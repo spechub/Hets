@@ -23,6 +23,7 @@ import HasCASL.Le
 import HasCASL.MixAna
 import HasCASL.MapTerm
 import HasCASL.Constrain
+import HasCASL.ProgEq
 import HasCASL.MinType
 
 import qualified Common.Lib.Map as Map
@@ -169,9 +170,10 @@ inferAppl ps mt t1 t2 = do
             combs <- mapM ( \ (sf, cf, _, tf) -> do 
                 let sfty = subst sf aty
                 args <- infer (Just sfty) t2 >>= reduce False
---                   args2 <- infer (Just $  FunType logicalType 
---                                        PFunArr sfty ps) t2
---                   let args = typeNub tm q2p (args1 ++ args2)
+{-                args2 <- infer (Just $  FunType logicalType 
+                                         PFunArr sfty ps) t2 >>= reduce False
+                let args = args1 ++ args2
+-}
                 combs2 <- mapM ( \ (sa, ca, _, ta) -> do
                     let sr = compSubst sf sa
                     return [(sr, joinC ca $ substC sa cf, subst sr rty, 
@@ -379,7 +381,7 @@ inferLetEqs es = do
     do vs <- gets localVars
        newPats <- checkList (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
-             mapM_ addLocalVar $ concatMap extractVars pps 
+             mapM_ addLocalVar $ concatMap extractVars pps
              newTrms <- checkList (map Just tys) trms 
              return $ map ( \ (sr, tcs, tys2, tts ) ->  
                           (compSubst sf sr, 
@@ -392,14 +394,9 @@ inferLetEqs es = do
 inferCaseEq :: Type -> Type -> ProgEq 
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
 inferCaseEq pty tty (ProgEq pat trm ps) = do
-   as <- gets assumps
-   let newAs = filterAssumps ( \ o -> case opDefn o of
-                                              ConstructData _ -> True
-                                              VarDefn -> True
-                                              _ -> False) as
-   putAssumps newAs
-   pats <- infer (Just pty) pat >>= reduce False
-   putAssumps as
+   pats1 <- infer (Just pty) pat >>= reduce False
+   e <- get            
+   let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
    if null pats then addDiags [mkDiag Error "unresolved case pattern" pat]
       else return ()
    vs <- gets localVars

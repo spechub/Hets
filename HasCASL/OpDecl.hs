@@ -58,9 +58,6 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
 	                       Just t -> return $ Just $ UnitOpAttr t ps
 anaAttr _ _ b = return $ Just b
 
-filterVars :: Assumps -> Assumps
-filterVars = filterAssumps (not . isVarDefn)
-
 patternsToType :: [[VarDecl]] -> Type -> Type
 patternsToType [] t = t
 patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr 

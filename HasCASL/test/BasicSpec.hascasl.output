@@ -214,15 +214,15 @@ type Data4
   known types:
     
 *** Hint 21.1, untypable application (with result type: s)
- 'fst(x : s, var y : t_v1)'
-*** Error 21.1, no typing for 'fst(x : s, var y : t_v1) : s'
+ 'fst(x : s, var y : t)'
+*** Error 21.1, no typing for 'fst(x : s, var y : t) : s'
 *** Hint 22.1, no type match for: snd
-  with (maximal) type: _var_5_v5 ->? t_v1
+  with (maximal) type: _var_5_v5 ->? t
   known types:
     
-*** Hint 22.1, untypable application (with result type: t_v1)
- 'snd(x : s, var y : t_v1)'
-*** Error 22.1, no typing for 'snd(x : s, var y : t_v1) : t_v1'
+*** Hint 22.1, untypable application (with result type: t)
+ 'snd(x : s, var y : t)'
+*** Error 22.1, no typing for 'snd(x : s, var y : t) : t'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:

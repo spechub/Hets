@@ -303,11 +303,11 @@ optAnaVarDecl vd@(VarDecl v t s q) =
     else varDecl
 
 makeMonomorph :: VarDecl -> VarDecl
-makeMonomorph (VarDecl v t sk ps) =
-    let s = Map.fromList $ map ( \ a@(TypeArg i k _ _) -> 
-				    (a, TypeName i k 0)) $ 
-	    varsOf t
-	in VarDecl v (repl s t) sk ps
+makeMonomorph (VarDecl v t sk ps) = VarDecl v (monoType t) sk ps
+
+monoType :: Type -> Type
+monoType t = repl (Map.fromList $ map ( \ a@(TypeArg i k _ _) -> 
+			                (a, TypeName i k 0)) $ varsOf t) t
 
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)

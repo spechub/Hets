@@ -28,11 +28,11 @@ op def, tt : Pred s
 var x : s
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : _var_4_v4 . ()
+          = \ (var x : s) : s . ()
         %% def is also total (identical to tt) 
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : _var_7_v7 . ()
+          = \ (var x : s) : s . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -211,10 +211,10 @@ y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : _var_4_v4 . () %(pe_def)%
+          = \ (var x : s) : s . () %(pe_def)%
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : _var_7_v7 . () %(pe_tt)%
+          = \ (var x : s) : s . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
@@ -272,11 +272,11 @@ free type bool
 *** FatalError 31.6, illegal type pattern: __ * __ * __
 *** Warning 42.16, variable shadows global name(s) 'x'
 *** Hint 42.15, unable to prove: s < _var_4_v4
-*** Error 42.15, in term'\ (var x : s) : _var_4_v4 . ()' of type '_var_4_v4 ->? Unit'
+*** Error 42.15, in term'\ (var x : s) : s . ()' of type '_var_4_v4 ->? Unit'
  unresolved constraints '{ s < _var_4_v4 }'
 *** Warning 44.15, variable shadows global name(s) 'x'
 *** Hint 44.14, unable to prove: s < _var_7_v7
-*** Error 44.14, in term'\ (var x : s) : _var_7_v7 . ()' of type '_var_7_v7 ->? Unit'
+*** Error 44.14, in term'\ (var x : s) : s . ()' of type '_var_7_v7 ->? Unit'
  unresolved constraints '{ s < _var_7_v7 }'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
@@ -290,12 +290,12 @@ free type bool
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with (maximal) type: _var_11_v11 ->? t_v2
+  with (maximal) type: _var_11_v11 ->? t
   known types:
     
-*** Hint 60.9, untypable application (with result type: t_v2)
- 'snd(x : s_v1, var y : t_v2)'
-*** Error 60.9, no typing for 'snd(x : s_v1, var y : t_v2) : t_v2'
+*** Hint 60.9, untypable application (with result type: t)
+ 'snd(x : s, var y : t)'
+*** Error 60.9, no typing for 'snd(x : s, var y : t) : t'
 *** Error 65.18, ambiguous mixfix term
 	def(__res__(x, y))
 	def__(__res__(x, y))
@@ -312,8 +312,8 @@ free type bool
   known types:
     
 *** Hint 87.9, untypable application (with result type: Unit ->? Unit)
- 'all(var p : s_v1 ->? Unit)'
-*** Error 87.9, no typing for 'all(var p : s_v1 ->? Unit) : Unit ->? Unit'
+ 'all(var p : s ->? Unit)'
+*** Error 87.9, no typing for 'all(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
   with (maximal) type: _var_94_v94 ->? Unit ->? Unit
   known types:
@@ -328,8 +328,8 @@ free type bool
   known types:
     
 *** Hint 98.9, untypable application (with result type: Unit ->? Unit)
- 'ex(var p : s_v1 ->? Unit)'
-*** Error 98.9, no typing for 'ex(var p : s_v1 ->? Unit) : Unit ->? Unit'
+ 'ex(var p : s ->? Unit)'
+*** Error 98.9, no typing for 'ex(var p : s ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
   with (maximal) type: _var_96_v96 ->? Unit ->? Unit
   known types:

@@ -123,12 +123,12 @@ x : m a %(var)%
    op emptySet[_var_10_v10] : forall a : Type . Set a_v-1)' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
 *** Hint 37.14, rejected '__->?__ < __->__' of '(var x : m a,
- \ (var y : a_v1)
+ \ (var y : a)
    . (op return[_var_91_v91; _var_92_v92]
       : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1)
-       ((var g : a -> b)(var y : a_v1)))'
+       ((var g : a -> b)(var y : a)))'
 
-*** Error 37.16, untypable application '__bind__(x, \ (var y : a_v1) . return(g(y)))'
+*** Error 37.16, untypable application '__bind__(x, \ (var y : a) . return(g(y)))'
 *** Hint 37.12, untypable application (with result type: Unit)
- '__=__(fmap(g)(x), __bind__(x, \ (var y : a_v1) . return(g(y))))'
-*** Error 37.12, no typing for '__=__(fmap(g)(x), __bind__(x, \ (var y : a_v1) . return(g(y))))'
+ '__=__(fmap(g)(x), __bind__(x, \ (var y : a) . return(g(y))))'
+*** Error 37.12, no typing for '__=__(fmap(g)(x), __bind__(x, \ (var y : a) . return(g(y))))'
