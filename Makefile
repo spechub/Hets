@@ -226,7 +226,8 @@ release:
 	ln -s ../uni uni
 	(cd HetCATS; $(MAKE) derivedSources; ./clean.sh; \
            find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
-           $(RM) clean.*; $(RM) Makefile; mv ReleaseMakefile Makefile)
+           $(RM) clean.*; mv Makefile Makefile.orig; \
+           mv ReleaseMakefile Makefile)
 	tar cvf HetCATS.tar HetCATS
 
 #############################
