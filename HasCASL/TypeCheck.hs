@@ -93,7 +93,6 @@ reduce :: Bool -> [(Subst, Constraints, Type, Term)]
        -> State Env [(Subst, Constraints, Type, Term)]
 reduce b alts = do
        tm <- gets typeMap
-       vs <- gets localVars
        combs <- mapM ( \ (s, cr, ty, tr) -> do 
            Result ds mc <- toEnvState $ preClose tm cr
            addDiags $ map (improveDiag tr) ds 
@@ -101,7 +100,7 @@ reduce b alts = do
                Nothing -> []
                Just (cs, cc) -> let 
                    s1 = compSubst s cs
-                   ms = if b then monoSubsts tm (Map.map (subst s1) vs) 
+                   ms = if b then monoSubsts tm 
                        (foldr (uncurry Rel.insert) 
                                        (fromTypeMap tm) 
                                         $ toListC cc) (subst s1 ty)

@@ -37,18 +37,18 @@ unboundTypevars args ct =
 
 -- | vars
 varsOf :: Type -> [TypeArg]
-varsOf = map fst . leaves (/=0)
+varsOf = map snd . leaves (/=0)
 
 -- | bound vars
 genVarsOf :: Type -> [TypeArg]
-genVarsOf = map fst . leaves (<0)
+genVarsOf = map snd . leaves (<0)
 
 -- | vars or other ids 
-leaves :: (Int -> Bool) -> Type -> [(TypeArg, Int)]
+leaves :: (Int -> Bool) -> Type -> [(Int, TypeArg)]
 leaves b t = 
     case t of 
 	   TypeName j k i -> if b(i)
-			     then [(TypeArg j k Other [], i)]
+			     then [(i, TypeArg j k Other [])]
 			     else []
 	   TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
 	   ExpandedType _ t2 -> leaves b t2
@@ -149,7 +149,7 @@ getTypeVar :: TypeArg -> Id
 getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.fromList . map (getTypeVar . fst) . leaves b
+idsOf b = Set.fromList . map (getTypeVar . snd) . leaves b
 
 mapType :: IdMap -> Type -> Type
 mapType m ty = if Map.isEmpty m then ty else 

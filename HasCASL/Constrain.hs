@@ -347,50 +347,46 @@ monotonic tm v t =
                 _ -> error "monotonic"
 
 -- | find monotonicity based instantiation
-monoSubst :: TypeMap -> Map.Map Id Type -> Rel.Rel Type -> Type -> Subst
-monoSubst tm vm r t = 
+monoSubst :: TypeMap -> Rel.Rel Type -> Type -> Subst
+monoSubst tm r t = 
     let varSet = Set.fromList . leaves (> 0)
-        fvs = Set.union (varSet t) $ Set.unions $ map varSet 
+        vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet 
               $ Set.toList $ Rel.nodes r
-        avs = Set.unions $ map varSet $ Map.elems vm
-        vs = Set.toList (fvs Set.\\ avs)
-        monos = filter ( \ (TypeArg n k _ _, i) -> case monotonic tm i t of
+        monos = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
                                 (True, _) -> 1 == Set.size 
                                     (Rel.predecessors r $ TypeName n k i)
                                 _ -> False) vs
-        antis = filter ( \ (TypeArg n k _ _, i) -> case monotonic tm i t of
+        antis = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
                                 (_, True) -> 1 == Set.size
                                      (Rel.succs r $ TypeName n k i)
                                 _ -> False) vs
-        rest = filter ( \ (TypeArg n k _ _, i) -> case monotonic tm i t of
-                                (True, True) -> 1 /= Set.size
+        resta = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+                                (True, True) -> 1 < Set.size
                                      (Rel.succs r $ TypeName n k i)
-                                     && 1 /= Set.size
-                                    (Rel.predecessors r $ TypeName n k i)
                                 _ -> False) vs
-    in if null monos then 
-          if null antis then 
-             if null rest then eps
-             else let (TypeArg n k _ _, i) = head rest
-                      tv = TypeName n k i 
-                      s = Set.union (Rel.succs r tv)
-                          $ Rel.predecessors r tv
-                  in if Set.isEmpty s then eps 
-                     else Map.single i $ Set.findMin s
-          else let (TypeArg n k _ _, i) = head antis 
-                   v = Set.findMin $ Rel.succs r $ TypeName n k i 
-               in Map.single i v  
-       else let (TypeArg n k _ _, i) = head monos 
-                v = Set.findMin $ Rel.predecessors r $ TypeName n k i 
-               in Map.single i v 
+        restb = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+                                (True, True) -> 1 < Set.size
+                                     (Rel.predecessors r $ TypeName n k i)
+                                _ -> False) vs
+    in if null antis then 
+          if null monos then 
+             if null resta then
+                if null restb then eps else
+                Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
+                (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) restb
+             else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
+                (i, Set.findMin $ Rel.succs r $ TypeName n k i)) resta
+          else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
+                (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) monos
+       else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
+                (i, Set.findMin $ Rel.succs r $ TypeName n k i)) antis
 
-monoSubsts :: TypeMap -> Map.Map Id Type -> Rel.Rel Type -> Type -> Subst
-monoSubsts tm vs r t = 
-    let s = monoSubst tm vs (Rel.transReduce $ Rel.irreflex r) t in
+monoSubsts :: TypeMap -> Rel.Rel Type -> Type -> Subst
+monoSubsts tm r t = 
+    let s = monoSubst tm (Rel.transReduce $ Rel.irreflex r) t in
     if Map.isEmpty s then s else
        compSubst s $ 
-            monoSubsts tm (Map.map (subst s) vs)
-                           (Rel.transReduce $ Rel.irreflex $
+            monoSubsts tm (Rel.transReduce $ Rel.irreflex $
                            Rel.image (subst s) r) 
                            $ subst s t 
 
