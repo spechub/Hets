@@ -28,8 +28,8 @@ import Common.PrettyPrint
 import Data.List
 import Data.Maybe
 
-import TextDisplay
-import Configuration
+-- import TextDisplay
+-- import Configuration
 
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
@@ -55,8 +55,10 @@ isaProve thName (sig,axs) goals = do
                    ++ showAxs ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
   writeFile (thName++".thy") showTheory
-  createTextDisplay thName ("Wrote Isabelle/Isar theory "++thName++".thy") 
-                    [size(50,10)]
+  putStrLn 
+  -- createTextDisplay thName 
+          ("Wrote Isabelle/Isar theory "++thName++".thy") 
+  --                    [size(50,10)]
   return [] -- ??? to be implemented
 
 -- translate special characters in sentence names
