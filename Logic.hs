@@ -112,6 +112,8 @@ class (Show basic_spec, Show sentence, Show symb_items,
          parse_sentence :: id -> String -> Result sentence
          parse_symb_items :: id -> String -> Result [symb_items]
          parse_symb_map_items :: id -> String -> Result [symb_map_items]
+         comment_line :: id -> String
+         comment_group :: id -> (String,String)
 
 
 -- lattices (for sublogics)
@@ -145,13 +147,18 @@ type Tactic_script = String  -- the file name
 
 data Proof_status sen = Open sen
                       | Disproved sen 
-                      | Proved(sen,[sen],Proof_tree sen,Tactic_script)
+                      | Proved(sen,
+                               [sen], -- used axioms
+                               Proof_tree sen,
+                               Tactic_script)
 
 data Prover sen symbol = 
      Prover { prover_name :: String,
               prover_sublogic :: String,
               add_sym :: symbol -> IO(Bool),  -- returns True if succeeded
               remove_sym :: symbol -> IO(Bool), -- returns True if succeeded
+              add_sen :: sen -> IO(Bool),  -- returns True if succeeded
+              remove_sen :: sen -> IO(Bool), -- returns True if succeeded
               prove :: sen -> IO([Proof_status sen]) -- proof status for goal and lemmas
             }
 
