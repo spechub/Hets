@@ -1,11 +1,9 @@
 type bool ::= true | false
 
-op l : bool
+op a : bool = true
 
-type Unit
+op notA : bool = case a of true -> false | false -> true
 
-op a : Unit = case l of true -> ()| false -> ()
+op b : bool = let x = true; y = false; z = x in true
 
-op b : Unit = let x = true; y = false; z = x in ()
-
-op b : Unit -> Unit = \x . ()
+op b : bool -> bool = \x . x
