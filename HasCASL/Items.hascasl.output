@@ -3,3 +3,7 @@ var a:{_ < c}
 var {a} : c -> d
 class Monad :Type ->Type
 type a :Monad := \ t:Type .  t -> t
+parse error at (line 6, column 25):
+unexpected "V"
+expecting "{", __, [<id>,...,<id>], "(", "?", "%%", "%{", "%(", "%", "|", "deriving", ";", "sort", "op", "pred", "type", "class", "program", "generated", "free", "var", "forall", dot, "axiom" or end of input
+

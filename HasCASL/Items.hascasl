@@ -3,3 +3,4 @@ var a < c
 var {a}: c -> d
 class Monad: Type -> Type
 type a : Monad := \ t . t -> t
+free type Term ::=  Var Variable | Lam Variable Term | App Term Term 
