@@ -23,6 +23,7 @@ import Sign
 import Logic
 
 import qualified Sublogics
+import qualified Static
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -72,7 +73,15 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
                Sign 
                Morphism 
                Symbol RawSymbol where
--- missing
+         -- symbol_to_raw :: id -> Symbol -> RawSymbol
+         -- id_to_raw  :: id -> Id -> RawSymbol
+         -- sym_of :: id -> sign -> Set Symbol
+         -- symmap_of :: id -> Morphism -> EndoMap Symbol
+         -- matches :: id -> Symbol -> RawSymbol -> Bool
+         -- sym_name :: id -> Symbol -> Id
+               
+         basic_analysis CASL = Just Static.basic_analysis
+         empty_signature CASL = emptySign
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

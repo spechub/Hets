@@ -28,15 +28,18 @@ module Static where
 
 import Maybe
 import FiniteMap
+import Set
 import Id
 import AS_Annotation
 import GlobalAnnotations
+import GlobalAnnotationsFunctions
 import AS_Basic_CASL
 import Sign
 import Result
 import Graph
-import Latin1
+import Latin
 import Utils
+import Logic ( EndoMap )
 
 ------------------------------------------------------------------------------
 -- types
@@ -469,10 +472,9 @@ addVAR_DECL s env v pos =
      return env' { getGlobal = Global (setAddOne (global $ getGlobal env')
                                (VarDecl v s (getListPos pos))) }
 
-basic_analysis :: Maybe (BASIC_SPEC, Sign, GlobalAnnos)
+basic_analysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                   -> Result (Sign,Sign,[(String,Sentence)])
-basic_analysis (Nothing) = return (emptySign,emptySign,[])
-basic_analysis (Just (b,sigma,ga)) =
+basic_analysis (b,sigma,ga) =
   do env <- addBASIC_SPEC
             (Env "unknown" ga sigma emptySentences emptyGlobal) b
      let sigma' = getSigma env
@@ -483,6 +485,79 @@ basic_analysis (Just (b,sigma,ga)) =
 --
 signDiff :: Sign -> Sign -> Sign
 signDiff a b = b
+
+symbTypeToKind :: SymbType -> Kind
+symbTypeToKind (OpAsItemType optype) = FunKind
+symbTypeToKind (PredType predtype)   = PredKind
+symbTypeToKind (Sign.Sort)           = SortKind
+
+symbolToRaw :: Symbol -> RawSymbol
+symbolToRaw (Symbol id typ) = AKindedId (symbTypeToKind typ) id
+
+idToRaw :: Id -> RawSymbol
+idToRaw x = AnID x
+
+sigItemToSymbol :: SigItem -> Symbol
+sigItemToSymbol (ASortItem s) = Symbol (sortId $ item s) Sign.Sort
+sigItemToSymbol (AnOpItem  o) = Symbol (opId $ item o)
+                                       (OpAsItemType (opType $ item o))
+sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
+                                       (PredType (predType $ item p))
+
+symOf :: Sign -> Set Symbol
+symOf sigma = mkSet $ map sigItemToSymbol $ concat $ eltsFM $ getMap sigma
+
+idToSortSymbol :: Id -> Symbol
+idToSortSymbol id = Symbol id Sign.Sort
+
+idToOpSymbol :: Id -> OpType -> Symbol
+idToOpSymbol id typ = Symbol id (OpAsItemType typ)
+
+idToPredSymbol :: Id -> PredType -> Symbol
+idToPredSymbol id typ = Symbol id (PredType typ)
+
+funMapEntryToSymbol :: Sign -> (Id,[(OpType,Id,Bool)]) -> [(Symbol,Symbol)]
+funMapEntryToSymbol sigma (id,[]) = []
+funMapEntryToSymbol sigma (id,(typ,newId,_):t) =
+  let
+    origType = opType $ (\x -> case x of (AnOpItem o) -> item o)
+                      $ fromJust $ getOp sigma id
+  in
+    (idToOpSymbol id origType,idToOpSymbol newId typ):
+    (funMapEntryToSymbol sigma (id,t)) 
+
+predMapEntryToSymbol :: Sign -> (Id,[(PredType,Id)]) -> [(Symbol,Symbol)]
+predMapEntryToSymbol sigma (id,[]) = []
+predMapEntryToSymbol sigma (id,(typ,newId):t) =
+  let
+    origType = predType $ (\x -> case x of (APredItem p) -> item p)
+                        $ fromJust $ getPred sigma id
+  in
+    (idToPredSymbol id origType,idToPredSymbol newId typ):
+    (predMapEntryToSymbol sigma (id,t))
+
+symmapOf :: Morphism -> EndoMap Symbol
+symmapOf (Morphism src trg sorts funs preds) =
+  let
+    sortMap = listToFM $ zip (map idToSortSymbol $ keysFM sorts)
+                             (map idToSortSymbol $ eltsFM sorts)
+    funMap  = listToFM $ concat $ map (funMapEntryToSymbol src)
+                                      (fmToList funs)
+    predMap = listToFM $ concat $ map (predMapEntryToSymbol src)
+                                      (fmToList preds)
+  in
+    foldl plusFM emptyFM [sortMap,funMap,predMap]
+
+matches :: Symbol -> RawSymbol -> Bool
+matches x                            (ASymbol y)             =  x==y
+matches (Symbol id _)                (AnID di)               = id==di
+matches (Symbol id Sign.Sort)        (AKindedId SortKind di) = id==di
+matches (Symbol id (OpAsItemType _)) (AKindedId FunKind di)  = id==di
+matches (Symbol id (PredType _))     (AKindedId PredKind di) = id==di
+matches _                            _                       = False
+
+symName :: Symbol -> Id
+symName (Symbol id _) = id
 
 ------------------------------------------------------------------------------
 -- THE END
