@@ -213,17 +213,31 @@ transSignature sign = Result []
 -- Translating to strings compatible with Isabelle-HOLCF
 
 showIsaS :: Show i => i -> IsaSign.IName
-showIsaS x = (Translate.transString) (show x)
+-- showIsaS x = (Translate.transString) (show x)
+showIsaS x = (show x)
 
---showIsaPNT :: PNT -> IsaSign.IName
---showIsaPNT t = 
+
+showIsaPNT :: PNT -> IsaSign.IName
+showIsaPNT t = case t of 
+   PNT (PN p _) _ _ -> case p of 
+       Qual (PlainModule x) y -> ((showIsaS x)++"."++(showIsaS y))
+       Qual (MainModule x) y -> ((showIsaS x)++"."++(showIsaS y))
+       UnQual w -> showIsaS w
+
+-- showIsaHs :: TiTypes.Type PNT -> IsaSign.IName
+
+showIsaH :: HsIdent.HsIdentI PNT -> IsaSign.IName
+showIsaH t = case t of
+                 HsVar x -> showIsaPNT x
+                 HsCon x -> showIsaPNT x
+
 
 -------------------------------- Identifier translation -----------------------
 
-idTrans :: Show i => HsIdent.HsIdentI i -> IsaSign.Term
+idTrans :: HsIdent.HsIdentI PNT -> IsaSign.Term
 idTrans t = case t of
-                 HsVar x -> Free (showIsaS x) noType
-                 HsCon x -> Const (showIsaS x) noType
+                 HsVar x -> Free (showIsaPNT x) noType
+                 HsCon x -> Const (showIsaPNT x) noType
 
 ------------------------------- Kind translation ------------------------------
 
@@ -267,18 +281,20 @@ not_supported :: (Show t, Show i) => String -> HsTypeStruct.TI i t -> a
 not_supported s x = error $ s++" not supported (yet): "++show x
 
 transIdV :: PNT -> IsaType
-transIdV t = TFree (showIsaS t) IsaSign.dom
+transIdV t = TFree (showIsaPNT t) IsaSign.dom
 
 transIdC :: PNT -> IsaType
 transIdC t = 
   case (UniqueNames.orig t) of 
-    UniqueNames.G m n _ -> 
+    UniqueNames.G (PlainModule m) n _ -> 
          IsaSign.Type ((showIsaS m)++"."++(showIsaS n)) IsaSign.dom (transFields t) 
-    _ -> IsaSign.Type (showIsaS t) IsaSign.dom (transFields t)
+    UniqueNames.G (MainModule m) n _ -> 
+         IsaSign.Type ((showIsaS m)++"."++(showIsaS n)) IsaSign.dom (transFields t) 
+    _ -> IsaSign.Type (showIsaPNT t) IsaSign.dom (transFields t)
 
 transFields ::  PNT -> [IsaType]
 transFields t = case t of 
-    PNT _ (TypedIds.Type q) _ -> [TFree (showIsaS x) IsaSign.dom | x <- TypedIds.fields q]
+    PNT _ (TypedIds.Type q) _ -> [TFree (showIsaS x) IsaSign.dom | (PN x _) <- TypedIds.fields q]
     _ -> error "Haskell2IsabelleHOLCF.transFields"
 
 transType :: HsType -> IsaType
@@ -291,7 +307,7 @@ mkIsaClass n = IsaClass n
 
 transClass :: HsType -> IsaClass
 transClass x = case x of 
-                     Typ (HsTyCon c) -> IsaClass (showIsaS c)
+                     Typ (HsTyCon c) -> IsaClass (showIsaPNT c)
                      Typ _           -> error "Hs2HOLCF.transClass"
 -- maybe need check for parameters?
 
@@ -307,7 +323,7 @@ liftMapByListF ma mb h k cs f = mb [(h a, k b) | (a, b) <- ma f, cs a]
 
 getConstTab ::  VaMap -> IsaSign.ConstTab
 getConstTab f =   
-    liftMapByList Map.toList Map.fromList showIsaS transFromScheme f
+    liftMapByList Map.toList Map.fromList showIsaH transFromScheme f
 
 transFromScheme :: TiTypes.Scheme PNT -> IsaType
 transFromScheme s = case s of 
@@ -335,7 +351,7 @@ getAbbrs f =
     liftMapByList Map.toList Map.fromList showIsaS transAbbrsInfo f
 
 transAbbrsInfo :: (Kind, TiTypes.TypeInfo PNT) -> ([IsaSign.TName], IsaType)
-transAbbrsInfo p = let x = extAbbrsInfo (snd p) in (map showIsaS (fst x), transType (snd x))
+transAbbrsInfo p = let x = extAbbrsInfo (snd p) in (map showIsaPNT (fst x), transType (snd x))
 
 extAbbrsInfo :: TiTypes.TypeInfo PNT -> ([PNT], HsType)
 extAbbrsInfo p = case p of 
@@ -446,7 +462,7 @@ getTypeVarsR as ls = case as of
 
 getTyCons :: TyMap -> VaMap -> Map.Map IsaSign.TName IsaType
 getTyCons g f =  
-     liftMapByListF Map.toList Map.fromList showIsaS transFromScheme (checkTyCons g) f 
+     liftMapByListF Map.toList Map.fromList showIsaH transFromScheme (checkTyCons g) f 
 
 checkTyCons :: TyMap -> HsIdent.HsIdentI PNT -> Bool
 checkTyCons f n = case Map.lookup n f of 
@@ -514,7 +530,7 @@ getDomainEntry :: IsaSign.ConstTab -> HsType -> IsaSign.DomainEntry
 getDomainEntry ctab t = 
  case t of
   Typ (HsTyCon (PNT _ (TypedIds.Type d) _)) -> 
-   (transType t, [(b, getFieldTypes ctab b) | b <- [showIsaS $ conName c | c <- constructors d]])
+   (transType t, [(b, getFieldTypes ctab b) | b <- [showIsaS c | (PN c _) <- map conName (constructors d)]])
   _ -> error "Haskell2IsabelleHOLCF.getDomainEntry" 
 --   (transType t, [(showIsaS $ conName c, getFieldTypes ctab (showIsaS $ conName c))  
 --                    | c <- constructors d]) 
@@ -577,7 +593,7 @@ transP trId trP p =
 
 transPat :: TiDecorate.TiPat PNT -> IsaPattern
 transPat x = case x of 
-    (TiDecorate.Pat p) -> transP showIsaS transPat p
+    (TiDecorate.Pat p) -> transP showIsaPNT transPat p
     _ -> error "Haskell2IsabelleHOLCF.transPat"
 
 -- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
@@ -590,7 +606,7 @@ extVars p = case p of
 
 transExp :: TiPropDecorate.TiExp PNT -> IsaTerm
 transExp t = case t of 
-    (TiPropDecorate.Exp e) -> transE showIsaS transExp transPat e
+    (TiPropDecorate.Exp e) -> transE showIsaPNT transExp transPat e
     _ -> error "Haskell2IsabelleHOLCF.transExp"
 
 -- transExp :: PropSyntaxRec.HsExpI PNT -> IsaTerm
