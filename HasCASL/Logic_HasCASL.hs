@@ -31,6 +31,7 @@ import HasCASL.Morphism
 import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
+import HasCASL.MapTerm
 
 type HasCASL_Sublogics = ()
 
@@ -86,6 +87,7 @@ instance Category HasCASL Env Morphism where
     legal_mor HasCASL m = legalMor m
 
 instance Sentences HasCASL Term () Env Morphism Symbol where
+    map_sen HasCASL = mapSen
     sym_name HasCASL = symName
     sym_of HasCASL = symOf -- \ _ -> Set.empty
     symmap_of HasCASL = morphismToSymbMap
