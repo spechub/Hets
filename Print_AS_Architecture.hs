@@ -23,6 +23,9 @@ import Id
 import Print_AS_Annotation
 import Print_AS_Structured
 
+
+import List
+
 import Logic
 import LogicGraph
 import Grothendieck
@@ -39,7 +42,7 @@ instance PrettyPrint ARCH_SPEC where
     printText0 ga (Basic_arch_spec aa ab _) =
 	let aa' = fcat $ punctuate (semi <> space) $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
-	in aa' <+> ptext "result" <+> ab'
+	in (hang (ptext "units") 4 aa') $$ (ptext "result" <+> ab')
     printText0 ga (Arch_spec_name aa) =
 	printText0 ga aa
     printText0 ga (Group_arch_spec aa _) =
@@ -85,7 +88,8 @@ instance PrettyPrint UNIT_EXPRESSION where
     printText0 ga (Unit_expression aa ab _) =
 	let aa' = cat $ punctuate (semi <> space) $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
-	in hang (ptext "lambda") 4 (hang aa' (-2) (ptext "." <+> ab'))
+	in if null aa then ab' 
+	   else hang (ptext "lambda") 4 (hang aa' (-2) (ptext "." <+> ab'))
 
 instance PrettyPrint UNIT_BINDING where
     printText0 ga (Unit_binding aa ab _) =
@@ -103,7 +107,7 @@ instance PrettyPrint UNIT_TERM where
 	    ab' = printText0 ga ab
 	in fsep [aa', ab']
     printText0 ga (Amalgamation aa _) =
-	fsep $ punctuate (ptext "and") $ map (printText0 ga) aa
+	fsep $ intersperse (ptext "and") $ map (printText0 ga) aa
     printText0 ga (Local_unit aa ab _) =
 	let aa' = fcat $ punctuate (semi<>space) $ map (printText0 ga) aa
 	    ab' = printText0 ga ab
@@ -122,7 +126,8 @@ instance PrettyPrint FIT_ARG_UNIT where
 	  --  ab' = fcat $ punctuate (comma<>space) $ 
 	  --                 map (print_symb_map_items_text lid ga) ab
 	    ab' = printText0 ga ab
-	    null' = False
+	    null' = case ab of
+	            G_symb_map_items_list _ l -> null l
+		    _ -> error "Something strange happend to FIT_ARG_UNIT!"
 	in aa' <+> (if null' then empty else ptext "fit" <+> ab')
-	
-
+ 
