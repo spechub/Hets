@@ -1,71 +1,79 @@
-parse error at (line 1, column 1):
-unexpected "="
-expecting "(", "{", "[" or id/literal
+parse error at (line 1, column 3):
+unexpected end of input
+expecting digit
 
-parse error at (line 2, column 1):
-unexpected "="
-expecting "(", "{", "[" or id/literal
+parse error at (line 2, column 3):
+unexpected end of input
+expecting digit
 
-parse error at (line 3, column 5):
+parse error at (line 3, column 1):
 unexpected "="
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 4, column 1):
-unexpected "as"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 5, column 1):
-unexpected ":"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 6, column 1):
-unexpected "true"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 7, column 1):
-unexpected "false"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 8, column 14):
-unexpected end of input
-expecting casl char, "(", "{", "[" or id/literal
-
-parse error at (line 9, column 1):
-unexpected "var"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 10, column 8):
-unexpected "?"
-
-parse error at (line 11, column 1):
-unexpected "not"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 12, column 1):
-unexpected "def"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 13, column 1):
 unexpected "="
 expecting "(", "{", "[" or id/literal
 
+parse error at (line 5, column 5):
+unexpected "="
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 6, column 1):
+unexpected "as"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 7, column 1):
+unexpected ":"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 8, column 1):
+unexpected "true"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 9, column 1):
+unexpected "false"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 10, column 14):
+unexpected end of input
+expecting casl char, "(", "{", "[" or id/literal
+
+parse error at (line 11, column 1):
+unexpected "var"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 12, column 8):
+unexpected "?"
+
+parse error at (line 13, column 1):
+unexpected "not"
+expecting "(", "{", "[" or id/literal
+
 parse error at (line 14, column 1):
-unexpected "=>"
+unexpected "def"
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 15, column 1):
-unexpected "if"
+unexpected "="
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 16, column 1):
-unexpected "<=>"
+unexpected "=>"
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 17, column 1):
-unexpected "/\\"
+unexpected "if"
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 18, column 1):
+unexpected "<=>"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 19, column 1):
+unexpected "/\\"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 20, column 1):
 unexpected "\\/"
 expecting "(", "{", "[" or id/literal
 
