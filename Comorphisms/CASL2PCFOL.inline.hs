@@ -197,6 +197,7 @@ encodeFORMULA :: [Named (FORMULA f)] -> [Named (FORMULA f)]
 encodeFORMULA  [ ]  = [ ]
 encodeFORMULA  l = map nf2NFormula l
 
+
 f2Formula::FORMULA f->FORMULA f
 f2Formula  f = case f of
     Quantification q vs frm ps ->Quantification q vs (f2Formula frm) ps
@@ -211,11 +212,16 @@ f2Formula  f = case f of
     Strong_equation t1 t2 ps -> Strong_equation (t2term  t1) (t2term  t2) ps
     Predication pn as qs -> Predication pn (map t2term  as) qs
     Definedness t ps -> Definedness (t2term  t) ps
-    Membership t ty ps -> Predication (Pred_name membership) [t] ps
+    Membership t ty ps -> Predication (Qual_pred_name (membership (ty)) (spos2PT t ps) ([]) ) [t2term t] ps
     Sort_gen_ax constrs isFree -> Sort_gen_ax constrs isFree
-    _ -> error "FORMULA error"
-    where    
-    membership=mkId[mkSimpleId "_membership"]
+    _ -> error "FORMULA"
+
+
+membership::SORT -> Id
+membership t =Id [mkSimpleId "_membership"] [t] []
+
+spos2PT::TERM f -> [Pos] -> PRED_TYPE
+spos2PT f pos =(Pred_type [(term2SSort f)] pos)
 
 
 t2term::TERM f-> TERM f
@@ -223,18 +229,31 @@ t2term t = case t of
     Qual_var v ty ps -> Qual_var v ty ps
     Application opsym as qs  -> Application opsym (map t2term as) qs
     Sorted_term trm ty ps -> Sorted_term (t2term trm) ty ps
-    Cast trm ty ps -> Application (Op_name pr) [trm] ps
+    Cast trm ty ps -> Application (projection trm ty) [t2term trm] ps
     Conditional t1 f t2 ps ->
-       Conditional (t2term t1) (f2Formula f) (t2term t2) ps
-    _ -> error "TERM error"
-   where    
+       Conditional (t2term t1) f (t2term t2) ps
+    _ -> error "TERM"
+
+projection::TERM f -> SORT -> OP_SYMB
+projection f s = (Qual_op_name pr (Partial_op_type [(term2SSort f)] s []) [])
+  where
     pr=mkId [mkSimpleId "_pr"]
+
+
+
+
+term2SSort::TERM f -> SORT
+term2SSort t = case t of
+      Sorted_term trm ty ps -> ty
+      _ ->mkId[mkSimpleId ""]
+
+
+
+
 
 nf2NFormula::Named (FORMULA f) -> Named (FORMULA f)
 nf2NFormula nf = nf{
                     sentence=(f2Formula (sentence nf))
                     }
-       
-        
-    
-        
+
+
