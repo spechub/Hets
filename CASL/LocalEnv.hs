@@ -1,11 +1,12 @@
 module LocalEnv where
 
+-- $Header$
+
 import Id
 import AS_Annotation
-import Set
 import FiniteMap
-
-type Anno = Annotation
+import Graph
+import List(intersperse)
 
 type SortId = Id  -- non-mixfix, but possibly compound
 
@@ -22,7 +23,7 @@ data SymbType = OpAsItemType OpType
 	      | Sort 
 		deriving (Eq, Ord)
 
-data Symbol = Symbol {symbId :: Id, sumbType :: SymbType} deriving (Eq, Ord)
+data Symbol = Symbol {symbId :: Id, symbType :: SymbType} deriving (Eq, Ord)
 
 -- the list of items which are part of a "sort-gen" (or free type)
 type GenItems = [Symbol] 
@@ -41,11 +42,15 @@ data GenKind = Free | Generated | Loose deriving (Show,Eq)
 data VarDecl = VarDecl {varId :: Id, varSort :: SortId}
 
 -- sort defined as predicate subtype or as more or less loose datatype
-data SortDefn = SubsortDefn VarDecl SortId Formula [Pos]
+data SortDefn = SubsortDefn VarDecl Formula [Pos]
               | Datatype [Annoted Alternative] GenKind GenItems [Pos]
 
 -- the sub- and supertypes of a sort 
-data SortRels = SortRels { subsorts :: [SortId], supersorts :: [SortId] } 
+data SortRels = SortRels { subsorts :: [SortId]  -- explicitly given
+			 , supersorts :: [SortId] 
+			 , allsubsrts :: [SortId] -- transitively closed 
+			 , allsupersrts :: [SortId]
+			 } 
 
 data ItemStart = Key | Comma | Semi | Less
 
@@ -67,7 +72,7 @@ data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term
 type ConsId = Symbol
 type SelId = Symbol
 
-data OpDefn = OpDef [VarDecl] Term [[Pos]] -- ,,,;,,,;,,,
+data OpDefn = OpDef [VarDecl] (Annoted Term) [[Pos]] -- ,,,;,,,;,,,
             | Constr ConsId          -- inferred
             | Select [ConsId] SelId  -- inferred
 
@@ -88,17 +93,15 @@ data PredItem = PredItem { predId :: Id
 			 , altPreds :: [ItemPos] 
 			 }
 
-data TypeOp = OfType | AsType
+data TypeQualifier = OfType | AsType
 
 data Qualified = Explicit | Inferred
 
 -- a constant op has an empty list of Arguments
-data Term = Literal Token SortId [Pos]  -- SortId is inferred
-	  | VarId Id SortId Qualified [Pos]
+data Term = VarId Id SortId Qualified [Pos]
 	  | OpAppl Id OpType [Term] Qualified [Pos]  
-	  | Typed Term TypeOp SortId [Pos]
+	  | Typed Term TypeQualifier SortId [Pos]
           | Cond Term Formula Term [Pos]
-	  | AnnTerm (Annoted Term)
 
 data Quantifier =  Forall | Exists | ExistsUnique
 
@@ -123,7 +126,8 @@ data SigItem = ASortItem (Annoted SortItem)
 -- and annotations for several ITEMS 
 
 data Sign = SignAsList [SigItem]
-	  | SignAsMap (FiniteMap Symbol SigItem)
+
+data LocalEnv = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
 
 data RaySymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
 data Kind = SortKind | FunKind | PredKind
@@ -133,4 +137,15 @@ data Axiom = AxiomDecl [VarDecl] Formula [[Pos]] -- ,,,;,,,;
 data Sentence = Axiom (Annoted Axiom) 
 	      | GenItems GenItems [Pos] -- generate/free, { , }
 
-
+getLabel :: Sentence -> String
+getLabel (Axiom ax) = let annos = r_annos(ax)
+                          isLabel a = case a of Label _ _ -> True; _ -> False 
+                          labels = filter isLabel annos
+		          getLabel(Label l _) = concat l  		    
+                      in if null labels then "" else getLabel(head(labels))
+getLabel (GenItems l _) = let srts = filter (\x ->
+					     case x of Symbol _ Sort -> True;
+                                                       _ -> False) l
+                          in "ga_generated_" ++ concat 
+				 (intersperse "__" 
+				      (map (show . symbId) srts))
