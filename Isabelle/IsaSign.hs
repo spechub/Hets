@@ -34,7 +34,7 @@ type Sort  = [Class]
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
 data Typ = Type (String,[Typ])
              | TFree (String, Sort)
-             -- TVar  (Indexname, Sort)
+             | TVar  (Indexname, Sort)
            deriving (Eq, Ord)
 
 infix -->
@@ -148,10 +148,14 @@ emptyTypeSig = TySg {
 data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: Map.Map String Typ,
-                   dataTypeTab :: [[(Typ,[(String,[Typ])])]],
+                   dataTypeTab :: DataTypeTab,
                    syn :: Syntax
                  }
              deriving (Eq)
+
+type DataTypeTab = [DataTypeTabEntry]
+type DataTypeTabEntry = [(Typ,[DataTypeAlt])]
+type DataTypeAlt = (String,[Typ])
 
 emptySign :: Sign
 emptySign = Sign { baseSig = "Pure",
