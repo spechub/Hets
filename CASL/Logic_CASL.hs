@@ -65,19 +65,19 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL Sentence LocalEnv Sign Morphism Symbol where
+instance Sentences CASL Sentence Sign Sign Morphism Symbol where
 -- missing
 
 instance StaticAnalysis CASL BASIC_SPEC Sentence 
                SYMB_ITEMS SYMB_MAP_ITEMS
-               LocalEnv Sign 
+               Sign Sign 
                Morphism 
                Symbol RawSymbol where
 -- missing
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
-               LocalEnv Sign 
+               Sign Sign 
                Morphism
                Symbol RawSymbol where
          sublogic_names CASL = Sublogics.sublogics_name

@@ -138,10 +138,10 @@ data Sign = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
 instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
 
-type LocalEnv = Sign
+-- type LocalEnv = Sign
 
-instance Show LocalEnv where
-    show = error "show for type LocalEnv not defined"
+instance Show Sign where
+    show = error "show for type Sign not defined"
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
 	       deriving (Show, Eq)
