@@ -68,6 +68,8 @@ hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
 ### removes *.hi and *.o in all include directories and the binary 'hetcats'
 clean:
 	rm -f hetcats
+	rm -f capa
+	rm -f hacapa
 	THIS_DIR=`pwd`;\
          for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
          cd $$p ; rm -f *.hi *.o ; cd $$THIS_DIR;\
@@ -99,9 +101,17 @@ ghci:
 	$(HC)i $(HCI_OPTS)
 
 ### christian's target
-casl_test_parser: ../CASL/Main.hs $(drifted_files)
+### CASL parser
+capa: ../CASL/Main.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
+	\cp -p $@ ../CASL/$@ 
+
+### HasCASL parser
+hacapa: ../HasCASL/Main.hs $(drifted_files)
+	rm -f $@
+	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
+	\cp -p $@ ../HasCASL/$@ 
 
 ####################################################################
 ## rules for DrIFT
