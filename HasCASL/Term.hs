@@ -1,12 +1,20 @@
 module Term where
 
+import Char (isLower)
 import Id
 import Type
 
 -- symbols uniquely identify signature items 
 data Symb = Symb { symbId :: Id
 		 , symbType :: Type 
-		 } deriving (Show, Eq, Ord)
+		 } deriving (Eq, Ord)
+
+showSymb :: Symb -> ShowS
+showSymb (Symb i Sort) = shows i
+showSymb (Symb i t) = shows i . showChar ':' . shows t
+
+instance Show Symb where
+    showsPrec _ = showSymb
 
 -- try to reconstruct notation of (nested) declaration  
 type DeclNotation = Keyword 
@@ -21,7 +29,16 @@ type Anno = String
 data Decl = Decl { symb :: Symb
 		 , nota :: DeclNotation
 		 , declAn :: [Anno]
-		 } deriving (Show,Eq)
+		 } deriving (Eq)
+
+showDecl (Decl s n a) = 
+    shows n . showChar ' ' 
+    . showSymb s
+    . (if null a then showString "" 
+       else showChar ';' . showString (unwords a) . showChar '\n')  
+
+instance Show Decl where
+    showsPrec _ = showDecl
 
 -- for faster lookup
 type DeclLevel = Int

@@ -32,7 +32,19 @@ data SortItem = SortItem { sortDecl :: Decl
 			 , sortRels :: SortRels
                          , sortDef  :: Maybe SortDefn
 			 , sortAn   :: [Anno]
-			 } deriving (Show,Eq)
+			 } deriving (Eq)
+
+
+showSortItem (SortItem decl rels def an) = 
+    shows decl . showChar ' ' . showParen True (shows rels)
+	  . showChar ' ' . (case def of Nothing -> showString ""
+				        Just x -> showParen True (shows x))
+	  . showString (unwords an) . showChar '\n'
+
+instance Show SortItem where
+    showsPrec _ = showSortItem
+    showList [] = showString ""
+    showList (x:r) = shows x . showList r
 
 data OpAttr = AssocOpAttr | CommonOpAttr | IdemOpAttr | UnitOpAttr Term
 	       deriving (Show,Eq)
@@ -60,6 +72,12 @@ data Env = Env { sorts :: [SortItem]
 	       , vars :: [VarDecl]     
 	       , axioms :: [Axiom]   
 	       , generates :: [GenItems]
-	       } deriving (Show)
+	       } deriving ()
+
+showEnv (Env s o v a g) =
+    shows (reverse s). shows o. shows v. shows a . shows g
+
+instance Show Env where
+    showsPrec _ = showEnv
 
 empty = Env [] [] [] [] []

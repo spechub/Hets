@@ -20,7 +20,24 @@ internalBoolRep = simpleId("") -- invisible
 -- ----------------------------------------------
 data Type = Type Id [Type]
           | Sort
-	    deriving (Show, Eq, Ord)
+	    deriving (Eq, Ord)
+
+showType :: Bool -> Type -> ShowS
+showType _ Sort = showString "!SORT!"
+showType _ t@(Type i []) = if isProduct t then showString "()" else shows i
+showType b t@(Type i (x:r)) = showParen b 
+ (if isFunType t 
+  then showType (isFunType x) x . shows i . showType False (head r)
+  else if isProduct t 
+       then let showl [] = showString ""
+                showl (y:t) = shows i . showType 
+                              (isFunType y || isProduct y) y . showl t
+            in showType (isFunType x || isProduct x) x . showl r
+       else shows i . showList (x:r)
+ )
+
+instance Show Type where
+    showsPrec p = showType (p > 0)
 
 asType s = Type s []
 -- ----------------------------------------------
