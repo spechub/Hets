@@ -21,9 +21,6 @@ program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
 	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
 	ff () : ? Unit : ? Unit = all (\ r : (? Unit) . r ())
 forall x : t; y : t
-. %(..)%
-  (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						   (var y : t))
 type s
 op a : ? s
 type Data1 ::= a | 
@@ -36,7 +33,6 @@ type Data3 ::= Cons31 (sel1:? Data1; sel2:? Data2) |
 	       Cons32 (sel2:? Data2; sel1:? Data1)
 type Data4 ::= Cons41 (sel1:? Data1; sel2:? Data2) ? | 
 	       Cons42 (sel2:? Data2; sel1:? Data1) ?
-. (fun true : Unit)
 forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
@@ -114,11 +110,7 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
 true : Unit %(Fun)%
-tt : s ->? Unit %(Op)% = \ x : s . ()
-%% Sentences -------------------------------------------------------------
-(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						 (var y : t)) %()%
-(fun true : Unit) %()%
+tt : s ->? Unit %(Pred)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.7, illegal universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'
@@ -128,18 +120,26 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 *** Warning 11.10, redeclared class 'b'
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
+*** Error 18.23, ambiguous mixfix term
+	__(())
+	()
+*** Error 18.22, ambiguous mixfix term
+	__(\ x : s . ())
+	\ x : s . ()
 *** Error 20.12, unexpected mixfix token: res
 *** Error 20.10, unexpected pattern '__ res __ (x : s, y : t)'
-*** Error 20.37, unexpected mixfix token: x
+*** Error 20.37, ambiguous mixfix term
+	__(x)
+	x
 *** Hint 21.1, no type match for: fst
-  with type: '_var_4 ->? s' (line 21, column 20)
+  with type: '_var_2 ->? s' (line 21, column 20)
   known types:
     
 *** Hint 21.1, wrong result type 's' (line 21, column 20)
   for application 'fst (x : s, y : t)'
 *** Error 21.1, no typing for 'fst(x : s, y : t) : s'
 *** Hint 22.1, no type match for: snd
-  with type: '_var_5 ->? t' (line 22, column 20)
+  with type: '_var_3 ->? t' (line 22, column 20)
   known types:
     
 *** Hint 22.1, wrong result type 't' (line 22, column 20)
@@ -147,26 +147,30 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 *** Error 22.1, no typing for 'snd(x : s, y : t) : t'
 *** Error 26.11, cyclic super type '? s'
 *** Hint 28.9, no type match for: all
-  with type: '_var_6 ->? ? Unit' (line 28, column 26)
+  with type: '_var_4 ->? ? Unit' (line 28, column 26)
   known types:
     
 *** Hint 28.9, wrong result type '? Unit' (line 28, column 26)
   for application 'all (p : ? s)'
 *** Error 28.9, no typing for 'all(p : ? s) : ? Unit'
 *** Hint 30.9, no type match for: And
-  with type: '_var_8 ->? ? Unit' (line 30, column 31)
+  with type: '_var_6 ->? ? Unit' (line 30, column 31)
   known types:
     
 *** Hint 30.9, wrong result type '? Unit' (line 30, column 31)
-  for application 'And (x : _var_7, y : ? Unit)'
-*** Error 30.9, no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
+  for application 'And (x : _var_5, y : ? Unit)'
+*** Error 30.9, no typing for 'And(x : _var_5, y : ? Unit) : ? Unit'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
 *** Error 34.10, unexpected pattern '__ or __ (x, y : (? Unit))'
-*** Error 35.19, unexpected mixfix token: x
-*** Error 34.44, unexpected mixfix token: all
+*** Error 35.50, ambiguous mixfix term
+	__(__(__(x impl r) res (__(y impl r))) impl r)
+	__(__(x impl r) res (__(y impl r))) impl r
+*** Error 35.51, ambiguous mixfix term
+	__(all (__(\ r : ? Unit . ((x impl r) res (y impl r)) impl r)))
+	all (__(\ r : ? Unit . ((x impl r) res (y impl r)) impl r))
 *** Hint 37.3, no type match for: ex
-  with type: '_var_10 ->? ? Unit' (line 37, column 18)
+  with type: '_var_8 ->? ? Unit' (line 37, column 18)
   known types:
     
 *** Hint 37.3, wrong result type '? Unit' (line 37, column 18)
@@ -174,7 +178,29 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 *** Error 37.3, no typing for 'ex(p : ? s) : ? Unit'
 *** Error 40.7, unexpected mixfix token: )
 *** Error 40.3, unexpected pattern 'ff ()'
-*** Error 40.20, unexpected mixfix token: all
+*** Error 40.39, ambiguous mixfix term
+	__(r ())
+	r ()
+*** Error 40.40, ambiguous mixfix term
+	__(all (__(\ r : ? Unit . r ())))
+	all (__(\ r : ? Unit . r ()))
+*** Error 47.5, ambiguous mixfix term
+	(__=__)(__(x), __(y))
+	(__=__)(x, __(y))
+	(__=__)(__(x), __(y))
+	(__=__)(x, __(y))
+*** Hint 47.3, no type match for: __
+  with type: '_var_14 ->? _var_13'
+  known types:
+    
+*** Hint 47.3, wrong result type '_var_13'
+  for application '__ x'
+*** Hint 47.5, wrong result type 'Unit'
+  for application '(__=__) (__(x), __(y))'
+*** Error 47.5, no typing for '(__=__)(__(x), __(y))'
 *** Warning 61.73, data subtype ignored
+*** Error 66.8, ambiguous mixfix term
+	__(true)
+	true
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

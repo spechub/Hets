@@ -13,10 +13,12 @@ Portability :  portable
 module HasCASL.Le where
 
 import HasCASL.As
+import HasCASL.AsToIds
 import Common.Lib.Map as Map
 import Common.Result
 import Common.Lib.State
 import Common.Named
+import Common.Id
 
 -----------------------------------------------------------------------------
 -- classInfo
@@ -101,11 +103,12 @@ data Env = Env { classMap :: ClassMap
 	       , assumps :: Assumps
 	       , sentences :: [Named Term]	 
 	       , envDiags :: [Diagnosis]
+	       , mixRules :: [(Id, (), [Token])]
 	       , counter :: Int
 	       } deriving (Show, Eq)
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] [] 1
+initialEnv = Env Map.empty Map.empty Map.empty [] [] [] 1
 
 -- | add diagnostic messages 
 addDiags :: [Diagnosis] -> State Env ()

@@ -16,15 +16,18 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Named
 import Common.Result
 import HasCASL.As
+import HasCASL.AsToIds
 import HasCASL.Le
 import HasCASL.ClassDecl
 import HasCASL.VarDecl
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
 import HasCASL.TypeCheck
+import HasCASL.MixAna
 import Data.Maybe
 import Data.List
 
@@ -64,9 +67,10 @@ diffAss a1 _a2 = Nothing -- Just a1
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv e 
-	     { envDiags = [], sentences = [], counter = 1,
-               assumps = filterAssumps (not . isVarDefn) (assumps e), 
-               typeMap = Map.filter (not . isTypeVarDefn) (typeMap e) }
+	     { envDiags = [], sentences = [], counter = 1
+             , assumps = filterAssumps (not . isVarDefn) (assumps e)
+             , typeMap = Map.filter (not . isTypeVarDefn) (typeMap e)
+	     , mixRules = [] }
 	     preEnv 
 
 -- | environment with predefined types and operations
@@ -74,14 +78,30 @@ preEnv :: Env
 preEnv = initialEnv { typeMap = addUnit Map.empty
 		    , assumps = addOps Map.empty }
 
+addRules :: [Rule] -> State Env ()
+addRules r = do e <- get
+		put e { mixRules = r }
+
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
-anaBasicSpec ga (BasicSpec l) = do 
+anaBasicSpec ga b@(BasicSpec l) = do 
     tm <- gets typeMap
     as <- gets assumps
     putTypeMap $ addUnit tm
     putAssumps $ addOps as
-    ul <- mapAnM (anaBasicItem ga) l
+    newAs <- gets assumps
+    let ids = Set.fromDistinctAscList $ Map.keys newAs 
+	preds = Set.fromDistinctAscList 
+		   $ Map.keys $ Map.filter (any ( \ oi -> 
+				 case opDefn oi of
+				 NoOpDefn Pred -> True
+				 Definition Pred _ -> True
+				 _ -> False) . opInfos) newAs
+	Ids newPreds newOps = idsOfBasicSpec b 
+	newGa = addBuiltins ga (Set.union ids newOps) 
+		(Set.union preds newPreds) 
+    addRules $ initTermRules $ Set.unions [newPreds, ids, newOps]
+    ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 
 -- | analyse basic item

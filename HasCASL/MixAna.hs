@@ -83,6 +83,9 @@ defId = mkId $ map mkSimpleId [defS, place]
 notId :: Id 
 notId = mkId $ map mkSimpleId [notS, place]
 
+builtinRelIds :: Set.Set Id 
+builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
+
 addBuiltins :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> GlobalAnnos
 addBuiltins ga opIds predIds = 
     let ass = assoc_annos ga
@@ -94,7 +97,7 @@ addBuiltins ga opIds predIds =
 	logIds = Set.fromDistinctAscList 
 		 [andId, eqvId, implId, orId, infixIf, notId] 
 	relIds = (Set.filter isInfix predIds Set.\\ logIds) `Set.union` 
-		 Set.fromDistinctAscList [typeId, eqId, exEq, defId]
+		 builtinRelIds
 	opIs = Set.toList ((((Set.filter isInfix opIds)
 		Set.\\ relIds) Set.\\ logIds) 
 	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
@@ -242,15 +245,9 @@ iterateCharts ga terms chart =
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga trm =
-    do as <- gets assumps
-       let ids = Set.fromList $ Map.keys as 
-	   preds = Set.fromList $ Map.keys $ Map.filter (any ( \ oi -> 
-				 case opDefn oi of
-				 NoOpDefn Pred -> True
-				 Definition Pred _ -> True
-				 _ -> False) . opInfos) as
-       chart<- iterateCharts (addBuiltins ga ids preds) [trm] $ 
-	       initChart (initTermRules ids) Set.empty
+    do rules <- gets mixRules
+       chart<- iterateCharts ga [trm] $ 
+	       initChart rules Set.empty
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
 			  toMixTerm chart
        addDiags ds
