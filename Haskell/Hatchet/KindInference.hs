@@ -23,24 +23,22 @@ import Haskell.Hatchet.Representation
                         (Kind (..),
                          Kindvar (..)) 
 
+import Haskell.Hatchet.FiniteMaps 
+            (FiniteMap, 
+	     mapFM, 
+	     toListFM)
 import Haskell.Hatchet.Env
             (Env,
-             emptyEnv,
              unitEnv,
              lookupEnv,
              joinEnv,
-             joinListEnvs,
              listToEnv,
-             envToList,
-             showEnv,
-             mapEnv
             ) 
 
-import Haskell.Hatchet.AnnotatedHsSyn         -- XXX need to say exactly what is imported
+import Haskell.Hatchet.AnnotatedHsSyn
             
 import Haskell.Hatchet.Utils
-             (isQualified,
-              getDeclName,
+             (getDeclName,
               isSigDecl)
 
 import List                             (nub)
@@ -83,9 +81,9 @@ instance Kinds a => Kinds (b, a) where
    apply s (x, y) = (x, apply s y)
    vars (x, y) = vars y
 
-instance Kinds KindEnv where
-   apply s = mapEnv (\key el -> apply s el) 
-   vars env = vars $ map snd $ envToList env
+instance (Ord k, Kinds a) => Kinds (FiniteMap k a) where
+   apply s = mapFM (\key el -> apply s el) 
+   vars env = vars $ map snd $ toListFM env
 
 
 --------------------------------------------------------------------------------
