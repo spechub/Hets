@@ -150,8 +150,8 @@ step((v :: [], e_0, []) :: (s, e, c) :: d) = (v :: s, e, c) :: d %(return)%
 spec Repeat[Step] = Recursion and Nat then 
 ops repeat : (State -> Bool) -> State ->? State
     count : (State -> Bool) -> State ->? Nat
-program repeat p s = IF p s THEN s else repeat p(step s); 
-   count p s = IF p s THEN  0 else 1 + count p(step s) 
+program repeat p s = if p s then s else repeat p(step s); 
+   count p s = if p s then 0 else 1 + count p(step s) 
 
   view DumpStep : Step to Dump =
       sort State |-> Dump
