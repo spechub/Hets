@@ -5,7 +5,7 @@ import ParsecExpr
 import Logic
 import Grothendieck
 import Parser
-import StaticAnalysis
+--import StaticAnalysis
 import Dynamic
 
 

@@ -79,6 +79,8 @@ data AnyRepresentation = forall id1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2)
 
 
+type LogicGraph = ([AnyLogic],[AnyRepresentation])
+
 {- This does not work due to needed ordering:
 instance Functor Set where
   fmap = mapSet

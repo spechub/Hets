@@ -38,6 +38,7 @@ withinS,
   getS,
   generatedS,
   fromS,
+  cofreeS,
   freeS,
   fitS,
   forallS,
@@ -135,6 +136,7 @@ existsS  = "exists"
 forallS  = "forall"
 fitS  = "fit"
 freeS  = "free"
+cofreeS  = "cofree"
 fromS  = "from"
 generatedS  = "generated"
 getS  = "get"

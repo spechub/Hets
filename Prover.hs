@@ -46,7 +46,9 @@ data Prover sen symbol =
               remove_sym :: symbol -> IO(Bool), -- returns True if succeeded
               add_sen :: sen -> IO(Bool),  -- returns True if succeeded
               remove_sen :: sen -> IO(Bool), -- returns True if succeeded
-              prove :: sen -> IO([Proof_status sen]) -- proof status for goal and lemmas
+              prove :: sen -> IO([Proof_status sen]), -- proof status for goal and lemmas
+              add_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
+              remove_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool) -- returns True if succeeded
             }
 
 data Cons_checker morphism = 

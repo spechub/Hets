@@ -21,8 +21,8 @@ class (Language id, Show basic_spec, Eq basic_spec, Typeable basic_spec,
                     Show sentence, Eq sentence) =>
       Syntax id sign sentence basic_spec symbol_mapping 
         | id -> sign, id -> basic_spec, id -> symbol_mapping, id -> sentence where
-         parse_basic_spec :: forall st . id ->  CharParser st basic_spec
-         parse_symbol_mapping :: forall st . id -> CharParser st symbol_mapping
+         parse_basic_spec :: id ->  CharParser st basic_spec
+         parse_symbol_mapping :: id -> CharParser st symbol_mapping
          parse_sentence  :: id -> sign -> String -> sentence
 
 

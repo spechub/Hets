@@ -57,7 +57,7 @@ import Set
 import FiniteMap
 import Graph
 import Result
-import Parsec
+--import Parsec
 import Prover -- for one half of class Sentences
 
 import PrettyPrint
@@ -99,6 +99,8 @@ class (Language id, Eq sign, Show sign, Eq morphism) =>
 
 -- abstract syntax, parsing and printing
 
+type ParseFun a = FilePath -> String -> (a,String)
+
 class (Language id, PrettyPrint basic_spec, Eq basic_spec,
        PrettyPrint symb_items, Eq symb_items,
        PrettyPrint symb_map_items, Eq symb_map_items) =>
@@ -107,9 +109,9 @@ class (Language id, PrettyPrint basic_spec, Eq basic_spec,
           id -> symb_map_items
       where 
          -- parsing
-         parse_basic_spec :: id -> Maybe(GenParser Char st basic_spec)
-         parse_symb_items :: id -> GenParser Char st symb_items
-         parse_symb_map_items :: id -> GenParser Char st symb_map_items
+         parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
+         parse_symb_items :: id -> Maybe(ParseFun symb_items)
+         parse_symb_map_items :: id -> Maybe(ParseFun symb_map_items)
 
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 

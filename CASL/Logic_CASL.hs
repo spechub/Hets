@@ -17,7 +17,9 @@ module Logic_CASL where
 import AS_Basic_CASL
 import Print_AS_Basic
 import Parse_AS_Basic
+import Lexer
 import SymbolParser
+import ParsecInterface
 
 import Sign
 import Logic
@@ -50,9 +52,9 @@ instance Category CASL Sign Morphism
 instance Syntax CASL BASIC_SPEC 
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CASL = Just(basicSpec)
-	 parse_symb_items CASL = symbItems
-	 parse_symb_map_items CASL = symbMapItems
+         parse_basic_spec CASL = Just(toParseFun basicSpec ())
+	 parse_symb_items CASL = Just(toParseFun symbItems ())
+	 parse_symb_map_items CASL = Just(toParseFun symbMapItems ())
 
 -- lattices (for sublogics)
 

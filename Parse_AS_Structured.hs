@@ -1,4 +1,7 @@
 
+-- parse (do x<-many (char 'a'); s <- getInput; return (x,s)) "" "aaab"
+
+
 {- HetCATS/Parse_AS_Structured.hs
    $Id$
    Author: Christian Maeder
@@ -17,6 +20,8 @@ import Grothendieck
 import LogicGraph
 import Logic
 
+import Logic_CASL  -- we need the default logic
+
 import AS_Structured
 import AS_Annotation
 import Anno_Parser
@@ -30,6 +35,9 @@ import List
 
 import Maybe(maybeToList)
 
+import Print_AS_Structured  -- for test purposes
+import Print_HetCASL
+
 ------------------------------------------------------------------------
 -- annotation adapter
 ------------------------------------------------------------------------
@@ -39,6 +47,9 @@ annos :: GenParser Char st [Annotation]
 annos = skip >> many (annotationL << skip)
 
 annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
+
+emptyAnno :: a -> Annoted a
+emptyAnno x = Annoted x [] [] []
 
 ------------------------------------------------------------------------
 -- simpleIds for spec- and view-name 
@@ -75,7 +86,7 @@ logicName = do e <- encodingName
 -- parse Logic_code
 ------------------------------------------------------------------------
 
-parseLogic :: GenParser Char st Logic_code
+parseLogic :: GenParser Char AnyLogic Logic_code
 parseLogic = 
     do l <- asKey logicS
        do e <- logicName  -- try to parse encoding or logic source after "logic" 
@@ -119,7 +130,7 @@ plainComma = commaT `notFollowedWith` asKey logicS
 
 -- rearrange list to keep current logic as first element
 -- does not consume anything! (may only fail)
-switchLogic :: Logic_code -> [AnyLogic] -> GenParser Char st [AnyLogic]
+{-switchLogic :: Logic_code -> LogicGraph -> GenParser Char st LogicGraph
 switchLogic n l@(Logic i : _) =
        let s = case n of 
 	       Logic_code _ _ (Just (Logic_name t _)) _ -> tokStr t
@@ -127,25 +138,36 @@ switchLogic n l@(Logic i : _) =
 	   (f, r) =  partition (\ (Logic x) -> language_name x == s) l
        in if null f then fail ("unknown language " ++ s)
 	  else return (f++r)
+-}
 
 ------------------------------------------------------------------------
 -- parse G_mapping (if you modify this, do so for G_hiding, too!)
 ------------------------------------------------------------------------
 
-parseItemsMap :: [AnyLogic] -> GenParser Char st (G_symb_map_items_list, [Token])
-parseItemsMap (Logic i : _) = 
-    do (cs, ps) <- parse_symb_map_items i `separatedBy` plainComma
-       return (G_symb_map_items_list i cs, ps) 
+parseItemsMap :: GenParser Char AnyLogic (G_symb_map_items_list, [Token])
+parseItemsMap = 
+   do Logic id <- getState
+      (cs, ps) <- do
+         s <- getInput
+         pos <- getPosition
+         (cs,rest) <- case parse_symb_map_items id of 
+             Nothing -> fail ("no symbol map parser for language " 
+   				    ++ language_name id)
+	     Just p -> return (p (sourceName pos) s)
+         setInput rest
+         return cs 
+       `separatedBy` plainComma
+      return (G_symb_map_items_list id cs, ps)
 
-parseMapping :: [AnyLogic] -> GenParser Char st ([G_mapping], [Token])
+
+parseMapping :: LogicGraph -> GenParser Char AnyLogic ([G_mapping], [Token])
 parseMapping l =
     do n <- parseLogic
-       l' <- switchLogic n l  
        do c <- commaT
-	  (gs, ps) <- parseMapping l'
+	  (gs, ps) <- parseMapping l
 	  return (G_logic_translation n : gs, c:ps)
         <|> return ([G_logic_translation n], [])
-    <|> do (m, ps) <- parseItemsMap l
+    <|> do (m, ps) <- parseItemsMap
 	   do  c <- commaT 
   	       (gs, qs) <- parseMapping l
 	       return (G_symb_map m : gs, ps ++ c : qs)
@@ -155,17 +177,24 @@ parseMapping l =
 -- parse G_hiding (copied from above, but code sharing would be better!) 
 ------------------------------------------------------------------------
 
-parseItemsList :: [AnyLogic] -> GenParser Char st (G_symb_items_list, [Token])
-parseItemsList (Logic i : _) = 
-    do (cs, ps) <- parse_symb_items i `separatedBy` plainComma
-       return (G_symb_items_list i cs, ps) 
+parseItemsList :: LogicGraph -> GenParser Char AnyLogic (G_symb_items_list, [Token])
+parseItemsList l = undefined
+{-   do Logic id <- getState
+      s <- getInput
+      pos <- getPosition
+      (cs,rest) <- case parse_symb_items id of 
+          Nothing -> fail ("no symbol item parser for language " 
+				    ++ language_name id)
+	  Just p -> return (p (sourceName pos) s)
+      setInput rest
+      return (G_symb_items_list id cs, []) 
+-}
 
-parseHiding :: [AnyLogic] -> GenParser Char st ([G_hiding], [Token])
+parseHiding :: LogicGraph -> GenParser Char AnyLogic ([G_hiding], [Token])
 parseHiding l =
     do n <- parseLogic
-       l' <- switchLogic n l 
        do c <- commaT
-	  (gs, ps) <- parseHiding l'
+	  (gs, ps) <- parseHiding l
 	  return (G_logic_projection n : gs, c:ps)
         <|> return ([G_logic_projection n], [])
     <|> do (m, ps) <- parseItemsList l
@@ -174,36 +203,100 @@ parseHiding l =
 	       return (G_symb_list m : gs, ps ++ c : qs)
 	     <|> return ([G_symb_list m], ps)
 
+parseRevealing :: LogicGraph -> GenParser Char AnyLogic (G_symb_map_items_list, [Token])
+parseRevealing l = undefined
+------------------------------------------------------------------------
+-- sepBy1 with pos
+------------------------------------------------------------------------
+
+sepBy2pos :: GenParser tok st a -> GenParser tok st sep -> GenParser tok st ([a],[sep])
+sepBy2pos p sep = 
+ do x1 <- p
+    (xs,ps) <- rest x1
+    return (xs,ps)
+    where rest x1 = do s <- sep
+                       x <- p
+                       (xs,ps) <- option ([],[]) (rest x)
+                       return (x1:xs,s:ps) 
+           
+
+
 ------------------------------------------------------------------------
 -- specs
 ------------------------------------------------------------------------
 
-spec :: [AnyLogic] -> GenParser Char st SPEC
--- current logic is first element
-spec l = reSpec l 
+spec :: LogicGraph -> GenParser Char AnyLogic SPEC
+spec l = do (sps,ps) <- annoParser (specA l) `sepBy2pos` (asKey thenS)
+            return (Extension sps (map tokPos ps))
+      <|> specA l
 
-reSpec :: [AnyLogic] -> GenParser Char st SPEC
-reSpec l = annoParser (simpleSpec l) >>= 
-	   (\ s -> renaming l s <|> restriction l s)
+specA :: LogicGraph -> GenParser Char AnyLogic SPEC
+specA l = do (sps,ps) <- annoParser (specB l) `sepBy2pos` (asKey andS)
+             return (Union sps (map tokPos ps))
+      <|> specA l
 
-renaming l s = 
-    do w <- asKey withS
-       (m, ps) <- parseMapping l
-       return (Translation s (Renaming m (map tokPos (w:ps))))
+specB :: LogicGraph -> GenParser Char AnyLogic SPEC
+specB l = do p1 <- asKey localS
+             sp1 <- annoParser (spec l)
+             p2 <- asKey withinS
+             sp2 <- annoParser (specB l)
+             return (Local_spec sp1 sp2 (map tokPos [p1,p2]))
+          <|> specC l
 
-restriction l s = 
-    do w <- asKey hideS
-       (m, ps) <- parseHiding l
-       return (Reduction s (Hidden m (map tokPos (w:ps))))
+specC :: LogicGraph -> GenParser Char AnyLogic SPEC
+specC l = do sp <- annoParser (specD l)
+             p <- asKey withS
+             (m, ps) <- parseMapping l
+             return (Translation sp (Renaming m (map tokPos (p:ps))))
+      <|> do sp <- annoParser (specD l)
+             p <- asKey hideS
+             (m, ps) <- parseHiding l
+             return (Reduction sp (Hidden m (map tokPos (p:ps))))
+      <|> do sp <- annoParser (specD l)
+             p <- asKey revealS
+             (m, ps) <- parseRevealing l
+             return (Reduction sp (Revealed m (map tokPos (p:ps))))
+      <|> specD l
 
-simpleSpec :: [AnyLogic] -> GenParser Char st SPEC
-simpleSpec l@(Logic i : _) = 
-    groupSpec l <|> fmap (Basic_spec . G_basic_spec i) 
-		  (case parse_basic_spec i of 
+specD :: LogicGraph -> GenParser Char AnyLogic SPEC
+specD l = do p <- asKey freeS
+             sp <- groupSpec l
+             return (Free_spec (emptyAnno sp) [tokPos p])
+      <|> do p <- asKey cofreeS
+             sp <- groupSpec l
+             return (Cofree_spec (emptyAnno sp) [tokPos p])
+      <|> do p <- asKey closedS
+             sp <- groupSpec l
+             return (Closed_spec (emptyAnno sp) [tokPos p])
+      <|> specE l
+       
+specE :: LogicGraph -> GenParser Char AnyLogic SPEC
+specE l = basicSpec l
+      <|> groupSpec l
+      <|> logicSpec l
+
+
+basicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
+basicSpec l = do Logic id <- getState
+                 s <- getInput
+                 pos <- getPosition
+		 (bspec,rest) <- case parse_basic_spec id of 
 		   Nothing -> fail ("no parser for language " 
-				    ++ language_name i)
-		   Just p -> p
-		  )
+				    ++ language_name id)
+		   Just p -> return (p (sourceName pos) s)
+                 setInput rest
+                 return (Basic_spec (G_basic_spec id bspec))
+
+
+logicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
+logicSpec l = undefined {-do
+   log <- parseLogic
+                        name <- many1 alphaNum;
+                        setState (case lookup name logics of
+                          Nothing -> error ("logic "++name++" unknown")
+                          Just id -> id); 
+                        spaces; return (\x->x) } )],
+-}
 
 aSpec l = annoParser (spec l)
 
@@ -216,7 +309,7 @@ groupSpec l = do b <- oBraceT
 		 f <- fitArgs l
 		 return (Spec_inst n f)
 
-fitArgs :: [AnyLogic] -> GenParser Char st [Annoted FIT_ARG]
+fitArgs :: LogicGraph -> GenParser Char AnyLogic [Annoted FIT_ARG]
 -- toDo
 fitArgs l = return []
 
@@ -233,3 +326,21 @@ specDefn l =
        
 -- toDo
 generics l = return (Genericity (Params []) (Imported []) [])
+
+
+-------------------------------------------------------------
+-- Testing
+-------------------------------------------------------------
+
+parseSPEC fname =
+  do input <- readFile fname
+     case runParser (do x <- spec ([],[])
+                        s1<-getInput
+                        return (x,s1))
+               (Logic CASL) fname input of
+            Left err -> error (show err)
+            Right x -> return x
+
+test fname = do
+  (x,errs) <- parseSPEC fname
+  putStrLn (show (printText0_eGA x))
