@@ -22,104 +22,100 @@ import Common.Result
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
 
--- possibly remove Result stuff
+type MapSen f e m = Morphism f e m -> f -> f 
 
-mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> Result (TERM f)
+mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
 mapTerm mf m t = case t of
-   Qual_var v s ps -> return $ Qual_var v (mapSrt m s) ps
-   Application o ts ps -> do 
-       newTs <- mapM (mapTerm mf m) ts
-       newO <- mapOpSymb m o 
-       return $ Application newO newTs ps
-   Sorted_term st s ps -> do
-       newT <- mapTerm mf m st
-       return $ Sorted_term newT (mapSrt m s) ps
-   Cast st s ps -> do
-       newT <- mapTerm mf m st
-       return $ Cast newT (mapSrt m s) ps
-   Conditional t1 f t2 ps -> do
-       t3 <- mapTerm mf m t1
-       newF <- mapSen mf m f
-       t4 <- mapTerm mf m t2
-       return $ Conditional t3 newF t4 ps 
+   Qual_var v s ps -> Qual_var v (mapSrt m s) ps
+   Application o ts ps -> let 
+       newTs = map (mapTerm mf m) ts
+       newO = mapOpSymb m o 
+       in Application newO newTs ps
+   Sorted_term st s ps -> let
+       newT = mapTerm mf m st
+       in Sorted_term newT (mapSrt m s) ps
+   Cast st s ps -> let
+       newT = mapTerm mf m st
+       in Cast newT (mapSrt m s) ps
+   Conditional t1 f t2 ps -> let
+       t3 = mapTerm mf m t1
+       newF = mapSen mf m f
+       t4 = mapTerm mf m t2
+       in Conditional t3 newF t4 ps 
    _ -> error "mapTerm"
 
-mapOpSymb :: Morphism f e m -> OP_SYMB -> Result OP_SYMB
-mapOpSymb m (Qual_op_name i t ps) = do 
+mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
+mapOpSymb m (Qual_op_name i t ps) =  
    let (j, ty) = mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
-   return $ Qual_op_name j (toOP_TYPE ty) ps
+   in Qual_op_name j (toOP_TYPE ty) ps
 mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
 
 mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
 
-mapDecoratedOpSymb :: Morphism f e m -> 
-                        (OP_SYMB,[Int]) -> Result (OP_SYMB,[Int])
-mapDecoratedOpSymb m (os,indices) = do
-   newOs <- mapOpSymb m os
-   return (newOs,indices)
+mapDecoratedOpSymb :: Morphism f e m -> (OP_SYMB,[Int]) -> (OP_SYMB,[Int])
+mapDecoratedOpSymb m (os,indices) = let
+   newOs = mapOpSymb m os
+   in (newOs,indices)
 
-mapConstr :: Morphism f e m -> Constraint -> Result Constraint
-mapConstr m constr = do
+mapConstr :: Morphism f e m -> Constraint -> Constraint
+mapConstr m constr = 
    let newS = mapSrt m (newSort constr)
-   newOps <- mapM (mapDecoratedOpSymb m) (opSymbs constr)
-   return (constr {newSort = newS, opSymbs = newOps})
+       newOps = map (mapDecoratedOpSymb m) (opSymbs constr)
+   in (constr {newSort = newS, opSymbs = newOps})
 
-type MapSen f e m = Morphism f e m -> f -> Result f 
-
-mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> Result (FORMULA f)
+mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> FORMULA f
 mapSen mf m f = case f of 
-   Quantification q vs qf ps -> do
-       newF <- mapSen mf m qf
-       return $ Quantification q (map (mapVars m) vs) newF ps
-   Conjunction fs ps -> do
-       newFs <- mapM (mapSen mf m) fs
-       return $ Conjunction newFs ps
-   Disjunction fs ps -> do
-       newFs <- mapM (mapSen mf m) fs
-       return $ Disjunction newFs ps
-   Implication f1 f2 b ps -> do
-       f3 <- mapSen mf m f1
-       f4 <- mapSen mf m f2
-       return $ Implication f3 f4 b ps
-   Equivalence f1 f2 ps -> do
-       f3 <- mapSen mf m f1
-       f4 <- mapSen mf m f2
-       return $ Equivalence f3 f4 ps
-   Negation nf ps -> do
-       newF <- mapSen mf m nf
-       return $ Negation newF ps
-   True_atom _ -> return f
-   False_atom _ -> return f
-   Predication p ts ps -> do 
-       newTs <- mapM (mapTerm mf m) ts
-       newP <- mapPrSymb m p
-       return $ Predication newP newTs ps
-   Definedness t ps -> do 
-       newT <- mapTerm mf m t
-       return $ Definedness newT ps
-   Existl_equation t1 t2 ps -> do
-       t3 <- mapTerm mf m t1
-       t4 <- mapTerm mf m t2
-       return $ Existl_equation t3 t4 ps
-   Strong_equation t1 t2 ps -> do
-       t3 <- mapTerm mf m t1
-       t4 <- mapTerm mf m t2
-       return $ Strong_equation t3 t4 ps
-   Membership t s ps -> do 
-       newT <- mapTerm mf m t
-       return $ Membership newT (mapSrt m s) ps
-   Sort_gen_ax constrs isFree -> do
-       newConstrs <- mapM (mapConstr m) constrs
-       return $ Sort_gen_ax newConstrs isFree
-   ExtFORMULA ef -> do 
-       newF <- mf m ef 
-       return $ ExtFORMULA newF	       
+   Quantification q vs qf ps -> let
+       newF = mapSen mf m qf
+       in Quantification q (map (mapVars m) vs) newF ps
+   Conjunction fs ps -> let
+       newFs = map (mapSen mf m) fs
+       in Conjunction newFs ps
+   Disjunction fs ps -> let
+       newFs = map (mapSen mf m) fs
+       in Disjunction newFs ps
+   Implication f1 f2 b ps -> let
+       f3 = mapSen mf m f1
+       f4 = mapSen mf m f2
+       in Implication f3 f4 b ps
+   Equivalence f1 f2 ps -> let
+       f3 = mapSen mf m f1
+       f4 = mapSen mf m f2
+       in Equivalence f3 f4 ps
+   Negation nf ps -> let
+       newF = mapSen mf m nf
+       in Negation newF ps
+   True_atom _ -> f
+   False_atom _ -> f
+   Predication p ts ps -> let 
+       newTs = map (mapTerm mf m) ts
+       newP = mapPrSymb m p
+       in Predication newP newTs ps
+   Definedness t ps -> let 
+       newT = mapTerm mf m t
+       in Definedness newT ps
+   Existl_equation t1 t2 ps -> let
+       t3 = mapTerm mf m t1
+       t4 = mapTerm mf m t2
+       in Existl_equation t3 t4 ps
+   Strong_equation t1 t2 ps -> let
+       t3 = mapTerm mf m t1
+       t4 = mapTerm mf m t2
+       in Strong_equation t3 t4 ps
+   Membership t s ps -> let 
+       newT = mapTerm mf m t
+       in Membership newT (mapSrt m s) ps
+   Sort_gen_ax constrs isFree -> let
+       newConstrs = map (mapConstr m) constrs
+       in Sort_gen_ax newConstrs isFree
+   ExtFORMULA ef -> let 
+       newF = mf m ef 
+       in ExtFORMULA newF	       
    _ -> error "mapSen"
 
-mapPrSymb :: 
-             Morphism f e m -> PRED_SYMB -> Result PRED_SYMB
-mapPrSymb m (Qual_pred_name i t ps) = do 
+mapPrSymb :: Morphism f e m -> PRED_SYMB -> PRED_SYMB
+mapPrSymb m (Qual_pred_name i t ps) =  
    let (j, ty) = mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
-   return $ Qual_pred_name j (toPRED_TYPE ty) ps
+   in Qual_pred_name j (toPRED_TYPE ty) ps
 mapPrSymb _ p = error ("mapPrSymb: unexpected pred symb: "++ showPretty p "")
