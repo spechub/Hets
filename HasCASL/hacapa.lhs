@@ -22,9 +22,13 @@ import Common.AnnoState
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 
-
 main :: IO ()
 main = exec lineParser fileParser
+
+parseA :: AParser a -> String -> a
+parseA p s = case runParser p emptyAnnos "" s of 
+	     Right a -> a
+	     Left err -> error $ show err
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
