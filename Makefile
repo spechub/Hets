@@ -47,7 +47,7 @@ HC_FLAGS   = -Wall -fglasgow-exts
 HC_INCLUDE = -i$(INCLUDE_PATH)
 
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
-ifneq ($(strip $(PFE_TOOLDIR)),)
+ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 
@@ -507,3 +507,5 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 sources_hetcats.mk: hetcats-make utils/create_sources.pl
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
 
+%::
+	$(RM) hetcats-make
