@@ -1,10 +1,10 @@
 parse error at 1.9:
 unexpected ")"
-expecting casl char, underline word, "%%", "%{", "%(", "%", "," or ":"
+expecting casl char, underline word, "%", "," or ":"
 
 parse error at 2.8:
 unexpected "="
-expecting "{", "[", __, [<id>,...,<id>], "%%", "%{", "%(", "%", ",", "<=>", "(" or ":"
+expecting "{", "[", __, [<id>,...,<id>], "%", ",", "<=>", "(" or ":"
 
 parse error at 3.8:
 unexpected ")"
@@ -12,9 +12,9 @@ expecting words
 
 parse error at 4.8:
 unexpected "#"
-expecting "{", "[", __, [<id>,...,<id>], "%%", "%{", "%(", "%", ",", "(" or ":"
+expecting "{", "[", __, [<id>,...,<id>], "%", ",", "(" or ":"
 
 parse error at 5.7:
 unexpected "?"
-expecting casl char, underline word, "{", "[", __, [<id>,...,<id>], "%%", "%{", "%(", "%", ",", "<=>" or "("
+expecting casl char, underline word, "{", "[", __, [<id>,...,<id>], "%", ",", "<=>" or "("
 

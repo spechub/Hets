@@ -16,7 +16,7 @@ expecting "(", "{", "[" or id/literal
 
 parse error at 5.5:
 unexpected "="
-expecting "%%", "%{", "%(", "%", "(", "{", "[" or id/literal
+expecting "%", "(", "{", "[" or id/literal
 
 parse error at 6.1:
 unexpected "as"
@@ -36,7 +36,7 @@ expecting "(", "{", "[" or id/literal
 
 parse error at 10.14:
 unexpected end of input
-expecting casl char, "_", "%%", "%{", "%(", "%", "(", "{", "[" or id/literal
+expecting casl char, "_", "%", "(", "{", "[" or id/literal
 
 parse error at 11.1:
 unexpected "var"
@@ -44,7 +44,7 @@ expecting "(", "{", "[" or id/literal
 
 parse error at 12.8:
 unexpected "?"
-expecting "%%", "%{", "%(" or "%"
+expecting "%"
 
 parse error at 13.1:
 unexpected "not"

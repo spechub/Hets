@@ -52,12 +52,12 @@ unexpected "c"
 expecting "'"
 
 parse error at 17.1:
-unexpected "b"
-expecting "__"
+unexpected "_"
+expecting "(", "{", "[" or id/literal
 
 parse error at 18.4:
-unexpected end of input
-expecting "__"
+unexpected "_"
+expecting underline word, "(", "{", "[", id/literal, "%", ":", "as", "when" or end of input
 
 __
 parse error at 20.1:
@@ -126,7 +126,7 @@ __ < [bla] __ < __
 aa ==
 parse error at 39.6:
 unexpected "%"
-expecting "(", "{", "[", id/literal, "%%", "%{", "%(", "%", ":", "as", "when" or end of input
+expecting "(", "{", "[", id/literal, "%", ":", "as", "when" or end of input
 
 ""
 < [[__]] >
