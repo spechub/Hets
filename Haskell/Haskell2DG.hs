@@ -9,7 +9,7 @@ Portability :  portable
 
 -} 
 
-module Haskell.Haskell2DG (anaHaskellFile) where
+module Haskell.Haskell2DG (anaHaskellFile, parseFile, parseHsSource) where
 
 import Options
 import Haskell.Hatchet.MultiModule  (expandDotsInTyCons,
