@@ -17,7 +17,7 @@ import Id
 import PrettyPrint
 import Pretty
 
-data DiagKind = Error | FatalError | Warning | Hint deriving Show
+data DiagKind = FatalError | Error | Warning | Hint deriving (Eq, Ord, Show)
 
 data Diagnosis = Diag { diagKind :: DiagKind
 		      , diagString :: String
