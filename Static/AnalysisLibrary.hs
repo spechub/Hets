@@ -109,10 +109,39 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 		-- should be caught here
 		maybe (do showDiags opts dias
 		          anaLibFile' fname)
-                      (\ gc -> do 
+                      (\ gc@(_,_,dgraph) -> do 
                        putIfVerbose opts 1 "Read environment from file... "
 		       putStrLn ""
-		       return (Map.insert libname gc libenv))
+		       -- get all DGRefs from DGraph
+		       let libEnv' = (Map.insert libname gc libenv)
+		           nodesDGRef =
+		              filter (\ labDG -> case labDG of 
+				                  DGRef _ _ _ -> True
+				                  _ -> False)
+		                    (map snd (labNodes dgraph))
+		       -- and call anaLibFile with each of the dgn_libname
+		       -- of the DGRefs
+		           refLibs = nub $ map dgn_libname nodesDGRef
+		       --putStrLn ("Referenced Libs: " ++ 
+			--	 (concat $ map (\ ln -> showPretty ln "; ")
+                          --                 refLibs))
+		       let newRefLibs = 
+		              filter (\ ln -> 
+				       not (ln `elem` Map.keys libEnv'))
+		                refLibs
+	               foldl (\ ioLibEnv tlibname ->
+                                do p_libEnv <- ioLibEnv
+		            --       putStrLn ("Available Libs: " ++
+				--	     (concat $ map 
+					--       (\ ln -> showPretty ln "; ")
+                                          --     (Map.keys p_libEnv)))
+			           putIfVerbose opts 1 
+			                     ("Analyzing from " ++ 
+					      showPretty tlibname "\n")
+			           anaLibFile logicGraph defaultLogic 
+                                              opts p_libEnv tlibname)
+		           (return libEnv') 
+		           newRefLibs )
 		      mgc
 	else anaLibFile' fname
  where anaLibFile' :: FilePath -> IO LibEnv
