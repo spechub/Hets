@@ -103,14 +103,7 @@ opAttrs os t c = do { q <- commaT
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
 
-opItems =   do { p <- pluralKeyword opS
-	       ; a <- annos
-	       ; (v:vs, ts, b:ans) <- itemAux opItem
-	       ; let s = Annoted v [] a b
-		     r = zipWith appendAnno vs ans 
-		 in return (Op_items (s:r) (map tokPos (p:ts)))
-	       }
-
+opItems = itemList opS opItem Op_items
 
 -- ----------------------------------------------------------------------
 -- predicates
@@ -141,10 +134,4 @@ predTypeCont ps cs = do { c <- colonT
 			; return (Pred_decl ps t (map tokPos (cs++[c])))
 			}
 
-predItems =   do { p <- pluralKeyword predS
-		 ; a <- annos
-		 ; (v:vs, ts, b:ans) <- itemAux predItem
-		 ; let s = Annoted v [] a b
-		       r = zipWith appendAnno vs ans 
-		   in return (Pred_items (s:r) (map tokPos (p:ts)))
-		 }
+predItems = itemList predS predItem Pred_items

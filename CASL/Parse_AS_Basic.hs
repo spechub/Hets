@@ -84,13 +84,7 @@ compSort is cs = do { c <- colonST
 -- sigItems
 -- ------------------------------------------------------------------------
 
-typeItems = do { p <- pluralKeyword typeS
-	       ; a <- annos
-	       ; (v:vs, ts, b:ans) <- itemAux datatype
-	       ; let s = Annoted v [] a b
-		     r = zipWith appendAnno vs ans 
-		 in return (Datatype_items (s:r) (map tokPos (p:ts)))
-	       }
+typeItems = itemList typeS datatype Datatype_items
 
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
 
@@ -156,14 +150,14 @@ dotFormulae = do { d <- dotT
 		      ; case m of 
 			{ Nothing -> return (Axiom_items fs ps)
 			; Just t -> return (Axiom_items 
-			       (init fs ++ [appendAnno (item (last fs)) an])
+			       (init fs ++ [appendAnno (last fs) an])
 			       (ps ++ [tokPos t]))
 			}
 		      }
 		   else return (Axiom_items fs ps)
 		 }
 
-aFormula = bind appendAnno formula lineAnnos
+aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 -- ------------------------------------------------------------------------
 -- basicSpec

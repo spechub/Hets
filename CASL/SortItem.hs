@@ -52,15 +52,27 @@ annos = skip >> many (anno << skip)
 
 -- remove quantifier exists from casl_reserved_word 
 -- because it may start a formula in "axiom/axioms ... \;"
-isStartKeyword s = s `elem` "}":"]":dotS:cDot:
+isStartKeyword s = s `elem` "":dotS:cDot:
 		   (delete existsS casl_reserved_words)
 
 lookAheadItemKeyword :: GenParser Char st ()
 lookAheadItemKeyword = 
     do { c <- lookAhead (annos >> 
-			 (many1 scanLPD <|> single (oneOf ("}]"++signChars))))
+			 (single (oneOf ("\"_([{"++signChars)) 
+			  <|> many scanLPD))
        ; if isStartKeyword c then return () else unexpected c
        }
+
+annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
+
+itemList keyword parser constr =
+    do { p <- pluralKeyword keyword
+       ; (vs, ts, ans) <- itemAux (annoParser parser)
+       ; let r = zipWith appendAnno vs ans 
+	 in return (constr r (map tokPos (p:ts)))
+       }
+
+appendAnno (Annoted x p l r) y =  Annoted x p l (r++y)
 
 itemAux :: GenParser Char st a 
 	-> GenParser Char st ([a], [Token], [[Annotation]])
@@ -133,15 +145,5 @@ sortItem = do { s <- sortId ;
 		    return (Sort_decl [s] [])
 		  } 		
 
-appendAnno x y =  Annoted x [] [] y
-
-sortItems = do { p <- pluralKeyword sortS
-	       ; a <- annos
-	       ; (v:vs, ts, b:ans) <- itemAux sortItem
-	       ; let s = Annoted v [] a b
-		     r = zipWith appendAnno vs ans 
-		 in return (Sort_items (s:r) (map tokPos (p:ts)))
-	       }
-
-
+sortItems = itemList sortS sortItem Sort_items
 
