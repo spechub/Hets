@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/sh
 
 getNumberOfLines ()
 {
@@ -18,17 +18,17 @@ runcheck ()
     if [ -x $prog ] && [ -f $annofile ] && [ -f $infile ]
     then 
 	$prog $option $annofile < $infile > temp
-        declare -i a=`fgrep -c -i "error" temp`
+        a=`fgrep -c -i "error" temp`
         if [ -f $outfile ]
 	then
-	    if diff temp $outfile >& /dev/null 
+	    if diff temp $outfile > /dev/null 
 	    then echo " passed"
             else 
 		echo " failed diff with $outfile"
 		if [ "$set" = "set" ] 
 		    then cat temp > $outfile
 		fi
-		declare -i b=`getNumberOfLines $infile`
+		b=`getNumberOfLines $infile`
 		if [ "$a" -ne 0 -a "$a" -ne "$b" ]
 		    then echo " $a errors for $b input lines"
 		fi 

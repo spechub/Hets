@@ -3,10 +3,10 @@
 .PHONY: check
 
 check: annos
-	bash runcheck.sh ../annos
+	./runcheck.sh ../annos
 
 output: annos
-	bash runcheck.sh ../annos set
+	./runcheck.sh ../annos set
 
 annos:
 	if test ! -x ../annos; then (cd ..; ./ghc-call); fi
