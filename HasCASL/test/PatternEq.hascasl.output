@@ -43,10 +43,10 @@ true : Unit %(Fun)%
 x : s %(Op)%
 y : t %(Op)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 6, column 10) different terms of 'snd'
+*** Error 6.10, different terms of 'snd'
 	\ (x : s, y : t) . (var y : t)
 	\ (x : s, y : t) . (var y : t) : t
 	
 
-Error (line 14, column 10) illegal toplevel pattern '(x : s, y : s)'
-Error (line 17, column 9) illegal toplevel pattern 'b : s'
+*** Error 14.10, illegal toplevel pattern '(x : s, y : s)'
+*** Error 17.9, illegal toplevel pattern 'b : s'

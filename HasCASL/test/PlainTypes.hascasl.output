@@ -70,29 +70,29 @@ v : m List %(var)%
 x : tuple3 r s t %(var)%
 y : tuple3 r s %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 12, column 9) incompatible kind of: tuple3 r s
+*** Error 12.9, incompatible kind of: tuple3 r s
   expected: Type
      found: c -> d
 
-Error (line 18, column 12) unknown type '__'
-Error (line 24, column 10) incompatible kind of: m
+*** Error 18.12, unknown type '__'
+*** Error 24.10, incompatible kind of: m
   expected: Type
      found: (a -> b) -> c
 
-Error (line 26, column 12) incompatible kind of: tuple1
+*** Error 26.12, incompatible kind of: tuple1
   expected: a -> b
      found: b -> a
 
-Error (line 28, column 12) incompatible kind of: tuple3
+*** Error 28.12, incompatible kind of: tuple3
   expected: a -> b
      found: a -> b -> c -> d
 
-Hint (line 30, column 5) is type variable 'nt'
-Error (line 32, column 15) incompatible kind of: List
+*** Hint 30.5, is type variable 'nt'
+*** Error 32.15, incompatible kind of: List
   expected: b -> c
      found: a -> b
 
-Error (line 38, column 19) ambiguous typings 
+*** Error 38.19, ambiguous typings 
   '(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
 						 (var x : t))' (line 38, column 19)
   '(fun __=__ : forall a : Type .  a ×

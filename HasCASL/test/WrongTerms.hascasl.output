@@ -1,168 +1,168 @@
-parse error at (line 1, column 2):
+parse error at 1.2:
 unexpected end of input
 expecting "\\", "'" or "\""
 
-parse error at (line 2, column 2):
+parse error at 2.2:
 unexpected end of input
 expecting "\\" or "\""
 
-parse error at (line 3, column 2):
+parse error at 3.2:
 unexpected end of input
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let" or "}"
 
-parse error at (line 4, column 2):
+parse error at 4.2:
 unexpected end of input
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let" or "]"
 
-parse error at (line 5, column 2):
+parse error at 5.2:
 unexpected end of input
 expecting "%%", "%{", "%(", "%", "var", "op", "fun", "pred", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let" or ")"
 
-parse error at (line 6, column 1):
+parse error at 6.1:
 unexpected "}"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 7, column 1):
+parse error at 7.1:
 unexpected "]"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 8, column 1):
+parse error at 8.1:
 unexpected ")"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 9, column 1):
+parse error at 9.1:
 unexpected "."
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 10, column 1):
+parse error at 10.1:
 unexpected end of input
 expecting "__"
 
-parse error at (line 11, column 1):
+parse error at 11.1:
 unexpected ":"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 12, column 1):
+parse error at 12.1:
 unexpected ":?"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 13, column 1):
+parse error at 13.1:
 unexpected ","
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 14, column 1):
+parse error at 14.1:
 unexpected ";"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 15, column 2):
+parse error at 15.2:
 unexpected ","
 expecting "%%", "%{", "%(", "%", "var", "op", "fun", "pred", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let" or ")"
 
-parse error at (line 16, column 4):
+parse error at 16.4:
 unexpected ")"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 17, column 1):
+parse error at 17.1:
 unexpected "as"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 18, column 1):
+parse error at 18.1:
 unexpected ":"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 19, column 1):
+parse error at 19.1:
 unexpected "in"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 20, column 15):
+parse error at 20.15:
 unexpected ")"
 expecting __, [<id>,...,<id>], "[", "%%", "%{", "%(", "%", ":?" or ":"
 
-parse error at (line 21, column 8):
+parse error at 21.8:
 unexpected "<"
 expecting simple-id, "{", "[" or __
 
-parse error at (line 22, column 13):
+parse error at 22.13:
 unexpected "?"
 expecting __, "%%", "%{", "%(" or "%"
 
-parse error at (line 23, column 13):
+parse error at 23.13:
 unexpected "?"
 expecting __, "%%", "%{", "%(" or "%"
 
-parse error at (line 24, column 13):
+parse error at 24.13:
 unexpected "?"
 expecting __, "%%", "%{", "%(" or "%"
 
-parse error at (line 25, column 13):
+parse error at 25.13:
 unexpected "?"
 expecting __, "%%", "%{", "%(" or "%"
 
-parse error at (line 26, column 9):
+parse error at 26.9:
 unexpected "a"
 expecting "{", __, "%%", "%{", "%(", "%", ",", ":" or "<"
 
-parse error at (line 27, column 13):
+parse error at 27.13:
 unexpected ".!" or "!"
 expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
-parse error at (line 28, column 13):
+parse error at 28.13:
 unexpected ".!" or "!"
 expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
-parse error at (line 29, column 10):
+parse error at 29.10:
 unexpected "a"
 expecting "{", __, "%%", "%{", "%(", "%", "," or ":"
 
-parse error at (line 30, column 14):
+parse error at 30.14:
 unexpected ".!" or "!"
 expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", ";" or dot
 
-parse error at (line 31, column 1):
+parse error at 31.1:
 unexpected "pred"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 32, column 1):
+parse error at 32.1:
 unexpected "var"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 33, column 1):
+parse error at 33.1:
 unexpected "op"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 34, column 11):
+parse error at 34.11:
 unexpected "?"
 expecting __, "%%", "%{", "%(", "%" or ":?"
 
-parse error at (line 35, column 11):
+parse error at 35.11:
 unexpected "?"
 expecting __, "%%", "%{", "%(", "%" or ":?"
 
-parse error at (line 36, column 3):
+parse error at 36.3:
 unexpected "and" or "a"
 expecting "%%", "%{", "%(", "%", ":", "as", "in", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
 
-parse error at (line 37, column 1):
+parse error at 37.1:
 unexpected "then"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 38, column 4):
+parse error at 38.4:
 unexpected "then"
 expecting "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 39, column 3):
+parse error at 39.3:
 unexpected end of input
 expecting casl char, "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 40, column 10):
+parse error at 40.10:
 unexpected end of input
 expecting casl char, "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 41, column 13):
+parse error at 41.13:
 unexpected end of input
 expecting casl char, "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "forall", "exists!", "exists", "\\", "case" or "let"
 
-parse error at (line 42, column 11):
+parse error at 42.11:
 unexpected "@"
 expecting quoted char, dot-words, digit, words, "__", "{", "[", "(", "%%", "%{", "%(", "%", ":", "," or ")"
 

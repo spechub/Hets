@@ -100,28 +100,28 @@ tail : forall a : Type+ .  Tree2 a -> Tree2 a %(select from Tree2 constructed by
 					   Cons : forall a : Type+ .  a × List a -> List a)%
 true : Unit %(Fun)%
 %% Diagnostics -----------------------------------------------------------
-Hint (line 1, column 5) is type variable 'b'
-Hint (line 2, column 5) is type variable 'a'
-Warning (line 4, column 11) redeclared type 'List'
-Error (line 5, column 55) unbound type variable(s)
+*** Hint 1.5, is type variable 'b'
+*** Hint 2.5, is type variable 'a'
+*** Warning 4.11, redeclared type 'List'
+*** Error 5.55, unbound type variable(s)
 	b : Type
-Warning (line 5, column 11) redeclared type 'List'
-Error (line 5, column 11) merge: TypeDefn of 'List'
+*** Warning 5.11, redeclared type 'List'
+*** Error 5.11, merge: TypeDefn of 'List'
 
-Error (line 6, column 57) unexpected type argument 'b'
-Error (line 6, column 57) unbound type variable(s)
+*** Error 6.57, unexpected type argument 'b'
+*** Error 6.57, unbound type variable(s)
 	b : Type
-Warning (line 6, column 11) redeclared type 'List'
-Error (line 6, column 11) merge: TypeDefn of 'List'
+*** Warning 6.11, redeclared type 'List'
+*** Error 6.11, merge: TypeDefn of 'List'
 
-Error (line 7, column 50) illegal polymorphic recursion
+*** Error 7.50, illegal polymorphic recursion
   expected: List a
      found: List (List a)
 
-Warning (line 7, column 11) redeclared type 'List'
-Error (line 7, column 11) merge: TypeDefn of 'List'
+*** Warning 7.11, redeclared type 'List'
+*** Error 7.11, merge: TypeDefn of 'List'
 
-Error (line 14, column 27) illegal polymorphic recursion
+*** Error 14.27, illegal polymorphic recursion
   expected: odd2 a
      found: odd2 (odd2 a)
 

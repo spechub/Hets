@@ -100,7 +100,7 @@ __<__<__[bla]
 [__]
 [{__}]
 __[__]
-parse error at (line 103, column 7):
+parse error at 103.7:
 unexpected ":=" or ":"
 expecting "{", simple-id, __, [<id>,...,<id>] or end of input
 
@@ -126,19 +126,19 @@ a{b}
 a{>}
 <{b}
 a[b[c]]
-parse error at (line 126, column 1):
+parse error at 126.1:
 unexpected ":="
 expecting id
 
-parse error at (line 127, column 1):
+parse error at 127.1:
 unexpected "@"
 expecting id
 
-parse error at (line 128, column 1):
+parse error at 128.1:
 unexpected "\\"
 expecting id
 
-parse error at (line 129, column 1):
+parse error at 129.1:
 unexpected ".!"
 expecting id
 

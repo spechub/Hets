@@ -118,60 +118,60 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 						 (var y : t)) %()%
 (fun true : Unit) %()%
 %% Diagnostics -----------------------------------------------------------
-Error (line 1, column 7) illegal universe class declaration 'Type'
-Hint (line 3, column 5) is type variable 't'
-FatalError (line 7, column 11) illegal type pattern argument: __
-Error (line 11, column 16) undeclared class 'd'
-Warning (line 11, column 7) redeclared class 'a'
-Warning (line 11, column 10) redeclared class 'b'
-Warning (line 11, column 13) redeclared class 'c'
-Warning (line 11, column 19) redeclared class 'a'
-Error (line 20, column 12) unexpected mixfix token: res
-Error (line 20, column 10) unexpected pattern '__ res __ (x : s, y : t)'
-Error (line 20, column 37) unexpected mixfix token: x
-Hint (line 21, column 1) no type match for: fst
+*** Error 1.7, illegal universe class declaration 'Type'
+*** Hint 3.5, is type variable 't'
+*** FatalError 7.11, illegal type pattern argument: __
+*** Error 11.16, undeclared class 'd'
+*** Warning 11.7, redeclared class 'a'
+*** Warning 11.10, redeclared class 'b'
+*** Warning 11.13, redeclared class 'c'
+*** Warning 11.19, redeclared class 'a'
+*** Error 20.12, unexpected mixfix token: res
+*** Error 20.10, unexpected pattern '__ res __ (x : s, y : t)'
+*** Error 20.37, unexpected mixfix token: x
+*** Hint 21.1, no type match for: fst
   with type: '_var_4 ->? s' (line 21, column 20)
   known types:
     
-Hint (line 21, column 1) wrong result type 's' (line 21, column 20)
+*** Hint 21.1, wrong result type 's' (line 21, column 20)
   for application 'fst (x : s, y : t)'
-Error (line 21, column 1) no typing for 'fst(x : s, y : t) : s'
-Hint (line 22, column 1) no type match for: snd
+*** Error 21.1, no typing for 'fst(x : s, y : t) : s'
+*** Hint 22.1, no type match for: snd
   with type: '_var_5 ->? t' (line 22, column 20)
   known types:
     
-Hint (line 22, column 1) wrong result type 't' (line 22, column 20)
+*** Hint 22.1, wrong result type 't' (line 22, column 20)
   for application 'snd (x : s, y : t)'
-Error (line 22, column 1) no typing for 'snd(x : s, y : t) : t'
-Hint (line 28, column 9) no type match for: all
+*** Error 22.1, no typing for 'snd(x : s, y : t) : t'
+*** Hint 28.9, no type match for: all
   with type: '_var_6 ->? ? Unit' (line 28, column 26)
   known types:
     
-Hint (line 28, column 9) wrong result type '? Unit' (line 28, column 26)
+*** Hint 28.9, wrong result type '? Unit' (line 28, column 26)
   for application 'all (p : ? s)'
-Error (line 28, column 9) no typing for 'all(p : ? s) : ? Unit'
-Hint (line 30, column 9) no type match for: And
+*** Error 28.9, no typing for 'all(p : ? s) : ? Unit'
+*** Hint 30.9, no type match for: And
   with type: '_var_8 ->? ? Unit' (line 30, column 31)
   known types:
     
-Hint (line 30, column 9) wrong result type '? Unit' (line 30, column 31)
+*** Hint 30.9, wrong result type '? Unit' (line 30, column 31)
   for application 'And (x : _var_7, y : ? Unit)'
-Error (line 30, column 9) no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
-Error (line 32, column 12) unexpected mixfix token: impl
-Error (line 34, column 12) unexpected mixfix token: or
-Error (line 34, column 10) unexpected pattern '__ or __ (x, y : (? Unit))'
-Error (line 35, column 19) unexpected mixfix token: x
-Error (line 34, column 44) unexpected mixfix token: all
-Hint (line 37, column 3) no type match for: ex
+*** Error 30.9, no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
+*** Error 32.12, unexpected mixfix token: impl
+*** Error 34.12, unexpected mixfix token: or
+*** Error 34.10, unexpected pattern '__ or __ (x, y : (? Unit))'
+*** Error 35.19, unexpected mixfix token: x
+*** Error 34.44, unexpected mixfix token: all
+*** Hint 37.3, no type match for: ex
   with type: '_var_10 ->? ? Unit' (line 37, column 18)
   known types:
     
-Hint (line 37, column 3) wrong result type '? Unit' (line 37, column 18)
+*** Hint 37.3, wrong result type '? Unit' (line 37, column 18)
   for application 'ex (p : ? s)'
-Error (line 37, column 3) no typing for 'ex(p : ? s) : ? Unit'
-Error (line 40, column 7) unexpected mixfix token: )
-Error (line 40, column 3) unexpected pattern 'ff ()'
-Error (line 40, column 20) unexpected mixfix token: all
-Warning (line 61, column 73) data subtype ignored
-Error (line 66, column 25) unexpected mixfix token: e
-Error (line 67, column 12) unexpected mixfix token: e
+*** Error 37.3, no typing for 'ex(p : ? s) : ? Unit'
+*** Error 40.7, unexpected mixfix token: )
+*** Error 40.3, unexpected pattern 'ff ()'
+*** Error 40.20, unexpected mixfix token: all
+*** Warning 61.73, data subtype ignored
+*** Error 66.25, unexpected mixfix token: e
+*** Error 67.12, unexpected mixfix token: e

@@ -55,23 +55,23 @@ not__ : Unit ->? Unit %(Fun)%
 true : Unit %(Fun)%
 x : y %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 3, column 7) illegal universe class declaration 'Type'
-Error (line 4, column 7) illegal universe class declaration 'Type'
-Error (line 6, column 7) illegal universe class declaration 'Type'
-Error (line 8, column 11) undeclared class 'a'
-Warning (line 8, column 7) redeclared class 'd'
-Error (line 10, column 24) undeclared class 'h'
-Warning (line 12, column 7) redeclared class 'a'
-Warning (line 15, column 7) redeclared class 'a'
-Error (line 15, column 7) cyclic class 'a'
-Warning (line 17, column 7) redeclared class 'a'
-Warning (line 18, column 7) redeclared class 'b'
-Warning (line 20, column 7) redeclared class 'd'
-Error (line 20, column 7) cyclic class 'd'
-Warning (line 25, column 7) redeclared class 'h'
-FatalError (line 29, column 7) illegal type pattern argument: __
-Hint (line 31, column 5) is type variable 'x'
-Hint (line 31, column 12) is type variable 'y'
-Error (line 33, column 9) unknown type 's'
-Hint (line 35, column 5) is type variable 'x'
-FatalError (line 39, column 8) illegal type pattern argument: __
+*** Error 3.7, illegal universe class declaration 'Type'
+*** Error 4.7, illegal universe class declaration 'Type'
+*** Error 6.7, illegal universe class declaration 'Type'
+*** Error 8.11, undeclared class 'a'
+*** Warning 8.7, redeclared class 'd'
+*** Error 10.24, undeclared class 'h'
+*** Warning 12.7, redeclared class 'a'
+*** Warning 15.7, redeclared class 'a'
+*** Error 15.7, cyclic class 'a'
+*** Warning 17.7, redeclared class 'a'
+*** Warning 18.7, redeclared class 'b'
+*** Warning 20.7, redeclared class 'd'
+*** Error 20.7, cyclic class 'd'
+*** Warning 25.7, redeclared class 'h'
+*** FatalError 29.7, illegal type pattern argument: __
+*** Hint 31.5, is type variable 'x'
+*** Hint 31.12, is type variable 'y'
+*** Error 33.9, unknown type 's'
+*** Hint 35.5, is type variable 'x'
+*** FatalError 39.8, illegal type pattern argument: __

@@ -90,4 +90,4 @@ z : s %(Op)% = (op __+__ : s × s -> s) ((op x : s) as s,
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
-Error (line 9, column 7) expected tuple argument for '__+__'
+*** Error 9.7, expected tuple argument for '__+__'

@@ -1,87 +1,87 @@
-parse error at (line 1, column 2):
+parse error at 1.2:
 unexpected ")"
 expecting words, "(" or "{"
 
-parse error at (line 2, column 3):
+parse error at 2.3:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 3, column 4):
+parse error at 3.4:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 4, column 2):
+parse error at 4.2:
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
-parse error at (line 5, column 6):
+parse error at 5.6:
 unexpected contra-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 6, column 8):
+parse error at 6.8:
 unexpected contra-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 7, column 7):
+parse error at 7.7:
 unexpected "*"
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
-parse error at (line 8, column 5):
+parse error at 8.5:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 9, column 10):
+parse error at 9.10:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 10, column 11):
+parse error at 10.11:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 11, column 7):
+parse error at 11.7:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 12, column 7):
+parse error at 12.7:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
 (a, b -> c)
-parse error at (line 14, column 4):
+parse error at 14.4:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 15, column 2):
+parse error at 15.2:
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
-parse error at (line 16, column 4):
+parse error at 16.4:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
 (a -> b)+ -> c
 (a- -> b)+ -> c
-parse error at (line 19, column 2):
+parse error at 19.2:
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
-parse error at (line 20, column 3):
+parse error at 20.3:
 unexpected "*"
 expecting casl char, underline word, [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "," or ")"
 
-parse error at (line 21, column 5):
+parse error at 21.5:
 unexpected co-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 22, column 5):
+parse error at 22.5:
 unexpected contra-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 23, column 5):
+parse error at 23.5:
 unexpected contra-variance of kind
 expecting "%%", "%{", "%(", "%" or "->"
 
-parse error at (line 24, column 7):
+parse error at 24.7:
 unexpected "*"
 expecting "%%", "%{", "%(", "%", "+", "-", "->" or end of input
 
