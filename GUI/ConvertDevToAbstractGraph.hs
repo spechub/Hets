@@ -881,7 +881,7 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
                  allNodes = getNodeDescriptors (head visibleNodes) 
 			    libname convMaps -- allDgNodes libname convMaps
                  dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph 
-						     visibleNodes parentNode))
+					       (head visibleNodes) parentNode))
                  -- the selected node (parentNode) shall not be hidden either,
                  -- and we already know its descriptor (descr)
 		 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree 
@@ -915,11 +915,13 @@ getNodeDescriptors (node:nodelist) libname convMaps =
 		      ++ (show node))
 
 
-getNodesOfSubtree :: DGraph -> [[Node]] -> Node -> [Node]
+getNodesOfSubtree :: DGraph -> [Node] -> Node -> [Node]
 getNodesOfSubtree dgraph visibleNodes node = 
-    (concat (map (getNodesOfSubtree dgraph visibleNodes) predOfNode))
+    (concat (map (getNodesOfSubtree dgraph remainingVisibleNodes) predOfNode))
     ++predOfNode
-    where predOfNode = filter (elemR (head visibleNodes)) (pre dgraph node)
+    where predOfNode = --filter (elemR (head visibleNodes)) (pre dgraph node)
+           [n| n <- (pre dgraph node), elem n visibleNodes]
+          remainingVisibleNodes = [n| n <- visibleNodes, notElem n predOfNode]
 
 elemR :: Eq a => [a] -> a -> Bool
 elemR list element = elem element list
