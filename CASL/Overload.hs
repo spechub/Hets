@@ -501,7 +501,7 @@ minExpTerm_cast mef ga sign term sort pos = do
     --debug 2 ("validExps",validExps)
     return
         $ qualifyTerms pos                              -- :: [[TERM]]
-        $ map (map (\ t -> (t, sort))) validExps        -- :: [[(TERM, SORT)]]
+        $ map (map (\ t -> (Cast t sort pos, sort))) validExps        -- :: [[(TERM, SORT)]]
 
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
