@@ -13,20 +13,39 @@ import AS_Basic_CASL
 import GlobalAnnotations
 import Result
 import Id
+import FiniteMap
+import Set
 import Lexer (caslChar)
 import ParsecPrim
 import qualified Char as C
-import List(intersperse)
+import List(intersperse, partition)
 
 
-data State = State { rule :: [Token]
-		   , dotPos :: Int
-		   , inPos :: Int
+-- Earley Algorithm
+-- the single non-terminal (forall terms) will be "()"
+
+nT = Token "()" nullPos
+isNT (Token s _) =  s == "()"
+
+-- all ids are duplicate replacing "__" with "()"
+
+data State = State { rule :: Id
+		   , dotPos :: [Token]
 		   , rulePos :: Int
-		   }
+		   } deriving (Eq, Ord)
 
-initialState :: State
-initialState = State ([Token place nullPos]) 0 0 0
+prefix :: Id -> Bool
+prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
+
+placeToNT :: Id -> Id
+placeToNT (Id ts cs ps) = Id (map (\t -> if isPlace t then nT else t) ts) cs ps
+
+initialState :: Set Id -> (Set Id, FiniteMap Int (Set State))
+initialState is = let (ps, ms) = partition prefix $ setToList is
+		      mis = map placeToNT ms
+		      pis = map placeToNT ps
+                      states = map (\i -> State i (getTokenList i) 0) mis
+		  in (mkSet $ ps ++ pis ++ ms ++ mis, unitFM 0 (mkSet states))
 
 getTokenList :: Id -> [Token]
 getTokenList (Id ts cs _) = 
@@ -36,9 +55,7 @@ getTokenList (Id ts cs _) =
 	      (map getTokenList cs)) ++ [Token "]" nullPos]
     in reverse toks ++ cts ++ reverse pls
 
-prefix :: Id -> Bool
-prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
-
+{-
 predict :: [Id] -> State -> [State]
 predict is (State ts d p _) =
     if isPlace (ts !! d) then 
@@ -54,7 +71,7 @@ complete :: State -> State -> [State]
 complete (State ts1 d1 p1 _) (State ts2 d2 p2 k2) =
     if d1 >= length ts1 && isPlace (ts2 !! d2) && p2 <= p1
        then [State ts2 (d2+1) p1 k2] else []
-
+-}
 -- --------------------------------------------------------------- 
 -- convert literals 
 -- --------------------------------------------------------------- 
