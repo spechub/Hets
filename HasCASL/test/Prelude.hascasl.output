@@ -200,7 +200,7 @@ Error (line 14, column 34) incompatible kind of: t
   expected: Type
      found: Type-
 
-Error (line 14, column 44) incompatible kind of: ((__->?__)(t))(Unit)
+Error (line 14, column 44) incompatible kind of: t ->? Unit
   expected: Type -> Type
      found: Type
 
@@ -358,11 +358,11 @@ Error (line 182, column 18) no typing for '(__=__)(__ in c --> d, \ f : c -->? d
 Error (line 0, column 0) undeclared type '_var_103'
 Error (line 0, column 0) undeclared type '_var_104'
 Error (line 186, column 25) unexpected mixfix token: [
-Error (line 190, column 9) incompatible kind of: ((__-->?__)(p))(p)
+Error (line 190, column 9) incompatible kind of: p -->? p
   expected: Cpo-
      found: Type
 
-Error (line 190, column 9) incompatible kind of: ((__-->?__)(p))(p)
+Error (line 190, column 9) incompatible kind of: p -->? p
   expected: Cpo-
      found: Type
 

@@ -1,20 +1,20 @@
 class a, b, c, d < Type
 type r, s, t
 type [__], {__} : a -> b
-var u : ([__])(r); v : ({__})(s)
+var u : [r]; v : {s}
 type tuple3 : a -> b -> c -> d
-var x : (((tuple3)(r))(s))(t)
-var y : ((tuple3)(r))(s)
+var x : tuple3 r s t
+var y : tuple3 r s
 type tuple1 : b -> a
 type m : (a -> b) -> c
 var
 type List : a -> b
-var v : (m)(List)
+var v : m List
 var o1 : m
-var o2 : (m)(tuple1)
-var o3 : (m)(tuple3)
+var o2 : m tuple1
+var o3 : m tuple3
 var nt : a -> (b -> c) -> c -> d
-var o4 : (((nt)(r))(List))(s)
+var o4 : nt r List s
 type s1, r1, t1 < t
 type s2 = r2 = t2
 type s3
@@ -59,16 +59,16 @@ def__ : forall a : Type .  a ->? Unit
 if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 o1 : m %(var)%
-o2 : (m)(tuple1) %(var)%
-o3 : (m)(tuple3) %(var)%
-o4 : (((nt)(r))(List))(s) %(var)%
-u : ([__])(r) %(var)%
-v : (m)(List) %(var)%
-  : ({__})(s) %(var)%
-x : (((tuple3)(r))(s))(t) %(var)%
-y : ((tuple3)(r))(s) %(var)%
+o2 : m tuple1 %(var)%
+o3 : m tuple3 %(var)%
+o4 : nt r List s %(var)%
+u : [r] %(var)%
+v : m List %(var)%
+  : {s} %(var)%
+x : tuple3 r s t %(var)%
+y : tuple3 r s %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 12, column 9) incompatible kind of: ((tuple3)(r))(s)
+Error (line 12, column 9) incompatible kind of: tuple3 r s
   expected: Type
      found: c -> d
 
@@ -90,11 +90,10 @@ Error (line 32, column 15) incompatible kind of: List
   expected: b -> c
      found: a -> b
 
-Hint (line 11, column 9) type 't' is not unifiable with '(((tuple3)(r))(s))(t)'
-Hint (line 11, column 9) type 't' is not unifiable with '(((tuple3)(r))(s))(t)'
+Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
+Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
 Error (line 38, column 19) ambiguous typings 
 	(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
 						(var x : t))
 	(op __=__ : forall a : Type .  a ×
-			       a ->? Unit) ((var x : (((tuple3)(r))(s))(t)),
-					    (var x : (((tuple3)(r))(s))(t)))
+			       a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))
