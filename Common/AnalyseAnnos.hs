@@ -25,7 +25,6 @@ import Common.Result
 import Control.Monad(foldM)
 
 import Text.ParserCombinators.Parsec
-import Common.Id (Token(..),nullPos,place)
 import Common.Lexer (bind)
 import Data.List
 
