@@ -355,7 +355,7 @@ getCoDataGenSig dl =
         alts = concatMap (( \ (CoDatatype_decl s al _) -> 
                        map ( \ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
-        (subs, realAlts) = partition (isCoConsAlt . snd) alts 
+        (realAlts, subs) = partition (isCoConsAlt . snd) alts 
         sels = map ( \ (i, ot) -> Component i ot) $ concatMap get_sel realAlts
         rel = foldr ( \ (t, a) r ->
                   foldr ( \ s -> 
