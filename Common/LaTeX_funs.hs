@@ -86,15 +86,14 @@ module Common.LaTeX_funs (
                    endAnno
 ) where
 
-import Common.Lib.Map hiding (isEmpty, empty, map)
+import Common.Lib.Map as Map hiding (isEmpty, empty, map)
 import Data.Char
 import Data.Maybe (isJust,fromJust)
 import Data.List (isPrefixOf)
-import Prelude hiding (lookup)
 import Numeric
 
 -- for the debug hack
-import Debug.Trace
+-- import Debug.Trace
 
 import Common.LaTeX_maps
 import Common.Lib.Pretty
@@ -132,8 +131,7 @@ pt_length i = showFFloat (Just 3) pt "pt"
 
 -- a hack to have some debug prints
 condTrace :: String -> a -> a
-condTrace s v = if debugFlag then trace s v else v
-    where debugFlag = True
+condTrace s v = v -- trace s v
 
 {- functions to calculate a word-width in integer with a given word
    type or purpose
@@ -147,7 +145,7 @@ data Word_type = Keyword | StructId | Normal
 
 calc_word_width :: Word_type -> String -> Int
 calc_word_width wt s = 
-    case lookup s wFM of
+    case Map.lookup s wFM of
     Just l  -> l
     Nothing -> sum_char_width_deb (  showString "In map \""
 				   . showsPrec 0 wt 
@@ -200,7 +198,7 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 	      | c == ' '  = r + lookupWithDefault_cFM "~"
 	      | otherwise = r + lookupWithDefault_cFM (c:[])
 	  sum_char_width' full@(c1:rest@(c2:cs)) r 
-	      | isLigature (c1:c2:[]) = case lookup (c1:c2:[]) cFM of
+	      | isLigature (c1:c2:[]) = case Map.lookup (c1:c2:[]) cFM of
 					Just l  -> sum_char_width' cs (r+l)
 					Nothing -> sum_char_width' rest nl
 	      | (c1:c2:[]) == "\\ " =  
@@ -209,11 +207,11 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 		  sum_char_width' rest (r + lookupWithDefault_cFM "~")
 	      | otherwise = case prefixIsKey full key_cFM of
 			    Just key -> sum_char_width' 
-				           (drop (length key) full) 
-			                   (r + (fromJust $ lookup key cFM))
+				        (drop (length key) full) 
+			                (r + (fromJust $ Map.lookup key cFM))
 			    Nothing -> sum_char_width' rest nl 
 	      where nl = r + lookupWithDefault_cFM (c1:[])
-	  lookupWithDefault_cFM s' = case lookup s' cFM of
+	  lookupWithDefault_cFM s' = case Map.lookup s' cFM of
 				     Nothing -> condTrace 
 					           ((pref_fun
 						     . showString s' 
@@ -225,7 +223,7 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 
 prefixIsKey :: String -> Map Char [String] -> Maybe String
 prefixIsKey [] _ = Nothing
-prefixIsKey ls@(c:_) key_cFM = case lookup c key_cFM of 
+prefixIsKey ls@(c:_) key_cFM = case Map.lookup c key_cFM of 
 			       Just ws -> firstJust $ map testPrefix ws
 			       Nothing -> Nothing
     where testPrefix s = if ((flip isPrefixOf) ls) s 
