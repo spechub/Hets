@@ -15,17 +15,19 @@ CASL signature
 module CASL.Sign where
 
 import CASL.AS_Basic_CASL
-import Common.PrettyPrint
-import Common.PPUtils
-import Common.Lib.Pretty
-import Common.Lib.State
 import CASL.Print_AS_Basic
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Common.PrettyPrint
+import Common.PPUtils
+import Common.Lib.Pretty
+import Common.Lib.State
+import Common.Keywords
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -108,29 +110,27 @@ instance PrettyPrint PredType where
 
 instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
     printText0 ga s = 
-	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
+	ptext (sortS++sS) <+> commaT_text ga (Set.toList $ sortSet s) 
 	$$ 
         (if Rel.isEmpty (sortRel s) then empty
-            else ptext "sorts" <+> 
+            else ptext (sortS++sS) <+> 
              (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   ptext "op" <+>
-		   printText0 ga i <+> colon <>
-		   printText0 ga t) 
-	      $ concatMap (\ (o, ts) ->
-			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	       $ Map.toList $ opMap s)
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   ptext "pred" <+>
-		   printText0 ga i <+> colon <+>
-		   printText0 ga (toPRED_TYPE t)) 
+	$$ printSetMap (ptext opS) empty ga (opMap s)
+	$$ printSetMap (ptext predS) space ga (predMap s)
+        $$ printText0 ga (extendedInfo s)
+     where printRel (subs, supersorts) =
+             printText0 ga subs <+> ptext lessS <+> printSet ga supersorts
+
+printSetMap :: (PrettyPrint k, PrettyPrint a, Ord k, Ord a) => Doc 
+	    -> Doc -> GlobalAnnos -> Map.Map k (Set.Set a) -> Doc
+printSetMap header sep ga m = 
+    vcat $ map (\ (i, t) -> 
+	       header <+>
+	       printText0 ga i <+> colon <> sep <>
+	       printText0 ga t) 
 	     $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	     $ Map.toList $ predMap s)
-     where printRel (subs, supersorts) =
-             printText0 ga subs <+> ptext "<" <+> printSet ga supersorts
+		   $ Map.toList m 
 
 -- working with Sign
 
@@ -163,17 +163,16 @@ addSig a b =
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
 
-isEmptySig :: Sign f e -> Bool 
-isEmptySig s = 
+isEmptySig :: (e -> Bool) -> Sign f e -> Bool 
+isEmptySig ie s = 
     Set.isEmpty (sortSet s) && 
     Rel.isEmpty (sortRel s) && 
     Map.isEmpty (opMap s) &&
-    Map.isEmpty (predMap s)
+    Map.isEmpty (predMap s) && ie (extendedInfo s)
 
 isSubSig :: Sign f e -> Sign f e -> Bool
-isSubSig sub super = isEmptySig $ diffSig sub 
-                      (super 
-		       { opMap = addPartOpsM $ opMap super })
+isSubSig sub super = isEmptySig (const True) (diffSig sub super 
+		     { opMap = addPartOpsM $ opMap super })
 
 partOps :: Set.Set OpType -> Set.Set OpType
 partOps s = Set.fromDistinctAscList $ map ( \ t -> t { opKind = Partial } ) 
@@ -206,16 +205,19 @@ addSort s =
 	  addDiags [mkDiag Hint "redeclared sort" s] 
 	  else put e { sortSet = Set.insert s m }
 
-checkSort :: SORT -> State (Sign f e) ()
-checkSort s = 
-    do m <- gets sortSet
-       addDiags $ if Set.member s m then [] else 
-		    [mkDiag Error "unknown sort" s]
+hasSort :: Sign f e -> SORT -> [Diagnosis]
+hasSort e s = if Set.member s $ sortSet e then [] 
+		else [mkDiag Error "unknown sort" s]
+
+checkSorts :: [SORT] -> State (Sign f e) ()
+checkSorts s = 
+    do e <- get
+       addDiags $ concatMap (hasSort e) $ reverse s
 
 addSubsort :: SORT -> SORT -> State (Sign f e) ()
 addSubsort super sub = 
     do e <- get
-       mapM_ checkSort [super, sub] 
+       checkSorts [super, sub] 
        put e { sortRel = Rel.insert sub super $ sortRel e }
 
 closeSubsortRel :: State (Sign f e) ()

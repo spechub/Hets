@@ -28,6 +28,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Id      as Id
 import qualified Common.AS_Annotation   as Named
+import Common.GlobalAnnotations
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lib.State
@@ -67,26 +68,26 @@ import Data.List                ( partition )
     Overload Resolution
 -----------------------------------------------------------}
 
-type Min f e = Sign f e -> f -> Result f
+type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
-overloadResolution      :: PrettyPrint f => Min f e -> Sign f e 
+overloadResolution      :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e 
 			-> [Named.Named (FORMULA f)]
 			-> Result [Named.Named (FORMULA f)]
-overloadResolution mef sign  = mapM overload
+overloadResolution mef ga sign  = mapM overload
     where
         overload sent = do
             let sent' = Named.sentence sent
             --debug 1 ("sent'",sent')
-            exp_sent    <- minExpFORMULA mef sign sent'
+            exp_sent    <- minExpFORMULA mef ga sign sent'
             --debug 2 ("exp_sent",exp_sent)
             return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
 -----------------------------------------------------------}
-minExpFORMULA :: PrettyPrint f => Min f e ->
+minExpFORMULA :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> (FORMULA f) -> Result (FORMULA f)
-minExpFORMULA mef sign formula
+minExpFORMULA mef ga sign formula
     = case formula of
         -- Trivial Atom         -> Return untouched
         True_atom _     -> return formula                       -- :: FORMULA
@@ -94,39 +95,39 @@ minExpFORMULA mef sign formula
 	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
 	Quantification q vars f pos -> do
             let (_, sign') = runState (mapM_ addVars vars) sign
-	    f' <- minExpFORMULA mef sign' f
+	    f' <- minExpFORMULA mef ga sign' f
 	    return $ Quantification q vars f' pos
 	Conjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA mef sign) fs
+	    fs' <- mapM (minExpFORMULA mef ga sign) fs
 	    return $ Conjunction fs' pos
 	Disjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA mef sign) fs
+	    fs' <- mapM (minExpFORMULA mef ga sign) fs
 	    return $ Disjunction fs' pos
 	Implication f1 f2 b pos -> do
-	    f1' <- minExpFORMULA mef sign f1
-	    f2' <- minExpFORMULA mef sign f2
+	    f1' <- minExpFORMULA mef ga sign f1
+	    f2' <- minExpFORMULA mef ga sign f2
 	    return $ Implication f1' f2' b pos
 	Equivalence f1 f2 pos -> do
-	    f1' <- minExpFORMULA mef sign f1
-	    f2' <- minExpFORMULA mef sign f2
+	    f1' <- minExpFORMULA mef ga sign f1
+	    f2' <- minExpFORMULA mef ga sign f2
 	    return $ Equivalence f1' f2' pos
 	Negation f pos -> do
-	    f' <- minExpFORMULA mef sign f
+	    f' <- minExpFORMULA mef ga sign f
 	    return $ Negation f' pos
         -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms pos ->
-            minExpFORMULA_pred mef sign predicate terms pos     -- :: FORMULA
+            minExpFORMULA_pred mef ga sign predicate terms pos  -- :: FORMULA
         Definedness term pos            -> do
-            t   <- minExpTerm mef sign term                     -- :: [[TERM]]
+            t   <- minExpTerm mef ga sign term                  -- :: [[TERM]]
             --debug 4 ("t", t)
             t'  <- is_unambiguous t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
 	Existl_equation term1 term2 pos ->
-            minExpFORMULA_eq mef sign Existl_equation term1 term2 pos
+            minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
         Strong_equation term1 term2 pos ->
-            minExpFORMULA_eq mef sign Strong_equation term1 term2 pos
+            minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
         Membership term sort pos        -> do
-            t   <- minExpTerm mef sign term                     -- :: [[TERM]]
+            t   <- minExpTerm mef ga sign term                  -- :: [[TERM]]
             t'  <- let leq_term [] = False
                        leq_term (t1:_) =
                         leq_SORT sign sort $ term_sort t1 
@@ -135,7 +136,7 @@ minExpFORMULA mef sign formula
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
 	Sort_gen_ax _ -> return formula
-	ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
+	ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
 
@@ -155,12 +156,12 @@ is_unambiguous term pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: PrettyPrint f => Min f e ->
+minExpFORMULA_pred :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> PRED_SYMB -> [TERM f] -> [Id.Pos] 
                 -> Result (FORMULA f)
-minExpFORMULA_pred mef sign predicate terms pos = do
+minExpFORMULA_pred mef ga sign predicate terms pos = do
     expansions          <- mapM
-        (minExpTerm mef sign) terms             -- ::        [[[TERM]]]
+        (minExpTerm mef ga sign) terms          -- ::        [[[TERM]]]
     --debug 5 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::        [[[TERM]]]
@@ -230,12 +231,12 @@ minExpFORMULA_pred mef sign predicate terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
-minExpFORMULA_eq :: PrettyPrint f => Min f e ->
+minExpFORMULA_eq :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> (TERM f -> TERM f -> [Id.Pos] -> FORMULA f)
                     -> TERM f -> TERM f -> [Id.Pos] -> Result (FORMULA f)
-minExpFORMULA_eq mef sign eq term1 term2 pos = do
-    exps1       <- minExpTerm mef sign term1                -- :: [[TERM]]
-    exps2       <- minExpTerm mef sign term2                -- :: [[TERM]]
+minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
+    exps1       <- minExpTerm mef ga sign term1                -- :: [[TERM]]
+    exps2       <- minExpTerm mef ga sign term2                -- :: [[TERM]]
     --debug 1 ("exps1",exps1)
     --debug 2 ("exps2",exps2)
     pairs       <- return
@@ -247,7 +248,8 @@ minExpFORMULA_eq mef sign eq term1 term2 pos = do
     --debug 3 ("candidates",candidates)
     case candidates of
         [] -> pplain_error (eq term1 term2 pos)
-               (ptext "No correct typing for " <+> printText (eq term1 term2 pos))
+               (ptext "No correct typing for " 
+		<+> printText (eq term1 term2 pos))
                (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
         ([t1,t2]:_)       -> return $ eq t1 t2 pos
@@ -265,9 +267,9 @@ minExpFORMULA_eq mef sign eq term1 term2 pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a TERM
 -----------------------------------------------------------}
-minExpTerm :: PrettyPrint f => Min f e ->
+minExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> Result [[TERM f]]
-minExpTerm mef sign term'
+minExpTerm mef ga sign term'
  = do -- debug 6 ("term'",term')
       u <- case term' of
         Simple_id var
@@ -275,13 +277,13 @@ minExpTerm mef sign term'
         Qual_var var sort pos
             -> minExpTerm_qual sign var sort pos
         Application op terms pos
-            -> minExpTerm_op mef sign op terms pos
+            -> minExpTerm_op mef ga sign op terms pos
         Sorted_term term sort pos
-            -> minExpTerm_sorted mef sign term sort pos
+            -> minExpTerm_sorted mef ga sign term sort pos
         Cast term sort pos
-            -> minExpTerm_cast mef sign term sort pos
+            -> minExpTerm_cast mef ga sign term sort pos
         Conditional term1 formula term2 pos
-            -> minExpTerm_cond mef sign term1 formula term2 pos
+            -> minExpTerm_cond mef ga sign term1 formula term2 pos
         _   -> error "minExpTerm"
       return u
 
@@ -343,7 +345,7 @@ minExpTerm_qual sign var sort pos = do
         fits term                = case term of
             (Sorted_term (Qual_var var' _ _) sort' _)
                 -> (var == var') && (sort == sort')
-            _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
+            _   -> error "minExpTerm_qual: unsorted TERM after expansion"
         selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
         selectExpansions c
             = [ ((Qual_var var sort []), sort) |       -- :: (TERM, SORT)
@@ -353,42 +355,38 @@ minExpTerm_qual sign var sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: PrettyPrint f => Min f e ->
+minExpTerm_sorted :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_sorted mef sign term sort pos = do
-    expandedTerm <- minExpTerm  mef sign term   -- :: [[TERM]]
+minExpTerm_sorted mef ga sign term sort pos = do
+    expandedTerm <- minExpTerm mef ga sign term   -- :: [[TERM]]
     --debug 7 ("expandedTerm", expandedTerm)
     return
         $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
     where
-        fits                    :: TERM f -> Bool
-        fits term'               = case term' of
-            (Sorted_term _ sort' _)
-                -> sort == sort'
-            _   -> error "Internal error: minExpTerm: unsorted TERM after expansion"
         selectExpansions        :: [TERM f] -> [(TERM f, SORT)]
         selectExpansions c
-            = [ (sorted, sort) |                  -- :: (TERM, SORT)
-                sorted <- c,                    -- :: TERM
-                fits sorted ]                   -- :: Bool
+            = [ (sorted, sort) |                   -- :: (TERM, SORT)
+                sorted <- c,                       -- :: TERM
+                term_sort sorted == sort ]         -- :: Bool
 
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: PrettyPrint f => Min f e ->
+minExpTerm_op :: PrettyPrint f => Min f e -> GlobalAnnos ->
               Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_op _ sign (Op_name (Id.Id [tok] [] _)) [] _ = 
+minExpTerm_op _ _ sign (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
-minExpTerm_op mef sign op terms pos = minExpTerm_op1 mef sign op terms pos
+minExpTerm_op mef ga sign op terms pos = 
+    minExpTerm_op1 mef ga sign op terms pos
 
-minExpTerm_op1 :: PrettyPrint f => Min f e ->
+minExpTerm_op1 :: PrettyPrint f => Min f e -> GlobalAnnos ->
                Sign f e -> OP_SYMB -> [TERM f] -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_op1 mef sign op terms pos = do
+minExpTerm_op1 mef ga sign op terms pos = do
     --debug 3 ("op",op)
     --debug 3 ("terms",show terms)
     expansions          <- mapM
-        (minExpTerm mef sign) terms             -- ::       [[[TERM]]]
+        (minExpTerm mef ga sign) terms          -- ::       [[[TERM]]]
     --debug 9 ("expansions", expansions)
     permuted_exps       <- return
         $ permute expansions                    -- ::       [[[TERM]]]
@@ -402,9 +400,11 @@ minExpTerm_op1 mef sign op terms pos = do
     --debug 3 ("p",show p)
     p'                  <- return
         $ map (minimize_op sign) p              -- ::  [[(OpType, [TERM])]]
-    --debug 3 ("p'",show p')
-    --debug 3 (" qualifyOps p'",show $  qualifyOps p')
-    --debug 3 ("qualifyTerms pos $ qualifyOps p'",show $ qualifyTerms pos $ qualifyOps p')
+{- debug 3 ("p'",show p')
+   debug 3 (" qualifyOps p'",show $  qualifyOps p')
+   debug 3 ("qualifyTerms pos $ qualifyOps p'",
+      show $ qualifyTerms pos $ qualifyOps p')
+-}
     return
         $ qualifyTerms pos                      -- ::        [[TERM]]
         $ qualifyOps p'                         -- ::    [[(TERM, SORT)]]
@@ -454,12 +454,12 @@ minExpTerm_op1 mef sign op terms pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: PrettyPrint f => Min f e ->
+minExpTerm_cast :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> SORT -> [Id.Pos] -> Result [[TERM f]]
-minExpTerm_cast mef sign term sort pos = do
-    expandedTerm        <- minExpTerm mef sign term         -- :: [[TERM]]
+minExpTerm_cast mef ga sign term sort pos = do
+    expandedTerm <- minExpTerm mef ga sign term         -- :: [[TERM]]
     --debug 1 ("expandedTerm",expandedTerm)
-    validExps           <- return
+    validExps    <- return
         $ map (filter (leq_SORT sign sort . term_sort)) -- ::  [[TERM]]
         $ expandedTerm                                  -- ::  [[TERM]]
     --debug 2 ("validExps",validExps)
@@ -470,16 +470,16 @@ minExpTerm_cast mef sign term sort pos = do
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: PrettyPrint f => Min f e ->
+minExpTerm_cond :: PrettyPrint f => Min f e -> GlobalAnnos ->
                 Sign f e -> TERM f -> FORMULA f -> TERM f -> [Id.Pos]
                 -> Result [[TERM f]]
-minExpTerm_cond  mef sign term1 formula term2 pos = do
+minExpTerm_cond  mef ga sign term1 formula term2 pos = do
     expansions1
-        <- minExpTerm mef sign term1                -- ::       [[TERM]]
+        <- minExpTerm mef ga sign term1                -- ::       [[TERM]]
     expansions2
-        <- minExpTerm mef sign term2                -- ::       [[TERM]]
+        <- minExpTerm mef ga sign term2                -- ::       [[TERM]]
     expanded_formula
-        <- minExpFORMULA mef sign formula           -- ::       FORMULA
+        <- minExpFORMULA mef ga sign formula           -- ::       FORMULA
     permuted_exps       <- return
         $ permute [expansions1, expansions2]    -- ::      [[[TERM]]]
     --debug 7 ("permuted_exps",permuted_exps)
@@ -504,9 +504,9 @@ minExpTerm_cond  mef sign term1 formula term2 pos = do
         supersorts              :: [TERM f] -> Set.Set SORT
         supersorts               = common_supersorts sign . map term_sort
         eq                       = xeq_TUPLE sign
-        qualifyConds            :: FORMULA f -> [[([TERM f], SORT)]] -> [[(TERM f, SORT)]]
+        qualifyConds :: FORMULA f -> [[([TERM f], SORT)]] -> [[(TERM f, SORT)]]
         qualifyConds f           = map $ map (qualify_cond f)
-        qualify_cond            :: FORMULA f -> ([TERM f], SORT) -> (TERM f, SORT)
+        qualify_cond :: FORMULA f -> ([TERM f], SORT) -> (TERM f, SORT)
         qualify_cond f (ts, s)   = case ts of
             [t1, t2]    -> (Conditional t1 f t2 [], s)
             _           -> (Unparsed_term "" [],s) {-error
@@ -599,7 +599,7 @@ term_sort   :: TERM f -> SORT
 term_sort term'  = case term' of
     (Sorted_term _ sort _ )     -> sort
     _                           -> error                -- unlikely
-        "minExpTerm: unsorted TERM after expansion"
+        "term_sort: unsorted TERM after expansion"
 
 {-----------------------------------------------------------
     Set of SubSORTs common to all given SORTs
@@ -706,29 +706,33 @@ fun compute_conn_components (edges:'a*'a->bool) (nodes:'a list):'a list list =
           edges(node,n) orelse edges(n,node) orelse is_connected(node,c)
     fun split_components(node,nil,acc_comp_of_node,acc_other_comps) = 
     	(node::acc_comp_of_node)::acc_other_comps
-      | split_components(node,current_comp::other_comps,acc_comp_of_node,acc_other_comps) =
+      | split_components(node,current_comp::
+             other_comps,acc_comp_of_node,acc_other_comps) =
         if is_connected(node,current_comp)
-        then split_components(node,other_comps,current_comp@acc_comp_of_node,acc_other_comps)
-        else split_components(node,other_comps,acc_comp_of_node,current_comp::acc_other_comps)
+        then split_components(node,other_comps,
+	     current_comp@acc_comp_of_node,acc_other_comps)
+        else split_components(node,other_comps,acc_comp_of_node,
+             current_comp::acc_other_comps)
     fun add_node (node:'a,components:'a list list):'a list list =
         split_components(node,components,nil,nil)
   in
   foldr add_node (nodes,[])
   end 
 
-(* Compute the equivalence classes of the equivalence closures of leqF and leqP resp.
-   and store them in a table indexed by function and predicate names, resp.
-   This is needed when checking if terms or predications are equivalent, since
-   this equivalence is defined in terms of  the equivalence closures of leqF and leqP resp. *)
+(* Compute the equivalence classes of the equivalence closures of leqF
+   and leqP resp.  and store them in a table indexed by function and
+   predicate names, resp.  This is needed when checking if terms or
+   predications are equivalent, since this equivalence is defined in
+   terms of the equivalence closures of leqF and leqP resp. *)
 
 
      			 
 fun get_conn_components (env:local_env) : local_env1 =
 	let
-		val (srts,vars,funs,preds) = env
+	    val (srts,vars,funs,preds) = env
 	in
-		(env,(Symtab_id.map (compute_conn_components (leqF env)) funs ,
-		      Symtab_id.map (compute_conn_components (leqP env)) preds) )
+	    (env,(Symtab_id.map (compute_conn_components (leqF env)) funs ,
+	          Symtab_id.map (compute_conn_components (leqP env)) preds) )
 	end
 
 -}

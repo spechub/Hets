@@ -15,11 +15,9 @@ module Modal.Logic_Modal where
 import Modal.AS_Modal
 import Modal.ModalSign
 import Modal.ATC_Modal
-import Modal.Print_AS
 import Modal.Parse_AS
+import Modal.StatAna
 import Modal.LaTeX_Modal
-import Logic.Logic
-
 import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
@@ -29,9 +27,7 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
-import CASL.Overload
-
-import Common.Id
+import Logic.Logic
 import Data.Dynamic
 
 data Modal = Modal deriving Show
@@ -43,7 +39,6 @@ type ModalMor = Morphism M_FORMULA ModalSign ()
 type ModalFORMULA = FORMULA M_FORMULA
 
 tc_M_FORMULA, tc_M_SIG_ITEM, tc_M_BASIC_ITEM, modalSignTc :: TyCon
-
 tc_M_FORMULA     = mkTyCon "Modal.AS_Modal.M_FORMULA"
 tc_M_SIG_ITEM    = mkTyCon "Modal.AS_Modal.M_SIG_ITEM"
 tc_M_BASIC_ITEM  = mkTyCon "Modal.AS_Modal.M_BASIC_ITEM"
@@ -84,7 +79,7 @@ instance Syntax Modal M_BASIC_SPEC
 -- Modal logic
 
 instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
-      map_sen Modal = mapSen
+      map_sen Modal = mapSen map_M_FORMULA
       parse_sentence Modal = Nothing
       sym_of Modal = symOf
       symmap_of Modal = morphismToSymbMap
@@ -92,32 +87,17 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
       provers Modal = [] 
       cons_checkers Modal = []
 
-minExpForm s form = case form of
-        Box m f ps -> 
-	    do nm <- minMod s m ps
-	       nf <- minExpFORMULA minExpForm s f
-	       return $ Box nm nf ps
-	Diamond m f ps -> 
-	    do nm <- minMod s m ps
-	       nf <- minExpFORMULA minExpForm s f
-	       return $ Diamond nm nf ps
-	where minMod sig mod ps = case mod of
-	          Simple_mod _ -> return mod
-		  Term_mod t -> do 
-		      ts <- minExpTerm minExpForm sig t
-		      nt <- is_unambiguous ts ps
-		      return $ Term_mod nt
-
 instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                MSign 
                ModalMor 
                Symbol RawSymbol where
          basic_analysis Modal = Just $ basicAnalysis minExpForm
-			       (const id) (const id)
+			       ana_M_BASIC_ITEM ana_M_SIG_ITEM
          stat_symb_map_items Modal = statSymbMapItems
          stat_symb_items Modal = statSymbItems
-	 ensures_amalgamability Modal _ = fail "ensures_amalgamability nyi" -- ???
+	 ensures_amalgamability Modal _ = 
+	     fail "Modal: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec Modal _sigma _sens = Basic_spec [] -- ???
 
@@ -142,8 +122,14 @@ instance Logic Modal ()
                MSign 
                ModalMor
                Symbol RawSymbol () where
-         sublogic_names Modal _ = ["Modal"]
-         all_sublogics Modal = [()]
+         min_sublogic_basic_spec Modal _basic_spec = ()
+         min_sublogic_sentence Modal _sentence = ()
+         min_sublogic_symb_items Modal _symb_items = ()
+         min_sublogic_symb_map_items Modal _symb_map_items = ()
+         min_sublogic_sign Modal _sign = ()
+         min_sublogic_morphism Modal _morphism = ()
+         min_sublogic_symbol Modal _symbol = ()
+--         sublogic_names Modal _ = ["Modal"]
+--         all_sublogics Modal = [()]
 
-         data_logic Modal = Nothing
 

@@ -14,11 +14,12 @@ module Modal.Print_AS where
 
 import Common.Id
 import Common.Keywords
-import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 import CASL.Print_AS_Basic
+import CASL.Sign
 import Modal.AS_Modal
 import Modal.ModalSign
 
@@ -42,9 +43,9 @@ instance PrettyPrint M_SIG_ITEM where
 
 instance PrettyPrint M_FORMULA where
     printText0 ga (Box t f _) = 
-       ptext "[" <> printText0 ga t <+> ptext"]" <+> printText0 ga f
+       ptext "[" <> printText0 ga t <> ptext"]" <+> printText0 ga f
     printText0 ga (Diamond t f _) = 
-       ptext "<" <> printText0 ga t <+> ptext">" <+> printText0 ga f
+       ptext "<" <> printText0 ga t <> ptext">" <+> printText0 ga f
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 
@@ -54,7 +55,13 @@ instance PrettyPrint MODALITY where
 
 instance PrettyPrint ModalSign where
     printText0 ga s = 
-	ptext rigidS <+> ptext opS <+> commaT_text ga (Map.keys $ rigidOps s)
-        $$ 	
-	ptext rigidS <+> ptext predS 
-		  <+> commaT_text ga (Map.keys $ rigidPreds s)
+	let ms = modies s
+	    tms = termModies s in 
+	printSetMap (ptext rigidS <+> ptext opS) empty ga (rigidOps s)
+	$$
+	printSetMap (ptext rigidS <+> ptext predS) 
+		    space ga (rigidPreds s)
+	$$ (if Set.isEmpty ms then empty else
+	ptext modalitiesS <+> semiT_text ga (Set.toList ms))
+	$$ (if Set.isEmpty tms then empty else
+	ptext termS <+> ptext modalityS <+> semiT_text ga (Set.toList tms))

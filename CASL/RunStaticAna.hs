@@ -26,8 +26,8 @@ import CASL.AS_Basic_CASL
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
 	      -> Result (BASIC_SPEC () () ())
 localAnalysis ga bs = 
-    let (newBs, sig) = runState (ana_BASIC_SPEC (const id) 
-				 (const id) ga bs) 
+    let (newBs, sig) = runState (ana_BASIC_SPEC (const return) 
+				 (const return) ga bs) 
 		       $ emptySign () 
 	in Result (envDiags sig) $ Just newBs
 
@@ -39,8 +39,8 @@ runAna ga =
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
 localAna ga bs = 
     let Result ds (Just (_newBs, difSig, _accSig, _sents)) = 
-	    basicAnalysis (const return) 
-			      (const id) (const id) (bs, emptySign () , ga)
+	    basicAnalysis (const $ const return) (const return) 
+			      (const return) (bs, emptySign () , ga)
 	es = filter ((<= Error)  . diagKind) ds
 	in Result es $ Just difSig
 
@@ -52,8 +52,8 @@ getSign ga =
 props :: GlobalAnnos -> BASIC_SPEC () () () -> Result [Named (FORMULA ())]
 props ga bs = 
     let Result ds (Just (_newBs, _difSig, _accSig, sents)) = 
-	    basicAnalysis (const return) 
-			      (const id) (const id) (bs, emptySign (), ga)
+	    basicAnalysis (const $ const return) (const return) 
+			      (const return) (bs, emptySign (), ga)
 	es = filter ((<= Error)  . diagKind) ds
 	in Result es $ Just sents
 

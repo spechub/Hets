@@ -20,7 +20,6 @@ import Common.Token
 import Modal.AS_Modal
 import Common.Lib.Parsec
 import CASL.Formula
-import CASL.AS_Basic_CASL
 import CASL.OpItem
 
 modalFormula :: AParser M_FORMULA
@@ -40,15 +39,9 @@ modalFormula =
 modality :: [String] -> AParser MODALITY
 modality ks = 
     do t <- term (ks ++ modal_reserved_words)
-       let r = return $ Term_mod t
-       case t of 
-		     Mixfix_token tm -> 
-			 if head (tokStr tm) `elem` caslLetters
-			    then return $ Simple_mod tm
-			    else r
-		     _ -> r
-    <|> return (Simple_mod $ mkSimpleId emptyS)
- 
+       return $ Term_mod t
+   <|> return (Simple_mod $ mkSimpleId emptyS)
+
 instance AParsable M_FORMULA where
   aparser = modalFormula
 

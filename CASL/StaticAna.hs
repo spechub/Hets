@@ -39,12 +39,12 @@ checkPlaces args i =
 
 addOp :: OpType -> Id -> State (Sign f e) ()
 addOp ty i = 
-    do mapM_ checkSort (opRes ty : opArgs ty)
+    do checkSorts (opRes ty : opArgs ty)
        e <- get
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
 	   check = addDiags $ checkPlaces (opArgs ty) i
-	   store = do put e { opMap = Map.insert i (Set.insert ty l) m }
+	   store = do put e { opMap = addTo i ty m }
        if Set.member ty l then 
 	     addDiags [mkDiag Hint "redeclared op" i] 
           else case opKind ty of 
@@ -59,46 +59,51 @@ addOp ty i =
 addAssocOp :: OpType -> Id -> State (Sign f e) ()
 addAssocOp ty i = do
        e <- get
-       let m = assocOps e
-	   pty = ty { opKind = Partial } -- ignore FunKind
-           l = Map.findWithDefault Set.empty i m
-       put e { assocOps = Map.insert i (Set.insert pty l) m }
+       put e { assocOps = addTo i ty { opKind = Partial } -- ignore FunKind
+	                             $ assocOps e }
+
+updateExtInfo :: (e -> Result e) -> State (Sign f e) ()
+updateExtInfo upd = do
+    s <- get
+    let re = upd $ extendedInfo s
+    case maybeResult re of
+         Nothing -> return ()
+	 Just e -> put s { extendedInfo = e }
+    addDiags $ reverse $ diags re
+
+addTo :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a) 
+      -> Map.Map k (Set.Set a) 
+addTo k v m = let l = Map.findWithDefault Set.empty k m in
+     Map.insert k (Set.insert v l) m
 
 addPred :: PredType -> Id -> State (Sign f e) ()
 addPred ty i = 
-    do mapM_ checkSort $ predArgs ty
+    do checkSorts $ predArgs ty
        e <- get
        let m = predMap e
            l = Map.findWithDefault Set.empty i m
        if Set.member ty l then 
 	  addDiags [mkDiag Hint "redeclared pred" i] 
-	  else do put e { predMap = Map.insert i (Set.insert ty l) m }
+	  else do put e { predMap = addTo i ty m }
 		  addDiags $ checkPlaces (predArgs ty) i
 
-allOpIds :: State (Sign f e) (Set.Set Id)
-allOpIds = do 
-    e <- get
-    return $ Set.fromDistinctAscList $ Map.keys $ opMap e 
+allOpIds :: Sign f e -> Set.Set Id
+allOpIds = Set.fromDistinctAscList . Map.keys . opMap
 
-addAssocs :: GlobalAnnos -> State (Sign f e) GlobalAnnos
-addAssocs ga = do 
-    e <- get
-    return ga { assoc_annos =  
+addAssocs :: GlobalAnnos -> Sign f e -> GlobalAnnos
+addAssocs ga e =
+    ga { assoc_annos =  
 		foldr ( \ i m -> case Map.lookup i m of
 			Nothing -> Map.insert i ALeft m
 			_ -> m ) (assoc_annos ga) (Map.keys $ assocOps e) } 
 
-formulaIds :: State (Sign f e) (Set.Set Id)
-formulaIds = do
-    e <- get
-    ops <- allOpIds
-    return (Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
-	       `Set.union` ops)
+formulaIds :: Sign f e -> Set.Set Id
+formulaIds e = let ops = allOpIds e in
+    Set.fromDistinctAscList (map simpleIdToId $ Map.keys $ varMap e) 
+	       `Set.union` ops
 
-allPredIds :: State (Sign f e) (Set.Set Id)
-allPredIds = do
-    e <- get
-    return $ Set.fromDistinctAscList $ Map.keys $ predMap e
+allPredIds :: Sign f e -> Set.Set Id
+allPredIds = Set.fromDistinctAscList . Map.keys . predMap
 
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds = 
@@ -107,7 +112,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: (b -> e -> e) -> (s -> e -> e) ->
+ana_BASIC_SPEC :: Ana b f e -> Ana s f e ->
         GlobalAnnos -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC ab as ga (Basic_spec al) = fmap Basic_spec $
 			       mapAnM (ana_BASIC_ITEMS ab as ga) al
@@ -119,7 +124,7 @@ mkForall :: [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 mkForall vl f ps = if null vl then f else 
 		   Quantification Universal vl f ps
 
-ana_BASIC_ITEMS :: (b -> e -> e) -> (s -> e -> e) -> 
+ana_BASIC_ITEMS :: Ana b f e -> Ana s f e -> 
                 GlobalAnnos -> (BASIC_ITEMS b s f) 
                 -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS ab as ga bi = 
@@ -142,11 +147,11 @@ ana_BASIC_ITEMS ab as ga bi =
     Local_var_axioms il afs ps -> 
 	do e <- get -- save
 	   mapM_ addVars il
-	   ops <- formulaIds
+	   ops <- gets formulaIds
 	   put e -- restore 
-	   preds <- allPredIds
-	   newGa <- addAssocs ga
-	   let rfs = map (resolveFormula newGa ops preds . item) afs 
+	   let preds = allPredIds e
+	       newGa = addAssocs ga e
+               rfs = map (resolveFormula newGa ops preds . item) afs 
 	       ds = concatMap diags rfs
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
 				Nothing -> Nothing
@@ -159,9 +164,9 @@ ana_BASIC_ITEMS ab as ga bi =
            addSentences sens			    
            return $ Local_var_axioms il ufs ps
     Axiom_items afs ps -> 		    
-	do ops <- formulaIds
-	   preds <- allPredIds
-	   newGa <- addAssocs ga
+	do ops <- gets formulaIds
+	   preds <- gets allPredIds
+	   newGa <- gets $ addAssocs ga
 	   let rfs = map (resolveFormula newGa ops preds . item) afs 
 	       ds = concatMap diags rfs
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
@@ -172,10 +177,7 @@ ana_BASIC_ITEMS ab as ga bi =
            addDiags ds
            addSentences sens			    
            return $ Axiom_items ufs ps
-    Ext_BASIC_ITEMS b -> do 
-       sig <- get
-       put sig { extendedInfo = ab b $ extendedInfo sig }
-       return bi
+    Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab ga b
 
 toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
 toSortGenAx ps (sorts, ops) = do
@@ -199,7 +201,7 @@ toSortGenAx ps (sorts, ops) = do
     addSentences [NamedSen ("ga_generated_" ++ 
  			 showSepList (showString "_") showId sortList "") f]
 
-ana_SIG_ITEMS :: (s -> e -> e) -> GlobalAnnos -> GenKind -> SIG_ITEMS s f 
+ana_SIG_ITEMS :: Ana s f e -> GlobalAnnos -> GenKind -> SIG_ITEMS s f 
 	      -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS as ga gk si = 
     case si of 
@@ -219,13 +221,10 @@ ana_SIG_ITEMS as ga gk si =
 	   mapAnM (ana_DATATYPE_DECL gk) al 
            closeSubsortRel
 	   return si
-    Ext_SIG_ITEMS s -> 
-	do sig <- get
-	   put sig { extendedInfo = as s $ extendedInfo sig }
-	   return si
+    Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ as ga s
 
 -- helper
-ana_Generated :: (s -> e -> e) -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)] 
+ana_Generated :: Ana s f e -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)] 
 	      -> State (Sign f e)
 	      ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS s f)])
 ana_Generated as ga al = do
@@ -279,9 +278,9 @@ ana_SORT_ITEM ga asi =
 	   mapM_ (addSubsort i) il
 	   return asi
     Subsort_defn sub v super af ps -> 
-	do ops <- allOpIds 
-	   preds <- allPredIds
-	   newGa <- addAssocs ga
+	do ops <- gets allOpIds 
+	   preds <- gets allPredIds
+	   newGa <- gets $ addAssocs ga
            let Result ds mf = resolveFormula newGa
 			      (Set.insert (simpleIdToId v) ops) preds $ item af
 	       lb = getRLabel af
@@ -330,9 +329,9 @@ ana_OP_ITEM ga aoi =
 	       arg = concatMap ( \ (Var_decl v s qs) ->
 				 map ( \ j -> Qual_var j s qs) v) vs
            addOp (toOpType ty) i
-	   ops <- allOpIds
-	   preds <- allPredIds 
-	   newGa <- addAssocs ga
+	   ops <- gets allOpIds
+	   preds <- gets allPredIds 
+	   newGa <- gets $ addAssocs ga
  	   let vars =  concatMap ( \ (Arg_decl v _ _) -> v) args
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
@@ -365,9 +364,9 @@ ana_OP_ATTR ga ty ois oa =
 	q = [posOfId rty] in
     case oa of 
     Unit_op_attr t ->
-	do ops <- allOpIds
-	   preds <- allPredIds 
-	   newGa <- addAssocs ga
+	do ops <- gets allOpIds
+	   preds <- gets allPredIds 
+	   newGa <- gets $ addAssocs ga
 	   let Result ds mt = resolveMixfix newGa ops preds False t
 	   addDiags ds
 	   case mt of 
@@ -442,18 +441,17 @@ ana_PRED_ITEM ga ap =
     Pred_decl preds ty _ -> 
 	do mapM (addPred $ toPredType ty) preds
 	   return ap
-    Pred_defn i par at ps ->
-	do let Pred_head args rs = par
-	       lb = getRLabel at
+    Pred_defn i par@(Pred_head args rs) at ps ->
+	do let lb = getRLabel at
 	       lab = if null lb then getRLabel ap else lb
 	       ty = Pred_type (sortsOfArgs args) rs
 	       vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
 	       arg = concatMap ( \ (Var_decl v s qs) ->
 				 map ( \ j -> Qual_var j s qs) v) vs
            addPred (toPredType ty) i
-	   ops <- allOpIds
-	   preds <- allPredIds 
-	   newGa <- addAssocs ga
+	   ops <- gets allOpIds
+	   preds <- gets allPredIds 
+	   newGa <- gets $ addAssocs ga
 	   let vars = concatMap ( \ (Arg_decl v _ _) -> v) args 
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
@@ -663,8 +661,10 @@ ana_COMPONENTS s c = do
 
 -- wrap it all up for a logic
 
-basicAnalysis :: PrettyPrint f => Min f e -> (b -> e -> e)
-              -> (s -> e -> e) -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
+type Ana a f e = GlobalAnnos -> a -> State (Sign f e) a  
+
+basicAnalysis :: PrettyPrint f => Min f e -> Ana b f e
+              -> Ana s f e -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
      -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
 basicAnalysis mef ab as (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ab as ga bs) inSig
@@ -673,7 +673,7 @@ basicAnalysis mef ab as (bs, inSig, ga) = do
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
-    checked_sents <- overloadResolution mef accSig sents
+    checked_sents <- overloadResolution mef ga accSig sents
     Result ds (Just ()) -- insert diags
     return ( newBs
 	   , remPartOpsS diff

@@ -23,29 +23,27 @@ import Common.Result
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
 
-mapTerm :: 
-           Morphism f e m -> TERM f -> Result (TERM f)
-mapTerm m t = case t of
+mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> Result (TERM f)
+mapTerm mf m t = case t of
    Qual_var v s ps -> return $ Qual_var v (mapSrt m s) ps
    Application o ts ps -> do 
-       newTs <- mapM (mapTerm m) ts
+       newTs <- mapM (mapTerm mf m) ts
        newO <- mapOpSymb m o 
        return $ Application newO newTs ps
    Sorted_term st s ps -> do
-       newT <- mapTerm m st
+       newT <- mapTerm mf m st
        return $ Sorted_term newT (mapSrt m s) ps
    Cast st s ps -> do
-       newT <- mapTerm m st
+       newT <- mapTerm mf m st
        return $ Cast newT (mapSrt m s) ps
    Conditional t1 f t2 ps -> do
-       t3 <- mapTerm m t1
-       newF <- mapSen m f
-       t4 <- mapTerm m t2
+       t3 <- mapTerm mf m t1
+       newF <- mapSen mf m f
+       t4 <- mapTerm mf m t2
        return $ Conditional t3 newF t4 ps 
    _ -> error "mapTerm"
 
-mapOpSymb :: 
-             Morphism f e m -> OP_SYMB -> Result OP_SYMB
+mapOpSymb :: Morphism f e m -> OP_SYMB -> Result OP_SYMB
 mapOpSymb m os@(Qual_op_name i t ps) = do 
    (j, ty) <- maybeToResult (posOfId i) 
 	      ("no mapping for: " ++ showPretty os "") $ 
@@ -68,52 +66,56 @@ mapConstr m constr = do
    newOps <- mapM (mapDecoratedOpSymb m) (opSymbs constr)
    return (constr {newSort = newS, opSymbs = newOps})
 
-mapSen :: 
-          Morphism f e m -> FORMULA f -> Result (FORMULA f)
-mapSen m f = case f of 
+type MapSen f e m = Morphism f e m -> f -> Result f 
+
+mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> Result (FORMULA f)
+mapSen mf m f = case f of 
    Quantification q vs qf ps -> do
-       newF <- mapSen m qf
+       newF <- mapSen mf m qf
        return $ Quantification q (map (mapVars m) vs) newF ps
    Conjunction fs ps -> do
-       newFs <- mapM (mapSen m) fs
+       newFs <- mapM (mapSen mf m) fs
        return $ Conjunction newFs ps
    Disjunction fs ps -> do
-       newFs <- mapM (mapSen m) fs
+       newFs <- mapM (mapSen mf m) fs
        return $ Disjunction newFs ps
    Implication f1 f2 b ps -> do
-       f3 <- mapSen m f1
-       f4 <- mapSen m f2
+       f3 <- mapSen mf m f1
+       f4 <- mapSen mf m f2
        return $ Implication f3 f4 b ps
    Equivalence f1 f2 ps -> do
-       f3 <- mapSen m f1
-       f4 <- mapSen m f2
+       f3 <- mapSen mf m f1
+       f4 <- mapSen mf m f2
        return $ Equivalence f3 f4 ps
    Negation nf ps -> do
-       newF <- mapSen m nf
+       newF <- mapSen mf m nf
        return $ Negation newF ps
    True_atom _ -> return f
    False_atom _ -> return f
    Predication p ts ps -> do 
-       newTs <- mapM (mapTerm m) ts
+       newTs <- mapM (mapTerm mf m) ts
        newP <- mapPrSymb m p
        return $ Predication newP newTs ps
    Definedness t ps -> do 
-       newT <- mapTerm m t
+       newT <- mapTerm mf m t
        return $ Definedness newT ps
    Existl_equation t1 t2 ps -> do
-       t3 <- mapTerm m t1
-       t4 <- mapTerm m t2
+       t3 <- mapTerm mf m t1
+       t4 <- mapTerm mf m t2
        return $ Existl_equation t3 t4 ps
    Strong_equation t1 t2 ps -> do
-       t3 <- mapTerm m t1
-       t4 <- mapTerm m t2
+       t3 <- mapTerm mf m t1
+       t4 <- mapTerm mf m t2
        return $ Strong_equation t3 t4 ps
    Membership t s ps -> do 
-       newT <- mapTerm m t
+       newT <- mapTerm mf m t
        return $ Membership newT (mapSrt m s) ps
    Sort_gen_ax constrs -> do
        newConstrs <- mapM (mapConstr m) constrs
        return $ Sort_gen_ax newConstrs
+   ExtFORMULA ef -> do 
+       newF <- mf m ef 
+       return $ ExtFORMULA newF	       
    _ -> error "mapSen"
 
 mapPrSymb :: 

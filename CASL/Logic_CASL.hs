@@ -125,7 +125,7 @@ instance LatticeWithTop CASL_Sublogics where
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
-      map_sen CASL = mapSen
+      map_sen CASL = mapSen (const return)
       parse_sentence CASL = Just
         ( \ _sign str ->
 	  case runParser (aFormula [] << eof) emptyAnnos "" str of
@@ -143,7 +143,9 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                CASLMor 
                Symbol RawSymbol where
          basic_analysis CASL = Just $ basicAnalysis 
-			       (const return) (const id) (const id)
+			       (const $ const return) 
+			       (const return)
+			       (const return)
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
