@@ -128,7 +128,7 @@ readTAF at ('[':str) tbl l =
         (RTS_list (at'',ann)  str'' tbl'' l'') = 
 	    readAnnTAF at' (dropSpaces str') tbl' 0 
 	t            =  {-# SCC "Cons_AList" #-} ShAList kids ann 
-	at_t@(_,ai) = {-# SCC "RaddAList" #-} addATerm t at''
+	at_t@(_,ai) = {-# SCC "RaddAList" #-} addATermNoFullSharing t at''
 	tbl'''       = {-# SCC "RaddAListAbbr" #-}  seq ai (condAddElement (addRAbbrev ai) (l''+l') tbl'')
 	in  {-# SCC "RTS_AList" #-} RTS at_t str'' tbl''' (l+l'+l'')
 readTAF at str@(x:xs) tbl l 
@@ -140,7 +140,7 @@ readTAF at str@(x:xs) tbl l
 	  integer    :: Integer
 	  integer    = {-# SCC "Rread_integer" #-} readInteger x i
 	  t          =  {-# SCC "Cons_AInt" #-} ShAInt integer ann 
-	  at_t@(_,ai) = {-# SCC "RaddAInt" #-} addATerm t at'
+	  at_t@(_,ai) = {-# SCC "RaddAInt" #-} addATermNoFullSharing t at'
 	  tbl''      = {-# SCC "RaddAIntAbbrev" #-}  seq ai (condAddElement (addRAbbrev ai) (l'+l'') tbl')
       in  {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
   |isAFunChar x || x=='"' || x=='(' = 
@@ -151,7 +151,7 @@ readTAF at str@(x:xs) tbl l
 		readAnnTAF at' (dropSpaces str'') tbl' 0
 	  t                  =  {-# SCC "Cons_AAppl" #-} ShAAppl c kids ann
 	  l'''   = (length c) + l'+l''
-	  at_t@(_,ai) = {-# SCC "RaddAAppl" #-} addATerm t at''
+	  at_t@(_,ai) = {-# SCC "RaddAAppl" #-} addATermNoFullSharing t at''
 	  tbl''' = {-# SCC "RaddAApplAbbrev" #-} seq ai (condAddElement (addRAbbrev ai) l''' tbl'')
  	  in  {-# SCC "RTS_AAppl" #-} RTS at_t str''' tbl''' l'''
   | otherwise             = error $ error_saterm (take 5 str)
