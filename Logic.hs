@@ -113,15 +113,15 @@ class (Language id, PrettyPrint basic_spec, Eq basic_spec,
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category id sign morphism, Show sentence, 
-       Show local_env, Ord symbol, Show symbol)
-    => Sentences id sentence local_env sign morphism symbol
-        | id -> sentence, id -> local_env, id -> sign, id -> morphism,
+       Ord symbol, Show symbol)
+    => Sentences id sentence sign morphism symbol
+        | id -> sentence, id -> sign, id -> morphism,
           id -> symbol
       where
          -- sentence translation
       map_sen :: id -> morphism -> sentence -> Result sentence
          -- parsing of sentences
-      parse_sentence :: id -> local_env -> String -> Result sentence
+      parse_sentence :: id -> sign -> String -> Result sentence
            -- is a term parser needed as well?
       provers :: id -> [Prover sentence symbol]
       cons_checkers :: id -> [Cons_checker 
@@ -129,25 +129,24 @@ class (Category id sign morphism, Show sentence,
 -- static analysis
 
 class ( Syntax id basic_spec symb_items symb_map_items
-      , Sentences id sentence local_env sign morphism symbol
+      , Sentences id sentence sign morphism symbol
       , Show raw_symbol, Eq raw_symbol)
     => StaticAnalysis id 
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol 
+        sign morphism symbol raw_symbol 
         | id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> local_env,
+          id -> symb_map_items, 
           id -> sign, id -> morphism, id -> symbol, id -> raw_symbol
       where
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
                            Maybe((basic_spec,  -- abstract syntax tree
-                            local_env,   -- efficient table for env signature
+                            sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
-                           Result (local_env,sign,[(String,sentence)]))
-                              -- the output local env is expected to be
-                              -- just the input local env, united with the sign.
-                              -- We have both just for efficiency reasons.
-                              -- These include any new annotations
+                           Result (sign,sign,[(String,sentence)]))
+                           -- the first output sign is the accumulated sign
+                           -- the second output sign united with the input sing
+                           -- should yield the first output sign
          stat_symb_map_items :: 
 	     id -> symb_map_items -> Result (EndoMap raw_symbol)
          stat_symb_items :: id -> symb_items -> Result [raw_symbol] 
@@ -165,9 +164,8 @@ class ( Syntax id basic_spec symb_items symb_map_items
          matches :: id -> symbol -> raw_symbol -> Bool
          sym_name :: id -> symbol -> Id 
    
-         -- operations on local envs, signatures and morphisms
-         empty_local_env :: id -> local_env
-         add_sign :: id -> sign -> local_env -> local_env
+         -- operations on signatures and morphisms
+         add_sign :: id -> sign -> sign -> sign
          empty_signature :: id -> sign
          signature_union :: id -> sign -> sign -> Result sign
          final_union :: id -> sign -> sign -> Result sign
@@ -192,13 +190,13 @@ class Ord l => LatticeWithTop l where
 
 class (StaticAnalysis id 
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol,
+        sign morphism symbol raw_symbol,
        LatticeWithTop sublogics) =>
       Logic id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol 
+        sign morphism symbol raw_symbol 
         | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> local_env,
+          id -> symb_map_items,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
 	  where
          sublogic_names :: id -> sublogics -> [String] 

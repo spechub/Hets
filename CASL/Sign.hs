@@ -1,4 +1,4 @@
-module LocalEnv where
+module Sign where
 
 -- $Header$
 

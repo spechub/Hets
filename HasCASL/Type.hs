@@ -33,7 +33,7 @@ simpleTok :: String -> Token
 simpleTok s = Token s nullPos
 
 simpleId :: String -> Id
-simpleId(s) = Id [simpleTok s] [] 
+simpleId(s) = Id [simpleTok s] [] []
 
 isSign c = c `elem` signChars
 isAlpha c = c `elem` ['0'..'9'] ++ "'" ++ caslLetters

@@ -77,7 +77,7 @@ import FiniteMap ( emptyFM, isEmptyFM, fmToList, listToFM )
 import Id ( Id, Pos )
 import AS_Annotation
 import AS_Basic_CASL
-import LocalEnv
+import Sign
 
 ------------------------------------------------------------------------------
 -- Datatypes for CASL sublogics

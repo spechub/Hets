@@ -18,7 +18,7 @@ import AS_Basic_CASL
 import Print_AS_Basic
 import Parse_AS_Basic
 
-import LocalEnv
+import Sign
 import Logic
 
 import Result
@@ -65,19 +65,19 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL Sentence Sign Sign Morphism Symbol where
+instance Sentences CASL Sentence Sign Morphism Symbol where
 -- missing
 
 instance StaticAnalysis CASL BASIC_SPEC Sentence 
                SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign Sign 
+               Sign 
                Morphism 
                Symbol RawSymbol where
 -- missing
 
 instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
-               Sign Sign 
+               Sign 
                Morphism
                Symbol RawSymbol where
          sublogic_names CASL = Sublogics.sublogics_name

@@ -35,10 +35,10 @@ import Pretty
 
 data G_basic_spec = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_basic_spec id basic_spec 
 
 instance Show G_basic_spec where
@@ -53,10 +53,10 @@ instance Eq G_basic_spec where
 
 data G_sentence = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_sentence id sentence 
 
 instance Show G_sentence where
@@ -64,18 +64,18 @@ instance Show G_sentence where
 
 data G_l_sentence_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_l_sentence id [(String,sentence)] 
 
 data G_sign = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_sign id sign 
 
 instance Show G_sign where
@@ -83,26 +83,18 @@ instance Show G_sign where
 
 data G_sign_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_sign_list id [sign] 
-
-data G_local_env = forall id sublogics
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
-        Logic id sublogics
-         basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
-  G_local_env id local_env 
 
 data G_symbol = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
   G_symbol id symbol 
 
 instance Show G_symbol where
@@ -114,10 +106,10 @@ instance Eq G_symbol where
 
 data G_symb_items_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
         G_symb_items_list id [symb_items] 
 
 instance Show G_symb_items_list where
@@ -133,10 +125,10 @@ instance Eq G_symb_items_list where
 
 data G_symb_map_items_list = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
         G_symb_map_items_list id [symb_map_items] 
 
 instance Show G_symb_map_items_list where
@@ -152,17 +144,17 @@ instance Eq G_symb_map_items_list where
 
 data G_diagram = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
         G_diagram id (Diagram sign morphism) 
 
 data G_sublogics = forall id sublogics
         basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol .
         Logic id sublogics
          basic_spec sentence symb_items symb_map_items
-         local_env sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol =>
         G_sublogics id sublogics 
 
