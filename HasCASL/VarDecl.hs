@@ -135,6 +135,12 @@ addOpId i (TypeScheme vs (ps :=> ty) qs) attrs defn =
 -- GenVarDecl
 -----------------------------------------------------------------------------
 
+addGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
+addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
+				 return $ fmap GenVarDecl mv
+addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl t 
+				     return $ fmap GenTypeVarDecl mt
+
 anaGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = 
@@ -203,12 +209,15 @@ optAnaVarDecl vd@(VarDecl v t s q) =
 
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
-anaVarDecl(VarDecl v oldT s ps) = 
+anaVarDecl(VarDecl v oldT sk ps) = 
     do mt <- anaStarType oldT
        case mt of 
 	       Nothing -> return Nothing
-	       Just t -> addVarDecl (VarDecl v t s ps)
-
+	       Just t -> let s = Map.fromList $ 
+				 map ( \ a@(TypeArg i k _ _) -> 
+				       (a, TypeName i k 0)) $ varsOf t
+	                 -- make type monomorph
+	                 in  addVarDecl (VarDecl v (subst s t) sk ps)
 
 -- | add a local variable with an analysed type
 addVarDecl :: VarDecl -> State Env (Maybe VarDecl) 

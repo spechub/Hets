@@ -7,18 +7,18 @@ class a, b, c < d; a
 type s : c
 op tt : s ->? Unit
 var x : s
-program (tt) = \ x : s . ()
+program tt = \ x : s . ()
 program __ res __ (x : s, y : t) : s : s = x;
-	(fst) ((x : s, y : t)) : s = (var x : s);
-	(snd) ((x : s, y : t)) : t = (var y : t)
+	fst(x : s, y : t) : s = (var x : s);
+	snd(x : s, y : t) : t = (var y : t)
 op eq : s × s ->? Unit
 type s < ? s
-program (all) (p : ? s) : ? Unit = eq (p, tt)
-program (And) ((x : _var_4, y : ? Unit)) : ? Unit = t1 () res t2 ()
+program all(p : ? s) : ? Unit = eq (p, tt)
+program And(x : _var_6, y : ? Unit) : ? Unit = t1 () res t2 ()
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
 program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
 	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-	(ex) (p : ? s) : ? Unit =
+	ex(p : ? s) : ? Unit =
 	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
 	ff () : ? Unit : ? Unit = all (\ r : (? Unit) . r ())
 forall x : t; y : t
@@ -113,8 +113,8 @@ Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 37) unexpected mixfix token: x
 Hint (line 15, column 11) type 's' is not unifiable with 's ->? Unit'
 Error (line 28, column 41) no match for 'tt'
-Error (line 28, column 35) no type match for '(eq) ((p), (tt))'
-Error (line 28, column 35) no typing for '(eq) ((p), (tt))'
+Error (line 28, column 35) no type match for 'eq (p, tt)'
+Error (line 28, column 35) no typing for 'eq (p, tt)'
 Error (line 30, column 40) unexpected mixfix token: t1
 Error (line 32, column 12) unexpected mixfix token: impl
 Error (line 34, column 12) unexpected mixfix token: or

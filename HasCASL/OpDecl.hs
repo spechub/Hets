@@ -68,24 +68,6 @@ tuplePatternToType (TuplePattern ps qs) =
     ProductType (map tuplePatternToType ps) qs
 tuplePatternToType _ = error "tuplePatternToType"
 
-varsOf :: Type -> [TypeArg]
-varsOf t = 
-    case t of 
-	   TypeName j k i -> if i > 0 then [TypeArg j k Other []] else []
-	   TypeAppl t1 t2 -> varsOf t1 ++ varsOf t2
-	   TypeToken _ -> []
-	   BracketType _ l _ -> concatMap varsOf l
-	   KindedType tk _ _ -> varsOf tk
-	   MixfixType l -> concatMap varsOf l
-	   LazyType tl _ -> varsOf tl
-	   ProductType l _ -> concatMap varsOf l
-	   FunType t1 _ t2 _ -> varsOf t1 ++ varsOf t2
-
-
-generalize :: TypeScheme -> TypeScheme
-generalize (TypeScheme vs q@(_ :=> ty) ps) =
-    TypeScheme (nub (varsOf ty ++ vs)) q ps
-
 anaOpItem :: GlobalAnnos -> OpItem -> State Env OpItem
 anaOpItem ga (OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc

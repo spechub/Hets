@@ -91,8 +91,7 @@ addBuiltins ga =
 
 initTermRules :: [Id] -> [Rule]
 initTermRules is = (map (mixRule ()) . nub)
-    ([tupleId, parenId, unitId, applId, exprId, ifThenElse, 
-      exEq, eqId, orId, andId, implId, eqvId, defId, notId] ++ is) ++
+    ([tupleId, parenId, unitId, applId, exprId] ++ is) ++
     map ( \ i -> (protect i, (), getPlainTokenList i )) 
 	    (nub $ filter isMixfix is)
 
@@ -168,13 +167,13 @@ iterateCharts ga terms chart =
 						     _ -> hd
 			       recurse $ TypedTerm newT tqual nTyp ps
 		    QuantifiedTerm quant decls hd ps -> do 
-		       mapM_ anaGenVarDecl decls
+		       newDs <- mapM anaGenVarDecl decls
 		       mt <- resolve ga hd
 		       putAssumps as 
 		       putTypeMap tm
 		       let newT = case mt of Just trm -> trm
 					     _ -> hd
-		       recurse $ QuantifiedTerm quant decls newT ps
+		       recurse $ QuantifiedTerm quant (catMaybes newDs) newT ps
 		    LambdaTerm decls part hd ps -> do
 		       mDecls <- mapM (resolveConstrPattern ga) decls
 		       let newDecls = catMaybes mDecls

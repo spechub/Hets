@@ -16,6 +16,7 @@ import HasCASL.As
 import Common.Keywords
 import HasCASL.HToken
 import Common.Lib.Pretty
+import Common.Id
 import Common.PPUtils
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
@@ -133,14 +134,16 @@ instance PrettyPrint Term where
 			<+> printText0 ga n
 			<+> colon
 			<+> printText0 ga t
-    printText0 ga (ResolvedMixTerm n ts _) = (parens $ printText0 ga n)
-			<+> noPrint (null ts) (parens $ commaT_text ga ts)
+    printText0 ga (ResolvedMixTerm n ts _) = (if isSimpleId n then
+					     id else parens) (printText0 ga n)
+			<> noPrint (null ts) (parens $ commaT_text ga ts)
     printText0 ga (ApplTerm t1 t2 _) = printText0 ga t1
 			<+> (case t2 of 
 			     QualVar _ _ _ -> id 
 			     QualOp _ _ _ -> id 
 			     TupleTerm _ _ -> id
 			     BracketTerm Parens _ _ -> id
+			     ResolvedMixTerm _ [] _ -> id
 			     TermToken _ -> id
 			     _ -> parens) (printText0 ga t2)
     printText0 ga (TupleTerm ts _) = parens $ commaT_text ga ts 
@@ -176,9 +179,13 @@ instance PrettyPrint Term where
 
 instance PrettyPrint Pattern where 
     printText0 ga (PatternVar v) = printText0 ga v
-    printText0 ga (ResolvedMixPattern n args _) = parens (printText0 ga n) 
-			     <+> noPrint (null args) 
-				     (parens $ commaT_text ga args)
+    printText0 ga (ResolvedMixPattern n args _) = 
+	(if isSimpleId n then id else parens) (printText0 ga n) 
+			     <> (case args of 
+				 [] -> empty
+				 [t@(TuplePattern _ _)] -> 
+				           printText0 ga t
+				 _ -> parens $ commaT_text ga args)
     printText0 ga (PatternConstr n t args _) = printText0 ga n 
 			  <+> colon
 			  <+> printText0 ga t 

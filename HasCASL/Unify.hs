@@ -23,6 +23,32 @@ import Common.Result
 import Data.List
 import Data.Maybe
 
+varsOf :: Type -> [TypeArg]
+varsOf t = 
+    case t of 
+	   TypeName j k i -> if i > 0 then [TypeArg j k Other []] else []
+	   TypeAppl t1 t2 -> varsOf t1 ++ varsOf t2
+	   TypeToken _ -> []
+	   BracketType _ l _ -> concatMap varsOf l
+	   KindedType tk _ _ -> varsOf tk
+	   MixfixType l -> concatMap varsOf l
+	   LazyType tl _ -> varsOf tl
+	   ProductType l _ -> concatMap varsOf l
+	   FunType t1 _ t2 _ -> varsOf t1 ++ varsOf t2
+
+
+generalize :: TypeScheme -> TypeScheme
+generalize (TypeScheme vs q@(_ :=> ty) ps) =
+    TypeScheme (nub (varsOf ty ++ vs)) q ps
+
+compSubst :: Subst -> Subst -> Subst
+compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2  
+
+
+mUnify :: TypeMap -> Maybe Type -> Type -> Result Subst
+mUnify tm mt ty = case mt of Nothing -> Result [] $ Just eps
+			     Just t -> unify tm t ty
+
 -- | unifiability of type schemes including instantiation with fresh variables 
 -- and looking up type aliases
 isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
@@ -66,6 +92,9 @@ mkSubst tas = do ms <- mapM mkSingleSubst tas
  		   
 type Subst = Map.Map TypeArg Type
 
+eps :: Subst
+eps = Map.empty
+
 instance Ord TypeArg where
     TypeArg v1 k1 _ _ <= TypeArg v2 k2 _ _
 	= (v1, k1) <= (v2, k2)
@@ -103,7 +132,7 @@ instance Unifiable Type where
     unify tm t1 (KindedType t2 _ _) = unify tm t1 t2
     unify tm (KindedType t1 _ _) t2 = unify tm t1 t2
     unify tm t1@(TypeName i1 k1 v1) t2@(TypeName i2 k2 v2) =
-	if i1 == i2 then return $ Map.empty
+	if i1 == i2 then return eps
 	else if v1 > 0 then return $ 
 	        Map.single (TypeArg i1 k1 Other []) t2
 		else if v2 > 0 then return $
@@ -158,7 +187,7 @@ instance (Unifiable a, Unifiable b) => Unifiable (a, b) where
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     subst s = map (subst s) 
-    unify _ [] [] = return $ Map.empty
+    unify _ [] [] = return eps
     unify tm (a1:r1) (a2:r2) = unify tm (a1, r1) (a2, r2)
     unify tm [] l = unify tm l [] 
     unify _ (a:_) [] = Result [mkDiag Hint 

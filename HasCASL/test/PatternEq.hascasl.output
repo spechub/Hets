@@ -1,16 +1,16 @@
 type s, t
 op snd : s × t -> t
-program (snd) ((x : _var_1, y : _var_2)) = (var y : _var_2)
-program (snd) ((x : _var_3, y : _var_4)) = (var y : _var_4)
-program (snd) ((x : _var_5, y : _var_6)) = (var y : t) : t
-program (snd) ((x : _var_7, y : _var_8)) : t = (var y : _var_8)
-program (snd) ((x : _var_9, y : _var_10)) : t = (var y : _var_10)
-program (snd) ((x : s, y : t)) : t = (var y : t)
+program snd(x : _var_1, y : _var_2) = (var y : _var_2)
+program snd(x : _var_3, y : _var_4) = (var y : _var_4)
+program snd(x : _var_5, y : _var_6) = (var y : t) : t
+program snd(x : _var_7, y : _var_8) : t = (var y : _var_8)
+program snd(x : _var_9, y : _var_10) : t = (var y : _var_10)
+program snd(x : s, y : t) : t = (var y : t)
 program (x : s, y : s) = (x : s, y : s)
 op a : s
 program b : s = a
 op b : s
-program (b) : s = (op a : s)
+program b : s = (op a : s)
 op x : s; y : t
 op c : t = (op snd : s × t -> t) ((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------

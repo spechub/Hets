@@ -73,21 +73,6 @@ resolveTerm ga mt trm = do
 	      Nothing -> return Nothing
 	      Just t -> typeCheck mt t 
 
-{-- 
-addGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
-addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
-				 return $ fmap GenVarDecl mv
-addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl t 
-				     return $ fmap GenTypeVarDecl mt
---}
-
-compSubst :: Subst -> Subst -> Subst
-compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2  
-
-
-mUnify :: TypeMap -> Maybe Type -> Type -> Result Subst
-mUnify tm mt ty = case mt of Nothing -> Result [] $ Just Map.empty
-			     Just t -> unify tm t ty
 
 mUnifySc :: Maybe Type -> OpInfo
 	 -> State Env (Maybe (Subst, Type, OpInfo))
@@ -100,7 +85,7 @@ mUnifySc mt oi = do
 		Just s -> return $ Just (s, subst s ty, oi)
 
 checkList :: [Type] -> [Term] -> State Env [(Subst, [Type], [Term])]
-checkList [] [] = return [(Map.empty, [], [])]
+checkList [] [] = return [(eps, [], [])]
 checkList (ty : rty) (trm : rt) = do 
       fts <- infer (Just ty) trm
       combs <- mapM ( \ (sf, tyf, tf) -> do
@@ -110,21 +95,7 @@ checkList (ty : rty) (trm : rt) = do
 				     subst sr tyf : tys,
 				     tf : tts)) rts) fts
       return $ concat combs
-checkList (ty:_) [] = do addDiags [mkDiag Error "no match for type" ty]
-			 return []
-checkList [] (t:_) = do addDiags [mkDiag Error "no match for term" t]
-			return []
-
-inferList :: [Term] -> State Env [(Subst, [Type], [Term])]
-inferList [] = return [(Map.empty, [], [])]
-inferList (trm : rt) = do 
-      fts <- infer Nothing trm
-      rts <- inferList rt
-      return $ concatMap ( \ (sf, tyf, tf) ->
-		      map ( \ (sr, tys, tts) -> 
-			     (compSubst sf sr,
-				     subst sr tyf : tys,
-				     tf : tts)) rts) fts
+checkList _ _ = error "checkList"
 
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm = 
@@ -181,7 +152,7 @@ infer mt trm = do
 			      _ -> (s, ty, QualOp (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
-		 (TupleTerm ts ps) ps
+		 (if isSingle ts then head ts else TupleTerm ts ps) ps
 	ApplTerm t1 t2 ps -> do 
 	    aty <- freshTypeVar
 	    rty <- case mt of 
@@ -199,29 +170,18 @@ infer mt trm = do
 	       do addDiags [mkDiag Error "no type match for" trm]
 		  return res
 	       else  return res
-	TupleTerm ts ps -> if isSingle ts then infer mt $ head ts else 
-	    case mt of 
-		Nothing -> do 
-		    ls <- inferList ts 
-		    return $ map ( \ (s, tys, trms) ->
-				   (s, ProductType tys ps, TupleTerm trms ps))
-		             ls
-	        Just (ProductType ptys qs) -> do 
-		    ls <- checkList ptys ts 
-		    return $ map ( \ (s, tys, trms) ->
-				   (s, ProductType tys qs, TupleTerm trms ps))
-		             ls
-		Just ty -> do 
-		    vs <- freshVars ts
-		    let pt = ProductType vs []
-		    let Result ds ms = unify tm ty pt
-		    addDiags ds
-		    case ms of 
-			    Nothing -> return []
-			    Just s -> do 
-				is <- infer (Just $ subst s pt) trm
-				return $ map ( \ (as, tys, trms) ->
-				    (compSubst s as, tys, trms)) is
+	TupleTerm ts ps -> do
+	     vs <- freshVars ts
+	     let pt = ProductType vs []
+	         Result ds ms = mUnify tm mt pt
+	     addDiags ds
+	     case ms of 
+		     Nothing -> return []
+		     Just s  -> do 
+                         ls <- checkList (subst s vs) ts 
+			 return $ map ( \ (su, tys, trms) ->
+                                   (compSubst s su, ProductType tys ps, 
+				    TupleTerm trms ps)) ls
 	TypedTerm t qual ty ps -> do 
 	    case qual of 
 		OfType -> do
@@ -255,7 +215,7 @@ infer mt trm = do
 				(compSubst s s2, subst s2 ty, 
 				 TypedTerm tr qual ty ps)) rs
 	QuantifiedTerm quant decls t ps -> do
-	    mapM_ anaGenVarDecl decls
+	    mapM_ addGenVarDecl decls
 	    let Result ds ms = mUnify tm mt logicalType
 	    addDiags ds
 	    case ms of 
@@ -266,7 +226,7 @@ infer mt trm = do
 		    return $ map ( \ (s, typ, tr) -> 
 			(s, typ, QuantifiedTerm quant decls tr ps)) rs
 	_ -> do ty <- freshTypeVar
-		return [(Map.empty, ty, trm)]
+		return [(eps, ty, trm)]
                 
 {-
 Quantifier [GenVarDecl] Term [Pos]

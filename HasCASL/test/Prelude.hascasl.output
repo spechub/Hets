@@ -26,9 +26,9 @@ type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : forall s : Type .  (Pred)(s)
 var x : s
-program (def) = \ x : s . ()
+program def = \ x : s . ()
 	%% def is also total (identical to tt) 
-program (tt) = \ x : s . ()
+program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -39,45 +39,45 @@ type s->t < s ->? t
 %% total functions
 op __res__ : s × t ->? s = (var x : s)
 op fst : s × t ->? s = (var x : s)
-program (snd) ((x : s, y : t)) : t = (var y : t)
+program snd(x : s, y : t) : t = (var y : t)
 %% trivial because its the strict function property
-. (op __=__ : forall a : Type .  a × a ->? Unit) (\ ((x) : s,
+. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
 						     y : t) . def (x res y),
-						  \ ((x) : s, y : t) . (def y) und (def x))
+						  \ (x : s, y : t) . (def y) und (def x))
 . (op __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
 							    t ->? s),
 						  (op __res__ : s × t ->? s))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 op eq : forall s : Type .  s × s ->? Unit
-. (op __=__ : forall a : Type .  a ×
-				 a ->? Unit) (\ (x) : s . (eq) ((x), (x)),
-					      (op tt : forall s : Type .  t ->? Unit))
-. (op __=__ : forall a : Type .  a × a ->? Unit) (\ ((x),
-						     y : s) . x res eq (x, y),
-						  \ ((x), y : s) . y res eq (x, y))
+. (op __=__ : forall a : Type .  a × a ->? Unit) (\ x : s . eq (x,
+								x),
+						  (op tt : forall s : Type .  t ->? Unit))
+. (op __=__ : forall a : Type .  a × a ->? Unit) (\ (x, y : s) . x
+								 res eq (x, y),
+						  \ (x, y : s) . y res eq (x, y))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
 type s < ? s
-program (all) (p : (Pred)(s)) : (Pred)(Unit) =
+program all(p : (Pred)(s)) : (Pred)(Unit) =
 	(op eq : forall s : Type .  s × s ->? Unit) ((var p : t ->? Unit),
 						     (op tt : forall s : Type .  t ->? Unit))
 %% the cast from ?s to s is still done manually here (for the strict "und")
-program (And) ((x : _var_25, y : (Pred)(Unit))) : (Pred)(Unit) =
+program And(x : _var_37, y : (Pred)(Unit)) : (Pred)(Unit) =
 	t1 () und t2 ()
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
 program __ impl __ (x, y : Pred Unit) : (Pred)(Unit) : (Pred)(Unit)
 	= eq (x, x And y)
 program __ or __ (x, y : Pred Unit) : (Pred)(Unit) : (Pred)(Unit) =
 	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-program (ex) (p : (Pred)(s)) : (Pred)(Unit) =
+program ex(p : (Pred)(s)) : (Pred)(Unit) =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
 program ff () : (Pred)(Unit) : (Pred)(Unit) =
 	all (\ r : Pred Unit . r ())
-program (neg) (r : (Pred)(Unit)) : (Pred)(Unit) = r impl ff
+program neg(r : (Pred)(Unit)) : (Pred)(Unit) = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,8 +97,8 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program (__<<=__) ((x1 : _var_30, y1 : _var_31),
-		   (x2 : _var_32, y2 : _var_33))
+program (__<<=__)((x1 : _var_42, y1 : _var_43),
+		  (x2 : _var_44, y2 : _var_45))
 	= (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -138,10 +138,10 @@ type c-->d < c -->? d
 . (op __=__ : forall a : Type .  a × a ->? Unit) (__ in c --> d,
 						  \ f : c -->? d . all (\ x : c . def f (x)))
 var f : c --> d; g : c --> d
-program (__<<=__) (f : _var_43, g : _var_44) = f <<= [c -->? d] g
+program (__<<=__)(f : _var_59, g : _var_60) = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : forall p : Pcpo .  (p -->? p) --> p
-op undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (x))
+op undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! x)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -205,22 +205,22 @@ sup : forall c : Cpo .  (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
 tt : forall s : Type .  t ->? Unit
-undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (x))
+undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! x)
 %% Sentences -------------------------------------------------------------
 (op __=__ : forall a : Type .  a × a ->? Unit) (__ in s -> t,
 						\ f : s ->? t . all (\ x : s . def f (x))) %()%
-(op __=__ : forall a : Type .  a × a ->? Unit) (\ ((x) : s,
+(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
 						   y : t) . def (x res y),
-						\ ((x) : s, y : t) . (def y) und (def x)) %()%
+						\ (x : s, y : t) . (def y) und (def x)) %()%
 (op __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
 							  t ->? s),
 						(op __res__ : s × t ->? s)) %()%
-(op __=__ : forall a : Type .  a ×
-			       a ->? Unit) (\ (x) : s . (eq) ((x), (x)),
-					    (op tt : forall s : Type .  t ->? Unit)) %()%
-(op __=__ : forall a : Type .  a × a ->? Unit) (\ ((x), y : s) . x
-								 res eq (x, y),
-						\ ((x), y : s) . y res eq (x, y)) %()%
+(op __=__ : forall a : Type .  a × a ->? Unit) (\ x : s . eq (x,
+							      x),
+						(op tt : forall s : Type .  t ->? Unit)) %()%
+(op __=__ : forall a : Type .  a × a ->? Unit) (\ (x, y : s) . x
+							       res eq (x, y),
+						\ (x, y : s) . y res eq (x, y)) %()%
 (op __=__ : forall a : Type .  a × a ->? Unit) (__ in c -->? d,
 						\ f : c ->? d . all
 								(\ (x, y : c) . (def (f x) und x <<=
@@ -263,19 +263,19 @@ Error (line 46, column 11) unexpected mixfix token: und
 Error (line 46, column 9) no toplevel pattern '__ und __ (x, y : Unit) : Unit : Unit'
 Error (line 54, column 3) expected further mixfix token: ["/\\","<=>","=","=>","=e="]
 Error (line 54, column 42) ambiguous mixfix term
-	(def) ((f)) ((x))
-	(def__) ((f)) ((x))
+	def f x
+	(def__)(f) x
 Error (line 54, column 32) unexpected mixfix token: all
 Error (line 65, column 18) ambiguous mixfix term
-	(def) ((__res__) ((x), (y)))
-	(def__) ((__res__) ((x), (y)))
+	def ((__res__)(x, y))
+	(def__)((__res__)(x, y))
 Error (line 65, column 59) unexpected mixfix token: und
 Error (line 75, column 15) ambiguous mixfix term
-	(__res__) ((x), (eq) ((x), (y)))
-	(__res__) ((x), (eq)) ((x), (y))
+	(__res__)(x, eq (x, y))
+	(__res__)(x, eq) (x, y)
 Error (line 75, column 44) ambiguous mixfix term
-	(__res__) ((y), (eq) ((x), (y)))
-	(__res__) ((y), (eq)) ((x), (y))
+	(__res__)(y, eq (x, y))
+	(__res__)(y, eq) (x, y)
 Warning (line 85, column 6) redeclared type 's'
 Error (line 90, column 45) unexpected mixfix token: t1
 Error (line 93, column 11) unexpected mixfix token: impl
@@ -301,8 +301,8 @@ Error (line 123, column 3) unexpected mixfix token: all
 Error (line 125, column 55) unexpected mixfix token: Suc
 Error (line 125, column 32) unexpected mixfix token: all
 Error (line 126, column 50) ambiguous mixfix term
-	(s) ((__<<=__) ((n), (x)))
-	(__<<=__) ((s) ((n)), (x))
+	s ((__<<=__)(n, x))
+	(__<<=__)(s n, x)
 Error (line 126, column 38) unexpected mixfix token: all
 Error (line 131, column 42) unexpected mixfix token: isBound
 Error (line 130, column 32) unexpected mixfix token: impl
@@ -326,8 +326,8 @@ Error (line 171, column 9) unexpected mixfix token: all
 Error (line 176, column 16) unexpected mixfix token: [
 Error (line 182, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 182, column 46) ambiguous mixfix term
-	(def) ((f)) ((x))
-	(def__) ((f)) ((x))
+	def f x
+	(def__)(f) x
 Error (line 182, column 36) unexpected mixfix token: all
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
