@@ -55,8 +55,6 @@ import System
 
 import HTk
 
-import Debug.Trace
-
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
      Prover { prover_name = "Isabelle",
@@ -143,16 +141,27 @@ isaProve checkCons thName (sig,axs) goals = do
             subTN s | s == (getFN thName) = (getFN thName)++"_proved"
                     | otherwise = s
         in (unlines . dropWhile (isNotPrefixOf "theory")) sub
-      onlyThms thy = (unlines . 
-                        dropWhile (isNotPrefixOf "theorem")) (lines thy)
+      onlyThms thy = 
+        let l = lines thy
+            newl = if null l then l
+                     else init l ++ [methodSetUp] ++ [last l]
+        in (unlines . 
+              dropWhile (isNotPrefixOf "theorem")) newl
       isNotPrefixOf t s = (not . (isPrefixOf t)) s
-      checkThm = "\n\nML  \"fun check_theorem name thm thy = "
-                 ++ "aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy name))),"
-                 ++ "snd(read_axm (sign_of thy) (name,thm))) handle _ => false;\"\n\n"
-      checkThms thm = "ML \"check_theorem \\\"" 
+      methodSetUp = "method_setup ML_init = "
+                    ++ "\"Method.ctxt_args (fn ctxt => "
+                    ++ "((context (ProofContext.theory_of ctxt);"
+                    ++ " Method.METHOD (fn thm  => (Simp_tac 1)))))\""
+                    ++ " ML_init\n"
+      checkThm = "ML \"fun check_theorem name thm =\n" 
+                 ++ "let val thy = (the_context())\n"
+                 ++ "in aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy "
+                 ++ "name))),snd(read_axm (sign_of thy) "
+                 ++ "(name,thm))) handle _ => false\n"
+                 ++ "end\"\n"
+      checkThms thm = "ML \"check_theorem \\\""
                       ++ senName thm ++ "\\\" " 
-                      ++ "\\\""++showPretty (sentence thm) "\\\" " 
-                      ++ provedName ++ "\"\n"
+                      ++ "\\\"" ++ showPretty (sentence thm) "\\\"\"\n " 
       thyPath = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
                    ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
                    ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
