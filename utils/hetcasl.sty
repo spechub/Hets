@@ -1,0 +1,145 @@
+\ProvidesPackage{hetcasl}[2002/10/04 v0.1 LaTeX Package for CASL v1.0.1]
+
+\NeedsTeXFormat{LaTeX2e}
+
+% Required packages
+\RequirePackage{ifthen}
+\RequirePackage{tabularx}
+\RequirePackage{calc}
+\RequirePackage[latin1]{inputenc}
+% \RequirePackage{alltt}
+
+\newcounter{@opentabulars}
+\setcounter{@opentabulars}{0}
+
+\newlength{\@oldparindent}
+\newlength{\@hetcaslmaxwidth}
+\newlength{\@remhetcaslwidth}
+
+\newlength{\@KWwidth}% 
+% The next two length variables will be used in \KW
+\newlength{\@realWidth}\newlength{\@neededWidth}
+
+\newif\ifhetcasl \hetcaslfalse
+
+\newenvironment{hetcasl}[1][\textwidth]%
+{%begin stuff
+\ifhetcasl%
+\PackageError{hetcasl evironments cannot nested}%
+\else\hetcasltrue\fi%
+\begingroup%
+\setlength{\@oldparindent}{\the\parindent}%
+\setlength{\parindent}{0cm}%
+\setlength{\@hetcaslmaxwidth}{#1}%
+\setlength{\@remhetcaslwidth}{\the\@hetcaslmaxwidth}%
+%\begin{alltt}\begingroup\rmfamily
+\begin{tabbing}%
+% a little line to set up three useful tabstops for rendering parts
+% of a library and or specification
+\KW{view} \=\KW{preds} \=~~~~~~~\=\kill
+}%
+{%end stuff
+\end{tabbing}%
+%\endgroup\end{alltt}
+%\@CloseAllTabulars%
+\setlength{\parindent}{\the\@oldparindent}%
+\endgroup%
+\hetcaslfalse%
+}
+
+\newcommand{\@HetCASLPrelude}{%
+\settowidth{\@KWwidth}{\textbf{view}}
+%%%% define all the makros needed for typesetting hetCASL
+%
+% \KW prints a KeyWord within a box that is at least \@KWwidth wide.
+% If the keyword needs more space the box is as wide as the kyeword
+% is. The optional argument overrides \@KWwidth with the width of the
+% mandatory argument in bold face. The mandatory argument is always
+% printed in bold face.
+\newcommand{\KW}[2][no--format--keyword]%
+{\ifthenelse{\equal{##1}{no--format--keyword}}%
+{% no optional argument
+\settowidth{\@neededWidth}{\textbf{##2}}}%
+{% optional argument given
+\settowidth{\@realWidth}{\textbf{##2}}%
+\settowidth{\@KWwidth}{\textbf{##1}}%
+\ifthenelse{\@KWwidth > \@realWidth}%
+{\setlength{\@neededWidth}{\@KWwidth}}%
+{\setlength{\@neededWidth}{\@realWidth}}}%
+\makebox[% set the width of the box not smaller than the width of the KeyWord
+\@neededWidth]%
+[l]{\textbf{##2}}%
+}%
+% \SId prints its argument in small caps as a Structured Id for names
+% of specifications, views and libraries
+\newcommand{\SId}[1]{\textsc{##1}}%
+% \SIdIndex prints its argument like \SId but sets an Index Entry if
+% redifined 
+\newcommand{\SIdIndex}[1]{\SId{##1}%
+  }%
+% \Id prints its argument in italic face as one word, for all other
+% identifiers not covered by \SId and only containing letters, numbers
+% and \_
+\newcommand{\Id}[1]{\textit{##1}}%
+% \AX prints its argument in math modus
+\newcommand{\Ax}[1]{\ensuremath{##1}}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% starting a library
+\newcommand{\library}[1]{\textbf{library}\ \textsc{##1}\ } 
+% printing a version number
+%\newcommand{\version}[1]{\textnormal{\textbf{version}\ ##1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% comments, annotations and labels
+\newcommand{\commentline}[1]{\textbf{\%\%}{\small##1}}
+%
+\newenvironment{commentgroup}%
+{\textbf{\%\{}\begingroup\small}%
+{\endgroup\textbf{\}\%}}%
+%
+\newcommand{\annoteline}[2]{\textbf{\%##1}\ {\small \(##2\)}}%
+%
+\newenvironment{annotegroup}[1]%
+{\textbf{\%##1(}\begingroup\small}%
+{\endgroup\textbf{)\%}}%
+%
+\newcommand{\casllabel}[1]{\textbf{\%(}{\small##1}\textbf{)\%}}%
+%
+\newenvironment{mlabel}%
+{\textbf{\%(}\begingroup\small}%
+{\endgroup\textbf{)\%}}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\newcommand{\place}{\_\_}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% download items (from, get are automatically printed)
+\newenvironment{downloaditem}[1]%
+{\begingroup\sc
+\textnormal{\textbf{from}}\ ##1\ %
+%\textnormal{\ifthenelse{\equal{##1}{no-version}}{}{\version{##1}\ }}%
+\textnormal{\textbf{get}}}%
+{\endgroup}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% specifications 
+% specdefn starts a new spec defn
+% arguments: ##1 ::= opt. semantic-anno
+%            ##2 ::= spec name
+%            ##3 ::= parameters (see parameterspecs-env)
+%            ##4 ::= imports (see importspecs-env)
+\newenvironment{specdefn}[4][no-semantic-anno]%
+{\textbf{spec}\ \textsc{##2}%
+\ifthenelse{\equal{##3}{}}{}{##3}%
+\ \(=\)%
+}%
+{}
+% end of \@HetCASLPrelude
+}
+\@HetCASLPrelude%
+%% helpers
+% calculate a new width based on \@remhetcaslwidth and the fixed width
+% given as argument.
+\newcommand{\@calc@width}[1]{}
+%\newcommand{\@tabnewline}{\\&}
+
+\newcommand{\@condEOL}{\ifthenelse{\the@opentabulars=0}{\\}{\@tabnewline}}
+
+\newcommand{\@CloseAllTabulars}{}
