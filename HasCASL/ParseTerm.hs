@@ -75,10 +75,10 @@ extClass = do c <- parsePlainClass
 	      case c of ExtClass _ _ _ -> return c
 			_ -> do 
 			     s <- plusT
-			     return (ExtClass c CoVar (tokPos s))
+			     return (ExtClass c CoVar [tokPos s])
 			 <|> do 
 			     s <- minusT
-			     return (ExtClass c ContraVar (tokPos s))
+			     return (ExtClass c ContraVar [tokPos s])
 			 <|> return c
 
 prodClass :: GenParser Char st Kind
@@ -97,7 +97,7 @@ funKind =
     do k1 <- prodClass
        do a <- asKey funS
 	  k2 <- kind
-	  return $ KindAppl k1 k2 $ tokPos a
+	  return $ KindAppl k1 k2 $ [tokPos a]
         <|> return k1
 
 kind = funKind >>= checkResultKind
@@ -148,7 +148,7 @@ typeOrId = do ts <- many1 primTypeOrId
 kindAnno :: Type -> GenParser Char st Type
 kindAnno t = do c <- colT 
 		k <- kind
-		return (KindedType t k (tokPos c))
+		return (KindedType t k [tokPos c])
 
 primType, lazyType, mixType, prodType, funType :: GenParser Char st Type
 primType = typeToken 
@@ -159,7 +159,7 @@ primType = typeToken
 
 lazyType = do q <- quMarkT
 	      t <- primType 
-              return (LazyType t (tokPos q))
+              return (LazyType t [tokPos q])
 	   <|> primType
 
 mixType = do ts <- many1 lazyType
@@ -207,8 +207,8 @@ varDeclType vs ps = do c <- colT
 		       return (makeVarDecls vs ps t (tokPos c))
 
 makeVarDecls :: [Var] -> [Token] -> Type -> Pos -> [VarDecl]
-makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma (tokPos p))
-		     (init vs) ps ++ [VarDecl (last vs) t Other q]
+makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma [tokPos p])
+		     (init vs) ps ++ [VarDecl (last vs) t Other [q]]
 
 varDeclDownSet :: [TypeId] -> [Token] -> GenParser Char st [TypeArg]
 varDeclDownSet vs ps = 
@@ -229,9 +229,9 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 makeTypeVarDecls :: [TypeId] -> [Token] -> Kind -> Pos -> [TypeArg]
 makeTypeVarDecls vs ps cl q = 
     zipWith (\ v p -> 
-	     TypeArg v cl Comma (tokPos p))
+	     TypeArg v cl Comma [tokPos p])
 		(init vs) ps 
-		++ [TypeArg (last vs) cl Other q]
+		++ [TypeArg (last vs) cl Other [q]]
 
 genVarDecls:: GenParser Char st [GenVarDecl]
 genVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
@@ -259,23 +259,23 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
 			  isInVar(_,_,_) = False
 		      in all isInVar ts then 
 		      do k <- kind
-			 return (makeTypeArgs ts ps (tokPos c) k)
+			 return (makeTypeArgs ts ps [tokPos c] k)
 		      else do k <- kind
-			      return (makeTypeArgs ts ps (tokPos c) 
-				      (ExtClass k InVar nullPos))
+			      return (makeTypeArgs ts ps [tokPos c] 
+				      (ExtClass k InVar []))
 	        <|> 
 	        do l <- lessT
 		   t <- parseType
-		   return (makeTypeArgs ts ps (tokPos l)
+		   return (makeTypeArgs ts ps [tokPos l]
 			   (PlainClass (Downset t)))
-		<|> return (makeTypeArgs ts ps nullPos nullKind)
+		<|> return (makeTypeArgs ts ps [] nullKind)
 		where mergeVariance k e (t, InVar, _) p = 
 			  TypeArg t e k p 
 		      mergeVariance k e (t, v, ps) p =
-			  TypeArg t (ExtClass e v ps) k p
+			  TypeArg t (ExtClass e v [ps]) k p
 		      makeTypeArgs ts ps q e = 
                          zipWith (mergeVariance Comma e) (init ts) 
-				     (map tokPos ps)
+				     (map ((:[]). tokPos) ps)
 			     ++ [mergeVariance Other e (last ts) q]
 
 -----------------------------------------------------------------------------
@@ -500,7 +500,7 @@ typedTerm :: Term -> TypeMode -> GenParser Char st Term
 typedTerm f b = 
     do (q, p) <- typeQual b
        t <- parseType
-       return (TypedTerm f q t (tokPos p))
+       return (TypedTerm f q t [tokPos p])
 
 typedMixTerm :: TypeMode -> GenParser Char st Term
 typedMixTerm b = 

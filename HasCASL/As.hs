@@ -91,10 +91,10 @@ data Type = TypeName TypeId Int  -- analysed
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           -- pos "," (between type arguments)
-          | KindedType Type Kind Pos
+          | KindedType Type Kind [Pos]
           -- pos ":"
           | MixfixType [Type] 
-	  | LazyType Type Pos
+	  | LazyType Type [Pos]
 	  -- pos "?"
           | ProductType [Type] [Pos]
           -- pos crosses 
@@ -185,7 +185,7 @@ data Formula = TermFormula Term
 -- eases also parsing of formulae in parenthesis
 
 data Term = CondTerm Term Formula Term [Pos]
-	  -- pos "when", "else"
+	  -- pos "when", "else" (or if-then-else)
 	  | QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
 	  | QualOp InstOpId TypeScheme [Pos]
@@ -194,7 +194,7 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos?
 	  | TupleTerm [Term] [Pos]
 	  -- pos "(", ","s, ")"
-	  | TypedTerm Term TypeQual Type Pos
+	  | TypedTerm Term TypeQual Type [Pos]
 	  -- pos ":", "as" or "in"
 	  | QuantifiedTerm Quantifier [GenVarDecl] Term [Pos]
           -- pos quantifier, ";"s, dot
@@ -222,8 +222,7 @@ data Pattern = PatternVars [VarDecl] [Pos]
 	     | TuplePattern [Pattern] [Pos]
 	     -- pos ","s
 	     | MixfixPattern [Pattern] -- or HO-Pattern
-	     | TypedPattern Pattern Type [Pos]
-	     -- pos ":"  
+	     | TypedPattern Pattern Type [Pos]	     -- pos ":"  
 	     | AsPattern Pattern Pattern [Pos]
 	     -- pos "@"
 	       deriving (Show, Eq)
@@ -236,13 +235,13 @@ data ProgEq = ProgEq Pattern Term Pos deriving (Show, Eq)
 
 data SeparatorKind = Comma | Other deriving (Show, Eq)
 
-data VarDecl = VarDecl Var Type SeparatorKind Pos deriving (Show, Eq)
+data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show, Eq)
 	       -- pos "," or ":" 
 
 data TypeVarDecls = TypeVarDecls [TypeArg] [Pos] deriving (Show, Eq)
 		    -- pos "[", ";"s, "]"
 
-data TypeArg = TypeArg TypeId Kind SeparatorKind Pos
+data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show, Eq)
 
@@ -260,11 +259,11 @@ data GenVarDecl = GenVarDecl VarDecl
 data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
 data Kind = PlainClass Class
-            | ExtClass Kind Variance Pos
+            | ExtClass Kind Variance [Pos]
 	     -- pos "+" or "-" 
 	    | ProdClass [Kind] [Pos] 
 	    -- pos crosses
-	    | KindAppl Kind Kind Pos
+	    | KindAppl Kind Kind [Pos]
 	    -- pos "->" 
 	    deriving (Show, Eq)
 

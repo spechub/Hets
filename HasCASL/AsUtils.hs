@@ -12,50 +12,71 @@ module AsUtils where
 import As
 import Id
 
+getPos :: [Pos] -> Pos
+getPos l = if null l then nullPos else head l
+
+posOf :: PosItem a => [a] -> Pos
+posOf l = if null l then nullPos else 
+	  case get_pos $ head l of 
+	  Nothing -> case get_pos_l $ head l of
+		     Nothing -> posOf $ tail l
+		     Just ps -> if null ps then posOf $ tail l else head ps
+	  Just p -> p
+
+firstPos :: PosItem a => [a] -> [Pos] -> Pos
+firstPos l ps = if null ps then posOf l else head ps
+
+instance PosItem Kind where
+    get_pos = Just . posOfKind
+
 posOfKind :: Kind -> Pos
-posOfKind (KindAppl _ _ p) = p 
-posOfKind (ProdClass _ ps) = head ps
-posOfKind (ExtClass _ _ p) = p
-posOfKind (PlainClass c) = posOfClass c
+posOfKind k = 
+    case k of 
+    KindAppl k1 k2 ps -> firstPos [k1,k2] ps 
+    ProdClass cs ps -> firstPos cs ps
+    ExtClass c _ ps -> firstPos [c] ps
+    PlainClass c -> posOfClass c
+
+instance PosItem Class where
+    get_pos = Just . posOfClass
 
 posOfClass :: Class -> Pos 
-posOfClass (Downset t) = posOfType t
-posOfClass (Intersection is ps) = 
-    if null ps then if null is then nullPos else posOfId $ head is
-       else head ps
+posOfClass c = 
+    case c of
+    Downset t -> posOfType t
+    Intersection is ps -> firstPos is ps
+
 -- ---------------------------------------------------------------------
+instance PosItem TypePattern where
+    get_pos = Just . posOfTypePattern
+
+instance PosItem TypeArg where
+    get_pos (TypeArg t _ _ _) = Just $ posOfId t
 
 posOfTypePattern :: TypePattern -> Pos
-posOfTypePattern (TypePattern t _ _) = posOfId t
-posOfTypePattern (TypePatternToken t) = tokPos t
-posOfTypePattern (MixfixTypePattern ts) = 
-    if null ts then nullPos else posOfTypePattern $ head ts
-posOfTypePattern (BracketTypePattern _ ts ps) = 
-    if null ps then 
-       if null ts then nullPos
-       else posOfTypePattern $ head ts
-    else head ps
-posOfTypePattern (TypePatternArgs as) = 
-    if null as then nullPos else 
-       let TypeArg t _ _ _ = head as in posOfId t
-
+posOfTypePattern pat = 
+    case pat of
+    TypePattern t _ _ -> posOfId t
+    TypePatternToken t -> tokPos t
+    MixfixTypePattern ts -> posOf ts
+    BracketTypePattern _ ts ps -> firstPos ts ps
+    TypePatternArgs as -> posOf as
 -- ---------------------------------------------------------------------
 
-posOfType :: Type -> Pos
-posOfType (TypeName i _) = posOfId i
-posOfType (TypeAppl _ t2) = posOfType t2
-posOfType (TypeToken t) = tokPos t
-posOfType (BracketType _ ts ps) = 
-    if null ps then 
-       if null ts then nullPos else posOfType $ head ts 
-    else head ps
-posOfType (KindedType t _ p) = if p == nullPos then posOfType t else p
-posOfType (MixfixType ts) = if null ts then nullPos else posOfType $ head ts
-posOfType (LazyType t p) = if p == nullPos then posOfType t else p
-posOfType (ProductType ts ps) = 
-    if null ps then 
-       if null ts then nullPos else posOfType $ head ts 
-    else head ps
-posOfType (FunType t _ _ ps) = 
-    if null ps then posOfType t else head ps
+instance PosItem Type where
+    get_pos = Just . posOfType
 
+posOfType :: Type -> Pos
+posOfType ty = 
+    case ty of
+    TypeName i _ -> posOfId i
+    TypeAppl t1 t2 -> posOf [t1, t2]
+    TypeToken t -> tokPos t
+    BracketType _ ts ps -> firstPos ts ps
+    KindedType t _ ps -> firstPos [t] ps
+    MixfixType ts -> posOf ts
+    LazyType t ps -> firstPos [t] ps
+    ProductType ts ps -> firstPos ts ps
+    FunType t1 _ t2 ps -> firstPos [t1,t2] ps
+
+-- ---------------------------------------------------------------------
