@@ -82,7 +82,10 @@ minExpFORMULA sign formula
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-        Existl_equation term1 term2 pos ->
+	Quantification q vars formula' pos -> do
+	    f <- minExpFORMULA sign formula'
+	    return $ Quantification q vars f pos
+	Existl_equation term1 term2 pos ->
             minExpFORMULA_eq sign Existl_equation term1 term2 pos
         Strong_equation term1 term2 pos ->
             minExpFORMULA_eq sign Strong_equation term1 term2 pos
