@@ -67,16 +67,7 @@ Lottery
 Modal/Basic.mod
 Static/hetana.hs
 Syntax/hetpa.hs
-ToHaskell/Makefile
-ToHaskell/Translate.hs
-ToHaskell/check
-ToHaskell/example
-ToHaskell/ghc-call
-ToHaskell/hacapa.txt
-ToHaskell/runcheck.sh
-ToHaskell/translate.hs
-ToHaskell/translateAna.hs
-ToHaskell/test
+ToHaskell
 aterm_conv
 distribution
 
