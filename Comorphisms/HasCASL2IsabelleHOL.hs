@@ -181,9 +181,10 @@ transTerm sign (LambdaTerm pats Partial body _) =
                               pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
-transTerm sign (TupleTerm terms _) = 
-  conSome `App` (foldl1 (binConst pairC) 
-                        (map (transTerm sign) terms))
+transTerm sign (TupleTerm terms _) =
+  foldl1 (binConst pairC) (map (transTerm sign) terms)
+--   conSome `App` (foldl1 (binConst pairC) 
+--                         (map (transTerm sign) terms))
 transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax in use."
 
 
