@@ -20,13 +20,15 @@ import CASL.ShowMixfix -- (showTerm, showFormula)
 -- start testing
 stdAnnosL, stdOpsL, stdPredsL :: [String]
 stdAnnosL = [ "%prec {__+__} < {__*__}\n" 
-	  , "%prec {__*__} < {__^__}\n"
-          , "%prec {+__} <> {__ ^ __}\n"
-          , "%string empty, __::::__\n"
-	  , "%left_assoc(__+__,__*__)%"
-	  , "%number __@@__\n"
-          , "%floating __:::__, __E__\n"
-	  , "%list([__], [], __::__)%"]
+	    , "%prec {__*__} < {__^__}\n"
+            , "%prec {+__} <> {__ ^ __}\n"
+            , "%prec {__ --> __} <  {__{__}--__-->{__}__}\n"
+            , "%string empty, __::::__\n"
+	    , "%left_assoc(__+__,__*__)%"
+	    , "%left_assoc(__ --> __ )%"
+	    , "%number __@@__\n"
+            , "%floating __:::__, __E__\n"
+	    , "%list([__], [], __::__)%"]
 
 mkAnnos :: [String] -> GlobalAnnos
 mkAnnos l = addGlobalAnnos emptyGlobalAnnos 
@@ -40,7 +42,9 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
 	"-__", "__!"] ++ 
           [ "____p", "q____","____x____", "{____}",
           "repeat__until__", "while__do__od", 
-	    "__where__but__", "__where__done"] ++ 
+	    "__where__but__", "__where__done",
+           "__ --> __", "__{__}--__-->{__}__", 
+           "Pl7","folge_dem_Gang","nicht_wenden","Pl3","RS3", "RS6"] ++
         map (:[]) 
         "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
          ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__", 
