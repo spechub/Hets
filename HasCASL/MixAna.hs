@@ -93,7 +93,8 @@ addBuiltins ga =
 		filter isInfix $ map snd precs
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure $ 
-	    Rel.fromList $ concat [logs, eqs, appls, precs] }
+	    Rel.fromList $ concat [logs, eqs, [(exEq, applId), (eqId, applId)],
+				   appls, precs] }
 
 initTermRules :: [Id] -> [Rule]
 initTermRules is = (map (mixRule ()) . nub)
