@@ -73,8 +73,8 @@ type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
 
 overloadResolution :: (Eq f, PrettyPrint f) =>
                       Min f e -> GlobalAnnos -> Sign f e 
-			      -> [Named.Named (FORMULA f)]
-			      -> Result [Named.Named (FORMULA f)]
+                              -> [Named.Named (FORMULA f)]
+                              -> Result [Named.Named (FORMULA f)]
 overloadResolution mef ga sign  = mapM overload
     where
     overload sent = do
@@ -94,28 +94,28 @@ minExpFORMULA mef ga sign formula
         -- Trivial Atom         -> Return untouched
         True_atom _     -> return formula                       -- :: FORMULA
         False_atom _    -> return formula                       -- :: FORMULA
-	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
-	Quantification q vars f pos -> do
+        -- Non-Atomic FORMULA   -> Recurse through subFORMULAe
+        Quantification q vars f pos -> do
             let (_, sign') = runState (mapM_ addVars vars) sign
-	    f' <- minExpFORMULA mef ga sign' f
-	    return $ Quantification q vars f' pos
-	Conjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA mef ga sign) fs
-	    return $ Conjunction fs' pos
-	Disjunction fs pos -> do
-	    fs' <- mapM (minExpFORMULA mef ga sign) fs
-	    return $ Disjunction fs' pos
-	Implication f1 f2 b pos -> do
-	    f1' <- minExpFORMULA mef ga sign f1
-	    f2' <- minExpFORMULA mef ga sign f2
-	    return $ Implication f1' f2' b pos
-	Equivalence f1 f2 pos -> do
-	    f1' <- minExpFORMULA mef ga sign f1
-	    f2' <- minExpFORMULA mef ga sign f2
-	    return $ Equivalence f1' f2' pos
-	Negation f pos -> do
-	    f' <- minExpFORMULA mef ga sign f
-	    return $ Negation f' pos
+            f' <- minExpFORMULA mef ga sign' f
+            return $ Quantification q vars f' pos
+        Conjunction fs pos -> do
+            fs' <- mapM (minExpFORMULA mef ga sign) fs
+            return $ Conjunction fs' pos
+        Disjunction fs pos -> do
+            fs' <- mapM (minExpFORMULA mef ga sign) fs
+            return $ Disjunction fs' pos
+        Implication f1 f2 b pos -> do
+            f1' <- minExpFORMULA mef ga sign f1
+            f2' <- minExpFORMULA mef ga sign f2
+            return $ Implication f1' f2' b pos
+        Equivalence f1 f2 pos -> do
+            f1' <- minExpFORMULA mef ga sign f1
+            f2' <- minExpFORMULA mef ga sign f2
+            return $ Equivalence f1' f2' pos
+        Negation f pos -> do
+            f' <- minExpFORMULA mef ga sign f
+            return $ Negation f' pos
         -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms pos ->
             minExpFORMULA_pred mef ga sign predicate terms pos  -- :: FORMULA
@@ -124,7 +124,7 @@ minExpFORMULA mef ga sign formula
             --debug 4 ("t", t)
             t'  <- is_unambiguous term t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-	Existl_equation term1 term2 pos ->
+        Existl_equation term1 term2 pos ->
             minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
         Strong_equation term1 term2 pos ->
             minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
@@ -137,13 +137,13 @@ minExpFORMULA mef ga sign formula
                 
             t'' <- is_unambiguous term t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
-	Sort_gen_ax _ _ -> return formula
-	ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
-	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
+        Sort_gen_ax _ _ -> return formula
+        ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
+        _ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
 
 is_unambiguous :: (Eq f, PrettyPrint f) => TERM f -> [[TERM f]] 
-	       -> [Id.Pos] -> Result (TERM f)
+               -> [Id.Pos] -> Result (TERM f)
 is_unambiguous topterm term pos = do
             case term of
                 [] -> pplain_error (Unparsed_term "<error>" [])
@@ -169,6 +169,7 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
     permuted_exps       <- return
         $ permute expansions                    -- ::        [[[TERM]]]
     profiles            <- return
+        $ map (map insert_injections)           -- ::  [[(PredType, [TERM])]]
         $ map get_profile permuted_exps         -- ::  [[(PredType, [TERM])]]
     --debug 6 ("profiles", profiles)
     p                   <- return
@@ -216,6 +217,11 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                 zipped_all (leq_SORT sign)                      -- ::   Bool
                     (map term_sort ts)                          -- ::  [SORT]
                     (predArgs pred') ]                          -- ::  [SORT]
+	insert_injections :: (PredType, [TERM f]) -> (PredType, [TERM f])
+        insert_injections (pred', args)
+            = let needed_sorts = map term_sort args
+              in (pred', (zipWith inject args needed_sorts))
+
         pred_eq         :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
 {- todo
    Doku
@@ -262,7 +268,7 @@ minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
     case candidates of
         [] -> pplain_error (eq term1 term2 pos)
                (ptext "No correct typing for " 
-		<+> printText (eq term1 term2 pos))
+                <+> printText (eq term1 term2 pos))
                (Id.headPos pos)
         -- BEWARE! Oversimplified disambiguation!
         ([t1,t2]:_)       -> return $ eq t1 t2 pos
@@ -404,6 +410,7 @@ minExpTerm_op1 mef ga sign op terms pos = do
     permuted_exps       <- return
         $ permute expansions                    -- ::       [[[TERM]]]
     profiles            <- return
+        $ map (map insert_injections)           -- ::  [[(OpType, [TERM])]]
         $ map get_profile permuted_exps         -- ::  [[(OpType, [TERM])]]
     --debug 10 ("profiles", profiles)
     p                   <- return
@@ -424,8 +431,6 @@ minExpTerm_op1 mef ga sign op terms pos = do
     where
         name            :: OP_NAME
         name             = op_name op
-        result          :: SORT
-        result           = opRes $ toOpType $ op_type op
         ops             :: [OpType]
         ops              = Set.toList
             $ Map.findWithDefault
@@ -441,24 +446,11 @@ minExpTerm_op1 mef ga sign op terms pos = do
         qualifyOps       = map (map qualify_op)
         qualify_op      :: (OpType, [TERM f]) -> (TERM f, SORT)
         qualify_op (op', terms')
-            | True -- result == (opRes op')
-                = ((Application                                 -- ::  TERM
-                    (Qual_op_name name (toOP_TYPE op') [])      -- :: OP_SYMB
-                    terms'                                      -- :: [TERM]
-                    [])                                         -- :: [Pos]
-                  , (opRes op'))                                -- ::  SORT
-            | otherwise
-                = ((Application
-                    (Qual_op_name
-                     (Id.mkId [Id.Token {Id.tokStr="_inj",
-                                         Id.tokPos=Id.nullPos}])
-                     (Total_op_type [(opRes op')] result [Id.nullPos])
-                     [])
-                    [(Application
-                      (Qual_op_name name (toOP_TYPE op') [])
-                      terms' [])]
-                    [])
-                  , result)
+            = ((Application                             -- ::  TERM
+                (Qual_op_name name (toOP_TYPE op') [])  -- :: OP_SYMB
+                terms'                                  -- :: [TERM]
+                [])                                     -- :: [Pos]
+              , (opRes op'))                            -- ::  SORT
         get_profile     :: [[TERM f]] -> [(OpType, [TERM f])]
         get_profile cs
             = [ (op', ts) |                             -- :: (OpType, [TERM])
@@ -467,6 +459,10 @@ minExpTerm_op1 mef ga sign op terms pos = do
                 zipped_all (leq_SORT sign)              -- ::   Bool
                     (map term_sort ts)                  -- ::  [SORT]
                     (opArgs op') ]                      -- ::  [SORT]
+	insert_injections :: (OpType, [TERM f]) -> (OpType, [TERM f])
+        insert_injections (op', args)
+            = let needed_sorts = map term_sort args
+              in (op', (zipWith inject args needed_sorts))
         op_eq           :: (OpType, [TERM f]) -> (OpType, [TERM f]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
             = let   w1 = opArgs op1                             -- :: [SORT]
@@ -560,6 +556,24 @@ qualifyTerms pos pairs =
     where
         qualify_term       :: (TERM f, SORT) -> TERM f
         qualify_term (t, s) = Sorted_term t s pos
+
+{-----------------------------------------------------------
+    Construct explicit Injection to `result_type'
+    if SORT of `argument' does not match `result_type'
+-----------------------------------------------------------}
+inject :: TERM f -> SORT -> TERM f
+inject argument result_type
+    | (term_sort argument) == result_type
+        = argument
+    | otherwise
+        = (Application
+           (Qual_op_name
+            (Id.mkId [Id.Token {Id.tokStr="_inj",
+                                Id.tokPos=Id.nullPos}])
+            (Total_op_type [term_sort argument] result_type [Id.nullPos])
+            [])
+           [argument]
+           [])
 
 {-----------------------------------------------------------
     For each C in P (see above), let C' choose _one_
@@ -699,19 +713,19 @@ aber vielleicht brauch ich die eigentlich auch gar nicht?
    those which are connected to the node and those which are not.
    The former are all linked with @ in order to form a new connected
    component, the latter are left untouched. *)
-     			 
+                         
 fun compute_conn_components (edges:'a*'a->bool) (nodes:'a list):'a list list =
   let
     fun is_connected(node,nil) = false
       | is_connected(node,n::c) = 
           edges(node,n) orelse edges(n,node) orelse is_connected(node,c)
     fun split_components(node,nil,acc_comp_of_node,acc_other_comps) = 
-    	(node::acc_comp_of_node)::acc_other_comps
+        (node::acc_comp_of_node)::acc_other_comps
       | split_components(node,current_comp::
              other_comps,acc_comp_of_node,acc_other_comps) =
         if is_connected(node,current_comp)
         then split_components(node,other_comps,
-	     current_comp@acc_comp_of_node,acc_other_comps)
+             current_comp@acc_comp_of_node,acc_other_comps)
         else split_components(node,other_comps,acc_comp_of_node,
              current_comp::acc_other_comps)
     fun add_node (node:'a,components:'a list list):'a list list =
@@ -727,14 +741,14 @@ fun compute_conn_components (edges:'a*'a->bool) (nodes:'a list):'a list list =
    terms of the equivalence closures of leqF and leqP resp. *)
 
 
-     			 
+                         
 fun get_conn_components (env:local_env) : local_env1 =
-	let
-	    val (srts,vars,funs,preds) = env
-	in
-	    (env,(Symtab_id.map (compute_conn_components (leqF env)) funs ,
-	          Symtab_id.map (compute_conn_components (leqP env)) preds) )
-	end
+        let
+            val (srts,vars,funs,preds) = env
+        in
+            (env,(Symtab_id.map (compute_conn_components (leqF env)) funs ,
+                  Symtab_id.map (compute_conn_components (leqP env)) preds) )
+        end
 
 -}
 
