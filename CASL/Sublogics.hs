@@ -545,5 +545,46 @@ sl_symbtype (PredType _) = need_pred
 sl_symbtype _ = bottom
 
 ------------------------------------------------------------------------------
+-- comparison functions
+------------------------------------------------------------------------------
+
+nimpl :: Bool -> Bool -> Bool
+nimpl True _      = True
+nimpl False False = True
+nimpl False True  = False
+
+sl_in :: CASL_Sublogics -> CASL_Sublogics -> Bool
+sl_in given new = (nimpl (has_sub given) (has_sub new)) &&
+                  (nimpl (has_part given) (has_part new)) &&
+                  (nimpl (has_cons given) (has_cons new)) &&
+                  (nimpl (has_eq given) (has_eq new)) &&
+                  (nimpl (has_pred given) (has_pred new)) &&
+                  ((which_logic given) >= (which_logic new))
+
+in_x :: CASL_Sublogics -> a -> (a -> CASL_Sublogics) -> Bool
+in_x l x f = sl_in l (f x)
+
+in_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> Bool
+in_basic_spec l x = in_x l x sl_basic_spec
+
+in_sentence :: CASL_Sublogics -> Sentence -> Bool
+in_sentence l x = in_x l x sl_sentence
+
+in_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Bool
+in_symb_items l x = in_x l x sl_symb_items
+
+in_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Bool
+in_symb_map_items l x = in_x l x sl_symb_map_items
+
+in_sign :: CASL_Sublogics -> Sign -> Bool
+in_sign l x = in_x l x sl_sign
+
+-- in_morphism :: CASL_Sublogics -> morphism -> Bool
+-- in_morphism l x = in_x l x sl_morphism
+
+in_symbol :: CASL_Sublogics -> Symbol -> Bool
+in_symbol l x = in_x l x sl_symbol
+
+------------------------------------------------------------------------------
 -- the end
 ------------------------------------------------------------------------------
