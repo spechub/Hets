@@ -47,14 +47,12 @@ instance PrintLaTeX CODATATYPE_DECL where
 			    <~> (printLatex0 ga x)<>casl_normal_latex "~") t)) 
 
 instance PrintLaTeX COALTERNATIVE where
-    printLatex0 ga (CoTotal_construct n l _) = tabbed_nest_latex (
-	printLatex0 ga n <> if null l then empty 
+    printLatex0 ga (Co_construct k n l _) = tabbed_nest_latex (
+	printLatex0 ga n <> (if null l then case k of 
+                             Partial -> parens_tab_latex empty
+                             _ -> empty
 		            else parens_tab_latex ( semiT_latex ga l))
-    printLatex0 ga (CoPartial_construct n l _) = 
-	tabbed_nest_latex (printLatex0 ga n 
-				 <> parens_tab_latex 
-					( semiT_latex ga l)
-				 <> hc_sty_axiom quMark )
+                            <> optLatexQuMark k)
     printLatex0 ga (CoSubsorts l _) = 
 	sp_text (axiom_width s') s'' <\+> commaT_latex ga l 
 	where s'  = sortS ++ pluralS l

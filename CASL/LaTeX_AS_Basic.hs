@@ -164,7 +164,7 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
 		 4 (printLatex0 ga term)
 
 instance PrintLaTeX OP_TYPE where
-    printLatex0 ga (Total_op_type l s _) = 
+    printLatex0 ga (Op_type Total l s _) = 
 	let (arg_types,type_arr) = if null l then (empty,empty)
 				   else (space_latex <>
 					 crossT_latex ga l,
@@ -173,24 +173,23 @@ instance PrintLaTeX OP_TYPE where
 	in if isEmpty arg_types then result_type
 	   else sep_latex [arg_types,type_arr <\+> result_type]
 
-    printLatex0 ga (Partial_op_type l s _) = 
+    printLatex0 ga (Op_type Partial l s _) = 
 	(if null l then hc_sty_axiom quMark 
 	 else space_latex
               <> crossT_latex ga l 
 	       <\+>hc_sty_axiom ("\\rightarrow" ++ quMark))
 	<\+> printLatex0 ga s
 
+optLatexQuMark :: FunKind -> Doc
+optLatexQuMark Partial = hc_sty_axiom quMark
+optLatexQuMark Total = empty
+
 instance PrintLaTeX OP_HEAD where
-    printLatex0 ga (Total_op_head l s _) = 
+    printLatex0 ga (Op_head k l s _) = 
 	(if null l then empty 
 	 else parens_latex (semiT_latex ga l))
-	<> colon_latex
+	<> colon_latex <> optLatexQuMark k
 	<\+> printLatex0 ga s
-    printLatex0 ga (Partial_op_head l s _) = 
-	(if null l then empty 
-	 else parens_latex(semiT_latex ga l))
-	<> colon_latex <> hc_sty_axiom quMark
-        <\+> printLatex0 ga s
 
 instance PrintLaTeX ARG_DECL where
     printLatex0 ga (Arg_decl l s _) = commaT_latex ga l 
@@ -233,25 +232,21 @@ instance PrintLaTeX DATATYPE_DECL where
 	         tail a))
 	where defnS' = hc_sty_axiom defnS
 instance PrintLaTeX ALTERNATIVE where
-    printLatex0 ga (Total_construct n l _) = tabbed_nest_latex (
-	printLatex0 ga n <> if null l then empty 
+    printLatex0 ga (Alt_construct k n l _) = tabbed_nest_latex (
+	printLatex0 ga n <> (if null l then case k of 
+                             Partial -> parens_tab_latex empty
+                             _ -> empty
 		            else parens_tab_latex ( semiT_latex ga l))
-    printLatex0 ga (Partial_construct n l _) = 
-	tabbed_nest_latex (printLatex0 ga n 
-				 <> parens_tab_latex 
-					( semiT_latex ga l)
-				 <> hc_sty_axiom quMark )
+                            <> optLatexQuMark k)
     printLatex0 ga (Subsorts l _) = 
 	sp_text (axiom_width s') s'' <\+> commaT_latex ga l 
 	where s'  = sortS ++ pluralS l
 	      s'' = '\\':map toUpper s' ++ "[ID]"
+
 instance PrintLaTeX COMPONENTS where
-    printLatex0 ga (Total_select l s _) = 
-	commaT_latex ga l <> colon_latex <> printLatex0 ga s 
-    printLatex0 ga (Partial_select l s _) = 
-	commaT_latex ga l 
-			 <> colon_latex <> hc_sty_axiom quMark 
-			 <> printLatex0 ga s 
+    printLatex0 ga (Cons_select k l s _) = 
+	commaT_latex ga l <> colon_latex <> optLatexQuMark k 
+                         <> printLatex0 ga s 
     printLatex0 ga (Sort s) = printLatex0 ga s 	  
 
 instance PrintLaTeX VAR_DECL where

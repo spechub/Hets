@@ -146,7 +146,7 @@ instance LatticeWithTop CASL_Sublogics where
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
-      map_sen CASL = mapSen (const return)
+      map_sen CASL m = return . mapSen (\ _ -> id) m
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap

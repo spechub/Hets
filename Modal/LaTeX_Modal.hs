@@ -57,19 +57,18 @@ instance PrintLaTeX M_SIG_ITEM where
 	<\+> set_tabbed_nest_latex (semiAnno_latex ga ls)
 
 instance PrintLaTeX M_FORMULA where
-    printLatex0 ga (Box t f _) = 
-       (if isEmpty t' 
-	then hc_sty_axiom "\\Box" 
-	else brackets_latex t') <> 
-             condParensInnerF (printLatex0 ga) parens_tab_latex f
-	where t' = (printLatex0 ga t)
-    printLatex0 ga (Diamond t f _) = 
-	(if isEmpty t' 
-	 then hc_sty_axiom "\\Diamond" 
-	 else hc_sty_axiom lessS `sp` t' `sp` hc_sty_axiom greaterS) <\+> 
-	      condParensInnerF (printLatex0 ga) parens_tab_latex f
-	where t' = (printLatex0 ga t)	     
-              sp = if isEmpty t' then (<>) else (<\+>)
+    printLatex0 ga (BoxOrDiamond b t f _) =
+       let t' = printLatex0 ga t
+           f' = condParensInnerF (printLatex0 ga) parens_tab_latex f
+           sp = case t of 
+			 Simple_mod _ -> (<>)
+			 _ -> (<\+>)
+       in if isEmpty t' then 
+          if b then hc_sty_axiom "\\Box" <> f' 
+             else hc_sty_axiom "\\Diamond"  <\+> f'
+          else if b then brackets_latex t' <> f'
+               else hc_sty_axiom lessS `sp` t' `sp` hc_sty_axiom greaterS
+                        <\+> f'
 
 instance PrintLaTeX MODALITY where
     printLatex0 ga (Simple_mod ident) = 

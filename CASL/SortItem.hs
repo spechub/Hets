@@ -107,9 +107,9 @@ alternative ks =
 	    c <- addAnnos >> cParenT
 	    let qs = toPos o ps c 
             do   q <- try (addAnnos >> quMarkT)
-		 return (Partial_construct i cs (qs++[tokPos q]))
-	      <|> return (Total_construct i cs qs)
-	 <|> return (Total_construct i [] [])
+		 return (Alt_construct Partial i cs (qs++[tokPos q]))
+	      <|> return (Alt_construct Total i cs qs)
+	 <|> return (Alt_construct Total i [] [])
 
 isSortId :: Id -> Bool
 isSortId (Id is _ _) = case is of 
@@ -128,5 +128,4 @@ compSort ks is cs =
     do c <- anColon
        (b, t, _) <- opSort ks
        let p = map tokPos (cs++[c]) 
-       return $ if b then Partial_select is t p
-	      else  Total_select is t p
+       return $ Cons_select (if b then Partial else Total) is t p

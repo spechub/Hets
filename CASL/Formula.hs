@@ -140,18 +140,17 @@ opFunSort k ts ps =
     do a <- pToken (string funS)
        (b, s, _) <- opSort k
        let qs = map tokPos (ps ++ [a]) 
-       return $ if b then Partial_op_type ts s qs
-	      else Total_op_type ts s qs
+       return $ Op_type (if b then Partial else Total) ts s qs
 
 opType :: [String] -> AParser st OP_TYPE
 opType k = 
     do (b, s, p) <- opSort k
-       if b then return (Partial_op_type [] s [p])
+       if b then return (Op_type Partial [] s [p])
 	  else do c <- crossT 
 		  (ts, ps) <- sortId k `separatedBy` crossT
 		  opFunSort k (s:ts) (c:ps)
  	  <|> opFunSort k [s] []
-          <|> return (Total_op_type [] s [])
+          <|> return (Op_type Total [] s [])
 
 parenTerm, braceTerm, bracketTerm :: AParsable f => AParser st (TERM f)
 parenTerm = 

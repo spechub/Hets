@@ -92,8 +92,17 @@ instance Syntax Modal M_BASIC_SPEC
 
 -- Modal logic
 
+map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
+map_M_FORMULA mor (BoxOrDiamond b m f ps) =
+    let newM = case m of 
+                   Simple_mod _ -> m
+                   Term_mod t -> let newT = mapTerm map_M_FORMULA mor t
+                                 in Term_mod newT
+        newF = mapSen map_M_FORMULA mor f
+    in BoxOrDiamond b newM newF ps 
+
 instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
-      map_sen Modal = mapSen map_M_FORMULA
+      map_sen Modal m = return . mapSen map_M_FORMULA m
       parse_sentence Modal = Nothing
       sym_of Modal = symOf
       symmap_of Modal = morphismToSymbMap
@@ -104,42 +113,25 @@ instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
 
 -- remove type information in ExtFORMULA
 rmTypesMod :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
-rmTypesMod sign mFormula =
-    case mFormula of
-      Box md form pos -> 
-          let mod' = case md of
+rmTypesMod sign (BoxOrDiamond b md form pos) =
+    let mod' = case md of
                      Term_mod term -> Term_mod $ rmTypesT minExpForm 
                                       rmTypesExt sign term
                      t -> t
-          in Box mod' (rmTypesF minExpForm rmTypesExt sign form) pos
-      Diamond md form pos ->
-          let mod' = case md of
-                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
-                                      rmTypesExt sign term
-                     t -> t
-          in Diamond mod' (rmTypesF minExpForm rmTypesExt sign form) pos
+    in BoxOrDiamond b mod' (rmTypesF minExpForm rmTypesExt sign form) pos
 
 
 -- simplifySen for ExtFORMULA   
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
-simModal sign mFormula =
-    case mFormula of
-      Box md form pos -> 
-          let mod' = case md of
+simModal sign (BoxOrDiamond b md form pos) =
+    let mod' = case md of
                         Term_mod term -> Term_mod $ rmTypesT minExpForm 
                                          rmTypesExt sign term
                         t -> t
-          in Box mod' 
-             (simplifySen minExpForm simModal rmTypesExt sign form) pos
-      Diamond md form pos ->
-          let mod' = case md of
-                     Term_mod term -> Term_mod $ rmTypesT minExpForm 
-                                      rmTypesExt sign term
-                     t -> t
-          in Diamond mod' 
-             (simplifySen minExpForm simModal rmTypesExt sign form) pos
+    in BoxOrDiamond b mod' 
+                 (simplifySen minExpForm simModal rmTypesExt sign form) pos
 
--- such as id
+rmTypesExt :: a -> b -> b
 rmTypesExt _ f = f
  
 instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()

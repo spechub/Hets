@@ -220,10 +220,8 @@ checkFreeType (osig,osens) m fsn
                                   Just (Right _) -> True
                                   _ -> False) _axioms 
          filterOp symb = case symb of
-                           Just (Left (Qual_op_name ident (Total_op_type as rs _) _))->
-                                [(ident, OpType {opKind=Total, opArgs=as, opRes=rs})]
-                           Just (Left (Qual_op_name ident (Partial_op_type as rs _) _))->
-                                [(ident, OpType {opKind=Partial, opArgs=as, opRes=rs})]
+                           Just (Left (Qual_op_name ident (Op_type k as rs _) _))->
+                                [(ident, OpType {opKind=k, opArgs=as, opRes=rs})]
                            _ -> []
          filterPred symb = case symb of
                                Just (Right (Qual_pred_name ident (Pred_type s _) _))->
@@ -486,7 +484,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
               _ -> rP cp
          --  OP_SYMB -> Signature of CiME
          opStr o_s = case o_s of                -- kontext analyse
-                       Qual_op_name op_n (Total_op_type a_sorts _ _) _ -> case (length a_sorts) of 
+                       Qual_op_name op_n (Op_type k a_sorts _ _) _ -> case (length a_sorts) of 
                                                                             0 -> (idStrT op_n) ++ " : constant"
                                                                             1 -> (idStrT op_n) ++ " : unary"
                                                                             2 -> (idStrT op_n) ++ " : binary"
@@ -495,16 +493,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                             5 -> (idStrT op_n) ++ " : 5"
                                                                             6 -> (idStrT op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature_OpS"
-                       Qual_op_name op_n (Partial_op_type a_sorts _ _) _ -> case (length a_sorts) of 
-                                                                            0 -> (idStrT op_n) ++ " : constant"
-                                                                            1 -> (idStrT op_n) ++ " : unary"
-                                                                            2 -> (idStrT op_n) ++ " : binary"
-                                                                            3 -> (idStrT op_n) ++ " : 3"
-                                                                            4 -> (idStrT op_n) ++ " : 4"
-                                                                            5 -> (idStrT op_n) ++ " : 5"
-                                                                            6 -> (idStrT op_n) ++ " : 6"
-                                                                            _ -> error "Termination_Signature_OpS"
-                       _ -> error "Termination_Signature_OpS"
+                       _ -> error "Termination_Signature_OpS: Op_name"
          --  PRED_SYMB -> Signature of CiME
          predStr p_s = case p_s of
                        Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
@@ -750,8 +739,8 @@ partialAxiom f = case f of
 opTyp_Axiom :: FORMULA f -> Maybe Bool
 opTyp_Axiom f = case (leadingSym f) of
                   Just (Left (Op_name _)) -> Nothing
-                  Just (Left (Qual_op_name _ (Total_op_type _ _ _) _)) -> Just True 
-                  Just (Left (Qual_op_name _ (Partial_op_type _ _ _) _)) -> Just False  
+                  Just (Left (Qual_op_name _ (Op_type Total _ _ _) _)) -> Just True 
+                  Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
                   _ -> Nothing 
 
 idStr :: Id -> String

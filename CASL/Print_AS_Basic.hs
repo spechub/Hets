@@ -31,8 +31,6 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
---import Debug.Trace
-
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
     printText0 ga (Basic_spec l) = 
@@ -137,29 +135,24 @@ instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
                                   <+> text equalS
 				  <+> printText0 ga t
 
+optQuMark :: FunKind -> Doc
+optQuMark Partial = text quMark
+optQuMark Total = empty
+
 instance PrettyPrint OP_TYPE where
-    printText0 ga (Total_op_type l s _) = (if null l then empty
+    printText0 ga (Op_type k l s _) = (if null l then empty
 					   else space 
 					        <> crossT_text ga l 
 				                <+> text funS)
-				           <> space <> printText0 ga s
-    printText0 ga (Partial_op_type l s _) = (if null l then text quMark 
-					     else space 
-                                                  <> crossT_text ga l 
-					          <+> text (funS ++ quMark))
-					    <+> printText0 ga s
+				           <> optQuMark k
+                                           <> space <> printText0 ga s
 
 instance PrettyPrint OP_HEAD where
-    printText0 ga (Total_op_head l s _) = 
+    printText0 ga (Op_head k l s _) = 
 	(if null l then empty 
 	 else parens(semiT_text ga l))
-	<> colon
+	<> colon <> optQuMark k
 	<+> printText0 ga s
-    printText0 ga (Partial_op_head l s _) = 
-	(if null l then empty 
-	 else parens(semiT_text ga l))
-	<> text (colonS ++ quMark)
-        <+> printText0 ga s
 
 instance PrettyPrint ARG_DECL where
     printText0 ga (Arg_decl l s _) = commaT_text ga l 
@@ -195,21 +188,18 @@ instance PrettyPrint DATATYPE_DECL where
         [] -> error "PrettyPrint CASL.DATATYPE_DECL"
 
 instance PrettyPrint ALTERNATIVE where
-    printText0 ga (Total_construct n l _) = printText0 ga n 
-				 <> if null l then empty 
-				    else parens(semiT_text ga l)
-    printText0 ga (Partial_construct n l _) = printText0 ga n 
-				 <> parens(semiT_text ga l)
-				 <> text quMark
+    printText0 ga (Alt_construct k n l _) = printText0 ga n 
+				 <> (if null l then case k of 
+                                                   Partial -> parens empty
+                                                   _ -> empty
+				    else parens(semiT_text ga l)) 
+                                 <> optQuMark k
     printText0 ga (Subsorts l _) = 
 	text (sortS++pluralS l) <+> commaT_text ga l 
 
 instance PrettyPrint COMPONENTS where
-    printText0 ga (Total_select l s _) = commaT_text ga l 
-				<> colon 
-				<> printText0 ga s 
-    printText0 ga (Partial_select l s _) = commaT_text ga l 
-				<> text (colonS ++ quMark) 
+    printText0 ga (Cons_select k l s _) = commaT_text ga l 
+				<> colon <> optQuMark k
 				<> printText0 ga s 
     printText0 ga (Sort s) = printText0 ga s 	  
 

@@ -70,11 +70,11 @@ instance Comorphism CASL2HasCASL
 toType :: Id -> Type
 toType i = TypeName i star 0
 
-fromOpType :: OpType -> FunKind -> TypeScheme
+fromOpType :: OpType -> Cas.FunKind -> TypeScheme
 fromOpType ot ok = 
     let arrow = case ok of
-                CASL.Sign.Total -> FunArr 
-                CASL.Sign.Partial -> PFunArr
+                Cas.Total -> FunArr 
+                Cas.Partial -> PFunArr
         args = map toType $ opArgs ot
         arg = mkProductType args []
         res = toType $ opRes ot
@@ -158,10 +158,10 @@ toSentence sig f = case f of
    Cas.Sort_gen_ax cs b -> let 
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
-       mapPart :: FunKind -> Partiality
+       mapPart :: Cas.FunKind -> Partiality
        mapPart cp = case cp of
-                CASL.Sign.Total -> HasCASL.As.Total
-                CASL.Sign.Partial -> HasCASL.As.Partial
+                Cas.Total -> HasCASL.As.Total
+                Cas.Partial -> HasCASL.As.Partial
        in DatatypeSen 
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind []
                           (map ( \ (i, t, ps) -> 
@@ -215,8 +215,10 @@ toTerm s f = case f of
 fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme
 fromOP_TYPE ot = 
     let (args, res, ps, total, arr) = case ot of 
-                   Cas.Total_op_type as rs qs -> (as, rs, qs, True, FunArr)
-                   Cas.Partial_op_type as rs qs -> (as, rs, qs, False, PFunArr)
+                   Cas.Op_type Cas.Total as rs qs -> 
+                       (as, rs, qs, True, FunArr)
+                   Cas.Op_type Cas.Partial as rs qs -> 
+                       (as, rs, qs, False, PFunArr)
         resType = toType res
         in simpleTypeScheme $ if null args then 
            if total then resType else LazyType resType ps

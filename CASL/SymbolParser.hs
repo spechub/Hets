@@ -35,7 +35,7 @@ symb ks =
 opOrPredType :: [String] -> GenParser Char st TYPE
 opOrPredType ks = 
     do (b, s, p) <- opSort ks
-       if b then return (O_type (Partial_op_type [] s [p]))
+       if b then return (O_type (Op_type Partial [] s [p]))
 	 else do c <- crossT 
 		 (ts, ps) <- sortId ks `separatedBy` crossT
 		 fmap O_type (opFunSort ks (s:ts) (c:ps))

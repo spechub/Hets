@@ -31,7 +31,6 @@ import CASL.Utils
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
-import CASL.MapSentence
 
 import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
@@ -51,22 +50,17 @@ resolveMODALITY ga ids m = case m of
 
 resolveC_FORMULA :: MixResolve C_FORMULA
 resolveC_FORMULA ga ids cf = case cf of 
-   Box m f ps -> do 
+   BoxOrDiamond b m f ps -> do 
        nm <- resolveMODALITY ga ids m
        nf <- resolveMixFrm resolveC_FORMULA ga ids f
-       return $ Box nm nf ps
-   Diamond m f ps -> do 
-       nm <- resolveMODALITY ga ids m
-       nf <- resolveMixFrm resolveC_FORMULA ga ids f
-       return $ Diamond nm nf ps
+       return $ BoxOrDiamond b  nm nf ps
    _ -> error "resolveC_FORMULA"
 
 noExtMixfixCo :: C_FORMULA -> Bool
 noExtMixfixCo cf = 
     let noInner = noMixfixF noExtMixfixCo in
     case cf of
-    Box _ f _     -> noInner f
-    Diamond _ f _ -> noInner f
+    BoxOrDiamond _ _ f _     -> noInner f
     _ -> True
 
 minExpForm :: Min C_FORMULA CoCASLSign
@@ -97,14 +91,10 @@ minExpForm ga s form =
                                   _ -> r
                        _ -> r
     in case form of
-        Box m f ps -> 
+        BoxOrDiamond b m f ps -> 
             do nm <- minMod m ps
                f2 <- minExpFORMULA minExpForm ga s f
-               return $ Box nm f2 ps
-        Diamond m f ps -> 
-            do nm <- minMod m ps
-               f2 <- minExpFORMULA minExpForm ga s f
-               return $ Diamond nm f2 ps
+               return $ BoxOrDiamond b nm f2 ps
         phi -> return phi
 
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
@@ -158,17 +148,14 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
 getCoConsType :: SORT -> COALTERNATIVE -> (Maybe Id, OpType, [COCOMPONENTS])
 getCoConsType s c = 
     let (part, i, il) = case c of 
-                        CoSubsorts _ _ ->  error "getConsType"
-                        CoTotal_construct a l _ -> (Total, a, l)
-                        CoPartial_construct a l _ -> (Partial, a, l)
+              CoSubsorts _ _ ->  error "getConsType"
+              Co_construct k a l _ -> (k, a, l)
         in (i, OpType part (concatMap 
                             (map (opRes . snd) . getCoCompType s) il) s, il)
 
 getCoCompType :: SORT -> COCOMPONENTS -> [(Maybe Id, OpType)]
-getCoCompType s (CoSelect l (Total_op_type args res _) _) = 
-    map (\ i -> (Just i, OpType Total (args++[s]) res)) l
-getCoCompType s (CoSelect l (Partial_op_type args res _) _) = 
-    map (\ i -> (Just i, OpType Partial (args++[s]) res)) l
+getCoCompType s (CoSelect l (Op_type k args res _) _) = 
+    map (\ i -> (Just i, OpType k (args++[s]) res)) l
 
 coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
 coselForms x = 
@@ -311,8 +298,7 @@ getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
 getCoDataGenSig dl = 
     let get_sel1 s al = case al of 
           CoSubsorts _ _ ->  []
-          CoTotal_construct _ l _ -> concatMap (getCoCompType s) l
-          CoPartial_construct _ l _ -> concatMap (getCoCompType s) l
+          Co_construct _ _ l _ -> concatMap (getCoCompType s) l
         get_sel (s,als) = concatMap (get_sel1 s . item) als 
         alts = map (( \ (CoDatatype_decl s al _) -> (s, al)) . item) dl
         sorts = map fst alts
@@ -320,31 +306,4 @@ getCoDataGenSig dl =
         computeComp (Just i,ot) = [Component i ot]
         computeComp _ = []
         in (Set.fromList sorts, Set.fromList sels)
-
-resultToState :: (a -> Result a) -> a -> State (Sign f e) a
-resultToState f a = do 
-    let r =  f a 
-    addDiags $ reverse $ diags r
-    case maybeResult r of
-        Nothing -> return a
-        Just b -> return b
-
-
-map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
-map_C_FORMULA mor frm =
-    let mapMod m = case m of 
-                   Simple_mod _ -> return m
-                   Term_mod t -> do newT <- mapTerm map_C_FORMULA mor t
-                                    return $ Term_mod newT
-        in case frm of
-           Box m f ps -> do 
-               newF <- mapSen map_C_FORMULA mor f
-               newM <- mapMod m 
-               return $ Box newM newF ps 
-           Diamond m f ps -> do 
-               newF <- mapSen map_C_FORMULA mor f
-               newM <- mapMod m 
-               return $ Diamond newM newF ps 
-           phi -> return phi
-
 

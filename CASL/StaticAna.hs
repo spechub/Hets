@@ -342,8 +342,7 @@ ana_OP_ITEM extR extC ga aoi =
                lb = getRLabel at
                lab = if null lb then getRLabel aoi else lb
                args = case par of 
-                      Total_op_head as _ _ -> as
-                      Partial_op_head as _ _ -> as
+                      Op_head _ as _ _ -> as
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap ( \ (Var_decl v s qs) ->
                                  map ( \ j -> Qual_var j s qs) v) vs
@@ -368,10 +367,7 @@ ana_OP_ITEM extR extC ga aoi =
                           return aoi {item = Op_defn i par at { item = t } ps }
 
 headToType :: OP_HEAD -> OP_TYPE
-headToType (Total_op_head args r ps) = 
-        Total_op_type (sortsOfArgs args) r ps
-headToType (Partial_op_head args r ps) = 
-        Partial_op_type (sortsOfArgs args) r ps
+headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
@@ -604,14 +600,11 @@ getConsType s c =
      in case c of 
         Subsorts srts _ ->  
              [(injName, OpType Total [s1] s,[Sort s1]) | s1<-srts]
-        Total_construct a l _ -> [getConsTypeAux (Total, a, l)]
-        Partial_construct a l _ -> [getConsTypeAux (Partial, a, l)]
+        Alt_construct k a l _ -> [getConsTypeAux (k, a, l)]
 
 getCompType :: SORT -> COMPONENTS -> [(Maybe Id, OpType)]
-getCompType s (Total_select l cs _) = 
-    map (\ i -> (Just i, OpType Total [s] cs)) l
-getCompType s (Partial_select l cs _) = 
-    map (\ i -> (Just i, OpType Partial [s] cs)) l
+getCompType s (Cons_select k l cs _) = 
+    map (\ i -> (Just i, OpType k [s] cs)) l
 getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
 
 genSelVars :: String -> Int -> [(Maybe Id, OpType)] -> [VAR_DECL]
@@ -681,6 +674,15 @@ ana_COMPONENTS s c = do
             Just i -> do addOp ty i
                          return $ Just $ Component i ty) cs 
     return $ partition ((==Total) . opKind . compType) $ catMaybes sels 
+
+-- | utility
+resultToState :: (a -> Result a) -> a -> State (Sign f e) a
+resultToState f a = do 
+    let r =  f a 
+    addDiags $ diags r
+    case maybeResult r of
+        Nothing -> return a
+        Just b -> return b
 
 -- wrap it all up for a logic
 

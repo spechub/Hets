@@ -246,7 +246,7 @@ t2term t = case t of
     _ -> error "TERM"
 
 projection::TERM f -> SORT -> OP_SYMB
-projection f s = (Qual_op_name pr (Partial_op_type [(term2SSort f)] s []) [])
+projection f s = (Qual_op_name pr (Op_type Partial [(term2SSort f)] s []) [])
   where
     pr=mkId [mkSimpleId "_pr"]
 

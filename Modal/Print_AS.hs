@@ -38,34 +38,33 @@ printFormulaOfModalSign ga f =
 			     
 instance PrettyPrint M_BASIC_ITEM where
     printText0 ga (Simple_mod_decl is fs _) = 
-	ptext modalityS <+> semiAnno_text ga is
+	text modalityS <+> semiAnno_text ga is
 	      <> braces (semiAnno_text ga fs)
     printText0 ga (Term_mod_decl ss fs _) = 
-        ptext termS <+> ptext modalityS <+> semiAnno_text ga  ss
+        text termS <+> text modalityS <+> semiAnno_text ga  ss
 	      <> braces (semiAnno_text ga fs)
 
 instance PrettyPrint RIGOR where
-    printText0 _ Rigid = ptext rigidS
-    printText0 _ Flexible = ptext flexibleS
+    printText0 _ Rigid = text rigidS
+    printText0 _ Flexible = text flexibleS
 
 instance PrettyPrint M_SIG_ITEM where
     printText0 ga (Rigid_op_items r ls _) =
-	hang (printText0 ga r <+> ptext opS <> pluralS_doc ls) 4 $ 
+	hang (printText0 ga r <+> text opS <> pluralS_doc ls) 4 $ 
 	     semiAnno_text ga ls
     printText0 ga (Rigid_pred_items r ls _) =
-	hang (printText0 ga r <+> ptext predS <> pluralS_doc ls) 4 $ 
+	hang (printText0 ga r <+> text predS <> pluralS_doc ls) 4 $ 
 	     semiAnno_text ga ls
 
 instance PrettyPrint M_FORMULA where
-    printText0 ga (Box t f _) = 
-       brackets (printText0 ga t) <> 
-       condParensInnerF (printFORMULA ga) parens f -- (printText0 ga) parens f
-    printText0 ga (Diamond t f _) = 
-	let sp = case t of 
+    printText0 ga (BoxOrDiamond b t f _) = 
+ 	let sp = case t of 
 			 Simple_mod _ -> (<>)
 			 _ -> (<+>)
-	    in ptext lessS `sp` printText0 ga t `sp` ptext greaterS 
-		   <+> condParensInnerF (printFORMULA ga) parens f
+            td = printText0 ga t
+            fd = condParensInnerF (printFORMULA ga) parens f
+	in if b then brackets td <> fd 
+           else text lessS `sp` td `sp` text greaterS <+> fd
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 
@@ -77,14 +76,14 @@ instance PrettyPrint ModalSign where
     printText0 ga s = 
 	let ms = modies s      
 	    tms = termModies s in       -- Map Id [Annoted (FORMULA M_FORMULA)]
-	printSetMap (ptext rigidS <+> ptext opS) empty ga (rigidOps s) 
+	printSetMap (text rigidS <+> text opS) empty ga (rigidOps s) 
 	$$
-	printSetMap (ptext rigidS <+> ptext predS) space ga (rigidPreds s) 
+	printSetMap (text rigidS <+> text predS) space ga (rigidPreds s) 
 	$$ (if Map.isEmpty ms then empty else
-	ptext modalitiesS <+> semiT_text ga (Map.keys ms)
+	text modalitiesS <+> semiT_text ga (Map.keys ms)
             <> braces (printFormulaOfModalSign ga $ Map.elems ms))
 	$$ (if Map.isEmpty tms then empty else
-	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms) 
+	text termS <+> text modalityS <+> semiT_text ga (Map.keys tms) 
             <> braces (printFormulaOfModalSign ga (Map.elems tms)))
 
 

@@ -269,7 +269,7 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
 	 mapT = mapTERM mapEnv newVars 
      in
      case f of
-     Box     moda f1 _ -> 
+     BoxOrDiamond True moda f1 _ -> 
        let rel = getRel moda pwRelMap in
 	case moda of
 	Simple_mod _ ->
@@ -299,7 +299,7 @@ mapMSen mapEnv@(MME{worldSort=fws,modalityRelMap=pwRelMap}) vars f
 					  newVars f1
 		   _  -> error "Modal2CASL: mapMSen: impossible error"
 
-     Diamond moda f1 _ -> 
+     BoxOrDiamond False moda f1 _ -> 
        let rel = getRel moda pwRelMap in
 	case moda of
 	Simple_mod _ ->
@@ -335,10 +335,8 @@ mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
     Application opsym as qs  -> 
 	let as'        = map (mapTERM mapEnv vars) as
 	    fwsTerm    = sortedWorldTerm fws (head vars) 
-	    addFws (Partial_op_type sorts res pps) = 
-		Partial_op_type (fws:sorts) res pps
-	    addFws (Total_op_type sorts res pps) = 
-		Total_op_type (fws:sorts) res pps
+	    addFws (Op_type k sorts res pps) = 
+		Op_type k (fws:sorts) res pps
 	    (opsym',as'') =  
 		case opsym of
 		Op_name _ -> error "Modal2CASL: untyped prdication" 

@@ -459,7 +459,7 @@ minExpTerm_simple sign var = do
           pair_with_id :: SORT -> (TERM f, SORT)
           pair_with_id sort
               | isVar sort = ((Qual_var var sort []), sort)
-              | otherwise  = (Application (Qual_op_name name (Total_op_type [] sort []) []) [] [], sort) -- should deal with partial constants as well!
+              | otherwise  = (Application (Qual_op_name name (Op_type Total [] sort []) []) [] [], sort) -- should deal with partial constants as well!
           isVar :: SORT -> Bool
           isVar s = Set.member s (Map.findWithDefault Set.empty var (varMap sign))
 
@@ -749,7 +749,7 @@ injName = Id.mkId [Id.Token {Id.tokStr="inj",
 injOpSymb :: SORT -> SORT -> OP_SYMB
 injOpSymb s1 s2 =
     Qual_op_name injName
-                 (Total_op_type [s1] s2 [Id.nullPos])
+                 (Op_type Total [s1] s2 [Id.nullPos])
                  []
 
 

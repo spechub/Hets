@@ -29,11 +29,6 @@ import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
-
-data FunKind = Total | Partial deriving (Show, Eq, Ord)
-
 -- constants have empty argument lists 
 data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT} 
               deriving (Show, Eq, Ord)
@@ -101,16 +96,13 @@ supersortsOf s e =
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
-    (case k of 
-     Total -> Total_op_type 
-     Partial -> Partial_op_type) args res []
+    Op_type k  args res [] 
 
 toPRED_TYPE :: PredType -> PRED_TYPE
 toPRED_TYPE PredType { predArgs = args } = Pred_type args []
 
 toOpType :: OP_TYPE -> OpType
-toOpType (Total_op_type args r _) = OpType Total args r
-toOpType (Partial_op_type args r _) = OpType Partial args r
+toOpType (Op_type k args r _) = OpType k args r
 
 toPredType :: PRED_TYPE -> PredType
 toPredType (Pred_type args _) = PredType args

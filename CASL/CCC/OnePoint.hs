@@ -181,8 +181,8 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
                                           Op_name _->[]
                                           Qual_op_name _ ot _->
                                             case ot of
-                                             Total_op_type args res _->[(args,res)]
-                                             Partial_op_type args res _->[(args,res)]) ops
+                                             Op_type _ args res _->[(args,res)]
+                                  ) ops
           iterateInhabited l =
 	            if l==newL then newL else iterateInhabited newL
 		             where newL =foldr (\ (as,rs) l'->

@@ -65,12 +65,12 @@ instance PrettyPrint CODATATYPE_DECL where
 	      map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) t
 
 instance PrettyPrint COALTERNATIVE where
-    printText0 ga (CoTotal_construct n l _) = printText0 ga n 
-				 <> if null l then empty 
-				    else parens(semiT_text ga l)
-    printText0 ga (CoPartial_construct n l _) = printText0 ga n 
-				 <> parens(semiT_text ga l)
-				 <> text quMark
+    printText0 ga (Co_construct k n l _) = printText0 ga n 
+				 <> (if null l then case k of
+                                                   Total -> empty
+                                                   _ -> parens empty
+				    else parens(semiT_text ga l)) <> 
+                                         optQuMark k
     printText0 ga (CoSubsorts l _) = text sortS <+> commaT_text ga l 
 
 instance PrettyPrint COCOMPONENTS where
@@ -80,14 +80,14 @@ instance PrettyPrint COCOMPONENTS where
 
 
 instance PrettyPrint C_FORMULA where
-    printText0 ga (Box t f _) = 
-       brackets (printText0 ga t) <> printText0 ga f
-    printText0 ga (Diamond t f _) = 
-	let sp = case t of 
+    printText0 ga (BoxOrDiamond b t f _) = 
+ 	let sp = case t of 
 			 Simple_mod _ -> (<>)
 			 _ -> (<+>)
-	    in ptext lessS `sp` printText0 ga t `sp` ptext greaterS 
-		   <+> printText0 ga f
+            td = printText0 ga t
+            fd = printText0 ga f
+	in if b then brackets td <> fd 
+           else text lessS `sp` td `sp` text greaterS <+> fd
     printText0 ga (CoSort_gen_ax sorts ops _) = 
         text cogeneratedS <> 
         braces (text sortS <+> commaT_text ga sorts 

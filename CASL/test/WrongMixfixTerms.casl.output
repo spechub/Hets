@@ -10,9 +10,9 @@ a < b
 *** Error 8.4, expected further mixfix token: ["(","(op )","(var )"]
 *** Error 9.1, unexpected mixfix token: (
 *** Error 10.13, unexpected mixfix token: ,
-*** Error 11.12, not a formula: (op a:b)
+*** Error 11.12, not a formula: (op a: b)
 *** Error 12.13, not a formula: (var a:b)
-*** Error 13.12, not a formula: (op a:b)(a)
+*** Error 13.12, not a formula: (op a: b)(a)
 *** Error 14.1, ambiguous mixfix term
   A__([__](a))
   A[a]

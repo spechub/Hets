@@ -40,13 +40,9 @@ data M_SIG_ITEM =
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM M_FORMULA)
              deriving (Eq, Ord, Show)
 
-data M_FORMULA = 
-	       Box MODALITY (FORMULA M_FORMULA) [Pos]
+data M_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA M_FORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
-	       -- pos: "[]"	    
-	     | Diamond MODALITY (FORMULA M_FORMULA) [Pos]
-               -- The identifier and the term specify the kind of the modality
-               -- pos: "<>"
+	       -- pos: "[]" or  "<>", True if Box, False if Diamond
              deriving (Eq, Ord, Show)
 
 modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS, diamondS, greaterS 

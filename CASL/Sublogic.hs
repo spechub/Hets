@@ -475,11 +475,11 @@ sl_op_attr (Unit_op_attr t) = sl_term t
 sl_op_attr _ = need_eq
 
 sl_op_type :: OP_TYPE -> CASL_Sublogics
-sl_op_type (Partial_op_type _ _ _) = need_part
+sl_op_type (Op_type Partial _ _ _) = need_part
 sl_op_type _ = bottom
 
 sl_op_head :: OP_HEAD -> CASL_Sublogics
-sl_op_head (Partial_op_head _ _ _) = need_part
+sl_op_head (Op_head Partial _ _ _) = need_part
 sl_op_head _ = bottom
 
 sl_pred_item :: PRED_ITEM f -> CASL_Sublogics
@@ -492,12 +492,12 @@ sl_datatype_decl (Datatype_decl _ l _) = comp_list $ map sl_alternative
                                                    $ map item l
 
 sl_alternative :: ALTERNATIVE -> CASL_Sublogics
-sl_alternative (Total_construct _ l _) =  comp_list $ map sl_components l
-sl_alternative (Partial_construct _ _ _) = need_part
+sl_alternative (Alt_construct Total _ l _) =  comp_list $ map sl_components l
+sl_alternative (Alt_construct Partial _ _ _) = need_part
 sl_alternative (Subsorts _ _) = need_sub
 
 sl_components :: COMPONENTS -> CASL_Sublogics
-sl_components (Partial_select _ _ _) = need_part
+sl_components (Cons_select Partial _ _ _) = need_part
 sl_components _ = bottom
 
 sl_var_decl :: VAR_DECL -> CASL_Sublogics
@@ -781,17 +781,17 @@ pr_datatype_decl l (Datatype_decl s a p) =
 
 
 pr_alternative :: CASL_Sublogics -> ALTERNATIVE -> Maybe ALTERNATIVE
-pr_alternative l (Total_construct n c p) =
+pr_alternative l (Alt_construct Total n c p) =
                let
                  (res,pos) = mapPos 1 p (pr_components l) c
                in
                  if (null res) then
                    Nothing
                  else
-                   Just (Total_construct n res pos)
-pr_alternative l (Partial_construct n c p) =
+                   Just (Alt_construct Total n res pos)
+pr_alternative l alt@(Alt_construct Partial n c p) =
              if ((has_part l)==True) then
-               Just (Partial_construct n c p)
+               Just alt
              else
                Nothing
 pr_alternative l (Subsorts s p) =
@@ -801,9 +801,9 @@ pr_alternative l (Subsorts s p) =
                  Nothing
 
 pr_components :: CASL_Sublogics -> COMPONENTS -> Maybe COMPONENTS
-pr_components l (Partial_select n s p) =
+pr_components l sel@(Cons_select Partial n s p) =
               if ((has_part l)==True) then
-                Just (Partial_select n s p)
+                Just sel
               else
                 Nothing
 pr_components _ x = Just x
@@ -965,7 +965,7 @@ pr_pred_map l x = if (has_pred l) then x else Map.empty
 pr_fun_map :: CASL_Sublogics -> Fun_map -> Fun_map
 pr_fun_map l m = Map.filterWithKey (pr_fun_map_entry l) m
 
-pr_fun_map_entry :: CASL_Sublogics -> (Id, OpType) -> (Id,FunKind) -> Bool
+pr_fun_map_entry :: CASL_Sublogics -> (Id, OpType) -> (Id, FunKind) -> Bool
 pr_fun_map_entry l (_,t) (_,b) =
                  if (has_part l) then True
                  else ((in_x l t sl_optype) && b == Partial) 

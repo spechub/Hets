@@ -29,18 +29,18 @@ modalFormula =
        m <- modality []
        c <- cBracketT
        f <- formula modal_reserved_words
-       return (Box m f $ toPos o [] c)
+       return (BoxOrDiamond True m f $ toPos o [] c)
     <|> 
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
        f <- formula modal_reserved_words
-       return (Diamond m f $ toPos o [] c)
+       return (BoxOrDiamond False m f $ toPos o [] c)
     <|> 
     do d <- asKey diamondS
        f <- formula modal_reserved_words
        let p = tokPos d
-       return (Diamond (Simple_mod $ Token emptyS p) f [p])
+       return (BoxOrDiamond False (Simple_mod $ Token emptyS p) f [p])
 
 modality :: [String] -> AParser st MODALITY
 modality ks = 

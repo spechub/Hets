@@ -30,13 +30,13 @@ cocaslFormula =
        m <- modality []
        c <- cBracketT
        f <- formula cocasl_reserved_words
-       return (Box m f $ toPos o [] c)
+       return (BoxOrDiamond True m f $ toPos o [] c)
     <|> 
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
        f <- formula cocasl_reserved_words
-       return (Diamond m f $ toPos o [] c)
+       return (BoxOrDiamond False m f $ toPos o [] c)
 
 modality :: [String] -> AParser st MODALITY
 modality ks = 
@@ -103,9 +103,9 @@ coalternative ks =
 	    c <- cParenT
 	    let qs = toPos o ps c 
             do   q <- quMarkT
-		 return (CoPartial_construct i cs (qs++[tokPos q]))
-	      <|> return (CoTotal_construct i cs qs)
-	 <|> return (CoTotal_construct i [] [])
+		 return (Co_construct Partial i cs (qs++[tokPos q]))
+	      <|> return (Co_construct Total i cs qs)
+	 <|> return (Co_construct Total i [] [])
 
 cocomponent :: [String] -> AParser st COCOMPONENTS
 cocomponent ks = 

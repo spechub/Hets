@@ -15,6 +15,76 @@ module CASL.ShowMixfix (showTerm, showFormula) where
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Keywords
+{-
+mapTerm :: f -> f -> Morphism f e m -> TERM f -> TERM f
+mapTerm mf m t = case t of
+   Qual_var v s ps -> Qual_var v (mapSrt m s) ps
+   Application o ts ps -> let 
+       newTs = map (mapTerm mf m) ts
+       in Application o newTs ps
+   Sorted_term st s ps -> let
+       newT = mapTerm mf m st
+       in Sorted_term newT s ps
+   Cast st s ps -> let
+       newT = mapTerm mf m st
+       in Cast newT s ps
+   Conditional t1 f t2 ps -> let
+       t3 = mapTerm mf m t1
+       newF = mapSen mf m f
+       t4 = mapTerm mf m t2
+       in Conditional t3 newF t4 ps 
+   _ -> error "mapTerm"
+
+mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> FORMULA f
+mapSen mf m f = case f of 
+   Quantification q vs qf ps -> let
+       newF = mapSen mf m qf
+       in Quantification q (map (mapVars m) vs) newF ps
+   Conjunction fs ps -> let
+       newFs = map (mapSen mf m) fs
+       in Conjunction newFs ps
+   Disjunction fs ps -> let
+       newFs = map (mapSen mf m) fs
+       in Disjunction newFs ps
+   Implication f1 f2 b ps -> let
+       f3 = mapSen mf m f1
+       f4 = mapSen mf m f2
+       in Implication f3 f4 b ps
+   Equivalence f1 f2 ps -> let
+       f3 = mapSen mf m f1
+       f4 = mapSen mf m f2
+       in Equivalence f3 f4 ps
+   Negation nf ps -> let
+       newF = mapSen mf m nf
+       in Negation newF ps
+   True_atom _ -> f
+   False_atom _ -> f
+   Predication p ts ps -> let 
+       newTs = map (mapTerm mf m) ts
+       newP = mapPrSymb m p
+       in Predication newP newTs ps
+   Definedness t ps -> let 
+       newT = mapTerm mf m t
+       in Definedness newT ps
+   Existl_equation t1 t2 ps -> let
+       t3 = mapTerm mf m t1
+       t4 = mapTerm mf m t2
+       in Existl_equation t3 t4 ps
+   Strong_equation t1 t2 ps -> let
+       t3 = mapTerm mf m t1
+       t4 = mapTerm mf m t2
+       in Strong_equation t3 t4 ps
+   Membership t s ps -> let 
+       newT = mapTerm mf m t
+       in Membership newT (mapSrt m s) ps
+   Sort_gen_ax constrs isFree -> let
+       newConstrs = map (mapConstr m) constrs
+       in Sort_gen_ax newConstrs isFree
+   ExtFORMULA ef -> let 
+       newF = mf m ef 
+       in ExtFORMULA newF	       
+   _ -> error "mapSen"
+-}
 
 bl :: ShowS
 bl = showChar ' '
@@ -53,12 +123,11 @@ showOps(Qual_op_name opn opt _) = showParen True $ showString opS . bl
 
 -- die show-Funktion fuer den Datentyp OP_Type
 showOpt :: OP_TYPE -> ShowS
-showOpt (Total_op_type sorts s _ )   = 
+showOpt (Op_type k sorts s _ )   = 
     (if null sorts then id
-     else showProduct sorts . bl . showString funS . bl) . showId s   
-showOpt (Partial_op_type sorts s _ ) = 
-    (if null sorts then id else 
-     showProduct sorts . bl . showString funS) . showString quMark . showId s
+     else showProduct sorts . bl . showString funS)
+     . showString (case k of Partial -> quMark
+                             _ -> " ") . showId s   
 
 -- die show-Funktion fuer den Daten-Typ FORMULA
 showFormula :: FORMULA f -> ShowS

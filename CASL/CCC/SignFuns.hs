@@ -93,8 +93,8 @@ inhabited sorts constrs = iterateInhabited sorts
                                           Op_name _->[]
                                           Qual_op_name _ ot _->
                                             case ot of
-                                             Total_op_type args res _->[(args,res)]
-                                             Partial_op_type args res _->[(args,res)]) ops
+                                             Op_type _ args res _->[(args,res)]
+                                    ) ops
             iterateInhabited l =
 	            if l==newL then newL else iterateInhabited newL
 		             where newL =foldr (\ (as,rs) l'->
@@ -113,5 +113,5 @@ partial_OpSymb :: OP_SYMB -> Maybe Bool
 partial_OpSymb os = case os of
                       Op_name _ -> Nothing
 	              Qual_op_name _ ot _ -> case ot of
-                                               Total_op_type _ _ _ -> Just False
-	                                       Partial_op_type _ _ _ -> Just True
+                                     Op_type Total _ _ _ -> Just False
+	                             Op_type Partial _ _ _ -> Just True

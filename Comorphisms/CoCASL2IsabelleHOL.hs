@@ -135,9 +135,6 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
   concl (s,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
                      (var "v") NotCont) 
                              (binEq (var "u") (var "v"))
-formTrCoCASL sign (Box mod phi _) = 
-   trace "WARNING: ignoring modal forumla" 
-          $ true
-formTrCoCASL sign (Diamond mod phi _) = 
+formTrCoCASL sign (BoxOrDiamond _ _mod _phi _) = 
    trace "WARNING: ignoring modal forumla" 
           $ true

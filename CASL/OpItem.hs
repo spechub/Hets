@@ -50,8 +50,7 @@ opHead ks =
        c <- anColon
        (b, s, _) <- opSort ks
        let qs = ps ++ [tokPos c]
-       return $ if b then Partial_op_head vs s qs
-	      else Total_op_head vs s qs
+       return $ Op_head (if b then Partial else Total) vs s qs
 
 opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = do p <- asKey assocS
@@ -68,13 +67,11 @@ opAttr ks = do p <- asKey assocS
 	       return (Unit_op_attr t, p)
 
 isConstant :: OP_TYPE -> Bool
-isConstant(Total_op_type [] _ _) = True
-isConstant(Partial_op_type [] _ _) = True
+isConstant(Op_type _ [] _ _) = True
 isConstant _ = False
 
 toHead :: Pos -> OP_TYPE -> OP_HEAD
-toHead c (Total_op_type [] s _) = Total_op_head [] s [c] 
-toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
+toHead c (Op_type k [] s _) = Op_head k [] s [c] 
 toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)

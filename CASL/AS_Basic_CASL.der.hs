@@ -69,23 +69,20 @@ data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] [Pos]
 	       -- pos: "="
 	       deriving (Show,Eq)
 
-data OP_TYPE = Total_op_type [SORT] SORT [Pos]
-	       -- pos: "*"s, "->" ; if null [SORT] then [Pos] = [] 
-	     | Partial_op_type [SORT] SORT [Pos]
-	       -- pos: "*"s, "->?"; if null [SORT] then pos: "?"
+data FunKind = Total | Partial deriving (Show, Eq, Ord)
+
+data OP_TYPE = Op_type FunKind [SORT] SORT [Pos]
+	       -- pos: "*"s, "->" ; if null [SORT] then [Pos] = [] or pos: "?"
 	       deriving (Show,Eq,Ord)
 
 args_OP_TYPE :: OP_TYPE -> [SORT]
-args_OP_TYPE (Total_op_type args _ _) = args
-args_OP_TYPE (Partial_op_type args _ _) = args
+args_OP_TYPE (Op_type _ args _ _) = args
 
 res_OP_TYPE :: OP_TYPE -> SORT
-res_OP_TYPE (Total_op_type _ res _) = res
-res_OP_TYPE (Partial_op_type _ res _) = res
+res_OP_TYPE (Op_type _ _ res _) = res
 
-data OP_HEAD = Total_op_head [ARG_DECL] SORT [Pos]
+data OP_HEAD = Op_head FunKind [ARG_DECL] SORT [Pos]
 	       -- pos: "(", semicolons, ")", colon
-	     | Partial_op_head [ARG_DECL] SORT [Pos]
 	       deriving (Show,Eq)
 
 data ARG_DECL = Arg_decl [VAR] SORT [Pos]
@@ -114,18 +111,14 @@ data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] [Pos]
 		     -- pos: "::=", "|"s
 		     deriving (Show,Eq)
 
-data ALTERNATIVE = Total_construct OP_NAME [COMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")"
-		 | Partial_construct OP_NAME [COMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")", "?"
+data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] [Pos]
+		   -- pos: "(", semi colons, ")" optional "?"
 		 | Subsorts [SORT] [Pos]
 		   -- pos: sort, commas
 		   deriving (Show,Eq)
 
-data COMPONENTS = Total_select [OP_NAME] SORT [Pos]
-                  -- pos: commas, colon
-		| Partial_select [OP_NAME] SORT [Pos] 
-		  -- pos: commas, ":?"
+data COMPONENTS = Cons_select FunKind [OP_NAME] SORT [Pos]
+                  -- pos: commas, colon or ":?"
 		| Sort SORT		  
 		  deriving (Show,Eq)
 
@@ -219,14 +212,10 @@ recover_Sort_gen_ax constrs =
   sortMap (i,s) = (indSort1 i,s) 
   indOps = zip indices (map opSymbs constrs)
   indOps1 = concat (map (\(i,ops) -> map ((,) i) ops) indOps)
-  indOp (res,(Qual_op_name on (Total_op_type args1 res1 pos1) pos,args)) =
+  indOp (res,(Qual_op_name on (Op_type k args1 res1 pos1) pos,args)) =
      Qual_op_name on 
-         (Total_op_type (map indSort (zip args args1)) 
+         (Op_type k (map indSort (zip args args1)) 
                         (indSort (res,res1)) pos1) pos
-  indOp (res,(Qual_op_name on (Partial_op_type args1 res1 pos1) pos,args)) =
-     Qual_op_name on 
-         (Partial_op_type (map indSort (zip args args1)) 
-                          (indSort (res,res1)) pos1) pos
   indOp _ = error 
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 

@@ -22,7 +22,6 @@ import CASL.StaticAna
 import CASL.Utils
 import CASL.AS_Basic_CASL
 import CASL.Overload
-import CASL.MapSentence
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -48,21 +47,16 @@ resolveMODALITY ga ids m = case m of
 
 resolveM_FORMULA :: MixResolve M_FORMULA
 resolveM_FORMULA ga ids cf = case cf of 
-   Box m f ps -> do 
+   BoxOrDiamond b m f ps -> do 
        nm <- resolveMODALITY ga ids m
        nf <- resolveMixFrm resolveM_FORMULA ga ids f
-       return $ Box nm nf ps
-   Diamond m f ps -> do 
-       nm <- resolveMODALITY ga ids m
-       nf <- resolveMixFrm resolveM_FORMULA ga ids f
-       return $ Diamond nm nf ps
+       return $ BoxOrDiamond b nm nf ps
 
 noExtMixfixM :: M_FORMULA -> Bool
 noExtMixfixM mf =
     let noInner = noMixfixF noExtMixfixM in
     case mf of
-    Box _ f _     -> noInner f
-    Diamond _ f _ -> noInner f
+    BoxOrDiamond _ _ f _     -> noInner f
 
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm ga s form = 
@@ -91,14 +85,10 @@ minExpForm ga s form =
                                   _ -> r
                        _ -> r
     in case form of
-        Box m f ps -> 
+        BoxOrDiamond b m f ps -> 
             do nm <- minMod m ps
                f2 <- minExpFORMULA minExpForm ga s f
-               return $ Box nm f2 ps
-        Diamond m f ps -> 
-            do nm <- minMod m ps
-               f2 <- minExpFORMULA minExpForm ga s f
-               return $ Diamond nm f2 ps
+               return $ BoxOrDiamond b nm f2 ps
 
 ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
 ana_M_SIG_ITEM ga mi = 
@@ -149,14 +139,6 @@ ana_M_BASIC_ITEM ga bi = do
             mapM_ ((updateExtInfo . addModSort newFs) . item) al
             return $ Term_mod_decl al newFs ps
 
-resultToState :: (a -> Result a) -> a -> State (Sign f e) a
-resultToState f a = do 
-    let r =  f a 
-    addDiags $ diags r
-    case maybeResult r of
-        Nothing -> return a
-        Just b -> return b
-
 preAddModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
 preAddModId i m = 
     let ms = modies m in 
@@ -179,22 +161,6 @@ preAddModSort e i m =
 addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
 addModSort frms i m = 
        return m { termModies = Map.insert i frms $ termModies m }
-
-map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
-map_M_FORMULA mor frm =
-    let mapMod m = case m of 
-                   Simple_mod _ -> return m
-                   Term_mod t -> do newT <- mapTerm map_M_FORMULA mor t
-                                    return $ Term_mod newT
-        in case frm of
-           Box m f ps -> do 
-               newF <- mapSen map_M_FORMULA mor f
-               newM <- mapMod m 
-               return $ Box newM newF ps 
-           Diamond m f ps -> do 
-               newF <- mapSen map_M_FORMULA mor f
-               newM <- mapMod m 
-               return $ Diamond newM newF ps 
 
 ana_FORMULA :: Bool -> Ana (FORMULA M_FORMULA) M_FORMULA ModalSign
 ana_FORMULA b ga f = 
@@ -230,8 +196,7 @@ getFormPredToks frm = case frm of
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.single t
     Mixfix_formula t -> getTermPredToks t
-    ExtFORMULA (Box _ f _) -> getFormPredToks f
-    ExtFORMULA (Diamond _ f _) -> getFormPredToks f
+    ExtFORMULA (BoxOrDiamond _ _ f _) -> getFormPredToks f
     Predication _ ts _ -> Set.unions $ map getTermPredToks ts
     Definedness t _ -> getTermPredToks t
     Existl_equation t1 t2 _ -> 
@@ -263,8 +228,7 @@ isPropForm b frm = case frm of
     Equivalence f1 f2 _  -> isPropForm b f1 && isPropForm b f2
     Negation f _ -> isPropForm b f
     Mixfix_formula _ -> True
-    ExtFORMULA (Box _ f _) -> isPropForm b f
-    ExtFORMULA (Diamond _ f _) -> isPropForm b f
+    ExtFORMULA (BoxOrDiamond _ _ f _) -> isPropForm b f
     Predication _ _ _ -> True
     False_atom _ -> True
     True_atom _ -> True

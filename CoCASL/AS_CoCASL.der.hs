@@ -26,7 +26,7 @@ type AnModFORM = Annoted (FORMULA C_FORMULA)
 
 data C_BASIC_ITEM = CoFree_datatype [Annoted CODATATYPE_DECL] [Pos]
 		   -- pos: free, type, semi colons
-	 	  | CoSort_gen [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)] [Pos] 
+	 	  | CoSort_gen [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)] [Pos]
 		   -- pos: generated, opt. braces 
 		    deriving (Eq, Show)
 
@@ -38,10 +38,8 @@ data CODATATYPE_DECL = CoDatatype_decl SORT [Annoted COALTERNATIVE] [Pos]
 		     -- pos: "::=", "|"s
 		     deriving (Show,Eq)
 
-data COALTERNATIVE = CoTotal_construct (Maybe OP_NAME) [COCOMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")"
-		 | CoPartial_construct (Maybe OP_NAME) [COCOMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")", "?"
+data COALTERNATIVE = Co_construct FunKind (Maybe OP_NAME) [COCOMPONENTS] [Pos]
+		   -- True if Total, pos: "(", semi colons, ")"
 		 | CoSubsorts [SORT] [Pos]
 		   -- pos: sort, commas
 		   deriving (Show,Eq)
@@ -53,14 +51,10 @@ data COCOMPONENTS = CoSelect [OP_NAME] OP_TYPE [Pos]
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
              deriving (Eq, Ord, Show)
 
-data C_FORMULA = 
-	       Box MODALITY (FORMULA C_FORMULA) [Pos]
+data C_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA C_FORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
-	       -- pos: "[]"	    
-	     | Diamond MODALITY (FORMULA C_FORMULA) [Pos]
-               -- The identifier and the term specify the kind of the modality
-               -- pos: "<>"
-	     | CoSort_gen_ax [SORT] [OP_SYMB] Bool 
+	       -- pos: "[]" or  "<>", True if Box, False if Diamond
+	       | CoSort_gen_ax [SORT] [OP_SYMB] Bool 
                -- flag: belongs to a cofree type and hence is cofreeness axiom?
              deriving (Eq, Ord, Show)
 

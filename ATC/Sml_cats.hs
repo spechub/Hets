@@ -706,13 +706,13 @@ instance ATermConvertibleSML OP_TYPE where
                 (aa',ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab'      = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac'      = insertPos ps pos_l
-                in (Total_op_type aa' ab' ac')
+                in (Op_type Total aa' ab' ac')
             (ShAAppl "partial-op-type" [ aa,ab ] _)  ->
                 let
                 (aa',ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab'      = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac'      = insertPos ps pos_l
-                in (Partial_op_type aa' ab' ac')
+                in (Op_type Partial aa' ab' ac')
             _ -> from_sml_ShATermError "OP_TYPE" aterm
         where
             aterm = getATerm att'
@@ -750,13 +750,13 @@ instance ATermConvertibleSML OP_HEAD where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Total_op_head aa' ab' ac')
+                in (Op_head Total aa' ab' ac')
             (ShAAppl "partial-op-head" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Partial_op_head aa' ab' ac')
+                in (Op_head Partial aa' ab' ac')
             _ -> from_sml_ShATermError "OP_HEAD" aterm
         where
             aterm = getATerm att'
@@ -923,13 +923,13 @@ instance ATermConvertibleSML ALTERNATIVE where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Total_construct aa' ab' ac')
+                in (Alt_construct Total aa' ab' ac')
             (ShAAppl "partial-construct" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Partial_construct aa' ab' ac')
+                in (Alt_construct Partial aa' ab' ac')
             (ShAAppl "subsort" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
@@ -955,13 +955,13 @@ instance ATermConvertibleSML COMPONENTS where
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Total_select aa' ab' ac')
+                in (Cons_select Total aa' ab' ac')
             (ShAAppl "partial-select" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Partial_select aa' ab' ac')
+                in (Cons_select Partial aa' ab' ac')
             (ShAAppl "sort-component" [ aa ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)

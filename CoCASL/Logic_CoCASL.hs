@@ -83,8 +83,19 @@ instance Syntax CoCASL C_BASIC_SPEC
 
 -- CoCASL logic
 
+
+map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
+map_C_FORMULA mor frm = case frm of
+           BoxOrDiamond b m f ps -> let 
+              newF = mapSen map_C_FORMULA mor f
+              newM = case m of 
+                   Simple_mod _ ->  m
+                   Term_mod t -> Term_mod $ mapTerm map_C_FORMULA mor t 
+              in BoxOrDiamond b newM newF ps 
+           phi -> phi
+
 instance Sentences CoCASL CoCASLFORMULA () CSign CoCASLMor Symbol where
-      map_sen CoCASL = mapSen map_C_FORMULA
+      map_sen CoCASL m = return . mapSen map_C_FORMULA m
       parse_sentence CoCASL = Nothing
       sym_of CoCASL = symOf
       symmap_of CoCASL = morphismToSymbMap
