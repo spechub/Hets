@@ -11,7 +11,8 @@
 
 -}
 
-{-  "free datatypes and recursive equations are consistent"
+{-  
+"free datatypes and recursive equations are consistent"
 
 checkFreeType :: (PrettyPrint f, Eq f) => 
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
@@ -114,7 +115,8 @@ checkFreeType (osig,osens) m fsn
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE
-{-call the symbols in the image of the signature morphism "new"
+{-
+  call the symbols in the image of the signature morphism "new"
 
 - each new sort must be a free type,
   i.e. it must occur in a sort generation constraint that is marked as free
@@ -167,8 +169,9 @@ checkFreeType (osig,osens) m fsn
          l_Syms1 = map leadingSym leading_o_p                                    
          l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
 
-{- check if leading symbols are new (not in the image of morphism),
-         if not, return Nothing
+{- 
+  check if leading symbols are new (not in the image of morphism),
+        if not, return Nothing
 -}
          op_fs = filter (\f-> case leadingSym f of
                                 Just (Left _) -> True
@@ -190,7 +193,7 @@ checkFreeType (osig,osens) m fsn
          id_pts = concat $ map filterPred $ l_Syms
          old_op_id= idStr $ fst $ head $ filter (\ot->find_ot ot) $ id_ots
          old_pred_id = idStr $ fst $ head $ filter (\pt->find_pt pt) $ id_pts
-         old_op_ps = case head $ map leading_Term_Predication $        -- noch bessen ??????????????????????
+         old_op_ps = case head $ map leading_Term_Predication $       
                           filter (\f->find_ot $ head $ filterOp $ leadingSym f) op_fs of
                        Just (Left (Application _ _ p)) -> p
                        _ -> []
@@ -198,7 +201,6 @@ checkFreeType (osig,osens) m fsn
                             filter (\f->find_pt $ head $ filterPred $ leadingSym f) pred_fs of
                          Just (Right (Predication _ _ p)) -> p
                          _ -> []
-
          find_ot (ident,ot) = case Map.lookup ident oldOpMap of
                                   Nothing -> False
                                   Just ots -> Set.member ot ots
@@ -206,7 +208,7 @@ checkFreeType (osig,osens) m fsn
                                   Nothing -> False
                                   Just pts -> Set.member pt pts
 {-
-   - the leading terms consist of variables and constructors only, if not, return Nothing
+   the leading terms consist of variables and constructors only, if not, return Nothing
      - split function leading_Symb into 
        leading_Term_Predication ::  FORMULA f -> Maybe(Either Term (Formula f))
        and 
@@ -225,7 +227,7 @@ checkFreeType (osig,osens) m fsn
                                                                                       checkTerm (term t) 
                                                                _ -> False) ts
 {-
-   - no variable occurs twice in a leading term, 
+   no variable occurs twice in a leading term, 
        if not, return Nothing
 -} 
          checkVar (Application _ ts _) = overlap $ concat $ map allVarOfTerm ts
@@ -235,7 +237,8 @@ checkFreeType (osig,osens) m fsn
                             Application _ ts _ -> if length ts==0 then []
                                                   else concat $ map allVarOfTerm ts
                             _ -> [] 
-{-  check that patterns do not overlap, if not, return Nothing This means:
+{-  
+   check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
        this means: either leading symbol is a variable, and there is just one axiom
@@ -301,7 +304,8 @@ checkFreeType (osig,osens) m fsn
 --         term t = case t of
 --                    Sorted_term t' _ _ ->term t'
 --                    _ -> t
-{- Automatic termination proof
+{- 
+   Automatic termination proof
    using cime, see http://cime.lri.fr/
 
   interface to cime system, using newChildProcess
@@ -479,7 +483,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-                 cim <- newChildProcess "/home/xinga/bin/cime" []
+          --       cim <- newChildProcess "/home/xinga/bin/cime" []
+                 cim <- newChildProcess "cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
                  sendMsg cim ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")        
