@@ -1224,7 +1224,7 @@ pred q : s
 			   (op c : a * t * t * t -> s)((var Y1 : a), (var Y2 : t),
 						       (var Y3 : t), (var Y4 : t))
 *** Error 286.46, No correct typing for 
-*** Error 286.41, Cannot disambiguate1!
+*** Error 286.41, Cannot disambiguate!
 Possible Expansions:  [ ]
 *** Error 286.41, No correct typing for 
 *** Error 286.39, No correct typing for 
@@ -1242,11 +1242,11 @@ Possible Expansions:  [ ]
 *** Error 342.39, No correct typing for 
 *** Error 342.26, No correct typing for 
 *** Error 342.14, No correct typing for 
-*** Error 419.5, Cannot disambiguate1!
+*** Error 419.5, Cannot disambiguate!
 Possible Expansions:  [ ]
-*** Error 417.5, Cannot disambiguate1!
+*** Error 417.5, Cannot disambiguate!
 Possible Expansions:  [ ]
-*** Error 416.5, Cannot disambiguate1!
+*** Error 416.5, Cannot disambiguate!
 Possible Expansions:  [ ]
 *** Error 414.10, No correct typing for  f(x) = g(x)
 *** Error 413.10, No correct typing for  f(x) =e= g(x)
