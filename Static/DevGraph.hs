@@ -43,6 +43,7 @@ import Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
+import Common.PPUtils
 import Common.Lib.Pretty
 
 -- ??? Some info about the theorems already proved for a node
