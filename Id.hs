@@ -2,18 +2,10 @@ module Id where
 
 import Char
 -- identifiers, fixed for all logics
-{-
-data ID = Simple_Id String
-        | Compound_Id (String,[ID])
 
--}
 type Pos = (Int, Int) -- line, column
  
-nullPos :: Pos
-nullPos = (0,0) -- dummy position
-
 type Region = (Pos,Pos)
-
  
 -- tokens as supplied by the scanner
 data Token = Token(String, Pos) -- deriving (Show, Eq, Ord)
@@ -26,15 +18,14 @@ instance Ord Token where
    Token(s1, _) <= Token(s2, _) = s1 <= s2
  
 instance Show Token where
-   showsPrec _ = showString.showTok
+   showsPrec _ = showString . showTok
+   showList [] = showString ""
+   showList (x:r) = shows x . showList r
 
 -- spezial tokens
 type Keyword = Token
 type TokenOrPlace = Token
  
--- move to scanner
-setPos(Token(t, _), p) = Token(t, p)
-
 place = "__"
 
 isPlace(Token(t, _)) = t == place
@@ -49,12 +40,6 @@ splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 instance Show Id where
     showsPrec _ (Id ts is) = 
 	let (toks, places) = splitMixToken ts 
-	    front = concat (map show toks)
-	    rest = concat (map show places)
-            comps = if null is then "" else show is 
+            comps = if null is then showString "" else shows is 
 	in
-        showString (front ++ comps ++ rest) 
-
-
-
-
+        showList toks . comps . showList places
