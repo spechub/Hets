@@ -39,8 +39,6 @@ todo for Jorina:
 
 
    todo:
-   - verwendung bereits gelöschter Kante bei locDecomp (nach globDecomp) in
-     view-test1.casl
    - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
    - bei GlobDecomp hinzufügen:
      zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
@@ -180,7 +178,11 @@ globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
    otherwise the unprovenThm edge is replaced by a proven one -}
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] = 
   if null changes then (dgraph, changes)
-   else ((insEdge provenEdge (delLEdge edge dgraph)),
+   else
+     if isDuplicate provenEdge dgraph changes
+            then ((insEdge provenEdge (delLEdge edge dgraph)),
+	    ((DeleteEdge edge):changes))
+      else ((insEdge provenEdge (delLEdge edge dgraph)),
 	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
 
   where
@@ -197,7 +199,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
  ((node,path):list) =
-  if elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
+  if isDuplicate newEdge dgraph changes
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
 
@@ -215,7 +217,6 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
                )
     newGraph = insEdge newEdge dgraph
     newChanges = ((InsertEdge newEdge):changes)
-
 
 -- -------------------
 -- global subsumption
@@ -240,7 +241,12 @@ globSubsumeAux _ dgraph historyElement [] = (dgraph, historyElement)
 globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if not (null proofBasis) || isIdentityEdge ledge libEnv dgraph
    then
-     globSubsumeAux libEnv (insEdge newEdge (delLEdge ledge dgraph)) (newRules,newChanges) list
+     if isDuplicate newEdge dgraph changes then
+        globSubsumeAux libEnv (delLEdge ledge dgraph) 
+          (newRules,(DeleteEdge ledge):changes) list
+      else
+        globSubsumeAux libEnv (insEdge newEdge (delLEdge ledge dgraph))
+          (newRules,(DeleteEdge ledge):((InsertEdge newEdge):changes)) list
    else 
      globSubsumeAux libEnv dgraph (rules,changes) list
 
@@ -258,22 +264,6 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 		       dgl_origin = DGProof}
                )
     newRules = (GlobSubsumption ledge):rules
-    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
-
-isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
-isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
-  if isDGRef nodeLab then 
-    case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just globContext@(_,_,refDgraph) -> isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) libEnv refDgraph
-      Nothing -> False
-   else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
-
-  where nodeLab = lab' (context src dgraph)
-
-
-{- returns the DGLinkLab of the given LEdge -}
-getLabelOfEdge :: (LEdge b) -> b
-getLabelOfEdge (_,_,label) = label
 
 -- --------------------
 -- local decomposition
@@ -298,7 +288,8 @@ locDecompAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locDecompAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  if null proofBasis
+  if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
+   || isDuplicate newEdge dgraph changes
      then
        locDecompAux libEnv dgraph (rules,changes) list
      else
@@ -376,6 +367,7 @@ isSameTranslationAux sens mor1 mor2 =
   where
     maybeSens1 = translateG_l_sentence_list mor1 sens
     maybeSens2 = translateG_l_sentence_list mor2 sens
+
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -390,17 +382,7 @@ getAllGlobPathsOfMorphismBetween dgraph morphism src tgt =
   where 
       allPaths = getAllGlobPathsBetween dgraph src tgt
 
-{- Benutzung dieser Methode derzeit auskommentiert - wird wahrscheinlich weggeschmissen -}
-{- returns a list of all proven loc-glob paths of the given morphism between
-   the given source and target node -}
-{-getAllProvenLocGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node 
-					  -> Node -> [[LEdge DGLinkLab]]
-getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism src tgt =
-  filterPathsByMorphism morphism allPaths
 
-  where
-      allPaths = getAllProvenLocGlobPathsBetween dgraph src tgt
--}
 {- returns all paths from the given list whose morphism is equal to the
    given one-}
 filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
@@ -598,6 +580,31 @@ isLocalDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     LocalDef -> True
     otherwise -> False
+
+-- ----------------------------------------------------------------------------
+-- other methods on edges
+-- ----------------------------------------------------------------------------
+{- returns true, if an identical edge is already in the graph or marked to be inserted,
+ false otherwise-}
+isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
+isDuplicate newEdge dgraph changes = 
+  elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
+
+
+isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
+isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
+  if isDGRef nodeLab then 
+    case Map.lookup (dgn_libname nodeLab) libEnv of
+      Just globContext@(_,_,refDgraph) -> isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) libEnv refDgraph
+      Nothing -> False
+   else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
+
+  where nodeLab = lab' (context src dgraph)
+
+
+{- returns the DGLinkLab of the given LEdge -}
+getLabelOfEdge :: (LEdge b) -> b
+getLabelOfEdge (_,_,label) = label
 
 -- ----------------------------------------------------------------------------
 -- methods to determine the labels of the inserted edges in the given dgchange
