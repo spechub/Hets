@@ -7,9 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
    The embedding comorphism from CASL to Isabelle-HOL.
-
 -}
 
 {- todo
@@ -20,14 +18,12 @@ module Comorphisms.CASL2IsabelleHOL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.List as List
 import Data.Maybe
 import Data.Char
-import Common.PrettyPrint
 import Common.AS_Annotation (Named, mapNamedM)
 import Debug.Trace
 -- CASL
@@ -102,7 +98,7 @@ transTheory :: SignTranslator f e ->
                    -> Maybe IsaTheory 
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (extendedInfo sign)) $
-  Just(IsaSign.Sign{
+  Just(IsaSign.emptySign {
     baseSig = "Main",
     tsig = emptyTypeSig 
             {tycons = Set.fold (\s -> Map.insert (showIsa s) 0) 
@@ -112,9 +108,7 @@ transTheory trSig trForm (sign,sens) =
                                    Map.empty
                                    (predMap sign))
                   (opMap sign),
-    dataTypeTab = makeDtDefs sign $ sens,
-    syn = (), 
-    showLemmas = False },
+    dataTypeTab = makeDtDefs sign $ sens },
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
     insertOps op ts m = 
@@ -123,11 +117,11 @@ transTheory trSig trForm (sign,sens) =
       else
       foldl (\m1 (t,i) -> Map.insert (showIsaI op i) (transOpType t) m1) m 
             (zip (Set.toList ts) [1..size ts])
-    insertPreds pred ts m =
+    insertPreds pre ts m =
      if Set.size ts == 1 
-      then Map.insert (showIsa pred) (transPredType (Set.findMin ts)) m
+      then Map.insert (showIsa pre) (transPredType (Set.findMin ts)) m
       else
-      foldl (\m1 (t,i) -> Map.insert (showIsaI pred i) (transPredType t) m1) m 
+      foldl (\m1 (t,i) -> Map.insert (showIsaI pre i) (transPredType t) m1) m 
             (zip (Set.toList ts) [1..size ts])
  
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
@@ -139,11 +133,11 @@ makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) ->
 makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
   Just(map makeDt srts)
   where 
-  (srts,ops,maps) = recover_Sort_gen_ax constrs
-  makeDt s = (transSort s, map makeOp (List.filter (hasSort s) ops))
+  (srts,ops,_maps) = recover_Sort_gen_ax constrs
+  makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
   makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
-  hasSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
-  hasSort _ _ = error "CASL2IsabelleHOL : hasSort"
+  hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
+  hasTheSort _ _ = error "CASL2IsabelleHOL.hasTheSort"
   transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
   transArgs _ = error "CASL2IsabelleHOL : transArgs"
 makeDtDef _ _ = Nothing
@@ -173,10 +167,12 @@ xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
 rvar :: Int -> String
 rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
+quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v,t) phi =
   App (Const q noType isaTerm) (Abs (Const v noType isaTerm) t phi NotCont)
       NotCont
 
+quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify q (v,t) phi  = 
   quantifyIsa (qname q) (transVar v, transSort t) phi
   where
@@ -184,21 +180,27 @@ quantify q (v,t) phi  =
   qname Existential = "Ex"
   qname Unique_existential = "Ex1"
 
-
+binOp :: String -> Term -> Term -> Term
 binOp s phi1 phi2 = 
     App (App (Const s noType isaTerm) phi1 NotCont) phi2 NotCont
-binConj= binOp "op &"
+
+conj :: [Term] -> Term
 conj l = if null l then true else foldr1 binConj l
 
+binConj, binDisj, binImpl, binEq :: Term -> Term -> Term
+binConj= binOp "op &"
 binDisj = binOp "op |"
 binImpl = binOp "op -->"
 binEq = binOp "op ="
+
+true, false :: Term
 true = Const "True" noType isaTerm
 false = Const "False" noType isaTerm 
 
-prodType t1 t2 = Type "*" [t1,t2] []
+prodType :: Typ -> Typ -> Typ
+prodType t1 t2 = Type "*" [] [t1,t2]
 
-transOP_SYMB _ (Op_name op) = error "CASL2Isabelle: unqualified operation"
+transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
   case (do ots <- Map.lookup op (opMap sign)
            if Set.size ots == 1 then return $ showIsa op
@@ -206,8 +208,9 @@ transOP_SYMB sign (Qual_op_name op ot _) =
                     return $ showIsaI op (i+1)) of
     Just str -> str  
     Nothing -> showIsa op
+transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
-transPRED_SYMB _ (Pred_name p) = error "CASL2Isabelle: unqualified predicate"
+transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> String
 transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
            if Set.size pts == 1 then return $ showIsa p 
@@ -215,6 +218,7 @@ transPRED_SYMB sign (Qual_pred_name p pt _) =
                     return $ showIsaI p (i+1)) of
     Just str -> str
     Nothing -> error "CASL2Isabelle: showIsa p"
+transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
 mapSen trFrom sign phi = 
@@ -223,8 +227,8 @@ mapSen trFrom sign phi =
 
 transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e 
                 -> FORMULA f -> Term
-transFORMULA sign tr (Quantification quant vdecl phi _) =
-  foldr (quantify quant) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
+transFORMULA sign tr (Quantification qu vdecl phi _) =
+  foldr (quantify qu) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
 transFORMULA sign tr (Conjunction phis _) =
   if null phis then true
   else foldl1 binConj (map (transFORMULA sign tr) phis)
@@ -237,15 +241,15 @@ transFORMULA sign tr (Equivalence phi1 phi2 _) =
   binEq (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Negation phi _) =
   App (Const "Not" noType isaTerm) (transFORMULA sign tr phi) NotCont
-transFORMULA sign tr (True_atom _) =
+transFORMULA _sign _tr (True_atom _) =
   true
-transFORMULA sign tr (False_atom _) =
+transFORMULA _sign _tr (False_atom _) =
   false
 transFORMULA sign tr (Predication psymb args _) =
   foldl ( \ t1 t2 -> App t1 t2 NotCont)  
             (Const (transPRED_SYMB sign psymb) noType isaTerm) 
             (map (transTERM sign tr) args)
-transFORMULA sign tr (Definedness t _) =
+transFORMULA _sign _tr (Definedness _t _) =
   true
 transFORMULA sign tr (Existl_equation t1 t2 _) =
   binOp "op =" (transTERM sign tr t1) (transTERM sign tr t2)
@@ -258,37 +262,32 @@ transFORMULA sign tr (Sort_gen_ax constrs _) =
    trace "WARNING: ignoring sort generation constraints" 
           $ true
   --error "No translation for sort generation constraints"
-transFORMULA sign tr (Mixfix_formula _) = 
+transFORMULA _sign _tr (Mixfix_formula _) = 
   error "No translation for mixfix formulas"
-transFORMULA sign tr (Unparsed_formula _ _) = 
+transFORMULA _sign _tr (Unparsed_formula _ _) = 
   error "No translation for unparsed formulas"
 transFORMULA sign tr (ExtFORMULA phi) =
   tr sign phi
 
-transTERM sign tr (Qual_var v s _) =
+transTERM :: CASL.Sign.Sign f e
+	     -> (CASL.Sign.Sign f e -> f -> Term) -> TERM f -> Term
+transTERM _sign _tr (Qual_var v _s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
   foldl ( \ t1 t2 -> App t1 t2 IsCont) 
             (Const (transOP_SYMB sign opsymb) noType isaTerm) 
             (map (transTERM sign tr) args)
-transTERM sign tr (Sorted_term t s _) =
+transTERM sign tr (Sorted_term t _s _) =
   transTERM sign tr t
-transTERM sign tr (Cast t s _) =
+transTERM sign tr (Cast t _s _) =
   transTERM sign tr t -- ??? Should lead to an error!
 transTERM sign tr (Conditional t1 phi t2 _) =
   App (App (App (Const "If" noType isaTerm) (transFORMULA sign tr phi) NotCont)
        (transTERM sign tr t1) NotCont) (transTERM sign tr t2) NotCont
-transTERM sign tr (Simple_id v) =
+transTERM _sign _tr (Simple_id v) =
   IsaSign.Free (transVar v) noType isaTerm
   --error "No translation for undisambiguated identifier"
-transTERM sign tr (Unparsed_term _ _) =
-  error "No translation for unparsed terms"
-transTERM sign tr (Mixfix_qual_pred _) =
-  error "No translation for mixfix terms"
-transTERM sign tr (Mixfix_term _) =
-  error "No translation for mixfix terms"
-transTERM sign tr (Mixfix_token _) =
-  error "No translation for mixfix terms"
-transTERM sign tr (Mixfix_sorted_term _ _) =
-  error "No translation for mixfix terms"
+transTERM _sign _tr _ =
+  error "CASL2IsabelleHOL.transTERM" 
+
 
