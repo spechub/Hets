@@ -27,7 +27,7 @@ Portability :  non-portable (imports Logic.Logic)
 -}
 
 
-module Comorphisms.HasCASL2IsabelleHOLCF where
+module Comorphisms.Haskell2IsabelleHOLCF where
 
 import Logic.Logic
 -- import Logic.Comorphism
@@ -45,7 +45,7 @@ import Common.AS_Annotation (Named)
 import Haskell.Hatchet.MultiModuleBasics as MMB
 --import qualified Haskell.Hatchet.MultiModuleBasics as MMB (ModuleInfo,
 --                                          emptyModuleInfo,
---					  joinModuleInfo)
+--                                        joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl,AHsName) 
 import Haskell.Hatchet.FiniteMaps as FiniteMaps
 import Haskell.Hatchet.Representation as Rep
@@ -514,7 +514,7 @@ transSentence e s = case s of
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm _ (QualVar (VarDecl var typ _ _)) = 
     let tp = transType typ 
-	otp = tp --> mkOptionType tp
+        otp = tp --> mkOptionType tp
      in  (conSomeT otp) `App` IsaSign.Free(transVar var, tp)
 transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | opId == trueId =  con "True"

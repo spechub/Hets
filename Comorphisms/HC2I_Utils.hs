@@ -49,17 +49,17 @@ binConst s t1 t2 = termAppl (termAppl (con s) t1) t2
 
 
 termAppl :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
-termAppl t1 t2 = t1 `App` t2
+termAppl t1 t2 = App t1 t2 IsCont
 
 
 con :: String -> IsaSign.Term
-con s = Const(s, noType)
+con s = Const s noType isaTerm
 
 conSome :: IsaSign.Term
 conSome = con "Some"
 
 conSomeT :: Typ -> IsaSign.Term
-conSomeT t = Const("Some", t)
+conSomeT t = Const "Some" t isaTerm
 
 defOp :: IsaSign.Term
 defOp = con "defOp"

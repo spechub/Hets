@@ -51,19 +51,19 @@ instance Show Typ where
   show = showTyp 1000
 
 showTyp :: Integer -> Typ -> String
-showTyp pri (Type ("typeAppl",[s,t])) =
+showTyp pri (Type "typeAppl" _ [s,t]) =
   if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
     else showTyp pri s ++ sp ++ showTyp pri t
   where withTFrees tv =
           case tv of
-            TFree _ -> True
-            Type (_, ts) -> and (map withTFrees ts)
+            TFree _ _ -> True
+            Type _ _ ts -> and (map withTFrees ts)
             _      -> False
-showTyp pri (Type ("fun",[s,t])) = 
+showTyp pri (Type "fun" _ [s,t]) = 
   bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
-showTyp pri (Type ("*",[s,t])) =
+showTyp pri (Type "*" _ [s,t]) =
   lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
-showTyp _ (Type (name,args)) = 
+showTyp _ (Type name _ args) = 
   case args of
     []     -> name
     arg:[] -> show arg ++ sp ++ name
@@ -72,10 +72,10 @@ showTyp _ (Type (name,args)) =
                 lb ++ concat (map ((sp++) . show) tyVars) ++
                       concat (map ((sp++) . show) types) ++ rb ++ name
               where split (tv,ty) t = case t of 
-                                        TFree _ -> (tv++[t],ty)
+                                        TFree _ _ -> (tv++[t],ty)
                                         _       -> (tv,ty++[t])
-showTyp _ (TFree (v,_)) = "\'" ++ v
-showTyp _ (TVar ((v,_),_)) = "?\'" ++ v
+showTyp _ (TFree v _) = "\'" ++ v
+showTyp _ (TVar (v,_) _) = "?\'" ++ v
 
 instance Show TypeSig where
   show tysig =
@@ -90,16 +90,16 @@ instance Show Term where
   show = showTerm -- outerShowTerm   -- back to showTerm, because meta !! causes problems with show ?thesis
 
 showTerm :: Term -> String
-showTerm (Const (c,_)) = c
-showTerm (Free (v,_)) = v
-showTerm (Abs (v,_,t)) = lb++"% "++showTerm v++" . "++showTerm t++rb
-showTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
+showTerm (Const c _ _) = c
+showTerm (Free v _ _) = v
+showTerm (Abs v _ t _) = lb++"% "++showTerm v++" . "++showTerm t++rb
+showTerm (App (Const "All" _ _) (Abs v ty t _) _) = 
   showQuant "!" v ty t
-showTerm (Const ("Ex",_) `App` Abs (v,ty,t)) = 
+showTerm (App (Const "Ex" _ _) (Abs v ty t _) _) = 
   showQuant "?" v ty t
-showTerm (Const ("Ex1",_) `App` Abs (v,ty,t)) = 
+showTerm (App (Const "Ex1" _ _) (Abs v ty t _) _) = 
   showQuant "?!" v ty t
-showTerm (Case (term, alts)) =
+showTerm (Case term alts _) =
   let sAlts = map showCaseAlt alts
   in 
    lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
@@ -107,9 +107,10 @@ showTerm (Case (term, alts)) =
       ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
                                                     (tail sAlts)) ++ rb
 -- Just t1 `App` t2 left
-showTerm (If (t1,t2,t3)) = lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
-                      ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
-showTerm (Let (pts, t)) = lb ++ "let" ++ sp ++ showPat False (head pts) 
+showTerm (If t1 t2 t3 _) = 
+    lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
+           ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
+showTerm (Let pts t _) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
 showTerm t = showPTree (toPrecTree t)
@@ -133,14 +134,14 @@ showQuant s var typ term =
   (s++sp++showTerm var++" :: "++show typ++" . "++showTerm term)
 
 outerShowTerm :: Term -> String
-outerShowTerm (Const ("All",_) `App` Abs (v,ty,t)) = 
+outerShowTerm (App (Const "All" _ _) (Abs v ty t _) _) = 
   outerShowQuant "!!" v ty t
-outerShowTerm (Const ("op -->",_) `App` t1 `App` t2) =
+outerShowTerm (App (App (Const "op -->" _ _) t1 _) t2 _) =
   showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm t = showTerm t
 
 outerShowTerm1 :: Term -> String
-outerShowTerm1 (Const ("op -->",_) `App` t1 `App` t2) =
+outerShowTerm1 (App (App (Const "op -->" _ _) t1 _) t2 _) =
   showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm1 t = showTerm t
 
@@ -200,40 +201,40 @@ noPrec :: Term -> PrecTerm
 noPrec t = PrecTerm t (-10)
 
 toPrecTree :: Term -> PrecTermTree
-toPrecTree t =
-  case t of
-    (Const("All",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", noType))) 
-            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
-    (Const("Ex",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", noType))) 
-            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]
-    (Const("Ex1",t1) `App` Abs(v,ty,t2)) -> 
-       Node (isaAppPrec (Const ("QUANT", noType))) 
-            [toPrecTree (Const("All",t1)), toPrecTree (Abs(v,ty,t2))]    
-    (t1 `App` t2) -> 
+toPrecTree trm =
+  case trm of
+    App c1@(Const "All" _ _) a2@(Abs _ _ _ _) _-> 
+       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
+            [toPrecTree c1, toPrecTree a2]
+    App (Const "Ex" t1 c) a2@(Abs _ _ _ _) _ -> 
+       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
+            [toPrecTree (Const "All" t1 c), toPrecTree a2]
+    App (Const "Ex1" t1 c) a2@(Abs _ _ _ _) _ -> 
+       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
+            [toPrecTree (Const "All" t1 c), toPrecTree a2]
+    App t1 t2 _ -> 
       case t1 of 
-        Const ("op <=>", typ) `App` t3 
-          -> Node (eqvPrec (Const ("op =",typ))) 
+        App t@(Const "op <=>" _ _) t3 _ 
+          -> Node (eqvPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        Const ("op =", typ) `App` t3 
-          -> Node (eqPrec (Const ("op =",typ))) 
+        App t@(Const "op =" _ _) t3 _
+          -> Node (eqPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        Const ("op &", typ) `App` t3 
-          -> Node (andPrec (Const ("op &",typ))) 
+        App t@(Const "op &" _ _) t3 _ 
+          -> Node (andPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        Const ("op |", typ) `App` t3 
-          -> Node (orPrec (Const ("op |",typ))) 
+        App t@(Const "op |" _ _) t3 _ 
+          -> Node (orPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        Const ("op -->", typ) `App` t3 
-          -> Node (implPrec (Const ("op -->",typ)))
+        App t@(Const "op -->" _ _) t3 _ 
+          -> Node (implPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        Const (c, typ) `App` t3 
-          -> Node (appPrec (Const (c, typ))) 
+        App t@(Const _ _ _) t3 _ 
+          -> Node (appPrec t)
                   [toPrecTree t3, toPrecTree t2] 
-        _ -> Node (isaAppPrec (Const ("DUMMY", noType))) 
+        _ -> Node (isaAppPrec (Const "DUMMY" noType isaTerm)) 
                [toPrecTree t1, toPrecTree t2] 
-    _ -> Node (noPrec t) []
+    _ -> Node (noPrec trm) []
 
 
 -- instance Show PrecTermTree where
@@ -248,15 +249,15 @@ showPTree (Node (PrecTerm term pre) annos) =
       rightChild = last annos
    in
      case term of
-       Const ("op =", _)   -> infixP pre "=" LeftAs leftChild rightChild
-       Const ("op &", _)   -> infixP pre "&" RightAs leftChild rightChild
-       Const ("op |", _)   -> infixP pre "|" RightAs leftChild rightChild
-       Const ("op -->", _) -> infixP pre "-->" RightAs leftChild rightChild
-       Const ("DUMMY", _)  -> simpleInfix pre leftChild rightChild
-       Const ("Pair", _)   -> pair leftChild rightChild
-       Const ("QUANT",_)   -> quant leftChild rightChild
-       Const (c, _)        -> prefixP pre c leftChild rightChild
-       _                   -> showTerm term
+       Const "op =" _ _   -> infixP pre "=" LeftAs leftChild rightChild
+       Const "op &" _ _   -> infixP pre "&" RightAs leftChild rightChild
+       Const "op |" _ _   -> infixP pre "|" RightAs leftChild rightChild
+       Const "op -->" _ _ -> infixP pre "-->" RightAs leftChild rightChild
+       Const "DUMMY" _ _  -> simpleInfix pre leftChild rightChild
+       Const "Pair" _ _   -> pair leftChild rightChild
+       Const "QUANT"_ _   -> quant leftChild rightChild
+       Const c _ _        -> prefixP pre c leftChild rightChild
+       _                  -> showTerm term
 
 
 {- Logical connectors: For readability and by habit they are written 
@@ -353,12 +354,15 @@ simpleInfix pAdult leftChild rightChild
 {- Quantification _in_ Formulas
 -}
 quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const("All",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
-  lb++showQuant "!"  v ty t++rb
-quant (Node (PrecTerm (Const("Ex",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) [])  = 
-  lb++showQuant "?"  v ty t++rb
-quant (Node (PrecTerm (Const("Ex1",_)) _) []) (Node (PrecTerm (Abs(v,ty,t)) _) []) = 
-  lb++showQuant "?!"  v ty t++rb
+quant (Node (PrecTerm (Const"All"_ _) _) []) 
+          (Node (PrecTerm (Abs v ty t _) _) []) = 
+              lb++showQuant "!"  v ty t++rb
+quant (Node (PrecTerm (Const"Ex"_ _) _) []) 
+          (Node (PrecTerm (Abs v ty t _) _) [])  = 
+              lb++showQuant "?"  v ty t++rb
+quant (Node (PrecTerm (Const"Ex1"_ _) _) []) 
+          (Node (PrecTerm (Abs v ty t _) _) []) = 
+              lb++showQuant "?!"  v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
@@ -410,7 +414,7 @@ instance Show Sign where
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
-                    TFree _ -> show arg
+                    TFree _ _-> show arg
                     _      -> "\"" ++ show arg ++ "\""
 
 

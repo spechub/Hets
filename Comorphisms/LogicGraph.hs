@@ -49,6 +49,7 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.CASL2CspCASL
+import Comorphisms.Haskell2IsabelleHOLCF
 
 import qualified Common.Lib.Map as Map
 
@@ -68,7 +69,8 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 		 Comorphism HasCASL2Haskell,
                  Comorphism CASL2IsabelleHOL, 
 		 Comorphism CASL2Modal, 
-		 Comorphism Modal2CASL, 
+--		 Comorphism Haskell2IsabelleHOLCF,
+                 Comorphism Modal2CASL, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
                  Comorphism HasCASL2IsabelleHOL,
                  Comorphism CASL2CspCASL]

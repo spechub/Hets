@@ -149,7 +149,7 @@ makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
 makeDtDef _ _ = Nothing
 
 transSort :: SORT -> Typ
-transSort s = Type(showIsa s,[])
+transSort s = Type (showIsa s) [] []
 
 transOpType :: OpType -> Typ
 transOpType ot = map transSort (opArgs ot) ---> transSort (opRes ot)
@@ -161,7 +161,7 @@ transPredType pt = map transSort (predArgs pt) ---> boolType
 ------------------------------ Formulas ------------------------------
 
 var :: String -> Term
-var v = IsaSign.Free(v,noType)
+var v = IsaSign.Free v noType isaTerm
 
 transVar :: VAR -> String
 transVar = showIsaSid
@@ -173,7 +173,8 @@ rvar :: Int -> String
 rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
 quantifyIsa q (v,t) phi =
-  Const (q,noType) `App` Abs ( (Const(v, noType)) , t,phi)
+  App (Const q noType isaTerm) (Abs (Const v noType isaTerm) t phi NotCont)
+      NotCont
 
 quantify q (v,t) phi  = 
   quantifyIsa (qname q) (transVar v, transSort t) phi
@@ -183,20 +184,18 @@ quantify q (v,t) phi  =
   qname Unique_existential = "Ex1"
 
 
-binConj phi1 phi2 = 
-  Const("op &",noType) `App` phi1 `App` phi2
+binOp s phi1 phi2 = 
+    App (App (Const s noType isaTerm) phi1 NotCont) phi2 NotCont
+binConj= binOp "op &"
 conj l = if null l then true else foldr1 binConj l
 
-binDisj phi1 phi2 = 
-  Const("op |",noType) `App` phi1 `App` phi2
-binImpl phi1 phi2 = 
-  Const("op -->",noType) `App` phi1 `App` phi2
-binEq phi1 phi2 = 
-  Const("op =",noType) `App` phi1 `App` phi2
-true = Const ("True",noType)
-false = Const ("False",noType)
+binDisj = binOp "op |"
+binImpl = binOp "op -->"
+binEq = binOp "op ="
+true = Const "True" noType isaTerm
+false = Const "False" noType isaTerm 
 
-prodType t1 t2 = Type("*",[t1,t2])
+prodType t1 t2 = Type "*" [t1,t2] []
 
 transOP_SYMB _ (Op_name op) = error "CASL2Isabelle: unqualified operation"
 transOP_SYMB sign (Qual_op_name op ot _) = 
@@ -236,20 +235,21 @@ transFORMULA sign tr (Implication phi1 phi2 _ _) =
 transFORMULA sign tr (Equivalence phi1 phi2 _) =
   binEq (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Negation phi _) =
-  Const ("Not",noType) `App` (transFORMULA sign tr phi)
+  App (Const "Not" noType isaTerm) (transFORMULA sign tr phi) NotCont
 transFORMULA sign tr (True_atom _) =
   true
 transFORMULA sign tr (False_atom _) =
-  Const ("False",noType)
+  false
 transFORMULA sign tr (Predication psymb args _) =
-  foldl App (Const (transPRED_SYMB sign psymb,noType)) 
+  foldl ( \ t1 t2 -> App t1 t2 NotCont)  
+            (Const (transPRED_SYMB sign psymb) noType isaTerm) 
             (map (transTERM sign tr) args)
 transFORMULA sign tr (Definedness t _) =
   true
 transFORMULA sign tr (Existl_equation t1 t2 _) =
-  Const ("op =",noType) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
+  binOp "op =" (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Strong_equation t1 t2 _) =
-  Const ("op =",noType) `App` (transTERM sign tr t1) `App` (transTERM sign tr t2)
+  binOp "op =" (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Membership t1 s _) =
   trace "WARNING: ignoring membership formula" $ true
   --error "No translation for membership"
@@ -267,19 +267,19 @@ transFORMULA sign tr (ExtFORMULA phi) =
 transTERM sign tr (Qual_var v s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
-  foldl App (Const (transOP_SYMB sign opsymb,noType)) 
+  foldl ( \ t1 t2 -> App t1 t2 IsCont) 
+            (Const (transOP_SYMB sign opsymb) noType isaTerm) 
             (map (transTERM sign tr) args)
 transTERM sign tr (Sorted_term t s _) =
   transTERM sign tr t
 transTERM sign tr (Cast t s _) =
   transTERM sign tr t -- ??? Should lead to an error!
 transTERM sign tr (Conditional t1 phi t2 _) =
-  Const ("If",noType) `App` (transFORMULA sign tr phi) 
-                      `App` (transTERM sign tr t1)
-                      `App` (transTERM sign tr t2)
+  App (App (App (Const "If" noType isaTerm) (transFORMULA sign tr phi) NotCont)
+       (transTERM sign tr t1) NotCont) (transTERM sign tr t2) NotCont
 transTERM sign tr (Simple_id v) =
-  IsaSign.Free(transVar v,noType)
-  --error "No translation for undisambigated identifier"
+  IsaSign.Free (transVar v) noType isaTerm
+  --error "No translation for undisambiguated identifier"
 transTERM sign tr (Unparsed_term _ _) =
   error "No translation for unparsed terms"
 transTERM sign tr (Mixfix_qual_pred _) =

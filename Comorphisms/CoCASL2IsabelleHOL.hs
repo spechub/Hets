@@ -103,27 +103,32 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
              -- variables for the extra parameters
              varDecls = zip [xvar i | i<-indicesArgs] (map transSort args)
              -- the selector ...
-             top = Const (transOP_SYMB sign opsymb,noType)
+             top = Const (transOP_SYMB sign opsymb) noType isaTerm
              -- applied to x and extra parameter vars
-             rhs = foldl App (top `App` var "x") (map (var . xvar) indicesArgs)
+             appFold = foldl ( \ t1 t2 -> App t1 t2 IsCont)
+             rhs = appFold (App top (var "x") IsCont) 
+                       (map (var . xvar) indicesArgs)
              -- applied to y and extra parameter vars
-             lhs = foldl App (top `App` var "y") (map (var . xvar) indicesArgs)
+             lhs = appFold (App top (var "y") IsCont) 
+                             (map (var . xvar) indicesArgs)
              chi = -- is the result of selector non-observable? 
                    if res `elem` sorts
                      -- then apply corresponding relation
-                     then var (rvar (fromJust (findIndex (==res) sorts)))
-                           `App` rhs `App` lhs
+                     then App (App (var $ 
+                                    rvar (fromJust (findIndex (==res) sorts)))
+                               rhs NotCont) lhs NotCont
                      -- else use equality
                      else binEq rhs lhs
           in foldr (quantifyIsa "All") chi varDecls
         prem1 = conj (map premSel sels)
-        concl1 = var (rvar i) `App` var "x" `App` var "y"
+        concl1 = App (App (var $ rvar i) (var "x") NotCont) (var "y") NotCont
         psi = concl1 `binImpl` prem1
         typS = transSort s
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
   concls = conj (map concl (zip sorts indices))
-  concl (s,i::Int) = binImpl (var (rvar i) `App` var "u" `App` var "v") 
+  concl (s,i::Int) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
+                     (var "v") NotCont) 
                              (binEq (var "u") (var "v"))
 formTrCoCASL sign (Box mod phi _) = 
    trace "WARNING: ignoring modal forumla" 
