@@ -26,7 +26,9 @@ import qualified Common.Lib.Map as Map
 
 import Static.DevGraph
 import ATC.DevGraph
+import Common.SimpPretty (SDoc, TextDetails(..), fullRender)
 -- for debugging
+import Debug.Trace
 
 {---
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
@@ -83,6 +85,7 @@ write_casl_latex opt oup ld =
     do hout <- openFile oup WriteMode
        putIfVerbose opt 3 (show (printText0_eGA (initGlobalAnnos ld)))
        hPutStr hout $ printLIB_DEFN_latex ld
+       hClose hout
        doIfVerbose opt 5
         (do dout <- openFile (debug_latex_filename oup) WriteMode
             hPutStr dout $ printLIB_DEFN_debugLatex ld
@@ -91,16 +94,33 @@ write_casl_latex opt oup ld =
 
 writeShATermFile :: (ATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFile fp atcon = writeFile fp $ toShATermString atcon 
-                            
+
+writeShATermFileSDoc :: (ATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFileSDoc fp atcon =
+    do let sDoc = writeSharedATermSDoc (versionedATermTable atcon)
+       h <- openFile fp WriteMode
+       hPutSDoc h sDoc
+       hClose h
+
+hPutSDoc :: Handle -> SDoc -> IO ()
+hPutSDoc h sd = fullRender hPutTD (return ()) sd
+    where hPutTD :: TextDetails -> IO () -> IO ()
+	  hPutTD td io = case td of
+			 Chr  c -> hPutChar h c >> io
+			 Str  s -> hPutStr  h s >> io
+
+versionedATermTable :: (ATermConvertible a) => a -> ATermTable
+versionedATermTable atcon =     
+    let (att0,versionnr) = toShATerm emptyATermTable hetcats_version
+	(att1,aterm) = seq att0 $ toShATerm att0 atcon
+    in seq att1 $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+                           
 toShATermString :: (ATermConvertible a) => a -> String
-toShATermString atcon = let (att0,versionnr) = toShATerm emptyATermTable hetcats_version
-			    (att1,aterm) = toShATerm att0 atcon
-                            (att2,hets)  = addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
-                        in writeSharedATerm att2
+toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
                         
 
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
-globalContexttoShATerm fp gc = writeShATermFile fp gc
+globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
 
 rmSuffix :: String -> String
 rmSuffix = reverse . tail . snd . break (=='.') . reverse
@@ -111,5 +131,6 @@ writeFileInfo opts file ln lenv =
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
-      return ()
-      --putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
+      --return ()
+      --writeFile (envFile++"-string") (show gctx)
+      putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
