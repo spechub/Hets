@@ -111,7 +111,10 @@ restrict r s =
   $
   Map.foldWithKey
   (\a ra -> if a `Set.member` s 
-             then Map.insert a (ra `Set.intersection` s)
+             then case ra `Set.intersection` s of 
+                    ra_s -> if Set.isEmpty ra_s 
+                             then id
+                             else Map.insert a ra_s
              else id)
   Map.empty
   $
