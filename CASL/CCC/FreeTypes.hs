@@ -10,6 +10,17 @@
     Portability :  portable
 
 -}
+
+{-  "free datatypes and recursive equations are consistent"
+
+checkFreeType :: (PrettyPrint f, Eq f) => 
+                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
+                       -> Result (Maybe Bool)
+Just (Just True) => Yes, is consistent
+Just (Just False) => No, is inconsistent
+Just Nothing => don't know
+-}
+
 {- todo
 
 Improve warnings: sort s should output the actual sort
@@ -17,9 +28,6 @@ Improve warnings: sort s should output the actual sort
 Document the code
 
 Check CASL-lib/Basic/Numbers.casl
-
-http://elan.loria.fr/    http://www1.elsevier.com/gej-ng/31/29/23/71/22/73/entcs36006.pdf
-  topic: prove termination of rewriting
 
 -} 
 
@@ -69,18 +77,20 @@ checkFreeType :: (PrettyPrint f, Eq f) =>
 checkFreeType (osig,osens) m fsn      
 #ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
-                   let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
+                   let (Id ts _ ps) = head $ filter (\s->not $ elem s srts) newL
                        pos = headPos ps
-                   in warning Nothing "sort s is not in srts" pos
+                       sname = concat $ map tokStr ts 
+                   in warning Nothing (sname ++ " is not in new sorts") pos
        | Set.any (\s->not $ elem s f_Inhabited) newSorts =
-                   let (Id _ _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
+                   let (Id ts _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
                        pos = headPos ps
-                   in warning (Just False) "sort s is not inhabited" pos
+                       sname = concat $ map tokStr ts 
+                   in warning (Just False) (sname ++ " is not inhabited") pos
        | elem Nothing l_Syms =
                    let (Quantification _ _ _ ps) = head $ filter (\f->(leadingSym f) == Nothing) op_preds
                        pos = headPos ps
                    in warning Nothing "formula f is illegal" pos
-       | any id $ map find_ot id_ots ++ map find_pt id_pts =    -- return Nothing
+       | any id $ map find_ot id_ots ++ map find_pt id_pts =    
                    let pos = if any id $ map find_ot id_ots then headPos old_op_ps
                              else headPos old_pred_ps
                    in warning Nothing "leading symbol ist not new" pos
@@ -100,8 +110,28 @@ checkFreeType (osig,osens) m fsn
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE
+{-call the symbols in the image of the signature morphism "new"
+
+- each new sort must be a free type,
+  i.e. it must occur in a sort generation constraint that is marked as free
+     (Sort_gen_ax constrs True)
+     such that the sort is in srts, where (srts,ops,_)=recover_Sort_gen_ax constrs
+    if not, output "don't know"
+  and there must be one term of that sort (inhabited)
+    if not, output "no"
+- group the axioms according to their leading operation/predicate symbol,
+  i.e. the f resp. the p in
+  forall x_1:s_n .... x_n:s_n .                  f(t_1,...,t_m)=t
+  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
+                                  Implication  Application  Strong_equation
+  forall x_1:s_n .... x_n:s_n .                  p(t_1,...,t_m)<=>phi
+  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
+                                 Implication   Predication    Equivalence
+  if there are axioms not being of this form, output "don't know"
+
+-}
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
-         fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
+         fs = trace (showPretty fs1 "Axiom") fs1                     -- new Axioms
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
@@ -123,12 +153,15 @@ checkFreeType (osig,osens) m fsn
          constructors = trace (showPretty constructors1 "constructors") constructors1       -- constructors
          f_Inhabited1 = inhabited (Set.toList oldSorts) fconstrs
          f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1      --  f_inhabited
-         op_preds1 = filter (\f->case f of
-                                  Quantification Universal _ _ _ -> True
-                                  _ -> False) fs
+         op_preds1 = filter (\f-> case f of                       
+                                    Sort_gen_ax _ _ -> False
+                                    _ -> True) fs
          op_preds = trace (showPretty op_preds1 "leading") op_preds1         --  leading
          l_Syms1 = map leadingSym op_preds
          l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1         -- leading_Symbol
+{-check if leading symbols are new (not in the image of morphism),
+    if not, return Nothing
+-}
          op_fs = filter (\f-> case leadingSym f of
                                 Just (Left _) -> True
                                 _ -> False) op_preds 
@@ -161,6 +194,14 @@ checkFreeType (osig,osens) m fsn
          find_pt (ident,pt) = case Map.lookup ident oldPredMap of
                                   Nothing -> False
                                   Just pts -> Set.member pt pts
+{-
+   - the leading terms consist of variables and constructors only, if not, return Nothing
+     - split function leading_Symb into 
+       leading_Term_Predication ::  FORMULA f -> Maybe(Either Term (Formula f))
+       and 
+       extract_leading_symb :: Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
+     - collect all operation symbols from recover_Sort_gen_ax fconstrs (= constructors)
+-}
          ltp1 = map leading_Term_Predication op_preds                 
          ltp = trace (showPretty ltp1 "leading_term_pre") ltp1              --  leading_term_pre
          leadingTerms1 = concat $ map (\tp->case tp of
@@ -171,7 +212,11 @@ checkFreeType (osig,osens) m fsn
                                                                Qual_var _ _ _ -> True
                                                                Application op' _ _ -> elem op' constructors && 
                                                                                       checkTerm (term t) 
-                                                               _ -> False) ts 
+                                                               _ -> False) ts
+{-
+   - no variable occurs twice in a leading term, 
+       if not, return Nothing
+-} 
          checkVar (Application _ ts _) = overlap $ concat $ map allVarOfTerm ts
          allVarOfTerm t = case t of
                             Qual_var _ _ _ -> [t]
@@ -179,12 +224,21 @@ checkFreeType (osig,osens) m fsn
                             Application _ ts _ -> if length ts==0 then []
                                                   else concat $ map allVarOfTerm ts
                             _ -> [] 
+{-  check that patterns do not overlap, if not, return Nothing This means:
+       in each group of the grouped axioms:
+       all patterns of leading terms/formulas are disjoint
+       this means: either leading symbol is a variable, and there is just one axiom
+                   otherwise, group axioms according to leading symbol
+                              no symbol may be a variable
+                              check recursively the arguments of constructor in each group
+-}
+
          leadingPatterns1 = map (\l-> case l of                     
                                        Just (Left (Application _ ts _))->ts
                                        Just (Right (Predication _ ts _))->ts
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
-   --      leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
+    --     leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
                      Application _ _ _->True
@@ -303,7 +357,6 @@ spec NatJT1 =
   sort Elem
   free type Bool ::= True | False
   op __or__ : Bool*Bool->Bool
-  forall m,n:Bool
   . True or True = True
   . True or False = True
   . False or True = True
@@ -322,7 +375,7 @@ end
 
 CiME:
 let F = signature "when_else : 3; eq : binary; True,False : constant; True : constant; False : constant; __or__ : binary; Leaf : unary; Branch : unary; Nil : constant; Cons : binary; elemT : binary; elemF : binary; ";
-let X = vars "t1 t2 m n x y t f";
+let X = vars "t1 t2 x y t f";
 let axioms = TRS F X "
 eq(t1,t1) -> True;
 eq(t1,t2) -> False;
@@ -339,25 +392,23 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 
 -}      
          oldfs1 = map sentence (filter is_user_or_sort_gen osens)
-         oldfs = trace (showPretty oldfs1 "Old_Axiom") oldfs1
-         old_op_preds = filter (\f->case f of
-                                  Quantification Universal _ _ _ -> True
-                                  _ -> False) oldfs
+         oldfs = trace (showPretty oldfs1 "Old_Axiom") oldfs1               -- old Axioms
+         old_op_preds = filter (\f->case f of             
+                                      Sort_gen_ax _ _ -> False
+                                      _ -> True) oldfs
          o_fconstrs = concat $ map fc oldfs
          (_,o_constructors1,_) = recover_Sort_gen_ax o_fconstrs
-         o_constructors = trace (showPretty o_constructors1 "o_constructors") o_constructors1       -- o_constructors
+         o_constructors = trace (showPretty o_constructors1 "o_constructors") o_constructors1       -- olc constructors
          o_l_Syms1 = map leadingSym old_op_preds
-         o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1         -- leading_Symbol
-         idStr (Id ts _ _) = concat $ map tokStr ts
-              --               if (tokStr (head ts)) == "__" then (tokStr (head (tail ts)))
-              --               else tokStr (head ts) 
-         rP cp = do
+         o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1         --old leading_Symbol
+         idStr (Id ts _ _) = concat $ map tokStr ts 
+         rP cp = do                   --read the result of proof
             msg <- readMsg cp
             case msg of
               "Termination proof found." -> return True
               "Quitting." -> return False
               _ -> rP cp
-         opStr o_s = case o_s of
+         opStr o_s = case o_s of                -- kontext analyse
                        Qual_op_name op_n (Total_op_type a_sorts _ _) _ -> case (length a_sorts) of 
                                                                             0 -> (idStr op_n) ++ " : constant"
                                                                             1 -> (idStr op_n) ++ " : unary"
@@ -377,37 +428,35 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                             6 -> (idStr op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature"
                        _ -> error "Termination_Signature"
-         sigComb sig1 sig2 | null sig2 =sig1
+         sigComb sig1 sig2 | null sig2 =sig1             
                            | otherwise = case (head sig2) of
                                            Just (Left o_s) -> if elem o_s sig1 then sigComb sig1 (tail sig2)
                                                               else sigComb (o_s:sig1) (tail sig2)
                                            Just (Right _) -> sigComb sig1 (tail sig2)       --  not Predication
                                            _ -> error "Termination_Signature" 
-         signStr signs str
+         signStr signs str                         -- transform signature to string
                  | null signs = str
                  | otherwise = signStr (tail signs) (str ++ (opStr $ head signs) ++ "; ")
-           --      | otherwise = if null str then signStr (tail signs) (str ++ (opStr $ head signs))
-           --                    else signStr (tail signs) (str ++ "; " ++ (opStr $ head signs))
-         varOfAxiom f = case f of
+         varOfAxiom f = case f of                  -- all variable of a axiom
                           Quantification Universal v_d _ _ -> concat $  map (\v-> case v of
                                                                                    Var_decl vs _ _ -> vs
-                                                                                   _ -> error "Termination_Variable") v_d 
-                          _ -> error "Termination_Variable"
+                                                                                   _ -> error "Termination_Variable") v_d
+                          _ -> [] 
          allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
-         varsStr vars str
+         varsStr vars str                          --  transform variable-array to string
                  | null vars = str
                  | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
-         f_str f = case f of
+         f_str f = case f of                        --  transform a axiom to string
                      Quantification Universal _ f' _ -> f_str f' 
                      Implication _ f' _ _ -> f_str f' 
                      Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
                      _ -> error "Termination_Axioms"
-         t_f_str f =case f of
+         t_f_str f =case f of                       --  condition of term
                      Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
                      _ -> error "Termination_Term-Formula"
-         termStr t = case (term t) of
+         termStr t = case (term t) of              -- transform a term to string
                        (Qual_var var _ _) -> tokStr var
                        (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStr opn)
                                                                     else ((idStr opn) ++ "(" ++ 
@@ -415,11 +464,11 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                        (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
                                                   ")")                                 -- ?
                        _ -> error "Termination_Term"
-         axiomStr axioms str 
+         axiomStr axioms str                           -- transform all axioms to string
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-                 cim <- newChildProcess "cime" []
+                 cim <- newChildProcess "/home/xinga/bin/cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
                  sendMsg cim ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_op_preds ++ op_preds) "") ++ "\";")        
@@ -433,6 +482,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  sendMsg cim "#quit;"
                  res <-rP cim
                  return res)
+       -- print infomation 
          tmp = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
                                        "eq(t1,t2) -> False; " ++ 
                                        "when_else(t1,True,t2) -> t1; " ++ 
@@ -472,7 +522,7 @@ leadingSymb f = leading (f,False,False)
 leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
-                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)
+                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)     -- ?
                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                             ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                             ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
@@ -508,12 +558,3 @@ groupAxioms phis = do
                                   symb'= if not $ (elem fp symb) then fp:symb
                                          else symb
                               in p'++(filterA ps symb')
-{-
-instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
-  printText0 ga (Left x) = printText0 ga x
-  printText0 ga (Right x) = printText0 ga x
-
-instance PrettyPrint a => PrettyPrint (Maybe a) where
-  printText0 ga (Just x) = printText0 ga x
-  printText0 ga Nothing = ptext "Nothing"
--}
