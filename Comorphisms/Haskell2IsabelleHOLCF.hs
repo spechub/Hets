@@ -170,14 +170,11 @@ transSignature sign = Result []
     baseSig = "MainHC",
     tsig = emptyTypeSig 
            { 
-             classrel = Map.union Map.empty $ getClassrel (HatAna.types sign),
-             abbrs = Map.union Map.empty $ getAbbrs (HatAna.types sign),
-             arities = Map.union Map.empty $ getArities (HatAna.instances sign) 
+             classrel = getClassrel (HatAna.types sign),
+             abbrs = getAbbrs (HatAna.types sign),
+             arities = getArities (HatAna.instances sign) 
            },
-    constTab = Map.union Map.empty $ getConstTab (HatAna.values sign),
---    constTab = Map.foldWithKey insertOps 
---                               Map.empty 
---                               (assumps sign),
+    constTab = getConstTab (HatAna.values sign),
     dataTypeTab = [],
     domainTab = getDomainTab (HatAna.types sign) (HatAna.values sign),
     showLemmas = False },
@@ -224,7 +221,7 @@ kindTrans :: TiKinds.Kind -> IsaSign.IsaKind
 kindTrans x = case x of 
                  K HsKindStruct.Kstar -> IsaSign.Star
                  K (HsKindStruct.Kfun a b) -> IsaSign.Kfun (kindTrans a) (kindTrans b)
-                 _ -> error "Hs2HOLCF.kindTrans,"
+                 _ -> error "error, Hs2HOLCF.kindTrans,"
 
 kindExTrans :: TiKinds.Kind -> IsaSign.ExKind
 kindExTrans x = case x of 
@@ -365,9 +362,11 @@ remove_dupes ls ms = case ls of x:rs -> if (elem x (rs ++ ms)) then remove_dupes
 
 getMainInstType :: HsInstance -> HsType
 getMainInstType i = case i of (Typ (HsTyApp _ t), _) -> t
+                              _ -> error "error, getMainInstType"
 
 getMainInstClass :: HsInstance -> HsClass
 getMainInstClass i = case i of (Typ (HsTyApp c _), _) -> c
+                               _ -> error "error, getMainInstClass"
 
 getInstType :: HsIClause -> HsType
 getInstType i = case i of (Typ (HsTyApp _ t)) -> t
@@ -375,9 +374,11 @@ getInstType i = case i of (Typ (HsTyApp _ t)) -> t
  
 getInstClass :: HsIClause -> HsType
 getInstClass i = case i of (Typ (HsTyApp c _)) -> c
+                           _ -> error "error, getInstClass"
 
 getInstPrems :: HsInstance -> [HsIClause]
 getInstPrems i = case i of (_, (_, ls)) -> ls
+                           _ -> error "error, getInstPrems"
 
 -------------- corresponding change in IsaSign
 
@@ -390,7 +391,7 @@ prepInst i = (getMainInstClass i, prepInst1 i)
 
 prepInst1 :: HsInstance -> [(HsType, [HsClass])]
 prepInst1 i = [(x, [getInstClass y | y <- getInstPrems i, getInstType y == x]) 
-              | x <- map getInstType (getInstPrems i)] 
+               | x <- map getInstType (getInstPrems i)] 
 
 
 ------------------------------- getting Type Constructors ---------------------
@@ -402,12 +403,15 @@ getTyCons g f =
 checkTyCons :: TyMap -> HsIdent.HsIdentI PNT -> Bool
 checkTyCons f n = case Map.lookup n f of 
                       Just (_, d) -> if d == TiTypes.Data || d == TiTypes.Newtype then True else False
-                      _ -> error "Haskell2IsabelleHOLCF.checkTyCons"
+                      _ -> False
+--                      _ -> error "Haskell2IsabelleHOLCF.checkTyCons"
 
 ---------------------------- checking mutual dependencies -----------------------
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-getDepDoms ls = checkDep (abCheckDep mutDep) (tail ls) [head ls] []
+getDepDoms ls = case ls of 
+                  x:xs -> checkDep (abCheckDep mutDep) (xs) [x] []
+                  [] -> []
 
 abCheckDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 abCheckDep f as bs = genOr (\x -> genOr (f x) bs) as  
