@@ -22,19 +22,12 @@ module Common.Earley (
                      -- * special tokens for special ids
                      varTok, exprTok, typeTok
 		     , applId, parenId, typeId, exprId, varId
-		     , tupleId, unitId, unknownId
-		     , Knowns
-		     , mkRuleId
-		     , protect
-		     , listRules
+		     , tupleId, unitId, unknownId, isUnknownId, unToken
+		     , Knowns, mkId, protect, listRules, mixRule
 		     , getTokenPlaceList
                      -- * resolution chart
-		     , Chart
-		     , mixDiags
-		     , ToExpr
-		     , initChart
-		     , nextChart
-		     , getResolved)
+		     , Chart, mixDiags, ToExpr
+		     , initChart, nextChart, getResolved)
     where
 
 import Common.Id
@@ -44,11 +37,11 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
-import Control.Exception (assert)
-import Debug.Trace(trace)
+-- import Control.Exception (assert)
+-- import Debug.Trace(trace)
 
---assert :: Bool -> a -> a
---assert b a = if b then a else error ("assert")
+assert :: Bool -> a -> a
+assert b a = if b then a else error ("assert")
 
 -- | a special index type for more type safety
 newtype Index = Index Int deriving (Eq, Ord, Show)
@@ -116,32 +109,32 @@ unknownTok :: Token
 unknownTok = mkSimpleId "(?)"
 
 -- | construct an 'Id' from a token list
-mkRuleId :: [Token] -> Id
-mkRuleId toks = Id toks [] []
+mkId :: [Token] -> Id
+mkId toks = Id toks [] []
 -- | the invisible application rule with two places
 applId :: Id
-applId       = mkRuleId [placeTok, placeTok]
+applId       = mkId [placeTok, placeTok]
 -- | parenthesis around one place
 parenId :: Id
-parenId      = mkRuleId [oParenTok, placeTok, cParenTok]
+parenId      = mkId [oParenTok, placeTok, cParenTok]
 -- | id for tuples with at least two arguments
 tupleId :: Id
-tupleId      = mkRuleId [oParenTok, placeTok, commaTok, placeTok, cParenTok]
+tupleId      = mkId [oParenTok, placeTok, commaTok, placeTok, cParenTok]
 -- | id for the emtpy tuple
 unitId :: Id
-unitId       = mkRuleId [oParenTok, cParenTok]
+unitId       = mkId [oParenTok, cParenTok]
 -- | see 'typeTok'
 typeId :: Id
-typeId       = mkRuleId [placeTok, typeTok]
+typeId       = mkId [placeTok, typeTok]
 -- | see 'exprTok'
 exprId :: Id
-exprId	     = mkRuleId [exprTok]
+exprId	     = mkId [exprTok]
 -- | see 'varTok'
 varId :: Id
-varId	     = mkRuleId [varTok]
--- | see 'unkownTok'
+varId	     = mkId [varTok]
+-- | see 'unknownTok'
 unknownId :: Id
-unknownId    = mkRuleId [unknownTok]
+unknownId    = mkId [unknownTok]
 
 listId :: (Id, Id) -> Id
 listId (f,c) = Id [listTok] [f,c] []
@@ -162,8 +155,14 @@ isProtected :: Id -> Bool
 isProtected (Id ts cs _) = not (null ts) && head ts == protectTok
 			   && isSingle cs
 
+-- | test if an 'unknownId' was matched
 isUnknownId :: Id -> Bool
 isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
+
+-- | get unknown token from an 'unknownId'
+unToken :: Id -> Token
+unToken (Id [_,t] _ _) = t
+unToken _ = error "unToken"
 
 mkItem :: Index -> (Id, b, [Token]) -> Item a b
 mkItem ind (ide, inf, toks) = 
@@ -178,6 +177,10 @@ mkItem ind (ide, inf, toks) =
 -- | extract tokens with the non-terminal for places 
 getTokenPlaceList :: Id -> [Token]
 getTokenPlaceList = getTokenList termStr
+
+-- | construct a rule for a mixfix
+mixRule :: b -> Id -> (Id, b, [Token])
+mixRule b i = (i, b, getTokenPlaceList i)
 
 asListAppl :: ToExpr a b -> Id -> b -> [a] -> [Pos] -> a
 asListAppl toExpr i b ra br =
@@ -218,7 +221,7 @@ type Knowns = Set.Set String
 -- | recognize next token (possible introduce new tuple variable)
 scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a b
 	  -> [Item a b] 
-scanItem addType knowns (trm, t) p =
+scanItem addType ks (trm, t) p =
     let ts = rest p
 	as = args p
 	ide = rule p
@@ -241,13 +244,13 @@ scanItem addType knowns (trm, t) p =
 		   [q { rest = [], args = [addType trm $ head as] }]
 	      else [r]
 	  else if isUnknownId ide
-	         && not (tokStr t `Set.member` knowns) then
-	       [r { rule = mkRuleId [unknownTok, t]}]
+	         && not (tokStr t `Set.member` ks) then
+	       [r { rule = mkId [unknownTok, t]}]
 	       else []
 
 scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a b]
      -> [Item a b] 
-scan f knowns term = concatMap (scanItem f knowns term)
+scan f ks term = concatMap (scanItem f ks term)
 
 addArg :: [[a]] -> (a, Pos) -> Item a b -> Item a b
 addArg ams (arg, q) p = assert (not $ null $ rest p) $
@@ -357,6 +360,7 @@ data Chart a b = Chart { prevTable :: Table a b
 		       , currIndex :: Index
 		       , currItems :: [Item a b]
 		       , rules :: [(Id, b, [Token])]
+		       , knowns :: Knowns
 		       , solveDiags :: [Diagnosis] }
 	       deriving Show
 
@@ -365,12 +369,12 @@ data Chart a b = Chart { prevTable :: Table a b
 -- The second function filters based on argument and operator info.
 -- If filtering yields 'Nothing' further filtering by precedence is applied. 
 nextChart :: (a -> a -> a) -> (b -> b -> Maybe Bool) -> ToExpr a b 
-	  -> Knowns -> GlobalAnnos -> Chart a b -> (a, Token) -> Chart a b
-nextChart addType filt toExpr knowns ga st term@(_, tok) = 
+	  -> GlobalAnnos -> Chart a b -> (a, Token) -> Chart a b
+nextChart addType filt toExpr ga st term@(_, tok) = 
     let table = prevTable st
 	idx = currIndex st
 	items = currItems st
-	scannedItems = scan addType knowns term items
+	scannedItems = scan addType (knowns st) term items
         nextTable = Map.insert idx items table
 	nextIdx = incrIndex idx
     in	if null items then st else
@@ -391,11 +395,12 @@ mixDiags :: [Diagnosis] -> Chart a b -> Chart a b
 mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
 -- | create the initial chart
-initChart :: [(Id, b, [Token])] -> Chart a b
-initChart ruleS = Chart { prevTable = Map.empty
+initChart :: [(Id, b, [Token])] -> Knowns -> Chart a b
+initChart ruleS knownS= Chart { prevTable = Map.empty
 			, currIndex = startIndex
 			, currItems = map (mkItem startIndex) ruleS
 			, rules = ruleS
+			, knowns = knownS 
 			, solveDiags = [] }
 
 -- | extract resolved result

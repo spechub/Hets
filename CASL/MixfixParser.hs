@@ -34,9 +34,6 @@ assert b a = if b then a else error ("assert")
 
 type Rule = (Id, Bool, [Token])  -- True means predicate
 
-mixRule :: Bool -> Id -> Rule
-mixRule b ide = (ide, b, getTokenPlaceList ide) 
-
 mkRule :: Id -> Rule
 mkRule = mixRule False
 
@@ -51,10 +48,10 @@ mkArgsRule b ide = (protect ide, b, getPlainTokenList ide
 		      ++ getTokenPlaceList tupleId)
 
 singleArgId, singleOpArgId, multiArgsId :: Id
-singleArgId = mkRuleId (getPlainTokenList exprId ++ [varTok])
-singleOpArgId = mkRuleId (getPlainTokenList exprId ++ [exprTok])
+singleArgId = mkId (getPlainTokenList exprId ++ [varTok])
+singleOpArgId = mkId (getPlainTokenList exprId ++ [exprTok])
 
-multiArgsId = mkRuleId (getPlainTokenList exprId ++
+multiArgsId = mkId (getPlainTokenList exprId ++
 				 getPlainTokenList tupleId)
 
 initRules ::  GlobalAnnos -> IdSet -> Bool -> [Rule]
@@ -115,7 +112,7 @@ toAppl ide _ ar qs =
 		 Mixfix_qual_pred _ -> Mixfix_term [har,
 				   Mixfix_parenthesized tar ps]
 		 _ -> error "stateToAppl"
-	    else Application (Op_name ide) ar qs
+	    else asAppl ide ar qs
 
 type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
 
@@ -139,7 +136,7 @@ iterateCharts :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> TermChart
 iterateCharts g ids maybeFormula terms c = 
     let self = iterateCharts g ids maybeFormula
 	expand = expandPos Mixfix_token 
-	oneStep = nextChart addType filterByPredicate toAppl Set.empty g c
+	oneStep = nextChart addType filterByPredicate toAppl g c
 	resolveTerm = resolveMixTrm g ids False
     in if null terms then c
        else case head terms of
@@ -204,7 +201,7 @@ resolveMixTrm :: GlobalAnnos -> IdSet -> Bool
 resolveMixTrm ga ids maybeFormula trm =
 	getResolved showTerm (posOfTerm trm) toAppl
 	   $ iterateCharts ga ids maybeFormula [trm] $ 
-	    initChart $ initRules ga ids maybeFormula
+	    initChart (initRules ga ids maybeFormula) Set.empty
 
 resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> FORMULA 
 	       -> Result FORMULA
