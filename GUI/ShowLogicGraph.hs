@@ -122,14 +122,6 @@ showLogicGraph
                   --(drop (length arcList1) (Map.elems (comorphisms logicGraph)))
        
        redraw logicG
-       sync(
-            (receive killChannel) >>> 
-               do
-                  putStrLn "Destroy graph"
-                  destroy logicG
-               
-         +> (destroyed logicG)
-	)
        
 
      where 		
