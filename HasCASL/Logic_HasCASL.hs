@@ -29,11 +29,12 @@ import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
 import HasCASL.MapTerm
+import HasCASL.Sublogic
 import Logic.Logic
 import Data.Dynamic
 import Common.Result
 
-type HasCASL_Sublogics = ()
+-- type HasCASL_Sublogics = ()
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -126,17 +127,42 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
 
     final_union HasCASL = merge
 
+-- lattices (for sublogics)
+
+instance LatticeWithTop HasCASL_Sublogics where
+    -- meet, join :: l -> l -> l
+    meet = HasCASL.Sublogic.sublogics_min
+    join = HasCASL.Sublogic.sublogics_max
+    -- top :: l
+    top = HasCASL.Sublogic.top
+
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SymbItems SymbMapItems
                Env 
                Morphism
                Symbol RawSymbol () where
-         min_sublogic_basic_spec HasCASL _basic_spec = ()
-         min_sublogic_sentence HasCASL _sentence = ()
-         min_sublogic_symb_items HasCASL _symb_items = ()
-         min_sublogic_symb_map_items HasCASL _symb_map_items = ()
-         min_sublogic_sign HasCASL _sign = ()
-         min_sublogic_morphism HasCASL _morphism = ()
-         min_sublogic_symbol HasCASL _symbol = ()
+         sublogic_names HasCASL = HasCASL.Sublogic.sublogics_name
+--         all_sublogics HasCASL = HasCASL.Sublogic.sublogics_all
+
+         data_logic HasCASL = Nothing
+
+
+         is_in_basic_spec HasCASL = HasCASL.Sublogic.in_basicSpec
+         is_in_sentence HasCASL = HasCASL.Sublogic.in_sentence
+         is_in_symb_items HasCASL = HasCASL.Sublogic.in_symbItems
+         is_in_symb_map_items HasCASL = HasCASL.Sublogic.in_symbMapItems
+         is_in_sign HasCASL = HasCASL.Sublogic.in_env
+         is_in_morphism HasCASL = HasCASL.Sublogic.in_morphism
+         is_in_symbol HasCASL = HasCASL.Sublogic.in_symbol
+
+
+         min_sublogic_basic_spec HasCASL = HasCASL.Sublogic.sl_basicSpec
+         min_sublogic_sentence HasCASL = HasCASL.Sublogic.sl_sentence
+         min_sublogic_symb_items HasCASL = HasCASL.Sublogic.sl_symbItems
+         min_sublogic_symb_map_items HasCASL = HasCASL.Sublogic.sl_symbMapItems
+         min_sublogic_sign HasCASL = HasCASL.Sublogic.sl_env
+         min_sublogic_morphism HasCASL = HasCASL.Sublogic.sl_morphism
+         min_sublogic_symbol HasCASL = HasCASL.Sublogic.sl_symbol
+
 
 
