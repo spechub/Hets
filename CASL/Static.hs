@@ -61,15 +61,10 @@ type Filename = String
 data GlobalVars = Global { global :: [VarDecl] }
                   deriving (Eq,Show)
 
-type NamedSentence = Named Sentence
-
-data Sentences = Sentences { sentences :: [NamedSentence] }
-                 deriving (Eq,Show)
-
 data LocalEnv = Env { getName   :: Filename,
                       getGA     :: GlobalAnnos,
                       getSign   :: Sign,
-                      getPsi    :: Sentences,
+                      getPsi    :: [Named Sentence],
                       getGlobal :: GlobalVars }
 	      deriving Show
 
@@ -105,12 +100,9 @@ toSigLocalEnv env = SigEnv env [] empty False
 emptyGlobal :: GlobalVars
 emptyGlobal = Global []
 
-emptySentences :: Sentences
-emptySentences = Sentences []
-
 emptyLocalEnv :: LocalEnv
 emptyLocalEnv =
-  Env "empty" emptyGlobalAnnos emptySign emptySentences emptyGlobal
+  Env "empty" emptyGlobalAnnos emptySign [] emptyGlobal
 
 emptyExtPos :: ExtPos
 emptyExtPos = (nullPos, Key)
@@ -118,11 +110,9 @@ emptyExtPos = (nullPos, Key)
 emptyAnnotations :: Annotations
 emptyAnnotations = Annotations [] [] []
 
-flattenSentences :: Sentences -> [(String, Sentence)]
-flattenSentences sens = map (\x -> (senName x,sentence x)) (sentences sens)
 
-addNamedSentences :: Sentences -> [NamedSentence] -> Sentences
-addNamedSentences (Sentences s) l = Sentences (setAdd s l)
+addNamedSentences :: [Named Sentence] -> [Named Sentence] -> [Named Sentence]
+addNamedSentences = setAdd
 
 myShowList :: Show a => [a] -> String
 myShowList []    = "[]"
@@ -281,7 +271,7 @@ typeToVarDecl t = map (\(s,v) -> VarDecl v s (ListPos Key nullPos))
 toVarId :: VarDecl -> Term
 toVarId v = VarId (simpleIdToId $ varId v) (varSort v) Inferred []
 
-opToApplSentence :: OpItem -> [NamedSentence]
+opToApplSentence :: OpItem -> [Named Sentence]
 opToApplSentence itm =
   let
     name   = case (opId itm) of Id [Token n _] [] [] -> n;
@@ -295,7 +285,7 @@ opToApplSentence itm =
      (Axiom (noAnnos (AxiomDecl vars (ElemTest (OpAppl (opId itm) optype terms
                                                Inferred []) res []) [])))]
 
-toGenItems :: [OpItem] -> [Pos] -> NamedSentence
+toGenItems :: [OpItem] -> [Pos] -> Named Sentence
 toGenItems ops pos = NamedSen ""
                      (GenItems (map (\x -> Symbol (opId x)
                                           (OpAsItemType (opType x))) ops) pos)
@@ -310,7 +300,7 @@ sortToSymbol s = Symbol s CASL.Sign.Sort
 opTypeIdToSymbol :: OpType -> Id -> Symbol
 opTypeIdToSymbol typ idt = Symbol idt (OpAsItemType typ)
 
-toNamedSentence :: [VarDecl] -> String -> Annoted Formula -> NamedSentence
+toNamedSentence :: [VarDecl] -> String -> Annoted Formula -> Named Sentence
 toNamedSentence vars str f =
   NamedSen str
     (Axiom (cloneAnnos f (AxiomDecl vars (item f) [])))
@@ -1115,7 +1105,7 @@ ana_BASIC_SPEC :: LocalEnv -> BASIC_SPEC -> Result LocalEnv
 ana_BASIC_SPEC sigma (Basic_spec l) = foldM ana_BASIC_ITEMS sigma l
 
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
-                 -> Result (Sign,Sign,[(String,Sentence)])
+                 -> Result (Sign,Sign,[Named Sentence])
 basicAnalysis (spec,sigma,ga) = return(emptySign,emptySign,[])
 {-
   do env <- ana_BASIC_SPEC
