@@ -1,0 +1,24 @@
+%% many legal annotations for testing purposes
+%{group comment 
+  %{
+    over many lines
+  %% } % }%
+%%line comment starting immidiately after %%containing %{ }% , ending in %%
+%(one_line_label)%
+%(multi 
+  line
+  label)%
+%prec( {a__, __**__} < {p, 'e', 6})%
+%prec( {a__, 0} <> {__k_h__, .f'____})%
+%% one word annotes 
+%implies
+%def
+%cons
+%mono
+%left_assoc( 'a', b, __<__)%
+%right_assoc( 5, .ly__, __[__])%
+%display( sum__To__ %HTML SUM<sub>__<sup>__ %LATEX \sum_{__}^{__})%
+%number __@@__
+%floating __frac__, __exp__
+%string eStr, __++__
+%list [__], nil, cons

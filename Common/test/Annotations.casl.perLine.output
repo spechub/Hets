@@ -1,0 +1,132 @@
+%% many legal annotations for testing purposes
+parse error at (line 2, column 17):
+unexpected end of input
+expecting "}%"
+
+parse error at (line 3, column 3):
+unexpected end of input
+expecting "}%"
+
+parse error at (line 4, column 1):
+unexpected " "
+expecting "%%", "%{", "%(" or "%"
+
+%% } % 
+parse error at (line 6, column 1):
+unexpected "}"
+expecting "%%", "%{", "%(" or "%"
+
+%%line comment starting immidiately after %%containing %{ }% , ending in %%
+parse error at (line 8, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 9, column 1):
+unexpected "["
+expecting "%%", "%{", "%(" or words
+
+parse error at (line 10, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%(one_line_label)%
+parse error at (line 12, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 13, column 9):
+unexpected end of input
+expecting ")%"
+
+parse error at (line 14, column 1):
+unexpected "l"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 15, column 1):
+unexpected "l"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 16, column 1):
+unexpected ")"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 17, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%prec( {a__, __**__} < {p, 'e', 6})%
+parse error at (line 19, column 7):
+unexpected end of input
+expecting ")%"
+
+parse error at (line 20, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 21, column 1):
+unexpected "{"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 22, column 1):
+unexpected "<"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 23, column 1):
+unexpected "{"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 24, column 1):
+unexpected ")"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 25, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%% one word annotes 
+%implies
+%def
+parse error at (line 29, column 1):
+unexpected " "
+expecting "%%", "%{", "%(" or "%"
+
+%mono
+parse error at (line 31, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%left_assoc( 'a', b, __<__)%
+parse error at (line 33, column 26):
+unexpected end of input
+expecting ")%"
+
+parse error at (line 34, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 35, column 1):
+unexpected "_"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 36, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 37, column 21):
+unexpected end of input
+expecting ")%"
+
+%HTML SUM<sub>__<sup>__
+%LATEX \sum_{__}^{__}
+parse error at (line 40, column 1):
+unexpected ")"
+expecting "%%", "%{", "%(" or "%"
+
+parse error at (line 41, column 1):
+unexpected end of input
+expecting "%%", "%{", "%(" or "%"
+
+%number __@@__
+%floating __frac__, __exp__
+%string eStr, __++__
+%list [__], nil, cons

@@ -9,13 +9,13 @@ ANNOS=../../Common/test/Empty.annos
 for i in *.annos Annotations.casl
 do
   echo "processing $i"
-  runchecker "Annotations" $i $i.output1
-  runchecker "Annos" $i $i.output2
+  runchecker "Annotations" $i $i.output
+  runchecker "Annos" $i $i.perLine.output
+  runchecker "GlobalAnnos" $i $i.global.output
 done
 
-for j in MixIds
-do
-    i=`basename $j .casl`
-    runmycheck $i casl
-    runwrongcheck $i casl
-done
+runmycheck MixIds casl
+runwrongcheck MixIds casl
+
+runchecker SortIds MixIds.casl MixIds.casl.asSortIds.output
+runchecker VarIds MixIds.casl MixIds.casl.asVarIds.output 
