@@ -1,0 +1,15 @@
+
+{- HetCATS/hetcats/Version.in
+   $Id$
+   Author: Klaus Lüttich
+   Year:   2002
+
+   template for generating the Version module of hetcats
+
+   >>>HEADER<<<
+-}
+
+module Version where
+
+hetcats_version :: String
+hetcats_version = >>>VERSION<<<
