@@ -57,7 +57,7 @@ expecting "(", "{", "[" or id/literal
 
 parse error at 18.4:
 unexpected "_"
-expecting underline word, "(", "{", "[", id/literal, "%", ":", "as", "when" or end of input
+expecting casl char, "(", "{", "[", id/literal, "%", ":", "as", "when" or end of input
 
 __
 parse error at 20.1:

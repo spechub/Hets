@@ -116,7 +116,7 @@ singleUnderline :: GenParser Char st Char
 singleUnderline = char '_' `followedWith` scanLPD
 
 scanUnderlineWord :: GenParser Char st String
-scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
+scanUnderlineWord = singleUnderline <:> many1 scanLPD
 
 scanAnyWords, casl_words :: GenParser Char st String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
@@ -126,7 +126,7 @@ scanDot :: GenParser Char st Char
 scanDot = char '.' `followedWith` caslLetter
 
 scanDotWords :: GenParser Char st String
-scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
+scanDotWords = scanDot <:> scanAnyWords
 
 -- ----------------------------------------------
 -- * casl escape chars for quoted chars and literal strings

@@ -238,11 +238,11 @@ expecting words
 
 parse error at 83.2:
 unexpected "_"
-expecting casl char, underline word, [<id>,...,<id>] or end of input
+expecting casl char, "[" or end of input
 
 parse error at 84.2:
 unexpected "_"
-expecting casl char, underline word, [<id>,...,<id>] or end of input
+expecting casl char, "[" or end of input
 
 a[__{}]
 a[__{}__]
@@ -354,7 +354,7 @@ expecting words
 a[a]
 parse error at 118.2:
 unexpected "{"
-expecting casl char, underline word, [<id>,...,<id>] or end of input
+expecting casl char, "_", "[" or end of input
 
 a[b]
 parse error at 120.1:
@@ -363,7 +363,7 @@ expecting words
 
 parse error at 121.2:
 unexpected "{"
-expecting casl char, underline word, [<id>,...,<id>] or end of input
+expecting casl char, "_", "[" or end of input
 
 parse error at 122.1:
 unexpected "<"
@@ -371,7 +371,7 @@ expecting words
 
 parse error at 123.2:
 unexpected "{"
-expecting casl char, underline word, [<id>,...,<id>] or end of input
+expecting casl char, "_", "[" or end of input
 
 parse error at 124.1:
 unexpected "<"

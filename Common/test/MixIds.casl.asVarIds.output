@@ -174,7 +174,7 @@ expecting words
 
 parse error at 64.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 65.1:
 unexpected "="
@@ -202,7 +202,7 @@ expecting words
 
 parse error at 71.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 72.3:
 unexpected "["
@@ -250,35 +250,35 @@ expecting words
 
 parse error at 83.2:
 unexpected "_"
-expecting casl char, underline word or end of input
+expecting casl char or end of input
 
 parse error at 84.2:
 unexpected "_"
-expecting casl char, underline word or end of input
+expecting casl char or end of input
 
 parse error at 85.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 86.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 87.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 88.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 89.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 90.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 91.1:
 unexpected "_"
@@ -286,7 +286,7 @@ expecting words
 
 parse error at 92.6:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 93.1:
 unexpected "_"
@@ -386,15 +386,15 @@ expecting words
 
 parse error at 117.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 118.2:
 unexpected "{"
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 119.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 120.1:
 unexpected "<"
@@ -402,7 +402,7 @@ expecting words
 
 parse error at 121.2:
 unexpected "{"
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 122.1:
 unexpected "<"
@@ -410,7 +410,7 @@ expecting words
 
 parse error at 123.2:
 unexpected "{"
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 124.1:
 unexpected "<"
@@ -418,7 +418,7 @@ expecting words
 
 parse error at 125.2:
 unexpected "["
-expecting casl char, underline word or end of input
+expecting casl char, "_" or end of input
 
 parse error at 126.1:
 unexpected ":"

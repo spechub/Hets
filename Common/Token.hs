@@ -203,7 +203,6 @@ comps keys = do o <- oBracketT
 	        (ts, ps) <- mixId keys keys `separatedBy` commaT
 	        c <- cBracketT
 	        return (ts, toPos o ps c)
-	     <?> "[<id>,...,<id>]"
 
 -- | parse mixfix components ('start') and an optional compound list ('comps')
 -- if the last token was no 'place'. Accept possibly further places.

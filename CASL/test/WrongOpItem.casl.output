@@ -1,8 +1,8 @@
 parse error at 1.15:
 unexpected "-"
-expecting [<id>,...,<id>], "%", ",", ";" or end of input
+expecting "[", "%", ",", ";" or end of input
 
 parse error at 2.8:
 unexpected =e= or "="
-expecting casl char, underline word, [<id>,...,<id>], cross, "->", "%", ",", ";" or end of input
+expecting casl char, "_", "[", cross, "->", "%", ",", ";" or end of input
 
