@@ -101,7 +101,7 @@ posOfTerm trm =
     CaseTerm t _ ps -> firstPos [t] ps 
     LetTerm _ _ t ps -> firstPos [t] ps
     TermToken t -> tokPos t
-    MixInTerm t ps -> firstPos [t] ps
+    MixTypeTerm q t ps -> firstPos [t] ps
     MixfixTerm ts -> posOf ts
     BracketTerm _ ts ps -> firstPos ts ps 
 

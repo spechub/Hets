@@ -19,7 +19,7 @@
 (op x : a) (a, b)
 a
 (__+__)(a, b)
-a : s + b : s
+a (: s + b : s)
 parse error at 14.12:
 unexpected "as" or "a"
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", cross, "->?", "-->", "-->?", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input

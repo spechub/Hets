@@ -255,7 +255,7 @@ data Term = QualVar Var Type [Pos]
 	  | LetTerm LetBrand [ProgEq] Term [Pos]
 	  -- pos "where", ";"s
 	  | TermToken Token
-	  | MixInTerm Type [Pos]
+	  | MixTypeTerm TypeQual Type [Pos]
           | MixfixTerm [Term]
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
@@ -429,7 +429,7 @@ instance Eq Term where
     CaseTerm t1 e1 _ ==  CaseTerm t2 e2 _ = (t1, e1) == (t2, e2)
     LetTerm b1 e1 t1 _ == LetTerm b2 e2 t2 _  = (b1, t1, e1) == (b2, t2, e2)
     TermToken t1 == TermToken t2 = t1 == t2
-    MixInTerm t1 _ == MixInTerm t2 _ = t1 == t2
+    MixTypeTerm q1 t1 _ == MixTypeTerm q2 t2 _ = (q1, t1) == (q2, t2)
     MixfixTerm l1 == MixfixTerm l2 = l1 == l2
     BracketTerm b1 l1 _ == BracketTerm b2 l2 _ = (b1, l1) == (b2, l2) 
     _ == _ = False

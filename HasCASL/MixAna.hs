@@ -56,8 +56,7 @@ initTermRules (pm@(_, _, m), ps) is =
 	    (filter isMixfix $ Set.toList is))
 
 addType :: Term -> Term -> Term
-addType (TypedTerm _ qual ty ps) t = TypedTerm t qual ty ps 
-addType (MixInTerm ty ps) t = TypedTerm t InType ty ps 
+addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
 addType _ _ = error "addType"
 
 toMixTerm :: Id -> Int -> [Term] -> [Pos] -> Term
@@ -90,8 +89,13 @@ iterateCharts ga terms chart =
 		          oneStep (trm, exprTok {tokPos = posOfTerm trm})
              case t of
 		    MixfixTerm ts -> self (ts ++ tt) chart
-		    MixInTerm _ ps -> self tt $ oneStep (t, 
-				typeTok {tokPos = headPos ps})
+		    MixTypeTerm q typ ps -> do 
+		       mTyp <- anaStarType typ
+		       case mTyp of 
+			   Nothing -> recurse t
+			   Just nTyp -> self tt $ oneStep 
+					(MixTypeTerm q nTyp ps, 
+					 typeTok {tokPos = headPos ps})
 		    BracketTerm b ts ps -> self 
 		      (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
 		    QualVar v typ ps -> do 
@@ -118,15 +122,6 @@ iterateCharts ga terms chart =
 				    _ -> return ()
 			       recurse $ QualOp b io 
 					(TypeScheme rs (qs :=> nTyp) ss) ps
-		    TypedTerm hd tqual typ ps -> do
-		       mTyp <- anaStarType typ
-		       case mTyp of 
-		           Nothing -> recurse t
-			   Just nTyp -> do 
-		               mt <- resolve ga hd 
-		               let newT = case mt of Just trm -> trm
-						     _ -> hd
-			       recurse $ TypedTerm newT tqual nTyp ps
 		    QuantifiedTerm quant decls hd ps -> do 
 		       newDs <- mapM anaGenVarDecl decls
 		       mt <- resolve ga hd
