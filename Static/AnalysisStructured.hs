@@ -2,7 +2,7 @@
 {- | 
    
    Module      :  $Header$
-   Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
+   Cop-D¿yright   :  (c)  Till Mossakowski and Uni Bremen 2003-A
    Licence     :  All rights reserved.
 
    Maintainer  :  hets@tzi.de
@@ -72,7 +72,6 @@ import Common.Lib.Graph hiding (empty)
 import Static.DevGraph
 import Syntax.AS_Structured
 import Common.AS_Annotation
-import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
 import Common.Lib.Set hiding (filter)
@@ -82,6 +81,7 @@ import Common.PrettyPrint
 
 -- should be moved to eslewhere!
 
+lookupNode :: Node -> Graph a b -> b 
 lookupNode n dg = lab' $ context n dg
 
 setFilter p s = fromList (filter p (toList s))

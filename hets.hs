@@ -55,7 +55,7 @@ processFile opt file =
                     putIfVerbose opt 2 ("Analyzing file: " ++ file)
                     Common.Result.Result diags res <- ioresToIO 
                       (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
-                    sequence (map ((putIfVerbose opt 3) . show) diags)
+                    sequence (map ((putIfVerbose opt 1) . show) diags)
                     case res of
                      Just (_,ld1,_,_) -> return (ld1,res)
                      Nothing -> return (ld, res)

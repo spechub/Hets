@@ -166,6 +166,10 @@ instance (Comorphism cid1
               lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
               sign3 morphism3 symbol3 raw_symbol3 proof_tree3
              where
+   sourceLogic (CompComorphism cid1 _) = 
+     sourceLogic cid1
+   targetLogic (CompComorphism _ cid2) = 
+     targetLogic cid2
    source_sublogic (CompComorphism cid1 _) = 
      source_sublogic cid1
    target_sublogic (CompComorphism _ cid2) = 
