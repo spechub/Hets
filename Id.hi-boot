@@ -1,7 +1,0 @@
-__interface Id 1 0 where
-__export  Id Id{Id} TokenOrPlace Pos Token;
-
-data Id = Id [TokenOrPlace] [Id] [Pos];
-type Pos = (PrelBase.Int, PrelBase.Int);
-type TokenOrPlace = Token;
-data Token;
