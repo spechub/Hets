@@ -1,6 +1,9 @@
-$Id$
+-- $Id$
 
 module Latin1 ( toASCII, fromASCII ) where
+
+import List 
+import Char
 
 -- convert all LATIN-1 symbol to ASCII representations
 -- useful for generating lowlevel labels from identifiers
@@ -45,7 +48,7 @@ toASCII "\34"  = "_QuotatationMark_"
 toASCII "\35"  = "_NumberSign_"
 toASCII "\36"  = "_DollarSign_"
 toASCII "\37"  = "_PercentSign_"
-toASCII "\38"  = "_Ampersand__"
+toASCII "\38"  = "_Ampersand_"
 toASCII "\40"  = "_LeftParenthesis_"
 toASCII "\41"  = "_RightParenthesis_"
 toASCII "\42"  = "_Asterisk_"
@@ -65,6 +68,7 @@ toASCII "\91"  = "_LeftSquareBracket_"
 toASCII "\92"  = "_ReverseSolidus_"
 toASCII "\93"  = "_RightSquareBracket_"
 toASCII "\94"  = "_Circumflex_"
+toASCII "\95"  = "_LowerLine_"
 toASCII "\96"  = "_GraveAccent_"
 toASCII "\123" = "_LeftCurlyBracket_"
 toASCII "\124" = "_VerticalLine_"
@@ -200,21 +204,24 @@ toASCII "\253" = "_LatinSmallLettterYWithAcute_"
 toASCII "\254" = "_LatinSmallLetterThorn_"
 toASCII "\255" = "_LatinSmallLetterYWithDiaeresis_"
 toASCII [x]    = [x]
-toASCII l      = String.concat $ map (toASCII . (\x -> [x])) l
+toASCII l      = concat $ map (toASCII . (\x -> [x])) l
 
--- convert from ASCII with LATIN-1 representations to LATIN-1
---  of course, if represantations occur in the string by accident, they
---  will also be replaced by the corresponding LATIN-1 symbol
---
+singleton :: a -> [a]
+singleton x = [x]
+
+allTransscripts :: [String]
+allTransscripts = map (toASCII.singleton) ['\0'..'\255']
+
+checkOne :: String -> [String] -> Int -> String
+checkOne s [] idx    = s
+checkOne s (h:t) idx = if (h `isPrefixOf` s) then
+                         (chr idx):(drop (length h) s)
+                       else
+                         checkOne s t (idx+1)
+
 fromASCII :: String -> String
-fromASCII x =
-  let
-    val allTransscripts = map (toAscii.(\x -> [x})) '\0'..'\255'
-    val checkStr = (\s x idx -> case x of [] -> x;
-                             case x of (h:t) -> if (h `isPrefixOf` s) then
-                                                  (chr idx):(checkStr t
-                                                   allTransscripts 0)
-                                                else
-                                                  checkStr (h:t) (idx+1))
-  in
-    checkStr x
+fromASCII [] = []
+fromASCII s  = let
+                 res = checkOne s allTransscripts 0
+               in
+                 (head res):(fromASCII $ tail res) 
