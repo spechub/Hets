@@ -283,19 +283,19 @@ toScheme t     = Scheme [] ([] :=> t)
 -- TIMonad:	Type inference monad
 -----------------------------------------------------------------------------
 
-newtype TI a = TI {ti :: (Subst -> Int -> [(Subst, Int, a)])}
+newtype TI a = TI {ti :: Subst -> Int -> (Subst, Int, a)}
 
 instance Monad TI where
-  return x   = TI (\s n -> [(s,n,x)])
-  TI f >>= g = TI (\s n -> [(s2, n2, x2) | (s1, n1, x1) <- f s n,
-			    (s2, n2, x2) <- (ti (g x1)) s1 n1])
-  fail _ = TI (\ _ _ -> [])
+  return x   = TI (\s n -> (s,n,x))
+  TI f >>= g = TI (\s n -> case f s n of
+                            (s',m,x) -> let TI gx = g x
+                                        in  gx s' m)
 
-runTI       :: TI a -> [a]
-runTI (TI f) = map (\ (_, _, x) -> x) $ f nullSubst 0
+runTI       :: Int -> TI a -> a
+runTI n (TI f) = x where (_, _, x) = f nullSubst n
 
 getSubst   :: TI Subst
-getSubst    = TI (\s n -> [(s,n,s)])
+getSubst    = TI (\s n -> (s,n,s))
 
 unify      :: Le.Type -> Le.Type -> TI ()
 unify t1 t2 = do s <- getSubst
@@ -303,15 +303,15 @@ unify t1 t2 = do s <- getSubst
                  extSubst u
 
 extSubst   :: Subst -> TI ()
-extSubst s' = TI (\s n -> [(s'@@s, n, ())])
-
-newTVar    :: Le.Kind -> TI Le.Type
-newTVar k   = TI (\s n -> let v = Tyvar (enumId n) k
-                          in  [(s, n+1, TVar v)])
+extSubst s' = TI (\s n -> (s'@@s, n, ()))
 
 freshInst               :: Scheme -> TI (Qual Le.Type)
 freshInst (Scheme ks qt) = do ts <- mapM newTVar ks
                               return (inst ts qt)
+
+newTVar    :: Le.Kind -> TI Le.Type
+newTVar k   = TI (\s n -> let v = Tyvar (enumId n) k
+                          in  (s, n+1, TVar v))
 
 class Instantiate t where
   inst  :: [Le.Type] -> t -> t
@@ -326,19 +326,66 @@ instance Instantiate t => Instantiate (Qual t) where
 instance Instantiate Pred where
   inst ts (IsIn c t) = IsIn c (inst ts t)
 
+type Assumps = FiniteMap Id [Scheme]
+
+lookUp :: Ord a => FiniteMap a [b] -> a -> [b]
+lookUp ce = lookupWithDefaultFM ce [] 
+
+
+{-
+newtype TIL a = TIL {til :: [(Subst, Int)] -> [(Subst, Int, a)]}
+
+instance Monad TIL where
+  return x   = TIL (map \ (s, n) -> (s,n,x))
+  TIL f >>= g = TIL (\s n -> [(s2, n2, x2) | (s1, n1, x1) <- f s n,
+			    (s2, n2, x2) <- (til (g x1)) s1 n1])
+  fail _ = TIL (\ _ _ -> [])
+
+
+lift l = TI (\ s n -> map (\ x -> (s, n, x)) l)
+-}
+
+newTVars :: Int -> Scheme -> ([Le.Type], Int)
+newTVars n (Scheme ks _) = 
+    let m = n + length(ks)
+    in (zipWith (\ k i -> (TVar (Tyvar (enumId i) k))) ks [n .. m - 1], m)
+
+tiTerm :: ClassEnv -> Assumps -> As.Term -> Subst -> Int 
+       -> [(Subst, Int, Qual Le.Type, Le.Term)]
+tiTerm _ as (TermToken t) s n = let i = simpleIdToId t
+				    l = lookUp as i
+				    tss = map (newTVars n. apply s) l
+				 in zipWith (\ (ts, m) sc@(Scheme _ qs) -> 
+					   (s, m, 
+					    inst ts qs,
+					    BaseName i sc ts))
+				    tss l
+
+
+tiTerm ce as (ApplTerm f a _) s n = 
+    [(s3 @@ s2 @@ s1, n2+1, (q1 ++ q2) :=> apply s3 t3, Application e1 e2) | 
+             (s1, n1, q1 :=> t1, e1) <- tiTerm ce as f s n,
+             (s2, n2, q2 :=> t2, e2) <- tiTerm ce as a s1 n1,
+             let t3 = TVar (Tyvar (enumId n2) star),
+             s3 <- mgu (apply s2 t1) (t2 `fn` t3) 
+             ]
+
+-- test
+
+
+
+{-
+
 -----------------------------------------------------------------------------
 -- TIMain:	Type Inference Algorithm
 -----------------------------------------------------------------------------
 -- Infer:	Basic definitions for type inference
 -----------------------------------------------------------------------------
-type Assumps = FiniteMap Id [Scheme]
+
 
 type Infer e t = ClassEnv -> Assumps -> e -> TI (Qual t)
 
 
--- tiTerm :: ClassEnv -> Assumps -> As.Term -> TI (
-
-{-
 -----------------------------------------------------------------------------
 -- Pat:		Patterns
 -----------------------------------------------------------------------------

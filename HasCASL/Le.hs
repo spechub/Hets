@@ -62,10 +62,10 @@ data Tycon = Tycon TypeId Kind
 data Type  = TVar Tyvar | TCon Tycon | TAp  Type Type | TGen Int
              deriving Eq
 
-data Qual t = [Pred] :=> t
+data Pred   = IsIn Id Type
               deriving Eq
 
-data Pred   = IsIn Id Type
+data Qual t = [Pred] :=> t
               deriving Eq
 
 data Scheme = Scheme [Kind] (Qual Type)
@@ -147,7 +147,7 @@ data Binder = LambdaTotal | LambdaPartial
 
 data Term = BaseName Id Scheme [Type]  -- instance
 	  | VarId Id Type Class
-          | Application Term [Term] 
+          | Application Term Term 
 	  | Binding Binder [VarDecl] Term
 	  | Typed Term TypeOp Type
 
