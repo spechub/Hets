@@ -70,6 +70,33 @@ call the symbols in the image of the signature morphism "new"
 
 
 
+check' :: [EquationInfo] -> ([ExhaustivePat],EqnSet)  
+check' []                                              = ([([],[])],emptyUniqSet)
+
+-- nur ein Pattern, bestehend aus nur Variablen? fertig, True
+check' [EqnInfo n ctx ps (MatchResult CanFail _)] 
+   | all_vars ps  = ([(takeList ps (repeat new_wild_pat),[])],  unitUniqSet n)
+
+-- besteht das erste Pattern nur aus Variablen? dann darf es kein zweites geben!
+check' qs@((EqnInfo n ctx ps (MatchResult CanFail _)):rs)
+   | all_vars ps  = (pats,  addOneToUniqSet indexs n)
+  where
+    (pats,indexs) = check' rs
+
+-- falls ein Konstruktor dabei ist: split_by_constructor
+-- wenn die ersten Argument nur Variablen sind: first_column_only_vars
+check' qs@((EqnInfo n ctx ps result):_) 
+   | all_vars ps  = ([],  unitUniqSet n)
+   | constructors = split_by_constructor qs
+   | only_vars    = first_column_only_vars qs
+   | otherwise    = panic "Check.check': Not implemented :-("
+  where
+     -- Note: RecPats will have been simplified to ConPats
+     --       at this stage.
+    constructors = or (map is_con qs)
+    only_vars    = and (map is_var qs) 
+
+
 ************************************************
 Zicheng (Till)
 ************************************************
