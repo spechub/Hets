@@ -77,24 +77,30 @@ makeType :: Id -> HasCASL.As.Type
 makeType ide = TypeName ide star 0
 
 trOpType :: CASL.StaticAna.OpType -> HasCASL.Le.OpInfo
-trOpType ot = OpInfo { opType = TypeScheme [] ([] :=> t) [],
+trOpType ot = OpInfo { opType = simpleTypeScheme t,
 		       opAttrs = [],
 		       opDefn = NoOpDefn Op
 		     }
-               where t = FunType arg arrow res []
+               where t = if null args then res 
+			 else FunType arg arrow res []
                      arrow = case opKind ot of
                        CASL.StaticAna.Total -> FunArr 
                        CASL.StaticAna.Partial -> PFunArr
-                     arg = ProductType (map makeType $ opArgs ot) []
+		     args = map makeType $ opArgs ot
+                     arg = if isSingle args then head args else 
+			   ProductType args []
                      res = makeType $ opRes ot
 
 trPredType :: CASL.StaticAna.PredType -> HasCASL.Le.OpInfo
-trPredType pt = OpInfo { opType = TypeScheme [] ([] :=> t) [],
+trPredType pt = OpInfo { opType = simpleTypeScheme t,
 		         opAttrs = [],
-		         opDefn = NoOpDefn Op
+		         opDefn = NoOpDefn Pred
 		     }
-               where t = predType arg
-                     arg = ProductType (map makeType $ predArgs pt) []
+               where t = if null args then logicalType else 
+			 predType arg
+		     args = map makeType $ predArgs pt
+                     arg = if isSingle args then head args else 
+			   ProductType args []
 
 mapSignature :: CASL.StaticAna.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
 mapSignature sign = Just (HasCASL.Le.Env { 
