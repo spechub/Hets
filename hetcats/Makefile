@@ -86,8 +86,8 @@ clean:
 ### additionally removes binaries
 bin_clean: clean
 	$(RM) hetcats
-	$(RM) capa
-	$(RM) hacapa
+	$(RM) ../CASL/capa
+	$(RM) ../HasCASL/hacapa
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
@@ -119,12 +119,16 @@ ghci:
 
 ### christian's target
 ### CASL parser
-capa: ../CASL/capa.lhs $(drifted_files)
+capa: ../CASL/capa
+
+../CASL/capa: ../CASL/capa.lhs $(drifted_files) ../CASL/*.hs
 	$(RM) $@
 	$(HC) --make -o ../CASL/$@ $< $(HC_OPTS)
 
 ### HasCASL parser
-hacapa: ../HasCASL/hacapa.lhs $(drifted_files)
+hacapa: ../HasCASL/hacapa
+
+../HasCASL/hacapa: ../HasCASL/hacapa.lhs $(drifted_files) ../HasCASL/*.hs 
 	$(RM) $@
 	$(HC) --make -o ../HasCASL/$@ $< $(HC_OPTS)
 
