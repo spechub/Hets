@@ -2,6 +2,10 @@ module Type where
 
 import Id
 
+-- simple Id
+simpleId :: String -> Id
+simpleId(s) = Id [Token(s, nullPos)] [] 
+
 -- same predefined type constructors
 totalFunArrow = simpleId("->")
 partialFunArrow = simpleId("->?")

@@ -33,9 +33,9 @@ annote = Anno_Parser.label <|>
 				nsp = setSourceColumn sp ((sourceColumn sp)-1)
 				in
 				setPosition nsp
-			      ; inp <- getInput
+			      {- ; inp <- getInput
 			      ; setInput ("%"++inp)
-			      ; char '%'
+			      ; char '%' -}
 			      ; fail (tail (showErrorMessages "or" 
 					    "unknown parse error" 
 					    "expecting" "unexpected" 

@@ -41,11 +41,11 @@ scanLPD = caslLetter <|> digit <|> prime
 -- Monad/Functor extensions
 -- ----------------------------------------------
 
-ignore :: (Monad m) => m a -> m b -> m a
-p `ignore` q = do { x <- p; q; return x }
-
 bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
 bind f p q = do { x <- p; y <- q; return (f x y) }
+
+followedBy :: (Monad m) => m a -> m b -> m a
+followedBy = bind const
 
 infixr 1 <:>
 
@@ -74,11 +74,8 @@ p `notFollowedWith` q = do { x <- p
 			   ; try ((q >>= unexpected . show) <|> return x)
 			   }
 
-followedBy :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
-p `followedBy` q = try (do { x <- p
-			   ; lookAhead q
-			   ; return x
-			   })
+followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
+p `followedWith` q = p `followedBy` lookAhead q
 
 begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
 begDoEnd open p close = (open <:> p) <++> single close  
@@ -97,14 +94,14 @@ p `checkWith` f = do { x <- p
 
 scanLetterWord = caslLetter <:> many scanLPD <?> "letter word"
 
-singleUnderline = (char '_') `followedBy` scanLPD
+singleUnderline = try (char '_' `followedWith` scanLPD)
 
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
 scanAnyWords :: Parser String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord <?> "words")
 
-scanDot = (char '.') `followedBy` caslLetter
+scanDot = try (char '.' `followedWith` caslLetter)
 
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 
@@ -154,17 +151,7 @@ scanFloat = (getNumber <++> option ""
 	      ((char 'E' <:> option "" (single (oneOf "+-")))
 	       <++> getNumber))) `checkWith` (\n -> length n > 1)
 
-scanDigit = getNumber `checkWith` (\n -> length n == 1)
-
--- ----------------------------------------------
--- skip whitespaces and comment out
--- ----------------------------------------------
-
-blankChars = "\t\v\f \160" -- non breaking space
-
-skip p = p `ignore` 
-	 skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		  <|> commentOut <?> "")
+scanDigit = (getNumber `checkWith` (\n -> length n == 1)) <?> "single digit"
 
 -- ----------------------------------------------
 -- comments and label
@@ -174,13 +161,13 @@ newlineChars = "\n\r"
 
 eol = (eof >> return '\n') <|> oneOf newlineChars
 
-textLine = many (noneOf newlineChars) `ignore` eol
+textLine = many (noneOf newlineChars) `followedBy` eol
 
 commentLine = try (string "%%") <++> textLine
 
-notEndText c = try (char c) `notFollowedWith` char '%' <?> ""
+notEndText c = try (char c `notFollowedWith` char '%' <?> "")
 
-middleText c = many ((satisfy (/=c)) <|> notEndText c) 
+middleText c = many (satisfy (/=c) <|> notEndText c) 
 
 comment o c = try (string ("%" ++ [o])) <++> middleText c <++> string (c : "%")
 
@@ -188,6 +175,15 @@ commentOut = comment '[' ']'
 commentGroup = comment '{' '}'
 labelAnn = comment '(' ')'
 
+-- ----------------------------------------------
+-- skip whitespaces and comment out
+-- ----------------------------------------------
+
+blankChars = "\t\v\f \160" -- non breaking space
+
+skip p = p `followedBy` 
+	 skipMany(single (oneOf (newlineChars ++ blankChars)) 
+		  <|> commentOut <?> "")
 
 -- ----------------------------------------------
 -- annotations starting with %word

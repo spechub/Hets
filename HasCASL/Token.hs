@@ -30,11 +30,7 @@ type_words = ["as","in"]
 
 
 reserved :: [String] -> Parser String -> Parser String
-reserved l p = do { r <- p 
-		  ; if r `elem` l 
-		    then unexpected ("reserved keyword: " ++ r)
-		    else return r
-		  }
+reserved l p = p `checkWith` (\r -> r `notElem` l) 
 
 scanTermWords = reserved casl_reserved_words scanAnyWords 
 
@@ -57,7 +53,6 @@ scanMixLeaf = makeToken(try scanFloat <|> scanString <|> otherToken
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-brackets = "{}[]"
 obr = makeToken (single (char '['))
 cbr = makeToken (single (char ']'))
 ocb = makeToken (single (char '{'))
@@ -77,41 +72,25 @@ iList =  fmap concat (many (many1 uu
                   <|> curly
 	          <|> noComp)) 
 
-afterPlace =  do { r <-  curly <|> noComp <|> singleId
-		 ; s <- fmap concat (many (curly <|> singleId))
-		 ; return (r ++ s)
-		 }
+afterPlace =  (curly <|> noComp <|> singleId) <++>
+		 flat (many (curly <|> singleId))
 
-middle = do { u <- many1 uu
-	    ; option u (do { r <- afterPlace
-			   ; return (u++r)
-			   })
-	    } <?> "mix-id"
+middle = many1 uu <++> option [] afterPlace  <?> "mix-id"
 
-start = do { u <- many uu
-           ; (do { r <- afterPlace
-		 ; s <- fmap concat (many middle)
-		 ; return (u++r++s)
-		 })
-	     <|> (if length u < 2 then unexpected ("empty identifier \"" 
-						   ++ show (Id u []) ++ "\"")
-	          else return u)
-	   } <?> "id"
+start = many uu <++>
+	option [] (afterPlace <++> flat (many middle))
+
+checkStart = start `checkWith` (\l -> length l > 1 || 
+				(length l == 1 && not(isPlace(head l))))
+	     <?> "id"
 
 comps = between obr cbr
 	(sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
 
-parseId = do { l <- start
+parseId = do { l <- checkStart
              ; if isPlace (last l) then return (Id l [])
 	       else (do { c <- option [] comps
 			; u <- many uu
 			; return (Id (l++u) c)
 			})
 	     }
-
-
-
-
-
-
-

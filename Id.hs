@@ -55,9 +55,6 @@ instance Show Id where
 	in
         showString (front ++ comps ++ rest) 
 
--- simple Id
-simpleId :: String -> Id
-simpleId(s) = Id [Token(s, nullPos)] [] 
 
 
 
