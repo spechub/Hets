@@ -21,8 +21,8 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
- ("MixIds", HetParser uninstOpName),
- ("Typenames", HetParser typeName),
+ ("MixIds", HetParser uninstOpId),
+ ("Typenames", HetParser typeId),
  ("Types", HetParser parseType),
  ("Terms", HetParser term),
  ("Typepattern", HetParser typePattern),
