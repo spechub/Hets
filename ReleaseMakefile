@@ -33,7 +33,7 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       hs2stratego hs2stratego/AST
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
-            -fno-monomorphism-restriction
+            -fno-monomorphism-restriction -fallow-undecidable-instances
 endif
 
 HC_OPTS    = -fglasgow-exts -fallow-overlapping-instances \
