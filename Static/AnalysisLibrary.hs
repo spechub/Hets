@@ -233,21 +233,23 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
                             vn gen vt gsis pos)
 
 -- architectural specification
-ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l 
              asd@(Arch_spec_defn asn asp pos) = do
   let just_struct = analysis opts == Structured
   ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec " ++ showPretty asn ""))
-  archSig <- ana_ARCH_SPEC lgraph defl gctx l just_struct (item asp)
+  (archSig, dg', asp') <- ana_ARCH_SPEC lgraph defl gctx l just_struct (item asp)
+  let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
+      gctx' = (gannos, genv, dg')
   if Map.member asn genv 
      then
-     resToIORes (plain_error (asd, gctx, l, libenv)
+     resToIORes (plain_error (asd', gctx', l, libenv)
 		             ("Name " ++ showPretty asn " already defined")
 		             (headPos pos))
      else
-     return (asd, 
+     return (asd', 
 	     (gannos,
 	      Map.insert asn (ArchEntry archSig) genv,
-	      dg),
+	      dg'),
 	     l,
 	     libenv)
 	     
