@@ -153,7 +153,10 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    proofBasis = getLabelsOfInsertedEdges changes -- alle eingefuegten Kanten als proofBasis ??
+    proofBasis =
+      case getLabelOfAnyInsertedEdge changes of
+        Nothing -> []
+        Just label -> label:[]
     provenEdge = (source,
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
@@ -266,8 +269,8 @@ locDecompAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths =
-	getAllProvenLocGlobPathsPfMorphismBetween dgraph morphism source target
-    proofBasis = -- nur eine der Kanten?
+	getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism source target
+    proofBasis =
       case allPaths of
         [] -> []
         (path:paths) -> map getLabelOfEdge path
@@ -315,9 +318,9 @@ getAllProvenGlobPathsOfMorphismBetween dgraph morphism src tgt =
 
 {- returns a list of all proven loc-glob paths of the given morphism between
    the given source and target node -}
-getAllProvenLocGlobPathsPfMorphismBetween :: DGraph -> GMorphism -> Node 
+getAllProvenLocGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node 
 					  -> Node -> [[LEdge DGLinkLab]]
-getAllProvenLocGlobPathsPfMorphismBetween dgraph morphism src tgt =
+getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism src tgt =
   filterPathsByMorphism morphism allPaths
 
   where
@@ -536,7 +539,7 @@ calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath [] = Nothing
 calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
-    Nothing -> Nothing --Just morphism
+    Nothing -> if null furtherPath then Just morphism else Nothing
     Just morphismOfFurtherPath ->
 		  comp Grothendieck morphism morphismOfFurtherPath
 
@@ -649,9 +652,18 @@ getThmLinkStatus (edgeType:list) =
     otherwise -> error ("getThmLinkStatus not yet implemented for "
 		       ++(show edgeType))
 
-getLabelsOfInsertedEdges :: [DGChange] -> [DGLinkLab]
-getLabelsOfInsertedEdges [] = []
-getLabelsOfInsertedEdges (change:list) =
+{- filters the list of changes for insertions of edges and returns the label of one of these; or Nothing if no insertion was found -}
+getLabelOfAnyInsertedEdge :: [DGChange] -> Maybe DGLinkLab
+getLabelOfAnyInsertedEdge changes = 
+  case getInsertedEdges changes of
+    [] -> Nothing
+    ((_,_,label):edges) -> Just label
+
+{- returns all insertions of edges from the given list of changes -}
+getInsertedEdges :: [DGChange] -> [LEdge DGLinkLab]
+getInsertedEdges [] = []
+getInsertedEdges (change:list) = 
   case change of
-    (InsertEdge (_,_,label)) -> label:(getLabelsOfInsertedEdges list)
-    otherwise -> getLabelsOfInsertedEdges list
+    (InsertEdge edge) -> edge:(getInsertedEdges list)
+    otherwise -> getInsertedEdges list
+
