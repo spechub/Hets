@@ -101,9 +101,5 @@ instance PrettyPrint MODALITY where
 instance PrettyPrint CoCASLSign where
     printText0 ga s = empty
 
-instance PrettyPrint a => PrettyPrint (Maybe a) where
-    printText0 ga Nothing = empty
-    printText0 ga (Just x) = printText0 ga x
-
 instance ListCheck CODATATYPE_DECL where
     (CoDatatype_decl _ _ _) `innerListGT` _ = False

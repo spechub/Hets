@@ -363,12 +363,3 @@ groupAxioms phis = do
                                   symb'= if not $ (elem fp symb) then fp:symb
                                          else symb
                               in p'++(filterA ps symb')
-
-
-instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
-  printText0 ga (Left x) = printText0 ga x
-  printText0 ga (Right x) = printText0 ga x
-
-instance PrettyPrint a => PrettyPrint (Maybe a) where
-  printText0 ga (Just x) = printText0 ga x
-  printText0 ga Nothing = ptext "Nothing"

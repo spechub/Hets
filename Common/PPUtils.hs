@@ -137,7 +137,7 @@ instance PrettyPrint a => PrettyPrint [a] where
   printText0 _ [] =  empty
   printText0 ga (x:xs) = 
     ptext "[" <+> commaT_text ga (x:xs) <+> ptext "]"
-    
+   
 {--------------------------------------------------------------------
   Sets
 --------------------------------------------------------------------}
@@ -170,7 +170,7 @@ printMap _ []
 printMap ga (x:xs) 
   = ptext "{" <+> (fsep . punctuate comma . map printElem) (x:xs) <+>  ptext "}"
     where    
-    printElem (k,x)  = printText0 ga k <+> ptext "|->" <+> printText0 ga x
+    printElem (k,v)  = printText0 ga k <+> ptext "|->" <+> printText0 ga v
 
 
 {--------------------------------------------------------------------
@@ -191,6 +191,14 @@ instance (PrettyPrint a, PrettyPrint b, PrettyPrint c) =>
 --------------------------------------------------------------------}
 
 instance PrettyPrint Bool where
-  printText0 ga x = text $ show x
+  printText0 _ x = text $ show x
 instance PrettyPrint Int where
-  printText0 ga x = text $ show x
+  printText0 _ x = text $ show x
+
+instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
+  printText0 ga (Left x) = printText0 ga x
+  printText0 ga (Right x) = printText0 ga x
+
+instance PrettyPrint a => PrettyPrint (Maybe a) where
+  printText0 ga (Just x) = printText0 ga x
+  printText0 _ Nothing = empty
