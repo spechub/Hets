@@ -82,7 +82,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 		 -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId Kind Int  -- analysed (Int for internal use) 
+data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
 	  | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
