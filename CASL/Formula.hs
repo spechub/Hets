@@ -71,7 +71,7 @@ whenTerm k =
 		 f <- impFormula k
 		 e <- asKey elseS
 		 r <- whenTerm k
-		 return (Conditional t f r [tokPos w, tokPos e])
+		 return (Conditional t f r $ toPos w [] e)
 		<|> return t
 
 term :: AParser TERM
@@ -89,27 +89,27 @@ castedTerm = do c <- asT
 		t <- sortId
 		return (Mixfix_cast t [tokPos c])
 
-terms :: [String] -> AParser ([TERM], [Pos])
+terms :: [String] -> AParser ([TERM], [Token])
 terms k = 
     do (ts, ps) <- whenTerm k `separatedBy` anComma
-       return (ts, map tokPos ps)
+       return (ts, ps)
 
-qualVarName, qualOpName :: Pos -> AParser TERM
+qualVarName, qualOpName :: Token -> AParser TERM
 qualVarName o = do v <- asKey varS
 		   i <- varId
 		   c <- colonT 
 		   s <- sortId
 		   p <- cParenT
-		   return (Qual_var i s [o, tokPos v, tokPos c, tokPos p])
+		   return $ Qual_var i s $ toPos o [v, c] p
 
 qualOpName o = do v <- asKey opS
 		  i <- parseId
 		  c <- colonST 
 		  t <- opType 
 		  p <- cParenT
-		  return (Application 
-			  (Qual_op_name i t
-			   [o, tokPos v, tokPos c, tokPos p]) [] [])
+		  return $ Application 
+			  (Qual_op_name i t $ toPos o [v, c] p)
+			   [] []
 
 opSort :: GenParser Char st (Bool, Id, Pos)
 opSort = fmap (\s -> (False, s, nullPos)) sortId 
@@ -120,7 +120,7 @@ opSort = fmap (\s -> (False, s, nullPos)) sortId
 opFunSort :: [Id] -> [Token] -> GenParser Char st OP_TYPE
 opFunSort ts ps = do a <- pToken (string funS)
 		     (b, s, _) <- opSort
-		     let qs = map tokPos ps ++[tokPos a] in 
+		     let qs = map tokPos (ps ++ [a]) in 
 			 return (if b then Partial_op_type ts s qs
 				 else Total_op_type ts s qs)
 
@@ -136,36 +136,37 @@ opType = do (b, s, p) <- opSort
 parenTerm, braceTerm, bracketTerm :: [String] -> AParser TERM
 parenTerm k = 
             do o <- oParenT
-               qualVarName (tokPos o) 
-		 <|> qualOpName (tokPos o)
-		 <|> qualPredName (tokPos o)
+               qualVarName o
+		 <|> qualOpName o
+		 <|> qualPredName o
 		 <|> do (ts, ps) <- terms k
 		        c <- cParenT
 		        return (Mixfix_parenthesized ts 
-				  (tokPos o : ps ++ [tokPos c]))
+				  $ toPos o ps c)
 
 braceTerm k = 
     do o <- oBraceT
        (ts, ps) <- option ([], []) $ terms k
        c <- cBraceT 
-       return (Mixfix_braced ts (tokPos o : ps ++ [tokPos c]))
+       return $ Mixfix_braced ts $ toPos o ps c
 
 bracketTerm k = 
     do o <- oBracketT
        (ts, ps) <- option ([], []) $ terms k
        c <- cBracketT 
-       return (Mixfix_bracketed ts (tokPos o : ps ++ [tokPos c]))
+       return $ Mixfix_bracketed ts $ toPos o ps c
 
-quant :: AParser (QUANTIFIER, Pos)
+
+quant :: AParser (QUANTIFIER, Token)
 quant = try(
         do q <- asKey (existsS++exMark)
-	   return (Unique_existential, tokPos q)
+	   return (Unique_existential, q)
         <|>
         do q <- asKey existsS
-	   return (Existential, tokPos q)
+	   return (Existential, q)
         <|>
         do q <- forallT
-	   return (Universal, tokPos q))
+	   return (Universal, q))
         <?> "quantifier"
        
 quantFormula :: [String] -> AParser FORMULA
@@ -174,8 +175,8 @@ quantFormula k =
        (vs, ps) <- varDecl `separatedBy` anSemi
        d <- dotT
        f <- impFormula k
-       return (Quantification q vs f
-	       (p: map tokPos ps ++[tokPos d]))
+       return $ Quantification q vs f
+	       $ toPos p ps d
 
 varDecl :: AParser VAR_DECL
 varDecl = do (vs, ps) <- varId `separatedBy` anComma
@@ -196,38 +197,34 @@ predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
 
-qualPredName :: Pos -> AParser TERM
+qualPredName :: Token -> AParser TERM
 qualPredName o = do v <- asKey predS
 		    i <- parseId
 		    c <- colonT 
 		    s <- predType
 		    p <- cParenT
-		    return (Mixfix_qual_pred
-			    (Qual_pred_name i s 
-			     [o, tokPos v, tokPos c, tokPos p]))
+		    return $ Mixfix_qual_pred
+			    $ Qual_pred_name i s $ toPos o [v, c] p
 
 parenFormula :: [String] -> AParser FORMULA
 parenFormula k = 
-               do o <- oParenT
-		  let po = tokPos o in
-		    do q <- qualPredName po 
-			    <|> qualVarName po <|> qualOpName po
-		       l <- many $ restTerm k  -- optional arguments
-		       termFormula k (if null l then q else
+    do o <- oParenT
+       do q <- qualPredName o <|> qualVarName o <|> qualOpName o
+	  l <- many $ restTerm k  -- optional arguments
+	  termFormula k (if null l then q else
 				      Mixfix_term (q:l))
-		    <|>
-		    do f <- impFormula k
-		       case f of Mixfix_formula t -> 
+         <|> do f <- impFormula k
+		case f of Mixfix_formula t -> 
 				     do c <- cParenT
 					l <- many $ restTerm k
 					let tt = Mixfix_parenthesized [t]
-					           [tokPos o, tokPos c]
+					           (toPos o [] c)
 					    ft = if null l then tt 
 					           else Mixfix_term (tt:l)
 					  in termFormula k ft
 				     -- commas are not allowed
-				 _ -> do c <- cParenT
-					 return (updFormulaPos 
+			  _ -> do c <- cParenT
+				  return (updFormulaPos 
 						 (tokPos o) (tokPos c) f)
 
 termFormula :: [String] -> TERM -> AParser FORMULA

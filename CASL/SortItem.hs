@@ -33,7 +33,7 @@ commaSortDecl :: Id -> AParser SORT_ITEM
 commaSortDecl s = do c <- anComma
 		     (is, cs) <- sortId `separatedBy` anComma
 		     let l = s : is 
-		         p = tokPos c : map tokPos cs in
+		         p = map tokPos (c:cs) in
 		       subSortDecl (l, p) <|> return (Sort_decl l p)
 
 isoDecl :: Id -> AParser SORT_ITEM
@@ -41,7 +41,7 @@ isoDecl s = do e <- equalT
                subSortDefn (s, tokPos e)
 		 <|>
 		 (do (l, p) <- sortId `separatedBy` equalT
-		     return (Iso_decl (s:l) (tokPos e : map tokPos p)))
+		     return (Iso_decl (s:l) (map tokPos (e:p))))
 
 subSortDefn :: (Id, Pos) -> AParser SORT_ITEM
 subSortDefn (s, e) = do a <- annos
@@ -52,8 +52,8 @@ subSortDefn (s, e) = do a <- annos
 			d <- dotT -- or bar
 			f <- formula
 			p <- cBraceT
-			return (Subsort_defn s v t (Annoted f [] a []) 
-				(e:tokPos o:tokPos c:tokPos d:[tokPos p]))
+			return $ Subsort_defn s v t (Annoted f [] a []) 
+				(e: map tokPos [o, c, d, p])
 
 subSortDecl :: ([Id], [Pos]) -> AParser SORT_ITEM
 subSortDecl (l, p) = do t <- lessT
