@@ -19,6 +19,9 @@ CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:Common:Logic:CASL:CASL/CCC:Synt
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
 
+# override on commandline for other architectures
+INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
+
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
 INLINEAXIOMS_deps = utils/InlineAxioms/*hs
@@ -229,6 +232,13 @@ release:
            $(RM) clean.*; mv Makefile Makefile.orig; \
            mv ReleaseMakefile Makefile)
 	tar cvf HetCATS.tar HetCATS
+
+install-hets:
+	mv hets $(INSTALLDIR)/versions/hets-`cat version_nr`
+	$(RM) $(INSTALLDIR)/hets
+	ln -s $(INSTALLDIR)/versions/hets-`cat version_nr` $(INSTALLDIR)/hets
+
+install: hets-opt install-hets
 
 #############################
 ### ATC DrIFT-rule generation
