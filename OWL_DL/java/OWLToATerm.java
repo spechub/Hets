@@ -5,9 +5,6 @@
 
 /**
  * @author jiang
- *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
  */
 
 import org.semanticweb.owl.model.OWLOntology;
@@ -23,6 +20,7 @@ import org.semanticweb.owl.util.OWLManager;
 // import org.semanticweb.owl.impl.model.*;
 // import org.semanticweb.owl.model.*;
 // import org.semanticweb.owl.io.simple.*;
+import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
 import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -34,17 +32,18 @@ import java.util.Map;
 // import org.apache.log4j.BasicConfigurator;
 import org.semanticweb.owl.validation.OWLValidationConstants;
 import uk.ac.man.cs.img.owl.validation.SpeciesValidator;
-import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
+// import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
 // import uk.ac.man.cs.img.owl.validation.ConstructChecker;
-import org.xml.sax.SAXException;
+// import org.xml.sax.SAXException;
 import org.semanticweb.owl.util.URIMapper;
+import org.xml.sax.SAXException;
 // import org.semanticweb.owl.util.PropertyBasedURIMapper;
 // import java.util.Properties;
 // import java.net.URISyntaxException;
 // import java.io.FileInputStream;
 // import java.io.IOException;
-import aterm.*;
 import aterm.pure.*;
+import aterm.*;
 import java.util.*;
 import java.io.*;
 
@@ -87,7 +86,7 @@ public class OWLToATerm implements OWLValidationConstants {
 		
 			// Warning
 			List warningList;
-			OWL2ATermErrorHandler handler = new OWL2ATermErrorHandler();
+			OWLToATermErrorHandler handler = new OWLToATermErrorHandler();
 
 			rdfParser.setOWLRDFErrorHandler(handler);
 
@@ -131,7 +130,7 @@ public class OWLToATerm implements OWLValidationConstants {
 	static void owlParserOutput(int valid, List message, OWLOntology ontology) {
 
 		try {
-			File file = new File("./output.term");
+			File file = new File("./output2.term");
 			if(file.exists()){
 				file.delete();
 				file.createNewFile();
@@ -139,8 +138,7 @@ public class OWLToATerm implements OWLValidationConstants {
 			// FileWriter fw = new FileWriter(file, true);
 			PrintWriter pw = new PrintWriter(new FileWriter(file, true));
 			
-			Renderer2 renderer = null;
-			renderer = new Renderer2();
+			Renderer2 renderer = new Renderer2();
 			ATerm result;
 			Writer writer = new StringWriter();
 			
@@ -170,7 +168,6 @@ public class OWLToATerm implements OWLValidationConstants {
 			renderer.renderOntology( ontology, writer );
 			result = ATermUtils.term( writer.toString() );
 			result.writeToSharedTextFile( stream );		    
-			
 			// System.out.println(result);
 		    // pw.close();
 		    stream.close();
@@ -182,15 +179,12 @@ public class OWLToATerm implements OWLValidationConstants {
 
 }
 
-class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
+class OWLToATermErrorHandler implements OWLRDFErrorHandler {
 
-	ArrayList wList;
+	ArrayList list;
 
-	ArrayList eList;
-
-	public OWL2ATermErrorHandler() {
-		wList = new ArrayList();
-		eList = new ArrayList();
+	public OWLToATermErrorHandler() {
+		list = new ArrayList();
 	}
 
 	public void owlFullConstruct(int code, String message) throws SAXException {
@@ -201,16 +195,17 @@ class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
 	}
 
 	public void error(String message) throws SAXException {
-		eList.add(message);
+		list.add(message);
 		// throw new SAXException();
 	}
 
 	public void warning(String message) throws SAXException {
-		wList.add(message);
+		list.add(message);
 	}
 
 	public List getList() {
-		return wList;
+		return list;
 	}
 
 }
+

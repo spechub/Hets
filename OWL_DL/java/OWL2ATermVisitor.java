@@ -70,6 +70,11 @@ import java.util.Map;
  */
 
 public class OWL2ATermVisitor implements OWLObjectVisitor {
+	/**
+	 * Comment for <code>serialVersionUID</code>
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public static boolean DEBUG = false;
 
 	private static OWLVocabularyAdapter OWL = OWLVocabularyAdapter.INSTANCE;
@@ -78,7 +83,9 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 
 	OWLOntology ontology;
 
-	ATermAppl term;
+	ATerm term;
+
+	ATermAppl namespaces;
 
 	private Set allURIs;
 
@@ -89,11 +96,12 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 	private int reservedNames;
 
 	private ATermRender2 visitRend;
-/*
-	private String[] names = { "a", "b", "c", "d", "e", "f", "g", "h", "i",
-			"j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
-			"w", "x", "y", "z", };
-*/
+
+	/*
+	 * private String[] names = { "a", "b", "c", "d", "e", "f", "g", "h", "i",
+	 * "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w",
+	 * "x", "y", "z", };
+	 */
 	public OWL2ATermVisitor(OWL2ATermLoader loader, OWLOntology onto) {
 		this.loader = loader;
 		this.ontology = onto;
@@ -104,15 +112,19 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		}
 		visitRend = new ATermRender2(ontology);
 		visitRend.generateShortNames();
-		visitRend.buildNamespaces();
+		namespaces = visitRend.buildNamespaces();
 	}
 
-	public ATermAppl result() {
+	public ATerm result() {
 		return term;
 	}
 
 	public void reset() {
 		term = null;
+	}
+
+	public ATermAppl getNamespace() {
+		return namespaces;
 	}
 
 	public ATermAppl term(OWLDataValue dv) throws OWLException {
@@ -247,7 +259,7 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		restriction.getObjectProperty().accept(this);
 		ATerm p = term;
 		restriction.getIndividual().accept(this);
-		ATermAppl ind = term;
+		ATerm ind = term;
 
 		term = ATermUtils.makeSomeValues(p, ATermUtils.makeValue(ind));
 	}
@@ -309,14 +321,14 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		if (eqs.hasNext()) {
 			OWLDescription desc1 = (OWLDescription) eqs.next();
 			desc1.accept(this);
-			ATermAppl c1 = term;
+			ATerm c1 = term;
 
 			while (eqs.hasNext()) {
 				OWLDescription desc2 = (OWLDescription) eqs.next();
 				desc2.accept(this);
-				ATermAppl c2 = term;
+				ATerm c2 = term;
 
-				kb.addSameClass(c1, c2);
+				//	kb.addSameClass(c1, c2);
 			}
 		}
 	}
@@ -341,16 +353,16 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 
 	public void visit(OWLSubClassAxiom axiom) throws OWLException {
 		axiom.getSubClass().accept(this);
-		ATermAppl c1 = term;
+		ATerm c1 = term;
 		axiom.getSuperClass().accept(this);
-		ATermAppl c2 = term;
+		ATerm c2 = term;
 
-		KnowledgeBase kb = loader.getKB();
-		kb.addSubClass(c1, c2);
+		// KnowledgeBase kb = loader.getKB();
+		//kb.addSubClass(c1, c2);
 	}
 
 	public void visit(OWLEquivalentPropertiesAxiom axiom) throws OWLException {
-		KnowledgeBase kb = loader.getKB();
+		// KnowledgeBase kb = loader.getKB();
 
 		Object[] eqs = axiom.getProperties().toArray();
 		for (int i = 0; i < eqs.length; i++) {
@@ -358,65 +370,66 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 				OWLProperty prop1 = (OWLProperty) eqs[i];
 				OWLProperty prop2 = (OWLProperty) eqs[j];
 				prop1.accept(this);
-				ATermAppl p1 = term;
+				ATerm p1 = term;
 				prop2.accept(this);
-				ATermAppl p2 = term;
+				ATerm p2 = term;
 
-				kb.addSameProperty(p1, p2);
+				//kb.addSameProperty(p1, p2);
 			}
 		}
 	}
 
 	public void visit(OWLSubPropertyAxiom axiom) throws OWLException {
-	
-		axiom.getSubProperty().accept(this);
-		ATermAppl p1 = term;
-		axiom.getSuperProperty().accept(this);
-		ATermAppl p2 = term;
 
-		KnowledgeBase kb = loader.getKB();
-		kb.addSubProperty(p1, p2);
+		axiom.getSubProperty().accept(this);
+		ATerm p1 = term;
+		axiom.getSuperProperty().accept(this);
+		ATerm p2 = term;
+
+		//KnowledgeBase kb = loader.getKB();
+		//kb.addSubProperty(p1, p2);
 	}
 
 	public void visit(OWLDifferentIndividualsAxiom axiom) throws OWLException {
-		KnowledgeBase kb = loader.getKB();
+		//	KnowledgeBase kb = loader.getKB();
 
 		Object[] inds = axiom.getIndividuals().toArray();
 		for (int i = 0; i < inds.length; i++) {
 			for (int j = i + 1; j < inds.length; j++) {
-				ATermAppl i1 = loader.term((OWLIndividual) inds[i]);
-				ATermAppl i2 = loader.term((OWLIndividual) inds[j]);
+				ATerm i1 = loader.term((OWLIndividual) inds[i]);
+				ATerm i2 = loader.term((OWLIndividual) inds[j]);
 
-				kb.addDifferent(i1, i2);
+				//			kb.addDifferent(i1, i2);
 			}
 		}
 	}
 
 	public void visit(OWLSameIndividualsAxiom axiom) throws OWLException {
-		KnowledgeBase kb = loader.getKB();
+		//	KnowledgeBase kb = loader.getKB();
 
 		Iterator eqs = axiom.getIndividuals().iterator();
 		if (eqs.hasNext()) {
-			ATermAppl i1 = loader.term((OWLIndividual) eqs.next());
+			ATerm i1 = loader.term((OWLIndividual) eqs.next());
 
 			while (eqs.hasNext()) {
-				ATermAppl i2 = loader.term((OWLIndividual) eqs.next());
+				ATerm i2 = loader.term((OWLIndividual) eqs.next());
 
-				kb.addSame(i1, i2);
+				//				kb.addSame(i1, i2);
 			}
 		}
 	}
 
 	public void visit(OWLAnnotationProperty ap) {
-		// skip annotation properties
-		if (DEBUG)
-			System.out.println("OWLAnnotationProperty " + ap);
+		// skip annotation properties?
+		try{
+			term = visitRend.renderAnnotationProperty(ontology, ap);
+		}catch(Exception e){
+			term = null;
+		}
 	}
 
 	public void visit(OWLAnnotationInstance ai) {
 		// skip annotation instances
-		if (DEBUG)
-			System.out.println("OWLAnnotationInstance " + ai);
 	}
 
 	public void visit(OWLDataEnumeration enumeration) throws OWLException {
@@ -449,22 +462,18 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 
 	public void visit(OWLDataValueRestriction restriction) throws OWLException {
 		restriction.getDataProperty().accept(this);
-		ATermAppl p = term;
+		ATerm p = term;
 		restriction.getValue().accept(this);
-		ATermAppl dv = term;
+		ATerm dv = term;
 
 		term = ATermUtils.makeSomeValues(p, ATermUtils.makeValue(dv));
 	}
 
 	public void visit(OWLFrame f) {
 		// skip OWLFrame
-		if (DEBUG)
-			System.out.println("OWLFrame " + f);
 	}
 
 	public void visit(OWLOntology o) {
 		// skip ontology
-		if (DEBUG)
-			System.out.println("OWLOntology " + o);
 	}
 }

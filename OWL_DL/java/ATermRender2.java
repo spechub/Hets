@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.semanticweb.owl.model.OWLOntology;
 import org.semanticweb.owl.model.OWLClass;
+import org.semanticweb.owl.impl.model.OWLPropertyImpl;
 import org.semanticweb.owl.io.vocabulary.OWLVocabularyAdapter;
 import org.semanticweb.owl.io.vocabulary.RDFVocabularyAdapter;
 import org.semanticweb.owl.io.vocabulary.RDFSVocabularyAdapter;
@@ -24,9 +25,9 @@ import java.net.URI;
 import org.semanticweb.owl.io.RendererException;
 // import org.semanticweb.owl.util.OWLConnection;
 // import org.semanticweb.owl.util.OWLManager;
-//import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
-import java.io.File;
-import java.io.FileOutputStream;
+// import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
+// import java.io.File;
+// import java.io.FileOutputStream;
 // import java.io.StringWriter;
 import java.io.Writer;
 import org.semanticweb.owl.model.helper.OntologyHelper;
@@ -83,7 +84,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			"l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
 			"y", "z", };
 
-	PureFactory factory = new PureFactory();
+	static PureFactory factory = new PureFactory();
 
 	ATermList emptyList = factory.makeList();
 	
@@ -116,7 +117,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 	}
 
-	public ATermAppl renderClass(OWLOntology ontology, OWLClass clazz)
+	public ATerm renderClass(OWLOntology ontology, OWLClass clazz)
 			throws OWLException {
 
 		boolean done = false;
@@ -130,7 +131,6 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		if (clazz.getURI() != null) {
 			classID = strToATermAppl(shortForm(clazz.getURI()));
-
 			dep = strToATermAppl((clazz.isDeprecated(ontology) ? "Deprecated," : ""));
 		}
 
@@ -138,7 +138,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		if (!clazz.getAnnotations(ontology).isEmpty()) {
 
 			annos = makeAnno(clazz.getAnnotations().iterator());
-			done = true;
+			// done = true;
 		}
 
 		// Equivalent Class
@@ -231,9 +231,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		}
 
 		// return is an ATermAppl: ATermOfClass(classID, ClassAxiomList)
-		AFun classAFun = factory.makeAFun("ATermOfClass", 2, false);
-
-		return factory.makeAppl(classAFun, classID, resList);
+		// AFun classAFun = factory.makeAFun("ATermOfClass", 2, false);
+		return resList;
 	}
 
 	public ATermAppl renderIndividual(OWLOntology ontology, OWLIndividual ind)
@@ -352,10 +351,15 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		// Writer writer = new StringWriter();
 		// setWriter(writer);
 
-		AFun apFun = factory.makeAFun("AnnotationProperty", 1, false);
-		ATermAppl result = strToATermAppl(shortForm(prop.getURI()));
+		AFun apFun = factory.makeAFun("AnnotationProperty", 2, false);
+		Set apSet = prop.getAnnotations();
+		Iterator it = apSet.iterator();
+		// Iterator it = OntologyHelper.getAnnotations(ontology, ontology ,prop).iterator();
+		
+		ATermList annoList = makeAnno(it);
+		ATermAppl uri = strToATermAppl(shortForm(prop.getURI()));
 		// pw.print("AnnotationProperty(" + shortForm(prop.getURI()) + ")");
-		return factory.makeAppl(apFun, result);
+		return factory.makeAppl(apFun, uri, annoList);
 	}
 
 	public ATermAppl renderObjectProperty(OWLOntology ontology,
@@ -391,10 +395,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		ATermAppl deprecated = strToATermAppl("");
 
 		// get annotations
-		for (Iterator it = prop.getAnnotations().iterator(); it.hasNext();) {
-			annoList = makeAnno(it);
-		}
-
+		annoList = makeAnno(prop.getAnnotations().iterator());
+		
 		// maybe deprecated
 		if (prop.isDeprecated(ontology)) {
 			deprecated = strToATermAppl("Deprecated");
@@ -742,23 +744,23 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		}
 	}
 
-	public void buildNamespaces() {
+	public ATermAppl buildNamespaces() {
 		/* Changed to fit with "concrete abstract syntax" */
 		//	pw.print("[Namespaces: ");
 		AFun nsFun1 = factory.makeAFun("Namespace", 1, false);
 		AFun nsFun2 = factory.makeAFun("NS", 2, false);
 		ATermList nsList = emptyList;
-		File file = new File("./namespaces.term");
-		
-		try{
-			if(file.exists()){
-				file.delete();
-				file.createNewFile();
-			}
-		}catch(Exception e){
-			System.out.println("Error: can not build file: namespaces.term.");
-			System.exit(1);
-		}
+		// File file = new File("./namespaces.term");
+//		
+//		try{
+//			if(file.exists()){
+//				file.delete();
+//				file.createNewFile();
+//			}
+//		}catch(Exception e){
+//			System.out.println("Error: can not build file: namespaces.term.");
+//			System.exit(1);
+//		}
 		
 		// pw.print("Namespaces(");
 		for (Iterator it = known.keySet().iterator(); it.hasNext();) {
@@ -776,13 +778,14 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				// pw.print(" NS( " + names[i] + ",\"<" + ns + ">\")");
 			}
 		}
-		
-		try{
-			ATermAppl result = factory.makeAppl(nsFun1, nsList.reverse());
-			result.writeToSharedTextFile(new FileOutputStream(file, true));
-		}catch(Exception e){
-			System.out.println("Exception by buildNamespeces: \t" + e);
-		}
+//		
+//		try{
+//			ATermAppl result = factory.makeAppl(nsFun1, nsList.reverse());
+//			result.writeToSharedTextFile(new FileOutputStream(file, true));
+//		}catch(Exception e){
+//			System.out.println("Exception by buildNamespeces: \t" + e);
+//		}
+		return factory.makeAppl(nsFun1, nsList.reverse());
 	}
 
 	public String shortForm(URI uri) {
@@ -903,7 +906,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 */
 	private ATermList makeAnno(Iterator it) throws OWLException {
 
-		AFun annoFun = factory.makeAFun("Annotation", 2, false);
+		// AFun annoFun = factory.makeAFun("Annotation", 2, false);
 		ATermList annos = factory.makeList();
 		ATermAppl annoCont;
 
@@ -919,8 +922,9 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		}
 		return annos.reverse();
 	}
+	
 
-	private ATermAppl strToATermAppl(String str) {
+	public static ATermAppl strToATermAppl(String str) {
 		return factory.makeAppl(factory.makeAFun(str, 0, true));
 	}
 
