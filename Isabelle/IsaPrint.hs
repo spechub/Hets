@@ -18,6 +18,7 @@ Portability :  portable
 module Isabelle.IsaPrint where
 
 import Isabelle.IsaSign
+import Isabelle.IsaConsts
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
@@ -67,29 +68,31 @@ showTyp _ (TVar (v,_) _) = "?\'" ++ v
 instance PrettyPrint TypeSig where
   printText0 _ tysig =
     if Map.isEmpty (arities tysig) then empty
-      else text $ Map.foldWithKey showTycon em (arities tysig) 
+      else text $ Map.foldWithKey showTycon "" (arities tysig) 
     where showTycon t arity' rest = 
               let arity = if null arity' then
                           error "IsaPrint.printText0 (TypeSig)" 
                                 else length (snd $ head arity') in 
             "typedecl "++
             (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
-             else em) ++ show t  ++"\n"++rest
+             else "") ++ show t  ++"\n"++rest
 
 instance PrettyPrint Term where
   printText0 _ = text . showTerm -- outerShowTerm   
   -- back to showTerm, because meta !! causes problems with show ?thesis
 
+showQuantStr :: String -> String
+showQuantStr s | s == allS = "!"
+               | s == exS  = "?"
+               | s == ex1S = "?!"
+               | otherwise = error "IsaPrint.showQuantStr"
+
 showTerm :: Term -> String
 showTerm (Const c _ _) = c
 showTerm (Free v _ _) = v
 showTerm (Abs v _ t _) = lb++"% "++showTerm v++" . "++showTerm t++rb
-showTerm (App (Const "All" _ _) (Abs v ty t _) _) = 
-  showQuant "!" v ty t
-showTerm (App (Const "Ex" _ _) (Abs v ty t _) _) = 
-  showQuant "?" v ty t
-showTerm (App (Const "Ex1" _ _) (Abs v ty t _) _) = 
-  showQuant "?!" v ty t
+showTerm (App (Const q _ _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
+  showQuant (showQuantStr q) v ty t
 showTerm (Case term alts _) =
   let sAlts = map showCaseAlt alts
   in 
@@ -125,15 +128,15 @@ showQuant s var typ term =
   (s++sp++showTerm var++" :: "++showTyp 1000 typ++" . "++showTerm term)
 
 outerShowTerm :: Term -> String
-outerShowTerm (App (Const "All" _ _) (Abs v ty t _) _) = 
+outerShowTerm (App (Const q _ _) (Abs v ty t _) _) | q == allS = 
   outerShowQuant "!!" v ty t
-outerShowTerm (App (App (Const "op -->" _ _) t1 _) t2 _) =
+outerShowTerm (App (App (Const o _ _) t1 _) t2 _) | o == impl =
   showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm t = showTerm t
 
 outerShowTerm1 :: Term -> String
-outerShowTerm1 (App (App (Const "op -->" _ _) t1 _) t2 _) =
-  showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
+outerShowTerm1 t@(App (App (Const o _ _) _ _) _ _) | o == impl =
+  outerShowTerm t
 outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
@@ -191,42 +194,30 @@ implPrec t = PrecTerm t 40
 noPrec :: Term -> PrecTerm
 noPrec t = PrecTerm t (-10)
 
+quantS :: String
+quantS = "QUANT" 
+
+dummyS :: String
+dummyS = "Dummy" 
+
+binFunct :: String -> Term -> PrecTerm
+binFunct s | s == eqv  = eqvPrec
+           | s == eq   = eqPrec
+           | s == conj = andPrec
+           | s == disj = orPrec
+           | s == impl = implPrec
+           | otherwise = appPrec
+
 toPrecTree :: Term -> PrecTermTree
 toPrecTree trm =
   case trm of
-    App c1@(Const "All" _ _) a2@(Abs _ _ _ _) _-> 
-       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
-            [toPrecTree c1, toPrecTree a2]
-    App c1@(Const "Ex" _ _) a2@(Abs _ _ _ _) _ -> 
-       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
-            [toPrecTree c1, toPrecTree a2]
-    App c1@(Const "Ex1" _ _) a2@(Abs _ _ _ _) _ -> 
-       Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
-            [toPrecTree c1, toPrecTree a2]
-    App t1 t2 _ -> 
-      case t1 of 
-        App t@(Const "op <=>" _ _) t3 _ 
-          -> Node (eqvPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        App t@(Const "op =" _ _) t3 _
-          -> Node (eqPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        App t@(Const "op &" _ _) t3 _ 
-          -> Node (andPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        App t@(Const "op |" _ _) t3 _ 
-          -> Node (orPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        App t@(Const "op -->" _ _) t3 _ 
-          -> Node (implPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        App t@(Const _ _ _) t3 _ 
-          -> Node (appPrec t)
-                  [toPrecTree t3, toPrecTree t2] 
-        _ -> Node (isaAppPrec (Const "DUMMY" noType isaTerm)) 
-               [toPrecTree t1, toPrecTree t2] 
+    App c1@(Const q _ _) a2@(Abs _ _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
+       Node (isaAppPrec $ con quantS) [toPrecTree c1, toPrecTree a2]
+    App (App t@(Const o _ _) t3 _) t2 _ ->
+      Node (binFunct o t) [toPrecTree t3, toPrecTree t2]
+    App t1 t2 _ -> Node (isaAppPrec $ con dummyS) 
+                   [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec trm) []
-
 
 data Assoc = LeftAs | NoAs | RightAs
 
@@ -237,16 +228,14 @@ showPTree (Node (PrecTerm term pre) annos) =
       rightChild = last annos
    in
      case term of
-       Const "op =" _ _   -> infixP pre "=" LeftAs leftChild rightChild
-       Const "op &" _ _   -> infixP pre "&" RightAs leftChild rightChild
-       Const "op |" _ _   -> infixP pre "|" RightAs leftChild rightChild
-       Const "op -->" _ _ -> infixP pre "-->" RightAs leftChild rightChild
-       Const "DUMMY" _ _  -> simpleInfix pre leftChild rightChild
-       Const "Pair" _ _   -> pair leftChild rightChild
-       Const "QUANT"_ _   -> quant leftChild rightChild
-       Const c _ _        -> prefixP pre c leftChild rightChild
-       _                  -> showTerm term
-
+       Const c _ _ | c == eq -> infixP pre "=" LeftAs leftChild rightChild
+                   | c `elem` [conj, disj, impl] ->
+                        infixP pre (drop 3 c) RightAs leftChild rightChild
+                   | c == dummyS  -> simpleInfix pre leftChild rightChild
+                   | c == isaPair -> pair leftChild rightChild
+                   | c == quantS  -> quant leftChild rightChild
+                   | otherwise    -> prefixP pre c leftChild rightChild
+       _ -> showTerm term
 
 {- Logical connectors: For readability and by habit they are written 
    at an infix position.
@@ -342,15 +331,9 @@ simpleInfix pAdult leftChild rightChild
 {- Quantification _in_ Formulas
 -}
 quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const"All"_ _) _) []) 
+quant (Node (PrecTerm (Const q _ _) _) []) 
           (Node (PrecTerm (Abs v ty t _) _) []) = 
-              lb++showQuant "!"  v ty t++rb
-quant (Node (PrecTerm (Const"Ex"_ _) _) []) 
-          (Node (PrecTerm (Abs v ty t _) _) [])  = 
-              lb++showQuant "?"  v ty t++rb
-quant (Node (PrecTerm (Const"Ex1"_ _) _) []) 
-          (Node (PrecTerm (Abs v ty t _) _) []) = 
-              lb++showQuant "?!"  v ty t++rb
+              lb++showQuant (showQuantStr q)  v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
@@ -410,9 +393,6 @@ instance PrintLaTeX Sign where
     printLatex0 = printText0
 
 
-
-em :: String
-em = ""
 
 sp :: String
 sp = " "

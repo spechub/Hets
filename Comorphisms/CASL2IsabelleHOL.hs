@@ -36,6 +36,7 @@ import CASL.Quantification
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
@@ -139,7 +140,7 @@ makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
   hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
   hasTheSort _ _ = error "CASL2IsabelleHOL.hasTheSort"
   transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
-  transArgs _ = error "CASL2IsabelleHOL : transArgs"
+  transArgs _ = error "CASL2IsabelleHOL.transArgs"
 makeDtDef _ _ = Nothing
 
 transSort :: SORT -> Typ
@@ -176,26 +177,9 @@ quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
 quantify q (v,t) phi  = 
   quantifyIsa (qname q) (transVar v, transSort t) phi
   where
-  qname Universal = "All"
-  qname Existential = "Ex"
-  qname Unique_existential = "Ex1"
-
-binOp :: String -> Term -> Term -> Term
-binOp s phi1 phi2 = 
-    App (App (Const s noType isaTerm) phi1 NotCont) phi2 NotCont
-
-conj :: [Term] -> Term
-conj l = if null l then true else foldr1 binConj l
-
-binConj, binDisj, binImpl, binEq :: Term -> Term -> Term
-binConj= binOp "op &"
-binDisj = binOp "op |"
-binImpl = binOp "op -->"
-binEq = binOp "op ="
-
-true, false :: Term
-true = Const "True" noType isaTerm
-false = Const "False" noType isaTerm 
+  qname Universal = allS
+  qname Existential = exS
+  qname Unique_existential = ex1S
 
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
@@ -235,23 +219,23 @@ transFORMULA sign tr (Disjunction phis _) =
 transFORMULA sign tr (Implication phi1 phi2 _ _) =
   binImpl (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Equivalence phi1 phi2 _) =
-  binEq (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
+  binEqv (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Negation phi _) =
-  App (Const "Not" noType isaTerm) (transFORMULA sign tr phi) NotCont
+  termAppl notOp (transFORMULA sign tr phi)
 transFORMULA _sign _tr (True_atom _) =
   true
 transFORMULA _sign _tr (False_atom _) =
   false
 transFORMULA sign tr (Predication psymb args _) =
-  foldl ( \ t1 t2 -> App t1 t2 NotCont)  
-            (Const (transPRED_SYMB sign psymb) noType isaTerm) 
+  foldl termAppl
+            (con $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
 transFORMULA _sign _tr (Definedness _t _) =
   true
 transFORMULA sign tr (Existl_equation t1 t2 _) =
-  binOp "op =" (transTERM sign tr t1) (transTERM sign tr t2)
+  binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Strong_equation t1 t2 _) =
-  binOp "op =" (transTERM sign tr t1) (transTERM sign tr t2)
+  binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Membership t1 s _) =
   trace "WARNING: ignoring membership formula" $ true
   --error "No translation for membership"
@@ -271,16 +255,16 @@ transTERM :: CASL.Sign.Sign f e
 transTERM _sign _tr (Qual_var v _s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
-  foldl ( \ t1 t2 -> App t1 t2 IsCont) 
-            (Const (transOP_SYMB sign opsymb) noType isaTerm) 
+  foldl termAppl
+            (con $ transOP_SYMB sign opsymb)
             (map (transTERM sign tr) args)
 transTERM sign tr (Sorted_term t _s _) =
   transTERM sign tr t
 transTERM sign tr (Cast t _s _) =
   transTERM sign tr t -- ??? Should lead to an error!
 transTERM sign tr (Conditional t1 phi t2 _) =
-  App (App (App (Const "If" noType isaTerm) (transFORMULA sign tr phi) NotCont)
-       (transTERM sign tr t1) NotCont) (transTERM sign tr t2) NotCont
+  foldl termAppl (con "If") [transFORMULA sign tr phi,
+       transTERM sign tr t1, transTERM sign tr t2]
 transTERM _sign _tr (Simple_id v) =
   IsaSign.Free (transVar v) noType isaTerm
   --error "No translation for undisambiguated identifier"

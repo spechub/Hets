@@ -36,6 +36,7 @@ import Comorphisms.CASL2IsabelleHOL
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 
 
@@ -68,6 +69,9 @@ instance Comorphism CoCASL2IsabelleHOL
 sigTrCoCASL :: SignTranslator C_FORMULA CoCASLSign
 sigTrCoCASL _ _ = id
 
+conjs :: [Term] -> Term
+conjs l = if null l then true else foldr1 binConj l
+
 -- | extended formula translation for CoCASL
 formTrCoCASL :: FormulaTranslator C_FORMULA CoCASLSign
 formTrCoCASL sign (CoSort_gen_ax sorts ops _) = 
@@ -81,7 +85,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
   predDecls = zip [rvar i | i<-indices] (map binPred sorts)
   binPred s = let s' = transSort s in mkCurryFunType [s',s'] boolType
   -- premises: all relations are bisimulations
-  prems = conj (map prem (zip sorts indices))
+  prems = conjs (map prem (zip sorts indices))
   {- generate premise for s, where s is the i-th sort
      for all x,y of that sort, 
       if all sel_j(x) R_j sel_j(y), where sel_j ranges over the selectors for s
@@ -120,13 +124,13 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
                      -- else use equality
                      else binEq rhs lhs
           in foldr (quantifyIsa "All") chi varDecls
-        prem1 = conj (map premSel sels)
+        prem1 = conjs (map premSel sels)
         concl1 = App (App (var $ rvar i) (var "x") NotCont) (var "y") NotCont
         psi = concl1 `binImpl` prem1
         typS = transSort s
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
-  concls = conj (map concl (zip sorts indices))
+  concls = conjs (map concl (zip sorts indices))
   concl (s,i::Int) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
                      (var "v") NotCont) 
                              (binEq (var "u") (var "v"))
