@@ -1,17 +1,8 @@
 module HasCASLModul where
 import Prelude (undefined, Show)
  
-data AT = A !(Int, B)
-        deriving Show
- 
-data B = B
-       deriving Show
- 
-data C = C
-       deriving Show
- 
-data Int = Int
-         deriving Show
+data FiniteSet a1 = FiniteSet
+                  deriving Show
  
 type Pred a = a -> ()
  
@@ -32,10 +23,11 @@ data A__2_M_G_2 a1 a2 = A__2_M_G_2
 data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
                         deriving Show
  
-type A_s = B
+_2_P_2 :: (FiniteSet a, FiniteSet a) -> FiniteSet a
+_2_P_2 = undefined
  
-_P :: (AT, B) -> C
-_P = undefined
+_2_M_2 :: (FiniteSet a, FiniteSet a) -> FiniteSet a
+_2_M_2 = undefined
  
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
@@ -64,12 +56,6 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-f2 :: C -> C
-f2 = undefined
- 
-f :: B -> B
-f = undefined
- 
 false :: ()
 false = undefined
  
@@ -81,3 +67,9 @@ not_2 = undefined
  
 true :: ()
 true = undefined
+ 
+_b_2_r :: a -> FiniteSet a
+_b_2_r = undefined
+ 
+_b_r :: FiniteSet a
+_b_r = undefined

@@ -1,0 +1,5 @@
+     var a : Type;
+     type FiniteSet: Type -> Type;
+     ops {} :  FiniteSet a;
+         {__} : a -> FiniteSet a;
+         __ + __, __ - __ : FiniteSet a * FiniteSet a -> FiniteSet a

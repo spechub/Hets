@@ -5,20 +5,20 @@ type Pred a = a -> ()
  
 type Unit = ()
  
-data A__2_T_2 = A__2_T_2
-              deriving Show
- 
-data A__2_M_M_G_2 = A__2_M_M_G_2
-                  deriving Show
- 
-data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+data A__2_T_2 a1 a2 = A__2_T_2
                     deriving Show
  
-data A__2_M_G_2 = A__2_M_G_2
-                deriving Show
+data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
+                        deriving Show
  
-data A__2_M_G_Q_2 = A__2_M_G_Q_2
-                  deriving Show
+data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
+                          deriving Show
+ 
+data A__2_M_G_2 a1 a2 = A__2_M_G_2
+                      deriving Show
+ 
+data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
+                        deriving Show
  
 data A_bool = True
             | False
@@ -52,12 +52,12 @@ a :: A_bool
 a = True
  
 b2 :: A_bool -> A_bool
-b2 = \ x -> (x :: A_bool)
+b2 = \ x -> x
  
 b :: A_bool
 b = let x = True
         y = False
-        z = (x :: A_bool)
+        z = x
       in True
  
 def_2 :: a -> ()

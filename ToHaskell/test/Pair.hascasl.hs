@@ -1,17 +1,8 @@
 module HasCASLModul where
 import Prelude (undefined, Show)
  
-data AT = A !(Int, B)
-        deriving Show
- 
-data B = B
-       deriving Show
- 
-data C = C
-       deriving Show
- 
-data Int = Int
-         deriving Show
+data Pair = Pair !(A_a, A_b)
+          deriving Show
  
 type Pred a = a -> ()
  
@@ -32,10 +23,11 @@ data A__2_M_G_2 a1 a2 = A__2_M_G_2
 data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
                         deriving Show
  
-type A_s = B
+data A_a = A_a
+         deriving Show
  
-_P :: (AT, B) -> C
-_P = undefined
+data A_b = A_b
+         deriving Show
  
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
@@ -64,14 +56,14 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
-f2 :: C -> C
-f2 = undefined
- 
-f :: B -> B
-f = undefined
+f :: (A_a, A_b) -> Pair
+f = \ (a, b) -> Pair (a, b)
  
 false :: ()
 false = undefined
+ 
+g :: Pair -> A_a
+g = \ (Pair (a, b)) -> a
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined

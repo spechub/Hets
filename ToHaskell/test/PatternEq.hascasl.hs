@@ -5,20 +5,20 @@ type Pred a = a -> ()
  
 type Unit = ()
  
-data A__2_T_2 = A__2_T_2
-              deriving Show
- 
-data A__2_M_M_G_2 = A__2_M_M_G_2
-                  deriving Show
- 
-data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+data A__2_T_2 a1 a2 = A__2_T_2
                     deriving Show
  
-data A__2_M_G_2 = A__2_M_G_2
-                deriving Show
+data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
+                        deriving Show
  
-data A__2_M_G_Q_2 = A__2_M_G_Q_2
-                  deriving Show
+data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
+                          deriving Show
+ 
+data A__2_M_G_2 a1 a2 = A__2_M_G_2
+                      deriving Show
+ 
+data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
+                        deriving Show
  
 data A_s = A_s
          deriving Show
@@ -57,7 +57,7 @@ b :: A_s
 b = a
  
 c :: A_t
-c = snd (((x :: A_s), (y :: A_t)))
+c = snd (x, y)
  
 def_2 :: a -> ()
 def_2 = undefined
@@ -72,7 +72,7 @@ not_2 :: () -> ()
 not_2 = undefined
  
 snd :: (A_s, A_t) -> A_t
-snd = \ (x, y) -> (y :: A_t)
+snd = \ (x, y) -> y
  
 true :: ()
 true = undefined

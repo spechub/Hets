@@ -1,2 +1,6 @@
 var a :Type+
 free type List a ::= Nil | Cons(head : a; tail : List a)
+
+op f(x : List a) : List a = x
+
+op g : List a -> List a

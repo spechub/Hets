@@ -2,27 +2,27 @@ module HasCASLModul where
 import Prelude (undefined, Show)
  
 data List a = Nil
-            | Cons{head :: !a, tail :: !(List a)}
+            | Cons !(a, List a)
             deriving Show
  
 type Pred a = a -> ()
  
 type Unit = ()
  
-data A__2_T_2 = A__2_T_2
-              deriving Show
- 
-data A__2_M_M_G_2 = A__2_M_M_G_2
-                  deriving Show
- 
-data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+data A__2_T_2 a1 a2 = A__2_T_2
                     deriving Show
  
-data A__2_M_G_2 = A__2_M_G_2
-                deriving Show
+data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
+                        deriving Show
  
-data A__2_M_G_Q_2 = A__2_M_G_Q_2
-                  deriving Show
+data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
+                          deriving Show
+ 
+data A__2_M_G_2 a1 a2 = A__2_M_G_2
+                      deriving Show
+ 
+data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
+                        deriving Show
  
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
@@ -51,8 +51,14 @@ _2when_2else_2 = undefined
 def_2 :: a -> ()
 def_2 = undefined
  
+f :: List a -> List a
+f = \ x -> x
+ 
 false :: ()
 false = undefined
+ 
+g :: List a -> List a
+g = undefined
  
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined

@@ -1,3 +1,3 @@
-type Nat : Type
+free type Nat ::= Zero | Suc (prec : Nat)
 
-free type Nat ::= Zero | Suc (Prec : Nat)
+op f(x:Nat):Nat = Suc x

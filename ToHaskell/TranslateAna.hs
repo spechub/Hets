@@ -28,7 +28,6 @@ module ToHaskell.TranslateAna (
        , translateTypeMap
        , translateData
        , translateAltDefn
-       , translateRecord
        -- * Translation of type argument
        , getArg
        ) where
@@ -75,7 +74,7 @@ translateData (tid,info) =
            [(HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
-		       [] -- [HsName] no type arguments
+		       (kindToTypeArgs 1 $ typeKind info)
 		       [(HsConDecl nullLoc hsname [])]
 		       [(UnQual $ HsIdent "Show")] -- [HsQName]  (deriving ...)
 	    )]
@@ -106,23 +105,25 @@ typeSynonym :: HsName -> Type -> HsDecl
 typeSynonym hsname ty = 
   HsTypeDecl nullLoc hsname [] (translateType ty)
 
+kindToTypeArgs :: Int -> Kind -> [HsName]
+kindToTypeArgs i k = case k of
+    Universe _ -> []
+    MissingKind -> []
+    ClassKind _ rk -> kindToTypeArgs i rk
+    Downset _ _ rk _ -> kindToTypeArgs i rk
+    FunKind _ kr _ -> HsIdent ("a" ++ show i) : kindToTypeArgs (i+1) kr
+    Intersection l _ -> if null l then error "kindToTypeArgs"
+			 else kindToTypeArgs i $ head l
+    ExtKind ek _ _ -> kindToTypeArgs i ek
+
+
 -- | Translation of an alternative constructor for a datatype definition.
 --   Uses 'translateRecord'.
 translateAltDefn :: AltDefn -> HsConDecl
-translateAltDefn (Construct uid ts _ []) = 
+translateAltDefn (Construct uid ts _ _) = 
     HsConDecl nullLoc
 	      (HsIdent (translateIdWithType UpperId uid))
 	      (map getType ts)
-translateAltDefn (Construct uid _ts _ sel) =
-    HsRecDecl nullLoc
-	      (HsIdent (translateIdWithType UpperId uid))
-	      (map translateRecord sel)
-
--- | Translation one field label.
-translateRecord :: Selector -> ([HsName], HsBangType)
-translateRecord (Select opid t _) = 
-    ([(HsIdent (translateIdWithType LowerId opid))],
-     getType t)
 
 getType :: Type -> HsBangType
 getType t = HsBangedTy (translateType t)
@@ -163,7 +164,7 @@ translateAssump as tm (i, opinf) =
   in case (opDefn $ head $ opInfos opinf) of
     NoOpDefn _ -> [res, (functionUndef fname)]
     ConstructData _ -> []  -- Implicitly introduced by the datatype definition.
-    SelectData _ _ -> []   -- Implicitly introduced by the datatype definition.
+    SelectData _ _ -> []   -- not implicitly introduced!
     Definition _ term -> 
       (translateFunDef as tm i (opType $ head $ opInfos opinf) term)
     VarDefn -> []
@@ -234,13 +235,11 @@ isConstructor o = case opDefn o of
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Assumps -> TypeMap -> Term -> HsExp
 translateTerm as tm t = 
-  let err = error ("Unexpected term: " ++ show t) in
+  let err = error ("Unexpected term: " ++ show t)
+      undef = HsVar $ UnQual $ HsIdent "undefined" in
   case t of
-    QualVar v ty _pos ->
-        HsParen (HsExpTypeSig 
-		 nullLoc 
-		 (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
-		 (HsUnQualType $ translateType ty))      
+    QualVar v _ty _pos -> HsVar $ UnQual $ HsIdent $ 
+			  translateIdWithType LowerId v
     QualOp _ (InstOpId uid _types _) ts _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for "Unifizierbarkeit" with the 
@@ -253,28 +252,23 @@ translateTerm as tm t =
 	      (HsCon (UnQual (HsIdent (translateIdWithType UpperId i))))
 	    else (HsVar (UnQual (HsIdent (translateIdWithType LowerId i))))
         _ -> error("Problem with finding of unique id: " ++ show t)
-
-    ApplTerm t1 t2 _pos ->
-      HsApp(translateTerm as tm t1)(HsParen $ translateTerm as tm t2)
+    ApplTerm t1 t2 _pos -> let at = translateTerm as tm t2 in
+       HsApp (translateTerm as tm t1) $ (case at of 
+       HsTuple _ -> id
+       HsCon _ -> id
+       HsVar _ -> id
+       _ -> HsParen) at
     TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
-    TypedTerm t1 tqual ty _pos ->
-      let res = (HsExpTypeSig nullLoc 
-	                    (translateTerm as tm t1)
-                            (HsUnQualType $ translateType ty)) in
-      case tqual of 
-        OfType -> HsParen res
-        AsType -> HsParen res
-	-- Here a HsExpTypeSig (t1::ty) is sufficient because supertypes
-        -- in HasCASL are converted to typesynonymes in haskell.
-        InType -> error ("Translation of \"InType\" not possible: " ++ show t)
-
-    QuantifiedTerm _quant _vars _t1 _pos -> -- forall ...
-        error ("Translation of \"QuantifiedTerm\" not possible" ++ show t)
+    TypedTerm t1 tqual _ty _pos -> -- check for global types later
+      let res = translateTerm as tm t1
+      in case tqual of 
+        InType -> undef
+        _ -> res
+    QuantifiedTerm _quant _vars _t1 _pos -> undef
     LambdaTerm pats _part t1 _pos -> 
         HsLambda nullLoc
                  (map (translatePattern as tm) pats)
 	         (translateTerm as tm t1)
-
     CaseTerm t1 progeqs _pos -> 
         HsCase (translateTerm as tm t1)
 	       (map(translateCaseProgEq as tm)progeqs)
@@ -283,7 +277,6 @@ translateTerm as tm t =
         HsLet (map (translateLetProgEq as tm) progeqs)
 	      (translateTerm as tm t1)
     _ -> err -- ResolvedMixTerm, TermToken, MixfixTerm, BracketTerm 
-
 
 -- | Conversion of patterns form HasCASL to haskell.
 translatePattern :: Assumps -> TypeMap -> Pattern -> HsPat
@@ -304,7 +297,8 @@ translatePattern as tm pat =
 	  let tp = translatePattern as tm p1
 	      a = translatePattern as tm p2
 	      in case tp of
-                 HsPApp u os -> HsPApp u (os ++ [a])
+                 HsPApp u os -> HsPParen $ HsPApp u (os ++ [a])
+		 HsPParen (HsPApp u os) -> HsPParen $ HsPApp u (os ++ [a])
 		 _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _pos -> 
 	  HsPTuple $ map (translatePattern as tm) pats

@@ -5,20 +5,20 @@ type Pred a = a -> ()
  
 type Unit = ()
  
-data A__2_T_2 = A__2_T_2
-              deriving Show
- 
-data A__2_M_M_G_2 = A__2_M_M_G_2
-                  deriving Show
- 
-data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
+data A__2_T_2 a1 a2 = A__2_T_2
                     deriving Show
  
-data A__2_M_G_2 = A__2_M_G_2
-                deriving Show
+data A__2_M_M_G_2 a1 a2 = A__2_M_M_G_2
+                        deriving Show
  
-data A__2_M_G_Q_2 = A__2_M_G_Q_2
-                  deriving Show
+data A__2_M_M_G_Q_2 a1 a2 = A__2_M_M_G_Q_2
+                          deriving Show
+ 
+data A__2_M_G_2 a1 a2 = A__2_M_G_2
+                      deriving Show
+ 
+data A__2_M_G_Q_2 a1 a2 = A__2_M_G_Q_2
+                        deriving Show
  
 data A_s = A_s
          deriving Show
@@ -75,4 +75,4 @@ x2 :: A_s
 x2 = undefined
  
 y :: A_s
-y = _2_P_2 ((x2, x2))
+y = _2_P_2 (x2, x2)
