@@ -14,8 +14,10 @@ import Keywords
 import HToken
 import Pretty
 import PrettyPrint
+import GlobalAnnotations(GlobalAnnos)
 import Print_AS_Annotation
 
+commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 commas ga l = fsep $ punctuate comma (map (printText0 ga) l)
 semis ga l = sep $ punctuate semi (map (printText0 ga) l)
 
@@ -27,6 +29,7 @@ instance PrettyPrint TypePattern where
     printText0 ga (BracketTypePattern k l _) = bracket k $ commas ga l
     printText0 ga (TypePatternArgs l) = semis ga l
 
+bracket :: BracketKind -> Doc -> Doc
 bracket Parens t = parens t
 bracket Squares t = Pretty.brackets t
 bracket Braces t = braces t
@@ -82,9 +85,29 @@ instance PrettyPrint TypeQual where
     printText0 _ AsType = text asS
     printText0 _ InType = text inS
 
+instance PrettyPrint LogOp where
+    printText0 _ NotOp = text notS
+    printText0 _ AndOp = text lAnd
+    printText0 _ OrOp = text lOr
+    printText0 _ ImplOp = text implS
+    printText0 _ EquivOp = text equivS
+
+instance PrettyPrint EqOp where
+    printText0 _ EqualOp = text equalS
+    printText0 _ ExEqualOp = text exEqual
+
 instance PrettyPrint Formula where
     printText0 ga (TermFormula t) = printText0 ga t
--- other cases missing
+    printText0 ga (ConnectFormula o fs _) = parens $
+	fsep (punctuate (space <> printText0 ga o) (map (printText0 ga) fs))
+    printText0 ga (EqFormula o t1 t2 _) = printText0 ga t1
+					  <+> printText0 ga o
+					  <+> printText0 ga t2
+    printText0 ga (DefFormula t _) = text defS <+> printText0 ga t
+    printText0 ga (QuantifiedFormula q vs f _) =
+	printText0 ga q <+> semis ga vs <+> text dotS <+> printText0 ga f
+    printText0 ga (PolyFormula ts f _) = 
+	text forallS <+> semis ga ts <+> text dotS <+> printText0 ga f
 
 instance PrettyPrint Term where
     printText0 ga (CondTerm t1 f t2 _) =  printText0 ga t1
@@ -151,6 +174,8 @@ instance PrettyPrint Pattern where
 			  <+> text asP
 			  <+> printText0 ga p
 
+
+printEq0 :: GlobalAnnos -> String -> ProgEq -> Doc
 printEq0 ga s (ProgEq p t _) = fsep [printText0 ga p 
 			  , text s
 			  , printText0 ga t] 

@@ -1,1 +1,1 @@
-ghci -i..:../parsec Main.hs
+ghci -fglasgow-exts -Wall -i..:../fgl:../parsec:../pretty:../CASL -package data Main.hs
