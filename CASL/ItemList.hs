@@ -48,28 +48,24 @@ forallT = asKey forallS
 
 annos, lineAnnos :: AParser [Annotation]
 annos = addAnnos >> getAnnos
-lineAnnos = addAnnos >> getLineAnnos
+lineAnnos = addLineAnnos >> getAnnos
 
 -- optional semicolon followed by annotations on the same line
 optSemi :: AParser (Maybe Token, [Annotation])
-optSemi = do addAnnos
-             l <- getLineAnnos
-	     a <- getAnnos 
-	     do s <- asSeparator ";" 
-		addAnnos
-		l2 <- getLineAnnos
-		return (Just s, l ++ a ++ l2)
-	      <|> do setState $ AnnoState [] a
-		     return (Nothing, l)
+optSemi = do (a1, s) <- try (bind (,) annos (asSeparator ";"))
+             a2 <- lineAnnos                         
+             return (Just s, a1 ++ a2)
+          <|> do a <- lineAnnos
+                 return (Nothing, a)
 
 -- succeeds if an item is not continued after a semicolon
 tryItemEnd :: [String] -> AParser ()
 tryItemEnd l = 
-    try (do c <- lookAhead 
+    try (do c <- lookAhead (annos >>
 			      (single (oneOf "\"([{")
 			       <|> placeS
 			       <|> scanAnySigns
-			       <|> many scanLPD)
+			       <|> many scanLPD))
 	    if null c || c `elem` l then return () else unexpected c)
 
 

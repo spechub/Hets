@@ -19,37 +19,31 @@ import Parsec
 -- ----------------------------------------------
 type AParser a = GenParser Char AnnoState a
 
-data AnnoState = AnnoState { lastLines :: [Annotation]
-			   , nextAnnos :: [Annotation] }
+data AnnoState = AnnoState { toAnnos :: [Annotation] }
 
 emptyAnnos :: AnnoState
-emptyAnnos = AnnoState [] []
+emptyAnnos = AnnoState []
 
 parseAnnos :: AnnoState -> GenParser Char st AnnoState 
-parseAnnos (AnnoState oldL as) = 
+parseAnnos (AnnoState as) = 
+    do a <- skip >> annotations
+       return $ AnnoState (as ++ a) 
+
+parseLineAnnos :: AnnoState -> GenParser Char st AnnoState 
+parseLineAnnos (AnnoState as) = 
     do l <- mLineAnnos
-       a <- skip >> annotations
-       return $ AnnoState (oldL ++ as ++ l) a 
+       return $ AnnoState (as ++ l) 
 
 addAnnos :: AParser ()
 addAnnos = getState >>= parseAnnos >>= setState
 
-splitLineAnnos :: AnnoState -> (AnnoState, [Annotation])
-splitLineAnnos (AnnoState l as) = (AnnoState [] as, l)
-
-getLineAnnos :: AParser [Annotation]
-getLineAnnos = do a <- getState 
-		  let (b , l) = splitLineAnnos a
-		  setState b
-		  return l
-
-toAnnos :: AnnoState -> [Annotation]
-toAnnos (AnnoState l as) = l ++ as
+addLineAnnos :: AParser ()
+addLineAnnos = getState >>= parseLineAnnos >>= setState
 
 getAnnos :: AParser [Annotation]
-getAnnos = do a <- getState 
+getAnnos = do AnnoState a <- getState 
 	      setState emptyAnnos 
-	      return $ toAnnos a
+	      return a
 
 -- annotations on one line
 mLineAnnos :: GenParser Char st [Annotation]
