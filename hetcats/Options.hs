@@ -16,9 +16,11 @@
 -}
 
 {- TODO:
-     - Flag und HetCATSOpts Datentyp anpassen
-     - options Liste erweitern 
-     - mehrere infiles zulassen
+   -- parse the input type via 'instance Read InType'?
+   -- there's got to be a better way to realize parseOutType
+   -- an Error should be raised when more than one OutDir were specified,
+      or when the OutDir wasn't approved sane
+   -- implement Read instance for some (all?) Types of Flags
 -}
 
 {- Optionen:
@@ -60,35 +62,34 @@ import System.Console.GetOpt
 -- main Datatypes --
 
 {- | 'HetcatsOpts' describes the interpreted options -}
--- TODO: pretty-printer Options
 data HetcatsOpts = 
     HcOpt { verbose  :: Int        -- greater than null to turn verbosity on
-	  , intype   :: InType     -- type of the file to be read
-	  , infiles  :: [FilePath] -- files to be read
-	  , outtypes :: [OutType]  -- list of output types to be generated
-	  , outdir   :: FilePath   -- output directory
 	  , analysis :: Bool       -- False if analysis should be skipped
-	  , libdir   :: FilePath   -- CASL library directory
+	  , intype   :: InType     -- type of the file to be read
+	  , outtypes :: [OutType]  -- list of output types to be generated
 	  , rawopts  :: [RawOpt]   -- raw options for the pretty printer
+	  , libdir   :: FilePath   -- CASL library directory
+	  , outdir   :: FilePath   -- output directory
+	  , infiles  :: [FilePath] -- files to be read
 	  }
     deriving (Eq)
 
 instance Show HetcatsOpts where
     show opts =    " --verbose="      ++ show (verbose opts)
+		++ showAnalysis (analysis opts)
 		++ " --input-type="   ++ show (intype opts)
-		++ " --output-types=" ++ showOutTypes
-		++ " --output-dir="   ++ (outdir opts)
-		++ showAnalysis
+		++ " --output-types=" ++ showOutTypes (outtypes opts)
+		++ " " ++ showRaw (rawopts opts)
 		++ " --casl-libdir="  ++ (libdir opts)
-		++ showRaw (rawopts opts)
-		++ " " ++ showInFiles
+		++ " --output-dir="   ++ (outdir opts)
+		++ " " ++ showInFiles (infiles opts)
 	where
-	showOutTypes = joinWith ',' $ map show (outtypes opts)
-	showInFiles  = joinWith ' ' (infiles opts)
-	showAnalysis = if (analysis opts) then " --just-parse" else ""
-	showRaw = joinWith ' ' . (map showRaw')
-	showRaw' (RawAscii s) = " --raw=ascii=" ++ s
-	showRaw' (RawLatex s) = " --raw=latex=" ++ s
+	showAnalysis x = if x then " --just-parse" else ""
+	showInFiles  = joinWith ' '
+	showOutTypes = joinWith ',' . map show
+	showRaw = joinWith ' ' . map showRaw'
+	showRaw' (RawAscii s) = "--raw=ascii=" ++ s
+	showRaw' (RawLatex s) = "--raw=latex=" ++ s
 
 {- | incorporates a Flag into a setof HetcatsOpts -}
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -111,64 +112,33 @@ infile = head . infiles
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { verbose  = 0
-	  , intype   = Guess -- ATerm NonBAF
-	  , infiles  = []
-	  , outtypes = [HetCASLOut OutASTree Ascii]
-	  , outdir   = ""
+	  , analysis = True
+	  , intype   = GuessIn -- ATerm NonBAF
+	  , outtypes = [HetCASLOut OutASTree OutAscii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
 	  , intype   = HetCASLIn
 	  , outtypes = [Global_Env [XML]]
 	    -}
-	  , analysis = True
-	  , libdir   = ""
 	  , rawopts  = []
+	  , libdir   = ""
+	  , outdir   = ""
+	  , infiles  = []
 	  }
 
 {- | 'Flag' describes the raw options -}
 data Flag = Verbose  Int         -- how verbose shall we be?
 	  | Version              -- print version number
 	  | Help                 -- print usage message
-	  | InType   InType      -- type of input file
-	  | OutDir   FilePath    -- destination directory for output files
-	  | OutTypes [OutType]   -- types of output to generate
 	  | Analysis Bool        -- to analyse or not to analyse
-	  | LibDir   FilePath    -- CASL library directory
+	  | InType   InType      -- type of input file
+	  | OutTypes [OutType]   -- types of output to generate
 	  | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
+	  | LibDir   FilePath    -- CASL library directory
+	  | OutDir   FilePath    -- destination directory for output files
 	    deriving (Show,Eq)
 
-{- | 'options' describes all available options and generates usage information
--}
-options :: [OptDescr Flag]
-options =
-    [ Option ['v'] ["verbose"] (OptArg parseVerbosity "Int")
-      "chatty output on stderr"
-    , Option ['V'] ["version"] (NoArg Version)
-      "print version number and exit"
-    , Option ['h'] ["help", "usage"] (NoArg Help)
-      "print usage information and exit"
-    , Option ['i'] ["input-type"]  (ReqArg parseInputType "ITYPE")
-      "ITYPE of input file: \n\t(tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?"
-    , Option ['O'] ["output-dir"]  (ReqArg parseOutputDir "DIR")
-      "destination directory for output files"
-    , Option ['o'] ["output-types"] (ReqArg parseOutputTypes "OTYPES")
-      "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t(default: dg.taf)"
-    , Option ['p'] ["just-parse"]  (NoArg (Analysis False))
-      "skip static analysis - just parse"
-    , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
-      "CASL library directory"
-    , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
-      "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
-    ]
-
-
--- auxiliary Datatypes --
-
--- posible sources of errors: user input or internal errors
-data ErrorSource = User | Intern
-		   deriving (Show, Eq)
-
-data InType = ATerm ATType | ASTree ATType | CASLIn | HetCASLIn | Guess
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | GuessIn
 	      deriving (Show, Eq)
 
 data ATType = BAF | NonBAF
@@ -188,7 +158,7 @@ data HetOutType = OutASTree | OutDGraph Flattening Bool
 data Flattening = Flattened | HidingOutside | Full
 		  deriving (Show, Eq)
 
-data HetOutFormat = Ascii | Term | Taf | Html | Xml
+data HetOutFormat = OutAscii | OutTerm | OutTaf | OutHtml | OutXml
 		    deriving (Show, Eq)
 
 data GraphType = Dot | PostScript | Davinci
@@ -196,6 +166,34 @@ data GraphType = Dot | PostScript | Davinci
 
 data RawOpt = RawAscii String | RawLatex String
 	      deriving (Show, Eq)
+
+-- posible sources of errors: user input or internal errors
+data ErrorSource = User | Intern
+		   deriving (Show, Eq)
+
+{- | 'options' describes all available options and generates usage information
+-}
+options :: [OptDescr Flag]
+options =
+    [ Option ['v'] ["verbose"] (OptArg parseVerbosity "Int")
+      "chatty output on stderr"
+    , Option ['V'] ["version"] (NoArg Version)
+      "print version number and exit"
+    , Option ['h'] ["help", "usage"] (NoArg Help)
+      "print usage information and exit"
+    , Option ['i'] ["input-type"]  (ReqArg parseInType "ITYPE")
+      "ITYPE of input file: \n\t(tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?"
+    , Option ['O'] ["output-dir"]  (ReqArg parseOutDir "DIR")
+      "destination directory for output files"
+    , Option ['o'] ["output-types"] (ReqArg parseOutTypes "OTYPES")
+      "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t(default: dg.taf)"
+    , Option ['p'] ["just-parse"]  (NoArg (Analysis False))
+      "skip static analysis - just parse"
+    , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
+      "CASL library directory"
+    , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
+      "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
+    ]
 
 
 -- parser functions returning Flags --
@@ -209,24 +207,23 @@ parseVerbosity (Just s)
 		   _        -> hetsError User (s ++ " is not a valid INT")
 
 -- parse the input type 
--- TODO: maybe this can be implemented via 'instance Read InType'?
-parseInputType :: String -> Flag
-parseInputType "casl"             = InType CASLIn
-parseInputType "hetcasl"          = InType HetCASLIn
-parseInputType "het"              = InType HetCASLIn
-parseInputType "gen_trm"          = InType (ATerm NonBAF)
-parseInputType "tree.gen_trm"     = InType (ATerm NonBAF)
-parseInputType "gen_trm.baf"      = InType (ATerm BAF)
-parseInputType "tree.gen_trm.baf" = InType (ATerm BAF)
-parseInputType "ast"              = InType (ASTree NonBAF)
-parseInputType "ast.baf"          = InType (ASTree BAF)
-parseInputType str                = error' str
+parseInType :: String -> Flag
+parseInType "casl"             = InType CASLIn
+parseInType "hetcasl"          = InType HetCASLIn
+parseInType "het"              = InType HetCASLIn
+parseInType "gen_trm"          = InType $ ATermIn NonBAF
+parseInType "tree.gen_trm"     = InType $ ATermIn NonBAF
+parseInType "gen_trm.baf"      = InType $ ATermIn BAF
+parseInType "tree.gen_trm.baf" = InType $ ATermIn BAF
+parseInType "ast"              = InType $ ASTreeIn NonBAF
+parseInType "ast.baf"          = InType $ ASTreeIn BAF
+parseInType str                = error' str
     where
     error' s = hetsError User (s ++ " is not a valid ITYPE")
 
 -- parse the output types 
-parseOutputTypes :: String -> Flag
-parseOutputTypes str
+parseOutTypes :: String -> Flag
+parseOutTypes str
     | ',' `elem` str = OutTypes $ 
 		       (map maybeOType . map parseOutType . splitOn ',') str
     | otherwise = case (parseOutType str) of
@@ -236,50 +233,49 @@ parseOutputTypes str
     maybeOType = maybe (error' str) id
     error' s = hetsError User (s ++ " is not a valid OTYPE")
 
--- TODO: there's got to be a better way ...
 -- parse a single output type from a string
 parseOutType :: String -> Maybe OutType
 parseOutType s
     | "pp."    `isPrefixOf` s =
-	parseOutType' (getPrettyType $ drop 3 s) PrettyOut
+	parseOutType' (parsePrettyType $ drop 3 s) PrettyOut
     | "graph." `isPrefixOf` s =
-	parseOutType' (getGraphType $ drop 6 s) GraphOut
+	parseOutType' (parseGraphType $ drop 6 s) GraphOut
     | "ast."   `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 4 s) (HetCASLOut OutASTree)
+	parseOutType' (parseOutFormat $ drop 4 s) (HetCASLOut OutASTree)
     | "fdg.nax."   `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 8 s) 
+	parseOutType' (parseOutFormat $ drop 8 s) 
 		      (HetCASLOut $ OutDGraph Flattened True)
     | "fdg."   `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 4 s)
+	parseOutType' (parseOutFormat $ drop 4 s)
 		      (HetCASLOut $ OutDGraph Flattened False)
     | "hdg.nax."   `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 8 s) 
+	parseOutType' (parseOutFormat $ drop 8 s) 
 		      (HetCASLOut $ OutDGraph HidingOutside True)
     | "hdg."   `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 4 s)
+	parseOutType' (parseOutFormat $ drop 4 s)
 		      (HetCASLOut $ OutDGraph HidingOutside False)
     | "dg.nax."    `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 7 s)
+	parseOutType' (parseOutFormat $ drop 7 s)
 		      (HetCASLOut $ OutDGraph Full True)
     | "dg."    `isPrefixOf` s =
-	parseOutType' (getOutFormat $ drop 3 s)
+	parseOutType' (parseOutFormat $ drop 3 s)
 		      (HetCASLOut $ OutDGraph Full False)
     | otherwise               = Nothing
     where
-    getPrettyType "het"  = Just PrettyAscii
-    getPrettyType "tex"  = Just PrettyLatex
-    getPrettyType "html" = Just PrettyHtml
-    getPrettyType _      = Nothing
-    getGraphType "dot"     = Just Dot
-    getGraphType "ps"      = Just PostScript
-    getGraphType "davinci" = Just Davinci
-    getGraphType _         = Nothing
-    getOutFormat "het"  = Just Ascii
-    getOutFormat "taf"  = Just Taf
-    getOutFormat "trm"  = Just Term
-    getOutFormat "html" = Just Html
-    getOutFormat "xml"  = Just Xml
-    getOutFormat _      = Nothing
+    parsePrettyType "het"  = Just PrettyAscii
+    parsePrettyType "tex"  = Just PrettyLatex
+    parsePrettyType "html" = Just PrettyHtml
+    parsePrettyType _      = Nothing
+    parseGraphType "dot"     = Just Dot
+    parseGraphType "ps"      = Just PostScript
+    parseGraphType "davinci" = Just Davinci
+    parseGraphType _         = Nothing
+    parseOutFormat "het"  = Just OutAscii
+    parseOutFormat "taf"  = Just OutTaf
+    parseOutFormat "trm"  = Just OutTerm
+    parseOutFormat "html" = Just OutHtml
+    parseOutFormat "xml"  = Just OutXml
+    parseOutFormat _      = Nothing
     parseOutType' getter typ =
 	case getter of
 		    (Just t) -> Just (typ t)
@@ -287,18 +283,19 @@ parseOutType s
 
 -- parse raw options
 parseRawOpts :: String -> Flag
-parseRawOpts s 
-    | "ascii=" `isPrefixOf` s = Raw $ [RawAscii (drop 6 s)]
-    | "text="  `isPrefixOf` s = Raw $ [RawAscii (drop 5 s)]
-    | "latex=" `isPrefixOf` s = Raw $ [RawLatex (drop 6 s)]
-    | "tex="   `isPrefixOf` s = Raw $ [RawLatex (drop 4 s)]
-    | otherwise = error'
-    where
-    error' = hetsError User (s ++ " ia not a valid RAW String")
+parseRawOpts s =
+    let (prefix, string) = break (== '=') s
+	parsePrefix "ascii" = RawAscii
+	parsePrefix "text"  = RawAscii
+	parsePrefix "latex" = RawLatex
+	parsePrefix "tex"   = RawLatex
+	parsePrefix _       = error'
+	error' = hetsError User (s ++ " ia not a valid RAW String")
+    in Raw [(parsePrefix prefix) (drop 1 s)]
 
 -- parse the output directory 
-parseOutputDir :: String -> Flag
-parseOutputDir s = OutDir s
+parseOutDir :: String -> Flag
+parseOutDir s = OutDir s
 
 -- parse casl library directory
 parseLibDir :: String -> Flag
@@ -365,10 +362,8 @@ checkOutDirs fs =
        if null ods
 	  then return []
 	  else return $ [OutDir $ head ods]
--- TODO: Only one OutDir may be specified. If there are more that that,
---       an Error should be raised
 
--- sanity check for a single output directory
+-- Sanity Check For A Single Output Directory
 checkOutDir :: String -> IO Bool
 checkOutDir file = 
     do exists <- doesDirectoryExist file
@@ -386,8 +381,6 @@ noPerms = Permissions { readable = False
 
 -- auxiliary functions: collect flags -- 
 
--- TODO: if there were OutDirs specified, and none of them are sane,
--- we should warn the user instead of sticking to our defaults!
 collectOutDirs :: [Flag] -> IO [Flag]
 collectOutDirs fs =
     let (ods,fs') = partition isOutDir fs
