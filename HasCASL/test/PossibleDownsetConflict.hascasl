@@ -1,4 +1,4 @@
-var s,t: Type;
+type s,t: Type;
 
 class b : { x . x < s}  %% assume s < t
 

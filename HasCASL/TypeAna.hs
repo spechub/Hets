@@ -34,10 +34,10 @@ anaKindM k env =
     case k of
     MissingKind -> mkError "missing kind" k
     Downset v t _ ps -> do (rk, newT) <- anaType (Nothing, t) (typeMap env)
-                           -- let ds = unboundTypevars [] newT
-                           -- if null ds then 
-                           return $ Downset v newT rk ps
-                           -- else Result ds Nothing 
+                           let ds = unboundTypevars [] newT
+                           if null ds then 
+                              return $ Downset v newT rk ps
+                              else Result ds Nothing 
     ClassKind ci _ -> anaClassId ci (classMap env)
     Intersection ks ps -> do newKs <- mapM ( \ ek -> anaKindM ek env) ks
                              if null newKs then return k

@@ -11,6 +11,6 @@ class g < (a,i) %% cycle via i = g
 class i         %% i is already alias class 
 class i : (a,g) %% ok
 class i : b     
-var t : Type
+type t : Type
 class i : { x . x < t } 
 

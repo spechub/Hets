@@ -1,11 +1,11 @@
-var s : Type; t : Type
-class b < {x . x < s_v1}
+type s, t
+class b < {x . x < s}
       %% assume s < t
-class a < {x . x < t_v2}
+class a < {x . x < t}
 class a < b
-class a < {y . y < t_v2}
+class a < {y . y < t}
       %% ok (but only for simple tokens)
-class a < {y . y < s_v1}
+class a < {y . y < s}
 class c, d < Type
 class a < (c, d)
 class e < a
@@ -14,13 +14,13 @@ class h < e
       %% ok 
 class h < (a, b)
       %% ok 
-class e < {x . x < t_v2}
+class e < {x . x < t}
 %% Classes ---------------------------------------------------------------
-a < ({y . y < s_v1}, {x . x < t_v2}, b, c, d)
-b < {x . x < s_v1}
+a < ({y . y < s}, {x . x < t}, b, c, d)
+b < {x . x < s}
 c < Type
 d < Type
-e < ({x . x < t_v2}, a)
+e < ({x . x < t}, a)
 h < (a, b, e)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
@@ -31,8 +31,8 @@ __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-s : Type %(var_1)%
-t : Type %(var_2)%
+s : Type
+t : Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -50,8 +50,6 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 1.5, is type variable 's'
-*** Hint 1.7, is type variable 't'
 *** Warning 7.7, redeclared class 'a'
 *** Warning 9.7, redeclared class 'a'
 *** Warning 11.7, redeclared class 'a'
