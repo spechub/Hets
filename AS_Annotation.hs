@@ -14,6 +14,8 @@
 
 module AS_Annotation where
 import Id
+import PrettyPrint
+import Pretty
 
 {-! global: ATermConvertible !-}
 
@@ -57,3 +59,12 @@ data Annoted a = Annoted { item::a
 			 , l_annos, r_annos::[Annotation]}
 	                   -- left or preceeding, right or following
 		 deriving (Show,Eq) 
+
+
+printList l = vcat (map printText0 l)
+
+instance PrettyPrint a => PrettyPrint (Annoted a) where
+    printText0(Annoted i _ l r) = printList l $$  (printText0 i <+> printList r)
+
+instance PrettyPrint Annotation where
+    printText0 a = ptext (show a)

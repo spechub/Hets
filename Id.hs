@@ -1,6 +1,8 @@
 module Id where
 
 import Char
+import Pretty
+import PrettyPrint
 -- identifiers, fixed for all logics
 
 type Pos = (Int, Int) -- line, column
@@ -29,6 +31,9 @@ showSepList _ _ [] = showString ""
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
 
+instance PrettyPrint Token where
+ printText0 t = text (tokStr t)
+
 -- special tokens
 type Keyword = Token
 type TokenOrPlace = Token
@@ -52,6 +57,9 @@ showId (Id ts is _) =
 
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
+
+instance PrettyPrint Id where
+ printText0 i = text (showId i "")
 
 -- Simple Ids
 
