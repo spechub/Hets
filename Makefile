@@ -97,7 +97,7 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg hets all clean_genRules genRules
+.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg clean_genRules genRules
 .SECONDARY : %.hs %.d $(generated_rule_files)
 #.PRECIOUS: sources_hetcats.mk
 
@@ -147,9 +147,10 @@ apache_doc:
 ##########################
 ### DrIFT-rule generation
 
-$(generated_rule_files): genRules
+genRules: $(generated_rule_files)
 
-genRules: $(genrule_files) clean_genRules
+$(generated_rule_files): $(genrule_files) 
+	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs $(casl_files)
 	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs $(hascasl_files)
@@ -170,8 +171,8 @@ hascasl_files := $(filter HasCASL/% ,$(genrule_files))
 cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
 haskell_files := $(filter Haskell/%,$(genrule_files))
 
-clean_genRules:
-	$(RM) ATC/*.der.hs CASL/ATC_CASL.der.hs HasCASL/ATC_HasCASL.der.hs Haskell/ATC_Haskell.der.hs CspCASL/ATC_CspCASL.der.hs
+clean_genRules: 
+	$(RM) $(generated_rule_files)
 
 ###############
 ### clean up
@@ -295,22 +296,22 @@ hetcats/Version.hs: hetcats/Version.in version_nr
 	$(PERL) utils/build_version.pl version_nr < hetcats/Version.in > $@
 
 ## two hardcoded dependencies for a correct generation of Version.hs
-hetcats/Options.hs: hetcats/Version.hs
-hets.hs: hetcats/Version.hs
+hetcats/Options.hs hetcats/WriteFn.hs hetcats/ReadFn.hs: hetcats/Version.hs
+#hets.hs: hetcats/Version.hs
 ####################################################################
 ## rules for DrIFT
 
 %.hs: %.ly
 	$(HAPPY) $<
 
-%.hs: %.ag.hs
-	$(AG) $<
+#%.hs: %.ag.hs
+#	$(AG) $<
 
 %.hs: %.der.hs
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
-%.hs: %.ag
-	$(AG) $< -o $@
+#%.hs: %.ag
+#	$(AG) $< -o $@
 
 %.lhs: %.der.lhs
 	$(DRIFT) $< > $@
