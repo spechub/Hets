@@ -18,9 +18,10 @@ spec Example =
         h : B;
   
   forall a1,a2,a3:A; b1,b2,b3:B
+    . forall b4:B . true
     . exists b4:B . true
     . exists! b4:B . true
-    . a a1 = b a2 /\ b a2 = b a3
+    . a a1 = b a2 /\ b a2 = b a3 /\ a a1 = b a3
     . a a1 = b a2 \/ b a2 = b a3
     . a a1 = b a2 => b a2 = b a3
     . a a1 = b a2 <=> b a2 = b a3
