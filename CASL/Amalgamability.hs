@@ -16,6 +16,7 @@ Portability :  portable
 TODO:
 
 * include functions and predicates in the analysis
+* change the representation of equivalences to utilise Maps and Sets
 * optimisations in congruenceClosure (Nelson-Oppen algorithm?)
 * optimisation in colimitIsThin (fixUpdRule)
 * optimisations in the whole algorithm
@@ -82,7 +83,7 @@ sorts diag =
 
 -- | Compute the Ops set -- a disjoint union of all the operation symbols
 -- in the diagram.
-ops :: CASLDiag        -- ^ the diagram to get the sorts from
+ops :: CASLDiag        -- ^ the diagram to get the ops from
     -> [DiagOp]
 ops diag = 
     let mkNodeOp n opId opType ol = ol ++ [(n, (opId, opType))]
@@ -91,6 +92,19 @@ ops diag =
         appendOps ol (n, Sign { opMap = m }) =
 	    ol ++ Map.foldWithKey (mkNodeOps n) [] m 
     in foldl appendOps [] (labNodes diag)
+
+
+-- | Compute the Preds set -- a disjoint union of all the predicate symbols
+-- in the diagram.
+preds :: CASLDiag        -- ^ the diagram to get the preds from
+      -> [DiagPred]
+preds diag = 
+    let mkNodePred n predId predType pl = pl ++ [(n, (predId, predType))]
+        mkNodePreds n predId predTypes pl = 
+	    pl ++ Set.fold (mkNodePred n predId) [] predTypes
+        appendPreds pl (n, Sign { predMap = m }) =
+	    pl ++ Map.foldWithKey (mkNodePreds n) [] m 
+    in foldl appendPreds [] (labNodes diag)
 
 
 -- | Convert the relation representation from list of pairs 
@@ -185,7 +199,7 @@ isMorphSort diag (srcNode, srcSort) (targetNode, targetSort) =
 
 
 -- | Return true if there is an edge between srcNode and targetNode
--- and the morphism with which it's labelled maps srcSort to targetSort
+-- and the morphism with which it's labelled maps srcOp to targetOp
 isMorphOp :: CASLDiag
 	  -> DiagOp
 	  -> DiagOp
@@ -196,6 +210,22 @@ isMorphOp diag (srcNode, srcOp) (targetNode, targetOp) =
 	    if sn == srcNode && 
 	       tn == targetNode &&
 	       mapOpSym sm fm srcOp == targetOp
+	       then True else checkEdges edges
+    in checkEdges (out diag srcNode)
+
+
+-- | Return true if there is an edge between srcNode and targetNode
+-- and the morphism with which it's labelled maps srcPred to targetPred
+isMorphPred :: CASLDiag
+	    -> DiagPred
+	    -> DiagPred
+	    -> Bool
+isMorphPred diag (srcNode, srcPred) (targetNode, targetPred) = 
+    let checkEdges [] = False
+        checkEdges ((sn, tn, Morphism { sort_map = sm, pred_map = pm }) : edges) =
+	    if sn == srcNode && 
+	       tn == targetNode &&
+	       mapPredSym sm pm srcPred == targetPred
 	       then True else checkEdges edges
     in checkEdges (out diag srcNode)
 
@@ -223,10 +253,10 @@ simeq diag =
 simeqOp :: CASLDiag  -- ^ the diagram for which the relation should be created
 	 -> EquivRel DiagOp
 -- ^ returns the relation represented as a list of equivalence
--- classes (each represented as a list of diagram sorts)
+-- classes (each represented as a list of diagram ops)
 simeqOp diag =
     -- During the computations the relation is represented as a list of pairs
-    -- (DiagSort, DiagOp). The first element is a diagram sort and the second
+    -- (DiagOp, DiagOp). The first element is a diagram op and the second
     -- denotes the equivalence class to which it belongs. All the pairs with
     -- equal second element denote elements of one equivalence class.
 
@@ -234,6 +264,25 @@ simeqOp diag =
 
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (ops diag)
+	rel' = mergeEquivClassesBy mergeCond rel
+    in taggedValsToEquivClasses rel'
+
+
+-- | Compute the simeq^pred relation for given diagram.
+simeqPred :: CASLDiag  -- ^ the diagram for which the relation should be created
+	 -> EquivRel DiagPred
+-- ^ returns the relation represented as a list of equivalence
+-- classes (each represented as a list of diagram preds)
+simeqPred diag =
+    -- During the computations the relation is represented as a list of pairs
+    -- (DiagPred, DiagPred). The first element is a diagram pred and the second
+    -- denotes the equivalence class to which it belongs. All the pairs with
+    -- equal second element denote elements of one equivalence class.
+
+    let mergeCond ds ds' = isMorphPred diag ds ds' || isMorphPred diag ds' ds
+
+        -- compute the relation
+	rel = map (\ds -> (ds, ds)) (preds diag)
 	rel' = mergeEquivClassesBy mergeCond rel
     in taggedValsToEquivClasses rel'
 
@@ -251,7 +300,7 @@ simeq_tau sink =
     in taggedValsToEquivClasses rel
 
 
--- | Compute the simeqOp_tau relation for given diagram.
+-- | Compute the simeq^op_tau relation for given diagram.
 simeqOp_tau :: [LEdge CASLMor]
 	    -> EquivRel DiagOp
 simeqOp_tau sink = 
@@ -260,6 +309,19 @@ simeqOp_tau sink =
 	-- is mapped by m to DiagOp b
         tagEdge (sn, tn, Morphism { sort_map = sm, fun_map = fm }) = 
 	    map (\srcOp -> ((sn, srcOp), (tn, mapOpSym sm fm srcOp))) (Map.keys fm)
+        rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
+    in taggedValsToEquivClasses rel
+
+
+-- | Compute the simeq^pred_tau relation for given diagram.
+simeqPred_tau :: [LEdge CASLMor]
+	      -> EquivRel DiagPred
+simeqPred_tau sink = 
+    let -- tagEdge: for given morphism m create a list of pairs 
+	-- (a, b) where a is DiagPred from the source signature that
+	-- is mapped by m to DiagPred b
+        tagEdge (sn, tn, Morphism { sort_map = sm, pred_map = pm }) = 
+	    map (\srcPred -> ((sn, srcPred), (tn, mapPredSym sm pm srcPred))) (Map.keys pm)
         rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
     in taggedValsToEquivClasses rel
 
@@ -739,6 +801,7 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 	   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
 	   lns = labNodes diag'
            formatOp (id, t) = renderText Nothing (printText id) ++ " :" ++ renderText Nothing (printText t)
+           formatPred (id, t) = renderText Nothing (printText id) ++ " : " ++ renderText Nothing (printText t)
 	   formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
 			      Just (_, d) -> d 
 			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
@@ -770,24 +833,39 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
 							   " in\n\n" ++ formatSig (fst nop2) ++ "\n\n"
 	                       in do return (No ("\noperations " ++ opString1 ++ "and " ++ opString2 ++ "might be different"))
 		      Nothing ->
-                       do let ct = cong_tau diag' sink st
-			      -- As we will be using a finite representation of \cong_0
-			      -- that may not contain some of the equivalence classes with
-			      -- only one element it's sufficient to check that the subrelation
-			      -- ct0 of ct that has only non-reflexive elements is a subrelation
-			      -- of \cong_0.
-			      ct0 = filter (\l -> length l > 1) ct
-			      c0 = cong_0 diag s
-			  -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
-			  -- specification is correct.
-		          case subRelation ct0 c0 of
-		               Nothing -> do return Yes
-			       Just _ -> do let em = embs diag
-					        mas = finiteAdm_simeq em s
-					    -- 3. Check if the set Adm_\simeq is finite.
-					    case mas of 
-						 Just as -> do -- 4. check the colimit thinness. If the colimit is thing then
-							       -- the specification is correct.
+			do let spred = simeqPred diag
+			       spredt = simeqPred_tau sink
+			   -- 3. Check sharing of predicates. If the check fails, the specification is
+			   -- incorrect
+			   --warning DontKnow ("simeqPred: " ++ (showPretty spred "")) nullPos -- test
+			   --warning DontKnow ("simeqPred_tau: " ++ (showPretty spredt "")) nullPos -- test
+		           case subRelation spredt spred of
+			        Just (np1, np2) -> let pString1 = formatPred (snd np1) ++
+								  " in\n\n" ++ formatSig (fst np1) ++ "\n\n"
+						       pString2 = formatPred (snd np2) ++
+			                                          " in\n\n" ++ formatSig (fst np2) ++ "\n\n"
+						   in do return (No ("\npredicates " ++ pString1 ++ "and " ++ pString2 ++ "might be different"))
+			        Nothing ->
+                                  do let ct = cong_tau diag' sink st
+				         -- As we will be using a finite representation of \cong_0
+					 -- that may not contain some of the equivalence classes with
+					 -- only one element it's sufficient to check that the subrelation
+					 -- ct0 of ct that has only non-reflexive elements is a subrelation
+					 -- of \cong_0.
+					 ct0 = filter (\l -> length l > 1) ct
+					 c0 = cong_0 diag s
+ 				     -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
+				     -- specification is correct.
+			             case subRelation ct0 c0 of
+				          Nothing -> do return Yes
+					  Just _ -> 
+					    do let em = embs diag
+						   mas = finiteAdm_simeq em s
+					       -- 3. Check if the set Adm_\simeq is finite.
+					       case mas of 
+						    Just as -> 
+						      do -- 4. check the colimit thinness. If the colimit is thing then
+							 -- the specification is correct.
                                                                if colimitIsThin s em c0 then return Yes
                                                                   else do let c = cong diag as s
 								          -- 5. Check the cell condition in its full generality.
@@ -801,11 +879,11 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) desc =
                                                                                                 in do return (No ("embedding paths \n    " ++ word1 ++
 										  		                  "\nand\n    " ++ word2 ++ "\nmight be different"))
 							                       Nothing -> do return Yes 
-						 Nothing -> do let cR = congR diag s
+						    Nothing -> do let cR = congR diag s
 							       -- 6. Check the restricted cell condition. If it holds then the
 							       -- specification is correct. Otherwise proof obligations need to 
 							       -- be generated.
-							       case subRelation ct cR of 
+							          case subRelation ct cR of 
 								    Just _ -> do return DontKnow -- TODO: generate proof obligations
 								    Nothing -> do return Yes
 
