@@ -53,6 +53,27 @@ encodeSig sig = error "encodeSig not yet implemented"
 
 -}
 
+
+generateAxioms :: Sign f e -> [Named (FORMULA f)]
+generateAxioms sig = 
+  concat 
+   [inlineAxioms CASL
+     "  sorts s < s' \
+      \ op inj : s->s' \
+      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
+          | (s,s') <- Rel.toList (sortRel sig)]
+  where x = mkSimpleId "x"
+        y = mkSimpleId "y"
+        inj = mkId [mkSimpleId "_inj"]
+
+{-
+inj((op f:s_1*...*s_n->s)(inj(x_1),...,inj(x_n))) = 
+inj((op f:s'_1*...*s'_n->s')(inj(x_1),...,inj(x_n))) 
+
+forall x[i]:s[i] . inj((op f:s[i]->s)(inj(x[i]))) = 
+
+
+
 test1 :: [Named (FORMULA f)]
 test1 = 
   inlineAxioms CASL
@@ -76,24 +97,6 @@ test2  =
   where x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
-
-generateAxioms :: Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = 
-  concat 
-   [inlineAxioms CASL
-     "  sorts s < s' \
-      \ op inj : s->s' \
-      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
-          | (s,s') <- Rel.toList (sortRel sig)]
-  where x = mkSimpleId "x"
-        y = mkSimpleId "y"
-        inj = mkId [mkSimpleId "_inj"]
-
-{-
-inj((op f:s_1*...*s_n->s)(inj(x_1),...,inj(x_n))) = 
-inj((op f:s'_1*...*s'_n->s')(inj(x_1),...,inj(x_n))) 
-
-forall x[i]:s[i] . inj((op f:s[i]->s)(inj(x[i]))) = 
 
 -}
 
