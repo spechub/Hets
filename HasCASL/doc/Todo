@@ -33,7 +33,15 @@ are also not renamed in DatatypeSens, because they are not used)
 
 types:
 currently certain subtype relations are checked, but unification still
-checks relatedTypeIds (and fails in Secd.hascasl and Numbers.casl without this)
+checks relatedTypeIds (and fails in Secd.hascasl and Numbers.casl
+without this)
+
+"Unit" must be recognized by the parser if class memberships are added
+for Unit. 
+
+(shape unify must repeatedly consider the whole list)
+
+Add known function subtypings '__->__ < __->?__'
 
 
 
