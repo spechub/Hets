@@ -100,11 +100,13 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty
     printText0 ga (Just c) =  printText0 ga c
 
+{- Moved to PrettyPrint.hs, TM
 instance (PrettyPrint a, Ord a, PrettyPrint b) 
     => PrettyPrint (Map.Map a b) where
     printText0 ga m =
 	let l = Map.toList m in
 	    vcat(map (\ (a, b) -> printText0 ga a <> printText0 ga b) l)
+-}
 
 instance PrettyPrint Env where
     printText0 ga (Env{classMap=cm, typeMap=tm, 

@@ -31,6 +31,8 @@ import Common.GlobalAnnotations
 import Common.Lib.Graph as Graph
 import Common.Lib.Map as Map
 import Common.Id
+import Common.PrettyPrint
+import Common.Lib.Pretty
 
 -- ??? Some info about the theorems already proved for a node
 --     should be added
@@ -91,14 +93,19 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
               | DGLocal | DGClosed | DGClosedLenv 
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
-              | DGView SIMPLE_ID | DGFitView | DGFitViewImp 
-              | DGFitViewA | DGFitViewAImp | DGProof
+              | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
+              | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
               deriving (Eq,Show)
 
 type DGraph = Graph DGNodeLab DGLinkLab
 
 data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
                deriving (Eq,Show)
+
+instance PrettyPrint NodeSig where
+  printText0 ga (EmptyNode _) = ptext "<empty NodeSig>"
+  printText0 ga (NodeSig(n,sig)) = 
+    ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
 
 getNode (NodeSig (n,sigma)) = Just n
 getNode (EmptyNode _) = Nothing

@@ -79,7 +79,9 @@ module Common.Lib.Map  (
             -- ** Insertion
             , insert
             , insertWith, insertWithKey, insertLookupWithKey
-            
+            , setInsert
+            , listInsert
+
             -- ** Delete\/Update
             , delete
             , adjust
@@ -100,6 +102,7 @@ module Common.Lib.Map  (
             , difference
             , differenceWith
             , differenceWithKey
+            , differentKeys
             
             -- ** Intersection
             , intersection           
@@ -135,7 +138,7 @@ module Common.Lib.Map  (
             , fromAscListWithKey
             , fromDistinctAscList
 
-            -- * Filter 
+            -- * Filter
             , filter
             , filterWithKey
             , partition
@@ -171,10 +174,15 @@ module Common.Lib.Map  (
             , showTree
             , showTreeWith
             , valid
+
+           -- * Misc. additions
+           , image
+           , kernel
             ) where
 
 import Prelude hiding (lookup,map,filter)
 
+import qualified Common.Lib.Set as Set
 
 {-
 -- for quick check
@@ -317,6 +325,18 @@ insertLookupWithKey f kx x t
                LT -> let (found,l') = insertLookupWithKey f kx x l in (found,balance ky y l' r)
                GT -> let (found,r') = insertLookupWithKey f kx x r in (found,balance ky y l r')
                EQ -> (Just y, Bin sy ky (f ky x y) l r)
+
+-- | Insert into a set of values
+setInsert :: (Ord k, Ord a) => k -> a -> Map k (Set.Set a) -> Map k (Set.Set a)
+setInsert  kx x t = case lookup kx t of
+  Nothing -> insert kx (Set.single x) t
+  Just xs -> insert kx (Set.insert x xs) (delete kx t)
+
+-- | Insert into a list of values
+listInsert :: Ord k => k -> a -> Map k [a] -> Map k [a]
+listInsert  kx x t = case lookup kx t of
+  Nothing -> insert kx [x] t
+  Just xs -> insert kx (x:xs) (delete kx t)
 
 {--------------------------------------------------------------------
   Deletion
@@ -631,6 +651,12 @@ hedgeDiffWithKey f cmplo cmphi t (Bin _ kx x l r)
     tr          = hedgeDiffWithKey f cmpkx cmphi gt r
 
 
+-- | find keys that are mapped differently
+differentKeys :: (Ord k, Eq a) => Map k a -> Map k a -> [k]
+differentKeys f1 f2 =
+        keys $ 
+        differenceWith (\x y -> if x==y then Nothing else Just x)
+                       f2 (f1 `union` f2)
 
 {--------------------------------------------------------------------
   Intersection
@@ -1544,4 +1570,25 @@ prop_Ordered
 prop_List :: [Int] -> Bool
 prop_List xs
   = (sort (nub xs) == [x | (x,()) <- toList (fromList [(x,()) | x <- xs])])
+
 -}
+
+{--------------------------------------------------------------------
+  Image
+--------------------------------------------------------------------}
+image :: (Ord k, Ord a) => Map k a -> Set.Set k -> Set.Set a
+image f s =
+  Set.fold ins Set.empty s
+  where ins x = case lookup x f of
+                 Nothing -> id
+                 Just y -> Set.insert y
+
+{--------------------------------------------------------------------
+  Kernel
+--------------------------------------------------------------------}
+kernel :: (Ord k, Eq a) => Map k a -> Set.Set (k,k)
+kernel f = 
+  Set.fromList [(k1,k2) | k1 <- keysF, k2 <- keysF, lookup k1 f == lookup k2 f]
+  where keysF = keys f
+  
+ 

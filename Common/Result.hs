@@ -129,9 +129,17 @@ resToIORes = IOResult . return
 fatal_error :: String -> Pos -> Result a
 fatal_error s p = Result [Diag FatalError s p] Nothing  
 
+-- | a failing result, using pretty printed Doc
+pfatal_error :: Doc -> Pos -> Result a
+pfatal_error s p = fatal_error (show s) p  
+
 -- | add an error message but continue (within do)
 plain_error :: a -> String -> Pos -> Result a
 plain_error x s p = Result [Diag Error s p] $ Just x  
+
+-- | an error message, using pretty printed Doc
+pplain_error :: a -> Doc -> Pos -> Result a
+pplain_error x s p = plain_error x (show s) p
 
 -- | add a warning
 warning :: a -> String -> Pos -> Result a
@@ -143,6 +151,10 @@ maybeToResult p s m = Result (case m of
 		              Nothing -> [Diag FatalError s p]
 			      Just _ -> []) m
 
+adjustPos :: Pos -> Result a -> Result a
+adjustPos p r =
+  r {diags = map (\d -> d {diagPos = p}) (diags r)}
+
 -- ---------------------------------------------------------------------
 -- instances for Result
 -- ---------------------------------------------------------------------
@@ -152,8 +164,10 @@ instance Show Diagnosis where
 
 instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s sp) = 
-	ptext (show k)
+	ptext "***" 
+        <+> ptext (show k)
         <+> text (show sp)
+        <> text ","
 	<+> text s
 
 instance PosItem Diagnosis where
@@ -165,3 +179,13 @@ instance PrettyPrint a => PrettyPrint (Result a) where
 				       Nothing -> empty
 	 			       Just x -> printText0 g x) :
 					    (map (printText0 g) ds))
+
+-- ---------------------------------------------------------------------
+-- debugging
+-- ---------------------------------------------------------------------
+
+debug :: PrettyPrint a => Int -> (String,a) -> Result ()
+debug n (s,a) =
+  warning () (show (ptext ("Debug point " ++ show n) 
+                    $$ ptext ("Variable "++s++":") <+> printText a))
+          nullPos

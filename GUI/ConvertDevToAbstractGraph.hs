@@ -466,7 +466,7 @@ getSublogicOfNode descr ab2dgNode dgraph =
            (DGNode _ _ _ _) ->
 	     case (dgn_sign dgnode) of
 	       G_sign lid sigma ->
-		 do putStrLn (head (sublogic_names lid (min_sublogic_sign lid sigma)))
+		 do putStrLn (language_name lid ++ "." ++ head (sublogic_names lid (min_sublogic_sign lid sigma)))
                otherwise -> error ("no sublogic found")
            (DGRef _ _ _) -> error ( "nodes of type dg_ref do not have a sublogic")
            otherwise -> error ( "unknown type of node")

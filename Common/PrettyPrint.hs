@@ -24,6 +24,7 @@ module Common.PrettyPrint
     , setTabWithSpaces
     , printToken_latex
     , printDisplayToken_latex
+    , printText
     ) 
     where
 
@@ -37,11 +38,16 @@ import Common.Lib.Pretty
 import Common.GlobalAnnotations
 import Common.LaTeX_funs
 
+
 -- This type class allows pretty printing of instantiating Datatypes
 -- for infomation on the predefined functions see above
 class Show a => PrettyPrint a where
     printLatex0, printText0 :: GlobalAnnos -> a -> Doc
     printLatex0 ga a = printText0 ga a
+
+-- | printText uses empty global annotations
+printText :: PrettyPrint a  => a -> Doc
+printText = printText0 emptyGlobalAnnos
 
 -- | a more pretty alternative for shows
 showPretty :: PrettyPrint a => a -> ShowS
@@ -459,3 +465,4 @@ printId pf ga mdf i =
 		      (glue_tok (printDisplayToken_latex casl_axiom_latex)) 
 		      (disp_tops) 
            else print_ i
+

@@ -41,7 +41,8 @@ Currently, no further functions seem to be necessary:
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap
-		      , transMember, transClosure, fromList, toList) where
+		      , transMember, transClosure, fromList, toList
+                      , image, restrict) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -100,3 +101,32 @@ toList = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) (Set.toList bs))
 
 instance (Show a, Ord a) => Show (Rel a) where
     show = show . Set.fromList . toList
+
+{--------------------------------------------------------------------
+  Image (Added by T.M.)
+--------------------------------------------------------------------}
+-- | /n/. Image of a relation under a function
+image :: Ord b => (a -> b) -> Rel a -> Rel b
+image f = Rel 
+          .
+          Map.foldWithKey 
+           (\a ra -> Map.insert (f a) (Set.image f ra)) 
+           Map.empty
+          .
+          toMap
+
+{--------------------------------------------------------------------
+  Restriction (Added by T.M.)
+--------------------------------------------------------------------}
+-- | /n/. Image of a relation under a function
+restrict :: Ord a => Rel a -> Set.Set a -> Rel a
+restrict r s = 
+  Rel
+  $
+  Map.foldWithKey
+  (\a ra -> if a `Set.member` s 
+             then Map.insert a (ra `Set.intersection` s)
+             else id)
+  Map.empty
+  $
+  toMap r

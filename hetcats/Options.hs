@@ -456,7 +456,7 @@ collectVerbosity fs =
         verbosity = (sum . map (\(Verbose x) -> x)) vs
         isVerb (Verbose _) = True
         isVerb _           = False
-        vfs = (Verbose (verbosity + 1)):fs'
+        vfs = (Verbose (verbosity+1)):fs'
     in if (Quiet `elem` fs') then fs' else vfs
 
 collectOutTypes :: [Flag] -> [Flag]
@@ -508,7 +508,8 @@ doIfVerbose opts level func =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
 showDiags opts diags = do
-  sequence $ map (putStrLn . show) $ filter (relevantDiagKind . diagKind) $ diags
+  sequence $ map (putStrLn . show) $ take maxdiags
+           $ filter (relevantDiagKind . diagKind) $ diags
   return ()
   where relevantDiagKind FatalError = True
         relevantDiagKind Error = True

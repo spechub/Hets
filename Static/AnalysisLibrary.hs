@@ -31,6 +31,7 @@ import Syntax.AS_Library
 import Static.AnalysisStructured
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
 import Common.Result
 import Common.Id
@@ -45,9 +46,9 @@ import Directory
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
-anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> String
+anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
               -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
-anaFile logicGraph defaultLogic opts fname = do
+anaFile logicGraph defaultLogic opts libenv fname = do
   putIfVerbose opts 1  ("Reading " ++ fname)
   let names = map (fname++) ("":(map ("."++) downloadExtensions))
   -- look for the first existing file
@@ -66,7 +67,7 @@ anaFile logicGraph defaultLogic opts fname = do
         Right ast -> do
           Result diags res <-
             ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
-                                    emptyLibEnv ast)
+                                    libenv ast)
           -- no diags expected here, since these are handled in ana_LIB_DEFN
           -- sequence (map (putStrLn . show) diags)
           return res
@@ -95,7 +96,8 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
                   return (path1++file)
                 Direct_link _ _ -> error "No direct links implemented yet"
      -- read and analyze the library,
-     res <- anaFile logicGraph defaultLogic opts fname
+     res <- anaFile logicGraph defaultLogic opts libenv fname
+     putStrLn ""
      -- and just return the libenv
      return (case res of 
                Just (_,_,_,libenv') -> libenv'
@@ -202,16 +204,17 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
        ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')))
        return (libItem,gctx,l,libenv')
     Just (gannos',genv',dg') -> do
-                    -- ??? what to do with gannos' ?
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
                                        (return (genv,dg)) items'
                                  )
-      return (libItem,(gannos,genv1,dg1),l,libenv')
+      gannos'' <- resToIORes $ gannos `mergeGlobalAnnos` gannos'
+      return (libItem,(gannos'',genv1,dg1),l,libenv')
 
 
 -- ??? Needs to be generalized to views between different logics
 ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
               vn gen vt gsis pos = do
+  let adj = adjustPos (headPos pos)
   (gen',(imp,params,parsig,allparams),dg') <- 
        ana_GENERICITY lgraph gctx l just_struct gen
   (vt',(src,tar),dg'') <- 
@@ -220,17 +223,17 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
   G_sign lidT sigmaT <- return gsigmaT
-  gsis1 <- homogenize (Logic lidS) gsis
+  gsis1 <- adj $ homogenize (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
   sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
   mor <- if just_struct then return (ide lid sigmaS')
            else do
-             rmap <- stat_symb_map_items lid sis
-             induced_from_to_morphism lid rmap sigmaS' sigmaT'
-  nodeS <- maybeToResult nullPos 
+             rmap <- adj $ stat_symb_map_items lid sis
+             adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
+  nodeS <- maybeToResult (headPos pos) 
          "Internal error: empty source spec of view" (getNode src)
-  nodeT <- maybeToResult nullPos 
+  nodeT <- maybeToResult (headPos pos) 
          "Internal error: empty source spec of view" (getNode tar)
   let gmor = gEmbed (G_morphism lid mor)
       link = (nodeS,nodeT,DGLink {

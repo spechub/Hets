@@ -43,7 +43,7 @@ addGlobalAnnos ga all_annos = do
 	    Unparsed_anno _ _ _ -> False
             -- line and group and comments will be ignored
 	    _ -> True) all_annos
-	   ds = map ( \ d -> mkDiag Warning "ignoring annotation" d) 
+	   ds = map ( \ d -> mkDiag Hint "ignoring annotation" d) 
 		rest_annos
        Result ds (Just ())
        n_prec_annos <- store_prec_annos (prec_annos  ga) annos

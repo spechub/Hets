@@ -20,6 +20,9 @@ import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
+
 import Common.Print_AS_Annotation
 import Common.Lib.Pretty
 import Common.PrettyPrint
@@ -240,3 +243,64 @@ tab_hang_latex d1 i d2 = sep_latex [d1, tab_nest_latex i d2]
         <> sep_latex [d1, tabbed_nest_latex (nest_latex i d2)]
 -}
 
+
+{--------------------------------------------------------------------
+  Lists
+--------------------------------------------------------------------}
+
+instance PrettyPrint a => PrettyPrint [a] where
+  printText0 _ [] =  empty
+  printText0 ga (x:xs) = 
+    ptext "[" <+> commaT_text ga (x:xs) <+> ptext "]"
+    
+{--------------------------------------------------------------------
+  Sets
+--------------------------------------------------------------------}
+
+instance PrettyPrint a => PrettyPrint (Set.Set a) where
+  printText0 ga s  = printListSet ga True (Set.toAscList s)
+
+-- | print a set without enclosing braces
+printSet :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
+printSet ga s = printListSet ga False (Set.toAscList s)
+
+printListSet :: (PrettyPrint a) => GlobalAnnos -> Bool -> [a] -> Doc
+printListSet _ False [] = empty     
+printListSet _ True [] = ptext "{}" 
+printListSet ga showBra (x:xs) 
+  = (if showBra then ptext "{" else empty)
+    <+> commaT_text ga (x:xs) 
+    <+> (if showBra then ptext "}" else empty)
+    
+
+{--------------------------------------------------------------------
+  Maps
+--------------------------------------------------------------------}
+instance (PrettyPrint k, PrettyPrint a) => PrettyPrint (Map.Map k a) where
+  printText0 ga m  = printMap ga (Map.toAscList m)
+
+printMap :: (PrettyPrint k,PrettyPrint a) => GlobalAnnos -> [(k,a)] -> Doc
+printMap _ []     
+  = ptext "{}" 
+printMap ga (x:xs) 
+  = ptext "{" <+> (fsep . punctuate comma . map printElem) (x:xs) <+>  ptext "}"
+    where    
+    printElem (k,x)  = printText0 ga k <+> ptext "|->" <+> printText0 ga x
+
+
+{--------------------------------------------------------------------
+  Pairs
+--------------------------------------------------------------------}
+instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (a,b) where
+  printText0 ga (a,b) =
+   ptext "(" <> printText0 ga a <> ptext "," <> printText0 ga b <> ptext ")"
+
+
+{--------------------------------------------------------------------
+  Simple types
+--------------------------------------------------------------------}
+
+instance PrettyPrint Bool where
+  printText0 ga x = text $ show x
+instance PrettyPrint Int where
+  printText0 ga x = text $ show x

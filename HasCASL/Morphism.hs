@@ -101,5 +101,13 @@ morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
 			 return $ mkMorphism s t
 
 
+-- Some quick and dirty instances
+
 instance PrettyPrint Morphism where
+  printText0 ga s = text (show s)
+
+instance PrettyPrint Symbol where
+  printText0 ga s = text (show s)
+
+instance PrettyPrint RawSymbol where
   printText0 ga s = text (show s)

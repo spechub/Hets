@@ -7,11 +7,9 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
+
+CASL signatures and static analysis for basic specifications
     
-apply mixfix resolution to all terms and formulae in basic items 
-
-- collect signature
-
 -}
 
 module CASL.StaticAna where
@@ -58,6 +56,20 @@ emptyEnv = Env { sortSet = Set.empty
 	       , varMap = Map.empty
 	       , sentences = []
 	       , envDiags = [] }
+
+subsortsOf :: SORT -> Env -> Set.Set SORT
+subsortsOf s e =
+  Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
+  where addSubs sub supers =
+         if s `Set.member` supers 
+            then Set.insert sub
+            else id
+
+supersortsOf :: SORT -> Env -> Set.Set SORT
+supersortsOf s e =
+  case Map.lookup s $ Rel.toMap $ sortRel e of
+    Nothing -> Set.empty
+    Just supers -> supers
 
 addSort :: SORT -> State Env ()
 addSort s = 
@@ -247,6 +259,10 @@ ana_SORT_ITEM ga si =
 	   mapM_ ( \ i -> mapM_ (addSubsort i) il) il
 	   return si
 
+toOpType :: OP_TYPE -> OpType
+toOpType (Total_op_type args r _) = OpType Total args r
+toOpType (Partial_op_type args r _) = OpType Partial args r
+
 ana_OP_ITEM :: GlobalAnnos -> OP_ITEM -> State Env OP_ITEM
 ana_OP_ITEM ga oi = 
     case oi of 
@@ -268,9 +284,6 @@ ana_OP_ITEM ga oi =
 	            Nothing -> Op_decl [i] ty [] ps
 		    Just t -> Op_defn i par at { item = t } ps
     where 
-    toOpType :: OP_TYPE -> OpType
-    toOpType (Total_op_type args r _) = OpType Total args r
-    toOpType (Partial_op_type args r _) = OpType Partial args r
     headToType :: OP_HEAD -> OP_TYPE
     headToType (Total_op_head args r ps) = 
 	Total_op_type (sortsOfArgs args) r ps
@@ -297,6 +310,9 @@ ana_OP_ATTR ga oa =
 	   return $ fmap Unit_op_attr mt
     _ -> return $ Just oa
 
+toPredType :: PRED_TYPE -> PredType
+toPredType (Pred_type args _) = PredType args
+
 ana_PRED_ITEM :: GlobalAnnos -> PRED_ITEM -> State Env PRED_ITEM
 ana_PRED_ITEM ga p = 
     case p of 
@@ -317,8 +333,6 @@ ana_PRED_ITEM ga p =
 	            Nothing -> Pred_decl [i] ty ps
 		    Just t -> Pred_defn i par at { item = t } ps
     where 
-    toPredType :: PRED_TYPE -> PredType
-    toPredType (Pred_type args _) = PredType args
     predHeadToType :: PRED_HEAD -> PRED_TYPE
     predHeadToType (Pred_head args ps) = 
 	Pred_type (sortsOfArgs args) ps
@@ -340,7 +354,7 @@ instance Ord Component where
 
 instance PrettyPrint Component where
     printText0 ga (Component i ty) =
-	printText0 ga i <+> colon <> printText0 ga (toOP_TYPE ty)
+	printText0 ga i <+> colon <> printText0 ga ty
 
 instance PosItem Component where
     get_pos = Just . posOfId . compId
@@ -493,14 +507,24 @@ toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
 toPRED_TYPE :: PredType -> PRED_TYPE
 toPRED_TYPE PredType { predArgs = args } = Pred_type args []
 
+instance PrettyPrint OpType where
+  printText0 ga ot = printText0 ga $ toOP_TYPE ot
+
+instance PrettyPrint PredType where
+  printText0 ga pt = printText0 ga $ toPRED_TYPE pt
+
 instance PrettyPrint Sign where
     printText0 ga s = 
 	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
 	$$ 
+        (if Rel.isEmpty (sortRel s) then empty
+            else ptext "sorts" <+> 
+             (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
+	$$ 
 	vcat (map (\ (i, t) -> 
 		   ptext "op" <+>
 		   printText0 ga i <+> colon <>
-		   printText0 ga (toOP_TYPE t)) 
+		   printText0 ga t) 
 	      $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
 	       $ Map.toList $ opMap s)
@@ -512,4 +536,5 @@ instance PrettyPrint Sign where
 	     $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
 	     $ Map.toList $ predMap s)
-		   
+     where printRel (s,subsorts) =
+             printText0 ga s <+> ptext "<" <+> printSet ga subsorts

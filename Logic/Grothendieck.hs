@@ -110,6 +110,9 @@ instance Eq G_sign where
 instance Show G_sign where
     show (G_sign _ s) = show s
 
+instance PrettyPrint G_sign where
+    printText0 ga (G_sign _ s) = printText0 ga s
+
 langNameSig :: G_sign -> String
 langNameSig (G_sign lid _) = language_name lid
 
@@ -426,7 +429,7 @@ homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
              in sequence (map coerce_lid gmors)
   bigMor <- let mor_union s1 s2 = do
                        s1' <- s1
-                       morphism_union lid s1' s2
+                       adjustPos pos $ morphism_union lid s1' s2
                 in foldl mor_union (return mor) mors
   return (G_morphism lid bigMor)
 

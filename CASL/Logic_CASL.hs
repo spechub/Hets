@@ -101,33 +101,21 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
          sym_of CASL = symOf
-         symmap_of CASL = symmapOf
+         symmap_of CASL = morphismToSymbMap
          matches CASL = CASL.Morphism.matches
          sym_name CASL = symName
          
          empty_signature CASL = emptySign
          signature_union CASL sigma1 sigma2 = 
            return $ addSig sigma1 sigma2
-         morphism_union CASL mor1 _mor2 = return mor1 -- ??? incorrect
-	 final_union CASL s1 s2 = return $ addSig s1 s2 -- ??? incorrect
+         morphism_union CASL = morphismUnion
+	 final_union CASL = finalUnion
          is_subsig CASL = isSubSig
-         inclusion CASL sigma1 sigma2 = 
-           if isSubSig sigma1 sigma2 
-              then return (embedMorphism sigma1 sigma2)
-              else plain_error (embedMorphism emptySign emptySign)
-                    "Attempt to construct inclusion between non-subsignatures"
-                    nullPos
-         cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
-         generated_sign CASL _rsys sigma = return (ide CASL sigma)
-         -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
-         --                -> Sign -> Result Morphism
+         inclusion CASL = sigInclusion
+         cogenerated_sign CASL = cogeneratedSign
+         generated_sign CASL = generatedSign
          induced_from_morphism CASL = inducedFromMorphism
-         --induced_from_to_morphism :: id -> EndoMap RawSymbol
-         --               -> Sign -> Sign -> Result Morphism
          induced_from_to_morphism CASL = inducedFromToMorphism
-         -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
-         --               -> Result Morphism
-         extend_morphism CASL _s m _s1 _s2 = return m -- ???
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

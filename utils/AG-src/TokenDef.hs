@@ -124,7 +124,7 @@ instance Show a => Show   (Token a) where
 
 instance Show Pos where
   show p | line p == (-1) = ""
-         | otherwise      = show (file p) ++ " (line " ++ show(line p) ++ ", column " ++ show(column p) ++")"
+         | otherwise      = (file p) ++ ":" ++ show(line p) ++ "." ++ show(column p) ++","
 
 updPos :: Char -> Pos -> Pos
 updPos c p = case c of

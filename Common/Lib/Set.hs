@@ -114,6 +114,10 @@ module Common.Lib.Set  (
             , elems
             , toList
             , fromList
+
+            -- ** Maybe
+            , maybeToSet
+            , maybeSetToSet
             
             -- ** Ordered list
             , toAscList
@@ -410,6 +414,20 @@ elems :: Set a -> [a]
 elems s
   = toList s
 
+{--------------------------------------------------------------------
+  Maybe (Added by T.M.)
+--------------------------------------------------------------------}
+-- | Convert Maybe a to Set a; Nothing becomes the empty set
+maybeToSet :: Maybe a -> Set a
+maybeToSet Nothing = empty
+maybeToSet (Just x) = single x
+
+-- | Convert Maybe (Set a) to Set a; Nothing becomes the empty set
+maybeSetToSet :: Maybe (Set a) -> Set a
+maybeSetToSet Nothing = empty
+maybeSetToSet (Just x) = x
+        
+ 
 {--------------------------------------------------------------------
   Lists 
 --------------------------------------------------------------------}

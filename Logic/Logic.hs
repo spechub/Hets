@@ -164,7 +164,7 @@ class (Language lid, PrettyPrint basic_spec,
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
-       PrettyPrint morphism, Ord symbol, Show symbol ,
+       PrettyPrint morphism, Ord symbol, Show symbol, PrettyPrint symbol,
        ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,
        ATermConvertible proof_tree)
@@ -201,7 +201,7 @@ class (Category lid sign morphism, Eq sentence, Show sentence, PrettyPrint sign,
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
-      , Show raw_symbol, Eq raw_symbol)
+      , Show raw_symbol, Eq raw_symbol, Ord raw_symbol, PrettyPrint raw_symbol)
     => StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 
@@ -245,13 +245,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          is_subsig :: lid -> sign -> sign -> Bool
          inclusion :: lid -> sign -> sign -> Result morphism
          generated_sign, cogenerated_sign :: 
-	     lid -> [symbol] -> sign -> Result morphism
+	     lid -> Set symbol -> sign -> Result morphism
          induced_from_morphism :: 
 	     lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_to_morphism :: 
 	     lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
-         extend_morphism :: 
-	     lid -> sign -> morphism -> sign -> sign -> Result morphism
 
 -- sublogics
 
