@@ -34,10 +34,14 @@ class  Eq a  where
     x == y           =  not (x /= y)
 
 data [a] = [] | (:) { head :: a , tail :: [a] } deriving (Show, Eq, Ord)
-(++) :: [a] -> [a] -> [a]
 
+(++) :: [a] -> [a] -> [a]
 []     ++ ys = ys
 (x:xs) ++ ys = x : (xs ++ ys)
+
+map :: (a -> b) -> [a] -> [b]
+map f []     = []
+map f (x:xs) = f x : map f xs
 
 type  String = [Char]
 
@@ -129,6 +133,7 @@ instance Num Rational
 instance Num Double
 instance Eq Int
 instance Ord Int
+instance Enum Int
 instance Eq Char
 instance Eq Integer
 instance Eq Rational
@@ -145,6 +150,39 @@ instance Show Double
 instance Fractional Rational
 instance Fractional Double
 
+subtract         :: (Num a) => a -> a -> a
+subtract         =  flip (-)
+
+flip             :: (a -> b -> c) -> b -> a -> c
+flip f x y       =  f y x
+
+class  Enum a  where
+    succ, pred       :: a -> a
+    toEnum           :: Int -> a
+    fromEnum         :: a -> Int
+    enumFrom         :: a -> [a]             -- [n..]
+    enumFromThen     :: a -> a -> [a]        -- [n,n'..]
+    enumFromTo       :: a -> a -> [a]        -- [n..m]
+    enumFromThenTo   :: a -> a -> a -> [a]   -- [n,n'..m]
+
+        -- Minimal complete definition:
+        --      toEnum, fromEnum
+--
+-- NOTE: these default methods only make sense for types
+--   that map injectively into Int using fromEnum
+--  and toEnum.
+    succ             =  toEnum . (+1) . fromEnum
+    pred             =  toEnum . (subtract 1) . fromEnum
+    enumFrom x       =  map toEnum [fromEnum x ..]
+    enumFromTo x y   =  map toEnum [fromEnum x .. fromEnum y]
+    enumFromThen x y =  map toEnum [fromEnum x, fromEnum y ..]
+    enumFromThenTo x y z =
+                        map toEnum [fromEnum x, fromEnum y .. fromEnum z]
+
+class  Bounded a  where
+    minBound         :: a
+    maxBound         :: a
+
 data  ()  =  () deriving (Eq, Ord, Show)
 
 data  (a,b)
@@ -158,4 +196,43 @@ data  (a,b,c)
 data  (a,b,c, d)
    =  (,,,) a b c d
    deriving (Show, Eq, Ord)
+
+class  (Num a, Ord a) => Real a  where
+    toRational       ::  a -> Rational
+
+class  (Real a, Enum a) => Integral a  where
+    quot, rem        :: a -> a -> a
+    div, mod         :: a -> a -> a
+    quotRem, divMod  :: a -> a -> (a,a)
+    toInteger        :: a -> Integer
+
+fromIntegral     :: (Integral a, Num b) => a -> b
+fromIntegral     =  fromInteger . toInteger
+
+even, odd        :: (Integral a) => a -> Bool
+even n           =  n `rem` 2 == 0
+odd n            =  not (even n)
+
+class  (Real a, Fractional a) => RealFrac a  where
+    properFraction   :: (Integral b) => a -> (b,a)
+    truncate, round  :: (Integral b) => a -> b
+    ceiling, floor   :: (Integral b) => a -> b
+
+        -- Minimal complete definition:
+        --      properFraction
+    truncate x       =  m  where (m,_) = properFraction x
+
+    round x          =  let (n,r) = properFraction x
+                            m     = if r < 0 then n - 1 else n + 1
+                          in case signum (abs r - 0.5) of
+                                -1 -> n
+                                0  -> if even n then n else m
+                                1  -> m
+
+    ceiling x        =  if r > 0 then n + 1 else n
+                        where (n,r) = properFraction x
+
+    floor x          =  if r < 0 then n - 1 else n
+                        where (n,r) = properFraction x
+
 }
