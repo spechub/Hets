@@ -4,13 +4,14 @@ import qualified Common.Lib.Parsec.Token as P
 import Common.Lib.Parsec.Language (emptyDef)
 
 import Common.Id
+import Common.Lexer(fromSourcePos)
 
 type GParser a = forall st. GenParser Char st a
 
 ------ helper functions ------ 
 
-convToPos :: SourcePos -> SourcePos
-convToPos = id
+convToPos :: SourcePos -> Pos
+convToPos = fromSourcePos
 
 ------------------------------
 
