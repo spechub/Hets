@@ -21,8 +21,7 @@ free type even2(a : Type+) ::= rek (odd2 (odd2 a));
 	  odd2(a : Type+) ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------
 List : Type+ -> Type %[free type __ a : Type+ ::=
-			    Nil : -> __
-			    Cons : a × List a -> __ (head : a)(tail : List a)]%
+			    Nil : -> __]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Tree : Type+ -> Type %[free type __ a : Type+ ::=
 			    Leaf : -> __
@@ -108,21 +107,15 @@ true : Unit %(Fun)%
 *** Error 5.55, unbound type variable(s)
 	b : Type
 *** Warning 5.11, redeclared type 'List'
-*** Error 5.11, merge: TypeDefn of 'List'
-
 *** Error 6.57, unexpected type argument 'b'
 *** Error 6.57, unbound type variable(s)
 	b : Type
 *** Warning 6.11, redeclared type 'List'
-*** Error 6.11, merge: TypeDefn of 'List'
-
 *** Error 7.50, illegal polymorphic recursion
   expected: List a
      found: List (List a)
 
 *** Warning 7.11, redeclared type 'List'
-*** Error 7.11, merge: TypeDefn of 'List'
-
 *** Error 14.27, illegal polymorphic recursion
   expected: odd2 a
      found: odd2 (odd2 a)
