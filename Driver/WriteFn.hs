@@ -71,8 +71,8 @@ write_LIB_DEFN ga file opt ld = sequence_ $ map write_type $ outtypes opt
 -}
 casl_asc_filename :: FilePath -> HetcatsOpts -> FilePath
 casl_asc_filename file opt =
-    let (base,_,_) = fileparse [".casl",".tree.gen_trm"] file
-    in (outdir opt) ++ "/" ++ base ++ ".pp.casl"
+    let (base,_,_) = fileparse [".casl",".tree.gen_trm",".het"] file
+    in (outdir opt) ++ "/" ++ base ++ ".pp.het"
       -- maybe an optin out-file is better
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
@@ -84,7 +84,7 @@ write_casl_asc opt ga oup ld =
 
 casl_latex_filename :: FilePath -> HetcatsOpts -> FilePath
 casl_latex_filename file opt =
-    let (base,_,_) = fileparse [".casl",".tree.gen_trm"] file
+    let (base,_,_) = fileparse [".casl",".tree.gen_trm",".het"] file
     in (outdir opt) ++ "/" ++ base ++ ".pp.tex"
       -- maybe an optin out-file is better
 
