@@ -1,7 +1,7 @@
 
 BASIC-SPEC      ::= BASIC-ITEMS ... BASIC-ITEMS  |  { }
 
-BASIC-ITEMS     ::= SIG-ITEM
+BASIC-ITEMS     ::= SIG-ITEMS
                   | class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
                   | class instance/instances CLASS-ITEM ; ... ; CLASS-ITEM ;/
                   | free      type/types DATATYPE-DECL ; ... ; DATATYPE-DECL ;/
