@@ -667,3 +667,37 @@ getInsertedEdges (change:list) =
     (InsertEdge edge) -> edge:(getInsertedEdges list)
     otherwise -> getInsertedEdges list
 
+-- -- ------------------------------------------------------
+-- @@@@@@@ ueberpruefung der proofBasis einfuehren...
+{- wenn die Proofbasis angelegt wird gucken, ob der erste pfad kanten enthält, die die zu beweisende kante in ihrer proofbasis haben, falls ja, mit dem nächsten versuchen usw., falls nein: nehmen
+-}
+
+{- gets all paths consisting of local/global thm/def edges
+   of the given morphism -}
+getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt =
+  filterPathsByMorphism morphism allPaths
+
+  where
+    allPaths = getAllPathsOfTypesBetween dgraph types src tgt []
+    types = 
+      [isProvenGlobalThm,
+       isUnprovenGlobalThm,
+       isProvenLocalThm,
+       isProvenLocalThm,
+       isUnprovenLocalThm,
+       isGlobalDef,
+       isLocalDef]
+
+{- checks if the given label is contained in the ProofBasis of one of the edges of the given path -}
+isProofCycle :: DGLinkLab -> [LEdge DGLinkLab] -> Bool
+isProofCycle label [] = False
+isProofCycle label (edge:path) =
+  if (elemOfProofBasis label edge) then True else (isProofCycle label path)
+
+{- checks if the given label is contained in the ProofBasis of the given edge -}
+elemOfProofBasis :: DGLinkLab -> (LEdge DGLinkLab) -> Bool
+elemOfProofBasis label (_,_,dglink) =
+  case dgl_type dglink of 
+    (GlobalThm (Proven proofBasis) _ _) -> elem label proofBasis
+    (LocalThm (Proven proofBasis) _ _) -> elem label proofBasis
+    _ -> False
