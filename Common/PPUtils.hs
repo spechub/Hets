@@ -24,6 +24,14 @@ import Common.PrettyPrint
 
 import Common.LaTeX_funs 		  
 
+-- | a helper type to pretty print (wrapped) strings 
+data WrapString = WrapString String
+instance Show WrapString where
+    showsPrec _ (WrapString s) _ = s 
+
+instance PrettyPrint WrapString where
+    printText0 _ (WrapString s) = text s 
+
 -- | 
 -- a helper class for calculating the pluralS of e.g. ops
 class ListCheck a where

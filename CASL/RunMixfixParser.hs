@@ -11,6 +11,7 @@ import Common.Result
 import Common.Lexer
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.PPUtils
 
 import Common.Token
 import CASL.Formula
@@ -70,13 +71,6 @@ resolveForm =
 resolveTerm :: AParser (Result TERM)
 resolveTerm = 
       resolveMixfix stdAnnos stdOps stdPreds False `fmap` term
-
-data WrapString = WrapString String
-instance Show WrapString where
-    showsPrec _ (WrapString s) _ = s 
-
-instance PrettyPrint WrapString where
-    printText0 _ (WrapString s) = text s 
 
 testTerm :: AParser WrapString
 testTerm = do t <- term
