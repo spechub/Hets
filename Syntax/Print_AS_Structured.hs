@@ -39,10 +39,10 @@ instance PrettyPrint SPEC where
 	    ab' = printText0 ga ab
 	in hang aa' 4 ab'
     printText0 ga (Union aa _) = 
-	fsep $ intersperse' aa 
-	where intersperse' [] = [] 
-	      intersperse' (x:xs) =
-		  (printText0 ga x):
+	fsep $ pl aa 
+	where pl [] = [] 
+	      pl (x:xs) =
+		  (condBracesAnd printText0 sp_braces ga x):
 		  map (\y -> ptext "and" $$ 
 		       condBracesAnd printText0 sp_braces ga y) 
 		      xs
@@ -57,7 +57,7 @@ instance PrettyPrint SPEC where
 	hang (ptext "free") 5 $ 
 	     condBracesGroupSpec printText0 sp_braces ga aa
     printText0 ga (Local_spec aa ab _) =
-	let aa' = condBracesWithin printText0 sp_braces ga aa
+	let aa' = printText0 ga aa
 	    ab' = condBracesWithin printText0 sp_braces ga ab
 	in (hang (ptext "local") 4 aa') $$ 
 	   (hang (ptext "within") 4 ab')
