@@ -1,9 +1,12 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski and Uni Bremen 2003
+Licence     :  All rights reserved.
 
--- needs ghc -fglasgow-exts -package data
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
 
-{- HetCATS/CASL2HasCASL.hs
-   $Id$
-   Till Mossakowski
    
    The embedding comorphism from CASL to HasCASL.
 
@@ -31,7 +34,7 @@ import HasCASL.Le
 import HasCASL.Symbol
 import HasCASL.Morphism
 
--- The identity of the comorphism
+-- | The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
 instance Language CASL2HasCASL -- default definition is okay
 
@@ -64,9 +67,9 @@ instance Comorphism CASL2HasCASL
 
 sortTypeinfo :: TypeInfo
 sortTypeinfo = TypeInfo { typeKind = star,
-			 , otherTypeKinds = [],
-			 , superTypes = [],
-			 , typeDefn = NoTypeDefn
+			  otherTypeKinds = [],
+			  superTypes = [],
+			  typeDefn = NoTypeDefn
 			 } 
 makeType :: Id -> HasCASL.As.Type
 makeType ide = TypeName ide star 0
