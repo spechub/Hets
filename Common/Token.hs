@@ -93,8 +93,8 @@ casl_reserved_fops = formula_ops ++ casl_reserved_ops
 -- | reserved keywords
 casl_basic_reserved_words :: [String]
 casl_basic_reserved_words =
-    [asS, axiomS, axiomS ++ sS, existsS, forallS, freeS, generatedS, 
-     inS, opS, opS ++ sS, predS, predS ++ sS, 
+    [axiomS, axiomS ++ sS, existsS, forallS, freeS, generatedS, 
+     opS, opS ++ sS, predS, predS ++ sS, 
      sortS, sortS ++ sS, typeS, typeS ++ sS, varS, varS ++ sS]
 
 -- | reserved keywords
@@ -114,7 +114,7 @@ casl_reserved_words =
 
 -- | these formula words are legal in terms, but illegal in declarations
 formula_words :: [String]
-formula_words = [defS, elseS, ifS, whenS, falseS, notS, trueS]
+formula_words = [asS, defS, elseS, ifS, inS, whenS, falseS, notS, trueS]
 
 -- | all reserved words
 casl_reserved_fwords :: [String]
