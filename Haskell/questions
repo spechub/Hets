@@ -1,0 +1,3 @@
+ - Wo wird basic_analysis aufgerufen? Parsing muss vorher passieren.
+ - Typanalyse von AXIOMS???
+ - Was wird von hatchet Ausgabe benoetigt? (TIModule.hs/tiModule)
