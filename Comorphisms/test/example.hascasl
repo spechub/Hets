@@ -1,0 +1,35 @@
+library Example
+
+logic HasCASL
+
+spec Example =
+
+  sorts A,B
+  ops a,b : A ->? B;
+      c : A * B * B ->? B;
+      c : A * B;
+      cc : A * A * A ->? B;
+      d : B;
+      __abc__ : A * B ->? A
+
+  preds e,f : A ->? B;
+        g : A * B;
+        gg : A * A * B;
+        h : B;
+  
+  forall a1,a2,a3:A; b1,b2,b3:B
+    . exists b4:B . true
+    . exists! b4:B . true
+    . a a1 = b a2 /\ b a2 = b a3
+    . a a1 = b a2 \/ b a2 = b a3
+    . a a1 = b a2 => b a2 = b a3
+    . a a1 = b a2 <=> b a2 = b a3
+    . not (def g)
+    . true
+    . false
+    . def e
+    . a1 abc b1 = a2 abc b2
+    . a a1 = b a2
+    . \ . a1 = a2
+    . let a4 = \  (x:A,y:A) . x = y in h b1
+    . let a4 = a1;  a6 = a a2 in a6 = d
