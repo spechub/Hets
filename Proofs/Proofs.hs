@@ -405,8 +405,8 @@ getAllLocGlobDefPathsTo dgraph node path =
 
   where
     inEdges = inn dgraph node
-    globalEdges = filter isGlobalDef inEdges
-    localEdges = filter isLocalDef inEdges
+    globalEdges = [edge| edge <- filter isGlobalDef inEdges, notElem edge path]
+    localEdges = [edge| edge <- filter isLocalDef inEdges, notElem edge path]
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
 
@@ -480,7 +480,8 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
 
   where
     inGoingEdges = inn dgraph tgt
-    edgesOfTypes = filterByTypes types inGoingEdges
+    edgesOfTypes =
+        [edge| edge <- filterByTypes types inGoingEdges, notElem edge path]
     edgesFromSrc = 
 	[edge| edge@(source,_,_) <- edgesOfTypes, source == src]
     nextStep =
