@@ -17,7 +17,6 @@ import Parsec
 import ParsecError
 import Result
 import MonadState
-import FiniteMap
 import Pretty
 import PrettyPrint
 import PrintLe

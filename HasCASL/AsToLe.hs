@@ -146,20 +146,14 @@ convertTypeToClass (TypeToken t) =
 		else return $ Result ds (Just $ Intersection cs [])  
 
 convertTypeToClass (BracketType Parens ts ps) = 
-    convertTypeListToClass ts ps
-
-convertTypeToClass (TupleType ts ps) = convertTypeListToClass ts ps
-
-convertTypeToClass _ = return $ Result [] Nothing
-
-convertTypeListToClass :: [Type] -> [Pos] -> State Env (Result Class)
-convertTypeListToClass ts ps =
     do is <- mapM convertTypeToClass ts
        let mis = map maybeResult is
 	   ds = concatMap diags is
 	   in if all isJust mis then return $ Result ds 
 	      (Just $ Intersection (concatMap (iclass . fromJust) mis) ps)
 	      else return $ Result ds Nothing
+
+convertTypeToClass _ = return $ Result [] Nothing
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t _ _) = 
@@ -236,7 +230,9 @@ anaClass b c@(As.Intersection cs ps) =
 		  (Just $ Intersection 
 		   (nub $ concatMap (fromJust . maybeResult) newCs) ps)
 
-anaClass _ (Downset _) = error "anaClass for Downset"
+anaClass _ c@(Downset t) = 
+    return $ non_fatal_error c "anaClass for Downset not implemented" 
+	       (posOfType t)
 
 anaSuperClass :: Class -> State Env Class
 anaSuperClass c =

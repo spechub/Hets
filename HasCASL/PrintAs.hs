@@ -53,7 +53,6 @@ instance PrettyPrint Type where
     printText0 ga (KindedType t kind _) = printText0 ga t  
 			  <> printKind ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
-    printText0 ga (TupleType args _) = parens $ commas ga args
     printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
     printText0 ga (ProductType ts _) = fsep (punctuate (space <> text timesS) 
 					 (map (printText0 ga) ts))

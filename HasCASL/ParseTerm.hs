@@ -422,8 +422,8 @@ partialTypeScheme :: GenParser Char st (Token, TypeScheme)
 partialTypeScheme = do q <- qColonT
 		       t <- parseType 
 		       return (q, SimpleTypeScheme 
-			       (FunType (TupleType [] [tokPos q]) 
-				PFunArr t [tokPos q]))
+			       (FunType (BracketType Parens [] [tokPos q]) 
+				PFunArr t [posOfType t]))
 		    <|> bind (,) colT typeScheme
 
 varTerm :: Token -> GenParser Char st Term
@@ -448,7 +448,7 @@ predTypeScheme (TypeScheme vs (qs :=> t) ps) =
     TypeScheme vs (qs :=> predType t) ps
 
 predType :: Type -> Type
-predType t = FunType t PFunArr (TupleType [] []) []
+predType t = FunType t PFunArr (BracketType Parens [] [posOfType t]) []
 
 qualPredName :: Token -> GenParser Char st Term
 qualPredName o = do { v <- asKey predS
