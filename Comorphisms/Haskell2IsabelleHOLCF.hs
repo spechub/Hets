@@ -182,17 +182,15 @@ transSignature1 :: NewNames -> MMB.ModuleInfo
                    -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 
 transSignature1 ns sign = let datatypeList = transDatatype ns (tyconsMembers sign) (FiniteMaps.toListFM $ dconsAssumps sign) in 
-  (Just ( IsaSign.Sign{
+  (Just ( IsaSign.emptySign{
     baseSig = "MainHC",
     tsig = emptyTypeSig 
-            {tycons = Map.foldWithKey (extractTypeName (tyconsMembers sign)) 
+            {arities = Map.empty},
+             {- Map.foldWithKey (extractTypeName (tyconsMembers sign)) 
                                       Map.empty 
-                                      (fm2map $ kinds sign)},
+                                      (fm2map $ kinds sign) -} 
     constTab = Map.fromList $ extractConsts datatypeList,
-    dataTypeTab = [], 
-    domainTab = inDearrowize datatypeList,
-    showLemmas = False,
-    syn = () },
+    domainTab = inDearrowize datatypeList},
     [] ))                                 -- for now, no sentences
  where 
     extractTypeName list name kind m = 
@@ -307,7 +305,8 @@ trType t
                                                     updateVMap (t, nm)
                                                     return $ IsaSign.TFree nm domain
                                       Just v  -> return $ IsaSign.TFree v domain 
-           Rep.TCon tycon -> return $ IsaSign.Type (show tycon) domain []
+           Rep.TCon tycon -> return $ IsaSign.Type (show tycon) [] domain []
+                             -- implement translation from Kind to IsaClass
            Rep.TAp t1 t2  -> do a1 <- trType t1
                                 a2 <- trType t2
                                 return $ mkDomAppl a1 a2 
@@ -353,7 +352,7 @@ transDatatype ns a b = let (VarName s) = transT13 $ prepDatatype a b in (fst $ s
 dearrowize :: Typ -> [Typ]
 --dearrowize (Type ("dFun" _ [b,c])) = b:(dearrowize c)
 --dearrowize a = [a] 
-dearrowize a = case a of (Type "dFun" _ [b,c])   -> b:(dearrowize c)
+dearrowize a = case a of (Type "dFun" _ _ [b,c])   -> b:(dearrowize c)
                          _            -> [a] 
 
 inDearrowize ::  [[(Typ, [(String, Typ)])]] -> [[(Typ, [(String, [Typ])])]]

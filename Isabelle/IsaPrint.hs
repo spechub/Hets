@@ -26,8 +26,6 @@ import qualified Common.Lib.Map as Map
 
 instance PrettyPrint IsaClass where
      printText0 _ (IsaClass c _) = parens $ text c
-     printText0 ga (ClFun c1 c2) = parens (printText0 ga c1)
-      <> text "->" <> parens (printText0 ga c2)
 
 instance PrintLaTeX Sentence where
     printLatex0 = printText0
@@ -39,7 +37,7 @@ instance PrettyPrint Typ where
   printText0 _ = text . showTyp 1000
 
 showTyp :: Integer -> Typ -> String
-showTyp pri (Type str _ [s,t]) 
+showTyp pri (Type str _ _ [s,t]) 
   | str == typeApplS = 
      if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
         else showTyp pri s ++ sp ++ showTyp pri t
@@ -50,9 +48,9 @@ showTyp pri (Type str _ [s,t])
             where withTFrees tv =
                       case tv of
                               TFree _ _ -> True
-                              Type _ _ ts -> and (map withTFrees ts)
+                              Type _ _ _ ts -> and (map withTFrees ts)
                               _      -> False
-showTyp _ (Type name _ args) = 
+showTyp _ (Type name _ _ args) = 
   case args of
     []     -> name
     arg:[] -> show arg ++ sp ++ name
@@ -68,9 +66,12 @@ showTyp _ (TVar (v,_) _) = "?\'" ++ v
 
 instance PrettyPrint TypeSig where
   printText0 _ tysig =
-    if Map.isEmpty (tycons tysig) then empty
-      else text $ Map.foldWithKey showTycon em (tycons tysig) 
-    where showTycon t arity rest =
+    if Map.isEmpty (arities tysig) then empty
+      else text $ Map.foldWithKey showTycon em (arities tysig) 
+    where showTycon t arity' rest = 
+              let arity = if null arity' then
+                          error "IsaPrint.printText0 (TypeSig)" 
+                                else length (snd $ head arity') in 
             "typedecl "++
             (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
              else em) ++ show t  ++"\n"++rest

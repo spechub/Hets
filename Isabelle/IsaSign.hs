@@ -16,15 +16,10 @@ module Isabelle.IsaSign where
 
 import qualified Common.Lib.Map as Map
 
----------------- from src/Pure/Syntax/syntax.ML -------------------
-
-type Syntax = () -- leave this for later
-
 -- temporary!!
 type Axiom = ()
--- type ProofObl = ()
 
--------------------- from src/Pure/term.ML ------------------------
+-------------------- not quite from src/Pure/term.ML ------------------------
 
 {-Indexnames can be quickly renamed by adding an offset to the integer part,
   for resolution.-}
@@ -35,8 +30,7 @@ type Indexname = (String,Int)
 -- Classes
 
 data IsaClass  = IsaClass { classId :: String, classDef :: [Axiom] }
-              | ClFun IsaClass IsaClass          
-              deriving (Ord, Eq, Show)   
+                 deriving (Ord, Eq, Show)   
 
 type Sort  = [IsaClass]
 
@@ -46,22 +40,23 @@ domain = [pcpo]
 isaTerm :: IsaClass
 isaTerm = IsaClass "term" []
 
-holType :: IsaClass
-holType = IsaClass "hol_type" []
+holType :: Sort
+holType = [IsaClass "hol_type" []]
 
 pcpo :: IsaClass
 pcpo = IsaClass "pcpo" []
 
-ho_ho_ho :: IsaClass  -- (hol_type,hol_type)hol_type
-ho_ho_ho = ClFun holType (ClFun holType holType)
+ho_ho :: [Sort]
+ho_ho = [holType, holType]
 
 
 ------------------------------------------------------------------------------
 
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
 data Typ = Type  { typeId   :: String,
-                   typeSort :: Sort,
-                   typeArg  :: [Typ] } 
+                   typeArgKind :: [Sort],
+                   typeResultKind :: Sort,
+                   typeArgs  :: [Typ] } 
          | TFree { typeId    :: String,
                    typeSort  :: Sort}
          | TVar  { indexname :: Indexname, -- (String,Int)
@@ -72,63 +67,56 @@ noType :: Typ
 noType = dummyT
 
 dummyT :: Typ
-dummyT = Type "dummy" [holType] []
+dummyT = Type "dummy" [] holType []
 
 boolType :: Typ
-boolType = Type "bool" [holType] []
+boolType = Type "bool" [] holType []
 
 mkOptionType :: Typ -> Typ
-mkOptionType t = Type "option" [holType] [t]
+mkOptionType t = Type "option" [holType] holType [t]
 
 prodS :: String 
 prodS = "*"    -- this is printed as it is!
 
-mkProductType :: Typ -> Typ -> Typ
-mkProductType t1 t2 = Type prodS [ho_ho_ho] [t1,t2]
+prodType :: Typ -> Typ -> Typ
+prodType t1 t2 = Type prodS ho_ho holType [t1,t2]
 
 typeApplS :: String 
 typeApplS = "typeAppl" -- maybe this should be " " for printing
 
 mkTypeAppl :: Typ -> Typ -> Typ
-mkTypeAppl t1 t2 = Type typeApplS [ho_ho_ho] [t1,t2]
+mkTypeAppl t1 t2 = Type typeApplS ho_ho holType [t1,t2]
 
 funS :: String 
 funS = "fun"  -- may be this should be "=>" for printing
 
 mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type funS [ho_ho_ho] [s,t] -- was "-->" before
+mkFunType s t = Type funS ho_ho holType [s,t] -- was "-->" before
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 mkCurryFunType :: [Typ] -> Typ -> Typ
 mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
 voidDom :: Typ
-voidDom = Type "void" domain []
+voidDom = Type "void" [] domain []
 -- voidDom = Type ("void",[pcpo],[])
 
 {- should this be included (as primitive)? -}
 flatDom :: Typ
-flatDom = Type "flat" domain []
+flatDom = Type "flat" [] domain []
 
 {- sort is ok? -}
 mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type "dFun" domain [t1,t2]
--- mkContFun = Type ("dFun", [cp_pc_pc],[s,t])
+mkContFun t1 t2 = Type "dFun" [domain, domain] domain [t1,t2]
 
 mkDomProduct :: Typ -> Typ -> Typ
-mkDomProduct t1 t2 = Type "**" domain [t1,t2]
--- mkDomProduct t1 t2 = Type ("**",[pc_pc_pc],[t1,t2])
+mkDomProduct t1 t2 = Type "**" [domain, domain] domain [t1,t2]
 
 mkDomSum :: Typ -> Typ -> Typ
-mkDomSum t1 t2 = Type "++" domain [t1,t2]
--- mkDomSum t1 t2 = Type ("++",[pc_pc_pc],[t1,t2])
+mkDomSum t1 t2 = Type "++" [domain, domain] domain [t1,t2]
 
-{- type application. is the sort ok? -}
 mkDomAppl :: Typ -> Typ -> Typ 
-mkDomAppl t1 t2 = Type "domAppl" domain [t1,t2]
--- mkDomAppl t1 t2 = 
---      Type ("domAppl",[pc_pc_pc],[t1,t2])
-
+mkDomAppl t1 t2 = Type "domAppl" [domain, domain] domain [t1,t2]
 
 {-Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
@@ -153,13 +141,9 @@ data Term =
                 termType::Typ, 
                 absVar::Term,
                 flag::Flag }  -- lambda abstraction
---      | CAbs   { termId::Term, 
---                termType::Typ, 
---                absVar::Term }  -- lambda abstraction
       | App { funId::Term, 
               argId::Term, 
               flag::Flag }    -- application
---      | CApp { funId::Term, argId::Term } -- application
       | Case { termId::Term, caseSubst::[(Term, Term)], flag::Flag }  -- case
       | If { ifId::Term, 
              thenId::Term, 
@@ -170,8 +154,6 @@ data Term =
               flag::Flag }   -- Let
       | Fix { funId::Term }
       deriving (Eq, Ord, Show)
-
---      | CApp { funId::Term, termId::Term, proofObl::ProofObl } -- application
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
 
@@ -206,7 +188,7 @@ data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show)
     ars represents the arity t::(Ss)c;
 -}
 
-type Classrel = Map.Map String [IsaClass]
+type Classrel = Map.Map IsaClass Sort
 type Arities = Map.Map String [(IsaClass, [Sort])]
 
 
@@ -233,22 +215,18 @@ that should actually produce proof obligations. -}
 
 data TypeSig =
   TySg {
-    classes:: [IsaClass],
-    classrel:: Classrel,
+    classrel:: Classrel,  -- domain of the map yields the classes
     defaultSort:: Sort,
-    tycons:: Map.Map String Int,  -- type constructor names, with arities
     log_types:: [String],
     univ_witness:: Maybe (Typ, Sort),
     abbrs:: Map.Map String ([String], Typ),
-    arities:: Arities }
+    arities:: Arities } -- the former field tycons can be computed 
    deriving (Eq, Show)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
-    classes = [],
     classrel = Map.empty,
     defaultSort = [],
-    tycons = Map.empty,
     log_types = [],
     univ_witness = Nothing,
     abbrs = Map.empty,
@@ -260,8 +238,8 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: Map.Map String Typ,  -- constants with type
                    dataTypeTab :: DataTypeTab,
-                   domainTab :: DomainTab,  -- needs HOLCF, extend this with domains
-                   syn :: Syntax,
+                   domainTab :: DomainTab,  
+                   -- needs HOLCF, extend this with domains
                    showLemmas :: Bool
                  }
              deriving (Eq, Show)
@@ -285,5 +263,4 @@ emptySign = Sign { baseSig = "Pure",
                    constTab = Map.empty,
                    dataTypeTab = [],
                    domainTab = [],
-                   showLemmas = False,
-                   syn = () }
+                   showLemmas = False }

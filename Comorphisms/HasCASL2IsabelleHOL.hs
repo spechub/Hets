@@ -81,11 +81,11 @@ instance Comorphism HasCASL2IsabelleHOL
 transSignature :: Env
                    -> Maybe (IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
-  Just (IsaSign.Sign {
+  Just (IsaSign.emptySign {
     baseSig = "MainHC",
     -- translation of typeconstructors
     tsig = emptyTypeSig 
-             { tycons = Map.foldWithKey extractTypeName 
+             { arities = Map.foldWithKey extractTypeName 
                                         Map.empty 
                                         (typeMap sign) },
     -- translation of operation declarations
@@ -94,12 +94,13 @@ transSignature sign =
                                (assumps sign),
     -- translation of datatype declarations
     dataTypeTab = transDatatype (typeMap sign),
-    syn = (),
     showLemmas = True },
     [] ) 
    where 
-    extractTypeName typeId typeInfo m = if isDatatypeDefn typeInfo then m
-                                          else Map.insert (showIsa typeId) 0 m
+    extractTypeName typeId typeInfo m = 
+        if isDatatypeDefn typeInfo then m
+           else Map.insert (showIsa typeId) [(isaTerm, [])] m
+                -- translate the kind here!
     isDatatypeDefn t = case typeDefn t of
                          DatatypeDefn _ -> True
                          _              -> False
@@ -149,9 +150,9 @@ transPredType  (TypeScheme _ pre _) =
 -- types composed of simple types
 transType :: Type -> Typ
 transType (TypeName typeId _ i)       = 
-    if i == 0 then Type (showIsa typeId) [] []
+    if i == 0 then Type (showIsa typeId) [] [] [] -- translate kind here!!
        else TFree (showIsa typeId) []
-transType (ProductType types _)       = foldl1 IsaSign.mkProductType 
+transType (ProductType types _)       = foldl1 IsaSign.prodType 
                                                (map transType types)
 transType (FunType type1 arr type2 _) = 
   case arr of
@@ -160,7 +161,7 @@ transType (FunType type1 arr type2 _) =
     _       -> 
       error "[Comorphisms.HasCASL2IsabelleHOL] Not supported function type"
 transType (TypeAppl type1 type2)      = 
-  Type "typeAppl" [] ([transType type1] ++ [transType type2])
+    mkTypeAppl (transType type1) $ transType type2
 transType _ = error "[Comorphisms.HasCASL2IsabelleHOL] Not supported type"
 
 
@@ -176,7 +177,7 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
                          [((mkDName tyId tyArgs), (map mkAltDefn alts))]
-  where mkDName ti ta = Type (showIsa ti) [] (map transTypeArg ta)
+  where mkDName ti ta = Type (showIsa ti) [] [] (map transTypeArg ta)
 
 transDataEntry _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported datatype definition"
@@ -347,7 +348,7 @@ abstraction sign pat body =
         TupleTerm terms _           -> evalTupleType terms
         _                           -> 
           error "[Comorphisms.HasCASL2IsabelleHOL] Illegal pattern in lambda abstraction"
-    evalTupleType t = foldr1 IsaSign.mkProductType (map getType t)
+    evalTupleType t = foldr1 IsaSign.prodType (map getType t)
 
 -- translation of lambda patterns --> without constant:t -> Some constant:t option
 transPattern :: Env -> As.Term -> IsaSign.Term

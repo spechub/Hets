@@ -101,7 +101,7 @@ transTheory trSig trForm (sign,sens) =
   Just(IsaSign.emptySign {
     baseSig = "Main",
     tsig = emptyTypeSig 
-            {tycons = Set.fold (\s -> Map.insert (showIsa s) 0) 
+            {arities = Set.fold (\s -> Map.insert (showIsa s) [(isaTerm, [])]) 
                                Map.empty (sortSet sign)},
     constTab = Map.foldWithKey insertOps
                   (Map.foldWithKey insertPreds
@@ -143,7 +143,7 @@ makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
 makeDtDef _ _ = Nothing
 
 transSort :: SORT -> Typ
-transSort s = Type (showIsa s) [] []
+transSort s = Type (showIsa s) [] [] []
 
 transOpType :: OpType -> Typ
 transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
@@ -196,9 +196,6 @@ binEq = binOp "op ="
 true, false :: Term
 true = Const "True" noType isaTerm
 false = Const "False" noType isaTerm 
-
-prodType :: Typ -> Typ -> Typ
-prodType t1 t2 = Type "*" [] [t1,t2]
 
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
