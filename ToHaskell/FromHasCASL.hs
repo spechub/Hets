@@ -65,28 +65,17 @@ moveDataEntries (e, l) = case l of
   s : r -> let (e2, r2) = moveDataEntries (e , r) in (e2, s : r2)
 
 mapTheory :: (Env, [Named Sentence]) -> Maybe (Sign, [Named (HsDeclI PNT)])
-mapTheory th = 
-    let (sig, csens) = moveDataEntries th
+mapTheory (sig, csens) =
+    let hs = translateSig sig
+	ps = concatMap (translateSentence sig) csens
+	cs = cleanSig hs ps
         res@(Result _ m) = 
-            hatAna (HsDecls (preludeDecls ++ translateSig sig
-                    ++ map sentence (concatMap (translateSentence sig) csens)),
+            hatAna (HsDecls (preludeDecls ++ cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
     in case m of 
     Nothing -> error $ show res
-    Just (_, _, hs, sens) -> Just (diffSign hs preludeSign, 
+    Just (_, _, hsig, sens) -> Just (diffSign hsig preludeSign, 
                   filter noInstance sens \\ preludeSens) 
-
-{-
-    let sign = addPreDefs sig 
-        hs = translateSig sign
-	ps = concatMap (translateSentence sign) csens
-	fewHs = translateSig sig
-	cs = cleanSig hs ps
-	fewCs = cleanSig fewHs ps
-        (mi, _) = hatAna2 myPrelude (cs ++ map sentence ps) emptyModuleInfo
-	in (diffModInfo mi mi, map ( \ s -> NamedSen "" $ toAHsDecl s) fewCs
-	    ++ map (mapNamed toAHsDecl) ps)
--}
 
 noInstance :: Named (HsDeclI PNT) -> Bool
 noInstance s = case basestruct $ struct $ sentence s of
@@ -114,7 +103,7 @@ preludeTheory = case maybeResult $ hatAna
 preludeDecls :: [HsDecl]
 preludeDecls = let ts = pLexerPass0 lexerflags0 
                         -- adjust line number of module Prelude by hand!
-                        (replicate 75 '\n' ++ preludeString)
+                        (replicate 113 '\n' ++ preludeString)
    in case parseTokens (HsParser.parse) "ToHaskell/FromHasCASL.hs" ts of
       Just (HsModule _ _ _ _ ds) -> ds
       _ -> error "preludeDecls"
