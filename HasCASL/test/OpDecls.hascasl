@@ -12,3 +12,4 @@ op a,b : t
 
 op c : s = a + b
 
+op d : s = (a)

@@ -25,6 +25,7 @@ import Common.Id
 import Common.Lexer
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Data.Maybe(mapMaybe)
 import HasCASL.Unify
@@ -237,10 +238,8 @@ stateToAppl p =
 toAppl :: GlobalAnnos -> PState -> Term
 toAppl g s =
     if ruleId s == listId then    
-       case list_lit $ literal_annos g of
-       Nothing -> error "toAppl" 
-       Just (b, c, f) -> 
-	   let (b1, b2) = getListBrackets b
+           let (b, c, f) = Set.findMin $ list_lit $ literal_annos g
+	       (b1, b2) = getListBrackets b
                nb1 = length b1
                nb2 = length b2
                ra = reverse $ ruleArgs s
@@ -421,7 +420,8 @@ iterStates g ops terms pm =
             BracketTerm Parens ts ps -> 
 		let Result mds v = 
 			do tsNew <- mapM resolveInternal ts
-			   return (TupleTerm tsNew ps)
+			   return (if length tsNew == 1 then head tsNew 
+				   else TupleTerm tsNew ps)
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
 		in self (tail terms) $ nextState g ops tNew 

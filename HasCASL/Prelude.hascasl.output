@@ -36,15 +36,17 @@ t : Type %(var)%
 Y : p -->? p --> p
 __/\__ : logical × logical -> logical
 __<=>__ : logical × logical -> logical
-__=__ : t -> t -> logical
+__=__ : s -> s -> logical
 __=>__ : logical × logical -> logical
 __\/__ : logical × logical -> logical
 __if__ : logical × logical -> logical
+__res__ : s = \ (x : s; y : t) .! x
 bottom : p
 def : (Pred)(s)
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : logical %(construct logical)%
+fst : s = \ (x : s; y : t) .! x
 g : c --> d %(var)%
 not : logical -> logical
 sup : nat -> c ->? c
@@ -71,11 +73,10 @@ FatalError (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 FatalError (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
 Error (line 60, column 16) unexpected mixfix token '='
-FatalError (line 64, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x
-FatalError (line 65, column 1) no analysis yet for: program fst (x : s; y : t) : s = x
+Error (line 64, column 31) no resolution for term: \ (x : s; y : t) .! x
+Error (line 65, column 27) no resolution for term: \ (x : s; y : t) .! x
 FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
-Error (line 72, column 3) unexpected mixfix token 'fst'
-Error (line 72, column 13) unexpected mixfix token 'res'
+Error (line 72, column 3) no resolution for term: fst = (__ res __)
 Error (line 71, column 30) unexpected mixfix token '='
 FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
 Error (line 81, column 28) unexpected mixfix token '='

@@ -15,7 +15,7 @@ op true, false: logical
 ops __/\__, __\/__, __=>__, __if__,__<=>__ : logical * logical -> logical
 op not : logical -> logical
 
-op __=__ : t -> t -> logical %% =e=
+op __=__ : s -> s -> logical %% =e=
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
@@ -61,8 +61,8 @@ type s -> t < s ->? t
 
 
 %% total functions
-program __res__ (x: s; y: t) : s = x 
-program fst (x: s; y: t) : s = x 
+op __res__ (x: s; y: t) : s = x 
+op fst (x: s; y: t) : s = x 
 program snd (x: s; y: t) : t = y 
 
 
