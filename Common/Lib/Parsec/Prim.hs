@@ -31,8 +31,8 @@ module Common.Lib.Parsec.Prim
                    , many, skipMany
                                 
                    -- user state manipulation
-                   , getState, setState, updateState, consumeNothing
-
+                   , getState, setState, updateState
+		   , consumeNothing, mapParse, parseWithState
                    -- state manipulation
                    , getPosition, setPosition
                    , getInput, setInput                   
@@ -136,6 +136,31 @@ data State tok st       = State { stateInput :: [tok]
                                 , statePos   :: SourcePos
                                 , stateUser  :: !st
                                 }
+
+-----------------------------------------------------------
+-- map a parser's user state
+-----------------------------------------------------------
+
+mapState :: (st1 -> st2) -> State tok st1 -> State tok st2 
+mapState f (State i p u) = State i p $ f u
+
+mapOkReply :: (st1 -> st2) -> Reply tok st1 a -> Reply tok st2 a
+mapOkReply _ (Error a) = Error a
+mapOkReply f (Ok a s e) = Ok a (mapState f s) e
+
+mapConsumed :: (a -> b) -> Consumed a -> Consumed b 
+mapConsumed f (Consumed a) = Consumed $ f a
+mapConsumed f (Empty a) = Empty $ f a
+
+mapParse :: (st2  -> st1) -> (st1 -> st2) 
+	 -> GenParser tok st1 a -> GenParser tok st2 a
+mapParse f g (Parser p) = 
+    Parser (mapConsumed (mapOkReply g) . p  . mapState f) 
+
+parseWithState :: GenParser tok inter a -> inter -> GenParser tok st a
+parseWithState p inter = 
+    do st <- getState
+       mapParse (const inter) (const st) p
 
 
 -----------------------------------------------------------

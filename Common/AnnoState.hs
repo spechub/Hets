@@ -19,6 +19,9 @@ import Common.Lib.Parsec
 -- ----------------------------------------------
 type AParser a = GenParser Char AnnoState a
 
+aParse :: AParser a -> GenParser Char st a
+aParse p = parseWithState p emptyAnnos
+
 data AnnoState = AnnoState { toAnnos :: [Annotation] }
 
 emptyAnnos :: AnnoState
