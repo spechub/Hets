@@ -133,7 +133,7 @@ leftAssCollElems i trs =
 			  Application oi its _ 
 			      | op_id oi == i -> its
 			      | otherwise     -> [t]
-			  _        -> error "splitA: no Appl found"
+			  _        -> error "splitA: no Appl found (left)"
 
 collectElements :: (Maybe Id) -> Id -> [TERM f] -> [TERM f]
 collectElements mnid i trs = 
@@ -162,7 +162,7 @@ collectElementsRight mnid i trs =
 			  Application oi its _ 
 			      | op_id oi == i -> its
 			      | otherwise     -> [t]
-			  _        -> error "splitA: no Appl found"
+			  _        -> error "splitA: no Appl found (right)"
 	  getToken :: TERM f -> [TERM f]
 	  getToken trm = maybe [trm]
 			       (\ nid -> case trm of
@@ -205,7 +205,6 @@ sameId test i t = case t of
 			       not (null its) -> all (sameId test i) its
 			     | null its -> test $ op_id o -- digits i.e.
 			     | otherwise    -> False
-			 Simple_id _ -> True
 			 _           -> False
 
 op_id :: OP_SYMB -> Id
