@@ -19,6 +19,7 @@ module Common.Earley (
 		     , tupleId, unitId, unknownId, isUnknownId, unToken
 		     , Knowns, mkId, protect, listRules, mixRule
 		     , getTokenPlaceList
+		     , endPlace, begPlace
                      -- * resolution chart
 		     , Chart, mixDiags, ToExpr
 		     , initChart, nextChart, getResolved)
@@ -358,16 +359,15 @@ reduce ga table rs filt toExpr itm =
 	$ filter ( \ oi ->  let ts = rest oi in
 		   if null ts then False
 		   else if head ts == termTok
-		   then case filt (info itm) $ info oi of 
-		   Nothing -> checkPrecs ga rs itm oi 
-		   Just b -> b 
+		   then checkPrecs filt ga rs itm oi
 		   else False )
 	$ lookUp table $ index itm
 
--- | 'Id' starts with a 'Place'
+-- | 'Id' starts with a 'place'
 begPlace :: Id -> Bool
 begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
--- | 'Id' ends with a 'Place'
+
+-- | 'Id' ends with a 'place'
 endPlace :: Id -> Bool
 endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
 
@@ -384,16 +384,21 @@ joinIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps
 
 -- | check precedences of an argument and a top-level operator.
 -- (The 'Int' is the number of current arguments of the operator.)
-checkPrecs :: GlobalAnnos -> [Id] -> Item a b -> Item a b -> Bool
-checkPrecs ga rs argItem opItem =
+checkPrecs :: (b -> b -> Maybe Bool) -> GlobalAnnos 
+	   -> [Id] -> Item a b -> Item a b -> Bool
+checkPrecs filt ga rs argItem opItem =
     let op = rule opItem
+	opPrec = info opItem
 	arg = rule argItem
+	argPrec = info argItem
 	precs = prec_annos ga
         assocs = assoc_annos ga
 	num = length $ args opItem in
     case precRel precs op arg of
     BothDirections -> False
-    x -> if isLeftArg op num then
+    x -> if isLeftArg op num then case filt argPrec opPrec of 
+	   Just b -> b     
+           Nothing ->
 	    let rarg = rWeight argItem in 
 	    if endPlace arg then
 	       if rarg == unitId then True else
@@ -410,7 +415,9 @@ checkPrecs ga rs argItem opItem =
 			(_, False) -> False
 	    else not (begPlace arg && isNonCompound arg 
 		      && joinIds arg op `elem` rs)
-	 else if isRightArg op num then
+	 else if isRightArg op num then case filt argPrec opPrec of 
+	        Just b -> b     
+                Nothing ->
 	         let larg = lWeight argItem in 
 		 if begPlace arg then 
 		   if larg == unitId then True else
