@@ -16,6 +16,8 @@ import Pretty
 import System
 import GlobalAnnotationsFunctions
 
+import RunMixfixParser (stdAnnos)
+
 data HetParser = forall a. PrettyPrint a => HetParser (Parser a)
 
 exec :: [(String, HetParser)] -> [(String, HetParser)] -> IO ()
@@ -68,5 +70,5 @@ instance (Show a, PrettyPrint b) => PrettyPrint (Either a b) where
 		     Right x  -> printText0 g x
  
 result :: (Show a, PrettyPrint b) => Either a b -> String
-result r = renderText Nothing (printText0 emptyGlobalAnnos r) 
+result r = renderText Nothing (printText0 stdAnnos r) 
 
