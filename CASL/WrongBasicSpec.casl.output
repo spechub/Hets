@@ -1,4 +1,0 @@
-parse error at (line 1, column 1):
-unexpected "i"
-expecting "%%", "%{", "%(", "%", "s", "op", "pred", "type", "free", "generated", "var", "forall", dot, "axiom" or "{"
-

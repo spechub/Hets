@@ -1,2 +1,0 @@
-forall aa:s . (aa <= ab) => p
-Error (line 1, column 21) unexpected mixfix token: ab
