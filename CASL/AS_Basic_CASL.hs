@@ -24,10 +24,10 @@ data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEMS]
 data BASIC_ITEMS = Sig_items SIG_ITEMS 
                    -- the Annotation following the keyword is dropped
 		   -- but preceding the keyword is now an Annotation allowed
-		 | Free_datatype [DATATYPE_DECL] [Pos]
+		 | Free_datatype [Annoted DATATYPE_DECL] [Pos]
 		   -- pos: free, type, semi colons
 		 | Sort_gen [Annoted SIG_ITEMS] [Pos] 
-		   -- pos: generated, opt. braces (type in Datatype_items)
+		   -- pos: generated, opt. braces 
 		 | Var_items [VAR_DECL] [Pos]
 		   -- pos: var, semi colons
 		 | Local_var_axioms [VAR_DECL] [Annoted FORMULA] [Pos]
@@ -42,7 +42,7 @@ data SIG_ITEMS = Sort_items [Annoted SORT_ITEM] [Pos]
 		 -- pos: op, semi colons
 	       | Pred_items [Annoted PRED_ITEM] [Pos]
 		 -- pos: pred, semi colons
-	       | Datatype_items [DATATYPE_DECL]
+	       | Datatype_items [Annoted DATATYPE_DECL] [Pos]
 		 -- type, semi colons
 		 deriving (Show,Eq)
 

@@ -39,7 +39,7 @@ instance PrettyPrint SIG_ITEMS where
     printText0(Sort_items l _) =  text sortS <+> semiT l 
     printText0(Op_items l _) =  text opS <+> semiT l 
     printText0(Pred_items l _) =  text predS <+> semiT l 
-    printText0(Datatype_items l) = text typeS <+> semiT l 
+    printText0(Datatype_items l _) = text typeS <+> semiT l 
 
 commaT l = cat(punctuate comma (map printText0 l))
 equalT = space <> text equalS <> space
