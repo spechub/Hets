@@ -43,6 +43,50 @@ Test auf Einpunkt-Modell
    (ein Datenelement, wahre Prädikate, totale Funktionen)
    siehe ccc/OnePoint.hs
 
+Signature morphism: just carry around the image
+
+use three-valued logic {true, false, *}, * means "don't know"
+equations between new sorts are true, otherwise *
+new predicates are true, otherwise *
+
+and t f *
+t   t f *
+f   f f f
+*   * f *
+
+or  t f *
+t   t t t
+f   t f *
+*   t * *
+
+implies t f *
+t       t f *
+f       t t t
+*       t * *
+
+equivalent t f *
+t          t f *
+f          f t *
+*          * * *
+
+not t f *
+    f t *
+
+(this is just Kleene's strong three-valued logic)
+
+Implement it using Maybe Bool and monads
+
+Sort generation constraints:
+  use recover_sort_gen
+  check whether all generated sorts (when translated via the sort map) are new
+  check whether for each generated sort, 
+    there is a term with generating operations
+    and variables in non-generated sorts
+    Therefore start with the empty list of sorts, and repeatedly 
+      compute the one-step-closure under the generating operations
+      (ignoring argument sorts outside the generated sorts)
+      stop when iteration is stable
+
 port CCC to Haskell
 
 ************************************************
@@ -119,13 +163,13 @@ try out WADT 04 example:
 - coding to Isabelle: translate sort gen constraints
 - translation of sentences CASL->HasCASL (Christian)
 - translation of sentences along HasCASL sig mors (Christian)
-- remove / in thy names
+- remove / in thy names (ask cxl for function)
 - problem with Ids starting with __ (look at Isabelle's lexis)
 - correct display of CASL sublogis
 - improve display of HasCASL sigs + mors (Christian)
 - correct display of HasCASL sublogis (Christian)
 - correct MAYA: glob decomp: some links are not found (Jorina)
-
+- extended globDecomp rule: 
 Modal logics: modal logic, temporal logic, mu calculus
 + translations (e.g. modal to FOL)
 
@@ -137,6 +181,7 @@ Isabelle: (ask Christoph)
     + selection of single goals that are proved
    CASL-like syntax
    CASL annotation for lemmas that should be used in proof
+   inherit CASL's mixfix syntax
 
 Remove warnings
 
