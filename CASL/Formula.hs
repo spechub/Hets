@@ -36,7 +36,7 @@
 -}
 
 module Formula (term, formula
-	       , equalT, colonT, colonST, quMarkT, dotT, crossT,
+	       , equalT, colonT, colonST, quMarkT, dotT, crossT
 	       , varDecl, opSort, opFunSort, opType, predType, predUnitType) 
     where
 
