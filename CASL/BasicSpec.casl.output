@@ -808,11 +808,7 @@ preds isLetter(c :Char) <=> ((ord ('A') <= ord (c))
       isPrintable(c :Char) <=> ((ord (' ') <= ord (c))
 				/\ (ord (c) <= ord ('~')))
 			       \/ ((ord (' ') <= ord (c))
-				   /\ (ord 
-				       (c) 
-				       <= 
-				       ord 
-				       ('ÿ'))) %(isPrintable_def)%
+				   /\ (ord (c) <= ord ('ÿ'))) %(isPrintable_def)%
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :
 ops '\o000': Char = '\000'; %(slash_o000)%

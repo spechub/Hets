@@ -12,7 +12,6 @@ module HasCASL.OpDecl where
 import HasCASL.As
 import HasCASL.ClassDecl
 import HasCASL.TypeDecl
-import Common.Id
 import HasCASL.Le
 import Common.Lib.State
 import Common.Result

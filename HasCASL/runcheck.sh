@@ -2,6 +2,7 @@
 
 PA=$1
 SET=$2
+ANNOS=../Common/Standard.annos
 
 . ../CASL/checkFunctions.sh
 

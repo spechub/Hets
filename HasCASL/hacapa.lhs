@@ -15,7 +15,7 @@ import HasCASL.ParseTerm
 import HasCASL.PrintAs
 import HasCASL.PrintLe
 import HasCASL.HToken
-import CASL.RunParsers
+import Common.RunParsers
 import HasCASL.RunStaticAna
 import Common.Lib.Parsec
 import Common.AnnoState
@@ -30,19 +30,19 @@ parseA p s = case runParser p emptyAnnos "" s of
 	     Right a -> a
 	     Left err -> error $ show err
 
-lineParser, fileParser :: [(String, HetParser)]
+lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
- ("MixIds", HetParser uninstOpId),
- ("Typenames", HetParser typeId),
- ("Kinds", HetParser kind),
- ("Types", HetParser parseType),
- ("Terms", HetParser term),
- ("Typepattern", HetParser typePattern),
- ("Pattern", HetParser pattern),
- ("BasicItems", HetParser basicItems),
- ("Items", HetParser basicSpec)]
+ ("MixIds", fromAParser uninstOpId),
+ ("Typenames", fromAParser typeId),
+ ("Kinds", fromAParser kind),
+ ("Types", fromAParser parseType),
+ ("Terms", fromAParser term),
+ ("Typepattern", fromAParser typePattern),
+ ("Pattern", fromAParser pattern),
+ ("BasicItems", fromAParser basicItems),
+ ("Items", fromAParser basicSpec)]
 
-fileParser = [ ("BasicSpec", HetParser basicSpec)
-	     , ("analysis", HetParser anaParser)
+fileParser = [ ("BasicSpec", fromAParser basicSpec)
+	     , ("analysis", fromAParser anaParser)
 	     ]
 \end{code}

@@ -19,24 +19,7 @@ import Common.Anno_Parser
 import CASL.ShowMixfix -- (showTerm, showFormula)
 
 -- start testing
-stdAnnosL, stdOpsL, stdPredsL :: [String]
-stdAnnosL = [ "%prec {__+__} < {__*__}\n" 
-	    , "%prec {__*__} < {__^__}\n"
-            , "%prec {+__} <> {__ ^ __}\n"
-            , "%prec {__ --> __} <  {__{__}--__-->{__}__}\n"
-            , "%string empty, __::::__\n"
-	    , "%left_assoc(__+__,__*__)%"
-	    , "%left_assoc(__ --> __ )%"
-	    , "%number __@@__\n"
-            , "%floating __:::__, __E__\n"
-	    , "%list([__], [], __::__)%"]
-
-mkAnnos :: [String] -> GlobalAnnos
-mkAnnos l = addGlobalAnnos emptyGlobalAnnos 
-			 $ map (parseString annotationL) l
-
-stdAnnos :: GlobalAnnos
-stdAnnos = mkAnnos stdAnnosL
+stdOpsL, stdPredsL :: [String]
 
 stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__", 
         "__-__", "+__", "__E__", "__@@__", "[]", "__::__", "__:::__",
@@ -64,21 +47,21 @@ stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
-resolveForm :: AParser (Result FORMULA)
-resolveForm = 
-      resolveFormula stdAnnos stdOps stdPreds `fmap` formula
+resolveForm :: GlobalAnnos -> AParser (Result FORMULA)
+resolveForm ga = 
+      resolveFormula ga stdOps stdPreds `fmap` formula
 
-resolveTerm :: AParser (Result TERM)
-resolveTerm = 
-      resolveMixfix stdAnnos stdOps stdPreds False `fmap` term
+resolveTerm :: GlobalAnnos -> AParser (Result TERM)
+resolveTerm ga = 
+      resolveMixfix ga stdOps stdPreds False `fmap` term
 
-testTerm :: AParser WrapString
+testTerm ::  AParser WrapString
 testTerm = do t <- term
 	      return $ WrapString $ showTerm t ""
 
-testTermMix :: AParser WrapString
-testTermMix = do Result ds mt <- resolveTerm
-		 return $ WrapString $ 
+testTermMix :: GlobalAnnos -> AParser WrapString
+testTermMix ga = do Result ds mt <- resolveTerm ga
+		    return $ WrapString $ 
 			case mt of Just t -> showTerm t ""
 				   _ -> show ds
 
@@ -86,8 +69,8 @@ testFormula :: AParser WrapString
 testFormula = do f <- formula
 		 return $ WrapString $ showFormula f ""
 
-testFormulaMix :: AParser WrapString
-testFormulaMix = do Result ds m <- resolveForm
-		    return $ WrapString $ 
+testFormulaMix :: GlobalAnnos -> AParser WrapString
+testFormulaMix ga = do Result ds m <- resolveForm ga
+		       return $ WrapString $ 
 			   case m of Just f -> showFormula f ""
 				     _ -> show ds

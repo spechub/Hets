@@ -834,8 +834,7 @@ pred isLetter(c : Char) <=> ((ord ('A') <= ord (c) /\ ord (c) <=
      %(isDigit_def)%;
      isPrintable(c : Char) <=> ((ord (' ') <= ord (c) /\ ord (c) <= ord
 				 ('~'))
-				\/
-				(ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')))
+				\/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')))
      %(isPrintable_def)%
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :

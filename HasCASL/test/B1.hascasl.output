@@ -18,31 +18,31 @@ y :Type %(var)%
 x : s %(var)%
   : y %(var)%
 %% Diagnostics -----------------------------------------------------------
-Warning "B1.hascasl" (line 3, column 14) redundant universe class
-Error "B1.hascasl" (line 3, column 7) illegal universe class declaration
-Error "B1.hascasl" (line 4, column 7) illegal universe class declaration
-Error "B1.hascasl" (line 6, column 7) illegal universe class declaration
-Warning "B1.hascasl" (line 8, column 11) implicit declaration of superclass 'a'
-Warning "B1.hascasl" (line 8, column 7) redeclared class 'd'
-Error "B1.hascasl" (line 10, column 24) undeclared class 'h'
-Warning "B1.hascasl" (line 10, column 7) redeclared class 'a'
-Error "B1.hascasl" (line 10, column 12) cyclic class relation via 'd'
-Warning "B1.hascasl" (line 12, column 7) redeclared class 'a'
-Error "B1.hascasl" (line 12, column 11) cyclic class relation via 'd'
-Warning "B1.hascasl" (line 15, column 7) redeclared class 'a'
-Error "B1.hascasl" (line 15, column 11) cyclic class relation via 'a'
-Warning "B1.hascasl" (line 17, column 7) redeclared class 'a'
-Error "B1.hascasl" (line 17, column 7) class cannot become an alias class 'a'
-Warning "B1.hascasl" (line 18, column 7) redeclared class 'b'
-Error "B1.hascasl" (line 18, column 7) class cannot become an alias class 'b'
-Warning "B1.hascasl" (line 20, column 7) redeclared class 'd'
-Error "B1.hascasl" (line 20, column 7) class cannot become an alias class 'd'
-Warning "B1.hascasl" (line 25, column 7) redeclared class 'h'
-Error "B1.hascasl" (line 25, column 7) inconsistent redefinition of 'h'
-Warning "B1.hascasl" (line 27, column 21) unchecked type 't'
-Hint "B1.hascasl" (line 31, column 26) not a class 'y'
-Hint "B1.hascasl" (line 33, column 9) not a class 's'
-Error "B1.hascasl" (line 33, column 9) undeclared type 's'
-Hint "B1.hascasl" (line 31, column 26) type 's' is not unifiable with 'y'
-Warning "B1.hascasl" (line 37, column 9) unchecked type 't'
-Error "B1.hascasl" (line 39, column 6) wrong arity of 'a__'
+Warning (line 3, column 14) redundant universe class
+Error (line 3, column 7) illegal universe class declaration
+Error (line 4, column 7) illegal universe class declaration
+Error (line 6, column 7) illegal universe class declaration
+Warning (line 8, column 11) implicit declaration of superclass 'a'
+Warning (line 8, column 7) redeclared class 'd'
+Error (line 10, column 24) undeclared class 'h'
+Warning (line 10, column 7) redeclared class 'a'
+Error (line 10, column 12) cyclic class relation via 'd'
+Warning (line 12, column 7) redeclared class 'a'
+Error (line 12, column 11) cyclic class relation via 'd'
+Warning (line 15, column 7) redeclared class 'a'
+Error (line 15, column 11) cyclic class relation via 'a'
+Warning (line 17, column 7) redeclared class 'a'
+Error (line 17, column 7) class cannot become an alias class 'a'
+Warning (line 18, column 7) redeclared class 'b'
+Error (line 18, column 7) class cannot become an alias class 'b'
+Warning (line 20, column 7) redeclared class 'd'
+Error (line 20, column 7) class cannot become an alias class 'd'
+Warning (line 25, column 7) redeclared class 'h'
+Error (line 25, column 7) inconsistent redefinition of 'h'
+Warning (line 27, column 21) unchecked type 't'
+Hint (line 31, column 26) not a class 'y'
+Hint (line 33, column 9) not a class 's'
+Error (line 33, column 9) undeclared type 's'
+Hint (line 31, column 26) type 's' is not unifiable with 'y'
+Warning (line 37, column 9) unchecked type 't'
+Error (line 39, column 6) wrong arity of 'a__'

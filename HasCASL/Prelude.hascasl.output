@@ -58,61 +58,61 @@ x2 : c %(var)%
 y1 : d %(var)%
 y2 : d %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error "Prelude.hascasl" (line 4, column 7) illegal universe class declaration
-Warning "Prelude.hascasl" (line 13, column 4) repeated value 'true'
-Warning "Prelude.hascasl" (line 13, column 10) repeated value 'false'
-Warning "Prelude.hascasl" (line 27, column 11) redeclared type 'Unit'
-Error "Prelude.hascasl" (line 29, column 5) unexpected mixfix token '='
-Warning "Prelude.hascasl" (line 39, column 16) redeclared type 't'
-Hint "Prelude.hascasl" (line 46, column 9) not a class 's'
-FatalError "Prelude.hascasl" (line 48, column 1) no analysis yet for: program def = \ x : s . ()
+Error (line 4, column 7) illegal universe class declaration
+Warning (line 13, column 4) repeated value 'true'
+Warning (line 13, column 10) repeated value 'false'
+Warning (line 27, column 11) redeclared type 'Unit'
+Error (line 29, column 5) unexpected mixfix token '='
+Warning (line 39, column 16) redeclared type 't'
+Hint (line 46, column 9) not a class 's'
+FatalError (line 48, column 1) no analysis yet for: program def = \ x : s . ()
 	%% def is also total (identical to tt) 
-FatalError "Prelude.hascasl" (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
+FatalError (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
-FatalError "Prelude.hascasl" (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
-Error "Prelude.hascasl" (line 60, column 16) unexpected mixfix token '='
-FatalError "Prelude.hascasl" (line 64, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x
-FatalError "Prelude.hascasl" (line 65, column 1) no analysis yet for: program fst (x : s; y : t) : s = x
-FatalError "Prelude.hascasl" (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
-Error "Prelude.hascasl" (line 72, column 3) unexpected mixfix token 'fst'
-FatalError "Prelude.hascasl" (line 78, column 1) no analysis yet for: pred eq : s × s
-Warning "Prelude.hascasl" (line 91, column 6) redeclared type 's'
-FatalError "Prelude.hascasl" (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
-FatalError "Prelude.hascasl" (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
-FatalError "Prelude.hascasl" (line 99, column 1) no analysis yet for: program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
-FatalError "Prelude.hascasl" (line 101, column 1) no analysis yet for: program __ or __ (x, y : Pred Unit) : Pred Unit =
+FatalError (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
+Error (line 60, column 16) unexpected mixfix token '='
+FatalError (line 64, column 1) no analysis yet for: program __ res __ (x : s; y : t) : s = x
+FatalError (line 65, column 1) no analysis yet for: program fst (x : s; y : t) : s = x
+FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
+Error (line 72, column 3) unexpected mixfix token 'fst'
+FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
+Warning (line 91, column 6) redeclared type 's'
+FatalError (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
+FatalError (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
+FatalError (line 99, column 1) no analysis yet for: program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
+FatalError (line 101, column 1) no analysis yet for: program __ or __ (x, y : Pred Unit) : Pred Unit =
 	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-FatalError "Prelude.hascasl" (line 104, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
+FatalError (line 104, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-FatalError "Prelude.hascasl" (line 107, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
-FatalError "Prelude.hascasl" (line 109, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
-Error "Prelude.hascasl" (line 114, column 3) unexpected mixfix token 'all'
-Warning "Prelude.hascasl" (line 121, column 13) redundant universe class
-FatalError "Prelude.hascasl" (line 125, column 1) no analysis yet for: pred __<<=__ : c × c
-Error "Prelude.hascasl" (line 129, column 3) unexpected mixfix token 'all'
-Error "Prelude.hascasl" (line 128, column 3) unexpected mixfix token 'all'
-Error "Prelude.hascasl" (line 127, column 3) unexpected mixfix token 'all'
-FatalError "Prelude.hascasl" (line 131, column 1) no analysis yet for: pred isChain(s : nat -> c) <=> all
+FatalError (line 107, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
+FatalError (line 109, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
+Error (line 114, column 3) unexpected mixfix token 'all'
+Warning (line 121, column 13) redundant universe class
+FatalError (line 125, column 1) no analysis yet for: pred __<<=__ : c × c
+Error (line 129, column 3) unexpected mixfix token 'all'
+Error (line 128, column 3) unexpected mixfix token 'all'
+Error (line 127, column 3) unexpected mixfix token 'all'
+FatalError (line 131, column 1) no analysis yet for: pred isChain(s : nat -> c) <=> all
 			       (\ n : nat . s (n) <<= s (Suc (n)))
-FatalError "Prelude.hascasl" (line 132, column 1) no analysis yet for: pred isBound(x : c; s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
-Error "Prelude.hascasl" (line 140, column 3) unexpected mixfix token 'all'
-Error "Prelude.hascasl" (line 136, column 3) unexpected mixfix token 'all'
-Error "Prelude.hascasl" (line 149, column 3) unexpected mixfix token 'all'
-FatalError "Prelude.hascasl" (line 156, column 2) no analysis yet for: program __ <<= [f] __ = eq
-Warning "Prelude.hascasl" (line 159, column 5) redeclared type 'c'
-Hint "Prelude.hascasl" (line 163, column 13) not a class 'c'
-Hint "Prelude.hascasl" (line 163, column 13) not a class 'c'
-Hint "Prelude.hascasl" (line 163, column 25) not a class 'd'
-Hint "Prelude.hascasl" (line 163, column 25) not a class 'd'
-FatalError "Prelude.hascasl" (line 165, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
-Error "Prelude.hascasl" (line 176, column 20) unexpected mixfix token '='
-FatalError "Prelude.hascasl" (line 182, column 3) no analysis yet for: program f <<= [c -->? d] g =
+FatalError (line 132, column 1) no analysis yet for: pred isBound(x : c; s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
+Error (line 140, column 3) unexpected mixfix token 'all'
+Error (line 136, column 3) unexpected mixfix token 'all'
+Error (line 149, column 3) unexpected mixfix token 'all'
+FatalError (line 156, column 2) no analysis yet for: program __ <<= [f] __ = eq
+Warning (line 159, column 5) redeclared type 'c'
+Hint (line 163, column 13) not a class 'c'
+Hint (line 163, column 13) not a class 'c'
+Hint (line 163, column 25) not a class 'd'
+Hint (line 163, column 25) not a class 'd'
+FatalError (line 165, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
+Error (line 176, column 20) unexpected mixfix token '='
+FatalError (line 182, column 3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
-Error "Prelude.hascasl" (line 188, column 18) unexpected mixfix token '='
-Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
-Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
-FatalError "Prelude.hascasl" (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
-Error "Prelude.hascasl" (line 198, column 3) unexpected mixfix token 'all'
+Error (line 188, column 18) unexpected mixfix token '='
+Hint (line 190, column 13) not a class 'c --> d'
+Hint (line 190, column 13) not a class 'c --> d'
+FatalError (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+Error (line 198, column 3) unexpected mixfix token 'all'
 Error (line 0, column 0) no resolution for term: Y (\ x : c -->? p .! x)
-Hint "Prelude.hascasl" (line 11, column 11) type 'bool' is not unifiable with 'logical'
-Hint "Prelude.hascasl" (line 11, column 11) type 'bool' is not unifiable with 'logical'
+Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'
+Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'

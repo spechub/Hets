@@ -8,12 +8,12 @@ f
 g < h
 h
 %% Diagnostics -----------------------------------------------------------
-Warning "SuperClassWarnings.hascasl" (line 2, column 11) implicit declaration of superclass 'b'
-Warning "SuperClassWarnings.hascasl" (line 3, column 7) redeclared class 'b'
-Warning "SuperClassWarnings.hascasl" (line 4, column 11) redundant universe class
-Warning "SuperClassWarnings.hascasl" (line 6, column 7) redeclared class 'd'
-Warning "SuperClassWarnings.hascasl" (line 6, column 11) already known as super class 'b'
-Warning "SuperClassWarnings.hascasl" (line 7, column 7) redeclared class 'd'
-Warning "SuperClassWarnings.hascasl" (line 7, column 11) already known as super class 'a'
-Warning "SuperClassWarnings.hascasl" (line 8, column 18) implicit declaration of superclass 'f'
-Warning "SuperClassWarnings.hascasl" (line 9, column 12) implicit declaration of superclass 'h'
+Warning (line 2, column 11) implicit declaration of superclass 'b'
+Warning (line 3, column 7) redeclared class 'b'
+Warning (line 4, column 11) redundant universe class
+Warning (line 6, column 7) redeclared class 'd'
+Warning (line 6, column 11) already known as super class 'b'
+Warning (line 7, column 7) redeclared class 'd'
+Warning (line 7, column 11) already known as super class 'a'
+Warning (line 8, column 18) implicit declaration of superclass 'f'
+Warning (line 9, column 12) implicit declaration of superclass 'h'

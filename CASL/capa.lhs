@@ -17,7 +17,7 @@ import CASL.Print_AS_Basic
 import CASL.Parse_AS_Basic
 import CASL.SortItem
 import CASL.OpItem
-import CASL.RunParsers
+import Common.RunParsers
 import CASL.RunMixfixParser
 import CASL.RunStaticAna
 import ToHaskell.TranslateAna
@@ -26,25 +26,25 @@ main :: IO ()
 main = exec lineParser fileParser
     where _just_avoid_unused_import_warning = pluralS_symb_list
 
-lineParser, fileParser :: [(String, HetParser)]
+lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
- ("MixIds", HetParser parseId),
- ("TranslateIds", HetParser idToHaskell),
- ("Terms", HetParser term),
- ("Formula", HetParser formula),
- ("SortItem", HetParser sortItems),
- ("OpItem", HetParser opItems),
- ("PredItem", HetParser predItems),
- ("MixfixTerms", HetParser resolveTerm),
- ("MixfixFormula", HetParser resolveForm),
- ("VarIds", HetParser varId),
- ("ShowTerms", HetParser testTerm),
- ("ShowTermsMix", HetParser testTermMix),
- ("ShowForm", HetParser testFormula),
- ("ShowFormMix", HetParser testFormulaMix)]
+ ("MixIds", fromAParser parseId),
+ ("TranslateIds", fromAParser idToHaskell),
+ ("Terms", fromAParser term),
+ ("Formula", fromAParser formula),
+ ("SortItem", fromAParser sortItems),
+ ("OpItem", fromAParser opItems),
+ ("PredItem", fromAParser predItems),
+ ("MixfixTerms", toStringParser resolveTerm),
+ ("MixfixFormula", toStringParser resolveForm),
+ ("VarIds", fromAParser varId),
+ ("ShowTerms", fromAParser testTerm),
+ ("ShowTermsMix", toStringParser testTermMix),
+ ("ShowForm", fromAParser testFormula),
+ ("ShowFormMix", toStringParser testFormulaMix)]
 
-fileParser = [("BasicSpec", HetParser basicSpec)
-	      , ("analysis", HetParser runAna)
+fileParser = [("BasicSpec", fromAParser basicSpec)
+	      , ("analysis", fromAParser runAna)
 	     ]
 
 \end{code}

@@ -22,7 +22,7 @@ PERL       = perl
 HAPPY      = happy
 DRIFT      = $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
-HADDOCK    = $(PERL) utils/haddock
+HADDOCK    = haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
