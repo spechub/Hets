@@ -405,6 +405,8 @@ mkPatAppl op arg qs =
 		ResolvedMixPattern i [arg] qs
 	    TypedPattern p ty ps -> 
 		TypedPattern (mkPatAppl p arg qs) ty ps
+	    TuplePattern _ _ -> ApplPattern op arg qs
+	    ApplPattern _ _ _ -> ApplPattern op arg qs
 	    _ -> error ("mkPatAppl: " ++ show op)
 
 toPat :: Id -> Int -> [Pattern] -> [Pos] -> Pattern
