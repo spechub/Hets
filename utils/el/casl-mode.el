@@ -226,24 +226,24 @@
 	(forward-line 1)
       (skip-chars-forward "a-zA-Z* ")
       (forward-char 1)
-      (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1)) 
+      (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1))
 	  (forward-line 1)
-	(re-search-backward "\(\\(\\w+\\.\\(casl\\|het\\)\\)" nil t 1)
+	(re-search-backward "\(\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
 	(setq file-name (match-string-no-properties 1))
 	(re-search-forward ":\\([0-9]+\\)\\.\\([0-9]+\\):" (save-excursion (end-of-line) (point)) t 1)
-	(when (string= (match-string  0) "")
+	(when (not (string= (match-string-no-properties  0) ""))
 	  (setq error-line (match-string-no-properties 1))
 	  (setq error-colnum (match-string-no-properties 2))
 	  (setq casl-error-list
-		(append (list '(file-name error-line error-colnum) casl-error-list)))
-	))))
+		(append (list (list file-name error-line error-colnum)) casl-error-list))
+	)
+	(forward-line 1))))
   (message "%s errors have been found." (length casl-error-list))
   )
 
 (defun casl-compile-goto-next-error ()
   "search the netx error position from error-list, and move to it."
   (interactive)
-  (message "nun bin ich drin...")
   ;; wenn error-list leer ist...
   (if (null casl-error-list)
       (if (member (get-buffer "*hets-run*") (buffer-list))
@@ -253,17 +253,18 @@
 	   (error-file-name (nth 0 this-error))
 	   (error-line (nth 1 this-error))
 	   (error-column (nth 2 this-error)))
+      (message "DEBUG<Goto Error>: file: %s, line: %s, column: %s" error-file-name  error-line error-column)
       ;; wenn die Datei, die fehlerbehaftet ist, schon geoeffnet...
       (if (get-file-buffer error-file-name)
 	  (pop-to-buffer (get-file-buffer error-file-name))
 	(generate-new-buffer error-file-name)
 	(pop-to-buffer error-file-name)
 	(insert-file-contents error-file-name))
+      (goto-line (string-to-number error-line))
+      (move-to-column (string-to-number error-column))
       (message "goto next error... line: %s column: %s" error-line error-column)
-      (goto-line error-line)
-      (move-to-column error-column)
-      (append this-error casl-error-list))
-      ))
+      (setq casl-error-list (nconc casl-error-list (list this-error)))
+      )))
 
 ;; ================= C A S L   M A J O R   M O D E ===============
 ;; Definition of CASL major mode
