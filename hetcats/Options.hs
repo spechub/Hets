@@ -113,7 +113,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { verbose  = 0
 	  , analysis = True
-	  , intype   = GuessIn -- ATerm NonBAF
+	  , intype   = GuessIn -- ATermIn NonBAF
 	  , outtypes = [HetCASLOut OutASTree OutAscii]
             {- better default options, but 
 	    the underlying functions are not yet implemented:
@@ -293,6 +293,8 @@ parseRawOpts s =
 	error' = hetsError User (s ++ " ia not a valid RAW String")
     in Raw [(parsePrefix prefix) (drop 1 string)]
 
+guessInType :: FilePath -> InType
+guessInType _ = ATermIn NonBAF
 
 -- main functions --
 
