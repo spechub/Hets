@@ -247,6 +247,11 @@ data G_sublogics = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         G_sublogics lid sublogics 
 
+tyconG_sublogics :: TyCon
+tyconG_sublogics = mkTyCon "Logic.Grothendieck.G_sublogics"
+instance Typeable G_sublogics where
+  typeOf _ = mkTyConApp tyconG_sublogics []
+
 instance Show G_sublogics where
     show (G_sublogics _ l) = show l
 

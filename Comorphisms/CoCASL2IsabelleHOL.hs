@@ -22,6 +22,7 @@ import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.List as List
 import Data.Maybe
+import Data.Char
 import Common.PrettyPrint
 import Common.AS_Annotation (Named, mapNamedM)
 import Debug.Trace
@@ -127,12 +128,23 @@ transPredType pt = map transSort (predArgs pt) ---> boolType
 
 ------------------------------ Formulas ------------------------------
 
+var :: String -> Term
+var v = IsaSign.Free(v,dummyT)
+
 transVar :: VAR -> String
 transVar = showIsaSid
 
+xvar :: Int -> String
+xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
+
+rvar :: Int -> String
+rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
+
+quantifyIsa q (v,t) phi =
+  Const (q,dummyT) `App` Abs ( (Const(v, dummyT)) , t,phi)
 
 quantify q (v,t) phi  = 
-  Const (qname q,dummyT) `App` Abs ( (Const(transVar v, dummyT)) ,transSort t,phi)
+  quantifyIsa (qname q) (transVar v, transSort t) phi
   where
   qname Universal = "All"
   qname Existential = "Ex"
@@ -140,12 +152,17 @@ quantify q (v,t) phi  =
 
 binConj phi1 phi2 = 
   Const("op &",dummyT) `App` phi1 `App` phi2
+conj l = if null l then true else foldr1 binConj l
+
 binDisj phi1 phi2 = 
   Const("op |",dummyT) `App` phi1 `App` phi2
 binImpl phi1 phi2 = 
   Const("op -->",dummyT) `App` phi1 `App` phi2
 binEq phi1 phi2 = 
   Const("op =",dummyT) `App` phi1 `App` phi2
+true = Const ("True",dummyT)
+
+prodType t1 t2 = Type("*",[t1,t2])
 
 transOP_SYMB _ (Op_name op) = error "CoCASL2Isabelle: unqualified operation"
 transOP_SYMB sign (Qual_op_name op ot _) = 
@@ -179,55 +196,83 @@ transFORMULA sign (Equivalence phi1 phi2 _) =
 transFORMULA sign (Negation phi _) =
   Const ("Not",dummyT) `App` (transFORMULA sign phi)
 transFORMULA sign (True_atom _) =
-  Const ("True",dummyT)
+  true
 transFORMULA sign (False_atom _) =
   Const ("False",dummyT)
 transFORMULA sign (Predication psymb args _) =
   foldl App (Const (transPRED_SYMB sign psymb,dummyT)) 
             (map (transTERM sign) args)
 transFORMULA sign (Definedness t _) =
-  Const ("True",dummyT)
+  true
 transFORMULA sign (Existl_equation t1 t2 _) =
   Const ("op =",dummyT) `App` (transTERM sign t1) `App` (transTERM sign t2)
 transFORMULA sign (Strong_equation t1 t2 _) =
   Const ("op =",dummyT) `App` (transTERM sign t1) `App` (transTERM sign t2)
 transFORMULA sign (Membership t1 s _) =
-  trace "WARNING: ignoring membership formula" $ Const ("True",dummyT)
+  trace "WARNING: ignoring membership formula" $ true
   --error "No translation for membership"
 transFORMULA sign (Sort_gen_ax constrs _) =
    trace "WARNING: ignoring sort generation constraints" 
-          $ Const ("True",dummyT)
+          $ true
   --error "No translation for sort generation constraints"
 transFORMULA sign (Mixfix_formula _) = 
   error "No translation for mixfix formulas"
 transFORMULA sign (Unparsed_formula _ _) = 
   error "No translation for unparsed formulas"
 transFORMULA sign (ExtFORMULA (CoSort_gen_ax sorts ops _)) = 
-   trace "WARNING: ignoring cogeneration constraint" 
-          $ Const ("True",dummyT)    
+  foldr (quantifyIsa "ALL") phi predDecls
+  where
+  phi = prems `binImpl` concls
+  indices = [1..length sorts]
+  predDecls = zip [rvar i | i<-indices] (map binPred sorts)
+  binPred s = let s' = transSort s in [s',s'] ---> boolType
+  prems = conj (map prem (zip sorts indices))
+  prem (s::SORT,i) = 
+    let sels = List.filter 
+                (\(Qual_op_name _ t _) -> head (args_OP_TYPE t) == s) ops
+        premSel opsymb@(Qual_op_name n t _) =
+         let args = tail $ args_OP_TYPE t
+             indicesArgs = [1..length args]
+             res = res_OP_TYPE t
+             varDecls = zip [xvar i | i<-indicesArgs] (map transSort args)
+             top = Const (transOP_SYMB sign opsymb,dummyT)
+             rhs = foldl App (top `App` var "x") (map (var . xvar) indicesArgs)
+             lhs = foldl App (top `App` var "y") (map (var . xvar) indicesArgs)
+             chi = if res `elem` sorts
+                     then var (rvar (fromJust (findIndex (==res) sorts)))
+                           `App` rhs `App` lhs
+                     else binEq rhs lhs
+          in foldr (quantifyIsa "ALL") chi varDecls
+        prem1 = conj (map premSel sels)
+        concl1 = var (rvar i) `App` var "x" `App` var "y"
+        psi = prem1 `binImpl` concl1
+        typS = transSort s
+     in foldr (quantifyIsa "ALL") psi [("x",typS),("y",typS)]
+  concls = conj (map concl (zip sorts indices))
+  concl (s,i::Int) = binEq (var (rvar i)) (Const("op =",dummyT))
 transFORMULA sign (ExtFORMULA (Box mod phi _)) = 
    trace "WARNING: ignoring modal forumla" 
-          $ Const ("True",dummyT)
+          $ true
 transFORMULA sign (ExtFORMULA (Diamond mod phi _)) = 
    trace "WARNING: ignoring modal forumla" 
-          $ Const ("True",dummyT)
+          $ true
 
 
 transTERM sign (Qual_var v s _) =
-  IsaSign.Free(transVar v,dummyT)
+  var $ transVar v
 transTERM sign (Application opsymb args _) =
   foldl App (Const (transOP_SYMB sign opsymb,dummyT)) 
             (map (transTERM sign) args)
 transTERM sign (Sorted_term t s _) =
   transTERM sign t
 transTERM sign (Cast t s _) =
-  transTERM sign t
+  transTERM sign t  -- ??? Should lead to an error!
 transTERM sign (Conditional t1 phi t2 _) =
   Const ("If",dummyT) `App` (transFORMULA sign phi) 
                       `App` (transTERM sign t1)
                       `App` (transTERM sign t2)
 transTERM sign (Simple_id v) =
-  IsaSign.Free(transVar v,dummyT)
+  var $ transVar v
   --error "No translation for undisambigated identifier"
 transTERM sign (Unparsed_term _ _) =
   error "No translation for unparsed terms"
