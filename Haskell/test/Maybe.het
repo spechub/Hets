@@ -1,0 +1,48 @@
+library Prelude
+logic Haskell
+
+spec Maybe = {
+
+data Maybe a = Nothing | Just a 
+
+data Bool = True | False
+
+undefined = undefined
+
+isJust                 :: Maybe a -> Bool
+isJust (Just a)        =  True
+isJust Nothing         =  False
+
+isNothing        :: Maybe a -> Bool
+isNothing m    =   (isJust m)
+}
+
+then
+
+ {fromJust               :: Maybe a -> a
+fromJust (Just a)      =  a
+fromJust Nothing       =  undefined
+
+fromMaybe              :: a -> Maybe a -> a
+fromMaybe d Nothing    =  d
+fromMaybe d (Just a)   =  a 
+
+property Univ      = Gfp X. X
+property Undef     = Lfp X. X
+property Absurdity = $Undef
+
+assert undefined ::: Undef
+
+-- property Finite = $ (Lfp P. ([] \/ Univ : $P))
+
+property LeftUnit op  = {| e  | All x . {e `op` x} === x |}
+property RightUnit op = {| e  | All x. {x `op` e} === x |}
+property Assoc        = {| op | All x. All y. All z. {(x `op` y) `op` z} === {x
+`op` (y `op` z)} |}
+property Monoid op    = {| e  | Assoc op /\ RightUnit op e /\ LeftUnit op e |}
+
+property Strict = Undef -> Undef
+
+}
+ 
+
