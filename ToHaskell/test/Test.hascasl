@@ -1,5 +1,5 @@
-sort B,C
-free type A ::= A [B]
-ops + : A * B -> C
+type B,C,Int
+free type AT ::= A Int
+ops + : AT * B -> C
 
 
