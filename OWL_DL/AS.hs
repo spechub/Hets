@@ -128,11 +128,13 @@ data Axiom = Class
                    Bool -- ^ True == symmetric
                    (Maybe Func) 
                    [Description] -- ^ Domain 
-                   [Description] -- ^ Range
+                   [Description] -- ^ Range             
            | AnnotationProperty 
+                   -- ^ Declaration of a new annotation property
                    AnnotationPropertyID 
                    [Annotation]
            | OntologyProperty 
+                   -- ^ Declaration of a new ontology property
                    OntologyPropertyID 
                    [Annotation]
            | DEquivalentProperties 

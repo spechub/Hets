@@ -135,7 +135,8 @@ analyseHeader (firstT:trees) =
                           NTree (XAttr ontoProp) _ -> 
                              ((anaheader st), trees) 
                           _ -> ([],[])         -- remove warning
-                 else analyseHeader trees      --(trees ++ [firstT])
+                 else case analyseHeader trees of
+                      (res,trees') -> (res, firstT:trees') --(trees ++ [firstT])
           _ -> analyseHeader trees
 
     where anaheader :: XmlTrees -> [Axiom]
@@ -359,10 +360,12 @@ resTrees (Result ds mtree) = case mtree of
                                         Nothing -> error "ds" -- remve warning
                
 
-{-  warum funktioniert nicht?
-    
-    do x <- readFile "testJiang/wine.xml"; 
+{-  warum funktioniert nicht? -}
+test1 :: FilePath -> IO ()
+test1 fp =
+    do x <- readFile fp; 
        let Result d o = fromXmlTree $ head $ resTrees $ owl_parserT "Test" x 
-       in case o of 
-          Just onto -> print $ show onto
--}
+       putStrLn (show d)
+       case o of 
+          Just (onto::Ontology) -> print $ show onto
+
