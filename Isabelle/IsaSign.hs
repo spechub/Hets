@@ -53,8 +53,8 @@ ho_ho = [holType, holType]
 ------------------------------------------------------------------------------
 
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
-data Typ = Type  { typeId   :: String,
-                   typeArgKind :: [Sort],
+data Typ = Type  { typeId         :: String,
+                   typeArgKind    :: [Sort],
                    typeResultKind :: Sort,
                    typeArgs  :: [Typ] } 
          | TFree { typeId    :: String,
@@ -129,30 +129,32 @@ mkDomAppl t1 t2 = Type "domAppl" [domain, domain] domain [t1,t2]
 data Flag = IsCont | NotCont deriving (Eq, Ord ,Show)
 
 data Term =
-        Const { termBasicId::String, 
-                termType::Typ, 
-                defaultClass::IsaClass }  -- constants, with default class
-      | Free  { termBasicId::String, 
-                termType::Typ, 
-                defaultClass::IsaClass }  -- free variables
+        Const { termBasicId  :: String, 
+                termType     :: Typ, 
+                defaultClass :: IsaClass }  -- constants, with default class
+      | Free  { termBasicId  :: String, 
+                termType     :: Typ, 
+                defaultClass :: IsaClass }  -- free variables
       -- | Var   (Indexname, Typ)
       -- | Bound Int
-      | Abs   { termId::Term, 
-                termType::Typ, 
-                absVar::Term,
-                flag::Flag }  -- lambda abstraction
-      | App { funId::Term, 
-              argId::Term, 
-              flag::Flag }    -- application
-      | Case { termId::Term, caseSubst::[(Term, Term)], flag::Flag }  -- case
-      | If { ifId::Term, 
-             thenId::Term, 
-             elseId::Term, 
-             flag::Flag }        -- If then else
-      | Let { letSubst::[(Term, Term)], 
-              inId::Term, 
-              flag::Flag }   -- Let
-      | Fix { funId::Term }
+      | Abs   { termId   :: Term, 
+                termType :: Typ, 
+                absVar   :: Term,
+                flag     :: Flag }  -- lambda abstraction
+      | App { funId :: Term, 
+              argId :: Term, 
+              flag  :: Flag }    -- application
+      | Case { termId    :: Term, 
+               caseSubst :: [(Term, Term)], 
+               flag      :: Flag }  -- case
+      | If { ifId   :: Term, 
+             thenId :: Term, 
+             elseId :: Term, 
+             flag   :: Flag }        -- If then else
+      | Let { letSubst :: [(Term, Term)], 
+              inId     :: Term, 
+              flag     :: Flag }   -- Let
+      | Fix { funId    :: Term }
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
