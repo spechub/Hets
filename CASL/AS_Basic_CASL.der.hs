@@ -11,18 +11,11 @@ Portability :  portable
    Symb_map_items.
    Follows Sect. II:2.2 of the CASL Reference Manual.
 -}
-{-
-
-   todo:
-     - ATerm conversion has now his own module (s. HetCATS/aterm_conv/)
-     - Pretty printing
--}
 
 module CASL.AS_Basic_CASL where
 
 import Common.Id
 import Common.AS_Annotation 
-import Data.Dynamic
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -253,9 +246,3 @@ data SYMB_OR_MAP = Symb SYMB
 		   -- pos: "|->"
 		   deriving (Show,Eq)
 
-instance Typeable BASIC_SPEC where
-  typeOf _ = mkAppTy (mkTyCon "BASIC_SPEC") []
-instance Typeable SYMB_ITEMS where
-  typeOf _ = mkAppTy (mkTyCon "SYMB_ITEMS") []
-instance Typeable SYMB_MAP_ITEMS where
-  typeOf _ = mkAppTy (mkTyCon "SYMB_MAP_ITEMS") []

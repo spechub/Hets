@@ -130,14 +130,23 @@ embedMorphism a b =
     }
 
 -- Typeable instance
-sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
-    :: TyCon
-sentenceTc       = mkTyCon "CASL.Morphism.FORMULA"
+tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS,
+	     sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc :: TyCon
+tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.Morphism.BASIC_SPEC"
+tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_ITEMS"  
+tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.Morphism.SYMB_MAP_ITEMS" 
+sentenceTc       = mkTyCon "CASL.AS_Basic_CASL.FORMULA"
 signTc           = mkTyCon "CASL.Morphism.Sign"
 morphismTc       = mkTyCon "CASL.Morphism.Morphism"
 symbolTc         = mkTyCon "CASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
+instance Typeable BASIC_SPEC where
+  typeOf _ = mkAppTy tc_BASIC_SPEC []
+instance Typeable SYMB_ITEMS where
+  typeOf _ = mkAppTy tc_SYMB_ITEMS []
+instance Typeable SYMB_MAP_ITEMS where
+  typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
 instance Typeable FORMULA where
   typeOf _ = mkAppTy sentenceTc []
 instance Typeable Sign where
