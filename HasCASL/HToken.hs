@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
@@ -19,7 +18,6 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
-
 
 -- * further HasCASL key signs
 
@@ -55,7 +53,7 @@ functS = "fun"
 
 hascasl_reserved_ops, hascasl_type_ops :: [String]
 hascasl_reserved_ops = [dotS++exMark, cDot++exMark, asP, lamS] 
-		       ++ casl_reserved_ops
+                       ++ casl_reserved_ops
 
 hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark] 
 
@@ -63,7 +61,7 @@ hascasl_reserved_words :: [String]
 hascasl_reserved_words = 
     [functS, functS ++ sS, classS, classS ++ "es", instanceS, instanceS ++ sS,
      programS, programS ++ sS, caseS, ofS, letS, derivingS, internalS, whereS] 
-			 ++ casl_reserved_words
+                         ++ casl_reserved_words
 
 -- | HasCASL identifier words ('scanAnyWords')
 scanHCWords :: GenParser Char st String
@@ -78,7 +76,7 @@ scanHCSigns = reserved hascasl_reserved_ops scanAnySigns
 -- | non-type variables ('lessS' additionally excluded)
 var :: GenParser Char st Id
 var = fmap (\l -> Id l [] []) (start (lessS : hascasl_reserved_ops, 
-				      hascasl_reserved_words))
+                                      hascasl_reserved_words))
 
 -- | the HasCASL keys for 'mixId'
 hcKeys :: ([String], [String])
@@ -98,8 +96,8 @@ ite :: GenParser Char st Id
 ite = 
     do ts <- try ifThen
        do   e <- pToken $ keyWord $ string elseS
-	    p <- placeT
-	    return (mkId (ts ++ [e, p]))
+            p <- placeT
+            return (mkId (ts ++ [e, p]))
          <|> return (mkId ts)  
 
 -- | operation 'Id' (reserved stuff excluded)
@@ -109,13 +107,13 @@ uninstOpId = (try ite <|> mixId hcKeys hcKeys) <?> "id"
 -- | constructor 'Id' ('barS' additionally excluded)
 hconsId :: GenParser Char st Id
 hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words) 
-	  hcKeys
+          hcKeys
 
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
 typeVar = do s <- pToken scanHCWords
-	     return $ Id [s] [] [] 
-	     
+             return $ Id [s] [] [] 
+             
 -- | simple 'Id' possibly with compound list
 classId :: GenParser Char st Id
 classId = 

@@ -73,47 +73,47 @@ builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
 
 builtinLogIds :: Set.Set Id 
 builtinLogIds = Set.fromDistinctAscList 
-		 [andId, eqvId, implId, orId, infixIf, notId] 
+                 [andId, eqvId, implId, orId, infixIf, notId] 
 
 addBuiltins :: GlobalAnnos -> GlobalAnnos
 addBuiltins ga = 
     let ass = assoc_annos ga
-	newAss = Map.union ass $ Map.fromList 
-		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
-		  (implId, ARight), (infixIf, ALeft), 
-		  (whenElse, ARight)]
-	precs = prec_annos ga
-        pMap = Rel.toMap precs		
+        newAss = Map.union ass $ Map.fromList 
+                 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
+                  (implId, ARight), (infixIf, ALeft), 
+                  (whenElse, ARight)]
+        precs = prec_annos ga
+        pMap = Rel.toMap precs          
         opIds = Set.unions (Set.fromDistinctAscList (Map.keys pMap)
-			    :Map.elems pMap)
-	opIs = Set.toList ((((Set.filter isInfix opIds)
-		Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
-	        Set.\\ Set.fromDistinctAscList [applId, whenElse])
+                            :Map.elems pMap)
+        opIs = Set.toList ((((Set.filter isInfix opIds)
+                Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
+                Set.\\ Set.fromDistinctAscList [applId, whenElse])
 
-	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
-		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
-		 (andId, notId), (orId, notId),
-		(andId, negId), (orId, negId)]
+        logs = [(eqvId, implId), (implId, andId), (implId, orId), 
+                (eqvId, infixIf), (infixIf, andId), (infixIf, orId),
+                 (andId, notId), (orId, notId),
+                (andId, negId), (orId, negId)]
 
         rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
         rels1b = map ( \ i -> (negId, i)) $ Set.toList builtinRelIds
-	rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
-	ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
-	ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-	newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
-			 Rel.insert a b p) precs $  
-		  concat [logs, rels1, rels1b, rels2, ops1, ops2]
+        rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
+        ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
+        ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
+        newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
+                         Rel.insert a b p) precs $  
+                  concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in ga { assoc_annos = newAss
-	  , prec_annos = Rel.transClosure newPrecs }
+          , prec_annos = Rel.transClosure newPrecs }
 
 mkPrecIntMap :: Rel.Rel Id -> PrecMap
 mkPrecIntMap r = 
     let t = Rel.topSort r
-	l = length t
-	m = foldr ( \ (n, s) m1 -> 
-		    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
-		 Map.empty $ zip [1..l] t
-	in (m, Map.find eqId m, l)
+        l = length t
+        m = foldr ( \ (n, s) m1 -> 
+                    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
+                 Map.empty $ zip [1..l] t
+        in (m, Map.find eqId m, l)
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
@@ -128,17 +128,17 @@ lazyLog = LazyType logicalType []
 
 eqType, logType, defType, notType, whenType, unitType :: TypeScheme
 eqType = bindA $ 
-	  FunType (ProductType [aType, aType] [])
-	  PFunArr logicalType []
+          FunType (ProductType [aType, aType] [])
+          PFunArr logicalType []
 logType = simpleTypeScheme $ 
-	  FunType (ProductType [lazyLog, lazyLog] [])
-	  PFunArr logicalType []
+          FunType (ProductType [lazyLog, lazyLog] [])
+          PFunArr logicalType []
 defType = bindA $ FunType aType PFunArr logicalType []
 notType = simpleTypeScheme $ FunType lazyLog PFunArr logicalType []
 
 whenType = bindA $ 
-	  FunType (ProductType [aType, lazyLog, aType] [])
-	  PFunArr aType []
+          FunType (ProductType [aType, lazyLog, aType] [])
+          PFunArr aType []
 unitType = simpleTypeScheme logicalType
 
 botId :: Id
@@ -149,32 +149,32 @@ botType = bindA aType
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) : 
-	(negId, notType) : (whenElse, whenType) :
+        (negId, notType) : (whenElse, whenType) :
         (trueId, unitType) : (falseId, unitType) :
         (eqId, eqType) : (exEq, eqType) :
-	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
+        map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m -> 
-		 Map.insertWith ( \ _ old -> old) i
-			 (TypeInfo k [k] s d) m) tm $
-	      (unitTypeId, star, [], NoTypeDefn)
-	      : (simpleIdToId $ mkSimpleId "Pred", 
-		FunKind star star [], [], AliasTypeDefn defType)
-	      : (simpleIdToId $ mkSimpleId "Logical", 
-		star, [], AliasTypeDefn $ simpleTypeScheme $ 
-		 FunType logicalType PFunArr logicalType [])
-	      : (productId, prodKind, [], NoTypeDefn)
-	      : map ( \ (a, l) -> (arrowId a, funKind, 
+                 Map.insertWith ( \ _ old -> old) i
+                         (TypeInfo k [k] s d) m) tm $
+              (unitTypeId, star, [], NoTypeDefn)
+              : (simpleIdToId $ mkSimpleId "Pred", 
+                FunKind star star [], [], AliasTypeDefn defType)
+              : (simpleIdToId $ mkSimpleId "Logical", 
+                star, [], AliasTypeDefn $ simpleTypeScheme $ 
+                 FunType logicalType PFunArr logicalType [])
+              : (productId, prodKind, [], NoTypeDefn)
+              : map ( \ (a, l) -> (arrowId a, funKind, 
                         map ( \ b -> TypeName (arrowId b) funKind 0) l,
                                    NoTypeDefn)) 
-		[(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
+                [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
                  (ContFunArr, [PContFunArr, FunArr])]
 
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 
-		 Map.insertWith ( \ _ old -> old) i
-		 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
+                 Map.insertWith ( \ _ old -> old) i
+                 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
 
 mkQualOp :: Id -> TypeScheme -> [Pos] -> Term 
 mkQualOp i sc ps = QualOp Fun (InstOpId i [] ps) sc ps
@@ -199,7 +199,7 @@ toBinJunctor i ts ps = case ts of
     [] -> error "toBinJunctor"
     [t] -> t
     t:rs -> mkLogTerm i [headPos ps] t 
-	    (toBinJunctor i rs (if null ps then [] else tail ps))
+            (toBinJunctor i rs (if null ps then [] else tail ps))
 
 
 

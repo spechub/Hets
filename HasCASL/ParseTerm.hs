@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
@@ -43,7 +42,7 @@ qColonT = asKey (colonS++quMark)
 
 -- | a generic bracket parser 
 bracketParser :: AParser a -> AParser Token -> AParser Token -> AParser Token 
-	 -> ([a] -> [Pos] -> b) -> AParser b
+         -> ([a] -> [Pos] -> b) -> AParser b
 bracketParser parser op cl sep k = 
     do o <- op
        (ts, ps) <- option ([], []) (parser `separatedBy` sep)
@@ -63,53 +62,53 @@ mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 -- | parse a simple class name or the type universe as kind
 parseClassId :: AParser Kind
 parseClassId = fmap (\c -> if showId c "" == "Type" 
-		   then Intersection [] [posOfId c]
-		   else ClassKind c MissingKind) classId
+                   then Intersection [] [posOfId c]
+                   else ClassKind c MissingKind) classId
 
 -- | do 'parseClassId' or a downset or an intersection kind 
 parseSimpleKind :: AParser Kind
 parseSimpleKind = parseClassId
              <|> 
-	     do o <- oParenT
-		(cs, ps) <- kind `separatedBy` anComma
-		c <- cParenT
-		return (if isSingle cs then head cs else
-			Intersection cs	(toPos o ps c))
+             do o <- oParenT
+                (cs, ps) <- kind `separatedBy` anComma
+                c <- cParenT
+                return (if isSingle cs then head cs else
+                        Intersection cs (toPos o ps c))
              <|>
-	     do o <- oBraceT
-	        i <- pToken scanHCWords
-		d <- dotT
-		j <- asKey (tokStr i)
-		l <- lessT
-		t <- parseType
-		p <- cBraceT
-		return (Downset (Just i) t MissingKind 
-			(map tokPos [o,d,j,l,p])) 
+             do o <- oBraceT
+                i <- pToken scanHCWords
+                d <- dotT
+                j <- asKey (tokStr i)
+                l <- lessT
+                t <- parseType
+                p <- cBraceT
+                return (Downset (Just i) t MissingKind 
+                        (map tokPos [o,d,j,l,p])) 
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser Kind
 parseExtKind = do k <- parseSimpleKind
-	          do s <- plusT
-		     return (ExtKind k CoVar [tokPos s])
+                  do s <- plusT
+                     return (ExtKind k CoVar [tokPos s])
                    <|>
-		   do m <- minusT
-		      return (ExtKind k ContraVar [tokPos m])
+                   do m <- minusT
+                      return (ExtKind k ContraVar [tokPos m])
                    <|> return k
 
 -- | parse a (right associative) function kind for a given argument kind
 arrowKind :: Kind -> AParser Kind
 arrowKind k1 =
        do a <- asKey funS
-	  k2 <- kind
-	  return (FunKind k1 k2 $ [tokPos a])
+          k2 <- kind
+          return (FunKind k1 k2 $ [tokPos a])
 
 -- | parse a function kind but reject an extended kind
 kind :: AParser Kind
 kind = 
     do k1 <- parseExtKind
        arrowKind k1 <|> case k1 of
-	    ExtKind _ _ _ -> unexpected "variance of kind"
-	    _ -> return k1
+            ExtKind _ _ _ -> unexpected "variance of kind"
+            _ -> return k1
 
 -- | parse a function kind but accept an extended kind
 extKind :: AParser Kind
@@ -125,16 +124,16 @@ extVar :: AParser Id -> AParser (Id, Maybe Variance, Pos)
 extVar vp = 
     do t <- vp
        do   a <- plusT
-	    return (t, Just CoVar, tokPos a)
+            return (t, Just CoVar, tokPos a)
           <|>
-	  do a <- minusT
-	     return (t, Just ContraVar, tokPos a)
+          do a <- minusT
+             return (t, Just ContraVar, tokPos a)
           <|> return (t, Nothing, nullPos)
 
 -- several 'extTypeVar' with a 'Kind'
 typeVars :: AParser [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
-	      typeKind ts ps
+              typeKind ts ps
 
 allIsInVar :: [(TypeId, Maybe Variance, Pos)] -> Bool
 allIsInVar = all ( \ (_, v, _) -> isNothing v)
@@ -145,35 +144,35 @@ typeKind :: [(TypeId, Maybe Variance, Pos)] -> [Token] -> AParser [TypeArg]
 typeKind vs ps = 
     do c <- colT
        if allIsInVar vs then 
-	  do k <- extKind
-	     return (makeTypeArgs vs ps [tokPos c] k)
+          do k <- extKind
+             return (makeTypeArgs vs ps [tokPos c] k)
           else do k <- kind
-		  return (makeTypeArgs vs ps [tokPos c] k)
+                  return (makeTypeArgs vs ps [tokPos c] k)
     <|>
     do l <- lessT
        t <- parseType
        return (makeTypeArgs vs ps [tokPos l]
-		  (Downset Nothing t MissingKind [])) 
+                  (Downset Nothing t MissingKind [])) 
     <|> return (makeTypeArgs vs ps [] star)
 
 -- | add the 'Kind' to all 'extTypeVar' and yield a 'TypeArg'
 makeTypeArgs :: [(TypeId, Maybe Variance, Pos)] -> [Token] 
-	     -> [Pos] -> Kind -> [TypeArg]
+             -> [Pos] -> Kind -> [TypeArg]
 makeTypeArgs ts ps qs k = 
     zipWith (mergeVariance Comma k) (init ts) 
-		(map ((:[]). tokPos) ps)
-		++ [mergeVariance Other k (last ts) qs]
-		where mergeVariance c e (t, Nothing, _) q =
-			  TypeArg t e c q
-		      mergeVariance c e (t, Just v, p) q = 
-			  TypeArg t (ExtKind e v [p]) c q 
+                (map ((:[]). tokPos) ps)
+                ++ [mergeVariance Other k (last ts) qs]
+                where mergeVariance c e (t, Nothing, _) q =
+                          TypeArg t e c q
+                      mergeVariance c e (t, Just v, p) q = 
+                          TypeArg t (ExtKind e v [p]) c q 
 
 -- | a single 'TypeArg' (parsed by 'typeVars')
 singleTypeArg :: AParser TypeArg
 singleTypeArg = do  as <- typeVars
-		    case as of 
-			    [a] -> return a 
-			    _ -> unexpected "list of type arguments"
+                    case as of 
+                            [a] -> return a 
+                            _ -> unexpected "list of type arguments"
 
 -- | a 'singleTypArg' put in parentheses
 parenTypeArg :: AParser (TypeArg, [Token])
@@ -210,7 +209,7 @@ type TokenMode = [String]
 -- but exclude the signs in 'TokenMode'
 aToken :: TokenMode -> AParser Token
 aToken b = pToken (scanQuotedChar <|> scanDigit <|> scanHCWords <|> placeS <|> 
-		   reserved b scanHCSigns)
+                   reserved b scanHCSigns)
 
 -- | just 'aToken' only excluding basic HasCASL keywords
 idToken :: AParser Token
@@ -223,21 +222,21 @@ idToken = aToken [] <|> pToken scanDotWords
 -- Parenthesis are only legal for a 'typePatternArg'.
 primTypePatternOrId :: AParser TypePattern
 primTypePatternOrId = fmap TypePatternToken idToken 
-	       <|> mkBraces typePatternOrId (BracketTypePattern Braces)
-	       <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
-	       <|> typePatternArg
+               <|> mkBraces typePatternOrId (BracketTypePattern Braces)
+               <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
+               <|> typePatternArg
 
 -- several 'primTypePatternOrId's possibly yielding a 'MixfixTypePattern'
 typePatternOrId :: AParser TypePattern
 typePatternOrId = do ts <- many1 primTypePatternOrId
-		     return( if isSingle ts then head ts
- 			     else MixfixTypePattern ts)
+                     return( if isSingle ts then head ts
+                             else MixfixTypePattern ts)
 
 -- | those (top-level) 'Token's (less than 'idToken') 
 -- that may appear in 'TypePattern's as 'TypePatternToken'.
 typePatternToken :: AParser TypePattern
 typePatternToken = fmap TypePatternToken (pToken (scanHCWords <|> placeS <|> 
-			  reserved [assignS, lessS, equalS] scanHCSigns))
+                          reserved [assignS, lessS, equalS] scanHCSigns))
 
 -- | a 'typePatternToken' or something in braces (a 'typePattern'),
 -- in square brackets (a 'typePatternOrId' covering compound lists) 
@@ -245,15 +244,15 @@ typePatternToken = fmap TypePatternToken (pToken (scanHCWords <|> placeS <|>
 primTypePattern :: AParser TypePattern
 primTypePattern = typePatternToken 
            <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
-	   <|> mkBraces typePattern (BracketTypePattern Braces)
-	   <|> typePatternArg
+           <|> mkBraces typePattern (BracketTypePattern Braces)
+           <|> typePatternArg
 
 -- several 'primTypePatter's possibly yielding a 'MixfixTypePattern'
 typePattern :: AParser TypePattern
 typePattern = do ts <- many1 primTypePattern
                  let t = if isSingle ts then head ts 
-			 else MixfixTypePattern ts
-	           in return t
+                         else MixfixTypePattern ts
+                   in return t
 
 -- * types 
 -- a parsed type may also be interpreted as a kind (by the mixfix analysis)
@@ -261,9 +260,9 @@ typePattern = do ts <- many1 primTypePattern
 -- | type tokens with some symbols removed
 typeToken :: AParser Type
 typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|> 
-				    reserved (assignS : lessS : equalS : barS :
-					      hascasl_type_ops) 
-				    scanHCSigns))
+                                    reserved (assignS : lessS : equalS : barS :
+                                              hascasl_type_ops) 
+                                    scanHCSigns))
 
 
 -- | 'TypeToken's within 'BracketType's may recusively be
@@ -271,89 +270,89 @@ typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|>
 -- or may be interpreted as 'Intersection' later in a GEN-VAR-DECL.
 primTypeOrId :: AParser Type
 primTypeOrId = fmap TypeToken idToken
-	       <|> mkBrackets typeOrId (BracketType Squares)
-	       <|> mkBraces typeOrId (BracketType Braces)
-	       <|> bracketParser typeOrId oParenT cParenT anComma
-		       (BracketType Parens)
-	       
+               <|> mkBrackets typeOrId (BracketType Squares)
+               <|> mkBraces typeOrId (BracketType Braces)
+               <|> bracketParser typeOrId oParenT cParenT anComma
+                       (BracketType Parens)
+               
 -- | several 'primTypeOrId's possibly yielding a 'MixfixType' 
 -- and possibly followed by a 'kindAnno'.
 typeOrId :: AParser Type
 typeOrId = do ts <- many1 primTypeOrId
-	      let t = if isSingle ts then head ts
- 		      else MixfixType ts
-		 in 
-		 kindAnno t
- 		 <|> 
-		 return(t)
+              let t = if isSingle ts then head ts
+                      else MixfixType ts
+                 in 
+                 kindAnno t
+                 <|> 
+                 return(t)
 
 -- | a 'Kind' annotation starting with 'colT'.
 kindAnno :: Type -> AParser Type
 kindAnno t = do c <- colT 
-		k <- kind
-		return (KindedType t k [tokPos c])
+                k <- kind
+                return (KindedType t k [tokPos c])
 
 -- | a typeToken' or a 'BracketType'. Square brackets may contain 'typeOrId'.
 primType :: AParser Type
 primType = typeToken 
            <|> mkBrackets typeOrId (BracketType Squares)
-	   <|> mkBraces parseType (BracketType Braces)
-	   <|> bracketParser parseType oParenT cParenT anComma 
-		   (BracketType Parens)
+           <|> mkBraces parseType (BracketType Braces)
+           <|> bracketParser parseType oParenT cParenT anComma 
+                   (BracketType Parens)
 
 -- | a 'primType' possibly preceded by 'quMarkT'
 lazyType :: AParser Type
 lazyType = do q <- quMarkT
-	      t <- primType 
+              t <- primType 
               return (LazyType t [tokPos q])
-	   <|> primType
+           <|> primType
 
 -- | several 'lazyType's (as 'MixfixType') possibly followed by 'kindAnno' 
 mixType :: AParser Type
 mixType = do ts <- many1 lazyType
              let t = if isSingle ts then head ts else MixfixType ts
-	       in kindAnno t
-		  <|> return t 
+               in kindAnno t
+                  <|> return t 
 
 -- | 'mixType' possibly interspersed with 'crossT' 
 prodType :: AParser Type
 prodType = do (ts, ps) <- mixType `separatedBy` crossT
-	      return $ mkProductType ts (map tokPos ps)
+              return $ mkProductType ts (map tokPos ps)
 
 -- | a (right associativ) function type  
 parseType :: AParser Type
 parseType = 
     do t1 <- prodType 
        do a <- arrowT <?> funS
-	  t2 <- parseType
-	  return $ FunType t1 (fst a) t2 [snd a] 
+          t2 <- parseType
+          return $ FunType t1 (fst a) t2 [snd a] 
         <|> return t1
 
 -- | parse one of the four possible 'Arrow's
 arrowT :: AParser (Arrow, Pos)
 arrowT = do a <- asKey funS
-	    return (FunArr, tokPos a)
-	 <|>
-	 do a <- asKey pFun
-	    return (PFunArr, tokPos a)
-	 <|>
-	 do a <- asKey contFun
-	    return (ContFunArr, tokPos a)
+            return (FunArr, tokPos a)
          <|>
-	 do a <- asKey pContFun 
-	    return (PContFunArr, tokPos a)
+         do a <- asKey pFun
+            return (PFunArr, tokPos a)
+         <|>
+         do a <- asKey contFun
+            return (ContFunArr, tokPos a)
+         <|>
+         do a <- asKey pContFun 
+            return (PContFunArr, tokPos a)
 
 -- | parse a 'TypeScheme' using 'forallT', 'typeVars', 'dotT' and 'parseType'
 typeScheme :: AParser TypeScheme
 typeScheme = do f <- forallT
-		(ts, cs) <- typeVars `separatedBy` anSemi
-		d <- dotT
-		t <- typeScheme
+                (ts, cs) <- typeVars `separatedBy` anSemi
+                d <- dotT
+                t <- typeScheme
                 return $ case t of 
-			 TypeScheme ots q ps ->
-			     TypeScheme (concat ts ++ ots) q 
-					(toPos f cs d ++ ps)
-	     <|> fmap simpleTypeScheme parseType
+                         TypeScheme ots q ps ->
+                             TypeScheme (concat ts ++ ots) q 
+                                        (toPos f cs d ++ ps)
+             <|> fmap simpleTypeScheme parseType
 
 
 data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
@@ -361,23 +360,23 @@ data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
 -- a 'TypeOrTypescheme' for a possibly partial constant (given by 'qColonT')
 typeOrTypeScheme :: AParser (Token, TypeOrTypeScheme)
 typeOrTypeScheme = do q <- qColonT
-		      t <- parseType 
-		      return (q, PartialType t)
-		   <|>
-		   do q <- colT 
-		      s <- typeScheme
-		      return (q, TotalTypeScheme s)
+                      t <- parseType 
+                      return (q, PartialType t)
+                   <|>
+                   do q <- colT 
+                      s <- typeScheme
+                      return (q, TotalTypeScheme s)
 
 toPartialTypeScheme :: [Pos] -> TypeOrTypeScheme -> TypeScheme
 toPartialTypeScheme qs ts = case ts of 
-	    PartialType t -> simpleTypeScheme 
-			   (FunType (ProductType [] qs) 
-			    PFunArr t qs)
-	    TotalTypeScheme s -> s
+            PartialType t -> simpleTypeScheme 
+                           (FunType (ProductType [] qs) 
+                            PFunArr t qs)
+            TotalTypeScheme s -> s
 
 partialTypeScheme :: AParser (Token, TypeScheme)
 partialTypeScheme = do (c, ts) <- typeOrTypeScheme
-		       return (c, toPartialTypeScheme [tokPos c] ts)
+                       return (c, toPartialTypeScheme [tokPos c] ts)
 
 
 -- * varDecls and genVarDecls
@@ -385,31 +384,31 @@ partialTypeScheme = do (c, ts) <- typeOrTypeScheme
 -- | comma separated 'var' with 'varDeclType'
 varDecls :: AParser [VarDecl]
 varDecls = do (vs, ps) <- var `separatedBy` anComma
-	      varDeclType vs ps
+              varDeclType vs ps
 
 -- | a type ('parseType') following a 'colT' 
 varDeclType :: [Var] -> [Token] -> AParser [VarDecl]
 varDeclType vs ps = do c <- colT
-		       t <- parseType
-		       return (makeVarDecls vs ps t (tokPos c))
+                       t <- parseType
+                       return (makeVarDecls vs ps t (tokPos c))
 
 -- | attach the 'Type' to every 'Var'
 makeVarDecls :: [Var] -> [Token] -> Type -> Pos -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma [tokPos p])
-		     (init vs) ps ++ [VarDecl (last vs) t Other [q]]
+                     (init vs) ps ++ [VarDecl (last vs) t Other [q]]
 
 -- | either like 'varDecls' or type variables with a 'typeDownset'.
 -- A 'GenVarDecl' may later become a 'GenTypeVarDecl'.
 genVarDecls:: AParser [GenVarDecl]
 genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
-		 if allIsInVar vs then
-		    fmap (map GenVarDecl) 
-			     (varDeclType 
-			      (map ( \ (i, _, _) -> i) vs) ps)
-		      <|> fmap (map GenTypeVarDecl)
-			       (typeKind vs ps)
-		     else fmap (map GenTypeVarDecl)
-			       (typeKind vs ps)
+                 if allIsInVar vs then
+                    fmap (map GenVarDecl) 
+                             (varDeclType 
+                              (map ( \ (i, _, _) -> i) vs) ps)
+                      <|> fmap (map GenTypeVarDecl)
+                               (typeKind vs ps)
+                     else fmap (map GenTypeVarDecl)
+                               (typeKind vs ps)
 
 -- * patterns
 
@@ -418,14 +417,14 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
 tokenPattern :: TokenMode -> AParser Pattern
 tokenPattern b = fmap TermToken (aToken b <|> pToken (string "_"))
 -- a single underscore serves as wildcard pattern
-					  
+                                          
 -- | 'tokenPattern' or 'BracketPattern'
 primPattern :: TokenMode -> AParser Pattern
 primPattern b = tokenPattern b 
-		<|> mkBrackets pattern (BracketTerm Squares)
-		<|> mkBraces pattern (BracketTerm Braces) 
-		<|> bracketParser pattern oParenT cParenT anComma
-			(BracketTerm Parens)
+                <|> mkBrackets pattern (BracketTerm Squares)
+                <|> mkBraces pattern (BracketTerm Braces) 
+                <|> bracketParser pattern oParenT cParenT anComma
+                        (BracketTerm Parens)
 
 -- | several 'typedPattern'
 mixPattern :: TokenMode -> AParser Pattern
@@ -449,12 +448,12 @@ asPattern b =
        case v of 
            TermToken tt -> if isPlace tt then return v else do 
                c <- asKey asP 
-	       t <- typedPattern b 
-	       return (AsPattern 
-		       (VarDecl (mkId [tt]) (MixfixType []) Other [tokPos c])
-		       t [tokPos c])
-	     <|> return v 
-	   _ -> return v
+               t <- typedPattern b 
+               return (AsPattern 
+                       (VarDecl (mkId [tt]) (MixfixType []) Other [tokPos c])
+                       t [tokPos c])
+             <|> return v 
+           _ -> return v
 
 -- | an unrestricted 'asPattern'
 pattern :: AParser Pattern
@@ -463,19 +462,19 @@ pattern = mixPattern []
 -- | a 'Total' or 'Partial' lambda dot
 lamDot :: AParser (Partiality, Token)
 lamDot = do d <- asKey (dotS++exMark) <|> asKey (cDot++exMark)
-	    return (Total,d)
-	 <|> 
-	 do d <- dotT
-	    return (Partial,d)
+            return (Total,d)
+         <|> 
+         do d <- dotT
+            return (Partial,d)
 
 -- | patterns between 'lamS' and 'lamDot'
 lamPattern :: AParser [Pattern]
 lamPattern = 
     do  lookAhead lamDot 
-	return []
+        return []
       <|> do p <- pattern
-	     ps <- lamPattern
-	     return (p : ps)
+             ps <- lamPattern
+             return (p : ps)
 
 -- * terms
 
@@ -483,9 +482,9 @@ lamPattern =
 -- and further places ('placeT')
 instOpId :: AParser InstOpId
 instOpId = do i <- uninstOpId
-	      (ts, qs) <- option ([], [])
-				       (mkBrackets parseType (,))
-	      return (InstOpId i ts qs)
+              (ts, qs) <- option ([], [])
+                                       (mkBrackets parseType (,))
+              return (InstOpId i ts qs)
 
 {- | 'Token's that may occur in 'Term's including literals
    'scanFloat', 'scanString' but excluding 'ifS', 'whenS' and 'elseS'
@@ -494,10 +493,10 @@ instOpId = do i <- uninstOpId
 
 tToken :: TokenMode -> AParser Token
 tToken b = pToken(scanFloat <|> scanString 
-		<|> scanQuotedChar <|> scanDotWords 
-		<|> reserved [ifS, whenS, elseS] scanHCWords 
-		<|> reserved b scanHCSigns 
-		<|> placeS <?> "id/literal" )
+                <|> scanQuotedChar <|> scanDotWords 
+                <|> reserved [ifS, whenS, elseS] scanHCWords 
+                <|> reserved b scanHCSigns 
+                <|> placeS <?> "id/literal" )
 
 
 -- | 'tToken' as 'Term' plus 'exEqual' and 'equalS'
@@ -507,10 +506,10 @@ termToken b = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken b)
 -- | 'termToken' plus 'BracketTerm's
 primTerm :: TokenMode -> AParser Term
 primTerm b = termToken b
-	   <|> mkBraces termInParens (BracketTerm Braces)
-	   <|> mkBrackets termInParens (BracketTerm Squares)
- 	   <|> bracketParser termInParens oParenT cParenT anComma
-		       (BracketTerm Parens)
+           <|> mkBraces termInParens (BracketTerm Braces)
+           <|> mkBrackets termInParens (BracketTerm Squares)
+           <|> bracketParser termInParens oParenT cParenT anComma
+                       (BracketTerm Parens)
 
 -- | how the keyword 'inS' should be treated  
 data InMode = NoIn   -- ^ next 'inS' belongs to 'letS' 
@@ -519,12 +518,12 @@ data InMode = NoIn   -- ^ next 'inS' belongs to 'letS'
 -- | all 'Term's that start with a unique keyword
 baseTerm :: (InMode, TokenMode) -> AParser Term
 baseTerm b = ifTerm b
-	   <|> whenTerm b   
+           <|> whenTerm b   
            <|> forallTerm b 
-	   <|> exTerm b 
-	   <|> lambdaTerm b 
-	   <|> caseTerm b
-	   <|> letTerm b
+           <|> exTerm b 
+           <|> lambdaTerm b 
+           <|> caseTerm b
+           <|> letTerm b
 
 -- | 'whenS' possibly followed by an 'elseS'
 whenTerm :: (InMode, TokenMode) -> AParser Term
@@ -532,9 +531,9 @@ whenTerm b =
     do i <- asKey whenS
        c <- mixTerm b
        do t <- asKey elseS
-	  e <- mixTerm b
-	  return (MixfixTerm [TermToken i, c, TermToken t, e])
-	<|> return (MixfixTerm [TermToken i, c])
+          e <- mixTerm b
+          return (MixfixTerm [TermToken i, c, TermToken t, e])
+        <|> return (MixfixTerm [TermToken i, c])
 
 -- | 'ifS' possibly followed by 'thenS' and 'elseS'
 -- yielding a 'MixfixTerm'
@@ -543,13 +542,13 @@ ifTerm b =
     do i <- asKey ifS
        c <- mixTerm b
        do t <- asKey thenS
-	  e <- mixTerm b
-	  do s <- asKey elseS 
-	     f <- mixTerm b
-	     return (MixfixTerm [TermToken i, c, TermToken t, e, 
-				 TermToken s, f])
-	   <|> return (MixfixTerm [TermToken i, c, TermToken t, e]) 
-	<|> return (MixfixTerm [TermToken i, c])
+          e <- mixTerm b
+          do s <- asKey elseS 
+             f <- mixTerm b
+             return (MixfixTerm [TermToken i, c, TermToken t, e, 
+                                 TermToken s, f])
+           <|> return (MixfixTerm [TermToken i, c, TermToken t, e]) 
+        <|> return (MixfixTerm [TermToken i, c])
 
 -- | unrestricted terms including qualified names 
 termInParens :: AParser Term
@@ -567,7 +566,7 @@ varTerm =
 -- | 'opS' or 'functS'
 opBrand :: AParser (Token, OpBrand)
 opBrand = bind (,) (asKey opS) (return Op)
-	  <|> bind (,) (asKey functS) (return Fun) 
+          <|> bind (,) (asKey functS) (return Fun) 
 
 -- | a qualified operation (with 'opBrand') 
 qualOpName :: AParser Term
@@ -591,25 +590,25 @@ qualPredName =
 -- 'inS' is rejected for 'NoIn'
 typeQual :: InMode -> AParser (TypeQual, Token) 
 typeQual m = 
-	      do q <- colT
-	         return (OfType, q)
-	      <|> 
-	      do q <- asT
-	         return (AsType, q)
-	      <|> 
-	      case m of 
-		     NoIn -> pzero
-		     WithIn -> 
-			 do q <- asKey inS
-			    return (InType, q)
+              do q <- colT
+                 return (OfType, q)
+              <|> 
+              do q <- asT
+                 return (AsType, q)
+              <|> 
+              case m of 
+                     NoIn -> pzero
+                     WithIn -> 
+                         do q <- asKey inS
+                            return (InType, q)
 
 -- | a possibly type qualified ('typeQual') 'primTerm' or a 'baseTerm' 
 typedTerm :: (InMode, TokenMode) -> AParser Term
 typedTerm (i, b) = 
     do t <- primTerm b
        do (q, p) <- typeQual i
-	  ty <- parseType
-	  return (MixfixTerm [t, MixTypeTerm q ty [tokPos p]])
+          ty <- parseType
+          return (MixfixTerm [t, MixTypeTerm q ty [tokPos p]])
         <|> return t
       <|> baseTerm (i, b)
 
@@ -629,10 +628,10 @@ whereTerm :: (InMode, TokenMode) -> AParser Term
 whereTerm b = 
     do t <- mixTerm b 
        do p <- asKey whereS
-	  (es, ps, ans) <- itemAux hasCaslStartKeywords $
-			   patternTermPair ([equalS]) b equalS 
+          (es, ps, ans) <- itemAux hasCaslStartKeywords $
+                           patternTermPair ([equalS]) b equalS 
           setState (AnnoState (concat ans)) -- store back collected annotations
-	  return (LetTerm Where es t (map tokPos (p:ps)))
+          return (LetTerm Where es t (map tokPos (p:ps)))
         <|> return t
 
 -- | a 'whereTerm' called with ('WithIn', [])
@@ -668,31 +667,31 @@ exTerm b =
 lambdaTerm :: (InMode, TokenMode) -> AParser Term
 lambdaTerm b = 
              do l <- asKey lamS
-		pl <- lamPattern
-		(k, d) <- lamDot      
-		t <- mixTerm b
-		return (LambdaTerm pl k t (toPos l [] d))
+                pl <- lamPattern
+                (k, d) <- lamDot      
+                t <- mixTerm b
+                return (LambdaTerm pl k t (toPos l [] d))
 
 -- | a 'CaseTerm' with 'funS' excluded in 'patternTermPair'
 caseTerm :: (InMode, TokenMode) -> AParser Term
 caseTerm (i, _) = 
            do c <- asKey caseS
-	      t <- term
-	      o <- asKey ofS
-	      (ts, ps) <- patternTermPair [funS] (i, [barS]) funS 
-			  `separatedBy` barT
-	      return (CaseTerm t ts (map tokPos (c:o:ps)))
+              t <- term
+              o <- asKey ofS
+              (ts, ps) <- patternTermPair [funS] (i, [barS]) funS 
+                          `separatedBy` barT
+              return (CaseTerm t ts (map tokPos (c:o:ps)))
 
 -- | a 'LetTerm' with 'equalS' excluded in 'patternTermPair' 
 -- (called with 'NoIn')
 letTerm :: (InMode, TokenMode) -> AParser Term
 letTerm b = 
           do l <- asKey letS
-	     (es, ps) <- patternTermPair [equalS] (NoIn, []) equalS 
-			 `separatedBy` anSemi 
-	     i <- asKey inS
-	     t <- mixTerm b
-	     return (LetTerm Let es t (toPos l ps i))
+             (es, ps) <- patternTermPair [equalS] (NoIn, []) equalS 
+                         `separatedBy` anSemi 
+             i <- asKey inS
+             t <- mixTerm b
+             return (LetTerm Let es t (toPos l ps i))
 
 -- | a customizable pattern equation 
 patternTermPair :: TokenMode -> (InMode, TokenMode) -> String -> AParser ProgEq

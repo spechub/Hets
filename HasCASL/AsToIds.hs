@@ -42,10 +42,10 @@ idsOfSigItems (OpItems b l _) = unite $ map (idsOfOpItem b . item) l
 idsOfOpItem :: OpBrand -> OpItem -> Ids
 idsOfOpItem b (OpDecl os _ _ _) = 
     let ois = Set.fromList $ map ( \ (OpId i _ _) -> i) os  
-	in case b of 
-		  Pred -> ois
-		  _ -> Set.empty
+        in case b of 
+                  Pred -> ois
+                  _ -> Set.empty
 idsOfOpItem b (OpDefn (OpId i _ _) _ _ _ _ _) =
-	case b of 
-		  Pred -> (Set.single i)
-		  _ -> Set.empty
+        case b of 
+                  Pred -> (Set.single i)
+                  _ -> Set.empty

@@ -24,7 +24,7 @@ mapTerm m t = case t of
    QualVar vd -> QualVar $ mapVar (snd m) vd
    QualOp b (InstOpId i ts ps) sc qs -> 
         let (i2, sc2) = fst m (i, sc)
-	    in QualOp b (InstOpId i2 (map (snd m) ts) ps) sc2 qs
+            in QualOp b (InstOpId i2 (map (snd m) ts) ps) sc2 qs
    ApplTerm t1 t2 ps ->
        ApplTerm (mapTerm m t1) (mapTerm m t2) ps
    TupleTerm ts ps -> TupleTerm (map (mapTerm m) ts) ps
@@ -56,8 +56,8 @@ mapEq m (ProgEq p t ps) = ProgEq (mapTerm m p) (mapTerm m t) ps
 
 mapOpInfo :: Rename -> OpInfo -> OpInfo
 mapOpInfo m oi = oi { opType = mapTypeOfScheme (snd m) $ opType oi
-		    , opAttrs = map (mapOpAttr m) $ opAttrs oi
-		    , opDefn = renameOpDefn m $ opDefn oi }
+                    , opAttrs = map (mapOpAttr m) $ opAttrs oi
+                    , opDefn = renameOpDefn m $ opDefn oi }
 
 mapOpAttr :: Rename -> OpAttr -> OpAttr
 mapOpAttr m o = case o of 
