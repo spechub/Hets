@@ -406,7 +406,8 @@ checkPrecs filt ga rs argItem opItem =
 	       BothDirections -> False
 	       NoDirection -> 
 		   case (begPlace arg, endPlace op) of 
-		        (True, True) -> arg == op && isAssoc ALeft assocs op
+		        (True, True) -> arg == applId || 
+					arg == op && isAssoc ALeft assocs op
 			(False, True) -> True
 			(_, False) -> False
 	    else not (begPlace arg && isNonCompound arg 
@@ -423,7 +424,8 @@ checkPrecs filt ga rs argItem opItem =
 		   BothDirections -> False
 		   NoDirection ->
 		     case (begPlace op, endPlace arg) of
-		        (True, True) -> arg == op && isAssoc ARight assocs op
+		        (True, True) -> arg == applId && op /= applId ||
+					arg == op && isAssoc ARight assocs op
 			(False, True) -> False
 			(_, False) -> True
 		 else not (endPlace arg && isNonCompound op 
