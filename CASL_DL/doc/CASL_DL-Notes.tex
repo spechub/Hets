@@ -38,6 +38,9 @@ only this named spec? Till] [No, if you parse an OWL DL file the
     mutally recursive defined symbols.}  So circular imports lead to
   one theory in Hets and we have to split such a theory back into
   circular imports afterwards. Klaus]
+[Although it seems to be the only way, it sounds a bit complicated.
+Perhaps you could leave out the ``splitting back'' in a first
+approximation. Till]
 
   Where do we get the name from:
   \begin{itemize}
@@ -53,7 +56,9 @@ only this named spec? Till] [No, if you parse an OWL DL file the
   for parametrised specifications? [Yes. Till] [This is not very
   useful. As there is no notion of parametrisation in OWL DL these
   ontologies can't be used. The formal parameter specification
-  normally provides no meaning in terms of known concepts. Klaus] An
+  normally provides no meaning in terms of known concepts. Klaus]
+  [The reulting theory is just a loose theory, which may be useful
+  even without instantiation. Till] An
   Annotation should map specification names to URIs and only these
   theories are exported to OWL DL files. [But aren't auxilary specs
   needed as well? Till] (each of these URIs should have a Namespace
@@ -77,7 +82,8 @@ only this named spec? Till] [No, if you parse an OWL DL file the
   keeping track of parametrised specifications is not easy. 
   [I will implement some naming scheme for internal nodes soon.
    Perhaps that helps a little. Till] [What will this naming scheme
-  look like? Can we discuss that before you start implementingit? Klaus]
+  look like? Can we discuss that before you start implementing it? Klaus]
+  [I have already done this. Till]
 
 \subsection{Structuring on the \CASLDL side}
   flattened into a set of named theories each resulting into one OWL
@@ -174,6 +180,8 @@ via predicates? Till] [These AnnotationProperties have to be declared
   on the OWL DL side like ordinary other properties. And they are
   applied like other properties. We have no place in the Signature yet
   for storing annotations that are passed over morphisms. Klaus]
+  [Sounds strange to me. But if this the way OWL DL works, we have
+   to support it. Till]
 
 \section{Implementation decisions}
 
@@ -260,7 +268,10 @@ analysis working with the predefined stuff visible.
 
 [I would vote for the first possibility. In CASL, there are no
 predefined things, and we should keep this principle for
-CASL-DL. Till] [This complicates checking the CASL_DL language. Every
+CASL-DL. Till] [This complicates checking the CASL\_DL language. Every
   renaming of the predefined OWL DL datatypes and Symbols must be
   rejected; every hiding, too. Klaus]  
+  [But this can be implemented as an easy restriction on signature
+   morphisms. Till]
+
 \end{document}
