@@ -182,6 +182,7 @@ inferAppl b ps mt t1 t2 = do
                else return ()
             return res
 
+-- True means possibly find a smaller type
 infer :: Bool -> Maybe Type -> Term 
       -> State Env [(Subst, Constraints, Type, Term)]
 infer b mt trm = do
@@ -190,20 +191,28 @@ infer b mt trm = do
         uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
     case trm of 
-        QualVar (VarDecl v t ok ps)  -> do 
+        qv@(QualVar (VarDecl _ t _ _))  -> do 
             let Result ds ms = mUnify t
             uniDiags ds 
             case ms of 
-                Nothing -> return []
+                Nothing -> let typ = fromJust mt 
+                               p = if b then (t, typ) else (typ, t)
+                           in if uncurry (lesserType tm) p 
+                              then return [(eps, noC, t, qv)]
+                              else return []
                 Just s -> let ty = subst s t in 
-                    return [(s, noC, ty, QualVar $ VarDecl v ty ok ps)] 
-        QualOp br (InstOpId i ts qs) sc ps -> do
+                    return [(s, noC, subst s ty, qv)]
+        qv@(QualOp br (InstOpId i ts qs) sc ps) -> do
             (ty, inst, cs) <- instantiate sc
             let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
                                (Just ty, inst)
             uniDiags ds 
             case ms of 
-                Nothing -> return []
+                Nothing -> let typ = fromJust mt 
+                               p = if b then (ty, typ) else (typ, ty)
+                           in if null inst && uncurry (lesserType tm) p
+                              then return[(eps, cs, ty, qv)]
+                              else return []
                 Just s -> return [(s, substC s cs, subst s ty, QualOp br 
                                    (InstOpId i (map (subst s) inst) qs)
                                    sc ps)]
@@ -217,7 +226,12 @@ infer b mt trm = do
                      Just inTy -> do 
                          let rs = concatMap ( \ (ty, is, cs, oi) ->
                                   let Result _ ms = mgu tm inTy ty in
-                                  case ms of Nothing -> []
+                                  case ms of Nothing -> 
+                                                 let p = if b then (ty, inTy) 
+                                                         else (inTy, ty)
+                                                 in if uncurry(lesserType tm) p
+                                                    then [(eps,ty, is, cs, oi)]
+                                                    else []
                                              Just s -> [(s, subst s ty
                                                         , map (subst s) is
                                                         , substC s cs
@@ -269,9 +283,13 @@ infer b mt trm = do
                     let Result ds ms = mUnify ty
                     uniDiags ds
                     case ms of 
-                        Nothing -> return []
+                        Nothing -> if lesserType tm ty $ fromJust mt then do 
+                            rs <- infer True (Just ty) t
+                            return $ map ( \ (s2, cs, typ, tr) -> 
+                                (s2, cs, typ, TypedTerm tr qual ty ps)) rs
+                           else return []
                         Just s -> do 
-                            rs <- infer b (Just $ subst s ty) t 
+                            rs <- infer True (Just $ subst s ty) t 
                             return $ map ( \ (s2, cs, typ, tr) -> 
                                 (compSubst s s2, substC s cs, typ, 
                                  TypedTerm tr qual ty ps)) rs
@@ -281,7 +299,7 @@ infer b mt trm = do
                     case ms of 
                         Nothing -> return []
                         Just s -> do 
-                            rs <- infer b Nothing t -- Nothing 
+                            rs <- infer False (Just ty) t
                             return $ map ( \ (s2, cs, _, tr) -> 
                                 (compSubst s s2, substC s cs, logicalType, 
                                  TypedTerm tr qual ty ps)) rs
@@ -291,7 +309,7 @@ infer b mt trm = do
                     case ms of 
                         Nothing -> return []
                         Just s -> do 
-                            rs <- infer b Nothing t -- Nothing
+                            rs <- infer False (Just $ subst s ty) t
                             return $ map ( \ (s2, cs, _, tr) -> 
                                 (compSubst s s2, substC s cs, ty, 
                                  TypedTerm tr qual ty ps)) rs
