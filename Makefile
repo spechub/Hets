@@ -136,7 +136,7 @@ hets-opt: hetcats/Version.hs
 	$(MAKE) hets-optimized
 
 hets-optimized:
-	$(HC) --make -O -o $@ hets.hs $(HC_OPTS)
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
 
 hets-old: $(objects)
 	$(RM) $@
