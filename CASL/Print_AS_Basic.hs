@@ -31,7 +31,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
--- import Debug.Trace
+import Debug.Trace
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -81,14 +81,16 @@ printFormulaAux ga f =
 
 printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfModalSign ga f =
-    vcat $ map (rekuPF ga) f 
-	where rekuPF ::PrettyPrint f =>  GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
-              rekuPF ga tf = fsep $ punctuate semi  $ map (printAnnotedFormula_Text0 ga False) tf
+    vcat $ map rekuPF f 
+	where rekuPF ::PrettyPrint f =>  [Annoted (FORMULA f)] -> Doc
+              rekuPF tf = fsep $ punctuate semi  $ map (printAnnotedFormula_Text0 ga False) tf
 			     
 printAnnotedFormula_Text0 :: PrettyPrint f => 
 			     GlobalAnnos -> Bool ->  Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
-        let i'   = (if withDot then (char '.' <+>) else id) $  printFORMULA ga i
+        let i'   = trace (show i) $ 
+		 (if withDot then (char '.' <+>) else id) $  
+		 printFORMULA ga i
 	    las' = if not $ null las then 
 	               ptext "\n" <> printAnnotationList_Text0 ga las
 		   else
@@ -232,21 +234,22 @@ printFORMULA ga (Conjunction l _) =
 printFORMULA ga (Disjunction  l _) = 
 	sep $ prepPunctuate (ptext lOr <> space) $ 
 	    map (condParensXjunction printFORMULA parens ga) l
-printFORMULA ga i@(Implication f g b _) = 
-	if b
+printFORMULA ga i@(Implication f g isArrow _) = 
+	if isArrow
 	then (
-              hang (condParensImplEquiv printFORMULA parens ga i f 
+              hang (condParensImplEquiv printFORMULA parens ga i f False
 		    <+> ptext implS) 4 $ 
-	      condParensImplEquiv printFORMULA parens ga i g)
+	      condParensImplEquiv printFORMULA parens ga i g True)
 	else (
-              hang (condParensImplEquiv printFORMULA parens ga i g 
+              hang (condParensImplEquiv printFORMULA parens ga i g False
 		    <+> ptext "if") 4 $ 
-	      condParensImplEquiv printFORMULA parens ga i f)
+	      condParensImplEquiv printFORMULA parens ga i f True)
 printFORMULA ga e@(Equivalence  f g _) = 
-	hang (condParensImplEquiv printFORMULA parens ga e f 
+	hang (condParensImplEquiv printFORMULA parens ga e f False
 	      <+> ptext equivS) 4 $
-	     condParensImplEquiv printFORMULA parens ga e g
-printFORMULA ga (Negation f _) = ptext "not" <+> printFORMULA ga f
+	     condParensImplEquiv printFORMULA parens ga e g True
+printFORMULA ga (Negation f _) = 
+    ptext "not" <+> condParensNeg f parens (printFORMULA ga f)
 printFORMULA _ (True_atom _)  = ptext trueS
 printFORMULA _ (False_atom _) = ptext falseS
 printFORMULA ga (Predication p l _) = 
@@ -668,41 +671,22 @@ condParensAppl pf parens_fun ga o_i t mdir =
     _ -> parens_fun t'
     where t' = pf t
 
+is_atomic_FORMULA :: FORMULA f -> Bool
+is_atomic_FORMULA f =
+    case f of 
+	   True_atom _  -> True 
+	   False_atom _ -> True
+	   Predication _ _ _ -> True 
+	   Existl_equation _ _ _ -> True
+	   Definedness _ _ -> True
+	   Strong_equation _ _ _ -> True
+	   Membership _ _ _ -> True
+	   _ -> False
 
-condParensImplEquiv :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
-		    -> (Doc -> Doc)    -- ^ a function that surrounds 
-				       -- the given Doc with appropiate 
-				       -- parens
-		    -> GlobalAnnos -> FORMULA f -> FORMULA f -> Doc
-condParensImplEquiv pf parens_fun ga e_i f =  
-    case e_i of 
-    Implication _ _ _ _ -> case f of 
-				   Implication _ _ _ _ -> f'
-				   Disjunction _ _ -> f'
-				   Conjunction _ _ -> f'
-				   Negation _ _ -> f' 
-				   True_atom _  -> f' 
-				   False_atom _ -> f'
-				   Predication _ _ _ -> f' 
-				   Existl_equation _ _ _ -> f'
-				   Definedness _ _ -> f'
-				   Strong_equation _ _ _ -> f'		   
-				   ExtFORMULA _ -> f'
-				   _           -> parens_fun f'
-    Equivalence _ _ _ -> case f of Disjunction _ _ -> f'
-				   Conjunction _ _ -> f'
-				   Negation _ _ -> f' 
-				   True_atom _  -> f' 
-				   False_atom _ -> f'
-				   Predication _ _ _ -> f'
-				   Quantification _ _ _ _ -> f'
-				   Existl_equation _ _ _ -> f'
-				   Strong_equation _ _ _ -> f'
-				   Definedness _ _ -> f'
-				   ExtFORMULA _ -> f'
-				   _           -> parens_fun f'
-    _ ->  error "Wrong call: condParensImplEquiv"
-    where f' = pf ga f
+condParensNeg :: FORMULA f -> (Doc -> Doc) -> Doc -> Doc
+condParensNeg f parens_fun =
+    if is_atomic_FORMULA f then id else parens_fun
+
 
 condParensXjunction :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -710,16 +694,50 @@ condParensXjunction :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
 				       -- parens
 		    -> GlobalAnnos -> FORMULA f -> Doc
 condParensXjunction pf parens_fun ga x = 
-    case x of Negation _ _ -> x' 
-	      True_atom _  -> x' 
-	      False_atom _ -> x'
-	      Predication _ _ _ -> x'
-	      Existl_equation _ _ _ -> x'
-	      Strong_equation _ _ _ -> x'
-	      Definedness _ _ -> x'
-	      ExtFORMULA _ -> x'
-	      _            -> parens_fun x' 
+    case x of 
+	   Negation _ _ -> x' 
+	   ExtFORMULA _ -> x'
+	   _ | is_atomic_FORMULA x -> x'
+	     | otherwise -> parens_fun x' 
     where x' = pf ga x
+
+
+condParensImplEquiv :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
+		    -> (Doc -> Doc)    -- ^ a function that surrounds 
+				       -- the given Doc with appropiate 
+				       -- parens
+		    -> GlobalAnnos -> FORMULA f 
+		    -> FORMULA f 
+		    -> Bool -- ^ True if second FORMULA f arg is 
+			    -- right of the connective in the first 
+			    -- FORMULA f arg
+		    -> Doc
+condParensImplEquiv pf parens_fun ga e_i f isRight =  
+    case e_i of 
+    Implication _ _ isArrow1 _ -> 
+	case f of 
+	Implication _ _ isArrow2 _ 
+	    | isArrow1 == isArrow2 -> f'
+	    | otherwise -> parens_fun f'
+	Quantification _ _ _ _ 
+	    | isRight   -> f'
+	    | otherwise -> parens_fun f'
+	_ | has_higher_prec f -> f'
+	  | otherwise -> parens_fun f'
+    Equivalence _ _ _   -> 
+	case f of
+	_ | has_higher_prec f -> f'
+	  | otherwise -> parens_fun f'
+    _ ->  error "Wrong call: condParensImplEquiv"
+    where f' = pf ga f
+	  has_higher_prec ff = 
+	      case ff of
+	      Negation _ _ -> True
+	      ExtFORMULA _ -> True
+	      Disjunction _ _ -> True
+	      Conjunction _ _ -> True
+	      _ -> is_atomic_FORMULA ff
+
 
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
 instance (PrettyPrint s, PrettyPrint f) => 

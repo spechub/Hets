@@ -289,23 +289,23 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
 	{-trace pos $ -}
 	if not b
 	then (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i g 
+        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i g False
 		    <\+> hc_sty_id "if") 3 $ 
-	     condParensImplEquiv printLatex0 parens_tab_latex ga i f)
+	     condParensImplEquiv printLatex0 parens_tab_latex ga i f True)
 
 	else (
-	hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i f 
+	hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i f False
 		    <\+> hc_sty_axiom "\\Rightarrow") 3 $ 
-	     condParensImplEquiv printLatex0 parens_tab_latex ga i g)
+	     condParensImplEquiv printLatex0 parens_tab_latex ga i g True)
 {-	where pos = "Implication: \"=>\": "++show p 
 		    ++"; left_most_id_of_first_formula: "
 		    ++(show $ left_most_pos f )-}
     printLatex0 ga e@(Equivalence  f g _) = 
 	sep_latex 
-	     [condParensImplEquiv printLatex0 parens_tab_latex ga e f 
+	     [condParensImplEquiv printLatex0 parens_tab_latex ga e f False
 		    <\+> hc_sty_axiom "\\Leftrightarrow",
-	      condParensImplEquiv printLatex0 parens_tab_latex ga e g]
-    printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+> printLatex0 ga f
+	      condParensImplEquiv printLatex0 parens_tab_latex ga e g True]
+    printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+> condParensNeg f parens_latex (printLatex0 ga f)
     printLatex0 _ (True_atom _)  = hc_sty_id trueS
     printLatex0 _ (False_atom _) = hc_sty_id falseS
     printLatex0 ga (Predication p l _) = 
