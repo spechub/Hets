@@ -88,12 +88,11 @@ libId = do pos <- getPos
 -- | Parse the library elements
 libItems :: LogicGraph -> AParser AnyLogic [Annoted LIB_ITEM]
 libItems l = 
-    (eof >> return [])
-    <|> do 
-    r <- libItem l
-    an <- annos 
-    is <- libItems l
-    return ((Annoted r [] [] an) : is)
+     (eof >> return [])
+    <|> do r <- libItem l
+           an <- annos 
+           is <- libItems l
+           return ((Annoted r [] [] an) : is)
 
 
 -- | Parse an element of the library
