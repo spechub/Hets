@@ -1,6 +1,6 @@
 -- $Id$
 
-module Latin1 ( toASCII, fromASCII ) where
+module Latin ( toASCII, fromASCII ) where
 
 import List 
 import Char
