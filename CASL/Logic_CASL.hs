@@ -73,12 +73,12 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
                Sign 
                Morphism 
                Symbol RawSymbol where
-         -- symbol_to_raw :: id -> Symbol -> RawSymbol
-         -- id_to_raw  :: id -> Id -> RawSymbol
-         -- sym_of :: id -> sign -> Set Symbol
-         -- symmap_of :: id -> Morphism -> EndoMap Symbol
-         -- matches :: id -> Symbol -> RawSymbol -> Bool
-         -- sym_name :: id -> Symbol -> Id
+         symbol_to_raw CASL = Static.symbolToRaw
+         id_to_raw CASL = Static.idToRaw
+         sym_of CASL = Static.symOf
+         symmap_of CASL = Static.symmapOf
+         matches CASL = Static.matches
+         sym_name CASL = Static.symName
                
          basic_analysis CASL = Just Static.basic_analysis
          empty_signature CASL = emptySign
