@@ -19,7 +19,7 @@ import System.IO
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN()) 
 import Syntax.GlobalLibraryAnnotations
-
+import Common.ConvertGlobalAnnos
 -- for debugging
 
 {---
@@ -34,15 +34,17 @@ write_LIB_DEFN file opt ld = sequence_ $ map write_type $ outtypes opt
     write_type :: OutType -> IO ()
     write_type t = 
         case t of 
-            HetCASLOut OutASTree OutAscii -> do
-                putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
-                write_casl_asc opt (casl_asc_filename file opt) ld
+            HetCASLOut OutASTree OutAscii -> printAscii t
+	    PrettyOut PrettyAscii -> printAscii t 
             PrettyOut PrettyLatex -> do
                 putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
                 write_casl_latex opt (casl_latex_filename file opt) ld
             _ -> do putStrLn ( "Error: the OutType \"" ++ 
                         show t ++ "\" is not implemented")
                     return ()
+    printAscii ty = do
+                putIfVerbose opt 3 ("Generating OutType: " ++ (show ty))
+                write_casl_asc opt (casl_asc_filename file opt) ld
 {---
   Produces the filename of the pretty printed CASL-file.
   @param opt   - Options from the command line 
@@ -57,7 +59,7 @@ casl_asc_filename file opt =
 write_casl_asc :: HetcatsOpts -> FilePath -> LIB_DEFN -> IO ()
 write_casl_asc opt oup ld =
     do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (initGlobalAnnos ld))
+       putIfVerbose opt 3 (show (printText0_eGA (initGlobalAnnos ld)))
        hPutStr hout $ printLIB_DEFN_text ld
 
 casl_latex_filename :: FilePath -> HetcatsOpts -> FilePath
@@ -73,7 +75,7 @@ debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
 write_casl_latex :: HetcatsOpts -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt oup ld =
     do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (initGlobalAnnos ld))
+       putIfVerbose opt 3 (show (printText0_eGA (initGlobalAnnos ld)))
        hPutStr hout $ printLIB_DEFN_latex ld
        doIfVerbose opt 5
         (do dout <- openFile (debug_latex_filename oup) WriteMode
