@@ -7,8 +7,13 @@ version 0.9
 %left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
 
 from Basic/StructuredDatatypes get List
+from Basic/Numbers get Nat
 
 logic HasCASL
+
+spec InternalLogic = {}
+
+spec Extensionality = {}
 
 %{ Typed sets are represented by predicates over the type.
    Set membership is just holding of the predicate: x isIn s <=> s x
