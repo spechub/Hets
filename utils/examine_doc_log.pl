@@ -78,6 +78,7 @@ if ($fail == 0) {
 	    && $test_vars{'modified_lines'} > 0) {
 	$fail++;
 	$report .= "";
+    }
     unless (exists $test_vars{'modified_lines'} 
 	    && $test_vars{'modified_lines'} > 0) {
 	$report .= "no HTML file was modified\n";
