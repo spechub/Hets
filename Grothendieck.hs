@@ -48,10 +48,10 @@ import Id
 
 data G_basic_spec = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_basic_spec lid basic_spec 
 
 instance Show G_basic_spec where
@@ -68,10 +68,10 @@ instance Eq G_basic_spec where
 
 data G_sentence = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_sentence lid sentence 
 
 instance Show G_sentence where
@@ -79,18 +79,18 @@ instance Show G_sentence where
 
 data G_l_sentence_list = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_l_sentence lid [(String,sentence)] 
 
 data G_sign = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_sign lid sign 
 
 instance Eq G_sign where
@@ -102,18 +102,18 @@ instance Show G_sign where
 
 data G_sign_list = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_sign_list lid [sign] 
 
 data G_symbol = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_symbol lid symbol 
 
 instance Show G_symbol where
@@ -125,10 +125,10 @@ instance Eq G_symbol where
 
 data G_symb_items_list = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_symb_items_list lid [symb_items] 
 
 instance Show G_symb_items_list where
@@ -147,10 +147,10 @@ instance Eq G_symb_items_list where
 
 data G_symb_map_items_list = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_symb_map_items_list lid [symb_map_items] 
 
 instance Show G_symb_map_items_list where
@@ -169,26 +169,26 @@ instance Eq G_symb_map_items_list where
 
 data G_diagram = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_diagram lid (Diagram sign morphism) 
 
 data G_sublogics = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_sublogics lid sublogics 
 
 data G_morphism = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol .
+         sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_morphism lid morphism
 
 
@@ -199,30 +199,30 @@ data G_morphism = forall lid sublogics
 
 data AnyLogic = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol .
+        sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol =>
+         sign morphism symbol raw_symbol proof_tree =>
         Logic lid
 
 data AnyRepresentation = forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 .
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
       (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
       Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2) =>
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
   Repr(LogicRepr lid1 sublogics1 basic_spec1 sentence1 
                  symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
                  lid2 sublogics2 basic_spec2 sentence2 
                  symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2)
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
 
 
 type LogicGraph = ([AnyLogic],[AnyRepresentation])
@@ -246,42 +246,42 @@ comp_anyrepr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentatio
 comp_anyrepr 
   (Repr (r1 :: LogicRepr lid1 sublogics1 basic_spec1 sentence1 
                 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2)) 
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)) 
   (Repr (r2 :: LogicRepr lid3 sublogics3 basic_spec3 sentence3 
 	        symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3
+                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
             lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4)) =
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4)) =
   do r3 <- coerce (target r1) (source r2) r2 :: Maybe(
 	  LogicRepr lid2 sublogics2 basic_spec2 sentence2 
                 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4)
+                sign4 morphism4 symbol4 raw_symbol4 proof_tree4)
      r4 <- comp_repr r1 r3 
      return (Repr r4)
  
 data GMorphism = forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2 .
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
       (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
        Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2) =>
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
   GMorphism lid1 lid2 
    (LogicRepr lid1 sublogics1 basic_spec1 sentence1 
               symb_items1 symb_map_items1
-              sign1 morphism1 symbol1 raw_symbol1
+              sign1 morphism1 symbol1 raw_symbol1 proof_tree1
               lid2 sublogics2 basic_spec2 sentence2 
               symb_items2 symb_map_items2
-              sign2 morphism2 symbol2 raw_symbol2)
+              sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
    sign1 morphism2 
 
 instance Eq GMorphism where

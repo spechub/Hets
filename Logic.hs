@@ -127,28 +127,28 @@ class (Language lid, PrettyPrint basic_spec, Eq basic_spec,
 
 class (Category lid sign morphism, Show sentence, 
        Ord symbol, Show symbol)
-    => Sentences lid sentence sign morphism symbol
+    => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
-          lid -> symbol
+          lid -> symbol, lid -> proof_tree
       where
          -- sentence translation
       map_sen :: lid -> morphism -> sentence -> Result sentence
          -- parsing of sentences
       parse_sentence :: lid -> sign -> String -> Result sentence
            -- is a term parser needed as well?
-      provers :: lid -> [Prover sentence symbol]
+      provers :: lid -> [Prover sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
 -- static analysis
 
 class ( Syntax lid basic_spec symb_items symb_map_items
-      , Sentences lid sentence sign morphism symbol
+      , Sentences lid sentence proof_tree sign morphism symbol
       , Show raw_symbol, Eq raw_symbol)
     => StaticAnalysis lid 
-        basic_spec sentence symb_items symb_map_items
+        basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 
         | lid -> basic_spec, lid -> sentence, lid -> symb_items,
-          lid -> symb_map_items, 
+          lid -> symb_map_items, lid -> proof_tree,
           lid -> sign, lid -> morphism, lid -> symbol, lid -> raw_symbol
       where
          -- static analysis of basic specifications and symbol maps
@@ -204,14 +204,14 @@ class Ord l => LatticeWithTop l where
 -- logics
 
 class (StaticAnalysis lid 
-        basic_spec sentence symb_items symb_map_items
+        basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
        LatticeWithTop sublogics) =>
       Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol 
+        sign morphism symbol raw_symbol proof_tree
         | lid -> sublogics, lid -> basic_spec, lid -> sentence, lid -> symb_items,
-          lid -> symb_map_items,
+          lid -> symb_map_items, lid -> proof_tree,
           lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
 	  where
          sublogic_names :: lid -> sublogics -> [String] 

@@ -53,9 +53,9 @@ type Sentence = Formula
 data Symbol = DummySymbol deriving (Eq, Ord, Show)
 data RawSymbol = DummyRawSymbol deriving (Eq, Show)
 
-instance Sentences HasCASL Sentence Sign Morphism Symbol where
+instance Sentences HasCASL Sentence () Sign Morphism Symbol where
 
-instance StaticAnalysis HasCASL BasicSpec Sentence 
+instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
@@ -65,4 +65,4 @@ instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
-               Symbol RawSymbol where
+               Symbol RawSymbol () where

@@ -231,6 +231,10 @@ data Morphism = Morphism {msource,mtarget :: Sign,
                           pred_map :: Pred_map}
                          deriving (Eq)
 
+-- ??? this needs to be implemented!
+--         legal_sign :: Sign -> Bool
+--         legal_morphism :: Morphism -> Bool
+
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =
   let

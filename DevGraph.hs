@@ -19,7 +19,7 @@
 todo:
 
 Integrate stuff from Saarbrücken
-
+Add proof status information
 -}
 
 module DevGraph where

@@ -69,10 +69,10 @@ instance LatticeWithTop Sublogics.CASL_Sublogics where
 
 -- CASL logic
 
-instance Sentences CASL Sentence Sign Morphism Symbol where
+instance Sentences CASL Sentence () Sign Morphism Symbol where
 -- missing
 
-instance StaticAnalysis CASL BASIC_SPEC Sentence 
+instance StaticAnalysis CASL BASIC_SPEC Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
@@ -115,7 +115,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
-               Symbol RawSymbol where
+               Symbol RawSymbol () where
          sublogic_names CASL = Sublogics.sublogics_name
          all_sublogics CASL = Sublogics.sublogics_all
 

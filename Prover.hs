@@ -27,28 +27,26 @@ data TheoryMorphism sign sen mor =
 
 type Rule = String
 
-data Proof_tree sen = Axiom sen
-                    | Branch (sen,Rule,[Proof_tree sen])  -- add substitutions here?
-
 type Tactic_script = String  -- the file name
 
-data Proof_status sen = Open sen
+data Proof_status sen proof_tree = Open sen
                       | Disproved sen 
                       | Proved(sen,
                                [sen], -- used axioms
-                               Proof_tree sen,
+                               proof_tree,
                                Tactic_script)
 
-data Prover sen symbol = 
+data Prover sen proof_tree symbol = 
      Prover { prover_name :: String,
               prover_sublogic :: String,
               add_sym :: symbol -> IO(Bool),  -- returns True if succeeded
               remove_sym :: symbol -> IO(Bool), -- returns True if succeeded
               add_sen :: sen -> IO(Bool),  -- returns True if succeeded
               remove_sen :: sen -> IO(Bool), -- returns True if succeeded
-              prove :: sen -> IO([Proof_status sen]), -- proof status for goal and lemmas
+              prove :: sen -> IO([Proof_status sen proof_tree]), -- proof status for goal and lemmas
               add_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
-              remove_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool) -- returns True if succeeded
+              remove_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
+              replay :: proof_tree -> Maybe sen
             }
 
 data Cons_checker morphism = 

@@ -96,7 +96,7 @@ initializeGraph ln dGraph convMaps = do
                       ))
                   $$$ emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)), 
                 ("dg_ref",
-                  Box $$$ Color "Blue" $$$ ValueTitle (\ (s,_,_) -> return s)
+                  Box $$$ Color "SteelBlue" $$$ ValueTitle (\ (s,_,_) -> return s)
                     $$$ emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)) ]
                  [("def",
                     Solid $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),

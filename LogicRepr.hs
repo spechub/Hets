@@ -27,14 +27,14 @@ import Maybe(catMaybes)
 
 data (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
       Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2) =>
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
   LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
      =
      LogicRepr {repr_name :: String,
                 source :: lid1, source_sublogic :: sublogics1,
@@ -60,14 +60,14 @@ data (Logic lid1 sublogics1
 
 instance (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
       Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2) =>
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
   Eq (LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2)
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
   where
   r1==r2 = repr_name r1 == repr_name r2 &&
            language_name (source r1) == language_name (source r2) &&
@@ -80,12 +80,12 @@ instance (Logic lid1 sublogics1
 id_repr :: 
      Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol => 
+        sign morphism symbol raw_symbol proof_tree => 
   lid -> 
     LogicRepr lid sublogics basic_spec sentence symb_items symb_map_items
-                  sign morphism symbol raw_symbol
+                  sign morphism symbol raw_symbol proof_tree
               lid sublogics basic_spec sentence symb_items symb_map_items
-                  sign morphism symbol raw_symbol
+                  sign morphism symbol raw_symbol proof_tree
 id_repr lid = 
      LogicRepr {repr_name = "id_"++language_name lid,
                 source = lid, source_sublogic = top,
@@ -106,29 +106,29 @@ id_repr lid =
 comp_repr :: 
      (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1,
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
       Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
-        sign2 morphism2 symbol2 raw_symbol2,
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
       Logic lid3 sublogics3
         basic_spec3 sentence3 symb_items3 symb_map_items3 
-        sign3 morphism3 symbol3 raw_symbol3
+        sign3 morphism3 symbol3 raw_symbol3 proof_tree3
      ) =>
      LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
 
  ->  LogicRepr lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3
+                sign3 morphism3 symbol3 raw_symbol3 proof_tree3
 
  ->  Maybe (
      LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 )
+                sign3 morphism3 symbol3 raw_symbol3 proof_tree3 )
 
 comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
    Just(LogicRepr{ 
