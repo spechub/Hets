@@ -170,7 +170,7 @@ itCorrection s
 		        (r + lookupCorrection (y1:y2:[])) 
 			ys
 	  itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
-	  lookupCorrection _pc = def_cor
+	  lookupCorrection str = findWithDefault def_cor str italiccorrection_map 
 	  -- lookupWithDefaultFM correction_map def_cor pc
 	  -- TODO: Build a nice correction map
           def_cor = 610
