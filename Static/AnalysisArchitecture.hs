@@ -28,31 +28,17 @@ import Logic.Grothendieck
 import Common.Lib.Graph
 import Static.DevGraph
 import Static.ArchDiagram
--- import Syntax.AS_Library
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
 import Static.AnalysisStructured
 import Common.AS_Annotation
 import Common.Id (Token)
--- import Common.GlobalAnnotations
--- import Common.ConvertGlobalAnnos
--- import Common.AnalyseAnnos
 import Common.Result
 import Common.Id
 import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
 import Syntax.Print_AS_Architecture
--- import Common.PrettyPrint
--- import Common.AnnoState
--- import Options
--- import System
--- import List
--- import Directory
--- import ReadFn
--- import WriteFn (writeFileInfo)
-
--- TODO: the default logic for homogenisation should be obtained from the diagram
---import CASL.Logic_CASL
+import List
 
 
 -- | Analyse an architectural specification
@@ -169,7 +155,7 @@ ana_UNIT_IMPORTED lgraph defl gctx curl justStruct uctx terms =
        -- check amalgamability conditions
        -- let incl s = propagateErrors (ginclusion lgraph (getSig (getSigFromDiag s)) (getSig sig))
        (dnsig@(Diag_node_sig n _), diag'') <- extendDiagram lgraph diag' dnsigs sig
-       () <- assertAmalgamability nullPos diag' (inn diag'' n)
+       () <- assertAmalgamability nullPos diag'' (inn diag'' n)
        return (dnsig, diag'', dg'', terms')
 
 ana_UNIT_IMPORTED' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
@@ -213,7 +199,7 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct
        (z, diag4) <- extendDiagram lgraph diag''' [] (EmptyNode curl)
        -- check amalgamability conditions
        -- TODO: make sure the sink is correct
-       () <- assertAmalgamability nullPos diag (inn diag''' n)
+       () <- assertAmalgamability nullPos diag''' (inn diag''' n)
        return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
 	       Unit_expression ubs' (replaceAnnoted ut' ut) poss)
 
@@ -271,8 +257,7 @@ ana_UNIT_TERM lgraph defl gctx curl@(Logic lid) justStruct uctx (Unit_reduction 
     do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
        -- TODO: what with the second morphism returned by ana_RESTRICTION?
        (morph, _) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr
-       -- TODO: the domain of morph should already be in the dev graph -- find it there
-       -- temporary solution: create new node representing the domain of morph
+       -- create new node representing the domain of morph
        let rsig' = dom Grothendieck morph
            nodeContents = DGNode {dgn_name = Nothing,
 				  dgn_sign = rsig',
