@@ -31,7 +31,7 @@ import Common.Lib.Set as Set hiding (filter, split, single, insert)
 import Common.Lexer
 import Control.Monad
 import Common.Lib.Parsec
-import qualified Char as C
+import qualified Data.Char as C
 import Data.List(intersperse)
 import CASL.Formula(updFormulaPos)
 import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
