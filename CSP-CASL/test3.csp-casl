@@ -1,0 +1,17 @@
+ccspec(ccspec) =
+  data 
+
+      sort s 
+      op c:s
+
+  channel
+ 
+      n,m: s; 
+      k,l: s 
+    
+  process 
+
+   P\s;
+   P[[c]];
+   -- Q ; P(c) ; Q ; P(c)
+end    
