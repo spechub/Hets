@@ -68,14 +68,7 @@ data Token
 	| DoubleArrow
 	| Minus
 	| Exclamation
-	| Dot
-
--- Reserved operators Extended Haskell
  
-        | And
-        | Or
-        | Equiv
-        | Impl
 -- Reserved Ids
 
 	| KW_As
@@ -108,7 +101,6 @@ data Token
         | KW_Forall
         | KW_Exists
         | KW_Existsone
-        | KW_Not
 
 -- Extended Haskell Pragma
 
@@ -134,13 +126,8 @@ reserved_ops = [
  ( "=>",  DoubleArrow ),
  ( "-",   Minus ),			--ToDo: shouldn't be here
  ( "!",   Exclamation ),		--ditto
- ( "/\\", And ),                        --ExtHas
- ( "\\/", Or ),
- ( "<=>", Equiv ),
- ( "==>", Impl ),
  ( "{-#", KW_OpenPrag ),
  ( "#-}", KW_ClosePrag ),
- ( ".",   Dot),
  ( "AXIOMS",    KW_AxiomsPrag)
  ]
 
@@ -173,8 +160,7 @@ reserved_ids = [
  ( "hiding", 	KW_Hiding ),
  ( "forall",    KW_Forall ),                --ExtHas
  ( "exists",    KW_Exists ),
- ( "existsone", KW_Existsone),
- ( "not",       KW_Not)
+ ( "existsone", KW_Existsone)
  ]
 
 isIdent, isSymbol :: Char -> Bool
@@ -288,7 +274,7 @@ lexToken = do
 		ident <- lexWhile isIdent
 		return $ case lookup ident reserved_ids of
 			Just keyword -> keyword
-			Nothing -> VarId ident
+			Nothing ->  VarId ident
 
 	    | isSymbol c -> do
 		sym <- lexWhile isSymbol

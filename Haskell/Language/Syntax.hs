@@ -397,8 +397,8 @@ tuple_tycon i	      = HsTyCon (tuple_tycon_name i)
 type AxiomName = String
 
 data Binding
-  = NullBind
-  | AndBindings    Binding Binding
+--  = NullBind
+  = AndBindings    Binding Binding
   | AxiomDecl      AxiomName Formula
   deriving (Eq,Show)
 
@@ -407,33 +407,14 @@ data AxiomBndr
  | AxiomBndrSig HsName HsQualType
   deriving (Eq,Show)
 
--- data Quantifier = Forall | Exists | ExistsOne deriving (Show, Eq)
-
--- data QuantVars = QuantVars Quantifier [AxiomBndr] deriving (Show, Eq)
-
 data Quantifier
   = AxForall [AxiomBndr]
    | AxExists [AxiomBndr]
    | AxExistsOne [AxiomBndr]
   deriving (Eq,Show)
 
--- data LogOp = AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq)
-
--- data Formula
---   = AxQuant   QuantVars Formula 
---   | AxLogOp   LogOp Formula Formula
---   | AxNot     Formula
---   | AxEq      HsExp HsExp SrcLoc
---   deriving (Eq,Show)
-
 data Formula
   = AxQuant   Quantifier Formula
-  | AxAnd     Formula Formula
-  | AxOr      Formula Formula
-  | AxImpl    Formula Formula
-  | AxEquiv   Formula Formula
-  | AxNot     Formula
-  | AxPar     Formula
-  | AxEq      HsExp HsExp SrcLoc
-  | AxPred    HsName
+  | AxEq      Formula HsExp SrcLoc
+  | AxExp     HsExp
   deriving (Eq,Show)
