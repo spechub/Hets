@@ -1,0 +1,178 @@
+library Prelude
+logic Haskell
+
+spec Prelude = {
+data Integer
+data Rational
+data Double
+data Char
+data Int
+
+data (->) a b
+
+data Bool = False | True deriving (Eq, Ord, Show)
+
+not              :: Bool -> Bool
+not True         =  False
+not False        =  True
+
+otherwise = True
+
+(&&) :: Bool -> Bool -> Bool
+a && b = if a then True else b
+
+data  Ordering  =  LT | EQ | GT
+          deriving (Eq, Ord, Show)
+
+lexOrder EQ o = o
+lexOrder o  _ = o
+
+class  Eq a  where
+    (==), (/=)       :: a -> a -> Bool
+
+    x /= y           =  not (x == y)
+    x == y           =  not (x /= y)
+
+data [a] = [] | (:) { head :: a , tail :: [a] } deriving (Eq, Ord)
+(++) :: [a] -> [a] -> [a]
+
+[]     ++ ys = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+
+type  String = [Char]
+
+foreign import primError       :: String -> a
+
+error            :: String -> a
+error = primError
+
+(.)              :: (b -> c) -> (a -> b) -> a -> c
+f . g            =  \ x -> f (g x)
+
+type  ShowS    = String -> String
+
+class  (Eq a) => Ord a  where
+    compare              :: a -> a -> Ordering
+    (<), (<=), (>=), (>) :: a -> a -> Bool
+    max, min             :: a -> a -> a
+
+        -- Minimal complete definition:
+        --      (<=) or compare
+        -- Using compare can be more efficient for complex types.
+    compare x y
+         | x == y    =  EQ
+         | x <= y    =  LT
+         | otherwise =  GT
+
+    x <= y           =  compare x y /= GT
+    x <  y           =  compare x y == LT
+    x >= y           =  compare x y /= LT
+    x >  y           =  compare x y == GT
+
+-- note that (min x y, max x y) = (x,y) or (y,x)
+    max x y
+         | x <= y    =  y
+         | otherwise =  x
+    min x y
+         | x <= y    =  x
+         | otherwise =  y
+
+shows            :: (Show a) => a -> ShowS
+shows            =  showsPrec 0
+
+showChar         :: Char -> ShowS
+showChar         =  (:)
+
+showString       :: String -> ShowS
+showString       =  (++)
+
+showParen        :: Bool -> ShowS -> ShowS
+showParen b p    =  if b then showChar '(' . p . showChar ')' else p
+
+-- Basic printing combinators (nonstd, for use in derived Show instances):
+
+showParenArg :: Int -> ShowS -> ShowS
+showParenArg d = showParen (10<=d)
+
+showArgument x = showChar ' ' . showsPrec 10 x
+
+showArgument x = showChar ' ' . showList x
+
+class  Show a  where
+    showsPrec        :: Int -> a -> ShowS
+    show             :: a -> String
+    showList         :: [a] -> ShowS
+
+    showsPrec _ x s   = show x ++ s
+
+    show x        = showsPrec 0 x ""
+
+    showList []       = showString "[]"
+    showList (x:xs)   = showChar '[' . shows x . showl xs
+                        where showl []     = showChar ']'
+                              showl (x:xs) = showChar ',' . shows x .
+                                             showl xs
+
+
+class  (Eq a, Show a) => Num a  where
+    (+), (-), (*)    :: a -> a -> a
+    negate           :: a -> a
+    abs, signum      :: a -> a
+    fromInteger      :: Integer -> a
+
+class  (Num a) => Fractional a  where
+    (/)              :: a -> a -> a
+    recip            :: a -> a
+    fromRational     :: Rational -> a
+
+instance  (Show a) => Show [a]  where
+    showsPrec p      = showList
+
+instance Num Int
+instance Num Integer
+instance Num Rational
+instance Num Double
+instance Eq Int
+instance Ord Int
+instance Eq Char
+instance Eq Integer
+instance Eq Rational
+instance Eq Double
+instance Ord Char
+instance Ord Integer
+instance Ord Rational
+instance Ord Double
+instance Show Int
+instance Show Char
+instance Show Integer
+instance Show Rational
+instance Show Double
+instance Fractional Rational
+instance Fractional Double
+
+data  ()  =  () deriving (Eq, Ord, Show)
+
+data  (a,b)
+   =  (,) a b
+   deriving (Eq, Ord)
+
+instance  (Show a, Show b) => Show (a,b)  where
+    showsPrec p (x,y) = showChar '(' . shows x . showChar ',' .
+                                       shows y . showChar ')'
+data  (a,b,c)
+   =  (,,) a b c
+   deriving (Eq, Ord)
+}
+%% deriving Show does not work for lists and tuples 
+%% overloaded constants require type signature!
+%[
+a = 'a'
+
+b :: Int
+b = 1
+
+c :: Double
+c = 1.1
+
+s = ""
+]%
