@@ -1,5 +1,4 @@
 {-| 
-   
 Module      :  $Header$
 Copyright   :  (c) Martin Kühl, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -14,13 +13,9 @@ Portability :  non-portable(DevGraph)
 
    A record datatype for fast and easy access and modification
    extension of the options. 
-
 -}
 
 {- Maybe TODO:
-    -- implement Read instance for some (all?) Types of Flags
-    -- parse the input type via 'instance Read InType'?
-    -- there's got to be a better way to realize parseOutType...
     -- an Error should be raised when more than one OutDir were specified,
        or when the OutDir wasn't approved sane
 -}
@@ -421,17 +416,17 @@ options =
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
-      ("output file types, default " ++ show defaultOutType ++ crS ++
+      ("output file types, default " ++ show defaultOutType ++ "," ++ crS ++
        listS ++ crS ++ bS ++ envS ++ crS ++ bS ++
        ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
        graphS ++ joinBar (map show graphList) ++ crS ++ bS ++
        astS ++ formS ++ crS ++ bS ++ 
        joinBar (map show outTypeList) ++ bracket naxS ++ formS)
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
-      ("raw options for pretty-printing" ++ crS ++ "RAW is " 
+      ("raw options for pretty printing" ++ crS ++ "RAW is " 
        ++ joinBar [asciiS, textS, latexS, texS]
        ++ "=STRING where " ++ crS ++ 
-       "STRING is passed to the appropiate printer")
+       "STRING is passed to the appropriate printer")
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++ 
        crS ++ joinBar (map show caslAmalgOpts))
