@@ -3,7 +3,7 @@
 .PHONY: check
 
 check: capa 
-	runcheck.sh
+	./runcheck.sh
 
 capa: Main.hs RunParsers.hs
-	ghc-call
+	./ghc-call
