@@ -83,7 +83,8 @@ mkTypeConstrAppls m ty tm = case ty of
                                      i = Id [o, Token place $ firstPos args ps
                                             , c] [] []
                                  t <- getIdType i tm
-                                 return $ TypeAppl t x 
+                                 if isPlaceType (head ts) then return t
+                                    else return $ TypeAppl t x
                   _ -> mkError "illegal type" ty
     MixfixType [] -> error "mkTypeConstrAppl (MixfixType [])"
     MixfixType (f:a) -> case (f, a) of 
@@ -99,14 +100,21 @@ mkTypeConstrAppls m ty tm = case ty of
     LazyType t p -> do
        newT <- mkTypeConstrAppls TopLevel t tm
        return $ LazyType newT p 
-    ProductType ts ps -> do
+    ProductType ts ps -> if all isPlaceType ts && length ts == 2 then 
+       getIdType productId tm else do
        mTs <- mapM (\ t -> mkTypeConstrAppls TopLevel t tm) ts
        return $ mkProductType mTs ps
-    FunType t1 a t2 ps -> do
+    FunType t1 a t2 ps -> if isPlaceType t1 && isPlaceType t2 then
+       getIdType (arrowId a) tm else do
        newT1 <- mkTypeConstrAppls TopLevel t1 tm
        newT2 <- mkTypeConstrAppls TopLevel t2 tm
        return $ FunType newT1 a newT2 ps
     ExpandedType _ t2 -> mkTypeConstrAppls m t2 tm
+
+isPlaceType :: Type -> Bool
+isPlaceType ty = case ty of 
+    TypeToken t -> isPlace t
+    _ -> False
 
 mkTypeCompId :: Type -> Result Id
 mkTypeCompId ty = case ty of 
