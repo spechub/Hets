@@ -237,7 +237,6 @@ typedSymbKindToRaw Implicit   idt (P_type pt) =
 typedSymbKindToRaw Implicit   idt (A_type s) = 
   return (ASymbol (idToOpSymbol idt ot))
   where ot = OpType {opKind = Total, opArgs = [], opRes = s}
-typedSymbKindToRaw Implicit     idt _ = return (AnID idt)
 typedSymbKindToRaw (Sorts_kind) idt _ = return (AKindedId SortKind idt)
 typedSymbKindToRaw (Ops_kind)   idt (O_type ot) = 
   return (ASymbol (idToOpSymbol idt (toOpType ot)))
