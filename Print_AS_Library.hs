@@ -39,18 +39,30 @@ instance PrettyPrint LIB_ITEM where
     printText0 ga (Spec_defn aa ab ac _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	    ac' = printText0 ga ac
+	    spec_head = (hang (ptext "spec" <+> aa' <+> ab') 2 equals)
+	    ac' = spAnnotedPrintText0 ga (spec_head) ac
          -- nesting is done by the instance for SPEC now
-	in (ptext "spec" <+> aa' <+> ab' <+> equals) $$ ac' $$ ptext "end\n"
+	in ac' $$ ptext "end\n"
 	   
     printText0 ga (View_defn aa ab ac ad _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	    ac' = printText0 ga ac
-	    ad' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ad
+	    -- ac' = printText0 ga ac
+	    (frm,to) = case ac of 
+		       AS_Struct.View_type vaa vab _ -> 
+			   (condBracesGroupSpec ga vaa, 
+			    condBracesGroupSpec ga vab)
+	    ad' = sep $ punctuate comma $ map (printText0 ga) ad
 	    eq' = if null ad then empty else equals
-	in (hang (hang (ptext "view" <+> aa' <+> ab') 8 
-	             (colon <+> ac' <+> eq')) 4 ad') 
+	in (hang (hang (hang (hang (ptext "view" <+> aa' <+> ab') 
+			           6 
+			           (colon <+> frm <+> ptext "to")) 
+			     4 
+                             to) 
+		       2 
+		       eq') 
+	         4 
+	         ad') 
 	   $$ ptext "end\n"
 {-
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
@@ -68,7 +80,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
     printText0 ga (Download_items aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ab
-	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab')
+	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') <+> ptext "\n"
     printText0 ga (AS_Library.Logic aa _) =
 	let aa' = printText0 ga aa
 	in ptext "logic" <+> aa' 
