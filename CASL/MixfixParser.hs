@@ -16,7 +16,7 @@
 -}
 
 module CASL.MixfixParser ( parseString, resolveFormula, resolveMixfix
-		    , getTokenList, expandPos, listBrackets )
+		    , getTokenList, expandPos, listBrackets, isLitToken )
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
@@ -539,8 +539,9 @@ resolveFormula g ops preds frm =
 -- convert literals 
 -- --------------------------------------------------------------- 
 
--- isChar :: Token -> Bool
--- isChar t = head (tokStr t) == '\''
+isLitToken :: Token -> Bool
+isLitToken t =  head (tokStr t) == '\'' || isString t || C.isDigit  
+	       (head $ tokStr t)
 
 isString :: Token -> Bool
 isString t = head (tokStr t) == '\"'
