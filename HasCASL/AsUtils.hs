@@ -46,7 +46,7 @@ getAppl = thrdM reverse . getAppl2
     getAppl2 t = case t of 
         TypedTerm trm q _ _ -> case q of 
             InType -> Nothing
-            _ -> getAppl trm 
+            _ -> getAppl2 trm 
         QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
         QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
         ApplTerm t1 t2 _ -> thrdM (t2:) $ getAppl2 t1
