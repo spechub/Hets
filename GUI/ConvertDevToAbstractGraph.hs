@@ -276,18 +276,22 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                   ("proventhm",
                    Solid $$$ Color "Green"
 		   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ createLocalMenuValueTitleShowConservativity
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
 		   $$$ createLocalEdgeMenuThmEdge gInfo
+		   $$$ createLocalMenuValueTitleShowConservativity
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
 		   $$$ createLocalEdgeMenuThmEdge gInfo
+		   $$$ createLocalMenuValueTitleShowConservativity
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
 		   $$$ createLocalEdgeMenuThmEdge gInfo
+		   $$$ createLocalMenuValueTitleShowConservativity
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unprovenhidingthm",
                    Solid $$$ Color "Orange"
@@ -628,6 +632,16 @@ createLocalMenuButtonShowProofStatusOfThm _ =
           do showProofStatusOfThm descr maybeLEdge
 	     return ()
 	 ))
+
+createLocalMenuValueTitleShowConservativity =
+   (ValueTitle 
+      (\ (_,_,maybeLEdge) ->
+        case maybeLEdge of
+          Just (_,_,edgelab) ->
+            case dgl_type edgelab of
+                        GlobalThm _ c _ -> return (show c)
+                        LocalThm _ c _ -> return (show c)
+              ))
   
 -- ------------------------------
 -- end of local menu definitions
