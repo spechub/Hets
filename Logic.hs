@@ -62,7 +62,7 @@ import Prover -- for one half of class Sentences
 
 import PrettyPrint
 
--- for coercion used in LogicGraph.hs and Grothendieck.hs
+-- for coercion used in Grothendieck.hs and Analysis modules
 
 import UnsafeCoerce
 

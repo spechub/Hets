@@ -19,27 +19,28 @@
 todo:
 
 Integrate stuff from Saarbrücken
-GEnv should become superfluous (cf. extended static semantics)
-  => annotate nodes and links with their origin
-Use graph library
+
 -}
 
 module DevGraph where
 
 import Grothendieck
 import Graph
+import FiniteMap
+import Id
 
 data DGNode = DGNode {
-              dgn_name :: String,
-              dgn_sign :: G_sign,
-              dgn_sens :: [(String,G_sentence)],
-              dgn_generated :: Bool }
+              dgn_sign :: G_sign, -- only the delta
+              dgn_sens :: G_l_sentence_list,  -- or better [(String,G_sentence)] ???
+              dgn_origin :: DGOrigin
+              }
             
 data DGLink = DGLink {
               dgl_name :: String,
               dgl_src, dgl_tar :: DGNode,
               dgl_morphism :: G_morphism,
-              dgl_type :: DGLinkType }
+              dgl_type :: DGLinkType,
+              dgl_origin :: DGOrigin }
 
 
 data DGLinkType = LocalDef 
@@ -54,4 +55,21 @@ data DGLinkType = LocalDef
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
 
+data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding | DGRevealing 
+              | DGRevealTranslation | DGFree | DGCofree | DGLocal | DGClosed 
+              | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec | DGView
+              | DGFitView | DGFitViewImp | DGFitViewA | DGFitViewAImp
+
 type DGraph = Graph DGNode DGLink
+
+type ExtGenSig = (Node,[Node],Node)
+type ExtViewSig = (Node,G_morphism,ExtGenSig)
+type ArchSig = () -- to be done
+type UnitSig = () -- to be done
+
+data GlobalEntry = SpecEntry ExtGenSig 
+                 | ViewEntry ExtViewSig
+                 | ArchEntry ArchSig
+                 | UnitEntry UnitSig
+
+type GlobalEnv = FiniteMap SIMPLE_ID GlobalEntry

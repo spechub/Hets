@@ -19,7 +19,6 @@
 module Parse_AS_Structured where
 
 import Grothendieck
-import LogicGraph
 import Logic
 
 import Logic_CASL  -- we need the default logic

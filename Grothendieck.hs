@@ -14,14 +14,19 @@
 
    R. Diaconescu:
    Grothendieck institutions
-   J. applied categorical structures, to appear
+   J. applied categorical structures 10, 2002, p. 383-402.
 
    T. Mossakowski: 
    Heterogeneous development graphs and heterogeneous borrowing
-   Fossacs 2002, LNCS 2303
+   Fossacs 2002, LNCS 2303, p. 326-341
 
-   T. Mossakowski: Simplified heterogeneous specification
+   T. Mossakowski: Foundations of heterogeneous specification
    Submitted
+
+   T. Mossakowski:
+   Relating CASL with Other Specification Languages:
+        the Institution Level
+   Theoretical Computer Science 286, 2002, p. 367-475
 
    Todo:
 
@@ -30,6 +35,7 @@
 module Grothendieck where
 
 import Logic
+import LogicRepr
 import PrettyPrint
 import Pretty
 import PPUtils (fsep_latex, comma_latex)
@@ -174,4 +180,111 @@ data G_morphism = forall id sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol =>
         G_morphism id morphism
+
+g_ide (G_sign id sigma) = G_morphism id (ide id sigma)
+
+
+-- Existential types for logics and representations
+
+data AnyLogic = forall id sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol .
+        Logic id sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol =>
+        Logic id
+
+data AnyRepresentation = forall id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1
+        id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 .
+      (Logic id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1,
+      Logic id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2) =>
+  Repr(LogicRepr id1 sublogics1 basic_spec1 sentence1 
+                 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1
+                 id2 sublogics2 basic_spec2 sentence2 
+                 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2)
+
+
+type LogicGraph = ([AnyLogic],[AnyRepresentation])
+
+{- This does not work due to needed ordering:
+instance Functor Set where
+  fmap = mapSet
+instance Monad Set where
+  return = unitSet
+  m >>= k          = unionManySets (setToList (fmap k m))
+-}
+
+
+
+------------------------------------------------------------------------------
+-- The Grothendieck signature category
+------------------------------------------------------------------------------
+
+comp_repr :: AnyRepresentation -> AnyRepresentation -> Maybe AnyRepresentation
+comp_repr (Repr (r1 :: {-Logic id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1,
+        Logic id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2) => -}
+        LogicRepr id1 sublogics1 basic_spec1 sentence1 
+                symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1
+            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2))
+  (Repr (r2 :: {-Logic id3 sublogics3
+         basic_spec3 sentence3 symb_items3 symb_map_items3
+         sign3 morphism3 symbol3 raw_symbol3,
+         Logic id4 sublogics4
+         basic_spec4 sentence4 symb_items4 symb_map_items4 
+         sign4 morphism4 symbol4 raw_symbol4) => -}
+         LogicRepr id3 sublogics3 basic_spec3 sentence3 
+	        symb_items3 symb_map_items3
+                sign3 morphism3 symbol3 raw_symbol3
+            id4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4)) = 
+  case coerce (target r1) (source r2) r2 :: Maybe(
+	  LogicRepr id2 sublogics2 basic_spec2 sentence2 
+                symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2
+            id4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
+                sign4 morphism4 symbol4 raw_symbol4)
+		of 
+		Nothing -> Nothing
+		Just r3 -> case LogicRepr.comp_repr r1 r3 of
+			   Nothing -> Nothing
+			   Just r4 -> Just (Repr r4)
+ 
+data GMorphism = forall id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1
+        id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2 .
+      (Logic id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1,
+       Logic id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2) =>
+  GMorphism id1 id2 
+   (LogicRepr id1 sublogics1 basic_spec1 sentence1 
+              symb_items1 symb_map_items1
+              sign1 morphism1 symbol1 raw_symbol1
+              id2 sublogics2 basic_spec2 sentence2 
+              symb_items2 symb_map_items2
+              sign2 morphism2 symbol2 raw_symbol2)
+   morphism2 
+
+
 
