@@ -32,7 +32,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
-import Debug.Trace
+--import Debug.Trace
 -- trace :: String -> a -> a
 -- trace _ a = a
 
@@ -706,9 +706,7 @@ left_most_pos f =
 
 if_detect :: FORMULA -> [Pos] -> Bool
 if_detect _ []  = False
-if_detect f ps  = trace (concatMap (\x->x++"; ") [show f,
-							 show p_impl,
-							 show p_form])
+if_detect f ps  = 
         (line p_impl, column p_impl) < (line p_form, column p_form)
     where p_form = left_most_pos f
 	  p_impl = reduce ps
