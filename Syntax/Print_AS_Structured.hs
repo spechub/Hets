@@ -23,7 +23,11 @@ import Syntax.AS_Structured
 import Common.Print_AS_Annotation
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+
 import Data.List
+import Data.Maybe (fromMaybe)
+
+import Debug.Trace
 
 instance PrettyPrint SPEC where
     --- This implementation doesn't use the grouping information 
@@ -55,7 +59,7 @@ instance PrettyPrint SPEC where
 		    map (spAnnotedPrint printText0 (<+>) ga (ptext "then")) xs
     printText0 ga (Free_spec aa _) =
 	hang (ptext "free") 5 $ 
-	     condBracesGroupSpec printText0 sp_braces ga aa
+	     condBracesGroupSpec printText0 braces Nothing ga aa
     printText0 ga (Local_spec aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = condBracesWithin printText0 sp_braces ga ab
@@ -63,7 +67,7 @@ instance PrettyPrint SPEC where
 	   (hang (ptext "within") 4 ab')
     printText0 ga (Closed_spec aa _) =
 	hang (ptext "closed") 4 $ 
-	     condBracesGroupSpec printText0 sp_braces ga aa
+	     condBracesGroupSpec printText0 braces Nothing ga aa
     printText0 ga (Group aa _) =
 	printText0 ga aa
         -- maybe?: condBracesGroupSpec printText0 sp_braces ga aa
@@ -78,67 +82,82 @@ instance PrettyPrint SPEC where
     --- use global annotations for different printing options
 
     printLatex0 ga (Basic_spec aa) =
-        tabbed_nest_latex $ nest_latex 8 $ printLatex0 ga aa
+        tabbed_nest_latex $ printLatex0 ga aa
     printLatex0 ga (Translation aa ab) =
-	let aa' = condBracesTransReduct printLatex0 sp_braces_latex ga aa
+	let aa' = condBracesTransReduct printLatex0 
+		           sp_braces_latex2 ga aa
 	    ab' = printLatex0 ga ab
 	in tab_hang_latex aa' 8 ab'
     printLatex0 ga (Reduction aa ab) =
-	let aa' = condBracesTransReduct printLatex0 sp_braces_latex ga aa
+	let aa' = condBracesTransReduct printLatex0 
+		        sp_braces_latex2 ga aa
 	    ab' = printLatex0 ga ab
 	in tab_hang_latex aa' 8 ab'
     printLatex0 ga (Union aa _) = fsep_latex $ intersperse' aa 
 	where intersperse' [] = [] 
 	      intersperse' (x:xs) =
-		  (condBracesAnd printLatex0 sp_braces_latex ga x):
+		  (condBracesAnd printLatex0 sp_braces_latex2 ga x):
 		  map (\y -> hc_sty_plain_keyword "and" $$ 
-		       condBracesAnd printLatex0 sp_braces_latex ga y)
+		       condBracesAnd printLatex0 sp_braces_latex2 ga y)
                       xs
     printLatex0 ga (Extension aa _) =
 	fsep_latex $ printList aa
 	where printList [] = []
 	      printList (x:xs) =
-		  (printLatex0 ga x):
-		    map (spAnnotedPrint printLatex0 (<\+>) ga 
+		  (sp_space <> printLatex0 ga' x):
+		    map (spAnnotedPrint printLatex0 (<\+>) ga' 
 			        (hc_sty_hetcasl_keyword "then")) xs
+	      (sp_space,ga') = sp_space_latex ga
     printLatex0 ga (Free_spec aa _) =
-	tabbed_nest_latex (setTabWithSpaces_latex 8 <> 
-			   tab_hang_latex (hc_sty_hetcasl_keyword "free") 8  
-			                  (condBracesGroupSpec printLatex0 
-					               sp_braces_latex ga aa))
+	tabbed_nest_latex (condBracesGroupSpec printLatex0 
+					  sp_braces_latex2 mkw ga aa)
+	where mkw = 
+		  mkMaybeKeywordTuple Nothing $ hc_sty_plain_keyword "free"
     printLatex0 ga (Local_spec aa ab _) =
-	let aa' = printLatex0 ga aa
-	    ab' = condBracesWithin printLatex0 sp_braces_latex ga ab
-	in (hang_latex (hc_sty_plain_keyword "local") 8 aa') $$ 
-	   (hang_latex (hc_sty_plain_keyword "within") 8 ab')
+	let aa' = sp_braces_latex2 $ set_tabbed_nest_latex $ 
+	          (cond_space<> printLatex0 ga aa)
+	    ab' = condBracesWithin printLatex0 sp_braces_latex2 ga ab
+	    cond_space = case skip_Group $ item aa of
+			 Extension _ _ -> space
+			 Union _ _ -> space
+			 _ -> empty
+	    space = hspace_latex (
+		       pt_length (keyword_width "view" + normal_width "~"))
+		       <>setTab_latex
+	in tabbed_nest_latex (setTabWithSpaces_latex 3<>
+		 fsep [hc_sty_plain_keyword "local",tabbed_nest_latex aa',
+		       hc_sty_plain_keyword "within",tabbed_nest_latex ab'])
     printLatex0 ga (Closed_spec aa _) =
-	tabbed_nest_latex (setTabWithSpaces_latex 8 <>
-			   tab_hang_latex (hc_sty_plain_keyword "closed") 8  
-			                  (condBracesGroupSpec printLatex0 
-                                                       sp_braces_latex ga aa))
+	tabbed_nest_latex (condBracesGroupSpec printLatex0 
+                                           sp_braces_latex2 mkw ga aa)
+	where mkw = mkMaybeKeywordTuple Nothing
+		    $ hc_sty_plain_keyword "closed"
     printLatex0 ga (Group aa _) =
 	printLatex0 ga aa
     printLatex0 ga (Spec_inst aa ab _) =
 	let aa' = simple_id_latex aa 
-	    ab' = sep_latex (map (sp_brackets_latex.
-				  (\x -> casl_normal_latex "~" <>setTab_latex
-			           <>printLatex0 ga x)) ab)
-	in tabbed_nest_latex $ 
+	    ga' = set_inside_gen_arg True (set_first_spec_in_param True ga) 
+	in tabbed_nest_latex $
 	   if null ab 
 	   then aa' 
-	   else setTabWithSpaces_latex 8 
-			      <>tab_hang_latex (aa' <~> setTab_latex)  8 ab'
+	   else aa' <\+> set_tabbed_nest_latex
+		    (fsep_latex $ 
+	              map (brackets_latex.
+			   (\x -> set_tabbed_nest_latex
+			          (printLatex0 ga' x))) ab)
+	where ga' = set_inside_gen_arg True (set_first_spec_in_param True ga) 
     printLatex0 ga (Qualified_spec ln asp _) =
 	hc_sty_plain_keyword "logic" <\+> 
             (printLatex0 ga ln) <> colon_latex $$ (printLatex0 ga asp)
 
 instance PrettyPrint RENAMING where
     printText0 ga (Renaming aa _) =
-	hang (text "with") 4 $ cat $ map (printText0 ga) aa
+	hang (text "with") 4 $ fcat $ map (printText0 ga) aa
 
     printLatex0 ga (Renaming aa _) =
-	hang_latex (hc_sty_plain_keyword "with") 8 $ 
-		   cat $ map (printLatex0 ga) aa
+       hc_sty_plain_keyword "with"<\+>
+          set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) aa))
+
 
 instance PrettyPrint RESTRICTION where
     printText0 ga (Hidden aa _) =
@@ -147,10 +166,13 @@ instance PrettyPrint RESTRICTION where
 	hang (text "reveal") 4 $ printText0 ga aa
 
     printLatex0 ga (Hidden aa _) =
-	hang_latex (hc_sty_plain_keyword "hide") 8 $ 
-		   cat $ map (printLatex0 ga) aa
+       hc_sty_plain_keyword "hide"<\+>
+          set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) aa))
     printLatex0 ga (Revealed aa _) =
-	hang_latex (hc_sty_plain_keyword "reveal") 8 $ printLatex0 ga aa
+	hc_sty_plain_keyword "reveal"<\+>
+	  set_tabbed_nest_latex (printLatex0 ga aa)
+
+{- hang_latex (hc_sty_plain_keyword "reveal") 8 $ printLatex0 ga aa -}
 
 {- Is declared in Print_AS_Library
 instance PrettyPrint SPEC_DEFN where
@@ -181,7 +203,7 @@ instance PrettyPrint GENERICITY where
 	in hang aa' 6 ab'
 
     printLatex0 ga (Genericity aa ab _) =
-	let aa' = printLatex0 ga aa
+	let aa' = set_tabbed_nest_latex $ printLatex0 ga aa
 	    ab' = printLatex0 ga ab
 	in if isEmpty aa' && isEmpty ab' 
 	   then empty 
@@ -190,34 +212,46 @@ instance PrettyPrint GENERICITY where
 	      then ab' 
 	      else if isEmpty ab' 
 		   then aa' 
-		   else hang_latex aa' 10 ab'
+		   else fsep_latex [aa'<~>setTab_latex,
+				    tabbed_nest_latex $ ab']
 
 instance PrettyPrint PARAMS where
     printText0 ga (Params aa) =
 	if null aa then empty
-	else sep $ map (sp_brackets.(nest (-4)).(printText0 ga)) aa
+	else sep $ map (brackets.(nest (-4)).(printText0 ga)) aa
 
     printLatex0 ga (Params aa) =
 	if null aa then empty
 	else sep_latex $ 
-	              map (sp_brackets_latex.
-			   (\x -> casl_normal_latex "~" <>setTab_latex
-			          <>printLatex0 ga x)) aa
-
+	              map (brackets_latex.
+			   (\x -> set_tabbed_nest_latex
+			          (printLatex0 ga' x))) aa
+	where ga' = set_inside_gen_arg True (set_first_spec_in_param True ga) 
 instance PrettyPrint IMPORTED where
     printText0 ga (Imported aa) =
 	if null aa then empty 
 	else ptext "given" <+> (fsep $ punctuate comma $ 
 				         map (condBracesGroupSpec printText0 
-					         sp_braces ga) aa)
+					         braces Nothing ga) aa)
 
     printLatex0 ga (Imported aa) =
-	if null aa then empty 
-	else hc_sty_plain_keyword "given" <~> setTab_latex <>
-		 (fsep_latex $ punctuate comma_latex $ 
-		             map (condBracesGroupSpec printLatex0 
-				      sp_braces_latex ga) aa)
-
+	let mkw = mkMaybeKeywordTuple Nothing
+		       (hc_sty_plain_keyword "given")
+	    coBrGrSp = condBracesGroupSpec printLatex0 sp_braces_latex2
+	    taa = tail aa
+	    taa' = if null taa then [] 
+		   else punctuate comma_latex $ tabList_latex $
+			   map ( coBrGrSp Nothing ga) taa
+	    condComma = if null taa then empty else comma_latex
+	    aa' = fsep_latex (map (coBrGrSp Nothing ga) aa)
+	in if null aa then empty 
+	   else  fsep_latex ((coBrGrSp mkw ga (head aa) <> condComma): taa')
+        
+{-	tabbed_nest_latex (condBracesGroupSpec printLatex0 
+					  sp_braces_latex2 mkw ga aa)
+	where mkw = 
+		  mkMaybeKeywordTuple Nothing $ hc_sty_plain_keyword "free"
+-}
 instance PrettyPrint FIT_ARG where
     printText0 ga (Fit_spec aa ab _) =
 	let aa' = printText0 ga aa
@@ -236,16 +270,19 @@ instance PrettyPrint FIT_ARG where
 	    ab' = printLatex0 ga ab
 	    null' = case ab of 
 		    G_symb_map_items_list _ sis -> null sis
-	in aa' <\+> if null' then empty 
-	            else hang_latex (hc_sty_plain_keyword "fit") 8 ab'
+	in if null' then aa' 
+	else fsep_latex [aa',
+			     hc_sty_plain_keyword "fit"<\+>
+			         set_tabbed_nest_latex ab']
     printLatex0 ga (Fit_view aa ab _ ad) =
 	let aa' = simple_id_latex aa
 	    ab' = print_fit_arg_list printLatex0 
-	                             sp_brackets_latex 
+	                             brackets_latex 
 				     sep_latex
 				     ga ab
 	    ad' = vcat $ map (printLatex0 ga) ad
-	in ad' $$ hang_latex (hc_sty_plain_keyword "view" <\+> aa') 8 ab'
+	    view_name = hc_sty_plain_keyword "view" <\+> aa'
+	in ad' $$ if null ab then view_name else setTabWithSpaces_latex 16 <> tab_hang_latex view_name 16 ab'
 
 {- This can be found in Print_AS_Library
 instance PrettyPrint VIEW_DEFN where
@@ -325,12 +362,33 @@ print_fit_arg_list pf b_fun sep_fun ga fas =
 condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		    -> (Doc -> Doc) -- ^ a function enclosing the Doc
                                     -- in braces
+		    -> Maybe (String,Doc) -- ^ something like a keyword 
+					  -- that should be right before 
+		                          -- the braces                        
 		    -> GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesGroupSpec pf b_fun ga as =
+condBracesGroupSpec pf b_fun mkeyw ga as =
     case skip_Group $ item as of
-		 Spec_inst _ _ _ -> as'
-		 _             -> b_fun as'
+		 Spec_inst _ _ _ -> str_doc'<>as'
+		 Union _ _       -> nested''
+		 Extension _ _   -> nested''
+		 _               -> 
+		     if is_latex_print ga 
+		     then str_doc'<>set_tabbed_nest_latex 
+			              (b_fun (set_tabbed_nest_latex as'))
+		     else str_doc'<>b_fun as'
     where as' = pf ga as
+	  format_line = latex_macro (str++"\\{\\=\\KW{view}~\\=\\kill\n")
+	  (str,str_doc) = fromMaybe ("",empty) mkeyw 
+	  str_doc' = if isEmpty str_doc then empty 
+	             else str_doc<>latex_macro"~"
+	  nested' = format_line <> str_doc' <>
+			      latex_macro "\\>"<>
+				  tabbed_nest_latex(
+				     b_fun (set_tabbed_nest_latex 
+					    (latex_macro "\\>"<>as')))
+	  nested'' = if is_latex_print ga then nested'
+		     else str_doc' <>b_fun as'
+
 
 condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		      -> (Doc -> Doc) -- ^ a function enclosing the Doc
@@ -338,11 +396,18 @@ condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		      -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesTransReduct pf b_fun ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> b_fun as'
-		 Union _ _        -> b_fun as'
-		 Local_spec _ _ _ -> b_fun as'
+		 Extension _ _    -> nested''
+		 Union _ _        -> nested''
+		 Local_spec _ _ _ -> nested''
 		 _                -> as'
-    where as' = pf ga as
+    where nested' =  tabbed_nest_latex
+		      (format_line <>
+		           b_fun (set_tabbed_nest_latex 
+				     (latex_macro "\\>"<>as')))
+          as' = pf ga as
+	  format_line = latex_macro "\\{\\=\\KW{view}~\\=\\kill\n"	
+	  nested'' = if is_latex_print ga then nested'
+		     else b_fun as'
 
 condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		 -> (Doc -> Doc) -- ^ a function enclosing the Doc
@@ -350,10 +415,20 @@ condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		 -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesWithin pf b_fun ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> b_fun as'
-		 Union _ _        -> b_fun as'
+		 Extension _ _    -> nested''
+		 Union _ _        -> nested''
 		 _                -> as'
-    where as' = pf ga as
+    where nested' = 
+		      (format_line <>
+		           b_fun (set_tabbed_nest_latex  
+				     (latex_macro "\\>"<>as')))
+          as' = pf ga as
+	  format_line = latex_macro "\\{\\=\\KW{view}~\\=\\kill\n"	
+	  nested'' = if is_latex_print ga then nested'
+		     else b_fun as'
+	  b_fun' = if is_latex_print ga 
+	           then b_fun . set_tabbed_nest_latex 
+		   else b_fun
 
 condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 	      -> (Doc -> Doc) -- ^ a function enclosing the Doc
@@ -361,15 +436,36 @@ condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 	      -> GlobalAnnos -> (Annoted SPEC) -> Doc
 condBracesAnd pf b_fun ga as =
     case skip_Group $ item as of
-		 Extension _ _    -> b_fun as'
+		 Extension _ _    -> nested''
 		 _                -> as'
-    where as' = pf ga as
+    where nested' = 
+		      (format_line <>
+		           b_fun (set_tabbed_nest_latex  
+				     (latex_macro "\\>"<>as')))
+          as' = pf ga as
+	  format_line = latex_macro "\\{\\=\\KW{view}~\\=\\kill\n"	
+	  nested'' = if is_latex_print ga then nested'
+		     else b_fun as'
+	  b_fun' = if is_latex_print ga 
+	           then b_fun . set_tabbed_nest_latex 
+		   else b_fun
 
 skip_Group :: SPEC -> SPEC
 skip_Group sp = 
     case sp of
 	    Group as _ -> skip_Group $ item as
 	    _          -> sp
+
+mkMaybeKeywordTuple :: Maybe String -> Doc -> Maybe (String,Doc)
+mkMaybeKeywordTuple mstr kw_doc = 
+    Just (fromMaybe (if isEmpty kw_doc then "" 
+		     else show $ kw_doc<~>setTab_latex) mstr,kw_doc)
+
+sp_space_latex :: GlobalAnnos -> (Doc,GlobalAnnos)
+sp_space_latex ga = if is_inside_gen_arg ga && is_first_spec_in_param ga
+		    then (space,set_first_spec_in_param False ga)
+		    else (empty,ga)
+    where space = hspace_latex $ pt_length (keyword_width "view" + normal_width "~")
 
 -- moved from Print_AS_Annotation
 spAnnotedPrint :: (PrettyPrint a) => 
