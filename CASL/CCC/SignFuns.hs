@@ -69,3 +69,15 @@ inhabited constrs = iterateInhabited []
                                                   if (all (\s->elem s l') as)
                                                       && (not (elem rs l'))then rs:l'
 					          else l') l argsAndres
+
+--??
+inhabited' :: FORMULA f -> [SORT]
+inhabited' f = case f of
+                Quantification _ _ f' _->inhabited' f'
+                Conjunction fs _->concat [inhabited' f'|f'<-fs]
+                Disjunction fs _->concat [inhabited' f'|f'<-fs]
+                Implication f1 f2 _ _->(inhabited' f1)++(inhabited' f2)
+                Equivalence f1 f2 _->(inhabited' f1)++(inhabited' f2)
+                Negation f' _->inhabited' f'
+                Sort_gen_ax constrs True->inhabited constrs
+                _ -> []
