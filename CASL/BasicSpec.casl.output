@@ -39,9 +39,9 @@ forall m, n, r, s:Nat
 . not def (m /? 0) %(Nat_divide_0)%
 . (n > 0) => (m /? n = r <=> m = r * n) %(Nat_divide_Pos)%
 . m div n = r <=> exists s:Nat . m = n * r + s /\ (s < n)
-  %(Nat_div)%
+%(Nat_div)%
 . m mod n = s <=> exists r:Nat . m = n * r + s /\ (s < n)
-  %(Nat_mod)%
+%(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
 . 1 = suc (0) %(Nat_1_def)%
@@ -73,7 +73,7 @@ forall x, m, n, r, s, t:Nat; p:Pos
 . (r + s) * t = (r * t) + (s * t) %(Nat_distr)%
 . max (m, 0) = m %(Nat_max_unit)%
 . min (m, 0) = 0 %(Nat_min_0)%
-  %% end
+%% end
 generated type Int ::= __-__(Nat; Nat)
 forall a, b, c, d:Nat
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
@@ -94,12 +94,12 @@ ops 0, 1 : Int;
 forall m, n, r, s:Int; a, b, c, d:Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
 . (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
-  %(Int_mult_def)%
+%(Int_mult_def)%
 . m - n = m + (- n) %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
 . - (a - b) = b - a %(Int_neg_def)%
 . sign (m) = 0 when m = 0 else (1 when m > 0 else - 1)
-  %(Int_sign_def)%
+%(Int_sign_def)%
 . (m <= n) <=> (n - m in Nat) %(Int_leq_def)%
 . (m >= n) <=> (n <= m) %(Int_geq_def)%
 . (m < n) <=> (m <= n) /\ not m = n %(Int_less_def)%
@@ -112,15 +112,15 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . (even (m)) <=> (even (abs (m))) %(Int_even_def)%
 . (odd (m)) <=> not (even (m)) %(Int_odd_def)%
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
-  %(Int_divide)%
+%(Int_divide)%
 . not n = 0 => (m mod n < abs (n)) %(Int_mod_range)%
 . not n = 0 => m = (m div n) * n + (m mod n) %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
-  %(Int_quot_def)%
+%(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
-  %(Int_rem_def)%
+%(Int_rem_def)%
 %% then %implies
 forall m, n, r:Int; a, b:Nat
 . (def (a -? b)) => a -? b = a - b %(Int_Nat_sub_compat)%
@@ -134,7 +134,7 @@ forall m, n, r:Int; a, b:Nat
 . (def (m quot n)) <=> not n = 0 %(Int_quot_dom)%
 . (def (m rem n)) <=> not n = 0 %(Int_rem_dom)%
 . not n = 0 => m = (m quot n) * n + (m rem n) %(Int_quot_rem)%
-  %% end
+%% end
 generated type Rat ::= __/__(Int; Pos)
 forall i, j:Int; p, q:Pos
 . i / p = j / q <=> i * q = j * p %(Rat_equality)%
@@ -171,7 +171,7 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 forall i, j:Int; p, q:Pos
 . (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
 . not j = 0 => (i / p) / (j / q) = (i / p) * (q / j)
-  %(Rat_divide_rule)%
+%(Rat_divide_rule)%
 pred __<__ : a * a
 ops __a : b;
     c : b
@@ -236,17 +236,17 @@ ops 1, 2, 3, 4 : s;
 . def 12E34
 . def 12E-34
 . def 12.34
-  %%numbers
+%%numbers
 . def 12.34E34
 . def 12.34E+34
 . def 12.34E-34
-  %%fractions
+%%fractions
 . true %(The true formula)%
 . true
-  %(and this
-               also goes
-               along several lines! 
-               and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
+%(and this
+             also goes
+             along several lines! 
+             and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
 sort s
 op __and'__ : s
 sort a

@@ -206,11 +206,7 @@ data Sentence = Axiom (Annoted Axiom)
 		deriving (Show, Eq)
 
 getLabel :: Sentence -> String
-getLabel (Axiom ax) = let annos = r_annos(ax)
-                          isLbl a = case a of Label _ _ -> True; _ -> False 
-                          labels = filter isLbl annos
-		          getLabels(Label l _) = concat l  		    
-                      in if null labels then "" else getLabels(head(labels))
+getLabel (Axiom ax) = getRLabel ax
 getLabel (GenItems l _) = let srts = filter (\x ->
 					     case x of Symbol _ Sort -> True
                                                        _ -> False) l
