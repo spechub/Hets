@@ -213,7 +213,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
               (Diagram sign morphism, -- the diagram to be analyzed
-	       [LEdge morphism],      -- the sink
+	       [(Node, morphism)],    -- the sink
 	       Diagram String String) -- the descriptions of nodes and edges
 		  -> Result Amalgamates
 
