@@ -20,6 +20,7 @@ import Syntax.Parse_AS_Structured
 import Common.Lib.Parsec
 import Logic.LogicGraph
 import Common.ATerm.Lib
+import Version
 
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
@@ -43,7 +44,17 @@ read_LIB_DEFN opt file =
     guess GuessIn = guessInType file
     guess itype   = itype
 
-readShATermFile :: (ATermConvertible a) => FilePath -> IO a
+readShATermFile :: (ATermConvertible a) => FilePath -> IO a 
 readShATermFile fp = do str <- readFile fp
-                        return $ fromShATerm $ readATerm str                        
+                        att <- return $ readATerm str
+                        case getATerm att of
+                         ShAAppl "hets" [versionnr,aterm] [] -> if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
+								 then return $ fromShATerm $ getATermByIndex1 aterm att
+                                                                 else return $ error "Wrong version number!"
+                         _                                   -> return $ error "Couldn't convert ShATerm back from file"
+ 
+
+
+
+
 
