@@ -183,13 +183,13 @@ options =
       "print usage information and exit"
     , Option ['i'] ["input-type"]  (ReqArg parseInType "ITYPE")
       "ITYPE of input file: \n\t(tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?"
-    , Option ['O'] ["output-dir"]  (ReqArg parseOutDir "DIR")
+    , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")
       "destination directory for output files"
     , Option ['o'] ["output-types"] (ReqArg parseOutTypes "OTYPES")
       "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t(default: dg.taf)"
     , Option ['p'] ["just-parse"]  (NoArg (Analysis False))
       "skip static analysis - just parse"
-    , Option ['L'] ["casl-libdir"]  (ReqArg parseLibDir "DIR")
+    , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR")
       "CASL library directory"
     , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
       "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
@@ -291,15 +291,7 @@ parseRawOpts s =
 	parsePrefix "tex"   = RawLatex
 	parsePrefix _       = error'
 	error' = hetsError User (s ++ " ia not a valid RAW String")
-    in Raw [(parsePrefix prefix) (drop 1 s)]
-
--- parse the output directory 
-parseOutDir :: String -> Flag
-parseOutDir s = OutDir s
-
--- parse casl library directory
-parseLibDir :: String -> Flag
-parseLibDir s = LibDir s
+    in Raw [(parsePrefix prefix) (drop 1 string)]
 
 
 -- main functions --
@@ -314,28 +306,26 @@ hetcatsOpts argv =
 	       hcOpts <- return $ 
 			 foldr (flip makeOpts) defaultHetcatsOpts flags
 	       return $ hcOpts { infiles = infs }
-        (_,_,errs) -> fail (concat errs ++ hetsUsage)
+        (_,_,errs) -> hetsError User (concat errs)
 
 checkFlags :: [Flag] -> IO [Flag]
 checkFlags fs =
-    do if (hasHelp fs)
-	  then do putStrLn hetsUsage
-		  exitWith ExitSuccess
-	  else return [] -- fall through
-       if (hasVersion fs)
-	  then do putStrLn ("version of hets: " ++ hetcats_version)
-		  exitWith ExitSuccess
-	  else return [] -- fall through
-       fs' <- (collectOutDirs
-	       . collectOutTypes
-	       . collectVerbosity
-	       . collectRawOpts
-	       -- collect some more here?
-	      ) fs
-       return fs'
-    where
-    hasVersion xs = Version `elem` xs
-    hasHelp xs = Help `elem` xs
+    let collectFlags = (collectOutDirs
+			. collectOutTypes
+			. collectVerbosity
+			. collectRawOpts
+			-- collect some more here?
+		   )
+    in do if (Help `elem` fs)
+	     then do putStrLn hetsUsage
+		     exitWith ExitSuccess
+	     else return [] -- fall through
+	  if (Version `elem` fs)
+	     then do putStrLn ("version of hets: " ++ hetcats_version)
+		     exitWith ExitSuccess
+	     else return [] -- fall through
+	  fs' <- collectFlags fs
+	  return fs'
 
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs = 
@@ -403,10 +393,8 @@ collectOutTypes fs =
 	isOType (OutTypes _) = True
 	isOType _            = False
 	otypes = foldl concatOTypes [] ots
-	concatOTypes os (OutTypes ot) = os ++ ot
-	concatOTypes _ _ = hetsError Intern "Unknown Error in collectOutTypes"
-	otypes' = if (null otypes) then [] else [(OutTypes otypes)]
-    in otypes' ++ fs'
+	concatOTypes = (\os (OutTypes ot) -> os ++ ot)
+    in if (null otypes) then fs' else ((OutTypes otypes):fs')
 
 collectRawOpts :: [Flag] -> [Flag]
 collectRawOpts fs =
@@ -414,10 +402,8 @@ collectRawOpts fs =
 	isRawOpt (Raw _) = True
 	isRawOpt _       = False
 	raws = foldl concatRawOpts [] rfs
-	concatRawOpts os (Raw ot) = os ++ ot
-	concatRawOpts _ _ = hetsError Intern "Unknown Error in collectRawOpts"
-	raws' = if (null raws) then [] else [(Raw raws)]
-    in raws' ++ fs'
+	concatRawOpts = (\os (Raw ot) -> os ++ ot)
+    in if (null raws) then fs' else ((Raw raws):fs')
 
 
 -- auxiliary functions: error messages --
