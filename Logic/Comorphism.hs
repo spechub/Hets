@@ -84,8 +84,10 @@ class (Language cid,
 
 data IdComorphism lid sublogics = 
      IdComorphism lid sublogics deriving Show
+
 idComorphismTc :: TyCon
 idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"
+
 instance Typeable (IdComorphism lid sub) where 
   typeOf _ = mkTyConApp idComorphismTc []
 
@@ -94,7 +96,9 @@ instance Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdComorphism lid sublogics) where
            language_name (IdComorphism lid sub) = 
-             "id_"++language_name lid++"."++head (sublogic_names lid sub)
+               case sublogic_names lid sub of 
+               [] -> error "language_name IdComorphism"
+               h : _ -> "id_" ++ language_name lid ++ "." ++ h
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -107,10 +111,10 @@ instance Logic lid sublogics
           basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree 
          where
-           sourceLogic (IdComorphism lid sub) = lid
-           targetLogic (IdComorphism lid sub) = lid
-           sourceSublogic (IdComorphism lid sub) = sub
-           targetSublogic (IdComorphism lid sub) = sub
+           sourceLogic (IdComorphism lid _sub) = lid
+           targetLogic (IdComorphism lid _sub) = lid
+           sourceSublogic (IdComorphism _lid sub) = sub
+           targetSublogic (IdComorphism _lid sub) = sub
            map_sign _ = \sigma -> Just(sigma,[])
            map_morphism _ = Just
            map_sentence _ = \_ -> Just
@@ -121,6 +125,7 @@ data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
 
 tyconCompComorphism :: TyCon
 tyconCompComorphism = mkTyCon "Logic.Comorphism.CompComorphism"
+
 instance Typeable (CompComorphism cid1 cid2) where
   typeOf _ = mkTyConApp tyconCompComorphism []
 

@@ -279,7 +279,7 @@ class (StaticAnalysis lid
 	 data_logic _ = Nothing
 
          sublogic_names :: lid -> sublogics -> [String] 
-	 sublogic_names _ _ = []
+	 sublogic_names lid _ = [language_name lid]
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
 	 all_sublogics _ = []

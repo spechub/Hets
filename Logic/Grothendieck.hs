@@ -281,8 +281,9 @@ instance Typeable G_sublogics where
   typeOf _ = mkTyConApp tyconG_sublogics []
 
 instance Show G_sublogics where
-    show (G_sublogics lid sub) = 
-      show lid++"."++head (sublogic_names lid sub)
+    show (G_sublogics lid sub) = case sublogic_names lid sub of 
+      [] -> error "show G_sublogics"
+      h : _ -> show lid ++ "." ++ h
 
 instance Eq G_sublogics where
     (G_sublogics lid1 l1) == (G_sublogics lid2 l2) =
