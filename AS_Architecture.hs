@@ -14,7 +14,7 @@ import AS_Structured
 import Grothendieck
 import Id
 
-data ARCH_SPEC_DEFN = Arch_spec_defn ARCH_SPEC_NAME ARCH_SPEC [Pos]
+data ARCH_SPEC_DEFN = Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) [Pos]
 		      deriving (Show,Eq)
 
 data ARCH_SPEC = Basic_arch_spec [UNIT_DECL_DEFN] UNIT_EXPRESSION [Pos]

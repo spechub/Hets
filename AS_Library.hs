@@ -9,20 +9,24 @@
 -}
 
 module AS_Library where
+
+import Id
+import AS_Annotation
+
 import AS_Architecture
 import AS_Structured
 import Grothendieck
-import Id
+
 
 data LIB_DEFN = Lib_defn LIB_NAME [LIB_ITEM] [Pos]
 		deriving (Show,Eq)
 
-data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY SPEC [Pos] 
+data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos] 
 
 	      | View_defn VIEW_NAME GENERICITY VIEW_TYPE 
 		          G_symb_map_items_list [Pos] 
 
-	      | Arch_spec_defn ARCH_SPEC_NAME ARCH_SPEC [Pos]
+	      | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) [Pos]
 
 	      | Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 

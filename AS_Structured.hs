@@ -20,14 +20,14 @@ import Grothendieck
 import Logic
 
 data SPEC = Basic_spec G_basic_spec 
-	  | Translation SPEC RENAMING 
-	  | Reduction SPEC RESTRICTION 
-	  | Union [SPEC] [Pos]
-	  | Extension [SPEC] [Pos]
-	  | Free_spec SPEC [Pos]
-	  | Local_spec SPEC SPEC [Pos]
-	  | Closed_spec SPEC [Pos]
-          | Group SPEC [Pos]
+	  | Translation (Annoted SPEC) RENAMING 
+	  | Reduction (Annoted SPEC) RESTRICTION 
+	  | Union [(Annoted SPEC)] [Pos]
+	  | Extension [(Annoted SPEC)] [Pos]
+	  | Free_spec (Annoted SPEC) [Pos]
+	  | Local_spec (Annoted SPEC) (Annoted SPEC) [Pos]
+	  | Closed_spec (Annoted SPEC) [Pos]
+          | Group (Annoted SPEC) [Pos]
           | Spec_inst SPEC_NAME [FIT_ARG] 
 	    deriving (Show,Eq)
 
@@ -39,20 +39,19 @@ data RESTRICTION = Hidden G_symb_items_list [Pos]
 		 | Revealed G_symb_map_items_list [Pos]
 		   deriving (Show,Eq)
 
-data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY SPEC [Pos]
-               -- 
+data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
 		 deriving (Show,Eq)
 
 data GENERICITY = Genericity PARAMS IMPORTED [Pos]
 		  deriving (Show,Eq)
 
-data PARAMS = Params [SPEC] [Pos]
+data PARAMS = Params [Annoted SPEC] [Pos]
 	      deriving (Show,Eq)
 
-data IMPORTED = Imported [SPEC] [Pos]
+data IMPORTED = Imported [Annoted SPEC] [Pos]
 		deriving (Show,Eq)
 
-data FIT_ARG = Fit_spec SPEC G_symb_map_items_list [Pos] 
+data FIT_ARG = Fit_spec (Annoted SPEC) G_symb_map_items_list [Pos] 
 	     | Fit_view VIEW_NAME [FIT_ARG] [Pos]
 	       deriving (Show,Eq)
 
@@ -60,7 +59,7 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			   G_symb_map_items_list [Pos]
 		  deriving (Show,Eq)
 
-data VIEW_TYPE = View_type SPEC SPEC [Pos]
+data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) [Pos]
 		 deriving (Show,Eq)
 
 type SPEC_NAME = SIMPLE_ID
