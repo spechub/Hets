@@ -282,7 +282,7 @@ kernel f =
 {--------------------------------------------------------------------
   Show
 --------------------------------------------------------------------}
-instance (Show k, Show a) => Show (Map k a) where
+instance (Show k, Show a) => Show (FiniteMap k a) where
   showsPrec _ m  = showMap (toAscList m)
 
 -- | Retrieve an element by /index/. Calls 'error' when an
