@@ -8,6 +8,8 @@
 #extra test
 runcheck capa Terms MixIds.casl MixIds.casl.output $1
 runcheck capa Terms WrongMixIds.casl WrongMixIds.casl.asTerms.output $1
+runcheck capa MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output $1
+runcheck capa MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output $1
 
 #don't take files starting with "Wrong"
 for j in [A-V]*.casl; 
