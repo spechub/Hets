@@ -28,19 +28,18 @@ may destroy the closedness property of a relation.
 -}
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
-                       union , subset, difference, path,
+                       union , subset, difference, path, delete,
                        succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
-		       intransKernel,mostRight,rmSym,symmetricSets,
+                       intransKernel, mostRight, rmSym, symmetricSets,
                        restrict, toSet, fromSet, topSort, nodes,
-                       transpose, collaps, transReduce) where
+                       transpose, collaps, transReduce, 
+                       haveCommonLeftElem) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.List(groupBy)
-
 import Data.Maybe (catMaybes)
-import Debug.QuickCheck
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 -- the invariant is that set values are never empty
@@ -74,8 +73,8 @@ delete :: Ord a => a -> a -> Rel a -> Rel a
 delete a b r
     | member a b r = let s = Set.delete b (Map.find a (toMap r)) 
                      in if Set.isEmpty s 
-			then Rel $ Map.delete a $ toMap r 
-			else Rel $ Map.insert a s $ toMap r
+                        then Rel $ Map.delete a $ toMap r 
+                        else Rel $ Map.insert a s $ toMap r
     | otherwise    = r
 
 -- | test for an (previously inserted) ordered pair
@@ -109,13 +108,6 @@ predecessors r@(Rel m) a = preds r a $ keySet m
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
 path a b r = Set.member b $ reachable r a
-
-{--------------------------------------------------------------------
-  SymMember (Added by K.L.)
---------------------------------------------------------------------}
--- | test for proper transitive membership
-propTransMember :: Ord a => a -> a -> Rel a -> Bool
-propTransMember a b r = not (member a b r) && path a b r
 
 -- | compute transitive closure (make all transitive members direct members)
 transClosure :: Ord a => Rel a -> Rel a
@@ -282,7 +274,7 @@ mostRight :: (Ord a) => Rel a -> (Set.Set a)
 mostRight r = 
     let rmp = toMap $ rmSym $ rmReflex r
     in (Set.unions $ Map.elems rmp) Set.\\ 
-	    (Set.fromDistinctAscList $ Map.keys rmp)
+            (Set.fromDistinctAscList $ Map.keys rmp)
 
 {--------------------------------------------------------------------
   symmetricSets (Added by K.L.)
@@ -293,28 +285,28 @@ mostRight r =
 symmetricSets :: (Ord a) => Rel a -> Set.Set (Set.Set a)
 symmetricSets rel = 
     fst $ Map.foldWithKey  
-	   (\k e (s,seen) -> 
-	      if not (Set.isEmpty seen) && 
-	         k == Set.findMin seen 
-	      then (s,seen) 
-	      else (let sym = Set.fold (\ e1 s1 -> 
-					      if member e1 k rel
-					      then Set.insert k $ 
-					           Set.insert e1 s1
-					      else s1) Set.empty  e 
-		    in if Set.isEmpty sym 
-		       then s 
-		       else Set.insert sym s
-		   ,Set.insert k seen `Set.union` e))
-	   (Set.empty,Set.empty)  $ 
-		      toMap $ rmReflex rel 
+           (\k e (s,seen) -> 
+              if not (Set.isEmpty seen) && 
+                 k == Set.findMin seen 
+              then (s,seen) 
+              else (let sym = Set.fold (\ e1 s1 -> 
+                                              if member e1 k rel
+                                              then Set.insert k $ 
+                                                   Set.insert e1 s1
+                                              else s1) Set.empty  e 
+                    in if Set.isEmpty sym 
+                       then s 
+                       else Set.insert sym s
+                   ,Set.insert k seen `Set.union` e))
+           (Set.empty,Set.empty)  $ 
+                      toMap $ rmReflex rel 
 
 symmetricMap :: (Ord a) => Rel a -> Map.Map a (Set.Set a) 
 symmetricMap = Set.fold (\s mp -> 
-			       Set.fold (\k mp1 -> 
-					   Map.insert k s mp1) mp s)
-		            Map.empty . symmetricSets
-		  
+                               Set.fold (\k mp1 -> 
+                                           Map.insert k s mp1) mp s)
+                            Map.empty . symmetricSets
+                  
 {--------------------------------------------------------------------
   remove reflexive (Added by K.L.)
 --------------------------------------------------------------------}
@@ -335,29 +327,29 @@ rmReflex = Rel . Map.mapWithKey Set.delete . toMap
 intransKernel :: (Show a ,Ord a) => Rel a -> Rel a
 intransKernel r = 
     let rmap = toMap $ rmReflex $ rmSym r
-	insDirR k set m = Map.insert k (dirRight set) m
-	dirRight set = set Set.\\ transRight set
-	transRight =  Set.unions . map lkup . Set.toList
-	lkup = (\ e -> maybe Set.empty id (Map.lookup e rmap))
-	addSym sm mp = 	      
-	    let checkAllSym m = 
-		    Set.fold (\k cm -> if Map.member k cm 
+        insDirR k set m = Map.insert k (dirRight set) m
+        dirRight set = set Set.\\ transRight set
+        transRight =  Set.unions . map lkup . Set.toList
+        lkup = (\ e -> maybe Set.empty id (Map.lookup e rmap))
+        addSym sm mp =        
+            let checkAllSym m = 
+                    Set.fold (\k cm -> if Map.member k cm 
                                          then cm 
                                          else Map.insert k 
                                               (Map.find k sm) cm) 
-		               m $ Set.unions $ Map.elems sm
-	    in Rel $ checkAllSym 
-		   $ Map.mapWithKey 
-			 (\ k s -> Set.delete k $
-			           Set.unions (s:catMaybes (concatMap  
-				        (\x-> let ms = Map.lookup x sm
+                               m $ Set.unions $ Map.elems sm
+            in Rel $ checkAllSym 
+                   $ Map.mapWithKey 
+                         (\ k s -> Set.delete k $
+                                   Set.unions (s:catMaybes (concatMap  
+                                        (\x-> let ms = Map.lookup x sm
                                               in maybe ([ms]) 
                                                     (\ _ -> [ms,
-							     Map.lookup x 
-							       mp]) 
-					            ms) 
+                                                             Map.lookup x 
+                                                               mp]) 
+                                                    ms) 
                                             (k:Set.toList s)))) 
-		   $ mp 
+                   $ mp 
     in addSym (symmetricMap r) $ 
        Map.foldWithKey insDirR Map.empty rmap
 
@@ -372,9 +364,9 @@ intransKernel r =
 rmSym :: (Ord a) => Rel a -> Rel a
 rmSym rel =
           let rl = Map.keys (toMap rel) 
-	      sym (x,y) r1 = if symMember x y rel 
-			      then delete y x r1
-			      else r1
+              sym (x,y) r1 = if symMember x y rel 
+                              then delete y x r1
+                              else r1
           in foldr sym rel [(x,y) | x <- rl, y <- rl, x<y]    
 
 {--------------------------------------------------------------------
@@ -387,67 +379,5 @@ rmSym rel =
 -- * if one of the arguments is not present False is returned
 haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
-    Map.foldWithKey (\ k e rs -> rs || 
-		                (t1 `Set.member` e && 
-				 t2 `Set.member` e)) False . toMap
-
-instance Arbitrary (Rel Int) where
-    arbitrary = do l <- arbitrary
-		   l1 <- arbitrary
-		   l2 <- arbitrary
-		   let r = fromList $ filter (\ (x,y) -> x/=y) (l++l1++l2)
-		       keys = Map.keys $ toMap r
-                   x <- choose (0,length keys-1)
-		   y <- choose (0,length keys-3)
-		   z <- choose (0,length keys-1)
-		   x1 <- choose (0,length keys-2)
-		   y1 <- choose (0,length keys-1)
-		   let r' = 
-			insert x1 y1 $
-			insert y1 x1 $
-			insert x y $
-			insert x z $
-			insert z y $
-			insert y x $ r
-		   return r'
-
-
-
-prop_transReduce_transClosure = prp_transClosure transReduce
-prop_intransKernel_transClosure = prp_transClosure intransKernel
-
-prp_transClosure intrKern r =
-    (Set.size (mostRight r) <= 3 && 
-     Set.size (symmetricSets r) > 1 &&
-     length (Map.keys $ toMap r) > 6 )  ==>
-       ((Set.size $ toSet $ rmReflex r) < 10) `trivial`
-        collect (length (Map.keys $ toMap r))
-		 (transClosure (rmReflex r) == 
-		  transClosure (intrKern $ transClosure r))
-    where rel = r::(Rel Int)
-
-tr = transClosure test1
- 
-test1 = fromList (zip [(1::Int)..7] [2..8] ++ 
-		 [(2,1),(12,11),(4,12),(12,13),(13,12),
-		 (11,14),(14,11),(-1,14),(14,-1),(100,1),(2,100)])
-
-test2 = fromList [(1,2::Int),(2,3),(3,2),(3,5),(3,4),(1,4),(4,5),
-		  (4,6),(5,6),(6,7),(6,8),(7,9),(8,9)]
-
-test3 = delete 100 1 (test1 `union` fromList (zip [7..100] [8..101]))
-
-test4 = test3 `union` fromList (zip [100..300] [101..301])
-
-test5 = test4 `union` (test2 `union` fromList (zip [301..500] [302,501]))
-
-test6 = fromList [(2,1::Int),(3,1),(5,2),(5,4),(4,5),(6,3),(7,3),(8,5),(8,6),(8,7),(9,8),(8,9),(9,5),(2,-1),(-11,-10),(-12,-10),(-1,-3)]
-
-test7 = fromList [(2,1),(3,1),(4,2),(5,2),(6,3),(7,6),(8,6::Int),(-7,7),(7,-7)]
-
-myQuick = Config
-  { configMaxTest = 100
-  , configMaxFail = 2000
-  , configSize    = (+ 3) . (`div` 2)
-  , configEvery   = \n args -> let s = show n in s ++ [ '\b' | _ <- s ]
-  }
+    Map.fold(\ e rs -> rs || (t1 `Set.member` e && 
+                              t2 `Set.member` e)) False . toMap
