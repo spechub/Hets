@@ -24,37 +24,31 @@ import Common.Result                     (Result (..))
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.AS_Annotation
+import Common.ATerm.Conversion
 
-import Haskell.ATC_Haskell      -- generated ATerm conversions
-import Haskell.PrintModuleInfo
+-- import Haskell.ATC_Haskell      -- generated ATerm conversions
+-- import Haskell.PrintModuleInfo
 import Haskell.HatParser                 (HsDecls,
                                           hatParser)
-import Haskell.HatAna
+{- import Haskell.HatAna
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
                                           emptyModuleInfo,
 					  joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.HsSyn    (HsDecl)
+-}
 
 import Logic.Logic             
 
-moduleInfoTc, hsDeclTc, aHsDeclTc :: TyCon
-moduleInfoTc   = mkTyCon "Haskell.Hatchet.MultiModuleBasics.ModuleInfo"
-hsDeclTc       = mkTyCon "Haskell.Hatchet.HsSyn.HsDecl"
-aHsDeclTc      = mkTyCon "Haskell.Hatchet.AnnotatedHsSyn.AHsDecl"
+hsDeclsTc :: TyCon
+hsDeclsTc = mkTyCon "Haskell.HatParser.HsDecls"
 
-instance Typeable ModuleInfo where
-    typeOf _ = mkTyConApp moduleInfoTc []
-instance Typeable HsDecl where
-    typeOf _ = mkTyConApp hsDeclTc []
-instance Typeable AHsDecl where
-    typeOf _ = mkTyConApp aHsDeclTc []
+instance ATermConvertible HsDecls
 
-instance PrintLaTeX ModuleInfo where
-  printLatex0 = printText0
+instance Typeable HsDecls where
+    typeOf _ = mkTyConApp hsDeclsTc []
+
 instance PrintLaTeX HsDecls where
-  printLatex0 = printText0
-instance PrintLaTeX AHsDecl where
   printLatex0 = printText0
 
 -- a dummy datatype for the LogicGraph and for identifying the right
@@ -67,7 +61,7 @@ instance Language Haskell where
   \featuring static typing, higher-order functions, polymorphism, type classes and monadic effects\ 
   \See http://www.haskell.org"
 
-type Sign = ModuleInfo 
+type Sign = ()
 type Morphism = ()
 
 instance Category Haskell Sign Morphism where
@@ -87,9 +81,7 @@ instance Syntax Haskell HsDecls
 
 type Haskell_Sublogics = ()
 
-type Sentence = AHsDecl
-instance Ord AHsDecl where
-  compare _x _y = error "Haskell.Logic_Haskell: compare for AHsDecl"
+type Sentence = ()
 
 type Symbol = ()
 type RawSymbol = ()
@@ -102,7 +94,6 @@ instance Sentences Haskell Sentence () Sign Morphism Symbol where
     provers Haskell = [] 
     cons_checkers Haskell = []
 
-
 instance StaticAnalysis Haskell HsDecls
                Sentence () 
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -110,22 +101,8 @@ instance StaticAnalysis Haskell HsDecls
                Morphism 
                Symbol RawSymbol 
 
-
-  where
-    empty_signature Haskell 
-       = emptyModuleInfo
-    signature_union Haskell sig1 sig2 = return (joinModuleInfo sig1 sig2)
-    inclusion Haskell _ _ = return ()
-    basic_analysis Haskell = Just(basicAnalysis)
-      where basicAnalysis (basicSpec, sig, _) = 	            
-             let (modInfo, sens) = hatAna basicSpec sig
-             in Result [] $ Just (basicSpec, diffModInfo modInfo sig, 
-				  modInfo, sens)
-    is_subsig Haskell s1 s2 = joinModuleInfo s1 s2 == s2
-
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
                Symbol RawSymbol ()
-   where data_logic Haskell = Nothing

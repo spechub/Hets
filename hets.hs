@@ -51,10 +51,12 @@ import qualified Common.Lib.Map as Map
 
 import ReadFn
 import WriteFn
---import ProcessFn
 
+{-
+#ifdef PROGRAMATICA
 import Haskell.Haskell2DG
-
+#endif
+-}
 
 main :: IO ()
 main = 
@@ -76,11 +78,15 @@ processFile opt file =
                            fail "No web interface; UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
                    No   -> return () 
+{-
+#ifdef PROGRAMATICA
              HaskellIn -> do  
                  r <- anaHaskellFile opt file
                  case gui opt of
                      Not -> return ()
                      _ -> showGraph file opt r
+#endif
+-}
              _ -> do
                   ld <- read_LIB_DEFN opt file
 --                (env,ld') <- analyse_LIB_DEFN opt

@@ -16,30 +16,33 @@ Portability :  portable
 module Haskell.HatParser where
 
 import Haskell.Wrapper
-import Haskell.Hatchet.HsSyn
-import Haskell.Hatchet.HsParser as HatParser
-import Haskell.Hatchet.HsPretty as HatPretty
-import Haskell.Hatchet.HsParseMonad
+import HsModule
+import PropLexer
+import PropParser as HsParser
+import PropPosSyntax
+import qualified NewPrettyPrint as HatPretty
+import ParseMonad
 import Common.Lib.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
 -- import Debug.Trace
 
 instance PrettyPrint HsDecls where
-     printText0 _ hsDecls = 
-         vcat (map (text . ((++) "\n") . HatPretty.render . ppHsDecl) hsDecls)
+     printText0 _ ds = 
+         vcat (map (text . ((++) "\n") . HatPretty.pp) $ hsDecls ds)
 
-type HsDecls = [HsDecl]
+
+data HsDecls = HsDecls { hsDecls :: [HsDecl] } deriving (Show, Eq)
 
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
 --               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
-                   r = HatParser.parse s 
-                          (SrcLoc l 0) c []
+                   ts = pLexerPass0 (Flags True) s
+                   r = parseTokens (HsParser.parse) "" ts 
                case r of
-		           Ok _ (HsModule _ _ _ hsDecls) -> 
---			       trace (showPretty hsDecls " OK!") $ 
-				     return hsDecls
-			   Failed msg -> unexpected msg
+		           Right (HsModule _ _ _ _ ds) -> 
+--			       trace (showPretty ds " OK!") $ 
+				     return $ HsDecls ds
+			   Left msg -> unexpected msg

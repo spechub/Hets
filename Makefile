@@ -14,11 +14,18 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Aux:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
+CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:$(PFE_DRIFTPATH)
 
 ## set ghc imports properly for your system
 LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
+
+# the 'replacing spaces' example was taken from the (GNU) Make info manual 
+empty:=
+space:= $(empty) $(empty)
+# add PFE_DRIFTPATH to DERIVEPATH if needed
+# but name clashes currently prevent ATC generation in a single file
+PFE_DRIFTPATH = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
 
 # override on commandline for other architectures
 INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
@@ -35,7 +42,7 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances 
+HC_FLAGS   = -Wall -fglasgow-exts
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
@@ -43,6 +50,19 @@ HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
+
+PFE_TOOLDIR = $(wildcard ../programatica/tools)
+PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
+      base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
+      base/transforms base/transforms/Deriving hs2html \
+      property/pfe property/syntax property/AST property/transforms \
+      property/TI property/defs property/parse2 property/parse2/Parser \
+      hs2stratego hs2stratego/AST
+PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
+ifneq ($(strip $(PFE_TOOLDIR)),)
+PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
+endif
+#-fallow-undecidable-instances -fno-monomorphism-restriction 
 
 ### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -52,7 +72,7 @@ HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
 ### Comment in the following line for switching on profiling. 
 #HC_PROF    = -prof -auto-all 
 
-HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
+HCI_OPTS    = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
@@ -123,19 +143,13 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 COL/AS_COL.hs COL/COLSign.hs \
                 CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs \
                 Static/DevGraph.hs \
-                Haskell/Hatchet/AnnotatedHsSyn.hs \
-                Haskell/Hatchet/MultiModuleBasics.hs \
-                Haskell/Hatchet/HsSyn.hs \
-                Haskell/Hatchet/Representation.hs\
-                Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-                Haskell/Hatchet/Env.hs \
                 Isabelle/IsaSign.hs 
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
                    ATC/AS_Structured.hs ATC/AS_Architecture.hs \
                    ATC/DevGraph.hs \
-                   CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs \
+                   CASL/ATC_CASL.hs \
                    HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs \
                    Modal/ATC_Modal.hs CoCASL/ATC_CoCASL.hs COL/ATC_COL.hs \
                    ATC/IsaSign.hs
@@ -150,7 +164,8 @@ happy_files = Haskell/Hatchet/HsParser.hs
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
-    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs
+    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
+    ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs
 
 doc_sources = $(filter-out $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
@@ -290,7 +305,7 @@ install: hets-opt install-hets
 
 genRules: $(generated_rule_files) utils/genRules
 
-$(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files)
+$(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files) Makefile
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL $(casl_files)
@@ -299,10 +314,8 @@ $(generated_rule_files): $(genrule_files) utils/genRules $(genrule_header_files)
 	utils/genRules -r $(rule) -o CoCASL $(cocasl_files)
 	utils/genRules -r $(rule) -o COL $(col_files)
 	utils/genRules -r $(rule) -o CspCASL $(cspcasl_files)
-	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
-            $(haskell_files)
 
-rule = ShATermConvertible
+rule:= ShATermConvertible
 
 gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
                    utils/genRules -r $(rule) -o ATC -h ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
@@ -310,14 +323,14 @@ gen_atc_files = if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs 
                    utils/genRules -r $(rule) -o ATC $(file); \
                 fi ;
 
-atc_files := $(filter-out CASL/% HasCASL/% Modal/% CoCASL/% COL/% CspCASL/% Haskell/% ,$(genrule_files))
+atc_files := $(filter-out CASL/% HasCASL/% Modal/% CoCASL/% COL/% CspCASL/%,$(genrule_files))
 casl_files := $(filter CASL/% ,$(genrule_files))
 hascasl_files := $(filter HasCASL/% ,$(genrule_files))
 modal_files := $(filter Modal/% ,$(genrule_files))
 cocasl_files := $(filter CoCASL/% ,$(genrule_files))
 col_files := $(filter COL/% ,$(genrule_files))
 cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
-haskell_files := $(filter Haskell/%,$(genrule_files))
+#haskell_files := $(filter $(PFE_TOOLDIR)/%,$(genrule_files))
 
 clean_genRules: 
 	$(RM) $(generated_rule_files)

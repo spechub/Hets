@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- | 
    
    Module      :  $Header$
@@ -40,7 +41,6 @@ import Logic.Grothendieck
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2HasCASL
-import Comorphisms.HasCASL2Haskell
 import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CASL2IsabelleHOL
 import Comorphisms.CoCASL2IsabelleHOL
@@ -49,7 +49,12 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.CASL2CspCASL
+{-
+#ifdef PROGRAMATICA
+import Comorphisms.HasCASL2Haskell
 import Comorphisms.Haskell2IsabelleHOLCF
+#endif
+-}
 
 import qualified Common.Lib.Map as Map
 
@@ -66,10 +71,14 @@ addInclusionNames c@(Comorphism cid) =
 
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
-		 Comorphism HasCASL2Haskell,
                  Comorphism CASL2IsabelleHOL, 
 		 Comorphism CASL2Modal, 
+{-
+#ifdef PROGRAMATICA
+		 Comorphism HasCASL2Haskell,
 		 Comorphism Haskell2IsabelleHOLCF,
+#endif
+-}
                  Comorphism Modal2CASL, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
                  Comorphism HasCASL2IsabelleHOL,

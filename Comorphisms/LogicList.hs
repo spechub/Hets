@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- | 
    
    Module      :  $Header$
@@ -36,7 +37,9 @@ import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
+#ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
+#endif
 import CspCASL.Logic_CspCASL
 import Isabelle.Logic_Isabelle
 import Modal.Logic_Modal
@@ -45,7 +48,10 @@ import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, Logic Haskell, 
+logicList = [Logic CASL, Logic HasCASL, 
+#ifdef PROGRAMATICA
+             Logic Haskell, 
+#endif
 	     Logic CoCASL, Logic Modal, Logic CspCASL, Logic Isabelle]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
