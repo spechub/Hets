@@ -203,7 +203,7 @@ showLogicGraph
 	         subNodeType <- newNodeType subLogicG subNodeTypeParms
 	         
 	         subNodeList <- mapM (newNode subLogicG subNodeType) listG_Sublogics 
-                 putStrLn (show (length subNodeList)                  )
+
                  let 
                      slAndNodes = zip listG_Sublogics subNodeList
                      lookupSublogic(g_sl) = 
@@ -220,7 +220,7 @@ showLogicGraph
                            newArc subLogicG subArcType "" node1 node2
                  subArcList <- mapM insertSubArc [(lookupSublogic(g1), lookupSublogic(g2)) |
                                     g1 <- listG_Sublogics, g2 <- listG_Sublogics,
-                                    g1 > g2]
+                                    g1 < g2, not (any (\g -> g1<g && g<g2)  listG_Sublogics)]
                                  
                  redraw subLogicG
 
