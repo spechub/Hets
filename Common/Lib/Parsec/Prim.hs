@@ -41,11 +41,12 @@ module Common.Lib.Parsec.Prim
 import Prelude
 import Common.Lib.Parsec.Pos
 import Common.Lib.Parsec.Error
--- import Control.Monad
 
 {-# INLINE parsecMap    #-}
 {-# INLINE parsecReturn #-}
 {-# INLINE parsecBind   #-}
+{-# INLINE parsecZero   #-}
+{-# INLINE parsecPlus   #-}
 {-# INLINE token        #-}
 {-# INLINE tokenPrim    #-}
 
