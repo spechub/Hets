@@ -78,6 +78,9 @@ CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
                   | CLASS-NAME , ... , CLASS-NAME < CLASS
                   | CLASS-NAME = CLASS
 		  | CLASS-NAME = { SIMPLE-ID . SIMPLE-ID < TYPE } 
+                  | CLASS-NAME , ... , CLASS-NAME : KIND
+                  | CLASS-NAME , ... , CLASS-NAME : KIND < CLASS
+                  | CLASS-NAME : KIND = CLASS
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -172,10 +175,9 @@ TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS-NAME
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-KIND          ::= CLASS
-		| PROD-CLASS -> ... -> PROD-CLASS -> CLASS
-
-PROD-CLASS    ::= EXT-CLASS * ... * EXT-CLASS
+KIND          ::= EXT-CLASS
+		  KIND * ... * KIND
+		  KIND -> KIND                   %% right associative
 
 EXT-CLASS     ::= CLASS | CLASS + | CLASS -
 
