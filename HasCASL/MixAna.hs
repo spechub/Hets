@@ -30,20 +30,14 @@ import HasCASL.Unify
 
 -- Earley Algorithm
 
-
-data GrSym = Terminal Token 
-	   | NonTerminal Type  -- a term of type Type
-	   deriving (Show, Eq)
-
-type Rule = [GrSym]
-
-data PState = PState Id     -- the rule to match
-                   Type     -- type of Id
-                   [Pos]    -- positions of Id tokens
-                   [Term]   -- currently collected arguments 
-		                               -- both in reverse order
-		   [Token]     -- part of the rule after the "dot"
-		   Int      -- index into the ParseMap/input string
+data PState = PState { ruleId :: Id        -- the rule to match
+                     , ruleType :: Type    -- type of Id
+                     , posList :: [Pos]    -- positions of Id tokens
+		     , ruleArgs :: [Term]  -- currently collected arguments 
+		                           -- both in reverse order
+		     , restRule :: [Token] -- part of the rule after the "dot"
+		     , stateNo :: Int -- index into the ParseMap/input string
+		     }
 
 instance Eq PState where
     PState r1 _ _ _ t1 p1 == PState r2 _ _ _ t2 p2 =
@@ -243,7 +237,15 @@ filterByPrec g (PState argIde _ _ _ _ _) (PState opIde _ _ args (hd:_) _) =
        else False
 
 filterByType :: ParseMap -> PState -> PState -> Bool
-filterByType cm pArg pOp = True 
+filterByType cm argState opState = 
+    case ruleType (opState) of
+		t@(TypeName _ _ _) -> 
+		    let (newT, b) = expandAlias (typeAliases cm) t in
+			if b then filterByType cm argState 
+                                  opState {ruleType = newT}
+			else False 
+		FunType t1 a t2 _ -> True
+		_ -> False
 
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
