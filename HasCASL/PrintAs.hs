@@ -221,7 +221,7 @@ instance PrettyPrint Kind where
 
 instance PrettyPrint Class where 
     printText0 ga (Downset t) = braces $ text lessS <+> printText0 ga t
-    printText0 ga (Intersection c _) = if null c then empty 
+    printText0 ga (Intersection c _) = if null c then ptext "Type"
 			   else if null $ tail c then printText0 ga $ head c
 			   else parens $ commas ga c 
 
