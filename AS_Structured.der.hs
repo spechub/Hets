@@ -111,7 +111,8 @@ data Logic_code = Logic_code (Maybe Token)
                  -- "logic bla ->" => <src-logic> only
                  -- "logic -> bla" => <targ-logic> only
                  -- "logic bla1 -> bla2" => <src-logic> and <targ-logic>
-                 -- "logic bla1:bla2"    => <encoding> and <src-logic>
+                 -- -- "logic bla1:bla2"    => <encoding> and <src-logic>
+                 -- ^ this notation is not very useful and is not maintained
                  -- "logic bla1:bla2 ->" => <encoding> and <src-logic> (!)
                  -- "logic bla1: ->bla2" => <encoding> and <targ-logic>
 		  deriving (Show,Eq)
