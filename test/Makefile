@@ -2,5 +2,5 @@
 
 .PHONY: check
 
-check:
-	@echo "No tests implemented so far."
+check: ../hetana ../hetpa
+	bash ./runcheck.sh
