@@ -34,7 +34,7 @@ import Logic.Logic              (Language,
                                  data_logic,
                                  inclusion)
 import Data.Dynamic             (Typeable)
-import Haskell.ATC_Haskell      -- ???
+import Haskell.ATC_Haskell      -- generated ATerm conversions
 
 import System.IO.Unsafe (unsafePerformIO)
 import Haskell.Hatchet.MultiModule (readModuleInfo)
@@ -70,17 +70,17 @@ import Common.PrettyPrint
 
 import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
-instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo where
   printText0 ga s = text (show s)
-instance PrintLaTeX ModuleInfo where
-  printLatex0 ga s = text (show s)
+
+instance Typeable ModuleInfo
 instance Typeable HsDecls
 instance Typeable AHsDecl
-instance PrettyPrint HsDecls where
-  printText0 ga s = text (show s)
+
+instance PrintLaTeX ModuleInfo where
+  printLatex0 = printText0
 instance PrintLaTeX HsDecls where
-  printLatex0 ga s = text (show s)
+  printLatex0 = printText0
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -126,23 +126,6 @@ preludeSign = ModuleInfo {
                synonyms = preludeSynonyms
               }
 
-
-
-{-   basic_analysis :: lid ->
-                       Maybe((basic_spec,       -- abstract syntax tree
-                              sign,             -- signature of imported modules
-                              GlobalAnnos) ->   -- global annotations
-                       Result (basic_spec,      -- renamed module
-                               sign,sign,       -- (total, delta)
-                                  -- delta = deklarations in the modul
-                                  -- total = imported + delta 
-                               [Named sentence] -- programdefinitions))
-
-  basic_analysis calculates from the abstract syntax tree the types of
-  all functions and tests wether all used identifiers are declared
-
--}
-
 instance StaticAnalysis Haskell HsDecls
                Sentence () 
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -166,14 +149,17 @@ instance StaticAnalysis Haskell HsDecls
           inclusion Haskell _ _ = return ()
           basic_analysis Haskell = Just(basicAnalysis)
               where basicAnalysis (basicSpec, sig, _) = 	            
-  			let basicMod = cvrtHsModule (HsModule (Module "Anonymous") Nothing [] basicSpec)
-
-          -- re-group matches into their associated funbinds (patch up the output from the parser)
-                            moduleSyntaxFixedFunBinds = fixFunBindsInModule basicMod
-
+  			let basicMod = cvrtHsModule 
+				       (HsModule 
+					(Module "Anonymous") 
+					Nothing [] basicSpec)
+          -- re-group matches into their associated funbinds 
+	  -- (patch up the output from the parser)
+                            moduleSyntaxFixedFunBinds = fixFunBindsInModule 
+							basicMod
           -- map the abstract syntax into the annotated abstract syntax
-  			    annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds
-
+  			    annotatedSyntax = toAHsModule 
+					      moduleSyntaxFixedFunBinds
   		            (moduleEnv,
    			     dataConEnv,
    			     newClassHierarchy,
@@ -181,19 +167,23 @@ instance StaticAnalysis Haskell HsDecls
    			     moduleIds,
    			     moduleRenamed,
    			     moduleSynonyms) = tiModule [] annotatedSyntax sig
-  			    modInfo = ModuleInfo {varAssumps = moduleEnv, 
-    				 		  moduleName = getAModuleName annotatedSyntax,
-    						  dconsAssumps = dataConEnv, 
-    						  classHierarchy = newClassHierarchy,
-    						  kinds = newKindInfoTable,
-    						  tyconsMembers = getTyconsMembers moduleRenamed,
-    						  infixDecls = getInfixDecls moduleRenamed,
-    						  synonyms = moduleSynonyms }
+  			    modInfo = ModuleInfo 
+				      {varAssumps = moduleEnv, 
+    				       moduleName = getAModuleName
+				                    annotatedSyntax,
+    				       dconsAssumps = dataConEnv, 
+    				       classHierarchy = newClassHierarchy,
+    				       kinds = newKindInfoTable,
+    				       tyconsMembers = getTyconsMembers  
+				                       moduleRenamed,
+    				       infixDecls = getInfixDecls 
+				                    moduleRenamed,
+    				       synonyms = moduleSynonyms }
                         in
 			    Result {diags = [],
 				    maybeResult = Just(basicSpec, modInfo, 
-                                                       (joinModuleInfo sig modInfo), 
-                                                       (extractSentences annotatedSyntax)) }
+                                       (joinModuleInfo sig modInfo), 
+                                       (extractSentences annotatedSyntax)) }
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
@@ -201,5 +191,3 @@ instance Logic Haskell Haskell_Sublogics
                Morphism
                Symbol RawSymbol ()
    where data_logic Haskell = Nothing
-
-

@@ -23,32 +23,31 @@ module Haskell.HatParser where
 
 import Haskell.Wrapper
 import Haskell.Hatchet.HsSyn
-import Haskell.Hatchet.HsParser
+import Haskell.Hatchet.HsParser as HatParser
+import Haskell.Hatchet.HsPretty as HatPretty
 import Haskell.Hatchet.HsParseMonad
 import Common.Lib.Parsec
+import Common.PrettyPrint
+import Common.Lib.Pretty
 import Debug.Trace
--- import Common.PrettyPrint
--- import Common.Lib.Pretty
 
--- instance PrettyPrint HsDecls where
---     printText0 _ hsDecls = 
---         vcat (map (text . ((++) "\n") . prettyPrint) hsDecls)
+instance PrettyPrint HsDecls where
+     printText0 _ hsDecls = 
+         vcat (map (text . ((++) "\n") . HatPretty.render . ppHsDecl) hsDecls)
 
 type HsDecls = [HsDecl]
 
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
-	       s <- hStuff
+               s <- hStuff
                trace ("@"++s++"@") (return ())
-	       let r = Haskell.Hatchet.HsParser.parse 
-		       ("\nmodule Anonymous where\n" ++ s) (SrcLoc 1 1) 0 []
+	       let (l, c) = (sourceLine p, sourceColumn p)
+                   r = HatParser.parse 
+		       ("\nmodule Anonymous where\n" ++ s) 
+                          (SrcLoc l 0) c []
                case r of
 		           Ok _ (HsModule _ _ _ hsDecls) -> 
-			       trace (show hsDecls++"OK!") $ return hsDecls
-			   Failed msg -> do
--- 			       let q = setSourceColumn (setSourceLine p 
--- 				       (srcLine loc + sourceLine p - 3))
--- 				        $ srcColumn loc
--- 			       setPosition q
--- 			       consumeNothing -- throw "(un)expect..." away
+			       trace (showPretty hsDecls " OK!") $ 
+				     return hsDecls
+			   Failed msg -> do -- no failure position!
 			       fail msg
