@@ -1,18 +1,11 @@
 module Haskell.Haskell2DG where
 
 import Options
-
 import Haskell.Hatchet.MultiModuleBasics
-
-import Haskell.Hatchet.MultiModule              (writeModuleInfo, readModuleInfo, toString)
-
+import Haskell.Hatchet.MultiModule              (readModuleInfo)
 import Haskell.Hatchet.HsParseMonad             (ParseResult (..))
-
 import Haskell.Hatchet.SynConvert               (toAHsModule)
-
 import Haskell.Hatchet.HsParsePostProcess       (fixFunBindsInModule)
-
-
 import Haskell.Hatchet.HaskellPrelude
                                 (tyconsMembersHaskellPrelude, 
                                  preludeDefs, 
@@ -21,60 +14,25 @@ import Haskell.Hatchet.HaskellPrelude
                                  preludeClasses,
                                  preludeInfixDecls,
                                  preludeDataCons)
-
 import Haskell.Hatchet.Type     (assumpToPair)
-
 import Haskell.Hatchet.HsParser (parse)
-
-import Haskell.Hatchet.AnnotatedHsSyn
-                                (AHsDecl,
-                                 AHsName (..),
-                                 AModule (..),
-                                 AHsModule)
- 
-import Haskell.Hatchet.Rename   (renameTidyModule,
-                                 IdentTable,
-                                 printIdentTable)
-
-import Haskell.Hatchet.KindInference
-                                (KindEnv,
-                                 kiModule)
-
-import Haskell.Hatchet.Representation
-                                (Kind,
-                                 Scheme,
-                                 Assump (..))
-
-import Haskell.Hatchet.TidyModule (tidyModule, 
-                                 TidyModule (..),
-                                 tidyModuleToAHsModule)
-
+import Haskell.Hatchet.AnnotatedHsSyn (AHsDecl, AModule (..), AHsModule)
+import Haskell.Hatchet.Rename   (IdentTable)
+import Haskell.Hatchet.KindInference (KindEnv)
+import Haskell.Hatchet.Representation (Scheme)
 import Haskell.Hatchet.Class    (ClassHierarchy)
-
-import Haskell.Hatchet.Env      (Env,
-                                 listToEnv)
-
+import Haskell.Hatchet.Env      (Env, listToEnv)
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
-
 import Haskell.Hatchet.TIModule
-
 import Haskell.Hatchet.HsSyn
-
 import Static.DevGraph
-
 import Syntax.AS_Library
-
 import Haskell.Hatchet.AnnotatedHsSyn
-
 import Logic.Grothendieck
-
 import Common.Lib.Graph
-
 import Common.Id
-
--- import Haskell.Logic_Haskell
-
-data Haskell = Haskell deriving (Show)
+import Haskell.Logic_Haskell
+import Haskell.HaskellUtils
 
 -- - Datentyp anlegen für HaskellEnv (Resultat von tiModule)
 data HaskellEnv = HasEnv Timing              -- timing values for each stage
@@ -92,7 +50,7 @@ anaHaskellFile :: HetcatsOpts -> String -> IO (Maybe (LIB_NAME, -- filename
                                                       DGraph,   -- development graph
                                                       LibEnv    -- DGraphs für importierte Module 
                                                       ))
-anaHaskellFile opts srcFile = 
+anaHaskellFile _ srcFile = 
    do
      src <- readFile srcFile
      let moduleSyntax = parseHsSource src
@@ -164,23 +122,25 @@ hasEnv2DG (HasEnv
                      synonyms = moduleSynonyms,
                      infixDecls = [],
                      tyconsMembers = [] }
-                   mod = AHsModule name exps imps decls
+                   aMod = AHsModule name exps imps decls
                in
-                   hsMod2DG mod modInfo
+                   hsMod2DG aMod modInfo
 
 hsMod2DG :: AHsModule -> ModuleInfo -> DGraph
-hsMod2DG (AHsModule name _ imps decls) modInfo = 
+hsMod2DG (AHsModule name exps imps decls) modInfo = 
        let node_contents  | imps == [] =
                              DGNode {
                                dgn_name = aHsMod2SimpleId name,
                                dgn_sign = G_sign Haskell modInfo,
-                               dgn_sens = G_l_sentence Haskell [],
+                               dgn_sens = G_l_sentence Haskell (extractSentences 
+                                           (AHsModule name exps imps decls)),
                                dgn_origin = DGBasic }
                           | otherwise =
                              DGNode {
                                dgn_name = aHsMod2SimpleId name,
                                dgn_sign = G_sign Haskell modInfo,
-                               dgn_sens = G_l_sentence Haskell [],
+                               dgn_sens = G_l_sentence Haskell (extractSentences
+                                           (AHsModule name exps imps decls)),
                                dgn_origin = DGExtension }
            dg = buildGr []
            [node] = newNodes 0 dg
@@ -192,7 +152,7 @@ hsMod2DG (AHsModule name _ imps decls) modInfo =
 
 createDGLink :: [AHsImportDecl] -> DGLinkLab
 createDGLink _ = DGLink  {
-                  dgl_morphism = (),
+                  dgl_morphism = gEmbed (G_morphism Haskell ()),
                   dgl_type = GlobalDef,
                   dgl_origin = DGExtension }
 
@@ -221,6 +181,6 @@ hasEnv2LG _ = emptyLibEnv
 
 parseHsSource :: String -> HsModule
 parseHsSource s = case parse s (SrcLoc 1 1) 0 [] of
-                      Ok state e -> e
+                      Ok _ e -> e
                       Failed err -> error err
 
