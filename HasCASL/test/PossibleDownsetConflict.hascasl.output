@@ -1,0 +1,11 @@
+a -> < b = {_ < t}
+b -> = {_ < s}
+Type Constructors
+s -> Type
+t -> Type
+Type Variables
+Assumptions
+Warning (3,11) implicit declaration of superclass 'b'
+Warning (4,7) redeclared class 'b'
+Warning (6,7) redeclared class 'a'
+Warning (6,7) downset definition may conflict with those of superclasses

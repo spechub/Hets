@@ -1,0 +1,14 @@
+a -> < b
+b ->
+c ->
+d -> < (a,b)
+Type Constructors
+Type Variables
+Assumptions
+Warning (2,11) implicit declaration of superclass 'b'
+Warning (3,7) redeclared class 'b'
+Warning (4,11) redundant universe class
+Warning (6,7) redeclared class 'd'
+Warning (6,11) already known as super class 'b'
+Warning (7,7) redeclared class 'd'
+Warning (7,11) already known as super class 'a'
