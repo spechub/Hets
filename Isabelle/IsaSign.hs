@@ -121,6 +121,9 @@ instance Show Sentence where
 instance PrettyPrint Sentence where
     printText0 _ = ptext . show
 
+instance PrintLaTeX Sentence where
+    printLatex0 = printText0
+
 
 -------------------- from src/Pure/sorts.ML ------------------------
 

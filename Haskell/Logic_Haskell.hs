@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -50,6 +50,7 @@ import Haskell.Hatchet.Utils             (getAModuleName)
 import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
 import Haskell.Hatchet.HsSyn             (HsModule (..), HsDecl,
                                           Module (..))
+import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.Type              (assumpToPair)
 
 import Logic.Logic             
@@ -69,6 +70,8 @@ instance Typeable AHsDecl where
 instance PrintLaTeX ModuleInfo where
   printLatex0 = printText0
 instance PrintLaTeX HsDecls where
+  printLatex0 = printText0
+instance PrintLaTeX AHsDecl where
   printLatex0 = printText0
 
 -- a dummy datatype for the LogicGraph and for identifying the right

@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
    
@@ -41,4 +41,7 @@ instance PrintLaTeX SymbItems where
     printLatex0 = printText0
 
 instance PrintLaTeX SymbMapItems where
+    printLatex0 = printText0
+
+instance PrintLaTeX Sentence where
     printLatex0 = printText0
