@@ -705,7 +705,8 @@ sl_symb_or_map (Symb s) = sl_symb s
 sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign -> CASL_Sublogics
-sl_sign (SignAsList l) = comp_list $ map sl_sigitem l
+sl_sign (SignAsMap m _) =
+  comp_list $ map sl_sigitem $ concat $ map snd $ fmToList m
 
 sl_sigitem :: SigItem -> CASL_Sublogics
 sl_sigitem (ASortItem i) = sl_sortitem $ item i
@@ -1140,8 +1141,17 @@ pr_symb l (Qual_id i t p) =
           Nothing
 
 pr_sign :: CASL_Sublogics -> Sign -> Sign
-pr_sign l (SignAsList s) =
-  SignAsList (mapMaybe (pr_sigitem (adjust_logic l)) s)
+pr_sign sl (SignAsMap m g) =
+        let
+          l      = adjust_logic sl
+          doPart = (\(i,ll) ->
+                    let
+                      res = mapMaybe (pr_sigitem l) ll
+                    in
+                      case res of [] -> Nothing;
+                                   _ -> Just (i,res))
+        in
+          SignAsMap (listToFM $ mapMaybe doPart $ fmToList m) g
 
 pr_sigitem :: CASL_Sublogics -> SigItem -> Maybe SigItem
 pr_sigitem l (ASortItem s) =
