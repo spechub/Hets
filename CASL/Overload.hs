@@ -17,8 +17,8 @@ module CASL.Overload (
     overloadResolution          -- :: Sign -> [FORMULA] -> Result [FORMULA]
     ) where
 
-import CASL.Sign                -- Sign/Env OpType
-import CASL.AS_Basic_CASL       -- FORMULA, TERM, SORT, VAR, OP_{NAME,SYMB}
+import CASL.Sign                -- Sign, OpType
+import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import Common.Result            -- Result
 
 import qualified Common.Lib.Map as Map
@@ -54,11 +54,11 @@ minExpFORMULA :: Sign -> FORMULA -> Result FORMULA
 minExpFORMULA sign formula
     = case formula of
         -- Trivial Atom         -> Return untouched
-        True_atom _     -> return formula                      -- :: FORMULA
-        False_atom _    -> return formula                      -- :: FORMULA
+        True_atom _     -> return formula                       -- :: FORMULA
+        False_atom _    -> return formula                       -- :: FORMULA
         -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms _ ->
-            minExpFORMULA_pred sign predicate terms            -- :: FORMULA
+            minExpFORMULA_pred sign predicate terms             -- :: FORMULA
         Definedness term pos            -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
@@ -67,13 +67,13 @@ minExpFORMULA sign formula
             t1  <- minExpTerm sign term1                        -- :: [[TERM]]
             t2  <- minExpTerm sign term2                        -- :: [[TERM]]
             -- find common supersort for each combination of equivs
-            return $ Existl_equation term1 term2 pos                  -- :: FORMULA
+            return $ Existl_equation term1 term2 pos            -- :: FORMULA
         -- FIXME: check whether sorts of terms match
         Strong_equation term1 term2 pos -> do
             t1  <- minExpTerm sign term1                        -- :: [[TERM]]
             t2  <- minExpTerm sign term2                        -- :: [[TERM]]
             -- find common supersort for each combination of equivs
-            return $ Strong_equation term1 term2 pos                  -- :: FORMULA
+            return $ Strong_equation term1 term2 pos            -- :: FORMULA
         -- FIXME: check whether sorts of terms match
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
