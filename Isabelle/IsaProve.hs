@@ -103,7 +103,7 @@ isaProve checkCons thName (sig,axs) goals = do
   pack b []
   clickedb <- clicked b
   sync (clickedb >>> destroy t)
-  closeChildProcessFds isa
+--  closeChildProcessFds isa
   provedThy <- readFile fileName
   let newThy = withoutThms theory ++ onlyThms provedThy 
                                   ++ checkThm 
@@ -234,10 +234,5 @@ freeTypesTerm (Fix f) =
 
 freeTypesTermPair (t1,t2) = (freeTypesTerm t1,freeTypesTerm t2)
 
--- <<<<<<< IsaProve.hs
 freeTypesTyp (Type t s _) = TFree t s
 freeTypesTyp t = t
--- =======
--- freeTypesTyp (Type t _ s _) = TFree t s
--- freeTypesTyp t = t
--- >>>>>>> 1.28
