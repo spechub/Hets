@@ -34,6 +34,10 @@ type Pos = SourcePos
 nullPos :: Pos 
 nullPos = newPos "" 0 0 
 
+isNullPos :: Pos -> Bool
+isNullPos p = 
+    sourceName p == "" && sourceLine p == 0 && sourceColumn p == 0
+
 -- * Tokens as 'String's with positions that are ignored for 'Eq' and 'Ord'
 
 -- | tokens as supplied by the scanner
