@@ -73,6 +73,11 @@ test_parser: ../test_parser.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+### christian's target
+casl_test_parser: ../CASL/Main.hs $(drifted_files)
+	rm -f $@
+	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
+
 ####################################################################
 ## rules for DrIFT
 %.hs: %.der.hs
