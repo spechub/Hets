@@ -49,7 +49,7 @@ import CASL.Morphism
 import Logic.Logic
 import Data.Dynamic
 import Common.DynamicUtils 
-
+import Common.Lib.Map as Map
 
 
 -- a dummy datatype for the LogicGraph and for identifying the right
@@ -60,7 +60,12 @@ instance Language CspCASL  -- default definition is okay
 instance Category CspCASL CSPSign CSPMorphism
     where
          -- ide :: id -> object -> morphism
-	 ide CspCASL sigma = fun_err "ide"
+	 ide CspCASL sigma = 
+           let idAdd =
+                CSPAddMorphism { channelMap = Map.empty -- ???
+                               , processMap = Map.empty -- ???
+                               }
+            in idMor (\ _ _ -> idAdd) sigma
          -- o :: id -> morphism -> morphism -> Maybe morphism
 	 comp CspCASL sigma1 _sigma2 = fun_err "comp"
          -- dom, cod :: id -> morphism -> object

@@ -68,7 +68,10 @@ data CSPAddMorphism =
 type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
 
 computeExt :: Ext () CSPAddSign CSPAddMorphism
-computeExt = error ("*** CspCASL.SignCSP: Function computeExt is not yet implemented!")
+computeExt _ _  =
+  CSPAddMorphism { channelMap = Map.empty -- ???
+                 , processMap = Map.empty -- ???
+                 }
 
 
 signTc      = mkTyCon "CspCASL.SignCSP.CSPAddSign"
