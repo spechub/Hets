@@ -29,7 +29,7 @@ my @sources = ();
 my $ready = 0;
 
 while (<$IN>) {
-    $ready = 1 if m/^Linking/o;
+    $ready = 1 if m/^.*inking/o;
     # skip some junk
     next if m/^ghc.*:/o;
     # select the right lines
