@@ -1498,7 +1498,10 @@ op b : a
 *** Error 268.9, unknown sort 'b'
 *** Error 266.20, unknown sort 'a'
 *** Error 266.16, unknown sort 'a'
-*** Error 261.21, expected further mixfix token: ["*","+",":","!","-"]
+*** Error , ambiguous mixfix term
+	__*__(i,__-__(q,__*__(j,p)))
+	__-__(__*__(i,q),__*__(j,p))
+	__*__(__*__(i,__-__(q,j)),p)
 *** Hint 209.11, redeclared sort 'Int'
 *** Hint 209.17, redeclared sort 'Rat'
 *** Hint 121.12, redeclared sort 'Nat'
