@@ -72,7 +72,8 @@ anaClassDecl sups defn ci =
 		    oldSups = superClasses info
 		if isJust defn then
 		   if isJust oldDefn then
-		      mergeDefns ci (fromJust oldDefn) (fromJust defn)
+		      appendDiags $ mergeDefns ci 
+				      (fromJust oldDefn) (fromJust defn)
 		      else appendDiags [Diag Error 
 			     ("class cannot become an alias class '"
 			      ++ showId ci "'") 
@@ -114,28 +115,19 @@ showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (length is > 1)
 		   $ showSepList ("," ++) showId is
 
-mergeDefns :: ClassId -> Class -> Class -> State Env ()
+mergeDefns :: ClassId -> Class -> Class -> [Diagnosis]
 
 mergeDefns ci (Downset oldT) (Downset t) =
-    if oldT == t then return ()
-       else wrongClassDecl ci
-
+    if oldT == t then [] else wrongClassDecl ci
 
 mergeDefns ci (Intersection oldIs _) (Intersection is _) =
-    do cMap <- getClassMap
-       if sort (resolveClassSyns cMap oldIs) ==
-	  sort (resolveClassSyns cMap is)
-	  then return ()
+       if sort (nub oldIs) == sort (nub is) then []
 	  else wrongClassDecl ci
-
--- subclasses in an intersection type should be removed as well 
 
 mergeDefns ci _ _ = wrongClassDecl ci
 
-
-
-wrongClassDecl :: ClassId -> State Env ()
+wrongClassDecl :: ClassId -> [Diagnosis]
 wrongClassDecl ci =
-    appendDiags [Diag Error 
+    [Diag Error 
 		 ("inconsistent redefinition of '" ++ showId ci "'")
 		 $ posOfId ci]
