@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2002-2003
@@ -20,13 +19,20 @@ shorted warning about (non)intended maps
 remove identity subsort relations resulting from non-injective renaming
 (or add them to ALL signatures)
 
-overloading stuff is missing (wait for Martin's implementation of leqF and leqP)
+overloading stuff is missing (wait for Martin's implementation of leqF
+and leqP)
 
 introduce symbol functor (additionally to signature symbol functor)
 
 -}
 
-module CASL.SymbolMapAnalysis where
+module CASL.SymbolMapAnalysis
+    ( inducedFromMorphism
+    , inducedFromToMorphism
+    , cogeneratedSign
+    , generatedSign
+    , finalUnion
+    )  where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -42,8 +48,7 @@ import Control.Monad
 import Data.Maybe
 
 {-
-inducedFromMorphism :: 
-                RawSymbolMap -> Sign lid b s f e -> Result (Morphism lid b s f e)
+inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
 
 Here is Bartek Klin's algorithm that has benn used for CATS. 
 Our algorithm deviates from it. The exact details need to be checked.
@@ -113,6 +118,7 @@ inducedFromMorphism extEm rmap sigma = do
   -- ??? Missing: check preservation of overloading relation
   -- first check: do all source raw symbols match with source signature?
   let syms = symOf sigma
+      sortsSigma = sortSet sigma
       incorrectRsyms = Map.foldWithKey
         (\rsy _ -> if Set.any (matchesND rsy) syms
                     then id
@@ -129,23 +135,23 @@ inducedFromMorphism extEm rmap sigma = do
   -- ... if not, generate an error
   when (not (Set.isEmpty incorrectRsyms))
     (pfatal_error
-       (ptext "the following symbols:"
+       (text "the following symbols:"
         <+> printText incorrectRsyms 
-        $$ ptext "are already mapped directly or do not match with signature"
+        $$ text "are already mapped directly or do not match with signature"
         $$ printText sigma) 
        nullPos)
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold 
-              (\s m -> do s' <- sortFun s
+              (\s m -> do s' <- sortFun rmap s 
                           if s' == s then m else do
                           m1 <- m
                           return $ Map.insert s s' m1) 
               (return Map.empty) sortsSigma
   -- compute the op map (as a Map)
-  op_Map <- Map.foldWithKey (opFun sort_Map)
+  op_Map <- Map.foldWithKey (opFun rmap sort_Map)
               (return Map.empty) (opMap sigma)
   -- compute the pred map (as a Map)
-  pred_Map <- Map.foldWithKey (predFun sort_Map)
+  pred_Map <- Map.foldWithKey (predFun rmap sort_Map)
               (return Map.empty) (predMap sigma)
   -- compute target signature
   let sigma' = 
@@ -167,158 +173,178 @@ inducedFromMorphism extEm rmap sigma = do
                    fun_map = op_Map,
                    pred_map = pred_Map,
                    extended_map = extEm sigma sigma' })
-  where
+
   -- the sorts of the source signature 
-  sortsSigma = sortSet sigma
   -- sortFun is the sort map as a Haskell function
-  sortFun s = 
+sortFun :: RawSymbolMap -> Id -> Result Id
+sortFun rmap s = 
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
           0 -> return s  -- use default = identity mapping
           1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
           _ -> pplain_error s  -- ambiguity! generate an error 
-                 (ptext "Sort" <+> printText s 
-                  <+> ptext "mapped ambiguously:" <+> printText rsys)
+                 (text "Sort" <+> printText s 
+                  <+> text "mapped ambiguously:" <+> printText rsys)
                  nullPos
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
                [ASymbol $ idToSortSymbol s, AnID s, AKindedId SortKind s]
 
-  -- to a Fun_map, add everything resulting from mapping (id, ots) according to rmap
-  opFun :: Sort_map -> Id -> Set.Set OpType -> Result Fun_map -> Result Fun_map
-  opFun sort_Map ident ots m = 
+  {- to a Fun_map, add everything resulting from mapping (id, ots)
+  according to rmap -}
+opFun :: RawSymbolMap -> Sort_map -> Id -> Set.Set OpType 
+      -> Result Fun_map -> Result Fun_map
+opFun rmap sort_Map ide ots m = 
     -- first consider all directly mapped profiles
-    let (ots1,m1) = Set.fold (directOpMap ident) (Set.empty,m) ots
+    let (ots1,m1) = Set.fold (directOpMap rmap sort_Map ide) (Set.empty,m) ots
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId FunKind ident) rmap,Map.lookup (AnID ident) rmap) of
+    in case (Map.lookup (AKindedId FunKind ide) rmap,
+                Map.lookup (AnID ide) rmap) of
        (Just rsy1, Just rsy2) -> 
           do m' <- m
              pplain_error m'
-               (ptext "Operation" <+> printText ident
-                <+> ptext "is mapped twice:"
-                <+> printText rsy1 <+> ptext "," <+> printText rsy2
+               (text "Operation" <+> printText ide
+                <+> text "is mapped twice:"
+                <+> printText rsy1 <+> text "," <+> printText rsy2
                )
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapOpSym ident rsy) m1 ots1
+          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapOpSym ident rsy) m1 ots1
+          Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
        (Nothing,Nothing) -> m1
-    where
+
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
-    directOpMap :: Id -> OpType -> (Set.Set OpType,Result Fun_map)
-                     -> (Set.Set OpType,Result Fun_map)
-    directOpMap ident' ot (ots',m') =
-      case Map.lookup (ASymbol (idToOpSymbol ident' ot)) rmap of
+directOpMap :: RawSymbolMap -> Sort_map -> Id -> OpType 
+            -> (Set.Set OpType,Result Fun_map)
+            -> (Set.Set OpType,Result Fun_map)
+directOpMap rmap sort_Map ide' ot (ots',m') =
+      case Map.lookup (ASymbol (idToOpSymbol ide' ot)) rmap of
         Just rsy -> 
-          (ots',insertmapOpSym ident' rsy ot m')
+          (ots',insertmapOpSym sort_Map ide' rsy ot m')
         Nothing -> (Set.insert ot ots',m')
-    -- map op symbol (ident,ot) to raw symbol rsy
-    mapOpSym :: Id -> OpType -> RawSymbol -> Result (Id,FunKind)
-    mapOpSym ident ot rsy = case rsy of
-      ASymbol (Symbol ident' (OpAsItemType ot')) ->
+
+    -- map op symbol (ide,ot) to raw symbol rsy
+mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id,FunKind)
+mappedOpSym sort_Map ide ot rsy = case rsy of
+      ASymbol (Symbol ide' (OpAsItemType ot')) ->
         if compatibleOpTypes (mapOpType sort_Map ot) ot'
-           then return (ident',opKind ot')
-           else pplain_error (ident,opKind ot)
-             (ptext "Operation symbol " <+> printText (idToOpSymbol ident ot) 
-              <+> ptext "is mapped to type" <+>  printText ot'
-              <+> ptext "but should be mapped to type" <+>  
+           then return (ide',opKind ot')
+           else pplain_error (ide,opKind ot)
+             (text "Operation symbol " <+> printText (idToOpSymbol ide ot) 
+              <+> text "is mapped to type" <+>  printText ot'
+              <+> text "but should be mapped to type" <+>  
               printText (mapOpType sort_Map ot) 
              )
              nullPos
-      AnID ident' -> return (ident',opKind ot)
-      AKindedId FunKind ident' -> return (ident',opKind ot)
-      rsy -> pplain_error (ident,opKind ot)
-               (ptext "Operation symbol " <+> printText (idToOpSymbol ident ot)
-                <+> ptext" is mapped to symbol of wrong kind:" 
+      AnID ide' -> return (ide',opKind ot)
+      AKindedId FunKind ide' -> return (ide',opKind ot)
+      _ -> pplain_error (ide,opKind ot)
+               (text "Operation symbol " <+> printText (idToOpSymbol ide ot)
+                <+> text" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
                nullPos
-    -- insert mapping of op symbol (ident,ot) to raw symbol rsy into m
-    insertmapOpSym ident rsy ot m = do  
+
+    -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
+insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
+               ->  Result Fun_map -> Result Fun_map
+insertmapOpSym sort_Map ide rsy ot m = do  
       m1 <- m        
-      (ident',kind') <- mapOpSym ident ot rsy
-      return (Map.insert (ident,ot{opKind = Partial}) (ident',kind') m1)
-    -- insert mapping of op symbol (ident,ot) to itself into m
+      (ide',kind') <- mappedOpSym sort_Map ide ot rsy
+      return (Map.insert (ide,ot{opKind = Partial}) (ide',kind') m1)
+    -- insert mapping of op symbol (ide,ot) to itself into m
   -- map the ops in the source signature
-  mapOps sort_Map op_Map ident ots m = 
+mapOps :: Sort_map -> Fun_map -> Id -> Set.Set OpType -> OpMap -> OpMap
+mapOps sort_Map op_Map ide ots m = 
     Set.fold mapOp m ots 
     where
     mapOp ot m1 = 
-      let (ident',ot') = mapOpSym sort_Map op_Map (ident,ot)
-      in Map.setInsert ident' ot' m1
+      let (ide',ot') = mapOpSym sort_Map op_Map (ide,ot)
+      in Map.setInsert ide' ot' m1
 
-  -- to a Pred_map, add evering resulting from mapping (ident,pts) according to rmap
-  predFun :: Sort_map -> Id -> Set.Set PredType 
+  {- to a Pred_map, add evering resulting from mapping (ide,pts)
+  according to rmap -}
+
+predFun :: RawSymbolMap -> Sort_map -> Id -> Set.Set PredType 
                -> Result Pred_map -> Result Pred_map
-  predFun sort_Map ident pts m = 
+predFun rmap sort_Map ide pts m = 
     -- first consider all directly mapped profiles
-    let (pts1,m1) = Set.fold (directPredMap ident) (Set.empty,m) pts
+    let (pts1,m1) = Set.fold (directPredMap rmap sort_Map ide) 
+                    (Set.empty,m) pts
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId PredKind ident) rmap,Map.lookup (AnID ident) rmap) of
+    in case (Map.lookup (AKindedId PredKind ide) rmap,
+                Map.lookup (AnID ide) rmap) of
        (Just rsy1, Just rsy2) -> 
           do m' <- m
              pplain_error m'
-               (ptext "Predicate" <+> printText ident 
-                <+> ptext "is mapped twice:"
-                <+> printText rsy1 <+> ptext "," <+> printText rsy2)
+               (text "Predicate" <+> printText ide 
+                <+> text "is mapped twice:"
+                <+> printText rsy1 <+> text "," <+> printText rsy2)
                nullPos
        (Just rsy, Nothing) -> 
-          Set.fold (insertmapPredSym ident rsy) m1 pts1
+          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
        (Nothing, Just rsy) -> 
-          Set.fold (insertmapPredSym ident rsy) m1 pts1
+          Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
        -- Anything not mapped explicitly is left unchanged
        (Nothing,Nothing) -> m1
-    where
+
     -- try to map a predicate symbol directly
     -- collect all predTypes that cannot be mapped directly
-    directPredMap :: Id -> PredType -> (Set.Set PredType,Result Pred_map)
-                     -> (Set.Set PredType,Result Pred_map)
-    directPredMap ident pt (pts,m) =
-      case Map.lookup (ASymbol (idToPredSymbol ident pt)) rmap of
+directPredMap :: RawSymbolMap -> Sort_map -> Id -> PredType 
+              -> (Set.Set PredType,Result Pred_map)
+              -> (Set.Set PredType,Result Pred_map)
+directPredMap rmap sort_Map ide pt (pts,m) =
+      case Map.lookup (ASymbol (idToPredSymbol ide pt)) rmap of
         Just rsy -> 
-          (pts,insertmapPredSym ident rsy pt m)
+          (pts,insertmapPredSym sort_Map ide rsy pt m)
         Nothing -> (Set.insert pt pts,m)
-    -- map pred symbol (ident,pt) to raw symbol rsy
-    mapPredSym :: Id -> PredType -> RawSymbol -> Result Id
-    mapPredSym ident pt rsy = case rsy of
-      ASymbol (Symbol ident' (PredAsItemType pt')) ->
+
+    -- map pred symbol (ide,pt) to raw symbol rsy
+mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
+mappedPredSym sort_Map ide pt rsy = case rsy of
+      ASymbol (Symbol ide' (PredAsItemType pt')) ->
         if (mapPredType sort_Map pt) == pt'
-           then return ident'
-           else pplain_error ident
-             (ptext "Predicate symbol " <+> printText (idToPredSymbol ident pt) 
-              <+> ptext "is mapped to type" <+>  printText pt'
-              <+> ptext "but should be mapped to type" 
+           then return ide'
+           else pplain_error ide
+             (text "Predicate symbol " <+> printText (idToPredSymbol ide pt) 
+              <+> text "is mapped to type" <+>  printText pt'
+              <+> text "but should be mapped to type" 
               <+> printText (mapPredType sort_Map pt) 
              )
              nullPos
-      AnID ident' -> return ident'
-      AKindedId PredKind ident' -> return ident'
-      rsy -> pplain_error ident
-               (ptext "Predicate symbol" <+> printText (idToPredSymbol ident pt)
-                <+> ptext "is mapped to symbol of wrong kind: " 
+      AnID ide' -> return ide'
+      AKindedId PredKind ide' -> return ide'
+      _ -> pplain_error ide
+               (text "Predicate symbol" <+> printText (idToPredSymbol ide pt)
+                <+> text "is mapped to symbol of wrong kind: " 
                 <+> printText rsy
                ) 
                nullPos
-    -- insert mapping of pred symbol (ident,pt) to raw symbol rsy into m
-    insertmapPredSym ident rsy pt m = do  
+
+    -- insert mapping of pred symbol (ide,pt) to raw symbol rsy into m
+insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
+                 -> Result Pred_map -> Result Pred_map
+insertmapPredSym sort_Map ide rsy pt m = do  
       m1 <- m        
-      ident' <- mapPredSym ident pt rsy
-      return (Map.insert (ident,pt) ident' m1)
-    -- insert mapping of pred symbol (ident,pt) to itself into m
+      ide' <- mappedPredSym sort_Map ide pt rsy
+      return (Map.insert (ide,pt) ide' m1)
+    -- insert mapping of pred symbol (ide,pt) to itself into m
+
   -- map the preds in the source signature
-  mapPreds sort_Map pred_Map ident pts m = 
+mapPreds :: Sort_map -> Pred_map -> Id -> Set.Set PredType 
+         -> Map.Map Id (Set.Set PredType) -> Map.Map Id (Set.Set PredType)
+mapPreds sort_Map pred_Map ide pts m = 
     Set.fold mapPred m pts 
     where
     mapPred pt m1 = 
-      let (ident',pt') = mapPredSym sort_Map pred_Map (ident,pt)
-      in Map.setInsert ident' pt' m1
+      let (ide',pt') = mapPredSym sort_Map pred_Map (ide,pt)
+      in Map.setInsert ide' pt' m1
 
 {-
-inducedFromToMorphism :: 
-                RawSymbolMap -> Sign f e -> Sign f e -> Result (Morphism f e m)
+inducedFromToMorphism :: RawSymbolMap -> sign -> sign -> Result morphism
 
 Algorithm adapted from Bartek Klin's algorithm for CATS.
 
@@ -365,8 +391,8 @@ Output: morphism "mor": sigma1 -> sigma2
 //"No_map" value. Parameters are: sigma1, sigma2, akmap, posmap.
 GET MRV (minimun remaining values) "VARIABLE"
 4a. if posmap is empty
-        4a.1. check if akmap defines a mapping from every symbol in source mor1.
-              (this should be vacuously true - Bartek?)
+        4a.1. check if akmap defines a mapping from every symbol in
+              source mor1.  (this should be vacuously true - Bartek?)
         4a.2. if yes, return akmap, otherwise return "No_map".
 4b. take a pair sym1 |-> (symset1,symset2) with MRV from posmap
    (i.e. one with minimal cardinality of symset1 union symset2).
@@ -400,7 +426,8 @@ GET MRV (minimun remaining values) "VARIABLE"
         CONTINUE DEPTH FIRST SERACH
         5.10. call recursively point 4.
 6. if for exactly one sym2 step 5 gave a map, return this map.
-7. if step 5 gave more than one map, raise an exception. Morphism is not unique.
+7. if step 5 gave more than one map, raise an exception. Morphism is
+   not unique.
 8. (only) if for no sym2 step 5 gave a map, 
    repeat steps 5-7 with symset2 instead of symset1
    if this does not give a map either, return "No_map".
@@ -499,10 +526,10 @@ addToPosmap sym symset (posmap1,posmap2) =
 -- restrict posmap such that each symbol from symset1 is only mapped
 -- to symbols from symset2
 restrictPosMap :: SymbolSet -> SymbolSet -> PosMap -> PosMap
-restrictPosMap symset1 symset2 posmap =
-  Set.fold restrictPosMap1 posmap symset1
+restrictPosMap symset1' symset2 posmap' =
+  Set.fold restrictPosMap1 posmap' symset1'
   where
-  restrictPosMap1 sym1 posmap@(posmap1,posmap2)  =
+  restrictPosMap1 sym1 posmap@(posmap1,_posmap2)  =
     case Map.lookup sym1 posmap1 of
       Nothing -> posmap
       Just (symset1,card) ->
@@ -531,7 +558,7 @@ restrictSorts sym1 sym2 sigma1 sigma2 posmap =
 -- remove all sort mappings that map s1 to a sort different from s2
 removeIncompatibleSortMaps :: Maybe PosMap -> (SORT,SORT) -> Maybe PosMap
 removeIncompatibleSortMaps Nothing _ = Nothing
-removeIncompatibleSortMaps (Just posmap@(posmap1,posmap2)) (s1,s2) = 
+removeIncompatibleSortMaps (Just posmap@(posmap1,_posmap2)) (s1,s2) = 
   case Map.lookup sym1 posmap1 of
     Nothing -> Just posmap
     Just (symset,card) ->
@@ -583,7 +610,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
-                       (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
+                   (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
          posmap1 = Set.fold ins1 Map.empty symset1
          ins2 sym1a (symset,card) = Map.listInsert card (sym1a,symset)
          posmap2 = Map.foldWithKey ins2 Map.empty posmap1
@@ -594,7 +621,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
        Just syms -> pfatal_error
-         (ptext "No symbol mapping for "
+         (text "No symbol mapping for "
            <+> printText (Set.fromList $ map fst syms)) nullPos
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
@@ -606,40 +633,52 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
      pwarning rm (
         text "please check if the following morphism matches your intention"
         $$ printText rm) nullPos
-     where
+
+
      -- 4. recursive depth first function
      -- ambiguous map leads to fatal error (similar to exception)
-     tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
+tryToInduce :: Sign f e -> Sign f e -> SymbolMap -> PosMap 
+            -> Result (Maybe SymbolMap)
+tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
        --trace("akmap: "++showPretty akmap "") (return ())
        if Map.isEmpty posmap2 then return $ Just akmap -- 4a.
         else do
           --trace ("trying to map: "++showPretty sym1 "") (return ())
           (akmap1,stopBT,immF) <- 
              tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset1
-          (akmap2,stopBT2,immF2) <- 
+          (akmap2,stopBT2,_immF2) <- 
             if isNothing akmap1 && not stopBT
              -- 6. no map for symset1, hence try symset2
              then tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset2
              else return (akmap1,stopBT,immF) -- otherwise, use symset1 only
           when ((akmap2,stopBT2)==(Nothing,False) && immF)
-            (phint () (ptext "Possibly no mapping for "<+>printText sym1) nullPos)
+            (phint () (text "Possibly no mapping for "<+>printText sym1)
+                   nullPos)
           return akmap2
        where
        -- 4b. take symbol with minimal remaining values (MRV)
-       (card,(sym1,symset):symsets) = Map.findMin posmap2
+       (card,(sym1,symset):_symsets) = Map.findMin posmap2
        (symset1,symset2) = Set.partition (preservesName sym1) symset
        posmap' = removeFromPosmap sym1 card (posmap1,posmap2)
+
      -- 5. to 7.
-     tryToInduce1 sigma1 sigma2 akmap posmap sym1 symset = do
+tryToInduce1 :: Sign f e -> Sign f e -> SymbolMap -> PosMap -> Symbol
+             -> Set.Set Symbol -> Result (Maybe SymbolMap, Bool, Bool)
+tryToInduce1 sigma1 sigma2 akmap posmap sym1 symset = do
        Set.fold (tryToInduce2 sigma1 sigma2 akmap posmap sym1) 
                        (return (Nothing,False,False)) symset
-     tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
+
+tryToInduce2 :: Sign f e -> Sign f e -> SymbolMap -> PosMap -> Symbol
+             -> Symbol -> Result (Maybe SymbolMap, Bool, Bool)
+             -> Result (Maybe SymbolMap, Bool, Bool)
+tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
        -- 5.1. to 5.3. consistency check
        (akmapSoFar1,stopBackTrack,_) <- akmapSoFar
-       --(trace ("map "++(case akmapSoFar1 of
-       --                  Just x -> showPretty x " + "
-       --                  Nothing -> "")
-       -- ++showPretty sym1 " |-> " ++showPretty sym2 "; stopBackTrack: "++show stopBackTrack) (return ()))
+       {-(trace ("map "++(case akmapSoFar1 of
+                         Just x -> showPretty x " + "
+                         Nothing -> "")
+        ++showPretty sym1 " |-> " ++showPretty sym2 "; stopBackTrack: "
+        ++show stopBackTrack) (return ())) -}
        (akmap',stopBackTrack',immediateFailure) <- 
         case extendSymbMap akmap sym1 sym2 of
          Nothing -> return (Nothing,stopBackTrack,True)
@@ -653,7 +692,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
                 -- 5.7./5.8. constraint propagation 
                 --           for an operation/predicate symbol
                 _ -> restrictOps sym1 sym2 posmap
-                 -- 5.9. omitted until overload relation will be available !!!???
+                 -- 5.9. omitted until overload relation will be available !!??
                noNewSortMaps = posmap1==Just posmap
            -- 5.10.
            -- case posmap1 of
@@ -672,13 +711,15 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
        case (akmap',akmapSoFar1) of
          -- stop backtracking next time if there haven't been new sort maps
          (Nothing,Nothing) -> return (Nothing,stopBackTrack',immediateFailure)
-         (Just smap,Nothing) -> return (Just smap,stopBackTrack',immediateFailure)
-         (Nothing,Just smap) -> return (Just smap,stopBackTrack',immediateFailure)
+         (Just smap,Nothing) -> return (Just smap,stopBackTrack',
+                                             immediateFailure)
+         (Nothing,Just smap) -> return (Just smap,stopBackTrack',
+                                             immediateFailure)
          (Just smap1,Just smap2) -> 
             fail $ shows 
-             (ptext "Ambiguous symbol map" $$ 
-              ptext "Map1" <+> printText smap1 $$
-              ptext "Map2" <+> printText smap2) 
+             (text "Ambiguous symbol map" $$ 
+              text "Map1" <+> printText smap1 $$
+              text "Map2" <+> printText smap2) 
             ""
 
 {-
@@ -713,16 +754,19 @@ generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 generatedSign extEm sys sigma = do
   if not (sys `Set.subset` symset)   -- 2.
    then pfatal_error 
-         (ptext "Revealing: The following symbols" 
+         (text "Revealing: The following symbols" 
           <+> printText(sys Set.\\ symset)
-          <+> ptext "are not in the signature") nullPos
+          <+> text "are not in the signature") nullPos
    else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1. 
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
                                      , opMap = Map.empty
                                      , predMap = Map.empty }) sys  -- 4. 
-  revealSym sy sigma1 = case symbType sy of  -- 4.1.
+  sigma2 = sigma1 {sortRel = sortRel sigma `Rel.restrict` sortSet sigma1} 
+
+revealSym :: Symbol -> Sign f e -> Sign f e
+revealSym sy sigma1 = case symbType sy of  -- 4.1.
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
@@ -731,7 +775,7 @@ generatedSign extEm sys sigma = do
     PredAsItemType pt ->   -- 4.1.4.
       sigma1 {sortSet = foldr Set.insert (sortSet sigma1) (predArgs pt),
               predMap = Map.setInsert (symName sy) pt $ predMap sigma1}
-  sigma2 = sigma1 {sortRel = sortRel sigma `Rel.restrict` sortSet sigma1} -- 5./6.
+  -- 5./6.
 
 {-
 Computing signature co-generated by a raw symbol set.
@@ -762,21 +806,21 @@ cogeneratedSign extEm symset sigma = do
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
            (not (symset `Set.subset` symset0))   -- 2.
    then pfatal_error 
-         (ptext "Hiding: The following symbols" 
+         (text "Hiding: The following symbols" 
           <+> printText(symset Set.\\ symset0)
-          <+> ptext "are not in the signature") nullPos
+          <+> text "are not in the signature") nullPos
    else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1. 
-  symset1 = Set.fold revealSym symset0 symset  -- 3. 
-  revealSym sy symset1 = case symbType sy of  -- 3.1.
+  symset1 = Set.fold revealSym' symset0 symset  -- 3. 
+  revealSym' sy symset1' = case symbType sy of  -- 3.1.
     SortAsItemType ->      -- 3.1.1.
       Set.filter (not . profileContains (symName sy) . symbType) 
-        $ Set.delete sy symset1
+        $ Set.delete sy symset1'
     OpAsItemType _ ->     -- 3.1.2
-      Set.delete sy symset1
+      Set.delete sy symset1'
     PredAsItemType _ ->   -- 3.1.2
-      Set.delete sy symset1
+      Set.delete sy symset1'
   profileContains _ SortAsItemType = False
   profileContains s (OpAsItemType ot) = s `elem` (opRes ot:opArgs ot)
   profileContains s (PredAsItemType pt) = s `elem` (predArgs pt)
