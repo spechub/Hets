@@ -1,24 +1,38 @@
+{- --------------------------------------------------------------------------
+  HetCATS/CASL/Sublogics.hs
+  $Id$
+  Authors: Pascal Schmidt
+  Year:    2002
 -----------------------------------------------------------------------------
--- HetCATS/CASL/Sublogics.hs
--- $Id$
--- Authors: Pascal Schmidt
--- Year:    2002
-------------------------------------------------------------------------------
-{- todo:
+  SUMMARY
+  
+  This module provides the sublogic functions (as required by Logic.hs)
+  for CASL. The functions allow to compute the minimal sublogics needed
+  by a given element, to check whether an item is part of a given
+  sublogic, and to project an element into a given sublogic.
+  
+-----------------------------------------------------------------------------
+  TODO
 
   [Pos] in LocalEnv.SortDefn -> Christian Maeder fragen
 
   Testen mit hetcats/hetcats.hs (Klaus kontakten)
+  
+-------------------------------------------------------------------------- -}
 
--}
+-----------------------------------------------------------------------------
+-- Export declarations
+-----------------------------------------------------------------------------
 
 module Sublogics ( -- datatype
                    CASL_Sublogics(..),
 
-                   -- lattice functions
+                   -- functions for LatticeWithTop instance
                    top,
                    sublogics_max,
                    sublogics_min,
+
+                   -- functions for Logic instance
                    
                    -- sublogic to string converstion
                    sublogics_name,
@@ -26,7 +40,7 @@ module Sublogics ( -- datatype
                    -- list of all sublogics
                    sublogics_all,
 
-                   -- check functions: element in given sublogic?
+                   -- checks: element in given sublogic?
                    in_basic_spec,
                    in_sentence,
                    in_symb_items,
@@ -35,7 +49,7 @@ module Sublogics ( -- datatype
                    in_morphism,
                    in_symbol,
 
-                   -- computation functions: sublogic of given element
+                   -- computations: sublogic of given element
                    sl_basic_spec,
                    sl_sentence,
                    sl_symb_items,
@@ -44,7 +58,7 @@ module Sublogics ( -- datatype
                    sl_morphism,
                    sl_symbol,
                    
-                   -- projection function: project element into given sublogic
+                   -- projections: project element into given sublogic
                    pr_basic_spec,
                    pr_symb_items,
                    pr_symb_map_items,
@@ -54,15 +68,19 @@ module Sublogics ( -- datatype
                    pr_symbol
                  ) where
 
-import Maybe
-import FiniteMap
-import Id
+------------------------------------------------------------------------------
+-- Imports from other modules
+------------------------------------------------------------------------------
+
+import Maybe ( catMaybes, fromJust, isJust, isNothing, mapMaybe )
+import FiniteMap ( emptyFM, isEmptyFM, fmToList, listToFM )
+import Id ( Id, Pos )
 import AS_Annotation
 import AS_Basic_CASL
 import LocalEnv
 
 ------------------------------------------------------------------------------
--- datatypes for CASL sublogics
+-- Datatypes for CASL sublogics
 ------------------------------------------------------------------------------
 
 data CASL_Formulas = Atomic  -- atomic logic
@@ -80,6 +98,10 @@ data CASL_Sublogics = CASL_SL
                         which_logic::CASL_Formulas
                       } deriving (Show,Ord,Eq)
 
+-----------------------------------------------------------------------------
+-- Special sublogics elements
+-----------------------------------------------------------------------------
+
 -- top element
 --
 top :: CASL_Sublogics
@@ -90,13 +112,65 @@ top = (CASL_SL True True True True True FOL)
 bottom :: CASL_Sublogics
 bottom = (CASL_SL False False False False False Atomic)
 
+-- the following are used to add a needed feature to a given
+-- sublogic via sublogics_max, i.e. (sublogics_max given needs_part)
+-- will force partiality in addition to what features given already
+-- has included
+
+-- minimal sublogic with subsorting
+--
+need_sub :: CASL_Sublogics
+need_sub = bottom { has_sub = True, which_logic = Horn }
+
+-- minimal sublogic with partiality
+--
+need_part :: CASL_Sublogics
+need_part = bottom { has_part = True }
+
+-- minimal sublogic with sort generation constraints
+--
+need_cons :: CASL_Sublogics
+need_cons = bottom { has_cons = True }
+
+-- minimal sublogic with equality
+--
+need_eq :: CASL_Sublogics
+need_eq = bottom { has_eq = True }
+
+-- minimal sublogic with predicates
+--
+need_pred :: CASL_Sublogics
+need_pred = bottom { has_pred = True }
+
+need_horn :: CASL_Sublogics
+need_horn = bottom { which_logic = Horn }
+
+need_ghorn :: CASL_Sublogics
+need_ghorn = bottom { which_logic = GHorn }
+
+need_fol :: CASL_Sublogics
+need_fol = bottom { which_logic = FOL }
+
+-----------------------------------------------------------------------------
+-- Functions to generate a list of all sublogics for CASL
+-----------------------------------------------------------------------------
+
 -- all elements
+-- create a list of all CASL sublogics by generating all possible
+-- feature combinations and then filtering illegal ones out
 --
 sublogics_all :: [CASL_Sublogics]
 sublogics_all = filter (not . adjust_check) $
                 morph_logic $ morph_part $ morph_cons $ morph_eq $ morph_pred
-                [CASL_SL True  False False False False Atomic,
-                 CASL_SL False False False False False Atomic]
+                [bottom, bottom { has_sub = True }]
+
+-- The following generate permutations for all sublogic features,
+-- this is done by taking a list of already generated sublogics and
+-- creating one version of each element with the feature in question
+-- turned off and one with it turned on.
+-- This generates all possible permutations when chained together.
+-- There is no function morph_sub because the two elements for that
+-- feature are used as a seed for permuting the other features (above).
 
 morph_part :: [CASL_Sublogics] -> [CASL_Sublogics]
 morph_part [] = []
@@ -127,35 +201,7 @@ morph_logic (h:t) = [h{ which_logic = Atomic}] ++
                     (morph_logic t)
 
 ------------------------------------------------------------------------------
--- special constants
-------------------------------------------------------------------------------
-
-need_sub :: CASL_Sublogics
-need_sub = bottom { has_sub = True, which_logic = Horn }
-
-need_part :: CASL_Sublogics
-need_part = bottom { has_part = True }
-
-need_cons :: CASL_Sublogics
-need_cons = bottom { has_cons = True }
-
-need_eq :: CASL_Sublogics
-need_eq = bottom { has_eq = True }
-
-need_pred :: CASL_Sublogics
-need_pred = bottom { has_pred = True }
-
-need_horn :: CASL_Sublogics
-need_horn = bottom { which_logic = Horn }
-
-need_ghorn :: CASL_Sublogics
-need_ghorn = bottom { which_logic = GHorn }
-
-need_fol :: CASL_Sublogics
-need_fol = bottom { which_logic = FOL }
-
-------------------------------------------------------------------------------
--- conversion to String
+-- Conversion functions (to String)
 ------------------------------------------------------------------------------
 
 formulas_name :: Bool -> CASL_Formulas -> String
@@ -176,7 +222,7 @@ sublogics_name x = [   ( if (has_sub  x) then "Sub" else "")
                     ++ ( if (has_eq   x) then "="   else "")]
 
 ------------------------------------------------------------------------------
--- min and max functions
+-- min/join and max/meet functions
 ------------------------------------------------------------------------------
 
 formulas_max :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
@@ -202,12 +248,16 @@ sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
                             (formulas_min (which_logic a) (which_logic b))
 
 ------------------------------------------------------------------------------
--- helper functions
+-- Helper functions
 ------------------------------------------------------------------------------
 
+-- compute sublogics from a list of sublogics
+--
 comp_list :: [CASL_Sublogics] -> CASL_Sublogics
 comp_list l = foldl sublogics_max bottom l
 
+-- run sublogics computation function on Maybe datatype
+--
 mb :: (a -> CASL_Sublogics) -> Maybe a -> CASL_Sublogics
 mb f Nothing = bottom
 mb f (Just x) = f x
@@ -220,6 +270,8 @@ adjust_logic x = if (adjust_check x) then
                  else
                    x
 
+-- check for illegal combination "subsorting with atomic logic"
+--
 adjust_check :: CASL_Sublogics -> Bool
 adjust_check x = (has_sub x) && (which_logic x == Atomic)
 
@@ -256,31 +308,55 @@ mapPos c p f l = let
                    (res,(take c p)++pos)
 
 ------------------------------------------------------------------------------
--- functions to analyse formulae
+-- Functions to analyse formulae
 ------------------------------------------------------------------------------
 
+{- ---------------------------------------------------------------------------
+   These functions are based on Till Mossakowski's paper "Sublanguages of
+   CASL", which is CoFI Note L-7. The functions implement an adaption of
+   the reduced grammar given there for formulae in a specific expression
+   logic by, checking whether a formula would match the productions from the
+   grammar. Which function checks for which nonterminal from the paper is
+   given as a comment before each function.
+--------------------------------------------------------------------------- -}
+
+-- Atomic Logic (subsection 3.4 of the paper)
+
+-- FORMULA, P-ATOM
+--
 is_atomic_f :: FORMULA -> Bool
 is_atomic_f (Quantification q _ f _) = (is_atomic_q q) && (is_atomic_f f)
-is_atomic_f (Conjunction l _) = and ((map is_atomic_f) l)
+is_atomic_f (Conjunction l _) = -- F-CONJUNCTION
+                                (l /= []) && (and $ map is_atomic_f l)
 is_atomic_f (True_atom _) = True
 is_atomic_f (Predication _ _ _) = True
 is_atomic_f (Definedness _ _) = True
 is_atomic_f (Existl_equation _ _ _) = True
 is_atomic_f _ = False
 
+-- QUANTIFIER
+--
 is_atomic_q :: QUANTIFIER -> Bool
 is_atomic_q (Universal) = True
 is_atomic_q _ = False
 
+-- Positive Conditional Logic (subsection 3.2 in the paper)
+
+-- FORMULA
+--
 is_horn_f :: FORMULA -> Bool
 is_horn_f (Quantification q _ f _) = (is_atomic_q q) && (is_horn_f f)
 is_horn_f (Implication f g _) = (is_horn_p_conj f) && (is_horn_a g)
 is_horn_f _ = False
 
+-- P-CONJUNCTION
+--
 is_horn_p_conj :: FORMULA -> Bool
 is_horn_p_conj (Conjunction l _) = and ((map is_horn_p_a) l)
 is_horn_p_conj _ = False
 
+-- ATOM
+--
 is_horn_a :: FORMULA -> Bool
 is_horn_a (True_atom _) = True
 is_horn_a (Predication _ _ _) = True
@@ -290,6 +366,8 @@ is_horn_a (Strong_equation _ _ _) = True
 is_horn_a (Membership _ _ _) = True
 is_horn_a _ = False
 
+-- P-ATOM
+--
 is_horn_p_a :: FORMULA -> Bool
 is_horn_p_a (True_atom _) = True
 is_horn_p_a (Predication _ _ _) = True
@@ -298,6 +376,10 @@ is_horn_p_a (Existl_equation _ _ _) = True
 is_horn_p_a (Membership _ _ _) = True
 is_horn_p_a _ = False
 
+-- Generalized Positive Conditional Logic (subsection 3.3 of the paper)
+
+-- FORMULA, ATOM
+--
 is_ghorn_f :: FORMULA -> Bool
 is_ghorn_f (Quantification q _ f _) = (is_atomic_q q) && (is_ghorn_f f)
 is_ghorn_f (Conjunction l _) = (is_ghorn_c_conj l) || (is_ghorn_f_conj l)
@@ -311,23 +393,35 @@ is_ghorn_f (Strong_equation _ _ _) = True
 is_ghorn_f (Membership _ _ _) = True
 is_ghorn_f _ = False
 
+-- C-CONJUNCTION
+--
 is_ghorn_c_conj :: [FORMULA] -> Bool
 is_ghorn_c_conj l = and ((map is_ghorn_conc) l)
 
+-- F-CONJUNCTION
+--
 is_ghorn_f_conj :: [FORMULA] -> Bool
 is_ghorn_f_conj l = and ((map is_ghorn_f) l)
 
+-- P-CONJUNCTION
+--
 is_ghorn_p_conj :: [FORMULA] -> Bool
 is_ghorn_p_conj l = and ((map is_ghorn_prem) l)
 
+-- PREMISE
+--
 is_ghorn_prem :: FORMULA -> Bool
 is_ghorn_prem (Conjunction l _) = is_ghorn_p_conj l
 is_ghorn_prem x = is_horn_p_a x
 
+-- CONCLUSION
+--
 is_ghorn_conc :: FORMULA -> Bool
 is_ghorn_conc (Conjunction l _) = is_ghorn_c_conj l
 is_ghorn_conc x = is_horn_a x
 
+-- compute logic of a formula by checking all logics in turn
+--
 get_logic :: FORMULA -> CASL_Sublogics
 get_logic f = if (is_atomic_f f) then bottom else
               if (is_horn_f f) then need_horn else
@@ -341,8 +435,12 @@ get_logic_sd f = if (is_horn_p_a f) then need_horn else
                  if (is_ghorn_prem f) then need_ghorn else
                  need_fol
 
--- and now for Formula instead of FORMULA
+-- and now for Formula instead of FORMULA, same method as above
 
+-- Atomic Logic
+
+-- FORMULA, P-ATOM
+--
 is_Atomic_f :: Formula -> Bool
 is_Atomic_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Atomic_f f)
 is_Atomic_f (Connect AndOp l _) = and ((map is_Atomic_f) l)
@@ -353,10 +451,16 @@ is_Atomic_f (TermTest DefOp _ _) = True
 is_Atomic_f (AnnFormula f) = is_Atomic_f (item f)
 is_Atomic_f _ = False
 
+-- QUANTIFIER
+--
 is_Atomic_q :: Quantifier -> Bool
 is_Atomic_q (Forall) = True
 is_Atomic_q _ = False
 
+-- Positive Conditional Logic
+
+-- FORMULA
+--
 is_Horn_f :: Formula -> Bool
 is_Horn_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Horn_f f)
 is_Horn_f (Connect ImplOp [f,g] _) = (is_Horn_p_conj f) && (is_Horn_a g)
@@ -364,11 +468,15 @@ is_Horn_f (Connect IfOp [g,f] _) = (is_Horn_p_conj f) && (is_Horn_a g)
 is_Horn_f (AnnFormula f) = is_Horn_f (item f)
 is_Horn_f _ = False
 
+-- P-CONJUNCTION
+--
 is_Horn_p_conj :: Formula -> Bool
 is_Horn_p_conj (Connect AndOp l _) = and ((map is_Horn_p_a) l)
 is_Horn_p_conj (AnnFormula f) = is_Horn_p_conj (item f)
 is_Horn_p_conj _ = False
 
+-- ATOM
+--
 is_Horn_a :: Formula -> Bool
 is_Horn_a (TrueAtom _) = True
 is_Horn_a (PredAppl _ _ _ _ _) = True
@@ -377,6 +485,8 @@ is_Horn_a (ElemTest _ _ _) = True
 is_Horn_a (AnnFormula f) = is_Horn_a (item f)
 is_Horn_a _ = False
 
+-- P-ATOM
+--
 is_Horn_p_a :: Formula -> Bool
 is_Horn_p_a (TrueAtom _) = True
 is_Horn_p_a (PredAppl _ _ _ _ _) = True
@@ -386,6 +496,10 @@ is_Horn_p_a (ElemTest _ _ _) = True
 is_Horn_p_a (AnnFormula f) = is_Horn_p_a (item f)
 is_Horn_p_a _ = False
 
+--
+
+-- FORMULA, ATOM
+--
 is_Ghorn_f :: Formula -> Bool
 is_Ghorn_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Ghorn_f f)
 is_Ghorn_f (Connect AndOp l _) = (is_Ghorn_c_conj l) || (is_Ghorn_f_conj l)
@@ -399,23 +513,35 @@ is_Ghorn_f (ElemTest _ _ _) = True
 is_Ghorn_f (AnnFormula f) = is_Ghorn_f (item f)
 is_Ghorn_f _ = False
 
+-- C-CONJUNCTION
+--
 is_Ghorn_c_conj :: [Formula] -> Bool
 is_Ghorn_c_conj l = and ((map is_Ghorn_conc) l)
 
+-- F-CONJUNCTION
+--
 is_Ghorn_f_conj :: [Formula] -> Bool
 is_Ghorn_f_conj l = and ((map is_Ghorn_f) l)
 
+-- P-CONJUNCTION
+--
 is_Ghorn_p_conj :: [Formula] -> Bool
 is_Ghorn_p_conj l = and ((map is_Ghorn_prem) l)
 
+-- PREMISE
+--
 is_Ghorn_prem :: Formula -> Bool
 is_Ghorn_prem (Connect AndOp l _) = is_Ghorn_p_conj l
 is_Ghorn_prem x = is_Horn_p_a x
 
+-- CONCLUSION
+--
 is_Ghorn_conc :: Formula -> Bool
 is_Ghorn_conc (Connect AndOp l _) = is_Ghorn_c_conj l
 is_Ghorn_conc x = is_Horn_a x
 
+-- compute logic of a formula by checking each logic in turn
+--
 get_Logic :: Formula -> CASL_Sublogics
 get_Logic f = if (is_Atomic_f f) then bottom else
               if (is_Horn_f f) then need_horn else
@@ -430,7 +556,8 @@ get_Logic_sd f = if (is_Horn_p_a f) then need_horn else
                  need_fol
 
 ------------------------------------------------------------------------------
--- functions to compute minimal sublogic for a given element
+-- Functions to compute minimal sublogic for a given element, these work
+-- by recursing into all subelements
 ------------------------------------------------------------------------------
 
 sl_basic_spec :: BASIC_SPEC -> CASL_Sublogics
@@ -459,6 +586,10 @@ sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
 sl_sig_items (Datatype_items l _) = comp_list $ map sl_datatype_decl
                                               $ map item l
 
+-- Subsort_defn needs to compute the expression logic needed seperately
+-- because the expressiveness allowed in the formula may be different
+-- from more general formulae in the same expression logic
+--
 sl_sort_item :: SORT_ITEM -> CASL_Sublogics
 sl_sort_item (Subsort_decl _ _ _) = need_sub
 sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
@@ -508,8 +639,7 @@ sl_var_decl _ = bottom
 
 sl_term :: TERM -> CASL_Sublogics
 sl_term (Cast _ _ _) = need_part
-sl_term (Conditional t f u _) = sublogics_max (sl_term t)
-                                (sublogics_max (sl_formula f) (sl_term u))
+sl_term (Conditional t f u _) = comp_list [sl_term t,sl_formula f,sl_term u]
 sl_term _ = bottom
 
 sl_formula :: FORMULA -> CASL_Sublogics
@@ -527,10 +657,8 @@ sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
                               (comp_list $ map sl_term l)
 sl_form (Definedness t _) = sl_term t
-sl_form (Existl_equation t u _) = sublogics_max need_eq
-                                  (sublogics_max (sl_term t) (sl_term u))
-sl_form (Strong_equation t u _) = sublogics_max need_eq
-                                  (sublogics_max (sl_term t) (sl_term u))
+sl_form (Existl_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
+sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Membership t _ _) = sublogics_max need_sub (sl_term t)
 sl_form (Mixfix_formula t) = sl_term t
 sl_form (Unparsed_formula _ _) = bottom
@@ -597,10 +725,8 @@ sl_sortrels (SortRels [] [] [] []) = bottom
 sl_sortrels _ = need_sub
 
 sl_opitem :: OpItem -> CASL_Sublogics
-sl_opitem (OpItem _ t l d _ _) = sublogics_max (sl_optype t)
-                                 (sublogics_max (mb sl_opdefn d)
-                                 (comp_list $ map sl_opattr l))
-
+sl_opitem (OpItem _ t l d _ _) = comp_list [sl_optype t,mb sl_opdefn d,
+                                            comp_list $ map sl_opattr l]
 sl_opattr :: OpAttr -> CASL_Sublogics
 sl_opattr (UnitOpAttr t) = sl_Term t
 sl_opattr _ = bottom
@@ -628,8 +754,7 @@ sl_Term :: Term -> CASL_Sublogics
 sl_Term (OpAppl _ t l _ _) = sublogics_max (sl_optype t)
                                            (comp_list $ map sl_Term l)
 sl_Term (Typed t _ _ _) = sl_Term t
-sl_Term (Cond t f u _) = sublogics_max (sl_Term t)
-                         (sublogics_max (sl_Formula f) (sl_Term u))
+sl_Term (Cond t f u _) = comp_list [sl_Term t,sl_Formula f,sl_Term u]
 sl_Term _ = bottom
 
 sl_Formula :: Formula -> CASL_Sublogics
@@ -646,23 +771,12 @@ sl_Form (FalseAtom _) = bottom
 sl_Form (TrueAtom _) = bottom
 sl_Form (AnnFormula f) = sl_Form $ item f
 
+-- the maps have no influence since all sorts,ops,preds in them
+-- must also appear in the signatures, so any features needed by
+-- them will be included by just checking the signatures
+--
 sl_morphism :: Morphism -> CASL_Sublogics
-sl_morphism (Morphism a b _ f p) = sublogics_max
-                                   (sublogics_max (sl_sign a) (sl_sign b))
-                                   (sublogics_max (sl_fun_map f)
-                                                  (sl_pred_map p))
-
-sl_fun_map_entry :: (OpType, Id, Bool) -> CASL_Sublogics
-sl_fun_map_entry (t,_,_) = sl_optype t
-
-sl_fun_map_entries :: [(OpType, Id, Bool)] -> CASL_Sublogics
-sl_fun_map_entries l = comp_list $ map sl_fun_map_entry l
-
-sl_fun_map :: Fun_map -> CASL_Sublogics
-sl_fun_map fm = comp_list $ map sl_fun_map_entries $ map snd $ fmToList fm
-
-sl_pred_map :: Pred_map -> CASL_Sublogics
-sl_pred_map fm = if (isEmptyFM fm) then bottom else need_pred
+sl_morphism (Morphism a b _ _ _) = sublogics_max (sl_sign a) (sl_sign b)
 
 sl_symbol :: Symbol -> CASL_Sublogics
 sl_symbol (Symbol _ t) = sl_symbtype t
@@ -684,11 +798,16 @@ sl_Component (Component _ t _) = sl_optype t
 -- comparison functions
 ------------------------------------------------------------------------------
 
+-- negated implication
+--
 nimpl :: Bool -> Bool -> Bool
 nimpl True _      = True
 nimpl False False = True
 nimpl False True  = False
 
+-- check if a "new" sublogic is contained in/equal to a given
+-- sublogic
+--
 sl_in :: CASL_Sublogics -> CASL_Sublogics -> Bool
 sl_in given new = (nimpl (has_sub  given) (has_sub  new)) &&
                   (nimpl (has_part given) (has_part new)) &&
@@ -771,8 +890,16 @@ pr_check l f e = if (in_x l e f) then (Just e) else Nothing
 pr_formula :: CASL_Sublogics -> FORMULA -> Maybe FORMULA
 pr_formula l f = pr_check l sl_formula f
 
+-- make full Annoted Sig_items out of a SORT list
+--
+pr_make_sorts :: [SORT] -> Annoted BASIC_ITEMS
+pr_make_sorts s =
+  Annoted (Sig_items (Sort_items [Annoted (Sort_decl s [])[][][]][]))[][][]
+
 -- when processing BASIC_SPEC, add a Sort_decl in front for sorts
--- defined by DATATYPE_DECLs that had to be removed completely
+-- defined by DATATYPE_DECLs that had to be removed completely,
+-- otherwise formulas might be broken by the missing sorts, thus
+-- breaking the projection
 --
 pr_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> BASIC_SPEC
 pr_basic_spec l (Basic_spec s) =
@@ -783,12 +910,13 @@ pr_basic_spec l (Basic_spec s) =
     ret   = if (toAdd==[]) then
               items
             else
-              [Annoted (Sig_items (Sort_items
-              [Annoted (Sort_decl toAdd []) [] [] []] []))
-              [] [] [] ] ++ items
+              (pr_make_sorts toAdd):items
   in
     Basic_spec ret
 
+-- returns a non-empty list of [SORT] if datatypes had to be removed
+-- completely
+--
 pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> (Maybe BASIC_ITEMS, [SORT])
 pr_basic_items l (Sig_items s) =
                let
@@ -877,6 +1005,11 @@ pr_components l (Partial_select n s p) =
                 Nothing
 pr_components l x = Just x
 
+-- takes a list of datatype declarations and checks whether a
+-- whole declaration is invalid in the given sublogic - if this
+-- is the case, the sort that would be declared by the type is
+-- added to a list of SORT that is emitted
+--
 pr_lost_dt :: CASL_Sublogics -> [DATATYPE_DECL] -> [SORT]
 pr_lost_dt l [] = []
 pr_lost_dt sl ((Datatype_decl s l p):t) =
@@ -891,6 +1024,9 @@ pr_lost_dt sl ((Datatype_decl s l p):t) =
 pr_symbol :: CASL_Sublogics -> Symbol -> Maybe Symbol
 pr_symbol l s = pr_check l sl_symbol s
 
+-- returns a non-empty list of [SORT] if datatypes had to be removed
+-- completely
+--
 pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> (Maybe SIG_ITEMS,[SORT])
 pr_sig_items l (Sort_items s p) =
              let
@@ -926,6 +1062,10 @@ pr_sig_items l (Datatype_items d p) =
 pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
 pr_op_item l i = pr_check l sl_op_item i
 
+-- subsort declarations and definitions are reduced to simple
+-- sort declarations if the sublogic disallows subsorting to
+-- avoid loosing sorts in the projection
+--
 pr_sort_item :: CASL_Sublogics -> SORT_ITEM -> Maybe SORT_ITEM
 pr_sort_item l (Sort_decl s p) = Just (Sort_decl s p)
 pr_sort_item l (Subsort_decl sl s p) =
@@ -1023,6 +1163,9 @@ pr_sigitem l (APredItem p) =
             else
               Nothing
 
+-- if the sublogic given disallows subsorting, remove all sort
+-- relation information
+--
 pr_sortitem :: CASL_Sublogics -> SortItem -> Maybe SortItem
 pr_sortitem l (SortItem id rels def pos alt) =
   if (has_sub l) then
@@ -1030,6 +1173,9 @@ pr_sortitem l (SortItem id rels def pos alt) =
   else
     Just (SortItem id (SortRels [] [] [] []) (pr_sortdefn l def) pos alt)
 
+-- remove information about how a sort was defined if not expressable
+-- in the target sublogic
+--
 -- FIXME
 -- handle [Pos] in Datatype case
 pr_sortdefn :: CASL_Sublogics -> Maybe SortDefn -> Maybe SortDefn
@@ -1100,6 +1246,9 @@ pr_opitem l i = pr_check l sl_opitem i
 pr_preditem :: CASL_Sublogics -> PredItem -> Maybe PredItem
 pr_preditem l i = pr_check l sl_preditem i
 
+-- since a projection never removes sorts, it is safe to leave
+-- the sort_map as-is
+--
 pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
 pr_morphism l1 (Morphism s t sm fm pm) =
   let
@@ -1108,6 +1257,9 @@ pr_morphism l1 (Morphism s t sm fm pm) =
     Morphism (pr_sign l s) (pr_sign l t) sm (pr_fun_map l fm)
              (pr_pred_map l pm)
 
+-- predicates only rely on the has_pred feature, so the map
+-- can be kept or removed as a whole
+--
 pr_pred_map :: CASL_Sublogics -> Pred_map -> Pred_map
 pr_pred_map l x = if (has_pred l) then x else emptyFM
 
@@ -1129,6 +1281,9 @@ pr_fun_map_entry l (t,i,b) =
                    else
                      Nothing
 
+-- compute a morphism that consists of the original signature
+-- and the projected signature
+--
 pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 pr_epsilon l1 s = let
                     l = adjust_logic l1
@@ -1137,5 +1292,5 @@ pr_epsilon l1 s = let
                     embedMorphism new s
 
 ------------------------------------------------------------------------------
--- the end
+-- THE END
 ------------------------------------------------------------------------------
