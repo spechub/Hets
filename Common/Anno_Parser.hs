@@ -134,6 +134,7 @@ parse_internal :: GenParser Char () a -> SourcePos -> [Char]
 parse_internal p sp inp = parse (do setPosition sp
 				    whiteSpace
 				    res <- p
+				    eof
 				    return res
 				)
 			        (sourceName sp)
@@ -181,7 +182,7 @@ display_anno = do ident <- casl_id
 		  return (Display_anno ident tls [])
     where  disp_symb (df_symb, symb) = 
 	       do lexeme $ try $ string $ "%"++symb
-		  str <- manyTill anyChar $ charOrEof '%'
+		  str <- manyTill anyChar $ lookAhead $ charOrEof '%'
 		  return (df_symb, reverse $ dropWhile (`elem` whiteChars)
 			 $ reverse str)
 
