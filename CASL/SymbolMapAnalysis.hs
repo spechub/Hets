@@ -74,6 +74,6 @@ inducedFromToMorphism :: Map.EndoMap RawSymbol
 inducedFromToMorphism rmap sigma1 sigma2 = do
   mor1 <- inducedFromMorphism rmap sigma1
   if isSubSig (mtarget mor1) sigma2 
-   then return mor1
+   then return (mor1 {mtarget = sigma2})
    else plain_error mor1 "true fitting maps nyi" nullPos
   

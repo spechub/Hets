@@ -330,6 +330,12 @@ instance Language Grothendieck
 instance Show GMorphism where
     show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
  
+instance PrettyPrint GMorphism where
+    printText0 ga (GMorphism cid s m) = 
+      ptext (show cid) <+> 
+      ptext "(" <+> printText0 ga s <+> ptext ")" 
+      $$
+      printText0 ga m
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 

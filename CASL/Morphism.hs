@@ -287,4 +287,30 @@ legalMor mor =
 
 
 instance PrettyPrint Morphism where
-  printText0 ga s = text (show s)
+  printText0 ga mor = 
+   (if null sorts then empty
+       else ptext "sorts" <+> (fsep $ punctuate comma sorts))
+   $$ 
+   (if null ops then empty
+       else ptext "ops" <+> (fsep $ punctuate comma ops))
+   $$ 
+   (if null preds then empty
+       else ptext "preds" <+> (fsep $ punctuate comma preds))
+   $$ 
+   ptext " : " <+> 
+   ptext "{" <+>  printText0 ga (msource mor) <+> ptext "}" <+> 
+   ptext "->" <+> 
+   ptext "{" <+>  printText0 ga (mtarget mor) <+> ptext "}"
+   where sorts = map print_sort_map (Map.toList $ sort_map mor)
+         print_sort_map (s1,s2) = 
+           printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
+         ops = map print_op_map (Map.toList $ fun_map mor)
+         print_op_map ((id1,ot),(id2,kind)) = 
+           printText0 ga (Qual_op_name id1 (toOP_TYPE ot) [])
+           <+> ptext "|->" <+> 
+           printText0 ga id2
+         preds = map print_pred_map (Map.toList $ pred_map mor)
+         print_pred_map ((id1,pt),id2) = 
+           printText0 ga (Qual_pred_name id1 (toPRED_TYPE pt) [])
+           <+> ptext "|->" <+> 
+           printText0 ga id2

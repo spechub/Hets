@@ -477,7 +477,7 @@ getSublogicOfNode descr ab2dgNode dgraph =
 {- prints the morphism of the edge -}
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) = 
-      putStrLn (show (dgl_morphism linklab))
+      putStrLn (showPretty (dgl_morphism linklab) "")
 showMorphismOfEdge descr Nothing = 
       putStrLn ("edge "++(show descr)++" has no corresponding edge"
 		++ "in the development graph")
