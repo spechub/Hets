@@ -42,7 +42,7 @@ import Data.Maybe(maybeToList)
 
 
 -- | Parse annotated architectural specification
-annotedArchSpec :: (AnyLogic, LogicGraph) -> AParser st (Annoted ARCH_SPEC)
+annotedArchSpec :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted ARCH_SPEC)
 annotedArchSpec l = annoParser2 (archSpec l)
 
 
@@ -50,7 +50,7 @@ annotedArchSpec l = annoParser2 (archSpec l)
 -- @
 -- ARCH-SPEC ::= BASIC-ARCH-SPEC | GROUP-ARCH-SPEC
 -- @
-archSpec :: (AnyLogic, LogicGraph) -> AParser st (Annoted ARCH_SPEC)
+archSpec :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted ARCH_SPEC)
 archSpec l = 
     do asp <- basicArchSpec l 
        return asp
@@ -63,7 +63,7 @@ archSpec l =
 -- @
 -- GROUP-ARCH-SPEC ::= { ARCH-SPEC } | ARCH-SPEC-NAME
 -- @
-groupArchSpec :: (AnyLogic, LogicGraph) -> AParser st (Annoted ARCH_SPEC)
+groupArchSpec :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted ARCH_SPEC)
 groupArchSpec l =
     do kOpBr <- asKey "{"
        anno <- annos
@@ -82,7 +82,7 @@ groupArchSpec l =
 -- BASIC-ARCH-SPEC ::= unit/units UNIT-DECL-DEFNS
 --                                result UNIT-EXPRESSION ;/
 -- @
-basicArchSpec :: (AnyLogic, LogicGraph) -> AParser st (Annoted ARCH_SPEC)
+basicArchSpec :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted ARCH_SPEC)
 basicArchSpec l = 
     do kUnit <- (do u <- asKey unitS; return u) <|> (do u <- asKey "units"; return u) -- TODO: more elegant
        declDefn <- unitDeclDefns l
@@ -99,7 +99,7 @@ basicArchSpec l =
 -- @
 -- UNIT-DECL-DEFNS ::= UNIT-DECL-DEFN ; ... ; UNIT-DECL-DEFN ;
 -- @
-unitDeclDefns :: (AnyLogic, LogicGraph) -> AParser st [Annoted UNIT_DECL_DEFN]
+unitDeclDefns :: (AnyLogic, LogicGraph) -> AParser AnyLogic [Annoted UNIT_DECL_DEFN]
 unitDeclDefns l =
     do dd <- unitDeclDefn l
        ann <- annos
@@ -114,7 +114,7 @@ unitDeclDefns l =
 -- @
 -- UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 -- @
-unitDeclDefn :: (AnyLogic, LogicGraph) -> AParser st UNIT_DECL_DEFN
+unitDeclDefn :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_DECL_DEFN
 unitDeclDefn l = 
         -- unit declaration 
     try (do decl <- unitDecl l
@@ -130,7 +130,7 @@ unitDeclDefn l =
 -- UNIT-DECL ::= UNIT-NAME : UNIT-SPEC
 --             | UNIT-NAME : UNIT-SPEC given GROUP-UNIT-TERMS
 -- @
-unitDecl :: (AnyLogic, LogicGraph) -> AParser st UNIT_DECL_DEFN
+unitDecl :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_DECL_DEFN
 unitDecl l = 
         do name <- simpleId
 	   sep1 <- asKey ":"
@@ -151,7 +151,7 @@ unitDecl l =
 --             | closed UNIT-SPEC
 -- @
 -- TODO: check the precedence
-unitSpec :: (AnyLogic, LogicGraph) -> AParser st UNIT_SPEC
+unitSpec :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_SPEC
 unitSpec l =
        -- closed unit spec
     do kClosed <- asKey closedS
@@ -181,7 +181,7 @@ unitSpec l =
 -- @
 -- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
 -- @
-unitArgs :: (AnyLogic, LogicGraph) -> AParser st ([Annoted SPEC], [Pos])
+unitArgs :: (AnyLogic, LogicGraph) -> AParser AnyLogic ([Annoted SPEC], [Pos])
 -- ^ returns the list of (annotated) group specs and a list of "*" and 
 -- "->" positions
 unitArgs l = 
@@ -196,7 +196,7 @@ unitArgs l =
 -- @
 -- UNIT-ARGS ::= GROUP-SPEC * ... * GROUP-SPEC ->
 -- @
-nonemptyUnitArgs :: (AnyLogic, LogicGraph) -> AParser st ([Annoted SPEC], [Pos])
+nonemptyUnitArgs :: (AnyLogic, LogicGraph) -> AParser AnyLogic ([Annoted SPEC], [Pos])
 -- ^ returns the list of (annotated) group specs and a list of "*" and 
 -- "->" positions
 nonemptyUnitArgs l = 
@@ -215,7 +215,7 @@ nonemptyUnitArgs l =
 -- @
 -- GROUP-UNIT-TERMS ::= GROUP-UNIT-TERM ,..., GROUP-UNIT-TERM
 -- @
-groupUnitTerms :: (AnyLogic, LogicGraph) -> AParser st [Annoted UNIT_TERM]
+groupUnitTerms :: (AnyLogic, LogicGraph) -> AParser AnyLogic [Annoted UNIT_TERM]
 groupUnitTerms l =
     do gut <- groupUnitTerm l
        (com, guts) <- option (Nothing, [])
@@ -231,7 +231,7 @@ groupUnitTerms l =
 --                   | UNIT-NAME FIT-ARG-UNITS
 --                   | { UNIT-TERM }
 -- @
-groupUnitTerm :: (AnyLogic, LogicGraph) -> AParser st UNIT_TERM
+groupUnitTerm :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_TERM
 groupUnitTerm l =
         -- unit name/application
     do name <- simpleId
@@ -248,7 +248,7 @@ groupUnitTerm l =
 -- @
 -- FIT-ARG-UNITS ::= [ FIT-ARG-UNIT ] ... [ FIT-ARG-UNIT ]
 -- @
-fitArgUnits :: (AnyLogic, LogicGraph) -> AParser st ([FIT_ARG_UNIT], [Pos])
+fitArgUnits :: (AnyLogic, LogicGraph) -> AParser AnyLogic ([FIT_ARG_UNIT], [Pos])
 -- ^ returns a list of arguments for unit application and a list of 
 -- "[" and "]" positions
 fitArgUnits l = 
@@ -266,7 +266,7 @@ fitArgUnits l =
 --                | UNIT-TERM fit SYMB-MAP-ITEMS-LIST
 -- @
 -- The SYMB-MAP-ITEMS-LIST is parsed using parseItemsMap.
-fitArgUnit :: (AnyLogic, LogicGraph) -> AParser st FIT_ARG_UNIT
+fitArgUnit :: (AnyLogic, LogicGraph) -> AParser AnyLogic FIT_ARG_UNIT
 fitArgUnit l@(Logic curLog, _) = 
     do ut <- unitTerm l
        (kFit, smis) <- option (Nothing, G_symb_map_items_list curLog [])
@@ -287,7 +287,7 @@ fitArgUnit l@(Logic curLog, _) =
 -- @
 -- This will be done by subsequent functions in order to preserve
 -- the operator precedence; see other 'unitTerm*' functions.
-unitTerm :: (AnyLogic, LogicGraph) -> AParser st (Annoted UNIT_TERM)
+unitTerm :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTerm l = unitTermAmalgamation l
 
 
@@ -295,7 +295,7 @@ unitTerm l = unitTermAmalgamation l
 -- @
 -- UNIT-TERM-AMALGAMATION ::= UNIT-TERM-LOCAL and ... and UNIT-TERM-LOCAL
 -- @
-unitTermAmalgamation :: (AnyLogic, LogicGraph) -> AParser st (Annoted UNIT_TERM)
+unitTermAmalgamation :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTermAmalgamation l = 
     do (uts, toks) <- annoParser2 (unitTermLocal l) `separatedBy` (asKey andS)
        return (case uts of
@@ -308,7 +308,7 @@ unitTermAmalgamation l =
 -- UNIT-TERM-LOCAL ::= local UNIT-DEFNS within UNIT-TERM-LOCAL
 --                   | UNIT-TERM-TRANS-RED
 -- @
-unitTermLocal :: (AnyLogic, LogicGraph) -> AParser st (Annoted UNIT_TERM)
+unitTermLocal :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTermLocal l =
         -- local unit
     do kLocal <- asKey localS
@@ -338,7 +338,7 @@ unitTermLocal l =
 --                        | EPSILON
 -- @
 -- in order to eliminate left-hand-side recursion.
-unitTermTransRed :: (AnyLogic, LogicGraph) -> AParser st (Annoted UNIT_TERM)
+unitTermTransRed :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted UNIT_TERM)
 unitTermTransRed l =
     do ut <- groupUnitTerm l
        tr <- unitTermTransRed' l (emptyAnno ut)
@@ -347,7 +347,7 @@ unitTermTransRed l =
 -- | Parse the helper unit term productions
 unitTermTransRed' :: (AnyLogic, LogicGraph) 
     -> Annoted UNIT_TERM           -- ^ the unit term that came before the renaming or restriction clause
-    -> AParser st (Annoted UNIT_TERM) -- ^ the resulting unit term
+    -> AParser AnyLogic (Annoted UNIT_TERM) -- ^ the resulting unit term
 unitTermTransRed' l ut =
         -- translation
     do ren <- renaming l
@@ -366,7 +366,7 @@ unitTermTransRed' l ut =
 -- RENAMING ::= with SYMB-MAP-ITEMS-LIST
 -- @
 -- SYMB-MAP-ITEMS-LIST is parsed using parseMapping
-renaming :: (AnyLogic, LogicGraph) -> AParser st RENAMING
+renaming :: (AnyLogic, LogicGraph) -> AParser AnyLogic RENAMING
 renaming l =
     do kWith <- asKey withS
        (mappings, commas, _) <- parseMapping l
@@ -380,7 +380,7 @@ renaming l =
 -- @
 -- SYMB-ITEMS-LIST is parsed using parseHiding; SYMB-MAP-ITEMS-LIST is 
 -- parsed using parseItemsMap
-restriction :: (AnyLogic, LogicGraph) -> AParser st RESTRICTION
+restriction :: (AnyLogic, LogicGraph) -> AParser AnyLogic RESTRICTION
 restriction l =
         -- hide
     do kHide <- asKey hideS
@@ -397,7 +397,7 @@ restriction l =
 -- UNIT-EXPRESSION ::= lambda UNIT-BINDINGS "." UNIT-TERM
 --                   | UNIT-TERM 
 -- @
-unitExpr :: (AnyLogic, LogicGraph) -> AParser st (Annoted UNIT_EXPRESSION)
+unitExpr :: (AnyLogic, LogicGraph) -> AParser AnyLogic (Annoted UNIT_EXPRESSION)
 unitExpr l =
          do (bindings, poss) <- option ([], [])
 				(do kLambda <- asKey lambdaS
@@ -411,7 +411,7 @@ unitExpr l =
 
 -- | Parse a nonempty list of unit bindings separated by
 -- semicolons.
-unitBindings :: (AnyLogic, LogicGraph) -> AParser st ([UNIT_BINDING], [Pos])
+unitBindings :: (AnyLogic, LogicGraph) -> AParser AnyLogic ([UNIT_BINDING], [Pos])
 -- ^ returns the list of unit bindings and a list of semicolon positions
 unitBindings l =
     do ub <- unitBinding l
@@ -426,7 +426,7 @@ unitBindings l =
 -- @
 -- UNIT-BINDING ::= UNIT-NAME : UNIT-SPEC
 -- @
-unitBinding :: (AnyLogic, LogicGraph) -> AParser st UNIT_BINDING
+unitBinding :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_BINDING
 unitBinding l =
     do name <- simpleId
        kCol <- asKey colonS
@@ -439,7 +439,7 @@ unitBinding l =
 -- @
 -- UNIT-DEFNS ::= UNIT-DEFN ; ... ; UNIT-DEFN ;
 -- @
-unitDefns :: (AnyLogic, LogicGraph) -> AParser st [Annoted UNIT_DECL_DEFN]
+unitDefns :: (AnyLogic, LogicGraph) -> AParser AnyLogic [Annoted UNIT_DECL_DEFN]
 unitDefns l =
     do ud <- unitDefn l
        ann <- annos
@@ -454,7 +454,7 @@ unitDefns l =
 -- @
 -- UNIT-DEFN ::= UNIT-NAME = UNIT-EXPRESSION
 -- @
-unitDefn :: (AnyLogic, LogicGraph) -> AParser st UNIT_DECL_DEFN
+unitDefn :: (AnyLogic, LogicGraph) -> AParser AnyLogic UNIT_DECL_DEFN
 unitDefn l =
     do name <- simpleId
        kEqu <- asKey equalS

@@ -49,7 +49,7 @@ import Data.Maybe(maybeToList)
 
 
 -- | Parse a library of specifications
-library :: (AnyLogic, LogicGraph) -> AParser st LIB_DEFN
+library :: (AnyLogic, LogicGraph) -> AParser AnyLogic LIB_DEFN
 library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
@@ -84,7 +84,7 @@ libId = do pos <- getPos
            -- ??? URL need to be added
 
 -- | Parse the library elements
-libItems :: (AnyLogic, LogicGraph) -> AParser st [Annoted LIB_ITEM]
+libItems :: (AnyLogic, LogicGraph) -> AParser AnyLogic [Annoted LIB_ITEM]
 libItems l@(_, lG) = 
     (eof >> return [])
     <|> do 
@@ -95,7 +95,7 @@ libItems l@(_, lG) =
 
 
 -- | Parse an element of the library
-libItem :: (AnyLogic, LogicGraph) -> AParser st (LIB_ITEM, AnyLogic)
+libItem :: (AnyLogic, LogicGraph) -> AParser AnyLogic (LIB_ITEM, AnyLogic)
 libItem l@(lgc, lG) = 
      -- spec defn
     do s <- asKey specS 
@@ -158,7 +158,7 @@ libItem l@(lgc, lG) =
 	       (Genericity (Params []) (Imported []) []) a [], lgc)	
 
 -- | Parse view type
-viewType :: (AnyLogic, LogicGraph) -> AParser st VIEW_TYPE
+viewType :: (AnyLogic, LogicGraph) -> AParser AnyLogic VIEW_TYPE
 viewType l = do sp1 <- annoParser (groupSpec l)
                 s <- asKey toS
                 sp2 <- annoParser (groupSpec l)
