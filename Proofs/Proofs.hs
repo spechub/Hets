@@ -750,67 +750,80 @@ getConservativity edge@(_,_,edgeLab) =
 
 theoremHideShift :: ProofStatus -> IO ProofStatus
 theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
-  let nodePathsList = 
-	  [(node,
-	    getAllPathsBeginningWithHidingDefTo
-	    dgraph 
-	    node 
-	    ([]::[LEdge DGLinkLab]))|
-	   node <- nodes dgraph]
-  let (newDgraph,newChanges) = theoremHideShiftAux dgraph nodePathsList
-  putStrLn "d o n e"
-  return (globalContext,
-	 libEnv,
-	 ([TheoremHideShift],newChanges):history,
-	 newDgraph)
+  let allNodes = nodes dgraph
+      (leaves,nonLeaves)
+	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
+  (auxGraph,changes) <- handleLeaves dgraph leaves
+  (finalGraph,furtherChanges) <- handleNonLeaves dgraph nonLeaves
+  return (globalContext, libEnv,
+	  ([TheoremHideShift],furtherChanges++changes):history, finalGraph)
 
 
-theoremHideShiftAux :: DGraph -> [(Node,[(Node,[LEdge DGLinkLab])])]
-		    -> (DGraph,[DGChange])
-theoremHideShiftAux dgraph [] = (dgraph,[])
-theoremHideShiftAux dgraph ((node, []):list) = 
-  replaceNode dgraph oldNode newNode
+splitByProperty :: [a] -> (a -> Bool) -> ([a],[a])
+splitByProperty [] _ = ([],[])
+splitByProperty (x:xs) f =
+  if (f x) then (x:first, second) else (first, x:second)
   where
-   nodeContext = (context node dgraph)
-   oldNode = labNode' nodeContext
-   oldNodeLab = lab' nodeContext
-   newNode = (node, DGNode {dgn_name = dgn_name oldNodeLab,
-			   dgn_sign = dgn_sign oldNodeLab,
-			   dgn_sens = dgn_sens oldNodeLab,
+    next = splitByProperty xs f
+    first = fst next
+    second = snd next
+
+
+hasIngoingHidingDef :: DGraph -> Node -> Bool
+hasIngoingHidingDef dgraph node =
+  not (null hidingDefEdges) || or (map (hasIngoingHidingDef dgraph) next)
+  where
+    inGoingEdges = inn dgraph node
+    hidingDefEdges = filter isHidingDef inGoingEdges
+    globalDefEdges = filter isGlobalDef inGoingEdges
+    next = map getSourceNode globalDefEdges
+
+-- was machen, wenn der Knoten ein DGRef ist??
+handleLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
+handleLeaves dgraph [] = return (dgraph,[])
+handleLeaves dgraph (node:list) = do
+  (auxGraph, changes) <- convertToNf dgraph node
+  (finalGraph, furtherChanges) <- handleLeaves auxGraph list
+  return (finalGraph, changes ++ furtherChanges)
+
+-- was machen, wenn der Knoten ein DGRef ist??
+convertToNf :: DGraph -> Node -> IO (DGraph, [DGChange])
+convertToNf dgraph node = do
+  let dgnodelab = lab' (context node dgraph)
+      sign = dgn_sign dgnodelab
+      [newNode] = newNodes 0 dgraph
+      newDgnode = (newNode, 
+		   DGNode {dgn_name = dgn_name dgnodelab,
+			   dgn_sign = sign,
+			   dgn_sens = dgn_sens dgnodelab,
 			   dgn_nf = Just node,
-			   dgn_sigma = Nothing, --Just ID,
-			   dgn_origin = dgn_origin oldNodeLab})
-
-theoremHideShiftAux dgraph ((node,pathsToNode):list) =
-  error ("theoremHideShiftAux: not yet implemented")
-
-replaceNode :: DGraph -> LNode DGNodeLab -> LNode DGNodeLab
-	    -> (DGraph,[DGChange])
-replaceNode dgraph oldNode@(on,_) newNode@(nn,_) =
-  (newDGraph,
-   [DeleteEdge edge|edge <- (oldInEdges ++ oldOutEdges)]
-   ++ [DeleteNode oldNode, InsertNode newNode]
-   ++ [InsertEdge edge| edge <- (newEdges)])
-
-  where
-    oldInEdges = inn dgraph on
-    oldOutEdges = out dgraph on
-    oldInEdges' = removeDuplicatesFromFstList oldInEdges oldOutEdges
-    newInEdges = [(src,nn,edgelab)|(src,_,edgelab) <- oldInEdges']
-    newOutEdges = [(nn,tgt,edgelab)|(_,tgt,edgelab) <- oldOutEdges]
-    newEdges = newInEdges ++ newOutEdges
-    auxGraph = delNode on (removeEdges (oldInEdges'++oldOutEdges) dgraph)
-    newDGraph = insEdges newEdges (insNode newNode dgraph)
+			   dgn_sigma = Just (ide Grothendieck sign),
+			   dgn_origin = DGProof
+			  })
+      auxGraph = insNode newDgnode dgraph
+  (finalGraph,changes) <- adoptEdges auxGraph node newNode
+  return (delNode node finalGraph,
+	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,dgnodelab)])
 
 
-removeDuplicatesFromFstList :: Eq a => [a] -> [a] -> [a]
-removeDuplicatesFromFstList fstList sndList =
-  [e | e <- fstList, notElem e sndList]
+adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
+adoptEdges dgraph oldNode newNode = do
+  (auxGraph, changes) <- adoptIngoingEdges dgraph oldNode newNode
+  (finalGraph, furtherChanges) <- adoptOutgoingEdges auxGraph oldNode newNode
+  return (finalGraph, changes ++ furtherChanges)
 
 
-removeEdges :: [LEdge DGLinkLab] -> DGraph -> DGraph
-removeEdges [] dgraph = dgraph
-removeEdges (edge:list) dgraph = removeEdges list (delLEdge edge dgraph)
+adoptIngoingEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
+adoptIngoingEdges dgraph oldNode newNode = undefined
+
+
+adoptOutgoingEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
+adoptOutgoingEdges dgraph oldNode newNode = undefined
+
+
+handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
+handleNonLeaves dgraph [] = return (dgraph,[])
+handleNonLeaves dgraph (node:list) = undefined
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
