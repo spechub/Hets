@@ -68,9 +68,9 @@ addLocalVar (VarDecl v t _ _) =
     do ass <- gets assumps
        vs <- gets localVars
        if Map.member v ass then
-          addDiags [mkDiag Warning "variable shadows global name(s)" v]
+          addDiags [mkDiag Hint "variable shadows global name(s)" v]
           else if Map.member v vs then 
-          addDiags [mkDiag Warning "shadowing by variable" v]
+          addDiags [mkDiag Hint "shadowing by variable" v]
           else return ()
        putLocalVars $ Map.insert v t vs 
 
