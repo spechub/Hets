@@ -15,7 +15,6 @@ module Modal.ModalSign where
 import CASL.Sign
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Set as Set
 import Common.Id
 		       
 data ModalSign = ModalSign { rigidOps :: Map.Map Id (Set.Set OpType)

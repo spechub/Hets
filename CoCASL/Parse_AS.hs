@@ -22,6 +22,7 @@ import CoCASL.AS_CoCASL
 import Common.Lib.Parsec
 import CASL.Formula
 import CASL.OpItem
+import CASL.Parse_AS_Basic (sigItems)
 
 cocaslFormula :: AParser C_FORMULA
 cocaslFormula = 
@@ -36,17 +37,11 @@ cocaslFormula =
        c <- asKey greaterS
        f <- formula cocasl_reserved_words
        return (Diamond m f $ toPos o [] c)
-    <|> 
-    do d <- asKey diamondS
-       f <- formula cocasl_reserved_words
-       let p = tokPos d
-       return (Diamond (Simple_mod $ Token emptyS p) f [p])
 
 modality :: [String] -> AParser MODALITY
 modality ks = 
     do t <- term (ks ++ cocasl_reserved_words)
        return $ Term_mod t
-   <|> return (Simple_mod $ mkSimpleId emptyS)
 
 instance AParsable C_FORMULA where
   aparser = cocaslFormula
@@ -54,20 +49,20 @@ instance AParsable C_FORMULA where
 
 cBasic :: AParser C_BASIC_ITEM
 cBasic =  do f <- asKey cofreeS
-             ti <- cotypeItems ks
+             ti <- coSigItems 
              return (codatatypeToCofreetype ti (tokPos f))
       <|> do g <- asKey cogeneratedS
-	     do t <- cotypeItems ks
+	     do t <- sigItems cocasl_reserved_words
 		return (CoSort_gen [Annoted t [] [] []] [tokPos g])
 	       <|> 
 	       do o <- oBraceT
-	          is <- annosParser (sigItems ks)
+	          is <- annosParser (sigItems cocasl_reserved_words)
 	          c <- cBraceT
 	          return (CoSort_gen is
 		            (toPos g [o] c)) 
 
 coSigItems :: AParser C_SIG_ITEM
-coSigItems = itemList cocasl_keywords cotypeS codatatype CoDatatype_items
+coSigItems = itemList cocasl_reserved_words cotypeS codatatype CoDatatype_items
 
 codatatype :: [String] -> AParser CODATATYPE_DECL
 codatatype ks = 
@@ -96,7 +91,8 @@ coalternative ks =
        cocomp (Just i)
     <|>
     do cocomp Nothing
-    where cocomp i =
+    where 
+      cocomp i =
        do   o <- oParenT
 	    (cs, ps) <- cocomponent ks `separatedBy` anSemi
 	    c <- cParenT
@@ -124,7 +120,7 @@ instance AParsable C_BASIC_ITEM where
 
 ---- helpers ----------------------------------------------------------------
 
-codatatypeToCofreetype ::  C_SIG_ITEMS -> Pos -> C_BASIC_ITEMS 
+codatatypeToCofreetype ::  C_SIG_ITEM -> Pos -> C_BASIC_ITEM
 codatatypeToCofreetype d pos =
    case d of
      CoDatatype_items ts ps -> CoFree_datatype ts (pos : ps)

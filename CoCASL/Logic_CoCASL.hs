@@ -39,7 +39,6 @@ instance Language CoCASL  where
  description _ = 
   "CoCASL is the coalgebraic extension of CASL."
 
-type CSign = Sign C_FORMULA CoCASLSign
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
 

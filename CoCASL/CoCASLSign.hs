@@ -13,6 +13,7 @@ Portability :  portable
 module CoCASL.CoCASLSign where
 
 import CASL.Sign
+import CASL.AS_Basic_CASL (SORT, OP_SYMB)
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel

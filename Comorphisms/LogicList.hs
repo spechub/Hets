@@ -40,12 +40,13 @@ import Haskell.Logic_Haskell
 import CspCASL.Logic_CspCASL
 import Isabelle.Logic_Isabelle
 import Modal.Logic_Modal
+import CoCASL.Logic_CoCASL
 import qualified Common.Lib.Map as Map
 import CASL.ATC_CASL
 
 logicList :: [AnyLogic]
 logicList = [Logic CASL, Logic HasCASL, Logic Haskell, 
-	     Logic Modal, Logic CspCASL, Logic Isabelle]
+	     Logic CoCASL, Logic Modal, Logic CspCASL, Logic Isabelle]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)

@@ -11,6 +11,7 @@ Portability :  portable
 -}
 
 {- todo:
+  correct map_C_FORMULA
 -}
 
 module CoCASL.StatAna where
@@ -34,6 +35,12 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 
+import Data.Maybe
+import Data.List
+
+
+type CSign = Sign C_FORMULA CoCASLSign
+
 minExpForm :: Min C_FORMULA CoCASLSign
 minExpForm ga s form = 
     let newGa = addAssocs ga s
@@ -49,15 +56,15 @@ minExpForm ga s form =
 		      t2 <- is_unambiguous t ts ps
 		      let srt = term_sort t2
 			  trm = Term_mod t2
-		      if Set.member srt $ termModies $ extendedInfo s 
+		      if Set.member srt ops 
 			 then return trm
 		         else Result [mkDiag Error 
-			      ("unknown term modality sort '"
+			      ("unknown modality '"
 			       ++ showId srt "' for term") t ]
 			      $ Just trm
 		    in case t of
 		       Mixfix_token tm -> 
-			   if Set.member tm $ modies $ extendedInfo s 
+			   if Set.member (simpleIdToId tm) ops 
 			      then return $ Simple_mod tm
 			      else case maybeResult r of
 			          Nothing -> Result 
@@ -80,49 +87,200 @@ minExpForm ga s form =
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
 ana_C_SIG_ITEM ga mi = 
     case mi of 
-    Rigid_op_items r al ps -> 
-	do ul <- mapM (ana_OP_ITEM ga) al 
-	   case r of
-               Rigid -> mapC_ ( \ aoi -> case item aoi of 
-		   Op_decl ops ty _ _ -> 
-		       mapC_ (updateExtInfo . addRigidOp (toOpType ty)) ops
-		   Op_defn i par _ _ -> 
-		       updateExtInfo $ addRigidOp (toOpType $ headToType par) 
-				i ) ul
-               _ -> return ()
-	   return $ Rigid_op_items r ul ps
-    Rigid_pred_items r al ps -> 
-	do ul <- mapM (ana_PRED_ITEM ga) al 
-	   case r of
-               Rigid -> mapC_ ( \ aoi -> case item aoi of 
-		   Pred_decl ops ty _ -> 
-		       mapC_ (updateExtInfo . addRigidPred (toPredType ty)) ops
-	           Pred_defn i (Pred_head args _) _ _ -> 
-		       updateExtInfo $ addRigidPred 
-			        (PredType $ sortsOfArgs args) i ) ul
-               _ -> return ()
-	   return $ Rigid_pred_items r ul ps
+    CoDatatype_items al _ -> 
+	do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
+           mapM_ addSort sorts
+	   mapAnM (ana_CODATATYPE_DECL Loose) al 
+           closeSubsortRel
+	   return mi
 
-addRigidOp :: OpType -> Id -> CoCASLSign -> Result CoCASLSign
-addRigidOp ty i m = return
-       m { rigidOps = addTo i ty { opKind = Partial } $ rigidOps m }
+-- | return list of constructors 
+ana_CODATATYPE_DECL :: GenKind -> CODATATYPE_DECL -> State CSign [Component]
+ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) = 
+    do ul <- mapM (ana_COALTERNATIVE s . item) al
+       let constr = catMaybes ul
+           cs = map fst constr		    
+       if null constr then return ()
+	  else do addDiags $ checkUniqueness cs
+		  let totalSels = Set.unions $ map snd constr
+		      wrongConstr = filter ((totalSels /=) . snd) constr
+		  addDiags $ map ( \ (c, _) -> mkDiag Error 
+		      ("total selectors '" ++ showSepList (showString ",")
+		       showPretty (Set.toList totalSels) 
+		       "'\n\tmust appear in alternative") c) wrongConstr
+       case gk of 
+         Free -> do 
+	   let allts = map item al
+	       (alts, subs) = partition ( \ a -> case a of 
+			       CoSubsorts _ _ -> False
+			       _ -> True) allts
+	       sbs = concatMap ( \ (CoSubsorts ss _) -> ss) subs
+	       comps = map (getCoConsType s) alts
+	       ttrips = map ( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
+			    $ catMaybes $ map (coselForms1 "X") $ comps 
+	       sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
+	   addSentences $ catMaybes $ map comakeInjective 
+			    $ filter ( \ (_, _, ces) -> not $ null ces) 
+			      comps
+	   addSentences $ catMaybes $ concatMap ( \ as -> map (comakeDisjToSort as) sbs)
+			comps 
+	   addSentences $ comakeDisjoint comps 
+	   addSentences $ catMaybes $ concatMap 
+			     ( \ ses -> 
+			       map (makeUndefForm ses) ttrips) sels
+	 _ -> return ()
+       return cs
 
-addRigidPred :: PredType -> Id -> CoCASLSign -> Result CoCASLSign
-addRigidPred ty i m = return
-       m { rigidPreds = addTo i ty $ rigidPreds m }
+getCoConsType :: SORT -> COALTERNATIVE -> (Maybe Id, OpType, [COCOMPONENTS])
+getCoConsType s c = 
+    let (part, i, il) = case c of 
+			CoSubsorts _ _ ->  error "getConsType"
+			CoTotal_construct a l _ -> (Total, a, l)
+			CoPartial_construct a l _ -> (Partial, a, l)
+	in (i, OpType part (concatMap 
+			    (map (opRes . snd) . getCoCompType s) il) s, il)
+
+getCoCompType :: SORT -> COCOMPONENTS -> [(Maybe Id, OpType)]
+getCoCompType s (CoTotal_select l cs _) = 
+    map (\ i -> (Just i, OpType Total [s] cs)) l
+getCoCompType s (CoPartial_select l cs _) = 
+    map (\ i -> (Just i, OpType Partial [s] cs)) l
+
+coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
+coselForms x = 
+  case coselForms1 "X" x of
+    Nothing -> []
+    Just y -> makeSelForms 1 y
+
+coselForms1 :: String -> (Maybe Id, OpType, [COCOMPONENTS]) 
+	  -> Maybe (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
+coselForms1 str (Nothing, ty, il) = Nothing
+coselForms1 str (Just i, ty, il) =
+    let cs = concatMap (getCoCompType $ opRes ty) il
+	vs = genSelVars str 1 cs 
+    in Just $ (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
+	    (map toQualVar vs) [], cs)
+
+comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT 
+                     -> Maybe (Named (FORMULA f))
+comakeDisjToSort a s = do
+    (c, v, t, _) <- coselForms1 "X" a 
+    let p = [posOfId s] 
+    return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
+	mkForall v (Negation (Membership t s p) p) p
+
+comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS]) 
+                     -> Maybe (Named (FORMULA f))
+comakeInjective a = do
+    (c, v1, t1, _) <- coselForms1 "X" a
+    (_, v2, t2, _) <- coselForms1 "Y" a
+    let p = [posOfId c]
+    return $ NamedSen ("ga_injective_" ++ showId c "") $
+       mkForall (v1 ++ v2) 
+       (Equivalence (Strong_equation t1 t2 p)
+	(let ces = zipWith ( \ w1 w2 -> Strong_equation 
+			     (toQualVar w1) (toQualVar w2) p) v1 v2
+	 in if isSingle ces then head ces else Conjunction ces p)
+	p) p
+
+comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
+comakeDisjoint [] = []
+comakeDisjoint (a:as) = catMaybes (map (comakeDisj a) as) ++ comakeDisjoint as
+comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS]) 
+                           -> (Maybe Id, OpType, [COCOMPONENTS])
+                           -> Maybe (Named (FORMULA f))
+comakeDisj a1 a2 = do
+    (c1, v1, t1, _) <- coselForms1 "X" a1
+    (c2, v2, t2, _) <- coselForms1 "Y" a2
+    let p = [posOfId c1, posOfId c2]
+    return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
+       mkForall (v1 ++ v2) 
+       (Negation (Strong_equation t1 t2 p) p) p
+
+-- | return the constructor and the set of total selectors 
+ana_COALTERNATIVE :: SORT -> COALTERNATIVE 
+		-> State CSign (Maybe (Component, Set.Set Component))
+ana_COALTERNATIVE s c = 
+    case c of 
+    CoSubsorts ss _ ->
+	do mapM_ (addSubsort s) ss
+	   return Nothing
+    _ -> do let cons@(i, ty, il) = getCoConsType s c
+	    case i of 
+              Nothing -> return Nothing
+              Just i' -> do
+                addOp ty i'
+	        ul <- mapM (ana_COCOMPONENTS s) il
+                let ts = concatMap fst ul
+                addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+	        addSentences $ coselForms cons
+	        return $ Just (Component i' ty, Set.fromList ts) 
+
+ 
+-- | return total and partial selectors
+ana_COCOMPONENTS :: SORT -> COCOMPONENTS 
+	       -> State CSign ([Component], [Component])
+ana_COCOMPONENTS s c = do
+    let cs = getCoCompType s c
+    sels <- mapM ( \ (mi, ty) -> 
+	    case mi of 
+	    Nothing -> return Nothing
+	    Just i -> do addOp ty i
+		         return $ Just $ Component i ty) cs 
+    return $ partition ((==Total) . opKind . compType) $ catMaybes sels 
 
 ana_C_BASIC_ITEM :: Ana C_BASIC_ITEM C_FORMULA CoCASLSign
-ana_C_BASIC_ITEM _ bi = do
-    e <- get
-    case bi of
-        Simple_mod_decl al fs ps -> do
-	    mapC_ ((updateExtInfo . addModId) . item) al
-	    newFs <- mapAnM (resultToState (ana_C_FORMULA False)) fs 
-	    return $ Simple_mod_decl al newFs ps
-	Term_mod_decl al fs ps -> do
-	    mapC_ ((updateExtInfo . addModSort e) . item) al
-	    newFs <- mapAnM (resultToState (ana_C_FORMULA True)) fs 
-	    return $ Term_mod_decl al newFs ps
+ana_C_BASIC_ITEM ga bi = do
+  case bi of
+    CoFree_datatype al ps -> 
+	do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
+           mapM_ addSort sorts
+           mapAnM (ana_CODATATYPE_DECL Free) al 
+	   toCoSortGenAx ps True $ getCoDataGenSig al
+           closeSubsortRel 
+	   return bi
+    CoSort_gen al ps ->
+	do (gs,ul) <- ana_Generated ana_C_SIG_ITEM ga al
+	   toCoSortGenAx ps False 
+                (Set.unions $ map fst gs, Set.unions $ map snd gs)
+	   return $ CoSort_gen ul ps
+
+toCoSortGenAx :: [Pos] -> Bool ->
+               (Set.Set Id, Set.Set Component) -> State CSign ()
+toCoSortGenAx ps isFree (sorts, ops) = do
+    let sortList = Set.toList sorts
+        opSyms = map ( \ c ->  Qual_op_name (compId c)  
+		      (toOP_TYPE $ compType c) []) $ Set.toList ops
+        resType _ (Op_name _) = False
+        resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
+        getIndex s = maybe (-1) id $ findIndex (==s) sortList
+        addIndices (Op_name _) = 
+          error "CASL/StaticAna: Internal error in function addIndices"
+        addIndices os@(Qual_op_name _ t _) = 
+            (os,map getIndex $ args_OP_TYPE t)
+        collectOps s = 
+          Constraint s (map addIndices $ filter (resType s) opSyms) s
+        constrs = map collectOps sortList
+        f =  ExtFORMULA $ CoSort_gen_ax constrs isFree
+    if null sortList then 
+       addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
+       else return ()
+    addSentences [NamedSen ("ga_cogenerated_" ++ 
+ 			 showSepList (showString "_") showId sortList "") f]
+
+getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
+getCoDataGenSig dl = 
+    let alts = map (( \ (CoDatatype_decl s al _) -> (s, al)) . item) dl
+	sorts = map fst alts
+	cs = catMaybes $ concatMap ( \ (s, al) -> map (( \ a -> 
+	      let (i, ty, _) = getCoConsType s a
+	      in maybe Nothing (\j -> Just $ Component j ty) i)) 
+		       $ filter ( \ a ->
+				  case a of 
+				  CoSubsorts _ _ -> False
+				  _ -> True)
+		       $ map item al) alts
+	in (Set.fromList sorts, Set.fromList cs)
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
 resultToState f a = do 
@@ -132,20 +290,6 @@ resultToState f a = do
         Nothing -> return a
         Just b -> return b
 
-addModId :: SIMPLE_ID -> CoCASLSign -> Result CoCASLSign
-addModId i m = 
-    let ms = modies m in 
-    if Set.member i ms then 
-       Result [mkDiag Hint "repeated modality" i] $ Just m
-       else return m { modies = Set.insert i ms }
-
-addModSort :: Sign C_FORMULA CoCASLSign -> SORT -> CoCASLSign -> Result CoCASLSign
-addModSort e i m = 
-    let ms = termModies m
-        ds = hasSort e i 
-    in if Set.member i ms || not (null ds) then 
-       Result (mkDiag Hint "repeated term modality" i : ds) $ Just m
-       else return m { termModies = Set.insert i ms }
 
 map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
 map_C_FORMULA mor frm =
@@ -163,60 +307,4 @@ map_C_FORMULA mor frm =
 	       newM <- mapMod m 
 	       return $ Diamond newM newF ps 
 
-ana_C_FORMULA :: Bool -> FORMULA C_FORMULA -> Result (FORMULA C_FORMULA)
-ana_C_FORMULA b (Conjunction phis pos) = do
-  phis' <- mapM (ana_C_FORMULA b) phis
-  return (Conjunction phis' pos)
-ana_C_FORMULA b (Disjunction phis pos) = do
-  phis' <- mapM (ana_C_FORMULA b) phis
-  return (Disjunction phis' pos)
-ana_C_FORMULA b (Implication phi1 phi2 b1 pos) = do
-  phi1' <- ana_C_FORMULA b phi1
-  phi2' <- ana_C_FORMULA b phi2
-  return (Implication phi1' phi2' b1 pos)
-ana_C_FORMULA b (Equivalence phi1 phi2 pos) = do
-  phi1' <- ana_C_FORMULA b phi1
-  phi2' <- ana_C_FORMULA b phi2
-  return (Equivalence phi1' phi2' pos)
-ana_C_FORMULA b (Negation phi pos) = do
-  phi' <- ana_C_FORMULA b phi
-  return (Negation phi' pos)
-ana_C_FORMULA _ phi@(True_atom _) = return phi
-ana_C_FORMULA _ phi@(False_atom _) = return phi
-ana_C_FORMULA _ (Mixfix_formula (Mixfix_token ident)) = 
-  return (Predication (Qual_pred_name (mkId [ident]) 
-              (Pred_type [] []) []) 
-              [] [])
-ana_C_FORMULA b (ExtFORMULA (Box m phi pos)) = do
-  phi' <- ana_C_FORMULA b phi
-  return(ExtFORMULA (Box m phi' pos))
-ana_C_FORMULA b (ExtFORMULA (Diamond m phi pos)) = do
-  phi' <- ana_C_FORMULA b phi
-  return(ExtFORMULA (Diamond m phi' pos))
-ana_C_FORMULA b phi@(Quantification _ _ phi1 pos) = 
-  if b then ana_C_FORMULA b phi1
-    else anaError phi pos
-ana_C_FORMULA _ phi@(Predication _ _ pos) =
-  return phi -- should lookup predicate!
-ana_C_FORMULA _ phi@(Definedness _ pos) =
-  anaError phi pos
-ana_C_FORMULA _ phi@(Existl_equation _ _ pos) =
-  anaError phi pos
-ana_C_FORMULA _ phi@(Strong_equation _ _ pos) =
-  anaError phi pos
-ana_C_FORMULA _ phi@(Membership _ _ pos) =
-  anaError phi pos
-ana_C_FORMULA _ phi@(Mixfix_formula _) =
-  return phi -- should do mixfix analysis and lookup predicate!
-  -- anaError phi [nullPos]
-ana_C_FORMULA _ phi@(Unparsed_formula _ pos) =
-  anaError phi pos
-ana_C_FORMULA _ phi@(Sort_gen_ax _ _) =
-  anaError phi [nullPos]
-
-anaError :: a -> [Pos] -> Result a
-anaError phi pos = 
-   plain_error phi 
-     "CoCASLity declarations may only contain propositional axioms"
-     (headPos pos)
 

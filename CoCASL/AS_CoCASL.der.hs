@@ -11,7 +11,7 @@ Portability :  portable
   Only the added syntax is specified
 -}
 
-module Modal.AS_CoCASL where
+module CoCASL.AS_CoCASL where
 
 import Common.Id
 import Common.AS_Annotation 
@@ -29,9 +29,6 @@ data C_BASIC_ITEM = CoFree_datatype [Annoted CODATATYPE_DECL] [Pos]
 		   -- pos: free, type, semi colons
 	 	  | CoSort_gen [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)] [Pos] 
 		   -- pos: generated, opt. braces 
-
-Simple_mod_decl [Annoted SIMPLE_ID] [AnModFORM] [Pos]
-		  | Term_mod_decl [Annoted SORT] [AnModFORM] [Pos]
 		    deriving (Eq, Show)
 
 data C_SIG_ITEM = CoDatatype_items [Annoted CODATATYPE_DECL] [Pos]
@@ -54,6 +51,7 @@ data COCOMPONENTS = CoTotal_select [OP_NAME] SORT [Pos]
                   -- pos: commas, colon
 		| CoPartial_select [OP_NAME] SORT [Pos] 
 		  -- pos: commas, ":?"
+		     deriving (Show,Eq)
 
 data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
              deriving (Eq, Ord, Show)
@@ -65,6 +63,7 @@ data C_FORMULA =
 	     | Diamond MODALITY (FORMULA C_FORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
                -- pos: "<>"
+	     | CoSort_gen_ax [Constraint] Bool -- flag: belongs to a cofree type?
              deriving (Eq, Ord, Show)
 
 cotypeS, cotypesS, cogeneratedS, diamondS, greaterS 
