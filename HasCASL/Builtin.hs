@@ -158,8 +158,8 @@ addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, d) m -> 
 		 Map.insertWith ( \ _ old -> old) i
 			 (TypeInfo k [k] [] d) m) tm $
-	      (simpleIdToId $ mkSimpleId "Unit",
-	        star, AliasTypeDefn $ simpleTypeScheme logicalType)
+	      (unitTypeId,
+	        star, NoTypeDefn)
 	      : (simpleIdToId $ mkSimpleId "Pred", 
 		FunKind star star [],
 		AliasTypeDefn defType)

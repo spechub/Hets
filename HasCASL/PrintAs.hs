@@ -162,7 +162,9 @@ instance PrettyPrint Term where
 
 unPredType :: Type -> Type
 unPredType t = case t of
-	       FunType ty PFunArr (ProductType [] _) _ -> ty
+	       FunType ty PFunArr (TypeName 
+                                   (Id [Token "Unit" _] [] _) 
+                                   (Intersection [] _) 0) _ -> ty
 	       _ -> t
 
 unPredTypeScheme :: TypeScheme -> TypeScheme

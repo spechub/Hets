@@ -191,9 +191,12 @@ data TypeScheme = TypeScheme [TypeArg] Type [Pos]
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] t []
 
+unitTypeId :: Id
+unitTypeId = simpleIdToId $ mkSimpleId "Unit"
+
 logicalType :: Type 
-logicalType = -- TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
-              ProductType [] [] 
+logicalType = TypeName unitTypeId star 0
+              -- ProductType [] [] 
 
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
 mapTypeOfScheme f (TypeScheme args t ps) =
