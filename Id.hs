@@ -1,5 +1,6 @@
 module Id where
 
+import Char
 -- identifiers, fixed for all logics
 {-
 data ID = Simple_Id String
@@ -39,14 +40,26 @@ place = "__"
 isPlace(Token(t, _)) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
-data Id = Id([TokenOrPlace], [Id]) deriving (Eq, Ord)
+-- TokenOrPlace list must be non-empty!
+data Id = Id [TokenOrPlace] [Id] deriving (Eq, Ord)
  
+splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
+	      (reverse toks, reverse pls)
+
 instance Show Id where
-    showsPrec _ (Id(ts, is)) = showString ((unwords (map show ts)) ++ 
-	(case is of [] -> "" ;  _:_ -> (show is)))
+    showsPrec _ (Id ts is) = 
+	let (toks, places) = splitMixToken ts 
+	    front = concat (map show toks)
+	    rest = concat (map show places)
+	    c = last front
+	    sep = if (isAlpha c || isDigit c || c /= '\'') then "" else " "
+            comps = if null is then "" else sep ++ (show is)	  
+	in
+        showString (front ++ comps ++ rest) 
 
 -- simple Id
 simpleId :: String -> Id
-simpleId(s) = Id([Token(s, nullPos)],[]) 
+simpleId(s) = Id [Token(s, nullPos)] [] 
+
 
 
