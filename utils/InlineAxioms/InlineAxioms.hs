@@ -5,7 +5,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (import Logic.Logic)
 
    Preprocessor for sentences written in some logic, usually used for
    transforming file.inline.hs into file.hs.  The sentences are
@@ -46,14 +46,22 @@ import Common.AnnoState
 import Common.Lib.Parsec
 import Common.Result
 
-import System
+import System.Environment
 import System.Console.GetOpt
-import Data.List
-import Data.Char
-import IO
+import System.IO
+import Data.Char(ord)
+import Data.List(nub)
 
-import Comorphisms.LogicList
+-- avoid import Comorphisms.LogicList and the Grothendieck stuff
 import Logic.Logic
+import CASL.Logic_CASL
+import Modal.Logic_Modal
+
+-- currently only logic CASL and Modal are used
+lookupLogic_in_LG :: String -> String -> AnyLogic
+lookupLogic_in_LG err s = 
+  let fl = filter ((== s). show) [Logic CASL, Logic Modal] in 
+   if null fl then error (err ++ "unsupported logic " ++ s) else head fl
 
 -- hack: delete position info of form "[nlineAxioms ...]", replace with "[]"
 deletePos :: String -> String
