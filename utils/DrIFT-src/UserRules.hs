@@ -40,6 +40,7 @@ userRules = [("Binary", binary),
              ("Term", termfn),
              ("ATermConvertible", atermfn),
 	     ("UpPos",updateposfn),
+	     ("PrintTemplate",printfn),
              ("Implode", implodefn),
              ("Explode", explodefn)
             ]
@@ -298,6 +299,39 @@ makeGetPosFn fname tp hasPos body =
 
 -- end of PosItem derivation 
 
+-- begin of PrintTemplate derivation
+-- Author: Klaus Lüttich <luettich@tzi.de>
+printfn dat =
+    instanceSkeleton "PrettyPrint" 
+       [ (makePrint "Text0" (name dat),empty)
+       --, (makePrint "Text"  (name dat),empty)
+       --, (makePrint "Latex0" (name dat),empty)
+       --, (makePrint "Latex" (name dat),empty) 
+       ]
+       dat
+       
+makePrint fnSuffix name body =
+    let cvs'       = head (mknss [body] namesupply)
+	is_pos t   = t == Con "Pos" || t == List (Con "Pos")
+	cvs'_types = zip cvs' $ types body
+	cvs        = 
+	    map (\(v,t) -> if is_pos t then text "_" else v) cvs'_types
+	(rvs,_)    = unzip $ filter (\(_,t) -> not $ is_pos t) cvs'_types
+	fnName     = text $ "print" ++ fnSuffix
+    in fnName  <+>
+       ppCons cvs body <+>
+       text "=" $$ nest 4 (if null rvs then text "empty" 
+	                   else (hang (text "let") 4 
+			            (vcat $ itemPrint fnName cvs'_types) $$
+			         text "in") <+>
+                           hcat (punctuate (text " <+> ") (map addPrime rvs)))
+
+itemPrint fnName vs_ts = map iPr $ vs_ts
+    where iPr (v,t) = if is_pos then empty 
+		      else (addPrime v) <+> text "=" <+> fnName <+> v
+	      where is_pos = t == Con "Pos" || t == List (Con "Pos")
+-- end of PrintTemplate derivation
+
 -- begin of ATermConvertible derivation 
 -- Author: Joost.Visser@cwi.nl
 -- adapted by: luettich@tzi.de
@@ -373,7 +407,7 @@ pos_const True  dat =
 	   text "->" $$
 	   nest 4 (parenList [text "fromATerm_reg reg_i att"
 			     ,text "getATermByIndexSp1 item_i att"])
-	  ,text "otherwise -> ([],att)"
+	  ,text "_ -> ([],att)"
 	  ]
     where
        pos_name = text ("pos-" ++ (map (\x -> if x == '_' then '-'
