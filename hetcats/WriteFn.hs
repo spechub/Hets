@@ -36,6 +36,8 @@ write_LIB_DEFN opt ld = sequence_ $ map write_type $ outtypes opt
 	      case t of 
 	      HetCASLOut Ascii -> 
 		  write_casl_asc (verbose opt) (casl_asc_filename opt) ld
+	      HetCASLOut Latex ->
+		  write_casl_latex (verbose opt) (casl_latex_filename opt) ld
 	      _ -> trace ( "the outtype \"" ++ 
 		           show t ++ "\" is not implemented")
 		         (return ())
@@ -57,3 +59,15 @@ write_casl_asc verb oup ld =
         else return ()
        hPutStr hout $ printLIB_DEFN_text ld
 
+casl_latex_filename :: HetcatsOpts -> FilePath
+casl_latex_filename opt =
+    let (base,_,_) = fileparse [".casl",".tree.gen_trm"] (infile opt)
+    in (outdir opt) ++ "/" ++ base ++ ".pp.tex"
+      -- maybe an optin out-file is better
+
+write_casl_latex :: Int -> FilePath -> LIB_DEFN -> IO ()
+write_casl_latex verb oup ld =
+    do hout <- openFile oup WriteMode
+       if verb > 3 then putStrLn $ show (initGlobalAnnos ld)
+        else return ()
+       hPutStr hout $ printLIB_DEFN_latex ld

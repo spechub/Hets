@@ -99,6 +99,12 @@ form_opt_rec flags inp_files =
 	    where collect_verb v f = case f of 
 				     Verbose i -> i + v
 				     _       -> v
+	outTypes = if null flags then
+		      defaultOt
+		   else case head flags of
+		          OutTypes ot -> ot
+			  _           -> defaultOt
+	    where defaultOt = outtypes default_HetcatsOpts
     in do if Help `elem` flags then 
 	     do putStrLn $ "\n" ++ hetcats_usage
 		exitWith ExitSuccess
@@ -114,6 +120,7 @@ form_opt_rec flags inp_files =
 				       , outdir  = od 
 				       , verbose = verb'
 				       , rawoptions = flags
+				       , outtypes = outTypes
 				       }
 
 -- some suffixes to try in turn 
@@ -205,8 +212,8 @@ out_types :: String -> Flag
 out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 			     [x] -> x
 			     _ -> error "another thing went wrong!!"
-	    | s == "casl-latex"    = OutTypes  [HetCASLOut Latex]
-	    | s == "hetcasl-ascii" = OutTypes  [HetCASLOut Ascii]
+	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
+	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
 	    | s == "global-env-xml" = OutTypes [Global_Env XML]
 	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
 				 hetcats_usage)
