@@ -12,29 +12,29 @@
 
 -}
 
+-- does anyone ever need anything else from here??
 module CASL.Overload (
     overloadResolution          -- :: Sign -> [Sentence] -> Result [Sentence]
     ) where
 
-import CASL.StaticAna           -- Sign = Env
-import CASL.AS_Basic_CASL       -- FORMULA, TERM, SORT et al
+import CASL.StaticAna           -- Sign/Env, Sentence, OpType
+import CASL.AS_Basic_CASL       -- TERM, SORT, VAR, OP_{NAME,SYMB}
 import Common.Result            -- Result
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
+--import qualified Common.Lib.Rel as Rel        -- not used directly
 import qualified Common.Id      as Id
-import Data.List(partition)
+
+import Data.List                ( partition )
 
 {-
 
-Idee: 
-- global Infos aus Sign berechnen + mit durchreichen
-  (connected compenents, s.u.)
-- rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
-- atomaren Formeln mit minExpTerm behandeln
-
-TODO: All das hier implementieren und testen :D
+    Idee: 
+        - global Infos aus Sign berechnen + mit durchreichen
+          (connected compenents, s.u.)
+        - rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
+        - atomaren Formeln mit minExpTerm behandeln
 
 -}
 
@@ -44,11 +44,8 @@ TODO: All das hier implementieren und testen :D
 {- expand all sentences to be fully qualified, then return them if there is no
    ambiguity -}
 overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
-overloadResolution sign sentences
-    = --do expandedSentences <- map (minExpSentence sign) sentences
-         return sentences
-         -- check ambiguities, generate errors for them
--- TODO FIXME dies ist ein DUMMY
+overloadResolution sign
+    = mapM (minExpSentence sign)
 
 {-----------------------------------------------------------
     Extract Atomic Sentences from (general) Sentences
@@ -68,33 +65,56 @@ overloadResolution sign sentences
 --    where getAllAtoms = concat . map getAtoms
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Sentence -- TODO: implement :o)
+    Minimal Expansions of a Sentence
 -----------------------------------------------------------}
-minExpSentence :: Sign -> Sentence -> Result [[Sentence]]
+minExpSentence :: Sign -> Sentence -> Result Sentence
 minExpSentence sign sentence
     = case sentence of
-        -- -- Atomic Sentences -> Calculate minimal Expansion 
-        -- True_atom _                    -> -- True
-        -- False_atom _                   -> -- False
-        -- Predication PRED_SYMB [TERM] _ -> -- predicate application
-        -- Definedness TERM _             -> -- see till's mail
-        -- Existl_equation TERM TERM _    -> -- see till's mail
-        -- Strong_equation TERM TERM _    -> -- see till's mail
-        -- Membership TERM SORT _         -> -- like in 'forall n in Nat'?
-        -- -- Unparsed Sentences -> Error in Parser, Bail out!
-        -- Mixfix_formula term            ->
-        --     error $ "Parser Error: Unparsed `Mixfix_formula' received: "
-        --             ++ (show term)
-        -- Unparsed_formula string _      ->
-        --     error $ "Parser Error: Unparsed `Unparsed_formula' received: "
-        --             ++ string
-        -- -- Non-Atomic Sentences -> Error in getAtoms, Bail out!
-        _                              ->
-            error $ "Internal Error: Unknown type of Sentence received: "
-                    ++ (show sentence)
+        -- Trivial Atom         -> Return untouched
+        True_atom _     -> return sentence                      -- :: Sentence
+        False_atom _    -> return sentence                      -- :: Sentence
+        -- Atomic Sentence      -> Check for Ambiguities
+        Predication predicate terms pos -> do
+                ts <- mapM choose_unambiguous terms             -- :: [TERM]
+                return $ Predication predicate ts pos           -- :: Sentence
+        -- FIXME: This is the trivial implememtation, not the full one
+        Definedness term pos            -> do
+                t <- choose_unambiguous term                    -- :: TERM
+                return $ Definedness t pos                      -- :: Sentence
+        Existl_equation term1 term2 pos -> do
+                t1 <- choose_unambiguous term1                  -- :: TERM
+                t2 <- choose_unambiguous term2                  -- :: TERM
+                return $ Existl_equation t1 t2 pos              -- :: Sentence
+        Strong_equation term1 term2 pos -> do
+                t1 <- choose_unambiguous term1                  -- :: TERM
+                t2 <- choose_unambiguous term2                  -- :: TERM
+                return $ Strong_equation t1 t2 pos              -- :: Sentence
+        Membership term sort pos        -> do
+                t <- choose_unambiguous term                    -- :: TERM
+                return $ Membership t sort pos                  -- :: Sentence
+        -- Unparsed Sentence    -> Error in Parser, Bail out!
+        Mixfix_formula term             -> error
+            $ "Parser Error: Unparsed `Mixfix_formula' received: "
+            ++ (show term)
+        Unparsed_formula string _       -> error
+            $ "Parser Error: Unparsed `Unparsed_formula' received: "
+            ++ (show string)
+        -- "Other" Sentence     -> Unknown Error, Bail out!
+        _                               -> error
+            $ "Internal Error: Unknown type of Sentence received: "
+            ++ (show sentence)
+    where
+        choose_unambiguous      :: TERM -> Result TERM
+        choose_unambiguous term  = do
+            expansions  <- minExpTerm sign term                 -- :: [[TERM]]
+            case expansions of
+                [_]     -> return $ head $ head expansions      -- ::   TERM
+                _       -> error
+                    $ "Cannot disambiguate! Term: " ++ (show term)
+                    ++ "\n  Possible Expansions: " ++ (show expansions)
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Term
+    Minimal Expansions of a Term
 -----------------------------------------------------------}
 minExpTerm :: Sign -> TERM -> Result [[TERM]]
 minExpTerm sign term'
@@ -108,7 +128,7 @@ minExpTerm sign term'
         Sorted_term term sort _
             -> minExpTerm_sorted sign term sort
         Cast term sort _
-            -> error $ "not implemented ... yet"        -- cast ?
+            -> minExpTerm_cast sign term sort
         Conditional term1 formula term2 _
             -> error $ "not implemented ... yet"        -- conditional ?
         Unparsed_term string _
@@ -118,7 +138,7 @@ minExpTerm sign term'
                ++ (show term')
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Simple_id Term
+    Minimal Expansions of a Simple_id Term
 -----------------------------------------------------------}
 minExpTerm_simple :: Sign -> Id.SIMPLE_ID -> Result [[TERM]]
 minExpTerm_simple sign var = do
@@ -129,10 +149,10 @@ minExpTerm_simple sign var = do
         $ Map.findWithDefault                   -- :: Set.Set SORT
             Set.empty name (opMap sign)
     ops         <- return
-        $ (Set.fromList                         -- :: Set.Set SORT
-           . (map opRes)                        -- :: [SORT]
-           . Set.toList                         -- :: [SORT]
-           . (Set.filter is_const_op))          -- :: Set.Set SORT
+        $ Set.fromList                          -- :: Set.Set SORT
+        $ (map opRes)                           -- :: [SORT]
+        $ Set.toList                            -- :: [SORT]
+        $ (Set.filter is_const_op)              -- :: Set.Set SORT
             ops'                                -- :: Set.Set SORT
         -- maybe use Set.fold instead of List.map?
     cs          <- return
@@ -156,7 +176,7 @@ minExpTerm_simple sign var = do
         pair_with_id sort        = ((Simple_id var), sort)
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Qual_var Term
+    Minimal Expansions of a Qual_var Term
 -----------------------------------------------------------}
 minExpTerm_qual :: Sign -> VAR -> SORT -> Result [[TERM]]
 minExpTerm_qual sign var sort = do
@@ -177,7 +197,7 @@ minExpTerm_qual sign var sort = do
                 fits sorted ]                   -- :: Bool
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Sorted_term Term
+    Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
 minExpTerm_sorted :: Sign -> TERM -> SORT -> Result [[TERM]]
 minExpTerm_sorted sign term sort = do
@@ -198,7 +218,7 @@ minExpTerm_sorted sign term sort = do
                 fits sorted ]                   -- :: Bool
 
 {-----------------------------------------------------------
-    Minimal Expansion of a Function Application Term
+    Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
 minExpTerm_op sign op terms = do
@@ -209,9 +229,9 @@ minExpTerm_op sign op terms = do
     profiles            <- return
         $ map get_profile permuted_exps         -- :: [[(OpType, [TERM])]]
     p                   <- return
-        $ (concat                               -- :: [[(OpType, [TERM])]]
-           . (map (equivalence_Classes op_eq))) -- :: [[[(OpType, [TERM])]]]
-            profiles                            -- :: [[(OpType, [TERM])]]
+        $ concat                                -- :: [[(OpType, [TERM])]]
+        $ map (equivalence_Classes op_eq)       -- :: [[[(OpType, [TERM])]]]
+          profiles                              -- :: [[(OpType, [TERM])]]
     p'                  <- return
         $ map (minimize sign) p                 -- :: [[(OpType, [TERM])]]
     return
@@ -244,7 +264,7 @@ minExpTerm_op sign op terms = do
                     terms'                                      -- :: [TERM]
                     [])                                         -- :: [Pos]
               , (opRes op') )                                   -- ::  SORT
-        get_profile :: [[TERM]] -> [(OpType, [TERM])]
+        get_profile     :: [[TERM]] -> [(OpType, [TERM])]
         get_profile cs
             = [ (op', ts) |
                 op' <- ops,                                     -- :: OpType
@@ -252,7 +272,7 @@ minExpTerm_op sign op terms = do
                 zipped_all (leq_SORT sign)                      -- ::  Bool
                     (map term_sort ts)                          -- :: [SORT]
                     (opArgs op') ]                              -- :: [SORT]
-        op_eq :: (OpType, [TERM]) -> (OpType, [TERM]) -> Bool
+        op_eq           :: (OpType, [TERM]) -> (OpType, [TERM]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
             = let   w1 = opArgs op1                             -- :: [SORT]
                     w2 = opArgs op2                             -- :: [SORT]
@@ -266,7 +286,26 @@ minExpTerm_op sign op terms = do
                 in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
 
 {-----------------------------------------------------------
-    Divide a Set (list) into equivalence classes w.r.to eq
+    Minimal Expansions of a Cast Term
+-----------------------------------------------------------}
+minExpTerm_cast :: Sign -> TERM -> SORT -> Result [[TERM]]
+minExpTerm_cast sign term sort = do
+    expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
+    validExps           <- return
+        $ filter (leq_SORT sign sort . term_sort)       -- ::  [TERM]
+        $ map head expandedTerm                         -- ::  [TERM]
+    return
+        $ qualifyTerms                                  -- :: [[TERM]]
+        $ [map (\ t -> (t, sort)) validExps]            -- :: [[(TERM, SORT)]]
+    where
+        term_sort       :: TERM -> SORT
+        term_sort term'  = case term' of
+            (Sorted_term _ sort _ )     -> sort
+            _                           -> error        -- unlikely
+                "minExpTerm: unsorted TERM after expansion"
+
+{-----------------------------------------------------------
+    Divide a Set (list) into equivalence classes w.r. to eq
 -----------------------------------------------------------}
 -- also look below for Till's SML-version of this
 equivalence_Classes         :: (a -> a -> Bool) -> [a] -> [[a]]
