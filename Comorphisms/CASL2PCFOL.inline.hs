@@ -57,15 +57,29 @@ encodeSig sig = error "encodeSig not yet implemented"
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat 
-   [inlineAxioms CASL
+   ([inlineAxioms CASL
      "  sorts s < s' \
       \ op inj : s->s' \
-      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
-          | (s,s') <- Rel.toList (sortRel sig)]
+      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "++
+    inlineAxioms CASL
+     " sort s< s' \
+      \ op pr : s'->?s ; inj:s->s' \
+      \ forall x :s . pr(inj(x))=e=x          %(projection)% " 
+          | (s,s') <- rel2List]++          
+    [ inlineAxioms CASL
+     " sort s<s';s'<s'' \
+      \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
+      \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
+          |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)])
+               
+          
   where x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
-
+        pr=mkId [mkSimpleId "_pr"]
+        rel2List=Rel.toList(sortRel sig)
+        rel2Map=Rel.toMap(sortRel sig)
+        
 {-
 inj((op f:s_1*...*s_n->s)(inj(x_1),...,inj(x_n))) = 
 inj((op f:s'_1*...*s'_n->s')(inj(x_1),...,inj(x_n))) 
