@@ -75,13 +75,14 @@ instance Comorphism CASL2PCFOL
                         has_pred = True,
                         which_logic = FOL
                       }
-    map_sign CASL2PCFOL sig = 
-      let e = encodeSig sig in return (e, generateAxioms sig)
+    map_theory CASL2PCFOL = mkTheoryMapping ( \ sig -> 
+      let e = encodeSig sig in return (e, generateAxioms sig))
+      (map_sentence CASL2PCFOL)
     map_morphism CASL2PCFOL mor = return 
       (mor  { msource =  encodeSig $ msource mor,
               mtarget =  encodeSig $ mtarget mor })
       -- other components need to be adapted as well!
-    map_sentence CASL2PCFOL sig = return . f2Formula
+    map_sentence CASL2PCFOL _ = return . f2Formula
     map_symbol CASL2PCFOL = Set.single . id
 
 -- | Add injection, projection and membership symbols to a signature

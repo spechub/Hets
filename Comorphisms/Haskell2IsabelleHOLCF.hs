@@ -121,13 +121,13 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     sourceSublogic Haskell2IsabelleHOLCF = ()
     targetLogic Haskell2IsabelleHOLCF = Isabelle
     targetSublogic Haskell2IsabelleHOLCF = ()
-    map_sign Haskell2IsabelleHOLCF = transSignature
     map_sentence Haskell2IsabelleHOLCF = transSentence
     map_morphism Haskell2IsabelleHOLCF mor = do
        (sig1,_) <- map_sign Haskell2IsabelleHOLCF (Logic.dom Haskell mor)
        (sig2,_) <- map_sign Haskell2IsabelleHOLCF (cod Haskell mor)
        inclusion Isabelle sig1 sig2
---    map_theory _ = transTheory
+    map_theory Haskell2IsabelleHOLCF = 
+        mkTheoryMapping transSignature transSentence
 
 ------------------------------ Isa auxiliaries ----------------------------------
 

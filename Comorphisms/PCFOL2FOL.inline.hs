@@ -75,10 +75,11 @@ instance Comorphism PCFOL2FOL
                         has_pred = True,
                         which_logic = FOL
                       }
-    map_sign PCFOL2FOL sig = 
-      let e = sig2FOL sig in return (e, generateFOLAxioms sig)
+    map_theory PCFOL2FOL = mkTheoryMapping ( \ sig ->
+          let e = sig2FOL sig in return (e, generateFOLAxioms sig)) 
+          (map_sentence PCFOL2FOL)
     map_morphism PCFOL2FOL = return . id
-    map_sentence PCFOL2FOL sig = return . mapSen
+    map_sentence PCFOL2FOL _ = return . mapSen
     map_symbol PCFOL2FOL = Set.single . id
 
 

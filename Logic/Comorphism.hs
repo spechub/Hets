@@ -32,7 +32,7 @@ import Common.Result
 import Data.Maybe
 import Data.Dynamic
 import Common.DynamicUtils 
-import Common.AS_Annotation (Named, mapNamedM)
+import Common.AS_Annotation
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -64,16 +64,8 @@ class (Language cid,
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
     -- cover theoroidal comorphisms as well
-    map_sign :: cid -> sign1 -> Result (sign2,[Named sentence2])
     map_theory :: cid -> (sign1,[Named sentence1])
                       -> Result (sign2,[Named sentence2])
-    --default implementations
-    map_sign cid sign = map_theory cid (sign,[])
-{-    map_theory cid (sign,sens) = do
-       (sign',sens') <- map_sign cid sign
-       sens'' <- mapM (mapNamedM $ map_sentence cid sign) sens
-       return (sign',sens'++sens'')
--}
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
           -- also covers semi-comorphisms
@@ -83,6 +75,29 @@ class (Language cid,
     constituents :: cid -> [String]
     -- default implementation
     constituents cid = [language_name cid]
+
+map_sign :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> sign1 -> Result (sign2,[Named sentence2])
+map_sign cid sign = map_theory cid (sign,[])
+
+simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2) 
+                    -> (sign1, [Named sentence1]) 
+                    -> (sign2, [Named sentence2])
+simpleTheoryMapping mapSig mapSen (sign,sens) = 
+    (mapSig sign, map (mapNamed mapSen) sens)
+
+mkTheoryMapping :: (Monad m) => (sign1 -> m (sign2, [Named sentence2]))
+		   -> (sign1 -> sentence1 -> m sentence2) 
+                   -> (sign1, [Named sentence1]) 
+                   -> m (sign2, [Named sentence2])
+mkTheoryMapping mapSig mapSen (sign,sens) = do
+       (sign',sens') <- mapSig sign
+       sens'' <- mapM (mapNamedM $ mapSen sign) sens
+       return (sign',sens'++sens'')
 
 data IdComorphism lid sublogics = 
      IdComorphism lid sublogics 
@@ -125,8 +140,7 @@ instance Logic lid sublogics
            sourceSublogic (IdComorphism _lid sub) = sub
            targetSublogic (IdComorphism _lid sub) = sub
            mapSublogic _ = id
-           map_sign _ = \sigma -> return (sigma,[])
-           map_theory _ = \ (sigma, sens) -> return (sigma, sens)
+           map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
            map_symbol _ = single
@@ -189,17 +203,9 @@ instance (Comorphism cid1
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1 
-	    (si2', se2') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
-			    "Mapping sentence along comorphism" (si2, se2)
+            (si2', se2') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
+                            "Mapping sentence along comorphism" (si2, se2)
             map_sentence cid2 si2' se2'
-   map_sign (CompComorphism cid1 cid2) = 
-       \si1 -> 
-         do (si2, se2s) <- map_sign cid1 si1
-            (si2', se2s') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
-			     "Mapping signature along comorphism"(si2, se2s)
-            (si3, se3s) <- map_sign cid2 si2' 
-            se3s' <- mapM (mapNamedM $ map_sentence cid2 si2') se2s'
-            return (si3, se3s ++ se3s')
 
    map_theory (CompComorphism cid1 cid2) = 
        \ti1 -> 
@@ -210,15 +216,15 @@ instance (Comorphism cid1
 
    map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
        do m2 <- map_morphism cid1 m1 
-	  m3 <- mcoerce (targetLogic cid1) (sourceLogic cid2)
+          m3 <- mcoerce (targetLogic cid1) (sourceLogic cid2)
                   "Mapping signature morphism along comorphism"m2
           map_morphism cid2 m3
 
    map_symbol (CompComorphism cid1 cid2) = \ s1 -> 
          let mycast = fromJust . mcoerce (targetLogic cid1) (sourceLogic cid2)
                                   "Mapping symbol along comorphism"
-	 in unions
-		(map (map_symbol cid2 . mycast) 
+         in unions
+                (map (map_symbol cid2 . mycast) 
                  (toList (map_symbol cid1 s1)))
    constituents (CompComorphism cid1 cid2) = 
       constituents cid1 ++ constituents cid2
