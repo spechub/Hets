@@ -86,11 +86,11 @@ anaString logicGraph defaultLogic opts libenv input fname = do
 
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME 
-              -> IO LibEnv
+              -> IO ([Diagnosis], LibEnv)
 anaLibFile logicGraph defaultLogic opts libenv libname = do
   -- is the library already in memory?
   case Map.lookup libname libenv of
-   Just _ -> return libenv
+   Just _ -> return ([],libenv)
    Nothing -> do
      -- if not compute the filename,
      fname <- case getLIB_ID libname of
@@ -114,72 +114,95 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
      let env_fname = fname++".env"
 		     -- fname is sufficient here, because anaFile
 		     -- trys all possible suffices with this basename
-     isFileExist <- fileExist env_fname
-     if ((not $ outputToStdout opts) && (not isFileExist)) 
-       then
-	  return libenv
-       else
-	do
-	recent_env_file <- checkRecentEnv env_fname fname
-	if recent_env_file 
-	   then do 
-             putIfVerbose opts 1 ("Reading "++env_fname)
+     recent_env_file <- checkRecentEnv env_fname fname
+     if recent_env_file 
+	then do 
+	     putIfVerbose opts 1 ("Reading "++env_fname)
 	     (Result dias mgc) <- globalContextfromShATerm env_fname
 	     -- the conversion/reading might yield an error that
 	     -- should be caught here
-	     maybe (do ioresToIO $ showDiags1 opts (resToIORes (Result dias mgc))
-		       --showDiags opts dias
-		       anaLibFile' fname)
-                   (\ gc@(_,_,dgraph) -> do 
-		       if outputToStdout opts then
-                          putStrLn ""
-		          else return()
-		       -- get all DGRefs from DGraph
-		       let libEnv' = (Map.insert libname gc libenv)
-		           nodesDGRef =
-		              filter (\ labDG -> case labDG of 
-				                  DGRef _ _ _ -> True
-				                  _ -> False)
-		                    (map snd (labNodes dgraph))
+	     (dias2, mLibEnv) <- 
+	           maybe (do ioresToIO $ showDiags1 opts (resToIORes (Result dias mgc))
+		             anaLibFile' fname dias)
+                       (\ gc@(_,_,dgraph) -> do 
+		          if outputToStdout opts then
+                             putStrLn ""
+		             else return()
+		          -- get all DGRefs from DGraph
+		          let libEnv' = (Map.insert libname gc libenv)
+		              nodesDGRef =
+		                 filter (\ labDG -> case labDG of 
+				                      DGRef _ _ _ -> True
+				                      _ -> False)
+		                        (map snd (labNodes dgraph))
 		       -- and call anaLibFile with each of the dgn_libname
 		       -- of the DGRefs
-		           refLibs = nub $ map dgn_libname nodesDGRef
-		       --putStrLn ("Referenced Libs: " ++ 
-			--	 (concat $ map (\ ln -> showPretty ln "; ")
-                          --                 refLibs))
-		       let newRefLibs = 
-		              filter (\ ln -> 
-				       not (ln `elem` Map.keys libEnv'))
-		                refLibs
-	               foldl (\ ioLibEnv tlibname ->
-                                do p_libEnv <- ioLibEnv
-		            --       putStrLn ("Available Libs: " ++
-				--	     (concat $ map 
-					--       (\ ln -> showPretty ln "; ")
-                                          --     (Map.keys p_libEnv)))
+		              refLibs = nub $ map dgn_libname nodesDGRef
+		              newRefLibs = 
+		                 filter (\ ln -> 
+				          not (ln `elem` Map.keys libEnv'))
+		                   refLibs
+	                  foldl (\ioLibEnv tlibname ->
+                                do (dias3 ,p_libEnv) <- ioLibEnv
 			           putIfVerbose opts 1 
 			                     ("Analyzing from " ++ 
 					      showPretty tlibname "\n")
-			           anaLibFile logicGraph defaultLogic 
-                                              opts p_libEnv tlibname)
-		           (return libEnv') 
-		           newRefLibs )
+			           (dias4, libEnvF) <- anaLibFile logicGraph defaultLogic                                              opts p_libEnv tlibname
+				   return ((dias3 ++ dias4),libEnvF)
+				) (return ([], libEnv')) newRefLibs
+		       )
 		      mgc
-	   else anaLibFile' fname
-
- where anaLibFile' :: FilePath -> IO LibEnv
-       anaLibFile' fname =
+	     if outputToStdout opts then
+		return ([], mLibEnv)  
+		else return( dias ++ dias2 , mLibEnv)
+	     else anaLibFile' fname []
+		 
+ where anaLibFile' :: FilePath -> [Diagnosis] -> IO ([Diagnosis], LibEnv)
+       anaLibFile' fname diags'=
          do
          -- read and analyze the library,
-         res <- anaFile logicGraph defaultLogic opts libenv fname
-	 if outputToStdout opts then
+         if outputToStdout opts then
+	    do
+            res <- anaFile logicGraph defaultLogic opts libenv fname	
 	    putStrLn ""
-	    else return()
-	 -- and just return the libenv
-	 return (case res of 
-               Just (_,_,_,libenv') -> libenv'
-               Nothing -> libenv) 
-  
+	    -- and just return the libenv
+	    return (case res of 
+		       Just (_,_,_,libenv') -> (diags', libenv')
+		       Nothing -> (diags', libenv)
+		   )
+	    else do
+		 (dias, res) <- anaFileW logicGraph defaultLogic opts libenv fname
+	         return (case res of
+			 Just (_,_,_,libenv') -> (diags'++dias, libenv')
+			 Nothing -> ((diags $ message () (fname ++" not found.")) ++ diags',libenv))
+			    
+       anaFileW :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
+                  -> IO ([Diagnosis], Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
+       anaFileW logicGraph defaultLogic opts libenv fname = do
+                fname' <- existsAnSource fname
+		case fname' of
+		     Nothing -> return ([], Nothing)
+		     Just fname'' -> do
+				input <- readFile fname''
+				anaStringW logicGraph defaultLogic opts libenv input (Just fname'')
+
+       anaStringW :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
+		     -> Maybe String 
+		     -> IO ([Diagnosis], Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
+       anaStringW logicGraph defaultLogic opts libenv input fname = do
+                let fname' = case fname of
+			          Nothing -> "<stdin>"
+			          Just n -> n
+		(_, ast) <- read_LIB_DEFN_M_WI defaultLogic fname' input
+		Result diags res <-
+		    ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
+                                libenv ast)
+		case (res,fname) of 
+				 (Just (ln,_,_,lenv), Just n) ->
+				     writeFileInfo opts diags n ln lenv
+				 _ -> return ()
+		return (diags, res)
+
 -- | analyze a LIB_DEFN
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
 -- call this function as follows:
@@ -209,23 +232,26 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
     (libItems',gctx1,l1,libenv1) <- res1
 
     IOResult (do
-      Result diags res <-
+      Result diags2 res <-
          ioresToIO $ ana_LIB_ITEM lgraph defl opts libenv1 gctx1 l1 libItem   
-      ioresToIO $ showDiags1 opts (resToIORes (Result diags res))
-
-      if hasErrors diags then 
-	 if outputToStdout opts then
-	   fail "Stopped due to errors"
-	   else case res of
-		Just (libItem',gctx1',l1',libenv1') ->
-		    ioresToIO $ resToIORes (Result diags (Just ([],gctx1',l1',libenv1)))
-		Nothing -> ioresToIO $ resToIORes (Result diags (Just ([],gctx1,l1,libenv1)))
-			   -- return (fail "Ist hier Error?")
-	 else case res of
-		   Just (libItem',gctx1',l1',libenv1') -> 
-			 return (return (libItem':libItems',gctx1',l1',libenv1'))
-		   Nothing -> fail "Stopped. No result available"
-      )
+      ioresToIO $ showDiags1 opts (resToIORes (Result diags2 res))
+      if outputToStdout opts then
+	 if hasErrors diags2 then 
+	    fail "Stopped due to errors"
+	    else case res of
+              Just (libItem',gctx1',l1',libenv1') -> 
+                  return (return (libItem':libItems',gctx1',l1',libenv1'))
+              Nothing -> fail "Stopped. No result available"
+	 else do
+	      --result1 <- ioresToIO res1
+	      --let diags1 = diags result1
+	      if hasErrors diags2 then
+	         ioresToIO $ resToIORes (Result (diags2) Nothing)
+	         else case res of
+		           Just (libItem',gctx1',l1',libenv1') -> 
+			      return ((return (libItem':libItems',gctx1',l1',libenv1')){diags = diags2})
+		           Nothing -> return $ fail "Stopped. No result available"
+	     )
 
 -- analyse a LIB_ITEM
 -- Parameters: logic graph, default logic, opts, library env
@@ -234,18 +260,20 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> LibEnv -> GlobalContext -> AnyLogic
                  -> LIB_ITEM
                  -> IOResult (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
-
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l  
              (Spec_defn spn gen asp pos) = do
   let just_struct = analysis opts == Structured
       analyseMessage = "Analyzing spec " ++ showPretty spn ""
   ioToIORes (putIfVerbose opts 1  analyseMessage)
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
   (gen',(imp,params,parsig,allparams),dg') <- 
      resToIORes (ana_GENERICITY lgraph gctx l just_struct gen)
   (sp',body,dg'') <- 
      resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
                           allparams (Just spn) just_struct (item asp))
-  resToIORes $ message () analyseMessage
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)
@@ -261,7 +289,12 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
   let just_struct = analysis opts == Structured
-  ioToIORes (putIfVerbose opts 1  ("Analyzing view " ++ showPretty vn ""))
+      analyseMessage = "Analyzing view " ++ showPretty vn ""
+  ioToIORes (putIfVerbose opts 1  analyseMessage)
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
                             vn gen vt gsis pos)
 
@@ -269,7 +302,12 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l 
              asd@(Arch_spec_defn asn asp pos) = do
   let just_struct = analysis opts == Structured
-  ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec " ++ showPretty asn ""))
+      analyseMessage = "Analyzing arch spec " ++ showPretty asn ""
+  ioToIORes (putIfVerbose opts 1 analyseMessage )
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
   (archSig, dg', asp') <- resToIORes (ana_ARCH_SPEC lgraph defl gctx l just_struct (item asp))
   let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
       gctx' = (gannos, genv, dg')
@@ -290,8 +328,13 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              usd@(Unit_spec_defn usn usp pos) = do
   let just_struct = analysis opts == Structured
-  ioToIORes (putIfVerbose opts 1 ("Analyzing unit spec " ++ showPretty usn ""))
-  (unitSig, dg', usp') <- resToIORes (ana_UNIT_SPEC lgraph defl gctx l just_struct (EmptyNode defl) usp)
+      analyseMessage = "Analyzing unit spec " ++ showPretty usn ""
+  ioToIORes (putIfVerbose opts 1 analyseMessage)
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
+  (unitSig, dg', usp') <- resToIORes (ana_UNIT_SPEC lgraph defl gctx l just_struct (EmptyNode defl) usp) 
   let usd' = Unit_spec_defn usn usp' pos
   if Map.member usn genv 
      then
@@ -309,24 +352,41 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
 ana_LIB_ITEM lgraph defl opts libenv gctx l 
              (Logic_decl ln pos) = do
   log <- lookupLogicName ln lgraph
-  ioToIORes (putIfVerbose opts 1  ("logic "++show log))
+  let  analyseMessage = "logic "++show log
+  ioToIORes (putIfVerbose opts 1  analyseMessage)
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
   return (Logic_decl ln pos,gctx,log,libenv)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
              libItem@(Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
-  ioToIORes (putIfVerbose opts 1 ("Analyzing from " ++ showPretty ln "\n"))
+  
   let items' = zip items (drop 2 (pos ++ repeat nullPos))
-  libenv' <- ioToIORes (anaLibFile lgraph defl opts libenv ln)
+      analyseMessage = "Analyzing from " ++ showPretty ln "\n"
+  ioToIORes (putIfVerbose opts 1 analyseMessage)
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
+
+  (diags', libenv') <- ioToIORes (anaLibFile lgraph defl opts libenv ln)
+  resToIORes $ Result diags' $ Just ()
+
+  -- let libMsg = unlines $ map show diags'
+  -- resToIORes $ message () libMsg
+
   case Map.lookup ln libenv' of
-    Nothing -> do
+    Nothing -> do 
      if outputToStdout opts then
         do 
           ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')))
           return (libItem,gctx,l,libenv')
        else 
-          resToIORes $ (fatal_error ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')) nullPos){maybeResult = Nothing} 
+          resToIORes $ (fatal_error ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')) nullPos)
     Just (gannos',genv',dg') -> do
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
                                        (return (genv,dg)) items'
