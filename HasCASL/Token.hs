@@ -61,34 +61,38 @@ skipChar = makeToken . single . char
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-obr = skipChar '['
+obr = skipChar '[' <?> "" -- don't convey confusing mix-id tokens
 cbr = skipChar ']'
-ocb = skipChar '{'
+ocb = skipChar '{' <?> ""
 ccb = skipChar '}'
 uu = makeToken (try (string place) <?> "place")
 
 -- simple id
-sid = makeToken (otherToken <|> scanSigns <|> scanWords)
+sid = single (makeToken (otherToken <|> scanSigns 
+			 <|> scanWords <?> "simple-id"))
 
-singleId = single (sid `notFollowedWith` sid) 
+curly =  begDoEnd ocb innerList ccb
+noComp = begDoEnd obr innerList cbr
 
-curly =  begDoEnd ocb iList ccb
-noComp = begDoEnd obr iList cbr 
+innerMix1 = sid <++> option [] innerMix2
+innerMix2 = flat (many1 (curly <|> noComp <|> many1 uu))
+            <++> option [] innerMix1
 
-iList =  flat (many (many1 uu
-	             <|> singleId 
-                     <|> curly
-	             <|> noComp)) <?> "mix-id-tokens" 
+innerList =  option [] (innerMix1 <|> innerMix2 <?> "token")
 
-afterPlace =  (curly <|> noComp <|> singleId <?> "token") <++>
-		 flat (many (curly <|> singleId <?> "mix-id-token"))
+topMix1 = sid <++> option [] topMix2
+topMix2 = flat (many1 curly) <++> option [] topMix1
+
+topMix3 = noComp <++> flat (many curly) <++> option [] topMix1
+
+afterPlace = topMix1 <|> topMix2 <|> topMix3
 
 middle = many1 uu <++> option [] afterPlace  
 
 tokStart = afterPlace <++> flat (many middle)
 
 start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
-        <?> "mix-id"
+        <?> "id"
 
 comps = obr >> (parseId `sepBy1` skip (char ',')) << cbr 
 	<?> "[<id>,...,<id>]"

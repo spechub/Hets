@@ -36,13 +36,16 @@ data ParsedSortItems = AllLess [(Token, Id)] (Maybe (Token, Id))
 		     | SubType (Token, Id) -- Term
 		       deriving (Show)
 
+
+commaSortDecl l = do { c <- comma
+		     ; s <- sortId
+		     ; let l2 = l ++ [(c, s)] in
+		       commaSortDecl l2
+		       <|> subSortDecl l2
+		       <|> return (AllLess l2 Nothing)
+		     }
+
 {-
-commaSortDecl s1 = do { comma;
-		   s <- sepBy sortId comma;
-		   option (AllLess (s1:s) Nothing) (subSortDecl (s1:s));
-		 }
-
-
 isoDecl s1 = do { equal;
                   subSortDefn s1
 		  <|>
@@ -57,18 +60,19 @@ subSortDefn s = do { t <- between (try (skipChar '{')) (skipChar '}')
 		   }
 -}
 
-subSortDecl l = do { t <- skipChar '<';
-		     s <- sortId;
-		     return (AllLess l (Just (t, s)))
+subSortDecl l = do { t <- skipChar '<'
+		   ; s <- sortId
+		   ; return (AllLess l (Just (t, s)))
 		   }
 
 sortItem key = do { s1 <- sortId;
 		    subSortDecl [(key, s1)]
-{-		    <|>
-		    commaSortDecl key s1
 		    <|>
+		    commaSortDecl [(key, s1)]
+{-		    <|>
                     isoDecl key s1
 -}
+		    <|> return (AllLess [(key, s1)] Nothing)
 		  } 		
 
 toSymb x = Symb x Sort
@@ -87,7 +91,9 @@ asSortItems (AllLess l m) =
 
 sortItemsAux sig key = do { si <- sortItem key;
 			    (m, an) <- optSemi;
-			    let sig2 = sig in -- addSig sig si an in 
+			    let li = asSortItems si
+			        sig2 = sig {sorts = sorts sig ++ li}
+			    in 
                             case m of Nothing -> return sig2
                                       Just key -> option sig2 
 			                          (try (sortItemsAux sig2 key))
