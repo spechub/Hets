@@ -88,19 +88,14 @@ write_casl_latex opt oup ld =
        return ()
 
 writeShATermFile :: (ATermConvertible a) => FilePath -> a -> IO ()
-writeShATermFile fp atcon = writeFile fp hetsstr 
-                            where
-                            hetsstr = "hets("++hetcats_version++","++ atermstr ++ ")"
-                            atermstr = writeSharedATerm $ fst $ toShATerm emptyATermTable atcon
-
-readShATermFile :: (ATermConvertible a) => FilePath -> IO a
-readShATermFile fp = do str <- readFile fp
-                        return $ fromShATerm $ readATerm str                        
-                                         
-
+writeShATermFile fp atcon = writeFile fp $ toShATermString atcon 
+                            
 toShATermString :: (ATermConvertible a) => a -> String
-toShATermString atcon = "hets("++hetcats_version++","++ atermstr ++ ")"
-                        where 
-                        atermstr = writeSharedATerm $ fst $ toShATerm emptyATermTable atcon
+toShATermString atcon = let (att0,versionnr) = toShATerm emptyATermTable hetcats_version
+			    (att1,aterm) = toShATerm att0 atcon
+                            (att2,hets)  = addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+                        in writeSharedATerm att2
+                        
+
 
 
