@@ -179,7 +179,9 @@ predTypeScheme (TypeScheme vs (qs :=> t) ps) =
     TypeScheme vs (qs :=> predType t) ps
 
 predType :: Type -> Type
-predType t = FunType t PFunArr logicalType []
+predType t = case t of
+		    BracketType Parens [] _ -> logicalType
+		    _ -> FunType t PFunArr logicalType []
 
 data Partiality = Partial | Total deriving (Show, Eq, Ord)
 

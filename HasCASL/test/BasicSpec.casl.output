@@ -269,7 +269,7 @@ op c(x : s; y : s; z : t) : s = a
 op a :? s = a
 op c(x : s; y : s; z : t) :? s = a
 type s, t
-predfun a : () ->? Unit
+predfun a : Unit
 predfun b : s ->? Unit
 predfun c : s × s ->? Unit; c : s × s × s ->? Unit
 predfun c(x : s; y : s; z : t) :? Unit = false
@@ -298,7 +298,7 @@ generated {type nat; op 0 : nat; succ : nat -> nat}
 type s < t
 op f, g : s ->? s; g : s -> t;
    __+__, __-__, __*__, __/__ : s × s -> s; {} : s; {__} : s -> s
-predfun p : () ->? Unit; q : s ->? Unit
+predfun p : Unit; q : s ->? Unit
 var x : s; y : s; z : s; r1 : t; r2 : t
 . false
 var x : s
@@ -323,7 +323,7 @@ var x : s
 . def g (x) as s
 . def (op f : s ->? s) (x)
 . def (op g : s -> t) (x)
-. (predfun p : () ->? Unit)
+. (predfun p : Unit)
 . (predfun q : s ->? Unit) (x)
 . def x * y * z + z * y * x
 . def {}
