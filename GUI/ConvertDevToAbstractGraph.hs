@@ -140,7 +140,7 @@ initializeGraph ln dGraph convMaps = do
                   ("unproventhm",
                    Solid $$$ Color "Red" 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
-                  -- ######### welche Farbe fuer reference ##########
+                  -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))]
