@@ -58,12 +58,12 @@ data ReadTAFStruct = RTS (ATermTable,Int)
 
 readATerm :: String -> ATermTable 
 readATerm ('!':str)	= 
-    let (RTS (at,_) _ _rt _l) = readTAF emptyATermTable str emptyRTable 0 
+    case readTAF emptyATermTable str emptyRTable 0 of
+    (RTS (at,_) _ _rt _l) -> at
 {-	ab = case rt of
 	     RTab _ i -> ("Read: next_abbrev="++show i
 			  ++" ATT-TopIndex="++show (getTopIndex at)
 			  ++" length-of-aterm="++show l)-}
-    in at
 readATerm str		= 
     let ((at,_),_)     = readAT  emptyATermTable (dropSpaces str)      in at
 
@@ -119,41 +119,57 @@ readAnn at str       = ((at,[]),str)
 readTAF :: ATermTable -> String 
 	-> ReadTable -> Int -> ReadTAFStruct
 readTAF at ('#':str) tbl l =  
-    let (i,str') = {-# SCC "spanAbbrevChar" #-} spanAbbrevChar str
-    in  {-# SCC "RTS_abb" #-}  RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
-                            str' tbl (l+(length i)+1)    
+    case {-# SCC "spanAbbrevChar" #-} spanAbbrevChar str of
+    (i,str') -> {-# SCC "RTS_abb" #-}  
+          RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
+                                str' tbl (l+(length i)+1)    
 readTAF at ('[':str) tbl l =  
-    let (RTS_list (at' ,kids) str'  tbl'  l')  = 
-	    {-# SCC "RTAFs_AList" #-} readTAFs at ']' (dropSpaces str) tbl 1
-        (RTS_list (at'',ann)  str'' tbl'' l'') = 
-	    readAnnTAF at' (dropSpaces str') tbl' 0 
-	t            =  {-# SCC "Cons_AList" #-} ShAList kids ann 
-	at_t@(_,ai) = {-# SCC "RaddAList" #-} addATermNoFullSharing t at''
-	tbl'''       = {-# SCC "RaddAListAbbr" #-}  seq ai (condAddElement (addRAbbrev ai) (l''+l') tbl'')
-	in  {-# SCC "RTS_AList" #-} RTS at_t str'' tbl''' (l+l'+l'')
+	case {-# SCC "RTAFs_AList" #-} 
+             readTAFs at ']' (dropSpaces str) tbl 1 of
+        (RTS_list (at' ,kids) str'  tbl'  l') -> 
+          case 
+	    readAnnTAF at' (dropSpaces str') tbl' 0 of
+	  (RTS_list (at'',ann)  str'' tbl'' l'') ->
+           case {-# SCC "Cons_AList" #-} ShAList kids ann of
+	   t -> case  {-# SCC "RaddAList" #-} addATermNoFullSharing t at'' of
+		at_t@(_,ai) -> 
+                 case {-# SCC "RaddAListAbbr" #-}  
+		  seq ai (condAddElement (addRAbbrev ai) (l''+l') tbl'') of
+		 tbl''' -> {-# SCC "RTS_AList" #-} 
+		       RTS at_t str'' tbl''' (l+l'+l'')
 readTAF at str@(x:xs) tbl l 
   | isIntHead x =  
-      let (i,str')   = {-# SCC "RspanDigits" #-} span isDigit xs
-          l'         = length (x:i)
-          (RTS_list (at',ann) str'' tbl' l'') = readAnnTAF at str' tbl 0
-	  xi         = {-# SCC "RconIntStr" #-} x:i
-	  integer    :: Integer
-	  integer    = {-# SCC "Rread_integer" #-} readInteger x i
-	  t          =  {-# SCC "Cons_AInt" #-} ShAInt integer ann 
-	  at_t@(_,ai) = {-# SCC "RaddAInt" #-} addATermNoFullSharing t at'
-	  tbl''      = {-# SCC "RaddAIntAbbrev" #-}  seq ai (condAddElement (addRAbbrev ai) (l'+l'') tbl')
-      in  {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
-  |isAFunChar x || x=='"' || x=='(' = 
-      let (c,str')           = {-# SCC "RspanConstructor" #-} readAFun str
-	  (RTS_list (at',kids) str'' tbl' l') = 
-		{-# SCC "RTAFs_AAppl" #-} readParenTAFs at (dropSpaces str') tbl 0
-          (RTS_list (at'',ann) str''' tbl'' l'') = 
-		readAnnTAF at' (dropSpaces str'') tbl' 0
-	  t                  =  {-# SCC "Cons_AAppl" #-} ShAAppl c kids ann
-	  l'''   = (length c) + l'+l''
-	  at_t@(_,ai) = {-# SCC "RaddAAppl" #-} addATermNoFullSharing t at''
-	  tbl''' = {-# SCC "RaddAApplAbbrev" #-} seq ai (condAddElement (addRAbbrev ai) l''' tbl'')
- 	  in  {-# SCC "RTS_AAppl" #-} RTS at_t str''' tbl''' l'''
+     case {-# SCC "RspanDigits" #-} span isDigit xs of
+     (i,str') -> 
+       case length (x:i) of
+       l' ->
+         case readAnnTAF at str' tbl 0 of
+	 (RTS_list (at',ann) str'' tbl' l'') ->
+	   case {-# SCC "Rread_integer" #-} readInteger x i of
+	   integer ->
+	    case {-# SCC "RaddAInt" #-} 
+	       addATermNoFullSharing (ShAInt integer ann) at' of
+	    at_t@(_,ai) ->
+              case {-# SCC "RaddAIntAbbrev" #-}  
+	         seq ai (condAddElement (addRAbbrev ai) (l'+l'') tbl') of
+	      tbl'' -> {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
+  | isAFunChar x || x=='"' || x=='(' = 
+     case {-# SCC "RspanConstructor" #-} readAFun str of
+     (c,str') ->
+       case {-# SCC "RTAFs_AAppl" #-} 
+            readParenTAFs at (dropSpaces str') tbl 0 of
+       (RTS_list (at',kids) str'' tbl' l') ->
+         case readAnnTAF at' (dropSpaces str'') tbl' 0 of
+	 (RTS_list (at'',ann) str''' tbl'' l'') ->
+	   case {-# SCC "RaddAAppl" #-} 
+		addATermNoFullSharing (ShAAppl c kids ann) at'' of
+	   at_t@(_,ai) ->
+             case ((length c) + l'+l'') of
+	     l''' -> seq l''' 
+              (case {-# SCC "RaddAApplAbbrev" #-} 
+		  seq ai (condAddElement (addRAbbrev ai) l''' tbl'') of
+	       tbl''' -> {-# SCC "RTS_AAppl" #-} 
+                    RTS at_t str''' tbl''' l''')
   | otherwise             = error $ error_saterm (take 5 str)
 
 readParenTAFs :: ATermTable -> String -> ReadTable 
@@ -169,10 +185,11 @@ readTAFs at par s@(p:str) tbl l | par == p  = RTS_list (at,[]) str tbl (l+1)
 readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int 
 	  -> ReadTAFStruct
 readTAFs1 at par str tbl l = 
-    let (RTS (at' ,t)  str'  tbl'  l') = readTAF at (dropSpaces str) tbl l
-	(RTS_list (at'',ts) str'' tbl'' l'') = 
-	    readTAFs' at' par (dropSpaces str') tbl' l'
-    in (RTS_list (at'',t:ts) str'' tbl'' l'') 
+    case  readTAF at (dropSpaces str) tbl l of
+    (RTS (at' ,t)  str'  tbl'  l') -> 
+      case readTAFs' at' par (dropSpaces str') tbl' l' of
+      (RTS_list (at'',ts) str'' tbl'' l'') ->	 
+              (RTS_list (at'',t:ts) str'' tbl'' l'') 
 
 readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int 
 			-> ReadTAFStruct
@@ -315,23 +332,25 @@ writeTAF' :: ATermTable -> WriteTable -> Write_struct
 writeTAF' at tbl = 
     case getATerm at of
     (ShAAppl c ts as) -> 
-	     let (WS tbl' kids)     = writeTAFs at ts tbl
-                 (WS tbl'' kidsAnn) = writeTAFs at as tbl'
-             in WS tbl'' $ dlConcat (writeATermAuxS c kids) 
-		                       (parenthesiseAnnS kidsAnn)
+	      case writeTAFs at ts tbl of
+	      (WS tbl' kids) ->
+		  case writeTAFs at as tbl' of
+		  (WS tbl'' kidsAnn) ->
+                     WS tbl'' $ dlConcat (writeATermAuxS c kids) 
+		                         (parenthesiseAnnS kidsAnn)
     (ShAList ts as)   -> 
-	     let (WS tbl' kids)     = writeTAFs at ts tbl
-		 (WS tbl'' kidsAnn) = writeTAFs at as tbl'
-             in WS tbl'' $ 
-		     dlConcat (bracketS kids) 
-		                 (parenthesiseAnnS kidsAnn)
+	      case writeTAFs at ts tbl of
+	      (WS tbl' kids) ->
+		  case writeTAFs at as tbl' of
+		  (WS tbl'' kidsAnn) ->
+		      WS tbl'' $ dlConcat (bracketS kids) 
+		                          (parenthesiseAnnS kidsAnn)
     (ShAInt i as)     -> 
-	     let (WS tbl' kidsAnn) = writeTAFs at as tbl
-		 istr = show i
+	case writeTAFs at as tbl of
+        (WS tbl' kidsAnn) ->
 		 -- don't use showInt: can't show negative numbers
-	     in WS tbl' $ 
-		      dlConcat (Doc_len (integer i) (length istr)) 
-		                  (parenthesiseAnnS kidsAnn)
+	      WS tbl' $ dlConcat (Doc_len (integer i) (length (show i))) 
+		                 (parenthesiseAnnS kidsAnn)
 
 dlConcat :: Doc_len -> Doc_len -> Doc_len		
 {-showSConcat ShowS_len_empty ShowS_len_empty = fatal_error "showSConcat"
@@ -368,11 +387,11 @@ writeTAFs at inds tbl = writeTAFs' inds (WS tbl $ Doc_len empty 0)
     where writeTAFs' :: [Int] -> Write_struct -> Write_struct
 	  writeTAFs' [] _ = error "not reachable"
 	  writeTAFs' [i] (WS t s) = 
-	      let (WS t' s') = wT t i
-	      in WS t' (dlConcat s s')
+	      case  wT t i of
+	      (WS t' s') -> WS t' (dlConcat s s')
 	  writeTAFs' (i:is) (WS t s) = 
-	      let (WS t' s')   = wT t i
-	      in writeTAFs' is (WS t' (dlConcat_comma s s'))
+	      case  wT t i of
+	      (WS t' s') -> writeTAFs' is (WS t' (dlConcat_comma s s'))
 	  wT :: WriteTable -> Int -> Write_struct
 	  wT t i = writeTAF (getATermByIndex1 i at) t
 
@@ -495,10 +514,10 @@ emptyWTable = WTab emptyFM (abbrevD 0,0)
 -- abbrev of top-level / selected ATerm for wirting
 indexOf :: ATermTable -> WriteTable -> Maybe (Doc_len)
 indexOf at (WTab ai_abb_map _) = 
-    let ai = getTopIndex at
-    in if ai == -1 
-       then Nothing
-       else lookupFM ai_abb_map ai
+    case getTopIndex at of
+    ai -> if ai == -1 
+          then Nothing
+          else lookupFM ai_abb_map ai
 {-
 lengthOfShATermInd :: Int -> WriteTable -> Maybe Int
 lengthOfShATermInd ai (WTab _ lmap _) = IntMap.lookup ai lmap
@@ -509,8 +528,8 @@ addWAbbrev :: Int -> WriteTable -> WriteTable
 addWAbbrev ai (WTab ai_abb_map (da,i)) 
     | ai < 0    = error "addWAbbrev: negative index" 
     | otherwise = 
-	let new_map = (addToFM ai_abb_map ai da) 
-	in seq new_map (
+	case (addToFM ai_abb_map ai da) of
+	new_map -> seq new_map (
 		  maybe (WTab new_map (abbrevD (i+1),i+1))
 		        (error ("destructive update in WriteTable "
 				++show i++" "
@@ -529,9 +548,9 @@ addRAbbrev ai (RTab abb_ai_map i)
 
 getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
 getAbbrevTerm i at (RTab abb_ai_map _) =  
-    let ai    = lookupWithDefaultFM abb_ai_map (err) i
-	err   = error ("Index "++show i++" not found")
-    in snd $  getATermByIndex ai at 
+    case lookupWithDefaultFM abb_ai_map 
+                 (error ("Index "++show i++" not found")) i of
+    ai -> snd $  getATermByIndex ai at 
 
 {-
 (!!!)              :: [b] -> Integer -> b
@@ -570,9 +589,9 @@ deAbbrev x		=  deAbbrevAux (reverse x)
 
 deAbbrevAux :: [Char] -> Int
 deAbbrevAux []		=  0
-deAbbrevAux (c:cs)	=  let i = base64Array ! c
-               	               r = deAbbrevAux cs			       
-			   in seq r (i + 64*r)
+deAbbrevAux (c:cs)	=  case base64Array ! c of
+			   i -> case deAbbrevAux cs of
+				r -> seq r (i + 64*r)
 
 revBase64Array :: Array Int Char
 revBase64Array = listArray (0,63) toBase64
@@ -595,8 +614,8 @@ toBase64 =
 
 -- helpers --
 abbrevD :: Int -> Doc_len
-abbrevD i = let abbStr = abbrev i 
-            in (Doc_len (text abbStr) (length abbStr))
+abbrevD i = case abbrev i of
+	    abbStr -> (Doc_len (text abbStr) (length abbStr))
 
 abbrev :: Int -> [Char]
 abbrev i = '#' : (mkAbbrev i)

@@ -65,34 +65,39 @@ addATerm' cho t (ATT a_iDFM i_aDFM i1) =
 	      Full -> insertFull
 	      NoFull -> insertNoFull))
     where insertFull =
-             (let (mayInd,dfm1) = {-# SCC "fm1_f" #-} 
+             (case {-# SCC "fm1_f" #-} 
                          Map.insertLookupWithKey (\_ _ y -> y)  
-                             t i1 a_iDFM
+                             t i1 a_iDFM of
 	          -- here we get Just index, if there is already a
 	          -- mapping of t to i1 otherwise we get Nothing and
 	          -- the new relation is defined.
-                  dfm2 = {-# SCC "fm2_f" #-} 
+	      (mayInd,dfm1) -> case 
+                  {-# SCC "fm2_f" #-} 
 	                 maybe (DMap.insert i1 t i_aDFM) 
 	                       -- mapping not defined => set it
 	                       (\_->i_aDFM) 
 	                       -- otherwise return unchanged map
-                               mayInd
-	          (newATT_ind,return_ind) = 
+                               mayInd of
+	          dfm2 -> 
+                   case
 	             -- calculate new indices for ATT and the Term as well
 	             -- Nothing means old ATT index i1 is now mapped to t
                      --   and new ATT index is (i1+1)
                      -- Just means leave ATT index i1 unchanged 
                      --   and t has already index old index
-                     maybe (i1+1,i1) (\old_ind->(i1,old_ind)) mayInd
-              in (ATT dfm1 dfm2 newATT_ind,return_ind))
+                     maybe (i1+1,i1) (\old_ind->(i1,old_ind)) mayInd of
+	           (newATT_ind,return_ind) ->
+                     (ATT dfm1 dfm2 newATT_ind,return_ind))
           insertNoFull = 
-             (let dfm1 = {-# SCC "fm1_nf" #-} 
+             (case {-# SCC "fm1_nf" #-} 
                          Map.insertWithKey 
                              (\_ _ _ -> error ("destructive update with: "
                                                 ++ show t))  
-                             t i1 a_iDFM
-                  dfm2 = {-# SCC "fm2_nf" #-} DMap.insert i1 t i_aDFM
-              in (ATT dfm1 dfm2 (i1+1),i1))
+                             t i1 a_iDFM of
+	      dfm1 -> 
+               case
+                 {-# SCC "fm2_nf" #-} DMap.insert i1 t i_aDFM of
+	       dfm2 -> (ATT dfm1 dfm2 (i1+1),i1))
 
           shorter = all (<i1)
 	  check is as = (shorter is && shorter as)

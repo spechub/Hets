@@ -65,15 +65,16 @@ class ATermConvertible t where
     fromShATermList :: ATermTable -> [t]
 
     -- default functions ignore the Annotation part
-    toShATermList at ts = addATerm (ShAList inds []) at'
-	where (at',inds) = mapAccumL toShATerm at ts
-    fromShATermList at = 
-	case aterm of 
-	ShAList ats _ ->  map con ats
-	_           -> fromShATermError "[a]" aterm
-	where aterm  = getATerm at
-	      con i = fromShATerm (getATermByIndex1 i at)
+    toShATermList at ts = case mapAccumL toShATerm at ts of
+			  (at',inds) -> addATerm (ShAList inds []) at'
 
+    fromShATermList at = 
+	case getATerm at of
+	aterm -> 
+	    case aterm of 
+	    ShAList ats _ ->  
+		map (\i -> fromShATerm (getATermByIndex1 i at)) ats
+	    _           -> fromShATermError "[a]" aterm
 
 toATermString :: ATermConvertible a => a -> String
 toATermString t	 = (writeATerm . fst) (toShATerm emptyATermTable t)
@@ -163,15 +164,18 @@ instance (ATermConvertible a,Integral a) => ATermConvertible (Ratio a) where
 						   in (i1 % i2)
 		   _ -> fromATermError "Ratio" at
    toShATerm att0 ((:%) i1 i2) = 
-       let (att1,i1') = toShATerm att0 i1
-           (att2,i2') = toShATerm att1 i2
-       in addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
+       case toShATerm att0 i1 of
+       (att1,i1') -> 
+	  case toShATerm att1 i2 of
+          (att2,i2') ->
+              addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
    fromShATerm att = 
        case aterm of
        (ShAAppl "Ratio" [i1',i2'] _) -> 
-	   let i1 = fromShATerm (getATermByIndex1 i1' att)
-	       i2 = fromShATerm (getATermByIndex1 i2' att)
-	   in (i1 % i2)
+	   case fromShATerm (getATermByIndex1 i1' att) of
+	   i1 -> 
+             case fromShATerm (getATermByIndex1 i2' att) of
+	     i2 -> (i1 % i2)
        _                ->  fromShATermError "Ratio" aterm
        where aterm = getATerm att 
 
@@ -243,13 +247,14 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
 		     _ -> fromATermError "Maybe" at
     toShATerm att mb = case mb of
                      Nothing -> addATerm (ShAAppl "Nothing" [] []) att
-                     (Just x)  -> let (att1,x') = toShATerm att x
-                                  in addATerm (ShAAppl "Just" [x'] []) att1
+                     (Just x)  -> case toShATerm att x of
+				  (att1,x') ->
+                                   addATerm (ShAAppl "Just" [x'] []) att1
     fromShATerm att = case aterm of
                        (ShAAppl "Nothing" [] _) -> Nothing
                        (ShAAppl "Just" [x] _) -> 
-			   let x' = fromShATerm (getATermByIndex1 x att)
-                           in (Just x')
+			   case fromShATerm (getATermByIndex1 x att) of
+                           x' -> (Just x')
 		       _      -> fromShATermError "Maybe" aterm
                       where aterm = getATerm att
 
@@ -259,12 +264,13 @@ instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Ma
     fromATerm at     = case at of
 		       (AAppl "Map" [ml] []) -> Map.fromDistinctAscList $ fromATerm ml
 		       _ -> fromATermError "Map" at
-    toShATerm att fm = let (att1,i) = toShATerm att $ Map.toAscList fm 
-                       in seq att1 $ addATerm (ShAAppl "Map" [i] []) att1
+    toShATerm att fm = case toShATerm att $ Map.toAscList fm of
+		        (att1,i) ->
+                          {-seq att1 $-} addATerm (ShAAppl "Map" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Map" [i] []) -> 
-			   let l = fromShATerm (getATermByIndex1 i att)
-		           in Map.fromDistinctAscList l
+			   case fromShATerm (getATermByIndex1 i att) of
+			   l -> Map.fromDistinctAscList l
 		       u     -> fromShATermError "Map" u
 		       where aterm = getATerm att
 
@@ -274,12 +280,13 @@ instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
     fromATerm at     = case at of
 		       (AAppl "Set" [ml] []) -> Set.fromDistinctAscList $ fromATerm ml
 		       _ -> fromATermError "Set" at
-    toShATerm att set = let (att1,i) = toShATerm att $ Set.toAscList set
-                        in seq att1 $ addATerm (ShAAppl "Set" [i] []) att1
+    toShATerm att set = case  toShATerm att $ Set.toAscList set of
+			 (att1,i) ->
+                          {-seq att1 $-} addATerm (ShAAppl "Set" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Set" [i] []) -> 
-			   let l = fromShATerm (getATermByIndex1 i att)
-		           in Set.fromDistinctAscList l
+			   case fromShATerm (getATermByIndex1 i att) of
+			   l -> Set.fromDistinctAscList l
 		       u     -> fromShATermError "Set" u
 		       where aterm = getATerm att
 
@@ -289,12 +296,13 @@ instance (Ord a,ATermConvertible a) => ATermConvertible (Rel.Rel a) where
     fromATerm at     = case at of
 		       (AAppl "Rel" [ml] []) -> Rel.fromList $ fromATerm ml
 		       _ -> fromATermError "Rel" at
-    toShATerm att set = let (att1,i) = toShATerm att $ Rel.toList set
-                        in seq att1 $ addATerm (ShAAppl "Rel" [i] []) att1
+    toShATerm att set = case toShATerm att $ Rel.toList set of
+                        (att1,i) -> 
+			 {-seq att1 $-} addATerm (ShAAppl "Rel" [i] []) att1
     fromShATerm att  = case aterm of
 		       (ShAAppl "Rel" [i] []) -> 
-			   let l = fromShATerm (getATermByIndex1 i att)
-		           in Rel.fromList l
+			   case fromShATerm (getATermByIndex1 i att) of
+			   l -> Rel.fromList l
 		       u     -> fromShATermError "Rel" u
 		       where aterm = getATerm att
 
@@ -352,13 +360,17 @@ instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) where
     fromATerm at     = case at of
                         (AAppl "" [a,b] _) -> (fromATerm a,fromATerm b)
                         _                  -> fromATermError "(a,b)" at
-    toShATerm att0 (x,y) = addATerm (ShAAppl "" [x',y'] []) att2
-                          where (att2,y') = toShATerm att1 y 
-                                (att1,x') = toShATerm att0 x 
+    toShATerm att0 (x,y) = case toShATerm att0 x of
+			   (att1,x') -> 
+			     case toShATerm att1 y of
+			     (att2,y') -> 
+                               addATerm (ShAAppl "" [x',y'] []) att2
     fromShATerm att = case at of  
-                       (ShAAppl "" [x,y] _) -> (x',y')
-                        where x' = fromShATerm (getATermByIndex1 x att) 
-                              y' = fromShATerm (getATermByIndex1 y att) 
+                       (ShAAppl "" [x,y] _) -> 
+			case fromShATerm (getATermByIndex1 x att) of
+			x' -> 
+			 case fromShATerm (getATermByIndex1 y att) of
+			 y' -> (x',y')
                        _  -> fromShATermError "(a,b)" at
                       where at = getATerm att 
 
@@ -367,17 +379,22 @@ instance (ATermConvertible a, ATermConvertible b, ATermConvertible c) => ATermCo
     fromATerm at    = case at of
                        (AAppl "" [a,b,c] _) -> (fromATerm a, fromATerm b, fromATerm c)
                        _                          -> fromATermError "(a,b,c)" at
-    toShATerm att (a,b,c) = addATerm (ShAAppl "" [a',b',c'] []) att1 
-                            where (att1,c')  = toShATerm att'' c
-			          (att'',b') = toShATerm att'  b 
-                                  (att',a')  = toShATerm att   a
+    toShATerm att0 (a,b,c) = case toShATerm att0 a of
+			     (att1,x') -> 
+			      case toShATerm att1 b of
+			      (att2,y') -> 
+                               case toShATerm att2 c of
+			       (att3,z') -> 
+				  addATerm (ShAAppl "" [x',y',z'] []) att3 
     fromShATerm att = case at of 
-		       (ShAAppl "" [a,b,c] _) -> (a',b',c')
-                         where a' = fromShATerm (getATermByIndex1 a att) 
-                               b' = fromShATerm (getATermByIndex1 b att) 
-			       c' = fromShATerm (getATermByIndex1 c att) 
-			     
-                       _                            -> fromShATermError "(a,b,c)" at
+		       (ShAAppl "" [a,b,c] _) -> 
+			case fromShATerm (getATermByIndex1 a att) of
+			a' -> 
+			 case fromShATerm (getATermByIndex1 b att) of
+			 b' ->
+			  case fromShATerm (getATermByIndex1 c att) of
+			  c' -> (a',b',c')			     
+                       _                 -> fromShATermError "(a,b,c)" at
                       where at = getATerm att
                             
 instance (ATermConvertible a, ATermConvertible b, ATermConvertible c, ATermConvertible d) => ATermConvertible (a,b,c,d) where
@@ -385,19 +402,29 @@ instance (ATermConvertible a, ATermConvertible b, ATermConvertible c, ATermConve
     fromATerm at    = case at of
                        (AAppl "" [a,b,c,d] _) -> (fromATerm a, fromATerm b, fromATerm c, fromATerm d)
                        _                          -> fromATermError "(a,b,c)" at
-    toShATerm att (a,b,c,d) = addATerm (ShAAppl "" [a',b',c',d'] []) att2 
-                              where (att2,d')  = toShATerm att1  d
-                                    (att1,c')  = toShATerm att'' c
-			            (att'',b') = toShATerm att'  b 
-                                    (att',a')  = toShATerm att   a
-    fromShATerm att = case at of 
-		       (ShAAppl "" [a,b,c,d] _) -> (a',b',c',d')
-                         where a' = fromShATerm (getATermByIndex1 a att) 
-                               b' = fromShATerm (getATermByIndex1 b att) 
-			       c' = fromShATerm (getATermByIndex1 c att) 
-			       d' = fromShATerm (getATermByIndex1 d att)
-                       _                            -> fromShATermError "(a,b,c)" at
-                      where at = getATerm att
+    toShATerm att0 (a,b,c,d) = 
+	case toShATerm att0 a of
+        (att1,a') -> 
+	    case toShATerm att1 b of
+	    (att2,b') -> 
+                case toShATerm att2 c of
+		(att3,c') -> 
+		    case toShATerm att3 d of
+		    (att4,d') -> 
+			addATerm (ShAAppl "" [a',b',c',d'] []) att4 
+    fromShATerm att = 
+	case at of 
+        (ShAAppl "" [a,b,c,d] _) ->
+ 	 case fromShATerm (getATermByIndex1 a att) of
+	 a' -> 
+	  case fromShATerm (getATermByIndex1 b att) of
+	  b' ->
+	   case fromShATerm (getATermByIndex1 c att) of
+	   c' -> 
+	    case fromShATerm (getATermByIndex1 d att) of
+	    d' -> (a',b',c',d')
+        _                            -> fromShATermError "(a,b,c)" at
+      where at = getATerm att
 
 
 
