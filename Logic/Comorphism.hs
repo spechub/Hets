@@ -83,7 +83,8 @@ instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdComorphism lid) where
-           language_name _ = "id_"++language_name (error "Comorphism.hs"::lid)
+           language_name (IdComorphism lid) = 
+             "id_"++language_name lid
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
