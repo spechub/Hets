@@ -1,21 +1,25 @@
--- needs -package text 
 
 {- HetCATS/PrettyPrint.hs
    $Id$
    Author: Klaus Lüttich
    Year:   2002
+-}
+{- | 
+   
+   Maintainer  :  hets@tzi.de
+   Stability   :  provisional
+   Portability :  non-portable (import Control.Monad.State)
 
    This class needs to be instantiated for every datastructure in AS_*
    for LaTeX and isolatin-1 pretty printing. It is only neccessary to
    provide one isolatin-1 printing method for prototypes, but for real
    nice output you need to implement every method.
-
-   todo:
-     
 -}
 
 module Common.PrettyPrint 
-    ( renderLatex
+    ( noPrint
+    , showPretty
+    , renderLatex
     , debugRenderLatex
     , renderText 
     , PrettyPrint(..)
@@ -30,8 +34,6 @@ module Common.PrettyPrint
 import Data.Char (isSpace,isAlphaNum,isDigit)
 import Control.Monad.State (State(..),evalState,get,put)
 import Data.List (isPrefixOf)
--- debugging
--- import IOExts (trace)
 
 import Common.Id
 import Common.Lib.Pretty
@@ -47,12 +49,14 @@ class Show a => PrettyPrint a where
     printLatex  ga a = printLatex0  ga a
     printText   ga a = printText0 ga a
 
-{-instance (PrettyPrint a) => PrettyPrint [a] where
-    printText0  ga l = cat $ map (printText0  ga) l
-    printLatex0 ga l = cat $ map (printLatex0 ga) l
-    printText   ga l = cat $ map (printText   ga) l
-    printLatex  ga l = cat $ map (printLatex  ga) l
--}
+-- shortcut
+noPrint :: Bool -> Doc -> Doc
+noPrint b d = if b then empty else d
+
+-- | a more pretty alternative for show
+showPretty :: PrettyPrint a => a -> ShowS
+showPretty = shows . printText0 emptyGlobalAnnos 
+
 ----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 100 1.5)
 
@@ -384,22 +388,23 @@ printToken_latex strConvDoc_fun t =
 	    in printToken s
 
 instance PrettyPrint Id where
-    printText0  ga (Id tops cs _) = 
-	printId printText0  comma       brackets       ga tops cs
-    printLatex0 ga (Id tops cs _) = 
-	printId printLatex0 comma_latex brackets_latex ga tops cs
+    printText0  ga i = 
+	printId printText0  comma       brackets       ga i
+    printLatex0 ga i = 
+	printId printLatex0 comma_latex brackets_latex ga i
 
-printId :: (forall a . PrettyPrint a => GlobalAnnos -> a -> Doc)
+printId :: (GlobalAnnos -> Token -> Doc)
 	   -> Doc -- ^ a comma seperator
 	   -> (Doc -> Doc) -- ^ a function that surrounds the given Doc 
 			-- with brackets
-	   -> GlobalAnnos -> [Token] -> [Id] -> Doc
-printId pf comma_fun brackets_fun ga tops ids =
+	   -> GlobalAnnos -> Id -> Doc
+printId pf comma_fun brackets_fun ga (Id tops ids _) =
     let (toks,places) = splitMixToken tops
 	glue_tok = fcat . (map (pf ga))
-	comp = if null ids then empty
-		   else brackets_fun $ fcat $ 
-			punctuate comma_fun $ map (pf ga) ids
+	comp = noPrint (null ids) $
+		   brackets_fun $ fcat $ 
+			punctuate comma_fun $ map 
+		   (printId pf comma_fun brackets_fun ga) ids
 	in  fcat [glue_tok toks, comp, glue_tok places]
 
 -- some useful instances ---------------------------------------------
@@ -408,6 +413,3 @@ printId pf comma_fun brackets_fun ga tops ids =
 instance PrettyPrint String where
     printText0  _ = ptext 
     printLatex0  _ = error "use a function from module LaTeX_funs" 
-
-
-
