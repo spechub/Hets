@@ -159,8 +159,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          -- ensures_amalgamability :: id
          --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
          --   -> Result (Diagram CASLSign CASLMor)
-	 ensures_amalgamability CASL (diag, sink) = 
-	     ensuresAmalgamability diag sink
+	 ensures_amalgamability CASL (diag, sink, desc) = 
+	     ensuresAmalgamability diag sink desc
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
 
