@@ -62,8 +62,9 @@ simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString
 		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
-startTerm, restTerm, mixTerm, whenTerm  :: AParsable f => [String] -> AParser (TERM f)
-startTerm k = parenTerm k <|> braceTerm k <|> bracketTerm k <|> simpleTerm k
+startTerm, restTerm, mixTerm, whenTerm :: AParsable f => [String] 
+				       -> AParser (TERM f)
+startTerm k = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm k
 
 restTerm k = startTerm k <|> typedTerm k <|> castedTerm k
 
@@ -102,20 +103,20 @@ terms k =
     do (ts, ps) <- whenTerm k `separatedBy` anComma
        return (ts, ps)
 
-qualVarName, qualOpName :: [String] -> Token -> AParser (TERM f)
-qualVarName k o = 
+qualVarName, qualOpName :: Token -> AParser (TERM f)
+qualVarName o = 
     do v <- asKey varS
-       i <- varId k
+       i <- varId []
        c <- colonT 
-       s <- sortId k
+       s <- sortId []
        p <- cParenT
        return $ Qual_var i s $ toPos o [v, c] p
 
-qualOpName k o = 
+qualOpName o = 
     do v <- asKey opS
-       i <- parseId k
+       i <- parseId []
        c <- colonST 
-       t <- opType k
+       t <- opType []
        p <- cParenT
        return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] []
 
@@ -143,24 +144,23 @@ opType k =
  	  <|> opFunSort k [s] []
           <|> return (Total_op_type [] s [])
 
-parenTerm, braceTerm, bracketTerm :: AParsable f => [String] 
-				  -> AParser (TERM f)
-parenTerm k = 
+parenTerm, braceTerm, bracketTerm :: AParsable f => AParser (TERM f)
+parenTerm = 
     do o <- oParenT
-       qualVarName k o <|> qualOpName k o <|> qualPredName k o <|> 
-          do (ts, ps) <- terms k
+       qualVarName o <|> qualOpName o <|> qualPredName o <|> 
+          do (ts, ps) <- terms []
 	     c <- cParenT
 	     return (Mixfix_parenthesized ts $ toPos o ps c)
 
-braceTerm k = 
+braceTerm = 
     do o <- oBraceT
-       (ts, ps) <- option ([], []) $ terms k
+       (ts, ps) <- option ([], []) $ terms []
        c <- cBraceT 
        return $ Mixfix_braced ts $ toPos o ps c
 
-bracketTerm k = 
+bracketTerm = 
     do o <- oBracketT
-       (ts, ps) <- option ([], []) $ terms k
+       (ts, ps) <- option ([], []) $ terms []
        c <- cBracketT 
        return $ Mixfix_bracketed ts $ toPos o ps c
 
@@ -203,23 +203,23 @@ predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
 
-qualPredName :: [String] -> Token -> AParser (TERM f)
-qualPredName k o = 
+qualPredName :: Token -> AParser (TERM f)
+qualPredName o = 
     do v <- asKey predS
-       i <- parseId k
+       i <- parseId []
        c <- colonT 
-       s <- predType k
+       s <- predType []
        p <- cParenT
        return $ Mixfix_qual_pred $ Qual_pred_name i s $ toPos o [v, c] p
 
 parenFormula :: AParsable f => [String] -> AParser (FORMULA f)
 parenFormula k = 
     do o <- oParenT
-       do q <- qualPredName k o <|> qualVarName k o <|> qualOpName k o
-	  l <- many $ restTerm k  -- optional arguments
+       do q <- qualPredName o <|> qualVarName o <|> qualOpName o
+	  l <- many $ restTerm []  -- optional arguments
 	  termFormula k (if null l then q else
 				      Mixfix_term (q:l))
-         <|> do f <- impFormula k
+         <|> do f <- impFormula []
 		case f of Mixfix_formula t -> 
 				     do c <- cParenT
 					l <- many $ restTerm k

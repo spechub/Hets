@@ -26,27 +26,28 @@ import CASL.OpItem
 modalFormula :: AParser M_FORMULA
 modalFormula = 
 	      do o <- oBracketT
-	         m <- modality
+	         m <- modality []
 		 c <- cBracketT
 		 f <- formula modal_reserved_words
 		 return (Box m f $ toPos o [] c)
               <|> 
 	      do o <- asSeparator "<"
-	         m <- modality
+	         m <- modality [">"] -- do not consume matching ">"!
 		 c <- asSeparator ">"
 		 f <- formula modal_reserved_words
 		 return (Diamond m f $ toPos o [] c)
 
-modality :: AParser MODALITY
-modality = do t <- term modal_reserved_words
-	      let r = return $ Term_mod t
-	      case t of 
+modality :: [String] -> AParser MODALITY
+modality ks = 
+    do t <- term (ks ++ modal_reserved_words)
+       let r = return $ Term_mod t
+       case t of 
 		     Mixfix_token tm -> 
 			 if head (tokStr tm) `elem` caslLetters
 			    then return $ Simple_mod tm
 			    else r
 		     _ -> r
-           <|> return (Simple_mod $ mkSimpleId emptyS)
+    <|> return (Simple_mod $ mkSimpleId emptyS)
  
 instance AParsable M_FORMULA where
   aparser = modalFormula
