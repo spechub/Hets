@@ -31,10 +31,10 @@ import Data.List                ( partition )
 {-
 
     Idee: 
-        - global Infos aus Sign berechnen + mit durchreichen
-          (connected compenents, s.u.)
-        - rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
-        - atomaren Formeln mit minExpTerm behandeln
+    - global Infos aus Sign berechnen + mit durchreichen
+      (connected compenents, s.u.)
+    - rekursiv in Sentence absteigen, bis atomare Formel erreicht wird
+    - atomaren Formeln mit minExpTerm behandeln
 
 -}
 
@@ -164,6 +164,7 @@ minExpSentence_pred sign predicate terms = do
                     preds_equiv = pred1 `leqP` pred2            -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
                 in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+
 {-----------------------------------------------------------
     Minimal Expansions of a Term
 -----------------------------------------------------------}
@@ -418,6 +419,7 @@ leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 -----------------------------------------------------------}
 geq_SORT :: Sign -> SORT -> SORT -> Bool
 geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
+-- geq_SORT = (flip Set.member) . (flip subsortsOf)
 
 {- Die hier fehlen noch - sind aber essentiell :) -}
 leqF :: a -> a -> Bool -- Funktionsgleichheit
