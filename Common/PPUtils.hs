@@ -194,11 +194,3 @@ instance PrettyPrint Bool where
   printText0 _ x = text $ show x
 instance PrettyPrint Int where
   printText0 _ x = text $ show x
-
-instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
-  printText0 ga (Left x) = printText0 ga x
-  printText0 ga (Right x) = printText0 ga x
-
-instance PrettyPrint a => PrettyPrint (Maybe a) where
-  printText0 ga (Just x) = printText0 ga x
-  printText0 _ Nothing = empty

@@ -176,7 +176,23 @@ printId pf ga mdf f i =
 	     $ lookupDisplay ga df i) mdf
 
 instance PrettyPrint () where
-   printText0 _ga _s = empty
+    printText0 _ga _s = empty
 
 instance PrintLaTeX () where
-   printLatex0 _ga _s = empty
+    printLatex0 _ga _s = empty
+
+instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
+    printText0 ga (Left x) = printText0 ga x
+    printText0 ga (Right x) = printText0 ga x
+
+instance (PrintLaTeX a, PrintLaTeX b) => PrintLaTeX (Either a b) where
+    printLatex0 ga (Left x) = printLatex0 ga x
+    printLatex0 ga (Right x) = printLatex0 ga x
+
+instance PrettyPrint a => PrettyPrint (Maybe a) where
+    printText0 ga (Just x) = printText0 ga x
+    printText0 _ Nothing = empty
+
+instance PrintLaTeX a => PrintLaTeX (Maybe a) where
+    printLatex0 ga (Just x) = printLatex0 ga x
+    printLatex0 _ Nothing = empty
