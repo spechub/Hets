@@ -94,6 +94,9 @@ instance Mergeable TypeDefn where
 	    (TypeVarDefn, TypeVarDefn) -> return d1
 	    (TypeVarDefn, _) -> fail "merge: TypeVarDefn"
 	    (_, TypeVarDefn) -> fail "merge: TypeVarDefn"
+	    (PreDatatype, DatatypeDefn _ _ _) -> return d2 
+	    (PreDatatype, _) -> fail "expected data type definition"
+	    (_, PreDatatype) -> return d1
 --	    (NoTypeDefn, AliasTypeDefn _) -> fail "merge: AliasTypeDefn" 
 --	    (AliasTypeDefn _, NoTypeDefn) -> fail "merge: AliasTypeDefn"
 	    (NoTypeDefn, _) -> return d2

@@ -48,7 +48,11 @@ Data1 : Type %[type __ ::=
 	       a : -> __
 	       b : -> __
 	       c : -> __]%
-Data2 : Type %[type __ ::=]%
+Data2 : Type %[type __ ::=
+	       Cons21 : Data1 ×
+			Data2 -> __ (%(Data2.Cons21.sel_[1,1])% :? Data1)(%(Data2.Cons21.sel_[2,1])% :? Data2)
+	       Cons22 : Data2 ×
+			Data1 -> __ (%(Data2.Cons22.sel_[1,1])% :? Data2)(%(Data2.Cons22.sel_[2,1])% :? Data1)]%
 Data3 : Type %[type __ ::=
 	       Cons31 : Data1 × Data2 -> __ (sel1 :? Data1)(sel2 :? Data2)
 	       Cons32 : Data2 × Data1 -> __ (sel2 :? Data2)(sel1 :? Data1)]%
@@ -65,6 +69,16 @@ __×__ : Type+ -> Type+ -> Type
 s : c < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
+%(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by
+					    Cons21 : Data1 × Data2 -> Data2)%
+%(Data2.Cons21.sel_[2,1])% : Data2 ->? Data2 %(select from Data2 constructed by
+					    Cons21 : Data1 × Data2 -> Data2)%
+%(Data2.Cons22.sel_[1,1])% : Data2 ->? Data2 %(select from Data2 constructed by
+					    Cons22 : Data2 × Data1 -> Data2)%
+%(Data2.Cons22.sel_[2,1])% : Data2 ->? Data1 %(select from Data2 constructed by
+					    Cons22 : Data2 × Data1 -> Data2)%
+Cons21 : Data1 × Data2 -> Data2 %(construct Data2)%
+Cons22 : Data2 × Data1 -> Data2 %(construct Data2)%
 Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
 Cons41 : Data1 × Data2 ->? Data4 %(construct Data4)%
@@ -134,8 +148,6 @@ Error (line 37, column 3) no typing for 'ex(p : ? s) : ? Unit'
 Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 3) unexpected pattern 'ff ()'
 Error (line 40, column 20) unexpected mixfix token: all
-Error (line 61, column 36) unknown type 'Data2'
-Error (line 61, column 52) unknown type 'Data2'
 Warning (line 61, column 73) data subtype ignored
 Error (line 66, column 8) unexpected mixfix token: true
 Error (line 66, column 25) unexpected mixfix token: e

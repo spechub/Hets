@@ -30,6 +30,7 @@ instance PrettyPrint ClassInfo where
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
+    printText0 _ PreDatatype = space <> ptext "%(data type)%"
     printText0 _ TypeVarDefn = space <> ptext "%(var)%"
     printText0 ga (AliasTypeDefn s) = space <> ptext assignS 
 				      <+> printPseudoType ga s

@@ -207,8 +207,6 @@ Error (line 46, column 11) unexpected mixfix token: und
 Error (line 46, column 9) unexpected pattern '__ und __ (x, y : Unit)'
 Error (line 46, column 9) illegal toplevel pattern '__ und __ (x, y : Unit)'
 Warning (line 50, column 8) redeclared type '__->__'
-Warning (line 52, column 6) redeclared type 's'
-Warning (line 52, column 11) redeclared type 't'
 Error (line 52, column 8) incompatible kind of: __->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -298,8 +296,6 @@ Error (line 0, column 0) undeclared type '_var_76'
 Error (line 0, column 0) undeclared type '_var_77'
 Error (line 0, column 0) undeclared type '_var_78'
 Error (line 159, column 45) unexpected mixfix token: und
-Warning (line 169, column 7) redeclared type 'c'
-Warning (line 169, column 14) redeclared type 'd'
 Error (line 169, column 9) incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -327,8 +323,6 @@ Error (line 170, column 20) no typing for '(__=__)(__ in c -->? d,
 						       (sup (\ n : nat .! f (s (n + m))),
 							f (sup (s))))))'
 Error (line 176, column 16) unexpected mixfix token: [
-Warning (line 181, column 7) redeclared type 'c'
-Warning (line 181, column 13) redeclared type 'd'
 Error (line 181, column 9) incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type

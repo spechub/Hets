@@ -24,22 +24,21 @@ import Data.Maybe
 import Data.List
 
 
-anaAlts :: Type -> [Alternative] -> State Env [AltDefn]
-anaAlts dt alts = do ll <- mapM (anaAlt dt) alts
-		     let l = concat ll
-		     addDiags (checkUniqueness $ map 
-				    ( \ (Construct i _ _ _) -> i) l) 
-		     return l
+anaAlts :: [Type] -> Type -> [Alternative] -> State Env [AltDefn]
+anaAlts tys dt alts = 
+    do ll <- mapM (anaAlt tys dt) alts
+       let l = concat ll
+       addDiags (checkUniqueness $ map ( \ (Construct i _ _ _) -> i) l) 
+       return l
 
-
-anaAlt :: Type -> Alternative -> State Env [AltDefn] 
-anaAlt _ (Subtype ts ps) = 
+anaAlt :: [Type] -> Type -> Alternative -> State Env [AltDefn] 
+anaAlt _ _ (Subtype ts ps) = 
     do mapM_ anaStarType ts
        addDiags [Diag Warning "data subtype ignored" $ firstPos ts ps]
        return []
 
-anaAlt dt (Constructor i cs p _) = 
-    do newCs <- mapM (anaComp i dt) $ zip cs $ map (:[]) [1..]
+anaAlt tys dt (Constructor i cs p _) = 
+    do newCs <- mapM (anaComp i tys dt) $ zip cs $ map (:[]) [1..]
        let mts = map fst newCs
        if all isJust mts then 
 	  do let sels = concatMap snd newCs
@@ -67,15 +66,15 @@ makePartial t =
 		       _ -> FunType t1 PFunArr t2 ps
 	   _ -> LazyType t []  
 
-anaComp :: Id -> Type -> (Components, [Int]) 
+anaComp :: Id -> [Type] -> Type -> (Components, [Int]) 
 	-> State Env (Maybe Type, [Selector]) 
-anaComp _ rt (Selector s p t _ _, _) =
-    do mt <- anaCompType rt t
+anaComp _ tys rt (Selector s p t _ _, _) =
+    do mt <- anaCompType tys rt t
        case mt of 
            Just ct -> return (mt, [Select s ct p])
 	   _ -> return (Nothing, [])
-anaComp con rt (NoSelector t, i) =
-    do mt <- anaCompType rt t
+anaComp con tys rt (NoSelector t, i) =
+    do mt <- anaCompType tys rt t
        case mt of 
            Just ct -> return (mt, [Select (simpleIdToId $ mkSimpleId 
 			   ("%(" ++ showPretty rt "." ++ 
@@ -83,8 +82,8 @@ anaComp con rt (NoSelector t, i) =
 				   ct Partial])
 	   _ -> return  (Nothing, [])
 
-anaComp con rt (NestedComponents cs ps, i) =
-    do newCs <- mapM (anaComp con rt) $ zip cs $ map (:i) [1..]
+anaComp con tys rt (NestedComponents cs ps, i) =
+    do newCs <- mapM (anaComp con tys rt) $ zip cs $ map (:i) [1..]
        let mts = map fst newCs
        if all isJust mts then 
 	  return (Just $ ProductType (catMaybes mts) ps,
@@ -94,8 +93,8 @@ anaComp con rt (NestedComponents cs ps, i) =
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []
 
-anaCompType :: Type -> Type -> State Env (Maybe Type)
-anaCompType dt t = do
+anaCompType :: [Type] -> Type -> Type -> State Env (Maybe Type)
+anaCompType tys dt t = do
     mt <- anaStarType t 
     case mt of 
 	    Nothing -> return Nothing

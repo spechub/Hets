@@ -34,7 +34,7 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
 			  Just (t1,t2,t3)
 		      _ -> Nothing
        tm <- gets typeMap
-       mapM_ addTypeVarDecl tvs
+       mapM_ (addTypeVarDecl False) tvs
        case mTy of 
 	     Nothing -> do addDiags [mkDiag Error 
 				     "unexpected type of operation" ty]
@@ -129,8 +129,7 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
     do tm <- gets typeMap    -- save global variables  
        mArgs <- mapM anaTypeVarDecl tArgs
        let newArgs = catMaybes mArgs  
-       addDiags $ checkUniqueness
-		       $ map (\ (TypeArg v _ _ _) -> v) newArgs
+       checkUniqueTypevars newArgs
        mt <- anaStarType ty
        putTypeMap tm       -- forget local variables 
        case mt of 

@@ -35,19 +35,19 @@ import HasCASL.Merge
 putTypeMap :: TypeMap -> State Env ()
 putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
--- | store type id and check the kind
-addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
-addTypeId defn _ kind i = 
+-- | store type id and check kind arity (warn on redeclared types)
+addTypeId :: Bool -> TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
+addTypeId warn defn _ kind i = 
     do let nk = rawKind kind
        if placeCount i <= kindArity TopLevel nk then
-	  do addTypeKind defn i kind
+	  do addTypeKind warn defn i kind
 	     return $ Just i 
 	  else do addDiags [mkDiag Error "wrong arity of" i]
                   return Nothing
 
--- | store type as is
-addTypeKind :: TypeDefn -> Id -> Kind -> State Env () 
-addTypeKind d i k = 
+-- | store type as is (warn on redeclared types)
+addTypeKind :: Bool -> TypeDefn -> Id -> Kind -> State Env () 
+addTypeKind warn d i k = 
     do tk <- gets typeMap
        let rk = rawKind k
        case Map.lookup i tk of
@@ -55,13 +55,17 @@ addTypeKind d i k =
 			 (TypeInfo rk [k] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  if rk == ok
-		     then do if k `elem` ks then
+		     then do let isKnownInst = k `elem` ks
+				 insts = if isKnownInst then ks else
+					mkIntersection (k:ks)
+				 Result ds mDef = merge defn d
+			     if warn && isKnownInst && case (defn, d) of 
+			         (PreDatatype, DatatypeDefn _ _ _) -> False
+			         _ -> True
+				then
 			        addDiags [mkDiag Warning 
 					  "redeclared type" i]
 				else return ()
-			     let insts = if k `elem` ks then ks else
-					mkIntersection (k:ks)
-				 Result ds mDef = merge defn d
 		             case mDef of
 			         Just newDefn -> putTypeMap $ Map.insert i 
 					 (TypeInfo ok insts sups newDefn) tk
@@ -77,14 +81,14 @@ anaTypeVarDecl(TypeArg t k s ps) =
        let m = getKind tk t
        case m of 
  	      Nothing -> anaTypeVarDecl(TypeArg t star s ps)
-	      Just oldK -> anaTypeVarDecl(TypeArg t oldK s ps)
+	      Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
     _ -> do nk <- anaKind k
-	    addTypeVarDecl $ TypeArg t nk s ps
+	    addTypeVarDecl True $ TypeArg t nk s ps
 
--- | add an analysed type argument
-addTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-addTypeVarDecl ta@(TypeArg t k _ _) = 
-    do mi <- addTypeId TypeVarDefn Plain k t
+-- | add an analysed type argument (warn on redeclared types)
+addTypeVarDecl :: Bool -> TypeArg -> State Env (Maybe TypeArg)
+addTypeVarDecl warn ta@(TypeArg t k _ _) = 
+    do mi <- addTypeId warn TypeVarDefn Plain k t
        return $ fmap (const ta) mi
 
 -- | compute arity from a 'Kind'
@@ -147,7 +151,7 @@ addOpId i sc attrs defn =
 addGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
 addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
 				 return $ fmap GenVarDecl mv
-addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl t 
+addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl True t 
 				     return $ fmap GenTypeVarDecl mt
 
 anaGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)

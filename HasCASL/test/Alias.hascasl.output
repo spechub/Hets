@@ -44,16 +44,12 @@ if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 's'
-Warning (line 2, column 13) redeclared type 's'
 Warning (line 6, column 15) redeclared type 'a'
 Warning (line 6, column 19) redeclared type 'b'
 Warning (line 6, column 6) redeclared type 'a1'
-Warning (line 7, column 9) redeclared type 'a'
 Warning (line 7, column 16) redeclared type 'b'
 Warning (line 7, column 6) redeclared type 'a1'
 Warning (line 9, column 15) redeclared type 'a'
 Warning (line 9, column 19) redeclared type 'b'
 Warning (line 11, column 15) redeclared type 'a'
 Warning (line 11, column 19) redeclared type 'a'
-Warning (line 13, column 9) redeclared type 'a'
-Warning (line 13, column 11) redeclared type 'a'

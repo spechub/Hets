@@ -90,7 +90,9 @@ anaBasicItem ga (ProgItems l ps) =
     do ul <- mapAnM (anaProgEq ga) l
        return $ ProgItems ul ps
 anaBasicItem _ (FreeDatatype l ps) = 
-    do ul <- mapAnM (anaDatatype Free Plain) l
+    do al <- mapAnMaybe ana1Datatype l
+       let tys = map (dataPatToType . item) al
+       ul <- mapAnM (anaDatatype Free Plain tys) al
        return $ FreeDatatype ul ps
 anaBasicItem ga (GenItems l ps) = 
     do ul <- mapAnM (anaSigItems ga Generated) l
@@ -119,7 +121,7 @@ appendSentences fs =
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
 anaSigItems ga gk (TypeItems inst l ps) = 
-    do ul <- mapAnM (anaTypeItem ga gk inst) l
+    do ul <- anaTypeItems ga gk inst l
        return $ TypeItems inst ul ps
 anaSigItems ga _ (OpItems l ps) = 
     do ul <- mapAnM (anaOpItem ga) l
