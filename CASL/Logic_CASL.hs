@@ -19,6 +19,7 @@ import CASL.LaTeX_CASL
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.MapSentence
+import CASL.Amalgamability
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
 import Common.Lib.Parsec
@@ -38,9 +39,10 @@ data CASL = CASL deriving Show
 instance Language CASL  -- default definition is okay
 
 type CASLBasicSpec = BASIC_SPEC () () ()
-type CASLSign = Sign () ()
-type CASLMor = Morphism () () ()
 type CASLFORMULA = FORMULA ()
+-- Following types are imported from CASL.Amalgamability:
+-- type CASLSign = Sign () ()
+-- type CASLMor = Morphism () () ()
 
 dummy :: a -> b -> ()
 dummy _ _ = ()
@@ -137,7 +139,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          -- ensures_amalgamability :: id
          --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
          --   -> Result (Diagram CASLSign CASLMor)
-	 ensures_amalgamability CASL _ = fail "ensures_amalgamability nyi" -- ???
+	 ensures_amalgamability CASL (diag, sink) = 
+	     ensuresAmalgamability diag sink
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
 
