@@ -1,5 +1,3 @@
-{-# OPTIONS -cpp #-}
-
 module Taxonomy.AbstractGraphView where
 
 {- Interface for graph viewing and abstraction.
@@ -11,11 +9,6 @@ module Taxonomy.AbstractGraphView where
    edge types are handled by user-supplied strings.
    
 -}
-
-
-#ifdef UNI_PACKAGE
-import Logic.Grothendieck
-#endif
 
 import DaVinciGraph
 
