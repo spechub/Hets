@@ -4,7 +4,7 @@ module RuleUtils (module Pretty,module RuleUtils, module DataP)where
 
 import Pretty
 import DataP (Statement(..),Data(..),Type(..),Name(..),Var(..),Class(..),
-		Body(..),Constructor)
+		Body(..),Constructor,AtermConst(..))
 
 
 -- New Pretty Printers ---------------

@@ -241,6 +241,7 @@ childExplode v
 
 -- begin of ATermConvertible derivation 
 -- Author: Joost.Visser@cwi.nl
+-- adapted by: luettich@tzi.de
 
 atermfn dat
   = instanceSkeleton "ATermConvertible" 
@@ -255,10 +256,11 @@ makeToATerm name body
        ppCons cvs body <+>
        text "=" <+>
        text "(AAppl" <+>
-       text (doublequote (constructor body)) <+>
+       con body <+>
        text "[" <+> 
        hcat (intersperse (text ",") (map childToATerm cvs)) <+> 
-       text "])"
+       text "])" <+> 
+       c_parens body
 defaultToATerm
   = empty
 childToATerm v
@@ -268,10 +270,11 @@ makeFromATerm name body
   = let cvs = head (mknss [body] namesupply)
     in text "fromATerm" <+> 
        text "(AAppl" <+>
-       text (doublequote (constructor body)) <+>
+       con body <+>
        text "[" <+> 
        hcat (intersperse (text ",") cvs) <+> 
        text "])" <+>
+       c_parens body <+>
        text "=" <+> text "let" <+>
        vcat (map childFromATerm cvs) <+>
        text "in" <+>
@@ -280,5 +283,26 @@ defaultFromATerm name
   = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"]
 childFromATerm v
   = (addPrime v) <+> text "=" <+> text "fromATerm" <+> v
+
+con body = let atc       = aterm_constructor body
+	       (fc,atc') = case atc of
+				    Const c ac -> (c,ac)
+				    Args -> error "number of constructors < 1"
+	   in text (doublequote fc) <+> con' atc'
+    where con' atc = case atc of 
+			      Args         -> text ""
+			      Const s atc' -> text "[" <+>
+					      text "(AAppl" <+> 
+					      text (doublequote s) <+> 
+					      con' atc'
+
+c_parens body = let atc  = aterm_constructor body
+		    atc' = case atc of 
+				    Const _ ac -> ac
+				    Args  -> error "number of constructors < 1"
+                in text (p atc')
+    where p atc = case atc of
+			   Args         -> ""
+			   Const _ atc' -> "])" ++ (p atc')
 
 -- end of ATermConvertible derivation
