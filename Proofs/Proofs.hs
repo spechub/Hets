@@ -454,23 +454,23 @@ locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  case (maybeTheoryTgt, maybeTranslatedAxiomsSrc) of
-    (Just theoryTgt,Just (G_l_sentence_list lidSrc sensSrc)) ->
-      case maybeResult (coerceTheory lidSrc theoryTgt) of
-        Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
-	Just (_,sentencesTgt) ->
-          if (all (`elem` sentencesTgt) sensSrc) 
-            then locSubsumeAux libEnv newGraph (newRules,newChanges) list
-            else locSubsumeAux libEnv dgraph (rules,changes) list
+  case (getDGNode libEnv dgraph tgt, maybeAxiomsSrc) of
+    (Just (target,_), Just axiomsSrc) ->
+      case (maybeResult (computeTheory libEnv dgraph target), maybeResult (translateG_l_sentence_list morphism axiomsSrc)) of
+        (Just theoryTgt, Just (G_l_sentence_list lidSrc sensSrc)) ->
+          case maybeResult (coerceTheory lidSrc theoryTgt) of
+            Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
+	    Just (_,sentencesTgt) ->
+              if (all (`elem` sentencesTgt) sensSrc) 
+               then locSubsumeAux libEnv newGraph (newRules,newChanges) list
+                else locSubsumeAux libEnv dgraph (rules,changes) list
+        otherwise -> locSubsumeAux libEnv dgraph (rules,changes) list
     otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
 		 locSubsumeAux libEnv dgraph (rules,changes) list
 
   where
-    (Result errTgt maybeTheoryTgt) = computeTheory libEnv dgraph tgt
     morphism = dgl_morphism edgeLab
-    localAxiomsSrc = dgn_sens (snd (labNode' (context src dgraph)))
-    maybeTranslatedAxiomsSrc
-	= maybeResult (translateG_l_sentence_list morphism localAxiomsSrc)
+    maybeAxiomsSrc = getLocalAxioms libEnv dgraph src
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
@@ -485,6 +485,24 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
+
+{- gets the local axioms of the given node. If this node is a DGRef the referenced node is looked up first.-}
+getLocalAxioms :: LibEnv -> DGraph -> Node -> Maybe G_l_sentence_list
+getLocalAxioms libEnv dgraph node =
+  case getDGNode libEnv dgraph node of
+    Just dgNode -> Just (dgn_sens (snd dgNode))
+    Nothing -> Nothing
+
+{- if the given node is a DGRef, the referenced node is returned (as a labeled node). Otherwise the node itself is returned (as a labeled node).-}
+getDGNode :: LibEnv -> DGraph -> Node -> Maybe (LNode DGNodeLab)
+getDGNode libEnv dgraph node =
+  if isDGRef nodeLab then case Map.lookup (dgn_libname nodeLab) libEnv of
+      Just (_,_,refDgraph) -> 
+         getDGNode libEnv refDgraph (dgn_node nodeLab)
+      Nothing -> Nothing
+    else Just (labNode' contextOfNode)
+  where contextOfNode = (context node dgraph)
+        nodeLab = lab' contextOfNode
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
@@ -992,13 +1010,16 @@ isLocalThmInsertion change
 -- -------------------------------------------------------
 
 -- | Calculate the morphism of a path with given start node
-calculateMorphismOfPathWithStart :: DGraph -> (Node,[LEdge DGLinkLab]) 
+calculateMorphismOfPathWithStart :: DGraph -> LibEnv 
+                                    -> (Node,[LEdge DGLinkLab]) 
                                            -> Maybe GMorphism
-calculateMorphismOfPathWithStart dg (n,[]) = do
+calculateMorphismOfPathWithStart dg libEnv (n,[]) = do
   ctx <- fst $ match n dg
-  return $ ide Grothendieck (dgn_sign (lab' ctx)) -- ??? to simplistic 
+  case getDGNode libEnv dg (fst (labNode' ctx)) of
+    Just dgNode_ctx -> return $ ide Grothendieck (dgn_sign (snd (dgNode_ctx))) -- ??? to simplistic 
+    Nothing -> Nothing
   
-calculateMorphismOfPathWithStart _ (_,p) = calculateMorphismOfPath p
+calculateMorphismOfPathWithStart _ _ (_,p) = calculateMorphismOfPath p
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> DGraph -> Node -> Result G_theory 
@@ -1006,7 +1027,7 @@ computeTheory libEnv dg n = do
   let  paths = reverse $ getAllLocGlobDefPathsTo dg n []
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToResult nullPos "Could not calculate morphism of path"
-            $ mapM (calculateMorphismOfPathWithStart dg) paths
+            $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
   sens <- maybeToResult nullPos "Could not calculate sentence list of node"
             $ mapM (getSentenceList libEnv dg . fst) paths
   sens' <- mapM (uncurry translateG_l_sentence_list) 
