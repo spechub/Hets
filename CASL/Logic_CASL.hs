@@ -36,15 +36,15 @@ import Data.Dynamic
 import Common.DynamicUtils
 import CASL.SimplifySen
 import Common.Result
-import CASL.CCC.OnePoint
-import Options
+import CASL.CCC.OnePoint -- currently unused
 
 data CASL = CASL deriving Show
 
 instance Language CASL where
  description _ = 
   "CASL - the Common algebraic specification language\n\ 
-  \This logic is subsorted partial first-order logic with sort generation constraints\n\ 
+  \This logic is subsorted partial first-order logic \
+  \with sort generation constraints\n\ 
   \See the CASL User Manual, LNCS 2900\n\ 
   \and the CASL Reference Manual, LNCS 2960\n\ 
   \See also http://www.cofi.info/CASL.html"
@@ -170,9 +170,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                                (const return) const
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
-         -- ensures_amalgamability :: id
-         --   -> (Diagram CASLSign CASLMor, Node, CASLSign, LEdge CASLMor, CASLMor)
-         --   -> Result (Diagram CASLSign CASLMor)
          ensures_amalgamability CASL (opts, diag, sink, desc) = 
              ensuresAmalgamability opts diag sink desc
 
