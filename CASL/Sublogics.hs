@@ -1092,10 +1092,9 @@ pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 pr_epsilon l1 s = let
                     l = adjust_logic l1
                     new = pr_sign l s
-                    -- (sm,fm,pm) = embedMorphism new s
                   in
                     (Morphism new s emptyFM emptyFM emptyFM)
-                    -- (Morphism new s sm fm pm)
+                    -- embedMorphism new s
 
 ------------------------------------------------------------------------------
 -- the end
