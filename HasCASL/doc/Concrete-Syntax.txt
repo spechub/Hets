@@ -1,0 +1,198 @@
+BASIC-SPEC      ::= BASIC-ITEMS...BASIC-ITEMS | { }
+
+BASIC-ITEMS     ::= class/classes CLASS-ITEM ;...; CLASS-ITEM ;/
+                  | class instance/instances CLASS-ITEM ;...; CLASS-ITEM ;/
+                  | SIG-ITEMS
+                  | free type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
+                  | generated type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
+                  | generated { SIG-ITEMS...SIG-ITEMS } ;/
+                  | internal { BASIC-ITEMS...BASIC-ITEMS } ;/
+                  | var/vars GEN-VAR-DECL ;...; GEN-VAR-DECL ;/
+                  | forall GEN-VAR-DECL ;...; GEN-VAR-DECL
+                             "." FORMULA "."..."." FORMULA ;/ 
+                  | "." FORMULA "."..."." FORMULA ;/ 
+                  | program/programs PATTERN-EQ ;...; PATTERN-EQ ;/
+                  | axiom/axioms FORMULA ;...; FORMULA ;/  
+
+%% for backwards compatibility with CASL v1.0: axiom
+
+CLASS-ITEM      ::= CLASS-DECL 
+                  | CLASS-DECL { BASIC-ITEMS...BASIC-ITEMS }
+
+CLASS-DECL      ::= CLASS-NAME ,..., CLASS-NAME
+                  | CLASS-NAME ,..., CLASS-NAME : KIND
+                  | CLASS-NAME ,..., CLASS-NAME < KIND
+
+KIND            ::= Type
+                  | CLASS-NAME
+                  | ( KIND ,..., KIND ) 
+                  | { VAR "." VAR < TYPE }
+                  | EXT-KIND -> KIND 
+
+EXT-KIND        ::= KIND | KIND + | KIND -
+
+SIG-ITEMS       ::= sort/sorts SORT-ITEM ;...; SORT-ITEM
+                  | type/types DATATYPE-DECL ;...; DATATYPE-DECL ;/
+                  | type/types TYPE-ITEM ;...; TYPE-ITEM ;/
+                  | type/types instance/instances TYPE-ITEM ;...; TYPE-ITEM ;/
+                  | op/ops OP-ITEM ;...; OP-ITEM ;/
+                  | fun/funs OP-ITEM ;...; OP-ITEM ;/ 
+                  | pred/preds PRED-ITEM ;...; PRED-ITEM ;/ 
+
+SORT-ITEM       ::= TYPE-PATTERN ,..., TYPE-PATTERN
+                  | TYPE-PATTERN ,..., TYPE-PATTERN : KIND
+                  | TYPE-PATTERN ,..., TYPE-PATTERN < TYPE 
+                  | TYPE-PATTERN =...= TYPE-PATTERN
+                  | TYPE-PATTERN = { VARS : TYPE "." FORMULA }
+
+%% several vars to pattern match a tuple (different from summary)
+VARS            ::= VAR 
+                  | (VARS, ..., VARS)
+
+TYPE-ITEM       ::= SORT-ITEM
+                  | TYPE-PATTERN := SYNONYM-TYPE
+
+SYNONYM-TYPE    ::= TYPE 
+                  | \ TYPE-ARGS "." SYNONYM-TYPE
+
+TYPE-PATTERN    ::= TYPE-NAME             
+                  | TYPE-NAME TYPE-ARGS
+
+TYPE-ARGS       ::= TYPE-ARG...TYPE-ARG
+TYPE-ARG        ::= EXT-TYPE-VAR
+                  | EXT-TYPE-VAR : EXT-KIND
+                  | EXT-TYPE-VAR < TYPE
+                  | ( TYPE-ARG )    
+EXT-TYPE-VAR    ::= TYPE-VAR | TYPE-VAR + | TYPE-VAR -
+
+DATATYPE-DECL   ::= TYPE-PATTERN "::=" ALTERNATIVES
+                  | TYPE-PATTERN "::=" ALTERNATIVES deriving CLASSES
+
+CLASSES         ::= CLASS-NAME ,..., CLASS-NAME
+
+ALTERNATIVES    ::= ALTERNATIVE "|"..."|" ALTERNATIVE
+
+ALTERNATIVE     ::= OP-NAME TUPLE-COMPONENT...TUPLE-COMPONENT
+                  | OP-NAME TUPLE-COMPONENT...TUPLE-COMPONENT ?
+                  | OP-NAME
+                  | sort/sorts TYPE-NAME ,..., TYPE-NAME
+                  | type/types TYPE ,..., TYPE
+
+TUPLE-COMPONENT ::= ( COMPONENT ;...; COMPONENT )
+
+COMPONENT       ::= OP-NAME ,..., OP-NAME : TYPE
+                  | OP-NAME ,..., OP-NAME :? TYPE
+                  | TYPE
+
+OP-ITEM         ::= OP-NAME ,..., OP-NAME : TYPESCHEME
+                  | OP-NAME ,..., OP-NAME : TYPESCHEME, OP-ATTRS
+                  | OP-NAME : TYPESCHEME = TERM
+                  | OP-NAME [ TYPE-VAR-DECLS ] OP-HEAD = TERM
+                  | OP-NAME OP-HEAD = TERM
+
+OP-HEAD         ::= TUPLE-ARGS : TYPE
+                  | TUPLE-ARGS :? TYPE 
+                  | :? TYPE
+
+TUPLE-ARGS      ::= TUPLE-ARG...TUPLE-ARG
+TUPLE-ARG       ::= ( VAR-DECL ;...; VAR-DECL ) 
+VAR_DECL        ::= VAR ,..., VAR : TYPE
+
+OP-ATTRS        ::= OP-ATTR ,..., OP-ATTR
+OP-ATTR         ::= BIN-ATTR | unit TERM
+BIN-ATTR        ::= assoc | comm | idem 
+
+PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPESCHEME
+                  | OP-NAME [ TYPE-VAR-DECLS ] TUPLE-ARG <=> FORMULA 
+                  | OP-NAME TUPLE-ARG <=> FORMULA 
+                  | OP-NAME <=> FORMULA 
+
+TYPESCHEME      ::= TYPE 
+                  | forall TYPE-VAR-DECLS . TYPE
+
+TYPE-VAR-DECLS  ::= TYPE-VARS ;...; TYPE-VARS
+
+TYPE-VARS       ::= EXT-TYPE-VAR ,...,  EXT-TYPE-VAR
+                  | EXT-TYPE-VAR ,...,  EXT-TYPE-VAR : EXT-KIND
+                  | EXT-TYPE-VAR ,...,  EXT-TYPE-VAR < TYPE
+
+GEN-VAR-DECL    ::= TYPE-VARS
+                  | VAR-DECL
+
+TYPE            ::= TYPE ARROW TYPE
+                  | TYPE *...* TYPE
+                  | ( TYPE )
+                  | Pred Type
+                  | ? TYPE
+                  | Unit
+                  | Logical
+                  | TYPE : KIND
+                  | TYPE TYPE
+ARROW           ::= ->? | -> | -->? | -->
+
+FORMULA         ::= QUANTIFIER GEN-VAR-DECL ;...; GEN-VAR-DECL 
+                               "." FORMULA
+                  | FORMULA /\.../\ FORMULA
+                  | FORMULA \/...\/ FORMULA
+                  | FORMULA => FORMULA
+                  | FORMULA if FORMULA
+                  | FORMULA <=> FORMULA
+                  | not FORMULA
+                  | true | false
+                  | def TERM 
+                  | TERM in TYPE
+                  | TERM = TERM
+                  | TERM =e= TERM
+                  | TERM
+
+TERM            ::= QUAL-VAR
+                  | INST-QUAL-NAME
+                  | TERM TERM
+                  | (TERM ,..., TERM) | ( )
+                  | TERM : TYPE
+                  | TERM when FORMULA else TERM
+                  | \ LAMBDA-DOT TERM  
+                  | \ PATTERN...PATTERN LAMBDA-DOT TERM
+                  | let PATTERN-EQ ;...; PATTERN-EQ in TERM
+                  | TERM where PATTERN-EQ ;...; PATTERN-EQ ;/
+                  | case TERM of CASE "|"..."|" CASE
+                  | if TERM then TERM else TERM
+                  | TERM as TYPE
+                  | LITERAL
+                  | MIXFIX
+
+LAMBDA-DOT      ::= "." | .!
+QUANTIFIER      ::= forall | exists | exists!
+
+PATTERN-EQ      ::= PATTERN = TERM
+CASE            ::= PATTERN -> TERM 
+
+PATTERN         ::= QUAL-VAR
+                  | INST-QUAL-NAME
+                  | PATTERN PATTERN
+                  | (PATTERN ,..., PATTERN) | () 
+                  | PATTERN : TYPE
+                  | VAR @ PATTERN
+                  | MIXFIX
+
+MIXFIX          ::= PLACE
+                  | NO-BRACKET-TOKEN            
+                  | [ MIXFIX ,..., MIXFIX ]  | [ ] 
+                  | { MIXFIX ,..., MIXFIX }  | { } 
+                  | ( MIXFIX ,..., MIXFIX )  | ( )
+                  | MIXFIX...MIXFIX 
+
+QUAL-VAR        ::= (var VAR : TYPE)
+INST-QUAL-NAME  ::= (op INST-OP-NAME : TYPESCHEME)
+                  | (fun INST-OP-NAME : TYPESCHEME)
+                  | (pred INST-OP-NAME : TYPESCHEME)
+      
+INST-OP-NAME    ::= OP-NAME
+                  | OP-NAME [TYPE ,..., TYPE]
+
+OP-NAME         ::= ID   %% "|" excluded for constructors only
+TYPE-NAME       ::= ID   %% "?", "<", "=", "|" excluded
+CLASS-NAME      ::= ID   %% simple but possibly compound
+VAR             ::= ID   %% "<" excluded for GEN-VAR-DECL
+TYPEVAR         ::= SIMPLE-ID
+
