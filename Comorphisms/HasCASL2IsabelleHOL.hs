@@ -94,77 +94,84 @@ transSignature sign =
     showLemmas = True },
     [] ) 
    where 
-    extractTypeName tId typeInfo m = 
+    extractTypeName tyId typeInfo m = 
         if isDatatypeDefn typeInfo then m
-           else Map.insert (showIsa tId) [(isaTerm, [])] m
+           else Map.insert (showIsa tyId) [(isaTerm, [])] m
                 -- translate the kind here!
     isDatatypeDefn t = case typeDefn t of
                          DatatypeDefn _ -> True
                          _              -> False
-    insertOps opName opInfs m = 
-     let opIs = opInfos opInfs
-     in if isSingle opIs then
-            let transOp = transOpInfo (head opIs)
+    insertOps name ops m = 
+     let infos = opInfos ops
+     in if isSingle infos then
+            let transOp = transOpInfo (head infos)
             in case transOp of 
-                 Just op -> Map.insert (showIsa opName) op m
+                 Just op -> Map.insert (showIsa name) op m
                  Nothing -> m
           else 
-            let transOps = map transOpInfo opIs
-            in  foldl (\ m1 (transOp,i) -> 
+            let transOps = map transOpInfo infos
+            in  foldl (\ m' (transOp,i) -> 
                            case transOp of
-                             Just typ -> Map.insert (showIsaI opName i) 
-                                                    typ m1
-                             Nothing   -> m1)
+                             Just typ -> Map.insert (showIsaI name i) 
+                                                    typ m'
+                             Nothing   -> m')
                       m
                       (zip transOps [1..length transOps])
 
 
 ---------- translation of a type in an operation declaration ----------
 
+-- extract type from OpInfo
+-- omit datatype constructors
 transOpInfo :: OpInfo -> Maybe Typ
-transOpInfo (OpInfo opT _ opDef) = 
+transOpInfo (OpInfo t _ opDef) = 
   case opDef of
-    NoOpDefn Pred   -> Just (transPredType opT)
-    NoOpDefn _      -> Just (transOpType opT)
+    NoOpDefn Pred   -> Just (transPredType t)
+    NoOpDefn _      -> Just (transOpType t)
     ConstructData _ -> Nothing
-    Definition _ _  -> Just (transOpType opT)
+    Definition _ _  -> Just (transOpType t)
     _               -> 
       error ("[Comorphisms.HasCASL2IsabelleHOL] Not supported" 
                  ++ "operation declaration and/or definition")
 
--- operation
+-- operation type
 transOpType :: TypeScheme -> Typ
 transOpType (TypeScheme _ op _) = transType op
 
--- predicate
+-- predicate type
 transPredType :: TypeScheme -> Typ
 transPredType  (TypeScheme _ pre _) = 
        case pre of
-         FunType tp _ _ _ -> mkFunType (transType tp) boolType
+         FunType t _ _ _ -> mkFunType (transType t) boolType
          _                -> 
            error "[Comorphisms.HasCASL2IsabelleHOL] Wrong predicate type"
 
--- types composed of simple types
+-- types
 transType :: Type -> Typ
-transType (TypeName tId _ i)          = 
-    if i == 0 then Type (showIsa tId) [] [] [] -- translate kind here!!
-       else TFree (showIsa tId) []
-transType (ProductType types _)       = foldl1 IsaSign.prodType 
-                                               (map transType types)
-transType (FunType type1 arr type2 _) = 
+-- type name
+transType (TypeName tyId _ i) = 
+    if i == 0 then Type (showIsa tyId) [] [] [] -- translate kind here!!
+       else TFree (showIsa tyId) []
+-- product type
+transType (ProductType ts _) = 
+  foldl1 IsaSign.prodType (map transType ts)
+-- function type
+transType (FunType t arr t' _) = 
   case arr of
-    PFunArr -> mkFunType (transType type1) (mkOptionType (transType type2))
-    FunArr  -> mkFunType (transType type1) (transType type2)
+    PFunArr -> mkFunType (transType t) (mkOptionType (transType t'))
+    FunArr  -> mkFunType (transType t) (transType t')
     _       -> 
       error "[Comorphisms.HasCASL2IsabelleHOL] Not supported function type"
-transType (TypeAppl type1 type2) = 
-    mkTypeAppl c (ts ++ [transType type2])
-    where (c, ts) = stripAppl type1 "" []
-          stripAppl t c ts =
-            case t of
-              TypeAppl t1 t2 -> stripAppl t1 c ((transType t2):ts)
+-- type application
+transType (TypeAppl t t') = 
+    mkTypeAppl c (ts ++ [transType t'])
+    where (c, ts) = stripAppl t "" []
+          stripAppl ty c ts =
+            case ty of
+              TypeAppl ty ty' -> stripAppl ty c ((transType ty'):ts)
               TypeName i _ _ -> (showIsa i, ts)
               _              -> error "HasCASL2IsabelleHOL.transType"
+
 transType _ = error "[Comorphisms.HasCASL2IsabelleHOL] Not supported type"
 
 
@@ -179,9 +186,8 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
-                         [((mkDName tyId tyArgs), (map mkAltDefn alts))]
-  where mkDName ti ta = Type (showIsa ti) [] [] (map transTypeArg ta)
-
+                         [((transDName tyId tyArgs), (map transAltDefn alts))]
+  where transDName ti ta = Type (showIsa ti) [] [] (map transTypeArg ta)
 transDataEntry _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported datatype definition"
 
@@ -189,31 +195,33 @@ transDataEntry _ =
 transTypeArg :: TypeArg -> Typ
 transTypeArg (TypeArg tyId _ _ _) = TFree (showIsa tyId) []
 
-
-mkAltDefn :: AltDefn -> DataTypeAlt
-mkAltDefn (Construct opId types Total _) = 
-   let typs = map transType types
+-- datatype alternatives/constructors
+transAltDefn :: AltDefn -> DataTypeAlt
+transAltDefn (Construct opId ts Total _) = 
+   let ts' = map transType ts
    in case opId of
-        Just opI -> (showIsa opI, typs)
-        Nothing  -> ("", typs)
-mkAltDefn _ = 
+        Just opId' -> (showIsa opId', ts')
+        Nothing  -> ("", ts')
+transAltDefn _ = 
   error ("[Comorphisms.HasCASL2IsabelleHOL] Not supported"
            ++ "alternative definition in (free) datatype")
 
 
 ------------------------------ Formulas ------------------------------
 
+-- simple variables 
 transVar :: Var -> String
 transVar = showIsa
 
 
 transSentence :: Env -> Le.Sentence -> Maybe IsaSign.Term
-transSentence e s = case s of
-    Le.Formula t      -> Just (transTerm e t)
+transSentence sign s = case s of
+    Le.Formula t      -> Just (transTerm sign t)
     DatatypeSen _     -> Nothing
     ProgEqSen _ _ _pe -> Nothing
 
 
+-- disambiguate operation names
 transOpId :: Env -> UninstOpId -> TypeScheme -> String
 transOpId sign op ts = 
   case (do ops <- Map.lookup op (assumps sign)
@@ -223,60 +231,68 @@ transOpId sign op ts =
     Just str -> str  
     Nothing  -> showIsa op
 
+-- terms
 transTerm :: Env -> As.Term -> IsaSign.Term
-transTerm _ (QualVar (VarDecl var typ _ _)) = 
-  let tp  = transType typ 
-      otp = mkFunType tp $ mkOptionType tp
-  in  termAppl (conSomeT otp) (IsaSign.Free (transVar var) tp isaTerm)
+transTerm _ (QualVar (VarDecl var t _ _)) = 
+  let t'  = transType t 
+      ot = mkFunType t' $ mkOptionType t'
+  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var) t' isaTerm)
 
 transTerm sign (QualOp _ (InstOpId opId _ _) ts _)
   | opId == trueId  =  con "True"
   | opId == falseId = con "False"
   | otherwise       = termAppl conSome (con (transOpId sign opId ts))
-
-transTerm sign (ApplTerm term1 term2 _) =
-  transApplTerm term1
+-- term application
+transTerm sign (ApplTerm term term' _) =
+  transApplTerm term
   where
    transApplTerm t =
      case t of
        QualOp Fun (InstOpId opId _ _) _ _ -> 
-         if opId == whenElse then transWhenElse sign term2
-           else transLog sign opId term1 term2 
+         -- logical formulas are translated seperatly (transLog)
+         if opId == whenElse then transWhenElse sign term'
+           else transLog sign opId term term'
+       -- predicates
        QualOp Pred _ _ _                  -> 
-         termAppl (termAppl (con "pApp") (transTerm sign term1)) 
-                                          (transTerm sign term2)
+         termAppl (termAppl (con "pApp") (transTerm sign term)) 
+                                          (transTerm sign term')
+       -- distinguishes between partial and total term application
        QualOp Op _ typeScheme _           -> 
          if isPart typeScheme then mkApp "app"
            else mkApp "apt"
+       -- seeks for determining inner term
        ApplTerm t' _ _                    -> transApplTerm t'
+       -- strips TypedTerm
        TypedTerm t' _ _ _                 -> transApplTerm t'
        _                                  -> mkApp "app"
-   mkApp s = termAppl (termAppl (con s) (transTerm sign term1)) 
-             (transTerm sign term2)
+   mkApp s = termAppl (termAppl (con s) (transTerm sign term)) 
+                      (transTerm sign term')
    isPart (TypeScheme _ op _) = 
      case op of
        FunType _ PFunArr _ _ -> True
        FunType _ FunArr _ _  -> False
        _                     -> 
          error "[Comorphisms.HasCASL2IsabelleHOL] Wrong operation type"
-
-transTerm sign (QuantifiedTerm quan varDecls phi' _) = 
-  foldr (quantify quan) (transTerm sign phi') varDecls
+-- quantified formulas
+transTerm sign (QuantifiedTerm quan varDecls phi _) = 
+  foldr (quantify quan) (transTerm sign phi) varDecls
   where
-    quantify q gvd phi  = 
+    quantify q gvd phi' = 
       case gvd of
         (GenVarDecl (VarDecl var typ _ _)) ->
           termAppl (con $ qname q) (Abs (con $ transVar var) 
-                               (transType typ) phi NotCont)
-        (GenTypeVarDecl (TypeArg _ _ _ _)) ->  phi
+                               (transType typ) phi' NotCont)
+        (GenTypeVarDecl (TypeArg _ _ _ _)) ->  phi'
     qname Universal   = allS
     qname Existential = exS
     qname Unique      = ex1S
-
+-- strip TypedTerm
 transTerm sign (TypedTerm t _ _ _) = transTerm sign t
-
-transTerm sign (LambdaTerm pats part body _) =
-  case part of
+-- lambda abstraction
+transTerm sign (LambdaTerm pats p body _) =
+  -- distinguishes between partial and total lambda abstraction
+  -- total lambda bodies are of type 'a' instead of type 'a option'
+  case p of
     Partial -> lambdaAbs transTerm
     Total   -> lambdaAbs transTotalLambda
   where 
@@ -287,29 +303,31 @@ transTerm sign (LambdaTerm pats part body _) =
        else termAppl conSome (foldr (abstraction sign) 
                                  (f sign body)
                                  pats)
-
-transTerm sign (LetTerm As.Let eqs body _) = 
-  IsaSign.Let (map transPEq eqs) (transTerm sign body) IsCont
+-- let statement
+transTerm sign (LetTerm As.Let peqs body _) = 
+  IsaSign.Let (map transProgEq peqs) (transTerm sign body) IsCont
   where
-    transPEq (ProgEq pat t _) = 
+    transProgEq (ProgEq pat t _) = 
       (transPattern sign pat, transPattern sign t)
-
-
-transTerm sign (TupleTerm terms _) =
-  foldl1 (binConst pairC) (map (transTerm sign) terms)
-
-transTerm sign (CaseTerm t pEqs _) = 
-  let alts = arangeCaseAlts sign pEqs
+-- tuple
+transTerm sign (TupleTerm ts _) =
+  foldl1 (binConst pairC) (map (transTerm sign) ts)
+-- case statement
+transTerm sign (CaseTerm t peqs _) = 
+  -- flatten case alternatives
+  let alts = arangeCaseAlts sign peqs
   in
+    -- introduces new case statement if case variable is
+    -- a term application that may evaluate to 'Some x' or 'None'
     case t of
       QualVar (VarDecl decl _ _ _) -> 
         Case (IsaSign.Free (transVar decl) noType isaTerm) alts IsCont
       _                            -> 
         Case (transTerm sign t)
-              ((con "None", con "None"):
+             ((con "None", con "None"):
                [(App conSome (IsaSign.Free "caseVar" noType isaTerm) IsCont,
                Case (IsaSign.Free "caseVar" noType isaTerm) alts IsCont)])
-              IsCont
+             IsCont
 
 transTerm _ _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
@@ -322,34 +340,49 @@ transLog sign opId opTerm t
                             (map (transTerm sign) ts)
   | opId == orId   = foldl1 (binConst disj) 
                             (map (transTerm sign) ts)
-  | opId == implId = binConst impl (transTerm sign t1)
-                                   (transTerm sign t2)
-  | opId == eqvId  = binConst eqv (transTerm sign t1)
-                                  (transTerm sign t2)
+  | opId == implId = binConst impl (transTerm sign t')
+                                   (transTerm sign t'')
+  | opId == eqvId  = binConst eqv (transTerm sign t')
+                                  (transTerm sign t'')
   | opId == notId  = termAppl notOp (transTerm sign t)
   | opId == defId  = termAppl defOp (transTerm sign t)
   | opId == exEq   = 
       binConst conj 
         (binConst conj 
-          (binConst eq (transTerm sign t1) 
-                       (transTerm sign t2))
-          (termAppl defOp (transTerm sign t1)))
-        (termAppl defOp (transTerm sign t2))
-  | opId == eqId = binConst eq (transTerm sign t1)
-                               (transTerm sign t2)
+          (binConst eq (transTerm sign t') 
+                       (transTerm sign t''))
+          (termAppl defOp (transTerm sign t')))
+        (termAppl defOp (transTerm sign t''))
+  | opId == eqId = binConst eq (transTerm sign t')
+                               (transTerm sign t'')
   | otherwise = termAppl (transTerm sign opTerm) (transTerm sign t)
       where ts = getTerms t
-            t1 = head ts
-            t2 = last ts
+            t' = head ts
+            t'' = last ts
             getTerms (TupleTerm terms _) = terms
             getTerms _ = 
               error ("[Comorphisms.HasCASL2IsabelleHOL] Incorrect"
                            ++ "formula coding in abstract syntax")
 
 
------------------ translation of lambda-things -----------------
+-- when else statement
+transWhenElse :: Env -> As.Term -> IsaSign.Term
+transWhenElse sign t =
+    case t of
+      TupleTerm terms _ -> 
+        let ts = (map (transTerm sign) terms)
+        in
+           if (length ts) == 3 
+              then If (head $ tail ts) (head  ts) (last ts) NotCont
+              else error 
+                "[Comorphisms.HasCASL2IsabelleHOL] Wrong when-else definition"
+      _                 -> 
+        error "[Comorphisms.HasCASL2IsabelleHOL] Wrong when-else definition"
 
--- form Abs(...)
+
+--translation of lambda abstractions
+
+-- form Abs(pattern term)
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
 abstraction sign pat body = 
     Abs (transPattern sign pat) (getType pat) body IsCont where
@@ -362,8 +395,8 @@ abstraction sign pat body =
           error "HasCASL2IsabelleHOL.abstraction"
     evalTupleType t = foldr1 IsaSign.prodType (map getType t)
 
-{- translation of lambda patterns --> without constant:t 
-    -> Some constant:t option -}
+-- translation of lambda patterns 
+-- a pattern keeps his type 't', isn't translated to 't option'
 transPattern :: Env -> As.Term -> IsaSign.Term
 transPattern _ (QualVar (VarDecl var typ _ _)) = 
   IsaSign.Free (transVar var) (transType typ) isaTerm
@@ -374,7 +407,7 @@ transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) = App (transPattern sign t1) (transPattern sign t2) IsCont
 transPattern sign t = transTerm sign t
 
--- translation of bodies of total lambda abstractions
+-- translation of total lambda abstraction bodies
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
 transTotalLambda _ (QualVar (VarDecl var typ _ _)) = 
   IsaSign.Free(transVar var) (transType typ) isaTerm
@@ -401,33 +434,9 @@ transTotalLambda sign (CaseTerm t pEqs _) =
   Case (transTotalLambda sign t) (map transCaseAltTotal pEqs) IsCont
   where transCaseAltTotal (ProgEq pat trm _) = 
                 (transPat sign pat, transTotalLambda sign trm)
-transTotalLambda sign t = transTerm sign t
+transTotalLambda sign t = transTerm sign t   
 
-transWhenElse :: Env -> As.Term -> IsaSign.Term
-transWhenElse sign t =
-    case t of
-      TupleTerm terms _ -> 
-        let ts = (map (transTerm sign) terms)
-        in
-           if (length ts) == 3 
-              then If (head $ tail ts) (head  ts) (last ts) NotCont
-              else error 
-           "[Comorphisms.HasCASL2IsabelleHOL] Wrong when-else definition"
-      _                 -> 
-        error "[Comorphisms.HasCASL2IsabelleHOL] Wrong when-else definition"
-
-
-
-let2lambda :: ProgEq -> As.Term -> As.Term
-let2lambda (ProgEq pat t _) body = 
-  ApplTerm (LambdaTerm [pat] Partial body [nullPos]) t [nullPos]
-
-
-transLetPat :: Env -> As.Term -> IsaSign.Term
-transLetPat sign t@(QualVar (VarDecl _var _typ _ _)) = transPattern sign t
-transLetPat sign t@(TupleTerm _terms _) = transPattern sign t
-transLetPat sign t@(QualOp _ (InstOpId _opId _ _) _ _) = transPattern sign t
-transLetPat sign t = transTerm sign t
+----------------- translation of case alternatives ------------------
 
 {- todo
 nested case patterns:
@@ -450,9 +459,9 @@ nested case patterns:
 -- Functionality: Tests wheter pattern is a variable -> case alternative are
 --                translated
 arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
-arangeCaseAlts sign pEqs 
-  | and (map patIsVar pEqs) = map (transCaseAlt sign) pEqs
-  | otherwise               =  sortCaseAlts sign pEqs
+arangeCaseAlts sign peqs 
+  | and (map patIsVar peqs) = map (transCaseAlt sign) peqs
+  | otherwise               =  sortCaseAlts sign peqs
   
 
 -- Input: List of case alternatives, that patterns does consist of datatype constructors
@@ -461,17 +470,17 @@ arangeCaseAlts sign pEqs
 --                each pattern group is 'unfolded'
 -- !! Von hier an hat man es nur mit EINER Art von leading constructor zu tun!!
 sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
-sortCaseAlts sign pEqs = 
+sortCaseAlts sign peqs = 
   let consList
-        | null pEqs = error "No case alternatives."
-        | otherwise = getCons sign (getName (head pEqs))
-      groupedByCons = Data.List.nub (map (groupCons pEqs) consList)
+        | null peqs = error "No case alternatives."
+        | otherwise = getCons sign (getName (head peqs))
+      groupedByCons = Data.List.nub (map (groupCons peqs) consList)
   in  map (flattenPattern sign) groupedByCons
 
 -- Returns a list of the constructors of the used datatype
 getCons :: Env -> TypeId -> [UninstOpId]
-getCons sign tId = 
-  extractIds (typeDefn (Map.find tId (typeMap sign)))
+getCons sign tyId = 
+  extractIds (typeDefn (Map.find tyId (typeMap sign)))
   where extractIds (DatatypeDefn (DataEntry _ _ _ _ altDefns)) =
           catMaybes (map stripConstruct altDefns)
         extractIds _ = error "HasCASL2Isabelle.extractIds"
@@ -501,7 +510,7 @@ getTypeName p =
 -- Input: Case alternatives and name of one constructor
 -- Functionality: Filters case alternatives by constructor's name
 groupCons :: [ProgEq] -> UninstOpId -> [ProgEq]
-groupCons pEqs name = filter hasSameName pEqs
+groupCons peqs name = filter hasSameName peqs
   where hasSameName (ProgEq pat _ _) = 
            hsn pat
         hsn pat =
@@ -520,12 +529,12 @@ groupCons pEqs name = filter hasSameName pEqs
 --                if not
 
 flattenPattern :: Env -> [ProgEq] -> (IsaSign.Term, IsaSign.Term)
-flattenPattern sign pEqs
-  | null pEqs         = error "Missing constructor alternative in case pattern."
-  | isSingle pEqs     = (transCaseAlt sign) (head pEqs)
+flattenPattern sign peqs
+  | null peqs         = error "Missing constructor alternative in case pattern."
+  | isSingle peqs     = (transCaseAlt sign) (head peqs)
  -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
  -- or the 'TypedTerm' variant of one of them
-  | otherwise = let m = concentrate (matricize pEqs) sign
+  | otherwise = let m = concentrate (matricize peqs) sign
                 in 
                     transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullPos)
 
@@ -627,59 +636,58 @@ matriArg pat cTerm =
 
 
 redArgs :: Env -> [CaseMatrix] -> CaseMatrix
-redArgs sign caMas
-  | and (map (testPatBrand Appl) caMas)  = redAppl caMas sign
-  | and (map (testPatBrand Tuple) caMas) = redAppl caMas sign
-  | isSingle caMas                       = head caMas
-  | otherwise                            = head caMas
-  where testPatBrand pb cm = pb == patBrand cm
+redArgs sign cmxs
+  | and (map (testPatBrand Appl) caMas)  = redAppl cmxs sign
+  | and (map (testPatBrand Tuple) caMas) = redAppl cmxs sign
+  | isSingle caMas                       = head cmxs
+  | otherwise                            = head cmxs
+  where testPatBrand pb cmx = pb == patBrand cmx
 
 -- Input: List of CMs thats leading constructor and arguments except the last one are equal
 -- Functionality: Reduces n CMs to one with same last argument in pattern
 redAppl :: [CaseMatrix] -> Env -> CaseMatrix
-redAppl caMas sign
-  | and (map null (map args caMas)) = head caMas
-  | isSingle caMas                  = 
-      hCaMas { args     = init (args hCaMas),
-               newArgs  = (last (args hCaMas)):(newArgs hCaMas) }
-  | and (map termIsVar lastArgs)        = substVar (head caMas)
-  | otherwise                           = substTerm (head caMas)
-   where terms = map term caMas
-         hCaMas = head caMas
-         lastArgs = map last (map args caMas)
-         varName = "caseVar" ++ show (length (args (head caMas)))
+redAppl cmxs sign
+  | and (map null (map args cmxs)) = head cmxs
+  | isSingle cmxs                  = 
+      (head cmxs) { args     = init (args (head cmxs)),
+                    newArgs  = (last (args (head cmxs))):(newArgs (head cmxs)) }
+  | and (map termIsVar lastArgs)        = substVar (head cmxs)
+  | otherwise                           = substTerm (head cmxs)
+   where terms = map term cmxs
+         lastArgs = map last (map args cmxs)
+         varName = "caseVar" ++ show (length (args (head cmxs)))
          varId = (mkId [(mkSimpleId varName)])
          newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
-         newPEqs = (map newPE (zip lastArgs terms))
-         newPEqs' = recArgs sign newPEqs
-         substVar caMa 
-           | null (args caMa)     = caMa
-           | isSingle (args caMa) = 
-               caMa { args    = [],
-                      newArgs = last(args caMa) : (newArgs caMa) }
+         newPeqs = (map newProgEq (zip lastArgs terms))
+         newPeqs' = recArgs sign newPeqs
+         substVar cmx 
+           | null (args cmx)     = cmx
+           | isSingle (args cmx) = 
+               cmx { args    = [],
+                     newArgs = last(args cmx) : (newArgs cmx) }
            | otherwise                =
-               caMa { args    = init (args caMa),
-                      newArgs = last(args caMa) : (newArgs caMa) }
-         substTerm caMa
-           | null (args caMa)     = caMa
-           | isSingle (args caMa) =
-               caMa { args    = [], 
-                      newArgs = newVar : (newArgs caMa),
-                      term    = CaseTerm newVar newPEqs' [] }
+               cmx { args    = init (args cmx),
+                     newArgs = last(args cmx) : (newArgs cmx) }
+         substTerm cmx
+           | null (args cmx)     = cmx
+           | isSingle (args cmx) =
+               cmx { args    = [], 
+                     newArgs = newVar : (newArgs cmx),
+                     term    = CaseTerm newVar newPeqs' [] }
            | otherwise                =
-               caMa { args    = init(args caMa), 
-                      newArgs = newVar : (newArgs caMa),
-                      term    = CaseTerm newVar newPEqs' [] }
+               cmx { args    = init(args cmx), 
+                     newArgs = newVar : (newArgs cmx),
+                     term    = CaseTerm newVar newPeqs' [] }
 
 recArgs :: Env -> [ProgEq] -> [ProgEq]
-recArgs sign newPEqs 
+recArgs sign peqs 
   | isSingle groupedByCons 
       || null groupedByCons = []
   | otherwise               = doPEQ groupedByCons []
   where consList
-          | null newPEqs = error "No case alternatives."
-          | otherwise    = getCons sign (getName (head newPEqs))
-        groupedByCons = map (groupCons newPEqs) consList
+          | null peqs = error "No case alternatives."
+          | otherwise    = getCons sign (getName (head peqs))
+        groupedByCons = map (groupCons peqs) consList
         doPEQ [] res = res
         doPEQ (g:gByCs) res
           | isSingle g = doPEQ gByCs (res ++ g)
@@ -687,24 +695,21 @@ recArgs sign newPEqs
         toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullPos
 
 testPEQs :: Env -> [ProgEq] -> CaseMatrix
-testPEQs sign pEqs
-  | null pEqs = error "HasCASL2IsabelleHOL.testPEQs"
-  | otherwise = concentrate (matricize pEqs) sign
+testPEQs sign peqs
+  | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
+  | otherwise = concentrate (matricize peqs) sign
 
-newPE (p, t) = ProgEq p t nullPos
-
-newPEq cm = ProgEq (head (args cm)) (term cm) nullPos
-
+newProgEq (p, t) = ProgEq p t nullPos
 
 shrinkPat :: CaseMatrix -> As.Term
-shrinkPat caMa = 
-  case patBrand caMa of
-    Appl  -> case cons caMa of
-               Just c ->  foldl mkApplT c ((args caMa) ++ (newArgs caMa))
+shrinkPat cmx = 
+  case patBrand cmx of
+    Appl  -> case cons cmx of
+               Just c ->  foldl mkApplT c ((args cmx) ++ (newArgs cmx))
                Nothing -> error "HasCASL2IsabelleHOL.shrinkPat"
-    Tuple -> TupleTerm ((args caMa) ++ (newArgs caMa)) []
-    QuOp  -> head (args caMa)
-    _     -> head (newArgs caMa)
+    Tuple -> TupleTerm ((args cmx) ++ (newArgs cmx)) []
+    QuOp  -> head (args cmx)
+    _     -> head (newArgs cmx)
   where mkApplT t1 t2 = ApplTerm t1 t2 []
 
 
@@ -742,15 +747,15 @@ transPat sign (TupleTerm terms _) =
 transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsa i)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 
-showPEQ peqs = "PEQ-Liste: "++show (map spe peqs) ++"\n\n"
-spe (ProgEq pat term _) = "PEQ Pattern: " ++ sT pat++"   "++"Term: "++sT term++"\n"
-sT (QualVar (VarDecl v _ _ _)) = show v 
-sT (QualOp _ (InstOpId i _ _) _ _) = show i
-sT (ApplTerm t1 t2 _) = "ApplT ("++sT t1++") ("++sT t2++")"
-sT (TupleTerm ts _) = "TupleT "++concat (map sT ts)
-sT (TypedTerm t _ _ _) = "Typed "++sT t
-sT (CaseTerm t peqs _) = "Case "++sT t++" "-- ++showPEQ peqs
-sT t = show t
+-- showPEQ peqs = "PEQ-Liste: "++show (map spe peqs) ++"\n\n"
+-- spe (ProgEq pat term _) = "PEQ Pattern: " ++ sT pat++"   "++"Term: "++sT term++"\n"
+-- sT (QualVar (VarDecl v _ _ _)) = show v 
+-- sT (QualOp _ (InstOpId i _ _) _ _) = show i
+-- sT (ApplTerm t1 t2 _) = "ApplT ("++sT t1++") ("++sT t2++")"
+-- sT (TupleTerm ts _) = "TupleT "++concat (map sT ts)
+-- sT (TypedTerm t _ _ _) = "Typed "++sT t
+-- sT (CaseTerm t peqs _) = "Case "++sT t++" "-- ++showPEQ peqs
+-- sT t = show t
 
 
 -- showCM cm = "MATRIX -+- Cons: PB: "++show (patBrand cm)++" Pats: "++concat (map sT (args cm))++" newArgs: "++concat (map sT (newArgs cm))++" term: "++sT (term cm)
