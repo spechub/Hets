@@ -1209,6 +1209,12 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
+*** Error 342.14, No correct typing for 
+*** Error 342.26, No correct typing for 
+*** Error 342.39, No correct typing for 
+*** Error 343.5, No correct typing for 
+*** Error 343.20, No correct typing for 
+*** Error 343.36, No correct typing for 
 *** Error 427.12, not a predicate: e
 *** Error 426.26, not a predicate: e
 *** Error 351.11, wrong number of places '__and'__'
