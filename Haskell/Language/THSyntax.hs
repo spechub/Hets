@@ -1,3 +1,12 @@
+-- |
+-- Module      :  Haskell.Language.ParseUtils
+-- Copyright   :  (c) The GHC Team, 1997-2000
+-- License     :  BSD-style (see the file libraries/base/LICENSE)
+-- 
+-- Maintainer  :  libraries@haskell.org
+-- Stability   :  experimental
+-- Portability :  portable
+
 module Haskell.Language.THSyntax 
 -- FIXME: *urgh* we don't really want to export stuff like `counter'  -=chak
 where

@@ -1,12 +1,16 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/CASL/AS_Basic_CASL.hs
-   $Id$
-   Authors: Klaus Lüttich
-            Christian Maeder
-   Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and 
    Symb_map_items.
+-}
+{-
 
    todo:
      - ATerm conversion has now his own module (s. HetCATS/aterm_conv/)

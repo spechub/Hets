@@ -1,9 +1,15 @@
-{- 
-    HetCATS/Common/LaTeX_maps
-    $Id$
-    Author: Klaus Lüttich
-    Year: 2002
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+-}
     
+{-
     Created by a Perl-script (HetCATS/utils/words.pl)!
     DO NOT MODIFY BY HAND!!
 

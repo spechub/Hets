@@ -1,15 +1,20 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
--- needs ghc -fglasgow-exts -package data
-
-{- HetCATS/Comorphism.hs
-   $Id$
-   Till Mossakowski, Christian Maeder
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (via Logic)
    
    Provides data structures logic (co)morphisms. 
    Logic (co)morphisms are just collections of
    functions between (some of) the types of logics.
 
-   References: see Logic.hs
+-}
+
+{-   References: see Logic.hs
 
    Todo:
    Weak amalgamability, also for comorphisms

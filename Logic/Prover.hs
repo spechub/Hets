@@ -1,9 +1,12 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/Prover.hs
-   $Id$
-   Authors: Till Mossakowski
-            Christian Maeder
-   Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    Provide prover stuff for class Logic.Sentences
 

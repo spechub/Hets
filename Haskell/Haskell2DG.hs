@@ -1,7 +1,13 @@
-{- HetCATS/Haskell/Haskell2DG.hs
-   Authors: S. Groening
-   Year:    2003
--}
+{-| 
+Module      :  $Header$
+Copyright   :  (c) Sonja Groening, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+-} 
 
 module Haskell.Haskell2DG (anaHaskellFile) where
 

@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+
+printing abstract syntax of CSP-CASL
+
+-}
 module CspCASL.Print_AS_CSP_CASL where
 
 import CspCASL.AS_CSP_CASL

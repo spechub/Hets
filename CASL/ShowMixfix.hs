@@ -1,14 +1,11 @@
-                                                    
-{- HetCATS/CASL/ShowMixfix.hs
-   $Id$
-   Author:
-   Year:    2002
-
--}
 {- |
-   Maintainer  :  hets@tzi.de
-   Stability   :  provisional
-   Portability :  portable
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    This module provides show functions for mixfix errors
 -}

@@ -1,7 +1,12 @@
-{- HetCATS/aterm_conv/ATC_sml_cats.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    This module exports functions, that can convert an sml-CATS ATerm
    into the Haskell abstract syntax tree. So it contains all the

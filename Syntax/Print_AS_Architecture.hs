@@ -1,11 +1,16 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/Syntax/Print_AS_Architecture.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Grothendieck)
 
    Printing the Architechture stuff of HetCASL.
-
+-}
+{-
    todo:
      - ATermConversion SML-CATS has now his own module 
        (s. HetCATS/aterm_conv/)

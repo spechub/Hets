@@ -1,5 +1,3 @@
--- begin header
-
 
 instance (ATermConvertible t) => ATermConvertible (Qual t)where
    toShATerm att0 (predlist :=> t) = 
@@ -17,5 +15,3 @@ instance (ATermConvertible t) => ATermConvertible (Qual t)where
    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Qual\""
    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Qual\""
 
- 
--- end header

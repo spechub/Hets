@@ -1,10 +1,14 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/hetcats/ReadFn.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(DevGraph)
 
-   "reading" ATerms, CASL, HetCASL files and parsing them into an
+   reading ATerms, CASL, HetCASL files and parsing them into an
    appropiate data structure 
  
 -}

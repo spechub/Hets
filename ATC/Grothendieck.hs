@@ -1,8 +1,12 @@
-{-
-   File: ATC/Grothendieck.hs
-   ShATermConvertible instances for the datatypes in Logic/Grothendieck.hs
-   Author: Felix Reckers
-   Year: 2003
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Reckers and Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
 -}
 
 module ATC.Grothendieck where

@@ -102,7 +102,7 @@ __<__<__[bla]
 __[__]
 parse error at 103.7:
 unexpected ":=" or ":"
-expecting "{", simple-id, __, [<id>,...,<id>] or end of input
+expecting "{", "[", simple-id, __, [<id>,...,<id>] or end of input
 
 __[__]==__
 __<__[__>__]

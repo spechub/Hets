@@ -1,12 +1,17 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- | 
-   HetCATS/Syntax/Parse_AS_Librart.hs
-   $Id$
-   Module: Syntax.Parse_AS_Library
-   Author: Maciek Makowski
-   Year:   2003
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Grothendieck)
 
    Parsing the specification library.
+-}
+
+{-
    www.cofi.info
    from 25 March 2001
 

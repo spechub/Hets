@@ -1,10 +1,17 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/Syntax/Parse_AS_Structured.hs
-   $Id$
-   Author: Till Mossakowski, Christian Maeder
-   Year:   2002/2003
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Grothendieck)
 
    Parsing the Structured part of hetrogenous specifications.
+
+-}
+{-
    http://www.cofi.info/Documents/CASL/Summary/
    from 25 March 2001
 

@@ -1,9 +1,12 @@
 {-| 
    
- > HetCATS/hetcats/Result.hs
- > $Id$
- > Authors: Till Mossakowski, Klaus Lüttich, Christian Maeder
- > Year:   2002, 2003
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Till Mossakowski, Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    This module provides a 'Result' type and some monadic functions to
    use this type for accumulation of errors and warnings occuring

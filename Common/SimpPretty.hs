@@ -1,8 +1,12 @@
-{- 
-   > HetCATS/Common/SimpPretty.hs
-   > $Id$
-   > Authors: Hughes, Peyton Jones, Klaus Lüttich
-   > Year:    2002/2003
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Hughes, Peyton Jones, Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    An imported and simplified version of GHC module
    
@@ -11,7 +15,7 @@
 -}
 
 -----------------------------------------------------------------------------
--- |
+-- 
 -- Module      :  Common.Lib.Pretty
 -- Copyright   :  (c) The University of Glasgow 2001
 -- License     :  BSD-style (see the file libraries/base/LICENSE)

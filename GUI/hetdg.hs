@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(via imports
+
+   Temporary interface for displaying development graphs.
+   Should be replaced with hets in the future.
+   
+-}
 
 -- needs ghc and UniForM workbench
 -- for the UniForM workbench:
@@ -6,15 +19,6 @@
 -- configure
 -- gmake boot
 -- gmake packages
-
-{- GUI/hetdg.hs
-   $Id$
-   Till Mossakowski
-
-   Temporary interface for displaying development graphs.
-   Should be replaced with hets in the future.
-   
--}
 
 
 module Main

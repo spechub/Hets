@@ -1,7 +1,11 @@
-{- HetCATS/hugs/UnsafeCoerce.hs
-   $Id$
-   author: Christian Maeder
-   year: 2002 
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    unsafeCoerce for Hugs
 -}

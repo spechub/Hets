@@ -1,9 +1,12 @@
 {-| 
    
- > HetCATS/Utils.hs
- > $Id$
- > Authors: Klaus Lüttich
- > Year:    2002
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    Useful functions that can't be found in the libraries.
    But should shared across HetCATS.

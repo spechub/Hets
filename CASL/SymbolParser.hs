@@ -1,9 +1,12 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/CASL/SymbolParser.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
-   
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
    may be needed for structured specs 
 -}
 

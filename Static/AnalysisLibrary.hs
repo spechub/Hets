@@ -1,10 +1,17 @@
-{- HetCATS/Static/AnalysisLibrary.hs
-   $Id$
-   Till Mossakowski
+{-| 
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
 
    Analysis of libraries
 
-   Follows the extended static semantic rules in:
+-}
+
+{-   Follows the extended static semantic rules in:
 
    T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
    CASL Proof calculus.

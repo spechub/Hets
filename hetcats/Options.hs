@@ -1,9 +1,12 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Martin Kühl, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- |
- > HetCATS/hetcats/Options.hs
- > $Id$
- > Author: Martin Kühl
- > Year:   2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(DevGraph)
 
    Datatypes for options, a list of options hetcats understands.
    Useful functions to parse and check the user-provided functions

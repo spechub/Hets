@@ -1,17 +1,20 @@
-{- --------------------------------------------------------------------------
-   HetCATS/LogicStructured.hs
-   $Id$
-   Authors: Pascal Schmidt
-   Year:    2002
------------------------------------------------------------------------------
-   SUMMARY
+{-| 
    
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Pascal Schmidt, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
+
    This module provides routines to calculate the sublogic of a structured
    item - a structured specification, a view, an architectural
    specification, or a library. The calculation succeeds for homogenous
    items (only one language occuring inside) and returns Nothing otherwise.
 
------------------------------------------------------------------------------
+-}
+{------------------------------------------------------------------------------
    TODO
 
    IMAGINABLE FUTURE EXTENSIONS:

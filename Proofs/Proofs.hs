@@ -1,9 +1,17 @@
-{- HetCATS/Proofs/Proofs.hs
-   $Id$
-   Till Mossakowski
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
 
    Proofs in development graphs.
+-}
 
+{- 
    References:
 
    T. Mossakowski, S. Autexier and D. Hutter:

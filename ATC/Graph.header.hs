@@ -1,6 +1,4 @@
 
--- begin header
-
 instance (ATermConvertible a,
 	  ATermConvertible b) => ATermConvertible (Graph a b) where
     toShATerm att0 graph =
@@ -19,5 +17,5 @@ instance (ATermConvertible a,
     fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Graph\""
     toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Graph\""
 
---end header
+
 

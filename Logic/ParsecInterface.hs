@@ -1,6 +1,12 @@
-{- HetCATS/Logic.hs
-   $Id$
-   Till Mossakowski
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (via Logic)
 
    Interface for Parsec parsers.
    Generates a ParseFun as needed by Logic.hs

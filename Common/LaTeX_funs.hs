@@ -1,9 +1,12 @@
 
 {- |
-   > HetCATS/Common/LaTeX_funs.hs
-   > $Id$
-   > Author: Klaus Lüttich
-   > Year: 2002
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    Functions to calculate the length of a given word as it would be
    printed with LaTeX according to one of four categories of words

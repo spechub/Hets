@@ -1,11 +1,18 @@
-{- HetCATS/Syntax/Print_AS_Library.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Grothendieck)
 
    These data structures describe the abstract syntax tree for heterogenous 
    libraries in HetCASL.
+-}
 
+{-
    todo:
      - ATermConversion SML-CATS has now his own module 
        (s. HetCATS/aterm_conv/)

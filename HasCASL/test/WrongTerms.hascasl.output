@@ -100,7 +100,7 @@ expecting __, "%%", "%{", "%(" or "%"
 
 parse error at 26.9:
 unexpected "a"
-expecting "{", __, "%%", "%{", "%(", "%", "+", "-", ",", ":", "<", ";" or dot
+expecting "{", "[", __, "%%", "%{", "%(", "%", "+", "-", ",", ":", "<", ";" or dot
 
 parse error at 27.13:
 unexpected ".!" or "!"
@@ -112,7 +112,7 @@ expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "-
 
 parse error at 29.10:
 unexpected "a"
-expecting "{", __, "%%", "%{", "%(", "%", "," or ":"
+expecting "{", "[", __, "%%", "%{", "%(", "%", "," or ":"
 
 parse error at 30.14:
 unexpected ".!" or "!"

@@ -1,14 +1,18 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{---
-  HetCATS/hetcats/WriteFn.hs
-  @version $Id$
-  @author Klaus L&uuml;ttich<BR>
-  Year:   2002
-  <p>
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(DevGraph)
+
   This module provides functions to write a pretty printed abstract
   syntax and all the other formats.
-  </p>
+
 -}
+
 module WriteFn where
 
 import Options

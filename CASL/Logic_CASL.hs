@@ -1,13 +1,17 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/CASL/Logic_CASL.hs
-   $Id$
-   Authors: Klaus Lüttich
-   Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
+-}
 
-   todo:
+{-   todo:
      - writing real functions
 
 -}

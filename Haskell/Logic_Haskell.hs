@@ -1,10 +1,12 @@
 {-# OPTIONS -fno-warn-missing-methods #-}
--- needs -package haskell-src
+{-| 
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/Haskell/Logic_Haskell.hs
-   $Id$
-   Authors: C. Maeder, S. Groening
-   Year:    2003
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
 
    Here is the place where the class Logic is instantiated for Haskell.
    Also the instances for Syntax an Category.

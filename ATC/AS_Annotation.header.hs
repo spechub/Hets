@@ -1,4 +1,3 @@
-
 -- begin header
 
 instance (ATermConvertible a) => ATermConvertible (Annoted a) where

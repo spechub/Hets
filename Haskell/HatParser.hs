@@ -1,15 +1,19 @@
--- needs -package haskell-src
-{- HetCATS/Haskell/HParser.hs
-   $Id$
-   Authors: C. Maeder, S. Groening
-   Year:    2003
+{-| 
+Module      :  $Header$
+Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-   Wrapper for Haskell parsing
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+
+   Wrapper for Haskell parsing.
    Parses Haskell declarations (not a whole module), for use
      in heterogeneous specifications
-
-   toDo: maybe change Language.Haskell.Parser 
-   and export the parser for HsDecl
+-}
+{-
+   toDo: 
 
    positions in successfully parsed abstract syntax are wrong
    (they start with 3)
@@ -36,7 +40,8 @@ hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
 	       s <- hStuff
                trace ("@"++s++"@") (return ())
-	       let r = Haskell.Hatchet.HsParser.parse ("\nmodule Anonymous where\n" ++ s) (SrcLoc 1 1) 0 []
+	       let r = Haskell.Hatchet.HsParser.parse 
+		       ("\nmodule Anonymous where\n" ++ s) (SrcLoc 1 1) 0 []
                case r of
 		           Ok _ (HsModule _ _ _ hsDecls) -> 
 			       trace (show hsDecls++"OK!") $ return hsDecls
