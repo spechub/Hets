@@ -163,19 +163,18 @@ collaps :: Ord a => Map.Map a a -> Rel a -> Rel a
 collaps c = image (\ e -> Map.findWithDefault e e c)
 
 {- | transitive reduction (minimal relation with the same transitive closure)
-     of a DAG (non-trivial cycles will be lost). -}
+     of a DAG. -}
 transReduce :: Ord a => Rel a -> Rel a
 transReduce rel@(Rel m) =
-    foldr ( \ i t -> 
-           Set.fold ( \ j ->
+    Map.foldWithKey ( \ i ->
+               flip $ Set.fold ( \ j ->
                if covers i j rel then 
-                  insert i j else id) t $ elemSet m) 
-    empty $ Map.keys m where
+                  insert i j else id)) empty m
+    where
     -- (a, b) in r but no c with (a, c) and (c, b) in r
     covers :: Ord a => a -> a -> Rel a -> Bool
-    covers a b r = member a b r 
-                   && (a == b || Set.all ( \ c -> not $ path c b r) 
-                       (Set.delete a $ Set.delete b $ reachable r a))  
+    covers a b r = Set.all ( \ c -> not $ path c b r) 
+                       (Set.delete a $ Set.delete b $ reachable r a)  
 
 -- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
