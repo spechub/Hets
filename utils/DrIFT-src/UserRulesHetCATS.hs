@@ -198,7 +198,9 @@ makeFromShATermFn dat =
 	   [block (fnstart:(block cases):[whereblock])])
 	where 
 	fnstart     = text "case" <+> text "aterm" <+> text "of"
-        cases       = map makeFromShATerm (body dat)
+        cases       = map makeFromShATerm (body dat)++[def_case]
+	def_case    = hsep $ texts ["u", "->", "fromShATermError", 
+		  ('\"':name dat++"\""), "u"]
 	whereblock  =
 	    text "where" $$
             block [text "aterm = getATerm att" ]
@@ -219,7 +221,7 @@ makeFromShATerm body
 				     (childFromShATerm (text "att")) 
 			             (types body)
                                      cvs)
- 		 in ks
+ 		 in ks 
 
 {-defaultFromATerm name = empty-}
 {-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"] -}
