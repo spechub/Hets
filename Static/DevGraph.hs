@@ -19,6 +19,7 @@
 todo:
 
 Integrate stuff from Saarbrücken
+Should AS be stored in GloblaContext as well?
 -}
 
 module Static.DevGraph where

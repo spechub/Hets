@@ -155,6 +155,13 @@ adjustPos :: Pos -> Result a -> Result a
 adjustPos p r =
   r {diags = map (\d -> d {diagPos = p}) (diags r)}
 
+-- | Propagate errors using the error function
+propagateErrors :: Result a -> a
+propagateErrors r =
+  case (hasErrors $ diags r, maybeResult r) of
+    (False,Just x) -> x
+    _ -> error $ unlines $ map show $ diags r
+
 -- ---------------------------------------------------------------------
 -- instances for Result
 -- ---------------------------------------------------------------------

@@ -9,6 +9,7 @@ module ATC.Grothendieck where
 
 import Logic.Grothendieck
 import Common.ATerm.Lib
+import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Logic
 import ATC.Comorphism
@@ -205,7 +206,8 @@ instance ATermConvertible AnyComorphism where
          case aterm of
 	    (ShAAppl "Comorphism" [i1] _) -> 
 		let i1' = fromShATerm (getATermByIndex1 i1 att) 
-                in lookupComorphism_in_LG ("couldn't find Comorphims " ++ i1' ++ " in Logic Graph") i1'
+                in propagateErrors 
+                    $ lookupComorphism_in_LG i1'
          where
          aterm = getATerm att
 
@@ -219,7 +221,7 @@ instance ATermConvertible GMorphism where
            case aterm of
 	    (ShAAppl "GMorphism" [i1,i2,i3] _) ->
 	 	let i1'  = fromShATerm (getATermByIndex1 i1 att)
-                    c  =  lookupComorphism_in_LG ("ATermConvertible AnyComorphism:") i1'
+                    c  =  propagateErrors $ lookupComorphism_in_LG i1'
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att
                 in case c of

@@ -8,7 +8,7 @@
    Stability   :  provisional
    Portability :  non-portable
    
-   Assembles all the logics and representations into a graph.
+   Assembles all the logics and comorphisms into a graph.
    The modules for the Grothendieck logic are logic graph indepdenent,
    and here is the logic graph that is used to instantiate these.
    Since the logic graph depends on a large number of modules for the
@@ -30,6 +30,7 @@
 module Comorphisms.LogicGraph
 where
 
+import Common.Result
 import Logic.Logic 
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -75,6 +76,6 @@ lookupLogic_in_LG :: String -> String -> AnyLogic
 lookupLogic_in_LG errorPrefix logname =
     lookupLogic errorPrefix (logname) logicGraph
 
-lookupComorphism_in_LG :: String -> String -> AnyComorphism
-lookupComorphism_in_LG error_prefix coname =
-    lookupComorphism error_prefix coname logicGraph
+lookupComorphism_in_LG :: String -> Result AnyComorphism
+lookupComorphism_in_LG coname =
+    lookupComorphism coname logicGraph

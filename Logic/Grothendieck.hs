@@ -43,7 +43,9 @@ import Common.PPUtils (fsep_latex, comma_latex)
 import Common.Result
 import Common.Id
 import Common.Named
+import Common.ListUtils
 import Data.Dynamic
+import Control.Monad
 
 import Common.Lib.Parsec.Pos -- for testing purposes
 
@@ -248,6 +250,20 @@ data AnyComorphism = forall cid lid1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
       Comorphism cid
 
+-- | Compose comorphisms
+compComorphism :: AnyComorphism -> AnyComorphism -> Result AnyComorphism
+compComorphism (Comorphism cid1) (Comorphism cid2) = do
+    let lid1 = sourceLogic cid1
+        lid2 = targetLogic cid1
+        lid3 = sourceLogic cid2
+    ComorphismAux cid1' _ _ _ _ <- 
+      maybeToResult 
+        nullPos 
+        ("Cannot compose comorphisms "++language_name cid1++
+         " with "++language_name cid2)
+        (coerce lid2 lid3 $ ComorphismAux cid1 lid1 lid2 undefined undefined)
+    return (Comorphism (CompComorphism cid1' cid2))
+
 -- | Logic graph
 data LogicGraph = LogicGraph {
                     logics :: Map.Map String AnyLogic, 
@@ -261,13 +277,28 @@ lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname (logics logicGraph) of
     Nothing -> error (error_prefix++" in LogicGraph logic \""++logname++"\" unknown")
     Just lid -> lid
+    where 
 
 -- | find a comorphism in a logic graph
-lookupComorphism :: String -> String -> LogicGraph -> AnyComorphism
-lookupComorphism error_prefix coname logicGraph =
-    case Map.lookup coname (comorphisms logicGraph) of
-    Nothing -> error (error_prefix++" in LogicGraph comorphism \""++coname++"\" unknown")
-    Just cid -> cid
+lookupComorphism :: String -> LogicGraph -> Result AnyComorphism
+lookupComorphism coname logicGraph = do
+  let nameList = splitBy ';' coname
+  cs <- sequence $ map lookup nameList
+  case cs of
+    c:cs1 -> foldM compComorphism c cs1
+    _ -> fail ("Illgegal comorphism name: "++coname)
+  where 
+  lookup name = 
+    case name of
+      'i':'d':'_':logic -> do
+         l <- maybeToResult 
+                nullPos ("Cannot find logic "++logic)
+                $ Map.lookup logic (logics logicGraph)
+         case l of
+           Logic lid -> return $ Comorphism $ IdComorphism lid
+      _ -> maybeToResult 
+            nullPos ("Cannot find logic comorphism "++name) 
+            $ Map.lookup name (comorphisms logicGraph)
 
 
 -- | auxiliary existential type needed for composition of comorphisms

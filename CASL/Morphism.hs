@@ -1,7 +1,7 @@
 
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
@@ -9,7 +9,12 @@ Stability   :  provisional
 Portability :  portable
     
 Symbols and signature morphisms for the CASL logic
+-}
 
+{-
+todo:
+issue warning for symbols lists like __ * __, __ + __: Elem * Elem -> Elem
+the qualification only applies to __+__ !
 -}
 
 module CASL.Morphism where
