@@ -372,17 +372,17 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
   Spec_inst spname afitargs pos ->
    case Map.lookup spname genv of
     Nothing -> plain_error (nsig,dg) 
-                 ("Specification "++pretty spname++" not found") (headPos pos)
+                 ("Specification "++ showPretty spname " not found") (headPos pos)
     Just (ViewEntry _) -> 
      plain_error (nsig,dg) 
-      (pretty spname++" is a view, not a specification") (headPos pos)
+      (showPretty spname " is a view, not a specification") (headPos pos)
     Just (ArchEntry _) -> 
      plain_error (nsig,dg) 
-      (pretty spname++
+      (showPretty spname
        " is an architectural, not a structured specification") (headPos pos)
     Just (UnitEntry _) -> 
      plain_error (nsig,dg) 
-      (pretty spname++
+      (showPretty spname
        " is a unit specification, not a structured specification") (headPos pos)
     Just (SpecEntry gs@(imps,params,gSigmaP,body)) -> 
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
@@ -486,7 +486,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
       -- finally the case with conflicting numbers of formal and actual parameters
       otherwise -> 
         plain_error (nsig,dg) 
-          (pretty spname++" expects "++show (length params)++" arguments"
+          (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) (headPos pos)
 
 

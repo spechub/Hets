@@ -103,12 +103,12 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> LibEnv
 
 ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts (Spec_defn spn gen asp pos) = do
   let just_struct = False -- justStruct opts
-  ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ pretty spn))
+  ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
   ((imp,params,parsig,allparams),dg') <- resToIORes (ana_GENERICITY gctx l just_struct gen)
   (body,dg'') <- resToIORes (ana_SPEC (gannos,genv,dg') allparams (Just spn) just_struct (item asp))
   if Map.member spn genv 
    then resToIORes (plain_error (gctx,l,libenv)
-                                ("Name "++pretty spn++" already defined")
+                                ("Name "++ showPretty spn " already defined")
                                 (headPos pos))
    else return ((gannos,
                  Map.insert spn (SpecEntry (imp,params,parsig,body)) genv,
@@ -119,18 +119,18 @@ ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts (Spec_defn spn gen 
 ana_LIB_ITEM lgraph defl libenv gctx l opts
              (View_defn vn gen vt gsis pos) = do
   let just_struct = False -- justStruct opts
-  ioToIORes (putIfVerbose opts 1  ("Analyzing view " ++ pretty vn))
+  ioToIORes (putIfVerbose opts 1  ("Analyzing view " ++ showPretty vn ""))
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
                             vn gen vt gsis pos)
 
 ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
              (Arch_spec_defn asn asp pos) = do
-  ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec " ++ pretty asn))
+  ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec "++showPretty asn ""))
   ana_err "arch spec"
 
 ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts
              (Unit_spec_defn usn usp pos) = do
-  ioToIORes (putIfVerbose opts 1  ("Analyzing unit spec " ++ pretty usn))
+  ioToIORes (putIfVerbose opts 1  ("Analyzing unit spec "++showPretty usn ""))
   ana_err "unit spec"
 
 ana_LIB_ITEM lgraph defl libenv gctx l opts 
@@ -143,7 +143,7 @@ ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts
              (Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
-  ioToIORes (putIfVerbose opts 1 ("Analyzing from " ++ pretty ln ++ "\n"))
+  ioToIORes (putIfVerbose opts 1 ("Analyzing from " ++ showPretty ln "\n"))
   let items' = zip items (drop 2 (pos ++ repeat nullPos))
   libenv' <- ioToIORes (ana_file1 lgraph defl libenv opts ln)
   case Map.lookup ln libenv' of
@@ -185,7 +185,7 @@ ana_VIEW_DEFN lgraph defl libenv gctx@(gannos,genv,dg) l just_struct
       vsig = (src,gmor,(imp,params,parsig,tar))
   if Map.member vn genv 
    then plain_error (gctx,l,libenv)
-                    ("Name "++pretty vn++" already defined")
+                    ("Name "++showPretty vn " already defined")
                     (headPos pos)
    else return ((gannos,
                  Map.insert vn (ViewEntry vsig) genv,
@@ -202,10 +202,10 @@ ana_ITEM_NAME_OR_MAP ln genv' res (Item_name_map old new _, pos) =
 ana_ITEM_NAME_OR_MAP1 ln genv' res old new pos = do
   (genv,dg) <- res
   entry <- maybeToResult pos 
-            (pretty old++" not found") (Map.lookup old genv')
+            (showPretty old " not found") (Map.lookup old genv')
   case Map.lookup new genv of
     Nothing -> return ()
-    Just _ -> fatal_error (pretty new++" already used") pos 
+    Just _ -> fatal_error (showPretty new " already used") pos 
   case entry of
     SpecEntry extsig ->
       let (dg1,extsig1) = refExtsig ln dg new extsig

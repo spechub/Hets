@@ -19,7 +19,6 @@
 module Common.PrettyPrint 
     ( noPrint
     , showPretty
-    , pretty
     , renderLatex
     , debugRenderLatex
     , renderText 
@@ -54,10 +53,6 @@ noPrint b d = if b then empty else d
 -- | a more pretty alternative for shows
 showPretty :: PrettyPrint a => a -> ShowS
 showPretty = shows . printText0 emptyGlobalAnnos 
-
--- | a more pretty alternative for show
-pretty :: PrettyPrint a => a -> String
-pretty  = show . printText0 emptyGlobalAnnos
 
 ----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 100 1.5)
