@@ -57,7 +57,7 @@ import AS_Annotation
 import Set
 import FiniteMap
 import Graph
-import Error
+import Result
 import Parsec
 import Prover -- for one half of class Sentences
 

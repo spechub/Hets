@@ -1,6 +1,6 @@
 -- error messages
 
-module Error where
+module Result where
 
 import Id
 

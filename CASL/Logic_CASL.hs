@@ -21,7 +21,7 @@ import Parse_AS_Basic
 import LocalEnv
 import Logic
 
-import Error
+import Result
 import Dynamic
 import qualified Sublogics
 
