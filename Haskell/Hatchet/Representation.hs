@@ -35,7 +35,7 @@ import Haskell.Hatchet.FiniteMaps               (FiniteMap)
 data Type  = TVar Tyvar
            | TCon Tycon
            | TAp  Type Type
-           | TGen Int
+           | TGen Int        -- type variable with de Bruijn index Int
            | TArrow Type Type
            | TTuple [Type]
              deriving (Eq, Show)
@@ -208,7 +208,8 @@ type Subst  = FiniteMap Tyvar Type
 
 -- schemes
 
-data Scheme = Forall [Kind] (Qual Type)
+data Scheme = Forall [Kind] (Qual Type)  -- kinds for type variables
+                                         -- listed by de Bruijn indices
               deriving (Eq, Show)
 
 instance PPrint Scheme where

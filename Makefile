@@ -323,6 +323,7 @@ bin_clean:
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hapa
+	$(RM) Haskell/hana
 	$(RM) Haskell/wrap
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
@@ -391,6 +392,13 @@ HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs
 hapa: Haskell/hapa
 
 Haskell/hapa: Haskell/hapa.hs Haskell/Hatchet/*.hs $(happy_files)
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### Haskell analysis
+hana: Haskell/hana
+
+Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/Hatchet/*.hs $(happy_files)
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 

@@ -89,18 +89,18 @@ data HsAssoc
   deriving (Eq,Show)
 
 data HsDecl
-	 = HsTypeDecl	 SrcLoc HsName [HsName] HsType
-	 | HsDataDecl	 SrcLoc HsContext HsName [HsName] [HsConDecl] [HsQName]
+	 = HsTypeDecl	 SrcLoc HsName [HsName] HsType -- type synonyms
+	 | HsDataDecl	 SrcLoc HsContext HsName [HsName] [HsConDecl] [HsQName] -- datatypes
 	 | HsInfixDecl   SrcLoc HsAssoc Int [HsName]
-	 | HsNewTypeDecl SrcLoc HsContext HsName [HsName] HsConDecl [HsQName]
-	 | HsClassDecl	 SrcLoc HsQualType [HsDecl]
-	 | HsInstDecl	 SrcLoc HsQualType [HsDecl]
+	 | HsNewTypeDecl SrcLoc HsContext HsName [HsName] HsConDecl [HsQName] -- shorthand datatypes, with one implicit constructor
+	 | HsClassDecl	 SrcLoc HsQualType [HsDecl]  -- classes
+	 | HsInstDecl	 SrcLoc HsQualType [HsDecl]  -- class instances
 	 | HsDefaultDecl SrcLoc HsType
-	 | HsTypeSig	 SrcLoc [HsName] HsQualType
+	 | HsTypeSig	 SrcLoc [HsName] HsQualType -- type of function
 	 -- | HsFunBind     SrcLoc [HsMatch]
-	 | HsFunBind     [HsMatch]
-	 | HsPatBind	 SrcLoc HsPat HsRhs {-where-} [HsDecl]
-         | HsAxiomBind AxBinding
+	 | HsFunBind     [HsMatch]  -- function body
+	 | HsPatBind	 SrcLoc HsPat HsRhs {-where-} [HsDecl] -- value definition
+         | HsAxiomBind AxBinding -- HasSLe axioms
   deriving (Eq,Show)
 
 data HsMatch 

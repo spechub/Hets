@@ -26,8 +26,9 @@ import Haskell.Hatchet.Representation
 
 data ModuleInfo = ModuleInfo {
                     moduleName :: AModule,
-                    varAssumps :: Env Scheme,
-                    dconsAssumps :: Env Scheme,
+                    varAssumps :: Env Scheme,  -- function declarations
+                         -- map, mapping names to type schemes
+                    dconsAssumps :: Env Scheme, -- type declarations
                     -- tyconsMembers is a little bit of a hack (sorry)
                     -- so that we can see what each type constructor has 
                     -- as its datacons (see getTyconsMembers for an example)

@@ -37,9 +37,9 @@ type Class = String;
 type Sort  = [Class]
 
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
-data Typ = Type (String,[Typ])
-             | TFree (String, Sort)
-             | TVar  (Indexname, Sort)
+data Typ = Type (String,[Typ])  -- type constructor, with name and args
+             | TFree (String, Sort)  -- free type variable ('a)
+             | TVar  (Indexname, Sort) -- type unknown     (?'a)
            deriving (Eq, Ord)
 
 infix -->
@@ -75,13 +75,13 @@ s --> t = Type("fun",[s,t])
 
 
 data Term =
-        Const (String, Typ)
-      | Free  (String, Typ)
+        Const (String, Typ)  -- constants
+      | Free  (String, Typ)  -- free variables
       -- | Var   (Indexname, Typ)
       -- | Bound Int
-      | Abs   (Term, Typ, Term)
-      | App Term  Term
-      | Case (Term, [(Term, Term)]) 
+      | Abs   (Term, Typ, Term)  -- lambda abstraction
+      | App Term  Term           -- application
+      | Case (Term, [(Term, Term)])  -- case
       deriving (Eq, Ord)
 
 data Sentence = Sentence { senTerm :: Term
@@ -134,7 +134,7 @@ data TypeSig =
     classes:: [Class],
     classrel:: Classrel,
     defaultSort:: Sort,
-    tycons:: Map.Map String Int,
+    tycons:: Map.Map String Int,  -- type constructor names, with arities
     log_types:: [String],
     univ_witness:: Maybe (Typ,  Sort),
     abbrs:: Map.Map String ([String],Typ),
@@ -158,6 +158,7 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: Map.Map String Typ,
                    dataTypeTab :: DataTypeTab,
+                   -- needs HOLCF, extend this with domains
                    syn :: Syntax
                  }
              deriving (Eq)
