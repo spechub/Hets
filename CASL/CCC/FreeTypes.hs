@@ -20,6 +20,88 @@ http://elan.loria.fr/    http://www1.elsevier.com/gej-ng/31/29/23/71/22/73/entcs
   and pipes
   transform CASL signature to Cime signature, CASL formulas to Cime rewrite rules
 
+Example:
+
+spec NatJT2 = {} then
+  free type Nat ::= 0 | suc(Nat)
+  op __+__ : Nat*Nat->Nat
+  forall x,y:Nat
+  . 0+x=x
+  . suc(x)+y=suc(x+y)
+end
+
+Von Hets erzeugte Theorie:
+
+sorts Nat
+op 0 : Nat
+op __+__ : Nat * Nat -> Nat
+op suc : Nat -> Nat
+
+
+forall X1:Nat; Y1:Nat
+    . (op suc : Nat -> Nat)((var X1 : Nat) : Nat) : Nat =
+          (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat <=>
+          (var X1 : Nat) : Nat = (var Y1 : Nat) : Nat %(ga_injective_suc)%
+
+forall Y1:Nat
+    . not (op 0 : Nat) : Nat =
+              (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat %(ga_disjoint_0_suc)%
+
+generated{sort Nat; op 0 : Nat;
+                    op suc : Nat -> Nat} %(ga_generated_Nat)%
+
+forall x, y:Nat
+    . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat) : Nat,
+                                    (var x : Nat) : Nat) : Nat =
+          (var x : Nat) : Nat
+
+forall x, y:Nat
+    . (op __+__ : Nat *
+                  Nat -> Nat)((op suc : Nat -> Nat)((var x : Nat) : Nat) : Nat,
+                              (var y : Nat) : Nat) : Nat =
+          (op suc : Nat -> Nat)((op __+__ : Nat *
+                                            Nat -> Nat)((var x : Nat) : Nat,
+                                                        (var y : Nat) : Nat) : Nat) : Nat
+sorts Nat
+op 0 : Nat
+op __+__ : Nat * Nat -> Nat
+op suc : Nat -> Nat
+
+
+forall X1:Nat; Y1:Nat
+    . (op suc : Nat -> Nat)((var X1 : Nat) : Nat) : Nat =
+          (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat <=>
+          (var X1 : Nat) : Nat = (var Y1 : Nat) : Nat %(ga_injective_suc)%
+
+forall Y1:Nat
+    . not (op 0 : Nat) : Nat =
+              (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat %(ga_disjoint_0_suc)%
+
+generated{sort Nat; op 0 : Nat;
+                    op suc : Nat -> Nat} %(ga_generated_Nat)%
+
+forall x, y:Nat
+    . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat) : Nat,
+                                    (var x : Nat) : Nat) : Nat =
+          (var x : Nat) : Nat
+
+forall x, y:Nat
+    . (op __+__ : Nat *
+                  Nat -> Nat)((op suc : Nat -> Nat)((var x : Nat) : Nat) : Nat,
+                              (var y : Nat) : Nat) : Nat =
+          (op suc : Nat -> Nat)((op __+__ : Nat *
+                                            Nat -> Nat)((var x : Nat) : Nat,
+                                                        (var y : Nat) : Nat) : Nat) : Nat
+
+
+
+
+CiME:
+let F = signature "0:constant; suc : unary; + : binary";
+let X = vars "x y";
+let axioms = TRS F X "+(0,x) -> x; +(suc(x),y) -> suc(+(x,y)); ";
+termcrit "dp";
+termination axioms;
 -} 
 
 module CASL.CCC.FreeTypes where
