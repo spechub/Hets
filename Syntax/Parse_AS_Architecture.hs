@@ -3,9 +3,13 @@
    Author     : Maciek Makowski
    Maintainer : m.makowski@students.mimuw.edu.pl
    Year       : 2003
+   Copyright   :  
+   Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+   Stability   :  provisional
+   Portability :  needs ghc -fglasgow-exts -fallow-overlapping-instances -package data
 
    Parsing the architectural part of heterogenous specifications.
-   http://www.cofi.info/Documents/CASL/Summary/
+   www.cofi.info
    from 25 March 2001
 
    C.2.3 Structured Specifications
@@ -13,7 +17,7 @@
    TODO:
    - make sure the precedence is OK
    - annotations
-   > see specific TODOs in functions
+   - see specific TODOs in functions
 -}
 
 module Syntax.Parse_AS_Architecture where
@@ -77,10 +81,10 @@ basicArchSpec l =
 	                [] [] [])
 
 
--- | Parse a nonempty list of unit declarations/definitions separated by
+-- | Parse a nonempty list of unit declarations or definitions separated by
 -- semicolons, with optional semicolon at the end.
 -- @
--- UNIT-DECL-DEFNS ::= UNIT-DECL-DEFN ; ... ; UNIT-DECL-DEFN ;/
+-- UNIT-DECL-DEFNS ::= UNIT-DECL-DEFN ; ... ; UNIT-DECL-DEFN ;
 -- @
 unitDeclDefns :: (AnyLogic, LogicGraph) -> AParser [Annoted UNIT_DECL_DEFN]
 unitDeclDefns l =
@@ -93,7 +97,7 @@ unitDeclDefns l =
        return ((Annoted dd [] [] ann) : dds)
 
 
--- | Parse unit declaration/definition
+-- | Parse unit declaration or definition
 -- @
 -- UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 -- @
@@ -282,7 +286,7 @@ unitTermLocal l =
        return ut
 
 
--- | Parse translation/reduction unit term
+-- | Parse translation or reduction unit term
 -- The original grammar
 -- @
 -- UNIT-TERM-TRANS-RED ::= UNIT-TERM-TRANS-RED RENAMING
@@ -305,7 +309,7 @@ unitTermTransRed l =
 
 -- | Parse the helper unit term productions
 unitTermTransRed' :: (AnyLogic, LogicGraph) 
-    -> Annoted UNIT_TERM           -- ^ the unit term that came before the renaming/restriction clause
+    -> Annoted UNIT_TERM           -- ^ the unit term that came before the renaming or restriction clause
     -> AParser (Annoted UNIT_TERM) -- ^ the resulting unit term
 unitTermTransRed' l ut =
         -- translation
@@ -396,7 +400,7 @@ unitBinding l =
 -- | Parse a nonempty list of unit definitions separated by
 -- semicolons, with optional semicolon at the end.
 -- @
--- UNIT-DEFNS ::= UNIT-DEFN ; ... ; UNIT-DEFN ;/
+-- UNIT-DEFNS ::= UNIT-DEFN ; ... ; UNIT-DEFN ;
 -- @
 unitDefns :: (AnyLogic, LogicGraph) -> AParser [Annoted UNIT_DECL_DEFN]
 unitDefns l =

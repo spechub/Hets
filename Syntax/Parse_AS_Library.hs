@@ -7,7 +7,7 @@
    Year:   2003
 
    Parsing the specification library.
-   http://www.cofi.info/Documents/CASL/Summary/
+   www.cofi.info
    from 25 March 2001
 
    C.2.4 Specification Libraries

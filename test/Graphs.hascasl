@@ -31,6 +31,7 @@ spec Nat =
 end
 
 spec List = {}
+
 spec InternalLogic = {}
 
 spec Extensionality = {}
@@ -38,6 +39,158 @@ spec Extensionality = {}
 %{ Typed sets are represented by predicates over the type.
    Set membership is just holding of the predicate: x isIn s <=> s x
    Note that for disjoint unions and products, the type changes.  }%
+
+spec Category =
+  sorts Ob, Mor
+  ops dom,cod : Mor -> Ob;
+      id : Ob -> Mor;
+      __o__ : Mor*Mor ->? Mor;
+  forall f,g,h : Mor; a,b:Ob
+  . def f o g <=> cod g = dom f
+  . def f o g => dom f o g = dom g
+  . def f o g => cod f o g = cod f
+  . f o (g o h) = (f o g) o h
+  . f o id(dom f) = f
+  . id(cod f) o f = f
+end
+
+spec ExtCategory[Category] =
+  pred __ :: __ --> __ : Mor * Ob * Ob 
+  forall f : Mor; a,b : Ob 
+  . f :: a --> b <=> dom f = a /\ cod f = b
+end
+
+spec Coproduct[Category] = 
+  ExtCategory[Category]
+then
+  ops __coproduct__ : Ob * Ob -> Ob;
+      inl,inr : Ob * Ob -> Mor;
+      [__!__] : Mor * Mor ->? Mor
+  pred __mediates__ (h:Mor) ((f,g):Mor*Mor) <=> 
+     h :: (dom f) coproduct (dom g) -> cod f
+     /\ h o inl (dom f) (dom g) = f
+     /\ h o inr (dom f) (dom g) = g
+  forall a,b,c : Ob; f,g,h : Mor
+  . inl a b :: a --> a coproduct b
+  . inr a b :: b --> a coproduct b
+  . def [f!g] <=> dom f = a /\ dom g = b /\ cod f = cod g
+  . [f!g] mediates (f,g)
+  . h mediates (f,g) => h = [f!g]
+end
+
+
+spec Coequalizer[Category] = 
+  ExtCategory[Category]
+then
+  ops ...
+end
+
+
+spec Pushout[Category] =
+  ExtCategory[Category]
+then
+  op pushout : Mor * Mor ->? (Mor * Mor * (Mor * Mor ->? Mor))
+  pred __mediates__ (m:Mor) ((f,g,h,k):Mor*Mor) <=> 
+          m o f = h /\ m o g = k
+  forall f,g,h,k : Mor
+  . def pushout(f,g) <=> dom f = dom g
+  . def pushout(f,g) =>
+    let (h,k,med) = pushout(f,g)
+    in h o f = k o g
+       /\ forall h',k' : Mor . def med(h,'k') <=> h' o f = k' o g
+                /\ def med(h,'k') => med (h',k') mediates (h,k,h',k')
+                /\ forall m':Mor . m' mediates (h,k,h',k') => m'=med (h',k')
+end
+
+spec Functor =
+  Category and {Category with Ob |-> Ob', Mor |-> Mor'}
+then
+  type Functor = {(fob,fmor) : (Ob -> Ob') * (Mor -> Mor') .
+                       forall a:Ob . fob(id(a))=id(fob(a))
+                    /\ forall f:Mor . fmor(f)::fob(dom f) --> fob(cod f)
+                    /\ forall f,g:Mor . def f o g =>
+                               fmor(f o g) = fmor f o fmor g }
+end
+
+spec Shape =
+  sorts Diagram, Cocone
+  preds __isCoconeFor__ : CoCone * Diagram;
+        mediates : Mor * Cocone * Cocone
+end
+
+spec Colimit[Category][Shape] =
+  ExtCategory[Category]
+then
+  op colimit : Diagram -> (Coconce * (Cocone ->? Mor))
+  forall d:Diagram
+  . let (c,m) = colimit d
+    in c isCoconeFor d
+       /\ forall c':Cocone . c' isCoconeFor d <=> def m c'
+       /\ def m c' => mediates(m c',c,c')
+       /\ forall mor:Mor . mediates(mor,c,c') => mor=m c'
+end
+
+spec CoproductShape =
+  Category
+then
+  type CPDiagram := Ob * Ob;
+       CPCocone := {(h,k) : Mor * Mor . cod h = cod k}
+  pred __isCoconeFor__ : POCoCone * PODiagram
+  . ((h,k) as POCocone) isCoconeFor (a,b)  
+       <=> dom h = a /\ dom k = b
+end
+
+spec PushoutShape =
+  Category
+then
+  type PODiagram = {(f,g) : Mor * Mor . dom f = dom g};
+       POCocone = {(h,k) : Mor * Mor . cod h = cod k}
+  pred __isCoconeFor__ : POCoCone * PODiagram
+  . ((h,k) as POCocone) isCoconeFor ((f,g) as PODiagram)  
+       <=> h o f = k o g
+end
+
+spec CoequalizerShape =
+  Category
+then
+  type PODiagram = {(f,g) : Mor * Mor . dom f = dom g /\ cod f = cod g};
+       POCocone := Mor
+  pred __isCoconeFor__ : POCoCone * PODiagram
+  . (k as POCocone) isCoconeFor ((f,g) as PODiagram)
+       <=> k o f = k o g
+end
+
+view CPShape : Shape -> CoproductShape =
+  Diagram |-> CPDiagram, CoCone |-> CPCocone
+end
+
+spec Coproduct[Category] =
+  Colimit[Category][view CPShape]
+end
+
+view CEShape : Shape -> CoequalizerShape =
+  Diagram |-> CEDiagram, CoCone |-> CECocone
+end
+
+spec Coequalizer[Category] =
+  Colimit[Category][view CEShape]
+end
+
+view POShape : Shape -> PushoutShape =
+  Diagram |-> PODiagram, CoCone |-> POCocone
+end
+
+spec Pushout[Category] =
+  Colimit[Category][view OPShape]
+end
+
+view PushoutAsCoequalizerOfCoproduct :
+  Pushout[Category] ->
+  Coproduct[Category] and Coequalizer[Category] and
+  { %% construction of pushouts from coquealizers + coproducts
+  }
+end
+
 
 spec Set = Bool and InternalLogic and Extensionality then
   var S,T : Type
@@ -77,7 +230,7 @@ then
   . (symmetric r) <=> forall x,y:S . (r(x,y)) => (r(y,x))
   . (transitive r) <=> forall x,y,z:S . ((r(x,y)) /\ (r(y,z))) => (r(x,y))
   type PER S := Set(S*S)
-  %% = { r : Set(S*S) . (symmetric r) /\ (transitive r) }
+  %% = { r : Set(S*S) . (symmetric r) /\ (transitive r) }    %% Christian!
   op dom : PER S -> Set S
   %%forall x:S; r: PER S
   %%. (x isIn (dom r)) <=> ((x,x) isIn r)
@@ -118,6 +271,24 @@ spec Map =
   %% injectivity only for values in the domain, hence the existential equation
   . injective f <=> (forall x,y:S . f x =e= f y => x=y)
 end
+
+spec SetCategory =
+  Map
+then
+  type SetS := Set S
+  type MapS := Set S * Map S * Set S
+  ops dom (a,f,b):MapS = a
+      cod (a,f,b):MapS = b
+      __o__ : MapS * MapS ->? MapS
+  forall a,b,c : SetS; f,g : MapS
+  . def f o g <=> cod g = dom f
+  . (b,g,c) o (a,f,b) = (a,g o f,c)
+end
+
+view CategoryofSets : Category -> SetCategory =
+     Ob |-> SetS, Mor |-> MapS, __o__, dom, cod
+end
+
 
 %{ If we want to iterate the constructions product, disjoint union
    and quotients on sets, we need to circumvent the problem that
@@ -175,34 +346,51 @@ end
    We also specify the mediating morphisms that exist by the
    respective (co)universal properties of the constructions. }%
 spec AbstractSetConstructions[SetRepresentation] given Map = %def
-  ops __*__,__coproduct__ : Set S * Set S -> Set S;
+  spec SetCategory
+then
+  ops __*__,__coproduct__ : SetS * SetS -> SetS;
       %% the mediating morphisms for (co)products depend on two morphisms
       %% going into the factors (out of the summands)
-      <__! __>, [__! __] : Map S -> Map S -> Map S;
+      <__! __>, [__! __] : MapS -> MapS -> MapS;
       %% the product projections (coproduct injections already come from SetRepresentation)
       pi1,pi2 : S ->? S;
       %% partial inverses of the coproduct injections
       left, rigt : S ->? S;
       %% given a PER, yield the resulting quotient set (=coequalizer)
       %% then we have coeq r :: dom r --> factor r
-      factor : PER S -> Set S;
+      factor : PER S -> SetS;
       %% the mediating morphism for coequalizers
       %% if we have another h :: dom r --> A, it factors through coeq r via the mediating morphism
-      mediate : PER S -> Map S ->? Map S
-  forall x,y:S; s,s1,s2,t:Set S; f,g,h : Map S; r:PER S
+      mediate : PER S -> MapS ->? MapS
+  forall x,y:S; s,s1,s2,t:SetS; f,g,h : MapS; r:PER S
   . pi1 (pair (x,y)) = x
   . pi2 (pair (x,y)) = y
   . s1 * s2 = image pair (s1*s2)
-  . <f!g> x = pair(f x, g x)
+%%  . <(a,f,c)!(b,g,c)> = (\x -> pair(f x, g x)
   . s1 coproduct s2 = (image inl s1) union (image inr s2)
-  . [f!g] (inl x) = f x
-  . [f!g] (inr x) = g x
+  . [(a,f,c)!(b,g,c)] = 
+      (a coproduct b, 
+       \ y -> case y of (inl x) -> f x
+                        (inr x) -> g x,
+       c)
   . def left x <=> x isIn range inl
   . def right x <=> x isIn range inr
   . left (inl x) = x
   . right (inr x) = x
   . factor r = range (coeq r)
   . f :: dom r --> t /\ ker f subset r => mediate r f (coeq x) = f x 
+end
+
+
+view SetCoproducts [SetRepresentation] given Map : 
+        Coproduct[Category] -> AbstractSetConstructions[SetRepresentation] =
+     Ob |-> SetS, Mor |-> MapS, __o__, dom, cod,
+     __coproduct__, inj, inl, [__!__]
+end     
+
+
+
+%[
 then %implies
   . pi1 :: s1 * s2 --> s1 
   . pi2 :: s1 * s2 --> s2  
@@ -260,9 +448,19 @@ then %def
             then mediate r [h!k] else undef())
 then %implies
   %% pushout properties
- {}
+  forall x,y:S; s,s1,s2,s3,t:Set S; f,g : Map S; r:Pred(S*S)
+  . def pushout (s1,f,s2,g,s3) =>
+    let (s4,h,k,m) = pushout (s1,f,s2,g,s3) 
+    in k o g = h o f
+  . def pushout (s1,f,s2,g,s3) =>
+    forall s4' : Set S; h',k' : Map S .
+    h'::s2-->s4 /\ k'::s3-->s4 /\ k' o g = h' o f => 
+     let unique = m s4' h' k' 
+     in unique o k = k' /\ unique o h = h'
+        /\ forall unique'::s4-->s4' .
+              unique o k = k' /\ unique o h = h' => unique=unique`
 end
-
+]%
 
 %{ Directed graphs over some arbitrary but fixed node and edge types,
    given by node set and source and target maps.
@@ -477,7 +675,7 @@ end
 
 
 %% still first order !!!!!
-
+%[
 spec SymmetricClosure[sort NodeLabel][sort EdgeLabel] =
   RichAbstractGraph[sort NodeLabel][sort EdgeLabel]
 then
@@ -567,3 +765,4 @@ then
 end
 
 %%
+]%

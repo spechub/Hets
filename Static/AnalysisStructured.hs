@@ -542,18 +542,18 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
           l = getLogic nsig
       (sp1',nsig1,dg1) <- 
          ana_SPEC lg gctx (EmptyNode lid1) Nothing just_struct sp1
-      (sp2'nsig2,dg2) <- 
+      (sp2',nsig2,dg2) <- 
          ana_SPEC lg (gannos,genv,dg1) nsig1 Nothing just_struct sp2
       n' <- maybeToResult nullPos 
-            "Internal error: Free spec over empty spec" (getNode nsig')
-      let gsigma' = getSig nsig'
+            "Internal error: Data spec over empty spec" (getNode nsig1)
+      let gsigma' = getSig nsig1
       G_sign lid' sigma' <- return gsigma'
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = G_sign lid' (empty_signature lid'), -- delta is empty
             dgn_sens = G_l_sentence lid' [],
             dgn_origin = DGFree }
-          [node] = newNodes 0 dg'
+          [node] = newNodes 0 dg2
           link = (n',node,DGLink {
             dgl_morphism = error "AnalysisStructured.hs:5", -- ??? inclusion
             dgl_type = FreeDef nsig,
@@ -564,8 +564,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
                    pos,
               NodeSig(node,gsigma'),
               insEdge link $
-              insNode (node,node_contents) dg')
-
+              insNode (node,node_contents) dg2)
 -}
 
 -- analysis of renamings

@@ -6,6 +6,8 @@
  - wie NodeLab aus DG bekommen (anhand eines Node), match ok?
 
  - join DGraphs selbst schreiben?
+   lieber anaHaskellFileAux mit DGraph-Argument, anaHaskellFile = anaHaskellFileAux emptyDG
+   und so den DG durchschleifen/inkrementell vergößern => kein Join nötig
 
  - erhalten des Knoten aufwaendig/krude: name in GlobalEnv nicht bekannt
 
