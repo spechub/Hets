@@ -60,8 +60,8 @@ TYPE-ARG        ::= TYPE-EXT-VARS           %% globally declared or universe
 TYPE-ARGS       :: TYPE-ARG ; ... ; TYPE-ARG
 
 PSEUDOTYPE      ::= TYPE 
-                  | \ TYPE-ARGS "." PSEUDOTYPE
-                  | \ (TYPE-ARGS) ... (TYPE-ARGS) "." PSEUDOTYPE  
+                  | \ TYPE-PATTERN-ARG "." PSEUDOTYPE
+                  | \ (TYPE-PATTERN-ARG)...(TYPE-PATTERN-ARG) "." PSEUDOTYPE
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
