@@ -201,7 +201,7 @@ post_doc4apache:
 ###############################
 ### release management
 
-derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
+derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs $(inline_axiom_files)
 
 utils/DrIFT: $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
