@@ -11,19 +11,21 @@ Portability :  non-portable
 
 module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
 
+import Haskell.HatParser hiding (hatParser)
+import Haskell.PreludeString
+
 import Common.AS_Annotation 
 import Common.Id(Pos(..))
 import Common.Result 
 import Common.GlobalAnnotations
-import Haskell.HatParser hiding (hatParser)
-import Haskell.PreludeString
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+
 import Data.List
 import Data.Char
 import Data.Set as DSet
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 
 type Scope = Rel (SN HsName) (Ent (SN String))
 
@@ -117,8 +119,11 @@ emptySign = Sign
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
-hatAna (hs, e, ga) = do
-    (decls, diffSig, accSig, sens) <- hatAna2 (hs, addSign e preludeSign, ga)
+hatAna (HsDecls hs, e, ga) = do
+    let (rs, ds) = preludeConflicts hs
+    Result ds $ Just ()
+    (decls, diffSig, accSig, sens) <- 
+        hatAna2 (HsDecls rs, addSign e preludeSign, ga)
     return (decls, diffSig, diffSign accSig preludeSign, sens)
 
 preludeSign :: Sign
@@ -175,10 +180,14 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
 formSrcLoc :: SrcLoc -> Pos
 formSrcLoc (SrcLoc file _ line col) = SourcePos file line col
 
-getHsDecl = maybe (error "FromHasCASL.getHsDecl") id . basestruct . struct 
+getHsDecl :: (Rec a b, GetBaseStruct b (DI i e p ds t [t] t)) => 
+              a -> DI i e p ds t [t] t
+getHsDecl = maybe (HsFunBind loc0 []) id . basestruct . struct 
+  -- use a dummy for properties
 
-preludeConflicts f = 
-    foldr ( \ d (es, ds) -> let e = f d
+preludeConflicts :: [HsDecl] -> ([HsDecl], [Diagnosis])
+preludeConflicts = 
+    foldr ( \ d (es, ds) -> let e = getHsDecl d
                                 p = formSrcLoc $ srcLoc e
                             in
         if preludeEntity e then 
@@ -186,6 +195,8 @@ preludeConflicts f =
              Diag Warning ("possible Prelude conflict:\n  " ++ pp e) p : ds)
            else (d : es, ds)) ([], [])
 
+preludeEntity :: (Printable i, Show t, DefinedNames i t) => 
+                 DI i e p ds t [t] t -> Bool
 preludeEntity d = case d of 
     HsFunBind _ ms -> any preludeMatch ms
     HsTypeSig _ ts _ _ -> any (flip Set.member preludeValues . pp) ts
@@ -194,10 +205,13 @@ preludeEntity d = case d of
                               || any preludeConstr cs
     _ -> True -- ignore others
 
+preludeMatch :: Printable i => 
+                HsMatchI i e p ds -> Bool
 preludeMatch m = case m of 
     HsMatch _ n _ _ _ -> let s = pp n in
         Set.member s preludeValues || prefixed s
 
+preludeConstr :: Printable i => HsConDeclI i t [t] -> Bool
 preludeConstr c = let s = pp $ case c of
                           HsConDecl _ _ _ n _ -> n 
                           HsRecDecl _ _ _ n _ -> n 

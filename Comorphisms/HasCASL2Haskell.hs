@@ -82,11 +82,9 @@ mapSingleSentence sign sen = do
 
 mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (TiDecl PNT)])
 mapTheory (sig, csens) = do
-    let (hs, ds) = preludeConflicts getHsDecl $ translateSig sig
-	(ps, es) = preludeConflicts (getHsDecl . sentence) $ 
-                   concatMap (translateSentence sig) csens
+    let hs = translateSig sig
+	ps = concatMap (translateSentence sig) csens
 	cs = cleanSig hs ps
-    Result (ds ++ es) $ Just ()
     (_, _, hsig, sens) <- 
             hatAna (HsDecls (cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
