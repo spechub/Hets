@@ -14,7 +14,6 @@
 module Common.PrintLaTeX 
     ( renderLatex
     , debugRenderLatex
-    , renderText 
     , PrintLaTeX(..)
     , renderLatexVerb
     , startTab, endTab, setTab
@@ -33,11 +32,6 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.LaTeX_funs
-
--- This type class allows latex printing of instantiated Datatypes
-class PrettyPrint a => PrintLaTeX a where
-    printLatex0 :: GlobalAnnos -> a -> Doc
---    printLatex0 ga a = printText0 ga a
 
 ----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 100 1.5)

@@ -7,16 +7,15 @@
    Stability   :  provisional
    Portability :  portable
 
-   This class needs to be instantiated for every datastructure in AS_*
-   for LaTeX and isolatin-1 pretty printing. It is only neccessary to
-   provide one isolatin-1 printing method for prototypes, but for real
-   nice output you need to implement every method.
+   This classes needs to be instantiated for every datastructure in AS_*
+   for LaTeX and isolatin-1 pretty printing. 
 -}
 
 module Common.PrettyPrint 
     ( showPretty
     , renderText 
     , PrettyPrint(..)
+    , PrintLaTeX(..)
     , printText
     , isChar
     , textStyle
@@ -28,8 +27,11 @@ import Common.Id
 import Common.Lib.Pretty
 import Common.GlobalAnnotations
 
+-- This type class allows latex printing of instantiated Datatypes
+class PrettyPrint a => PrintLaTeX a where
+    printLatex0 :: GlobalAnnos -> a -> Doc
+
 -- This type class allows pretty printing of instantiating Datatypes
--- for infomation on the predefined functions see above
 class Show a => PrettyPrint a where
     printText0 :: GlobalAnnos -> a -> Doc
 
