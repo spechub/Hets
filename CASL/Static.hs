@@ -559,6 +559,53 @@ matches _                            _                       = False
 symName :: Symbol -> Id
 symName (Symbol id _) = id
 
+statSymbMapItems :: SYMB_MAP_ITEMS -> Result (EndoMap RawSymbol)
+statSymbMapItems (Symb_map_items kind l _) =
+  return (listToFM $ map (symbOrMapToRaw kind) l)
+  
+symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> (RawSymbol,RawSymbol)
+symbOrMapToRaw k (Symb s) = (symbToRaw k s,symbToRaw k s)
+symbOrMapToRaw k (Symb_map s t _) = (symbToRaw k s,symbToRaw k t)
+
+statSymbItems :: SYMB_ITEMS -> Result [RawSymbol]
+statSymbItems (Symb_items kind l _) =
+  return (map (symbToRaw kind) l)
+
+symbToRaw :: SYMB_KIND -> SYMB -> RawSymbol
+symbToRaw k (Symb_id id)       = symbKindToRaw k id
+symbToRaw k (Qual_id id typ _) = symbKindToRaw k id
+
+symbKindToRaw :: SYMB_KIND -> Id -> RawSymbol
+symbKindToRaw Implicit     id = AnID id
+symbKindToRaw (Sorts_kind) id = AKindedId SortKind id
+symbKindToRaw (Ops_kind)   id = AKindedId FunKind  id
+symbKindToRaw (Preds_kind) id = AKindedId PredKind id
+
+typeToRaw :: SYMB_KIND -> TYPE -> Id -> RawSymbol
+typeToRaw k (O_type _) id = AKindedId FunKind  id
+typeToRaw k (P_type _) id = AKindedId PredKind id
+typeToRaw k (A_type _) id = symbKindToRaw k id
+
+checkItem :: Sign -> (Id,SigItem) -> Bool
+checkItem sigma (id,si) =
+  let
+    res   = lookupFM (getMap sigma) id
+    items = if (isJust res) then
+              fromJust res
+            else
+              []
+  in
+    si `elem` items
+
+unfoldSigItems :: (Id, [SigItem]) -> [(Id, SigItem)]
+unfoldSigItems (id,[])  = []
+unfoldSigItems (id,h:t) = (id,h):(unfoldSigItems (id,t))
+
+isSubSig :: Sign -> Sign -> Bool
+isSubSig sub super =
+  and $ map (checkItem super) $ concat $ map unfoldSigItems
+      $ fmToList $ getMap sub
+
 ------------------------------------------------------------------------------
 -- THE END
 ------------------------------------------------------------------------------
