@@ -1,3 +1,17 @@
+
+{- HetCATS/AS_Annotation.hs
+   $Id$
+   Author: Klaus Lüttich
+   Year:   2002
+
+   These datastructures describe the Annotaions of (Het)CASL. 
+   There is also a type class for Annoted items.
+
+   todo:
+      - ATermConversion SML-CATS
+      - LaTeX Pretty Printing
+-}
+
 module AS_Annotation where
 import Id
 
@@ -10,15 +24,15 @@ data Annotation = Comment_line String [Pos]
 		| Annote_group String [String] [Pos]
 		-- known annotes
 		| Display_anno Id [(String,String)] [Pos]
-		-- postion of comment start, keywords and comment end
+		-- postion of anno start, keywords and anno end
 		| String_anno Id Id [Pos] 
-		-- postion of comment start, commas and comment end
+		-- postion of anno start, commas and anno end
 		| List_anno Id Id Id [Pos] 
-		-- postion of comment start, commas and comment end
+		-- postion of anno start, commas and anno end
 		| Number_anno Id [Pos] 
-		-- postion of comment start, commas and comment end
+		-- postion of anno start, commas and anno end
 		| Float_anno Id Id [Pos] 
-		-- postion of comment start, commas and comment end
+		-- postion of anno start, commas and anno end
 		| Prec_anno Bool [Id] [Id] [Pos] 
 		--          ^              ^ "{",commas,"}", "<",
 		--          |                "{",commas,"}"
@@ -26,19 +40,9 @@ data Annotation = Comment_line String [Pos]
 		| Lassoc_anno [Id] [Pos] -- position of commas
 		| Rassoc_anno [Id] [Pos] -- position of commas
 		| Label [String] [Pos] 
-		-- postion of comment start and comment end
+		-- postion of anno start and anno end
 
-		-- All annotations below are only as commentline allowed
-		| Logic_anno  String String [Pos] 
-		-- position of comment start, first string, snd string
-		| Hide_anno  String String String [Pos] 
-		-- position of comment start,1st str,"<-",2nd str,"--",3rd str
-		  -- if one string is empty pos is ommitted and
-		  -- pos of arrows may differ
-		| With_anno  String String String [Pos]
-		-- position of comment start,1st str,"--",2nd str,"->",3rd str
-		  -- if one string is empty pos is ommitted and
-		  -- pos of arrows may differ
+		-- All annotations below are only as annotationline allowed
 		| Implies [Pos] 
 		| Definitional [Pos]
 		| Conservative [Pos]
