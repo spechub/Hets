@@ -19,6 +19,7 @@ import Common.Lib.Pretty
 import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.GlobalAnnotations
+import Common.Keywords
 
 import Common.Id
 import qualified Syntax.AS_Structured as AS_Struct 
@@ -35,16 +36,16 @@ instance PrintLaTeX LIB_DEFN where
 	    ab' = vcat $ map (printLatex0 ga') ab -- LIB_ITEMs
 	    ad' = vcat $ map (printLatex0 ga') ad -- global ANNOTATIONs
 	    ga' = set_latex_print True ga
-	in hc_sty_plain_keyword "library" <\+> aa' 
-	       <> latex_macro "\n" $$ ad' 
-	       $$ latex_macro "\n" $$ ab'
+	in hc_sty_plain_keyword libraryS <\+> aa' 
+	       <> lnl $$ ad' 
+	       $$ lnl $$ ab'
 
 instance PrintLaTeX LIB_ITEM where
     printLatex0 ga (Spec_defn aa ab ac _) =
 	let aa' = simple_id_indexed_latex aa
 	    ab' = printLatex0 ga ab -- only PARAMS are nested/hang after 
 				    -- the spec name
-	    spec_head = hc_sty_hetcasl_keyword "spec" 
+	    spec_head = hc_sty_hetcasl_keyword specS 
 			<\+> setTab_latex <> aa' <\+> ab' <\+> equals_latex
 	    ac' = spAnnotedPrint (printLatex0 ga) 
 		  (printLatex0 ga) (<\+>) (spec_head) ac
@@ -65,12 +66,12 @@ instance PrintLaTeX LIB_ITEM where
 	    ad' = fcat $ punctuate (comma_latex<>space_latex) $ 
 	                 map (printLatex0 ga) ad
 	    eq' = if null ad then empty else equals_latex
-	    vhead = hc_sty_hetcasl_keyword "view" <\+> 
+	    vhead = hc_sty_hetcasl_keyword viewS <\+> 
 		   setTab_latex <> aa' <\+> ab' 
 	    to' = if isEmpty eq' then to else to <\+> eq'
 	    head_with_type = 
 		fsep [vhead <\+> colon_latex, 
-		      fsep [frm <\+> hc_sty_plain_keyword "to",
+		      fsep [frm <\+> hc_sty_plain_keyword toS,
 		      to']]	                  
 	    in (if isEmpty eq' 
 		then head_with_type
@@ -101,14 +102,23 @@ instance PrintLaTeX LIB_ITEM where
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab
 	in (hang_latex 
-	        (hc_sty_plain_keyword "arch spec" <\+> aa' 
+	        (hc_sty_plain_keyword archS <\+>
+                 hc_sty_plain_keyword specS <\+> aa' 
 		 <\+> equals_latex) 
 	        4 ab') 
            $$ latexEnd
     printLatex0 ga (Unit_spec_defn aa ab _) =
 	let aa' = hc_sty_id $ tokStr aa
 	    ab' = printLatex0 ga ab
-	in (hang_latex (hc_sty_plain_keyword "unit spec" <\+> aa' 
+	in (hang_latex (hc_sty_plain_keyword unitS <\+>
+                        hc_sty_plain_keyword specS <\+> aa' 
+			<\+> equals_latex) 
+	               4 ab') 
+	   $$ latexEnd
+    printLatex0 ga (Ref_spec_defn aa ab _) =
+	let aa' = hc_sty_id $ tokStr aa
+	    ab' = printLatex0 ga ab
+	in (hang_latex (hc_sty_plain_keyword refinementS <\+> aa' 
 			<\+> equals_latex) 
 	               4 ab') 
 	   $$ latexEnd
@@ -116,13 +126,13 @@ instance PrintLaTeX LIB_ITEM where
 	let aa' = printLatex0 ga aa
 	    ab' = fsep_latex $ punctuate comma_latex $ 
 	                       map (printLatex0 ga) ab
-	in (hang_latex (hc_sty_hetcasl_keyword "from" <\+> setTab_latex <>aa' 
-			<\+> hc_sty_plain_keyword "get") 
+	in (hang_latex (hc_sty_hetcasl_keyword fromS <\+> setTab_latex <>aa' 
+			<\+> hc_sty_plain_keyword getS) 
 	               8 
-	               (tabbed_nest_latex ab')) <> latex_macro "\n"
+	               (tabbed_nest_latex ab')) <> lnl
     printLatex0 ga (Syntax.AS_Library.Logic_decl aa _) =
 	let aa' = printLatex0 ga aa
-	in hc_sty_plain_keyword "logic" <\+> aa' 
+	in hc_sty_plain_keyword logicS <\+> aa' 
 
 instance PrintLaTeX ITEM_NAME_OR_MAP where
     printLatex0 _ga (Item_name aa) =
@@ -134,7 +144,7 @@ instance PrintLaTeX LIB_NAME where
     printLatex0 ga (Lib_version aa ab) =
 	let aa' = printLatex0 ga aa
 	    ab' = printLatex0 ga ab
-	in aa' <\+> hc_sty_plain_keyword "version" <\+> ab'
+	in aa' <\+> hc_sty_plain_keyword versionS <\+> ab'
     printLatex0 ga (Lib_id aa) = printLatex0 ga aa
 
 instance PrintLaTeX LIB_ID where
@@ -147,5 +157,8 @@ instance PrintLaTeX VERSION_NUMBER where
     printLatex0 _ (Version_number aa _) =
 	hcat $ punctuate (casl_normal_latex ".") $ map casl_normal_latex aa
 
+lnl :: Doc
+lnl = latex_macro "\n"
+
 latexEnd :: Doc
-latexEnd = hc_sty_plain_keyword "end" <> latex_macro "\n"
+latexEnd = hc_sty_plain_keyword endS <> lnl
