@@ -575,7 +575,7 @@ listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
   do
     main <- HTk.createToplevel [HTk.text title]
-    lb  <- HTk.newListBox main [HTk.value entries, bg "white", size (25, 25)] ::
+    lb  <- HTk.newListBox main [HTk.value entries, bg "white", size (100, 50)] ::
              IO (HTk.ListBox String)
     HTk.pack lb [HTk.Side HTk.AtLeft, 
                  HTk.Expand HTk.On, HTk.Fill HTk.Both]
