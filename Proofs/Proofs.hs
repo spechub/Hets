@@ -150,16 +150,15 @@ applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
 applyRule = error "Proofs.hs:applyRule"
 
 
-automatic :: ProofStatus -> ProofStatus
-automatic proofStatus =
-  (globalContext, libEnv, newHistory, dgraph)
-  where 
-    (globalContext, libEnv, history, dgraph) 
-      = automaticAux proofStatus
-    (newHistoryPart, oldHistory) = splitAt 4 history
-    (rules, changes) = concatHistoryElems (reverse newHistoryPart)
-    newHistoryElem = (rules, removeContraryChanges changes)
-    newHistory = newHistoryElem:oldHistory
+automatic :: ProofStatus -> IO ProofStatus
+automatic proofStatus = do
+  (globalContext, libEnv, history, dgraph) <- automaticAux proofStatus
+  let (newHistoryPart, oldHistory) = splitAt 5 history
+      (rules, changes) = concatHistoryElems (reverse newHistoryPart)
+      newHistoryElem = (rules, removeContraryChanges changes)
+      newHistory = newHistoryElem:oldHistory
+  return (globalContext, libEnv, newHistory, dgraph)
+
 
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
@@ -184,8 +183,8 @@ removeChange change changes =
   (takeWhile (change /=) changes)
   ++(tail (dropWhile (change /=) changes))
 
-automaticAux :: ProofStatus -> ProofStatus
-automaticAux = locDecomp.locSubsume.globDecomp.globSubsume
+automaticAux :: ProofStatus -> IO ProofStatus
+automaticAux = (hideTheoremShift True).locDecomp.locSubsume.globDecomp.globSubsume
 
 concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
 concatHistoryElems [] = ([],[])
@@ -318,13 +317,6 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 -- -------------------
 -- global subsumption
 -- -------------------
-
--- local debug method
-printEdges :: [LEdge DGLinkLab] -> String
-printEdges [] = ""
-printEdges ((edge@(src,tgt,label)):edges) =
-  "("++(show src)++", "++(show tgt)++", dgl_type=<<"++(show (dgl_type label))++">>\ndgl_origin=<<"++(show (dgl_origin label))++">>\ndgl_morphism=<<"++(show (dgl_morphism label))++">>)\n\n"++(printEdges edges)
-
 
 -- applies global subsumption to all unproven global theorem edges if possible
 globSubsume ::  ProofStatus -> ProofStatus
@@ -508,9 +500,9 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 -- hide theorem shift
 -- ----------------------------------------------
 
-hideTheoremShift :: ProofStatus -> IO ProofStatus
-hideTheoremShift proofStatus@(globalContext,libEnv,history,dGraph) =
-  do result <- hideTheoremShiftAux dGraph ([],[]) hidingThmEdges
+hideTheoremShift :: Bool -> ProofStatus -> IO ProofStatus
+hideTheoremShift isAutomatic proofStatus@(globalContext,libEnv,history,dGraph)=
+  do result <- hideTheoremShiftAux dGraph ([],[]) hidingThmEdges isAutomatic
      let nextDGraph = fst result
          nextHistoryElem = snd result
      return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
@@ -521,12 +513,14 @@ hideTheoremShift proofStatus@(globalContext,libEnv,history,dGraph) =
 
 {- auxiliary method for hideTheoremShift -}
 hideTheoremShiftAux :: DGraph -> ([DGRule],[DGChange])
-		    -> [LEdge DGLinkLab] -> IO (DGraph,([DGRule],[DGChange]))
-hideTheoremShiftAux dgraph historyElement [] =
+		    -> [LEdge DGLinkLab] -> Bool 
+		    -> IO (DGraph,([DGRule],[DGChange]))
+hideTheoremShiftAux dgraph historyElement [] _ =
   return (dgraph, historyElement)
-hideTheoremShiftAux dgraph (rules,changes) (ledge:list) = 
-  do proofBasis <- findProofBasisForHideTheoremShift dgraph ledge
-     if (null proofBasis) then hideTheoremShiftAux dgraph (rules,changes) list
+hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic = 
+  do proofBasis <- findProofBasisForHideTheoremShift dgraph ledge isAutomatic
+     if (null proofBasis)
+      then hideTheoremShiftAux dgraph (rules,changes) list isAutomatic
        else do
          let newEdge = makeProvenHidingThmEdge proofBasis ledge
              auxDGraph = insEdge newEdge (delLEdge ledge dgraph)
@@ -534,7 +528,7 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) =
              (newDGraph,newChanges) = 
 		 insertNewEdges auxDGraph auxChanges proofBasis
              newRules = (HideTheoremShift ledge):rules
-         hideTheoremShiftAux newDGraph (newRules,newChanges) list
+         hideTheoremShiftAux newDGraph (newRules,newChanges) list isAutomatic
 
 {- inserts the given edges into the development graph and adds a corresponding entry to the changes -}
 insertNewEdges :: DGraph -> [DGChange] -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
@@ -560,17 +554,19 @@ makeProvenHidingThmEdge proofBasisEdges (src,tgt,edgeLab) =
 
 
 {- selects a proof basis for 'hide theorem shift' if there is one-}
-findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab
+findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab -> Bool
 			  -> IO [LEdge DGLinkLab]
-findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
+findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) isAutomatic=
   if (null pathPairsFilteredByConservativity) then return []
- {-    error (prettyPrintPossiblePathPairs dgraph hidingMorphism morphism
-	    possiblePathPairs)-}
-   else do proofBasis <- hideTheoremShift_selectProofBasis dgraph 
-			 pathPairsFilteredByConservativity
-           let fstPath = fst proofBasis
-	       sndPath = snd proofBasis
-           return [createEdgeForPath fstPath, createEdgeForPath sndPath]
+   else 
+     do pb <- hideTheoremShift_selectProofBasis dgraph 
+			 pathPairsFilteredByConservativity isAutomatic
+        case pb of
+          Nothing -> return []
+          Just proofBasis -> do let fstPath = fst proofBasis
+				    sndPath = snd proofBasis
+				return [createEdgeForPath fstPath, 
+					createEdgeForPath sndPath]
 
    where
     pathsFromSrc = getAllPathsOfTypeFrom dgraph src (ledge /=)
@@ -585,9 +581,11 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) =
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
 
 
-filterPairsByConservativityOfSecondPath ::
+{- removes all pairs from the given list whose second path does not have a 
+   conservativity greater than or equal to Cons -}
+filterPairsByConservativityOfSecondPath :: 
     [([LEdge DGLinkLab],[LEdge DGLinkLab])] 
-	-> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+      -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
 filterPairsByConservativityOfSecondPath [] = []
 filterPairsByConservativityOfSecondPath (([],_):list) = 
   filterPairsByConservativityOfSecondPath list
@@ -598,58 +596,54 @@ filterPairsByConservativityOfSecondPath (pair:list) =
    then pair:(filterPairsByConservativityOfSecondPath list)
     else filterPairsByConservativityOfSecondPath list
 
-hideTheoremShift_selectProofBasis :: 
-    DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
-		 -> IO ([LEdge DGLinkLab], [LEdge DGLinkLab])
-hideTheoremShift_selectProofBasis _ (basis:[]) = return basis
-hideTheoremShift_selectProofBasis dgraph basisList = do
-   sel <- listBox 
-                "Choose a path tuple as the proof basis"
-		(map (prettyPrintPathTuple dgraph) basisList)
-   i <- case sel of
-           Just j -> return j
-           _ -> error "Proofs.Proofs: selection of proof basis failed"
-   return (basisList!!i)
 
- 
+{- selects a proofBasis (i.e. a path tuple) from the list of possible ones:
+   If there is exaclty one proofBasis in the list, this is returned.
+   If there are more than one and the method is called in automatic mode Nothing is returned. In non-automatic mode the user is asked to select a proofBasis via listBox. -}
+hideTheoremShift_selectProofBasis :: 
+    DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> Bool
+		 -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
+hideTheoremShift_selectProofBasis _ (basis:[]) _ = return (Just basis)
+hideTheoremShift_selectProofBasis dgraph basisList isAutomatic =
+  case isAutomatic of
+    True -> return Nothing
+    False -> do sel <- listBox 
+                       "Choose a path tuple as the proof basis"
+		       (map (prettyPrintPathTuple dgraph) basisList)
+		i <- case sel of
+                       Just j -> return j
+                       _ -> error ("Proofs.Proofs: " ++
+				   "selection of proof basis failed")
+		return (Just (basisList!!i))
+
+
+{- returns a string representation of the given paths:
+   for each path a tuple of the names of its nodes is shown, the two are combined by an 'and' -}
 prettyPrintPathTuple :: DGraph -> ([LEdge DGLinkLab],[LEdge DGLinkLab]) 
 		     -> String
 prettyPrintPathTuple dgraph (p1,p2) =
-  "PATH 1: " ++ (prettyPrintPath dgraph p1) ++ "\n" 
-   ++ "PATH 2: " ++ (prettyPrintPath dgraph p2)
+  (prettyPrintPath dgraph p1) ++ " and " ++ (prettyPrintPath dgraph p2)
 
-prettyPrintEdgeType :: LEdge DGLinkLab -> String
-prettyPrintEdgeType (_,_,lab) =
-  case dgl_type lab of
-    GlobalThm Static.DevGraph.Open _ _ -> "GlobalThm Open"
-    GlobalThm (Proven _) _ _ -> "GlobalThm Proven"
-    LocalThm Static.DevGraph.Open _ _  -> "LocalThm Open"
-    LocalThm (Proven _) _ _ -> "LocalThm Proven"
-    HidingThm _ Static.DevGraph.Open -> "HidingThm Open"
-    HidingThm _ (Proven _) -> "HidingThm Proven"
-    _ -> show (dgl_type lab)
+{- returns the names of the nodes of the path, separated by commas-}
+prettyPrintNodesOfPath :: DGraph -> [LEdge DGLinkLab] -> String
+prettyPrintNodesOfPath _ [] = ""
+prettyPrintNodesOfPath dgraph (edge:path) =
+  (prettyPrintSourceNode dgraph edge) ++ ", "
+  ++ (prettyPrintNodesOfPath dgraph path)
+  ++ end
+  where
+    end = case path of
+            [] -> prettyPrintTargetNode dgraph edge
+            _ -> ""
 
+{- returns a string reprentation of the path: showing a tuple of its nodes-}
 prettyPrintPath :: DGraph -> [LEdge DGLinkLab] -> String
 prettyPrintPath dgraph [] = "<empty path>"
-prettyPrintPath dgraph p@(x:xs) =
-  (prettyPrintNodesAndEdgeTypesOfPath dgraph p) ++ " with morphism < " ++ (showPretty pathMorphism "") ++ ">"
-  where 
-    pathMorphism = calculateMorphismOfPath p
+prettyPrintPath dgraph path =
+  "(" ++ (prettyPrintNodesOfPath dgraph path) ++ ")"
 
 
-prettyPrintNodesAndEdgeTypesOfPath :: DGraph -> [LEdge DGLinkLab] -> String
-prettyPrintNodesAndEdgeTypesOfPath _ [] = ""
-prettyPrintNodesAndEdgeTypesOfPath dgraph (edge:path) =
-  (prettyPrintSourceNode dgraph edge) ++ " -- " ++ (prettyPrintEdgeType edge) ++ " --> " ++ end ++ (prettyPrintNodesAndEdgeTypesOfPath dgraph path)
-  where
-    end = if (null path) then (prettyPrintTargetNode dgraph edge) else ""
-
-
-prettyPrintSourceNodeOfPath :: DGraph -> [LEdge DGLinkLab] -> String
-prettyPrintSourceNodeOfPath _ [] = "no source node"
-prettyPrintSourceNodeOfPath dgraph (edge:list) =
-  prettyPrintSourceNode dgraph edge
-
+{- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
   case get_dgn_name lab of
@@ -658,6 +652,8 @@ prettyPrintSourceNode dgraph (src,_,_) =
   where
     lab = lab' (context src dgraph)
 
+
+{- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
   case get_dgn_name lab of
@@ -666,6 +662,8 @@ prettyPrintTargetNode dgraph (_,tgt,_) =
   where
     lab = lab' (context tgt dgraph)
 
+
+{- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}
 createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
 createEdgeForPath path =
   case (calculateMorphismOfPath path) of
@@ -678,43 +676,6 @@ createEdgeForPath path =
 		     )    
     Nothing -> error ("Could not determine morphism of path " ++ (show path))
 
--- ----- DEBUGGING METHODS -----
-prettyPrintPossiblePathPairs :: DGraph -> GMorphism -> GMorphism
-			      -> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
-			      -> String
-prettyPrintPossiblePathPairs dgraph hidingMorph morph pairs =
- "DEBUG OUTPUT FOR HIDE THEOREM SHIFT\n\n"
-  ++ "hiding morphism of hiding link =<" ++ (showPretty hidingMorph "") ++">\n"
-  ++ "('normal') morphism of hiding link =<" ++ (showPretty morph "") ++ ">\n"
-  ++ "+++-+++-+++-+++-+++\n" 
-  ++ "+++-+++-+++-+++-+++\n" 
-  ++ (prettyPrintPossiblePathPairsAux dgraph hidingMorph morph pairs)
-
-prettyPrintPossiblePathPairsAux :: DGraph -> GMorphism -> GMorphism
-				-> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
-				-> String
-prettyPrintPossiblePathPairsAux  _ _ _ [] = ""
-prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph (([],_):pairs) 
-    = prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph pairs
-prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((_,[]):pairs)
-    = prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph pairs
-prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((p1,p2:ps):pairs) =
-  "FIRST: " ++ (prettyPrintPath dgraph p1) ++ "SECOND: " ++ (prettyPrintPath dgraph p2) ++ "+++-+++-+++-+++-+++\n" ++ (prettyPrintPossiblePathPairsAux  dgraph hidingMorph morph ((p1,ps):pairs))
-
-
-
-prettyPrintMiddleNodesOfPath :: DGraph -> [LEdge DGLinkLab] -> String
-prettyPrintMiddleNodesOfPath dgraph [] = ""
-prettyPrintMiddleNodesOfPath dgraph (edge:edges) =
-  if ((length edges) > 1) then (prettyPrintTargetNodeOfPath dgraph [edge]) 
-	 ++ ", " ++ prettyPrintMiddleNodesOfPath dgraph edges
-   else if (null edges) then "" else (prettyPrintTargetNodeOfPath dgraph [edge])
-
-prettyPrintTargetNodeOfPath :: DGraph -> [LEdge DGLinkLab] -> String
-prettyPrintTargetNodeOfPath _ [] = "no target node"
-prettyPrintTargetNodeOfPath dgraph p = prettyPrintTargetNode dgraph (last p)
-
--- -----END OF DEBUGGING METHODS -----
 
 {- returns a list of path pairs, as shorthand the pairs are not returned as path-path tuples but as path-<list of path> tuples. Every path in the list is a pair of the single path.
 The path pairs are selected by having the same target node. -}
@@ -801,6 +762,7 @@ getAllLocOrHideGlobDefPathsTo =
     getAllGlobDefPathsBeginningWithTypesTo
 	([isLocalDef, isHidingDef]::[LEdge DGLinkLab -> Bool])
 
+
 {- returns a list of all paths to the given node
    that consist of globalDef edges only
    or
@@ -809,19 +771,7 @@ getAllLocGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
 getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo 
 			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
-{-  (node,path):(locGlobPaths ++
-    (concat (
-      [getAllLocGlobDefPathsTo dgraph (getSourceNode edge) path| 
-       (_, path@(edge:edges)) <- globalPaths]))
-    )
 
-  where
-    inEdges = inn dgraph node
-    globalEdges = [edge| edge <- filter isGlobalDef inEdges, notElem edge path]
-    localEdges = [edge| edge <- filter isLocalDef inEdges, notElem edge path]
-    globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
-    locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
--}
 
 {- returns all paths consisting of global edges only
    or

@@ -220,7 +220,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
 
 	        Menu (Just "Proofs")
                   [Button "Automatic"
-			  (proofMenuSef gInfo automatic),
+			  (proofMenu gInfo (fmap return . automatic)),
                    Button "Global Subsumption"
 			  (proofMenuSef gInfo globSubsume),
 		   Button "Global Decomposition"
@@ -230,7 +230,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
 		   Button "Local Decomposition (merge of rules)"
 			  (proofMenuSef gInfo locDecomp),
 		   Button "Hide Theorem Shift"
-		          (proofMenu gInfo (fmap return . hideTheoremShift))
+	                  (proofMenu gInfo (fmap return . 
+					    (hideTheoremShift False)))
                     ]])]
       -- the node types
                [("spec", 
