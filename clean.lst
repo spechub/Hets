@@ -32,6 +32,7 @@ Common/Lib/Parsec/Token.hs
 Common/Lib/Text
 Common/test
 
+CspCASL/Doku
 CspCASL/FileAttributes.csp-casl
 CspCASL/Main.hs
 CspCASL/ghc-call
@@ -86,7 +87,7 @@ haterm-1.0
 hetcats/Algebra_I.tree.gen_trm
 hetcats/README
 
-doc/HetsOverview.tex
+doc
 mini
 parsec
 pretty
