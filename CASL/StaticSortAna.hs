@@ -2,8 +2,8 @@ module CASL.StaticSortAna where
 
 import CASL.Sign
 
-ana_SORT_ITEM :: SigLocalEnv -> Posed (Annoted SORT_ITEM) 
-	      -> Result SigLocalEnv
+ana_SORT_ITEM :: LocalEnv -> Posed (Annoted SORT_ITEM) 
+	      -> Result LocalEnv
 
 ana_SORT_ITEM env paItem = 
     case item $ posedItem paItem of
@@ -16,11 +16,11 @@ ana_SORT_ITEM env paItem =
 		       map (\ a -> mapAnnoted (const a) $ 
 			    posedItem paItem) al
 		  
-ana_single_SORT :: SigLocalEnv -> SortRels -> Maybe SortDefn 
+ana_single_SORT :: LocalEnv -> SortRels -> Maybe SortDefn 
 		-> Posed SortId -> Result SortItem
 
-update_ann_SORT_ITEM :: SigLocalEnv -> Annoted SortItem
-		      -> Result SigLocalEnv
+update_ann_SORT_ITEM :: LocalEnv -> Annoted SortItem
+		      -> Result LocalEnv
 
 		
 

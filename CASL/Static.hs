@@ -79,7 +79,7 @@ toSigLocalEnv env = SigEnv env [] Map.empty False
 
 emptyLocalEnv :: LocalEnv
 emptyLocalEnv =
-  Env emptyGlobalAnnos emptySign [] []
+  Env emptyGlobalAnnos Map.empty Map.empty Map.empty emptySign [] []
 
 emptyExtPos :: ExtPos
 emptyExtPos = ExtPos Key nullPos

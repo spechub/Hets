@@ -215,7 +215,10 @@ getLabel (GenItems l _) = let srts = filter (\x ->
 				      (map (show . symbId) srts))
 
 data LocalEnv = Env { getGA     :: GlobalAnnos,
-                      getSign   :: Sign,
+                      getSortMap   :: Map.Map Id (Annoted SortItem),
+                      getOpsMap    :: Map.Map Id [Annoted OpItem],
+                      getPredsMap  :: Map.Map Id [Annoted PredItem],
+		      getSign   :: Sign,
                       getPsi    :: [Named Sentence],
                       getGlobal :: [VarDecl] }
 	      deriving Show
