@@ -187,7 +187,7 @@ ana_BASIC_ITEMS ga bi =
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
 				Nothing -> Nothing
 				Just f -> Just a { item = f }) afs rfs
-	       ufs = mapMaybe id arfs
+	       ufs = catMaybes arfs
 	       fufs = map ( \ a -> a { item = Quantification Universal il 
 				     (item a) ps } ) ufs
 	       sens = map ( \ a -> NamedSen (getRLabel a) $ item a) fufs
@@ -202,7 +202,7 @@ ana_BASIC_ITEMS ga bi =
 	       arfs = zipWith ( \ a m -> case maybeResult m of 
 				Nothing -> Nothing
 				Just f -> Just a { item = f }) afs rfs
-	       ufs = mapMaybe id arfs
+	       ufs = catMaybes arfs
 	       sens = map ( \ a -> NamedSen (getRLabel a) $ item a) ufs
            addDiags ds
            addSentences sens			    
@@ -258,7 +258,7 @@ ana_OP_ITEM ga oi =
     Op_decl ops ty il ps -> 
 	do mapM_ (addOp $ toOpType ty) ops
 	   ul <- mapM (ana_OP_ATTR ga) il
-	   return $ Op_decl ops ty (mapMaybe id ul) ps
+	   return $ Op_decl ops ty (catMaybes ul) ps
     Op_defn i par at ps -> 
 	do let ty = headToType par
            addOp (toOpType ty) i
@@ -358,7 +358,7 @@ ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Env ()
 ana_DATATYPE_DECL _gk (Datatype_decl s al _) = 
 -- GenKind currently unused 
     do ul <- mapM (ana_ALTERNATIVE s . item) al
-       let constr = mapMaybe id ul
+       let constr = catMaybes ul
        if null constr then return ()
 	  else do addDiags $ checkUniqueness $ map fst constr
 		  let totalSels = Set.unions $ map snd constr
