@@ -14,6 +14,9 @@
   Sublogic ggf. hochsetzen (für subsorted atomic logic)
   Morphism umstellen, in Zusammenarbeit mit Klaus
 
+  für pr_epsilon:
+  Einbettungs-Signaturmorphismus, ueber Funktion in LocalEnv.hs
+
   Testen mit hetcats/hetcats.hs (Klaus kontakten)
 
 Korrespondenz abstrakt-konkret:
@@ -724,7 +727,7 @@ pr_formula l f = pr_check l sl_formula f
 
 pr_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> BASIC_SPEC
 pr_basic_spec l (Basic_spec s) =
-              Basic_spec ((mapMaybe (pr_annoted l pr_basic_items)) s)
+  Basic_spec ((mapMaybe (pr_annoted (adjust_logic l) pr_basic_items)) s)
 
 pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> Maybe BASIC_ITEMS
 pr_basic_items l (Sig_items s) =
@@ -816,7 +819,10 @@ pr_sort_item l (Subsort_defn s1 v s2 f p) =
 pr_sort_item l (Iso_decl s p) = Just (Iso_decl s p)
 
 pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS
-pr_symb_items l (Symb_items k s p) =
+pr_symb_items l1 (Symb_items k s p) =
+            let
+              l = adjust_logic l1
+            in
               if (in_x l k sl_symb_kind) then
                 let
                   (res,pos) = mapPos (tln 1 p) (pr_symb l) s
@@ -827,7 +833,10 @@ pr_symb_items l (Symb_items k s p) =
                 Nothing
 
 pr_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Maybe SYMB_MAP_ITEMS
-pr_symb_map_items l (Symb_map_items k s p) =
+pr_symb_map_items l1 (Symb_map_items k s p) =
+                let
+                  l = adjust_logic l1
+                in
                   if (in_x l k sl_symb_kind) then
                     let
                       (res,pos) = mapPos (tln 1 p) (pr_symb_or_map l) s
@@ -863,7 +872,8 @@ pr_symb l (Qual_id i t p) =
           Nothing
 
 pr_sign :: CASL_Sublogics -> Sign -> Sign
-pr_sign l (SignAsList s) = SignAsList (mapMaybe (pr_sigitem l) s)
+pr_sign l (SignAsList s) =
+  SignAsList (mapMaybe (pr_sigitem (adjust_logic l)) s)
 
 pr_sigitem :: CASL_Sublogics -> SigItem -> Maybe SigItem
 pr_sigitem l (ASortItem s) =
@@ -928,8 +938,12 @@ pr_preditem :: CASL_Sublogics -> PredItem -> Maybe PredItem
 pr_preditem l i = pr_check l sl_preditem i
 
 pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
-pr_morphism l (Morphism s t sm fm pm) =
-  Morphism (pr_sign l s) (pr_sign l t) sm (pr_fun_map l fm) (pr_pred_map l pm)
+pr_morphism l1 (Morphism s t sm fm pm) =
+  let
+    l = adjust_logic l1
+  in
+    Morphism (pr_sign l s) (pr_sign l t) sm (pr_fun_map l fm)
+             (pr_pred_map l pm)
 
 pr_pred_map :: CASL_Sublogics -> Pred_map -> Pred_map
 pr_pred_map l x = if (has_pred l) then x else emptyFM
@@ -955,9 +969,17 @@ pr_fun_map_entry l (t,i,b) =
       if ((isJust res) && (not b)) then
       Just (t,i,b) else Nothing
 
+-- FIXME
+-- function embedMorphism needs to be implemented in Logic.hs
+-- or elsewhere
 pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
-pr_epsilon l s = (Morphism (pr_sign l s) s emptyFM emptyFM emptyFM)
-  -- Einbettungs-Signaturmorphismus, ueber Funktion in LocalEnv.hs
+pr_epsilon l1 s = let
+                    l = adjust_logic l1
+                    new = pr_sign l s
+                    -- (sm,fm,pm) = embedMorphism new s
+                  in
+                    (Morphism new s emptyFM emptyFM emptyFM)
+                    -- (Morphism new s sm fm pm)
 
 ------------------------------------------------------------------------------
 -- the end
