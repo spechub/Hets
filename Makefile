@@ -14,20 +14,27 @@ all: hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats:fgl:hxt
-COMMONLIB_PATH = Common/Lib:Common/ATerm:fgl/Data/Graph:fgl/Data/Graph/Inductive:fgl/Data/Graph/Inductive/Internal:fgl/Data/Graph/Inductive/Monad:fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet:Hatchet:Taxonomy:$(PFE_PATHS)
+INCLUDE_PATH = ghc hetcats fgl hxt
+COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
+    fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
+    fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
+CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
+    Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
+    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle $(INCLUDE_PATH) \
+    Haskell/Hatchet Hatchet Taxonomy $(PFE_PATHS)
 
 ## set ghc imports properly for your system
-LINUX_IMPORTS = $(wildcard /home/linux-bkb/ghc/ghc-latest/lib/ghc-*/imports)
-DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}:${PFE_PATHS}'
+GHC_IMPORTS =`$(HC) --print-libdir`/imports
+DRIFT_ENV = \
+  DERIVEPATH=.:ghc:hetcats:$(GHC_IMPORTS):$(subst $(space),:,${PFE_PATHS})
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty:=
 space:= $(empty) $(empty)
 
 # override on commandline for other architectures
-INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
+INSTALLDIR = \
+  /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
@@ -35,8 +42,8 @@ INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files)
 
 HC         = ghc
 PERL       = perl
-HAPPY      = happy
-DRIFT      = $(DRIFT_ENV) utils/DrIFT
+HAPPY      = happy -sgca
+DRIFT      = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
@@ -47,7 +54,7 @@ HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
-HC_INCLUDE = $(addprefix -i, $(subst :, ,$(INCLUDE_PATH)))
+HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -58,14 +65,11 @@ logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
 
 # some modules from uni for haddock
 # if uni/server is included also HaXml sources are needed
-uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
-  $(wildcard ../uni/graphs/haddock/*.hs) \
-  ../uni/htk/toplevel/HTk.hs \
-  $(wildcard ../uni/htk/haddock/*/*.hs) \
-  $(wildcard ../uni/events/haddock/*.hs) \
-  $(wildcard ../uni/reactor/haddock/*.hs) \
-  $(wildcard ../uni/util/haddock/*.hs) \
-  $(wildcard ../uni/posixutil/haddock/*.hs)
+uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
+    ../uni/reactor ../uni/util ../uni/posixutil
+
+uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
+    $(wildcard ../uni/htk/haddock/*/*.hs)
 endif
 
 PFE_TOOLDIR := $(wildcard ../programatica/tools)
@@ -75,15 +79,26 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       base/transforms base/transforms/Deriving property \
       property/syntax property/AST property/transforms \
       property/TI property/defs property/parse2 property/parse2/Parser
-PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
 
-# add PFE_PATHS to DERIVEPATH if needed
-# but name clashes currently prevent ATC generation in a single file
-PFE_PATHS = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
-pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
+PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
+pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
+PFE_PATH = $(addprefix -i, $(PFE_PATHS))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
 happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
   $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
+
+LEX_DIR := $(PFE_TOOLDIR)/base/parse2/Lexer
+
+$(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
+	$< > $@
+
+$(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
+                          $(LEX_DIR)/HsTokens.hs
+	$(HC) --make -O -package data \
+           -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
+           -i$(PFE_TOOLDIR)/base/lib \
+	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
+              $@.hs -o $@
 
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
@@ -135,16 +150,19 @@ TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 
-GHCMAKE_OUTPUT = $(wildcard hetcats-make)
+#GHCMAKE_OUTPUT = $(wildcard hetcats-make)
 
-ifneq ($(strip $(GHCMAKE_OUTPUT)),)
-include sources_hetcats.mk
-else
-SOURCE_PATHS = $(COMMON_LIB_PATH):$(CLEAN_PATH)
-sources = $(wildcard $(subst :,/*hs , $(SOURCE_PATHS))/*hs)
-endif
+#ifneq ($(strip $(GHCMAKE_OUTPUT)),)
+#include sources_hetcats.mk
+#else
 
-objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
+non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs
+SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
+sources = hets.hs $(filter-out $(non_sources), \
+          $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
+#endif
+
+objects    = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
@@ -197,13 +215,24 @@ derived_sources += $(drifted_files) hetcats/Version.hs $(happy_files) \
                   $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = ./Isabelle/Logic_Isabelle.hs \
-    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
-    ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs
+cpp_sources = Isabelle/Logic_Isabelle.hs \
+    Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
+    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs
+
+
+nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
+          $(wildcard utils/DrIFT-src/*.lhs) \
+          $(wildcard utils/GenerateRules/*.hs) \
+          $(wildcard utils/InlineAxioms/*.hs) \
+          $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
+	  $(genrule_header_files) $(generated_rule_files) \
+          Haskell/PreludeString.append.hs \
+          Haskell/ProgramaticaPrelude.hs hxt/HXT.hs \
+	  $(patsubst %.hs,%.der.hs,$(drifted_files))
 
 # this variable holds the modules that should be documented
-doc_sources = $(filter-out $(cpp_sources), $(filter-out $(pfe_sources), \
-	$(sources))) $(patsubst %.hs, %.hspp, $(cpp_sources))
+doc_sources = $(filter-out $(nondoc_sources), $(sources)) \
+        $(patsubst %.hs, %.hspp, $(cpp_sources)) $(uni_sources)
 
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
                    Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
@@ -267,7 +296,7 @@ doc: docs/index.html
 
 # generate haddock documentation with links to sources
 docs/index.html: $(doc_sources)
-	$(HADDOCK) $(doc_sources) $(uni_sources) -o docs -h -v \
+	$(HADDOCK) $(doc_sources) -o docs -h -v \
           -i docs/base.haddock -i docs/parsec.haddock -s ../ \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
@@ -371,22 +400,6 @@ gen_atc_files = \
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files)
 
-#############################
-### programatica stuff
-
-LEX_DIR := $(PFE_TOOLDIR)/base/parse2/Lexer
-
-$(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
-	$< > $@
-
-$(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
-                          $(LEX_DIR)/HsTokens.hs
-	$(HC) --make -O -package data \
-           -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
-           -i$(PFE_TOOLDIR)/base/lib \
-	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
-              $@.hs -o $@
-
 ###############
 ### clean up
 
@@ -394,7 +407,7 @@ clean: bin_clean o_clean
 
 ### removes *.hi and *.o in all include directories
 o_clean:
-	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
+	for p in $(CLEAN_PATH) ; do \
 	(cd $$p ; $(RM) *.hi *.o *.hspp) ; done
 
 ### remove binaries
@@ -423,12 +436,12 @@ bin_clean:
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
 d_clean: clean
-	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
+	for p in $(CLEAN_PATH) ; do \
 	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### remove files also in own libraries
 lib_clean:
-	for p in $(subst :, ,$(COMMONLIB_PATH)) . ; do \
+	for p in $(COMMONLIB_PATH) ; do \
 	(cd $$p ; $(RM) *.hi *.d *.o) ; done
 
 ### additionally removes the files that define the sources-variable
@@ -530,6 +543,7 @@ hets.hs: hetcats/Version.hs
 	$(HAPPY) -o $@ $<
 
 %.hs: %.der.hs utils/DrIFT
+	$(DRIFT_ENV)
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
 ## rules for inlineAxioms
