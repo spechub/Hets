@@ -235,7 +235,8 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                       (toOP_TYPE $ compType c) [posOfId ide]) $ Set.toList ops
         injSyms = map ( \ (s, t) -> let p = [posOfId s] in 
                         Qual_op_name injName 
-                        (Op_type Total [s] t p) p) $ Rel.toList rel
+                        (Op_type Total [s] t p) p) $ Rel.toList 
+                  $ Rel.irreflex rel
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
         getIndex s = maybe (-1) id $ findIndex (==s) sortList
@@ -303,7 +304,7 @@ getDataGenSig dl =
     let alts = concatMap (( \ (Datatype_decl s al _) -> 
                           map ( \ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
-        (subs, realAlts) = partition (isConsAlt . snd) alts 
+        (realAlts, subs) = partition (isConsAlt . snd) alts 
         cs = map ( \ (s, a) ->
                let (i, ty, _) = getConsType s a
                in Component i ty) realAlts
