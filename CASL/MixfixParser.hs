@@ -261,10 +261,8 @@ stateToAppl (State ide rs a _ _) =
 asListAppl :: GlobalAnnos -> State -> TERM
 asListAppl g s@(State i bs a _ _) =
     if i == listId then    
-       case list_lit $ literal_annos g of
-       Nothing -> error "asListAppl" 
-       Just (b, c, f) -> 
-	   let (b1, b2) = getListBrackets b
+           let (b, c, f) = Set.findMin $ list_lit $ literal_annos g
+	       (b1, b2) = getListBrackets b
                nb1 = length b1
                nb2 = length b2
                ra = reverse a

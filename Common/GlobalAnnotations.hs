@@ -17,8 +17,9 @@ module Common.GlobalAnnotations where
 
 import Common.Id
 
-import Common.Lib.Rel
-import Common.Lib.Map
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
@@ -29,27 +30,27 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      } deriving (Show)
 
 emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos = GA { prec_annos    = Common.Lib.Rel.empty
-		      , assoc_annos   = Common.Lib.Map.empty
-		      , display_annos = Common.Lib.Map.empty
+emptyGlobalAnnos = GA { prec_annos    = Rel.empty
+		      , assoc_annos   = Map.empty
+		      , display_annos = Map.empty
 		      , literal_annos = emptyLiteralAnnos
-		      , literal_map   = Common.Lib.Map.empty
+		      , literal_map   = Map.empty
 		      } 
 
 emptyLiteralAnnos :: LiteralAnnos
 emptyLiteralAnnos = LA { string_lit  = Nothing
-			, list_lit   = Nothing 
+			, list_lit   = Set.empty
 			, number_lit = Nothing
 			, float_lit  = Nothing
 			}
 
-type PrecedenceGraph = Rel Id
+type PrecedenceGraph = Rel.Rel Id
 
-type AssocMap = Map Id AssocEither
+type AssocMap = Map.Map Id AssocEither
 
-type DisplayMap = Map Id [(Display_format,String)]
+type DisplayMap = Map.Map Id [(Display_format,String)]
 
-type LiteralMap = Map Id LiteralType
+type LiteralMap = Map.Map Id LiteralType
 
 data LiteralType = StringCons | StringNull
 		 | ListBrackets | ListCons | ListNull
@@ -58,7 +59,7 @@ data LiteralType = StringCons | StringNull
 		   deriving (Show,Eq)
 
 data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
-		       , list_lit   :: Maybe (Id,Id,Id)
+		       , list_lit   :: Set.Set (Id,Id,Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
 		       } deriving (Show)

@@ -30,8 +30,7 @@ import Common.GlobalAnnotations
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
-
-import Data.Maybe (fromJust)
+import qualified Common.Lib.Set as Set
 
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
 addGlobalAnnos ga annos = 
@@ -120,11 +119,10 @@ up_literal_map lmap la =
 			 Nothing      -> ([],False)
 			 Just (i1,i2) -> ([(i1,StringCons),(i2,StringNull)],
 					  True)
-        (lids,rem_lst) = case list_lit la of
-			 Nothing -> ([],False)
-			 Just (i1,i2,i3) -> ([(i1,ListBrackets),
-					      (i2,ListCons),
-					      (i3,ListNull)],True)
+        (lids,rem_lst) = let s = list_lit la in
+			     (concatMap ( \ (i1,i2,i3) -> 
+			    [(i1,ListBrackets), (i2,ListCons), (i3,ListNull)])
+					  $ Set.toList s , Set.isEmpty s)
 	(nid,rem_num)  = case number_lit la of
 			 Nothing -> ([],False)
 			 Just i  -> ([(i,Number)],True)
@@ -166,24 +164,21 @@ store_literal_annos :: LiteralAnnos -> [Annotation] -> LiteralAnnos
 store_literal_annos la ans = 
     let string_lit' = setStringLit (string_lit la) ans
         list_lit'   = setListLit   (list_lit la)   ans    
-        test_diff s l = let (s_null,s_conc) = fromJust s
-		            (l_null,l_conc) = (\(_,n,c)-> (n,c)) (fromJust l)
-                            isNothing x = case x of
-					  Nothing -> True
-					  _ -> False
-	                in or [ isNothing s
-			      , isNothing l
-			      , s_null /= l_null
-			      , s_conc /= l_conc ]
-        diff = test_diff string_lit' list_lit'
-    in if diff then
+	newLA = 
            la { string_lit = string_lit'
 	      , list_lit   = list_lit'
 	      , number_lit = setNumberLit (number_lit la) ans
 	      , float_lit  = setFloatLit  (float_lit la)  ans
 	      }
-       else
-         error "%string- and %list-annotions use same identifiers"
+	in case string_lit' of 
+	   Nothing -> newLA
+	   Just (s_null,s_conc) -> 
+	       let cs = Set.filter ( \ (_, n, c) -> 
+			n == s_null || c == s_conc) list_lit' 
+		   in if Set.isEmpty cs then newLA
+		      else  error 
+		   ("%string- and %list-annotions use same identifiers: "
+                     ++ show (Set.findMin cs))
 
 setStringLit :: Maybe (Id,Id) -> [Annotation] -> Maybe (Id,Id)
 setStringLit = 
@@ -224,19 +219,18 @@ setNumberLit =
 	                  ++ show id2)
 	    _ -> m )
 
-setListLit :: Maybe (Id,Id,Id) -> [Annotation] -> Maybe (Id,Id,Id)
+setListLit :: Set.Set (Id,Id,Id) -> [Annotation] -> Set.Set (Id,Id,Id)
 setListLit = 
-    foldr ( \ a m ->
+    foldr ( \ a s ->
 	    case a of 
 	    List_anno id1 id2 id3 _ ->
-	        case m of 
-	        Nothing -> Just (id1, id2, id3)
-	        Just p -> 
-	            if (id1, id2, id3) == p then m
+	            let cs = Set.filter ( \ ( o1, o2, o3) -> 
+				 o1 == id1 || o2 == id2 || o3 == id3) s in
+	            if Set.isEmpty cs then Set.insert (id1, id2, id3) s 
 	            else error ("conflict %list " ++ showId id1 "," 
 				++ showId id2 "'" ++ showId id3 " and " 
-				++ show p)
-	    _ -> m )
+				++ show (Set.findMin cs))
+	    _ -> s )
 
 -------------------------------------------------------------------------
 
@@ -245,9 +239,9 @@ nullStr ga = case string_lit $ literal_annos ga of
 	     Just (n,_) -> n
 	     Nothing    -> error "nullStr Id not found"
 
-nullList ga = case list_lit $ literal_annos ga of
-	      Just (_,n,_) -> n
-	      Nothing    -> error "nullList Id not found"
+nullList ga = let s = list_lit $ literal_annos ga in 
+              if Set.isEmpty s then error "nullList Id not found"
+	      else let (_, n, _) = Set.findMin s in n
 
 ---------------------------------------------------------------------------
 
@@ -260,9 +254,9 @@ getListBrackets (Id b _ _) =
 
 listBrackets :: GlobalAnnos -> ([Token], [Token])
 listBrackets g = 
-    case list_lit $ literal_annos g of
-		Nothing -> ([], [])
-		Just (bs, _, _) -> getListBrackets bs
-
+    let s = list_lit $ literal_annos g 
+	in if Set.isEmpty s then ([], [])
+	   else let (bs, _, _) = Set.findMin s in 
+		getListBrackets bs		 
 -------------------------------------------------------------------------
 
