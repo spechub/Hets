@@ -11,7 +11,7 @@ import Common.AnnoState
 import HasCASL.Le
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
-import Control.Monad.State
+import Common.Lib.State
 
 hParser :: AParser HsModule
 hParser = do b <- basicSpec

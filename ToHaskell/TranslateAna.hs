@@ -47,7 +47,7 @@ translateData (tid,info) =
 		    [] -- [HsQName]  (für deriving) woher?
 	 ):[])
     Supertype _ _ _ -> [] -- ?
-    DatatypeDefn _ -> 
+    DatatypeDefn _ _ -> 
 	((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
 	            (HsIdent (translateIdWithType TypeId tid))
