@@ -298,7 +298,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
 -- UNIT-TRANSLATION
 ana_UNIT_TERM lgraph defl gctx curl opts uctx tr@(Unit_translation ut ren) =
     do (dnsig@(Diag_node_sig p _), diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
-       gMorph <- ana_RENAMING dg (getSig (getSigFromDiag dnsig)) opts ren
+       gMorph <- ana_RENAMING lgraph (getSig (getSigFromDiag dnsig)) opts ren
        let pos = getPos_UNIT_TERM tr
            sink = [(p, gMorph)]
        -- check amalamability conditions

@@ -254,6 +254,10 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+Buffer.het, sublogic of node Buffer:
+Fail: illegal node type in sublogic computation
+
+
 Jürgen Zimmer, Saarbrücken+Edinburgh, Beweiserkennung für versch. Logiken im MathWeb
 
 spec VarTestIncorrect =

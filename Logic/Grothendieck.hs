@@ -539,6 +539,15 @@ gEmbed :: G_morphism -> GMorphism
 gEmbed (G_morphism lid mor) =
   GMorphism (IdComorphism lid (top_sublogic lid)) (dom lid mor) mor
 
+-- | Embedding of comorphisms as Grothendieck sig mors
+gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
+gEmbedComorphism (Comorphism cid) (G_sign lid sig) = do
+  sig' <- mcoerce (sourceLogic cid) lid "gEmbedComorphism: logic mismatch" sig
+  (sigTar,_) <- maybeToMonad "gEmbedComorphism: map_sign failed"
+             (map_sign cid sig')
+  let lidTar = targetLogic cid
+  return (GMorphism cid sig' (ide lidTar sigTar))
+
 -- | heterogeneous union of two Grothendieck signatures
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
 gsigUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =

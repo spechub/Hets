@@ -32,10 +32,6 @@
    Check that translations and reductions do not effect local env
    (Implement new semantics for revealing here)
 
-   Unions (already in the parser) need unions of logics  
-     = suprema in the lattice of default logic inclusions!
-     (also needed by closed specs)
-
    Should we use institution independent analysis over the Grothendieck logic?
       abstract syntax + devgraph would have to be changed to homogeneous case
       logic translations are symbol maps in the Grothendieck logic
@@ -179,7 +175,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       n' <- maybeToResult nullPos
               "Internal error: Translation of empty spec" (getNode nsig')
       let gsigma = getSig nsig'
-      mor <- ana_RENAMING dg gsigma opts ren
+      mor <- ana_RENAMING lg gsigma opts ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
@@ -711,7 +707,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
 -- analysis of renamings
 
-ana_ren1 :: DGraph -> GMorphism -> (G_mapping,Pos) -> Result GMorphism
+ana_ren1 :: LogicGraph -> GMorphism -> (G_mapping,Pos) -> Result GMorphism
 ana_ren1 _ (GMorphism r sigma mor) 
            (G_symb_map (G_symb_map_items_list lid sis),pos) = do
   let lid2 = targetLogic r
@@ -724,19 +720,40 @@ ana_ren1 _ (GMorphism r sigma mor)
                         (comp lid2 mor mor1)
   return (GMorphism r sigma mor2)
  
-ana_ren1 _ mor (G_logic_translation (Logic_code tok src tar pos1),pos2) =
-  fatal_error "no analysis of logic translations yet" pos2
+ana_ren1 lg mor (G_logic_translation (Logic_code tok src tar pos1),pos2) = do
+  G_sign srcLid srcSig <- return (cod Grothendieck mor)
+  c <- case tok of
+            Just ctok -> do 
+               Comorphism cid <- lookupComorphism (tokStr ctok) lg
+               when (isJust src && getLogicStr (fromJust src) /=
+                                    language_name (sourceLogic cid))
+                    (fail (getLogicStr (fromJust src)++"is not the source logic of "
+                           ++ language_name cid))
+               when (isJust tar && getLogicStr (fromJust tar) /=
+                                    language_name (targetLogic cid))
+                    (fail (getLogicStr (fromJust tar)++"is not the target logic of "
+                           ++ language_name cid))
+               return (Comorphism cid)
+            Nothing -> case tar of
+               Just (Logic_name l _) -> do
+                 tarL <- lookupLogic "with logic: " (tokStr l) lg
+                 logicInclusion lg (Logic srcLid) tarL
+               Nothing -> fail "with logic: cannot determine comorphism"
+  mor1 <- gEmbedComorphism c (G_sign srcLid srcSig)
+  maybeToMonad "with logic: cannot compose morphisms" 
+               (comp Grothendieck mor mor1)
+  where getLogicStr (Logic_name l _) = tokStr l 
 
-ana_ren :: DGraph -> Result GMorphism -> (G_mapping,Pos) -> Result GMorphism
-ana_ren dg mor_res ren =
+ana_ren :: LogicGraph -> Result GMorphism -> (G_mapping,Pos) -> Result GMorphism
+ana_ren lg mor_res ren =
   do mor <- mor_res
-     ana_ren1 dg mor ren
+     ana_ren1 lg mor ren
 
-ana_RENAMING :: DGraph -> G_sign -> HetcatsOpts -> RENAMING -> Result GMorphism
-ana_RENAMING dg gSigma opts (Renaming ren pos) = 
+ana_RENAMING :: LogicGraph -> G_sign -> HetcatsOpts -> RENAMING -> Result GMorphism
+ana_RENAMING lg gSigma opts (Renaming ren pos) = 
   if isStructured opts
      then return (ide Grothendieck gSigma)
-     else foldl (ana_ren dg) (return (ide Grothendieck gSigma)) ren'
+     else foldl (ana_ren lg) (return (ide Grothendieck gSigma)) ren'
   where
   ren' = zip ren (tail (pos ++ repeat nullPos))
 
