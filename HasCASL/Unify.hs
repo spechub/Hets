@@ -214,7 +214,10 @@ expandAliases tm t@(TypeName i _ _) =
        case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
 		  (AliasTypeDefn (TypeScheme l (_ :=> ts) _))) ->
-				     (l, [], ts, True)
+		     (l, [], ts, True)
+	    Just (TypeInfo _ _ _
+		  (Supertype _ (TypeScheme l (_ :=> ts) _) _)) ->
+		     (l, [], ts, True)
 	    _ -> ([], [], t, False)
 
 expandAliases tm (TypeAppl t1 t2) =
