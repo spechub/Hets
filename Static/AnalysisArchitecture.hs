@@ -253,26 +253,27 @@ ana_UNIT_TERM :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 -- UNIT-REDUCTION
 ana_UNIT_TERM lgraph defl gctx curl@(Logic lid) justStruct uctx red@(Unit_reduction ut restr) =
     do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       (morph, _) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr
-       -- create new node representing the domain of morph
-       let rsig' = dom Grothendieck morph
-           nodeContents = DGNode {dgn_name = Nothing,
-				  dgn_sign = rsig',
-				  dgn_sens = G_l_sentence_list lid [],
-				  dgn_origin = DGHiding }
-	   [node] = newNodes 0 dg
-	   dg' = insNode (node, nodeContents) dg
-       sig' <- return (NodeSig (node, rsig'))
-       (q, diag') <- extendDiagramRev lgraph diag [p] sig' (renderText Nothing (printText red))
+       (incl, msigma) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr
        let pos = getPos_UNIT_TERM red
-       (q'@(Diag_node_sig n _), diag'', dg'') <- extendDiagramWithMorphism pos lgraph diag' dg' q morph 
-						                           (renderText Nothing (printText red))
-									   (case restr of 
-									              (Hidden _ _) -> DGHiding
-										      (Revealed _ _) -> DGRevealing)
-       -- check amalgamability conditions
-       () <- assertAmalgamability pos diag'' (inn diag'' n)
-       return (q', diag'', dg'', Unit_reduction (replaceAnnoted ut' ut) restr)
+       (q, diag', dg') <- extendDiagramWithMorphismRev pos lgraph diag dg p incl 
+			                               (renderText Nothing (printText red)) 
+						       (case restr of 
+							           (Hidden _ _) -> DGHiding
+							           (Revealed _ _) -> DGRevealing)
+       case msigma of 
+		  Nothing -> 
+		      -- the renaming morphism is just identity, so there's no need
+		      -- to extend the diagram
+		      do return (q, diag', dg', Unit_reduction (replaceAnnoted ut' ut) restr)
+		  Just sigma -> 
+		      do (q'@(Diag_node_sig n _), diag'', dg'') <- extendDiagramWithMorphism pos lgraph diag' dg' q sigma 
+								       (renderText Nothing (printText red))
+								       (case restr of 
+									           (Hidden _ _) -> DGHiding
+										   (Revealed _ _) -> DGRevealing)
+			 -- check amalgamability conditions
+			 () <- assertAmalgamability pos diag'' (inn diag'' n)
+			 return (q', diag'', dg'', Unit_reduction (replaceAnnoted ut' ut) restr)
 -- UNIT-TRANSLATION
 ana_UNIT_TERM lgraph defl gctx curl justStruct uctx tr@(Unit_translation ut ren) =
     do (dnsig, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
