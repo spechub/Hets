@@ -341,7 +341,8 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
 	   -i$(LEX_DIR):$(LEX_DIR)Gen:$(LEX_DIR)Spec \
               $@.hs -o $@
 
-Haskell/HatParser.hs: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
+## bad rule without programatica
+## Haskell/HatParser.hs: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 ###############
 ### clean up
