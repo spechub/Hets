@@ -269,7 +269,8 @@ skipSmart = do p <- getPosition
 -- ----------------------------------------------
 
 keyWord :: GenParser Char st a -> GenParser Char st a
-keyWord p = try(p << notFollowedBy (scanLPD <|> char '_'))
+keyWord p = try(p << notFollowedBy (scanLPD <|> singleUnderline))
+
 keySign :: GenParser Char st a -> GenParser Char st a
 keySign p = try(p << notFollowedBy (oneOf signChars))
 
