@@ -2,14 +2,13 @@ module Lexer where
 
 import Char
 import Id
-import Parsec
+-- import Parsec
 
-{-
 import ParsecPos
 import ParsecPrim
 import ParsecCombinator
 import ParsecChar
--}
+
 
 -- ----------------------------------------------
 -- casl letters
@@ -77,8 +76,7 @@ signChars = "!#$&*+-./:<=>?@\\^|~\161\162\163\167\169\172\176\177\178\179\181\18
 
 casl_reserved_ops = ": :? ::= . · | |-> -> ->? "
 
-scanSigns = try (string "=e=") <|>
-	    do { r <- many1 (oneOf signChars);
+scanSigns = do { r <- many1 (oneOf signChars);
 		 if r `elem` (words casl_reserved_ops)
 		 then unexpected "casl symbol"
 		 else return r
@@ -236,19 +234,19 @@ makeToken parser = skip(do { p <- getPosition;
 			     return (setTokPos p s)
 			   })
 
-scanPlace = (string "__") <?> "place"
+scanPlace = (string place) <?> "place"
 
 scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
 	       scanDotWords
 
-scanMixLeaf = makeToken(try scanFloat <|> scanString 
-			<|> scToken <|> scanSigns <|> scanPlace)
+scanMixLeaf = makeToken(try scanFloat <|> scanString <|> scToken 
+			<|> try (string "=e=") <|> scanSigns <|> scanPlace)
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-placeToken = fmap TokId (makeToken scanPlace)
+placeToken = makeToken scanPlace
 
 brackets = "{}[]"
 
@@ -257,25 +255,29 @@ bracketSigns = fmap concat (many1 (scanSigns
 				   <|> single (oneOf brackets) 
 				   <?> "bracket signs"))
 
-bracketToken = fmap TokId (makeToken (scToken <|> bracketSigns))
+bracketToken = makeToken (scToken <|> bracketSigns)
 
--- several tokens between places are currently not allowed
-placeTokenId = do { p <- placeToken;
-                    option [p] 
-		    (do { t <- compId;
-			  return [p,t]
-			});
-		  }
 
-placeTokenIds = fmap concat (many1 placeTokenId)
 
 comps  = between (skip (char '[')) (skip (char ']')) 
-	 (sepBy1 mixId (skip (char ','))) <?> "[<id>,...,<id>]"
+	 (sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
 
-compId = do { b <- bracketToken;
-	      option b (do {cs <- comps; return (CompId b cs)})
-	    }
-		  
+-- several tokens between places are not allowed
+-- the last token may have a compound list (for the whole mixfix id) 
+
+mixId = do {  b <- many placeToken;
+	      t <- bracketToken;
+                   do { c <- comps;
+			l <- many placeToken;
+			return (Id (b ++ t : l) c)
+		      }
+	      <|>  do { p <- placeToken;
+			Id s c <- mixId;
+			return (Id (b ++ [t, p] ++ s) c)
+		      }
+	      <|> return (Id (b ++ [t]) [])
+	   }
+
 -- balanced brackets
 balanced = many (noneOf brackets
 		 <|>
@@ -285,17 +287,13 @@ balanced = many (noneOf brackets
 
 isBalanced t = case parse (balanced >> eof) "" t of {Right _ -> True; _ -> False}
 
-mixId = (do { l <- option [] (single compId);
-	      ls <- option [] placeTokenIds;
-	      let cs = l ++ ls in
-	      if isBalanced (show (MixId cs)) then
-	      (if length cs == 0 then unexpected "missing id"
-	       else if length cs == 1 then return (head cs)
-	       else return (MixId cs))
-	      else unexpected "unbalanced brackets id" 
-	    })
+parseId = do { Id t c <- mixId;
+	       let s = concat (map show t) in
+	       if isBalanced s 
+	       then return (Id t c)
+	       else  unexpected ("unbalanced brackets id: " ++ s)
+	     }
 
--- a compound list after the last place is still missing
 
 		
 
