@@ -37,6 +37,12 @@ compatibleTypeDefn d1 d2 i =
 
 addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
 addTypeKind d i k = 
+    if isPrefix i then do addSingleTypeKind d i k
+			  addSingleTypeKind d (stripFinalPlaces i) k
+    else addSingleTypeKind d i k
+
+addSingleTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
+addSingleTypeKind d i k = 
     do tk <- getTypeMap
        case Map.lookup i tk of
 	      Nothing -> putTypeMap $ Map.insert i 

@@ -3,7 +3,9 @@ Cpo
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
+? :Type ->Type := \ t:Type .  Unit ->? t
 ?__ :Type ->Type := \ t:Type .  Unit ->? t
+Pred :Type- ->Type := \ t:Type- .  t ->? Unit
 Pred__ :Type- ->Type := \ t:Type- .  t ->? Unit
 Unit :(Type, Pcpo)
 __*__ :(Type+ ->Type+ ->Type, Pcpo+ ->Pcpo+ ->Pcpo,
@@ -52,8 +54,6 @@ Error "Prelude.hascasl" (line 4, column 7) illegal universe class declaration
 Warning "Prelude.hascasl" (line 27, column 11) redeclared type 'Unit'
 Error "Prelude.hascasl" (line 29, column 5) unexpected mixfix token '='
 Warning "Prelude.hascasl" (line 39, column 16) redeclared type 't'
-Error "Prelude.hascasl" (line 45, column 14) undeclared type 'Pred'
-Error "Prelude.hascasl" (line 45, column 14) undeclared type 'Pred'
 Hint "Prelude.hascasl" (line 46, column 9) not a class 's'
 FatalError "Prelude.hascasl" (line 48, column 1) no analysis yet for: program def = \ x : s . ()
 	%% def is also total (identical to tt) 
@@ -65,10 +65,10 @@ FatalError "Prelude.hascasl" (line 64, column 1) no analysis yet for: program __
 FatalError "Prelude.hascasl" (line 65, column 1) no analysis yet for: program fst (x : s; y : t) : s = x
 FatalError "Prelude.hascasl" (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
 Error "Prelude.hascasl" (line 72, column 3) unexpected mixfix token 'fst'
-Error "Prelude.hascasl" (line 71, column 3) unexpected mixfix token '['
+Error "Prelude.hascasl" (line 71, column 28) unexpected mixfix token ')'
 FatalError "Prelude.hascasl" (line 78, column 1) no analysis yet for: pred eq : s × s
-Error "Prelude.hascasl" (line 81, column 3) unexpected mixfix token '['
-Error "Prelude.hascasl" (line 80, column 3) unexpected mixfix token '['
+Error "Prelude.hascasl" (line 81, column 26) unexpected mixfix token ')'
+Error "Prelude.hascasl" (line 80, column 19) unexpected mixfix token ')'
 Warning "Prelude.hascasl" (line 91, column 6) redeclared type 's'
 FatalError "Prelude.hascasl" (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 FatalError "Prelude.hascasl" (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
@@ -106,4 +106,4 @@ Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
 Hint "Prelude.hascasl" (line 190, column 13) not a class 'c --> d'
 FatalError "Prelude.hascasl" (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
 Error "Prelude.hascasl" (line 198, column 3) unexpected mixfix token 'all'
-Error "Prelude.hascasl" (line 201, column 28) unexpected mixfix token '['
+Error "Prelude.hascasl" (line 201, column 28) unexpected mixfix token '('

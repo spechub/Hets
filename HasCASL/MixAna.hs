@@ -72,9 +72,6 @@ opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 litTok = mkSimpleId "\""
 
-stripFinalPlaces :: Id -> Id
-stripFinalPlaces (Id ts cs ps) =
-    Id (fst $ splitMixToken ts) cs ps 
 
 mkState :: Int -> (Id, OpInfo) -> State Int PState 
 mkState i (ide, info) = 
@@ -106,12 +103,25 @@ listStates g i =
 	      else [ listState (b1 ++ [termTok] ++ b2) 
 		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
 
+tupleStates :: Int -> State Int [PState]
+tupleStates i = 
+    do ty <- freshType star
+       let tupleState toks = PState (Id [parenTok] [] [])
+			     (simpleTypeScheme $ 
+			      BracketType Parens [] []) 
+			     ty [] [] toks i
+	   (b1, b2) = ([mkSimpleId "("], [mkSimpleId ")"])
+       return [ tupleState (b1 ++ b2) 
+	      , tupleState (b1 ++ [termTok] ++ b2) 
+	      , tupleState (b1 ++ [termTok, commaTok] ++ b2)]
+
 -- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
 
 initialState :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> State Int [PState]
 initialState g ids i = 
     do ls <- listStates g i
+       ts <- tupleStates i
        l1 <- mapM (mkState i) ids
        l2 <- mapM (mkApplState i) ids   
        let ty = MixfixType []
@@ -126,7 +136,7 @@ initialState g ids i =
 	       mkTokState [opTok] :
 	       mkTokState [litTok] :
 	       mkTokState [termTok, termTok] :
-	       ls ++ l1 ++ l2)
+	       ls ++ ts ++ l1 ++ l2)
 
 
 lookUp :: (Ord a, MonadPlus m) => Map.Map a (m b) -> a -> (m b)
@@ -168,6 +178,7 @@ stateToAppl :: PState -> Term
 stateToAppl p = 
     let vs = getTokenList place $ ruleId p
         ar = reverse $ ruleArgs p
+	qs = reverse $ posList p
     in if  vs == [termTok, colonTok] 
 	   || vs == [termTok, asTok] 
 	   || vs == [varTok] 
@@ -175,8 +186,11 @@ stateToAppl p =
            || vs == [predTok]
            || vs == [parenTok]
        then head ar
-       else if null ar then error "stateToAppl" else head ar
-
+       else foldr (\ (a, q) t -> ApplTerm t a [q]) 
+		(QualOp (InstOpId (ruleId p) [] []) (ruleScheme p) qs) 
+		$ zip ar (posList p ++ repeat (if null qs then nullPos
+					       else last qs))
+	       
 toAppl :: GlobalAnnos -> PState -> Term
 toAppl g s =
     if ruleId s == listId then    
@@ -314,17 +328,25 @@ predict g is i cm =
 			    , parseMap = Map.insertWith (++) i ps m }
 		 else cm
 
-type Chart = (Int, [Diagnosis], ParseMap)
+data Chart = Chart { chartCount :: Int
+		   , chartDiags :: [Diagnosis]
+		   , chartMap :: ParseMap }
+
+incrChartCount :: Chart -> Chart
+incrChartCount c = c { chartCount = chartCount c + 1 }
+
+addChartDiags :: [Diagnosis] -> Chart -> Chart
+addChartDiags ds c = c { chartDiags = ds ++ chartDiags c } 
 
 nextState :: GlobalAnnos -> [(Id, OpInfo)] -> Term -> Chart -> Chart
-nextState g is trm (i, ds, m) =
-    let cm1 = predict g is i m
+nextState g is trm c@(Chart { chartCount = i }) =
+    let cm1 = predict g is i $ chartMap c
         cm2 = complete g (i+1) $
 		 scan trm i cm1
-    in if null (lookUp (parseMap cm2) (i+1)) && null ds
-		    then (i+1, mkDiag Error "unexpected mixfix token" trm
-			       : ds, m)
-       else (i+1, ds, cm2)
+	c2 = incrChartCount c 
+    in if null (lookUp (parseMap cm2) (i+1)) && null (chartDiags c)
+       then addChartDiags [mkDiag Error "unexpected mixfix token" trm] c2
+       else c2 { chartMap = cm2 }
 
 iterateStates :: GlobalAnnos -> [(Id, OpInfo)] -> [Term] -> Chart -> Chart
 iterateStates g ops terms c = 
@@ -333,16 +355,9 @@ iterateStates g ops terms c =
     in if null terms then c
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) c
-            BracketTerm b ts ps -> 
-		self (expand b ts ps ++ tail terms) c
+            BracketTerm b ts ps -> self 
+	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) c
 	    t ->  self (tail terms) (nextState g ops t c)
-  where expand br = expandPos TermToken  
-		    (case br of
-			  Parens -> ("(", ")")
-			  Squares -> ("[", "]")
-			  Braces -> ("{", "}"))
-					      
-	
 
 getAppls :: GlobalAnnos -> Int -> ParseMap -> [Term]
 getAppls g i m = 
@@ -353,10 +368,13 @@ getAppls g i m =
 resolve :: GlobalAnnos -> [(Id, OpInfo)] -> ParseMap -> Term -> Result Term
 resolve g ops p trm =
     let (ps, c2) = runState (initialState g ops 0) (varCount p)
-        (i, ds, m) = iterateStates g ops [trm] 
-		     (0, [], p { varCount = c2, parseMap =  
-				 Map.single 0 $ ps} ) 
-        ts = getAppls g i m
+        Chart { chartCount = i, chartDiags = ds, chartMap = m } = 
+	    iterateStates g ops [trm] 
+		     Chart { chartCount = 0
+			   , chartDiags = []
+			   , chartMap = p { varCount = c2
+					  , parseMap = Map.single 0 $ ps } } 
+        ts = getAppls g i m 
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
 					     ++ show trm)
