@@ -75,17 +75,20 @@ s --> t = Type("fun",[s,t])
 
 
 data Term =
-        Const (String, Typ)  -- constants
-      | Free  (String, Typ)  -- free variables
+        Const (String, Typ)          -- constants
+      | Free  (String, Typ)          -- free variables
       -- | Var   (Indexname, Typ)
       -- | Bound Int
-      | Abs   (Term, Typ, Term)  -- lambda abstraction
-      | App Term  Term           -- application
+      | Abs   (Term, Typ, Term)      -- lambda abstraction
+      | App Term  Term               -- application
       | Case (Term, [(Term, Term)])  -- case
+      | If (Term, Term, Term)        -- If then else
+      | Let ([(Term, Term)], Term)   -- Let
       deriving (Eq, Ord)
 
-data Sentence = Sentence { senTerm :: Term
-                           }
+
+data Sentence = Sentence { senTerm :: Term }
+
 instance Eq Sentence where
   s1 == s2 = senTerm s1 == senTerm s2
 

@@ -61,12 +61,12 @@ instance Show Typ where
 
 showTyp :: Integer -> Typ -> String
 showTyp pri (Type ("typeAppl",[s,t])) =
-  if withTVars t then showTyp pri t ++ sp ++ showTyp pri s
+  if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
     else showTyp pri s ++ sp ++ showTyp pri t
-  where withTVars tv =
+  where withTFrees tv =
           case tv of
-            TVar _ -> True
-            Type (_, ts) -> and (map withTVars ts)
+            TFree _ -> True
+            Type (_, ts) -> and (map withTFrees ts)
             _      -> False
 showTyp pri (Type ("fun",[s,t])) = 
   bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
@@ -79,23 +79,21 @@ showTyp _ (Type (name,args)) =
     _      -> let (tyVars,types) = foldl split ([],[]) args
               in  
                 lb ++ concat (map ((sp++) . show) tyVars) ++
-                                concat (map ((sp++) . show) types) ++ rb ++ name
+                      concat (map ((sp++) . show) types) ++ rb ++ name
               where split (tv,ty) t = case t of 
-                            TVar _ -> (tv++[t],ty)
-                            _      -> (tv,ty++[t])
-showTyp _ (TFree (v,_)) = v
-showTyp _ (TVar ((v,_),_)) = "\'" ++ v
+                                        TFree _ -> (tv++[t],ty)
+                                        _       -> (tv,ty++[t])
+showTyp _ (TFree (v,_)) = "\'" ++ v
+showTyp _ (TVar ((v,_),_)) = "?\'" ++ v
 
 instance Show TypeSig where
   show tysig =
     if Map.isEmpty (tycons tysig) then em
-     else Map.foldWithKey showTycon em (tycons tysig) 
-     where showTycon t arity rest =
+      else Map.foldWithKey showTycon em (tycons tysig) 
+    where showTycon t arity rest =
             "typedecl "++
-             (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
-               else em)
-            ++ show t
-            ++"\n"++rest
+            (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
+             else em) ++ show t  ++"\n"++rest
 
 instance Show Term where
   show = outerShowTerm
@@ -114,9 +112,24 @@ showTerm (Case (term, alts)) =
   let sAlts = map showCaseAlt alts
   in 
    lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
-      ++ sp ++ head sAlts ++  concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) (tail sAlts)) ++ rb
+      ++ sp ++ head sAlts
+      ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
+                                                    (tail sAlts)) ++ rb
 -- Just t1 `App` t2 left
+showTerm (If (t1,t2,t3)) = lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
+                      ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
+showTerm (Let (pts, t)) = "let" ++ sp ++ showPat False (head pts) 
+                                ++ concat (map (showPat True) (tail pts))
+                                ++ sp ++ "in" ++ sp ++ showTerm t
 showTerm t = show (toPrecTree t)
+
+
+showPat :: Bool -> (Term, Term) -> String
+showPat b (pat, term) = 
+  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ showTerm term
+  in
+    if b then ";" ++ s
+      else s
 
 
 showCaseAlt :: (Term, Term) -> String
@@ -165,7 +178,8 @@ type Precedence = Int
                              application of HasCASL ops, <=>, =, /\, \/, => 
    Associativity:  =  -- left
                    => -- right
-                  <=> -- no
+                   /\ -- right
+                   \/ -- right
 -}
 
 isaAppPrec :: Term -> PrecTerm
@@ -194,7 +208,6 @@ noPrec t = PrecTerm t (-10)
 
 toPrecTree :: Term -> Tree PrecTerm
 toPrecTree t =
--- trace ("[sT] "++st t++"\n") (
   case t of
     (Const("All",t1) `App` Abs(v,ty,t2)) -> 
        Node (isaAppPrec (Const ("QUANT", dummyT))) 
@@ -228,7 +241,7 @@ toPrecTree t =
         _ -> Node (isaAppPrec (Const ("DUMMY", dummyT))) 
                [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec t) []
--- )
+
 
 instance Show (Tree PrecTerm) where
    show = showPTree
@@ -238,20 +251,19 @@ data Assoc = LeftAs | NoAs | RightAs
 showPTree :: Tree PrecTerm -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
 showPTree (Node (PrecTerm term pre) annos) = 
--- trace ("[showPTree] "++st term++"\n    Prec: "++show pre++"\n")
   let leftChild = head annos
       rightChild = last annos
    in
-    case term of
-      Const ("op =", _)   -> infixP pre "=" LeftAs leftChild rightChild
-      Const ("op &", _)   -> infixP pre "&" RightAs leftChild rightChild
-      Const ("op |", _)   -> infixP pre "|" RightAs leftChild rightChild
-      Const ("op -->", _) -> infixP pre "-->" RightAs leftChild rightChild
-      Const ("DUMMY", _)  -> simpleInfix pre leftChild rightChild
-      Const ("Pair", _)   -> pair leftChild rightChild
-      Const ("QUANT",_)   -> quant leftChild rightChild
-      Const (c, _)        -> prefixP pre c leftChild rightChild
-      _                   -> showTerm term
+     case term of
+       Const ("op =", _)   -> infixP pre "=" LeftAs leftChild rightChild
+       Const ("op &", _)   -> infixP pre "&" RightAs leftChild rightChild
+       Const ("op |", _)   -> infixP pre "|" RightAs leftChild rightChild
+       Const ("op -->", _) -> infixP pre "-->" RightAs leftChild rightChild
+       Const ("DUMMY", _)  -> simpleInfix pre leftChild rightChild
+       Const ("Pair", _)   -> pair leftChild rightChild
+       Const ("QUANT",_)   -> quant leftChild rightChild
+       Const (c, _)        -> prefixP pre c leftChild rightChild
+       _                   -> showTerm term
 
 
 {- Logical connectors: For readability and by habit they are written 
@@ -384,14 +396,14 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
 instance Show Sign where
   show sig =
     baseSig sig ++":\n\n"++
-    "ML \"proofs := 1\"\n\n" ++
     shows (tsig sig) (showDataTypeDefs (dataTypeTab sig))
       ++ (showsConstTab (constTab sig))
     where
     showsConstTab tab =
      if Map.isEmpty tab then ""
       else "\nconsts\n" ++ Map.foldWithKey showConst "" tab
-    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"" ++ showDecl c ++ "\n" ++ rest
+    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t 
+                                ++ "\"" ++ showDecl c ++ "\n" ++ rest
     showDecl c = sp ++ sp ++ sp ++ "( \"" ++ c ++ "\" )"
     showDataTypeDefs dtDefs = concat $ map showDataTypeDef dtDefs
     showDataTypeDef [] = ""
@@ -404,7 +416,7 @@ instance Show Sign where
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
-                    TVar _ -> show arg
+                    TFree _ -> show arg
                     _      -> "\"" ++ show arg ++ "\""
 
 
@@ -448,9 +460,9 @@ replaceChar1 c | isIsaChar c = [c]
 transString :: String -> String
 transString "" = "X"
 transString (c:s) = 
-   if isInf (c:s) then (concat $ map replaceChar1 (cut (c:s)))
-   else ((if isAlpha c && isAscii c then [c] 
-          else 'X':replaceChar1 c) ++ (concat $ map replaceChar1 s))
+   if isInf (c:s) then concat $ map replaceChar1 (cut (c:s))
+     else ((if isAlpha c && isAscii c then [c] 
+              else 'X':replaceChar1 c) ++ (concat $ map replaceChar1 s))
 
 isInf :: String -> Bool
 isInf s = has2Under s && has2Under (reverse s)
