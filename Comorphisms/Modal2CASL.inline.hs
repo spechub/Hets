@@ -35,6 +35,7 @@ import CASL.Sublogic
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
+import CASL.Utils
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -377,36 +378,6 @@ modalityToModName (Term_mod t) =
 
 sortedWorldTerm :: SORT -> VAR -> TERM ()
 sortedWorldTerm fws v = Sorted_term (Qual_var v fws []) fws [] 
-
-replacePropPredication :: Maybe (PRED_NAME,VAR,TERM ()) 
-                        -- ^ Just (pSymb,x,t) replace x 
-			-- with t in Predication of pSymb 
-                       -> PRED_NAME -- ^ propositional symbol to replace
-		       -> CASLFORMULA -- ^ Formula to insert
-		       -> CASLFORMULA -- ^ Formula with placeholder
-		       -> CASLFORMULA
-replacePropPredication mTerm pSymb frmIns frmToChn =
-    case frmToChn of
-    Quantification q vs frm ps ->
-	Quantification q vs (replacePropPredication mTerm pSymb frmIns frm) ps
-    Conjunction fs ps -> 
-	Conjunction (map (replacePropPredication mTerm pSymb frmIns) fs) ps 
-    Implication f1 f2 b ps ->
-	Implication (replacePropPredication mTerm pSymb frmIns f1) 
-		    (replacePropPredication mTerm pSymb frmIns f2) b ps
-    Predication (Qual_pred_name symb (Pred_type [] []) []) [] [] 
-	| symb == pSymb -> frmIns
-    Predication qpn@(Qual_pred_name symb _ _) (arg1:args) ps
-	| (isJust mTerm) && symb == pSymbT -> 
-	    case arg1 of
-	    Sorted_term (Qual_var v1 _ _) _ _ 
-		| v1 == var -> Predication qpn (term:args) ps 
-	    _ -> error "Modal2CASL: replacePropPredication: unknown term to replace"
-          where (pSymbT,var,term) = fromJust mTerm 
-    p@(Predication _ _ _) -> p 
-    _ -> error "Modal2CASL: replacePropPredication: unknown formula to replace"
-
-
 
 addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType 
 	    -> Map.Map OP_NAME (Set.Set OpType) 
