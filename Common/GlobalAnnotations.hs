@@ -138,6 +138,7 @@ precRel :: PrecedenceGraph -- ^ Graph describing the precedences
 	-> Id -- ^ x oid (y iID z) -- inner id
 	-> PrecRel
 -- a 'Lower' corresponds to %prec {out_id} < {in_id} 
+-- BothDirections means <> was given (or derived by transitive closure)
 precRel pg out_id in_id =
     case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
     (False,True)  -> Lower
