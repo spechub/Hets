@@ -66,12 +66,12 @@ exists! a: v . x
 exists!a:v.x
 exists! # :v.x
 forall a: v . x
-lambda a:v.x
-lambda!a:v.x
-lambda a:v.!x
-lambda!a:v.!x
-lambda a:v. !x
-lambda!a:v. !x
+\a:v.x
+\ a:v.x
+\ a:v.!x
+\a:v.!x
+\ a:v. !x
+\a:v. !x
 a if b
 a when b else c
 def x
@@ -85,7 +85,7 @@ true
 false
 #as b
 b in#
-a lambda!a:v. !x
+a \a:v.! !x
 =e =
 =e<
 = e <

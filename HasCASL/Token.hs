@@ -19,7 +19,7 @@ reserved :: [String] -> Parser String -> Parser String
 reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
 -- sign keywords
-casl_reserved_ops = [":", ":?","::=",".","\183","|","|->"]
+casl_reserved_ops = [":", ":?","::=",".","\183","|","|->", "\\", "\\\\"]
 
 -- these signs are legal in terms, but illegal in declarations
 formula_ops = ["=", "=>", "<=>", "\\/", "/\\", "\172"] 

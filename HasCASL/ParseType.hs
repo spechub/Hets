@@ -9,26 +9,30 @@ import Type
 oParen = skipChar '('
 cParen = skipChar ')'
 
-separatedBy :: (Token -> Parser a) -> Parser Token 
-	    -> Token -> Parser [(Token, a)]
-separatedBy p s t = do { r <- p t
-		       ; l <- option [] (s >>= separatedBy p s)
-		       ; return ((t, r) : l) 
-		       }
+separatedBy :: Parser a -> Parser Token -> Parser ([a], [Token])
+
+separatedBy p s = do { r <- p
+		     ; option ([r], []) 
+		       (do { t <- s
+			   ; (es, ts) <- separatedBy p s
+			   ; return (r:es, t:ts)
+			   })
+		     }
 
 toKey s = makeToken (let p = string s in 
 		     if last s `elem` signChars then keySign p 
 		     else keyWord p)
 
+equalStr = "="
 lessStr = "<"
 lessSign = toKey lessStr
 
-isMixIdOrCross (Id ts cs) = 
-    not (null (tail ts)) || 
-	show ts `elem` 
-	  [lessStr, totalFunArrow, partialFunArrow, productSign, altProductSign]
+isSimpleTypeId (Id ts cs) = 
+    null (tail ts) && 
+	show ts `notElem` 
+	  [equalStr, lessStr, totalFunArrow, partialFunArrow, productSign, altProductSign]
 
-sortId = parseId  `checkWith` (not . isMixIdOrCross)
+sortId = parseId  `checkWith` isSimpleTypeId
 
 typeId = do { i <- sortId
 	    ; return (Type i [])
@@ -38,7 +42,7 @@ primType :: Parser Type
 primType = typeId 
 	   <|> (do { o <- oParen
 		   ; (cParen >> return (crossProduct []))
-		     <|> (funType o << cParen)
+		     <|> (funType << cParen)
 		   })
 
 cross = toKey productSign <|> toKey altProductSign <?> "cross"
@@ -46,20 +50,20 @@ cross = toKey productSign <|> toKey altProductSign <?> "cross"
 toId :: Token -> Id
 toId i = Id [i] []
 
-productType :: Token -> Parser Type
-productType c = fmap makeProduct (separatedBy (const primType) cross c)
-    where makeProduct [(c, x)] = x
-	  makeProduct [(_, x), (c, y)] = Type (toId c) [x, y]
-	  makeProduct ((_, x) : l@(_ : _)) =  
-	      let Type c m = makeProduct l in Type c (x:m) 
+productType :: Parser Type
+productType = fmap makeProduct (separatedBy primType cross)
+    where makeProduct ([x], []) = x
+	  makeProduct ([x, y], [c]) = Type (toId c) [x, y]
+	  makeProduct ((x:l), (_:r)) = 
+	      let Type c m = makeProduct (l, r) in Type c (x:m) 
 
 arrow = makeToken (keySign (string totalFunArrow 
 			    <++> option "" (string partialSuffix)))
 
-funType :: Token -> Parser Type
-funType c = fmap makeFuns (separatedBy productType arrow c)
-    where makeFuns [(_, x)] = x
-	  makeFuns ((_, x) : s@((c, _):_)) = 
-	      let t = makeFuns s in Type (toId c) [x, t]
+funType :: Parser Type
+funType = fmap makeFuns (separatedBy productType arrow)
+    where makeFuns ([x], []) = x
+	  makeFuns ((x:l), (c:r)) = 
+	      let t = makeFuns (l, r) in Type (toId c) [x, t]
 
-parseType = funType (Token [colonChar] nullPos)
+parseType = funType

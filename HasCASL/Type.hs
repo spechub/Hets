@@ -4,24 +4,39 @@ import Id
 import List (isPrefixOf)
 import Lexer (signChars, caslLetters)
 
--- simple Id
-nullPos :: Pos
-nullPos = (0, 0)
+-- ----------------------------------------------
+-- we want to have (at least some builtin) type constructors 
+-- for uniformity/generalization sorts get type "Sort"
+-- "Sort -> Sort" would be the type/kind of a type constructor
+-- ----------------------------------------------
 
-simpleId :: String -> Id
-simpleId(s) = Id [Token s nullPos] [] 
+data Type = Type { typeConst :: Id, typeArgs :: [Type] } -- [Pos] ? 
+          | Sort
+	  | PartialType { partialTypeId :: Id } -- for partial constants
+	    deriving (Eq, Ord)
 
-colonChar = ':'
+instance Show Type where
+    showsPrec _ = showType False -- without parenthesis 
 
+-- strings 
 partialSuffix = "?"
-totalSuffix = "!"
+totalSuffix = "!"  -- for total lambda 
 
 -- same predefined type constructors
-
 totalFunArrow = "->"
 partialFunArrow = totalFunArrow ++ partialSuffix
 productSign = "*"
 altProductSign = "\215"
+
+-- simple Id
+nullPos :: Pos
+nullPos = (0, 0)
+
+simpleTok :: String -> Token
+simpleTok s = Token s nullPos
+
+simpleId :: String -> Id
+simpleId(s) = Id [simpleTok s] [] 
 
 internalBoolRep = simpleId("!BOOL!") -- invisible
 
@@ -36,22 +51,10 @@ showSign i s = let r = show i in
 			then r ++ " " ++ s else r ++ s
 
 showSignStr s = showSign (simpleId s) 
--- ----------------------------------------------
--- we want to have (at least some builtin) type constructors 
--- for uniformity/generalization sorts get type "Sort"
--- "Sort -> Sort" would be the type/kind of a type constructor
--- ----------------------------------------------
--- an Unknown Type only occurs before static analysis
-data Type = Type Id [Type]
-          | Sort
-	  | Unknown
-	  | PartialType Id -- for partial constants
-	    deriving (Eq, Ord)
 
 showType :: Bool -> Type -> ShowS
 showType _ (PartialType i) = showSignStr partialSuffix . showSign i
-showType _ Unknown = showString "!UNKNOWN!"
-showType _ Sort = showString "!SORT!"
+showType _ Sort = showString "!SORT!" -- should not be shown
 showType _ t@(Type i []) = if isProduct t then showString "()" else showSign i
 showType b t@(Type i (x:r)) = showParen b 
  (if isFunType t 
@@ -63,8 +66,6 @@ showType b t@(Type i (x:r)) = showParen b
        else shows i . showSepList (showChar ' ') shows (x:r)
  )
 
-instance Show Type where
-    showsPrec _ = showType False
 
 asType s = Type s []
 -- ----------------------------------------------

@@ -76,9 +76,9 @@ parse error at (line 23, column 1):
 unexpected "|->"
 expecting "(", id/literal or quantifier
 
-parse error at (line 24, column 1):
-unexpected "->"
-expecting "(", id/literal or quantifier
+parse error at (line 24, column 2):
+unexpected end of input
+expecting id
 
 parse error at (line 25, column 2):
 unexpected end of input

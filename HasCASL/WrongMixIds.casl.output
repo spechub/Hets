@@ -89,7 +89,7 @@ unexpected "|->"
 expecting id
 
 parse error at (line 24, column 1):
-unexpected "->"
+unexpected "\\"
 expecting id
 
 parse error at (line 25, column 2):

@@ -4,8 +4,8 @@ unexpected __**__
 parse error at (line 2, column 31):
 unexpected __*__
 
-parse error at (line 3, column 6):
-unexpected __*__
+parse error at (line 3, column 26):
+unexpected __*__->__*__
 
 parse error at (line 4, column 27):
 unexpected __*__*__*__
@@ -42,9 +42,8 @@ parse error at (line 14, column 8):
 unexpected "b"
 expecting place, [<id>,...,<id>], cross, "->" or end of input
 
-parse error at (line 15, column 3):
-unexpected "->"
-expecting simple-id or place
+parse error at (line 15, column 7):
+unexpected __->__
 
 parse error at (line 16, column 3):
 unexpected "*"
@@ -58,9 +57,8 @@ parse error at (line 18, column 2):
 unexpected ")"
 expecting casl char, underline word, place, [<id>,...,<id>], cross, "->" or end of input
 
-parse error at (line 19, column 5):
-unexpected "->"
-expecting id or "("
+parse error at (line 19, column 8):
+unexpected ->
 
 parse error at (line 20, column 3):
 unexpected []
@@ -68,9 +66,8 @@ unexpected []
 parse error at (line 21, column 3):
 unexpected *
 
-parse error at (line 22, column 1):
-unexpected "->?"
-expecting id or "("
+parse error at (line 22, column 4):
+unexpected ->?
 
 parse error at (line 23, column 6):
 unexpected end of input
@@ -98,6 +95,6 @@ parse error at (line 29, column 11):
 unexpected end of input
 expecting casl char, underline word, place, [<id>,...,<id>], cross, "->" or ")"
 
-parse error at (line 30, column 4):
-unexpected {}
+parse error at (line 30, column 19):
+unexpected {}->{}
 

@@ -1,6 +1,6 @@
 module ParseTerm where
 
-import Id (Token(Token), Id(Id), showTok)
+import Id -- (Token(Token), Id(Id), showTok)
 import Lexer -- ((<:>), (<++>), flat, scanFloat, scanString, single, toKey)
 import Parsec
 import ParseType
@@ -18,16 +18,17 @@ colon = toKey [colonChar]
 partialColon = makeToken (keySign 
 		    (char colonChar <:> option "" (string partialSuffix)))
 
-makeDecl i t = Decl (Symb i t) (Token "," nullPos) []
-
 varDecl :: Parser Decl
-varDecl = do { i <- varId `sepBy1` comma
-	       ; t <- colon >>= funType
-	       ; return (makeDecl i t)
- 	       }
+varDecl = do { (is, cs) <- separatedBy varId comma 
+	     ; c <- colon 
+	     ; t <- funType
+	     ; return (Decl is t (map tokPos (cs ++ [c])))
+ 	     }
 
-varDecls :: Parser [Decl]
-varDecls = varDecl `sepBy1` semi
+varDecls :: Parser ([Decl], [Pos])
+varDecls = do { (ds, cs) <- separatedBy varDecl semi
+	      ; return (ds, map tokPos cs)
+	      }
 
 parseDecls = varDecls
 -- ----------------------------------------------
@@ -35,109 +36,92 @@ parseDecls = varDecls
 -- ----------------------------------------------
 exEqual = string "=e="
 
-asTok = toKey asStr
-inTok = toKey inStr
+keyword :: Show a => a -> Parser (a, Pos) 
+keyword a = do {t <- toKey (show a)
+		  ; return (a, tokPos t)
+		  }
+
+asOp = keyword AsType 
+inOp = keyword InType
+ofOp = keyword OfType
 
 simpleTerm :: Parser Term
-simpleTerm = fmap toQualId (makeToken(scanFloat <|> scanString <|>
+simpleTerm = fmap SimpleTerm (makeToken(scanFloat <|> scanString <|>
 				 otherToken <|> scanTermWords <|>
 				 try exEqual <|> scanTermSigns) 
 		       <|> uu <?> "id/literal")
 
 startTerm :: Parser Term
-startTerm = parenTerm <|> braceTerm <|> brktTerm <|> simpleTerm
+startTerm = parenTerm <|> braceTerm <|> sBrktTerm <|> simpleTerm
 
 restTerm :: Parser Term
 restTerm = startTerm <|> typedTerm
 
 mixTerm = do { l <- startTerm <:> many restTerm <++> option [] (single quantTerm)
 	     ; if length l == 1 then return (head l) 
-	       else return (Application MixTerm l [])
+	       else return (MixTerm l)
 	     } <|> quantTerm  
 
-typeOfPrefix t = if [colonChar] == show t then OfType
-		 else if asStr == show t then AsType
-		      else if inStr == show t then InType
-			   else error ("typeOfPrefix: " ++ show t)
-
 typedTerm :: Parser Term
-typedTerm = do { c <- try (colon <|> asTok <|> inTok) <?> "type"
-	       ; t <- funType c
-	       ; return (Typed MixTerm (typeOfPrefix c) t) 
+typedTerm = do { (c, p) <- try (ofOp <|> asOp <|> inOp) <?> "type"
+	       ; t <- funType
+	       ; return (TypeInfo c t [p])
 	       }
 
-toQualId :: Token -> Term
-toQualId t = BaseName (QualId (Symb [toId t] Unknown) 0 Inferred)
 
-terms :: Token -> Parser [Term]
-terms t = do { l <- separatedBy (const mixTerm) comma t
-	     ; return (map snd l)
-	     }
-
-isPartialId (PartialType _) = True
-isPartialId _ = False
+terms :: Parser ([Term], [Pos])
+terms = do { (ts, ps) <- separatedBy mixTerm comma
+	   ; return (ts, map tokPos ps)
+	   }
 
 isColon c = showTok c == [colonChar]
 
-parsePartialType c = if isColon c then funType c else fmap PartialType sortId
+parsePartialType c = if isColon c then funType else fmap PartialType sortId
 
-qualName = do { w <- toKey varStr <|> toKey opStr <|> toKey predStr
+qualName = do { (w, p) <- try (keyword VarQ <|> keyword OpQ <|> keyword PredQ) 
+		      <?> "qualifier"
 	      ; i <- parseId
-	      ; c <- partialColon `checkWith` \c -> showTok w == opStr
-		|| showTok c == [colonChar]
+	      ; c <- partialColon `checkWith` \c -> w == OpQ
+		                              || showTok c == [colonChar]
 	      ; t <- parsePartialType c
-	      ; let s = showTok w 
-		    ty = if s == predStr then predicate t else t 
-		    l = if s == varStr then 1 else 0 
-		in return (BaseName (QualId (Symb [i] ty) l UserGiven))
+	      ; return (Qualified (QualId w i t [p, tokPos c]))
 	      }
 
 parenTerm = do { o <- oParen
-               ; l <- single qualName <|> terms o
+               ; (ts, ps) <- fmap (\t -> ([t], [])) qualName <|> terms
 	       ; c <- cParen 
-	       ; if length l == 1 && isBaseName (head l) 
-		 then return (head l) 
-		 else return (Application MixTerm l [o,c]) 
+	       ; return (Application Parens ts (tokPos o : ps ++ [tokPos c]))
 	       }
 
-braTerm op cl = do { o <- op
-		   ; l <- option [] (terms o)
-		   ; c <- cl
-		   ; return (Application MixTerm l [o,c]) 
-		   }
+braceTerm = do { o <- oBrace
+               ; (ts, ps) <- option ([], []) terms
+	       ; c <- cBrace 
+	       ; return (Application Braces ts (tokPos o : ps ++ [tokPos c]))
+	       }
 
-braceTerm = braTerm oBrace cBrace
-brktTerm = braTerm opBrkt clBrkt
+sBrktTerm = do { o <- opBrkt
+               ; (ts, ps) <- option ([], []) terms
+	       ; c <- clBrkt 
+	       ; return (Application Squares ts (tokPos o : ps ++ [tokPos c]))
+	       }
 
-quant = toKey allStr
-	<|> makeToken((keyWord (string exStr) <|> keyWord (string lamStr)) 
-		<++> option "" (keySign (string totalSuffix))) <?> "quantifier"
+quant = try (keyword ExistsUnique <|> keyword Exists <|> keyword Forall 
+	<|> keyword LambdaPartial) <?> "quantifier"
 
 getDot = makeToken (keySign (oneOf (dotChar:middleDotStr) 
 			     <:> option "" (string totalSuffix)))
 
-binder t = let s = showTok t in
-	   if s == allStr then Forall
-	     else if s == exStr then Exists
-	          else if s == exStr ++ totalSuffix then ExistsUnique
-		       else if s == lamStr then Lambda Partial
-			    else if s == lamStr ++ totalSuffix 
-				 then Lambda Total
-				 else error ("binder: " ++ s)
-
-isLambda (Lambda _) = True
+isLambda (LambdaPartial) = True
+isLambda (LambdaTotal) = True
 isLambda _ = False
 
-quantTerm = do { q <- try quant
-	       ; v <- varDecls
-	       ; d <- getDot `checkWith` 
-		 \d -> length (showTok d) == 1
-		 || isLambda (binder q) 
+quantTerm = do { (q, p) <- quant
+	       ; (vs, ps) <- varDecls
+	       ; d <- getDot `checkWith`  \d -> length (showTok d) == 1 
+		                                || isLambda q 
                ; t <- mixTerm
-	       ; let b = binder q
-		     c = if isLambda b && length (showTok d) > 1
-		         then Lambda Total else b
-		 in return (Binding c v t)
+               ; let qu = if length (showTok d) > 1 then LambdaTotal else q
+	         in  return (Binding qu vs t (p:ps ++ [tokPos d]))
 	       }
 
 parseTerm = mixTerm

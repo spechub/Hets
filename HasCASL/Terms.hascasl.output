@@ -41,22 +41,22 @@ b[a__b]a
 ({},[],{[]{}})
 {{},[],{[]{}}}
 [{},[],{[]{}}]
-(var y:bb)
-(op y:bb)
-(op__<__: ##)
-(op__<__: ## -> --)
-(op__<__:bb)
-(op__<__:?bb)
-(op__<__:? ##)
-(op__<__: ?##)
-(pred y:bb)
-(pred y:bb*bb)
-(var y:bb->bb)
+((var y:bb))
+((op y:bb))
+((op__<__: ##))
+((op__<__: ## -> --))
+((op__<__:bb))
+((op__<__:? ?bb))
+((op__<__:? ? ##))
+((op__<__: ?##))
+((pred y:bb))
+((pred y:bb*bb))
+((var y:bb->bb))
 a=e= <b
 ys as b
-(pred y:bb)
-(pred y:bb)
-(pred y:())
+((pred y:bb))
+((pred y:bb))
+((pred y:()))
 (predy y:bb)
 (predy:bb)
 (predy:bb)
@@ -66,12 +66,12 @@ exists!a:v·x
 exists!a:v·x
 exists! # :v·x
 forall a:v·x
-lambda a:v·x
-lambda a:v·!x
-lambda a:v·!x
-lambda a:v·!x
-lambda a:v· !x
-lambda a:v·! !x
+\a:v·x
+\a:v·x
+\a:v.!x
+\a:v.!x
+\a:v· !x
+\a:v· !x
 a if b
 a when b else c
 def x
@@ -85,7 +85,7 @@ true
 false
 #as b
 b in#
-a lambda a:v·! !x
+a\a:v.! !x
 = e=
 =e<
 =e<
