@@ -107,14 +107,17 @@ data CASL_Sublogics = CASL_SL
                       } deriving (Show,Ord,Eq)
 
 -- top element
+--
 top :: CASL_Sublogics
 top = (CASL_SL True True True True True FOL)
 
 -- bottom element
+--
 bottom :: CASL_Sublogics
 bottom = (CASL_SL False False False False False Atomic)
 
 -- all elements
+--
 sublogics_all :: [CASL_Sublogics]
 sublogics_all = filter (not . adjust_check) $
                 morph_logic $ morph_part $ morph_cons $ morph_eq $ morph_pred
@@ -211,18 +214,18 @@ formulas_min :: CASL_Formulas -> CASL_Formulas -> CASL_Formulas
 formulas_min x y = if (x<y) then x else y
 
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_max a b = CASL_SL (has_sub  a || has_sub b)
+sublogics_max a b = CASL_SL (has_sub  a || has_sub  b)
                             (has_part a || has_part b)
                             (has_cons a || has_cons b)
-                            (has_eq   a || has_eq b)
+                            (has_eq   a || has_eq   b)
                             (has_pred a || has_pred b)
                             (formulas_max (which_logic a) (which_logic b))
 
 sublogics_min :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_min a b = CASL_SL (has_sub  a && has_sub b)
+sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
                             (has_part a && has_part b)
                             (has_cons a && has_cons b)
-                            (has_eq   a && has_eq b)
+                            (has_eq   a && has_eq   b)
                             (has_pred a && has_pred b)
                             (formulas_min (which_logic a) (which_logic b))
 
@@ -238,6 +241,7 @@ mb f Nothing = bottom
 mb f (Just x) = f x
 
 -- adjust illegal combination "subsorting with atomic logic"
+--
 adjust_logic :: CASL_Sublogics -> CASL_Sublogics
 adjust_logic x = if (adjust_check x) then 
                    x { which_logic = Horn }
@@ -271,6 +275,7 @@ mapMaybePos (p1:pl) f (h:t) = let
 --  where f returns Nothing
 --  given number of elements from the beginning of [Pos] are always
 --  kept
+--
 mapPos :: Int -> [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
 mapPos c p f l = let
                    (res,pos) = (\(x,y) -> (catMaybes x,y)) 
@@ -358,6 +363,7 @@ get_logic f = if (is_atomic_f f) then bottom else
               need_fol
 
 -- for the formula inside a subsort-defn
+--
 get_logic_sd :: FORMULA -> CASL_Sublogics
 get_logic_sd f = if (is_horn_p_a f) then need_horn else
                  if (is_ghorn_prem f) then need_ghorn else
@@ -445,6 +451,7 @@ get_Logic f = if (is_Atomic_f f) then bottom else
               need_fol
 
 -- for the formula inside a subsort-defn
+--
 get_Logic_sd :: Formula -> CASL_Sublogics
 get_Logic_sd f = if (is_Horn_p_a f) then need_horn else
                  if (is_Ghorn_prem f) then need_ghorn else
@@ -517,7 +524,7 @@ sl_datatype_decl (Datatype_decl _ l _) = comp_list $ map sl_alternative
 
 sl_alternative :: ALTERNATIVE -> CASL_Sublogics
 sl_alternative (Total_construct _ l _) =  comp_list $ map sl_components l
-sl_alternative (Partial_construct _ l _) = comp_list $ map sl_components l
+sl_alternative (Partial_construct _ l _) = need_part
 sl_alternative (Subsorts _ _) = need_sub
 
 sl_components :: COMPONENTS -> CASL_Sublogics
@@ -774,7 +781,8 @@ pr_annoted sl f a = let
 -- that does not use partiality (does not use any constructor
 -- or selector)
 --
-pr_annoted_dt :: CASL_Sublogics -> (CASL_Sublogics -> a -> (Maybe a,[SORT])) -> Annoted a -> (Maybe (Annoted a),[SORT])
+pr_annoted_dt :: CASL_Sublogics -> (CASL_Sublogics -> a -> (Maybe a,[SORT]))
+                 -> Annoted a -> (Maybe (Annoted a),[SORT])
 pr_annoted_dt sl f a = let
                          (res,lst) = f sl (item a)
                        in
@@ -783,7 +791,7 @@ pr_annoted_dt sl f a = let
                          else
                            (Just (a { item = fromJust res }),lst)
 
--- keep an element if its computed sublogics is in the given sublogic
+-- keep an element if its computed sublogic is in the given sublogic
 --
 pr_check :: CASL_Sublogics -> (a -> CASL_Sublogics) -> a -> Maybe a
 pr_check l f e = if (in_x l e f) then (Just e) else Nothing
