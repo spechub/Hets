@@ -1,7 +1,12 @@
-{- 
-  File:           HetCATS/CSP-CASL/Parse_AS_CSP_CASL.hs
-  Autors:         Daniel Pratsch 
-  last modified:  4.11.2002
+{- **********************************************************************
+
+   $Source$
+
+   $Date$
+   $Revision$
+   Author: Daniel Pratsch (Last modification by $Author$)
+
+  ************************************************************************** 
 -}
 
 module Parse_hugo where
