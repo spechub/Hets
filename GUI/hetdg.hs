@@ -1,5 +1,11 @@
 
--- needs ghc
+-- needs ghc and UniForM workbench
+-- for the UniForM workbench:
+-- cd into the folder where HetCATS lives
+-- cvs co uni
+-- configure
+-- gmake boot
+-- gmake packages
 
 {- GUI/hetdg.hs
    $Id$
@@ -26,10 +32,9 @@ import GUI.ConvertDevToAbstractGraph
 import GUI.AbstractGraphView
 
 proceed fname showdg = do
-  res <- ana_file1 logicGraph defaultLogic fname
+  res <- anaFile logicGraph defaultLogic fname False
   case res of
-    Nothing -> return ()
-    Just (ln,dg,libenv) -> 
+    (_,Just (ln,dg,libenv)) -> 
       if showdg then do
        graphMem <- initializeConverter
        (gid,gv,cmaps) <- convertGraph graphMem ln libenv
@@ -40,6 +45,7 @@ proceed fname showdg = do
         h <- openFile (fname++".dot") WriteMode
         sequence (map (hPutStrLn h) (dot dg))
         hClose h
+    _ -> return ()
 
 main = do
   args <- getArgs
