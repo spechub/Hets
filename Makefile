@@ -207,7 +207,7 @@ generated_rule_files = $(atc_der_files) $(atc_logic_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
-                     Comorphisms/Modal2CASL.hs # Comorphisms/CASL2TopSort.hs
+                     Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
