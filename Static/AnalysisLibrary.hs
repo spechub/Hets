@@ -349,6 +349,31 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              l,
              libenv)
 
+-- refinement specification
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l 
+             rd@(Ref_spec_defn rn ref pos) = do
+  let analyseMessage = "Analyzing refinement " ++ showPretty rn "\n  (refinement analysis not implemented yet)"
+  ioToIORes (putIfVerbose opts 1 analyseMessage )
+  if outputToStdout opts then
+     return()
+     else
+     resToIORes $ message () analyseMessage
+  let rd' = rd
+      dg' = dg
+  if Map.member rn genv 
+     then
+     resToIORes (plain_error (rd, (gannos, genv, dg), l, libenv)
+                             ("Name " ++ showPretty rn " already defined")
+                             (headPos pos))
+     else
+     return (rd', 
+             (gannos,
+              Map.insert rn (RefEntry) genv,
+              dg'),
+             l,
+             libenv)
+
+-- logic declaration
 ana_LIB_ITEM lgraph _defl opts libenv gctx _l 
              (Logic_decl ln pos) = do
   logNm <- lookupLogicName ln lgraph

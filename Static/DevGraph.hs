@@ -271,7 +271,8 @@ type ArchSig = (StUnitCtx, UnitSig)
 data GlobalEntry = SpecEntry ExtGenSig 
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
-                 | UnitEntry UnitSig deriving (Show,Eq)
+                 | UnitEntry UnitSig 
+                 | RefEntry deriving (Show,Eq)
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
