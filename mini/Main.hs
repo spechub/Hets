@@ -65,11 +65,11 @@ instance StaticAnalysis L2 B2 B2 B2 B2 B2 where
 instance Logic L1 B1 B1 B1 B1 B1 where
    empty_signature _ = B1
    map_sentence  = undefined 
-   provers  = undefined 
+   prover  = undefined 
 instance Logic  L2 B2 B2 B2 B2 B2 where
    empty_signature _ = B2
    map_sentence  = undefined 
-   provers  = undefined 
+   prover  = undefined 
 
 {-
 th1 = (G_theory L1 (B1,[])) 
