@@ -31,6 +31,7 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -139,6 +140,12 @@ mkForall :: [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 mkForall vl f ps = if null vl then f else 
                    Quantification Universal vl f ps
 
+unionGenAx :: [GenAx] -> GenAx
+unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) -> 
+                        (Set.union s1 s2,
+                         Rel.union r1 r2,
+                         Set.union f1 f2)) emptyGenAx
+
 ana_BASIC_ITEMS :: Resolver f => Min f e  
                 -> Ana b f e -> Ana s f e -> GlobalAnnos 
                 -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
@@ -155,8 +162,7 @@ ana_BASIC_ITEMS mef ab as ga bi =
            return bi
     Sort_gen al ps ->
         do (gs,ul) <- ana_Generated mef as ga al
-           toSortGenAx ps False 
-                (Set.unions $ map fst gs, Set.unions $ map snd gs)
+           toSortGenAx ps False $ unionGenAx gs
            return $ Sort_gen ul ps
     Var_items il _ -> 
         do mapM_ addVars il
@@ -217,12 +223,19 @@ ana_BASIC_ITEMS mef ab as ga bi =
 mapAn :: (a -> b) -> Annoted a -> Annoted b
 mapAn f an = replaceAnnoted (f $ item an) an
 
-toSortGenAx :: [Pos] -> Bool ->
-               (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
-toSortGenAx ps isFree (sorts, ops) = do
+type GenAx = (Set.Set SORT, Rel.Rel SORT, Set.Set Component)
+
+emptyGenAx :: GenAx
+emptyGenAx = (Set.empty, Rel.empty, Set.empty)
+
+toSortGenAx :: [Pos] -> Bool -> GenAx -> State (Sign f e) ()
+toSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
-        opSyms = map ( \ c ->  Qual_op_name (compId c)  
-                      (toOP_TYPE $ compType c) []) $ Set.toList ops
+        opSyms = map ( \ c -> let ide = compId c in Qual_op_name ide  
+                      (toOP_TYPE $ compType c) [posOfId ide]) $ Set.toList ops
+        injSyms = map ( \ (s, t) -> let p = [posOfId s] in 
+                        Qual_op_name injName 
+                        (Op_type Total [s] t p) p) $ Rel.toList rel
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
         getIndex s = maybe (-1) id $ findIndex (==s) sortList
@@ -231,7 +244,8 @@ toSortGenAx ps isFree (sorts, ops) = do
         addIndices os@(Qual_op_name _ t _) = 
             (os,map getIndex $ args_OP_TYPE t)
         collectOps s = 
-          Constraint s (map addIndices $ filter (resType s) opSyms) s
+          Constraint s (map addIndices $ filter (resType s) 
+                            (opSyms ++ injSyms)) s
         constrs = map collectOps sortList
         f =  Sort_gen_ax constrs isFree
     if null sortList then 
@@ -266,36 +280,53 @@ ana_SIG_ITEMS mef as ga gk si =
 -- helper
 ana_Generated :: Resolver f => Min f e 
               -> Ana s f e -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)]     
-              -> State (Sign f e) 
-                 ([(Set.Set Id, Set.Set Component)],[Annoted (SIG_ITEMS s f)])
+              -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef as ga  al = do
    ul <- mapAnM (ana_SIG_ITEMS mef as ga Generated) al
    return (map (getGenSig . item) ul, ul)
    
-getGenSig :: SIG_ITEMS s f -> (Set.Set Id, Set.Set Component)
+getGenSig :: SIG_ITEMS s f -> GenAx
 getGenSig si = case si of 
-      Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
-      Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
+      Sort_items al _ -> unionGenAx $ map (getGenSorts . item) al
+      Op_items al _ -> (Set.empty, Rel.empty, 
+                           Set.unions (map (getOps . item) al))
       Datatype_items dl _ -> getDataGenSig dl
-      _ -> (Set.empty, Set.empty)
+      _ -> emptyGenAx
 
-getDataGenSig :: [Annoted DATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
+isConsAlt :: ALTERNATIVE -> Bool
+isConsAlt a = case a of 
+              Subsorts _ _ -> False
+              _ -> True
+
+getDataGenSig :: [Annoted DATATYPE_DECL] -> GenAx
 getDataGenSig dl = 
-    let alts = map (( \ (Datatype_decl s al _) -> (s, al)) . item) dl
+    let alts = concatMap (( \ (Datatype_decl s al _) -> 
+                          map ( \ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
-        mkComponent (i, ty, _) = Component i ty
-        cs = concatMap ( \ (s, al) -> concatMap (( \ a -> 
-              map mkComponent (getConsType s a)))
-                       $ map item al) alts
-        in (Set.fromList sorts, Set.fromList cs)
+        (subs, realAlts) = partition (isConsAlt . snd) alts 
+        cs = map ( \ (s, a) ->
+               let (i, ty, _) = getConsType s a
+               in Component i ty) realAlts
+        rel = foldr ( \ (t, a) r ->
+                  foldr ( \ s -> 
+                          Rel.insert s t)
+                  r $ getAltSubsorts a)
+               Rel.empty subs   
+        in (Set.fromList sorts, rel, Set.fromList cs)
 
-getSorts :: SORT_ITEM f -> Set.Set Id
-getSorts si = 
-    case si of 
-    Sort_decl il _ -> Set.fromList il
-    Subsort_decl il i _ -> Set.fromList (i:il)
-    Subsort_defn sub _ _ _ _ -> Set.single sub
-    Iso_decl il _ -> Set.fromList il
+getGenSorts :: SORT_ITEM f -> GenAx
+getGenSorts si = 
+    let (sorts, rel) = case si of 
+           Sort_decl il _ -> (Set.fromList il, Rel.empty)
+           Subsort_decl il i _ -> (Set.fromList (i:il)
+                                  , foldr (flip Rel.insert i) Rel.empty il)
+           Subsort_defn sub _ super _ _ -> (Set.single sub
+                                           , Rel.insert sub super Rel.empty)
+           Iso_decl il _ -> (Set.fromList il
+                            , foldr ( \ s r -> foldr ( \ t -> 
+                              Rel.insert s t) r il) Rel.empty il)
+        in (sorts, rel, Set.empty)
+           
 
 getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of 
@@ -550,18 +581,16 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
        case gk of 
          Free -> do 
            let allts = map item al
-               (alts, subs) = partition ( \ a -> case a of 
-                               Subsorts _ _ -> False
-                               _ -> True) allts
-               sbs = concatMap ( \ (Subsorts ss _) -> ss) subs
-               comps = concatMap (getConsType s) alts
+               (alts, subs) = partition isConsAlt allts
+               sbs = concatMap getAltSubsorts subs
+               comps = map (getConsType s) alts
                ttrips = map (( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
                                . selForms1 "X" ) comps 
                sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
            addSentences $ map makeInjective 
                             $ filter ( \ (_, _, ces) -> not $ null ces) 
                               comps
-           addSentences $ concatMap ( \ as -> map (makeDisjToSort as) sbs)
+           addSentences $ concatMap ( \ c -> map (makeDisjToSort c) sbs)
                         comps 
            addSentences $ makeDisjoint comps 
            addSentences $ catMaybes $ concatMap 
@@ -622,24 +651,28 @@ makeUndefForm (s, ty) (i, vs, t, sels) =
                 (Application (Qual_op_name s (toOP_TYPE ty) p) [t] p)
                 p) p) p
 
-getConsType :: SORT -> ALTERNATIVE -> [(Id, OpType, [COMPONENTS])]
+getAltSubsorts :: ALTERNATIVE -> [SORT]
+getAltSubsorts c = case c of
+    Subsorts cs _ -> cs
+    _ -> []
+
+getConsType :: SORT -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
 getConsType s c = 
     let getConsTypeAux (part, i, il) = 
           (i, OpType part (concatMap 
                             (map (opRes . snd) . getCompType s) il) s, il)
      in case c of 
-        Subsorts srts _ ->  
-             [(injName, OpType Total [s1] s,[Sort s1]) | s1<-srts]
-        Alt_construct k a l _ -> [getConsTypeAux (k, a, l)]
+        Subsorts _ _ -> error "getConsType"
+        Alt_construct k a l _ -> getConsTypeAux (k, a, l)
 
 getCompType :: SORT -> COMPONENTS -> [(Maybe Id, OpType)]
 getCompType s (Cons_select k l cs _) = 
     map (\ i -> (Just i, OpType k [s] cs)) l
 getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
 
-genSelVars :: String -> Int -> [(Maybe Id, OpType)] -> [VAR_DECL]
+genSelVars :: String -> Int -> [OpType] -> [VAR_DECL]
 genSelVars _ _ [] = []
-genSelVars str n ((_, ty):rs)  = 
+genSelVars str n (ty:rs)  = 
     Var_decl [mkSelVar str n] (opRes ty) [] : genSelVars str (n+1) rs
 
 mkSelVar :: String -> Int -> Token
@@ -664,8 +697,8 @@ makeSelForms n (i, vs, t, (mi, ty):rs) =
 selForms1 :: String -> (Id, OpType, [COMPONENTS]) 
           -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
 selForms1 str (i, ty, il) =
-    let cs = concatMap (getCompType $ opRes ty) il
-        vs = genSelVars str 1 cs 
+    let cs = concatMap (getCompType (opRes ty)) il
+        vs = genSelVars str 1 $ map snd cs 
     in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
             (map toQualVar vs) [], cs)
 
@@ -684,7 +717,7 @@ ana_ALTERNATIVE s c =
     Subsorts ss _ ->
         do mapM_ (addSubsort s) ss
            return Nothing
-    _ -> do let [cons@(i, ty, il)] = getConsType s c
+    _ -> do let cons@(i, ty, il) = getConsType s c
             addOp ty i
             ul <- mapM (ana_COMPONENTS s) il
             let ts = concatMap fst ul

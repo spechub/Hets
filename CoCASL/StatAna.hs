@@ -37,6 +37,7 @@ import CASL.Inject
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
 import Common.Result
@@ -151,6 +152,16 @@ ana_C_SIG_ITEM _ mi =
            closeSubsortRel
            return mi
 
+isCoConsAlt :: COALTERNATIVE -> Bool
+isCoConsAlt a = case a of 
+                CoSubsorts _ _ -> False
+                _ -> True
+
+getCoSubsorts :: COALTERNATIVE -> [SORT]
+getCoSubsorts c = case c of
+    CoSubsorts cs _ -> cs
+    _ -> []
+
 -- | return list of constructors 
 ana_CODATATYPE_DECL :: GenKind -> CODATATYPE_DECL -> State CSign [Component]
 ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) = 
@@ -167,11 +178,8 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
                        "'\n  must appear in alternative") c) wrongConstr
        case gk of 
          Free -> do 
-           let allts = map item al
-               (alts, subs) = partition ( \ a -> case a of 
-                               CoSubsorts _ _ -> False
-                               _ -> True) allts
-               sbs = concatMap ( \ (CoSubsorts ss _) -> ss) subs
+           let (alts, subs) = partition isCoConsAlt $ map item al
+               sbs = concatMap getCoSubsorts subs
                comps = map (getCoConsType s) alts
                ttrips = map ( \ (a, vs, ses) -> (a, vs, catSels ses))
                             $ map (coselForms1 "X") $ comps 
@@ -179,7 +187,8 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
            addSentences $ catMaybes $ map comakeInjective 
                             $ filter ( \ (_, _, ces) -> not $ null ces) 
                               comps
-           addSentences $ catMaybes $ concatMap ( \ as -> map (comakeDisjToSort as) sbs)
+           addSentences $ catMaybes $ concatMap 
+                            ( \ c -> map (comakeDisjToSort c) sbs)
                         comps 
            addSentences $ comakeDisjoint comps 
            let ttrips' = [(a,vs,t,ses) | (Just(a,t),vs,ses) <- ttrips]
@@ -192,14 +201,14 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
 getCoConsType :: SORT -> COALTERNATIVE -> (Maybe Id, OpType, [COCOMPONENTS])
 getCoConsType s c = 
     let (part, i, il) = case c of 
-              CoSubsorts _ _ ->  error "getConsType"
+              CoSubsorts _ _ ->  error "getCoConsType"
               Co_construct k a l _ -> (k, a, l)
         in (i, OpType part (concatMap 
                             (map (opRes . snd) . getCoCompType s) il) s, il)
 
-getCoCompType :: SORT -> COCOMPONENTS -> [(Maybe Id, OpType)]
+getCoCompType :: SORT -> COCOMPONENTS -> [(Id, OpType)]
 getCoCompType s (CoSelect l (Op_type k args res _) _) = 
-    map (\ i -> (Just i, OpType k (args++[s]) res)) l
+    map (\ i -> (i, OpType k (args++[s]) res)) l
 
 coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
 coselForms x = 
@@ -211,13 +220,13 @@ coselForms1 :: String -> (Maybe Id, OpType, [COCOMPONENTS])
           -> (Maybe (Id, TERM f), [VAR_DECL], [(Maybe Id, OpType)])
 coselForms1 str (i, ty, il) = 
     let cs = concatMap (getCoCompType $ opRes ty) il
-        vs = genSelVars str 1 cs 
+        vs = genSelVars str 1 $ map snd cs 
         it = case i of
                Nothing -> Nothing
                Just i' -> Just (i',Application (Qual_op_name i' 
                                                  (toOP_TYPE ty) [])
                                               (map toQualVar vs) [])
-     in (it, vs, cs)
+     in (it, vs, map ( \ (j, typ) -> (Just j, typ)) cs)
 
 comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT 
                      -> Maybe (Named (FORMULA f))
@@ -247,6 +256,7 @@ comakeInjective a = do
 comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
 comakeDisjoint [] = []
 comakeDisjoint (a:as) = catMaybes (map (comakeDisj a) as) ++ comakeDisjoint as
+
 comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS]) 
                            -> (Maybe Id, OpType, [COCOMPONENTS])
                            -> Maybe (Named (FORMULA f))
@@ -285,11 +295,9 @@ ana_COCOMPONENTS :: SORT -> COCOMPONENTS
                -> State CSign ([Component], [Component])
 ana_COCOMPONENTS s c = do
     let cs = getCoCompType s c
-    sels <- mapM ( \ (mi, ty) -> 
-            case mi of 
-            Nothing -> return Nothing
-            Just i -> do addOp ty i
-                         return $ Just $ Component i ty) cs 
+    sels <- mapM ( \ (i, ty) ->
+                   do addOp ty i
+                      return $ Just $ Component i ty) cs 
     return $ partition ((==Total) . opKind . compType) $ catMaybes sels 
 
 ana_C_BASIC_ITEM :: Ana C_BASIC_ITEM C_FORMULA CoCASLSign
@@ -304,17 +312,19 @@ ana_C_BASIC_ITEM ga bi = do
            return bi
     CoSort_gen al ps ->
         do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM ga ([], al)
-           toCoSortGenAx ps False 
-                (Set.unions $ map fst gs, Set.unions $ map snd gs)
+           toCoSortGenAx ps False $ unionGenAx gs
            return $ CoSort_gen ul ps
 
-toCoSortGenAx :: [Pos] -> Bool ->
-               (Set.Set Id, Set.Set Component) -> State CSign ()
-toCoSortGenAx ps isFree (sorts, ops) = do
+toCoSortGenAx :: [Pos] -> Bool -> GenAx -> State CSign ()
+toCoSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
-        opSyms = map ( \ c ->  Qual_op_name (compId c)  
-                      (toOP_TYPE $ compType c) []) $ Set.toList ops
-        f = ExtFORMULA $ CoSort_gen_ax sortList opSyms isFree
+        opSyms = map ( \ c -> let ide = compId c in  Qual_op_name ide  
+                      (toOP_TYPE $ compType c) [posOfId ide]) $ Set.toList ops
+        injSyms = map ( \ (s, t) -> let p = [posOfId s] in 
+                        Qual_op_name injName 
+                        (Op_type Total [s] t p) p) $ Rel.toList rel
+        f = ExtFORMULA $ CoSort_gen_ax sortList 
+            (opSyms ++ injSyms) isFree
     if null sortList then 
               addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
               else return ()
@@ -322,32 +332,35 @@ toCoSortGenAx ps isFree (sorts, ops) = do
                          showSepList (showString "_") showId sortList "") f]
 
 ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
-                -> Ana ([(Set.Set Id, Set.Set Component)], 
-                        [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) 
+                -> Ana ([GenAx], [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) 
                    C_FORMULA CoCASLSign
 ana_CoGenerated anaf ga (_, al) = do
    ul <- mapAnM (ana_SIG_ITEMS minExpForm anaf ga Generated) al
-   return (map (getCoGenSig . item) ul,ul)
+   return (map (getCoGenSig . item) ul, ul)
    
-getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA 
-                -> (Set.Set Id, Set.Set Component)
+getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA -> GenAx
 getCoGenSig si = case si of 
-      Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
-      Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
+      Sort_items al _ -> unionGenAx $ map (getGenSorts . item) al
+      Op_items al _ -> (Set.empty, Rel.empty, 
+                           Set.unions (map (getOps . item) al))
       Datatype_items dl _ -> getDataGenSig dl
       Ext_SIG_ITEMS (CoDatatype_items dl _) -> getCoDataGenSig dl
-      _ -> (Set.empty, Set.empty)
+      _ -> emptyGenAx
 
-getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
+getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> GenAx
 getCoDataGenSig dl = 
-    let get_sel1 s al = case al of 
+    let get_sel (s, a) = case a of 
           CoSubsorts _ _ ->  []
           Co_construct _ _ l _ -> concatMap (getCoCompType s) l
-        get_sel (s,als) = concatMap (get_sel1 s . item) als 
-        alts = map (( \ (CoDatatype_decl s al _) -> (s, al)) . item) dl
+        alts = concatMap (( \ (CoDatatype_decl s al _) -> 
+                       map ( \ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
-        sels = concatMap computeComp $ concatMap get_sel alts
-        computeComp (Just i,ot) = [Component i ot]
-        computeComp _ = []
-        in (Set.fromList sorts, Set.fromList sels)
+        (subs, realAlts) = partition (isCoConsAlt . snd) alts 
+        sels = map ( \ (i, ot) -> Component i ot) $ concatMap get_sel realAlts
+        rel = foldr ( \ (t, a) r ->
+                  foldr ( \ s -> 
+                          Rel.insert s t)
+                  r $ getCoSubsorts a)
+               Rel.empty subs   
+        in (Set.fromList sorts, rel, Set.fromList sels)
 
