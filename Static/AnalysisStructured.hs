@@ -224,8 +224,8 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
       (sps',nsigs,dg') <- 
           let ana r sp = do
                 (sps1,nsigs,dg) <- r
-                (sp1,nsig,dg1) <- ana_SPEC gctx nsig Nothing just_struct sp
-                return (sp1:sps1,nsig:nsigs,dg1)
+                (sp1,nsig',dg1) <- ana_SPEC (gannos,genv,dg) nsig Nothing just_struct sp
+                return (sp1:sps1,nsig':nsigs,dg1)
            in foldl ana (return ([],[],dg)) sps
       let nsigs' = reverse nsigs
           nodes = catMaybes (map getNode nsigs')

@@ -46,12 +46,7 @@ processFile opt file =
                     putIfVerbose opt 2
                         ("Skipping static analysis on file: " ++ file)
                     return (ld, Nothing)
-                Structured  -> do
-                    -- TODO: implement structured analysis
-                    putIfVerbose opt 2
-                        ("Skipping static analysis on file: " ++ file)
-                    return (ld, Nothing)
-                Basic       -> do
+                _       -> do
                     putIfVerbose opt 2 ("Analyzing file: " ++ file)
                     Common.Result.Result diags res <- ioresToIO 
                       (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)

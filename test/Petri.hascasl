@@ -1,11 +1,13 @@
 library Petri
 version 0.1
 
+from Graphs get Set, Map, SetRepresentation, AbstractSetConstructions1
+
 logic HasCASL
 
 spec Nat = {}
 
-spec Set = {}
+
 
 spec MultiSet = Nat and Set then
   var Elem : Type

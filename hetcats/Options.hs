@@ -256,6 +256,7 @@ parseInType1 :: String -> InType
 parseInType1 "casl"             = CASLIn
 parseInType1 "hetcasl"          = HetCASLIn
 parseInType1 "het"              = HetCASLIn
+parseInType1 "spec"             = HetCASLIn
 parseInType1 "gen_trm"          = ATermIn NonBAF
 parseInType1 "tree.gen_trm"     = ATermIn NonBAF
 parseInType1 "gen_trm.baf"      = ATermIn BAF
@@ -340,7 +341,7 @@ parseRawOpts s =
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
 guessInType file = 
-    case fileparse ["casl","hetcasl","het","gen_trm","tree.gen_trm",
+    case fileparse ["casl","spec","hetcasl","het","gen_trm","tree.gen_trm",
                     "gen_trm.baf","tree.gen_trm.baf","ast","ast.baf"]
          file of
       (_,_,Just suf) -> parseInType1 suf
