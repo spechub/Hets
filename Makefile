@@ -145,7 +145,8 @@ post_doc4apache:
             'Common.Lib.Map.html:Common.Lib._Map.html' \
             '/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/:'
 	mv docs/* a-docs/
-	ln -s /home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base a-docs
+	$(RM) a-docs/base
+	cp -r /home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base a-docs
 
 #############################
 ### ATC DrIFT-rule generation

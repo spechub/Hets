@@ -1,6 +1,10 @@
 module HasCASLModul where
 import Prelude (undefined)
  
+type Pred a = a -> ()
+ 
+type Unit = ()
+ 
 type A_s = A_t
  
 data A_t = A_t
@@ -14,8 +18,26 @@ _2_P_22 = undefined
 _2_P_2 :: (A_s, A_s) -> A_s
 _2_P_2 = undefined
  
+_2_D_B_2 :: ((), ()) -> ()
+_2_D_B_2 = undefined
+ 
 _2_L_I_2_L_I_2 :: (A_s, A_s, A_s) -> A_s
 _2_L_I_2_L_I_2 = undefined
+ 
+_2_L_I_G_2 :: ((), ()) -> ()
+_2_L_I_G_2 = undefined
+ 
+_2_I_2 :: (a, a) -> ()
+_2_I_2 = undefined
+ 
+_2_I_G_2 :: ((), ()) -> ()
+_2_I_G_2 = undefined
+ 
+_2_Ie_I_2 :: (a, a) -> ()
+_2_Ie_I_2 = undefined
+ 
+_2_B_D_2 :: ((), ()) -> ()
+_2_B_D_2 = undefined
  
 a2 :: A_t
 a2 = undefined
@@ -34,6 +56,9 @@ c = _2_P_2 (a, b)
  
 d :: A_s
 d = _2_P_2 (a, a)
+ 
+def_2 :: a -> ()
+def_2 = undefined
  
 e :: (A_s, A_s) -> A_s
 e = _2_P_2
@@ -59,6 +84,9 @@ i2 = incr a
 i3 :: A_s
 i3 = incr a
  
+if_2then_2else_2 :: ((), a, a) -> a
+if_2then_2else_2 = undefined
+ 
 incr :: A_s -> A_s
 incr = undefined
  
@@ -76,6 +104,9 @@ l4 = _2_L_I_2_L_I_2 (a, b, c)
  
 l5 :: (A_s, A_s, A_s)
 l5 = (a, b, c)
+ 
+not_2 :: () -> ()
+not_2 = undefined
  
 x :: A_s
 x = undefined
