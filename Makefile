@@ -15,25 +15,20 @@
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
-
+## set ghc imports properly for your system
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports'
 
 HC         = ghc
 PERL       = perl
 HAPPY      = happy
-DRIFT      = $(DRIFT_ENV) $(PERL) utils/DrIFT
-AG         = $(PERL) utils/ag
-HADDOCK    = $(PERL) utils/haddock
+DRIFT      = $(DRIFT_ENV) utils/DrIFT
+HADDOCK    = haddock
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
-# please remove '-O2' if compilation lasts to long on your system
-# but please don't commit to cvs server
+HC_FLAGS   = -fglasgow-exts -Wall
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
              -package uni-server
-
-AG_FLAGS   = -mdcfs
 
 ### Profiling and Warnings (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -44,7 +39,7 @@ AG_FLAGS   = -mdcfs
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
-DRIFT_OPTS  = +RTS -K10 -RTS
+#DRIFT_OPTS  = +RTS -K10 -RTS
 
 ### list of directories to run checks in
 TESTDIRS    = CASL HasCASL test
@@ -58,10 +53,18 @@ ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
+ifneq ($(MAKECMDGOALS),hets-opt)
+ifneq ($(MAKECMDGOALS),hets-optimized)
+ifneq ($(MAKECMDGOALS),driftedSources)
+ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 include sources_hetcats.mk
+endif
+endif
+endif
+endif
 endif
 endif
 endif
@@ -127,11 +130,12 @@ all: hets
 hets: $(sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
-hets-opt: $(sources)
-	$(MAKE) real_clean
+hets-opt: hetcats/Version.hs
+	$(MAKE) distclean
+	$(MAKE) driftedSources
 	$(MAKE) hets-optimized
 
-hets-optimized: $(sources)
+hets-optimized:
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS)
 
 hets-old: $(objects)
@@ -174,18 +178,43 @@ post_doc4apache:
             'Common.Lib.Map.html:Common.Lib._Map.html'
 	mv docs/* a-docs/
 
+###############################
+### release management
+
+driftedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
+
+utils/DrIFT:
+	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
+
+utils/genRules:
+	(cd utils/GenerateRules; \
+           $(HC) --make -i../.. -package text GenerateRules.hs -o ../genRules)
+
+release: 
+	$(RM) -r HetCATS
+	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co HetCATS
+	$(RM) -r uni
+	ln -s ../uni uni
+	(cd HetCATS; ./clean.sh; $(MAKE) driftedSources; ./clean.sh)
+	find HetCATS -name CVS -exec $(RM) -rf {} \;
+	tar zcvf HetCATS.tgz HetCATS     
+
 #############################
 ### ATC DrIFT-rule generation
 
-genRules: $(generated_rule_files)
+genRules: $(generated_rule_files) utils/genRules
 
-$(generated_rule_files): $(genrule_files)# $(genrule_header_files)
+$(generated_rule_files): $(genrule_files) utils/genRules #$(genrule_header_files)
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
-	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs $(casl_files)
-	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs $(hascasl_files)
-	utils/genRules -r $(rule) -o CspCASL -h ATC/CspCASL.header.hs $(cspcasl_files)
-	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs $(haskell_files)
+	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs \
+            $(casl_files)
+	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs \
+            $(hascasl_files)
+	utils/genRules -r $(rule) -o CspCASL -h ATC/CspCASL.header.hs \
+            $(cspcasl_files)
+	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
+            $(haskell_files)
 
 rule = ShATermConvertible
 
@@ -341,22 +370,12 @@ hets.hs: hetcats/Version.hs
 %.hs: %.ly
 	$(HAPPY) $<
 
-#%.hs: %.ag.hs
-#	$(AG) $<
-
-%.hs: %.der.hs
+%.hs: %.der.hs utils/DrIFT
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
-
-#%.hs: %.ag
-#	$(AG) $< -o $@
-
-%.lhs: %.der.lhs
-	$(DRIFT) $< > $@
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
 	$(HC) -c $< $(HC_OPTS)
-
 
 %.o %.hi: %.lhs
 	$(HC) -c $< $(HC_OPTS)
@@ -377,6 +396,8 @@ ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),genRules)
+ifneq ($(MAKECMDGOALS),driftedSources)
+ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifeq  ($(MAKECMDGOALS),hets-old)
 ## include every .d file in INCLUDE_PATH
@@ -385,6 +406,8 @@ endif
 
 sources_hetcats.mk: hetcats-make hetcats/Version.hs hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
 	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
+endif
+endif
 endif
 endif
 endif
