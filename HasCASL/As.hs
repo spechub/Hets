@@ -59,7 +59,7 @@ data SIG_ITEMS = Sort_items [Annoted SORT_ITEM] [Pos]
 		 -- type, semi colons
 		 deriving (Show,Eq)
 
-data KIND = Kind [EXT_CLASS] CLASS [Pos]
+data KIND = Kind [EXT_CLASS] [CLASS] [Pos]
 	    deriving (Show,Eq)
 		 -- pos: ->
 
@@ -69,9 +69,16 @@ data EXT_CLASS = Ext_class [CLASS] VARIANCE [Pos]
 data VARIANCE = CoVar | ContraVar | InVar
 		deriving (Show,Eq)
 			  
-data TYPE_ITEM = Type_decl [TYPE_NAME] KIND [Pos]
+data TYPE_ITEM = Type_val_decl [TYPE_NAME] KIND [Pos]
+	       | Type_fun_decl TYPENAME [TYPE_ARG_DECL] [CLASS] [Pos]
+               | Type_alias
+	       | Subtype_decl
 	         -- pos: commas
 		 deriving (Show,Eq)
+
+data TYPE_ARG_DECL = Type_arg_decl [TYPEVAR] EXT_CLASS [pos]
+		   | Type_arg_var [TYPEVAR]
+
 
 data SORT_ITEM = Sort_decl [SORT] [Pos]
 	         -- pos: commas

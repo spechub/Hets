@@ -14,15 +14,17 @@ SORT-ITEM        ::= SORT-DECL
 
 SORT-DECL        ::= sort-decl TYPE-NAME+ CLASS*
 
-TYPE-ITEMS::= type-constr-items TYPE-ITEM+
-TYPE-ITEM ::= TYPE-DECL | TYPE-ALIAS-DEFN 
+TYPE-ITEMS       ::= type-constr-items TYPE-ITEM+
+TYPE-ITEM        ::= TYPE-DECL | TYPE-ALIAS-DEFN 
 
-TYPE-DECL    ::= TYPE-VAL-DECL | TYPE-FUN-DECL
-TYPE-VAL-DECL::= type-val-const-decl TYPE-NAME+ KIND
-TYPE-FUN-DECL::= type-constr-fun-decl TYPE-PATTERN+ CLASS+
-TYPE-PATTERN ::= type-constr-pattern TYPE-NAME TYPE-VAR-OR-DECL* 
-TYPE-VAR-OR-DECL    ::= TYPE-VAR | TYPE-ARG-DECL
-TYPE-ARG-DECL       ::= type-arg-decl TYPE-VAR EXT-CLASS
+TYPE-DECL           ::= TYPE-VAL-DECL | TYPE-FUN-DECL
+TYPE-VAL-DECL       ::= type-val-const-decl TYPE-NAME+ KIND
+TYPE-FUN-DECL       ::= type-constr-fun-decl TYPE-PATTERN+ CLASS+
+TYPE-PATTERN        ::= type-constr-pattern TYPE-NAME TYPE-ARG* 
+TYPE-ARG            ::= TYPE-VARS | TYPE-ARG-DECL
+TYPE-VARS           ::= type-vars TYPE-VAR+
+TYPE-ARG-DECL       ::= type-arg-decl TYPE-VAR+ EXT-CLASS
+		    
 TYPE-ALIAS-DEFN     ::= TYPE-ALIAS-VAL-DEFN | TYPE-ALIAS-FUN-DEFN
 TYPE-ALIAS-VAL-DEFN ::= type-alias-val-defn TYPE-NAME PSEUDOTYPE
 PSEUDOTYPE          ::= TYPE | LAMBDA-TYPE
@@ -35,35 +37,23 @@ CLASS-ITEM        ::= CLASS-DECL | SUBCLASS-DECL
 CLASS-DECL        ::= class-decl CLASS-NAME+
 SUBCLASS-DECL     ::= subclass-decl CLASS-NAME+ CLASS-NAME
 
-INSTANCE-ITEMS    ::= instance-items INSTANCE-ITEM+
-INSTANCE-ITEM     ::= INSTANCE-DECL | INSTANCE-DEFN
-
-INSTANCE-DECL     ::= CLASS-INSTANCE | ARITY 
-CLASS-INSTANCE    ::= SUB-INSTANCE | VAR-SUB-INSTANCE
-SUB-INSTANCE      ::= sub-instance CLASS-NAME CLASS-NAME
-VAR-SUB-INSTANCE  ::= var-sub-instance TYPE-VAR CLASS-NAME CLASS-NAME
-ARITY             ::= VAL-ARITY | FUN-ARITY | VAR-FUN-ARITY
-VAL-ARITY         ::= val-arity TYPE KIND
-FUN-ARITY         ::= fun-arity TYPE-NAME CLASS* CLASS
-VAR-FUN-ARITY     ::= var-fun-arity TYPE-PATTERN CLASS
-INSTANCE-DEFN     ::= instance-defn INSTANCE-DECL BASIC-SPEC
-
 OP-ITEMS         ::= op-items OP-ITEM+
 OP-ITEM          ::= OP-DECL | OP-DEFN
 
 OP-DECL          ::= op-decl OP-NAME+ TYPE-SCHEME OP-ATTR*
-OP-TYPE, TOTAL-OP-TYPE, PARTIAL-OP-TYPE, SORT-LIST: obsolete
+           %% OP-TYPE, TOTAL-OP-TYPE, PARTIAL-OP-TYPE, SORT-LIST: obsolete
 OP-ATTR          ::= BINARY-OP-ATTR | UNIT-OP-ATTR
 BINARY-OP-ATTR   ::= assoc-op-attr | comm-op-attr | idem-op-attr
 UNIT-OP-ATTR     ::= unit-op-attr TERM
 
 OP-DEFN          ::= OP-FUN-DEFN | OP-VAL-DEFN | OP-REC-VAL-DEFN
-OP-FUN-DEFN      ::= op-fun-defn OP-NAME OP-HEAD TERM  %% Not encouraged:
-                 %% Equivalent to quantified external formula,
-                 %% loose definition due to intensionality
-OP-HEAD          ::= TOTAL-OP-HEAD | PARTIAL-OP-HEAD
-TOTAL-OP-HEAD    ::= total-op-head ARG-DECL* TYPE
-PARTIAL-OP-HEAD  ::= partial-op-head ARG-DECL* TYPE
+OP-FUN-DEFN      ::= op-fun-defn OP-NAME OP-HEAD TERM  
+           %% not encouraged 
+           %% equivalent to quantified external formula,
+           %% loose definition due to intensionality
+OP-HEAD          ::= TOTAL-OR-NO-HEAD | PARTIAL-OP-HEAD
+TOTAL-OP-HEAD    ::= total-op-head ARG-DECL+ TYPE
+PARTIAL-OP-HEAD  ::= partial-op-head ARG-DECL+ TYPE
 ARG-DECL         ::= arg-decl VAR+ TYPE
 OP-VAL-DEFN      ::= op-val-defn OP-NAME TYPE TERM
 OP-REC-VAL-DEFN  ::= op-rec-val-defn OP-NAME TYPE TERM
@@ -76,7 +66,7 @@ PRED-TYPE: obsolete
 PRED-DEFN        ::= PRED-FUN-DEFN | PRED-VAL-DEFN | PRED-REC-VAL-DEFN
 
 PRED-FUN-DEFN    ::= pred-fun-defn OP-NAME PRED-HEAD FORMULA
-PRED-HEAD        ::= pred-head ARG-DECL*
+PRED-HEAD        ::= pred-head ARG-DECL+
 PRED-VAL-DEFN    ::= pred-val-defn OP-NAME TYPE TERM
 PRED-REC-VAL-DEFN::= pred-rec-val-defn OP-NAME TYPE TERM
 
@@ -318,7 +308,7 @@ SORT-ITEM       ::= TYPE-NAME ,..., TYPE-NAME
                   | TYPE-NAME = { VAR : TYPE "." FORMULA } 
                   | TYPE-NAME =...= TYPE-NAME   
 
-TYPE-ITEM::= TYPE-NAME ,..., TYPE-NAME: KIND
+TYPE-ITEM       ::= TYPE-NAME ,..., TYPE-NAME: KIND
                   | TYPE-PATTERN ,..., TYPE-PATTERN: 
                                 CLASS ,..., CLASS
                   | TYPE-NAME = PSEUDOTYPE
@@ -346,36 +336,35 @@ INSTANCE-DECL   ::= CLASS-NAME < CLASS-NAME
 INSTANCE-DEFN   ::= INSTANCE-DECL { BASIC-SPEC }
 
 OP-ITEM         ::= OP-NAME, ..., OP-NAME: TYPE-SCHEME
-                  | OP-NAME ,..., OP-NAME : TYPE-SCHEME , 
-                            OP-ATTR ,..., OP-ATTR 
+                  | OP-NAME, ..., OP-NAME: TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
                   | OP-NAME: TYPE = TERM
                   | OP-NAME: TYPE =rec TERM
-                  | OP-NAME OP-HEAD = TERM        %% This form is 
-                                                  %% not encouraged
-OP-HEAD         ::= ( ARG-DECL ;...; ARG-DECL ) : TYPE    
-                  | ARG-DECL ... ARG-DECL : TYPE 
-                  |  : TYPE   
-                  | ( ARG-DECL ;...; ARG-DECL ) : ? TYPE  
-                  | ARG-DECL ... ARG-DECL : ? TYPE 
-                  |  : ? TYPE 
-ARG-DECL        ::= VAR ,..., VAR : TYPE
+                  | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
+                  | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
 
-OP-TYPE: obsolete
+%% OP-ARGS instead of OP-HEAD and PRED-HEAD
 
-SOME-SORTS: obsolete 
+%% OP-TYPE: obsolete
+
+%% SOME-SORTS: obsolete 
 
 OP-ATTR         ::= assoc  |  comm  |  idem  |  unit TERM
 
 PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPE
-                  | OP-NAME PRED-HEAD <=> FORMULA  %% This form is 
+                  | OP-NAME OP-ARGS <=> FORMULA  %% This form is 
                                                  %% not encouraged.
                   | OP-NAME <=> FORMULA          %% Nor is this one.
-                  | OP-NAME: TYPE = TERM
-                  | OP-NAME: TYPE =rec TERM
-PRED-TYPE: obsolete
+                  | OP-NAME: TYPE = TERM          %% \-Term -? unit
+                  | OP-NAME: TYPE =rec TERM       %% \-Term ->? unit
 
-PRED-HEAD       ::= ( ARG-DECL ;...; ARG-DECL ) 
-                  | ARG-DECL ... ARG-DECL
+%% PRED-TYPE: obsolete
+
+OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
+ARG-DECLS       ::= ( ARG-DECL ;...; ARG-DECL ) 
+ARG-DECL        ::= VAR ,..., VAR : TYPE
+
+%% curried ARG-DECLs must be but in parenthesis
+%% because a TYPE would "eat" a following VAR 
 
 DATATYPE-DECL   ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
 
@@ -385,42 +374,43 @@ SIMPLE-DATATYPE-DECL
 DERIVING-DATATYPE-DECL
                 ::= SIMPLE-DATATYPE-DECL deriving CLASS ,..., CLASS
 
-ALTERNATIVE     ::= OP-NAME  ( COMPONENT ;...; COMPONENT )    
-                  | OP-NAME  ( COMPONENT ;...; COMPONENT ) ?   
+ALTERNATIVE     ::= OP-NAME COMPONENTS ... COMPONENTS     
+                  | OP-NAME COMPONENTS ... COMPONENTS ?   
                   | OP-NAME                           
                   | sort/sorts TYPE-NAME ,..., TYPE-NAME
                   | type/types TYPE ,..., TYPE                  
 
+%% compare with OP-ARGS
+COMPONENTS      ::= ( COMPONENT ;...; COMPONENT ) 
 COMPONENT       ::= OP-NAME ,..., OP-NAME : TYPE
                   | OP-NAME ,..., OP-NAME : ? TYPE               
                   | TYPE                                        
 
-
-GEN-VAR-DECL    ::= VAR-DECL | TYPE-VAR-DECL
 VAR-DECL        ::= VAR ,..., VAR : TYPE
-TYPE-VAR-DECL   ::= TYPE-VAR, ..., TYPE-VAR: CLASS ,..., CLASS |
-                    TYPE-VAR, ...,TYPE-VAR < TYPE
+TYPE-VAR-DECL   ::= TYPE-VAR, ..., TYPE-VAR: CLASS ,..., CLASS 
 
-KIND            ::= EXT-CLASS * ... * EXT-CLASS -> CLASS
-EXT-CLASS       ::= CLASS ,..., CLASS
-                  | VARIANCE
-                  | CLASS ,..., CLASS(VARIANCE)
-VARIANCE        ::= covariant | contravariant | invariant
+KIND            ::= EXT-CLASS * ... * EXT-CLASS -> CLASS,...,CLASS
+EXT-CLASS       ::= CLASS ,..., CLASS | + | - 
+                  | CLASS ,..., CLASS +
+                  | CLASS ,..., CLASS -
 
-CLASS           ::= type | {a. a < TYPE} | CLASS-NAME
+%% VARIANCE        ::= covariant | contravariant | invariant
+
+CLASS           ::= type | {TYPE} | CLASS-NAME
 
 TYPE-SCHEME     ::= TYPE | forall TYPE-VAR-DECL;...;TYPE-VAR-DECL. TYPE
 
-TYPE            ::= TYPE-VAR 
-                  | TYPE * ... * TYPE
-                  | TYPE -> TYPE
-                  | TYPE ->? TYPE
-                  | TCont TYPE TYPE | TCont(TYPE,TYPE)
-                  | PCont TYPE TYPE | PCont(TYPE,TYPE)
-                  | pred(TYPE)
-                  | ()
-                  | TYPE-NAME TYPE ... TYPE
-                  | TYPE-NAME(TYPE ,..., TYPE)
+PRIM-TYPE      ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
+	         | (TYPE)
+		 | ()                 %% unit
+
+MIXFIX-TYPE      ::= PRIM-TYPE ... PRIM-TYPE 
+
+PRODUCT-TYPE     ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
+
+TYPE             ::= PRODUCT-TYPE ARR ... ARR PRODUCT-TYPE
+
+ARR              ::= ->? | -> | -->? | -->
 
 
 AXIOM           ::= EXT-FORMULA | TYPE-QUANTIFICATION
