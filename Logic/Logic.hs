@@ -154,6 +154,10 @@ class (Language lid, PrintTypeConv basic_spec,
          parse_basic_spec :: lid -> Maybe(AParser basic_spec)
          parse_symb_items :: lid -> Maybe(AParser symb_items)
          parse_symb_map_items :: lid -> Maybe(AParser symb_map_items)
+         -- default implementations
+         parse_basic_spec _ = Nothing
+         parse_symb_items _ = Nothing
+         parse_symb_map_items _ = Nothing
 
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
@@ -177,6 +181,10 @@ class (Category lid sign morphism, Ord sentence,
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
+      -- default implementations
+      parse_sentence _ = Nothing
+      provers _ = []
+      cons_checkers _ = []
 
 -- static analysis
 
@@ -200,6 +208,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            -- the first output sign united with the input sign
                            -- should yield the second output sign
                            -- the second output sign is the accumulated sign
+         -- default implementation
+         basic_analysis _ = Nothing
+
          -- Shouldn't the following deliver Maybes???
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items :: 
