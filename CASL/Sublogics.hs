@@ -326,7 +326,12 @@ sl_Formula _ = top
 -- sl_morphism _ = top
 
 sl_symbol :: Symbol -> CASL_Sublogics
-sl_symbol _ = top
+sl_symbol (Symbol _ t) = sl_symbtype t
+
+sl_symbtype :: SymbType -> CASL_Sublogics
+sl_symbtype (OpAsItemType t) = sl_optype t
+sl_symbtype (PredType _) = need_pred
+sl_symbtype _ = bottom
 
 ------------------------------------------------------------------------------
 -- the end
