@@ -10,7 +10,39 @@
 
 -}
 {- todo
-   extend function checkFreeType:
+  add diagnostic messages. Change result type to Result (Maybe Bool) (see Common/Result.hs,
+  function warning, extract pos from FORMULA or TERM, take the head of the list [pos]).
+  i.e. instead of Just False, return
+     warning (Just False) "sort s is not inhabited" pos
+  similarly for Nothing
+  instead of Just True, take
+     return (Just True)
+
+  extend function checkFreeType by
+  for each axiom, let f be the function/predicate application of the
+  leading symbol on the left hand-side (lhs), and f(t_1,...,t_n) the lhs. 
+  Check that in the right hand-side, each occurence of f is applied
+  only to subterms of f(t_1,...,t_n).
+  for example, f(Cons(x,y)) = f(y)
+-} 
+
+module CASL.CCC.FreeTypes where
+
+import Debug.Trace
+import CASL.Sign                -- Sign, OpType
+import CASL.Morphism              
+import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import CASL.CCC.SignFuns
+import Common.AS_Annotation
+import Common.PrettyPrint
+import Common.Lib.Pretty
+import Common.Result
+
+{-
+   function checkFreeType:
    - check if leading symbols are new (not in the image of morphism), if not, return Nothing
    - the leading terms consist of variables and constructors only, if not, return Nothing
      - split function leading_Symb into 
@@ -27,24 +59,13 @@
                               no symbol may be a variable
                               check recursively the arguments of constructor in each group
   - return (Just True)
--} 
+-}
+checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] 
+   -> Result (Maybe Bool)
+checkFreeType m fsn = return $ checkFreeType1 m fsn
 
-module CASL.CCC.FreeTypes where
-
-import Debug.Trace
-import CASL.Sign                -- Sign, OpType
-import CASL.Morphism              
-import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
-import CASL.CCC.SignFuns
-import Common.AS_Annotation
-import Common.PrettyPrint
-import Common.Lib.Pretty
-
-checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
-checkFreeType m fsn 
+checkFreeType1 :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
+checkFreeType1 m fsn 
        | Set.any (\s->not $ elem s srts) newSorts = Nothing
        | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False
        | elem Nothing l_Syms = Nothing
