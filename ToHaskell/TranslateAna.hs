@@ -130,7 +130,8 @@ translateSignature i opinf =
     NoOpDefn -> res
     ConstructData _ -> []
     SelectData _ _ -> []
-    Definition _term -> [] -- Term zu HsFunBind/HsPatBind übersetzen!! 
+    Definition term -> res ++ 
+                       translateTerm term -- Term zu HsFunBind übersetzen!! 
     VarDefn -> res
 
 translateTypeScheme :: TypeScheme -> HsQualType
@@ -155,7 +156,10 @@ translateType t = case t of
 	 HsTyVar (HsIdent (translateIdWithType LowerId tid)) -- Upper/LowerId?
       else
          HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
---Missing: Übersetzung der Kind's             
+--Missing: Übersetzung der Kind's    
+
+translateTerm :: Term -> [HsDecl] --HsFunBind
+translateTerm t = []
 
 {------------------------------------------------------------------------
  Translation of Id's
