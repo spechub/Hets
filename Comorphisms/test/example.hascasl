@@ -10,6 +10,7 @@ spec Example =
       c : A * B;
       cc : A * A * A ->? B;
       d : B;
+      i : A ->? B->? B;
       __abc__ : A * B ->? A
 
   preds e,f : A ->? B;
@@ -21,12 +22,14 @@ spec Example =
     . forall b4:B . true
     . exists b4:B . true
     . exists! b4:B . true
+    . true /\ false
     . (true => false) /\ (false => true)
     . not (h b1 \/ g(a1,b2))
     . a a1 = b a2 /\ b a2 = b a3 /\ a a1 = b a3
     . a a1 = b a2 \/ b a2 = b a3
     . a a1 = b a2 => b a2 = b a3
     . a a1 = b a2 <=> b a2 = b a3
+    . a a1 =e= b a2
     . not (def g)
     . true
     . false
