@@ -146,26 +146,29 @@ iterStates ga as tm cm ty terms pm =
             MixfixTerm ts -> self (ts ++ tail terms) pm
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
-	    t@(QualVar v tyq _) -> 
+	    (QualVar v tyq ps) -> 
 		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
 		    case mt of 
 		    Just (_, typq) ->
 			let mi = findOpId as tm (varCount pm) v typq in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (Just typq, t) pm
+				      (Just typq, QualVar v typq ps) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
 		    Nothing -> pm { failDiags = es }
-	    t@(QualOp (InstOpId v _ _) (TypeScheme _ (_ :=> tyq) _) _) ->
-		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
+	    (QualOp io@(InstOpId v _ _) (TypeScheme vs (qs :=> tyq) ps1) ps2) 
+		-> let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) 
+		    in
 		    case mt of 
 		    Just (_, typq) ->
 			let mi = findOpId as tm (varCount pm) v typq in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (Just typq, t) pm
+				      (Just typq, QualOp io 
+				       (TypeScheme vs (qs :=> typq) ps1)
+				       ps2) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
