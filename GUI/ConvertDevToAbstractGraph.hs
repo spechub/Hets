@@ -57,9 +57,9 @@ data GraphMem = GraphMem {
 
 -- types of the Maps above
 type DGraphToAGraphNode = Map.Map (LIB_NAME,Node) Descr
-type DGraphToAGraphEdge = Map.Map (LIB_NAME,Edge) Descr
+type DGraphToAGraphEdge = Map.Map (LIB_NAME,(Descr,Descr,String)) Descr
 type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node) 
-type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,Edge)
+type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = do initGraphInfo <- initgraphs
@@ -120,7 +120,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 --  graphId <- newIORef 0
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
-               [GlobalMenu(Menu (Just "internal nodes")
+             [GlobalMenu (Menu Nothing
+               [Menu (Just "internal nodes")
                  [Button "Hide" 
                           (do --gid <- readIORef graphId
                               Result descr _ <- hideSetOfNodeTypes gid
@@ -136,8 +137,10 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 			      descr <- readIORef event
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
-                              return ()    ),
-		  Button "TEMP - Global Subsumption"
+                              return ()    )],
+
+	        Menu (Just "proofs")
+                  [		  Button "TEMP - Global Subsumption"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
 			            globSubsume proofStatus
@@ -178,26 +181,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		              writeIORef event newDescr
 		              writeIORef convRef newConvMaps
 		              redisplay gid actGraphInfo
-		              return ()    )]),
-
-	        GlobalMenu(Menu (Just "proofs")
-                  [Button "Global Subsumption"
-                           (do proofStatus <- readIORef ioRefProofStatus
-			       let newProofStatus@(_,history,_) =
-			             globSubsume proofStatus
-			       writeIORef ioRefProofStatus newProofStatus
-			       descr <- readIORef event
-			       convMaps <- readIORef convRef
-			       (newDescr,newConvMaps)
-			          <- applyChanges gid ln actGraphInfo descr 
-			               convMaps history
-			       writeIORef event newDescr
-			       writeIORef convRef newConvMaps
-			       redisplay gid actGraphInfo
-			       return ()    ),
-                   Button "Global Decomposition"
-                          (do return ()    )])]
-
+		              return ()    )]])]
                [("spec", 
 		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
                               ioRefSubtreeEvents ioRefVisibleNodes
@@ -569,21 +553,22 @@ invContext dgraph node = context node dgraph
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
                     [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps descr graphInfo [] libname = return convMaps
-convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edge)):lEdges) libname = 
+convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges) libname = 
   do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
-        Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge))
+        Result newDescr err <- addlink descr (getDGLinkType (dgl_type edgelab))
                                    "" (Just ledge) s t graphInfo
         newConvMaps <- (convertEdgesAux
-                       convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
-				                     newDescr
-				                     (dg2abstrEdge convMaps),
+                       convMaps {dg2abstrEdge = Map.insert
+				     (libname, (src,tar,show edgelab))
+				     newDescr
+				     (dg2abstrEdge convMaps),
                                  abstr2dgEdge = Map.insert newDescr
-				                     (libname, (src,tar))
-				                     (abstr2dgEdge convMaps)}
-                                       descr graphInfo lEdges libname)
+		                     (libname, (src,tar,show edgelab))
+		                     (abstr2dgEdge convMaps)}
+                                         descr graphInfo lEdges libname)
         return newConvMaps
       otherwise -> error "Cannot find nodes"
 
@@ -682,15 +667,15 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
   case change of
     InsertNode lNode -> error "insert node not yet implemented"
     DeleteNode node -> error "delete node not yet implemented"
-    InsertEdge ledge@(src,tgt,edgeLab) -> 
+    InsertEdge ledge@(src,tgt,edgelab) -> 
       do
         let dg2abstrNodeMap = dg2abstrNode convMaps
         case (Map.lookup (libname,src) dg2abstrNodeMap,
 	      Map.lookup (libname,tgt) dg2abstrNodeMap) of
           (Just abstrSrc, Just abstrTgt) ->
-            do let dgEdge = (libname, (src,tgt))
+            do let dgEdge = (libname, (src,tgt,show edgelab))
 	       (Result descr error) <- 
-                  addlink gid (getDGLinkType (dgl_type edgeLab))
+                  addlink gid (getDGLinkType (dgl_type edgelab))
 			      "" (Just ledge) abstrSrc abstrTgt graphInfo
 	       case error of
 	         Nothing ->
@@ -713,8 +698,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			         convMaps changes
    
 
-    DeleteEdge (src,tgt,_) -> 
-      do let dgEdge = (libname, (src,tgt))
+    DeleteEdge (src,tgt,edgelab) -> 
+      do let dgEdge = (libname, (src,tgt,show edgelab))
              dg2abstrEdgeMap = dg2abstrEdge convMaps 
          case Map.lookup dgEdge dg2abstrEdgeMap of
             Just abstrEdge ->
