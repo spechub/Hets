@@ -26,10 +26,11 @@ import Syntax.Print_HetCASL
 import Debug.Trace
 
 main :: IO ()
-main = do opt <- getArgs >>= hetcatsOpts
-	  if (verbose opt >= 3) then putStr "Options: " >> print opt
-	     else return ()
-	  sequence_ $ map (processFile opt) (infiles opt)
+main = 
+    do opt <- getArgs >>= hetcatsOpts
+       if (verbose opt >= 3) then putStr "Options: " >> print opt
+          else return ()
+       sequence_ $ map (processFile opt) (infiles opt)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
@@ -37,13 +38,12 @@ processFile opt file =
        ld <- read_LIB_DEFN opt file
        -- (env,ld') <- analyse_LIB_DEFN opt
        if (analysis opt)
-	  then do
-	       let odir = if (null (outdir opt)) then (dirname file)
-			  else (outdir opt)
-	       trace ("selected OutDir: " ++ odir) (return ())
-	       write_LIB_DEFN (opt { outdir = odir }) ld
-	       -- write_GLOBAL_ENV env
-  else putStrLn (take 200 (show (printText0_eGA ld)) ++ "\n...")
+          then do let odir = if (null (outdir opt)) then (dirname file)
+                                else (outdir opt)
+                  trace ("selected OutDir: " ++ odir) (return ())
+                  write_LIB_DEFN (opt { outdir = odir }) ld
+                  -- write_GLOBAL_ENV env
+          else putStrLn (take 200 (show (printText0_eGA ld)) ++ "\n...")
 {-
   (ast,env) <- 
     if just_parse then return (ld,Nothing)
