@@ -1,8 +1,7 @@
 -- stub module to add your own rules.
-module UserRules where
+module UserRuleXml (userRuleXml) where
 
-import List (nub)
-import StandardRules(Rule,Tag) -- gives some examples 
+import List (nub,sortBy)
 import RuleUtils -- useful to have a look at this too
 
 {- datatype that rules manipulate :-
@@ -33,18 +32,14 @@ type Rule = (Tag, Data->Doc)
 
 -}
 
--- add your rules to this list
-userRules :: [Rule]
-userRules = [("Haskell2Xml", xml)]
-
-xml dat = 
+userRuleXml dat = 
   let cs  = body dat
       cvs = mknss cs namesupply
   in
   instanceheader "Haskell2Xml" dat $$
   block (toHTfn cs cvs dat:
          ( text "fromContents (CElem (Elem constr [] cs):etc)" $$
-           vcat (zipWith3 readsfn [0..] cvs cs)):
+           vcat (preorder cs (zipWith3 readsfn [0..] cvs cs))):
          zipWith3 showsfn [0..] cvs cs)
 
 toHTfn cs cvs dat =
@@ -229,6 +224,18 @@ readsfn n ns cn =
                 , cfn (text "cs")]
     )
   )
+  -- Constructors are matched with "isPrefixOf" rather than "=="
+  -- because of parametric polymorphism.  For a datatype
+  --        data A x = A | B x
+  -- the XML tags will be <A>, <B-Int>, <B-Bool>, <B-Maybe-Char> etc.
+  -- However prefix-matching presents a problem for types like
+  --        data C = C | CD
+  -- because (C `isPrefixOf`) matches both constructors.  The solution
+  -- (implemented by "preorder") is to order the constructors such that
+  -- <CD> is matched before <C>.
+
+preorder cs =
+    map snd . reverse . sortBy (\(a,_) (b,_)-> compare a b) . zip (map constructor cs)
 
 
 --
