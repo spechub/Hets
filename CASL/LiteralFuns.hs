@@ -46,7 +46,7 @@ isLiteral ga i trm =
 
 isNumber :: GlobalAnnos -> Id -> [TERM] -> Bool
 isNumber ga i trs = 
-    digitTest i || (getLiteralType ga i == Number && 
+    digitTest i && null trs || (getLiteralType ga i == Number && 
 		    all (sameId digitTest i) trs)
     where digitTest ii = case ii of
 			 Id [t] [] _ -> isDigit $ head $ tokStr t
