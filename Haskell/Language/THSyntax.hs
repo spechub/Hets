@@ -2,12 +2,12 @@ module Haskell.Language.THSyntax
 -- FIXME: *urgh* we don't really want to export stuff like `counter'  -=chak
 where
 
-import Monad            ( liftM, liftM2, sequence )
+import Control.Monad            ( liftM, liftM2, sequence )
 
 import Data.IORef       ( IORef, newIORef, readIORef, writeIORef )
 import System.IO.Unsafe ( unsafePerformIO )
-import Text.PrettyPrint.HughesPJ
-import Char (toLower)
+import Common.Lib.Pretty
+import Data.Char (toLower)
 
 
 -------------------------------------------------------

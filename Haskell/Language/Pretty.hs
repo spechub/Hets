@@ -23,7 +23,7 @@ module Haskell.Language.Pretty (
 
 import Haskell.Language.Syntax
 
-import qualified Text.PrettyPrint as P
+import qualified Common.Lib.Pretty as P
 
 infixl 5 $$$
 
