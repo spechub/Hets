@@ -820,7 +820,7 @@ print_mixfix_appl pf parens_fun
 	  d_terms_a_comp = fsep_fun (fillIn places' terms_a_comp'
 				     ++ [last_term])
 	  isL3 = length tops >= 3
-	  tps_b_comp' :: [TokenOrPlace]
+	  tps_b_comp' :: [Token]
 	  terms_b_comp' :: [TERM]
 	  first_term    :: Doc
 	  (tps_b_comp',terms_b_comp',first_term) = 
@@ -842,9 +842,9 @@ print_mixfix_appl pf parens_fun
 		                 (Just ARight))
 	      else
 	         (places,terms_a_comp,empty)
-	  fillIn :: [TokenOrPlace] -> [TERM] -> [Doc]
+	  fillIn :: [Token] -> [TERM] -> [Doc]
 	  fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
-	  pr :: [TERM] -> TokenOrPlace -> ([TERM],Doc)
+	  pr :: [TERM] -> Token -> ([TERM],Doc)
 	  pr [] top = ([], pf ga top)
 	  pr tS@(t:ts) top 
 	      | isPlace top = (ts,pf ga t)

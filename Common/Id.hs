@@ -30,8 +30,6 @@ nullPos = newPos "" 0 0
 headPos :: [Pos] -> Pos 
 headPos l = if null l then nullPos else head l
 
-type Region = (Pos,Pos)
- 
 -- tokens as supplied by the scanner
 data Token = Token { tokStr :: String
 		   , tokPos :: Pos
@@ -55,19 +53,16 @@ showSepList _ _ [] = id
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
 
--- special tokens
-type Keyword = Token
-type TokenOrPlace = Token
- 
+-- special token
 place :: String
 place = "__"
 
-isPlace :: TokenOrPlace -> Bool
+isPlace :: Token -> Bool
 isPlace (Token t _) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
 -- TokenOrPlace list must be non-empty!
-data Id = Id [TokenOrPlace] [Id] [Pos] 
+data Id = Id [Token] [Id] [Pos] 
                                  -- pos of "[", commas, "]" 
 	  deriving (Show)
 -- for pretty printing see PrettyPrint.hs

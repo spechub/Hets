@@ -367,7 +367,7 @@ instance PrettyPrint Token where
 
     printLatex0 _ = printToken_latex casl_axiom_latex
 
-printToken_latex :: (String -> Doc) -> TokenOrPlace -> Doc
+printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
     let s =  tokStr t
 	printToken = 
@@ -393,7 +393,7 @@ printId :: (forall a . PrettyPrint a => GlobalAnnos -> a -> Doc)
 	   -> Doc -- ^ a comma seperator
 	   -> (Doc -> Doc) -- ^ a function that surrounds the given Doc 
 			-- with brackets
-	   -> GlobalAnnos -> [TokenOrPlace] -> [Id] -> Doc
+	   -> GlobalAnnos -> [Token] -> [Id] -> Doc
 printId pf comma_fun brackets_fun ga tops ids =
     let (toks,places) = splitMixToken tops
 	glue_tok = fcat . (map (pf ga))
