@@ -101,17 +101,21 @@ transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (extendedInfo sign)) $
   Just(IsaSign.emptySign {
     baseSig = "Main",
-    tsig = emptyTypeSig 
-            {arities = Set.fold (\s -> Map.insert (showIsa s) [(isaTerm, [])]) 
+    tsig = emptyTypeSig {arities = 
+               Set.fold (\s -> let s1 = showIsa s in
+                                if s1 `elem` dtTypes then id
+                                 else Map.insert s1 [(isaTerm, [])]) 
                                Map.empty (sortSet sign)},
     constTab = Map.foldWithKey insertOps
                   (Map.foldWithKey insertPreds
                                    Map.empty
                                    (predMap sign))
                   (opMap sign),
-    dataTypeTab = makeDtDefs sign $ sens },
+    dataTypeTab = dtDefs },
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
+    dtDefs = makeDtDefs sign $ sens
+    dtTypes = map ((\(Type s _ _ _) -> s).fst) $ concat dtDefs
     insertOps op ts m = 
      if Set.size ts == 1 
       then Map.insert (showIsa op) (transOpType (Set.findMin ts)) m
@@ -127,7 +131,7 @@ transTheory trSig trForm (sign,sens) =
  
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
                -> [[(Typ,[(String,[Typ])])]]
-makeDtDefs sign = mapMaybe $ makeDtDef sign
+makeDtDefs sign = List.nub . (mapMaybe $ makeDtDef sign)
 
 makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) -> 
              Maybe [(Typ,[(String,[Typ])])]
