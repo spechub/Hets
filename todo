@@ -33,7 +33,12 @@ get cvs access from George Russell (see mail)
 run the following:
   cvs checkout HetCATS
   cvs checkout CASL-lib
-  cd HetCATS
+  cvs checkout uni
+  cd uni
+  ./configure
+  make boot
+  make het
+  cd ../HetCATS
   make hets
 try out small examples, e.g.
   export HETS_LIB=.../CASL-lib
