@@ -76,6 +76,10 @@ addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
     language_name $ sourceLogic cid2),
    (c1,c2))
 
+{- | Comorphisms are either logic inclusions, or normal comorphisms.
+     The former are assembled in inclusionList, the latter in normalList
+-}
+
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
                  Comorphism CASL2IsabelleHOL, 
@@ -90,9 +94,16 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CASL2CspCASL,
                  Comorphism CspCASL2Modal]
 
-comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL, Comorphism CASL2TopSort]
+normalList :: [AnyComorphism]
+normalList = [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL, Comorphism CASL2TopSort]
 
+comorphismList :: [AnyComorphism]
+comorphismList = inclusionList ++ normalList
+
+{- | Unions of logics, represented as pairs of inclusions.
+     Entries only necessary for non-trivial unions 
+     (a trivial union is a union of a sublogic with a superlogic).
+-}
 unionList :: [(AnyComorphism,AnyComorphism)]
 unionList = []
 
