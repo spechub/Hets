@@ -50,7 +50,7 @@ checkArg g dir op arg =
 checkAnyArg :: GlobalAnnos -> Id -> Id -> Bool
 checkAnyArg g op arg = 
     case precRel (prec_annos g) op arg of
-    ExplGroup BothDirections -> False
+    ExplGroup BothDirections -> isInfix op && op == arg
     _ -> True				       
 
 -- Earley Algorithm
@@ -59,6 +59,7 @@ checkAnyArg g op arg =
 -- and arguments must follow in parenthesis
 
 data State = State { rule :: Id
+                   , matchList :: Bool        -- usually False 
                    , matchPlace :: Maybe Bool -- no "__" encountered yet,
 		                              -- or true (literal match of place) 
 		                              -- or false (treat as non-terminal)
@@ -73,7 +74,7 @@ shortShowState:: State -> ShowS
 shortShowState s = showId $ rule s 
 
 instance Show State where
-    showsPrec _ (State r b a d p) = showChar '{' 
+    showsPrec _ (State r l b a d p) = showChar '{' . showList l 
 				 . showSepList (showString "") showTok first
 				 . showChar '.' 
 				 . showSepList (showString "") showTok d
@@ -83,7 +84,8 @@ instance Show State where
 	where first = take (length v - length d) v
 	      v = getTokenList r
 	      showMatch Nothing = showString "" 
-	      showMatch (Just x) = showString $ if x then place else "TERM" 
+	      showMatch (Just x) = showString $ if x then place else "TERM"
+	      showList l = if l then showString "L " else showString ""
 
 instance (Show a) => Show (Set a) where
     showsPrec _ = shows . setToList
@@ -100,7 +102,7 @@ getTokenList (Id ts cs _) =
     in reverse toks ++ cts ++ reverse pls
 
 mkState :: Int -> Id -> State 
-mkState n ide = State ide Nothing [] (getTokenList ide) n
+mkState n ide = State ide False Nothing [] (getTokenList ide) n
 
 type Chart = FiniteMap Int (Set State)
 
@@ -117,9 +119,9 @@ mayMatchNT = not . doMatchPlace
 scan :: Token -> Int -> Chart -> Chart
 scan t i m = 
     addToFM m (i+1) (mkSet $ 
-       foldr (\ (State o b a ts k) l ->
+       foldr (\ (State o z b a ts k) l ->
 	      if null ts || head ts /= t || isPlace t && dontMatchPlace b then l 
-	      else (State o (if isPlace t then Just True else b) 
+	      else (State o z (if isPlace t then Just True else b) 
 		    a (tail ts) k) : l) [] 
 	      (setToList $ lookUp m i))
 
@@ -129,24 +131,35 @@ lookUp m i = lookupWithDefaultFM m emptySet i
 compl :: GlobalAnnos -> Chart -> [State] -> [State]
 compl g m l = 
   concat $ map (collectArg g m) 
-  $ filter (\ (State _ _ _ ts _) -> null ts) l
+  $ filter (\ (State _ _ _ _ ts _) -> null ts) l
 
 collectArg :: GlobalAnnos -> Chart -> State -> [State]
 -- pre: finished rule 
-collectArg g m s@(State _ _ _ _ k) = 
--- insert filter by precedence (if all arguments are given)
-    map (\ (State o _ a ts k1) ->
-	      State o (Just False) (s:a) (tail ts) k1)
+collectArg g m s@(State _ _ _ _ _ k) = 
+    map (\ (State o z _ a ts k1) ->
+	      State o z (Just False) (s:a) (tail ts) k1)
     $ filter (filterByPrec g s)
-    $ filter (\ (State _ b _ ts _) -> not (null ts) 
+    $ filter (\ (State _ _ b _ ts _) -> not (null ts) 
 		       && isPlace (head ts) && mayMatchNT b)
     $ setToList $ lookUp m k
 
 filterByPrec :: GlobalAnnos -> State -> State -> Bool
-filterByPrec g (State argIde _ _ _ _) (State opIde b args ts k) = 
-    if null args then checkArg g ALeft opIde argIde 
-       else checkArg g ARight opIde argIde
+filterByPrec g (State argIde _ _ _ _ _) (State opIde _ _ args _ _) = 
+       let n = length args in
+       if isLeftArg opIde n then 
+	  if isPostfix opIde && not (isPostfix argIde) then False
+	     else checkArg g ALeft opIde argIde 
+       else if isRightArg opIde n then 
+            if isPrefix opIde && isMixfix argIde then False
+	    else checkArg g ARight opIde argIde
+       else checkAnyArg g opIde argIde
 
+isLeftArg, isRightArg :: Id -> Int -> Bool
+isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
+
+isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
+	      (length $ takeWhile isPlace (reverse ts))
+	  
 complRec :: GlobalAnnos -> Chart -> [State] -> [State]
 complRec g m l = let l1 = compl g m l in 
     if null l1 then l else complRec g m l1 ++ l
@@ -155,7 +168,7 @@ complete :: GlobalAnnos -> Int  -> Chart -> Chart
 complete g i m = addToFM m i $ mkSet $ complRec g m $ setToList $ lookUp m i 
 
 predict :: Set Id -> Int -> Chart -> Chart
-predict ms i m = if any (\ (State _ b _ ts _) -> not (null ts) 
+predict ms i m = if any (\ (State _ _ b _ ts _) -> not (null ts) 
 			 && isPlace (head ts) && mayMatchNT b) 
 		 (setToList $ lookUp m i)
 		 then addToFM_C union m i (mapSet (mkState i) ms)
@@ -174,19 +187,19 @@ mkChart :: Set Id -> [Token] -> Chart
 mkChart rules toks = nextState rules testAnnos toks 0 (initialState rules)
 
 sucChart :: Chart -> Bool
-sucChart m = any (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+sucChart m = any (\ (State _ _ _ _ ts k) -> null ts && k == 0) $ 
 	     setToList $ lookUp m $ sizeFM m - 1
 
 
 getAppls :: Chart -> [TERM]
 getAppls m = 
     map stateToAppl $ 
-	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+	filter (\ (State _ _ _ _ ts k) -> null ts && k == 0) $ 
 	     setToList $ lookUp m $ sizeFM m - 1
 
 stateToAppl :: State -> TERM
-stateToAppl (State i _ a _ _) = Application (Op_name i) 
-				(reverse (map stateToAppl a)) []
+stateToAppl (State i _ _ a _ _) = Application (Op_name i) 
+				  (reverse (map stateToAppl a)) []
 
 -- start testing
 
