@@ -658,7 +658,7 @@ condPrint_Mixfix pf parens_fun sp_brackets_fun
 condPrint_Mixfix_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_text =
     condPrint_Mixfix printText0 parens sp_brackets 
-		     (<+>) fsep (commaT printLatex0)
+		     (<+>) fsep (commaT printText0)
 
 condPrint_Mixfix_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 condPrint_Mixfix_latex =
