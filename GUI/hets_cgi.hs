@@ -95,14 +95,15 @@ printR str result isTex outputfile =
        h2 $ text "Analyzing spec cache ..."
        printRes result 
        if isTex then
-         p $ i(do  text "You can here " 
-	           hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
+	 do
+          p $ i(do  text "You can here " 
+	            hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
 				(drop 24 outputfile))) $ text "the LaTeX file" 
-	           text " download. The file will be deleted after 30 minutes.\n" 
+	            text " download. The file will be deleted after 30 minutes.\n" 
 	      )
-	 p $ i( do text "For compiling the LaTeX output, you need " 
-	           hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
-	           text "."
+	  p $ i( do  text "For compiling the LaTeX output, you need " 
+	             hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
+	             text "."
 	      )
 	 else CGI.empty
        hr_S $ CGI.empty
