@@ -1,21 +1,93 @@
 
-{- HetCATS/CASL/Keywords.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
-   
-   string constants for CASL keywords to be used for parsing and printing
-   all exported identifiers are mixed case (usually keyword plus capital S)
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-   http://www.cofi.info/Documents/CASL/Summary/
-   from 25 March 2001
-   C.4 Lexical Syntax
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+    
+String constants for CASL keywords to be used for parsing and printing
+
+- all identifiers are mixed case (i.e. the keyword followed by  a capital S)
+
+- see <http://www.cofi.info/Documents/CASL/Summary/> from 25 March 2001, 
+  C.4 Lexical Syntax
 -}
+
 
 module Common.Keywords where
 
 import Prelude (String)
 
+-- * context dependend keywords
+
+-- | sub sort indicator
+lessS :: String
+lessS  = "<"
+
+-- | modifier for 'funS' or 'colonS'
+exMark :: String
+exMark  = "!" 
+
+-- | modifier for 'existsS'
+quMark :: String 
+quMark  = "?"  
+
+-- ** type constructors
+timesS,
+  prodS,
+  funS :: String
+funS  = "->"
+prodS  = "*"
+timesS  = "\215"
+
+-- ** modal operators
+diamondS :: String
+diamondS = "<>"
+
+-- | mind @[]@ also as (non-symbol) term
+boxS :: String
+boxS = "[]"  
+
+-- * symbol keywords 
+defnS,
+  mapsTo,
+  barS,
+  cDot,
+  dotS,
+  colonS :: String 
+colonS  = ":"
+dotS  = "."
+cDot  = "\183"
+barS  = "|"
+mapsTo  = "|->"
+defnS  = "::="
+
+-- ** equality symbols
+
+-- | mind spacing i.e. in @e =e= e@
+exEqual :: String
+exEqual  = "=e="  
+
+-- | also a definition indicator
+equalS :: String
+equalS  = "="
+
+-- ** formula symbols
+lOr,
+  lAnd,
+  negS,
+  equivS,
+  implS :: String
+implS  = "=>"
+equivS  = "<=>"
+negS  = "\172"
+lAnd  = "/\\"    
+lOr  = "\\/"
+
+-- * lower case letter keywords
 withinS,
   withS,
   viewS,
@@ -62,60 +134,7 @@ withinS,
   ifS,
   falseS,
   elseS,
-  defS,
-  diamondS,
-  boxS,
-  lOr,
-  lAnd,
-  negS,
-  equivS,
-  implS,
-  exEqual,
-  equalS,
-  defnS,
-  mapsTo,
-  barS,
-  cDot,
-  dotS,
-  colonS,
-  lessS,
-  timesS,
-  prodS,
-  funS,
-  quMark,
-  exMark :: String
-
--- ----------------------------------------------
--- casl special strings 
--- ----------------------------------------------
-
-exMark  = "!" -- in "exists!"
-quMark  = "?"
-funS  = "->"
-prodS  = "*"
-timesS  = "\215"
-lessS  = "<"
-colonS  = ":"
-
--- ----------------------------------------------
--- casl keywords
--- ----------------------------------------------
-
-dotS  = "."
-cDot  = "\183"
-barS  = "|"
-mapsTo  = "|->"
-defnS  = "::="
-
-equalS  = "="
-exEqual  = "=e="  -- unusual keyword 
-implS  = "=>"
-equivS  = "<=>"
-negS  = "\172"
-lAnd  = "/\\"   -- logical and/or
-lOr  = "\\/"
-boxS = "[]"
-diamondS = "<>"
+  defS :: String
 
 defS  = "def"
 elseS  = "else"
