@@ -53,7 +53,8 @@ instance ATermConvertible Int where
 	where mi = if toInteger ((fromInteger::Integer->Int) x) == x then 
 			      Just (fromInteger x)
 	           else       Nothing 
-	      x::Integer = fromATerm at
+	      x::Integer 
+	      x = fromATerm at
 
 instance ATermConvertible String where
     toATerm at s      = addATerm (AAppl s' []) at
