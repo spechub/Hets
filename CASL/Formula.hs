@@ -217,8 +217,8 @@ parenFormula = do { o <- oParenT
 		    do { q <- qualPredName po 
 			 <|> qualVarName po <|> qualOpName po
 		       ; l <- many restTerm   -- optional arguments
-		       ; return (if null l then Mixfix_formula q
-				 else Mixfix_formula (Mixfix_term (q:l)))
+		       ; termFormula (if null l then q else
+					      Mixfix_term (q:l))
 		       }
 		    <|>
 		    do { f <- formula
@@ -229,7 +229,7 @@ parenFormula = do { o <- oParenT
 					           [tokPos o, tokPos c]
 					      ft = if null l then tt 
 					           else Mixfix_term (tt:l)
-					  in return (Mixfix_formula ft) 
+					  in termFormula ft
 					}
 				     -- commas are not allowed
 				   ; _ -> do { c <- cParenT
@@ -240,8 +240,7 @@ parenFormula = do { o <- oParenT
 		       }
 		    }
 
-termFormula = do { t <- term
-		 ; do { e <- asKey exEqual
+termFormula t =    do { e <- asKey exEqual
 		      ; r <- term 
 		      ; return (Existl_equation t r [tokPos e])
 		      }
@@ -260,7 +259,6 @@ termFormula = do { t <- term
 		      ; return (Membership t s [tokPos e])
 		      }
 		   <|> return (Mixfix_formula t)
-		   }
 
 primFormula = do { c <- asKey trueS
 		 ; return (True_atom [tokPos c])
@@ -279,7 +277,7 @@ primFormula = do { c <- asKey trueS
 		 ; f <- primFormula 
 		 ; return (Negation f [tokPos c])
 		 }
-              <|> parenFormula <|> quantFormula <|> termFormula
+              <|> parenFormula <|> quantFormula <|> (term >>= termFormula)
 
 andKey = asKey lAnd
 orKey = asKey lOr
