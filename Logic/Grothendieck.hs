@@ -429,7 +429,9 @@ gsigLeftUnion lg pos gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
   if language_name lid1 == language_name lid2 
      then homogeneousGsigUnion pos gsig1 gsig2
      else do
-      GMorphism incl _ _ <- ginclusion lg gsig2 gsig1
+      GMorphism incl _ _ <- ginclusion lg 
+          (G_sign lid2 (empty_signature lid2))
+          (G_sign lid1 (empty_signature lid1))
       let lid1' = targetLogic incl
           lid2' = sourceLogic incl
       sigma1' <- rcoerce lid1 lid1' pos sigma1
