@@ -14,11 +14,11 @@ __
 <=
 .a
 'a'
-= [a,b]
-< [a,b]
-<= [a,b]
-.a [a,b]
-'a' [a,b]
+= [a, b]
+< [a, b]
+<= [a, b]
+.a [a, b]
+'a' [a, b]
 __ * __
 a =e= b
 a = e = b
@@ -37,10 +37,10 @@ b {a __ b} a
 [a __ b] a
 b [a __ b]
 b [a __ b] a
-(a,=,b)
-({},[],{[] {}})
-{{},[],{[] {}}}
-[{},[],{[] {}}]
+(a, =, b)
+({}, [], {[] {}})
+{{}, [], {[] {}}}
+[{}, [], {[] {}}]
 (var y : bb)
 (op y : bb)
 (op __<__ : ##)
@@ -114,9 +114,9 @@ let x = case x in t of y -> z;
 if a then b
 a if b
 if a then b else c
-(a,b) as t
-((a,b) as t)
-\ (a @ (b,c) : S × S) . a
-\ (a # (b,c) : S × S) . a
-\ (a # (b,c) # : S × S) . a
+(a, b) as t
+((a, b) as t)
+\ (a @ (b, c) : S × S) . a
+\ (a # (b, c) : S × S) . a
+\ (a # (b, c) # : S × S) . a
 \ (a) . a
