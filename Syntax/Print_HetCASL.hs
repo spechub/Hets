@@ -28,7 +28,7 @@ import Syntax.GlobalLibraryAnnotations
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library
-
+import Debug.Trace
 
 data PrintMode = PMtext | PMlatex | PMdebugLatex
 
@@ -44,11 +44,16 @@ printLIB_DEFN_mode m ld =
 		 PMtext -> renderText Nothing
 		 PMlatex -> renderLatex default_latex_line_length
 		 PMdebugLatex -> debugRenderLatex default_latex_line_length)
-	(if null ds then doc else doc $$ printText0 ga r)
+	(if null ds then doc 
+	 else trace (show $ vcat $ map (printText0 ga) ds) doc 
+	 {-$$ printText0 ga r -})
+  -- print the whole result in this way causes LaTeX problems:
+  -- not every line break gets an comment out (%) for LaTeX !!!
 
 default_latex_line_length :: Maybe Int
 default_latex_line_length = -- Nothing
    Just $ calc_line_length "396.0pt"
+	-- for svmono you need 336.0pt
 
 printLIB_DEFN_text, printLIB_DEFN_latex, printLIB_DEFN_debugLatex 
     :: LIB_DEFN -> String
