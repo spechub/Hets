@@ -151,3 +151,34 @@ mapIgnoreMaybe :: (a -> b) -> [IgnoreMaybe a] -> [b]
 mapIgnoreMaybe f [] = []
 mapIgnoreMaybe f (RealJust x:t) = (f x):(mapIgnoreMaybe f t)
 mapIgnoreMaybe f (h:t) = mapIgnoreMaybe f t
+
+-- add element to list as if it were a set
+--  addition is to the front if element wasn't already in the list, in which
+--  case the list is not modified
+--
+setAddOne :: Eq a => [a] -> a -> [a]
+setAddOne set x = if (x `elem` set) then set else (x:set)
+
+-- concat two lists as if they were sets
+-- adds each element from the second list using setAddOne
+--
+setAdd :: Eq a => [a] -> [a] -> [a]
+setAdd set add = foldl setAddOne set add
+
+-- find out whether all the elements of a list occur only once
+--
+allUnique :: Eq a => [a] -> Bool
+allUnique [] = False
+allUnique [h] = True
+allUnique (h:t) = ([ x | x<-t, x == h ]==[]) && allUnique t
+
+-- compute members of a list occuring more than once
+--
+notUnique :: Eq a => [a] -> [a]
+notUnique [] = []
+notUnique (h:t) = let
+                    diff = [ x | x<-t, x/=h ]
+                    rest = notUnique diff
+                  in
+                    case (h `elem` t) of True ->  h : rest;
+                                         False -> rest
