@@ -180,7 +180,7 @@ data TERM = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	    deriving (Show,Eq)
 
 data OP_SYMB = Op_name OP_NAME
-	     | Qual_op_name OP_NAME OP_TYPE
+	     | Qual_op_name OP_NAME OP_TYPE [Pos]
 		 -- pos: "(", op, colon, ")"
 	       deriving (Show,Eq)
 
