@@ -6,11 +6,12 @@ Tina (Till)
 
 List.casl should go through
 
-in Comorphisms/CASL2IsabelleHOL.hs:
-remove op decls generated for datatypes
+rename clashing names
 
 set up default simplifier
 set up default tactics using axioms
+  (see DOLCE sample files)
+
 
 ************************************************
 Sonja (Till)
@@ -280,6 +281,23 @@ IsaWin: support CASL-libraries
 ************************************************
 Till
 ************************************************
+
+[from DOLCE cooperation:
+quit wish!
+ontology mediation via pushouts/pullbacks/pulations
+Robinson consistency with shared theory constructed via pre-image?
+show theorem links between same instances of different parameterized
+  specs (where one is an extension of the other one)
+link menu for %implies, $def, %cons, even without open proof obligation
+for a proved theorem, show minimal part of DG needed for proof
+cons, def, mono for nodes
+Isabelle interface: each qed should write proof info into file
+globally display nodes containing symbols mapped "twice" (i.e. via
+  different signature morphisms)
+  and add a menu for each node allowing for tracking the different
+    uses of the symbols/concepts
+topsort coding: partial functions as relations?
+]
 
 theorem link menu for proof obligations
 
