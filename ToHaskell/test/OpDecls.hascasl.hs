@@ -5,49 +5,49 @@ type Pred a = a -> ()
  
 type Unit = ()
  
+data A__2_T_2 = A__2_T_2
+              deriving Show
+ 
 data A__2_M_M_G_2 = A__2_M_M_G_2
-		  deriving Show
+                  deriving Show
  
 data A__2_M_M_G_Q_2 = A__2_M_M_G_Q_2
-		    deriving Show
+                    deriving Show
  
 data A__2_M_G_2 = A__2_M_G_2
-		deriving Show
+                deriving Show
  
 data A__2_M_G_Q_2 = A__2_M_G_Q_2
-		  deriving Show
- 
-data A__2_m_2 = A__2_m_2
-	      deriving Show
+                  deriving Show
  
 type A_s = A_t
  
 data A_t = A_t
-	 deriving Show
+         deriving Show
  
 _2_P_2 :: (A_s, A_s) -> A_s
 _2_P_2 = undefined
  
-_2_D_B_2 :: ((), ()) -> ()
-_2_D_B_2 = undefined
+_2_S_B_2 :: ((), ()) -> ()
+_2_S_B_2 = undefined
  
-_2_L_I_2_L_I_2 :: (A_s, A_s, A_s) -> A_s
-_2_L_I_2_L_I_2 = undefined
+_2_L_R_2_L_R_2 :: (A_s, A_s, A_s) -> A_s
+_2_L_R_2_L_R_2 = undefined
  
-_2_L_I_G_2 :: ((), ()) -> ()
-_2_L_I_G_2 = undefined
+_2_L_R_G_2 :: ((), ()) -> ()
+_2_L_R_G_2 = undefined
  
-_2_I_2 :: (a, a) -> ()
-_2_I_2 = undefined
+_2_R_2 :: (a, a) -> ()
+_2_R_2 = undefined
  
-_2_I_G_2 :: ((), ()) -> ()
-_2_I_G_2 = undefined
+_2_R_G_2 :: ((), ()) -> ()
+_2_R_G_2 = undefined
  
-_2_Ie_I_2 :: (a, a) -> ()
-_2_Ie_I_2 = undefined
+_2_Re_R_2 :: (a, a) -> ()
+_2_Re_R_2 = undefined
  
-_2_B_D_2 :: ((), ()) -> ()
-_2_B_D_2 = undefined
+_2_B_S_2 :: ((), ()) -> ()
+_2_B_S_2 = undefined
  
 _2if_2 :: ((), ()) -> ()
 _2if_2 = undefined
@@ -104,16 +104,16 @@ incr :: A_s -> A_s
 incr = undefined
  
 l1 :: A_s
-l1 = _2_L_I_2_L_I_2 ((a, b, c))
+l1 = _2_L_R_2_L_R_2 ((a, b, c))
  
 l2 :: (A_s, A_s, A_s) -> A_s
-l2 = _2_L_I_2_L_I_2
+l2 = _2_L_R_2_L_R_2
  
 l3 :: A_s
-l3 = _2_L_I_2_L_I_2 ((a, b, c))
+l3 = _2_L_R_2_L_R_2 ((a, b, c))
  
 l4 :: A_s
-l4 = _2_L_I_2_L_I_2 ((a, b, c))
+l4 = _2_L_R_2_L_R_2 ((a, b, c))
  
 l5 :: (A_s, A_s, A_s)
 l5 = (a, b, c)
@@ -128,7 +128,7 @@ x :: A_s
 x = undefined
  
 y :: A_s
-y = _2_L_I_2_L_I_2 ((a, (x :: A_s), (a :: A_s)))
+y = _2_L_R_2_L_R_2 ((a, (x :: A_s), (a :: A_s)))
  
 z :: A_s
 z = _2_P_2 (((x :: A_s), ((x :: A_t) :: A_s)))
