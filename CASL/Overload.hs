@@ -17,7 +17,8 @@
 -}
 
 module CASL.Overload(minExpFORMULA, oneExpTerm, Min,
-                     is_unambiguous, term_sort, leqF)  where
+                     is_unambiguous, term_sort, leqF, leqP,
+                     common_supersorts, common_subsorts)  where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
