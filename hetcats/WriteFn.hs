@@ -78,6 +78,7 @@ write_casl_asc opt ga oup ld =
     do hout <- openFile oup WriteMode
        putIfVerbose opt 3 (show (printText0_eGA ga))
        hPutStr hout $ printLIB_DEFN_text ga ld
+       hClose hout
 
 casl_latex_filename :: FilePath -> HetcatsOpts -> FilePath
 casl_latex_filename file opt =
