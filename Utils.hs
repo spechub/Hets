@@ -96,3 +96,11 @@ stripOf suf inp = reverse $ stripOf' (reverse suf) (reverse inp)
 
 -- stripOf suf = reverse . drop (length suf) . reverse
 
+-- |
+-- like the chomp from Perl
+-- but this chomp removes trailing newlines AND trailing spaces if any 
+chomp :: String -> String
+chomp = reverse . chomp' . reverse 
+    where chomp' [] = []
+	  chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
+			    | otherwise = xs

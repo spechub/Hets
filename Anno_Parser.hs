@@ -18,6 +18,8 @@ import ParsecError
 import ParsecPos
 import ParsecPerm
 
+import Utils
+
 import CaslLanguage
 import Id
 import AS_Annotation
@@ -196,11 +198,4 @@ semantic_anno anno kw as sp pos =
        Right (anno pos)
     else 
        Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
--- a little helper ------------------------------------------------
---- like the chomp from Perl --------------------------------------
-{- chomp removes trailing newlines if any -}
-chomp :: String -> String
-chomp s = reverse . chomp' . reverse $ s
-    where chomp' [] = []
-	  chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
-			    | otherwise = xs
+
