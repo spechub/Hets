@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-glasgow-exts #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2004
@@ -439,7 +440,7 @@ instance (ATermConvertibleSML a) => ATermConvertibleSML (Annoted a) where
 ---- functions to convert annoted stuff ---------------------------------
 -- all these functions are called by instance ATermConvertibleSML Annoted a
 
-from_sml_ATermAnnotedBasic_Items :: forall a . ATermConvertibleSML a => 
+from_sml_ATermAnnotedBasic_Items :: ATermConvertibleSML a => 
                                ATermTable -> (a,[Annotation])
 from_sml_ATermAnnotedBasic_Items att = 
     if isSig_items then
@@ -515,7 +516,7 @@ parse_disp_anno i pos_l inp =
                       | otherwise -> inp
 
 ----- instances of AS_Basic_CASL.hs -------------------------------------
-instance ATermConvertibleSML (BASIC_SPEC () () ()) where
+instance ATermConvertibleSML (BASIC_SPEC a b c) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_SPEC\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_SPEC\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_SPEC\" not implemented"
@@ -534,7 +535,7 @@ instance ATermConvertibleSML (BASIC_SPEC () () ()) where
                     getATermByIndex1 item_i att
                 _  -> att
 
-instance ATermConvertibleSML (BASIC_ITEMS () () ()) where
+instance ATermConvertibleSML (BASIC_ITEMS a b c) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_ITEMS\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_ITEMS\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_ITEMS\" not implemented"
@@ -579,7 +580,7 @@ instance ATermConvertibleSML (BASIC_ITEMS () () ()) where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> ([],att)
 
-instance ATermConvertibleSML (SIG_ITEMS () ()) where
+instance ATermConvertibleSML (SIG_ITEMS a b) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"SIG_ITEMS\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"SIG_ITEMS\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SIG_ITEMS\" not implemented"
@@ -622,7 +623,7 @@ instance ATermConvertibleSML (SIG_ITEMS () ()) where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> ([],att)
 
-instance ATermConvertibleSML (SORT_ITEM ()) where
+instance ATermConvertibleSML (SORT_ITEM a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"SORT_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"SORT_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SORT_ITEM\" not implemented"
@@ -663,7 +664,7 @@ instance ATermConvertibleSML (SORT_ITEM ()) where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> ([],att)
 
-instance ATermConvertibleSML (OP_ITEM ()) where
+instance ATermConvertibleSML (OP_ITEM a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ITEM\" not implemented"
@@ -792,7 +793,7 @@ instance ATermConvertibleSML ARG_DECL where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> ([],att)
 
-instance ATermConvertibleSML (OP_ATTR ()) where
+instance ATermConvertibleSML (OP_ATTR a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ATTR\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ATTR\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ATTR\" not implemented"
@@ -820,7 +821,7 @@ instance ATermConvertibleSML (OP_ATTR ()) where
                     getATermByIndex1 item_i att
                 _  -> att
 
-instance ATermConvertibleSML (PRED_ITEM ()) where
+instance ATermConvertibleSML (PRED_ITEM a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_ITEM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_ITEM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_ITEM\" not implemented"
@@ -989,7 +990,7 @@ instance ATermConvertibleSML VAR_DECL where
         where
             aterm = getATerm att
 
-instance ATermConvertibleSML (FORMULA ()) where
+instance ATermConvertibleSML (FORMULA a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"FORMULA\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"FORMULA\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"FORMULA\" not implemented"
@@ -1077,7 +1078,7 @@ instance ATermConvertibleSML (FORMULA ()) where
             (pos_l,_g_flag,att') = skipPosFlag "pos-FORMULA" att
 
 ---- a helper for the SML-datatype TERMS -------------------------------
-from_sml_ATermTERMS :: ATermTable -> ([TERM ()],[Pos])
+from_sml_ATermTERMS :: ATermTable -> ([TERM a],[Pos])
 from_sml_ATermTERMS att = 
     case aterm of
              (ShAAppl "terms" [ aa ] _)  ->
@@ -1162,7 +1163,7 @@ instance ATermConvertibleSML PRED_SYMB where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> ([],att)
 
-instance ATermConvertibleSML (TERM ()) where
+instance ATermConvertibleSML (TERM a) where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"TERM\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"TERM\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"TERM\" not implemented"
@@ -1460,7 +1461,7 @@ instance ATermConvertibleSML SPEC where
 
 --- a helper function for [(Annoted a, [Annotation])] --------------------
 
-toAnnotedList :: forall a . [(Annoted a,[Annotation])] -> [Annoted a]
+toAnnotedList :: [(Annoted a,[Annotation])] -> [Annoted a]
 toAnnotedList xs = map merge xs
     where merge (ai,as) = ai { l_annos = (l_annos ai) ++ as}
 
@@ -2219,10 +2220,10 @@ instance ATermConvertibleSML VERSION_NUMBER where
 -------------------------------------------------------------------------
 
 -- some helpers for Annoted things --------------------------------------
-addLAnnoList :: forall a . [Annotation] -> Annoted a -> Annoted a
+addLAnnoList :: [Annotation] -> Annoted a -> Annoted a
 addLAnnoList as ani = ani {l_annos = as ++ (l_annos ani) }
 
-addRAnnoList :: forall a . [Annotation] -> Annoted a -> Annoted a
+addRAnnoList :: [Annotation] -> Annoted a -> Annoted a
 addRAnnoList as ani = ani {r_annos = (r_annos ani) ++ as } 
 
 --- some helpers for Regions and Positions ------------------------------
