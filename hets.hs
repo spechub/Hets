@@ -23,7 +23,6 @@ import Options
 import System.Environment
 
 import Comorphisms.LogicGraph
-import ToHaskell.TranslateAna
 import Static.AnalysisLibrary
 import Static.DevGraph
 
