@@ -94,9 +94,11 @@ fromATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error ("Cannot convert ShATerm to "++t++": "++(err u))
     where err u = case u of 
-		  ShAAppl s _ _ -> "!ShAAppl "++s
-		  ShAList _ _   -> "!ShAList"
-		  _             -> "!ShAInt"
+		  ShAAppl s l _ -> "!ShAAppl "++s 
+				   ++ " ("++show (length l)++")"
+		  ShAList l _   -> "!ShAList"
+				   ++ " ("++show (length l)++")"
+		  ShAInt i _    -> "!ShAInt " ++ show i
 
 
 -- some instances -----------------------------------------------
@@ -252,8 +254,14 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
 instance (Ord a, ATermConvertible a, ATermConvertible b) => ATermConvertible (Map.Map a b) where
     toATerm fm       = toATerm (Map.toList fm)
     fromATerm at     = Map.fromList $ fromATerm at
-    toShATerm att fm = toShATerm att $ Map.toList fm 
-    fromShATerm att  = Map.fromList $ fromShATerm att
+    toShATerm att fm = let (att1,i) = toShATerm att $ Map.toList fm 
+                       in addATerm (ShAAppl "Map" [i] []) att1
+    fromShATerm att  = case aterm of
+		       (ShAAppl "Map" [i] []) -> 
+			   let l = fromShATerm (getATermByIndex1 i att)
+		           in Map.fromList l
+		       u     -> fromShATermError "Map.Map" u
+		       where aterm = getATerm att
 
 instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
     toATerm set = toATerm (Set.toList set)
@@ -306,13 +314,13 @@ instance ATermConvertible a => ATermConvertible [a] where
     fromShATerm att  = fromShATermList att
 
 instance ATermConvertible () where
-    toATerm x = AAppl "" [] []
+    toATerm x = AAppl "UNIT" [] []
     fromATerm at = case at of
-                    (AAppl "" [] _) -> ()
+                    (AAppl "UNIT" [] _) -> ()
                     _               -> fromATermError "()" at
-    toShATerm att x = addATerm (ShAAppl "" [] []) att
+    toShATerm att x = addATerm (ShAAppl "UNIT" [] []) att
     fromShATerm att = case at of
-                       (ShAAppl "" [] _) -> ()
+                       (ShAAppl "UNIT" [] _) -> ()
                        _                 -> fromShATermError "()" at
                       where at = getATerm att
 
@@ -321,9 +329,9 @@ instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) where
     fromATerm at     = case at of
                         (AAppl "" [a,b] _) -> (fromATerm a,fromATerm b)
                         _                  -> fromATermError "(a,b)" at
-    toShATerm att (x,y) = addATerm (ShAAppl "" [x',y'] []) att' 
-                          where (att' ,y') = toShATerm att'' y 
-                                (att'',x') = toShATerm att   x 
+    toShATerm att0 (x,y) = addATerm (ShAAppl "" [x',y'] []) att2
+                          where (att2,y') = toShATerm att1 y 
+                                (att1,x') = toShATerm att0 x 
     fromShATerm att = case at of  
                        (ShAAppl "" [x,y] _) -> (x',y')
                         where x' = fromShATerm (getATermByIndex1 x att) 

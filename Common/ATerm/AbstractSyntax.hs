@@ -22,13 +22,14 @@ module Common.ATerm.AbstractSyntax
      getATerm,getATermFull,
      getATermIndex,getTopIndex,
      getATermByIndex,getATermByIndex1,
-     toATermTable
+     toATermTable,getReferencingATerms
     )  
     where
 
 import Data.FiniteMap
 import GHC.Read
 import GHC.Show
+import List
 {-
 import Text.ParserCombinators.ReadPrec
 import qualified Text.Read.Lex as L
@@ -69,7 +70,7 @@ addATerm t tbl =
     ind = getATermIndex t tbl 
     addATerm' (ATT a_iFM i_aFM i1) = 
 	      if elemFM i1 i_aFM then
-		 error err_destruct_up
+		 error err_destruct_up 
 	      else
 	      case t of 
 	      ShAAppl _ inds anns -> check inds anns
@@ -97,6 +98,19 @@ getATerm (ATT _ i_aFM i) =
 
 getTopIndex :: ATermTable -> Int
 getTopIndex (ATT _ _ i) = i-1
+
+getReferencingATerms :: ATermTable -> Int -> Int -> [[ShATerm]]
+getReferencingATerms att@(ATT fm _ _) depth i 
+    | depth <= 0 = []
+    | otherwise = 
+	let ats = nub $ keysFM $ filterFM (\at _ -> case at of
+	                          ShAAppl _ inds _ -> i `elem` inds
+	                          _  -> False) fm
+	    get (ShAAppl _ inds _) = 
+		concatMap (getReferencingATerms att (depth-1)) inds
+	    get _ = 
+		error ("something in getReferencingATerms went realy wrong")
+	in [ats] ++ if depth - 1  > 1 then concatMap get ats else [[]]
 
 getATermFull :: ATermTable -> ATerm
 getATermFull at = 
