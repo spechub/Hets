@@ -398,3 +398,11 @@ parse error at (line 130, column 1):
 unexpected "."
 expecting words
 
+parse error at (line 131, column 1):
+unexpected "|"
+expecting words
+
+parse error at (line 132, column 1):
+unexpected "["
+expecting words
+

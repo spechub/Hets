@@ -65,64 +65,60 @@ unexpected "."
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 21, column 1):
-unexpected "|"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 22, column 1):
 unexpected "::="
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 23, column 1):
+parse error at (line 22, column 1):
 unexpected "|->"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 24, column 2):
+parse error at (line 23, column 2):
 unexpected end of input
 expecting "(", "{", "[", id/literal or "]"
 
-parse error at (line 25, column 1):
+parse error at (line 24, column 1):
 unexpected "]"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 26, column 2):
+parse error at (line 25, column 2):
 unexpected end of input
 expecting "(", "{", "[", id/literal or "}"
 
-parse error at (line 27, column 1):
+parse error at (line 26, column 1):
 unexpected "}"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 28, column 1):
+parse error at (line 27, column 1):
 unexpected "`"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 29, column 1):
+parse error at (line 28, column 1):
 unexpected "%"
+expecting "(", "{", "[" or id/literal
+
+parse error at (line 29, column 1):
+unexpected "."
 expecting "(", "{", "[" or id/literal
 
 parse error at (line 30, column 1):
 unexpected "."
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 31, column 1):
-unexpected "."
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 32, column 3):
+parse error at (line 31, column 3):
 unexpected "="
 expecting "(", "{", "[", id/literal or "]"
 
 a [__]
 a [__]
-parse error at (line 35, column 10):
+parse error at (line 34, column 10):
 unexpected "]"
 expecting "(", "{", "[", id/literal or "}"
 
-parse error at (line 36, column 3):
+parse error at (line 35, column 3):
 unexpected ","
 expecting "(", "{", "[", id/literal or "]"
 
-parse error at (line 37, column 4):
+parse error at (line 36, column 4):
 unexpected "="
 expecting "(", "{", "[", id/literal or "]"
 
@@ -131,36 +127,29 @@ aa ==
 a []
 ""
 < [[__]] >
-parse error at (line 43, column 2):
-unexpected "|"
-expecting "(", "{", "[", id/literal or "]"
-
 < [__] >
-parse error at (line 45, column 1):
-unexpected "|"
-expecting "(", "{", "[" or id/literal
-
-parse error at (line 46, column 3):
+| [__] |
+parse error at (line 44, column 3):
 unexpected "="
 expecting "(", "{", "[", id/literal or "]"
 
-parse error at (line 47, column 1):
+parse error at (line 45, column 1):
 unexpected "when"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 48, column 1):
+parse error at (line 46, column 1):
 unexpected "else"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 49, column 1):
+parse error at (line 47, column 1):
 unexpected "if"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 50, column 1):
+parse error at (line 48, column 1):
 unexpected "=>"
 expecting "(", "{", "[" or id/literal
 
-parse error at (line 51, column 1):
+parse error at (line 49, column 1):
 unexpected "<=>"
 expecting "(", "{", "[" or id/literal
 

@@ -73,7 +73,7 @@ import Common.Lib.Parsec
 -- ----------------------------------------------
 
 casl_reserved_ops, formula_ops, casl_reserved_fops :: [String]
-casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
+casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, mapsTo]
 
 -- these signs are legal in terms, but illegal in declarations
 formula_ops = [equalS, implS, equivS, lOr, lAnd, negS] 
@@ -177,10 +177,16 @@ mixId keys idKeys =
 -- CASL mixfix Ids
 -- ----------------------------------------------
 
+casl_keys :: ([String], [String])
+casl_keys = (casl_reserved_fops, casl_reserved_fwords) 
+
 parseId, casl_id :: GenParser Char st Id
-parseId = mixId (casl_reserved_fops, casl_reserved_fwords) 
-	  (casl_reserved_fops, casl_reserved_fwords)
+parseId = mixId casl_keys casl_keys
 casl_id = parseId
+
+-- disallow barS within (the top-level) constructor names
+consId :: GenParser Char st Id
+consId = mixId (barS:casl_reserved_fops, casl_reserved_fwords) casl_keys
 
 -- ----------------------------------------------
 -- VAR Ids
@@ -197,8 +203,7 @@ varId = pToken (reserved casl_reserved_fwords scanAnyWords)
 -- sortIds are words, but possibly compound ids
 sortId :: GenParser Char st Id
 sortId = do s <- varId
-	    (c, p) <- option ([], []) 
-		      (comps (casl_reserved_fops, casl_reserved_fwords))
+	    (c, p) <- option ([], []) (comps casl_keys)
 	    return (Id [s] c p)
 
 ------------------------------------------------------------------------

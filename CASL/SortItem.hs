@@ -95,7 +95,7 @@ alternative = do s <- pluralKeyword sortS
 		 (ts, cs) <- sortId `separatedBy` anComma
 		 return (Subsorts ts (map tokPos (s:cs)))
               <|> 
-              do i <- parseId
+              do i <- consId
 		 do o <- oParenT
 		    (cs, ps) <- component `separatedBy` anSemi
 		    c <- cParenT

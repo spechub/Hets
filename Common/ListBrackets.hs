@@ -21,8 +21,6 @@ compound-list. Braces and brackets in b1__b2 together must match.
 module Common.ListBrackets where
 
 import Common.Token
-import Common.Keywords(barS)
-import Data.List(delete)
 import Common.Id (Id(Id), Token(..), isPlace)
 import Common.Lib.Parsec
 
@@ -49,6 +47,4 @@ listBrackets keys idKeys =
        return (Id l c p)
 
 caslListBrackets :: GenParser Char st Id
-caslListBrackets = listBrackets 
-		   (delete barS casl_reserved_fops, casl_reserved_fwords) 
-		   (casl_reserved_fops, casl_reserved_fwords)
+caslListBrackets = listBrackets casl_keys casl_keys
