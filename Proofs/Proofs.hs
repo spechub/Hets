@@ -109,7 +109,7 @@ data DGRule =
    deriving (Eq, Show)
 
 data DGChange = InsertNode (LNode DGNodeLab)
-              | DeleteNode Node 
+              | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
   deriving (Eq,Show)
@@ -148,6 +148,48 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
 applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
 applyRule = error "Proofs.hs:applyRule"
 
+
+automatic :: ProofStatus -> ProofStatus
+automatic proofStatus =
+  (globalContext, libEnv, newHistory, dgraph)
+  where 
+    (globalContext, libEnv, history, dgraph) 
+      = automaticAux proofStatus
+    (newHistoryPart, oldHistory) = splitAt 4 history
+    (rules, changes) = concatHistoryElems (reverse newHistoryPart)
+    newHistoryElem = (rules, removeContraryChanges changes)
+    newHistory = newHistoryElem:oldHistory
+
+removeContraryChanges :: [DGChange] -> [DGChange]
+removeContraryChanges [] = []
+removeContraryChanges (change:changes) =
+  if elem contraryChange changes
+   then removeContraryChanges (removeChange contraryChange changes)
+    else change:(removeContraryChanges changes)
+  where
+    contraryChange = getContraryChange change
+
+
+getContraryChange :: DGChange -> DGChange
+getContraryChange change =
+  case change of
+    InsertEdge edge -> DeleteEdge edge
+    DeleteEdge edge -> InsertEdge edge
+    InsertNode node -> DeleteNode node
+    DeleteNode node -> InsertNode node
+
+removeChange :: DGChange -> [DGChange] -> [DGChange]
+removeChange change changes =
+  (takeWhile (change /=) changes)
+  ++(tail (dropWhile (change /=) changes))
+
+automaticAux :: ProofStatus -> ProofStatus
+automaticAux = locDecomp.locSubsume.globDecomp.globSubsume
+
+concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
+concatHistoryElems [] = ([],[])
+concatHistoryElems ((rules,changes):elems) =
+  (rules++(fst (concatHistoryElems elems)),changes++(snd (concatHistoryElems elems)))
 -- ---------------------
 -- global decomposition
 -- ---------------------

@@ -192,14 +192,16 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                               return ()    )],
 
 	        Menu (Just "Proofs")
-                  [Button "Global Subsumption"
+                  [Button "Automatic"
+			  (proofMenuSef gInfo automatic),
+                   Button "Global Subsumption"
 			  (proofMenuSef gInfo globSubsume),
-		   Button "Local Decomposition (merge of rules)"
-			  (proofMenuSef gInfo locDecomp),
 		   Button "Global Decomposition"
 			  (proofMenuSef gInfo globDecomp),
 		   Button "Local Subsumption"
-		          (proofMenuSef gInfo locSubsume)
+		          (proofMenuSef gInfo locSubsume),
+		   Button "Local Decomposition (merge of rules)"
+			  (proofMenuSef gInfo locDecomp)
                     ]])]
       -- the node types
                [("spec", 
