@@ -9,7 +9,8 @@
    structured specifications in HetCASL.
 
    todo:
-   Deriving Show and Eq is not so easy with stuff from the Grothendieck logic
+     - ATermConversion SML-CATS
+     - LaTeX Pretty Printing
 -}
 
 {-! global: ATermConvertible !-}
@@ -41,15 +42,46 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: many of "[","]"; one balanced pair per FIT_ARG
 	    deriving (Show,Eq)
 
+{- The next two datatypes contain two new constructors. They are
+   needed for the Heterogenus specification purposes.  
+   The Concrete Syntax:
+   RENAMING ::= ...
+              | with logic LOGIC -- MORPHISM -> LOGIC
+	      | with logic MORPHISM -> LOGIC
+	      | with logic --> LOGIC
+	      | with logic LOGIC --> LOGIC
+	      | with logic MORPHISM
+   RESTRICTION ::= ...
+                 | hide logic LOGIC <- MORPHISM -- LOGIC
+                 | hide logic MORPHISM
+                 | hide logic LOGIC <-- LOGIC
+		 | hide logic <-- LOGIC
+		 | hide logic MORPHISM <- LOGIC
 
+   MORPHISM  ::= SP_WORD
+   LOGIC     ::= SP_WORD
+   SP_WORD   ::= SP_LETTER ... SP_LETTER
+   SP_LETTER ::= LETTER-P-D | NO-BRACKET-SIGN
+
+-}
+
+ 
 data RENAMING = Renaming G_symb_map_items_list [Pos]
 	        -- pos: "with"; comma pos is stored inside the list
-		deriving (Show,Eq)
+	      | Logic_renaming String String String [Pos]
+		-- pos: "with","logic","1st str,"<-",2nd str,"--",3rd str
+		  -- if one string is empty pos is ommitted and
+		  -- pos of arrows may differ
+		 deriving (Show,Eq)
 
 data RESTRICTION = Hidden G_symb_items_list [Pos]
 		   -- pos: "hide"; comma pos is stored inside the list
 		 | Revealed G_symb_map_items_list [Pos]
 		   -- pos: "reveal"; comma pos is stored inside the list
+		 | Logic_hiding String String String [Pos]
+		-- pos: "hide","logic",1st str,"--",2nd str,"->",3rd str
+		  -- if one string is empty pos is ommitted and
+		  -- pos of arrows may differ
 		   deriving (Show,Eq)
 
 data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
