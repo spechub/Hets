@@ -14,16 +14,10 @@ Portability :  non-portable(Grothendieck)
 
 -}
 {-
-   http://www.cofi.info/Documents/CASL/Summary/
-   from 25 March 2001
-
-   C.2.2 Structured Specifications
-
    todo:
     logic translations and implicit coercions
     "and" should do union of involved logics
 
-    arch specs
 -}
 
 module Syntax.Parse_AS_Structured where
@@ -35,16 +29,12 @@ import Logic.Grothendieck
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
-import Common.Id(tokPos)
 import Common.Keywords
 import Common.Lexer
 import Common.Token
-import Text.ParserCombinators.Parsec
 import Common.Id
+import Text.ParserCombinators.Parsec
 import Data.List((\\))
-
--- import Syntax.Print_AS_Structured  -- for test purposes
-
 
 ------------------------------------------------------------------------
 -- annotation adapter
@@ -341,26 +331,18 @@ basicSpec = do Logic lid <- getUserState
 logicSpec :: LogicGraph -> AParser AnyLogic SPEC
 logicSpec lG = do
    s1 <- asKey logicS
-   lid <- logicName
-   let Logic_name t _ = lid
-   s2 <- asKey ":"
+   ln <- logicName
+   s2 <- colonT
    oldlog <- getUserState
-   lookupAndSetLogicName lid lG
+   lookupAndSetLogicName ln lG
    sp <- annoParser (specE lG)
-   let sp1 = Qualified_spec lid sp (map tokPos [s1,t,s2])
    setUserState oldlog
-   return sp1
+   return $ Qualified_spec ln sp $ toPos s1 [] s2
 
-lookupLogicName :: Monad m => Logic_name -> LogicGraph -> m AnyLogic
-lookupLogicName (Logic_name lid _sublog) lg = 
-    lookupLogic "Parser: " (tokStr lid) lg
-
-lookupAndSetLogicName :: Logic_name -> LogicGraph -> AParser AnyLogic AnyLogic
-lookupAndSetLogicName ln lg = do
-    l <- lookupLogicName ln lg
+lookupAndSetLogicName :: Logic_name -> LogicGraph -> AParser AnyLogic ()
+lookupAndSetLogicName (Logic_name lid _) lg = do
+    l <- lookupLogic "Parser: " (tokStr lid) lg
     setUserState l
-    return l
-
 
 lookupAndSetComorphismName :: Token -> LogicGraph -> AParser AnyLogic ()
 lookupAndSetComorphismName ctok lg = do
@@ -400,7 +382,7 @@ fitArg :: LogicGraph -> AParser AnyLogic (Annoted FIT_ARG,[Pos])
 fitArg l = do b <- oBracketT   
               fa <- annoParser (fittingArg l)
               c <- cBracketT
-              return (fa,[tokPos b,tokPos c])
+              return (fa, toPos b [] c)
 
 fittingArg :: LogicGraph -> AParser AnyLogic FIT_ARG
 fittingArg l = do (an,s) <- try (do an <- annos
@@ -437,12 +419,9 @@ param :: LogicGraph -> AParser AnyLogic (Annoted SPEC,[Pos])
 param l = do b <- oBracketT   
              pa <- aSpec l
              c <- cBracketT
-             return (pa,[tokPos b,tokPos c])
+             return (pa, toPos b [] c)
 
 imports :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], [Pos])
 imports l = do s <- asKey givenS
                (sps,ps) <- annoParser (groupSpec l) `separatedBy` anComma
                return (sps,map tokPos (s:ps))
-
-
-
