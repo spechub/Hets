@@ -35,7 +35,6 @@ module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
 		       intransKernel,mostRight,rmSym,symmetricSets,
-		       rmReflex,
                        restrict, toSet, fromSet, topSort, nodes,
                        transpose, connComp, collaps, transReduce) where
 
@@ -405,6 +404,7 @@ symmetricSetsFP rel =
   remove reflexive (Added by K.L.)
 --------------------------------------------------------------------}
 -- | remove reflexive relations
+-- Warning: this function violates the empty set condition
 rmReflex :: (Ord a) => Rel a -> Rel a
 rmReflex = Rel . Map.mapWithKey Set.delete . toMap
 
