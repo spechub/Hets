@@ -34,7 +34,7 @@ showSepList _ _ [] = showString ""
 showSepList _ f [x] = f x
 showSepList s f (x:r) = f x . s . showSepList s f r
 
--- spezial tokens
+-- special tokens
 type Keyword = Token
 type TokenOrPlace = Token
  
