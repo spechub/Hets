@@ -78,7 +78,7 @@ mkpattern c l ns =
   if null l then text c
   else parens (hsep (text c : take (length l) ns))
 
-addPrime doc = doc <> char '''
+addPrime doc = doc <> char '\''
 
 ppCons cv c = mkpattern (constructor c) (types c) cv
 
