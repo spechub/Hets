@@ -61,6 +61,17 @@ import Syntax.Print_AS_Library
    Ri is a list of rules that transforms DGi-1 to DGi
    With the list of intermediate proof states, one can easily implement
     an undo operation
+
+   todo:
+   - Stack overflow bei view-test1.casl mit GlobSubsume
+   - Identitäts-Pfeile bei local decomp (ähnlich wir bei GlobSubsume)
+   - bei GlobDecomp hinzufügen:
+     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
+     Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
+     theta ist der Signaturmorphismus des HidingDef's (geht "falsch rum")
+     sigma ist die Komposition der Signaturmorphismen auf dem restl. Pfad
+     für jeden solchen Pfad: einen HidingThm theta einfügen. sigma ist
+     der normale Morphismus (wie bei jedem anderen Link)
 -}
 type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
 
