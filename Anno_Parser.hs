@@ -54,8 +54,9 @@ annote = Anno_Parser.label <|>
 	      up_pos_l (\l -> l++[c sp a]) a
 	  c sp a = (\(l,c) -> case a of
 			   Annote_group _ _ _ -> (l,c-2)
-			   Annote_line  _ _ _ -> (l,c)) (convToPos sp)
-
+			   Annote_line  _ _ _ -> (l,c)
+			   _ -> error "nothing to be done for other Annos"
+		   ) (convToPos sp)
 label = do try(string "%(")
 	   label_lines <- manyTill anyChar (string ")%")
 	   sp <- getPosition
@@ -96,15 +97,14 @@ annotations = many annotation
 parse_anno :: Annotation -> SourcePos -> Either ParseError Annotation
 parse_anno anno sp = case anno of
  		     Annote_line kw as pos ->  			 
-		        (case kw of
+		        case kw of
 			 "def"     -> semantic_anno Definitional kw as sp pos
 			 "implies" -> semantic_anno Implies      kw as sp pos
 			 "cons"    -> semantic_anno Conservative kw as sp pos
 			 "mono"    -> semantic_anno Monomorph    kw as sp pos
-			 otherwise -> parse_anno (Annote_group kw [as] pos) sp
-			) 
+			 _         -> parse_anno (Annote_group kw [as] pos) sp 
 		     Annote_group kw as pos -> 
-			 (case kw of
+			 case kw of
 			  "prec"    -> parse_internal prec_anno    nsp inp
 			  "display" -> parse_internal display_anno nsp inp
 			  "left_assoc" -> parse_internal 
@@ -117,10 +117,11 @@ parse_anno anno sp = case anno of
 			  "string"   -> parse_internal string_anno   nsp inp
 			  "list"     -> parse_internal list_anno     nsp inp
 			  "floating" -> parse_internal floating_anno nsp inp
-			  otherwise -> Left(newErrorMessage 
+			  _ -> Right anno
+			  {- a strict implementation:
+			     _ -> Left(newErrorMessage 
 					    (UnExpect ("kind of annotation or this kind is not allowed as group: " ++ kw))
-					    sp)
-			 )
+					    sp) -}
 			 where nsp = updatePosString sp (kw ++ "(")
 			       inp = unlines as
 			       lassoc p = do res <- p
@@ -130,7 +131,7 @@ parse_anno anno sp = case anno of
 			       assoc_anno = (sepBy1 casl_id comma)
 
 
-		     otherwise -> Right anno
+		     _ -> Right anno
 
 parse_internal p sp inp = parse (do setPosition sp
 				    whiteSpace
