@@ -539,7 +539,7 @@ groupCons pEqs name = filter hasSameName pEqs
 unfoldCons :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
 unfoldCons sign pEqs =
 --  trace ("unfold: "++show pEqs++"\n") 
-  (if and (map patHasNoArg pEqs) -- || and (map patIsVar pEqs) 
+  (if and (map patHasNoArg pEqs)
     then map (transCaseAlt sign) pEqs
  -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
  -- or the 'TypedTerm' variant of one of them
