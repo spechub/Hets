@@ -174,7 +174,8 @@ scan trm i m =
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
-                   if t == commaTok then -- list elements separator
+                   if t == commaTok && o == listId then 
+	      -- list elements separator
 	             (State o p a 
 		      (termTok : commaTok : tail ts) k)
                      : (State o p a (termTok : tail ts) k) : l
@@ -245,15 +246,12 @@ setPlainIdePos (Id ts cs _) ps =
    in if null cs then 
       let (ps3, ps4) = splitAt (length pls) ps2
       in (Id (front ++ f pls ps3) [] [], ps4)
-      else let (newCs, ps3, ps4) = foldr (\ a (prevCs, seps, rest) -> 
+      else let (newCs, ps3, ps4) = foldl (\ (prevCs, seps, rest) a -> 
 				  let (c1, qs) = setPlainIdePos a rest
 				  in (c1: prevCs, head qs : seps, tail qs))
 			   ([], [head ps2], tail ps2) cs
-	       ps5 = tail ps4
-	       (ps6, ps7) = splitAt (length pls) ps5
-           in (Id (front ++ f pls ps6) 
-	       (reverse newCs)  
-	       (reverse (head ps4 : ps3)), ps7)
+	       (ps6, ps7) = splitAt (length pls) ps4
+           in (Id (front ++ f pls ps6) (reverse newCs) (reverse ps3), ps7)
 
 setIdePos :: Id -> [TERM] -> [Pos] -> Id
 setIdePos i@(Id ts _ _) ar ps =
@@ -277,7 +275,6 @@ setIdePos i@(Id ts _ _) ar ps =
  		in (posOfTerm (head args) : tokps, rargs, rqs)
 		else let (tokps, rargs, rqs) = mergePos rs args (tail qs)
 		     in (head qs : tokps, rargs, rqs)
- 
 -- constructing the parse tree from (the final) parser state(s)
 
 stateToAppl :: State -> TERM
