@@ -126,6 +126,10 @@ check' qs@((EqnInfo n ctx ps result):_)
 Heng (Klaus)
 ************************************************
 
+emacs mode
+
+OWL-DL logic
+OWL-DL -> CASL
 
 
 -------------------------------------------------------------------
@@ -187,6 +191,8 @@ Case study
 Klaus
 ************************************************
 
+CASL -> SPASS
+
 Fail when version numer is wrong
 (*** Warning , Wrong version number ... re-analyzing)
 
@@ -222,6 +228,10 @@ IsaWin: support CASL-libraries
 ************************************************
 Till
 ************************************************
+
+GUI: use daVinci close button; 
+  use Workbench tool registration for central shutdown
+  use save button for saving proof info
 
 remove "prove" menu in abstracted dg
 
