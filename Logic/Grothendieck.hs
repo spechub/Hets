@@ -359,7 +359,7 @@ instance Category Grothendieck G_sign GMorphism where
        ComorphismAux r1' _ _ sigma1' mor1' <- 
          (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2 sigma1 mor1)
        mor1'' <- map_morphism r2 mor1'
-       mor <- comp lid4 mor2 mor1''
+       mor <- comp lid4 mor1'' mor2
        return (GMorphism (CompComorphism r1' r2) sigma1' mor)
   dom _ (GMorphism r sigma _mor) = 
     G_sign (sourceLogic r) sigma
@@ -389,8 +389,8 @@ gsigLeftUnion lg pos gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
       GMorphism incl _ _ <- ginclusion lg gsig2 gsig1
       let lid1' = targetLogic incl
           lid2' = sourceLogic incl
-      sigma1' <- rcoerce lid1 lid1' (newPos "q" 0 0) sigma1
-      sigma2' <- rcoerce lid2 lid2' (newPos "r" 0 0) sigma2
+      sigma1' <- rcoerce lid1 lid1' pos sigma1
+      sigma2' <- rcoerce lid2 lid2' pos sigma2
       (sigma2'',_) <- maybeToResult pos "gsigLeftUnion: signature mapping failed" 
                        (map_sign incl sigma2')  -- where to put axioms???
       sigma3 <- signature_union lid1' sigma1' sigma2''

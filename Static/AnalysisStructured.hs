@@ -555,7 +555,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
         let link = DGLink {
              dgl_morphism = incl,
              dgl_type = GlobalDef,
-             dgl_origin = DGClosed }
+             dgl_origin = DGFitSpec }
         return (nA_i,node,link)
 
       -- finally the case with conflicting numbers of formal and actual parameters
@@ -755,6 +755,7 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
       (showPretty spname
        " is a unit specification, not a view") (headPos pos)
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
+     let adj = adjustPos (headPos pos)
      nSrc <- maybeToResult (headPos pos) 
              "Internal error: empty source spec of view" (getNode src)
      nTar <- maybeToResult (headPos pos) 
@@ -775,14 +776,14 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
                $$ printText gsigmaIS) (headPos pos))
      GMorphism cid _ morHom <- return mor
      let lid = targetLogic cid
-     when (not (language_name (IdComorphism lid) == language_name cid))
+     when (not (language_name (sourceLogic cid) == language_name lid))
           (fatal_error  
                  "heterogeneous fitting views not yet implemented"
                  (headPos pos))
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
 
       -- the case without parameters leads to a simpler dg
-      (0,0) -> case (getNode nsigI) of
+      (0,0) -> case getNode nsigI of
 
          -- the subcase with empty import leads to a simpler dg
          Nothing -> do
@@ -796,14 +797,14 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
          Just nI -> do
            G_sign lidI sigI1 <- return gsigmaI
            sigI <- rcoerce lidI lid (headPos pos) sigI1
-           mor_I <- morphism_union lid morHom $ ide lid sigI 
+           mor_I <- adj $ morphism_union lid morHom $ ide lid sigI 
            gsigmaA <- gsigLeftUnion lg (headPos pos) gsigmaI gsigmaT
            G_sign lidA _ <- return gsigmaA
            G_sign lidP _ <- return gsigmaP
-           incl1 <- ginclusion lg gsigmaI gsigmaA
-           incl2 <- ginclusion lg gsigmaT gsigmaA
-           incl3 <- ginclusion lg gsigmaI gsigmaP
-           incl4 <- ginclusion lg gsigmaS gsigmaP
+           incl1 <- adj $ ginclusion lg gsigmaI gsigmaA
+           incl2 <- adj $ ginclusion lg gsigmaT gsigmaA
+           incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
+           incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
            let [nA,n'] = newNodes 1 dg
                node_contentsA = DGNode {
                  dgn_name = Nothing,
@@ -819,10 +820,10 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
                  dgl_morphism = ide Grothendieck gsigmaP,
                  dgl_type = GlobalThm Open None Open,
                  dgl_origin = DGFitView spname})
-               link1 = (nI,nA,DGLink {
-                 dgl_morphism = incl1,
+               link1 = (nSrc,n',DGLink {
+                 dgl_morphism = incl4,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewAImp spname})
+                 dgl_origin = DGFitView spname})
                link2 = (nTar,nA,DGLink {
                  dgl_morphism = incl2,
                  dgl_type = GlobalDef,
@@ -831,10 +832,10 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
                  dgl_morphism = incl3,
                  dgl_type = GlobalDef,
                  dgl_origin = DGFitViewImp spname})
-               link4 = (nSrc,n',DGLink {
-                 dgl_morphism = incl4,
+               link4 = (nI,nA,DGLink {
+                 dgl_morphism = incl1,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitView spname})
+                 dgl_origin = DGFitViewAImp spname})
            return (fv,
                    insEdge link $
                    insEdge link1 $
@@ -844,60 +845,99 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
                    insNode (nA,node_contentsA) $
                    insNode (n',node_contents') dg,
                    (G_morphism lid mor_I,NodeSig (nA,gsigmaA)))
-{-
+
       -- now the case with parameters
       (_,0) -> do
        let fitargs = map item afitargs
        (fitargs',dg',args) <- 
           foldl anaFitArg (return ([],dg,[])) (zip params fitargs)
        let actualargs = reverse args
-       (gsigma',morDelta) <- apply_GS (headPos pos) gs actualargs
-       gsigmaRes <- homogeneousGsigUnion (headPos pos) (getSig nsig) gsigma'
+       (gsigmaA,mor_f) <- apply_GS (headPos pos) gs actualargs
+       let gmor_f = gEmbed mor_f
+       gsigmaRes <- homogeneousGsigUnion (headPos pos) gsigmaI gsigmaA
        G_sign lidRes _ <- return gsigmaRes
-       nB <- maybeToResult (headPos pos) 
-             "Internal error: empty target spec" (getNode target)
-       incl1 <- ginclusion lg (getSig nsig) gsigmaRes
-       let [node] = newNodes 0 dg'
-           node_contents = DGNode {
-             dgn_name = name,
-             dgn_sign = gsigmaRes, -- G_sign lid' (empty_signature lid'),
-             dgn_sens = G_l_sentence lidRes [],
-             dgn_origin = DGSpecInst spname}
-           link1 = DGLink {
-             dgl_morphism = incl1,
+       mor1 <- maybeToResult (headPos pos)
+                (show (ptext "Morphism composition failed when instantiating generic fitting view" 
+                       $$ ptext "Morphism 1" $$ printText mor
+                       $$ ptext "Morphism 2" $$ printText gmor_f))
+                $ comp Grothendieck mor gmor_f
+       incl1 <- adj $ ginclusion lg gsigmaA gsigmaRes
+       mor' <- maybeToResult (headPos pos)
+                (show (ptext "Morphism composition with inclusion failed in fitting view" 
+                       $$ ptext "Morphism 1" $$ printText gmor_f
+                       $$ ptext "Morphism 2" $$ printText incl1))
+                $ comp Grothendieck gmor_f incl1
+       GMorphism cid1 _ mor1Hom <- return mor1
+       let lid1 = targetLogic cid1
+       when (not (language_name (sourceLogic cid1) == language_name lid1))
+            (fatal_error  
+                   ("heterogeneous fitting views not yet implemented")
+                   (headPos pos))
+       G_sign lidI sigI1 <- return gsigmaI
+       sigI <- rcoerce lidI lid1 (headPos pos) sigI1
+       theta <- adj $ morphism_union lid1 mor1Hom (ide lid1 sigI)
+       incl2 <- adj $ ginclusion lg gsigmaI gsigmaRes
+       incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
+       incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
+       G_sign lidP _ <- return gsigmaP
+       let [nA,n'] = newNodes 1 dg'
+           node_contentsA = DGNode {
+           dgn_name = Nothing,
+           dgn_sign = gsigmaRes,
+           dgn_sens = G_l_sentence lidRes [],
+           dgn_origin = DGFitViewA spname}
+           node_contents' = DGNode {
+             dgn_name = Nothing,
+             dgn_sign = gsigmaP, 
+             dgn_sens = G_l_sentence lidP [],
+             dgn_origin = DGFitView spname}
+           link = (nP,n',DGLink {
+             dgl_morphism = ide Grothendieck gsigmaP,
+             dgl_type = GlobalThm Open None Open,
+             dgl_origin = DGFitView spname})
+           link1 = (nSrc,n',DGLink {
+             dgl_morphism = incl4,
              dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname}
-           insLink1 = case (getNode nsig) of
-                        Nothing -> id
-                        Just n -> insEdge (n,node,link1)
-           link2 = (nB,node,DGLink {
-             dgl_morphism = gEmbed morDelta,
+             dgl_origin = DGFitView spname})
+           link2 = (nTar,nA,DGLink {
+             dgl_morphism = mor',
              dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname})
-           parLinks = catMaybes (map (parLink gsigmaRes node) actualargs)
-       return (Spec_inst spname 
-                         (map (uncurry replaceAnnoted)
-                              (zip (reverse fitargs') afitargs))
-                         pos,
-               NodeSig(node,gsigmaRes),
+             dgl_origin = DGFitViewA spname})
+           fitLinks = [link,link1,link2] ++ case getNode nsigI of
+                         Nothing -> []
+                         Just nI -> let
+                           link3 = (nI,n',DGLink {
+                                     dgl_morphism = incl3,
+                                     dgl_type = GlobalDef,
+                                     dgl_origin = DGFitViewImp spname})
+                           link4 = (nI,nA,DGLink {
+                                     dgl_morphism = incl2,
+                                     dgl_type = GlobalDef,
+                                     dgl_origin = DGFitViewAImp spname})
+                           in [link3,link4]
+           parLinks = catMaybes (map (parLink gsigmaRes nA) actualargs)
+       return (Fit_view vn 
+                        (map (uncurry replaceAnnoted)
+                             (zip (reverse fitargs') afitargs))
+                        pos ans,
                foldr insEdge
-                  (insLink1 $
-                   insEdge link2 $
-                   insNode (node,node_contents) dg')
-                parLinks)
+                 (insNode (nA,node_contentsA) $
+                  insNode (n',node_contents') dg')
+                 (fitLinks++parLinks),
+               (G_morphism lid1 theta,NodeSig (nA,gsigmaRes)))
        where
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args) <- res
          (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
                                   spname imps nsig' just_struct fa
          return (fa':fas',dg',arg:args)
-       parLink gsigma' node (mor_i,nsigA_i) = do
+       parLink gsigmaRes node (mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
-        incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigma'
+        incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigmaRes
         let link = DGLink {
              dgl_morphism = incl,
              dgl_type = GlobalDef,
-             dgl_origin = DGClosed }
+             dgl_origin = DGFitView spname }
         return (nA_i,node,link)
 
       -- finally the case with conflicting numbers of formal and actual parameters
@@ -906,13 +946,6 @@ ana_FIT_ARG lg gctx@(gannos,genv,dg) spname nsigI nsigP just_struct
           (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) (headPos pos)
 
-  warning () "Fitting views not yet implemented!!!" (headPos pos)
-  G_sign lid sigma <- return (getSig nsigP)
-  return (Fit_view vn fas pos ans,
-          dg,
-          (G_morphism lid (ide lid sigma),nsigP))
-  -- ??? Needs to be implemented
--}
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
