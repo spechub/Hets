@@ -1,6 +1,8 @@
 module Main where
 
 import System
+import List
+
 import Parsec
 import ParsecPerm
 import CaslLanguage
@@ -73,6 +75,51 @@ test_id p inp = case (testData p inp) of
 					     ; putStr ": " 
 					     ; putStrLn (showId id "") }
 
+-- Comparing Id-Parser and presenting results
+testFileCS name = do inp <- readFile name
+		     ((ma,dif),rl) <- return $ 
+				         mapAccumL testLine (0,0) (lines inp)
+		     sequence rl
+		     putStrLn $ "------\nMatched: " ++ show ma ++
+		                "\nDiffs: " ++ show dif
+		    
+    where testLine (ma,dif) line = 
+	      let res1 = testData casl_id line
+		  res2 = testData parseId line
+		  (ma1,dif1,out) = comp res1 res2 line
+	      in ((ma+ma1,dif+dif1),out)
+
+comp (Left err1) (Left err2) line = 
+    (0,0,showDiff line (print err1) (print err2))
+comp (Left err1) (Right id2) line = 
+    (0,1,showDiff line (print err1) (printId id2))
+comp (Right id1) (Left err2) line = 
+    (0,1,showDiff line (printId id1) (print err2))
+comp (Right id1) (Right id2) line = comp' id1 id2 line
+    where comp' id1 id2 line =
+	      if id1 == id2 then (1,0,putStr "")
+	      else if showId id1 "" == showId id2 "" then diff_rep 
+		   else diff_parse 
+	  diff_parse = (0,1,putStrLn "Different Parses!" >> diff)
+	  diff_rep = (1,0, putStrLn "Diferent Representations!" >> diff)
+	  diff = showDiff line (printId id1) (printId id2) 
+
+showDiff line out1 out2 =
+    do putStr "** Input was: "
+       putStrLn line
+       putStr "** Result(KL) is: "
+       out1
+       putStr "** Result(CM) is: "
+       out2
+
+printId id@(Id mix comp _) = do if comp == [] then 
+				   putChar 'M' 
+				 else
+			          do putChar 'C'
+				     putStr ": " 
+				     putStrLn (showId id "")
+
+
 main = do { as <- getArgs
 	  ; (p,files) <- return (extract_par as)
 	  ; sequence (map (parseFile' p) files)  
@@ -91,10 +138,15 @@ main = do { as <- getArgs
 	  parseFile' s = case s of
 			 "annotations" -> parseFile annotations
 			 "casl_id"     -> testFileC' 
+			 "casl_id2"     -> testFileCS' 
 			 otherwise     -> error ("*** unknown parser " ++ s)
 	  testFileC' s = do { testFileC s
 			    ; return ()
 			    }
+	  testFileCS' s = do { testFileCS s
+			    ; return ()
+			    }
+
 	      
 testId = testPL (sepBy casl_id semi) 
 	 "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]" 
