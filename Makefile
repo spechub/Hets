@@ -39,7 +39,7 @@ HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
-#DRIFT_OPTS  = +RTS -K10 -RTS
+DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
 TESTDIRS    = Common CASL HasCASL
