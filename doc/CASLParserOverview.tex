@@ -12,6 +12,62 @@ Make sure a new version (currently 5.04.1) of \texttt{ghc}
 \texttt{/usr/local/bin/perl, /usr/local/bin/bash} and \texttt{GNU
   make} are required.
 
+
+\subsection{Accessing the CVS repository}
+
+Read \texttt{http://www.informatik.uni-bremen.de/\~{}ger/cvs/CVS.html}
+and send the encrypted password and your (or another) username to
+George Russell (\texttt{ger@tzi.de}). Under solaris you can use
+\texttt{/home/till/bin/encrypt} to get the password. After George's
+reply you can log in. 
+
+For \texttt{cvs login} the evironment variable \texttt{CVSROOT} must be set:
+
+\begin{verbatim}
+CVSROOT=:pserver:$USER@cvs-agbkb.informatik.uni-bremen.de:/repository
+export CVSROOT
+\end{verbatim}
+
+Go to or make a directory with sufficient space, i.e. under
+\texttt{/home/cofi/\$USER}, and then retrieve the source tree:
+
+\begin{verbatim}
+cvs checkout HetCATS
+\end{verbatim}
+
+With \texttt{cvs up} you'll always retrieve the latest versions,
+unless you modified a file. A modified file can be put into the
+repository by \texttt{cvs commit MyFile}. Before committing something
+you may check differences by \texttt{cvs diff MyFile}. Make sure the
+committed file is usable for others and enter a meaningful log
+message. A short log message can be given via the \texttt{-m} option:
+
+\begin{verbatim}
+cvs commit -m "corrected typing of 'eror' to 'error' " MyFile
+\end{verbatim}
+
+A completely new file must be added before committing by \texttt{cvs
+  add MyFile}.  No longer used files can be removed by \texttt{cvs
+  remove MyFile}.  Moving a file from one directory to another is
+best done by adding and removing.
+
+\texttt{cvs log MyFile} gives an overview of all revisions. An old
+version, i.e. the initial revision 1.1, may be viewed using the
+\texttt{-p} and \texttt{-r} options. (If you forget \texttt{-p} the
+current revision will change.)
+
+\begin{verbatim}
+cvs up -p -r1.1 MyFile | less
+\end{verbatim}
+
+When you no longer work with the repository, you may release it:
+
+\begin{verbatim}
+cvs release HetCATS
+\end{verbatim}
+
+\subsection{Using Hugs}
+
 It is also possible to use hugs (version of Nov. 2002) instead of ghc.
 A binary for Solaris is currently available under
 \texttt{/home/maeder/bin/hugs}.  The environment variable
