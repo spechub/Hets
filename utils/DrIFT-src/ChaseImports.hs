@@ -102,10 +102,10 @@ breakPaths x = case break (==':') x of
 -- search though paths, using try
 findModule :: [String] -> String -> IO String
 findModule paths modname = let
-	action p = try $ do 
-			    h <- readFile p 
+	action p = try $ do h <- readFile p
  	                    return (h,p)
-	fnames = combine paths modname
+	fnames = (combine paths modname) ++ combine paths hiracle_modname
+	hiracle_modname = map (\x -> if x == '.' then '/' else x) modname
 	isLeft (Left _ ) = True
 	isLeft _ = False
      in do
