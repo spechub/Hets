@@ -71,6 +71,12 @@ emptySign e = Sign { sortSet = Set.empty
 	       , envDiags = []
                , extendedInfo = e }
 
+isSubsortOf :: Sign f e -> SORT -> SORT -> Bool
+isSubsortOf sig s1 s2 =
+  case Map.lookup s1 (Rel.toMap $ sortRel sig) of
+    Just supers -> s1 `Set.member` supers
+    Nothing -> False
+
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
 subsortsOf s e =
   Set.insert s $
