@@ -16,8 +16,4 @@ do
     runmycheck $i hascasl
 done
 
-for i in test/*.hascasl
-do
-  echo "processing $i"
-  runchecker "analysis" $i $i.output
-done
+(cd test; bash runcheck.sh ../$PA $SET)

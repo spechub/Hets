@@ -45,7 +45,8 @@ anaClassDecls (SubclassDecl cls sc@(Intersection supcls ps) _) =
 			  mapM_ (anaClassDecl newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci ic _) =
-    anaClassDecl [] (Just ic) ci 
+    do newIc <- anaClass ic
+       anaClassDecl [] (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
     do newT <- anaType t 
@@ -59,25 +60,36 @@ anaClassDecl sups defn ci =
     else do
        cMap <- getClassMap
        case lookupFM cMap ci of
-            Nothing -> putClassMap $ addToFM cMap ci $ newClassInfo ci
-	    Just _ -> appendDiags [Diag Warning 
-				   ("redeclared class '"
-				    ++ showId ci "'") 
-				  $ posOfId ci]
-       if null sups && isNothing defn then return ()
-	  else do 
-	       cMap2 <- getClassMap			     
-	       let info = fromJust $ lookupFM cMap2 ci
-	       newSups <- getLegalSuperClasses ci (superClasses info) sups
-	       newDefn <- mergeDefns ci (classDefn info) defn
-	       putClassMap $ addToFM cMap2 ci info 
-		       { superClasses = newSups, 
-		         classDefn = newDefn }
+            Nothing -> putClassMap $ addToFM cMap ci  
+		       (newClassInfo ci) { superClasses = sups, 
+					   classDefn = defn }
+	    Just info -> do 
+	        appendDiags [Diag Warning 
+			     ("redeclared class '"
+			      ++ showId ci "'") 
+			    $ posOfId ci]
+		let oldDefn = classDefn info
+		    oldSups = superClasses info
+		if isJust defn then
+		   if isJust oldDefn then
+		      mergeDefns ci (fromJust oldDefn) (fromJust defn)
+		      else appendDiags [Diag Error 
+			     ("class cannot become an alias class '"
+			      ++ showId ci "'") 
+			    $ posOfId ci]
+		      else if isJust oldDefn then
+			   appendDiags [Diag Error 
+			     ("alias class cannot become a real class '"
+			      ++ showId ci "'") 
+			    $ posOfId ci]
+		      else do
+		      newSups <- getLegalSuperClasses cMap ci oldSups sups
+		      putClassMap $ addToFM cMap ci info 
+				      { superClasses = newSups } 
 
-getLegalSuperClasses :: ClassId -> [ClassId] 
+getLegalSuperClasses :: ClassMap -> ClassId -> [ClassId] 
 		     -> [ClassId] -> State Env [ClassId]
-getLegalSuperClasses ci oldCs cs =
-    do ce <- getClassMap
+getLegalSuperClasses ce ci oldCs cs =
        let scs = zip (map (allSuperClasses ce) cs) cs
 	   (scycs, sOk) = partition ((ci `elem`) . fst) scs
 	   defCs = map snd sOk
@@ -102,45 +114,22 @@ showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (length is > 1)
 		   $ showSepList ("," ++) showId is
 
-mergeDefns :: ClassId -> Maybe Class -> Maybe Class -> State Env (Maybe Class) 
-mergeDefns _ Nothing Nothing = return Nothing
+mergeDefns :: ClassId -> Class -> Class -> State Env ()
 
-mergeDefns ci c1@(Just (Downset oldT)) c2@(Just (Downset t)) =
-    if eqType oldT t then return c2
-       else do wrongClassDecl ci
-	       return c1
+mergeDefns ci (Downset oldT) (Downset t) =
+    if oldT == t then return ()
+       else wrongClassDecl ci
 
-mergeDefns ci c1@(Just (Intersection oldIs _)) c2@(Just (Intersection is _)) =
+
+mergeDefns ci (Intersection oldIs _) (Intersection is _) =
     do cMap <- getClassMap
        if sort (resolveClassSyns cMap oldIs) ==
 	  sort (resolveClassSyns cMap is)
-	  then return c2
-	  else do wrongClassDecl ci
-	          return c1
+	  then return ()
+	  else wrongClassDecl ci
 
-mergeDefns ci c@(Just _) (Just _) =
-    do wrongClassDecl ci
-       return c
+mergeDefns ci _ _ = wrongClassDecl ci
 
-mergeDefns _ c Nothing = return c
-mergeDefns ci Nothing (Just (Intersection is ps)) = 
-    do cMap <- getClassMap
-       js <- getLegalSuperClasses ci [] is
-       return $ Just $ Intersection js ps
-
-mergeDefns ci Nothing c@(Just _) = 
-    do cMap <- getClassMap
-       let sups = delete ci $ allSuperClasses cMap ci 
-	   sDefns = map (classDefn . fromJust . lookupFM cMap) sups 
-	   jDefns = filter ( \ x -> case x of 
-			     Just (Downset _) -> True
-			     _ -> False ) sDefns
-       if null jDefns then return ()
-	  else appendDiags [Diag Warning 
-			    ("downset definition may conflict " 
-			    ++ "with those of superclasses")
-			    $ posOfId ci]
-       return c
 
 
 wrongClassDecl :: ClassId -> State Env ()

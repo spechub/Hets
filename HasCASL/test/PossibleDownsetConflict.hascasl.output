@@ -1,11 +1,22 @@
-a -> < b = {_ < t}
-b -> = {_ < s}
+a = {_ < t}
+b = {_ < s}
+c
+d
+e = a
+h < (a,b,e)
 Type Constructors
-s -> Type
-t -> Type
-Type Variables
+s : Type
+t : Type
+Type Variables :
 Assumptions
-Warning (3,11) implicit declaration of superclass 'b'
-Warning (4,7) redeclared class 'b'
-Warning (6,7) redeclared class 'a'
-Warning (6,7) downset definition may conflict with those of superclasses
+Warning (7,7) redeclared class 'a'
+Error (7,7) alias class cannot become a real class 'a'
+Warning (9,7) redeclared class 'a'
+Warning (11,7) redeclared class 'a'
+Error (11,7) inconsistent redefinition of 'a'
+Warning (15,7) redeclared class 'a'
+Error (15,7) inconsistent redefinition of 'a'
+Warning (21,7) redeclared class 'h'
+Warning (21,12) already known as super class 'a'
+Warning (23,7) redeclared class 'e'
+Error (23,7) inconsistent redefinition of 'e'

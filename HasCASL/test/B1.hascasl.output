@@ -1,21 +1,21 @@
-a -> < (e,g) = b
-b -> = (c,e)
-c ->
-d -> < a = Type
-e ->
-f ->
-g ->
-h -> = (a,b)
-j -> = {_ < t}
+a < (e,g)
+b
+c
+d < a
+e
+f
+g
+h = (a,b)
+j = {_ < t}
 Type Constructors
-[__] -> a ->b
-a__b -> a ->b
-t -> a
-x -> ({_ < t},b,a)
-y -> Type
-Type Variables x
+[__] : a ->b
+a__b : a ->b
+t : a
+x : ({_ < t},b,a)
+y : Type
+Type Variables : x
 Assumptions
-x -> (s,y)
+x : (s,y)
 Warning (3,14) redundant universe class
 Error (3,7) illegal universe class declaration
 Error (4,7) illegal universe class declaration
@@ -30,10 +30,11 @@ Error (12,11) cyclic class relation via 'd'
 Warning (15,7) redeclared class 'a'
 Error (15,11) cyclic class relation via 'a'
 Warning (17,7) redeclared class 'a'
+Error (17,7) class cannot become an alias class 'a'
 Warning (18,7) redeclared class 'b'
-Error (18,14) cyclic class relation via 'd'
+Error (18,7) class cannot become an alias class 'b'
 Warning (20,7) redeclared class 'd'
-Error (20,11) cyclic class relation via 'd'
+Error (20,7) class cannot become an alias class 'd'
 Warning (25,7) redeclared class 'h'
 Error (25,7) inconsistent redefinition of 'h'
 Error (33,9) unidentified type 's'

@@ -24,13 +24,13 @@ noPrint b d = if b then empty else d
 
 instance PrettyPrint ClassInfo where
     printText0 ga (ClassInfo _ sups defn insts) =
-	(noPrint (null sups)
+	(noPrint (isNothing defn)
+	   (ptext equalS <+> printText0 ga defn)
+	<> noPrint (null sups || isNothing defn) space
+	<> noPrint (null sups)
 	   (ptext lessS <+> if null $ tail sups 
 	    then printText0 ga $ head sups
 	    else parens (commas ga sups))
-	<> noPrint (null sups || isNothing defn) space
-	<> noPrint (isNothing defn)
-	   (ptext equalS <+> printText0 ga defn)
 	) $$ noPrint (null insts) 
              (ptext "Instances" $$ 
 	      vcat (map (printText0 ga) insts))
@@ -44,17 +44,16 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
     => PrettyPrint (FiniteMap a b) where
     printText0 ga m =
 	let l = fmToList m in
-	    vcat(map (\ (a, b) -> printText0 ga a <+> ptext "->"
-		 <+> printText0 ga b) l)
+	    vcat(map (\ (a, b) -> printText0 ga a <+> printText0 ga b) l)
 
 instance PrettyPrint [Kind] where
-    printText0 = printList0
+    printText0 ga l = colon <+> printList0 ga l
 
 instance PrettyPrint [TypeScheme] where
-    printText0 = printList0
+    printText0 ga l = colon <+> printList0 ga l
 
 instance PrettyPrint [ClassId] where
-    printText0 = printList0
+    printText0 ga l = colon <+> printList0 ga l
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty

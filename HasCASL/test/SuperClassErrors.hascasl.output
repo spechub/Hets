@@ -1,0 +1,32 @@
+a < b
+b
+c < d
+d < e
+e
+g < a
+h = Type
+i = (g,a)
+Type Constructors
+t : Type
+Type Variables :
+Assumptions
+Warning (1,11) implicit declaration of superclass 'b'
+Warning (2,7) redeclared class 'b'
+Error (2,11) cyclic class relation via 'a'
+Warning (3,11) implicit declaration of superclass 'd'
+Warning (4,11) implicit declaration of superclass 'e'
+Warning (4,7) redeclared class 'd'
+Warning (5,7) redeclared class 'e'
+Error (5,11) cyclic class relation via 'c'
+Error (6,11) undeclared class 'g'
+Warning (8,7) redeclared class 'g'
+Error (8,7) class cannot become an alias class 'g'
+Warning (10,7) redeclared class 'g'
+Error (10,14) cyclic class relation via 'i'
+Warning (11,7) redeclared class 'i'
+Error (11,7) alias class cannot become a real class 'i'
+Warning (12,7) redeclared class 'i'
+Warning (13,7) redeclared class 'i'
+Error (13,7) inconsistent redefinition of 'i'
+Warning (15,7) redeclared class 'i'
+Error (15,7) inconsistent redefinition of 'i'

@@ -1,9 +1,13 @@
-a -> < b
-b ->
-c ->
-d -> < (a,b)
+a < b
+b
+c
+d < (a,b)
+e < f
+f
+g < h
+h
 Type Constructors
-Type Variables
+Type Variables :
 Assumptions
 Warning (2,11) implicit declaration of superclass 'b'
 Warning (3,7) redeclared class 'b'
@@ -12,3 +16,5 @@ Warning (6,7) redeclared class 'd'
 Warning (6,11) already known as super class 'b'
 Warning (7,7) redeclared class 'd'
 Warning (7,11) already known as super class 'a'
+Warning (8,18) implicit declaration of superclass 'f'
+Warning (9,12) implicit declaration of superclass 'h'
