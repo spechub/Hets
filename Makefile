@@ -99,7 +99,14 @@ doc: docs/index.html utils/hd-lib
 
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          -t 'HetCATS -- a heterogenous CASL tool set'
+          -t 'hets -- a heterogenous Specification (CASL) tool set'
+
+apache_doc:
+	cvs up -d
+	$(RM) docs/*.html 
+	$(MAKE) doc
+        $(PERL) utils/post_process_docs.pl docs \
+            'Common.Lib.Map.html:Common.Lib._Map.html'
 
 ###############
 ### clean up
