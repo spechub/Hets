@@ -31,7 +31,7 @@ unboundTypevars :: [TypeArg] -> Type -> [Diagnosis]
 unboundTypevars args ct = 
     let restVars = varsOf ct List.\\ args in
     if null restVars then []
-       else [mkDiag Error ("unbound type variable(s)\n\t"
+       else [mkDiag Error ("unbound type variable(s)\n  "
                                   ++ showSepList ("," ++) showPretty 
                                   restVars " in") ct]
 

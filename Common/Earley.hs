@@ -557,6 +557,6 @@ getResolved pp p toExpr st =
 				   
 showAmbigs :: (a -> ShowS) -> Pos -> [a] -> Diagnosis
 showAmbigs pp p as = 
-    Diag Error ("ambiguous mixfix term\n\t" ++ 
-		showSepList (showString "\n\t") pp
+    Diag Error ("ambiguous mixfix term\n  " ++ 
+		showSepList (showString "\n  ") pp
 		(take 5 as) "") p

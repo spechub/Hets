@@ -226,7 +226,7 @@ free type odd2(a : Type+)
 *** Hint 2.5, is type variable 'a'
 *** Hint 4.11, redeclared type 'List'
 *** Error 5.50, unbound type variable(s)
-	b : Type in 'List b_v1'
+  b : Type in 'List b_v1'
 *** Error 6.57, unexpected type argument 'b_v1'
 *** Error 7.50, illegal polymorphic recursion
   expected: List a_v-1

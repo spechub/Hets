@@ -285,8 +285,8 @@ free type bool
      found: Type -> Type -> Type
 
 *** Error 54.42, ambiguous mixfix term
-	def__(f(x))
-	def(f)(x)
+  def__(f(x))
+  def(f)(x)
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
@@ -297,8 +297,8 @@ free type bool
  'snd(x : s, var y : t)'
 *** Error 60.9, no typing for 'snd(x : s, var y : t) : t'
 *** Error 65.18, ambiguous mixfix term
-	def(__res__(x, y))
-	def__(__res__(x, y))
+  def(__res__(x, y))
+  def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
 *** Warning 74.5, variable shadows global name(s) 'x'
 *** Warning 75.6, variable shadows global name(s) 'x'
@@ -400,8 +400,8 @@ free type bool
      found: Type -> Type -> Type
 
 *** Error 182.46, ambiguous mixfix term
-	def__(f(x))
-	def(f)(x)
+  def__(f(x))
+  def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Error 186.26, unexpected mixfix token: c
