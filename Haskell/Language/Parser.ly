@@ -86,6 +86,11 @@ Reserved operators
 >	'=>'	{ DoubleArrow }
 >	'-'	{ Minus }
 >	'!'	{ Exclamation }
+>       '/\\'   { And }                        --ExtHas
+>       '\\/'   { Or }
+>       '==>'   { Impl } 
+>       '<=>'   { Equiv }
+>       '.'     { Dot }
 
 Reserved Ids
 
@@ -113,11 +118,21 @@ Reserved Ids
 >	'type'		{ KW_Type }
 >	'where'		{ KW_Where }
 >	'qualified'	{ KW_Qualified }
+>       'forall'        { KW_Forall }               --ExtHas
+>       'exists'        { KW_Exists }
+>       'exists!'       { KW_Existsone }
+>       'not'           { KW_Not }
+>       '{-#'           { KW_OpenPrag }
+>       'AXIOMS'        { KW_AxiomsPrag }
+>       '#-}'           { KW_ClosePrag }
 
 > %monad { P }
 > %lexer { lexer } { EOF }
 > %name parse
 > %tokentype { Token }
+> %left '==>' '<=>'
+> %left '/\\' '\\/'
+> %left 'not'
 > %%
 
 -----------------------------------------------------------------------------
@@ -293,6 +308,7 @@ shift/reduce-conflict, so we don't handle this case here, but in bodyaux.
 >	: signdecl			{ $1 }
 >	| fixdecl			{ $1 }
 >	| valdef			{ $1 }
+>       | '{-#' 'AXIOMS' axioms '#-}'      { HsAxiomBind $3 }  -- ExtHas!
 
 > decllist :: { [HsDecl] }
 >	: '{'  decls '}'		{ $2 }
@@ -771,6 +787,53 @@ Identifiers and Symbols
 >	| STRING		{ HsString $1 }
 
 > srcloc :: { SrcLoc }	:	{% getSrcLoc }
+
+-----------------------------------------------------------------------------
+Axioms (Extended Haskell)
+
+> axioms  :: { Binding }
+>       :  axioms ';' axiom                     { $1 `AndBindings` $3 }
+>       |  axioms ';'                           { $1 }
+>       |  axiom                                { $1 }
+       |  {- empty -}                          { NullBind }
+
+> axiom   :: { Binding }
+>       : STRING form                           { AxiomDecl $1 $2 }
+                                                -- Labelled formulas
+> form :: { Formula }
+>       : formula                               { $1 }
+>       | quantification formula                { AxQuant $1 $2 } 
+
+
+> formula :: { Formula }
+>       : subformula                            { $1 }
+>       | formula '==>' subformula              { $1 `AxImpl` $3 }
+>       | formula '<=>' subformula              { $1 `AxEquiv` $3 }
+
+
+> subformula :: {Formula}
+>       : atomic                                { $1 }
+>       | subformula '/\\' atomic               { $1 `AxAnd` $3 }
+>       | subformula '\\/' atomic               { $1 `AxOr` $3 }
+
+> atomic :: { Formula }
+>       : '(' formula ')'                       { AxPar $2 }
+>       | 'not' atomic                          { AxNot $2 }
+>       | exp0 '=' srcloc exp                   { AxEq $1 $4 $3 }
+>       | varid                                 { AxPred $1 }
+
+> quantification :: { Quantifier }
+>       : 'forall' axiom_var_list '.'           { AxForall $2 }
+>       | 'exists' axiom_var_list '.'           { AxExists $2 }
+>       | 'exists!' axiom_var_list '.'          { AxExistsOne $2 }
+
+> axiom_var_list :: { [AxiomBndr] }
+>       : axiom_var                             { [$1] }
+>       | axiom_var axiom_var_list              { $1 : $2 }
+
+> axiom_var :: { AxiomBndr }
+>       : varid                                 { AxiomBndr $1 }
+>       | '(' varid '::' ctype ')'               { AxiomBndrSig $2 $4 }
  
 -----------------------------------------------------------------------------
 Layout
