@@ -17,7 +17,6 @@ module Comorphisms.CASL2Modal where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Common.Lib.Set as Set
-import Common.AS_Annotation
 
 -- CASL
 import CASL.Logic_CASL 
@@ -69,10 +68,7 @@ mapSig sign =
 	       , sortRel = sortRel sign
                , opMap = opMap sign
 	       , assocOps = assocOps sign
-	       , predMap = predMap sign
-               , varMap = varMap sign
-	       , sentences = map (mapNamed mapSen) $ sentences sign
-	       , envDiags = envDiags sign }
+	       , predMap = predMap sign }
 
 mapMor :: CASLMor -> ModalMor
 mapMor m = Morphism {msource = mapSig $ msource m
