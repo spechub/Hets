@@ -385,7 +385,7 @@ crossT ga l = fsep $ punctuate (space<>char '*') $ map (printText0 ga) l
 semiAnno :: (PrettyPrint a) => GlobalAnnos -> [Annoted a] -> Doc
 semiAnno ga l = vcat $ map (\x -> printText0 ga (l_annos x) 
 			          $$ printText0 ga (item x) <> semi 
-			          <> printText0 ga (r_annos x)) 
+			          <+> printText0 ga (r_annos x)) 
 		           l 
 
 -- like punctuate from Pretty, but prepends symbol to every element 

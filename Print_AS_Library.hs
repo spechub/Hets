@@ -27,32 +27,30 @@ import Print_AS_Annotation
 import Print_AS_Architecture
 import Print_AS_Structured
 
-import Logic
-import LogicGraph
-import Grothendieck
-
 instance PrettyPrint LIB_DEFN where
     printText0 ga (Lib_defn aa ab _ ad) =
 	let aa' = printText0 ga aa
 	    pt x = printText0 ga x  
 	    ab' = vcat $ map pt ab
 	    ad' = printText0 ga ad
-	in ptext "library" <+> aa' $$ ad' $$ ab'
+	in ptext "library" <+> aa' $$ ad' $$ ptext "\n" $$ ab'
 
 instance PrettyPrint LIB_ITEM where
     printText0 ga (Spec_defn aa ab ac _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
-	in (hang (ptext "spec" <+> aa' <+> ab' <+> equals) 4 ac')
+         -- nesting is done by the instance for SPEC now
+	in (ptext "spec" <+> aa' <+> ab' <+> equals) $$ ac' $$ ptext "end\n"
+	   
     printText0 ga (View_defn aa ab ac ad _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
 	    ad' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ad
 	    eq' = if null ad then empty else equals
-	in hang (ptext "view" <+> aa' <+> ab' <+> colon <+> ac' <+> eq') 4 
-	         ad'
+	in (hang (ptext "view" <+> aa' <+> ab' <+> colon <+> ac' <+> eq') 4 
+	         ad') $$ ptext "end\n"
 {-
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			   [G_mapping] [Pos]
@@ -61,15 +59,16 @@ data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
     printText0 ga (Arch_spec_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in hang (ptext "arch spec" <+> aa' <+> equals) 4 ab'
+	in (hang (ptext "arch spec" <+> aa' <+> equals) 4 ab') $$ ptext "end\n"
     printText0 ga (Unit_spec_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in hang (ptext "unit spec" <+> aa' <+> equals) 4 ab'
+	in (hang (ptext "unit spec" <+> aa' <+> equals) 4 ab') $$ ptext "end\n"
     printText0 ga (Download_items aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ab
-	in hang (ptext "from" <+> aa' <+> ptext "get") 4 ab'
+	in (hang (ptext "from" <+> aa' <+> ptext "get") 4 ab') $$ 
+	   ptext "end\n" 
     printText0 ga (AS_Library.Logic aa _) =
 	let aa' = printText0 ga aa
 	in ptext "logic" <+> aa' 

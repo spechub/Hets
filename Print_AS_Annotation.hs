@@ -21,16 +21,15 @@ import PrettyPrint
 import Pretty
 
 instance PrettyPrint Annotation where
-    printText0 ga (Comment_line aa _) =
-	let aa' = printText0 ga aa
-	in ptext "%%" <> aa' <> ptext "\n"
-    printText0 ga (Comment_group aa _) =
+    printText0 _ (Comment_line aa _) =
+	ptext "%%" <> ptext aa -- <> ptext "\n"
+    printText0 _ (Comment_group aa _) =
 	let aa' = vcat $ map ptext aa
 	in ptext "%{" <> aa' <> ptext "}%"
     printText0 ga (Annote_line aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in ptext "%" <> aa' <+> ab' <> ptext "\n"
+	in ptext "%" <> aa' <+> ab' -- <> ptext "\n"
     printText0 ga (Annote_group aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
@@ -72,25 +71,29 @@ instance PrettyPrint Annotation where
 					  map (printText0 ga) aa
     printText0 ga (Label aa _) =
 	let aa' = printText0 ga aa
-	in ptext "%(" <> aa' <> ptext ")%"
-    printText0 ga (Implies _) =
+	in ptext "%(" <+> aa' <+> ptext ")%"
+    printText0 _ (Implies _) =
 	printLine (ptext "implies") empty
-    printText0 ga (Definitional _) =
+    printText0 _ (Definitional _) =
 	printLine (ptext "def") empty
-    printText0 ga (Conservative _) =
+    printText0 _ (Conservative _) =
 	printLine (ptext "cons") empty
-    printText0 ga (Monomorph _) =
+    printText0 _ (Monomorph _) =
 	printLine (ptext "mono") empty
+
 printGroup :: Doc -> Doc -> Doc
 printGroup key grp = ptext "%" <> key <> ptext "(" <+> grp <> ptext ")%"
 
 printLine :: Doc -> Doc -> Doc
-printLine key line = ptext "%" <> key <+> line <> ptext "\n"
+printLine key line = ptext "%" <> key <+> line -- <> ptext "\n"
+
+instance PrettyPrint [Annotation] where
+    printText0 ga l = (vcat $ map (printText0 ga) l) -- <> ptext "\n"
 
 instance (PrettyPrint a) => PrettyPrint (Annoted a) where
     printText0 ga (Annoted i _ las ras) =
 	let i'   = printText0 ga i
 	    las' = printText0 ga las
 	    ras' = printText0 ga ras
-        in las' $$ i' <+> ras'
+        in las' $+$ i' <+> ras'
 

@@ -19,7 +19,7 @@ import Pretty
 import PrettyPrint
 
 -- debugging stuff
--- import IOExts (trace)
+--import IOExts (trace)
 
 import Grothendieck
 
@@ -31,19 +31,28 @@ import List
 
 instance PrettyPrint SPEC where
     printText0 ga (Basic_spec aa) =
-	printText0 ga aa
+	nest 4 $ printText0 ga aa
     printText0 ga (Translation aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in aa' $$ ab'
+	in nest 4 (aa' $$ ab')
     printText0 ga (Reduction aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
-	in aa' $$ ab'
+	in nest 4 (aa' $$ ab')
     printText0 ga (Union aa _) =
-	fsep $ intersperse (ptext "and") $ map (printText0 ga) aa
+	fsep $ map (\x -> ptext "and" $$ printText0 ga x) aa
     printText0 ga (Extension aa _) =
-	fsep $ intersperse (ptext "then") $ map (printText0 ga) aa
+	fsep $ printList aa
+	       -- intersperse (ptext "then") $ map (printText0 ga) aa
+	where printList [] = []
+	      printList (x:xs) = (printText0 ga x):map spPrintText0 xs
+	      spPrintText0 x = 
+		  case x of 
+		  Annoted i _ las _ ->
+		      let i'   = printText0 ga i
+			  las' = printText0 ga las
+		      in ptext "then" <+> las' $$ i'
     printText0 ga (Free_spec aa _) =
 	hang (ptext "free") 4 $ printText0 ga aa
     printText0 ga (Local_spec aa ab _) =
@@ -58,7 +67,7 @@ instance PrettyPrint SPEC where
     printText0 ga (Spec_inst aa ab) =
 	let aa' = printText0 ga aa
 	    ab' = printText0_fit_arg_list ga ab
-	in hang aa' 4 ab'
+	in nest 4 (hang aa' 4 ab')
     printText0 ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
 
