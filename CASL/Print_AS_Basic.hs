@@ -17,8 +17,10 @@ module CASL.Print_AS_Basic where
 
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
+import Data.Maybe (fromJust)
 
 import Common.Id
+import Common.Lib.Parsec.Pos (sourceLine,sourceColumn)
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -375,7 +377,7 @@ instance PrettyPrint ALTERNATIVE where
 					( semiT_latex ga l)
 				 <> hc_sty_axiom quMark )
     printLatex0 ga (Subsorts l _) = 
-	hc_sty_plain_keyword sortS <\+> commaT_latex ga l 
+	hc_sty_id sortS <\+> commaT_latex ga l 
 
 instance PrettyPrint COMPONENTS where
     printText0 ga (Total_select l s _) = commaT_text ga l 
@@ -413,10 +415,16 @@ instance PrettyPrint FORMULA where
     printText0 ga (Disjunction  l _) = 
 	sep $ prepPunctuate (ptext lOr <> space) $ 
 	    map (condParensXjunction printText0 parens ga) l
-    printText0 ga i@(Implication f g _) = 
-	hang (condParensImplEquiv printText0 parens ga i f 
+    printText0 ga i@(Implication f g p) = 
+	if if_detect f p 
+	then (
+        hang (condParensImplEquiv printText0 parens ga i g 
+	      <+> ptext "if") 4 $ 
+	     condParensImplEquiv printText0 parens ga i f)
+	else (
+        hang (condParensImplEquiv printText0 parens ga i f 
 	      <+> ptext implS) 4 $ 
-	     condParensImplEquiv printText0 parens ga i g
+	     condParensImplEquiv printText0 parens ga i g)
     printText0 ga e@(Equivalence  f g _) = 
 	hang (condParensImplEquiv printText0 parens ga e f 
 	      <+> ptext equivS) 4 $
@@ -469,11 +477,20 @@ instance PrettyPrint FORMULA where
 			       [x]    -> l
 			       (x:xs) ->  (hspace_latex "0.375cm"<>x): xs-}
     printLatex0 ga i@(Implication f g p) = 
-	-- trace pos $ 
+	{-trace pos $ -}
+	if if_detect f p 
+	then (
+        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i g 
+		    <\+> hc_sty_id "if") 3 $ 
+	     condParensImplEquiv printLatex0 parens_tab_latex ga i f)
+
+	else (
 	hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i f 
 		    <\+> hc_sty_axiom "\\Rightarrow") 3 $ 
-	     condParensImplEquiv printLatex0 parens_tab_latex ga i g
-	where pos = "Implication: "++show p ++"; "++(show $ left_most_pos f )
+	     condParensImplEquiv printLatex0 parens_tab_latex ga i g)
+{-	where pos = "Implication: \"=>\": "++show p 
+		    ++"; left_most_id_of_first_formula: "
+		    ++(show $ left_most_pos f )-}
     printLatex0 ga e@(Equivalence  f g _) = 
 	sep_latex 
 	     [condParensImplEquiv printLatex0 parens_tab_latex ga e f 
@@ -570,7 +587,7 @@ instance PrettyPrint TERM where
 	parens_latex $ hc_sty_id varS 
 			 <\+> printLatex0 ga n 
 			 <\+> colon_latex <\+> printLatex0 ga t
-    printLatex0 ga ap@(Application o l _) = 
+    printLatex0 ga (Application o l _) = 
 	let (o_id,isQual) = 
 		case o of
 		       Op_name i          -> (i,False)
@@ -901,16 +918,13 @@ print_Literal pf parens_fun
 	  tokNumber i   = if tokIsDigit then
 			     tok
 			   else
-			    -- trace ("Number: "++show ts) $ 
+			    {-trace ("Number: "++show ts) $ -}
 			     mergeTok $ map (termToTok "number") $
-				 leftAssCollElems i ts
+			         collectElements (Nothing) i ts
 	     where tok = case i of
 			 Id []     _ _ -> error "malformed Id!!!"
 			 Id [tokk] [] _ -> tokk
 			 Id (x:_) _ _ -> x 
-		   numbOp = case getLiteralType ga i of
-			    Number -> Just i
-			    _ -> error "toksNumber"
 		   tokIsDigit = (isDigit $ head $ tokStr $ tok) && null ts
 	  toksString i   = case getLiteralType ga i of 
 			   StringNull -> []
@@ -1059,7 +1073,15 @@ left_most_pos f =
     Negation _ pl -> head' pl 
     True_atom pl -> head' pl 
     False_atom pl -> head' pl 
-    Predication _ _ pl -> head' pl
+    Predication pre _ pl -> 
+	let p = head' pl
+	    p' = fromJust $ 
+	         get_pos (case pre of
+			  Pred_name i          -> i
+			  Qual_pred_name i _ _ -> i)
+	in if isNullPos p 
+	   then p'
+	   else p	       
     Definedness _ pl -> head' pl 
     Existl_equation _ _ pl -> head' pl 
     Strong_equation _ _ pl -> head' pl 
@@ -1067,6 +1089,18 @@ left_most_pos f =
     Unparsed_formula _ pl -> head' pl 
     _ -> nullPos
     where head' l = if null l then nullPos else head l
+
+if_detect :: FORMULA -> [Pos] -> Bool
+if_detect _ []    = False
+if_detect f (p_impl:_) = 
+    case left_most_pos f of
+    p_form 
+	| line p_form == line p_impl -> column p_impl < column p_form
+	| line p_impl < line p_form  -> True
+	| line p_impl > line p_form  -> False
+    where line   = sourceLine
+	  column = sourceColumn
+	  
 
 
 hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
