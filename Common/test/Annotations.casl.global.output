@@ -36,11 +36,18 @@
 %list [__], nil, cons
 %number __@@__
 %floating __frac__, __exp__
-Error (line 11, column 1) unexpected annotation '%(one_line_label)%'
-Error (line 13, column 1) unexpected annotation '%(multi 
+Warning (line 1, column 1) ignoring annotation '%% many legal annotations for testing purposes'
+Warning (line 2, column 1) ignoring annotation '%{group comment 
+  %{
+    over many lines
+  %% } % }%'
+Warning (line 7, column 1) ignoring annotation '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
+Warning (line 11, column 1) ignoring annotation '%(one_line_label)%'
+Warning (line 13, column 1) ignoring annotation '%(multi 
   line
   label)%'
-Error (line 27, column 1) unexpected annotation '%implies'
-Error (line 28, column 1) unexpected annotation '%def'
-Error (line 29, column 2) unexpected annotation '%cons'
-Error (line 30, column 1) unexpected annotation '%mono'
+Warning (line 26, column 1) ignoring annotation '%% one word annotes '
+Warning (line 27, column 1) ignoring annotation '%implies'
+Warning (line 28, column 1) ignoring annotation '%def'
+Warning (line 29, column 2) ignoring annotation '%cons'
+Warning (line 30, column 1) ignoring annotation '%mono'

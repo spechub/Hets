@@ -40,10 +40,10 @@ addGlobalAnnos ga all_annos = do
     do let (annos, rest_annos) = partition ( \ a -> case a of 
 	    Label _ _ -> False
 	    Semantic_anno _ _ -> False
-	    Unparsed_anno (Annote_word _) _ _ -> False
-            -- line and group comments will be ignored
+	    Unparsed_anno _ _ _ -> False
+            -- line and group and comments will be ignored
 	    _ -> True) all_annos
-	   ds = map ( \ d -> mkDiag Error "unexpected annotation" d) 
+	   ds = map ( \ d -> mkDiag Warning "ignoring annotation" d) 
 		rest_annos
        Result ds (Just ())
        n_prec_annos <- store_prec_annos (prec_annos  ga) annos
