@@ -29,7 +29,8 @@ import Logic.Logic              (Language,
                                  parse_symb_items,
                                  parse_symb_map_items,
                                  basic_analysis,
-                                 empty_signature)
+                                 empty_signature,
+                                 data_logic)
 import Data.Dynamic             (Typeable)
 import Haskell.ATC_Haskell      -- ???
 
@@ -180,4 +181,4 @@ instance Logic Haskell Haskell_Sublogics
                Sign 
                Morphism
                Symbol RawSymbol ()
-
+   where data_logic Haskell = Nothing

@@ -215,16 +215,17 @@ specB l = do p1 <- asKey localS
 
 specC :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specC l@(Logic lid, lG) =     
-              do p1 <- asKey "data"
-                 case data_logic lid of
-                   Nothing -> fail ("No data logic for " ++ language_name lid)
-                   Just (Logic dlid) -> do
-                     sp1 <- groupSpec (Logic dlid, lG)
-                     sp2 <- specD l
-                     return (emptyAnno (Data (Logic dlid) 
-                                             (emptyAnno sp1) 
-                                             (emptyAnno sp2) 
-                                             [tokPos p1]))
+              try(do p1 <- asKey "data"
+                     case data_logic lid of
+                       Nothing -> fail ("No data logic for " ++ language_name lid)
+                       Just (Logic dlid) -> do
+                         sp1 <- groupSpec (Logic dlid, lG)
+                         sp2 <- specD l
+                         return (emptyAnno (Data (Logic dlid) 
+                                                 (emptyAnno sp1) 
+                                                 (emptyAnno sp2) 
+                                                 [tokPos p1]))
+                 )
           <|> do sp <- annoParser (specD l)
                  translation_list l sp
           
