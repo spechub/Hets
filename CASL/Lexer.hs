@@ -196,8 +196,8 @@ getNumber :: GenParser Char st String
 getNumber = many1 digit
 
 scanFloat :: GenParser Char st String
-scanFloat = getNumber <++> option "" 
-	     (char '.' <:> getNumber
+scanFloat = getNumber <++> (option "" 
+	     (char '.' <:> getNumber)
 	      <++> option "" 
 	      (char 'E' <:> option "" (single (oneOf "+-"))
 	       <++> getNumber))
