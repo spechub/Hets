@@ -57,6 +57,7 @@ import Common.Lib.Set
 import Common.Lib.Map
 import Common.Lib.Graph
 import Common.Result
+import Common.Named
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -182,11 +183,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
-                           Result (sign,sign,[(String,sentence)]))
+                           Result (sign,sign,[Named sentence]))
                            -- the first output sign is the accumulated sign
                            -- the second output sign united with the input sing
                            -- should yield the first output sign
-         sign_to_basic_spec :: lid -> sign -> [(String,sentence)] -> basic_spec
+         sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 

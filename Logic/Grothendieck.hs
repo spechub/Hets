@@ -42,6 +42,7 @@ import qualified Common.Lib.Map as Map
 import Common.PPUtils (fsep_latex, comma_latex)
 import Common.Result
 import Common.Id
+import Common.Named
 import Data.Dynamic
 
 ------------------------------------------------------------------
@@ -81,7 +82,7 @@ data G_l_sentence_list = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_l_sentence lid [(String,sentence)] 
+  G_l_sentence lid [Named sentence] 
 
 data G_sign = forall lid sublogics
         basic_spec sentence symb_items symb_map_items

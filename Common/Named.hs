@@ -16,6 +16,7 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Print_AS_Annotation
 import Common.AS_Annotation
+import Data.Dynamic
 
 data Named s = NamedSen { senName  :: String,
                           sentence :: s }
@@ -24,3 +25,10 @@ data Named s = NamedSen { senName  :: String,
 instance PrettyPrint s => PrettyPrint (Named s) where
     printText0 ga (NamedSen{senName = label, sentence = s}) =
 	printText0 ga s <+> printText0 ga (Label [label] [])
+
+-- used in version 1.4 2003/02/25 Static/DGToSpec.hs:38:
+namedTc :: TyCon
+namedTc = mkTyCon "Common.Named.Named"
+
+instance Typeable s => Typeable (Named s) where 
+  typeOf s = mkAppTy namedTc [typeOf ((undefined :: Named a -> a) s)]
