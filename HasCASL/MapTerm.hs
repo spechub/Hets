@@ -15,7 +15,7 @@ module HasCASL.MapTerm where
 
 import HasCASL.Morphism
 import HasCASL.As
-import HasCASL.Symbol
+import HasCASL.Le
 import Common.Result
 import qualified Common.Lib.Map as Map
 

@@ -19,7 +19,6 @@ import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
 import HasCASL.Unify
-import HasCASL.TypeAna
 import HasCASL.TypeCheck
 import HasCASL.MixAna
 import Data.Maybe

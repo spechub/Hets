@@ -14,21 +14,17 @@ Portability :  portable
 module HasCASL.Symbol where
 
 import HasCASL.Le
-import HasCASL.HToken
+import HasCASL.PrintLe
 import HasCASL.As
 import HasCASL.Unify
 import HasCASL.Merge
 import Common.Id
-import Common.Keywords
 import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-
--- new type to defined a different Eq and Ord instance
-data TySc = TySc TypeScheme deriving Show
 
 instance Eq TySc where
     TySc sc1 == TySc sc2 = 
@@ -51,11 +47,6 @@ instance Ord TySc where
 					   (Set.toList v1) $ Set.toList v2) t2
 			GT -> False 
 
-data SymbolType = OpAsItemType TypeScheme
-		| TypeAsItemType Kind
-		| ClassAsItemType Kind
-		  deriving (Show, Eq, Ord)
-
 data SyTy = OpAsITy TySc
 	  | TypeAsITy Kind
 	  | ClassAsITy Kind
@@ -68,15 +59,6 @@ toSyTy st = case st of
     TypeAsItemType k -> TypeAsITy k
     ClassAsItemType k -> ClassAsITy k
 
-instance PrettyPrint SymbolType where
-    printText0 ga t = case t of 
-      OpAsItemType sc -> printText0 ga sc
-      TypeAsItemType k -> printText0 ga k
-      ClassAsItemType k -> printText0 ga k
-
-data Symbol = Symbol {symName :: Id, symType :: SymbolType, symEnv :: Env} 
-	      deriving Show
-
 instance Eq Symbol where
     s1 == s2 = (symName s1, toSyTy $ symType s1) == 
 	       (symName s2, toSyTy $ symType s2)
@@ -84,26 +66,6 @@ instance Eq Symbol where
 instance Ord Symbol where
     s1 <= s2 = (symName s1, toSyTy $ symType s1) <= 
 	       (symName s2, toSyTy $ symType s2)
-
-instance PrettyPrint Symbol where
-  printText0 ga s = text (case symType s of 
-			  OpAsItemType _ -> opS
-			  TypeAsItemType _ -> typeS
-			  ClassAsItemType _ -> classS) <+> 
-                    printText0 ga (symName s) <+> text colonS <+> 
-		    printText0 ga (symType s)
-
-type SymbolMap = Map.Map Symbol Symbol 
-type SymbolSet = Set.Set Symbol 
-
-idToTypeSymbol :: Env -> Id -> Kind -> Symbol
-idToTypeSymbol e idt k = Symbol idt (TypeAsItemType k) e
-
-idToClassSymbol :: Env -> Id -> Kind -> Symbol
-idToClassSymbol e idt k = Symbol idt (ClassAsItemType k) e
-
-idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
-idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
 checkSymbols s1 s2 r = 

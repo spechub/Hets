@@ -25,13 +25,14 @@ import HasCASL.RawSym
 import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.ParseItem
-import Logic.Logic
-import Data.Dynamic
 import HasCASL.Morphism
 import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
 import HasCASL.MapTerm
+import Logic.Logic
+import Data.Dynamic
+import Common.Result
 
 type HasCASL_Sublogics = ()
 
@@ -101,7 +102,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
                Morphism 
                Symbol RawSymbol where
     basic_analysis HasCASL = Just basicAnalysis 
-    signature_union HasCASL = mergeEnv
+    signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
     induced_from_to_morphism HasCASL = inducedFromToMorphism
     induced_from_morphism HasCASL = inducedFromMorphism
@@ -118,7 +119,7 @@ instance StaticAnalysis HasCASL BasicSpec Term ()
     id_to_raw HasCASL = idToRaw
     matches HasCASL = matchSymb
 
-    final_union HasCASL = mergeEnv
+    final_union HasCASL = merge
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Term SymbItems SymbMapItems

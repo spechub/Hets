@@ -13,13 +13,14 @@ analyse alternatives of data types
 
 module HasCASL.DataAna where
 
-import HasCASL.As
+
 import Common.Id
 import Common.Lib.State
 import qualified Common.Lib.Set as Set
 import Common.Result
+import HasCASL.As
 import HasCASL.Le
-import HasCASL.TypeAna
+import HasCASL.VarDecl
 import HasCASL.AsUtils
 import HasCASL.Unify
 import Data.Maybe

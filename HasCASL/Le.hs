@@ -15,10 +15,9 @@ module HasCASL.Le where
 import HasCASL.As
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.Result
-import Common.Lib.State
+import Common.Result(Diagnosis)
 import Common.Id
-import Common.AS_Annotation
+import Common.AS_Annotation(Named)
 
 -----------------------------------------------------------------------------
 -- classInfo
@@ -113,9 +112,61 @@ initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty [] [] 
 	     ((Map.empty, 0, 0), Set.empty) 1
 
--- | add diagnostic messages 
-addDiags :: [Diagnosis] -> State Env ()
-addDiags ds =
-    do e <- get
-       put $ e {envDiags = ds ++ envDiags e}
+-----------------------------------------------------------------------------
+-- symbol stuff
+-----------------------------------------------------------------------------
+
+data SymbolType = OpAsItemType TypeScheme
+		| TypeAsItemType Kind
+		| ClassAsItemType Kind
+		  deriving (Show, Eq, Ord)
+
+data Symbol = Symbol {symName :: Id, symType :: SymbolType, symEnv :: Env} 
+	      deriving Show
+
+type SymbolMap = Map.Map Symbol Symbol 
+type SymbolSet = Set.Set Symbol 
+
+idToTypeSymbol :: Env -> Id -> Kind -> Symbol
+idToTypeSymbol e idt k = Symbol idt (TypeAsItemType k) e
+
+idToClassSymbol :: Env -> Id -> Kind -> Symbol
+idToClassSymbol e idt k = Symbol idt (ClassAsItemType k) e
+
+idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
+idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
+
+-- note that the type of a raw symbol is not analysed!
+data RawSymbol = AnID Id | AKindedId SymbKind Id 
+	       | AQualId Id SymbolType
+    	         deriving (Show, Eq, Ord)
+
+type RawSymbolMap = Map.Map RawSymbol RawSymbol
+
+idToRaw :: Id -> RawSymbol
+idToRaw x = AnID x
+
+rawSymName :: RawSymbol -> Id
+rawSymName (AnID i) = i
+rawSymName (AKindedId _ i) = i
+rawSymName (AQualId i _) = i
+
+symbTypeToKind :: SymbolType -> SymbKind
+symbTypeToKind (OpAsItemType _)    = SK_op
+symbTypeToKind (TypeAsItemType _)  = SK_type
+symbTypeToKind (ClassAsItemType _) = SK_class
+
+symbolToRaw :: Symbol -> RawSymbol
+symbolToRaw sym = AQualId (symName sym) $ symType sym
+
+symbKindToRaw :: SymbKind -> Id -> RawSymbol
+symbKindToRaw Implicit = AnID 
+symbKindToRaw sk = AKindedId $ case sk of 
+		   SK_pred -> SK_op
+		   SK_fun -> SK_op
+		   SK_sort -> SK_type
+		   _ -> sk
+
+-- new type to defined a different Eq and Ord instance
+data TySc = TySc TypeScheme deriving Show
 

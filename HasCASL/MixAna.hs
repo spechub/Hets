@@ -28,7 +28,6 @@ import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Unify 
-import HasCASL.TypeAna
 import Data.Maybe
 import Control.Exception(assert)
 

@@ -358,6 +358,36 @@ type UninstOpId = Id
 type Var = Id
 type ClassId = Id -- TOKEN-ID (one token with compound list, like CASL sorts)
 
+-- * symbol data types
+-- | symbols 
+data SymbItems = SymbItems SymbKind [Symb] [Annotation] [Pos] 
+		  -- pos: kind, commas
+		  deriving (Show, Eq)
+
+-- | mapped symbols 
+data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] [Pos]
+		      -- pos: kind commas
+		      deriving (Show, Eq)
+
+-- | kind of symbols
+data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred 
+	      | SK_class
+		 deriving (Show, Eq, Ord)
+
+-- | type annotated symbols
+data Symb = Symb Id (Maybe SymbType) [Pos] 
+	    -- pos: colon (or empty)
+	    deriving (Show, Eq)
+
+-- | type for symbols
+data SymbType = SymbType TypeScheme
+	    deriving (Show, Eq)
+
+-- | mapped symbol
+data SymbOrMap = SymbOrMap Symb (Maybe Symb) [Pos]
+		   -- pos: "|->" (or empty)
+		   deriving (Show, Eq)
+
 -- ----------------------------------------------------------------------------
 -- equality instances while ignoring positions
 -- ----------------------------------------------------------------------------

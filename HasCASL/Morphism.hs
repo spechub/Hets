@@ -15,10 +15,8 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.As
 import HasCASL.AsToLe
-import HasCASL.Builtin
 import HasCASL.PrintLe
 import HasCASL.Unify
-import HasCASL.Merge
 import HasCASL.Symbol
 import Common.Id
 import Common.Keywords
@@ -26,7 +24,6 @@ import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
-import Data.List(partition)
 
 type IdMap = Map.Map Id Id
 
@@ -81,34 +78,6 @@ mapFunSym tm fm (i, sc) = do
   let sc2 = mapTySc tm sc
       -- unify sc2 with sc1 later
   return (newI, sc2)
-
-mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
-mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = 
-    do l <- mergeOps tm c l1 l2
-       return $ OpInfos l
--- trace (showPretty l1 "\n+ " ++ showPretty l2 "\n 0" ++ showPretty l "") l
-
-mergeOps :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
-mergeOps _ _ [] l = return l
-mergeOps tm c (o:os) l2 = do 
-    let (es, us) = partition (isUnifiable (addUnit tm) c 
-			      (opType o) . opType) l2
-    l1 <- mergeOps tm c os us 
-    if null es then return (o : l1)
-       else do r <- mergeOpInfo tm c o $ head es
-	       return (r : l1)
-
-mergeEnv :: Env -> Env -> Result Env
-mergeEnv e1 e2 =
-	do cMap <- merge (classMap e1) $ classMap e2
-	   let m = max (counter e1) $ counter e2
-	   tMap <- mergeMap (mergeTypeInfo Map.empty 0) 
-		   (typeMap e1) $ typeMap e2
-	   as <- mergeMap (mergeOpInfos tMap m) 
-		 (assumps e1) $ assumps e2
-	   return initialEnv { classMap = cMap
-			     , typeMap = tMap
-			     , assumps = as }
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
@@ -203,8 +172,8 @@ legalMor m = let s = msource m
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = 
-    do s <- mergeEnv (msource m1) $ msource m2
-       t <- mergeEnv (mtarget m1) $ mtarget m2
+    do s <- merge (msource m1) $ msource m2
+       t <- merge (mtarget m1) $ mtarget m2
        tm <- foldr ( \ (i, j) rm -> 
 		     do m <- rm
 		        case Map.lookup i m of

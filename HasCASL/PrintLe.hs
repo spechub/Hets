@@ -123,3 +123,23 @@ instance PrettyPrint Env where
 			  vcat(map (\ (a, b) -> printText0 g a 
 				    <> printText0 g b) l)
 
+instance PrettyPrint SymbolType where
+    printText0 ga t = case t of 
+      OpAsItemType sc -> printText0 ga sc
+      TypeAsItemType k -> printText0 ga k
+      ClassAsItemType k -> printText0 ga k
+
+instance PrettyPrint Symbol where
+    printText0 ga s = text (case symType s of 
+			    OpAsItemType _ -> opS
+			    TypeAsItemType _ -> typeS
+			    ClassAsItemType _ -> classS) <+> 
+                    printText0 ga (symName s) <+> text colonS <+> 
+		    printText0 ga (symType s)
+
+instance PrettyPrint RawSymbol where
+  printText0 ga rs = case rs of
+      AnID i -> printText0 ga i
+      AKindedId k i -> printSK k <> printText0 ga i
+      AQualId i t -> printSK (symbTypeToKind t) <> printText0 ga i <+> colon 
+		       <+> printText0 ga t

@@ -28,6 +28,33 @@ import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Merge
 
+-- | add diagnostic messages 
+addDiags :: [Diagnosis] -> State Env ()
+addDiags ds =
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
+
+anaStarType :: Type -> State Env (Maybe Type)
+anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)
+		   return $ fmap snd mp
+
+anaKind :: Kind -> State Env Kind
+anaKind k = toState star $ anaKindM k
+
+toState :: a -> (Env -> Result a) -> State Env a
+toState bot r = do
+     ma <- fromResult r
+     case ma of 
+	  Nothing -> return bot  
+          Just a -> return a
+
+fromResult :: (Env -> Result a) -> State Env (Maybe a)
+fromResult f = do 
+   e <- get
+   let r = f e
+   addDiags $ diags r
+   return $ maybeResult r
+
 -- ---------------------------------------------------------------------------
 -- storing type ids with their kind and definition
 -- ---------------------------------------------------------------------------

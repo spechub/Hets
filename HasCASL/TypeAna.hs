@@ -20,7 +20,6 @@ import HasCASL.Unify
 import Data.List
 import Data.Maybe
 import qualified Common.Lib.Map as Map
-import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
@@ -28,23 +27,6 @@ import Common.PrettyPrint
 -- --------------------------------------------------------------------------
 -- kind analysis
 -- --------------------------------------------------------------------------
-
-anaKind :: Kind -> State Env Kind
-anaKind k = toState star $ anaKindM k
-
-toState :: a -> (Env -> Result a) -> State Env a
-toState bot r = do
-     ma <- fromResult r
-     case ma of 
-	  Nothing -> return bot  
-          Just a -> return a
-
-fromResult :: (Env -> Result a) -> State Env (Maybe a)
-fromResult f = do 
-   e <- get
-   let r = f e
-   addDiags $ diags r
-   return $ maybeResult r
 
 anaKindM :: Kind -> Env -> Result Kind
 anaKindM k env = 
@@ -305,10 +287,6 @@ anaType (mk, t) tm =
     do nt <- mkTypeConstrAppls TopLevel t tm
        newk <- inferKind mk (unalias tm nt) tm
        return (newk, nt)
-
-anaStarType :: Type -> State Env (Maybe Type)
-anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)
-		   return $ fmap snd mp
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

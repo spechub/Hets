@@ -415,3 +415,31 @@ instance PrettyPrint OpId where
 				  <+> noPrint (null ts) 
 				      (brackets $ commaT_text ga ts)
 
+instance PrettyPrint Symb where
+    printText0 ga (Symb i mt _) =
+	printText0 ga i <> (case mt of Nothing -> empty
+			               Just (SymbType t) -> 
+					  empty <+> colon <+>
+					    printText0 ga t)
+
+instance PrettyPrint SymbItems where
+    printText0 ga (SymbItems k syms _ _) =
+	printSK k <> commaT_text ga syms
+
+instance PrettyPrint SymbOrMap where
+    printText0 ga (SymbOrMap s mt _) =
+	printText0 ga s <> (case mt of Nothing -> empty
+			               Just t -> 
+					  empty <+> ptext mapsTo <+>
+					    printText0 ga t)
+
+instance PrettyPrint SymbMapItems where
+    printText0 ga (SymbMapItems k syms _ _) =
+	printSK k <> commaT_text ga syms
+
+-- | print symbol kind
+printSK :: SymbKind -> Doc
+printSK k = 
+    case k of Implicit -> empty
+	      _ -> ptext (drop 3 $ show k) <> space 
+

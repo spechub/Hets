@@ -15,6 +15,7 @@ module HasCASL.Merge where
 import Common.Id
 import Common.PrettyPrint
 import HasCASL.As
+import HasCASL.Builtin
 import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.Unify
@@ -185,6 +186,35 @@ mergeConstrInfos tm (c : r) c2 =
 		       && constrId c == constrId d) c2 
            then return c3
 	   else return (c : c3)
+
+
+mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
+mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = 
+    do l <- mergeOps tm c l1 l2
+       return $ OpInfos l
+-- trace (showPretty l1 "\n+ " ++ showPretty l2 "\n 0" ++ showPretty l "") l
+
+mergeOps :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
+mergeOps _ _ [] l = return l
+mergeOps tm c (o:os) l2 = do 
+    let (es, us) = partition (isUnifiable (addUnit tm) c 
+			      (opType o) . opType) l2
+    l1 <- mergeOps tm c os us 
+    if null es then return (o : l1)
+       else do r <- mergeOpInfo tm c o $ head es
+	       return (r : l1)
+
+instance Mergeable Env where
+    merge e1 e2 =
+	do cMap <- merge (classMap e1) $ classMap e2
+	   let m = max (counter e1) $ counter e2
+	   tMap <- mergeMap (mergeTypeInfo Map.empty 0) 
+		   (typeMap e1) $ typeMap e2
+	   as <- mergeMap (mergeOpInfos tMap m) 
+		 (assumps e1) $ assumps e2
+	   return initialEnv { classMap = cMap
+			     , typeMap = tMap
+			     , assumps = as }
 
 instance Mergeable Term where
     merge t1 t2 = if t1 == t2 then return t1 

@@ -13,15 +13,15 @@ Portability :  portable
 module HasCASL.ClassDecl where
 
 import HasCASL.As
+import HasCASL.Le
+import HasCASL.ClassAna
+import HasCASL.VarDecl
 import qualified Common.Lib.Map as Map
 import Common.Id
-import HasCASL.Le
-import Data.List
-import Data.Maybe
 import Common.Lib.State
 import Common.Result
-import HasCASL.ClassAna
-import HasCASL.TypeAna
+import Data.List
+import Data.Maybe
 
 -- ---------------------------------------------------------------------------
 -- analyse class decls
