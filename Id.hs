@@ -42,4 +42,9 @@ data Id = Id([TokenOrPlace], [Id]) deriving (Eq, Ord)
  
 instance Show Id where
     showsPrec _ (Id(ts, is)) = showString ((foldl (++) "" (map show ts)) ++ 
-					   (show is))
+	(case is of [] -> "" ;  _:_ -> (show is)))
+
+-- simple Id
+simpleId :: String -> Id
+simpleId(s) = Id([Token(s, nullPos)],[]) 
+
