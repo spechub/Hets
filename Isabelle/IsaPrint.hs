@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -6,7 +7,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(overlapping-instances)
 
    Printing functions for Isabelle logic.
 -}
