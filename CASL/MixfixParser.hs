@@ -26,18 +26,17 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import Common.Lib.Map as Map hiding (filter, split, map)
-import Common.Lib.Set as Set hiding (filter, split, single, insert)
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lexer
 import Control.Monad
 import Common.Lib.Parsec
-import qualified Data.Char as C
 import Data.List(intersperse)
 import CASL.Formula(updFormulaPos)
-import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
+import CASL.ShowMixfix 
 
-showTerm :: GlobalAnnos -> TERM -> String
-showTerm _ t = ShowMixfix.showTerm t ""
+showTrm :: GlobalAnnos -> TERM -> String
+showTrm _ t = showTerm t ""
 
 -- Earley Algorithm
 
@@ -47,12 +46,6 @@ data State = State (Id, Bool)  -- True means predicate
 		                               -- both in reverse order
 		   [Token]  -- only tokens after the "dot" are given 
 		   Int      -- index into the ParseMap/input string
-
-instance Eq State where
-    State r1 _ _ t1 p1 == State r2 _ _ t2 p2 = (r1, t1, p1) == (r2, t2, p2)
-
-instance Ord State where
-    State r1 _ _ t1 p1 <= State r2 _ _ t2 p2 = (r1, t1, p1) <= (r2, t2, p2)
 
 termStr :: String
 termStr = "(T)"
@@ -119,10 +112,10 @@ initialState g (ops, preds) i =
        map (mkState i False) ops,
        map (mkApplState i False) ops]
 
-type ParseMap = Map Int [State]
+type ParseMap = Map.Map Int [State]
 
-lookUp :: (Ord a, MonadPlus m) => Map a (m b) -> a -> (m b)
-lookUp ce k = findWithDefault mzero k ce
+lookUp :: (Ord a, MonadPlus m) => Map.Map a (m b) -> a -> (m b)
+lookUp ce k = Map.findWithDefault mzero k ce
 
 -- match (and shift) a token (or partially finished term)
 
@@ -291,7 +284,7 @@ predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
 predict g ops i m = 
     if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
 		      && head ts == termTok) (lookUp m i)
-    then insertWith (++) i (initialState g (ops, []) i) m
+    then Map.insertWith (++) i (initialState g (ops, []) i) m
     else m 
 
 type Chart = (Int, [Diagnosis], ParseMap)
@@ -304,11 +297,11 @@ nextState g ops trm (i, ds, m) =
 		 predict g ops i m
     in if null (lookUp m1 (i+1)) && null ds
 		    then (i+1, Diag Error ("unexpected mixfix token: " 
-				      ++ showTerm g trm)
+				      ++ showTrm g trm)
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
-type IdSet = (Set Id, Set Id, Set Id)
+type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
 
 iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart -> Chart
 iterateStates g ids@(ops, _, _) maybeFormula terms c@(i, ds, m) = 
@@ -370,12 +363,13 @@ getAppls g i m =
 	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
 	     lookUp m i
 
-mkIdSet :: Set Id -> Set Id -> IdSet
+mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
     let both = Set.intersection ops preds in
 	(ops, Set.difference preds both, preds)
 
-resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
+resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM 
+	      -> Result TERM
 resolveMixfix g ops preds maybeFormula t = 
     let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) maybeFormula t 
 	in if null ds then r else Result ds Nothing
@@ -390,17 +384,18 @@ resolveMixTrm g ids@(ops, preds, _) mayBeFormula trm =
         ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
-					     ++ showTerm g trm)
+					     ++ showTrm g trm)
 					    (posOfTerm trm)
 		       else Result ds (Just trm)
        else if null $ tail ts then Result ds (Just (head ts))
 	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
 			 (concat  
 			 $ intersperse "\n\t" 
-			 $ map (showTerm g) 
+			 $ map (showTrm g) 
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
-resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
+resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> FORMULA 
+	       -> Result FORMULA
 resolveFormula g ops preds f =     
     let r@(Result ds _) = resolveMixFrm g (mkIdSet ops preds) f 
 	in if null ds then r else Result ds Nothing
@@ -475,7 +470,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 		  return $ Predication qide ts ps
                  Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
 		 _ -> plain_error (Mixfix_formula t)
-	                ("not a formula: " ++ showTerm g t)
+	                ("not a formula: " ++ showTrm g t)
 			(posOfTerm t)
        f -> return f
 
