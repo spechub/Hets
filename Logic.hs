@@ -44,15 +44,17 @@
 
    Todo:
    ATerm, XML
-   Sublanguages more abstractly (lattice), projs
-   Weak amalgamability
+   Weak amalgamability, also for reprs
    Metavars
-   extension of morphisms wrt. compound ids
+   repr maps
+   symbol maps for reprs
+   reprs out of sublogic relaionships
 -}
 
 module Logic where
 
 import Id
+import Anno
 import Error
 import Dynamic
 
@@ -103,32 +105,21 @@ class (Eq object, Eq morphism) =>
 -- abstract syntax, parsing and printing
 
 class (Show basic_spec, Show sentence, Show symb_items, 
-       Show symb_map_items, Show anno) =>
-      Syntax basic_spec sentence symb_items symb_map_items anno
+       Show symb_map_items) =>
+      Syntax basic_spec sentence symb_items symb_map_items
       where 
          -- parsing
          parse_basic_spec :: id -> String -> Result basic_spec
          parse_sentence :: id -> String -> Result sentence
          parse_symb_items :: id -> String -> Result [symb_items]
          parse_symb_map_items :: id -> String -> Result [symb_map_items]
-         parse_anno :: id -> String -> Result anno
 
 
--- sublogics
+-- lattices (for sublogics)
 
-data Sublogic basic_spec sentence symb_items symb_map_items anno
-              sign local_env morphism symbol raw_symbol =
-     Sublogic {sublogic_name :: String,
-               is_in_basic_spec :: basic_spec -> Bool,
-               is_in_sentence :: sentence -> Bool,
-               is_in_symb_items :: symb_items -> Bool,
-               is_in_symb_map_items :: symb_map_items -> Bool,
-               is_in_anno :: anno -> Bool,
-               is_in_sign :: sign -> Bool,
-               is_in_morphism :: morphism -> Bool,
-               is_in_symbol :: symbol -> Bool,
-               is_in_raw_symbol :: raw_symbol -> Bool
-              }
+class Ord l => LatticeWithTop l where
+  meet, join :: l -> l -> l
+  top :: l
 
 
 -- theories and theory morphisms
@@ -174,16 +165,19 @@ data Cons_checker morphism =
 
 -- logics
 
-class (Syntax basic_spec sentence symb_items symb_map_items anno,
+class (Syntax basic_spec sentence symb_items symb_map_items,
        Show sign, Show morphism, Show symbol, Show raw_symbol,
        Ord symbol, --  needed for efficient symbol tables
        Category id sign morphism,
-       Typeable symb_items) =>
-      Logic id
-        basic_spec sentence symb_items symb_map_items anno
+       LatticeWithTop sublogics,
+       -- needed for heterogeneous coercions:
+       Typeable id, Typeable sublogics, Typeable sign, Typeable morphism, Typeable symbol, Typeable raw_symbol,
+       Typeable basic_spec, Typeable sentence, Typeable symb_items, Typeable symb_map_items) =>
+      Logic id sublogics
+        basic_spec sentence symb_items symb_map_items
         local_env sign morphism symbol raw_symbol 
-        | id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> anno, id -> local_env,
+        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items, id -> local_env,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
        where
          logic_name :: id -> String
@@ -198,8 +192,9 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          basic_analysis :: id -> 
                            (basic_spec,  -- abstract syntax tree
                             local_env,   -- efficient table for env signature
-                            [anno]) ->   -- global annotations
+                            [Anno]) ->   -- global annotations
                            Result (sign,[(String,sentence)])
+                                   -- these include any new annotations
          stat_symb_map_items :: id -> [symb_map_items] -> Result (Map raw_symbol)
          stat_symb_items :: id -> [symb_items] -> Result [raw_symbol] 
 
@@ -227,11 +222,35 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Result morphism
          induced_from_morphism :: id -> Map raw_symbol -> sign -> Result morphism
          induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> Result morphism 
+         extend_morphism :: Id -> sign -> morphism -> sign -> sign -> Result morphism
 
          -- sublogics
-         sublogics :: [Sublogic basic_spec sentence symb_items symb_map_items anno
-                                local_env sign morphism symbol raw_symbol]
-         included_logic :: String -> String -> Bool
+         sublogic_names :: id -> sublogics -> [String]
+         all_sublogics :: id -> [sublogics]
+
+         is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
+         is_in_sentence :: id -> sublogics -> sentence -> Bool
+         is_in_symb_items :: id -> sublogics -> symb_items -> Bool
+         is_in_symb_map_items :: id -> sublogics -> symb_map_items -> Bool
+         is_in_sign :: id -> sublogics -> sign -> Bool
+         is_in_morphism :: id -> sublogics -> morphism -> Bool
+         is_in_symbol :: id -> sublogics -> symbol -> Bool
+
+         min_sublogic_basic_spec :: id -> basic_spec -> sublogics
+         min_sublogic_sentence :: id -> sentence -> sublogics
+         min_sublogic_symb_items :: id -> symb_items -> sublogics
+         min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
+         min_sublogic_sign :: id -> sign -> sublogics
+         min_sublogic_morphism :: id -> morphism -> sublogics
+         min_sublogic_symbol :: id -> symbol -> sublogics
+
+         proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
+         proj_sublogic_symb_items :: id -> sublogics -> symb_items -> Maybe symb_items
+         proj_sublogic_symb_map_items :: id -> sublogics -> symb_map_items -> Maybe symb_map_items
+         proj_sublogic_sign :: id -> sublogics -> sign -> sign 
+         proj_sublogic_morphism :: id -> sublogics -> morphism -> morphism
+         proj_sublogic_epsilon :: id -> sublogics -> sign -> morphism
+         proj_sublogic_symbol :: id -> sublogics -> symbol -> Maybe symbol
 
          -- provers
          provers :: [Prover sentence symbol]
@@ -244,7 +263,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          show_sentence :: id -> sentence -> String
          show_symb_items :: id -> symb_items -> String
          show_symb_map_items :: id -> symb_map_items -> String
-         show_anno :: id -> anno -> String
+         show_anno :: id -> Anno -> String
          show_sign :: id -> sign -> String
          show_morphism :: id -> morphism -> String
          show_symbol :: id -> symbol -> String
@@ -254,7 +273,6 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          show_sentence _ = show
          show_symb_items _ = show
          show_symb_map_items _ = show
-         show_anno _ = show
          show_sign _ = show
          show_morphism _ = show
          show_symbol _ = show
@@ -263,28 +281,30 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
 
 -- Simple logic representations (possibly also morphisms via adjointness)
 
-data (Logic id1
-        basic_spec1 sentence1 symb_items1 symb_map_items1 anno1
+data (Logic id1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
         local_env1 sign1 morphism1 symbol1 raw_symbol1,
-      Logic id2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 anno2
+      Logic id2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
         local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
-  LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 
+  LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 local_env1 sign1 morphism1 symbol1 raw_symbol1
-            id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 
+            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 local_env2 sign2 morphism2 symbol2 raw_symbol2
      =
      LogicRepr {repr_name :: String,
-                source :: id1,
-                target :: id2,
-                map_basic_spec :: basic_spec1->basic_spec2,
+                source :: id1, source_sublogic :: sublogics1,
+                target :: id2, target_sublogic :: sublogics2,
+                map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
+                      -- partial because the target may be a sublanguage
                 map_sentence :: sign1 -> sentence1 -> Maybe sentence2,
                       -- also cover semi-representations
-                map_anno :: anno1 -> anno2,
-                map_sign :: sign1 -> sign2,
-                project_sign :: Maybe (sign2 -> sign1,morphism2),  
-                      -- right adjoint and counit
-                map_morphism :: morphism1 -> morphism2,
-                map_symbol :: symbol1 -> symbol2
+                map_sign :: sign1 -> Maybe sign2,
+                projection:: Maybe (sign2 -> sign1, morphism2 -> morphism1, 
+                                    sign2 -> morphism2,
+                                    -- right adjoint and counit
+                                    basic_spec2 -> basic_spec1,
+                                    symbol2 -> Maybe symbol1),  
+                map_morphism :: morphism1 -> Maybe morphism2,
+                map_symbol :: symbol1 -> Maybe symbol2
                }
-

@@ -10,6 +10,9 @@ type Pos = (Int, Int) -- line, column
  
 nullPos :: Pos
 nullPos = (0,0) -- dummy position
+
+type Region = (Pos,Pos)
+
  
 -- tokens as supplied by the scanner
 data Token = Token(String, Pos)
