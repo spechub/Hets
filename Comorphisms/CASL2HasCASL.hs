@@ -36,10 +36,15 @@ import HasCASL.Morphism
 
 -- | The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
+
 instance Language CASL2HasCASL -- default definition is okay
+
+tycon_CASL2HasCASL :: TyCon
 tycon_CASL2HasCASL = mkTyCon "G_sign"
+
 instance Typeable CASL2HasCASL where
   typeOf _ = mkAppTy tycon_CASL2HasCASL []
+
 instance Comorphism CASL2HasCASL
                CASL CASL.Sublogic.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
@@ -74,7 +79,7 @@ sortTypeinfo = TypeInfo { typeKind = star,
 			  typeDefn = NoTypeDefn
 			 } 
 makeType :: Id -> HasCASL.As.Type
-makeType ide = TypeName ide star 0
+makeType i = TypeName i star 0
 
 trOpType :: CASL.StaticAna.OpType -> HasCASL.Le.OpInfo
 trOpType ot = OpInfo { opType = simpleTypeScheme t,
@@ -103,15 +108,12 @@ trPredType pt = OpInfo { opType = simpleTypeScheme t,
 			   ProductType args []
 
 mapSignature :: CASL.StaticAna.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
-mapSignature sign = Just (HasCASL.Le.Env { 
+mapSignature sign = Just (initialEnv { 
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 
                            $ Set.toList $ sortSet sign,
     assumps = Map.map OpInfos $ Map.unionWith (++) opmap predmap,
-    HasCASL.Le.sentences = [],	 
-    HasCASL.Le.envDiags = [],
-    counter = 1
-  }, [])
+				     }, [])
   where
     opmap   = Map.map (map trOpType . Set.toList) $ opMap sign 
     predmap = Map.map (map trPredType . Set.toList) $ predMap sign
