@@ -1,0 +1,24 @@
+HetCATS/strange_observations.txt
+
+This file should contain our strange observations, while implementing
+and debugging 'hetcats'.
+
+Initiator: Klaus Lüttich
+Year: 2002
+
+20.Jun.2002: - A loop occures if some instances are used but not
+               linked together with the binary. It is not sufficient
+               to give the context for a type class. You must yorself
+               find the modules that define those instances that are
+               requested by the context of a typeclass. 
+	       my example:
+	       Without the import of Print_AS_Basic in
+               CASL/Logic_CASL.hs the whole system compiles and links
+               very well, but you cannot run the code. It fails with
+               '<<loop>>'.
+
+	     - If the context 'Show basic_spec' is omitted at the
+               definition of class Syntax in Logic.hs, a loop at
+               runtime is reported whenever you run a show on a
+               basic_spec. 
+ 
