@@ -1,245 +1,211 @@
+
+{- HetCATS/HasCASL/As.hs
+   $Id$
+   Authors: Christian Maeder
+   Year:    2002
+   
+   abstract syntax for HasCASL
+   more liberal than HetCATS/HasCASL/Concrete-Syntax.txt
+   annotations almost as in HetCATS/CASL/AS_Basic_CASL.hs v 1.8 
+-}
+
 module As where
 
 import Id
 import AS_Annotation 
 
-data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEMS]
+data BasicSpec = BasicSpec [Annoted BasicItem]
 		  deriving (Show,Eq)
 
-data BASIC_ITEMS = Sig_items SIG_ITEMS 
-                   -- the Annotation following the keyword is dropped
-		   -- but preceding the keyword is now an Annotation allowed
-		 | Class_items [CLASS_ITEM] [Pos]
-		   -- pos: class, semi colons
-		 | Typevar_items [TYPEVAR_DECL] [Pos]
-		   -- pos: var, semi colons
-		 | Local_typevar_axioms [TYPEVAR_DECL] [VAR_DECL] 
-		                        [Annoted FORMULA] [Pos]
-		   -- pos: forall, typevars, vars, dots
-		 | Free_datatype [DATATYPE_DECL] [Pos]
-		   -- pos: free, type, semi colons
-		 | Sort_gen [Annoted SIG_ITEMS] [Pos] 
+data BasicItem = TypeItem Instance [Annoted TypeItem] [Pos] -- including sort
+	       | OpItem [Annoted OpItem] [Pos]              -- including pred
+	       | ProgItem [Annoted ProgEq] [Pos]
+	       | ClassItem Instance [Annoted ClassItem] [Pos]
+	       -- pos: class, semi colons
+	       | GenVarItems [GenVarDecl] [Pos]
+	       -- pos: var, semi colons
+	       | Datatype GenKind [Annoted DatatypeDecl] [Pos]
+	       -- pos: free, type, semi colons
+	       | GenItems [Annoted BasicItem] [Pos] 
 		   -- pos: generated, opt. braces (type in Datatype_items)
-		 | Var_items [VAR_DECL] [Pos]
-		   -- pos: var, semi colons
-		 | Local_var_axioms [VAR_DECL] [Annoted FORMULA] [Pos]
+	       | LocalVarAxioms [GenVarDecl] [Annoted Term] [Pos]
 		   -- pos: forall, dots
-		 | Axiom_items [Annoted FORMULA] [Pos]
-		   -- pos: dots
+	       | AxiomItem [Annoted Term] [Pos]
+	       -- pos: dots
+		 deriving (Show,Eq)
+
+data Instance = Instance | Plain deriving (Show,Eq)
+
+-- looseness of a datatype
+data GenKind = Free | Generated | Loose deriving (Show,Eq)      
+			    
+data ClassItem = ClassGroup ClassDecl [Annoted BasicItem] [Pos] 
+		 deriving (Show,Eq)
+
+data ClassDecl = ClassDecl [ClassName] [Pos]
+	         -- pos: commas
+	       | SubclassDecl [ClassName] Class [Pos]
+	       | IsoClassDecl [ClassName] [Pos]
+		-- pos: commas, <
+               | ClassDefn ClassName Class [Pos]
+		 deriving (Show,Eq)
+
+			  
+data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
+	       | SubtypeDecl [TypePattern] [Type] [Pos]
+	       | IsoDecl [TypePattern] [Pos]
+	       | SubtypeDefn TypePattern Var Type Term [Pos]
+               | AliasType TypePattern PseudoType [Pos]
+	         -- pos: commas
+		 deriving (Show,Eq)
+
+
+data TypeArg = TypeVars [TypeVar] ExtClass [Pos]
+	     | TypeExtVars [TypeExtVar] Class [Pos] 
+	       deriving (Show,Eq)
+
+data TypeExtVar = TypeExtVar TypeVar Variance Pos deriving (Show,Eq)
+
+data TypePattern = TypeDeclPattern TypeName TypeArgs [Pos]
+		 | TypePattern [PrimTypePattern]
 		   deriving (Show,Eq)
 
-data TYPEVAR_DECL = Typevar_decl [TYPEVAR] [CLASS] [Pos]
-		  | Downset_typevar [TYPEVAR] TYPE [Pos]
-		    deriving (Show,Eq)
+data PrimTypePattern = TypePatternToken Token
+		     | BracketTypePattern BracketKind [PrimTypePattern] [Pos]
+		     | TypePatternArg TypeVar ExtClass [Pos]
+		     | TypePatternArgs TypeArgs [Pos]
+		       deriving (Show,Eq)
 
-data TYPE = Unit_Type
-	  | Type_Name TYPE_NAME
-          | Classified_type TYPE [CLASS] [Pos]
-	  | Mixfix_type [TYPE]
-	  | Paren_type [TYPE] [Pos]
+data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show,Eq)
+
+data PseudoType = PseudoType [TypeArgs] Type [Pos] 
+		| NestedPseudoType [TypeArgs] PseudoType [Pos] 
+		  deriving (Show,Eq)
+
+data Type = TypeToken Token
+	  | BracketType BracketKind [Type] [Pos]
+          | ClassifiedType Type Class [Pos]
+	  | MixfixType [Type] 
+	  | ProductType [Type] [Pos]
+	  | FunType [Type] [Arrow] [Pos]
 	    deriving (Show,Eq)
 
-data CLASS_ITEM = Class_decl [CLASS] [Pos]
-	         -- pos: commas
-		| Subclass_decl [CLASS] CLASS [Pos]
-		 -- pos: commas, <
-                | Class_intersect_defn CLASS [CLASS]
-                | Class_downset_defn CLASS TYPE
-		 deriving (Show,Eq)
+data Arrow = FunArr| PFunArr | ContFun | PContFun deriving (Show,Eq)
 
-data SIG_ITEMS = Sort_items [Annoted SORT_ITEM] [Pos] 
-	         -- pos: sort, semi colons
-	       | Op_items [Annoted OP_ITEM] [Pos]
-		 -- pos: op, semi colons
-	       | Pred_items [Annoted PRED_ITEM] [Pos]
-		 -- pos: pred, semi colons
-	       | Datatype_items [DATATYPE_DECL]
-		 -- type, semi colons
-	       | Type_items [TYPE_ITEM]
-		 -- type, semi colons
-		 deriving (Show,Eq)
+data TypeScheme = TypeScheme [TypeVarDecl] Type [Pos]
+		| NestedTypeScheme [TypeVarDecl] TypeScheme [Pos]
+		  deriving (Show,Eq)
 
-data KIND = Kind [EXT_CLASS] [CLASS] [Pos]
-	    deriving (Show,Eq)
-		 -- pos: ->
+data PartialKind = Partial | Total deriving (Show,Eq)
 
-data EXT_CLASS = Ext_class [CLASS] VARIANCE [Pos]
-		 deriving (Show,Eq)
-
-data VARIANCE = CoVar | ContraVar | InVar
-		deriving (Show,Eq)
-			  
-data TYPE_ITEM = Type_val_decl [TYPE_NAME] KIND [Pos]
-	       | Type_fun_decl [TYPE_PATTERN] [CLASS] [Pos]
-               | Type_alias 
-	       | Subtype_decl
-	         -- pos: commas
-		 deriving (Show,Eq)
-
-data TYPE_PATTERN = Type_pattern TYPE_NAME [TYPE_ARG_DECL] [Pos]
-		    deriving (Show,Eq)
-
-data TYPE_ARG_DECL = Type_arg_decl [TYPEVAR] EXT_CLASS [Pos]
-		   | Type_arg_var [TYPEVAR] [Pos]
-		     deriving (Show,Eq)
-
-
-data SORT_ITEM = Sort_decl [SORT] [Pos]
-	         -- pos: commas
-	       | Subsort_decl [SORT] SORT [Pos]
-		 -- pos: commas, <
-	       | Subsort_defn SORT VAR SORT (Annoted FORMULA) [Pos]
-		 -- pos: "=", "{", ":", ".", "}"
-	       | Iso_decl [SORT] [Pos]
-	         -- pos: "="s
-		 deriving (Show,Eq)
-
-data OP_ITEM = Op_decl [OP_NAME] OP_TYPE [OP_ATTR] [Pos]
-	       -- pos: commas, colon, OP_ATTR sep. by commas
-	     | Op_defn OP_NAME OP_HEAD TERM [Pos]
+data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
+	       -- pos: commas, colon,
+	    | OpDefn OpName [ArgDecls] PartialKind TypeScheme Term [Pos]
 	       -- pos: "="
-	       deriving (Show,Eq)
+	      deriving (Show,Eq)
 
-data OP_TYPE = Total_op_type [SORT] SORT [Pos]
-	       -- pos: "*"s, "->" ; if null [SORT] then [Pos] = [] 
-	     | Partial_op_type [SORT] SORT [Pos]
-	       -- pos: "*"s, "->?"; if null [SORT] then pos: "?"
-	       deriving (Show,Eq)
+data ArgDecls = ArgsDecls [VarDecl] [Pos] deriving (Show,Eq)
 
-data OP_HEAD = Total_op_head [ARG_DECL] SORT [Pos]
-	       -- pos: "(", semicolons, ")", colon
-	     | Partial_op_head [ARG_DECL] SORT [Pos]
-	       deriving (Show,Eq)
+data BinOpAttr = Assoc | Comm | Idem deriving (Show,Eq)
 
-data ARG_DECL = Arg_decl [VAR] SORT [Pos]
-	        -- pos: commas, colon
-		deriving (Show,Eq)
+data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term deriving (Show,Eq)
 
-data OP_ATTR = Assoc_op_attr | Common_op_attr | Idem_op_attr
-	     | Unit_op_attr TERM
-	       deriving (Show,Eq)
-
-data PRED_ITEM = Pred_decl [PRED_NAME] PRED_TYPE [Pos]
-                 -- pos: commas, colon
-	       | Pred_defn PRED_NAME PRED_HEAD (Annoted FORMULA) [Pos]
-		 -- pos: "<=>"
-		 deriving (Show,Eq)
-
-data PRED_TYPE = Pred_type [SORT] [Pos]
-	         -- pos: if null [SORT] then "(",")" else "*"s
-		 deriving (Show,Eq)
-
-data PRED_HEAD = Pred_head [ARG_DECL] [Pos]
-	         -- pos: "(",semi colons , ")"
-		 deriving (Show,Eq)
-
-data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] [Pos] 
+data DatatypeDecl = DatatypeDecl TypePattern [Annoted Alternative] [Pos] 
 		     -- pos: "::=", "|"s
 		     deriving (Show,Eq)
 
-data ALTERNATIVE = Total_construct OP_NAME [COMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")"
-		 | Partial_construct OP_NAME [COMPONENTS] [Pos]
-		   -- pos: "(", semi colons, ")", "?"
-		 | Subsorts [SORT] [Pos]
-		   -- pos: sort, commas
+data Alternative = Constructor UninstOpName [Components] PartialKind [Pos]
+		   -- pos: "(" ... ")" ... "(" ... ")" , "?"
+		 | Subtypes [Type] [Pos]
+		   -- pos: sort/type, commas
 		   deriving (Show,Eq)
 
-data COMPONENTS = Total_select [OP_NAME] SORT [Pos]
-                  -- pos: commas, colon
-		| Patial_select [OP_NAME] SORT [Pos] 
-		  -- pos: commas, ":?"
-		| Sort SORT		  
+data Components = Selector [UninstOpName] PartialKind Type [Pos] 
+		| NestedComponents [Components] [Pos]
+		  -- pos : "(" ; ... ;  ")"
 		  deriving (Show,Eq)
 
-data VAR_DECL = Var_decl [VAR] SORT [Pos]
-	        -- pos: commas, colon
-		deriving (Show,Eq)
-
-{- Position definition for FORMULA: 
-   Information on parens are also encoded in [Pos].  If there
-   are more Pos than necessary there is a pair of Pos enclosing the
-   other Pos informations which encode the brackets of every kind
--}
-
-data FORMULA = Quantfication QUANTIFIER [VAR_DECL] FORMULA [Pos]
-	       -- pos: QUANTIFIER, semi colons, dot
-	     | Conjunction [FORMULA] [Pos]
-	       -- pos: "/\"s
-	     | Disjunction [FORMULA] [Pos]
-	       -- pos: "\/"s
-	     | Implication FORMULA FORMULA [Pos]
-	       -- pos: "=>" or "if" 	   
-	     | Equivalence FORMULA FORMULA [Pos]
-	       -- pos: "<=>"
-	     | Negation FORMULA [Pos]
-	       -- pos: not
-	     | True_atom [Pos]
-	       -- pos: true	    
-	     | False_atom [Pos]
-               -- pos: false
-	     | Predication PRED_SYMB [TERM] [Pos]
-               -- pos: opt. "(",commas,")"
-	     | Definednes TERM [Pos]
-	       -- pos: def
-	     | Existl_equation TERM TERM [Pos]
-               -- pos: =e=
-	     | Strong_equation TERM TERM [Pos]
-	       -- pos: =
-	     | Membership TERM SORT [Pos]
-               -- pos: in
-
-	     -- a formula left original for mixfix analysis
-	     | Unparsed_formula String [Pos]
-	       -- pos: first Char in String
-	       deriving (Show,Eq)
-
-data QUANTIFIER = Universal | Existential | Unique_existential
+data Quantifier = Universal | Existential | Unique
 		  deriving (Show,Eq)
 
-data PRED_SYMB = Pred_name PRED_NAME 
-	       | Qual_pred_name PRED_NAME PRED_TYPE [Pos]
-		 -- pos: "(", pred, colon, ")"
-		 deriving (Show,Eq)
+data TypeQual = OfType | AsType | InType deriving (Show,Eq)
 
-{- Position and kind of brackets is provided by the list of Tokens -}
+data BracketKind = Parens | Squares | Braces deriving (Show,Eq)
 
-data TERM = Simple_id SIMPLE_ID [Token]-- "Var" might be a better constructor
-	  | Qual_var VAR SORT [Pos] [Token]
-	    -- pos: "(", var, colon, ")"
-	  | Application OP_SYMB [TERM] [Pos] [Token]
-	    -- pos: parens around [TERM] if any and seperating commas
-	  | Sorted_term TERM SORT [Pos] [Token]
-	    -- pos: colon
-	  | Cast TERM SORT [Pos] [Token]
-	    -- pos: 
-	  | Conditional TERM FORMULA TERM [Pos] [Token]
-
-	  | Unparsed_term String [Pos]
-
-	  -- A new intermediate state
-          | Mixfix_term  [TERM]
-	  | Mixfix_token Token -- all kind of brackets are included
-	  | Mixfix_sorted_term [TERM] [Token]
-	    -- [Token] contains: colon and sort
-	  | Mixfix_cast [TERM] [Token]
-	    -- [Token] contains: "as" and sort
-	  | Mixfix_cond [TERM] FORMULA [TERM] [Pos]
-	    -- pos: when, else
+data Term = MixfixToken Token
+	  | QualVar Var Type [Pos]
+	  | QualOp InstOpName Type [Pos]
+	  | TypedTerm Term TypeQual Type [Pos]
+          | MixfixTerm [Term]
+	  | BracketTerm BracketKind [Term] [Pos]
+	  | QuantifiedTerm Quantifier [GenVarDecl] Term [Pos]
+	  | LambdaTerm [Pattern] PartialKind Term [Pos]
+	  | CaseTerm Term [ProgEq] [Pos]
+	  | LetTerm [ProgEq] Term [Pos]
 	    deriving (Show,Eq)
 
-data OP_SYMB = Op_name OP_NAME
-	     | Qual_op_name OP_NAME OP_TYPE
-		 -- pos: "(", op, colon, ")"
+data ProgEq = ProgEq Pattern Term [Pos] deriving (Show,Eq)
+
+data SeparatorKind = Comma | Semicolon deriving (Show,Eq)
+
+data Pattern = PatternToken Token
+	     | BracketPattern BracketKind Pattern [Pos]
+	     | TuplePattern SeparatorKind [Pattern] [Pos]
+	     | MixfixPattern [Pattern] 
+	     | TypedPattern Pattern Type [Pos]
+	     | AsPattern Pattern Pattern [Pos]
 	       deriving (Show,Eq)
 
-type OP_NAME = Id
+-- ----------------------------------------------------------------------------
+-- type var decls
+-- ----------------------------------------------------------------------------
 
-type PRED_NAME = Id
+data VarDecl = VarDecl [Var] Type [Pos] deriving (Show,Eq)
 
-type SORT = Id
-type CLASS = SIMPLE_ID
-type TYPE_NAME = Id
+data TypeVarDecl = TypeVarDecl [TypeVar] Class [Pos] deriving (Show,Eq)
 
-type VAR = SIMPLE_ID
-type TYPEVAR = SIMPLE_ID
+data GenVarDecl = GenVarDecl [Var] Type [Pos]
+		| SureTypeVarDecl [TypeVar] Class [Pos]
+		  deriving (Show,Eq)
+
+-- ----------------------------------------------------------------------------
+-- class
+-- ----------------------------------------------------------------------------
+
+data Variance = CoVar | ContraVar | InVar deriving (Show,Eq)
+
+data ExtClass = ExtClass Class Variance Pos deriving (Show,Eq)
+
+data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
+
+data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
+
+data Dir = Up | Down deriving (Show,Eq)  -- < oder > 
+
+dummyTypeVar = Token "a" nullPos -- for TypeVarDecl
+
+data Class = Universe [Pos] -- "type" or missing
+	   | ClassName ClassName
+           | TypeSet Dir TypeVar Type [Pos] -- { a . a < TYPE }  
+	   | InterSection [Class] [Pos]  -- ( CLASS, ..., CLASS )
+	     deriving (Show,Eq)
+
+-- ----------------------------------------------------------------------------
+-- op names
+-- ----------------------------------------------------------------------------
+
+data OpName = OpName [TypeVarDecl] [Pos] deriving (Show,Eq)
+
+data Types = Types [Type] [Pos] deriving (Show,Eq) -- [TYPE, ..., TYPE]
+data InstOpName = InstOpName [Types] Pos deriving (Show,Eq) -- curried
+
+-- ----------------------------------------------------------------------------
+-- ids
+-- ----------------------------------------------------------------------------
+
+type TypeName = Id
+type UninstOpName = Id
+
+type Var = Id
+type TypeVar = Token
+type ClassName = Token
