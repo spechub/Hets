@@ -18,9 +18,8 @@ import Maybe (isJust,fromJust)
 import CASL.AS_Basic_CASL
 
 -- |
-
 -- replacePropPredication replaces a propositional predication of a
--- given symbol with an als given Formula. Optionally a given variable
+-- given symbol with an also given Formula. Optionally a given variable
 -- is replaced in the predication of another predicate symbol with a
 -- given term, the variable must occur in the first argument position
 -- of the predication.
@@ -54,8 +53,7 @@ replacePropPredication mTerm pSymb frmIns frmToChn =
     _ -> error "Modal2CASL: replacePropPredication: unknown formula to replace"
 
 -- | 
-
--- noMixfixF checks a FORMULA f for Mixfix_*. A logic specific helper has to be provided for checking the 'f'.
+-- noMixfixF checks a 'FORMULA' f for Mixfix_*. A logic specific helper has to be provided for checking the 'f'.
 
 noMixfixF :: (Show f) => (f -> Bool) -> FORMULA f -> Bool
 noMixfixF cef form = 
@@ -79,6 +77,9 @@ noMixfixF cef form =
     Unparsed_formula _ _ -> error ("CASL.Utils.noMixfixF: should not occur: "
 				   ++show form)
     _ -> True -- {True,False}_atom
+
+-- | 
+-- noMixfixT checks a 'TERM' f for Mixfix_*. A logic specific helper has to be provided for checking the 'f'.
     
 noMixfixT :: (Show f) => (f -> Bool) -> TERM f -> Bool
 noMixfixT cef term = 
