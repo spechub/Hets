@@ -61,6 +61,7 @@ import Common.GlobalAnnotations
 import Common.Lib.Set
 import Common.Lib.Map
 import Common.Lib.Graph
+import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
 import Logic.Prover -- for one half of class Sentences
@@ -129,10 +130,6 @@ class (Language lid, Eq sign, Show sign, Eq morphism, Show morphism) =>
 
 -- abstract syntax, parsing and printing
 
-type ParseFun a = Pos -> String -> (a,String, Pos)
-                  -- args: start pos (including file name), input text
-                  -- result: value, remaining text, end pos
-
 class (Language lid, PrintLaTeX basic_spec, 
        PrintLaTeX symb_items, Eq symb_items,
        PrintLaTeX symb_map_items, Eq symb_map_items ,
@@ -144,9 +141,9 @@ class (Language lid, PrintLaTeX basic_spec,
           lid -> symb_map_items
       where 
          -- parsing
-         parse_basic_spec :: lid -> Maybe(ParseFun basic_spec)
-         parse_symb_items :: lid -> Maybe(ParseFun symb_items)
-         parse_symb_map_items :: lid -> Maybe(ParseFun symb_map_items)
+         parse_basic_spec :: lid -> Maybe(AParser basic_spec)
+         parse_symb_items :: lid -> Maybe(AParser symb_items)
+         parse_symb_map_items :: lid -> Maybe(AParser symb_map_items)
 
          fromShATerm_basic_spec :: lid -> ATermTable -> basic_spec
 	 fromShATerm_basic_spec _ att = fromShATerm att

@@ -270,7 +270,8 @@ specD l = do (p,sp) <- try (do p <- asKey freeS
       <|> specE l
        
 specE :: (AnyLogic, LogicGraph) -> AParser SPEC
-specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group spec
+specE l = do lookAhead (try (oBraceT >> cBraceT)) 
+                       -- avoid overlap with group spec
              basicSpec l        
       <|> do lookAhead (oBraceT <|> ((simpleId << annos) 
 				     `followedWith`
@@ -287,18 +288,13 @@ specE l = do lookAhead (try (oBraceT >> cBraceT)) -- avoid overlap with group sp
       <|> basicSpec l
 
 
-
+-- | call a logic specific parser if it exists
+callParser :: Maybe (AParser a) -> String -> String -> AParser a
 callParser p name itemType = do
-    s <- getInput
-    pos <- getPosition
-    (x,rest,pos') <- case p of 
+    case p of 
 	 Nothing -> fail ("no "++itemType++" parser for language " 
 			    ++ name)
-	 Just pa -> return (pa pos s)
-    setInput rest
-    setPosition pos'
-    return x
-
+	 Just pa -> pa
 
 basicSpec :: (AnyLogic, LogicGraph) -> AParser SPEC
 basicSpec l@(Logic lid, _) = 
