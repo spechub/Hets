@@ -50,6 +50,8 @@ import Common.Id
 import Common.AS_Annotation
 import Common.ListUtils
 import Data.Dynamic
+import qualified Data.List as List
+import Data.Maybe
 import Control.Monad
 
 import Common.Lib.Parsec.Pos -- for testing purposes
@@ -281,15 +283,42 @@ data AnyComorphism = forall cid lid1 sublogics1
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
       Comorphism cid
 
+instance Eq AnyComorphism where
+  Comorphism cid1 == Comorphism cid2 =
+     language_name cid1 == language_name cid2  
+  -- need to be refined, using comorphism translations !!! 
+
+instance Show AnyComorphism where
+  show (Comorphism cid) = 
+    language_name cid
+    ++" : "++language_name (sourceLogic cid)
+    ++" -> "++language_name (targetLogic cid)
+
+-- | Test whether a comporphism is the identity
+isIdComorphism :: AnyComorphism -> Bool
+isIdComorphism (Comorphism cid) =
+  case language_name cid of
+    'i':'d':'_':_ -> True
+    _ -> False
+
 -- | Compose comorphisms
-compComorphism :: AnyComorphism -> AnyComorphism -> Result AnyComorphism
-compComorphism (Comorphism cid1) (Comorphism cid2) =
+compComorphism :: AnyComorphism -> AnyComorphism -> Maybe AnyComorphism
+compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
     if language_name (targetLogic cid1) == 
-       language_name (sourceLogic cid2) then 
-       Result [] $ Just $ Comorphism (CompComorphism cid1 cid2)
-    else Result [Diag FatalError 
-		 ("Cannot compose comorphisms "++language_name cid1++
-		  " with "++language_name cid2) nullPos] Nothing
+       language_name (sourceLogic cid2) 
+       then case (isIdComorphism cm1,isIdComorphism cm2) of
+         (True,_) -> Just cm2
+         (_,True) -> Just cm1
+         _ ->  Just $ Comorphism (CompComorphism cid1 cid2)
+       else Nothing
+
+-- | Compose comorphisms, deliver a Result
+compComorphismRes :: AnyComorphism -> AnyComorphism -> Result AnyComorphism
+compComorphismRes cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
+  maybeToResult nullPos 
+        ("Cannot compose comorphism "++language_name cid1++
+		  " with "++language_name cid2)
+        (compComorphism cm1 cm2)
 
 -- | Logic graph
 data LogicGraph = LogicGraph {
@@ -315,7 +344,7 @@ lookupComorphism coname logicGraph = do
   let nameList = splitBy ';' coname
   cs <- sequence $ map lookupN nameList
   case cs of
-    c:cs1 -> foldM compComorphism c cs1
+    c:cs1 -> foldM compComorphismRes c cs1
     _ -> fail ("Illgegal comorphism name: "++coname)
   where 
   lookupN name = 
@@ -561,6 +590,18 @@ flatG_l_sentence_list [] = Nothing
 flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
 
 
+-- | Find all (composites of) comorphisms starting from a given logic
+findComorphismPaths :: LogicGraph -> AnyLogic -> [AnyComorphism]
+findComorphismPaths lg (Logic lid) = 
+  iterateComp (0::Int) [Comorphism (IdComorphism lid)]
+  where
+  coMors = comorphisms lg
+  -- compute possible compositions, but only up to depth 5
+  iterateComp n l =
+    if n>5 || l==newL then newL else iterateComp (n+1) newL
+    where 
+    newL = List.nub (l ++ (concat (map extend l)))
+    extend coMor = catMaybes $ map (compComorphism coMor) $ Map.elems $ coMors
 
 ------------------------------------------------------------------
 -- Provers

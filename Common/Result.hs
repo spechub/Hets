@@ -167,6 +167,12 @@ maybeToResult p s m = Result (case m of
 		              Nothing -> [Diag FatalError s p]
 			      Just _ -> []) m
 
+maybePlainError :: a -> Pos -> String -> Maybe a -> Result a
+maybePlainError def p s m = 
+  case m of 
+      Nothing -> plain_error def s p
+      Just x -> return x
+
 -- | check whether no errors are present, coerce into Maybe
 resultToMaybe :: Result a -> Maybe a
 resultToMaybe (Result diags val) =

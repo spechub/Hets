@@ -22,6 +22,7 @@ module GUI.ConvertDevToAbstractGraph where
 
 import Logic.Logic
 import Logic.Grothendieck
+import Logic.Comorphism
 import Comorphisms.LogicGraph
 import Static.DevGraph
 import Static.DGToSpec
@@ -42,9 +43,14 @@ import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.PrettyPrint
 import qualified Common.Result as Res
 import Syntax.AS_Library
+import Common.AS_Annotation
+
+import Options
 
 import Data.IORef
+import Data.Maybe
 import List(nub)
+import Control.Monad
 
 import Debug.Trace
 
@@ -288,6 +294,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonShowNumberOfNode,
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowTheory gInfo convRef dGraph,
+		    createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
                     createLocalMenuButtonShowNodeOrigin convRef dGraph,
                     createLocalMenuButtonProveAtNode gInfo convRef dGraph,
@@ -310,6 +317,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 		     createLocalMenuButtonShowNumberOfNode,
 		     createLocalMenuButtonShowSignature convRef dGraph,
  		     createLocalMenuButtonShowTheory gInfo convRef dGraph,
+		     createLocalMenuButtonTranslateTheory gInfo convRef dGraph,
  		     createLocalMenuButtonShowSublogic convRef dGraph,
                      createLocalMenuButtonProveAtNode gInfo convRef dGraph,
                      createLocalMenuButtonShowNodeOrigin convRef dGraph])
@@ -360,6 +368,8 @@ createLocalMenuButtonShowSignature =
   createMenuButton "Show signature" getSignatureOfNode
 createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_) = 
   createMenuButton "Show theory" (getTheoryOfNode proofStatus)
+createLocalMenuButtonTranslateTheory (proofStatus,_,_,_,_,_) = 
+  createMenuButton "Translate theory" (translateTheoryOfNode proofStatus)
 createLocalMenuButtonShowSublogic = 
   createMenuButton "Show sublogic" getSublogicOfNode 
 createLocalMenuButtonShowNodeOrigin  = 
@@ -532,9 +542,81 @@ getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a theory"
-  Res.Result diags _ -> do
-     sequence $ map (putStrLn . show) diags
-     return ()
+  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
+
+
+listBox :: String -> [String] -> IO (Maybe Int)
+listBox title entries =
+  do
+    main <- HTk.createToplevel [HTk.text title]
+    lb  <- HTk.newListBox main [HTk.value entries, bg "white", size (25, 25)] ::
+             IO (HTk.ListBox String)
+    HTk.pack lb [HTk.Side HTk.AtLeft, 
+                 HTk.Expand HTk.On, HTk.Fill HTk.Both]
+    scb <- HTk.newScrollBar main []
+    HTk.pack scb [HTk.Side HTk.AtRight, HTk.Fill HTk.Y]
+    lb HTk.# HTk.scrollbar HTk.Vertical scb
+    (press, _) <- HTk.bindSimple lb (HTk.ButtonPress (Just 1))
+    HTk.sync press
+    sel <- HTk.getSelection lb
+    HTk.destroy main
+    return (case sel of
+       Just [i] -> Just i
+       _ -> Nothing)
+
+{- translate the theory of a node in a window;
+used by the node menu defined in initializeGraph-}
+translateTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+                     DGraph -> IO()
+translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+ (_,libEnv,_,_) <- readIORef proofStatusRef
+ case (do
+   (libname, node) <- 
+        Res.maybeToResult nullPos ("Node "++show descr++" not found")
+                       $ Map.lookup descr ab2dgNode 
+   th <- computeTheory libEnv dgraph node
+   return (node,th) ) of
+  Res.Result [] (Just (node,th)) -> do
+    Res.Result diags _ <-  Res.ioresToIO(
+      do (G_sign lid sign,G_l_sentence_list lid' sens) <- return th
+         -- find all comorphism paths starting from lid
+         let paths = findComorphismPaths logicGraph (Logic lid)
+         -- let the user choose one
+         sel <- Res.ioToIORes $ listBox "Choose a logic translation"
+                   (map show paths)
+         i <- case sel of
+           Just j -> return j
+           _ -> Res.resToIORes $ Res.fatal_error "" nullPos
+         Comorphism cid <- return $ head (drop i paths)
+         -- adjust lid's
+         let lidS = sourceLogic cid
+             lidT = targetLogic cid
+         sign' <- Res.resToIORes $ rcoerce lidS lid nullPos sign
+         sens' <- Res.resToIORes $ rcoerce lidS lid' nullPos sens
+         -- translate theory along chosen comorphism
+         (sign'',sens1) <- 
+             Res.resToIORes $ Res.maybeToResult 
+                                nullPos "Could not map signature"
+                        $ map_sign cid sign'
+         sens'' <- Res.resToIORes
+                 $ Res.maybePlainError [] nullPos "Could not map sentences"
+                 $ mapM (mapNamedM (map_sentence cid sign')) sens'
+         let dgnode = lab' (context node dgraph)
+             shownsens = concat $ map ((++"\n") . flip showPretty "") 
+                                      (sens1++sens'')
+             str = showPretty sign'' "\n\naxioms\n" ++ shownsens
+	 case dgnode of
+           (DGNode name (G_sign _ sig) _ _) ->
+              let title = case name of
+                   Nothing -> "Translated heory"
+                   Just n -> "Translated theory of "++showPretty n ""
+               in Res.ioToIORes $ createTextDisplay title str [size(100,50)]
+           (DGRef _ _ _) -> error 
+			    "nodes of type dg_ref do not have a theory"
+     )
+    showDiags defaultHetcatsOpts diags
+    return ()
+  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
 
 {- outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}

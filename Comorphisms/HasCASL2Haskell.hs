@@ -61,7 +61,7 @@ instance Comorphism HasCASL2Haskell
     targetSublogic _ = ()
     map_sign _ = mapSignature
     --map_morphism _ morphism1 -> Maybe morphism2
-    --map_sentence _ sign1 -> sentence1 -> Maybe sentence2
+    map_sentence _ _ _ = Nothing
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 mapSignature :: Env -> Maybe(ModuleInfo,[Named AHsDecl]) 

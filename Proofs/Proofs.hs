@@ -778,7 +778,7 @@ basicInferenceNode lg (ln,node)
     goals'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
                  $ mapM (mapNamedM (map_sentence cid sign')) goals'
-    -- compute name ot theory
+    -- compute name of theory
     ctx <- resToIORes 
                 $ maybeToResult nullPos ("Could node find node "++show node)
                 $ fst $ match node dGraph
