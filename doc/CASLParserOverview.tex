@@ -32,8 +32,8 @@ directory \texttt{HetCATS/} using:
 One important effect is that \texttt{*.der.hs} files will be
 ``drifted'', i.e.  from \texttt{*.der.hs} files actual haskell source
 files (\texttt{*.hs}) are created that include extra code for
-instances (of class \texttt{PosItem}) derived by DrIFT (a
-\texttt{perl}-script in \texttt{HetCATS/utils/}).
+instances (of class \texttt{PosItem}) derived by DrIFT (a in
+\texttt{HetCATS/utils/}).
 
 \subsection{Compiling the CASL parser}
 
@@ -83,7 +83,8 @@ Calling ``\texttt{./runcheck.sh set}'' will update the \texttt{*.output} files (
 \begin{description}
 \item[Main.hs] simply lists the test parsers 
 \item[RunParsers.hs] contains the driver called in Main for test parsers and is reused in \texttt{HetCATS/HasCASL}
-\item[RunMixfixParser.hs] is an additional driver to test the mixfix analysis
+\item[RunMixfixParser.hs] is an additional driver to test the mixfix
+  analysis. (It declares an existential type.)
 \item[MixfixParser.hs] uses precedence and associativity to resolve
   mixfix terms (and formulae). Also \%list, \%string, \%number and
   \%floating annotations are resolved. 
@@ -118,12 +119,13 @@ The above files rely on the data types in \texttt{Id.hs} and
 \texttt{AS\_Annotation.hs} in the parent directory. For pretty
 printing the class in \texttt{PrettyPrint.hs} is required.
 \texttt{PrettyPrint.hs} in turn relies on
-\texttt{GlobalAnnotations.hs} and
-\texttt{pretty/LaTeX\_funs.hs} (to consider \%display
-annotations). \texttt{pretty/Pretty.lhs} is an adapted copy of
+\texttt{GlobalAnnotations.hs} and \texttt{pretty/LaTeX\_funs.hs} and
+\texttt{pretty/LaTeX\_maps.hs} (to consider \%display annotations).
+\texttt{pretty/Pretty.lhs} is an adapted copy of\\
 \texttt{//research.microsoft.com/\~{}simonpj/downloads/pretty-printer/pretty.html}
 that is also included as Haskell (\texttt{package -text}) library. (So
-don't include this package.)
+don't include this package instead of the subdirectories
+\texttt{pretty} and \texttt{parsec}.)
 
 \texttt{PrettyPrint.hs} supplies an instance for \texttt{Id}. The
 instance for annotations is given in \texttt{Print\_AS\_Annotation.hs}.
@@ -206,7 +208,8 @@ printers \texttt{Print\_AS\_*.hs} are given.
 \item[Grothendieck.hs] supplies the heterogeneous (existential) data
   types for structured specifications
 \item[Logic.hs] defines the (very big) class \texttt{Logic} for the
-  types in \texttt{Grothendieck}
+  types in \texttt{Grothendieck}. It exploits \texttt{functional
+    dependencies}!
 \item[LogicRepr.hs] is an extension of \texttt{Logic.hs} and includes
   composition of logic representation (not used?)
 \item[LogicGraph.hs] gives a graph of logic representations (not used?)
@@ -215,7 +218,7 @@ printers \texttt{Print\_AS\_*.hs} are given.
   combinators) for heterogeneous parsing (Klaus)
 \item[Parse\_AS\_Structured.hs] is the unfinished start of a heterogeneous
   parser without user state (Christian)
-\item[Print\_HetCASL.hs] applies functions form \texttt{Print\_AS\_Library}
+\item[Print\_HetCASL.hs] applies functions from \texttt{Print\_AS\_Library}
 \item[Prover.hs] is one subdivision of \texttt{Logic.hs}
 \item[test\_parser.hs] contains a \texttt{main} to test the differences
   between the two \texttt{Id} parsers (from Christian's
@@ -227,6 +230,30 @@ The other files \texttt{AS\_Annotation.der.hs},
 \texttt{GraphUtils.hs}, \texttt{PPUtils.hs}, \texttt{PrettyPrint.hs},
 \texttt{Print\_AS\_Annotation} and \texttt{Utils.hs} have been mentioned in 
 Section \ref{sec:casl}.
+
+
+\subsection{Directory \texttt{HetCATS/HasCASL}}
+
+HasCASL relies on \texttt{CASL/Keywords.hs}, \texttt{CASL/Lexer.hs},
+\texttt{CASL/Token.hs} and \texttt{CASL/RunParsers.hs} (for testing
+purposes in \texttt{Main.hs}). Form the top-level directory also stuff
+for annotations (i.e.\ \texttt{Anno\_Parser.hs}) is used.
+
+\begin{description}
+\item[Main.hs] counterpart to \texttt{CASL/Main.hs} 
+\item[As.hs] abstract syntax
+\item[Le.hs] local environment
+\item[HToken.hs] extension of \texttt{CASL/Token.hs} for HasCASL
+  (further keywords)
+\item[PrintAs.hs] pretty printing the abstract syntax
+\item[ParseTerm.hs] parsing classes, types, terms and formulae
+\item[ParseItem.hs] parsing basic (HasCASL) items
+\end{description}
+
+As in \texttt{HetCATS/CASL/} there are some test files (
+\texttt{*.casl}, \texttt{Wrong*.casl} and \texttt{*.output}) and a
+script \texttt{runcheck.sh}. The binary produced by \texttt{ghc-call}
+is named \texttt{hacapa}.
 
 \end{document}
 
