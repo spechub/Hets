@@ -29,12 +29,14 @@ import Static.DGToSpec
 import Proofs.Proofs
 
 import GUI.AbstractGraphView
+import GUI.ShowLogicGraph
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
 import TextDisplay
 import Configuration
 import qualified HTk
+import Core
 
 import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Common.Lib.Graph
@@ -93,6 +95,7 @@ type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = 
     do HTk.initHTk [HTk.withdrawMainWin]
+       showLogicGraph daVinciSort
        initGraphInfo <- initgraphs
        graphMem <- (newIORef GraphMem{nextGraphId = 0, 
 				      graphInfo = initGraphInfo})

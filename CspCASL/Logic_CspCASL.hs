@@ -91,12 +91,13 @@ instance LatticeWithTop () where
 -- CspCASL logic
 
 
-instance Sentences CspCASL () () () () ()
+instance Sentences CspCASL () () () () () where
+  parse_sentence CspCASL = Nothing
 
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                () () () ()  where
-         basic_analysis CspCASL = Just(\(bspec,_,_) -> return (bspec,(),(),[]))
+         basic_analysis CspCASL = Nothing -- Just(\(bspec,_,_) -> return (bspec,(),(),[]))
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
 

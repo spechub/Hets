@@ -100,7 +100,8 @@ showLogicGraph
        
        
        redraw logicG
-       
+
+{-
        sync(
             (receive killChannel) >>> 
                do
@@ -109,6 +110,7 @@ showLogicGraph
                
          +> (destroyed logicG)
         )
+-}
 
   where showParse l = 
 	    case l of 
