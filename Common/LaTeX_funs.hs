@@ -385,7 +385,7 @@ hc_sty_plain_keyword str =
     "view" -> sp_t "\\VIEW"
     "generated" -> sp_t "\\GENERATED"
     "vars" -> sp_t "\\VARS"
-    "sort" -> sp_t "\\SORTS[KW]"
+    "sort" -> sp_t "\\SORT[KW]"
     "sorts" -> sp_t "\\SORTS[KW]"
     "op" -> sp_t "\\OP[KW]"
     "ops" -> sp_t "\\OPS[KW]"
