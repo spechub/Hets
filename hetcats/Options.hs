@@ -87,7 +87,7 @@ data HetcatsOpts =
           , verbose  :: Int        -- greater than null to turn verbosity on
 	  , defLogic :: String     -- initial logic 
 	  , web      :: WebType    -- Web Interface
-          , outputDiags :: Bool    -- flag: output diagnostic messages?
+          , outputToStdout :: Bool    -- flag: output diagnostic messages?
           }
     deriving (Eq)
 
@@ -146,7 +146,7 @@ defaultHetcatsOpts =
           , rawopts  = []
 	  , defLogic = "CASL"
           , verbose  = 1
-          , outputDiags = True
+          , outputToStdout = True
           }
 
 -- | every 'Flag' describes a raw option
@@ -546,7 +546,10 @@ hetsUsage = usageInfo header options
 -- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts' 
 -- Verbosity exceeds the given level
 putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
-putIfVerbose opts level str = doIfVerbose opts level (putStrLn str)
+putIfVerbose opts level str = 
+    if outputToStdout opts
+       then doIfVerbose opts level (putStrLn str)
+    else return()
 
 -- | 'doIfVerbose' executes a given function when the given HetcatsOpts' 
 -- Verbosity exceeds the given level
@@ -571,7 +574,7 @@ showDiags opts ds = do
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> IOResult a -> IOResult a
 showDiags1 opts res = do
-  if outputDiags opts
+  if outputToStdout opts
      then do Result diags res' <- ioToIORes $ ioresToIO res 
              ioToIORes $ sequence $ map (putStrLn . show) -- take maxdiags
                        $ filter (relevantDiagKind . diagKind) diags
