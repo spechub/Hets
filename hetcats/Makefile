@@ -67,17 +67,24 @@ clean:
 
 real_clean: clean
 	rm -f hetcats-make sources_hetcats.mk
-
+####################################################################
 ### test targets
+####################################################################
+### a parser to test annotation parser and Id parsers
 test_parser: ../test_parser.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### interactive
+ghci: 
+	$(HC)i $(HC_OPTS)
 
 ### christian's target
 casl_test_parser: ../CASL/Main.hs $(drifted_files)
 	rm -f $@
 	$(HC) --make -Wall -fno-warn-missing-signatures -o $@ $< $(HC_OPTS)
 
+>>>>>>> 1.3
 ####################################################################
 ## rules for DrIFT
 %.hs: %.der.hs
