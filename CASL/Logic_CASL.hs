@@ -81,6 +81,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
                String -- Morphism 
                Symbol RawSymbol where
          sublogic_names CASL = Sublogics.sublogics_name
+         all_sublogics CASL = Sublogics.sublogics_all
 
          is_in_basic_spec CASL = Sublogics.in_basic_spec
          is_in_sentence CASL = Sublogics.in_sentence
