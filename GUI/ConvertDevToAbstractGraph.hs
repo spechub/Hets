@@ -222,31 +222,31 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Solid 
 		   $$$ LocalMenu (Menu (Just "edge menu")
 				 [(Button "Show morphism" 
-                      (\ (_,descr,gid)  -> 
+                      (\ (_,descr,arcValue)  -> 
 		        do convMaps <- readIORef convRef
-                           showMorphismOfEdge convMaps descr gid dGraph
+                           showMorphismOfEdge convMaps descr arcValue dGraph
 		           return ()
                        ))])
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
 		  ("def",
                    Dotted $$$ Color "Steelblue"
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
                    Solid $$$ Color "Green" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
-                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int))]
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
                  [("globaldef","globaldef","globaldef"),
 		  ("globaldef","def","def"),
                   ("globaldef","proventhm","proventhm"),
@@ -451,7 +451,7 @@ getSublogicOfNode descr ab2dgNode dgraph =
                        ++ (show descr) 
                         ++ " has no corresponding node in the development graph")
 
-showMorphismOfEdge :: ConversionMaps -> Descr -> Descr -> DGraph -> IO()
+showMorphismOfEdge :: ConversionMaps -> Descr -> Maybe (LEdge DGLinkLab) -> DGraph -> IO()
 showMorphismOfEdge convMaps descr gid dgraph =
   case Map.lookup descr (abstr2dgEdge convMaps) of
     Just (libname,edge) -> 
@@ -552,13 +552,13 @@ invContext dgraph node = context node dgraph
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
                     [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps descr graphInfo [] libname = return convMaps
-convertEdgesAux convMaps descr graphInfo ((src,tar,edge):lEdges) libname = 
+convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edge)):lEdges) libname = 
   do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
         Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge))
-                                   "" s t graphInfo
+                                   "" (Just ledge) s t graphInfo
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
 				                     newDescr
@@ -665,7 +665,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
   case change of
     InsertNode lNode -> error "insert node not yet implemented"
     DeleteNode node -> error "delete node not yet implemented"
-    InsertEdge (src,tgt,edgeLab) -> 
+    InsertEdge ledge@(src,tgt,edgeLab) -> 
       do
         let dg2abstrNodeMap = dg2abstrNode convMaps
         case (Map.lookup (libname,src) dg2abstrNodeMap,
@@ -674,7 +674,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
             do let dgEdge = (libname, (src,tgt))
 	       (Result descr error) <- 
                   addlink gid (getDGLinkType (dgl_type edgeLab))
-			      "" abstrSrc abstrTgt graphInfo
+			      "" (Just ledge) abstrSrc abstrTgt graphInfo
 	       case error of
 	         Nothing ->
 	           do let newConvMaps = convMaps 

@@ -18,6 +18,8 @@
 module GUI.AbstractGraphView where
 
 import DaVinciGraph
+import Static.DevGraph (DGLinkLab)
+import Common.Lib.Graph (LEdge)
 
 import GraphDisp
 import GraphConfigure
@@ -27,7 +29,12 @@ import Destructible
 import Data.List(nub)
 
 import Data.IORef
+import Dynamics
 
+dglinklab_tyRep = mkTyRep "DevGraph" "DGLinkLab"
+
+instance HasTyRep DGLinkLab where
+   tyRep _ = dglinklab_tyRep 
 
 {- methods using fetch_graph return a quadruple containing the modified graph, a descriptor of the last modification (e.g. a new node), the descriptor that can be used for the next modification and a possible error message-}
 
@@ -36,7 +43,7 @@ import Data.IORef
 instance Eq (DaVinciNode (String, Int, Int)) where
     (==) = eq1
     
-instance Eq (DaVinciArc (String, Int, Int)) where
+instance Eq (DaVinciArc EdgeValue) where
     (==) = eq1
     
 
@@ -59,9 +66,9 @@ type CompTable = [(String,String,String)]
 data AbstractionGraph = AbstractionGraph {
        theGraph :: OurGraph,
        nodeTypes :: [(String,DaVinciNodeType (String,Int,Int))],
-       edgeTypes :: [(String,DaVinciArcType (String,Int,Int))],
+       edgeTypes :: [(String,DaVinciArcType EdgeValue)],
        nodes :: [(Int,(String,DaVinciNode (String,Int,Int)))],
-       edges :: [(Int,(Int,Int,String,DaVinciArc (String,Int,Int)))],
+       edges :: [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
        -- probably, also the abstracted graph needs to be stored,
        -- and a list of hide/abstract events with the hidden nodes/edges (for each event),
        -- which is used to restore things when showIt is called
@@ -69,6 +76,7 @@ data AbstractionGraph = AbstractionGraph {
        eventTable :: [(Int,Entry)]}
 
 type Descr = Int
+type EdgeValue = (String,Int,Maybe (LEdge DGLinkLab))
 type GraphInfo = IORef ([(Descr,AbstractionGraph)],Descr) -- for each graph the descriptor and the graph,
                                                          -- plus a global counter for new descriptors
 data Result = Result Descr                          -- graph, node or edge descriptor
@@ -77,13 +85,13 @@ data Result = Result Descr                          -- graph, node or edge descr
 
 data Entry = Entry {newNodes :: [(Descr,(String,DaVinciNode (String,Int,Int)))],
 		    oldNodes :: [(Descr,(String,String))],
-		    newEdges :: [(Int,(Int,Int,String,DaVinciArc (String,Int,Int)))],
-		    oldEdges :: [(Int,(Int,Int,String,String))]
+		    newEdges :: [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
+		    oldEdges :: [(Int,(Int,Int,String,EdgeValue))]
 		    }
 
 
 -- creates a new entry of the eventTable and fills it with the data contained in its parameters
-createEntry :: [(Descr,(String,DaVinciNode (String,Int,Int)))] -> [(Descr,(String,String))] -> [(Descr,(Int,Int,String,DaVinciArc (String,Int,Int)))] -> [(Descr,(Int,Int,String,String))] -> Descr -> (Int,Entry)
+createEntry :: [(Descr,(String,DaVinciNode (String,Int,Int)))] -> [(Descr,(String,String))] -> [(Descr,(Int,Int,String,DaVinciArc EdgeValue))] -> [(Descr,(Int,Int,String,EdgeValue))] -> Descr -> (Int,Entry)
 createEntry nn on ne oe cnt = (cnt, Entry {newNodes = nn, oldNodes = on, newEdges = ne, oldEdges = oe})
 
 
@@ -134,7 +142,8 @@ initgraphs = do newRef <- newIORef ([],0)
 
 makegraph :: String -> [GlobalMenu] -> 
              [(String,DaVinciNodeTypeParms (String,Descr,Descr))] -> 
-             [(String,DaVinciArcTypeParms (String,Descr,Descr))] ->
+             [(String,DaVinciArcTypeParms 
+	           (String,Descr,Maybe (LEdge DGLinkLab)))] ->
              CompTable -> GraphInfo -> IO Result 
 makegraph title menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
@@ -166,7 +175,7 @@ makegraph title menus nodetypeparams edgetypeparams comptable gv = do
   let g = AbstractionGraph {
             theGraph = graph,
             nodeTypes = zip nodetypenames nodetypes,
-            edgeTypes = zip edgetypenames edgetypes,
+	    edgeTypes = zip edgetypenames edgetypes,
             nodes = [], 
             edges = [], 
             edgeComp = comptable,
@@ -220,8 +229,8 @@ changenodetype
 unclear how to implement, ask George
 -}
 
-addlink :: Descr -> String -> String -> Descr -> Descr -> GraphInfo -> IO Result
-addlink gid edgetype name src tar gv = 
+addlink :: Descr -> String -> String -> Maybe (LEdge DGLinkLab) -> Descr -> Descr -> GraphInfo -> IO Result
+addlink gid edgetype name label src tar gv = 
   fetch_graph gid gv False (\(g,ev_cnt) ->
     case (lookup edgetype (edgeTypes g),
           lookup src (nodes g),
@@ -230,7 +239,7 @@ addlink gid edgetype name src tar gv =
       do existingEdgesOfSameTypeAndPosition <- sequence [(getArcValue (theGraph g) davinciArc)|(descr,(srcId, tgtId, tp, davinciArc)) <- (edges g), tp == edgetype && srcId == src && tgtId == tar]
          case lookup name [(nm,descr)|(nm,descr,graphId) <- existingEdgesOfSameTypeAndPosition] of
 	   _ ->
-	     do edge <- newArc (theGraph g) et (name,ev_cnt,gid) (snd src_node) (snd tar_node)
+	     do edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node) (snd tar_node)
                 return (g{edges = (ev_cnt,(src,tar,edgetype,edge)):edges g},ev_cnt,ev_cnt+1,Nothing)
 	   Just _ -> do srcToString <- getNodeNameAndTypeAsString g src
                         tarToString <- getNodeNameAndTypeAsString g tar	   
@@ -370,7 +379,7 @@ makepaths g node_list (inEdges,outEdges) =
     
 
 -- determines source, target and type of the path to be added and checks it using method checkpath
-makepathsaux :: AbstractionGraph -> [Descr] -> [Descr] -> ((Descr,Descr,String,DaVinciArc(String,Int,Int)),(Descr,Descr,String,DaVinciArc(String,Int,Int))) -> Maybe [(Descr,Descr,String)]
+makepathsaux :: AbstractionGraph -> [Descr] -> [Descr] -> ((Descr,Descr,String,DaVinciArc EdgeValue),(Descr,Descr,String,DaVinciArc EdgeValue)) -> Maybe [(Descr,Descr,String)]
 makepathsaux g node_list alreadyPassedNodes ((s1,t1,ty1,ed1),(s2,t2,ty2,ed2)) =
   -- try to determine the type of the path
   case determineedgetype g (ty1,ty2) of
@@ -382,7 +391,7 @@ makepathsaux g node_list alreadyPassedNodes ((s1,t1,ty1,ed1),(s2,t2,ty2,ed2)) =
 -- check, if the source or the target of an edge are element of the list of nodes that are to be hidden
 -- if so, find out the "next" sources/targets and check again
 -- remember which nodes have been passed to avoid infinite loops
-checkpath :: AbstractionGraph -> [Descr] -> [Descr] -> (Descr,Descr,String,DaVinciArc(String,Int,Int)) -> Maybe [(Descr,Descr,String)]
+checkpath :: AbstractionGraph -> [Descr] -> [Descr] -> (Descr,Descr,String,DaVinciArc EdgeValue) -> Maybe [(Descr,Descr,String)]
 checkpath g node_list alreadyPassedNodes path@(src,tgt,ty,ed)
   | elem src alreadyPassedNodes || elem tgt alreadyPassedNodes = Just []
   | elem src node_list = -- try to determine the in- and outgoing edges of the source node
@@ -413,7 +422,7 @@ checkpath g node_list alreadyPassedNodes path@(src,tgt,ty,ed)
 addpaths :: Descr -> [(Descr,Descr,String)] -> GraphInfo -> IO Result
 addpaths gid [] gv = do (gs,ev_cnt) <- readIORef gv
                         return (Result ev_cnt Nothing)
-addpaths gid ((src,tgt,ty):newEdges) gv = do edge@(Result de error) <- addlink gid ty "" src tgt gv
+addpaths gid ((src,tgt,ty):newEdges) gv = do edge@(Result de error) <- addlink gid ty "" Nothing src tgt gv
                                              case error of
 					       Nothing -> do addpaths gid newEdges gv
 					       Just t -> return edge	   
@@ -590,7 +599,7 @@ showIt gid hide_event gv =
 							               (Result de4 error4) <- showedges gid (oldEdges entry) gv
 								       info4 <- readIORef gv
 							               case error4 of
-								         Nothing -> do -- remove the event from the eventTable
+			   	                                         Nothing -> do -- remove the event from the eventTable
 									               let g' = snd (get gid (fst info4))
 									               return (g'{eventTable = remove hide_event (eventTable g')},0,ev_cnt+1,Nothing)
 									 Just t4 -> return (g,0,ev_cnt,Just ("showIt: error restoring old edges:\n-> "++t4))
@@ -619,15 +628,17 @@ shownodes gid ((node@(d,(tp,name))):list) gv =
 
 
 -- adds edges that had been hidden  
-showedges :: Descr -> [(Int,(Int,Int,String,String))] -> GraphInfo -> IO Result
+showedges :: Descr -> [(Int,(Int,Int,String,EdgeValue))] -> GraphInfo -> IO Result
 showedges gid [] gv = do (gs,ev_cnt) <- readIORef gv
                          return (Result ev_cnt Nothing)
-showedges gid ((edge@(d,(src,tgt,tp,davinciarc))):list) gv =
+showedges gid ((edge@(d,(src,tgt,tp,value))):list) gv =
   do (gs,_) <- readIORef gv
      let g = snd (get gid gs)
      -- try to add the first edge
      writeIORef gv (gs,d)
-     ed@(Result de err) <- addlink gid tp davinciarc src tgt gv
+     let name = getEdgeName value
+     let label = getEdgeLabel value
+     ed@(Result de err) <- addlink gid tp name label src tgt gv
      case err of
        Nothing -> do -- try to add the rest
 	             showedges gid list gv
@@ -643,64 +654,17 @@ saveOldNodes g ((node@(de,(tp,davincinode))):list) = do (name,descr,gid) <- getN
 
 
 -- creates a list of the edges that will be hidden (ie descriptor,source,target,type and name)
-saveOldEdges :: AbstractionGraph -> [(Int,(Int,Int,String,DaVinciArc(String,Int,Int)))] -> IO [(Int,(Int,Int,String,String))]
+saveOldEdges :: AbstractionGraph -> [(Int,(Int,Int,String,DaVinciArc EdgeValue))] ->
+		IO [(Int,(Int,Int,String,EdgeValue))] -- IO [(Int,(Int,Int,String,String))]
 saveOldEdges g [] = return []
 saveOldEdges g (edge@(de,(src,tgt,tp,davinciarc)):list) =
   do value <- getArcValue (theGraph g) davinciarc
-     let name = getEdgeName value
+--     let name = getEdgeName value
      restOfList <- saveOldEdges g list
-     return ((de,(src,tgt,tp,name)):restOfList)
+     return ((de,(src,tgt,tp,value)):restOfList)
 
-getEdgeName :: (String,Int,Int) -> String
+getEdgeName :: EdgeValue -> String
 getEdgeName (name,_,_) = name
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+getEdgeLabel :: EdgeValue -> Maybe (LEdge DGLinkLab)
+getEdgeLabel (_,_,label) = label
