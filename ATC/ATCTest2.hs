@@ -143,7 +143,7 @@ resultFP fp = fp++".ttttt"
 
 testATC :: FilePath -> IO ()
 testATC fp = do str <- readFile fp
-		let att = readATerm fp
+		let att = readATerm str
 		putStrLn ("Reading File "++fp++" ...")
 		let fp' = resultFP fp
 		putStrLn ("Writing File "++fp'++" ...")                
