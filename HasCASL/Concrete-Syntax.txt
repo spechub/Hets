@@ -31,28 +31,51 @@ SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME
 
 TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
                   | TYPE-DEFN-PATTERN , .... , TYPE-DEFN-PATTERN : KIND
-                  | TYPE-DEFN-PATTERN = PSEUDOTYPE
-                  | TYPE < TYPE      %% with global TYPE-VARs
-                  | TYPE = { VAR : TYPE "." FORMULA }   %% "" 
-                  | TYPE = ... = TYPE                   %% ""
+                  | TYPE-APPL-PATTERN := PSEUDOTYPE
+                  | TYPE-APPL-PATTERN , ... , TYPE-APPL-PATTERN < TYPE 
+                  | TYPE-APPL-PATTERN = { VAR : TYPE "." FORMULA }
+                  | TYPE-APPL-PATTERN = ... = TYPE-APPL-PATTERN
 		  | DATATYPE-DECL        %% TYPE-DEFN-PATTERN ::= ALTERNATIVES
 
 %% TYPE , ... , TYPE clashes with intersection class without parenthesis
 
 TYPE-DEFN-PATTERN ::= TYPE-NAME 
-		    | TYPE-NAME (TYPE-ARG) ... (TYPE-ARG)
-%% "(" of first TYPE-ARG ist required 
-%% in order to recognize the end of the TYPE-NAME 
+		    | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
 
-TYPE-ARG        ::= TYPE-VAR                 %% globally declared
-		  | TYPE-VAR + | TYPE-VAR -  %% globally declared
-		  | TYPE-VAR : EXT-CLASS      
-		  | TYPE-VAR < TYPE | TYPE-VAR > TYPE
+TYPE-APPL-PATTERN ::= TYPE-DEFN-PATTERN
+		    | PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN
+
+PRIM-TYPE-PATTERN ::= [ ID , ... , ID ]      %% compound list
+		    | NO-BRACKET-TOKEN       %% TYPE-NAME or TYPE-VAR
+                    | TYPE-EXT-VAR
+		    | TYPE-PATTERN-ARG
+		    | (TYPE-PATTERN-ARG)
+		    | (TYPE-ARGS)            %% remaining arguments 
+
+TYPE-PATTERN-ARG ::=  TYPE-EXT-VAR : CLASS    
+		    | TYPE-VAR : EXT-CLASS
+		    | TYPE-VAR < TYPE    
+		    | TYPE-VAR > TYPE    
+
+TYPE-VARS       ::= TYPE-VAR , ... , TYPE-VAR
+
+TYPE-EXT-VAR    ::= TYPE-VAR | TYPE-VAR + | TYPE-VAR -
+TYPE-EXT-VARS   ::= TYPE-EXT-VAR , ... , TYPE-EXT-VAR
+
+TYPE-ARG        ::= TYPE-EXT-VARS           %% globally declared or universe
+		  | TYPE-VARS : EXT-CLASS      
+		  | TYPE-EXT-VARS : CLASS      
+		  | TYPE-EXT-VARS < TYPE 
+		  | TYPE-EXT-VARS > TYPE
+
+TYPE-ARGS       :: TYPE-ARG ; ... ; TYPE-ARG
 
 %% curried kind!
 PSEUDOTYPE      ::= TYPE 
-                  | \ TYPE-ARG "." PSEUDOTYPE
-                  | \ (TYPE-ARG) ... (TYPE-ARG) "." PSEUDOTYPE
+                  | \ TYPE-ARGS "." PSEUDOTYPE
+%% omit?          | \ (TYPE-ARGS) ... (TYPE-ARGS) "." PSEUDOTYPE  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CLASS-ITEMS     ::= class/classes CLASS-ITEM ; ... ; CLASS-ITEM ;/
                   | class instance/instances CLASS-ITEM ; ... ; CLASS-ITEM ;/
@@ -68,21 +91,26 @@ CLASS-DECL      ::= CLASS-NAME , ... , CLASS-NAME
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-OP-ITEM         ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
-                  | OP-NAME , ... , OP-NAME : TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
-                  | OP-NAME : TYPE-SCHEME = TERM %% real constant (no shortcut)  
-                  | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
-                  | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
-                  | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME () :? ...
-				             %% strongly discouraged
+UNINST-OP-NAME  :: = ID
 
-%% either INST-LIST or real TYPE-SCHEME
-%% OP-ARGS instead of OP-HEAD 
+OP-NAME        ::= UNINST-OP-NAME 
+	         | UNINST-OP-NAME TYPE-INST-LIST ... TYPE-INST-LIST
 
-OP-NAME        ::= ID | ID [TYPE-INST-DECL; ... ; TYPE-INST-DECL]
+TYPE-INST-LIST ::= [TYPE-INST-DECL; ... ; TYPE-INST-DECL]
 
 TYPE-INST-DECL ::= TYPE-VAR , ... , TYPE-VAR   %% global type vars
                  | TYPE-VAR-DECL
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+OP-ITEM       ::= OP-NAME , ... , OP-NAME : TYPE-SCHEME
+                | OP-NAME , ... , OP-NAME : TYPE-SCHEME, OP-ATTR ,..., OP-ATTR 
+                | OP-NAME : TYPE-SCHEME = TERM %% real constant (no shortcut)  
+                | OP-NAME OP-ARGS : TYPE = TERM    %% This form is 
+                | OP-NAME OP-ARGS :? TYPE = TERM   %% not encouraged
+                | OP-NAME :? TYPE = TERM   %% shortcut for OP-NAME () :? ...
+				             %% strongly discouraged
+%% OP-ARGS instead of OP-HEAD 
 
 OP-ATTR         ::= BIN-ATTR |  unit TERM
 BIN-ATTR        ::= assoc  |  comm  |  idem 
@@ -100,6 +128,7 @@ PRED-ITEM       ::= OP-NAME, ..., OP-NAME: PRODUCT-TYPE  %% no currying!
 OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
 ARG-DECLS       ::= ( PATTERN ; ... ; PATTERN ) | ()
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unknown IDs will become new variables
 PATTERN         ::= VAR , ... , VAR        % globally declared 
 		  | VAR-DECL
@@ -114,13 +143,15 @@ AS-PATTERN      ::= INST-PATTERN
 
 INST-PATTERN    ::= SIMPLE-PATTERN 
 		  | SIMPLE-PATTERN [TYPE, ... , TYPE]
-		  | ( PATTERN ; ... ; PATTERN ) | ()   %% without instantiation  
+		  | ( PATTERN ; ... ; PATTERN ) 
+		  | ( )   
 
 SIMPLE-PATTERN  ::= "__"
 		  | NO-BRACKET-TOKEN          %% VAR or part of ID
-                  | [ PATTERN ; ... ; PATTERN ] | [ ]         %% mixfix 
-		  | { PATTERN ; ... ; PATTERN } | { }         %% mixfix 
+                  | [ PATTERN ; ... ; PATTERN ] | [ ]       %% mixfix/compound 
+		  | { PATTERN ; ... ; PATTERN } | { }       %% mixfix 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 PROG-EQ         ::= MIXFIX-PATTERN = TERM        %% TERM without formulae
 
@@ -135,8 +166,6 @@ SIMPLE-DATATYPE-DECL
 DERIVING-DATATYPE-DECL
                 ::= SIMPLE-DATATYPE-DECL deriving CLASS
 
-UNINST-OP-NAME  :: = ID
-
 %% take instance-notation from TYPE-DEFN-PATTERN 
 ALTERNATIVE     ::= UNINST-OP-NAME COMPONENTS ... COMPONENTS     
                   | UNINST-OP-NAME COMPONENTS ... COMPONENTS ?   
@@ -147,7 +176,7 @@ ALTERNATIVE     ::= UNINST-OP-NAME COMPONENTS ... COMPONENTS
 %% support for nested products
 COMPONENTS      ::= ( COMPONENT ; ... ; COMPONENT ) 
 COMPONENT       ::= UNINST-OP-NAME , ... , UNINST-OP-NAME : TYPE
-                  | UNINST-OP-NAME , ... , UNINST-OP-NAME :? TYPE               
+                  | UNINST-OP-NAME , ... , UNINST-OP-NAME :? TYPE
                   | TYPE
 		  | ( COMPONENT ; ... ; COMPONENT )  
 
@@ -160,7 +189,9 @@ TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 KIND          ::= CLASS
-		  | EXT-CLASS -> ... -> EXT-CLASS -> CLASS
+		| PROD-CLASS -> ... -> PROD-CLASS -> CLASS
+
+PROD-CLASS    ::= EXT-CLASS * ... * EXT-CLASS
 
 EXT-CLASS     ::= CLASS | CLASS + | CLASS -
 
@@ -170,10 +201,16 @@ CLASS         ::= SIMPLE-CLASS | (CLASS , ... , CLASS)
 SIMPLE-CLASS  ::= type | CLASS-NAME 
 		| { SIMPLE-ID . SIMPLE-ID < TYPE } 
 		| { SIMPLE-ID . SIMPLE-ID > TYPE } 
-		
-TYPE-SCHEME   ::= TYPE | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE
 
-PRIM-TYPE     ::= NO-BRACKET-TOKEN   %% TYPE-VAR or TYPE-NAME
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+		
+TYPE-SCHEME   ::= TYPE 
+	        | forall TYPE-VAR-DECL ; ... ; TYPE-VAR-DECL . TYPE-SCHEME
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+PRIM-TYPE     ::= NO-BRACKET-TOKEN    %% TYPE-VAR or TYPE-NAME
+	        | [ ID , ... , ID ]   %% compound list 
 	        | ( TYPE )
 		| ( )                 %% unit
 
@@ -182,15 +219,17 @@ MIXFIX-TYPE   ::= PRIM-TYPE ... PRIM-TYPE
 
 PRODUCT-TYPE  ::= MIXFIX-TYPE * ... * MIXFIX-TYPE
 
+%% product-types (possibly) separated by arrows 
 TYPE          ::= PRODUCT-TYPE ARROW ... ARROW PRODUCT-TYPE
 
+%% ARROW must be treated like a terminal in the above rule
 ARROW         ::= ->? | -> | -->? | -->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 FORMULA         ::= TERM   %% of type logical or ?unit
 
-%% EQUAL-OP        ::= "=" | =e=
+%% EQUAL-OP        ::= "=" | =e= (only for backward compatibility)
 %% BIN-CONNECT     ::= /\ | \/ | => | if | <=>
 
 %% also Prelude: not, true, false, def, __when__else__
@@ -213,11 +252,11 @@ LET-TERM        ::= let PROG-EQ ; ... ; PROG-EQ in TERM
 %% ";" is already used as item-separator
 CASE-TERM       ::= case TERM of PATTERN -> TERM "|" ... "|" PATTERN -> TERM
 
-QUANT-TERM      ::= QUANTIFIER  VAR-DECL ;...; VAR-DECL "." TERM 
-                  | forall  TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM %% at top
+QUANT-TERM      ::= QUANTIFIER VAR-DECL ;...; VAR-DECL "." TERM 
+                  | forall TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM 
 		  | \ LAMBDA-DOT TERM     % for unit
 		  | \ VAR-DECL LAMBDA-DOT TERM
-		  | \ (VAR-DECL) ... (VAR-DECL) LAMBDA-DOT TERM
+		  | \ (PATTERN) ... (PATTERN) LAMBDA-DOT TERM
 
 %% case/lambda-Terms must be without formula ingredients
 
@@ -232,12 +271,14 @@ INST-TERM       ::= SIMPLE-TERM
 
 SIMPLE-TERM     ::= "__"
 		  | NO-BRACKET-TOKEN              %% plus formula keywords     
-                  | [ TERM , ... , TERM ]  |  [ ]     %% mixfix
+                  | [ TERM , ... , TERM ]  |  [ ]     %% mixfix/compound
                   | { TERM , ... , TERM }  |  { }     %% mixfix
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 QUAL-VAR-NAME   ::= ( var VAR : TYPE )
 
-INST-OP-NAME    ::= ID [TYPE, ... , TYPE]
+INST-OP-NAME    ::= ID [TYPE, ... , TYPE] ... [TYPE, ... , TYPE]
 
 QUAL-PRED-NAME  ::= ( pred UNINST-OP-NAME : TYPE-SCHEME )
 		  | ( pred INST-OP-NAME : TYPE)
@@ -246,7 +287,10 @@ QUAL-OP-NAME    ::= ( op UNINST-OP-NAME : TYPE-SCHEME )
 		  | ( op INST-OP-NAME : TYPE)
 
 TYPE-NAME       ::= ID  %% MIXFIX-COMPOUND-ID
+%% exluded are arrows, "*", "<", ">" and  ":=" (and ":", ":?", "=", "::=")
 
-CLASS-NAME      ::= SIMPLE-ID %% disjoint with TYPE-VAR and TYPE-NAME ingredients
-VAR             ::= ID 
+CLASS-NAME      ::= SIMPLE-ID 
+%% disjoint with TYPE-VAR and TYPE-NAME ingredients
+
+VAR             ::= ID   %% mixfix but not compound
 TYPE-VAR        ::= SIMPLE-ID
