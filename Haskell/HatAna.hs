@@ -162,9 +162,8 @@ hatAna (hs@(HsDecls ds), e, _) = do
                extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)
-   (HsModule _ _ _ _  fs : _) :>: (is, (ts, vs)) <- 
-        lift $ inMyEnv $ tcModuleGroup findPredef
-            id [sm]
+   HsModule _ _ _ _  fs :>: (is, (ts, vs)) <- 
+        lift $ inMyEnv $ tcModule findPredef sm
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
 
