@@ -53,7 +53,7 @@ import Common.Token
 import CASL.AS_Basic_CASL
 import Common.Lib.Parsec
 
-simpleTerm :: AParsable f => [String] -> AParser (TERM f)
+simpleTerm :: [String] -> AParser (TERM f)
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords 
 		       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
@@ -84,7 +84,7 @@ term = whenTerm []
 restrictedTerm :: AParsable f => [String] -> AParser (TERM f)
 restrictedTerm = whenTerm 
 
-typedTerm, castedTerm :: AParsable f => AParser (TERM f)
+typedTerm, castedTerm :: AParser (TERM f)
 typedTerm = do c <- colonT
                t <- sortId
                return (Mixfix_sorted_term t [tokPos c])
@@ -98,7 +98,7 @@ terms k =
     do (ts, ps) <- whenTerm k `separatedBy` anComma
        return (ts, ps)
 
-qualVarName, qualOpName :: AParsable f => Token -> AParser (TERM f)
+qualVarName, qualOpName :: Token -> AParser (TERM f)
 qualVarName o = do v <- asKey varS
 		   i <- varId
 		   c <- colonT 
@@ -160,7 +160,6 @@ bracketTerm k =
        c <- cBracketT 
        return $ Mixfix_bracketed ts $ toPos o ps c
 
-
 quant :: AParser (QUANTIFIER, Token)
 quant = try(
         do q <- asKey (existsS++exMark)
@@ -188,7 +187,7 @@ varDecl = do (vs, ps) <- varId `separatedBy` anComma
 	     s <- sortId
 	     return (Var_decl vs s (map tokPos ps ++[tokPos c]))
 
-updFormulaPos :: AParsable f => Pos -> Pos -> (FORMULA f) -> (FORMULA f)
+updFormulaPos :: PosItem f => Pos -> Pos -> FORMULA f -> FORMULA f
 updFormulaPos o c = up_pos_l (\l-> o:l++[c])  
 
 predType :: AParser PRED_TYPE
@@ -201,7 +200,7 @@ predUnitType = do o <- oParenT
 		  c <- cParenT
 		  return (Pred_type [] [tokPos o, tokPos c])
 
-qualPredName :: AParsable f => Token -> AParser (TERM f)
+qualPredName :: Token -> AParser (TERM f)
 qualPredName o = do v <- asKey predS
 		    i <- parseId
 		    c <- colonT 
@@ -267,7 +266,6 @@ primFormula k =
 		      <|> (whenTerm k >>= termFormula k)
               <|> do f <- aparser k
                      return (ExtFORMULA f)
-
 
 andKey, orKey :: AParser Token
 andKey = asKey lAnd

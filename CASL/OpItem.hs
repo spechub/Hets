@@ -128,7 +128,7 @@ predBody p h = do e <- asKey equivS
 		  f <- formula
 		  return (Pred_defn p h (Annoted f [] a []) [tokPos e])
 
-predTypeCont :: AParsable f => [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
+predTypeCont :: [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
 predTypeCont ps cs = do c <- colonT
 			t <- predType
 			return (Pred_decl ps t (map tokPos (cs++[c])))

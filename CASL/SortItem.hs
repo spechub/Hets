@@ -35,7 +35,7 @@ import CASL.Formula
 -- sortItem
 -- ------------------------------------------------------------------------
 
-commaSortDecl :: AParsable f => Id -> AParser (SORT_ITEM f)
+commaSortDecl :: Id -> AParser (SORT_ITEM f)
 commaSortDecl s = do c <- anComma
 		     (is, cs) <- sortId `separatedBy` anComma
 		     let l = s : is 
@@ -61,7 +61,7 @@ subSortDefn (s, e) = do a <- annos
 			return $ Subsort_defn s v t (Annoted f [] a []) 
 				(e: map tokPos [o, c, d, p])
 
-subSortDecl :: AParsable f => ([Id], [Pos]) -> AParser (SORT_ITEM f)
+subSortDecl :: ([Id], [Pos]) -> AParser (SORT_ITEM f)
 subSortDecl (l, p) = do t <- lessT
 			s <- sortId
 			return (Subsort_decl l s (p++[tokPos t]))
