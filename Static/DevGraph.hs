@@ -157,6 +157,8 @@ nodeSigUnion lgraph dg nodeSigs orig =
      let nodeContents = DGNode {dgn_name = Nothing,
 				dgn_sign = sigUnion,
 				dgn_sens = G_l_sentence_list lid [],
+				dgn_nf = Nothing,
+				dgn_sigma = Nothing,
 				dgn_origin = orig }
 	 [node] = newNodes 0 dg
 	 dg' = insNode (node, nodeContents) dg
@@ -185,7 +187,9 @@ extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
     let targetSig = cod Grothendieck morph
         nodeContents = DGNode {dgn_name = Nothing,
 			       dgn_sign = targetSig,
-			       dgn_sens = G_l_sentence_list lid [],			       
+			       dgn_sens = G_l_sentence_list lid [],
+			       dgn_nf = Nothing,
+			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
@@ -211,7 +215,9 @@ extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
     let sourceSig = dom Grothendieck morph
         nodeContents = DGNode {dgn_name = Nothing,
 			       dgn_sign = sourceSig,
-			       dgn_sens = G_l_sentence_list lid [],			       
+			       dgn_sens = G_l_sentence_list lid [],
+			       dgn_nf = Nothing,
+			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
