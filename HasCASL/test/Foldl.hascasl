@@ -1,0 +1,7 @@
+var a: Type
+type List a
+op nil : List a
+op snoc: List a  -> a --> List a
+forall x:a 
+. snoc nil x = snoc nil x
+

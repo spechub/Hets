@@ -1,0 +1,126 @@
+var a : Type
+type List(a : Type)
+op nil : List a
+op snoc : List a -> a --> List a
+forall x : a
+. ((fun __=__[List a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       List a * List a ->? Unit)
+    ((((op snoc[a]
+        : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+           List a -> a --> List a)
+        ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+          a --> List a)
+       (var x : a) :
+         List a,
+     (((op snoc[a]
+        : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+           List a -> a --> List a)
+        ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+          a --> List a)
+       (var x : a) :
+         List a) :
+      Unit
+%% Type Constructors -----------------------------------------------------
+List : Type -> Type
+Logical : Type := Unit ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Unit : Type
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
+__->?__ : Type- -> Type+ -> Type
+a : Type %(var_1)%
+%% Assumptions -----------------------------------------------------------
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+false : Unit %(fun)%
+nil : forall a : Type . List a_v-1 %(op)%
+not__ : ? Unit ->? Unit %(fun)%
+snoc : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1 %(op)%
+true : Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+((fun __=__[List a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     List a * List a ->? Unit)
+  ((((op snoc[a]
+      : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+         List a -> a --> List a)
+      ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+        a --> List a)
+     (var x : a) :
+       List a,
+   (((op snoc[a]
+      : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+         List a -> a --> List a)
+      ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+        a --> List a)
+     (var x : a) :
+       List a) :
+    Unit
+%% Diagnostics -----------------------------------------------------------
+*** Hint 1.5, is type variable 'a'
+*** Hint 6.8, in type of '(op nil[_var_13_v13] : forall a : Type . List a_v-1) :
+    List _var_13_v13'
+  type 'List _var_13_v13' (3.10)
+  is not unifiable with type 'Unit ->? List _var_9_v9' (4.10)
+
+*** Hint 6.12, in type of '(var x : a)'
+  typename 'a' (5.10)
+  is not unifiable with type 'Unit ->? _var_9_v9' (4.15)
+
+*** Hint 6.21, in type of '(op nil[_var_21_v21] : forall a : Type . List a_v-1) :
+    List _var_21_v21'
+  type 'List _var_21_v21' (3.10)
+  is not unifiable with type 'Unit ->? List _var_17_v17' (4.10)
+
+*** Hint 6.25, in type of '(var x : a)'
+  typename 'a' (5.10)
+  is not unifiable with type 'Unit ->? _var_17_v17' (4.15)
+
+*** Hint 6.8, in type of '(op nil[_var_30_v30] : forall a : Type . List a_v-1) :
+    List _var_30_v30'
+  type 'List _var_30_v30' (3.10)
+  is not unifiable with type 'Unit ->? List _var_26_v26' (4.10)
+
+*** Hint 6.12, in type of '(var x : a)'
+  typename 'a' (5.10)
+  is not unifiable with type 'Unit ->? _var_26_v26' (4.15)
+
+*** Hint 6.21, in type of '(op nil[_var_38_v38] : forall a : Type . List a_v-1) :
+    List _var_38_v38'
+  type 'List _var_38_v38' (3.10)
+  is not unifiable with type 'Unit ->? List _var_34_v34' (4.10)
+
+*** Hint 6.25, in type of '(var x : a)'
+  typename 'a' (5.10)
+  is not unifiable with type 'Unit ->? _var_34_v34' (4.15)
+
+*** Hint 6.3, in type of '((((op snoc[_var_26_v26]
+    : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+       List _var_26_v26 -> _var_26_v26 --> List _var_26_v26)
+    ((op nil[_var_26_v26] : forall a : Type . List a_v-1) :
+         List _var_26_v26) :
+      _var_26_v26 --> List _var_26_v26)
+   (var x : a) :
+     List _var_26_v26,
+ (((op snoc[_var_34_v34]
+    : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+       List _var_34_v34 -> _var_34_v34 --> List _var_34_v34)
+    ((op nil[_var_34_v34] : forall a : Type . List a_v-1) :
+         List _var_34_v34) :
+      _var_34_v34 --> List _var_34_v34)
+   (var x : a) :
+     List _var_34_v34)'
+  type 'List a * List a' (4.27)
+  is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3'
+
