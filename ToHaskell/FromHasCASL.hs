@@ -30,7 +30,7 @@ import Haskell.HatAna
 mapSignature :: Env -> Maybe(ModuleInfo, [Named AHsDecl]) 
 mapSignature sign = 
     let hs = translateAna sign
-    in	Just(hatAna hs emptySign) 
+    in	Just(hatAna hs emptyModuleInfo) 
 
 mapSentence :: Named Sentence -> [Named AHsDecl] 
 mapSentence sen = case sentence sen of
@@ -51,5 +51,5 @@ translateDt (DatatypeConstr i _ _ args alts) =
 mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
 mapTheory (sign, csens) =
     let hs = translateAna sign
-	(mi, hsens) = hatAna hs emptySign
+	(mi, hsens) = hatAna hs emptyModuleInfo
 	in (mi, hsens ++ concatMap mapSentence csens)
