@@ -1,7 +1,7 @@
 
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -10,8 +10,8 @@ Portability :  portable
     
 
 supply a simple data type for (precedence or subsort) relations. A
-relation is conceptually a set of (ordered) pairs (see 'toList' and
-'fromList'). But the hidden implementation is based on a map of sets.
+relation is conceptually a set of (ordered) pairs. 
+But the hidden implementation is based on a map of sets.
 
 'Rel' replaces a directed graph with unique node labels (Ord a) and
 unlabelled edges (without multiplicity higher than one).
@@ -24,19 +24,6 @@ It is possible to insert self edges or bigger cycles.
 A transitive path can be checked by 'transMember' without computing
 the full transitive closure. A further 'insert', however,
 may destroy the closedness property of a relation.
-
-Currently, no further functions seem to be necessary: 
-
-- deletion
-
-- filtering, mapping
-
-- transposing
-
-- reflexive closure (for a finite domain)
-
-- computing a minimal relation whose transitive closure 
-  covers a given relation
 
 -}
 
@@ -60,8 +47,7 @@ isEmpty = Map.isEmpty . toMap
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
 insert a b =
-    let update m = Map.insert a ((b `Set.insert`) $ 
-				 Map.findWithDefault Set.empty a m) m
+    let update = Map.setInsert a b
     in 
     Rel . update .toMap
 
@@ -105,7 +91,7 @@ instance (Show a, Ord a) => Show (Rel a) where
 {--------------------------------------------------------------------
   Image (Added by T.M.)
 --------------------------------------------------------------------}
--- | /n/. Image of a relation under a function
+-- | Image of a relation under a function
 image :: Ord b => (a -> b) -> Rel a -> Rel b
 image f = Rel 
           .
@@ -118,7 +104,7 @@ image f = Rel
 {--------------------------------------------------------------------
   Restriction (Added by T.M.)
 --------------------------------------------------------------------}
--- | /n/. Image of a relation under a function
+-- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
 restrict r s = 
   Rel
@@ -134,41 +120,61 @@ restrict r s =
 {--------------------------------------------------------------------
  Conversion from/to sets (Added by T.M.)
 --------------------------------------------------------------------}
+-- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
 toSet = Map.foldWithKey 
 	( \ a ra -> Set.fold ( \ b -> (Set.insert (a,b) .) ) id ra) 
 	Set.empty . toMap
 
+-- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
 fromSet = Rel .
           Set.fold (\(a,b) -> Map.setInsert a b) Map.empty
 
--- pre: transitively closed 
-topSort :: Ord a => Rel a -> [Set.Set a] 
+-- | topological sort a relation (more efficient for a closed relation)
+topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r@(Rel m) = 
     if isEmpty r then []
     else let es = Set.unions $ Map.elems m
-	     ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es
-    in if Set.isEmpty ms then 
-       let (a, cyc, restRel) = removeCycle r in
-	   map ( \ s -> if Set.member a s then 
-		 Set.union s cyc else s) $ topSort restRel
-	   else ms : topSort (Rel $ Set.fold Map.delete m ms)
+	     ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es in 
+       if Set.isEmpty ms then let hasCyc = removeCycle r in 
+	   case hasCyc of 
+	   Nothing -> topSort (transClosure r)
+	   Just (a, cyc, restRel) ->
+	       map ( \ s -> if Set.member a s then 
+		     Set.union s cyc else s) $ topSort restRel
+        else let (lowM, rest) = 
+		     Map.partitionWithKey (\ k _ -> Set.member k ms) m
+		 -- no not forget loose ends 
+		 bs = Set.unions $ Map.elems lowM
+		 ls = bs Set.\\ Set.fromDistinctAscList	(Map.keys rest) in 
+		 -- put them as low as possible
+            ms : (topSort $ Rel $ Set.fold ( \ i -> 
+		      Map.insert i Set.empty) rest ls)
 
-removeCycle :: Ord a => Rel a -> (a, Set.Set a, Rel a)
+-- | try to remove a cycle
+removeCycle :: Ord a => Rel a -> Maybe (a, Set.Set a, Rel a)
 removeCycle r@(Rel m) = 
     let cycles = Map.filterWithKey Set.member m in
-	if Map.isEmpty cycles then error "removeCycle"
+	if Map.isEmpty cycles then -- no cycle found 
+	   let cl = transClosure r in 
+	   if r == transClosure r then Nothing -- no cycle there 
+	      else removeCycle cl
 	   else let (a, os) = Map.findMin cycles
 		    cs = Set.fold ( \ e s -> 
 		            if member e a r then 
-				    Set.insert e s else s) Set.empty os
+				    Set.insert e s else s) Set.empty 
+			 $ Set.delete a os
 		    m1 = Map.map (Set.image ( \ e -> 
 					      if Set.member e cs then 
 					      a else e)) m 
-		    rs = Set.delete a $ Map.foldWithKey ( \ k v s -> 
+		    rs = Map.foldWithKey ( \ k v s -> 
 				 if Set.member k cs then 
-					Set.union v s else s) Set.empty m1
-	    in (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
+					Set.union s $ Set.delete a v else s) 
+			 Set.empty m1
+	    in Just (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
 
-	        
+{- The result is a representative "a", the cycle "cs", i.e. all other
+elements that are represented by "a" and the remaining relation with
+all elements from "cs" replaced by "a" and without the cycle "(a,a)"
+-}
