@@ -27,6 +27,8 @@ module Common.ATerm.AbstractSyntax
     where
 
 import qualified Common.Lib.Map as Map
+import qualified Common.DFiniteMap as DMap
+
 import List
 import Control.Exception (assert)
 
@@ -40,13 +42,13 @@ data ShATerm = ShAAppl {-# UNPACK #-} !String {-# UNPACK #-} ![Int] ![Int]
 	     | ShAInt  {-# UNPACK #-} !Integer       ![Int]  
 	       deriving (Read,Show,Eq,Ord)
 
-data ATermTable = ATT (Map.Map ShATerm Int) (Map.Map Int ShATerm) 
+data ATermTable = ATT (Map.Map ShATerm Int) (DMap.Map Int ShATerm) 
                       {-# UNPACK #-} !Int
 
 data ShChoice = Full | NoFull 
 
 emptyATermTable :: ATermTable
-emptyATermTable =  ATT Map.empty Map.empty 0
+emptyATermTable =  ATT Map.empty DMap.empty 0
 
 addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable,Int)
 addATermNoFullSharing = addATerm' NoFull
@@ -57,7 +59,7 @@ addATerm = addATerm' Full
 addATerm' :: ShChoice -> ShATerm -> ATermTable -> (ATermTable,Int)
 addATerm' cho t (ATT a_iDFM i_aDFM i1) = 
         -- asserts are only checked without optimization
-        assert (not (Map.member i1 i_aDFM)) (
+        assert (not (DMap.member i1 i_aDFM)) (
            assert (consistent)
 	     (case cho of
 	      Full -> insertFull
@@ -70,7 +72,7 @@ addATerm' cho t (ATT a_iDFM i_aDFM i1) =
 	          -- mapping of t to i1 otherwise we get Nothing and
 	          -- the new relation is defined.
                   dfm2 = {-# SCC "fm2_f" #-} 
-	                 maybe (Map.insert i1 t i_aDFM) 
+	                 maybe (DMap.insert i1 t i_aDFM) 
 	                       -- mapping not defined => set it
 	                       (\_->i_aDFM) 
 	                       -- otherwise return unchanged map
@@ -89,7 +91,7 @@ addATerm' cho t (ATT a_iDFM i_aDFM i1) =
                              (\_ _ _ -> error ("destructive update with: "
                                                 ++ show t))  
                              t i1 a_iDFM
-                  dfm2 = {-# SCC "fm2_nf" #-} Map.insert i1 t i_aDFM
+                  dfm2 = {-# SCC "fm2_nf" #-} DMap.insert i1 t i_aDFM
               in (ATT dfm1 dfm2 (i1+1),i1))
 
           shorter = all (<i1)
@@ -104,7 +106,7 @@ addATerm1 t tbl = fst $ addATerm t tbl
 
 getATerm :: ATermTable -> ShATerm
 getATerm (ATT _ i_aFM i) = 
-    Map.findWithDefault (ShAInt (-1) []) (i-1) i_aFM
+    DMap.findWithDefault (ShAInt (-1) []) (i-1) i_aFM
 
 getTopIndex :: ATermTable -> Int
 getTopIndex (ATT _ _ i) = i-1
@@ -159,7 +161,7 @@ getATermIndex t (ATT a_iDFM _ _) = Map.findWithDefault (-1) t a_iDFM
 getATermByIndex :: Int -> ATermTable -> (ATermTable,ShATerm)
 getATermByIndex i (ATT a_iDFM i_aDFM _) = 
     (ATT a_iDFM i_aDFM (i+1),
-     Map.findWithDefault
+     DMap.findWithDefault
          (error "getATermByIndex: No entry for ATerm in ATermTable") i
          i_aDFM) 
 
