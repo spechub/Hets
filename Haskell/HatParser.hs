@@ -12,12 +12,6 @@ Portability :  portable
    Parses Haskell declarations (not a whole module), for use
      in heterogeneous specifications
 -}
-{-
-   toDo: 
-
-   positions in successfully parsed abstract syntax are wrong
-   (they start with 3)
--}
 
 module Haskell.HatParser where
 
@@ -42,12 +36,10 @@ hatParser = do p <- getPosition
                s <- hStuff
 --               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
-                   r = HatParser.parse 
-		       ("\nmodule Anonymous where\n" ++ s) 
+                   r = HatParser.parse s 
                           (SrcLoc l 0) c []
                case r of
 		           Ok _ (HsModule _ _ _ hsDecls) -> 
 --			       trace (showPretty hsDecls " OK!") $ 
 				     return hsDecls
-			   Failed msg -> do -- no failure position!
-			       fail msg
+			   Failed msg -> unexpected msg

@@ -26,7 +26,7 @@ stuff = lineComment <|> nestComment <|> stringLit <|> charLit
 	<|> balanced "{}" 
 	<|> balanced "()" 
 	<|> balanced "[]" 
-	<|> single (noneOf "])}")
+	<|> single (noneOf "])}") <?> ""
 
 balanced :: String -> GenParser Char st String
 balanced [o, c] = char o <:> hStuff <++> string [c]
