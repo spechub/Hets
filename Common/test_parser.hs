@@ -125,7 +125,7 @@ main = do { as <- getArgs
     where extract_par = extract_par' "annotations" [] 
 	  extract_par' p ac as = 
 	      if as == [] then
-		 error "*** No Filename or argument given"
+		 error "usage: <prog> -p (annotation|casl_id|casl_id2) <files>"
 	      else
 	      case as of 
 		      [s] -> (p,ac ++ as) 
