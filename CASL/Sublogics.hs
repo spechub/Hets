@@ -1,4 +1,4 @@
-------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 -- HetCATS/CASL/Sublogics.hs
 -- $Id$
 -- Authors: Pascal Schmidt
@@ -752,6 +752,24 @@ pr_annoted sl f (Annoted e p l r) =
              if (isNothing res) then Nothing else
              Just (Annoted (fromJust res) p l r)
 
+-- project annoted type, by-producing a [SORT]
+-- used for projecting datatypes: sometimes it is necessary to
+-- introduce a SORT_DEFN for a datatype that was erased
+-- completely, for example by only having partial constructors
+-- and partiality forbidden in the desired sublogic - the sort
+-- name may however still be needed for formulas because it can
+-- appear there like in (forall x,y:Datatype . x=x), a formula
+-- that does not use partiality (does not use any constructor
+-- or selector)
+--
+pr_annoted_dt :: CASL_Sublogics -> (CASL_Sublogics -> a -> (Maybe a,[SORT])) -> Annoted a -> (Maybe (Annoted a),[SORT])
+pr_annoted_dt sl f (Annoted e p l r) =
+           let
+             (res,lst) = f sl e
+           in
+             if (isNothing res) then (Nothing,lst) else
+             (Just (Annoted (fromJust res) p l r),lst)
+
 pr_check :: CASL_Sublogics -> (a -> CASL_Sublogics) -> a -> Maybe a
 pr_check l f e = if (in_x l e f) then (Just e) else Nothing
 
@@ -760,79 +778,105 @@ pr_formula l f = pr_check l sl_formula f
 
 pr_basic_spec :: CASL_Sublogics -> BASIC_SPEC -> BASIC_SPEC
 pr_basic_spec l (Basic_spec s) =
-  Basic_spec ((mapMaybe (pr_annoted (adjust_logic l) pr_basic_items)) s)
+  let
+    res   = map (pr_annoted_dt (adjust_logic l) pr_basic_items) s
+    items = (map fromJust . filter isJust) $ map fst res
+    adds  = concat $ map snd res
+    ret   = if (adds==[]) then
+              items
+            else
+              items ++ [Annoted (Sig_items (Sort_items
+                        [Annoted (Sort_decl adds []) [] [] []] []))
+                        [] [] [] ]
+  in
+    Basic_spec ret
 
-pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> Maybe BASIC_ITEMS
+pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS -> (Maybe BASIC_ITEMS, [SORT])
 pr_basic_items l (Sig_items s) =
                let
-                 res = pr_sig_items l s
+                 (res,lst) = pr_sig_items l s
                in
-                 if (isNothing res) then Nothing else
-                 Just (Sig_items (fromJust res))
+                 if (isNothing res) then (Nothing,lst) else
+                 (Just (Sig_items (fromJust res)),lst)
 pr_basic_items l (Free_datatype d p) =
                let
                  (res,pos) = mapPos (tln 2 p)
                                     (pr_annoted l pr_datatype_decl) d
+                 lst = pr_lost_dt l ((map item) d)
                in
-                 if (res==[]) then Nothing else
-                 Just (Free_datatype res ((topn 2 p) ++ pos))
+                 if (res==[]) then (Nothing,lst) else
+                 (Just (Free_datatype res ((topn 2 p) ++ pos)),lst)
 pr_basic_items l (Sort_gen s p) =
                if (has_cons l) then
                  let
-                   res = mapMaybe (pr_annoted l pr_sig_items) s
+                   tmp = map (pr_annoted_dt l pr_sig_items) s
+                   res = (map fromJust . filter isJust) $ map fst tmp
+                   lst = concat $ map snd tmp
                  in
-                   if (res==[]) then Nothing else
-                   Just (Sort_gen res p)
+                   if (res==[]) then (Nothing,lst) else
+                   (Just (Sort_gen res p),lst)
                else
-                 Nothing
-pr_basic_items l (Var_items v p) = Just (Var_items v p)
+                 (Nothing,[])
+pr_basic_items l (Var_items v p) = (Just (Var_items v p),[])
 pr_basic_items l (Local_var_axioms v f p) =
                let
                  (res,pos) = mapPos (tln (length v) p)
                                     (pr_annoted l pr_formula) f
                in
-                 if (res==[]) then Nothing else
-                 Just (Local_var_axioms v res ((topn (length v) p) ++ pos))
+                 if (res==[]) then (Nothing,[]) else
+                 (Just (Local_var_axioms v res ((topn (length v) p)++pos)),[])
 pr_basic_items l (Axiom_items f p) =
                let
                  (res,pos) = mapPos p (pr_annoted l pr_formula) f
                in
-                 if (res==[]) then Nothing else
-                 Just (Axiom_items res pos)
+                 if (res==[]) then (Nothing,[]) else
+                 (Just (Axiom_items res pos),[])
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
 pr_datatype_decl l d = pr_check l sl_datatype_decl d
 
+pr_lost_dt :: CASL_Sublogics -> [DATATYPE_DECL] -> [SORT]
+pr_lost_dt l [] = []
+pr_lost_dt sl ((Datatype_decl s l p):t) =
+                     let
+                       res = pr_datatype_decl sl (Datatype_decl s l p)
+                     in
+                       if (isNothing res) then
+                         s:(pr_lost_dt sl t)
+                       else
+                         pr_lost_dt sl t
+                         
 pr_symbol :: CASL_Sublogics -> Symbol -> Maybe Symbol
 pr_symbol l s = pr_check l sl_symbol s
 
-pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> Maybe SIG_ITEMS
+pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> (Maybe SIG_ITEMS,[SORT])
 pr_sig_items l (Sort_items s p) =
              let
                (res,pos) = mapPos (tln 1 p)
                                   (pr_annoted l pr_sort_item) s
              in
-               if (res==[]) then Nothing else
-               Just (Sort_items res ((topn 1 p) ++ pos))
+               if (res==[]) then (Nothing,[]) else
+               (Just (Sort_items res ((topn 1 p) ++ pos)),[])
 pr_sig_items l (Op_items o p) =
              let
                (res,pos) = mapPos (tln 1 p)
                                   (pr_annoted l pr_op_item) o
              in
-               if (res==[]) then Nothing else
-               Just (Op_items res ((topn 1 p) ++ pos))
+               if (res==[]) then (Nothing,[]) else
+               (Just (Op_items res ((topn 1 p) ++ pos)),[])
 pr_sig_items l (Pred_items i p) =
              if (has_pred l) then
-               Just (Pred_items i p)
+               (Just (Pred_items i p),[])
              else
-               Nothing
+               (Nothing,[])
 pr_sig_items l (Datatype_items d p) =
              let
                (res,pos) = mapPos (tln 1 p)
-                                  (pr_annoted l pr_datatype_decl) d
+                           (pr_annoted l pr_datatype_decl) d
+               lst = pr_lost_dt l ((map item) d)
              in
-               if (res==[]) then Nothing else
-               Just (Datatype_items res ((topn 1 p) ++ pos))
+               if (res==[]) then (Nothing,lst) else
+               (Just (Datatype_items res ((topn 1 p) ++ pos)),lst)
 
 pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
 pr_op_item l i = pr_check l sl_op_item i
