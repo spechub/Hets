@@ -47,7 +47,7 @@ showTyp pri (Type str _ _ [s,t])
 showTyp _ (Type name _ _ args) = 
   case args of
     []     -> name
-    arg:[] -> showTyp 100 arg ++ sp ++ name
+    arg:[] -> showTyp 10 arg ++ sp ++ name
     _      -> let (tyVars,types) = foldl split ([],[]) args
               in  
                 lb ++ concat (map ((sp++) . show) tyVars) ++
@@ -410,21 +410,6 @@ quote_underscores [] = []
 quote_underscores ('_':'_':rest) = '_':quote_underscores rest
 quote_underscores ('_':rest) = '\'':'_':quote_underscores rest
 quote_underscores (c:rest) = c:quote_underscores rest
-
--- datatype Bool = True | False
-
--- lemma case_Type {typeId = "Bool", typeArgKind = [], typeResultKind = [], typeArgs = []}_SomeProm [simp]:"(case a ofTrue  => Some( true
--- )   |False  => Some( false
--- )) =
--- Some (case a ofTrue  => true
---    |False  => false
--- )"
-
--- type DataTypeTab = [DataTypeTabEntry]
--- type DataTypeTabEntry = [(Typ,[DataTypeAlt])] -- (type,[constructors])
--- type DataTypeAlt = (String,[Typ])
-
-
 
 -- instance PrettyPrint Sign where
 --     printText0 _ = ptext . show
