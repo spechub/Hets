@@ -14,16 +14,18 @@ Mixfix analysis of terms, adapted from the CASL analysis
 module HasCASL.MixAna where 
 
 import HasCASL.As
+import HasCASL.Le
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import CASL.MixfixParser
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Control.Monad
+import Control.Monad.State
 import qualified Char as C
 import Data.List(intersperse)
+import HasCASL.Unify
 
 -- Earley Algorithm
 
@@ -34,37 +36,37 @@ data GrSym = Terminal Token
 
 type Rule = [GrSym]
 
-data State = State Id     -- the rule to match
+data PState = PState Id     -- the rule to match
+                   Type     -- type of Id
                    [Pos]    -- positions of Id tokens
                    [Term]   -- currently collected arguments 
 		                               -- both in reverse order
 		   [Token]     -- part of the rule after the "dot"
 		   Int      -- index into the ParseMap/input string
 
-instance Eq State where
-    State r1 _ _ t1 p1 == State r2 _ _ t2 p2 =
-	r1 == r2 && t1 == t2 && p1 == p2
+instance Eq PState where
+    PState r1 _ _ _ t1 p1 == PState r2 _ _ _ t2 p2 =
+	(r1, t1, p1) == (r2, t2, p2)
 
-instance Ord State where
-    State r1 _ _ t1 p1 <= State r2 _ _ t2 p2 =
-	if r1 == r2 then
-	       if t1 == t2 then p1 <= p2
-	       else t1 <= t2
-	else r1 <= r2
+instance Ord PState where
+    PState r1 _ _ _ t1 p1 <= PState r2 _ _ _ t2 p2 =
+	(r1, t1, p1) <= (r2, t2, p2)
 
-instance Show State where
-    showsPrec _ (State r _ _ d p) = showChar '{' 
+instance Show PState where
+    showsPrec _ (PState r _ _ _ d p) = showChar '{' 
 				 . showSepList (showString "") showTok first
 				 . showChar '.' 
 				 . showSepList (showString "") showTok d
 				 . shows p . showChar '}'
 	where first = take (length v - length d) v
-	      v = getTokenList True r
+	      v = getTokenList place r
 
 
+termStr :: String
+termStr = "(T)"
 commaTok, parenTok, termTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
-termTok = mkSimpleId "(T)"
+termTok = mkSimpleId termStr
 parenTok = mkSimpleId "(..)" 
 
 colonTok, asTok, varTok, opTok, predTok, inTok, caseTok, litTok :: Token
@@ -81,46 +83,53 @@ stripFinalPlaces :: Id -> Id
 stripFinalPlaces (Id ts cs ps) =
     Id (fst $ splitMixToken ts) cs ps 
 
-mkState :: Int -> Id -> State 
-mkState i ide = State ide [] [] (getTokenList False $ stripFinalPlaces ide) i
+mkState :: Int -> (Id, OpInfo) -> State Int PState 
+mkState i (ide, info) = 
+    do t <- freshInst $ opType info 
+       return $ PState ide t [] [] 
+			      (getTokenList termStr $ stripFinalPlaces ide) i
 
-mkApplState :: Int -> Id -> State
-mkApplState i ide = State ide [] [] 
-		    (getTokenList True ide) i
+mkApplState :: Int -> (Id, OpInfo) -> State Int PState 
+mkApplState i (ide, info) =     
+    do t <- freshInst $ opType info 
+       return $ PState ide t [] [] (getTokenList place ide) i
 
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
 listId = Id [mkSimpleId "[]"] [] []
 
-listStates :: GlobalAnnos -> Int -> [State]
+
+listStates :: GlobalAnnos -> Int -> State Int [PState]
 -- no empty list (can be written down directly)
 listStates g i = 
-    let listState toks = State listId [] [] toks i
-	(b1, b2) = listBrackets g
-    in if null b1 || null b2 then []
-       else [ listState (b1 ++ [termTok] ++ b2) 
+    do ty <- freshType star
+       let listState toks = PState listId ty [] [] toks i
+	   (b1, b2) = listBrackets g
+       return $ if null b1 || null b2 then []
+	      else [ listState (b1 ++ [termTok] ++ b2) 
 		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
 
 -- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> Set.Set Id -> Int -> [State]
+initialState :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> State Int [PState]
 initialState g ids i = 
-    let mkTokState toks = State (Id toks [] []) [] [] toks i
-        is = Set.toList ids
-    in mkTokState [parenTok] : 
-       mkTokState [termTok, colonTok] :
-       mkTokState [termTok, asTok] :
-       mkTokState [termTok, inTok] :
-       mkTokState [varTok] :
-       mkTokState [opTok] :
-       mkTokState [litTok] :
-       mkTokState [termTok, termTok] :
-       listStates g i ++
-       map (mkState i) is ++ 
-       map (mkApplState i) is
+    do ls <- listStates g i
+       l1 <- mapM (mkState i) ids
+       l2 <- mapM (mkApplState i) ids   
+       let mkTokState toks = PState (Id toks [] []) (MixfixType []) 
+			     [] [] toks i
+       return (mkTokState [parenTok] : 
+	       mkTokState [termTok, colonTok] :
+	       mkTokState [termTok, asTok] :
+	       mkTokState [termTok, inTok] :
+	       mkTokState [varTok] :
+	       mkTokState [opTok] :
+	       mkTokState [litTok] :
+	       mkTokState [termTok, termTok] :
+	       ls ++ l1 ++ l2)
 
-type ParseMap = Map.Map Int [State]
+type ParseMap = Map.Map Int [PState]
 
 lookUp :: (Ord a, MonadPlus m) => Map.Map a (m b) -> a -> (m b)
 lookUp ce k = Map.findWithDefault mzero k ce
@@ -134,25 +143,63 @@ scan trm i m =
 			 x 
   in
     Map.insert (i+1) ( 
-       foldr (\ (State o b a ts k) l ->
+       foldr (\ (PState o ty b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
                    if t == commaTok && o == listId then 
 	      -- list elements separator
-	             (State o p a 
+	             (PState o ty p a 
 		      (termTok : commaTok : tail ts) k)
-                     : (State o p a (termTok : tail ts) k) : l
+                     : (PState o ty p a (termTok : tail ts) k) : l
               else if t == parenTok then
-                     (State o b (trm : a) (tail ts) k) : l
+                     (PState o ty b (trm : a) (tail ts) k) : l
               else if t == varTok || t == opTok || t == predTok then
-                     (State o b [trm] (tail ts) k) : l
+                     (PState o ty b [trm] (tail ts) k) : l
 	      else if t == colonTok || t == asTok then
-	             (State o b [mkTerm $ head a] [] k) : l
-	           else (State o p a (tail ts) k) : l) [] 
+	             (PState o ty b [mkTerm $ head a] [] k) : l
+	           else (PState o ty p a (tail ts) k) : l) [] 
 	      (lookUp m i)) m
      where mkTerm t1 = case trm of 
 			  _ -> t1
 	      
+-- construct resulting term from PState 
+
+stateToAppl :: PState -> Term
+stateToAppl (PState ide _ rs a _ _) = 
+    let vs = getTokenList place ide 
+        ar = reverse a
+        _qs = reverse rs
+    in if  vs == [termTok, colonTok] 
+	   || vs == [termTok, asTok] 
+	   || vs == [varTok] 
+           || vs == [opTok]
+           || vs == [predTok]
+           || vs == [parenTok]
+       then head ar
+       else head ar
+
+toAppl :: GlobalAnnos -> PState -> Term
+toAppl g s@(PState i _ bs a _ _) =
+    if i == listId then    
+       case list_lit $ literal_annos g of
+       Nothing -> error "toAppl" 
+       Just (_, c, f) -> 
+	   let (b1, b2) = listBrackets g
+               nb1 = length b1
+               nb2 = length b2
+               ra = reverse a
+               na = length ra
+               nb = length bs
+	       mkList [] ps = asAppl c [] (head ps)
+	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
+	   in if null a then asAppl c [] (if null bs then nullPos else last bs)
+	      else if nb + 1 == nb1 + nb2 + na then
+		   let br = reverse bs 
+		       br1 = drop (nb1 - 1) br 
+	           in  mkList (reverse a) br1  
+		   else error "toAppl"
+    else stateToAppl s
+
 -- precedence graph stuff
 
 checkArg :: GlobalAnnos -> AssocEither -> Id -> Id -> Bool
@@ -178,9 +225,9 @@ isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
 isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
 	      (length $ takeWhile isPlace (reverse ts))
 	  
-filterByPrec :: GlobalAnnos -> State -> State -> Bool
-filterByPrec _ _ (State _ _ _ [] _) = False 
-filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:_) _) = 
+filterByPrec :: GlobalAnnos -> PState -> PState -> Bool
+filterByPrec _ _ (PState _ _ _ _ [] _) = False 
+filterByPrec g (PState argIde _ _ _ _ _) (PState opIde _ _ args (hd:_) _) = 
        if hd == termTok then 
 	  if opIde == listId || argIde == listId then True
 	  else let n = length args in
@@ -194,79 +241,24 @@ filterByPrec g (State argIde _ _ _ _) (State opIde _ args (hd:_) _) =
                          else checkAnyArg g opIde argIde
        else False
 
--- reconstructing positions 
-
-setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
-setPlainIdePos (Id ts cs _) ps =
-   let (places, toks) = span isPlace (reverse ts) 
-       pls = reverse places
-       f = zipWith (\ a b -> up_pos (const b) a)
-       (ps1, ps2) = splitAt (length toks) ps
-       front = f (reverse toks) ps1
-   in if null cs then 
-      let (ps3, ps4) = splitAt (length pls) ps2
-      in (Id (front ++ f pls ps3) [] [], ps4)
-      else let (newCs, ps3, ps4) = foldl (\ (prevCs, seps, rest) a -> 
-				  let (c1, qs) = setPlainIdePos a rest
-				  in (c1: prevCs, head qs : seps, tail qs))
-			   ([], [head ps2], tail ps2) cs
-	       (ps6, ps7) = splitAt (length pls) ps4
-           in (Id (front ++ f pls ps6) (reverse newCs) (reverse ps3), ps7)
-
-stateToAppl :: State -> Term
-stateToAppl (State ide rs a _ _) = 
-    let vs = getTokenList True ide 
-        ar = reverse a
-        _qs = reverse rs
-    in if  vs == [termTok, colonTok] 
-	   || vs == [termTok, asTok] 
-	   || vs == [varTok] 
-           || vs == [opTok]
-           || vs == [predTok]
-           || vs == [parenTok]
-       then head ar
-       else head ar
-
-asListAppl :: GlobalAnnos -> State -> Term
-asListAppl g s@(State i bs a _ _) =
-    if i == listId then    
-       case list_lit $ literal_annos g of
-       Nothing -> error "asListAppl" 
-       Just (_, c, f) -> 
-	   let (b1, b2) = listBrackets g
-               nb1 = length b1
-               nb2 = length b2
-               ra = reverse a
-               na = length ra
-               nb = length bs
-	       mkList [] ps = asAppl c [] (head ps)
-	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
-	   in if null a then asAppl c [] (if null bs then nullPos else last bs)
-	      else if nb + 1 == nb1 + nb2 + na then
-		   let br = reverse bs 
-		       br1 = drop (nb1 - 1) br 
-	           in  mkList (reverse a) br1  
-		   else error "asListAppl"
-    else stateToAppl s
-
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
 
-collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
+collectArg :: GlobalAnnos -> ParseMap -> PState -> [PState]
 -- pre: finished rule 
-collectArg g m s@(State _ _ _ _ k) = 
-    map (\ (State o b a ts k1) ->
-	 State o b (asListAppl g s : a) 
-	 (tail ts) k1)
+collectArg g m s@(PState _ _ _ _ _ k) = 
+    foldr (\ (PState o ty b a ts k1) l ->
+	 PState o ty b (toAppl g s : a) 
+	 (tail ts) k1 : l) []
     $ filter (filterByPrec g s)
     $ lookUp m k
 
-compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
+compl :: GlobalAnnos -> ParseMap -> [PState] -> [PState]
 compl g m l = 
   concat $ map (collectArg g m) 
-  $ filter (\ (State _ _ _ ts _) -> null ts) l
+  $ filter (\ (PState _ _ _ _ ts _) -> null ts) l
 
-complRec :: GlobalAnnos -> ParseMap -> [State] -> [State]
+complRec :: GlobalAnnos -> ParseMap -> [PState] -> [PState]
 complRec g m l = let l1 = compl g m l in 
     if null l1 then l else complRec g m l1 ++ l
 
@@ -276,27 +268,33 @@ complete g i m = Map.insert i (complRec g m $ lookUp m i) m
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: GlobalAnnos -> Set.Set Id -> Int -> ParseMap -> ParseMap
-predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
+data CountMap = CountMap { counter :: Int
+			 , parseMap :: Map.Map Int [PState]
+			 }
+
+predict :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> CountMap -> CountMap
+predict g is i cm@(CountMap c m) = 
+    if i /= 0 && any (\ (PState _ _ _ _ ts _) -> not (null ts) 
 			 && head ts == termTok) 
 		 (lookUp m i)
-		 then Map.insertWith (++) i (initialState g is i) m
-		 else m 
+		 then let (ps, c2) = runState (initialState g is i) c
+		      in CountMap c2 $ Map.insertWith (++) i ps m
+		 else cm
 
-type Chart = (Int, [Diagnosis], ParseMap)
+type Chart = (Int, [Diagnosis], CountMap)
 
-nextState :: GlobalAnnos -> Set.Set Id -> Term -> Chart -> Chart
-nextState g is trm (i, ds, m) = 
-    let m1 = complete g (i+1) $
-		 scan trm i $
-		 predict g is i m
+nextState :: GlobalAnnos -> [(Id, OpInfo)] -> Term -> Chart -> Chart
+nextState g is trm (i, ds, m) =
+    let CountMap c2 pm = predict g is i m
+        m1 = complete g (i+1) $
+		 scan trm i pm
     in if null (lookUp m1 (i+1)) && null ds
 		    then (i+1, Diag Error ("unexpected mixfix token: " 
 				      ++ show  trm)
 			       (nullPos) : ds, m)
-       else (i+1, ds, m1)
+       else (i+1, ds, CountMap c2 m1)
 
-iterateStates :: GlobalAnnos -> Set.Set Id -> [Term] -> Chart -> Chart
+iterateStates :: GlobalAnnos -> [(Id, OpInfo)] -> [Term] -> Chart -> Chart
 iterateStates g ops terms c = 
     let self = iterateStates g ops
         _resolveTerm = resolve g ops
@@ -310,15 +308,16 @@ iterateStates g ops terms c =
 
 getAppls :: GlobalAnnos -> Int -> ParseMap -> [Term]
 getAppls g i m = 
-    map (asListAppl g) $ 
-	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
+    map (toAppl g) $ 
+	filter (\ (PState _ _ _ _ ts k) -> null ts && k == 0) $ 
 	     lookUp m i
 
-resolve :: GlobalAnnos -> Set.Set Id -> Term -> Result Term
-resolve g ops trm =
-    let (i, ds, m) = iterateStates g ops [trm] 
-		     (0, [], Map.single 0 $ initialState g ops 0) 
-        ts = getAppls g i m
+resolve :: GlobalAnnos -> [(Id, OpInfo)] -> Int -> Term -> Result Term
+resolve g ops c trm =
+    let (ps, c2) = runState (initialState g ops 0) c
+        (i, ds, m) = iterateStates g ops [trm] 
+		     (0, [], CountMap c2 $ Map.single 0 $ ps) 
+        ts = getAppls g i $ parseMap m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
 					     ++ show trm)
