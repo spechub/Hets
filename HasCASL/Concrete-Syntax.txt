@@ -31,10 +31,10 @@ SORT-ITEM       ::= TYPE-NAME , ... , TYPE-NAME
 
 TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
                   | TYPE-DEFN-PATTERN , .... , TYPE-DEFN-PATTERN : KIND
-                  | TYPE-APPL-PATTERN := PSEUDOTYPE
-                  | TYPE-APPL-PATTERN , ... , TYPE-APPL-PATTERN < TYPE 
-                  | TYPE-APPL-PATTERN = { VAR : TYPE "." FORMULA }
-                  | TYPE-APPL-PATTERN = ... = TYPE-APPL-PATTERN
+                  | TYPE-PATTERN := PSEUDOTYPE
+                  | TYPE-PATTERN , ... , TYPE-PATTERN < TYPE 
+                  | TYPE-PATTERN = { VAR : TYPE "." FORMULA }
+                  | TYPE-PATTERN = ... = TYPE-PATTERN
 		  | DATATYPE-DECL        %% TYPE-DEFN-PATTERN ::= ALTERNATIVES
 
 %% TYPE , ... , TYPE clashes with intersection class without parenthesis
@@ -42,7 +42,7 @@ TYPE-ITEM       ::= TYPE-NAME , ... , TYPE-NAME  %% same as SORT-ITEM
 TYPE-DEFN-PATTERN ::= TYPE-NAME 
 		    | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
 
-TYPE-APPL-PATTERN ::= TYPE-DEFN-PATTERN
+TYPE-PATTERN      ::= TYPE-DEFN-PATTERN
 		    | PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN
 
 PRIM-TYPE-PATTERN ::= [ ID , ... , ID ]      %% compound list
