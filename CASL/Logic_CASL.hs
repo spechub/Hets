@@ -103,6 +103,7 @@ instance Logic CASL Sublogics.CASL_Sublogics
          proj_sublogic_symb_map_items CASL = Sublogics.pr_symb_map_items
          proj_sublogic_sign CASL = Sublogics.pr_sign
 --         proj_sublogic_morphism CASL = Sublogics.pr_morphism
+--         proj_sublogic_epsilon CASL = Sublogics.pr_epsilon
          proj_sublogic_symbol CASL = Sublogics.pr_symbol
 
 ---- helpers ---------------------------------

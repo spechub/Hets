@@ -926,10 +926,8 @@ pr_fun_map_entry l (t,i,b) =
       if ((isJust res) && (not b)) then
       Just (t,i,b) else Nothing
 
--- FIXME:
-
--- pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
--- pr_epsilon l s = 
+pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
+pr_epsilon l s = (Morphism s (pr_sign l s) emptyFM emptyFM emptyFM)
 
 ------------------------------------------------------------------------------
 -- the end
