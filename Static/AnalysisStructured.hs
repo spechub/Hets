@@ -679,13 +679,15 @@ ana_RESTRICTION dg gSigma gSigma' False (Hidden restr pos) =
   -- ??? Need to check that local env is not affected !
 ana_RESTRICTION _ (G_sign lid sigma) (G_sign lid' sigma') 
      False (Revealed (G_symb_map_items_list lid1 sis) pos) = 
-  do let sys = sym_of lid sigma
-         sys' = sym_of lid' sigma'
+  do let sys = sym_of lid sigma -- local env
+         sys' = sym_of lid' sigma' -- "big" signature
      sis' <- rcoerce lid1 lid' (headPos pos) sis
      rmap <- stat_symb_map_items lid' sis'
      let sys'' = 
           Set.fromList
            [sy | sy <- Set.toList sys', rsy <- Map.keys rmap, matches lid' sy rsy]
+          -- domain of rmap intersected with sys'
+          -- domain of rmap should be checked to match symbols from sys' ???
      sys1 <- rcoerce lid lid' (headPos pos) sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic
