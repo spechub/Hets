@@ -221,7 +221,7 @@ free type bool (|-> bool) ::=
 *** Error 65.52, unexpected term '(def y) und (def x)'
 *** Error , unknown type '_var_37'
 *** Hint 75.15, no type match for: x
-  with type: 's' (58.16)
+  with type: '_var_48'
   known types:
     
 *** Hint 75.17, wrong result type '_var_44'

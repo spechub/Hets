@@ -56,16 +56,13 @@ anaAttr _ _ b = return $ Just b
 filterVars :: Assumps -> Assumps
 filterVars = filterAssumps (not . isVarDefn)
 
-patternsToType :: [Pattern] -> Type -> Type
+patternsToType :: [[VarDecl]] -> Type -> Type
 patternsToType [] t = t
 patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr 
 			  (patternsToType ps t) []
 
-tuplePatternToType :: Pattern -> Type
-tuplePatternToType (QualVar _ t _) = t
-tuplePatternToType (TupleTerm ps qs) = 
-    mkProductType (map tuplePatternToType ps) qs
-tuplePatternToType _ = error "tuplePatternToType"
+tuplePatternToType :: [VarDecl] -> Type
+tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) []
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
 anaOpItem ga br ods@(OpDecl is sc attr ps) = 
@@ -86,11 +83,13 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        putAssumps $ filterVars as
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
+	   monoPats = map (map makeMonomorph) newPats
 	   toQualVar (VarDecl v t _ qs) = QualVar v t qs
-	   pats = map (\ l -> mkTupleTerm (map toQualVar l) []) newPats
+	   pats = map (\ l -> mkTupleTerm (map toQualVar l) []) monoPats
        case mSc of 
-		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
+		Just newSc@(TypeScheme tArgs (qu :=> scTy) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc
+		    mapM (mapM addVarDecl) monoPats
 		    mt <- resolveTerm ga (Just ty) trm
 		    putAssumps as
 		    case mt of 
@@ -98,7 +97,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 					     newSc partial trm ps
 			      Just lastTrm -> do 
 			          let lastSc = TypeScheme tArgs 
-					  (qu :=> patternsToType pats ty) qs
+					(qu :=> patternsToType newPats scTy) qs
 				      lamTrm = case (pats, partial) of 
 					       ([], Total) -> lastTrm
 					       _ -> LambdaTerm pats partial 

@@ -267,8 +267,12 @@ convertTypeToKind _ =
 
 optAnaVarDecl :: VarDecl -> State Env (Maybe GenVarDecl)
 optAnaVarDecl vd@(VarDecl v t s q) = 
-    let varDecl = anaVarDecl vd >>= (return . fmap GenVarDecl) in
-    if isSimpleId v then
+    let varDecl = do mvd <- anaVarDecl vd
+		     case mvd of 
+		         Nothing -> return Nothing
+			 Just nvd -> do mmvd <- addVarDecl $ makeMonomorph nvd
+					return $ fmap GenVarDecl mmvd
+    in if isSimpleId v then
     do mk <- convertTypeToKind t
        case mk of 
 	   Just k -> do addDiags [mkDiag Hint "is type variable" v]
@@ -277,18 +281,20 @@ optAnaVarDecl vd@(VarDecl v t s q) =
            _ -> varDecl
     else varDecl
 
+makeMonomorph :: VarDecl -> VarDecl
+makeMonomorph (VarDecl v t sk ps) =
+    let s = Map.fromAscList $ map ( \ a@(TypeArg i k _ _) -> 
+				    (a, TypeName i k 0)) $ 
+	    Set.toList $ varsOf t
+	in VarDecl v (subst s t) sk ps
+
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
 anaVarDecl(VarDecl v oldT sk ps) = 
     do mt <- anaStarType oldT
-       case mt of 
-	       Nothing -> return Nothing
-	       Just t -> let s = Map.fromAscList $ 
-				 map ( \ a@(TypeArg i k _ _) -> 
-				       (a, TypeName i k 0)) $ 
-				 Set.toList $ varsOf t
-	                 -- make type monomorph
-	                 in  addVarDecl (VarDecl v (subst s t) sk ps)
+       return $ case mt of 
+	       Nothing -> Nothing
+	       Just t -> Just $ VarDecl v t sk ps
 
 -- | add a local variable with an analysed type
 addVarDecl :: VarDecl -> State Env (Maybe VarDecl) 
