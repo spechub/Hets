@@ -1,8 +1,11 @@
- -- needs ghc
+{-
+Module      :  $Header$
+Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- GUI/ConvertDevToAbstractGraph.hs
-   $Id$
-   Jorina Freya Gerken, Till Mossakowski
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic)
 
    Conversion of development graphs from Logic.DevGraph
    to abstract graphs of the graph display interface
@@ -41,8 +44,9 @@ import Logic.Logic
 import Common.PrettyPrint
 
 
-{- Maps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
-and one Map to store which libname belongs to which development graph-}
+{- Maps used to track which node resp edge of the abstract graph
+correspondes with which of the development graph and vice versa and
+one Map to store which libname belongs to which development graph-}
 
 data ConversionMaps = ConversionMaps {
 		        dg2abstrNode :: DGraphToAGraphNode,
@@ -62,14 +66,18 @@ type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 initializeConverter :: IO (IORef GraphMem)
-initializeConverter = do initGraphInfo <- initgraphs
-		         graphMem <- (newIORef GraphMem{nextGraphId = 0, graphInfo = initGraphInfo})
-			 return graphMem
+initializeConverter = 
+    do initGraphInfo <- initgraphs
+       graphMem <- (newIORef GraphMem{nextGraphId = 0, 
+				      graphInfo = initGraphInfo})
+       return graphMem
 
 {- converts the development graph given by its libname into an abstract graph
 and returns the descriptor of the latter, the graphInfo it is contained in
 and the conversion maps (see above)-}
-convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv -> IO (Descr, GraphInfo, ConversionMaps)
+
+convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv 
+	     -> IO (Descr, GraphInfo, ConversionMaps)
 convertGraph graphMem libname libEnv =
   do --nextGraphId <- newIORef 0
      let convMaps = ConversionMaps
@@ -197,10 +205,12 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		("locallyEmpty_internal", 
 		 createLocalMenuNodeTypeInternal "LightGrey" convRef dGraph),
                 ("dg_ref", 
-		 createLocalMenuNodeTypeDgRef "SteelBlue" convRef actGraphInfo ioRefGraphMem graphMem
+		 createLocalMenuNodeTypeDgRef "SteelBlue" convRef actGraphInfo 
+					      ioRefGraphMem graphMem
                  ),
 		("locallyEmpty_dg_ref", 
-		 createLocalMenuNodeTypeDgRef "LightSteelBlue" convRef actGraphInfo ioRefGraphMem graphMem
+		 createLocalMenuNodeTypeDgRef "LightSteelBlue" convRef 
+		        actGraphInfo ioRefGraphMem graphMem
                  ) ]
                  [("globaldef",
                    Solid 
@@ -257,18 +267,19 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 -- -------------------------------------------------------------
 
 -- local menu for the nodetypes spec and locallyEmpty_spec
-createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents ioRefVisibleNodes actGraphInfo ioRefGraphMem =
+createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents 
+			    ioRefVisibleNodes actGraphInfo ioRefGraphMem =
                  Ellipse $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s) 
                  $$$ LocalMenu (Menu (Just "node menu")
                    [createLocalMenuButtonShowSpec convRef dGraph,
 		    createLocalMenuButtonShowSignature convRef dGraph,
 		    createLocalMenuButtonShowSublogic convRef dGraph,
-		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef
-		                                         ioRefVisibleNodes ioRefGraphMem
+		    createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
+		                     convRef ioRefVisibleNodes ioRefGraphMem
 		                                         actGraphInfo,
 		    createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes 
-		                                             ioRefSubtreeEvents                                                                                                        actGraphInfo
+		              ioRefSubtreeEvents actGraphInfo
 		   ])
                   $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)
@@ -285,20 +296,24 @@ createLocalMenuNodeTypeInternal color convRef dGraph =
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
 -- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
-createLocalMenuNodeTypeDgRef color convRef actGraphInfo ioRefGraphMem graphMem = 
+createLocalMenuNodeTypeDgRef color convRef actGraphInfo 
+			     ioRefGraphMem graphMem = 
                  Box $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s)
 		 $$$ LocalMenu (Button "Show referenced library"
 		     (\ (name,descr,gid) ->
 		        do convMaps <- readIORef convRef
                            --g <- readIORef graphId
-		           (refDescr, newGraphInfo, refConvMaps) <- showReferencedLibrary ioRefGraphMem descr
+		           (refDescr, newGraphInfo, refConvMaps) <- 
+		                showReferencedLibrary ioRefGraphMem descr
 		                              gid
 		                              actGraphInfo
 		                              convMaps
 		           
 --writeIORef convRef newConvMaps
-                           writeIORef ioRefGraphMem graphMem{graphInfo = newGraphInfo, nextGraphId = refDescr +1}
+                           writeIORef ioRefGraphMem 
+				      graphMem{graphInfo = newGraphInfo, 
+					       nextGraphId = refDescr +1}
                            redisplay refDescr newGraphInfo
 		          -- redisplay gid graphInfo
 		           return ()
@@ -345,43 +360,56 @@ createLocalMenuButtonShowSublogic convRef dgraph =
 	            )
 
 
-createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
+createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
+    ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
                     (Button "Show just subtree"
 		      (\ (name,descr,gid) ->
 		        do subtreeEvents <- readIORef ioRefSubtreeEvents
 		           case Map.lookup descr subtreeEvents of
-                             Just _ -> putStrLn ("it is already just the subtree of node " ++ (show descr) ++" shown")
+                             Just _ -> putStrLn 
+		               ("it is already just the subtree of node " 
+				++ (show descr) ++" shown")
 		             Nothing -> 
                                do convMaps <- readIORef convRef
                                   visibleNodes <- readIORef ioRefVisibleNodes
-			          (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
-				 	    				    descr gid convMaps visibleNodes
+			          (eventDescr,newVisibleNodes,errorMsg) <- 
+		                     showJustSubtree ioRefGraphMem
+		                           descr gid convMaps visibleNodes
 		                  case errorMsg of
-		                    Nothing -> do let newSubtreeEvents = Map.insert descr eventDescr subtreeEvents
-                                                  writeIORef ioRefSubtreeEvents newSubtreeEvents
-					          writeIORef ioRefVisibleNodes newVisibleNodes
+		                    Nothing -> do let newSubtreeEvents = 
+		                                        Map.insert descr 
+		                                            eventDescr 
+		                                            subtreeEvents
+                                                  writeIORef ioRefSubtreeEvents
+		                                      newSubtreeEvents
+					          writeIORef ioRefVisibleNodes
+		                                      newVisibleNodes
 		                                  redisplay gid actGraphInfo
 		                                  return()
 		                    Just text -> do putStrLn text
-		                                    return()                            
+		                                    return()
 		      )
                     )
 
 
-createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes ioRefSubtreeEvents actGraphInfo =
+createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes 
+					 ioRefSubtreeEvents actGraphInfo =
                     (Button "undo show just subtree"
 		      (\ (name,descr,gid) ->
 		        do visibleNodes <- readIORef ioRefVisibleNodes
                            case (tail visibleNodes) of
-                             [] -> do putStrLn "Complete graph is already shown"
+                             [] -> do putStrLn 
+		                          "Complete graph is already shown"
                                       return()
                              newVisibleNodes@(x:xs) ->
                                do subtreeEvents <- readIORef ioRefSubtreeEvents
                                   case Map.lookup descr subtreeEvents of
                                     Just hide_event -> 
 		                      do showIt gid hide_event actGraphInfo
-                                         writeIORef ioRefSubtreeEvents (Map.delete descr subtreeEvents)
-                                         writeIORef ioRefVisibleNodes newVisibleNodes
+                                         writeIORef ioRefSubtreeEvents 
+		                              (Map.delete descr subtreeEvents)
+                                         writeIORef ioRefVisibleNodes 
+                                               newVisibleNodes
 		                         redisplay gid actGraphInfo
 		                         return ()
 		                    Nothing -> do putStrLn "undo not possible"
@@ -448,11 +476,11 @@ getSignatureOfNode descr ab2dgNode dgraph =
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
            (DGNode _ (G_sign _ sig) _ _) -> putStrLn ((showPretty sig) "\n")
-           (DGRef _ _ _) -> error ( "nodes of type dg_ref do not have a signature")
-           otherwise -> error ( "unknown type of node")
+           (DGRef _ _ _) -> error 
+			    "nodes of type dg_ref do not have a signature"
     Nothing -> error ("node with descriptor "
-                       ++ (show descr) 
-                        ++ " has no corresponding node in the development graph")
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
 
 
 {- outputs the sublogic of a node in the bash;
@@ -466,13 +494,13 @@ getSublogicOfNode descr ab2dgNode dgraph =
            (DGNode _ _ _ _) ->
 	     case (dgn_sign dgnode) of
 	       G_sign lid sigma ->
-		 do putStrLn (language_name lid ++ "." ++ head (sublogic_names lid (min_sublogic_sign lid sigma)))
-               otherwise -> error ("no sublogic found")
-           (DGRef _ _ _) -> error ( "nodes of type dg_ref do not have a sublogic")
-           otherwise -> error ( "unknown type of node")
+		 do putStrLn (language_name lid ++ "." 
+			      ++ head (sublogic_names lid 
+				       (min_sublogic_sign lid sigma)))
+           (DGRef _ _ _) -> error "nodes of type dg_ref do not have a sublogic"
     Nothing -> error ("node with descriptor "
-                       ++ (show descr) 
-                        ++ " has no corresponding node in the development graph")
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
 
 {- prints the morphism of the edge -}
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
@@ -523,10 +551,12 @@ convertNodes convMaps descr graphInfo dgraph libname
 				libname
 
 
-{- auxiliar function for convertNodes
-if the given list of nodes is emtpy, it returns the conversion maps unchanged
-otherwise it adds the converted first node to the abstract graph and to the affected conversion maps
-and afterwards calls itself with the remaining node list -}
+{- auxiliar function for convertNodes if the given list of nodes is
+emtpy, it returns the conversion maps unchanged otherwise it adds the
+converted first node to the abstract graph and to the affected
+conversion maps and afterwards calls itself with the remaining node
+list -}
+
 convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
 		     [LNode DGNodeLab] -> LIB_NAME -> IO ConversionMaps
 convertNodesAux convMaps descr graphInfo [] libname = return convMaps
@@ -538,12 +568,15 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
 				graphInfo
      --putStrLn (maybe "" id err)
      newConvMaps <- (convertNodesAux
-                       convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps),
-                                 abstr2dgNode = Map.insert newDescr (libname, node) (abstr2dgNode convMaps)}
+                       convMaps {dg2abstrNode = Map.insert (libname, node) 
+				       newDescr (dg2abstrNode convMaps),
+                                 abstr2dgNode = Map.insert newDescr 
+				      (libname, node) (abstr2dgNode convMaps)}
                                        descr graphInfo lNodes libname)
      return newConvMaps
 
--- gets the name of a development graph node as a string						  
+-- gets the name of a development graph node as a string
+						  
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName dgnode =
   case get_dgn_name dgnode of
@@ -602,7 +635,8 @@ invContext dgraph node = context node dgraph
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
                     [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps descr graphInfo [] libname = return convMaps
-convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges) libname = 
+convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges) 
+		libname = 
   do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
@@ -622,20 +656,24 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges) libn
       otherwise -> error "Cannot find nodes"
 
 
-showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo -> ConversionMaps -> IO (Descr, GraphInfo, ConversionMaps)
+showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo 
+	      -> ConversionMaps -> IO (Descr, GraphInfo, ConversionMaps)
 showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
 	  Just (_,_,dgraph) -> 
-            do let (_,(DGRef _ refLibname refNode)) = labNode' (context node dgraph)
+            do let (_,(DGRef _ refLibname refNode)) = 
+		       labNode' (context node dgraph)
 	       case Map.lookup refLibname libname2dgMap of
-                 Just (_,refDgraph,_) -> convertGraph graphMem refLibname (libname2dg convMaps)
+                 Just (_,refDgraph,_) -> 
+		     convertGraph graphMem refLibname (libname2dg convMaps)
 		 Nothing -> error ("The referenced library ("
 				     ++ (show refLibname)
 				     ++ ") is unknown")
           Nothing ->
-	    error ("Selected node belongs to unknown library: " ++ (show libname))
+	    error ("Selected node belongs to unknown library: " 
+		   ++ (show libname))
     Nothing ->
       error ("there is no node with the descriptor "
 	         ++ show descr)
@@ -644,28 +682,34 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
 
 -- --------------------------
 -- returntype festlegen
-showJustSubtree:: IORef GraphMem -> Descr -> Descr -> ConversionMaps -> [[Node]]-> IO (Descr, [[Node]], Maybe String)
+showJustSubtree:: IORef GraphMem -> Descr -> Descr -> ConversionMaps 
+	       -> [[Node]]-> IO (Descr, [[Node]], Maybe String)
 showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,parentNode) ->
       case Map.lookup libname libname2dgMap of
 	Just (_,_,dgraph) -> 
 	  do let -- allDgNodes = Common.Lib.Graph.nodes dgraph
-                 allNodes = getNodeDescriptors (head visibleNodes) libname convMaps -- allDgNodes libname convMaps
-                 dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph visibleNodes parentNode))
+                 allNodes = getNodeDescriptors (head visibleNodes) 
+			    libname convMaps -- allDgNodes libname convMaps
+                 dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph 
+						     visibleNodes parentNode))
                  -- the selected node (parentNode) shall not be hidden either,
                  -- and we already know its descriptor (descr)
-		 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree libname convMaps
+		 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree 
+				  libname convMaps
 	         nodesToHide = filter (notElemR nodesOfSubtree) allNodes
 	     graphMem <- readIORef ioRefGraphMem
-	     (Result eventDescr errorMsg) <- hidenodes abstractGraph nodesToHide (graphInfo graphMem)
+	     (Result eventDescr errorMsg) <- hidenodes abstractGraph 
+					     nodesToHide (graphInfo graphMem)
 	     return (eventDescr, (dgNodesOfSubtree:visibleNodes), errorMsg)
 {-	     case errorMsg of 
 	       Just text -> return (-1,text)
 	       Nothing -> return (eventDescr,
 			  return convMaps-}
-        Nothing ->
-	    error ("showJustSubtree: Selected node belongs to unknown library: " ++ (show libname))
+        Nothing -> error 
+	  ("showJustSubtree: Selected node belongs to unknown library: " 
+	   ++ (show libname))
     Nothing ->
       error ("showJustSubtree: there is no node with the descriptor "
 	         ++ show descr)
@@ -679,12 +723,14 @@ getNodeDescriptors [] _ _ = []
 getNodeDescriptors (node:nodelist) libname convMaps =
   case Map.lookup (libname,node) (dg2abstrNode convMaps) of
     Just descr -> descr:(getNodeDescriptors nodelist libname convMaps)
-    Nothing -> error ("getNodeDescriptors: There is no descriptor for dgnode " ++ (show node))
+    Nothing -> error ("getNodeDescriptors: There is no descriptor for dgnode " 
+		      ++ (show node))
 
 
 getNodesOfSubtree :: DGraph -> [[Node]] -> Node -> [Node]
-getNodesOfSubtree dgraph visibleNodes node = (concat (map (getNodesOfSubtree dgraph visibleNodes) predOfNode))++predOfNode
-
+getNodesOfSubtree dgraph visibleNodes node = 
+    (concat (map (getNodesOfSubtree dgraph visibleNodes) predOfNode))
+    ++predOfNode
     where predOfNode = filter (elemR (head visibleNodes)) (pre dgraph node)
 
 elemR :: Eq a => [a] -> a -> Bool
@@ -759,7 +805,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 		                {dg2abstrEdge =
 				     Map.delete dgEdge dg2abstrEdgeMap,
 				 abstr2dgEdge = 
-				     Map.delete abstrEdge (abstr2dgEdge convMaps)}
+				     Map.delete abstrEdge (abstr2dgEdge 
+							   convMaps)}
  		        applyChangesAux gid libname graphInfo (descr+1)
 				 newConvMaps changes
 -- -- @@@ was machen, wenn Entfernen nicht erfolgreich?! @@@
@@ -773,21 +820,3 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			      ++ " and origin " ++ (show (dgl_origin edgelab))
 			      ++ " of development "
                          ++ "graph does not exist in abstraction graph")
-
-
-{- data DGChange = InsertNode (LNode DGNodeLab)
-              | DeleteNode Node 
-              | InsertEdge (LEdge DGLinkLab)
-              | DeleteEdge (LEdge DGLinkLab)
-convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps)
-
-
-convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
-				                     newDescr
-				                     (dg2abstrEdge convMaps),
-                                 abstr2dgEdge = Map.insert newDescr
-				                     (libname, (src,tar))
-				                     (abstr2dgEdge convMaps)}
-
-
--}
