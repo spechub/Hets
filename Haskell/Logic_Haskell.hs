@@ -88,6 +88,8 @@ type RawSymbol = ()
 
 instance Sentences Haskell Sentence () Sign Morphism Symbol where
     map_sen Haskell _m s = return s
+    provers Haskell = [] 
+    cons_checkers Haskell = []
 
 
 instance StaticAnalysis Haskell HsDecls
