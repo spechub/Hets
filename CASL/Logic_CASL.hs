@@ -15,8 +15,11 @@
 module Logic_CASL where
 
 import AS_Basic_CASL
+import Print_AS_Basic
+
 import LocalEnv
 import Logic
+
 import Error
 import Dynamic
 import qualified Sublogics
@@ -56,6 +59,8 @@ instance Syntax CASL BASIC_SPEC
 	 parse_symb_map_items = fun_err "parse_symb_map_items"
          comment_line CASL = "%%"
          comment_group CASL =  ("%{","}%")
+
+data CASL_sublogics = CASL_ deriving (Show,Eq,Ord)
 
 instance Typeable Sublogics.CASL_Sublogics where
     typeOf (Sublogics.CASL_SL _ _ _ _ _ _) = mkAppTy (mkTyCon "CASL_SL") []
