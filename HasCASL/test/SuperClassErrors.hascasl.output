@@ -32,7 +32,18 @@ g < a
 h = Type
 i = (a, g)
 %% Type Constructors -----------------------------------------------------
+Unit : Type
 t : Type %(var)%
+%% Assumptions -----------------------------------------------------------
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
+def__ : forall a : Type .  a ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
 Warning (line 1, column 13) implicit declaration of superclass 'b'
 Warning (line 2, column 7) redeclared class 'b'

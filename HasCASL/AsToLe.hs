@@ -25,6 +25,7 @@ import HasCASL.ClassDecl
 import HasCASL.VarDecl
 import HasCASL.OpDecl
 import HasCASL.TypeDecl
+import HasCASL.TypeCheck
 import Data.Maybe
 
 -- | basic analysis
@@ -68,8 +69,13 @@ cleanEnv e = e { envDiags = [], sentences = [], counter = 1,
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
-anaBasicSpec ga (BasicSpec l) = fmap BasicSpec $ 
-				mapAnM (anaBasicItem ga) l
+anaBasicSpec ga (BasicSpec l) = do 
+    tm <- gets typeMap
+    as <- gets assumps
+    putTypeMap $ addUnit tm
+    putAssumps $ addOps as
+    ul <- mapAnM (anaBasicItem ga) l
+    return $ BasicSpec ul
 
 -- | analyse basic item
 anaBasicItem :: GlobalAnnos -> BasicItem -> State Env BasicItem

@@ -25,6 +25,7 @@ c
 d
 %% Type Constructors -----------------------------------------------------
 List : a -> b
+Unit : Type
 [__] : a -> b
 m : (a -> b) -> c
 nt : a -> (b -> c) -> c -> d %(var)%
@@ -42,6 +43,15 @@ tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
 %% Assumptions -----------------------------------------------------------
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
+def__ : forall a : Type .  a ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
 o1 : m %(var)%
 o2 : (m)(tuple1) %(var)%
 o3 : (m)(tuple3) %(var)%
@@ -75,4 +85,11 @@ Error (line 28, column 12) incompatible kind of: tuple3
      found: Type -> Type -> Type -> Type
 
 Hint (line 32, column 10) not a class 'nt r List s'
-Error (line 38, column 19) unexpected mixfix token '='
+Hint (line 11, column 9) type 't' is not unifiable with '(((tuple3)(r))(s))(t)'
+Hint (line 11, column 9) type 't' is not unifiable with '(((tuple3)(r))(s))(t)'
+Error (line 38, column 19) ambiguous typings 
+	(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						(var x : t))
+	(op __=__ : forall a : Type .  a ×
+			       a ->? Unit) ((var x : (((tuple3)(r))(s))(t)),
+					    (var x : (((tuple3)(r))(s))(t)))

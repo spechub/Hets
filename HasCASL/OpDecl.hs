@@ -19,10 +19,11 @@ import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
 import HasCASL.Unify
-import HasCASL.ClassAna
 import HasCASL.TypeAna
+import HasCASL.TypeCheck
 import HasCASL.MixAna
 import Data.Maybe
+import Data.List
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) = 
@@ -37,18 +38,17 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
        case mTy of 
 	     Nothing -> do addDiags [mkDiag Error 
 				     "unexpected type of operation" ty]
-			   mt <- resolve ga Nothing trm
+			   mt <- resolveTerm ga Nothing trm
 			   putTypeMap tm
 			   case mt of 
 				   Nothing -> return Nothing
-				   Just (_, t) 
-				       -> return $ Just $ UnitOpAttr t ps
+				   Just t  -> return $ Just $ UnitOpAttr t ps
 	     Just (t1, t2, t3) -> 
 		 do if t1 == t2 && t2 == t3 then
 		       return ()
 		       else addDiags [mkDiag Error 
 				     "unexpected type of operation" ty]
-                    mt <- resolveTerm ga t3 trm
+                    mt <- resolveTerm ga (Just t3) trm
 		    putTypeMap tm
 		    case mt of Nothing -> return Nothing
 	                       Just t -> return $ Just $ UnitOpAttr t ps
@@ -68,19 +68,39 @@ tuplePatternToType (TuplePattern ps qs) =
     ProductType (map tuplePatternToType ps) qs
 tuplePatternToType _ = error "tuplePatternToType"
 
+varsOf :: Type -> [TypeArg]
+varsOf t = 
+    case t of 
+	   TypeName j k i -> if i > 0 then [TypeArg j k Other []] else []
+	   TypeAppl t1 t2 -> varsOf t1 ++ varsOf t2
+	   TypeToken _ -> []
+	   BracketType _ l _ -> concatMap varsOf l
+	   KindedType tk _ _ -> varsOf tk
+	   MixfixType l -> concatMap varsOf l
+	   LazyType tl _ -> varsOf tl
+	   ProductType l _ -> concatMap varsOf l
+	   FunType t1 _ t2 _ -> varsOf t1 ++ varsOf t2
+
+
+generalize :: TypeScheme -> TypeScheme
+generalize (TypeScheme vs q@(_ :=> ty) ps) =
+    TypeScheme (nub (varsOf ty ++ vs)) q ps
+
 anaOpItem :: GlobalAnnos -> OpItem -> State Env OpItem
 anaOpItem ga (OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
        let nSc = case mSc of 
 			  Nothing -> sc
-			  Just s -> s 
+			  Just s -> generalize s
        mAttrs <- mapM (anaAttr ga nSc) attr
        us <- mapM (anaOpId nSc attr) is
        return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
 
-anaOpItem ga (OpDefn o pats sc partial trm ps) = 
+anaOpItem ga (OpDefn o oldPats sc partial trm ps) = 
     do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
-	   bs = concatMap extractBindings pats
+       l <- mapM extractBindings oldPats
+       let bs = concatMap snd l
+	   pats = map fst l
        mSc <- anaTypeScheme extSc 
        as <- gets assumps
        checkUniqueVars bs
@@ -89,14 +109,14 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc
-		    mt <- resolve ga (Just ty) trm
+		    mt <- resolveTerm ga (Just ty) trm
 		    putAssumps as
 		    case mt of 
 			      Nothing -> return $ OpDefn op pats 
 					     newSc partial trm ps
-			      Just (newTy, lastTrm) -> do 
+			      Just lastTrm -> do 
 			          let lastSc = TypeScheme tArgs 
-					  (qu :=> patternsToType pats newTy) qs
+					  (qu :=> patternsToType pats ty) qs
 				  addOpId i lastSc [] $ Definition 
 				         $ case (pats, partial) of 
 					       ([], Total) -> lastTrm
@@ -105,11 +125,11 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
 				  return $ OpDefn op [] lastSc
 					   partial lastTrm ps
 		Nothing -> do 
-		    mt <- resolve ga Nothing trm
+		    mt <- resolveTerm ga Nothing trm
 		    putAssumps as
 		    return $ OpDefn op pats extSc partial 
 			      (case mt of Nothing -> trm
-			                  Just (_, x) -> x) ps
+			                  Just x -> x) ps
 							  
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
@@ -143,21 +163,23 @@ anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
     do as <- gets assumps
        putAssumps $ filterVars as
-       mp <- resolveTargetPattern ga Nothing pat
-       let exbs = case mp of 
-			Nothing -> []
-			Just (_, newPat) -> extractBindings newPat
-       checkUniqueVars exbs
-       mapM_ addVarDecl exbs
-       mt <- resolve ga (fmap fst mp) trm
-       putAssumps as
-       case (mt, mp) of 
-	    (Just (_, newTerm), Just (_, newPat))  ->
-		case removeResultType newPat of
+       mp <- resolvePattern ga pat
+       case mp of 
+	   Nothing -> return pe
+	   Just np -> do 
+	       (newPat, exbs) <- extractBindings np
+	       checkUniqueVars exbs
+	       mapM_ addVarDecl exbs
+	       mt <- resolveTerm ga Nothing trm
+	       putAssumps as
+	       case mt of 
+		   Just newTerm  -> case removeResultType newPat of
 		       PatternConstr (InstOpId i _tys _) sc args ps ->
 			   do addOpId i sc [] $ Definition $ 
 			          if null args then newTerm
 				     else LambdaTerm args Partial newTerm ps
+			      return $ ProgEq newPat newTerm qs
+		       ResolvedMixPattern _ _ _  ->
 			      return $ ProgEq newPat newTerm qs
 		       _ -> do addDiags $ [mkDiag Error 
 					   "no toplevel pattern" newPat]
@@ -166,5 +188,5 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 				 case p of 
 				 TypedPattern tp _ _ -> tp
 				 _ -> p
-	    _ -> return pe
+		   _ -> return $ ProgEq newPat trm qs 
 

@@ -33,7 +33,7 @@ import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
-import HasCASL.MixAna
+import HasCASL.TypeCheck
 
 -- | add a supertype to a given type id
 addSuperType :: Type -> Id -> State Env ()
@@ -52,7 +52,7 @@ idsToTypePatterns mis = map ( \ i -> TypePattern i [] [] )
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
 anaFormula ga at = 
-    do mt <- resolveTerm ga logicalType $ item at 
+    do mt <- resolveTerm ga (Just logicalType) $ item at 
        return $ case mt of Nothing -> Nothing
 			   Just e -> Just at { item = e }
 

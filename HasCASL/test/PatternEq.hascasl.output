@@ -1,33 +1,38 @@
 type s, t
 op snd : s × t -> t
-program snd : s × t -> t ((x : s, y : t)) = (var y : t)
-program snd : s × t -> t ((x : s, y : t)) = (var y : t)
-program snd : s × t -> t ((x : s, y : t)) = (var y : t) : t
-program snd : s × t -> t ((x : s, y : t)) : t = (var y : t)
-program snd : s × t -> t ((x : s, y : t)) : t = (var y : t)
-program snd : s × t -> t ((x : s, y : t)) : t = (var y : t)
+program (snd) ((x : _var_1, y : _var_2)) = (var y : _var_2)
+program (snd) ((x : _var_3, y : _var_4)) = (var y : _var_4)
+program (snd) ((x : _var_5, y : _var_6)) = (var y : t) : t
+program (snd) ((x : _var_7, y : _var_8)) : t = (var y : _var_8)
+program (snd) ((x : _var_9, y : _var_10)) : t = (var y : _var_10)
+program (snd) ((x : s, y : t)) : t = (var y : t)
 program (x : s, y : s) = (x : s, y : s)
 op a : s
 program b : s = a
 op b : s
-program b : s = (op a : s)
+program (b) : s = (op a : s)
 op x : s; y : t
 op c : t = (op snd : s × t -> t) ((op x : s) : s, (op y : t) : t)
 %% Type Constructors -----------------------------------------------------
+Unit : Type
 s : Type
 t : Type
 %% Assumptions -----------------------------------------------------------
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
 a : s
-b : s = (op a : s)
+b : s
 c : t = (op snd : s × t -> t) ((op x : s) : s, (op y : t) : t)
-snd : s × t -> t = \ (x : s, y : t) . (var y : t)
+def__ : forall a : Type .  a ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
+snd : s × t -> t
 x : s
 y : t
 %% Diagnostics -----------------------------------------------------------
-Error (line 6, column 10) different terms of 'snd'
-	\ (x : s, y : t) . (var y : t)
-	\ (x : s, y : t) . (var y : t) : t
-	
-
 Error (line 14, column 10) no toplevel pattern '(x : s, y : s)'
 Error (line 17, column 9) no toplevel pattern 'b : s'

@@ -24,12 +24,6 @@ import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Common.Result
 
--- | add diagnostic messages 
-addDiags :: [Diagnosis] -> State Env ()
-addDiags ds =
-    do e <- get
-       put $ e {envDiags = ds ++ envDiags e}
-
 -- ---------------------------------------------------------------------------
 -- analyse class
 -- ---------------------------------------------------------------------------

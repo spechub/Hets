@@ -1,25 +1,33 @@
 type bool ::= true | 
 	      false
 op a : bool = (op true : bool)
-op notA : bool = case (op a : bool) of true : bool ->
-				       (op false : bool) | 
-				       false : bool -> (op true : bool)
-op b : bool = let x : bool = (op true : bool);
-		  y : bool = (op false : bool);
-		  z : bool = (var x : bool) in (op true : bool)
-op b : bool -> bool = \ x : _var_151 . (var x : _var_151)
+op notA : bool = case (a) of (true) -> (false) | 
+			     (false) -> (true)
+op b : bool = let x : _var_2 = (true);
+		  y : _var_3 = (false);
+		  z : _var_4 = (x) in (true)
+op b : bool -> bool = \ x : _var_6 . (x)
 %% Type Constructors -----------------------------------------------------
+Unit : Type
 bool : Type %[type __ ::=
 	      true : -> __
 	      false : -> __]%
 %% Assumptions -----------------------------------------------------------
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
 a : bool = (op true : bool)
-b : bool -> bool = \ x : _var_151 . (var x : _var_151)
-  : bool = let x : bool = (op true : bool);
-	       y : bool = (op false : bool);
-	       z : bool = (var x : bool) in (op true : bool)
+b : bool -> bool = \ x : _var_6 . (x)
+  : bool = let x : _var_2 = (true);
+	       y : _var_3 = (false);
+	       z : _var_4 = (x) in (true)
+def__ : forall a : Type .  a ->? Unit
 false : bool %(construct bool)%
-notA : bool = case (op a : bool) of true : bool ->
-				    (op false : bool) | 
-				    false : bool -> (op true : bool)
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
+notA : bool = case (a) of (true) -> (false) | 
+			  (false) -> (true)
 true : bool %(construct bool)%

@@ -187,6 +187,7 @@ data Term = QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
 	  | QualOp InstOpId TypeScheme [Pos]
 	  -- pos "(", "op", ":", ")" 
+	  | ResolvedMixTerm Id [Term] [Pos]
 	  | ApplTerm Term Term [Pos]  -- analysed
 	  -- pos?
 	  | TupleTerm [Term] [Pos]
@@ -209,7 +210,8 @@ data Term = QualVar Var Type [Pos]
 	    deriving (Show)
 
 data Pattern = PatternVar VarDecl
-             -- pos ";"s 
+             -- pos ";"s
+	     | ResolvedMixPattern Id [Pattern] [Pos] 
 	     | PatternConstr InstOpId TypeScheme [Pattern] [Pos] 
 	     -- constructor or toplevel operation applied to arguments
 	     -- pos "("s, ")"s
@@ -324,6 +326,7 @@ instance Eq VarDecl where
 instance Eq Term where
     QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
     QualOp i1 s1 _ == QualOp  i2 s2 _ = (i1, s1) == (i2, s2) 
+    ResolvedMixTerm i1 t1 _ == ResolvedMixTerm i2 t2 _ = (i1, t1) == (i2, t2) 
     ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 
     TupleTerm l1 _ == TupleTerm l2 _ = l1 == l2
     TypedTerm s1 q1 t1 _ == TypedTerm s2 q2 t2 _ = (q1, t1, s1) == (q2, t2, s2)
@@ -340,6 +343,8 @@ instance Eq Term where
 
 instance Eq Pattern where
     PatternVar l1 == PatternVar l2 = l1 == l2 
+    ResolvedMixPattern i1 l1 _ == ResolvedMixPattern i2 l2 _ = 
+	(i1, l1) == (i2, l2) 
     PatternConstr i1 t1 l1 _ == PatternConstr i2 t2 l2 _ = 
 	(i1, l1, t1) == (i2, l2, t2)
     PatternToken t1 == PatternToken t2 = t1 == t2

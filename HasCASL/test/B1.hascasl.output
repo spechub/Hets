@@ -30,12 +30,22 @@ g
 h = (a, b)
 j = {_ < t}
 %% Type Constructors -----------------------------------------------------
+Unit : Type
 [__] : a -> b
 a__b : a -> b
 t : a
 x : (a, {_ < t}, b) %(var)%
 y : Type %(var)%
 %% Assumptions -----------------------------------------------------------
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
+def__ : forall a : Type .  a ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
 x : y %(var)%
 %% Diagnostics -----------------------------------------------------------
 Warning (line 3, column 14) redundant universe class

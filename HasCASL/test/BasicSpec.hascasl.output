@@ -7,20 +7,24 @@ class a, b, c < d; a
 type s : c
 op tt : s ->? Unit
 var x : s
-program tt : s ->? Unit = \ x : s . ()
-program __ res __ (x : s, y : t) : s = x;
-	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
+program (tt) = \ x : s . ()
+program __ res __ (x : s, y : t) : s : s = x;
+	(fst) ((x : s, y : t)) : s = (var x : s);
+	(snd) ((x : s, y : t)) : t = (var y : t)
 op eq : s × s ->? Unit
 type s < ? s
-program all (p : (? s)) : (? Unit) = eq (p, tt)
-program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
+program (all) (p : ? s) : ? Unit = eq (p, tt)
+program (And) ((x : _var_4, y : ? Unit)) : ? Unit = t1 () res t2 ()
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
-program __ or __ (x, y : (? Unit)) : (? Unit) =
+program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
 	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-	ex (p : (? s)) : (? Unit) =
+	(ex) (p : ? s) : ? Unit =
 	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
-	ff () : (? Unit) = all (\ r : (? Unit) . r ())
-forall y : t
+	ff () : ? Unit : ? Unit = all (\ r : (? Unit) . r ())
+forall x : t; y : t
+. %(..)%
+  (op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						  (var y : t))
 type s
 op a : ? s
 type Data1 ::= a | 
@@ -55,7 +59,7 @@ Data4 : Type %[type __ ::=
 	       Cons42 : Data2 × Data1 ->? __ (sel2 :? Data2)(sel1 :? Data1)]%
 Pred : Type- -> Type
 Pred__ : Type- -> Type
-Unit : TYPE
+Unit : (Type, TYPE)
 s : (c, Type) < ? s
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
@@ -63,11 +67,20 @@ Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
 Cons41 : Data1 × Data2 ->? Data4 %(construct Data4)%
 Cons42 : Data2 × Data1 ->? Data4 %(construct Data4)%
+__/\__ : Unit × Unit ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : forall a : Type .  a × a ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__=e=__ : forall a : Type .  a × a ->? Unit
+__\/__ : Unit × Unit ->? Unit
 a : Data1 %(construct Data1)%
   : ? s
 b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
+def__ : forall a : Type .  a ->? Unit
 eq : s × s ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a
+not__ : Unit ->? Unit
 sel1 : Data4 ->? Data1 %(select from Data4 constructed by
 		      (Cons41 : Data1 × Data2 ->? Data4,
 		       Cons42 : Data2 × Data1 ->? Data4))%
@@ -80,8 +93,10 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
      : Data3 ->? Data2 %(select from Data3 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
-tt : s ->? Unit = \ x : s . ()
-x : s %(var)%
+tt : s ->? Unit
+%% Sentences -------------------------------------------------------------
+(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						(var y : t)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Warning (line 5, column 20) redeclared class 'TYPE'
@@ -94,41 +109,30 @@ Warning (line 11, column 13) redeclared class 'c'
 Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
 Hint (line 16, column 9) not a class 's'
-Error (line 20, column 12) unexpected mixfix token 'res'
-Error (line 20, column 37) unexpected mixfix token 'x'
-Error (line 21, column 5) unexpected mixfix token '('
-Error (line 21, column 24) unexpected mixfix token 'x'
-Error (line 22, column 5) unexpected mixfix token '('
-Error (line 22, column 24) unexpected mixfix token 'y'
-Error (line 28, column 13) unexpected mixfix token '('
-Error (line 28, column 38) unexpected mixfix token 'p'
-Error (line 30, column 13) unexpected mixfix token '('
-Error (line 30, column 40) unexpected mixfix token 't1'
-Error (line 32, column 12) unexpected mixfix token 'impl'
-Error (line 32, column 40) unexpected mixfix token 'x'
-Error (line 34, column 12) unexpected mixfix token 'or'
-Error (line 34, column 44) unexpected mixfix token 'all'
-Error (line 35, column 19) unexpected mixfix token 'x'
-Error (line 37, column 6) unexpected mixfix token '('
-Error (line 37, column 27) unexpected mixfix token 'all'
-Error (line 38, column 17) unexpected mixfix token 'all'
-Error (line 38, column 27) unexpected mixfix token 'p'
-Error (line 40, column 6) unexpected mixfix token '('
-Error (line 40, column 20) unexpected mixfix token 'all'
-Error (line 40, column 38) unexpected mixfix token '('
+Error (line 20, column 12) unexpected mixfix token: res
+Error (line 20, column 37) unexpected mixfix token: x
+Hint (line 15, column 11) type 's' is not unifiable with 's ->? Unit'
+Error (line 28, column 41) no match for 'tt'
+Error (line 28, column 35) no type match for '(eq) ((p), (tt))'
+Error (line 28, column 35) no typing for '(eq) ((p), (tt))'
+Error (line 30, column 40) unexpected mixfix token: t1
+Error (line 32, column 12) unexpected mixfix token: impl
+Error (line 34, column 12) unexpected mixfix token: or
+Error (line 35, column 19) unexpected mixfix token: x
+Error (line 34, column 44) unexpected mixfix token: all
+Error (line 38, column 32) unexpected mixfix token: impl
+Error (line 38, column 17) unexpected mixfix token: all
+Error (line 37, column 27) unexpected mixfix token: all
+Error (line 40, column 7) unexpected mixfix token: )
+Error (line 40, column 20) unexpected mixfix token: all
 Hint (line 45, column 11) not a class 't'
-Error (line 45, column 8) wrong type scheme of 'x'
-  expected: s
-     found: t
-
 Hint (line 45, column 18) not a class 't'
-Error (line 47, column 5) unexpected mixfix token '='
 Warning (line 57, column 11) redeclared type 's'
 Error (line 61, column 36) unknown type 'Data2'
 Error (line 61, column 52) unknown type 'Data2'
 Warning (line 61, column 73) data subtype ignored
-Error (line 66, column 8) unexpected mixfix token 'true'
+Error (line 66, column 8) unexpected mixfix token: true
 Hint (line 66, column 23) not a class 's'
-Error (line 66, column 25) unexpected mixfix token 'e'
+Error (line 66, column 25) unexpected mixfix token: e
 Hint (line 67, column 10) not a class 's'
-Error (line 67, column 12) unexpected mixfix token 'e'
+Error (line 67, column 12) unexpected mixfix token: e

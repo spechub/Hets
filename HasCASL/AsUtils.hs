@@ -97,6 +97,7 @@ posOfTerm trm =
     case trm of
     QualVar v _ ps -> firstPos [v] ps
     QualOp (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
+    ResolvedMixTerm i _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps 
     TypedTerm t _ _ ps -> firstPos [t] ps 
@@ -116,6 +117,7 @@ posOfPat :: Pattern -> Pos
 posOfPat pat =
     case pat of
     PatternVar vs -> getMyPos vs
+    ResolvedMixPattern i _ _ -> posOfId i
     PatternConstr (InstOpId i _ _) _ _ qs -> firstPos [i] qs
     PatternToken t -> tokPos t
     BracketPattern _ ps qs -> firstPos ps qs

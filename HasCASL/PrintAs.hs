@@ -133,6 +133,8 @@ instance PrettyPrint Term where
 			<+> printText0 ga n
 			<+> colon
 			<+> printText0 ga t
+    printText0 ga (ResolvedMixTerm n ts _) = (parens $ printText0 ga n)
+			<+> noPrint (null ts) (parens $ commaT_text ga ts)
     printText0 ga (ApplTerm t1 t2 _) = printText0 ga t1
 			<+> (case t2 of 
 			     QualVar _ _ _ -> id 
@@ -174,6 +176,9 @@ instance PrettyPrint Term where
 
 instance PrettyPrint Pattern where 
     printText0 ga (PatternVar v) = printText0 ga v
+    printText0 ga (ResolvedMixPattern n args _) = parens (printText0 ga n) 
+			     <+> noPrint (null args) 
+				     (parens $ commaT_text ga args)
     printText0 ga (PatternConstr n t args _) = printText0 ga n 
 			  <+> colon
 			  <+> printText0 ga t 

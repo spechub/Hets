@@ -16,6 +16,7 @@ import HasCASL.As
 import Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Common.Result
+import Common.Lib.State
 import Common.Named
 
 -----------------------------------------------------------------------------
@@ -110,4 +111,10 @@ data Env = Env { classMap :: ClassMap
 
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty [] [] 1
+
+-- | add diagnostic messages 
+addDiags :: [Diagnosis] -> State Env ()
+addDiags ds =
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
 
