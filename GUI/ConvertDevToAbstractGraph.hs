@@ -222,11 +222,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                    Solid 
 		   $$$ LocalMenu (Menu (Just "edge menu")
 				 [(Button "Show morphism" 
-                      (\ (name,descr,gid)  ->
-                        do convMaps <- readIORef convRef
-		           putStrLn name
-		           putStrLn (show descr)
-		           putStrLn (show gid)
+                      (\ (_,descr,gid)  -> 
+		        do convMaps <- readIORef convRef
+                           showMorphismOfEdge convMaps descr gid dGraph
 		           return ()
                        ))])
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
@@ -452,6 +450,14 @@ getSublogicOfNode descr ab2dgNode dgraph =
     Nothing -> error ("node with descriptor "
                        ++ (show descr) 
                         ++ " has no corresponding node in the development graph")
+
+showMorphismOfEdge :: ConversionMaps -> Descr -> Descr -> DGraph -> IO()
+showMorphismOfEdge convMaps descr gid dgraph =
+  case Map.lookup descr (abstr2dgEdge convMaps) of
+    Just (libname,edge) -> 
+      error "showMorphismOfEdge is not yet implemented"
+--      putStrLn (show (dgl_morphism linklab))
+    Nothing -> putStrLn ("error determing morphism of edge "++(show descr))
 
 
 {- converts the nodes of the development graph, if it has any,
