@@ -200,47 +200,6 @@ filterByPrec g (State (argIde, predArg) _ _ _ _)
                          else checkAnyArg g opIde argIde
        else False
 
--- reconstructing positions 
-
-setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
-setPlainIdePos (Id ts cs _) ps =
-   let (places, toks) = span isPlace (reverse ts) 
-       pls = reverse places
-       f = zipWith (\ a b -> up_pos (const b) a)
-       (ps1, ps2) = splitAt (length toks) ps
-       front = f (reverse toks) ps1
-   in if null cs then 
-      let (ps3, ps4) = splitAt (length pls) ps2
-      in (Id (front ++ f pls ps3) [] [], ps4)
-      else let (newCs, ps3, ps4) = foldl (\ (prevCs, seps, rest) a -> 
-				  let (c1, qs) = setPlainIdePos a rest
-				  in (c1: prevCs, head qs : seps, tail qs))
-			   ([], [head ps2], tail ps2) cs
-	       (ps6, ps7) = splitAt (length pls) ps4
-           in (Id (front ++ f pls ps6) (reverse newCs) (reverse ps3), ps7)
-
-setIdePos :: Id -> [TERM] -> [Pos] -> Id
-setIdePos i@(Id ts _ _) ar ps =
-   let nt = length $ getPlainTokenList i 
-       np = length ps
-       na = length $ filter isPlace ts       
-       (_, toks) = span isPlace (reverse ts) 
-   in if nt == np then  -- literal places
-         let (newId, []) = setPlainIdePos i ps
-         in newId
-      else if np + na == nt && na == length ar then -- mixfix
-         let (newTps, rargs, rqs) = mergePos (reverse toks) ar ps 
-             (newId, []) = setPlainIdePos i 
-			  (newTps ++ rqs ++ map posOfTerm rargs)
-         in newId
-      else error "setIdePos"
-   where mergePos [] args qs = ([], args, qs)
-	 mergePos (t:rs) args qs = 
-	     if isPlace t then
-                let (tokps, rargs, rqs) = mergePos rs (tail args) qs
- 		in (posOfTerm (head args) : tokps, rargs, rqs)
-		else let (tokps, rargs, rqs) = mergePos rs args (tail qs)
-		     in (head qs : tokps, rargs, rqs)
 -- constructing the parse tree from (the final) parser state(s)
 
 stateToAppl :: State -> TERM
