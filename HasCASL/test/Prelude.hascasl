@@ -6,37 +6,31 @@ class Type
 var s,t  : Type 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% invisible type "logical" for formulae
+%% invisible type "Unit" for formulae
 
-free type logical ::= true | false
+type Unit: Type  %% flat cpo with bottom
 
-op true, false: logical
+%% type aliases
+type Pred __ : Type -> Type := \ t:Type- . t ->? Unit 
+type ? __ := \ t:Type . Unit ->? t
 
-ops __/\__, __\/__, __=>__, __if__,__<=>__ : logical * logical -> logical
-op not : logical -> logical
+pred true, false : Unit
 
-op __=__ : s -> s -> logical %% =e=
+preds __/\__, __\/__, __=>__, __if__,__<=>__ : Unit * Unit
+pred not : Unit
+
+pred __=__ : s * s  %% =e=
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
 
 type __->?__ : Type- -> Type+ -> Type
 
-type Unit: Type  %% flat cpo with bottom
-
-free type Unit ::= 1       %% "()" is illegal as constructor
-
-. 1 = ()
-
 %% nested pairs are different from n-tupels (n > 2)
 type __*__ : Type+ -> Type+ -> Type
 type __*__*__ : Type+ -> Type+ -> Type+ -> Type
 
 %% ...
-
-%% type aliases
-type Pred __ : Type -> Type := \ t:Type- . t ->? Unit 
-type ? __ := \ t:Type . Unit ->? t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  

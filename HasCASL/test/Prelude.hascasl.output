@@ -23,35 +23,33 @@ c-->d : Type < c -->? d
 c-->?d : Type < c ->? d
 d : Cpo %(var)%
 f : Flatcpo %(var)%
-logical : Type %[free type __ ::=
-		      true : -> __
-		      false : -> __]%
 nat : (Type, Flatcpo)
 p : Pcpo %(var)%
 s : Type < ? s %(var)%
 s->t : Type < s ->? t
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-1 : Unit %(construct Unit)%
 Y : p -->? p --> p
-__/\__ : logical × logical -> logical
-__<=>__ : logical × logical -> logical
-__=__ : s -> s -> logical
-__=>__ : logical × logical -> logical
-__\/__ : logical × logical -> logical
-__if__ : logical × logical -> logical
+__/\__ : Unit × Unit ->? Unit
+__<<=__ : c × c ->? Unit
+__<=>__ : Unit × Unit ->? Unit
+__=__ : s × s ->? Unit
+__=>__ : Unit × Unit ->? Unit
+__\/__ : Unit × Unit ->? Unit
+__if__ : Unit × Unit ->? Unit
 __res__ : s = \ (x : s; y : t) .! (op x : s)
 bottom : p
 def : (Pred)(s)
+eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
-      : logical %(construct logical)%
+      : Unit ->? Unit
 fst : s = \ (x : s; y : t) .! (op x : s)
 g : c --> d %(var)%
-not : logical -> logical
+not : Unit ->? Unit
 sup : nat -> c ->? c
 true : bool %(construct bool)%
-     : logical %(construct logical)%
+     : Unit ->? Unit
 tt : (Pred)(s)
 x : s %(var)%
 x1 : c %(var)%
@@ -60,59 +58,53 @@ y1 : d %(var)%
 y2 : d %(var)%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration
-Warning (line 13, column 4) repeated value 'true'
-Warning (line 13, column 10) repeated value 'false'
-Warning (line 27, column 11) redeclared type 'Unit'
-Warning (line 39, column 16) redeclared type 't'
-Hint (line 46, column 9) not a class 's'
-FatalError (line 48, column 1) no analysis yet for: program def = \ x : s . ()
+Warning (line 15, column 16) redeclared type 't'
+Hint (line 40, column 9) not a class 's'
+FatalError (line 42, column 1) no analysis yet for: program def = \ x : s . ()
 	%% def is also total (identical to tt) 
-FatalError (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
+FatalError (line 44, column 1) no analysis yet for: program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
-FatalError (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
-FatalError (line 60, column 3) no resolution for term: __
-FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
-Error (line 71, column 19) unexpected mixfix token '('
-FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
-Error (line 81, column 19) unexpected mixfix token 'eq'
-Error (line 80, column 11) unexpected mixfix token 'eq'
-Warning (line 91, column 6) redeclared type 's'
-FatalError (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
-FatalError (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
-FatalError (line 99, column 1) no analysis yet for: program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
-FatalError (line 101, column 1) no analysis yet for: program __ or __ (x, y : Pred Unit) : Pred Unit =
+FatalError (line 46, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
+FatalError (line 54, column 3) no resolution for term: __
+FatalError (line 60, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
+Error (line 65, column 19) unexpected mixfix token '('
+Error (line 75, column 24) unexpected mixfix token 'y'
+Warning (line 85, column 6) redeclared type 's'
+FatalError (line 87, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
+FatalError (line 90, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
+FatalError (line 93, column 1) no analysis yet for: program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
+FatalError (line 95, column 1) no analysis yet for: program __ or __ (x, y : Pred Unit) : Pred Unit =
 	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
-FatalError (line 104, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
+FatalError (line 98, column 1) no analysis yet for: program ex (p : Pred (s)) : Pred Unit =
 	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
-FatalError (line 107, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
-FatalError (line 109, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
-Error (line 114, column 37) unexpected mixfix token 'f'
-Warning (line 121, column 13) redundant universe class
-FatalError (line 125, column 1) no analysis yet for: pred __<<=__ : c × c
-Error (line 129, column 22) unexpected mixfix token '<<='
-Error (line 128, column 22) unexpected mixfix token '<<='
-Error (line 127, column 16) unexpected mixfix token '<<='
-FatalError (line 131, column 1) no analysis yet for: pred isChain(s : nat -> c) <=> all
-			       (\ n : nat . s (n) <<= s (Suc (n)))
-FatalError (line 132, column 1) no analysis yet for: pred isBound(x : c; s : nat -> c) <=> all (\ n : nat . s (n) <<= x)
-Error (line 140, column 20) unexpected mixfix token 'isChain'
-Error (line 137, column 42) unexpected mixfix token 'isBound'
-Error (line 149, column 22) unexpected mixfix token '<<='
-FatalError (line 156, column 2) no analysis yet for: program __ <<= [f] __ = eq
-Warning (line 159, column 5) redeclared type 'c'
-Hint (line 163, column 13) not a class 'c'
-Hint (line 163, column 13) not a class 'c'
-Hint (line 163, column 25) not a class 'd'
-Hint (line 163, column 25) not a class 'd'
-FatalError (line 165, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
-FatalError (line 176, column 4) no resolution for term: __
-FatalError (line 182, column 3) no analysis yet for: program f <<= [c -->? d] g =
+FatalError (line 101, column 1) no analysis yet for: program ff () : Pred Unit = all (\ r : Pred Unit . r ())
+FatalError (line 103, column 1) no analysis yet for: program neg (r : Pred Unit) : Pred Unit = r impl ff
+Error (line 108, column 37) unexpected mixfix token 'f'
+Warning (line 115, column 13) redundant universe class
+Error (line 123, column 26) unexpected mixfix token 'y'
+Error (line 122, column 26) unexpected mixfix token 'y'
+Error (line 119, column 8) unexpected mixfix token '\ x : c . (op __<<=__ : c × c ->? Unit) ((op x : s), (op x : s))'
+Error (line 125, column 44) unexpected mixfix token 's'
+Error (line 126, column 50) unexpected mixfix token 's'
+Error (line 134, column 20) unexpected mixfix token 'isChain'
+Error (line 131, column 42) unexpected mixfix token 'isBound'
+Error (line 119, column 8) unexpected mixfix token '\ x : p . (op __<<=__ : c × c ->? Unit) ((op bottom : p),
+					 (op x : s))'
+FatalError (line 150, column 2) no analysis yet for: program __ <<= [f] __ = eq
+Warning (line 153, column 5) redeclared type 'c'
+Hint (line 157, column 13) not a class 'c'
+Hint (line 157, column 13) not a class 'c'
+Hint (line 157, column 25) not a class 'd'
+Hint (line 157, column 25) not a class 'd'
+FatalError (line 159, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
+FatalError (line 170, column 4) no resolution for term: __
+FatalError (line 176, column 3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
-FatalError (line 188, column 4) no resolution for term: __
-Hint (line 190, column 13) not a class 'c --> d'
-Hint (line 190, column 13) not a class 'c --> d'
-FatalError (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
-Error (line 199, column 20) unexpected mixfix token 'eq'
-FatalError (line 201, column 27) no resolution for term: Y (\ x : c -->? p .! x)
-Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'
-Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'
+FatalError (line 182, column 4) no resolution for term: __
+Hint (line 184, column 13) not a class 'c --> d'
+Hint (line 184, column 13) not a class 'c --> d'
+FatalError (line 186, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
+Error (line 193, column 32) unexpected mixfix token 'impl'
+FatalError (line 195, column 27) no resolution for term: Y (\ x : c -->? p .! x)
+Hint (line 17, column 20) type 'bool' is not unifiable with 'Unit ->? Unit'
+Hint (line 17, column 20) type 'bool' is not unifiable with 'Unit ->? Unit'

@@ -49,12 +49,12 @@ instance PrettyPrint Type where
 			  <> space <> colon <+> printText0 ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
     printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
-    printText0 ga (ProductType ts _) = fsep (punctuate (space <> text timesS) 
-					 (map (printText0 ga) ts))
+    printText0 ga (ProductType ts _) = if null ts then parens empty 
+			  else fsep (punctuate (space <> text timesS) 
+				     (map (printText0 ga) ts))
     printText0 ga (FunType t1 arr t2 _) = printText0 ga t1
 				      <+> printText0 ga arr
 				      <+> printText0 ga t2
-
 
 instance PrettyPrint Pred where
     printText0 ga (IsIn c ts) = if null ts then printText0 ga c 
@@ -283,7 +283,6 @@ instance PrettyPrint SigItems where
     printText0 ga (TypeItems i l _) = text typeS <+> printText0 ga i 
 				      <+> semiT_text ga l
     printText0 ga (OpItems l _) = text opS <+> semiT_text ga l
-    printText0 ga (PredItems l _) = text predS <+> semiT_text ga l
 
 instance PrettyPrint Instance where
     printText0 _ Instance = text instanceS
@@ -351,14 +350,6 @@ instance PrettyPrint OpItem where
  			    <+> printText0 ga s 
 			    <+> text equalS
 			    <+> printText0 ga t
-
-instance PrettyPrint PredItem where 
-    printText0 ga (PredDecl l t _) = commaT_text ga l 
-				     <+> colon <+> printText0 ga t
-    printText0 ga (PredDefn n ps f _) = (printText0 ga n 
-					 <> fcat (map (printText0 ga) ps))
-				     <+> text equivS
-				     <+> printText0 ga f
 
 instance PrettyPrint BinOpAttr where 
     printText0 _ Assoc = text assocS

@@ -392,19 +392,21 @@ opItems = hasCaslItemList opS opItem OpItems
 -- predItem
 -----------------------------------------------------------------------------
 
-predDecl :: [OpId] -> [Token] -> AParser PredItem
+predDecl :: [OpId] -> [Token] -> AParser OpItem
 predDecl os ps = do c <- colT
 		    t <- typeScheme
-		    return (PredDecl os t (map tokPos (ps++[c])))
+		    return (OpDecl os (predTypeScheme t) []
+			    (map tokPos (ps++[c])))
 
-predDefn :: OpId -> AParser PredItem
+predDefn :: OpId -> AParser OpItem
 predDefn o = do ps <- many (bracketParser patterns oParenT cParenT anSemi 
 		      (BracketPattern Parens)) 
 		e <- asKey equivS
 		f <- term
-		return (PredDefn o ps (TermFormula f) [tokPos e]) 
+		return (OpDefn o ps (simpleTypeScheme logicalType)
+			Partial f [tokPos e]) 
 
-predItem :: AParser PredItem
+predItem :: AParser OpItem
 predItem = do (os, ps) <- opId `separatedBy` anComma
 	      if length os == 1 then 
 		 predDecl os ps
@@ -413,7 +415,7 @@ predItem = do (os, ps) <- opId `separatedBy` anComma
 		 else predDecl os ps 
 
 predItems :: AParser SigItems
-predItems = hasCaslItemList predS predItem PredItems
+predItems = hasCaslItemList predS predItem OpItems
 
 -----------------------------------------------------------------------------
 -- sigItem

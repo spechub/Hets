@@ -61,7 +61,6 @@ anaBasicItem (AxiomItems decls fs _) =
 anaSigItems :: GenKind -> SigItems -> State Env ()
 anaSigItems gk (TypeItems inst l _) = mapM_ (anaTypeItem gk inst) $ map item l
 anaSigItems _ (OpItems l _) =  mapM_ anaOpItem $ map item l
-anaSigItems _ l@(PredItems _ p) = missingAna l p 
 
 ----------------------------------------------------------------------------
 -- GenVarDecl

@@ -180,9 +180,6 @@ iterStates ga as tm cm ty terms pm =
 		    Nothing -> pm2
 	    t  ->  self (tail terms) $ nextState ga as tm (MixfixType [], t) pm
 
-logicalType :: Type 
-logicalType = TypeName (simpleIdToId (mkSimpleId "logical")) star 0
-
 getAppls :: GlobalAnnos -> ParseMap -> [Term]
 getAppls ga pm = 
     map (toAppl ga) $ 

@@ -38,8 +38,6 @@ data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
               | OpItems [Annoted OpItem] [Pos]
               -- pos "op", ";"s
-              | PredItems [Annoted PredItem] [Pos]
-              -- pos "pred", ";"s
                  deriving (Show, Eq)
 
 -- "instance" indicator
@@ -118,6 +116,16 @@ data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] ([] :=> t) []
 
+logicalType :: Type 
+logicalType = TypeName (simpleIdToId (mkSimpleId "Unit")) star 0
+-- or ProductType [] [] 
+
+predTypeScheme :: TypeScheme -> TypeScheme
+predTypeScheme (TypeScheme vs (qs :=> t) ps) = 
+    TypeScheme vs (qs :=> predType t) ps
+
+predType :: Type -> Type
+predType t = FunType t PFunArr logicalType []
 
 data Partiality = Partial | Total deriving (Show, Eq, Ord)
 
@@ -125,12 +133,6 @@ data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
             | OpDefn OpId [Pattern] TypeScheme Partiality Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
-              deriving (Show, Eq)
-
-data PredItem = PredDecl [OpId] TypeScheme [Pos]
-               -- pos ","s, ":", ","s
-              | PredDefn OpId [Pattern] Formula [Pos]
-               -- pos "("s, ")"s, "<=>"
               deriving (Show, Eq)
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq, Ord)

@@ -470,20 +470,13 @@ qualOpName o = do { v <- asKey opS
 		  ; return (QualOp i t (toPos o [v, c] p))
 		  }
 
-predTypeScheme :: Pos -> TypeScheme -> TypeScheme
-predTypeScheme p (TypeScheme vs (qs :=> t) ps) = 
-    TypeScheme vs (qs :=> predType p t) ps
-
-predType :: Pos -> Type -> Type
-predType p t = FunType t PFunArr (BracketType Parens [] [p]) []
-
 qualPredName :: Token -> AParser Term
 qualPredName o = do { v <- asKey predS
 		    ; i <- instOpId
 		    ; c <- colT 
 		    ; t <- typeScheme
 		    ; p <- cParenT
-		    ; return (QualOp i (predTypeScheme (tokPos c) t) 
+		    ; return (QualOp i (predTypeScheme t) 
 			      (toPos o [v, c] p))
 		  }
 
