@@ -57,7 +57,7 @@ if ($fail == 0) {
 		    $fail ++;
 	    };
 	# haddock error
-	m/^([^:]*?):([0-9]+):([0-9]+): Parse error/o &&
+	m/^([^:]*?):([0-9]+):([0-9]+): (p|P)arse error/o &&
 	    do {
 		$fail ++;
 		$report .= "haddock cannot parse $1 at line $2 char $3\n";
@@ -77,19 +77,33 @@ if ($fail == 0) {
     }
     close LOG;
     # post process positive lines
+    unless (exists $test_vars{'cvs_updated'}) {
+	$report .= "no cvs update occured\n";
+	$fail ++; 
+    }
+    unless (exists $test_vars{'cleaning_started'}) {
+	$report .= "no distclean\n";
+	$fail ++; 
+    }
+    unless (exists $test_vars{'post_process_started'}) {
+	$report .= "got stuck before post processing of HTML files\n".
+	    "  => most likely haddock failed\n";
+	$fail++;
+    }
     unless (exists $test_vars{'modified_lines'} 
 	    && $test_vars{'modified_lines'} > 0) {
 	$report .= "no HTML file was modified\n";
 	$fail ++;
     }
+
 }
 
 # send report as mail
 if ($fail > 0) {
     print STDERR "\n$fail test(s) failed -- sending Mail with report:\n\n$report\n";
-#    open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
-# print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
- #   close MAIL;
+    open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
+ print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
+    close MAIL;
 } 
 
 # compilation complete?
