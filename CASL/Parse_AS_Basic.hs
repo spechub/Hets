@@ -130,7 +130,7 @@ basicItems = fmap Sig_items sigItems
 
 varItems = do { v <- varDecl
 	      ; do { s <- semiT
-		   ; do { try lookAheadItemKeyword
+		   ; do { tryItemEnd startKeyword
 			; return ([v], [s])
 			}
 	             <|> 

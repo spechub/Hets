@@ -19,49 +19,17 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Anno_Parser (comment, annote)
 import Maybe
 import Parsec
 import Token
 import Formula
 import List(delete)
 
-pluralKeyword s = makeToken (keyWord (string s <++> option "" (string "s")))
-
--- following annotations
-anno = 	comment <|> annote  -- position not included yet
-
-lineAnnos = do { p <- getPosition
-	       ; do { a <- anno  
-		    ; skip
-		    ; q <- getPosition
-		    ; if sourceLine q == sourceLine p then
-		      do { l <- lineAnnos
-			 ; return (a:l)
-			 }
-		      else return [a]
-		    }
-		 <|> return []
-	       }
-
-optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
-
--- skip to leading annotation and read it
-annos = skip >> many (anno << skip)
 
 -- remove quantifier exists from casl_reserved_word 
 -- because it may start a formula in "axiom/axioms ... \;"
-isStartKeyword s = s `elem` "":dotS:cDot:
+startKeyword = dotS:cDot:
 		   (delete existsS casl_reserved_words)
-
-lookAheadItemKeyword :: GenParser Char st ()
-lookAheadItemKeyword = 
-    do { c <- lookAhead (annos >> 
-			 (single (oneOf ("\"_([{"++signChars)) 
-			  <|> many scanLPD))
-       ; if isStartKeyword c then return () else unexpected c
-       }
 
 annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
 
@@ -80,7 +48,7 @@ itemAux itemParser =
     do { a <- itemParser
        ; (m, an) <- optSemi
        ; case m of { Nothing -> return ([a], [], [an])
-                   ; Just t -> do { try lookAheadItemKeyword
+                   ; Just t -> do { tryItemEnd startKeyword
 				  ; return ([a], [t], [an])
 				  }
 	                        <|> 

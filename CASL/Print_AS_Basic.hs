@@ -52,7 +52,7 @@ instance PrettyPrint SORT_ITEM where
 			       <> printText0 t
     printText0(Subsort_defn s v t f _) = printText0 s 
 			       <> text equalS 
-			       <> braces(printText0 s 
+			       <> braces(printText0 v
 					  <> colon
 					  <> printText0 t
 					  <> (text cDot

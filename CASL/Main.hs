@@ -9,7 +9,6 @@
 
 module Main where
 
-import Id
 import Token
 import Formula
 import Parsec
@@ -17,7 +16,7 @@ import ParsecPos
 import Pretty
 import PrettyPrint
 import System
-import Print_AS_Basic
+import Print_AS_Basic()
 import Parse_AS_Basic
 import SortItem
 import OpItem
@@ -25,16 +24,16 @@ import OpItem
 main = do {l <- getArgs;
 	   if length l < 2 then print 
 	   "usage: main {id,term,formula,sorts,ops,preds,items} <filename>"
-	   else let option = head l 
+	   else let opt = head l 
 	            file = head (tail l)
-	   in if option == "id" then checkLines parseId file
-	   else if option == "term" then checkLines term file
-	   else if option == "formula" then checkLines formula file
-	   else if option == "sorts" then checkLines sortItems file
-	   else if option == "ops" then checkLines opItems file
-	   else if option == "preds" then checkLines predItems file
-	   else if option == "items" then parseSpec file
-	   else print ("unknown option: " ++ option) 
+	   in if opt == "id" then checkLines parseId file
+	   else if opt == "term" then checkLines term file
+	   else if opt == "formula" then checkLines formula file
+	   else if opt == "sorts" then checkLines sortItems file
+	   else if opt == "ops" then checkLines opItems file
+	   else if opt == "preds" then checkLines predItems file
+	   else if opt == "items" then parseSpec file
+	   else print ("unknown option: " ++ opt) 
 	  }
 
 checkLines p fileName = do { s <- readFile fileName

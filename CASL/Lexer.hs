@@ -15,20 +15,28 @@
 
 -}
 
-module Lexer ( bind, (<<), (<:>), (<++>), signChars, scanLPD
-	     , caslLetters, begDoEnd, flat, single, separatedBy
+module Lexer ( bind, (<<), (<:>), (<++>), 
+	     , begDoEnd, flat, single, separatedBy, caslLetters
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann, keyWord, keySign, toKey
+	     , reserved, placeS, placeT, pToken, asKey
+	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
+	     , commaT, semiT, pluralKeyword
+	     , annos, lineAnnos, optSemi, tryItemEnd
 	     ) where
 
 import Char (digitToInt)
+import Id (Token(..), place)
 import Monad (MonadPlus (mplus), liftM2)
-import ParsecPrim ((<?>), (<|>), many, try, skipMany
-		  , unexpected, consumeNothing, Parser, GenParser)
-import ParsecCombinator (count, eof, option, lookAhead, many1, notFollowedBy)
+import ParsecPrim ((<?>), (<|>), many, try, skipMany, getPosition
+		  , unexpected, consumeNothing, GenParser)
+import ParsecCombinator (count, option, lookAhead, many1, notFollowedBy)
 import ParsecChar (char, digit, hexDigit, octDigit
 		  , oneOf, noneOf, satisfy, string)
+import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
+
+import AS_Annotation
+import Anno_Parser (comment, annote)
 
 -- ----------------------------------------------
 -- no-bracket-signs
@@ -99,7 +107,8 @@ begDoEnd open p close = open <:> p <++> single close
 enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
 p `enclosedBy` q = begDoEnd q p q
 
-checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) -> GenParser tok st a
+checkWith :: (Show a) => GenParser tok st a -> (a -> Bool) 
+	  -> GenParser tok st a
 p `checkWith` f = do { x <- p
 		     ; if f x then return x else 
 		       consumeNothing >> unexpected (show x)
@@ -182,26 +191,10 @@ scanDigit :: GenParser Char st String
 scanDigit = single digit
 
 -- ----------------------------------------------
--- comments and label
+-- nested comment outs
 -- ----------------------------------------------
 
-newlineChars = "\n\r"
-
-eol = (eof >> return '\n') <|> oneOf newlineChars
-
-textLine = many (noneOf newlineChars) <++> single eol
-
-commentLine = try (string "%%") <++> textLine
-
 notEndText c = try (char c << notFollowedBy (char '%'))
-
-middleText c = many (satisfy (/=c) <|> notEndText c) 
-
-comment o c = try (string ("%" ++ [o])) <++> middleText c <++> string (c : "%")
-
-commentOut = comment '[' ']' 
-commentGroup = comment '{' '}'
-labelAnn = comment '(' ')'
 
 nestCommentOut = try (string "%[") >> 
 		 many (noneOf "]%" 
@@ -214,23 +207,49 @@ nestCommentOut = try (string "%[") >>
 -- skip whitespaces and nested comment out
 -- ----------------------------------------------
 
+newlineChars = "\n\r"
 blankChars = "\t\v\f \160" -- non breaking space
 
 skip :: GenParser Char st ()
 skip = skipMany(oneOf (newlineChars ++ blankChars) 
 		       <|> nestCommentOut <?> "") >> return () 
 
+-- only skip to an annotation if it's on the same line
+skipSmart = do {p <- getPosition
+	       ; try (do { skip
+			 ; q <- getPosition
+			 ; if sourceLine q == sourceLine p then return ()
+			   else notFollowedBy (char '%') >> return ()
+			 })
+		<|> return ()
+	       }
+
+
 -- ----------------------------------------------
--- annotations starting with %word
+-- annotations
 -- ----------------------------------------------
 
-annote = try(char '%' <:> scanAnyWords) <++>
-	 (try(char '(') <:> middleText ')' <++> string ")%"
-	  <|> textLine)
+anno :: GenParser Char st Annotation
+anno = 	comment <|> annote  --  (imported) position not included yet
 
--- annotations between items
-ann = many ((annote <|> labelAnn <|> commentGroup <|> commentLine) << skip)
-      <?> "annotation"
+-- skip to leading annotation and read many
+annos :: GenParser Char st [Annotation]
+annos = skip >> many (anno << skip)
+
+-- annotations on one line
+lineAnnos :: GenParser Char st [Annotation]
+lineAnnos = do { p <- getPosition
+	       ; do { a <- anno  
+		    ; skip
+		    ; q <- getPosition
+		    ; if sourceLine q == sourceLine p then
+		      do { l <- lineAnnos
+			 ; return (a:l)
+			 }
+		      else return [a]
+		    }
+		 <|> return []
+	       }
 
 -- ----------------------------------------------
 -- keywords WORDS or NO-BRACKET-SIGNS 
@@ -241,8 +260,56 @@ keyWord p = try(p << notFollowedBy scanLPD)
 keySign :: GenParser Char st a -> GenParser Char st a
 keySign p = try(p << notFollowedBy (oneOf signChars))
 
+reserved :: [String] -> GenParser Char st String -> GenParser Char st String
+-- "try" to avoid reading keywords 
+reserved l p = try (p `checkWith` \r -> r `notElem` l)
+
+-- ----------------------------------------------
+-- lexical tokens with position
+-- ----------------------------------------------
+
+setTokPos :: SourcePos -> String -> Token
+setTokPos p s = Token s (sourceLine p, sourceColumn p)
+
+pToken :: GenParser Char st String -> GenParser Char st Token
+pToken parser = bind setTokPos getPosition (parser << skipSmart)
+
+pluralKeyword :: String -> GenParser Char st Token
+pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
+
 -- check for keywords (depending on lexem class)
 toKey s = let p = string s in 
 	      if last s `elem` "[]{}(),;" then p 
 		 else if last s `elem` signChars then keySign p 
 		      else keyWord p
+
+asKey :: String -> GenParser Char st Token
+asKey = pToken . toKey
+
+commaT = asKey ","
+semiT = asKey ";"
+
+oBracketT = asKey "["
+cBracketT = asKey "]"
+oBraceT = asKey "{" 
+cBraceT = asKey "}"
+oParenT = asKey "("
+cParenT = asKey ")"
+
+placeS = string place
+placeT = pToken (try (placeS) <?> place)
+
+-- optional semicolon followed by annotations on the same line
+optSemi :: GenParser Char st (Maybe Token, [Annotation])
+optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
+
+-- succeeds if an item is not continued after a semicolon
+tryItemEnd :: [String] -> GenParser Char st ()
+tryItemEnd l = 
+    try (do { c <- lookAhead (annos >> 
+			      (single (oneOf "\"([{")
+			       <|> placeS
+			       <|> scanAnySigns
+			       <|> many scanLPD))
+	    ; if null c || c `elem` l then return () else unexpected c
+	    })

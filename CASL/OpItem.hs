@@ -20,8 +20,6 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Anno_Parser
-import Maybe
 import Parsec
 import Token
 import Formula

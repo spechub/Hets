@@ -58,23 +58,18 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
    The IDs within the compound list may surely be compound IDs again.
 -}
 
-module Token where
+module Token (scanWords, scanSigns, parseId, sortId, varId) 
+    where
 
 import Keywords
 import Lexer
-import Id (Id(Id), Token(..), Pos, place, isPlace)
-import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
-import ParsecPrim (GenParser, (<?>), (<|>), getPosition, many, try)
-import ParsecCombinator (many1, option, sepBy1, notFollowedBy)
-import ParsecChar (char, string)
+import Id (Id(Id), Token(..), Pos, isPlace)
+import ParsecPrim (GenParser, (<?>), (<|>), many)
+import ParsecCombinator (many1, option)
 
 -- ----------------------------------------------
 -- casl keyword handling
 -- ----------------------------------------------
-
-reserved :: [String] -> GenParser Char st String -> GenParser Char st String
--- "try" to avoid reading keywords 
-reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
 scanTermSigns = reserved casl_reserved_ops scanAnySigns
 
@@ -84,42 +79,14 @@ scanTermWords = reserved casl_reserved_words scanAnyWords
 
 scanWords = reserved formula_words scanTermWords
 
--- ----------------------------------------------
--- lexical tokens with position
--- ----------------------------------------------
-
-setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token s (sourceLine p, sourceColumn p)
-
-skipSmart = do {p <- getPosition
-	       ; try (do { skip
-			 ; q <- getPosition
-			 ; if sourceLine q == sourceLine p then return ()
-			   else notFollowedBy (char '%') >> return ()
-			 })
-		<|> return ()
-	       }
-
-makeToken :: GenParser Char st String -> GenParser Char st Token
-makeToken parser = bind setTokPos getPosition (parser << skipSmart)
-
-asKey = makeToken . toKey
 
 -- ----------------------------------------------
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-commaT = asKey commaS
-semiT = asKey semiS
-
-oBracketT = asKey oBracketS <?> "" -- don't convey confusing mix-id tokens
-cBracketT = asKey cBracketS
-oBraceT = asKey oBraceS <?> ""
-cBraceT = asKey cBraceS
-placeT = makeToken (try (string place) <?> place)
 
 -- simple id (but more than only words)
-sid = makeToken (scanQuotedChar <|> scanDotWords 
+sid = pToken (scanQuotedChar <|> scanDotWords 
 		 <|> scanDigit <|> scanSigns 
 		 <|> scanWords <?> "simple-id")
 
@@ -173,6 +140,7 @@ comps = do { o <- oBracketT
 
 -- a compound list does not follow a place
 -- but after a compound list further places may follow
+parseId :: GenParser Char st Id
 parseId = do { l <- start
              ; if isPlace (last l) then return (Id l [] [])
 	       else (do { (c, p) <- option ([], []) comps
@@ -189,7 +157,8 @@ parseId = do { l <- start
 -- obsolete isSortId (t) =  tokStr t `notElem` non_sort_signs
 
 -- sortIds are words, but possibly compound ids
-sortId = do { s <- makeToken scanWords
+sortId :: GenParser Char st Id
+sortId = do { s <- pToken scanWords
 	    ; (c, p) <- option ([], []) comps
 	    ; return (Id [s] c p)
 	    }
@@ -198,4 +167,5 @@ sortId = do { s <- makeToken scanWords
 -- VAR Ids
 -- ----------------------------------------------
 -- no compound ids (just a word) 
-varId = makeToken scanWords
+varId :: GenParser Char st Token
+varId = pToken scanWords

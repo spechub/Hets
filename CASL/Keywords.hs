@@ -35,6 +35,7 @@ cDot = "\183"
 barS = "|"
 mapsTo = "|->"
 defnS = "::="
+casl_reserved_ops :: [String]
 casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, barS, mapsTo]
 
 equalS = "="
@@ -46,6 +47,7 @@ lAnd = "/\\"   -- logical and/or
 lOr = "\\/"
 
 -- these signs are legal in terms, but illegal in declarations
+formula_ops :: [String]
 formula_ops = [equalS, implS, equivS, lOr, lAnd, negS] 
 
 defS = "def"
@@ -99,6 +101,7 @@ withS = "with"
 withinS = "within"
 
 -- letter keywords
+casl_reserved_words :: [String]
 casl_reserved_words =
     [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
     existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
@@ -106,12 +109,3 @@ casl_reserved_words =
     opS, opS ++ sS, predS, predS ++ sS, resultS, revealS, sortS, 
     sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
-
-oBracketS = "["
-cBracketS = "]"
-oBraceS = "{"
-cBraceS = "}"
-oParenS = "("
-cParenS = ")"
-commaS = ","
-semiS = ";"

@@ -35,31 +35,30 @@
    and all brackets must be balanced in "b1 b2" (the empty list).
 -}
 
-module Formula where
+module Formula (term, formula
+	       , equalT, colonT, colonST, quMarkT, dotT
+	       , varDecl, opSort, opType, predType) 
+    where
 
 import Id
 import Keywords
 import Lexer -- (separatedBy,(<:>),scanFloat,scanString)
 import Token
--- import CaslLanguage
 import AS_Basic_CASL
 import Parsec
 
-
 equalT = asKey equalS
 colonT = asKey colonS
-colonST = makeToken (string colonS) -- if "?" may immediately follow as in ":?" 
-oParenT = asKey oParenS
-cParenT = asKey cParenS
+colonST = pToken (string colonS) -- if "?" may immediately follow as in ":?" 
 quMarkT = asKey quMark
 
 dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
 crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 
 simpleTerm :: GenParser Char st TERM
-simpleTerm = fmap Mixfix_token (makeToken(scanFloat <|> scanString 
+simpleTerm = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords <|> scanWords 
-		       <|>  scanSigns <|> string place <?> "id/literal" )) 
+		       <|>  scanSigns <|> placeS <?> "id/literal" )) 
 
 startTerm :: GenParser Char st TERM
 startTerm = parenTerm <|> braceTerm <|> bracketTerm <|> simpleTerm
@@ -80,7 +79,7 @@ whenTerm = do { t <- mixTerm
 		   }
 		<|> return t
 	      }
-
+term :: GenParser Char st TERM
 term = whenTerm
 
 typedTerm :: GenParser Char st TERM
@@ -115,7 +114,7 @@ qualOpName o = do { v <- asKey opS
 		  ; p <- cParenT
 		  ; return (Application 
 			    (Qual_op_name i t
-			     [tokPos v, tokPos c, tokPos p]) [] [])
+			     [o, tokPos v, tokPos c, tokPos p]) [] [])
 		  }
 
 opSort = fmap (\s -> (False, s, nullPos)) sortId 
@@ -124,7 +123,7 @@ opSort = fmap (\s -> (False, s, nullPos)) sortId
 		; return (True, s, tokPos q)
 		}
 
-opFunSort ts ps = do { a <- makeToken (string funS)
+opFunSort ts ps = do { a <- pToken (string funS)
 		     ; (b, s, _) <- opSort
 		     ; let qs = map tokPos ps ++[tokPos a] in 
 		       return (if b then Partial_op_type ts s qs
@@ -319,4 +318,5 @@ impFormula = do { f <- andOrFormula
 			             Implication f (makeImpl r p) [c]
 			  makeIf l p = makeImpl (reverse l) (reverse p)
 
+formula :: GenParser Char st FORMULA
 formula = impFormula
