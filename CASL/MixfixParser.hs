@@ -1,3 +1,12 @@
+
+{- HetCATS/CASL/MixfixParser.hs
+   $Id$
+   Author:  Christian Maeder
+   Year:    2002
+
+   Mixfix analysis of terms
+-}
+
 module MixfixParser where
 
 import AS_Basic_CASL 
@@ -7,7 +16,48 @@ import Id
 import Lexer (caslChar)
 import ParsecPrim
 import qualified Char as C
+import List(intersperse)
 
+
+data State = State { rule :: [Token]
+		   , dotPos :: Int
+		   , inPos :: Int
+		   , rulePos :: Int
+		   }
+
+initialState :: State
+initialState = State ([Token place nullPos]) 0 0 0
+
+getTokenList :: Id -> [Token]
+getTokenList (Id ts cs _) = 
+    let (pls, toks) = span isPlace (reverse ts) 
+        cts = if null cs then [] else (Token "[" nullPos) :
+	      concat (intersperse [Token "," nullPos]
+	      (map getTokenList cs)) ++ [Token "]" nullPos]
+    in reverse toks ++ cts ++ reverse pls
+
+prefix :: Id -> Bool
+prefix (Id ts _ _) = if null ts then False else not $ isPlace $ head ts
+
+predict :: [Id] -> State -> [State]
+predict is (State ts d p _) =
+    if isPlace (ts !! d) then 
+       map (\i -> State (getTokenList i) 0 p p) 
+	       (filter prefix is) 
+    else []
+
+scan :: Token -> State -> [State]
+scan i (State ts d p k) = 
+    if ts !! d == i then [State ts (d+1) (p+1) k] else []
+
+complete :: State -> State -> [State]
+complete (State ts1 d1 p1 _) (State ts2 d2 p2 k2) =
+    if d1 >= length ts1 && isPlace (ts2 !! d2) && p2 <= p1
+       then [State ts2 (d2+1) p1 k2] else []
+
+-- --------------------------------------------------------------- 
+-- convert literals 
+-- --------------------------------------------------------------- 
 
 -- isChar :: Token -> Bool
 -- isChar t = head (tokStr t) == '\''
