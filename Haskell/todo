@@ -1,5 +1,7 @@
-Hatchet/HsSyn
-
-  * Fehler (???) beim Parsen von hets.hs beheben
+HatParser
 
  - Zeilennummern in Hatchet-Parser einbauen (neue Version angucken)
+
+Haskell2DG
+
+ - umstellen, so dass Importe nur einmal eingelesen werden

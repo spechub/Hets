@@ -1,26 +1,2 @@
-
- - HatParser: Positionsbestimmung bei Fehler fehlt
-
- - wie Dateinamen fuer anaHaskellFile rausbekommen?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Wat soll das? Und wieso geht das nicht??
---          classHierarchy 
---             = foldl (flip (addClassToHierarchy moduleName kindInfo)) importClassHierarchy rClassDecls
+- MultiModuleBasics/joinModuleInfo: Modulname nicht definiert, wird
+  aber irgendwo drauf zugegriffen... (-> error)
