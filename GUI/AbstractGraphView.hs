@@ -271,7 +271,7 @@ determineedgetype :: AbstractionGraph -> (String,String) -> Maybe String
 determineedgetype g (t1,t2) = case result of
                               [] -> Nothing
 			      x:xs -> Just x
-  where result = [t| (tp1,tp2,t) <- (edgeComp g), (tp1==t1)&&(tp2==t2)]
+  where result = [ t | (tp1,tp2,t) <- (edgeComp g), (tp1==t1)&&(tp2==t2)]
 	
 
 -- returns a pair of lists: one list of all in- and one of all out-going edges of the node
