@@ -20,22 +20,22 @@ bool : Type %[type __ ::=
 	      true : -> __
 	      false : -> __]%
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
-a : bool = (op true : bool)
-b : bool -> bool = \ x : bool . (var x : bool)
-  : bool = let x : bool = (op true : bool);
-	       y : bool = (op false : bool);
-	       z : bool = (var x : bool) in (op true : bool)
-def__ : forall a : Type .  a ->? Unit
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
+a : bool %(Op)% = (op true : bool)
+b : bool -> bool %(Op)% = \ x : bool . (var x : bool)
+  : bool %(Op)% = let x : bool = (op true : bool);
+		      y : bool = (op false : bool);
+		      z : bool = (var x : bool) in (op true : bool)
+def__ : forall a : Type .  a ->? Unit %(Fun)%
 false : bool %(construct bool)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-not__ : Unit ->? Unit
-notA : bool = case (op a : bool) of true : bool ->
-				    (op false : bool) | 
-				    false : bool -> (op true : bool)
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+not__ : Unit ->? Unit %(Fun)%
+notA : bool %(Op)% = case (op a : bool) of true : bool ->
+					   (op false : bool) | 
+					   false : bool -> (op true : bool)
 true : bool %(construct bool)%

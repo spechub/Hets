@@ -5,12 +5,12 @@ type  : Type- -> Type; Unit : TYPE
 class a, b, c < Type
 class a, b, c < Type; a < b
 type s : c
-op tt : s ->? Unit
+predfun tt : s ->? Unit
 var x : s
 program tt : s ->? Unit = \ x : s . ()
 program __ res __ (x : s, y : t) : s : s = x;
 	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
-op eq : s × s ->? Unit
+predfun eq : s × s ->? Unit
 type s < ? s
 program all (p : (? s)) : (? Unit) = eq (p, tt)
 program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
@@ -22,8 +22,8 @@ program __ or __ (x, y : (? Unit)) : ? Unit : ? Unit =
 	ff () : ? Unit : ? Unit = all (\ r : (? Unit) . r ())
 forall x : t; y : t
 . %(..)%
-  (op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						  (var y : t))
+  (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						   (var y : t))
 type s
 op a : ? s
 type Data1 ::= a | 
@@ -83,20 +83,20 @@ Cons31 : Data1 × Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 × Data1 -> Data3 %(construct Data3)%
 Cons41 : Data1 × Data2 ->? Data4 %(construct Data4)%
 Cons42 : Data2 × Data1 ->? Data4 %(construct Data4)%
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
 a : Data1 %(construct Data1)%
-  : ? s
+  : ? s %(Op)%
 b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
-def__ : forall a : Type .  a ->? Unit
-eq : s × s ->? Unit
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-not__ : Unit ->? Unit
+def__ : forall a : Type .  a ->? Unit %(Fun)%
+eq : s × s ->? Unit %(Pred)%
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+not__ : Unit ->? Unit %(Fun)%
 sel1 : Data4 ->? Data1 %(select from Data4 constructed by
 		      (Cons41 : Data1 × Data2 ->? Data4,
 		       Cons42 : Data2 × Data1 ->? Data4))%
@@ -109,10 +109,10 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
      : Data3 ->? Data2 %(select from Data3 constructed by
 		      (Cons31 : Data1 × Data2 -> Data3,
 		       Cons32 : Data2 × Data1 -> Data3))%
-tt : s ->? Unit = \ x : s . ()
+tt : s ->? Unit %(Op)% = \ x : s . ()
 %% Sentences -------------------------------------------------------------
-(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						(var y : t)) %()%
+(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						 (var y : t)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
 Hint (line 3, column 5) is type variable 't'

@@ -77,10 +77,10 @@ data ConstrInfo = ConstrInfo { constrId :: UninstOpId
 			     , constrType :: TypeScheme 
 			     } deriving (Show, Eq)
 
-data OpDefn = NoOpDefn
+data OpDefn = NoOpDefn OpBrand
 	    | ConstructData TypeId     -- target type
 	    | SelectData [ConstrInfo] TypeId   -- constructors of source type
-	    | Definition Term            
+	    | Definition OpBrand Term            
 	    | VarDefn deriving (Show, Eq)
 
 isVarDefn :: OpInfo -> Bool

@@ -144,7 +144,7 @@ iterateCharts ga terms chart =
 						  "value not found" v]
 				    _ -> return ()
 			       recurse $ QualVar v nTyp ps
-		    QualOp io@(InstOpId v _ _) 
+		    QualOp b io@(InstOpId v _ _) 
 			       (TypeScheme rs (qs :=> typ) ss) ps -> do 
 		       mTyp <- anaStarType typ
 		       case mTyp of 
@@ -155,7 +155,7 @@ iterateCharts ga terms chart =
 			            Nothing -> addDiags [mkDiag Error 
 						  "value not found" v]
 				    _ -> return ()
-			       recurse $ QualOp io 
+			       recurse $ QualOp b io 
 					(TypeScheme rs (qs :=> nTyp) ss) ps
 		    TypedTerm hd tqual typ ps -> do
 		       mTyp <- anaStarType typ

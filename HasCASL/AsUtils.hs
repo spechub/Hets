@@ -91,7 +91,7 @@ posOfTerm :: Term -> Pos
 posOfTerm trm =
     case trm of
     QualVar v _ ps -> firstPos [v] ps
-    QualOp (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
+    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
     ResolvedMixTerm i _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps 

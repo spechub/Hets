@@ -148,12 +148,19 @@ instance Mergeable OpAttr where
 	   else fail "unequal unit elements"
     merge _ _ = fail "merge: OpAttr"
 
+instance Mergeable OpBrand where
+    merge Pred _ = return Pred
+    merge _ Pred = return Pred
+    merge Op _   = return Op
+    merge _ Op   = return Op
+    merge _ _    = return Fun
+    
 instance Mergeable OpDefn where
     merge VarDefn VarDefn = return VarDefn
     merge VarDefn _       = fail "illegal redeclaration of a variable"
     merge _ VarDefn       = fail "illegal redeclaration as variable"
-    merge NoOpDefn d      = return d
-    merge d NoOpDefn      = return d
+    merge (NoOpDefn _) d  = return d
+    merge d (NoOpDefn _)  = return d
     merge d@(ConstructData d1) (ConstructData d2) = 
 	if d1 == d2 then return d else 
 	   fail ("wrong constructor target type" ++
@@ -164,9 +171,10 @@ instance Mergeable OpDefn where
 	      return $ SelectData c d1
 	else fail ("wrong selector's source type" ++
 		   expected d1 d2)
-    merge (Definition d1) (Definition d2) =
+    merge (Definition b1 d1) (Definition b2 d2) =
 	do d <- merge d1 d2
-	   return $ Definition d
+	   b <- merge b1 b2
+	   return $ Definition b d
     merge _d1 _d2 = fail "illegal redefinition"
 
 mergeConstrInfos :: [ConstrInfo] -> [ConstrInfo] -> Result [ConstrInfo]

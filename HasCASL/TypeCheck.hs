@@ -71,7 +71,7 @@ addUnit tm = foldr ( \ (i, k, d) m ->
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 
 		 Map.insertWith ( \ _ old -> old) i
-		 (OpInfos [OpInfo sc [] NoOpDefn]) m) as bList
+		 (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
 
 resolveTerm :: GlobalAnnos -> Maybe Type -> Term -> State Env (Maybe Term)
 resolveTerm ga mt trm = do
@@ -172,13 +172,13 @@ infer mt trm = do
 		Nothing -> return []
 		Just s -> let ty = (subst s t) in 
 			      return [(s, ty, QualVar v ty ps)] 
-	QualOp io sc ps -> do
+	QualOp b io sc ps -> do
 	    ty <- toEnvState $ freshInst sc
 	    let Result ds ms = mUnify tm mt ty
 	    addDiags ds 
 	    case ms of 
 		Nothing -> return []
-		Just s -> return [(s, subst s ty, QualOp io sc ps)]
+		Just s -> return [(s, subst s ty, QualOp b io sc ps)]
 	ResolvedMixTerm i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
@@ -189,7 +189,11 @@ infer mt trm = do
 	          else return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, ty, QualVar i ty ps)
-			      _ -> (s, ty, QualOp (InstOpId i [] [])
+			      x -> let br = case x of
+				            NoOpDefn b -> b
+				            Definition b _ -> b
+				            _ -> Op in 
+				      (s, ty, QualOp br (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
 		 (if isSingle ts then head ts else TupleTerm ts ps) ps

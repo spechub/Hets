@@ -44,7 +44,7 @@ mkIntersection = delete star . nub .
 				 Intersection lk _ -> mkIntersection lk
 			         _ -> [k]) 
 
-rawKind :: Kind -> RawKind
+rawKind :: Kind -> Kind
 rawKind c = 
     case c of
     Universe _ -> c
@@ -57,7 +57,7 @@ rawKind c =
     ExtKind k InVar _ -> rawKind k
     ExtKind k v ps -> ExtKind (rawKind k) v ps 
 
-checkIntersection :: RawKind -> [Kind] -> [Diagnosis]
+checkIntersection :: Kind -> [Kind] -> [Diagnosis]
 checkIntersection _ [] = []
 checkIntersection k (f:r) = 
 	case k == rawKind f of 
@@ -68,13 +68,13 @@ checkIntersection k (f:r) =
 	True -> checkIntersection k r
 
 diffKindDiag :: (PosItem a, PrettyPrint a) => 
-		 a -> RawKind -> RawKind -> [Diagnosis]
+		 a -> Kind -> Kind -> [Diagnosis]
 diffKindDiag a k1 k2 = 
            [ Diag Error
 	      ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
 	    $ posOf [a] ]
 
-minKind :: Bool -> RawKind -> RawKind -> Maybe RawKind
+minKind :: Bool -> Kind -> Kind -> Maybe Kind
 minKind b k1 k2 = 
     case k1 of 
 	    FunKind ek1 k3 ps -> 

@@ -123,9 +123,9 @@ anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
 anaSigItems ga gk (TypeItems inst l ps) = 
     do ul <- anaTypeItems ga gk inst l
        return $ TypeItems inst ul ps
-anaSigItems ga _ (OpItems l ps) = 
-    do ul <- mapAnM (anaOpItem ga) l
-       return $ OpItems ul ps
+anaSigItems ga _ (OpItems b l ps) = 
+    do ul <- mapAnM (anaOpItem ga b) l
+       return $ OpItems b ul ps
 
 -- | analyse a class item
 anaClassItem :: GlobalAnnos -> Instance -> ClassItem 

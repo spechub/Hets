@@ -63,9 +63,13 @@ hascasl_reserved_words =
      programS, programS ++ sS, caseS, ofS, letS, derivingS, internalS] 
 			 ++ casl_reserved_words
 
-scanWords, scanSigns :: GenParser Char st String
-scanWords = reserved hascasl_reserved_words scanAnyWords 
-scanSigns = reserved hascasl_reserved_ops scanAnySigns 
+-- | HasCASL identifier words ('scanAnyWords')
+scanHCWords :: GenParser Char st String
+scanHCWords = reserved hascasl_reserved_words scanAnyWords 
+
+-- | HasCASL identifier signs ('scanAnySigns')
+scanHCSigns :: GenParser Char st String
+scanHCSigns = reserved hascasl_reserved_ops scanAnySigns 
 
 -- * HasCASL 'Id' parsers
 
@@ -94,13 +98,13 @@ typeId = mixId (lessS:equalS:barS:hascasl_type_ops++hascasl_reserved_ops,
 
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
-typeVar = do s <- pToken scanWords
+typeVar = do s <- pToken scanHCWords
 	     return $ Id [s] [] [] 
 	     
 -- | simple 'Id' possibly with compound list
 classId :: GenParser Char st Id
 classId = 
-    do s <- pToken scanWords
+    do s <- pToken scanHCWords
        (c, p) <- option ([], []) $ comps hcKeys 
        return $ Id [s] c p
 

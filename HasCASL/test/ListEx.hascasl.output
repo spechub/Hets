@@ -65,13 +65,13 @@ Leaf : forall a : Type+ .  Tree2 a %(construct Tree2)%
      : forall a : Type+ .  Tree1 a %(construct Tree1)%
      : forall a : Type+ .  Tree a %(construct Tree)%
 Nil : forall a : Type+ .  List a %(construct List)%
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
-def__ : forall a : Type .  a ->? Unit
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
+def__ : forall a : Type .  a ->? Unit %(Fun)%
 head : forall a : Type+ .  Tree2 a -> Tree a %(select from Tree2 constructed by
 					    Branch : forall a : Type+ .  Tree a ×
 									 Tree2 a -> Tree2 a)%
@@ -82,8 +82,8 @@ head : forall a : Type+ .  Tree2 a -> Tree a %(select from Tree2 constructed by
 					   Branch : forall a : Type+ .  Tree a × Tree a -> Tree a)%
      : forall a : Type+ .  List a -> a %(select from List constructed by
 				      Cons : forall a : Type+ .  a × List a -> List a)%
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-not__ : Unit ->? Unit
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+not__ : Unit ->? Unit %(Fun)%
 rek : forall a : Type+ .  even2 a -> odd2 a %(construct odd2)%
     : forall a : Type+ .  even a -> odd a %(construct odd)%
     : forall a : Type+ .  odd a -> even a %(construct even)%

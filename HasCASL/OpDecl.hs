@@ -68,17 +68,17 @@ tuplePatternToType (TuplePattern ps qs) =
     ProductType (map tuplePatternToType ps) qs
 tuplePatternToType _ = error "tuplePatternToType"
 
-anaOpItem :: GlobalAnnos -> OpItem -> State Env OpItem
-anaOpItem ga (OpDecl is sc attr ps) = 
+anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
+anaOpItem ga br (OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
        let nSc = case mSc of 
 			  Nothing -> sc
 			  Just s -> generalize s
        mAttrs <- mapM (anaAttr ga nSc) attr
-       us <- mapM (anaOpId nSc attr) is
+       us <- mapM (anaOpId br nSc attr) is
        return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
 
-anaOpItem ga (OpDefn o oldPats sc partial trm ps) = 
+anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
     do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
        l <- mapM extractBindings oldPats
        let bs = concatMap snd l
@@ -99,7 +99,7 @@ anaOpItem ga (OpDefn o oldPats sc partial trm ps) =
 			      Just lastTrm -> do 
 			          let lastSc = TypeScheme tArgs 
 					  (qu :=> patternsToType pats ty) qs
-				  addOpId i lastSc [] $ Definition 
+				  addOpId i lastSc [] $ Definition br
 				         $ case (pats, partial) of 
 					       ([], Total) -> lastTrm
 					       _ -> LambdaTerm pats partial 
@@ -118,10 +118,10 @@ getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
       (OpId i [] qs, TypeScheme (args ++ tvs) q ps)  
 
-anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env (Maybe OpId) 
-anaOpId sc attrs o =
+anaOpId :: OpBrand -> TypeScheme -> [OpAttr] -> OpId -> State Env (Maybe OpId) 
+anaOpId br sc attrs o =
     do let (OpId i _ _, newSc) = getUninstOpId sc o
-       mo <- addOpId i newSc attrs NoOpDefn
+       mo <- addOpId i newSc attrs $ NoOpDefn br 
        return $ fmap (const o) mo
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
@@ -161,7 +161,7 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 					     Partial newTerm []	
 		       in case topPat of 
 		       PatternConstr (InstOpId i _tys _) sc _ -> do
-			   addOpId i sc [] $ Definition defTrm
+			   addOpId i sc [] $ Definition Op defTrm
 			   return $ ProgEq newPat newTerm qs
 		       _ -> do addDiags $ [mkDiag Error 
 					   "illegal toplevel pattern"

@@ -49,15 +49,15 @@ tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
-def__ : forall a : Type .  a ->? Unit
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-not__ : Unit ->? Unit
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
+def__ : forall a : Type .  a ->? Unit %(Fun)%
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+not__ : Unit ->? Unit %(Fun)%
 o1 : m %(var)%
 o2 : m tuple1 %(var)%
 o3 : m tuple3 %(var)%
@@ -93,7 +93,7 @@ Error (line 32, column 15) incompatible kind of: List
 Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
 Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
 Error (line 38, column 19) ambiguous typings 
-	(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						(var x : t))
-	(op __=__ : forall a : Type .  a ×
-			       a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))
+	(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						 (var x : t))
+	(fun __=__ : forall a : Type .  a ×
+				a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))

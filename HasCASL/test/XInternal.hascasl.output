@@ -1,6 +1,6 @@
-internal {type s, t; op o, q : s -> t;
-	  . (op __=__ : forall a : Type .  a × a ->? Unit) ((op o : s -> t),
-							    (op q : s -> t))}
+internal {type s, t; fun o, q : s -> t;
+	  . (fun __=__ : forall a : Type .  a ×
+					    a ->? Unit) ((fun o : s -> t), (fun q : s -> t))}
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
@@ -12,17 +12,17 @@ __×__ : Type+ -> Type+ -> Type
 s : Type
 t : Type
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
-def__ : forall a : Type .  a ->? Unit
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-not__ : Unit ->? Unit
-o : s -> t
-q : s -> t
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
+def__ : forall a : Type .  a ->? Unit %(Fun)%
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+not__ : Unit ->? Unit %(Fun)%
+o : s -> t %(Fun)%
+q : s -> t %(Fun)%
 %% Sentences -------------------------------------------------------------
-(op __=__ : forall a : Type .  a × a ->? Unit) ((op o : s -> t),
-						(op q : s -> t)) %()%
+(fun __=__ : forall a : Type .  a × a ->? Unit) ((fun o : s -> t),
+						 (fun q : s -> t)) %()%

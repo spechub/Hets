@@ -1,8 +1,12 @@
 
-{- HetCATS/HasCASL/ParseItem.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
    
    parser for HasCASL basic Items
 -}
@@ -143,10 +147,10 @@ typeArgParen =
 
 pseudoType :: AParser TypeScheme
 pseudoType = do l <- asKey lamS
-		ts <- many1 typeArgParen <|> single singleTypeArg
+		(ts, pps) <- typeArgs
 		d <- dotT
 		t <- pseudoType
-		let qs = map tokPos [l,d]
+		let qs = toPos l pps d
 		case t of 
 		       TypeScheme ts1 gt ps -> 
 			   return $ TypeScheme (ts1++ts) gt (ps++qs)
@@ -287,7 +291,7 @@ classItems = do p <- asKey (classS ++ "es") <|> asKey classS
 typeVarDeclSeq :: AParser ([TypeArg], [Pos])
 typeVarDeclSeq = 
     do o <- oBracketT
-       (ts, cs) <- typeVarDecls `separatedBy` anSemi
+       (ts, cs) <- typeVars `separatedBy` anSemi
        c <- cBracketT
        return (concat ts, toPos o cs c)
 
@@ -367,8 +371,8 @@ opItem = do (os, ps) <- opId `separatedBy` anComma
 		    else opDecl os ps
 
 opItems :: AParser SigItems
-opItems = hasCaslItemList opS opItem OpItems
-	  <|> hasCaslItemList functS opItem OpItems
+opItems = hasCaslItemList opS opItem (OpItems Op)
+	  <|> hasCaslItemList functS opItem (OpItems Fun)
 
 -----------------------------------------------------------------------------
 -- predItem
@@ -396,7 +400,7 @@ predItem = do (os, ps) <- opId `separatedBy` anComma
 		 else predDecl os ps 
 
 predItems :: AParser SigItems
-predItems = hasCaslItemList predS predItem OpItems
+predItems = hasCaslItemList predS predItem (OpItems Pred)
 
 -----------------------------------------------------------------------------
 -- sigItem

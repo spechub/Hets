@@ -171,8 +171,8 @@ instance PrettyPrint Term where
 			<+> printText0 ga v
 			<+> colon
 			<+> printText0 ga t
-    printText0 ga (QualOp n t _) = parens $
-			text opS 
+    printText0 ga (QualOp b n t _) = parens $
+			printText0 ga b
 			<+> printText0 ga n
 			<+> colon
 			<+> printText0 ga t
@@ -182,7 +182,7 @@ instance PrettyPrint Term where
     printText0 ga (ApplTerm t1 t2 _) = printText0 ga t1
 			<+> (case t2 of 
 			     QualVar _ _ _ -> id 
-			     QualOp _ _ _ -> id 
+			     QualOp _ _ _ _ -> id 
 			     TupleTerm _ _ -> id
 			     BracketTerm Parens _ _ -> id
 			     ResolvedMixTerm _ [] _ -> id
@@ -312,10 +312,16 @@ instance PrettyPrint BasicItem where
 					 fs)
     printText0 ga (Internal l _) = text internalS <+> braces (semiT_text ga l)
 
+
+instance PrettyPrint OpBrand where
+    printText0 _ b = text $ case b of Fun -> functS 
+				      Op -> opS
+				      Pred -> "predfun"
+
 instance PrettyPrint SigItems where 
     printText0 ga (TypeItems i l _) = text typeS <+> printText0 ga i 
 				      <+> semiT_text ga l
-    printText0 ga (OpItems l _) = text opS <+> semiT_text ga l
+    printText0 ga (OpItems b l _) = printText0 ga b <+> semiT_text ga l
 
 instance PrettyPrint Instance where
     printText0 _ Instance = text instanceS

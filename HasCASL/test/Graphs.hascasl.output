@@ -18,33 +18,33 @@ op emptySet : forall S : Type .  S ->? Unit;
    inl, inr : forall S : Type .  S -> S × Bool
 forall x : S; x' : S; y : T; s : S ->? Unit; s' : S ->? Unit;
        t : T ->? Unit
-. (op not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-								(S ->? Unit) ->? Unit) ((var x : S),
-											(op emptySet : forall S : Type .  S ->? Unit)))
-. (op __<=>__ : Unit ×
-		Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-								  (S ->? Unit) ->? Unit) ((var x : S),
-											  (op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
-				(op __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
-										(var x' : S)))
-. (op __<=>__ : Unit ×
-		Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-								  (S ->? Unit) ->? Unit) ((var x : S),
-											  (var s : S ->? Unit)),
-				(var s : S ->? Unit) (var x : S))
-. (op __<=>__ : Unit ×
-		Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
-								    (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
-											    (var s' : S ->? Unit)),
-				forall x : S . x isIn s => x isIn s')
-. (op __=__ : forall a : Type .  a ×
-				 a ->? Unit) ((op inl : forall S : Type .  S -> S ×
-										Bool) (var x : S),
-					      ((var x : S), (op false : Bool)))
-. (op __=__ : forall a : Type .  a ×
-				 a ->? Unit) ((op inr : forall S : Type .  S -> S ×
-										Bool) (var x : S),
-					      ((var x : S), (op true : Bool)))
+. (fun not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (op emptySet : forall S : Type .  S ->? Unit)))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) ((var x : S),
+											   (op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
+				 (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
+										  (var x' : S)))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								   (S ->? Unit) ->? Unit) ((var x : S),
+											   (var s : S ->? Unit)),
+				 (var s : S ->? Unit) (var x : S))
+. (fun __<=>__ : Unit ×
+		 Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
+								     (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											     (var s' : S ->? Unit)),
+				 forall x : S . x isIn s => x isIn s')
+. (fun __=__ : forall a : Type .  a ×
+				  a ->? Unit) ((op inl : forall S : Type .  S -> S ×
+										 Bool) (var x : S),
+					       ((var x : S), (op false : Bool)))
+. (fun __=__ : forall a : Type .  a ×
+				  a ->? Unit) ((op inr : forall S : Type .  S -> S ×
+										 Bool) (var x : S),
+					       ((var x : S), (op true : Bool)))
 %% Type Constructors -----------------------------------------------------
 Bool : Type
 Pred : Type -> Type := \ a : Type . a ->? Unit
@@ -59,60 +59,60 @@ __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
 __*__ : forall S : Type;
-	       T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit
-__/\__ : Unit × Unit ->? Unit
-__<=>__ : Unit × Unit ->? Unit
-__=__ : forall a : Type .  a × a ->? Unit
-__=>__ : Unit × Unit ->? Unit
-__=e=__ : forall a : Type .  a × a ->? Unit
-__\/__ : Unit × Unit ->? Unit
-__\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
+	       T : Type .  (S ->? Unit) -> (T ->? Unit) -> S × T ->? Unit %(Op)%
+__/\__ : Unit × Unit ->? Unit %(Fun)%
+__<=>__ : Unit × Unit ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=>__ : Unit × Unit ->? Unit %(Fun)%
+__=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__\/__ : Unit × Unit ->? Unit %(Fun)%
+__\\__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
 __disjoint__ : forall S : Type .  (S ->? Unit) ×
-				  (S ->? Unit) ->? Unit
+				  (S ->? Unit) ->? Unit %(Op)%
 __disjointUnion__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ×
-								       Bool ->? Unit
-__intersection__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
-__isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit
+								       Bool ->? Unit %(Op)%
+__intersection__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
+__isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit %(Op)%
 __subset__ : forall S : Type .  (S ->? Unit) ×
-				(S ->? Unit) ->? Unit
-__union__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit
-def__ : forall a : Type .  a ->? Unit
-emptySet : forall S : Type .  S ->? Unit
-false : Bool
-if__then__else__ : forall a : Type .  Unit × a × a ->? a
-inl : forall S : Type .  S -> S × Bool
-inr : forall S : Type .  S -> S × Bool
-not__ : Unit ->? Unit
-true : Bool
-{__} : forall S : Type .  S -> S ->? Unit
+				(S ->? Unit) ->? Unit %(Op)%
+__union__ : forall S : Type .  (S ->? Unit) -> (S ->? Unit) -> S ->? Unit %(Op)%
+def__ : forall a : Type .  a ->? Unit %(Fun)%
+emptySet : forall S : Type .  S ->? Unit %(Op)%
+false : Bool %(Op)%
+if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
+inl : forall S : Type .  S -> S × Bool %(Op)%
+inr : forall S : Type .  S -> S × Bool %(Op)%
+not__ : Unit ->? Unit %(Fun)%
+true : Bool %(Op)%
+{__} : forall S : Type .  S -> S ->? Unit %(Op)%
 %% Sentences -------------------------------------------------------------
-(op not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-							      (S ->? Unit) ->? Unit) ((var x : S),
-										      (op emptySet : forall S : Type .  S ->? Unit))) %()%
-(op __<=>__ : Unit ×
-	      Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-								(S ->? Unit) ->? Unit) ((var x : S),
-											(op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
-			      (op __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
-									      (var x' : S))) %()%
-(op __<=>__ : Unit ×
-	      Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
-								(S ->? Unit) ->? Unit) ((var x : S),
-											(var s : S ->? Unit)),
-			      (var s : S ->? Unit) (var x : S)) %()%
-(op __<=>__ : Unit ×
-	      Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
-								  (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
-											  (var s' : S ->? Unit)),
-			      forall x : S . x isIn s => x isIn s') %()%
-(op __=__ : forall a : Type .  a ×
-			       a ->? Unit) ((op inl : forall S : Type .  S -> S ×
-									      Bool) (var x : S),
-					    ((var x : S), (op false : Bool))) %()%
-(op __=__ : forall a : Type .  a ×
-			       a ->? Unit) ((op inr : forall S : Type .  S -> S ×
-									      Bool) (var x : S),
-					    ((var x : S), (op true : Bool))) %()%
+(fun not__ : Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+							       (S ->? Unit) ->? Unit) ((var x : S),
+										       (op emptySet : forall S : Type .  S ->? Unit))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (op {__} : forall S : Type .  S -> S ->? Unit) (var x' : S)),
+			       (fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : S),
+										(var x' : S))) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __isIn__ : forall S : Type .  S ×
+								 (S ->? Unit) ->? Unit) ((var x : S),
+											 (var s : S ->? Unit)),
+			       (var s : S ->? Unit) (var x : S)) %()%
+(fun __<=>__ : Unit ×
+	       Unit ->? Unit) ((op __subset__ : forall S : Type .  (S ->? Unit) ×
+								   (S ->? Unit) ->? Unit) ((var s : S ->? Unit),
+											   (var s' : S ->? Unit)),
+			       forall x : S . x isIn s => x isIn s') %()%
+(fun __=__ : forall a : Type .  a ×
+				a ->? Unit) ((op inl : forall S : Type .  S -> S ×
+									       Bool) (var x : S),
+					     ((var x : S), (op false : Bool))) %()%
+(fun __=__ : forall a : Type .  a ×
+				a ->? Unit) ((op inr : forall S : Type .  S -> S ×
+									       Bool) (var x : S),
+					     ((var x : S), (op true : Bool))) %()%
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 6) is type variable 'S'
 Hint (line 1, column 8) is type variable 'T'

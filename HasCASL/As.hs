@@ -21,6 +21,8 @@ import Common.Keywords
 import Common.AS_Annotation 
 import HasCASL.HToken
 
+-- * abstract syntax entities 
+
 data BasicSpec = BasicSpec [Annoted BasicItem]
                   deriving (Show, Eq)
 
@@ -44,11 +46,14 @@ data BasicItem = SigItems SigItems
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
-              | OpItems [Annoted OpItem] [Pos]
+              | OpItems OpBrand [Annoted OpItem] [Pos]
               -- pos "op", ";"s
                  deriving (Show, Eq)
 
--- "instance" indicator
+-- | indicator for predicate, operation or function
+data OpBrand = Pred | Op | Fun deriving (Show, Eq) 
+
+-- | indicator in 'ClassItems' and 'TypeItems'
 data Instance = Instance | Plain deriving (Show, Eq)
 
 data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos] 
@@ -61,27 +66,33 @@ data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                           
 data Variance = CoVar | ContraVar | InVar deriving (Show, Eq, Ord)
 
-type ExtKind = Kind
-
+-- | kind or an extended kind
 data Kind = Universe [Pos]
-          | MissingKind 
-          | Downset (Maybe Token) Type Kind [Pos]
-	  | ClassKind ClassId Kind
-	  | Intersection [Kind] [Pos]
-	  | FunKind ExtKind Kind [Pos]
+          | MissingKind -- ^ initially missing information
+          | Downset (Maybe Token) Type Kind [Pos] -- ^ plus the derived kind
+	  | ClassKind ClassId Kind                -- ^ plus the declared kind
+	  | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
+	  | FunKind Kind Kind [Pos]     -- ^ only argument may be an 'ExtKind' 
 	    -- pos "->" 
-	  | ExtKind Kind Variance [Pos]
+	  | ExtKind Kind Variance [Pos] -- ^ no 'InVar'  
 	     -- pos "+" or "-" 
 	    deriving Show
-type RawKind = Kind
 
-star, starPlus, funKind, prodKind :: RawKind
+-- | the 'Universe' raw kind
+star :: Kind
 star = Universe []
 
+-- | the 'ExtKind' 'star' 'CoVar' (Type+)
+starPlus :: Kind
 starPlus = ExtKind star CoVar []
 
+-- | the 'Kind' of the function type
+funKind :: Kind
 funKind = FunKind (ExtKind star ContraVar [])
 	     (FunKind starPlus star []) []
+
+-- | the 'Kind' of the pair product type
+prodKind :: Kind
 prodKind = FunKind starPlus (FunKind starPlus star []) []
 
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
@@ -97,6 +108,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
 	       | Datatype DatatypeDecl
                  deriving (Show, Eq)
 
+-- | a tuple pattern for 'SubtypeDefn' 
 data Vars = Var Var | VarTuple [Vars] [Pos] deriving (Show, Eq)
 
 data TypePattern = TypePattern TypeId [TypeArg] [Pos]
@@ -109,7 +121,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 		 -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId ExtKind Int  -- (Int == 0 means constructor)
+data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
 	  | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
@@ -219,7 +231,7 @@ getBrackets b = case b of
 
 data Term = QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
-	  | QualOp InstOpId TypeScheme [Pos]
+	  | QualOp OpBrand InstOpId TypeScheme [Pos]
 	  -- pos "(", "op", ":", ")" 
 	  | ResolvedMixTerm Id [Term] [Pos]
 	  | ApplTerm Term Term [Pos]  -- analysed
@@ -271,7 +283,7 @@ data SeparatorKind = Comma | Other deriving (Show)
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show)
 	       -- pos "," or ":" 
 
-data TypeArg = TypeArg TypeId ExtKind SeparatorKind [Pos]
+data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show)
 
@@ -384,7 +396,7 @@ instance Eq VarDecl where
 
 instance Eq Term where
     QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
-    QualOp i1 s1 _ == QualOp  i2 s2 _ = (i1, s1) == (i2, s2) 
+    QualOp _ i1 s1 _ == QualOp _ i2 s2 _ = (i1, s1) == (i2, s2) 
     ResolvedMixTerm i1 t1 _ == ResolvedMixTerm i2 t2 _ = (i1, t1) == (i2, t2) 
     ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 
     TupleTerm l1 _ == TupleTerm l2 _ = l1 == l2

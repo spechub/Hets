@@ -108,7 +108,7 @@ PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPESCHEME
                   | OP-NAME <=> FORMULA 
 
 TYPESCHEME      ::= TYPE 
-                  | forall TYPE-VAR-DECLS . TYPE
+                  | forall TYPE-VAR-DECLS . TYPESCHEME
 
 TYPE-VAR-DECLS  ::= TYPE-VARS ;...; TYPE-VARS
 
