@@ -30,32 +30,33 @@ data Symbol = Symbol {symbId :: Id, symbType :: SymbType}
 type GenItems = [Symbol] 
 
 -- full function type of a selector (result sort is component sort)
-data Component = Component (Maybe Id) OpType [Pos]
+data Component = Component (Maybe Id) OpType [Pos] deriving (Show, Eq) 
 
 -- full function type of constructor (result sort is the data type)
 data Alternative = Construct Id OpType [Component] [Pos] 
 		 | Subsort SortId [Pos]
+		   deriving (Show, Eq) 
 
 -- looseness of a datatype
 -- a datatype may (only) be (sub-)part of a "sort-gen"
-data GenKind = Free | Generated | Loose deriving (Show,Eq)      
+data GenKind = Free | Generated | Loose deriving (Show, Eq)      
 
-data VarDecl = VarDecl {varId :: Id, varSort :: SortId}
+data VarDecl = VarDecl {varId :: Id, varSort :: SortId} deriving (Show, Eq)
 
 -- sort defined as predicate subtype or as more or less loose datatype
 data SortDefn = SubsortDefn VarDecl Formula [Pos]
               | Datatype [Annoted Alternative] GenKind GenItems [Pos]
-
+		deriving (Show, Eq)
 -- the sub- and supertypes of a sort 
 data SortRels = SortRels { subsorts :: [SortId]  -- explicitly given
 			 , supersorts :: [SortId] 
 			 , allsubsrts :: [SortId] -- transitively closed 
 			 , allsupersrts :: [SortId]
-			 } 
+			 } deriving (Show, Eq)
 
-data ItemStart = Key | Comma | Semi | Less
+data ItemStart = Key | Comma | Semi | Less deriving (Show, Eq)
 
-data ItemPos = ItemPos String ItemStart [Pos] 
+data ItemPos = ItemPos String ItemStart [Pos] deriving (Show, Eq)
 -- "filename" plus positions of op, :, * ... *, ->, ",", assoc ... 
 
 -- sort or type 
@@ -65,17 +66,18 @@ data SortItem = SortItem { sortId :: SortId
                          , sortPos :: ItemPos
                          , altSorts :: [ItemPos] -- alternative positions
 			 }                       -- of repeated decls
+		deriving (Show, Eq)
 
-data BinOpAttr = Assoc | Comm | Idem deriving (Show) 
+data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq) 
 
-data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term
-
+data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term deriving (Show, Eq)
 type ConsId = Symbol
 type SelId = Symbol
 
 data OpDefn = OpDef [VarDecl] (Annoted Term) [[Pos]] -- ,,,;,,,;,,,
             | Constr ConsId          -- inferred
             | Select [ConsId] SelId  -- inferred
+	      deriving (Show, Eq)
 
 data OpItem = OpItem { opId :: Id
 		     , opType :: OpType
@@ -83,32 +85,32 @@ data OpItem = OpItem { opId :: Id
 		     , opDefn :: Maybe OpDefn
                      , opPos :: ItemPos      -- positions of merged attributes
 		     , altOps :: [ItemPos]   -- may get lost
-		     }
+		     } deriving (Show, Eq)
 
-data PredDefn = PredDef [VarDecl] Formula [[Pos]]
+data PredDefn = PredDef [VarDecl] Formula [[Pos]] deriving (Show, Eq)
 
 data PredItem = PredItem { predId :: Id
 			 , predType :: PredType
 			 , predDefn :: Maybe PredDefn
 			 , predPos :: ItemPos    
 			 , altPreds :: [ItemPos] 
-			 }
+			 } deriving (Show, Eq)
 
-data TypeQualifier = OfType | AsType
+data TypeQualifier = OfType | AsType deriving (Show, Eq)
 
-data Qualified = Explicit | Inferred
+data Qualified = Explicit | Inferred deriving (Show, Eq)
 
 -- a constant op has an empty list of Arguments
 data Term = VarId Id SortId Qualified [Pos]
 	  | OpAppl Id OpType [Term] Qualified [Pos]  
 	  | Typed Term TypeQualifier SortId [Pos]
-          | Cond Term Formula Term [Pos]
+          | Cond Term Formula Term [Pos] deriving (Show, Eq) 
 
-data Quantifier =  Forall | Exists | ExistsUnique
+data Quantifier =  Forall | Exists | ExistsUnique deriving (Show, Eq)
 
-data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp | IfOp 
+data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp | IfOp deriving (Show, Eq)
 
-data PolyOp = DefOp | EqualOp | ExEqualOp
+data PolyOp = DefOp | EqualOp | ExEqualOp deriving (Show, Eq)
 
 data Formula = Quantified Quantifier [VarDecl] Formula [[Pos]]
 	     | Connect LogOp [Formula] [Pos]
@@ -118,26 +120,34 @@ data Formula = Quantified Quantifier [VarDecl] Formula [[Pos]]
 	     | FalseAtom [Pos]
 	     | TrueAtom [Pos]
 	     | AnnFormula (Annoted Formula)
+	       deriving (Show, Eq)
 
 data SigItem = ASortItem (Annoted SortItem)
 	     | AnOpItem (Annoted OpItem)
 	     | APredItem (Annoted PredItem)
+	       deriving (Show, Eq)
 
 -- lost are unused global vars
 -- and annotations for several ITEMS 
 
-data Sign = SignAsList [SigItem]
+data Sign = SignAsList [SigItem] deriving (Show, Eq)
 
 data LocalEnv = SignAsMap (FiniteMap Id [SigItem]) (Graph SortId ())
 
+instance Show LocalEnv where
+    show = error "show for type LocalEnv not defined"
+
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
-	       deriving (Show)
-data Kind = SortKind | FunKind | PredKind
-	       deriving (Show)
+	       deriving (Show, Eq)
+
+data Kind = SortKind | FunKind | PredKind deriving (Show, Eq)
+
 data Axiom = AxiomDecl [VarDecl] Formula [[Pos]] -- ,,,;,,,;
+	     deriving (Show, Eq)
 
 data Sentence = Axiom (Annoted Axiom) 
 	      | GenItems GenItems [Pos] -- generate/free, { , }
+		deriving (Show, Eq)
 
 getLabel :: Sentence -> String
 getLabel (Axiom ax) = let annos = r_annos(ax)
