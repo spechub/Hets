@@ -75,7 +75,7 @@ instance Comorphism CASL2PCFOL
     map_sign CASL2PCFOL sig = 
       let e = encodeSig sig in Just (e, generateAxioms sig)
     map_morphism CASL2PCFOL = Just . id
-    map_sentence CASL2PCFOL sig = Just -- needs to be improved !
+    map_sentence CASL2PCFOL sig = Just . f2Formula
     map_symbol CASL2PCFOL = Set.single . id
 
 -- | Add injection, projection and membership symbols to a signature
