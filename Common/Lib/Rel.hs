@@ -59,10 +59,7 @@ subset a b = Set.subset (toSet a) $ toSet b
 
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
-insert a b =
-    let update = Map.setInsert a b
-    in 
-    Rel . update . toMap
+insert a b = let update = Map.setInsert a b in Rel . update . toMap
 
 -- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
@@ -86,7 +83,7 @@ transMember :: Ord a => a -> a -> Rel a -> Bool
 transMember a b r = Set.member b $ getTAdjs r Set.empty $ Set.single a
 
 -- | compute transitive closure (make all transitive members direct members)
-transClosure ::  Ord a => Rel a -> Rel a
+transClosure :: Ord a => Rel a -> Rel a
 transClosure r = Rel $ Map.map ( \ s -> getTAdjs r s s) $ toMap r
 
 -- | convert a list of ordered pairs to a relation 
@@ -102,17 +99,11 @@ instance (Show a, Ord a) => Show (Rel a) where
     show = show . Set.fromList . toList
 
 {--------------------------------------------------------------------
-  Image (Added by T.M.)
+  Image (Added by T.M.) (implementation changed by C.M.)
 --------------------------------------------------------------------}
 -- | Image of a relation under a function
-image :: Ord b => (a -> b) -> Rel a -> Rel b
-image f = Rel 
-          .
-          Map.foldWithKey 
-           (\a ra -> Map.insert (f a) (Set.image f ra)) 
-           Map.empty
-          .
-          toMap
+image :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
+image f = fromSet . Set.image ( \ (a, b) -> (f a, f b)) . toSet
 
 {--------------------------------------------------------------------
   Restriction (Added by T.M.)
@@ -134,18 +125,15 @@ restrict r s =
   toMap r
 
 {--------------------------------------------------------------------
- Conversion from/to sets (Added by T.M.)
+ Conversion from/to sets (Added by T.M.)(implementation changed by C.M.)
 --------------------------------------------------------------------}
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
-toSet = Map.foldWithKey 
-        ( \ a ra -> Set.fold ( \ b -> (Set.insert (a,b) .) ) id ra) 
-        Set.empty . toMap
+toSet = Set.fromDistinctAscList . toList
 
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
-fromSet = Rel .
-          Set.fold (\(a,b) -> Map.setInsert a b) Map.empty
+fromSet = fromList . Set.toList
 
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
