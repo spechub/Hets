@@ -22,6 +22,7 @@ import CASL.Print_AS_Basic
 import CASL.Sign
 import Modal.AS_Modal
 import Modal.ModalSign
+import CASL.AS_Basic_CASL (FORMULA(..))
 
 instance PrettyPrint M_BASIC_ITEM where
     printText0 ga (Simple_mod_decl is fs _) = 
@@ -45,13 +46,14 @@ instance PrettyPrint M_SIG_ITEM where
 
 instance PrettyPrint M_FORMULA where
     printText0 ga (Box t f _) = 
-       brackets (printText0 ga t) <> printText0 ga f
+       brackets (printText0 ga t) <> 
+       condParensInnerF (printText0 ga) parens f
     printText0 ga (Diamond t f _) = 
 	let sp = case t of 
 			 Simple_mod _ -> (<>)
 			 _ -> (<+>)
 	    in ptext lessS `sp` printText0 ga t `sp` ptext greaterS 
-		   <+> printText0 ga f
+		   <+> condParensInnerF (printText0 ga) parens f
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 
@@ -71,3 +73,21 @@ instance PrettyPrint ModalSign where
 	ptext modalitiesS <+> semiT_text ga (Map.keys ms))
 	$$ (if Map.isEmpty tms then empty else
 	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms))
+
+condParensInnerF :: PrettyPrint f => (FORMULA f -> Doc)
+		    -> (Doc -> Doc)    -- ^ a function that surrounds 
+				       -- the given Doc with appropiate 
+				       -- parens
+		    -> FORMULA f -> Doc
+condParensInnerF pf parens_fun f =
+    case f of
+    Quantification _ _ _ _ -> f'
+    True_atom _            -> f'
+    False_atom _           -> f'
+    Predication _ _ _      -> f'
+    Definedness _ _        -> f'
+    Existl_equation _ _ _  -> f' 
+    Strong_equation _ _ _  -> f'
+    Membership _ _ _       -> f'
+    _                      -> parens_fun f'
+    where f' = pf f 

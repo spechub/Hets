@@ -27,7 +27,7 @@ Portability :  portable
 -}
 
 
-module Common.LaTeX_funs (
+module Common.LaTeX_funs (-- module Common.LaTeX_funs,
 		   space_latex_width,
 
 		   calc_line_length,
@@ -348,7 +348,13 @@ casl_annotation_latex s   = sp_text (annotation_width s) s
 casl_annotationbf_latex s = sp_text (annotationbf_width s) s
 casl_comment_latex s      = sp_text (comment_width s)    s
 casl_structid_latex s     = sp_text (structid_width s)   s
-casl_axiom_latex s        = sp_text (axiom_width s)      s
+casl_axiom_latex s        = let s' = conv s 
+			    in sp_text (axiom_width s') s'
+    where conv [] = []
+	  conv (x:xs) 
+	      | x == '~'  = "\\sim{}"++conv xs
+	      | otherwise = x:conv xs
+
 casl_normal_latex s       = sp_text (normal_width s)     s
 
 
@@ -458,7 +464,8 @@ escape_latex (x:xs)
 	          | isSpace    y -> default_quotes (y:escape_latex ys)
 	          | otherwise    -> default_quotes (escape_latex xs) 
     | x `elem` "_%$&{}#" = '\\':x:escape_latex xs
-    | x `elem` "~^"   = '\\':x:("{}"++escape_latex xs)
+    | x == '~' = "\\Ax{\\sim}" ++escape_latex xs
+    | x == '^'   = '\\':x:("{}"++escape_latex xs)
     | otherwise       =      x:escape_latex xs
     where default_quotes = ('\'':) . ('\'':)
 

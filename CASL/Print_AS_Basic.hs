@@ -31,9 +31,8 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 
---import Debug.Trace
--- trace :: String -> a -> a
--- trace _ a = a
+import Debug.Trace
+import Control.Exception (assert)
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -201,7 +200,8 @@ instance PrettyPrint ALTERNATIVE where
     printText0 ga (Partial_construct n l _) = printText0 ga n 
 				 <> parens(semiT_text ga l)
 				 <> text quMark
-    printText0 ga (Subsorts l _) = text sortS <+> commaT_text ga l 
+    printText0 ga (Subsorts l _) = 
+	text (sortS++pluralS l) <+> commaT_text ga l 
 
 instance PrettyPrint COMPONENTS where
     printText0 ga (Total_select l s _) = commaT_text ga l 
@@ -260,7 +260,10 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
 	hang (printText0 ga f <+> ptext equalS) 4 $ printText0 ga g 
     printText0 ga (Membership f g _) = 
 	printText0 ga f <+> ptext inS <+> printText0 ga g
-    printText0 ga (Mixfix_formula t) = printText0 ga t
+    printText0 ga (Mixfix_formula t) = assert 
+				        (trace ("Mixfix_formula found: "++
+						showPretty t "") True) 
+					(printText0 ga t)
     printText0 _ (Unparsed_formula s _) = text s 
     printText0 ga (Sort_gen_ax constrs _) = 
         text generatedS <> 
@@ -395,14 +398,22 @@ condPrint_Mixfix :: PrettyPrint f => (Token -> Doc)
 condPrint_Mixfix pTok pId pTrm parens_fun
 		 beside_fun fsep_fun comma_doc mpt_fun mdf
 		 ga i l =
-    if isMixfix i then
-       if placeCount i == length l then
+    if isMixfix dispId
+    then
+       if placeCount dispId == length l
+       then
 	  print_mixfix_appl pTok pId pTrm parens_fun 
-			    beside_fun fsep_fun mpt_fun mdf ga i l 
+			    beside_fun fsep_fun mpt_fun 
+	                    (not $ null dispToks) ga dispId l 
        else 
           print_prefix_appl pTrm parens_fun fsep_fun comma_doc o' l
-    else print_prefix_appl pTrm parens_fun fsep_fun comma_doc o' l
-    where o' = pId i
+    else print_prefix_appl pTrm parens_fun fsep_fun comma_doc (pId i) l
+    where o' = if null dispToks then pId i else dispIdDoc
+	  dispIdDoc = 
+	      fsep_fun $ (maybe (map pTok) (\f -> map f) (mpt_fun)) dispToks
+	  dispToks = maybe [] (\x -> maybe [] id (lookupDisplay ga x i)) mdf
+	     -- null if no display entry is available
+	  dispId = if null dispToks then i else Id dispToks [] []
 {- TODO: consider string-, number-, list- and floating-annotations -}
 
 condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
@@ -428,17 +439,15 @@ print_mixfix_appl :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
 					  -- given to print a Token in a 
 					  -- special way if Nothing is given
 					  -- pf is used
-		  -> Maybe Display_format
+		  -> Bool -- ^ True if a display_annotation 
+			  -- has generated this Id
 		  -> GlobalAnnos -> Id -> [TERM f] -> Doc
 print_mixfix_appl pTok pId pTrm parens_fun 
 		  beside_fun fsep_fun 
-		  mpt_fun mdf
+		  mpt_fun isDisplayAnnoModi
 		  ga oid terms = 
 		      d_terms_b_comp <> c `beside_fun` d_terms_a_comp
-    where (tops,cs) = maybe (case oid of Id x1 x2 _ -> (x1,x2))
-		            (\x -> (x,[]))
-			    md_tops
-	  md_tops = maybe Nothing (\x -> lookupDisplay ga x oid) mdf
+    where (tops,cs) = case oid of Id x1 x2 _ -> (x1,x2)
 	  c = if null cs then text "" -- an empty String works for ASCII 
 				      -- and LaTeX ensuring a space after 
 				      -- the last token of the identifier 
@@ -481,8 +490,12 @@ print_mixfix_appl pTok pId pTrm parens_fun
 	  pr [] top = ([], pf' top)
 	  pr tS@(t:ts) top 
 	      | isPlace top = (ts, pTrm t)
-	      | otherwise   = (tS,pf' top)	  
-	  pf' = maybe pTok (\ f -> maybe pTok (\ _ -> f) md_tops) mpt_fun
+	      | otherwise   = (tS,pf' top)
+	  pf' = maybe pTok 
+		      (\ f -> if isDisplayAnnoModi 
+		              then f 
+		              else pTok) 
+		      mpt_fun
 
 -- printing consistent prefix application and predication
 print_prefix_appl :: PrettyPrint f => (TERM f -> Doc)   -- ^ print TERM recursively 
@@ -492,7 +505,7 @@ print_prefix_appl :: PrettyPrint f => (TERM f -> Doc)   -- ^ print TERM recursiv
 	          -> ([Doc] -> Doc)    -- ^ a list concat without space and 
 				   -- fill the line policy  like
 				   -- fsep or fsep_latex
-		  -> Doc -- comma
+		  -> Doc -- ^ comma
 		  -> Doc -> [TERM f] -> Doc 
 print_prefix_appl pTrm parens_fun fsep_fun comma_doc po' l = po' <> 
             (if null l then empty 
@@ -665,6 +678,7 @@ condParensImplEquiv pf parens_fun ga e_i f =
 				   Existl_equation _ _ _ -> f'
 				   Definedness _ _ -> f'
 				   Strong_equation _ _ _ -> f'		   
+				   ExtFORMULA _ -> f'
 				   _           -> parens_fun f'
     Equivalence _ _ _ -> case f of Disjunction _ _ -> f'
 				   Conjunction _ _ -> f'
@@ -676,9 +690,11 @@ condParensImplEquiv pf parens_fun ga e_i f =
 				   Existl_equation _ _ _ -> f'
 				   Strong_equation _ _ _ -> f'
 				   Definedness _ _ -> f'
+				   ExtFORMULA _ -> f'
 				   _           -> parens_fun f'
     _ ->  error "Wrong call: condParensImplEquiv"
     where f' = pf ga f
+
 condParensXjunction :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
@@ -692,6 +708,7 @@ condParensXjunction pf parens_fun ga x =
 	      Existl_equation _ _ _ -> x'
 	      Strong_equation _ _ _ -> x'
 	      Definedness _ _ -> x'
+	      ExtFORMULA _ -> x'
 	      _            -> parens_fun x' 
     where x' = pf ga x
 

@@ -45,6 +45,9 @@ class ListCheck a where
 instance ListCheck Token where
     _ `innerListGT` _ = False
 
+instance ListCheck Id where
+    _ `innerListGT` _ = False
+
 -- |
 -- an instance of ListCheck for Annoted stuff 
 instance ListCheck a => ListCheck (Annoted a) where

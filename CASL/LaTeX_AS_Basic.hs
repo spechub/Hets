@@ -9,6 +9,8 @@ Portability :  portable
     
    latex printing data types of 'BASIC_SPEC'
 
+   todo:
+
 -}
 
 module CASL.LaTeX_AS_Basic where
@@ -30,6 +32,8 @@ import Common.Lib.Pretty
 import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.PPUtils
+
+import Data.Char (toUpper)
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) 
     => PrintLaTeX (BASIC_SPEC b s f) where 
@@ -238,8 +242,9 @@ instance PrintLaTeX ALTERNATIVE where
 					( semiT_latex ga l)
 				 <> hc_sty_axiom quMark )
     printLatex0 ga (Subsorts l _) = 
-	hc_sty_id sortS <\+> commaT_latex ga l 
-
+	sp_text (axiom_width s') s'' <\+> commaT_latex ga l 
+	where s'  = sortS ++ pluralS l
+	      s'' = '\\':map toUpper s' ++ "[ID]"
 instance PrintLaTeX COMPONENTS where
     printLatex0 ga (Total_select l s _) = 
 	commaT_latex ga l <> colon_latex <> printLatex0 ga s 

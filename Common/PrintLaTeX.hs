@@ -372,7 +372,13 @@ renderLatexVerb mi d = renderStyle textStyle' d'
 
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrintLaTeX Token where
-    printLatex0 _ = printToken_latex casl_axiom_latex
+    printLatex0 ga t = printToken_latex casl_axiom_latex t'
+	where i = Id [t] [] []
+              t' = maybe t (\ ts -> if isMixfix (Id ts [] []) 
+			            then t 
+			            else head ts) 
+		         (lookupDisplay ga DF_LATEX i) 
+
 
 isLaTeXmacro :: String -> Bool 
 isLaTeXmacro s = or ['\\' `elem` s,
@@ -383,14 +389,17 @@ printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
     let s = tokStr t
 	esc = escape_latex s
-	in if s `elem` map (:[]) "[](),;" then strConvDoc_fun s 
-	   else if isPlace t || s `elem` map (:[]) "{}" then strConvDoc_fun esc
-	   else if  all isAlphaNum s  
-		|| ('\\' `elem` esc && not ('\\' `elem` s))
-		|| isChar t
-		then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
+    in if s `elem` map (:[]) "[](),;" 
+       then strConvDoc_fun s 
+       else if isPlace t || s `elem` map (:[]) "{}" 
+            then strConvDoc_fun esc
+	    else if  all isAlphaNum s  
+		     || ('\\' `elem` esc && not ('\\' `elem` s) 
+			 && not ('~' `elem` s))
+		     || isChar t
+	         then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
 			 $ strConvDoc_fun esc
-		else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
+		 else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
 			 $ strConvDoc_fun s
 
 printDisplayToken_latex :: (String -> Doc) -> Token -> Doc
