@@ -13,7 +13,10 @@ Portability :  portable
 -}
 
 {- todo:
-   equation systems of processes 
+   most of the process and channel analysis missing
+
+   sentences are completely missing:
+   use equation systems of processes, like:
    
    spec hugo =
      data ...
@@ -41,7 +44,9 @@ import qualified Common.Lib.Map as Map
 import Common.Lib.State
 import Common.PrettyPrint
 import Common.Id
+import Common.AS_Annotation
 
+-- | static analysis for standalone tool
 statAna :: C3PO -> Result CSPSign
 statAna (Named_c3po (Named_csp_casl_spec _ sp)) =
   statBasicSpec sp
@@ -62,7 +67,17 @@ statBasicSpec (Csp_casl_c_spec sp ch p) =
      let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig
      return accSig
 	
+-- | static analysis for Hets
+basicAnalysisCspCASL :: (Basic_CSP_CASL_C_SPEC,CSPSign,GlobalAnnos) 
+        -> Result (Basic_CSP_CASL_C_SPEC,CSPSign,CSPSign,[Named ()])
+basicAnalysisCspCASL (Basic_csp_casl_c_spec ch p,sigma,ga) =
+  do let ((ch',p'), accSig) = runState (ana_BASIC_CSP (ch,p)) sigma
+         diffSig = diffCSPSign accSig sigma
+         ds = reverse $ envDiags accSig
+     Result ds (Just ()) -- insert diags
+     return (Basic_csp_casl_c_spec ch' p',diffSig,accSig,[])
 
+-- | the main CspCASL analysis function
 ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS_DEFN) 
          -> State CSPSign (CHANNEL_DECL, PROCESS_DEFN)
 ana_BASIC_CSP (ch, p) = do

@@ -138,7 +138,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' <- return (getSig nsig)
-       sigma <- rcoerce lid' lid (newPos "a" 0 0) sigma'
+       sigma <- rcoerce lid' lid (newPos "ab" 0 0) sigma'
        (bspec', _sigma_local, sigma_complete, ax) <- 
           if analysis opts == Structured 
            then return (bspec,empty_signature lid, empty_signature lid,[])
@@ -639,9 +639,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (sigmaD',sensD') <- maybeToResult (headPos pos) 
                           "Could not map signature along data logic inclusion"
                           (map_sign cid sigmaD)
-      let node_contents = DGNode {
-            dgn_name = name,
-            dgn_sign = G_sign lidP' sigmaD', 
+      let gsigmaD' = G_sign lidP' sigmaD'
+          node_contents = DGNode {
+            dgn_name = Nothing,
+            dgn_sign = gsigmaD', 
             dgn_sens = G_l_sentence_list lidP' sensD',
             dgn_origin = DGData }
           [node] = newNodes 0 dg1
@@ -649,15 +650,16 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             dgl_morphism = GMorphism cid sigmaD (ide lidP' sigmaD'),
             dgl_type = GlobalDef,
             dgl_origin = DGData })
-      let dg2 = insEdgeNub link $
+          dg2 = insEdgeNub link $
                 insNode (node,node_contents) dg1
-      (sp2',nsig2,dg3) <- 
-         ana_SPEC lg (gannos,genv,dg2) nsig1 Nothing opts sp2
+          nsig2 = NodeSig (node,gsigmaD')
+      (sp2',nsig3,dg3) <- 
+         ana_SPEC lg (gannos,genv,dg2) nsig2 name opts sp2
       return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1) 
                    (replaceAnnoted sp2' asp2) 
                    pos,
-              nsig2,
+              nsig3,
               dg3)
 
 

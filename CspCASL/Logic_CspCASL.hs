@@ -38,10 +38,13 @@ import CspCASL.Parse_hugo
 import CspCASL.LaTeX_AS_CSP_CASL
 import CspCASL.ATC_CspCASL
 import CspCASL.SignCSP
+import CspCASL.StatAnaCSP
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser
 import CASL.Logic_CASL(CASL(CASL))
+import CASL.Sign
+import CASL.Morphism
 
 import Logic.Logic
 import Data.Dynamic
@@ -99,9 +102,12 @@ instance Sentences CspCASL () () CSPSign CSPMorphism () where
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
-         basic_analysis CspCASL = Nothing -- Just(\(bspec,_,_) -> return (bspec,(),(),[]))
+         basic_analysis CspCASL = Just basicAnalysisCspCASL
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
+         empty_signature CspCASL = emptyCSPSign
+         inclusion CspCASL = sigInclusion computeExt isInclusion
+         is_subsig CspCASL = isSubSig isInclusion
 
 instance Logic CspCASL ()
                Basic_CSP_CASL_C_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
@@ -121,6 +127,6 @@ instance Typeable Basic_CSP_CASL_C_SPEC where
 ---- helpers ---------------------------------
 fun_err :: String -> a
 fun_err fname = 
-    error ("*** Function \"" ++ fname ++ "\" is not yet implemented!")
+    error ("*** CspCASL.Logic_CspCASL: Function \"" ++ fname ++ "\" is not yet implemented!")
 
 ----------------------------------------------

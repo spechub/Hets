@@ -12,7 +12,7 @@ Portability :  portable
 
 -}
 
-{- todo:
+{- todo:  implement isInclusion, computeExt
  
 -}
 
@@ -26,6 +26,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.Dynamic
 import Common.DynamicUtils
+import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PrintLaTeX
 
@@ -46,8 +47,16 @@ diffCSPAddSign a b =
         processNames = processNames a `Map.difference` processNames b
       }
 
+diffCSPSign :: CSPSign -> CSPSign -> CSPSign
+diffCSPSign sig1 sig2 = 
+  diffSig sig1 sig2 
+     { extendedInfo = extendedInfo sig1 `diffCSPAddSign` extendedInfo sig2 }
+
 emptyCSPSign :: CSPSign
 emptyCSPSign = emptySign emptyCSPAddSign
+
+isInclusion :: CSPAddSign -> CSPAddSign -> Bool
+isInclusion _ _ = True
 
 data CSPAddMorphism = 
      CSPAddMorphism { channelMap :: Map.Map Id Id
@@ -57,6 +66,9 @@ data CSPAddMorphism =
 
 
 type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
+
+computeExt :: Ext () CSPAddSign CSPAddMorphism
+computeExt = error ("*** CspCASL.SignCSP: Function computeExt is not yet implemented!")
 
 
 signTc      = mkTyCon "CspCASL.SignCSP.CSPAddSign"
@@ -68,7 +80,11 @@ instance Typeable CSPAddMorphism where
   typeOf _ = mkTyConApp morTc []
 
 -- dummy instances, need to be elaborated!
-instance PrettyPrint CSPAddSign 
-instance PrettyPrint CSPAddMorphism
-instance PrintLaTeX CSPAddSign
-instance PrintLaTeX CSPAddMorphism
+instance PrettyPrint CSPAddSign where
+  printText0 _ x = ptext $ show x
+instance PrettyPrint CSPAddMorphism where
+  printText0 _ x = ptext $ show x
+instance PrintLaTeX CSPAddSign where
+  printLatex0 _ x = ptext $ show x
+instance PrintLaTeX CSPAddMorphism where
+  printLatex0 _ x = ptext $ show x

@@ -207,8 +207,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             GlobalAnnos) ->   -- global annotations
                            Result (basic_spec,sign,sign,[Named sentence]))
                            -- the resulting bspec has analyzed axioms in it
-                           -- the first output sign united with the input sign
-                           -- should yield the second output sign
+                           -- sign's: sigma_local, sigma_complete, i.e.
+                           -- the second output sign united with the input sign
+                           -- should yield the first output sign
                            -- the second output sign is the accumulated sign
          -- default implementation
          basic_analysis _ = Nothing
