@@ -1,9 +1,11 @@
+{-
+Module      :  $Header$
+Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
--- needs ghc
-
-{- GUI/AbstractGraphView.hs
-   $Id$
-   Jorina Freya Gerken, Till Mossakowski
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (relies on Logic via DevGraph)
 
    Interface for graph viewing and abstraction.
    It is possible to hide sets of nodes and edges.
@@ -212,7 +214,7 @@ addnode gid nodetype name gv =
                case elem name [existingName| (existingName, _,_) <- existingNodesOfSameType] of
 	         _ ->     do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
 		             return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
-	         True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
+--	         True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
    )
 
 
@@ -241,9 +243,9 @@ addlink gid edgetype name label src tar gv =
 	   _ ->
 	     do edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node) (snd tar_node)
                 return (g{edges = (ev_cnt,(src,tar,edgetype,edge)):edges g},ev_cnt,ev_cnt+1,Nothing)
-	   Just _ -> do srcToString <- getNodeNameAndTypeAsString g src
+{-	   Just _ -> do srcToString <- getNodeNameAndTypeAsString g src
                         tarToString <- getNodeNameAndTypeAsString g tar	   
-	                return (g,0,ev_cnt,Just("addlink: edge \""++name++"\" from node "++(show src)++(srcToString)++" to node "++(show tar)++(tarToString)++" of type "++edgetype++" already exists in graph "++(show gid)))
+	                return (g,0,ev_cnt,Just("addlink: edge \""++name++"\" from node "++(show src)++(srcToString)++" to node "++(show tar)++(tarToString)++" of type "++edgetype++" already exists in graph "++(show gid))) -}
     (Nothing,_,_) -> return (g,0,ev_cnt,Just ("addlink: illegal edge type: "++edgetype))
     (_,Nothing,_) -> return (g,0,ev_cnt,Just ("addlink: illegal source node id: "++show src))
     (_,_,Nothing) -> return (g,0,ev_cnt,Just ("addlink: illegal target node id: "++show tar))
