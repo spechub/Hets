@@ -43,7 +43,7 @@ hatParser = do p <- getPosition
                         (replicate (l-2) '\n' ++
                          "module Prelude where\n" ++
                          replicate (c-1) ' ' ++ s)
-               case parseTokens (HsParser.parse) "" ts of
+               case parseTokens (HsParser.parse) (sourceName p) ts of
 		           Result _ (Just (HsModule _ _ _ _ ds)) -> 
 				     return $ HsDecls ds
 			   Result ds Nothing -> unexpected 
