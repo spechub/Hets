@@ -91,14 +91,25 @@ casl_reserved_fops :: [String]
 casl_reserved_fops = formula_ops ++ casl_reserved_ops
 
 -- | reserved keywords
+casl_basic_reserved_words :: [String]
+casl_basic_reserved_words =
+    [asS, existsS, forallS, freeS, generatedS, 
+     inS, opS, opS ++ sS, predS, predS ++ sS, 
+     sortS, sortS ++ sS, typeS, typeS ++ sS]
+
+-- | reserved keywords
+casl_structured_reserved_words :: [String]
+casl_structured_reserved_words =
+    [andS, archS,  axiomS, axiomS ++ sS, closedS, endS, 
+     fitS, freeS, fromS,  getS, givenS,
+     hideS,  lambdaS, libraryS, localS, logicS,
+     resultS, revealS, specS, thenS, toS, 
+     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
+
+-- | reserved keywords
 casl_reserved_words :: [String]
 casl_reserved_words =
-    [andS, archS, asS, axiomS, axiomS ++ sS, closedS, endS, 
-    existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
-    hideS, inS, lambdaS, libraryS, localS, logicS,
-    opS, opS ++ sS, predS, predS ++ sS, propS, propS ++ sS, resultS, revealS, 
-    sortS, sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
-    unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
+   casl_basic_reserved_words++ casl_structured_reserved_words
 
 -- | these formula words are legal in terms, but illegal in declarations
 formula_words :: [String]

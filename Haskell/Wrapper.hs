@@ -18,16 +18,18 @@ module Haskell.Wrapper where
 
 import Common.Lib.Parsec
 import Common.Lexer
+import Common.Token
 
  
 hStuff, stuff :: GenParser Char st String
-hStuff = flat $ many stuff 
+hStuff = flat $ many1 stuff 
 
 stuff = lineComment <|> nestComment <|> stringLit <|> charLit
 	<|> balanced "{}" 
 	<|> balanced "()" 
 	<|> balanced "[]" 
-	<|> single (noneOf "])}")
+        <|> reserved casl_structured_reserved_words scanAnyWords
+	<|> single (noneOf ("])}"++['A'..'Z'] ++ ['a'..'z']))
 
 balanced :: String -> GenParser Char st String
 balanced [o, c] = char o <:> hStuff <++> string [c]

@@ -30,7 +30,8 @@ import Logic.Logic              (Language,
                                  parse_symb_map_items,
                                  basic_analysis,
                                  empty_signature,
-                                 data_logic)
+                                 data_logic,
+                                 inclusion)
 import Data.Dynamic             (Typeable)
 import Haskell.ATC_Haskell      -- ???
 
@@ -72,7 +73,8 @@ instance Typeable ModuleInfo
 instance PrettyPrint ModuleInfo
 instance Typeable HsDecls
 instance Typeable AHsDecl
-instance PrettyPrint HsDecls
+instance PrettyPrint HsDecls where
+  printText0 ga s = text (show s)
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -145,6 +147,7 @@ instance StaticAnalysis Haskell HsDecls
 
        where
           empty_signature Haskell = emptyModuleInfo
+          inclusion Haskell _ _ = return ()
           basic_analysis Haskell = Just(basicAnalysis)
               where basicAnalysis (basicSpec, sig, _) = 	            
   			let basicMod = HsModule (Module "Anonymous") Nothing [] basicSpec
@@ -182,3 +185,5 @@ instance Logic Haskell Haskell_Sublogics
                Morphism
                Symbol RawSymbol ()
    where data_logic Haskell = Nothing
+
+

@@ -22,6 +22,7 @@ import Haskell.Hatchet.HsSyn
 import Haskell.Hatchet.HsParser
 import Haskell.Hatchet.HsParseMonad
 import Common.Lib.Parsec
+import Debug.Trace
 -- import Common.PrettyPrint
 -- import Common.Lib.Pretty
 
@@ -34,10 +35,11 @@ type HsDecls = [HsDecl]
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
 	       s <- hStuff
+               trace ("@"++s++"@") (return ())
 	       let r = Haskell.Hatchet.HsParser.parse ("\nmodule Anonymous where\n" ++ s) (SrcLoc 1 1) 0 []
                case r of
-		           Ok _ (HsModule _ _ _ hsDecls) ->
-			       return hsDecls
+		           Ok _ (HsModule _ _ _ hsDecls) -> 
+			       trace (show hsDecls++"OK!") $ return hsDecls
 			   Failed msg -> do
 -- 			       let q = setSourceColumn (setSourceLine p 
 -- 				       (srcLine loc + sourceLine p - 3))
