@@ -2,11 +2,11 @@
 
 PA=$1
 SET=$2
-ANNOS=../Common/Standard.annos
+ANNOS=../Common/test/Standard.annos
 
-. ../CASL/checkFunctions.sh
+. ../Common/test/checkFunctions.sh
 
-for i in MixIds Kinds Types Terms Items BasicSpec;
+for i in Kinds Types Terms Items BasicSpec;
 do
     runmycheck $i hascasl
     runwrongcheck $i hascasl

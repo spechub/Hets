@@ -2,9 +2,9 @@
 
 PA=$1
 SET=$2
-ANNOS=../../Common/Standard.annos
+ANNOS=../../Common/test/Standard.annos
 
-. ../../CASL/checkFunctions.sh
+. ../../Common/test/checkFunctions.sh
 
 for i in *.hascasl
 do
