@@ -280,7 +280,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 		    createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes 
 		              ioRefSubtreeEvents actGraphInfo
 		   ]) -- ??? Should be globalized somehow
-                  -- $$$ LocalMenu (Button "xxx" undefined) 
+                  -- >$$$ LocalMenu (Button "xxx" undefined) 
                   $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
