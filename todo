@@ -126,26 +126,22 @@ Christian
 ************************************************
 
 Missing points for heterogeneous WADT 04 example:
-- translation of sentences along HasCASL sig mors 
-- correct display of HasCASL sublogis 
 - improve display of HasCASL sigs + mors 
-- translation of sentences CASL->HasCASL 
-
-Sprachdesign HasCASL
-  Verhältnis von Parametrisierung und Polymorphie/Typklassen
 
 Static analysis for HasCASL
-  Subsorting
-  Symbol map analysis
+  checking class constraints of terms
+  pattern analysis for program equations 
+  Sub-/Supertypes
+    - for simple types (currently type synonyms)
+  symbol representation
+  symbol map analysis (hiding sub/supertypes)
 
-Weak amalgamation analysis
+Weak amalgamation analysis?
 
-Instantiate Transformation Application system for HasCASL
+Instantiate Transformation Application system for HasCASL?
 Automatic generation of Haskell (for a HasCASL subset)
 Proofs in HasCASL
 Case study
-Sönke Magnussen kontaktieren (der arbeitet mit Has-CASL-ähnlicher Sprache)
-
 
 ************************************************
 Klaus
@@ -236,7 +232,6 @@ Encodings
 
 
 Errors:
-Test suite (Christian's mail)
 Klaus' wayfinding example
 
 UniForM workbench:
