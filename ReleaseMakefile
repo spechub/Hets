@@ -5,9 +5,9 @@
 
 # This Makefile will compile the hets sources
 # note that you'll need the "uni" library residing in ".." 
+# from http://www.informatik.uni-bremen.de/~ger/cvs/CVS.html
 
-# !!! Note: This makefile is written for GNU make !!!
-#           (gmake on solaris ; make on linux)
+# This makefile is written for GNU make (gmake on solaris, make on linux)
 
 ####################################################################
 ## Some varibles, which control the compilation
@@ -79,13 +79,10 @@ generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
 happy_files = Haskell/Language/Parser.hs Haskell/Hatchet/HsParser.hs
 
-# this variable holds the modules that should be documented
-doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
-
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg \
+.PHONY : clean real_clean bin_clean \
          clean_genRules genRules
 
 .SECONDARY : %.hs %.d $(generated_rule_files)
@@ -166,7 +163,7 @@ lib_clean: clean
 real_clean: lib_clean
 
 ### additionally generated files not in CVS tree
-distclean: real_clean clean_genRules d_clean
+distclean: real_clean clean_genRules
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
 	$(RM) $(happy_files)
