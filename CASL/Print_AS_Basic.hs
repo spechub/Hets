@@ -80,6 +80,7 @@ instance PrettyPrint SORT_ITEM where
     printText0 ga (Subsort_decl l t _) = 
 	hang (commaT ga l) 4 $ text lessS <+> printText0 ga t
     printText0 ga (Subsort_defn s v t f _) = 
+	{- TODO: lannos of f should printed after the equal sign -}
 	printText0 ga s <+> ptext equalS <+> 
 	   braces (hang (printText0 ga v <+> colon <+> printText0 ga t) 
 		         4 (ptext "." <+> printText0 ga f))
@@ -328,29 +329,37 @@ instance PrettyPrint SYMB_OR_MAP where
 -}
 
 instance PrettyPrint SYMB_ITEMS where
- printText0 ga (Symb_items k l _) = printText0 ga k <+>
-				    commaT ga l
+ printText0 ga (Symb_items k l _) = 
+     printText0 ga k <> pluralS' <+> commaT ga l
+     where pluralS' = case k of
+			     Implicit -> empty
+			     _        -> if length l > 1 then ptext "s" 
+					 else empty
 
 instance PrettyPrint SYMB_ITEMS_LIST where
     printText0 ga (Symb_items_list l _) = commaT ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS where
- printText0 ga (Symb_map_items k l _) = printText0 ga k <+>
-				    commaT ga l
+ printText0 ga (Symb_map_items k l _) = 
+     printText0 ga k <> pluralS' <+> commaT ga l
+     where pluralS' = case k of
+			     Implicit -> empty
+			     _        -> if length l > 1 then ptext "s" 
+					 else empty
 
 instance PrettyPrint SYMB_MAP_ITEMS_LIST where 
     printText0 ga (Symb_map_items_list l _) = commaT ga l
 
 instance PrettyPrint SYMB_KIND where 
     printText0 _ Implicit = empty
-    printText0 _ Sorts_kind = text sortS
-    printText0 _ Ops_kind = text opS
-    printText0 _ Preds_kind = text predS
+    printText0 _ Sorts_kind = ptext sortS
+    printText0 _ Ops_kind = ptext opS
+    printText0 _ Preds_kind = ptext predS
 
 instance PrettyPrint SYMB where 
     printText0 ga (Symb_id i) = printText0 ga i
-    printText0 ga (Qual_id i t _) = printText0 ga i <> colon 
-				    <> printText0 ga t
+    printText0 ga (Qual_id i t _) = 
+	printText0 ga i <+> colon <+> printText0 ga t
 
 instance PrettyPrint TYPE where 
     printText0 ga (O_type t) = printText0 ga t
@@ -359,9 +368,8 @@ instance PrettyPrint TYPE where
 
 instance PrettyPrint SYMB_OR_MAP where 
     printText0 ga (Symb s) = printText0 ga s
-    printText0 ga (Symb_map s t _) = printText0 ga s 
-				     <+> text mapsTo
-				     <+> printText0 ga t
+    printText0 ga (Symb_map s t _) = 
+	printText0 ga s <+> text mapsTo <+> printText0 ga t
 
 
 ---- helpers ----------------------------------------------------------------
