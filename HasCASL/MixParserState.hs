@@ -27,8 +27,6 @@ import Common.Lib.State
 import Data.Maybe
 import HasCASL.Unify
 
-import Debug.Trace
-
 -- avoid confusion with the variable counter Int
 newtype Index = Index Int deriving (Eq, Ord, Show)
 
@@ -212,8 +210,8 @@ initialState g as i =
        return (a:p:t:ls ++ l1 ++ l2 ++ l3)
 
 -- recognize next token (possible introduce new tuple variable)
-scanState :: TypeMap -> (Type, Term) -> Token -> PState Term
-	  -> State Int [PState Term]
+scanState :: TypeMap -> (Type, a) -> Token -> PState a
+	  -> State Int [PState a]
 scanState tm (ty, trm) t p =
     do let ts = restRule p
        if null ts || head ts /= t then return []
@@ -233,8 +231,7 @@ scanState tm (ty, trm) t p =
 		   if t == opTok || t == inTok then
 	             let mp = do q <- filterByType tm (ty,trm) p
 	                         return q { ruleType = ty, restRule = tail ts }
-	             in trace (showPretty trm " : " ++ showPretty ty "") 
-			maybeToList mp
+	             in maybeToList mp
 	      else [p { restRule = tail ts, posList = tokPos t : posList p }]
 
 -- construct resulting term from PState 
@@ -252,36 +249,39 @@ stateToAppl p =
        else if r == applId then
 	    ApplTerm (head ar) (head (tail ar)) qs 
        else if r == tupleId || r == unitId then TupleTerm ar qs
-       else fst $ addFunArguments (ty, QualOp (InstOpId r [] []) sc qs) ar
+       else addFunArguments (ty, QualOp (InstOpId r [] []) sc qs) 
+		$ concatMap expandArgument ar
 
--- foldr (\ a t -> ApplTerm t a []) 
---		(QualOp (InstOpId r [] []) sc qs) ar
+expandArgument :: Term -> [Term]
+expandArgument arg =
+    case arg of 
+             TupleTerm ts _ -> concatMap expandArgument ts
+	     _ -> [arg]
 
-addFunArguments :: (Type, Term) -> [Term] -> (Term, [Term])
+addFunArguments :: (Type, Term) -> [Term] -> Term
 addFunArguments (ty, trm) args =
-    if null args then (trm, [])
-    else 
+    if null args then trm else
     case ty of 
 	    FunType t1 _ t2 _ -> 
-		let (arg, rest) = getArgument t1 args in
+		let arg: rest = getArgument t1 args in
 		    addFunArguments (t2, ApplTerm trm arg []) rest
 	    _ -> error "addFunArguments"
 
-getArgument :: Type -> [Term] -> (Term, [Term])
+getArgument :: Type -> [Term] -> [Term]
 getArgument ty args =
     case ty of
 	     ProductType ts _ -> 
 		 let (trms, rest) = getArguments ts args in 
-		     (TupleTerm trms [], rest)
+		     TupleTerm trms [] : rest
 	     _ -> if null args then error "getArgument" 
-		  else (head args, tail args)
+		  else args
 
 getArguments :: [Type] -> [Term] -> ([Term], [Term])
 getArguments [] args = ([], args)
 getArguments (t:rt) args = 
-    let (trms, restArgs) = getArgument t args
+    let trm : restArgs = getArgument t args
 	(nextTrms, finalArgs) = getArguments rt restArgs
-    in (trms:nextTrms, finalArgs)
+    in (trm:nextTrms, finalArgs)
  
 toAppl :: GlobalAnnos -> PState Term -> Term
 toAppl g s = let i = ruleId s in
