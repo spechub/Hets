@@ -28,7 +28,7 @@ freeVars f = case f of
 		    concatMap ( \ (Var_decl vs _ _) -> vs) vdecl
     Conjunction phis _ -> Set.unions $ map freeVars  phis
     Disjunction phis _ -> Set.unions $ map freeVars phis
-    Implication phi1 phi2 _ -> freeVars phi1 `Set.union` freeVars phi2
+    Implication phi1 phi2 _ _ -> freeVars phi1 `Set.union` freeVars phi2
     Equivalence phi1 phi2 _ -> freeVars phi1 `Set.union` freeVars phi2
     Negation phi _ -> freeVars phi
     Predication _ args _ -> Set.unions $ map freeTermVars args
@@ -79,8 +79,8 @@ stripQuant (Conjunction phis pos) =
   Conjunction (map stripQuant phis) pos
 stripQuant (Disjunction phis pos) =
   Disjunction (map stripQuant phis) pos
-stripQuant (Implication phi1 phi2 pos) =
-  Implication (stripQuant phi1) (stripQuant phi2) pos
+stripQuant (Implication phi1 phi2 b pos) =
+  Implication (stripQuant phi1) (stripQuant phi2) b pos
 stripQuant (Equivalence phi1 phi2 pos) =
   Equivalence (stripQuant phi1) (stripQuant phi2) pos
 stripQuant (Negation phi pos) =

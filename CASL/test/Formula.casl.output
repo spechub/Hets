@@ -10,7 +10,7 @@ exists! a:v . x
 exists! a:v . x
 exists! a:v . x
 forall a:v . x
-(b) => (a)
+(a) if (b)
 def x
 def #
 {} when [] else {}
@@ -24,7 +24,7 @@ b in s
 a =e= b
 a = b
 (a) => (b) => (c) => (d)
-(d) => (c) => (b) => (a)
+(a) if (b) if (c) if (d)
 (a) <=> (b)
 (a) /\ (b) if (b) \/ (c) if not c if def d
 m div n = r <=> exists s:Nat . m = n * r + s /\ (s < n)

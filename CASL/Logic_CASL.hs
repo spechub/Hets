@@ -11,22 +11,19 @@ Portability :  portable
    Also the instances for Syntax an Category.
 -}
 
-module CASL.Logic_CASL(CASL(CASL)) where
+module CASL.Logic_CASL(CASL(CASL), CASLFORMULA, CASLSign, CASLMor, 
+		       CASLBasicSpec) where
 
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.MapSentence
-import Logic.ParsecInterface
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
 import Common.Lib.Parsec
-import Common.Lib.Map
 import Logic.Logic
 import Common.Lexer((<<))
-import Common.Result
-import Common.Id
 import CASL.ATC_CASL
 
 import CASL.Sublogic
@@ -35,7 +32,14 @@ import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 
+data CASL = CASL deriving Show
+
 instance Language CASL  -- default definition is okay
+
+type CASLBasicSpec = BASIC_SPEC () () ()
+type CASLSign = Sign () ()
+type CASLMor = Morphism () () ()
+type CASLFORMULA = FORMULA ()
 
 instance Category CASL CASLSign CASLMor  
     where
@@ -54,12 +58,12 @@ instance Category CASL CASLSign CASLMor
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax CASL BASIC_SPEC 
+instance Syntax CASL CASLBasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CASL = Just(toParseFun basicSpec emptyAnnos)
-	 parse_symb_items CASL = Just(toParseFun symbItems ())
-	 parse_symb_map_items CASL = Just(toParseFun symbMapItems ())
+         parse_basic_spec CASL = Just basicSpec
+	 parse_symb_items CASL = Just symbItems
+	 parse_symb_map_items CASL = Just symbMapItems
 
 -- lattices (for sublogics)
 
@@ -85,12 +89,13 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       provers CASL = [] 
       cons_checkers CASL = []
 
-instance StaticAnalysis CASL BASIC_SPEC CASLFORMULA ()
+instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign 
                CASLMor 
                Symbol RawSymbol where
-         basic_analysis CASL = Just basicAnalysis
+         basic_analysis CASL = Just $ basicAnalysis 
+			       (const id) (const id) return
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          -- ensures_amalgamability :: id
@@ -104,7 +109,7 @@ instance StaticAnalysis CASL BASIC_SPEC CASLFORMULA ()
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
          
-         empty_signature CASL = emptySign
+         empty_signature CASL = emptySign ()
          signature_union CASL sigma1 sigma2 = 
            return $ addSig sigma1 sigma2
          morphism_union CASL = morphismUnion
@@ -117,7 +122,7 @@ instance StaticAnalysis CASL BASIC_SPEC CASLFORMULA ()
          induced_from_to_morphism CASL = inducedFromToMorphism
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
-               BASIC_SPEC CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign 
                CASLMor
                Symbol RawSymbol () where

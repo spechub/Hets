@@ -19,17 +19,13 @@ module CASL.MixfixParser ( resolveFormula, resolveMixfix)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
-import Common.AnnoState
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Set as Set
 import Common.Earley
 import Common.ConvertLiteral
 import CASL.ShowMixfix 
--- import Control.Exception (assert)
-
-assert :: Bool -> a -> a
-assert b a = if b then a else error ("assert")
+import Control.Exception (assert)
 
 type Rule = (Id, Bool, [Token])  -- True means predicate
 
@@ -75,28 +71,37 @@ initRules ga (opS, predS, _) maybeFormula =
        map (mkArgsRule False) ops]
 
 -- | meaningful position of a term
-posOfTerm :: AParsable f => TERM f -> Pos
+posOfTerm :: TERM f -> Pos
 posOfTerm trm =
     case trm of
 	      Mixfix_token t -> tokPos t
-	      Mixfix_term ts -> posOf ts
+	      Mixfix_term ts -> headPos $ map posOfTerm ts
 	      Simple_id i -> tokPos i
 	      Mixfix_qual_pred p -> 
 		  case p of 
 		  Pred_name i -> posOfId i
-		  Qual_pred_name _ _ ps -> headPos ps
-              Application o [] [] -> 
+		  Qual_pred_name i _ _ -> posOfId i
+              Application o _ _ -> 
 		  case o of 
 		  Op_name i ->  posOfId i
-		  Qual_op_name _ _ ps -> headPos ps
-	      _ -> getMyPos trm 
+		  Qual_op_name i _ _ -> posOfId i
+	      Qual_var v _ _ -> tokPos v
+	      Sorted_term t _ _ -> posOfTerm t
+	      Cast  t _ _ -> posOfTerm t
+	      Conditional t _ _ _ -> posOfTerm t
+	      Unparsed_term _ ps -> headPos ps
+	      Mixfix_sorted_term _ ps -> headPos ps
+	      Mixfix_cast _ ps -> headPos ps
+              Mixfix_parenthesized _ ps -> headPos ps
+              Mixfix_bracketed _ ps -> headPos ps
+              Mixfix_braced _ ps -> headPos ps
 
 -- | construct application
-asAppl :: AParsable f => Id -> [TERM f] -> [Pos] -> TERM f
+asAppl :: Id -> [TERM f] -> [Pos] -> TERM f
 asAppl f as ps = Application (Op_name f) as ps
 
 -- | constructing the parse tree from (the final) parser state(s)
-toAppl :: AParsable f => Id -> Bool -> [TERM f] -> [Pos] -> TERM f
+toAppl :: Id -> Bool -> [TERM f] -> [Pos] -> TERM f
 toAppl ide _ ar qs = 
        if ide == singleArgId || ide == multiArgsId
 	    then assert (length ar > 1) $ 
@@ -112,7 +117,7 @@ toAppl ide _ ar qs =
 
 type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
 
-addType :: AParsable f => TERM f -> TERM f -> TERM f
+addType :: TERM f -> TERM f -> TERM f
 addType tt t = 
     case tt of
     Mixfix_sorted_term s ps -> Sorted_term t s ps
@@ -127,8 +132,7 @@ filterByPredicate bArg bOp =
 
 type TermChart f = Chart (TERM f) Bool
 
-iterateCharts :: AParsable f =>
-              GlobalAnnos -> IdSet -> Bool -> [TERM f] -> TermChart f 
+iterateCharts :: GlobalAnnos -> IdSet -> Bool -> [TERM f] -> TermChart f 
 	      -> TermChart f
 iterateCharts g ids maybeFormula terms c = 
     let self = iterateCharts g ids maybeFormula
@@ -180,35 +184,33 @@ iterateCharts g ids maybeFormula terms c =
 		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
 	    t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
 		self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
-	    t -> error ("iterate mixfix states: " ++ show t)
+	    _ -> error "iterateCharts"
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
     let both = Set.intersection ops preds in
 	(ops, Set.difference preds both, preds)
 
-resolveMixfix :: AParsable f => GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM f 
+resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM f 
 	      -> Result (TERM f)
 resolveMixfix g ops preds maybeFormula t = 
     let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) maybeFormula t 
 	in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: AParsable f => GlobalAnnos -> IdSet -> Bool 
+resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
 	      -> TERM f -> Result (TERM f)
 resolveMixTrm ga ids maybeFormula trm =
 	getResolved showTerm (posOfTerm trm) toAppl
 	   $ iterateCharts ga ids maybeFormula [trm] $ 
 	    initChart (initRules ga ids maybeFormula) Set.empty
 
-resolveFormula :: AParsable f => 
-               GlobalAnnos -> Set.Set Id -> Set.Set Id -> (FORMULA f)
+resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> (FORMULA f)
 	       -> Result (FORMULA f)
 resolveFormula g ops preds f =     
     let r@(Result ds _) = resolveMixFrm g (mkIdSet ops preds) f 
 	in if null ds then r else Result ds Nothing
 
-resolveMixFrm :: AParsable f => 
-                 GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
+resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
 resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
     let self = resolveMixFrm g ids 
 	resolveTerm = resolveMixTrm g ids False in
@@ -227,10 +229,10 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
        Disjunction fsOld ps -> 
 	   do fsNew <- mapM self fsOld  
 	      return $ Disjunction fsNew ps
-       Implication f1 f2 ps -> 
+       Implication f1 f2 b ps -> 
 	   do f3 <- self f1 
 	      f4 <- self f2
-	      return $ Implication f3 f4 ps
+	      return $ Implication f3 f4 b ps
        Equivalence f1 f2 ps -> 
 	   do f3 <- self f1 
 	      f4 <- self f2

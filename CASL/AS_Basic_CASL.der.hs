@@ -16,17 +16,14 @@ module CASL.AS_Basic_CASL where
 
 import Common.Id
 import Common.AS_Annotation 
-import Common.PrettyPrint
-import Common.AnnoState
 
 -- DrIFT command
 {-! global: UpPos !-}
 
-data BASIC_SPEC = Basic_spec [Annoted (BASIC_ITEMS () () ())]
+data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
 		  deriving (Show,Eq)
 
-data (AParsable b, AParsable s, AParsable f) => 
-     BASIC_ITEMS b s f = Sig_items (SIG_ITEMS b s f)
+data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS b s f)
                    -- the Annotation following the keyword is dropped
 		   -- but preceding the keyword is now an Annotation allowed
 		 | Free_datatype [Annoted DATATYPE_DECL] [Pos]
@@ -42,8 +39,7 @@ data (AParsable b, AParsable s, AParsable f) =>
                  | Ext_BASIC_ITEMS b
 		   deriving (Show,Eq)
 
-data (AParsable b, AParsable s, AParsable f) =>
-     SIG_ITEMS b s f = Sort_items [Annoted (SORT_ITEM f)] [Pos] 
+data SIG_ITEMS b s f = Sort_items [Annoted (SORT_ITEM f)] [Pos] 
 	         -- pos: sort, semi colons
 	       | Op_items [Annoted (OP_ITEM f)] [Pos]
 		 -- pos: op, semi colons
@@ -54,8 +50,7 @@ data (AParsable b, AParsable s, AParsable f) =>
                | Ext_SIG_ITEMS s
 		 deriving (Show,Eq)
 
-data AParsable f =>
-     SORT_ITEM f = Sort_decl [SORT] [Pos]
+data SORT_ITEM f = Sort_decl [SORT] [Pos]
 	         -- pos: commas
 	       | Subsort_decl [SORT] SORT [Pos]
 		 -- pos: commas, <
@@ -67,8 +62,7 @@ data AParsable f =>
 	         -- pos: "="s
 		 deriving (Show,Eq)
 
-data AParsable f => 
-     OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] [Pos]
+data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] [Pos]
 	       -- pos: commas, colon, OP_ATTR sep. by commas
 	     | Op_defn OP_NAME OP_HEAD (Annoted (TERM f)) [Pos]
 	       -- pos: "="
@@ -89,13 +83,11 @@ data ARG_DECL = Arg_decl [VAR] SORT [Pos]
 	        -- pos: commas, colon
 		deriving (Show,Eq)
 
-data AParsable f =>
-     OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
+data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
 	     | Unit_op_attr (TERM f)
 	       deriving (Show,Eq)
 
-data AParsable f =>
-     PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE [Pos]
+data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE [Pos]
                  -- pos: commas, colon
 	       | Pred_defn PRED_NAME PRED_HEAD (Annoted (FORMULA f)) [Pos]
 		 -- pos: "<=>"
@@ -138,15 +130,14 @@ data VAR_DECL = Var_decl [VAR] SORT [Pos]
    other Pos informations which encode the brackets of every kind
 -}
 
-data AParsable f =>
-     FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
+data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
 	       -- pos: QUANTIFIER, semi colons, dot
 	     | Conjunction [FORMULA f] [Pos]
 	       -- pos: "/\"s
 	     | Disjunction [FORMULA f] [Pos]
 	       -- pos: "\/"s
-	     | Implication (FORMULA f) (FORMULA f) [Pos]
-	       -- pos: "=>" or "if" 	   
+	     | Implication (FORMULA f) (FORMULA f) Bool [Pos]
+	       -- pos: "=>" or "if" (True -> "=>")	   
 	     | Equivalence (FORMULA f) (FORMULA f) [Pos]
 	       -- pos: "<=>"
 	     | Negation (FORMULA f) [Pos]
@@ -182,8 +173,7 @@ data PRED_SYMB = Pred_name PRED_NAME
 		 -- pos: "(", pred, colon, ")"
 		 deriving (Show,Eq,Ord)
 
-data AParsable f =>
-     TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
+data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	  | Qual_var VAR SORT [Pos]
 	    -- pos: "(", var, colon, ")"
 	  | Application OP_SYMB [TERM f] [Pos]

@@ -19,11 +19,9 @@ import Data.List (mapAccumL)
 import Data.Char (isDigit)
 
 import Common.Id
-import Common.Lib.Parsec.Pos (sourceLine,sourceColumn)
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.AnnoState
 import CASL.LiteralFuns
 
 import Common.Print_AS_Annotation
@@ -37,11 +35,12 @@ import Common.PPUtils
 -- trace :: String -> a -> a
 -- trace _ a = a
 
-instance PrettyPrint BASIC_SPEC where
+instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
+    PrettyPrint (BASIC_SPEC b s f) where
     printText0 ga (Basic_spec l) = 
 	if null l then braces empty else vcat (map (printText0 ga) l) 
 
-instance (AParsable b, AParsable s, AParsable f) =>
+instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_ITEMS b s f) where
     printText0 ga (Sig_items s) = printText0 ga s
     printText0 ga (Free_datatype l _) = 
@@ -71,18 +70,18 @@ instance (AParsable b, AParsable s, AParsable f) =>
 		  _  -> False
     printText0 ga (Var_items l _) = 
 	text varS<>pluralS_doc l <+> semiT_text ga l
-    printText0 ga (Local_var_axioms l f p) = 
+    printText0 ga (Local_var_axioms l f _) = 
 	text forallS <+> semiT_text ga l
 		 $$ printFormulaAux ga f
     printText0 ga (Axiom_items f _) = 
 	printFormulaAux ga f
     printText0 ga (Ext_BASIC_ITEMS b) = printText0 ga b
 
-printFormulaAux :: AParsable f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
+printFormulaAux :: PrettyPrint f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
 printFormulaAux ga f =
   vcat $ map (printAnnotedFormula_Text0 ga) f
 
-printAnnotedFormula_Text0 :: AParsable f => 
+printAnnotedFormula_Text0 :: PrettyPrint f => 
                              GlobalAnnos -> Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
 	let i'   = char '.' <+> printText0 ga i
@@ -96,7 +95,7 @@ printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
 				    (empty) ga ras
         in las' $+$ (hang i' 0 la) $$ ras'
 
-instance (AParsable b, AParsable s, AParsable f) =>
+instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS b s f) where
     printText0 ga (Sort_items l _) =  
 	text sortS<>pluralS_doc l <+> semiAnno_text ga l
@@ -108,7 +107,7 @@ instance (AParsable b, AParsable s, AParsable f) =>
 	text typeS<>pluralS_doc l <+> semiAnno_text ga l 
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
 
-instance AParsable f =>
+instance PrettyPrint f =>
          PrettyPrint (SORT_ITEM f) where
     printText0 ga (Sort_decl l _) = commaT_text ga l
     printText0 ga (Subsort_decl l t _) = 
@@ -122,7 +121,7 @@ instance AParsable f =>
 	fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
 
 
-instance AParsable f => PrettyPrint (OP_ITEM f) where
+instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
     printText0 ga (Op_decl l t a _) = 
 	hang (hang (commaT_text ga l) 
 	            4 
@@ -167,13 +166,13 @@ instance PrettyPrint ARG_DECL where
 			      <+> colon
 			      <> printText0 ga s
 
-instance AParsable f => PrettyPrint (OP_ATTR f) where
+instance PrettyPrint f => PrettyPrint (OP_ATTR f) where
     printText0 _ (Assoc_op_attr)   = text assocS
     printText0 _ (Comm_op_attr)    = text commS 
     printText0 _ (Idem_op_attr)    = text idemS
     printText0 ga (Unit_op_attr t) = text unitS <+> printText0 ga t
 
-instance AParsable f => PrettyPrint (PRED_ITEM f) where
+instance PrettyPrint f => PrettyPrint (PRED_ITEM f) where
     printText0 ga (Pred_decl l t _) = commaT_text ga l 
 				  <+> colon <+> printText0 ga t
     printText0 ga (Pred_defn n h f _) = printText0 ga n 
@@ -218,7 +217,7 @@ instance PrettyPrint VAR_DECL where
 				<> colon 
 				<> printText0 ga s 
 
-instance AParsable f => PrettyPrint (FORMULA f) where
+instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 ga (Quantification q l f _) = 
 	hang (printText0 ga q <+> semiT_text ga l) 4 $ 
 	     char '.' <+> printText0 ga f
@@ -228,16 +227,16 @@ instance AParsable f => PrettyPrint (FORMULA f) where
     printText0 ga (Disjunction  l _) = 
 	sep $ prepPunctuate (ptext lOr <> space) $ 
 	    map (condParensXjunction printText0 parens ga) l
-    printText0 ga i@(Implication f g p) = 
-	if if_detect f p 
+    printText0 ga i@(Implication f g b _) = 
+	if b
 	then (
-        hang (condParensImplEquiv printText0 parens ga i g 
-	      <+> ptext "if") 4 $ 
-	     condParensImplEquiv printText0 parens ga i f)
+              hang (condParensImplEquiv printText0 parens ga i f 
+		    <+> ptext implS) 4 $ 
+	      condParensImplEquiv printText0 parens ga i g)
 	else (
-        hang (condParensImplEquiv printText0 parens ga i f 
-	      <+> ptext implS) 4 $ 
-	     condParensImplEquiv printText0 parens ga i g)
+              hang (condParensImplEquiv printText0 parens ga i g 
+		    <+> ptext "if") 4 $ 
+	      condParensImplEquiv printText0 parens ga i f)
     printText0 ga e@(Equivalence  f g _) = 
 	hang (condParensImplEquiv printText0 parens ga e f 
 	      <+> ptext equivS) 4 $
@@ -278,7 +277,7 @@ instance PrettyPrint PRED_SYMB where
     printText0 ga (Qual_pred_name n t _) = 
 	parens $ ptext predS <+> printText0 ga n <+> colon <+> printText0 ga t
 
-instance AParsable f => PrettyPrint (TERM f) where
+instance PrettyPrint f => PrettyPrint (TERM f) where
     printText0 ga (Simple_id i) = printText0 ga i
     printText0 ga (Qual_var n t _) = 
 	parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
@@ -369,7 +368,7 @@ pluralS_symb_list k l = case k of
 				   then "s" 
 				   else ""
 
-condPrint_Mixfix :: AParsable f => (Token -> Doc)
+condPrint_Mixfix :: PrettyPrint f => (Token -> Doc)
 		 -> (Id -> Doc)
 		 -> (TERM f -> Doc)
 		 -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -400,7 +399,7 @@ condPrint_Mixfix pTok pId pTrm parens_fun
 	  o' = pId i
 {- TODO: consider string-, number-, list- and floating-annotations -}
 
-condPrint_Mixfix_text :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Doc
+condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
 condPrint_Mixfix_text ga =
     condPrint_Mixfix (printText0 ga) (printText0 ga) 
 		  (printText0 ga) parens 
@@ -408,7 +407,7 @@ condPrint_Mixfix_text ga =
 
 -- printing consitent mixfix application or predication
 {- TODO: consider string-, number-, list- and floating-annotations -}
-print_mixfix_appl :: AParsable f => (Token -> Doc)  -- ^ print a Token
+print_mixfix_appl :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
 		  -> (Id -> Doc)     -- ^ print an Id
 		  -> (TERM f -> Doc)   -- ^ print TERM recursively 	 
 		  -> (Doc -> Doc)   -- ^ a function that surrounds 
@@ -447,7 +446,7 @@ print_mixfix_appl pTok pId pTrm parens_fun
 	  d_terms_a_comp = fsep_fun (fillIn places' terms_a_comp'
 				     ++ [last_term])
 	  -- tps_b_comp' :: [Token]
-	  -- terms_b_comp' :: AParsable f => [TERM f]
+	  -- terms_b_comp' :: PrettyPrint f => [TERM f]
 	  -- first_term  :: Doc
 	  (tps_b_comp',terms_b_comp',first_term) = 
 	      if null tps_b_comp then -- invisible Id 
@@ -470,9 +469,9 @@ print_mixfix_appl pTok pId pTrm parens_fun
 		                 (Just ARight))
 	      else
 	         (places,terms_a_comp,empty)
-	  -- fillIn :: AParsable f => [Token] -> [TERM f] -> [Doc]
+	  -- fillIn :: PrettyPrint f => [Token] -> [TERM f] -> [Doc]
 	  fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
-	  -- pr :: AParsable f => [TERM f] -> Token -> ([TERM f],Doc)
+	  -- pr :: PrettyPrint f => [TERM f] -> Token -> ([TERM f],Doc)
 	  pr [] top = ([], pf' top)
 	  pr tS@(t:ts) top 
 	      | isPlace top = (ts, pTrm t)
@@ -480,7 +479,7 @@ print_mixfix_appl pTok pId pTrm parens_fun
 	  pf' = maybe pTok (\ f -> maybe pTok (\ _ -> f) md_tops) mpt_fun
 
 -- printing consistent prefix application and predication
-print_prefix_appl :: AParsable f => (TERM f -> Doc)   -- ^ print TERM recursively 
+print_prefix_appl :: PrettyPrint f => (TERM f -> Doc)   -- ^ print TERM recursively 
 		  -> (Doc -> Doc)    -- ^ a function that surrounds 
 				     -- the given Doc with appropiate 
 				     -- parens
@@ -493,11 +492,11 @@ print_prefix_appl pTrm parens_fun fsep_fun comma_doc po' l = po' <>
             (if null l then empty 
 	     else parens_fun $ fsep_fun $ punctuate comma_doc $ map pTrm l)
 
-print_prefix_appl_text :: AParsable f => GlobalAnnos -> Doc -> [TERM f] -> Doc
+print_prefix_appl_text :: PrettyPrint f => GlobalAnnos -> Doc -> [TERM f] -> Doc
 print_prefix_appl_text ga =
     print_prefix_appl (printText0 ga) parens fsep comma
 
-print_Literal :: AParsable f => (Token -> Doc)  -- ^ print a Token
+print_Literal :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
               -> (Id -> Doc)     -- ^ print an Id
 	      -> (TERM f -> Doc)   -- ^ print TERM recursively 	 
 	      -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -585,12 +584,12 @@ mergeTok ts
     where initTok = Token {tokStr="",tokPos = tokPos (head ts)}
 	  merge tok newTok = newTok {tokStr = tokStr tok ++ tokStr newTok} 
 
-print_Literal_text :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Doc
+print_Literal_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
 print_Literal_text ga =
     print_Literal (printText0 ga) (printText0 ga) (printText0 ga) 
          parens (<+>) fsep comma  (char '.') (char 'E') Nothing Nothing ga
 
-condParensAppl :: AParsable f => (TERM f -> Doc)
+condParensAppl :: PrettyPrint f => (TERM f -> Doc)
 	       -> (Doc -> Doc)    -- ^ a function that surrounds 
 				  -- the given Doc with appropiate 
 				  -- parens
@@ -642,14 +641,15 @@ condParensAppl pf parens_fun ga o_i t mdir =
     where t' = pf t
 
 
-condParensImplEquiv :: AParsable f => (GlobalAnnos -> FORMULA f -> Doc)
+condParensImplEquiv :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
 		    -> GlobalAnnos -> FORMULA f -> FORMULA f -> Doc
 condParensImplEquiv pf parens_fun ga e_i f =  
     case e_i of 
-    Implication _ _ _ -> case f of Implication _ _ _ -> f'
+    Implication _ _ _ _ -> case f of 
+				   Implication _ _ _ _ -> f'
 				   Disjunction _ _ -> f'
 				   Conjunction _ _ -> f'
 				   Negation _ _ -> f' 
@@ -673,7 +673,7 @@ condParensImplEquiv pf parens_fun ga e_i f =
 				   _           -> parens_fun f'
     _ ->  error "Wrong call: condParensImplEquiv"
     where f' = pf ga f
-condParensXjunction :: AParsable f => (GlobalAnnos -> FORMULA f -> Doc)
+condParensXjunction :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
@@ -689,66 +689,26 @@ condParensXjunction pf parens_fun ga x =
 	      _            -> parens_fun x' 
     where x' = pf ga x
 
-left_most_pos :: AParsable f => FORMULA f -> Pos
-left_most_pos f = 
-    case f of
-    Quantification _ _ _ pl -> headPos pl 
-    Conjunction _ pl   -> headPos pl 
-    Disjunction _ pl   -> headPos pl 
-    Implication _ _ pl -> headPos pl 
-    Equivalence _ _ pl -> headPos pl 
-    Negation _ pl -> headPos pl 
-    True_atom pl -> headPos pl 
-    False_atom pl -> headPos pl 
-    Predication pre _ pl -> 
-	let p = headPos pl
-	    p' = posOfId (case pre of
-			  Pred_name i          -> i
-			  Qual_pred_name i _ _ -> i)
-	in if isNullPos p 
-	   then p'
-	   else p	       
-    Definedness _ pl -> headPos pl 
-    Existl_equation _ _ pl -> headPos pl 
-    Strong_equation _ _ pl -> headPos pl 
-    Membership _ _ pl -> headPos pl 
-    Unparsed_formula _ pl -> headPos pl 
-    Mixfix_formula t -> getMyPos t
-    Sort_gen_ax sorts _ -> firstPos sorts []
-
-if_detect :: AParsable f => FORMULA f -> [Pos] -> Bool
-if_detect _ []  = False
-if_detect f ps  = 
-        (line p_impl, column p_impl) < (line p_form, column p_form)
-    where p_form = left_most_pos f
-	  p_impl = reduce ps
-          line   = sourceLine
-	  column = sourceColumn
-	  reduce [] = error "reduce in if_detect is broken"
-	  reduce [x] = x
-	  reduce (_:xs)
-	      | length xs >= 2 = reduce $ init xs
-	      | otherwise  = 
-		  error "if_detect found unbalanced positions of parenthesis"
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
-instance (AParsable b, AParsable s, AParsable f) => 
+instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) => 
          ListCheck (SIG_ITEMS b s f) where
     (Sort_items l _)     `innerListGT` i = length l > i
     (Op_items l _)       `innerListGT` i = length l > i
     (Pred_items l _)     `innerListGT` i = length l > i
     (Datatype_items l _) `innerListGT` i = length l > i
+    (Ext_SIG_ITEMS _)    `innerListGT` _ = False        
 
-instance AParsable f => ListCheck (SORT_ITEM f) where
+instance PrettyPrint f => ListCheck (SORT_ITEM f) where
     (Sort_decl l _)          `innerListGT` i = length l > i
     (Subsort_decl l _ _)     `innerListGT` i = length l > i
     (Subsort_defn _ _ _ _ _) `innerListGT` _ = False
     (Iso_decl _ _)           `innerListGT` _ = False
 
-instance AParsable f => ListCheck (OP_ITEM f) where
+instance PrettyPrint f => ListCheck (OP_ITEM f) where
     (Op_decl l _ _ _) `innerListGT` i = length l > i
     (Op_defn _ _ _ _) `innerListGT` _ = False
 
-instance AParsable f => ListCheck (PRED_ITEM f) where
+instance PrettyPrint f => ListCheck (PRED_ITEM f) where
     (Pred_decl l _ _)   `innerListGT` i = length l > i
     (Pred_defn _ _ _ _) `innerListGT` _ = False
 

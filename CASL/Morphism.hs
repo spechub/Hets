@@ -30,7 +30,6 @@ import Data.Dynamic
 import Control.Monad
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Common.AnnoState
 
 data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
@@ -72,15 +71,14 @@ type Sort_map = Map.Map SORT SORT
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
-data Analyzable lid b s f e =>
-     Morphism lid b s f e = Morphism {msource :: Sign lid b s f e,
-			  mtarget :: Sign lid b s f e,
+data 
+     Morphism f e m = Morphism {msource :: Sign f e,
+			  mtarget :: Sign f e,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
-                          pred_map :: Pred_map}
+                          pred_map :: Pred_map,
+			  extended_map :: m}
                          deriving (Eq, Show)
-
-type CASLMor = Morphism CASL () () () ()
 
 mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
@@ -113,8 +111,8 @@ mapPredSym sMap fMap (i,pt) = do
   id' <- Map.lookup (i,pt) fMap
   return (id',mapPredType sMap pt)
 
-embedMorphism :: Analyzable lid b s f e => 
-                 Sign lid b s f e -> Sign lid b s f e -> Morphism lid b s f e
+embedMorphism ::  
+                 Sign f e -> Sign f e -> Morphism f e m
 embedMorphism a b =
     Morphism 
     { msource = a 
@@ -145,7 +143,7 @@ morphismTc       = mkTyCon "CASL.Morphism.Morphism"
 symbolTc         = mkTyCon "CASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
-instance Typeable BASIC_SPEC where
+instance Typeable (BASIC_SPEC b s f) where
   typeOf _ = mkAppTy tc_BASIC_SPEC []
 instance Typeable SYMB_ITEMS where
   typeOf _ = mkAppTy tc_SYMB_ITEMS []
@@ -153,9 +151,9 @@ instance Typeable SYMB_MAP_ITEMS where
   typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
 instance Typeable (FORMULA f) where
   typeOf _ = mkAppTy sentenceTc []
-instance Typeable (Sign lid b s f e) where
+instance Typeable (Sign f e) where
   typeOf _ = mkAppTy signTc []
-instance Typeable (Morphism lid b s f e) where
+instance Typeable (Morphism f e m) where
   typeOf _ = mkAppTy morphismTc []
 instance Typeable Symbol where
   typeOf _ = mkAppTy symbolTc []
@@ -188,7 +186,7 @@ rawSymName (ASymbol sym) = symName sym
 rawSymName (AnID i) = i
 rawSymName (AKindedId _ i) = i
 
-symOf :: Analyzable lid b s f e => Sign lid b s f e -> SymbolSet
+symOf ::  Sign f e -> SymbolSet
 symOf sigma = 
     let sorts = Set.image idToSortSymbol $ sortSet sigma
 	ops = Set.fromList $ 
@@ -266,7 +264,7 @@ typedSymbKindToRaw k idt t =
      (showPretty idt ":" ++ showPretty t 
       "does not have kind" ++showPretty k "") nullPos
 
-symbMapToMorphism :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> SymbolMap -> Result (Morphism lid b s f e)
+symbMapToMorphism ::  Sign f e -> Sign f e -> SymbolMap -> Result (Morphism f e m)
 symbMapToMorphism sigma1 sigma2 smap = do
   sort_map1 <- Set.fold mapMSort (return Map.empty) (sortSet sigma1)
   fun_map1 <- Map.foldWithKey mapFun (return Map.empty)  (opMap sigma1)
@@ -311,9 +309,12 @@ symbMapToMorphism sigma1 sigma2 smap = do
                ++showPretty i "") nullPos 
     return (Map.insert (i, pt) (symName sym) m1)
       
-morphismToSymbMap :: Analyzable lid b s f e => Morphism lid b s f e -> SymbolMap
-morphismToSymbMap (Morphism _src _ sorts ops preds) =
+morphismToSymbMap ::  Morphism f e m -> SymbolMap
+morphismToSymbMap m =
   let
+    sorts = sort_map m
+    ops = fun_map m
+    preds = pred_map m
     sortSymMap = 
       Map.foldWithKey
          ( \ s1 s2 -> Map.insert (idToSortSymbol s1) (idToSortSymbol s2))
@@ -346,7 +347,7 @@ matches (Symbol idt (PredAsItemType _))     (AKindedId PredKind di) = idt==di
 matches _                            _                        = False
 
 
-idMor :: Analyzable lid b s f e => Sign lid b s f e -> Morphism lid b s f e
+idMor ::  Sign f e -> Morphism f e m
 idMor sigma =
   Morphism { 
     msource = sigma,
@@ -362,7 +363,8 @@ idMor sigma =
         Map.empty (predMap sigma)
             }
 
-compose :: Analyzable lid b s f e => Morphism lid b s f e -> Morphism lid b s f e -> Maybe (Morphism lid b s f e)
+compose :: (Eq e, Eq f) => 
+	   Morphism f e m -> Morphism f e m -> Maybe (Morphism f e m)
 compose mor1 mor2 = 
   if mtarget mor1 == msource mor2 
     then Just $ Morphism {
@@ -383,7 +385,7 @@ compose mor1 mor2 =
   -- ??? dangerous use of Map.find here (may lead to call of error!)
 
 
-legalSign :: Analyzable lid b s f e => Sign lid b s f e -> Bool
+legalSign ::  Sign f e -> Bool
 legalSign sigma =
   Map.foldWithKey (\s sset b -> b && legalSort s && Set.all legalSort sset)
                   True (Rel.toMap (sortRel sigma))
@@ -399,7 +401,7 @@ legalSign sigma =
                         && all legalSort (opArgs t) 
         legalPredType t = all legalSort (predArgs t) 
 
-legalMor :: Analyzable lid b s f e => Morphism lid b s f e -> Bool
+legalMor ::  Morphism f e m -> Bool
 legalMor mor =
   legalSign sigma1
   && legalSign sigma2
@@ -431,19 +433,19 @@ legalMor mor =
         sigma2 = mtarget mor
         smap = sort_map mor
 
-sigInclusion :: Analyzable lid b s f e => 
-                Sign lid b s f e -> Sign lid b s f e -> Result (Morphism lid b s f e)
+sigInclusion :: (PrettyPrint e, PrettyPrint f) => 
+                Sign f e -> Sign f e -> Result (Morphism f e m)
 sigInclusion sigma1 sigma2 = 
   if isSubSig sigma1 sigma2 
      then return (embedMorphism sigma1 sigma2)
-     else pplain_error (embedMorphism emptySign emptySign)
+     else pfatal_error 
           (ptext "Attempt to construct inclusion between non-subsignatures:"
            $$ ptext "Singature 1:" $$ printText sigma1
            $$ ptext "Singature 2:" $$ printText sigma2)
            nullPos
 
-morphismUnion :: Analyzable lid b s f e => 
-                 Morphism lid b s f e -> Morphism lid b s f e -> Result (Morphism lid b s f e)
+morphismUnion ::  
+                 Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 morphismUnion mor1 mor2 = do
   let src = msource mor1 `addSig` msource mor2
       tar = mtarget mor1 `addSig` mtarget mor2
@@ -505,7 +507,8 @@ instance PrettyPrint RawSymbol where
     AKindedId k i -> printText0 ga k <+> printText0 ga i
 
 
-instance Analyzable lid b s f e => PrettyPrint (Morphism lid b s f e) where
+instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) => 
+    PrettyPrint (Morphism f e m) where
   printText0 ga mor = 
    (if null sorts then empty
        else ptext "sorts" <+> (fsep $ punctuate comma sorts))
@@ -515,6 +518,7 @@ instance Analyzable lid b s f e => PrettyPrint (Morphism lid b s f e) where
    $$
    (if null preds then empty
        else ptext "preds" <+> (fsep $ punctuate comma preds))
+   $$ printText0 ga (extended_map mor)
    <+>
    ptext " : " $$ 
    ptext "{" <+>  printText0 ga (msource mor) <+> ptext "}" <+> 

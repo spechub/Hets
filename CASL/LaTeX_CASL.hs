@@ -32,7 +32,7 @@ instance PrintLaTeX OpType where
 instance PrintLaTeX PredType where
   printLatex0 ga pt = printLatex0 ga $ toPRED_TYPE pt
 
-instance Analyzable lid b s f e => PrintLaTeX (Sign lid b s f e) where
+instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
     printLatex0 ga s = 
 	ptext sortS <+> commaT_latex ga (Set.toList $ sortSet s) 
 	$$ 
@@ -82,7 +82,8 @@ instance PrintLaTeX RawSymbol where
     AnID i -> printLatex0 ga i
     AKindedId k i -> printLatex0 ga k <+> printLatex0 ga i
 
-instance Analyzable lid b s f e => PrintLaTeX (Morphism lid b s f e) where
+instance (PrintLaTeX f, PrintLaTeX e, PrintLaTeX m) => 
+    PrintLaTeX (Morphism f e m) where
   printLatex0 ga mor = 
    (if null sorts then empty
        else ptext sortS <+> (fsep $ punctuate comma sorts))
@@ -92,6 +93,7 @@ instance Analyzable lid b s f e => PrintLaTeX (Morphism lid b s f e) where
    $$
    (if null preds then empty
        else ptext predS <+> (fsep $ punctuate comma preds))
+   $$ printLatex0 ga (extended_map mor)
    <+>
    ptext " : " $$ 
    ptext "{" <+>  printLatex0 ga (msource mor) <+> ptext "}" <+> 

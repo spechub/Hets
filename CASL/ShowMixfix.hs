@@ -15,13 +15,12 @@ module CASL.ShowMixfix (showTerm, showFormula) where
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Keywords
-import Common.AnnoState
 
 bl :: ShowS
 bl = showChar ' '
 
 -- | shows Terms fully bracketed for mixfix errors
-showTerm :: AParsable f => TERM f -> ShowS
+showTerm :: TERM f -> ShowS
 showTerm (Simple_id s)               = showTok s
 showTerm (Qual_var v s _ )           = showParen True $ 
     showString varS . bl . showTok v  . showString colonS . showId s
@@ -62,7 +61,7 @@ showOpt (Partial_op_type sorts s _ ) =
      showProduct sorts . bl . showString funS) . showString quMark . showId s
 
 -- die show-Funktion fuer den Daten-Typ FORMULA
-showFormula :: AParsable f => FORMULA f -> ShowS
+showFormula :: FORMULA f -> ShowS
 showFormula (Quantification qu var_Ds f _) 
             = showQuantifier qu . bl . showVarDecls var_Ds  
               . showString dotS . showFormula f
@@ -70,8 +69,9 @@ showFormula (Conjunction forms _)
             = showFnTs showFormula forms "(" ")" (" "++lAnd++" ")
 showFormula (Disjunction forms _) 
             = showFnTs showFormula forms "(" ")" (" "++lOr++" ")
-showFormula (Implication f1 f2 _) = 
-    showFormula f1 . bl . showString implS . bl . showFormula f2
+showFormula (Implication f1 f2 b _) = 
+    if b then showFormula f1 . bl . showString implS . bl . showFormula f2
+       else showFormula f2 . bl . showString ifS . bl . showFormula f1
 showFormula (Equivalence f1 f2 _) = 
     showFormula f1 . bl . showString equivS . bl . showFormula f2
 showFormula (Negation f1 _) = 
@@ -93,6 +93,7 @@ showFormula (Sort_gen_ax sorts _) = showString generatedS .
 	 showString "{" . showString sortS .
 	  showFnTs showId sorts "" "" "," .
 	  showString "; ...}"
+showFormula (ExtFORMULA _) = showString "(<extended formula>)"
 
 -- die show-Funktion fuer den Datentyp QUANTIFIER
 showQuantifier :: QUANTIFIER -> ShowS

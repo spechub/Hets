@@ -63,17 +63,17 @@ datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
 datatypeToFreetype d pos =
    case d of
      Datatype_items ts ps -> Free_datatype ts (pos : ps)
-     _ -> error "Parse_AS_Basic: This cannot happen"
+     _ -> error "datatypeToFreetype"
 
 axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) => 
      BASIC_ITEMS b s f -> [Annotation] -> [VAR_DECL] -> [Pos] 
      -> BASIC_ITEMS b s f
 axiomToLocalVarAxioms ai a vs posl =
    case ai of
-     Axiom_items ((Annoted ft qs as rs):fs) ds
-      ->  let aft = Annoted ft qs (a++as) rs
-            in Local_var_axioms vs (aft:fs) 
-				   (posl ++ ds)
+     Axiom_items ((Annoted ft qs as rs):fs) ds ->  
+	 let aft = Annoted ft qs (a++as) rs
+	     in Local_var_axioms vs (aft:fs) (posl ++ ds)
+     _ -> error "axiomToLocalVarAxioms"
 
 -- ------------------------------------------------------------------------
 -- basicItems
@@ -142,6 +142,7 @@ aFormula = bind appendAnno (annoParser formula) lineAnnos
 -- basicSpec
 -- ------------------------------------------------------------------------
 
-basicSpec :: AParser BASIC_SPEC
+basicSpec :: (AParsable f, AParsable s, AParsable b) => 
+	     AParser (BASIC_SPEC b s f)
 basicSpec = (fmap Basic_spec $ annosParser basicItems)
             <|> (oBraceT >> cBraceT >> return (Basic_spec []))

@@ -26,12 +26,9 @@ import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
-import Common.AnnoState
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
-data CASL = CASL deriving (Show)
-
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
@@ -41,15 +38,7 @@ data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT}
 
 data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
-class (Show lid, AParsable b, AParsable s, AParsable f, PrettyPrint e,
-      Eq f, Eq e) => 
-      Analyzable lid b s f e | lid -> b, lid -> s, lid -> f, lid -> e where
-      analyzeExtBasicItems :: lid -> b -> (Maybe e) -> (Maybe e)
-      analyzeExtSigItems :: lid -> s -> (Maybe e) -> (Maybe e)
-      analyzeExtFormula :: lid -> f -> f
-
-data Analyzable lid b s f e =>
-     Sign lid b s f e = Sign { sortSet :: Set.Set SORT
+data Sign f e = Sign { sortSet :: Set.Set SORT
 	       , sortRel :: Rel.Rel SORT	 
                , opMap :: Map.Map Id (Set.Set OpType)
 	       , assocOps :: Map.Map Id (Set.Set OpType)
@@ -57,15 +46,11 @@ data Analyzable lid b s f e =>
                , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
 	       , sentences :: [Named (FORMULA f)]	 
 	       , envDiags :: [Diagnosis]
-               , extendedInfo :: Maybe e
-	       } deriving (Show)
-
--- specific types for CASL logic
-type CASLSign = Sign CASL () () () ()
-type CASLFORMULA = FORMULA ()
+               , extendedInfo :: e
+	       } deriving Show
 
 -- better ignore assoc flags for equality
-instance Analyzable lid b s f e => Eq (Sign lid b s f e) where
+instance (Eq f, Eq e) => Eq (Sign f e) where
     e1 == e2 = 
 	sortSet e1 == sortSet e1 &&
 	sortRel e1 == sortRel e2 &&
@@ -73,8 +58,8 @@ instance Analyzable lid b s f e => Eq (Sign lid b s f e) where
 	predMap e1 == predMap e2 &&
         extendedInfo e1 == extendedInfo e2
 
-emptySign :: Analyzable lid b s f e => Sign lid b s f e
-emptySign = Sign { sortSet = Set.empty
+emptySign :: e -> Sign f e
+emptySign e = Sign { sortSet = Set.empty
 	       , sortRel = Rel.empty
 	       , opMap = Map.empty
 	       , assocOps = Map.empty
@@ -82,10 +67,9 @@ emptySign = Sign { sortSet = Set.empty
 	       , varMap = Map.empty
 	       , sentences = []
 	       , envDiags = []
-               , extendedInfo = Nothing }
+               , extendedInfo = e }
 
-subsortsOf :: Analyzable lid b s f e => 
-              SORT -> Sign lid b s f e -> Set.Set SORT
+subsortsOf :: SORT -> Sign f e -> Set.Set SORT
 subsortsOf s e =
   Set.insert s $
     Map.foldWithKey addSubs (Set.empty) (Rel.toMap $ sortRel e)
@@ -94,7 +78,7 @@ subsortsOf s e =
             then Set.insert sub
             else id
 
-supersortsOf :: Analyzable lid b s f e => SORT -> Sign lid b s f e -> Set.Set SORT
+supersortsOf :: SORT -> Sign f e -> Set.Set SORT
 supersortsOf s e =
   case Map.lookup s $ Rel.toMap $ sortRel e of
     Nothing -> Set.single s
@@ -122,7 +106,7 @@ instance PrettyPrint OpType where
 instance PrettyPrint PredType where
   printText0 ga pt = printText0 ga $ toPRED_TYPE pt
 
-instance Analyzable lid b s f e => PrettyPrint (Sign lid b s f e) where
+instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
     printText0 ga s = 
 	ptext "sorts" <+> commaT_text ga (Set.toList $ sortSet s) 
 	$$ 
@@ -150,7 +134,7 @@ instance Analyzable lid b s f e => PrettyPrint (Sign lid b s f e) where
 
 -- working with Sign
 
-diffSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Sign lid b s f e
+diffSig :: Sign f e -> Sign f e -> Sign f e
 diffSig a b = 
     a { sortSet = sortSet a `Set.difference` sortSet b
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.difference
@@ -169,7 +153,7 @@ diffMapSet =
 			 if Set.isEmpty d then Nothing 
 			 else Just d )
 
-addSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Sign lid b s f e
+addSig :: Sign f e -> Sign f e -> Sign f e
 addSig a b = 
     a { sortSet = sortSet a `Set.union` sortSet b
       , sortRel = Rel.transClosure $ Rel.fromSet $ Set.union
@@ -179,14 +163,14 @@ addSig a b =
       , predMap = Map.unionWith Set.union (predMap a) $ predMap b	
       }
 
-isEmptySig :: Analyzable lid b s f e => Sign lid b s f e -> Bool 
+isEmptySig :: Sign f e -> Bool 
 isEmptySig s = 
     Set.isEmpty (sortSet s) && 
     Rel.isEmpty (sortRel s) && 
     Map.isEmpty (opMap s) &&
     Map.isEmpty (predMap s)
 
-isSubSig :: Analyzable lid b s f e => Sign lid b s f e -> Sign lid b s f e -> Bool
+isSubSig :: Sign f e -> Sign f e -> Bool
 isSubSig sub super = isEmptySig $ diffSig sub 
                       (super 
 		       { opMap = addPartOpsM $ opMap super })
@@ -209,12 +193,12 @@ addPartOpsM :: Ord a => Map.Map a (Set.Set OpType)
 	    -> Map.Map a (Set.Set OpType) 
 addPartOpsM = Map.map addPartOps
 
-addDiags :: Analyzable lid b s f e => [Diagnosis] -> State (Sign lid b s f e) ()
+addDiags :: [Diagnosis] -> State (Sign f e) ()
 addDiags ds = 
     do e <- get
        put e { envDiags = ds ++ envDiags e }
 
-addSort :: Analyzable lid b s f e => SORT -> State (Sign lid b s f e) ()
+addSort :: SORT -> State (Sign f e) ()
 addSort s = 
     do e <- get
        let m = sortSet e
@@ -222,28 +206,27 @@ addSort s =
 	  addDiags [mkDiag Hint "redeclared sort" s] 
 	  else put e { sortSet = Set.insert s m }
 
-checkSort :: Analyzable lid b s f e => SORT -> State (Sign lid b s f e) ()
+checkSort :: SORT -> State (Sign f e) ()
 checkSort s = 
     do m <- gets sortSet
        addDiags $ if Set.member s m then [] else 
 		    [mkDiag Error "unknown sort" s]
 
-addSubsort :: Analyzable lid b s f e => SORT -> SORT -> State (Sign lid b s f e) ()
+addSubsort :: SORT -> SORT -> State (Sign f e) ()
 addSubsort super sub = 
     do e <- get
        mapM_ checkSort [super, sub] 
        put e { sortRel = Rel.insert sub super $ sortRel e }
 
-closeSubsortRel :: Analyzable lid b s f e => State (Sign lid b s f e) ()
+closeSubsortRel :: State (Sign f e) ()
 closeSubsortRel= 
     do e <- get
        put e { sortRel = Rel.transClosure $ sortRel e }
 
-addVars :: Analyzable lid b s f e => VAR_DECL -> State (Sign lid b s f e) ()
+addVars :: VAR_DECL -> State (Sign f e) ()
 addVars (Var_decl vs s _) = mapM_ (addVar s) vs
 
-addVar :: Analyzable lid b s f e => 
-          SORT -> SIMPLE_ID -> State (Sign lid b s f e) ()
+addVar :: SORT -> SIMPLE_ID -> State (Sign f e) ()
 addVar s v = 
     do e <- get
        let m = varMap e

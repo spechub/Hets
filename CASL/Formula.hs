@@ -294,7 +294,7 @@ impFormula k =
              do f <- andOrFormula k
 		do c <- implKey
 		   (fs, ps) <- andOrFormula k `separatedBy` implKey
-		   return (makeImpl (f:fs) (map tokPos (c:ps)))
+		   return (makeImpl True (f:fs) (map tokPos (c:ps)))
 		  <|>
 		  do c <- ifKey
 		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
@@ -304,11 +304,12 @@ impFormula k =
 		     g <- andOrFormula k
 		     return (Equivalence f g [tokPos c])
 		  <|> return f
-		    where makeImpl [f,g] p = Implication f g p
-		          makeImpl (f:r) (c:p) = 
-			             Implication f (makeImpl r p) [c]
-		          makeImpl _ _ = error "makeImpl got illegal argument"
-			  makeIf l p = makeImpl (reverse l) (reverse p)
+		    where makeImpl b [f,g] p = Implication f g b p
+		          makeImpl b (f:r) (c:p) = 
+			             Implication f (makeImpl b r p) b [c]
+		          makeImpl _ _ _ = 
+			      error "makeImpl got illegal argument"
+			  makeIf l p = makeImpl False (reverse l) (reverse p)
 
 formula :: AParsable f => AParser (FORMULA f)
 formula = impFormula []

@@ -32,10 +32,8 @@ import Data.Char (isDigit)
 import Common.Id
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import Common.AnnoState
 
-
-isLiteral :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isLiteral :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isLiteral ga i trm =
        or [ isNumber ga i trm 
 	  , isString ga i trm
@@ -44,7 +42,7 @@ isLiteral ga i trm =
 	  , isFrac   ga i trm
 	  ]
 
-isNumber :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isNumber ga i trs = 
     (digitTest i && null trs) 
     || (getLiteralType ga i == Number && all (sameId digitTest i) trs)
@@ -56,7 +54,7 @@ isNumber ga i trs =
 			     where tstr = tokStr t
 			 _           -> False
 
-isSignedNumber :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isSignedNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isSignedNumber ga i trs = length trs == 1 && 
 			  isSign i && isNumber ga ni nt  
 			  where (ni,nt) = splitAppl $ head trs
@@ -67,7 +65,7 @@ isSign i = case i of
 			    in ts == "-" || ts == "+" 
 	   _             -> False
 
-isString :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isString :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isString ga i trs = case getLiteralType ga i of 
 		    StringNull -> null trs
 		    StringCons _ -> all (sameId stringTest i) trs
@@ -87,7 +85,7 @@ convCASLChar t = case tokStr t of
 			error ("convCASLChar: " ++ cs ++
 			       " is not a valid CASL Char")
 
-isList :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isList :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isList ga i trms = (case getLiteralType ga i of 
 		     ListNull _ -> null trms
 		     ListCons _ n -> listTest n i trms
@@ -99,7 +97,7 @@ isList ga i trms = (case getLiteralType ga i of
 				   in listTest n1 i2 ts
 	      _ -> False
 
-isFloat :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isFloat :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isFloat ga i [l, r] =
     case getLiteralType ga i of 
     Floating -> (isNumber ga li ltrm || isFrac ga li ltrm) 
@@ -109,7 +107,7 @@ isFloat ga i [l, r] =
 	  (ri,rtrm) = splitAppl r 
 isFloat _ _ _ = False
 
-isFrac :: AParsable f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isFrac :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isFrac ga i [l, r] = 
     case getLiteralType ga i of 
     Fraction -> isNumber ga li ltrm && isNumber ga ri rtrm
@@ -118,13 +116,13 @@ isFrac ga i [l, r] =
 	  (ri,rtrm) = splitAppl r
 isFrac _ _ _ = False
 
-splitAppl :: AParsable f => TERM f -> (Id,[TERM f])
+splitAppl :: TERM f -> (Id,[TERM f])
 splitAppl t = case t of
 	      Application oi ts _ -> (op_id oi,ts)
 	      _ -> error "splitAppl: no Application found"
 
 
-leftAssCollElems :: AParsable f => Id -> [TERM f] -> [TERM f]
+leftAssCollElems :: Id -> [TERM f] -> [TERM f]
 leftAssCollElems i trs = 
      case trs of
 	      []    -> error "no elements to collect"
@@ -137,13 +135,13 @@ leftAssCollElems i trs =
 			      | otherwise     -> [t]
 			  _        -> error "splitA: no Appl found"
 
-collectElements :: AParsable f => (Maybe Id) -> Id -> [TERM f] -> [TERM f]
+collectElements :: (Maybe Id) -> Id -> [TERM f] -> [TERM f]
 collectElements mnid i trs = 
     if detect_left_ass i trs 
     then leftAssCollElems i trs
     else collectElementsRight mnid i trs
 
-detect_left_ass :: AParsable f => Id -> [TERM f] -> Bool
+detect_left_ass :: Id -> [TERM f] -> Bool
 detect_left_ass i trs = 
     case trs of
     []    -> True
@@ -153,7 +151,7 @@ detect_left_ass i trs =
 	  _        -> False	      
     _     -> False
 
-collectElementsRight :: AParsable f => (Maybe Id) -> Id -> [TERM f] -> [TERM f]
+collectElementsRight :: (Maybe Id) -> Id -> [TERM f] -> [TERM f]
 collectElementsRight mnid i trs = 
      case trs of
 	      []    -> error "no elements to collect"
@@ -165,7 +163,7 @@ collectElementsRight mnid i trs =
 			      | op_id oi == i -> its
 			      | otherwise     -> [t]
 			  _        -> error "splitA: no Appl found"
-	  getToken :: AParsable f => TERM f -> [TERM f]
+	  getToken :: TERM f -> [TERM f]
 	  getToken trm = maybe [trm]
 			       (\ nid -> case trm of
 				     Application oid [] _ 
@@ -175,7 +173,7 @@ collectElementsRight mnid i trs =
 				     _ -> error "no Application found") 
 			       mnid
 
-basicTerm :: AParsable f => TERM f -> Maybe Token
+basicTerm :: TERM f -> Maybe Token
 basicTerm trm = case trm of
 		Application oi [] _ -> 
 		    case op_id oi of
@@ -200,7 +198,7 @@ basicTerm trm = case trm of
 			       _ -> False
 -}
 
-sameId :: AParsable f => (Id -> Bool) -> Id -> TERM f -> Bool
+sameId :: (Id -> Bool) -> Id -> TERM f -> Bool
 sameId test i t = case t of
 			 Application o its _ 
 			     | op_id o == i && 

@@ -38,7 +38,7 @@ forall m, n, r, s:Nat
 . suc (n) ! = suc (n) * n ! %(Nat_factorial_suc)%
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def (m /? 0) %(Nat_divide_0)%
-. (n > 0) => (m /? n = r <=> m = r * n) %(Nat_divide_Pos)%
+. (m /? n = r <=> m = r * n) if (n > 0) %(Nat_divide_Pos)%
 . m div n = r <=> exists s:Nat . m = n * r + s /\ (s < n)
 %(Nat_div)%
 . m mod n = s <=> exists r:Nat . m = n * r + s /\ (s < n)
@@ -107,7 +107,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . (m > n) <=> (m < n) %(Int_greater_def)%
 . min (m, n) = m when m <= n else n %(Int_min_def)%
 . max (m, n) = n when m <= n else m %(Int_max_def)%
-. (m < 0) => abs (m) = - m %(Int_abs_def)%
+. abs (m) = - m if (m < 0) %(Int_abs_def)%
 . (- 1) ^ a = 1 when even (a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign (m) ^ a * abs (m) ^ a %(Int_power_def)%
 . (even (m)) <=> (even (abs (m))) %(Int_even_def)%
@@ -355,7 +355,7 @@ ops chr : Nat ->? Char;
 forall n:Nat; c:Char
 . def chr (n) <=> (n <= 255) %(chr_dom)%
 . chr (ord (c)) = c %(chr_def)%
-. (n <= 255) => ord (chr (n)) = n %(ord_def)%
+. ord (chr (n)) = n if (n <= 255) %(ord_def)%
 %% definition of individual characters:
 ops '\000': Char = chr (0); %(slash_000)%
     '\001': Char = chr (1); %(slash_001)%

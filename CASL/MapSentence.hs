@@ -21,11 +21,11 @@ import CASL.Print_AS_Basic
 import Common.Id
 import Common.Result
 
-mapSrt :: Analyzable lid b s f e => Morphism lid b s f e -> SORT -> SORT
+mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
 
-mapTerm :: Analyzable lid b s f e => 
-           Morphism lid b s f e -> TERM f -> Result (TERM f)
+mapTerm :: 
+           Morphism f e m -> TERM f -> Result (TERM f)
 mapTerm m t = case t of
    Qual_var v s ps -> return $ Qual_var v (mapSrt m s) ps
    Application o ts ps -> do 
@@ -43,10 +43,10 @@ mapTerm m t = case t of
        newF <- mapSen m f
        t4 <- mapTerm m t2
        return $ Conditional t3 newF t4 ps 
-   _ -> error ("mapTerm: unexpected term: " ++ showPretty t "")
+   _ -> error "mapTerm"
 
-mapOpSymb :: Analyzable lid b s f e => 
-             Morphism lid b s f e -> OP_SYMB -> Result OP_SYMB
+mapOpSymb :: 
+             Morphism f e m -> OP_SYMB -> Result OP_SYMB
 mapOpSymb m os@(Qual_op_name i t ps) = do 
    (j, ty) <- maybeToResult (posOfId i) 
 	      ("no mapping for: " ++ showPretty os "") $ 
@@ -54,11 +54,11 @@ mapOpSymb m os@(Qual_op_name i t ps) = do
    return $ Qual_op_name j (toOP_TYPE ty) ps
 mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
 
-mapVars :: Analyzable lid b s f e => Morphism lid b s f e -> VAR_DECL -> VAR_DECL
+mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
 
-mapSen :: Analyzable lid b s f e => 
-          Morphism lid b s f e -> FORMULA f -> Result (FORMULA f)
+mapSen :: 
+          Morphism f e m -> FORMULA f -> Result (FORMULA f)
 mapSen m f = case f of 
    Quantification q vs qf ps -> do
        newF <- mapSen m qf
@@ -69,10 +69,10 @@ mapSen m f = case f of
    Disjunction fs ps -> do
        newFs <- mapM (mapSen m) fs
        return $ Disjunction newFs ps
-   Implication f1 f2 ps -> do
+   Implication f1 f2 b ps -> do
        f3 <- mapSen m f1
        f4 <- mapSen m f2
-       return $ Implication f3 f4 ps
+       return $ Implication f3 f4 b ps
    Equivalence f1 f2 ps -> do
        f3 <- mapSen m f1
        f4 <- mapSen m f2
@@ -100,14 +100,13 @@ mapSen m f = case f of
    Membership t s ps -> do 
        newT <- mapTerm m t
        return $ Membership newT (mapSrt m s) ps
-   _ -> error ("mapSen: unexpected formula: " ++ showPretty f "")
+   _ -> error "mapSen"
 
-mapPrSymb :: Analyzable lid b s f e => 
-             Morphism lid b s f e -> PRED_SYMB -> Result PRED_SYMB
+mapPrSymb :: 
+             Morphism f e m -> PRED_SYMB -> Result PRED_SYMB
 mapPrSymb m p@(Qual_pred_name i t ps) = do 
    (j, ty) <- maybeToResult (posOfId i) 
 	      ("no mapping for: " ++ showPretty p "") $ 
 	      mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
    return $ Qual_pred_name j (toPRED_TYPE ty) ps
 mapPrSymb _ p = error ("mapPrSymb: unexpected pred symb: "++ showPretty p "")
-
