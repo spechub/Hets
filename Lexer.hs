@@ -15,15 +15,7 @@
 
 -}
 
-module Lexer ( bind, (<<), (<:>), (<++>), signChars
-	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
-	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
-	     , scanDigit, scanFloat, whiteChars, convToPos
-	     , caslChar, scanQuotedChar, scanString
-	     , reserved, placeS, placeT, pToken, asKey, toKey
-	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
-	     , commaT, semiT, skip, pluralKeyword, followedWith
-	     ) where
+module Lexer where
 
 import Char (digitToInt)
 import Id (Token(..), place)
@@ -33,7 +25,7 @@ import ParsecPrim ((<?>), (<|>), many, try, skipMany, getPosition
 import ParsecCombinator (count, option, lookAhead, many1, notFollowedBy)
 import ParsecChar (char, digit, hexDigit, octDigit
 		  , oneOf, noneOf, satisfy, string)
-import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
+import ParsecPos (SourcePos, sourceLine) -- for setTokPos
 
 -- ----------------------------------------------
 -- no-bracket-signs
@@ -229,9 +221,17 @@ nestCommentOut = try (string "%[") >>
 whiteChars :: String
 whiteChars = "\n\r\t\v\f \160" -- non breaking space
 
-skip :: GenParser Char st ()
+skip, whiteSpace :: GenParser Char st ()
 skip = skipMany(oneOf (whiteChars) 
 		       <|> nestCommentOut <?> "") >> return () 
+
+whiteSpace = skip
+
+lexeme :: GenParser Char st a -> GenParser Char st a
+lexeme p = p << skip
+
+symbol :: String -> GenParser Char st String
+symbol s = lexeme (string s)
 
 -- only skip to an annotation if it's on the same or next line
 skipSmart :: GenParser Char st ()
@@ -259,14 +259,11 @@ reserved l p = try (p `checkWith` \r -> r `notElem` l)
 -- ----------------------------------------------
 -- lexical tokens with position
 -- ----------------------------------------------
-convToPos :: SourcePos -> (Int, Int)
-convToPos (sp) = (sourceLine(sp),sourceColumn(sp))
-
-setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token s $ convToPos p
+convToPos :: SourcePos -> SourcePos
+convToPos = id 
 
 pToken :: GenParser Char st String -> GenParser Char st Token
-pToken parser = bind setTokPos getPosition (parser << skipSmart)
+pToken parser = bind (flip Token) getPosition (parser << skipSmart)
 
 pluralKeyword :: String -> GenParser Char st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
@@ -293,6 +290,11 @@ oBraceT = asKey "{"
 cBraceT = asKey "}"
 oParenT = asKey "("
 cParenT = asKey ")"
+
+brackets, parens, braces :: GenParser Char st a -> GenParser Char st a
+brackets p = oBracketT >> p << cBracketT
+parens p = oParenT >> p << cParenT 
+braces p = oBraceT >> p << cBraceT
 
 placeS :: GenParser Char st String
 placeS = string place

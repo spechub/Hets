@@ -18,7 +18,7 @@ stdAnnosL, stdOpsL, stdPredsL :: [String]
 stdAnnosL = [ "%prec {__+__} < {__*__}\n" 
 	  , "%prec {__*__} < {__^__}\n"
           , "%prec {+__} <> {__ ^ __}\n"
-          , "%string [], __::__\n"
+          , "%string empty, __::::__\n"
 	  , "%left_assoc(__+__,__*__)%"
 	  , "%number __@@__\n"
           , "%floating __:::__, __E__\n"

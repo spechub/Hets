@@ -84,8 +84,8 @@ bracketParser parser op cl sep k =
        c <- cl
        return (k ts (toPos o ps c))
 
-brackets :: GenParser Char st a -> ([a] -> [Pos] -> b) -> GenParser Char st b
-brackets parser k = bracketParser parser oBracketT cBracketT commaT k
+mkBrackets :: GenParser Char st a -> ([a] -> [Pos] -> b) -> GenParser Char st b
+mkBrackets parser k = bracketParser parser oBracketT cBracketT commaT k
 
 -- ----------------------------------------------
 -- mixIds

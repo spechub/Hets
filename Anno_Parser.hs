@@ -36,7 +36,7 @@ commentGroup = do try (string "%{")
 		  text_lines <- manyTill anyChar (try (string "}%"))
 		  sp <- getPosition
 		  return (Comment_group (lines text_lines) [conv sp])
-    where conv sp = (\(l,c) -> (l,c-2)) (convToPos sp)
+    where conv sp = incSourceColumn sp (-2)
 
 annote :: GParser Annotation
 annote = Anno_Parser.label <|> 
@@ -54,18 +54,17 @@ annote = Anno_Parser.label <|>
 	        Right pa -> return pa
     where add_pos sp a =
 	      up_pos_l (\l -> l++[conv sp a]) a
-	  conv sp a = (\(l,c) -> case a of
-			   Annote_group _ _ _ -> (l,c-2)
-			   Annote_line  _ _ _ -> (l,c)
+	  conv sp a = case a of
+			   Annote_group _ _ _ -> incSourceColumn sp (-2)
+			   Annote_line  _ _ _ -> sp
 			   _ -> error "nothing to be done for other Annos"
-		   ) (convToPos sp)
 
 label :: GParser Annotation
 label = do try(string "%(")
 	   label_lines <- manyTill anyChar (string ")%")
 	   sp <- getPosition
 	   return (Label (lines label_lines) [conv sp])
-    where conv sp = (\(l,c) -> (l,c-2)) (convToPos sp)
+    where conv sp = incSourceColumn sp (-2)
 
 anno_ident :: GParser String
 anno_ident = string "%" >> scanAnyWords
@@ -160,9 +159,9 @@ parse_internal p sp inp = parse (do setPosition sp
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
     :: GParser Annotation
-prec_anno = do left_ids <- oBraceT >> sepBy1 parseId commaT << cBraceT
-	       sign <- (try (string "<>") <|> (string "<")) << skip
-	       right_ids <- oBraceT >> (sepBy1 parseId commaT) << cBraceT
+prec_anno = do left_ids <- braces $ sepBy1 parseId commaT
+	       sign <- lexeme (try (string "<>") <|> (string "<"))
+	       right_ids <- braces (sepBy1 parseId commaT)
 	       return ( Prec_anno (sign == "<")
 				  left_ids
 				  right_ids
@@ -202,9 +201,8 @@ display_anno = do ident <- parseId
 		  return (Display_anno ident tls [])
     where mklst a b c = [a,b,c] 
 	  disp_symb sym = ((ready_symb,""),
-				 do symb <- (try (string 
+				 do symb <- lexeme (try (string 
 							   ready_symb))
-				              << skip
 				    str <- manyTill anyChar 
 				      ((fmap 
 					(\_->())

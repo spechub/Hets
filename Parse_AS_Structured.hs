@@ -427,14 +427,14 @@ libName = do lid <- libId
 libId = do pos <- getPosition
            path <- scanAnyWords `sepBy1` (string "/")
            skip
-           return (Indirect_link (concat (intersperse "/" path)) [(sourceLine pos, sourceColumn pos)])
+           return (Indirect_link (concat (intersperse "/" path)) [pos])
            -- ??? URL need to be added
 
 version = do s <- asKey versionS
              pos <- getPosition
              n <- many1 digit `sepBy1` (string ".")
              skip
-             return (Version_number n ([tokPos s,(sourceLine pos, sourceColumn pos)]))
+             return (Version_number n ([tokPos s, pos]))
 
 itemNameOrMap = do i1 <- simpleId
                    i' <- option Nothing (do

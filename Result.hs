@@ -14,6 +14,7 @@
 module Result where
 
 import Id
+import ParsecPos
 import PrettyPrint
 import Pretty
 
@@ -45,10 +46,10 @@ warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
 instance Show Diagnosis where
-    showsPrec _ (Diag k s (l,c)) = 
+    showsPrec _ (Diag k s sp) = 
 	shows k . colonS . 
-	showString "in line " . shows l .
-	showString " at char " . shows c . 
+	showString "in line " . shows (sourceLine sp) .
+	showString " at char " . shows (sourceColumn sp) . 
 	colonS . showString s 
 	       where colonS = showString ": "
     showList [] = id
@@ -56,9 +57,9 @@ instance Show Diagnosis where
     showList (d:ds) = shows d . showString "\n" . showList ds
 
 instance PrettyPrint Diagnosis where
-    printText0 _ (Diag k s (l,c)) = 
+    printText0 _ (Diag k s sp) = 
 	ptext (show k)
-        <+> parens (int l <> comma <> int c)
+        <+> parens (int (sourceLine sp) <> comma <> int (sourceColumn sp))
 	<+> text s
 
 instance PrettyPrint a => PrettyPrint (Result a) where

@@ -107,11 +107,8 @@ emptyLocalEnv :: LocalEnv
 emptyLocalEnv =
   Env "empty" emptyGlobalAnnos emptySign emptySentences emptyGlobal
 
-emptyPos :: Pos
-emptyPos = (0,0)
-
 emptyExtPos :: ExtPos
-emptyExtPos = (emptyPos, Key)
+emptyExtPos = (nullPos, Key)
 
 emptyAnnotations :: Annotations
 emptyAnnotations = Annotations [] [] []
@@ -261,7 +258,7 @@ toItemPos :: Filename -> ExtPos -> ItemPos
 toItemPos name (pos,tok) = ItemPos name tok [pos]
 
 fromItemPos :: ItemPos -> ExtPos
-fromItemPos (ItemPos _ kind []) = (emptyPos,kind)
+fromItemPos (ItemPos _ kind []) = (nullPos,kind)
 fromItemPos (ItemPos _ kind l)  = (head l,kind)
 
 toVarDecl :: SortId -> ExtPos -> VAR -> VarDecl
@@ -272,7 +269,7 @@ toVarDecls sort p v = map (uncurry (toVarDecl sort))
                           (zip (extendList emptyExtPos v p) v)
 
 typeToVarDecl :: OpType -> [VarDecl]
-typeToVarDecl t = map (\(s,v) -> VarDecl v s (ListPos Key emptyPos))
+typeToVarDecl t = map (\(s,v) -> VarDecl v s (ListPos Key nullPos))
                   $ zip (opArgs t) $ map mkSimpleId $ map (\x -> "x" ++ x)
                   $ map show $ [1..(length $ opArgs t)]
 

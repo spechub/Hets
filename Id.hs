@@ -18,13 +18,14 @@
 module Id where
 
 import Char
+import ParsecPos
 
 -- identifiers, fixed for all logics
 
-type Pos = (Int, Int) -- line, column
+type Pos = SourcePos
 
 nullPos :: Pos 
-nullPos = (0,0)
+nullPos = newPos "" 0 0 
  
 type Region = (Pos,Pos)
  
@@ -102,8 +103,8 @@ posOfId (Id [] _ _) = error "Id.posOfId"
 posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
 		      in if null l then -- for invisible "__ __" (only places)
 			   let h = head ts 
-			       (lin, col) = tokPos h
-			       in (lin, col + length (tokStr h))
+			       in incSourceColumn (tokPos h) 
+				      $ length (tokStr h)
 			 else tokPos $ head l
 
 -- Simple Ids

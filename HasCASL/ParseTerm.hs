@@ -112,9 +112,9 @@ typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|>
 				    reserved (equalS: hascasl_type_ops)
 				    scanSigns))
 
-braces :: GenParser Char st a -> ([a] -> [Pos] -> b) 
+mkBraces :: GenParser Char st a -> ([a] -> [Pos] -> b) 
        -> GenParser Char st b
-braces p c = bracketParser p oBraceT cBraceT commaT c
+mkBraces p c = bracketParser p oBraceT cBraceT commaT c
 
 data TokenMode = AnyToken
                | NoToken String   
@@ -132,8 +132,8 @@ idToken = aToken AnyToken
 
 primTypeOrId, typeOrId :: GenParser Char st Type
 primTypeOrId = fmap TypeToken idToken
-	       <|> braces typeOrId (BracketType Braces)
-	       <|> brackets typeOrId (BracketType Squares)
+	       <|> mkBraces typeOrId (BracketType Braces)
+	       <|> mkBrackets typeOrId (BracketType Squares)
 	       <|> bracketParser typeOrId oParenT cParenT commaT
 		       (BracketType Parens)
 	       
@@ -154,8 +154,8 @@ primType, lazyType, mixType, prodType, funType :: GenParser Char st Type
 primType = typeToken 
 	   <|> bracketParser parseType oParenT cParenT commaT 
 		   (BracketType Parens)
-	   <|> braces parseType (BracketType Braces)
-           <|> brackets typeOrId (BracketType Squares)
+	   <|> mkBraces parseType (BracketType Braces)
+           <|> mkBrackets typeOrId (BracketType Squares)
 
 lazyType = do q <- quMarkT
 	      t <- primType 
@@ -288,8 +288,8 @@ typePatternToken = fmap TypePatternToken (pToken (scanWords <|> placeS <|>
 				    reserved [lessS, equalS] scanSigns))
 
 primTypePatternOrId = fmap TypePatternToken idToken 
-	       <|> braces typePatternOrId (BracketTypePattern Braces)
-	       <|> brackets typePatternOrId (BracketTypePattern Squares)
+	       <|> mkBraces typePatternOrId (BracketTypePattern Braces)
+	       <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
 	       <|> bracketParser typePatternArgs oParenT cParenT semiT
 		       (BracketTypePattern Parens)
 
@@ -303,8 +303,8 @@ typePatternArgs = fmap TypePatternArgs typeArgs
 primTypePattern = typePatternToken 
 	   <|> bracketParser typePatternArgs oParenT cParenT semiT 
 		   (BracketTypePattern Parens)
-	   <|> braces typePattern (BracketTypePattern Braces)
-           <|> brackets typePatternOrId (BracketTypePattern Squares)
+	   <|> mkBraces typePattern (BracketTypePattern Braces)
+           <|> mkBrackets typePatternOrId (BracketTypePattern Squares)
 
 typePattern = do ts <- many1 primTypePattern
                  let t = if length ts == 1 then head ts 
@@ -328,8 +328,8 @@ tokenPattern b = fmap PatternToken (aToken b)
 					  
 primPattern :: TokenMode -> GenParser Char st Pattern
 primPattern b = tokenPattern b 
-		<|> braces pattern (BracketPattern Braces) 
-		<|> brackets pattern (BracketPattern Squares)
+		<|> mkBraces pattern (BracketPattern Braces) 
+		<|> mkBrackets pattern (BracketPattern Squares)
 		<|> bracketParser patterns oParenT cParenT semiT 
 			(BracketPattern Parens)
 
@@ -370,7 +370,7 @@ pattern = asPattern AnyToken
 instOpId :: GenParser Char st InstOpId
 instOpId = do i@(Id is cs ps) <- uninstOpId
 	      if isPlace (last is) then return (InstOpId i []) 
-		   else do l <- many (brackets parseType Types)
+		   else do l <- many (mkBrackets parseType Types)
 			   u <- many placeT
 			   return (InstOpId (Id (is++u) cs ps) l)
 
@@ -408,8 +408,8 @@ termToken = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken)
 -- flag if within brackets: True allows "in"-Terms
 primTerm :: TypeMode -> GenParser Char st Term
 primTerm b = ifTerm b <|> termToken
-	   <|> braces term (BracketTerm Braces)
-	   <|> brackets term  (BracketTerm Squares)
+	   <|> mkBraces term (BracketTerm Braces)
+	   <|> mkBrackets term  (BracketTerm Squares)
  	   <|> parenTerm
            <|> forallTerm b 
 	   <|> exTerm b 

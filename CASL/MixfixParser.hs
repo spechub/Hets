@@ -27,6 +27,7 @@ import Set
 import Lexer (caslChar)
 import Monad
 import ParsecPrim
+import ParsecPos
 import qualified Char as C
 import List(intersperse)
 import PrettyPrint
@@ -563,51 +564,54 @@ split p s = let ph = do hd <- p;
 
 makeStringTerm :: Id -> Id -> Token -> TERM
 makeStringTerm c f tok = 
-  makeStrTerm (line, colm + 1) str
+  makeStrTerm (incSourceColumn sp 1) str
   where 
-  (line, colm) = tokPos tok
+  sp = tokPos tok
   str = init (tail (tokStr tok))
-  makeStrTerm p@(lin, col) l = 
+  makeStrTerm p l = 
     if null l then asAppl c [] p
     else let (hd, tl) = split caslChar l
          in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] p, 
-		      makeStrTerm (lin, col + length hd) tl] p
+		      makeStrTerm (incSourceColumn p $ length hd) tl] p
 
 makeNumberTerm :: Id -> Token -> TERM
-makeNumberTerm f t@(Token n p@(lin, col)) =
+makeNumberTerm f t@(Token n p) =
     case n of
            [] -> error "makeNumberTerm"
 	   [_] -> asAppl (Id [t] [] []) [] p
 	   hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] p, 
-			      makeNumberTerm f (Token tl (lin, col+1))] p
+			      makeNumberTerm f (Token tl 
+						(incSourceColumn p 1))] p
 
 makeFraction :: Id -> Id -> Token -> TERM
-makeFraction f d t@(Token s p@(lin, col)) = 
+makeFraction f d t@(Token s p) = 
     let (n, r) = span (\c -> c /= '.') s
-        dotcol = col + length n 
+        dotOffset = length n 
     in if null r then makeNumberTerm f t
        else asAppl d [makeNumberTerm f (Token n p),
-		      makeNumberTerm f (Token (tail r) (lin, dotcol + 1))] 
-            (lin, dotcol)
+		      makeNumberTerm f (Token (tail r) 
+					(incSourceColumn p $ dotOffset + 1))]
+            $ incSourceColumn p dotOffset
 
 makeSignedNumber :: Id -> Token -> TERM
-makeSignedNumber f t@(Token n p@(lin, col)) = 
+makeSignedNumber f t@(Token n p) = 
   case n of 
   [] -> error "makeSignedNumber"
   hd:tl ->   
     if hd == '-' || hd == '+' then
        asAppl (Id [Token [hd] p] [] []) 
-		  [makeNumberTerm f (Token tl (lin, col+1))] p
+		  [makeNumberTerm f (Token tl $ incSourceColumn p 1)] p
     else makeNumberTerm f t
 
 makeFloatTerm :: Id -> Id -> Id -> Token -> TERM
-makeFloatTerm f d e t@(Token s p@(lin, col)) = 
+makeFloatTerm f d e t@(Token s p) = 
     let (m, r) = span (\c -> c /= 'E') s
-        ecol = col + length m
+        offset = length m
     in if null r then makeFraction f d t
        else asAppl e [makeFraction f d (Token m p),
-		      makeSignedNumber f (Token (tail r) (lin, ecol + 1))]
-		(lin, ecol)
+		      makeSignedNumber f (Token (tail r) 
+					  $ incSourceColumn p (offset + 1))]
+		$ incSourceColumn p offset
 
 asAppl :: Id -> [TERM] -> Pos -> TERM
 asAppl f args p = let pos = if null args then [] else [p]

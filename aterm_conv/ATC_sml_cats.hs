@@ -223,7 +223,7 @@ instance ATermConvertible Annotation where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ANNO" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 --- Well the following instance has to tie together things, that don't
@@ -322,7 +322,7 @@ parse_anno pos_l inp =
     where set_pos p = do setPosition sp
 			 skip
 			 p
-	  sp = newPos "ATermConversion from SML" (fst pos) (snd pos)
+	  sp = pos -- newPos "ATermConversion from SML" (fst pos) (snd pos)
 	  pos = head pos_l
 
 parse_disp_anno :: Id -> [Pos] -> String -> Annotation
@@ -332,7 +332,7 @@ parse_disp_anno i pos_l inp =
        --Right [] -> error $ "No displayanno: " ++ inp' 
        Right x  -> x -- trace ("parsed display anno:" ++ show x) x
        --Right xs   -> error $ "More than one displayanno" ++ show xs
-    where sp = newPos "ATermConversion from SML" (fst pos) (snd pos)
+    where sp = pos -- newPos "ATermConversion from SML" (fst pos) (snd pos)
 	  pos = head pos_l
 	  inp' = (showId i "") ++ (' ':inp)
 
@@ -401,7 +401,7 @@ instance ATermConvertible BASIC_ITEMS where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-BASIC-ITEMS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible SIG_ITEMS where
@@ -445,7 +445,7 @@ instance ATermConvertible SIG_ITEMS where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SIG-ITEMS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible SORT_ITEM where
@@ -486,7 +486,7 @@ instance ATermConvertible SORT_ITEM where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SORT-ITEM" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible OP_ITEM where
@@ -516,7 +516,7 @@ instance ATermConvertible OP_ITEM where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-OP-ITEM" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible OP_TYPE where
@@ -543,7 +543,7 @@ instance ATermConvertible OP_TYPE where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-OP-TYPE" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 ---- a helper for the SML-datatype SORTS -------------------------------
@@ -558,7 +558,7 @@ fromATermSORTS att =
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SORTS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 ------------------------------------------------------------------------
@@ -587,7 +587,7 @@ instance ATermConvertible OP_HEAD where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-OP-HEAD" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible ARG_DECL where
@@ -606,7 +606,7 @@ instance ATermConvertible ARG_DECL where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ARG-DECL" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible OP_ATTR where
@@ -663,7 +663,7 @@ instance ATermConvertible PRED_ITEM where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-PRED-ITEM" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible PRED_TYPE where
@@ -681,7 +681,7 @@ instance ATermConvertible PRED_TYPE where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-PRED-TYPE" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible PRED_HEAD where
@@ -699,7 +699,7 @@ instance ATermConvertible PRED_HEAD where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-PRED-HEAD" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible DATATYPE_DECL where
@@ -721,7 +721,7 @@ instance ATermConvertible DATATYPE_DECL where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-DATATYPE-DECL" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible ALTERNATIVE where
@@ -754,7 +754,7 @@ instance ATermConvertible ALTERNATIVE where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ALTERNATIVE" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible COMPONENTS where
@@ -786,7 +786,7 @@ instance ATermConvertible COMPONENTS where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-COMPONENTS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible VAR_DECL where
@@ -909,7 +909,7 @@ fromATermTERMS att =
 	  (pos_l,att') =
 	      case getATerm att of
 	      (AAppl "pos-TERMS" [reg_i,item_i]) ->
-		       (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		       (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 	      _  -> ([],att)
 
 ---- a helper for SIMPLE_IDs --------------------------------------------
@@ -920,7 +920,7 @@ fromATermSIMPLE_ID att =
       (AAppl "tuple" [ si, _ ]) -> -- snd element is 'None' 
                                   -- (CASL.grm:((WORDS,None)))
           let s = fromATerm $ getATermByIndexSp1 si att
-	  in Token s (0,0)
+	  in Token s nullPos
       _ -> fromATermError "SIMPLE_ID" aterm
     where aterm = getATerm att
 
@@ -979,7 +979,7 @@ instance ATermConvertible PRED_SYMB where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-PRED-SYMB" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible TERM where
@@ -1050,7 +1050,7 @@ instance ATermConvertible OP_SYMB where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-OP-SYMB" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible SYMB_ITEMS where
@@ -1069,7 +1069,7 @@ instance ATermConvertible SYMB_ITEMS where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SYMB-ITEMS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible SYMB_MAP_ITEMS where
@@ -1089,7 +1089,7 @@ instance ATermConvertible SYMB_MAP_ITEMS where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SYMB-MAP-ITEMS" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible SYMB_KIND where
@@ -1137,7 +1137,7 @@ instance ATermConvertible SYMB where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SYMB" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible TYPE where
@@ -1183,7 +1183,7 @@ instance ATermConvertible SYMB_OR_MAP where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SYMB-OR-MAP" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 ---- a helper for SYMB_MAP from SML -------------------------------------
@@ -1300,7 +1300,7 @@ instance ATermConvertible RENAMING where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-RENAMING" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible RESTRICTION where
@@ -1327,7 +1327,7 @@ instance ATermConvertible RESTRICTION where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-RESTRICTION" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 {- !!! This will be done by the instance of LIB_ITEM !!!
@@ -1355,7 +1355,7 @@ instance ATermConvertible SPEC_DEFN where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-SPEC-DEFN" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 -}
 
@@ -1375,7 +1375,7 @@ instance ATermConvertible GENERICITY where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-GENERICITY" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible PARAMS where
@@ -1436,7 +1436,7 @@ instance ATermConvertible FIT_ARG where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-FIT-ARG" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
@@ -1465,7 +1465,7 @@ instance ATermConvertible VIEW_DEFN where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-VIEW-DEFN" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 -}
 
@@ -1486,7 +1486,7 @@ instance ATermConvertible VIEW_TYPE where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-VIEW-TYPE" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 -------------------------------------------------------------------------
@@ -1515,7 +1515,7 @@ instance ATermConvertible ARCH_SPEC_DEFN where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ARCH-SPEC-DEFN" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 -}
@@ -1544,7 +1544,7 @@ instance ATermConvertible ARCH_SPEC where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ARCH-SPEC" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 --------------------------------------------------------------------------
@@ -1577,7 +1577,7 @@ instance ATermConvertible UNIT_DECL_DEFN where
 		let att1 = getATermByIndexSp1 udl att
 		    (ps,att2) = case getATerm att1 of
 				  (AAppl "pos-UNIT-DECL" [reg_i,item_i]) ->
-				      (fromATerm_reg reg_i att,
+				      (posFromRegion reg_i att,
 				       getATermByIndexSp1 item_i att1)
 				  _  -> ([],att1)
 		    aterm2 = getATerm att2
@@ -1638,7 +1638,7 @@ fromATermUNIT_DEFN att =
 	  (ps,att') =
 	      case getATerm att of
 	      (AAppl "pos-UNIT-DEFN" [reg_i,item_i]) ->
-		  (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		  (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 	      _  -> ([],att)
 -------------------------------------------------------------------------
 
@@ -1665,7 +1665,7 @@ instance ATermConvertible UNIT_SPEC_DEFN where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-UNIT-SPEC-DEFN" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 -}
 
@@ -1708,7 +1708,7 @@ instance ATermConvertible UNIT_SPEC where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-UNIT-SPEC" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 ---- a helper for the SML-datatype UNIT_TYPE ----------------------------
@@ -1746,7 +1746,7 @@ instance ATermConvertible UNIT_EXPRESSION where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-UNIT-EXPRESSION" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible UNIT_BINDING where
@@ -1765,7 +1765,7 @@ instance ATermConvertible UNIT_BINDING where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-UNIT-BINDING" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible UNIT_TERM where
@@ -1828,7 +1828,7 @@ instance ATermConvertible FIT_ARG_UNIT where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-FIT-ARG-UNIT" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 -------------------------------------------------------------------------
 
@@ -1850,7 +1850,7 @@ instance ATermConvertible LIB_DEFN where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-LIB-DEFN" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible LIB_ITEM where
@@ -1912,7 +1912,7 @@ skipPos mcon at   =
      case getATerm at of
 	      AAppl con [reg_i,item_i] | mcon == con ->
 		  if pCon then skipPos mcon at'
-		  else (fromATerm_reg (reg_i) at, at')
+		  else (posFromRegion (reg_i) at, at')
 		      where pCon = case getATerm at' of
 				   AAppl con' _ | mcon == con' -> True
 				   _                           -> False
@@ -1930,7 +1930,7 @@ skipPosFlag mcon att   =
 			    AAppl con' _ | mcon == con' -> True
 			    _                           -> False
 		    at'   = getATermByIndexSp1 item_i att
-		    pos_l = fromATerm_reg reg_i att
+		    pos_l = posFromRegion reg_i att
 		    b     = fromATerm $ getATermByIndexSp1 b_i att
     _  -> ([],False,att)
 
@@ -1958,7 +1958,7 @@ instance ATermConvertible ITEM_NAME_OR_MAP where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-ITEM-NAME-OR-MAP" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible LIB_NAME where
@@ -2006,7 +2006,7 @@ instance ATermConvertible LIB_ID where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-LIB-ID" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 
 instance ATermConvertible VERSION_NUMBER where
@@ -2024,7 +2024,7 @@ instance ATermConvertible VERSION_NUMBER where
 	    (pos_l,att') =
 		case getATerm att of
 		(AAppl "pos-VERSION" [reg_i,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
+		    (posFromRegion reg_i att,getATermByIndexSp1 item_i att)
 		_  -> ([],att)
 -------------------------------------------------------------------------
 
@@ -2036,13 +2036,18 @@ addRAnnoList :: forall a . [Annotation] -> Annoted a -> Annoted a
 addRAnnoList as ani = ani {r_annos = (r_annos ani) ++ as } 
 
 --- some helpers for Regions and Positions ------------------------------
+
+posFromRegion :: ATerm -> ATermTable -> [Pos]
+posFromRegion reg at = map ( \ (l, c) -> newPos "" l c ) 
+		       $ fromATerm_reg reg at 
+
 getPos :: ATermTable -> [Pos]
 getPos att = case getATerm att of
-		AAppl _ (x:_) -> fromATerm_reg x att
+		AAppl _ (x:_) -> posFromRegion x att
 		_       -> []
 
 
-insertIM :: [a] -> [a] -> [a]
+insertIM, insertPos :: [a] -> [a] -> [a]
 insertIM ips ops | even $ length ops = let hl = (length ops) `div` 2
 					   (fp,lp) = splitAt hl ops
 				       in fp ++ ips ++ lp

@@ -160,7 +160,8 @@ typePatternToTokens (TypePatternArgs as) =
 
 -- compound Ids not supported yet
 getToken :: GenParser Token st Token
-getToken = token tokStr (( \ (l, c) -> newPos "" l c) . tokPos) Just
+getToken = token tokStr tokPos Just
+
 parseTypePatternId :: GenParser Token st Id
 parseTypePatternId =
     do ts <- many1 getToken 
@@ -171,7 +172,7 @@ makeMixTypeId t =
     Left err -> fatal_error (showErrorMessages "or" "unknown parse error" 
                              "expecting" "unexpected" "end of input"
 			     (errorMessages err)) 
-		(let p = errorPos err in (sourceLine p, sourceColumn p))
+		(errorPos err)
     Right x -> return x
 
 hasPlaces, hasTypeArgs :: TypePattern -> Bool
