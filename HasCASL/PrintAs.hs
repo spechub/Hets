@@ -34,7 +34,7 @@ printKind ga kind = case kind of
 			      ExtClass (Intersection s _) InVar _ -> 
 				  if Set.isEmpty s then empty else erg
 			      _ -> erg
-		    where erg = space <> colon <> printText0 ga kind
+		    where erg = space <> colon <+> printText0 ga kind
 
 instance PrettyPrint Type where 
     printText0 ga (TypeName name _k _i) = printText0 ga name 
@@ -46,7 +46,7 @@ instance PrettyPrint Type where
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commaT_text ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
-			  <> space <> colon <> printText0 ga kind
+			  <> space <> colon <+> printText0 ga kind
     printText0 ga (MixfixType ts) = fsep (map (printText0 ga) ts)
     printText0 ga (LazyType t _) = text quMark <+> printText0 ga (t)  
     printText0 ga (ProductType ts _) = fsep (punctuate (space <> text timesS) 
@@ -214,8 +214,8 @@ instance PrettyPrint GenVarDecl where
     printText0 ga (GenTypeVarDecl tv) = printText0 ga tv
 
 instance PrettyPrint TypeArg where 
-    printText0 ga (TypeArg v c _ _) = printText0 ga v <> colon 
-				      <> printText0 ga c
+    printText0 ga (TypeArg v c _ _) = printText0 ga v <+> colon 
+				      <+> printText0 ga c
 
 instance PrettyPrint Variance where 
     printText0 _ CoVar = text plusS
@@ -230,7 +230,7 @@ instance PrettyPrint Kind where
 				  KindAppl _ _ _ -> parens
 				  _ -> id) (printText0 ga k1)
 			  <+> text funS 
-			  <> printText0 ga k2
+			  <+> printText0 ga k2
 
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
 printList0 ga l = noPrint (null l)
@@ -256,7 +256,7 @@ printPseudoType ga (TypeScheme l t _) = noPrint (null l) (text lamS
 				<+> (if null $ tail l then
 				     printText0 ga $ head l
 				     else fcat(map (parens . printText0 ga) l))
-				<+> text dotS <+> space) <> printText0 ga t
+				<+> text dotS <> space) <> printText0 ga t
 
 instance PrettyPrint BasicSpec where 
     printText0 ga (BasicSpec l) = vcat (map (printText0 ga) l)
@@ -333,7 +333,7 @@ instance PrettyPrint TypeItem where
     printText0 ga (AliasType p k t _) =  (printText0 ga p <>
 					  case k of 
 					  Nothing -> empty
-					  Just j -> space <> colon <> 
+					  Just j -> space <> colon <+> 
 					           printText0 ga j)
 				       <+> text assignS
 				       <+> printPseudoType ga t

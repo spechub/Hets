@@ -4,23 +4,23 @@ b
 c
 d
 %% Type Constructors -----------------------------------------------------
-List :a ->b
-[__] :a ->b
-m :(a ->b) ->c
-nt :a ->(b ->c) ->c ->d %(var)%
-r :Type
-r1 :Type< t
-r2 :Type< (t2, r2, s2)
-s :Type
-s1 :Type< t
-s2 :Type< (t2, r2, s2)
-s3 :Type< t = {x : t . x = x}
-t :Type
-t1 :Type< t
-t2 :Type< (t2, r2, s2)
-tuple1 :b ->a
-tuple3 :a ->b ->c ->d
-{__} :a ->b
+List : a -> b
+[__] : a -> b
+m : (a -> b) -> c
+nt : a -> (b -> c) -> c -> d %(var)%
+r : Type
+r1 : Type < t
+r2 : Type < (t2, r2, s2)
+s : Type
+s1 : Type < t
+s2 : Type < (t2, r2, s2)
+s3 : Type < t = {x : t . x = x}
+t : Type
+t1 : Type < t
+t2 : Type < (t2, r2, s2)
+tuple1 : b -> a
+tuple3 : a -> b -> c -> d
+{__} : a -> b
 %% Assumptions -----------------------------------------------------------
 o1 : m %(var)%
 o2 : (m)(tuple1) %(var)%
@@ -39,16 +39,16 @@ Hint (line 11, column 9) not a class 'tuple3 r s t'
 Hint (line 12, column 9) not a class 'tuple3 r s'
 Error (line 12, column 5) incompatible kind of: y
   expected: Type
-  inferred: Type ->Type
+  inferred: Type -> Type
 Hint (line 18, column 9) not a class 'm [__]'
 Error (line 18, column 12) undeclared type '__'
 Hint (line 7, column 15) type 'm' is not unifiable with '{__}'
 Hint (line 24, column 10) not a class 'm'
 Error (line 24, column 5) incompatible kind of: o1
   expected: Type
-  inferred: (Type ->Type) ->Type
+  inferred: (Type -> Type) -> Type
 Error (line 28, column 12) incompatible kind of: tuple3
-  expected: Type ->Type
-  inferred: Type ->Type ->Type ->Type
+  expected: Type -> Type
+  inferred: Type -> Type -> Type -> Type
 Hint (line 32, column 10) not a class 'nt r List s'
 Warning (line 38, column 12) unchecked formula 'x = x'

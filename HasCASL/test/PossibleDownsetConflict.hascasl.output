@@ -6,8 +6,8 @@ d
 e = a
 h < (a, b, e)
 %% Type Constructors -----------------------------------------------------
-s :Type %(var)%
-t :Type %(var)%
+s : Type %(var)%
+t : Type %(var)%
 %% Diagnostics -----------------------------------------------------------
 Warning (line 3, column 21) unchecked type 's'
 Warning (line 5, column 21) unchecked type 't'

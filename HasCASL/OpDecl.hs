@@ -15,7 +15,15 @@ import HasCASL.TypeDecl
 import HasCASL.Le
 import Common.Lib.State
 import Common.Result
+import HasCASL.Unify
 import HasCASL.MixAna
+
+toEnvState :: State Int a -> State Env a 
+toEnvState pi = 
+    do s <- get
+       let (r, c) = runState pi $ counter s
+       put s { counter = c }
+       return r 
 
 anaOpItem :: OpItem -> State Env ()
 anaOpItem (OpDecl is sc attr _) = 
@@ -25,7 +33,8 @@ anaOpItem (OpDefn o pats sc partial trm ps) =
     do let newTrm = if null pats then trm else 
 		 LambdaTerm pats partial trm ps 
        (i, newSc) <- getUninstOpId sc o
-       Result ds mt <- resolveTerm newTrm
+       ty <- toEnvState $ freshInst newSc
+       Result ds mt <- resolveTermWithType (Just ty) newTrm
        appendDiags ds 
        case mt of 
 	       Just t -> addOpId i newSc [] $ Definition t

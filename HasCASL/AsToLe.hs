@@ -31,6 +31,8 @@ import HasCASL.Reader
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
+logicalType :: Type 
+logicalType = TypeName (simpleIdToId (mkSimpleId "logical")) star 0
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
@@ -52,7 +54,8 @@ anaBasicItem (AxiomItems decls fs _) =
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
-       ds <- mapM (( \ (TermFormula t) -> resolveTerm t ) . item) fs
+       ds <- mapM (( \ (TermFormula t) -> resolveTermWithType 
+		     (Just logicalType)  t ) . item) fs
        appendDiags $ concatMap diags ds
        putTypeMap tm -- restore 
        putAssumps as -- restore

@@ -62,16 +62,16 @@ instance PrettyPrint Selector where
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo k ks sups defn) =
-	space <> colon <> printList0 ga (k:ks) 
+	space <> colon <+> printList0 ga (k:ks) 
 	<> noPrint (null sups)
-	   (ptext lessS <+> printList0 ga sups)
+	   (space <> ptext lessS <+> printList0 ga sups)
         <> printText0 ga defn
 
 instance PrettyPrint [Kind] where
-    printText0 ga l = space <> colon <> printList0 ga l
+    printText0 ga l = space <> colon <+> printList0 ga l
 
 instance PrettyPrint [Type] where
-    printText0 ga l = space <> colon <> printList0 ga l
+    printText0 ga l = space <> colon <+> printList0 ga l
 
 instance PrettyPrint OpDefn where
     printText0 _ NoOpDefn = empty

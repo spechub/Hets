@@ -3,34 +3,34 @@ Cpo
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
-? :Type ->Type := \ t:Type .  Unit ->? t
-?__ :Type ->Type := \ t:Type .  Unit ->? t
-Pred :Type- ->Type := \ t:Type- .  t ->? Unit
-Pred__ :Type- ->Type := \ t:Type- .  t ->? Unit
-Unit :(Type, Pcpo)
-__*__ :(Type+ ->Type+ ->Type, Pcpo+ ->Pcpo+ ->Pcpo,
-	Cpo+ ->Cpo+ ->Cpo)
-__*__*__ :Type+ ->Type+ ->Type+ ->Type
-__-->__ :(Cpo- ->Cpo+ ->Cpo, Cpo- ->Pcpo+ ->Pcpo)
-__-->?__ :Cpo- ->Cpo+ ->Pcpo
-__->__ :Type- ->Type+ ->Type
-__->?__ :Type- ->Type+ ->Type
-bool :(Type, Flatcpo) %[free type __ ::=
-			     true : bool
-			     false : bool]%
-c :Cpo %(var)%
-c-->d :Type< c -->? d
-c-->?d :Type< c ->? d
-d :Cpo %(var)%
-f :Flatcpo %(var)%
-logical :Type %[free type __ ::=
-		     true : logical
-		     false : logical]%
-nat :(Type, Flatcpo)
-p :Pcpo %(var)%
-s :Type< ? s %(var)%
-s->t :Type< s ->? t
-t :Type %(var)%
+? : Type -> Type := \ t : Type . Unit ->? t
+?__ : Type -> Type := \ t : Type . Unit ->? t
+Pred : Type- -> Type := \ t : Type- . t ->? Unit
+Pred__ : Type- -> Type := \ t : Type- . t ->? Unit
+Unit : (Type, Pcpo)
+__*__ : (Type+ -> Type+ -> Type, Pcpo+ -> Pcpo+ -> Pcpo,
+	 Cpo+ -> Cpo+ -> Cpo)
+__*__*__ : Type+ -> Type+ -> Type+ -> Type
+__-->__ : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo)
+__-->?__ : Cpo- -> Cpo+ -> Pcpo
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+bool : (Type, Flatcpo) %[free type __ ::=
+			      true : bool
+			      false : bool]%
+c : Cpo %(var)%
+c-->d : Type < c -->? d
+c-->?d : Type < c ->? d
+d : Cpo %(var)%
+f : Flatcpo %(var)%
+logical : Type %[free type __ ::=
+		      true : logical
+		      false : logical]%
+nat : (Type, Flatcpo)
+p : Pcpo %(var)%
+s : Type < ? s %(var)%
+s->t : Type < s ->? t
+t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 1 : Unit %(construct Unit)%
 Y : p -->? p --> p
@@ -75,10 +75,11 @@ FatalError (line 64, column 1) no analysis yet for: program __ res __ (x : s; y 
 FatalError (line 65, column 1) no analysis yet for: program fst (x : s; y : t) : s = x
 FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
 Error (line 72, column 3) unexpected mixfix token 'fst'
-Error (line 71, column 3) unexpected mixfix token '('
+Error (line 72, column 13) unexpected mixfix token 'res'
+Error (line 71, column 30) unexpected mixfix token '='
 FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
-Error (line 81, column 3) unexpected mixfix token '('
-Error (line 80, column 3) unexpected mixfix token '('
+Error (line 81, column 28) unexpected mixfix token '='
+Error (line 80, column 21) unexpected mixfix token '='
 Warning (line 91, column 6) redeclared type 's'
 FatalError (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 FatalError (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
@@ -116,6 +117,6 @@ Hint (line 190, column 13) not a class 'c --> d'
 Hint (line 190, column 13) not a class 'c --> d'
 FatalError (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g
 Error (line 198, column 3) unexpected mixfix token 'all'
-Error (line 201, column 28) unexpected mixfix token '('
+Error (line 201, column 27) no resolution for term: Y (\ x : c -->? p .! x)
 Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'
 Hint (line 11, column 11) type 'bool' is not unifiable with 'logical'

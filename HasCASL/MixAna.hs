@@ -11,7 +11,7 @@ Mixfix analysis of terms, adapted from the CASL analysis
 
 -}
 
-module HasCASL.MixAna (resolveTerm) where 
+module HasCASL.MixAna where 
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -414,10 +414,18 @@ nextState g is trm pm =
 iterStates :: GlobalAnnos -> [(Id, OpInfo)] -> [Term] -> ParseMap -> ParseMap
 iterStates g ops terms pm = 
     let self = iterStates g ops
-        _resolveTerm = resolve g ops (typeAliases pm) (varCount pm)
+        resolveInternal = resolve g ops (typeAliases pm) (varCount pm) Nothing
     in if null terms then pm
        else case head terms of
             MixfixTerm ts -> self (ts ++ tail terms) pm
+            BracketTerm Parens ts ps -> 
+		let Result mds v = 
+			do tsNew <- mapM resolveInternal ts
+			   return (TupleTerm tsNew ps)
+                    tNew = case v of Nothing -> head terms
+				     Just x -> x
+		in self (tail terms) $ nextState g ops tNew 
+		   pm { failDiags = mds ++ failDiags pm }
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
 	    t ->  self (tail terms) (nextState g ops t pm)
@@ -440,18 +448,24 @@ resolveToParseMap g ops tm c trm =
 			, varCount = c2
 			, parseMap = Map.single startIndex initStates }
 
-checkResultType :: Type -> ParseMap -> ParseMap
-checkResultType t pm =
-    let m = parseMap pm
-	i = lastIndex pm in
-    pm { parseMap = Map.insert i (mapMaybe (filterByResultType t) 
-				 $ lookUp m i) m }
+checkResultType :: Maybe Type -> ParseMap -> ParseMap
+checkResultType mt pm =
+    case mt of 
+    Nothing -> pm
+    Just t ->  let m = parseMap pm
+		   i = lastIndex pm in
+		       pm { parseMap = Map.insert i 
+			(mapMaybe (filterByResultType (typeAliases pm) t) 
+			$ lookUp m i) m }
 
-filterByResultType :: Type -> PState -> Maybe PState
-filterByResultType t p = Just p
+filterByResultType :: TypeMap -> Type -> PState -> Maybe PState
+filterByResultType tm t p = 
+    do let rt = ruleType p 
+       s <- maybeResult $ unify tm t rt
+       return p { ruleType = subst s rt } 
 
 resolve :: GlobalAnnos -> [(Id, OpInfo)] -> TypeMap -> Int 
-	-> Type -> Term -> Result Term
+	-> Maybe Type -> Term -> Result Term
 resolve g ops tm c ty trm =
     let pm = checkResultType ty $ resolveToParseMap g ops tm c trm
 	ds = failDiags pm
@@ -467,8 +481,7 @@ resolve g ops tm c ty trm =
 			 (concatMap ( \ t -> showPretty t "\n\t" )
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
-
-resolveTermWithType :: Type -> Term -> State Env (Result Term)
+resolveTermWithType :: Maybe Type -> Term -> State Env (Result Term)
 resolveTermWithType ty trm = 
     do tm <- gets typeMap
        as <- gets assumps
@@ -479,8 +492,7 @@ resolveTermWithType ty trm =
        return $ resolve ga ops tm c ty trm
 
 resolveTerm :: Term -> State Env (Result Term)
-resolveTerm = resolveTermWithType $ TypeName (simpleIdToId $ mkSimpleId "%any")
-	      star 1
+resolveTerm = resolveTermWithType Nothing
 
 
 
