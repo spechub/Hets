@@ -66,7 +66,7 @@ showLogicGraph
                logicNodeMenu $$$
                Ellipse $$$
                ValueTitle (return . showTitle) $$$
-               Color "blue" $$$
+               Color "lightsteelblue" $$$
                nullNodeParms
       
        normalNodeType <- newNodeType logicG normalNodeTypeParms
