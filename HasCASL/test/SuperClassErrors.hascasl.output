@@ -8,7 +8,7 @@ h = Type
 i = (g,a)
 Type Constructors
 t : Type
-Type Variables :
+Type Variables : t
 Assumptions
 Warning (1,11) implicit declaration of superclass 'b'
 Warning (2,7) redeclared class 'b'

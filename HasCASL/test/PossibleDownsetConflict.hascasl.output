@@ -7,7 +7,7 @@ h < (a,b,e)
 Type Constructors
 s : Type
 t : Type
-Type Variables :
+Type Variables : (s,t)
 Assumptions
 Warning (7,7) redeclared class 'a'
 Error (7,7) alias class cannot become a real class 'a'

@@ -82,5 +82,6 @@ putTypeVars :: [TypeId] -> State Env ()
 putTypeVars ts =  do { e <- get; put e { typeVars = ts } }
 
 addTypeVar :: TypeId -> State Env ()
-addTypeVar t = do ts <- getTypeVars 
-		  putTypeVars $ insert t ts
+addTypeVar t = do ts <- getTypeVars
+		  if t `elem` ts then return ()
+		     else putTypeVars $ insert t ts

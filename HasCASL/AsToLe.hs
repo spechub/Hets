@@ -73,12 +73,12 @@ convertTypeToClass cMap (BracketType Parens ts ps) =
 convertTypeToClass _ _ = Result [] Nothing
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
-optAnaVarDecl vd@(VarDecl v t _ _) = 
+optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
        do cMap <- getClassMap 
 	  let Result _ mc = convertTypeToClass cMap t 
 	      in case mc of
-	       Just c -> addTypeKind v (Kind [] c [])
+	       Just c -> anaTypeVarDecl(TypeVarDecl v (Kind [] c []) s q)
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
 

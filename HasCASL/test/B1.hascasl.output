@@ -13,7 +13,7 @@ a__b : a ->b
 t : a
 x : ({_ < t},b,a)
 y : Type
-Type Variables : x
+Type Variables : (x,y)
 Assumptions
 x : (s,y)
 Warning (3,14) redundant universe class
