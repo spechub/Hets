@@ -32,6 +32,8 @@ import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.CCC.FreeTypes
+import CASL.Taxonomy
+
 import Data.Dynamic
 import Common.DynamicUtils
 import CASL.SimplifySen
@@ -190,6 +192,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          generated_sign CASL = generatedSign dummy
          induced_from_morphism CASL = inducedFromMorphism dummy
          induced_from_to_morphism CASL = inducedFromToMorphism dummy trueC
+	 theory_to_taxonomy CASL = convTaxo
+
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS

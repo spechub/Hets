@@ -31,6 +31,8 @@ import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
+import CASL.Taxonomy
+
 import Logic.Logic
 import Data.Dynamic
 import Common.DynamicUtils
@@ -167,6 +169,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
          induced_from_morphism Modal = inducedFromMorphism dummy
          induced_from_to_morphism Modal = 
              inducedFromToMorphism dummy isSubModalSign
+	 theory_to_taxonomy Modal = convTaxo
 
 instance Logic Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
