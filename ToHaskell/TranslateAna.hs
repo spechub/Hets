@@ -291,7 +291,7 @@ translateTerm as tm t =
         HsCase (translateTerm as tm t1)
 	       (map(translateCaseProgEq as tm)progeqs)
 
-    LetTerm progeqs t1 _pos -> 
+    LetTerm _ progeqs t1 _pos -> 
         HsLet (map (translateLetProgEq as tm) progeqs)
 	      (translateTerm as tm t1)
     _ -> err -- ResolvedMixTerm, TermToken, MixfixTerm, BracketTerm 
