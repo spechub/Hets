@@ -49,6 +49,8 @@ type CASLMor = Morphism () () ()
 -- Miscellaneous types
 type CASLDiag = Diagram CASLSign CASLMor
 type DiagSort = (Node, SORT) 
+type DiagOp = (Node, (Id, OpType))
+type DiagPred = (Node, (Id, PredType))
 type DiagEmb = (Node, SORT, SORT)
 type DiagEmbWord = [DiagEmb]
 -- | equivalence classes are represented as lists of elements
@@ -59,7 +61,7 @@ type EquivRel a = [EquivClass a]
 type EquivRelTagged a = [(a, a)]
 
 -- PrettyPrint instance (for diagnostic output)
-instance PrettyPrint (Diagram CASLSign CASLMor) where
+instance PrettyPrint CASLDiag where
     printText0 ga diag = 
 	ptext "nodes: " 
         <+> (printText0 ga (labNodes diag))
@@ -67,7 +69,7 @@ instance PrettyPrint (Diagram CASLSign CASLMor) where
 	<+> (printText0 ga (labEdges diag))
 
 
--- | Compute the Sorts set -- a disjoint union of all the sets
+-- | Compute the Sorts set -- a disjoint union of all the sorts
 -- in the diagram.
 sorts :: CASLDiag        -- ^ the diagram to get the sorts from
       -> [DiagSort]
@@ -76,6 +78,19 @@ sorts diag =
         appendSorts sl (n, Sign { sortSet = s }) =
 	    sl ++ (map (mkNodeSortPair n) (Set.toList s))
     in foldl appendSorts [] (labNodes diag)
+
+
+-- | Compute the Ops set -- a disjoint union of all the operation symbols
+-- in the diagram.
+ops :: CASLDiag        -- ^ the diagram to get the sorts from
+    -> [DiagOp]
+ops diag = 
+    let mkNodeOp n opId opType ol = ol ++ [(n, (opId, opType))]
+        mkNodeOps n opId opTypes ol = 
+	    ol ++ Set.fold (mkNodeOp n opId) [] opTypes
+        appendOps ol (n, Sign { opMap = m }) =
+	    ol ++ Map.foldWithKey (mkNodeOps n) [] m 
+    in foldl appendOps [] (labNodes diag)
 
 
 -- | Convert the relation representation from list of pairs 
@@ -155,11 +170,11 @@ mergeEquivClasses rel tag1 tag2 | tag1 == tag2 = rel
 
 -- | Return true if there is an edge between srcNode and targetNode
 -- and the morphism with which it's labelled maps srcSort to targetSort
-isMorph :: CASLDiag
-	-> DiagSort
-	-> DiagSort
-	-> Bool
-isMorph diag (srcNode, srcSort) (targetNode, targetSort) = 
+isMorphSort :: CASLDiag
+	    -> DiagSort
+	    -> DiagSort
+	    -> Bool
+isMorphSort diag (srcNode, srcSort) (targetNode, targetSort) = 
     let checkEdges [] = False
         checkEdges ((sn, tn, Morphism { sort_map = sm }) : edges) =
 	    if sn == srcNode && 
@@ -169,21 +184,56 @@ isMorph diag (srcNode, srcSort) (targetNode, targetSort) =
     in checkEdges (out diag srcNode)
 
 
+-- | Return true if there is an edge between srcNode and targetNode
+-- and the morphism with which it's labelled maps srcSort to targetSort
+isMorphOp :: CASLDiag
+	  -> DiagOp
+	  -> DiagOp
+	  -> Bool
+isMorphOp diag (srcNode, srcOp) (targetNode, targetOp) = 
+    let checkEdges [] = False
+        checkEdges ((sn, tn, Morphism { sort_map = sm, fun_map = fm }) : edges) =
+	    if sn == srcNode && 
+	       tn == targetNode &&
+	       mapOpSym sm fm srcOp == targetOp
+	       then True else checkEdges edges
+    in checkEdges (out diag srcNode)
+
+
 -- | Compute the simeq relation for given diagram.
 simeq :: CASLDiag  -- ^ the diagram for which the relation should be created
       -> EquivRel DiagSort
 -- ^ returns the relation represented as a list of equivalence
--- classes (each represented as a list of diagram sorts)
+-- classes (each represented as a list of diagram ops)
 simeq diag =
     -- During the computations the relation is represented as a list of pairs
     -- (DiagSort, DiagSort). The first element is a diagram sort and the second
     -- denotes the equivalence class to which it belongs. All the pairs with
     -- equal second element denote elements of one equivalence class.
 
-    let mergeCond ds ds' = isMorph diag ds ds' || isMorph diag ds' ds
+    let mergeCond ds ds' = isMorphSort diag ds ds' || isMorphSort diag ds' ds
 
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (sorts diag)
+	rel' = mergeEquivClassesBy mergeCond rel
+    in taggedValsToEquivClasses rel'
+
+
+-- | Compute the simeq^op relation for given diagram.
+simeqOp :: CASLDiag  -- ^ the diagram for which the relation should be created
+	 -> EquivRel DiagOp
+-- ^ returns the relation represented as a list of equivalence
+-- classes (each represented as a list of diagram sorts)
+simeqOp diag =
+    -- During the computations the relation is represented as a list of pairs
+    -- (DiagSort, DiagOp). The first element is a diagram sort and the second
+    -- denotes the equivalence class to which it belongs. All the pairs with
+    -- equal second element denote elements of one equivalence class.
+
+    let mergeCond ds ds' = isMorphOp diag ds ds' || isMorphOp diag ds' ds
+
+        -- compute the relation
+	rel = map (\ds -> (ds, ds)) (ops diag)
 	rel' = mergeEquivClassesBy mergeCond rel
     in taggedValsToEquivClasses rel'
 
@@ -197,6 +247,19 @@ simeq_tau sink =
 	-- is mapped by m to DiagSort b
         tagEdge (sn, tn, Morphism { sort_map = sm }) = 
 	    map (\(ss, ts) -> ((sn, ss), (tn, ts))) (Map.toList sm)
+        rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
+    in taggedValsToEquivClasses rel
+
+
+-- | Compute the simeqOp_tau relation for given diagram.
+simeqOp_tau :: [LEdge CASLMor]
+	    -> EquivRel DiagOp
+simeqOp_tau sink = 
+    let -- tagEdge: for given morphism m create a list of pairs 
+	-- (a, b) where a is DiagOp from the source signature that
+	-- is mapped by m to DiagOp b
+        tagEdge (sn, tn, Morphism { sort_map = sm, fun_map = fm }) = 
+	    map (\srcOp -> ((sn, srcOp), (tn, mapOpSym sm fm srcOp))) (Map.keys fm)
         rel = foldl (\l -> \e -> l ++ (tagEdge e)) [] sink
     in taggedValsToEquivClasses rel
 
@@ -429,8 +492,8 @@ cong_0 :: CASLDiag
 cong_0 diag simeq = 
     let -- diagRule: the Diag rule
 	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
-	    isMorph diag (n1, s11) (n2, s21) && isMorph diag (n1, s12) (n2, s22) || 
-	    isMorph diag (n2, s21) (n1, s11) && isMorph diag (n2, s22) (n1, s12)
+	    isMorphSort diag (n1, s11) (n2, s21) && isMorphSort diag (n1, s12) (n2, s22) || 
+	    isMorphSort diag (n2, s21) (n1, s11) && isMorphSort diag (n2, s22) (n1, s12)
 	diagRule _ _ = False
 
         -- addToRel: add given word to given relation
@@ -622,8 +685,8 @@ cong diag adm simeq =
 
 	-- diagRule: the Diag rule
 	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
-	    isMorph diag (n1, s11) (n2, s21) && isMorph diag (n1, s12) (n2, s22) ||
-	    isMorph diag (n2, s21) (n1, s11) && isMorph diag (n2, s22) (n1, s12) 
+	    isMorphSort diag (n1, s11) (n2, s21) && isMorphSort diag (n1, s12) (n2, s22) ||
+	    isMorphSort diag (n2, s21) (n1, s11) && isMorphSort diag (n2, s22) (n1, s12) 
 	diagRule _ _ = False
 
 	-- compRule: the Comp rule works for words 1 and 2-letter long
@@ -668,9 +731,19 @@ ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked;
 					 -- must already be extended with the node
 					 -- that is the target of the sink.
 		      -> [LEdge CASLMor] -- ^ the sink
+		      -> Diagram String String -- ^ the diagram containing descriptions of nodes and edges
 		      -> Result Amalgamates
-ensuresAmalgamability diag' sink@((_, tn, _) : _) = 
-    do let diag = delNode tn diag'
+ensuresAmalgamability diag' sink@((_, tn, _) : _) desc = 
+    do let -- aux. functions that help printing out diagnostics
+           getNodeSig _ [] = emptySign () -- this should never be the case
+	   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
+	   lns = labNodes diag'
+           formatOp (id, t) = renderText Nothing (printText id) ++ " :" ++ renderText Nothing (printText t)
+	   formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
+			      Just (_, d) -> d 
+			      Nothing -> renderText Nothing (printText (getNodeSig n lns))
+           -- and now the relevand stuff
+	   diag = delNode tn diag'
            s = simeq diag
 	   st = simeq_tau sink
        -- 1. Check the inclusion (*). If it doesn't hold, the specification is
@@ -678,15 +751,26 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
        --warning DontKnow ("sink: " ++ (showPretty sink "")) nullPos -- test
        --warning DontKnow ("diag: " ++ (showPretty diag "")) nullPos -- test
        case subRelation st s of
-	    Just (ns1, ns2) -> let getNodeSig _ [] = emptySign () -- this should never be the case
-				   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
-				   lns = labNodes diag'
-				   sortString1 = renderText Nothing (printText (snd ns1)) ++
-					     " in\n{" ++ renderText Nothing (printText (getNodeSig (fst ns1) lns)) ++ "}\n"
+	    Just (ns1, ns2) -> let sortString1 = renderText Nothing (printText (snd ns1)) ++
+					     " in\n\n" ++ formatSig (fst ns1) ++ "\n\n"
 				   sortString2 = renderText Nothing (printText (snd ns2)) ++
-					     " in\n{" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}\n"
-	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2 ++ " might be different"))
-	    Nothing -> do let ct = cong_tau diag' sink st
+					     " in\n\n" ++ formatSig (fst ns2) ++ "\n\n"
+	                       in do return (No ("\nsorts " ++ sortString1 ++ "and " ++ sortString2 ++ "might be different"))
+	    Nothing -> 
+              do let sop = simeqOp diag
+		     sopt = simeqOp_tau sink
+                 -- 2. Check sharing of operations. If the check fails, the specification is
+		 -- incorrect
+		 --warning DontKnow ("simeqOp: " ++ (showPretty sop "")) nullPos -- test
+		 --warning DontKnow ("simeqOp_tau: " ++ (showPretty sopt "")) nullPos -- test
+                 case subRelation sopt sop of
+		      Just (nop1, nop2) -> let opString1 = formatOp (snd nop1) ++
+							   " in\n\n" ++ formatSig (fst nop1) ++ "\n\n"
+					       opString2 = formatOp (snd nop2) ++
+							   " in\n\n" ++ formatSig (fst nop2) ++ "\n\n"
+	                       in do return (No ("\noperations " ++ opString1 ++ "and " ++ opString2 ++ "might be different"))
+		      Nothing ->
+                       do let ct = cong_tau diag' sink st
 			      -- As we will be using a finite representation of \cong_0
 			      -- that may not contain some of the equivalence classes with
 			      -- only one element it's sufficient to check that the subrelation
