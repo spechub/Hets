@@ -21,7 +21,10 @@ module Haskell.Hatchet.MultiModule(
     readModuleInfo,
     readOneImportSpec,
   fromString, 
-  toString       -- eventually we shouldn't export these
+  toString,       -- eventually we shouldn't export these
+    expandDotsInTyCons,
+    filterModuleInfo,
+    importSpecToExportSpec
     ) where
 
 import List                     (intersect)
