@@ -18,7 +18,7 @@
 module Lexer ( bind, (<<), (<:>), (<++>), signChars
 	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
-	     , scanDigit, scanFloat
+	     , scanDigit, scanFloat, whiteChars, convToPos
 	     , caslChar, scanQuotedChar, scanString
 	     , reserved, placeS, placeT, pToken, asKey, toKey
 	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
@@ -226,12 +226,11 @@ nestCommentOut = try (string "%[") >>
 -- skip whitespaces and nested comment out
 -- ----------------------------------------------
 
-newlineChars, blankChars :: String
-newlineChars = "\n\r"
-blankChars = "\t\v\f \160" -- non breaking space
+whiteChars :: String
+whiteChars = "\n\r\t\v\f \160" -- non breaking space
 
 skip :: GenParser Char st ()
-skip = skipMany(oneOf (newlineChars ++ blankChars) 
+skip = skipMany(oneOf (whiteChars) 
 		       <|> nestCommentOut <?> "") >> return () 
 
 -- only skip to an annotation if it's on the same or next line
@@ -260,9 +259,11 @@ reserved l p = try (p `checkWith` \r -> r `notElem` l)
 -- ----------------------------------------------
 -- lexical tokens with position
 -- ----------------------------------------------
+convToPos :: SourcePos -> (Int, Int)
+convToPos (sp) = (sourceLine(sp),sourceColumn(sp))
 
 setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token s (sourceLine p, sourceColumn p)
+setTokPos p s = Token s $ convToPos p
 
 pToken :: GenParser Char st String -> GenParser Char st Token
 pToken parser = bind setTokPos getPosition (parser << skipSmart)
