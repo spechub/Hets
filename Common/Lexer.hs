@@ -1,15 +1,19 @@
 
-{- HetCATS/CASL/Lexer.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-   scanner for CASL tokens and extensions to parsec
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+   scanner for Casl tokens and extensions to Parsec
    
-   http://www.cs.uu.nl/~daan/parsec.html)
-   -- extended with "consumeNothing" 
+   <http://www.cs.uu.nl/~daan/parsec.html>
+   extended with 'consumeNothing'
    
-   http://www.cofi.info/Documents/CASL/Summary/
+   <http://www.cofi.info/Documents/CASL/Summary/>
    from 25 March 2001
    C.4 Lexical Syntax
 
@@ -22,9 +26,8 @@ import Common.Id (Token(..), place)
 import Control.Monad (MonadPlus (mplus), liftM2)
 import Common.Lib.Parsec
 
--- ----------------------------------------------
--- no-bracket-signs
--- ----------------------------------------------
+
+-- | no-bracket-signs
 signChars :: String
 signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
 
@@ -34,14 +37,12 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
 scanAnySigns :: GenParser Char st String
 scanAnySigns = many1 (oneOf signChars <?> "casl sign") <?> "signs"
 
--- ----------------------------------------------
--- casl letters
--- ----------------------------------------------
+-- | casl letters
 caslLetters :: String
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
 	      "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜİßàáâãäåæçèéêëìíîïñòóôõöøùúûüıÿ"
 
--- see http://www.htmlhelp.com/reference/charset/ starting from \192
+-- see <http://www.htmlhelp.com/reference/charset/> starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
 
 caslLetter :: GenParser Char st Char
@@ -54,7 +55,7 @@ scanLPD :: GenParser Char st Char
 scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 
 -- ----------------------------------------------
--- Monad/Functor extensions
+-- * Monad and Functor extensions
 -- ----------------------------------------------
 
 bind :: (Monad m) => (a -> b -> c) -> m a -> m b -> m c
@@ -83,7 +84,7 @@ flat :: (Functor f) => f [[a]] -> f [a]
 flat = fmap concat
 
 -- ----------------------------------------------
--- ParsecCombinator extension
+-- * ParsecCombinator extension
 -- ----------------------------------------------
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
@@ -110,7 +111,7 @@ p `separatedBy`  s = do r <- p
                               return (r:es, t:ts))
 
 -- ----------------------------------------------
--- casl words
+-- * casl words
 -- ----------------------------------------------
 
 scanLetterWord :: GenParser Char st String
@@ -133,7 +134,7 @@ scanDotWords :: GenParser Char st String
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 
 -- ----------------------------------------------
--- casl escape chars for quoted chars and literal strings
+-- * casl escape chars for quoted chars and literal strings
 -- ----------------------------------------------
 
 -- see ParsecToken.number
@@ -158,7 +159,7 @@ escapeChar = char '\\' <:>
 	     (simpleEscape <|> decEscape <|> hexEscape <|> octEscape)
 
 -- ----------------------------------------------
--- chars for quoted chars and literal strings
+-- * chars for quoted chars and literal strings
 -- ----------------------------------------------
 
 printable :: GenParser Char st String
@@ -194,7 +195,7 @@ splitString p s =
 	in parseString ph s
 
 -- ----------------------------------------------
--- digit, number, fraction, float
+-- * digit, number, fraction, float
 -- ----------------------------------------------
 
 getNumber :: GenParser Char st String
@@ -225,7 +226,7 @@ isLitToken t = case tokStr t of
 	       _ -> False
 
 -- ----------------------------------------------
--- nested comment outs
+-- * nested comment outs
 -- ----------------------------------------------
 
 notEndText :: Char -> GenParser Char st Char
@@ -240,7 +241,7 @@ nestCommentOut = try (string "%[") >>
 		 >> char ']' >> char '%'
 
 -- ----------------------------------------------
--- skip whitespaces and nested comment out
+-- * skip whitespaces and nested comment out
 -- ----------------------------------------------
 
 whiteChars :: String
@@ -269,7 +270,7 @@ skipSmart = do p <- getPosition
 		<|> return ()
 
 -- ----------------------------------------------
--- keywords WORDS or NO-BRACKET-SIGNS 
+-- * keywords WORDS or NO-BRACKET-SIGNS 
 -- ----------------------------------------------
 
 keyWord :: GenParser Char st a -> GenParser Char st a
@@ -282,10 +283,8 @@ reserved :: [String] -> GenParser Char st String -> GenParser Char st String
 reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
 -- ----------------------------------------------
--- lexical tokens with position
+-- * lexical tokens with position
 -- ----------------------------------------------
-convToPos :: SourcePos -> SourcePos
-convToPos = id 
 
 pToken :: GenParser Char st String -> GenParser Char st Token
 pToken parser = bind (flip Token) getPosition (parser << skipSmart)
@@ -293,12 +292,14 @@ pToken parser = bind (flip Token) getPosition (parser << skipSmart)
 pluralKeyword :: String -> GenParser Char st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
 
--- check for keywords (depending on lexem class)
+-- | check for keywords (depending on lexem class)
 toKey :: String -> GenParser Char st String
 toKey s = let p = string s in 
 	      if last s `elem` "[]{}(),;" then p 
 		 else if last s `elem` signChars then keySign p 
 		      else keyWord p
+
+-- * some separator parsers
 
 asSeparator :: String -> GenParser Char st Token
 asSeparator = pToken . string
