@@ -219,7 +219,7 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
                     (predArgs pred') ]                          -- ::  [SORT]
 	insert_injections :: (PredType, [TERM f]) -> (PredType, [TERM f])
         insert_injections (pred', args)
-            = let needed_sorts = map term_sort args
+            = let needed_sorts = predArgs pred'
               in (pred', (zipWith inject args needed_sorts))
 
         pred_eq         :: (PredType, [TERM f]) -> (PredType, [TERM f]) -> Bool
@@ -461,7 +461,7 @@ minExpTerm_op1 mef ga sign op terms pos = do
                     (opArgs op') ]                      -- ::  [SORT]
 	insert_injections :: (OpType, [TERM f]) -> (OpType, [TERM f])
         insert_injections (op', args)
-            = let needed_sorts = map term_sort args
+            = let needed_sorts = opArgs op'
               in (op', (zipWith inject args needed_sorts))
         op_eq           :: (OpType, [TERM f]) -> (OpType, [TERM f]) -> Bool
         op_eq (op1,ts1) (op2,ts2)
