@@ -143,6 +143,7 @@ translateAssumps as tm =
   let distList =  distinctOpIds $ Map.toList as
       distAs = Map.fromList distList
   in  concat $ map (translateAssump distAs tm) $ distList
+      --error ("List: " ++ show distList ++ "\n Map: " ++ show distAs)
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
 distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfos)]
@@ -165,7 +166,7 @@ newName (Id tlist idlist poslist) len =
   in (Id (tlist ++ [newTok]) idlist poslist)
 
 -- uebersetzt eindeutig benannte Funktionen 
--- (d.h. OpInfos enthaält nur ein Element)
+-- (d.h. OpInfos enthält nur ein Element)
 -- (Funktionsdeklarationen und -definitionen)
 translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfos) -> [HsDecl]
 translateAssump as tm (i, opinf) = 
@@ -197,7 +198,8 @@ translateType t = case t of
   MixfixType _ -> error ("unexpected type (MixfixType): " ++ show t)
   KindedType kt _kind _poslist -> translateType kt
   BracketType _ _ _ -> error ("unexpected type (BracketType): " ++ show t)
-  TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
+  TypeToken ttok -> HsTyCon (UnQual (HsIdent (tokStr ttok)))
+  --TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n > 0 then
@@ -234,32 +236,40 @@ translateTerm as tm t = case t of
   --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
   --HsIf HsExp HsExp HsExp, wie passt das zusammen?
 
-  QualVar v _ty _pos -> 
-      HsVar (UnQual (HsIdent (translateIdWithType LowerId v)))
-      -- Was wird mit dem Typ gemacht?
-      -- HsVar kann mit Modul qualifiziert sein, woher?
+  QualVar v ty _pos ->
+      (HsExpTypeSig 
+        nullLoc 
+        (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
+        (HsQualType [] $ translateType ty))
 
   -- zur id der opid muss der evtl. umbenannte eindeutige Name gefunden werden
   -- hierzu muss ts mit den TypeSchemes aus Assumps auf Unifizierbarkeit
   -- geprueft werden; hierzu benoetigt man die Assumps und die TypeMap;
-  -- data OpId = OpId UninstOpId [TypeArg] [Pos]
   QualOp (InstOpId uid types _) ts _pos -> 
   -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen vergleichen,
-  -- bei passendem TupeScheme die id (also denSchluessel) als HsExp
-  -- fuer den ersten Ausdruck der HsApp verwenden
+  -- bei passendem TupeScheme die id (also den Schluessel) als HsVar verwenden
     let fittingAs = Map.filter (canUnify tm ts) as 
     in if Map.size fittingAs == 1 then
-          -- gut, eine Uebereinstimmung -> HsApp basteln
+         -- gut, eine Uebereinstimmung
           let oid = head $ Map.keys $ fittingAs
           in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
-       else error "problem with finding opid"
+       --falls mehr als ein passendes TypeScheme gefunden wurde
+       --kann auf "Ähnlichkeit" mit der Id getestet werden
+       else error("problem with finding opid: " ++ show uid ++ "\n" ++ show ts
+                   ++ "\n" ++ show types ++ "\n" ++ show (Map.size fittingAs))
+
   ApplTerm t1 t2 _pos -> HsApp(translateTerm as tm t1)(translateTerm as tm t2)
-
   TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
+  TypedTerm t1 tqual ty _pos -> -- -> HsExpTypeSig
+    case tqual of 
+      OfType -> (HsExpTypeSig nullLoc 
+	                     (translateTerm as tm t1)
+                             (HsQualType [] $ translateType ty))
+      --AsType ->
+      --InType ->
+      _ -> error "TypedTerm not yet finished"
 
-  --TypedTerm _t1 _tqual _ty _pos -> [] -- -> HsExpTypeSig
-
-  --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... kommt das vor??
+  --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... ?
 
   LambdaTerm pats _part t1 _pos -> 
       HsLambda nullLoc
@@ -277,14 +287,24 @@ translateTerm as tm t = case t of
   BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
   _ -> error ("translateTerm not finished; Term: " ++ show t)
 
+findTypeSchemeMap :: Assumps -> TypeScheme -> [Id]
+findTypeSchemeMap as ts = findTypeSchemeList (Map.toList as) ts
+
+-- hier wird mit einer eindeutigen Benennung der Ids gearbeitet,
+-- daher enthält OpInfos jeweils nur ein OpInfo
+findTypeSchemeList :: [(UninstOpId,OpInfos)] -> TypeScheme -> [Id]
+findTypeSchemeList [] _ts = []
+findTypeSchemeList ((id1,infos):idInfoList) ts = 
+  if (opType $ head $ opInfos infos) == ts then
+    ((id1):(findTypeSchemeList idInfoList ts))
+  else findTypeSchemeList idInfoList ts
+
+isEqualTs :: TypeScheme -> TypeScheme -> Bool
+isEqualTs (TypeScheme _ (_ :=> t1) _) (TypeScheme _ (_ :=> t2) _) = t1 == t2
+
 canUnify :: TypeMap -> TypeScheme -> OpInfos -> Bool
 canUnify tm ts (OpInfos infos) = 
     or $ map (isUnifiable tm 0 ts) (map opType infos)
-
--- uebersetzt die Typen aus InstOpId zu Expressions 
--- (fuer die zweite Expression fuer die HsApp aus einer QualOp)
-translateTypes :: [Type] -> HsExp
-translateTypes = error "Types for QualOp not yet translated"
 
 --Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
 translatePattern :: [Pattern] -> [HsPat]
