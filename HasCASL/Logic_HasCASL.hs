@@ -30,6 +30,7 @@ import Common.Lib.State
 import HasCASL.Morphism
 import qualified CASL.Sign
 import qualified CASL.Static
+import qualified CASL.SymbolAnalysis
 import qualified CASL.Sublogics
 import qualified CASL.Logic_CASL
 
@@ -87,12 +88,12 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     basic_analysis HasCASL = Just ( \ (b, e, _) ->
 		let ne = snd $ (runState (anaBasicSpec b)) e 
 		    in return (ne, initialEnv, [])) 
-    stat_symb_map_items HasCASL = CASL.Static.statSymbMapItems
-    stat_symb_items HasCASL = CASL.Static.statSymbItems
-    symbol_to_raw HasCASL = CASL.Static.symbolToRaw
-    id_to_raw HasCASL = CASL.Static.idToRaw
-    matches HasCASL = CASL.Static.matches
-    sym_name HasCASL = CASL.Static.symName
+    stat_symb_map_items HasCASL = CASL.SymbolAnalysis.statSymbMapItems
+    stat_symb_items HasCASL = CASL.SymbolAnalysis.statSymbItems
+    symbol_to_raw HasCASL = CASL.SymbolAnalysis.symbolToRaw
+    id_to_raw HasCASL = CASL.SymbolAnalysis.idToRaw
+    matches HasCASL = CASL.SymbolAnalysis.matches
+    sym_name HasCASL = CASL.SymbolAnalysis.symName
   
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
