@@ -7,7 +7,7 @@ import FiniteMap
 
 type Anno = Annotation
 
-type SortId = Id -- or SIMPLE_ID
+type SortId = Id
 
 -- the sub- and supertypes of a sort 
 data SortRels = SortRels { subsorts :: [SortId], supersorts :: [SortId] } 
@@ -95,7 +95,7 @@ data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp | IfOp
 
 data PolyOp = DefOp | EqualOp | ExEqualOp
 
--- true and false are constant predicates (Id)
+-- true and false are constant predicates (Id) or even empty conj./disj
 data Formula = Binding Binder [VarDecl] Formula
 	     | Connect LogOp [Formula]
 	     | TermTest PolyOp [Term]
