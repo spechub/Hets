@@ -13,7 +13,7 @@ Portability :  portable
 
 module Haskell.ExtHaskellCvrt where
 
-import Char
+import Data.Char(toLower)
 import Haskell.Hatchet.HsSyn
 
 cvrtHsModule :: HsModule -> HsModule
@@ -49,7 +49,7 @@ cvrtWithQuant (AxForall (a:axbList)) f =
                  HsApp (HsVar (UnQual (HsIdent "allof"))) 
                        (HsParen (HsLambda (SrcLoc (-1) (-1)) 
                                           [HsPVar (cvrtAxiomBndr a)] 
-                                          (cvrtWithQuant (AxForall axbList) f)))
+                                 (cvrtWithQuant (AxForall axbList) f)))
 
 cvrtWithQuant (AxExists []) f =  cvrtWithoutQuant f
 cvrtWithQuant (AxExists (a:axbList)) f = 
@@ -72,6 +72,7 @@ cvrtWithoutQuant (AxExp expr) = expr
 cvrtWithoutQuant (AxEq form expr _) = HsInfixApp 
                                        (cvrtWithoutQuant form) 
                                        (HsVar (UnQual (HsSymbol "==="))) expr
+cvrtWithoutQuant _ = error "cvrtWithoutQuant"
 
 
 cvrtAxiomBndr :: AxiomBndr -> HsName
@@ -80,3 +81,4 @@ cvrtAxiomBndr (AxiomBndrSig name _) = name
 
 cvrtAxiomName :: AxiomName -> HsPat
 cvrtAxiomName (n:ame) = HsPVar (HsIdent ((toLower n):ame))
+cvrtAxiomName "" = error "cvrtAxiomName"
