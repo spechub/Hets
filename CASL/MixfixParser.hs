@@ -16,7 +16,7 @@
 -}
 
 module CASL.MixfixParser ( parseString, resolveFormula, resolveMixfix
-		    , getTokenList, expandPos )
+		    , getTokenList, expandPos, listBrackets )
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations
@@ -30,8 +30,6 @@ import Control.Monad
 import Common.Lib.Parsec
 import qualified Char as C
 import Data.List(intersperse)
-import Common.PrettyPrint
-import CASL.Print_AS_Basic
 import Common.GlobalAnnotationsFunctions
 import CASL.Formula(updFormulaPos)
 import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
@@ -132,20 +130,21 @@ getListBrackets (Id b _ _) =
 	     else filter (not . isPlace) rest
     in (b1, b2)
 
+listBrackets :: GlobalAnnos -> ([Token], [Token])
+listBrackets g = 
+    case list_lit (literal_annos g) of
+		Nothing -> ([], [])
+		Just (bs, _, _) -> getListBrackets bs
+
 listStates :: GlobalAnnos -> Int -> [State]
 -- no empty list (can be written down directly)
 listStates g i = 
     let listState toks = State listId [] [] toks i
-    in case list_lit (literal_annos g) of
-		Nothing -> []
-		Just (bs, c, _) -> 
-		    let (b1, b2) = getListBrackets bs
-			el = b1++b2
-		        ls = [ listState (b1 ++ [termTok] ++ b2) 
-			     , listState (b1 ++ [termTok, commaTok] ++ b2)]
-		     in if c == Id el [] [] then ls 
-		        -- don't put in empty list twice
-			else listState el : ls
+	(b1, b2) = listBrackets g
+    in if null b1 || null b2 then []
+       else [ listState (b1 ++ [termTok] ++ b2) 
+		     , listState (b1 ++ [termTok, commaTok] ++ b2)]
+-- assume that b1 ++ b2 is included as Id for the empty list
 
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
