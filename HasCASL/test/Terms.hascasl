@@ -117,3 +117,5 @@ if a then b else c
 \ (a) . a
 y where x= y; z=y;
 y where x= y; z=y in t
+(op __<__ : ?##) 
+(op __<__ : ? ##) 

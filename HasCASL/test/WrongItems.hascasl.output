@@ -2,27 +2,19 @@ parse error at 1.9:
 unexpected "="
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", ",", ":", "<", "{", ";", "sort", "op", "fun", "pred", "type", "classes", "class", "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
-parse error at 2.9:
-unexpected end of input
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", "=e=" or "="
-
-parse error at 3.5:
-unexpected "?"
-expecting casl char, underline word, "{", __, [<id>,...,<id>], "[", "%%", "%{", "%(", "%", ",", "(" or ":?"
-
-parse error at 4.5:
+parse error at 2.5:
 unexpected "<"
 expecting id
 
-parse error at 5.16:
+parse error at 3.16:
 unexpected "="
 expecting [<id>,...,<id>], "%%", "%{", "%(", "%", "+", "-", "->", "{", ";", "sort", "op", "fun", "pred", "type", "classes", "class", "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
-parse error at 6.17:
+parse error at 4.17:
 unexpected list of type arguments
 expecting "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
 
-parse error at 7.12:
+parse error at 5.12:
 unexpected list of type arguments
 expecting casl char, underline word, "%%", "%{", "%(", "%", "+", "-", ",", ":" or "<"
 

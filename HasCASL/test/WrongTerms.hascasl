@@ -31,8 +31,6 @@ exists! a: v .! x
 pred
 var
 op
-(op __<__ : ?##) 
-(op __<__ : ? ##) 
 a and b
 then
 if then

@@ -1,6 +1,4 @@
 class x = y = z
-op a:? b
-op a: ? b
 var <
 class a : Type = {x . x < t}
 type t := \ s,r . s -> r

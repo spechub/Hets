@@ -78,23 +78,11 @@ parse error at 20.11:
 unexpected end of input
 expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", "," or ")"
 
-parse error at 21.3:
-unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
-
-parse error at 22.3:
-unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
-
-parse error at 23.4:
-unexpected "->", "?" or "-"
-expecting "?", words, "__", "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->?", "-->", "-->?" or end of input
-
-parse error at 24.2:
+parse error at 21.2:
 unexpected end of input
 expecting words, "__", signs, "(", "{" or "["
 
-parse error at 25.9:
+parse error at 22.9:
 unexpected end of input
 expecting words, "__", signs, "(", "{" or "["
 

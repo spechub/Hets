@@ -286,12 +286,15 @@ opAttr = do a <- asKey assocS
 	    return (UnitOpAttr t [tokPos a])
 
 opDecl :: [OpId] -> [Token] -> AParser OpItem
-opDecl os ps = do c <- colT
-		  t <- typeScheme
-		  do   d <- anComma
-		       (as, cs) <- opAttr `separatedBy` anComma
-		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
-		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
+opDecl os ps = do (c, t) <- partialTypeScheme
+		  opAttrs os ps c t
+	            <|> return (OpDecl os t [] (map tokPos (ps++[c])))
+
+opAttrs :: [OpId] -> [Token] -> Token -> TypeScheme -> AParser OpItem
+opAttrs os ps c t = 
+    do   d <- anComma
+	 (as, cs) <- opAttr `separatedBy` anComma
+	 return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
 
 opArg :: AParser ([VarDecl], [Pos])
 opArg = bracketParser varDecls oParenT cParenT anSemi concatFst
@@ -301,39 +304,40 @@ opArgs =
     do cps <- many1 opArg
        return (map fst cps, concatMap snd cps)
 
--- | a 'Total' or a 'Partial' function definition
-quColon :: AParser (Partiality, Token)
-quColon = do c <- colT
-	     return (Total, c)
-	  <|> 
-	  do c <- qColonT
-	     return (Partial, c) 
-
 opDeclOrDefn :: OpId -> AParser OpItem
 opDeclOrDefn o = 
-    do c <- colT
-       t <- typeScheme
-       do   d <- anComma
-	    (as, cs) <- opAttr `separatedBy` anComma
-	    return (OpDecl [o] t as (map tokPos ([c,d]++cs))) 
-	 <|> do e <- equalT
-		f <- term 
-		return (OpDefn o [] t Total f (toPos c [] e))  
-         <|> return (OpDecl [o] t [] (map tokPos [c]))
+    do (c, st) <- typeOrTypeScheme
+       let qs = [tokPos c]
+           t = toPartialTypeScheme qs st
+       opAttrs [o] [] c t
+	 <|> opTerm o [] [] c st
+         <|> return (OpDecl [o] t [] qs)
     <|> 
     do (as, ps) <- opArgs
-       do    (p, c) <- quColon
-	     t <- parseType 
-	     e <- equalT
-	     f <- term 
-	     return (OpDefn o as (simpleTypeScheme t) p f 
-		     (ps ++ toPos c [] e))
-    <|> 
-    do c <- qColonT 
-       t <- parseType 
-       e <- equalT
+       (c, st) <- typeOrTotalType
+       opTerm o as ps c st 
+
+ -- | a 'Total' or a 'Partial' function definition type
+typeOrTotalType :: AParser (Token, TypeOrTypeScheme)
+typeOrTotalType = 
+    do c <- colT
+       t <- parseType
+       return (c, TotalTypeScheme $ simpleTypeScheme t)
+   <|>   
+   do c <- qColonT
+      t <- parseType
+      return (c, PartialType t) 
+
+opTerm :: OpId -> [[VarDecl]] -> [Pos] -> Token 
+       -> TypeOrTypeScheme -> AParser OpItem
+opTerm o as ps c st = 
+    do e <- equalT
        f <- term 
-       return (OpDefn o [] (simpleTypeScheme t) Partial f (toPos c [] e))
+       let (p, sc) = case st of
+			     PartialType t -> (Partial, simpleTypeScheme t)
+			     TotalTypeScheme s -> (Total, s)
+       return (OpDefn o as sc p f 
+		     (ps ++ toPos c [] e))
 
 opItem :: AParser OpItem
 opItem = do (os, ps) <- opId `separatedBy` anComma

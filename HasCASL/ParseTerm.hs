@@ -30,13 +30,9 @@ plusT, minusT :: AParser Token
 plusT = asKey plusS
 minusT = asKey minusS
 
--- | a keyword string not followed by a question mark
-noQuMark :: String -> AParser Token
-noQuMark s = try $ asKey s << notFollowedBy (char '?')
-
 -- | a colon not followed by a question mark
 colT :: AParser Token
-colT = noQuMark colonS
+colT = asKey colonS
 
 -- | a colon immediately followed by a question mark
 qColonT :: AParser Token
@@ -339,13 +335,13 @@ parseType =
 
 -- | parse one of the four possible 'Arrow's
 arrowT :: AParser (Arrow, Pos)
-arrowT = do a <- noQuMark funS
+arrowT = do a <- asKey funS
 	    return (FunArr, tokPos a)
 	 <|>
 	 do a <- asKey pFun
 	    return (PFunArr, tokPos a)
 	 <|>
-	 do a <- noQuMark contFun
+	 do a <- asKey contFun
 	    return (ContFunArr, tokPos a)
          <|>
 	 do a <- asKey pContFun 
@@ -363,14 +359,30 @@ typeScheme = do f <- forallT
 					(toPos f cs d ++ ps)
 	     <|> fmap simpleTypeScheme parseType
 
--- a 'TypeScheme' for a possibly partial constant (given by 'qColonT')
+
+data TypeOrTypeScheme = PartialType Type | TotalTypeScheme TypeScheme
+
+-- a 'TypeOrTypescheme' for a possibly partial constant (given by 'qColonT')
+typeOrTypeScheme :: AParser (Token, TypeOrTypeScheme)
+typeOrTypeScheme = do q <- qColonT
+		      t <- parseType 
+		      return (q, PartialType t)
+		   <|>
+		   do q <- colT 
+		      s <- typeScheme
+		      return (q, TotalTypeScheme s)
+
+toPartialTypeScheme :: [Pos] -> TypeOrTypeScheme -> TypeScheme
+toPartialTypeScheme qs ts = case ts of 
+	    PartialType t -> simpleTypeScheme 
+			   (FunType (BracketType Parens [] qs) 
+			    PFunArr t qs)
+	    TotalTypeScheme s -> s
+
 partialTypeScheme :: AParser (Token, TypeScheme)
-partialTypeScheme = do q <- qColonT
-		       t <- parseType 
-		       return (q, simpleTypeScheme 
-			       (FunType (BracketType Parens [] [tokPos q]) 
-				PFunArr t [tokPos q]))
-		    <|> bind (,) colT typeScheme
+partialTypeScheme = do (c, ts) <- typeOrTypeScheme
+		       return (c, toPartialTypeScheme [tokPos c] ts)
+
 
 -- * varDecls and genVarDecls
 

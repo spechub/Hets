@@ -124,3 +124,5 @@ y where x = y;
 	z = y
 y where x = y;
 	z = y in t
+(op __<__ : ?##)
+(op __<__ : ? ##)

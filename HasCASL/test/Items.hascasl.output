@@ -10,3 +10,5 @@ type WNet = {(sys, i, o) : T × T × T . i = o}
 var a : Type+
 var - : Type
 var []+ : Type
+op a : () ->? b
+op a : ? b
