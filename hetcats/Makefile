@@ -182,7 +182,7 @@ hetana: ../hetana.hs $(drifted_files) ../*.hs
 ### HetCASL with dev graph
 hetdg: ../GUI/hetdg.hs $(drifted_files) ../*.hs 
 	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf /home/till/CASL/uni/uni-package.conf  -package uni-davinci -package uni-server
+	$(HC) --make -o $@ $< $(HC_OPTS)  -package-conf ../../uni/uni-package.conf  -package uni-davinci -package uni-server
 
 
 ### run tests in other directories
