@@ -154,17 +154,20 @@ initgraphs :: IO GraphInfo
 initgraphs = do newRef <- newIORef ([],0)
                 return newRef
 
-makegraph :: String -> [GlobalMenu] -> 
+makegraph :: String -> IO () -> IO () -> IO () -> [GlobalMenu] ->
              [(String,DaVinciNodeTypeParms (String,Descr,Descr))] -> 
              [(String,DaVinciArcTypeParms 
 	           (String,Descr,Maybe (LEdge DGLinkLab)))] ->
              CompTable -> GraphInfo -> IO Result 
-makegraph title menus nodetypeparams edgetypeparams comptable gv = do
+makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
   let graphParms  = 
        foldr ($$) (GraphTitle title $$
                    OptimiseLayout True $$
                    AllowClose (return True) $$ 
+                   FileMenuAct OpenMenuOption (Just open) $$
+                   FileMenuAct SaveMenuOption (Just save) $$
+                   FileMenuAct SaveAsMenuOption (Just saveAs) $$
 	           emptyGraphParms)
                    menus 
       abstractNodetypeparams = LocalMenu

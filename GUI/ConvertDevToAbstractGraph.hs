@@ -176,6 +176,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
+         -- action on "open"
+             (do openProofStatus "./proofStatus.log" ioRefProofStatus convRef)
+         -- action on "save"
+             (do proofStatus <- readIORef ioRefProofStatus
+                 writeShATermFile "./proofStatus.log" proofStatus)
+         -- action on "save as...:"
+             (do return())
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
@@ -207,14 +214,6 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		          (proofMenuSef gInfo locSubsume),
 		   Button "Local Decomposition (merge of rules)"
 			  (proofMenuSef gInfo locDecomp)
-                    ],
-                Menu (Just "File")
-                  [Button "Save"
-                     (do proofStatus <- readIORef ioRefProofStatus
-                         writeShATermFile "./proofStatus.log" proofStatus),
-                   Button "Save as..." (return ()),
-                   Button "Open..."
-		     (do openProofStatus "./proofStatus.log" ioRefProofStatus convRef)
                     ]])]
       -- the node types
                [("spec", 
