@@ -2,12 +2,12 @@
 
 .PHONY: check
 
-check: ../annos
+check: annos
 	bash runcheck.sh ../annos
 
-output: ../annos
+output: annos
 	bash runcheck.sh ../annos set
 
 %: 
-	(cd ..; $(MAKE) $@)
+	(cd ../..; $(MAKE) $@)
 
