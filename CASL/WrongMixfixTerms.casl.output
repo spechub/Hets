@@ -1,111 +1,111 @@
 [a]
-Error: in line 1 at char 1: ambiguous mixfix term
+Error (1,1) ambiguous mixfix term
 	a :: []
 	[ a ]
 (a) (b)
-Error: in line 2 at char 1: no resolution for term: (a) (b)
+Error (2,1) no resolution for term: (a) (b)
 a :s (a)
-Error: in line 3 at char 1: no resolution for term: a :s (a)
+Error (3,1) no resolution for term: a :s (a)
 a +
-Error: in line 4 at char 1: no resolution for term: a +
+Error (4,1) no resolution for term: a +
 +
-Error: in line 5 at char 1: no resolution for term: +
+Error (5,1) no resolution for term: +
 a < b
-Error: in line 6 at char 3: unexpected mixfix token: <
+Error (6,3) unexpected mixfix token: <
 __ < __ (a, b)
-Error: in line 7 at char 3: unexpected mixfix token: <
+Error (7,3) unexpected mixfix token: <
 __ * __
-Error: in line 8 at char 1: no resolution for term: __ * __
+Error (8,1) no resolution for term: __ * __
 ([a], (a) (b), a +, __ < __ (a, b))
-Error: in line 9 at char 2: ambiguous mixfix term
+Error (9,2) ambiguous mixfix term
 	a :: []
 	[ a ]
-Error: in line 9 at char 7: no resolution for term: (a) (b)
-Error: in line 9 at char 15: no resolution for term: a +
-Error: in line 9 at char 22: unexpected mixfix token: <
+Error (9,7) no resolution for term: (a) (b)
+Error (9,15) no resolution for term: a +
+Error (9,22) unexpected mixfix token: <
 [[a], (a) (b), a +, __ < __ (a, b)]
-Error: in line 10 at char 13: unexpected mixfix token: ,
+Error (10,13) unexpected mixfix token: ,
 a when a + b else b
-Error: in line 11 at char 8: not a predicate: __+__
+Error (11,8) not a predicate: __+__
 a when (op a : b) else b
-Error: in line 12 at char 8: not a formula: (op a : b)
+Error (12,8) not a formula: (op a : b)
 a when (var a : b) else b
-Error: in line 13 at char 8: not a formula: (var a : b)
+Error (13,8) not a formula: (var a : b)
 a when f else b
-Error: in line 14 at char 8: not a predicate: f
+Error (14,8) not a predicate: f
 a when f else b
-Error: in line 15 at char 9: not a predicate: f
+Error (15,9) not a predicate: f
 a when f else b
-Error: in line 16 at char 10: not a predicate: f
+Error (16,10) not a predicate: f
 a when (op a : b)(a) else b
-Error: in line 17 at char 16: not a formula: (op a : b)(a)
+Error (17,16) not a formula: (op a : b)(a)
 A [a]
-Error: in line 18 at char 1: ambiguous mixfix term
+Error (18,1) ambiguous mixfix term
 	A (a :: [])
 	A ([ a ])
 	A [ a ]
 	A [ a ]
 	A[a]
 B [a]
-Error: in line 19 at char 1: ambiguous mixfix term
+Error (19,1) ambiguous mixfix term
 	B [ a ]
 	B [ a ]
 A [a] A [a] p
-Error: in line 20 at char 1: ambiguous mixfix term
+Error (20,1) ambiguous mixfix term
 	A ([ a ] (A ([ a ] p)))
 	A ([ a ] (A (a :: []) p))
 	A ([ a ] (A ([ a ]) p))
 	A [ a ] (A ([ a ] p))
 	A ([ a ] A [ a ] p)
 A [a] !
-Error: in line 21 at char 1: ambiguous mixfix term
+Error (21,1) ambiguous mixfix term
 	A (a :: []) !
 	A ([ a ]) !
 	A [ a ] !
 	A [ a ] !
 	A[a] !
 [[[a]]]
-Error: in line 22 at char 1: ambiguous mixfix term
+Error (22,1) ambiguous mixfix term
 	((a :: []) :: []) :: []
 	[ ((a :: []) :: []) ]
 	([ (a :: []) ]) :: []
 	[ ([ (a :: []) ]) ]
 	(([ a ]) :: []) :: []
 [b, A [a]]
-Error: in line 23 at char 1: ambiguous mixfix term
+Error (23,1) ambiguous mixfix term
 	b :: ((A (a :: [])) :: [])
 	b :: ((A ([ a ])) :: [])
 	b :: (A [ a ] :: [])
 	b :: (A [ a ] :: [])
 	b :: (A[a] :: [])
 b + [a] + b
-Error: in line 24 at char 1: ambiguous mixfix term
+Error (24,1) ambiguous mixfix term
 	b + ([ a ] (+ b))
 	b + (a :: []) + b
 	b + ([ a ]) + b
 [a + b]
-Error: in line 25 at char 1: ambiguous mixfix term
+Error (25,1) ambiguous mixfix term
 	(a + b) :: []
 	[ (a + b) ]
 A ([a])
-Error: in line 26 at char 1: ambiguous mixfix term
+Error (26,1) ambiguous mixfix term
 	A ([a])
 	A([a])
-Error: in line 26 at char 3: ambiguous mixfix term
+Error (26,3) ambiguous mixfix term
 	a :: []
 	[ a ]
 - [a]
-Error: in line 27 at char 1: ambiguous mixfix term
+Error (27,1) ambiguous mixfix term
 	- (a :: [])
 	- ([ a ])
 b + A [a]
-Error: in line 28 at char 1: ambiguous mixfix term
+Error (28,1) ambiguous mixfix term
 	b + (A (a :: []))
 	b + (A ([ a ]))
 	b + A [ a ]
 	b + A [ a ]
 	b + A[a]
 [a] !
-Error: in line 29 at char 1: ambiguous mixfix term
+Error (29,1) ambiguous mixfix term
 	(a :: []) !
 	([ a ]) !
