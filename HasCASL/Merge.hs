@@ -69,20 +69,8 @@ instance Mergeable ClassInfo where
 			else fail "merge: non-equal super classes"
 
 instance Mergeable Kind where
-    merge k1 k2 = if sameKind k1 k2 then return k1
+    merge k1 k2 = if k1 == k2 then return k1
 		  else fail "merge: non-equal kinds"
-
-sameClass :: Class -> Class -> Bool
-sameClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
-sameClass (Downset t1) (Downset t2) = t1 == t2
-sameClass _ _ = False
-
-sameKind :: Kind -> Kind -> Bool
-sameKind (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    sameClass c1 c2 && v1 == v2
-sameKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
-    sameKind p1 p2 && sameKind c1 c2
-sameKind _ _ = False
 
 instance Mergeable Class where
     merge c1@(Downset t1) (Downset t2) =

@@ -96,10 +96,10 @@ data Type = TypeName TypeId Kind Int  -- analysed (Int for internal use)
           -- pos crosses 
           | FunType Type Arrow Type [Pos]
           -- pos arrow
-            deriving (Show, Eq)
+            deriving (Show)
 
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
-             deriving (Show, Eq)
+             deriving (Show, Eq, Ord)
 
 data Pred = IsIn ClassId [Type]
               deriving (Show, Eq)
@@ -131,7 +131,7 @@ data PredItem = PredDecl [OpId] TypeScheme [Pos]
                -- pos "("s, ")"s, "<=>"
               deriving (Show, Eq)
 
-data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq)
+data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq, Ord)
 
 data OpAttr = BinOpAttr BinOpAttr [Pos] 
 	    | UnitOpAttr Term [Pos] deriving (Show, Eq)
@@ -251,18 +251,18 @@ data GenVarDecl = GenVarDecl VarDecl
 -- class
 -- ----------------------------------------------------------------------------
 
-data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
+data Variance = CoVar | ContraVar | InVar deriving (Show, Eq, Ord)
 
 data Kind = ExtClass Class Variance [Pos]
 	     -- pos "+" or "-" 
 	    | KindAppl Kind Kind [Pos]
 	    -- pos "->" 
-	    deriving (Show, Eq)
+	    deriving (Show)
 
 data Class = Downset Type   -- not parsed directly
 	   | Intersection { iclass :: Set ClassId, classPos :: [Pos] }  
 	   -- pos "(", ","s, ")"
-	     deriving (Show, Eq)
+	     deriving (Show)
 
 universe :: Class
 universe = Intersection empty []
@@ -287,3 +287,29 @@ type UninstOpId = Id
 
 type Var = Id
 type ClassId = Id -- TOKEN-ID (one token with compound list, like CASL sorts)
+
+-- ----------------------------------------------------------------------------
+-- equality instances while ignoring positions
+-- ----------------------------------------------------------------------------
+
+instance Eq Class where
+    Intersection i1 _ == Intersection i2 _ = i1 == i2
+    Downset t1 == Downset t2 = t1 == t2
+    _ == _ = False
+
+instance Eq Kind where
+    ExtClass c1 v1 _ == ExtClass c2 v2 _ = (c1, v1) == (c2, v2)
+    KindAppl p1 c1 _ == KindAppl p2 c2 _ = (p1, c1) == (p2, c2)
+    _ == _ = False
+
+instance Eq Type where 
+    TypeName i1 k1 v1 == TypeName i2 k2 v2 = (i1, k1, v1) == (i2, k2, v2)
+    TypeAppl f1 a1 == TypeAppl f2 a2 = (f1, a1) == (f2, a2)
+    TypeToken t1 == TypeToken t2 = t1 == t2
+    BracketType b1 l1 _ == BracketType b2 l2 _ = (b1, l1) == (b2, l2)
+    KindedType t1 k1 _ == KindedType t2 k2 _ = (t1, k1) == (t2, k2)
+    MixfixType l1 == MixfixType l2 = l1 == l2
+    LazyType t1 _ == LazyType t2 _ = t1 == t2 
+    ProductType l1 _ == ProductType l2 _ = l1 == l2
+    FunType f1 a1 g1 _ == FunType f2 a2 g2 _ = (f1, a1, g1) == (f2, a2, g2)
+    _ == _ = False

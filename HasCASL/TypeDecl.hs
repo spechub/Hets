@@ -11,7 +11,6 @@ module HasCASL.TypeDecl where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.Merge
 import Common.AS_Annotation(item)
 import HasCASL.ClassAna
 import qualified Common.Lib.Map as Map
@@ -24,7 +23,6 @@ import CASL.MixfixParser(getTokenList, expandPos)
 import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 
-import HasCASL.PrintAs()
 import Common.Result
 import Common.PrettyPrint
 import HasCASL.TypeAna
@@ -46,7 +44,7 @@ addTypeKind d i k =
 			 (TypeInfo k [] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  do checkKinds (posOfId i) k ok
-		     if any (sameKind k) (ok:ks)
+		     if any (==k) (ok:ks)
 			then addDiag $ mkDiag Warning 
 				 "redeclared type" i
 				 else putTypeMap $ Map.insert i 
