@@ -314,14 +314,14 @@ ghci:
 ### CASL parser
 capa: CASL/capa
 
-CASL/capa: Common/*.hs CASL/*.hs
+CASL/capa: CASL/capa.hs Common/*.hs CASL/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
-HasCASL/hacapa: Common/*.hs HasCASL/*.hs 
+HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
