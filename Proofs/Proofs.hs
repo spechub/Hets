@@ -764,7 +764,8 @@ calculateMorphismOfPathWithStart _ (_,p) = calculateMorphismOfPath p
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> DGraph -> Node -> Result (G_sign,G_l_sentence_list) 
 computeTheory libEnv dg n = do
-  let  paths = getAllLocGlobDefPathsTo dg n []
+  let  paths = reverse $ getAllLocGlobDefPathsTo dg n []
+         -- reverse needed to have a "bottom up" ordering
   mors <- maybeToResult nullPos "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg) paths
   sens <- maybeToResult nullPos "Could not calculate sentence list of node"

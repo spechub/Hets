@@ -327,14 +327,17 @@ isIdComorphism (Comorphism cid) =
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
-    if language_name (targetLogic cid1) == 
-       language_name (sourceLogic cid2) 
+   case coerce (targetLogic cid1) (sourceLogic cid2) (targetSublogic cid1) of
+    Just sl1 -> 
+      if sl1 <= sourceSublogic cid2
        then case (isIdComorphism cm1,isIdComorphism cm2) of
          (True,_) -> return cm2
          (_,True) -> return cm1
          _ ->  return $ Comorphism (CompComorphism cid1 cid2)
-       else fail ("Cannot compose comorphism "++language_name cid1++
-		  " with "++language_name cid2)
+       else fail ("Sublogic mismatch in composition of "++language_name cid1++
+		  " and "++language_name cid2)
+    Nothing -> fail ("Logic mismatch in composition of "++language_name cid1++
+	             " and "++language_name cid2)
 
 -- | Logic graph
 data LogicGraph = LogicGraph {
@@ -607,15 +610,23 @@ flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph -> AnyLogic -> [AnyComorphism]
 findComorphismPaths lg (Logic lid) = 
-  iterateComp (0::Int) [Comorphism (IdComorphism lid)]
+  List.nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
   where
-  coMors = comorphisms lg
+  idc = Comorphism (IdComorphism lid)
+  coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 5
-  iterateComp n l =
+  iterateComp n (l::[(AnyComorphism,[AnyComorphism])]) =
     if n>5 || l==newL then newL else iterateComp (n+1) newL
     where 
     newL = List.nub (l ++ (concat (map extend l)))
-    extend coMor = catMaybes $ map (compComorphism coMor) $ Map.elems $ coMors
+    -- extend comorphism list in all directions, but no cylces
+    extend (coMor,comps::[AnyComorphism]) =  
+       let addCoMor c = 
+            case compComorphism coMor c of
+              Nothing -> Nothing
+              Just c1 -> Just (c1,c:comps)
+        in catMaybes $ map addCoMor $ filter (not . (`elem` comps)) $ coMors
+
 
 ------------------------------------------------------------------
 -- Provers

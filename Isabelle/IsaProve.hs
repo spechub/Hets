@@ -11,6 +11,11 @@ Portability :  portable
    Interface for Isabelle theorem prover.
 -}
 
+{- todo
+  remove axioms/theorems keyword when formula list is empty
+  datatypes
+-}
+
 module Isabelle.IsaProve where
 
 import Logic.Prover
@@ -39,13 +44,14 @@ isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence]
               -> IO([Proof_status Sentence ()])
 isaProve thName (sig,axs) goals = do
   let disAxs = disambiguateSens [] $ nameSens $ transSens axs
-      showAxs = concat $ map ((++"\n") . showSen) disAxs
+      showAxs = if null disAxs then ""
+                 else "axioms\n"++(concat $ map ((++"\n") . showSen) disAxs)
       showGoals = concat 
          $ map (("theorem "++) . (++"\noops\n\n") . showSen) 
                   $ disambiguateSens disAxs $ nameSens $ transSens goals
       getFileName = reverse . fst . break (=='/') . reverse
       showTheory = "theory " ++ getFileName thName ++ " = " 
-                   ++ showPretty sig "\n\naxioms\n" 
+                   ++ showPretty sig "\n\n" 
                    ++ showAxs ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
   writeFile (thName++".thy") showTheory

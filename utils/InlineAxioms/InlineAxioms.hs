@@ -52,6 +52,7 @@ import Common.Result
 import System
 import System.Console.GetOpt
 import Data.List
+import Data.Char
 import IO
 
 import Comorphisms.LogicList
@@ -80,7 +81,7 @@ deletePos s = reverse (deletePos1 s "")
 -- We rely on show for Ids giving just strings, such that these are
 -- recognized as Haskell ids
 listComp :: String -> HsExp
-listComp s = lcHsExp expr
+listComp s = lcHsExp 0 expr
   where
   modStr = "module M where\nf="++deletePos s
   expr = case parseHsSource modStr of
@@ -183,31 +184,32 @@ parseInline (HsModule modu expr imp decls) =
 -- transformation of x_i to list comprehension x_i<-x
 
 lcHsFieldUpdate :: HsFieldUpdate -> HsFieldUpdate
-lcHsFieldUpdate (HsFieldUpdate qn expr) = HsFieldUpdate qn (lcHsExp expr)
+lcHsFieldUpdate (HsFieldUpdate qn expr) = HsFieldUpdate qn (lcHsExp 0 expr)
 
 lcHsStmt :: HsStmt -> HsStmt
-lcHsStmt (HsGenerator loc pat expr) = HsGenerator loc pat (lcHsExp expr)
-lcHsStmt (HsQualifier expr) = HsQualifier (lcHsExp expr)
+lcHsStmt (HsGenerator loc pat expr) = HsGenerator loc pat (lcHsExp 0 expr)
+lcHsStmt (HsQualifier expr) = HsQualifier (lcHsExp 0 expr)
 lcHsStmt (HsLetStmt decls) = HsLetStmt (map lcHsDecl decls)
 
 lcHsGuardedAlt :: HsGuardedAlt -> HsGuardedAlt
 lcHsGuardedAlt (HsGuardedAlt loc expr1 expr2) =
-  HsGuardedAlt loc (lcHsExp expr1) (lcHsExp expr2)
+  HsGuardedAlt loc (lcHsExp 0 expr1) (lcHsExp 0 expr2)
 
 lcHsGuardedAlts :: HsGuardedAlts -> HsGuardedAlts
-lcHsGuardedAlts (HsUnGuardedAlt expr) = HsUnGuardedAlt (lcHsExp expr)
+lcHsGuardedAlts (HsUnGuardedAlt expr) = HsUnGuardedAlt (lcHsExp 0 expr)
 lcHsGuardedAlts (HsGuardedAlts alts) = HsGuardedAlts (map lcHsGuardedAlt alts)
 
 lcHsAlt :: HsAlt -> HsAlt
 lcHsAlt (HsAlt loc pat alts decls) =
   HsAlt loc pat (lcHsGuardedAlts alts) (map lcHsDecl decls)
 
--- look for a variable of form x_i and return it as a string, if present
+-- look for a variable of form x_i or x_..._i and return it as a string, 
+-- if present. Also return the number of underscores
 
-indexVar :: HsExp -> [String]
+indexVar :: HsExp -> [(String,Int)]
 indexVar (HsVar (UnQual (HsIdent v))) =
   case reverse v of
-    _:'_':_ -> [v]
+    i:'_':_ -> [(v,ord(i)-ord('h'))] 
     _ -> []
 -- special treatment of CASL Var_decl's, since these should not count
 -- as enumerated lists
@@ -218,37 +220,42 @@ indexVar (HsApp expr1 expr2) =
   indexVar expr1++indexVar expr2
 indexVar (HsTuple exprs) = concat (map indexVar exprs)
 indexVar (HsParen expr) = indexVar expr
+indexVar (HsList exprs) = 
+  [(v,n-1) | e <- exprs, (v,n) <- indexVar e, n>1]  
 indexVar _ = []
 
-lcHsExp :: HsExp -> HsExp
-lcHsExp (HsInfixApp expr1 expr2 expr3) =
-  HsInfixApp (lcHsExp expr1) (lcHsExp expr2) (lcHsExp expr3)
-lcHsExp (HsApp expr1 expr2) =
-  HsApp (lcHsExp expr1) (lcHsExp expr2)
-lcHsExp (HsNegApp expr) =
-  HsNegApp (lcHsExp expr)
-lcHsExp (HsLambda loc pats expr) =
-  HsLambda loc pats (lcHsExp expr)
-lcHsExp (HsLet decls expr) =
-  HsLet (map lcHsDecl decls) (lcHsExp expr)
-lcHsExp (HsIf expr1 expr2 expr3) =
-  HsIf (lcHsExp expr1) (lcHsExp expr2) (lcHsExp expr3)
-lcHsExp (HsCase expr alts) = HsCase (lcHsExp expr) (map lcHsAlt alts)
-lcHsExp (HsDo stmts) = HsDo (map lcHsStmt stmts)
-lcHsExp (HsTuple exprs) = HsTuple (map lcHsExp exprs)
-lcHsExp (expr@(HsList [])) = expr
-lcHsExp (HsList (exprs@(expr:_))) = 
+lcHsExp :: Int -> HsExp -> HsExp
+lcHsExp n (HsInfixApp expr1 expr2 expr3) =
+  HsInfixApp (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (HsApp expr1 expr2) =
+  HsApp (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsNegApp expr) =
+  HsNegApp (lcHsExp n expr)
+lcHsExp n (HsLambda loc pats expr) =
+  HsLambda loc pats (lcHsExp n expr)
+lcHsExp n (HsLet decls expr) =
+  HsLet (map lcHsDecl decls) (lcHsExp n expr)
+lcHsExp n (HsIf expr1 expr2 expr3) =
+  HsIf (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (HsCase expr alts) = HsCase (lcHsExp n expr) (map lcHsAlt alts)
+lcHsExp _ (HsDo stmts) = HsDo (map lcHsStmt stmts)
+lcHsExp n (HsTuple exprs) = HsTuple (map (lcHsExp n) exprs)
+lcHsExp _ (expr@(HsList [])) = expr
+lcHsExp (n+1) (HsList exprs) = HsList (map (lcHsExp n) exprs)
+lcHsExp 0 (HsList (exprs@(expr:_))) = 
   case nub $ indexVar expr of
-    [] -> HsList (map lcHsExp exprs)
-    [v] -> HsListComp (lcHsExp expr) [HsGenerator 
+    [] -> HsList (map (lcHsExp 0) exprs)
+    [(v,n)] -> HsListComp (lcHsExp (max (n-1) 0) expr) [HsGenerator 
+                 (SrcLoc 0 0) 
+                 (HsPVar $ HsIdent $ v) 
+                 (HsVar $ UnQual $ HsIdent $ v0 $ v)
+                ]
+    vs@((_,n):_) -> 
+       let vs' = map fst vs
+        in HsListComp (lcHsExp (max (n-1) 0) expr) [HsGenerator 
               (SrcLoc 0 0) 
-              (HsPVar $ HsIdent $ v) 
-              (HsVar $ UnQual $ HsIdent $ v0 $ v)
-            ]
-    vs -> HsListComp (lcHsExp expr) [HsGenerator 
-              (SrcLoc 0 0) 
-              (HsPTuple (map (HsPVar . HsIdent) vs)) 
-              (mkZip (map (HsVar . UnQual . HsIdent . v0) vs))
+              (HsPTuple (map (HsPVar . HsIdent) vs')) 
+              (mkZip (map (HsVar . UnQual . HsIdent . v0) vs'))
             ]
                -- The list variable v0 is just v without index
   where v0 v = reverse $ drop 2 $ reverse v
@@ -258,27 +265,27 @@ lcHsExp (HsList (exprs@(expr:_))) =
                 l
           where ext = if n==2 then "" else show n
                 n = length l
-lcHsExp (HsParen expr) = HsParen (lcHsExp expr)
-lcHsExp (HsLeftSection expr1 expr2) = HsLeftSection (lcHsExp expr1) (lcHsExp expr2)
-lcHsExp (HsRightSection expr1 expr2) =  HsRightSection (lcHsExp expr1) (lcHsExp expr2)
-lcHsExp (HsRecConstr qn fields) = HsRecConstr qn (map lcHsFieldUpdate fields)
-lcHsExp (HsRecUpdate expr fields) = 
-  HsRecUpdate (lcHsExp expr) (map lcHsFieldUpdate fields)
-lcHsExp (HsEnumFrom expr) = HsEnumFrom (lcHsExp expr)
-lcHsExp (HsEnumFromTo expr1 expr2) = HsEnumFromTo (lcHsExp expr1) (lcHsExp expr2)
-lcHsExp (HsEnumFromThen expr1 expr2) = HsEnumFromThen (lcHsExp expr1) (lcHsExp expr2)
-lcHsExp (HsEnumFromThenTo expr1 expr2 expr3) = 
-  HsEnumFromThenTo (lcHsExp expr1) (lcHsExp expr2) (lcHsExp expr3)
-lcHsExp (HsListComp expr stmts) = HsListComp (lcHsExp expr) (map lcHsStmt stmts)
-lcHsExp (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (lcHsExp expr) qt
-lcHsExp expr = expr
+lcHsExp n (HsParen expr) = HsParen (lcHsExp n expr)
+lcHsExp n (HsLeftSection expr1 expr2) = HsLeftSection (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsRightSection expr1 expr2) =  HsRightSection (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp _ (HsRecConstr qn fields) = HsRecConstr qn (map lcHsFieldUpdate fields)
+lcHsExp n (HsRecUpdate expr fields) = 
+  HsRecUpdate (lcHsExp n expr) (map lcHsFieldUpdate fields)
+lcHsExp n (HsEnumFrom expr) = HsEnumFrom (lcHsExp n expr)
+lcHsExp n (HsEnumFromTo expr1 expr2) = HsEnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsEnumFromThen expr1 expr2) = HsEnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsEnumFromThenTo expr1 expr2 expr3) = 
+  HsEnumFromThenTo (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (HsListComp expr stmts) = HsListComp (lcHsExp n expr) (map lcHsStmt stmts)
+lcHsExp n (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (lcHsExp n expr) qt
+lcHsExp _ expr = expr
 
 lcHsGuardedRhs :: HsGuardedRhs ->HsGuardedRhs
 lcHsGuardedRhs (HsGuardedRhs loc expr1 expr2) =
-  HsGuardedRhs loc (lcHsExp expr1) (lcHsExp expr2)
+  HsGuardedRhs loc (lcHsExp 0 expr1) (lcHsExp 0 expr2)
 
 lcHsRhs :: HsRhs -> HsRhs
-lcHsRhs (HsUnGuardedRhs expr) = HsUnGuardedRhs (lcHsExp expr)
+lcHsRhs (HsUnGuardedRhs expr) = HsUnGuardedRhs (lcHsExp 0 expr)
 lcHsRhs (HsGuardedRhss rhss) = HsGuardedRhss (map lcHsGuardedRhs rhss)
 
 lcHsMatch :: HsMatch -> HsMatch

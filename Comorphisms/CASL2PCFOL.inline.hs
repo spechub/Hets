@@ -15,6 +15,7 @@ Portability :  portable
    todo
    predicate_monotonicity  (wie function_monotonicty)
    encodeFORMULA
+   treat inj(u_i) separately
 -}
 
 module Comorphisms.CASL2PCFOL where
@@ -147,9 +148,10 @@ generateAxioms sig =
           |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)] ++
 --s_i -> w_i
    [inlineAxioms CASL
-    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i  \
+    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i; w_j  \
     \ op f:w'_i->s' ; f:w''_i->s'' ; inj: s' -> s ; inj: s''->s ; inj: w_i->w'_i ; inj:w_i -> w''_i  \
-    \ forall u_i : w_i . inj((op f:w'_i->s')(inj(u_i)))=inj((op f:w''_i->s'')(inj(u_i)))       %(function_monotonicity)%"
+    \ var u_j : w_i   \
+    \ forall u_i : w_i . inj((op f:w'_i->s')(inj(u_j)))=inj((op f:w''_i->s'')(inj(u_j)))       %(function_monotonicity)%"
     
           |(f,l)<- ftTL,t1<-l,t2<-l,length(opArgs t1)==length(opArgs t2),
            t1<t2,let w'=(opArgs t1),let w''=(opArgs t2),let s'=(opRes t1),let s''=(opRes t2),

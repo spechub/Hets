@@ -1,3 +1,8 @@
+ {- list of datatype definitions
+    each of these consists of a list of (mututally recursive) datatypes
+    each datatype consists of its name (Typ) and a list of constructors
+    each constructor consists of its name (String) and list of argument types
+ -}                      
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -153,6 +158,12 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                  }
              deriving (Eq)
 
+
+ {- list of datatype definitions
+    each of these consists of a list of (mututally recursive) datatypes
+    each datatype consists of its name (Typ) and a list of constructors
+    each constructor consists of its name (String) and list of argument types
+ -}                      
 type DataTypeTab = [DataTypeTabEntry]
 type DataTypeTabEntry = [(Typ,[DataTypeAlt])]
 type DataTypeAlt = (String,[Typ])

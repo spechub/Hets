@@ -38,6 +38,7 @@ import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
 import Comorphisms.CASL2PCFOL
+import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.HasCASL2HasCASL
@@ -67,7 +68,7 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism HasCASL2IsabelleHOL]
 
 comorphismList :: [AnyComorphism]
-comorphismList = inclusionList ++ [Comorphism CASL2PCFOL]
+comorphismList = inclusionList ++ [Comorphism CASL2PCFOL, Comorphism PCFOL2FOL]
 
 logicGraph :: LogicGraph
 logicGraph = 

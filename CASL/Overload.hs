@@ -341,7 +341,11 @@ minExpTerm_simple sign var = do
             = Set.size (Set.intersection ss (subsortsOf s sign)) == 1
         eq                       = xeq_TUPLE sign
         pair_with_id            :: SORT -> (TERM f, SORT)
-        pair_with_id sort        = ((Qual_var var sort []), sort)
+        pair_with_id sort | isVar sort = ((Qual_var var sort []), sort)
+                          | otherwise = (Application (Qual_op_name name (Total_op_type [] sort [] )[]) [] [],sort)  -- should deal with partial constants as well!!!!
+        isVar                   :: SORT -> Bool
+        isVar s = s `Set.member` 
+                      maybe Set.empty id (Map.lookup var (varMap sign))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Qual_var Term

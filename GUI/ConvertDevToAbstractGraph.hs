@@ -9,13 +9,16 @@ Portability :  non-portable (imports Logic)
 
    Conversion of development graphs from Logic.DevGraph
    to abstract graphs of the graph display interface
+-}
 
+{-
    todo:
    hiding of internal nodes:
     internal nodes that are not between named nodes should be kept
    display inclusions and inter-logic links in special colour
    try different graph layout algorithms for daVinci (dot?)
    close program when all windows are closed
+   issue warning when theory cannot be flattened
 -}
 
 module GUI.ConvertDevToAbstractGraph where

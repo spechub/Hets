@@ -167,7 +167,7 @@ showGraph file opt env =
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
             GUI.AbstractGraphView.redisplay gid gv
-            putIfVerbose opt 1 "Hit Return when finished"
+            --putIfVerbose opt 1 "Hit Return when finished"
             getLine
             return ()
         Nothing -> putIfVerbose opt 1
