@@ -29,17 +29,17 @@ data A_t = A_t
 _2_S_B_2 :: ((), ()) -> ()
 _2_S_B_2 = undefined
  
-_2_L_R_G_2 :: ((), ()) -> ()
-_2_L_R_G_2 = undefined
+_2_L_E_G_2 :: ((), ()) -> ()
+_2_L_E_G_2 = undefined
  
-_2_R_2 :: (a, a) -> ()
-_2_R_2 = undefined
+_2_E_2 :: (a, a) -> ()
+_2_E_2 = undefined
  
-_2_R_G_2 :: ((), ()) -> ()
-_2_R_G_2 = undefined
+_2_E_G_2 :: ((), ()) -> ()
+_2_E_G_2 = undefined
  
-_2_Re_R_2 :: (a, a) -> ()
-_2_Re_R_2 = undefined
+_2_Ee_E_2 :: (a, a) -> ()
+_2_Ee_E_2 = undefined
  
 _2_B_S_2 :: ((), ()) -> ()
 _2_B_S_2 = undefined
