@@ -1,6 +1,6 @@
 # Makefile
 # $Header$
-# Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+# Author: (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2005
 # Year:   2004
 
 # This Makefile will compile the new hets system and provides also
@@ -23,18 +23,18 @@ CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
     Haskell/Hatchet Hatchet Taxonomy $(PFE_PATHS)
 
-## set ghc imports properly for your system
-GHC_IMPORTS =`$(HC) --print-libdir`/imports
-DRIFT_ENV = \
-  DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
-
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
-empty:=
-space:= $(empty) $(empty)
+empty = 
+space = $(empty) $(empty)
+
+## set ghc imports properly for your system
+GHC_IMPORTS = `$(HC) --print-libdir`/imports
+DRIFT_ENV = \
+    DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
-  /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
+    /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
@@ -52,17 +52,17 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs Common/ListUtils.hs \
     CASL/StaticAna.hs Modal/AS_Modal.hs Modal/Parse_AS.hs \
     Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
-HC         = ghc
-PERL       = perl
-HAPPY      = happy -sgca
-DRIFT      = utils/DrIFT
+HC = ghc
+PERL = perl
+HAPPY = happy -sgca
+DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
-HADDOCK    = haddock
-CPPP       = cpp 
+HADDOCK = haddock
+CPPP = cpp 
 
-HC_WARN    = -Wall
-HC_FLAGS   = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
-             -fallow-overlapping-instances -fallow-undecidable-instances 
+HC_WARN = -Wall
+HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
+    -fallow-overlapping-instances -fallow-undecidable-instances 
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
@@ -71,10 +71,10 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
 
-UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
+UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
-             -package uni-server -DUNI_PACKAGE
+    -package uni-server -DUNI_PACKAGE
 
 # some modules from uni for haddock
 # if uni/server is included also HaXml sources are needed
@@ -85,22 +85,22 @@ uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
 endif
 
-PFE_TOOLDIR := $(wildcard ../programatica/tools)
+PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
-      base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
-      base/transforms base/transforms/Deriving property \
-      property/syntax property/AST property/transforms \
-      property/TI property/defs property/parse2 property/parse2/Parser
+    base/parse2/LexerGen base/parse2/LexerSpec base/tests/HbcLibraries \
+    base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
+    base/transforms base/transforms/Deriving property \
+    property/syntax property/AST property/transforms \
+    property/TI property/defs property/parse2 property/parse2/Parser
 
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
 pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
-happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
-  $(PFE_TOOLDIR)/base/parse2/Lexer/HsLex.hs
+happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
-LEX_DIR := $(PFE_TOOLDIR)/base/parse2/Lexer
+LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	$< > $@
@@ -114,33 +114,34 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
               $@.hs -o $@
 
 logics += Haskell
-derived_sources += Haskell/PreludeString.hs
+derived_sources += Haskell/PreludeString.hs $(LEX_DIR)/HsLex.hs \
+    $(LEX_DIR)Gen/HsLexerGen
+
 APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
-                      Haskell/ProgramaticaPrelude.hs
+    Haskell/ProgramaticaPrelude.hs
 
 ## rule for appendHaskellPreludeString
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
         $(APPENDPRELUDESTRING)
 	$(APPENDPRELUDESTRING) < $< > $@
 
-Ast_Haskell_files := HsDeclStruct HsExpStruct HsFieldsStruct \
-          HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
-          HsModule HsName HsLiteral HsIdent
+Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
+    HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
+    HsModule HsName HsLiteral HsIdent
 
-Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
-      base/defs/UniqueNames base/Modules/TypedIds \
-      base/TI/TiKinds \
-      base/parse2/SourceNames base/syntax/SyntaxRec \
-      property/syntax/PropSyntaxStruct
+Other_PFE_files = property/AST/HsPropStruct base/defs/PNT \
+    base/defs/UniqueNames base/Modules/TypedIds base/TI/TiKinds \
+    base/parse2/SourceNames base/syntax/SyntaxRec \
+    property/syntax/PropSyntaxStruct
 
 Haskell_files = $(addsuffix .hs, \
-	$(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
-	$(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
+    $(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
+    $(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
 
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
 	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
-             $(Haskell_files)
+            $(Haskell_files)
 endif
 happy_files += Haskell/Hatchet/HsParser.hs
 
@@ -150,14 +151,14 @@ happy_files += Haskell/Hatchet/HsParser.hs
 ### Profiling, do an 'gmake real_clean; gmake'
 ### and comment out HC_PACKAGE variable definition above.
 ### Comment in the following line for switching on profiling. 
-#HC_PROF    = -prof -auto-all 
+#HC_PROF = -prof -auto-all 
 
-HCI_OPTS    = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
-HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
-DRIFT_OPTS  = +RTS -K10m -RTS
+HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
+HC_OPTS = $(HCI_OPTS) $(HC_PROF)
+DRIFT_OPTS = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
+TESTDIRS = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 
 
 ####################################################################
@@ -170,13 +171,16 @@ TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 #else
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs \
-              Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
+    Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
+
 SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
+
 sources = hets.hs $(filter-out $(non_sources), \
-          $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
+    $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
+
 #endif
 
-objects    = $(sources:%.hs=%.o)
+objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
@@ -185,34 +189,31 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
-atc_files := Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
-                Common/AS_Annotation.der.hs \
-                Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
-                Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-                Static/DevGraph.hs \
-		Proofs/Proofs.hs \
-                Isabelle/IsaSign.hs 
+atc_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
+    Common/AS_Annotation.der.hs \
+    Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
+    Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
+    Static/DevGraph.hs Proofs/Proofs.hs Isabelle/IsaSign.hs 
 
 atc_der_files = $(foreach file, $(atc_files), \
-                ATC/$(basename $(basename $(notdir $(file)))).der.hs)
+    ATC/$(basename $(basename $(notdir $(file)))).der.hs)
 
-CASL_files := CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
-              CASL/AS_Basic_CASL.der.hs 
+CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
+    CASL/AS_Basic_CASL.der.hs 
 
-HasCASL_files := HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
-                 HasCASL/Sublogic.hs \
+HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
+    HasCASL/Sublogic.hs \
 
-Modal_files := Modal/AS_Modal.hs Modal/ModalSign.hs
-CoCASL_files := CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
-COL_files := COL/AS_COL.hs COL/COLSign.hs
-CspCASL_files := CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
+Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
+CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
+COL_files = COL/AS_COL.hs COL/COLSign.hs
+CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 
-Hatchet_files := Haskell/Hatchet/AnnotatedHsSyn.hs \
-                Haskell/Hatchet/MultiModuleBasics.hs \
-                Haskell/Hatchet/HsSyn.hs \
-                Haskell/Hatchet/Representation.hs \
-                Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-                Haskell/Hatchet/Env.hs Hatchet/HatParser.hs
+Hatchet_files = Haskell/Hatchet/AnnotatedHsSyn.hs \
+    Haskell/Hatchet/MultiModuleBasics.hs Haskell/Hatchet/HsSyn.hs \
+    Haskell/Hatchet/Representation.hs Haskell/Hatchet/Class.hs \
+    Haskell/Hatchet/KindInference.hs Haskell/Hatchet/Env.hs \
+    Hatchet/HatParser.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -221,12 +222,12 @@ generated_rule_files = $(atc_der_files) $(atc_logic_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
-                     Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs
+    Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs
 
-gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
+gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-                  $(inline_axiom_files) Modal/ModalSystems.hs
+    $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DFiniteMap.hs Common/DynamicUtils.hs \
@@ -234,34 +235,32 @@ cpp_sources = Common/DFiniteMap.hs Common/DynamicUtils.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
-
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
-          $(wildcard utils/DrIFT-src/*.lhs) \
-          $(wildcard utils/GenerateRules/*.hs) \
-          $(wildcard utils/InlineAxioms/*.hs) \
-          $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
-	  $(genrule_header_files) $(generated_rule_files) \
-          Modal/GeneratePatterns.inline.hs \
-          Haskell/PreludeString.append.hs \
-          Haskell/ProgramaticaPrelude.hs hxt/HXT.hs hxt/Net.hs \
-	  $(patsubst %.hs,%.der.hs,$(drifted_files))
+    $(wildcard utils/DrIFT-src/*.lhs) \
+    $(wildcard utils/GenerateRules/*.hs) \
+    $(wildcard utils/InlineAxioms/*.hs) \
+    $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
+    $(genrule_header_files) $(generated_rule_files) \
+    Modal/GeneratePatterns.inline.hs \
+    Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
+    hxt/HXT.hs hxt/Net.hs $(patsubst %.hs, %.der.hs, $(drifted_files))
 
 # this variable holds the modules that should be documented
 doc_sources = $(filter-out $(nondoc_sources), $(sources)) \
-        $(patsubst %.hs, %.hspp, $(cpp_sources)) $(uni_sources)
+    $(patsubst %.hs, %.hspp, $(cpp_sources)) $(uni_sources)
 
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
-                   Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
-tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
+    Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
 
+tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 ####################################################################
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
-         lib_clean distclean check capa hacapa h2h clean_genRules genRules \
-         taxonomy count doc apache_doc post_doc4apache \
-         derivedSources install_hets install release
+    lib_clean distclean check capa hacapa h2h clean_genRules genRules \
+    taxonomy count doc apache_doc post_doc4apache \
+     derivedSources install_hets install release
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 #.PRECIOUS: sources_hetcats.mk
@@ -306,7 +305,7 @@ taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 # !!Beware this is somewhat instable, because it uses an absolute path!!
 hetcats.TAGS: $(sources) 
 	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
-	  $(sources); mv TAGS $@; mv tags hetcats.tags
+	    $(sources); mv TAGS $@; mv tags hetcats.tags
 
 ###############################
 ### count lines of code
@@ -319,8 +318,8 @@ doc: docs/index.html
 # generate haddock documentation with links to sources
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h -v \
-          -i docs/base.haddock -i docs/parsec.haddock -s ../ \
-          -t 'hets -- a heterogenous Specification (CASL) tool set'
+            -i docs/base.haddock -i docs/parsec.haddock -s ../ \
+            -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 # sources are not copied here
 apache_doc:
@@ -344,16 +343,16 @@ derivedSources: $(derived_sources)
 
 utils/DrIFT: $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
-           strip ../DrIFT)
+            strip ../DrIFT)
 
 utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
-              GenerateRules.hs -o ../genRules && strip ../genRules)
+            $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
+                GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) \
-                          -i../.. -o $(INLINEAXIOMS)
+            -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
 release: 
@@ -364,13 +363,13 @@ release:
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
 	if [ -d ../programatica ] ; then \
-          mkdir programatica; \
-          ln -s ../../programatica/tools programatica/tools ; fi
+            mkdir programatica; \
+            ln -s ../../programatica/tools programatica/tools ; fi
 	(cd HetCATS; $(MAKE) derivedSources; \
-           $(MAKE) clean; ./clean.sh; \
-           find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
-           $(RM) clean.*; mv Makefile Makefile.orig; \
-           mv ReleaseMakefile Makefile)
+            $(MAKE) clean; ./clean.sh; \
+            find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
+            $(RM) clean.*; mv Makefile Makefile.orig; \
+            mv ReleaseMakefile Makefile)
 	tar cvf HetCATS.tar HetCATS
 
 install-hets:
@@ -388,7 +387,7 @@ install: hets-opt install-hets
 genRules: $(generated_rule_files)
 
 $(atc_der_files): $(atc_files) $(genrule_header_files) utils/genRules
-	$(foreach file,$(atc_files),$(gen_atc_files))
+	$(foreach file, $(atc_files), $(gen_atc_files))
 
 CASL/ATC_CASL.der.hs: $(CASL_files) utils/genRules
 	utils/genRules -r $(rule) -o CASL $(CASL_files)
@@ -410,14 +409,14 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 
 Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) utils/genRules
 	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
-             $(Hatchet_files)
+            $(Hatchet_files)
 
-rule:= ShATermConvertible
+rule = ShATermConvertible
 
 gen_atc_files = \
   if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; \
   then utils/genRules -r $(rule) -o ATC -h \
-          ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
+      ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
   else utils/genRules -r $(rule) -o ATC $(file); fi ;
 
 clean_genRules: 
@@ -431,7 +430,7 @@ clean: bin_clean o_clean
 ### removes *.hi and *.o in all include directories
 o_clean:
 	for p in $(CLEAN_PATH) ; do \
-	(cd $$p ; $(RM) *.hi *.o *.hspp) ; done
+	    (cd $$p ; $(RM) *.hi *.o *.hspp) ; done
 
 ### remove binaries
 bin_clean: 
@@ -460,12 +459,12 @@ bin_clean:
 ### also delete *.d.bak (dependency file backups)
 d_clean: clean
 	for p in $(CLEAN_PATH) ; do \
-	(cd $$p ; $(RM) *.d *.d.bak) ; done
+	    (cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### remove files also in own libraries
 lib_clean:
 	for p in $(COMMONLIB_PATH) ; do \
-	(cd $$p ; $(RM) *.hi *.d *.o) ; done
+	    (cd $$p ; $(RM) *.hi *.d *.o) ; done
 
 ### additionally removes the files that define the sources-variable
 real_clean: bin_clean lib_clean clean
@@ -527,13 +526,13 @@ hetana: Static/hetana.hs Static/*.hs
 atctest: ATC/ATCTest.hs ATC/*.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs \
-          Common/ATerm/*.hs Common/Lib/*.hs
+atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs \
+    Common/Lib/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATerm.Lib test system
 atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
-              Common/ATerm/*.hs Common/Lib/*.hs
+    Common/ATerm/*.hs Common/Lib/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
@@ -592,7 +591,7 @@ hets.hs: Driver/Version.hs
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
 Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
-                       utils/genTransMFormFunc.pl $(INLINEAXIOMS)
+    utils/genTransMFormFunc.pl $(INLINEAXIOMS)
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 
 # hetcats-make is created as side-effect of hets or hets-optimized
