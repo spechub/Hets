@@ -304,8 +304,11 @@ stateToAppl (State ide rs a _ _) =
 			       Application (Op_name 
 					    (setIdePos ide ts qs))
 				ts ps
-			   _ -> asAppl (setIdePos ide ar qs) 
-				ar nullPos -- true mixfix
+			   _ -> let newIde@(Id (t:_) _ _) = setIdePos ide ar qs
+                                    pos = if isPlace t then posOfTerm $ head ar
+					  else tokPos t
+			        in Application (Op_name newIde) ar [pos]
+				   -- true mixfix
 
 asListAppl :: GlobalAnnos -> State -> TERM
 asListAppl g s@(State i _ a _ _) =
@@ -477,7 +480,7 @@ resolveFormula g ops preds frm =
 testForm l r t = 
     let g = addGlobalAnnos emptyGlobalAnnos 
 			 $ map (parseString annotationL) l
-	in printText0 g $
+	in 
 	   resolveFormula g (mkSet $ map (parseString parseId) r)
 		      emptySet (parseString formula t)
 
