@@ -369,9 +369,7 @@ typeOrTypeScheme = do q <- qColonT
 
 toPartialTypeScheme :: [Pos] -> TypeOrTypeScheme -> TypeScheme
 toPartialTypeScheme qs ts = case ts of 
-            PartialType t -> simpleTypeScheme 
-                           (FunType logicalType
-                            PFunArr t qs)
+            PartialType t -> simpleTypeScheme $ liftType t qs
             TotalTypeScheme s -> s
 
 partialTypeScheme :: AParser (Token, TypeScheme)
