@@ -65,9 +65,15 @@ forall x, y:Nat
                                                         (var y : Nat) : Nat) : Nat) : Nat
 
 CiME:
-let F = signature "0:constant; suc:unary; +:binary";
-let X = vars "x y";
-let axioms = TRS F X "+(0,x) -> x; +(suc(x),y) -> suc(+(x,y)); ";
+let F = signature "when_else : 3; eq : binary; True,False : constant; 0 : constant; suc : unary; __+__ : binary; ";
+let X = vars "t1 t2 x y";
+let axioms = TRS F X "
+eq(t1,t1) -> True; 
+eq(t1,t2) -> False; 
+when_else(t1,True,t2) -> t1; 
+when_else(t1,False,t2) -> t2; 
+__+__(0,x) -> x; 
+__+__(suc(x),y) -> suc(__+__(x,y)); ";
 termcrit "dp";
 termination axioms;
 -} 
@@ -115,7 +121,7 @@ import Foreign
 checkFreeType :: (PrettyPrint f, Eq f) => 
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
                   -> Result (Maybe Bool)
-checkFreeType (sig,sens) m fsn 
+checkFreeType (osig,osens) m fsn      
 #ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
@@ -233,7 +239,8 @@ checkFreeType (sig,sens) m fsn
                                        Just (Right (Predication _ ts _))->ts
                                        _ ->[]) $ 
                             map leading_Term_Predication op_preds
-         leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
+   --      leadingPatterns = trace (showPretty leadingPatterns1 (tmp1 ++ "\n" ++ tmp2 ++ "\n" ++ tmp ++ "\n")) leadingPatterns1    --leading Patterns
+         leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
          isApp t = case t of
                      Application _ _ _->True
                      Sorted_term t' _ _ ->isApp t'
@@ -280,33 +287,64 @@ checkFreeType (sig,sens) m fsn
                                             else term_Pos $ head $ map head pas 
                 | all (\p-> sameOps p (head (head pas))) $ map head pas =
                                             pattern_Pos $ map (\p'->(patternsOfTerm $ head p')++(tail p')) pas
-        --        | all isApp $ map head pas = concat $ map pattern_Pos $ group ps
                 | otherwise = concat $ map pattern_Pos $ group pas
-                  
-{-
-         checkMatrix ps 
-                | length ps <=1 = True
-                | allIdentic ps = False
-                | all isVar $ map head ps = if allIdentic $ map head ps then checkMatrix $ map tail ps
-                                            else False
-                | all (\p-> sameOps p (head (head ps))) $ map head ps = 
-                                            checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps 
-                | all isApp $ map head ps = all id $ map checkMatrix $ group ps
-                | otherwise = False
-     
-         checkPatterns [] = True
-         checkPatterns ps
-                | (length ps) == 1 = overlap $ filter (\t->case (term t) of
-                                                             Qual_var _ _ _ ->True
-                                                             _ -> False) $ head ps
-                | otherwise = checkMatrix ps
--}
          term t = case t of
                     Sorted_term t' _ _ ->term t'
                     _ -> t
          -- Termination
-         idStr (Id ts _ _) = if (tokStr (head ts)) == "__" then (tokStr (head (tail ts)))
-                             else tokStr (head ts) 
+{-
+spec NatJT1 = 
+  sort Elem
+  free type Bool ::= True | False
+  op __or__ : Bool*Bool->Bool
+  forall m,n:Bool
+  . True or True = True
+  . True or False = True
+  . False or True = True
+  . False or False = False
+then
+  free types Tree ::= Leaf(Elem) | Branch(Forest);
+             Forest ::= Nil | Cons(Tree;Forest)
+  op elemT : Elem * Tree -> Bool
+  op elemF : Elem * Forest -> Bool
+  forall x,y:Elem; t:Tree; f:Forest
+  . elemT(x,Leaf(y)) = True when x=y else False
+  . elemT(x,Branch(f)) = elemF(x,f)
+  . elemF(x,Nil) = False
+  . elemF(x,Cons(t,f)) = elemT(x,t) or elemF(x,f)
+end
+
+CiME:
+let F = signature "when_else : 3; eq : binary; True,False : constant; True : constant; False : constant; __or__ : binary; Leaf : unary; Branch : unary; Nil : constant; Cons : binary; elemT : binary; elemF : binary; ";
+let X = vars "t1 t2 m n x y t f";
+let axioms = TRS F X "
+eq(t1,t1) -> True;
+eq(t1,t2) -> False;
+when_else(t1,True,t2) -> t1;
+when_else(t1,False,t2) -> t2;
+__or__(True,True) -> True; 
+__or__(True,False) -> True; 
+__or__(False,True) -> True; 
+__or__(False,False) -> False;
+elemT(x,Leaf(y)) -> when_else(True,eq(x,y),False); 
+elemT(x,Branch(f)) -> elemF(x,f); 
+elemF(x,Nil) -> False; 
+elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
+
+-}      
+         oldfs1 = map sentence (filter is_user_or_sort_gen osens)
+         oldfs = trace (showPretty oldfs1 "Old_Axiom") oldfs1
+         old_op_preds = filter (\f->case f of
+                                  Quantification Universal _ _ _ -> True
+                                  _ -> False) oldfs
+         o_fconstrs = concat $ map fc oldfs
+         (_,o_constructors1,_) = recover_Sort_gen_ax o_fconstrs
+         o_constructors = trace (showPretty o_constructors1 "o_constructors") o_constructors1       -- o_constructors
+         o_l_Syms1 = map leadingSym old_op_preds
+         o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1         -- leading_Symbol
+         idStr (Id ts _ _) = concat $ map tokStr ts
+              --               if (tokStr (head ts)) == "__" then (tokStr (head (tail ts)))
+              --               else tokStr (head ts) 
          rP cp = do
             msg <- readMsg cp
             case msg of
@@ -318,18 +356,26 @@ checkFreeType (sig,sens) m fsn
                                                                             0 -> (idStr op_n) ++ " : constant"
                                                                             1 -> (idStr op_n) ++ " : unary"
                                                                             2 -> (idStr op_n) ++ " : binary"
+                                                                            3 -> (idStr op_n) ++ " : 3"
+                                                                            4 -> (idStr op_n) ++ " : 4"
+                                                                            5 -> (idStr op_n) ++ " : 5"
+                                                                            6 -> (idStr op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature"
                        Qual_op_name op_n (Partial_op_type a_sorts _ _) _ -> case (length a_sorts) of 
                                                                             0 -> (idStr op_n) ++ " : constant"
                                                                             1 -> (idStr op_n) ++ " : unary"
                                                                             2 -> (idStr op_n) ++ " : binary"
+                                                                            3 -> (idStr op_n) ++ " : 3"
+                                                                            4 -> (idStr op_n) ++ " : 4"
+                                                                            5 -> (idStr op_n) ++ " : 5"
+                                                                            6 -> (idStr op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature"
                        _ -> error "Termination_Signature"
          sigComb sig1 sig2 | null sig2 =sig1
                            | otherwise = case (head sig2) of
                                            Just (Left o_s) -> if elem o_s sig1 then sigComb sig1 (tail sig2)
                                                               else sigComb (o_s:sig1) (tail sig2)
-                                           Just (Right _) -> sigComb sig1 (tail sig2) 
+                                           Just (Right _) -> sigComb sig1 (tail sig2)       --  not Predication
                                            _ -> error "Termination_Signature" 
          signStr signs str
                  | null signs = str
@@ -341,9 +387,10 @@ checkFreeType (sig,sens) m fsn
                                                                                    Var_decl vs _ _ -> vs
                                                                                    _ -> error "Termination_Variable") v_d 
                           _ -> error "Termination_Variable"
+         allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
          varsStr vars str
                  | null vars = str
-                 | otherwise = if null str then varsStr (tail vars) (str ++ (tokStr $ head vars))
+                 | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
          f_str f = case f of
                      Quantification Universal _ f' _ -> f_str f' 
@@ -351,32 +398,45 @@ checkFreeType (sig,sens) m fsn
                      Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
                      _ -> error "Termination_Axioms"
+         t_f_str f =case f of
+                     Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
+                     _ -> error "Termination_Term-Formula"
          termStr t = case (term t) of
                        (Qual_var var _ _) -> tokStr var
                        (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStr opn)
                                                                     else ((idStr opn) ++ "(" ++ 
                                                                          (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
+                       (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
+                                                  ")")                                 -- ?
                        _ -> error "Termination_Term"
          axiomStr axioms str 
                  | null axioms = str
                  | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
                  cim <- newChildProcess "/home/xinga/bin/cime" []
-   --              sendMsg cim "let F = signature \"0 : constant;suc : unary;+ : binary\";"
-                 sendMsg cim ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")     
-   --              sendMsg cim "let X = vars \"x y\";"
-                 sendMsg cim ("let X = vars \"" ++ (varsStr (varOfAxiom $ (head op_preds)) "") ++ "\";")        
-   --              sendMsg cim "let axioms = TRS F X \"+(0,x) -> x; +(suc(x),y) -> suc(+(x,y));\";"
-                 sendMsg cim ("let axioms = TRS F X \"" ++ (axiomStr op_preds "") ++"\";")    --3
+                 sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
+                              (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
+                 sendMsg cim ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_op_preds ++ op_preds) "") ++ "\";")        
+                 sendMsg cim ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
+                                                     "eq(t1,t2) -> False; " ++ 
+                                                     "when_else(t1,True,t2) -> t1; " ++ 
+                                                     "when_else(t1,False,t2) -> t2; " ++ 
+                                (axiomStr (old_op_preds ++ op_preds) "") ++"\";")    
                  sendMsg cim "termcrit \"dp\";"
                  sendMsg cim "termination axioms;"
                  sendMsg cim "#quit;"
                  res <-rP cim
                  return res)
-         tmp = ("let axioms = TRS F X \"" ++ (axiomStr op_preds "") ++"\";")
-         tmp1 = ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")
-         tmp2 = ("let X = vars \"" ++ (varsStr (varOfAxiom $ (head op_preds)) "") ++ "\";")                              
+         tmp = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
+                                       "eq(t1,t2) -> False; " ++ 
+                                       "when_else(t1,True,t2) -> t1; " ++ 
+                                       "when_else(t1,False,t2) -> t2; " ++ 
+                                (axiomStr (old_op_preds ++ op_preds) "") ++"\";")
+         tmp1 = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " 
+                 ++ (signStr (sigComb (o_constructors ++ constructors) (o_l_Syms ++ l_Syms)) "") ++ "\";")
+         tmp2 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_op_preds ++ op_preds) "") ++ "\";")                              
 #endif
+
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
        tp<-leading_Term_Predication f
