@@ -25,6 +25,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 --import qualified Common.Lib.Rel as Rel        -- not used directly
 import qualified Common.Id      as Id
+import qualified Common.Named   as Named
 
 import Data.List                ( partition )
 
@@ -58,9 +59,15 @@ import Data.List                ( partition )
 {-----------------------------------------------------------
     Overload Resolution
 -----------------------------------------------------------}
-overloadResolution :: Sign -> [FORMULA] -> Result [FORMULA]
-overloadResolution sign
-    = mapM (minExpFORMULA sign)
+overloadResolution      :: Sign -> [Named.Named FORMULA]
+                        -> Result [Named.Named FORMULA]
+overloadResolution sign  = mapM overload
+    where
+        overload :: (Named.Named FORMULA) -> Result (Named.Named FORMULA)
+        overload sent = do
+            sent'       <- return $ Named.sentence sent
+            exp_sent    <- minExpFORMULA sign sent'
+            return sent { Named.sentence = exp_sent }
 
 {-----------------------------------------------------------
     Minimal Expansions of a FORMULA
@@ -72,16 +79,16 @@ minExpFORMULA sign formula
         True_atom _     -> return formula                       -- :: FORMULA
         False_atom _    -> return formula                       -- :: FORMULA
         -- Atomic FORMULA      -> Check for Ambiguities
-        Predication predicate terms _ ->
-            minExpFORMULA_pred sign predicate terms             -- :: FORMULA
+        Predication predicate terms pos ->
+            minExpFORMULA_pred sign predicate terms pos         -- :: FORMULA
         Definedness term pos            -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-        Existl_equation term1 term2 _ ->
-            minExpFORMULA_eq sign Existl_equation term1 term2
-        Strong_equation term1 term2 _ ->
-            minExpFORMULA_eq sign Strong_equation term1 term2
+        Existl_equation term1 term2 pos ->
+            minExpFORMULA_eq sign Existl_equation term1 term2 pos
+        Strong_equation term1 term2 pos ->
+            minExpFORMULA_eq sign Strong_equation term1 term2 pos
         Membership term sort pos        -> do
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- return
@@ -114,8 +121,8 @@ minExpFORMULA sign formula
 {-----------------------------------------------------------
     Minimal Expansions of a Predicate Application Formula
 -----------------------------------------------------------}
-minExpFORMULA_pred :: Sign -> PRED_SYMB -> [TERM] -> Result FORMULA
-minExpFORMULA_pred sign predicate terms = do
+minExpFORMULA_pred :: Sign -> PRED_SYMB -> [TERM] -> [Id.Pos] -> Result FORMULA
+minExpFORMULA_pred sign predicate terms pos = do
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::        [[[TERM]]]
     permuted_exps       <- return
@@ -149,7 +156,7 @@ minExpFORMULA_pred sign predicate terms = do
             = (Predication                                      -- :: FORMULA
                 (Qual_pred_name name (toPRED_TYPE pred') [])    -- :: PRED_SYMB
                 terms'                                          -- :: [TERM]
-                [])                                             -- :: [Pos]
+                pos)                                            -- :: [Pos]
         get_profile     :: [[TERM]] -> [(PredType, [TERM])]
         get_profile cs
             = [ (pred', ts) |
@@ -175,8 +182,8 @@ minExpFORMULA_pred sign predicate terms = do
     Minimal Expansions of a Strong/Existl. Equation Formula
 -----------------------------------------------------------}
 minExpFORMULA_eq :: Sign -> (TERM -> TERM -> [Id.Pos] -> FORMULA)
-                    -> TERM -> TERM -> Result FORMULA
-minExpFORMULA_eq sign eq term1 term2 = do
+                    -> TERM -> TERM -> [Id.Pos] -> Result FORMULA
+minExpFORMULA_eq sign eq term1 term2 pos = do
     exps1       <- minExpTerm sign term1                -- :: [[TERM]]
     exps2       <- minExpTerm sign term2                -- :: [[TERM]]
     pairs       <- return
@@ -184,7 +191,7 @@ minExpFORMULA_eq sign eq term1 term2 = do
     candidates  <- return
         $ filter fit pairs                              -- :: [[TERM]]
     case candidates of
-        [[t1,t2]]       -> return $ eq t1 t2 []
+        [[t1,t2]]       -> return $ eq t1 t2 pos
         _               -> error
             $ "Cannot disambiguate! Possible Expansions: "
             ++ (show exps1) ++ "\n\t" ++ (show exps2)
@@ -200,16 +207,16 @@ minExpTerm sign term'
     = case term' of
         Simple_id var
             -> minExpTerm_simple sign var
-        Qual_var var sort _
-            -> minExpTerm_qual sign var sort
-        Application op terms _
-            -> minExpTerm_op sign op terms
-        Sorted_term term sort _
-            -> minExpTerm_sorted sign term sort
-        Cast term sort _
-            -> minExpTerm_cast sign term sort
-        Conditional term1 formula term2 _
-            -> minExpTerm_cond sign term1 formula term2
+        Qual_var var sort pos
+            -> minExpTerm_qual sign var sort pos
+        Application op terms pos
+            -> minExpTerm_op sign op terms pos
+        Sorted_term term sort pos
+            -> minExpTerm_sorted sign term sort pos
+        Cast term sort pos
+            -> minExpTerm_cast sign term sort pos
+        Conditional term1 formula term2 pos
+            -> minExpTerm_cond sign term1 formula term2 pos
         Unparsed_term string _
             -> error $ "minExpTerm: Parser Error - Unparsed `Unparsed_term' "
                ++ string
@@ -239,7 +246,7 @@ minExpTerm_simple sign var = do
     least       <- return
         $ Set.filter (is_least_sort cs) cs      -- :: Set.Set SORT
     return
-        $ qualifyTerms                          -- :: [[TERM]]
+        $ qualifyTerms []                       -- :: [[TERM]]
         $ (equivalence_Classes eq)              -- :: [[(TERM, SORT)]]
         $ map pair_with_id                      -- :: [(TERM, SORT)]
         $ Set.toList least                      -- :: [SORT]
@@ -258,11 +265,11 @@ minExpTerm_simple sign var = do
 {-----------------------------------------------------------
     Minimal Expansions of a Qual_var Term
 -----------------------------------------------------------}
-minExpTerm_qual :: Sign -> VAR -> SORT -> Result [[TERM]]
-minExpTerm_qual sign var sort = do
+minExpTerm_qual :: Sign -> VAR -> SORT -> [Id.Pos] -> Result [[TERM]]
+minExpTerm_qual sign var sort pos = do
     expandedVar <- minExpTerm_simple sign var   -- :: [[TERM]]
     return
-        $ qualifyTerms                          -- :: [[TERM]]
+        $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedVar      -- :: [[(TERM, SORT)]]
     where
         fits                    :: TERM -> Bool
@@ -279,11 +286,11 @@ minExpTerm_qual sign var sort = do
 {-----------------------------------------------------------
     Minimal Expansions of a Sorted_term Term
 -----------------------------------------------------------}
-minExpTerm_sorted :: Sign -> TERM -> SORT -> Result [[TERM]]
-minExpTerm_sorted sign term sort = do
+minExpTerm_sorted :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
+minExpTerm_sorted sign term sort pos = do
     expandedTerm <- minExpTerm sign term        -- :: [[TERM]]
     return
-        $ qualifyTerms                          -- :: [[TERM]]
+        $ qualifyTerms pos                      -- :: [[TERM]]
         $ map selectExpansions expandedTerm     -- :: [[(TERM, SORT)]]
     where
         fits                    :: TERM -> Bool
@@ -300,8 +307,8 @@ minExpTerm_sorted sign term sort = do
 {-----------------------------------------------------------
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
-minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
-minExpTerm_op sign op terms = do
+minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
+minExpTerm_op sign op terms pos = do
     expansions          <- mapM
         (minExpTerm sign) terms                 -- ::       [[[TERM]]]
     permuted_exps       <- return
@@ -315,7 +322,7 @@ minExpTerm_op sign op terms = do
     p'                  <- return
         $ map (minimize_op sign) p              -- ::  [[(OpType, [TERM])]]
     return
-        $ qualifyTerms                          -- ::        [[TERM]]
+        $ qualifyTerms pos                      -- ::        [[TERM]]
         $ qualifyOps p'                         -- ::    [[(TERM, SORT)]]
     where
         name            :: OP_NAME
@@ -360,21 +367,22 @@ minExpTerm_op sign op terms = do
 {-----------------------------------------------------------
     Minimal Expansions of a Cast Term
 -----------------------------------------------------------}
-minExpTerm_cast :: Sign -> TERM -> SORT -> Result [[TERM]]
-minExpTerm_cast sign term sort = do
+minExpTerm_cast :: Sign -> TERM -> SORT -> [Id.Pos] -> Result [[TERM]]
+minExpTerm_cast sign term sort pos = do
     expandedTerm        <- minExpTerm sign term         -- :: [[TERM]]
     validExps           <- return
         $ filter (leq_SORT sign sort . term_sort)       -- ::  [TERM]
         $ map head expandedTerm                         -- ::  [TERM]
     return
-        $ qualifyTerms                                  -- :: [[TERM]]
+        $ qualifyTerms pos                              -- :: [[TERM]]
         $ [map (\ t -> (t, sort)) validExps]            -- :: [[(TERM, SORT)]]
 
 {-----------------------------------------------------------
     Minimal Expansions of a Conditional Term
 -----------------------------------------------------------}
-minExpTerm_cond :: Sign -> TERM -> FORMULA -> TERM -> Result [[TERM]]
-minExpTerm_cond sign term1 formula term2 = do
+minExpTerm_cond :: Sign -> TERM -> FORMULA -> TERM -> [Id.Pos]
+                -> Result [[TERM]]
+minExpTerm_cond sign term1 formula term2 pos = do
     expansions1
         <- minExpTerm sign term1                -- ::       [[TERM]]
     expansions2
@@ -393,7 +401,7 @@ minExpTerm_cond sign term1 formula term2 = do
     p'                  <- return
         $ map (minimize_cond sign) p            -- ::  [[([TERM], SORT)]]
     return
-        $ qualifyTerms                          -- ::       [[TERM]]
+        $ qualifyTerms pos                      -- ::       [[TERM]]
         $ qualifyConds expanded_formula p'      -- ::   [[(TERM, SORT)]]
     where
         have_supersort          :: [TERM] -> Bool
@@ -450,11 +458,11 @@ zipped_all _  _      _     = False
     Construct a TERM of type Sorted_term
     from each (TERM, SORT) tuple
 -----------------------------------------------------------}
-qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
-qualifyTerms  = map (map qualify_term)
+qualifyTerms            :: [Id.Pos] -> [[(TERM, SORT)]] -> [[TERM]]
+qualifyTerms pos pairs   = map (map qualify_term) pairs
     where
         qualify_term       :: (TERM, SORT) -> TERM
-        qualify_term (t, s) = Sorted_term t s []
+        qualify_term (t, s) = Sorted_term t s pos
 
 {-----------------------------------------------------------
     For each C in P (see above), let C' choose _one_
