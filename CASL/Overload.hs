@@ -16,7 +16,7 @@
       LNCS 1376, p. 333-348
 -}
 
-module CASL.Overload(minExpFORMULA, oneExpTerm, Min(),
+module CASL.Overload(minExpFORMULA, oneExpTerm, Min,
                      is_unambiguous, term_sort, leqF)  where
 
 import CASL.Sign
