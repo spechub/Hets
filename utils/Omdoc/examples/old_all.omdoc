@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE omdoc PUBLIC "-//OMDoc//DTD OMDoc V1.1//EN"
-                 "omdoc.dtd" []>
+                 "../../dtd/omdoc.dtd" []>
 <!--  An example of OMDoc, that uses everything, this  is intended as an 
       example of proper usage and as a torture test for OMDoc tools.
 

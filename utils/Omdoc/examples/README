@@ -1,3 +1,3 @@
-These are Omdoc-Files taken from the examples tree and the results auf reading them in with the Haskell-Omdoc-Module and writing them back (files with '_' suffix).
-Using XmlDiff a lot of differences are found between all.omdoc (Omdoc/examples/usesall) and its conversion but none for example.omdoc (Omdoc/examples/testcases).
-The files produced by HaXml are well-formed but hard to read...
+These OMDoc-Files and omdoc.dtd are taken from the 'examples' and 'dtd' directories of OMDoc. The OMDoc-files have been modified to use the dtd in this directory.
+
+'omdoc_nocan.dtd' was created by using the 'Haskell XML Toolbox' and is used as a second view on OMDoc-Files (not used directly by anything).

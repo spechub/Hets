@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE omdoc PUBLIC "-//OMDoc//DTD OMDoc V1.1//EN"
-                 "omdoc.dtd" []>
+                 "../../dtd/omdoc.dtd" []>
 
 <omdoc id="test_example">
 
