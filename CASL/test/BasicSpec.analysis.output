@@ -23,7 +23,7 @@ forall m, n, r, s:Nat
 . 0 + m = m %(Nat_add_0)%
 . suc(n) + m = suc(n + m) %(Nat_add_suc)%
 . 0 * m = 0 %(Nat_mult_0)%
-. suc(n) * m = ((n * m)) + m %(Nat_mult_suc)%
+. suc(n) * m = n * m + m %(Nat_mult_suc)%
 . m ^ 0 = 1 %(Nat_power_0)%
 . m ^ suc(n) = m * m ^ n %(Nat_power_suc)%
 . min(m, n) = m when m <= n else n %(Nat_min_def)%
@@ -36,7 +36,7 @@ forall m, n, r, s:Nat
 . 0 ! = 1 %(Nat_factorial_0)%
 . suc(n) ! = suc(n) * n ! %(Nat_factorial_suc)%
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
-. not def (m /? 0) %(Nat_divide_0)%
+. not def m /? 0 %(Nat_divide_0)%
 . n > 0 => (m /? n = r <=> m = r * n) %(Nat_divide_Pos)%
 . m div n = r <=> exists s:Nat . m = n * r + s /\ s < n %(Nat_div)%
 . m mod n = s <=> exists r:Nat . m = n * r + s /\ s < n %(Nat_mod)%
@@ -51,7 +51,7 @@ forall m, n, r, s:Nat
 . 7 = suc(6) %(Nat_7_def)%
 . 8 = suc(7) %(Nat_8_def)%
 . 9 = suc(8) %(Nat_9_def)%
-. m @@ n = ((m * suc(9))) + n %(Nat_decimal_def)%
+. m @@ n = m * suc(9) + n %(Nat_decimal_def)%
 %% then %def
 sort Pos = {p : Nat . p > 0}
 ops 1: Pos = suc(0); %(Nat_1_as_Pos_def)%
@@ -62,13 +62,13 @@ ops 1: Pos = suc(0); %(Nat_1_as_Pos_def)%
 %% then %implies
 ops min, max : Nat * Nat -> Nat, comm, assoc
 forall x, m, n, r, s, t:Nat; p:Pos
-. (def (m -? n)) <=> m >= n %(Nat_sub_dom)%
-. (def (m /? n)) <=> m mod n = 0 %(Nat_divide_dom)%
-. (def (m div n)) <=> not n = 0 %(Nat_div_dom)%
-. (def (m mod n)) <=> not n = 0 %(Nat_mod_dom)%
-. (def (m quot n)) <=> not n = 0 %(Nat_quot_dom)%
-. (def (m rem n)) <=> not n = 0 %(Nat_rem_dom)%
-. ((r + s)) * t = ((r * t)) + ((s * t)) %(Nat_distr)%
+. (def m -? n) <=> m >= n %(Nat_sub_dom)%
+. (def m /? n) <=> m mod n = 0 %(Nat_divide_dom)%
+. (def m div n) <=> not n = 0 %(Nat_div_dom)%
+. (def m mod n) <=> not n = 0 %(Nat_mod_dom)%
+. (def m quot n) <=> not n = 0 %(Nat_quot_dom)%
+. (def m rem n) <=> not n = 0 %(Nat_rem_dom)%
+. (r + s) * t = r * t + s * t %(Nat_distr)%
 . max(m, 0) = m %(Nat_max_unit)%
 . min(m, 0) = 0 %(Nat_min_0)%
 %% end
@@ -90,13 +90,13 @@ ops 0, 1 : Int;
     __/?__, __div__, __quot__, __rem__ : Int * Int ->? Int;
     __mod__ : Int * Int ->? Nat
 forall m, n, r, s:Int; a, b, c, d:Nat
-. ((a - b)) + ((c - d)) = ((a + c)) - ((b + d)) %(Int_add_def)%
-. ((a - b)) * ((c - d)) = ((a * c + b * d)) - ((b * c + a * d))
+. (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
+. (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
 %(Int_mult_def)%
-. m - n = m + ((- n)) %(Int_sub_def)%
+. m - n = m + (- n) %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
 . - a - b = b - a %(Int_neg_def)%
-. sign(m) = 0 when m = 0 else (1 when m > 0 else - 1)
+. sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
 %(Int_sign_def)%
 . m <= n <=> (n - m in Nat) %(Int_leq_def)%
 . m >= n <=> n <= m %(Int_geq_def)%
@@ -105,33 +105,31 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . min(m, n) = m when m <= n else n %(Int_min_def)%
 . max(m, n) = n when m <= n else m %(Int_max_def)%
 . m < 0 => abs(m) = - m %(Int_abs_def)%
-. ((- 1)) ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
+. (- 1) ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign(m) ^ a * abs(m) ^ a %(Int_power_def)%
 . even(m) <=> even(abs(m)) %(Int_even_def)%
 . odd(m) <=> not even(m) %(Int_odd_def)%
-. m /? n = sign(m) * sign(n) * ((abs(m) /? abs(n))) %(Int_divide)%
+. m /? n = sign(m) * sign(n) * (abs(m) /? abs(n)) %(Int_divide)%
 . not n = 0 => (m mod n) < abs(n) %(Int_mod_range)%
-. not n = 0 => m = ((m div n)) * n + ((m mod n))
-%(Int_mod__div_def)%
+. not n = 0 => m = (m div n) * n + (m mod n) %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
-. m quot n = sign(m) * sign(n) * ((abs(m) quot abs(n)))
+. m quot n = sign(m) * sign(n) * (abs(m) quot abs(n))
 %(Int_quot_def)%
-. m rem n = sign(m) * sign(n) * ((abs(m) rem abs(n)))
-%(Int_rem_def)%
+. m rem n = sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%
 %% then %implies
 forall m, n, r:Int; a, b:Nat
-. (def (a -? b)) => a -? b = a - b %(Int_Nat_sub_compat)%
+. (def a -? b) => a -? b = a - b %(Int_Nat_sub_compat)%
 . m = sign(m) * abs(m) %(Int_abs_decomp)%
 . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%
 . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%
-. (def (m /? n)) <=> m mod n = 0 %(Int_divide_dom2)%
-. (def (m mod n)) <=> not n = 0 %(Int_mod_dom)%
+. (def m /? n) <=> m mod n = 0 %(Int_divide_dom2)%
+. (def m mod n) <=> not n = 0 %(Int_mod_dom)%
 . m mod n = m mod abs(n) %(Int_mod_abs)%
-. (def (m div n)) <=> not n = 0 %(Int_div_dom)%
-. (def (m quot n)) <=> not n = 0 %(Int_quot_dom)%
-. (def (m rem n)) <=> not n = 0 %(Int_rem_dom)%
-. not n = 0 => m = ((m quot n)) * n + ((m rem n)) %(Int_quot_rem)%
+. (def m div n) <=> not n = 0 %(Int_div_dom)%
+. (def m quot n) <=> not n = 0 %(Int_quot_dom)%
+. (def m rem n) <=> not n = 0 %(Int_rem_dom)%
+. not n = 0 => m = (m quot n) * n + (m rem n) %(Int_quot_rem)%
 %% end
 generated type Rat ::= __/__(Int; Pos)
 forall i, j:Int; p, q:Pos
@@ -152,25 +150,23 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 . x >= y <=> y <= x %(Rat_geq_def)%
 . x < y <=> x <= y /\ not x = y %(Rat_less_def)%
 . x > y <=> y < x %(Rat_greater_def)%
-. ((i / p)) + ((j / q)) = ((i * q + j * p)) / ((p * q))
-%(Rat_add_def)%
-. x - y = x + ((- y)) %(Rat_sub_def)%
-. ((i / p)) * ((j / q)) = ((i * j)) / ((p * q)) %(Rat_mult_def)%
+. (i / p) + (j / q) = (i * q + j * p) / (p * q) %(Rat_add_def)%
+. x - y = x + (- y) %(Rat_sub_def)%
+. (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%
 . not def x / 0 %(Rat_divide_def1)%
 . not y = 0 => (x / y = z <=> z = x * y) %(Rat_divide_def2)%
 . + x = x %(Rat_plus_def)%
-. - i / p = ((- i)) / p %(Rat_minus_def)%
+. - i / p = (- i) / p %(Rat_minus_def)%
 . abs(i / p) = abs(i) / p %(Rat_abs_def)%
 . x ^ 0 = 1 %(Rat_power_0)%
 . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%
-. x ^ ((- p)) = 1 / ((x ^ p)) %(Rat_power_neg)%
+. x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
 . min(x, y) = x when x <= y else y %(Rat_min_def)%
 . max(x, y) = y when x <= y else x %(Rat_max_def)%
 %% then %implies
 forall i, j:Int; p, q:Pos
-. ((i / p)) - ((j / q)) = ((i * q - j * p)) / ((p * q))
-%(Rat_sub_rule)%
-. not j = 0 => ((i / p)) / ((j / q)) = ((i / p)) * ((q / j))
+. (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
+. not j = 0 => (i / p) / (j / q) = (i / p) * (q / j)
 %(Rat_divide_rule)%
 pred __<__ : a * a
 ops __a : b;

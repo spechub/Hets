@@ -251,7 +251,10 @@ stateToAppl (State ide rs a _ _) =
            || vs == [opTok]
            || vs == [predTok]
            || vs == [parenTok]
-       then head ar
+       then case head ar of 
+            Mixfix_parenthesized ts _ -> if length ts == 1 then head ts
+					 else head ar
+	    har -> har
        else if vs == [opTok, parenTok]
 		 then let Application q _ _ = head ar
                           Mixfix_parenthesized ts ps = head a
@@ -357,7 +360,7 @@ iterateStates g ops preds maybeFormula terms c@(i, ds, m) =
 	    Mixfix_parenthesized ts ps -> 
 		let Result mds v = 
 			do tsNew <- mapM resolveTerm ts
-			   return (Mixfix_parenthesized tsNew ps)
+			   return $ Mixfix_parenthesized tsNew ps
                     tNew = case v of Nothing -> head terms
 				     Just x -> x
 		in self (tail terms) (oneStep tNew (i, ds++mds, m))
