@@ -26,12 +26,13 @@ printList0 ga l = noPrint (null l)
 		       else parens $ commas ga l)
 
 instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo sups defn) =
-	noPrint (isNothing defn)
-	   (ptext equalS <+> printText0 ga defn)
-	<> noPrint (null sups || isNothing defn) space
+    printText0 ga (ClassInfo sups k defn) =
+        noPrint (case k of ExtClass (Intersection [] []) InVar _ -> True
+		           _ -> False) (space <> printKind ga k)
+	<> noPrint (isNothing defn)
+	   (space <> ptext equalS <+> printText0 ga defn)
 	<> noPrint (null sups)
-	   (ptext lessS <+> printList0 ga sups)
+	   (space <> ptext lessS <+> printList0 ga sups)
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
@@ -54,22 +55,19 @@ instance PrettyPrint TypeDefn where
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo k ks sups defn) =
-	colon <> printList0 ga (k:ks) 
+	space <> colon <> printList0 ga (k:ks) 
 	<> noPrint (null sups)
 	   (ptext lessS <+> printList0 ga sups)
         <> printText0 ga defn
 
 instance PrettyPrint [Kind] where
-    printText0 ga l = colon <> printList0 ga l
+    printText0 ga l = space <> colon <> printList0 ga l
 
 instance PrettyPrint [Type] where
-    printText0 ga l = colon <> printList0 ga l
+    printText0 ga l = space <> colon <> printList0 ga l
 
 instance PrettyPrint [TypeScheme] where
-    printText0 ga l = colon <+> printList0 ga l
-
-instance PrettyPrint [ClassId] where
-    printText0 ga l = colon <+> printList0 ga l
+    printText0 ga l = space <> colon <+> printList0 ga l
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty
@@ -79,7 +77,7 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
     => PrettyPrint (Map.Map a b) where
     printText0 ga m =
 	let l = Map.toList m in
-	    vcat(map (\ (a, b) -> printText0 ga a <+> printText0 ga b) l)
+	    vcat(map (\ (a, b) -> printText0 ga a <> printText0 ga b) l)
 
 instance PrettyPrint Env where
     printText0 ga e = printText0 ga (classMap e)

@@ -21,11 +21,12 @@ import Common.Result
 -----------------------------------------------------------------------------
 
 data ClassInfo = ClassInfo { superClasses :: [ClassId]
+                           , classKind :: Kind
 			   , classDefn :: Maybe Class
 			   } deriving (Show, Eq)
 
 newClassInfo :: ClassInfo
-newClassInfo = ClassInfo [] Nothing
+newClassInfo = ClassInfo [] star Nothing
 
 -----------------------------------------------------------------------------
 

@@ -46,29 +46,35 @@ allSuperClasses ce ci =
 		 ++ recurse (superClasses info)
     Nothing -> error "allSuperClasses"
 
-anaClassId :: ClassMap -> ClassId -> [Diagnosis]
+anaClassId :: ClassMap -> ClassId -> Maybe Kind
 anaClassId cMap ci = 
        case Map.lookup ci cMap of
-       Nothing -> [mkDiag Error "undeclared class" ci]
-       _ -> []
+       Nothing -> Nothing
+       Just i -> Just $ classKind i
 
-anaClass :: Class -> State Env Class
+anaClass :: Class -> State Env (Kind, Class)
 anaClass (Intersection cs ps) =  
     do cMap <- getClassMap
        let l = zip (map (anaClassId cMap) cs) cs
-	   restCs = map snd $ filter (\ (x, _) -> null x) l  
-	   ds = concatMap fst l 
-       appendDiags ds 
-       return $ Intersection restCs ps 
+	   (js, ns) = partition (isJust . fst) l
+	   ds = map (mkDiag Error "undeclared class" . snd) ns
+	   restCs = map snd js
+	   ks = map (fromJust. fst) js
+	   k = if null ks then star else fromJust $ fst $ head js
+	   es = filter (not . eqKind Compatible k . fromJust . fst) js
+	   fs =	map (\ (Just wk, i) -> mkDiag Error 
+		     ("wrong kind '" ++ showPretty wk "' of")
+		     i) es
+       appendDiags (ds ++ fs) 
+       return (k, Intersection restCs ps) 
 
 anaClass (Downset t) = 
     do downsetWarning t
-       return $ Downset t
+       return $ (star, Downset t)
 
 downsetWarning :: Type -> State Env ()
 downsetWarning t = 
     addDiag $ mkDiag Warning "unchecked type" t
-
 
 -- ----------------------------------------------------------------------------
 -- analyse kind
@@ -80,8 +86,10 @@ anaKind (KindAppl k1 k2 p) =
        k4 <- anaKind k2
        return $ KindAppl k3 k4 p
 anaKind (ExtClass k v p) = 
-    do k1 <- anaClass k
-       return $ ExtClass k1 v p
+    do (k1, c) <- anaClass k
+       return $ case k1 of 
+			ExtClass _ _ _ -> ExtClass c v p
+			_ -> k1
 
 -- ---------------------------------------------------------------------------
 -- analyse type

@@ -65,9 +65,10 @@ convertTypeToClass cMap (TypeToken t) =
        if tokStr t == "Type" then Result [] (Just $ universe) else 
           let ci = simpleIdToId t
               ds = anaClassId cMap ci
-              in if null ds then 
-                 Result [] (Just $ Intersection [ci] [])
-                 else Result [mkDiag Hint "not a class" ci] Nothing
+              in case ds of 
+			 Just _ -> Result [] (Just $ Intersection [ci] [])
+                         Nothing -> Result 
+				    [mkDiag Hint "not a class" ci] Nothing
 
 convertTypeToClass cMap (BracketType Parens ts ps) = 
        do cs <- mapM (convertTypeToClass cMap) ts

@@ -111,9 +111,11 @@ anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
 anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs _) =
     do k <- anaKind kind
+       appendDiags $ eqKindDiag k star
        case derivs of 
-		   Just c -> anaClass c
-		   Nothing -> return $ Intersection [] [] -- ignore
+		   Just c -> do (dk, _) <- anaClass c
+				appendDiags $ eqKindDiag dk star
+		   Nothing -> return ()
        let Result ds m = convertTypePattern pat
        appendDiags ds
        case m of 

@@ -21,37 +21,42 @@ import HasCASL.ClassAna
 
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls k _) = 
-    mapM_ (anaClassDecl [] Nothing) cls
+    do ak <- anaKind k
+       mapM_ (anaClassDecl ak [] Nothing) cls
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
+    do ak <- anaKind k
        if null supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
 			 $ if null ps then head qs else head ps
-	     mapM_ (anaClassDecl [] Nothing) cls
+	     mapM_ (anaClassDecl ak [] Nothing) cls
           else let hd:tl = supcls in 
 	      if null $ tl then
 		 do cMap <- getClassMap 
-		    if null $ anaClassId cMap hd then
+		    if isJust $ anaClassId cMap hd then
 		       return () else do  
-			  anaClassDecl [] Nothing hd
+			  anaClassDecl ak [] Nothing hd
 			  addDiag $ mkDiag Warning 
 				      "implicit declaration of superclass" hd
-		    mapM_ (anaClassDecl [hd] Nothing) cls
-		  else do Intersection newSups _ <- anaClass sc
-			  mapM_ (anaClassDecl newSups Nothing) cls
+		    mapM_ (anaClassDecl ak [hd] Nothing) cls
+		  else do (sk, Intersection newSups _) <- anaClass sc
+			  appendDiags $ eqKindDiag sk ak
+			  mapM_ (anaClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
-    do newIc <- anaClass ic
-       anaClassDecl [] (Just newIc) ci 
+    do ak <- anaKind k
+       (dk, newIc) <- anaClass ic
+       appendDiags $ eqKindDiag dk ak
+       anaClassDecl ak [] (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
     do downsetWarning t
-       anaClassDecl [] (Just $ Downset t) ci
+       anaClassDecl star [] (Just $ Downset t) ci
 
-anaClassDecl :: [ClassId] -> Maybe Class -> ClassId -> State Env ()
-anaClassDecl sups defn ci = 
+anaClassDecl :: Kind -> [ClassId] -> Maybe Class -> ClassId -> State Env ()
+anaClassDecl kind sups defn ci = 
     if showId ci "" == "Type" then 
        addDiag $ Diag Error 
 		    "illegal universe class declaration" $ posOfId ci
@@ -59,12 +64,15 @@ anaClassDecl sups defn ci =
        cMap <- getClassMap
        case Map.lookup ci cMap of
             Nothing -> putClassMap $ Map.insert ci  
-		       newClassInfo { superClasses = sups, 
+		       newClassInfo { superClasses = sups,
+				      classKind = kind,
 					   classDefn = defn } cMap
 	    Just info -> do 
 	        addDiag $ mkDiag Warning "redeclared class" ci
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
+		    oldKind = classKind info
+                appendDiags $ eqKindDiag kind oldKind
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 
