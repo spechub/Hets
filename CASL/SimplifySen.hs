@@ -29,7 +29,7 @@ import Control.Exception (assert)
 simplifySen :: (PrettyPrint f, Eq f) =>
 	       (Min f e) -- ^ extension type analysis
 	    -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA 
-	    -> (f -> f) -- ^ remove type information in ExtFORMULA
+	    -> (Sign f e -> f -> f) -- ^ remove type information in ExtFORMULA
 	    -> Sign f e -> FORMULA f -> 
 	       FORMULA f
 simplifySen min_func e_func rmTypE_func sign formula = 
@@ -55,8 +55,9 @@ simplifySen min_func e_func rmTypE_func sign formula =
 {- |
    simplifies the TERM such that there are no type-information in it.
 -}
-rmTypesT :: (PrettyPrint f, Eq f) => Min f e -- for 'anaFormula' in case of 'Conditional'
-	 ->(f -> f) -- ^ remove type information in ExtFORMULA
+rmTypesT :: (PrettyPrint f, Eq f) => 
+	    Min f e -- for 'anaFormula' in case of 'Conditional'
+	 ->(Sign f e -> f -> f) -- ^ remove type information in ExtFORMULA
 	 -> Sign f e -> TERM f -> TERM f
 rmTypesT minT rmTypE_func signT termT = 
     case termT of
@@ -93,7 +94,7 @@ rmTypesT minT rmTypE_func signT termT =
 {- |
    analyzes the TERM if it is the Minimal Expansions of a TERM
 -}
-anaTerm :: (PrettyPrint f, Eq f) => Min f e -> (f -> f) -> Sign f e -> TERM f -> TERM f
+anaTerm :: (PrettyPrint f, Eq f) => Min f e -> (Sign f e ->f -> f) -> Sign f e -> TERM f -> TERM f
 anaTerm minA rmtFunc signA term = 
     case maybeResult $ minExpTerm minA emptyGlobalAnnos signA (rtc term) of
          Just _  -> rtc term
@@ -107,7 +108,7 @@ anaTerm minA rmtFunc signA term =
     simplifies the FORMULA such that there are no type-information in it.
 -}
 rmTypesF ::(PrettyPrint f, Eq f) => Min f e 
-	 -> (f -> f) -- ^ remove type information in ExtFORMULA
+	 -> (Sign f e ->f -> f) -- ^ remove type information in ExtFORMULA
 	 -> Sign f e -> FORMULA f -> FORMULA f
 rmTypesF minF rmTypesFunc signF form = 
     case form of
@@ -124,7 +125,7 @@ rmTypesF minF rmTypesFunc signF form =
 	 Equivalence f1 f2 pos -> Equivalence (rmTypesFCall f1) (rmTypesFCall f2) pos
 	 Negation f pos ->  Negation (rmTypesFCall f) pos
 	 -- Mixfix_formula t	->  Mixfix_formula (anaTerm t) 	
-	 ExtFORMULA f -> ExtFORMULA $ rmTypesFunc f
+	 ExtFORMULA f -> ExtFORMULA $ rmTypesFunc signF f
 	 f -> error ("Error in rmTypesF " ++  show f) 
       where rmTypesFCall = rmTypesF minF rmTypesFunc signF 
 	    anaTermCall = anaTerm minF rmTypesFunc signF
@@ -132,7 +133,7 @@ rmTypesF minF rmTypesFunc signF form =
 {- |
     analyzes the Formula if it is the Minimal Expansions of a FORMULA.
 -}
-anaFormula :: (PrettyPrint f, Eq f) => Min f e -> (f -> f) -> Sign f e -> FORMULA f -> FORMULA f
+anaFormula :: (PrettyPrint f, Eq f) => Min f e -> (Sign f e ->f -> f) -> Sign f e -> FORMULA f -> FORMULA f
 anaFormula minF rmTypeE_func sign' form1 = 
     let rmf = rmTypesF minF rmTypeE_func sign' form1 
 	atc = anaTerm minF rmTypeE_func sign'

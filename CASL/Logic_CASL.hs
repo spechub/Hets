@@ -58,6 +58,7 @@ type CASLFORMULA = FORMULA ()
 dummy :: a -> b -> ()
 dummy _ _ = ()
 
+
 -- dummy of "Min f e"
 dummyMin :: a -> b -> c -> Result ()
 dummyMin _ _ _ = Result {diags = [], maybeResult = Just ()}
@@ -154,7 +155,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       consCheck CASL = checkFreeType
-      simplify_sen CASL = simplifySen dummyMin dummy id
+      simplify_sen CASL = simplifySen dummyMin dummy dummy
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
