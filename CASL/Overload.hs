@@ -222,7 +222,7 @@ minExpFORMULA_pred mef sign predicate terms pos = do
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     preds_equal = (pred1 == pred2)              -- ::  Bool
                     preds_equiv = leqP sign pred1 pred2         -- ::  Bool
-                    types_equal = and (zipWith (==) s1 s2)      -- ::  Bool
+                    types_equal = False -- and (zipWith (==) s1 s2) -- ::  Bool
                 in  b1 && b2 && (preds_equal
                                  || (preds_equiv
                                      && types_equal))
@@ -446,7 +446,7 @@ minExpTerm_op1 mef sign op terms pos = do
                     b2 = zipped_all (leq_SORT sign) s2 w2       -- ::  Bool
                     ops_equal = (op1 == op2)                    -- ::  Bool
                     ops_equiv = leqF sign op1 op2               -- ::  Bool
-                    types_equal = and (zipWith (==) s1 s2)      -- ::  Bool
+                    types_equal = False -- and (zipWith (==) s1 s2) -- ::  Bool
                 in  b1 && b2 && (ops_equal
                                 || (ops_equiv
                                     && types_equal))
