@@ -104,9 +104,9 @@ generateOntology onto (f:fs) =
 
 		RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) -> 
 		  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue 
-		  in case  weOnto of
-		       Left err -> weOnto
-		       Right o -> insertRelationType o name sourceClass targetClass
+		  in weither (const weOnto)
+                      ( \ o -> insertRelationType o name sourceClass targetClass)
+                      weOnto
 
 		BaseRelationDeclFrag (BaseRelationDecl cardValue name defaultText superRel) ->
 		  insertBaseRelation onto name defaultText superRel cardValue 
@@ -119,11 +119,7 @@ generateOntology onto (f:fs) =
 
 		otherwise -> hasValue(onto)
   
-  in case  weOnto of
-       Left err -> weOnto
-       Right o -> generateOntology o fs
-
-
+  in weither (const weOnto) (flip generateOntology fs) weOnto
 
 -- frag ist der eigentliche Parser für Fragmente. Als ersten Parameter bekommt er eine Liste der
 -- bisher beim Parsen aufgesammelten Relationsnamen übergeben, damit der Link-Parser (aufgerufen vom

@@ -32,7 +32,7 @@ convTaxo :: TaxoGraphKind -> MMiSSOntology
 	 -> Sign f e 
 	 -> [Named (FORMULA f)] -> Result MMiSSOntology
 convTaxo kind onto sign sens =
-   withErrorToResult $ 
+   fromWithError $ 
    case kind of
     KSubsort -> convSign KSubsort onto sign
     KConcept -> foldl convSen (convSign KConcept onto sign) sens
@@ -49,7 +49,7 @@ convSign KSubsort onto sign =
 	  relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
 	  addSor sort weOnto =
 	     let sortStr = str sort in
-	      either (const weOnto)
+	      weither (const weOnto)
 		     (\ on -> 
 		      maybe (insertClass on 
 		                         sortStr sortStr 
@@ -57,11 +57,11 @@ convSign KSubsort onto sign =
 	                     (\ l -> addSuperSorts sort l weOnto) $
 		             Map.lookup sort relMap) weOnto
 	  addSuperSorts sort supSl weOnto =
-	      either (const weOnto)
+	      weither (const weOnto)
 		     (\_ -> Set.fold insRel weOnto supSl) weOnto
 	      where sortStr = str sort
 		    insRel supS weOn =
-			either (const weOn)
+			weither (const weOn)
 			   (\ on -> 
 			         insertClass on
 			                     sortStr sortStr
@@ -70,8 +70,6 @@ convSign KSubsort onto sign =
 
 convSen :: WithError MMiSSOntology 
 	-> Named (FORMULA f) -> WithError MMiSSOntology
-convSen weOnto _nSen = 
-    case weOnto of
-     Left _ -> weOnto
-     Right o  -> hasValue o -- insertClass (cSen nSen) o 
+convSen weOnto _nSen = weither (const weOnto) hasValue weOnto
+              -- insertClass (cSen nSen) o 
 

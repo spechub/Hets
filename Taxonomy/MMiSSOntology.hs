@@ -19,7 +19,9 @@ module Taxonomy.MMiSSOntology (
   InsertMode(..),
   OntoObjectType(..),
   ClassType(..),
-  WithError(..),
+  weither, -- like either
+  fromWithError, -- convert to another monad
+  WithError, 
   {-- 
    AutoInsert: When a new class is to be inserted and the given SuperClass is not
                present in the ontology, it is automatically inserted with just it's name.
@@ -104,7 +106,7 @@ import Data.FiniteMap
 import Data.Graph.Inductive
 import Data.Graph.Inductive.Tree
 
-import Control.Monad.Error
+import Control.Monad
 
 type ClassName = String
 type ObjectName = String
@@ -116,13 +118,29 @@ type RelName = String
 type RelationText = String
 type AutoInserted = Bool
 
-type WithError a = Either String a
+data WithError a = HasError String | HasValue a
+
+instance Functor WithError where
+  fmap                = liftM
+
+instance Monad WithError where
+  return              = HasValue
+  HasValue x >>= f    = f x
+  HasError x >>= f    = HasError x
 
 hasError :: String -> WithError a 
-hasError = Left
+hasError = HasError
 
 hasValue :: a -> WithError a 
-hasValue = Right
+hasValue = HasValue
+
+weither :: (String -> b) -> (a -> b) -> WithError a -> b
+weither ef vf we = case we of
+                   HasError s -> ef s
+                   HasValue v -> vf v
+
+fromWithError :: (Monad m) => WithError a -> m a
+fromWithError = weither (\err -> fail err) (\x -> return x) 
 
 data RelationProperty = InversOf String | Functional 
                         deriving (Eq, Read, Show)

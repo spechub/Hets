@@ -4,26 +4,18 @@
 module Main(main) where
 
 
-import IO
 import System
-import List
+import System.IO
+import Data.List(elemIndices)
 
---import Computation
-import AtomString
 import Taxonomy.OntoParser
 import Taxonomy.MMiSSOntology
 import Taxonomy.MMiSSOntologyGraph
 import Data.Graph.Inductive.Graphviz
 
-import Events
--- import Destructible
--- import InfoBus
-
 import HTk
-import SimpleForm
-import DialogWin
 
-
+main :: IO ()
 main =
    do args <- System.getArgs
       if ((length (elemIndices "--help" args)) > 0)
@@ -34,7 +26,7 @@ main =
 		putStr " -daVinci : start daVinci and show ontology as graph\n"
 		exitWith ExitSuccess
         else done
-      filename <- if ((length args) == 0) 
+      fileName <- if ((length args) == 0) 
                     then do putStr "Tool for checking and converting MMiSS ontologies"
 		            putStr "usage:\n  ontotool [OPTIONS] [STARTNODENAME] INPUTFILE\n"
 		            putStr "Options are:\n"
@@ -45,19 +37,18 @@ main =
       startNodeName <- if ((length args) > 2)
                          then return(Just(head (drop 1 (reverse args))))
                          else return(Nothing)
-      weOntology <- parseMMiSSOntologyFile filename
+      weOntology <- parseMMiSSOntologyFile fileName
 
-      onto <- case weOntology of
-                Left message -> let str = "The following errors occured during parsing:\n" 
-                                in error (str ++ message)
-                Right o -> let messages = isComplete o
-                           in if (messages == [])
+      onto <- weither ( \ message -> 
+                        let str = "The following errors occured during parsing:\n"
+                        in error (str ++ message)) 
+                ( \ o -> let messages = isComplete o
+                         in if (messages == [])
                                 then do hPutStr stderr "Parse: Successfull\nChecking Ontology: Successfull\n" 
                                         return o
                                 else do hPutStr stderr (unlines messages)
-					return o
+					return o) weOntology
 --                                        exitWith (ExitFailure 2)
-
       if ((length (elemIndices "-owl" args)) > 0)
         then let str = (exportOWL onto)
              in do putStr str 
