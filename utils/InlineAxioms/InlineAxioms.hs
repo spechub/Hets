@@ -7,10 +7,10 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Preprocessor for sentences written in some logic, usually used for transforming
-   file.inline.hs into file.hs.
-   The sentences are replaced with corresponding abstract syntax trees in Haskell.
-   This frees the programmer from writing AS tree expressions.
+   Preprocessor for sentences written in some logic, usually used for
+   transforming file.inline.hs into file.hs.  The sentences are
+   replaced with corresponding abstract syntax trees in Haskell.  This
+   frees the programmer from writing AS tree expressions.
 
    The syntax for inline sentences is
 
@@ -26,7 +26,8 @@ generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat [inlineAxioms CASL
             "  sorts s < s'; op inj : s->s' \
-             \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
+             \ forall x,y:s . inj(x)=inj(y) => x=y  
+                                  %(ga_embedding_injectivity)% "
            | (s,s') <- Rel.toList (sortRel sig)]
   where x = mkSimpleId "x"
         y = mkSimpleId "y"
@@ -36,16 +37,12 @@ generateAxioms sig =
 
 module Main where -- Comorphisms.PreProcessor where
 
---import Debug.Trace
-
-import Haskell.Hatchet.HsPretty as HP
-import Haskell.Hatchet.HsSyn
-import Haskell.Hatchet.TIPhase (parseFile, parseHsSource)
+import Language.Haskell.Pretty as HP
+import Language.Haskell.Syntax
+import Language.Haskell.Parser
 
 import Common.GlobalAnnotations 
 import Common.AnnoState
-import Common.Lib.Pretty
-import Common.PrettyPrint
 import Common.Lib.Parsec
 import Common.Result
 
@@ -57,9 +54,6 @@ import IO
 
 import Comorphisms.LogicList
 import Logic.Logic
-
-instance PrettyPrint HsModule where
-    printText0 _ m = text $ HP.render $ ppHsModule m
 
 -- hack: delete position info of form "[nlineAxioms ...]", replace with "[]"
 deletePos :: String -> String
@@ -84,9 +78,10 @@ listComp :: String -> HsExp
 listComp s = lcHsExp 0 expr
   where
   modStr = "module M where\nf="++deletePos s
-  expr = case parseHsSource modStr of
-    HsModule _ _ _ [HsPatBind _ _ (HsUnGuardedRhs expr1) _] -> expr1
-    _ -> error "inlineAxioms: parser delivered unknown as tree"
+  expr = case parseModule modStr of
+    ParseOk (HsModule _ _ _ _ [HsPatBind _ _ (HsUnGuardedRhs expr1) _]) 
+        -> expr1
+    err -> error ("inlineAxioms: " ++ show err)
   
   
 -- parse inline for Haskell decls and exps
@@ -112,8 +107,8 @@ piHsAlt (HsAlt loc pat alts decls) =
   HsAlt loc pat (piHsGuardedAlts alts) (map piHsDecl decls)
 
 piHsExp :: HsExp -> HsExp
-piHsExp (HsInfixApp expr1 expr2 expr3) =
-  HsInfixApp (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
+piHsExp (HsInfixApp expr1 qOp expr3) =
+  HsInfixApp (piHsExp expr1) qOp (piHsExp expr3)
 piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent "inlineAxioms"))) 
                       (HsCon (UnQual (HsIdent logStr)))) 
                (HsLit (HsString str))) =
@@ -144,17 +139,20 @@ piHsExp (HsDo stmts) = HsDo (map piHsStmt stmts)
 piHsExp (HsTuple exprs) = HsTuple (map piHsExp exprs)
 piHsExp (HsList exprs) = HsList (map piHsExp exprs) 
 piHsExp (HsParen expr) = HsParen (piHsExp expr)
-piHsExp (HsLeftSection expr1 expr2) = HsLeftSection (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsRightSection expr1 expr2) =  HsRightSection (piHsExp expr1) (piHsExp expr2)
+piHsExp (HsLeftSection expr1 qOp) = HsLeftSection (piHsExp expr1) qOp
+piHsExp (HsRightSection qOp expr2) =  HsRightSection qOp (piHsExp expr2)
 piHsExp (HsRecConstr qn fields) = HsRecConstr qn (map piHsFieldUpdate fields)
 piHsExp (HsRecUpdate expr fields) = 
   HsRecUpdate (piHsExp expr) (map piHsFieldUpdate fields)
 piHsExp (HsEnumFrom expr) = HsEnumFrom (piHsExp expr)
-piHsExp (HsEnumFromTo expr1 expr2) = HsEnumFromTo (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsEnumFromThen expr1 expr2) = HsEnumFromThen (piHsExp expr1) (piHsExp expr2)
+piHsExp (HsEnumFromTo expr1 expr2) = 
+  HsEnumFromTo (piHsExp expr1) (piHsExp expr2)
+piHsExp (HsEnumFromThen expr1 expr2) = 
+  HsEnumFromThen (piHsExp expr1) (piHsExp expr2)
 piHsExp (HsEnumFromThenTo expr1 expr2 expr3) = 
   HsEnumFromThenTo (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
-piHsExp (HsListComp expr stmts) = HsListComp (piHsExp expr) (map piHsStmt stmts)
+piHsExp (HsListComp expr stmts) = 
+  HsListComp (piHsExp expr) (map piHsStmt stmts)
 piHsExp (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (piHsExp expr) qt
 piHsExp expr = expr
 
@@ -177,8 +175,8 @@ piHsDecl (HsPatBind loc pat rhs decls) =
 piHsDecl decl = decl
 
 parseInline :: HsModule -> HsModule
-parseInline (HsModule modu expr imp decls) =
-  HsModule modu expr imp (map piHsDecl decls)
+parseInline (HsModule loc modu expr imp decls) =
+  HsModule loc modu expr imp (map piHsDecl decls)
 
 
 -- transformation of x_i to list comprehension x_i<-x
@@ -225,8 +223,8 @@ indexVar (HsList exprs) =
 indexVar _ = []
 
 lcHsExp :: Int -> HsExp -> HsExp
-lcHsExp n (HsInfixApp expr1 expr2 expr3) =
-  HsInfixApp (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (HsInfixApp expr1 qOp expr3) =
+  HsInfixApp (lcHsExp n expr1) qOp (lcHsExp n expr3)
 lcHsExp n (HsApp expr1 expr2) =
   HsApp (lcHsExp n expr1) (lcHsExp n expr2)
 lcHsExp n (HsNegApp expr) =
@@ -240,20 +238,21 @@ lcHsExp n (HsIf expr1 expr2 expr3) =
 lcHsExp n (HsCase expr alts) = HsCase (lcHsExp n expr) (map lcHsAlt alts)
 lcHsExp _ (HsDo stmts) = HsDo (map lcHsStmt stmts)
 lcHsExp n (HsTuple exprs) = HsTuple (map (lcHsExp n) exprs)
-lcHsExp _ (expr@(HsList [])) = expr
-lcHsExp (n+1) (HsList exprs) = HsList (map (lcHsExp n) exprs)
-lcHsExp 0 (HsList (exprs@(expr:_))) = 
+lcHsExp n (HsList exprs)  
+  | null exprs = HsList [] 
+  | n > 0 = HsList $ map (lcHsExp (n-1)) exprs
+  | otherwise = let expr = head exprs in 
   case nub $ indexVar expr of
     [] -> HsList (map (lcHsExp 0) exprs)
-    [(v,n)] -> HsListComp (lcHsExp (max (n-1) 0) expr) [HsGenerator 
-                 (SrcLoc 0 0) 
+    [(v,k)] -> HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator 
+                 (SrcLoc "" 0 0) 
                  (HsPVar $ HsIdent $ v) 
                  (HsVar $ UnQual $ HsIdent $ v0 $ v)
                 ]
-    vs@((_,n):_) -> 
+    vs@((_,k):_) -> 
        let vs' = map fst vs
-        in HsListComp (lcHsExp (max (n-1) 0) expr) [HsGenerator 
-              (SrcLoc 0 0) 
+        in HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator 
+              (SrcLoc "" 0 0) 
               (HsPTuple (map (HsPVar . HsIdent) vs')) 
               (mkZip (map (HsVar . UnQual . HsIdent . v0) vs'))
             ]
@@ -263,20 +262,23 @@ lcHsExp 0 (HsList (exprs@(expr:_))) =
           foldl HsApp (HsVar $ Qual (Module "Data.List") 
                                     (HsIdent ("zip"++ext)))
                 l
-          where ext = if n==2 then "" else show n
-                n = length l
+          where ext = if len == 2 then "" else show len
+                len = length l
 lcHsExp n (HsParen expr) = HsParen (lcHsExp n expr)
-lcHsExp n (HsLeftSection expr1 expr2) = HsLeftSection (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsRightSection expr1 expr2) =  HsRightSection (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsLeftSection expr1 qOp) = HsLeftSection (lcHsExp n expr1) qOp
+lcHsExp n (HsRightSection qOp expr2) =  HsRightSection qOp (lcHsExp n expr2)
 lcHsExp _ (HsRecConstr qn fields) = HsRecConstr qn (map lcHsFieldUpdate fields)
 lcHsExp n (HsRecUpdate expr fields) = 
   HsRecUpdate (lcHsExp n expr) (map lcHsFieldUpdate fields)
 lcHsExp n (HsEnumFrom expr) = HsEnumFrom (lcHsExp n expr)
-lcHsExp n (HsEnumFromTo expr1 expr2) = HsEnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsEnumFromThen expr1 expr2) = HsEnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsEnumFromTo expr1 expr2) = 
+  HsEnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (HsEnumFromThen expr1 expr2) = 
+  HsEnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
 lcHsExp n (HsEnumFromThenTo expr1 expr2 expr3) = 
   HsEnumFromThenTo (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
-lcHsExp n (HsListComp expr stmts) = HsListComp (lcHsExp n expr) (map lcHsStmt stmts)
+lcHsExp n (HsListComp expr stmts) = 
+  HsListComp (lcHsExp n expr) (map lcHsStmt stmts)
 lcHsExp n (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (lcHsExp n expr) qt
 lcHsExp _ expr = expr
 
@@ -298,22 +300,20 @@ lcHsDecl (HsPatBind loc pat rhs decls) =
   HsPatBind loc pat (lcHsRhs rhs) (map lcHsDecl decls)
 lcHsDecl decl = decl
 
-{-
-listComp :: HsModule -> HsModule
-listComp (HsModule modu expr imp decls) =
-  HsModule modu expr imp (map lcHsDecl decls)
--}
-
 -- main functions
 
 processFile :: String -> IO ()
 processFile file = do
-  hPutStrLn stderr ("Preprocessing inline axioms in "++file)
-  decls <- parseFile file
-  let decls' = parseInline decls
-      --decls'' = listComp $ parseHsSource (showPretty decls' "")
-  putStrLn (header ++ showPretty decls' "")
-  where header = "{- generated by utils/inlineAxioms. Look, but don't touch! -}\n\n"
+  -- hPutStrLn stderr ("Preprocessing inline axioms in "++file)
+  src <- readFile file
+  let hsModRes = parseModuleWithMode (ParseMode file) src
+  case hsModRes of 
+       ParseOk hsMod -> do 
+           let decls' = parseInline hsMod
+           putStrLn (
+               "{- generated by utils/outlineAxioms. Look, but don't touch! -}"
+               ++ "\n\n" ++ HP.prettyPrint decls')
+       _ -> hPutStrLn stderr $ show hsModRes
 
 main :: IO ()
 main = do args <- getArgs
@@ -321,6 +321,7 @@ main = do args <- getArgs
             (_,files@(_:_),[]) -> do 
               mapM processFile files
               return ()
-            (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header opts))
-          where header = "Usage: inlineAxioms file [file ...]"
+            (_,_,errs) -> ioError (userError (concat errs ++ 
+                                                     usageInfo header opts))
+          where header = "Usage: outlineAxioms file [file ...]"
                 opts = [] -- no options
