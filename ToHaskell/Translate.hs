@@ -23,9 +23,9 @@ translateBasicItems (bi:bis) =
           ((translateBasicItem (item bi))++(translateBasicItems bis))
 
 translateBasicItem :: BasicItem -> [HsDecl]
-translateBasicItem item = 
-  case item of
-    ProgItems eqList posList -> translateProgEqs eqList
+translateBasicItem i = 
+  case i of
+    ProgItems eqList _posList -> translateProgEqs eqList
     _ -> error "not yet implemented"
 
 
