@@ -206,12 +206,12 @@ toPrecTree trm =
     App c1@(Const "All" _ _) a2@(Abs _ _ _ _) _-> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
             [toPrecTree c1, toPrecTree a2]
-    App (Const "Ex" t1 c) a2@(Abs _ _ _ _) _ -> 
+    App c1@(Const "Ex" t1 c) a2@(Abs _ _ _ _) _ -> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
-            [toPrecTree (Const "All" t1 c), toPrecTree a2]
-    App (Const "Ex1" t1 c) a2@(Abs _ _ _ _) _ -> 
+            [toPrecTree c1, toPrecTree a2]
+    App c1@(Const "Ex1" t1 c) a2@(Abs _ _ _ _) _ -> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
-            [toPrecTree (Const "All" t1 c), toPrecTree a2]
+            [toPrecTree c1, toPrecTree a2]
     App t1 t2 _ -> 
       case t1 of 
         App t@(Const "op <=>" _ _) t3 _ 
