@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
    These data structures describe the abstract syntax tree for heterogenous 
-   structured specifications in HetCASL.
+   libraries in HetCASL.
    Follows Sect. II:2.2.5 of the CASL Reference Manual.
 
 -}
