@@ -339,4 +339,4 @@ translateSentence env sen = case sentence sen of
     _ -> []
 
 derives :: [SN HsName]
-derives = map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
+derives = [] -- map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
