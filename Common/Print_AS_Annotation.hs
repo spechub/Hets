@@ -78,6 +78,7 @@ instance PrettyPrint Annotation where
 		               ALeft -> ptext "left_assoc") $ fcat $ 
 				punctuate (comma <> space) $ 
 					  map (printText0 ga) aa
+    printText0 _ (Label [] _) = empty
     printText0 _ (Label aa _) =
 	let aa' = vcat $ map ptext aa
 	in ptext "%(" <> aa' <> ptext ")%"
