@@ -1,11 +1,12 @@
+{-# OPTIONS -fglasgow-exts #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
    unsafeCoerce for GHC
 -}

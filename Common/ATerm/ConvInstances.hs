@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich 
@@ -5,7 +6,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (SPECIALIZE pragma)
 
 This module provides instances of
 Common.ATerm.Conversion.ATermConvertible.  The purpose is separation
