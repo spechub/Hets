@@ -123,16 +123,7 @@ mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
 
 embedMorphism :: Env -> Env -> Morphism
-embedMorphism a b =
-    (mkMorphism a b) 
-    { typeIdMap = foldr (\x -> Map.insert x x) Map.empty 
-                $ Map.keys $ typeMap a
-    , funMap = Map.foldWithKey 
-                 ( \ i (OpInfos ts) m -> foldr 
-                      (\ oi -> let v = (i, TySc $ opType oi) in 
-                         Map.insert v v) m ts)
-                 Map.empty $ assumps a
-    }
+embedMorphism = mkMorphism
 
 ideMor :: Env -> Morphism
 ideMor e = embedMorphism e e
@@ -140,13 +131,15 @@ ideMor e = embedMorphism e e
 compMor :: Morphism -> Morphism -> Maybe Morphism
 compMor m1 m2 = 
   if isSubEnv (mtarget m1) (msource m2) then 
-      let tm2 = typeIdMap m2 in Just 
+      let tm2 = typeIdMap m2 
+	  fm2 = funMap m2 in Just 
       (mkMorphism (msource m1) (mtarget m2))
-      { typeIdMap = Map.map ( \ i -> Map.findWithDefault i i tm2)
-			     $ typeIdMap m1
+      { typeIdMap = Map.foldWithKey ( \ i j -> 
+		       Map.insert i $ Map.findWithDefault j j tm2)
+			     tm2 $ typeIdMap m1
       , funMap = Map.foldWithKey ( \ p1 p2 -> 
 		       Map.insert p1
-		       $ mapFunEntry tm2 (funMap m2) p2) Map.empty $ funMap m1
+		       $ mapFunEntry tm2 fm2 p2) fm2 $ funMap m1
       }
    else Nothing
 
