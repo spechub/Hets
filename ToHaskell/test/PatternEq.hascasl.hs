@@ -12,16 +12,16 @@ a :: A_s
 a = undefined
  
 b :: A_s
-b = undefined
  
 c :: A_t
-c = undefined
  
 a_snd :: (A_s, A_t) -> A_t
-a_snd = undefined
  
 x :: A_s
 x = undefined
  
 y :: A_t
 y = undefined
+a_snd (x, y) = y
+b = a
+c = a_snd (x, y)

@@ -49,9 +49,6 @@ program equations (ProgEq.hs).
 Add a "bottom" or a missing case term to convert conditional equations
 (implications) to when-else terms.
 
-Convert executable formulas "f" or "not f" to program equations "f =
-True" or "f = False"
-
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 

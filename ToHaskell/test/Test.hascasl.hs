@@ -2,9 +2,6 @@ module Dummy where
 import Prelude (undefined, Show, Eq, Ord, Bool)
 import MyLogic
  
-data AT = A !(A_Int, B)
-        deriving (Show, Eq, Ord)
- 
 data B = B
        deriving (Show, Eq, Ord)
  
@@ -26,7 +23,10 @@ f :: B -> B
 f = undefined
  
 s1 :: AT -> A_Int
-s1 = undefined
  
 s2 :: AT -> B
-s2 = undefined
+s1 (A (x_11_11, x_11_12)) = x_11_11
+s2 (A (x_11_11, x_11_12)) = x_11_12
+ 
+data AT = A !(A_Int, B)
+        deriving (Show, Eq, Ord)

@@ -48,11 +48,3 @@ instance Comorphism HasCASL2HasCASL
     map_theory HasCASL2HasCASL (sig, sen) = Just 
       (sig, map  (mapNamed (translateSen sig)) sen)
 
-translateSen :: Env -> Sentence -> Sentence
-translateSen env s = case s of 
-	Formula t -> case mkQuantEq env t of
-		 Nothing -> s 
-		 Just pe@(ProgEq p _ _) -> case getAppl p of
-		     Nothing -> s 
-		     Just (i, sc, _) -> ProgEqSen i sc pe
-	_ -> s 

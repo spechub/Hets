@@ -36,5 +36,7 @@ lineParser = [
 
 fileParser = [ ("BasicSpec", fromAParser basicSpec)
 	     , ("analysis", anaParser)
+	     , ("sentences", printSen senParser)
+	     , ("translate", printSen transParser)
 	     ]
 

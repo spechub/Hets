@@ -64,8 +64,8 @@ findUniqueId uid ts tm as =
 --   the last token of the token list.
 --   Uses 'isSimilarId'.
 findSimilarId :: Id -> [Id] -> Id
-findSimilarId i ilist = 
-       head $ filter (isSimilarId i) ilist
+findSimilarId i ilist = let l = filter (isSimilarId i) ilist in
+      if null l then error "findSimilarId" else head l
 
 -- | Two identifiers are similar if the second is maximum one token longer
 --   and if they match in all other respects.

@@ -25,20 +25,23 @@ import Common.PrettyPrint
 import Haskell.Hatchet.MultiModuleBasics
 import Haskell.Hatchet.HsPretty
 import Haskell.Hatchet.HsSyn
+import Haskell.PrintModuleInfo
 
 import ToHaskell.TranslateAna
 
 import HasCASL.Le
 import HasCASL.AsToLe(cleanEnv, anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
-import Haskell.PrintModuleInfo
+import HasCASL.ProgEq
 
 hParser :: AParser [HsDecl]
 hParser = do b <- basicSpec
-	     let env = cleanEnv $ snd $ runState 
+	     let env = snd $ runState 
 		       (anaBasicSpec emptyGlobalAnnos b) initialEnv
-		 hs = translateSig env
-		 nhs = concatMap (translateSentence env) $ sentences env
+		 hs = translateSig $ cleanEnv env
+		 nhs = concatMap (translateSentence env . mapNamed
+				  (translateSen env)) 
+		       $ sentences env
 	     return (cleanSig hs nhs ++ map sentence nhs)
 	  
 main :: IO ()

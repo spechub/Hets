@@ -18,4 +18,4 @@ x2 :: A_s
 x2 = undefined
  
 y :: A_s
-y = undefined
+y = _2_P_2 (x2, x2)
