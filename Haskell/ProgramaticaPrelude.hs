@@ -1,5 +1,47 @@
 module Prelude where
 
+data Unit = Unit
+type Pred a = a -> Unit
+
+bottom :: a
+bottom = error "bottom"
+
+a___2_S_B_2 :: (Unit, Unit) -> Unit
+a___2_S_B_2 = bottom
+
+a___2_L_E_G_2 :: (Unit, Unit) -> Unit
+a___2_L_E_G_2 = bottom
+
+a___2_E_2 :: (a, a) -> Unit
+a___2_E_2 = bottom
+
+a___2_E_G_2 :: (Unit, Unit) -> Unit
+a___2_E_G_2 (a, b) = bottom
+
+a___2_Ee_E_2 :: (a, a) -> Unit
+a___2_Ee_E_2 = bottom
+
+a___2_B_S_2 :: (Unit, Unit) -> Unit
+a___2_B_S_2 = bottom
+
+a___2if_2 :: (Unit, Unit) -> Unit
+a___2if_2 (a, b) = bottom
+
+a___2when_2else_2 :: (a, Unit, a) -> a
+a___2when_2else_2 (a, b, c) = bottom
+
+not_2 :: Unit -> Unit
+not_2 = bottom
+
+def_2 :: a -> Unit
+def_2 a = bottom
+
+false :: Unit
+false = bottom
+
+true :: Unit
+true = bottom
+
 data Integer
 data Rational
 data Double

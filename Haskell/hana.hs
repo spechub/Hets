@@ -57,11 +57,3 @@ main = do l <- getArgs
 		       _ -> mapM_ (putStrLn . show) ds
 	     else putStrLn "missing argument"
 
-preludeDecls :: [HsDecl]
-preludeDecls = let ts = pLexerPass0 lexerflags0 
-                        -- adjust line number of 'preludeString =' by hand!
-                        (preludeString)
-   in case parseTokens (HP.parse) "Haskell/ProgramaticaPrelude.hs" ts of
-      Just (HsModule _ _ _ _ ds) -> ds
-      _ -> error "preludeDecls"
-

@@ -11,7 +11,17 @@ provide the programatica prelude as a string
 
 -}
 
-module Haskell.PreludeString (preludeString) where
+module Haskell.PreludeString (preludeDecls) where
+
+import Haskell.HatParser
+
+preludeDecls :: [HsDecl]
+preludeDecls = let ts = pLexerPass0 lexerflags0 preludeString
+   in case parseTokens parse "Haskell/ProgramaticaPrelude.hs" ts of
+      Just (HsModule _ _ _ _ ds) -> ds
+      _ -> error "preludeDecls"
 
 preludeString :: String
-preludeString = -- 
+preludeString = 
+{- append Haskell/ProgramaticaPrelude.hs by
+   utils/appendHaskellPreludeString -}

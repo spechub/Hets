@@ -12,52 +12,27 @@ Portability :  non-portable
 module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
 
 import Common.AS_Annotation 
+import Common.Id(nullPos, Pos(..))
 import Common.Result 
 import Common.GlobalAnnotations
-import PropPosSyntax hiding (Id, HsName)
-import Modules
-import MUtils
-import SimpFieldLabels
-import ReAssocModule
-import AST4ModSys
-import HsName
-import ReAssocBase
-import Names
-import Ents
-import SourceNames
-import Relations
-import WorkModule
-import ScopeModule
-import OrigTiMonad
-import TypedIds(namespace)
-import HasBaseName
-import TiNames
-import TiTypes
-import TiInstanceDB
-import TiClasses
-import HsConstants
-import PPfeInstances()
-import UniqueNames
-import TypedIds
-import PNT
-import Lift
-import qualified NewPrettyPrint as HatPretty
 import Haskell.HatParser
+import Haskell.PreludeString
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Data.List((\\))
-import Data.Set
+import Data.List
+import Data.Char
+import Data.Set as DSet
 import qualified Common.Lib.Map as Map
-import TiPropDecorate
+import qualified Common.Lib.Set as Set
 
-type Scope = Rel (SN HsName) (Ent (SN Id))
+type Scope = Rel (SN HsName) (Ent (SN String))
 
 data Sign = Sign 
     { instances :: [Instance PNT]
-    , types :: Map.Map (HsIdentI PNT) (Kind, TiTypes.TypeInfo PNT)
+    , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
     , values :: Map.Map (HsIdentI PNT) (Scheme PNT) 
     , scope :: Scope
-    , fixities :: Map.Map (HsIdentI (SN Id)) HsFixity
+    , fixities :: Map.Map (HsIdentI (SN String)) HsFixity
     } deriving (Show, Eq)
 
 diffSign :: Sign -> Sign -> Sign
@@ -74,14 +49,14 @@ addSign e1 e2 = emptySign
     { instances = let is = instances e2 in (instances e1 \\ is) ++ is
     , types = types e1 `Map.union` types e2
     , values = values e1 `Map.union` values e2 
-    , scope = scope e1 `union` scope e2 
+    , scope = scope e1 `DSet.union` scope e2 
     , fixities = fixities e1 `Map.union` fixities e2
     }
 
 isSubSign :: Sign -> Sign -> Bool
 isSubSign e1 e2 = diffSign e1 e2 == emptySign
 
-instance Eq (TiTypes.TypeInfo i) where
+instance Eq (TypeInfo i) where
     _ == _ = True
 
 instance Eq (TiDecl PNT) where
@@ -91,40 +66,37 @@ instance Ord (TiDecl PNT) where
     s1 <= s2 = show s1 <= show s2
 
 instance PrettyPrint (TiDecl PNT) where
-     printText0 _ = text . HatPretty.pp
+     printText0 _ = text . pp
 
 instance PrettyPrint Sign where
     printText0 _ Sign { instances = is, types = ts, 
                         values = vs, fixities = fs, scope = sc }
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
-                   vcat (map (text . HatPretty.pp) is)) $$ 
+                   vcat (map (text . pp) is)) $$ 
           (if Map.isEmpty ts then empty else
               text "\ntypes:" $$ 
-                   vcat (map (text . HatPretty.pp) 
+                   vcat (map (text . pp) 
                          [ a :>: b | (a, b) <- Map.toList ts ])) $$
           (if Map.isEmpty vs then empty else
               text "\nvalues:" $$ 
-                   vcat (map (text . HatPretty.pp) 
+                   vcat (map (text . pp) 
                          [ a :>: b | (a, b) <- Map.toList vs ])) $$
           (if Map.isEmpty fs then empty else
               text "\nfixities:" $$ 
-                   vcat [ text (HatPretty.pp b) <+> text (HatPretty.pp a) 
+                   vcat [ text (pp b) <+> text (pp a) 
                               | (a, b) <- Map.toList fs ]) $$
           text "\nscope:" $$ 
-          text (HatPretty.pp sc) $$
+          text (pp sc) $$
           text "-}" $$
           text "module Dummy where"
-          $$ text "import Prelude (error, Show, Eq, Ord)"
           $$ text "import MyLogic"
 
-
-
-extendSign :: Sign -> [TiInstanceDB.Instance PNT]
-            -> [TiClasses.TAssump PNT] 
-            -> [TiTypes.Assump PNT] 
+extendSign :: Sign -> [Instance PNT]
+            -> [TAssump PNT] 
+            -> [Assump PNT] 
             -> Scope
-            -> [(HsIdentI (SN Id), HsFixity)]
+            -> [(HsIdentI (SN String), HsFixity)]
             -> Sign
 extendSign e is ts vs s fs = addSign e emptySign 
     { instances = is 
@@ -145,14 +117,27 @@ emptySign = Sign
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
-hatAna (hs@(HsDecls ds), e, _) = do
+hatAna (hs, e, ga) = do
+    (decls, diffSig, accSig, sens) <- hatAna2 (hs, addSign e preludeSign, ga)
+    return (decls, diffSig, diffSign accSig preludeSign, sens)
+
+preludeSign :: Sign
+preludeSign = case maybeResult $ hatAna2 
+                (HsDecls $ preludeDecls, 
+                         emptySign, emptyGlobalAnnos) of
+                Just (_, _, sig, _) -> sig
+                _ -> error "preludeSign"
+
+hatAna2 :: (HsDecls, Sign, GlobalAnnos) -> 
+          Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
+hatAna2 (hs@(HsDecls ds), e, _) = do
    let parsedMod = HsModule loc0 (SN mod_Prelude loc0) Nothing [] ds
        astMod = toMod parsedMod
        insc = inscope astMod (const emptyRel)
-       osc = scope e `union` insc
-       expScope :: Rel (SN Id) (Ent (SN Id))
+       osc = scope e `DSet.union` insc
+       expScope :: Rel (SN String) (Ent (SN String))
        expScope = mapDom (fmap hsUnQual) osc
-       wm :: WorkModuleI QName (SN Id)
+       wm :: WorkModuleI QName (SN String)
        wm = mkWM (osc, expScope)
        fixs = mapFst getQualified $ getInfixes parsedMod
        fixMap = Map.fromList fixs `Map.union` fixities e
@@ -170,18 +155,69 @@ hatAna (hs@(HsDecls ds), e, _) = do
            case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
            [v] -> Right (ent2pnt v)
            _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
-       prelError = HsVar $ PNT (PN (UnQual "error") 
-                                       (G mod_Prelude "error" noSrcLoc))
-                   Value noSrcLoc
----       nsds = simpFieldLabels prelError sds :: [HsDeclI PNT]
        inMyEnv =  withStdNames findPredef
                . inModule (const mod_Prelude) []
                . extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)
+   case sds of 
+       [] -> return ()
+       d : _ -> Result [Diag Hint ("\n" ++ pp sds) 
+                       $ formSrcLoc $ srcLoc d] $ Just ()
    fs :>: (is, (ts, vs)) <- 
         lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName $ fromDefs 
              (fs :: TiDecls PNT))
+
+-- filtering some Prelude stuff
+
+formSrcLoc :: SrcLoc -> Pos
+formSrcLoc (SrcLoc file _ line col) = SourcePos file line col
+
+getHsDecl = maybe (error "FromHasCASL.getHsDecl") id . basestruct . struct 
+
+preludeConflicts f = 
+    foldr ( \ d (es, ds) -> let e = f d
+                                p = formSrcLoc $ srcLoc e
+                            in
+        if preludeEntity e then 
+            (es, 
+             Diag Warning ("possible Prelude conflict:\n  " ++ pp e) p : ds)
+           else (d : es, ds)) ([], [])
+
+preludeEntity d = case d of 
+    HsFunBind _ ms -> any preludeMatch ms
+    HsTypeSig _ ts _ _ -> any (flip Set.member preludeValues . pp) ts
+    HsTypeDecl _ ty _ -> Set.member (pp $ definedType ty) preludeTypes
+    HsDataDecl _ _ ty cs _ -> Set.member (pp $ definedType ty) preludeTypes
+                              || any preludeConstr cs
+    _ -> True -- ignore others
+
+preludeMatch m = case m of 
+    HsMatch _ n _ _ _ -> let s = pp n in
+        Set.member s preludeValues || prefixed s
+
+preludeConstr c = let s = pp $ case c of
+                          HsConDecl _ _ _ n _ -> n 
+                          HsRecDecl _ _ _ n _ -> n 
+                  in Set.member s preludeConstrs
+
+genPrefixes :: [String]
+genPrefixes = ["$--", "default__", "derived__Prelude", "inst__Prelude"]
+
+prefixed :: String -> Bool
+prefixed s = any (flip isPrefixOf s) genPrefixes
+
+preludeValues :: Set.Set String
+preludeValues = Set.fromList $ filter (not . prefixed) $ map pp 
+                $ Map.keys $ values preludeSign
+
+preludeConstrs :: Set.Set String
+preludeConstrs = 
+    Set.filter ( \ s -> not (null s) && isUpper (head s)) preludeValues
+
+preludeTypes :: Set.Set String
+preludeTypes = Set.fromList $ map pp $ Map.keys $ types preludeSign
+
 
