@@ -19,10 +19,7 @@ import Data.Dynamic
 
 -- theories and theory morphisms
 
-data Theory sign sen = 
-     Theory {sign_of :: sign, 
-             ax_of :: [(String,sen)]
-            }
+type Theory sign sen = (sign,[Named sen])
 
 data TheoryMorphism sign sen mor = 
      TheoryMorphism {t_source, t_target :: Theory sign sen,
@@ -64,11 +61,23 @@ data Prover sign sen proof_tree symbol =
               replay :: proof_tree -> Maybe sen -- what about the theory???
 -}
 
-data Cons_checker morphism = 
-     Cons_checker {cons_checker_name :: String,
+data ConsChecker morphism = 
+     ConsChecker {cons_checker_name :: String,
                    cons_checker_sublogic :: String,
-                   cons_check :: morphism -> IO(Bool, Tactic_script)
+                   cons_check :: morphism -> IO(Maybe Bool, Tactic_script)
                   }
+
+
+proverTc :: TyCon
+proverTc      = mkTyCon "Logic.Prover.Prover"
+instance Typeable (Prover sign sen proof_tree symbol) where
+    typeOf _ = mkTyConApp proverTc []
+
+
+consCheckerTc :: TyCon
+consCheckerTc      = mkTyCon "Logic.Prover.ConsChecker"
+instance Typeable (ConsChecker mor) where
+    typeOf _ = mkTyConApp consCheckerTc []
 
 
 tcProof_status :: TyCon

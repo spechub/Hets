@@ -1094,9 +1094,14 @@ getGoals libEnv dg (n,_,edge) = do
   let mor = dgl_morphism edge
   translateG_l_sentence_list mor sens
 
-getProvers :: LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
-getProvers lg gsub =
-  [(G_prover (targetLogic cid) p,Comorphism cid) | 
+getProvers :: Bool -> LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
+getProvers consCheck lg gsub =
+  if consCheck then
+     [(G_cons_checker (targetLogic cid) p,Comorphism cid) | 
+        Comorphism cid <- cms,
+        p <- cons_checkers (targetLogic cid)]
+     else
+     [(G_prover (targetLogic cid) p,Comorphism cid) | 
         Comorphism cid <- cms,
         p <- provers (targetLogic cid)]
   where cms = findComorphismPaths lg gsub
@@ -1117,40 +1122,14 @@ selectProver provers = do
 #endif
  
 -- applies basic inference to a given node
-basicInferenceNode :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
+basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
-basicInferenceNode lg (ln,node) 
+basicInferenceNode checkCons lg (ln,node) 
          proofStatus@(globalContext,libEnv,history,dGraph) =
   ioresToIO (do 
+    -- compute the theory of the node, and its name
     G_theory lid1 sign axs <- 
          resToIORes $ computeTheory libEnv dGraph node
-    let inEdges = inn dGraph node
-        localEdges = filter isUnprovenLocalThm inEdges
-    goalslist <- resToIORes $ mapM (getGoals libEnv dGraph) localEdges
-    G_l_sentence_list lid3 goals <- 
-      if null goalslist then return $ G_l_sentence_list lid1 [] 
-        else resToIORes (maybeToResult nullPos 
-                                  "Logic mismatch for proof goals" 
-                                  (flatG_l_sentence_list goalslist))
-    goals1 <- resToIORes $ rcoerce lid1 lid3 nullPos goals
-    let provers = getProvers lg $ sublogicOfTh $ 
-                            (G_theory lid1 sign (axs++goals1))
-    (G_prover lid4 p,Comorphism cid) <- selectProver provers
-    let lidS = sourceLogic cid
-        lidT = targetLogic cid
-    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
-    axs' <- resToIORes $ rcoerce lidS lid1 nullPos axs
-    goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
-    p' <- resToIORes $ rcoerce lidT lid4 nullPos p
-    -- Borrowing: translate theory and goal
-    (sign'',sens'') <- resToIORes  
-                        $ maybeToResult nullPos "Could not map signature"
-                        $ map_theory cid (sign',axs')
-{-    axs'' <- resToIORes
-                 $ maybeToResult nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) axs' -}
-    let goals'' = mapMaybe (mapNamedM (map_sentence cid sign')) goals'
-    -- compute name of theory
     ctx <- resToIORes 
                 $ maybeToResult nullPos ("Could node find node "++show node)
                 $ fst $ match node dGraph
@@ -1160,18 +1139,50 @@ basicInferenceNode lg (ln,node)
           DGRef _ _ _ -> dgn_renamed nlab
         thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
-{-
-    ioToIORes (putStrLn ("Calling logic-specific prover for "++thName++"\n" 
-                ++ "Signature:\n" ++ showPretty sign'' "\n"
-                ++ "Sentences:\n" ++ showPretty sens'' "\n"
-                ++ "Goals:\n" ++ showPretty goals'' "" ))
--}
-    ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
-    let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
---    let nextDGraph = dGraph -- ??? to be implemented
-  --      nextHistoryElem = error "Proofs.Proofs: basic inference"
-                 -- ??? to be implemented
-    return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+    -- compute the list of proof goals
+    let inEdges = inn dGraph node
+        localEdges = filter isUnprovenLocalThm inEdges
+    goalslist <- if checkCons then return []
+                  else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
+    G_l_sentence_list lid3 goals <- 
+      if null goalslist then return $ G_l_sentence_list lid1 [] 
+        else resToIORes (maybeToResult nullPos 
+                                  "Logic mismatch for proof goals" 
+                                   (flatG_l_sentence_list goalslist))
+    goals1 <- resToIORes $ rcoerce lid1 lid3 nullPos goals
+    -- select a suitable translation and prover
+    let provers = getProvers checkCons lg $ sublogicOfTh $ 
+                            (G_theory lid1 sign (axs++goals1))
+    (prover,Comorphism cid) <- selectProver provers
+    -- Borrowing: translate theory
+    let lidS = sourceLogic cid
+        lidT = targetLogic cid
+    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
+    axs' <- resToIORes $ rcoerce lidS lid1 nullPos axs
+    (sign'',sens'') <- resToIORes  
+                        $ maybeToResult nullPos "Could not map signature"
+                        $ map_theory cid (sign',axs')
+    case prover of
+     G_prover lid4 p -> do
+       -- Borrowing: translate goal
+       goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
+       let goals'' = mapMaybe (mapNamedM (map_sentence cid sign')) goals'
+       -- call the prover
+       p' <- resToIORes $ rcoerce lidT lid4 nullPos p
+       ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
+       -- update the development graph
+       let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
+       return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+     G_cons_checker lid4 p -> do
+       incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
+       let mor = TheoryMorphism { t_source = empty_theory lidT, 
+                                  t_target = (sign'',sens''),
+                                  t_morphism = incl } 
+       p' <- resToIORes $ rcoerce lidT lid4 nullPos p
+       (res,_) <- ioToIORes $ cons_check p' mor
+       let nextHistoryElem = error "Proofs.Proofs: basic inference"
+         -- ??? to be implemented
+       return (globalContext, libEnv, nextHistoryElem:history, dGraph)
    )
 
 proveLocalEdges :: DGraph -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
@@ -1199,52 +1210,3 @@ proveLocalEdgesAux (rules,changes) dGraph ((edge@(src, tgt, edgelab)):edges) =
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
-
-
--- applies consistency checking to a given node
-basicCCC :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
-                          -> IO (Result ProofStatus)
-basicCCC = error "basicCCC not yet implemented!"
-
-{-
-basicCCC lg (ln,node) 
-         proofStatus@(globalContext,libEnv,history,dGraph) =
-  ioresToIO (do 
-    (G_sign lid1 sign,G_l_sentence_list lid2 axs) <- 
-         resToIORes $ computeTheory libEnv dGraph node
-    let cccs = getCCCs lg (Logic lid1)
-    (G_prover lid4 p,Comorphism cid) <- selectProver provers
-    let lidS = sourceLogic cid
-        lidT = targetLogic cid
-    sign' <- resToIORes $ rcoerce lidS lid1 nullPos sign
-    axs' <- resToIORes $ rcoerce lidS lid2 nullPos axs
-    goals' <- resToIORes $ rcoerce lidS lid3 nullPos goals
-    p' <- resToIORes $ rcoerce lidT lid4 nullPos p
-    -- Borrowing: translate theory and goal
-    (sign'',sens'') <- resToIORes  
-                        $ maybeToResult nullPos "Could not map signature"
-                        $ map_sign cid sign'
-    axs'' <- resToIORes
-                 $ maybeToResult nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) axs'
-    goals'' <- resToIORes
-                 $ maybeToResult nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) goals'
-    -- compute name of theory
-    ctx <- resToIORes 
-                $ maybeToResult nullPos ("Could node find node "++show node)
-                $ fst $ match node dGraph
-    let nlab = lab' ctx  
-        nodeName = case nlab of
-          DGNode _ _ _ _-> dgn_name nlab
-          DGRef _ _ _ -> dgn_renamed nlab
-        thName = showPretty (getLIB_ID ln) "_"
-                 ++ maybe (show node) (flip showPretty "") nodeName
-    ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
-    let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
---    let nextDGraph = dGraph -- ??? to be implemented
-  --      nextHistoryElem = error "Proofs.Proofs: basic inference"
-                 -- ??? to be implemented
-    return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-   )
--}

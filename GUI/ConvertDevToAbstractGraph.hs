@@ -406,9 +406,9 @@ createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_) =
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButton "Show origin" showOriginOfNode 
 createLocalMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (proveAtNode gInfo)
+  createMenuButton "Prove" (proveAtNode False gInfo)
 createLocalMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (cccAtNode gInfo)
+  createMenuButton "Check consistency" (proveAtNode True gInfo)
 
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef 
     ioRefVisibleNodes ioRefGraphMem actGraphInfo = 
@@ -680,27 +680,17 @@ showOriginOfNode descr ab2dgNode dgraph =
                       ++ " has no corresponding node in the development graph")
 
 
-{- start local theorem proving at a node -}
---proveAtNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
-proveAtNode gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
+{- start local theorem proving or consistency checking at a node -}
+--proveAtNode :: Bool -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
+proveAtNode checkCons gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just libNode -> 
       do convMaps <- readIORef convRef
-         proofMenu gInfo (basicInferenceNode logicGraph libNode)
+         proofMenu gInfo (basicInferenceNode checkCons logicGraph libNode)
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
-{- start local consistency checking proving at a node -}
---proveAtNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
-cccAtNode gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
-  case Map.lookup descr ab2dgNode of
-    Just libNode -> 
-      do convMaps <- readIORef convRef
-         proofMenu gInfo (basicCCC logicGraph libNode)
-    Nothing -> error ("node with descriptor "
-                      ++ (show descr) 
-                      ++ " has no corresponding node in the development graph")
 
 {- prints the morphism of the edge -}
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()

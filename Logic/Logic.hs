@@ -181,10 +181,10 @@ class (Category lid sign morphism, Ord sentence,
       sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       provers _ = []
-      cons_checkers :: lid -> [Cons_checker 
+      cons_checkers :: lid -> [ConsChecker 
                               (TheoryMorphism sign sentence morphism)] 
       cons_checkers _ = []
-      consCheck :: lid -> (sign,[Named sentence]) -> 
+      consCheck :: lid -> Theory sign sentence -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       consCheck l _ _ _ = statErr l "consCheck"
 
@@ -346,6 +346,16 @@ class (StaticAnalysis lid
 
          top_sublogic :: lid -> sublogics
          top_sublogic _ = top
+
+----------------------------------------------------------------
+-- Derived functions
+----------------------------------------------------------------
+
+empty_theory :: StaticAnalysis lid 
+        basic_spec sentence proof_tree symb_items symb_map_items
+        sign morphism symbol raw_symbol =>
+        lid -> Theory sign sentence
+empty_theory lid = (empty_signature lid,[])
  
 ----------------------------------------------------------------
 -- Existential type covering any logic
@@ -372,11 +382,6 @@ instance Typeable AnyLogic where
 ----------------------------------------------------------------
 -- Typeable instances
 ----------------------------------------------------------------
-
-proverTc :: TyCon
-proverTc      = mkTyCon "Logic.Prover.Prover"
-instance Typeable (Prover sign sen proof_tree symbol) where
-    typeOf _ = mkTyConApp proverTc []
 
 namedTc :: TyCon
 namedTc = mkTyCon "Common.AS_Annotation.Named"
