@@ -79,13 +79,13 @@ instance Comorphism HasCASL2IsabelleHOL
 
 
 -- ============================ Signature ================================== --
-
+baseSign = "MainHC"
 
 transSignature :: Env
                    -> Result (IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
   return (IsaSign.emptySign {
-    baseSig = "MainHC",
+    baseSig = baseSign,
     -- translation of typeconstructors
     tsig = emptyTypeSig 
              { arities = Map.foldWithKey extractTypeName 
@@ -102,7 +102,7 @@ transSignature sign =
    where 
     extractTypeName tyId typeInfo m = 
         if isDatatypeDefn typeInfo then m
-           else Map.insert (showIsa tyId) [(isaTerm, [])] m
+           else Map.insert (showIsaT tyId baseSign) [(isaTerm, [])] m
                 -- translate the kind here!
     isDatatypeDefn t = case typeDefn t of
                          DatatypeDefn _ -> True
@@ -112,13 +112,13 @@ transSignature sign =
      in if isSingle infos then
             let transOp = transOpInfo (head infos)
             in case transOp of 
-                 Just op -> Map.insert (showIsa name) op m
+                 Just op -> Map.insert (showIsaT name baseSign) op m
                  Nothing -> m
           else 
             let transOps = map transOpInfo infos
             in  foldl (\ m' (transOp,i) -> 
                            case transOp of
-                             Just typ -> Map.insert (showIsaI name i) 
+                             Just typ -> Map.insert (showIsaIT name i baseSign) 
                                                     typ m'
                              Nothing   -> m')
                       m
@@ -156,8 +156,8 @@ transPredType  (TypeScheme _ pre _) =
 transType :: Type -> Typ
 -- type name
 transType (TypeName tyId _ i) = 
-    if i == 0 then Type (showIsa tyId) [] [] -- translate kind here!!
-       else TFree (showIsa tyId) []
+    if i == 0 then Type (showIsaT tyId baseSign) [] [] -- translate kind here!!
+       else TFree (showIsaT tyId baseSign) []
 -- product type
 transType (ProductType ts _) = 
   foldl1 IsaSign.prodType (map transType ts)
@@ -177,7 +177,7 @@ transType (TypeAppl t t') =
 --(c)          stripAppl ty c ts =
 --(c)            case ty of
 --(c)              TypeAppl ty ty' -> stripAppl ty c ((transType ty'):ts)
---(c)              TypeName i _ _ -> (showIsa i, ts)
+--(c)              TypeName i _ _ -> (showIsaT i ts baseSign)
 --(c)              _              -> error "HasCASL2IsabelleHOL.transType"
 
 transType _ = error "[Comorphisms.HasCASL2IsabelleHOL] Not supported type"
@@ -195,20 +195,20 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
                          [((transDName tyId tyArgs), (map transAltDefn alts))]
-  where transDName ti ta = Type (showIsa ti) [] (map transTypeArg ta)
+  where transDName ti ta = Type (showIsaT ti baseSign) [] (map transTypeArg ta)
 transDataEntry _ = 
   error "[Comorphisms.HasCASL2IsabelleHOL] Not supported datatype definition"
 
 -- arguments of datatype's typeconstructor
 transTypeArg :: TypeArg -> Typ
-transTypeArg (TypeArg tyId _ _ _) = TFree (showIsa tyId) []
+transTypeArg (TypeArg tyId _ _ _) = TFree (showIsaT tyId baseSign) []
 
 -- datatype alternatives/constructors
 transAltDefn :: AltDefn -> DataTypeAlt
 transAltDefn (Construct opId ts Total _) = 
    let ts' = map transType ts
    in case opId of
-        Just opId' -> (showIsa opId', ts')
+        Just opId' -> (showIsaT opId' baseSign, ts')
         Nothing  -> ("", ts')
 transAltDefn _ = 
   error ("[Comorphisms.HasCASL2IsabelleHOL] Not supported"
@@ -233,11 +233,11 @@ transSentence sign s = case s of
 transOpId :: Env -> UninstOpId -> TypeScheme -> String
 transOpId sign op ts = 
   case (do ops <- Map.lookup op (assumps sign)
-           if isSingle (opInfos ops) then return $ showIsa op
+           if isSingle (opInfos ops) then return $ showIsaT op baseSign
              else do i <- elemIndex ts (map opType (opInfos ops))
-                     return $ showIsaI op (i+1)) of
+                     return $ showIsaIT op (i+1) baseSign) of
     Just str -> str  
-    Nothing  -> showIsa op
+    Nothing  -> showIsaT op baseSign
 
 -- terms
 transTerm :: Env -> As.Term -> IsaSign.Term
@@ -422,7 +422,7 @@ transPattern _ (QualVar (VarDecl var typ _ _)) =
   IsaSign.Free (transVar var) (transType typ)
 transPattern sign (TupleTerm terms _) = foldl1 (binConst isaPair) 
                                                (map (transPattern sign) terms)
-transPattern _ (QualOp _ (InstOpId opId _ _) _ _) = con (showIsa opId)
+transPattern _ (QualOp _ (InstOpId opId _ _) _ _) = con (showIsaT opId baseSign)
 transPattern sign (TypedTerm t _ _ _) = transPattern sign t
 transPattern sign (ApplTerm t1 t2 _) = App (transPattern sign t1) (transPattern sign t2) IsCont
 transPattern sign t = transTerm sign t
@@ -433,7 +433,7 @@ transTotalLambda _ (QualVar (VarDecl var typ _ _)) =
   IsaSign.Free (transVar var) (transType typ) 
 transTotalLambda sign t@(QualOp _ (InstOpId opId _ _) _ _) =
   if (opId == trueId) || (opId == falseId) then transTerm sign t
-    else con (showIsa opId)
+    else con (showIsaT opId baseSign)
 transTotalLambda sign (ApplTerm term1 term2 _) =
   termAppl (transTotalLambda sign term1) (transTotalLambda sign term2)
 transTotalLambda sign (TypedTerm t _ _ _) = transTotalLambda sign t
@@ -757,7 +757,7 @@ transPat sign (ApplTerm term1 term2 _) =
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
 transPat sign (TupleTerm terms _) =
   foldl1 (binConst isaPair) (map (transPat sign) terms)
-transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsa i)
+transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsaT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
 
 

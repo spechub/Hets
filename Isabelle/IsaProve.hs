@@ -124,6 +124,7 @@ isaProve checkCons thName (sig,axs) goals = do
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
+--hier-- 
       showAxs = concat $ map ((++"\n") . showSen) disAxs
       disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
       showGoals = concat $ map showGoal disGoals

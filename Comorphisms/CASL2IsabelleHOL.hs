@@ -96,6 +96,7 @@ instance Comorphism CASL2IsabelleHOL
 
 
 ---------------------------- Signature -----------------------------
+baseSign = "Main"
 
 transTheory :: SignTranslator f e ->
                FormulaTranslator f e ->
@@ -104,9 +105,9 @@ transTheory :: SignTranslator f e ->
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (extendedInfo sign)) $
   return (IsaSign.emptySign {
-    baseSig = "Main",
+    baseSig = baseSign,
     tsig = emptyTypeSig {arities = 
-               Set.fold (\s -> let s1 = showIsa s in
+               Set.fold (\s -> let s1 = (showIsaT s baseSign) in
                                 if s1 `elem` dtTypes then id
                                  else Map.insert s1 [(isaTerm, [])]) 
                                Map.empty (sortSet sign)},
@@ -122,15 +123,15 @@ transTheory trSig trForm (sign,sens) =
     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
     insertOps op ts m = 
      if Set.size ts == 1 
-      then Map.insert (showIsa op) (transOpType (Set.findMin ts)) m
+      then Map.insert (showIsaT op baseSign) (transOpType (Set.findMin ts)) m
       else 
-      foldl (\m1 (t,i) -> Map.insert (showIsaI op i) (transOpType t) m1) m 
+      foldl (\m1 (t,i) -> Map.insert (showIsaIT op i baseSign) (transOpType t) m1) m 
             (zip (Set.toList ts) [2..(size ts + 1)])
     insertPreds pre ts m =
      if Set.size ts == 1 
-      then Map.insert (showIsa pre) (transPredType (Set.findMin ts)) m
+      then Map.insert (showIsaT pre baseSign) (transPredType (Set.findMin ts)) m
       else
-      foldl (\m1 (t,i) -> Map.insert (showIsaI pre i) (transPredType t) m1) m 
+      foldl (\m1 (t,i) -> Map.insert (showIsaIT pre i baseSign) (transPredType t) m1) m 
             (zip (Set.toList ts) [1..size ts])
     --delete all elements from dataTypeTab in constTab
     delDtTypes opMap = Map.fromList (map (deleteDtTypes dtDefs) (Map.toList opMap)) 
@@ -139,7 +140,8 @@ transTheory trSig trForm (sign,sens) =
 deleteDtTypes dtDef (a,b) = (a, Set.fromList(List.filter (isNotIn dtDef a) (Set.toList b)))
 
 --test if there is an entry in dtDef which has the constructor a and the arguments (opArgs b) 
-isNotIn ((d:_):ds) a b = (isSameConst (showIsa a) args const == False) && (isNotIn ds a b)  
+isNotIn ((d:_):ds) a b = (isSameConst (showIsaT a baseSign) args const == False) 
+			 && (isNotIn ds a b)  
     where
     (OpType {opArgs = args}) = b
     (typ, const) = d
@@ -149,7 +151,7 @@ isNotIn ((d:_):ds) a b = (isSameConst (showIsa a) args const == False) && (isNot
     hasArgs [] [] = True
     hasArgs [] _  = False
     hasArgs _  [] = False
-    hasArgs (arg1:args1) (arg2:args2) = (showIsa arg1 == (typeId arg2)) 
+    hasArgs (arg1:args1) (arg2:args2) = (showIsaT arg1 baseSign == (typeId arg2)) 
 					         && hasArgs args1 args2
 isNotIn _ _ _ = True == True
 
@@ -269,7 +271,7 @@ makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
 makeDtDef _ _ = Nothing
 
 transSort :: SORT -> Typ
-transSort s = Type (showIsa s) [] []
+transSort s = Type (showIsaT s baseSign) [] []
 
 transOpType :: OpType -> Typ
 transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
@@ -314,22 +316,22 @@ quantify q (v,t) phi  =
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
   case (do ots <- Map.lookup op (opMap sign) 
-           if Set.size ots == 1 then return $ showIsa op
+           if Set.size ots == 1 then return $ showIsaT op baseSign
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ showIsa op) of
---                    return $ showIsaI op (i+1)) of
+                    return $ showIsaT op baseSign) of
+--                    return $ showIsaIT op (i+1) baseSign) of
     Just str -> str  
-    Nothing -> showIsa op
+    Nothing -> showIsaT op baseSign
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
 transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> String
 transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ showIsa p 
+           if Set.size pts == 1 then return $ showIsaT p baseSign 
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
-                    return $ showIsaI p (i+1)) of
+                    return $ showIsaIT p (i+1) baseSign) of
     Just str -> str
-    Nothing -> error "CASL2Isabelle: showIsa p"
+    Nothing -> error "CASL2Isabelle: showIsaT p baseSign"
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence

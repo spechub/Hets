@@ -390,7 +390,7 @@ instance PrettyPrint Sign where
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
        ++ (concat $ map (("and "++) . showDataType) dts) ++ "\n"
-    showDataType (_,[]) = error "IsaPrint.showDataType"
+    showDataType (a,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
        showTyp 1000 t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
