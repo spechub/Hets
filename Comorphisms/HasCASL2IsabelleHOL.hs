@@ -68,7 +68,8 @@ instance Comorphism HasCASL2IsabelleHOL
     -- map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
        case transSentence sign phi of
-         Nothing   -> fail "translation not implemented"
+         Nothing   -> warning (Sentence {senTerm = true}) 
+                           "translation of sentence not implemented" nullPos
          Just (ts) -> return $ Sentence {senTerm = ts}
     -- map_symbol :: cid -> symbol1 -> Set symbol2
 

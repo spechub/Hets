@@ -188,6 +188,11 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+Recursion does not compile due to clashes between built-in
+variances (-->? vs. ->? in subtype declaration)
+
+non-free/generated datatype declarations generate ga-axioms
+
 logic coding form the comand line with printing of results
 
 Haskell modules: hiding, renaming
