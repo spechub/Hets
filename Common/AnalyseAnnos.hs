@@ -26,6 +26,11 @@ import Common.Print_AS_Annotation
 import Common.PrettyPrint
 import Common.Result
 import Control.Monad
+import Data.Maybe
+
+import Common.Lib.Parsec
+import Common.Id (Token(..),nullPos,place)
+import Common.Lexer (bind)
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
@@ -108,12 +113,28 @@ store_display_annos =
 	    case an of 
 	    Display_anno i sxs _ -> 
 	       do let t = Map.findWithDefault Map.empty i m
-	          dm <- foldM ( \ tab (df, str) ->
-			let oldStr = Map.findWithDefault str df tab in 
-			if oldStr == str 
-			then return $ Map.insert df str tab
-			else Result [mkDiag Error ("conflict: " 
-                                     ++ showPretty an "") an] $ Just tab
+	          dm <- foldM ( \ table (df, str) ->
+			let oldTok = Map.findWithDefault tok df table 
+			    rtok = parse_display_str an str
+			    tok = fromMaybe [] (maybeResult rtok)
+			    checkToks toks id'@(Id toks' _ _) =
+				if c_plc toks == c_plc toks'
+				then []
+				else [mkDiag Error 
+				        ("Number of places in identifier \"" 
+					 ++ showPretty id'  
+					    (" \" does not meet number "++
+					     "of places in display string \"" 
+					     ++str ++"\"")) an]
+				where c_plc = foldl placePlus1 (0::Int) 
+				      placePlus1 acc toky = 
+				         if isPlace toky then acc+1 else acc
+                        in 
+			if oldTok == tok 
+			then Result (diags rtok ++ checkToks tok i) 
+			         $ Just $ Map.insert df tok table
+			else Result (diags rtok++[mkDiag Error ("conflict: " 
+                                     ++ showPretty an "") an]) $ Just table
 			      ) t sxs
                   return $ Map.insert i dm m  
 	    _ -> return m )
@@ -243,4 +264,36 @@ setListLit =
             _ -> return s )
     where showTriple (i1, i2, i3) = " %list " ++ showId i1 "," 
                                 ++ showId i2 "," ++ showId i3 "" 
+
+parse_display_str :: Annotation -> String -> Result [Token]
+parse_display_str an str = case parse (tokenL [])
+			           "-- internal parse --" 
+				   str of
+			Left err -> Result [mkDiag Warning 
+					           (err' ++show err++"\nin:\n")
+					           an ] 
+				           $ Just [Token str nullPos] 
+			Right i' -> Result [] $ Just i'
+    where tokenL acc = 
+	      do isEof <- option False (eof >> return True) 
+		 if isEof 
+		    then return acc
+		    else do plcs <- many $ try placeP 
+			    tok <- optTok $ nonPlaceP 
+			    if null tok 
+			       then return (acc ++ plcs)
+			       else tokenL (acc ++ plcs ++tok)
+	  optTok pa = option [] (do t <- pa 
+				    return [t])
+	  mkTok p = bind Token p (return nullPos)
+	  placeP = mkTok (string place)
+	  nonPlaceP = mkTok $ 
+		         do c <- anyChar 
+			    cs <- manyTill anyChar (lookAhead (placeUn<|>eof))
+			    return (c:cs)
+	      where placeUn = do try $ placeP
+				 return ()
+
+	  err' = "could not parse display string: using \"" 
+		 ++ str ++ "\" as display token!\n"
 
