@@ -138,9 +138,9 @@ transSentence sign (TiPropDecorate.Dec d) = case d of
                 HsDeclStruct.HsFunBind _ ls -> Result [] (Just (Sentence $ transMatchList ls)) 
 --                HsDeclStruct.HsTypeSig _ ls c t -> Result [] (Just (Sentence (functionDeclList ls c t)))
 --                _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 137 1))] (Nothing)
-                _ -> error "Haskell2IsabelleHOLCF.transSentence 2, not yet supported"
+                _ -> warning (Sentence true) "Haskell2IsabelleHOLCF.transSentence 2, not yet supported"  nullPos
 --             _ -> Result [(Diag Hint "problem" (Id.SourcePos "Haskell2IsabelleHOLCF.transSentence" 136 1))] (Nothing)
-             _ -> error "Haskell2IsabelleHOLCF.transSentence 1, case not yet supported"
+             _ -> warning (Sentence true) "Haskell2IsabelleHOLCF.transSentence 1, case not yet supported" nullPos
 
 -- fuctionDecl :: PNT -> [HsTypeI PNT] -> HsTypeI PNT -> IsaTerm
 -- functionDecl n c t = 
