@@ -29,7 +29,7 @@ INSTALLDIR = /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.s
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
-INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files)
+INLINEAXIOMS_deps = utils/InlineAxioms/*hs $(drifted_files) $(happy_files) hetcats/Version.hs Modal/ModalSystems.hs
 
 HC         = ghc
 PERL       = perl
@@ -151,7 +151,7 @@ generated_rule_files = $(atc_der_files) $(atc_logic_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
-                     Comorphisms/Modal2CASL.hs
+                     Comorphisms/Modal2CASL.hs # Comorphisms/CASL2TopSort.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
