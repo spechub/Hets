@@ -13,11 +13,11 @@ import AnnoState
 import Id
 import Keywords
 import Lexer
-import List(nub)
+import Data.List(nub)
 import Token
 import HToken
 import As
-import Parsec
+import Common.Lib.Parsec
 import ItemList
 
 noQuMark :: String -> AParser Token

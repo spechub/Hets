@@ -15,7 +15,7 @@ import Keywords
 import Lexer
 import Token(casl_reserved_ops, casl_reserved_words
 	    , start, comps, mixId)
-import Parsec
+import Common.Lib.Parsec
 
 -- ----------------------------------------------
 -- further hascasl keyword

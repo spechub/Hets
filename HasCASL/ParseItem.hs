@@ -16,7 +16,7 @@ import Lexer
 import Token
 import HToken
 import As
-import Parsec
+import Common.Lib.Parsec
 import AS_Annotation
 import ParseTerm
 import ItemList

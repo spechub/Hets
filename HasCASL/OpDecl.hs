@@ -15,12 +15,13 @@ import ClassAna
 import FiniteMap
 import Id
 import Le
-import MonadState
+import Control.Monad.State
 import PrettyPrint
 import PrintAs(showPretty)
+import Common.Lib.Parsec.Pos
 import Result
 import TypeDecl
-import List
+import Data.List
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 

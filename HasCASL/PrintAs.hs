@@ -12,7 +12,7 @@ module PrintAs where
 import As
 import Keywords
 import HToken
-import Pretty
+import Common.Lib.Pretty 
 import PrettyPrint
 import GlobalAnnotations(GlobalAnnos)
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
@@ -39,7 +39,7 @@ instance PrettyPrint TypePattern where
 
 bracket :: BracketKind -> Doc -> Doc
 bracket Parens t = parens t
-bracket Squares t = Pretty.brackets t
+bracket Squares t = brackets t
 bracket Braces t = braces t
 
 printKind :: GlobalAnnos -> Kind -> Doc
@@ -253,7 +253,7 @@ instance PrettyPrint Class where
 			   else parens $ commas ga c 
 
 instance PrettyPrint Types where
-    printText0 ga (Types l _) = Pretty.brackets $ commas ga l
+    printText0 ga (Types l _) = brackets $ commas ga l
 
 instance PrettyPrint InstOpId where
     printText0 ga (InstOpId n l) = printText0 ga n 
@@ -403,6 +403,6 @@ instance PrettyPrint Components where
 
 instance PrettyPrint OpId where 
     printText0 ga (OpId n ts) = printText0 ga n 
-				  <+> fcat(map (Pretty.brackets . 
+				  <+> fcat(map (brackets . 
 						printText0 ga) ts)
 

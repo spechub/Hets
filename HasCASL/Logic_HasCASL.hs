@@ -23,7 +23,7 @@ import SymbolParser
 import ParsecInterface
 import Logic
 import AnnoState(emptyAnnos)
-import Dynamic
+import Data.Dynamic
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances

@@ -13,9 +13,9 @@ import As
 import FiniteMap
 import Id
 import Le
-import List
-import Maybe
-import MonadState
+import Data.List
+import Data.Maybe
+import Control.Monad.State
 import Result
 import ClassAna
 

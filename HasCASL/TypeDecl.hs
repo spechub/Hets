@@ -16,12 +16,12 @@ import ClassAna
 import FiniteMap
 import Id
 import Le
-import Maybe
-import MonadState
+import Data.Maybe
+import Control.Monad.State
 
 import MixfixParser(getTokenList, expandPos)
-import Parsec
-import ParsecError
+import Common.Lib.Parsec
+import Common.Lib.Parsec.Error
 
 import PrintAs(showPretty)
 import Result

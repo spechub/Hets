@@ -13,9 +13,9 @@ import As
 import HToken
 import PrintAs
 import Le
-import Maybe
+import Data.Maybe
 import PrettyPrint
-import Pretty
+import Common.Lib.Pretty
 import FiniteMap
 import Keywords
 import GlobalAnnotations

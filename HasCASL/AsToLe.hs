@@ -17,9 +17,9 @@ import FiniteMap
 import Id
 import Le
 import Lexer 
-import Maybe
-import Monad
-import MonadState
+import Data.Maybe
+import Control.Monad
+import Control.Monad.State
 import OpDecl
 import Result
 import PrintAs

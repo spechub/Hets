@@ -14,7 +14,7 @@ import AnnoState
 import Le
 import AsToLe(anaBasicSpec)
 import ParseItem(basicSpec)
-import MonadState
+import Control.Monad.State
 
 anaParser :: AParser Env
 anaParser = do b <- basicSpec

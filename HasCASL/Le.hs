@@ -12,8 +12,8 @@ module Le where
 import Id
 import As
 import FiniteMap
-import List
-import MonadState
+import Data.List
+import Control.Monad.State
 import Result
 
 -----------------------------------------------------------------------------

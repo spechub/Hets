@@ -9,5 +9,5 @@ output: hacapa
 	bash ./runcheck.sh ./hacapa set
 
 %: 
-	(cd ../hetcats; $(MAKE) $@)
+	(cd ..; $(MAKE) $@)
 
