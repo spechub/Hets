@@ -64,7 +64,8 @@ instance Comorphism HasCASL2IsabelleHOL
                        }
     targetLogic _ = Isabelle
     targetSublogic _ = ()
-    map_sign _ = transSignature
+    map_theory _ = mkTheoryMapping transSignature 
+                   (map_sentence HasCASL2IsabelleHOL)
     map_morphism HasCASL2IsabelleHOL mor = do
        (sig1,_) <- map_sign HasCASL2IsabelleHOL (Logic.dom HasCASL mor)
        (sig2,_) <- map_sign HasCASL2IsabelleHOL (cod HasCASL mor)

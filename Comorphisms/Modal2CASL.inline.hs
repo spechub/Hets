@@ -78,9 +78,9 @@ instance Comorphism Modal2CASL
                         has_pred = True,
                         which_logic = FOL
                       }
-    map_sign Modal2CASL sig = 
-	case transSig sig of 
-	mme ->  return (caslSign mme,relFormulas mme)
+    map_theory (Modal2CASL) (sig, sens) = case transSig sig of
+      mme -> return (caslSign mme, relFormulas mme
+                     ++ map (mapNamed $ transSen sig) sens)
     map_morphism Modal2CASL = return . mapMor
     map_sentence Modal2CASL sig = return . transSen sig
     map_symbol Modal2CASL = Set.single . mapSym

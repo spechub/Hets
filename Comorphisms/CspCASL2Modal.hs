@@ -54,7 +54,7 @@ instance Comorphism CspCASL2Modal
     sourceSublogic CspCASL2Modal = ()
     targetLogic CspCASL2Modal = Modal
     targetSublogic CspCASL2Modal = ()
-    map_sign CspCASL2Modal sig = let e = mapSig sig in return (e, [])
+    map_theory CspCASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CspCASL2Modal = return . mapMor
     map_sentence CspCASL2Modal _ = return . mapSen
     map_symbol CspCASL2Modal = Set.single . mapSym
