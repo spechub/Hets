@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 
 {- |
 Module      :  $Header$
@@ -49,14 +48,11 @@ import Data.Maybe
 
 import Configuration
 
---import System.Posix.IO
 import ChildProcess
 import Directory
 import System
 
 import HTk
-
-import Debug.Trace
 
 isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
@@ -155,7 +151,7 @@ disambiguateSensAux others (ax:rest) soFar =
   disambiguateSensAux (ax':others) rest (ax':soFar)
   where
   name' = fromJust $ find (not . flip elem namesSoFar) 
-                          (name:[name++show i | i<-[1..]])
+                          (name:[name++show (i :: Int) | i<-[1..]])
   name = senName ax 
   namesSoFar = map senName others
   ax' = ax{senName = name'}
