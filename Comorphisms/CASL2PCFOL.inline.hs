@@ -38,81 +38,47 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism 
+import List (nub,delete)
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
-encodeSig sig = error "encodeSig not yet implemented"
+encodeSig sig = sig {sortRel=newsortRel,opMap=priopMap,predMap=newpredMap}
 
-
---opMap sig -> Map.Map Id (Set.Set OpType)
---predMap sig -> Map.Map Id (Set.Set PredType)
---Id Set.Set SORT
---sortRel sig -> Rel.Rel SORT
---Rel.toList (sortRel sig) -> [(SORT,SORT)]
---Set.fromList [(SORT,SORT)]->Set (SORT,SORT)
-
-
-{-
-Test:
-*Comorphisms.CASL2PCFOL> sig <- getCASLSig "test/encode.casl"
-
-<interactive>:1: Warning: Defined but not used: sig
-Reading test/encode.casl
-Analyzing spec sp
-Writing test/encode.env
-
-*Comorphisms.CASL2PCFOL> sig
-Sign {sortSet = {s,s'}, sortRel = {(s,s')}, 
-opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}},
-pr:={OpType {opKind = Partial, opArgs = [s], opRes = s'}}}, assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
-
-*Comorphisms.CASL2PCFOL> insteadOfpi sig
-{_inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}},
-_proj:={OpType {opKind = Partial, opArgs = [s], opRes = s'}}}
-
-
-Habe ich richtig gemacht oder schief gemacht?? Die 2 Methode sind so einfach.
-Wenn sie falsch sind, wie soll ich machen??
-
-Wenn die beide richtig sind,baue ich am ende  die 2 Methode in encodeSig. 
-
--}
-
-
-  
-insteadOfpi::Sign f e -> Map.Map Id (Set.Set OpType)
-insteadOfpi  sig =Map.fromList(map pif opList)
- where
-   opList=Map.toList(opMap sig)
-   inj=mkId[mkSimpleId "_inj"]
-   pro=mkId[mkSimpleId "_proj"] 
-   pif   (x,y)
-        |x==mkId[mkSimpleId "inj"] = (inj,y)
-        |x==mkId[mkSimpleId "pr"] = (pro,y)
-        |otherwise=(x,y) 
-        
-insteadOfpre::Sign f e -> Map.Map Id (Set.Set PredType)
-insteadOfpre   sig = Map.fromList(predList) 
- where
-   predList = Map.toList  (predMap sig)  
-   predf  (x,y) = if x==mkId[mkSimpleId "pr"] then (pred,y) else (x,y)
-   pred=mkId[mkSimpleId "_elem_e"]
+  where 
+ 
+ trivial=[(x,x)|x<-(fst(unzip(Rel.toList(sortRel sig))))++ snd(unzip(Rel.toList(sortRel sig)))] 
+ relList=Rel.toList(sortRel sig)++nub(trivial) --[(SORT,SORT)] 
+ newsortRel=Rel.fromList(relList)  --Rel SORT
+ 
+ 
+ total      (s, s') = OpType {opKind=Total,opArgs=[s],opRes=s'}
+ partial    (s, s') = OpType {opKind=Partial,opArgs=[s'],opRes=s}
+ 
    
+ setinjOptype= Set.fromList(map total relList)  
+ setproOptype= Set.fromList (map partial  relList)  
+ injopMap=Map.insert inj setinjOptype (opMap sig) 
+ priopMap=Map.insert pro setproOptype (injopMap)  
+  
+ inj=mkId[mkSimpleId "_inj"]
+ pro=mkId[mkSimpleId "_proj"]
 
+      --(SORT,[SORT])->[(SORT,[SORT])]
+ --map 
+ predList= nub(fst(unzip (relList)))
+ udupredList=[(x,Set.toList(supersortsOf x sig))|x<-predList]  --[(SORT,[SORT])]
+ altpredMap=predMap sig
+ newcomb (x,[])=[ ]  --(SORT,[SORT])->[(SORT,[SORT])]
+ newcomb  (x,(y:ys))=(x,[y]):(newcomb (x,ys))
+ pred  x = PredType {predArgs=x} --[SORT]
+ newpredMap = insertPred  newLList altpredMap 
+ newLList=(concat(map newcomb udupredList)) --map (SORT,[SORT])->[(SORT,[SORT])]  [(SORT,[SORT])] [[(SORT,[SORT])]]
+ --[(SORT,[SORT])]->Map.Map Id (Set.Set PredType)
+ insertPred  [ ] m  = m
+ insertPred  ((x,y):xs) m = insertPred (xs) (Map.insert (Id [mkSimpleId "_elem_"] [x] []) (Set.fromList[pred y]) m)
 
-{- todo
-   setRel sig angucken
-   Liste von Paaren (s,s') daraus generieren (siehe toList aus Common/Lib/Rel.hs)
-   zurückgeben
-   sig {opMap = ...     ein Id "_inj" mit Typmenge { s->s' | s<=s'}
-                     +  ein Id "_proj" mit Typmegen {s'->?s | s<=s' }
-        predMap = ...   pro s einen neuen Id "_elem_s" einfügen, mit entsprechender Typmenge ( alle  s' mit s<=s') 
-       }
-zu benutzen: Map.insert, supersortsOf, Set.fromList . map f . Set.toList
-wobei f aus einer Sorte s' einen Typ s->s' erzeugt 
--}
-
-
+ 
+ 
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat 
@@ -136,109 +102,44 @@ generateAxioms sig =
       " sort s<s' \
       \ op pr : s' -> ?s \
       \ forall x:s . x<=>def(pr(x))            %(mebership)%"                               
-          | (s,s') <- rel2List]++               
-   [inlineAxioms CASL
-     " sort s<s';s'<s'' \
-      \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
-      \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
-          |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)])
-               
-          
-  where x = mkSimpleId "x"
+          | (s,s') <- rel2List])
+      where 
+        x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
         pr=mkId [mkSimpleId "_pr"]
         pr_trans=mkId [mkSimpleId "_pr_trans"]
         indentity=mkId [mkSimpleId "_indentity"]
         membership=mkId[mkSimpleId "_membership"]
-        rel2List=Rel.toList(sortRel sig)
         rel2Map=Rel.toMap(sortRel sig)
-        
+        mapOp=Set.toList(opMap sig)
+        rel2List=Rel.toList(sortRel sig)
+
+
 {-
-inj((op f:s_1*...*s_n->s)(inj(x_1),...,inj(x_n))) = 
-inj((op f:s'_1*...*s'_n->s')(inj(x_1),...,inj(x_n))) 
-
-forall x[i]:s[i] . inj((op f:s[i]->s)(inj(x[i]))) = 
-
-
-
-test1 :: [Named (FORMULA f)]
-test1 = 
-  inlineAxioms CASL
-     "  sorts s_i, s', s'' \
-      \ op inj:s_i -> s_i \
-      \ op f:s_i->s' \
-      \ op inj:s'->s'' \
-      \ forall x_i:s_i . def inj((op f:s_i->s')(inj(x_i))) \
-      \ forall x_i:s_i . def x_i /\\ def x_i"
-   where x = [mkSimpleId "x",mkSimpleId "y"]
-         s = [mkId [mkSimpleId "s_1"],mkId [mkSimpleId "s_2"]]
-         s' = [mkId [mkSimpleId "s'"]]
+++               
+   [inlineAxioms CASL
+     " sort s<s';s'<s'' \
+      \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
+      \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
+          |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)]++
+   [inlineAxioms CASL
+    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i;  \
+    \ op f:w'->s' ; f:w''->s'' ; inj: s' -> s ; inj: s''->s ; inj: s_i->s'_i ; inj:s_i -> s''_i \
+    \ forall x_i : s_i . inj(f(inj(x_i)))=inj(f(inj(x_i))) \
+    \ |(w,s,s',s'',w'_i,w''_i,f) | f<-mapOp, 
+    
+    " 
+   
+   
+     ]
 
 
-test2 :: [Named (FORMULA f)]
-test2  = 
-  inlineAxioms CASL
-     "  sorts s < s' \
-      \ op inj : s->s' \
-      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "
-  where x = mkSimpleId "x"
-        y = mkSimpleId "y"
-        inj = mkId [mkSimpleId "_inj"]
+
+
 
 -}
-
-{- todo
-  Axiome auf S. 407, oder RefMan S. 173
-
-  einfacher evtl.: mit Hets erzeugen
-
-library encode
-
-spec sp =
-       sorts s < s'
-       op inj : s->s'
-       op proj : s'->?s
-       pred in_s : s'
-       var x,y:s
-       . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)%
-end
-
-und dann
-
-sens <- getCASLSens "../CASL-lib/encode.casl"
-
-
-
-*Main> sig <- getCASLSig "../CASL-lib/encode.casl"
-
-<interactive>:1: Warning: Defined but not used: sig
-Reading ../CASL-lib/encode.casl
-Analyzing spec sp
-Writing ../CASL-lib/encode.env
-*Main> sig
-Sign {sortSet = {s,s'}, 
-sortRel = {(s,s')}, 
-opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}}}, 
-assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
-*Main> sens <- getCASLSens "../CASL-lib/encode.casl"
-
-<interactive>:1: Warning: Defined but not used: sens
-Reading ../CASL-lib/encode.casl
-Analyzing spec sp
-Writing ../CASL-lib/encode.env
-*Main> sens
-[NamedSen {senName = "ga_embedding_injectivity", 
-sentence = Implication (Strong_equation (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) 
-[Sorted_term (Qual_var x s []) s []] []) s' []) 
-(Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) 
-[Sorted_term (Qual_var y s []) s []] []) s' []) [../CASL-lib/encode.casl:7.16])
- (Strong_equation (Sorted_term (Qual_var x s []) s []) (Sorted_term (Qual_var y s []) s []) 
- [../CASL-lib/encode.casl:7.28]) True [../CASL-lib/encode.casl:7.24]}]
-*Main>
-
--}
-
-
-encodeFORMULA :: Named (FORMULA f) -> Named (FORMULA f)
-encodeFORMULA phi = error "encodeFORMULA not yet implemented"
+        
+        
+    
+        
