@@ -145,3 +145,36 @@ map_M_FORMULA mor frm =
 	       newF <- mapSen map_M_FORMULA mor f
 	       newM <- mapMod m 
 	       return $ Diamond newM newF ps 
+
+ana_M_FORMULA :: FORMULA M_FORMULA -> Result (FORMULA M_FORMULA)
+ana_M_FORMULA (Conjunction phis pos) = do
+  phis' <- mapM ana_M_FORMULA phis
+  return (Conjunction phis' pos)
+ana_M_FORMULA (Disjunction phis pos) = do
+  phis' <- mapM ana_M_FORMULA phis
+  return (Disjunction phis' pos)
+ana_M_FORMULA (Implication phi1 phi2 b pos) = do
+  phi1' <- ana_M_FORMULA phi1
+  phi2' <- ana_M_FORMULA phi2
+  return (Implication phi1' phi2' b pos)
+ana_M_FORMULA (Equivalence phi1 phi2 pos) = do
+  phi1' <- ana_M_FORMULA phi1
+  phi2' <- ana_M_FORMULA phi2
+  return (Equivalence phi1' phi2' pos)
+ana_M_FORMULA (Negation phi pos) = do
+  phi' <- ana_M_FORMULA phi
+  return (Negation phi' pos)
+ana_M_FORMULA phi@(True_atom pos) = return phi
+ana_M_FORMULA phi@(False_atom pos) = return phi
+ana_M_FORMULA (Mixfix_formula _) = undefined
+ana_M_FORMULA (ExtFORMULA (Box m phi pos)) = do
+  phi' <- ana_M_FORMULA phi
+  return(ExtFORMULA (Box m phi' pos))
+ana_M_FORMULA (ExtFORMULA (Diamond m phi pos)) = do
+  phi' <- ana_M_FORMULA phi
+  return(ExtFORMULA (Diamond m phi' pos))
+ana_M_FORMULA phi = 
+  plain_error phi 
+     "Modality declarations may only contain propositional axioms"
+     nullPos
+
