@@ -1,0 +1,10 @@
+
+
+ ---- Type checking AModule "Main" ----
+
+
+
+ ---- the types of identifiers ---- 
+
+Main.1_main :: [Bool]
+Main.2_foo :: [Int]

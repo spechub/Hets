@@ -1,0 +1,10 @@
+
+
+ ---- Type checking AModule "Main" ----
+
+
+
+ ---- the types of identifiers ---- 
+
+Main.1_mymap :: (a -> b) -> [a] -> [b]
+Main.2_main :: [[Char]]
