@@ -1,142 +1,106 @@
-
-
 BASIC-SPEC       ::= basic-spec BASIC-ITEMS*
 
-BASIC-ITEMS      ::= SIG-ITEMS | CLASS-ITEMS | INSTANCE-ITEMS 
-                   | FREE-DATATYPE | SORT-GEN
-                   | VAR-ITEMS | LOCAL-VAR-AXIOMS | AXIOM-ITEMS
+BASIC-ITEMS      ::= CLASS-ITEMS | SIG-ITEMS 
+                   | GENERATED-ITEMS | FREE-DATATYPES 
+                   | GENERIC-VARS | LOCAL-VAR-AXIOMS | AXIOM-ITEMS
+                   | INTERNAL-ITEMS | PROG-ITEMS
 
-SIG-ITEMS        ::= SORT-ITEMS | TYPE-ITEMS | OP-ITEMS | PRED-ITEMS
-                   | DATATYPE-ITEMS
+INTERNAL-ITEMS   ::= internal BASIC-ITEMS+
+PROG-ITEMS       ::= prog-items PATTERN-EQ+
 
-SORT-ITEMS       ::= sort-items SORT-ITEM+ %% Only for reverse compatibility
-SORT-ITEM        ::= SORT-DECL
+CLASS-ITEMS          ::= SIMPLE-CLASS-ITEMS | INSTANCE-CLASS-ITEMS
+SIMPLE-CLASS-ITEMS   ::= class-items CLASS-ITEM+
+INSTANCE-CLASS-ITEMS ::= instance-class-items CLASS-ITEM+
 
-SORT-DECL        ::= sort-decl TYPE-NAME+ CLASS*
+CLASS-ITEM       ::= class-item CLASS-DECL BASIC-ITEMS*
 
-TYPE-ITEMS       ::= type-constr-items TYPE-ITEM+
-TYPE-ITEM        ::= TYPE-DECL | TYPE-ALIAS-DEFN 
+CLASS-DECL       ::= SIMPLE-CLASS-DECL | SUBCLASS-DECL
+SIMPLE-CLASS-DECL::= class-decl CLASS-NAME+                      
+SUBCLASS-DECL    ::= subclass-decl CLASS-NAME+ KIND
 
-TYPE-DECL           ::= TYPE-VAL-DECL | TYPE-FUN-DECL
-TYPE-VAL-DECL       ::= type-val-const-decl TYPE-NAME+ KIND
-TYPE-FUN-DECL       ::= type-constr-fun-decl TYPE-PATTERN+ CLASS+
-TYPE-PATTERN        ::= type-constr-pattern TYPE-NAME TYPE-ARG* 
-TYPE-ARG            ::= TYPE-VAR | TYPE-ARG-DECL
-TYPE-ARG-DECL       ::= type-arg-decl TYPE-VAR EXT-CLASS
-		    
-TYPE-ALIAS-DEFN     ::= TYPE-ALIAS-VAL-DEFN | TYPE-ALIAS-FUN-DEFN
-TYPE-ALIAS-VAL-DEFN ::= type-alias-val-defn TYPE-NAME PSEUDOTYPE
-PSEUDOTYPE          ::= TYPE | LAMBDA-TYPE
-LAMBDA-TYPE         ::= lambda-type TYPE-VAR-DECL+ TYPE
-TYPE-ALIAS-FUN-DEFN ::= type-alias-fun-defn TYPE-PATTERN TYPE
+KIND             ::= TYPE-UNIVERSE | CLASS-KIND | INTERSECTION-KIND
+                   | DOWNSET-KIND | FUN-KIND
+TYPE-UNIVERSE    ::= type-universe
+CLASS-KIND       ::= class-name CLASS-NAME
+INTERSECTION-KIND::= intersection KIND+
+DOWNSET-KIND     ::= downset TYPE
+FUN-KIND         ::= fun-kind EXT-KIND KIND
+EXT-KIND         ::= ext-kind KIND VARIANCE
+VARIANCE         ::= covariant | contravariant | invariant
 
-CLASS-ITEMS       ::= class-items CLASS-ITEM+
-CLASS-ITEM        ::= CLASS-DECL | SUBCLASS-DECL
+SIG-ITEMS        ::= TYPE-ITEMS | OP-ITEMS | FUN-ITEMS | PRED-ITEMS
 
-CLASS-DECL        ::= class-decl CLASS-NAME+
-SUBCLASS-DECL     ::= subclass-decl CLASS-NAME+ CLASS-NAME
+TYPE-ITEMS          ::= SIMPLE-TYPE-ITEMS | INSTANCE-TYPE-ITEMS
+SIMPLE-TYPE-ITEMS   ::= type-items TYPE-ITEM+
+INSTANCE-TYPE-ITEMS ::= instance-type-items TYPE-ITEM+
+
+TYPE-ITEM        ::= TYPE-DECL | SYNONYM-TYPE | DATATYPE-DECL
+                   | SUBTYPE-DECL | ISO-DECL | SUBTYPE-DEFN
+TYPE-DECL        ::= type-decl TYPE-NAME+ KIND
+SYNONYM-TYPE     ::= synonym-type TYPE-NAME TYPE-ARG* TYPE
+SUBTYPE-DECL     ::= subtype-decl TYPE-NAME+ TYPE
+ISO-DECL         ::= iso-decl TYPENAME+
+SUBTYPE-DEFN     ::= subtype-defn TYPE-NAME TYPE-ARG* VAR TYPE FORMULA
+
+TYPE-ARG         ::= type-arg TYPEVAR EXT-KIND
 
 OP-ITEMS         ::= op-items OP-ITEM+
+FUN-ITEMS        ::= fun-items OP-ITEM+
 OP-ITEM          ::= OP-DECL | OP-DEFN
+OP-DECL          ::= op-decl OP-NAME+ TYPESCHEME OP-ATTR*
 
-OP-DECL          ::= op-decl OP-NAME+ TYPE-SCHEME OP-ATTR*
-           %% OP-TYPE, TOTAL-OP-TYPE, PARTIAL-OP-TYPE, SORT-LIST: obsolete
+TYPESCHEME       ::= typescheme TYPE-ARG* TYPE
+
 OP-ATTR          ::= BINARY-OP-ATTR | UNIT-OP-ATTR
 BINARY-OP-ATTR   ::= assoc-op-attr | comm-op-attr | idem-op-attr
 UNIT-OP-ATTR     ::= unit-op-attr TERM
 
-OP-DEFN          ::= OP-FUN-DEFN | OP-VAL-DEFN | OP-REC-VAL-DEFN
-OP-FUN-DEFN      ::= op-fun-defn OP-NAME OP-HEAD TERM  
-           %% not encouraged 
-           %% equivalent to quantified external formula,
-           %% loose definition due to intensionality
-OP-HEAD          ::= TOTAL-OR-NO-HEAD | PARTIAL-OP-HEAD
-TOTAL-OP-HEAD    ::= total-op-head ARG-DECL+ TYPE
-PARTIAL-OP-HEAD  ::= partial-op-head ARG-DECL+ TYPE
-ARG-DECL         ::= arg-decl VAR+ TYPE
-OP-VAL-DEFN      ::= op-val-defn OP-NAME TYPE TERM
-OP-REC-VAL-DEFN  ::= op-rec-val-defn OP-NAME TYPE TERM
+OP-DEFN          ::= op-defn OP-NAME TYPE-ARG* OP-HEAD TERM
+OP-HEAD          ::= TOTAL-OP-HEAD | PARTIAL-OP-HEAD
+TOTAL-OP-HEAD    ::= total-op-head   TUPLE-ARG* TYPE
+PARTIAL-OP-HEAD  ::= partial-op-head TUPLE-ARG* TYPE
+TUPLE-ARG        ::= tuple-arg VAR-DECL*
+VAR-DECL         ::= var-decl VAR TYPE
 
-PRED-ITEMS       ::= pred-items PRED-ITEM+      %% only for compatibility
+PRED-ITEMS       ::= pred-items PRED-ITEM+
 PRED-ITEM        ::= PRED-DECL | PRED-DEFN
+PRED-DECL        ::= pred-decl OP-NAME+ TYPESCHEME
+PRED-DEFN        ::= pred-defn OP-NAME TYPE-ARG* TUPLE-ARG FORMULA
 
-PRED-DECL        ::= pred-decl OP-NAME+ TYPE 
-PRED-TYPE: obsolete
-PRED-DEFN        ::= PRED-FUN-DEFN | PRED-VAL-DEFN | PRED-REC-VAL-DEFN
+GENERATED-ITEMS  ::= generated SIG-ITEMS+
+FREE-DATATYPE    ::= free-datatype DATATYPE-DECL+
+GENERIC-VARS     ::= var-items GEN-VAR-DECL+
+LOCAL-VAR-AXIOMS ::= local-var-axioms GEN-VAR-DECL+ FORMULA+
+AXIOM-ITEMS      ::= axiom-items FORMULA+
 
-PRED-FUN-DEFN    ::= pred-fun-defn OP-NAME PRED-HEAD FORMULA
-PRED-HEAD        ::= pred-head ARG-DECL+
-PRED-VAL-DEFN    ::= pred-val-defn OP-NAME TYPE TERM
-PRED-REC-VAL-DEFN::= pred-rec-val-defn OP-NAME TYPE TERM
+GEN-VAR-DECL     ::= VAR-DECL | TYPE-ARG
 
-DATATYPE-ITEMS   ::= datatype-items DATATYPE-DECL+
-DATATYPE-DECL    ::= SIMPLE-DATATYPE-DECL | DERIVING-DATATYPE-DECL
+DATATYPE-DECL    ::= datatype-decl TYPE-NAME TYPE-ARG* ALTERNATIVE+ 
+                                                       CLASS-NAME*
 
-SIMPLE-DATATYPE-DECL
-                 ::= simple-datatype-decl TYPE-PATTERN ALTERNATIVE+ 
-DERIVING-DATATYPE-DECL
-                 ::= deriving-datatype-decl SIMPLE-DATATYPE-DECL CLASS+
-ALTERNATIVE      ::= TOTAL-CONSTRUCT | PARTIAL-CONSTRUCT
-TOTAL-CONSTRUCT  ::= total-construct   OP-NAME COMPONENTS*
-PARTIAL-CONSTRUCT::= partial-construct OP-NAME COMPONENTS+
+ALTERNATIVE      ::= TOTAL-CONSTRUCT | PARTIAL-CONSTRUCT | SUBTYPES
+TOTAL-CONSTRUCT  ::= total-construct   OP-NAME TUPLE-COMPONENT*
+PARTIAL-CONSTRUCT::= partial-construct OP-NAME TUPLE-COMPONENT+
+TUPLE-COMPONENT  ::= tuple-component COMPONENTS+
 COMPONENTS       ::= TOTAL-SELECT | PARTIAL-SELECT | TYPE
 TOTAL-SELECT     ::= total-select   OP-NAME+ TYPE
 PARTIAL-SELECT   ::= partial-select OP-NAME+ TYPE
+SUBTYPES         ::= subtypes TYPE+
 
-FREE-DATATYPE    ::= free-datatype DATATYPE-ITEMS
-
-SORT-GEN         ::= sort-gen SIG-ITEMS+
-
-VAR-ITEMS        ::= var-items GEN-VAR-DECL+
-GEN-VAR-DECL     ::= VAR-DECL | TYPE-VAR-DECL
-VAR-DECL         ::= var-decl VAR+ TYPE
-TYPE-VAR-DECL    ::= type-var-decl TYPE-VAR+ CLASS+
-
-LOCAL-VAR-AXIOMS ::= local-var-axioms VAR-DECL+ AXIOM+
-
-AXIOM-ITEMS      ::= axiom-items AXIOM+     
-
-KIND             ::= kind EXT-CLASS* CLASS  %% Argumente, Resultat
-EXT-CLASS        ::= CLASS+ | VARIANCE | CLASSES-WITH-VARIANCE
-CLASSES-WITH-VARIANCE
-                 ::= class-with-variance CLASS+ VARIANCE
-VARIANCE         ::= covariant | contravariant | invariant
-%% Idee: Varianz von Konstruktoren kann spezifiziert werden,
-%% wird bei Datentypen ausserdem inferiert (?). Irrtuemer geben
-%% dann eben Inkonsistenzen.
-
-
-CLASS            ::= UNIVERSE | DOWNSET | CLASS-NAME
-UNIVERSE         ::= type 
-DOWNSET          ::= downset TYPE
-
-TYPE-SCHEME      ::= TYPE | POLYMORPHIC-TYPE
-POLYMORPHIC-TYPE ::= polymorphic-type TYPE-VAR-DECL+ TYPE  
-
-TYPE             ::= TYPE-VAR | PROD-TYPE | TOTAL-FUN-TYPE 
-                   | PARTIAL-FUN-TYPE | TOTAL-CONT-TYPE
-                   | PARTIAL-CONT-TYPE | PRED-TYPE | UNIT-TYPE 
-                   | TYPE-APPL
-
-PROD-TYPE        ::= prod-type TYPE+
-TOTAL-FUN-TYPE   ::= total-funp-type TYPE TYPE
-PARTIAL-FUN-TYPE ::= partial-fun-type TYPE TYPE
-TOTAL-CONT-TYPE  ::= total-cont-type TYPE TYPE
-PARTIAL-CONT-TYPE::= partial-cont-type TYPE TYPE
-PRED-TYPE        ::= pred-type TYPE
-UNIT-TYPE        ::= unit-type
-TYPE-APPL ::= type-constr-application TYPE-NAME TYPE*
-
-
-
-AXIOM            ::= EXT-FORMULA | TYPE-QUANTIFICATION
-TYPE-QUANTIFICATION   
-                 ::= type-quantification TYPE-VAR-DECL+ EXT-FORMULA
-EXT-FORMULA      ::= FORMULA | REC-EQUATION
-
+TYPE             ::= TYPE-NAME | TYPE-APPL
+                   | PRODUCT-TYPE | LAZY-TYPE | KINDED-TYPE | FUN-TYPE 
+TYPE-APPL        ::= type-appl TYPE TYPE
+PRODUCT-TYPE     ::= product-type TYPE+ 
+LAZY-TYPE        ::= lazy-type TYPE
+KINDED-TYPE      ::= kinded-type TYPE KIND
+FUN-TYPE         ::= fun-type TYPE ARROW TYPE
+ARROW            ::= partial-fun | total-fun 
+                   | cont-partial-fun | cont-total-fun
+ 
 FORMULA          ::= QUANTIFICATION | CONJUNCTION | DISJUNCTION 
-                   | IMPLICATION | EQUIVALENCE | NEGATION | ATOM
-QUANTIFICATION   ::= quantification QUANTIFIER VAR-DECL+ FORMULA
+                   | IMPLICATION | EQUIVALENCE 
+                   | NEGATION | ATOM
+QUANTIFICATION   ::= quantification QUANTIFIER GEN-VAR-DECL+ FORMULA
 QUANTIFIER       ::= universal | existential | unique-existential
 CONJUNCTION      ::= conjunction FORMULA+
 DISJUNCTION      ::= disjunction FORMULA+
@@ -144,128 +108,47 @@ IMPLICATION      ::= implication FORMULA FORMULA
 EQUIVALENCE      ::= equivalence FORMULA FORMULA
 NEGATION         ::= negation FORMULA
 
-REC-EQUATION    ::= rec-equation OP-NAME TERM
-
-ATOM             ::= TRUTH | EXISTL-EQUATION | STRONG-EQUATION 
-                    | INTERNAL-FORMULA   %% !!!
+ATOM             ::= TRUTH | DEFINEDNESS 
+                   | EXISTL-EQUATION | STRONG-EQUATION 
+                   | MEMBERSHIP | PREDICATION
 TRUTH            ::= true-atom | false-atom
-PREDICATION, PRED-SYMB, QUAL-PRED-NAME: obsolete
+DEFINEDNESS      ::= definedness TERM
 EXISTL-EQUATION  ::= existl-equation TERM TERM
 STRONG-EQUATION  ::= strong-equation TERM TERM
-INT-FORMULA      ::= TERM  %% Of type unit -->  static analysis
-
-TERMS: obsolete
-TERM             ::= VAR | QUAL-VAR | APPLICATION
-                   | TYPED-TERM | CONDITIONAL | TOTAL-LAMBDA-TERM 
-                   | PARTIAL-LAMBDA-TERM | PRED-LAMBDA-TERM 
-                   | POLY-LAMBDA-TERM | PROJECTION1-TERM
-                   | ... | PROJECTIONN-TERM | UNIT-TERM | TUPLE-TERM 
-                   | CONSTANT-TERM | CASE-TERM | RES-TERM
-                   | FIX-TERM | LOGIC-TERM
-%% Checking that abstractions don't contain conditionals is left to the
-%% static analysis!
-
-QUAL-VAR         ::= qual-var VAR TYPE
-APPLICATION      ::= application TERM TERM 
-OP-SYMB          ::= OP-NAME | QUAL-OP-NAME
-QUAL-OP-NAME     ::= qual-op-name OP-NAME OP-TYPE
-TYPED-TERM       ::= typed-term TERM TYPE
-CONDITIONAL      ::= conditional FORMULA TERM TERM
-DEFINEDNESS      ::= definedness TERM
-TOTAL-LAMBDA-TERM::= total-lambda-term VAR-DECL+ TERM
-PARTIAL-LAMBDA-TERM 
-                 ::= partial-lambda-term VAR-DECL+ TERM
-PRED-LAMBDA-TERM ::= pred-lambda-term VAR-DECL+ INT-FORMULA  
-PROJECTION1-TERM ::= projection1-term TERM
-...
-PROJECTIONN-TERM ::= projectionn-term TERM
-UNIT-TERM        ::= unit-term 
-TUPLE-TERM       ::= tuple-term TERM TERM+
-CONSTANT-TERM    ::= constant-term OP-NAME TYPE*
-CASE-TERM        ::= case-term TERM CASE+
-CASE             ::= case OP-NAME TOTAL-OP-HEAD TERM
-RES-TERM         ::= res-term TERM TERM
-FIX-TERM         ::= fix-term TERM
-LOGIC-TERM       ::= INT-TRUTH 
-                   | INT-NEGATION
-                   | INT-CONJUNCTION
-                   | INT-DISJUNCTION
-                   | INT-IMPLICATION
-                   | INT-EQUIVALENCE
-                   | INT-QUANTIFICATION
-
-INT-TRUTH        ::= SIMPLE-INT-TRUTH | TYPED-INT-TRUTH
-TYPED-INT-TRUTH  ::= typed-int-truth SIMPLE-INT-TRUTH TYPE
-SIMPLE-INT-TRUTH ::= tt | ff
-INT-NEGATION     ::= int-negation INT-FORMULA
-INT-CONJUNCTION  ::= int-conjunction INT-FORMULA INT-FORMULA+
-INT-DISJUNCTION  ::= int-disjunction INT-FORMULA INT-FORMULA+
-INT-IMPLICATION  ::= int-implication INT-FORMULA INT-FORMULA
-INT-EQUIVALENCE  ::= int-equivalence INT-FORMULA INT-FORMULA
-INT-QUANTIFICATION
-                 ::= SIMPLE-INT-QUANTIFICATION
-                   | TYPED-INT-QUANTIFICATION
-TYPED-INT-QUANTIFICATION 
-                 ::= typed-int-quantification SIMPLE-INT-QUANTIFICATION TYPE
-SIMPLE-INT-QUANTIFICATION
-                 ::= simple-int-quantification INT-QUANTIFIER TERM
-INT-QUANTIFIER   ::= int-all | int-exists | int-exists-uniquely
-
-
-
-%% SORT: obsolete
-CLASS-NAME       ::= TOKEN-ID   %% or SIMPLE-ID
-TYPE-NAME ::= ID 
-OP-NAME          ::= ID
-PRED-NAME: obsolete
-VAR              ::= SIMPLE-ID
-TYPE-VAR         ::= SIMPLE-ID
-         
-SIMPLE-ID        ::= WORDS
-ID               ::= TOKEN-ID | MIXFIX-ID
-TOKEN-ID         ::= TOKEN
-TOKEN            ::= WORDS | DOT-WORDS | SIGNS | DIGIT | QUOTED-CHAR
-MIXFIX-ID        ::= TOKEN-PLACES
-TOKEN-PLACES     ::= token-places TOKEN-OR-PLACE+
-TOKEN-OR-PLACE   ::= TOKEN | PLACE
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% With subsorting                                                 %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SORT-ITEM        ::= ... | SUBSORT-DECL | ISO-DECL | SUBSORT-DEFN
-                         %% again: only for compatibility
-
-SUBSORT-DECL     ::= subsort-decl TYPE-NAME+ TYPE
-ISO-DECL         ::= iso-decl TYPE-NAME+
-SUBSORT-DEFN     ::= subsort-defn TYPE-NAME+ VAR 
-                                  TYPE FORMULA
-
-TYPE-ITEM ::= ...
-                 | SUBTYPE-DECL | TYPE-ISO-DECL | SUBTYPE-DEFN
-
-SUBTYPE-DECL     ::= SUBTYPE-VAL-DECL | SUBTYPE-FUN-DECL
-SUBTYPE-VAL-DECL ::= subtype-val-decl TYPE-NAME PSEUDOTYPE
-SUBTYPE-FUN-DECL ::= subtype-fun-decl TYPE-PATTERN+ TYPE 
-TYPE-ISO-DECL    ::= TYPE-ISO-VAL-DECL | TYPE-ISO-FUN-DECL
-TYPE-ISO-VAL-DECL::= type-iso-val-decl TYPE-NAME+
-TYPE-ISO-FUN-DECL::= type-iso-fun-decl TYPE-PATTERN+
-SUBTYPE-DEFN     ::= subtype-defn TYPE-PATTERN VAR TYPE FORMULA 
-%% alias < type must be caught by the static semantics ! 
-
-
-ALTERNATIVE      ::= ... | SUBTYPE
-SUBTYPE         ::= subtype TYPE
-
-FORMULA          ::= ... | MEMBERSHIP
 MEMBERSHIP       ::= membership TERM TYPE
+PREDICATION      ::= predication TERM
 
-TERM             ::= ... | CAST
+TERM             ::= QUAL-VAR | INST-QUAL-NAME
+                   | TERM-APPL | TUPLE-TERM
+                   | TYPED-TERM 
+                   | CONDITIONAL
+                   | TOTAL-LAMBDA | PARTIAL-LAMBDA 
+                   | LET-TERM | CASE-TERM 
+                   | CAST
+QUAL-VAR         ::= qual-var VAR TYPE 
+INST-QUAL-NAME   ::= inst-qual-name OP-NAME TYPE* TYPESCHEME
+TERM-APPL        ::= term-appl TERM TERM
+TUPLE-TERM       ::= tuple-term TERM*
+TYPED-TERM       ::= typed-term TERM TYPE
+CONDITIONAL      ::= conditional TERM TERM TERM
+PARTIAL-LAMBDA   ::= partial-lambda PATTERN* TERM
+TOTAL-LAMBDA     ::= total-lambda   PATTERN* TERM
+LET-TERM         ::= let-term PATTERN-EQ+ TERM
+CASE-TERM        ::= case-term TERM CASE+
 CAST             ::= cast TERM TYPE
 
+PATTERN          ::= QUAL-VAR | INST-QUAL-NAME | PATTERN-APPL
+                   | TUPLE-PATTERN | TYPED-PATTERN | AS-PATTERN
+PATTERN-APPL     ::= pattern-appl PATTERN PATTERN
+TUPLE-PATTERN    ::= tuple-pattern PATTERN*
+TYPED-PATTERN    ::= typed-pattern PATTERN TYPE
+AS-PATTERN       ::= as-pattern VAR PATTERN 
 
+PATTERN-EQ       ::= pattern-eq PATTERN TERM
+CASE             ::= case PATTERN TERM 
 
-
-
-
-
-
+CLASS-NAME       ::= ID
+TYPE-NAME        ::= ID
+OP-NAME          ::= ID
+VAR              ::= ID
+TYPEVAR          ::= SIMPLE-ID
