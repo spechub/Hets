@@ -131,13 +131,13 @@ writeFileInfo opts diags file ln lenv =
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
-      putIfVerbose opts 1 ("Writing "++envFile)
+      putIfVerbose opts 2 ("Writing "++envFile)
       res <- try (globalContexttoShATerm envFile gctx)
       case res of
        Right _ -> return ()
        Left ioErr -> do 
-           putIfVerbose opts 1 (envFile++" not written")
-	   putIfVerbose opts 2 ("see following error description:\n"
+           putIfVerbose opts 2 (envFile++" not written")
+	   putIfVerbose opts 3 ("see following error description:\n"
 				++show ioErr++"\n")
 
 write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)

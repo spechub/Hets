@@ -353,16 +353,14 @@ parseInType1 str =
 parseOutTypes :: String -> Flag
 parseOutTypes str
     | ',' `elem` str = OutTypes $ 
-                       (map maybeOType . map parseOutType . splitOn ',') str
-    | otherwise = case (parseOutType str) of
-                                          (Just ts) -> OutTypes [ts]
-                                          Nothing   -> error' str
+                       (map eitherOType . map parseOutType . splitOn ',') str
+    | otherwise = OutTypes [eitherOType (parseOutType str)]
     where
-    maybeOType = maybe (error' str) id
+    eitherOType = either error' id
     error' s = hetsError User (s ++ " is not a valid OTYPE")
 
 -- 'parseOutType' parses an 'OutType' from a String
-parseOutType :: String -> Maybe OutType
+parseOutType :: String -> Either String OutType
 parseOutType s
     | "pp."    `isPrefixOf` s =
         parseOutType' (parsePrettyType $ drop 3 s) PrettyOut
@@ -388,8 +386,8 @@ parseOutType s
     | "dg."    `isPrefixOf` s =
         parseOutType' (parseOutFormat $ drop 3 s)
                       (HetCASLOut $ OutDGraph Full False)
-    | s == "env" = Just EnvOut
-    | otherwise               = Nothing
+    | s == "env" = Right EnvOut
+    | otherwise               = Left s
     where
     parsePrettyType "het"  = Just PrettyAscii
     parsePrettyType "tex"  = Just PrettyLatex
@@ -407,8 +405,8 @@ parseOutType s
     parseOutFormat _      = Nothing
     parseOutType' getter typ =
         case getter of
-                    (Just t) -> Just (typ t)
-                    Nothing  -> Nothing
+                    (Just t) -> Right (typ t)
+                    Nothing  -> Left  s
 
 -- | 'parseRawOpts' parses a 'Raw' Flag from user input
 parseRawOpts :: String -> Flag
@@ -461,13 +459,16 @@ hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
       isUni ('-':'-':'u':'n':'i':_) = True
       isUni _ = False
+      seq' x = seq x x
+      seqL = map seq'
    in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
                infs  <- checkInFiles non_opts
                hcOpts <- return $ 
                          foldr (flip makeOpts) defaultHetcatsOpts flags
-               return $ hcOpts { infiles = infs }
+	       let hcOpts' = hcOpts { infiles = infs }
+               seq (length $ show hcOpts') $ return $ hcOpts' 
         (_,_,errs) -> hetsError User (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -623,7 +624,7 @@ showDiags1 opts res = do
                        $ filter (relevantDiagKind . diagKind) diags
              case res' of
                Just res'' -> return res''
-               Nothing -> fail ""
+               Nothing    -> resToIORes $ Result [] Nothing
      else res
   where relevantDiagKind FatalError = True
         relevantDiagKind Error = True
