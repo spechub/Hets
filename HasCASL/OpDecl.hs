@@ -25,6 +25,7 @@ import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsUtils
+import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
@@ -69,73 +70,75 @@ patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) []
 
-anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
-anaOpItem ga br ods@(OpDecl is sc attr ps) = 
-    do mSc <- anaTypeScheme sc
-       case mSc of 
-           Nothing -> return ods
-	   Just nSc -> do 
-	       mAttrs <- mapM (anaAttr ga nSc) attr
-	       us <- mapM (anaOpId br nSc attr) is
-	       return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
-
-anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
-    do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
-       mSc <- anaTypeScheme extSc 
-       as <- gets assumps
-       checkUniqueVars $ concat oldPats
-       putAssumps $ filterVars as
-       mPats <- mapM (mapM anaVarDecl) oldPats
-       let newPats = map catMaybes mPats
-	   monoPats = map (map makeMonomorph) newPats
-	   pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
-       case mSc of 
-		Just newSc@(TypeScheme tArgs (qu :=> scTy) qs) -> do 
-		    ty <- toEnvState $ freshInst newSc
-		    mapM (mapM addVarDecl) monoPats
-		    mt <- resolveTerm ga (Just ty) trm
-		    putAssumps as
-		    case mt of 
-			      Nothing -> return $ OpDefn op newPats 
-					     newSc partial trm ps
-			      Just lastTrm -> do 
-			          let lastSc = TypeScheme tArgs 
-					(qu :=> patternsToType newPats scTy) qs
-				      lamTrm = case (pats, partial) of 
-					       ([], Total) -> lastTrm
-					       _ -> LambdaTerm pats partial 
-						    lastTrm ps
-				      ot = QualOp br (InstOpId i [] []) 
-					  lastSc []
-				      lhs = mkApplTerm ot pats
-				      ef = mkEqTerm eqId ps lhs lastTrm
-				      f = mkForall (map GenTypeVarDecl tArgs
-					  ++ (map GenVarDecl $ 
-					      concatMap extractVars pats)) ef
-				  addOpId i lastSc [] $ Definition br lamTrm
-				  appendSentences [NamedSen 
-						   ("def_" ++ showId i "")
-						   $ Formula f] 
-				  return $ OpDefn op [] lastSc
-					   Total lamTrm ps
-		Nothing -> do 
-		    mt <- resolveTerm ga Nothing trm
-		    putAssumps as
-		    return $ OpDefn op newPats extSc partial 
-			      (case mt of Nothing -> trm
-			                  Just x -> x) ps
-							  
-
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
       (OpId i [] qs, TypeScheme (args ++ tvs) q ps)  
 
-anaOpId :: OpBrand -> TypeScheme -> [OpAttr] -> OpId -> State Env (Maybe OpId) 
-anaOpId br sc attrs o =
-    do let (OpId i _ _, newSc) = getUninstOpId sc o
-       mo <- addOpId i newSc attrs $ NoOpDefn br 
-       return $ fmap (const o) mo
+anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId 
+	-> State Env (Maybe OpId) 
+anaOpId ga br partSc attrs o =
+    do let (OpId i _ _, sc) = getUninstOpId partSc o
+       mSc <- anaTypeScheme sc 
+       case mSc of 
+           Nothing -> return Nothing
+	   Just newSc -> do
+               mAttrs <- mapM (anaAttr ga newSc) attrs
+               mo <- addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br 
+               return $ fmap (const o) mo
 
+anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
+anaOpItem ga br (OpDecl is sc attr ps) = do
+	us <- mapM (anaOpId ga br sc attr) is
+	return $ OpDecl (catMaybes us) sc attr ps
+
+anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
+    do let (op@(OpId i _ _), extSc@(TypeScheme tArgs (qu :=> scTy) qs)) = 
+	       getUninstOpId sc o
+       checkUniqueVars $ concat oldPats
+       tm <- gets typeMap
+       mArgs <- mapM anaTypeVarDecl tArgs
+       mPats <- mapM (mapM anaVarDecl) oldPats
+       let newPats = map catMaybes mPats
+           monoPats = map (map makeMonomorph) newPats
+           pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
+       as <- gets assumps
+       mapM (mapM addVarDecl) monoPats
+       let newArgs = catMaybes mArgs  
+       checkUniqueTypevars newArgs
+       mty <- anaStarType scTy
+       case mty of 
+	   Just ty -> do 
+               mt <- resolveTerm ga (Just ty) trm
+	       putAssumps as
+	       putTypeMap tm
+	       mSc <- fromResult $ const $ generalize $ 
+			                TypeScheme tArgs 
+					(qu :=> patternsToType newPats ty) qs
+	       case (mt, mSc) of 
+		   (Just lastTrm, Just newSc) -> do 
+		       let lamTrm = case (pats, partial) of 
+				    ([], Total) -> lastTrm
+				    _ -> LambdaTerm pats partial lastTrm ps
+			   ot = QualOp br (InstOpId i [] []) newSc []
+			   lhs = mkApplTerm ot pats
+			   ef = mkEqTerm eqId ps lhs lastTrm
+			   f = mkForall (map GenTypeVarDecl tArgs
+					  ++ (map GenVarDecl $ 
+					      concatMap extractVars pats)) ef
+		       addOpId i newSc [] $ Definition br lamTrm
+		       appendSentences [NamedSen 
+						   ("def_" ++ showId i "")
+						   $ Formula f] 
+		       return $ OpDefn op [] newSc Total lamTrm ps
+		   _ -> return $ OpDefn op newPats extSc partial trm ps
+	   Nothing -> do 
+	       mt <- resolveTerm ga Nothing trm
+	       putAssumps as
+	       putTypeMap tm
+	       return $ OpDefn op oldPats extSc partial 
+			      (case mt of Nothing -> trm
+			                  Just x -> x) ps
+							  
 -- ----------------------------------------------------------------------------
 -- ProgEq
 -- ----------------------------------------------------------------------------
@@ -143,7 +146,6 @@ anaOpId br sc attrs o =
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
     do as <- gets assumps
---       putAssumps $ filterVars as -- leave in for constrained variables
        mp <- checkPattern ga pat
        case mp of 
 	   Nothing -> return pe
