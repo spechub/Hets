@@ -278,25 +278,35 @@ class (StaticAnalysis lid
       Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        | lid -> sublogics, lid -> basic_spec, lid -> sentence, lid -> symb_items,
-          lid -> symb_map_items, lid -> proof_tree,
+        | lid -> sublogics, lid -> basic_spec, lid -> sentence, 
+          lid -> symb_items, lid -> symb_map_items, lid -> proof_tree,
           lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
 	  where
 
          data_logic :: lid -> Maybe AnyLogic
+	 data_logic _ = Nothing
 
          sublogic_names :: lid -> sublogics -> [String] 
+	 sublogic_names _ _ = []
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
+	 all_sublogics _ = []
 
          is_in_basic_spec :: lid -> sublogics -> basic_spec -> Bool
+         is_in_basic_spec _ _ _ = False
          is_in_sentence :: lid -> sublogics -> sentence -> Bool
+         is_in_sentence _ _ _ = False
          is_in_symb_items :: lid -> sublogics -> symb_items -> Bool
-         is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
+         is_in_symb_items _ _ _ = False
+	 is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
+         is_in_symb_map_items _ _ _ = False
          is_in_sign :: lid -> sublogics -> sign -> Bool
-         is_in_morphism :: lid -> sublogics -> morphism -> Bool
+         is_in_sign _ _ _ = False
+	 is_in_morphism :: lid -> sublogics -> morphism -> Bool
+         is_in_morphism _ _ _ = False
          is_in_symbol :: lid -> sublogics -> symbol -> Bool
-
+	 is_in_symbol _ _ _ = False
+ 
          min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
          min_sublogic_sentence :: lid -> sentence -> sublogics
          min_sublogic_symb_items :: lid -> symb_items -> sublogics
@@ -305,14 +315,23 @@ class (StaticAnalysis lid
          min_sublogic_morphism :: lid -> morphism -> sublogics
          min_sublogic_symbol :: lid -> symbol -> sublogics
 
-         proj_sublogic_basic_spec :: lid -> sublogics -> basic_spec -> basic_spec
-         proj_sublogic_symb_items :: lid -> sublogics -> symb_items -> Maybe symb_items
-         proj_sublogic_symb_map_items :: lid -> sublogics -> symb_map_items -> Maybe symb_map_items
+         proj_sublogic_basic_spec :: lid -> sublogics 
+				  -> basic_spec -> basic_spec
+	 proj_sublogic_basic_spec _ _ b = b			     
+         proj_sublogic_symb_items :: lid -> sublogics 
+				  -> symb_items -> Maybe symb_items
+	 proj_sublogic_symb_items _ _ _ = Nothing
+         proj_sublogic_symb_map_items :: lid -> sublogics 
+				      -> symb_map_items -> Maybe symb_map_items
+	 proj_sublogic_symb_map_items _ _ _ = Nothing
          proj_sublogic_sign :: lid -> sublogics -> sign -> sign 
-         proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
-         proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
+         proj_sublogic_sign _ _ s = s
+	 proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
+         proj_sublogic_morphism _ _ m = m
+	 proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
+	 proj_sublogic_epsilon li _ s = ide li s
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
-
+	 proj_sublogic_symbol _ _ _ = Nothing
          fromShATerm_sublogics :: lid -> ATermTable -> sublogics
          fromShATerm_sublogics _ att = fromShATerm att
  
