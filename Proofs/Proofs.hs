@@ -156,10 +156,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    proofBasis =
-      case getLabelOfAnyInsertedEdge changes of
-        Nothing -> []
-        Just label -> label:[]
+    proofBasis = getLabelsOfInsertedEdges changes
     provenEdge = (source,
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
@@ -516,11 +513,9 @@ isLocalDef (_,_,edgeLab) =
 
 {- filters the list of changes for insertions of edges and returns the label
    of one of these; or Nothing if no insertion was found -}
-getLabelOfAnyInsertedEdge :: [DGChange] -> Maybe DGLinkLab
-getLabelOfAnyInsertedEdge changes = 
-  case getInsertedEdges changes of
-    [] -> Nothing
-    ((_,_,label):edges) -> Just label
+getLabelsOfInsertedEdges :: [DGChange] -> [DGLinkLab]
+getLabelsOfInsertedEdges changes = 
+  [label | (_,_,label) <- getInsertedEdges changes]
 
 {- returns all insertions of edges from the given list of changes -}
 getInsertedEdges :: [DGChange] -> [LEdge DGLinkLab]
