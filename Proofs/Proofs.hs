@@ -202,25 +202,42 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsProvenGlobPathOfMorphismBetween dGraph morphism source target
-     then
-       globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
-     else
-       globSubsumeAux dGraph (rules,changes) list
+globSubsumeAux dGraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+  if null allPaths
+   then
+     globSubsumeAux dGraph (rules,changes) list
+   else 
+     globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
+--existsProvenGlobPathOfMorphismBetween dGraph morphism src tgt
+    -- then
+      -- globSubsumeAux (insEdge newEdge (delLEdge ledge dGraph)) (newRules,newChanges) list
+     --else
+       --globSubsumeAux dGraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
   --  auxGraph = delLEdge ledge dGraph
+    allPaths = getAllProvenGlobPathsOfMorphismBetween dGraph morphism src tgt
+    proofBasis =
+      case allPaths of
+        [] -> []
+        (path:paths) -> [] -- @@ hier weitermachen -- map getLabelOfEdge path
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    newEdge = (source,
-	       target,
+    newEdge = (src,
+	       tgt,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (GlobalThm (Proven [])
+		       dgl_type = (GlobalThm (Proven proofBasis)
 				   conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
     --newGraph = insEdge newEdge auxGraph
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+
+-- @@Todo: label von Kanten bestimmen@@
+--getLabelOfEdge :: (LEdge b) -> b
+--getLabelOfEdge (LEdge label) = label
+
 
 -- ------------------
 -- local subsumption
@@ -284,6 +301,24 @@ existsProvenGlobPathOfMorphismBetween dgraph morphism src tgt =
       allPaths = getAllProvenGlobPathsBetween dgraph src tgt
       morphismsOfPaths = map calculateMorphismOfPath allPaths
       filteredMorphismsOfProvenPaths = getFilteredMorphisms morphismsOfPaths 
+
+{- returns a list of all proven global paths of the given morphism between
+   the given source and target node-}
+getAllProvenGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
+					  -> [[LEdge DGLinkLab]]
+getAllProvenGlobPathsOfMorphismBetween dgraph morphism src tgt = 
+  filterPathsByMorphism morphism allPaths
+
+  where 
+      allPaths = getAllProvenGlobPathsBetween dgraph src tgt
+
+
+{- returns all paths from the given list whose morphism is equal to the
+   given one-}
+filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
+		      -> [[LEdge DGLinkLab]]
+filterPathsByMorphism morphism paths = 
+  [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
 {- @@@ hier weiter machen @@@ -}
 {- returns a Maybe path the proof of the given edge can be based on -}
