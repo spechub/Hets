@@ -322,7 +322,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
    namedSps = zip3 (map (\_ -> Nothing) (tail asps) ++ [name]) 
                    asps 
                    (nullPos:pos)
-   ana res (name',asp',pos') = do
+   ana res (name',asp',_pos') = do
      (sps',nsig',dg') <- res
      (sp1',nsig1,dg1) <- 
          ana_SPEC lg (gannos,genv,dg') nsig' name' opts (item asp')
@@ -330,7 +330,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
      dg2 <- case (any isImplies $ l_annos asp',getNode nsig',getNode nsig1) of
        (True,Just n',Just n1) -> do
            let sig1 = getSig nsig1
-               sig' = getSig nsig'
+               _sig' = getSig nsig'
 -- temporarily removed, for %cons test using %implies...
 --           when (not (is_subgsign sig1 sig')) (pplain_error () 
 --             (ptext "Signature must not be extended in presence of %implies") 
@@ -892,7 +892,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
       (showPretty spname
        " is a unit specification, not a view") pos
     Just (RefEntry) -> 
-     plain_error (sp,nsig,dg) 
+     plain_error (fv,dg, error "no fit view") 
       (showPretty spname
        " is a refinement specification, not a view") pos
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
