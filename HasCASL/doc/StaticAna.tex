@@ -222,6 +222,40 @@ that not a type but value variable is declared (most likely causing a type
 error). Keeping class and type names disjoint is not furhter enforced.
 
 
+\section{Sources in \texttt{HetCATS/HasCASL}}
+
+HasCASL relies on \texttt{Keywords.hs}, \texttt{Lexer.hs}, \texttt{Token.hs}
+and \texttt{CASL/RunParsers.hs} (for testing purposes in \texttt{Main.hs}).
+Form the \texttt{Common} directory also stuff for annotations (i.e.\ 
+\texttt{Anno\_Parser.hs}, \texttt{AnnoState.hs}) is used.
+
+\begin{description}
+\item[As.hs] abstract syntax
+\item[AsToLe.hs] the static analysis
+\item[AsUtils.hs] helpers for \texttt{As}
+\item[ClassAna.hs] analyse classes
+\item[ClassDecl.hs] analyse class declarations
+\item[Concrete-Syntax.txt] concrete syntax
+\item[HToken.hs] extension of \texttt{CASL/Token.hs} for HasCASL
+  (further keywords)
+\item[Le.hs] analysed local environment
+\item[OpDecl.hs] analyse declarations
+\item[Logic\_HasCASL.hs] instance for \texttt{Logic.Logic}
+\item[ParseItem.hs] parsing basic (HasCASL) items
+\item[ParseTerm.hs] parsing classes, types, terms and formulae
+\item[PrintAs.hs] pretty printing the abstract syntax
+\item[PrintLe.hs] pretty printing the analysed abstract syntax
+\item[RunStaticAna.hs] wrapper for \texttt{CASL.RunParsers}
+\item[TypeAna.hs] analyse types
+\item[TypeDecls.hs] analyse type declarations
+\item[hacapa.lhs] counterpart to \texttt{CASL/capa.lhs} 
+\end{description}
+
+As in \texttt{HetCATS/CASL/} there are some test files (
+\texttt{*.hascasl}, \texttt{Wrong*.hascasl} and \texttt{*.output}) and a
+script \texttt{runcheck.sh}. The binary produced by \texttt{ghc-call}
+is named \texttt{hacapa}.
+
 \section{Test}
 
 The subdirectory \texttt{test} contains \texttt{*.hascasl} files with basic
