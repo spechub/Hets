@@ -299,6 +299,8 @@ data AnyLogic = forall lid sublogics
 
 instance Show AnyLogic where
   show (Logic lid) = language_name lid
+instance Eq AnyLogic where
+  Logic lid1 == Logic lid2 = language_name lid1 == language_name lid2
 
 ----------------------------------------------------------------
 -- Typeable instances

@@ -64,6 +64,7 @@ data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
+              deriving (Eq,Show)
 
 
 data DGLinkType = LocalDef 
@@ -75,13 +76,15 @@ data DGLinkType = LocalDef
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
             | GlobalThm Bool Conservativity -- is_proved
-            | HidingThm G_morphism Bool  -- reduction mor, is_proved
-            | FreeThm G_morphism Bool
+            | HidingThm GMorphism Bool  -- reduction mor, is_proved
+            | FreeThm GMorphism Bool
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
+              deriving (Eq,Show)
 
 data Conservativity = None | Cons | Mono | Def
+              deriving (Eq,Show)
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
@@ -94,6 +97,7 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
 type DGraph = Graph DGNodeLab DGLinkLab
 
 data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
+               deriving (Eq,Show)
 
 getNode (NodeSig (n,sigma)) = Just n
 getNode (EmptyNode _) = Nothing
