@@ -1,7 +1,6 @@
 module MixfixParser where
 
 import AS_Basic_CASL 
-import Sign
 import GlobalAnnotations
 import Result
 import Id
@@ -10,78 +9,16 @@ import ParsecPrim
 import qualified Char as C
 
 
--- convert LiteralAnnos from Ids to OpItems
+-- isChar :: Token -> Bool
+-- isChar t = head (tokStr t) == '\''
 
-data LiteralOpItems = LitItem 
-    { emptyString :: Maybe OpItem
-    , consString :: Maybe OpItem
-    , emptyList :: Maybe OpItem
-    , consList :: Maybe OpItem
-    , listBrackets :: ([Token],[Token])
-    , numberLit :: Maybe OpItem
-    , decimalOp  :: Maybe OpItem
-    , exponentOp :: Maybe OpItem    
-    , negExponent :: Maybe OpItem
-    } deriving (Show)
-
-convertLitAnnos is la = 
-    LitItem {emptyString = case string_lit la of 
-	                   Nothing -> Nothing
-	                   Just (c, _) -> case lookupId is 0 c of
-	                                  [ci] -> Just ci
-	                                  _ -> Nothing
-            ,consString  = case string_lit la of 
-	                   Nothing -> Nothing
-	                   Just (_, f) -> case lookupId is 2 f of
-	                                  [fi] -> Just fi
-	                                  _ -> Nothing
-            ,emptyList   = case list_lit la of 
-	                   Nothing -> Nothing
-	                   Just (_, c, _) -> case lookupId is 0 c of
-	                                  [ci] -> Just ci
-	                                  _ -> Nothing
-            ,consList    = case list_lit la of 
-	                   Nothing -> Nothing
-	                   Just (_, _, f) -> case lookupId is 2 f of
-	                                  [fi] -> Just fi
-	                                  _ -> Nothing
-            ,listBrackets = case list_lit la of 
-	                    Nothing -> ([], [])
-	                    Just(Id bs _ _, _, _) -> 
-	                       let (b1, rt) = span (not . isPlace) bs
-			       in if null rt || any isPlace (tail rt) 
-				  then ([], []) 
-				  else (b1, tail rt)
-	    ,numberLit   = case number_lit la of 
-                           Nothing -> Nothing
-			   Just f -> case lookupId is 2 f of 
-	                                  [fi] -> Just fi
-	                                  _ -> Nothing
-            ,decimalOp   = case float_lit la of 
-	                   Nothing -> Nothing
-	                   Just (f, _) -> case lookupId is 2 f of
-	                                  [fi] -> Just fi
-	                                  _ -> Nothing
-            ,exponentOp  = case float_lit la of 
-	                   Nothing -> Nothing
-	                   Just (_, g) -> case lookupId is 2 g of
-	                                  [gi] -> Just gi
-	                                  _ -> Nothing
-            ,negExponent = case lookupId is 1 (Id [Token "-" nullPos] [] []) of
-				          [fi] -> Just fi
-	                                  _ -> Nothing
-	    }
-
--- only check for the correct number of arguments
-lookupId :: [OpItem] -> Int -> Id -> [OpItem]
-lookupId is args i =
-	 filter (\x -> opId x == i && args == length(opArgs(opType x))) is
-
-isChar :: Token -> Bool
-isChar t = head (tokStr t) == '\''
-
+isString :: Token -> Bool
 isString t = head (tokStr t) == '\"'
-isNumber t = C.isDigit $ head (tokStr t)
+isNumber :: Token -> Bool
+isNumber t = let s = tokStr t in length s > 1 && C.isDigit (head s)
+isFloating :: Token -> Bool
+-- precondition: isNumber
+isFloating t = any (\c -> c == '.' || c == 'E') (tokStr t)
 
 split ::  GenParser Char () String -> String -> (String, String)
 split p s = let ph = do hd <- p;
@@ -91,75 +28,82 @@ split p s = let ph = do hd <- p;
                Left _ -> error"split" 
 	       Right x -> x
 
--- may be convert to Sign.Term
-makeStringTerm :: LiteralOpItems -> [OpItem] -> Token -> ([Diagnosis], [TERM])
-makeStringTerm ga is tok = 
-  let p = tokPos tok in
-	    case emptyString ga of 
-	    Nothing -> ([Error "no proper %string annotation" p], [])
-            Just x -> let l = init (tail (tokStr tok))
-                          y = asAppl x []
-	              in if null l then ([], [y])
-			 else case consString ga of 
-                              Nothing ->  
-				  ([Error "no %string constructor" p], [])
-                              Just f -> 
-				  let (errs, term) = makeStrTerm is y 
-						     (asAppl f) p l
-				  in (errs, [term])
-
-makeStrTerm :: [OpItem] -> TERM -> ([TERM] -> TERM) 
-               -> Pos -> [Char] -> ([Diagnosis], TERM)
-makeStrTerm is x f p l = 
-    if null l then ([], x)
+makeStringTerm :: Id -> Id -> Token -> TERM
+makeStringTerm c f tok = 
+  makeStrTerm (line, colm + 1) str
+  where 
+  (line, colm) = tokPos tok
+  str = init (tail (tokStr tok))
+  makeStrTerm p@(lin, col) l = 
+    if null l then asAppl c [] p
     else let (hd, tl) = split caslChar l
-             incr (line, column) = (line, column+1)
-             (errs, rest) = makeStrTerm is x f (incr p) tl
-	     real = "'" ++ hd ++ "'"
-         in case lookupId is 0 (Id [Token real nullPos] [] []) of 
-	    [c] -> (errs, f [asAppl c [], rest])
-            _ -> (Error ("missing or ambiguous definition for character " 
-			 ++ real) p : errs, rest)
+	     real = if hd == "'" then "'\\''" else "'" ++ hd ++ "'"
+             -- convert "'" to "\'" and lookup character '\''
+         in asAppl f [asAppl (Id [Token real p] [] []) [] p, 
+		      makeStrTerm (lin, col + length hd) tl] p
 
--- convert OpItem's OpType to OP_TYPE
-oldOpType :: OpItem -> OP_TYPE
-oldOpType f = 
-    let t = opType f in
-    (case opKind t of 
-    Total -> Total_op_type
-    Partial -> Partial_op_type) (opArgs t) (opRes t) []
+makeNumberTerm :: Id -> Token -> TERM
+makeNumberTerm f t@(Token n p@(lin, col)) =
+    case n of
+           [] -> error "makeNumberTerm"
+	   [_] -> asAppl (Id [t] [] []) [] p
+	   hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] p, 
+			      makeNumberTerm f (Token tl (lin, col+1))] p
 
-asAppl :: OpItem -> [TERM] -> TERM
-asAppl f args = Application (Qual_op_name (opId f) (oldOpType f) []) args []
+makeFraction :: Id -> Id -> Token -> TERM
+makeFraction f d t@(Token s p@(lin, col)) = 
+    let (n, r) = span (\c -> c /= '.') s
+        dotcol = col + length n 
+    in if null r then makeNumberTerm f t
+       else asAppl d [makeNumberTerm f (Token n p),
+		      makeNumberTerm f (Token (tail r) (lin, dotcol + 1))] 
+            (lin, dotcol)
+
+makeSignedNumber :: Id -> Token -> TERM
+makeSignedNumber f t@(Token n p@(lin, col)) = 
+  case n of 
+  [] -> error "makeSignedNumber"
+  hd:tl ->   
+    if hd == '-' || hd == '+' then
+       asAppl (Id [Token [hd] p] [] []) 
+		  [makeNumberTerm f (Token tl (lin, col+1))] p
+    else makeNumberTerm f t
+
+makeFloatTerm :: Id -> Id -> Id -> Token -> TERM
+makeFloatTerm f d e t@(Token s p@(lin, col)) = 
+    let (m, r) = span (\c -> c /= 'E') s
+        ecol = col + length m
+    in if null r then makeFraction f d t
+       else asAppl e [makeFraction f d (Token m p),
+		      makeSignedNumber f (Token (tail r) (lin, ecol + 1))]
+		(lin, ecol)
+
+asAppl :: Id -> [TERM] -> Pos -> TERM
+asAppl f args p = let pos = if null args then [] else [p]
+		  in Application (Op_name f) args pos
 
 -- analyse Mixfix_token
-convertMixfixToken::  LiteralOpItems -> [VarDecl] -> [OpItem] -> Token
-         -> ([Diagnosis], [TERM]) 
-convertMixfixToken ga vs is t = 
-     if isPlace t then ([], [Mixfix_token t])
-     else if isString t then makeStringTerm ga is t
-     else if isNumber t then error "not implemented yet"
-     else let i = Id [t] [] []
-              os = map (\o -> asAppl o []) (lookupId is 0 i)
-              ds = map (\v -> Qual_var (varId v) (varSort v) [])
-			 (filter (\x -> varId x == t) vs)
-	  in case os ++ ds of 
-	     [] -> ([Error ("no matching constant or variable for: "
-			    ++ tokStr t)(tokPos t)], [])
-	     l -> ([], os ++ ds)
+convertMixfixToken::  LiteralAnnos -> Token  -> Result TERM 
+convertMixfixToken ga t = 
+     if isString t then 
+	case string_lit ga of
+	Nothing -> err "string"
+        Just (c, f) -> erg $ makeStringTerm c f t
+--     else if isChar t then erg $ asAppl (Id [t] [] []) [] (tokPos t) 
+     else if isNumber t then 
+	  case number_lit ga of
+	  Nothing -> err "number"
+	  Just f -> if isFloating t then
+		        case float_lit ga of
+			Nothing -> err "floating"
+			Just (d, e) -> erg $ makeFloatTerm f d e t
+		    else erg $ makeNumberTerm f t
+     else erg $ Mixfix_token t
+    where err s = Result([Error ("missing %" ++ s ++ " annotation") (tokPos t)],
+			 Just (Mixfix_token t))
+          erg r = Result([], Just r) 
 
 
 
-{-
-lookupToken :: [OpItem] -> Int -> Token -> [OpItem]
-lookupToken is pos t =
-	 filter (\x -> opId x == i && args == length(opArgs(opType x))) is
 
 
-getNthToken :: Id -> Int -> Token
-getNthToken (Id ts cs _) n = 
-    let (_, toks) = span isPlace (reverse l) in 
-    (reverse toks) !! n
-
-numberOfTokens 
--}
