@@ -129,7 +129,7 @@ class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 instance (PrintLaTeX a, Typeable a, ATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-class (Language lid, EqPrintTypeConv sign, EqPrintTypeConv morphism)
+class (Language lid, Eq sign, Eq morphism)
     => Category lid sign morphism | lid -> sign, lid -> morphism where
          ide :: lid -> sign -> morphism
          comp :: lid -> morphism -> morphism -> Maybe morphism
@@ -156,6 +156,7 @@ class (Language lid, PrintTypeConv basic_spec,
 
 class (Category lid sign morphism, Ord sentence,
        Ord symbol, 
+       PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
        ATermConvertible proof_tree, Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
