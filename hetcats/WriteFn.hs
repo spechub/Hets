@@ -34,7 +34,7 @@ write_LIB_DEFN opt ld = sequence_ $ map write_type $ outtypes opt
     where write_type :: OutType -> IO ()
 	  write_type t = 
 	      case t of 
-	      HetCASLOut OutASTree Ascii -> 
+	      HetCASLOut OutASTree OutAscii -> 
 		  write_casl_asc (verbose opt) (casl_asc_filename opt) ld
 	      PrettyOut PrettyLatex ->
 		  write_casl_latex (verbose opt) (casl_latex_filename opt) ld
