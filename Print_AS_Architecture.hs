@@ -128,6 +128,5 @@ instance PrettyPrint FIT_ARG_UNIT where
 	    ab' = printText0 ga ab
 	    null' = case ab of
 	            G_symb_map_items_list _ l -> null l
-		    _ -> error "Something strange happend to FIT_ARG_UNIT!"
 	in aa' <+> (if null' then empty else ptext "fit" <+> ab')
  
