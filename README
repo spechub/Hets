@@ -56,7 +56,7 @@ README                      This file (Till Mossakowski)
 hets.hs                     Top-level Haskell module for hets (Till Mossakowski)
 version_nr                  Current version (Till Mossakowski)
 ATC/                        Conversion from and to ATerms (Klaus Luettich)
-CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder)
+CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder/Martin Kuehl)
 Common/                     Modules common to all logics
 Common/ATerm/                 Conversion from and to ATerms (Klaus Luettich)
 Common/Lib/                   Third-party modules
@@ -79,7 +79,7 @@ hugs/                       Some hugs-specific stuff (Christian Maeder)
 Isabelle/                   Instance of Logic: Isabelle
 Logic/                      Infrastructure for logic independence (Till Mossakowski)
 Modal/                      Instance of Logic: ModalCASL (Till Mossakowski)
-Proofs/                     Heterogeneous proof engine (Till Mossakowski)
+Proofs/                     Heterogeneous proof engine (Till Mossakowski/Jorina Gerken)
 Static/                     Heterogeneous development graphs and static analysis  (Till Mossakowski/Maciek Makowski)
 Syntax/                     Heterogeneous syntax and parsing (Christian Maeder)
 ToHaskell/                  translation to Haskell (Christian Maeder)
