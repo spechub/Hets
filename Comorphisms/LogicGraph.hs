@@ -37,22 +37,16 @@ import Common.Result
 import Logic.Logic 
 import Logic.Comorphism
 import Logic.Grothendieck
-import CASL.Logic_CASL  -- also serves as default logic
-import HasCASL.Logic_HasCASL
-import Haskell.Logic_Haskell
-import CspCASL.Logic_CspCASL
-import Isabelle.Logic_Isabelle
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2Haskell
+import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CASL2IsabelleHOL
 import Comorphisms.CoCASL2IsabelleHOL
 import Comorphisms.CASL2Modal
 import Comorphisms.CASL2CoCASL
 import Comorphisms.HasCASL2IsabelleHOL
 import qualified Common.Lib.Map as Map
-import CASL.ATC_CASL
-import Modal.Logic_Modal
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
@@ -66,7 +60,8 @@ addInclusionNames c@(Comorphism cid) =
    c)
 
 inclusionList :: [AnyComorphism]
-inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2Haskell,
+inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
+		 Comorphism HasCASL2Haskell,
                  Comorphism CASL2IsabelleHOL, Comorphism CASL2Modal, 
                  Comorphism CASL2CoCASL, Comorphism CoCASL2IsabelleHOL, 
                  Comorphism HasCASL2IsabelleHOL]
