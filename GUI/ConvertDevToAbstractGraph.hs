@@ -88,7 +88,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
-  subtreeEvent <- newIORef (-1)
+  ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
@@ -125,21 +125,43 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
 	            ),
 		    (Button "Show just subtree"
 		      (\ (name,descr,gid) ->
-		        do convMaps <- readIORef convRef
-                           visibleNodes <- readIORef ioRefVisibleNodes
-			   (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
-									 descr gid convMaps visibleNodes
-		           case errorMsg of
-		             Nothing -> do writeIORef subtreeEvent eventDescr
-					   writeIORef ioRefVisibleNodes newVisibleNodes
-		                          -- writeIORef convRef newConvMaps
-		                           redisplay gid actGraphInfo
-		                           return()
-		             Just text -> do putStrLn text
-	                                     redisplay gid actGraphInfo
-		                             return()                            
+		        do subtreeEvents <- readIORef ioRefSubtreeEvents
+		           case Map.lookup descr subtreeEvents of
+                             Just _ -> putStrLn ("it is already just the subtree of node " ++ (show descr) ++" shown")
+		             Nothing -> 
+                               do convMaps <- readIORef convRef
+                                  visibleNodes <- readIORef ioRefVisibleNodes
+			          (eventDescr,newVisibleNodes,errorMsg) <- showJustSubtree ioRefGraphMem
+				 	    				    descr gid convMaps visibleNodes
+		                  case errorMsg of
+		                    Nothing -> do let newSubtreeEvents = Map.insert descr eventDescr subtreeEvents
+                                                  writeIORef ioRefSubtreeEvents newSubtreeEvents
+					          writeIORef ioRefVisibleNodes newVisibleNodes
+		                                  redisplay gid actGraphInfo
+		                                  return()
+		                    Just text -> do putStrLn text
+		                                    return()                            
 		      )
-                    )])
+                    ),
+		    (Button "undo show just subtree"
+		      (\ (name,descr,gid) ->
+		        do visibleNodes <- readIORef ioRefVisibleNodes
+                           case (tail visibleNodes) of
+                             [] -> do putStrLn "Complete graph is already shown"
+                                      return()
+                             newVisibleNodes@(x:xs) ->
+                               do subtreeEvents <- readIORef ioRefSubtreeEvents
+                                  case Map.lookup descr subtreeEvents of
+                                    Just hide_event -> 
+		                      do showIt gid hide_event actGraphInfo
+                                         writeIORef ioRefSubtreeEvents (Map.delete descr subtreeEvents)
+                                         writeIORef ioRefVisibleNodes newVisibleNodes
+		                         redisplay gid actGraphInfo
+		                         return ()
+		                    Nothing -> do putStrLn "undo not possible"
+		                                  return()
+                      )
+		    )])
                   $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)),
                 ("internal",
@@ -375,7 +397,6 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
                  -- and we already know its descriptor (descr)
 		 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree libname convMaps
 	         nodesToHide = filter (notElemR nodesOfSubtree) allNodes
-	     putStr ("all nodes: " ++ (show allNodes)++"\n nodes of the subtree: "++(show nodesOfSubtree)++"\n nodes to hide: "++(show nodesToHide)++ "\n visible nodes: " ++ (show (head visibleNodes)) ++ "\n")
 	     graphMem <- readIORef ioRefGraphMem
 	     (Result eventDescr errorMsg) <- hidenodes abstractGraph nodesToHide (graphInfo graphMem)
 	     return (eventDescr, (dgNodesOfSubtree:visibleNodes), errorMsg)
