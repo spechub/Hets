@@ -8,7 +8,8 @@
    There is also a type class for Annoted items.
 
    todo:
-      - ATermConversion SML-CATS
+      - ATermConversion SML-CATS has now his own module 
+        (s. HetCATS/aterm_conv/)
       - LaTeX Pretty Printing
 -}
 
@@ -17,7 +18,8 @@ import Id
 import PrettyPrint
 import Pretty
 
-{-! global: ATermConvertible !-}
+-- DrIFT command
+{-! global: UpPos !-}
 
 data Annotation = Comment_line String [Pos]
 		| Comment_group [String] [Pos]
