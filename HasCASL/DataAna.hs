@@ -44,7 +44,7 @@ genSelVars n (ts:sels)  =
     genTuple n 1 ts : genSelVars (n + 1) sels
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
-makeSelTupleEqs dt@(_, args, _) ct n m (Select mi ty p : sels) = 
+makeSelTupleEqs dt ct n m (Select mi ty p : sels) = 
     let Result _ msc = getSelType dt p ty in
     (case (mi, msc) of
     (Just i, Just sc) -> let
