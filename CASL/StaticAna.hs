@@ -418,19 +418,17 @@ ana_COMPONENTS s c =
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos)
                  -> Result (BASIC_SPEC, Sign, Sign, [Named FORMULA])
 
-basicAnalysis (bs, inSig, ga) = 
+basicAnalysis (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ga bs) inSig
 	ds = envDiags accSig
 	sents = sentences accSig
-        checked_sents = overloadResolution inSig sents
-        checked_sents' = case maybeResult checked_sents of
-            Nothing     -> error $ unlines $ map show $ diags checked_sents
-            Just ss     -> ss
 	cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
 	diff = diffSig cleanSig inSig
 	remPartOpsS s = s { opMap = remPartOpsM $ opMap s }
-	in Result ds $ Just ( newBs
-			    , remPartOpsS diff
-			    , remPartOpsS cleanSig
-			    , checked_sents' ) 
+    checked_sents <- return sents -- overloadResolution inSig sents
+    Result ds (Just ()) -- insert diags
+    return ( newBs
+	   , remPartOpsS diff
+	   , remPartOpsS cleanSig
+	   , checked_sents ) 
 
