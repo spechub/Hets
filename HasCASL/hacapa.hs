@@ -1,11 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-$Header$
-Authors: Christian Maeder
-Year:    2002, 2003
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
    
 test some parsers (and printers)
+-}
 
-\begin{code}
 module Main where
 
 import HasCASL.ParseItem
@@ -33,4 +37,4 @@ lineParser = [
 fileParser = [ ("BasicSpec", fromAParser basicSpec)
 	     , ("analysis", anaParser)
 	     ]
-\end{code}
+

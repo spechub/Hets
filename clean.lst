@@ -4,7 +4,7 @@ ATC/ATCTest2.hs
 CASL/Makefile
 CASL/RunMixfixParser.hs
 CASL/RunStaticAna.hs
-CASL/capa.lhs
+CASL/capa.hs
 CASL/ghc-call
 CASL/doc
 CASL/test
@@ -49,7 +49,7 @@ HasCASL/RunStaticAna.hs
 HasCASL/doc/StaticAna.tex
 HasCASL/ghc-call
 HasCASL/ghci-call
-HasCASL/hacapa.lhs
+HasCASL/hacapa.hs
 HasCASL/test
 
 Haskell/HParser.hs

@@ -57,10 +57,12 @@ ifneq ($(MAKECMDGOALS),hets-opt)
 ifneq ($(MAKECMDGOALS),hets-optimized)
 ifneq ($(MAKECMDGOALS),derivedSources)
 ifneq ($(MAKECMDGOALS),release)
+ifneq ($(MAKECMDGOALS),check)
 ifneq ($(MAKECMDGOALS),apache_doc)
 ifneq ($(MAKECMDGOALS),clean_genRules)
 ifneq ($(MAKECMDGOALS),atctest2)
 include sources_hetcats.mk
+endif
 endif
 endif
 endif
@@ -300,14 +302,14 @@ ghci:
 ### CASL parser
 capa: CASL/capa
 
-CASL/capa: CASL/capa.lhs Common/*.hs CASL/*.hs
+CASL/capa: CASL/capa.hs Common/*.hs CASL/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
-HasCASL/hacapa: HasCASL/hacapa.lhs CASL/capa HasCASL/*.hs 
+HasCASL/hacapa: HasCASL/hacapa.hs CASL/capa HasCASL/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
