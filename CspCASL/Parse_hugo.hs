@@ -57,6 +57,7 @@ import Common.AnnoState
 ----------------------------------------------------------------------------
 -- Parsers for CSP-CASL-specifications
 ----------------------------------------------------------------------------
+
 interim :: AParser C3PO
 interim = try ( do { nc <- namedCspCaslCSpec
                    ; eof
@@ -67,6 +68,11 @@ interim = try ( do { nc <- namedCspCaslCSpec
                    ; eof
                    ; return (C3po c)
                    } 
+
+gimbo :: Parser Char
+gimbo   = do { char '('
+             ; char ')'
+             }
 
 namedCspCaslCSpec :: AParser NAMED_CSP_CASL_C_SPEC
 namedCspCaslCSpec = try ( do { ccspecT

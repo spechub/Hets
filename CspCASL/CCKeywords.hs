@@ -8,7 +8,8 @@ Stability   :  provisional
 Portability :  portable
   
 
-CSP-CASL keywords 
+CSP-CASL keywords defined as strings to provide consistent keyword
+usage.
 
 -}
 
@@ -20,6 +21,8 @@ ccspecS, dataS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
 oRBracketS, cRBracketS, oSBracketS, cSBracketS, multiPreS, extChoiceS
   , oRenamingS, cRenamingS, oAlPaS, cAlPaS, oGenPaS, mGenPaS, cGenPaS :: String
 
+-- AMGQ: Looks like putting an "S" on the end is a convention
+-- throughout Hets, certainly it's used in Common/Keywords.hs
 
 ccspecS    = "ccspec"
 dataS      = "data"

@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 
-parser for CSP-CASL keywords
+Parser for CSP-CASL keywords
 
 -}
 
