@@ -118,26 +118,21 @@ ARG-DECLS       ::= ( PATTERN ; ... ; PATTERN ) | ()
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unknown IDs will become new variables
-PATTERN         ::= VAR , ... , VAR        % globally declared 
-		  | VAR-DECL
-		  | MIXFIX-PATTERN , ... , MIXFIX-PATTERN
 
-MIXFIX-PATTERN  ::= AS-PATTERN ... AS-PATTERN
-                  | AS-PATTERN ... AS-PATTERN : TYPE
+%% AS-PATTERN
+PATTERN         ::= MIXFIX-PATTERN
+	          | MIXFIX-PATTERN @ MIXFIX-PATTERN 
 
-AS-PATTERN      ::= INST-PATTERN
-		  | VAR @ INST-PATTERN 
-		  | VAR : TYPE @ INST-PATTERN 
+MIXFIX-PATTERN  ::= PRIM-PATTERN ... PRIM-PATTERN
+                  | PRIM-PATTERN ... PRIM-PATTERN : TYPE
 
-INST-PATTERN    ::= SIMPLE-PATTERN 
-		  | SIMPLE-PATTERN [TYPE, ... , TYPE]
-		  | ( PATTERN ; ... ; PATTERN ) 
-		  | ( )   
+PATTERNS        ::= PATTERN , ... , PATTERN
 
-SIMPLE-PATTERN  ::= "__"
-		  | NO-BRACKET-TOKEN          %% VAR or part of ID
-                  | [ PATTERN ; ... ; PATTERN ] | [ ]       %% mixfix/compound 
-		  | { PATTERN ; ... ; PATTERN } | { }       %% mixfix 
+PRIM-PATTERN    ::= "__"
+		  | NO-BRACKET-TOKEN         %% part of ID or VAR
+                  | [ PATTERNS ] | [ ]       %% mixfix/compound/instantiation 
+		  | { PATTERNS } | { }       %% mixfix 
+		  | ( PATTERNS ; ... ; PATTERNS ) | ( )   
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

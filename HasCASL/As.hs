@@ -29,16 +29,18 @@ data BasicItem = SigItems SigItems
                | GenItems [Annoted BasicItem] [Pos] 
                -- pos "generated" "{", ";"s, "}"
                -- or "generated" "type" ";"s
-               | LocalVarAxioms [GenVarDecl] [Annoted Term] [Pos]
+               | LocalVarAxioms [GenVarDecl] [Annoted Formula] [Pos]
                -- pos "forall" , dots 
-               | AxiomItems [Annoted Term] [Pos]
+               | AxiomItems [Annoted Formula] [Pos]
                -- pos dots
                  deriving (Show,Eq)
 
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
-              | OpItems [Annoted OpItem] [Pos]              -- including pred
-              -- pos "op"/"pred", ";"s
+              | OpItems [Annoted OpItem] [Pos]
+              -- pos "op", ";"s
+              | PredItems [Annoted PredItem] [Pos]
+              -- pos "pred", ";"s
               | Datatype [Annoted DatatypeDecl] [Pos]
               -- pos "type", ";"s
                  deriving (Show,Eq)
@@ -56,6 +58,8 @@ data ClassDecl = ClassDecl [ClassName] [Pos]
                -- pos ","s, "<"
                | ClassDefn ClassName Class [Pos]
                -- pos "="
+               | DownsetDefn ClassName TypeVar Type [Pos] 
+	       -- pos " =" "{", dot, "<", typeVar,  "}"
                  deriving (Show,Eq)
                           
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
@@ -64,7 +68,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s, "<"
                | IsoDecl [TypePattern] [Pos]
                -- pos "="s
-               | SubtypeDefn TypePattern Var Type Term [Pos]
+               | SubtypeDefn TypePattern Var Type Formula [Pos]
                -- pos "=", "{", ":", dot, "}"
                | AliasType TypePattern PseudoType [Pos]
                -- pos ":="
@@ -83,17 +87,25 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show,Eq)
 
+data TypeOrId = TypeOrIdToken Token
+              | BracketTypeOrId BracketKind [TypeOrId] [Pos]
+              -- pos brackets. "," 
+              | KindAnnotation Kind [Pos]
+              -- pos ":"
+              | MixfixTypeOrId [TypeOrId] 
+		deriving (Show,Eq)
+
 data Type = TypeConstrAppl TypeName Kind [Type] [Pos]  -- analysed
           | TypeToken Token
-          | BracketType BracketKind Type [Pos]
-          -- pos brackets 
+          | MixCompound [TypeOrId] [Pos]
+          | BracketType BracketKind [Type] [Pos]
           | KindedType Type Kind [Pos]
           -- pos ":"
           | MixfixType [Type] 
           | TupleType [Type] [Pos]
           -- pos "," (between type arguments)
           | ProductType [Type] [Pos]
-          -- pos crosses or "(" and ")" (for the unit type)
+          -- pos crosses 
           | FunType Type Arrow Type [Pos]
           -- pos arrow
             deriving (Show,Eq)
@@ -113,7 +125,12 @@ data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
             | OpDefn OpName [Pattern] TypeScheme Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
-               -- or "(", ")", "<=>"
+              deriving (Show,Eq)
+
+data PredItem = PredDecl [OpName] TypeScheme [Pos]
+               -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
+              | PredDefn OpName [Pattern] Formula [Pos]
+               -- pos "("s, ")"s, "<=>"
               deriving (Show,Eq)
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show,Eq)
@@ -148,19 +165,25 @@ data TypeQual = OfType | AsType | InType deriving (Show,Eq)
 
 data BracketKind = Parens | Squares | Braces deriving (Show,Eq)
 
-type Formula = Term
 
 data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show,Eq)
 data EqOp = EqualOp | ExEqualOp deriving (Show,Eq)
 
+data Formula = TermFormula Term 	  
+	     | ConnectFormula LogOp [Formula] [Pos]
+	     -- pos not, "/\", "\/", impl, "<=>"
+	     | EqFormula EqOp Term Term [Pos]
+	     -- pos "=", "=e="
+	     | DefFormula Term [Pos] 
+	     -- pos "def"
+	     | QuantifiedFormula Quantifier [VarDecl] Formula [Pos]
+             -- pos quantifier, ";"s, dot
+	     | PolyFormula TypeVarDecls Formula [Pos]
+             -- pos "forall", dot
+	       deriving (Show,Eq)
+
 data Term = CondTerm Term Formula Term [Pos]
 	  -- pos "when", "else"
-	  | ConnectFormula LogOp [Formula] [Pos]
-	  -- pos not, "/\", "\/", impl, "<=>"
-	  | EqFormula EqOp Term Term [Pos]
-	  -- pos "=", "=e="
-	  | DefFormula Term [Pos] 
-	  -- pos "def"
 	  | QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
 	  | QualOp InstOpName TypeScheme [Pos]
@@ -171,10 +194,6 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos "(", ","s, ")"
 	  | TypedTerm Term TypeQual Type [Pos]
 	  -- pos ":", "as" or "in"
-	  | QuantifiedTerm Quantifier [VarDecl] Term [Pos]
-          -- pos quantifier, ";"s, dot
-	  | PolyTerm TypeVarDecls Term [Pos]
-          -- pos "forall", dot
 	  | LambdaTerm [Pattern] PartialKind Term [Pos]
           -- pos "\", dot (plus "!") 
 	  | CaseTerm Term [ProgEq] [Pos]
@@ -195,18 +214,14 @@ data Pattern = PatternVar Var Type SeparatorKind [Pos]
 	     -- constructor or toplevel operation applied to arguments
 	     -- pos "("s, ")"s
              | PatternToken Token
-	     | BracketPattern BracketKind Pattern [Pos]
-	     -- pos brackets
+	     | BracketPattern BracketKind [Pattern] [Pos]
+	     -- pos brackets, ";"s, ","s
 	     | TuplePattern [Pattern] [Pos]
-	     -- pos ";"s (or ","s)
+	     -- pos ","s
 	     | MixfixPattern [Pattern] 
-	     | TypedPattern Pattern Type [Pos]     -- analysed
+	     | TypedPattern Pattern Type [Pos]
 	     -- pos ":"  
-	     | TypeMixfixPattern Type [Pos]
-	     -- pos ":"  
-	     | AsPattern Var Type Pattern [Pos]    -- analysed
-	     -- pos ":", "@"
-	     | AsMixfixPattern Pattern [Pos]
+	     | AsPattern Pattern Pattern [Pos]
 	     -- pos "@"
 	       deriving (Show,Eq)
 
@@ -223,6 +238,8 @@ data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show,Eq)
 
 data TypeVarDecl = TypeVarDecl TypeVar Class SeparatorKind [Pos] 
                    -- pos "," or ":" 
+		 | DownSetTypeVar TypeVar Type SeparatorKind [Pos] 
+                   -- pos "," or "<" 
 		   deriving (Show,Eq)
 
 data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show,Eq)
@@ -253,13 +270,9 @@ data ProdClass = ProdClass [ExtClass] [Pos] deriving (Show,Eq)
 
 data Kind = Kind [ProdClass] Class [Pos] deriving (Show,Eq)
 	    -- pos "->"s (first order)
-    
-dummyTypeVar = Token "a" nullPos -- for Downset
 
 data Class = Universe [Pos] -- pos "type" (or missing)
 	   | ClassName ClassName
-           | Downset TypeVar Type [Pos] 
-	   -- pos "{", dot, "<", typeVar,  "}"
 	   | Intersection [Class] [Pos]  
 	   -- pos "(", ","s, ")"
 	     deriving (Show,Eq)

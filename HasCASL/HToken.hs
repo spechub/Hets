@@ -41,7 +41,7 @@ letS = "let"
 
 hascasl_reserved_ops = [asP, assignS, lamS] ++ formula_ops ++ casl_reserved_ops
 
-hascasl_type_ops = [funS, pFun, contFun, pContFun, plusS, minusS, quMark, 
+hascasl_type_ops = [funS, pFun, contFun, pContFun, prodS, timesS, quMark, 
 		   lessS, greaterS] 
 
 hascasl_reserved_words = [classS, instanceS, programS, caseS, ofS, letS] 
