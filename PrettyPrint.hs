@@ -49,8 +49,8 @@ instance (PrettyPrint a) => PrettyPrint [a] where
 ----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 100 1.5)
 latexStyle, textStyle :: Style
-latexStyle = style {lineLength=80, ribbonsPerLine= 1.7} 
--- maximum line length 80 with 47 printable chars (up to 33 indentation chars) 
+latexStyle = style {lineLength=80, ribbonsPerLine= 1.6} 
+-- maximum line length 80 with 50 printable chars (up to 30 indentation chars) 
 textStyle = latexStyle
 
 -- functions for producing IO printable Strings
