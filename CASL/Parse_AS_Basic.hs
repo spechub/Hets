@@ -64,7 +64,7 @@ basicItems = fmap Sig_items sigItems
 		    return (Local_var_axioms vs fs (map tokPos (f:ps) ++ ds))
 	     <|> dotFormulae
              <|> do a <- pluralKeyword axiomS
-		    (fs, ps, ans) <- itemAux formula
+		    (fs, ps, ans) <- itemAux startKeyword formula
 		    return (Axiom_items (zipWith 
 					 (\ x y -> Annoted x [] [] y) 
 					 fs ans) (map tokPos (a:ps)))

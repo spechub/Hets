@@ -63,27 +63,31 @@ startKeyword = dotS:cDot:
 annoParser :: GenParser Char st a -> GenParser Char st (Annoted a)
 annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
 
-itemList :: String -> GenParser Char st b
+auxItemList :: [String] -> String -> GenParser Char st b
                -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
 
-itemList keyword parser constr =
+auxItemList startKeywords keyword parser constr =
     do p <- pluralKeyword keyword
-       (vs, ts, ans) <- itemAux (annoParser parser)
+       (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in 
 	   return (constr r (map tokPos (p:ts)))
+
+itemList :: String -> GenParser Char st b
+               -> ([Annoted b] -> [Pos] -> a) -> GenParser Char st a
+itemList = auxItemList startKeyword
 
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
 appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
 
-itemAux :: GenParser Char st a 
+itemAux :: [String] -> GenParser Char st a 
 	-> GenParser Char st ([a], [Token], [[Annotation]])
-itemAux itemParser = 
+itemAux startKeywords itemParser = 
     do a <- itemParser
        (m, an) <- optSemi
        case m of Nothing -> return ([a], [], [an])
-                 Just t -> do tryItemEnd startKeyword
+                 Just t -> do tryItemEnd startKeywords
 			      return ([a], [t], [an])
 	                   <|> 
-	                   do (as, ts, ans) <- itemAux itemParser
+	                   do (as, ts, ans) <- itemAux startKeywords itemParser
 			      return (a:as, t:ts, an:ans)
 
