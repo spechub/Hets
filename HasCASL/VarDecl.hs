@@ -197,6 +197,7 @@ addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn
 addOpId i sc attrs defn = 
     do e <- get
        let as = assumps e
+           tm = typeMap e
            TypeScheme _ ty _ = sc 
            ds = if placeCount i > 1 then case unalias ty of 
 		   FunType arg _ _ _ -> case unalias arg of
@@ -209,7 +210,7 @@ addOpId i sc attrs defn =
            (l, r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
-	       do let Result es mo = foldM merge oInfo l
+	       do let Result es mo = foldM (mergeOpInfo tm) oInfo l
 		  addDiags $ map (improveDiag i) es
 	          if i `elem` map fst bList then addDiags $ [mkDiag Error 
 			  "illegal overloading of predefined identifier" i]

@@ -173,14 +173,19 @@ mergeOps tm (o:os) l2 = do
 			      (opType o) . opType) l2
     l1 <- mergeOps tm os us 
     if null es then return (o : l1)
-       else do r <- merge o $ head es
+       else do r <- mergeOpInfo tm o $ head es
 	       return (r : l1)
 
-instance Mergeable OpInfo where
-    merge o1 o2 = 
-	do as <- merge (opAttrs o1) $ opAttrs o2
+mergeOpInfo ::  TypeMap -> OpInfo -> OpInfo -> Result OpInfo
+mergeOpInfo tm o1 o2 = 
+	do let s1 = opType o1
+               s2 = opType o2 
+           sc <- if instScheme tm 1 s2 s1 then return s1
+                    else if instScheme tm 1 s1 s2 then return s2
+                    else fail "overlapping but incompatible type schemes"
+           as <- merge (opAttrs o1) $ opAttrs o2
  	   d <- merge (opDefn o1) $ opDefn o2
-	   return $ OpInfo (opType o1) as d
+	   return $ OpInfo sc as d
 
 instance Mergeable Env where
     merge e1 e2 =
