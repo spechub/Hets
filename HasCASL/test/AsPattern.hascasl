@@ -1,0 +1,5 @@
+type a;
+
+op f : a -> a
+
+program f (v@_:a) = v 

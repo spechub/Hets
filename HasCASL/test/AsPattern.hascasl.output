@@ -1,0 +1,29 @@
+type a
+op f : a -> a
+program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a)
+%% Type Constructors -----------------------------------------------------
+Pred : Type -> Type := \ a : Type . a ->? Unit
+Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+a : Type
+%% Assumptions -----------------------------------------------------------
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+f : a -> a %(op)%
+false : Unit %(fun)%
+not__ : Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+program (op f : a -> a)(v : a @ (var _ : a)) = (var v : a) %(pe_f)%
