@@ -13,7 +13,7 @@ module Main where
 
 import Token
 import Formula
-import Print_AS_Basic()
+import Print_AS_Basic
 import Parse_AS_Basic
 import SortItem
 import OpItem
@@ -22,6 +22,7 @@ import RunMixfixParser
 
 main :: IO ()
 main = exec lineParser fileParser
+    where _just_avoid_unused_import_warning = pluralS_symb_list
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [

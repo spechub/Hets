@@ -16,8 +16,6 @@
 module Print_AS_Basic where
 
 -- debugging
-import IOExts (trace)
-
 import List (mapAccumL)
 
 import Id
@@ -38,6 +36,7 @@ import PPUtils
 instance PrettyPrint BASIC_SPEC where
     printText0 ga (Basic_spec l) = 
 	if null l then braces empty else vcat (map (printText0 ga) l) 
+	     where _just_avoid_unused_import_warning = smallSpace_latex
 
     printLatex0 ga (Basic_spec l) = 
 	if null l then braces_latex empty else vcat (map (printLatex0 ga) l) 

@@ -34,6 +34,10 @@ import Print_AS_Basic
 import GlobalAnnotationsFunctions
 import Formula(updFormulaPos)
 
+showTerm :: GlobalAnnos -> TERM -> String
+showTerm g t = show $ printText0 g t 
+	     where _just_avoid_unused_import_warning = pluralS_symb_list
+
 -- Earley Algorithm
 
 data State = State Id
@@ -379,7 +383,7 @@ nextState g is trm (i, ds, m) =
 		 predict g is i m
     in if null (lookUp m1 (i+1)) && null ds
 		    then (i+1, Diag Error ("unexpected mixfix token: " 
-				      ++ show (printText0 g trm))
+				      ++ showTerm g trm)
 			       (posOfTerm trm) : ds, m)
        else (i+1, ds, m1)
 
@@ -448,14 +452,14 @@ resolveMixfix g ops preds mayBeFormula trm =
         ts = getAppls g i m
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
-					     ++ show (printText0 g trm))
+					     ++ showTerm g trm)
 					    (posOfTerm trm)
 		       else Result ds (Just trm)
        else if null $ tail ts then Result ds (Just (head ts))
 	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
 			 (concat  
 			 $ intersperse "\n\t" 
-			 $ map (show . printText0 g) 
+			 $ map (showTerm g) 
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
 resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
@@ -526,7 +530,7 @@ resolveFormula g ops preds frm =
 		  return $ Predication qide ts ps
                  Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
 		 _ -> plain_error (Mixfix_formula t)
-	                ("not a formula: " ++ show (printText0 g t))
+	                ("not a formula: " ++ showTerm g t)
 			(posOfTerm t)
        f -> return f
 
