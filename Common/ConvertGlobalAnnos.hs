@@ -45,7 +45,8 @@ c_assoc am =
     let liste = Map.toList am -- [(Id,assEith)]
         i1s = [ i | (i,aE)<-liste, aE == ALeft]
         i2s = [ i | (i,aE)<-liste, aE == ARight]
-    in [(Assoc_anno ALeft i1s []),(Assoc_anno ARight i2s [])]
+    in (if null i1s then [] else [(Assoc_anno ALeft i1s [])])
+       ++ (if null i2s then [] else [(Assoc_anno ARight i2s [])])
 
 c_displ::DisplayMap->[Annotation]
 c_displ dm =
