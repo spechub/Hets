@@ -13,6 +13,7 @@ version 0.9
 
 %prec {__+__} < {__*__,__div__}
 %prec {__=__} < {__o__}
+%prec {__mediates__} < {__ __}
 
 %%from Basic/StructuredDatatypes get List
 %%from Basic/Numbers get Nat
@@ -93,16 +94,16 @@ spec Pushout[Category] =
   ExtCategory[Category]
 then
   op pushout : Mor * Mor ->? (Mor * Mor * (Mor * Mor ->? Mor))
-  pred __mediates__ (m:Mor) (f,g,h,k:Mor) <=> 
-          m o f = h /\ m o g = k
+  pred __mediates__ (m:Mor; fghk:Mor * Mor * Mor * Mor) <=> 
+          let (f,g,h,k) = fghk in m o f = h /\ m o g = k;
   forall f,g,h,k : Mor
-  . def pushout(f,g) <=> dom f = dom g
-  . def pushout(f,g) =>
+  . def (pushout(f,g)) <=> dom f = dom g
+  . def (pushout(f,g)) =>
     let (h,k,med) = pushout(f,g)
     in h o f = k o g
-       /\ forall h',k' : Mor . def med(h,'k') <=> h' o f = k' o g
-                /\ def med(h,'k') => med (h',k') mediates (h,k,h',k')
-                /\ forall m':Mor . m' mediates (h,k,h',k') => m'=med (h',k')
+       /\ forall h',k' : Mor . def (med(h',k')) <=> h' o f = k' o g
+                /\ def (med(h',k')) => (med (h',k') mediates (h,k,h',k'))
+                /\ forall m':Mor . (m' mediates (h,k,h',k')) => m'=med (h',k')
 end
 
 spec Functor =
