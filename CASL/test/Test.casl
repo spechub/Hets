@@ -1,5 +1,22 @@
 sort a, b, c
 
-op o:a; p : a
+pred q:a; p : a
 
-op o,p:a
+pred q,p:b
+
+op o : a -> b
+
+op o2 : a ->? b
+
+sort a < d
+
+op o : a , assoc
+
+var c : a
+
+. o(c) = o2(c)
+
+sort x = { y:a . y = c} 
+
+
+

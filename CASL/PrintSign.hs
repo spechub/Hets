@@ -5,20 +5,12 @@ module CASL.PrintSign where
 --import Data.Char (isDigit)
 import Data.Maybe (isJust,fromJust)
 
-import Common.Id
-import CASL.AS_Basic_CASL
-import Common.AS_Annotation
-import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
-import CASL.LiteralFuns
-
-import Common.Print_AS_Annotation
-
 import Common.Keywords
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
 import Common.PPUtils
+import Common.GlobalAnnotations
 
 import CASL.Sign
 
@@ -47,9 +39,10 @@ instance PrettyPrint Symbol where
 
 instance PrettyPrint Component where
 	 printText0 ga (Component mId opT _) 
-             = (if isJust mId then printText0 ga (fromJust mId) <> colon
-	        else empty) 
-               <> printText0 ga opT
+             = (case mId of
+		Just i -> printText0 ga i <+> colon
+		_ -> empty)
+               <+> printText0 ga opT
 
 -- noch einmal Christian fragen.
 -- er hat was aufgeschrieben: type s = c:tc (comp;..;comp)
@@ -77,22 +70,24 @@ instance PrettyPrint SortDefn where
          printText0 ga (SubsortDefn vd form _) 
              = braces $ printText0 ga vd <+> ptext "." <+> printText0 ga form 
          printText0 ga (Datatype annAltLs genK genIt _) 
-             = if null annAltLs then empty
-	       else printText0 ga genK 
+             = noPrint (null annAltLs) $
+	       printText0 ga genK 
 		    <+> commaT printText0 ga genIt 
 		    <+> text defnS 
-		    <>  vcat $ punctuate (text (barS++" ")) 
-                               $  map (printText0 ga) annAltLs
+		    <>  vcat (punctuate (text (barS++" ")) 
+                               (map (printText0 ga) annAltLs))
 
 -- sortPos und altSorts habe ich noch nicht eingebaut!!
 instance PrettyPrint SortItem where
          printText0 ga (SortItem{sortId=sI,sortRels=sR,sortDef=mSD}) 
-             = printSI (supersorts sR)  (char '<')
+             = ptext sortS <+> printText0 ga sI 
+	       $$ printSI (supersorts sR)  (char '<')
                $$ printSI (subsorts sR) (char '>')
 	       $$ printSI (allsupersrts sR) (text $ "<"++timesS) 
                $$ printSI (allsubsrts sR)   (text $ ">"++timesS) 
 	       $$ if isJust mSD 
-		  then printText0 ga sI <+> printText0 ga (fromJust mSD) 
+		  then printText0 ga sI 
+			   <+> printText0 ga (fromJust mSD) 
 		  else empty
                where
                printSI xs doc = if null xs then empty 
@@ -125,9 +120,9 @@ instance PrettyPrint PredDefn where
 
 instance PrettyPrint PredItem where
          printText0 ga (PredItem{predId=pI, predType=pType, 
-				 predDefn=mPrDef, predPos=pPos, altPreds=aP}) 
-			= printText0 ga pI<>colon
-                          <>printText0 ga (crossT printText0 ga pType)
+				 predDefn=mPrDef}) 
+			= printText0 ga pI<+>colon
+                          <+> crossT printText0 ga pType
 			  $$ if isJust mPrDef 
 			     then printText0 ga pI 
 				  <+> printText0 ga (fromJust mPrDef)
@@ -175,29 +170,29 @@ instance PrettyPrint PolyOp where
          printText0 ga ExEqualOp = ptext exEqual
 
 instance PrettyPrint Formula where
-	 printText0 ga (Quantified quan vdLs form _) 
-             = hang (printText0 ga quan 
-	             <+> semiT printText0 ga vdLs) 4 (char '.') 
-               <+> printText0 ga form
-	 printText0 ga (Connect logOp formLs _) 
-             = sep $ punctuate (printText0 ga logOp<>space) 
-                     (makeDocList ga formLs) 
-               -- klammern?
-	 printText0 ga (TermTest polyOp termLs _) 
-             = sep $ punctuate (printText0 ga polyOp<>space) 
-	             (makeDocList ga termLs) 
-               -- klammern?
+ 	 printText0 ga (Quantified quan vdLs form _) 
+              = hang (printText0 ga quan 
+ 	             <+> semiT printText0 ga vdLs) 4 (char '.') 
+                <+> printText0 ga form
+ 	 printText0 ga (Connect logOp formLs _) 
+              = sep $ punctuate (printText0 ga logOp<>space) 
+                      (makeDocList ga formLs) 
+                -- klammern?
+ 	 printText0 ga (TermTest polyOp termLs _) 
+              = sep $ punctuate (printText0 ga polyOp<>space) 
+ 	             (makeDocList ga termLs) 
+                -- klammern?
          printText0 ga (PredAppl id pT termLs qual _)
-             = parens (text predS <+> printText0 ga id <> colon 
-                                            <> crossT printText0 ga pT)
-               <+> parens (commaT printText0 ga termLs)
+              = parens (text predS <+> printText0 ga id <> colon 
+                                             <> crossT printText0 ga pT)
+                <+> parens (commaT printText0 ga termLs)
          printText0 ga (ElemTest term sId _) 
-	     = printText0 ga term <+> text inS <+> printText0 ga sId
+ 	     = printText0 ga term <+> text inS <+> printText0 ga sId
          printText0 ga (TrueAtom _)  = ptext trueS
          printText0 ga (FalseAtom _) = ptext falseS
          printText0 ga (AnnFormula anForm) = printText0 ga anForm
 
--- Hilffunktion
+-- -- Hilffunktion
 makeDocList::PrettyPrint a=>GlobalAnnos->[a]->[Doc]
 makeDocList ga l = map (printText0 ga) l
 
@@ -208,12 +203,16 @@ instance PrettyPrint SigItem where
          printText0 ga (AnOpItem annOpIt)   = printText0 ga annOpIt -- ???
          printText0 ga (APredItem annPrIt)  = printText0 ga annPrIt -- ???
 
+instance PrettyPrint OpItem where
+    printText0 ga o = printText0 ga (opId o) <+> colon <+>
+		      printText0 ga (opType o) -- ...
+
 -- hier muss ich irgendwie mit einer Liste als zweitem Argument umgehen,
 -- geht das ueberhaupt??
 instance PrettyPrint Sign where
          printText0 ga sAsMap 
              = let l = Map.toList (getMap sAsMap) in
-	       vcat (map (\ (a,b)->printText0 ga a<>commaT printText0 ga b) l)
+	       vcat (map (\ (_,b)-> commaT printText0 ga b) l)
 
 instance PrettyPrint RawSymbol where
          printText0 ga (ASymbol symbol)    = printText0 ga symbol
@@ -227,7 +226,7 @@ instance PrettyPrint Kind where
          printText0 ga PredKind = ptext predS -- ???
         
 instance PrettyPrint Axiom where
-         printText ga (AxiomDecl vDecLs form _ ) 
+         printText0 ga (AxiomDecl vDecLs form _ ) 
              = text forallS <+> parens (semiT printText0 ga vDecLs) 
 	       <+> char '.' <+> printText ga form
 
@@ -238,43 +237,3 @@ instance PrettyPrint Sentence where
 	     = braces $ commaT printText0 ga genIt
                -- generate/free ???
 
-
--- ACHTUNG hier musst Du noch einmal nachschauen:
--- fun_map = Map Id [(OpType,Id,Bool)]
--- pred_map = Map Id [(PredType,Id)]
--- Wie beruecksichtigt das die normale PrettyPrint-Instanz?
-instance PrettyPrint Morphism where
-         printText0 ga morph 
-             = parens (printText0 ga (msource  morph)) <+> ptext funS 
-               <+> parens (printText0 ga (mtarget morph)) 
-	       <> braces (text sortS <>colon<>printText0 ga (sort_map morph)
-                             <>comma 
-                          $$ text "fun"<>colon<>printText0 ga (fun_map morph) 
-                             <> comma
-                          $$ text predS<>colon<>printText0 ga (pred_map morph))
-	       -- ??? 
-
--- von CM ANSCHAUEN!!!!
-instance (PrettyPrint a, Ord a, PrettyPrint b) 
-    => PrettyPrint (Map.Map a b) where
-    printText0 ga m =
-	let l = Map.toList m in
-	    vcat(map (\ (a, b) -> printText0 ga a <> printText0 ga b) l)
-{-
--- Idee zum Bearbeiten von fun_map: geht das???
-instance PrettyPrint (OpType,Id,Bool) where
-         printText0 ga (opT,id,buul) 
-	     = printText0 ga opT <> printText0 ga id
-
-instance PrettyPrint Bool where
-	 printText0 ga b = empty
-
-instance PrettyPrint (PredType, Id)
--}
-{-
-ToDo: Ich muss noch alle Funktionen bearbeiten, die den Datentyp Map haben.
-Dies sind (soviel ich sehen kann: Sign und Morphism)
-
-Ich habe schon etwas dazu geschrieben, allerdings bin ich mir nicht sicher, wie und warum 
-Map a b auch mit beliebeigen Datentypen (Liste, Tupel, bla...) umgehen kann.
--}
