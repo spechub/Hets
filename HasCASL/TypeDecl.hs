@@ -37,7 +37,9 @@ import HasCASL.TypeCheck
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
     do tk <- gets typeMap
-       case Map.lookup i tk of
+       if occursIn tk i t then 
+	  addDiags [mkDiag Error "cyclic super type" t]
+	  else case Map.lookup i tk of
 	      Nothing -> return () -- previous error
 	      Just (TypeInfo ok ks sups defn) -> 
 				putTypeMap $ Map.insert i 
@@ -139,8 +141,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 				  Result es mvds = anaVars v ty 
 			      addDiags es
 			      checkUniqueTypevars nAs
-			      addSuperType ty i
-			      if i `occursIn` ty then do 
+			      if occursIn tm i ty then do 
 			         addDiags [mkDiag Error 
 				     "illegal recursive subtype definition" ty]
 				 return $ SubtypeDefn newPat v ty f ps
@@ -148,6 +149,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 					    Nothing -> return $ SubtypeDefn 
 						         newPat v ty f ps
 					    Just vds -> do 
+					        addSuperType ty i
 						checkUniqueVars vds
 						ass <- gets assumps
 				                mapM_ addVarDecl vds
@@ -191,7 +193,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                   newPty = TypeScheme allArgs qty qs
 				  fullKind = typeArgsListToKind nAs ik
 			      checkUniqueTypevars allArgs
-			      if i `occursIn` ty then do 
+			      if occursIn tm i ty then do 
 			         addDiags [mkDiag Error 
 					   "illegal recursive type synonym" ty]
 				 return Nothing

@@ -16,6 +16,7 @@ module HasCASL.DataAna where
 import HasCASL.As
 import Common.Id
 import Common.Lib.State
+import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
@@ -111,13 +112,14 @@ anaCompType tys dt t = do
 
  
 checkMonomorphRecursion :: Type	-> (Id, Type) -> State Env Bool
-checkMonomorphRecursion t (i, rt) =
-    if i `occursIn` t then 
+checkMonomorphRecursion t (i, rt) = do 
+    tm <- gets typeMap
+    if occursIn tm i t then 
        if t == rt then return True
        else do addDiags [Diag Error  ("illegal polymorphic recursion" 
 				      ++ expected rt t) $ getMyPos t]
 	       return False
-    else return True
+       else return True
 
 unboundTypevars :: [TypeArg] -> Type -> State Env (Maybe Type)
 unboundTypevars args ct = do 

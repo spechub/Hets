@@ -41,10 +41,9 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 s : Type < t
-t : Type < t
+t : Type
 %% Assumptions -----------------------------------------------------------
-__+__ : t × t -> t %(Op)%
-      : s × s -> s %(Op)%
+__+__ : s × s -> s %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Fun)%
 __<=__<=__ : s × s × s -> s %(Op)%
 __<=>__ : Unit × Unit ->? Unit %(Fun)%
@@ -54,10 +53,8 @@ __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 __if__ : Unit × Unit ->? Unit %(Fun)%
 __when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
-a : t %(Op)%
-  : s %(Op)%
-b : t %(Op)%
-  : s %(Op)%
+a : s %(Op)%
+b : s %(Op)%
 c : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op b : s))
 d : s %(Op)% = (op __+__ : s × s -> s) ((op a : s), (op a : s))
 def__ : forall a : Type .  a ->? Unit %(Fun)%
@@ -92,4 +89,5 @@ z : s %(Op)% = (op __+__ : s × s -> s) ((op x : s) as s,
 (op x : s) in s %(bla_label)%
 (op x : s) in t %()%
 %% Diagnostics -----------------------------------------------------------
+*** Error 1.12, cyclic super type 't'
 *** Error 9.7, expected tuple argument for '__+__'

@@ -37,14 +37,14 @@ m : (a -> b) -> c
 nt : a -> (b -> c) -> c -> d %(var)%
 r : Type
 r1 : Type < t
-r2 : Type < (t2, r2, s2)
+r2 : Type < s2
 s : Type
 s1 : Type < t
-s2 : Type < (t2, r2, s2)
+s2 : Type
 s3 : Type := t
 t : Type
 t1 : Type < t
-t2 : Type < (t2, r2, s2)
+t2 : Type < (r2, s2)
 tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
@@ -94,6 +94,12 @@ y : tuple3 r s %(var)%
   expected: b -> c
      found: a -> b
 
+*** Error 36.6, cyclic super type 's2'
+*** Error 36.9, cyclic super type 'r2'
+*** Error 36.9, cyclic super type 'r2'
+*** Error 36.12, cyclic super type 't2'
+*** Error 36.12, cyclic super type 't2'
+*** Error 36.12, cyclic super type 't2'
 *** Error 38.19, ambiguous typings 
   '(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
 						 (var x : t))' (line 38, column 19)

@@ -67,7 +67,7 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
-s : c < ? s
+s : c
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 %(Data2.Cons21.sel_[1,1])% : Data2 ->? Data1 %(select from Data2 constructed by
@@ -145,6 +145,7 @@ tt : s ->? Unit %(Op)% = \ x : s . ()
 *** Hint 22.1, wrong result type 't' (line 22, column 20)
   for application 'snd (x : s, y : t)'
 *** Error 22.1, no typing for 'snd(x : s, y : t) : t'
+*** Error 26.11, cyclic super type '? s'
 *** Hint 28.9, no type match for: all
   with type: '_var_6 ->? ? Unit' (line 28, column 26)
   known types:

@@ -143,7 +143,12 @@ instance Unifiable Type where
     match tm t1 (b2, KindedType t2 _ _) = match tm t1 (b2, t2)
     match tm (b1, KindedType t1 _ _) t2 = match tm (b1, t1) t2
     match tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
-	if i1 == i2 then return eps
+	if i1 == i2 ||
+	   (any (occursIn tm i1) $ superTypes $ 
+	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) i2 tm)
+           || (any (occursIn tm i2) $ superTypes $ 
+	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) i1 tm)
+	   then return eps
 	else if v1 > 0 && b1 then return $ 
 	        Map.single (TypeArg i1 k1 Other []) t2
 		else if v2 > 0 && b2 then return $
@@ -155,7 +160,7 @@ instance Unifiable Type where
 				    "is not unifiable with typename" i2
     match tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2) =
 	if v1 > 0 && b1 then 
-	   if i1 `occursIn` t2 then 
+	   if occursIn tm i1 t2 then 
 	      uniResult "var" i1 "occurs in" t2
 	   else return $
 			Map.single (TypeArg i1 k1 Other []) t2
@@ -222,18 +227,19 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ (_, Nothing) = return eps
     match tm (b1, Just a1) (b2, Just a2) = match tm (b1, a1) (b2, a2)
 
-occursIn :: TypeId -> Type -> Bool
-occursIn i t = 
+occursIn :: TypeMap -> TypeId -> Type -> Bool
+occursIn tm i t = 
     case t of 
-	   TypeName j _ _ -> i == j
-	   TypeAppl t1 t2 -> occursIn i t1 || occursIn i t2
+	   TypeName j _ _ -> i == j || (any (occursIn tm i) $ superTypes $ 
+	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) j tm)
+	   TypeAppl t1 t2 -> occursIn tm i t1 || occursIn tm i t2
 	   TypeToken tk -> i == simpleIdToId tk 
-	   BracketType _ l _ -> any (occursIn i) l
-	   KindedType tk _ _ -> occursIn i tk
-	   MixfixType l -> any (occursIn i) l
-	   LazyType tl _ -> occursIn i tl
-	   ProductType l _ -> any (occursIn i) l
-	   FunType t1 _ t2 _ -> occursIn i t1 || occursIn i t2
+	   BracketType _ l _ -> any (occursIn tm i) l
+	   KindedType tk _ _ -> occursIn tm i tk
+	   MixfixType l -> any (occursIn tm i) l
+	   LazyType tl _ -> occursIn tm i tl
+	   ProductType l _ -> any (occursIn tm i) l
+	   FunType t1 _ t2 _ -> occursIn tm i t1 || occursIn tm i t2
 
 expandAlias :: TypeMap -> Type -> (Type, Bool)
 expandAlias tm t = 
