@@ -1,16 +1,17 @@
 
-{- HetCATS/hetcats/Options.hs
-   $Id$
-   Author: Klaus Lüttich
-   Year:   2002
+{-| 
+   
+ > HetCATS/hetcats/Options.hs
+ > $Id$
+ > Author: Klaus Lüttich
+ > Year:   2002
 
    Datatypes for options, a list of options hetcats understands.
    Useful functions to parse and check the user-provided functions
    and for filling in default values.
 
-   A record datatype for fast and easy access and modification /
-   extension of the options.
-
+   A record datatype for fast and easy access and modification \/
+   extension of the options. 
 -}
 
 module Options where
@@ -18,11 +19,15 @@ module Options where
 import Version
 import Directory
 import System
+
 import Char (isSpace)
 import List
 import GetOpt
 
-data Flag = Verbose
+import GHC.Read (readEither)
+
+{- | 'Flag' describes the raw options -}
+data Flag = Verbose Int
 	  | Version
 	  | Help
 	  | InType   InType
@@ -32,27 +37,29 @@ data Flag = Verbose
 	  | OutDir FilePath
 	    deriving (Show,Eq)
 
-data HetcatsOpts = HcOpt { verbose  :: Int     -- greater than null for 
+data HetcatsOpts = HcOpt { verbose  :: Int     -- ^greater than null for 
 			                       -- turning verbosity on.  
 			 , libdir   :: FilePath
 			 , outdir   :: FilePath
 			 , infile   :: FilePath
 			 , intype   :: InType
 			 , outtypes :: [OutType]
+			 , rawoptions :: [Flag]
 			 } deriving (Show,Eq)
 
 default_HetcatsOpts :: HetcatsOpts
 default_HetcatsOpts = HcOpt { verbose = 0
 			    , libdir  = ""
 			    , outdir = "." -- or like cats the same as
-					   -- that of the input file
+			                   -- that of the input file	     
 			    , infile = ""
 			    , intype   = SML_Gen_ATerm NonBAF
 			    , outtypes = [CASLOut]
-                           {- The better default options, but 
-			      they are not jet implemented :
+                           {- better default options, but 
+			      the unlying functions are not jet implemented :
 			    , intype   = HetCASLIn
 			    , outtypes = [Global_Env [XML]] -}
+			    , rawoptions = []
 			    }
 
 data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
@@ -88,7 +95,7 @@ form_opt_rec flags inp_files =
 				     hetcats_usage
 	verb' = foldl collect_verb 0 flags
 	    where collect_verb v f = case f of 
-				     Verbose -> 1 + v
+				     Verbose i -> i + v
 				     _       -> v
     in do if Help `elem` flags then 
 	     do putStrLn $ "\n" ++ hetcats_usage
@@ -104,6 +111,7 @@ form_opt_rec flags inp_files =
 	  return $ default_HetcatsOpts { infile  = in_file 
 				       , outdir  = od 
 				       , verbose = verb'
+				       , rawoptions = flags
 				       }
 
 -- some suffixes to try in turn 
@@ -155,7 +163,7 @@ hetcats_usage = usageInfo header options
 -- this list describes all options and gives usage Information
 options :: [OptDescr Flag]
 options =
- [ Option ['v'] ["verbose"] (NoArg Verbose)       
+ [ Option ['v'] ["verbose"] (OptArg parse_verb "Int")       
             "chatty output on stderr"
  , Option ['V'] ["version"] (NoArg Version)       
             "show version number"
@@ -163,13 +171,23 @@ options =
             "show usage information"
  , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
             "TYPE of input file: gen-trm | gen-trm-baf | hetcasl (default) | casl (via cats)"
- , Option ['O'] ["output-dir"]  (ReqArg out_dir  "DIR")  
+ , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")  
             "output DIR"
  , Option ['o'] ["output-types"] (ReqArg out_types "TYPE") 
             "select TYPE of output files: latex | casl | global-env"
  , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
             "CASL library directory"
  ]
+
+-- | parse the optional Argument to --verbose
+parse_verb :: Maybe String -- ^ optional Argument to --verbose
+	   -> Flag -- ^ Parsed verbose flag 
+parse_verb Nothing  = Verbose 1
+parse_verb (Just s) = Verbose (case readEither s of
+			       Right i -> i
+			       Left _  -> error $ "\""++ s
+			                          ++"\" is not an Int\n"
+			                          ++ hetcats_usage)
 
 -- Just the function to get the input-type right
 inp_type :: String -> Flag
@@ -180,10 +198,6 @@ inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
 				hetcats_usage)
     where trm_type trm | "baf" `isSuffixOf` trm = SML_Gen_ATerm BAF 
 		       | otherwise = SML_Gen_ATerm NonBAF
-
--- Processing the out dir
-out_dir :: String -> Flag
-out_dir dir_name = OutDir dir_name
 
 out_types :: String -> Flag
 out_types s | ',' `elem` s = case merge_out_types $ split_types s of
@@ -206,7 +220,8 @@ merge_out_types flags =
 	concatTypes l ot = case ot of
 			     OutTypes l' -> l++l'
 			     _ -> error "something went very wrong!!"
-    in (OutTypes $ foldl concatTypes [] ots):flags'  
+	ots' = foldl concatTypes [] ots
+    in if null ots' then flags' else (OutTypes ots'):flags'  
 
 
 joinWith :: a -> [[a]] -> [a]
