@@ -15,19 +15,26 @@
 module Main where
 
 import CspCASL.Parse_hugo
+import CspCASL.SignCSP
+import CspCASL.StatAnaCSP
+
 import Common.Lib.Parsec
 import System.IO
 import System.Environment
 
 import Common.AnnoState
+import Common.Result
 
-run :: Show a => AParser a -> String -> IO ()
+--run :: Show a => AParser a -> String -> IO ()
 run p input
         = case (runParser p emptyAnnos "" input) of
             Left err -> do { putStr "parse error at "
                            ; print err
                            }
-            Right x -> print x                        
+            Right x -> do let Result diags sig = statAna x
+                          sequence $ map (putStrLn . show) diags 
+                          print x                        
+                          print sig
 
 fi :: [String] -> IO()
 fi (l:es) = do { c <- readFile l

@@ -1,2 +1,2 @@
-ghc --make -fglasgow-exts -Wall -o c3po -i..:../ghc Main.hs
+ghc --make -fglasgow-exts -Wall -o c3po -i..:../ghc:../Common:../CASL Main.hs
 #MixfixParser.hs 

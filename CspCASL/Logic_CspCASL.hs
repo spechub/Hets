@@ -37,6 +37,7 @@ import CspCASL.CCKeywords
 import CspCASL.Parse_hugo
 import CspCASL.LaTeX_AS_CSP_CASL
 import CspCASL.ATC_CspCASL
+import CspCASL.SignCSP
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser

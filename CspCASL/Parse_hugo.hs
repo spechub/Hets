@@ -12,7 +12,31 @@ parser for CSP-CASL
 
 -}
 
+{- todo:
+   equation systems of processes 
+   
+   spec hugo =
+     data ...
+     channel ...
+     process A = a->A
+     process P = ...A...Q...
+             Q = ...P....
+             R = a->P
+     reveal R
+
+reveal R should keep CASL data part, and reveal process R
+
+
+parameterized processes
+
+process + channel names should be Ids
+
+add line numbers (using Annoted)
+-}
+
 module CspCASL.Parse_hugo where
+
+import Debug.Trace
 
 import CspCASL.AS_CSP_CASL
 import CASL.AS_Basic_CASL(OP_NAME)
@@ -35,10 +59,12 @@ import Common.AnnoState
 ----------------------------------------------------------------------------
 interim :: AParser C3PO
 interim = try ( do { nc <- namedCspCaslCSpec
+                   ; eof
                    ; return (Named_c3po nc)
                    }
               )  
       <|>       do { c  <- cspCaslCSpec
+                   ; eof
                    ; return (C3po c)
                    } 
 
@@ -77,7 +103,7 @@ cspCaslCSpec = do { d <- dataDefn
 basicCspCaslCSpec :: AParser Basic_CSP_CASL_C_SPEC
 basicCspCaslCSpec = do { c <- channelDecl
                   ; p <- processDefn
-                  ; return  (Basic_csp_casl_c_spec c p)
+                  ; return $ trace ("fertig "++show p) (Basic_csp_casl_c_spec c p)
                   }
 
 ----------------------------------------------------------------------------
@@ -150,6 +176,7 @@ genericEquation = do { pn <- processName
 	                   ; colonT
 	                   ; es <- eventSet             
 	                   ; return (Generic pn vi es)
+                           -- closing bracket missing!!
 	                   }
 
 
