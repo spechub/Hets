@@ -17,7 +17,6 @@ module CASL.MapSentence where
 import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
-import CASL.Print_AS_Basic
 import Common.Id
 import Common.Result
 
