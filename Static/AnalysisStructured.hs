@@ -16,7 +16,9 @@
    CASL Proof calculus.
    Available from <http://www.informatik.uni-bremen.de/~till/calculus.ps>
    To appear in the CASL book.
+-}
 
+{-
    Todo:
    Improve efficiency by storing local signature fragments only
 
@@ -69,6 +71,29 @@
 
    Ensure that just_struct option leads to disabling of various dg operations
    (show sig, show mor, proving)
+
+   local: better error message for the following
+
+spec GenCardinality [sort Subject,Object;
+                     pred predicate : Subject * Object] =
+%%Nat then
+local {
+            Set [sort Object fit sort Elem |-> Object]
+	    reveal Set[Object], #__, __eps__,
+		   Nat,0,1,2,3,4,5,6,7,8,9,__@@__,__>=__,__<=__
+       then
+            op toSet : Subject -> Set [Object]
+	    forall x : Subject; y : Object 
+	    . predicate (x,y) <=> y eps toSet(x)
+    }  within 
+           pred minCardinality(s: Subject;n: Nat) <=>
+	            # toSet(s) >= n;
+		maxCardinality(s: Subject;n: Nat) <=>
+	            # toSet(s) <= n;
+		cardinality(s: Subject;n: Nat) <=>
+		    # toSet(s) = n
+%%} hide Pos,toSet,Set[Object],#__,__eps__,__<=__,__>=__
+end
 -}
 
 
@@ -368,8 +393,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
       when (not( just_struct || sys2 `Set.difference` sys1 `Set.subset` sys3))
-       (plain_error () 
-         "attempt to hide symbols from the local environment" (headPos pos))
+       (pplain_error () 
+         (ptext "attempt to hide the following symbols from the local environment"
+          $$ printText ((sys2 `Set.difference` sys1) `Set.difference` sys3))
+         (headPos pos))
       let node_contents = DGNode {
             dgn_name = name,
             dgn_sign = gsigma3, -- G_sign lid (empty_signature lid), -- delta is empty
