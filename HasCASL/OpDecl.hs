@@ -25,6 +25,7 @@ import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsUtils
+import HasCASL.MinType
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
@@ -93,19 +94,21 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tm <- gets typeMap
+       ass <- gets assumps
        mArgs <- mapM anaTypeVarDecl tArgs
        mPats <- mapM (mapM anaVarDecl) oldPats
+       putAssumps ass
        let newPats = map catMaybes mPats
            monoPats = map (map makeMonomorph) newPats
            pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
-       as <- gets assumps
-       mapM (mapM addVarDecl) monoPats
+       vs <- gets localVars
+       mapM (mapM addLocalVar) monoPats
        let newArgs = catMaybes mArgs  
        mty <- anaStarType scTy
        case mty of 
            Just ty -> do 
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
-               putAssumps as
+               putLocalVars vs
                putTypeMap tm
                newSc <- generalizeS $ TypeScheme newArgs 
                       (patternsToType newPats ty) qs
@@ -130,7 +133,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        return $ Just $ OpDecl [OpId i [] ps] newSc [] ps
            Nothing -> do 
                resolveTerm ga Nothing trm -- get a view more diags
-               putAssumps as
+               putLocalVars vs
                putTypeMap tm
                return Nothing
                                                           
@@ -140,17 +143,17 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
-    do as <- gets assumps
+    do vs <- gets localVars
        mp <- checkPattern ga pat
        case mp of 
            Nothing -> return pe
            Just newPat -> do 
                let exbs = extractVars newPat
                checkUniqueVars exbs
-               mapM_ addVarDecl exbs
+               mapM_ addLocalVar exbs
                mt <- resolveTerm ga Nothing trm 
                -- guarantee that type of pattern and term are equal!
-               putAssumps as
+               putLocalVars vs
                case mt of 
                    Just newTerm  -> let newPrg = ProgEq newPat newTerm qs in
                      case getAppl newPat of

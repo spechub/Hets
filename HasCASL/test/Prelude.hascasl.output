@@ -286,6 +286,8 @@ free type bool
   def(f)(x)
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
+*** Hint 58.13, variable shadows global name(s) 'x'
+*** Hint 59.9, variable shadows global name(s) 'x'
 *** Hint 60.9, no type match for: snd
   with (maximal) type: _var_11_v11 ->? t
   known types:
@@ -449,6 +451,7 @@ free type bool
 *** Error 123.3, unexpected mixfix token: all
 *** Error 125.55, unexpected mixfix token: Suc
 *** Error 125.32, unexpected mixfix token: all
+*** Hint 126.15, variable shadows global name(s) 'x'
 *** Error 126.38, unexpected mixfix token: all
 *** Error 131.56, unexpected mixfix token: impl
 *** Error 130.32, unexpected mixfix token: impl
@@ -467,6 +470,10 @@ free type bool
   type '(c * d) * (c * d)' (157.13)
   is not unifiable with type 'Unit ->? _var_168_v168 * _var_169_v169' (119.16)
 
+*** Hint 159.10, variable shadows global name(s) 'x1'
+*** Hint 159.14, variable shadows global name(s) 'y1'
+*** Hint 159.23, variable shadows global name(s) 'x2'
+*** Hint 159.27, variable shadows global name(s) 'y2'
 *** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
@@ -514,6 +521,8 @@ free type bool
   type '(c --> d) * (c --> d)' (184.13)
   is not unifiable with type 'Unit ->? _var_194_v194 * _var_195_v195' (119.16)
 
+*** Hint 186.10, variable shadows global name(s) 'f'
+*** Hint 186.16, variable shadows global name(s) 'g'
 *** Error 186.26, unexpected mixfix token: c
 *** Error 190.9, incompatible kind of: p_v162 -->? p_v162
   expected: Cpo-

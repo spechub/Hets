@@ -11,9 +11,9 @@ var v : m List
 var nt : a -> (b -> c) -> c -> d
 type s1, r1, t1 < t
 type s2 = r2 = t2
-type s3 = {x : t . (fun __=__[tuple3 r s t]
+type s3 = {x : t . (fun __=__[t]
                     : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                     (var x : tuple3 r s t, var x : tuple3 r s t)}
+                     (var x : t, var x : t)}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
@@ -40,9 +40,9 @@ s1 : Type < t
 s2 : Type < (t2, r2, s2)
 s3
   : Type < t
-    = {x : t . (fun __=__[tuple3 r s t]
+    = {x : t . (fun __=__[t]
                 : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                 (var x : tuple3 r s t, var x : tuple3 r s t)}
+                 (var x : t, var x : t)}
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)
@@ -92,29 +92,8 @@ x : tuple3 r s t %(var)%
   expected: b -> c
      found: a -> b
 
+*** Hint 38.12, variable shadows global name(s) 'x'
 *** Hint 38.17, in type of '(var x : t, var x : t)'
   type 't * t' (38.14)
   is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
-
-*** Hint 38.17, in type of '(var x : t, var x : tuple3 r s t)'
-  type 't * tuple3 r s t' (38.14)
-  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
-
-*** Hint 38.17, in type of '(var x : tuple3 r s t, var x : t)'
-  type 'tuple3 r s t * t' (11.9)
-  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
-
-*** Hint 38.17, in type of '(var x : tuple3 r s t, var x : tuple3 r s t)'
-  type 'tuple3 r s t * tuple3 r s t' (11.9)
-  is not unifiable with type 'Unit ->? _var_4_v4 * _var_5_v5'
-
-*** Hint 38.19, in type of '(fun __=__[_var_3_v3] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : t, var x : tuple3 r s t)'
-  typename 't' (11.20)
-  is not unifiable with type 'tuple3 r s t' (11.9)
-
-*** Hint 38.19, in type of '(fun __=__[_var_3_v3] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (var x : tuple3 r s t, var x : t)'
-  typename 't' (11.20)
-  is not unifiable with type 'tuple3 r s t' (11.9)
 

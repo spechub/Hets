@@ -25,6 +25,7 @@ import qualified Common.Lib.Set as Set
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.VarDecl
+import HasCASL.MinType
 import HasCASL.Le
 
 import Data.Maybe
@@ -55,7 +56,8 @@ iterateCharts ga terms chart =
        let self = iterateCharts ga  
            oneStep = nextChart addType opKindFilter
                      toMixTerm ga chart
-           as = assumps e
+           ass = assumps e
+           vs = localVars e
            tm = typeMap e
        if null terms then return chart else 
           do let t:tt = terms 
@@ -99,7 +101,7 @@ iterateCharts ga terms chart =
                     QuantifiedTerm quant decls hd ps -> do 
                        newDs <- mapM anaGenVarDecl decls
                        mt <- resolve ga hd
-                       putAssumps as 
+                       putAssumps ass 
                        putTypeMap tm
                        let newT = case mt of Just trm -> trm
                                              _ -> hd
@@ -110,9 +112,9 @@ iterateCharts ga terms chart =
                        anaDecls <- mapM anaPattern newDecls
                        let bs = concatMap extractVars anaDecls 
                        checkUniqueVars bs 
-                       mapM_ addVarDecl bs
+                       mapM_ addLocalVar bs
                        mt <- resolve ga hd
-                       putAssumps as
+                       putLocalVars vs
                        let newT = case mt of Just trm -> trm
                                              _ -> hd
                        recurse $ LambdaTerm anaDecls part newT ps
@@ -127,7 +129,7 @@ iterateCharts ga terms chart =
                        mt <- resolve ga hd 
                        let newT = case mt of Just trm -> trm
                                              _ -> hd
-                       putAssumps as
+                       putLocalVars vs
                        recurse $ LetTerm b newEs newT ps
                     TermToken tok -> do
                         let (ds1, trm) = convertMixfixToken 
@@ -159,13 +161,13 @@ resolveCaseEq ga (ProgEq p t ps) =
        case mp of 
            Nothing -> return Nothing
            Just np -> do 
-                as <- gets assumps
+                vs <- gets localVars
                 newP <- anaPattern np
                 let bs = extractVars newP
                 checkUniqueVars bs
-                mapM_ addVarDecl bs
+                mapM_ addLocalVar bs
                 mtt <- resolve ga t
-                putAssumps as 
+                putLocalVars vs
                 return $ case mtt of 
                     Nothing -> Nothing
                     Just newT -> Just $ ProgEq newP newT ps
@@ -190,7 +192,7 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
                newPat <- anaPattern nPat
                let bs = extractVars newPat
                checkUniqueVars bs
-               mapM addVarDecl bs
+               mapM_ addLocalVar bs
                mTrm <- resolve ga trm
                case mTrm of
                    Nothing -> resolveLetEqs ga rt 
@@ -230,10 +232,12 @@ resolve ga = resolver ga builtinIds
 resolver :: GlobalAnnos -> [Id] -> Term 
          -> State Env (Maybe Term)
 resolver ga bs trm =
-    do as <- gets assumps
+    do ass <- gets assumps
+       vs <- gets localVars
        oldDs <- gets envDiags
        ps@((_, _, m), _) <- gets preIds
-       let ids = Map.keys as
+       let keySet = Set.fromDistinctAscList . Map.keys
+           ids = Set.toList $ Set.union (keySet ass) $ keySet vs
            ks = Set.union (Set.fromList (tokStr exprTok: inS :
                                          map (:[]) ":{}[](),"))
                     $ Set.unions $ map getKnowns ids

@@ -30,6 +30,7 @@ import HasCASL.AsUtils
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
+import HasCASL.MinType
 import HasCASL.TypeCheck
 
 idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
@@ -154,11 +155,11 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                            Nothing -> altAct
                            Just vds -> do 
                                checkUniqueVars vds
-                               ass <- gets assumps
-                               mapM_ addVarDecl vds
+                               vs <- gets localVars
+                               mapM_ addLocalVar vds
                                mf <- anaFormula ga f
                                putTypeMap tm
-                               putAssumps ass 
+                               putLocalVars vs
                                case mf of 
                                    Nothing -> altAct
                                    Just newF -> do 
