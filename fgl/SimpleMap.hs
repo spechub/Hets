@@ -84,7 +84,7 @@ delFromFM (Node l (j,x) r) i | i<j        =  Node (delFromFM l i) (j,x) r
                              | i>j        =  Node l (j,x) (delFromFM r i) 
                              | otherwise  =  merge l r  
 
-isEmptyFM :: FiniteMap a b -> Bool
+isEmptyFM :: Ord a => FiniteMap a b -> Bool
 isEmptyFM Empty = True
 isEmptyFM _     = False
 
