@@ -1,7 +1,7 @@
 class Type
 var t : Type
 class TYPE=Type; TYPE={x.x< t}
-type Pred __ :Type- ->Type; Unit :TYPE
+type Pred __ :Type-->Type; Unit :TYPE
 class a,b,c
 class a,b,c<d; a=b
 var s : c
@@ -108,7 +108,7 @@ forall x : Nat;
 . (r + s) * t = (r * t) + (s * t) %(Nat_distr)%
 . max (m,0) = m %(Nat_max_unit)%
 . min (m,0) = 0 %(Nat_min_0)%
-%% end
+  %% end
 generated {type Int ::= __-__(Nat; Nat)}
 forall a : Nat; b : Nat; c : Nat; d : Nat
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
@@ -155,8 +155,7 @@ forall m : Int;
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
   %(Int_divide)%
 . m mod n < abs (n) if not n = 0 %(Int_mod_range)%
-. m = (m div n) * n + (m mod n) if not n = 0
-%(Int_mod__div_def)%
+. m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
@@ -176,7 +175,7 @@ forall m : Int; n : Int; r : Int; a : Nat; b : Nat
 . def (m quot n) <=> not n = 0 %(Int_quot_dom)%
 . def (m rem n) <=> not n = 0 %(Int_rem_dom)%
 . m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%
-%% end
+  %% end
 generated {type Rat ::= __/__(Int; Pos)}
 forall i : Int; j : Int; p : Pos; q : Pos
 . i / p = j / q <=> i * q = j * p %(Rat_equality)%
