@@ -234,12 +234,12 @@ skip :: GenParser Char st ()
 skip = skipMany(oneOf (newlineChars ++ blankChars) 
 		       <|> nestCommentOut <?> "") >> return () 
 
--- only skip to an annotation if it's on the same line
+-- only skip to an annotation if it's on the same or next line
 skipSmart :: GenParser Char st ()
 skipSmart = do p <- getPosition
 	       try (do skip
 		       q <- getPosition
-		       if sourceLine q == sourceLine p then return ()
+		       if sourceLine q <= sourceLine p + 1 then return ()
 			   else notFollowedBy (char '%') >> return ()
 		   )
 		<|> return ()

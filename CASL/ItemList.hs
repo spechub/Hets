@@ -30,10 +30,10 @@ annos = skip >> many (annotationL << skip)
 -- annotations on one line
 lineAnnos :: GenParser Char st [Annotation]
 lineAnnos = do p <- getPosition
-	       do a <- annotationL  
+	       do a <- annotationL
 		  skip
 		  q <- getPosition
-		  if sourceLine q == sourceLine p then
+		  if sourceLine q <= sourceLine p + 1 then
 		      do l <- lineAnnos
 			 return (a:l)
 		      else return [a]

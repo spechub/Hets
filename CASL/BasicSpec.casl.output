@@ -114,8 +114,7 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
   %(Int_divide)%
 . not n = 0 => (m mod n < abs (n)) %(Int_mod_range)%
-. not n = 0 => m = (m div n) * n + (m mod n)
-%(Int_mod__div_def)%
+. not n = 0 => m = (m div n) * n + (m mod n) %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
