@@ -20,15 +20,13 @@ module Haskell.Logic_Haskell (Haskell(..), HaskellMorphism) where
 import Data.Dynamic            
 import Common.DynamicUtils 
 
-import Common.Result                     (Result (..))
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.AS_Annotation
 import Common.ATerm.Conversion
 
 -- import Haskell.ATC_Haskell      -- generated ATerm conversions
-import Haskell.HatParser                 (HsDecls,
-                                          hatParser)
+import Haskell.HatParser                
 import Haskell.HatAna
 
 import Logic.Logic             
@@ -118,11 +116,11 @@ instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
 
 instance PrettyPrint HaskellMorphism where
   printText0 ga (sig1,sig2) =
-    printText0 ga sig1 $$ ptext "->" $$ printText0 ga sig1
+    printText0 ga sig1 $$ ptext "->" $$ printText0 ga sig2
 
 instance PrintLaTeX HaskellMorphism where
   printLatex0 ga (sig1,sig2) =
-    printLatex0 ga sig1 $$ ptext "\\rightarrow" $$ printLatex0 ga sig1
+    printLatex0 ga sig1 $$ ptext "\\rightarrow" $$ printLatex0 ga sig2
 
 instance StaticAnalysis Haskell HsDecls
                (TiDecl PNT) () 
