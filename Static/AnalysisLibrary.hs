@@ -137,7 +137,7 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
 
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l  
              (Spec_defn spn gen asp pos) = do
-  let just_struct = False -- justStruct opts
+  let just_struct = analysis opts == Structured
   ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
   (gen',(imp,params,parsig,allparams),dg') <- resToIORes (ana_GENERICITY gctx l just_struct gen)
   (sp',body,dg'') <- resToIORes (ana_SPEC (gannos,genv,dg') allparams (Just spn) just_struct (item asp))
@@ -155,7 +155,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
-  let just_struct = False -- justStruct opts
+  let just_struct = analysis opts == Structured
   ioToIORes (putIfVerbose opts 1  ("Analyzing view " ++ showPretty vn ""))
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
                             vn gen vt gsis pos)

@@ -9,9 +9,11 @@ infix 2 \/
 infix 3 /\
 infix 1 ==>
 infix 1 <=> 
-(\/), (/\), (==>), (<=>) :: Logical -> Logical -> Logical
+infix 1 `oor`
+(\/), (/\), (==>), (<=>), oor :: Logical -> Logical -> Logical
 neg :: Logical -> Logical
 -- unfortunately, already not :: Bool -> Bool
+(oor) = not_implemented
 (/\) = not_implemented
 (\/) = not_implemented
 (==>) = not_implemented
@@ -31,7 +33,6 @@ infix 4 ===
 (===) :: a->a->Logical
 (===) = not_implemented
 
-{-
 
 {-# AXIOMS
          "map_law"       forall f g xs. map f (map g xs) = map (f.g) xs
@@ -43,6 +44,8 @@ map_law = allof(\f-> allof(\g -> map (g.f) === map g . map f))
 deMorgan = allof(\p -> allof(\q -> neg p /\ neg q <=> neg (p\/q)))
 
 
+{-
+
 Syntax of AXIOM pragmas:
 
 topdecl : ...
@@ -51,11 +54,7 @@ topdecl : ...
 axiom : STRING formula
 
 formula : quantification formula
-        | formula '/\' formula
-        | formula '\/' formula
-        | formula '=>' formula
-        | formula '<=>' formula
-        | 'not' formula
+        | exp
         | infixexp '=' srcloc exp  -- srcloc just gets source location
 
 quantification : 'forall' rule_var_list '.'   
