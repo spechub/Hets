@@ -110,10 +110,22 @@ ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM _ bi = do
     e <- get
     case bi of
-        Simple_mod_decl al _ _ -> mapM_ ((updateExtInfo . addModId) . item) al
-	Term_mod_decl al _ _ -> 
+        Simple_mod_decl al fs ps -> do
+	    mapM_ ((updateExtInfo . addModId) . item) al
+	    newFs <- mapAnM (resultToState ana_M_FORMULA) fs 
+	    return $ Simple_mod_decl al newFs ps
+	Term_mod_decl al fs ps -> do
 	    mapM_ ((updateExtInfo . addModSort e) . item) al
-    return bi
+	    newFs <- mapAnM (resultToState ana_M_FORMULA) fs 
+	    return $ Term_mod_decl al newFs ps
+
+resultToState :: (a -> Result a) -> a -> State (Sign f e) a
+resultToState f a = do 
+    let r =  f a 
+    addDiags $ reverse $ diags r
+    case maybeResult r of
+        Nothing -> return a
+        Just b -> return b
 
 addModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
 addModId i m = 
