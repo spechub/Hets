@@ -26,7 +26,6 @@ import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsUtils
 import HasCASL.TypeAna
-import HasCASL.Unify
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
