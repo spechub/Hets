@@ -6,11 +6,6 @@
 ------------------------------------------------------------------------------
 {- todo:
 
-  Frage wg. Fun_map: im OpType gibt es schon total/partial, warum der
-                     Boolean?
-  Frage: was ist bei projections mit [Pos], übernehmen, weglassen, an
-         neue Verhältnisse anpassen (kompliziert!?!)
-
   all_sublogics :: id -> [sublogics]
   morphisms
   projections
