@@ -11,7 +11,7 @@ Portability :  portable
     Inductive Graphs. The implementation is based on extensible finite maps.
 -}
 
-module Common.Lib.Graph (
+module Common.Lib.Graph (Diagram,
 -- types
    Node,LNode,UNode,                  -- plain, labeled, and unit-labeled node
    Edge,LEdge,UEdge,                  -- plain, labeled, and unit-labeled edge
@@ -43,6 +43,9 @@ module Common.Lib.Graph (
 import Common.Lib.SimpleMap
 import Data.Maybe (fromJust)
 import Data.List(sortBy)
+
+-- diagrams are just graphs
+type Diagram object morphism = Graph object morphism
 
 ----------------------------------------------------------------------
 -- TYPES
