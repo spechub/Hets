@@ -12,6 +12,24 @@ Make sure a new version (currently 5.04.1) of \texttt{ghc}
 \texttt{/usr/local/bin/perl, /usr/local/bin/bash} and \texttt{GNU
   make} are required.
 
+It is also possible to use hugs (version of Nov. 2002) instead of ghc.
+A binary for Solaris is currently available under
+\texttt{/home/maeder/bin/hugs}.  The environment variable
+\texttt{HUGSFLAGS} (one line) is given in my \texttt{.bashrc} as follows:
+
+\begin{verbatim}
+HCAT=/home/maeder/haskell/HetCATS
+HLIB=/home/maeder/lib/hugs/lib
+
+export HUGSFLAGS="-98 +o -h20M\
+  -P$HCAT:$HCAT/hugs:$HCAT/parsec:$HCAT/pretty:$HCAT/haterm-1.0/src:\
+    $HCAT/aterm_conv:$HCAT/fgl:$HCAT/CASL:$HCAT/HasCASL:\
+    $HLIB:$HLIB/exts:$HLIB/hugs\
+  -E\"emacsclient +%d %s\""
+\end{verbatim}
+
+The variable \texttt{HCAT} must be set to your own \texttt{HetCATS} directory.
+
 \section{Getting started}
 
 \subsection{Check out}
@@ -38,7 +56,7 @@ instances (of class \texttt{PosItem}) derived by DrIFT (a in
 \subsection{Compiling the CASL parser}
 
 \texttt{cd HetCATS/CASL} and call \texttt{./ghc-call} (a script that
-contains all necessary ghc options and parameters).
+contains all necessary ghc options and parameters). An alternative is to call \texttt{gmake capa} in (almost) any directory with a \texttt{Makefile}.
 
 This creates a binary called \texttt{capa} that can parse (and pretty
 print) ``Basic Specification with Subsorts'' of the CASL Summary
@@ -60,8 +78,12 @@ A test call might be:
 The binary \texttt{capa} is also used to test various subordinate (and
 mixfix) parsers. Test cases are given as \texttt{*.casl} files.
 
-Calling \texttt{./runcheck.sh} performs many tests and compares the
+Calling \texttt{./runcheck.sh ./capa} performs many tests and compares the
 results with corresponding \texttt{*.output} files.
+
+Alternatively a test can be run using \texttt{runhugs}. For this the
+file \texttt{capa.lhs} is executable and the test can be run
+by \texttt{./runcheck.sh ./capa.lhs}.
 
 \texttt{Wrong*.casl} files contain wrong CASL code and should produce
 error messages. Apart from extra tests, correct (\texttt{Bla.casl})
@@ -72,7 +94,7 @@ then the test is silently regarded as ok, otherwise an additional message
 is produced that can be ignored provided the internal call to
 \texttt{diff} succeeded and ``\texttt{passed}'' was emitted.
 
-Calling ``\texttt{./runcheck.sh set}'' will update the \texttt{*.output} files (and a subsequent \texttt{./runcheck.sh} should always pass).
+Calling ``\texttt{./runcheck.sh ./capa set}'' will update the \texttt{*.output} files (and a subsequent \texttt{./runcheck.sh ./capa} should always pass).
 
 \section{Structure of source files}
 
@@ -81,7 +103,8 @@ Calling ``\texttt{./runcheck.sh set}'' will update the \texttt{*.output} files (
 \subsubsection*{Parser related files}
 
 \begin{description}
-\item[Main.hs] simply lists the test parsers 
+\item[capa.lhs] is the main module that simply lists the test parsers
+  and is executable for hugs
 \item[RunParsers.hs] contains the driver called in Main for test parsers and is reused in \texttt{HetCATS/HasCASL}
 \item[RunMixfixParser.hs] is an additional driver to test the mixfix
   analysis. (It declares an existential type.)
@@ -177,6 +200,13 @@ Typechecking (considering subtypes and overloading) of terms and
 formulae (plus their conversions to the types in \texttt{Sign.hs}) is
 still missing.
 
+\subsubsection*{scripts}
+
+\texttt{runcheck.sh} includes \texttt{checkFunctions.sh}.
+\texttt{iterate.sh} checks differences between the working copy and
+the most recent cvs version.
+
+
 \subsection{Top-level directory \texttt{HetCATS}}
 
 The subdirectories \texttt{utils} (for DriFT), \texttt{hetcats} (for
@@ -191,9 +221,13 @@ have been mentioned above.
 \item[aterm\_conv] converts sml-CATS ATerms (Klaus)
 \item[haterm-1.0/src] the adapted ATerm library (Klaus)
 \item[doc] for documentations like this one
+\item[hugs] include this directory if you use hugs
+\item[ghc] include this directory if you use ghc
 \item[mini] Till
 \item[test] for test cases (Pascal)
 \end{description}
+
+The directories \texttt{hugs} and \texttt{ghc} currently only implement the function \texttt{unsafeCoerce} differently. 
 
 The top-level directory contains the abstract syntax trees for
 heterogeneous specifications: \texttt{AS\_Atructured}, \texttt{AS\_Architecture} and \texttt{AS\_Library}
@@ -240,7 +274,7 @@ purposes in \texttt{Main.hs}). Form the top-level directory also stuff
 for annotations (i.e.\ \texttt{Anno\_Parser.hs}) is used.
 
 \begin{description}
-\item[Main.hs] counterpart to \texttt{CASL/Main.hs} 
+\item[hacapa.lhs] counterpart to \texttt{CASL/capa.lhs} 
 \item[As.hs] abstract syntax
 \item[Le.hs] local environment
 \item[HToken.hs] extension of \texttt{CASL/Token.hs} for HasCASL
