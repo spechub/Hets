@@ -23,7 +23,7 @@ HADDOCK    = $(PERL) ../utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package data -package haskell-src
+HC_PACKAGE = -package data 
 
 AG_FLAGS   = -mdcfs
 
@@ -159,6 +159,13 @@ hacapa: ../HasCASL/hacapa
 hapa: ../Haskell/hapa
 
 ../Haskell/hapa: ../Haskell/hapa.lhs ../Haskell/*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### Haskell parser
+wrap: ../Haskell/wrap
+
+../Haskell/wrap: ../Haskell/wrap.lhs ../Haskell/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
