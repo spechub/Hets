@@ -124,7 +124,7 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if existsDefPathOfSameMorphism dGraph morphism source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True -- existsDefPathOfSameMorphism dGraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -141,8 +141,8 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
                )
     newGraph = insEdge newEdge auxGraph
     newRules = (GlobSubsumption ledge):rules
-    newChanges = (InsertEdge newEdge):((DeleteEdge ledge):changes)
-
+--    newChanges = (InsertEdge newEdge):((DeleteEdge ledge):changes)
+    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
 existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
 existsDefPathOfSameMorphism dgraph morphism src tgt =

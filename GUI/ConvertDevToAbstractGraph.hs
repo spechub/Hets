@@ -617,7 +617,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
   case change of
     InsertNode lNode -> error "insert node not yet implemented"
     DeleteNode node -> error "delete node not yet implemented"
-    InsertEdge (src,tgt,edgeLab) ->
+    InsertEdge (src,tgt,edgeLab) -> 
       do
         let dg2abstrNodeMap = dg2abstrNode convMaps
         case (Map.lookup (libname,src) dg2abstrNodeMap,
@@ -648,7 +648,7 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			         convMaps changes
    
 
-    DeleteEdge (src,tgt,_) ->
+    DeleteEdge (src,tgt,_) -> 
       do let dgEdge = (libname, (src,tgt))
              dg2abstrEdgeMap = dg2abstrEdge convMaps 
          case Map.lookup dgEdge dg2abstrEdgeMap of
