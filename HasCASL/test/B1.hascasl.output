@@ -15,10 +15,8 @@ class h < c
 class j < {v . v < t}
 type [__] : a -> b
 var x : a; y : Type; x : y
-var
 var x : b
 var x : {_ < t}
-type  : b
 %% Classes ---------------------------------------------------------------
 a < (b, d)
 b < (c, d, e)

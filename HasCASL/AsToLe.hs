@@ -136,7 +136,7 @@ anaBasicItem ga (ProgItems l ps) =
 anaBasicItem _ (FreeDatatype l ps) = 
     do al <- mapAnMaybe ana1Datatype l
        let tys = map (dataPatToType . item) al
-       ul <- mapAnM (anaDatatype Free Plain tys) al
+       ul <- mapAnMaybe (anaDatatype Free Plain tys) al
        addDataSen tys
        return $ FreeDatatype ul ps
 anaBasicItem ga (GenItems l ps) = 
@@ -164,7 +164,7 @@ anaSigItems ga gk (TypeItems inst l ps) =
     do ul <- anaTypeItems ga gk inst l
        return $ TypeItems inst ul ps
 anaSigItems ga _ (OpItems b l ps) = 
-    do ul <- mapAnM (anaOpItem ga b) l
+    do ul <- mapAnMaybe (anaOpItem ga b) l
        return $ OpItems b ul ps
 
 -- | analyse a class item

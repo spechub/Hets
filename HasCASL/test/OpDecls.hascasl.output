@@ -3,7 +3,6 @@ op a, b : s
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
 op __+__ : s * s -> s
 op __+__ : t * t -> t
-op : t -> t -> t
 op a, b : t
 op c : s = (op __+__ : s * s -> s)(op a : s, op b : s) as s
 op d : s = (op __+__ : s * s -> s)(op a : s, op a : s) as s

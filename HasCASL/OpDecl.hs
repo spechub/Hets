@@ -81,13 +81,15 @@ anaOpId ga br partSc attrs o =
                mo <- addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br 
                return $ fmap (const o) mo
 
-anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
+anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
 anaOpItem ga br (OpDecl is sc attr ps) = do
-        us <- mapM (anaOpId ga br sc attr) is
-        return $ OpDecl (catMaybes us) sc attr ps
+        mus <- mapM (anaOpId ga br sc attr) is
+        let us = catMaybes mus
+        return $ if null us then Nothing else
+            Just $ OpDecl us sc attr ps
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
-    do let (op@(OpId i _ _), extSc@(TypeScheme tArgs scTy qs)) = 
+    do let (op@(OpId i _ _), TypeScheme tArgs scTy qs) = 
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tm <- gets typeMap
@@ -122,15 +124,15 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        appendSentences [NamedSen 
                                                    ("def_" ++ showId i "")
                                                    $ Formula f] 
-                       return $ OpDefn op [] newSc Total lamTrm ps
-                   _ -> return $ OpDefn op newPats extSc partial trm ps
+                       return $ Just $ OpDefn op [] newSc Total lamTrm ps
+                   Nothing -> do 
+                       addOpId i newSc [] $ NoOpDefn br
+                       return $ Just $ OpDecl [OpId i [] ps] newSc [] ps
            Nothing -> do 
-               mt <- resolveTerm ga Nothing trm
+               resolveTerm ga Nothing trm -- get a view more diags
                putAssumps as
                putTypeMap tm
-               return $ OpDefn op oldPats extSc partial 
-                              (case mt of Nothing -> trm
-                                          Just x -> x) ps
+               return Nothing
                                                           
 -- ----------------------------------------------------------------------------
 -- ProgEq
@@ -167,7 +169,6 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
                                          newPat]
                                return newPrg
                    _ -> return $ ProgEq newPat trm qs 
-
 
 getApplConstr :: Pattern -> (Pattern, [Pattern])
 getApplConstr pat = 

@@ -1,7 +1,7 @@
 class Type < Type
 var t : Type
 class TYPE < Type
-type  : Type- -> Type; Unit : TYPE
+type Unit : TYPE
 class a, b, c < Type
 class a, b, c < Type; a < b
 type s : c

@@ -7,8 +7,6 @@ var s : Type; t : Type
 type Unit
      %% flat cpo with bottom
      %% type aliases
-type Pred __ : Type -> Type := \ t : Type- . t ->? Unit
-type ? __ := \ t : Type . Unit ->? t
 pred true, false : Unit
 pred __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
 pred not : Unit
@@ -19,7 +17,6 @@ pred __=__ : s * s
 type __->?__ : Type- -> Type+ -> Type
 %% nested pairs are different from n-tupels (n > 2)
 type __*__ : Type+ -> Type+ -> Type
-type  : Type+ -> Type+ -> Type+ -> Type
 %% ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
@@ -98,10 +95,8 @@ program neg (r : Pred Unit) : Pred Unit = r impl ff
 type nat
 class Cpo < Type
       {var c : Cpo; pred __<<=__ : c * c; ;
-       pred isChain(s : nat -> c_v159) :? Unit
-              = all (\ n : nat . s (n) <<= s (Suc (n)));
-       pred isBound(x : c_v159; s : nat -> c_v159) :? Unit
-              = all (\ n : nat . s (n) <<= x);
+       pred isChain : forall c : Cpo . nat -> c_v-1;
+       pred isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1);
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
       {var p : Pcpo; op bottom : p;}
@@ -128,8 +123,7 @@ program (pred __<<=__[c --> d] : forall c : Cpo . c_v-1 * c_v-1)
           (var f : c --> d, var g : c --> d)
           = f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
-op : (p -->? p) --> p
-op undefined : c -->? p = Y (\ x : c -->? p .! x)
+op undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -194,6 +188,8 @@ fst
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
     %(op)% = \ (var x : s, var y : t) .! (var x : s) as s_v1
 g : c --> d %(var)%
+isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1) ->? Unit %(pred)%
+isChain : forall c : Cpo . (nat -> c_v-1) ->? Unit %(pred)%
 not : Unit ->? Unit %(pred)%
 not__ : ? Unit ->? Unit %(fun)%
 sup : forall c : Cpo . (nat -> c_v-1) ->? c_v-1 %(op)%
@@ -202,6 +198,7 @@ true
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
 tt : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
+undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2 %(op)%
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -453,10 +450,10 @@ free type bool
 *** Error 125.55, unexpected mixfix token: Suc
 *** Error 125.32, unexpected mixfix token: all
 *** Error 126.38, unexpected mixfix token: all
-*** Error 131.42, unexpected mixfix token: isBound
+*** Error 131.56, unexpected mixfix token: impl
 *** Error 130.32, unexpected mixfix token: impl
 *** Error 130.3, unexpected mixfix token: all
-*** Error 134.20, unexpected mixfix token: isChain
+*** Error 134.31, unexpected mixfix token: impl
 *** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
 *** Error 141.4, illegal overloading of predefined identifier 'bottom'
@@ -478,7 +475,7 @@ free type bool
 *** Error 171.35, unexpected mixfix token: und
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.40, unexpected mixfix token: und
-*** Error 172.28, unexpected mixfix token: isChain
+*** Error 172.39, unexpected mixfix token: und
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
