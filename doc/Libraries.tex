@@ -1,0 +1,239 @@
+\documentclass{article}
+
+\parindent 0pt
+\parskip 5pt
+\usepackage{xspace}
+\RequirePackage{alltt}
+\usepackage{casl}
+\usepackage{url}
+
+\renewcommand{\index}[1]{}
+
+\newcommand{\QUERY}[1]
+{\marginpar{\raggedright\hspace{0pt}\small #1\\~}}
+
+\newenvironment{Grammar}
+ {\small% svmono sets \footnotesize to \small
+  \begin{alltt}}{\end{alltt}\ignorespacesafterend}
+
+\newenvironment{AbstractGrammar}
+ {\par\smallskip\samepage\begin{Grammar}}{\end{Grammar}\noindent
+ \ignorespacesafterend}
+
+\newenvironment{ConcreteDisplay}
+ {\nopagebreak\begin{quote}\casl}{\end{quote}\noindent
+ \ignorespacesafterend}
+
+\newcommand{\Meta}[1]{\mbox{$\it#1$}}
+\newcommand{\Metasub}[2]{\mbox{$\it#1_{#2}$}}
+\newcommand{\Metasubsub}[2]{\mbox{$\scriptstyle\it#1_{#2}$}}
+
+\newcommand{\Gram}[1]{{\textup{\texttt{#1}}}}
+
+% \textindex{TEXT}
+% - prints and marks TEXT for the main index
+\newcommand{\textindex}[1]{#1\index{#1}}
+
+% \bothindex{TEXT}{SUBTEXT}
+% - marks TEXT,SUBTEXT and SUBTEXT,TEXT for the main index
+\newcommand{\bothindex}[2]{\index{#1!#2}\index{#2!#1}}
+
+% \textbothindex{TEXT}{SUBTEXT}
+% - prints TEXT SUBTEX and marks both TEXT,SUBTEXT and SUBTEXT,TEXT
+\newcommand{\textbothindex}[2]{#1 #2\index{#1!#2}\index{#2!#1}}
+
+% \emphindex{TEXT}
+% - prints \emph{TEXT} and marks TEXT for the main index
+\newcommand{\emphindex}[1]{\emph{#1}\index{#1}}
+
+
+% \gramindex{TEXT}
+% - marks \Gram{TEXT} for the Symbol Index, sorted as TEXT
+\newcommand{\gramindex}[1]{\texttt{#1}}
+
+\newcommand{\CASL}{\textmd{\textsc{Casl}}\xspace }
+\newcommand{\HasCASL}{\textmd{\textsc{HasCasl}}\xspace }
+\newcommand{\LBCASL}{\textmd{\textsc{Lb-Casl}}\xspace }
+\newcommand{\SBCASL}{\textmd{\textsc{Sb-Casl}}\xspace }
+\newcommand{\CspCASL}{\textmd{\textsc{Csp-Casl}}\xspace }
+\newcommand{\CspCFOL}{\textmd{\textsc{Csp}-$CFOL^=$}\xspace }
+\newcommand{\CASLLtl}{\textmd{\textsc{Casl-Ltl}}\xspace }
+\newcommand{\CFOLLtl}{\textmd{$CFOL^=$-\textsc{Ltl}}\xspace }
+\newcommand{\CATS}{\textmd{\textsc{Cats}}\xspace }
+\newcommand{\Hets}{\textmd{\textsc{Hets}}\xspace }
+\newcommand{\MAYA}{\textmd{\textsc{Maya}}\xspace }
+\newcommand{\HOLCASL}{\textmd{\textsc{Hol-Casl}}\xspace }
+\newcommand{\ELANCASL}{\textmd{\textsc{Elan-Casl}}\xspace }
+
+\begin{document}
+
+\title{CASL libraries on the web}
+
+\maketitle
+
+From the \CASL summary:
+
+\begin{quote}
+A library may be located at a particular \emphindex{site} on the
+Internet.  
+The library is referenced from other sites by a name which determines
+the location and perhaps identifies a particular version of the
+library.  To allow libraries to be relocated without this invalidating
+existing references to them, library names may be interpreted relative
+to a \emph{\textbothindex{global}{directory}} that maps names to URIs.  
+\QUERY{CASL/Summary 9, \ldots:\\
+URL changed to URI.}
+Libraries
+may also be referenced directly by their (relative or absolute) URIs,
+independently of their registration in the global directory.
+
+\begin{AbstractGrammar}
+\gramindex{LIB-NAME}       ::= LIB-ID | LIB-VERSION
+\gramindex{LIB-VERSION}    ::= lib-version LIB-ID VERSION-NUMBER
+\gramindex{VERSION-NUMBER} ::= version-number NUMBER+
+\end{AbstractGrammar}
+
+\begin{AbstractGrammar}
+\gramindex{LIB-ID}        ::= DIRECT-LINK | INDIRECT-LINK
+\gramindex{DIRECT-LINK}   ::= direct-link URI
+\gramindex{INDIRECT-LINK} ::= indirect-link PATH
+\end{AbstractGrammar}
+A direct link to a library is simply written as the URI of the
+library.  The location of a library is always a directory, giving
+access not only to the individual specifications defined by the
+current version of the library but also to previously-defined
+versions, various indexes, and perhaps other documentation.
+
+An indirect link is written:
+\begin{ConcreteDisplay}
+\Metasub{FI}{1}/\ldots/\Metasub{FI}{n}
+\end{ConcreteDisplay}
+where each file identifier \Metasub{FI}{i} is a valid file name, as
+for use in a path in a URI.  An indirect link is interpreted as a URI
+by the current global library directory.
+
+
+\Gram{URI} and \Gram{PATH} are recognized as lexical symbols only directly
+following the key words `\Gram{library}' and `\Gram{from}' in
+specification libraries.  The following grammar provides a minimal
+syntax for \Gram{URI}: further forms may be recognized and supported.
+\QUERY{The \Gram{PATH-CHAR} characters include all the `safe' and `extra' 
+characters, plus the `reserved' character `\Gram{:}' and the `national' 
+character `\Gram{\textasciitilde}'.}
+%
+\begin{quote}
+\begin{Grammar}
+\gramindex{PATH-CHAR} ::= A |...| Z | a |...| z | 0 |...| 9
+            | \$ | - | \_ | @ | . | & | + | ! | * 
+            | '"' | "'" | ( | ) | , | : | \textasciitilde
+            | \% HEX-CHAR HEX-CHAR
+\gramindex{HEX-CHAR}  ::= A |...| F | a |...| f | 0 |...| 9
+
+\gramindex{PATH-WORD} ::= PATH-CHAR ... PATH-CHAR
+\gramindex{PATH}      ::= PATH-WORD /.../ PATH-WORD
+\gramindex{URI}       ::= http:// PATH
+            | ftp:// PATH
+            | file:/// PATH
+\end{Grammar}
+\end{quote}
+
+
+\end{quote}
+
+
+Proposal for implementation in the Heterogeneous Tool Set (\Hets):
+
+\begin{enumerate}
+\item 
+The global directory for the indirect links is accessed by a list of
+mirror sites that can be obtained from 
+\begin{quote}\texttt{www.cofi.info/Libraries}.\end{quote} 
+The
+mirror sites are copied from a central server (initially
+\url{cvs-agbkb.informatik.uni-bremen.de:/repository/CASL-lib}
+later based on the UniForm Workbench). 
+The central server can be accessed through an http interface. 
+
+\item
+The http interface provides access to versioned libraries,
+following the versioning scheme below.
+The http interface is
+used by \Hets (and both the http interface and \Hets should do some
+caching). For directly browsing through the libraries viewcvs should
+suffice. Setting up an Apache server in order to be able to use cvsweb
+is too much for the moment.
+\label{global-server}
+
+\item 
+Direct absolute URIs are taken as such. 
+It is unclear relative to what the direct relative
+URIs mentioned in the summary should be interpreted.
+
+Local files can be accessed via \texttt{file://path},
+but \texttt{path} must begin with a \texttt{/}
+(otherwise the first name in \texttt{apth} it is interpreted as a hostname).
+It is rather inconvenient that one is forced to specify
+always the full path.
+Hence the following proposal: with
+\begin{quote}\texttt{hetslib:path}\end{quote}
+it is possible to access local files relative to the value of \$HETS\_LIB.
+Note that \texttt{hetslib:path} is in principle a valid URI,
+although \texttt{hetslib} is not registered, of course.
+(Also allow servers as value of \$HETS\_LIB ?)
+
+\item 
+Versioning: should the location of a library be a directory
+containing all the versions (which means that library
+\texttt{name} in path \texttt{path} version \texttt{nnn} is accessed via \texttt{path/name/v\_nnn}), 
+or should the version be appended to the name of the library (which
+means that library \texttt{name} in path \texttt{path} version \texttt{nnn} is accessed via
+\texttt{path/name\_v\_nnn}) ? 
+A decision in favour of the former is taken in the summary, and
+indeed counting all the versions and development graphs, proof object, proof scripts
+etc.\ that shall be stored, this make sense.
+
+\item The versioning is realized in cvs with tags, one for each version
+(note that one cannot use cvs version numbers, because they are numbered
+consecutively, while \CASL version numbers are chosen by the user).
+The versioning scheme shall be supported by a shell script that in
+connection with cvs automatically generates all available
+versions, named by the above versioning scheme.
+This solution uses more disk space than a dynamic checkout
+of individual version via cgi scripts. However, the advantage
+is that the versioning scheme is simple, such that it also
+can be simulated by people who want to provide access to their
+libraries via direct links but who do not want to install cgi
+scripts or use cvs: they can just manually create the needed directories
+and files. (By constrast, using cgi scripts would require
+a different versioning scheme, with the file name and version
+number added as parameters to the URL, using, say, ?name and ?version.)
+A further advantage is that it is easy to store 
+development graphs, proof object, proof scripts
+together with the particular libray version they belong to.
+
+\item What happens if different versions of the same specification
+are imported (via different import paths)? At least, \Hets
+should issue a warning. But still the user could get confused
+by the fact that (s)he has to work with, say, two different
+copies of \texttt{Nat} and cannot interchange theorems and proofs
+between the two copies. Hence, an alternative might be to
+require global version numbers for each package of libraries.
+Here, a package is a collection of libraries needed for a specific
+project, or a standard package like the collection of libraries
+of basic datatypes.  \Hets should provide some means of
+specifying which libraries belong to a package.
+
+\item URNs are not needed: the syntax of URLs suffices, and moreover,
+URLs are directly understood by browsers and web servers.
+
+\item We should have a look at VSE to get feeling for a realistic system
+(however, VSE does not have version control).
+Currently, VSE needs Solaris 5 or SunOS 5.6. In Bremen, we only have Solaris 8 and 9.
+
+
+\end{enumerate}
+
+
+
+
+\end{document}
