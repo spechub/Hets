@@ -168,7 +168,6 @@ GEN-VAR-DECL    ::= VAR-DECL | TYPE-VAR-DECL
 VAR-DECL        ::= VAR ,..., VAR : TYPE
 
 TYPE-VAR-DECL   ::= TYPE-VAR , ... , TYPE-VAR: CLASS-NAME
-		  | TYPE-VAR , ... , TYPE-VAR: type
 		  | TYPE-VAR , ... , TYPE-VAR < TYPE
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -181,7 +180,8 @@ PROD-CLASS    ::= EXT-CLASS * ... * EXT-CLASS
 EXT-CLASS     ::= CLASS | CLASS + | CLASS -
 
 %% intersection class must be put in parenthesis
-CLASS         ::= type | CLASS-NAME | (CLASS , ... , CLASS)
+%% "Type" is a CLASS-NAME for the universe
+CLASS         ::= CLASS-NAME | (CLASS , ... , CLASS)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 		
