@@ -15,6 +15,8 @@ Portability :  portable
 {-
 todo:
 
+shorted warning about (non)intended maps
+
 remove identity subsort relations resulting from non-injective renaming
 (or add them to ALL signatures)
 
