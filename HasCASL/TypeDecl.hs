@@ -73,7 +73,30 @@ anaTypeItems ga gk inst l = do
 	      filter ( \ t -> case t of 
 		       Datatype _ -> True
 		       _ -> False) $ map item ul
-    mapAnM (anaTypeItem ga gk inst tys) ul
+    rl <- mapAnM (anaTypeItem ga gk inst tys) ul
+    addDataSen tys
+    return rl
+
+addDataSen :: [(Id, Type)] -> State Env ()
+addDataSen tys = do 
+    tm <- gets typeMap
+    let tis = map fst tys
+        ds = foldr ( \ i dl -> case Map.lookup i tm of 
+		     Nothing -> dl
+		     Just ti -> case typeDefn ti of
+		                DatatypeDefn k args alts -> 
+		                     DatatypeConstr i i k args alts : dl
+		                _ -> dl) [] tis
+	sen = NamedSen ("ga_" ++ showSepList (showString "_") showId tis "") 
+	      $ DatatypeSen ds
+    if null tys then return () else appendSentences [sen]
+
+
+-- | add sentences
+appendSentences :: [Named Sentence] -> State Env ()
+appendSentences fs =
+    do e <- get
+       put $ e {sentences = sentences e ++ fs}
 
 ana1TypeItem :: TypeItem -> State Env (Maybe TypeItem)
 ana1TypeItem (Datatype d) = 

@@ -45,3 +45,7 @@ notA : bool %(op)% = case (op a : bool) of
                          (op True : bool) -> (op False : bool) | 
                          (op False : bool) -> (op True : bool)
 true : Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+type bool (|-> bool) ::=
+                     True : -> __
+                     False : -> __ %(ga_bool)%

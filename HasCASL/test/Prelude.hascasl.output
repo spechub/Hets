@@ -182,6 +182,9 @@ tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
      (pred eq[_var_36] : forall s : Type . s * s)
        (var x : _var_36, var x : _var_36),
    op tt[_var_36] : forall s : Type . Pred s) %()%
+free type bool (|-> bool) ::=
+                          true : -> __
+                          false : -> __ %(ga_bool)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'

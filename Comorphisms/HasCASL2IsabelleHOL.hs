@@ -130,7 +130,7 @@ transVar = showIsa
 transSentence :: Env -> Le.Sentence -> IsaSign.Term
 transSentence e s = case s of
     Le.Formula t -> transTerm e t
-    DatatypeSen _ _ _ _ -> error "transSentence: data type"
+    DatatypeSen _ -> error "transSentence: data type"
     ProgEqSen _ _ _pe -> error "transSentence: program"
 
 transTerm :: Env -> As.Term -> IsaSign.Term

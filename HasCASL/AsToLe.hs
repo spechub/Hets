@@ -137,6 +137,7 @@ anaBasicItem _ (FreeDatatype l ps) =
     do al <- mapAnMaybe ana1Datatype l
        let tys = map (dataPatToType . item) al
        ul <- mapAnM (anaDatatype Free Plain tys) al
+       addDataSen tys
        return $ FreeDatatype ul ps
 anaBasicItem ga (GenItems l ps) = 
     do ul <- mapAnM (anaSigItems ga Generated) l
@@ -156,12 +157,6 @@ anaBasicItem ga (AxiomItems decls fs ps) =
 anaBasicItem ga (Internal l ps) = 
     do ul <- mapAnM (anaBasicItem ga) l
        return $ Internal ul ps
-
--- | add sentences
-appendSentences :: [Named Sentence] -> State Env ()
-appendSentences fs =
-    do e <- get
-       put $ e {sentences = sentences e ++ fs}
 
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems

@@ -14,6 +14,7 @@ Portability :  portable
 module ToHaskell.FromHasCASL where
 
 import Common.AS_Annotation
+import Common.Id
 
 import HasCASL.Le
 
@@ -31,15 +32,24 @@ mapSignature sign =
     let hs = translateAna sign
     in	Just(hatAna hs emptySign) 
 
-mapSentence :: Env -> Sentence -> Maybe(AHsDecl) 
-mapSentence _sign sen = 
-    case sen of 
-    DatatypeSen i _ args alts -> 
-	 let hsname = HsIdent $ translateIdWithType UpperId i in
-         Just $ toAHsDecl $ HsDataDecl (SrcLoc 0 0)
+mapSentence :: Named Sentence -> [Named AHsDecl] 
+mapSentence sen = case sentence sen of
+    DatatypeSen dt -> map translateDt dt 
+    _ -> []
+
+translateDt :: DatatypeDefn -> Named AHsDecl
+translateDt (DatatypeConstr i _ _ args alts) = 
+   	 let hsname = HsIdent $ translateIdWithType UpperId i in
+         NamedSen ("ga_" ++ showId i "") $
+         toAHsDecl $ HsDataDecl (SrcLoc 0 0)
 	               [] -- empty HsContext
 	               hsname
 		       (map getArg args) -- type arguments
 		       (map translateAltDefn alts) -- [HsConDecl] 
 		       [(UnQual $ HsIdent "Show")]
-    _ -> Nothing
+
+mapTheory :: (Env, [Named Sentence]) -> (ModuleInfo, [Named AHsDecl])
+mapTheory (sign, csens) =
+    let hs = translateAna sign
+	(mi, hsens) = hatAna hs emptySign
+	in (mi, hsens ++ concatMap mapSentence csens)

@@ -104,16 +104,20 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty
     printText0 ga (Just c) =  printText0 ga c
 
-instance PrettyPrint Sentence  where 
+instance PrettyPrint DatatypeDefn where 
+    printText0 ga (DatatypeConstr i1 i2 k args alts) =  
+	printGenKind k <> text typeS 
+		       <+> printText0 ga i1 <+> parens 
+			       (text mapsTo <+> printText0 ga i2)
+			       <+> (printList0 ga args 
+				       <+> text defnS $$ 
+					   vcat (map (printText0 ga) alts))
+		       
+instance PrettyPrint Sentence where 
     printText0 ga s = case s of
         Formula t -> printText0 ga t
-	DatatypeSen t k args alts -> printGenKind k <> text typeS 
-		       <+> printText0 ga t
-			       <+> printList0 ga args 
-				       <+> text defnS $$ 
-					   vcat (map (printText0 ga) alts)
+	DatatypeSen ls -> vcat (map (printText0 ga) ls)
         ProgEqSen _ _ pe -> text programS <+> printText0 ga pe
-
  
 instance PrettyPrint Env where
     printText0 ga (Env{classMap=cm, typeMap=tm, 

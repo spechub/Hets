@@ -63,14 +63,14 @@ mapSen :: Morphism -> Term -> Result Term
 mapSen m = let tm = typeIdMap m in 
        return . mapTerm (mapFunSym tm (funMap m), mapType tm)
 
-mapAlt :: Morphism -> AltDefn -> AltDefn
-mapAlt m c@(Construct _i _ts _p _sels) = c -- missing
+-- mapAlt :: Morphism -> AltDefn -> AltDefn
+-- mapAlt m c@(Construct _i _ts _p _sels) = c -- missing
+--      (Map.findWithDefault t t $ typeIdMap m) k args $ map (mapAlt m) alts
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = case s of 
    Formula t -> fmap Formula $ mapSen m t 
-   DatatypeSen t k args alts -> return $ DatatypeSen 
-           (Map.findWithDefault t t $ typeIdMap m) k args $ map (mapAlt m) alts
+   DatatypeSen td -> return $ DatatypeSen td
    ProgEqSen i sc pe ->
        let tm = typeIdMap m 
 	   fm = funMap m 

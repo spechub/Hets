@@ -27,7 +27,7 @@ import Haskell.HatParser
 import Haskell.Hatchet.MultiModuleBasics 
 import Haskell.Hatchet.AnnotatedHsSyn
 
-import qualified ToHaskell.FromHasCASL as H
+import ToHaskell.FromHasCASL
 
 -- | The identity of the comorphism
 data HasCASL2Haskell = HasCASL2Haskell deriving Show
@@ -49,8 +49,9 @@ instance Comorphism HasCASL2Haskell
     sourceSublogic _ = ()
     targetLogic _ = Haskell
     targetSublogic _ = ()
-    map_sign _ = H.mapSignature
+    map_sign _ = mapSignature
     --map_morphism _ morphism1 -> Maybe morphism2
-    map_sentence _ = H.mapSentence
+    map_sentence _ _ _ = Nothing
     --map_symbol :: cid -> symbol1 -> Set symbol2
+    map_theory _ = Just . mapTheory
 

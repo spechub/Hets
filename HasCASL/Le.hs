@@ -61,11 +61,11 @@ isTypeVarDefn t = case typeDefn t of
                   TypeVarDefn -> True
                   _           -> False
 
+data DatatypeDefn = DatatypeConstr TypeId TypeId GenKind [TypeArg] [AltDefn]
+		  deriving (Show, Eq, Ord)
+
 data Sentence = Formula Term
-              | DatatypeSen TypeId GenKind [TypeArg] [AltDefn]
---            | SupertypeSen TypeId Vars TypeScheme Term 
---            | OpAttrSen UninstOpId TypeScheme OpAttr
---            | OpDefnSen UninstOpId TypeScheme OpBrand Term
+              | DatatypeSen [DatatypeDefn]
               | ProgEqSen UninstOpId TypeScheme ProgEq
 	        deriving (Show, Eq, Ord)
  
