@@ -167,10 +167,6 @@ comp_list_helper x (h:t) = comp_list_helper (sublogics_max x h) t
 comp_list :: [CASL_Sublogics] -> CASL_Sublogics
 comp_list l = comp_list_helper bottom l
 
-and_list :: [Bool] -> Bool
-and_list []    = True
-and_list (h:t) = h && (and_list t)
-
 mb :: (a -> CASL_Sublogics) -> Maybe a -> CASL_Sublogics
 mb f Nothing = bottom
 mb f (Just x) = f x
@@ -215,7 +211,7 @@ mapPos p f l = let
 
 is_atomic_f :: FORMULA -> Bool
 is_atomic_f (Quantification q _ f _) = (is_atomic_q q) && (is_atomic_f f)
-is_atomic_f (Conjunction l _) = and_list ((map is_atomic_f) l)
+is_atomic_f (Conjunction l _) = and ((map is_atomic_f) l)
 is_atomic_f (True_atom _) = True
 is_atomic_f (Predication _ _ _) = True
 is_atomic_f (Definedness _ _) = True
@@ -232,7 +228,7 @@ is_horn_f (Implication f g _) = (is_horn_p_conj f) && (is_horn_a g)
 is_horn_f _ = False
 
 is_horn_p_conj :: FORMULA -> Bool
-is_horn_p_conj (Conjunction l _) = and_list ((map is_horn_p_a) l)
+is_horn_p_conj (Conjunction l _) = and ((map is_horn_p_a) l)
 is_horn_p_conj _ = False
 
 is_horn_a :: FORMULA -> Bool
@@ -266,13 +262,13 @@ is_ghorn_f (Membership _ _ _) = True
 is_ghorn_f _ = False
 
 is_ghorn_c_conj :: [FORMULA] -> Bool
-is_ghorn_c_conj l = and_list ((map is_ghorn_conc) l)
+is_ghorn_c_conj l = and ((map is_ghorn_conc) l)
 
 is_ghorn_f_conj :: [FORMULA] -> Bool
-is_ghorn_f_conj l = and_list ((map is_ghorn_f) l)
+is_ghorn_f_conj l = and ((map is_ghorn_f) l)
 
 is_ghorn_p_conj :: [FORMULA] -> Bool
-is_ghorn_p_conj l = and_list ((map is_ghorn_prem) l)
+is_ghorn_p_conj l = and ((map is_ghorn_prem) l)
 
 is_ghorn_prem :: FORMULA -> Bool
 is_ghorn_prem (Conjunction l _) = is_ghorn_p_conj l
@@ -298,7 +294,7 @@ get_logic_sd f = if (is_horn_p_a f) then need_horn else
 
 is_Atomic_f :: Formula -> Bool
 is_Atomic_f (Quantified q _ f _) = (is_Atomic_q q) && (is_Atomic_f f)
-is_Atomic_f (Connect AndOp l _) = and_list ((map is_Atomic_f) l)
+is_Atomic_f (Connect AndOp l _) = and ((map is_Atomic_f) l)
 is_Atomic_f (TrueAtom _) = True
 is_Atomic_f (PredAppl _ _ _ _ _) = True
 is_Atomic_f (TermTest ExEqualOp _ _) = True
@@ -318,7 +314,7 @@ is_Horn_f (AnnFormula f) = is_Horn_f (strip_anno f)
 is_Horn_f _ = False
 
 is_Horn_p_conj :: Formula -> Bool
-is_Horn_p_conj (Connect AndOp l _) = and_list ((map is_Horn_p_a) l)
+is_Horn_p_conj (Connect AndOp l _) = and ((map is_Horn_p_a) l)
 is_Horn_p_conj (AnnFormula f) = is_Horn_p_conj (strip_anno f)
 is_Horn_p_conj _ = False
 
@@ -353,13 +349,13 @@ is_Ghorn_f (AnnFormula f) = is_Ghorn_f (strip_anno f)
 is_Ghorn_f _ = False
 
 is_Ghorn_c_conj :: [Formula] -> Bool
-is_Ghorn_c_conj l = and_list ((map is_Ghorn_conc) l)
+is_Ghorn_c_conj l = and ((map is_Ghorn_conc) l)
 
 is_Ghorn_f_conj :: [Formula] -> Bool
-is_Ghorn_f_conj l = and_list ((map is_Ghorn_f) l)
+is_Ghorn_f_conj l = and ((map is_Ghorn_f) l)
 
 is_Ghorn_p_conj :: [Formula] -> Bool
-is_Ghorn_p_conj l = and_list ((map is_Ghorn_prem) l)
+is_Ghorn_p_conj l = and ((map is_Ghorn_prem) l)
 
 is_Ghorn_prem :: Formula -> Bool
 is_Ghorn_prem (Connect AndOp l _) = is_Ghorn_p_conj l
