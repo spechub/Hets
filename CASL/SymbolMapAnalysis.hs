@@ -28,8 +28,6 @@ introduce symbol functor (additionally to signature symbol functor)
 
 module CASL.SymbolMapAnalysis where
 
-import Debug.Trace
-
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
@@ -139,6 +137,7 @@ inducedFromMorphism extEm rmap sigma = do
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold 
               (\s m -> do s' <- sortFun s
+                          if s' == s then m else do
                           m1 <- m
                           return $ Map.insert s s' m1) 
               (return Map.empty) sortsSigma
@@ -186,7 +185,7 @@ inducedFromMorphism extEm rmap sigma = do
     rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
                [ASymbol $ idToSortSymbol s, AnID s, AKindedId SortKind s]
 
-  -- to a Fun_map, add evering resulting from mapping (id,ots) according to rmap
+  -- to a Fun_map, add everything resulting from mapping (id, ots) according to rmap
   opFun :: Sort_map -> Id -> Set.Set OpType -> Result Fun_map -> Result Fun_map
   opFun sort_Map ident ots m = 
     -- first consider all directly mapped profiles
@@ -206,7 +205,7 @@ inducedFromMorphism extEm rmap sigma = do
        (Nothing, Just rsy) -> 
           Set.fold (insertmapOpSym ident rsy) m1 ots1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedOpSym ident) m1 ots1
+       (Nothing,Nothing) -> m1
     where
     -- try to map an operation symbol directly
     -- collect all opTypes that cannot be mapped directly
@@ -241,11 +240,8 @@ inducedFromMorphism extEm rmap sigma = do
     insertmapOpSym ident rsy ot m = do  
       m1 <- m        
       (ident',kind') <- mapOpSym ident ot rsy
-      return (Map.insert (ident,ot) (ident',kind') m1)
+      return (Map.insert (ident,ot{opKind = Partial}) (ident',kind') m1)
     -- insert mapping of op symbol (ident,ot) to itself into m
-    unchangedOpSym ident ot m = do
-      m1 <- m
-      return (Map.insert (ident,ot) (ident,opKind ot) m1)
   -- map the ops in the source signature
   mapOps sort_Map op_Map ident ots m = 
     Set.fold mapOp m ots 
@@ -274,7 +270,7 @@ inducedFromMorphism extEm rmap sigma = do
        (Nothing, Just rsy) -> 
           Set.fold (insertmapPredSym ident rsy) m1 pts1
        -- Anything not mapped explicitly is left unchanged
-       (Nothing,Nothing) -> Set.fold (unchangedPredSym ident) m1 pts1
+       (Nothing,Nothing) -> m1
     where
     -- try to map a predicate symbol directly
     -- collect all predTypes that cannot be mapped directly
@@ -312,9 +308,6 @@ inducedFromMorphism extEm rmap sigma = do
       ident' <- mapPredSym ident pt rsy
       return (Map.insert (ident,pt) ident' m1)
     -- insert mapping of pred symbol (ident,pt) to itself into m
-    unchangedPredSym ident pt m = do
-      m1 <- m
-      return (Map.insert (ident,pt) ident m1)
   -- map the preds in the source signature
   mapPreds sort_Map pred_Map ident pts m = 
     Set.fold mapPred m pts 
