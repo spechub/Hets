@@ -52,7 +52,7 @@ instance Show Id where
 	    front = concat (map show toks)
 	    rest = concat (map show places)
 	    c = last front
-	    sep = if (isAlpha c || isDigit c || c /= '\'') then "" else " "
+	    sep = if (isAlpha c || isDigit c || c == '\'') then "" else " "
             comps = if null is then "" else sep ++ (show is)	  
 	in
         showString (front ++ comps ++ rest) 
