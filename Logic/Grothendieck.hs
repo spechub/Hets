@@ -43,7 +43,7 @@ import Logic.Comorphism
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
-import Common.PPUtils (fsep_latex, comma_latex)
+import Common.PPUtils 
 import Common.Result
 import Common.Id
 import Common.Named
@@ -171,7 +171,7 @@ instance PrettyPrint G_symb_items_list where
         fsep $ punctuate comma $ map (printText0 ga) l
 
     printLatex0 ga (G_symb_items_list _ l) = 
-        fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
+        commaT_latex ga l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
@@ -194,7 +194,7 @@ instance PrettyPrint G_symb_map_items_list where
         fsep $ punctuate comma $ map (printText0 ga) l
 
     printLatex0 ga (G_symb_map_items_list _ l) = 
-        fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
+        commaT_latex ga l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
