@@ -19,6 +19,7 @@ import Print_AS_Basic()
 import Parse_AS_Basic
 import SortItem
 import OpItem
+import GlobalAnnotationsFunctions
 
 main = do {l <- getArgs;
 	   if length l < 2 then print 
@@ -56,5 +57,5 @@ parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 }
    
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
-		     Right x  -> renderText (printText0 x) 
+		     Right x  -> renderText (printText0 emptyGlobalAnnos x) 
 
