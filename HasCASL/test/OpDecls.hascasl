@@ -28,3 +28,15 @@ op incr : s -> s
 op i1 : s = incr a
 op i2 : s = incr (a)
 op i3 : s = (incr) (a)
+
+op __ <= __ <= __ : s * s * s -> s
+
+op l1 : s = a<=b<=c
+op l2 : s * s * s -> s = __ <= __ <= __
+op l3 : s = __ <= __ <= __ (a, b, c)
+op l4 : s = (__ <= __ <= __) (a, b, c)
+op l5 : s * s * s = (a, b, c)
+
+
+
+

@@ -186,6 +186,18 @@ mkApplTokState i r =
            sc = simpleTypeScheme t2appl
        return $ mkPState i r sc t2appl $ getTokenList termStr r
 
+mkTupleTokState :: Index -> Id -> State Int PState 
+mkTupleTokState i r = 
+    do tv1 <- freshVar
+       tv2 <- freshVar
+       let ty1 = TypeName tv1 star 1
+	   ty2 = TypeName tv2 star 1
+	   tuple = ProductType [ty1, ty2] []
+	   tappl = FunType tuple PFunArr tuple []
+           sc = simpleTypeScheme tappl
+       return $ mkPState i r sc tappl $ getTokenList termStr r
+
+
 mkParenTokState :: Index -> Id -> State Int PState 
 mkParenTokState i r = 
     do tv1 <- freshVar
@@ -201,15 +213,15 @@ initialState g ids i =
        l2 <- mapM (mkPlainApplState i) $ filter (isMixfix . fst) ids
        a  <- mkApplTokState i applId
        p  <- mkParenTokState i parenId
+       t  <- mkTupleTokState i tupleId
        l3 <- mapM (mkTokState i)
-              [tupleId,
-               unitId,
+              [unitId,
 	       colonId,
 	       asId,
 	       inId,
 	       varId,
 	       opId]
-       return (a:p:ls ++ l1 ++ l2 ++ l3)
+       return (a:p:t:ls ++ l1 ++ l2 ++ l3)
 
 lookUp :: (Ord a) => Map.Map a [b] -> a -> [b]
 lookUp ce k = Map.findWithDefault [] k ce
@@ -249,16 +261,27 @@ scan _ trm pm =
 	  TermToken x -> x 
 	  _ -> opTok
       incI = incrIndex i
+      (tvar, c2) = runState freshVar $ varCount pm
   in
     pm { lastIndex = incI
+       , varCount = c2
        , parseMap = Map.insert incI ( 
        foldr (\ p l ->
 	      let ts = restRule p
 	          a = ruleArgs p in
 	      if null ts || head ts /= t then l 
 	      else if t == commaTok then 
-	      -- list elements separator
-	             p { restRule = termTok : commaTok : tail ts }
+	      let newTy = case ruleType p of 
+	                  FunType (ProductType tys ps) 
+	                      PFunArr (ProductType _ _) _ -> 
+	                      let newTuple = ProductType 
+	                           (tys++[TypeName tvar star 1]) ps in
+	                      FunType newTuple PFunArr newTuple []
+	                  same -> same 
+              in  
+	      -- list elements separator 
+	             p { restRule = termTok : commaTok : tail ts
+		       , ruleType = newTy }
 	             : p { restRule = termTok : tail ts } : l
               else if t == varTok || t == opTok || t == predTok then
                      p { restRule = tail ts, ruleArgs = [trm] } : l 
@@ -397,15 +420,17 @@ filterByType cm argState opState =
 		(FunType t1 _ t2 _) -> 
 		    case expandType tm t1 of 
 		    ProductType ts _ -> 
-			let (prevTerms, restArgs) = 
-				if null prevArgs then ([], []) 
-				else case head prevArgs of
-				MixfixTerm trms -> (trms, tail prevArgs)
-				_ -> ([], prevArgs) in
-			mkTupleTerm tm ts argState opState 
+			case expandType tm $ ruleType argState of
+			ProductType _ _ -> mkTupleTerm tm [t1] argState 
+					   opState [] prevArgs t2
+			_ -> let (prevTerms, restArgs) = 
+				     if null prevArgs then ([], []) 
+					else case head prevArgs of
+				     MixfixTerm trms -> (trms, tail prevArgs)
+				     _ -> ([], prevArgs) in
+				 mkTupleTerm tm ts argState opState 
 				    prevTerms restArgs t2
-		    expType -> mkTupleTerm tm [expType] argState opState 
-			       [] prevArgs t2
+		    _ -> mkTupleTerm tm [t1] argState opState [] prevArgs t2
 		TypeName _ _ v -> if v == 0 then Nothing
 				  else Just $ addArgState argState opState
 		_ -> Nothing
@@ -509,9 +534,9 @@ checkResultType t pm =
 		 $ lookUp m i) m }
 
 filterByResultType :: TypeMap -> Type -> PState -> Maybe PState
-filterByResultType tm t p = 
+filterByResultType tm ty p = 
     do let rt = ruleType p 
-       s <- maybeResult $ unify tm t rt
+       s <- maybeResult $ unify tm ty rt
        return p { ruleType = subst s rt } 
 
 resolve :: GlobalAnnos -> [(Id, OpInfo)] -> TypeMap 
