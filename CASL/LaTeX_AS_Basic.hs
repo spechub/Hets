@@ -314,6 +314,10 @@ instance PrintLaTeX FORMULA where
 	printLatex0 ga f <\+> hc_sty_axiom "\\in" <\+> printLatex0 ga g
     printLatex0 ga (Mixfix_formula t) = printLatex0 ga t
     printLatex0 _ (Unparsed_formula s _) = text s 
+    printLatex0 ga (Sort_gen_ax sorts ops) = 
+	hc_sty_id generatedS <> braces_latex
+		      (hc_sty_id sortS <\+> commaT_latex ga sorts 
+		       <> semi_latex <\+> semiT_latex ga ops) 
 
 instance PrintLaTeX QUANTIFIER where
     printLatex0 _ (Universal) = hc_sty_axiom "\\forall"
@@ -340,7 +344,7 @@ instance PrintLaTeX TERM where
 		       Qual_op_name i _ _ -> (i,True)
 	    o' = printLatex0 ga o
 	in if isQual then 
-	     print_prefix_appl_latex ga o' l
+	     print_prefix_appl_latex ga (parens_latex o') l
 	   else 
 	     if isLiteral ga o_id l then
 	       {-trace ("print_Application: "++show ap)-}
@@ -374,9 +378,8 @@ instance PrintLaTeX TERM where
 instance PrintLaTeX OP_SYMB where
     printLatex0 ga (Op_name o) = printLatex0 ga o
     printLatex0 ga (Qual_op_name o t _) = 
-	parens_latex
-	  (hc_sty_id opS
-	   <\+> printLatex0 ga o <\+> colon_latex <> printLatex0 ga t)
+	  hc_sty_id opS
+	   <\+> printLatex0 ga o <\+> colon_latex <> printLatex0 ga t
 
 instance PrintLaTeX SYMB_ITEMS where
     printLatex0 ga (Symb_items k l _) = 

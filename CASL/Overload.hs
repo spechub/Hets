@@ -129,16 +129,8 @@ minExpFORMULA sign formula
                 
             t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
-        -- Unparsed FORMULA    -> Error in Parser, Bail out!
-        Mixfix_formula term             -> error
-            $ "Parser Error: Unparsed `Mixfix_formula' received: "
-            ++ (show term)
-        Unparsed_formula string _       -> error
-            $ "Parser Error: Unparsed `Unparsed_formula' received: "
-            ++ (show string)
-        -- "Other" FORMULA     -> Unknown Error, Bail out!
-        _                               -> error
-            $ "Internal Error: Unknown type of FORMULA received: "
+	Sort_gen_ax _ _ -> return formula
+	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
     where
         is_unambiguous          :: [[TERM]] -> [Id.Pos] -> Result TERM
@@ -368,7 +360,7 @@ minExpTerm_sorted sign term sort pos = do
     Minimal Expansions of a Function Application Term
 -----------------------------------------------------------}
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [Id.Pos] -> Result [[TERM]]
-minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] pos = 
+minExpTerm_op sign (Op_name (Id.Id [tok] [] _)) [] _ = 
   minExpTerm_simple sign tok
 minExpTerm_op sign op terms pos = minExpTerm_op1 sign op terms pos
 
@@ -595,7 +587,7 @@ common_subsorts sign = let
     Set of SuperSORTs common to all given SORTs
 -----------------------------------------------------------}
 common_supersorts :: Sign -> [SORT] -> Set.Set SORT
-common_supersorts sign [] = Set.empty
+common_supersorts _ [] = Set.empty
 common_supersorts sign srts = let
     get_supersorts = flip supersortsOf sign
     in foldr1 Set.intersection $ map get_supersorts $ srts

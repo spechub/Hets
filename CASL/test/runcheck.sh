@@ -25,3 +25,4 @@ done
 
 runchecker analysis BasicSpec.casl BasicSpec.analysis.output
 runchecker signature BasicSpec.casl BasicSpec.signature.output
+runchecker sentences BasicSpec.casl BasicSpec.sentences.output

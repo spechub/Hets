@@ -158,6 +158,7 @@ data FORMULA = Quantification QUANTIFIER [VAR_DECL] FORMULA [Pos]
 	     -- a formula left original for mixfix analysis
 	     | Unparsed_formula String [Pos]
 	       -- pos: first Char in String
+	     | Sort_gen_ax [SORT] [OP_SYMB]  -- qualified OP_SYMB
 	       deriving (Show,Eq,Ord)
 
 data QUANTIFIER = Universal | Existential | Unique_existential

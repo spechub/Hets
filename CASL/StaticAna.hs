@@ -24,7 +24,6 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -117,14 +116,17 @@ ana_BASIC_ITEMS :: GlobalAnnos -> BASIC_ITEMS -> State Sign BASIC_ITEMS
 ana_BASIC_ITEMS ga bi = 
     case bi of 
     Sig_items sis -> fmap Sig_items $ ana_SIG_ITEMS ga Loose sis 
-    Free_datatype al _ -> 
+    Free_datatype al ps -> 
 	do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
            mapAnM (ana_DATATYPE_DECL Free) al 
+	   toSortGenAx ps $ getDataGenSig al
            closeSubsortRel 
 	   return bi
     Sort_gen al ps ->
 	do ul <- mapAnM (ana_SIG_ITEMS ga Generated) al 
+	   let gs = map (getGenSig . item) ul
+	   toSortGenAx ps (Set.unions $ map fst gs, Set.unions $ map snd gs)
 	   return $ Sort_gen ul ps
     Var_items il _ -> 
 	do mapM_ addVars il
@@ -163,6 +165,18 @@ ana_BASIC_ITEMS ga bi =
            addSentences sens			    
            return $ Axiom_items ufs ps
 
+toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State Sign ()
+toSortGenAx ps (sorts, ops) = do
+    let s = Set.toList sorts
+        f =  Sort_gen_ax s $
+			   map ( \ c ->  Qual_op_name (compId c)  
+				 (toOP_TYPE $ compType c) []) $ Set.toList ops
+    if null s then 
+       addDiags[Diag Error "missing generated sort" (headPos ps)]
+       else return ()
+    addSentences [NamedSen ("ga_generated_" ++ 
+ 			 showSepList (showString "_") showId s "") f]
+
 ana_SIG_ITEMS :: GlobalAnnos -> GenKind -> SIG_ITEMS -> State Sign SIG_ITEMS
 ana_SIG_ITEMS ga gk si = 
     case si of 
@@ -182,6 +196,41 @@ ana_SIG_ITEMS ga gk si =
 	   mapAnM (ana_DATATYPE_DECL gk) al 
            closeSubsortRel
 	   return si
+
+getGenSig :: SIG_ITEMS -> (Set.Set Id, Set.Set Component)
+getGenSig si = case si of 
+    Sort_items al _ -> (Set.unions (map (getSorts . item) al), Set.empty)
+    Op_items al _ -> (Set.empty, Set.unions (map (getOps . item) al))
+    Pred_items _ _ -> (Set.empty, Set.empty)
+    Datatype_items dl _ -> getDataGenSig dl
+
+getDataGenSig :: [Annoted DATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
+getDataGenSig dl = 
+    let alts = map (( \ (Datatype_decl s al _) -> (s, al)) . item) dl
+	sorts = map fst alts
+	cs = concatMap ( \ (s, al) -> map (( \ a -> 
+	      let (i, ty, _) = getConsType s a
+	      in Component i ty)) 
+		       $ filter ( \ a ->
+				  case a of 
+				  Subsorts _ _ -> False
+				  _ -> True)
+		       $ map item al) alts
+	in (Set.fromList sorts, Set.fromList cs)
+
+getSorts :: SORT_ITEM -> Set.Set Id
+getSorts si = 
+    case si of 
+    Sort_decl il _ -> Set.fromList il
+    Subsort_decl il i _ -> Set.fromList (i:il)
+    Subsort_defn sub _ _ _ _ -> Set.single sub
+    Iso_decl il _ -> Set.fromList il
+
+getOps :: OP_ITEM -> Set.Set Component
+getOps oi = case oi of 
+    Op_decl is ty _ _ -> 
+	Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
+    Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
 
 ana_SORT_ITEM :: GlobalAnnos -> SORT_ITEM -> State Sign SORT_ITEM
 ana_SORT_ITEM ga si = 
@@ -239,17 +288,18 @@ ana_OP_ITEM ga oi =
 	            Nothing -> Op_decl [i] ty [] ps
 		    Just t -> Op_defn i par at { item = t } ps
     where 
-    headToType :: OP_HEAD -> OP_TYPE
-    headToType (Total_op_head args r ps) = 
-	Total_op_type (sortsOfArgs args) r ps
-    headToType (Partial_op_head args r ps) = 
-	Partial_op_type (sortsOfArgs args) r ps
     headToVars :: OP_HEAD -> [VAR]
     headToVars h = 
 	let as = case h of 
 		 Total_op_head args _ _ -> args
 		 Partial_op_head args _ _ -> args
 	    in concatMap ( \ (Arg_decl v _ _) -> v) as 
+
+headToType :: OP_HEAD -> OP_TYPE
+headToType (Total_op_head args r ps) = 
+	Total_op_type (sortsOfArgs args) r ps
+headToType (Partial_op_head args r ps) = 
+	Partial_op_type (sortsOfArgs args) r ps
 
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
@@ -316,24 +366,33 @@ instance PrettyPrint Component where
 instance PosItem Component where
     get_pos = Just . posOfId . compId
 
--- full function type of constructor (result sort is the data type)
-data Alternative = Construct Id OpType [Component]
-		   deriving (Show, Eq) 
-
-ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Sign ()
+-- | return list of constructors 
+ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State Sign [Component]
 ana_DATATYPE_DECL _gk (Datatype_decl s al _) = 
 -- GenKind currently unused 
     do ul <- mapM (ana_ALTERNATIVE s . item) al
        let constr = catMaybes ul
+           cs = map fst constr		    
        if null constr then return ()
-	  else do addDiags $ checkUniqueness $ map fst constr
+	  else do addDiags $ checkUniqueness cs
 		  let totalSels = Set.unions $ map snd constr
 		      wrongConstr = filter ((totalSels /=) . snd) constr
 		  addDiags $ map ( \ (c, _) -> mkDiag Error 
 		      ("total selectors '" ++ showSepList (showString ",")
 		       showPretty (Set.toList totalSels) 
 		       "'\n\tmust appear in alternative") c) wrongConstr
+       return cs
 
+
+getConsType :: Id -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
+getConsType s c = 
+    let (part, i, il) = case c of 
+			Subsorts _ _ ->  error "getConsType"
+			Total_construct a l _ -> (Total, a, l)
+			Partial_construct a l _ -> (Partial, a, l)
+	in (i, OpType part (concatMap compSort il) s, il)
+
+-- | return the constructor and the set of total selectors 
 ana_ALTERNATIVE :: SORT -> ALTERNATIVE 
 		-> State Sign (Maybe (Component, Set.Set Component))
 ana_ALTERNATIVE s c = 
@@ -341,20 +400,17 @@ ana_ALTERNATIVE s c =
     Subsorts ss _ ->
 	do mapM_ (addSubsort s) ss
 	   return Nothing
-    _ -> do let (part, i, il) = case c of 
-			     Total_construct a l _ -> (Total, a, l)
-			     Partial_construct a l _ -> (Partial, a, l)
-			     _ -> error "ana_ALTERNATIVE"
-		ty = OpType part (concatMap compSort il) s
+    _ -> do let (i, ty, il) = getConsType s c
 	    addOp ty i
 	    ul <- mapM (ana_COMPONENTS s) il
             let ts = concatMap fst ul
             addDiags $ checkUniqueness (ts ++ concatMap snd ul)
 	    return $ Just (Component i ty, Set.fromList ts) 
-    where compSort :: COMPONENTS -> [SORT]
-	  compSort (Total_select l cs _) = map (const cs) l
-	  compSort (Partial_select l cs _) = map (const cs) l
-	  compSort (Sort cs) = [cs]
+
+compSort :: COMPONENTS -> [SORT]
+compSort (Total_select l cs _) = map (const cs) l
+compSort (Partial_select l cs _) = map (const cs) l
+compSort (Sort cs) = [cs]
  
 ana_COMPONENTS :: SORT -> COMPONENTS -> State Sign ([Component], [Component])
 ana_COMPONENTS s c = 

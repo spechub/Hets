@@ -16,6 +16,7 @@ module CASL.RunStaticAna where
 import CASL.StaticAna
 import CASL.Sign
 import Common.AnnoState
+import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Lib.State
@@ -43,3 +44,15 @@ getSign :: GlobalAnnos -> AParser (Result Sign)
 getSign ga = 
     do b <- basicSpec
        return $ localAna ga b
+
+props :: GlobalAnnos -> BASIC_SPEC -> Result [Named FORMULA]
+props ga bs = 
+    let Result ds (Just (_newBs, _difSig, _accSig, sents)) = 
+	    basicAnalysis (bs, emptySign, ga)
+	es = filter ((<= Error)  . diagKind) ds
+	in Result es $ Just sents
+
+getProps :: GlobalAnnos -> AParser (Result [Named FORMULA])
+getProps ga = 
+    do b <- basicSpec
+       return $ props ga b

@@ -1,0 +1,666 @@
+[ (op __||__ : a * a -> a)((op __||__ : a * a -> a)(b : a,
+						    b : a) : a,
+			   b : a) : a =
+      b : a %()%,
+  forall n:Nat; c:Char
+      . def (op chr : Nat ->? Char)(n : Nat) : Char <=>
+	    (pred __<=__ : Int * Int)(n : Nat,
+				      (op __@@__ : Nat * Nat -> Nat)(2 : Nat,
+								     (op __@@__ : Nat *
+										  Nat -> Nat)(5 : Nat,
+											      5 : Nat) : Nat) : Nat) %(chr_dom)%,
+  forall n:Nat; c:Char
+      . (op chr : Nat ->? Char)((op ord : Char -> Nat)(c : Char) : Nat) : Char =
+	    c : Char %(chr_def)%,
+  forall n:Nat; c:Char
+      . (op ord : Char -> Nat)((op chr : Nat ->? Char)(n : Nat) : Char) : Nat =
+	    n : Nat if
+	    (pred __<=__ : Int * Int)(n : Nat,
+				      (op __@@__ : Nat * Nat -> Nat)(2 : Nat,
+								     (op __@@__ : Nat *
+										  Nat -> Nat)(5 : Nat,
+											      5 : Nat) : Nat) : Nat) %(ord_def)%,
+  forall x, y, z:Boolean
+      . (op Not__ : Boolean -> Boolean)(False : Boolean) : Boolean =
+	    True : Boolean %(Not_False)%,
+  forall x, y, z:Boolean
+      . (op Not__ : Boolean -> Boolean)(True : Boolean) : Boolean =
+	    False : Boolean %(Not_True)%,
+  forall x, y, z:Boolean
+      . (op __And__ : Boolean * Boolean -> Boolean)(False : Boolean,
+						    False : Boolean) : Boolean =
+	    False : Boolean %(And_def1)%,
+  forall x, y, z:Boolean
+      . (op __And__ : Boolean * Boolean -> Boolean)(False : Boolean,
+						    True : Boolean) : Boolean =
+	    False : Boolean %(And_def2)%,
+  forall x, y, z:Boolean
+      . (op __And__ : Boolean * Boolean -> Boolean)(True : Boolean,
+						    False : Boolean) : Boolean =
+	    False : Boolean %(And_def3)%,
+  forall x, y, z:Boolean
+      . (op __And__ : Boolean * Boolean -> Boolean)(True : Boolean,
+						    True : Boolean) : Boolean =
+	    True : Boolean %(And_def4)%,
+  forall x, y, z:Boolean
+      . (op __Or__ : Boolean * Boolean -> Boolean)(x : Boolean,
+						   y : Boolean) : Boolean =
+	    (op Not__ : Boolean -> Boolean)((op __And__ : Boolean *
+							  Boolean -> Boolean)((op Not__ : Boolean -> Boolean)(x : Boolean) : Boolean,
+									      (op Not__ : Boolean -> Boolean)(y : Boolean) : Boolean) : Boolean) : Boolean %(Or_def)%,
+  generated{sort Boolean; op False : Boolean;
+			  op True : Boolean} %(ga_generated_Boolean)%,
+  true %()%,
+  forall x:s
+      . not (pred p : ())
+	/\ not (pred q : s)(x : s)
+	/\ (pred q : s)(x : s) <=>
+	    exists x:s
+		. not (pred p : ())
+		  \/ not (pred q : s)(x : s)
+		  \/ (pred q : s)(x : s) <=>
+		      exists! x:s
+			  . not (pred p : ())
+			    /\ not (pred q : s)(x : s)
+			    /\ (pred q : s)(x : s) %()%,
+  forall x:s . def (op f : s ->? s)(x : s) : s %()%,
+  forall x:s
+      . (op f : s ->? s)(x : s) : s =e= (op g : s -> t)(x : s) : t %()%,
+  forall x:s
+      . (op f : s ->? s)(x : s) : s = (op g : s -> t)(x : s) : t %()%,
+  forall x:s . r1 : t in s %()%,
+  forall x:s . def (op g : s -> t)(x : s) : t : t %()%,
+  forall x:s . def (op g : s -> t)(x : s) : t : s %()%,
+  forall x:s . def (op f : s ->? s)(x : s) : s %()%,
+  forall x:s . def (op g : s -> t)(x : s) : t %()%,
+  forall x:s . (pred p : ()) %()%,
+  forall x:s . (pred q : s)(x : s) %()%,
+  forall x:s
+      . def (op __+__ : s * s -> s)((op __*__ : s *
+						s -> s)((op __*__ : s * s -> s)(x : s, y : s) : s,
+							z : s) : s,
+				    (op __*__ : s * s -> s)((op __*__ : s * s -> s)(z : s,
+										    y : s) : s,
+							    x : s) : s) : s %()%,
+  forall x:s . def (op {} : s) : s %()%,
+  forall x:s . def (op {__} : s -> s)(x : s) : s %()%, true %()%,
+  not (pred p : ())
+  /\ not (pred q : s)(x : s)
+  /\ (pred q : s)(x : s) %()%,
+  not (pred p : ())
+  \/ not (pred q : s)(x : s)
+  \/ (pred q : s)(x : s) %()%,
+  not (pred p : ())
+  /\ not (pred q : s)(x : s)
+  /\ (pred q : s)(x : s) =>
+      not (pred p : ())
+      \/ not (pred q : s)(x : s)
+      \/ (pred q : s)(x : s) =>
+	  not (pred p : ())
+	  /\ not (pred q : s)(x : s)
+	  /\ (pred q : s)(x : s) %()%,
+  not (pred p : ())
+  /\ not (pred q : s)(x : s)
+  /\ (pred q : s)(x : s) if
+      not (pred p : ())
+      \/ not (pred q : s)(x : s)
+      \/ (pred q : s)(x : s) if
+      not (pred p : ())
+      /\ not (pred q : s)(x : s)
+      /\ (pred q : s)(x : s) %()%,
+  false %()%,
+  generated{sort nat; op 0 : nat;
+		      op succ : nat -> nat} %(ga_generated_nat)%,
+  generated{sort Set; op Add : Data1 * Set -> Set;
+		      op Mt : Set} %(ga_generated_Set)%,
+  generated{sort Set; op Add : Data1 * Set -> Set;
+		      op Mt : Set} %(ga_generated_Set)%,
+  generated{sort List; op Cons : Data1 * List -> List;
+		       op Nil : List} %(ga_generated_List)%,
+  def (op __@@__ : Nat * Nat -> Nat)(1 : Nat, 2 : Nat) : Nat %()%,
+  def <error> %()%, def <error> %()%, def <error> %()%,
+  def <error> %()%, def <error> %()%, def <error> %()%,
+  true %(The true formula)%, true %(and this)%,
+  a : Data1 = a : Data1 %(f1)%, a : Data1 = a : Data1 %(f1)%,
+  a : Data1 = a : Data1 %(a1)%, a : Data1 = a : Data1 %(a2)%,
+  generated{sort s, t; op a : b; op c : b; op c : s; op c : a ->? s;
+		       op c : a * t * t * t -> s} %(ga_generated_s_t)%,
+  generated{sort s; op c : s; op c : a ->? s;
+		    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  generated{sort s; op c : s; op c : a ->? s;
+		    op c : a * t * t * t -> s} %(ga_generated_s)%,
+  a : Data1 = a : Data1 %()%, a : Data1 = a : Data1 %()%,
+  a : Data1 = a : Data1 %()%, a : Data1 = a : Data1 %()%,
+  forall a:t; a, b:s . a : Data1 = a : Data1 %()%,
+  forall a:t; a, b:s . a : Data1 = a : Data1 %()%,
+  a : Data1 = a : Data1 %()%, a : Data1 = a : Data1 %()%,
+  forall i, j:Int; p, q:Pos
+      . (op __/__ : Rat * Rat ->? Rat)((op __/__ : Int *
+						   Pos -> Rat)(i : Int, p : Pos) : Rat,
+				       (op __/__ : Int * Pos -> Rat)(j : Int,
+								     q : Pos) : Rat) : Rat =
+	    (op __*__ : Rat * Rat -> Rat)((op __/__ : Int *
+						      Pos -> Rat)(i : Int, p : Pos) : Rat,
+					  (op __/__ : Rat * Rat ->? Rat)(q : Pos,
+									 j : Int) : Rat) : Rat if
+	    not j : Int = 0 : Int %(Rat_divide_rule)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (pred __<=__ : Rat * Rat)((op __/__ : Int * Pos -> Rat)(i : Int,
+								p : Pos) : Rat,
+				  (op __/__ : Int * Pos -> Rat)(j : Int, q : Pos) : Rat) <=>
+	    (pred __<=__ : Int * Int)((op __*__ : Int * Int -> Int)(i : Int,
+								    q : Pos) : Int,
+				      (op __*__ : Int * Int -> Int)(j : Int,
+								    p : Pos) : Int) %(Rat_leq_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (pred __>=__ : Rat * Rat)(x : Rat, y : Rat) <=>
+	    (pred __<=__ : Rat * Rat)(y : Rat, x : Rat) %(Rat_geq_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (pred __<__ : Rat * Rat)(x : Rat, y : Rat) <=>
+	    (pred __<=__ : Rat * Rat)(x : Rat, y : Rat)
+	    /\ not x : Rat = y : Rat %(Rat_less_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (pred __>__ : Rat * Rat)(x : Rat, y : Rat) <=>
+	    (pred __<__ : Rat * Rat)(y : Rat, x : Rat) %(Rat_greater_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __+__ : Rat * Rat -> Rat)((op __/__ : Int *
+						  Pos -> Rat)(i : Int, p : Pos) : Rat,
+				      (op __/__ : Int * Pos -> Rat)(j : Int, q : Pos) : Rat) : Rat =
+	    (op __/__ : Rat * Rat ->? Rat)((op __+__ : Int *
+						       Int -> Int)((op __*__ : Int *
+									       Int -> Int)(i : Int,
+											   q : Pos) : Int,
+								   (op __*__ : Int *
+									       Int -> Int)(j : Int,
+											   p : Pos) : Int) : Int,
+					   (op __*__ : Int * Int -> Int)(p : Pos,
+									 q : Pos) : Int) : Rat %(Rat_add_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __-__ : Rat * Rat -> Rat)(x : Rat, y : Rat) : Rat =
+	    (op __+__ : Rat * Rat -> Rat)(x : Rat,
+					  (op -__ : Rat -> Rat)(y : Rat) : Rat) : Rat %(Rat_sub_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __*__ : Rat * Rat -> Rat)((op __/__ : Int *
+						  Pos -> Rat)(i : Int, p : Pos) : Rat,
+				      (op __/__ : Int * Pos -> Rat)(j : Int, q : Pos) : Rat) : Rat =
+	    (op __/__ : Rat * Rat ->? Rat)((op __*__ : Int *
+						       Int -> Int)(i : Int, j : Int) : Int,
+					   (op __*__ : Int * Int -> Int)(p : Pos,
+									 q : Pos) : Int) : Rat %(Rat_mult_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . not def (op __/__ : Rat * Rat ->? Rat)(x : Rat,
+					       0 : Int) : Rat %(Rat_divide_def1)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . ((op __/__ : Rat * Rat ->? Rat)(x : Rat, y : Rat) : Rat =
+	     z : Rat <=>
+	     z : Rat = (op __*__ : Rat * Rat -> Rat)(x : Rat, y : Rat) : Rat) if
+	    not y : Rat = 0 : Int %(Rat_divide_def2)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op +__ : Rat -> Rat)(x : Rat) : Rat = x : Rat %(Rat_plus_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op -__ : Rat -> Rat)((op __/__ : Int * Pos -> Rat)(i : Int,
+							    p : Pos) : Rat) : Rat =
+	    (op __/__ : Int * Pos -> Rat)((op -__ : Int -> Int)(i : Int) : Int,
+					  p : Pos) : Rat %(Rat_minus_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op abs : Rat -> Rat)((op __/__ : Int * Pos -> Rat)(i : Int,
+							    p : Pos) : Rat) : Rat =
+	    (op __/__ : Int * Pos -> Rat)((op abs : Int -> Nat)(i : Int) : Nat,
+					  p : Pos) : Rat %(Rat_abs_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __^__ : Rat * Int -> Rat)(x : Rat, 0 : Int) : Rat =
+	    1 : Int %(Rat_power_0)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __^__ : Rat * Int -> Rat)(x : Rat,
+				      (op suc : Nat -> Nat)(n : Nat) : Nat) : Rat =
+	    (op __*__ : Rat * Rat -> Rat)(x : Rat,
+					  (op __^__ : Rat * Int -> Rat)(x : Rat,
+									n : Nat) : Rat) : Rat %(Rat_power_suc)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op __^__ : Rat * Int -> Rat)(x : Rat,
+				      (op -__ : Int -> Int)(p : Pos) : Int) : Rat =
+	    (op __/__ : Rat * Rat ->? Rat)(1 : Int,
+					   (op __^__ : Rat * Int -> Rat)(x : Rat,
+									 p : Pos) : Rat) : Rat %(Rat_power_neg)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op min : Rat * Rat -> Rat)(x : Rat, y : Rat) : Rat =
+	    x : Rat
+		when (pred __<=__ : Rat * Rat)(x : Rat, y : Rat)
+		else y : Rat : Rat %(Rat_min_def)%,
+  forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
+      . (op max : Rat * Rat -> Rat)(x : Rat, y : Rat) : Rat =
+	    y : Rat
+		when (pred __<=__ : Rat * Rat)(x : Rat, y : Rat)
+		else x : Rat : Rat %(Rat_max_def)%,
+  forall i:Int
+      . (op __/__ : Int * Pos -> Rat)(i : Int, 1 : Pos) : Rat =
+	    i : Int %(embeddingIntToRat)%,
+  forall i, j:Int; p, q:Pos
+      . (op __/__ : Int * Pos -> Rat)(i : Int, p : Pos) : Rat =
+	    (op __/__ : Int * Pos -> Rat)(j : Int, q : Pos) : Rat <=>
+	    (op __*__ : Int * Int -> Int)(i : Int, q : Pos) : Int =
+		(op __*__ : Int * Int -> Int)(j : Int,
+					      p : Pos) : Int %(Rat_equality)%,
+  generated{sort Rat; op __/__ : Int *
+				 Pos -> Rat} %(ga_generated_Rat)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __-?__ : Nat * Nat ->? Nat)(a : Nat, b : Nat) : Nat =>
+	    (op __-?__ : Nat * Nat ->? Nat)(a : Nat, b : Nat) : Nat =
+		(op __-__ : Int * Int -> Int)(a : Nat,
+					      b : Nat) : Int %(Int_Nat_sub_compat)%,
+  forall m, n, r:Int; a, b:Nat
+      . m : Int =
+	    (op __*__ : Int *
+			Int -> Int)((op sign : Int -> Int)(m : Int) : Int,
+				    (op abs : Int -> Nat)(m : Int) : Nat) : Int %(Int_abs_decomp)%,
+  forall m, n, r:Int; a, b:Nat
+      . (pred odd : Int)(m : Int) <=>
+	    (pred odd : Int)((op abs : Int -> Nat)(m : Int) : Nat) %(Int_odd_alt)%,
+  forall m, n, r:Int; a, b:Nat
+      . (op __/?__ : Int * Int ->? Int)(m : Int, n : Int) : Int =
+	    r : Int <=>
+	    not n : Int = 0 : Int
+	    /\ (op __*__ : Int * Int -> Int)(n : Int, r : Int) : Int =
+		   n : Int %(Int_divide_dom1)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __/?__ : Int * Int ->? Int)(m : Int, n : Int) : Int <=>
+	    (op __mod__ : Int * Int ->? Nat)(m : Int, n : Int) : Nat =
+		0 : Int %(Int_divide_dom2)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __mod__ : Int * Int ->? Nat)(m : Int, n : Int) : Nat <=>
+	    not n : Int = 0 : Int %(Int_mod_dom)%,
+  forall m, n, r:Int; a, b:Nat
+      . (op __mod__ : Int * Int ->? Nat)(m : Int, n : Int) : Nat =
+	    (op __mod__ : Int * Int ->? Nat)(m : Int,
+					     (op abs : Int -> Nat)(n : Int) : Nat) : Nat %(Int_mod_abs)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __div__ : Int * Int ->? Int)(m : Int, n : Int) : Int <=>
+	    not n : Int = 0 : Int %(Int_div_dom)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __quot__ : Int * Int ->? Int)(m : Int, n : Int) : Int <=>
+	    not n : Int = 0 : Int %(Int_quot_dom)%,
+  forall m, n, r:Int; a, b:Nat
+      . def (op __rem__ : Int * Int ->? Int)(m : Int, n : Int) : Int <=>
+	    not n : Int = 0 : Int %(Int_rem_dom)%,
+  forall m, n, r:Int; a, b:Nat
+      . m : Int =
+	    (op __+__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)((op __quot__ : Int *
+										 Int ->? Int)(m : Int,
+											      n : Int) : Int,
+								  n : Int) : Int,
+					  (op __rem__ : Int * Int ->? Int)(m : Int,
+									   n : Int) : Int) : Int if
+	    not n : Int = 0 : Int %(Int_quot_rem)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __+__ : Int * Int -> Int)((op __-__ : Int *
+						  Int -> Int)(a : Nat, b : Nat) : Int,
+				      (op __-__ : Int * Int -> Int)(c : Nat, d : Nat) : Int) : Int =
+	    (op __-__ : Int * Int -> Int)((op __+__ : Int *
+						      Int -> Int)(a : Nat, c : Nat) : Int,
+					  (op __+__ : Int * Int -> Int)(b : Nat,
+									d : Nat) : Int) : Int %(Int_add_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __*__ : Int * Int -> Int)((op __-__ : Int *
+						  Int -> Int)(a : Nat, b : Nat) : Int,
+				      (op __-__ : Int * Int -> Int)(c : Nat, d : Nat) : Int) : Int =
+	    (op __-__ : Int * Int -> Int)((op __+__ : Int *
+						      Int -> Int)((op __*__ : Int *
+									      Int -> Int)(a : Nat,
+											  c : Nat) : Int,
+								  (op __*__ : Int *
+									      Int -> Int)(b : Nat,
+											  d : Nat) : Int) : Int,
+					  (op __+__ : Int * Int -> Int)((op __*__ : Int *
+										    Int -> Int)(b : Nat,
+												c : Nat) : Int,
+									(op __*__ : Int *
+										    Int -> Int)(a : Nat,
+												d : Nat) : Int) : Int) : Int %(Int_mult_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __-__ : Int * Int -> Int)(m : Int, n : Int) : Int =
+	    (op __+__ : Int * Int -> Int)(m : Int,
+					  (op -__ : Int -> Int)(n : Int) : Int) : Int %(Int_sub_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op +__ : Int -> Int)(m : Int) : Int = m : Int %(Int_pos_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op -__ : Int -> Int)((op __-__ : Int * Int -> Int)(a : Nat,
+							    b : Nat) : Int) : Int =
+	    (op __-__ : Int * Int -> Int)(b : Nat,
+					  a : Nat) : Int %(Int_neg_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op sign : Int -> Int)(m : Int) : Int =
+	    0 : Int
+		when m : Int = 0 : Int
+		else 1 : Int
+			 when (pred __>__ : Int * Int)(m : Int, 0 : Int)
+			 else (op -__ : Int -> Int)(1 : Int) : Int : Int : Int %(Int_sign_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred __<=__ : Int * Int)(m : Int, n : Int) <=>
+	    ((op __-__ : Int * Int -> Int)(n : Int,
+					   m : Int) : Int in Nat) %(Int_leq_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred __>=__ : Int * Int)(m : Int, n : Int) <=>
+	    (pred __<=__ : Int * Int)(n : Int, m : Int) %(Int_geq_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred __<__ : Int * Int)(m : Int, n : Int) <=>
+	    (pred __<=__ : Int * Int)(m : Int, n : Int)
+	    /\ not m : Int = n : Int %(Int_less_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred __>__ : Int * Int)(m : Int, n : Int) <=>
+	    (pred __<__ : Int * Int)(m : Int, n : Int) %(Int_greater_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op min : Int * Int -> Int)(m : Int, n : Int) : Int =
+	    m : Int
+		when (pred __<=__ : Int * Int)(m : Int, n : Int)
+		else n : Int : Int %(Int_min_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op max : Int * Int -> Int)(m : Int, n : Int) : Int =
+	    n : Int
+		when (pred __<=__ : Int * Int)(m : Int, n : Int)
+		else m : Int : Int %(Int_max_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op abs : Int -> Nat)(m : Int) : Nat =
+	    (op -__ : Int -> Int)(m : Int) : Int if
+	    (pred __<__ : Int * Int)(m : Int, 0 : Int) %(Int_abs_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __^__ : Int *
+		    Nat -> Int)((op -__ : Int -> Int)(1 : Int) : Int, a : Nat) : Int =
+	    1 : Int
+		when (pred even : Int)(a : Nat)
+		else (op -__ : Int -> Int)(1 : Int) : Int : Int %(Int_neg1_power_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __^__ : Int * Nat -> Int)(m : Int, a : Nat) : Int =
+	    (op __*__ : Int * Int -> Int)((op __^__ : Int *
+						      Nat -> Int)((op sign : Int -> Int)(m : Int) : Int,
+								  a : Nat) : Int,
+					  (op __^__ : Int *
+						      Nat -> Int)((op abs : Int -> Nat)(m : Int) : Nat,
+								  a : Nat) : Int) : Int %(Int_power_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred even : Int)(m : Int) <=>
+	    (pred even : Int)((op abs : Int -> Nat)(m : Int) : Nat) %(Int_even_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred odd : Int)(m : Int) <=>
+	    not (pred even : Int)(m : Int) %(Int_odd_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __/?__ : Int * Int ->? Int)(m : Int, n : Int) : Int =
+	    (op __*__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)((op sign : Int -> Int)(m : Int) : Int,
+								  (op sign : Int -> Int)(n : Int) : Int) : Int,
+					  (op __/?__ : Int *
+						       Int ->? Int)((op abs : Int -> Nat)(m : Int) : Nat,
+								    (op abs : Int -> Nat)(n : Int) : Nat) : Int) : Int %(Int_divide)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (pred __<__ : Int * Int)((op __mod__ : Int *
+					       Int ->? Nat)(m : Int, n : Int) : Nat,
+				 (op abs : Int -> Nat)(n : Int) : Nat) if
+	    not n : Int = 0 : Int %(Int_mod_range)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . m : Int =
+	    (op __+__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)((op __div__ : Int *
+										Int ->? Int)(m : Int,
+											     n : Int) : Int,
+								  n : Int) : Int,
+					  (op __mod__ : Int * Int ->? Nat)(m : Int,
+									   n : Int) : Nat) : Int if
+	    not n : Int = 0 : Int %(Int_mod__div_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . not def (op __mod__ : Int * Int ->? Nat)(m : Int,
+						 0 : Int) : Nat %(Int_mod_zero)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . not def (op __div__ : Int * Int ->? Int)(m : Int,
+						 0 : Int) : Int %(Int_div_zero)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __quot__ : Int * Int ->? Int)(m : Int, n : Int) : Int =
+	    (op __*__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)((op sign : Int -> Int)(m : Int) : Int,
+								  (op sign : Int -> Int)(n : Int) : Int) : Int,
+					  (op __quot__ : Int *
+							 Int ->? Int)((op abs : Int -> Nat)(m : Int) : Nat,
+								      (op abs : Int -> Nat)(n : Int) : Nat) : Int) : Int %(Int_quot_def)%,
+  forall m, n, r, s:Int; a, b, c, d:Nat
+      . (op __rem__ : Int * Int ->? Int)(m : Int, n : Int) : Int =
+	    (op __*__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)((op sign : Int -> Int)(m : Int) : Int,
+								  (op sign : Int -> Int)(n : Int) : Int) : Int,
+					  (op __rem__ : Int *
+							Int ->? Int)((op abs : Int -> Nat)(m : Int) : Nat,
+								     (op abs : Int -> Nat)(n : Int) : Nat) : Int) : Int %(Int_rem_def)%,
+  forall a:Nat
+      . a : Nat =
+	    (op __-__ : Int * Int -> Int)(a : Nat,
+					  0 : Int) : Int %(Int_Nat_embedding)%,
+  forall a, b, c, d:Nat
+      . (op __-__ : Int * Int -> Int)(a : Nat, b : Nat) : Int =
+	    (op __-__ : Int * Int -> Int)(c : Nat, d : Nat) : Int <=>
+	    (op __+__ : Int * Int -> Int)(a : Nat, d : Nat) : Int =
+		(op __+__ : Int * Int -> Int)(c : Nat,
+					      b : Nat) : Int %(Int_equality)%,
+  generated{sort Int; op __-__ : Nat *
+				 Nat -> Int} %(ga_generated_Int)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __-?__ : Nat * Nat ->? Nat)(m : Nat, n : Nat) : Nat <=>
+	    (pred __>=__ : Int * Int)(m : Nat, n : Nat) %(Nat_sub_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __/?__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int <=>
+	    (op __mod__ : Int * Int ->? Nat)(m : Nat, n : Nat) : Nat =
+		0 : Int %(Nat_divide_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __div__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int <=>
+	    not n : Nat = 0 : Int %(Nat_div_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __mod__ : Int * Int ->? Nat)(m : Nat, n : Nat) : Nat <=>
+	    not n : Nat = 0 : Int %(Nat_mod_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __quot__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int <=>
+	    not n : Nat = 0 : Int %(Nat_quot_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . def (op __rem__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int <=>
+	    not n : Nat = 0 : Int %(Nat_rem_dom)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . (op __*__ : Int * Int -> Int)((op __+__ : Int *
+						  Int -> Int)(r : Nat, s : Nat) : Int,
+				      t : Nat) : Int =
+	    (op __+__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)(r : Nat, t : Nat) : Int,
+					  (op __*__ : Int * Int -> Int)(s : Nat,
+									t : Nat) : Int) : Int %(Nat_distr)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . (op max : Int * Int -> Int)(m : Nat, 0 : Int) : Int =
+	    m : Nat %(Nat_max_unit)%,
+  forall x, m, n, r, s, t:Nat; p:Pos
+      . (op min : Int * Int -> Int)(m : Nat, 0 : Int) : Int =
+	    0 : Int %(Nat_min_0)%,
+  forall m, n, r, s:Nat
+      . (pred __<=__ : Int * Int)(0 : Int, n : Nat) %(Nat_leq_def1)%,
+  forall m, n, r, s:Nat
+      . not (pred __<=__ : Int *
+			   Int)((op suc : Nat -> Nat)(n : Nat) : Nat,
+				0 : Int) %(Nat_leq_def2)%,
+  forall m, n, r, s:Nat
+      . (pred __<=__ : Int * Int)((op suc : Nat -> Nat)(m : Nat) : Nat,
+				  (op suc : Nat -> Nat)(n : Nat) : Nat) <=>
+	    (pred __<=__ : Int * Int)(m : Nat, n : Nat) %(Nat_leq_def3)%,
+  forall m, n, r, s:Nat
+      . (pred __>=__ : Int * Int)(m : Nat, n : Nat) <=>
+	    (pred __<=__ : Int * Int)(n : Nat, m : Nat) %(Nat_geq_def)%,
+  forall m, n, r, s:Nat
+      . (pred __<__ : Int * Int)(m : Nat, n : Nat) <=>
+	    (pred __<=__ : Int * Int)(m : Nat, n : Nat)
+	    /\ not m : Nat = n : Nat %(Nat_less_def)%,
+  forall m, n, r, s:Nat
+      . (pred __>__ : Int * Int)(m : Nat, n : Nat) <=>
+	    (pred __<__ : Int * Int)(m : Nat, n : Nat) %(Nat_greater_def)%,
+  forall m, n, r, s:Nat
+      . (op __+__ : Int * Int -> Int)(0 : Int, m : Nat) : Int =
+	    m : Nat %(Nat_add_0)%,
+  forall m, n, r, s:Nat
+      . (op __+__ : Int *
+		    Int -> Int)((op suc : Nat -> Nat)(n : Nat) : Nat, m : Nat) : Int =
+	    (op suc : Nat -> Nat)((op __+__ : Nat * Nat -> Nat)(n : Nat,
+								m : Nat) : Nat) : Nat %(Nat_add_suc)%,
+  forall m, n, r, s:Nat
+      . (op __*__ : Int * Int -> Int)(0 : Int, m : Nat) : Int =
+	    0 : Int %(Nat_mult_0)%,
+  forall m, n, r, s:Nat
+      . (op __*__ : Int *
+		    Int -> Int)((op suc : Nat -> Nat)(n : Nat) : Nat, m : Nat) : Int =
+	    (op __+__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)(n : Nat, m : Nat) : Int,
+					  m : Nat) : Int %(Nat_mult_suc)%,
+  forall m, n, r, s:Nat
+      . (op __^__ : Int * Nat -> Int)(m : Nat, 0 : Nat) : Int =
+	    1 : Int %(Nat_power_0)%,
+  forall m, n, r, s:Nat
+      . (op __^__ : Int * Nat -> Int)(m : Nat,
+				      (op suc : Nat -> Nat)(n : Nat) : Nat) : Int =
+	    (op __*__ : Int * Int -> Int)(m : Nat,
+					  (op __^__ : Int * Nat -> Int)(m : Nat,
+									n : Nat) : Int) : Int %(Nat_power_suc)%,
+  forall m, n, r, s:Nat
+      . (op min : Int * Int -> Int)(m : Nat, n : Nat) : Int =
+	    m : Nat
+		when (pred __<=__ : Int * Int)(m : Nat, n : Nat)
+		else n : Nat : Nat %(Nat_min_def)%,
+  forall m, n, r, s:Nat
+      . (op max : Int * Int -> Int)(m : Nat, n : Nat) : Int =
+	    n : Nat
+		when (pred __<=__ : Int * Int)(m : Nat, n : Nat)
+		else m : Nat : Nat %(Nat_max_def)%,
+  forall m, n, r, s:Nat
+      . (op +__ : Int -> Int)(m : Nat) : Int = m : Nat %(plus_def)%,
+  forall m, n, r, s:Nat
+      . (op abs : Int -> Nat)(n : Nat) : Nat = n : Nat %(Nat_abs)%,
+  forall m, n, r, s:Nat
+      . (pred odd : Int)(m : Nat) <=>
+	    not (pred even : Int)(m : Nat) %(Nat_odd_def)%,
+  forall m, n, r, s:Nat . (pred even : Int)(0 : Int) %(Nat_even_0)%,
+  forall m, n, r, s:Nat
+      . (pred even : Int)((op suc : Nat -> Nat)(m : Nat) : Nat) <=>
+	    (pred odd : Int)(m : Nat) %(Nat_even_suc)%,
+  forall m, n, r, s:Nat
+      . (op __! : Nat -> Nat)(0 : Nat) : Nat =
+	    1 : Int %(Nat_factorial_0)%,
+  forall m, n, r, s:Nat
+      . (op __! : Nat -> Nat)((op suc : Nat -> Nat)(n : Nat) : Nat) : Nat =
+	    (op __*__ : Int * Int -> Int)((op suc : Nat -> Nat)(n : Nat) : Nat,
+					  (op __! : Nat -> Nat)(n : Nat) : Nat) : Int %(Nat_factorial_suc)%,
+  forall m, n, r, s:Nat
+      . (op __-?__ : Nat * Nat ->? Nat)(m : Nat, n : Nat) : Nat =
+	    r : Nat <=>
+	    m : Nat =
+		(op __+__ : Int * Int -> Int)(r : Nat,
+					      n : Nat) : Int %(Nat_sub_def)%,
+  forall m, n, r, s:Nat
+      . not def (op __/?__ : Int * Int ->? Int)(m : Nat,
+						0 : Int) : Int %(Nat_divide_0)%,
+  forall m, n, r, s:Nat
+      . ((op __/?__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int =
+	     r : Nat <=>
+	     m : Nat = (op __*__ : Int * Int -> Int)(r : Nat, n : Nat) : Int) if
+	    (pred __>__ : Int * Int)(n : Nat, 0 : Int) %(Nat_divide_Pos)%,
+  forall m, n, r, s:Nat
+      . (op __div__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int =
+	    r : Nat <=>
+	    exists s:Nat
+		. m : Nat =
+		      (op __+__ : Int * Int -> Int)((op __*__ : Int *
+								Int -> Int)(n : Nat, r : Nat) : Int,
+						    s : Nat) : Int
+		  /\ (pred __<__ : Int * Int)(s : Nat, n : Nat) %(Nat_div)%,
+  forall m, n, r, s:Nat
+      . (op __mod__ : Int * Int ->? Nat)(m : Nat, n : Nat) : Nat =
+	    s : Nat <=>
+	    exists r:Nat
+		. m : Nat =
+		      (op __+__ : Int * Int -> Int)((op __*__ : Int *
+								Int -> Int)(n : Nat, r : Nat) : Int,
+						    s : Nat) : Int
+		  /\ (pred __<__ : Int * Int)(s : Nat, n : Nat) %(Nat_mod)%,
+  forall m, n, r, s:Nat
+      . (op __quot__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int =
+	    (op __div__ : Int * Int ->? Int)(m : Nat,
+					     n : Nat) : Int %(Nat_quot)%,
+  forall m, n, r, s:Nat
+      . (op __rem__ : Int * Int ->? Int)(m : Nat, n : Nat) : Int =
+	    (op __mod__ : Int * Int ->? Nat)(m : Nat,
+					     n : Nat) : Nat %(Nat_rem)%,
+  forall m, n, r, s:Nat
+      . 1 : Int = (op suc : Nat -> Nat)(0 : Nat) : Nat %(Nat_1_def)%,
+  forall m, n, r, s:Nat
+      . 2 : Nat = (op suc : Nat -> Nat)(1 : Nat) : Nat %(Nat_2_def)%,
+  forall m, n, r, s:Nat
+      . 3 : Nat = (op suc : Nat -> Nat)(2 : Nat) : Nat %(Nat_3_def)%,
+  forall m, n, r, s:Nat
+      . 4 : Nat = (op suc : Nat -> Nat)(3 : Nat) : Nat %(Nat_4_def)%,
+  forall m, n, r, s:Nat
+      . 5 : Nat = (op suc : Nat -> Nat)(4 : Nat) : Nat %(Nat_5_def)%,
+  forall m, n, r, s:Nat
+      . 6 : Nat = (op suc : Nat -> Nat)(5 : Nat) : Nat %(Nat_6_def)%,
+  forall m, n, r, s:Nat
+      . 7 : Nat = (op suc : Nat -> Nat)(6 : Nat) : Nat %(Nat_7_def)%,
+  forall m, n, r, s:Nat
+      . 8 : Nat = (op suc : Nat -> Nat)(7 : Nat) : Nat %(Nat_8_def)%,
+  forall m, n, r, s:Nat
+      . 9 : Nat = (op suc : Nat -> Nat)(8 : Nat) : Nat %(Nat_9_def)%,
+  forall m, n, r, s:Nat
+      . (op __@@__ : Nat * Nat -> Nat)(m : Nat, n : Nat) : Nat =
+	    (op __+__ : Int * Int -> Int)((op __*__ : Int *
+						      Int -> Int)(m : Nat,
+								  (op suc : Nat -> Nat)(9 : Nat) : Nat) : Int,
+					  n : Nat) : Int %(Nat_decimal_def)%,
+  generated{sort Nat; op 0 : Nat;
+		      op suc : Nat -> Nat} %(ga_generated_Nat)% ]
+*** Error 342.14, No correct typing for 
+*** Error 342.26, No correct typing for 
+*** Error 342.39, No correct typing for 
+*** Error 343.5, No correct typing for 
+*** Error 343.20, No correct typing for 
+*** Error 343.36, No correct typing for 
+*** Error 427.12, not a predicate: e
+*** Error 426.26, not a predicate: e
+*** Error 351.11, wrong number of places '__and'__'
+*** Error 305.6, unknown sort 'd'
+*** Error 304.6, unknown sort 'b'
+*** Error 294.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+*** Error 294.29, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a -> s'
+*** Error 294.55, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+*** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
+*** Error 294.57, unknown sort 'a'
+*** Error 294.38, unknown sort 'a'
+*** Error 294.31, unknown sort 'a'
+*** Error 292.13, unknown sort 'b'
+*** Error 292.7, unknown sort 'b'
+*** Error 290.20, unknown sort 'a'
+*** Error 290.16, unknown sort 'a'
+*** Error 287.35, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+*** Error 287.58, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+*** Error 287.60, unknown sort 'a'
+*** Error 287.41, unknown sort 'a'
+*** Error 286.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+*** Error 286.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+*** Error 286.55, unknown sort 'a'
+*** Error 286.36, unknown sort 'a'
+*** Error 285.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : s'
+*** Error 285.50, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+	must appear in alternative 'c : a ->? s'
+*** Error 285.52, unknown sort 'a'
+*** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
+*** Error 285.31, unknown sort 'a'
+*** Error 270.3, unexpected mixfix token: a
+*** Error 268.15, unknown sort 'b'
+*** Error 268.6, wrong number of places '__a'
+*** Error 268.9, unknown sort 'b'
+*** Error 266.20, unknown sort 'a'
+*** Error 266.16, unknown sort 'a'
+*** Error 261.21, expected further mixfix token: ["*","+",":","!","-"]

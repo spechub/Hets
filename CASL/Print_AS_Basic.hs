@@ -252,6 +252,9 @@ instance PrettyPrint FORMULA where
 	printText0 ga f <+> ptext inS <+> printText0 ga g
     printText0 ga (Mixfix_formula t) = printText0 ga t
     printText0 _ (Unparsed_formula s _) = text s 
+    printText0 ga (Sort_gen_ax sorts ops) = 
+	text generatedS <> braces (text sortS <+> commaT_text ga sorts 
+				   <> semi <+> semiT_text ga ops) 
 
 instance PrettyPrint QUANTIFIER where
     printText0 _ (Universal) = ptext forallS
@@ -274,7 +277,7 @@ instance PrettyPrint TERM where
 		       Qual_op_name i _ _ -> (i,True)
 	    o' = printText0 ga o
 	in if isQual then 
-	     print_prefix_appl_text ga o' l
+	     print_prefix_appl_text ga (parens o') l
 	   else 
 	     if isLiteral ga o_id l then
 	       {-trace ("a literal application: " 
@@ -305,10 +308,8 @@ instance PrettyPrint TERM where
 
 instance PrettyPrint OP_SYMB where
     printText0 ga (Op_name o) = printText0 ga o
-    printText0 ga (Qual_op_name o t _) = parens(text opS
-						<+> printText0 ga o
-						<+> (colon
-						     <> printText0 ga t))
+    printText0 ga (Qual_op_name o t _) = 
+	text opS <+> printText0 ga o <+> colon <> printText0 ga t
 
 instance PrettyPrint SYMB_ITEMS where
     printText0 ga (Symb_items k l _) = 
@@ -701,6 +702,7 @@ left_most_pos f =
     Membership _ _ pl -> headPos pl 
     Unparsed_formula _ pl -> headPos pl 
     Mixfix_formula t -> getMyPos t
+    Sort_gen_ax sorts _ -> firstPos sorts []
 
 if_detect :: FORMULA -> [Pos] -> Bool
 if_detect _ []    = False
