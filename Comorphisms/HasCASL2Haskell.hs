@@ -3,12 +3,12 @@ Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 Licence     :  All rights reserved.
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
    
-   The embedding comorphism from CASL to HasCASL.
+   The embedding comorphism from HasCASL to Haskell.
 
 -}
 
@@ -16,21 +16,18 @@ module Comorphisms.HasCASL2Haskell where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Result
-import Common.AS_Annotation
-import Common.GlobalAnnotations
 
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Morphism
 
-import ToHaskell.TranslateAna
 import Haskell.Logic_Haskell
 import Haskell.HatParser
 import Haskell.Hatchet.MultiModuleBasics 
 import Haskell.Hatchet.AnnotatedHsSyn
 
+import qualified ToHaskell.FromHasCASL as H
 
 -- | The identity of the comorphism
 data HasCASL2Haskell = HasCASL2Haskell deriving Show
@@ -52,16 +49,8 @@ instance Comorphism HasCASL2Haskell
     sourceSublogic _ = ()
     targetLogic _ = Haskell
     targetSublogic _ = ()
-    map_sign _ = mapSignature
+    map_sign _ = H.mapSignature
     --map_morphism _ morphism1 -> Maybe morphism2
-    map_sentence _ _ _ = Nothing
+    map_sentence _ = H.mapSentence
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
-mapSignature :: Env -> Maybe(ModuleInfo,[Named AHsDecl]) 
-mapSignature sign = do 
-     anaFun <- basic_analysis Haskell
-     let Result _ mt = anaFun (translateAna sign,  
-				empty_signature Haskell,
-				emptyGlobalAnnos)
-     (_, _, r, hs) <- mt
-     return (r, map (emptyName . sentence) hs) 
