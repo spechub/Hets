@@ -83,7 +83,7 @@ getLegalSuperClasses ci oldCs cs =
 	   defCs = map snd sOk
 	   newCs = nub $ defCs ++ oldCs
 	   cycles = map snd scycs
-	   dubs = filter (`elem` oldCs) defCs
+	   dubs = filter (`elem` allSuperClasses ce ci) defCs
 	   in do if null cycles then return ()
 		    else appendDiags 
 			     [Diag Error 
@@ -93,7 +93,7 @@ getLegalSuperClasses ci oldCs cs =
 		 if null dubs then return ()
 		    else appendDiags 
 			     [Diag Warning 
-			      ("repeated super class '"
+			      ("already known as super class '"
 			       ++ showClassList dubs "'")
 			     $ posOfId (head dubs)]
 		 return newCs
