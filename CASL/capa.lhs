@@ -20,6 +20,7 @@ import CASL.OpItem
 import CASL.RunParsers
 import CASL.RunMixfixParser
 import CASL.RunStaticAna
+import ToHaskell.TranslateAna
 
 main :: IO ()
 main = exec lineParser fileParser
@@ -28,6 +29,7 @@ main = exec lineParser fileParser
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
  ("MixIds", HetParser parseId),
+ ("TranslateIds", HetParser idToHaskell),
  ("Terms", HetParser term),
  ("Formula", HetParser formula),
  ("SortItem", HetParser sortItems),

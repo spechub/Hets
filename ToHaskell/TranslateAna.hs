@@ -8,8 +8,14 @@ import Common.Id
 --import Common.Lib.Parsec.Pos
 import Common.Lib.Map as Map hiding (map)
 import Common.Lexer
-import Char
-import List
+import Data.Char
+import Data.List
+import Common.Token
+import Common.AnnoState
+import Common.PPUtils
+
+idToHaskell :: AParser WrapString
+idToHaskell = fmap (WrapString . translateId) parseId 
 
 -------------------------------------------------------------------------
 -- Translation of an HasCASL-Environement
