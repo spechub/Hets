@@ -14,7 +14,7 @@ Portability :  portable
   todo: thy files in subdir
 -}
 
-#include <../uni.hs>
+#include <uni.hs>
 
 module Isabelle.IsaProve where
 

@@ -33,6 +33,7 @@ HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
+CPPP       = cpp 
 
 HC_FLAGS   = -Wall -fglasgow-exts -cpp  
 # -fglasgow-exts comes in via  ../uni/uni-package.conf
@@ -146,8 +147,10 @@ happy_files = Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
-doc_sources = $(filter-out ./Isabelle/IsaSign.hs ,$(sources))
+cpp_sources = ./Isabelle/IsaProve.hs ./Isabelle/Logic_Isabelle.hs ./Proofs/Proofs.hs hets.hs
 
+doc_sources = $(filter-out ./Isabelle/IsaSign.hs $(cpp_sources) ,$(sources)) \
+               $(patsubst %.hs, %.hspp, $(cpp_sources))
 ####################################################################
 ### targets
 
@@ -186,7 +189,7 @@ hets-old: $(objects)
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS)
+	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_OPTS) -O
 
 hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files) Modal/ModalSystems.hs
 	$(RM) hetcats-make sources_hetcats.mk
@@ -310,7 +313,7 @@ clean_genRules:
 ### removes *.hi and *.o in all include directories
 clean: bin_clean
 	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
-	(cd $$p ; $(RM) *.hi *.o) ; done
+	(cd $$p ; $(RM) *.hi *.o *.hspp) ; done
 
 ### remove binaries
 bin_clean: 
@@ -445,12 +448,16 @@ hets.hs: hetcats/Version.hs
 %.hs: %.inline.hs $(INLINEAXIOMS)
 	$(INLINEAXIOMS) $< > $@
 
+## rule for cpp and haddock
+%.hspp: %.hs
+	$(HC) -E -cpp -optP -P $<
+
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
-	$(HC) -c $< $(HC_OPTS)
+	$(HC) -c $< $(HC_OPTS) -O
 
 %.o %.hi: %.lhs
-	$(HC) -c $< $(HC_OPTS)
+	$(HC) -c $< $(HC_OPTS) -O
 
 ## compiling rules for dependencies
 %.d : %.hs
