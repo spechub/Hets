@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -782,10 +782,10 @@ basicInferenceNode lg (ln,node)
     -- Borrowing: translate theory and goal
     (sign'',sens'') <- resToIORes  
                         $ maybeToResult nullPos "Could not map signature"
-                        $ map_sign cid sign'
-    axs'' <- resToIORes
+                        $ map_theory cid (sign',axs')
+{-    axs'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
-                 $ mapM (mapNamedM (map_sentence cid sign')) axs'
+                 $ mapM (mapNamedM (map_sentence cid sign')) axs' -}
     goals'' <- resToIORes
                  $ maybeToResult nullPos "Could not map sentences"
                  $ mapM (mapNamedM (map_sentence cid sign')) goals'
@@ -799,7 +799,7 @@ basicInferenceNode lg (ln,node)
           DGRef _ _ _ -> dgn_renamed nlab
         thName = showPretty (getLIB_ID ln) "_"
                  ++ maybe (show node) (flip showPretty "") nodeName
-    ps <- ioToIORes $ prove p' thName (sign'',sens''++axs'') goals'' 
+    ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
     let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
 --    let nextDGraph = dGraph -- ??? to be implemented
   --      nextHistoryElem = error "Proofs.Proofs: basic inference"
