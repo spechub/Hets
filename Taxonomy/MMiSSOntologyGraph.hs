@@ -40,7 +40,7 @@ displayClassGraph onto startClass =
      A.Result gid err <-
        A.makegraph  (getOntologyName onto)
 	   [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
-           [("class", Box $$$ Color "lightsteelblue" $$$
+           [("class", Box $$$ Color "#e0eeee" $$$
                    createLocalMenu onto ginfo main
                    $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
                    emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
