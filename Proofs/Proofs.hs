@@ -124,7 +124,7 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
-globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True -- existsDefPathOfSameMorphism dGraph morphism source target
+globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =    if True -- existsDefPathOfMorphism dGraph morphism source target
      then
        globSubsumeAux newGraph (newRules,newChanges) list
      else
@@ -141,20 +141,59 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
                )
     newGraph = insEdge newEdge auxGraph
     newRules = (GlobSubsumption ledge):rules
---    newChanges = (InsertEdge newEdge):((DeleteEdge ledge):changes)
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-existsDefPathOfSameMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
-existsDefPathOfSameMorphism dgraph morphism src tgt =
- True 
+{- @@@@@@@ hier weitermachen @@@@@@@@@@ -}
+{- the same as globSubsume, but for the rule LocSubsumption -}
+locSubsume ::  ProofStatus -> ProofStatus
+locSubsume proofStatus@(globalContext,history,dGraph) =
+  if null (snd nextHistoryElem) then proofStatus  
+   else (globalContext, nextHistoryElem:history, nextDGraph)
 
- -- existsDefPathOfSameMorphismAux dgraph morphism tgt [] src
+  where
+    localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
+    result = locSubsumeAux dGraph ([],[]) localThmEdges
+    nextDGraph = fst result
+    nextHistoryElem = snd result
 
-existsDefPathOfSameMorphismAux dgraph morphism tgt path src =
+locSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+	            -> (DGraph,([DGRule],[DGChange]))
+locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
+  if False --or [existsDefPathOfMorphism dGraph remainingMorphism nextSrc target | nextSrc <- nextSources]
+     then
+       globSubsumeAux newGraph (newRules,newChanges) list
+     else
+       globSubsumeAux dgraph (rules,changes) list
+  where
+    morphism = dgl_morphism edgeLab
+    outGoingEdges = out dgraph source
+    --localDefEdges = filter isLocalDef outGoingEdges
+    --nextStep = [(edge, getTargetNode edge)| edge <- localDefEdges]
+    auxGraph = delLEdge ledge dgraph
+    (GlobalThm _ conservativity) = (dgl_type edgeLab)
+    newEdge = (source,
+	       target,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = (GlobalThm True conservativity),
+		       dgl_origin = DGProof}
+               )
+    newGraph = insEdge newEdge auxGraph
+    newRules = (GlobSubsumption ledge):rules
+    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+
+
+existsDefPathOfMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
+existsDefPathOfMorphism dgraph morphism src tgt =
+  existsDefPathOfMorphismAux dgraph morphism tgt ([]::[LEdge DGLinkLab]) src
+
+existsDefPathOfMorphismAux :: DGraph -> GMorphism -> Node -> [LEdge DGLinkLab]
+			        -> Node -> Bool
+existsDefPathOfMorphismAux dgraph morphism tgt path src =
   if null outGoingEdges then False
    else
-     if elem morphism morphismsOfPathsToTgt then True
-      else or [existsDefPathOfSameMorphismAux dgraph morphism tgt
+     if elem morphism filteredMorphismsOfPathsToTgt then True
+      else or [existsDefPathOfMorphismAux dgraph morphism tgt
 	       ((fst step):path) (snd step)| step <- nextStep]
 
   where 
@@ -163,22 +202,32 @@ existsDefPathOfSameMorphismAux dgraph morphism tgt path src =
     nextStep = [(edge, getTargetNode edge)| edge <- globalDefEdges]
     defEdgesToTgt = [edge| edge <- globalDefEdges, tgt == getTargetNode edge]
     defPathsToTgt = [edge:path| edge <- defEdgesToTgt]
-    morphismsOfPathsToTgt = map getMorphismOfPath defPathsToTgt
+    morphismsOfPathsToTgt = map calculateMorphismOfPath defPathsToTgt
+    filteredMorphismsOfPathsToTgt = getFilteredMorphisms morphismsOfPathsToTgt
 
-getMorphismOfPath :: [LEdge DGLinkLab] -> GMorphism
-getMorphismOfPath [] = error "getMorphismOfPath: empty path"
-getMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
-  calculateCombinedMorphism morphism morphismOfFurtherPath
+
+-- Reihenfolge der Komposition überprüfen
+calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
+calculateMorphismOfPath [] = error "getMorphismOfPath: empty path"
+calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
+  case maybeMorphismOfFurtherPath of
+    Nothing -> Nothing
+    Just morphismOfFurtherPath ->
+		  comp Grothendieck morphism morphismOfFurtherPath
 
   where
     morphism = dgl_morphism edgeLab
-    morphismOfFurtherPath = getMorphismOfPath furtherPath
+    maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
 
-calculateCombinedMorphism :: GMorphism -> GMorphism -> GMorphism
-calculateCombinedMorphism morph1 morph2 = 
-  case comp Grothendieck morph1 morph2 of
-    Just morphism -> morphism
-    Nothing -> error "wie soll mit diesem Fall umgegangen werden?"
+getFilteredMorphisms :: [Maybe GMorphism] -> [GMorphism]
+getFilteredMorphisms morphisms =
+  [morph| (Just morph) <- filter isValidMorphism morphisms]
+
+isValidMorphism :: Maybe GMorphism -> Bool
+isValidMorphism morphism =
+  case morphism of
+    Nothing -> False
+    otherwise -> True
 
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
@@ -189,12 +238,15 @@ isUnprovenGlobalThm (_,_,edgeLab) =
     (GlobalThm False _) -> True
     otherwise -> False
 
+isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
+isUnprovenLocalThm (_,_,edgeLab) =
+  case dgl_type edgeLab of
+    (LocalThm False _) -> True
+    otherwise -> False
+
 isGlobalDef ::LEdge DGLinkLab -> Bool
 isGlobalDef (_,_,edgeLab) =
   case dgl_type edgeLab of
     GlobalDef -> True
     otherwise -> False
 
-{- the same as globSubsume, but for the rule LocSubsumption -}
-locSubsume ::  ProofStatus -> ProofStatus
-locSubsume = undefined

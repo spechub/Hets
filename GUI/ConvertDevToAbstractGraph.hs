@@ -509,8 +509,6 @@ convertEdgesAux convMaps descr graphInfo ((src,tar,edge):lEdges) libname =
       (Just s, Just t) -> do
         Result newDescr err <- addlink descr (getDGLinkType (dgl_type edge))
                                    "" s t graphInfo
-        --putStrLn (maybe "" id err)
-        --putStrLn ("Adding link" ++ show descr)
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert (libname, (src,tar))
 				                     newDescr
