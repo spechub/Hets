@@ -28,11 +28,13 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
-mkSelId :: String -> Int -> Int -> Id
-mkSelId str n m = mkId [mkSimpleId (str ++ "_" ++ show n ++ "_" ++ show m)]
+mkSelId :: Pos -> String -> Int -> Int -> Id
+mkSelId p str n m = mkId 
+    [Token (str ++ "_" ++ show n ++ "_" ++ show m)
+    $ incSourceColumn p (100 * (n-1) + m)]
 
 mkSelVar :: Int -> Int -> Type -> VarDecl
-mkSelVar n m ty = VarDecl (mkSelId "x" n m) ty  Other []
+mkSelVar n m ty = VarDecl (mkSelId (getMyPos ty) "x" n m) ty  Other []
 
 genTuple :: Int -> Int -> [Selector] -> [VarDecl]
 genTuple _ _ [] = [] 
