@@ -22,7 +22,22 @@ complete OWL DL logic (node) of Hets. Clearly the development of
 
 [and when translating to CASL-DL, 
 the named spec is put into a file/CASL library that contains
-only this named spec? Till]
+only this named spec? Till] [No, if you parse an OWL DL file the
+  resulting abstract syntax will include all imported
+  specifications. This makes the handling of parsing and analysis
+  between Hets and an external parser much easier. So we generate a
+  development graph from this import structure. The parser already
+  handles cyclic imports as it does not read a known OWL DL file
+  again. Example: food.owl imports wine.owl and wine.owl imports
+  food.owl. If you parse wine.owl the parser reads first wine.owl and
+  second food.owl and it recognizes that it has read wine.owl already
+  hence it skips the import in food.owl. This development graph has
+  two nodes: food and wine where wine is an extension of
+  food. \emph{while writing this I recognized that splitting an
+    abstract syntax like this is not possible. There can be
+    mutally recursive defined symbols.}  So circular imports lead to
+  one theory in Hets and we have to split such a theory back into
+  circular imports afterwards. Klaus]
 
   Where do we get the name from:
   \begin{itemize}
@@ -32,14 +47,17 @@ only this named spec? Till]
   \item (Given as annotation to the Ontology in the OWL DL-File.)
   \end{itemize}
 
-  But is every named spec an OWL DL-file?  [Yes, unless we have
-  a way to distingiush several named specs with one OWL DL file,
+  But is every named theory (spec) an OWL DL-file?  [Yes, unless we
+  have a way to distingiush several named specs with one OWL DL file,
   which seems not to be the case. Till ] Do we generate OWL DL-files
-  for parametrised specifications? [Yes. Till] An Annotation should map
-  specification names to URIs and only these specs are exorted to OWL
-  DL files. [But aren't auxilary specs needed as well? Till]
-  (each of these URIs should have a Namespace abbrev for the
-  disambiguation when an imported ontology is extended)
+  for parametrised specifications? [Yes. Till] [This is not very
+  useful. As there is no notion of parametrisation in OWL DL these
+  ontologies can't be used. The formal parameter specification
+  normally provides no meaning in terms of known concepts. Klaus] An
+  Annotation should map specification names to URIs and only these
+  theories are exported to OWL DL files. [But aren't auxilary specs
+  needed as well? Till] (each of these URIs should have a Namespace
+  abbrev for the disambiguation when an imported ontology is extended)
 
   How to treat circlar imports in the development graph. 
   [The development graph must be acyclic. Hence,
@@ -58,7 +76,8 @@ only this named spec? Till]
   So we could reflect some structuring made in \CASLDL. But 
   keeping track of parametrised specifications is not easy. 
   [I will implement some naming scheme for internal nodes soon.
-   Perhaps that helps a little. Till]
+   Perhaps that helps a little. Till] [What will this naming scheme
+  look like? Can we discuss that before you start implementingit? Klaus]
 
 \subsection{Structuring on the \CASLDL side}
   flattened into a set of named theories each resulting into one OWL
@@ -79,7 +98,8 @@ only this named spec? Till]
     has to be generated. \emph{Not paper conforming}
 \end{itemize}
 
-[don't know which one is better. Till]
+[don't know which one is better. Till] [Extendenting FORMULA seems
+  easier to me. So I implement that. Klaus]
   
 \subsection{Namespaces} (1) global to library or (2) local to a named
   specification or (3) to a basic specification?
@@ -99,7 +119,9 @@ only this named spec? Till]
   
 [I vote for 1. Perhaps having only one DL spec per library
 eases things? Other OWL tools also should have the problem
-of name space integration w.r.t. imported files ?!? Till]
+of name space integration w.r.t. imported files ?!? Till] [A
+  unification is done by the parser we currently consider, but all
+  imports become integrated into one abstract syntax. Klaus]
 
 \subsection{Symbols in / from different OWL DL files}
 
@@ -126,7 +148,7 @@ of name space integration w.r.t. imported files ?!? Till]
   \end{itemize}
 
 [I vote for the second possibility, because it keeps names shorter
-whenever possible. Till]
+whenever possible. Till] [I agree. Klaus]
 
 \subsection{Renaming of predefined concepts}
 
@@ -148,7 +170,10 @@ Options:
 \end{enumerate}
 
 [I vote for 1. Why should annotations be integrated into models
-via predicates? Till]
+via predicates? Till] [These AnnotationProperties have to be declared
+  on the OWL DL side like ordinary other properties. And they are
+  applied like other properties. We have no place in the Signature yet
+  for storing annotations that are passed over morphisms. Klaus]
 
 \section{Implementation decisions}
 
@@ -234,5 +259,8 @@ all and apply something behind the scenes to get the mixfix and static
 analysis working with the predefined stuff visible.
 
 [I would vote for the first possibility. In CASL, there are no
-predefined things, and we should keep this principle for CASL-DL. Till]
+predefined things, and we should keep this principle for
+CASL-DL. Till] [This complicates checking the CASL_DL language. Every
+  renaming of the predefined OWL DL datatypes and Symbols must be
+  rejected; every hiding, too. Klaus]  
 \end{document}
