@@ -231,14 +231,14 @@ listRules :: b -> GlobalAnnos -> [(Id, b, [Token])]
 listRules inf g = 
     let lists = list_lit $ literal_annos g
         listRule co toks = (listId co, inf, toks)
-    in concatMap ( \ (bs, n, c) ->
+    in concatMap ( \ (bs, (n, c)) ->
        let (b1, b2, cs) = getListBrackets bs 
 	   e = Id (b1 ++ b2) cs [] in
 	   (if e == n then [] -- add b1 ++ b2 if its not yet included by n
 	       else [listRule (c, n) $ getPlainTokenList e]) 
 	   ++ [listRule (c, n) (b1 ++ [termTok] ++ b2), 
 	       listRule (c, n) (b1 ++ [termTok, commaTok, termTok] ++ b2)]
-		 ) $ Set.toList lists
+		 ) $ Map.toList lists
 
 type Table a b = Map.Map Index [Item a b]
 

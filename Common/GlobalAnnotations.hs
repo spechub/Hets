@@ -18,7 +18,6 @@ import Common.Id
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
 -- | all global annotations and a field for PrettyPrint stuff
@@ -44,7 +43,7 @@ emptyGlobalAnnos = GA { prec_annos    = Rel.empty
 
 -- | literal annotations for string, lists, number and floating
 data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
-                       , list_lit :: Set.Set (Id, Id, Id)
+                       , list_lit :: Map.Map Id (Id, Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
 		       } deriving (Show)
@@ -52,7 +51,7 @@ data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
 -- | empty literal annotations
 emptyLiteralAnnos :: LiteralAnnos
 emptyLiteralAnnos = LA { string_lit  = Nothing
-			, list_lit = Set.empty
+			, list_lit = Map.empty
 			, number_lit = Nothing
 			, float_lit  = Nothing
 			}

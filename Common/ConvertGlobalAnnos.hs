@@ -20,7 +20,6 @@ import Common.Id (tokStr)
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AnalyseAnnos
 import Common.PrettyPrint
@@ -64,8 +63,8 @@ c_lit_an::LiteralAnnos->[Annotation]
 c_lit_an la = let str = case (string_lit la) of
 			     Just (x,y) -> [String_anno x y []]
 			     _ -> []
-                  lis = map (\ (br,n,con) -> List_anno br n con []) 
-                         (Set.toList (list_lit la))
+                  lis = map (\ (br,(n,con)) -> List_anno br n con []) 
+                         (Map.toList (list_lit la))
                   number = case (number_lit la) of
 				 Just x -> [Number_anno x []]
 				 _ -> []

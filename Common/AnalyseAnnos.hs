@@ -32,7 +32,6 @@ import Data.List
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 
 -- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
@@ -255,20 +254,23 @@ setNumberLit =
 	    _ -> return m )
 
 -- | add (and check for consistency) (possibly several) list annotations
-setListLit :: Set.Set (Id,Id,Id) -> [Annotation] -> Result (Set.Set (Id,Id,Id))
+setListLit :: Map.Map Id (Id,Id) -> [Annotation] -> Result (Map.Map Id (Id,Id))
 setListLit = 
-    foldM ( \ s a ->
+    foldM ( \ m a ->
             case a of 
             List_anno id1 id2 id3 _ ->
-                    let p = (id1, id2, id3)
-	                cs = Set.filter ((==) p) s in
-                    if Set.isEmpty cs then return $ Set.insert p s 
-                    else Result [mkDiag Error 
-				 ("conflict" ++ showTriple p ++ 
-                                  " and" ++ showTriple (Set.findMin cs)) id1] 
-	                         $ Just s
-            _ -> return s )
-    where showTriple (i1, i2, i3) = " %list " ++ showId i1 "," 
+-- gleiche Keys mit verschiedenen Values sind ein Konflikt!!
+                    let nv = (id2, id3)
+	            in case Map.lookup id1 m of 
+	               Nothing -> return $ Map.insert id1 nv m 
+	               Just v  -> 
+                         if nv == v then return m
+                         else Result [mkDiag Error 
+				 ("conflict" ++ showListAnno id1 nv ++ 
+                                  " and" ++ showListAnno id1 v) id1] 
+	                         $ Just m
+            _ -> return m )
+    where showListAnno i1 (i2, i3) = " %list " ++ showId i1 "," 
                                 ++ showId i2 "," ++ showId i3 "" 
 
 parse_display_str :: Annotation -> String -> Result [Token]
