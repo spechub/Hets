@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003
@@ -39,7 +40,9 @@ import Isabelle.IsaPrint
 -- import Comorphisms.HC2I_Case
 import Comorphisms.HC2I_Utils
 
+#ifdef UNI_PACKAGE
 import GUIObject
+#endif
 
 -- | The identity of the comorphism
 data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving (Show)

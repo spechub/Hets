@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- | 
    
     Module      :  $Header$
@@ -86,8 +87,10 @@ import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Result
 import Common.Id
+#ifdef UNI_PACKAGE
 import Isabelle.IsaProve
 import ChildProcess
+#endif
 import Foreign
 
 {-
@@ -112,6 +115,7 @@ import Foreign
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] 
    -> Result (Maybe Bool)
 checkFreeType m fsn 
+#ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
                    let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
                        pos = headPos ps
@@ -140,8 +144,10 @@ checkFreeType m fsn
                    let pos = headPos $ pattern_Pos leadingPatterns
                    in warning Nothing "patterns overlap" pos
        | (not $ null op_preds) && (not $ proof) = 
-                   warning Nothing "not terminal" nullPos          
+                   warning Nothing "not terminal" nullPos 
+#endif         
        | otherwise = return (Just True)
+#ifdef UNI_PACKAGE
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
@@ -369,7 +375,7 @@ checkFreeType m fsn
          tmp = ("let axioms = TRS F X \"" ++ (axiomStr op_preds "") ++"\";")
          tmp1 = ("let F = signature \"" ++ (signStr (sigComb constructors l_Syms) "") ++ "\";")
          tmp2 = ("let X = vars \"" ++ (varsStr (varOfAxiom $ (head op_preds)) "") ++ "\";")                              
-    
+#endif
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
        tp<-leading_Term_Predication f
