@@ -26,7 +26,7 @@ import Logic.ParsecInterface
 import Logic.Logic
 import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
-import Control.Monad.State
+import Common.Lib.State
 import HasCASL.Morphism
 import qualified CASL.Sign
 import qualified CASL.Static
