@@ -130,7 +130,7 @@ type ParseFun a = Pos -> String -> (a,String, Pos)
                   -- args: start pos (including file name), input text
                   -- result: value, remaining text, end pos
 
-class (Language lid, PrettyPrint basic_spec,
+class (Language lid, PrettyPrint basic_spec, 
        PrettyPrint symb_items, Eq symb_items,
        PrettyPrint symb_map_items, Eq symb_map_items
 {-       ATermConvertible basic_spec, 
@@ -148,7 +148,7 @@ class (Language lid, PrettyPrint basic_spec,
 
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class (Category lid sign morphism, Show sentence, 
+class (Category lid sign morphism, Show sentence, PrettyPrint sign,
        Ord symbol, Show symbol
        {-ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,

@@ -36,6 +36,7 @@ import List(nub)
 import Logic.Grothendieck
 import Logic.Logic
 
+import Common.PrettyPrint
 
 
 {- Maps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
@@ -337,7 +338,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
-           (DGNode _ _ _ _) -> putStrLn (show (dgn_sign dgnode))
+           (DGNode _ (G_sign _ sig) _ _) -> putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error ( "nodes of type dg_ref do not have a signature")
            otherwise -> error ( "unknown type of node")
     Nothing -> error ("node with descriptor "

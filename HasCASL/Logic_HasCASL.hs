@@ -29,6 +29,7 @@ import Data.Dynamic
 import Common.Lib.State
 import qualified HasCASL.Morphism as M
 import CASL.Morphism
+import Common.PrettyPrint
 
 type Sign = Env
 type HasCASL_Sublogics = ()
@@ -71,6 +72,8 @@ instance Category HasCASL Env M.Morphism where
     cod HasCASL m = M.mtarget m
     legal_obj HasCASL e = M.legalEnv e
     legal_mor HasCASL m = M.legalMor m
+
+instance PrettyPrint Sign
 
 instance Sentences HasCASL Sentence () Sign M.Morphism Symbol
 

@@ -53,6 +53,8 @@ import CASL.SymbolParser
 
 import Data.Dynamic
 
+import Common.PrettyPrint
+
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data CspCASL = CspCASL deriving (Show)
@@ -95,6 +97,8 @@ instance LatticeWithTop () where
 -}
 
 -- CspCASL logic
+
+instance PrettyPrint ()
 
 instance Sentences CspCASL () () () () ()
 
