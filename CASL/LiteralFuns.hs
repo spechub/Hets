@@ -25,9 +25,9 @@ module LiteralFuns ( LiteralFuns.isLiteral
 		   ) where
 
 -- debugging
-import IOExts (trace)
+import Debug.Trace (trace)
 
-import Char (isDigit)
+import Data.Char (isDigit)
 
 import Id
 import AS_Basic_CASL

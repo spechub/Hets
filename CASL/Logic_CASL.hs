@@ -30,7 +30,7 @@ import Lexer((<<))
 import qualified Sublogics
 import qualified Static
 
-import Dynamic
+import Data.Dynamic
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
