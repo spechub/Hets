@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Sonja Groening, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -23,19 +23,15 @@ extractSentences (AHsModule _ _ _ decls) = filterDecls decls
 filterDecls :: AHsDecls -> NamedSentences
 filterDecls [] = []
 filterDecls (decl:decls) =
-     case decl of
-       (AHsTypeDecl _ _ _ _) -> filterDecls decls
-       (AHsDataDecl _ _ _ _ _ _) -> filterDecls decls
-       (AHsNewTypeDecl _ _ _ _ _ _) -> filterDecls decls
-       (AHsClassDecl _ _ _) -> filterDecls decls
-       (AHsInstDecl _ _ _) -> filterDecls decls
-       (AHsDefaultDecl _ _) -> filterDecls decls
-       (AHsInfixDecl _ _ _ _) -> filterDecls decls
-       (AHsTypeSig _ _ _) -> filterDecls decls           -- skip: no sentences
-       (AHsFunBind matches) -> ( NamedSen { senName = (show (1+(length decls))) ++ (funName matches), 
-                                            sentence = decl } ):(filterDecls decls)
-       (AHsPatBind _ pat _ _) -> ( NamedSen { senName =  (show (1+(length decls))) ++ (patName pat), 
-                                              sentence = decl } ):(filterDecls decls)
+     (case decl of
+       AHsFunBind matches -> 
+	   [NamedSen { senName = show (1 + length decls) ++ funName matches
+                     , sentence = decl }]
+
+       AHsPatBind _ pat _ _ -> 
+	   [NamedSen { senName = show (1 + length decls) ++ patName pat
+		     , sentence = decl }]
+       _ -> []) ++ filterDecls decls
      where funName ((AHsMatch _ name _ _ _):rest) = show name
            patName pat =
              case pat of
