@@ -21,11 +21,13 @@ DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:${LINUX_IMPORTS}:${GHC_IMPORTS}'
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
+INLINEAXIOMS_deps = utils/InlineAxioms/*hs
 
 HC         = ghc
 PERL       = perl
 HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
+INLINEAXIOMS = utils/inlineAxioms
 HADDOCK    = haddock
 
 HC_FLAGS   = -Wall  
@@ -122,6 +124,9 @@ gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
+inline_axiom_files = Comorphisms/CASL2PCFOL.hs
+gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
+
 happy_files = Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
@@ -134,7 +139,7 @@ doc_sources = $(filter-out ./Isabelle/IsaSign.hs ,$(sources))
 .PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg \
          clean_genRules genRules
 
-.SECONDARY : %.hs %.d $(generated_rule_files)
+.SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 #.PRECIOUS: sources_hetcats.mk
 
 all: hets
@@ -207,6 +212,11 @@ utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
          $(HC) --make '-i../..:../DrIFT-src' -package text GenerateRules.hs -o ../genRules && \
          strip ../genRules)
+
+utils/inlineAxioms: $(INLINEAXIOMS_deps)
+	(cd utils/InlineAxioms; \
+         make install && \
+         strip ../inlineAxioms)
 
 release: 
 	$(RM) -r HetCATS
@@ -385,6 +395,10 @@ hets.hs: hetcats/Version.hs
 
 %.hs: %.der.hs utils/DrIFT
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
+
+## rules for inlineAxioms
+%.hs: %.inline.hs utils/inlineAxioms
+	$(INLINEAXIOMS) $< > $@
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
