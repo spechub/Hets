@@ -74,9 +74,10 @@ basicItems = fmap Sig_items sigItems
 				   (map tokPos (f:ps) ++ ds))
 	     <|> dotFormulae
              <|> do a <- pluralKeyword axiomS
-		    (fs, ps, ans) <- itemAux startKeyword formula
+		    (fs, ps, ans) <- itemAux startKeyword (annoParser formula)
 		    return (Axiom_items (zipWith 
-					 (\ x y -> Annoted x [] [] y) 
+					 (\ x y -> Annoted (item x) 
+					           [] (l_annos x) y) 
 					 fs ans) (map tokPos (a:ps)))
 
 varItems :: AParser ([VAR_DECL], [Token])
