@@ -40,7 +40,8 @@ hatParser = do p <- getPosition
                s <- hStuff
 	       let (l, c) = (sourceLine p, sourceColumn p)
                    ts = pLexerPass0 lexerflags0 
-                        (replicate (l-1) '\n' ++
+                        (replicate (l-2) '\n' ++
+                         "module Prelude where\n" ++
                          replicate (c-1) ' ' ++ s)
                case parseTokens (HsParser.parse) "" ts of
 		           Result _ (Just (HsModule _ _ _ _ ds)) -> 
