@@ -30,6 +30,7 @@ import OpItem
 -- datatypes
 -- ------------------------------------------------------------------------
 
+datatype :: GenParser Char st DATATYPE_DECL
 datatype = do { s <- sortId
 	      ; e <- asKey defnS
 	      ;	a <- annos
@@ -39,11 +40,13 @@ datatype = do { s <- sortId
 			(map tokPos (e:ps)))
 	      }
 
+aAlternative :: GenParser Char st (Annoted ALTERNATIVE)
 aAlternative = do { a <- alternative
 		  ; an <- annos
 		  ; return (Annoted a [] [] an)
 		  }
 
+alternative :: GenParser Char st ALTERNATIVE
 alternative = do { s <- pluralKeyword sortS
 		 ; (ts, cs) <- sortId `separatedBy` commaT
 		 ; return (Subsorts ts (map tokPos (s:cs)))
@@ -66,6 +69,7 @@ alternative = do { s <- pluralKeyword sortS
 isSortId (Id is _ _) = length is == 1 && not (null (tokStr (head is))) 
 		       && head (tokStr (head is)) `elem` caslLetters
 
+component :: GenParser Char st COMPONENTS
 component = do { (is, cs) <- parseId `separatedBy` commaT
 	       ; if length is == 1 && isSortId (head is) then
 		 compSort is cs 
@@ -84,14 +88,17 @@ compSort is cs = do { c <- colonST
 -- sigItems
 -- ------------------------------------------------------------------------
 
+typeItems :: GenParser Char st SIG_ITEMS
 typeItems = itemList typeS datatype Datatype_items
 
+sigItems :: GenParser Char st SIG_ITEMS
 sigItems = sortItems <|> opItems <|> predItems <|> typeItems
 
 -- ------------------------------------------------------------------------
 -- basicItems
 -- ------------------------------------------------------------------------
 
+basicItems :: GenParser Char st BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
 	     <|> do { f <- asKey freeS
 		    ; Datatype_items ts ps <- typeItems
@@ -128,6 +135,7 @@ basicItems = fmap Sig_items sigItems
 					   fs ans) (map tokPos (a:ps)))
 		    }
 
+varItems :: GenParser Char st ([VAR_DECL], [Token])
 varItems = do { v <- varDecl
 	      ; do { s <- semiT
 		   ; do { tryItemEnd startKeyword
@@ -142,6 +150,7 @@ varItems = do { v <- varDecl
 		return ([v], [])
 	      }
              
+dotFormulae :: GenParser Char st BASIC_ITEMS
 dotFormulae = do { d <- dotT
 		 ; (fs, ds) <- aFormula `separatedBy` dotT
 		 ; let ps = map tokPos (d:ds) in 
@@ -157,14 +166,17 @@ dotFormulae = do { d <- dotT
 		   else return (Axiom_items fs ps)
 		 }
 
+aFormula :: GenParser Char st (Annoted FORMULA)
 aFormula = bind appendAnno (annoParser formula) lineAnnos
 
 -- ------------------------------------------------------------------------
 -- basicSpec
 -- ------------------------------------------------------------------------
 
+basicSpec :: GenParser Char st BASIC_SPEC
 basicSpec = (oBraceT >> cBraceT >> return (Basic_spec []))
 	    <|> 
 	    fmap Basic_spec (many1 aBasicItems)
 
+aBasicItems :: GenParser Char st (Annoted BASIC_ITEMS)
 aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems
