@@ -11,15 +11,17 @@ toNFrm = head . head
 genPatterns :: [(Named ModalFORMULA,Named CASLFORMULA)]
 genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y)) 
  snip><Patterns 
-     [([°!modalAx"[] p => <> p"],
-       [°!caslAx"exists w2 : world . rel(w1,w2) %(D_Serial)%"]),
+     [([°!modalAx"[](p=>q) => (([]p) => []q)"],
+       [[Nothing]]),
+      ([°!modalAx"[] p => <> p"],
+       [°!caslAx"exists w2 : world . rel(w1,w2) %(Serial_D)%"]),
       ([°!modalAx"[] p => p"],
-       [°!caslAx"rel(w1,w1) %(M_Reflexive)%"]),
+       [°!caslAx"rel(w1,w1) %(Reflexive_M)%"]),
       ([°!modalAx"[] p => [][] p "],
-       [°!caslAx"forall w2,w3: world . (rel(w1,w2) /\\ rel(w2,w3)) => rel(w1,w3) %(4_Transitive)%"]),
+       [°!caslAx"forall w2,w3: world . (rel(w1,w2) /\\ rel(w2,w3)) => rel(w1,w3) %(Transitive_4)%"]),
       ([°!modalAx" p => []<> p "],
-       [°!caslAx"forall w2:world . rel(w1,w2) => rel(w2,w1) %(B_Symmetric)%"]),
+       [°!caslAx"forall w2:world . rel(w1,w2) => rel(w2,w1) %(Symmetric_B)%"]),
       ([°!modalAx"<> p => []<> p"],
-       [°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(5_Euclidean)%"])      
+       [°!caslAx"forall w2,w3:world . (rel(w1,w2) /\\ rel(w1,w3)) => rel(w2,w3) %(Euclidean_5)%"])      
      ]
    snip>/<Patterns

@@ -14,7 +14,8 @@ Portability :  non-portable (imports Logic.Logic)
    type world to each predicate.
 
    todo:
-     - translate / generate formulas from modality formulas
+     - translate / generate formulas from modality formulas .. done
+     - correct the overloaded flexible Ops / Preds lookup
      - add a place to mixfix identifiers
 
 -}
@@ -40,6 +41,7 @@ import Modal.Logic_Modal
 import Modal.AS_Modal
 import Modal.ModalSign
 
+import Data.Maybe (mapMaybe)
 import Control.Exception (assert)
 
 -- generated function
@@ -91,9 +93,9 @@ data ModMapEnv = MME { caslSign :: CASLSign,
 		       worldSort :: SORT, 
 		       modalityRelMap :: ModalityRelMap,
 		       flexOps :: Map.Map OP_NAME (Set.Set OpType),
-		       rigOps :: Map.Map OP_NAME (Set.Set OpType),
+--		       rigOps :: Map.Map OP_NAME (Set.Set OpType),
 		       flexPreds :: Map.Map PRED_NAME (Set.Set PredType),
-		       rigPreds :: Map.Map PRED_NAME (Set.Set PredType),
+--		       rigPreds :: Map.Map PRED_NAME (Set.Set PredType),
 		       relFormulas :: [Named CASLFORMULA]
 		     } 
 
@@ -114,20 +116,22 @@ transSig sign =
                {sortSet = Set.insert fws sorSet 
 	       , sortRel = sortRel sign
 	       , opMap = Map.unionWith Set.union flexOps' rigOps' 
-	       , assocOps = Map.map (addWorld_OP fws) $ assocOps sign
+	       , assocOps = diffMapSet (assocOps sign) flexibleOps
 	       , predMap = Map.unionWith Set.union flexPreds' rigPreds'},
          worldSort = fws,
 	 modalityRelMap = relations,
-	 flexOps = flexOps',
-	 rigOps = rigOps',
-	 flexPreds = flexPreds',
-	 rigPreds = rigPreds',
+	 flexOps = flexibleOps,
+--	 rigOps = rigOps',
+	 flexPreds = flexiblePreds,
+--	 rigPreds = rigPreds',
 	 relFormulas = relFrms}
     where sorSet     = sortSet sign
 	  fws        = freshWorldSort sorSet
-	  flexOps'   = Map.map (addWorld_OP fws) $ flexibleOps
+	  flexOps'   = Map.foldWithKey (addWorld_OP fws) 
+		                       Map.empty $ flexibleOps
 	  flexPreds' = addWorldRels $ 
-	               Map.map (addWorld_PRED fws) $ flexiblePreds
+	               Map.foldWithKey (addWorld_PRED fws) 
+			               Map.empty $ flexiblePreds
 	  rigOps'    = rigidOps $ extendedInfo sign
 	  rigPreds'  = rigidPreds $ extendedInfo sign
 	  flexibleOps     = diffMapSet (opMap sign) rigOps'
@@ -182,7 +186,7 @@ mapSym = id  -- needs to be changed once modal symbols are added
 transSchemaMFormulas :: SORT -> PRED_NAME 
 		     -> [AnModFORM] -> [Named CASLFORMULA]
 transSchemaMFormulas fws relSymb = 
-    map (transSchemaMFormula fws relSymb worldVars)
+    mapMaybe (transSchemaMFormula fws relSymb worldVars)
 
 transSen :: MSign -> ModalFORMULA -> CASLFORMULA
 transSen msig = mapSenTop (transSig msig) 
@@ -223,13 +227,18 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
 		   fwsTerm    = sortedWorldTerm fws (head vars) 
 		   (pn',as'') =  
 		       case pn of
-		       Pred_name _ -> error "Modal2CASL: untyped prdication" 
-		       Qual_pred_name prn (Pred_type sorts pps) ps 
-			   | Map.member prn fPreds -> 
-			       (Qual_pred_name prn 
-				        (Pred_type (fws:sorts) pps) ps,
-				fwsTerm:as')
-			   | otherwise -> (pn,as')
+		       Pred_name _ -> error "Modal2CASL: untyped predication" 
+		       Qual_pred_name prn pType@(Pred_type sorts pps) ps ->
+		         let addTup = (Qual_pred_name (addPlace prn) 
+                                             (Pred_type (fws:sorts) pps) ps,
+				       fwsTerm:as')
+			     defTup = (pn,as') in
+		          maybe defTup
+			    (\ ts -> assert (not $ Set.isEmpty ts) 
+                                 (if Set.member (toPredType pType) ts 
+				     then addTup
+			             else defTup))
+			    (Map.lookup prn fPreds)
 	       in Predication pn' as'' qs
 	   Definedness t ps -> Definedness (mapTERM mapEnv vars t) ps
 	   Membership t ty ps -> Membership (mapTERM mapEnv vars t) ty ps
@@ -292,12 +301,17 @@ mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
 	    (opsym',as'') =  
 		case opsym of
 		Op_name _ -> error "Modal2CASL: untyped prdication" 
-		Qual_op_name on opType ps 
-		    | Map.member on fOps -> 
-			(Qual_op_name on 
-			        (addFws opType) ps,
-			 fwsTerm:as')
-		    | otherwise -> (opsym,as')
+		Qual_op_name on opType ps ->
+		    let addTup = (Qual_op_name (addPlace on) 
+                                               (addFws opType) ps,
+				  fwsTerm:as')
+			defTup = (opsym,as') in
+		    maybe defTup
+			  (\ ts -> assert (not $ Set.isEmpty ts) 
+			    (if Set.member (toOpType opType) ts
+			        then addTup
+			        else defTup))
+			  (Map.lookup on fOps)
         in Application opsym' as'' qs
     Sorted_term trm ty ps -> Sorted_term (mapTERM mapEnv vars trm) ty ps 
     Cast trm ty ps -> Cast (mapTERM mapEnv vars trm) ty ps 
@@ -306,6 +320,12 @@ mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
 		   (mapSen mapEnv vars f) 
 		   (mapTERM mapEnv vars t2) ps
     _ -> error "Modal2CASL.mapTERM"
+
+addPlace :: Id -> Id
+addPlace i@(Id ts ids ps)
+    | isMixfix i = Id ((\ (x,y) -> x++mkSimpleId place:y) 
+                          (span (not . isPlace) ts)) ids ps
+    | otherwise  = i
 
 modalityToModName :: MODALITY -> ModName
 modalityToModName (Simple_mod sid) = SimpleM sid
@@ -336,11 +356,21 @@ replacePropPredication pSymb frmIns frmToChn =
 
 
 
-addWorld_OP :: SORT -> Set.Set OpType -> Set.Set OpType
-addWorld_OP fws = Set.image (\t -> t { opArgs =  fws : opArgs t})
+addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType 
+	    -> Map.Map OP_NAME (Set.Set OpType) 
+	    -> Map.Map OP_NAME (Set.Set OpType)
+addWorld_OP = addWorld_ (\ws t -> t { opArgs =  ws : opArgs t})
 
-addWorld_PRED :: SORT -> Set.Set PredType -> Set.Set PredType
-addWorld_PRED fws = Set.image (\t -> t {predArgs = fws : predArgs t})
+addWorld_PRED :: SORT -> PRED_NAME -> Set.Set PredType 
+	      -> Map.Map PRED_NAME (Set.Set PredType) 
+	      -> Map.Map PRED_NAME (Set.Set PredType)
+addWorld_PRED = addWorld_ (\ws t -> t {predArgs = ws : predArgs t})
+
+addWorld_ :: (Ord a) => (SORT -> a -> a) 
+	  -> SORT -> Id -> Set.Set a 
+	  -> Map.Map OP_NAME (Set.Set a) 
+	  -> Map.Map OP_NAME (Set.Set a)
+addWorld_ f fws k set mp = Map.insert (addPlace k) (Set.image (f fws) set) mp
 
 -- List of sort ids for possible Worlds
 worldSorts :: [SORT]
