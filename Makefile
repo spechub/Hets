@@ -240,6 +240,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
           $(wildcard utils/InlineAxioms/*.hs) \
           $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
 	  $(genrule_header_files) $(generated_rule_files) \
+          Modal/GeneratePatterns.inline.hs \
           Haskell/PreludeString.append.hs \
           Haskell/ProgramaticaPrelude.hs hxt/HXT.hs hxt/Net.hs \
 	  $(patsubst %.hs,%.der.hs,$(drifted_files))
