@@ -44,11 +44,8 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args _) =
        (mk, newSc) <- anaTypeScheme Nothing sc
        case mk of 
 	       Nothing -> return () -- induced error
-	       Just k -> if eqKind Compatible k star then
-			 addOpId i newSc attrs
-			 else addDiag $ mkDiag Error 
-			      ("wrong kind '" ++ showPretty k
-			       "' of type for operation") i 
+	       Just k -> do checkKinds (posOfId i) k star
+			    addOpId i newSc attrs
 
 checkDifferentTypeArgs :: [TypeArg] -> [Diagnosis]
 checkDifferentTypeArgs l = 

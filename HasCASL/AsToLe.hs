@@ -117,12 +117,7 @@ anaVarDecl(VarDecl v oldT _ _) =
 		   do (mk, t) <- anaType oldT
 		      case mk of 
 			      Nothing -> return ()
-			      Just k -> if eqKind Compatible k star
-					then  return ()
-					else addDiag $
-					     mkDiag Error
-					("wrong kind '" ++ showPretty k
-					 "' of type for variable") v 
+			      Just k -> checkKinds (posOfId v) k star
 		      as <- getAssumps
 		      let l = Map.findWithDefault [] v as
 			  ts = simpleTypeScheme t in 

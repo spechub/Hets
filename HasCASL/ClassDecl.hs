@@ -42,13 +42,13 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 				      "implicit declaration of superclass" hd
 		    mapM_ (anaClassDecl ak [hd] Nothing) cls
 		  else do (sk, Intersection newSups _) <- anaClass sc
-			  appendDiags $ eqKindDiag sk ak
+			  checkKinds (posOfId hd) sk ak
 			  mapM_ (anaClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
     do ak <- anaKind k
        (dk, newIc) <- anaClass ic
-       appendDiags $ eqKindDiag dk ak
+       checkKinds (posOfId ci) dk ak
        anaClassDecl ak [] (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
@@ -72,7 +72,7 @@ anaClassDecl kind sups defn ci =
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		    oldKind = classKind info
-                appendDiags $ eqKindDiag kind oldKind
+		checkKinds (posOfId ci) kind oldKind
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 

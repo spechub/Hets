@@ -90,9 +90,10 @@ inferKind (TypeAppl t1 t2) =
 		       KindAppl k1 k2 _ -> do
 			   case m2 of 
 				   Nothing -> return ()
-				   Just mk2 -> if eqKind Compatible mk2 k1
-					       then return ()
+				   Just mk2 -> if eqKind mk2 k1
+                                               then return ()
 					       else addDiag $ wrongKind t2
+
 			   return $ Just k2
 		       _ -> do addDiag $ wrongKind t1
 			       return Nothing
@@ -105,7 +106,7 @@ inferKind (ProductType ts _) =
        let ns = map ( \ (Just x, y) -> (x, y)) 
 		$ filter (isJust . fst) $ zip ms ts 
 	   es = map (wrongKind . snd) $ 
-		filter (not . eqKind Compatible star . fst) ns
+		filter (not . eqKind star . fst) ns
        appendDiags es
        return $ Just star 
 inferKind (LazyType t _) = 
@@ -127,7 +128,7 @@ checkKind t j = do
 	m <- inferKind t 
 	case m of 
 	       Nothing -> return ()
-	       Just k -> if eqKind Compatible k j
+	       Just k -> if eqKind k j
 			  then return ()
 			  else addDiag $ wrongKind t
 
@@ -142,9 +143,10 @@ getIdKind i =
     do tk <- getTypeMap
        let m = getKind tk i
        case m of
-	    Nothing -> addDiag $ mkDiag Error "undeclared type" i
-	    _ -> return ()
-       return m
+	    Nothing -> do addDiag $ mkDiag Error "undeclared type" i
+                          return Nothing
+	    Just k -> do cMap <- getClassMap
+			 return $ Just $ expandKind cMap k
 
 getKind :: TypeMap -> Id -> Maybe Kind
 getKind tk i = 

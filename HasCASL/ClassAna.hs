@@ -40,10 +40,10 @@ allSuperClasses ce ci =
     let recurse = nub . concatMap (allSuperClasses ce) in
     case Map.lookup ci ce of 
     Just info -> nub $ (case classDefn info of 
-			Nothing -> [ci]
-			Just (Intersection cis _) -> recurse cis
-			Just _ -> [ci])
-		 ++ recurse (superClasses info)
+                        Nothing -> [ci]
+                        Just (Intersection cis _) -> recurse cis
+                        Just _ -> [ci])
+                 ++ recurse (superClasses info)
     Nothing -> error "allSuperClasses"
 
 anaClassId :: ClassMap -> ClassId -> Maybe Kind
@@ -52,6 +52,18 @@ anaClassId cMap ci =
        Nothing -> Nothing
        Just i -> Just $ classKind i
 
+expandKind :: ClassMap -> Kind -> Kind
+expandKind cMap (ExtClass c _ _) = 
+    case c of
+    Intersection (a:_) _ -> 
+	case anaClassId cMap a of
+	    Just k -> expandKind cMap k
+	    _ -> error "expandKind"
+    _ -> star
+
+expandKind cMap (KindAppl k1 k2 ps) = 
+    KindAppl (expandKind cMap k1) (expandKind cMap k2) ps
+    
 anaClass :: Class -> State Env (Kind, Class)
 anaClass (Intersection cs ps) =  
     do cMap <- getClassMap
@@ -60,8 +72,10 @@ anaClass (Intersection cs ps) =
 	   ds = map (mkDiag Error "undeclared class" . snd) ns
 	   restCs = map snd js
 	   ks = map (fromJust. fst) js
-	   k = if null ks then star else fromJust $ fst $ head js
-	   es = filter (not . eqKind Compatible k . fromJust . fst) js
+	   k = if null ks then star else expandKind cMap $ 
+	       fromJust $ fst $ head js
+	   es = filter (not . eqKind k . expandKind cMap . 
+			fromJust . fst) js
 	   fs =	map (\ (Just wk, i) -> mkDiag Error 
 		     ("wrong kind '" ++ showPretty wk "' of")
 		     i) es
@@ -82,53 +96,51 @@ downsetWarning t =
 
 anaKind :: Kind -> State Env Kind
 anaKind (KindAppl k1 k2 p) = 
-    do k3 <- anaKind k1
-       k4 <- anaKind k2
-       return $ KindAppl k3 k4 p
+    do k1e <- anaKind k1
+       k2e <- anaKind k2
+       return $ KindAppl k1e k2e p
 anaKind (ExtClass k v p) = 
-    do (k1, c) <- anaClass k
-       return $ case k1 of 
-			ExtClass _ _ _ -> ExtClass c v p
-			_ -> k1
-
--- ---------------------------------------------------------------------------
--- analyse type
--- ---------------------------------------------------------------------------
-
-eqKindDiag :: Kind -> Kind -> [Diagnosis]
-eqKindDiag k1 k2 = 
-    if eqKind Compatible k1 k2 then []
-       else [ Diag Error
-	      ("incompatible kinds\n" ++ 
-	       indent 2 (showPretty k1 . 
-			 showChar '\n' .  
-			 showPretty k2) "")
-	    $ posOfKind k1 ]
+    do (_, c) <- anaClass k
+       return $ ExtClass c v p
 
 -- ---------------------------------------------------------------------
 -- comparing kinds 
 -- ---------------------------------------------------------------------
 
-data EqMode = Compatible | SameSyntax
+checkKinds :: Pos -> Kind -> Kind -> State Env ()
+checkKinds p k1 k2 =
+    do cMap <- getClassMap
+       appendDiags $ eqKindDiag p (expandKind cMap k1) 
+		   $ expandKind cMap k2
 
-eqKind :: EqMode -> Kind -> Kind -> Bool
-eqKind emod (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
-    eqKind emod p1 p2 && eqKind emod c1 c2
-eqKind emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    v1 == v2 && 
-	   case emod of Compatible -> True
-			SameSyntax -> eqClass c1 c2
-eqKind _ _ _ = False
+eqKindDiag :: Pos -> Kind -> Kind -> [Diagnosis]
+eqKindDiag p k1 k2 = 
+    if eqKind k1 k2 then []
+       else [ Diag Error
+	      ("incompatible kinds\n" ++ 
+	       indent 2 (showPretty k1 . 
+			 showChar '\n' .  
+			 showPretty k2) "")
+	    $ p ]
 
-eqListBy :: (a -> a -> Bool) -> [a] -> [a] -> Bool
-eqListBy _ [] [] = True
-eqListBy f (h1:t1) (h2:t2) = f h1 h2 && eqListBy f t1 t2
-eqListBy _ _ _ = False
 
-eqClass :: Class -> Class -> Bool
-eqClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
-eqClass (Downset t1) (Downset t2) = t1 == t2
-eqClass _ _ = False
+eqKind :: Kind -> Kind -> Bool
+eqKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
+    eqKind p1 p2 && eqKind c1 c2
+eqKind (ExtClass _ _ _) (ExtClass _ _ _) = True
+eqKind _ _ = False
+
+sameClass :: Class -> Class -> Bool
+sameClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
+sameClass (Downset t1) (Downset t2) = t1 == t2
+sameClass _ _ = False
+
+sameKind ::  Kind -> Kind -> Bool
+sameKind (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
+    sameClass c1 c2 && v1 == v2
+sameKind (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
+    sameKind p1 p2 && sameKind c1 c2
+sameKind _ _ = False
 
 -- ---------------------------------------------------------------------
 

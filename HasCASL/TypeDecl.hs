@@ -43,15 +43,13 @@ addTypeKind d i k =
 	      Nothing -> putTypeMap $ Map.insert i 
 			 (TypeInfo k [] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
-		  let ds = eqKindDiag k ok in
-			  if null ds then 
-			     if any (eqKind SameSyntax k) (ok:ks)
-				then addDiag $ mkDiag Warning 
-				     "redeclared type" i
-				else putTypeMap $ Map.insert i 
+		  do checkKinds (posOfId i) k ok
+		     if any (sameKind k) (ok:ks)
+			then addDiag $ mkDiag Warning 
+				 "redeclared type" i
+				 else putTypeMap $ Map.insert i 
 					 (TypeInfo ok
 					       (k:ks) sups defn) tk
-			     else appendDiags ds
 
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
@@ -86,7 +84,7 @@ anaTypeItem _ inst (SubtypeDefn pat v t f ps) =
     do (mk, newT) <- anaType t
        k <- case mk of 
 	      Nothing -> return star
-	      Just k -> do appendDiags $ eqKindDiag k star 
+	      Just k -> do checkKinds (posOfType t) k star 
 			   return k
        addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
 		   $ firstPos [v] ps
@@ -109,12 +107,12 @@ anaTypeItem _ inst (AliasType pat mk sc _) =
 anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d 
 
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
-anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs _) =
+anaDatatype genKind inst (DatatypeDecl pat kind _alts derivs ps) =
     do k <- anaKind kind
-       appendDiags $ eqKindDiag k star
+       checkKinds (firstPos [pat] ps) k star
        case derivs of 
 		   Just c -> do (dk, _) <- anaClass c
-				appendDiags $ eqKindDiag dk star
+				checkKinds (posOfClass c) dk star
 		   Nothing -> return ()
        let Result ds m = convertTypePattern pat
        appendDiags ds
@@ -141,7 +139,7 @@ anaTypeScheme mk (TypeScheme tArgs (q :=> ty) p) =
 	      Just sk -> do let newK = typeArgsListToKind tArgs sk
 			    case k of 
 			        Nothing -> return ()
-			        Just ki -> appendDiags $ eqKindDiag ki newK
+			        Just ki -> checkKinds (posOfType ty) ki newK
 			    return $ Just newK
        putTypeMap tm       -- forget local variables 
        return (sik, newPty)
