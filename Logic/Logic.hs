@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2003
@@ -97,32 +98,16 @@ class Show lid => Language lid where
     description _ = "No description available"
 
 -- (a bit unsafe) coercion using the language name
-coerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
-          lid1 -> lid2 -> a -> Maybe b
-coerce i1 i2 a = if language_name i1 == language_name i2 then 
-		 --fromDynamic (toDyn (a)) else Nothing
-                 (Just $ unsafeCoerce a) else Nothing
-
-rcoerce1 :: (Typeable a, Typeable b, Language lid1, Language lid2, Show a) => 
-           lid1 -> lid2 -> Pos-> a -> b -> Result b
-rcoerce1 i1 i2 pos a b = 
-  maybeToResult pos 
-                (if language_name i1 == language_name i2 then 
-                   "Internal type error concerning types "++show (typeOf a)
-                     ++" and "++show(typeOf b)
-                  else "Logic "++ language_name i1 ++ " expected, but "
-                         ++ language_name i2++" found")
-                (coerce i1 i2 a)
+coerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
+          Monad m) => lid1 -> lid2 -> a -> m b
+coerce i1 i2 a = if language_name i1 == language_name i2 
+                 then return $ unsafeCoerce a 
+                 else fail ("Logic "++ language_name i1 ++ " expected, but "
+                            ++ language_name i2 ++ " found")
 
 rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
            lid1 -> lid2 -> Pos-> a -> Result b
-rcoerce i1 i2 pos a = -- rcoerce1 i1 i2 pos a undefined
-  maybeToResult pos 
-                (if language_name i1 == language_name i2 then 
-                   "Internal type error concerning type "++show (typeOf a)
-                  else "Logic "++ language_name i1 ++ " expected, but "
-                         ++ language_name i2++" found")
-                (coerce i1 i2 a)
+rcoerce i1 i2 pos a = adjustPos pos $ coerce i1 i2 a
 
 -- Categories are given by a quotient,
 -- i.e. we need equality
