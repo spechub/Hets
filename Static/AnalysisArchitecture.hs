@@ -489,13 +489,11 @@ assertAmalgamability :: HetcatsOpts          -- ^ the program options
 		     -> [(Node, GMorphism)]  -- ^ the sink
 		     -> Result ()
 assertAmalgamability opts pos diag sink =
-    do if caslAmalg opts == [] then do warning () "Skipping amalgamability check" pos 
-				       return ()
-          else do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
-		  case ensAmalg of
-			     Logic.Logic.Yes -> return ()
-			     Logic.Logic.No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
-			     DontKnow -> warning () "Unable to assert that amalgamability is ensured" pos
+    do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
+       case ensAmalg of
+		     Logic.Logic.Yes -> return ()
+		     Logic.Logic.No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
+		     DontKnow msg -> warning () msg pos
 
 
 -- | Check the amalgamability assuming common logic for whole diagram
@@ -506,7 +504,7 @@ homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
 				 -> Result Amalgamates
 homogeneousEnsuresAmalgamability opts pos diag sink =
     do case sink of  
-		 [] -> plain_error DontKnow "homogeneousEnsuresAmalgamability: Empty sink" pos
+		 [] -> plain_error defaultDontKnow "homogeneousEnsuresAmalgamability: Empty sink" pos
                  lab:_ -> do let (_, mor) = lab
 			         sig = cod Grothendieck mor
 			     G_sign lid _ <- return sig
