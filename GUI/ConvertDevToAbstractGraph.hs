@@ -129,7 +129,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
              [GlobalMenu (Menu Nothing
-               [Menu (Just "internal nodes")
+               [Menu (Just "Unnamed nodes")
                  [Button "Hide" 
                           (do --gid <- readIORef graphId
                               Result descr _ <- hideSetOfNodeTypes gid
@@ -147,7 +147,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                               redisplay gid actGraphInfo
                               return ()    )],
 
-	        Menu (Just "proofs")
+	        Menu (Just "Proofs")
                   [		  Button "Global Subsumption"
 			  (do proofStatus <- readIORef ioRefProofStatus
 			      let newProofStatus@(_,history,_) =
@@ -217,7 +217,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
 		  ("def",
-                   Dotted $$$ Color "Steelblue"
+                   Solid $$$ Color "Steelblue"
 		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
@@ -394,7 +394,7 @@ createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef
 
 createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes 
 					 ioRefSubtreeEvents actGraphInfo =
-                    (Button "undo show just subtree"
+                    (Button "Undo show just subtree"
 		      (\ (name,descr,gid) ->
 		        do visibleNodes <- readIORef ioRefVisibleNodes
                            case (tail visibleNodes) of
