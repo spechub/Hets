@@ -1,0 +1,8 @@
+ class Cpo class Cppo %%Recursion then
+var a: Cpo
+free type List a ::= nil | cons (a) (List a) deriving Cpo
+var b: Cppo; z: b; f: b --> a --> b; x: a; l: List a
+op foldl: b --> (b --> a --> b) --> List a --> b
+program
+ foldl z f nil = z;
+ foldl z f (cons x l) = foldl (f z x) f l

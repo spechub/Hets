@@ -1,0 +1,212 @@
+class Cpo < Type
+class Cppo < Type
+      %%Recursion then
+var a : Cpo
+free type List(a : Cpo) ::= nil | 
+                            cons (a) (List a) deriving Cpo
+var b : Cppo; z : b; f : b --> a --> b; x : a; l : List a
+op foldl : b --> (b --> a --> b) --> List a --> b
+program ((((op foldl[b; a]
+            : forall b : Cppo; a : Cpo .
+                b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+               b --> (b --> a --> b) --> List a --> b)
+            (var z : b) :
+              (b --> a --> b) ->? List a ->? b)
+           (var f : b --> a --> b) :
+             List a ->? b)
+          ((op nil[a] : forall a : Cpo . List a_v-1) : List a) :
+            b
+          = (var z : b);
+        ((((op foldl[b; a]
+            : forall b : Cppo; a : Cpo .
+                b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+               b --> (b --> a --> b) --> List a --> b)
+            (var z : b) :
+              (b --> a --> b) ->? List a ->? b)
+           (var f : b --> a --> b) :
+             List a ->? b)
+          ((((op cons[a]
+              : forall a : Cpo . a_v-1 -> List a_v-1 -> List a_v-1) :
+                 a -> List a -> List a)
+              (var x : a) :
+                List a ->? List a)
+             (var l : List a) :
+               List a) :
+            b
+          = ((((op foldl[b; a]
+                : forall b : Cppo; a : Cpo .
+                    b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+                   b --> (b --> a --> b) --> List a --> b)
+                (((var f : b --> a --> b)(var z : b) : a ->? b)(var x : a) : b) :
+                  (b --> a --> b) ->? List a ->? b)
+               (var f : b --> a --> b) :
+                 List a ->? b)
+              (var l : List a) :
+                b
+%% Classes ---------------------------------------------------------------
+Cpo < Type
+Cppo < Type
+%% Type Constructors -----------------------------------------------------
+List
+  : Cpo -> Type
+     %[free type List(a : Cpo)
+         ::= nil : List a_v-1
+             cons : a_v-1 -> List a_v-1 -> List a_v-1 (a_v-1)(List a_v-1)]%
+Logical : Type := Unit ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Unit : Type
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
+__->?__ : Type- -> Type+ -> Type
+a : Cpo %(var_1)%
+b : Cppo %(var_2)%
+%% Assumptions -----------------------------------------------------------
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+cons
+  : forall a : Cpo . a_v-1 -> List a_v-1 -> List a_v-1
+    %(construct List)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+f : b --> a --> b %(var)%
+false : Unit %(fun)%
+foldl
+  : forall b : Cppo; a : Cpo .
+      b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1
+    %(op)%
+l : List a %(var)%
+nil : forall a : Cpo . List a_v-1 %(construct List)%
+not__ : ? Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+x : a %(var)%
+z : b %(var)%
+¬__ : ? Unit ->? Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+free type List(a : Cpo)
+  ::= nil : List a_v-1
+      cons : a_v-1 -> List a_v-1 -> List a_v-1
+        (a_v-1)(List a_v-1) %(ga_List)%
+program ((((op foldl[b; a]
+            : forall b : Cppo; a : Cpo .
+                b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+               b --> (b --> a --> b) --> List a --> b)
+            (var z : b) :
+              (b --> a --> b) ->? List a ->? b)
+           (var f : b --> a --> b) :
+             List a ->? b)
+          ((op nil[a] : forall a : Cpo . List a_v-1) : List a) :
+            b
+          = (var z : b) %(pe_foldl)%
+program ((((op foldl[b; a]
+            : forall b : Cppo; a : Cpo .
+                b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+               b --> (b --> a --> b) --> List a --> b)
+            (var z : b) :
+              (b --> a --> b) ->? List a ->? b)
+           (var f : b --> a --> b) :
+             List a ->? b)
+          ((((op cons[a]
+              : forall a : Cpo . a_v-1 -> List a_v-1 -> List a_v-1) :
+                 a -> List a -> List a)
+              (var x : a) :
+                List a ->? List a)
+             (var l : List a) :
+               List a) :
+            b
+          = ((((op foldl[b; a]
+                : forall b : Cppo; a : Cpo .
+                    b_v-1 --> (b_v-1 --> a_v-2 --> b_v-1) --> List a_v-2 --> b_v-1) :
+                   b --> (b --> a --> b) --> List a --> b)
+                (((var f : b --> a --> b)(var z : b) : a ->? b)(var x : a) : b) :
+                  (b --> a --> b) ->? List a ->? b)
+               (var f : b --> a --> b) :
+                 List a ->? b)
+              (var l : List a) :
+                b %(pe_foldl)%
+%% Diagnostics -----------------------------------------------------------
+*** Hint 2.5, is type variable 'a'
+*** Hint 4.5, is type variable 'b'
+*** Hint 7.8, in type of '(var z : b)'
+  typename 'b' (4.17)
+  is not unifiable with type 'Unit ->? _var_6_v6' (7.8)
+
+*** Hint 7.10, in type of '(var f : b --> a --> b)'
+  typename 'b' (4.23)
+  is not unifiable with type '_var_11_v11 --> _var_12_v12' (5.24)
+
+*** Hint 7.12, in type of '(op nil[_var_15_v15] : forall a : Cpo . List a_v-1) :
+    List _var_15_v15'
+  type 'List _var_15_v15' (3.11)
+  is not unifiable with type 'Unit ->? List _var_8_v8' (5.37)
+
+*** Hint 7.8, variable shadows global name(s) 'z'
+*** Hint 7.10, variable shadows global name(s) 'f'
+*** Hint 7.8, variable shadows global name(s) 'z'
+*** Hint 7.10, variable shadows global name(s) 'f'
+*** Hint 8.8, in type of '(var z : b)'
+  typename 'b' (4.17)
+  is not unifiable with type 'Unit ->? _var_19_v19' (8.8)
+
+*** Hint 8.10, in type of '(var f : b --> a --> b)'
+  typename 'b' (4.23)
+  is not unifiable with type '_var_24_v24 --> _var_25_v25' (5.24)
+
+*** Hint 8.18, in type of '(var x : a)'
+  typename 'a' (4.41)
+  is not unifiable with type 'Unit ->? _var_28_v28' (8.18)
+
+*** Hint 8.20, in type of '(var l : List a)'
+  type 'List a' (4.47)
+  is not unifiable with type 'Unit ->? List _var_21_v21' (3.38)
+
+*** Hint 8.13, in type of '(op cons[_var_33_v33]
+ : forall a : Cpo . a_v-1 -> List a_v-1 -> List a_v-1) :
+    _var_33_v33 -> List _var_33_v33 -> List _var_33_v33'
+  type 'List _var_32_v32' (3.11)
+  is not unifiable with type 'Unit ->? List _var_21_v21' (5.37)
+
+*** Hint 8.13, untypable application (with result type: _var_31_v31 ->? Unit ->? List _var_21_v21)
+ 'cons(x)'
+*** Hint 8.13, untypable application (with result type: Unit ->? List _var_21_v21)
+ 'cons(x)(l)'
+*** Hint 8.8, variable shadows global name(s) 'z'
+*** Hint 8.10, variable shadows global name(s) 'f'
+*** Hint 8.18, variable shadows global name(s) 'x'
+*** Hint 8.20, variable shadows global name(s) 'l'
+*** Hint 8.34, in type of '(var z : b)'
+  typename 'b' (4.17)
+  is not unifiable with type 'Unit ->? _var_45_v45' (8.34)
+
+*** Hint 8.36, in type of '(var x : a)'
+  typename 'a' (4.41)
+  is not unifiable with type 'Unit ->? _var_44_v44' (8.36)
+
+*** Hint 8.32, in type of '(var f : b --> a --> b)'
+  typename 'b' (4.23)
+  is not unifiable with type 'Unit ->? _var_36_v36' (8.32)
+
+*** Hint 8.32, untypable application (with result type: _var_46_v46 ->? Unit ->? _var_36_v36)
+ 'f(z)'
+*** Hint 8.32, untypable application (with result type: Unit ->? _var_36_v36)
+ 'f(z)(x)'
+*** Hint 8.39, in type of '(var f : b --> a --> b)'
+  typename 'b' (4.23)
+  is not unifiable with type '_var_41_v41 --> _var_42_v42' (5.24)
+
+*** Hint 8.41, in type of '(var l : List a)'
+  type 'List a' (4.47)
+  is not unifiable with type 'Unit ->? List _var_38_v38' (5.37)
+
+*** Hint 8.8, variable shadows global name(s) 'z'
+*** Hint 8.10, variable shadows global name(s) 'f'
+*** Hint 8.18, variable shadows global name(s) 'x'
+*** Hint 8.20, variable shadows global name(s) 'l'
