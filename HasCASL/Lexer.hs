@@ -99,7 +99,7 @@ singleUnderline = try (char '_' `followedWith` scanLPD)
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
 scanAnyWords :: Parser String
-scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord <?> "words")
+scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
 
 scanDot = try (char '.' `followedWith` caslLetter)
 
@@ -151,7 +151,7 @@ scanFloat = (getNumber <++> option ""
 	      ((char 'E' <:> option "" (single (oneOf "+-")))
 	       <++> getNumber))) `checkWith` (\n -> length n > 1)
 
-scanDigit = (getNumber `checkWith` (\n -> length n == 1)) <?> "single digit"
+scanDigit = getNumber `checkWith` (\n -> length n == 1)
 
 -- ----------------------------------------------
 -- comments and label
@@ -181,7 +181,8 @@ labelAnn = comment '(' ')'
 
 blankChars = "\t\v\f \160" -- non breaking space
 
-skip p = p `followedBy` 
+skip :: GenParser Char st a -> GenParser Char st a
+skip p = p `followedBy`  
 	 skipMany(single (oneOf (newlineChars ++ blankChars)) 
 		  <|> commentOut <?> "")
 

@@ -60,12 +60,12 @@ ccb = makeToken (single (char '}'))
 uu = makeToken (scanPlace)
 
 -- simple id
-sid = makeToken (otherToken <|> scanSigns <|> scanWords) <?> "simple-id"
+sid = makeToken (otherToken <|> scanSigns <|> scanWords <?> "simple-id")
 
 curly =  begDoEnd ocb iList ccb
 noComp = begDoEnd obr iList cbr 
 
-singleId = single (sid `notFollowedWith` sid)
+singleId = single (sid `notFollowedWith` sid) 
 
 iList =  fmap concat (many (many1 uu
 	          <|> singleId 
@@ -80,8 +80,11 @@ middle = many1 uu <++> option [] afterPlace  <?> "mix-id"
 start = many uu <++>
 	option [] (afterPlace <++> flat (many middle))
 
-checkStart = start `checkWith` (\l -> length l > 1 || 
-				(length l == 1 && not(isPlace(head l))))
+checkStart = do { l <- start
+		; if length l > 1 || (length l == 1 && not(isPlace(head l)))
+		  then return l
+		  else unexpected ("empty identifier " ++ show (Id l []))
+		}
 	     <?> "id"
 
 comps = between obr cbr
