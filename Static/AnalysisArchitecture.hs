@@ -18,6 +18,7 @@
 module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
 where
 
+import Options
 import Maybe 
 import Logic.Logic
 import Logic.Grothendieck
@@ -45,19 +46,19 @@ import List
 -- @
 ana_ARCH_SPEC :: LogicGraph -> AnyLogic    -- ^ the default logic
 	      -> GlobalContext -> AnyLogic -- ^ current logic
-	      -> Bool                      -- ^ should only the structure be analysed?
+	      -> HetcatsOpts                      -- ^ should only the structure be analysed?
 	      -> ARCH_SPEC -> Result (ArchSig, DGraph, ARCH_SPEC)
 -- ^ returns 1. the architectural signature of given ARCH-SPEC 2. development graph resulting from
 -- structured specs within the arch spec and 3. ARCH_SPEC after possible conversions
 
 -- BASIC-ARCH-SPEC
-ana_ARCH_SPEC lgraph defl gctx@(gannos, genv, _) curl justStruct (Basic_arch_spec udd uexpr pos) = 
-    do (uctx, dg', udd') <- ana_UNIT_DECL_DEFNS lgraph defl gctx curl justStruct udd 
-       (_, usig, _, dg'', uexpr') <- ana_UNIT_EXPRESSION lgraph defl (gannos, genv, dg') curl justStruct uctx (item uexpr)
+ana_ARCH_SPEC lgraph defl gctx@(gannos, genv, _) curl opts (Basic_arch_spec udd uexpr pos) = 
+    do (uctx, dg', udd') <- ana_UNIT_DECL_DEFNS lgraph defl gctx curl opts udd 
+       (_, usig, _, dg'', uexpr') <- ana_UNIT_EXPRESSION lgraph defl (gannos, genv, dg') curl opts uctx (item uexpr)
        return ((ctx uctx, usig), dg'', Basic_arch_spec udd' (replaceAnnoted uexpr' uexpr) pos)
 -- GROUP-ARCH-SPEC
-ana_ARCH_SPEC lgraph defl gctx curl justStruct (Group_arch_spec asp _) = 
-    ana_ARCH_SPEC lgraph defl gctx curl justStruct (item asp)
+ana_ARCH_SPEC lgraph defl gctx curl opts (Group_arch_spec asp _) = 
+    ana_ARCH_SPEC lgraph defl gctx curl opts (item asp)
 -- ARCH-SPEC-NAME
 ana_ARCH_SPEC _ defl (_, genv, dg) _ _ asp@(Arch_spec_name asn@(Token _ pos)) = 
     do case Map.lookup asn genv of
@@ -72,36 +73,36 @@ ana_ARCH_SPEC _ defl (_, genv, dg) _ _ asp@(Arch_spec_name asn@(Token _ pos)) =
 
 -- | Analyse a list of unit declarations and definitions
 ana_UNIT_DECL_DEFNS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		    -> Bool -> [Annoted UNIT_DECL_DEFN] 
+		    -> HetcatsOpts -> [Annoted UNIT_DECL_DEFN] 
 		    -> Result (ExtStUnitCtx, DGraph, [Annoted UNIT_DECL_DEFN])
 -- ^ returns 1. extended static unit context 2. possibly modified development graph
 -- 3. possibly modified list of unit declarations and definitions
-ana_UNIT_DECL_DEFNS lgraph defl gctx curl justStruct udds = 
-    ana_UNIT_DECL_DEFNS' lgraph defl gctx curl justStruct emptyExtStUnitCtx udds
+ana_UNIT_DECL_DEFNS lgraph defl gctx curl opts udds = 
+    ana_UNIT_DECL_DEFNS' lgraph defl gctx curl opts emptyExtStUnitCtx udds
 
-ana_UNIT_DECL_DEFNS' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic -> Bool 
+ana_UNIT_DECL_DEFNS' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic -> HetcatsOpts 
 		     -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN] 
 		     -> Result (ExtStUnitCtx, DGraph, [Annoted UNIT_DECL_DEFN])
 ana_UNIT_DECL_DEFNS' _ _ (_, _, dg) _ _ uctx [] =
     do return (uctx, dg, [])
-ana_UNIT_DECL_DEFNS' lgraph defl gctx@(gannos, genv, _) curl justStruct uctx (udd : udds) =
-    do (uctx', dg', udd') <- ana_UNIT_DECL_DEFN lgraph defl gctx curl justStruct uctx (item udd) 
-       (uctx'', dg'', udds') <- ana_UNIT_DECL_DEFNS' lgraph defl (gannos, genv, dg') curl justStruct uctx' udds
+ana_UNIT_DECL_DEFNS' lgraph defl gctx@(gannos, genv, _) curl opts uctx (udd : udds) =
+    do (uctx', dg', udd') <- ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx (item udd) 
+       (uctx'', dg'', udds') <- ana_UNIT_DECL_DEFNS' lgraph defl (gannos, genv, dg') curl opts uctx' udds
        return (uctx'', dg'', (replaceAnnoted udd' udd) : udds')
 
 
 -- | Analyse unit declaration or definition
 ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		   -> Bool -> ExtStUnitCtx -> UNIT_DECL_DEFN -> Result (ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+		   -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL_DEFN -> Result (ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
 -- ^ returns 1. extended static unit context 2. possibly modified development graph 
 -- 3. possibly modified UNIT_DECL_DEFN
 
 -- unit declaration
-ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl justStruct 
+ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl opts 
 		   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp uts pos) =
-    do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl justStruct uctx pos uts
+    do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx pos uts
        let impSig = getSigFromDiag dns
-       (usig, dg'', usp') <- ana_UNIT_SPEC lgraph defl (gannos, genv, dg') curl justStruct impSig usp
+       (usig, dg'', usp') <- ana_UNIT_SPEC lgraph defl (gannos, genv, dg') curl opts impSig usp
        let ud' = Unit_decl un usp' uts' pos
        if Map.member un buc 
 	  then
@@ -120,9 +121,9 @@ ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl justStruct
 		      return ((Map.insert un (Based_unit_sig dn') buc, diag''), dg''', ud')
 
 -- unit definition
-ana_UNIT_DECL_DEFN lgraph defl gctx curl justStruct uctx@(buc, _) 
+ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _) 
 		   (Unit_defn un@(Token _ unpos) uexp poss) =
-    do (p, usig, diag, dg', uexp') <- ana_UNIT_EXPRESSION lgraph defl gctx curl justStruct uctx uexp
+    do (p, usig, diag, dg', uexp') <- ana_UNIT_EXPRESSION lgraph defl gctx curl opts uctx uexp
        let ud' = Unit_defn un uexp' poss
        {- it's sufficient to check that un is not mapped in buc, we don't need
           to convert the ExtStUnitCtx to StUnitCtx as the domain will be preserved -}
@@ -143,43 +144,43 @@ ana_UNIT_DECL_DEFN lgraph defl gctx curl justStruct uctx@(buc, _)
 
 -- | Analyse unit imports
 ana_UNIT_IMPORTED :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		  -> Bool -> ExtStUnitCtx -> [Pos] -> [Annoted UNIT_TERM] 
+		  -> HetcatsOpts -> ExtStUnitCtx -> [Pos] -> [Annoted UNIT_TERM] 
 		  -> Result (DiagNodeSig, Diag, DGraph, [Annoted UNIT_TERM])
 ana_UNIT_IMPORTED _ _ (_, _, dg) curl _ (_, diag) _ [] =
     do return (Empty_node curl, diag, dg, [])
-ana_UNIT_IMPORTED lgraph defl gctx curl justStruct uctx poss terms =
-    do (dnsigs, diag', dg', terms') <- ana_UNIT_IMPORTED' lgraph defl gctx curl justStruct uctx terms 
+ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx poss terms =
+    do (dnsigs, diag', dg', terms') <- ana_UNIT_IMPORTED' lgraph defl gctx curl opts uctx terms 
        (sig, dg'') <- nodeSigUnion lgraph dg' (map getSigFromDiag dnsigs) DGImports
        -- check amalgamability conditions
        -- let incl s = propagateErrors (ginclusion lgraph (getSig (getSigFromDiag s)) (getSig sig))
        let pos = getPos_UNIT_IMPORTED poss
        sink <- inclusionSink lgraph dnsigs sig
-       () <- assertAmalgamability pos diag' sink
+       () <- assertAmalgamability opts pos diag' sink
        (dnsig, diag'') <- extendDiagramIncl lgraph diag' dnsigs sig (renderText Nothing (printText terms))
        return (dnsig, diag'', dg'', terms')
 
 ana_UNIT_IMPORTED' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		   -> Bool -> ExtStUnitCtx -> [Annoted UNIT_TERM] 
+		   -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM] 
 		   -> Result ([DiagNodeSig], Diag, DGraph, [Annoted UNIT_TERM])
 ana_UNIT_IMPORTED' _ _ (_, _, dg) _ _ (_, diag) [] =
     do return ([], diag, dg, [])
-ana_UNIT_IMPORTED' lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, _) (ut : uts) =
-    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       (dnsigs, diag'', dg'', uts') <- ana_UNIT_IMPORTED' lgraph defl (gannos, genv, dg') curl justStruct (buc, diag') uts
+ana_UNIT_IMPORTED' lgraph defl gctx@(gannos, genv, _) curl opts uctx@(buc, _) (ut : uts) =
+    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
+       (dnsigs, diag'', dg'', uts') <- ana_UNIT_IMPORTED' lgraph defl (gannos, genv, dg') curl opts (buc, diag') uts
        return (dnsig : dnsigs, diag'', dg'', (replaceAnnoted ut' ut) : uts')
 
 
 -- | Analyse an unit expression
 ana_UNIT_EXPRESSION :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		    -> Bool -> ExtStUnitCtx -> UNIT_EXPRESSION 
+		    -> HetcatsOpts -> ExtStUnitCtx -> UNIT_EXPRESSION 
 		    -> Result (DiagNodeSig, UnitSig, Diag, DGraph, UNIT_EXPRESSION)
-ana_UNIT_EXPRESSION lgraph defl gctx curl justStruct uctx (Unit_expression [] ut poss) =
-    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+ana_UNIT_EXPRESSION lgraph defl gctx curl opts uctx (Unit_expression [] ut poss) =
+    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
        return (dnsig, Unit_sig (getSigFromDiag dnsig), diag', dg', 
 	       Unit_expression [] (replaceAnnoted ut' ut) poss)
-ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct 
+ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl opts 
 		    uctx@(buc, diag) exp@(Unit_expression ubs ut poss) =
-    do (args, dg', ubs') <- ana_UNIT_BINDINGS lgraph defl gctx curl justStruct uctx ubs
+    do (args, dg', ubs') <- ana_UNIT_BINDINGS lgraph defl gctx curl opts uctx ubs
        (resnsig, dg'') <- nodeSigUnion lgraph dg' (map snd args) DGFormalParams
        -- build the extended diagram and new based unit context
        let insNodes diag [] buc = do return ([], diag, buc)
@@ -194,11 +195,11 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct
        (_, diag'') <- extendDiagramIncl lgraph diag' pardnsigs resnsig (renderText Nothing (printText exp))
        -- analyse the unit term
        (p@(Diag_node_sig _ pnsig), diag''', dg''', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg'') 
-				                                     curl justStruct (buc', diag'') (item ut)
+				                                     curl opts (buc', diag'') (item ut)
        -- check amalgamability conditions
        let pos = getPos_UNIT_EXPRESSION exp
        sink <- inclusionSink lgraph (p : pardnsigs) pnsig
-       () <- assertAmalgamability pos diag''' sink
+       () <- assertAmalgamability opts pos diag''' sink
        -- add new node to the diagram
        (z, diag4) <- extendDiagramIncl lgraph diag''' [] (EmptyNode curl) (renderText Nothing (printText exp))
        return (z, Par_unit_sig (map snd args, getSigFromDiag p), diag4, dg''', 
@@ -208,20 +209,20 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct
 -- | Analyse a list of unit bindings. Ensures that the unit names are not present
 -- in extended static unit context and that there are no duplicates among them.
 ana_UNIT_BINDINGS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
-		  -> Bool -> ExtStUnitCtx -> [UNIT_BINDING]
+		  -> HetcatsOpts -> ExtStUnitCtx -> [UNIT_BINDING]
 		  -> Result ([(SIMPLE_ID, NodeSig)], DGraph, [UNIT_BINDING])
 ana_UNIT_BINDINGS _ _ (_, _, dg) _ _ _ [] =
     do return ([], dg, [])
-ana_UNIT_BINDINGS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, _) 
+ana_UNIT_BINDINGS lgraph defl gctx@(gannos, genv, _) curl opts uctx@(buc, _) 
 		  ((Unit_binding un@(Token _ unpos) usp poss) : ubs) =
-    do (usig, dg', usp') <- ana_UNIT_SPEC lgraph defl gctx curl justStruct (EmptyNode curl) usp
+    do (usig, dg', usp') <- ana_UNIT_SPEC lgraph defl gctx curl opts (EmptyNode curl) usp
        let ub' = Unit_binding un usp' poss
        case usig of 
 	    Par_unit_sig _ -> plain_error ([], dg', [])
 				          ("An argument unit " ++ showPretty un " must not be parameterized")
 				          unpos
 	    Unit_sig nsig ->
-		do (args, dg'', ubs') <- ana_UNIT_BINDINGS lgraph defl (gannos, genv, dg') curl justStruct uctx ubs
+		do (args, dg'', ubs') <- ana_UNIT_BINDINGS lgraph defl (gannos, genv, dg') curl opts uctx ubs
 		   let args' = (un, nsig) : args
 	           if Map.member un buc
 		      then
@@ -238,25 +239,25 @@ ana_UNIT_BINDINGS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, 
 
 -- | Analyse a list of unit terms
 ana_UNIT_TERMS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-	       -> Bool -> ExtStUnitCtx -> [Annoted UNIT_TERM]
+	       -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM]
 	       -> Result ([DiagNodeSig], Diag, DGraph, [Annoted UNIT_TERM])
 ana_UNIT_TERMS _ _ (_, _, dg) _ _ (_, diag) [] =
     do return ([], diag, dg, [])
-ana_UNIT_TERMS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, _) (ut : uts) =
-    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       (dnsigs, diag'', dg'', uts') <- ana_UNIT_TERMS lgraph defl (gannos, genv, dg') curl justStruct (buc, diag') uts
+ana_UNIT_TERMS lgraph defl gctx@(gannos, genv, _) curl opts uctx@(buc, _) (ut : uts) =
+    do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
+       (dnsigs, diag'', dg'', uts') <- ana_UNIT_TERMS lgraph defl (gannos, genv, dg') curl opts (buc, diag') uts
        return (dnsig : dnsigs, diag'', dg'', (replaceAnnoted ut' ut) : uts')
 
 
 -- | Analyse an unit term
 ana_UNIT_TERM :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-	      -> Bool -> ExtStUnitCtx -> UNIT_TERM 
+	      -> HetcatsOpts -> ExtStUnitCtx -> UNIT_TERM 
 	      -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
 
 -- UNIT-REDUCTION
-ana_UNIT_TERM lgraph defl gctx curl justStruct uctx red@(Unit_reduction ut restr) =
-    do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       (incl, msigma) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr
+ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
+    do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
+       (incl, msigma) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) opts restr
        let pos = getPos_UNIT_TERM red
        (q@(Diag_node_sig qn _), diag', dg') <- extendDiagramWithMorphismRev pos lgraph diag dg p incl 
 			                                                    (renderText Nothing (printText red)) 
@@ -272,7 +273,7 @@ ana_UNIT_TERM lgraph defl gctx curl justStruct uctx red@(Unit_reduction ut restr
 		      do 
 			 -- check amalgamability conditions
 		         let sink = [(qn, sigma)]
-			 () <- assertAmalgamability pos diag' sink
+			 () <- assertAmalgamability opts pos diag' sink
 		         (q', diag'', dg'') <- extendDiagramWithMorphism pos lgraph diag' dg' q sigma 
 								       (renderText Nothing (printText red))
 								       (case restr of 
@@ -280,34 +281,34 @@ ana_UNIT_TERM lgraph defl gctx curl justStruct uctx red@(Unit_reduction ut restr
 										   (Revealed _ _) -> DGRevealing)
 			 return (q', diag'', dg'', Unit_reduction (replaceAnnoted ut' ut) restr)
 -- UNIT-TRANSLATION
-ana_UNIT_TERM lgraph defl gctx curl justStruct uctx tr@(Unit_translation ut ren) =
-    do (dnsig@(Diag_node_sig p _), diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
-       gMorph <- ana_RENAMING dg (getSig (getSigFromDiag dnsig)) justStruct ren
+ana_UNIT_TERM lgraph defl gctx curl opts uctx tr@(Unit_translation ut ren) =
+    do (dnsig@(Diag_node_sig p _), diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
+       gMorph <- ana_RENAMING dg (getSig (getSigFromDiag dnsig)) opts ren
        let pos = getPos_UNIT_TERM tr
 	   sink = [(p, gMorph)]
        -- check amalamability conditions
-       () <- assertAmalgamability pos diag sink
+       () <- assertAmalgamability opts pos diag sink
        (dnsig', diag', dg') <- extendDiagramWithMorphism pos lgraph diag dg dnsig gMorph 
 			                                 (renderText Nothing (printText tr))
 							 DGTranslation
        return (dnsig', diag', dg', Unit_translation (replaceAnnoted ut' ut) ren)
 -- AMALGAMATION
-ana_UNIT_TERM lgraph defl gctx curl justStruct uctx am@(Amalgamation uts poss) =
-    do (dnsigs, diag, dg', uts') <- ana_UNIT_TERMS lgraph defl gctx curl justStruct uctx uts
+ana_UNIT_TERM lgraph defl gctx curl opts uctx am@(Amalgamation uts poss) =
+    do (dnsigs, diag, dg', uts') <- ana_UNIT_TERMS lgraph defl gctx curl opts uctx uts
        -- compute sigma
        (sig, dg'') <- nodeSigUnion lgraph dg' (map getSigFromDiag dnsigs) DGUnion
        -- check amalgamability conditions
        sink <- inclusionSink lgraph dnsigs sig
-       () <- assertAmalgamability (headPos poss) diag sink
+       () <- assertAmalgamability opts (headPos poss) diag sink
        (q, diag') <- extendDiagramIncl lgraph diag dnsigs sig (renderText Nothing (printText am))
        return (q, diag', dg'', Amalgamation uts' poss)
 -- LOCAL-UNIT
-ana_UNIT_TERM lgraph defl gctx@(gannos, genv, _) curl justStruct uctx (Local_unit udds ut poss) =
-    do (uctx', dg, udds') <- ana_UNIT_DECL_DEFNS' lgraph defl gctx curl justStruct uctx udds
-       (dnsig, diag, dg', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx' (item ut)
+ana_UNIT_TERM lgraph defl gctx@(gannos, genv, _) curl opts uctx (Local_unit udds ut poss) =
+    do (uctx', dg, udds') <- ana_UNIT_DECL_DEFNS' lgraph defl gctx curl opts uctx udds
+       (dnsig, diag, dg', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl opts uctx' (item ut)
        return (dnsig, diag, dg', Local_unit udds' (replaceAnnoted ut' ut) poss)
 -- UNIT-APPL
-ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag) 
+ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl opts uctx@(buc, diag) 
 	      uappl@(Unit_appl un fargus _) =
     do let pos = getPos_UNIT_TERM uappl
        case Map.lookup un buc of
@@ -321,7 +322,7 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 					    pos
 	    Just (Based_par_unit_sig (pI, (argSigs, resultSig))) ->
 		do (sigF, dg') <- nodeSigUnion lgraph dg ((getSigFromDiag pI) : argSigs) DGFormalParams
-		   (morphSigs, dg'', diagA) <- ana_FIT_ARG_UNITS lgraph defl (gannos, genv, dg') curl justStruct uctx
+		   (morphSigs, dg'', diagA) <- ana_FIT_ARG_UNITS lgraph defl (gannos, genv, dg') curl opts uctx
 					                         uappl pos argSigs fargus
 		   let first (e, _, _) = e
 		       second (_, e, _) = e
@@ -337,7 +338,7 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 		   (_, sigMorExt) <- extendMorphism (getSig sigF) (getSig resultSig) (getSig sigA) morphA
 		   -- check amalgamability conditions
 		   sink <- inclusionSink lgraph (pI : (map third morphSigs)) sigA
-		   () <- assertAmalgamability pos diagA sink
+		   () <- assertAmalgamability opts pos diagA sink
 		   (qB@(Diag_node_sig nqB _), diag') <- extendDiagramIncl lgraph diagA [pI] resultSig ""
 		   -- insert nodes p^F_i and appropriate edges to the diagram
 		   let ins diag dg [] = do return (diag, dg)
@@ -353,7 +354,7 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 		   (sigR, dg5) <- extendDGraph dg4 resultSig (gEmbed sigMorExt) DGExtension
 		   sink <-  inclusionSink lgraph (map third morphSigs) sigR
 		   let sink' = (nqB, gEmbed sigMorExt) : sink
-		   () <- assertAmalgamability pos diag'' sink'
+		   () <- assertAmalgamability opts pos diag'' sink'
 		   (q, diag''') <- extendDiagram diag'' qB (gEmbed sigMorExt) sigR
 				                 (renderText Nothing (printText uappl))
 		   diag4 <- insInclusionEdges lgraph diag''' (map third morphSigs) q
@@ -362,14 +363,14 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 			           ("Undefined unit " ++ showPretty un "")
 				   pos
 -- group unit term
-ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (Group_unit_term ut poss) =
-    do (dnsig, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+ana_UNIT_TERM lgraph defl gctx curl opts uctx (Group_unit_term ut poss) =
+    do (dnsig, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
        return (dnsig, diag, dg, Group_unit_term (replaceAnnoted ut' ut) poss)
 
 
 -- | Analyse unit arguments
 ana_FIT_ARG_UNITS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		  -> Bool -> ExtStUnitCtx 
+		  -> HetcatsOpts -> ExtStUnitCtx 
 		  -> UNIT_TERM      -- ^ the whole application for diagnostic purposes
 		  -> Pos            -- ^ the position of the application (for diagnostic purposes)
 		  -> [NodeSig]      -- ^ the signatures of unit's formal parameters
@@ -377,11 +378,11 @@ ana_FIT_ARG_UNITS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 		  -> Result ([(G_morphism, NodeSig, DiagNodeSig)], DGraph, Diag)
 ana_FIT_ARG_UNITS _ _ (_, _, dg) _ _ (_, diag) _ _ [] [] =
     do return ([], dg, diag)
-ana_FIT_ARG_UNITS lgraph defl gctx@(gannos, genv, _) curl justStruct uctx@(buc, _) 
+ana_FIT_ARG_UNITS lgraph defl gctx@(gannos, genv, _) curl opts uctx@(buc, _) 
 		  appl pos (nsig : nsigs) (fau : faus) =
-    do (gmorph, nsig', dnsig, dg, diag) <- ana_FIT_ARG_UNIT lgraph defl gctx curl justStruct 
+    do (gmorph, nsig', dnsig, dg, diag) <- ana_FIT_ARG_UNIT lgraph defl gctx curl opts 
 				                           uctx nsig fau
-       (morphSigs, dg', diag') <- ana_FIT_ARG_UNITS lgraph defl (gannos, genv, dg) curl justStruct 
+       (morphSigs, dg', diag') <- ana_FIT_ARG_UNITS lgraph defl (gannos, genv, dg) curl opts 
 			                            (buc, diag) appl pos nsigs faus
        return ((gmorph, nsig', dnsig) : morphSigs, dg', diag')
 ana_FIT_ARG_UNITS _ _ (_, _, dg) _ _ (_, diag) appl pos [] _ =
@@ -396,12 +397,12 @@ ana_FIT_ARG_UNITS _ _ (_, _, dg) _ _ (_, diag) appl pos _ [] =
 
 -- | Analyse unit argument
 ana_FIT_ARG_UNIT :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-		 -> Bool -> ExtStUnitCtx -> NodeSig -> FIT_ARG_UNIT 
+		 -> HetcatsOpts -> ExtStUnitCtx -> NodeSig -> FIT_ARG_UNIT 
 		 -> Result (G_morphism, NodeSig, DiagNodeSig, DGraph, Diag) 
 -- ^ returns 1. the signature morphism 2. the target signature of the morphism
 -- 3. the diagram node 4. the modified DGraph 5. the modified diagram
-ana_FIT_ARG_UNIT lgraph defl gctx curl justStruct uctx nsig (Fit_arg_unit ut symbMap poss) =
-    do (p, diag', dg', _) <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
+ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig (Fit_arg_unit ut symbMap poss) =
+    do (p, diag', dg', _) <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
        -- compute gMorph (the morphism r|sigma/D(p))
        let adj = adjustPos (headPos poss)
 	   gsigmaS = getSig nsig
@@ -410,7 +411,7 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl justStruct uctx nsig (Fit_arg_unit ut sym
        G_sign lidT sigmaT <- return gsigmaT
        G_symb_map_items_list lid sis <- return symbMap
        sigmaT' <- rcoerce lidT lidS (headPos poss) sigmaT
-       mor <- if justStruct then return (ide lidS sigmaS)
+       mor <- if analysis opts == Structured then return (ide lidS sigmaS)
 	         else do rmap <- adj $ stat_symb_map_items lid sis
 			 rmap' <- rcoerce lid lidS (headPos poss) rmap
 			 adj $ induced_from_to_morphism lidS rmap' sigmaS sigmaT'
@@ -422,7 +423,7 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl justStruct uctx nsig (Fit_arg_unit ut sym
 -- | Analyse unit specification
 ana_UNIT_SPEC :: LogicGraph -> AnyLogic    -- ^ the default logic
 	      -> GlobalContext -> AnyLogic -- ^ current logic
-	      -> Bool                      -- ^ should only the structure be analysed?
+	      -> HetcatsOpts                      -- ^ should only the structure be analysed?
 	      -> NodeSig                   -- ^ the signature of imports
 	      -> UNIT_SPEC -> Result (UnitSig, DGraph, UNIT_SPEC)
 -- ^ returns 1. unit signature 2. the development graph resulting from 
@@ -443,11 +444,11 @@ ana_UNIT_SPEC lgraph _ gctx _ just_struct impsig (Unit_type [] resultSpec poss) 
 					         just_struct (item resultSpec)
        return (Unit_sig resultSig, dg', Unit_type [] (replaceAnnoted resultSpec' resultSpec) poss)
 -- a non-trivial unit type
-ana_UNIT_SPEC lgraph defl gctx@(gannos, genv, _) _ justStruct impSig (Unit_type argSpecs resultSpec poss) =
-    do (argSigs, dg1, argSpecs') <- ana_argSpecs lgraph defl gctx justStruct argSpecs
+ana_UNIT_SPEC lgraph defl gctx@(gannos, genv, _) _ opts impSig (Unit_type argSpecs resultSpec poss) =
+    do (argSigs, dg1, argSpecs') <- ana_argSpecs lgraph defl gctx opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1 (impSig : argSigs) DGFormalParams
        (resultSpec', resultSig, dg3) <- ana_SPEC lgraph (gannos, genv, dg2) sigUnion
-					         Nothing justStruct (item resultSpec)
+					         Nothing opts (item resultSpec)
        return (Par_unit_sig (argSigs, resultSig), dg3, 
 	       Unit_type argSpecs' (replaceAnnoted resultSpec' resultSpec) poss) 
 -- SPEC-NAME (an alias)
@@ -470,36 +471,40 @@ ana_UNIT_SPEC lgraph defl gctx curl just_struct _ (Closed_unit_spec usp' _) =
 
 
 -- | Analyse a list of argument specifications
-ana_argSpecs :: LogicGraph -> AnyLogic -> GlobalContext -> Bool -> [Annoted SPEC] 
+ana_argSpecs :: LogicGraph -> AnyLogic -> GlobalContext -> HetcatsOpts -> [Annoted SPEC] 
 		-> Result ([NodeSig], DGraph, [Annoted SPEC])
 ana_argSpecs _ _ (_, _, dg) _ [] =
     do return ([], dg, [])
-ana_argSpecs lgraph defl gctx@(gannos, genv, _) justStruct (argSpec : argSpecs) =
+ana_argSpecs lgraph defl gctx@(gannos, genv, _) opts (argSpec : argSpecs) =
     do (argSpec', argSig, dg') <- ana_SPEC lgraph gctx (EmptyNode defl) Nothing
-					   justStruct (item argSpec)
-       (argSigs, dg'', argSpecs') <- ana_argSpecs lgraph defl (gannos, genv, dg') justStruct argSpecs
+					   opts (item argSpec)
+       (argSigs, dg'', argSpecs') <- ana_argSpecs lgraph defl (gannos, genv, dg') opts argSpecs
        return (argSig : argSigs, dg'', (replaceAnnoted argSpec' argSpec) : argSpecs')
 
 
 -- | Check that given diagram ensures amalgamability along given set of morphisms
-assertAmalgamability :: Pos                  -- ^ the position (for diagnostics)
+assertAmalgamability :: HetcatsOpts          -- ^ the program options
+		     -> Pos                  -- ^ the position (for diagnostics)
 		     -> Diag                 -- ^ the diagram to be checked
 		     -> [(Node, GMorphism)]  -- ^ the sink
 		     -> Result ()
-assertAmalgamability pos diag sink =
-    do ensAmalg <- homogeneousEnsuresAmalgamability pos diag sink
-       case ensAmalg of
-            Yes -> return ()
-	    No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
-	    DontKnow -> warning () "Unable to assert that amalgamability is ensured" pos
+assertAmalgamability opts pos diag sink =
+    do if caslAmalg opts == [] then do warning () "Skipping amalgamability check" pos 
+				       return ()
+          else do ensAmalg <- homogeneousEnsuresAmalgamability opts pos diag sink
+		  case ensAmalg of
+			     Logic.Logic.Yes -> return ()
+			     Logic.Logic.No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
+			     DontKnow -> warning () "Unable to assert that amalgamability is ensured" pos
 
 
 -- | Check the amalgamability assuming common logic for whole diagram
-homogeneousEnsuresAmalgamability :: Pos                 -- ^ the position (for diagnostics)
+homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
+				 -> Pos                 -- ^ the position (for diagnostics)
 				 -> Diag                -- ^ the diagram to be checked
 				 -> [(Node, GMorphism)] -- ^ the sink
 				 -> Result Amalgamates
-homogeneousEnsuresAmalgamability pos diag sink =
+homogeneousEnsuresAmalgamability opts pos diag sink =
     do case sink of  
 		 [] -> plain_error DontKnow "homogeneousEnsuresAmalgamability: Empty sink" pos
                  lab:_ -> do let (_, mor) = lab
@@ -507,7 +512,7 @@ homogeneousEnsuresAmalgamability pos diag sink =
 			     G_sign lid _ <- return sig
 			     hDiag <- homogeniseDiagram lid diag
 			     hSink <- homogeniseSink lid sink
-			     ensures_amalgamability lid (hDiag, hSink, (diagDesc diag))
+			     ensures_amalgamability lid (opts, hDiag, hSink, (diagDesc diag))
 
 
 -- | Get a position within the source file of a UNIT-TERM
