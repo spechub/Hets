@@ -474,6 +474,9 @@ hets.hs: hetcats/Version.hs
 %.hs: %.ly
 	$(HAPPY) $<
 
+%.hs: %.y
+	$(HAPPY) $<
+
 %.hs: %.der.hs utils/DrIFT
 	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
