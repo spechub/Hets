@@ -181,9 +181,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
--- *************************************************************
+-- -------------------------------------------------------------
 -- methods to create the local menus of the different nodetypes
--- *************************************************************
+-- -------------------------------------------------------------
 
 -- local menu for the nodetypes spec and locallyEmpty_spec
 createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents ioRefVisibleNodes actGraphInfo ioRefGraphMem =
@@ -317,10 +317,9 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes ioRefSubtreeEvents ac
 		                                  return()
                       )
 		    )
--- ******************************
+-- ------------------------------
 -- end of local menu definitions
--- ******************************
-
+-- ------------------------------
 
 showSpec descr convMap dgraph =
   case Map.lookup descr convMap of
@@ -499,7 +498,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
 
     where libname2dgMap = libname2dg convMaps
 
--- ###################################################################
+-- --------------------------
 -- returntype festlegen
 showJustSubtree:: IORef GraphMem -> Descr -> Descr -> ConversionMaps -> [[Node]]-> IO (Descr, [[Node]], Maybe String)
 showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
