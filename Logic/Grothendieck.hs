@@ -1,8 +1,12 @@
--- needs ghc -fglasgow-exts 
+{- |
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-{- HetCATS/Grothendieck.hs
-   $Id$
-   Till Mossakowski
+Maintainer  :  till@tzi.de
+Stability   :  provisional
+Portability :  non-portable (overlapping instances, dynamics, existentials)
+
    
    The Grothendieck logic is defined to be the
    heterogeneous logic over the logic graph.
@@ -164,10 +168,10 @@ instance Show G_symb_items_list where
 
 instance PrettyPrint G_symb_items_list where
     printText0 ga (G_symb_items_list _ l) = 
-	fsep $ punctuate comma $ map (printText0 ga) l
+        fsep $ punctuate comma $ map (printText0 ga) l
 
     printLatex0 ga (G_symb_items_list _ l) = 
-	fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
+        fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
@@ -187,10 +191,10 @@ instance Show G_symb_map_items_list where
 
 instance PrettyPrint G_symb_map_items_list where
     printText0 ga (G_symb_map_items_list _ l) = 
-	fsep $ punctuate comma $ map (printText0 ga) l
+        fsep $ punctuate comma $ map (printText0 ga) l
 
     printLatex0 ga (G_symb_map_items_list _ l) = 
-	fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
+        fsep_latex $ punctuate comma_latex $ map (printLatex0 ga) l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
@@ -275,20 +279,20 @@ data LogicGraph = LogicGraph {
 lookupLogic :: String -> String -> LogicGraph -> AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname (logics logicGraph) of
-    Nothing -> error (error_prefix++" in LogicGraph logic \""++logname++"\" unknown")
+    Nothing -> error (error_prefix++" in LogicGraph logic \""
+                      ++logname++"\" unknown")
     Just lid -> lid
-    where 
 
 -- | find a comorphism in a logic graph
 lookupComorphism :: String -> LogicGraph -> Result AnyComorphism
 lookupComorphism coname logicGraph = do
   let nameList = splitBy ';' coname
-  cs <- sequence $ map lookup nameList
+  cs <- sequence $ map lookupN nameList
   case cs of
     c:cs1 -> foldM compComorphism c cs1
     _ -> fail ("Illgegal comorphism name: "++coname)
   where 
-  lookup name = 
+  lookupN name = 
     case name of
       'i':'d':'_':logic -> do
          l <- maybeToResult 
@@ -299,7 +303,6 @@ lookupComorphism coname logicGraph = do
       _ -> maybeToResult 
             nullPos ("Cannot find logic comorphism "++name) 
             $ Map.lookup name (comorphisms logicGraph)
-
 
 -- | auxiliary existential type needed for composition of comorphisms
 data AnyComorphismAux lid1 sublogics1
@@ -320,6 +323,7 @@ data AnyComorphismAux lid1 sublogics1
 
 tyconAnyComorphismAux :: TyCon
 tyconAnyComorphismAux = mkTyCon "Logic.Grothendieck.AnyComorphismAux"
+
 instance Typeable (AnyComorphismAux lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -327,6 +331,7 @@ instance Typeable (AnyComorphismAux lid1 sublogics1
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
   where typeOf _ = mkAppTy tyconG_sign []
+
 instance Show (AnyComorphismAux lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
