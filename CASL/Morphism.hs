@@ -462,14 +462,14 @@ morphismUnion uniteM mor1 mor2 = do
 instance PrettyPrint Symbol where
   printText0 ga sy = 
     printText0 ga (symName sy) <> 
-    (if isEmpty t then empty
-      else colon <+> t)
-    where
-    t = printText0 ga (symbType sy)
+    case symbType sy of
+    SortAsItemType -> empty
+    st -> space <> colon <> printText0 ga st
 
 instance PrettyPrint SymbType where
+  -- op types try to place a question mark immediately after a colon
   printText0 ga (OpAsItemType ot) = printText0 ga ot
-  printText0 ga	(PredAsItemType pt) = printText0 ga pt
+  printText0 ga	(PredAsItemType pt) = space <> printText0 ga pt
   printText0 _ SortAsItemType = empty 
 
 instance PrettyPrint Kind where
@@ -506,7 +506,7 @@ instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
          ops = map print_op_map (Map.toList $ fun_map mor)
          print_op_map ((id1,ot),(id2, kind)) =
            printText0 ga id1 <+> colon 
-		    <+> printText0 ga (toOP_TYPE ot)
+		    <> printText0 ga (toOP_TYPE ot)
            <+> text mapsTo <+> 
            printText0 ga id2 <+> colon <> 
 		      (printText0 ga $ toOP_TYPE $ mapOpTypeK sMap kind ot)
