@@ -45,7 +45,7 @@ HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
-HC_INCLUDE = -i$(INCLUDE_PATH)
+HC_INCLUDE = $(addprefix -i, $(subst :, ,$(INCLUDE_PATH)))
 
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -261,7 +261,7 @@ utils/DrIFT: $(DRIFT_deps)
 
 utils/genRules: $(GENERATERULES_deps)
 	(cd utils/GenerateRules; \
-         $(HC) --make '-i../..:../DrIFT-src' \
+         $(HC) --make -i../DrIFT-src -i../.. \
               GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
@@ -343,7 +343,7 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
 	$(HC) --make -O -package data \
            -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
            -i$(PFE_TOOLDIR)/base/lib \
-	   -i$(LEX_DIR):$(LEX_DIR)Gen:$(LEX_DIR)Spec \
+	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
               $@.hs -o $@
 
 ###############
