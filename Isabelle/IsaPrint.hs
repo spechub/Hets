@@ -23,7 +23,7 @@ import Isabelle.IsaSign
 import Data.Char
 import Data.Tree
 
--- import Debug.Trace
+import Debug.Trace
 
 
 
@@ -56,16 +56,25 @@ instance Show Typ where
   show = showTyp 1000
 
 showTyp :: Integer -> Typ -> String
-showTyp _ (Type (t,[])) = t
-showTyp pri (Type ("appl",[s,t])) =
-  showTyp pri s ++ " " ++ showTyp pri t
+showTyp pri (Type ("typeAppl",[s,t])) =
+  case t of
+    TVar _ -> showTyp pri t ++ sp ++ showTyp pri s
+    _      -> showTyp pri s ++ sp ++ showTyp pri t
 showTyp pri (Type ("fun",[s,t])) = 
   bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
 showTyp pri (Type ("*",[s,t])) =
   showTyp pri s ++ " * " ++ showTyp pri t
-showTyp _ (Type (t,(arg:[]))) = show arg ++ sp ++ t
-showTyp _ (Type (t,(arg:args))) = rb ++ show arg ++
-                                      concat (map ((sp++).show) args)++ lb ++ t
+showTyp _ (Type (name,args)) = 
+  case args of
+    []     -> name
+    arg:[] -> show arg ++ sp ++ name
+    _      -> let (tyVars,types) = foldl split ([],[]) args
+              in  
+                rb ++ concat (map ((sp++) . show) tyVars) ++
+                                concat (map ((sp++) . show) types) ++ lb ++ name
+              where split (tv,ty) t = case t of 
+                            TVar _ -> (tv++[t],ty)
+                            _      -> (tv,ty++[t])
 showTyp _ (TFree (v,_)) = v
 showTyp _ (TVar ((v,_),_)) = "\'" ++ v
 
@@ -334,8 +343,10 @@ instance Show Sign where
        show t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
     showOp (opname,args) =
-       opname ++ (concat $ map (((" ")++) . show) args)
-
+       opname ++ (concat $ map ((sp ++) . showArg) args)
+    showArg arg = case arg of
+                    TVar _ -> show arg
+                    _      -> "\"" ++ show arg ++ "\""
 
 instance PrettyPrint Sign where
     printText0 _ = ptext . show
@@ -363,6 +374,7 @@ lb = ")"
 lbb :: String
 lbb = lb++lb
 
+
 bracketize :: Bool -> String -> String
 bracketize b s = if b then rb++s++lb else s
 
@@ -384,7 +396,7 @@ isInf :: String -> Bool
 isInf s = has2Under s && has2Under (reverse s)
 
 has2Under :: String -> Bool
-has2Under (fst:snd:_) = fst == '_' && snd == '_'
+has2Under (fs:sn:_) = fs == '_' && sn == '_'
 has2Under _ = False
 
 cut :: String -> String
