@@ -535,7 +535,7 @@ createLocalMenuButtonShowOriginOfEdge _ =
 	  ))
 
 createLocalMenuButtonCheckconsistencyOfEdge gInfo = 
-  (Button "Check consistency (preliminary)" 
+  (Button "Check conservativity (preliminary)" 
                       (\ (ginfo,descr,maybeLEdge)  -> 
 		        do checkconsistencyOfEdge descr gInfo maybeLEdge
 		           return ()
