@@ -480,12 +480,11 @@ assertAmalgamability :: Pos                  -- ^ the position (for diagnostics)
 		     -> Diag                 -- ^ the diagram to be checked
 		     -> [LEdge DiagLinkLab]  -- ^ the sink
 		     -> Result ()
--- TODO
 assertAmalgamability pos diag sink =
     do ensAmalg <- homogeneousEnsuresAmalgamability diag sink
        case ensAmalg of
             Yes -> return ()
-	    No -> plain_error () "Amalgamability is not ensured" pos
+	    No msg -> plain_error () ("Amalgamability is not ensured: " ++ msg) pos
 	    DontKnow -> warning () "Unable to assert that amalgamability is ensured" pos
 
 
