@@ -22,7 +22,6 @@ import ReAssocModule
 import AST4ModSys
 import HsName
 import ReAssocBase
-import SpecialNames
 import Names
 import Ents
 import SourceNames
@@ -136,8 +135,7 @@ emptySign = Sign
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (HsDeclI PNT)])
 hatAna (hs@(HsDecls ds), e, _) = do
-   let mn = PlainModule "Prelude"
-       parsedMod = HsModule loc0 (SN mn loc0) Nothing [] ds
+   let parsedMod = HsModule loc0 (SN mod_Prelude loc0) Nothing [] ds
        astMod = toMod parsedMod
        insc = inscope astMod (const emptyRel)
        osc = scope e `union` insc
@@ -147,8 +145,8 @@ hatAna (hs@(HsDecls ds), e, _) = do
        wm = mkWM (osc, expScope)
        fixs = mapFst getQualified $ getInfixes parsedMod
        fixMap = Map.fromList fixs `Map.union` fixities e
-       rm = reAssocModule wm [(mn, Map.toList fixMap)] parsedMod
-       (sm, _) = scopeModule (wm, [(mn, expScope)]) rm
+       rm = reAssocModule wm [(mod_Prelude, Map.toList fixMap)] parsedMod
+       (sm, _) = scopeModule (wm, [(mod_Prelude, expScope)]) rm
        ent2pnt (Ent m (HsCon i) t) = 
            HsCon (topName Nothing m (bn i) (origt m t))
        ent2pnt (Ent m (HsVar i) t) = 
@@ -160,12 +158,13 @@ hatAna (hs@(HsDecls ds), e, _) = do
            case filter ((==ns) . namespace) $ applyRel expScope (fakeSN n) of
            [v] -> Right (ent2pnt v)
            _ -> Left ("'" ++ n ++ "' unknown or ambiguous")
+       inMyEnv =  withStdNames findPredef .
+               extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
+               . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
+               . extendIEnv (instances e)
    (HsModule _ _ _ _  fs : _) :>: (is, (ts, vs)) <- 
         lift $ inMyEnv $ tcModuleGroup findPredef
             id [sm]
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
-   where
-   inMyEnv = extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
-               . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
-               . extendIEnv (instances e)     
+
