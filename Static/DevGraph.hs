@@ -1,4 +1,4 @@
-{- HetCATS/DevGraph.hs
+{- HetCATS/ Static/DevGraph.hs
    $Id$
    Till Mossakowski
 
@@ -22,16 +22,16 @@ Integrate stuff from Saarbrücken
 Add proof status information
 -}
 
-module DevGraph where
+module Static.DevGraph where
 
-import Logic
-import Grothendieck
-import AS_Library
-import GlobalAnnotations
+import Logic.Logic
+import Logic.Grothendieck
+import Syntax.AS_Library
+import Common.GlobalAnnotations
 
 import Common.Lib.Graph
 import FiniteMap
-import Id
+import Common.Id
 
 -- ??? Some info about the theorems already proved for a node
 --     should be added

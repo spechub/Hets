@@ -1,4 +1,4 @@
-module AbstractGraphView where
+module GUI.AbstractGraphView where
 
 {- Interface for graph viewing and abstraction.
    It is possible to hide sets of nodes and edges.
@@ -17,9 +17,9 @@ import GraphConfigure
 
 import Destructible
 
-import List(nub)
+import Data.List(nub)
 
-import IORef
+import Data.IORef
 
 
 {- methods using fetch_graph return a quadruple containing the modified graph, a descriptor of the last modification (e.g. a new node), the descriptor that can be used for the next modification and a possible error message-}
@@ -182,7 +182,7 @@ delallgraphs gv = do
     destroy_all [] _ = return ()
     destroy_all ((gid,_):gs) ev_cnt = do
          writeIORef gv (gs,ev_cnt)
-         Result _ _ <- AbstractGraphView.delgraph gid gv
+         Result _ _ <- GUI.AbstractGraphView.delgraph gid gv
 	 (_,ev_cnt') <- readIORef gv
          destroy_all gs ev_cnt'
 

@@ -1,4 +1,4 @@
-{- HetCATS/DGToSpec.hs
+{- HetCATS/Static/DGToSpec.hs
    $Id$
    Till Mossakowski
 
@@ -9,25 +9,25 @@
 -}
 
 
-module DGToSpec
+module Static.DGToSpec
 where
 
 import Data.Maybe
-import Logic
-import LogicRepr
-import Grothendieck
+import Logic.Logic
+import Logic.LogicRepr
+import Logic.Grothendieck
 import Common.Lib.Graph
-import DevGraph
-import AS_Structured
-import AS_Annotation
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
-import Result
-import Id
+import Static.DevGraph
+import Syntax.AS_Structured
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions
+import Common.Result
+import Common.Id
 import Common.Lib.Set
 import FiniteMap
 import Data.List
-import PrettyPrint
+import Common.PrettyPrint
 
 emptyAnno x = Annoted x [] [] []
 

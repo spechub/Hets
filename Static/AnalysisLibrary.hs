@@ -1,4 +1,4 @@
-{- HetCATS/AnalysisLibrary.hs
+{- HetCATS/Static/AnalysisLibrary.hs
    $Id$
    Till Mossakowski
 
@@ -16,26 +16,26 @@
 -}
 
 
-module AnalysisLibrary
+module Static.AnalysisLibrary
 where
 
-import Logic
-import LogicRepr
-import Grothendieck
+import Logic.Logic
+import Logic.LogicRepr
+import Logic.Grothendieck
 import Common.Lib.Graph
-import DevGraph
-import qualified AS_Structured
-import Parse_AS_Structured (lookupLogic, library)
+import Static.DevGraph
+import qualified Syntax.AS_Structured
+import Syntax.Parse_AS_Structured (lookupLogic, library)
 import Common.Lib.Parsec
-import AS_Library
-import AnalysisStructured
-import AS_Annotation
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
-import Result
-import Id
+import Syntax.AS_Library
+import Static.AnalysisStructured
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions
+import Common.Result
+import Common.Id
 import FiniteMap
-import Result
+import Common.Result
 
 
 -- for testing
@@ -224,7 +224,7 @@ ana_LIB_ITEM lgraph defl libenv gannos genv dg l (Logic_decl ln pos) = do
   return (gannos,genv,dg,log,libenv)
 
 homogenize1 res 
-     (AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
+     (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
   (G_symb_map_items_list lid sis) <- res
   sis1' <- rcoerce lid1 lid nullPos sis1
   return (G_symb_map_items_list lid (sis++sis1'))

@@ -1,15 +1,15 @@
-{- HetCATS/DotGraph.hs
+{- HetCATS/Static/DotGraph.hs
    $Id$
    Till Mossakowski
 
    Display of development graphs using dot
 -}
 
-module DotGraph where
+module Static.DotGraph where
 
 import Common.Lib.Graph
-import DevGraph
-import Print_HetCASL
+import Static.DevGraph
+import Syntax.Print_HetCASL
 
 
 edgeAttribute LocalDef = " [style=bold]"

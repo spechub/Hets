@@ -1,18 +1,18 @@
-module ConvertDevToAbstractGraph where
+module GUI.ConvertDevToAbstractGraph where
 
-import DevGraph
-import AbstractGraphView
+import Static.DevGraph
+import GUI.AbstractGraphView
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
 import FiniteMap
-import AS_Library
+import Syntax.AS_Library
 import Common.Lib.Graph
-import PrettyPrint
-import GlobalAnnotationsFunctions
+import Common.PrettyPrint
+import Common.GlobalAnnotationsFunctions
 import Data.IORef
-import Print_HetCASL
-import DGToSpec
+import Syntax.Print_HetCASL
+import Static.DGToSpec
 
 pretty x = show $ printText0 emptyGlobalAnnos x
 

@@ -2,26 +2,26 @@ module Main
 
 where
 
-import Parse_AS_Structured
+import Syntax.Parse_AS_Structured
 import System.Environment
 import Common.Lib.Parsec
-import LogicGraph
-import Print_HetCASL
-import DevGraph
-import AnalysisLibrary
-import IO
-import AS_Library
+import Syntax.LogicGraph
+import Syntax.Print_HetCASL
+import Static.DevGraph
+import Static.AnalysisLibrary
+import System.IO
+import Syntax.AS_Library
 import Common.Lib.Graph
-import DotGraph
+import Static.DotGraph
 
-import ConvertDevToAbstractGraph
+import GUI.ConvertDevToAbstractGraph
 
 import Data.Char
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
-import AbstractGraphView
-import IORef
+import GUI.AbstractGraphView
+import Data.IORef
 
 import FiniteMap
 
@@ -33,7 +33,7 @@ proceed fname showdg = do
     Just (ln,dg,libenv) -> 
       if showdg then do
        (gid,gv,cmaps) <- convertGraph ln libenv
-       AbstractGraphView.redisplay gid gv
+       GUI.AbstractGraphView.redisplay gid gv
        getLine
        return () 
       else do

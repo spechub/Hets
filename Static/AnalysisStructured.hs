@@ -1,4 +1,4 @@
-{- HetCATS/AnalysisStructured.hs
+{- HetCATS/Static/AnalysisStructured.hs
    $Id$
    Till Mossakowski
 
@@ -52,25 +52,25 @@
 -}
 
 
-module AnalysisStructured
+module Static.AnalysisStructured
 where
 
 import Data.Maybe
-import Logic
-import LogicRepr
-import Grothendieck
+import Logic.Logic
+import Logic.LogicRepr
+import Logic.Grothendieck
 import Common.Lib.Graph hiding (empty)
-import DevGraph
-import AS_Structured
-import AS_Annotation
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
-import Result
-import Id
+import Static.DevGraph
+import Syntax.AS_Structured
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.GlobalAnnotationsFunctions
+import Common.Result
+import Common.Id
 import Common.Lib.Set hiding (filter)
 import FiniteMap
 import Data.List hiding (union)
-import PrettyPrint
+import Common.PrettyPrint
 
 pretty x = show $ printText0 emptyGlobalAnnos x
 

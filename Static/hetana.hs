@@ -2,11 +2,11 @@ module Main
 
 where
 
-import System
-import LogicGraph
-import AnalysisLibrary
-import IO
-import DotGraph
+import System.Environment
+import Syntax.LogicGraph
+import Static.AnalysisLibrary
+import System.IO
+import Static.DotGraph
 
 proceed :: String -> IO()
 proceed fname = do

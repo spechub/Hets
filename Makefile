@@ -13,8 +13,8 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = Static:Common/ATerm:HasCASL:ghc:Modal:Haskell:GUI:hetcats
-CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:$(INCLUDE_PATH)
+INCLUDE_PATH = Common/ATerm:HasCASL:ghc:Modal:Haskell:hetcats
+CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:$(INCLUDE_PATH)
 
 HC         = ghc
 PERL       = perl
@@ -115,6 +115,9 @@ bin_clean: clean
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
 	$(RM) GUI/hetdg
+	$(RM) hetpa
+	$(RM) hetana
+	$(RM) hetdg
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
