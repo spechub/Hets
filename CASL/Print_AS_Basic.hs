@@ -60,7 +60,8 @@ instance PrettyPrint SORT_ITEM where
 instance PrettyPrint OP_ITEM where
     printText0(Op_decl l t a _) = commaT l 
 				  <+> (colon
-				       <> printText0 t)
+				       <> printText0 t
+				       <> if null a then empty else comma)
 				  <+> commaT a
     printText0(Op_defn n h t _) = printText0 n 
 				  <+> printText0 h
@@ -79,10 +80,10 @@ instance PrettyPrint OP_TYPE where
 					<> printText0 s
 
 instance PrettyPrint OP_HEAD where
-    printText0(Total_op_head l s _) = parens(semiT l)
+    printText0(Total_op_head l s _) = if null l then empty else parens(semiT l)
 			     <> colon
 			     <> printText0 s
-    printText0(Partial_op_head l s _) = parens(semiT l)
+    printText0(Partial_op_head l s _) = if null l then empty else parens(semiT l)
 			     <> text (colonS ++ quMark)
 			     <> printText0 s
 

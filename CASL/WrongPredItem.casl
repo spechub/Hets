@@ -1,0 +1,6 @@
+pred a(a) <=> e
+pred a = e
+pred a() <=> e
+pred a <=>#
+pred a:?s
+pred a %()% <=> e

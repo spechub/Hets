@@ -118,24 +118,28 @@ qualOpName o = do { v <- asKey opS
 			     [tokPos v, tokPos c, tokPos p]) [] [])
 		  }
 
-opType = do { (ts, ps) <- sortId `separatedBy` crossT
-	    ; do { a <- makeToken (string funS)
-		 ; let qs = map tokPos ps ++[tokPos a] 
-		   in
-		   do { quMarkT
-		      ; s <- sortId
-		      ; return (Partial_op_type ts s qs)
-		      } <|> do { s <- sortId
-			       ; return (Total_op_type ts s qs)
-			       }
-		   } 
-	      <|> (if length ts == 1 then return (Total_op_type [] (head ts) [])
-	           else unexpected ("missing " ++ funS))
-	    }
-         <|> do { q <- quMarkT
+opSort = fmap (\s -> (False, s, nullPos)) sortId 
+	 <|> do { q <- quMarkT
 		; s <- sortId
-		; return (Partial_op_type [] s [tokPos q])
+		; return (True, s, tokPos q)
 		}
+
+opFunSort ts ps = do { a <- makeToken (string funS)
+		     ; (b, s, _) <- opSort
+		     ; let qs = map tokPos ps ++[tokPos a] in 
+		       if b then return (Partial_op_type ts s qs)
+		       else return (Total_op_type ts s qs)
+		     }
+
+opType = do { (b, s, p) <- opSort
+	    ; if b then return (Partial_op_type [] s [p])
+	      else do { c <- crossT 
+		      ; (ts, ps) <- sortId `separatedBy` crossT
+		      ; opFunSort (s:ts) (c:ps)
+		      }
+	           <|> opFunSort [s] []
+	           <|> return (Total_op_type [] s [])
+	    }
 
 parenTerm = do { o <- oParenT
                ; qualVarName (tokPos o) 
@@ -210,12 +214,8 @@ qualPredName o = do { v <- asKey predS
 
 parenFormula = do { o <- oParenT
 		  ; let po = tokPos o in
-		    do { q <- (qualVarName po <|> qualOpName po)
-		       ; l <- many1 restTerm
-		       ; return (Mixfix_formula (Mixfix_term (q:l)))
-		       }
-		    <|>
-		    do { q <- qualPredName po
+		    do { q <- qualPredName po 
+			 <|> qualVarName po <|> qualOpName po
 		       ; l <- many restTerm   -- optional arguments
 		       ; if null l then return (Mixfix_formula q)
 			 else return (Mixfix_formula (Mixfix_term (q:l)))
@@ -241,9 +241,13 @@ parenFormula = do { o <- oParenT
 		    }
 
 termFormula = do { t <- term
-		 ; do { e <- makeToken (try (string exEqual))
+		 ; do { e <- asKey exEqual
 		      ; r <- term 
 		      ; return (Existl_equation t r [tokPos e])
+		      }
+                   <|>
+		   do { try (string exEqual)
+		      ; unexpected ("sign following " ++ exEqual)
 		      }
                    <|>
 		   do { e <- equalT

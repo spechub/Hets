@@ -23,7 +23,7 @@ import OpItem
 
 main = do {l <- getArgs;
 	   if length l < 2 then print 
-	   "usage: main {id,term,formula,sorts,ops} <filename>"
+	   "usage: main {id,term,formula,sorts,ops,preds} <filename>"
 	   else let option = head l 
 	            file = head (tail l)
 	   in if option == "id" then checkLines parseId file
@@ -31,6 +31,7 @@ main = do {l <- getArgs;
 	   else if option == "formula" then checkLines formula file
 	   else if option == "sorts" then checkLines sortItems file
 	   else if option == "ops" then checkLines opItems file
+	   else if option == "preds" then checkLines predItems file
 --	   else if option == "items" then parseSpec file
 	   else print ("unknown option: " ++ option) 
 	  }
