@@ -92,7 +92,7 @@
 \newcommand     {\HasCASL}{\normalTEXTSC{H}{AS}\normalTEXTSC{C}{ASL}\xspace}
 \newcommand{\largeHasCASL} {\largeTEXTSC{H}{AS}\largeTEXTSC{C}{ASL}\xspace}
 
-%% Do NOT use \ASF+\SDF (it gives a superflous space in the middle)
+%% Do NOT use \ASF+\SDF (it gives a superfluous space in the middle)
 
 \newcommand{\CCC}{CCC\xspace}
 
@@ -123,7 +123,7 @@ Comments to: hets@tzi.de
 
 The Heterogeneous Tool Set (\protect\Hets) is the main analysis tool
 for the specification language heterogeneous \CASL. Heterogeneous
-\CASL (\HetCASL) combines the specification langauage \CASL with \CASL extensions
+\CASL (\HetCASL) combines the specification language \CASL with \CASL extensions
 and sublanguages, as well as completely different logics and even
 programming languages such as Haskell. \HetCASL
 extends the structuring mechanisms of \CASL:
@@ -166,7 +166,7 @@ Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & - \\\hline
 \HasCASL & x & (x) & - \\\hline
 Haskell & x & x & -\\\hline
-\CspCASL & x & - & - \\\hline
+\CspCASL & (x) & - & - \\\hline
 Structured specifications & x & x & (x) \\\hline
 Architectural specifications & x & - & -\\\hline
 \end{tabular}
@@ -186,6 +186,8 @@ in Sect.~\ref{sec:HetSpec} below.
 
 An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
 the language is summarized in \cite{HasCASL/Summary}.
+The latter document is also available on the CD-ROM 
+in \texttt{Tools/Hets/doc}.
 The definitive reference for Haskell is \cite{PeytonJones03},
 see also \url{www.haskell.org}. An introduction to \CspCASL
 is given in \cite{Roggenbach:2003:CCN}.
@@ -193,21 +195,46 @@ is given in \cite{Roggenbach:2003:CCN}.
 \section{Getting started}
  
 The latest \Hets version can be obtained from the
-\CoFI tools home page \cite{CoFITools}. Since \Hets is being
+\CoFI tools home page
+\begin{quote}
+\texttt{http://www.cofi.info/Tools}
+\end{quote}
+ Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
 
 \Hets currently is available for Linux, Solaris and
-Mac OS-X. After downloading your platform specific distribution,
-you have to unpack it as follows (note that the filenames will
-be slightly different, depending on your platform):
+Mac OS-X. You can either start the script \texttt{Tools/Hets/hets} 
+(the script automatically finds the binary for your architecture).
+Or you can install \Hets on your local file system by \texttt{cd}ing
+into \texttt{Tools/Hets}on the CD-ROM and then calling
+\begin{quote}
+\texttt{./install <dir>}
+\end{quote}
+where \texttt{<dir>} is an existing directory where \Hets should be
+installed.
 
+MacIntosh users need to install some libraries from 
+\texttt{Tools/Hets/hets/macintosh}
 \begin{verbatim}
-tar zxf hets.tgz   # gtar under Solaris
+     cp libreadline.4.3.dylib /usr/local/lib
+     tar xzf Haskell-libs.tgz -C /Library/Frameworks 
 \end{verbatim}
+The \texttt{install} script installs these automatically for you.
+Note that you may have to be \texttt{root} in order to be able to 
+do this.
 
-If you have a source distribution then please follow the instructions of the
-\texttt{INSTALL} file.
+%After downloading your platform specific distribution,
+%you have to unpack it as follows (note that the filenames will
+%be slightly different, depending on your platform):
 
+%\begin{verbatim}
+%tar zxf hets.tgz   # gtar under Solaris
+%\end{verbatim}
+
+If you want to compile \Hets from the sources, please follow the
+instructions of the \texttt{Tools/Hets/src/INSTALL} file.
+
+\subsection*{daVinci}
 For the display of development graphs, \Hets uses daVinci.
 daVinci is maintained by b-novative and b-novative holds all rights.
 This release may be accompanied with free binary releases of daVinci
@@ -216,11 +243,11 @@ However, you are encouraged to obtain the latest version of daVinci
 Presenter (currently 3.0.5) from \url{http://www.b-novative.com}.
 It needs a license key, but is free for academic purposes.
 
-Linux: the linux binary release of daVinci 2.1 relies on the old
+Linux: the Linux binary release of daVinci 2.1 relies on the old
 shlibs5 that must be installed on your system (if ./daVinci cannot be
 found/executed, then shlibs5 are missing)
 
-Solaris: the solaris binary release of daVinci 2.1 should work without
+Solaris: the Solaris binary release of daVinci 2.1 should work without
 problems
 
 Macintosh (Darwin): there is no release of daVinci for Macintosh, but
@@ -228,17 +255,25 @@ b-novative may have one in the mean time
 
 For best quality, get the latest version of daVinci from b-novative.
 
+\subsection*{Environment variables}
+
+The script in \texttt{Tools/Hets/hets} sets the following environment
+variables:
+
 For \Hets to find daVinci, the environment variables \texttt{DAVINCIHOME} and
 \texttt{UNIDAVINCI} must be set to the installation directory of daVinci and to
 the actual executable, respectively.
-\QUERY{This should be done by the install script!}
 \begin{verbatim}
 export DAVINCIHOME=<path>/daVinci_V2.1
 export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
 \end{verbatim}
 
 The environment variable \texttt{HETS\_LIB} should be set to
-a location where specification libraries are stored.
+a location where specification libraries are stored. By default,
+it is set to the \texttt{Libraries} directory on the CD-ROM
+(or the corresponding copy on your local file system).
+
+%\QUERY{This should be done by the install script!}
 
 
 
@@ -336,6 +371,7 @@ embedding of \CASL into \HasCASL (cf.\ Fig.~\ref{fig:LogicGraph}).
 for explicit translations between logics will be made available
 in the future.)
 
+\eat{
 A \CspCASL specification consists of a \CASL specification
 for the data part and a \Csp process built over this data part.
 Therefore, \HetCASL provides a heterogeneous language construct
@@ -365,6 +401,7 @@ end
 
 Here, the construct \texttt{data List} refers to the \CASL specification
 \texttt{List}, which is implicitly embedded into \CspCASL.
+}
 
 The ending \texttt{.hs} is available for directly reading in
 Haskell programs, and hence supports the Haskell module system.
@@ -672,7 +709,7 @@ reads in the compressed ATerm format.
 Specify \texttt{DIR} as  destination directory for output files.
 
 \item[\texttt{-o OTYPES}, \texttt{--output-types=OTYPES}]  
-\texttt{OTYPES} is a comma seperated list of output types:
+\texttt{OTYPES} is a comma separated list of output types:
 \begin{verbatim}
              (ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
             |(pp.(het|tex|html))
@@ -699,9 +736,9 @@ coming with the \Hets distribution is used.
 
 The option \texttt{-r RAW} or \texttt{--raw=RAW} allows one
 to influence the formatting in more detail.
-\QUERY{Is the pretty printer documentation OK, Klaus?}
 Here, \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
-and \texttt{STRING} is passed to the appropiate pretty-printer.
+and \texttt{STRING} is passed to the appropriate pretty-printer.
+The deatils of these options are to be fixed in the future only.
 
 The other output formats are for future usage.
 \end{description}
@@ -728,9 +765,11 @@ This must be the first option.
 following points are still missing:
 
 \begin{itemize}
+\item There is no static analysis for architectural specifications.
 \item Distributed libraries are always downloaded from the local disk,
 not from the Internet.
-\item Version numbers of libraries are not considered.
+\item Version numbers of libraries are not considered properly.
+\item The proof engine for development graphs has not been completed.
 \end{itemize}
 
 \Hets has been built based on experiences with its
@@ -830,6 +869,10 @@ Felix Reckers,
 Markus Roggenbach, 
 and
 Pascal Schmidt.
+
+\Hets also benefited much from contributions by Serge Autexier, Dieter
+Hutter and Bartek Klin (through work on its precursors \Cats and
+\MAYA).
 
 \bibliographystyle{plain}
 \bibliography{cofibib,cofi-ann,UM,hets}
