@@ -180,7 +180,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
   if null changes then (dgraph, changes)
    else
      if isDuplicate provenEdge dgraph changes
-            then ((insEdge provenEdge (delLEdge edge dgraph)),
+            then (delLEdge edge dgraph,
 	    ((DeleteEdge edge):changes))
       else ((insEdge provenEdge (delLEdge edge dgraph)),
 	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
@@ -289,11 +289,13 @@ locDecompAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 locDecompAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
-   || isDuplicate newEdge dgraph changes
      then
        locDecompAux libEnv dgraph (rules,changes) list
      else
-       locDecompAux libEnv newGraph (newRules,newChanges) list
+       if isDuplicate newEdge dgraph changes
+          then locDecompAux libEnv auxGraph 
+                 (newRules,(DeleteEdge ledge):changes) list
+       else locDecompAux libEnv newGraph (newRules,newChanges) list
 
   where
     morphism = dgl_morphism edgeLab
