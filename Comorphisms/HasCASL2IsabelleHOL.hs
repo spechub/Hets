@@ -30,7 +30,7 @@ import Common.Id
 import qualified Common.Lib.Map as Map
 import Data.List
 import Common.AS_Annotation (Named)
-import Debug.Trace
+-- import Debug.Trace
 
 -- HasCASL
 import HasCASL.Logic_HasCASL
@@ -218,9 +218,9 @@ transTerm sign (ApplTerm term1 term2 _) =
        QualOp Pred _ _ _ -> con "pApp" 
                               `App` (transTerm sign term1) 
                               `App` (transTerm sign term2)
-       QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app" --sign term1 term2
-                                                        else mkApp "apt" --sign term1 term2
-       _                 -> mkApp "app" -- sign term1 term2
+       QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app"
+                                                        else mkApp "apt"
+       _                 -> mkApp "app"
      where mkApp s = con s 
                                  `App` (transTerm sign term1) 
                                  `App` (transTerm sign term2)
@@ -246,12 +246,42 @@ transTerm sign (LetTerm Let eqs body _) =
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
+transTerm sign (CaseTerm term pEqs _) = 
+  Case (transTerm sign term,  
+         (con "None", con "None"):
+           [(conSome `App` IsaSign.Free("x", dummyT),
+             Case (IsaSign.Free("x", dummyT), map (transProgEq sign) pEqs))])
 transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
 
---transDataEntryAx :: DataEntry -> IsaSign.Term
---transDataEntryAx (DataEntry _ _ _ _ alts) = transAltDefnAx alts
+transProgEq :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
+transProgEq sign (ProgEq pat term _) = 
+  (transPat sign pat, transTerm sign term)
+   --Abs (transTerm sign pat, dummyT, transTerm sign term)
 
+transPat :: Env -> As.Term -> IsaSign.Term
+transPat _ (QualVar (VarDecl var _ _ _)) = IsaSign.Free(transVar var, dummyT)
+transPat sign (ApplTerm term1 term2 _) = 
+  (transPat sign term1) `App` (transPat sign term2)
+transPat sign (TypedTerm term _ _ _) = transPat sign term
+transPat sign (LambdaTerm pats Partial body _) =
+  if (null pats) then Abs(IsaSign.Free("dummyVar",dummyT), 
+                                        dummyT, 
+                                        (transPat sign body))
+     else foldr (abstraction sign) 
+                (transPat sign body)
+                pats
+transPat sign (LetTerm Let eqs body _) = 
+  transPat sign (foldr let2lambda body eqs)
+transPat sign (TupleTerm terms _) =
+  foldl1 (binConst isaPair) (map (transPat sign) terms)
+transPat sign term = 
+  case term of
+    (QualOp _ _ _ _) -> tt
+    (QuantifiedTerm _ _ _ _) -> tt
+    (CaseTerm _ _ _) -> tt
+  where tt = transTerm sign term
+transPat _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
 let2lambda :: ProgEq -> As.Term -> As.Term
 let2lambda (ProgEq pat term _) body = 
@@ -341,7 +371,10 @@ toPair _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported GenVarDecl"
 
 
 binConst :: String -> IsaSign.Term -> IsaSign.Term -> IsaSign.Term
-binConst s t1 t2 = con s `App` t1 `App` t2
+binConst s t1 t2 = termAppl (termAppl (con s) t1) t2
+
+termAppl :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
+termAppl t1 t2 = t1 `App` t2
 
 
 con :: String -> IsaSign.Term
