@@ -20,7 +20,6 @@ import List
 import qualified Literate
 import Monad
 
-
 -- #if defined(__HASKELL98__)
 -- #define FMAP fmap
 -- import IO (try)
@@ -104,17 +103,17 @@ findModule :: [String] -> String -> IO String
 findModule paths modname = let
 	action p = try $ do h <- readFile p
  	                    return (h,p)
-	fnames = (combine paths modname) ++ combine paths hiracle_modname
+	fnames = combine paths modname ++ combine paths hiracle_modname
 	hiracle_modname = map (\x -> if x == '.' then '/' else x) modname
 	isLeft (Left _ ) = True
 	isLeft _ = False
      in do
 	hh <- mapM action fnames
 	let (h,p) = case dropWhile (isLeft) hh of
-	           ((Right h):_) -> h
+	           ((Right ff):_) -> ff 
 		   _ -> error ("can't find module " ++ modname)
-	--putStrLn p
-       	return $ fromLit (isLiterate h) h
+	--putStrLn ("-- " ++ p)
+       	return $ fromLit (isLiterate p) h
 
 -- generate filepaths by combining module names with different suffixes.
 -- Note : Dedicated Hugs-only users may wish to remove ".hi" from the list of
@@ -154,7 +153,7 @@ toLit True = unlines . map (\l -> '>':l)  . lines
 toLit False = id       
  
 isLiterate :: String -> Bool
-isLiterate = any ((=='>'). head) . words
+isLiterate fname = ".lhs" `isSuffixOf` fname
 
 -- utils -- this should be the sort of thing automatically generated !!
 isData D{} = True

@@ -1,7 +1,7 @@
 -- Based on DrIFT 1.0 by Noel Winstanley
 --  hacked for Haskell 98 by Malcolm Wallace, University of York, Feb 1999.
 --  modified by various people, now maintained by John Meacham
-module Main(main) where
+module Main(process,main,envGlobalRules,env,addGlobals) where
 import ChaseImports
 import UserRules
 import StandardRules 
