@@ -43,7 +43,9 @@ instance PrettyPrint Type where
     printText0 ga (TypeConstrAppl name i kind args _) = printText0 ga name 
     			  <> if i == 0 then empty 
 			     else parens (int i)
-			  <> printKind ga kind
+			  <> (case kind of 
+				Nothing -> empty
+			        Just k -> printKind ga k)
 			  <> if null args then empty 
 			     else parens (commas ga args)
     printText0 ga (TypeToken t) = printText0 ga t

@@ -85,7 +85,7 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show, Eq)
 
-data Type = TypeConstrAppl TypeId Int Kind [Type] [Pos]  -- analysed
+data Type = TypeConstrAppl TypeId Int (Maybe Kind) [Type] [Pos]  -- analysed
             -- Int > 0 means generalized
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
@@ -100,23 +100,6 @@ data Type = TypeConstrAppl TypeId Int Kind [Type] [Pos]  -- analysed
           | FunType Type Arrow Type [Pos]
           -- pos arrow
             deriving (Show, Eq)
-
-posOfType :: Type -> Pos
-posOfType (TypeConstrAppl i _ _ _ _) = posOfId i
-posOfType (TypeToken t) = tokPos t
-posOfType (BracketType _ ts ps) = 
-    if null ps then 
-       if null ts then nullPos else posOfType $ head ts 
-    else head ps
-posOfType (KindedType t _ p) = if p == nullPos then posOfType t else p
-posOfType (MixfixType ts) = if null ts then nullPos else posOfType $ head ts
-posOfType (LazyType t p) = if p == nullPos then posOfType t else p
-posOfType (ProductType ts ps) = 
-    if null ps then 
-       if null ts then nullPos else posOfType $ head ts 
-    else head ps
-posOfType (FunType t _ _ ps) = 
-    if null ps then posOfType t else head ps
 
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
              deriving (Show, Eq)
