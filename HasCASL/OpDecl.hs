@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/OpDecl.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2003
-   
-   analyse op decls
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   analyse operation declarations
 -}
 
 module HasCASL.OpDecl where
@@ -15,19 +18,20 @@ import HasCASL.TypeDecl
 import HasCASL.Le
 import Common.Lib.State
 import Common.Result
+import Common.GlobalAnnotations
 import HasCASL.Unify
 import HasCASL.MixAna
 
-anaOpItem :: OpItem -> State Env ()
-anaOpItem (OpDecl is sc attr _) = 
+anaOpItem :: GlobalAnnos -> OpItem -> State Env ()
+anaOpItem _ (OpDecl is sc attr _) = 
     mapM_ (anaOpId sc attr) is
 
-anaOpItem (OpDefn o pats sc partial trm ps) = 
+anaOpItem ga (OpDefn o pats sc partial trm ps) = 
     do let newTrm = if null pats then trm else 
 		 LambdaTerm pats partial trm ps 
        (i, newSc) <- getUninstOpId sc o
        ty <- toEnvState $ freshInst newSc
-       Result ds mt <- resolveTerm ty newTrm
+       Result ds mt <- resolveTerm ga ty newTrm
        appendDiags ds 
        case mt of 
 	       Just t -> addOpId i newSc [] $ Definition t

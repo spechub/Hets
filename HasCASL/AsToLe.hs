@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/AsToLe.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
-   
-   conversion of As.hs to Le.hs
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   conversion from As to Le
 -}
 
 module HasCASL.AsToLe where
@@ -13,6 +16,7 @@ import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.ClassAna
 import HasCASL.ClassDecl
+import Common.GlobalAnnotations
 import Common.Id
 import qualified Common.Lib.Set as Set
 import HasCASL.Le
@@ -35,23 +39,22 @@ missingAna t ps = appendDiags [Diag FatalError
 			       ("no analysis yet for: " ++ showPretty t "")
 			      $ if null ps then nullPos else head ps]
 
-anaBasicSpec :: BasicSpec -> State Env ()
-anaBasicSpec (BasicSpec l) = mapM_ anaBasicItem $ map item l
+anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env ()
+anaBasicSpec ga (BasicSpec l) = mapM_ (anaBasicItem ga) $ map item l
 
-anaBasicItem :: BasicItem -> State Env ()
-anaBasicItem (SigItems i) = anaSigItems Loose i
-anaBasicItem (ClassItems inst l _) = mapM_ (anaAnnotedClassItem inst) l
-anaBasicItem (GenVarItems l _) = mapM_ anaGenVarDecl l
-
-anaBasicItem (ProgItems l _) = mapM_ anaProgEq $ map item l
-anaBasicItem (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
-anaBasicItem (GenItems l _) = mapM_ (anaSigItems Generated) $ map item l
-anaBasicItem (AxiomItems decls fs _) = 
+anaBasicItem :: GlobalAnnos -> BasicItem -> State Env ()
+anaBasicItem ga (SigItems i) = anaSigItems ga Loose i
+anaBasicItem ga (ClassItems inst l _) = mapM_ (anaAnnotedClassItem ga inst) l
+anaBasicItem _ (GenVarItems l _) = mapM_ anaGenVarDecl l
+anaBasicItem ga (ProgItems l _) = mapM_ (anaProgEq ga) $ map item l
+anaBasicItem _ (FreeDatatype l _) = mapM_ (anaDatatype Free Plain) $ map item l
+anaBasicItem ga (GenItems l _) = mapM_ (anaSigItems ga Generated) $ map item l
+anaBasicItem ga (AxiomItems decls fs _) = 
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
        ds <- mapM (( \ (TermFormula t) -> 
-		     resolveTerm logicalType t ) . item) fs
+		     resolveTerm ga logicalType t ) . item) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
        appendDiags $ concatMap diags ds
@@ -67,9 +70,10 @@ appendSentences fs =
     do e <- get
        put $ e {sentences = sentences e ++ fs}
 
-anaSigItems :: GenKind -> SigItems -> State Env ()
-anaSigItems gk (TypeItems inst l _) = mapM_ (anaTypeItem gk inst) $ map item l
-anaSigItems _ (OpItems l _) =  mapM_ anaOpItem $ map item l
+anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env ()
+anaSigItems _ gk (TypeItems inst l _) = 
+    mapM_ (anaTypeItem gk inst) $ map item l
+anaSigItems ga _ (OpItems l _) =  mapM_ (anaOpItem ga) $ map item l
 
 ----------------------------------------------------------------------------
 -- GenVarDecl
@@ -141,19 +145,20 @@ anaVarDecl(VarDecl v oldT _ _) =
 -- ClassItem
 -- ----------------------------------------------------------------------------
 
-anaAnnotedClassItem :: Instance -> Annoted ClassItem -> State Env ()
-anaAnnotedClassItem _ aci = 
+anaAnnotedClassItem :: GlobalAnnos -> Instance -> Annoted ClassItem 
+		    -> State Env ()
+anaAnnotedClassItem ga _ aci = 
     let ClassItem d l _ = item aci in
     do anaClassDecls d 
-       mapM_ anaBasicItem $ map item l
+       mapM_ (anaBasicItem ga) $ map item l
 
 -- ----------------------------------------------------------------------------
 -- ProgEq
 -- ----------------------------------------------------------------------------
 
-anaProgEq :: ProgEq -> State Env ()
-anaProgEq (ProgEq pat trm _) =
-    do Result es mp <- resolvePattern pat
+anaProgEq :: GlobalAnnos -> ProgEq -> State Env ()
+anaProgEq ga (ProgEq pat trm _) =
+    do Result es mp <- resolvePattern ga pat
        appendDiags es
        case mp of 
 	   Nothing -> return ()
@@ -161,7 +166,7 @@ anaProgEq (ProgEq pat trm _) =
 	       let bs = extractBindings newPat
 	       e <- get
 	       mapM_ anaVarDecl bs
-	       Result ts mt <- resolveTerm ty trm
+	       Result ts mt <- resolveTerm ga ty trm
 	       put e
 	       appendDiags ts
 	       case mt of 

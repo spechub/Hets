@@ -2,6 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
+Licence     :  All rights reserved.
 
 Maintainer  :  hets@tzi.de
 Stability   :  experimental
@@ -287,10 +288,10 @@ resolve ga as tm cm (ty, trm) =
        return $ resolveFromParseMap (toAppl ga) tm (ty, trm) $ 
 	      resolveToParseMap ga as tm cm c ty trm
 
-resolveTerm :: Type -> Term -> State Env (Result Term)
-resolveTerm ty trm = 
+resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Result Term)
+resolveTerm ga ty trm = 
     do s <- get
-       r <- toEnvState $ resolve (globalAnnos s) 
+       r <- toEnvState $ resolve ga
 	    (assumps s) (typeMap s) (classMap s) (ty, trm)
        return $ fmap snd r 
 
@@ -411,9 +412,9 @@ resolvePat ga as tm cm (ty, trm) =
        return $ resolveFromParseMap patFromState tm (ty, trm) $ 
 	      resolvePatToParseMap ga as tm cm c ty trm
 
-resolvePattern :: Pattern -> State Env (Result (Type, Pattern))
-resolvePattern pat = 
+resolvePattern :: GlobalAnnos -> Pattern -> State Env (Result (Type, Pattern))
+resolvePattern ga pat = 
     do s <- get
-       toEnvState $ resolveAnyPat (globalAnnos s) 
+       toEnvState $ resolveAnyPat ga
 		      (assumps s) (typeMap s) (classMap s) pat
 

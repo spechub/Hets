@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/Le.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002/2003
-   
-   abstract syntax after/during static analysis
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   abstract syntax during static analysis
 -}
 
 module HasCASL.Le where
@@ -13,7 +16,6 @@ import HasCASL.As
 import Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Common.Result
-import Common.GlobalAnnotations
 import Common.Named
 
 -----------------------------------------------------------------------------
@@ -93,15 +95,10 @@ data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
 	       , sentences :: [Named Formula]	 
-               , globalAnnos :: GlobalAnnos
 	       , envDiags :: [Diagnosis]
 	       , counter :: Int
-	       } deriving Show
-
-instance Eq Env where
-    Env c1 t1 a1 s1 _ _ _ == Env c2 t2 a2 s2 _ _ _ = 
-	(c1, t1, a1, s1) == (c2, t2, a2, s2)
+	       } deriving (Show, Eq)
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty [] emptyGlobalAnnos [] 1
+initialEnv = Env Map.empty Map.empty Map.empty [] [] 1
 

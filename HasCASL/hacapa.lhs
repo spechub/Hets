@@ -1,8 +1,7 @@
 
-HetCATS/HasCASL/hacapa.lhs
-$Id$
+$Header$
 Authors: Christian Maeder
-Year:    2002
+Year:    2002, 2003
    
 test some parsers (and printers)
 
@@ -41,6 +40,6 @@ lineParser = [
  ("Items", fromAParser basicSpec)]
 
 fileParser = [ ("BasicSpec", fromAParser basicSpec)
-	     , ("analysis", fromAParser anaParser)
+	     , ("analysis", toStringParser anaParser)
 	     ]
 \end{code}
