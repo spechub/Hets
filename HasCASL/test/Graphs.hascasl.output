@@ -65,9 +65,11 @@ __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
 __disjoint__ : forall S : Type .  (S ->? Unit) ×
 				  (S ->? Unit) ->? Unit %(Op)%
+__if__ : Unit × Unit ->? Unit %(Fun)%
 __isIn__ : forall S : Type .  S × (S ->? Unit) ->? Unit %(Op)%
 __subset__ : forall S : Type .  (S ->? Unit) ×
 				(S ->? Unit) ->? Unit %(Op)%
+__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 emptySet : forall S : Type .  S ->? Unit %(Op)%
 false : Bool %(Op)%

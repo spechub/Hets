@@ -159,6 +159,7 @@ __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Pred)%
 __if__ : Unit × Unit ->? Unit %(Pred)%
 __res__ : s × t ->? s %(Op)% = \ (x : s, y : t) .! (var x : s)
+__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 bottom : forall p : Pcpo .  p %(Op)%
 def : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
 def__ : forall a : Type .  a ->? Unit %(Fun)%

@@ -50,8 +50,14 @@ falseId = mkId [mkSimpleId falseS]
 ifThenElse :: Id
 ifThenElse = mkId (map mkSimpleId [ifS, place, thenS, place, elseS, place])
 
+whenElse :: Id
+whenElse = mkId (map mkSimpleId [place, whenS, place, elseS, place])
+
 mkInfix :: String -> Id
 mkInfix s = mkId $ map mkSimpleId [place, s, place]
+
+infixIf :: Id 
+infixIf = mkInfix ifS
 
 exEq :: Id 
 exEq = mkInfix exEqual
@@ -82,15 +88,18 @@ addBuiltins ga =
     let ass = assoc_annos ga
 	newAss = Map.union ass $ Map.fromList 
 		 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
-		  (implId, ARight)]
+		  (implId, ARight), (infixIf, ALeft), 
+		  (whenElse, ARight)]
 	precs = Rel.toList $ prec_annos ga
         lows = map fst $ filter ((==eqId) . snd) precs
 	logs = [(eqvId, implId), (implId, andId), (implId, orId), 
+		(eqvId, infixIf), (infixIf, andId), (infixIf, orId),
 		 (andId, eqId), (orId, eqId), (andId, exEq), (orId, exEq)]
-	eqs = concatMap ( \ i -> [(eqId, i), (exEq, i)]) $ 
-	      filter (`notElem` (eqId : lows)) $ filter isInfix $ map fst precs
-	appls = map ( \ i -> (i, applId)) $ filter (/=applId) $
-		filter isInfix $ map snd precs
+	eqs = concatMap ( \ i -> [(eqId, i), (exEq, i)]) (whenElse : 
+	      (filter (`notElem` (eqId : lows)) $ filter isInfix 
+	      $ map fst precs))
+	appls = map ( \ i -> (i, applId)) (whenElse : 
+		(filter (/=applId) $ filter isInfix $ map snd precs))
     in ga { assoc_annos = newAss
 	  , prec_annos = Rel.transClosure $ 
 	    Rel.fromList $ concat [logs, eqs, [(exEq, applId), (eqId, applId)],

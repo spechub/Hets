@@ -37,7 +37,7 @@ aType = TypeName aVar star 1
 bindA :: Type -> TypeScheme
 bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []
 
-eqType, logType, defType, notType, ifType :: TypeScheme
+eqType, logType, defType, notType, ifType, whenType :: TypeScheme
 eqType = bindA $ 
 	  FunType (ProductType [aType, aType] [])
 	  PFunArr logicalType []
@@ -50,13 +50,17 @@ notType = simpleTypeScheme $ FunType logicalType PFunArr logicalType []
 ifType = bindA $ 
 	  FunType (ProductType [logicalType, aType, aType] [])
 	  PFunArr aType []
+whenType = bindA $ 
+	  FunType (ProductType [aType, logicalType, aType] [])
+	  PFunArr aType []
 
 bList :: [(Id, TypeScheme)]
-bList = (defId, defType) : (notId, notType) : (ifThenElse, ifType) :
+bList = (defId, defType) : (notId, notType) : 
+	(ifThenElse, ifType) : (whenElse, whenType) :
         (trueId, simpleTypeScheme logicalType) : 
 	(falseId, simpleTypeScheme logicalType)	:
         map ( \ e -> (e, eqType)) [eqId, exEq] ++
-	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId]
+	map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, d) m -> 

@@ -28,6 +28,8 @@ __=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
+__if__ : Unit × Unit ->? Unit %(Fun)%
+__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 a : bool %(Op)% = (op True : bool)
 b : bool -> bool %(Op)% = \ x : bool . (var x : bool)
   : bool %(Op)% = let x : bool = (op True : bool);

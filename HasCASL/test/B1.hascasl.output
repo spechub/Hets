@@ -48,6 +48,8 @@ __=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __=>__ : Unit × Unit ->? Unit %(Fun)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Fun)%
+__if__ : Unit × Unit ->? Unit %(Fun)%
+__when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
