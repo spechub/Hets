@@ -254,7 +254,7 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
   Extension asps pos -> do
    (sps',nsig1,dg1) <- foldl ana (return ([],nsig,dg)) namedSps
    return (Extension (map (uncurry replaceAnnoted)
-                         (zip (reverse sps') asps))
+                          (zip (reverse sps') asps))
                      pos,
            nsig1,dg1)
    where
@@ -529,8 +529,10 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
    do let sp1 = item asp1
           sp2 = item asp2
           l = getLogic nsig
-      (nsig1,dg1) <- ana_SPEC gctx (EmptyNode lid1) Nothing just_struct sp1
-      (nsig2,dg2) <- ana_SPEC (gannos,genv,dg1) nsig1 Nothing just_struct sp2
+      (sp1',nsig1,dg1) <- 
+         ana_SPEC gctx (EmptyNode lid1) Nothing just_struct sp1
+      (sp2'nsig2,dg2) <- 
+         ana_SPEC (gannos,genv,dg1) nsig1 Nothing just_struct sp2
       n' <- maybeToResult nullPos 
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
@@ -545,7 +547,11 @@ ana_SPEC gctx@(gannos,genv,dg) nsig name just_struct sp =
             dgl_morphism = undefined, -- ??? inclusion
             dgl_type = FreeDef nsig,
             dgl_origin = DGFree })
-      return (NodeSig(node,gsigma'),
+      return (Data (Logic lid1) 
+                   (replaceAnnoted sp1' asp1) 
+                   (replaceAnnoted sp2' asp2) 
+                   pos,
+              NodeSig(node,gsigma'),
               insEdge link $
               insNode (node,node_contents) dg')
 

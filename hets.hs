@@ -41,7 +41,7 @@ processFile opt file =
                then do 
                    putIfVerbose opt 2 ("Analyzing file: " ++ file)
                    Result diags res <- ioresToIO 
-                     (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv opt ld)
+                     (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
                    -- sequence (map (putStrLn . show) diags)
                    return (ld, res)
                else do putIfVerbose opt 2

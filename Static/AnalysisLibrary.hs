@@ -37,6 +37,9 @@ import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.PrettyPrint
 import Options
+import System
+import List
+import Directory
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
@@ -44,46 +47,67 @@ anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> String
               -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
 anaFile logicGraph defaultLogic opts fname = do
   putIfVerbose opts 1  ("Reading " ++ fname)
-  input <- readFile fname
-  let ast = case runParser (library logicGraph) defaultLogic fname input of
-              Left err -> error (show err)
-              Right ast -> ast
-  Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv opts ast)
-  sequence (map (putStrLn . show) diags)
-  return res
+  let names = [fname,fname++".spec",fname++".casl"]
+  -- look for the first existing file
+  existFlags <- sequence (map doesFileExist names)
+  let fname' = find fst (zip existFlags names) >>= (return . snd)
+  case fname' of
+    Nothing -> do
+      putStrLn (fname++" not found.")
+      return Nothing
+    Just fname'' -> do
+      input <- readFile fname''
+      case runParser (library logicGraph) defaultLogic fname'' input of
+        Left err -> do putStrLn (show err)
+                       return Nothing
+        Right ast -> do
+          Result diags res <- 
+            ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
+                                    emptyLibEnv ast)
+          sequence (map (putStrLn . show) diags)
+          return res
 
-
-ana_file1 :: LogicGraph -> AnyLogic -> LibEnv -> HetcatsOpts -> LIB_NAME 
+-- lookup/read a library
+anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME 
               -> IO LibEnv
-ana_file1 logicGraph defaultLogic libenv opts libname = do
+anaLibFile logicGraph defaultLogic opts libenv libname = do
+  -- is the library already in memory?
   case Map.lookup libname libenv of
    Just _ -> return libenv
    Nothing -> do
-    let fname = case getLIB_ID libname of
-                 Indirect_link p _ -> p
-                 Direct_link _ _ -> error "No direct links implemented yet"
-    putIfVerbose opts 1  ("Reading " ++ (fname++".casl"))
-    input <- readFile (fname++".casl")
-    let ast = case runParser (library logicGraph) defaultLogic fname input of
-                Left err -> error (show err)
-                Right ast -> ast
-    Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic libenv opts ast)
-    sequence (map (putStrLn . show) diags)
-    return (case res of 
+     -- if not compute the filename,
+     fname <- case getLIB_ID libname of
+                Indirect_link file _ -> do
+                  path <- case libdir opts of
+                            "" -> catch (getEnv "HETS_LIB") 
+                                        (\ _ -> return "")
+                            p -> return p
+                  -- add trailing "/" if necessary
+                  let path1 = case path of
+                       "" -> ""
+                       p -> case last p of
+                              '/' -> p
+                              _ -> p++"/"
+                  return (path1++file)
+                Direct_link _ _ -> error "No direct links implemented yet"
+     -- read and analyze the library,
+     res <- anaFile logicGraph defaultLogic opts fname
+     -- and just return the libenv
+     return (case res of 
                Just (_,_,_,libenv') -> libenv'
                Nothing -> libenv) 
   
 
 -- | analyze a LIB_DEFN
--- Parameters: logic graph, default logic, library env, opts, LIB_DEFN
+-- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
 -- call this function as follows:
 -- do Result diags res <- ioresToIO (ana_LIB_DEFN ...)
 --    sequence (map (putStrLn . show) diags)
-ana_LIB_DEFN :: LogicGraph -> AnyLogic 
-                 -> LibEnv -> HetcatsOpts -> LIB_DEFN
+ana_LIB_DEFN :: LogicGraph -> AnyLogic -> HetcatsOpts
+                 -> LibEnv -> LIB_DEFN
                  -> IOResult (LIB_NAME,LIB_DEFN,DGraph,LibEnv)
 
-ana_LIB_DEFN lgraph l libenv opts (Lib_defn ln alibItems pos ans) = do
+ana_LIB_DEFN lgraph l opts libenv (Lib_defn ln alibItems pos ans) = do
   (libItems',gctx@(_,_,dg),_,libenv') <- 
      foldl ana (return ([],(gannos,Map.empty,empty),l,libenv))
                (map item alibItems)
@@ -100,18 +124,18 @@ ana_LIB_DEFN lgraph l libenv opts (Lib_defn ln alibItems pos ans) = do
   ana res libItem = do
     (libItems',gctx1,l1,libenv1) <- res
     (libItem',gctx1',l1',libenv1') <- 
-       ana_LIB_ITEM lgraph l1 libenv1 gctx1 l1 opts libItem
+       ana_LIB_ITEM lgraph l1 opts libenv1 gctx1 l1 libItem
     return (libItem':libItems',gctx1',l1',libenv1')
 
 -- analyse a LIB_ITEM
--- Parameters: logic graph, default logic, library env
--- global context, current logic, opts, LIB_ITEM
-ana_LIB_ITEM :: LogicGraph -> AnyLogic -> LibEnv
-                 -> GlobalContext -> AnyLogic -> HetcatsOpts
+-- Parameters: logic graph, default logic, opts, library env
+-- global context, current logic, LIB_ITEM
+ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
+                 -> LibEnv -> GlobalContext -> AnyLogic
                  -> LIB_ITEM
                  -> IOResult (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
 
-ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l  
              (Spec_defn spn gen asp pos) = do
   let just_struct = False -- justStruct opts
   ioToIORes (putIfVerbose opts 1  ("Analyzing spec " ++ showPretty spn ""))
@@ -129,39 +153,39 @@ ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts
                 l,
                 libenv)
 
-ana_LIB_ITEM lgraph defl libenv gctx l opts
+ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
   let just_struct = False -- justStruct opts
   ioToIORes (putIfVerbose opts 1  ("Analyzing view " ++ showPretty vn ""))
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l just_struct
                             vn gen vt gsis pos)
 
-ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
              (Arch_spec_defn asn asp pos) = do
   ioToIORes (putIfVerbose opts 1  ("Analyzing arch spec "++showPretty asn ""))
   ana_err "arch spec"
 
-ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
              (Unit_spec_defn usn usp pos) = do
   ioToIORes (putIfVerbose opts 1  ("Analyzing unit spec "++showPretty usn ""))
   ana_err "unit spec"
 
-ana_LIB_ITEM lgraph defl libenv gctx l opts 
+ana_LIB_ITEM lgraph defl opts libenv gctx l 
              (Logic_decl ln pos) = do
   let log = lookupLogicName ln lgraph
   ioToIORes (putIfVerbose opts 1  ("logic "++show log))
   return (Logic_decl ln pos,gctx,log,libenv)
 
-ana_LIB_ITEM lgraph defl libenv gctx@(gannos,genv,dg) l opts 
+ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l 
              libItem@(Download_items ln items pos) = do
   -- we take as the default logic for imported libs 
   -- the global default logic
   ioToIORes (putIfVerbose opts 1 ("Analyzing from " ++ showPretty ln "\n"))
   let items' = zip items (drop 2 (pos ++ repeat nullPos))
-  libenv' <- ioToIORes (ana_file1 lgraph defl libenv opts ln)
+  libenv' <- ioToIORes (anaLibFile lgraph defl opts libenv ln)
   case Map.lookup ln libenv' of
     Nothing -> do
-       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available:"++show (Map.keys libenv')))
+       ioToIORes (putStrLn ("Internal error: did not find library "++show ln++" available: "++show (Map.keys libenv')))
        return (libItem,gctx,l,libenv')
     Just (gannos',genv',dg') -> do
                     -- ??? what to do with gannos' ?
