@@ -14,15 +14,13 @@ module CASL.Quantification where
 
 import CASL.AS_Basic_CASL
 import Common.Id
-import Common.PrettyPrint
-import Common.AnnoState
 import Data.List(nubBy)
 import qualified Common.Lib.Set as Set
 
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
 
-freeVars :: AParsable f => FORMULA f -> Set.Set VAR
+freeVars :: FORMULA f -> Set.Set VAR
 freeVars f = case f of 
     Quantification _ vdecl phi _ -> foldr Set.delete (freeVars phi) $ 
 		    concatMap ( \ (Var_decl vs _ _) -> vs) vdecl
@@ -39,7 +37,7 @@ freeVars f = case f of
     _ -> Set.empty
 
 
-freeTermVars :: AParsable f => TERM f -> Set.Set VAR
+freeTermVars :: TERM f -> Set.Set VAR
 freeTermVars t = case t of 
     Simple_id v -> Set.single v
     Qual_var v _ _ -> Set.single v
@@ -51,8 +49,7 @@ freeTermVars t = case t of
     _ -> Set.empty
 
 -- quantify only over free variables (and only once)
-effQuantify :: AParsable f => 
-               QUANTIFIER -> [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
+effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
 effQuantify q vdecls phi pos =
     let fvs = freeVars phi 
 	filterVAR_DECL (Var_decl vs s ps) =
@@ -65,7 +62,7 @@ effQuantify q vdecls phi pos =
 	   Quantification q (reverse $ myNub $ reverse newDecls) phi pos
 	
 -- strip superfluous (or nested) quantifications
-stripQuant :: AParsable f => FORMULA f -> FORMULA f
+stripQuant :: FORMULA f -> FORMULA f
 stripQuant (Quantification quant vdecl phi pos) =
     let newF = stripQuant phi 
 	qF = effQuantify quant vdecl phi pos in 
