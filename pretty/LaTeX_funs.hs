@@ -47,6 +47,7 @@ module LaTeX_funs (
                    braces_latex, 
 		   parens_latex, 
 		   brackets_latex,
+		   quotes_latex,
 
                    nest_latex,
 		   hang_latex,
@@ -78,6 +79,8 @@ module LaTeX_funs (
 
 import FiniteMap
 import Char
+import Maybe (isJust,fromJust)
+import List (isPrefixOf)
 
 -- for the debug hack
 import IOExts
@@ -132,15 +135,17 @@ calc_word_width wt s =
     Just l  -> l
     Nothing -> sum_char_width_deb (  showString "In map \""
 				   . showsPrec 0 wt 
-				   . showString "\" \'") wFM s - correction
-    where wFM = case wt of
-		 Keyword        -> keyword_map
-		 StructId       -> structid_map
-		 Comment        -> comment_map
-		 Annotation     -> annotation_map
-		 AnnotationBold -> annotationbf_map
-		 Axiom          -> axiom_map
-		 Normal         -> normal_map
+				   . showString "\" \'") wFM k_wFM s 
+	         - correction
+    where (wFM,k_wFM) = case wt of
+			Keyword        -> (keyword_map,key_keyword_map)
+			StructId       -> (structid_map,key_structid_map)
+			Comment        -> (comment_map,key_comment_map)
+			Annotation     -> (annotation_map,key_annotation_map)
+			AnnotationBold -> (annotationbf_map,
+					   key_annotationbf_map)
+			Axiom          -> (axiom_map,key_axiom_map)
+			Normal         -> (normal_map,key_normal_map)
 	  correction = case wt of 
 		       Axiom -> itCorrection s
 		       _     -> 0
@@ -171,21 +176,26 @@ itCorrection s
  
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
-		   -> FiniteMap String Int -> String -> Int
-sum_char_width_deb pref_fun cFM s = sum_char_width' s 0
+		   -> FiniteMap String Int 
+		   -> FiniteMap Char [String]  -> String -> Int
+sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
 	  sum_char_width' [c] r 
 	      | c == ' '  = r + lookupWithDefault_cFM "~"
 	      | otherwise = r + lookupWithDefault_cFM (c:[])
-	  sum_char_width' (c1:rest@(c2:cs)) r 
+	  sum_char_width' full@(c1:rest@(c2:cs)) r 
 	      | isLigature (c1:c2:[]) = case lookupFM cFM (c1:c2:[]) of
 					Just l  -> sum_char_width' cs (r+l)
 					Nothing -> sum_char_width' rest nl
 	      | (c1:c2:[]) == "\\ " =  
-		  sum_char_width' cs (r + lookupWithDefault_cFM "~")
+		  sum_char_width' cs (r + lookupWithDefault_cFM "~")	     
 	      | c1 == ' ' =
 		  sum_char_width' rest (r + lookupWithDefault_cFM "~")
-	      | otherwise = sum_char_width' rest nl 
+	      | otherwise = case prefixIsKey full key_cFM of
+			    Just key -> sum_char_width' 
+				           (drop (length key) full) 
+			                   (r + (fromJust $ lookupFM cFM key))
+			    Nothing -> sum_char_width' rest nl 
 	      where nl = r + lookupWithDefault_cFM (c1:[])
 	  lookupWithDefault_cFM s' = case lookupFM cFM s' of
 				     Nothing -> condTrace 
@@ -196,6 +206,17 @@ sum_char_width_deb pref_fun cFM s = sum_char_width' s 0
 						    "\" not found!")
 						   2200
 				     Just w  -> w    
+
+prefixIsKey :: String -> FiniteMap Char [String] -> Maybe String
+prefixIsKey [] _ = Nothing
+prefixIsKey ls@(c:_) key_cFM = case lookupFM key_cFM c of 
+			       Just ws -> firstJust $ map testPrefix ws
+			       Nothing -> Nothing
+    where testPrefix s = if ((flip isPrefixOf) ls) s 
+			 then Just s 
+			 else Nothing
+	  firstJust [] = Nothing
+	  firstJust (ms:mss) = if isJust ms then ms else firstJust mss
 
 isLigature :: String -> Bool
 isLigature s 
@@ -274,11 +295,12 @@ colon_latex  = let s = ":" in sp_text (normal_width s) s
 space_latex  = let s = " " in sp_text (normal_width s) s
 equals_latex = hc_sty_axiom "="
 
-braces_latex, parens_latex, brackets_latex :: Doc -> Doc
+braces_latex, parens_latex, brackets_latex, quotes_latex :: Doc -> Doc
 braces_latex d   = casl_normal_latex "\\{"<>d<>casl_normal_latex "\\}"
 parens_latex d   = casl_normal_latex "("<>d<>casl_normal_latex ")"
 brackets_latex d = casl_normal_latex "["<>d<>casl_normal_latex "]"
-
+quotes_latex d = q <> d <> q
+    where q = casl_normal_latex "{\\tt{}\\textquotedblright}"
 -- nest and hang that do the obvious thing except that they use
 -- multiple spaces for indentation
 nest_latex :: Int -> Doc -> Doc
@@ -357,6 +379,14 @@ cond_punctuate p (doc:docs) = go doc docs
 escape_latex :: String -> String
 escape_latex "" = ""
 escape_latex (x:xs) 
-    | x `elem` "_%{}" = '\\':x:(escape_latex xs)
+    | x == '\\' = "\\textbackslash" ++ '{':'}':escape_latex xs
+    | x == '"' = -- something to prevent german.sty from interpreting '"'
+	     case xs of
+	     []  -> default_quotes []
+	     y:ys | isAlphaNum y -> '`':'`':y:escape_latex ys
+	          | isSpace    y -> default_quotes (y:escape_latex ys)
+	          | otherwise    -> default_quotes (escape_latex xs) 
+    | x `elem` "_%$&{}#" = '\\':x:escape_latex xs
     | x `elem` "~^"   = '\\':x:("{}"++escape_latex xs)
-    | otherwise       =      x:(escape_latex xs)
+    | otherwise       =      x:escape_latex xs
+    where default_quotes = ('\'':) . ('\'':)
