@@ -37,7 +37,13 @@ import CASL.CCC.OnePoint
 
 data CASL = CASL deriving Show
 
-instance Language CASL  -- default definition is okay
+instance Language CASL where
+ description _ = 
+  "CASL - the Common algebraic specification language\
+  \The logic is subsorted partial first-order logic with sort generation constraints\
+  \See the CASL User Manual, LNCS 2900\
+  \and the CASL Reference Manual, LNCS 2960\
+  \See also http://www.cofi.info"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
 type CASLFORMULA = FORMULA ()
