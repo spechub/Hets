@@ -75,7 +75,7 @@ readShATermFile fp = do str <- readFile fp
                         return (fromShATermString str) 
                         
 fromShATermString :: (ATermConvertible a) => String -> Result a
-fromShATermString str = 
+fromShATermString str = if null str then Result [dia3] Nothing else
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] -> 
         if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
@@ -86,6 +86,7 @@ fromShATermString str =
 	  dia1 = Diag Warning "Wrong version number ... re-analyzing" nullPos
 	  dia2 = Diag Warning "Couldn't convert ShATerm back from file" 
 		      nullPos
+          dia3 = Diag Warning "got empty string from file" nullPos
 
 globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile
