@@ -1,0 +1,411 @@
+{- UU_AG
+ - Copyright:  S. Doaitse Swierstra, Arthur I. Baars and Andres Loeh
+               Department of Computer Science
+               Utrecht University
+               P.O. Box 80.089
+               3508 TB UTRECHT
+               the Netherlands
+               {swierstra,arthurb,andres}@cs.uu.nl -}
+INCLUDE "ConcreteSyntax.ag"
+INCLUDE "Patterns.ag"
+
+imports
+{
+import UU_Maps
+import UU_Utils
+import UU_Pretty
+
+import ConcreteSyntax
+import AbstractSyntax
+import Patterns
+import ErrorMessages
+import List (partition)
+import Maybe
+import IOExts
+}
+
+-------------------------------------------------------------------------------
+--         Passing errors, nonterminals and constructors
+-------------------------------------------------------------------------------
+
+-- Pass the name of the associated nonterminal to everyone
+ATTR Alt Alts SemAlt SemAlts SemDef SemDefs Pattern Patterns [ nt:{Nonterminal} | | ]
+
+SEM Elem
+  | Data alts.nt  = @name
+  | Sem  rules.nt = @name
+
+-- Pass the name of the constructor to semantic rules and patterns
+ATTR SemDef SemDefs Pattern Patterns [ con:{Constructor} | | ]
+
+SEM SemAlt
+  | SemAlt fields.con = @name
+
+
+-- Everyone that wants to report an error can do this by adding an error message to the
+-- stream of errors
+ATTR Elem Elems Alt Alts SemAlt SemAlts SemDef SemDefs Attrs Pattern Patterns [ | errors:{Errors}| ]
+
+-- initialisation of the error stream
+SEM AG [ | | errors:{Errors} ]
+  | AG elems.errors = []
+
+-- threading of errors from right to left
+SEM Elems
+  | Cons  tl.errors  = @lhs.errors
+          hd.errors  = @tl.errors
+          lhs.errors = @hd.errors
+SEM Alts
+  | Cons  tl.errors  = @lhs.errors
+          hd.errors  = @tl.errors
+          lhs.errors = @hd.errors
+
+SEM SemAlts
+  | Cons  tl.errors  = @lhs.errors
+          hd.errors  = @tl.errors
+          lhs.errors = @hd.errors
+SEM SemDefs
+  | Cons  tl.errors  = @lhs.errors
+          hd.errors  = @tl.errors
+          lhs.errors = @hd.errors
+
+SEM Patterns
+  | Cons  tl.errors  = @lhs.errors
+          hd.errors  = @tl.errors
+          lhs.errors = @hd.errors
+
+SEM Elem
+  | Sem  rules.errors   = @lhs.errors
+         attrs.errors   = @rules.errors
+  | Data alts.errors    = @lhs.errors
+         attrs.errors   = @alts.errors
+-------------------------------------------------------------------------------
+--         Calculation of code blocks                                        --
+-------------------------------------------------------------------------------
+types
+{
+type Blocks  = Map Name [String]
+}
+
+-- Collect code blocks bottom-up
+ATTR Elems AG [ | | blocks : {Blocks} ]
+
+SEM Elems
+  | Cons hd.blocks  = @tl.blocks
+         lhs.blocks = @hd.blocks
+  | Nil  lhs.blocks = emptyMap
+
+-- A Txt Elem adds the codelines to the block is passed in, if an Elem is not a Txt Elem
+-- the blocks remain the same
+SEM Elem [ | blocks : {Blocks} | ]
+  | Txt   lhs.blocks  = insertComb (++) @name @lines @lhs.blocks
+
+
+
+-------------------------------------------------------------------------------
+--         Grammar
+-------------------------------------------------------------------------------
+types
+{
+type Gram     = Map Nonterminal (Pos, AltMap)
+type AltMap   = Map Constructor (Pos, FieldMap)
+type FieldMap = [(Name, (Pos,String))]
+}
+
+ATTR Elem Elems [ | gram : {Gram} | ]
+
+SEM Elem
+  | Data  alts.altMap = maybe emptyMap snd $ locateMap @name @lhs.gram
+          lhs.gram    = insert @name (@pos,@alts.altMap) @lhs.gram
+
+ATTR Alt Alts [ | altMap : {AltMap} | ]
+
+SEM Alt
+  | Alt lhs.errors      = @loc.errs
+           .altMap      = @loc.aMap
+        loc.(errs,aMap) = case locateMap  @name @lhs.altMap  of
+                             Just (p,_) -> (DupAlt p @pos @lhs.nt @name : @lhs.errors
+                                           ,@lhs.altMap)
+                             Nothing    -> let ins (nm,tp) (es,fs) = case lookup nm fs of
+                                                Just (p,_) -> (DupChild p @pos @lhs.nt @name nm : es
+                                                              ,fs)
+                                                Nothing    -> (es, (nm, (@pos,tp)): fs)
+
+                                               (es,flds) = foldr ins (@lhs.errors,[]) @fields
+                                           in (es,insert @name (@pos,flds) @lhs.altMap)
+
+
+-- Initialise  elems.gram and pass the constructed gram to everyone that needs it
+
+ATTR Attrs Elem Elems [ gram2 : {Gram} | | ]
+SEM AG
+  | AG elems.gram  = emptyMap
+            .gram2 = @elems.gram
+
+
+-------------------------------------------------------------------------------
+--          Type synonyms
+-------------------------------------------------------------------------------
+
+{- At the moment type synonyms are only supported for list types
+   This means that only synonyms of the form:
+      TYPE <NT> = [ <TP> ]
+   are allowed
+-}
+
+
+ATTR Elem Elems [ | typeSyns : {TypeSyns} | ]
+
+{- Put this synonym in the typeSyns list and
+   add the implicit Cons and Nil productions for the type synonym
+
+   A synonym of the form:
+        TYPE <NT> = [ <TP> ]
+   is translated into:
+       DATA <NT> | Cons hd:<TP> tl:<NT>
+                 | Nil
+-}
+
+SEM Elem
+  | Type  lhs.gram     = @loc.gr
+             .errors   = @loc.es
+             .typeSyns = @loc.ts
+          loc.(gr,es,ts) = case locateMap @name @lhs.gram of
+                                   Just (p,_) -> ( @lhs.gram
+                                                 , DupSynonym p @pos @name : @lhs.errors
+                                                 , @lhs.typeSyns
+                                                 )
+                                   Nothing    -> ( insert @name (@pos,@loc.altEnv) @lhs.gram
+                                                 , @lhs.errors
+                                                 , (@name, @arg) : @lhs.typeSyns
+                                                 )
+             .altEnv        = list2map [("Cons", (@pos,@loc.consChildren))
+                                       ,("Nil" , (@pos,[]))
+                                       ]
+             .consChildren  =  [("hd",(@pos,@arg ))
+                               ,("tl",(@pos,@name))
+                               ]
+SEM AG
+  | AG elems.typeSyns = []
+-------------------------------------------------------------------------------
+--          Attribute declarations
+-------------------------------------------------------------------------------
+types
+{
+type AtMap  = Map Nonterminal (Map Name (Pos,String),Map Name (Pos,String))
+--type UseMap = Map Nonterminal (Map Name (String,String))
+}
+
+--collect attribute declarations and USE's
+
+
+
+ATTR Elem Elems Attrs [ | uses:{UseMap} atMap : {AtMap} | ]
+ATTR Attrs      [ nts : {[Nonterminal]} | | ]
+ATTR Elem Elems SemAlts SemAlt SemDefs SemDef [ attrMap:{AtMap}| | ]
+
+
+SEM AG
+  | AG elems.uses    = emptyMap
+            .atMap   = emptyMap
+            .attrMap = @elems.atMap
+
+
+SEM Elem
+  | Data   attrs.nts = [ @name ]
+  | Attr   attrs.nts = @names
+  | Sem    attrs.nts = [ @name ]
+
+
+SEM Attrs
+  | Attrs  lhs.atMap      = @loc.am
+              .uses       = @loc.us
+              .errors     = @loc.er
+           loc.(am,us,er) = let addAttrs nt (atmap,useMap,err1) =
+                                 if contains nt @lhs.gram2
+                                 then
+                                   let inhAts    = map getAttr  @loc.inhs
+                                       synAts    = map getAttr  @loc.syns
+                                       uses     = map getUse   @loc.syns
+                                       getUse  (nm,_ ,u) = (nm,u )
+                                       getAttr (nm,tp,_) = (nm,tp)
+
+                                       (eInh,eSyn) = fromMaybe (emptyMap,emptyMap) $ locateMap nt atmap
+                                       eUses       = fromMaybe emptyMap $ locateMap nt useMap
+
+                                       (newInh,err2) = foldr (addAttr DupInhAttr)
+                                                             (eInh,err1)
+                                                             inhAts
+
+                                       (newSyn,err3) = foldr (addAttr DupSynAttr)
+                                                             (eSyn,err2)
+                                                             synAts
+                                       newUses       = foldr addUse eUses uses
+
+                                       addUse (_,("",""))  ss = ss
+                                       addUse (a,use    )  ss | contains a ss  = ss
+                                                              | otherwise      = insert a use ss
+
+                                       addAttr dupE (a,tp) (as,err) = case locateMap a as of
+                                             Just (p,_) -> (as, dupE p @pos nt a : err)
+                                             Nothing    -> (insert a (@pos,tp) as,err)
+
+                                   in ( insert nt (newInh,newSyn) atmap
+                                      , insert nt newUses useMap
+                                      , err3
+                                      )
+                                 else (atmap,useMap,UndefNont @pos nt : err1)
+                            in foldr addAttrs (@lhs.atMap,@lhs.uses,@lhs.errors) @lhs.nts
+              .inhs      = @inh ++ @chn -- maintain the order of attr declarations
+              .syns      = @chn ++ @syn -- [ inh | chn | syn ]
+
+-- Initialise  elems.gram and pass the constructed gram to everyone that needs it
+
+
+-------------------------------------------------------------------------------
+--         Collecting rules
+-------------------------------------------------------------------------------
+
+types
+{
+type RulesMap    = Map Nonterminal RulesMap2
+type RulesMap2   = Map Constructor RulesMap3
+type RulesMap3   = (Map Name RulesMap4,LocRules)
+type RulesMap4   = Map Name (Pos,Expression)
+}
+
+
+ATTR Elems Elem [ | rulesMap : {RulesMap} | ]
+
+SEM AG
+  | AG elems.rulesMap = emptyMap
+
+SEM Elem
+  | Sem  lhs.errors     = @loc.es
+            .rulesMap   = @loc.rs
+         rules.rulesMap = fromMaybe emptyMap (locateMap @name @lhs.rulesMap)
+              .defAlts  = maybe emptyMap snd (locateMap @name @lhs.gram2)
+
+         loc.(es,rs)    = if contains @name @lhs.gram2
+                             then (@attrs.errors
+                                  ,insert @name @rules.rulesMap @lhs.rulesMap
+                                  )
+                             else (UndefNont @pos @name : @lhs.errors
+                                  ,@lhs.rulesMap
+                                  )
+
+ATTR SemAlt SemAlts [ defAlts : {AltMap} | rulesMap : {RulesMap2} | ]
+
+
+
+
+SEM SemAlt
+  | SemAlt lhs.errors       = @loc.es
+              .rulesMap     = @loc.rs
+           fields.rulesMap  = fromMaybe (emptyMap,[]) (locateMap @name @lhs.rulesMap)
+                 .defFields = maybe [] snd (locateMap @name @lhs.defAlts)
+           loc.(es,rs)      = if contains @name @lhs.defAlts
+                                then (@fields.errors
+                                     ,insert @name @fields.rulesMap @lhs.rulesMap
+                                     )
+                                else (UndefAlt @pos @lhs.nt @name : @lhs.errors
+                                     ,@lhs.rulesMap
+                                     )
+
+ATTR SemDef SemDefs  [ defFields : {FieldMap} | rulesMap : {RulesMap3} | ]
+
+SEM SemDef
+  | Def lhs.errors    = @loc.errs
+           .rulesMap  = @loc.rs
+        loc.(errs,rs) = if @field == _LHS
+                           then addRule @pos @field @attr @rhs @lhs.nt snd @lhs.attrMap @owrt @lhs.nt @lhs.con @lhs.rulesMap @lhs.errors
+                           else case lookup @field @lhs.defFields of
+                               Just (_,tp) -> addRule @pos @field @attr @rhs tp fst @lhs.attrMap @owrt @lhs.nt @lhs.con @lhs.rulesMap @lhs.errors
+                               Nothing -> (UndefChild @pos @lhs.nt @lhs.con @field : @lhs.errors
+                                          , @lhs.rulesMap
+                                          )
+
+{
+addRule pos field attr rhs tp getAttrs attrMap owrt nt con rulesMap errors
+  | contains attr (maybe emptyMap getAttrs (locateMap tp attrMap))
+        = let (rules,lrs) = rulesMap
+              rs          = fromMaybe emptyMap (locateMap field rules)
+          in case locateMap attr rs of
+              Just (p,_) -> if owrt
+                               then (errors
+                                    ,(insert field (insert attr (pos,rhs) rs) rules,lrs)
+                                    )
+                               else (DupRule p pos nt con field attr : errors
+                                    , rulesMap
+                                    )
+              Nothing    -> (errors
+                            ,(insert field (insert attr (pos,rhs) rs) rules,lrs)
+                            )
+  | otherwise = (SuperfluousRule pos nt con field attr : errors
+                ,rulesMap
+                )
+}
+
+
+SEM SemDef
+  | LocDef lhs.rulesMap       = let (rules,lrules) = @lhs.rulesMap
+                                in (rules, LocRule @pat.pat @rhs @owrt : lrules)
+
+ATTR Pattern Patterns [ defFields : {FieldMap} || ]
+
+SEM Pattern
+  | Var    lhs.errors  = nameClashError @pos @lhs.nt @lhs.con @lhs.errors @name @lhs.defFields
+  | Alias  lhs.errors  = nameClashError @pos @lhs.nt @lhs.con @pat.errors @name @lhs.defFields
+
+{
+--      name clash
+nameClashError pos nt con es var fields =
+        case var `lookup`  fields of
+          Just (p,_) ->  NameClash p pos nt con var  : es
+          Nothing    ->  es
+}
+
+SEM Pattern [|| pat : {Pattern}]
+  | Constr     lhs.pat = Constr @pos @name @pats.pats
+  | Product    lhs.pat = Product @pos @pats.pats
+  | Var        lhs.pat = Var @pos @name
+  | Alias      lhs.pat = Alias @pos @name @pat.pat
+  | Underscore lhs.pat = Underscore @pos
+
+SEM Patterns [||pats : {Patterns}]
+  | Cons   lhs.pats    = @hd.pat : @tl.pats
+  | Nil    lhs.pats    = []
+
+-------------------------------------------------------------------------------
+--         Constructing transformed syntax tree
+-------------------------------------------------------------------------------
+
+SEM AG [ | | trans : Grammar ]
+  | AG lhs.trans = constructGrammar @elems.gram @elems.atMap @elems.uses @elems.rulesMap @elems.typeSyns
+
+{
+constructGrammar gram attrs uses rules tsyns =
+   let gr = map (\(nt,(p,alts)) -> (nt, (p, map2list alts))) (map2list gram)
+       stripPos = fmap snd
+       prods = map prod gr
+       prod (nt,(_,alts))=  let (pinh,psyn) = fromMaybe (emptyMap,emptyMap) $ locateMap nt attrs
+                                inh = stripPos pinh
+                                syn = stripPos psyn
+                                rmap  = fromMaybe emptyMap (locateMap nt rules)
+                                alt (con,(_,flds)) =
+                                   let (rmap',lrs) = fromMaybe (emptyMap,[]) (locateMap con rmap)
+                                       locrs = reverse lrs -- order is reversed,so reverse again
+                                       rs  = fromMaybe emptyMap (locateMap _LHS rmap')
+                                       rules = map rule (map2list rs)
+                                       rule (attr,(_,rhs)) = Rule attr rhs
+                                       child (nm,(_,tp)) =
+                                          let (pinh,psyn) = fromMaybe (emptyMap,emptyMap) $ locateMap tp attrs
+                                              inh = stripPos pinh
+                                              syn = stripPos psyn
+                                              rs  = fromMaybe emptyMap (locateMap nm rmap')
+                                              rules = map rule (map2list rs)
+                                          in Child nm tp inh syn rules
+                                   in Alternative con (map child flds) rules locrs
+                            in Production nt inh syn (map alt alts)
+   in Grammar tsyns uses prods
+ }

@@ -1,0 +1,64 @@
+{- UU_AG
+ - Copyright:  S. Doaitse Swierstra, Arthur I. Baars and Andres Loeh
+               Department of Computer Science
+               Utrecht University
+               P.O. Box 80.089
+               3508 TB UTRECHT
+               the Netherlands
+               {swierstra,arthurb,andres}@cs.uu.nl -}
+
+-- code for generating a list of attributes and a list of
+-- local variables as comments in the generated file
+
+imports
+{
+import List  (intersect, (\\))
+}
+
+
+ATTR Productions Production Alternatives Alternative [ o_pretty:{Bool} | | ]
+
+SEM Grammar
+  | Grammar     loc.o_pretty = 'p' `elem` @lhs.options
+
+SEM Production
+  | Production  loc.comment = let syn'     = map2list @syn
+                                  inh'     = map2list @inh
+                                  chnn     = inh' `intersect` syn'
+                                  inhn     = inh' \\ chnn
+                                  synn     = syn' \\ chnn
+                              in Comment . unlines $
+                                 [ replicate 3 ' ' ++ "inherited attributes:"
+                                 , unlines . map ((replicate 6 ' ')++) .
+                                       map (\(x,y) -> x ++ replicate ((20 - length x) `max` 0) ' ' ++ " : " ++ y) $ inhn
+                                 , replicate 3 ' ' ++ "chained attributes:"
+                                 , unlines . map ((replicate 6 ' ')++) .
+                                       map (\(x,y) -> x ++ replicate ((20 - length x) `max` 0) ' ' ++ " : " ++ y) $ chnn
+                                 , replicate 3 ' ' ++ "synthesised attributes:"
+                                 , unlines . map ((replicate 6 ' ')++) .
+                                       map (\(x,y) -> x ++ replicate ((20 - length x) `max` 0) ' ' ++ " : " ++ y) $ synn
+                                 ]
+                
+SEM Alternatives [ || comments : {Decls} ] 
+  | Cons lhs.comments = @hd.comment : @tl.comments
+  | Nil  lhs.comments = []
+
+SEM Alternative [ || comment : {Decl} ] 
+  | Alternative lhs.comment = Comment . unlines $
+                                 [ replicate 3 ' ' ++ "local variables for " ++ @lhs.nt ++ "." ++ @con ++ ":"
+                                 , unlines . map ((replicate 6 ' ')++) $ @locrules.locVars
+                                 ]
+
+-- copied from DefaultRules, double computation :-(
+
+ATTR LocRules LocRule Patterns Pattern [ | locVars:{[String]} | ]
+
+SEM Alternative
+  | Alternative locrules.locVars = []
+
+SEM Pattern
+  | Var      lhs.locVars   = @name : @lhs.locVars
+  | Alias    lhs.locVars   = @name : @lhs.locVars
+
+
+                

@@ -1,0 +1,4 @@
+Main-module: Ag.hs
+
+requires: "hugs -98" or "ghc -fglasgow-exts" to run.
+
