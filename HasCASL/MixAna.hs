@@ -51,17 +51,17 @@ termToToken trm =
           _ -> opTok
 
 -- match (and shift) a token (or partially finished term)
-scan :: Knowns -> (Maybe Type, a) -> (a -> Token) 
-     -> State (Env, ParseMap a) ()
-scan knowns (ty, trm) f =
-  do (e, pm) <- get 
+scan :: TypeMap -> Knowns -> (Maybe Type, a) -> (a -> Token) 
+     -> State (Int, ParseMap a) ()
+scan tm knowns (ty, trm) f =
+  do (c, pm) <- get 
      let m = parseMap pm
 	 i = lastIndex pm
 	 incI = incrIndex i
-	 (ps, c2) = runState (mapM (scanState (typeMap e) knowns (ty, trm) 
-				   $ f trm) $ lookUp m i) $ counter e
-     put (e { counter = c2 }, pm { lastIndex = incI, 
-				   parseMap = Map.insert incI (concat ps) m })
+	 (ps, c2) = runState (mapM (scanState tm knowns (ty, trm) 
+				   $ f trm) $ lookUp m i) c
+     put (c2, pm { lastIndex = incI, 
+		   parseMap = Map.insert incI (concat ps) m })
 	      
 -- final complete/reduction phase 
 -- when a grammar rule (mixfix Id) has been fully matched
@@ -87,28 +87,27 @@ complRec :: GlobalAnnos -> TypeMap -> PMap a -> (PState a -> a)
 complRec ga tm m f l = let l1 = compl ga tm m f l in 
     if null l1 then l else complRec ga tm m f l1 ++ l
 
-complete :: GlobalAnnos -> (PState a -> a) -> State (Env, ParseMap a) ()
-complete ga f =
-    do (e, pm) <- get
+complete :: GlobalAnnos -> TypeMap -> (PState a -> a) -> State (ParseMap a) ()
+complete ga tm f =
+    do pm <- get
        let m = parseMap pm
 	   i = lastIndex pm 
-       put (e, pm { parseMap = Map.insert i 
-		    (complRec ga (typeMap e) m f $ lookUp m i) m })
+       put pm { parseMap = Map.insert i 
+		    (complRec ga tm m f $ lookUp m i) m }
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
 
-predict :: (Index -> State Int [PState a]) -> State (Env, ParseMap a) ()
+predict :: (Index -> State Int [PState a]) -> State (Int, ParseMap a) ()
 predict f = 
-    do (e, pm) <- get 
+    do (c, pm) <- get 
        let m = parseMap pm
 	   i = lastIndex pm 
-	   c = counter e
        if not (isStartIndex i) && any (\ (PState { restRule = ts }) ->
 				    not (null ts) && head ts == termTok) 
 	                       (lookUp m i)
 		 then let (nextStates, c2) = runState (f i) c
-		      in put (e { counter = c2 }, 
+		      in put (c2, 
 			      pm { parseMap = Map.insertWith (++) i 
 				   nextStates m })
 		 else return ()
@@ -123,12 +122,15 @@ completeScanPredict :: (PrettyPrint a, PosItem a)
                     -> (Index -> State Int [PState a])
 		    -> State (Env, ParseMap a) ()
 completeScanPredict ga knowns (ty, a) fromState toToken initStates =
-    do predict initStates
-       scan knowns (ty, a) toToken
-       complete ga fromState
-       pm <- gets snd
-       let m = parseMap pm
-	   i = lastIndex pm
+    do (e, pm0) <- get
+       let tm = typeMap e
+           (c, pm1) = execState (do predict initStates
+				    scan tm knowns (ty, a) toToken) 
+		       (counter e, pm0)
+	   pm2 = execState (complete ga tm fromState) pm1
+       put (e { counter = c }, pm2)
+       let m = parseMap pm2
+	   i = lastIndex pm2
        if (null $ lookUp m i) && (not $ null $ lookUp m $ decrIndex i)
            then addDiag $ mkDiag Error "unexpected mixfix token" a
 	   else return ()
@@ -156,31 +158,53 @@ iterStates ga ty terms =
             MixfixTerm ts -> self (ts ++ tail terms)
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms)
-	    t@(QualVar v typ _) -> 
-	        let mi = findOpId as tm c v typ in
-		    case mi of 
-		        Just _ -> do nextState ga (Just typ, t)
-			     	     self (tail terms)
-	                Nothing -> addDiag $ mkDiag Error "value not found" v
-	    t@(QualOp (InstOpId v _ _) (TypeScheme _ (_ :=> typ) _) _) ->
-	        let mi = findOpId as tm c v typ in 
-	            case mi of 
-			Just _ -> do nextState ga (Just typ, t)
-			     	     self (tail terms)
-			Nothing -> addDiag $ mkDiag Error "value not found" v
+	    QualVar v typ ps -> 
+		do let (mTyp, e2) = runState (anaStarType typ) e 
+                   put (e2, pm)
+		   case mTyp of 
+		       Nothing -> return ()
+		       Just nTyp -> do 
+		           let mi = findOpId as tm c v nTyp
+			   case mi of     
+			       Nothing -> addDiag $ mkDiag Error 
+					  "value not found" v
+			       Just _ -> do 
+			           nextState ga (Just nTyp, QualVar v nTyp ps)
+			     	   self (tail terms)
+	    QualOp io@(InstOpId v _ _) (TypeScheme rs (qs :=> typ) ss) ps ->
+		do let (mTyp, e2) = runState (anaStarType typ) e 
+                   put (e2, pm)
+	           case mTyp of 
+		       Nothing -> return ()
+		       Just nTyp -> do 
+		           let mi = findOpId as tm c v nTyp
+			   case mi of     
+			       Nothing -> addDiag $ mkDiag Error 
+					  "value not found" v
+			       Just _ -> do 
+				   nextState ga (Just nTyp, QualOp io 
+					   (TypeScheme rs (qs :=> nTyp) ss) ps)
+			           self (tail terms)
 	    TypedTerm hd tqual typ ps -> 
-		do let (mtt, e2) = runState
+		do let (mTyp, e1) = runState (anaStarType typ) e 
+                       (mtt, e2) = runState
 			   (case tqual of 
-			        OfType -> resolve ga (typ, hd)
-			        _ -> resolveAny ga hd) e
+			        OfType -> case mTyp of 
+			             Nothing -> resolveAny ga hd
+			             Just nTyp -> resolve ga (nTyp, hd)
+			        _ -> resolveAny ga hd) e1
 	           put (e2, pm)			       
 		   case mtt of  
-			Just (_, ttt) -> 
-	                   do nextState ga (Just (case tqual of 
-				    InType -> logicalType
-				    _ -> typ), TypedTerm ttt tqual typ ps)
-	                      self (tail terms) 
-			Nothing -> return ()
+		       Just (_, ttt) -> 
+	                   do case mTyp of 
+			          Nothing -> return () 
+				  Just nTyp -> do 
+				      nextState ga (case tqual of 
+						    InType -> Just logicalType
+						    _ -> mTyp, 
+					       TypedTerm ttt tqual nTyp ps)
+				      self (tail terms) 
+		       Nothing -> return ()
 	    QuantifiedTerm quant decls hd ps ->
 		do let (mtt, e2) = runState (resolve ga (logicalType, hd)) e
 	           put (e2, pm)			       
@@ -244,7 +268,7 @@ resolveToParseMap ga ty trm =
        let pm = ParseMap { lastIndex = startIndex
 			, parseMap = Map.single startIndex initStates }
        e <- get 
-       let (_, (e2, pm2)) = runState (iterStates ga ty [trm]) (e, pm)
+       let (e2, pm2) = execState (iterStates ga ty [trm]) (e, pm)
        put e2
        return pm2
 
@@ -287,9 +311,8 @@ resolve ga (ty, trm) =
        resolveFromParseMap (toAppl ga) (ty, trm) pm 
 
 resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Maybe Term)
-resolveTerm ga ty oldTrm = 
-    do trm <- anaTypesInTerm oldTrm
-       mr <- resolve ga (ty, trm)	    
+resolveTerm ga ty trm = 
+    do mr <- resolve ga (ty, trm)	    
        return $ fmap snd mr 
 
 -- ---------------------------------
@@ -370,13 +393,19 @@ iterPatStates ga knowns ty pats =
             BracketPattern b ts ps -> self 
 	       (expandPos PatternToken (getBrackets b) ts ps ++ tail pats)
 	    TypedPattern hd typ ps -> 
-		do let (mtt, e2) = runState (resolvePat ga (typ, hd)) e
+		do let (mTyp, e1) = runState (anaStarType typ) e  
+		       (mtt, e2) = runState (case mTyp of 
+				   Nothing -> resolvePattern ga hd
+				   Just nTyp -> resolvePat ga (nTyp, hd)) e1
 		   put (e2, pm)
 		   case mtt of  
 			Just (_, ttt) -> 
-			    do nextPatState ga knowns (Just typ, 
-						       TypedPattern ttt typ ps)
-			       self (tail pats) 
+			    do case mTyp of
+			           Nothing -> return ()
+				   Just nTyp -> do 
+				       nextPatState ga knowns (mTyp, 
+					   TypedPattern ttt nTyp ps)
+				       self (tail pats)  
 			Nothing -> return ()
 	    t@(PatternToken _) -> do nextPatState ga knowns (Nothing, t)
 				     self (tail pats)
@@ -396,15 +425,15 @@ resolvePatToParseMap ga ty trm =
 			       (tokStr inTok : map (:[]) "{}[](),"))
 		    $ Set.unions $ map getKnowns ids
        e <- get
-       let (_, (e2, pm2)) = runState (iterPatStates ga knowns ty [trm]) 
+       let (e2, pm2) = execState (iterPatStates ga knowns ty [trm]) 
 			    (e, ParseMap 
 			     { lastIndex = startIndex
 			     , parseMap = Map.single startIndex initStates })
        put e2
        return pm2
 
-resolveAnyPat :: GlobalAnnos -> Pattern -> State Env (Maybe (Type, Pattern))
-resolveAnyPat ga trm =
+resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe (Type, Pattern))
+resolvePattern ga trm =
     do tvar <- toEnvState freshVar
        resolvePat ga (TypeName tvar star 1, trm)
 
@@ -422,95 +451,9 @@ resolvePat ga (ty, trm) =
 				    (typeMap e) (newTy, pat)) 
 				       (counter e, Map.empty, [])
 		  put e { counter = c }
-		  addDiags ds
-		  return $ Just r
-
-resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe (Type, Pattern))
-resolvePattern ga oldPat = 
-    do pat <- anaTypesInPattern oldPat
-       resolveAnyPat ga pat
-
--- ---------------------------------------------------------------------------
--- resolve types in terms and patterns
--- ---------------------------------------------------------------------------
-
-anaTypesInTerm :: Term -> State Env Term
-anaTypesInTerm trm = 
-    case trm of
-	   QualVar v t ps -> 
-	       do ty <- anaStarType t
-		  return $ QualVar v ty ps
-	   QualOp io (TypeScheme vs (qs :=> t) ps1) ps ->
-	       do ty <- anaStarType t
-		  return $ QualOp io (TypeScheme vs (qs :=> ty) ps1) ps
-	   ApplTerm t1 t2 ps -> 
-	       do t3 <- anaTypesInTerm t1
-		  t4 <- anaTypesInTerm t2
-		  return $ ApplTerm t3 t4 ps
-	   TupleTerm ts ps -> 
-	       do tys <- mapM anaTypesInTerm ts
-		  return $ TupleTerm tys ps
-	   TypedTerm t1 q t ps ->
-	       do t2 <- anaTypesInTerm t1
-		  ty <- anaStarType t
-		  return $ TypedTerm t2 q ty ps 
-	   QuantifiedTerm q vs t ps -> 
-	       do e <- anaTypesInTerm t 
-		  return $ QuantifiedTerm q vs e ps
-	   LambdaTerm pats part t ps -> 
-	       do nPats <- mapM anaTypesInPattern pats
-	          e <- anaTypesInTerm t 
-		  return $ LambdaTerm nPats part e ps
-	   CaseTerm t es ps ->
-	       do e <- anaTypesInTerm t
-		  nEs <- mapM anaTypesInProgEq es
-		  return $ CaseTerm e nEs ps
-	   LetTerm es t ps ->
-	       do nEs <- mapM anaTypesInProgEq es
-		  e <- anaTypesInTerm t
-		  return $ LetTerm nEs e ps
-	   MixfixTerm ts -> 
-	       fmap MixfixTerm $ mapM anaTypesInTerm ts
-	   BracketTerm b ts ps -> 
-	       do nTs <- mapM anaTypesInTerm ts
-		  return $ BracketTerm b nTs ps
-	   _ -> return trm
-
-
-anaTypesInPattern :: Pattern -> State Env Pattern 
-anaTypesInPattern pat = 
-    case pat of 
-	     PatternVar (VarDecl v t k ps) ->
-		 do ty <- anaStarType t
-		    return $ PatternVar (VarDecl v ty k ps)
-	     PatternConstr io (TypeScheme vs (qs :=> t) ps1) pats ps ->
-		 do ty <- anaStarType t
-		    nPats <- mapM anaTypesInPattern pats
-		    return $ PatternConstr io (TypeScheme vs (qs :=> ty) ps1)
-			   nPats ps
-             PatternToken _ -> return pat
-	     BracketPattern b pats ps ->
-		 do nPats <- mapM anaTypesInPattern pats
-		    return $ BracketPattern b nPats ps 
-	     TuplePattern pats ps -> 
-		 do nPats <- mapM anaTypesInPattern pats
-		    return $ TuplePattern nPats ps 
-	     MixfixPattern pats -> 
-		 fmap MixfixPattern $ mapM anaTypesInPattern pats
-	     TypedPattern p t ps -> 
-		 do nPat <- anaTypesInPattern p
-		    ty <- anaStarType t
-		    return $ TypedPattern nPat ty ps 
-	     AsPattern p1 p2 ps ->
-		 do p3 <- anaTypesInPattern p1 
-		    p4 <- anaTypesInPattern p2
-		    return $ AsPattern p3 p4 ps
-
-anaTypesInProgEq :: ProgEq -> State Env ProgEq
-anaTypesInProgEq (ProgEq p t ps) = 
-    do pat <- anaTypesInPattern p 
-       trm <- anaTypesInTerm t
-       return $ (ProgEq pat trm ps)
+		  if null ds then return $ Just r
+		     else do addDiags ds
+			     return Nothing
 
 -- ---------------------------------------------------------------------------
 -- specialize 

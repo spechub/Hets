@@ -30,14 +30,18 @@ anaOpItem _ (OpDecl is sc attr _) =
 anaOpItem ga (OpDefn o pats sc partial trm ps) = 
     do let newTrm = if null pats then trm else 
 		 LambdaTerm pats partial trm ps 
-       (i, newSc) <- getUninstOpId sc o
-       ty <- toEnvState $ freshInst newSc
-       mt <- resolveTerm ga ty newTrm
-       case mt of 
-	       Nothing -> return ()
-	       Just lastTrm -> addOpId i newSc [] $ Definition lastTrm
+       (i, mSc) <- getUninstOpId sc o
+       case mSc of 
+           Nothing -> do resolveAny ga newTrm
+			 return ()
+	   Just newSc -> do 
+	       ty <- toEnvState $ freshInst newSc
+	       mt <- resolveTerm ga ty newTrm
+	       case mt of 
+	           Nothing -> return ()
+		   Just lastTrm -> addOpId i newSc [] $ Definition lastTrm
 
-getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, TypeScheme)
+getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, Maybe TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
@@ -49,14 +53,17 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
 
 anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env ()
 anaOpId sc attrs o =
-    do (i, newSc) <- getUninstOpId sc o
-       addOpId i newSc attrs NoOpDefn
+    do (i, mSc) <- getUninstOpId sc o
+       case mSc of 
+           Nothing -> return () 
+	   Just newSc -> addOpId i newSc attrs NoOpDefn
 
-anaTypeScheme :: TypeScheme -> State Env TypeScheme
+anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
     do tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       newTy <- anaStarType ty
-       let newPty = TypeScheme tArgs (q :=> newTy) p
+       mt <- anaStarType ty
        putTypeMap tm       -- forget local variables 
-       return newPty
+       case mt of 
+           Nothing -> return Nothing
+	   Just newTy -> return $ Just $ TypeScheme tArgs (q :=> newTy) p

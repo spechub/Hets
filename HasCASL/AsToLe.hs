@@ -83,60 +83,38 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-typeIsClass, typeIsKind :: Type -> State Env Bool
-typeIsClass (TypeToken t) = 
-    if tokStr t == "Type" then return True
-       else do let ci = simpleIdToId t 
-	       isClassId ci
-typeIsClass (BracketType Parens ts _) = 
-    do bs <- mapM typeIsClass ts 
-       return $ and bs
-typeIsClass _ = return False
-
-typeIsKind (FunType t1 FunArr t2 _) = 
-    do b1 <- typeIsKind t1 
-       b2 <- typeIsKind t2
-       return (b1 && b2) 
-typeIsKind (BracketType Parens [t] _) = 
-    typeIsKind t
-
-typeIsKind (MixfixType [t1, TypeToken t]) = 
-    let s = tokStr t 
-	v = case s of 
-		   "+" -> CoVar 
-		   "-" -> ContraVar 
-		   _ -> InVar
-    in case v of 
-	      InVar -> return False
-	      _ -> typeIsClass t1
-
-typeIsKind t = typeIsClass t
-
-convertTypeToClass :: Type -> State Env Class
+convertTypeToClass :: Type -> State Env (Maybe Class)
 convertTypeToClass (TypeToken t) = 
-       if tokStr t == "Type" then return universe else do
+       if tokStr t == "Type" then return $ Just universe else do
           let ci = simpleIdToId t
-	  b <- isClassId ci
-	  if b then return ()
-	     else addDiags [mkDiag Hint "not a class" ci] 
-	  return $ Intersection  (Set.single ci) []
+	  e <- get					       
+	  mk <- anaClassId ci
+	  case mk of 
+		  Nothing -> do put e
+				addDiags [mkDiag Hint "not a class" ci]
+				return Nothing
+		  _ -> return $ Just $ Intersection  (Set.single ci) []
 convertTypeToClass (BracketType Parens ts ps) = 
        do cs <- mapM convertTypeToClass ts
-	  return $ Intersection (Set.unions $ map iclass cs) ps
+	  if all isJust cs then 
+	     return $ Just $ Intersection (Set.unions $ map iclass $ 
+				    catMaybes cs) ps
+	     else return Nothing
 
 convertTypeToClass t = 
     do addDiags [mkDiag Hint "not a class" t]
-       return universe
+       return Nothing
 
-convertTypeToKind :: Type -> State Env Kind
+convertTypeToKind :: Type -> State Env (Maybe Kind)
 convertTypeToKind (FunType t1 FunArr t2 ps) = 
-    do k1 <- convertTypeToKind t1
-       k2 <- convertTypeToKind t2
-       return $ KindAppl k1 k2 ps
+    do mk1 <- convertTypeToKind t1
+       mk2 <- convertTypeToKind t2
+       case (mk1, mk2) of
+           (Just k1, Just k2) -> return $ Just $ KindAppl k1 k2 ps
+	   _ -> return Nothing
 
 convertTypeToKind (BracketType Parens [t] _) = 
-    do k <- convertTypeToKind t
-       return $ k
+    do convertTypeToKind t
 
 convertTypeToKind ty@(MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
@@ -146,27 +124,29 @@ convertTypeToKind ty@(MixfixType [t1, TypeToken t]) =
 		   _ -> InVar
     in case v of 
 	      InVar -> do addDiags [mkDiag Hint "no kind" ty]
-			  return star
-	      _ -> do k1 <- convertTypeToClass t1
-		      return $ ExtClass k1 v [tokPos t]
-
+			  return Nothing
+	      _ -> do mk1 <- convertTypeToClass t1
+		      case mk1 of 
+			  Just k1 -> return $ Just $ ExtClass k1 v [tokPos t]
+			  _ -> return Nothing
 convertTypeToKind t = 
-    do c <-  convertTypeToClass t
-       return $ ExtClass c InVar []
+    do mc <- convertTypeToClass t
+       return $ fmap ( \ c -> ExtClass c InVar []) mc
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
-    do b <- typeIsKind t
-       k <- convertTypeToKind t
-       if b then 
-	     anaTypeVarDecl(TypeArg v k s q)
-          else anaVarDecl vd
+    do mk <- convertTypeToKind t
+       case mk of 
+	   Just k -> anaTypeVarDecl(TypeArg v k s q)
+           _ -> anaVarDecl vd
     else anaVarDecl vd
 
 anaVarDecl(VarDecl v oldT _ _) = 
-		   do t <- anaStarType oldT
-		      addOpId v (simpleTypeScheme t) [] VarDefn
+		   do mt <- anaStarType oldT
+		      case mt of 
+		          Nothing -> return ()
+			  Just t -> addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------
 -- ClassItem

@@ -62,7 +62,8 @@ y2 : d %(var)%
 Error (line 4, column 7) illegal universe class declaration 'Type'
 Error (line 14, column 44) incompatible kind of: t ->? Unit
   expected: Type
-  inferred: Type -> Type
+     found: Type -> Type
+
 Warning (line 15, column 16) redeclared type 't'
 Hint (line 40, column 9) not a class 's'
 Error (line 46, column 11) unexpected mixfix token 'und'

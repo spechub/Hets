@@ -133,11 +133,6 @@ instance Mergeable OpInfo where
 	   return $ OpInfo sc as d
 
 
-expected :: PrettyPrint a => a -> a -> String
-expected a b = 
-    "\n  expected: " ++ showPretty a 
-    "\n     found: " ++ showPretty b "\n" 
-
 instance Mergeable TypeScheme where
     merge s1 s2 = if s1 == s2 then return s1 
 		  else fail ("wrong type scheme"

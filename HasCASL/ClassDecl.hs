@@ -43,12 +43,15 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 	     mapM_ (addClassDecl ak supcls Nothing) cls
           else let (hd, tl) = Set.deleteFindMin supcls in 
 	      if Set.isEmpty tl then
-		 do b <- isClassId hd
-		    if b then
-		       return () else do  
+		 do e <- get 
+		    mk <- anaClassId hd
+		    case mk of 
+			Nothing -> do 
+			  put e
 			  addClassDecl ak tl Nothing hd
 			  addDiags [mkDiag Warning 
 				      "implicit declaration of superclass" hd]
+			Just sk -> checkKinds hd sk ak
 		    mapM_ (addClassDecl ak (Set.single hd) Nothing) cls
 		  else do (sk, Intersection newSups _) <- anaClass sc
 			  checkKinds hd sk ak

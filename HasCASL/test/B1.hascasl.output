@@ -41,10 +41,6 @@ Error (line 25, column 7) inconsistent redefinition of 'h'
 Warning (line 27, column 21) unchecked type 't'
 Hint (line 31, column 26) not a class 'y'
 Hint (line 33, column 9) not a class 's'
-Error (line 33, column 9) undeclared type 's'
-Error (line 33, column 5) wrong type scheme of 'x'
-  expected: y
-     found: s
-
+Error (line 33, column 9) unknown type 's'
 Warning (line 37, column 9) unchecked type 't'
 Error (line 39, column 6) wrong arity of 'a__'

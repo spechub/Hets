@@ -1,17 +1,28 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/AsUtils.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2003
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
    
-   (further) auxiliary functions
+   compute meaningful positions for various data types of the abstract syntax
 -}
 
 module HasCASL.AsUtils where
 
 import HasCASL.As
+import HasCASL.PrintAs -- to reexport instances
 import Common.Id
 import Common.Lib.Set
+import Common.PrettyPrint
+
+-- | generate a comparison string 
+expected :: PrettyPrint a => a -> a -> String
+expected a b = 
+    "\n  expected: " ++ showPretty a 
+    "\n     found: " ++ showPretty b "\n" 
 
 instance PosItem Kind where
     get_pos = Just . posOfKind

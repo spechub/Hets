@@ -35,16 +35,6 @@ import HasCASL.DataAna
 import HasCASL.Unify
 import HasCASL.Merge
 
--- check with merge
-compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]
-compatibleTypeDefn d1 d2 i = 
-    if case (d1, d2) of 
-	    (TypeVarDefn, TypeVarDefn) -> True
-	    (TypeVarDefn, _) -> False
-	    (_, TypeVarDefn) -> False
-	    _ -> True
-    then [] else [mkDiag Error "incompatible redeclaration of type" i]
-
 -- ---------------------------------------------------------------------------
 -- storing type ids with their kind and definition
 -- ---------------------------------------------------------------------------
@@ -108,11 +98,13 @@ anaTypeItem _ inst (TypeDecl pats kind _) =
        addDiags ds
        mapM_ (addTypeId NoTypeDefn inst kind) is   
 anaTypeItem _ inst (SubtypeDecl pats t _) = 
-    do newT <- anaStarType t
-       let Result ds (Just is) = convertTypePatterns pats
-       addDiags ds
+    do let Result ds (Just is) = convertTypePatterns pats
+       addDiags ds  
        mapM_ (addTypeId NoTypeDefn inst star) is   
-       mapM_ (addSuperType newT) is
+       mt <- anaStarType t
+       case mt of
+           Nothing -> return ()
+           Just newT -> mapM_ (addSuperType newT) is
 
 anaTypeItem _ inst (IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
@@ -121,23 +113,30 @@ anaTypeItem _ inst (IsoDecl pats _) =
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
 
 anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
-    do newT <- anaStarType t
-       addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
-		   $ firstPos [v] ps]
+    do addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
+		$ firstPos [v] ps]
        let Result ds m = convertTypePattern pat
        addDiags ds
+       mt <- anaStarType t
        case m of 
 	      Nothing -> return ()
-	      Just i -> do addTypeId (Supertype v newT $ item f) 
-				     inst star i
-			   addSuperType newT i
+	      Just i -> case mt of 
+		  Nothing -> return ()
+		  Just newT -> do 		  
+		      addTypeId (Supertype v newT $ item f) inst star i
+		      addSuperType newT i
+       addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
+		   $ firstPos [v] ps]
+				   
 	   
 anaTypeItem _ inst (AliasType pat mk sc _) = 
-    do (ik, newPty) <- anaPseudoType mk sc
-       let Result ds m = convertTypePattern pat
+    do let Result ds m = convertTypePattern pat
        addDiags ds
+       (ik, mt) <- anaPseudoType mk sc
        case m of 
-	      Just i -> addTypeId (AliasTypeDefn newPty) inst ik i 
+	      Just i -> case mt of 
+		  Nothing -> return ()
+		  Just newPty -> addTypeId (AliasTypeDefn newPty) inst ik i 
 	      _ -> return ()
 
 anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d 
@@ -169,21 +168,22 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
 			           ) sels) newAlts
 		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i 
 
-anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, TypeScheme)
+anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
 	    Nothing -> return star
 	    Just j -> anaKind j
        tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       (sk, newTy) <- anaType (k, ty)
-       let newPty = TypeScheme tArgs (q :=> newTy) p
-           newK = typeArgsListToKind tArgs sk
-       case mk of 
-	      Nothing -> return ()
-	      Just j -> checkKinds ty j newK
+       (sk, mt) <- anaType (k, ty)
+       let newK = typeArgsListToKind tArgs sk
+       case mk of
+           Nothing -> return ()
+	   Just j -> checkKinds ty j newK
        putTypeMap tm       -- forget local variables 
-       return (newK, newPty)
+       case mt of 
+           Nothing -> return (newK, Nothing)
+	   Just newTy -> return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
 
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
@@ -209,7 +209,6 @@ kindArity m (ExtClass _ _ _) = case m of
 			     TopLevel -> 0
 			     OnlyArg -> 1
 
-
 convertTypePatterns :: [TypePattern] -> Result [Id]
 convertTypePatterns [] = Result [] $ Just []
 convertTypePatterns (s:r) =
@@ -232,8 +231,8 @@ convertTypePattern t =
                    (posOfTypePattern t)
     else makeMixTypeId t
 
--- TODO trailing places are not necessary for curried kinds
--- and should be ignored to avoid different Ids "Pred" and "Pred__"
+-- trailing places are not necessary for curried kinds
+-- and will be ignored to avoid different Ids "Pred" and "Pred__"
 
 typePatternToTokens :: TypePattern -> [Token]
 typePatternToTokens (TypePattern ti _ _) = getPlainTokenList ti
@@ -247,8 +246,6 @@ typePatternToTokens (BracketTypePattern pk ts ps) =
 		_ -> expanded
 typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
     [Token "__" (posOfId v)]
-
-
 
 -- compound Ids not supported yet
 getToken :: GenParser Token st Token

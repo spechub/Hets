@@ -18,7 +18,6 @@ import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
-import HasCASL.PrintAs()
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -28,7 +27,6 @@ import Common.Result
 -- | add diagnostic messages 
 addDiags :: [Diagnosis] -> State Env ()
 addDiags ds =
-    if null ds then return () else
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
 
@@ -51,26 +49,23 @@ allSuperClasses ce ci =
                  `Set.union` recurse (Set.toList $ superClasses info)
     Nothing -> error "allSuperClasses"
 
--- | test if 'ClassId' is declared 
-isClassId :: ClassId -> State Env Bool
-isClassId ci = 
-    do cMap <- gets classMap
-       return $ isJust $ Map.lookup ci cMap
-
-anaClassId :: ClassId -> State Env Kind
+anaClassId :: ClassId -> State Env (Maybe Kind)
 anaClassId ci = 
     do cMap <- gets classMap
        case Map.lookup ci cMap of
 	    Nothing -> do addDiags [mkDiag Error "undeclared class" ci]
-			  return star
-	    Just i -> return $ classKind i
+			  return Nothing
+	    Just i -> return $ Just $ classKind i
 
 expandKind :: Kind -> State Env Kind
 expandKind (ExtClass c _ _) = 
     case c of
     Intersection s _ ->
-	if Set.isEmpty s then return star else 
-	   anaClassId $ Set.findMin s
+	if Set.isEmpty s then return star else
+	   do mk <- anaClassId $ Set.findMin s
+	      case mk of
+	           Just k -> return k
+		   _ -> error "expandKind"
     _ -> return star
 
 expandKind (KindAppl k1 k2 ps) = 
@@ -80,10 +75,10 @@ expandKind (KindAppl k1 k2 ps) =
     
 anaClass :: Class -> State Env (Kind, Class)
 anaClass ic@(Intersection s ps) =
-    do l <- mapM ( \ ci -> do b <- isClassId ci
-		              ki <- anaClassId ci
-		              if b then return [(ki, ci)]
-		                  else return []
+    do l <- mapM ( \ ci -> do mki <- anaClassId ci
+		              case mki of 
+		                   Nothing -> return []
+		                   Just ki -> return [(ki, ci)]
 		 ) $ Set.toList s
        let (ks, restCs) = unzip (concat l)
 	   k = if null ks then star else head ks
@@ -127,14 +122,7 @@ eqKindDiag :: (PosItem a, PrettyPrint a) => a -> Kind -> Kind -> [Diagnosis]
 eqKindDiag a k1 k2 = 
     if eqKind k1 k2 then []
        else [ Diag Error
-	      (indent 2 (showString "incompatible kind of: " .
-			 showPretty a .
-			 showChar '\n' .  
-			 showString "expected: " .
-			 showPretty k1 . 
-			 showChar '\n' .  
-			 showString "inferred: " .
-			 showPretty k2) "")
+	      ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
 	    $ posOf [a] ]
 
 indent :: Int -> ShowS -> ShowS
@@ -148,5 +136,3 @@ eqKind (ExtClass _ _ _) (ExtClass _ _ _) = True
 eqKind _ _ = False
 
 -- ---------------------------------------------------------------------
-
-

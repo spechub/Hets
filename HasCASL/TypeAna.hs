@@ -26,14 +26,16 @@ import Common.Lib.State
 
 data ApplMode = OnlyArg | TopLevel 
 
-mkTypeConstrAppls :: ApplMode -> Type -> State Env Type
+mkTypeConstrAppls :: ApplMode -> Type -> State Env (Maybe Type)
 mkTypeConstrAppls _ t@(TypeName _ _ _) = 
-       return t 
+       return $ Just t 
 
 mkTypeConstrAppls m (TypeAppl t1 t2) = 
-    do t3 <- mkTypeConstrAppls m t1
-       t4 <- mkTypeConstrAppls OnlyArg t2
-       return $ TypeAppl t3 t4 
+    do mt3 <- mkTypeConstrAppls m t1
+       mt4 <- mkTypeConstrAppls OnlyArg t2
+       case (mt3, mt4) of
+           (Just t3, Just t4) -> return $ Just $ TypeAppl t3 t4 
+	   _ -> return Nothing
 
 mkTypeConstrAppls _ (TypeToken t) = 
     do let i = simpleIdToId t
@@ -41,67 +43,76 @@ mkTypeConstrAppls _ (TypeToken t) =
        let m = getKind tk i
 	   c = if isTypeVar tk i then 1 else 0
        case m of 
-	      Just k -> return $ TypeName i k c 
-	      _ -> return $ TypeToken t
+	      Just k -> return $ Just $ TypeName i k c 
+	      _ -> do addDiags [mkDiag Error "unknown type" t]
+		      return Nothing
 
 mkTypeConstrAppls m t@(BracketType b ts ps) =
-    do args <- mapM (mkTypeConstrAppls m) ts
-       let toks@[o,c] = mkBracketToken b ps 
-	   i = if null ts then Id toks [] [] 
-	       else Id [o, Token place $ posOfType $ head ts, c] [] []
-       tk <- gets typeMap
-       let mk = getKind tk i
-	   n = case mk of Just k -> TypeName i k 0
-			  _ -> t
-	   ds = [mkDiag Error "illegal type" t]
-       if null ts then return n
-	  else if null $ tail ts 
-	       then return $ case b of 
-			   Parens -> head args 
-			   _ -> TypeAppl n (head args)
-	       else do case m of
-			      TopLevel -> do addDiags ds
-			      OnlyArg -> case b of 
-					 Parens -> return ()
-					 _ -> do addDiags ds
-		       return $ BracketType b args ps
+    do mArgs <- mapM (mkTypeConstrAppls m) ts
+       if all isJust mArgs then 
+	  do let err = do addDiags [mkDiag Error "illegal type" t]
+			  return Nothing 
+	     case catMaybes mArgs of 
+	          [x] -> case b of
+		         Parens -> return $ Just x 		
+			 _ -> do let [o,c] = mkBracketToken b ps 
+				     i = Id [o, Token place $ posOfType 
+					    $ head ts, c] [] []
+				 tk <- gets typeMap
+				 case getKind tk i of
+				     Nothing -> err
+				     Just k -> return $ Just $ TypeAppl 
+					       (TypeName i k 0) x 
+		  _ -> err
+          else return Nothing
 
 mkTypeConstrAppls _ (MixfixType []) = error "mkTypeConstrAppl (MixfixType [])"
 mkTypeConstrAppls _ (MixfixType (f:a)) =
-   do newF <- mkTypeConstrAppls TopLevel f 
-      newA <- mapM (mkTypeConstrAppls OnlyArg) a
-      return $ foldl1 TypeAppl $ newF : newA
- 
+   do mF <- mkTypeConstrAppls TopLevel f 
+      case mF of
+          Nothing -> return Nothing
+	  Just newF -> 
+	      do mA <- mapM (mkTypeConstrAppls OnlyArg) a
+		 if all isJust mA then
+		    return $ Just $ foldl1 TypeAppl $ newF : catMaybes mA
+		    else return Nothing
+
 mkTypeConstrAppls m (KindedType t k p) =
-    do newT <- mkTypeConstrAppls m t
-       return $ KindedType newT k p
+    do mT <- mkTypeConstrAppls m t
+       return $ fmap ( \ newT -> KindedType newT k p ) mT
 
 mkTypeConstrAppls _ (LazyType t p) =
-    do newT <- mkTypeConstrAppls TopLevel t
-       return $ LazyType newT p
+    do mT <- mkTypeConstrAppls TopLevel t
+       return $ fmap ( \ newT -> LazyType newT p ) mT
 
 mkTypeConstrAppls _ (ProductType ts ps) =
-    do newTs <- mapM (mkTypeConstrAppls TopLevel) ts
-       return $ ProductType newTs ps
+    do mTs <- mapM (mkTypeConstrAppls TopLevel) ts
+       if all isJust mTs then
+	  return $ Just $ ProductType (catMaybes mTs) ps
+	  else return Nothing
 
 mkTypeConstrAppls _ (FunType t1 a t2 ps) =
-    do newT1 <- mkTypeConstrAppls TopLevel t1
-       newT2 <- mkTypeConstrAppls TopLevel t2
-       return $ FunType newT1 a newT2 ps
+    do mT1 <- mkTypeConstrAppls TopLevel t1
+       mT2 <- mkTypeConstrAppls TopLevel t2
+       case (mT1, mT2) of 
+           (Just newT1, Just newT2) -> 
+	       return $ Just $ FunType newT1 a newT2 ps
+	   _ -> return Nothing
 
 expandApplKind :: Class -> State Env Kind
 expandApplKind c = 
     case c of
     Intersection s _ -> if Set.isEmpty s then return star else
-        do k <- anaClassId  $ Set.findMin s
-	   case k of 
-		  ExtClass c2 _ _ -> expandApplKind c2
-		  _ -> return k
+        do mk <- anaClassId  $ Set.findMin s
+           case mk of 
+	       Just k -> case k of 
+		   ExtClass c2 _ _ -> expandApplKind c2
+		   _ -> return k
+	       Nothing -> error "expandApplKind"
     _ -> return star
 
 inferKind :: Type -> State Env Kind
-inferKind (TypeName i k _) = do j <- getIdKind i
-				checkKinds i k j
+inferKind (TypeName i _ _) = do j <- getIdKind i
 				return j
 inferKind (TypeAppl t1 t2) = 
     do mk1 <- inferKind t1 
@@ -161,14 +172,16 @@ isTypeVar tk i =
        Just (TypeInfo _ _ _ TypeVarDefn) -> True
        _ -> False
 
-anaType :: (Kind, Type) -> State Env (Kind, Type)
+anaType :: (Kind, Type) -> State Env (Kind, Maybe Type)
 anaType (k, t) = 
-    do newT <- mkTypeConstrAppls TopLevel t
-       newK <- inferKind newT 
-       checkKinds newT newK k
-       return (newK, newT)
+    do mT <- mkTypeConstrAppls TopLevel t
+       case mT of 
+            Nothing -> return (star, mT)
+	    Just newT -> do newK <- inferKind newT 
+			    checkKinds newT newK k
+			    return (newK, Just newT)
 
-anaStarType :: Type -> State Env Type
+anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap snd $ anaType (star, t)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]

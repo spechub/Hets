@@ -20,6 +20,8 @@ import Common.Result
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
+import Data.Maybe
+
 
 anaAlts :: Type -> [Alternative] -> State Env [AltDefn]
 anaAlts dt alts = do ll <- mapM (anaAlt dt) alts
@@ -37,12 +39,14 @@ anaAlt _ (Subtype ts ps) =
 
 anaAlt dt (Constructor i cs p _) = 
     do newCs <- mapM (anaComp i dt) $ zip cs $ map (:[]) [1..]
-       let sels = concatMap snd newCs
-	   con = Construct i (map fst newCs) p sels
-	   -- check for disjoint selectors 
-       addDiags (checkUniqueness $ map ( \ (Select s _ _) -> s ) sels)
-       return [con]
-
+       let mts = map fst newCs
+       if all isJust mts then 
+	  do let sels = concatMap snd newCs
+		 con = Construct i (catMaybes mts) p sels
+		 -- check for disjoint selectors 
+	     addDiags (checkUniqueness $ map ( \ (Select s _ _) -> s ) sels)
+	     return [con]
+	  else return []
 
 getConstrType :: Type -> Partiality -> [Type] -> Type
 getConstrType dt p = addPartiality p .
@@ -63,21 +67,28 @@ makePartial t =
 	   _ -> LazyType t []  
 
 anaComp :: Id -> Type -> (Components, [Int]) 
-	-> State Env (Type, [Selector]) 
+	-> State Env (Maybe Type, [Selector]) 
 anaComp _ _ (Selector s p t _ _, _) =
-    do ct <- anaStarType t
-       return (ct, [Select s ct p])
+    do mt <- anaStarType t
+       case mt of 
+           Just ct -> return (mt, [Select s ct p])
+	   _ -> return (Nothing, [])
 anaComp con rt (NoSelector t, i) =
-    do ct <- anaStarType t
-       return (ct, [Select (simpleIdToId $ mkSimpleId 
-			    ("%(" ++ showPretty rt "." ++ 
-			     showId con ".sel_" ++ show i ++ ")%"))
-		    ct Partial])
+    do mt <- anaStarType t
+       case mt of 
+           Just ct -> return (mt, [Select (simpleIdToId $ mkSimpleId 
+			   ("%(" ++ showPretty rt "." ++ 
+			    showId con ".sel_" ++ show i ++ ")%"))
+				   ct Partial])
+	   _ -> return  (Nothing, [])
 
 anaComp con rt (NestedComponents cs ps, i) =
     do newCs <- mapM (anaComp con rt) $ zip cs $ map (:i) [1..]
-       return (ProductType (map fst newCs) ps,
-	       concatMap snd newCs)
+       let mts = map fst newCs
+       if all isJust mts then 
+	  return (Just $ ProductType (catMaybes mts) ps,
+		  concatMap snd newCs)
+	  else return  (Nothing, [])
 
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = addPartiality p $ FunType dt FunArr rt []

@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/PrintAs.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
    
-   printing As data types
+   printing data types of the abstract syntax
 -}
 
 module HasCASL.PrintAs where
@@ -26,9 +29,11 @@ instance PrettyPrint TypePattern where
     printText0 ga (BracketTypePattern k l _) = bracket k $ commaT_text ga l
     printText0 ga (TypePatternArg t _) = parens $ printText0 ga t
 
+-- | put proper brackets around a document
 bracket :: BracketKind -> Doc -> Doc
 bracket b t = let (o,c) = getBrackets b in ptext o <> t <> ptext c
 
+-- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
 			      ExtClass (Intersection s _) InVar _ -> 
@@ -209,7 +214,7 @@ instance PrettyPrint Pattern where
 			  <+> text asP
 			  <+> printText0 ga p
 
-
+-- | print an equation with different symbols between 'Pattern' and 'Term'
 printEq0 :: GlobalAnnos -> String -> ProgEq -> Doc
 printEq0 ga s (ProgEq p t _) = fsep [printText0 ga p 
 			  , text s
@@ -242,10 +247,12 @@ instance PrettyPrint Kind where
 			  <+> text funS 
 			  <+> printText0 ga k2
 
+-- | don't print an empty list and put parens around longer lists
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
-printList0 ga l = noPrint (null l)
-		      (if null $ tail l then printText0 ga $ head l
-		       else parens $ commaT_text ga l)
+printList0 ga l =  case l of 
+	   []  -> empty
+	   [x] -> printText0 ga x
+	   _   -> parens $ commaT_text ga l
 
 instance PrettyPrint Class where 
     printText0 ga (Downset t) = braces $ 
@@ -261,6 +268,7 @@ instance PrettyPrint InstOpId where
 ------------------------------------------------------------------------
 -- item stuff
 ------------------------------------------------------------------------
+-- | print a 'TypeScheme' as a pseudo type
 printPseudoType :: GlobalAnnos -> TypeScheme -> Doc
 printPseudoType ga (TypeScheme l t _) = noPrint (null l) (text lamS 
 				<+> (if null $ tail l then
