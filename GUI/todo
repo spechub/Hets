@@ -28,6 +28,11 @@ Jorina
  GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
  HidingThm GMorphism ThmLinkStatus 
 
+  es muss geprüft werden, ob die benutzten theorem links solche
+  sind, die nicht in ihrer DGLinkLab-Liste den aktuell zu beweisenden
+  Theorem-Link enthalten
+
+
   Local Subsumption-Regel ausbauen zu Loc-Decomposition (I+II)
     Signaturmorphismen dürfen verschieden sein
     prüfen, ob beide die lokalen Axiome des Startknotens gleich abbilden
