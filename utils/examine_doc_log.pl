@@ -103,6 +103,7 @@ if ($fail > 0) {
     print STDERR "\n$fail test(s) failed -- sending Mail with report:\n\n$report\n";
     open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
  print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
+    print MAIL "\nTail of $logfile:\n",`/usr/bin/tail -30 $logfile`,"\n";
     close MAIL;
 } 
 
