@@ -1,7 +1,7 @@
 module ParseType where
 
 import Id (Token(Token), Id(Id), showTok) 
-import Lexer ((<++>), (<<), keySign, toKey, checkWith)
+import Lexer ((<++>), (<<), keySign, keyWord, signChars, checkWith)
 import Parsec
 import Token (skipChar, makeToken, parseId)
 import Type
@@ -16,18 +16,21 @@ separatedBy p s t = do { r <- p t
 		       ; return ((t, r) : l) 
 		       }
 
+toKey s = makeToken (let p = string s in 
+		     if last s `elem` signChars then keySign p 
+		     else keyWord p)
+
+lessStr = "<"
+lessSign = toKey lessStr
+
 isMixIdOrCross (Id ts cs) = 
     not (null (tail ts)) || 
-	show ts `elem` ["<", productSign, altProductSign]
-
-isPartialColon t = showTok t == colonChar : partialSuffix 
+	show ts `elem` [lessStr, productSign, altProductSign]
 
 sortId = parseId  `checkWith` (not . isMixIdOrCross)
 
-typeId c = do { i <- sortId
-	      ; if isPartialColon c then 
-		return (PartialType i) 
-		else return (Type i [])
+typeId _ = do { i <- sortId
+	      ; return (Type i [])
 	      }
 
 primType :: Token -> Parser Type
@@ -37,7 +40,7 @@ primType c = typeId c
 		     <|> (funType o << cParen)
 		   })
 
-cross = makeToken(toKey productSign <|> toKey altProductSign <?> "cross")
+cross = toKey productSign <|> toKey altProductSign <?> "cross"
 
 toId :: Token -> Id
 toId i = Id [i] []
@@ -58,4 +61,4 @@ funType c = fmap makeFuns (separatedBy productType arrow c)
 	  makeFuns ((_, x) : s@((c, _):_)) = 
 	      let t = makeFuns s in Type (toId c) [x, t]
 
-parseType = funType (Token (":", nullPos))
+parseType = funType (Token [colonChar] nullPos)

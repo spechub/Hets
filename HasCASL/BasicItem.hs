@@ -11,10 +11,10 @@ import Token
 import Term
 import Type
 import SortItem
--- import OpItem
+import OpItem
 import VarItem
 		   
-sigItems = sortItems -- <|> opItems
+sigItems ast = sortItems ast <|> opItems ast
 
 basicItem = sigItems
 

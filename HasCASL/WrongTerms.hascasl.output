@@ -86,11 +86,13 @@ parse error at (line 22, column 15):
 unexpected "#"
 expecting place, [<id>,...,<id>], cross, "->" or ")"
 
-parse error at (line 23, column 22):
-unexpected ? ## ->bb
+parse error at (line 23, column 17):
+unexpected "-"
+expecting place, [<id>,...,<id>] or ")"
 
-parse error at (line 24, column 19):
-unexpected ?aa*bb
+parse error at (line 24, column 16):
+unexpected "*"
+expecting casl char, underline word, place, [<id>,...,<id>] or ")"
 
 parse error at (line 25, column 15):
 unexpected :?

@@ -1,7 +1,7 @@
 module Lexer ( bind, (<<), (<:>), (<++>), begDoEnd, flat, single
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , skip, ann, keyWord, keySign, toKey, signChars, caslLetters
+	     , skip, ann, keyWord, keySign, signChars, caslLetters
 	     ) where
 
 import Char (digitToInt)
@@ -161,7 +161,7 @@ newlineChars = "\n\r"
 
 eol = (eof >> return '\n') <|> oneOf newlineChars
 
-textLine = many (noneOf newlineChars) << eol
+textLine = many (noneOf newlineChars) <++> single eol
 
 commentLine = try (string "%%") <++> textLine
 
@@ -199,6 +199,3 @@ ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
 
 keyWord p = try(p << notFollowedBy scanLPD)
 keySign p = try(p << notFollowedBy (oneOf signChars))
-toKey s = let p = string s in 
-		  if all (\c -> c `elem` signChars) s then keySign p 
-		     else keyWord p

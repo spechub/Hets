@@ -29,20 +29,18 @@ type DeclNotation = Keyword
 
 type Anno = String
 
-showAnnotation :: [Anno] -> ShowS
-showAnnotation [] = showString "" 
-showAnnotation an = showChar ';' . showString (unwords an) . showChar '\n'
+showAnno an = showSepList (showString "") showString an
 
 -- declaration of a variable or operation 
 data Decl = Decl { symb :: Symb
 		 , nota :: DeclNotation
 		 , declAn :: [Anno]
-		 } deriving (Eq)
+		 }
 
 showDecl (Decl s n an) = 
     shows n . showChar ' ' 
     . showSymb s
-    . showAnnotation an
+    . showAnno an
 
 showShortDecl (Decl s _ _) = showSymb s
 
@@ -61,6 +59,8 @@ data QualKind = UserGiven | Inferred
 varStr = "var"
 opStr = "op"
 predStr = "pred"
+equivStr = "<=>"
+equalStr = "="
 
 -- application of a variable or operation
 data QualId = QualId Symb DeclLevel QualKind deriving (Eq)
@@ -84,6 +84,8 @@ data Totality = Partial | Total deriving (Show,Eq)
 exStr = "exists"
 allStr = "forall"
 lamStr = "lambda" 
+middleDotStr = "\183"
+dotChar = '.'
 
 -- maybe also Ids or keywords
 data Binder = Lambda Totality | ArgDecl | SupersortVar
@@ -125,44 +127,43 @@ data Term = BaseName QualId
 	  | Typed Term TypeOp Type
           | Annotated Term [Anno]
 	  | MixTerm
-	    deriving (Eq)
 
 showTerm (BaseName q) = showShortQualId q
 
 showTerm (Application MixTerm ts [op, cl]) = 
-    shows op . showSepList (showChar ',') showTerm ts . shows cl
+    shows op . showSepList (showChar ',') shows ts . shows cl
 showTerm (Application MixTerm ts []) = 
     showSepList (showString "") showSign ts
-showTerm (Application t ts _) = showTerm t . showParen True (shows ts)
+showTerm (Application t ts _) = shows t . showParen True (shows ts)
 
 showTerm (Binding ArgDecl decls (Typed term co t)) = 
     showParen (not (null decls)) (shows decls)
 		  . showSignStr 
 			(if isPartialFunType t then colonChar:partialSuffix 
 			 else [colonChar])
-		  . showSign t . showSignStr "=" . showSign term  
+		  . showSign t . showSignStr equalStr . showSign term  
 
 showTerm (Binding SupersortVar decls term) = 
-    showSignStr "{" . showSign decls . showSignStr "\183"
+    showSignStr "{" . showSign decls . showSignStr middleDotStr
 		   . showSign term . showString "}"
     
 showTerm (Binding (Lambda Total) decls term) = 
     showSignStr lamStr . showSign decls 
-		   . showSignStr ("\183!") . showTerm term
+		   . showSignStr (middleDotStr ++ totalSuffix) . shows term
 
 showTerm (Binding b decls term) = 
     showBinder b . showSign decls 
-		   . showSignStr "\183" . showTerm term
+		   . showSignStr middleDotStr . shows term
 
 showTerm (Typed MixTerm op t) = showTypeOp op . shows t 
 showTerm (Typed term op t) = showSign term . showTypeOp op . shows t 
 
-showTerm (Annotated t an) = showTerm t . showAnnotation an
+showTerm (Annotated t an) = shows t . showAnno an
 showTerm MixTerm = showString "!MIX!"
 
 instance Show Term where
     showsPrec _ = showTerm
-    showList l = showSepList (showChar ',') showTerm l
+    showList = showSepList (showChar ',') shows
   
 isBaseName (BaseName _) = True
 isBaseName _ = False

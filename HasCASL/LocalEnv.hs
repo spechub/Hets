@@ -1,23 +1,24 @@
 module LocalEnv where
 
 import Id
+import Maybe
 import Type
 import Term
 
 -- the sub- and supertypes of a sort
-data SortRels = SortRels [Type] [Type] deriving (Show,Eq)      
+data SortRels = SortRels [Type] [Type] deriving (Show)      
 
 -- the list of items which are part of a "sort-gen" (or free type)
 type GenItems = [Symb] 
 
 -- real function type of a selector as Decl
-data Component = Component Decl deriving (Show,Eq)      
+data Component = Component Decl deriving (Show)      
 
 -- full function type (in Decl) of constructor 
 -- plus redundant (apart from partiality) component types
 data Alternative = Construct Decl [Component] 
 		 | Subsort Decl   
-		   deriving (Show,Eq)      
+		   deriving (Show)      
 
 -- looseness of a datatype
 -- a datatype may (only) be (sub-)part of a "sort-gen"
@@ -26,28 +27,45 @@ data GenKind = Free | Generated | Loose deriving (Show,Eq)
 -- sort defined as predicate subtype or as more or less loose datatype
 data SortDefn = SubsortDefn Term   -- binding Term "{ x : t | p(x) }"
               | Datatype [Alternative] GenKind GenItems
-	        deriving (Show,Eq)
+
+defStr = "::="
+barChar = '|'
+
+instance Show SortDefn where
+    showsPrec _ (SubsortDefn t) = showSignStr equalStr . shows t  
+    showsPrec _ (Datatype alts _ _) = 
+	showSignStr defStr . showSepList (showChar barChar) shows alts  
 
 data SortItem = SortItem { sortDecl :: Decl
 			 , sortRels :: SortRels
                          , sortDef  :: Maybe SortDefn
 			 , sortAn   :: [Anno]
-			 } deriving (Eq)
-
-
-showSortItem (SortItem decl rels def an) = 
-    shows decl . showChar ' ' . showParen True (shows rels)
-	  . showChar ' ' . (case def of Nothing -> showString ""
-				        Just x -> showParen True (shows x))
-	  . showString (unwords an)
+			 }
+sortStr = "sort"
+showSortItem (SortItem decl (SortRels le ge) def an) = 
+    showSignStr sortStr . shows decl 
+	  . shows le . shows ge
+	  . showPlainList (maybeToList def)
+	  . showAnno an
 
 instance Show SortItem where
     showsPrec _ = showSortItem
-    showList [] = showString ""
-    showList (x:r) = shows x . showList r
+    showList = showSepList (showString "\n") shows
 
-data OpAttr = AssocOpAttr | CommonOpAttr | IdemOpAttr | UnitOpAttr Term
-	       deriving (Show,Eq)
+
+assocStr = "assoc"
+commStr = "comm"
+idemStr = "idem"
+unitStr = "unit"
+
+data OpAttr = AssocOpAttr | CommOpAttr | IdemOpAttr | UnitOpAttr Term
+
+instance Show OpAttr where
+     showsPrec _ AssocOpAttr = showString assocStr
+     showsPrec _ CommOpAttr = showString commStr
+     showsPrec _ IdemOpAttr = showString idemStr
+     showsPrec _ (UnitOpAttr t) = showSignStr unitStr . shows t
+     showList = showString . concat . map (\a -> ',' : show a)
 
 -- synonyms to indicate the order of arguments
 type SortId = Id
@@ -59,13 +77,21 @@ type SelSymb = Symb
 data OpDefn = Definition Term
             | Constructor SortId ConsSymb
             | Selector SortId [ConsSymb] SelSymb
-	      deriving (Show,Eq)
+	      deriving (Show)
 
 data OpItem = OpItem { opDecl :: Decl
 		     , opAttrs :: [OpAttr]
 		     , opDefn :: (Maybe OpDefn)
 		     , opAn :: [Anno]
-		     } deriving (Show,Eq)      
+		     }
+
+showOpItem (OpItem decl attrs def an) =
+    showSignStr opStr . shows decl . shows attrs 
+	  . showPlainList (maybeToList def)
+	  . showAnno an
+
+instance Show OpItem where
+    showsPrec _ = showOpItem
 
 type Axiom = Term        -- synonyms
 -- "local-var-axioms" are a special Term "forall V1,...,V2. F1 /\ F2 /\ ...

@@ -50,7 +50,7 @@ otherToken = scanQuotedChar <|> scanDotWords
 -- ----------------------------------------------
 
 setTokPos :: SourcePos -> String -> Token
-setTokPos p s = Token(s, (sourceLine p, sourceColumn p))
+setTokPos p s = Token s (sourceLine p, sourceColumn p)
 
 makeToken parser = skip(bind setTokPos getPosition parser)
 

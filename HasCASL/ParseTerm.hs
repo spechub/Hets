@@ -14,8 +14,9 @@ import Type
 
 varId = parseId
 
-colon = makeToken (toKey [colonChar])
-partialColon = makeToken (char colonChar <:> option "" (string partialSuffix))
+colon = toKey [colonChar]
+partialColon = makeToken (keySign 
+		    (char colonChar <:> option "" (string partialSuffix)))
 
 makeDecl t []  = []
 makeDecl t ((c,v):l) = (Decl (Symb v t) c []) : (makeDecl t l)
@@ -35,8 +36,8 @@ parseDecls = varDecls
 -- ----------------------------------------------
 exEqual = string "=e="
 
-asTok = makeToken (toKey asStr)
-inTok = makeToken (toKey inStr)
+asTok = toKey asStr
+inTok = toKey inStr
 
 simpleTerm :: Parser Term
 simpleTerm = fmap toQualId (makeToken(scanFloat <|> scanString <|>
@@ -79,13 +80,12 @@ isPartialId _ = False
 
 isColon c = showTok c == [colonChar]
 
-parsePartialType c = funType c `checkWith` \t -> isColon c || isPartialId t
+parsePartialType c = if isColon c then funType c else fmap PartialType sortId
 
-qualName = do { w <- makeToken 
-		     (toKey varStr <|> toKey opStr <|> toKey predStr)
+qualName = do { w <- toKey varStr <|> toKey opStr <|> toKey predStr
 	      ; i <- parseId
 	      ; c <- partialColon `checkWith` \c -> showTok w == opStr
-		|| showTok c == ":"
+		|| showTok c == [colonChar]
 	      ; t <- parsePartialType c
 	      ; let s = showTok w 
 		    ty = if s == predStr then predicate t else t 
@@ -111,10 +111,11 @@ braceTerm = braTerm oBrace cBrace
 brktTerm = braTerm opBrkt clBrkt
 
 quant = toKey allStr
-	<|> (toKey exStr <|> toKey lamStr) 
-		<++> option "" (string totalSuffix) <?> "quantifier"
+	<|> makeToken((keyWord (string exStr) <|> keyWord (string lamStr)) 
+		<++> option "" (keySign (string totalSuffix))) <?> "quantifier"
 
-getDot = oneOf ".\183" <:> option "" (string totalSuffix)
+getDot = makeToken (keySign (oneOf (dotChar:middleDotStr) 
+			     <:> option "" (string totalSuffix)))
 
 binder t = let s = showTok t in
 	   if s == allStr then Forall
@@ -128,9 +129,9 @@ binder t = let s = showTok t in
 isLambda (Lambda _) = True
 isLambda _ = False
 
-quantTerm = do { q <- try (makeToken quant)
+quantTerm = do { q <- try quant
 	       ; v <- varDecls q
-	       ; d <- makeToken (keySign getDot) `checkWith` 
+	       ; d <- getDot `checkWith` 
 		 \d -> length (showTok d) == 1
 		 || isLambda (binder q) 
                ; t <- mixTerm

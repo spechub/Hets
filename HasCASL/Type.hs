@@ -1,6 +1,7 @@
 module Type where
 
 import Id
+import List (isPrefixOf)
 import Lexer (signChars, caslLetters)
 
 -- simple Id
@@ -8,7 +9,7 @@ nullPos :: Pos
 nullPos = (0, 0)
 
 simpleId :: String -> Id
-simpleId(s) = Id [Token(s, nullPos)] [] 
+simpleId(s) = Id [Token s nullPos] [] 
 
 colonChar = ':'
 
@@ -31,7 +32,7 @@ showSign i "" = show i
 showSign i s = let r = show i in 
 		     if not (null r) && (isSign (last r) && isSign (head s) 
 					 || isAlpha (last r) && isAlpha (head s)
-					 || r == "=" && head s == 'e')
+					 || r == "=" && "e=" `isPrefixOf` s)
 			then r ++ " " ++ s else r ++ s
 
 showSignStr s = showSign (simpleId s) 
@@ -59,7 +60,7 @@ showType b t@(Type i (x:r)) = showParen b
   else if isProduct t 
        then let f x = showType (isFunType x || isProduct x) x 
             in showSepList (showSign i) f (x:r)
-       else shows i . showSepList (showChar '_') shows (x:r)
+       else shows i . showSepList (showChar ' ') shows (x:r)
  )
 
 instance Show Type where
