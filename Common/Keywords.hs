@@ -19,8 +19,6 @@ String constants for CASL keywords to be used for parsing and printing
 
 module Common.Keywords where
 
-import Prelude (String)
-
 -- * context dependend keywords
 
 -- | sub sort indicator
