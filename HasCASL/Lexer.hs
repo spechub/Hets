@@ -28,7 +28,7 @@ caslLetter = oneOf caslLetters <?> "casl letter"
 prime = char '\'' -- also used for quoted chars
 
 scanLPD :: Parser Char
-scanLPD = caslLetter <|> digit <|> prime
+scanLPD = caslLetter <|> digit <|> prime <?> "word"
 
 -- ----------------------------------------------
 -- parsec/Monad extension
@@ -44,7 +44,7 @@ infixr 1 <:>
 
 scanLetterWord = try caslLetter <:> many scanLPD
 
-scanUnderlineWord = try(char '_') <:> many1 scanLPD
+scanUnderlineWord = try(char '_' <:> many scanLPD) <?> "word"
 
 -- excluded or "casl-builtin" ids in terms and formulae
 casl_reserved_words = 
@@ -157,7 +157,10 @@ scanFloat = do { n1 <- getNumber <?> "number, fraction or float";
 		 else return n5
 	       }
 
-scanDigit = single digit
+scanDigit = do { n <- getNumber;
+                 if length n > 1 then unexpected "multiple digits"
+		 else return n
+	       }
 
 
 -- ----------------------------------------------
@@ -198,8 +201,8 @@ blankChars = "\t\v\f \160" -- non breaking space
 
 skip p = do {t <- p ; 
 	     skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		      <|> commentOut);
-	     return t}
+		      <|> commentOut <?> "");
+	     return t} 
 
 -- ----------------------------------------------
 -- annotations starting with %word
@@ -221,6 +224,7 @@ annote =
 
 -- annotations between items
 ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
+      <?> "annotation"
 
 -- ----------------------------------------------
 -- no-bracket-token, literal or place (for terms)
@@ -234,7 +238,7 @@ makeToken parser = skip(do { p <- getPosition;
 			     return (setTokPos p s)
 			   })
 
-scanPlace = (string place) <?> "place"
+scanPlace = try (string place) <?> "place"
 
 scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
 	       scanDotWords
@@ -255,9 +259,7 @@ bracketSigns = fmap concat (many1 (scanSigns
 				   <|> single (oneOf brackets) 
 				   <?> "bracket signs"))
 
-bracketToken = makeToken (scToken <|> bracketSigns)
-
-
+bracketToken = makeToken (scToken <|> bracketSigns <?> "id")
 
 comps  = between (skip (char '[')) (skip (char ']')) 
 	 (sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
@@ -265,7 +267,7 @@ comps  = between (skip (char '[')) (skip (char ']'))
 -- several tokens between places are not allowed
 -- the last token may have a compound list (for the whole mixfix id) 
 
-mixId = do {  b <- many placeToken;
+mixId = do {  b <- many placeToken <?> "id";
 	      t <- bracketToken;
                    do { c <- comps;
 			l <- many placeToken;
