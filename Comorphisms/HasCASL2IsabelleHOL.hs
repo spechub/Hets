@@ -11,6 +11,16 @@ Portability :  non-portable (imports Logic.Logic)
    The embedding comorphism from HasCASL to Isabelle-HOL.
 
 -}
+{- todo
+nested case patterns:
+1. check if set of patterns is
+1a. one pattern consisting of a variable => we are done
+1b. set of constructor patterns 
+    1b1. sort patterns according to leading constructor
+    1b2. for each group of patterns with the same leading constructor
+         1b2a. for each argument position, call 1. recursively
+
+-}
 
 module Comorphisms.HasCASL2IsabelleHOL where
 
