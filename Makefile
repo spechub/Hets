@@ -96,7 +96,7 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL
+TESTDIRS    = Common CASL HasCASL ToHaskell
 
 
 ####################################################################
@@ -176,7 +176,7 @@ tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
-         lib_clean distclean check capa hacapa clean_genRules genRules \
+         lib_clean distclean check capa hacapa h2h clean_genRules genRules \
          taxonomy hets.cgi count doc apache_doc post_doc4apache \
          derivedSources install_hets install release
 
@@ -358,6 +358,7 @@ bin_clean:
 	$(RM) Haskell/hapa
 	$(RM) Haskell/hana
 	$(RM) Haskell/wrap
+	$(RM) ToHaskell/h2h
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
 	$(RM) GUI/hetdg
@@ -399,7 +400,6 @@ distclean: real_clean clean_genRules d_clean
 test_parser: Common/test_parser
 
 Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
 ### interactive
@@ -411,52 +411,49 @@ ghci:
 capa: CASL/capa
 
 CASL/capa: CASL/capa.hs Common/*.hs CASL/*.hs
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
 HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs 
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### Haskell analysis
 hana: Haskell/hana
 
 Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs
-	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### HasCASL to Haskell translation
+h2h: ToHaskell/h2h
+
+ToHaskell/h2h: ToHaskell/h2h.hs ToHaskell/*.hs Haskell/*.hs HasCASL/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
 hetpa: Syntax/hetpa.hs Syntax/*.hs 
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
 hetana: Static/hetana.hs Static/*.hs 
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATC test system
 atctest: ATC/ATCTest.hs ATC/*.hs 
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-atctest2: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
+atctest2: Common/ATerm/atctest2.hs Common/SimpPretty.hs \
           Common/ATerm/*.hs Common/Lib/*.hs
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATerm.Lib test system
-atermlibtest: Common/ATerm/ATermLibTest.hs Common/ATerm/*.hs \
-              Common/SimpPretty.hs
-	$(RM) $@
+atermlibtest: Common/ATerm/atermlibtest.hs Common/SimpPretty.hs \
+              Common/ATerm/*.hs Common/Lib/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
-	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### run tests in other directories
