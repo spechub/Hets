@@ -1,3 +1,15 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Sonja Groening, Uni Bremen 2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+   utilities for the HasCASL to Isabelle comorphism
+-}
+
 module Comorphisms.HC2I_Utils where
 
 import Common.Id
