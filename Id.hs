@@ -1,6 +1,6 @@
 module Id where
 
-{-! global : UpPos !-}
+{-! global : ATermConvertible !-}
 
 import Char
 import Pretty
@@ -28,10 +28,6 @@ instance Eq Token where
  
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
-
-instance PosItem Token where
-    up_pos f i = case i of
-		 (Token x1 p) -> (Token x1 (f p))
 
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
@@ -74,7 +70,7 @@ instance PrettyPrint Id where
 
 type SIMPLE_ID = Token
 
----- helper class ----------------------------
+---- helper class -------------------------------------------------------
 
 {- This class is derivable with DrIFT in HetCATS/utils ! 
    
@@ -84,12 +80,16 @@ type SIMPLE_ID = Token
 
 -}
 class PosItem a where
-    up_pos   :: (Pos -> Pos)    -> a -> a
-    up_pos_l :: ([Pos] -> [Pos]) -> a -> a
-    up_pos_err :: String -> a
+    up_pos    :: (Pos -> Pos)    -> a -> a
+    up_pos_l  :: ([Pos] -> [Pos]) -> a -> a
+    get_pos   :: a -> Pos
+    get_pos_l :: a -> [Pos]
+    up_pos_err  :: String -> a
     up_pos_err fn = 
 	error ("function \"" ++ fn ++ "\" is not implemented")
     up_pos _ _   = up_pos_err "up_pos"
     up_pos_l _ _ = up_pos_err "up_pos_l"
+    get_pos   _ = error "function \"get_pos\" not implemented" 
+    get_pos_l _ = error "function \"get_pos_l\" not implemented"    
     
-----------------------------------------------
+-------------------------------------------------------------------------
