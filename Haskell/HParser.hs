@@ -17,9 +17,9 @@ import Wrapper
 import Language.Haskell.Syntax
 import Language.Haskell.Pretty
 import Language.Haskell.Parser
-import Parsec
+import Common.Lib.Parsec
 import PrettyPrint
-import Pretty
+import Common.Lib.Pretty
 
 instance PrettyPrint HsDecls where
     printText0 _ hsDecls = 

@@ -14,7 +14,7 @@ module Main where
 
 import Language.Haskell.Pretty
 import Language.Haskell.Parser
-import System
+import System.Environment
 
 main :: IO ()
 main = do

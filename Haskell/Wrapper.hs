@@ -16,7 +16,7 @@
 
 module Wrapper where
 
-import Parsec
+import Common.Lib.Parsec
 import Lexer
 
  
