@@ -67,7 +67,6 @@ import Haskell.HaskellUtils              (extractSentences)
 import Common.Result                     (Result (..))
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PrintLaTeX
 
 import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
