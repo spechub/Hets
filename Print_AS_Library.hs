@@ -20,6 +20,7 @@ import Pretty
 import PrettyPrint
 
 import Id
+import qualified AS_Structured as AS_Struct 
 import AS_Library
 
 import Print_AS_Annotation
@@ -48,15 +49,15 @@ instance PrettyPrint LIB_ITEM where
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    ac' = printText0 ga ac
-	    ad' = printText0 ga ad
-	    null' = case ad of 
-		    G_symb_map_items_list _ sis -> null sis 
-			-- null_symb_map_items_list lid sis
-		    _ -> error $ "somthing very strange happend "++
-			         "to G_symb_map_items_list"
-	    eq' = if null' then empty else equals
+	    ad' = fcat $ punctuate (comma<>space) $ map (printText0 ga) ad
+	    eq' = if null ad then empty else equals
 	in hang (ptext "view" <+> aa' <+> ab' <+> colon <+> ac' <+> eq') 4 
 	         ad'
+{-
+data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
+			   [G_mapping] [Pos]
+
+-}
     printText0 ga (Arch_spec_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
