@@ -53,20 +53,7 @@
 module Logic where
 
 import Id
-
--- error messages
-
-data Diagnosis = Error String Pos
-               | Warning String Pos
-
-newtype Result a = Result ([Diagnosis],Maybe a)
-
-instance Monad Result where
-  return x = Result ([],Just x)
-  Result (errs, Nothing) >>= f = Result (errs,Nothing)
-  Result (errs1, Just x) >>= f = Result (errs1++errs2,y)
-     where Result (errs2,y) = f x
-
+import Error
 
 -- maps and sets, just a quick thing
 
@@ -97,8 +84,6 @@ diagram_nodes :: Diagram o m  -> [(Node,o)]
 diagram_nodes (Diagram nodes edges) = nodes
 diagram_edges :: Diagram o m -> [Edge m]
 diagram_edges (Diagram nodes edges) = edges
-
-
 
 
 -- Categories are given by a quotient,
