@@ -184,9 +184,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
                            Result (sign,sign,[Named sentence]))
-                           -- the first output sign is the accumulated sign
-                           -- the second output sign united with the input sing
-                           -- should yield the first output sign
+                           -- the first output sign united with the input sign
+                           -- should yield the second output sign
+                           -- the second output sign is the accumulated sign
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
