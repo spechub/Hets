@@ -116,19 +116,19 @@ data Partiality = Partial | Total deriving (Show,Eq)
 
 data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-            | OpDefn OpName [Pattern] TypeScheme Term [Pos]
+            | OpDefn OpName [Pattern] TypeScheme Partiality Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
               deriving (Show,Eq)
 
 data PredItem = PredDecl [OpName] TypeScheme [Pos]
-               -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
+               -- pos ","s, ":", ","s
               | PredDefn OpName [Pattern] Formula [Pos]
                -- pos "("s, ")"s, "<=>"
               deriving (Show,Eq)
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show,Eq)
 
-data OpAttr = BinOpAttr BinOpAttr | UnitOpAttr Term deriving (Show,Eq)
+data OpAttr = BinOpAttr BinOpAttr Pos | UnitOpAttr Term Pos deriving (Show,Eq)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 

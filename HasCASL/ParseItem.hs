@@ -269,6 +269,17 @@ compType is cs = do { c <- colonT
 	      (Selector a k t Comma (tokPos b)):makeComps r s k t 
 	  makeComps _ _ _ _ = error "makeComps: empty selector list"
 
+
+dataItem = do t <- typePattern
+	      do   c <- colonT
+		   k <- kind
+		   Datatype d <- dataDef t k [c]
+		   return d
+		<|> do Datatype d <- dataDef t nullKind []
+		       return d
+
+dataItems = itemList typeS dataItem FreeDatatype
+
 -----------------------------------------------------------------------------
 -- classItem
 -----------------------------------------------------------------------------
@@ -307,8 +318,6 @@ isoClassDecl s =
 	        return (ClassDefn s c [tokPos e])
        }
 
-basicItems = return (ProgItems [] [])
-
 classItem = do c <- classDecl
 	       do { o <- oBraceT 
                   ; a <- annos
@@ -320,6 +329,17 @@ classItem = do c <- classDecl
 		  }
                   <|> 
 		  return (ClassItem c [] [])
+
+classItems = do p <- pluralKeyword classS
+	        do   q <- pluralKeyword instanceS
+		     classItemList [p,q] Instance
+	         <|> classItemList [p] Plain
+
+classItemList ps k = 
+    do { (vs, ts, ans) <- itemAux (annoParser classItem)
+       ; let r = zipWith appendAnno vs ans 
+	 in return (ClassItems k r (map tokPos (ps++ts)))
+       }
 
 -----------------------------------------------------------------------------
 -- opItem
@@ -338,4 +358,119 @@ typeVarDeclSeq =
        c <- cBracketT
        return (TypeVarDecls (concat ts) (toPos o cs c))
 
--- opItem = do 
+opItem = do (os, ps) <- opName `separatedBy` commaT
+	    if length os == 1 then
+		    opDeclOrDefn (head os)
+		    else opDecl os ps
+
+opDecl os ps = do c <- colonT
+		  t <- typeScheme
+		  do   d <- commaT
+		       (as, cs) <- opAttr `separatedBy` commaT
+		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
+		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
+
+opAttr = do a <- asKey assocS
+	    return (BinOpAttr Assoc (tokPos a))
+	 <|>
+	 do a <- asKey commS
+	    return (BinOpAttr Comm (tokPos a))
+	 <|>
+	 do a <- asKey idemS
+	    return (BinOpAttr Idem (tokPos a))
+	 <|>
+	 do a <- asKey unitS
+	    t <- term
+	    return (UnitOpAttr t (tokPos a))
+
+quColon = do c <- colonT
+	     return (Total, c)
+	  <|> 
+	  do c <- qColonT
+	     return (Partial, c) 
+
+opDeclOrDefn o = 
+    do c <- colonT
+       t <- typeScheme
+       do   d <- commaT
+	    (as, cs) <- opAttr `separatedBy` commaT
+	    return (OpDecl [o] t as (map tokPos ([c,d]++cs))) 
+	 <|> do e <- equalT
+		f <- term 
+		return (OpDefn o [] t Total f (toPos c [] e))  
+         <|> return (OpDecl [o] t [] (map tokPos [c]))
+    <|> 
+    do ps <- many1 (bracketParser patterns oParenT cParenT semiT 
+		      (BracketPattern Parens)) 
+       do    (p, c) <- quColon
+	     t <- parseType 
+	     e <- equalT
+	     f <- term 
+	     return (OpDefn o ps (SimpleTypeScheme t) p f (toPos c [] e))
+    <|> 
+    do c <- qColonT 
+       t <- parseType 
+       e <- equalT
+       f <- term 
+       return (OpDefn o [] (SimpleTypeScheme t) Partial f (toPos c [] e))
+
+opItems = itemList opS opItem OpItems
+
+-----------------------------------------------------------------------------
+-- predItem
+-----------------------------------------------------------------------------
+
+predItem = do (os, ps) <- opName `separatedBy` commaT
+	      if length os == 1 then 
+		 predDecl os ps
+		 <|> 
+		 predDefn (head os)
+		 else predDecl os ps 
+
+predDecl os ps = do c <- colonT
+		    t <- typeScheme
+		    return (PredDecl os t (map tokPos (ps++[c])))
+
+predDefn o = do ps <- many (bracketParser patterns oParenT cParenT semiT 
+		      (BracketPattern Parens)) 
+		e <- asKey equivS
+		f <- term
+		return (PredDefn o ps (TermFormula f) [tokPos e]) 
+
+predItems = itemList predS predItem PredItems
+
+-----------------------------------------------------------------------------
+-- sigItem
+-----------------------------------------------------------------------------
+
+sigItems = sortItems <|> opItems <|> predItems <|> typeItems
+
+-----------------------------------------------------------------------------
+-- basicItem
+-----------------------------------------------------------------------------
+
+basicItems = fmap SigItems sigItems
+             <|> do { f <- asKey freeS
+                    ; FreeDatatype ds ps <- dataItems
+                    ; return (FreeDatatype ds (tokPos f : ps))
+                    }
+{-
+             <|> do { g <- asKey generatedS
+                    ; do { FreeDatatype ds ps <- dataItems
+                         ; return (Sort_gen [Annoted t [] [] []] [tokPos g])
+                         }
+                      <|> 
+                      do { o <- oBraceT
+                         ; a <- annos
+                         ; i:is <- many1 sigItems
+                         ; c <- cBraceT
+                         ; return (Sort_gen ((Annoted i [] a [])  
+                                            : map (\x -> Annoted x [] [] []) is)
+                                   (toPos g [o] c)) 
+                         }
+                    }
+             <|> do { v <- pluralKeyword varS
+                    ; (vs, ps) <- varItems
+                    ; return (Var_items vs (map tokPos (v:ps)))
+:
+-}
