@@ -33,6 +33,8 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: "then"s
 	  | Free_spec (Annoted SPEC) [Pos]
 	    -- pos: "free"
+	  | Cofree_spec (Annoted SPEC) [Pos]
+	    -- pos: "cofree"
 	  | Local_spec (Annoted SPEC) (Annoted SPEC) [Pos]
 	    -- pos: "local", "within"
 	  | Closed_spec (Annoted SPEC) [Pos]

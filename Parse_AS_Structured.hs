@@ -149,7 +149,7 @@ parseItemsMap :: GenParser Char AnyLogic (G_symb_map_items_list, [Token])
 parseItemsMap = 
    do Logic id <- getState
       (cs, ps) <- callParser (parse_symb_map_items id) (language_name id) "symbol maps"
-                      `separatedBy` plainComma
+                      `separatedBy` commaT
       return (G_symb_map_items_list id cs, ps)
 
 
@@ -217,38 +217,37 @@ specB l = do p1 <- asKey localS
              sp2 <- annoParser (specB l)
              return (Local_spec sp1 sp2 (map tokPos [p1,p2]))
           <|> do sp <- specC l
-                 return (item sp)
+                 return (item sp) -- ??? what to do with anno?
 
 specC :: LogicGraph -> GenParser Char AnyLogic (Annoted SPEC)
-specC l = do{sp <- annoParser (specD l)
-             ; (do{  p <- asKey withS
-                   ; (m, ps) <- parseMapping l
-                   ; return (emptyAnno (Translation sp (Renaming m (map tokPos (p:ps)))))
-                  })<|>( do
-                {  p <- asKey hideS
-                 ; (m, ps) <- parseHiding l
-                 ; return (emptyAnno (Reduction sp (Hidden m (map tokPos (p:ps)))))
-                })<|>( do 
-                {  p <- asKey revealS
-                 ; (m, ps) <- parseItemsMap
-                 ; return (emptyAnno (Reduction sp (Revealed m (map tokPos (p:ps)))))
-                })<|> return sp
-             }
+specC l = do sp <- annoParser (specD l)
+             translation_list l sp
+             
+translation_list l sp =
+     do sp' <- translation l sp
+        translation_list l sp'
+ <|> return sp
+
+translation l sp =
+     do p <- asKey withS
+        (m, ps) <- parseMapping l
+        return (emptyAnno (Translation sp (Renaming m (map tokPos (p:ps)))))
+ <|> do p <- asKey hideS
+        (m, ps) <- parseHiding l
+        return (emptyAnno (Reduction sp (Hidden m (map tokPos (p:ps)))))
+ <|> do p <- asKey revealS
+        (m, ps) <- parseItemsMap
+        return (emptyAnno (Reduction sp (Revealed m (map tokPos (p:ps)))))
+
 specD :: LogicGraph -> GenParser Char AnyLogic SPEC
            -- do some lookahead for free spec, to avoid clash with free type
-specD l = do (p,b) <- try (do p1 <- asKey freeS
-                              p2 <- oBraceT
-                              return (p1,p2))
-             a <- aSpec l
-             c <- cBraceT
-	     return (Free_spec (emptyAnno (Group a (map tokPos [b, c]))) [tokPos p])
-      <|> do (p,n) <- try (do p1 <- asKey freeS
-                              p2 <- simpleId
-                              return (p1,p2))       
-             (f,ps) <- fitArgs l
-             return (Free_spec (emptyAnno (Spec_inst n f)) [tokPos p])
-      <|> do p <- asKey cofreeS
-             sp <- groupSpec l
+specD l = do (p,sp) <- try (do p <- asKey freeS
+                               sp <- groupSpec l
+                               return (p,sp))
+	     return (Free_spec (emptyAnno sp) [tokPos p])
+      <|> do (p,sp) <- try (do p <- asKey cofreeS
+                               sp <- groupSpec l
+                               return (p,sp))
              return (Cofree_spec (emptyAnno sp) [tokPos p])
       <|> do p <- asKey closedS
              sp <- groupSpec l
@@ -317,19 +316,20 @@ fitArg l = do b <- oBracketT
               return (fa,[tokPos b,tokPos c])
 
 fittingArg :: LogicGraph -> GenParser Char AnyLogic FIT_ARG
-fittingArg l = do sp <- aSpec l
+fittingArg l = do (an,s) <- try (do an <- annos
+                                    s <- asKey viewS
+                                    return (an,s))
+                  vn <- simpleId
+                  (fa,ps) <- fitArgs l
+                  return (Fit_view vn fa (tokPos s:ps) an)
+            <|>
+               do sp <- aSpec l
                   Logic id <- getState
                   (symbit,ps) <- option (G_symb_map_items_list id [],[]) 
                                  (do s <- asKey fitS               
                                      (m, ps) <- parseItemsMap 
                                      return (m,[tokPos s]))
                   return (Fit_spec sp symbit ps)
-            <|>
-               do an <- annos
-                  s <- asKey viewS
-                  vn <- simpleId
-                  (fa,ps) <- fitArgs l
-                  return (Fit_view vn fa (tokPos s:ps) an)
 
 
 optEnd = option Nothing (fmap Just (asKey endS))
@@ -416,12 +416,14 @@ itemNameOrMap = do i1 <- simpleId
                       Just (i2,s) -> Item_name_map i1 i2 [tokPos s])
 
 
-library l = do s1 <- asKey libraryS
+library l = do skip
+               s1 <- asKey libraryS
                ln <- libName
                an <- annos
                ls <- many (annoParser (libItem l))
+               eof
                return (Lib_defn ln ls [tokPos s1] an)
-
+               
 -------------------------------------------------------------
 -- Testing
 -------------------------------------------------------------
