@@ -20,7 +20,7 @@ to the library have been made in the move from Gofer to Haskell:
 
 -----------------------------------------------------------------------------}
 
-module ParseLib
+module Haskell.Hatchet.ParseLib
    (Parser, item, papply, (+++), sat, many, many1, sepby, sepby1, chainl,
     chainl1, chainr, chainr1, ops, bracket, char, digit, lower, upper,
     letter, alphanum, string, ident, nat, int, spaces, comment, junk,

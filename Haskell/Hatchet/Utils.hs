@@ -13,7 +13,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Utils (getAModuleName,
+module Haskell.Hatchet.Utils (getAModuleName,
               maybeGetDeclName,
               getDeclName,
               doDump,
@@ -39,24 +39,24 @@ module Utils (getAModuleName,
               Binding (..)
              ) where
 
-import AnnotatedHsSyn       -- almost everything 
+import Haskell.Hatchet.AnnotatedHsSyn       -- almost everything 
 
-import FiniteMaps       (listToFM,
+import Haskell.Hatchet.FiniteMaps       (listToFM,
                          FiniteMap)
 
 import Char             (isUpper, 
                          isSpace)
 
-import HsPretty        (PPHsMode (..),
+import Haskell.Hatchet.HsPretty        (PPHsMode (..),
                         PPLayout (..),
                         render
                        )
 
-import Pretty          (Doc,
+import Haskell.Hatchet.Pretty          (Doc,
                         (<>),
                         text)
 
-import PPrint          (PPrint (..))
+import Haskell.Hatchet.PPrint          (PPrint (..))
 
 import Monad           (when)
 

@@ -1,19 +1,19 @@
 -- parser produced by Happy Version 1.13
 
-module HsParser (parse) where
+module Haskell.Hatchet.HsParser (parse) where
 
-import HsSyn
-import HsParseMonad
-import HsLexer
-import HsParseUtils
+import Haskell.Hatchet.HsSyn
+import Haskell.Hatchet.HsParseMonad
+import Haskell.Hatchet.HsLexer
+import Haskell.Hatchet.HsParseUtils
 
-#ifdef __HUGS__
-{-
-#endif
-import GlaExts
-#ifdef __HUGS__
--}
-#endif
+-- #ifdef __HUGS__
+-- {-
+-- #endif
+-- import GlaExts
+-- #ifdef __HUGS__
+-- -}
+-- #endif
 
 data HappyAbsSyn 
 	= HappyTerminal Token
@@ -5719,7 +5719,7 @@ happyReduction_75 (_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn25
 		 (HsAxiomBind happy_var_3
-	) `HappyStk` trace "happyReduction_75" happyRest
+	) `HappyStk` happyRest
 
 happyReduce_76 = happySpecReduce_3 34 happyReduction_76
 happyReduction_76 _

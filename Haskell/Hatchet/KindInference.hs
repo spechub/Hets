@@ -13,16 +13,18 @@
 
 -------------------------------------------------------------------------------}
 
-module KindInference (kiModule, 
+module Haskell.Hatchet.KindInference (kiModule, 
                       KindEnv, 
                       kiAHsQualType,
                       kindOf,
                       ) where 
 
-import Representation   (Kind (..),
+import Haskell.Hatchet.Representation
+                        (Kind (..),
                          Kindvar (..)) 
 
-import Env  (Env,
+import Haskell.Hatchet.Env
+            (Env,
              emptyEnv,
              unitEnv,
              lookupEnv,
@@ -34,15 +36,16 @@ import Env  (Env,
              mapEnv
             ) 
 
-import AnnotatedHsSyn         -- XXX need to say exactly what is imported
+import Haskell.Hatchet.AnnotatedHsSyn         -- XXX need to say exactly what is imported
             
-import Utils (isQualified,
+import Haskell.Hatchet.Utils
+             (isQualified,
               getDeclName,
               isSigDecl)
 
 import List                             (nub)
 
-import DependAnalysis                   (getBindGroups)
+import Haskell.Hatchet.DependAnalysis                   (getBindGroups)
 
 --------------------------------------------------------------------------------
 

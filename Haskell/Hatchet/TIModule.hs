@@ -13,52 +13,57 @@
 
 -------------------------------------------------------------------------------}
 
-module TIModule (tiModule, Timing (..)) where
+module Haskell.Hatchet.TIModule (tiModule, Timing (..)) where
 
-import Infix                    (infixer)
+import Haskell.Hatchet.Infix                    (infixer)
 
 import Monad                    (when)
 
-import AnnotatedHsSyn           (ASrcLoc (..),
+import Haskell.Hatchet.AnnotatedHsSyn
+                                (ASrcLoc (..),
                                  bogusASrcLoc,
                                  AHsDecl,
                                  AHsName (..),
                                  AModule (..),
                                  AHsModule)
 
-import SynConvert               (fromAHsModule,
+import Haskell.Hatchet.SynConvert
+                                (fromAHsModule,
                                  fromAHsDecl)
 
-import qualified AHsPretty      (ppAHsModule,
+import qualified Haskell.Hatchet.AHsPretty as AHsPretty
+                                (ppAHsModule,
                                  render,
                                  ppAHsDecl)
 
-import qualified PPrint         (render)
+import qualified Haskell.Hatchet.PPrint as PPrint         (render)
 
-import Desugar                  (desugarTidyModule)
+import Haskell.Hatchet.Desugar  (desugarTidyModule)
 
-import TIMain                   (getFunDeclsBg,
+import Haskell.Hatchet.TIMain   (getFunDeclsBg,
                                  makeProgram,
                                  tiProgram)
 
-import Rename                   (renameTidyModule,
+import Haskell.Hatchet.Rename   (renameTidyModule,
                                  IdentTable,
                                  printIdentTable)
 
-import KindInference            (KindEnv,
+import Haskell.Hatchet.KindInference
+                                (KindEnv,
                                  kiModule)
 
-import Representation           (Kind,
+import Haskell.Hatchet.Representation
+                                (Kind,
                                  Scheme,
                                  Assump (..))
 
 
-import DataConsAssump           (dataConsEnv)
+import Haskell.Hatchet.DataConsAssump    (dataConsEnv)
 
-import CPUTime                  (getCPUTime,
+import CPUTime  (getCPUTime,
                                  cpuTimePrecision)
 
-import Utils                    (maybeGetDeclName,
+import Haskell.Hatchet.Utils    (maybeGetDeclName,
                                  rJustify,
                                  lJustify,
                                  Binding (..),
@@ -67,31 +72,31 @@ import Utils                    (maybeGetDeclName,
                                  fromAHsName,
                                  doDump)
 
-import FiniteMaps               (toListFM,
+import Haskell.Hatchet.FiniteMaps (toListFM,
                                  zeroFM,
                                  addToFM)
 
-import TidyModule               (tidyModule, 
+import Haskell.Hatchet.TidyModule (tidyModule, 
                                  TidyModule (..),
                                  tidyModuleToAHsModule)
 
 
-import TypeSigs                 (collectSigs,
+import Haskell.Hatchet.TypeSigs (collectSigs,
                                  listSigsToSigEnv)
 
 
-import Class                  (--addInstancesToHierarchy,
+import Haskell.Hatchet.Class    (--addInstancesToHierarchy,
                                  printClassHierarchy,
                                  -- instanceToTopDecls,
                                  addClassToHierarchy,
                                  ClassHierarchy,
                                  classMethodAssumps)
 
-import Maybe                    (mapMaybe)
+import Maybe    (mapMaybe)
 
 import IO
 
-import Env                      (listToEnv,
+import Haskell.Hatchet.Env      (listToEnv,
                                  getNamesFromEnv,
                                  Env,
                                  envToList,
@@ -99,13 +104,13 @@ import Env                      (listToEnv,
                                  joinEnv,
                                  showEnv)
 
-import Type                     (assumpId)
+import Haskell.Hatchet.Type     (assumpId)
 
-import MultiModuleBasics        (ModuleInfo(..))
+import Haskell.Hatchet.MultiModuleBasics (ModuleInfo(..))
 
-import DependAnalysis           (getBindGroups)
+import Haskell.Hatchet.DependAnalysis (getBindGroups)
 
-import DeclsDepends             (getDeclDeps,
+import Haskell.Hatchet.DeclsDepends (getDeclDeps,
                                  debugDeclBindGroups)
 
 --------------------------------------------------------------------------------
@@ -210,7 +215,7 @@ tiModule dumps modSyntax imports
 
      let (renamedTidyModule', identTable) = renameTidyModule importedNames desugaredTidyModule
          -- we pass in the imported infix decls and also the ones from the local module
-         renamedTidyModule = Infix.infixer (tidyInFixDecls renamedTidyModule' ++ infixDecls imports) renamedTidyModule'
+         renamedTidyModule = Haskell.Hatchet.Infix.infixer (tidyInFixDecls renamedTidyModule' ++ infixDecls imports) renamedTidyModule'
 
 -- All the names are getting qualified but they are unqualified by fromAHsModule
 

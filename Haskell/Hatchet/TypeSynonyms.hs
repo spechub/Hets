@@ -12,15 +12,15 @@
 
 -------------------------------------------------------------------------------}
 
-module TypeSynonyms (removeSynsFromSig, 
+module Haskell.Hatchet.TypeSynonyms (removeSynsFromSig, 
                      removeSynsFromSigs, 
                      removeSynonymsFromType,
                      removeSynonymFromType,
                      oneTypeReplace) where
 
-import AnnotatedHsSyn            -- everything
+import Haskell.Hatchet.AnnotatedHsSyn            -- everything
 
-import Utils            (getUnQualName)
+import Haskell.Hatchet.Utils            (getUnQualName)
 
 --------------------------------------------------------------------------------
 

@@ -13,11 +13,11 @@ ToDo: FloatTok should have three parts (integer part, fraction, exponent)
 ToDo: Use a lexical analyser generator (lx?)
 
 \begin{code}
-module HsLexer (Token(..), lexer, parseError,isSymbol) where
+module Haskell.Hatchet.HsLexer (Token(..), lexer, parseError,isSymbol) where
 
-import HsParseMonad
-import HsParseUtils
-import HsSyn(SrcLoc(..))
+import Haskell.Hatchet.HsParseMonad
+import Haskell.Hatchet.HsParseUtils
+import Haskell.Hatchet.HsSyn(SrcLoc(..))
 import Data.List
 import Debug.Trace
 import Char

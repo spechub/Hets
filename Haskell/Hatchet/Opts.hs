@@ -15,11 +15,13 @@
 
 -------------------------------------------------------------------------------}
 
-module Opts (processCmdLine, 
+module Haskell.Hatchet.Opts
+            (processCmdLine, 
              makeUsageInfo,
              usageHeader) where
 
-import GetOpt (OptDescr (..),
+import Haskell.Hatchet.GetOpt
+              (OptDescr (..),
                ArgDescr (..),
                getOpt,
                usageInfo,

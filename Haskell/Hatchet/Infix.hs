@@ -16,9 +16,10 @@
 
 -------------------------------------------------------------------------------}
 
-module Infix (infixer) where
+module Haskell.Hatchet.Infix (infixer) where
 
-import AnnotatedHsSyn   (AHsDecl (..),
+import Haskell.Hatchet.AnnotatedHsSyn
+                        (AHsDecl (..),
                          AHsMatch (..),
                          AHsRhs (..),
                          AHsExp (..),
@@ -33,9 +34,10 @@ import AnnotatedHsSyn   (AHsDecl (..),
                          AHsFieldUpdate (..),
                          AModule (..))
 
-import TidyModule (TidyModule(..))
+import Haskell.Hatchet.TidyModule (TidyModule(..))
 
-import FiniteMaps   (FiniteMap,
+import Haskell.Hatchet.FiniteMaps
+                    (FiniteMap,
                      zeroFM,
                      addToFM,
                      lookupDftFM)

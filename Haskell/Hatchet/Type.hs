@@ -23,7 +23,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Type (kind,
+module Haskell.Hatchet.Type (kind,
              apply,
              nullSubst,
              (@@),
@@ -43,12 +43,12 @@ module Type (kind,
              Instantiate (..)
              ) where 
 
-import AnnotatedHsSyn           (AHsName (..))
+import Haskell.Hatchet.AnnotatedHsSyn           (AHsName (..))
 
 import List                     (union, 
                                  nub)
 
-import FiniteMaps               (toListFM,
+import Haskell.Hatchet.FiniteMaps               (toListFM,
                                  listToFM,
                                  zeroFM,
                                  unitFM,
@@ -56,7 +56,7 @@ import FiniteMaps               (toListFM,
                                  intersectFM,
                                  FiniteMap (..))
 
-import Representation           (Type (..),
+import Haskell.Hatchet.Representation           (Type (..),
                                  Tyvar (..),
                                  Tycon (..),
                                  Kind (..),

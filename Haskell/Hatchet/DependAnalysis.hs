@@ -17,14 +17,14 @@
 -------------------------------------------------------------------------------}
 
 
-module DependAnalysis (getBindGroups, showBindGroups, debugBindGroups) where
+module Haskell.Hatchet.DependAnalysis (getBindGroups, showBindGroups, debugBindGroups) where
 
-import Digraph (
+import Haskell.Hatchet.Digraph (
 	preorder,
 	scc,
 	buildG )
 
-import FiniteMaps (
+import Haskell.Hatchet.FiniteMaps (
 	FiniteMap,
 	lookupFM,
 	addToFM,
@@ -36,7 +36,7 @@ import FiniteMaps (
 import List (
 	nub ) 
 
-import Utils (
+import Haskell.Hatchet.Utils (
 	getDeclName )
 
 --------------------------------------------------------------------------------

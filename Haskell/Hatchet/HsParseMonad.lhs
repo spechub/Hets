@@ -8,9 +8,9 @@
 -----------------------------------------------------------------------------
 
 \begin{code}
-module HsParseMonad where
+module Haskell.Hatchet.HsParseMonad where
 
-import HsSyn
+import Haskell.Hatchet.HsSyn
 \end{code}
 
 \begin{code}

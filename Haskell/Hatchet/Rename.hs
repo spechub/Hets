@@ -64,7 +64,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Rename    (renameTidyModule, 
+module Haskell.Hatchet.Rename    (renameTidyModule, 
                   unRenameAHsSyn,
                   unRename, 
                   getAHsNamesAndASrcLocsFromAHsDecl, 
@@ -72,9 +72,9 @@ module Rename    (renameTidyModule,
                   printIdentTable,
                   IdentTable) where
 
-import AnnotatedHsSyn            -- everything 
+import Haskell.Hatchet.AnnotatedHsSyn            -- everything 
 
-import FiniteMaps       (FiniteMap,
+import Haskell.Hatchet.FiniteMaps       (FiniteMap,
                          zeroFM,
                          toListFM,
                          listToFM,
@@ -86,9 +86,9 @@ import List             (nub)
 
 import Char             (isDigit)
 
-import TidyModule       (TidyModule (..))
+import Haskell.Hatchet.TidyModule       (TidyModule (..))
 
-import Utils            (fromAHsName,
+import Haskell.Hatchet.Utils            (fromAHsName,
                          Binding (..),
                          fromAHsIdentifier,
                          qualifyName,

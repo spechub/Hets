@@ -27,7 +27,8 @@
 
 -------------------------------------------------------------------------------}
 
-module Class          (addClassToHierarchy,
+module Haskell.Hatchet.Class          
+                      (addClassToHierarchy,
                        emptyClassHierarchy,
                        -- addInstancesToHierarchy,
                        printClassHierarchy,
@@ -43,11 +44,11 @@ module Class          (addClassToHierarchy,
                        topDefaults
                        ) where
 
-import List                     (union,
+import List     (union,
                                 (\\), 
                                 partition)
 
-import Env                      (Env,
+import Haskell.Hatchet.Env      (Env,
                                  emptyEnv,
                                  lookupEnv,
                                  addToEnv,
@@ -57,7 +58,8 @@ import Env                      (Env,
                                  envToList,
                                  showEnv)
 
-import AnnotatedHsSyn           (AHsDecl (..),
+import Haskell.Hatchet.AnnotatedHsSyn           
+                                (AHsDecl (..),
                                  AHsType (..),
                                  AHsQualType (..),
                                  AHsContext,
@@ -68,7 +70,7 @@ import AnnotatedHsSyn           (AHsDecl (..),
                                  bogusASrcLoc,
                                  AHsPat (..))
 
-import Utils                    (showListAndSep,
+import Haskell.Hatchet.Utils    (showListAndSep,
                                  isSigDecl,
                                  fromAHsName,
                                  qualifyName,
@@ -78,16 +80,18 @@ import Utils                    (showListAndSep,
                                  showListAndSepInWidth,
                                  spacesToUnderscores)
 
-import KindInference            (KindEnv,
+import Haskell.Hatchet.KindInference
+                                (KindEnv,
                                  kindOf)
 
-import TypeSynonyms             (oneTypeReplace)
+import Haskell.Hatchet.TypeSynonyms (oneTypeReplace)
 
-import TypeUtils                (aHsAsstToPred,
+import Haskell.Hatchet.TypeUtils (aHsAsstToPred,
                                  flattenLeftTypeApplication,
                                  aHsTypeSigToAssumps) 
 
-import Representation           (Type (..),
+import Haskell.Hatchet.Representation
+                                (Type (..),
                                  Tycon (..),
                                  Tyvar (..),
                                  Kind (..),
@@ -100,11 +104,11 @@ import Representation           (Type (..),
                                  Subst,
                                  prettyPrintInst)
 
-import Type                     (Types (..),
+import Haskell.Hatchet.Type     (Types (..),
                                  apply,
                                  match)
 
-import PPrint                   (pretty,
+import Haskell.Hatchet.PPrint   (pretty,
                                  PPrint (..),
                                  text,
                                  render,
@@ -112,10 +116,10 @@ import PPrint                   (pretty,
                                  nest,
                                  ($$))
 
-import HsPretty                 (ppHsDecl,
+import Haskell.Hatchet.HsPretty (ppHsDecl,
                                  renderWithMode)
 
-import FiniteMaps               (listToFM)
+import Haskell.Hatchet.FiniteMaps (listToFM)
 
 --------------------------------------------------------------------------------
 
@@ -188,7 +192,7 @@ showInst (quals@(_:_) :=> IsIn c t)
    prettyAQuals qs
       = "(" ++ showListAndSep showPred ", " qs ++ ")"
 -}
-showInst = PPrint.render . prettyPrintInst 
+showInst = Haskell.Hatchet.PPrint.render . prettyPrintInst 
         
 showPred :: Pred -> String
 showPred (IsIn c t)

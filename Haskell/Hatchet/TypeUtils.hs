@@ -15,14 +15,14 @@
 
 -------------------------------------------------------------------------------}
 
-module TypeUtils (aHsTypeToType,
+module Haskell.Hatchet.TypeUtils (aHsTypeToType,
                   aHsQualTypeToQualType,
                   aHsTypeSigToAssumps,
                   aHsAsstToPred,
                   qualifyAssump,
                   flattenLeftTypeApplication) where
 
-import AnnotatedHsSyn           (AHsType (..),
+import Haskell.Hatchet.AnnotatedHsSyn           (AHsType (..),
                                  AHsQualType (..),
                                  AHsIdentifier (..),
                                  AHsName (..),
@@ -32,7 +32,7 @@ import AnnotatedHsSyn           (AHsType (..),
                                  AHsDecl (..),
                                  AHsContext) 
 
-import Representation           (Type (..),
+import Haskell.Hatchet.Representation           (Type (..),
                                  Tyvar (..),
                                  Tycon (..),
                                  Kind (..),
@@ -41,18 +41,18 @@ import Representation           (Type (..),
                                  Scheme (..),
                                  Assump (..))
 
-import HaskellPrelude           (fn)
+import Haskell.Hatchet.HaskellPrelude           (fn)
 
-import Type                     (tv, 
+import Haskell.Hatchet.Type     (tv, 
                                  quantify, 
                                  makeAssump,
                                  assumpScheme,
                                  assumpId)
 
-import Utils                    (fromAHsName,
+import Haskell.Hatchet.Utils    (fromAHsName,
                                  isQualified)
 
-import KindInference            (KindEnv, 
+import Haskell.Hatchet.KindInference            (KindEnv, 
                                  kiAHsQualType,
                                  kindOf)
 

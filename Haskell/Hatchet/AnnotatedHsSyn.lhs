@@ -16,7 +16,7 @@
 
 -------------------------------------------------------------------------------}
 
-module AnnotatedHsSyn (bogusASrcLoc,
+module Haskell.Hatchet.AnnotatedHsSyn (bogusASrcLoc,
     ASrcLoc(..), AModule(..), AHsName(..), AHsName(..),
     AHsModule(..), AHsExportSpec(..),
     AHsImportDecl(..), AHsImportSpec(..), AHsAssoc(..),
@@ -49,6 +49,8 @@ data AHsName
 instance Show AHsName where
    showsPrec _ (AQual (AModule m) i) = showString m . showString "." . shows i
    showsPrec _ (AUnQual i) = shows i
+   show (AQual (AModule m) i) = (show m) ++ "." ++ (show i)
+   show (AUnQual i) = show i
 
 
 data AHsIdentifier
@@ -62,7 +64,9 @@ instance Show AHsIdentifier where
    showsPrec _ (AHsIdent s) = showString s
    showsPrec _ (AHsSymbol s) = showString s
    showsPrec _ (AHsSpecial s) = showString s
-
+   show (AHsIdent s) = show s
+   show (AHsSymbol s) = show s
+   show (AHsSpecial s) = show s 
 
 data AHsModule = AHsModule AModule (Maybe [AHsExportSpec])
                          [AHsImportDecl] [AHsDecl]

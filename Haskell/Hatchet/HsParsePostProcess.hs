@@ -48,9 +48,9 @@
 
 -------------------------------------------------------------------------------}
 
-module HsParsePostProcess (fixFunBindsInModule, fixFunBinds) where
+module Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule, fixFunBinds) where
 
-import HsSyn            -- import everything
+import Haskell.Hatchet.HsSyn            -- import everything
 
 -- applies fixFunBinds to all decls in a Module
 fixFunBindsInModule :: HsModule -> HsModule

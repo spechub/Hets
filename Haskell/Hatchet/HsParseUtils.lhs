@@ -10,7 +10,7 @@
 ToDo: Polish readInteger, readRational
 
 \begin{code}
-module HsParseUtils (
+module Haskell.Hatchet.HsParseUtils (
 	  parseError		-- String -> Pa
 	, splitTyConApp		-- HsType -> P (HsName,[HsType])
 	, mkModule 		-- Module -> Maybe [HsExportSpec] 
@@ -31,8 +31,8 @@ module HsParseUtils (
 	, readRational 		-- String -> Rational
  ) where
 
-import HsSyn
-import HsParseMonad
+import Haskell.Hatchet.HsSyn
+import Haskell.Hatchet.HsParseMonad
 
 import Char(isDigit,isOctDigit,isHexDigit,digitToInt)
 import Ratio

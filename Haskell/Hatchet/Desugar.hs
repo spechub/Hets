@@ -32,14 +32,15 @@
 -------------------------------------------------------------------------------}
 
 
-module Desugar (desugarTidyModule, doToExp) where
+module Haskell.Hatchet.Desugar (desugarTidyModule, doToExp) where
 
-import AnnotatedHsSyn           -- everything 
+import Haskell.Hatchet.AnnotatedHsSyn           -- everything 
 
-import TypeSynonyms             (removeSynonymsFromType,
+import Haskell.Hatchet.TypeSynonyms
+                                (removeSynonymsFromType,
                                  removeSynsFromSig)
 
-import TidyModule               (TidyModule (..))
+import Haskell.Hatchet.TidyModule               (TidyModule (..))
 
 
 -- (unique int, list of type synoyms)

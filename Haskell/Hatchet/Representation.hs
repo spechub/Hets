@@ -17,16 +17,16 @@
                                 Haskell", (http://www.cse.ogi.edu/~mpj/thih/)
 
 -------------------------------------------------------------------------------}
-module Representation where
+module Haskell.Hatchet.Representation where
 
 
-import AnnotatedHsSyn           (AHsName (..), AModule (..), AHsIdentifier(..))
-import Env                      (listToEnv)
-import PPrint
-import Utils                    (fromAHsName,
+import Haskell.Hatchet.AnnotatedHsSyn           (AHsName (..), AModule (..), AHsIdentifier(..))
+import Haskell.Hatchet.Env                      (listToEnv)
+import Haskell.Hatchet.PPrint
+import qualified Haskell.Hatchet.Utils as Utils                   (fromAHsName,
                                  fst3,
                                  nameSupply)
-import FiniteMaps               (FiniteMap)
+import Haskell.Hatchet.FiniteMaps               (FiniteMap)
 
 --------------------------------------------------------------------------------
 
@@ -224,6 +224,7 @@ prettyPrintSchemeM (Forall _kinds qType)
 -- assumptions
 
 data Assump = AHsName :>: Scheme
+   deriving (Show,Eq)
 
 instance PPrint Assump where
   pprint (i :>: s) = (text (show i) <+> text ":>:") $$ nest 2 (pprint s)

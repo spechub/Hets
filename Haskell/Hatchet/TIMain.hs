@@ -18,7 +18,7 @@
 
 -------------------------------------------------------------------------------}
 
-module TIMain (tiProgram,
+module Haskell.Hatchet.TIMain (tiProgram,
                makeProgram,
                getFunDeclsBg) where
 
@@ -26,9 +26,9 @@ import List                     ((\\),
                                  intersect, 
                                  union)
 
-import Desugar                  (doToExp)
+import Haskell.Hatchet.Desugar                  (doToExp)
 
-import AHsPretty                (render,
+import Haskell.Hatchet.AHsPretty (render,
                                  ppAHsDecl,  
                                  ppAHsExp,
                                  ppAHsStmt,
@@ -37,10 +37,10 @@ import AHsPretty                (render,
                                  ppAHsName,
                                  ppGAlt)
 
-import AnnotatedHsSyn           -- almost everything
+import Haskell.Hatchet.AnnotatedHsSyn           -- almost everything
 
 
-import Representation          (Type (..),
+import Haskell.Hatchet.Representation (Type (..),
                                  Tyvar (..), 
                                  Tycon (..),
                                  Kind (..),
@@ -51,7 +51,7 @@ import Representation          (Type (..),
                                  Assump (..))
 
 
-import Type                     (apply,
+import Haskell.Hatchet.Type     (apply,
                                  (@@),
                                  Types (..),
                                  quantify,
@@ -63,7 +63,7 @@ import Type                     (apply,
 
 import Monad                    (zipWithM)
 
-import Diagnostic               (Diagnostic(..), 
+import Haskell.Hatchet.Diagnostic (Diagnostic(..), 
                                  withASrcLoc,
                                  makeMsg, 
                                  locMsg, 
@@ -71,13 +71,13 @@ import Diagnostic               (Diagnostic(..),
                                  locSimple, 
                                  simpleMsg)
 
-import Class                    (ClassHierarchy,
+import Haskell.Hatchet.Class    (ClassHierarchy,
                                  entails,
                                  split,
                                  topDefaults,
                                  reduce)
 
-import TIMonad                  (runTI,
+import Haskell.Hatchet.TIMonad  (runTI,
                                  getSubst,
                                  getErrorContext,
                                  getClassHierarchy,
@@ -92,7 +92,7 @@ import TIMonad                  (runTI,
                                  getModName,
                                  TI)
 
-import HaskellPrelude           (fn,
+import Haskell.Hatchet.HaskellPrelude           (fn,
                                  tBool,
                                  cFractional,
                                  tString,
@@ -101,7 +101,7 @@ import HaskellPrelude           (fn,
                                  tList,
                                  tChar)
 
-import Utils                    (isSigDecl,
+import Haskell.Hatchet.Utils    (isSigDecl,
                                  isBindDecl,
                                  fromAHsName,
                                  getDeclName,
@@ -111,28 +111,28 @@ import Utils                    (isSigDecl,
                                  snd3,
                                  trd3)
 
-import FiniteMaps               (FiniteMap,
+import Haskell.Hatchet.FiniteMaps (FiniteMap,
                                  lookupFM,
                                  mapFM,
                                  toListFM,
                                  listToFM)
 
-import KindInference            (KindEnv, 
+import Haskell.Hatchet.KindInference (KindEnv, 
                                  kiAHsQualType)
 
-import Rename                   (bindOfId,
+import Haskell.Hatchet.Rename   (bindOfId,
                                  IdentTable)
 
-import DependAnalysis           (getBindGroups)
+import Haskell.Hatchet.DependAnalysis (getBindGroups)
 
 import Maybe                    (fromMaybe)
 
-import TypeUtils                (aHsTypeSigToAssumps,
+import Haskell.Hatchet.TypeUtils (aHsTypeSigToAssumps,
                                  qualifyAssump)
 
-import TypeSigs                 (SigEnv)
+import Haskell.Hatchet.TypeSigs                 (SigEnv)
 
-import Env                      (showEnv, Env,
+import Haskell.Hatchet.Env      (showEnv, Env,
                                  emptyEnv,
                                  lookupEnv,
                                  joinEnv,
@@ -141,7 +141,7 @@ import Env                      (showEnv, Env,
                                  addToEnv,
                                  listToEnv)
                                    
-import DeclsDepends             (getDeclDeps)                                
+import Haskell.Hatchet.DeclsDepends (getDeclDeps)                                
 
 -----------------------------------------------------------------------------
 

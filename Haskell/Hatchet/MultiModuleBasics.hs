@@ -13,16 +13,16 @@
 
 -------------------------------------------------------------------------------}
 
-module MultiModuleBasics where
+module Haskell.Hatchet.MultiModuleBasics where
 
-import Env(Env, listToEnv, joinEnv, emptyEnv)
-import KindInference(KindEnv)
-import FiniteMaps(toListFM, listToFM)
-import Class(ClassHierarchy)
-import ParseLib
-import Rename           (unRename)
-import AnnotatedHsSyn
-import Representation
+import Haskell.Hatchet.Env(Env, listToEnv, joinEnv, emptyEnv)
+import Haskell.Hatchet.KindInference(KindEnv)
+import Haskell.Hatchet.FiniteMaps(toListFM, listToFM)
+import Haskell.Hatchet.Class(ClassHierarchy)
+import Haskell.Hatchet.ParseLib
+import Haskell.Hatchet.Rename           (unRename)
+import Haskell.Hatchet.AnnotatedHsSyn
+import Haskell.Hatchet.Representation
 
 --------------------------------------------------------------------------------
 
@@ -40,6 +40,7 @@ data ModuleInfo = ModuleInfo {
                     infixDecls :: [AHsDecl], -- infixities
                     tyconsMembers :: [(AHsName, [AHsName])]
                   } 
+   deriving (Eq, Show)
 
 
 -- takes a module and figures out what type constructor each 

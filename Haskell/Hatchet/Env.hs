@@ -15,7 +15,8 @@
 
 -------------------------------------------------------------------------------}
 
-module Env (Env, 
+module Haskell.Hatchet.Env
+           (Env, 
             emptyEnv, 
             unitEnv, 
             lookupEnv,
@@ -30,7 +31,8 @@ module Env (Env,
             mapEnv
            ) where
 
-import FiniteMaps (FiniteMap,
+import Haskell.Hatchet.FiniteMaps 
+                  (FiniteMap,
                    toListFM,
                    zeroFM,
                    unitFM,
@@ -40,12 +42,14 @@ import FiniteMaps (FiniteMap,
                    mapFM
                   )
 
-import AnnotatedHsSyn      (AHsName (..))
+import Haskell.Hatchet.AnnotatedHsSyn      (AHsName (..))
 
-import Utils      (isQualified,
+import Haskell.Hatchet.Utils
+                  (isQualified,
                    getUnQualName)
 
-import PPrint     (PPrint (..), 
+import Haskell.Hatchet.PPrint
+                  (PPrint (..), 
                    Doc, 
                    vcat,
                    (<+>),

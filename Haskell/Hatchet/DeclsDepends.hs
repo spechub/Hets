@@ -14,15 +14,15 @@
 
 -------------------------------------------------------------------------------}
 
-module DeclsDepends (getDeclDeps, debugDeclBindGroups) where
+module Haskell.Hatchet.DeclsDepends (getDeclDeps, debugDeclBindGroups) where
 
-import AnnotatedHsSyn           -- almost everything
+import Haskell.Hatchet.AnnotatedHsSyn           -- almost everything
 
-import DependAnalysis           (debugBindGroups)
+import Haskell.Hatchet.DependAnalysis           (debugBindGroups)
 
-import Utils                    (getDeclName, fromAHsName)
+import Haskell.Hatchet.Utils                    (getDeclName, fromAHsName)
 
-import Rename                   (unRename)
+import Haskell.Hatchet.Rename                   (unRename)
 
 --------------------------------------------------------------------------------
 

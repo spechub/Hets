@@ -7,7 +7,7 @@
 --
 -----------------------------------------------------------------------------
 
-module HsPretty (PPLayout(..),PPHsMode(..),defaultMode,
+module Haskell.Hatchet.HsPretty (PPLayout(..),PPHsMode(..),defaultMode,
 		render, renderWithMode,
 		ppHsModule,ppHsModuleHeader,
 		ppHsDecl,
@@ -20,9 +20,9 @@ module HsPretty (PPLayout(..),PPHsMode(..),defaultMode,
                 ppHsName,
 		ppHsQName) where
 
-import HsSyn
+import Haskell.Hatchet.HsSyn
 
-import qualified Pretty as P
+import qualified Haskell.Hatchet.Pretty as P
 
 infixl 5 $$$ 
 

@@ -12,13 +12,14 @@
 
 -------------------------------------------------------------------------------}
 
-module TidyModule (
+module Haskell.Hatchet.TidyModule (
                    tidyModule, 
                    tidyModuleToAHsModule, 
                    TidyModule (..) 
                   ) where
 
-import AnnotatedHsSyn           (AHsModule (..),
+import Haskell.Hatchet.AnnotatedHsSyn
+                                (AHsModule (..),
                                  AModule,
                                  AHsDecl (..),
                                  AHsExportSpec,

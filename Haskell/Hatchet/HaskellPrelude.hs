@@ -24,9 +24,10 @@
 
 -------------------------------------------------------------------------------}
 
-module HaskellPrelude where
+module Haskell.Hatchet.HaskellPrelude where
 
-import Representation  (Type (..),
+import Haskell.Hatchet.Representation
+                       (Type (..),
                         Tyvar (..),
                         Tycon (..), 
                         Kind (..),
@@ -37,9 +38,9 @@ import Representation  (Type (..),
                         Scheme (..),
                         Assump (..))
 
-import AnnotatedHsSyn    -- almost everything
+import Haskell.Hatchet.AnnotatedHsSyn    -- almost everything
 
-import Type             (inst)
+import Haskell.Hatchet.Type             (inst)
 
 --------------------------------------------------------------------------------
 

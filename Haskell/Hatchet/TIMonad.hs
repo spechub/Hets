@@ -19,7 +19,7 @@
 
 -------------------------------------------------------------------------------}
 
-module TIMonad (TI, 
+module Haskell.Hatchet.TIMonad (TI, 
                 inst,
                 runTI,
                 getErrorContext, 
@@ -40,17 +40,17 @@ module TIMonad (TI,
                 getModName,
                 newTVar) where
 
-import AnnotatedHsSyn           (AHsName (..),
+import Haskell.Hatchet.AnnotatedHsSyn           (AHsName (..),
                                  AHsIdentifier (..),
                                  AModule(AModule),
                                  ASrcLoc(..))
 
-import Diagnostic               (Diagnostic(..), 
+import Haskell.Hatchet.Diagnostic               (Diagnostic(..), 
                                  dumpDiagnostic,
                                  TypeError (..),
                                  typeError)
 
-import Representation           (Type (..),
+import Haskell.Hatchet.Representation           (Type (..),
                                  Tyvar (..),
                                  Tycon (..),
                                  Kind (..),
@@ -60,28 +60,28 @@ import Representation           (Type (..),
                                  Scheme (..),
                                  Assump)
 
-import Type                     ((@@),
+import Haskell.Hatchet.Type                     ((@@),
                                  Types (..),
                                  Instantiate (..),
                                  nullSubst,
                                  mgu)
 
-import Class                    (ClassHierarchy)
+import Haskell.Hatchet.Class                    (ClassHierarchy)
 
-import FiniteMaps               (lookupFM,
+import Haskell.Hatchet.FiniteMaps               (lookupFM,
                                  toListFM,
                                  listToFM,
                                  FiniteMap) 
 
 
-import KindInference            (KindEnv)
+import Haskell.Hatchet.KindInference            (KindEnv)
 
-import TypeSigs                 (SigEnv)
+import Haskell.Hatchet.TypeSigs                 (SigEnv)
 
-import Env                      (Env,
+import Haskell.Hatchet.Env                      (Env,
                                  lookupEnv)
 
-import PPrint                   (pretty)
+import Haskell.Hatchet.PPrint                   (pretty)
 
 --------------------------------------------------------------------------------
 

@@ -13,7 +13,7 @@
 
 -------------------------------------------------------------------------------}
 
-module Diagnostic (
+module Haskell.Hatchet.Diagnostic (
        Diagnostic(..), dumpDiagnostic, withASrcLoc,
        makeMsg,
        locMsg,
@@ -23,10 +23,10 @@ module Diagnostic (
        TypeError (..),
        ) where
 
-import AnnotatedHsSyn (ASrcLoc(..))
+import Haskell.Hatchet.AnnotatedHsSyn (ASrcLoc(..))
 import List  (find)
 import Maybe (isJust)
-import PPrint (PPrint, pretty)
+import Haskell.Hatchet.PPrint (PPrint, pretty)
 
 --------------------------------------------------------------------------------
 

@@ -15,25 +15,26 @@
 
 -------------------------------------------------------------------------------}
 
-module MultiModule(
+module Haskell.Hatchet.MultiModule(
     ModuleInfo(..),
     writeModuleInfo,
     readModuleInfo,
+    readOneImportSpec,
   fromString, 
   toString       -- eventually we shouldn't export these
     ) where
 
 import List                     (intersect)
-import MultiModuleBasics
-import Env                      (Env, listToEnv)
-import KindInference            (KindEnv)
-import HsSyn
-import FiniteMaps               (toListFM, listToFM)
-import AnnotatedHsSyn  
-import Utils                    (getUnQualName, qualifyName)
-import Rename                   (getAHsNamesAndASrcLocsFromAHsDecl, unRename)
-import Representation           (Scheme)
-import Class                    (ClassHierarchy)
+import Haskell.Hatchet.MultiModuleBasics
+import Haskell.Hatchet.Env                      (Env, listToEnv)
+import Haskell.Hatchet.KindInference            (KindEnv)
+import Haskell.Hatchet.HsSyn
+import Haskell.Hatchet.FiniteMaps               (toListFM, listToFM)
+import Haskell.Hatchet.AnnotatedHsSyn  
+import Haskell.Hatchet.Utils                    (getUnQualName, qualifyName)
+import Haskell.Hatchet.Rename                   (getAHsNamesAndASrcLocsFromAHsDecl, unRename)
+import Haskell.Hatchet.Representation           (Scheme)
+import Haskell.Hatchet.Class                    (ClassHierarchy)
 
 --------------------------------------------------------------------------------
 
@@ -42,10 +43,10 @@ readModuleInfo (AHsModule _ _ imports _)
     = do
       allModInfos <- mapM readOneImportSpec imports
       return (concatModuleInfos allModInfos)
-    where
+--    where
     -- take one declaration and build a ModuleInfo from it
-    readOneImportSpec :: AHsImportDecl -> IO ModuleInfo
-    readOneImportSpec (AHsImportDecl _ mod _ _ maybeListOfIdents)
+readOneImportSpec :: AHsImportDecl -> IO ModuleInfo
+readOneImportSpec (AHsImportDecl _ mod _ _ maybeListOfIdents)
         = do
           moduleInfoUnParsed <- readFile (modToFilePath mod)
           let modInfoUnFiltered :: ModuleInfo
@@ -57,22 +58,22 @@ readModuleInfo (AHsModule _ _ imports _)
                              expandDotsInTyCons mod (tyconsMembers modInfoUnFiltered) $
                              map importSpecToExportSpec importSpecs
                    in  do return ans
-                    
+
     -- e.g. rewrite Bool(..) to Bool(True, False). Second argument is the 
     -- list of tyconsMembers. First is imported mod's name (because we'll
     -- be looking in a list of qualified names)
-    expandDotsInTyCons :: AModule -> [(AHsName, [AHsName])] -> 
-				[AHsExportSpec] -> [AHsExportSpec]
-    expandDotsInTyCons modName tyconInfo specs 
-        = [ case lookup (qualifyName modName tycon) tyconInfo of 
+expandDotsInTyCons :: AModule -> [(AHsName, [AHsName])] -> 
+       				[AHsExportSpec] -> [AHsExportSpec]
+expandDotsInTyCons modName tyconInfo specs 
+                = [ case lookup (qualifyName modName tycon) tyconInfo of 
                      Just dcons -> AHsEThingWith tycon dcons
                      Nothing -> error $ "MultiModule.readModuleInfo: Couldn't "
 			            ++  "find the data\n"
                         ++  "constructors corresponding to " 
 			            ++ show tycon ++ " in the list " 
 			            ++ show tyconInfo 
-                 | (AHsEThingAll tycon) <- specs ] ++
-          filter (not . tyConWithDots) specs  -- the only thing we modify is the Foo(..) type
+                         | (AHsEThingAll tycon) <- specs ] ++
+                  filter (not . tyConWithDots) specs  -- the only thing we modify is the Foo(..) type
                                               -- exports. Others we just leave the same.
         where
         tyConWithDots (AHsEThingAll _) = True

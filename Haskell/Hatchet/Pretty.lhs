@@ -155,7 +155,7 @@ Relative to John's original paper, there are the following new features:
 
 
 \begin{code}
-module Pretty (
+module Haskell.Hatchet.Pretty (
         Doc,            -- Abstract
         Mode(..), TextDetails(..),
 

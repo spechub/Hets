@@ -13,7 +13,7 @@
 
 -------------------------------------------------------------------------------}
 
-module AHsPretty (PPLayout(..),PPAHsMode(..),defaultMode,
+module Haskell.Hatchet.AHsPretty (PPLayout(..),PPAHsMode(..),defaultMode,
 		render, renderWithMode,
 		ppAHsModule,ppAHsModuleHeader,
 		ppAHsDecl,
@@ -27,9 +27,9 @@ module AHsPretty (PPLayout(..),PPAHsMode(..),defaultMode,
                 ppGAlt,
                 ppAHsGuardedRhs) where
 
-import AnnotatedHsSyn
+import Haskell.Hatchet.AnnotatedHsSyn
 
-import qualified Pretty as P
+import qualified Haskell.Hatchet.Pretty as P
 
 infixl 5 $$$ 
 

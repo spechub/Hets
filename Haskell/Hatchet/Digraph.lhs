@@ -1,5 +1,5 @@
 \begin{code}
-module Digraph(
+module Haskell.Hatchet.Digraph(
 
 	-- At present the only one with a "nice" external interface
 	stronglyConnComp, stronglyConnCompR, SCC(..),

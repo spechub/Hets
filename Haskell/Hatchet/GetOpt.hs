@@ -17,7 +17,7 @@
 -- we need only 199 here, including a 46 line example! :-)
 -----------------------------------------------------------------------------------------
 
-module GetOpt (
+module Haskell.Hatchet.GetOpt (
    ArgOrder(..), OptDescr(..), ArgDescr(..), usageInfo, getOpt
    ) where
 

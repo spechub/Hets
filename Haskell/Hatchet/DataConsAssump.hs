@@ -25,17 +25,19 @@
 
 -------------------------------------------------------------------------------}
 
-module DataConsAssump (dataConsEnv) where
+module Haskell.Hatchet.DataConsAssump (dataConsEnv) where
 
 
-import AnnotatedHsSyn           (AHsDecl (..),
+import Haskell.Hatchet.AnnotatedHsSyn
+                                (AHsDecl (..),
                                  AHsName (..),
                                  AModule (AModule),
                                  AHsBangType (..),
                                  AHsConDecl (..),
                                  AHsContext)
 
-import Representation           (Type (..),
+import Haskell.Hatchet.Representation           
+                                (Type (..),
                                  Tycon (..),
                                  Tyvar (..),
                                  unfoldKind,
@@ -45,28 +47,30 @@ import Representation           (Type (..),
                                  Assump (..),
                                  Scheme)
 
-import Type                     (assumpToPair,
+import Haskell.Hatchet.Type     (assumpToPair,
                                  makeAssump,
                                  Types (..),
                                  quantify)
 
-import HaskellPrelude           (fn)
+import Haskell.Hatchet.HaskellPrelude (fn)
 
-import Utils                    (fromAHsName)
-
-
-import TypeUtils                (aHsTypeToType)
+import Haskell.Hatchet.Utils    (fromAHsName)
 
 
-import FiniteMaps               (FiniteMap,
+import Haskell.Hatchet.TypeUtils (aHsTypeToType)
+
+
+import Haskell.Hatchet.FiniteMaps
+                               (FiniteMap,
                                  toListFM,
                                  listToFM)
 
 
-import KindInference            (KindEnv,
+import Haskell.Hatchet.KindInference
+                                (KindEnv,
                                  kindOf)
 
-import Env                      (Env,
+import Haskell.Hatchet.Env      (Env,
                                  showEnv,
                                  joinListEnvs,
                                  unitEnv,

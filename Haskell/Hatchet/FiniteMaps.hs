@@ -45,11 +45,11 @@
 --    of the above mentioned technical report would be implemented.
 --
 
-module FiniteMaps (FiniteMap (..), zeroFM, unitFM, listToFM, listToCombFM, joinFM, 
-		   joinCombFM, sizeFM, addToFM, addToCombFM, delFromFM, diffFM,
-		   intersectFM, intersectCombFM, mapFM, foldFM, filterFM, 
-		   lookupFM, lookupDftFM, toListFM)
-where
+module Haskell.Hatchet.FiniteMaps (FiniteMap (..), zeroFM, unitFM,
+		   listToFM, listToCombFM, joinFM, joinCombFM, sizeFM,
+		   addToFM, addToCombFM, delFromFM, diffFM,
+		   intersectFM, intersectCombFM, mapFM, foldFM,
+		   filterFM, lookupFM, lookupDftFM, toListFM) where
 
 -- finite maps are represented as ordered binary trees; each node represents
 -- a key-element pair in the map, its children contain pair with smaller and

@@ -14,13 +14,13 @@
 
 -------------------------------------------------------------------------------}
 
-module SynConvert (toAHsModule, 
+module Haskell.Hatchet.SynConvert (toAHsModule, 
                    fromAHsModule, 
                    fromAHsDecl) where
 
-import HsSyn          -- everything
+import Haskell.Hatchet.HsSyn          -- everything
 
-import AnnotatedHsSyn -- everything
+import Haskell.Hatchet.AnnotatedHsSyn -- everything
 
 
 --------------------------------------------------------------------------------

@@ -12,24 +12,24 @@
 
 -------------------------------------------------------------------------------}
 
-module TypeSigs (collectSigs,
+module Haskell.Hatchet.TypeSigs (collectSigs,
                  SigEnv,
                  listSigsToSigEnv) where
 
-import Env              (Env,
+import Haskell.Hatchet.Env              (Env,
                          listToEnv)
 
-import Type             (assumpToPair)
+import Haskell.Hatchet.Type             (assumpToPair)
 
-import KindInference    (KindEnv)
+import Haskell.Hatchet.KindInference    (KindEnv)
 
-import Representation   (Kind,
+import Haskell.Hatchet.Representation   (Kind,
                          Assump (..),
                          Scheme)
 
-import TypeUtils        (aHsTypeSigToAssumps)
+import Haskell.Hatchet.TypeUtils        (aHsTypeSigToAssumps)
 
-import AnnotatedHsSyn            -- everything
+import Haskell.Hatchet.AnnotatedHsSyn            -- everything
 
 --------------------------------------------------------------------------------
 

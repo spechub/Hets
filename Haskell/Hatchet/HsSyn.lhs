@@ -8,7 +8,7 @@
 % -----------------------------------------------------------------------------
 
 \begin{code}
-module HsSyn (
+module Haskell.Hatchet.HsSyn (
     SrcLoc(..), Module(..), HsQName(..), HsName(..),
     HsModule(..), HsExportSpec(..),
     HsImportDecl(..), HsImportSpec(..), HsAssoc(..),
