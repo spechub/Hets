@@ -190,7 +190,7 @@ display_anno = do ident <- casl_id
 
 
 semantic_anno anno kw as sp pos = 
-    if (`elem` " \t") `all` as then 
+    if (`elem` "\r\t\v\f \160") `all` as then 
        Right (anno pos)
     else 
        Left (newErrorMessage (Expect("only whitespaces after %" ++ kw)) sp)
