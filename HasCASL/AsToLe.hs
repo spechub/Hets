@@ -14,6 +14,7 @@ import HasCASL.As
 import HasCASL.ClassAna
 import HasCASL.ClassDecl
 import Common.Id
+import qualified Common.Lib.Set as Set
 import HasCASL.Le
 import Common.Lexer 
 import Data.Maybe
@@ -65,13 +66,14 @@ convertTypeToClass cMap (TypeToken t) =
           let ci = simpleIdToId t
               ds = anaClassId cMap ci
               in case ds of 
-			 Just _ -> Result [] (Just $ Intersection [ci] [])
+			 Just _ -> Result [] (Just $ Intersection 
+					      (Set.single ci) [])
                          Nothing -> Result 
 				    [mkDiag Hint "not a class" ci] Nothing
 
 convertTypeToClass cMap (BracketType Parens ts ps) = 
        do cs <- mapM (convertTypeToClass cMap) ts
-	  return $ Intersection (concatMap iclass cs) ps
+	  return $ Intersection (Set.unions $ map iclass cs) ps
 
 convertTypeToClass _ t = Result [mkDiag Hint "not a class" t] Nothing
 

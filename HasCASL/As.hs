@@ -13,6 +13,7 @@ module HasCASL.As where
 
 import Common.Id
 import Common.AS_Annotation 
+import Common.Lib.Set
 
 data BasicSpec = BasicSpec [Annoted BasicItem]
                   deriving (Show, Eq)
@@ -259,12 +260,12 @@ data Kind = ExtClass Class Variance [Pos]
 	    deriving (Show, Eq)
 
 data Class = Downset Type   -- not parsed directly
-	   | Intersection { iclass :: [ClassId], classPos :: [Pos] }  
+	   | Intersection { iclass :: Set ClassId, classPos :: [Pos] }  
 	   -- pos "(", ","s, ")"
 	     deriving (Show, Eq)
 
 universe :: Class
-universe = Intersection [] []
+universe = Intersection empty []
 
 star :: Kind
 star = ExtClass universe InVar []

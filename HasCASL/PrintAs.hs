@@ -12,14 +12,16 @@ module HasCASL.PrintAs where
 import HasCASL.As
 import Common.Keywords
 import HasCASL.HToken
-import Common.Lib.Pretty 
+import Common.Lib.Pretty
+import Common.PPUtils
+import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
 import Common.Print_AS_Annotation
 
 commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
-commas ga l = fcat $ punctuate comma (map (printText0 ga) l)
-semis ga l = sep $ punctuate semi (map (printText0 ga) l)
+commas = commaT printText0
+semis = semiT printText0
 
 instance PrettyPrint TypePattern where 
     printText0 ga (TypePattern name args _) = printText0 ga name
@@ -36,8 +38,10 @@ bracket Braces t = braces t
 
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-			      ExtClass (Intersection [] _) InVar _ -> empty
-			      _ -> space <> colon <> printText0 ga kind
+			      ExtClass (Intersection s _) InVar _ -> 
+				  if Set.isEmpty s then empty else erg
+			      _ -> erg
+		    where erg = space <> colon <> printText0 ga kind
 
 instance PrettyPrint Type where 
     printText0 ga (TypeName name _k _i) = printText0 ga name 
@@ -227,12 +231,16 @@ instance PrettyPrint Kind where
 			  <+> text funS 
 			  <> printText0 ga k2
 
+printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
+printList0 ga l = noPrint (null l)
+		      (if null $ tail l then printText0 ga $ head l
+		       else parens $ commas ga l)
+
 instance PrettyPrint Class where 
     printText0 ga (Downset t) = braces $ 
 				text "_" <+> text lessS <+> printText0 ga t
-    printText0 ga (Intersection c _) = if null c then ptext "Type"
-			   else if null $ tail c then printText0 ga $ head c
-			   else parens $ commas ga c 
+    printText0 ga (Intersection c _) = if Set.isEmpty c then ptext "Type"
+			   else printList0 ga $ Set.toList c
 
 instance PrettyPrint InstOpId where
     printText0 ga (InstOpId n l _) = printText0 ga n 

@@ -13,11 +13,11 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Data.List(nub)
 import Common.Token
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
+import qualified Common.Lib.Set as Set
 import CASL.ItemList
 
 noQuMark :: String -> AParser Token
@@ -43,8 +43,8 @@ quColon = do c <- colT
 -- universe is just a special classId ("Type")
 parseClassId :: AParser Class
 parseClassId = fmap (\c -> if showId c "" == "Type" 
-		   then Intersection [] [posOfId c]
-		   else Intersection [c] []) classId
+		   then Intersection Set.empty [posOfId c]
+		   else Intersection (Set.single c) []) classId
 
 parseClass :: AParser Class
 parseClass = parseClassId
@@ -52,7 +52,7 @@ parseClass = parseClassId
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` anComma
 		c <- cParenT
-		return (Intersection (nub $ concatMap iclass cs) 
+		return (Intersection (Set.unions $ map iclass cs) 
 			(toPos o ps c))
 
 parsePlainClass :: AParser Kind
@@ -68,7 +68,7 @@ parsePlainClass =
 		      (cs, ps) <- parseClass `separatedBy` anComma
 		      c <- cParenT
 		      return $ ExtClass (Intersection 
-				 (nub $ concatMap iclass (k:cs)) 
+				 (Set.unions $ map iclass (k:cs)) 
 					    (toPos o (p:ps) c))
 		                         InVar []
 		    <|> do cParenT >> return f

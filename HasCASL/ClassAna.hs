@@ -19,6 +19,7 @@ import Control.Monad.State
 import HasCASL.PrintAs()
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 
 
@@ -29,15 +30,14 @@ import Common.Result
 -- transitiv super classes 
 -- PRE: all superclasses and defns must be defined in ClassEnv
 -- and there must be no cycle!
-allSuperClasses :: ClassMap -> ClassId -> [ClassId]
+allSuperClasses :: ClassMap -> ClassId -> Set.Set ClassId
 allSuperClasses ce ci = 
-    let recurse = nub . concatMap (allSuperClasses ce) in
+    let recurse = Set.unions . map (allSuperClasses ce) in
     case Map.lookup ci ce of 
-    Just info -> nub $ (case classDefn info of 
-                        Nothing -> [ci]
-                        Just (Intersection cis _) -> recurse cis
-                        Just _ -> [ci])
-                 ++ recurse (superClasses info)
+    Just info -> (case classDefn info of 
+                        Just (Intersection cis _) -> recurse $ Set.toList cis
+                        _ -> Set.single ci)
+                 `Set.union` recurse (Set.toList $ superClasses info)
     Nothing -> error "allSuperClasses"
 
 anaClassId :: ClassMap -> ClassId -> Maybe Kind
@@ -49,8 +49,9 @@ anaClassId cMap ci =
 expandKind :: ClassMap -> Kind -> Kind
 expandKind cMap (ExtClass c _ _) = 
     case c of
-    Intersection (a:_) _ -> 
-	case anaClassId cMap a of
+    Intersection s _ ->
+	if Set.isEmpty s then star else 
+	case anaClassId cMap $ Set.findMin s of
 	    Just k -> expandKind cMap k
 	    _ -> error "expandKind"
     _ -> star
@@ -59,12 +60,13 @@ expandKind cMap (KindAppl k1 k2 ps) =
     KindAppl (expandKind cMap k1) (expandKind cMap k2) ps
     
 anaClass :: Class -> State Env (Kind, Class)
-anaClass (Intersection cs ps) =  
+anaClass (Intersection s ps) =  
     do cMap <- getClassMap
-       let l = zip (map (anaClassId cMap) cs) cs
+       let cs = Set.toList s
+	   l = zip (map (anaClassId cMap) cs) cs
 	   (js, ns) = partition (isJust . fst) l
 	   ds = map (mkDiag Error "undeclared class" . snd) ns
-	   restCs = map snd js
+	   restCs = Set.fromList $ map snd js
 	   ks = map (fromJust. fst) js
 	   k = if null ks then star else expandKind cMap $ 
 	       fromJust $ fst $ head js

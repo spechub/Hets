@@ -17,6 +17,7 @@ import Common.Token
 import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import HasCASL.ParseTerm
 import CASL.ItemList
@@ -246,7 +247,8 @@ isoClassDecl :: ClassId -> Kind -> [Token] -> AParser ClassDecl
 isoClassDecl s k ps = 
     do e <- equalT
        do o <- oBraceT
-	  if null ps && (case k of ExtClass (Intersection [] _) InVar _ -> True
+	  if null ps && (case k of ExtClass (Intersection cs _) InVar _ -> 
+			                                    Set.isEmpty cs
 			           _ -> False)
 	     then do i <- pToken scanWords
 		     d <- dotT

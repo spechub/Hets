@@ -66,13 +66,11 @@ instance Mergeable ClassInfo where
 			 s2 = superClasses c2
 		     if s1 == s2 then 
 			return $ ClassInfo s1 k d 
-			else fatal_error "merge: non-equal super classes"
-			     $ posOfId $ head (s1++s2) 
+			else fail "merge: non-equal super classes"
 
 instance Mergeable Kind where
     merge k1 k2 = if sameKind k1 k2 then return k1
-		  else fatal_error "merge: non-equal kinds"
-		       $ posOfKind k1
+		  else fail "merge: non-equal kinds"
 
 sameClass :: Class -> Class -> Bool
 sameClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
@@ -89,13 +87,11 @@ sameKind _ _ = False
 instance Mergeable Class where
     merge c1@(Downset t1) (Downset t2) =
 	if t1 == t2 then return c1
-	   else fatal_error "merge: non-equal downset" $ posOfType t1
+	   else fail "merge: non-equal downset"
     merge c1@(Intersection i1 _) (Intersection i2 _) =
-       if sort (nub i1) == sort (nub i2) then 
-	      return c1
-	  else fatal_error "merge: non-equal intersection class" $ 
-	       posOfId $ head (i1 ++ i2)
-    merge c _ = fatal_error "merge: class" $ posOfClass c
+       if i1 == i2 then return c1
+	  else fail "merge: non-equal intersection class" 
+    merge _ _ = fail "merge: class"
 
 mergeList :: Eq a => [a] -> [a] -> Result [a]
 mergeList l1 l2 = return $ nub (l1 ++ l2)
@@ -111,16 +107,14 @@ instance Mergeable TypeDefn where
     merge d1 d2 = 
 	case (d1, d2) of 
 	    (TypeVarDefn, TypeVarDefn) -> return d1
-	    (TypeVarDefn, _) -> fail "merge TypeVarDefn"
-	    (_, TypeVarDefn) -> fail "merge TypeVarDefn"
-	    (NoTypeDefn, AliasTypeDefn sc) -> 
-		fatal_error "merge: AliasTypeDefn" $ posOf [sc]
-	    (AliasTypeDefn sc, NoTypeDefn) -> 
-		fatal_error "merge: AliasTypeDefn" $ posOf [sc]
+	    (TypeVarDefn, _) -> fail "merge: TypeVarDefn"
+	    (_, TypeVarDefn) -> fail "merge: TypeVarDefn"
+	    (NoTypeDefn, AliasTypeDefn _) -> fail "merge: AliasTypeDefn" 
+	    (AliasTypeDefn _, NoTypeDefn) -> fail "merge: AliasTypeDefn"
 	    (NoTypeDefn, _) -> return d2
 	    (_, NoTypeDefn) -> return d1
 	    (_, _) -> if d1 == d2 then return d1 else
-		      fail "merge TypeDefn"
+		      fail "merge: TypeDefn"
 
 mergeAssumps :: TypeMap -> Int -> Assumps -> Assumps -> Result Assumps
 mergeAssumps tm c = mergeMap (mergeOpInfos tm c)

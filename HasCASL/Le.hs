@@ -11,7 +11,8 @@ module HasCASL.Le where
 
 import Common.Id
 import HasCASL.As
-import Common.Lib.Map
+import Common.Lib.Map as Map
+import Common.Lib.Set as Set
 import Data.List
 import Control.Monad.State
 import Common.Result
@@ -20,13 +21,13 @@ import Common.Result
 -- classInfo
 -----------------------------------------------------------------------------
 
-data ClassInfo = ClassInfo { superClasses :: [ClassId]
+data ClassInfo = ClassInfo { superClasses :: Set ClassId
                            , classKind :: Kind
 			   , classDefn :: Maybe Class
 			   } deriving (Show, Eq)
 
 newClassInfo :: ClassInfo
-newClassInfo = ClassInfo [] star Nothing
+newClassInfo = ClassInfo Set.empty star Nothing
 
 -----------------------------------------------------------------------------
 
@@ -87,7 +88,7 @@ instance Eq Env where
     Env c1 t1 a1 _ _ == Env c2 t2 a2 _ _ = (c1, t1, a1) == (c2, t2, a2)
 
 initialEnv :: Env
-initialEnv = Env empty empty empty [] 1
+initialEnv = Env Map.empty Map.empty Map.empty [] 1
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =

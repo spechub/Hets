@@ -11,6 +11,7 @@ module HasCASL.ClassDecl where
 
 import HasCASL.As
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import HasCASL.Le
 import Data.List
@@ -22,25 +23,25 @@ import HasCASL.ClassAna
 anaClassDecls :: ClassDecl -> State Env ()
 anaClassDecls (ClassDecl cls k _) = 
     do ak <- anaKind k
-       mapM_ (anaClassDecl ak [] Nothing) cls
+       mapM_ (anaClassDecl ak Set.empty Nothing) cls
 
 anaClassDecls (SubclassDecl _ _ (Downset _) _) = error "anaClassDecl"
 anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
     do ak <- anaKind k
-       if null supcls then 
+       if Set.isEmpty supcls then 
 	  do addDiag $ Diag Warning
 			  "redundant universe class" 
 			 $ if null ps then head qs else head ps
-	     mapM_ (anaClassDecl ak [] Nothing) cls
-          else let hd:tl = supcls in 
-	      if null $ tl then
+	     mapM_ (anaClassDecl ak supcls Nothing) cls
+          else let (hd, tl) = Set.deleteFindMin supcls in 
+	      if Set.isEmpty tl then
 		 do cMap <- getClassMap 
 		    if isJust $ anaClassId cMap hd then
 		       return () else do  
-			  anaClassDecl ak [] Nothing hd
+			  anaClassDecl ak tl Nothing hd
 			  addDiag $ mkDiag Warning 
 				      "implicit declaration of superclass" hd
-		    mapM_ (anaClassDecl ak [hd] Nothing) cls
+		    mapM_ (anaClassDecl ak (Set.single hd) Nothing) cls
 		  else do (sk, Intersection newSups _) <- anaClass sc
 			  checkKinds (posOfId hd) sk ak
 			  mapM_ (anaClassDecl ak newSups Nothing) cls
@@ -49,13 +50,14 @@ anaClassDecls (ClassDefn ci k ic _) =
     do ak <- anaKind k
        (dk, newIc) <- anaClass ic
        checkKinds (posOfId ci) dk ak
-       anaClassDecl ak [] (Just newIc) ci 
+       anaClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
     do downsetWarning t
-       anaClassDecl star [] (Just $ Downset t) ci
+       anaClassDecl star Set.empty (Just $ Downset t) ci
 
-anaClassDecl :: Kind -> [ClassId] -> Maybe Class -> ClassId -> State Env ()
+anaClassDecl :: Kind -> Set.Set ClassId -> Maybe Class 
+	     -> ClassId -> State Env ()
 anaClassDecl kind sups defn ci = 
     if showId ci "" == "Type" then 
        addDiag $ Diag Error 
@@ -87,15 +89,16 @@ anaClassDecl kind sups defn ci =
 		      putClassMap $ Map.insert ci info 
 				      { superClasses = newSups } cMap
 
-getLegalSuperClasses :: ClassMap -> ClassId -> [ClassId] 
-		     -> [ClassId] -> State Env [ClassId]
-getLegalSuperClasses ce ci oldCs cs =
-       let scs = zip (map (allSuperClasses ce) cs) cs
-	   (scycs, sOk) = partition ((ci `elem`) . fst) scs
+getLegalSuperClasses :: ClassMap -> ClassId -> Set.Set ClassId
+		     -> Set.Set ClassId -> State Env (Set.Set ClassId)
+getLegalSuperClasses ce ci oldCs ses =
+       let cs = Set.toList ses
+	   scs = zip (map (allSuperClasses ce) cs) cs
+	   (scycs, sOk) = partition ((ci `Set.member`) . fst) scs
 	   defCs = map snd sOk
-	   newCs = nub $ defCs ++ oldCs
+	   newCs = Set.fromList defCs `Set.union` oldCs
 	   cycles = map snd scycs
-	   dubs = filter (`elem` allSuperClasses ce ci) defCs
+	   dubs = filter (`Set.member` allSuperClasses ce ci) defCs
 	   myDiag k s l = Diag k (s ++ " '" ++ showClassList l "'")
 			  $ posOfId $ head l
 	   in do if null cycles then return ()
@@ -116,7 +119,7 @@ mergeDefns ci (Downset oldT) (Downset t) =
     if oldT == t then [] else wrongClassDecl ci
 
 mergeDefns ci (Intersection oldIs _) (Intersection is _) =
-       if sort (nub oldIs) == sort (nub is) then []
+       if oldIs == is then []
 	  else wrongClassDecl ci
 
 mergeDefns ci _ _ = wrongClassDecl ci

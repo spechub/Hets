@@ -11,6 +11,7 @@ module HasCASL.AsUtils where
 
 import HasCASL.As
 import Common.Id
+import Common.Lib.Set
 
 posOf :: PosItem a => [a] -> Pos
 posOf l = if null l then nullPos else 
@@ -47,7 +48,7 @@ posOfClass :: Class -> Pos
 posOfClass c = 
     case c of
     Downset t -> posOfType t
-    Intersection is ps -> firstPos is ps
+    Intersection is ps -> firstPos (toList is) ps
 
 -- ---------------------------------------------------------------------
 instance PosItem TypePattern where

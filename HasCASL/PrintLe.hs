@@ -16,24 +16,21 @@ import HasCASL.PrintAs
 import HasCASL.Le
 import Data.Maybe
 import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Lib.Pretty as Pretty
+import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Keywords
 import Common.GlobalAnnotations
 
-printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
-printList0 ga l = noPrint (null l)
-		      (if null $ tail l then printText0 ga $ head l
-		       else parens $ commas ga l)
-
 instance PrettyPrint ClassInfo where
     printText0 ga (ClassInfo sups k defn) =
-        noPrint (case k of ExtClass (Intersection [] []) InVar _ -> True
+        noPrint (case k of ExtClass (Intersection s []) InVar _ -> 
+		                       Set.isEmpty s
 		           _ -> False) (space <> printKind ga k)
 	<> noPrint (isNothing defn)
 	   (space <> ptext equalS <+> printText0 ga defn)
-	<> noPrint (null sups)
-	   (space <> ptext lessS <+> printList0 ga sups)
+	<> noPrint (Set.isEmpty sups)
+	   (space <> ptext lessS <+> printList0 ga (Set.toList sups))
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty

@@ -19,6 +19,7 @@ import Data.Maybe
 import Control.Monad.State
 import HasCASL.PrintAs()
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.PrettyPrint
 
@@ -91,8 +92,8 @@ mkTypeConstrAppls _ (FunType t1 a t2 ps) =
 expandApplKind :: ClassMap -> Class -> Kind
 expandApplKind cMap c = 
     case c of
-    Intersection (a:_) _ -> 
-	case anaClassId cMap a of
+    Intersection s _ -> if Set.isEmpty s then star else  
+	case anaClassId cMap $ Set.findMin s of
 	    Just k -> case k of 
 			     ExtClass c2 _ _ -> expandApplKind cMap c2
 			     _ -> k
