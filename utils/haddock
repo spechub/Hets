@@ -5,7 +5,7 @@ use File::Basename;
 
 my $un=`uname`;
 my $suf = 'unknown';
-my $haddocklib = '../util/hd-lib';
+my $haddocklib = '../utils/hd-lib';
 
 $un =~ m"^SunOS" && do {$suf = "solaris"};    
 $un =~ m"^Linux" && do {$suf = "linux"};
