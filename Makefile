@@ -84,7 +84,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
 genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
-                Common/AS_Annotation.der.hs Common/Named.hs \
+                Common/AS_Annotation.der.hs \
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
                 Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Sublogic.hs \
@@ -101,7 +101,6 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
                 Haskell/Hatchet/Env.hs 
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
-                   ATC/Named.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
                    ATC/AS_Structured.hs ATC/AS_Architecture.hs \
                    ATC/DevGraph.hs \
