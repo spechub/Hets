@@ -120,7 +120,7 @@ minExpFORMULA mef ga sign formula
         Definedness term pos            -> do
             t   <- minExpTerm mef ga sign term                  -- :: [[TERM]]
             --debug 4 ("t", t)
-            t'  <- is_unambiguous t pos                         -- :: TERM
+            t'  <- is_unambiguous term t pos                         -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
 	Existl_equation term1 term2 pos ->
             minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
@@ -133,18 +133,19 @@ minExpFORMULA mef ga sign formula
                         leq_SORT sign sort $ term_sort t1 
                     in return $ filter leq_term t               -- :: TERM
                 
-            t'' <- is_unambiguous t' pos                        -- :: [[TERM]]
+            t'' <- is_unambiguous term t' pos                        -- :: [[TERM]]
             return $ Membership t'' sort pos                    -- :: FORMULA
 	Sort_gen_ax _ -> return formula
 	ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
 	_ -> error $ "minExpFORMULA: unexpected type of FORMULA: "
             ++ (show formula)
 
-is_unambiguous :: (Eq f, PrettyPrint f) => [[TERM f]] -> [Id.Pos] -> Result (TERM f)
-is_unambiguous term pos = do
+is_unambiguous :: (Eq f, PrettyPrint f) => TERM f -> [[TERM f]] 
+	       -> [Id.Pos] -> Result (TERM f)
+is_unambiguous topterm term pos = do
             case term of
                 [] -> pplain_error (Unparsed_term "<error>" [])
-                   (ptext "No correct typing for " <+> printText term)
+                   (ptext "No correct typing for " <+> printText topterm)
                    (Id.headPos pos)
                 (_:_):_   -> return $ head $ head $ term         -- :: TERM
         -- BEWARE! Oversimplified disambiguation!

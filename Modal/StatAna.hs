@@ -41,7 +41,7 @@ minExpForm ga s form =
 		    r = do 
 		      t1 <- resolveMixfix newGa (allOpIds s) preds False t
 		      ts <- minExpTerm minExpForm ga s t1
-		      t2 <- is_unambiguous ts ps
+		      t2 <- is_unambiguous t ts ps
 		      let srt = term_sort t2
 			  trm = Term_mod t2
 		      if Set.member srt $ termModies $ extendedInfo s 
