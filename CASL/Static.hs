@@ -1238,9 +1238,10 @@ symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> (RawSymbol,RawSymbol)
 symbOrMapToRaw k (Symb s) = (symbToRaw k s,symbToRaw k s)
 symbOrMapToRaw k (Symb_map s t _) = (symbToRaw k s,symbToRaw k t)
 
-statSymbItems :: SYMB_ITEMS -> Result [RawSymbol]
-statSymbItems (Symb_items kind l _) =
-  return (map (symbToRaw kind) l)
+statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
+statSymbItems sl = 
+  return (concat (map s1 sl))
+  where s1 (Symb_items kind l _) = map (symbToRaw kind) l
 
 symbToRaw :: SYMB_KIND -> SYMB -> RawSymbol
 symbToRaw k (Symb_id idt)     = symbKindToRaw k idt

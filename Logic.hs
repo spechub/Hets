@@ -162,7 +162,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                            -- should yield the first output sign
          stat_symb_map_items :: 
 	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_items :: lid -> symb_items -> Result [raw_symbol] 
+         stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: lid ->
               (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
