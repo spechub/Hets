@@ -24,7 +24,7 @@ Portability :  portable
 
 module Comorphisms.CASL2PCFOL where
 
---import Test
+import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
@@ -88,7 +88,7 @@ encodeSig sig = sig {sortRel=newsortRel,opMap=priopMap,predMap=newpredMap}
  
  trivial=[(x,x)|x<-(fst(unzip(Rel.toList(sortRel sig))))++ snd(unzip(Rel.toList(sortRel sig)))] 
  relList=Rel.toList(sortRel sig)++nub(trivial) --[(SORT,SORT)] 
- newsortRel=Rel.fromList(relList)  --Rel SORT
+ newsortRel=Rel.fromList([])  --Rel SORT
  
  
  total      (s, s') = OpType {opKind=Total,opArgs=[s],opRes=s'}
