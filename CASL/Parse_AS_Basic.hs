@@ -19,7 +19,6 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Anno_Parser
 import Maybe
 import Parsec
 import Token
@@ -34,13 +33,14 @@ import OpItem
 datatype = do { s <- sortId
 	      ; e <- asKey defnS
 	      ;	a <- annos
-	      ; (Annoted v _ _ b:as, ps) <- aAlternative `separatedBy` asKey barS
+	      ; (Annoted v _ _ b:as, ps) <- aAlternative 
+		`separatedBy` asKey barS
 	      ; return (Datatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
 	      }
 
 aAlternative = do { a <- alternative
-		  ; an <- annotations
+		  ; an <- annos
 		  ; return (Annoted a [] [] an)
 		  }
 
@@ -53,7 +53,7 @@ alternative = do { s <- pluralKeyword sortS
 		 ; do { o <- oParenT
 		      ; (cs, ps) <- component `separatedBy` semiT
 		      ; c <- cParenT
-		      ; let qs = map tokPos (o:ps++[c]) in
+		      ; let qs = toPos o ps c in
 			do { q <- quMarkT
 			   ; return (Partial_construct i cs 
 				     (qs++[tokPos q]))
@@ -108,7 +108,7 @@ basicItems = fmap Sig_items sigItems
 			 ; c <- cBraceT
 			 ; return (Sort_gen ((Annoted i [] a [])  
 					    : map (\x -> Annoted x [] [] []) is)
-				   (map tokPos [g,o,c])) 
+				   (toPos g [o] c)) 
 			 }
 		    }
 	     <|> do { v <- pluralKeyword varS
