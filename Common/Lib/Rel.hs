@@ -27,9 +27,10 @@ may destroy the closedness property of a relation.
 
 -}
 
-module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap
-		      , transMember, transClosure, fromList, toList
-                      , image, restrict, toSet, fromSet, topSort) where
+module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
+                       union , subset, difference, transMember,
+                       transClosure, fromList, toList, image,
+                       restrict, toSet, fromSet, topSort) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -44,12 +45,24 @@ empty = Rel Map.empty
 isEmpty :: Rel a -> Bool
 isEmpty = Map.isEmpty . toMap 
 
+-- | difference of two relations as set of pairs
+difference :: Ord a => Rel a -> Rel a -> Rel a
+difference a b = fromSet $ Set.difference  (toSet a) $ toSet b
+
+-- | union of two relations as set of pairs
+union :: Ord a => Rel a -> Rel a -> Rel a
+union a b = fromSet $ Set.union (toSet a) $ toSet b
+
+-- | is the first relation a subset of the second (viewed as set of pairs)
+subset :: Ord a => Rel a -> Rel a -> Bool
+subset a b = Set.subset (toSet a) $ toSet b
+
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
 insert a b =
     let update = Map.setInsert a b
     in 
-    Rel . update .toMap
+    Rel . update . toMap
 
 -- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
@@ -83,7 +96,7 @@ fromList = foldr (\ (a, b) r -> insert a b r ) empty
 -- | convert a relation to a list of ordered pairs
 toList ::  Ord a => Rel a -> [(a, a)]
 toList = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) (Set.toList bs)) 
-	 . Map.toList . toMap
+         . Map.toList . toMap
 
 instance (Show a, Ord a) => Show (Rel a) where
     show = show . Set.fromList . toList
@@ -126,8 +139,8 @@ restrict r s =
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
 toSet = Map.foldWithKey 
-	( \ a ra -> Set.fold ( \ b -> (Set.insert (a,b) .) ) id ra) 
-	Set.empty . toMap
+        ( \ a ra -> Set.fold ( \ b -> (Set.insert (a,b) .) ) id ra) 
+        Set.empty . toMap
 
 -- | convert a set of ordered pairs to a relation 
 fromSet :: (Ord a) => Set.Set (a, a) -> Rel a
@@ -139,43 +152,43 @@ topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r@(Rel m) = 
     if isEmpty r then []
     else let es = Set.unions $ Map.elems m
-	     ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es in 
+             ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es in 
        if Set.isEmpty ms then let hasCyc = removeCycle r in 
-	   case hasCyc of 
-	   Nothing -> topSort (transClosure r)
-	   Just (a, cyc, restRel) ->
-	       map ( \ s -> if Set.member a s then 
-		     Set.union s cyc else s) $ topSort restRel
+           case hasCyc of 
+           Nothing -> topSort (transClosure r)
+           Just (a, cyc, restRel) ->
+               map ( \ s -> if Set.member a s then 
+                     Set.union s cyc else s) $ topSort restRel
         else let (lowM, rest) = 
-		     Map.partitionWithKey (\ k _ -> Set.member k ms) m
-		 -- no not forget loose ends 
-		 bs = Set.unions $ Map.elems lowM
-		 ls = bs Set.\\ Set.fromDistinctAscList	(Map.keys rest) in 
-		 -- put them as low as possible
+                     Map.partitionWithKey (\ k _ -> Set.member k ms) m
+                 -- no not forget loose ends 
+                 bs = Set.unions $ Map.elems lowM
+                 ls = bs Set.\\ Set.fromDistinctAscList (Map.keys rest) in 
+                 -- put them as low as possible
             ms : (topSort $ Rel $ Set.fold ( \ i -> 
-		      Map.insert i Set.empty) rest ls)
+                      Map.insert i Set.empty) rest ls)
 
 -- | try to remove a cycle
 removeCycle :: Ord a => Rel a -> Maybe (a, Set.Set a, Rel a)
 removeCycle r@(Rel m) = 
     let cycles = Map.filterWithKey Set.member m in
-	if Map.isEmpty cycles then -- no cycle found 
-	   let cl = transClosure r in 
-	   if r == transClosure r then Nothing -- no cycle there 
-	      else removeCycle cl
-	   else let (a, os) = Map.findMin cycles
-		    cs = Set.fold ( \ e s -> 
-		            if member e a r then 
-				    Set.insert e s else s) Set.empty 
-			 $ Set.delete a os
-		    m1 = Map.map (Set.image ( \ e -> 
-					      if Set.member e cs then 
-					      a else e)) m 
-		    rs = Map.foldWithKey ( \ k v s -> 
-				 if Set.member k cs then 
-					Set.union s $ Set.delete a v else s) 
-			 Set.empty m1
-	    in Just (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
+        if Map.isEmpty cycles then -- no cycle found 
+           let cl = transClosure r in 
+           if r == transClosure r then Nothing -- no cycle there 
+              else removeCycle cl
+           else let (a, os) = Map.findMin cycles
+                    cs = Set.fold ( \ e s -> 
+                            if member e a r then 
+                                    Set.insert e s else s) Set.empty 
+                         $ Set.delete a os
+                    m1 = Map.map (Set.image ( \ e -> 
+                                              if Set.member e cs then 
+                                              a else e)) m 
+                    rs = Map.foldWithKey ( \ k v s -> 
+                                 if Set.member k cs then 
+                                        Set.union s $ Set.delete a v else s) 
+                         Set.empty m1
+            in Just (a, cs, Rel $ Map.insert a rs $ Set.fold Map.delete m1 cs)
 
 {- The result is a representative "a", the cycle "cs", i.e. all other
 elements that are represented by "a" and the remaining relation with
