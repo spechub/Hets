@@ -223,7 +223,7 @@ prettyPrintSchemeM (Forall _kinds qType)
 
 -- assumptions
 
-data Assump = AHsName :>: Scheme
+data Assump = (:>:) AHsName Scheme
    deriving (Show,Eq)
 
 instance PPrint Assump where
