@@ -1,5 +1,0 @@
-- library oder spec darf nicht zu Beginn einer Datei stehen
-
-- nur eine program-Zeile pro Operation?
-
-- rekursive Datentypen? (z.B. Listen)
