@@ -20,7 +20,6 @@ import Common.Lib.Parsec
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import HasCASL.ParseTerm
-import CASL.ItemList
 
 hasCaslStartKeywords :: [String]
 hasCaslStartKeywords = dotS:cDot: hascasl_reserved_words
@@ -294,7 +293,7 @@ classDecl = do   (is, cs) <- classId `separatedBy` anComma
 classItem :: AParser ClassItem
 classItem = do c <- classDecl
 	       do o <- oBraceT 
-                  is <- many1 aBasicItems
+                  is <- annosParser basicItems
                   p <- cBraceT
                   return (ClassItem c is $ toPos o [] p) 
                  <|> 
@@ -438,11 +437,9 @@ generatedItems = do g <- asKey generatedS
 				   [tokPos g])
                       <|> 
                       do o <- oBraceT
-                         a <- annos
-                         i:is <- many1 sigItems
+                         is <- annosParser sigItems
                          c <- cBraceT
-                         return (GenItems ((Annoted i [] a [])  
-                                           : map (\x -> Annoted x [] [] []) is)
+                         return (GenItems is
                                    (toPos g [o] c)) 
 
 -----------------------------------------------------------------------------
@@ -517,11 +514,7 @@ basicItems = fmap SigItems sigItems
              <|> dotFormulae
              <|> axiomItems
 
-aBasicItems :: AParser (Annoted BasicItem)
-aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems
-
 basicSpec :: AParser BasicSpec
-basicSpec = (oBraceT >> cBraceT >> return (BasicSpec []))
-            <|> 
-            fmap BasicSpec (many1 aBasicItems)
+basicSpec = (fmap BasicSpec $ annosParser basicItems)
+            <|> (oBraceT >> cBraceT >> return (BasicSpec []))
 

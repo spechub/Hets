@@ -18,7 +18,6 @@ import HasCASL.HToken
 import HasCASL.As
 import Common.Lib.Parsec
 import qualified Common.Lib.Set as Set
-import CASL.ItemList
 
 noQuMark :: String -> AParser Token
 noQuMark s = try $ asKey s << notFollowedBy (char '?')
