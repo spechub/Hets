@@ -3,13 +3,18 @@ module Type where
 import Id
 
 -- simple Id
+nullPos :: Pos
+nullPos = (0, 0)
+
 simpleId :: String -> Id
 simpleId(s) = Id [Token(s, nullPos)] [] 
 
 -- same predefined type constructors
-totalFunArrow = simpleId("->")
-partialFunArrow = simpleId("->?")
-productSign = simpleId("*")
+totalFunArrow = "->"
+partialSuffix = "?"
+partialFunArrow = totalFunArrow ++ partialSuffix
+productSign = "*"
+altProductSign = "\215"
 
 internalBoolRep = simpleId("") -- invisible
 
@@ -37,7 +42,7 @@ showType b t@(Type i (x:r)) = showParen b
  )
 
 instance Show Type where
-    showsPrec p = showType (p > 0)
+    showsPrec _ = showType False
 
 asType s = Type s []
 -- ----------------------------------------------
@@ -46,12 +51,12 @@ internalBool = asType internalBoolRep
 
 -- function types, product type and the internal bool for predicates
 totalFun  :: (Type, Type) -> Type 
-totalFun(t1,t2) = Type totalFunArrow [t1,t2]
-partialFun(t1,t2) = Type partialFunArrow [t1,t2]
+totalFun(t1,t2) = Type (simpleId totalFunArrow) [t1,t2]
+partialFun(t1,t2) = Type (simpleId partialFunArrow) [t1,t2]
 
 predicate t = totalFun(t, internalBool)
 
-isFunType(Type s  [_, _]) = (s == totalFunArrow) || (s == partialFunArrow)
+isFunType(Type s  [_, _]) = show s == totalFunArrow || show s == partialFunArrow
 isFunType _  = False
 
 argType(Type _ [t, _]) = t
@@ -59,16 +64,16 @@ resType(Type _ [_, t]) = t
 
 isPredicate t = isFunType t && (resType(t) == internalBool)
 
-product = Type productSign
-isProduct(Type s  _) = (s == productSign)
+product = Type (simpleId productSign)
+isProduct(Type s  _) = show s == productSign || show s == altProductSign
 isPoduct _ = False
 
 -- test if a type is first-order
-isBaseType(Type _  l) = case l of {[] -> True ; _ -> False}
-isBaseType Sort       = False -- not the type of a proper function 
+isBaseType (Type _  l) = case l of {[] -> True ; _ -> False}
+isBaseType  Sort       = False -- not the type of a proper function 
 
 -- first order types are products with 0, 1 or more arguments  
-isFOArgType(t) = isProduct(t) && 
+isFOArgType(t) = isProduct t  && 
                   case t of { Type _ l -> all isBaseType l }  
 
 -- constants are functions with the empty product as argument

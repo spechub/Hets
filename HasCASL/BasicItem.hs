@@ -5,9 +5,11 @@ import Lexer
 import LocalEnv
 import Maybe
 import Parsec
+import ParseTerm
+import ParseType
 import Token
-import Type
 import Term
+import Type
 
 
 {-
@@ -19,21 +21,27 @@ getDot = oneOf ".\183"
 mapf :: (Functor f) => f a -> (a -> b) -> f b
 mapf = flip fmap
 
-semi = fmap Just (skipChar ';')
-optSemi = bind (\ x y -> (x, y)) (option Nothing semi) ann
-
 pluralKeyword s = makeToken (string s <++> option "" (string "s"))
 
-sortId = parseId
-varId = parseId
 opId = parseId
-comma = skipChar ','
-equal = skipChar '='
 
+optSemi = bind (\ x y -> (x, y)) (option Nothing (fmap Just semi)) ann
+
+topVarDecls t = do { l <- varDecl t
+		; (m, an) <- optSemi
+		; let h:t = reverse l
+		      h2 = h {declAn = an}
+		      l2 = reverse (h2:t)
+		  in
+		  case m of Nothing -> return l2
+		            Just key -> do { r <- option [] (try (topVarDecls key))
+					   ; return (l2 ++ r)
+					   }
+		}
 
 data ParsedSortItems = AllLess [(Token, Id)] (Maybe (Token, Id)) 
 		     | AllEqual [(Token, Id)] 
-		     | SubType (Token, Id) -- Term
+		     | SubType (Token, Id) Type -- Term
 		       deriving (Show)
 
 
@@ -55,18 +63,26 @@ equalSortDecl e l = do { s2 <- sortId
 
 isoDecl :: Token -> Id -> Parser ParsedSortItems
 isoDecl key s1 = do { e <- equal
-                    ;  subSortDefn key s1
+                    ; subSortDefn key s1
 		      <|>
 		      (do { l <- equalSortDecl e [(key, s1)]
 			  ; return (AllEqual l)
 			  })
 		    }
 
+bar = skipChar '|'
+
 subSortDefn :: Token -> Id -> Parser ParsedSortItems
-subSortDefn key s = do { t <- between (try (skipChar '{')) (skipChar '}') 
-			 (return "") -- parse single var decl and term
-		       ; return (SubType (key, s))
+subSortDefn key s = do { o <- oBrace
+		       ; v <- varId
+		       ; c <- colon
+		       ; t <- funType c
+		       ; bar	 
+		       ; many (noneOf "}") -- Term
+		       ; cBrace
+		       ; return (SubType (key, s) t)
 		       }
+
 subSortDecl :: [(Token, Id)] -> Parser ParsedSortItems
 subSortDecl l = do { t <- skipChar '<'
 		   ; s <- sortId
@@ -84,7 +100,7 @@ sortItem key = do { s1 <- sortId
 		    return (AllLess [(key, s1)] Nothing)
 		  } 		
 
-toSymb x = Symb x Sort
+toSymb s = Symb s Sort
 mkItem :: [Type] -> [Type] -> (Token, Id) -> SortItem
 mkItem subs supers (key, id) = 
     SortItem (Decl (toSymb id) key []) (SortRels subs supers) Nothing []
@@ -104,8 +120,8 @@ asSortItems (AllEqual l) =
          sorts = map (mkItem types types) l 
     in   sorts -- maybe delete self
 
-asSortItems (SubType p) =
-    [mkItem [] [] p]
+asSortItems (SubType p t) =
+    [mkItem [] [t] p]
 
 sortItemsAux sig key = do { si <- sortItem key;
 			    (m, an) <- optSemi;

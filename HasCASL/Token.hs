@@ -1,5 +1,6 @@
 module Token ( scanTermWords, scanTermSigns, otherToken, makeToken
-	     , skipChar, obr, cbr, ocb, ccb, uu, parseId
+	     , skipChar, opBrkt, clBrkt, oBrace, cBrace, uu, comma
+	     , parseId
 	     ) where
 
 import Lexer
@@ -14,7 +15,8 @@ import ParsecChar (char, string)
 -- ----------------------------------------------
 
 reserved :: [String] -> Parser String -> Parser String
-reserved l p = p `checkWith` \r -> r `notElem` l 
+-- "try" to avoid reading keywords 
+reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
 -- sign keywords
 casl_reserved_ops = [":", ":?","::=",".","\183","|","|->","->","->?"]
@@ -44,7 +46,7 @@ scanWords = reserved (poly_words
 		      ++ mono_words
 		     ) scanTermWords
 
-otherToken = scanDigit <|> scanQuotedChar <|> scanDotWords
+otherToken = scanQuotedChar <|> scanDotWords
 
 -- ----------------------------------------------
 -- lexical tokens with position
@@ -61,29 +63,30 @@ skipChar = makeToken . single . char
 -- bracket-token (for ids)
 -- ----------------------------------------------
 
-obr = skipChar '[' <?> "" -- don't convey confusing mix-id tokens
-cbr = skipChar ']'
-ocb = skipChar '{' <?> ""
-ccb = skipChar '}'
+opBrkt = skipChar '[' <?> "" -- don't convey confusing mix-id tokens
+clBrkt = skipChar ']'
+oBrace = skipChar '{' <?> ""
+cBrace = skipChar '}'
 uu = makeToken (try (string place) <?> "place")
 
 -- simple id
-sid = single (makeToken (otherToken <|> scanSigns 
+sid = single (makeToken (otherToken <|> scanDigit <|> scanSigns 
 			 <|> scanWords <?> "simple-id"))
 
-curly =  begDoEnd ocb innerList ccb
-noComp = begDoEnd obr innerList cbr
+
+braced = begDoEnd oBrace innerList cBrace
+noComp = begDoEnd opBrkt innerList clBrkt
 
 innerMix1 = sid <++> option [] innerMix2
-innerMix2 = flat (many1 (curly <|> noComp <|> many1 uu))
+innerMix2 = flat (many1 (braced <|> noComp <|> many1 uu))
             <++> option [] innerMix1
 
 innerList =  option [] (innerMix1 <|> innerMix2 <?> "token")
 
 topMix1 = sid <++> option [] topMix2
-topMix2 = flat (many1 curly) <++> option [] topMix1
+topMix2 = flat (many1 braced) <++> option [] topMix1
 
-topMix3 = noComp <++> flat (many curly) <++> option [] topMix1
+topMix3 = noComp <++> flat (many braced) <++> option [] topMix1
 
 afterPlace = topMix1 <|> topMix2 <|> topMix3
 
@@ -94,7 +97,9 @@ tokStart = afterPlace <++> flat (many middle)
 start = tokStart <|> uu <:> (tokStart <|> many1 uu <++> option [] tokStart)
         <?> "id"
 
-comps = obr >> (parseId `sepBy1` skip (char ',')) << cbr 
+comma = skipChar ','
+
+comps = opBrkt >> parseId `sepBy1` comma << clBrkt
 	<?> "[<id>,...,<id>]"
 
 parseId = do { l <- start

@@ -159,9 +159,10 @@ scanFloat = getNumber <++> option ""
 	     (char '.' <:> getNumber
 	      <++> option "" 
 	      (char 'E' <:> option "" (single (oneOf "+-"))
-	       <++> getNumber)) `checkWith` \n -> length n > 1
+	       <++> getNumber))
 
-scanDigit = (getNumber << consumeNothing) `checkWith` \n -> length n == 1
+scanDigit :: Parser String
+scanDigit = single digit
 
 -- ----------------------------------------------
 -- comments and label
