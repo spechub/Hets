@@ -1,8 +1,10 @@
 This README belongs to a Hets release (and does not apply to
 sources directly obtained via cvs).
 
-The aim of this release is a binary "hets" that is able to analyse
+The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
+The sources need to be compiled with ghc Glasgow Haskell Compiler
+(www.haskell.org/ghc).
 
 The output of hets, if the input is successfully accepted, can be
 displayed by "daVinci".
@@ -42,3 +44,58 @@ that you obtained the HetCATS sources as CVS tree)
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
+
+Files in the Tools/Hets/src directory:
+--------------------------------------
+
+README                        This file
+hets                          Hets binary
+UserGuide.ps                  Hets documentaion
+docs/                         Overview and index for Hets sources
+src/                          Hets sources
+src/ATC/                        Conversion from and to ATerms (specific)
+src/ATC/doc/                      documentation
+src/aterm_conv/                 ATerm Conversion
+src/CASL/                       Instance of Logic: CASL
+src/CASL/doc/                     documentation
+src/CASL/test/                    test examples
+src/Common/                     Modules common to all logics
+src/Common/ATerm/                 Conversion from and to ATerms (general)
+src/Common/doc/                   Documentation
+src/Common/Lib/                   Third-party modules
+src/Common/Lib/Graph/               Functional Graph Library
+src/Common/Lib/Parsec/              Parsec combinator parser
+src/Common/test/                  Text examples
+src/Comorphisms/                Comorphisms of the logic graph
+src/CspCASL/                    Instance of Logic: CspCASL
+src/CspCASL/Doku/                 documentation
+src/docs/                       Haddock documentation 
+src/ghc/                        Some ghc-specific stuff 
+src/GUI/                        GUI for displaying development graphs
+src/HasCASL/                    Instance of Logic: HasCASL
+src/HasCASL/doc/                  documentation
+src/HasCASL/test/                 text examples
+src/Haskell/                    Instance of Logic: Haskell
+src/Haskell/Hatchet/              Static anaylsis of Haskell
+src/Haskell/Language/             Haskell syntax in Haskell
+src/Haskell/Language/Haskell/
+src/haterm-1.0/                 ATerm Conversion
+src/haterm-1.0/ac-macros/
+src/haterm-1.0/src/
+src/hetcats/                    Command line interface
+src/hugs/                       Some hugs-specific stuff
+src/Logic/                      Infrastructure for logic independence
+src/mini/                       Some toy version of Hets, used in a paper
+src/Modal/                      Instance of logic: modal logic
+src/parsec/                     ??
+src/pretty/                     ??
+src/Proofs/                     Heterogeneous proof engine
+src/Static/                     Heterogeneous development graphs and static analysis
+src/Syntax/                     Heterogeneous syntax and parsing
+src/test/                       Text examples
+src/ToHaskell/                  Translation from HasCASL to Haskell
+src/utils/                      Utilities
+src/utils/AG-src/                 Static analyser generator (not used by Hets)
+src/utils/DrIFT-src/              DrIFT (for polytpyic conversion functions)
+src/utils/GenerateRules/          
+src/utils/hd-lib/                 
