@@ -7,7 +7,6 @@ not s(n) <= 0
 def s(n) <= 0 
 not a => b
 not s a => s b
-a + def a
 def a = b
 10 * b(n div 10)
 10 when n < 10 else 10 * b(n div 10)
@@ -19,3 +18,4 @@ f a <= f a <= f a
 f a none a but f a
 f a one a done
 f a --> f a
+s(a) <= 0 

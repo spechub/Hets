@@ -122,7 +122,7 @@ addBuiltins ga =
 opKindFilter :: Int -> Int -> Int -> Maybe Bool
 opKindFilter relPrec arg op = 
     if op < arg then Just True
-       else if arg < op && (op <= relPrec || arg < relPrec) then Just False 
+       else if arg < op then Just False 
 	    else Nothing
 
 mkPrecIntMap :: Rel.Rel Id -> PrecMap
@@ -136,17 +136,17 @@ mkPrecIntMap r =
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
 getIdPrec (pm, r, m) ps i = Map.findWithDefault 
-    (if Set.member i ps then r
+    (if Set.member i ps then if isMixfix i then r else m
      else m) i pm
 					 
 initTermRules ::  (PrecMap, Set.Set Id) -> Set.Set Id -> [Rule]
-initTermRules (pm, ps) is = 
+initTermRules (pm@(_, _, m), ps) is = 
     (map ( \ i -> mixRule (getIdPrec pm ps i) i) 
 	    (Set.toList
 	     (Set.fromDistinctAscList 
 	      [unitId, parenId, tupleId, exprId, typeId, applId] 
 	      `Set.union` is))) ++
-    (map ( \ i -> (protect i, getIdPrec pm ps i, getPlainTokenList i)) 
+    (map ( \ i -> (protect i, m, getPlainTokenList i)) 
 	    (filter isMixfix $ Set.toList is))
 
 addType :: Term -> Term -> Term

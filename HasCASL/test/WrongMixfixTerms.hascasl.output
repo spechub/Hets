@@ -10,3 +10,4 @@
 *** Error 5.13, ambiguous mixfix term
 	(__-->__)(L, ([__])(x))
 	(__-->__)(L, (__::__)(x, ([])))
+*** Error 6.9, expected further mixfix token: ["!=","/=","/\\","<","<="]
