@@ -145,7 +145,7 @@ minExpTerm_simple sign var
             = Set.filter (no_lesser_sort all_sorts) all_sorts
         -- TODO: merge var into this process somewhere
         return qualifyTerms                     -- merge into qualified Term
-            $ equivalenceClasses leqF           -- divide into equiv. classes
+            $ equivalence_Classes leqF           -- divide into equiv. classes
             $ Set.toList least_sorts            -- convert to List
 
 {-----------------------------------------------------------
@@ -193,77 +193,103 @@ minExpTerm_sorted sign term sort
 minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
 minExpTerm_op sign op terms
     = do
-        -- expansions :: [[TERM]]
+        -- ops :: [OP_SYMB]
+        let ops = Map.toList (opMap sign)
+        -- expansions :: [[[Sorted_TERM]]]
         expansions <- mapM (minExpTerm sign) terms
-        -- permuted_exps :: [[TERM]]
+        -- permuted_exps :: [[[Sorted_TERM]]]
         let permuted_exps = permute expansions
-        -- profiles :: ???
-        let profiles = map profile permuted_exps
-        -- -- -- und hier geht's dann weiter -- -- --
-        let p = map (equiv op_equal) profiles
-        let p = concat $ map (equiv op_equal) profiles
-        let p' = minimize sign p
-        let p' = map (minimize sign) p
-        return qualifyTerms p'
+        -- profiles :: [[(OP_SYMB, [SORT])]]
+        let profiles = map get_profile permuted_exps
+        -- P :: [[[(OP_SYMB, [SORT])]]]
+        let P = map (equivalence_Classes op_eq) profiles
+        -- P' :: [[[(OP_SYMB, [SORT])]]]
+        let P' = map (minimize sign) P
+        -- kann das sein? das sieht mir aus, als wär da eine Liste zuviel drum
+        -- hab ich eventuell vorher ein concat vergessen?
+        return qualifyTerms $ qualifyOps P'
+        -- TODO: qualifyTerms muss hier anders definiert sein
+        -- evtl. muss jede minExpX eine andere Fkt am Ende aufrufen...
     where
-        list_all _ [] [] = True
-        list_all p (a:as) (b:bs) = (p a b) && (list_all p as bs)
-        list_all _ _ _ = False
-        ops = Map.toList (opMap sign)
-        op_name (Op_name name) = name
-        op_name (Qual_op_name name _ _) = name
-        op_terms (Qual_op_name _ w _) = w
-        op_terms (Op_name _)
-            = error "unqualified op received, qualified expected"
-        op_equal (op1,ts1) (op2,ts2)
-            = let w1 = op_terms op1
-                w2 = op_terms op2
-                t1 = list_all (sort_less sign) ts1 w1
-                t2 = list_all (sort_less sign) ts2 w2
-                ops_are_equal = op1 == op2
-                ops_are_equiv = op1 leqF op2
-                in t1 && t2 && (ops_are_equal || ops_are_equiv)
-        profile cs -- profile :: [TERM] -> ???
+        op_eq (op1,ts1) (op2,ts2)
+            = let w1 = op_terms op1                             -- :: [TERM]
+                  w2 = op_terms op2                             -- :: [TERM]
+                  b1 = zipped_all (leq_SORT sign) ts1 w1        -- ::  Bool
+                  b2 = zipped_all (leq_SORT sign) ts2 w2        -- ::  Bool
+                  ops_equal = op1 == op2                        -- ::  Bool
+                  ops_equiv = op1 leqF op2                      -- ::  Bool
+                  types_equal = all ( zipWith (==) ts1 ts2 )    -- ::  Bool
+                  -- TODO: leqF fehlt noch!
+              in b1 && b2 && (ops_equal || (ops_equiv && types_equal))
+        get_profile cs -- :: [[Sorted_TERM]] -> [(OP_SYMB, [SORT])]
             = [ (op', ts) | op' <- ops, ts <- (permute cs),
                 (op_name op') == (op_name op),
-                list_all (sort_less sign) ts (op_terms op') ]
+                zipped_all (leq_SORT sign) ts (op_terms op') ]
+        -- TODO: darf hier ein unqualifizierter OP in Sign stecken?!?
+        -- wenn ja, dann muss ich op_terms anpassen!!!
 
--- -- --
-
--- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
-
+{-----------------------------------------------------------
+    Construct a TERM of type Sorted_term
+    from each (TERM, SORT) tuple
+-----------------------------------------------------------}
 qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
-qualifyTerms
-    = map (map qualify_term)
-    where
-        qualify_term term sort = Sorted_term sort term []
+qualifyTerms = map (map qualify_term)
+    where qualify_term term sort = Sorted_term sort term []
 
--- TODO: implement for real - used by minExpTerm_op
+-- TODO: implement me for real - used by minExpTerm_op
+-- minimize :: Sign -> [XX] -> [XX]
 minimize :: (Ord a) => Sign -> [a] -> [a]
-minimize _ as
+minimize sign as
     = concat $ map (\a -> if null (filter (<a) as then [a] else []) as
 
-equivalenceClasses :: (a -> a -> Bool) -> [a] -> [[a]]
-equivalenceClasses _ [] = []
-equivalenceClasses eq (x:l)
+{-----------------------------------------------------------
+    Divide a Set (list) into equivalence classes w.r.to eq
+-----------------------------------------------------------}
+equivalence_Classes :: (a -> a -> Bool) -> [a] -> [[a]]
+equivalence_Classes _ [] = []
+equivalence_Classes eq (x:l)
     = let (xs, ys) = partition (eq x) l
-          xs' = (x:xs)
-          in xs':(equiv eq ys)
+           xs'     = (x:xs)
+      in xs':(equiv eq ys)
 -- komplexere Implementation: siehe unten, Till's SML-version...
 
 {-----------------------------------------------------------
     Transform a list [l1,l2, ... ln] to (in sloppy notation)
     [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
 -----------------------------------------------------------}
-permute :: [[a]] -> [[a]]
-permute [] = [[]]
-permute [x] = map (\y -> [y]) x
-permute (x:l)
-    = concat (map (distribute (permute l)) x)
-    where
-        distribute perms y = map ((:) y) perms
+permute       :: [[a]] -> [[a]]
+permute []    = [[]]
+permute [x]   = map (\y -> [y]) x
+permute (x:l) = concat (map (distribute (permute l)) x)
+    where distribute perms y = map ((:) y) perms
 
-sort_leq :: Sign -> SORT -> SORT -> Bool
+{-----------------------------------------------------------
+    Like 'all (zipWith p as bs)',
+    but must return False if lengths don't match
+-----------------------------------------------------------}
+zipped_all                 :: (a -> b -> Bool) -> [a] -> [b] -> Bool
+zipped_all _ []     []     = True
+zipped_all p (a:as) (b:bs) = (p a b) && (zipped_all p as bs)
+zipped_all _  _      _     = False
+
+{-----------------------------------------------------------
+    These are used by minExpTerm_op only,
+    maybe souldn't be global anyway...
+-----------------------------------------------------------}
+op_name                         :: OP_SYMB -> OP_NAME
+op_name (Op_name name)          = name
+op_name (Qual_op_name name _ _) = name
+
+op_terms                        :: OP_SYMB -> OP_TYPE
+op_terms (Qual_op_name _ ts _)  = ts
+op_terms (Op_name _)            = error "Critical: Unqualified Op in op_terms!"
+
+{-----------------------------------------------------------
+    Return True if s1 <= s2
+-----------------------------------------------------------}
+leq_SORT :: Sign -> SORT -> SORT -> Bool
+leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
+-- leq_SORT = (flip Set.member) . (flip supersortsOf)
 
 leqF :: a -> a -> Bool -- Funktionsgleichheit
 leqP :: a -> a -> Bool -- Praedikatsgleichheit
@@ -318,43 +344,5 @@ fun get_conn_components (env:local_env) : local_env1 =
 		      Symtab_id.map (compute_conn_components (leqP env)) preds) )
 	end
 
----
-
-{- 
-
-So sehen meine Datentypen aus
-(also nicht meine, sondern die, die ich hier benutze:
-
-Sign == Env
-data Env = Env { sortSet :: Set.Set SORT
-	       , sortRel :: Rel.Rel SORT	 
-               , opMap :: Map.Map Id (Set.Set OpType)
-	       , predMap :: Map.Map Id (Set.Set PredType)
-               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
-	       , sentences :: [Named FORMULA]	 
-	       , envDiags :: [Diagnosis]
-	       } deriving (Show, Eq)
-
-
-Sentence == FORMULA
-siehe AS_Basic fuer FORMULA, TERM und alle darin verwandten Typen
-
-Result is a Monad
--- | The 'Result' monad.  
--- A failing 'Result' should include a 'FatalError' message.
--- Otherwise diagnostics should be non-fatal.
-data Result a = Result { diags :: [Diagnosis]
-	               , maybeResult :: (Maybe a)
-		       } deriving (Show)
-
-instance Functor Result where
-    fmap f (Result errs m) = Result errs $ fmap f m
- 
-instance Monad Result where
-  return x = Result [] $ Just x
-  Result errs Nothing >>= _ = Result errs Nothing
-  Result errs1 (Just x) >>= f = Result (errs1++errs2) y
-     where Result errs2 y = f x
-  fail s = fatal_error s nullPos
-
 -}
+
