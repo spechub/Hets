@@ -22,7 +22,7 @@ PERL       = perl
 HAPPY      = happy
 DRIFT      = $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
-HADDOCK    = haddock
+HADDOCK    = $(PERL) utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
@@ -39,9 +39,10 @@ AG_FLAGS   = -mdcfs
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
+DRIFT_OPTS  = +RTS -K10 -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common/test CASL/test HasCASL/test ToHaskell test
+TESTDIRS    = CASL HasCASL test
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
@@ -51,8 +52,12 @@ ifneq ($(MAKECMDGOALS),bin_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),genRules)
 ifneq ($(MAKECMDGOALS),apache_doc)
+ifneq ($(MAKECMDGOALS),clean_genRules)
 include sources_hetcats.mk
+endif
+endif
 endif
 endif
 endif
@@ -63,7 +68,23 @@ endif
 objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
-    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs
+    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
+    $(gendrifted_files)
+
+genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Annotation.der.hs Common/Named.hs \
+                Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
+                CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
+                Haskell/Language/Syntax.hs \
+                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs \
+                CspCASL/AS_CSP_CASL.hs \
+                Static/DevGraph.hs  
+
+gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs ATC/Named.hs \
+                   ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
+                   ATC/AS_Structured.hs ATC/AS_Architecture.hs ATC/DevGraph.hs \
+                   CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs 
+
+generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
 happy_files = Haskell/Language/Parser.hs
 
@@ -74,14 +95,13 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg hets
-.SECONDARY : %.hs %.d 
+.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg hets all clean_genRules genRules
+.SECONDARY : %.hs %.d $(generated_rule_files)
 #.PRECIOUS: sources_hetcats.mk
 
-all: $(sources)
-	$(HC) --make -o hets hets.hs $(HC_OPTS)
+all: hets
 
-hets: $(sources)
+hets: $(sources) 
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-old: $(objects)
@@ -122,6 +142,35 @@ apache_doc:
             'Common.Lib.Map.html:Common.Lib._Map.html'
 	mv docs/* a-docs/
 
+##########################
+### DrIFT-rule generation
+
+$(generated_rule_files): genRules
+
+genRules: $(genrule_files) clean_genRules
+	$(foreach file,$(atc_files),$(gen_atc_files))
+	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs $(casl_files)
+	utils/genRules -r $(rule) -o HasCASL -h ATC/HasCASL.header.hs $(hascasl_files)
+	utils/genRules -r $(rule) -o CspCASL -h ATC/CspCASL.header.hs $(cspcasl_files)
+	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs $(haskell_files)
+
+rule = ShATermConvertible
+
+gen_atc_files = if [ -e ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; then \
+                   utils/genRules -r $(rule) -o ATC -h ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
+                else \
+                   utils/genRules -r $(rule) -o ATC $(file); \
+                fi ;
+
+atc_files := $(filter-out CASL/% HasCASL/% CspCASL/% Haskell/% ,$(genrule_files))
+casl_files := $(filter CASL/% ,$(genrule_files))
+hascasl_files := $(filter HasCASL/% ,$(genrule_files))
+cspcasl_files := $(filter CspCASL/% ,$(genrule_files))
+haskell_files := $(filter Haskell/%,$(genrule_files))
+
+clean_genRules:
+	$(RM) ATC/*.der.hs CASL/ATC_CASL.der.hs HasCASL/ATC_HasCASL.der.hs Haskell/ATC_Haskell.der.hs CspCASL/ATC_CspCASL.der.hs
+
 ###############
 ### clean up
 
@@ -133,8 +182,7 @@ clean: bin_clean
 ### remove binaries
 bin_clean: 
 	$(RM) hets
-	$(RM) Common/annos
-	$(RM) Common/test_parser
+	$(RM) test_parser
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hapa
@@ -164,7 +212,7 @@ real_clean: bin_clean lib_clean
 	$(RM) AS_*.hs
 
 ### additionally removes files not in CVS tree
-distclean: real_clean
+distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
 	$(RM) Haskell/Language/Parser.hs
@@ -177,12 +225,6 @@ distclean: real_clean
 test_parser: Common/test_parser
 
 Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
-	$(RM) $@
-	$(HC) --make -o $@ $< $(HC_OPTS) 
-
-annos: Common/annos
-
-Common/annos: Common/annos.hs Common/AS_Annotation.der.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
@@ -229,6 +271,12 @@ hetana: Static/hetana.hs Static/*.hs
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+### ATC test system
+atctest: ATC/ATCTest.hs ATC/*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
 	$(RM) $@
@@ -257,7 +305,7 @@ hets.hs: hetcats/Version.hs
 	$(AG) $<
 
 %.hs: %.der.hs
-	$(DRIFT) $< > $@
+	$(DRIFT) $(DRIFT_OPTS) $< > $@
 
 %.hs: %.ag
 	$(AG) $< -o $@
@@ -288,10 +336,16 @@ ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),genRules)
+ifneq ($(MAKECMDGOALS),clean_genRules)
+ifeq  ($(MAKECMDGOALS),hets-old)
 ## include every .d file in INCLUDE_PATH
 -include $(objects:.o=.d)
+endif
 
 sources_hetcats.mk: hetcats-make hetcats/Version.hs
+endif
+endif
 endif
 endif
 endif
