@@ -20,7 +20,8 @@ import Common.Id
 import qualified Common.Lib.Map as Map
 import Data.List
 import Common.AS_Annotation (Named)
--- import Debug.Trace
+import Debug.Trace
+
 -- HasCASL
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
@@ -105,6 +106,7 @@ transOpInfo :: OpInfo -> Typ
 transOpInfo opInf = case (opDefn opInf) of
                       NoOpDefn Pred -> transPredType (opType opInf)
                       NoOpDefn _    -> transOpType (opType opInf)
+transOpInfo _ = error "Not supported operation declaration and/or definition"
 
 transOpType :: TypeScheme -> Typ
 transOpType (TypeScheme _ (_ :=> op) _) = transType op
@@ -120,6 +122,7 @@ transType typ = case typ of
                    TypeName typeId _ _     -> Type(showIsa typeId,[])
                    ProductType types _     -> foldr1 IsaSign.mkProductType (map transType types)
                    FunType type1 _ type2 _ -> (transType type1) --> (mkOptionType (transType type2))
+transType _ = error "Not supported type in use"
 
 ------------------------------ Formulas ------------------------------
 
@@ -154,10 +157,13 @@ transTerm sign (QuantifiedTerm quant varDecls phi _) =
   foldr (quantify quant) (transTerm sign phi) (map toPair varDecls)
 transTerm sign (TypedTerm term _ _ _) = transTerm sign term
 transTerm sign (LambdaTerm pats Partial body _) = 
-  Const("Some",dummyT) `App` (foldr (abstraction sign) (transTerm sign body) pats)
+  if (null pats) then   Const("Some",dummyT) `App` Abs(IsaSign.Free("",dummyT),
+                                                       dummyT, (transTerm sign body))
+    else Const("Some",dummyT) `App` (foldr (abstraction sign) (transTerm sign body) pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) = foldl1 prod (map (transTerm sign) terms)
+transTerm _ _ = error "Not supported (abstract) syntax in use."
 
 let2lambda :: ProgEq -> As.Term -> As.Term
 let2lambda (ProgEq pat term _) body = 
@@ -188,7 +194,10 @@ transLog sign opId term1 term
                          (transTerm sign (last (getPhis term))))
   | opId == notId = (Const ("Not",dummyT) `App` (transTerm sign term))
   | opId == defId = (Const ("defOp",dummyT) `App` (transTerm sign term))
---  | opId == exId = 
+  | opId == exEq = binConj (binConj (binEq (transTerm sign (head (getPhis term))) 
+                              (transTerm sign (last (getPhis term))))
+                              (Const ("defOp",dummyT) `App` (transTerm sign (head (getPhis term)))))
+                           (Const ("defOp",dummyT) `App` (transTerm sign (last (getPhis term))))
   | opId == eqId = (binEq (transTerm sign (head (getPhis term))) 
                          (transTerm sign (last (getPhis term))))
   | otherwise = (transTerm sign term1) `App` (transTerm sign term)
@@ -223,8 +232,11 @@ prod term1 term2 =
   Const("Pair",dummyT) `App` term1 `App` term2
 
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
-abstraction sign pat body = Abs((transTerm sign pat), getType pat, body)
-                         -- Abs((trace "abstraction, transTerm" (transTerm sign pat)), (trace "abstraction, getType" (getType pat)), body)
+abstraction sign pat body = Abs((transTermAbs sign pat), getType pat, body)
+
+transTermAbs :: Env -> As.Term -> IsaSign.Term
+transTermAbs _ (QualVar var typ _) = IsaSign.Free(transVar var, transType typ)
+transTermAbs sign term = transTerm sign term
 
 toPair :: GenVarDecl -> (Var,Type)
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
