@@ -12,20 +12,6 @@ Portability :  portable
 module Haskell.Haskell2DG (anaHaskellFile) where
 
 import Options
-import Haskell.Hatchet.MultiModule  (expandDotsInTyCons,
-                                     filterModuleInfo,
-                                     importSpecToExportSpec)
-import Haskell.Hatchet.AnnotatedHsSyn (AModule (..), 
-                                       AHsModule)
-import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
-                                          joinModuleInfo,
-                                          getTyconsMembers,
-                                          getInfixDecls,
-                                          concatModuleInfos)
-import Haskell.Hatchet.TIHetsModule (tiModule)
-import Haskell.Hatchet.TIPhase
-import Haskell.Hatchet.HsSyn    (HsModule (..))
-import Haskell.Hatchet.Utils    (getAModuleName)
     
 import Static.DevGraph          (DGNodeLab (..),
                                  DGLinkLab (..),
@@ -38,7 +24,6 @@ import Static.DevGraph          (DGNodeLab (..),
                                  getNode)
 import Syntax.AS_Library        (LIB_NAME (..),
                                  LIB_ID (..))
-import Haskell.Hatchet.AnnotatedHsSyn
 import Logic.Grothendieck        (G_sign (..),
                                   G_l_sentence_list (..),
                                   G_morphism (..),
@@ -54,9 +39,7 @@ import Common.Lib.Graph          (Node,
 import Common.Id                 (Token (..),
                                   SIMPLE_ID,
                                   nullPos)
-import Haskell.Logic_Haskell     (Haskell (..))
-import Haskell.HaskellUtils      (extractSentences)
-import Haskell.ExtHaskellCvrt    (cvrtHsModule)
+
 import qualified Common.Lib.Map as Map
 import Common.GlobalAnnotations  (emptyGlobalAnnos)
 
