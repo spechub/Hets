@@ -35,7 +35,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Data.Maybe
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
