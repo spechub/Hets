@@ -1,12 +1,7 @@
+# $Header$
 
-.PHONY: check
-
-check: hapa 
-	bash ./runcheck.sh ../Haskell/hapa
-
-output: hapa 
-	bash ./runcheck.sh ../Haskell/hapa set
+call:
+	ghc-call
 
 %: 
-	(cd ..; $(MAKE) $@)
-
+	(cd test; $(MAKE) $@)

@@ -1,7 +1,0 @@
-ghc --make -Wall -i:.. translateAna.hs -o translateAna
-echo translating HasCASL/test/OpDecls.hascasl
-./translateAna ../HasCASL/test/OpDecls.hascasl > test/OpDecls.hascasl.hs 
-echo translating HasCASL/test/Expr.hascasl
-./translateAna ../HasCASL/test/Expr.hascasl > test/Expr.hascasl.hs 
-echo translating HasCASL/test/PatternEq.hascasl
-./translateAna ../HasCASL/test/PatternEq.hascasl > test/PatternEq.hascasl.hs
