@@ -113,7 +113,7 @@ cspCaslBasicSpecTc :: TyCon
 cspCaslBasicSpecTc = mkTyCon "CspCASL.Basic_CSP_CASL_C_SPEC"
 
 instance Typeable Basic_CSP_CASL_C_SPEC where
-    typeOf _ = mkAppTy cspCaslBasicSpecTc []
+    typeOf _ = mkTyConApp cspCaslBasicSpecTc []
 
 ---- helpers ---------------------------------
 fun_err :: String -> a

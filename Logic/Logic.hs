@@ -359,24 +359,30 @@ instance Eq AnyLogic where
 ----------------------------------------------------------------
 -- Typeable instances
 ----------------------------------------------------------------
+mkTyConApp = mkAppTy
+
+proverTc :: TyCon
+proverTc      = mkTyCon "Logic.Prover.Prover"
+instance Typeable (Prover sign sen proof_tree symbol) where
+    typeOf _ = mkTyConApp proverTc []
 
 namedTc :: TyCon
 namedTc = mkTyCon "Common.AS_Annotation.Named"
 
 instance Typeable s => Typeable (Named s) where 
-  typeOf s = mkAppTy namedTc [typeOf ((undefined :: Named a -> a) s)]
+  typeOf s = mkTyConApp namedTc [typeOf ((undefined :: Named a -> a) s)]
 
 setTc :: TyCon
 setTc = mkTyCon "Common.Lib.Set.Set"
 
 instance Typeable a => Typeable (Set a) where
-  typeOf s = mkAppTy setTc [typeOf ((undefined:: Set a -> a) s)]
+  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set a -> a) s)]
 
 mapTc :: TyCon
 mapTc = mkTyCon "Common.Lib.Map.Map"
 
 instance (Typeable a, Typeable b) => Typeable (Map a b) where
-  typeOf m = mkAppTy mapTc [typeOf ((undefined :: Map a b -> a) m),
+  typeOf m = mkTyConApp mapTc [typeOf ((undefined :: Map a b -> a) m),
                             typeOf ((undefined :: Map a b -> b) m)]
 
 {- class hierarchy:

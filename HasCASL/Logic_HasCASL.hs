@@ -54,21 +54,21 @@ symbMapItemsTc   = mkTyCon "HasCASL.Symbol.SymbolMapItems"
 morphismTc       = mkTyCon "HasCASL.Morphism.Morphism"
 
 instance Typeable BasicSpec where
-    typeOf _ = mkAppTy basicSpecTc []
+    typeOf _ = mkTyConApp basicSpecTc []
 instance Typeable Env where
-    typeOf _ = mkAppTy envTc []
+    typeOf _ = mkTyConApp envTc []
 instance Typeable Term where
-    typeOf _ = mkAppTy termTc []
+    typeOf _ = mkTyConApp termTc []
 instance Typeable Symbol where
-    typeOf _ = mkAppTy symbolTc []
+    typeOf _ = mkTyConApp symbolTc []
 instance Typeable RawSymbol where
-    typeOf _ = mkAppTy rawSymbolTc []
+    typeOf _ = mkTyConApp rawSymbolTc []
 instance Typeable SymbItems where
-    typeOf _ = mkAppTy symbItemsTc []
+    typeOf _ = mkTyConApp symbItemsTc []
 instance Typeable SymbMapItems where
-    typeOf _ = mkAppTy symbMapItemsTc []
+    typeOf _ = mkTyConApp symbMapItemsTc []
 instance Typeable Morphism where
-    typeOf _ = mkAppTy morphismTc []
+    typeOf _ = mkTyConApp morphismTc []
 
 -- abstract syntax, parsing (and printing)
 

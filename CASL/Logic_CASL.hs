@@ -64,33 +64,33 @@ rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
 instance (Typeable b, Typeable s, Typeable f) 
     => Typeable (BASIC_SPEC b s f) where
-  typeOf b = mkAppTy tc_BASIC_SPEC 
+  typeOf b = mkTyConApp tc_BASIC_SPEC 
 	     [typeOf $ (undefined :: BASIC_SPEC b s f -> b) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> s) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> f) b]
 instance Typeable SYMB_ITEMS where
-  typeOf _ = mkAppTy tc_SYMB_ITEMS []
+  typeOf _ = mkTyConApp tc_SYMB_ITEMS []
 instance Typeable SYMB_MAP_ITEMS where
-  typeOf _ = mkAppTy tc_SYMB_MAP_ITEMS []
+  typeOf _ = mkTyConApp tc_SYMB_MAP_ITEMS []
 instance Typeable f => Typeable (FORMULA f) where
-  typeOf f = mkAppTy sentenceTc 
+  typeOf f = mkTyConApp sentenceTc 
 	     [typeOf $ (undefined :: FORMULA f -> f) f]
 instance (Typeable f, Typeable e) => Typeable (Sign f e) where
-  typeOf s = mkAppTy signTc 
+  typeOf s = mkTyConApp signTc 
 	     [typeOf $ (undefined :: Sign f e -> f) s,
               typeOf $ (undefined :: Sign f e -> e) s]
 instance (Typeable e, Typeable f, Typeable m) => 
     Typeable (Morphism f e m) where
-  typeOf m = mkAppTy morphismTc
+  typeOf m = mkTyConApp morphismTc
 	     [typeOf $ (undefined :: Morphism f e m -> f) m,
               typeOf $ (undefined :: Morphism f e m -> e) m,
               typeOf $ (undefined :: Morphism f e m -> m) m]
 instance Typeable Symbol where
-  typeOf _ = mkAppTy symbolTc []
+  typeOf _ = mkTyConApp symbolTc []
 instance Typeable RawSymbol where
-  typeOf _ = mkAppTy rawSymbolTc []
+  typeOf _ = mkTyConApp rawSymbolTc []
 instance Typeable CASL_Sublogics where
-  typeOf _ = mkAppTy casl_SublocigsTc []
+  typeOf _ = mkTyConApp casl_SublocigsTc []
 
 instance Category CASL CASLSign CASLMor  
     where

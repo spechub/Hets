@@ -77,11 +77,11 @@ hsDeclTc       = mkTyCon "Haskell.Hatchet.HsSyn.HsDecl"
 aHsDeclTc      = mkTyCon "Haskell.Hatchet.AnnotatedHsSyn.AHsDecl"
 
 instance Typeable ModuleInfo where
-    typeOf _ = mkAppTy moduleInfoTc []
+    typeOf _ = mkTyConApp moduleInfoTc []
 instance Typeable HsDecl where
-    typeOf _ = mkAppTy hsDeclTc []
+    typeOf _ = mkTyConApp hsDeclTc []
 instance Typeable AHsDecl where
-    typeOf _ = mkAppTy aHsDeclTc []
+    typeOf _ = mkTyConApp aHsDeclTc []
 
 
 instance PrettyPrint ModuleInfo where

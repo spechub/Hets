@@ -49,13 +49,13 @@ tc_M_BASIC_ITEM  = mkTyCon "Modal.AS_Modal.M_BASIC_ITEM"
 modalSignTc      = mkTyCon "Modal.ModalSign.ModalSign"
 
 instance Typeable M_FORMULA where
-  typeOf _ = mkAppTy tc_M_FORMULA []
+  typeOf _ = mkTyConApp tc_M_FORMULA []
 instance Typeable M_SIG_ITEM where
-  typeOf _ = mkAppTy tc_M_SIG_ITEM []
+  typeOf _ = mkTyConApp tc_M_SIG_ITEM []
 instance Typeable M_BASIC_ITEM where
-  typeOf _ = mkAppTy tc_M_BASIC_ITEM []
+  typeOf _ = mkTyConApp tc_M_BASIC_ITEM []
 instance Typeable ModalSign where
-  typeOf _ = mkAppTy modalSignTc []
+  typeOf _ = mkTyConApp modalSignTc []
 
 instance Category Modal MSign ModalMor  
     where

@@ -121,7 +121,7 @@ data G_sign = forall lid sublogics
 tyconG_sign :: TyCon
 tyconG_sign = mkTyCon "Logic.Grothendieck.G_sign"
 instance Typeable G_sign where
-  typeOf _ = mkAppTy tyconG_sign []
+  typeOf _ = mkTyConApp tyconG_sign []
 
 instance Eq G_sign where
   (G_sign i1 sigma1) == (G_sign i2 sigma2) =
@@ -157,7 +157,7 @@ data G_ext_sign = forall lid sublogics
 tyconG_ext_sign :: TyCon
 tyconG_ext_sign = mkTyCon "Logic.Grothendieck.G_ext_sign"
 instance Typeable G_ext_sign where
-  typeOf _ = mkAppTy tyconG_ext_sign []
+  typeOf _ = mkTyConApp tyconG_ext_sign []
 
 instance Eq G_ext_sign where
   (G_ext_sign i1 sigma1 sys1) == (G_ext_sign i2 sigma2 sys2) =
@@ -385,7 +385,7 @@ instance Typeable (AnyComorphismAux lid1 sublogics1
         lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-  where typeOf _ = mkAppTy tyconG_sign []
+  where typeOf _ = mkTyConApp tyconG_sign []
 
 instance Show (AnyComorphismAux lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1

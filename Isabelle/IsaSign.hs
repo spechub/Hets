@@ -227,6 +227,6 @@ sentenceTc      = mkTyCon "Isabelle.Sign.Sentence"
 signTc          = mkTyCon "Isabelle.Sign.Sign"
 
 instance Typeable Sentence where
-    typeOf _ = mkAppTy sentenceTc []
+    typeOf _ = mkTyConApp sentenceTc []
 instance Typeable Sign where
-    typeOf _ = mkAppTy signTc []
+    typeOf _ = mkTyConApp signTc []

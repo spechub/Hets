@@ -13,7 +13,6 @@ Portability :  portable
 -}
 
 module Logic.Prover where
-import Data.Dynamic
 import Common.AS_Annotation (Named)
 
 -- theories and theory morphisms
@@ -50,11 +49,6 @@ data Prover sign sen proof_tree symbol =
                  -- input: theory name, theory, goals
                  -- output: proof status for goals and lemmas
             }
-
-proverTc :: TyCon
-proverTc      = mkTyCon "Logic.Prover.Prover"
-instance Typeable (Prover sign sen proof_tree symbol) where
-    typeOf _ = mkAppTy proverTc []
 
 
 {- possibly needed in the future
