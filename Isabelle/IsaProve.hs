@@ -75,12 +75,6 @@ isabelleConsChecker =
 isaProve :: Bool -> String -> (Sign,[Named Sentence]) -> [Named Sentence] 
               -> IO([Proof_status ()])
 isaProve checkCons thName (sig,axs) goals = do
-  let thName' = thName++if checkCons then "_c" else ""
-      fileName = thName'++".thy"
-      origName = thName'++".orig.thy"
-      patchName = thName'++".patch"
-      provedName = thName'++"_proved.thy"
-      theory = if checkCons then showConsTheory else showTheory
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
   case (ex,exorig) of
@@ -119,6 +113,12 @@ isaProve checkCons thName (sig,axs) goals = do
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
   where
+      thName' = thName++if checkCons then "_c" else ""
+      fileName = thName'++".thy"
+      origName = thName'++".orig.thy"
+      patchName = thName'++".patch"
+      provedName = thName'++"_proved.thy"
+      theory = if checkCons then showConsTheory else showTheory
       disAxs = disambiguateSens [] $ nameSens $ transSens axs
       (lemmas, decs) = unzip (map formLemmas disAxs)
       showLemma = if showLemmas sig 
