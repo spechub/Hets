@@ -24,16 +24,12 @@ module CASL.LiteralFuns ( isLiteral
 			, splitAppl
 			) where
 
--- debugging
-import Debug.Trace (trace)
-
 import Data.Char (isDigit)
-
 import Common.Id
-import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
+import CASL.AS_Basic_CASL
 
-isLiteral :: Show f => GlobalAnnos -> Id -> [TERM f] -> Bool
+isLiteral :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isLiteral ga i trm =
        or [ isNumber ga i trm 
 	  , isString ga i trm
@@ -85,8 +81,8 @@ convCASLChar t = case tokStr t of
 			error ("convCASLChar: " ++ cs ++
 			       " is not a valid CASL Char")
 
-isList :: Show f =>  GlobalAnnos -> Id -> [TERM f] -> Bool
-isList ga i trms = trace ("isList: "++show i++"; "++show trms) $
+isList :: GlobalAnnos -> Id -> [TERM f] -> Bool
+isList ga i trms = -- trace ("isList: "++show i++"; "++show trms) $
                    (case getLiteralType ga i of 
 		     ListNull _ -> null trms
 		     ListCons _ n -> listTest n i trms
