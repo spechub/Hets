@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-warn-missing-methods #-}
 {-| 
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
@@ -105,7 +104,8 @@ instance Ord AHsDecl where
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell Sentence () Sign Morphism Symbol
+instance Sentences Haskell Sentence () Sign Morphism Symbol where
+    map_sen Haskell _m s = return s
 
 preludeSign :: ModuleInfo
 preludeSign = ModuleInfo {
@@ -119,23 +119,6 @@ preludeSign = ModuleInfo {
                synonyms = preludeSynonyms
               }
 
-
-{-   basic_analysis :: lid ->
-                       Maybe((basic_spec,       -- abstract syntax tree
-                              sign,             -- signature of imported
-                                                   modules
-                              GlobalAnnos) ->   -- global annotations
-                       Result (basic_spec,      -- renamed module
-                               sign,sign,       -- (total, delta)
-                                  -- delta = deklarations in the modul
-                                  -- total = imported + delta 
-                               [Named sentence] -- programdefinitions))
-
-  basic_analysis calculates from the abstract syntax tree the types of
-  all functions and tests wether all used identifiers are declared
-
--}
-
 instance StaticAnalysis Haskell HsDecls
                Sentence () 
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -147,7 +130,8 @@ instance StaticAnalysis Haskell HsDecls
   where
     empty_signature Haskell 
        = ModuleInfo { varAssumps = emptyEnv,
-                      moduleName = AModule "EmptyModule",-- error "Unspecified module name",
+                      moduleName = AModule "EmptyModule",
+		                -- error "Unspecified module name",
                       dconsAssumps = emptyEnv,
                       classHierarchy = emptyEnv,
                       tyconsMembers = [], 
