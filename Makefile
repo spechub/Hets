@@ -111,8 +111,7 @@ hets-old: $(objects)
 
 hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
 	$(RM) hetcats-make sources_hetcats.mk
-	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
-         $(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
+	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
 
 ###############################
 ### TAGS files for (x)emacs 
@@ -347,7 +346,8 @@ ifeq  ($(MAKECMDGOALS),hets-old)
 -include $(objects:.o=.d)
 endif
 
-sources_hetcats.mk: hetcats-make hetcats/Version.hs
+sources_hetcats.mk: hetcats-make hetcats/Version.hs hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
+	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
 endif
 endif
 endif
