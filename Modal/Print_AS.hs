@@ -66,14 +66,16 @@ instance PrettyPrint MODALITY where
 instance PrettyPrint ModalSign where
     printText0 ga s = 
 	let ms = modies s      
-	    tms = termModies s in 
+	    tms = termModies s in       -- Map Id [Annoted (FORMULA M_FORMULA)]
 	printSetMap (ptext rigidS <+> ptext opS) empty ga (rigidOps s) 
 	$$
 	printSetMap (ptext rigidS <+> ptext predS) space ga (rigidPreds s) 
 	$$ (if Map.isEmpty ms then empty else
 	ptext modalitiesS <+> semiT_text ga (Map.keys ms))
 	$$ (if Map.isEmpty tms then empty else
-	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms) <> braces (semiT_text ga (concat $ Map.elems tms)))
+	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms) <> braces (printFormulaOfModalSign ga (Map.elems tms)))
+
+
 
 condParensInnerF :: PrettyPrint f => (FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
