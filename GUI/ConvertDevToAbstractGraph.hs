@@ -489,8 +489,8 @@ createMenuButton title menuFun convRef dGraph =
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 createLocalMenuButtonShowSignature = 
   createMenuButton "Show signature" getSignatureOfNode
-createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_,_) = 
-  createMenuButton "Show theory" (getTheoryOfNode proofStatus)
+createLocalMenuButtonShowTheory gInfo = 
+  createMenuButton "Show theory" (getTheoryOfNode gInfo)
 createLocalMenuButtonTranslateTheory gInfo = 
   createMenuButton "Translate theory" (translateTheoryOfNode gInfo)
 
@@ -701,14 +701,16 @@ lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
 
 {- outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
-getTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+getTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+getTheoryOfNode  (proofStatusRef,_,_,_,_,_,hetsOpts) descr ab2dgNode dgraph = do
  r <- lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph
  case r of
-  Res.Result [] (Just (n, gth)) ->  
-    displayTheory "Theory" n dgraph gth
-  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
+  Res.Result diags res -> do
+    showDiags hetsOpts diags
+    case res of
+      (Just (n, gth)) -> displayTheory "Theory" n dgraph gth
+      _ -> return ()
 
 printTheory :: G_theory -> String
 printTheory (G_theory lid sign sens) =
