@@ -105,8 +105,12 @@ showId (Id ts is _) =
 
 -- | splits off the front and final places 
 splitMixToken :: [Token] -> ([Token],[Token])
-splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
-	      (reverse toks, reverse pls)
+splitMixToken [] = ([], [])
+splitMixToken (h:l) = 
+    let (toks, pls) = splitMixToken l
+	in if isPlace h && null toks 
+	   then (toks, h:pls) 
+	   else (h:toks, pls)
 
 -- | ignores final places in an 'Id' (for HasCASL)
 stripFinalPlaces :: Id -> Id
