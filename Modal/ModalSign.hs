@@ -16,12 +16,13 @@ import CASL.Sign
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
+import Modal.AS_Modal
 		       
 data ModalSign = ModalSign { rigidOps :: Map.Map Id (Set.Set OpType)
 			   , rigidPreds :: Map.Map Id (Set.Set PredType)
-			   , modies :: Set.Set SIMPLE_ID
-			   , termModies :: Set.Set Id --SORT
+			   , modies :: Map.Map SIMPLE_ID [AnModFORM]
+			   , termModies :: Map.Map Id [AnModFORM] --SORT
 			   } deriving (Show, Eq)
 
 emptyModalSign :: ModalSign
-emptyModalSign = ModalSign Map.empty Map.empty Set.empty Set.empty 
+emptyModalSign = ModalSign Map.empty Map.empty Map.empty Map.empty 

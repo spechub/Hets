@@ -31,6 +31,7 @@ import CASL.MapSentence
 
 import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Lib.State
 import Common.Id
 import Common.Result
@@ -50,7 +51,7 @@ minExpForm ga s form =
 		      t2 <- is_unambiguous t ts ps
 		      let srt = term_sort t2
 			  trm = Term_mod t2
-		      if Set.member srt $ termModies $ extendedInfo s 
+		      if Map.member srt $ termModies $ extendedInfo s 
 			 then return trm
 		         else Result [mkDiag Error 
 			      ("unknown term modality sort '"
@@ -58,7 +59,7 @@ minExpForm ga s form =
 			      $ Just trm
 		    in case t of
 		       Mixfix_token tm -> 
-			   if Set.member tm $ modies $ extendedInfo s 
+			   if Map.member tm $ modies $ extendedInfo s 
 			      then return $ Simple_mod tm
 			      else case maybeResult r of
 			          Nothing -> Result 
@@ -117,12 +118,12 @@ ana_M_BASIC_ITEM _ bi = do
     e <- get
     case bi of
         Simple_mod_decl al fs ps -> do
-	    mapM_ ((updateExtInfo . addModId) . item) al
 	    newFs <- mapAnM (resultToState (ana_M_FORMULA False)) fs 
+	    mapM_ ((updateExtInfo . addModId newFs) . item) al
 	    return $ Simple_mod_decl al newFs ps
 	Term_mod_decl al fs ps -> do
-	    mapM_ ((updateExtInfo . addModSort e) . item) al
 	    newFs <- mapAnM (resultToState (ana_M_FORMULA True)) fs 
+	    mapM_ ((updateExtInfo . addModSort newFs e) . item) al
 	    return $ Term_mod_decl al newFs ps
 
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
@@ -133,20 +134,21 @@ resultToState f a = do
         Nothing -> return a
         Just b -> return b
 
-addModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
-addModId i m = 
+addModId :: [AnModFORM] -> SIMPLE_ID -> ModalSign -> Result ModalSign
+addModId frms i m = 
     let ms = modies m in 
-    if Set.member i ms then 
+    if Map.member i ms then 
        Result [mkDiag Hint "repeated modality" i] $ Just m
-       else return m { modies = Set.insert i ms }
+       else return m { modies = Map.insert i frms ms }
 
-addModSort :: Sign M_FORMULA ModalSign -> SORT -> ModalSign -> Result ModalSign
-addModSort e i m = 
+addModSort :: [AnModFORM] -> 
+              Sign M_FORMULA ModalSign -> SORT -> ModalSign -> Result ModalSign
+addModSort frms e i m = 
     let ms = termModies m
         ds = hasSort e i 
-    in if Set.member i ms || not (null ds) then 
+    in if Map.member i ms || not (null ds) then 
        Result (mkDiag Hint "repeated term modality" i : ds) $ Just m
-       else return m { termModies = Set.insert i ms }
+       else return m { termModies = Map.insert i frms ms }
 
 map_M_FORMULA :: MapSen M_FORMULA ModalSign ()
 map_M_FORMULA mor frm =

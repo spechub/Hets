@@ -14,7 +14,7 @@ module Modal.Print_AS where
 
 import Common.Id
 import Common.Keywords
-import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
@@ -67,7 +67,7 @@ instance PrettyPrint ModalSign where
 	$$
 	printSetMap (ptext rigidS <+> ptext predS) 
 		    space ga (rigidPreds s)
-	$$ (if Set.isEmpty ms then empty else
-	ptext modalitiesS <+> semiT_text ga (Set.toList ms))
-	$$ (if Set.isEmpty tms then empty else
-	ptext termS <+> ptext modalityS <+> semiT_text ga (Set.toList tms))
+	$$ (if Map.isEmpty ms then empty else
+	ptext modalitiesS <+> semiT_text ga (Map.keys ms))
+	$$ (if Map.isEmpty tms then empty else
+	ptext termS <+> ptext modalityS <+> semiT_text ga (Map.keys tms))
