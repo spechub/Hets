@@ -60,7 +60,7 @@ symbolToRaw sym = ASymbol sym
 -- symbolToRaw (Symbol idt typ) = AKindedId (symbTypeToKind typ) idt
 
 symOf :: Env -> Set.Set Symbol
-symOf sigma = 
+symOf sigma = Set.empty {-
     let classes = Map.foldWithKey ( \ i ks s -> 
 			Set.insert (Symbol i $ ClassAsItemType $
 				    Intersection (classKinds ks) []) s) 
@@ -75,6 +75,7 @@ symOf sigma =
 				      opType t) s1) s0 $ opInfos ts)
 	      types $ assumps sigma
 	in ops
+-}
 
 statSymbMapItems :: [SymbMapItems] -> Result (Map.Map RawSymbol RawSymbol)
 statSymbMapItems sl =  return (Map.fromList $ concat $ map s1 sl)
