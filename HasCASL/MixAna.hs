@@ -38,9 +38,10 @@ opKindFilter arg op =
 	    else Nothing
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
-getIdPrec (pm, r, m) ps i =  Map.findWithDefault 
-    (if begPlace i || endPlace i then if Set.member i ps then r else m - 1
-     else m + 1) i pm
+getIdPrec (pm, r, m) ps i =  if i == applId then m + 1 
+    else Map.findWithDefault 
+    (if begPlace i || endPlace i then if Set.member i ps then r else m
+     else m + 2) i pm
 					 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps 
@@ -270,7 +271,7 @@ resolver ga bs trm =
 					 map (:[]) ":{}[](),"))
 		    $ Set.unions $ map getKnowns ids
        chart<- iterateCharts ga [trm] $ 
-	       initChart (listRules (m+2) ga ++ 
+	       initChart (listRules (m + 3) ga ++ 
 			  (initRules ps bs 
 			  ids)) (if unknownId `elem` bs then ks else Set.empty)
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
@@ -285,5 +286,5 @@ initRules ::  (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
 initRules (pm@(_, _, m), ps) bs is = 
     map ( \ i -> mixRule (getIdPrec pm ps i) i) 
 	    (bs ++ is) ++
-    map ( \ i -> (protect i, m + 2, getPlainTokenList i)) 
+    map ( \ i -> (protect i, m + 3, getPlainTokenList i)) 
 	    (filter isMixfix is)
