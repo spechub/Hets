@@ -12,7 +12,7 @@ import Common.Result
 import Common.Token
 import CASL.Formula
 import Common.Anno_Parser
-
+import CASL.ShowMixfix -- (showTerm, showFormula)
 
 -- start testing
 stdAnnosL, stdOpsL, stdPredsL :: [String]
@@ -63,3 +63,21 @@ resolveForm =
 resolveTerm :: AParser (Result TERM)
 resolveTerm = 
       resolveMixfix stdAnnos stdOps stdPreds False `fmap` term
+
+testTerm :: AParser String
+testTerm = do t <- term
+	      return $ showTerm t
+
+testTermMix :: AParser String
+testTermMix = do Result ds mt <- resolveTerm
+		 return $ case mt of Just t -> showTerm t
+				     _ -> show ds
+
+testFormula :: AParser String
+testFormula = do f <- formula
+		 return $ showFormula f
+
+testFormulaMix :: AParser String
+testFormulaMix = do Result ds m <- resolveForm
+		    return $ case m of Just f -> showFormula f
+				       _ -> show ds

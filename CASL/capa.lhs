@@ -35,7 +35,11 @@ lineParser = [
  ("PredItem", HetParser predItems),
  ("MixfixTerms", HetParser resolveTerm),
  ("MixfixFormula", HetParser resolveForm),
- ("VarIds", HetParser varId)]
+ ("VarIds", HetParser varId),
+ ("ShowTerms", HetParser testTerm),
+ ("ShowTermsMix", HetParser testTermMix),
+ ("ShowForm", HetParser testFormula),
+ ("ShowFormMix", HetParser testFormulaMix)]
 
 fileParser = [("BasicSpec", HetParser basicSpec)
 	      , ("analysis", HetParser runAna)

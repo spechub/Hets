@@ -34,10 +34,10 @@ import Common.PrettyPrint
 import CASL.Print_AS_Basic
 import Common.GlobalAnnotationsFunctions
 import CASL.Formula(updFormulaPos)
+import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
 
 showTerm :: GlobalAnnos -> TERM -> String
-showTerm g t = show $ printText0 g t 
-	     where _just_avoid_unused_import_warning = pluralS_symb_list
+showTerm _ t = ShowMixfix.showTerm t
 
 -- Earley Algorithm
 
