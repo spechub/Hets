@@ -203,9 +203,7 @@ transVar = showIsa
 
 transSentence :: Env -> Le.Sentence -> Maybe IsaSign.Term
 transSentence e s = case s of
-    Le.Formula t      -> 
-    --trace ("TERM: "++show t++"\n\n" ++ "IsaTERM: "++ show  (transTerm e t)) 
-          (Just (transTerm e t))
+    Le.Formula t      -> Just (transTerm e t)
     DatatypeSen _     -> Nothing
     ProgEqSen _ _ _pe -> Nothing
 
@@ -288,13 +286,12 @@ transTerm sign (LetTerm As.Let eqs body _) =
   where
     transPEq (ProgEq pat t _) = 
       (transPattern sign pat, transPattern sign t)
---  transTerm sign (foldr let2lambda body eqs)
+
 
 transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
 
 transTerm sign (CaseTerm t pEqs _) = 
---  trace ("pEqs " ++ show pEqs ++ "\n")
   let alts = arangeCaseAlts sign pEqs
   in
     case t of
@@ -366,6 +363,8 @@ transPattern _ (QualVar (VarDecl var typ _ _)) =
 transPattern sign (TupleTerm terms _) = foldl1 (binConst isaPair) 
                                                (map (transPattern sign) terms)
 transPattern _ (QualOp _ (InstOpId opId _ _) _ _) = con (showIsa opId)
+transPattern sign (TypedTerm t _ _ _) = transPattern sign t
+transPattern sign (ApplTerm t1 t2 _) = App (transPattern sign t1) (transPattern sign t2) IsCont
 transPattern sign t = transTerm sign t
 
 -- translation of bodies of total lambda abstractions
@@ -397,7 +396,6 @@ transTotalLambda sign (CaseTerm t pEqs _) =
                 (transPat sign pat, transTotalLambda sign trm)
 transTotalLambda sign t = transTerm sign t
 
-
 transWhenElse :: Env -> As.Term -> IsaSign.Term
 transWhenElse sign t =
     case t of
@@ -422,7 +420,6 @@ transLetPat :: Env -> As.Term -> IsaSign.Term
 transLetPat sign t@(QualVar (VarDecl _var _typ _ _)) = transPattern sign t
 transLetPat sign t@(TupleTerm _terms _) = transPattern sign t
 transLetPat sign t@(QualOp _ (InstOpId _opId _ _) _ _) = transPattern sign t
---transLetPat sign (ApplTerm t1 t2) =
 transLetPat sign t = transTerm sign t
 
 {- todo
@@ -436,24 +433,33 @@ nested case patterns:
 
 -}
 
--- Pattern: Following the HasCASL-Summary and the limits of this encoding
---          patterns may take the form
---          QualVar, QualOp, ApplTerm, TupleTerm and TypedTerm
+{- Annotation concerning Patterns:
+     Following the HasCASL-Summary and the limits of this encoding
+     patterns may take the form:
+        QualVar, QualOp, ApplTerm, TupleTerm and TypedTerm 
+-}
 
+-- Input: List of case alternative one pattern per term
+-- Functionality: Tests wheter pattern is a variable -> case alternative are
+--                translated
 arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
-arangeCaseAlts sign pEqs = 
---  trace ("peqs: "++show pEqs++"\n") 
-  (if and (map patIsVar pEqs) then map (transCaseAlt sign) pEqs
-    else sortCaseAlts sign pEqs)
+arangeCaseAlts sign pEqs 
+  | and (map patIsVar pEqs) = map (transCaseAlt sign) pEqs
+  | otherwise               =  sortCaseAlts sign pEqs
   
 
-
+-- Input: List of case alternatives, that patterns does consist of datatype constructors
+--        (with arguments) or tupels
+-- Functionality: Groups case alternatives by leading pattern-constructor
+--                each pattern group is 'unfolded'
+-- !! Von hier an hat man es nur mit EINER Art von leading constructor zu tun!!
 sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
 sortCaseAlts sign pEqs = 
-  let consList =  getCons sign (getName (head pEqs))
-      groupedConsInLists = map (groupCons pEqs) consList
-  in
-    concat (map (unfoldCons sign) groupedConsInLists)
+  let consList
+        | null pEqs = error "No case alternatives."
+        | otherwise = getCons sign (getName (head pEqs))
+      groupedByCons = Data.List.nub (map (groupCons pEqs) consList)
+  in  map (flattenPattern sign) groupedByCons
 
 -- Returns a list of the constructors of the used datatype
 getCons :: Env -> TypeId -> [UninstOpId]
@@ -466,24 +472,27 @@ getCons sign tId =
 
 -- Extracts the type of the used datatype in case patterns
 getName :: ProgEq -> TypeId
-getName (ProgEq pat _ _) = 
---  trace ("gtn: "++show pat++"\n") 
- (getTypeName pat)
-  where getTypeName p = case p of
-                          QualVar (VarDecl _ typ _ _) -> name typ
-                          QualOp _ _ (TypeScheme _ typ _) _ -> name typ
-                          TypedTerm _ _ typ _ -> name typ
-                          ApplTerm  t _ _ -> getTypeName t
-                          TupleTerm ts _ -> getTypeName (head ts)
-                          _ -> error "HasCASL2IsabelleHOL.getTypeName"
-        name tp = --trace ("name: "++show tp++"\n") 
-            case tp of 
-                   TypeName tyId _ 0 -> tyId
-                   TypeAppl tp' _      -> name tp'
-                   FunType tp' _ _ _  -> name tp'
-                   -- ProductType
-                   _ -> error "HasCASL2IsabelleHOL.name (of type)"
+getName (ProgEq pat _ _) = (getTypeName pat)
 
+getTypeName p =
+   case p of
+     QualVar (VarDecl _ typ _ _)       -> name typ
+     QualOp _ _ (TypeScheme _ typ _) _ -> name typ
+     TypedTerm _ _ typ _               -> name typ
+     ApplTerm  t _ _                   -> getTypeName t
+     TupleTerm ts _                    -> getTypeName (head ts)
+     _                                 -> error "HasCASL2IsabelleHOL.getTypeName"
+   where name tp = case tp of 
+                     TypeName tyId _ 0       -> tyId
+                     TypeAppl tp' _          -> name tp'
+                     FunType _ _ tp' _       -> name tp'
+                     ProductType (tp':tps) _ -> name tp'
+                     _                       -> 
+                       error "HasCASL2IsabelleHOL.name (of type)"
+
+
+-- Input: Case alternatives and name of one constructor
+-- Functionality: Filters case alternatives by constructor's name
 groupCons :: [ProgEq] -> UninstOpId -> [ProgEq]
 groupCons pEqs name = filter hasSameName pEqs
   where hasSameName (ProgEq pat _ _) = 
@@ -493,205 +502,202 @@ groupCons pEqs name = filter hasSameName pEqs
             QualOp _ (InstOpId n _ _) _ _ -> n == name
             ApplTerm t1 _ _               -> hsn t1
             TypedTerm t _ _ _             -> hsn t
-            TupleTerm ts _                -> hsn (head ts)
+            TupleTerm _ _                 -> True
             _                             -> False
 
 
 
-unfoldCons :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
-unfoldCons sign pEqs =
---  trace ("unfold: "++show pEqs++"\n") 
-  (if and (map patHasNoArg pEqs)
-    then map (transCaseAlt sign) pEqs
+-- Input: List of case alternatives with same leading constructor
+-- Functionality: Tests whether the constructor has no arguments, if so
+--                translates case alternatives
+--                if not
+
+flattenPattern :: Env -> [ProgEq] -> (IsaSign.Term, IsaSign.Term)
+flattenPattern sign pEqs
+  | null pEqs         = error "Missing constructor alternative in case pattern."
+  | isSingle pEqs     = (transCaseAlt sign) (head pEqs)
  -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
  -- or the 'TypedTerm' variant of one of them
-      else matricize sign pEqs)
+  | otherwise = let m = concentrate (matricize pEqs) sign
+                in 
+                    transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullPos)
 
-{- First of all a matrix is engaged (matriArg) with the arguments of a
- constructor resp.  of a tuple. They're bind with the term, that would
+{- First of all a matrix is allocated (matriArg) with the arguments of a
+ constructor resp.  of a tuple. They're binded with the term, that would
  be executed if the pattern matched.  Then the resulting list of
  matrices is grouped by the leading argument. (groupArgs) Afterwards -
  if a list of grouped arguments has more than one element - the last
  pattern argument (in the list 'patterns') is ...  -}
 
+data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
+                               cons     :: Maybe As.Term,
+                               args     :: [Pattern],
+                               newArgs  :: [Pattern],
+                               term     :: As.Term } deriving (Show)
+
 data PatBrand = Appl | Tuple | QuOp | QuVar deriving (Eq, Show)
 
-data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
-                               patterns :: [Pattern],
-                               term     :: As.Term,
-                               cons     :: Maybe As.Term } deriving (Show)
-
 instance Eq CaseMatrix where
- (==) cm1 cm2 = (patBrand cm1 == patBrand cm2) 
-                && (patterns cm1 == patterns cm2)
-                       && (term cm1 == term cm2) && (cons cm1 == cons cm2)
+ (==) cmx cmx' = (patBrand cmx   == patBrand cmx') 
+                && (args cmx     == args cmx')
+                && (term cmx     == term cmx') 
+                && (cons cmx     == cons cmx')
+                && (newArgs cmx  == newArgs cmx')
+
+-- Input: List with CaseMatrix of same leading constructor pattern
+-- Functionality: First: Groups CMs so that these CMs are in one list
+--                that only differ in their last argument
+--                then: reduces list of every CMslist to one CM
+--                if there's only one CM left -> 
+--
+concentrate :: [CaseMatrix] -> Env -> CaseMatrix
+concentrate cmxs sign
+  | isSingle cmsWithSubstitutedLastArg = head cmsWithSubstitutedLastArg
+  | otherwise                          = concentrate cmsWithSubstitutedLastArg sign
+  where cmll = Data.List.nub (map (groupByArgs cmxs) [0..(length cmxs-1)])
+        cmsWithSubstitutedLastArg = map (redArgs sign) cmll
 
 
-matricize :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
-matricize sign pEqs = 
-  let caseMatrices = map matriPEq pEqs
-      m = rm caseMatrices
-  in
-    [transCaseAlt sign (ProgEq (head (patterns m)) (term m) nullPos)]
+groupByArgs :: [CaseMatrix] -> Int -> [CaseMatrix]
+groupByArgs cmxs i
+  | and (map null (map args cmxs)) = cmxs
+  | otherwise                      = (filter equalPat cmxs)
+  where patE = init (args (cmxs !! i))
+        equalPat cmx = isSingle (args cmx) || init (args cmx) == patE
 
-rm :: [CaseMatrix] -> CaseMatrix
-rm caseMatrices = 
-  let cm = --trace ("b4group: "++show caseMatrices ++"\n") 
-         (Data.List.nub (map (groupArgs caseMatrices) 
-                         [0..(length caseMatrices)-1]))
-  in
---   trace ("cm: "++show cm++"\n") 
-    (reduce cm)
-  
-reduce :: [[CaseMatrix]] -> CaseMatrix
-reduce listOfGroupedCMs = 
-  let fstCMs = 
-  {- trace ("cms "++show listOfGroupedCMs++"\n\n"++"redArgs "
-     ++show (map redArgs listOfGroupedCMs)++"\n") -}
-        (map redArgs listOfGroupedCMs)
-  in
-    if isSingle fstCMs then shrinkPat (head fstCMs) -- pattern zusammen fassen
-      else if or (map isSinglePat fstCMs) then redArgs fstCMs
-             else rm (map cutLastArg fstCMs)
-  where isSinglePat cm = isSingle (patterns cm)
-        cutLastArg cm = --trace ("cla"++show cm++"\n") 
-           cm { patterns = init (patterns cm) }
+-- Functionality: turns ProgEq into CaseMatrix
+matricize :: [ProgEq] -> [CaseMatrix]
+matricize =  map matriPEq
 
-matricizeArgs :: [Pattern] -> [As.Term] -> [CaseMatrix]
-matricizeArgs pats cTerms = 
-  let caseMatrices = 
-  --trace ("ma: "++show (map matriArgTuple (zip pats cTerms))++"\n") 
-              (map matriArgTuple (zip pats cTerms))
-      grouped = map (groupArgs caseMatrices) [0..(length caseMatrices)-1]
-  in
---    trace (show (nub grouped)++"\n") 
-        (map redArgs (nub grouped))
---     rm caseMatrices
-  where matriArgTuple (p, t) = matriArg p t
-
-groupArgs :: [CaseMatrix] -> Int -> [CaseMatrix]
-groupArgs caMas i = 
-  --trace ("i: "++show i++"\n"++"cm1: "++show (caMas !! i)++"\n") 
- (filter equalPat caMas)
-  where patE = init (patterns (caMas !! i))
-        _pb = patBrand (caMas !! i)
-        _pe = patterns (caMas !! i)
-        equalPat caMa = 
-        {-      if (pb == Appl && (patBrand caMa) == Appl) 
-           || (pb == Tuple && (patBrand caMa) == Tuple) then 
-           trace ("ga: "++show (init (patterns caMa))++"\n") 
-                trace "equalPat" 
-                -}
-                  init (patterns caMa) == patE
-                           && cons (caMas !! i) == cons caMa
-{-             else --trace ("gaE: "++show (patterns caMa)++"\n") 
-                 (patterns caMa == pe)
--}
-           
--- Maybe: have to write Eq instance for Terms resp. Patterns
 
 matriPEq :: ProgEq -> CaseMatrix
-matriPEq (ProgEq pat cTerm _) = matriArg pat cTerm
+matriPEq (ProgEq pat altTerm _) = matriArg pat altTerm
 
 matriArg :: Pattern -> As.Term -> CaseMatrix
 matriArg pat cTerm =
--- trace ("matriArg: " ++ show pat ++ "\n" ) 
   case pat of 
-    ApplTerm t1 t2 _   -> let (c, p) = stripAppl t1 (Nothing, [])
-                          in 
-                            CaseMatrix { patBrand = Appl,
-                                         patterns = p ++ [t2],
-                                         term = cTerm,
-                                         cons =  c }
-    TupleTerm ts _     -> CaseMatrix { patBrand = Tuple,
-                                       patterns = ts,
-                                       term = cTerm,
-                                       cons = Nothing }
-    TypedTerm t _ _ _  -> matriArg t cTerm
-    qv@(QualVar _)     -> CaseMatrix { patBrand = QuVar,
-                                       patterns = [qv],
-                                       term = cTerm,
-                                       cons = Nothing }
+    ApplTerm t1 t2 _    -> let (c, p) = stripAppl t1 (Nothing, [])
+                           in 
+                             CaseMatrix { patBrand = Appl,
+                                          cons     =  c,
+                                          args     = p ++ [t2],
+                                          newArgs  = [],
+                                          term     = cTerm }
+    TupleTerm ts _      -> CaseMatrix { patBrand = Tuple,
+                                        cons     = Nothing,
+                                        args     = ts,
+                                        newArgs  = [],
+                                        term     = cTerm }
+    TypedTerm t _ _ _   -> matriArg t cTerm
+    qv@(QualVar _)      -> CaseMatrix { patBrand = QuVar,
+                                        cons     = Nothing,
+                                        args     = [qv],
+                                        newArgs  = [],
+                                        term     = cTerm }
     qo@(QualOp _ _ _ _) -> CaseMatrix { patBrand = QuOp,
-                                       patterns = [qo],
-                                       term = cTerm,
-                                       cons = Nothing }
-    _ -> error "HasCASL2IsabelleHOL.matriArg"
+                                        cons     = Nothing,
+                                        args     = [qo],
+                                        newArgs  = [],
+                                        term     = cTerm }
+    _                   -> error "HasCASL2IsabelleHOL.matriArg"
 -- Assumption: The innermost term of a case-pattern consisting of a ApplTerm
 --             is a QualOp, that is a datatype constructor
   where stripAppl ct tp = 
---          trace ("stripAppl: " ++ show ct ++ "\n") 
-         (case ct of
-            ApplTerm qOp@(QualOp _ _ _ _) t' _ -> (Just qOp, [t'] ++ snd tp)
-            ApplTerm tQOp@(TypedTerm (QualOp _ _ _ _) _ _ _) t' _ -> 
-                                    (Just tQOp, [t'])
-            ApplTerm t' t'' _    -> stripAppl t' (fst tp, [t''] ++ snd tp)
-            qOp@(QualOp _ _ _ _) -> (Just qOp, snd tp)
-            _                     -> (Nothing, [ct] ++ snd tp))
+          (case ct of
+            TypedTerm (ApplTerm q@(QualOp _ _ _ _) t' _) _ _ _ -> (Just q, [t'] ++ snd tp)
+            TypedTerm (ApplTerm (TypedTerm 
+              q@(QualOp _ _ _ _) _ _ _) t' _) _ _ _ -> (Just q, [t'] ++ snd tp)
+            TypedTerm (ApplTerm t' t'' _) _ _ _                -> 
+              stripAppl t' (fst tp, [t''] ++ snd tp)
+            ApplTerm q@(QualOp _ _ _ _) t' _ -> (Just q, [t'] ++ snd tp)
+            ApplTerm (TypedTerm 
+              q@(QualOp _ _ _ _) _ _ _) t' _ -> (Just q, [t'])
+            ApplTerm t' t'' _                -> 
+              stripAppl t' (fst tp, [t''] ++ snd tp)
+--            TypedTerm t' _ _ _               -> stripAppl t' tp
+            q@(QualOp _ _ _ _)               -> (Just q, snd tp)
+            _                                -> (Nothing, [ct] ++ snd tp))
 
 
-redArgs :: [CaseMatrix] -> CaseMatrix
-redArgs caMas
-  | or (map (testPatBrand Appl) caMas)  = 
-  --trace ("appl "++show (redAppl caMas)++"\n") 
-                (redAppl caMas)
-  | or (map (testPatBrand Tuple) caMas) = head caMas
-  | and (map (testPatBrand QuOp) caMas) = --trace "quop\n" 
-               (redQuOp caMas)
-  | otherwise                           = --trace "other\n" 
-             shrinkPat (head caMas)
+redArgs :: Env -> [CaseMatrix] -> CaseMatrix
+redArgs sign caMas
+  | and (map (testPatBrand Appl) caMas)  = redAppl caMas sign
+  | and (map (testPatBrand Tuple) caMas) = redAppl caMas sign
+  | isSingle caMas                       = head caMas
+  | otherwise                            = head caMas
   where testPatBrand pb cm = pb == patBrand cm
 
-redQuOp :: [CaseMatrix] -> CaseMatrix
-redQuOp caMas =
-  let _terms = map term caMas
-      hCaMas = head caMas
-      varName = "caseVar" ++ show (length caMas)
-      varId = (mkId [(mkSimpleId varName)])
-      newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
-      newPEqs = map newPEq (map shrinkPat caMas)
-  in
---    trace ("newPeqs: "++show newPEqs++"\n") 
-    (if isSingle caMas then head (map shrinkPat caMas)
-      else shrinkPat hCaMas { patterns = [newVar],
-                              term = CaseTerm newVar newPEqs [] })
+-- Input: List of CMs thats leading constructor and arguments except the last one are equal
+-- Functionality: Reduces n CMs to one with same last argument in pattern
+redAppl :: [CaseMatrix] -> Env -> CaseMatrix
+redAppl caMas sign
+  | and (map null (map args caMas)) = head caMas
+  | isSingle caMas                  = 
+      hCaMas { args     = init (args hCaMas),
+               newArgs  = (last (args hCaMas)):(newArgs hCaMas) }
+  | and (map termIsVar lastArgs)        = substVar (head caMas)
+  | otherwise                           = substTerm (head caMas)
+   where terms = map term caMas
+         hCaMas = head caMas
+         lastArgs = map last (map args caMas)
+         varName = "caseVar" ++ show (length (args (head caMas)))
+         varId = (mkId [(mkSimpleId varName)])
+         newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
+         newPEqs = (map newPE (zip lastArgs terms))
+         newPEqs' = recArgs sign newPEqs
+         substVar caMa 
+           | null (args caMa)     = caMa
+           | isSingle (args caMa) = 
+               caMa { args    = [],
+                      newArgs = last(args caMa) : (newArgs caMa) }
+           | otherwise                =
+               caMa { args    = init (args caMa),
+                      newArgs = last(args caMa) : (newArgs caMa) }
+         substTerm caMa
+           | null (args caMa)     = caMa
+           | isSingle (args caMa) =
+               caMa { args    = [], 
+                      newArgs = newVar : (newArgs caMa),
+                      term    = CaseTerm newVar newPEqs' [] }
+           | otherwise                =
+               caMa { args    = init(args caMa), 
+                      newArgs = newVar : (newArgs caMa),
+                      term    = CaseTerm newVar newPEqs' [] }
 
-redAppl :: [CaseMatrix] -> CaseMatrix
-redAppl caMas = 
-  let terms = map term caMas
-      hCaMas = head caMas
-      lastArgs = map last (map patterns caMas)
-{-      laMas = --trace ("la "++show lastArgs++"\n"++"ma "++
-        show (matricizeArgs lastArgs terms)++"\n") 
-             (matricizeArgs lastArgs terms)
-        shrinkedMas = map shrinkPat laMas
--}
-      varName = "caseVar" ++ show (length caMas)
-      varId = (mkId [(mkSimpleId varName)])
-      newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
-      newPE (p, t) = ProgEq p t nullPos
-      newPEqs = --trace ("newPEqs: "++show lastArgs++"\n") 
-              (map newPE (zip lastArgs terms)) --shrinkedMas
-   in
-    if isSingle caMas then shrinkPat (head caMas)
-     else
-      shrinkPat (hCaMas { patterns = init (patterns hCaMas) ++ [newVar],
-                          term = CaseTerm newVar newPEqs [] })
+recArgs :: Env -> [ProgEq] -> [ProgEq]
+recArgs sign newPEqs 
+  | isSingle groupedByCons 
+      || null groupedByCons = []
+  | otherwise               = doPEQ groupedByCons []
+  where consList
+          | null newPEqs = error "No case alternatives."
+          | otherwise    = getCons sign (getName (head newPEqs))
+        groupedByCons = map (groupCons newPEqs) consList
+        doPEQ [] res = res
+        doPEQ (g:gByCs) res
+          | isSingle g = doPEQ gByCs (res ++ g)
+          | otherwise  = doPEQ gByCs (res ++ [(toPEQ (testPEQs sign g))])
+        toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullPos
 
-newPEq :: CaseMatrix -> ProgEq
-newPEq cm = ProgEq (head (patterns cm)) (term cm) nullPos
+testPEQs :: Env -> [ProgEq] -> CaseMatrix
+testPEQs sign pEqs
+  | null pEqs = error "HasCASL2IsabelleHOL.testPEQs"
+  | otherwise = concentrate (matricize pEqs) sign
 
-shrinkPat :: CaseMatrix -> CaseMatrix
+newPE (p, t) = ProgEq p t nullPos
+
+newPEq cm = ProgEq (head (args cm)) (term cm) nullPos
+
+
+shrinkPat :: CaseMatrix -> As.Term
 shrinkPat caMa = 
---  trace ("shrinkPat: " ++ show caMa ++ "\n") 
-  (case patBrand caMa of
+  case patBrand caMa of
     Appl  -> case cons caMa of
-               Just c -> caMa { patBrand = QuOp,
-                                patterns = [foldl mkApplT c (patterns caMa)]
-                                 }
-               Nothing -> error "HasCASL2IsabelleHOL.patBrand"
---    Tuple ->
-    _     -> caMa)
+               Just c ->  foldl mkApplT c ((args caMa) ++ (newArgs caMa))
+               Nothing -> error "HasCASL2IsabelleHOL.shrinkPat"
+    Tuple -> TupleTerm ((args caMa) ++ (newArgs caMa)) []
+    QuOp  -> head (args caMa)
+    _     -> head (newArgs caMa)
   where mkApplT t1 t2 = ApplTerm t1 t2 []
 
 
@@ -714,47 +720,9 @@ termHasNoArg t = case t of
                  TypedTerm tr _ _ _ -> termHasNoArg tr
                  _                  -> False
 
-{-
-substArg :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
-substArg sign pEqs =
-  let frontCons = transPat sign (getFrontCons pEqs)
-      varName = "caseVar" ++ show (length pEqs)
-      newPat = frontCons `App` IsaSign.Free(varName, noType)
-      varId = (mkId [(mkSimpleId varName)])
-      newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
-      newTerm = transTerm sign (CaseTerm newVar newPEqs [])
-      newPEqs = map getNewPEqs pEqs
-  in
-     [(newPat, newTerm)]
-  where getFrontCons ((ProgEq pat _ _):_) = 
-          case pat of 
-            ApplTerm t _ _ -> t
-            _              -> pat
-        getNewPEqs (ProgEq pat term p) =  
-          case pat of
-            ApplTerm _ t _ -> ProgEq t term p
-            _              -> ProgEq pat term p
-                                                 
---  VarDecl Var Type SeparatorKind [Pos]
-
-stripProgEq :: ProgEq -> Pattern
-stripProgEq (ProgEq pat t pos) = case pat of
-                                 TypedTerm p _ _ _ -> 
-                                     stripProgEq (ProgEq p t pos)
-                                 -- TupleTerm      ->
-                                 _                 -> pat
-
--- transCaseEx :: Env -> As.Term -> IsaSign.Term
--- transCaseEx sign term =
---   case term of
---     QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, noType)
---     _                            -> transTerm sign term
--}
 transCaseAlt :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
 transCaseAlt sign (ProgEq pat trm _) = 
-  (transPat sign pat, --trace ("term: "++show term++"\n") 
-                 (transTerm sign trm))
-   --Abs (transTerm sign pat, noType, transTerm sign term)
+  (transPat sign pat, (transTerm sign trm))
 
 transPat :: Env -> As.Term -> IsaSign.Term
 transPat _ (QualVar (VarDecl var _ _ _)) = 
@@ -762,16 +730,20 @@ transPat _ (QualVar (VarDecl var _ _ _)) =
 transPat sign (ApplTerm term1 term2 _) = 
   termAppl (transPat sign term1) (transPat sign term2)
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
--- transPat sign (LambdaTerm pats Partial body _) =
---   if (null pats) then Abs(IsaSign.Free("dummyVar",noType), 
---                                         noType, 
---                                         (transPat sign body))
---      else foldr (abstraction sign) 
---                 (transPat sign body)
---                 pats
--- transPat sign (LetTerm Let eqs body _) = 
---   transPat sign (foldr let2lambda body eqs)
 transPat sign (TupleTerm terms _) =
   foldl1 (binConst isaPair) (map (transPat sign) terms)
 transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsa i)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
+
+showPEQ peqs = "PEQ-Liste: "++show (map spe peqs) ++"\n\n"
+spe (ProgEq pat term _) = "PEQ Pattern: " ++ sT pat++"   "++"Term: "++sT term++"\n"
+sT (QualVar (VarDecl v _ _ _)) = show v 
+sT (QualOp _ (InstOpId i _ _) _ _) = show i
+sT (ApplTerm t1 t2 _) = "ApplT ("++sT t1++") ("++sT t2++")"
+sT (TupleTerm ts _) = "TupleT "++concat (map sT ts)
+sT (TypedTerm t _ _ _) = "Typed "++sT t
+sT (CaseTerm t peqs _) = "Case "++sT t++" "-- ++showPEQ peqs
+sT t = show t
+
+
+showCM cm = "MATRIX -+- Cons: PB: "++show (patBrand cm)++" Pats: "++concat (map sT (args cm))++" newArgs: "++concat (map sT (newArgs cm))++" term: "++sT (term cm)
