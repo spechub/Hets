@@ -74,7 +74,8 @@ import Common.PrettyPrint
 import Haskell.ExtHaskellCvrt            (cvrtHsModule)
 
 instance Typeable ModuleInfo
-instance PrettyPrint ModuleInfo
+instance PrettyPrint ModuleInfo where
+  printText0 ga s = text (show s)
 instance Typeable HsDecls
 instance Typeable AHsDecl
 instance PrettyPrint HsDecls where

@@ -205,12 +205,22 @@ improved constantly, it is recommended always to use the latest version.
 \Hets currently is available for Linux, Solaris and
 Mac OS-X. You can either start the script \texttt{Tools/Hets/hets} 
 (the script automatically finds the binary for your architecture).
-Or you can install \Hets on your local file system by \texttt{cd}ing
-into \texttt{Tools/Hets}on the CD-ROM and then calling
+Or you can install \Hets on your local file system (which
+is strongly recommended, since only then \Hets can write intermediate
+\texttt{.env} files that are needed for compilation of library
+downloads). This is done by
+opening a shell, \texttt{cd}ing
+into \texttt{Tools/Hets}on the CD-ROM\footnote{
+For Linux and Solaris users: you may need to mount the CD-ROM first.
+You can lookup in \texttt{/etc/fstab}
+where it is mounted, typcial locations are \texttt{/media/cdrom}
+or \texttt{/mount/cdrom}. 
+For MacIntosh
+users: cd into \texttt{/Volumes} and look there for the CD-ROM.} and then calling
 \begin{quote}
 \texttt{./install <dir>}
 \end{quote}
-where \texttt{<dir>} is an existing directory where \Hets should be
+where \texttt{<dir>} is the directory where \Hets should be
 installed.
 
 MacIntosh users need to install some libraries from 
@@ -221,8 +231,11 @@ MacIntosh users need to install some libraries from
 \end{verbatim}
 The \texttt{install} script installs these automatically for you.
 Note that you may have to be \texttt{root} in order to be able to 
-do this.
-
+do this. See
+\begin{quote}
+ \url{http://www.osxfaq.com/Tutorials/Root\_User\_Creation/index.ws}
+\end{quote}
+for instructions how to create a root user.
 %After downloading your platform specific distribution,
 %you have to unpack it as follows (note that the filenames will
 %be slightly different, depending on your platform):
