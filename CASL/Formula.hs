@@ -37,7 +37,8 @@
 
 module Formula (term, formula
 	       , equalT, colonT, colonST, quMarkT, dotT, crossT
-	       , varDecl, opSort, opFunSort, opType, predType, predUnitType) 
+	       , varDecl, opSort, opFunSort, opType, predType, predUnitType
+	       , updFormulaPos) 
     where
 
 import Id
