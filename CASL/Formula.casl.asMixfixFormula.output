@@ -2,14 +2,14 @@
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
 (pred y : bb * bb) a b
-Error (4,1) no resolution for term: (( pred y : [bb,bb]),a,b)
+Error (line 4, column 1) no resolution for term: (predy:bb*bb) a b
 a =e= < b
-Error (5,7) unexpected mixfix token: <
+Error (line 5, column 7) unexpected mixfix token: <
 a #= e = b
-Error (6,3) unexpected mixfix token: #=
+Error (line 6, column 3) unexpected mixfix token: #=
 exists1 (predy :: bb)
-Error (7,1) unexpected mixfix token: exists1
-Error (7,10) unexpected mixfix token: predy
+Error (line 7, column 1) unexpected mixfix token: exists1
+Error (line 7, column 10) unexpected mixfix token: predy
 exists predy:bb . a
 exists! a:v . x
 exists! a:v . x
@@ -18,12 +18,12 @@ forall a:v . x
 b => a
 def x
 def #
-Error (15,4) unexpected mixfix token: #
+Error (line 15, column 4) unexpected mixfix token: #
 {} when [] else {}
-Error (16,2) unexpected mixfix token: }
-Error (16,7) not a predicate: []
-Error (16,14) unexpected mixfix token: }
-Error (16,3) not a formula:  when [] else 
+Error (line 16, column 2) unexpected mixfix token: }
+Error (line 16, column 7) not a predicate: []
+Error (line 16, column 14) unexpected mixfix token: }
+Error (line 16, column 3) not a formula: {}when[]()else{}
 a /\ b /\ c
 a \/ b \/ c
 a => b

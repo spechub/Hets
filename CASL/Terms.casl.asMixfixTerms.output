@@ -1,11 +1,11 @@
 *
-Error (1,1) unexpected mixfix token: *
+Error (line 1, column 1) unexpected mixfix token: *
 **
-Error (2,1) unexpected mixfix token: **
+Error (line 2, column 1) unexpected mixfix token: **
 a_a
-Error (3,1) unexpected mixfix token: a_a
+Error (line 3, column 1) unexpected mixfix token: a_a
 __
-Error (4,1) no resolution for term: __
+Error (line 4, column 1) no resolution for term: __
 123
 1.2
 1
@@ -15,54 +15,54 @@ Error (4,1) no resolution for term: __
 "bla"
 ""
 <
-Error (13,1) unexpected mixfix token: <
+Error (line 13, column 1) unexpected mixfix token: <
 <=
-Error (14,1) unexpected mixfix token: <=
+Error (line 14, column 1) unexpected mixfix token: <=
 .a
-Error (15,1) unexpected mixfix token: .a
+Error (line 15, column 1) unexpected mixfix token: .a
 'a'
-Error (16,1) unexpected mixfix token: 'a'
+Error (line 16, column 1) unexpected mixfix token: 'a'
 < [a, b]
-Error (17,1) unexpected mixfix token: <
+Error (line 17, column 1) unexpected mixfix token: <
 <= [a, b]
-Error (18,1) unexpected mixfix token: <=
+Error (line 18, column 1) unexpected mixfix token: <=
 .a [a, b]
-Error (19,1) unexpected mixfix token: .a
+Error (line 19, column 1) unexpected mixfix token: .a
 'a' [a, b]
-Error (20,1) unexpected mixfix token: 'a'
+Error (line 20, column 1) unexpected mixfix token: 'a'
 __ * __
-Error (21,1) no resolution for term: (__,*,__)
+Error (line 21, column 1) no resolution for term: __ * __
 (a __ b)
-Error (22,7) unexpected mixfix token: b
+Error (line 22, column 7) unexpected mixfix token: b
 (a __ b) a
-Error (23,7) unexpected mixfix token: b
+Error (line 23, column 7) unexpected mixfix token: b
 b(a __ b)
-Error (24,8) unexpected mixfix token: b
+Error (line 24, column 8) unexpected mixfix token: b
 b (a __ b) a
-Error (25,8) unexpected mixfix token: b
+Error (line 25, column 8) unexpected mixfix token: b
 {a __ b}
-Error (26,7) unexpected mixfix token: b
+Error (line 26, column 7) unexpected mixfix token: b
 {a __ b} a
-Error (27,7) unexpected mixfix token: b
+Error (line 27, column 7) unexpected mixfix token: b
 b {a __ b}
-Error (28,8) unexpected mixfix token: b
+Error (line 28, column 8) unexpected mixfix token: b
 b {a __ b} a
-Error (29,8) unexpected mixfix token: b
+Error (line 29, column 8) unexpected mixfix token: b
 [a __ b]
-Error (30,7) unexpected mixfix token: b
+Error (line 30, column 7) unexpected mixfix token: b
 [a __ b] a
-Error (31,7) unexpected mixfix token: b
+Error (line 31, column 7) unexpected mixfix token: b
 b [a __ b]
-Error (32,8) unexpected mixfix token: b
+Error (line 32, column 8) unexpected mixfix token: b
 b [a __ b] a
-Error (33,8) unexpected mixfix token: b
+Error (line 33, column 8) unexpected mixfix token: b
 ({}, [], {[] {}})
-Error (34,3) unexpected mixfix token: }
-Error (34,14) unexpected mixfix token: }
+Error (line 34, column 3) unexpected mixfix token: }
+Error (line 34, column 14) unexpected mixfix token: }
 {{}, [], {[] {}}}
-Error (35,3) unexpected mixfix token: }
+Error (line 35, column 3) unexpected mixfix token: }
 [{}, [], {[] {}}]
-Error (36,3) unexpected mixfix token: }
+Error (line 36, column 3) unexpected mixfix token: }
 (var y : bb)
 (op y : bb)
 (op __<__ : a)
@@ -75,23 +75,23 @@ Error (36,3) unexpected mixfix token: }
 (op __<__ : a)
 (op __<__ : a)
 ys as b
-Error (48,1) unexpected mixfix token: ys
+Error (line 48, column 1) unexpected mixfix token: ys
 (predy y :bb)
-Error (49,2) unexpected mixfix token: predy
+Error (line 49, column 2) unexpected mixfix token: predy
 (predy :bb)
-Error (50,2) unexpected mixfix token: predy
+Error (line 50, column 2) unexpected mixfix token: predy
 (predy :bb)
-Error (51,2) unexpected mixfix token: predy
+Error (line 51, column 2) unexpected mixfix token: predy
 a when b else c
 # as b
-Error (53,1) unexpected mixfix token: #
+Error (line 53, column 1) unexpected mixfix token: #
 a b when b c else a f g when f a f else f a f g when f a f else f
-Error (54,1) no resolution for term: (a,b)
-Error (54,10) no resolution for term: (b,c)
-Error (54,19) no resolution for term: (a,f,g)
-Error (54,30) no resolution for term: (f,a,f)
-Error (54,41) no resolution for term: (f,a,f,g)
-Error (54,54) no resolution for term: (f,a,f)
+Error (line 54, column 1) no resolution for term: a b
+Error (line 54, column 10) no resolution for term: b c
+Error (line 54, column 19) no resolution for term: a f g
+Error (line 54, column 30) no resolution for term: f a f
+Error (line 54, column 41) no resolution for term: f a f g
+Error (line 54, column 54) no resolution for term: f a f
 (pred y : bb)
 (pred y : bb)
 (pred y : ())

@@ -1,2 +1,2 @@
 forall aa:s . (aa <= ab) => p
-Error (1,21) unexpected mixfix token: ab
+Error (line 1, column 21) unexpected mixfix token: ab
