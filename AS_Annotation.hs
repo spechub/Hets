@@ -20,8 +20,8 @@ data Annotation = Comment_line String [Pos]
 		| Float_anno Id Id [Pos] 
 		-- postion of comment start, commas and comment end
 		| Prec_anno Bool [Id] [Id] [Pos] 
-		--          ^              ^ p{:[p,]++[p}]++[p<]++
-		--          |                 [p{]++[p,]++[p}]
+		--          ^              ^ "{",commas,"}", "<",
+		--          |                "{",commas,"}"
 		--          | true = <   false = <>
 		| Lassoc_anno [Id] [Pos] -- position of commas
 		| Rassoc_anno [Id] [Pos] -- position of commas
@@ -32,10 +32,16 @@ data Annotation = Comment_line String [Pos]
 		| Logic_anno  String String [Pos] 
 		-- position of comment start, first string, snd string
 		| Hide_anno  String String String [Pos] 
-		-- position of comment start, 1st str, 2nd str, 3rd str
+		-- position of comment start,1st str,"<-",2nd str,"--",3rd str
+		  -- if one string is empty pos is ommitted and
+		  -- pos of arrows may differ
 		| With_anno  String String String [Pos]
-		-- position of comment start, 1st str, 2nd str, 3rd str
-		| Implies | Definitional | Conservative
+		-- position of comment start,1st str,"--",2nd str,"->",3rd str
+		  -- if one string is empty pos is ommitted and
+		  -- pos of arrows may differ
+		| Implies [Pos] 
+		| Definitional [Pos]
+		| Conservative [Pos]
 		-- position information for annotations is now provided 
 		-- by every annotation
 		-- | Pos_anno Region Annotation 
