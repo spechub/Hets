@@ -285,8 +285,8 @@
    . forall X1:a; X2:t; X3:t; X4:t
          . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
   generated{sort s, t; op c : s; op c : a ->? s;
-                       op c : a * t * t * t -> s; op inj : s1 -> s;
-                       op inj : s2 -> s} %(ga_generated_s_t)%,
+                       op c : a * t * t * t -> s; op inj : s1 -> s; op inj : s2 -> s;
+                       op inj : t -> s} %(ga_generated_s_t)%,
    . true %(The true formula)%,  . true %(and this)%,
    . forall x:b . x in a <=> true,
    . forall x:s; y:s; z:s
