@@ -100,6 +100,7 @@ data DGRule =
  | Composition
  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
  | LocDecomp (LEdge DGLinkLab)
+ | LocSubsumption (LEdge DGLinkLab)
  | GlobSubsumption (LEdge DGLinkLab)
  | LocalInference
  | BasicInference Edge BasicProof
@@ -438,13 +439,13 @@ isSameTranslationAux sens mor1 mor2 =
 
 locSubsume :: ProofStatus -> ProofStatus
 locSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
-  undefined --  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
+  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
 
   where
     localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
     result = locSubsumeAux libEnv dGraph ([],[]) localThmEdges
- --   nextDGraph = fst result
- --   nextHistoryElem = snd result
+    nextDGraph = fst result
+    nextHistoryElem = snd result
 
 locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
@@ -456,7 +457,9 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
         Nothing -> -- -------------------------------------------------------
                    -- hier weitermachen: das Ergebnis des coerce auswerten...
                    -- -------------------------------------------------------
-	    undefined -- coerceTheories theorySrc theoryTgt
+	   case Nothing of --maybeResult ( coerceTheories theorySrc theoryTgt) of
+             Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
+	     Just _ -> locSubsumeAux libEnv newGraph (newRules,newChanges) list
         Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
     Just _ -> locSubsumeAux libEnv dgraph (rules,changes) list
 
@@ -464,6 +467,21 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     (Result theorySrc errSrc)--(G_theory lidSrc signSrc sensSrc) errSrc)
         = computeTheory libEnv dgraph src
     (Result theoryTgt errTgt) = computeTheory libEnv dgraph tgt
+    morphism = dgl_morphism edgeLab
+    auxGraph = delLEdge ledge dgraph
+    (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    newEdge = (src,
+	       tgt,
+	       DGLink {dgl_morphism = morphism,
+		       dgl_type = 
+		         (LocalThm (Proven [])
+			  conservativity conservStatus),
+		       dgl_origin = DGProof}
+               )
+    newGraph = insEdge newEdge auxGraph
+    newRules = (LocSubsumption ledge):rules
+    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
 
 coerceTheories :: (Typeable b) => G_theory -> G_theory -> (Result b)
 coerceTheories (G_theory lid1 sign1 sens1) (G_theory lid2 sign2 sens2)
