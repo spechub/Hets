@@ -25,6 +25,17 @@ fromATermError t u = error ("Cannot convert ATerm to "++t++": "++(err u))
 		  AList _   -> "!AList"
 		  otherwise -> "!AInt"
 
+-- some instances -----------------------------------------------
+instance ATermConvertible Bool where
+    toATerm at b = case b of
+		   True  -> addATerm (AAppl "true"  []) at
+		   False -> addATerm (AAppl "false" []) at
+    fromATerm at = case aterm of
+		   AAppl "true"  [] -> True
+		   AAppl "false" [] -> False
+		   _                     -> fromATermError "Bool" aterm
+	where aterm = getATerm at
+
 {- for Integer derive : ATermConvertible hand written!-}
 
 instance ATermConvertible Integer where
@@ -57,16 +68,24 @@ instance ATermConvertible String where
 		       where s' = case s of
 				  ('\"':so) -> case reverse so of
 					       ('\"':sr) -> reverse sr
-					       _         -> err
-				  _         -> err
+					       _         -> err 1
+				  _         -> err 2
 			     conv ""          = ""
 			     conv ('\\':x:xs) = 
 				 if x `elem` "\n\\\t\"\r" then x:(conv xs)
-				 else err
+				 else -- the following case fixes a baffle bug
+				   if x `elem` "ntr\""    then x':(conv xs)
+				   else err 3
+				   where x' = case x of 
+					      'n' -> '\n'
+					      't' -> '\t'
+					      'r' -> '\r'
+					      '\"' -> '\"'
+					      _ -> error "very strange reach"
 			     conv (x:xs)      = x:(conv xs)
-		   otherwise    -> err 
+		   _    -> err 4
 	where aterm = getATerm at
-	      err   = fromATermError "String" aterm
+	      err i = fromATermError ("String"++ show i) aterm
 
 instance ATermConvertible a => ATermConvertible [a] where
     toATerm at l       = addATerm (AList l') at'
@@ -86,18 +105,19 @@ instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b)
 		   (AAppl "tuple" [x,y]) -> (x',y')
 		       where x' = fromATerm (getATermByIndexSp1 x at)
 			     y' = fromATerm (getATermByIndexSp1 y at)
-		   otherwise             -> fromATermError "(a,b)" aterm
+		   _  -> fromATermError "(a,b)" aterm
 	where aterm = getATerm at 
 
 --- some helpers needed and used by DrIFT instances ---------------------------
 -- throws an error in case that there is no ATerm in the list
-findATerm :: [Maybe ATerm] -> ATerm 
-findATerm l = case List.find just l of
+findATerm :: ATermTable -> [Maybe ATerm] -> ATerm 
+findATerm att l = case List.find just l of
 				    (Just(Just t)) -> t
-				    otherwise      -> error "No aterm found"
+				    _ -> error'
     where just mt = case mt of
 		    (Just _) -> True
 		    Nothing  -> False
+	  error'  = error $ "*** findATerm: " ++ (show $ getATermFull att)
 
 -- converts an aterm region information to [Pos]
 fromATerm_reg reg_i at = [fst r,snd r] 
