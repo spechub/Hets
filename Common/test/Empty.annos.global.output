@@ -1,1 +1,2 @@
-GA {prec_annos = {}, assoc_annos = {}, display_annos = {}, literal_annos = LA {string_lit = Nothing, list_lit = {}, number_lit = Nothing, float_lit = Nothing}, literal_map = {}}
+%left_assoc()%
+%right_assoc()%

@@ -20,6 +20,12 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.GlobalAnnotationsFunctions
+import Common.PrettyPrint
+import Common.Print_AS_Annotation()
+import Common.Lib.Pretty
+
+instance PrettyPrint GlobalAnnos where
+    printText0 ga = vcat . map (printText0 ga) . convertGlobalAnnos
 
 convertGlobalAnnos::GlobalAnnos->[Annotation]
 convertGlobalAnnos ga = c_prec (prec_annos ga) 

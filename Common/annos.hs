@@ -7,6 +7,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.GlobalAnnotationsFunctions
 import Common.Print_AS_Annotation
+import Common.ConvertGlobalAnnos
 
 main :: IO ()
 main = exec lineParser fileParser
@@ -20,7 +21,8 @@ lineParser = [("MixIds", fromAParser parseId),
 fileParser = [("Annotations", \ ga -> fmap (show . vcat . map 
 					    (printText0 ga)) 
 	       annotations)
-	     ,("GlobalAnnos", \ ga -> fmap (show . addGlobalAnnos ga)
+	     ,("GlobalAnnos", \ ga -> fmap 
+	       (show . printText0 ga . addGlobalAnnos ga)
 	       annotations)
 	     ]
 
