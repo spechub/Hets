@@ -46,6 +46,7 @@ data Typ = Type (String,[Typ])
 instance Show Typ where
   show = showTyp 1000
 
+showTyp _ (Type (t,[])) = t
 showTyp pri (Type ("fun",[s,t])) = 
   bracketize (pri<=10) (showTyp 10 s ++ "=>" ++ showTyp 11 t)
 showTyp pri (Type (t,args)) = "("++concat (map ((" "++).show) args)++")"++t
@@ -89,11 +90,14 @@ instance Show Term where
 showTerm :: Int -> Term -> String
 showTerm pri (Const (c,_)) = c
 showTerm pri (Free (v,_)) = v
-showTerm pri (Abs (v,_,t)) = "%"++v++" . "++show t
-showTerm pri (Abs (v,_,t)) = "%"++v++" . "++show t
-showTerm pri (Const ("All",_) `App` Abs (v,_,t)) = "!"++v++" . "++show t
-showTerm pri (Const ("Ex",_) `App` Abs (v,_,t)) = "?"++v++" . "++show t
-showTerm pri (Const ("Ex1",_) `App` Abs (v,_,t)) = "?!"++v++" . "++show t
+showTerm pri (Abs (v,_,t)) = "%"++v++" . "++showTerm pri t
+showTerm pri (Abs (v,_,t)) = "%"++v++" . "++showTerm pri t
+showTerm pri (Const ("All",_) `App` Abs (v,_,t)) = 
+  bracketize (pri<=10) ("! "++v++" . "++showTerm pri t)
+showTerm pri (Const ("Ex",_) `App` Abs (v,_,t)) = 
+  bracketize (pri<=10) ( "? "++v++" . "++showTerm pri t)
+showTerm pri (Const ("Ex1",_) `App` Abs (v,_,t)) = 
+  bracketize (pri<=10) ( "?! "++v++" . "++showTerm pri t)
 showTerm pri (t1 `App` t2) = 
   bracketize (pri<=10) (showTerm 11 t1 ++ " " ++ showTerm 10 t2)
 
@@ -111,12 +115,6 @@ instance Show Sentence where
 
 instance PrettyPrint Sentence where
     printText0 _ = ptext . show
-
-instance PrettyPrint Sign where
-    printText0 _ = ptext . show
-
-instance PrintLaTeX Sign where
-    printLatex0 = printText0
 
 
 -------------------- from src/Pure/sorts.ML ------------------------
@@ -181,9 +179,9 @@ emptyTypeSig = TySg {
 instance Show TypeSig where
   show tysig =
     if Map.isEmpty (tycons tysig) then ""
-     else "types\n" ++ Map.foldWithKey showTycon "" (tycons tysig) 
+     else Map.foldWithKey showTycon "" (tycons tysig) 
      where showTycon t arity rest =
-             "  "++
+             "typedecl "++
              (if arity>0 then "("++concat (map ((" 'a"++).show) [1..arity])++")"
                else "") 
             ++ show t
@@ -213,7 +211,13 @@ instance Show Sign where
     showsConstTab tab =
      if Map.isEmpty tab then ""
       else "consts\n" ++ Map.foldWithKey showConst "" tab
-    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"" ++ rest
+    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t ++ "\"\n" ++ rest
+
+instance PrettyPrint Sign where
+    printText0 _ = ptext . show
+
+instance PrintLaTeX Sign where
+    printLatex0 = printText0
 
 
 

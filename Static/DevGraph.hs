@@ -81,6 +81,11 @@ data DGLinkLab = DGLink {
               dgl_origin :: DGOrigin }
               deriving (Eq,Show)
 
+instance PrettyPrint DGLinkLab where
+  printText0 ga l = printText0 ga (dgl_morphism l)
+                    <+> ptext (show (dgl_type l))
+                    <+> printText0 ga (dgl_origin l)
+
 data ThmLinkStatus =  Open | Proven [DGLinkLab] deriving (Eq, Show)
 
 data DGLinkType = LocalDef 

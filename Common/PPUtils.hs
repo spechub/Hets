@@ -167,12 +167,17 @@ printMap ga (x:xs)
 
 
 {--------------------------------------------------------------------
-  Pairs
+  Pairs, triples
 --------------------------------------------------------------------}
 instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (a,b) where
   printText0 ga (a,b) =
    ptext "(" <> printText0 ga a <> ptext "," <> printText0 ga b <> ptext ")"
 
+instance (PrettyPrint a, PrettyPrint b, PrettyPrint c) => 
+          PrettyPrint (a,b,c) where
+  printText0 ga (a,b,c) =
+   ptext "(" <> printText0 ga a <> ptext "," <> printText0 ga b 
+             <> ptext "," <> printText0 ga c <> ptext ")"
 
 {--------------------------------------------------------------------
   Simple types

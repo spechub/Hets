@@ -28,6 +28,7 @@ import Logic.Logic
 import Common.Lib.Set
 import Data.Maybe
 import Data.Dynamic
+import Common.AS_Annotation (Named, mapNamedM)
 
 import Common.ATerm.Lib
 --import Logic.Grothendieck
@@ -57,7 +58,7 @@ class (Language cid, Typeable cid,
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
     -- cover theoroidal comorphisms as well
-    map_sign :: cid -> sign1 -> Maybe (sign2,[sentence2])
+    map_sign :: cid -> sign1 -> Maybe (sign2,[Named sentence2])
     map_morphism :: cid -> morphism1 -> Maybe morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Maybe sentence2
           -- also covers semi-comorphisms
@@ -167,7 +168,7 @@ instance (Comorphism cid1
 			     (si2, se2s)
             (si3, se3s) <- map_sign cid2 si2' 
             return (si3, se3s ++ catMaybes
-                          (map (map_sentence cid2 si2') se2s'))
+                          (map (mapNamedM (map_sentence cid2 si2')) se2s'))
 
    map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
        do m2 <- map_morphism cid1 m1 

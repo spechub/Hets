@@ -68,11 +68,11 @@ instance Comorphism HasCASL2Haskell
     --map_sentence _ sign1 -> sentence1 -> Maybe sentence2
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
-mapSignature :: Env -> Maybe(ModuleInfo,[AHsDecl]) 
+mapSignature :: Env -> Maybe(ModuleInfo,[Named AHsDecl]) 
 mapSignature sign = do 
      anaFun <- basic_analysis Haskell
      let Result ds mt = anaFun (translateAna sign,  
 				empty_signature Haskell,
 				emptyGlobalAnnos)
      (_, _, r, hs) <- mt
-     return (r, map sentence hs) 
+     return (r, map (emptyName . sentence) hs) 

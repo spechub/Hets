@@ -21,6 +21,8 @@ import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.Dynamic
 import Data.List
+import Common.PrettyPrint
+import Common.AS_Annotation (Named, mapNamedM)
 
 -- CASL
 import CASL.Logic_CASL 
@@ -82,10 +84,10 @@ transString :: String -> String
 transString = concat . map transChar
 
 showIsa :: Id -> String
-showIsa = transString . show
+showIsa = transString . flip showPretty ""
 
 showIsaSid :: SIMPLE_ID -> String
-showIsaSid = transString . show 
+showIsaSid = transString . flip showPretty ""
 
 -- disambiguation of overloaded ids
 showIsaI :: Id -> Int -> String
@@ -94,7 +96,8 @@ showIsaI ident i = showIsa ident ++ "__" ++ show i
 
 ---------------------------- Signature -----------------------------
 
-transSignature :: CASL.Sign.Sign -> Maybe(IsaSign.Sign,[IsaSign.Sentence]) 
+transSignature :: CASL.Sign.Sign 
+                   -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
   Just(IsaSign.Sign{
     baseSig = "HOL",
@@ -107,7 +110,7 @@ transSignature sign =
                                    (predMap sign))
                   (opMap sign),
     syn = () },
-     [] )  -- for now. no sentences
+     [] )  -- for now, no sentences
   where 
     insertOps op ts m = 
      if Set.size ts == 1 
@@ -162,15 +165,19 @@ binEq phi1 phi2 =
 transOP_SYMB _ (Op_name op) = showIsa op
 transOP_SYMB sign (Qual_op_name op ot _) = 
   case (do ots <- Map.lookup op (opMap sign)
-           elemIndex (toOpType ot) (Set.toList ots)) of
-    Just i -> showIsaI op i
+           if Set.size ots == 1 then return $ showIsa op
+            else do i <- elemIndex (toOpType ot) (Set.toList ots)
+                    return $ showIsaI op i) of
+    Just str -> str  
     Nothing -> showIsa op
 
 transPRED_SYMB _ (Pred_name p) = showIsa p
 transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
-           elemIndex (toPredType pt) (Set.toList pts)) of
-    Just i -> showIsaI p i
+           if Set.size pts == 1 then return $ showIsa p 
+            else do i <- elemIndex (toPredType pt) (Set.toList pts)
+                    return $ showIsaI p i) of
+    Just str -> str
     Nothing -> showIsa p
 
 transFORMULA :: CASL.Sign.Sign -> FORMULA -> Term
@@ -223,6 +230,9 @@ transTERM sign (Conditional t1 phi t2 _) =
   Const ("If",dummyT) `App` (transFORMULA sign phi) 
                       `App` (transTERM sign t1)
                       `App` (transTERM sign t2)
+transTERM sign (Simple_id v) =
+  Free(transVar v,dummyT)
+  --error "No translation for undisambigated identifier"
 transTERM sign (Unparsed_term _ _) =
   error "No translation for unparsed terms"
 transTERM sign (Mixfix_qual_pred _) =
@@ -233,5 +243,3 @@ transTERM sign (Mixfix_token _) =
   error "No translation for mixfix terms"
 transTERM sign (Mixfix_sorted_term _ _) =
   error "No translation for mixfix terms"
-transTERM sign (Simple_id _) =
-  error "No translation for undisambigated identifier"

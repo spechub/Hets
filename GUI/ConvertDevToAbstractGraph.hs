@@ -46,8 +46,9 @@ import Logic.Grothendieck
 import Logic.Logic
 
 import Common.PrettyPrint
+import qualified Common.Lib.Pretty as Pretty
 import Common.AS_Annotation
-import qualified Common.Result as Result
+import qualified Common.Result as Res
 
 import Comorphisms.CASL2IsabelleHOL -- ??? Only preliminarily
 import CASL.Logic_CASL
@@ -501,7 +502,7 @@ showSpec descr convMap dgraph =
       putStrLn (show (printText0_eGA sp))
 
 
-{- outputs the signature of a node in the bash;
+{- outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph-}
 getSignatureOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSignatureOfNode descr ab2dgNode dgraph = 
@@ -521,34 +522,51 @@ getSignatureOfNode descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
-{- outputs the theory of a node in the bash;
+showSen :: PrettyPrint a => Named a -> String
+showSen x =  (senName x) ++ ": \""++showPretty (sentence x) "\""
+
+nameSens :: [Named a] -> [Named a]
+nameSens sens = 
+  map nameSen (zip sens [1..length sens])
+  where nameSen (sen,no) = if senName sen == "" 
+                              then sen{senName = "Ax"++show no}
+                              else sen
+
+{- outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getTheoryOfNode descr ab2dgNode dgraph = case (do
-  (libname, node) <- Map.lookup descr ab2dgNode 
-  (G_sign lid sign,G_l_sentence_list lid' sens) <- computeTheory dgraph node
-  sens1 <- Result.resultToMaybe $ rcoerce lid' CASL nullPos sens 
-  sign1 <- Result.resultToMaybe $ rcoerce lid CASL nullPos sign 
-  sens' <- sequence $ map (mapNamedM (map_sentence CASL2IsabelleHOL sign1)) sens1
-  sign' <- map_sign CASL2IsabelleHOL sign1
-  return (node,showPretty sign' "\n" ++ showPretty sens' "") 
+  (libname, node) <- 
+        Res.maybeToResult nullPos ("Node "++show descr++" not found")
+                       $ Map.lookup descr ab2dgNode 
+  (G_sign lid sign,G_l_sentence_list lid' sens) <- 
+                   computeTheory dgraph node
+  sens1 <- rcoerce lid' CASL nullPos sens 
+  sign1 <- rcoerce lid CASL nullPos sign 
+  (sign',sens') <- Res.maybeToResult nullPos "Could not map signature"
+                        $ map_sign CASL2IsabelleHOL sign1
+  sens'' <- Res.maybeToResult nullPos "Could not map sentences"
+              $ sequence 
+              $ map (mapNamedM (map_sentence CASL2IsabelleHOL sign1)) sens1
+  let shownsens = concat $ map ((++"\n") . showSen) (nameSens (sens'++sens''))
+  return (node,showPretty sign' "\n\naxioms\n" ++ shownsens)
     ) of
-  Just (node,str) ->  
+  Res.Result [] (Just (node,str)) ->  
       do let dgnode = lab' (context node dgraph)
 	 case dgnode of
            (DGNode name (G_sign _ sig) _ _) ->
               let title = case name of
                    Nothing -> "Theory"
                    Just n -> "Theory of "++showPretty n ""
-               in createTextDisplay title str [size(50,50)]
+               in createTextDisplay title str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
            (DGRef _ _ _) -> error 
 			    "nodes of type dg_ref do not have a signature"
-  Nothing -> error ("node with descriptor "
-                      ++ (show descr) 
-                      ++ " has no corresponding node in the development graph")
+  Res.Result diags _ -> do
+     sequence $ map (putStrLn . show) diags
+     return ()
 
-{- outputs the sublogic of a node in the bash;
+{- outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}
 getSublogicOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSublogicOfNode descr ab2dgNode dgraph = 

@@ -42,6 +42,7 @@ import Static.DevGraph
 import Common.Result
 import Common.Lib.Graph
 import List(nub)
+import Common.Id
 
 {- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
@@ -604,18 +605,31 @@ sensOfNode :: DGraph -> DGNodeLab -> G_l_sentence_list
 sensOfNode dg (DGNode {dgn_sens = sens}) = sens
 sensOfNode dg _ = undefined -- ??? to simplistic
 
+-- | Calculate the morphism of a path with given start node
+calculateMorphismOfPathWithStart :: DGraph -> (Node,[LEdge DGLinkLab]) 
+                                           -> Maybe GMorphism
+calculateMorphismOfPathWithStart dg (n,[]) = do
+  ctx <- fst $ match n dg
+  return $ ide Grothendieck (dgn_sign (lab' ctx)) -- ??? to simplistic 
+  
+calculateMorphismOfPathWithStart _ (_,p) = calculateMorphismOfPath p
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: DGraph -> Node -> Maybe (G_sign,G_l_sentence_list) 
+computeTheory :: DGraph -> Node -> Result (G_sign,G_l_sentence_list) 
 computeTheory dg n = do
-  ctx <- fst $ match n dg
+  ctx <- maybeToResult nullPos ("Could node find node "++show n)
+              $ fst $ match n dg
   let  nlab = lab' ctx
        paths = getAllLocGlobDefPathsTo dg n []
-  mors <- sequence $ map (calculateMorphismOfPath . snd) paths
-  ctxs <- sequence $ map (fst . flip match dg . fst) paths
+  mors <- maybeToResult nullPos "Could not calculate morphism of path"
+            $ sequence $ map (calculateMorphismOfPathWithStart dg) paths
+  ctxs <- maybeToResult nullPos "Could not find start node of path"
+            $ sequence $ map (fst . flip match dg . fst) paths
   let sens = map (sensOfNode dg . lab') ctxs
-  sens' <- sequence 
+  sens' <- maybeToResult nullPos "Could not translate sentences"
+            $ sequence 
             $ map (resultToMaybe . uncurry translateG_l_sentence_list) 
             $ zip mors sens
-  sens'' <- flatG_l_sentence_list sens'
+  sens'' <- maybeToResult nullPos "Logic mismatch for sentences"
+              $ flatG_l_sentence_list sens'
   return (dgn_sign nlab,sens'') -- ??? dgn_sign too simplistic 
