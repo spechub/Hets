@@ -51,24 +51,17 @@ import Common.SimpPretty
 
 --- From String to ATerm ------------------------------------------------------
 
-data ReadTAFStruct = RTS (ATermTable,Int)
-		         -- ATermTable with Index of read and added ATerm
+data ReadTAFStruct = RTS ATermTable
+		         -- ATermTable
 		         String 
 			 -- remaing part of the ATerm as String
 			 ReadTable
 			 {-#UNPACK#-}!Int -- length of ATerm as String 
-		   | RTS_list (ATermTable,[Int])
-		              -- ATermTable with Indices 
-			      -- of read and added ATerms
-		     String 
-		     -- remaing part of the ATerm as String
-		     ReadTable
-		     {-#UNPACK#-}!Int -- length of ATerms as String 
 
 readATerm :: String -> ATermTable 
 readATerm ('!':str)	= 
     case readTAF emptyATermTable str emptyRTable 0 of
-    (RTS (at,_) _ _rt _l) -> at
+    (RTS at _ _rt _l, _) -> at
 {-	ab = case rt of
 	     RTab _ i -> ("Read: next_abbrev="++show i
 			  ++" ATT-TopIndex="++show (getTopIndex at)
@@ -126,91 +119,92 @@ readAnn at str       = ((at,[]),str)
 -- shared --
 
 readTAF :: ATermTable -> String 
-	-> ReadTable -> Int -> ReadTAFStruct
+	-> ReadTable -> Int -> (ReadTAFStruct, Int)
 readTAF at ('#':str) tbl l =  
     case {-# SCC "spanAbbrevChar" #-} spanAbbrevChar str of
     (i,str') -> {-# SCC "RTS_abb" #-}  
-          RTS (at,getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
-                                str' tbl (l+(length i)+1)    
+          (RTS at str' tbl (l+(length i)+1), 
+	   getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)    
 readTAF at ('[':str) tbl l =  
 	case {-# SCC "RTAFs_AList" #-} 
              readTAFs at ']' (dropSpaces str) tbl 1 of
-        (RTS_list (at' ,kids) str'  tbl'  l') -> 
+        (RTS at' str'  tbl'  l', kids) -> 
           case 
 	    readAnnTAF at' (dropSpaces str') tbl' 0 of
-	  (RTS_list (at'',ann)  str'' tbl'' l'') ->
+	  (RTS at'' str'' tbl'' l'', ann)  ->
            case {-# SCC "Cons_AList" #-} ShAList kids ann of
 	   t -> case  {-# SCC "RaddAList" #-} addATermNoFullSharing t at'' of
-		at_t@(_,ai) -> 
+		(at_t, ai) -> 
                  case {-# SCC "RaddAListAbbr" #-}  
 		  seq ai (condAddElement next_abbrev_R_len 
                                          (addRAbbrev ai) (l''+l') tbl'') of
 		 tbl''' -> {-# SCC "RTS_AList" #-} 
-		       RTS at_t str'' tbl''' (l+l'+l'')
+		       (RTS at_t str'' tbl''' (l+l'+l''), ai)
 readTAF at str@(x:xs) tbl l 
   | isIntHead x =  
      case {-# SCC "RspanDigits" #-} span isDigit xs of
      (i,str') -> 
          case readAnnTAF at str' tbl 0 of
-	 (RTS_list (at',ann) str'' tbl' l'') ->
+	 (RTS at' str'' tbl' l'', ann) ->
 	   case {-# SCC "Rread_integer" #-} readInteger (x:i) of
-	   (integer, l') ->
+	   (intl, l') ->
 	    case {-# SCC "RaddAInt" #-} 
-	       addATermNoFullSharing (ShAInt integer ann) at' of
-	    at_t@(_,ai) ->
+	       addATermNoFullSharing (ShAInt intl ann) at' of
+	    (at_t, ai) ->
               case {-# SCC "RaddAIntAbbrev" #-}  
 	         seq ai (condAddElement next_abbrev_R_len 
 			                (addRAbbrev ai) (l'+l'') tbl') of
-	      tbl'' -> {-# SCC "RTS_AInt" #-} RTS at_t str'' tbl'' (l+l'+l'')
+	      tbl'' -> {-# SCC "RTS_AInt" #-} 
+		     (RTS at_t str'' tbl'' (l+l'+l''), ai)
   | isAlphaNum x || x=='"' || x=='(' || x == '_' || x == '*' || x == '+' = 
      case {-# SCC "RspanConstructor" #-} readAFun str of
      (c,str') ->
        case {-# SCC "RTAFs_AAppl" #-} 
             readParenTAFs at (dropSpaces str') tbl 0 of
-       (RTS_list (at',kids) str'' tbl' l') ->
+       (RTS at' str'' tbl' l', kids) ->
          case readAnnTAF at' (dropSpaces str'') tbl' 0 of
-	 (RTS_list (at'',ann) str''' tbl'' l'') ->
+	 (RTS at'' str''' tbl'' l'', ann) ->
 	   case {-# SCC "RaddAAppl" #-} 
 		addATermNoFullSharing (ShAAppl c kids ann) at'' of
-	   at_t@(_,ai) ->
+	   (at_t,ai) ->
              case ((length c) + l'+l'') of
 	     l''' -> seq l''' 
               (case {-# SCC "RaddAApplAbbrev" #-} 
 		  seq ai (condAddElement next_abbrev_R_len 
                                          (addRAbbrev ai) l''' tbl'') of
 	       tbl''' -> {-# SCC "RTS_AAppl" #-} 
-                    RTS at_t str''' tbl''' l''')
+                    (RTS at_t str''' tbl''' l'''), ai)
   | otherwise             = error $ error_saterm (take 5 str)
 
 readParenTAFs :: ATermTable -> String -> ReadTable 
-	      -> Int -> ReadTAFStruct
+	      -> Int -> (ReadTAFStruct, [Int])
 readParenTAFs at ('(':str) tbl l  =  readTAFs at ')'(dropSpaces str) tbl (l+1)
-readParenTAFs at str       tbl l  =  RTS_list (at,[]) str tbl l
+readParenTAFs at str       tbl l  =  (RTS at str tbl l, [])
 
 readTAFs :: ATermTable -> Char -> String -> ReadTable 
-	 -> Int -> ReadTAFStruct
-readTAFs at par s@(p:str) tbl l | par == p  = RTS_list (at,[]) str tbl (l+1)
+	 -> Int -> (ReadTAFStruct, [Int])
+readTAFs at par s@(p:str) tbl l | par == p  = (RTS at str tbl (l+1), [])
                                 | otherwise = readTAFs1 at par s tbl l
 
 readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int 
-	  -> ReadTAFStruct
+	  -> (ReadTAFStruct, [Int])
 readTAFs1 at par str tbl l = 
     case  readTAF at (dropSpaces str) tbl l of
-    (RTS (at' ,t)  str'  tbl'  l') -> 
+    (RTS at' str'  tbl'  l' , t) -> 
       case readTAFs' at' par (dropSpaces str') tbl' l' of
-      (RTS_list (at'',ts) str'' tbl'' l'') ->	 
-              (RTS_list (at'',t:ts) str'' tbl'' l'') 
+      (RTS at'' str'' tbl'' l'', ts) ->	 
+              (RTS at'' str'' tbl'' l'', t:ts) 
 
 readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int 
-			-> ReadTAFStruct
+			-> (ReadTAFStruct, [Int])
 readTAFs' at par (',':str) tbl l = readTAFs1 at par (dropSpaces str) tbl (l+1)
-readTAFs' at par s@(p:str) tbl l | par == p  = RTS_list (at,[]) str tbl (l+1)
+readTAFs' at par s@(p:str) tbl l | par == p  = (RTS at str tbl (l+1), [])
                                  | otherwise = error $ error_paren (take 5 s)
 
 readAnnTAF :: ATermTable -> String -> ReadTable -> Int 
-	   -> ReadTAFStruct
+	   -> (ReadTAFStruct, [Int])
 readAnnTAF at ('{':str) tbl l = readTAFs at '}' (dropSpaces str) tbl (l+1) 
-readAnnTAF at str       tbl l = (RTS_list (at,[]) str tbl l)
+readAnnTAF at str       tbl l = (RTS at str tbl l, [])
 
 
 -- helpers --
@@ -553,9 +547,11 @@ getAbbrevTerm i at (RTab abb_ai_map _) =
 --- Intger Read ---------------------------------------------------------------
 
 readInteger :: String -> (Integer, Int)
-readInteger s@(hd:str) = if hd == '-' then case conv str of
+readInteger s = case s of 
+		  (hd:str) -> if hd == '-' then case conv str of
 			 (m, l) -> (negate m, l + 1)
 			 else conv s
+		  _ -> error "readInteger"
     where f (m, l) x = (toInteger (ord x - ord '0') + 10 * m, l + 1)
 	  conv = foldl f (0, 0)
 
