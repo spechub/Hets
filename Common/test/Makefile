@@ -2,11 +2,11 @@
 
 .PHONY: check
 
-check: ../test_parser
-	../test_parser Annotations.casl
+check: ../annos
+	bash runcheck.sh ../annos
 
-output: ../test_parser
-	../test_parser Annotations.casl > Annotations.casl.output
+output: ../annos
+	bash runcheck.sh ../annos set
 
 %: 
 	(cd ..; $(MAKE) $@)
