@@ -1,0 +1,122 @@
+Licence agreement
+
+[Das deutsche Original haben Sie zusammen mit dieser Übersetzung erhalten.
+You have received the German original together with this translation.]
+
+Preamble
+
+Following the ideas of open source software, the provider of this licence provides 
+access to the software for anyone without free, under the following conditions which 
+are similar to the Lesser Gnu Public License (LGPL). When the "Institut für 
+Rechtsfragen der Freien und Open Source Software" (www.ifross.de) has developed 
+as version of the LGPL adapted to German law, this shall replace the present 
+licence.
+ 
+The aim of this licence agreement is to enable the free use of the software that is 
+described in the sequel by anyone. In order to guarantee this, it is necessary to set 
+up rules for the use of the software that hold for any user.
+
+Provider of this licence is the University of Bremen, represented by ist principal 
+(called "licence provider" in the sequel). The provider of the licence has developed 
+the "Heterogeneous Tool Set" (Hets, just called  "software" in the sequel). The 
+software consists of a command line tool for the analysis of specifications and a 
+graphical interface for the management of specifications and proofs using 
+development graphs.
+
+Following the ideas of open source software, the licence provider gives access to the 
+software without fee for anyone (called „licence taker" in the sequel) under certain 
+conditions. Each licence taker obligates himself to follow the terms of use below.
+
+
+
+§ 1 Principle
+
+Each licence taker appreciating these terms of use receives a simple right, not 
+resctricted in time and space and without any fee, to use the software, in particular, 
+to copy, distribute and process it. Exclusively the following terms of use do hold.  The 
+licence provider explicitly contradicts any conflicting terms of business. By making 
+use of the rights described below, in particular by copying or distributing it, a licence 
+treaty between the licence provider and the licence takes is concluded.
+
+
+
+§ 2 Copying
+
+The licence taker has the right to make and distribute unmodified copies of the 
+software on any media. Prerequisite for this is that the licence provider and this 
+licence agreement is clearly recognizable, and that the sources are distributed 
+together with the software.
+
+
+
+§ 3 Modification and Distribution
+The licence taker has the right to modify copies of the software (or parts thereof) and 
+to distribute these modifications under the terms of § 2 above and the following 
+conditions:
+
+1.	The modified software has to carry a clear mark that points to the original 
+licence provider, the modification that has been made, and the date of the 
+modification.
+
+2.	The licence taker has to ensure that the software as a whole or parts of it are 
+accessible to third parties under the terms of this licence agreement without 
+fee.
+
+3.	If during the modification a copyright of the licence taker emerges, then this 
+copyright must be put under the terms of this licence if the modified software is 
+distributed.
+
+
+§ 4 Other duties
+
+1.	Reference to the validity of this licence agreement must not be modified or 
+deleted by the licence taker.
+
+2.	The use of the software by third parties must not be conditioned by the 
+fulfilment of duties that are not mentioned in this licence agreement.
+
+3.	The use of the software must not be prevented or complicated by means fo 
+technical protection, in particular copy protection means.
+
+
+
+§ 5 Liability, Update
+
+1.	Liability of the licence provider is restriced to fraudulent withheld factual or 
+legal errors. The licence provider does not give any warranty, and neither 
+ensures any properties of the software. Furthermore, he is liable only for those 
+damages that are caused by willful or grossly negligent violation of duty.
+
+2.	The licence provider has the right to update these terms of use at any time.
+
+
+
+
+§ 6 Forum for users
+
+The licence provider does provide neither support nor consultation. Without 
+acknowledgement of any legal duty, the licence provider will care about the 
+installation of a user forum for discussions about the software and its further 
+development. 
+
+
+§ 7 Legal domicile
+
+It is agreed that the law of the Federal Republic of Germany is valid for this licence 
+agreement. For any lawsuits or legal actions emerging from this licence agreement, it 
+is agreed that exclusively German courts are competent. Legal domicile is Bremen.
+
+
+§ 8 Termination through Offence
+
+Any violation of a duty of this agreement automatically terminates the rights of use of 
+the offender.
+
+
+
+§ 9 Salvatorian Clause
+
+If any rule of this agreement should be or become inoperative, validity of the other 
+rules is not affected. The parties will care about replacing the invalid rule by some 
+valid rule that comes close to the purpose of this agreement.
+

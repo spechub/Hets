@@ -238,6 +238,36 @@ lookupComorphism error_prefix coname (_,comorphisms) =
     Just cid -> cid
 
 
+-- auxiliary existential type needed for composition of comorphisms
+data AnyComorphismAux lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 = 
+        forall cid .
+      Comorphism cid 
+                 lid1 sublogics1 basic_spec1 sentence1 
+                 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                 lid2 sublogics2 basic_spec2 sentence2 
+                 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+      ComorphismAux cid lid1 lid2
+
+instance Typeable (lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+instance Show (lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+
 {- This does not work due to needed ordering:
 instance Functor Set where
   fmap = mapSet
@@ -327,18 +357,27 @@ instance Category Grothendieck G_sign GMorphism where
     GMorphism (IdComorphism lid) sigma (ide lid sigma)
   comp _ 
       (GMorphism r1 sigma1 mor1) 
-      (GMorphism r2 _sigma2 mor2) = undefined
-    {- do let lid1 = sourceLogic r1
-           lid2 = targetLogic r1
-           lid3 = sourceLogic r2
-           lid4 = targetLogic r2
-       --r1' <- coerce lid2 lid3 r1
-       let r3 = CompComorphism r1 r2
-           lid5 = targetLogic r3
-       mor1' <- coerce lid2 lid3 mor1
-       mor1'' <- map_morphism r2 mor1'
-       mor <- comp lid5 mor2 mor1''
-       return (GMorphism r3 sigma1 mor) -}
+      (GMorphism r2 _sigma2 mor2) = 
+    do let lid1::lid1 = sourceLogic r1
+           lid2::lid2 = targetLogic r1
+           lid3::lid3 = sourceLogic r2
+           lid4::lid4 = targetLogic r2
+       ComorphismAux r1' lid1' lid2' <- 
+         (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2)
+            :: Maybe (AnyComorphismAux lid5 sublogics1
+                basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                lid6 sublogics2
+                basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+--       r1' <- coerce lid2 lid3 r1
+       let r3 = CompComorphism r1' r2
+--           lid5 = targetLogic r3
+--       mor1' <- coerce lid2 lid3 mor1
+--       mor1'' <- map_morphism r2 mor1'
+--       mor <- comp lid5 mor2 mor1''
+       return undefined
+--       return (GMorphism r3 undefined undefined) --sigma1 mor) 
   dom _ (GMorphism r sigma _mor) = 
     G_sign (sourceLogic r) sigma
   cod _ (GMorphism r _sigma mor) = 

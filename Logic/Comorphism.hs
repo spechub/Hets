@@ -30,7 +30,7 @@ import Common.ATerm.Lib
 -- Logic comorphisms (possibly also morphisms via adjointness)
 
 
-class (Language cid,
+class (Language cid, Typeable cid,
        Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
@@ -67,6 +67,11 @@ class (Language cid,
 
 data IdComorphism lid  = 
      IdComorphism lid deriving Show
+idComorphismTc :: TyCon
+idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"
+instance Typeable (IdComorphism lid) where 
+  typeOf s = mkAppTy idComorphismTc []
+                --[typeOf ((undefined :: IdComorphism a -> a) s)]
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -117,7 +122,7 @@ data (Comorphism cid1
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3 = 
      CompComorphism cid1 cid2 deriving (Show)
 tyconCompComorphism :: TyCon
-tyconCompComorphism = mkTyCon "CompComorphism"
+tyconCompComorphism = mkTyCon "Logic.Comorphism.CompComorphism"
 instance Typeable (CompComorphism cid1
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -127,6 +132,8 @@ instance Typeable (CompComorphism cid1
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3) where
   typeOf _ = mkAppTy tyconCompComorphism []
+
+
 
 instance (Comorphism cid1
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

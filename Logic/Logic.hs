@@ -1,9 +1,15 @@
 
 -- needs ghc -fglasgow-exts -fallow-overlapping-instances -package data
 
-{- HetCATS/Logic.hs
-   $Id$
-   Till Mossakowski, Christian Maeder
+{- |
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
+
+Maintainer  :  till@tzi.de
+Stability   :  provisional
+Portability :  needs ghc -fglasgow-exts -fallow-overlapping-instances -package data
+ 
    
    Provides data structures for logics (with symbols). Logics are
    a type class with an "identitiy" type (usually interpreted
