@@ -11,7 +11,7 @@ Type Constructors
 [__] : a ->b
 a__b : a ->b
 t : a
-x : a
+x : ({_ < t},b,a)
 y : Type
 Type Variables : (x,y)
 Assumptions
@@ -37,11 +37,5 @@ Warning (20,7) redeclared class 'd'
 Error (20,7) class cannot become an alias class 'd'
 Warning (25,7) redeclared class 'h'
 Error (25,7) inconsistent redefinition of 'h'
-Error (33,9) unidentified type 's'
-Error (35,8) incompatible kinds
-b
-  a
-Error (37,9) incompatible kinds
-{_ < t}
-  a
+Error (33,9) undeclared type 's'
 Error (39,6) non-matching kind arity
