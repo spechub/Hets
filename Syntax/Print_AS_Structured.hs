@@ -188,6 +188,9 @@ instance PrettyPrint Logic_name where
 		       Just sub -> ptext "." <> printText0 ga sub)
 
 -----------------------------------------------
+{- |
+  specealized printing of 'FIT_ARG's 
+-}
 print_fit_arg_list :: (GlobalAnnos -> (Annoted FIT_ARG) -> Doc)
 		   -> (Doc -> Doc) -- ^ a function enclosing the Doc
                                    -- in brackets
@@ -198,7 +201,9 @@ print_fit_arg_list _pf _b_fun _sep_fun _ga [] = empty
 print_fit_arg_list pf b_fun _sep_fun ga [fa] = b_fun $ pf ga fa
 print_fit_arg_list pf b_fun sep_fun ga fas = 
     sep_fun $ map (b_fun . (pf ga)) fas
-
+{- |
+   conditional generation of grouping braces for Union and Extension
+-}
 condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		    -> (Doc -> Doc) -- ^ a function enclosing the Doc
                                     -- in braces
@@ -220,6 +225,9 @@ condBracesGroupSpec pf b_fun mkeyw ga as =
 	             else str_doc
 	  nested'' = str_doc' <>b_fun as'
 
+{- |
+  generate grouping braces for Tanslations and Reductions
+-}
 condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		      -> (Doc -> Doc) -- ^ a function enclosing the Doc
                                       -- in brackets
@@ -233,6 +241,9 @@ condBracesTransReduct pf b_fun ga as =
     where as' = pf ga as
 	  nested'' = b_fun as'
 
+{- |
+  generate grouping braces for Within
+-}
 condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 		 -> (Doc -> Doc) -- ^ a function enclosing the Doc
                                  -- in braces
@@ -244,7 +255,9 @@ condBracesWithin pf b_fun ga as =
 		 _                -> as'
     where as' = pf ga as
 	  nested'' = b_fun as'
-
+{- |
+  only Extensions inside of Unions (and) need grouping braces 
+-}
 condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
 	      -> (Doc -> Doc) -- ^ a function enclosing the Doc
                               -- in braces
@@ -263,17 +276,17 @@ skip_Group sp =
 	    _          -> sp
 
 
--- ToDo: \THENIMPLIES,... erzeugen
+-- ToDo: \\THENIMPLIES,... erzeugen
 --       Dazu Hilfsfunktionen erzeugen
 --       nachschauen wie implies zur Zeit gesetzt wird
 --       
--- | 
+-- |
 -- prints the keyword or spec head with following semantic annotation
 -- if any and the list of non sematic annotations if any and
--- then the following item from Annoted a
+-- then the following item from 'Annoted' a
 spAnnotedPrint :: (a -> Doc) -- ^ print function for the item
 	       -> (Annotation -> Doc) -- ^ print function for the annotation
-	       -> (Doc -> Doc -> Doc) -- ^ a function like <+> or <\+>
+	       -> (Doc -> Doc -> Doc) -- ^ a function like '<+>' or '<\+>'
 	       -> Doc -- ^ keyword or spec head (spec ... =) 
 	       -> Annoted a -- ^ item to print after keyword or spec head
 	       -> Doc
@@ -287,13 +300,13 @@ spAnnotedPrint pf pAn beside_ keyw ai =
 		                xs     -> (Nothing,xs)
  	      (san,anno)   = case msa of
 		               Nothing -> (empty, empty)
-		               Just a  -> (pAn a, checkAnno a (pAn a)) 
+		               Just a  -> (pAn a, checkAnno a keyw beside_ (pAn a)) 
               as'          = if null as then empty else vcat $ map pAn as 
 	                 -- Todo: indent annos
           in  case (render keyw) of
                 "\\THEN" | not $ isEmpty anno  -> anno $+$ as' $+$ i'
-                keyw'                          -> keyw `beside_` san $+$ as' $+$ i'
-    where checkAnno an san'= 
+                keyw'                         -> keyw `beside_` san $+$ as' $+$ i'
+    where checkAnno an keyword beside_ san = 
             case an of 
                  Semantic_anno anno _ ->
                           case anno of 
@@ -303,3 +316,4 @@ spAnnotedPrint pf pAn beside_ keyw ai =
 				SA_mono     -> sp_text 0 "\\THENMONO"
 				anno'       -> keyw `beside_` san'
                  an' -> keyw `beside_` san'                 
+

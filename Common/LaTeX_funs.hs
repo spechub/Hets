@@ -249,7 +249,7 @@ comment_width      = calc_word_width Comment
 normal_width       = calc_word_width Normal
 
 -- |
--- LaTeX version of <+> with enough space counted.  It's choosen the
+-- LaTeX version of '<+>' with enough space counted.  It's choosen the
 -- space between keywords which is nearly the average width of a
 -- space.
 (<\+>) :: Doc -> Doc -> Doc
