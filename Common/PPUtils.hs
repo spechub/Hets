@@ -12,8 +12,10 @@
      - Add your own functions.
 -}
 
-module Common.PPUtils (module Common.PPUtils,module Common.LaTeX_funs) where
- 
+module Common.PPUtils (module Common.PPUtils,
+		       module Common.LaTeX_funs,
+		       hspace_latex) where
+
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -22,7 +24,7 @@ import Common.Print_AS_Annotation
 import Common.Lib.Pretty
 import Common.PrettyPrint
 
-import Common.LaTeX_funs 		  
+import Common.LaTeX_funs hiding (startAnno,endAnno) 
 
 -- | a helper type to pretty print (wrapped) strings 
 data WrapString = WrapString String
@@ -109,9 +111,14 @@ semiAnno_text ga l = if null l then empty else
     where pfga as = vcat $ map (printText0 ga) as
 	  pf' printSemi a_item =
 	         pfga (l_annos a_item)
-			$$ printText0 ga (item a_item)
-			       <> (if printSemi then semi else empty)
-			       <+> pfga (r_annos a_item)
+			$$ hang (printText0 ga (item a_item)
+				 <> (if printSemi then semi else empty))
+			       0 laImpl 
+			$$ ras
+	      where (laImpl,ras) = splitAndPrintRAnnos printText0 
+	                                     printAnnotationList_Text0 
+					     (<+>)
+					     (empty) ga (r_annos a_item)
 
 --------------------------------------------------------------------
 
@@ -129,6 +136,7 @@ listSep_latex :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_latex separator ga = fsep_latex . punctuate separator .
 			     map (printLatex0 ga)
 
+
 semiAnno_latex :: (PrettyPrint a) => 
 		  GlobalAnnos -> [Annoted a] -> Doc
 semiAnno_latex ga l = if null l then empty else
@@ -136,10 +144,31 @@ semiAnno_latex ga l = if null l then empty else
 		              (init l) ++ [pf' False (last l)])
     where pfga as = vcat $ map (printLatex0 ga) as
 	  pf' printSemi a_item =
-	         pfga (l_annos a_item)
-			$$ printLatex0 ga (item a_item)
-			   <> (if printSemi then semi_latex else empty)
-			       <\+> pfga (r_annos a_item)
+	      leftAF (rightAF (
+		 if isEmpty laImpl then item'' else fsep_latex [item'', laImpl]))
+	      where (laImpl,ras) = splitAndPrintRAnnos printLatex0 
+	                                     printAnnotationList_Latex0 
+					     (<\+>)
+					     (latex_macro "\\`") 
+					     ga (r_annos a_item)
+		    item' = printLatex0 ga (item a_item)
+		    item'' = if printSemi then item'<>semi_latex else item'
+		    leftAF = if null l_annos' then id 
+			                      else ($$) (pfga l_annos')
+		    l_annos' = l_annos a_item
+		    rightAF = if isEmpty ras then id
+			                     else (\ x -> x $$ ras)
+
+tabList_latex :: [Doc] -> [Doc]
+tabList_latex [] = []
+tabList_latex [x] = [startTab_latex <> x <> endTab_latex]
+tabList_latex l = let h' = startTab_latex <> head l
+		      l' = last l <>endTab_latex
+		      rema = if null $ tail l 
+			    then [] 
+			    else init $ tail l 
+		  in h':rema++[l']
+
 
 hc_sty_casl_keyword :: String -> Doc
 hc_sty_casl_keyword = hc_sty_keyword (Just "preds")
@@ -154,12 +183,22 @@ sp_braces_latex :: Doc -> Doc
 sp_braces_latex = 
     sp_between_latex (casl_normal_latex "\\{") (casl_normal_latex "\\}")
 
+sp_braces_latex2 :: Doc -> Doc
+sp_braces_latex2 d =
+    fcat [casl_normal_latex "\\{"<>d,
+	  casl_normal_latex "\\}"]
+
 sp_brackets_latex :: Doc -> Doc
 sp_brackets_latex =
     sp_between_latex (casl_normal_latex "[") (casl_normal_latex "]")
 
 simple_id_latex :: SIMPLE_ID -> Doc 
 simple_id_latex = hc_sty_structid . tokStr
+
+simple_id_indexed_latex :: SIMPLE_ID -> Doc
+simple_id_indexed_latex = hc_sty_structid_indexed . tokStr
+parens_tab_latex :: Doc -> Doc
+parens_tab_latex = parens_latex.set_tabbed_nest_latex
 
 -- |
 -- constant document to start indentation by a LaTeX tab stop
@@ -191,13 +230,13 @@ set_tabbed_nest_latex d = setTab_latex <> tabbed_nest_latex d
 
 tab_nest_latex :: Int -> Doc -> Doc
 tab_nest_latex i d = tabbed_nest_latex (nest_latex i d)
-
+{- tab_nest_latex i d =
+   setTabWithSpaces_latex i <> tabbed_nest_latex (nest_latex i d)
+-}
 tab_hang_latex :: Doc -> Int -> Doc -> Doc
 tab_hang_latex d1 i d2 = sep_latex [d1, tab_nest_latex i d2]
-
-{-nest_latex :: Int -> Doc -> Doc
-nest_latex k = nest (k * space_latex_width)
-     
-hang_latex :: Doc -> Int -> Doc -> Doc
-hang_latex d1 n d2 = sep_latex [d1, nest_latex n d2]
+{-tab_hang_latex d1 i d2 = 
+    setTabWithSpaces_latex i 
+        <> sep_latex [d1, tabbed_nest_latex (nest_latex i d2)]
 -}
+
