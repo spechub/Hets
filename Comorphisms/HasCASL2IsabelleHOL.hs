@@ -25,7 +25,7 @@ import Common.AS_Annotation (Named, mapNamedM)
 import Debug.Trace
 -- HasCASL
 import HasCASL.Logic_HasCASL
--- import HasCASL.Sublogic
+import HasCASL.Sublogic
 -- import HasCASL.MiniAs as MiniAs
 -- import HasCASL.MiniLe
 import HasCASL.Le as Le
@@ -52,16 +52,17 @@ instance Comorphism HasCASL2IsabelleHOL
                IsaSign.Sign 
                () () () ()  where
     sourceLogic _ = HasCASL
-    sourceSublogic _ = () -- HasCASL_SL
---                       { has_sub = False,   -- subsorting
---                         has_part = True,  -- partiality
---                         has_eq = True,    -- equality
---                         has_pred = True,  -- predicates
---                         has_ho = True,  -- higher order
---                         has_type_classes = False,
---                         has_polymorphism = False,
---                         which_logic = FOL
---                       }
+    sourceSublogic _ = HasCASL_SL
+                       { has_sub = False,   -- subsorting
+                         has_part = True,  -- partiality
+                         has_eq = True,    -- equality
+                         has_pred = True,  -- predicates
+                         has_ho = True,  -- higher order
+                         has_type_classes = False,
+                         has_polymorphism = False,
+                         has_type_constructors = False,
+                         which_logic = FOL
+                       }
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
