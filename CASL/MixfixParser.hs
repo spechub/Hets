@@ -25,6 +25,7 @@ import Id
 import FiniteMap
 import Set
 import Lexer (caslChar)
+import Monad
 import ParsecPrim
 import qualified Char as C
 import List(intersperse)
@@ -162,8 +163,8 @@ initialState g ids i =
 
 type ParseMap = FiniteMap Int [State]
 
-lookUp :: (Ord key) => FiniteMap key [a] -> key -> [a]
-lookUp m i = lookupWithDefaultFM m [] i
+lookUp :: (Ord a, MonadPlus m) => FiniteMap a (m b) -> a -> (m b)
+lookUp ce = lookupWithDefaultFM ce mzero
 
 -- match (and shift) a token (or partially finished term)
 
@@ -564,13 +565,9 @@ makeStringTerm c f tok =
   str = init (tail (tokStr tok))
   makeStrTerm p@(lin, col) l = 
     if null l then asAppl c [] p
-    else let (real, len, rest) = if head l == '\'' 
-                        then ("'\\''", 1, tail l) 
-			else let (hd, tl) = split caslChar l
-	                     in ("'" ++ hd ++ "'", length hd, tl)
-             -- convert "'" to "\'" and lookup character '\''
-         in asAppl f [asAppl (Id [Token real p] [] []) [] p, 
-		      makeStrTerm (lin, col + len) rest] p
+    else let (hd, tl) = split caslChar l
+         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] p, 
+		      makeStrTerm (lin, col + length hd) tl] p
 
 makeNumberTerm :: Id -> Token -> TERM
 makeNumberTerm f t@(Token n p@(lin, col)) =
