@@ -110,8 +110,9 @@ ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM _ bi = do
     e <- get
     case bi of
-        Simple_mod_decl al _ -> mapM_ ((updateExtInfo . addModId) . item) al
-	Term_mod_decl al _ -> mapM_ ((updateExtInfo . addModSort e) . item) al
+        Simple_mod_decl al _ _ -> mapM_ ((updateExtInfo . addModId) . item) al
+	Term_mod_decl al _ _ -> 
+	    mapM_ ((updateExtInfo . addModSort e) . item) al
     return bi
 
 addModId :: SIMPLE_ID -> ModalSign -> Result ModalSign

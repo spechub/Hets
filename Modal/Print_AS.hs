@@ -24,10 +24,12 @@ import Modal.AS_Modal
 import Modal.ModalSign
 
 instance PrettyPrint M_BASIC_ITEM where
-    printText0 ga (Simple_mod_decl is _) = 
+    printText0 ga (Simple_mod_decl is fs _) = 
 	ptext modalityS <+> semiAnno_text ga is
-    printText0 ga (Term_mod_decl ss _) = 
+	      <> braces (semiAnno_text ga fs)
+    printText0 ga (Term_mod_decl ss fs _) = 
 	ptext termS <+> ptext modalityS <+> semiAnno_text ga ss
+	      <> braces (semiAnno_text ga fs)
 
 instance PrettyPrint RIGOR where
     printText0 _ Rigid = ptext rigidS

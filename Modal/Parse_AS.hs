@@ -13,6 +13,7 @@ Portability :  portable
 module Modal.Parse_AS where
 
 import Common.AnnoState
+import Common.AS_Annotation
 import Common.Id
 import Common.Keywords
 import Common.Lexer
@@ -68,14 +69,24 @@ mKey = asKey modalityS <|> asKey modalityS
 
 mBasic :: AParser M_BASIC_ITEM
 mBasic = 
-    do c <- mKey
-       auxItemList (modal_reserved_words ++ startKeyword)
-		       [c] simpleId Simple_mod_decl
+    do (as, fs, ps) <- mItem simpleId
+       return (Simple_mod_decl as fs ps)
     <|>
     do t <- asKey termS
+       (as, fs, ps) <- mItem (sortId modal_reserved_words)
+       return (Term_mod_decl as fs (tokPos t : ps))
+
+mItem :: AParser a -> AParser ([Annoted a], [AnModFORM], [Pos])
+mItem pr = do 
        c <- mKey
-       auxItemList (modal_reserved_words ++ startKeyword) 
-		       [t, c] (sortId modal_reserved_words) Term_mod_decl
+       (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)
+		   [c] pr (,)
+       do o <- oBraceT
+	  (fs, qs) <- annoParser (formula modal_reserved_words)
+		      `separatedBy` anSemi
+	  p <- cBraceT
+          return (as, fs, ps ++ toPos o qs p)
+	<|>  return (as, [], ps)
 		
 instance AParsable M_BASIC_ITEM where
   aparser = mBasic
