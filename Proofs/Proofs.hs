@@ -199,7 +199,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
  ((node,path):list) =
-  if isDuplicate newEdge dgraph changes
+  if isRedundant newEdge dgraph changes list
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
 
@@ -643,29 +643,38 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes = 
   elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
-{- -}
-isRedundant :: LEdge DGLinkLab -> DGraph -> [DGChange] -> [LEdge DGLinkLab]
- -> Bool
+{- returns true, if the given edge is duplicate or
+ if there already exists a parallel path,
+ which starts with a localThmEdge to one of the startnodes in 'otherNewEdge'
+ and has the same morphism as the given edge,
+ false otherwise-}
+isRedundant :: LEdge DGLinkLab -> DGraph -> [DGChange] 
+              ->[(Node, [LEdge DGLinkLab])] -> Bool
 isRedundant newEdge@(src,_,label) dgraph changes otherNewEdges =
   isDuplicate newEdge dgraph changes 
-  || elem (Just (dgl_morphism label)) morphisms
+  || elem (Just (dgl_morphism label)) morphismsOfParallelPaths
 
   where
     localThmEdgesToOtherSources = 
       [outEdge|outEdge@(_,tgt,_) <- out dgraph src,
-               elem tgt (map getSourceNode otherNewEdges)
+               elem tgt (map fst otherNewEdges)
                && isLocalThm outEdge]
-    paths = concat (map (combine otherNewEdges) localThmEdgesToOtherSources)
-    morphisms = map calculateMorphismOfPath paths
+    parallelPaths 
+      = concat (map (combineSucceedingEdges otherNewEdges)
+                    localThmEdgesToOtherSources)
+    morphismsOfParallelPaths = map calculateMorphismOfPath parallelPaths
 
-combine ::[LEdge DGLinkLab] ->  LEdge DGLinkLab -> [[LEdge DGLinkLab]]
-combine [] _ = []
-combine ((secondEdge@(src,_,_)):edges) firstEdge@(_,tgt,_) =
-  if tgt == src then [firstEdge,secondEdge]:(combine edges firstEdge)
-   else combine edges firstEdge
+{- combines the given edge with each of those given paths that start
+ with the target node of the edge-}
+combineSucceedingEdges :: [(Node,[LEdge DGLinkLab])] -> LEdge DGLinkLab
+                          -> [[LEdge DGLinkLab]]
+combineSucceedingEdges [] _ = []
+combineSucceedingEdges ((src,path):paths) edge@(_,tgt,_) =
+  if tgt == src 
+   then ((edge:path)):(combineSucceedingEdges paths edge)
+   else combineSucceedingEdges paths edge
+
   
-
-
 isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
   if isDGRef nodeLab then 
