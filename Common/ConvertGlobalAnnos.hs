@@ -33,10 +33,11 @@ convertGlobalAnnos ga = c_prec (prec_annos ga)
 	      ++ c_displ (display_annos ga)
               ++ c_lit_an (literal_annos ga)
 
--- Achtung noch nicht fertig
+mergeGlobalAnnos::GlobalAnnos->GlobalAnnos->GlobalAnnos
+mergeGlobalAnnos ga1 ga2 = addGlobalAnnos ga1 $ convertGlobalAnnos ga2
+
 c_prec::PrecedenceGraph->[Annotation]
-c_prec pg = -- [Prec_anno Lower [] [] []]
-            let erg = Rel.toList pg -- [(Id,???)]
+c_prec pg = let erg = Rel.toList pg -- [(Id,???)]
             in  map ( \ (x,y) -> Prec_anno (precRel pg x y) [x] [y] []) erg  
 
 c_assoc::AssocMap->[Annotation]
@@ -67,3 +68,5 @@ c_lit_an la = let str = case (string_lit la) of
 				 Just (a,b) -> [Float_anno a b []]
                                  _ -> []
               in str++lis++number++flo
+
+
