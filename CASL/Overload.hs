@@ -1,14 +1,14 @@
 {- | 
    
-   Module      :  $Header$
-   Copyright   :  (c)  Martin Kühl and Till Mossakowski and Uni Bremen 2003
-   Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+    Module      :  $Header$
+    Copyright   :  (c)  Martin Kühl and Till Mossakowski and Uni Bremen 2003
+    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-   Maintainer  :  hets@tzi.de
-   Stability   :  provisional
-   Portability :  portable
+    Maintainer  :  hets@tzi.de
+    Stability   :  provisional
+    Portability :  portable
 
-  Overload resolution
+    Overload resolution
 -}
 
 module CASL.Overload where
@@ -35,20 +35,17 @@ TODO: All das hier implementieren und testen :D
 -}
 
 {-----------------------------------------------------------
-  Overload Resolution
+    Overload Resolution
 -----------------------------------------------------------}
 {- expand all sentences to be fully qualified, then return them if there is no
    ambiguity -}
 overloadResolution :: Sign -> [Sentence] -> Result [Sentence]
 overloadResolution sign sentences
-    = let
-      expandedSentences =
-          map (minExpTerm sign) sentences
-      in
-      return expandedSentences
+    = do expandedSentences <- map (minExpSentence sign) sentences
+         -- check ambiguities, generate errors for them
 
 {-----------------------------------------------------------
-  Extract Atomic Sentences from (general) Sentences
+    Extract Atomic Sentences from (general) Sentences
 -----------------------------------------------------------}
 getAtoms :: Sentence -> [Sentence]
 getAtoms sentence
@@ -65,9 +62,9 @@ getAtoms sentence
     where getAllAtoms = concat . map getAtoms
 
 {-----------------------------------------------------------
-  Minimal Expansion of a Sentence
+    Minimal Expansion of a Sentence -- TODO: implement :o)
 -----------------------------------------------------------}
-minExpSentence :: Sign -> Sentence -> [[Sentence]]
+minExpSentence :: Sign -> Sentence -> Result [[Sentence]]
 minExpSentence sign sentence
     = case sentence of
         -- Atomic Sentences -> Calculate minimal Expansion 
@@ -91,13 +88,13 @@ minExpSentence sign sentence
                     ++ (show sentence)
 
 {-----------------------------------------------------------
-  Minimal Expansion of a Term
+    Minimal Expansion of a Term
 -----------------------------------------------------------}
-minExpTerm :: Sign -> TERM -> [[TERM]]
+minExpTerm :: Sign -> TERM -> Result [[TERM]]
 minExpTerm sign term
     = case term of
         Simple_id var
-            -> -- var/const definition
+            -> minExpTerm_simple sign var
         Qual_var var sort _
             -> -- qualified term
         Application op terms _
@@ -110,90 +107,137 @@ minExpTerm sign term
         Conditional term1 formula term2 _
             -> -- conditional ?
         Unparsed_term string _
-            -> error $ "Parser Error: Unparsed `Unparsed_term' received: "
+            -> error $ "Parser Error: Unparsed `Unparsed_term' found: "
                ++ string
-        _   -> error $ "Parser Error: Unparsed `Mixfix_whatever' received: "
+        _   -> error $ "Parser Error: Unparsed `Mixfix' term found: "
                ++ (show term)
 
 {-----------------------------------------------------------
-  minExpTerm Helper Functions for Special Cases
+    Minimal Expansion of a Simple_id Term
 -----------------------------------------------------------}
-minExpTerm_simple :: Sign -> SIMPLE_ID -> [[TERM]]
+minExpTerm_simple :: Sign -> SIMPLE_ID -> Result [[TERM]]
 minExpTerm_simple sign var
-    = let const op = null (opArgs op)
-          vars = case Map.lookup var (varMap sign) of
-                   Nothing -> []
-                   Just ss -> Set.elems ss
-          ops = case Map.lookup (simpleIdToId var) (opMap sign) of
-                  Nothing -> []
-                  Just os -> map (opRes) $ Set.elems $ Set.filter (const) os
-          all_sorts = (vars ++ ops)
-          sorts = filter (leastSort sign all_sorts) all_sorts
-          in qualifyTerm $ equivalenceClasses leqF sorts
-    where
-    leastSort sign sorts x = null $ filter (> x) sorts -- > defined in sign
+    = do
+        -- is_const :: OpType -> Bool
+        let is_const = null . opArgs            -- list of args is empty
+            = 1 == Set.size                     -- True if s is the only member
+                (Set.intersection sorts         -- intersect with current sorts
+                    (subsortsOf s sign))        -- find subsorts
+        -- vars :: Set.Set SORT
+        let vars = case Map.lookup var (varMap sign) of
+            Nothing    -> Set.empty
+            Just vars' -> vars'
+        -- ops :: Set.Set SORT
+        let ops = case Map.lookup (simpleIdToId var) (opMap sign) of
+            Nothing    -> Set.empty
+            Just ops'  ->
+                Set.fromList                    -- convert back into Set
+                    $ map opRes                 -- get result of each op
+                    $ Set.elems                 -- convert Set to list
+                    $ Set.filter is_const ops'  -- find const ops
+        -- all_sorts :: Set.Set SORT
+        let all_sorts = Set.union vars ops
+        -- no_lesser_sort :: (Set.Set SORT) -> SORT -> Bool
+        let no_lesser_sort sorts s
+        -- least_sorts :: Set.Set SORT
+        let least_sorts
+            = Set.filter (no_lesser_sort all_sorts) all_sorts
+        -- TODO: merge var into this process somewhere
+        return qualifyTerms                     -- merge into qualified Term
+            $ equivalenceClasses leqF           -- divide into equiv. classes
+            $ Set.toList least_sorts            -- convert to List
 
-minExpTerm_qual :: Sign -> VAR -> SORT -> [[TERM]]
+{-----------------------------------------------------------
+    Minimal Expansion of a Qual_var Term
+-----------------------------------------------------------}
+minExpTerm_qual :: Sign -> VAR -> SORT -> Result [[TERM]]
 minExpTerm_qual sign var sort
-    = let expandedVar = minExpTerm_simple sign var
-          selectExpansions c = [ (var, sort) |
-                                 sorted <- c,
-                                 fits sorted ]
-          fits (Sorted_term (Simple_id v) s _)
-               = (v == var) && (s <= sort)
-          in qualifyTerm $ map selectExpansions expandedVar
+    = do
+        -- expandedVar :: [[TERM]]
+        expandedVar <- minExpTerm_simple sign var
+        -- selectExpansions :: [TERM] -> [(TERM, SORT)]
+        let selectExpansions c                  -- foreach c in expandedVar
+            = [ ((Simple_id var), sort) |       -- choose {(var, sort)}
+                sorted <- c,                    -- foreach sorted Term in c
+                fits sorted ]                   -- if it fits var and sort
+        -- fits :: TERM -> Bool
+        let fits (Sorted_term (Simple_id v) s _)
+            = (v == var) && (s <= sort)         -- if var eq and sort leq
+        let fits _ = False                      -- TODO: this shouldn't happen
+        return qualifyTerms                     -- merge into qualified Term
+            $ map selectExpansions expandedVar  -- choose Set foreach Expansion
 
-minExpTerm_sorted :: Sign -> TERM -> SORT -> [[TERM]]
+{-----------------------------------------------------------
+    Minimal Expansion of a Sorted_term Term
+-----------------------------------------------------------}
+minExpTerm_sorted :: Sign -> TERM -> SORT -> Result [[TERM]]
 minExpTerm_sorted sign term sort
-    = let expandedTerm = minExpTerm sign term
-          selectExpansions c = [ (term, sort) |
-                                 sorted <- c,
-                                 fits sorted ]
-          fits (Sorted_term t s _)
-               = (t == term) && (s <= sort)
-          in qualifyTerm $ map selectExpansions expandedTerm
+    = do
+        -- expandedTerm :: [[TERM]]
+        expandedTerm <- minExpTerm sign term
+        -- selectExpansions :: [TERM] -> [(TERM, SORT)]
+        let selectExpansions c                  -- foreach c in expandedTerm
+            = [ (term, sort) |                  -- choose {(term, sort)}
+                sorted <- c,                    -- foreach sorted Term in c
+                fits sorted ]                   -- if it fits term and sort
+        let fits (Sorted_term t s _)
+            = (t == term) && (s <= sort)        -- if term eq and sort leq
+        let fits _ = False                      -- TODO this shouldn't happen
+        return qualifyTerms                     -- merge into qualified Term
+            $ map selectExpansions expandedTerm -- choose Set foreach Expansion
 
-minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [[TERM]]
+{-----------------------------------------------------------
+    Minimal Expansion of an Application Term
+-----------------------------------------------------------}
+minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> Result [[TERM]]
 minExpTerm_op sign op terms
-    = let exps = permute $ map minExpTerm sign terms -- [[[TERM]]]
-          profiles = map profile exps                -- [[(OP, [TERM])]]
-          p = map (equiv op_equal) profiles
---           p = concat $ map (equiv op_equal) profiles
-          p' = minimize sign p
---          p' = map (minimize sign) p
-          in {-map-} qualifyTerm p'
+    = do
+        -- expansions :: [[TERM]]
+        expansions <- mapM (minExpTerm sign) terms
+        -- permuted_exps :: [[TERM]]
+        let permuted_exps = permute expansions
+        -- profiles :: ???
+        let profiles = map profile permuted_exps
+        -- -- -- und hier geht's dann weiter -- -- --
+        let p = map (equiv op_equal) profiles
+        let p = concat $ map (equiv op_equal) profiles
+        let p' = minimize sign p
+        let p' = map (minimize sign) p
+        return qualifyTerms p'
     where
-    list_all _ [] [] = True
-    list_all p (a:as) (b:bs) = (p a b) && (list_all p as bs)
-    list_all _ _ _ = False
-    ops = Map.toList (opMap sign)
-    op_name (Op_name name) = name
-    op_name (Qual_op_name name _ _) = name
-    op_terms (Op_name _) = error "unqualified op received, qualified expected"
-    op_terms (Qual_op_name _ w _) = w
-    op_equal (op1,ts1) (op2,ts2)
-        = let w1 = op_terms op1
-              w2 = op_terms op2
-              t1 = list_all (sort_less sign) ts1 w1
-              t2 = list_all (sort_less sign) ts2 w2
-              ops_are_equal = op1 == op2
-              ops_are_equiv = op1 leqF op2
-              in t1 && t2 && (ops_are_equal || ops_are_equiv)
-    profile cs -- cs ist (C1,..,Cn)
-        = [ (op', ts) | op' <- ops, ts <- (permute cs),
-            (op_name op') == (op_name op),
-            list_all (sort_less sign) ts (op_terms op') ]
+        list_all _ [] [] = True
+        list_all p (a:as) (b:bs) = (p a b) && (list_all p as bs)
+        list_all _ _ _ = False
+        ops = Map.toList (opMap sign)
+        op_name (Op_name name) = name
+        op_name (Qual_op_name name _ _) = name
+        op_terms (Qual_op_name _ w _) = w
+        op_terms (Op_name _)
+            = error "unqualified op received, qualified expected"
+        op_equal (op1,ts1) (op2,ts2)
+            = let w1 = op_terms op1
+                w2 = op_terms op2
+                t1 = list_all (sort_less sign) ts1 w1
+                t2 = list_all (sort_less sign) ts2 w2
+                ops_are_equal = op1 == op2
+                ops_are_equiv = op1 leqF op2
+                in t1 && t2 && (ops_are_equal || ops_are_equiv)
+        profile cs -- profile :: [TERM] -> ???
+            = [ (op', ts) | op' <- ops, ts <- (permute cs),
+                (op_name op') == (op_name op),
+                list_all (sort_less sign) ts (op_terms op') ]
 
 -- -- --
--- ein Problem koennten noch die Definitionen von sort' <= sort und
--- var' == var darstellen, falls ich die noch machen muss.
--- Da hilft wohl auch nur ein beherzter Blick in die fremde source ^^
--- Update: das ist quasi in Common.Lib.Rel gemacht worden :\)
-
 
 -- Diese Funktionen fehlen in jedem Fall noch und sich ziemlich wichtig:
 
--- Ouch! This naive Implementation takes quadratic Time!!
+qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
+qualifyTerms
+    = map (map qualify_term)
+    where
+        qualify_term term sort = Sorted_term sort term []
+
+-- TODO: implement for real - used by minExpTerm_op
 minimize :: (Ord a) => Sign -> [a] -> [a]
 minimize _ as
     = concat $ map (\a -> if null (filter (<a) as then [a] else []) as
@@ -206,24 +250,23 @@ equivalenceClasses eq (x:l)
           in xs':(equiv eq ys)
 -- komplexere Implementation: siehe unten, Till's SML-version...
 
-{- Transform a list [l1,l2, ... ln] to
-   (in sloppy notation) [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln] -}
+{-----------------------------------------------------------
+    Transform a list [l1,l2, ... ln] to (in sloppy notation)
+    [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
+-----------------------------------------------------------}
 permute :: [[a]] -> [[a]]
 permute [] = [[]]
 permute [x] = map (\y -> [y]) x
 permute (x:l)
     = concat (map (distribute (permute l)) x)
     where
-    distribute perms y = map ((:) y) perms
+        distribute perms y = map ((:) y) perms
 
 sort_leq :: Sign -> SORT -> SORT -> Bool
 
 leqF :: a -> a -> Bool -- Funktionsgleichheit
 leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
--- diverse Ordering Funktionen fuer SORT-Typen
--- sollten innerhalb der Sign definiert werden koennen, vermutlich in
--- sortRel liegend, aber dafuer muss ich Rel besser verstehen fuerchte ich...
 
 {-
 
