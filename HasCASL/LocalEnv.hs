@@ -52,11 +52,11 @@ data OpItem = OpItem Decl [OpAttr] (Maybe OpDefn)
 type Axiom = Term        -- synonyms
 -- "local-var-axioms" are a special Term "forall V1,...,V2. F1 /\ F2 /\ ...
 
-data LocalEnv = LocalEnv { sorts :: [SortItem] 
-			 , ops :: [OpItem]
-			 , vars :: [VarDecl]     
-			 , axioms :: [Axiom]   
-			 , generates :: [GenItems]
-			 } deriving (Show)
+data Env = Env { sorts :: [SortItem] 
+	       , ops :: [OpItem]
+	       , vars :: [VarDecl]     
+	       , axioms :: [Axiom]   
+	       , generates :: [GenItems]
+	       } deriving (Show)
 
-empty = LocalEnv [] [] [] [] []
+empty = Env [] [] [] [] []

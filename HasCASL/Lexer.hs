@@ -44,7 +44,12 @@ infixr 1 <:>
 
 scanLetterWord = try caslLetter <:> many scanLPD
 
-scanUnderlineWord = try(char '_' <:> many scanLPD) <?> "word"
+singleUnderline = try (do { c <- char '_';
+			    notFollowedBy (char '_');
+			    return c
+			  })
+
+scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "word"
 
 -- excluded or "casl-builtin" ids in terms and formulae
 casl_reserved_words = 

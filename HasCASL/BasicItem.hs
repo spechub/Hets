@@ -21,9 +21,9 @@ pluralKeyword s = skip (do { w <- string s;
 			     option (w) (char 's' >> return (w++"s"))
 			   })
 
-sortId = mixId
-varId = mixId
-opId = mixId
+sortId = parseId
+varId = parseId
+opId = parseId
 comma = skipChar ','
 equal = skipChar '='
 
@@ -70,7 +70,7 @@ sortItem sig = do { s1 <- sortId;
 sortItemsAux sig = do { sig2 <- sortItem sig;
 			option (sig2) 
 		          (semi >> option (sig2) 
-			        (sortItemsAux sig2))
+			        (try (sortItemsAux sig2)))
 		      }
 
 sortItems sig = do { pluralKeyword "sort";
@@ -97,6 +97,7 @@ sigItems = sortItems -- <|> opItems
 
 basicItem = sigItems
 
+basicItem :: Env -> Parser Env
 basicItems sig = do { sig2 <- basicItem sig;
 		      option (sig2) (basicItems sig2)
 		    }
