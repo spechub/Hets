@@ -262,21 +262,44 @@ skip_Group sp =
 	    Group as _ -> skip_Group $ item as
 	    _          -> sp
 
--- moved from Print_AS_Annotation
-spAnnotedPrint :: (a -> Doc) 
-	       -> (Annotation -> Doc)
+
+-- ToDo: \THENIMPLIES,... erzeugen
+--       Dazu Hilfsfunktionen erzeugen
+--       nachschauen wie implies zur Zeit gesetzt wird
+--       
+-- | 
+-- prints the keyword or spec head with following semantic annotation
+-- if any and/or only the list of non sematic annotations if any and
+-- then the following item from Annoted a
+spAnnotedPrint :: (a -> Doc) -- ^ print function for the item
+	       -> (Annotation -> Doc) -- ^ print function for the annotation
 	       -> (Doc -> Doc -> Doc) -- ^ a function like <+> or <\+>
-	       -> Doc -> Annoted a -> Doc
+	       -> Doc -- ^ keyword or spec head (spec ... =) 
+	       -> Annoted a -- ^ item to print after keyword or spec head
+	       -> Doc
 spAnnotedPrint pf pAn beside_ keyw ai = 
     case ai of 
-    Annoted i _ las _ ->
-	let i'   = pf i
-            (msa,as) = case las of
-		       []     -> (Nothing,[]) 
-		       (x:xs) | isSemanticAnno x -> (Just x,xs)
-		       xs     -> (Nothing,xs)
-	    san      = case msa of
-		       Nothing -> empty
-		       Just a  -> pAn a 
-	    as' = if null as then empty else vcat $ map pAn as
-        in keyw `beside_` san $+$ as' $+$ i'
+         Annoted i _ las _ -> 
+          let i'           = pf i
+              (msa,as)     = case las of
+	   	                []     -> (Nothing,[]) 
+		                (x:xs) | isSemanticAnno x -> (Just x,xs)
+		                xs     -> (Nothing,xs)
+ 	      (san,anno)   = case msa of
+		               Nothing -> (empty, empty)
+		               Just a  -> (pAn a, checkAnno a keyw beside_ (pAn a)) 
+              as'          = if null as then empty else vcat $ map pAn as 
+	                 -- Todo: indent annos
+          in  case (render keyw) of
+                "\\THEN" | not $ isEmpty anno  -> anno $+$ as' $+$ i'
+                keyw'                         -> keyw `beside_` san $+$ as' $+$ i'
+    where checkAnno an keyword beside_ san = 
+            case an of 
+                 Semantic_anno anno _ ->
+                          case anno of 
+                                SA_cons -> sp_text 0 "\\THENCONS"
+                                SA_def  -> sp_text 0 "\\THENDEF"
+				SA_implies -> sp_text 0 "\\THENIMPLIES"
+				SA_mono  -> sp_text 0 "\\THENMONO"
+				SA_implied -> sp_text 0 "\\THENIMPLIED"
+				anno'  -> keyword `beside_` san
