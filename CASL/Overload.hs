@@ -61,6 +61,8 @@ import Data.List                ( partition )
     * generalize qualifyTerms or implement locally - too much structural force
     * gemeralize minimize_* or implement locally - needed only in one f. each
     * use more let/in constructs (instead of where) to simulate workflow
+
+    * use common upper bounds for membership and projection
 -}
 
 {-----------------------------------------------------------
