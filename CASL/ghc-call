@@ -1,1 +1,1 @@
-ghc --make -fglasgow-exts -Wall -i..:../ghc capa.hs -o capa
+ghc --make -Wall -i..:../ghc capa.hs -o capa
