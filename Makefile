@@ -72,10 +72,9 @@ PFE_TOOLDIR := $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
-      base/transforms base/transforms/Deriving hs2html pfe property base \
-      property/pfe property/syntax property/AST property/transforms \
-      property/TI property/defs property/parse2 property/parse2/Parser \
-      hs2stratego hs2stratego/AST
+      base/transforms base/transforms/Deriving property \
+      property/syntax property/AST property/transforms \
+      property/TI property/defs property/parse2 property/parse2/Parser
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
 
 # add PFE_PATHS to DERIVEPATH if needed
