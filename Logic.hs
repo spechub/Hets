@@ -77,14 +77,12 @@ data Diagram object morphism = Graph object morphism
 -- languages, define like "data CASL = CASL deriving Show" 
 
 class Show id => Language id where
-    logic_name :: id -> String
-    logic_name i = show i
-
-instance Show a => Language a where
+    language_name :: id -> String
+    language_name i = show i
 
 -- (a bit unsafe) coercion using the language name
 coerce :: (Language id1, Language id2) => id1 -> id2 -> a -> Maybe b
-coerce i1 i2 a = if logic_name i1 == logic_name i2 then 
+coerce i1 i2 a = if language_name i1 == language_name i2 then 
 		 (Just $ unsafeCoerce# a) else Nothing
 
 -- Categories are given by a quotient,
@@ -190,15 +188,20 @@ class Ord l => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
 
-class (Language id, LatticeWithTop sublogics)
-    => 
-      Sublogics id sublogics
+
+-- logics
+
+class (StaticAnalysis id 
         basic_spec sentence symb_items symb_map_items
-        sign morphism symbol
+        local_env sign morphism symbol raw_symbol,
+       LatticeWithTop sublogics) =>
+      Logic id sublogics
+        basic_spec sentence symb_items symb_map_items
+        local_env sign morphism symbol raw_symbol 
         | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, 
-          id -> sign, id -> morphism, id ->symbol
-       where
+          id -> symb_map_items, id -> local_env,
+          id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
+	  where
          sublogic_names :: id -> sublogics -> [String] 
              -- the first name is the principal name
          all_sublogics :: id -> [sublogics]
@@ -228,43 +231,16 @@ class (Language id, LatticeWithTop sublogics)
          proj_sublogic_symbol :: id -> sublogics -> symbol -> Maybe symbol
 
 
--- logics
-
-class (StaticAnalysis id 
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol,
-       Sublogics id sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol) =>
-      Logic id sublogics
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol 
-        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> local_env,
-          id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
-	  where
-
--- instance to define
-instance (StaticAnalysis  id 
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol,
-	  Sublogics id sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol) => 
-    Logic id sublogics
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol where
-
 {- class hierarchy:
-                                     Language
+                            Language
                __________/     
    Category
-      |                   ______/       |
+      |                  /       
    Sentences      Syntax
       \            /
-      StaticAnalysis (no sublogics)  Sublogics (no local_env, raw_symbol) 
-            \                         /
-             \                       /       
-                      Logic
+      StaticAnalysis (no sublogics)
+            \                        
+             \                             
+            Logic
 
 -}
