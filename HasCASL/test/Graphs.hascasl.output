@@ -1,6 +1,6 @@
 var S : Type; T : Type
-type Bool; Pred : Type -> Type := \ S : Type . S_v1 ->? Unit;
-     Set : Type -> Type := \ S : Type . S_v1 ->? Unit
+type Bool; Pred : Type -> Type := \ S : Type . S_v-1 ->? Unit;
+     Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 op True, False : Bool
 op emptySet : forall S : Type . Set S_v-1;
    {__} : forall S : Type . S_v-1 -> Set S_v-1;
@@ -105,7 +105,7 @@ Bool : Type
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 S : Type %(var_1)%
-Set : Type -> Type := \ S : Type . S_v1 ->? Unit
+Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 T : Type %(var_2)%
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type

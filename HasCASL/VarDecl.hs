@@ -67,8 +67,11 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        putTypeMap tm       -- forget local variables 
        case mt of 
            Nothing -> return Nothing
-	   Just newTy -> do 
-	       let fvs = varsOf newTy
+	   Just newTy -> generalize $ TypeScheme newArgs (q :=> newTy) p
+
+generalize :: TypeScheme -> State Env (Maybe TypeScheme)
+generalize (TypeScheme newArgs (q :=> newTy) p) = do
+ 	       let fvs = varsOf newTy
 		   ts = zipWith ( \ (TypeArg i k _ _) n -> 
 				  TypeName i k n) fvs [-1, -2..]
 		   m = Map.fromList $ zip fvs ts

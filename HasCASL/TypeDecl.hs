@@ -176,11 +176,11 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
 							return $ SubtypeDefn 
 							       newPat v ty 
 							       newF ps
-anaTypeItem _ _ inst _ (AliasType pat mk sc ps) = 
+anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds
        case m of 
-	      Nothing -> return $ AliasType pat mk sc ps
+	      Nothing -> return t
 	      Just (i, as) -> do
 	          tm <- gets typeMap
 	          newAs <- mapM anaTypeVarDecl as 
@@ -190,19 +190,26 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
 		      newPat = TypePattern i nAs []
 		  case mt of 
 			  Nothing -> return $ AliasType newPat mk sc ps
-			  Just (TypeScheme args qty@(_ :=> ty) qs) -> do 
-			      let allArgs = nAs++args
-                                  newPty = TypeScheme allArgs qty qs
-				  fullKind = typeArgsListToKind nAs ik
-			      checkUniqueTypevars allArgs
+			  Just newSc@(TypeScheme args qty@(_ :=> ty) qs) -> 
 			      if cyclicType i ty then 
 			        do addDiags [mkDiag Error 
 				       "illegal recursive type synonym" ty]
-			           return Nothing
-			        else addTypeId True (AliasTypeDefn newPty) 
-				     inst fullKind i 
-			      return $ AliasType (TypePattern i [] [])
-				     (Just fullKind) newPty ps
+			           return $ AliasType newPat mk newSc ps
+			        else do 
+			        let allArgs = nAs++args
+				    fullKind = typeArgsListToKind nAs ik
+				    allSc = TypeScheme allArgs qty qs
+    			        checkUniqueTypevars allArgs
+			        gPty <- generalize allSc
+				case gPty of 
+				  Nothing -> return $ AliasType 
+					     (TypePattern i [] [])
+					     (Just fullKind) allSc ps
+				  Just newPty -> do 
+				    addTypeId True (AliasTypeDefn newPty) 
+				        inst fullKind i 
+			            return $ AliasType (TypePattern i [] [])
+				        (Just fullKind) newPty ps
 anaTypeItem _ gk inst tys (Datatype d) = 
     do newD <- anaDatatype gk inst tys d 
        return $ Datatype newD

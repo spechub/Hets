@@ -1,27 +1,27 @@
 var s : Type
-type MyPred : Type -> Type := \ s : Type . s_v1 ->? Unit
-type MyAlias : Type -> Type := \ t : Type . t_v2 ->? Unit
+type MyPred : Type -> Type := \ s : Type . s_v-1 ->? Unit
+type MyAlias : Type -> Type := \ t : Type . t_v-1 ->? Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-                                    (b : Type) . a_v3 -> b_v4 -> Unit
+                                    (b : Type) . a_v-1 -> b_v-2 -> Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-                                    (b : Type) . a_v5 -> b_v6 -> Unit
+                                    (b : Type) . a_v-1 -> b_v-2 -> Unit
 type a1 : Type -> Type -> Type := \ (a : Type)
-                                    (b : Type) . a_v7 -> b_v8 -> Unit
+                                    (b : Type) . a_v-1 -> b_v-2 -> Unit
 type a2 : Type -> Type -> Type := \ (a : Type)
-                                    (b : Type) . a_v9 -> Unit
+                                    (b : Type) . a_v-1 -> Unit
 type a3 : Type -> Type -> Type := \ (a : Type)
-                                    (a : Type) . a_v11 -> Unit
+                                    (a : Type) . a_v-1 -> Unit
 type a4 : Type -> Type -> Type := \ (a : Type)
-                                    (a : Type) . a_v12 -> Unit
+                                    (a : Type) . a_v-1 -> Unit
 type a5(a : Type)
-type a5 : Type -> Type := \ a : Type . a5 a_v14 -> Unit
+type a5(a : Type) := a5 a_v14 -> Unit
 type a6(a : Type)
-type a7 : Type -> Type := \ a : Type . a6 a_v16 -> Unit
-type a6 : Type -> Type := \ a : Type . a7 a_v17 -> Unit
+type a7 : Type -> Type := \ a : Type . a6 a_v-1 -> Unit
+type a6(a : Type) := a7 a_v17 -> Unit
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-MyAlias : Type -> Type := \ t : Type . t_v2 ->? Unit
-MyPred : Type -> Type := \ s : Type . s_v1 ->? Unit
+MyAlias : Type -> Type := \ t : Type . t_v-1 ->? Unit
+MyPred : Type -> Type := \ s : Type . s_v-1 ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
@@ -31,13 +31,13 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 a1
   : Type -> Type -> Type
-    := \ (a : Type)(b : Type) . a_v3 -> b_v4 -> Unit
-a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a_v9 -> Unit
-a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a_v11 -> Unit
-a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a_v12 -> Unit
+    := \ (a : Type)(b : Type) . a_v-1 -> b_v-2 -> Unit
+a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a_v-1 -> Unit
+a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a_v-1 -> Unit
+a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a_v-1 -> Unit
 a5 : Type -> Type
 a6 : Type -> Type
-a7 : Type -> Type := \ a : Type . a6 a_v16 -> Unit
+a7 : Type -> Type := \ a : Type . a6 a_v-1 -> Unit
 s : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : Unit * Unit ->? Unit %(fun)%
