@@ -74,10 +74,6 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-isSimpleId :: Id -> Bool
-isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
-			 `elem` caslLetters
-
 convertTypeToClass :: Type -> ReadR ClassMap Class
 convertTypeToClass (TypeToken t) = 
        if tokStr t == "Type" then return universe else do
