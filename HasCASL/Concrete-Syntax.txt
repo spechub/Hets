@@ -35,27 +35,22 @@ SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
 TYPE-ITEM       ::= SORT-ITEM
                   | TYPE-PATTERN := PSEUDOTYPE
 
-TYPE-PATTERN      ::= TYPE-NAME 
-                    | TYPE-NAME (TYPE-ARGS) ... (TYPE-ARGS)
+TYPE-PATTERN      ::= TYPE-NAME               %% may include places
+                    | TYPE-NAME (TYPE-PATTERN-ARG) ... (TYPE-PATTERN-ARG)
                     | PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN
 
 PRIM-TYPE-PATTERN ::= [ ID , ... , ID ]      %% compound list
                     | NO-BRACKET-TOKEN       %% TYPE-NAME or TYPE-VAR
                     | { PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN } | { }
                     | [ PRIM-TYPE-PATTERN ... PRIM-TYPE-PATTERN ] | [ ]
-                    | TYPE-EXT-VAR
-                    | TYPE-PATTERN-ARG
-                    | (TYPE-PATTERN-ARG)
-                    | (TYPE-ARGS)            %% remaining arguments 
+                    | (TYPE-PATTERN-ARG) 
 
-TYPE-PATTERN-ARG ::=  TYPE-EXT-VAR : CLASS    
+TYPE-PATTERN-ARG ::=  TYPE-EXT-VAR
+                    | TYPE-EXT-VAR : CLASS    
                     | TYPE-VAR : EXT-CLASS
-                    | TYPE-VAR < TYPE    
-
-TYPE-VARS       ::= TYPE-VAR , ... , TYPE-VAR
+                    | TYPE-EXT-VAR < TYPE    
 
 TYPE-EXT-VAR    ::= TYPE-VAR | TYPE-VAR + | TYPE-VAR -
-TYPE-EXT-VARS   ::= TYPE-EXT-VAR , ... , TYPE-EXT-VAR
 
 TYPE-ARG        ::= TYPE-EXT-VARS           %% globally declared or universe
                   | TYPE-VARS : EXT-CLASS      
