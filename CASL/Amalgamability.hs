@@ -12,44 +12,67 @@ Portability :  portable
   Follows the algorithm outlined in MFCS 2001 (LNCS 2136, pp. 451-463, 
   Springer 2001) paper.
 
+
+TODO:
+
+* the whole algorithm
+
+* care needs to be taken when comparing DiagSorts and DiagEmbs coming
+  from the nodes that are sink's sources: all of these nodes should be treated
+  as one node, so the node parameter in DiagSort and DiagEmb should be
+  ignored in this case. A possible (?) solution would be to mark all
+  the DiagSorts coming from the sink sources with the same node, e.g. the node that
+  is the codomain of the first morphism in the sink.
+
 -}
 
-module CASL.Amalgamability(-- types
+module CASL.Amalgamability(-- * Types
 			   CASLSign, CASLMor, 
-			   -- functions
+			   -- * Functions
 			   ensuresAmalgamability) where
 
 
 import CASL.AS_Basic_CASL
-import CASL.LaTeX_CASL
-import CASL.Parse_AS_Basic
-import CASL.SymbolParser
-import CASL.MapSentence
-import Common.AS_Annotation
-import Common.AnnoState(emptyAnnos)
+--import CASL.LaTeX_CASL
+--import CASL.Parse_AS_Basic
+--import CASL.SymbolParser
+--import CASL.MapSentence
+--import Common.AS_Annotation
+--import Common.AnnoState(emptyAnnos)
 import Common.Id
 import Common.Lib.Graph
 import qualified Common.Lib.Map as Map
-import Common.Lib.Parsec
+--import Common.Lib.Parsec
 import Common.Lib.Pretty
+import Common.Lib.Rel
 import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Result
 import Logic.Logic
-import CASL.ATC_CASL
-import CASL.Sublogic
+--import CASL.ATC_CASL
+--import CASL.Sublogic
 import CASL.Sign
-import CASL.StaticAna
+--import CASL.StaticAna
 import CASL.Morphism
-import CASL.SymbolMapAnalysis
-import Data.Dynamic
+--import CASL.SymbolMapAnalysis
+--import Data.Dynamic
+import List
 
 -- Exported types
 type CASLSign = Sign () ()
 type CASLMor = Morphism () () ()
 
 -- Miscellaneous types
+type CASLDiag = Diagram CASLSign CASLMor
 type DiagSort = (Node, SORT) 
+type DiagEmb = (Node, SORT, SORT)
+type DiagEmbWord = [DiagEmb]
+-- | equivalence classes are represented as lists of elements
+type EquivClass a = [a]
+-- | equivalence relations are represented as lists of equivalence classes
+type EquivRel a = [EquivClass a]
+-- | or, sometimes, as lists of pairs (element, equiv. class tag)
+type EquivRelTagged a = [(a, a)]
 
 -- PrettyPrint instance (for diagnostic output)
 instance PrettyPrint (Diagram CASLSign CASLMor) where
@@ -73,9 +96,9 @@ sorts diag =
 
 -- | Convert the relation representation from list of pairs 
 -- (val, equiv. class tag) to a list of equivalence classes.
-taggedValsToEquivClasses :: Ord tag
-			 => [(a, tag)] -- ^ a list of (value, tag) pairs
-			 -> [[a]]
+taggedValsToEquivClasses :: Ord a
+			 => EquivRelTagged a -- ^ a list of (value, tag) pairs
+			 -> EquivRel a
 taggedValsToEquivClasses rel =
     let -- prepMap: create a map with all the equivalence class tags mapped to
 	-- empty lists
@@ -89,9 +112,54 @@ taggedValsToEquivClasses rel =
     in convert rel (prepMap rel)
 
 
+-- | Merge the equivalence classes for elements fulfilling given condition.
+mergeEquivClassesBy :: Eq a 
+	            => EquivRelTagged a -- ^ the input relation
+		    -> (a -> a -> Bool) -- ^ the condition stating when two elements are in relation
+		    -> EquivRelTagged a 
+-- ^ returns the input relation with equivalence classes merged according to
+-- the condition.
+mergeEquivClassesBy rel cond =
+    -- Starting with the first element in the list an element (elem, tag) is taken
+    -- and cond is subsequently applied to it and all the elements
+    -- following it in the list. Whenever an element (elem', tag') 
+    -- that is in relation with the chosen one is found, all the equivalence 
+    -- class tags in the list that are equal to tag' are updated to tag.
+
+    let merge rel pos | pos >= length rel = rel
+	merge rel pos | otherwise = 
+	    let mergeWith cmpl _ [] = cmpl
+		mergeWith cmpl vtp@(elem, ec) toCmpl@((elem', ec') : _) =
+		    let (cmpl', toCmpl') = if ec /= ec' && (cond elem elem') 
+					     then let upd (elem'', ec'') = 
+							  if ec'' == ec' 
+							     then (elem'', ec) 
+							     else (elem'', ec'')
+						  in (map upd cmpl, map upd toCmpl)
+					     else (cmpl, toCmpl)
+		    in mergeWith (cmpl' ++ [head toCmpl']) vtp (tail toCmpl')
+		(cmpl, (vtp : vtps)) = splitAt pos rel
+		rel' = mergeWith (cmpl ++ [vtp]) vtp vtps
+	    in merge rel' (pos + 1)
+    in merge rel 0
+
+
+-- | Merge the equivalence classes for given tags.
+mergeEquivClasses :: Eq a
+		  => EquivRelTagged a
+		  -> a                -- ^ tag 1
+		  -> a                -- ^ tag 2
+		  -> EquivRelTagged a
+mergeEquivClasses rel tag1 tag2 | tag1 == tag2 = rel
+				| otherwise =
+    let upd (el, tag) | tag == tag2 = (el, tag1)
+		      | otherwise = (el, tag)
+    in map upd rel
+    
+
 -- | Compute the simeq relation for given diagram.
 simeq :: Diagram CASLSign CASLMor -- ^ the diagram for which the relation should be created
-      -> [[DiagSort]]
+      -> EquivRel DiagSort
 -- ^ returns the relation represented as a list of equivalence
 -- classes (each represented as a list of diagram sorts)
 simeq diag =
@@ -110,39 +178,17 @@ simeq diag =
 		       mapSort sm srcSort == targetSort 
 		       then True else checkEdges edges
 	    in checkEdges (out diag srcNode)
-			 
-	-- merge: propagate the equivalence class tags.
-	-- Starting with the first element in the list an element (ds, tag) is taken
-	-- and isMorph is subsequently applied to it and all the elements
-	-- following it in the list. Whenever an element (ds', tag') 
-	-- that is in relation with the chosen one is found, all the equivalence 
-	-- class tags in the list that are equal to tag' are updated to tag.
-        merge rel pos | pos >= length rel = rel
-	merge rel pos | otherwise = 
-	    let mergeWith cmpl _ [] = cmpl
-		mergeWith cmpl dsp@(ds, ec) toCmpl@((ds', ec') : _) =
-		    let (cmpl', toCmpl') = if ec /= ec' && 
-					      (isMorph ds ds' || isMorph ds' ds) 
-					      then let upd (ds'', ec'') = 
-					                   if ec'' == ec' 
-							      then (ds'', ec) 
-							      else (ds'', ec'')
-						   in (map upd cmpl, map upd toCmpl)
-					      else (cmpl, toCmpl)
-		    in mergeWith (cmpl' ++ [head toCmpl']) dsp (tail toCmpl')
-	        (cmpl, (dsp : dsps)) = splitAt pos rel
-	        rel' = mergeWith (cmpl ++ [dsp]) dsp dsps
-	    in merge rel' (pos + 1)
+        mergeCond ds ds' = isMorph ds ds' || isMorph ds' ds
 
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (sorts diag)
-	rel' = merge rel 0
+	rel' = mergeEquivClassesBy rel mergeCond
     in taggedValsToEquivClasses rel'
 
 
 -- | Compute the simeq_tau relation for given diagram.
 simeq_tau :: [LEdge CASLMor]
-	  -> [[DiagSort]]
+	  -> EquivRel DiagSort
 simeq_tau sink = 
     let -- tagEdge: for given morphism m create a list of pairs 
 	-- (a, b) where a is DiagSort from the source signature that
@@ -157,41 +203,236 @@ simeq_tau sink =
 -- The relations are represented as a lists of equivalence classes,
 -- where equivalence classes are lists of elements.
 subRelation :: Eq a
-	    => [[a]]  -- ^ the relation that is supposed to be a subset
-	    -> [[a]]  -- ^ the relation that is supposed to be a superset
-	    -> [a]
--- ^ returns a list of elements that are in the same equivalence class of the 
+	    => EquivRel a  -- ^ the relation that is supposed to be a subset
+	    -> EquivRel a  -- ^ the relation that is supposed to be a superset
+	    -> Maybe (a, a)
+-- ^ returns a pair of elements that are in the same equivalence class of the 
 -- first relation but are not in the same equivalence class of the second 
--- relation. If the list is empty then the first relation is a subset of the
--- second one.
-subRelation [] _ = []
+-- relation or Nothing the first relation is a subset of the second one.
+subRelation [] _ = Nothing
+subRelation ([] : eqcls) sup = subRelation eqcls sup -- this should never be the case
 subRelation ((elt : elts) : eqcls) sup =
-    let findEqCl elt [] = [] -- this should never be the case
+    let findEqCl _ [] = [] -- this should never be the case
 	findEqCl elt (eqcl : eqcls) =
 	    if elem elt eqcl then eqcl else findEqCl elt eqcls
-        checkEqCl [] supEqCl = []
+        checkEqCl [] _ = Nothing
 	checkEqCl (elt : elts) supEqCl =
 	    if elem elt supEqCl 
 	       then checkEqCl elts supEqCl
-	       else [elt]
+	       else Just elt
 	curFail = checkEqCl elts (findEqCl elt sup)
     in case curFail of 
-	    [] -> subRelation eqcls sup
-	    _ -> (elt : curFail)
+	    Nothing -> subRelation eqcls sup
+	    Just elt2 -> Just (elt, elt2)
+
+
+-- | Compute the set of sort embeddings (relations on sorts) defined
+-- in the source nodes of the sink.
+sinkEmbs :: CASLDiag        -- ^ the diagram
+	 -> [LEdge CASLMor] -- ^ the sink
+	 -> [DiagEmb]
+sinkEmbs _ [] = []
+sinkEmbs diag ((srcNode, _, _) : edges) = 
+    let (_, _, Sign {sortRel = sr}, _) = context srcNode diag
+    in (map (\(s1, s2) -> (srcNode, s1, s2)) (toList sr)) ++ (sinkEmbs diag edges)
+    
+
+-- | Check if the two given elements are in the given relation.
+inRel :: Eq a 
+      => EquivRel a -- ^ the relation
+      -> a          -- ^ the first element
+      -> a          -- ^ the second element
+      -> Bool
+inRel [] _ _ = False
+inRel (eqc : eqcs) a b = 
+    case find (\x -> x == a) eqc of
+         Nothing -> inRel eqcs a b
+	 Just _ -> case find (\x -> x == b) eqc of
+		        Nothing -> False
+			Just _ -> True
+
+
+-- | Compute the set of all the loopless, admissible
+-- words over given set of embeddings.
+embWords :: [DiagEmb]         -- ^ the embeddings
+	 -> EquivRel DiagSort -- ^ the \simeq relation that defines admissibility
+	 -> [DiagEmbWord]
+embWords embs simeq =
+    let -- can the two embeddings occur subsequently in a word?
+        admissible (n1, s1, _) (n2, _, s2) = inRel simeq (n1, s1) (n2, s2)
+        -- generate the list of all loopless words over given alphabet
+	-- with given suffix
+        embWords' suff@(_ : _) embs pos | pos >= length embs = [suff]
+	embWords' suff@(e : _) embs pos | otherwise = 
+	    let emb = embs !! pos
+		embs' = embs \\ [emb]
+		ws = if admissible emb e
+		       then embWords' (emb : suff) embs' 0
+		       else []
+	    in ws ++ (embWords' suff embs (pos + 1))
+	embWords' [] embs pos | pos >= length embs = []
+	embWords' [] embs pos | otherwise = 
+	    let emb = embs !! pos
+		embs' = embs \\ [emb]
+	    in (embWords' [emb] embs' 0) ++ (embWords' [] embs (pos + 1))
+    in embWords' [] embs 0
+
+
+-- | Return the codomain of an embedding path.
+wordCod :: DiagEmbWord 
+	-> DiagSort
+wordCod ((n, _, s2) : _) = (n, s2)
+
+
+-- | Return the domain of an embedding path.
+wordDom :: DiagEmbWord
+	-> DiagSort
+wordDom w = let (n, s1, _) = last w in (n, s1)
+
+
+-- | Find an equivalence class tag for given element.
+findTag :: Eq a
+	=> EquivRelTagged a
+	-> a
+	-> a
+findTag [] w = w -- this should never be the case
+findTag ((w', t) : wtps) w = 
+    if w == w' then t else findTag wtps w
+
+
+-- | Compute the left-cancellable closure of a relation on words.
+leftCancellableClosure :: EquivRelTagged DiagEmbWord
+		       -> EquivRelTagged DiagEmbWord
+leftCancellableClosure rel = 
+    let -- checkPrefixes: for each common prefix of two given words
+	-- merge the equivalence classes of the suffixes
+        checkPrefixes [] _ rel = rel
+	checkPrefixes _ [] rel = rel
+	checkPrefixes w1@(l1 : suf1) w2@(l2 : suf2) rel | w1 == w2 = rel
+							| l1 /= l2 = rel
+							| otherwise =
+	    let tag1 = findTag rel suf1
+		tag2 = findTag rel suf2
+		rel' = if tag1 == tag2 then rel
+		          else let upd (w, t) | t == tag2 = (w, tag1)
+					      | otherwise = (w, t)
+			       in map upd rel
+	    in checkPrefixes suf1 suf2 rel'
+
+        -- iterateWord1: for each pair of related words call checkPrefixes
+	iterateWord1 rel pos | pos >= length rel = rel
+			     | otherwise =
+	    let iterateWord2 wtp1@(w1, t1) rel pos | pos >= length rel = rel
+						   | otherwise =
+		    let wtp2@(w2, t2) = rel !! pos
+			rel' = if t1 == t2 then checkPrefixes w1 w2 rel else rel
+		    in iterateWord2 wtp1 rel' (pos + 1)
+		wtp = rel !! pos
+		rel' = iterateWord2 wtp rel 0
+            in iterateWord1 rel' (pos + 1)
+    in iterateWord1 rel 0
+
+
+-- | Compute the congruent closure of a relation on words with
+-- given \simeq relation on letters.
+-- TODO: this should be applied until a fixpoint is reached
+congruentClosure :: EquivRel DiagSort          -- ^ the simeq relation
+		 -> EquivRelTagged DiagEmbWord 
+		 -> EquivRelTagged DiagEmbWord
+congruentClosure simeq rel =
+    let -- iterateWord1 
+        iterateWord1 rel pos | pos >= length rel = rel
+			     | otherwise =
+	    let -- iterateWord2
+	        iterateWord2 wtp1@(_, t1) rel pos | pos >= length rel = rel
+						| otherwise =
+                    let -- iterateWord3
+		        iterateWord3 wtp1@(w1, _) wtp2 rel pos | pos >= length rel = rel
+						       | otherwise =
+			    let -- iterateWord4
+			        iterateWord4 wtp1@(w1, _) wtp2@(w2, _) wtp3@(w3, t3) rel pos | pos >= length rel = rel
+											     | otherwise =
+				    let (w4, t4) = rel !! pos
+					rel' = if t3 /= t4 then rel
+					          else let ct1 = findTag rel (w3 ++ w1)
+							   ct2 = findTag rel (w4 ++ w2)
+						       in mergeEquivClasses rel ct1 ct2
+				    in iterateWord4 wtp1 wtp2 wtp3 rel (pos + 1)
+
+			        wtp3@(w3, _) = rel !! pos
+				rel' = if inRel simeq (wordCod w1) (wordDom w3)
+				          then iterateWord4 wtp1 wtp2 wtp3 rel 0
+					  else rel
+			    in iterateWord3 wtp1 wtp2 rel (pos + 1)
+
+		        wtp2@(_, t2) = rel !! pos
+			rel' = if t1 /= t2 then rel
+			          else iterateWord3 wtp1 wtp2 rel 0 
+		    in iterateWord2 wtp1 rel' (pos + 1)
+
+		wtp = rel !! pos
+		rel' = iterateWord2 wtp rel 0
+	    in iterateWord1 rel' (pos + 1)
+
+    in iterateWord1 rel 0
+
+
+-- | Compute the cong_tau relation for given diagram and sink.
+cong_tau :: CASLDiag          -- ^ the diagram
+	 -> [LEdge CASLMor]   -- ^ the sink
+	 -> EquivRel DiagSort -- ^ the \simeq_tau relation
+	 -> EquivRel DiagEmbWord
+cong_tau diag sink st = 
+    let -- domCodEqual: check that domains and codomains of given words are equal
+        domCodEqual w1 w2 = 
+	    -- we ignore the nodes form which the sorts come,
+	    -- as all the sink source nodes are considered to be one node
+	    let (_, sdom1) = wordDom w1
+		(_, scod1) = wordCod w1
+		(_, sdom2) = wordDom w2
+		(_, scod2) = wordCod w2
+	    in sdom1 == sdom2 && scod1 == scod2
+	    -- wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
+	-- comp: the Comp rule works for words 1 and 2-letter long
+	-- with equal domains and codomains
+        comp w1@[_] w2@[_, _] = domCodEqual w1 w2
+	comp w1@[_, _] w2@[_] = domCodEqual w1 w2
+	comp _ _ = False
+	
+        -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
+        fixCongLc rel = 
+	    let rel' = (leftCancellableClosure . congruentClosure st) rel
+	    in if rel == rel' then rel else fixCongLc rel'
+
+	-- compute the relation
+	embs = sinkEmbs diag sink
+	words = embWords embs st
+	rel = map (\w -> (w, w)) words
+	rel' = mergeEquivClassesBy rel comp
+	rel'' = fixCongLc rel'
+    in taggedValsToEquivClasses rel''
 
 
 -- | The amalgamability checking function for CASL.
-ensuresAmalgamability :: Diagram CASLSign CASLMor -- ^ the diagram to be checked
-		      -> [LEdge CASLMor]          -- ^ the sink
+ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked
+		      -> [LEdge CASLMor] -- ^ the sink
 		      -> Result Amalgamates
 ensuresAmalgamability diag sink = 
     do let s = simeq diag
 	   st = simeq_tau sink
+	   ct = cong_tau diag sink st
        -- 1. Checking the  inclusion (*). If it doesn't hold, the specification is
        -- incorrect.
-       --warning DontKnow (showPretty s "") nullPos -- test
-       --warning DontKnow (showPretty st "") nullPos -- test
+       --warning DontKnow (showPretty ct "") nullPos -- test
+       --warning DontKnow ("sink: " ++ (showPretty sink "")) nullPos -- test
+       --warning DontKnow ("diag: " ++ (showPretty diag "")) nullPos -- test
        case subRelation st s of
-	    nss@(_ : _) -> let sortString = renderText Nothing (printText nss)
-	                   in do return (No ("sorts " ++ sortString)) -- TODO: more informative message
-	    [] -> return DontKnow -- TODO
+	    Just (ns1, ns2) -> let getNodeSig _ [] = emptySign () -- this should never be the case
+				   getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
+				   lns = labNodes diag
+				   sortString1 = renderText Nothing (printText (snd ns1)) ++
+					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns1) lns)) ++ "}"
+				   sortString2 = renderText Nothing (printText (snd ns2)) ++
+					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}"
+	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2))
+	    Nothing -> return DontKnow -- TODO
