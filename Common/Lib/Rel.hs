@@ -8,7 +8,6 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
-
 supply a simple data type for (precedence or subsort) relations. A
 relation is conceptually a set of (ordered) pairs,
 but the hidden implementation is based on a map of sets. 
@@ -33,8 +32,9 @@ Some parts are adapted from D. King, J. Launchbury 95:
 
 module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
                        union , subset, difference, path,
+                       succs, predecessors, irreflex,
                        transClosure, fromList, toList, image,
-                       restrict, toSet, fromSet, topSort, 
+                       restrict, toSet, fromSet, topSort, nodes,
                        transpose, connComp, collaps, transReduce) where
 
 import qualified Common.Lib.Map as Map
@@ -54,7 +54,7 @@ isEmpty (Rel m) = Map.isEmpty m
 
 -- | difference of two relations
 difference :: Ord a => Rel a -> Rel a -> Rel a
-difference a b = fromSet $ Set.difference  (toSet a) $ toSet b
+difference a b = fromSet (toSet a Set.\\ toSet b)
 
 -- | union of two relations
 union :: Ord a => Rel a -> Rel a -> Rel a
@@ -70,11 +70,19 @@ insert a b (Rel m) = Rel $ Map.setInsert a b m
 
 -- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
-member a b r = Set.member b $ getDAdjs r a
+member a b r = Set.member b $ succs r a
 
 -- | get direct successors
-getDAdjs :: Ord a => Rel a -> a -> Set.Set a
-getDAdjs (Rel m) a = Map.findWithDefault Set.empty a m
+succs :: Ord a => Rel a -> a -> Set.Set a
+succs (Rel m) a = Map.findWithDefault Set.empty a m
+
+-- | predecessors in the given set of a node 
+preds :: Ord a => Rel a -> a -> Set.Set a -> Set.Set a
+preds r a = Set.filter ( \ s -> member s a r)
+
+-- | get direct predecessors inefficiently
+predecessors :: Ord a => Rel a -> a -> Set.Set a
+predecessors r@(Rel m) a = preds r a $ keySet m
 
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
@@ -88,7 +96,7 @@ data Tree a = Node a [Tree a] deriving Show
 
 -- | get dfs tree rooted at node
 dfsT :: Ord a => Rel a -> Set.Set a -> a -> (Set.Set a, Tree a)
-dfsT r s v = let (t, ts) = dfsF r (Set.insert v s) $ Set.toList $ getDAdjs r v 
+dfsT r s v = let (t, ts) = dfsF r (Set.insert v s) $ Set.toList $ succs r v 
                  in (t, Node v ts)
 
 -- | get dfs forest for a list of nodes
@@ -129,8 +137,16 @@ postOrd r = postOrdF (dff r) []
 scc :: Ord a => Rel a -> [Tree a]
 scc r = dfs r $ reverse $ postOrd $ transpose r
 
+-- | reachable nodes excluding the start node if there is no cycle
 reachable :: Ord a => Rel a -> a -> Set.Set a 
-reachable r = flatF . dfs r . Set.toList . getDAdjs r
+reachable r = flatF . dfs r . Set.toList . succs r
+
+-- | make relation irreflexive 
+irreflex :: Ord a => Rel a -> Rel a
+irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s -> 
+           let r = Set.delete k s in 
+           if Set.isEmpty r then id else
+              Map.insert k r) Map.empty m 
 
 {- | Connected components as a mapping to a minimal representative 
    and the reverse mapping -} 
@@ -153,7 +169,7 @@ transReduce rel@(Rel m) =
     foldr ( \ i t -> 
            Set.fold ( \ j ->
                if covers i j rel then 
-                  insert i j else id) t $ Set.unions $ Map.elems m) 
+                  insert i j else id) t $ elemSet m) 
     empty $ Map.keys m where
     -- (a, b) in r but no c with (a, c) and (c, b) in r
     covers :: Ord a => a -> a -> Rel a -> Bool
@@ -210,12 +226,21 @@ fromAscList = Rel . Map.fromDistinctAscList
                                   Set.fromDistinctAscList $ map snd l))
                         . groupBy ( \ (a, _) (b, _) -> a == b)
 
+-- | all nodes of the edges
+nodes :: Ord a => Rel a -> Set.Set a
+nodes (Rel m) = Set.union (keySet m) $ elemSet m
+
+keySet :: Ord a => Map.Map a b -> Set.Set a
+keySet = Set.fromDistinctAscList . Map.keys
+
+elemSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
+elemSet = Set.unions . Map.elems
+
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r@(Rel m) = 
     if isEmpty r then []
-    else let es = Set.unions $ Map.elems m
-             ms = (Set.fromDistinctAscList $ Map.keys m) Set.\\ es in 
+    else let ms = keySet m Set.\\ elemSet m in 
         if Set.isEmpty ms then case removeCycle r of 
            Nothing -> topSort (transClosure r)
            Just (a, cyc, restRel) ->
@@ -224,8 +249,7 @@ topSort r@(Rel m) =
         else let (lowM, rest) = 
                      Map.partitionWithKey (\ k _ -> Set.member k ms) m
                  -- no not forget loose ends 
-                 bs = Set.unions $ Map.elems lowM
-                 ls = bs Set.\\ Set.fromDistinctAscList (Map.keys rest) in 
+                 ls = elemSet lowM Set.\\ keySet rest in 
                  -- put them as low as possible
             ms : (topSort $ Rel $ Set.fold ( \ i -> 
                       Map.insert i Set.empty) rest ls)
@@ -236,12 +260,9 @@ removeCycle r@(Rel m) =
     let cycles = Map.filterWithKey Set.member m in
         if Map.isEmpty cycles then Nothing
            else let (a, os) = Map.findMin cycles
-                    cs = Set.fold ( \ e s -> 
-                            if member e a r then 
-                                    Set.insert e s else s) Set.empty 
-                         os
+                    cs = preds r a os
                     m1 = Map.foldWithKey 
-                         ( \ k v -> let i = Set.difference v cs 
+                         ( \ k v -> let i = v Set.\\ cs 
                                     in if Set.member k cs 
                                        then Map.insertWith Set.union a i
                                        else Map.insert k 
