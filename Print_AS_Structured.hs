@@ -21,13 +21,12 @@ import PrettyPrint
 -- debugging stuff
 -- import IOExts (trace)
 
-import Logic
-import LogicGraph
 import Grothendieck
 
 import AS_Structured
 import Print_AS_Annotation
-
+import AS_Annotation
+import GlobalAnnotations
 import List
 
 instance PrettyPrint SPEC where
@@ -122,16 +121,13 @@ instance PrettyPrint SPEC_DEFN where
 
 instance PrettyPrint G_mapping where
     printText0 ga (G_symb_map gsmil) = printText0 ga gsmil
-    printText0 ga (G_logic_translation enc sln tln _) =
-	ptext "logic" {- TODO: implement right syntax. -}
-	-- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
-
+    printText0 ga (G_logic_translation enc) =
+	ptext "logic" <+> printText0 ga enc
 
 instance PrettyPrint G_hiding where
     printText0 ga (G_symb_list gsil) = printText0 ga gsil
-    printText0 ga (G_logic_projection enc sln tln _) = 
-	ptext "logic" {- TODO: implement right syntax. -}
-	-- pos: "logic",<projection>,":",<src-logic>,"->",<targ-logic>
+    printText0 ga (G_logic_projection enc) = 
+	ptext "logic" <+> printText0 ga enc
 
 instance PrettyPrint GENERICITY where
     printText0 ga (Genericity aa ab _) =
@@ -150,7 +146,8 @@ instance PrettyPrint IMPORTED where
 	else ptext "given" <+> (fsep $ punctuate comma $ 
 				         map (printText0 ga) aa)
 
-printText0_fit_arg_list ga [] = empty
+printText0_fit_arg_list::GlobalAnnos -> [Annoted FIT_ARG] -> Doc
+printText0_fit_arg_list _ [] = empty
 printText0_fit_arg_list ga [fa] = brackets $ printText0 ga fa
 printText0_fit_arg_list ga fas = 
     fsep $ map (brackets . (printText0 ga)) fas
@@ -187,11 +184,35 @@ instance PrettyPrint VIEW_TYPE where
 	    ab' = printText0 ga ab
 	in aa' <+> ptext "to" <+> ab'
 
+instance PrettyPrint Logic_code where
+    printText0 ga (Logic_code (Just enc) (Just src) (Just tar) _) =
+	printText0 ga enc <+> colon <+>
+	printText0 ga src <+> ptext "->" <+>
+	printText0 ga tar
+    printText0 ga (Logic_code (Just enc) (Just src) Nothing _) =
+	printText0 ga enc <+> colon <+>
+	printText0 ga src <+> ptext "->"
+    printText0 ga (Logic_code (Just enc) Nothing (Just tar) _) =
+	printText0 ga enc <+> colon <+>
+	ptext "->" <+> printText0 ga tar
+    printText0 ga (Logic_code Nothing (Just src) (Just tar) _) =
+	printText0 ga src <+> ptext "->" <+>
+	printText0 ga tar
+    printText0 ga (Logic_code (Just enc) Nothing Nothing _) =
+	printText0 ga enc 
+    printText0 ga (Logic_code Nothing (Just src) Nothing _) =
+	printText0 ga src <+> ptext "->"
+    printText0 ga (Logic_code Nothing Nothing (Just tar) _) =
+	ptext "->" <+> printText0 ga tar
+    printText0 _ (Logic_code Nothing Nothing Nothing _) =
+	ptext ":ERROR" -- should not occur
 
 
 instance PrettyPrint Logic_name where
-    printText0 ga (Logic_name log slog) =
-       ptext "log" <> (if null slog then empty 
-		       else ptext "." <> ptext "slog")
-		  -- pos: Logic,opt (".", Sublogic)
+    printText0 ga (Logic_name mlog slog) =
+        printText0 ga mlog <> 
+		       (case slog of 
+		       Nothing -> empty 
+		       Just sub -> ptext "." <> printText0 ga sub)
+
 
