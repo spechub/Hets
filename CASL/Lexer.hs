@@ -203,15 +203,22 @@ commentOut = comment '[' ']'
 commentGroup = comment '{' '}'
 labelAnn = comment '(' ')'
 
+nestCommentOut = try (string "%[") >> 
+		 many (noneOf "]%" 
+		       <|> notEndText ']'
+			  <|> nestCommentOut 
+			  <|> char '%')
+		 >> char ']' >> char '%'
+
 -- ----------------------------------------------
--- skip whitespaces and comment out
+-- skip whitespaces and nested comment out
 -- ----------------------------------------------
 
 blankChars = "\t\v\f \160" -- non breaking space
 
 skip :: GenParser Char st ()
-skip = skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		       <|> commentOut <?> "") >> return () 
+skip = skipMany(oneOf (newlineChars ++ blankChars) 
+		       <|> nestCommentOut <?> "") >> return () 
 
 -- ----------------------------------------------
 -- annotations starting with %word
