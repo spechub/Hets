@@ -65,7 +65,7 @@ instance AParsable M_SIG_ITEM where
   aparser = rigidSigItems
 
 mKey :: AParser Token
-mKey = asKey modalityS <|> asKey modalityS
+mKey = asKey modalityS <|> asKey modalitiesS
 
 mBasic :: AParser M_BASIC_ITEM
 mBasic = 
