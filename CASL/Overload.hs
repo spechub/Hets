@@ -75,6 +75,27 @@ minExpFORMULA sign formula
         -- Trivial Atom         -> Return untouched
         True_atom _     -> return formula                       -- :: FORMULA
         False_atom _    -> return formula                       -- :: FORMULA
+	-- Non-Atomic FORMULA   -> Recurse through subFORMULAe
+	Quantification q vars f pos -> do
+	    f' <- minExpFORMULA sign f
+	    return $ Quantification q vars f' pos
+	Conjunction fs pos -> do
+	    fs' <- mapM (minExpFORMULA sign) fs
+	    return $ Conjunction fs' pos
+	Disjunction fs pos -> do
+	    fs' <- mapM (minExpFORMULA sign) fs
+	    return $ Disjunction fs' pos
+	Implication f1 f2 pos -> do
+	    f1' <- minExpFORMULA sign f1
+	    f2' <- minExpFORMULA sign f2
+	    return $ Implication f1' f2' pos
+	Equivalence f1 f2 pos -> do
+	    f1' <- minExpFORMULA sign f1
+	    f2' <- minExpFORMULA sign f2
+	    return $ Equivalence f1' f2' pos
+	Negation f pos -> do
+	    f' <- minExpFORMULA sign f
+	    return $ Negation f' pos
         -- Atomic FORMULA      -> Check for Ambiguities
         Predication predicate terms pos ->
             minExpFORMULA_pred sign predicate terms pos         -- :: FORMULA
@@ -82,9 +103,6 @@ minExpFORMULA sign formula
             t   <- minExpTerm sign term                         -- :: [[TERM]]
             t'  <- is_unambiguous t                             -- :: TERM
             return $ Definedness t' pos                         -- :: FORMULA
-	Quantification q vars formula' pos -> do
-	    f <- minExpFORMULA sign formula'
-	    return $ Quantification q vars f pos
 	Existl_equation term1 term2 pos ->
             minExpFORMULA_eq sign Existl_equation term1 term2 pos
         Strong_equation term1 term2 pos ->
@@ -140,7 +158,8 @@ minExpFORMULA_pred sign predicate terms pos = do
         name             = pred_name predicate
         preds           :: [PredType]
         preds            = Set.toList
-            $ Map.find name $ (predMap sign)
+            $ Map.findWithDefault
+                Set.empty name $ (predMap sign)
         pred_name       :: PRED_SYMB -> PRED_NAME
         pred_name pred'  = case pred' of
             (Pred_name name')           -> name'
@@ -329,7 +348,8 @@ minExpTerm_op sign op terms pos = do
         name             = op_name op
         ops             :: [OpType]
         ops              = Set.toList
-            $ Map.find name $ (opMap sign)
+            $ Map.findWithDefault
+                Set.empty name $ (opMap sign)
         op_name         :: OP_SYMB -> OP_NAME
         op_name op'      = case op' of
             (Op_name name')             -> name'
