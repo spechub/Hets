@@ -100,6 +100,8 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     induced_from_morphism HasCASL _ e = return $ ideMor e
     morphism_union HasCASL m1 m2 = morphismUnion m1 m2
 
+    cogenerated_sign HasCASL _ e = return $ ideMor e
+
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
