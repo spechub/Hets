@@ -34,7 +34,7 @@ import FiniteMap
 import Id
 
 data DGNode = DGNode {
-                dgn_name :: Maybe SIMPLE_ID
+                dgn_name :: Maybe SIMPLE_ID,
                 dgn_sign :: G_sign, -- only the delta
                 dgn_sens :: G_l_sentence_list, 
                                 -- or better [(String,G_sentence)] ???
