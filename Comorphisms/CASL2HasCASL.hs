@@ -18,6 +18,7 @@ import Logic.Logic
 import Logic.Comorphism
 import Common.Id
 import Common.Lib.State
+import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
@@ -33,6 +34,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.VarDecl
+import HasCASL.DataAna
 import HasCASL.Unify
 import HasCASL.Morphism
 import HasCASL.Sublogic as HasSub
@@ -66,6 +68,7 @@ instance Comorphism CASL2HasCASL
     map_morphism CASL2HasCASL = Just . mapMor
     map_sentence CASL2HasCASL sig = Just . toSentence sig
     map_symbol CASL2HasCASL = Set.single . mapSym
+    map_theory CASL2HasCASL = Just . mapTheory
 
 toType :: Id -> Type
 toType i = TypeName i star 0
@@ -86,6 +89,24 @@ fromPredType pt =
     let args = map toType $ predArgs pt
         arg = mkProductType args []
     in simpleTypeScheme $ if null args then logicalType else predType arg
+
+mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
+mapTheory (sig, sents) = 
+    let env = mapSig sig
+	newSents = map (mapNamed (toSentence sig)) sents 
+        dts = concatMap ( \ ns -> case sentence ns of
+			  DatatypeSen ds -> ds
+			  _ ->  []) newSents
+	tMap = foldr ( \ (DatatypeConstr i j _ _ _) m ->
+		      Map.insert i j m) Map.empty dts
+	constr = concatMap ( \ (DatatypeConstr _ j _ _ alts) ->
+			 map ( \ (Construct o args p _sels) ->
+			       (o, j, getConstrType (TypeName j star 0) p
+				     $ map (mapType tMap) args)) alts) dts
+	newEnv = execState (mapM_ ( \ (o, j, ty) -> 
+				    addOpId o (simpleTypeScheme ty) [] 
+				    $ ConstructData j) constr) env
+	in (newEnv, newSents)
 
 mapSig :: Sign f e -> Env
 mapSig sign = 
@@ -124,7 +145,6 @@ mapSym s = let i = CasM.symName s in
 	idToOpSymbol initialEnv i $ fromOpType ot $ opKind ot
     CasM.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
     CasM.SortAsItemType -> idToTypeSymbol initialEnv i star
-
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal 
 toQuant Cas.Existential = Existential
@@ -148,9 +168,10 @@ toSentence sig f = case f of
        in DatatypeSen 
           $ map ( \ s -> DatatypeConstr s (getSort s) genKind []
                           (map ( \ (i, t, ps) -> 
-			       Construct i
-			       [mkProductType
-				(map toType $ opArgs t) ps]
+			       let args = opArgs t in 
+			       Construct i 
+				 (if null args then []
+				  else [mkProductType (map toType args) ps])
 			       (mapPart $ opKind t) [])
                           $ filter ( \ (_, t, _) -> opRes t == s) 
 				$ map ( \ (Cas.Qual_op_name i t ps) -> 
