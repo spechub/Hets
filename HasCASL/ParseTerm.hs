@@ -12,6 +12,7 @@ module ParseTerm where
 import Id
 import Keywords
 import Lexer
+import List(nub)
 import Token
 import HToken
 import As
@@ -46,7 +47,8 @@ parseClass = fmap (\c -> if showId c "" == "Type"
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
 		c <- cParenT
-		return (Intersection (concatMap iclass cs) (toPos o ps c))
+		return (Intersection (nub $ concatMap iclass cs) 
+			(toPos o ps c))
 
 extClass :: GenParser Char st ExtClass
 extClass = do c <- parseClass
