@@ -15,10 +15,6 @@ Portability :  portable
 
 TODO:
 
-* \comp_\tau and\/or \comp_0 are not computed correctly: see the 
-  FailAmalg example, where the amalgamability check should fail but
-  succeedes in step 2.
-
 * the rest of the algorithm
 
 
@@ -112,12 +108,12 @@ taggedValsToEquivClasses rel =
 
 -- | Merge the equivalence classes for elements fulfilling given condition.
 mergeEquivClassesBy :: Eq a 
-	            => EquivRelTagged a -- ^ the input relation
-		    -> (a -> a -> Bool) -- ^ the condition stating when two elements are in relation
+		    => (a -> a -> Bool) -- ^ the condition stating when two elements are in relation
+	            -> EquivRelTagged a -- ^ the input relation
 		    -> EquivRelTagged a 
 -- ^ returns the input relation with equivalence classes merged according to
 -- the condition.
-mergeEquivClassesBy rel cond =
+mergeEquivClassesBy cond rel =
     -- Starting with the first element in the list an element (elem, tag) is taken
     -- and cond is subsequently applied to it and all the elements
     -- following it in the list. Whenever an element (elem', tag') 
@@ -186,7 +182,7 @@ simeq diag =
 
         -- compute the relation
 	rel = map (\ds -> (ds, ds)) (sorts diag)
-	rel' = mergeEquivClassesBy rel mergeCond
+	rel' = mergeEquivClassesBy mergeCond rel
     in taggedValsToEquivClasses rel'
 
 
@@ -267,21 +263,29 @@ inRel (eqc : eqcs) a b | a == b = True
 			Just _ -> True
 
 
+-- | Check if two embeddings can occur subsequently in a word
+-- given the simeq relation on sorts.
+admissible :: EquivRel DiagSort -- ^ the \simeq relation
+	   -> DiagEmb           -- ^ the first embedding
+	   -> DiagEmb           -- ^ the second embedding
+	   -> Bool
+admissible simeq (n1, s1, _) (n2, _, s2) = 
+    inRel simeq (n1, s1) (n2, s2)
+
+
 -- | Compute the set of all the loopless, admissible
 -- words over given set of embeddings.
 embWords :: [DiagEmb]         -- ^ the embeddings
 	 -> EquivRel DiagSort -- ^ the \simeq relation that defines admissibility
 	 -> [DiagEmbWord]
 embWords embs simeq =
-    let -- can the two embeddings occur subsequently in a word?
-        admissible (n1, s1, _) (n2, _, s2) = inRel simeq (n1, s1) (n2, s2)
-        -- generate the list of all loopless words over given alphabet
+    let -- generate the list of all loopless words over given alphabet
 	-- with given suffix
         embWords' suff@(_ : _) embs pos | pos >= length embs = [suff]
 	embWords' suff@(e : _) embs pos | otherwise = 
 	    let emb = embs !! pos
 		embs' = embs \\ [emb]
-		ws = if admissible emb e
+		ws = if admissible simeq emb e
 		       then embWords' (emb : suff) embs' 0
 		       else []
 	    in ws ++ (embWords' suff embs (pos + 1))
@@ -398,44 +402,57 @@ cong_tau :: CASLDiag          -- ^ the diagram
 	 -> EquivRel DiagSort -- ^ the \simeq_tau relation
 	 -> EquivRel DiagEmbWord
 cong_tau diag sink st = 
-    let -- domCodEqual: check that domains and codomains of given words are equal
-        domCodEqual w1 w2 = 
-	    -- we ignore the nodes form which the sorts come,
-	    -- as all the sink source nodes are considered to be one node
-	    -- TODO: ^ this is wrong
-	    {-let (_, sdom1) = wordDom w1
-		(_, scod1) = wordCod w1
-		(_, sdom2) = wordDom w2
-		(_, scod2) = wordCod w2
-	    in sdom1 == sdom2 && scod1 == scod2-}
-	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
-	-- comp: the Comp rule works for words 1 and 2-letter long
-	-- with equal domains and codomains
-        comp w1@[_] w2@[_, _] = domCodEqual w1 w2
-	comp w1@[_, _] w2@[_] = domCodEqual w1 w2
-	comp _ _ = False
-	
-        -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
-	-- TODO: Lc seems redundant in this case
-        fixCongLc rel =
-	    let rel' = (leftCancellableClosure . congruentClosure st) rel
-	    in if rel == rel' then rel else fixCongLc rel'
+    let -- domCodSimeq: check that domains and codomains of given words are related
+        domCodSimeq w1 w2 = 
+	    inRel st (wordDom w1) (wordDom w2) && inRel st (wordCod w1) (wordCod w2)
 
-	-- compute the relation
 	embs = sinkEmbs diag sink
 	words = embWords embs st
 	rel = map (\w -> (w, w)) words
-	rel' = mergeEquivClassesBy rel comp
-	rel'' = fixCongLc rel'
-    in taggedValsToEquivClasses rel''
+	rel' = mergeEquivClassesBy domCodSimeq rel
+    in taggedValsToEquivClasses rel'
 
 
--- | Compute the cong_0 relation for given diagram.
+-- | Compute the finite representation of cong_0 relation for given diagram.
+-- The representation consists only of equivalence classes that
+-- contain more than one element.
 cong_0 :: CASLDiag
        -> EquivRel DiagSort -- ^ the \simeq relation
        -> EquivRel DiagEmbWord
 cong_0 diag simeq = 
--- TODO: make the parts common with cong_tau global
+    let -- diagRule: the Diag rule
+	diagRule [(n1, s11, s12)] [(n2, s21, s22)] =
+	    isMorph diag (n1, s11) (n2, s21) && isMorph diag (n1, s12) (n2, s22) || 
+	    isMorph diag (n2, s21) (n1, s11) && isMorph diag (n2, s22) (n1, s12)
+	diagRule _ _ = False
+
+        -- addToRel: add given word to given relation
+        addToRel [] _ = []
+	addToRel (eqcl@(refw : _) : eqcls) w =
+	    if wordDom w == wordDom refw && wordCod w == wordCod refw
+	       then ((w : eqcl) : eqcls) 
+	       else (eqcl : (addToRel eqcls w))
+
+        -- words2: generate all the admissible 2-letter words over given alphabet
+        words2 _ [] _ = []
+	words2 alph (_ : embs) [] = words2 alph embs alph
+	words2 alph embs1@(emb1 : _) (emb2 : embs2) =
+	    let ws = words2 alph embs1 embs2
+	    in if admissible simeq emb1 emb2 
+	       then ([emb1, emb2] : ws) else ws
+
+	-- compute the relation
+        em = embs diag
+	rel = map (\e -> ([e], [e])) em
+	rel' = mergeEquivClassesBy diagRule rel
+	rel'' = taggedValsToEquivClasses rel'
+	w2s = words2 em em em
+	rel''' = foldl addToRel rel'' w2s
+    in rel'''
+
+
+{-
+-- TODO: this code will be used to compute \cong relation
     let -- domCodEqual: check that domains and codomains of given words are equal
         domCodEqual w1 w2 = 
 	       wordDom w1 == wordDom w2 && wordCod w1 == wordCod w2
@@ -451,18 +468,26 @@ cong_0 diag simeq =
         comp w1@[_] w2@[_, _] = domCodEqual w1 w2
 	comp w1@[_, _] w2@[_] = domCodEqual w1 w2
 	comp _ _ = False
-	
+
+        -- fixCongLc: apply Cong and Lc rules until a fixpoint is reached
+	fixCongLc rel =
+	    let rel' = (leftCancellableClosure . congruentClosure st) rel
+	    in if rel == rel' then rel else fixCongLc rel'
+
 	-- compute the relation
 	em = embs diag
 	words = embWords em simeq
 	rel = map (\w -> (w, w)) words
-	rel' = mergeEquivClassesBy rel diagRule
-	rel'' = mergeEquivClassesBy rel' comp
+	rel' = mergeEquivClassesBy diagRule rel
+	rel'' = mergeEquivClassesBy comp rel'
     in taggedValsToEquivClasses rel''
+-}
 
 
--- | The amalgamability checking function for CASL.
-ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked
+-- | The amalgamability checking function for CASL. 
+ensuresAmalgamability :: CASLDiag        -- ^ the diagram to be checked;
+					 -- must already be extended with the node
+					 -- that is the target of the sink.
 		      -> [LEdge CASLMor] -- ^ the sink
 		      -> Result Amalgamates
 ensuresAmalgamability diag' sink@((_, tn, _) : _) = 
@@ -483,12 +508,19 @@ ensuresAmalgamability diag' sink@((_, tn, _) : _) =
 					     " in {" ++ renderText Nothing (printText (getNodeSig (fst ns2) lns)) ++ "}"
 	                       in do return (No ("sorts " ++ sortString1 ++ " and " ++ sortString2))
 	    Nothing -> do let ct = cong_tau diag' sink st
+			      -- As we will be using a finite representation of \cong_0
+			      -- that may not contain some of the equivalence classes with
+			      -- only one element it's sufficient to check that the subrelation
+			      -- ct0 of ct that has only non-reflexive elements is a subrelation
+			      -- of \cong_0.
+			      ct0 = filter (\l -> length l > 1) ct
 			      c0 = cong_0 diag s
 			  -- 2. Check the simple case: \cong_0 \in \cong, so if \cong_\tau \in \cong_0 the
 			  -- specification is correct.
-			  --warning DontKnow ("cong_tau: " ++ (showPretty ct "")) nullPos -- test
-			  --warning DontKnow ("cong_0: " ++ (showPretty c0 "")) nullPos -- test
-		          case subRelation ct c0 of
+			  -- warning DontKnow ("cong_tau: " ++ (showPretty ct "")) nullPos -- test
+			  -- warning DontKnow ("cong_tau0: " ++ (showPretty ct0 "")) nullPos -- test
+			  -- warning DontKnow ("cong_0: " ++ (showPretty c0 "")) nullPos -- test
+		          case subRelation ct0 c0 of
 		               Nothing -> do return Yes
 			       Just _ -> return DontKnow -- TODO
 
