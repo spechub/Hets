@@ -98,8 +98,24 @@ applyRule = undefined
    add to proof status the pair ([GlobDecomp e1,...,GlobDecomp en],DGm+1)
    where e1...en are the global theorem links in DGm
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
-globDecomp :: ProofStatus -> ProofStatus
-globDecomp = undefined
+
+-- @@@@ hier weitermachen!! @@@@ 
+{-globDecomp :: ProofStatus -> ProofStatus
+globDecomp proofStatus@(globalContext,history,dgraph) =
+  concat [getAllLocDefPathsBetween dgraph src tgt| src <- allNodes]
+  where
+    globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
+    sourcesOfglobalThmEdges = map getSource globalThmEdges 
+    allNodes = nodes dGraph
+    
+-}
+{- alle globalThmEdges holen, für jede(edge1):
+     alle locDefPfade zum source suchen, für jeden:
+       Morphismus davon merken (morph1)
+       source davon merken, für jede(source1):
+         localThmEdge von source1 zum target von edge1 mit dem Morphismus
+	           (Morphismus von edge1)°morph1 einfügen
+-}
 
 {- try to apply rules GlobSubsumption  
      to all global theorem links in the current DG 
@@ -143,7 +159,6 @@ globSubsumeAux dGraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =  
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-{- @@@@@@@ hier weitermachen @@@@@@@@@@ -}
 {- the same as globSubsume, but for the rule LocSubsumption -}
 locSubsume ::  ProofStatus -> ProofStatus
 locSubsume proofStatus@(globalContext,history,dGraph) =
@@ -287,6 +302,9 @@ isValidMorphism morphism =
   case morphism of
     Nothing -> False
     otherwise -> True
+
+getSourceNode :: LEdge DGLinkLab -> Node
+getSourceNode (source,_,_) = source
 
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
