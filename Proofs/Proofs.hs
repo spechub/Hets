@@ -438,6 +438,7 @@ isSameTranslationAux sens mor1 mor2 =
 -- local subsumption
 -- ----------------------------------------------
 
+-- applies local subsumption to all unproven local theorem edges
 locSubsume :: ProofStatus -> ProofStatus
 locSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
   (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
@@ -448,6 +449,7 @@ locSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
     nextDGraph = fst result
     nextHistoryElem = snd result
 
+-- auxiliary method for locSubsume
 locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
@@ -483,15 +485,6 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-{-sentencesInG_l_sentence_list :: forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
-       [a] -> G_l_sentence_list -> Bool
-sentencesInG_l_sentence_list sentences (G_l_sentence_list i nl)
-  = all (`elem` nl) sentences-}
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
