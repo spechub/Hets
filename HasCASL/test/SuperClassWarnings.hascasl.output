@@ -1,3 +1,20 @@
+%% all warnings
+class a < b
+      %% implicit super class declaration
+class b
+      %% redeclared class
+class c < Type
+      %% useless (always true)
+class d < a
+      %% ok
+class d < b
+      %% transitive via a 
+class d < a
+      %% direct repetition
+class e < f
+      %% Type is silently ignored
+class g < h
+      %% doubles are silently ignored
 %% Classes ---------------------------------------------------------------
 a < b
 b

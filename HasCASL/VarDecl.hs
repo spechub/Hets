@@ -79,7 +79,7 @@ anaTypeVarDecl(TypeArg t k s ps) =
 
 -- | add an analysed type argument
 addTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-addTypeVarDecl ta@(TypeArg t k s ps) = 
+addTypeVarDecl ta@(TypeArg t k _ _) = 
     do mi <- addTypeId TypeVarDefn Plain k t
        return $ fmap (const ta) mi
 
@@ -110,7 +110,8 @@ partitionOpId as tm c i sc =
 	in partition (isUnifiable tm c sc . opType) $ opInfos l
 
 -- | storing an operation
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env Bool
+addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
+	-> State Env (Maybe UninstOpId)
 addOpId i sc attrs defn = 
     do as <- gets assumps
        tm <- gets typeMap
@@ -119,14 +120,14 @@ addOpId i sc attrs defn =
 	   oInfo = OpInfo sc attrs defn 
        if null l then do putAssumps $ Map.insert i 
 					(OpInfos (oInfo : r )) as
-			 return True
+			 return $ Just i
 	  else do let Result ds mo = merge (head l) oInfo
 		  addDiags $ map (improveDiag i) ds
 		  case mo of 
-		      Nothing -> return False
+		      Nothing -> return Nothing
 		      Just oi -> do putAssumps $ Map.insert i 
 						   (OpInfos (oi : r )) as
-				    return True
+				    return $ Just i
 
 ----------------------------------------------------------------------------
 -- GenVarDecl
@@ -204,12 +205,22 @@ anaVarDecl(VarDecl v oldT s ps) =
     do mt <- anaStarType oldT
        case mt of 
 	       Nothing -> return Nothing
-	       Just t -> 
-		   do let vd = VarDecl v t s ps
-	              b <- addVarDecl (VarDecl v t s ps)
-		      return $ if b then Just vd else Nothing
+	       Just t -> addVarDecl (VarDecl v t s ps)
+
 
 -- | add a local variable with an analysed type
-addVarDecl :: VarDecl -> State Env Bool 
-addVarDecl(VarDecl v t _ _) =
-    addOpId v (simpleTypeScheme t) [] VarDefn
+addVarDecl :: VarDecl -> State Env (Maybe VarDecl) 
+addVarDecl vd@(VarDecl v t _ _) = 
+    do newV <- addOpId v (simpleTypeScheme t) [] VarDefn
+       return $ fmap (const vd) newV
+
+-- | check uniqueness of variables 
+checkUniqueVars :: [VarDecl] -> State Env ()
+checkUniqueVars = addDiags . checkUniqueness . map ( \ (VarDecl v _ _ _) -> v )
+
+-- | filter out assumption
+filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps
+filterAssumps p =
+    Map.filter (not . null . opInfos) .
+       Map.map (OpInfos . filter p . opInfos)
+

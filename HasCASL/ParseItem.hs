@@ -354,6 +354,11 @@ opDecl os ps = do c <- colT
 		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
 		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
 
+opArgs :: AParser [Pattern]
+opArgs = many1 (bracketParser varDecls oParenT cParenT anSemi 
+		      (\ l p -> TuplePattern
+		       (map PatternVar $ concat l) p)) 
+
 opDeclOrDefn :: OpId -> AParser OpItem
 opDeclOrDefn o = 
     do c <- colT
@@ -366,9 +371,7 @@ opDeclOrDefn o =
 		return (OpDefn o [] t Total f (toPos c [] e))  
          <|> return (OpDecl [o] t [] (map tokPos [c]))
     <|> 
-    do ps <- many1 (bracketParser varDecls oParenT cParenT anSemi 
-		      (\ l p -> BracketPattern Parens 
-		       (map PatternVar $ concat l) p)) 
+    do ps <- opArgs
        do    (p, c) <- quColon
 	     t <- parseType 
 	     e <- equalT
@@ -401,9 +404,7 @@ predDecl os ps = do c <- colT
 			    (map tokPos (ps++[c])))
 
 predDefn :: OpId -> AParser OpItem
-predDefn o = do ps <- many (bracketParser varDecls oParenT cParenT anSemi 
-		      ( \ l p -> BracketPattern Parens 
-			(map PatternVar $ concat l) p)) 
+predDefn o = do ps <- opArgs
 		e <- asKey equivS
 		f <- term
 		return (OpDefn o ps (simpleTypeScheme logicalType)

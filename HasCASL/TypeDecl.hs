@@ -109,8 +109,9 @@ anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) =
        as <- gets assumps
        mv <- case mvds of 
 		       Nothing -> return Nothing
-		       Just vds -> do mvs <- mapM addVarDecl vds
-				      if all id mvs then 
+		       Just vds -> do checkUniqueVars vds
+				      mvs <- mapM addVarDecl vds
+				      if all isJust mvs then 
 					 return $ Just v
 					 else return Nothing
        mt <- anaFormula ga f

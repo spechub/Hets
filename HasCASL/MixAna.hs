@@ -146,6 +146,12 @@ findOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> Type -> Maybe OpInfo
 findOpId as tm c i ty = listToMaybe $ fst $
 			partitionOpId as tm c i $ TypeScheme [] ([] :=> ty) []
 
+filterOps :: Assumps -> Assumps
+filterOps = filterAssumps ( \ o -> case opDefn o of
+			    ConstructData _ -> True
+			    VarDefn -> True
+			    _ -> False)
+
 iterStates :: GlobalAnnos -> Type -> [Term] 
 	   -> State (Env, ParseMap Term) ()
 iterStates ga ty terms = 
@@ -206,21 +212,30 @@ iterStates ga ty terms =
 				      self (tail terms) 
 		       Nothing -> return ()
 	    QuantifiedTerm quant decls hd ps ->
-		do let (mtt, e2) = runState (resolve ga (logicalType, hd)) e
-	           put (e2, pm)			       
+		do let (mDecls, e1) = runState (mapM anaGenVarDecl decls) e
+		       newDecls = catMaybes mDecls
+		   let (mtt, e2) = runState (resolve ga (logicalType, hd)) e1
+	           put (e2 { typeMap = tm, assumps = as }, pm)
 		   case mtt of 
 	               Just (_, tt) -> 
 	                   do nextState ga (Just logicalType, 
-					    QuantifiedTerm quant decls tt ps)
+				       QuantifiedTerm quant newDecls tt ps)
 	                      self (tail terms) 
 	               Nothing -> return ()
 	    LambdaTerm decls part hd ps -> 
-		do let (mtt, e2) = runState (resolveAny ga hd) e 
-	           put (e2, pm)			       
+		do let (mDecls, e0) = runState (mapM (resolvePattern ga) 
+						decls) e 
+				      { assumps = filterOps as }
+		       newDecls = map snd $ catMaybes mDecls
+		       vDecls = concatMap extractBindings newDecls
+		       (_, e1) = runState (mapM_ addVarDecl vDecls) e0 
+				 { assumps = as }
+                   let (mtt, e2) = runState (resolveAny ga hd) e1 
+	           put (e2 {assumps = as}, pm)
 		   case mtt of 
 	               Just (typ, tt) -> 
                            do nextState ga (Just typ, 
-					    LambdaTerm decls part tt ps)
+					    LambdaTerm newDecls part tt ps)
 	                      self (tail terms) 
 	               Nothing -> return () 
 	    CaseTerm hd (ProgEq pat e1 pps : _) ps -> 
@@ -528,7 +543,7 @@ specializePatVars tm (ty, pat) = do
 		      return (newTy, case newPat of 
 			      PatternVar _ -> newPat 
 			      TypedPattern _ _ _ -> newPat
+			      PatternConstr _ (TypeScheme [] _ _) [] _ -> 
+			          newPat
 			      _ -> TypedPattern newPat newTy ps)
-    _ -> do put (c, oldSubst, mkDiag Error
-		 "unexpected pattern" pat : ds)
-	    return (ty, pat)
+    _ -> error ("specializePatVars: " ++ show pat)

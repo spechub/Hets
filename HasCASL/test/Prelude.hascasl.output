@@ -1,3 +1,106 @@
+%% predefined universe containing all types, 
+%% superclass of all other classes
+class Type
+var s : Type; t : Type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% invisible type "Unit" for formulae
+type Unit
+     %% flat cpo with bottom
+     %% type aliases
+type Pred__ : Type- -> Type := \ t : Type- . t ->? Unit
+type ?__ : Type -> Type := \ t : Type . Unit ->? t
+op true, false : Unit ->? Unit
+op __/\__, __\/__, __=>__, __if__, __<=>__ : Unit × Unit ->? Unit
+op not : Unit ->? Unit
+op __=__ : s × s ->? Unit
+   %% =e=
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %% (builtin) type (constructors)
+type __->?__ : Type- -> Type+ -> Type
+%% nested pairs are different from n-tupels (n > 2)
+type __*__ : Type+ -> Type+ -> Type
+type __*__*__ : Type+ -> Type+ -> Type+ -> Type
+%% ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% "pred p args = e" abbreviates "op p args :? unit = e"  
+%% CASL requires "<=>" for pred-defn and disallows "()" as result
+op def, tt : (Pred)(s)
+var x : s
+program def : (Pred)(s) = \ x : _var_36 . ()
+	%% def is also total (identical to tt) 
+program tt : (Pred)(s) = \ x : _var_93 . ()
+	%% tt is total "op tt(x: s): unit = ()"
+program __ und __ (x, y : Unit) : Unit = ()
+%% total function type
+type __->__ : Type- -> Type+ -> Type
+type s->t < s ->? t
+%% total functions
+op __res__(x : s, y : t) : s = (op x : s)
+op fst(x : s, y : t) : s = (op x : s)
+program snd (x : s, y : t) : t = y
+%% trivial because its the strict function property
+. (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Internal Logic
+op eq : s × s ->? Unit
+%% then %def
+%% notation "\ ."  abbreviates "\bla:unit." 
+%% where "bla" is never used, but only "()" instead
+%% for type inference 
+%% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
+type s < ? s
+program all (p : Pred (s)) : Pred Unit = eq (p, tt)
+%% the cast from ?s to s is still done manually here (for the strict "und")
+program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
+%% use "And" instead of "und" to avoid cast from "?unit" to "unit"
+program __ impl __ (x, y : Pred Unit) : Pred Unit = eq (x, x And y)
+program __ or __ (x, y : Pred Unit) : Pred Unit =
+	all (\ r : Pred Unit . ((x impl r) und (y impl r)) impl r)
+program ex (p : Pred (s)) : Pred Unit =
+	all (\ r : Pred Unit . all (\ x : s . p (x) impl r) impl r)
+program ff () : Pred Unit = all (\ r : Pred Unit . r ())
+program neg (r : Pred Unit) : Pred Unit = r impl ff
+%% the type instance for the first "eq" should be "?t" 
+%% this is explicitely enforced by "\ .f(x)"
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
+type nat
+class Cpo < Type
+      {var c : Cpo; op __<<=__ : c × c ->? Unit; ;
+       op isChain(s : nat -> c) :? Unit = all
+					  (\ n : nat . s (n) <<= s (Suc (n)));
+       op isBound(x : c, s : nat -> c) :? Unit = all
+						 (\ n : nat . s (n) <<= x);
+       op sup : (nat -> c) ->? c;}
+class Pcpo < Cpo
+      {var p : Pcpo; op bottom : p;}
+class instance Flatcpo < Cpo
+	       {var f : Flatcpo; program __ <<= [f] __ = eq}
+var c : Cpo; d : Cpo
+type instance __*__ : Cpo+ -> Cpo+ -> Cpo
+var x1 : c; x2 : c; y1 : d; y2 : d
+program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
+type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
+type Unit : Pcpo
+%% Pcont
+type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
+type c-->?d < c ->? d
+program f <<= [c -->? d] g =
+	all (\ x : c . def (f x) impl f (x) <<= g (x))
+%% Tcont
+type instance __-->__ : Cpo- -> Cpo+ -> Cpo
+type c-->d < c -->? d
+var f : c --> d; g : c --> d
+program f <<= g = f <<= [c -->? d] g
+type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
+op Y : (p -->? p) --> p
+op undefined : c -->? p = Y (\ x : c -->? p .! x)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% user stuff
+free type bool ::= true | 
+		   false
+type bool : Flatcpo
+type nat : Flatcpo
 %% Classes ---------------------------------------------------------------
 Cpo
 Flatcpo < Cpo
@@ -39,7 +142,7 @@ __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
 __res__ : s = \ (x : s, y : t) .! (op x : s)
 bottom : p
-def : (Pred)(s) = \ x : s . ()
+def : (Pred)(s) = \ x : _var_36 . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
@@ -50,7 +153,7 @@ not : Unit ->? Unit
 sup : (nat -> c) ->? c
 true : bool %(construct bool)%
      : Unit ->? Unit
-tt : (Pred)(s) = \ x : s . ()
+tt : (Pred)(s) = \ x : _var_93 . ()
 x : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
@@ -74,7 +177,6 @@ Error (line 65, column 22) unexpected mixfix token '('
 FatalError (line 65, column 18) no resolution for '(\ (x : s, y : t) . def (x res y)) =
 (\ (x : s, y : t) . (def y) und (def x))'
 FatalError (line 74, column 11) no resolution for '(\ x : s . eq (x, x)) = tt'
-Error (line 75, column 26) unexpected mixfix token 'y'
 FatalError (line 75, column 15) no resolution for '(\ (x, y : s) . x res eq (x, y)) = (\ (x, y : s) . y res eq (x, y))'
 Warning (line 85, column 6) redeclared type 's'
 Error (line 87, column 13) unexpected mixfix token '('
@@ -82,20 +184,21 @@ Error (line 87, column 43) unexpected mixfix token 'p'
 Error (line 90, column 13) unexpected mixfix token '('
 Error (line 90, column 45) unexpected mixfix token 't1'
 Error (line 93, column 11) unexpected mixfix token 'impl'
-Error (line 93, column 58) unexpected mixfix token 'And'
+Error (line 93, column 53) unexpected mixfix token 'x'
 Error (line 95, column 11) unexpected mixfix token 'or'
 Error (line 95, column 48) unexpected mixfix token 'all'
-Error (line 96, column 21) unexpected mixfix token 'impl'
+Error (line 96, column 19) unexpected mixfix token 'x'
 Error (line 98, column 12) unexpected mixfix token '('
 Error (line 98, column 39) unexpected mixfix token 'all'
 Error (line 99, column 17) unexpected mixfix token 'all'
 Error (line 99, column 27) unexpected mixfix token 'p'
 Error (line 101, column 12) unexpected mixfix token '('
 Error (line 101, column 29) unexpected mixfix token 'all'
-Error (line 101, column 49) unexpected mixfix token 'r'
+Error (line 101, column 50) unexpected mixfix token '('
 Error (line 103, column 13) unexpected mixfix token '('
 Error (line 103, column 42) unexpected mixfix token 'r'
 Error (line 108, column 3) unexpected mixfix token 'all'
+FatalError (line 108, column 9) no resolution for '(f, g)'
 Error (line 108, column 22) unexpected mixfix token 'all'
 Error (line 108, column 39) unexpected mixfix token 'f'
 FatalError (line 108, column 32) no resolution for 'eq (\ . f (x), g (x)) impl eq (f, g)'
@@ -103,13 +206,13 @@ Warning (line 115, column 13) redundant universe class
 Error (line 121, column 3) unexpected mixfix token 'all'
 FatalError (line 121, column 14) no resolution for 'x <<= x'
 Error (line 122, column 3) unexpected mixfix token 'all'
-Error (line 122, column 28) unexpected mixfix token 'y'
+Error (line 122, column 29) unexpected mixfix token ')'
 Error (line 123, column 3) unexpected mixfix token 'all'
-Error (line 123, column 28) unexpected mixfix token 'y'
+Error (line 123, column 29) unexpected mixfix token ')'
 Error (line 125, column 32) unexpected mixfix token 'all'
-Error (line 125, column 44) unexpected mixfix token 's'
+Error (line 125, column 55) unexpected mixfix token 'Suc'
 Error (line 126, column 38) unexpected mixfix token 'all'
-Error (line 126, column 50) unexpected mixfix token 's'
+FatalError (line 126, column 50) no resolution for 's (n) <<= x'
 Error (line 130, column 3) unexpected mixfix token 'all'
 Error (line 130, column 24) unexpected mixfix token '('
 Error (line 131, column 42) unexpected mixfix token 'isBound'
@@ -124,7 +227,7 @@ Hint (line 157, column 13) not a class 'c'
 Hint (line 157, column 25) not a class 'd'
 Hint (line 157, column 25) not a class 'd'
 FatalError (line 159, column 10) no resolution for '(x1, y1) <<= (x2, y2)'
-Error (line 159, column 45) unexpected mixfix token 'und'
+Error (line 159, column 34) unexpected mixfix token 'x1'
 FatalError (line 170, column 4) no resolution for '__'
 Error (line 176, column 16) unexpected mixfix token '['
 Error (line 176, column 31) unexpected mixfix token 'all'
@@ -132,8 +235,8 @@ Error (line 176, column 45) unexpected mixfix token '('
 FatalError (line 182, column 4) no resolution for '__'
 Hint (line 184, column 13) not a class 'c --> d'
 Hint (line 184, column 13) not a class 'c --> d'
-Error (line 186, column 12) unexpected mixfix token '<<='
-Error (line 186, column 22) unexpected mixfix token '<<='
+FatalError (line 186, column 10) no resolution for 'f <<= g'
+Error (line 186, column 20) unexpected mixfix token 'f'
 Error (line 192, column 3) unexpected mixfix token 'all'
 Error (line 192, column 38) unexpected mixfix token ')'
 Error (line 193, column 32) unexpected mixfix token 'impl'

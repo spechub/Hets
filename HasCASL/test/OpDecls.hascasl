@@ -37,7 +37,7 @@ op l3 : s = __ <= __ <= __ (a, b, c)
 op l4 : s = (__ <= __ <= __) (a, b, c)
 op l5 : s * s * s = (a, b, c)
 
-var x : s
+op x : s
 
 op y : s = (op a : s) <= (var x : s) <= (a : s) 
 

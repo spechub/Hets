@@ -54,6 +54,11 @@ anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) =
 	                       Just t -> return $ Just $ UnitOpAttr t ps
 anaAttr _ _ b = return $ Just b
 
+filterVars :: Assumps -> Assumps
+filterVars = filterAssumps ( \ o -> case opDefn o of
+			    VarDefn -> False
+			    _ -> True)
+
 anaOpItem :: GlobalAnnos -> OpItem -> State Env OpItem
 anaOpItem ga (OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
@@ -64,25 +69,37 @@ anaOpItem ga (OpDecl is sc attr ps) =
        us <- mapM (anaOpId nSc attr) is
        return $ OpDecl (catMaybes us) nSc (catMaybes mAttrs) ps
 
-anaOpItem ga od@(OpDefn o pats sc partial trm ps) = 
-    do let newTrm = if null pats then trm else 
-		 LambdaTerm pats partial trm ps 
-           (op@(OpId i _ _), extSc) = getUninstOpId sc o
+anaOpItem ga (OpDefn o pats sc partial trm ps) = 
+    do let (op@(OpId i _ _), extSc) = getUninstOpId sc o
+	   bs = concatMap extractBindings pats
        mSc <- anaTypeScheme extSc 
+       as <- gets assumps
+       checkUniqueVars bs
+       putAssumps $ filterVars as
+       mapM_ anaVarDecl bs
        case mSc of 
 		Just newSc -> do 
 		    ty <- toEnvState $ freshInst newSc
-		    mt <- resolveTerm ga ty newTrm
+		    mt <- resolveTerm ga ty trm
+		    putAssumps as
 		    case mt of 
-			      Nothing -> return $ OpDefn op [] 
-					     newSc partial newTrm ps
+			      Nothing -> return $ OpDefn op pats 
+					     newSc partial trm ps
 			      Just lastTrm -> 
-				  do addOpId i newSc [] $ Definition lastTrm
-				     return $ OpDefn op [] 
+				  do addOpId i newSc [] $ Definition 
+				         $ case (pats, partial) of 
+					       ([], Total) -> lastTrm
+					       _ -> LambdaTerm pats partial 
+						    lastTrm ps
+				     return $ OpDefn op pats 
 					    newSc partial lastTrm ps
 		Nothing -> do 
-		    resolveAny ga newTrm
-		    return od
+		    mt <- resolveAny ga trm
+		    putAssumps as
+		    return $ OpDefn op pats extSc partial 
+			      (case mt of Nothing -> trm
+			                  Just (_, x) -> x) ps
+							  
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
@@ -91,8 +108,8 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
 anaOpId :: TypeScheme -> [OpAttr] -> OpId -> State Env (Maybe OpId) 
 anaOpId sc attrs o =
     do let (OpId i _ _, newSc) = getUninstOpId sc o
-       b <- addOpId i newSc attrs NoOpDefn
-       return $ if b then Just o else Nothing
+       mo <- addOpId i newSc attrs NoOpDefn
+       return $ fmap (const o) mo
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
@@ -113,12 +130,14 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ProgEq
 anaProgEq ga pe@(ProgEq pat trm qs) =
-    do mp <- resolvePattern ga pat
-       let bs = case mp of 
+    do as <- gets assumps
+       putAssumps $ filterVars as
+       mp <- resolvePattern ga pat
+       let exbs = case mp of 
 			Nothing -> []
 			Just (_, newPat) -> extractBindings newPat
-       as <- gets assumps
-       mapM_ addVarDecl bs
+       checkUniqueVars exbs
+       mapM_ addVarDecl exbs
        mt <- case mp of 
 		     Nothing -> resolveAny ga trm
 		     Just (ty, _) -> resolve ga (ty, trm)
@@ -136,8 +155,7 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 			       return pe
 		       where removeResultType p = 
 				 case p of 
-				 TypedPattern tp _ _ -> 
-				     removeResultType tp
+				 TypedPattern tp _ _ -> tp
 				 _ -> p
 	    _ -> return pe
 

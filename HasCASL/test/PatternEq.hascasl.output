@@ -1,3 +1,12 @@
+type s, t
+op snd : s × t -> t
+program snd : s × t -> t ((x : s, y : t)) = (op y : t)
+program snd : s × t -> t ((x : s, y : t)) : t = (op y : t)
+program (x : s, y : s) = (x : s, y : s)
+op a : s
+program b : s = a
+op b : s
+program b : s = (op a : s)
 %% Type Constructors -----------------------------------------------------
 s : Type
 t : Type

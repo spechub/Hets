@@ -14,13 +14,17 @@ Portability :  portable
 module HasCASL.RunStaticAna where
 
 import Common.AnnoState
-import Common.GlobalAnnotations
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
 import Common.Lib.State
+import Common.Lib.Pretty
+import Common.PrettyPrint
+import Common.RunParsers
 
-anaParser :: GlobalAnnos -> AParser Env
-anaParser ga = do b <- basicSpec
-		  return $ snd $ (runState (anaBasicSpec ga b)) initialEnv
+anaParser :: StringParser
+anaParser ga = do b <- aParse basicSpec
+		  let (a, e) = runState (anaBasicSpec ga b) initialEnv
+                  return $ show (printText0 ga a $$ printText0 ga e)
 

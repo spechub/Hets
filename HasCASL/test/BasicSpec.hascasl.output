@@ -1,3 +1,40 @@
+class Type
+var t : Type
+class TYPE = Type; TYPE = Type
+type Pred__ : Type- -> Type; Unit : TYPE
+class a, b, c
+class a, b, c < d; a
+type s : c
+op tt : s ->? Unit
+var x : s
+program tt : s ->? Unit = \ x : s . ()
+program __ res __ (x : s, y : t) : s = x;
+	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
+op eq : s × s ->? Unit
+type s < ? s
+program all (p : (? s)) : (? Unit) = eq (p, tt)
+program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
+program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
+program __ or __ (x, y : (? Unit)) : (? Unit) =
+	all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
+	ex (p : (? s)) : (? Unit) =
+	all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
+	ff () : (? Unit) = all (\ r : (? Unit) . r ())
+forall y : t
+type s
+op a : ? s
+type Data1 ::= a | 
+	       b | 
+	       c
+type Data2 ::= Cons21 (Data1; Data2) | 
+	       Cons22 (Data2; Data1) | 
+	       type Data1
+type Data3 ::= Cons31 (sel1:? Data1; sel2:? Data2) | 
+	       Cons32 (sel2:? Data2; sel1:? Data1)
+type Data4 ::= Cons41 (sel1:? Data1; sel2:? Data2) ? | 
+	       Cons42 (sel2:? Data2; sel1:? Data1) ?
+forall x : s
+forall x : s
 %% Classes ---------------------------------------------------------------
 TYPE = Type
 a < d
@@ -58,7 +95,9 @@ Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
 Hint (line 16, column 9) not a class 's'
 Error (line 20, column 12) unexpected mixfix token 'res'
+Error (line 20, column 37) unexpected mixfix token 'x'
 Error (line 21, column 5) unexpected mixfix token '('
+Error (line 21, column 24) unexpected mixfix token 'x'
 Error (line 22, column 5) unexpected mixfix token '('
 Error (line 22, column 24) unexpected mixfix token 'y'
 Error (line 28, column 13) unexpected mixfix token '('
@@ -66,17 +105,17 @@ Error (line 28, column 38) unexpected mixfix token 'p'
 Error (line 30, column 13) unexpected mixfix token '('
 Error (line 30, column 40) unexpected mixfix token 't1'
 Error (line 32, column 12) unexpected mixfix token 'impl'
-Error (line 32, column 45) unexpected mixfix token 'And'
+Error (line 32, column 40) unexpected mixfix token 'x'
 Error (line 34, column 12) unexpected mixfix token 'or'
 Error (line 34, column 44) unexpected mixfix token 'all'
-Error (line 35, column 21) unexpected mixfix token 'impl'
+Error (line 35, column 19) unexpected mixfix token 'x'
 Error (line 37, column 6) unexpected mixfix token '('
 Error (line 37, column 27) unexpected mixfix token 'all'
 Error (line 38, column 17) unexpected mixfix token 'all'
 Error (line 38, column 27) unexpected mixfix token 'p'
 Error (line 40, column 6) unexpected mixfix token '('
 Error (line 40, column 20) unexpected mixfix token 'all'
-Error (line 40, column 37) unexpected mixfix token 'r'
+Error (line 40, column 38) unexpected mixfix token '('
 Hint (line 45, column 11) not a class 't'
 Error (line 45, column 8) wrong type scheme of 'x'
   expected: s
