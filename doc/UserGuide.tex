@@ -1,0 +1,578 @@
+\documentclass{article}
+\usepackage{alltt}
+\usepackage{casl}
+
+\input{xy}
+\xyoption{v2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SIMULATING SMALL-CAPS FOR BOLD, EMPH
+
+\newcommand{\normalTEXTSC}[2]{{#1\scriptsize#2}}
+%% NOT \newcommand{\normalTEXTSC}[2]{{\normalsize#1\scriptsize#2}}
+\newcommand{\largeTEXTSC} [2]{{\large     #1\small     #2}}
+\newcommand{\LargeTEXTSC} [2]{{\Large     #1\normalsize#2}}
+\newcommand{\LARGETEXTSC} [2]{{\LARGE     #1\large     #2}}
+\newcommand{\hugeTEXTSC}  [2]{{\huge      #1\Large     #2}}
+\newcommand{\HugeTEXTSC}  [2]{{\Huge      #1\LARGE     #2}}
+
+
+\newcommand     {\CASL}{\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\largeCASL} {\largeTEXTSC{C}{ASL}\xspace}
+\newcommand{\LargeCASL} {\LargeTEXTSC{C}{ASL}\xspace}
+\newcommand{\LARGECASL} {\LARGETEXTSC{C}{ASL}\xspace}
+\newcommand {\hugeCASL}  {\hugeTEXTSC{C}{ASL}\xspace}
+\newcommand {\HugeCASL}  {\HugeTEXTSC{C}{ASL}\xspace}
+
+\newcommand     {\CoFI}{CoFI\xspace}
+
+\newcommand     {\MAYA}{\normalTEXTSC{M}{AYA}\xspace}
+\newcommand{\largeMAYA} {\largeTEXTSC{M}{AYA}\xspace}
+
+\newcommand     {\Hets}{\normalTEXTSC{H}{ETS}\xspace}
+\newcommand{\largeHets} {\largeTEXTSC{H}{ETS}\xspace}
+
+\newcommand     {\Cats}{\normalTEXTSC{C}{ATS}\xspace}
+\newcommand{\largeCats} {\largeTEXTSC{C}{ATS}\xspace}
+
+\newcommand     {\ELAN}{\normalTEXTSC{E}{LAN}\xspace}
+\newcommand{\largeELAN} {\largeTEXTSC{E}{LAN}\xspace}
+
+\newcommand     {\HOL}{\normalTEXTSC{H}{OL}\xspace}
+\newcommand{\largeHOL} {\largeTEXTSC{H}{OL}\xspace}
+
+\newcommand     {\Isabelle}{\normalTEXTSC{I}{SABELLE}\xspace}
+\newcommand{\largeIsabelle} {\largeTEXTSC{I}{SABELLE}\xspace}
+
+\newcommand     {\Horn}{\normalTEXTSC{H}{ORN}}
+
+%% Use \ELAN-\CASL, \HOL-\CASL, \Isabelle/\HOL
+
+\newcommand{\LCF}{LCF\xspace}
+
+\newcommand{\ASF}{ASF\xspace}
+%%\newcommand     {\ASF}{\normalTEXTSC{A}{SF}\xspace}
+%%\newcommand{\largeASF} {\largeTEXTSC{A}{SF}\xspace}
+
+\newcommand{\SDF}{SDF\xspace}
+%%\newcommand     {\SDF}{\normalTEXTSC{S}{DF}\xspace}
+%%\newcommand{\largeSDF} {\largeTEXTSC{S}{DF}\xspace}
+
+\newcommand     {\ASFSDF}{\normalTEXTSC{A}{SF}+\normalTEXTSC{S}{DF}\xspace}
+\newcommand{\largeASFSDF} {\largeTEXTSC{A}{SF}+\largeTEXTSC{S}{DF}\xspace}
+
+\newcommand     {\HasCASL}{\normalTEXTSC{H}{AS}\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\largeHasCASL} {\largeTEXTSC{H}{AS}\largeTEXTSC{C}{ASL}\xspace}
+
+%% Do NOT use \ASF+\SDF (it gives a superflous space in the middle)
+
+\newcommand{\CCC}{CCC\xspace}
+
+\newcommand{\CoCASL}{\normalTEXTSC{C}{O}\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\CspCASL}{\normalTEXTSC{C}{SP}-\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\CcsCASL}{CCS-\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\CASLLtl}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{L}{TL}\xspace}
+\newcommand{\CASLChart}{\normalTEXTSC{C}{ASL}-\normalTEXTSC{C}{HART}\xspace}
+\newcommand{\SBCASL}{\normalTEXTSC{S}{B}-\normalTEXTSC{C}{ASL}\xspace}
+\newcommand{\HetCASL}{\normalTEXTSC{H}{ET}\normalTEXTSC{C}{ASL}\xspace}
+
+
+\begin{document}
+
+\title{{\bf \Hets User Guide}\\ 
+-- Version 0.3 --}
+\author{Till Mossakowski\\[1em]
+Department of Computer Science\\ and Bremen
+Institute for Safe Systems,\\ University of Bremen, Germany.\\[1em]
+Comments to: hets@tzi.de
+}
+
+\maketitle
+
+\section{Introduction}
+
+
+The Heterogeneous Tool Set (\protect\Hets) is the main analysis tool
+for the specification language heterogeneous \CASL. Heterogeneous
+\CASL combines the specification langauage \CASL with \CASL extensions
+and sublanguages, as well as comletely different logics and even
+programming languages such as Haskell. Heterogeneous \CASL
+extends the strucruting mechanisms of \CASL:
+\emph{Basic specifications} are
+unstructured specifications or modules written in a specific logic.
+(The graph of currently supported logics is shown in Fig.~\ref{fig:LogicGraph}.)
+With \emph{heterogeneous structured specifications}, it is possible to
+combine and rename specifications, hide parts thereof, and also
+translate them to other logics. \emph{Architectural specifications}
+precsribe the structure of implementations.
+\emph{Specification libraries} are collections of named structured
+and architectural specifications.
+
+\Hets consists of logic-specific tools for the parsing and static
+analysis of the different involved logics, as well as a
+logic-independent parsing and static analysis tool for structured and
+architectural specifications and libraries. The latter of course needs
+to call the logic-specific tools whenever a basic specification is
+encountered.
+
+\begin{figure}
+$$\xymatrix{
+\Text{Haskell} 
+&
+\Text{\HasCASL}
+&
+\Text{\CspCASL} \\
+&
+\CASL \ar[u]
+&
+}$$
+\caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
+\end{figure}
+
+
+
+
+
+
+
+
+\section{Getting started}
+ 
+The latest \Hets version can be obtained from the
+\CoFI tools home page \cite{CoFITools}. Since \Hets is being
+improved constantly, it is recommended always to use the latest version.
+
+\Hets currently is available for Linux, Solaris and
+Mac OS-X.
+
+
+
+
+This README belongs to a Hets release (and does not apply to
+sources directly obtained via cvs).
+
+The aim of this release is a binary "hets" that is able to analyse
+heterogeneous and in particular CASL specifications.
+
+The output of hets, if the input is successfully accepted, can be
+displayed by "daVinci".
+
+daVinci is maintained by b-novative and b-novative holds all rights.
+This release may be accompanied with free binary releases of daVinci
+Version 2.1, but daVinci 2.1 is no longer supported or maintained!
+However, you are encouraged to obtain the latest version of daVinci
+Presenter (currently 3.0.5) from http://www.b-novative.com that is
+free for academic purposes.
+
+Linux: the linux binary release of daVinci 2.1 relies on the old
+shlibs5 that must be installed on your system (if ./daVinci cannot be
+found/executed, then shlibs5 are missing)
+
+Solaris: the solaris binary release of daVinci 2.1 should work without
+problems
+
+Macintosh (Darwin): there is no release of daVinci for Macintosh, but
+b-novative may have one in the mean time
+
+For best quality, get the latest version of daVinci from b-novative.
+
+For hets to find daVinci, the environment variables DAVINCIHOME and
+UNIDAVINCI must be set to the installation directory of daVinci and to
+the actual executable, respectively.
+
+\begin{verbatim}
+export DAVINCIHOME=<path>/daVinci_V2.1
+export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
+\end{verbatim}
+
+A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
+
+
+
+
+\section{Analysis of Specifications}
+
+Consider the first example in this book:
+
+\VERTSPACE
+\begin{BIGEXAMPLE}
+\I\SPEC \NAMEREF{Strict\_Partial\_Order} =
+%%PDM\I{}    \COMMENTENDLINE{Let's start with a simple example !}
+\begin{ITEMS}[\PRED]
+\I\SORT    \( Elem \) 
+\I\PRED    \( \_\_<\_\_ : Elem \* Elem \)
+%           \COMMENTENDLINE{\PRED abbreviates predicate}
+\end{ITEMS}
+\(\[  \FORALL x,y,z : Elem \\
+      \. \NOT(x < x)                      \RIGHT{\LABEL{strict}}     \\
+      \. x < y   \IMPLIES  \NOT(y < x)    \RIGHT{\LABEL{asymmetric}} \\
+      \. x < y \A y < z  \IMPLIES  x < z  \RIGHT{\LABEL{transitive}} \\
+\]\)
+\begin{COMMENT}
+Note that there may exist \(x, y\) such that\\
+neither \(x < y\) nor \(y < x\).
+\end{COMMENT}
+\I\END
+\end{BIGEXAMPLE}
+
+\POINT{\protect\Hets can be used for parsing and 
+checking static well-formedness of specifications.}
+
+                \index{parsing}%
+                \index{static!analysis}%
+                \index{analysis, static}%
+
+Let us assume that the example is in a file named
+\texttt{Order.casl} (actually, this file is provided on the web 
+and on the CD-ROM coming with this volume). 
+Then you can check the well-formedness of the
+specification by typing (into some shell):
+
+\begin{quote}
+\texttt{hets Order.casl}
+\end{quote}
+\Hets checks both the correctness of this specification
+ with respect to the \CASL syntax, as
+well as its correctness with respect to the static semantics (e.g.\
+whether all identifiers have been declared before they are used,
+whether operators are applied to arguments of the correct sorts,
+whether the use of overloaded symbols is unambiguous, and so on).
+
+  -p         --just-parse           skip static analysis - just parse
+  -s         --just-structured      skip basic analysis - just do structured analysis
+  -L DIR     --casl-libdir=DIR      CASL library directory
+
+
+\section{Heterogeneous Specification}
+
+
+\section{Formatting}
+
+
+It is also possible to generate a pretty printed \LaTeX\ version
+of \texttt{Order.casl} by typing:
+
+\begin{quote}
+\texttt{hets -o pp.tex Order.casl}
+\end{quote}
+
+  -r RAW     --raw=RAW              raw options passed to the pretty-printer
+        RAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer
+
+
+
+\section{Development Graphs}
+  -g         --gui                  show graphical output in a GUI window
+  -G         --only-gui             show graphical output in a GUI window - don't write Output to file
+
+
+One use of \texttt{Order.casl} might be to express the fact that
+the natural numbers form a strict partial order as a view, as follows:
+
+\VERTSPACE
+\begin{BIGEXAMPLE}
+\I\SPEC \NAMEREF{Natural} = ~\FREE \TYPE \(Nat ::= 0 \| suc(Nat)\)~\END
+\end{BIGEXAMPLE}
+
+\pagebreak
+
+\begin{EXAMPLE}
+\I\SPEC \NAMEDEFN{Natural\_Order\_2} =
+\IEXT{\NAMEREF{Natural}} \THEN
+\begin{ITEMS}
+\I\PRED \( \_\_<\_\_ : Nat \* Nat\)
+\end{ITEMS}
+\(\[    \FORALL x,y:Nat \\
+        \. 0 < suc(x) \\
+        \. \neg x < 0 \\
+        \. suc(x) < suc(y) \IFF x < y
+\]\)
+\I\END
+\end{EXAMPLE}
+
+\begin{EXAMPLE}%[\SLIDESMALL]
+\I\VIEW \NAMEDEFN{v1} ~:~ \NAMEREF{Strict\_Partial\_Order}  \TO 
+\NAMEREF{Natural\_Order\_2} =
+\I{} \( Elem \MAPSTO Nat\)
+\I\END
+\end{EXAMPLE}
+
+Again, these specifications can be checked with \Hets. However, this
+only checks syntactic and static semantic well-formedness -- it is
+\emph{not} checked whether the predicate `$\_\_<\_\_$' introduced in
+\NAMEREF{Natural\_Order\_2} actually is constrained to be interpreted 
+by a strict partial ordering relation. Checking this requires theorem
+proving, which will be discussed below.
+
+\POINT{\protect\Hets also displays and manages 
+proof obligations, using development graphs.}
+
+                \index{proof!obligation}%
+                \index{development graph}%
+
+However, before coming to theorem proving, let us first inspect the
+proof obligations arising from a specification.  This can be done with:
+\begin{quote}
+\texttt{hets -g Order.casl}
+\end{quote}
+(assuming that the above two specifications and the view 
+have been added to the file 
+\texttt{Order.casl}).
+\Hets now displays a so-called development graph
+(which is just an overview graph showing the overall structure
+of the specifications in the library), see Fig.~\ref{fig:dg0}.
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.7]{dg-order-0}
+\end{center}
+\caption{Sample development graph.\label{fig:dg0}}
+\end{figure}
+
+\POINT{Nodes in a development graph correspond to \CASL specifications.
+Arrows show how specifications are related by the structuring
+constructs.}
+
+The solid arrow denotes an ordinary import of
+specifications (generated by the extension), while the dashed\FOOTNOTE
+{Actually, the dashed arrow will be displayed as solid and in red by \Hets;
+we do not have colors available here.} arrow
+denotes a proof obligation (corresponding to the view).
+This proof obligation needs to be discharged in order to
+show that the view is well-formed.
+
+As a more complex example, consider the following loose specification
+of a sorting function, taken from Chap.~\ref{UM--structuring}:
+
+\begin{BIGEXAMPLE}
+\I\SPEC \NAMEREF{List\_Order\_Sorted}
+\\{} [\,\NAMEREF{Total\_Order} \WITH \SORT \(Elem\), \PRED \(\_\_<\_\_\)\,] =
+\IEXT{\NAMEREF{List\_Selectors} [\,\SORT \(Elem\)\,]} \THEN
+\begin{ITEMS}[\WITHIN]
+\I\LOCAL
+\begin{ITEMS}[\PRED]
+\I\PRED  \( \_\_is\_sorted : List \)
+\end{ITEMS}
+\(\[  \FORALL e,e': Elem; L : List \\
+      \. empty~is\_sorted \\
+      \. cons(e,empty)~is\_sorted \\
+      \. cons(e,cons(e',L))~is\_sorted \IFF
+\\\M         (cons(e',L)~is\_sorted \A \NOT(e'<e)) \]\)
+\I\WITHIN
+\begin{ITEMS}[\OP]
+\I\OP    \( order : List \TOTAL List \)
+\end{ITEMS}
+\( \FORALL L:List\. \[ order(L)~is\_sorted \]\)
+\end{ITEMS}
+\I\END
+\end{BIGEXAMPLE}
+
+The following specification of sorting by insertion also is taken from
+Chap.~\ref{UM--structuring}:
+
+\begin{BIGEXAMPLE}
+\I\SPEC \NAMEREF{List\_Order}
+      [\,\NAMEREF{Total\_Order} \WITH \SORT \(Elem\), \PRED \(\_\_<\_\_\)\,] =
+\phantomsection 
+\IEXT{\NAMEREF{List\_Selectors} [\,\SORT \(Elem\)\,]} \THEN
+\begin{ITEMS}[\WITHIN]
+\I\LOCAL
+\begin{ITEMS}[\OP]
+\I\OP    \( insert : Elem \* List \TOTAL List \)
+\end{ITEMS}
+\(\[  \FORALL e,e':Elem; L:List \\
+      \. insert(e, empty) = cons(e, empty) \\
+      \. insert(e, cons(e',L)) = \[ cons(e', insert(e,L)) \WHEN e' < e\\
+                                    \ELSE cons(e, cons(e',L)) \] \\
+\]\)
+\I\WITHIN
+\begin{ITEMS}[\OP]
+\I\OP    \( order : List \TOTAL List \)
+\end{ITEMS}
+\(\[  \FORALL e:Elem; L:List \\
+      \. order(empty) = empty \\
+      \. order(cons(e,L)) = insert(e, order(L))  \]\)
+\end{ITEMS}
+\I\END
+\end{BIGEXAMPLE}
+
+
+Both specifications are related. To see this, we first inspect
+their signatures. This is possible with:
+\begin{quote}
+\texttt{hets -g Sorting.casl}
+\end{quote}
+assuming that \texttt{Sorting.casl} contains the above specifications.
+\Hets now displays a more complex development graph, see Fig.~\ref{fig:dg1}.
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.7]{dg-order-1}
+\end{center}
+\caption{Development graph for the two sorting specifications.\label{fig:dg1}}
+\end{figure}
+
+\POINT{Internal nodes in a development graph correspond
+to unnamed parts of a structured specification.}
+
+In the above-mentioned development graph, we have two types of nodes.
+The named ones correspond to named specifications, but there
+are also unnamed nodes corresponding to anonymous basic
+specifications like the declaration of the $insert$ operation in 
+\NAMEREF{List\_Order} above. Basically, there is an
+internal node for each structured specification that is not named.
+
+Again, the simple solid arrows denote an ordinary import of specifications
+(corresponding to the extensions and unions in the
+specifications), while the double arrows denote hiding (corresponding to 
+the local specification).
+
+By clicking on the nodes, one can inspect their signatures.
+In this way, we can see that both  \NAMEREF{List\_Order\_Sorted}  and
+\NAMEREF{List\_Order} have the same signature. Hence, it
+is legal to add a view:
+
+\begin{EXAMPLE}%[\SLIDESMALL]
+\I\VIEW \NAMEDEFN{v2}[\NAMEREF{Total\_Order}] ~:~ \NAMEREF{List\_Order\_Sorted}[\NAMEREF{Total\_Order}]  \TO 
+\NAMEREF{List\_Order}[\NAMEREF{Total\_Order}]
+\I\END
+\end{EXAMPLE}
+
+We have already added this view to \texttt{Sorting.casl}.
+The corresponding 
+proof obligation between \NAMEREF{List\_Order\_Sorted}  and 
+\NAMEREF{List\_Order} is displayed in Fig.~\ref{fig:dg1}
+ as a dotted arrow.
+
+\NOPOINT{Proof obligations can be discharged in various ways.}
+
+Trivial proof obligations can be discharged 
+by \Hets alone using the ``Proofs'' menu.
+The proof obligation in Fig.~\ref{fig:dg1},
+indicated by the lower dotted
+arrow between \NAMEREF{List\_Order\_Sorted}  and 
+\NAMEREF{List\_Order}, states that insertion sort,
+as defined by the operation \(order\) in \NAMEREF{List\_Order},
+actually has the properties of a sorting algorithm.  Here, one has to
+choose a theorem prover that 
+is to be used to discharge the proof
+obligation, which is then done by using commands specific to the
+theorem prover (cf. e.g.\ Section~\ref{sec:HOLCASL}).  Alternatively,
+one can state that one just conjectures the obligation to be true.
+
+
+In order to be able to tackle proof
+obligations occurring in (statically well-formed) specifications, \Hets
+is interfaced with various logic-specific theorem proving, rewriting
+and consistency checking tools.  On top of this, there is a
+logic-independent proof engine called \MAYA, which manages the proof
+obligations. \MAYA uses so-called \emph{development graphs}, a
+graphical representation of \CASL structured specifications.
+
+
+\section{Input, Output}
+
+  -i ITYPE   --input-type=ITYPE     ITYPE of input file:
+        (tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?
+
+  -O DIR     --output-dir=DIR       destination directory for output files
+  -o OTYPES  --output-types=OTYPES  OTYPES of output files, a comma seperated list of OTYPE
+        OTYPE is (pp.(het|tex|html))
+                |(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)
+                |(graph.(dot|ps|davinci))
+                (default: dg.taf)
+
+\section{Miscellaneous Options}
+  -v[Int]    --verbose[=Int]        chatty output to stderr
+  -q         --quiet                no output at all to stderr. overrides --verbose!
+  -V         --version              print version number and exit
+  -h         --help, --usage        print usage information and exit
+
+
+\section{Architecture of \Hets}
+
+\Hets is written in Haskell. Its parser uses combinator 
+                \index{parsing}%
+parsing.
+The user-defined (also known as ``mixfix'') syntax of \CASL
+calls for a two-pass approach. In the first pass, the skeleton of a
+\CASL abstract syntax tree is derived, in order to extract user-defined 
+syntax rules. In a second pass, which is performed during 
+static
+analysis, these syntax rules are used to parse 
+any expressions that
+use mixfix notation. The output is stored in the so-called
+                \index{ATerms}%
+ATerm format \cite{BJKO00}, which is used as interchange format
+for interfacing with other tools.
+
+
+\Hets provides an abstract interface for 
+                \index{institution!independence}%
+                \index{independence, institution}%
+institutions, so
+that new logics can be integrated smoothly. 
+In order to do so, a parser,
+a static checker and a prover for basic specifications in the logic have
+to be provided.
+
+
+
+\begin{figure}
+%\includegraphics[scale=0.44]{hets}
+\vspace{1em}
+\input{hets.tex}
+\caption{Architecture of the heterogeneous tool set.
+\label{fig:hets}}
+\end{figure}
+
+The architecture of \Hets is shown in Fig.~\ref{fig:hets}. 
+
+If your favourite logic is missing in \Hets, please tell us
+(hets@tzide.). We will take account your feedback when deciding which
+logics and proof tools to integrate next into \Hets. Help with
+integration of more logics and proof tools into \Hets is also welcome.
+
+\Hets< is mainly maintained by
+Christian Maeder (maeder@tzi.de) and Till Mossakowski
+(till@tzi.de). The mailing list is hets@tzi.de.
+
+\section{Precursors of \Hets}
+
+\Hets has been built based on experiences with its
+precursors, 
+                \index{Cats@\Cats}%
+\Cats and 
+                \index{Maya@\MAYA}%
+\MAYA.
+The \CASL Tool Set (\Cats) 
+\cite{Mossakowski:2000:CST,Mossakowski:1998:SSA}
+comes with roughly the same analysis tools as \Hets.
+%,
+%but neither supports extensions nor does it identify
+%sublanguages of \CASL (and the tools to be used with
+%sublanguages only).
+The management of development graphs is not integrated
+in \Cats, 
+but is provided with a stand-alone version of the
+tool \MAYA \cite{Autexier:2002:IHD,AutexierEtal02}. 
+%(which only supports part of \CASL's
+%structuring constructs; in particular, hiding is not supported).
+%
+\Cats and \MAYA 
+%are mainly important in the current transition phase,
+%since \Hets does not support full \CASL (e.g. architectural 
+%specifications) yet.
+%They
+ can be obtained from the \CoFI tools home page \cite{CoFITools}.
+
+\end{document}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "UserGuide"
+%%% End: 
