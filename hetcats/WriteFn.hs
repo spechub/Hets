@@ -139,3 +139,18 @@ writeFileInfo opts diags file ln lenv =
            putIfVerbose opts 1 (envFile++" not written")
 	   putIfVerbose opts 2 ("see following error description:\n"
 				++show ioErr++"\n")
+
+write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
+write_casl_asc_stdout opt ga ld =
+    do putIfVerbose opt 3 (show (printText0_eGA ga))
+       return $ printLIB_DEFN_text ga ld
+       
+write_casl_latex_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
+write_casl_latex_stdout opt ga ld =
+    do putIfVerbose opt 3 (show (printText0_eGA ga))
+       return $ printLIB_DEFN_latex ga ld
+       {-doIfVerbose opt 5
+        (do dout <- openFile (debug_latex_filename oup) WriteMode
+            hPutStr dout $ printLIB_DEFN_debugLatex ga ld
+            hClose dout)
+       -}
