@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 module Haskell.Hatchet.HsLexer (Token(..), lexer, parseError,isSymbol) where
 
 import Haskell.Hatchet.HsParseMonad
@@ -27,29 +12,29 @@ import Char
 data Token 
         = VarId String
         | QVarId (String,String)
-	| ConId String
+        | ConId String
         | QConId (String,String)
         | VarSym String
         | ConSym String
         | QVarSym (String,String)
         | QConSym (String,String)
-	| IntTok String
+        | IntTok String
         | FloatTok String
-	| Character Char
+        | Character Char
         | StringTok String
 
 -- Symbols
 
-	| LeftParen
-	| RightParen
-	| SemiColon
+        | LeftParen
+        | RightParen
+        | SemiColon
         | Colon                         -- ExtHas
         | LeftCurly
         | RightCurly
         | VRightCurly			-- a virtual close brace
         | LeftSquare
         | RightSquare
-	| Comma
+        | Comma
         | Underscore
         | BackQuote
 
@@ -78,7 +63,7 @@ data Token
 	| KW_Deriving 
 	| KW_Do       
 	| KW_Else     
-        | KW_Hiding
+	| KW_Hiding
 	| KW_If       
 	| KW_Import   
 	| KW_In       
@@ -184,8 +169,8 @@ tAB_LENGTH = 8 :: Int
 lexer :: (Token -> P a) -> P a
 lexer cont input (SrcLoc y x) col =
         if col == 0
-           then trace "\n lexerT " tab y x True input
-           else trace "\n lexerF " (tab y col False input) -- throw away old x
+           then trace "lexerT " tab y x True input
+           else trace "lexerF " (tab y col False input) -- throw away old x
   where
    	-- move past whitespace and comments
         tab y x bol [] = 
@@ -281,50 +266,14 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         		Just keyword -> forward l_id keyword rest
         		Nothing -> forward l_id (VarId id) rest
 
-          | trace ("isUpper " ++ show c ++ show (isUpper c)) (isUpper c) ->
+          | trace ("isUpper " ++ show c ++ " " ++ show (isUpper c)) (isUpper c) ->
         	let
         	    (contail, rest) = span isIdent s
         	    l_con = 1 + length contail
         	    con = c:contail
         	in
         	case rest of
-        	    '.':c1:s1 
-        	     | trace "isUpper/isLower" (isLower c1) ->	-- qualified varid?
-        		let
-        		    (idtail, rest1) = span isIdent s1
-        		    id = c1:idtail
-        		    l_id = 1 + length idtail
-        		in
-        		case lookup id reserved_ids of
-        		   -- cannot qualify a reserved word
-        		   Just keyword ->
-        			forward l_con (ConId con) rest
-        		   Nothing ->
-        			forward (l_con+l_id) (QVarId (con, id))
-        				rest1
-
-        	     | trace "isUpper2 " (isUpper c1) ->	-- qualified conid?
-        		let 
-        		    (con1,rest1) = span isIdent s1
-        		    l_con1 = 1 + length con1
-        		in
-        		forward (l_con+l_con1) (QConId (con, (c1:con1))) rest1
-
-        	     | trace "isUpper/isSymbol" (isSymbol c1) ->	-- qualified symbol?
-        		let
-        		    (symtail, rest1) = span isSymbol s1
-        		    sym = c1 : symtail
-        		    l_sym = 1 + length symtail
-        		in
-        		case lookup sym reserved_ops of
-        		    -- cannot qualify a reserved operator
-        		    Just _  -> 
-        			forward l_con (ConId con) rest
-        		    Nothing -> case c1 of
-        				':' -> forward (l_con+l_sym) 
-        					(QConSym (con, sym)) rest1
-        				_   -> forward (l_con+l_sym)
-        					(QVarSym (con, sym)) rest1
+        	    '.':s1 -> lexConIdOrQualId (c:contail) l_con rest
         	    _ ->          -- not a qualified object
                           if trace ("TEST " ++ (show contail)) contail == "XIOMS" then forward l_con 
                                                       KW_AxiomsPrag rest
@@ -362,8 +311,8 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
         		  s loc x
 
  where special t = trace ("special " ++ show t) (forward 1 t s)
-       forward n t s = trace ("forward " ++ show t) (cont t s loc (x+n))
-
+       forward n t s = trace ("forward " ++ show t ++ show (x+n)) (cont t s loc (x+n))
+-- forward (l_con+l_con1) (QConId (con, (c1:con1))) rest1
        special3 t = trace ("special3 " ++ show t) (forward 3 t (tail(tail s)))
 
        lexFloatRest r = case span isDigit r of
@@ -378,6 +327,51 @@ lexToken cont (c:s) loc@(SrcLoc y x') x =
        lexFloatExp2 r1 r2 = case span isDigit r2 of
                                 ("", _ ) -> Nothing
                                 (ds, r3) -> Just (r1++ds,r3)
+       lexConIdOrQualId con l_con (p:c1:s1)
+                     | trace "isUpper/isLower " (isLower c1) =	-- qualified varid?
+        		let
+        		    (idtail, rest1) = span isIdent s1
+        		    id = c1:idtail
+        		    l_id = 1 + length idtail
+        		in
+        		case lookup id reserved_ids of
+        		   -- cannot qualify a reserved word
+        		   Just keyword ->
+        			forward l_con (ConId con) (c1:s1)
+        		   Nothing ->
+                                case rest1 of
+                                    '.':s2 -> lexConIdOrQualId (con ++ (p:id)) (l_con + l_id) rest1
+                                    _      -> forward (l_con+l_id) (QVarId (con, id)) rest1
+
+        	     | trace "isUpper2 " (isUpper c1) =	-- qualified conid?
+        		let 
+        		    (con1,rest1) = span isIdent s1
+        		    l_con1 = 1 + length con1
+        		in
+                        case rest1 of
+                            '.':s2 -> lexConIdOrQualId (con ++ (p:c1:con1)) (l_con + l_con1) rest1
+                            _      -> forward (l_con+l_con1) (QConId (con, (c1:con1))) rest1
+
+        	     | trace "isUpper/isSymbol" (isSymbol c1) =	-- qualified symbol?
+        		let
+        		    (symtail, rest1) = span isSymbol s1
+        		    sym = c1 : symtail
+        		    l_sym = 1 + length symtail
+        		in
+        		case lookup sym reserved_ops of
+        		    -- cannot qualify a reserved operator
+        		    Just _  -> 
+        			forward l_con (ConId con) (c1:s1)
+        		    Nothing -> 
+                                 case rest1 of
+                                     '.':s2 -> lexConIdOrQualId (con ++ (p:sym)) (l_con + l_sym) rest1
+                                     _      ->
+                                          case c1 of
+                                              ':' -> forward (l_con+l_sym) 
+        					     (QConSym (con, sym)) rest1
+        				      _   -> forward (l_con+l_sym)
+        					     (QVarSym (con, sym)) rest1
+
 			      
 lexToken _ _ _ _ = error "Internal error: empty input in lexToken"
 

@@ -17,7 +17,7 @@ module Haskell.Hatchet.HsSyn (
     HsGuardedRhs(..), HsQualType(..), HsType(..), HsContext, HsAsst,
     HsLiteral(..), HsExp(..), HsPat(..), HsPatField(..), HsStmt(..),
     HsFieldUpdate(..), HsAlt(..), HsGuardedAlts(..), HsGuardedAlt(..),
-    AxBinding(..), AxiomBndr(..), Quantifier(..), Formula(..), 
+    AxBinding(..), AxiomBndr(..), Quantifier(..), Formula(..), AxiomName(..), 
 
     prelude_mod, main_mod, 
     unit_con_name, tuple_con_name,
