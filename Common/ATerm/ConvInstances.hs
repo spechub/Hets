@@ -223,10 +223,9 @@ instance ATermConvertible SourcePos where
 
 instance ATermConvertible Token where
     toShATerm att0 (Token aa ab) =
-	let (att1,aa') = toShATerm att0 aa
-	    (att2,ab') = toShATerm att1 ab
-	    lat = [ aa',ab' ]
-	in addATerm (ShAAppl "Token"  lat []) att2
+       case toShATerm att0 aa of { (att1,aa') ->
+       case toShATerm att1 ab of { (att2,ab') ->
+	  addATerm (ShAAppl "Token"  [aa',ab'] []) att2 }}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Token" [ aa,ab ] _) ->
@@ -241,11 +240,10 @@ instance ATermConvertible Token where
 
 instance ATermConvertible Id where
     toShATerm att0 (Id aa ab ac) =
-	let (att1,aa') = toShATerm att0 aa
-	    (att2,ab') = toShATerm att1 ab
-	    (att3,ac') = toShATerm att2 ac
-	    lat = [ aa',ab',ac' ]
-	in addATerm (ShAAppl "Id"  lat []) att3
+	case toShATerm att0 aa of { (att1,aa') ->
+	case toShATerm att1 ab of { (att2,ab') ->
+	case toShATerm att2 ac of { (att3,ac') -> 	    
+	   addATerm (ShAAppl "Id"  [aa',ab',ac'] []) att3 }}}
     fromShATerm att =
 	case aterm of
 	    (ShAAppl "Id" [ aa,ab,ac ] _) ->
