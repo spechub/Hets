@@ -112,7 +112,7 @@ data ALTERNATIVE = Total_construct OP_NAME [COMPONENTS] [Pos]
 
 data COMPONENTS = Total_select [OP_NAME] SORT [Pos]
                   -- pos: commas, colon
-		| Patial_select [OP_NAME] SORT [Pos] 
+		| Partial_select [OP_NAME] SORT [Pos] 
 		  -- pos: commas, ":?"
 		| Sort SORT		  
 		  deriving (Show,Eq)
