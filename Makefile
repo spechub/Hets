@@ -35,7 +35,7 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts   
+HC_FLAGS   = -Wall -fglasgow-exts -fallow-overlapping-instances  
 # -fglasgow-exts comes in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
@@ -146,7 +146,9 @@ happy_files = Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
-cpp_sources = ./Isabelle/IsaProve.hs ./Isabelle/Logic_Isabelle.hs ./Proofs/Proofs.hs hets.hs
+cpp_sources = ./Isabelle/IsaProve.hs ./Isabelle/Logic_Isabelle.hs \
+    ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
+    ./Comorphisms/HasCASL2IsabelleHOL.hs
 
 doc_sources = $(filter-out ./Isabelle/IsaSign.hs $(cpp_sources) ,$(sources)) \
                $(patsubst %.hs, %.hspp, $(cpp_sources))
