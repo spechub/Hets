@@ -21,6 +21,9 @@ addSort a b = a
 emptySign :: Sign
 emptySign = SignAsMap emptyFM empty
 
+unifySign :: Sign -> Sign -> Sign
+unifySign a b = a
+
 }
 
 DATA SORT_ITEM | Sort_decl sorts:{[SORT]} pos:{[Pos]}
@@ -31,5 +34,6 @@ DATA SORT_ITEM | Sort_decl sorts:{[SORT]} pos:{[Pos]}
 ATTR SORT_ITEM [ | sigma:Sign, err:{[String]} | delta:Sign ]
 
 SEM SORT_ITEM
-  | Sort_decl    lhs.delta = foldl addSort emptySign @sorts
-                    .sigma = foldl addSort @lhs.sigma @sorts
+  | Sort_decl    loc.temp  = foldl addSort emptySign @sorts
+                 lhs.delta = @temp
+                    .sigma = unifySign @lhs.sigma @temp
