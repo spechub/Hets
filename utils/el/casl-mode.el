@@ -86,13 +86,22 @@
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\sw*\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\sw+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)[ \t]*\\)+\\)" 
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\(\\sw\\|,\\)+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)\\(\\sw\\|=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
    '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\w\\|\\s_\\)*\\)\\s-*\\(\(.*\)\\s-*\\)?\\(:\\??\\|<=>\\)[^:]*"
      (2 casl-other-name-face keep t))
    ;; type name
    '("\\s-+\\(\\sw+\\)[ \t\n]*::=.*"
+     (1 casl-other-name-face keep t))
+   ;; constructor
+   '("|\\s-*\\(\\sw+\\)[ \t\n|(]*"
+     (1 casl-other-name-face keep t))
+   ;; in ()1
+   '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
+     (1 casl-other-name-face keep t))
+   ;; in ()2
+   '("\([^;]*;\\s-*\\(\\sw+\\)\\s-*:\\??.*\)"
      (1 casl-other-name-face keep t))
    ;; names before and after '|->'
    '("[ \t\n]*\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]+|->[ \t\n]+\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
@@ -105,24 +114,24 @@
   )	
   "Reserved keywords highlighting")
 
+;; String and Char
+(defconst casl-font-lock-string
+  (append casl-font-lock-keywords
+	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 casl-string-char-face t t))
+	  ))
+  "Syntax highlighting of String and Char") 
+
  ;; Comment
 (defconst casl-font-lock-specialcomment
-  (append casl-font-lock-keywords
+  (append casl-font-lock-string
 	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
 		'("%{[^}]*}%[ \t\n]*" (0 casl-comment-face t t))
 		))
   "Special Comment")
 
-;; String and Char
-(defconst casl-font-lock-string
-  (append casl-font-lock-specialcomment
-	  (list '("\\(\\(\"\\|^>[ \t]*\\\\\\)\\([^\"\\\\\n]\\|\\\\.\\)*\\(\"\\|\\\\[ \t]*$\\)\\|'\\([^'\\\\\n]\\|\\\\.[^'\n]*\\)'\\)" (0 casl-string-char-face t t))
-	  ))
-  "Syntax highlighting of String and Char") 
-
 ;; Alternativ for Annotation
 (defconst casl-font-lock-annotations
-  (append casl-font-lock-string
+  (append casl-font-lock-specialcomment
 	  (list 
 	   ;; %word(...)\n
 	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
