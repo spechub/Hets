@@ -110,13 +110,14 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 		     -- trys all possible suffices with this basename
      recent_env_file <- checkRecentEnv env_fname fname
      if recent_env_file 
-	then do (Result dias mgc) <- globalContextfromShATerm env_fname
-		-- the conversion/reading might yield an error that
-		-- should be caught here
-		maybe (do showDiags opts dias
-		          anaLibFile' fname)
-                      (\ gc@(_,_,dgraph) -> do 
-                       putIfVerbose opts 1 ("Reading "++env_fname)
+	then do 
+             putIfVerbose opts 1 ("Reading "++env_fname)
+	     (Result dias mgc) <- globalContextfromShATerm env_fname
+	     -- the conversion/reading might yield an error that
+	     -- should be caught here
+	     maybe (do showDiags opts dias
+		       anaLibFile' fname)
+                   (\ gc@(_,_,dgraph) -> do 
 		       putStrLn ""
 		       -- get all DGRefs from DGraph
 		       let libEnv' = (Map.insert libname gc libenv)
