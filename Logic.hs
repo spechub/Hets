@@ -44,19 +44,25 @@
 
    Todo:
    ATerm, XML
-   ID auslagern
-   Sublanguages more abstractly (lattice)
+   Sublanguages more abstractly (lattice), projs
    Weak amalgamability
+   Metavars
+   extension of morphisms wrt. compound ids
 -}
 
 module Logic where
 
+import Id
 
 -- error messages
 
-newtype Error a = Result ([String],Maybe a)
+type Pos = (Int,Int)
+data Diagnosis = Error String Pos
+               | Warning String Pos
 
-instance Monad Error where
+newtype Result a = Result ([Diagnosis],Maybe a)
+
+instance Monad Result where
   return x = Result ([],Just x)
   Result (errs, Nothing) >>= f = Result (errs,Nothing)
   Result (errs1, Just x) >>= f = Result (errs1++errs2,y)
@@ -94,10 +100,6 @@ diagram_edges :: Diagram o m -> [Edge m]
 diagram_edges (Diagram nodes edges) = edges
 
 
--- identifiers, fixed for all logics
-
-data ID = Simple_Id String
-        | Compound_Id (String,[ID])
 
 
 -- Categories are given by a quotient,
@@ -120,11 +122,11 @@ class (Show basic_spec, Show sentence, Show symb_items,
       Syntax basic_spec sentence symb_items symb_map_items anno
       where 
          -- parsing
-         parse_basic_spec :: id -> String -> Error basic_spec
-         parse_sentence :: id -> String -> Error sentence
-         parse_symb_items :: id -> String -> Error symb_items
-         parse_symb_map_items :: id -> String -> Error symb_map_items
-         parse_anno :: id -> String -> Error anno
+         parse_basic_spec :: id -> String -> Result basic_spec
+         parse_sentence :: id -> String -> Result sentence
+         parse_symb_items :: id -> String -> Result symb_items
+         parse_symb_map_items :: id -> String -> Result symb_map_items
+         parse_anno :: id -> String -> Result anno
 
 
 -- sublogics
@@ -195,25 +197,30 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
         basic_spec sentence symb_items symb_map_items anno
         sign morphism symbol raw_symbol 
         | id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, id -> anno,
+          id -> symb_map_items, id -> anno, id -> local_env,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
        where
          logic_name :: id -> String
+         has_parser :: id -> Bool
+         has_printer :: id -> Bool
+         has_analysis :: id -> Bool
 
          -- sentence translation
-         map_sen :: id -> morphism -> sentence -> Error sentence
+         map_sen :: id -> morphism -> sentence -> Result sentence
 
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: id -> 
-                           (basic_spec,sign,[anno]) -> 
-                           Error (sign,[(String,sentence)])
-         stat_symb_map_items :: id -> [symb_map_items] -> Error (Map raw_symbol)
-         stat_symb_items :: id -> [symb_items] -> Error [raw_symbol] 
+                           (basic_spec,  -- abstract syntax tree
+                            local_env,   -- efficient table for env signature
+                            [anno]) ->   -- global annotations
+                           Result (sign,[(String,sentence)])
+         stat_symb_map_items :: id -> [symb_map_items] -> Result (Map raw_symbol)
+         stat_symb_items :: id -> [symb_items] -> Result [raw_symbol] 
 
          -- architectural sharing analysis for one morphism
          ensures_amalgamability :: id ->
               (Diagram sign morphism, Node, sign, Edge morphism, morphism) -> 
-               Error (Diagram sign morphism)
+               Result (Diagram sign morphism)
          -- do we need it also for sinks consisting of two morphisms?
 
          -- symbols and symbol maps
@@ -224,14 +231,16 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
          matches :: id -> symbol -> raw_symbol -> Bool
          sym_name :: id -> symbol -> ID 
    
-         -- operations on signatures and morphisms
+         -- operations on local envs, signatures and morphisms
+         empty_local_env :: local_env
+         add_sign :: sign -> local_env -> local_env
          empty_signature :: id -> sign
-         signature_union :: id -> sign -> sign -> Error sign
-         final_union :: id -> sign -> sign -> Error sign
+         signature_union :: id -> sign -> sign -> Result sign
+         final_union :: id -> sign -> sign -> Result sign
          is_subsig :: id -> sign -> sign -> Bool
-         generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Error morphism
-         induced_from_morphism :: id -> Map raw_symbol -> sign -> Error morphism
-         induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> Error morphism 
+         generated_sign, cogenerated_sign :: id -> [raw_symbol] -> sign -> Result morphism
+         induced_from_morphism :: id -> Map raw_symbol -> sign -> Result morphism
+         induced_from_to_morphism :: id -> Map raw_symbol -> sign -> sign -> Result morphism 
 
          -- sublogics
          sublogics :: [Sublogic basic_spec sentence symb_items symb_map_items anno
