@@ -185,50 +185,50 @@
   (interactive)
   (save-buffer nil)
   (setq old-buffer (current-buffer))
-
-  (let ((hide-buffer (get-buffer-create "** hide **")))
-    (call-process shell-file-name nil hide-buffer nil "-c" "which hets")
-    (set-buffer hide-buffer)
-    (goto-char (point-min))
-    (if (looking-at "which")
-	(message "no hets program")
-      (re-search-forward "\\(.+hets\\)" nil t 1) 
-      (setq casl-hets-program (match-string-no-properties 0))
+  (if hets-program 
+      (setq casl-hets-program hets-program)
+    (let ((hide-buffer (get-buffer-create "** hide **")))
+      (call-process shell-file-name nil hide-buffer nil "-c" "which hets")
+      (set-buffer hide-buffer)
+      (goto-char (point-min))
+      (if (looking-at "which")
+	  (progn (message "no hets program have been found. Run /home/linux-bkb/bin/hets...")
+		 (setq casl-hets-programm "/home/linux-bkb/bin/hets"))
+	(re-search-forward "\\(.+hets\\)" nil t 1) 
+	(setq casl-hets-program (match-string-no-properties 0))
+	(pop-to-buffer old-buffer)
+	(kill-buffer hide-buffer))))
+  (let* ((casl-hets-file-name (buffer-file-name))
+	 (outbuf (get-buffer-create "*hets-run*")))
+    (set-buffer outbuf)
+    (setq buffer-read-only nil)
+    (buffer-disable-undo (current-buffer))
+    (erase-buffer)
+    (buffer-enable-undo (current-buffer))
+    (pop-to-buffer outbuf)
+    (insert casl-hets-program " " casl-hets-file-name "\n")
+    (let ((status 
+	   (call-process shell-file-name nil t nil "-c" 
+			 (concat casl-hets-program " " casl-hets-file-name))))
+      (cond ((numberp status)
+	     (compilation-handle-exit 'exit status
+				      (if (zerop status)
+					  "finished\n"
+					(format "exited abnormally with code %d\n" status))))
+	    ((stringp status)
+	     (compilation-handle-exit 'signal status
+				      (concat status "\n")))
+	    (t
+	     (compilation-handle-exit 'bizarre status status)))
+      (if (zerop status)
+	  (setq casl-error-list nil)
+	(setq casl-error-list nil)
+	(casl-parse-error)
+	(message "%s errors have been found." (length casl-error-list)))
       (pop-to-buffer old-buffer)
-      (kill-buffer hide-buffer)
-      (let* (;; (casl-hets-dir "/home/cofi/jiang/HetCATS/")
-	     (casl-hets-file-name (buffer-file-name))
-	     ;; (casl-hets-command (concat casl-hets-dir "hets "))
-	     (outbuf (get-buffer-create "*hets-run*")))
-	(set-buffer outbuf)
-	(setq buffer-read-only nil)
-	(buffer-disable-undo (current-buffer))
-	(erase-buffer)
-	(buffer-enable-undo (current-buffer))
-	(pop-to-buffer outbuf)
-	(insert casl-hets-program " " casl-hets-file-name "\n")
-	(let ((status 
-	       (call-process shell-file-name nil t nil "-c" 
-			     (concat casl-hets-program " " casl-hets-file-name))))
-	  (cond ((numberp status)
-		 (compilation-handle-exit 'exit status
-					  (if (zerop status)
-					      "finished\n"
-					    (format "exited abnormally with code %d\n" status))))
-		((stringp status)
-		 (compilation-handle-exit 'signal status
-					  (concat status "\n")))
-		(t
-		 (compilation-handle-exit 'bizarre status status)))
-	  (if (zerop status)
-	      (setq casl-error-list nil)
-	    (setq casl-error-list nil)
-	    (casl-parse-error)
-	    (message "%s errors have been found." (length casl-error-list)))
-	  (pop-to-buffer old-buffer)
-	  )))))
+      )))
 
-;; also functions with old hets-program    
+;; also functions with old hets-program?
 (defun casl-parse-error ()
   "Error Parser"
   (interactive)
@@ -241,20 +241,19 @@
       (forward-char 1)
       (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1))
 	  (forward-line 1)
-	(re-search-backward "\\(\(\\|:\\s-*\\)\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
+	(re-search-backward "\\(\(\\|\\s-+\\)\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
 	(setq file-name (match-string-no-properties 2))
-	(re-search-forward ":\\([0-9]+\\)\\.\\([0-9]+\\):" (save-excursion (end-of-line) (point)) t 1)
+	(re-search-forward ":\\([0-9]+\\)\\.\\([0-9]+\\)[:,]" (save-excursion (end-of-line) (point)) t 1)
 	(when (not (string= (match-string-no-properties  0) ""))
 	  (setq error-line (match-string-no-properties 1))
 	  (setq error-colnum (match-string-no-properties 2))
 	  (setq casl-error-list
-		(append (list (list file-name error-line error-colnum)) casl-error-list))
+		(nconc casl-error-list (list (list file-name error-line error-colnum))))
 	)
 	(forward-line 1)))))
 
-
 (defun casl-compile-goto-next-error ()
-  "search the netx error position from error-list, and move to it."
+  "search the next error position from error-list, and move to it."
   (interactive)
   ;; wenn error-list leer ist...
   (if (null casl-error-list)
@@ -265,7 +264,7 @@
 	   (error-file-name (nth 0 this-error))
 	   (error-line (nth 1 this-error))
 	   (error-column (nth 2 this-error)))
-      (message "DEBUG<Goto Error>: file: %s, line: %s, column: %s" error-file-name  error-line error-column)
+      ;; (message "DEBUG<Goto Error>: file: %s, line: %s, column: %s" error-file-name  error-line error-column)
       ;; wenn die Datei, die fehlerbehaftet ist, schon geoeffnet...
       (if (get-file-buffer error-file-name)
 	  (pop-to-buffer (get-file-buffer error-file-name))
