@@ -9,11 +9,6 @@
   ************************************************************************** 
 -}
 
-{-
-
-dies ist ein ueberfluessiger Kommentar
-
--}
 
 module Parse_hugo where
 
