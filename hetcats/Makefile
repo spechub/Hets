@@ -37,8 +37,12 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
 ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),bin_clean)
+ifneq ($(MAKECMDGOALS),d_clean)
 ifneq ($(MAKECMDGOALS),real_clean)
 include sources_hetcats.mk
+endif
+endif
 endif
 endif
 
@@ -89,7 +93,7 @@ d_clean: clean
          unset p THIS_DIR
 
 ### additionally removes the files that define the sources-variable
-real_clean: d_clean 
+real_clean: d_clean bin_clean
 	rm -f hetcats-make sources_hetcats.mk
 ####################################################################
 ### test targets
