@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-| 
    
 Module      :  $Header$
@@ -6,7 +7,7 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
 -}
 
@@ -282,8 +283,10 @@ kernel f =
 {--------------------------------------------------------------------
   Show
 --------------------------------------------------------------------}
+#if __GLASGOW_HASKELL__<=602
 instance (Show k, Show a) => Show (FiniteMap k a) where
   showsPrec _ m  = showMap (toAscList m)
+#endif
 
 -- | Retrieve an element by /index/. Calls 'error' when an
 -- invalid index is used.

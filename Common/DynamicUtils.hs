@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-| 
    
 Module      :  $Header$
@@ -6,14 +7,17 @@ Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
-   Utilities for Data.Dynamic
+   mkAppTy was renamed to mkTyConApp in ghc version 
+   6.3 upwards
 
 -}
 
-module Common.DynamicUtils where
+module Common.DynamicUtils (mkTyConApp) where
 import Data.Dynamic
 
+#if __GLASGOW_HASKELL__<=602
 mkTyConApp :: TyCon -> [TypeRep] -> TypeRep
 mkTyConApp = mkAppTy
+#endif

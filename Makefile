@@ -170,7 +170,7 @@ TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell
 #else
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs \
-              Static/LogicStructured.hs ./Test.hs
+              Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
 SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
 sources = hets.hs $(filter-out $(non_sources), \
           $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
@@ -229,7 +229,8 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
                   $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = Isabelle/Logic_Isabelle.hs \
+cpp_sources = Common/DFiniteMap.hs Common/DynamicUtils.hs \
+    Isabelle/Logic_Isabelle.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
