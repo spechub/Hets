@@ -83,6 +83,19 @@ instance Monad Result where
      where Result errs2 y = f x
   fail s = fatal_error s nullPos
 
+-- | join two results
+joinResultWith :: (a -> b -> c) -> Result a -> Result b -> Result c
+joinResultWith f (Result d1 m1) (Result d2 m2) = Result (d1 ++ d2) $
+    case m1 of 
+    Nothing -> Nothing
+    Just r1 -> case m2 of 
+               Nothing -> Nothing
+               Just r2 -> Just $ f r1 r2
+
+-- | join a list of results that are independently computed
+mapR :: (a -> Result a) -> [a] -> Result [a]
+mapR ana = foldr (joinResultWith (:)) (Result [] $ Just []) . map ana
+
 -- | bind results within the 'IO' monad
 ioBind :: IO(Result a) -> (a -> IO(Result b)) -> IO(Result b)
 x `ioBind` f = do
