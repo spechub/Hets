@@ -144,7 +144,7 @@ instance PrettyPrint Term where
              = parens (text opS <+> printText0 ga opType) 
                <> parens (commaT printText0 ga termLs) 
          printText0 ga (Typed term tQual sId _) 
-             = printText0 ga term <+> printText ga tQual 
+             = printText0 ga term <+> printText0 ga tQual 
 	       <+> printText0 ga sId
          printText0 ga (Cond t1 form t2 _)
              = printText0 ga t1 <+> text whenS 
@@ -228,7 +228,7 @@ instance PrettyPrint Kind where
 instance PrettyPrint Axiom where
          printText0 ga (AxiomDecl vDecLs form _ ) 
              = text forallS <+> parens (semiT printText0 ga vDecLs) 
-	       <+> char '.' <+> printText ga form
+	       <+> char '.' <+> printText0 ga form
 
 
 instance PrettyPrint Sentence where
