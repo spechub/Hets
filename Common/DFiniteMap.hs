@@ -101,7 +101,7 @@ import Data.List(foldl')
 import Prelude hiding (lookup,map,filter)
 import qualified Common.Lib.Set as Set
 
-infixl 9 ! -- ,\\ 
+infixl 9 !
 
 type Map a b = FiniteMap a b
 type EndoMap a = FiniteMap a a
