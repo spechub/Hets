@@ -32,12 +32,12 @@ caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++
 -- see http://www.htmlhelp.com/reference/charset/ starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
 
-caslLetter :: Parser Char
+caslLetter :: GenParser Char st Char
 caslLetter = oneOf caslLetters <?> "casl letter"
 
 prime = char '\'' -- also used for quoted chars
 
-scanLPD :: Parser Char
+scanLPD :: GenParser Char st Char
 scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
 
 -- ----------------------------------------------
@@ -88,8 +88,8 @@ p `checkWith` f = do { x <- p
 		       consumeNothing >> unexpected (show x)
 		     }
 
-separatedBy :: Parser a -> Parser b -> Parser ([a], [b])
-
+separatedBy :: GenParser tok st a -> GenParser tok st b 
+	    -> GenParser tok st ([a], [b])
 p `separatedBy`  s = do { r <- p
 			; option ([r], []) 
 			  (do { t <- s
@@ -108,7 +108,7 @@ singleUnderline = char '_' `followedWith` scanLPD
 
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "underline word"
 
-scanAnyWords :: Parser String
+scanAnyWords :: GenParser Char st String
 scanAnyWords = flat (scanLetterWord <:> many scanUnderlineWord) <?> "words"
 
 scanDot = char '.' `followedWith` caslLetter
@@ -161,7 +161,7 @@ scanFloat = getNumber <++> option ""
 	      (char 'E' <:> option "" (single (oneOf "+-"))
 	       <++> getNumber))
 
-scanDigit :: Parser String
+scanDigit :: GenParser Char st String
 scanDigit = single digit
 
 -- ----------------------------------------------
@@ -212,9 +212,9 @@ ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
 -- keywords WORDS or NO-BRACKET-SIGNS 
 -- ----------------------------------------------
 
-keyWord :: Parser a -> Parser a
+keyWord :: GenParser Char st a -> GenParser Char st a
 keyWord p = try(p << notFollowedBy scanLPD)
-keySign :: Parser a -> Parser a
+keySign :: GenParser Char st a -> GenParser Char st a
 keySign p = try(p << notFollowedBy (oneOf signChars))
 
 toKey s = let p = string s in 

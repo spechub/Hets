@@ -9,12 +9,9 @@ import Parsec
 import Token
 import Formula
 
-
 less = asKey lessStr
-equal = asKey equalStr
-colon = asKey [colonChar]
 
-commaSortDecl :: Id -> Parser SORT_ITEM
+commaSortDecl :: Id -> GenParser Char st SORT_ITEM
 commaSortDecl s = do { c <- comma 
 		     ; (is, cs) <- sortId `separatedBy` comma
 		     ; let l = s : is 
@@ -24,7 +21,7 @@ commaSortDecl s = do { c <- comma
 		       <|> return (Sort_decl l p)
 		     }
 
-isoDecl :: Id -> Parser SORT_ITEM
+isoDecl :: Id -> GenParser Char st SORT_ITEM
 isoDecl s = do { e <- equal
                ; subSortDefn (s, tokPos e)
 		 <|>
@@ -33,7 +30,7 @@ isoDecl s = do { e <- equal
 		     })
 	       }
 
-subSortDefn :: (Id, Pos) -> Parser SORT_ITEM
+subSortDefn :: (Id, Pos) -> GenParser Char st SORT_ITEM
 subSortDefn (s, e) = do { o <- oBrace
 			; v <- varId
 			; c <- colon
@@ -45,13 +42,13 @@ subSortDefn (s, e) = do { o <- oBrace
 				  (e:tokPos o:tokPos c:tokPos d:[tokPos p]))
 			}
 
-subSortDecl :: ([Id], [Pos]) -> Parser SORT_ITEM
+subSortDecl :: ([Id], [Pos]) -> GenParser Char st SORT_ITEM
 subSortDecl (l, p) = do { t <- less
 		   ; s <- sortId
 		   ; return (Subsort_decl l s (p++[tokPos t]))
 		   }
 
-sortItem :: Parser SORT_ITEM 
+sortItem :: GenParser Char st SORT_ITEM 
 sortItem = do { s <- sortId ;
 		    subSortDecl ([s],[])
 		    <|>

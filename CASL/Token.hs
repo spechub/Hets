@@ -9,7 +9,7 @@ module Token ( scanWords, scanSigns, makeToken, asKey
 import Lexer
 import Id (Id(Id), Token(..), Pos, place, isPlace)
 import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
-import ParsecPrim (Parser, (<?>), (<|>), getPosition, many, try)
+import ParsecPrim (GenParser, (<?>), (<|>), getPosition, many, try)
 import ParsecCombinator (many1, option, sepBy1)
 import ParsecChar (char, string)
 
@@ -17,7 +17,7 @@ import ParsecChar (char, string)
 -- casl keyword handling
 -- ----------------------------------------------
 
-reserved :: [String] -> Parser String -> Parser String
+reserved :: [String] -> GenParser Char st String -> GenParser Char st String
 -- "try" to avoid reading keywords 
 reserved l p = try (p `checkWith` \r -> r `notElem` l)
 
@@ -116,7 +116,7 @@ comma = sepChar ','
 -- ----------------------------------------------
 
 -- a compound list
-comps :: Parser ([Id], [Pos])
+comps :: GenParser Char st ([Id], [Pos])
 comps = do { o <- opBrkt 
 	   ; (is, cs) <- parseId `separatedBy` comma
 	   ; c <- clBrkt
