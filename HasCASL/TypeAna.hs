@@ -70,6 +70,16 @@ anaKindM k =
 
 data ApplMode = OnlyArg | TopLevel 
 
+getIdType :: Id -> State Env (Maybe Type)
+getIdType i = 
+    do tk <- gets typeMap
+       let m = getKind tk i
+	   c = if isTypeVar tk i then 1 else 0
+       case m of 
+	      Just k -> return $ Just $ TypeName i k c 
+	      _ -> do addDiags [mkDiag Error "unknown type" i]
+		      return Nothing
+
 mkTypeConstrAppls :: ApplMode -> Type -> State Env (Maybe Type)
 mkTypeConstrAppls _ t@(TypeName _ _ _) = 
        return $ Just t 
@@ -83,20 +93,18 @@ mkTypeConstrAppls m (TypeAppl t1 t2) =
 
 mkTypeConstrAppls _ (TypeToken t) = 
     do let i = simpleIdToId t
-       tk <- gets typeMap
-       let m = getKind tk i
-	   c = if isTypeVar tk i then 1 else 0
-       case m of 
-	      Just k -> return $ Just $ TypeName i k c 
-	      _ -> do addDiags [mkDiag Error "unknown type" t]
-		      return Nothing
+       getIdType i
 
 mkTypeConstrAppls m t@(BracketType b ts ps) =
     do mArgs <- mapM (mkTypeConstrAppls m) ts
        if all isJust mArgs then 
 	  do let err = do addDiags [mkDiag Error "illegal type" t]
 			  return Nothing 
-	     case catMaybes mArgs of 
+	     case catMaybes mArgs of
+	          [] -> case b of
+			Parens -> return $ Just logicalType
+			_ -> let i = Id (mkBracketToken b ps) [] []
+			     in getIdType i
 	          [x] -> case b of
 		         Parens -> return $ Just x 		
 			 _ -> do let [o,c] = mkBracketToken b ps 
@@ -111,8 +119,15 @@ mkTypeConstrAppls m t@(BracketType b ts ps) =
           else return Nothing
 
 mkTypeConstrAppls _ (MixfixType []) = error "mkTypeConstrAppl (MixfixType [])"
-mkTypeConstrAppls _ (MixfixType (f:a)) =
-   do mF <- mkTypeConstrAppls TopLevel f 
+mkTypeConstrAppls _ (MixfixType (f:a)) = 
+    case (f, a) of 
+    (TypeToken t, [BracketType Squares as@(_:_) ps]) ->
+      do mis <- mapM mkTypeCompId as 
+	 if all isJust mis then 
+            getIdType $ Id [t] (catMaybes mis) ps
+	    else return Nothing
+    _ -> do
+      mF <- mkTypeConstrAppls TopLevel f 
       case mF of
           Nothing -> return Nothing
 	  Just newF -> 
@@ -142,6 +157,72 @@ mkTypeConstrAppls _ (FunType t1 a t2 ps) =
            (Just newT1, Just newT2) -> 
 	       return $ Just $ FunType newT1 a newT2 ps
 	   _ -> return Nothing
+
+mkTypeCompId :: Type -> State Env (Maybe Id)
+mkTypeCompId (TypeToken t) = 
+    if isPlace t then 
+       do addDiags [mkDiag Error "unexpected place" t]
+	  return Nothing
+    else return $ Just $ Id [t] [] []
+mkTypeCompId (MixfixType []) = error "mkTypeCompId: MixfixType []"
+mkTypeCompId (MixfixType (hd:tps)) = 
+         if null tps then mkTypeCompId hd
+	 else do 
+	 let (toks, comps) = break ( \ p -> 
+			case p of BracketType Squares (_:_) _ -> True
+			          _ -> False) tps
+	 mts <- mapM mkTypeCompToks (hd:toks)
+	 (mis, ps) <- if null comps then return (Just [], [])
+		     else mkTypeCompIds $ head comps
+	 pls <- if null comps then return [] 
+		else mapM mkTypeIdPlace $ tail comps
+	 if all isJust mts && all isJust pls && isJust mis then 
+	    return $ Just $ Id (concat (catMaybes mts) ++ catMaybes pls) 
+		       (fromJust mis) ps
+	    else return Nothing
+mkTypeCompId tp = do 
+    mts <- mkTypeCompToks tp
+    return (do ts <- mts 
+	       return $ Id ts [] [])
+
+mkTypeCompIds :: Type -> State Env (Maybe [Id], [Pos])
+mkTypeCompIds (BracketType Squares tps@(_:_) ps) = do
+    mis <- mapM mkTypeCompId tps
+    if all isJust mis then 
+       return (Just $ catMaybes mis, ps)
+       else return (Nothing, ps)
+mkTypeCompIds tp = do
+    addDiags [mkDiag Error "no compound list for type id" tp]
+    return (Nothing, [])
+
+mkTypeCompToks :: Type -> State Env (Maybe [Token])
+mkTypeCompToks (TypeToken t) = return $ Just [t]
+mkTypeCompToks t@(BracketType bk [tp] ps) = case bk of 
+    Parens -> do addDiags [mkDiag Error "no type id" t]
+		 return Nothing
+    _ -> do let [o,c] = mkBracketToken bk ps
+            mts <- mkTypeCompToks tp
+	    if isJust mts then 
+               return $ Just $ (o : fromJust mts ++ [c])
+	       else return Nothing
+mkTypeCompToks(MixfixType tps) = do
+    mts <- mapM mkTypeCompToks tps
+    if all isJust mts then 
+       return $ Just $ concat $ catMaybes mts
+       else return Nothing
+mkTypeCompToks t = do 
+    addDiags [mkDiag Error "no type tokens" t]
+    return Nothing
+
+mkTypeIdPlace :: Type -> State Env (Maybe Token)
+mkTypeIdPlace (TypeToken t) = 
+    if isPlace t then return $ Just t
+       else do 
+    addDiags [mkDiag Error "no place" t]
+    return Nothing
+mkTypeIdPlace t = do
+    addDiags [mkDiag Error "no place" t]
+    return Nothing
 
 -- ---------------------------------------------------------------------------
 -- compare kinds

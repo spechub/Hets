@@ -76,7 +76,7 @@ y : tuple3 r s %(var)%
   expected: Type
      found: c -> d
 
-*** Error 18.12, unknown type '__'
+*** Error 18.12, unexpected place '__'
 *** Error 24.10, incompatible kind of: m
   expected: Type
      found: (a -> b) -> c

@@ -321,10 +321,14 @@ convertTypePatterns (s:r) =
 		  Just i -> Result (d++ds) $ Just (i:l)
 
 
-illegalTypePattern, illegalTypePatternArg  :: TypePattern -> Result a 
+illegalTypePattern, illegalTypePatternArg, illegalTypeId 
+    :: TypePattern -> Result a 
 illegalTypePattern tp = fatal_error ("illegal type pattern: " ++ 
 				  showPretty tp "") $ getMyPos tp
 illegalTypePatternArg tp = fatal_error ("illegal type pattern argument: " ++ 
+				  showPretty tp "") $ getMyPos tp
+
+illegalTypeId tp = fatal_error ("illegal type pattern identifier: " ++ 
 				  showPretty tp "") $ getMyPos tp
 
 -- | convert a 'TypePattern'
@@ -358,8 +362,12 @@ convertTypePattern tp@(MixfixTypePattern (TypePatternToken t1 : rp)) =
 		     then return (Id [t1,inId,t2] [] [], [])
 		   else illegalTypePattern tp
 	       _ -> illegalTypePattern tp
-    else do as <- mapM convertToTypeArg rp 
-	    return (simpleIdToId t1, as)
+    else case rp of
+         [BracketTypePattern Squares as@(_:_) ps] -> do 
+	     is <- mapM convertToId as 
+	     return (Id [t1] is ps, [])
+	 _ -> do as <- mapM convertToTypeArg rp 
+		 return (simpleIdToId t1, as)
 convertTypePattern (BracketTypePattern bk [ap] ps) =
     case bk of 
     Parens -> convertTypePattern ap
@@ -382,3 +390,47 @@ convertToTypeArg (TypePatternArg a _) =  return a
 convertToTypeArg (BracketTypePattern Parens [tp] _) =  convertToTypeArg tp
 convertToTypeArg tp = illegalTypePatternArg tp
 
+convertToId :: TypePattern -> Result Id
+convertToId tp@(TypePatternToken t) = 
+    if isPlace t then illegalTypeId tp
+       else return $ Id [t] [] []
+convertToId (MixfixTypePattern []) = error "convertToId: MixfixTypePattern []"
+convertToId (MixfixTypePattern (hd:tps)) = 
+         if null tps then convertToId hd
+	 else do 
+	 let (toks, comps) = break ( \ p -> 
+			case p of BracketTypePattern Squares (_:_) _ -> True
+			          _ -> False) tps
+	 ts <- mapM convertToToks (hd:toks)
+	 (is, ps) <- if null comps then return ([], []) 
+		     else convertToIds $ head comps
+	 pls <- if null comps then return [] 
+		else mapM convertToPlace $ tail comps
+	 return $ Id (concat ts ++ pls) is ps
+convertToId tp = do 
+    ts <- convertToToks tp
+    return $ Id ts [] []
+
+convertToIds :: TypePattern -> Result ([Id], [Pos])
+convertToIds (BracketTypePattern Squares tps@(_:_) ps) = do
+    is <- mapM convertToId tps
+    return (is, ps)
+convertToIds tp = illegalTypeId tp
+
+convertToToks :: TypePattern -> Result [Token]
+convertToToks (TypePatternToken t) = return [t]
+convertToToks (BracketTypePattern bk [tp] ps) = case bk of 
+    Parens -> illegalTypeId tp 
+    _ -> do let [o,c] = mkBracketToken bk ps
+            ts <- convertToToks tp 
+            return (o : ts ++ [c])
+convertToToks(MixfixTypePattern tps) = do
+    ts <- mapM convertToToks tps
+    return $ concat ts
+convertToToks tp = illegalTypeId tp
+
+convertToPlace :: TypePattern -> Result Token
+convertToPlace tp@(TypePatternToken t) = 
+    if isPlace t then return t
+       else illegalTypeId tp
+convertToPlace tp = illegalTypeId tp
