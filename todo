@@ -62,8 +62,10 @@ call the symbols in the image of the signature morphism "new"
     if not, output "no"
 - group the axioms according to their leading operation/predicate symbol,
   i.e. the f resp. the p in
+  forall x_1:s_n .... x_n:s_n .                  f(t_1,...,t_m)=t
   forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
                                   Implication  Application  Strong_equation
+  forall x_1:s_n .... x_n:s_n .                  p(t_1,...,t_m)<=>phi
   forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
