@@ -297,7 +297,7 @@ hetcats/Version.hs: hetcats/Version.in version_nr
 
 ## two hardcoded dependencies for a correct generation of Version.hs
 hetcats/Options.hs hetcats/WriteFn.hs hetcats/ReadFn.hs: hetcats/Version.hs
-#hets.hs: hetcats/Version.hs
+hets.hs: hetcats/Version.hs
 ####################################################################
 ## rules for DrIFT
 
