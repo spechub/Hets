@@ -134,24 +134,26 @@ relatedTypeIds tm i1 i2 =
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
 
-instance Unifiable Type where
-    subst m t = case t of
-	   TypeName i k _ -> 
-	       case Map.lookup (TypeArg i k Other []) m of
-	       Just s -> s
-	       _ -> t
+rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
+rename m t = case t of
+	   TypeName i k n -> m i k n
 	   TypeAppl t1 t2 ->
-	       TypeAppl (subst m t1) (subst m t2)
+	       TypeAppl (rename m t1) (rename m t2)
 	   TypeToken _ -> t
 	   BracketType b l ps ->
-	       BracketType b (map (subst m) l) ps
+	       BracketType b (map (rename m) l) ps
 	   KindedType tk k ps -> 
-	       KindedType (subst m tk) k ps
-	   MixfixType l -> MixfixType $ map (subst m) l
-	   LazyType tl ps -> LazyType (subst m tl) ps
-	   ProductType l ps -> ProductType (map (subst m) l) ps
-           FunType t1 a t2 ps -> FunType (subst m t1) a (subst m t2) ps
-			-- lookup type aliases
+	       KindedType (rename m tk) k ps
+	   MixfixType l -> MixfixType $ map (rename m) l
+	   LazyType tl ps -> LazyType (rename m tl) ps
+	   ProductType l ps -> ProductType (map (rename m) l) ps
+           FunType t1 a t2 ps -> FunType (rename m t1) a (rename m t2) ps
+
+instance Unifiable Type where
+    subst m = rename (\ i k n -> 
+	       case Map.lookup (TypeArg i k Other []) m of
+	       Just s -> s
+	       _ -> TypeName i k n)
     match m (a, s) (b, t) = mm m (a, unalias m s) (b, unalias m t)
       where 
       mm tm t1 (b2, LazyType t2 _) = mm tm t1 (b2, t2)

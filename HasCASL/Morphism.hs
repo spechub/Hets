@@ -18,6 +18,7 @@ import HasCASL.AsToLe
 import HasCASL.PrintLe
 import HasCASL.Unify
 import HasCASL.Symbol
+import HasCASL.MapTerm
 import Common.Id
 import Common.Keywords
 import Common.Result
@@ -43,41 +44,31 @@ instance PrettyPrint Morphism where
 
 mapType :: IdMap -> Type -> Type
 -- include classIdMap later
-mapType m t = case t of
-	   TypeName i k n ->
+mapType m = rename ( \ i k n ->
+	       let t = TypeName i k n in
 	       if n == 0 then 
 		  case Map.lookup i m of
 		  Just j -> TypeName j k 0
 		  _ -> t
-	       else t
-	   TypeAppl t1 t2 ->
-	       TypeAppl (mapType m t1) (mapType m t2)
-	   TypeToken _ -> t
-	   BracketType b l ps ->
-	       BracketType b (map (mapType m) l) ps
-	   KindedType tk k ps -> 
-	       KindedType (mapType m tk) k ps
-	   MixfixType l -> MixfixType $ map (mapType m) l
-	   LazyType tl ps -> LazyType (mapType m tl) ps
-	   ProductType l ps -> ProductType (map (mapType m) l) ps
-           FunType t1 a t2 ps -> FunType (mapType m t1) a (mapType m t2) ps
-
+	       else t)
 
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 -- rename clashing type arguments later
-mapTypeScheme m (TypeScheme args (q :=> t) ps) =
-    TypeScheme args (q :=> mapType m t) ps
+mapTypeScheme = mapTypeOfScheme . mapType
 
 mapTySc :: IdMap -> TySc -> TySc
-mapTySc m (TySc s1) = TySc (mapTypeScheme m s1)
+mapTySc m (TySc s1) = TySc $ mapTypeScheme m s1
 
+mapSen :: Morphism -> Term -> Result Term
+mapSen m = let tm = typeIdMap m in 
+       return . mapTerm (mapFunSym tm (funMap m), mapType tm)
 
-mapFunSym :: IdMap -> FunMap -> (Id, TySc) -> Maybe (Id, TySc)
-mapFunSym tm fm (i, sc) = do
-  (newI, _sc1) <- Map.lookup (i, sc) fm
-  let sc2 = mapTySc tm sc
-      -- unify sc2 with sc1 later
-  return (newI, sc2)
+mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
+mapFunSym tm fm (i, sc) =  
+    let (i2, TySc sc2) = Map.findWithDefault 
+			 (i, TySc $ mapTypeScheme tm sc)
+			 (i, TySc sc) fm
+	in (i2, sc2)
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty

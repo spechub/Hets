@@ -13,32 +13,21 @@ rename symbols of terms according to a signature morphisms
 
 module HasCASL.MapTerm where
 
-import HasCASL.Morphism
 import HasCASL.As
-import HasCASL.Le
-import Common.Result
-import qualified Common.Lib.Map as Map
+import Common.Id
 
-mapTp :: Morphism -> Type -> Type
-mapTp m = mapType $ typeIdMap m
-
-mapSen :: Morphism -> Term -> Result Term
-mapSen m t = return $ mapTerm m t
-
-mapTerm :: Morphism -> Term -> Term
+mapTerm :: ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type) -> Term -> Term
 mapTerm m t = case t of
-   QualVar v ty ps -> QualVar v (mapTp m ty) ps
+   QualVar v ty ps -> QualVar v (snd m ty) ps
    QualOp b (InstOpId i ts ps) sc qs -> 
-        let (i2, TySc sc2) = Map.findWithDefault 
-			     (i, TySc $ mapTypeScheme (typeIdMap m) sc) 
-			     (i, TySc sc) $ funMap m
-	    in QualOp b (InstOpId i2 (map (mapTp m) ts) ps) sc2 qs
+        let (i2, sc2) = fst m (i, sc)
+	    in QualOp b (InstOpId i2 (map (snd m) ts) ps) sc2 qs
    ApplTerm t1 t2 ps ->
        ApplTerm (mapTerm m t1) (mapTerm m t2) ps
    TupleTerm ts ps -> TupleTerm (map (mapTerm m) ts) ps
-   TypedTerm te q ty ps -> TypedTerm (mapTerm m te) q (mapTp m ty) ps
+   TypedTerm te q ty ps -> TypedTerm (mapTerm m te) q (snd m ty) ps
    QuantifiedTerm q vs te ps -> 
-       QuantifiedTerm q (map (mapGenVar m) vs) (mapTerm m te) ps
+       QuantifiedTerm q (map (mapGenVar $ snd m) vs) (mapTerm m te) ps
    LambdaTerm ps p te qs ->     
        LambdaTerm (map (mapTerm m) ps) p (mapTerm m te) qs
    CaseTerm te es ps -> 
@@ -48,12 +37,13 @@ mapTerm m t = case t of
    AsPattern v pa ps -> AsPattern v (mapTerm m pa) ps
    _ -> error "mapTerm"
 
-mapGenVar :: Morphism -> GenVarDecl -> GenVarDecl
+mapGenVar :: (Type -> Type) -> GenVarDecl -> GenVarDecl
 mapGenVar m (GenVarDecl vd) = GenVarDecl $ mapVar m vd
 mapGenVar _ tv = tv 
 
-mapVar :: Morphism -> VarDecl -> VarDecl
-mapVar m (VarDecl v ty q ps) = VarDecl v (mapTp m ty) q ps
+mapVar :: (Type -> Type) -> VarDecl -> VarDecl
+mapVar m (VarDecl v ty q ps) = VarDecl v (m ty) q ps
 
-mapEq :: Morphism -> ProgEq -> ProgEq
+mapEq :: ((Id, TypeScheme) -> (Id, TypeScheme), Type -> Type) 
+      -> ProgEq -> ProgEq
 mapEq m (ProgEq p t ps) = ProgEq (mapTerm m p) (mapTerm m t) ps
