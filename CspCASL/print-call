@@ -1,1 +1,0 @@
- ghc --make -fglasgow-exts -Wall -o print -i.. print_csp.hs
