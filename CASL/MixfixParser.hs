@@ -418,7 +418,9 @@ mkIdSet ops preds =
 	(Set.difference ops both, Set.difference preds both, both)
 
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
-resolveMixfix g ops preds = resolveMixTrm g $ mkIdSet ops preds 
+resolveMixfix g ops preds maybeFormula t = 
+    let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) maybeFormula t 
+	in if null ds then r else Result ds Nothing
 
 resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
 	      -> TERM -> Result TERM
@@ -443,7 +445,9 @@ resolveMixTrm g ids@(ops, preds, both) mayBeFormula trm =
 			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
 
 resolveFormula :: GlobalAnnos -> Set Id -> Set Id -> FORMULA -> Result FORMULA
-resolveFormula g ops preds = resolveMixFrm g $ mkIdSet ops preds
+resolveFormula g ops preds f =     
+    let r@(Result ds _) = resolveMixFrm g (mkIdSet ops preds) f 
+	in if null ds then r else Result ds Nothing
 
 resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA -> Result FORMULA
 resolveMixFrm g ids@(ops, preds, both) frm =

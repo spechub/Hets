@@ -165,14 +165,12 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 . max(x, y) = y when x <= y else x %(Rat_max_def)%
 %% then %implies
 forall i, j:Int; p, q:Pos
-. (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
 . not j = 0 => (i / p) / (j / q) = (i / p) * (q / j)
 %(Rat_divide_rule)%
 pred __<__ : a * a
 ops __a : b;
     c : b
 sorts s, t < s
-. a = a
 vars a:t; a, b:s
 vars a:t; a, b:s
 . a = a
@@ -325,9 +323,7 @@ forall x:s
 . def {}
 . def { x }
 . true
-. exists! x:s . e
 forall x:s
-. e
 free type Boolean ::= True | False
 ops Not__ : Boolean -> Boolean;
     __And__, __Or__ : Boolean * Boolean -> Boolean

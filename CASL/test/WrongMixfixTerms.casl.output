@@ -1,111 +1,82 @@
-[a]
 Error (line 1, column 1) ambiguous mixfix term
 	__::__(a,[])
 	[__](a)
-(a) (b)
 Error (line 2, column 1) no resolution for term: (a) (b)
-a :s (a)
 Error (line 3, column 1) no resolution for term: a :s (a)
-a +
 Error (line 4, column 1) no resolution for term: a +
-+
 Error (line 5, column 1) no resolution for term: +
-a < b
 Error (line 6, column 3) unexpected mixfix token: <
-__ < __ (a, b)
 Error (line 7, column 3) unexpected mixfix token: <
-__ * __
 Error (line 8, column 1) no resolution for term: __ * __
-([a], (a) (b), a +, __ < __ (a, b))
 Error (line 9, column 2) ambiguous mixfix term
 	__::__(a,[])
 	[__](a)
 Error (line 9, column 7) no resolution for term: (a) (b)
 Error (line 9, column 15) no resolution for term: a +
 Error (line 9, column 22) unexpected mixfix token: <
-[[a], (a) (b), a +, __ < __ (a, b)]
 Error (line 10, column 13) unexpected mixfix token: ,
-a when a + b else b
 Error (line 11, column 8) not a predicate: __+__
-a when (op a : b) else b
 Error (line 12, column 8) not a formula: (op a:b)
-a when (var a : b) else b
 Error (line 13, column 8) not a formula: (var a:b)
-a when f else b
 Error (line 14, column 8) not a predicate: f
-a when f else b
 Error (line 15, column 9) not a predicate: f
-a when f else b
 Error (line 16, column 10) not a predicate: f
-a when (op a : b)(a) else b
 Error (line 17, column 16) not a formula: (op a:b)(a)
-A [a]
 Error (line 18, column 1) ambiguous mixfix term
 	A__(__::__(a,[]))
 	A__([__](a))
 	__[__](A,a)
 	__[a](A)
 	A[a]
-B [a]
 Error (line 19, column 1) ambiguous mixfix term
 	__[__](B,a)
 	__[a](B)
-A [a] A [a] p
 Error (line 20, column 1) ambiguous mixfix term
 	A__([__]__(a,A__([__]__(a,p))))
 	__[__]__(A,a,A__([__]__(a,p)))
 	A__([__]__(a,A__(__p(__::__(a,[])))))
 	A__([__]__(a,A__(__p([__](a)))))
 	__[__]__(A,a,A__(__p(__::__(a,[]))))
-A [a] !
 Error (line 21, column 1) ambiguous mixfix term
 	A__(__!(__::__(a,[])))
 	A__(__!([__](a)))
 	__!(__[__](A,a))
 	__!(__[a](A))
 	__!(A[a])
-[[[a]]]
 Error (line 22, column 1) ambiguous mixfix term
 	__::__(__::__(__::__(a,[]),[]),[])
 	[__](__::__(__::__(a,[]),[]))
 	__::__([__](__::__(a,[])),[])
 	[__]([__](__::__(a,[])))
 	__::__(__::__([__](a),[]),[])
-[b, A [a]]
 Error (line 23, column 1) ambiguous mixfix term
 	__::__(b,__::__(A__(__::__(a,[])),[]))
 	__::__(b,__::__(A__([__](a)),[]))
 	__::__(b,__::__(__[__](A,a),[]))
 	__::__(b,__::__(__[a](A),[]))
 	__::__(b,__::__(A[a],[]))
-b + [a] + b
 Error (line 24, column 1) ambiguous mixfix term
 	__+__(b,[__]__(a,+__(b)))
 	__+__(__+__(b,__::__(a,[])),b)
 	__+__(__+__(b,[__](a)),b)
-[a + b]
 Error (line 25, column 1) ambiguous mixfix term
 	__::__(__+__(a,b),[])
 	[__](__+__(a,b))
-A ([a])
 Error (line 26, column 1) ambiguous mixfix term
 	A__([a])
 	A([a])
 Error (line 26, column 3) ambiguous mixfix term
 	__::__(a,[])
 	[__](a)
-- [a]
 Error (line 27, column 1) ambiguous mixfix term
 	-__(__::__(a,[]))
 	-__([__](a))
-b + A [a]
 Error (line 28, column 1) ambiguous mixfix term
 	__+__(b,A__(__::__(a,[])))
 	__+__(b,A__([__](a)))
 	__+__(b,__[__](A,a))
 	__+__(b,__[a](A))
 	__+__(b,A[a])
-[a] !
 Error (line 29, column 1) ambiguous mixfix term
 	__!(__::__(a,[]))
 	__!([__](a))
