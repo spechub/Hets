@@ -27,7 +27,6 @@ module Syntax.Parse_AS_Library where
 
 import Logic.Grothendieck
 import Logic.Logic
--- import CASL.Logic_CASL  -- we need the default logic
 import Syntax.AS_Structured
 -- import Syntax.AS_Architecture
 import Syntax.AS_Library
@@ -40,10 +39,8 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
-import Common.Lib.Parsec.Char (digit)
--- import qualified Common.Lib.Map as Map
 import Common.Id
-import Data.List
+import Data.List(intersperse)
 import Data.Maybe(maybeToList)
 
 
