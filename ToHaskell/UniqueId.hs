@@ -42,15 +42,14 @@ newName (Id tlist idlist poslist) n =
   in (Id (tlist ++ [newTok]) idlist poslist)
 
 -- | Searches for the real name of an overloaded identifier.
-findUniqueId :: UninstOpId -> TypeScheme -> TypeMap -> Assumps 
-	     -> Maybe (Id, OpInfo)
-findUniqueId uid ts tm as = 
-    let OpInfos l = Map.findWithDefault (OpInfos []) uid as
+findUniqueId :: Env -> UninstOpId -> TypeScheme -> Maybe (Id, OpInfo)
+findUniqueId env uid ts = 
+    let OpInfos l = Map.findWithDefault (OpInfos []) uid (assumps env)
 	fit :: Int -> [OpInfo] -> Maybe (Id, OpInfo)
 	fit n tl = 
 	    case tl of
 		   [] -> Nothing
-		   oi:rt -> if isUnifiable tm 0 ts $ opType oi then 
+		   oi:rt -> if isUnifiable (typeMap env) 0 ts $ opType oi then 
 			    Just (if null rt then uid else newName uid n, oi)
 			    else fit (n + 1) rt
     in fit 2 l
