@@ -2,7 +2,7 @@
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
 (pred y : bb * bb) a b
-Error (line 4, column 1) no resolution for term: (predy:bb*bb) a b
+Error (line 4, column 1) no resolution for term: (pred y:bb*bb) a b
 a =e= < b
 Error (line 5, column 7) unexpected mixfix token: <
 a #= e = b
@@ -23,7 +23,7 @@ Error (line 15, column 4) unexpected mixfix token: #
 Error (line 16, column 2) unexpected mixfix token: }
 Error (line 16, column 7) not a predicate: []
 Error (line 16, column 14) unexpected mixfix token: }
-Error (line 16, column 3) not a formula: {}when[]()else{}
+Error (line 16, column 3) not a formula: {} when [] else {}
 a /\ b /\ c
 a \/ b \/ c
 a => b
