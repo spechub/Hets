@@ -12,9 +12,8 @@ needs "-package haskell-src"
 
 module Main where
 
-import Haskell.Language.Pretty
-import Haskell.Language.Parser
-import System.Environment
+import Language.Haskell.Pretty
+import Language.Haskell.Parser
 
 main :: IO ()
 main = do

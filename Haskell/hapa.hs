@@ -17,7 +17,6 @@ import Haskell.Hatchet.HsParseMonad
 import Haskell.Hatchet.HsParser
 import Haskell.Hatchet.HsSyn
 import Haskell.Hatchet.HsPretty
-import System.Environment
 
 main :: IO ()
 main = do
