@@ -92,10 +92,12 @@ checkFreeType (osig,osens) m fsn
                                Just p -> headPos p
                                Nothing -> nullPos 
                    in warning Nothing ("/n" ++ (show f) ++"/n axiom is incorrect") pos
-       | any id $ map find_ot id_ots ++ map find_pt id_pts =    
-                   let pos = if any id $ map find_ot id_ots then headPos old_op_ps
-                             else headPos old_pred_ps
-                   in warning Nothing "leading symbol ist not new" pos
+       | any id $ map find_ot id_ots =    
+                   let pos = headPos old_op_ps
+                   in warning Nothing ("Op: " ++ old_op_id ++ " ist not new") pos
+       | any id $ map find_pt id_pts =    
+                   let pos = headPos old_pred_ps
+                   in warning Nothing ("Pedication: " ++ old_pred_id ++ " ist not new")pos
        | not $ and $ map checkTerm leadingTerms =
                    let (Application _ _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
                        pos = headPos ps
@@ -134,7 +136,7 @@ checkFreeType (osig,osens) m fsn
 -}
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
      --    fs1 = map sentence fsn
-         fs = trace (showPretty fs1 "new formulas") fs1                     -- new formulas
+         fs = trace (showPretty fs1 "new formulars") fs1                     -- new formulars
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
@@ -186,7 +188,9 @@ checkFreeType (osig,osens) m fsn
                                _ -> [] 
          id_ots = concat $ map filterOp $ l_Syms 
          id_pts = concat $ map filterPred $ l_Syms
-         old_op_ps = case head $ map leading_Term_Predication $ 
+         old_op_id= idStr $ fst $ head $ filter (\ot->find_ot ot) $ id_ots
+         old_pred_id = idStr $ fst $ head $ filter (\pt->find_pt pt) $ id_pts
+         old_op_ps = case head $ map leading_Term_Predication $        -- noch bessen ??????????????????????
                           filter (\f->find_ot $ head $ filterOp $ leadingSym f) op_fs of
                        Just (Left (Application _ _ p)) -> p
                        _ -> []
@@ -194,6 +198,7 @@ checkFreeType (osig,osens) m fsn
                             filter (\f->find_pt $ head $ filterPred $ leadingSym f) pred_fs of
                          Just (Right (Predication _ _ p)) -> p
                          _ -> []
+
          find_ot (ident,ot) = case Map.lookup ident oldOpMap of
                                   Nothing -> False
                                   Just ots -> Set.member ot ots
