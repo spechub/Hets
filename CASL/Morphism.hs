@@ -403,14 +403,16 @@ sigInclusion extEm isSubExt sigma1 sigma2 =
 morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
               -> (e -> e -> e) -- ^ join signature extensions
               -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-morphismUnion uniteM addSigExt mor1 mor2 = do
+-- consider identity mappings but filter them eventually
+morphismUnion uniteM addSigExt mor1 mor2 =
   let smap1 = sort_map mor1
       smap2 = sort_map mor2
       s1 = msource mor1
       s2 = msource mor2
-      us1 = foldr Set.delete (sortSet s1) $ Map.keys smap1
-      us2 = foldr Set.delete (sortSet s2) $ Map.keys smap2
-      us = Set.union us1 us2
+      us1 = Set.difference (sortSet s1) $ Set.fromDistinctAscList 
+            $ Map.keys smap1
+      us2 = Set.difference (sortSet s2) $ Set.fromDistinctAscList 
+            $ Map.keys smap2
       omap1 = fun_map mor1
       omap2 = fun_map mor2
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
@@ -418,80 +420,56 @@ morphismUnion uniteM addSigExt mor1 mor2 = do
       delOp (n, ot) m = diffMapSet m $ Map.single n $ 
                     Set.fromList [ot {opKind = Partial}, ot {opKind =Total}]
       uo = addMapSet uo1 uo2
-      memberOpMap (n, ot) m = memberMapSet (n, ot {opKind = Partial}) m
-                              || memberMapSet (n, ot {opKind = Total}) m
       pmap1 = pred_map mor1
       pmap2 = pred_map mor2
       up1 = foldr delPred (predMap s1) $ Map.keys pmap1
       up2 = foldr delPred (predMap s2) $ Map.keys pmap2
       up = addMapSet up1 up2
       delPred (n, pt) m = diffMapSet m $ Map.single n $ Set.single pt
-      memberMapSet (n, pt) m = case Map.lookup n m of 
-                               Nothing -> False
-                               Just s -> Set.member pt s
-  smap <- foldr ( \ (i, j) rm -> 
-                     do m <- rm
-                        case Map.lookup i m of
-                          Nothing -> if Set.member i us then do
-                              Result [Diag Error 
-                                ("incompatible mapping of sort: " ++ 
-                                 showId i " to: " ++ showId j " and: " 
-                                 ++ showId i "") $ posOfId i] $ Just ()
-                              return m 
-                            else return $ Map.insert i j m
-                          Just k -> if j == k then return m
-                            else do 
-                            Result [Diag Error 
-                              ("incompatible mapping of sort: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId k "") $ posOfId i] $ Just ()
-                            return m) 
-             (return smap1) $ Map.toList smap2
-  omap <- foldr ( \ (isc@(i, _), jsc@(j, t)) rm -> do
-                     m <- rm
-                     case Map.lookup isc m of
-                       Nothing -> {- if memberOpMap isc uo then do
-                            Result [Diag Error 
-                              ("incompatible mapping of op: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId i "") $ posOfId i] $ Just ()
-                            return m
-                          else -} return $ Map.insert isc jsc m
-                       Just (k, p) -> if j == k then
-                            if p == t then return m
-                            else return $ Map.insert isc (j, Total) m
-                          else do 
-                            Result [Diag Error 
-                              ("incompatible mapping of op: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId k "") $ posOfId i] $ Just ()
-                            return m) 
-             (return omap1) $ Map.toList omap2
-  pmap <- foldr ( \ (isc@(i, _), j) rm -> do
-                     m <- rm
-                     case Map.lookup isc m of
-                       Nothing -> {- if memberMapSet isc up then do
-                            Result [Diag Error 
-                              ("incompatible mapping of pred: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId i "") $ posOfId i] $ Just ()
-                            return m 
-                         else -} return $ Map.insert isc j m
-                       Just k -> if j == k then return m
-                          else do 
-                            Result [Diag Error 
-                              ("incompatible mapping of pred: " ++ 
-                               showId i " to: " ++ showId j " and: " 
-                               ++ showId k "") $ posOfId i] $ Just ()
-                            return m) 
-             (return pmap1) $ Map.toList pmap2
-  return $ Morphism { msource = addSig addSigExt (msource mor1) $ msource mor2,
-                      mtarget = addSig addSigExt (mtarget mor1) $ mtarget mor2,
-                      sort_map = smap, 
-                      fun_map = omap, 
-                      pred_map = pmap,
-                      extended_map = uniteM (extended_map mor1) $
-                                     extended_map mor2}
+      (sds, smap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
+          Nothing -> (ds, Map.insert i j m)
+          Just k -> if j == k then (ds, m) else 
+              (Diag Error 
+               ("incompatible mapping of sort " ++ showId i " to " 
+                ++ showId j " and " ++ showId k "")
+               nullPos : ds, m)) ([], smap1) 
+          (Map.toList smap2 ++ map (\ a -> (a, a)) 
+                      (Set.toList $ Set.union us1 us2))
+      (ods, omap) = foldr ( \ (isc@(i, ot), jsc@(j, t)) (ds, m) -> 
+          case Map.lookup isc m of
+          Nothing -> (ds, Map.insert isc jsc m)
+          Just (k, p) -> if j == k then if p == t then (ds, m)
+                            else (ds, Map.insert isc (j, Total) m) else 
+              (Diag Error 
+               ("incompatible mapping of op " ++ showId i ":" 
+                ++ showPretty ot { opKind = t } " to " 
+                ++ showId j " and " ++ showId k "") nullPos : ds, m))
+           (sds, omap1) (Map.toList omap2 ++ concatMap 
+              ( \ (a, s) -> map ( \ ot -> ((a, ot {opKind = Partial}), 
+                                           (a, opKind ot))) 
+              $ Set.toList s) (Map.toList uo))
+      (pds, pmap) = foldr ( \ (isc@(i, pt), j) (ds, m) -> 
+          case Map.lookup isc m of
+          Nothing -> (ds, Map.insert isc j m)
+          Just k -> if j == k then (ds, m) else 
+              (Diag Error 
+               ("incompatible mapping of pred " ++ showId i ":" 
+                ++ showPretty pt " to " ++ showId j " and " 
+                ++ showId k "") nullPos : ds, m)) (ods, pmap1) 
+          (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map 
+              ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))
+      s3 = addSig addSigExt s1 s2
+      o3 = opMap s3 in 
+      if null pds then Result [] $ Just Morphism 
+         { msource = s3,
+           mtarget = addSig addSigExt (mtarget mor1) $ mtarget mor2,
+           sort_map = Map.filterWithKey (/=) smap, 
+           fun_map = Map.filterWithKey 
+              (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot 
+               (Map.findWithDefault Set.empty i o3)) omap, 
+           pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap,
+           extended_map = uniteM (extended_map mor1) $ extended_map mor2 }
+      else Result pds Nothing
 
 instance PrettyPrint Symbol where
   printText0 ga sy = 
