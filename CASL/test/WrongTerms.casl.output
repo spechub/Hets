@@ -36,7 +36,7 @@ expecting "(", "{", "[" or id/literal
 
 parse error at 10.14:
 unexpected end of input
-expecting casl char, "%%", "%{", "%(", "%", "(", "{", "[" or id/literal
+expecting casl char, "_", "%%", "%{", "%(", "%", "(", "{", "[" or id/literal
 
 parse error at 11.1:
 unexpected "var"
