@@ -13,7 +13,7 @@ import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.ClassAna
 import HasCASL.ClassDecl
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
 import Common.Lexer 
@@ -124,12 +124,12 @@ anaVarDecl(VarDecl v oldT _ _) =
 					("wrong kind '" ++ showPretty k
 					 "' of type for variable") v 
 		      as <- getAssumps
-		      let l = lookupWithDefaultFM as [] v 
+		      let l = Map.findWithDefault [] v as
 			  ts = simpleTypeScheme t in 
 			  if ts `elem` l then 
 			     addDiag $ mkDiag Warning 
 				      "repeated variable '" v
-			     else  putAssumps $ addToFM as v (ts:l)
+			     else  putAssumps $ Map.insert v (ts:l) as
 
 
 -- ----------------------------------------------------------------------------

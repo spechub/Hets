@@ -12,7 +12,6 @@ module HasCASL.OpDecl where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.ClassAna
-import FiniteMap
 import Common.Id
 import HasCASL.Le
 import Control.Monad.State
@@ -53,7 +52,7 @@ anaOpId (TypeScheme tvs q ps) attrs (OpId i args) =
 
 checkDifferentTypeArgs :: [TypeArgs] -> [Diagnosis]
 checkDifferentTypeArgs l = 
-    let v :: [Id] = concatMap (\ (TypeArgs tas _) 
+    let v = concatMap (\ (TypeArgs tas _) 
 			       -> map (\ (TypeArg i _ _ _) -> i) tas) l
 	vd = filter ( not . null . tail) $ group $ sort v
     in map ( \ vs -> mkDiag Error ("duplicate ids at '" ++

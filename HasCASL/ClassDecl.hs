@@ -10,7 +10,7 @@
 module HasCASL.ClassDecl where
 
 import HasCASL.As
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
 import Data.List
@@ -57,10 +57,10 @@ anaClassDecl sups defn ci =
 		    "illegal universe class declaration" $ posOfId ci
     else do
        cMap <- getClassMap
-       case lookupFM cMap ci of
-            Nothing -> putClassMap $ addToFM cMap ci  
+       case Map.lookup ci cMap of
+            Nothing -> putClassMap $ Map.insert ci  
 		       newClassInfo { superClasses = sups, 
-					   classDefn = defn }
+					   classDefn = defn } cMap
 	    Just info -> do 
 	        addDiag $ mkDiag Warning "redeclared class" ci
 		let oldDefn = classDefn info
@@ -76,8 +76,8 @@ anaClassDecl sups defn ci =
 			     "alias class cannot become a real class" ci
 		      else do
 		      newSups <- getLegalSuperClasses cMap ci oldSups sups
-		      putClassMap $ addToFM cMap ci info 
-				      { superClasses = newSups } 
+		      putClassMap $ Map.insert ci info 
+				      { superClasses = newSups } cMap
 
 getLegalSuperClasses :: ClassMap -> ClassId -> [ClassId] 
 		     -> [ClassId] -> State Env [ClassId]

@@ -16,7 +16,7 @@ import HasCASL.Le
 import Data.Maybe
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Keywords
 import Common.GlobalAnnotations
 
@@ -76,9 +76,9 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 ga (Just c) =  printText0 ga c
 
 instance (PrettyPrint a, Ord a, PrettyPrint b) 
-    => PrettyPrint (FiniteMap a b) where
+    => PrettyPrint (Map.Map a b) where
     printText0 ga m =
-	let l = fmToList m in
+	let l = Map.toList m in
 	    vcat(map (\ (a, b) -> printText0 ga a <+> printText0 ga b) l)
 
 instance PrettyPrint Env where

@@ -11,7 +11,7 @@ module HasCASL.Le where
 
 import Common.Id
 import HasCASL.As
-import FiniteMap
+import Common.Lib.Map
 import Data.List
 import Control.Monad.State
 import Common.Result
@@ -29,7 +29,7 @@ newClassInfo = ClassInfo [] Nothing
 
 -----------------------------------------------------------------------------
 
-type ClassMap = FiniteMap ClassId ClassInfo
+type ClassMap = Map ClassId ClassInfo
 
 -----------------------------------------------------------------------------
 -- typeInfo
@@ -51,13 +51,13 @@ data TypeInfo = TypeInfo { typeKind :: Kind
  
 -----------------------------------------------------------------------------
 
-type TypeMap = FiniteMap TypeId TypeInfo
+type TypeMap = Map TypeId TypeInfo
 
 -----------------------------------------------------------------------------
 -- assumptions
 -----------------------------------------------------------------------------
 
-type Assumps = FiniteMap Id [TypeScheme]
+type Assumps = Map Id [TypeScheme]
 
 -----------------------------------------------------------------------------
 -- local env
@@ -70,7 +70,7 @@ data Env = Env { classMap :: ClassMap
 	       } deriving Show
 
 initialEnv :: Env
-initialEnv = Env emptyFM emptyFM emptyFM []
+initialEnv = Env empty empty empty []
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =

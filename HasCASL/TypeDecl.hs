@@ -13,7 +13,7 @@ import HasCASL.As
 import HasCASL.AsUtils
 import Common.AS_Annotation(item)
 import HasCASL.ClassAna
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
 import Data.Maybe
@@ -39,28 +39,29 @@ compatibleTypeDefn d1 d2 i =
 addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
 addTypeKind d i k = 
     do tk <- getTypeMap
-       case lookupFM tk i of
-	      Nothing -> putTypeMap $ addToFM tk i 
-			 $ TypeInfo k [] [] d
+       case Map.lookup i tk of
+	      Nothing -> putTypeMap $ Map.insert i 
+			 (TypeInfo k [] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  let ds = eqKindDiag k ok in
 			  if null ds then 
 			     if any (eqKind SameSyntax k) (ok:ks)
 				then addDiag $ mkDiag Warning 
 				     "redeclared type" i
-				else putTypeMap $ addToFM tk i 
-					 $ TypeInfo ok
-					       (k:ks) sups defn
+				else putTypeMap $ Map.insert i 
+					 (TypeInfo ok
+					       (k:ks) sups defn) tk
 			     else appendDiags ds
 
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
     do tk <- getTypeMap
-       case lookupFM tk i of
+       case Map.lookup i tk of
 	      Nothing -> error "addSuperType"
 	      Just (TypeInfo ok ks sups defn) -> 
-				putTypeMap $ addToFM tk i 
-					      $ TypeInfo ok ks (t:sups) defn
+				putTypeMap $ Map.insert i 
+					      (TypeInfo ok ks (t:sups) defn)
+					      tk
 
 anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
 anaTypeItem _ inst (TypeDecl pats kind _) = 

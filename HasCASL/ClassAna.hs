@@ -18,7 +18,7 @@ import Data.Maybe
 import Control.Monad.State
 import HasCASL.PrintAs(showPretty)
 import Common.PrettyPrint
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Result
 
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
@@ -38,7 +38,7 @@ mkDiag k s a =
 allSuperClasses :: ClassMap -> ClassId -> [ClassId]
 allSuperClasses ce ci = 
     let recurse = nub . concatMap (allSuperClasses ce) in
-    case lookupFM ce ci of 
+    case Map.lookup ci ce of 
     Just info -> nub $ (case classDefn info of 
 			Nothing -> [ci]
 			Just (Intersection cis _) -> recurse cis
@@ -48,7 +48,7 @@ allSuperClasses ce ci =
 
 anaClassId :: ClassMap -> ClassId -> [Diagnosis]
 anaClassId cMap ci = 
-       case lookupFM cMap ci of
+       case Map.lookup ci cMap of
        Nothing -> [mkDiag Error "undeclared class" ci]
        _ -> []
 

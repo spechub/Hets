@@ -18,7 +18,7 @@ import Data.List
 import Data.Maybe
 import Control.Monad.State
 import HasCASL.PrintAs(showPretty)
-import FiniteMap
+import qualified Common.Lib.Map as Map
 import Common.Result
 
 data ApplMode = OnlyArg | TopLevel 
@@ -154,7 +154,7 @@ getIdKind i =
 
 getKind :: TypeMap -> Id -> Maybe Kind
 getKind tk i = 
-       case lookupFM tk i of
+       case Map.lookup i tk of
        Nothing -> Nothing
        Just (TypeInfo k _ _ _) -> Just k
     
