@@ -239,6 +239,12 @@ get_logic f = if (is_atomic_f f) then bottom else
               if (is_ghorn_f f) then need_ghorn else
               need_fol
 
+-- for the formula inside a subsort-defn
+get_logic_sd :: FORMULA -> CASL_Sublogics
+get_logic_sd f = if (is_horn_p_a f) then need_horn else
+                 if (is_ghorn_prem f) then need_ghorn else
+                 need_fol
+
 ------------------------------------------------------------------------------
 -- functions to compute minimal sublogic for a given element
 ------------------------------------------------------------------------------
@@ -274,8 +280,10 @@ sl_sig_items (Datatype_items l _) = comp_list ((map sl_datatype_decl)
 
 sl_sort_item :: SORT_ITEM -> CASL_Sublogics
 sl_sort_item (Subsort_decl _ _ _) = need_sub
-sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max need_sub
-                                        (sl_formula (strip_anno f))
+sl_sort_item (Subsort_defn _ _ _ f _) = sublogics_max
+                                        (get_logic_sd (strip_anno f))
+                                        (sublogics_max need_sub
+                                        (sl_formula (strip_anno f)))
 sl_sort_item _ = bottom
 
 sl_op_item :: OP_ITEM -> CASL_Sublogics
@@ -324,12 +332,25 @@ sl_term (Conditional t f u _) = sublogics_max (sl_term t)
 sl_term _ = bottom
 
 sl_formula :: FORMULA -> CASL_Sublogics
-sl_formula _ = top
+sl_formula f = sublogics_max (get_logic f) (sl_form f)
 
-sl_quantifier :: QUANTIFIER -> CASL_Sublogics
-sl_quantifier (Existential) = need_fol
-sl_quantifier (Unique_existential) = need_fol
-sl_quantifier _ = bottom
+sl_form :: FORMULA -> CASL_Sublogics
+sl_form (Quantification _ _ f _) = sl_form f
+sl_form (Conjunction l _) = comp_list ((map sl_form) l)
+sl_form (Disjunction l _) = comp_list ((map sl_form) l)
+sl_form (Implication f g _) = sublogics_max (sl_form f) (sl_form g)
+sl_form (Equivalence f g _) = sublogics_max (sl_form f) (sl_form g)
+sl_form (Negation f _) = sl_form f
+sl_form (True_atom _) = bottom
+sl_form (False_atom _) = bottom
+sl_form (Predication _ l _) = sublogics_max need_pred
+                              (comp_list ((map sl_term) l))
+sl_form (Definedness t _) = sl_term t
+sl_form (Existl_equation t u _) = sublogics_max (sl_term t) (sl_term u)
+sl_form (Strong_equation t u _) = sublogics_max (sl_term t) (sl_term u)
+sl_form (Membership t _ _) = sublogics_max need_sub (sl_term t)
+sl_form (Mixfix_formula t) = sl_term t
+sl_form (Unparsed_formula _ _) = bottom
 
 sl_sentence :: Sentence -> CASL_Sublogics
 sl_sentence (Axiom a) = sl_axiom (strip_anno a)
