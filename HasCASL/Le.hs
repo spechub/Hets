@@ -53,7 +53,7 @@ data TypeDefn = NoTypeDefn
               | Supertype Vars TypeScheme Term 
               | DatatypeDefn DataEntry
               | AliasTypeDefn TypeScheme
-              | TypeVarDefn deriving (Show, Eq)
+              | TypeVarDefn Int deriving (Show, Eq)
 
 data TypeInfo = TypeInfo { typeKind :: Kind
                          , otherTypeKinds :: [Kind]
@@ -63,7 +63,7 @@ data TypeInfo = TypeInfo { typeKind :: Kind
 
 isTypeVarDefn :: TypeInfo -> Bool
 isTypeVarDefn t = case typeDefn t of
-                  TypeVarDefn -> True
+                  TypeVarDefn _ -> True
                   _           -> False
 
 data Sentence = Formula Term

@@ -501,7 +501,8 @@ printGenKind k = case k of
 instance PrintLaTeX TypeDefn where
     printLatex0 _ NoTypeDefn = empty
     printLatex0 _ PreDatatype = space <> text "\\%(data type)\\%"
-    printLatex0 _ TypeVarDefn = space <> text "\\%(var)\\%"
+    printLatex0 _ (TypeVarDefn i) = 
+	space <> text ("\\%(var_{" ++ show i ++ "})\\%")
     printLatex0 ga (AliasTypeDefn s) = space <> hc_sty_axiom assignS 
 				      <+> printPseudoType ga s
     printLatex0 ga (Supertype v t f) = space <> hc_sty_axiom equalS <+> 

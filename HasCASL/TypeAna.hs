@@ -57,7 +57,7 @@ getIdType :: Id -> TypeMap -> Result Type
 getIdType i tm = do 
        k <- getIdKind tm i 
        return $ TypeName i k $ case Map.lookup i tm of
-		 Just (TypeInfo _ _ _ TypeVarDefn) -> 1
+		 Just (TypeInfo _ _ _ (TypeVarDefn c)) -> c
 		 _ -> 0
 
 mkTypeConstrAppls :: ApplMode -> Type -> TypeMap -> Result Type

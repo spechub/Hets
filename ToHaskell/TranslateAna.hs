@@ -73,7 +73,7 @@ translateTypeInfo env (tid,info) =
        AliasTypeDefn ts -> 
 	   [HsTypeDecl nullLoc hsname (getAliasArgs ts) $ getAliasType ts]
        DatatypeDefn de -> [sentence $ translateDt env de] 
-       TypeVarDefn -> [] -- ignore others
+       TypeVarDefn _-> [] -- ignore others
        PreDatatype -> [] -- ignore others
 
 

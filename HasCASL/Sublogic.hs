@@ -747,7 +747,7 @@ sl_typeDefn (Supertype _ ts t) =
   sublogics_max (sl_typeScheme ts) (sl_term t)
 sl_typeDefn (DatatypeDefn de) = sl_dataEntry de
 sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
-sl_typeDefn (TypeVarDefn) = need_polymorphism
+sl_typeDefn (TypeVarDefn _) = need_polymorphism
 sl_typeDefn _ = bottom
 
 

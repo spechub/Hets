@@ -140,7 +140,8 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
+data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor,
+				      -- negative are bound variables)
           | TypeAppl Type Type
           | ExpandedType Type Type
           | TypeToken Token
@@ -424,7 +425,9 @@ instance Ord Kind where
     _ <= ExtKind _ _ _ = False
 
 instance Eq Type where 
-    TypeName i1 k1 v1 == TypeName i2 k2 v2 = (i1, k1, v1) == (i2, k2, v2)
+    TypeName i1 k1 v1 == TypeName i2 k2 v2 = 
+	if v1 == 0 && v2 == 0 then (i1, k1) == (i2, k2)
+	else (v1, k1) == (v2, k2)
     TypeAppl f1 a1 == TypeAppl f2 a2 = (f1, a1) == (f2, a2)
     TypeToken t1 == TypeToken t2 = t1 == t2
     BracketType b1 l1 _ == BracketType b2 l2 _ = (b1, l1) == (b2, l2)
@@ -438,7 +441,9 @@ instance Eq Type where
     _ == _ = False
 
 instance Ord Type where
-    TypeName i1 k1 v1 <= TypeName i2 k2 v2 = (i1, k1, v1) <= (i2, k2, v2)
+    TypeName i1 k1 v1 <= TypeName i2 k2 v2 = 
+	if v1 == 0 && v2 == 0 then (i1, k1) <= (i2, k2)
+	else (v1, k1) <= (v2, k2)
     TypeAppl f1 a1 <= TypeAppl f2 a2 = (f1, a1) <= (f2, a2)
     TypeToken t1 <= TypeToken t2 = t1 <= t2
     BracketType b1 l1 _ <= BracketType b2 l2 _ = (b1, l1) <= (b2, l2)

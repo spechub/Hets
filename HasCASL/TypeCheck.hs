@@ -53,11 +53,12 @@ checkPattern ga pat = do
 
 freshInstList :: TypeScheme -> State Int (Type, Constraints, [Type])
 freshInstList (TypeScheme tArgs (_ :=> t) _) = 
-    do m <- mkSubst tArgs 
-       return ( subst (Map.fromList m) t
-	      , Set.fromList $ map ( \ (TypeArg _ k _ _, ty) 
-				     -> Kinding ty k) m
-	      ,	map snd m)
+    do m <- mkSubst tArgs
+       let ts = map snd m 
+       return ( repl (Map.fromList $ zip tArgs ts) t
+	      , Set.fromList $ map ( \ ty@(TypeName _ k _)
+				     -> Kinding ty k) ts
+	      ,	ts)
 
 instantiate :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
 instantiate oi = do
@@ -112,8 +113,8 @@ typeCheck mt trm =
 
 freshTypeVar :: Pos -> State Env Type		  
 freshTypeVar p = 
-    do var <- toEnvState $ freshVar p
-       return $ TypeName var star 1
+    do (var, c) <- toEnvState $ freshVar p
+       return $ TypeName var star c
 
 freshVars :: [Term] -> State Env [Type]
 freshVars l = mapM (freshTypeVar . posOfTerm) l

@@ -118,7 +118,7 @@ mkPrecIntMap r =
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
 aType :: Type
-aType = TypeName aVar star 1
+aType = TypeName aVar star (-1)
 
 bindA :: Type -> TypeScheme
 bindA ty = TypeScheme [TypeArg aVar star Other []] ([] :=> ty) []

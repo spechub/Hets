@@ -26,7 +26,7 @@ import Data.Maybe
 
 -- | vars
 varsOf :: Type -> Set.Set TypeArg
-varsOf = leaves (>0)
+varsOf = leaves (/=0)
 
 -- | vars or other ids 
 leaves :: (Int -> Bool) -> Type -> Set.Set TypeArg
@@ -81,23 +81,23 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 freshInst :: TypeScheme -> State Int Type
 freshInst (TypeScheme tArgs (_ :=> t) _) = 
     do m <- mkSubst tArgs 
-       return $ subst (Map.fromList m) t
+       return $ repl (Map.fromList $ zip tArgs $ map snd m) t
 
-freshVar :: Pos -> State Int Id 
+freshVar :: Pos -> State Int (Id, Int) 
 freshVar p = 
     do c <- get
        put (c + 1)
-       return $ simpleIdToId $ Token ("_var_" ++ show c) p
+       return (simpleIdToId $ Token ("_var_" ++ show c) p, c)
 
-mkSingleSubst :: TypeArg -> State Int (TypeArg, Type)
+mkSingleSubst :: TypeArg -> State Int (Int, Type)
 mkSingleSubst tv@(TypeArg _ k _ _) =
-    do ty <- freshVar $ posOfTypeArg tv
-       return (tv, TypeName ty k 1)
+    do (ty, c) <- freshVar $ posOfTypeArg tv
+       return (c, TypeName ty k c)
 
-mkSubst :: [TypeArg] -> State Int [(TypeArg, Type)]
+mkSubst :: [TypeArg] -> State Int [(Int, Type)]
 mkSubst tas = mapM mkSingleSubst tas
  		   
-type Subst = Map.Map TypeArg Type
+type Subst = Map.Map Int Type
 
 eps :: Subst
 eps = Map.empty
@@ -164,7 +164,7 @@ rename m t = case t of
 
 instance Unifiable Type where
     subst m = rename (\ i k n -> 
-	       case Map.lookup (TypeArg i k Other []) m of
+	       case Map.lookup n m of
 	       Just s -> s
 	       _ -> TypeName i k n)
     match m (a, s) (b, t) = mm m (a, expandAlias m s) 
@@ -176,21 +176,21 @@ instance Unifiable Type where
       mm tm (b1, LazyType t1 _) t2 = mm tm (b1, t1) t2
       mm tm t1 (b2, KindedType t2 _ _) = mm tm t1 (b2, t2)
       mm tm (b1, KindedType t1 _ _) t2 = mm tm (b1, t1) t2
-      mm tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
+      mm tm (b1, t1@(TypeName i1 _ v1)) (b2, t2@(TypeName i2 _ v2)) =
         if relatedTypeIds tm i1 i2
            then return eps
         else if v1 > 0 && b1 then return $ 
-                Map.single (TypeArg i1 k1 Other []) t2
+                Map.single v1 t2
                 else if v2 > 0 && b2 then return $
-                     Map.single (TypeArg i2 k2 Other []) t1
+                     Map.single v2 t1
                         else uniResult "typename" i1 
                                     "is not unifiable with typename" i2
-      mm tm (b1, TypeName i1 k1 v1) (_, t2) =
+      mm tm (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
            if occursIn tm i1 t2 then 
               uniResult "var" i1 "occurs in" t2
            else return $
-                        Map.single (TypeArg i1 k1 Other []) t2
+                        Map.single v1 t2
         else uniResult "typename" i1  
                             "is not unifiable with type" t2
       mm tm t2 t1@(_, TypeName _ _ _) = mm tm t1 t2
@@ -244,11 +244,17 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ (_, Nothing) = return eps
     match tm (b1, Just a1) (b2, Just a2) = match tm (b1, a1) (b2, a2)
 
+repl :: Map.Map TypeArg Type -> Type -> Type
+repl m = rename ( \ i k n -> 
+		 case Map.lookup (TypeArg i k Other []) m of
+		      Just s -> s 
+		      Nothing -> TypeName i k n)
+
 expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
     let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
-	  ExpandedType t $ subst (Map.fromList (zip ps $ reverse as)) ta
+	  ExpandedType t $ repl (Map.fromList (zip ps $ reverse as)) ta
 	  else ta
 
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)

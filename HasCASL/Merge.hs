@@ -82,9 +82,12 @@ mergeTypeInfo tm c t1 t2 =
 mergeTypeDefn :: TypeMap -> Int -> TypeDefn -> TypeDefn -> Result TypeDefn
 mergeTypeDefn tm c d1 d2 = 
 	case (d1, d2) of 
-	    (TypeVarDefn, TypeVarDefn) -> return d1
-	    (TypeVarDefn, _) -> fail "merge: TypeVarDefn"
-	    (_, TypeVarDefn) -> fail "merge: TypeVarDefn"
+	    (TypeVarDefn 0, TypeVarDefn _) -> return d2
+	    (TypeVarDefn _, TypeVarDefn 0) -> return d1
+	    (TypeVarDefn c1, TypeVarDefn c2) -> 
+		if c1 == c2 then return d1 else fail "merge: TypeVarDefn"
+	    (TypeVarDefn _, _) -> fail "merge: TypeVarDefn"
+	    (_, TypeVarDefn _) -> fail "merge: TypeVarDefn"
 	    (_, DatatypeDefn _) -> return d2 
 	    (PreDatatype, _) -> fail "expected data type definition"
 	    (_, PreDatatype) -> return d1
@@ -190,14 +193,13 @@ mergeConstrInfos tm (c : r) c2 =
 
 mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
 mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = 
-    do l <- mergeOps tm c l1 l2
-       return $ OpInfos l
--- trace (showPretty l1 "\n+ " ++ showPretty l2 "\n 0" ++ showPretty l "") l
+    do l <- mergeOps (addUnit tm) c l1 l2
+       return $ OpInfos  l
 
 mergeOps :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
 mergeOps _ _ [] l = return l
 mergeOps tm c (o:os) l2 = do 
-    let (es, us) = partition (isUnifiable (addUnit tm) c 
+    let (es, us) = partition (isUnifiable tm c 
 			      (opType o) . opType) l2
     l1 <- mergeOps tm c os us 
     if null es then return (o : l1)

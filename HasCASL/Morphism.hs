@@ -140,8 +140,8 @@ inclusionMor e1 e2 =
      then return (embedMorphism e1 e2)
      else pplain_error (ideMor initialEnv)
           (ptext "Attempt to construct inclusion between non-subsignatures:"
-           $$ ptext "Singature 1:" $$ printText e1
-           $$ ptext "Singature 2:" $$ printText e2)
+           $$ ptext "Signature 1:" $$ printText e1
+           $$ ptext "Signature 2:" $$ printText e2)
            nullPos
 
 symbMapToMorphism :: Env -> Env -> SymbolMap -> Result Morphism

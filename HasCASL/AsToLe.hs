@@ -36,19 +36,19 @@ basicAnalysis :: (BasicSpec, Env, GlobalAnnos) ->
                  Result (BasicSpec, Env, Env, [Named Sentence])
 basicAnalysis (b, e, ga) = 
     let (nb, ne) = runState (anaBasicSpec ga b) e 
-	ce = cleanEnv ne
+        ce = cleanEnv ne
         in Result (reverse $ envDiags ne) $ 
            Just (nb, diffEnv ce e, ce, reverse $ sentences ne) 
 
 -- | is the signature empty?
 isEmptyEnv :: Env -> Bool
 isEmptyEnv e = Map.isEmpty (classMap e)
-	       && Map.isEmpty (typeMap e)
-	       && Map.isEmpty (assumps e)
+               && Map.isEmpty (typeMap e)
+               && Map.isEmpty (assumps e)
 
 -- | is the first argument a subsignature of the second?
 isSubEnv :: Env -> Env -> Bool
-isSubEnv e1 e2 = isEmptyEnv (diffEnv e1 e2)
+isSubEnv e1 e2 = isEmptyEnv $ diffEnv e1 e2
 
 -- a rough equality
 instance Eq Env where 
@@ -56,11 +56,12 @@ instance Eq Env where
 
 -- | compute difference of signatures 
 diffEnv :: Env -> Env -> Env
-diffEnv e1 e2 = let tm = typeMap e2 in
+diffEnv e1 e2 = let tm = typeMap e2 
+                    c = max (counter e1) $ counter e2 in
     initialEnv
        { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
        , typeMap = Map.differenceWith diffType (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss tm) (assumps e1) (assumps e2)
+       , assumps = Map.differenceWith (diffAss c tm) (assumps e1) (assumps e2)
        }
 
 -- | compute difference of class infos
@@ -72,20 +73,20 @@ diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
 diffType _ _ = Nothing
 
 -- | compute difference of overloaded operations
-diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
-diffAss tm (OpInfos l1) (OpInfos l2) = 
+diffAss :: Int -> TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
+diffAss c tm (OpInfos l1) (OpInfos l2) = 
     let l3 = diffOps l1 l2 in
-	if null l3 then Nothing else Just (OpInfos l3)
+        if null l3 then Nothing else Just (OpInfos l3)
     where diffOps [] _ = []
-	  diffOps (o:os) ps = 
-	      let rs = diffOps os ps in
-	      if any (\ p -> isUnifiable tm 0 (opType o) (opType p)) ps
-		 then rs else o:rs
+          diffOps (o:os) ps = 
+              let rs = diffOps os ps in
+              if any (\ p -> isUnifiable tm c (opType o) (opType p)) ps
+                 then rs else o:rs
  
 -- | environment with predefined types and operations
 addPreDefs :: Env -> Env  
 addPreDefs e = e { typeMap = addUnit $ typeMap e
-		    , assumps = addOps $ assumps e }
+                    , assumps = addOps $ assumps e }
 
 -- | environment with predefined types and operations
 preEnv :: Env  
@@ -94,10 +95,10 @@ preEnv = addPreDefs initialEnv
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv 
-	     { classMap = classMap e
+             { classMap = classMap e
              , typeMap = Map.filter (not . isTypeVarDefn) $ typeMap e
-	     , assumps = filterVars $ assumps e }
-	     preEnv 
+             , assumps = filterVars $ assumps e }
+             preEnv 
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
@@ -105,15 +106,15 @@ anaBasicSpec ga b@(BasicSpec l) = do
     e <- get
     let newAs = assumps e
         preds = Set.fromDistinctAscList 
-		   $ Map.keys $ Map.filter (any ( \ oi -> 
-				 case opDefn oi of
-				 NoOpDefn Pred -> True
-				 Definition Pred _ -> True
-				 _ -> False) . opInfos) newAs
-	newPreds = idsOfBasicSpec b 
-	rels = Set.union preds newPreds
-	newGa = addBuiltins ga
-	precs = mkPrecIntMap $ prec_annos newGa
+                   $ Map.keys $ Map.filter (any ( \ oi -> 
+                                 case opDefn oi of
+                                 NoOpDefn Pred -> True
+                                 Definition Pred _ -> True
+                                 _ -> False) . opInfos) newAs
+        newPreds = idsOfBasicSpec b 
+        rels = Set.union preds newPreds
+        newGa = addBuiltins ga
+        precs = mkPrecIntMap $ prec_annos newGa
     put (addPreDefs e) { preIds = (precs, rels) }
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
@@ -148,7 +149,7 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putAssumps as -- restore
        let newFs = catMaybes ts
            sens = map ( \ f -> NamedSen (getRLabel f) $ Formula $ item f) 
-		  newFs 
+                  newFs 
        appendSentences sens
        return $ AxiomItems (catMaybes ds) newFs ps
 anaBasicItem ga (Internal l ps) = 
@@ -166,11 +167,8 @@ anaSigItems ga _ (OpItems b l ps) =
 
 -- | analyse a class item
 anaClassItem :: GlobalAnnos -> Instance -> ClassItem 
-		    -> State Env ClassItem
+                    -> State Env ClassItem
 anaClassItem ga _ (ClassItem d l ps) = 
     do cd <- anaClassDecls d 
        ul <- mapAnM (anaBasicItem ga) l
        return $ ClassItem cd ul ps
-
-
-

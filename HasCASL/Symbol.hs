@@ -27,25 +27,11 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 instance Eq TySc where
-    TySc sc1 == TySc sc2 = 
-	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
-	    in maybe False (const True) ms
+    TySc sc1 == TySc sc2 = sc1 == sc2
 
 instance Ord TySc where
--- this does not match with Eq TypeScheme!
-    TySc sc1 <= TySc sc2 = 
-	TySc sc1 == TySc sc2 || 
-	         let (t1, c) = runState (freshInst sc1) 1
-		     t2 = evalState (freshInst sc2) c
-		     v1 = varsOf t1
-		     v2 = varsOf t2
-                 in case compare (Set.size v1) $ Set.size v2 of 
-			LT -> True
-			EQ -> t1 <= subst (Map.fromAscList $
-			    zipWith (\ v (TypeArg i k _ _) ->
-				     (v, TypeName i k 1)) 
-					   (Set.toList v1) $ Set.toList v2) t2
-			GT -> False 
+    TySc (TypeScheme v1 t1 _) <= TySc (TypeScheme v2 t2 _) 
+	= (v1, t1) <= (v2, t2) 
 
 data SyTy = OpAsITy TySc
 	  | TypeAsITy Kind

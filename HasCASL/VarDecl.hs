@@ -111,8 +111,12 @@ addTypeKind warn d i k =
        c <- gets counter
        let rk = rawKind k
        case Map.lookup i tk of
-	      Nothing -> putTypeMap $ Map.insert i 
-			 (TypeInfo rk [k] [] d) tk
+	      Nothing -> case d of
+	          TypeVarDefn _ -> do 
+		      (_, v) <- toEnvState $ freshVar (posOfId i) 
+		      putTypeMap $ Map.insert i 
+			 (TypeInfo rk [k] [] $ TypeVarDefn v) tk
+		  _ -> putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  if rk == ok
 		     then do let isKnownInst = k `elem` ks
@@ -148,7 +152,7 @@ anaTypeVarDecl(TypeArg t k s ps) =
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env (Maybe TypeArg)
 addTypeVarDecl warn ta@(TypeArg t k _ _) = 
-    do mi <- addTypeId warn TypeVarDefn Plain k t
+    do mi <- addTypeId warn (TypeVarDefn 0) Plain k t
        return $ fmap (const ta) mi
 
 -- | compute arity from a 'Kind'
@@ -304,7 +308,7 @@ makeMonomorph (VarDecl v t sk ps) =
     let s = Map.fromAscList $ map ( \ a@(TypeArg i k _ _) -> 
 				    (a, TypeName i k 0)) $ 
 	    Set.toList $ varsOf t
-	in VarDecl v (subst s t) sk ps
+	in VarDecl v (repl s t) sk ps
 
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
@@ -373,8 +377,8 @@ anaPattern pat =
     _ -> return pat
     where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
 	    MixfixType [] -> do
-	        tvar <- toEnvState $ freshVar $ posOfVarDecl vd
-		return $ VarDecl v (TypeName tvar star 1) ok ps
+	        (tvar, c) <- toEnvState $ freshVar $ posOfVarDecl vd
+		return $ VarDecl v (TypeName tvar star c) ok ps
 	    _ -> do mt <- anaStarType t 
 		    case mt of 
 		        Just ty -> return $ VarDecl v ty ok ps 

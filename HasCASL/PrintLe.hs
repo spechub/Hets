@@ -39,7 +39,7 @@ printGenKind k = case k of
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
     printText0 _ PreDatatype = text "%(data type)%"
-    printText0 _ TypeVarDefn = text "%(var)%"
+    printText0 _ (TypeVarDefn i)= text ("%(var_" ++ show i ++ ")%")
     printText0 ga (AliasTypeDefn s) = text assignS 
 				      <+> printPseudoType ga s
     printText0 ga (Supertype v t f) = text equalS <+> 
