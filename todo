@@ -291,6 +291,8 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+BinInt.casl: revealing in Int1 does not work correctly
+
 from Stefan Wölfl:
 computeTheory does not work across library imports
 local theorems
