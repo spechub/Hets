@@ -220,7 +220,7 @@ data HsBangType
   deriving (Eq,Show)
 
 data HsRhs
-	 = HsUnGuardedRhs HsExp
+ 	 = HsUnGuardedRhs HsExp
 	 | HsGuardedRhss  [HsGuardedRhs]
   deriving (Eq,Show)
 
