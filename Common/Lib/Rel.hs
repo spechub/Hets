@@ -87,7 +87,7 @@ fromList :: Ord a => [(a, a)] -> Rel a
 fromList = foldr (\ (a, b) r -> insert a b r ) empty
 
 toList ::  Ord a => Rel a -> [(a, a)]
-toList = concatMap (\ (a , bs) -> zip (repeat a) (Set.toList bs)) 
+toList = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) (Set.toList bs)) 
 	 . Map.toList . toMap
 
 instance (Show a, Ord a) => Show (Rel a) where
