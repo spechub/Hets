@@ -60,6 +60,12 @@ dummyT = Type("dummy",[])
 boolType :: Typ
 boolType = Type("bool",[])
 
+mkOptionType :: Typ -> Typ
+mkOptionType t = Type("option",[t])
+
+mkProductType :: Typ -> Typ -> Typ
+mkProductType t1 t2 = Type ("*",[t1,t2])
+
 s --> t = Type("fun",[s,t])
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
