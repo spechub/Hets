@@ -1,17 +1,40 @@
+
+{- |
+Module      :  $Header$
+Copyright   :  Christian Maeder and Uni Bremen 2003 
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable
+    
+   precedence check for the mixfix analysis
+
+-}
+
 module Common.Precedence where
 
 import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 
-begPlace, endPlace :: Id -> Bool
+-- | 'Id' starts with a 'Place'
+begPlace :: Id -> Bool
 begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
+-- | 'Id' ends with a 'Place'
+endPlace :: Id -> Bool
 endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
 
-isLeftArg, isRightArg :: Id -> Int -> Bool
+-- | check if a left argument will be added.
+-- (The 'Int' is the number of current arguments.)
+isLeftArg :: Id -> Int -> Bool
 isLeftArg op num = begPlace op && num == 0
+-- | check if a right argument will be added.
+isRightArg :: Id -> Int -> Bool
 isRightArg op num = endPlace op && num + 1 == placeCount op
 
+-- | compare precedences of a left or right argument and a top-level operator.
+-- (The 'Bool' indicates if the operator is any infix .)
 comparePrecs :: GlobalAnnos -> Bool -> AssocEither -> Id -> Id -> Bool
 comparePrecs ga isInfixOp ass arg op = 
     case precRel (prec_annos ga) op arg of
@@ -29,6 +52,8 @@ comparePrecs ga isInfixOp ass arg op =
             -- (not possible on the right side)
 	   _ -> True
 
+-- | check precedences of an argument and a top-level operator.
+-- (The 'Int' is the number of current arguments of the operator.)
 checkPrecs :: GlobalAnnos -> Id -> Id -> Int -> Bool
 checkPrecs ga arg op num =
     if isLeftArg op num 
