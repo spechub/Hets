@@ -65,8 +65,9 @@ addSort :: SORT -> State Env ()
 addSort s = 
     do e <- get
        let m = sortSet e
-       put e { sortSet = Set.insert s m }
-       addDiags $ if Set.member s m then [mkDiag Hint "known sort" s] else []
+       if Set.member s m then 
+	  addDiags [mkDiag Hint "known sort" s] 
+	  else put e { sortSet = Set.insert s m }
 
 checkSort :: SORT -> State Env ()
 checkSort s = 
@@ -88,9 +89,9 @@ addVar s v =
     do e <- get
        let m = varMap e
            l = Map.findWithDefault Set.empty v m
-       put e { varMap = Map.insert v (s `Set.insert` l) m }
-       addDiags $ if s `Set.member` l then 
-		    [mkDiag Hint "known var" v] else []
+       if s `Set.member` l then 
+	  addDiags [mkDiag Hint "known var" v] 
+	  else put e { varMap = Map.insert v (s `Set.insert` l) m }
 
 addOp :: OpType -> Id -> State Env ()
 addOp ty i = 
@@ -98,9 +99,9 @@ addOp ty i =
        e <- get
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
-       put e { opMap = Map.insert i (ty `Set.insert` l) m }
-       addDiags $ if ty `Set.member` l then 
-		    [mkDiag Hint "known op" i] else []
+       if ty `Set.member` l then 
+	  addDiags [mkDiag Hint "known op" i] 
+	  else put e { opMap = Map.insert i (ty `Set.insert` l) m }
 
 addPred :: PredType -> Id -> State Env ()
 addPred ty i = 
@@ -108,12 +109,12 @@ addPred ty i =
        e <- get
        let m = predMap e
            l = Map.findWithDefault Set.empty i m
-       put e { predMap = Map.insert i (ty `Set.insert` l) m }
-       addDiags $ if ty `Set.member` l then 
-		    [mkDiag Hint "known pred" i] else []
+       if ty `Set.member` l then 
+	  addDiags [mkDiag Hint "known pred" i] 
+	  else put e { predMap = Map.insert i (ty `Set.insert` l) m }
 
 allOpIds :: Env -> Set.Set Id
-allOpIds = Set.fromList . Map.keys . opMap 
+allOpIds = Set.fromAscList . Map.keys . opMap 
 
 formulaIds :: Env -> Set.Set Id
 formulaIds e = 
@@ -121,7 +122,7 @@ formulaIds e =
 	   `Set.union` allOpIds e
 
 allPredIds :: Env -> Set.Set Id
-allPredIds = Set.fromList . Map.keys . predMap 
+allPredIds = Set.fromAscList . Map.keys . predMap 
 
 addDiags :: [Diagnosis] -> State Env ()
 addDiags ds = 
