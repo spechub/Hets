@@ -1,4 +1,4 @@
-type s, t
+type s,t < t
 
 op a, b  : s
 

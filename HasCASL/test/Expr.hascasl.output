@@ -1,24 +1,25 @@
 type bool ::= true | 
 	      false
-var x : bool
-. case (var x : bool) of true : bool -> () | 
-			 false : bool -> ()
-. let x : bool = (op true : bool);
-      y : bool = (op false : bool);
-      z : bool = (var x : bool) in ()
+op l : bool
+type Unit
+op a : Unit = case (op l : bool) of true : bool -> () | 
+				    false : bool -> ()
+op b : Unit = let x : bool = (op true : bool);
+		  y : bool = (op false : bool);
+		  z : bool = (var x : bool) in ()
+op b : Unit -> Unit = \ x : _var_169 . ()
 %% Type Constructors -----------------------------------------------------
+Unit : Type
 bool : Type %[type __ ::=
 	      true : -> __
 	      false : -> __]%
 %% Assumptions -----------------------------------------------------------
+a : Unit = case (op l : bool) of true : bool -> () | 
+				 false : bool -> ()
+b : Unit -> Unit = \ x : _var_169 . ()
+  : Unit = let x : bool = (op true : bool);
+	       y : bool = (op false : bool);
+	       z : bool = (var x : bool) in ()
 false : bool %(construct bool)%
+l : bool
 true : bool %(construct bool)%
-x : bool %(var)%
-%% Sentences -------------------------------------------------------------
-case (var x : bool) of true : bool -> () | 
-		       false : bool -> () %()%
-let x : bool = (op true : bool);
-    y : bool = (op false : bool);
-    z : bool = (var x : bool) in () %()%
-%% Diagnostics -----------------------------------------------------------
-Hint (line 3, column 9) not a class 'bool'
