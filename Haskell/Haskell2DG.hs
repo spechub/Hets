@@ -79,18 +79,6 @@ import Haskell.HaskellUtils      (extractSentences)
 import qualified Common.Lib.Map as Map
 import Common.GlobalAnnotations  (emptyGlobalAnnos)
 
-data HaskellEnv = 
-     HasEnv Timing       -- timing values for each stage
-            (Env Scheme) -- output variable assumptions (may
-                         -- be local, and pattern variables) 
-            (Env Scheme) -- output data cons assumptions 
-            ClassHierarchy -- output class Hierarchy 
-            KindEnv      -- output kinds 
-            IdentTable   -- info about identifiers in 
-                         -- the module
-            AHsModule    -- renamed module 
-            [AHsDecl]    -- synonyms defined in this module
-
 -- toplevel function: Creates DevGraph and 
 --   LibEnv from a .hs file
 --   (including all imported modules)
@@ -110,10 +98,10 @@ anaHaskellFileAux :: String -> -- DGraph ->
 anaHaskellFileAux srcFile =
   do 
      moduleSyntax <- parseFile srcFile
-     (hasEnv, modInfo, le) <- typeInference moduleSyntax
+     (absSyn, modInfo, le) <- typeInference moduleSyntax
      let libName = Lib_id(Indirect_link srcFile [])
     -- convert HaskellEnv to DGraph, build up corresponding LibEnv
-     let (dg',le') = hasEnv2DG libName hasEnv modInfo le
+     let (dg',le') = hasEnv2DG libName absSyn modInfo le
      return (Just(libName, moduleSyntax, dg', le'))
 
 parseFile :: String -> IO HsModule
@@ -123,7 +111,7 @@ parseFile srcFile =
      return (parseHsSource src)
 
 typeInference :: HsModule 
-              -> IO (HaskellEnv, ModuleInfo, LibEnv)
+              -> IO (AHsModule, ModuleInfo, LibEnv)
 typeInference moduleSyntax =
    do
     -- re-group matches into their associated 
@@ -173,16 +161,7 @@ typeInference moduleSyntax =
                                 infixDecls = getInfixDecls moduleRenamed,
                                 synonyms = moduleSynonyms }
 
-     let hasEnv = HasEnv timings 
-                         moduleEnv
-                         dataConEnv
-                         newClassHierarchy
-                         newKindInfoTable
-                         moduleIds
-                         moduleRenamed
-                         moduleSynonyms
-
-     return (hasEnv, modInfo, le)
+     return (moduleRenamed, modInfo, le)
 
 
 
@@ -205,10 +184,9 @@ anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le =
 --      then do return (getModInfo ln le, le)
 --      else              
       do modSyn <- parseFile (fileName aMod)
-         (hasEnv, modInfo, leImports) <- typeInference modSyn
+         (annoSyn, modInfo, leImports) <- typeInference modSyn
          let le' = le `Map.union` leImports
          let filteredModInfo = filtModInfo aMod modInfo maybeListOfIdents
-         let annoSyn = getAbsSyn hasEnv
          case annoSyn of
               AHsModule modName _ [] _ -> 
                    let (dg,node) = addNode empty annoSyn filteredModInfo
@@ -226,7 +204,6 @@ anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le =
               filterModuleInfo aModule modInfo $
                expandDotsInTyCons aModule (tyconsMembers modInfo) $
                 map importSpecToExportSpec importSpecs
-       getAbsSyn (HasEnv _ _ _ _ _ _ absSyn _) = absSyn
 --        getModInfo ln le = 
 --                 let (_, _, dg) = Map.find ln le
 --                 in findModInfo (ln2SimpleId ln) (getlabNodes dg)
@@ -255,9 +232,9 @@ addLinks (idecl:idecls) dg mainNode le =
          where getModName (AHsImportDecl _ name _ _ _) = name
                
 
-hasEnv2DG :: LIB_NAME -> HaskellEnv -> ModuleInfo 
+hasEnv2DG :: LIB_NAME -> AHsModule -> ModuleInfo 
                       -> LibEnv -> (DGraph, LibEnv)
-hasEnv2DG ln (HasEnv _ _ _ _ _ _ aMod _) modInfo le =
+hasEnv2DG ln aMod modInfo le =
      let (dg, node) = addNode empty aMod modInfo
          dg' = addLinks (getImps aMod) dg node le
      in (dg', (addDG2LibEnv le ln node dg'))
