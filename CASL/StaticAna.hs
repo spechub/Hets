@@ -90,7 +90,12 @@ addSubsort :: SORT -> SORT -> State Env ()
 addSubsort super sub = 
     do e <- get
        mapM_ checkSort [super, sub] 
-       put e { sortRel = Rel.transClosure $ Rel.insert sub super $ sortRel e }
+       put e { sortRel = Rel.insert sub super $ sortRel e }
+
+closeSubsortRel :: State Env ()
+closeSubsortRel= 
+    do e <- get
+       put e { sortRel = Rel.transClosure $ sortRel e }
 
 addVars :: VAR_DECL -> State Env ()
 addVars (Var_decl vs s _) = mapM_ (addVar s) vs
@@ -177,6 +182,7 @@ ana_BASIC_ITEMS ga bi =
 	do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
            mapAnM (ana_DATATYPE_DECL Free) al 
+           closeSubsortRel 
 	   return bi
     Sort_gen al ps ->
 	do ul <- mapAnM (ana_SIG_ITEMS ga Generated) al 
@@ -221,6 +227,7 @@ ana_SIG_ITEMS ga gk si =
     case si of 
     Sort_items al ps -> 
 	do ul <- mapAnM (ana_SORT_ITEM ga) al 
+           closeSubsortRel
 	   return $ Sort_items ul ps
     Op_items al ps -> 
 	do ul <- mapAnM (ana_OP_ITEM ga) al 
@@ -232,6 +239,7 @@ ana_SIG_ITEMS ga gk si =
 	do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
 	   mapAnM (ana_DATATYPE_DECL gk) al 
+           closeSubsortRel
 	   return si
 
 ana_SORT_ITEM :: GlobalAnnos -> SORT_ITEM -> State Env SORT_ITEM
@@ -245,13 +253,13 @@ ana_SORT_ITEM ga si =
 	   mapM_ (addSubsort i) il
 	   return si
     Subsort_defn sub v super af ps -> 
-	do addSort sub
-           ops <- gets allOpIds 
+	do ops <- gets allOpIds 
 	   preds <- gets allPredIds
            let Result ds mf = resolveFormula ga 
 			      (Set.insert (simpleIdToId v) ops) preds $ item af
            addDiags ds 
-	   addSubsort super sub
+	   addSort sub
+           addSubsort super sub
 	   return $ case mf of 
 	            Nothing -> Subsort_decl [sub] super ps
 		    Just f -> Subsort_defn sub v super af { item = f } ps
@@ -534,5 +542,5 @@ instance PrettyPrint Sign where
 	     $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
 	     $ Map.toList $ predMap s)
-     where printRel (s,subsorts) =
-             printText0 ga s <+> ptext "<" <+> printSet ga subsorts
+     where printRel (subs, supersorts) =
+             printText0 ga subs <+> ptext "<" <+> printSet ga supersorts
