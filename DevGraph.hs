@@ -24,20 +24,25 @@ Integrate stuff from Saarbrücken
 
 module DevGraph where
 
+import Logic
 import Grothendieck
+import AS_Library
+import GlobalAnnotations
+
 import Graph
 import FiniteMap
 import Id
 
 data DGNode = DGNode {
+                dgn_name :: Maybe SIMPLE_ID
                 dgn_sign :: G_sign, -- only the delta
                 dgn_sens :: G_l_sentence_list, 
                                 -- or better [(String,G_sentence)] ???
                 dgn_origin :: DGOrigin
               }   
             | DGRef { 
-                dgn_name :: SIMPLE_ID,
-                dgn_libname :: SIMPLE_ID, 
+                dgn_renamed :: SIMPLE_ID,
+                dgn_libname :: LIB_NAME, 
                 dgn_node :: Node
               }
             
@@ -66,11 +71,23 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGLocal | DGClosed 
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView | DGFitView | DGFitViewImp | DGFitViewA | DGFitViewAImp
+              deriving (Eq,Show)
 
 type DGraph = Graph DGNode DGLink
 
-type ExtGenSig = (Node,[Node],Node)
-type ExtViewSig = (Node,G_morphism,ExtGenSig)
+data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
+
+getNode (NodeSig (n,sigma)) = Just n
+getNode (EmptyNode _) = Nothing
+
+getSig (NodeSig (n,sigma)) = sigma
+getSig (EmptyNode (Logic lid)) = G_sign lid (empty_signature lid)
+
+getLogic (NodeSig (n,G_sign lid _)) = Logic lid
+getLogic (EmptyNode l) = l
+
+type ExtGenSig = (NodeSig,[NodeSig],NodeSig)
+type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 type ArchSig = () -- to be done
 type UnitSig = () -- to be done
 
@@ -81,12 +98,12 @@ data GlobalEntry = SpecEntry ExtGenSig
 
 type GlobalEnv = FiniteMap SIMPLE_ID GlobalEntry
 
-type LibEntry = (GlobalEnv,DGraph)
+type LibEntry = (GlobalEnv,DGraph,GlobalAnnos)
 
-type LibEnv = FiniteMap SIMPLE_ID LibEntry
+type LibEnv = FiniteMap LIB_NAME LibEntry
 
 
 get_dgn_name :: DGNode -> Maybe SIMPLE_ID
-get_dgn_name (DGNode _ _ (DGSpecInst name)) = Just name
+get_dgn_name (DGNode (Just name) _ _ _) = Just name
 get_dgn_name (DGRef name _ _) = Just name
 get_dgn_name _ = Nothing
