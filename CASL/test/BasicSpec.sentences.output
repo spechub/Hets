@@ -1,1386 +1,2596 @@
-[  . forall X1:Nat . pre(suc(X1)) = X1 %(ga_selector_pre)%,
-   . forall X1:Nat; Y1:Nat
-         . suc(X1) = suc(Y1) <=> X1 = Y1 %(ga_injective_suc)%,
-   . forall Y1:Nat . not 0 = suc(Y1) %(ga_disjoint_0_suc)%,
-   . not def pre(0) %(ga_selector_undef_pre_0)%,
-  generated{sort Nat; op 0 : Nat;
-                      op suc : Nat -> Nat} %(ga_generated_Nat)%,
-   . forall n:Nat . 0 <= n %(Nat_leq_def1)%,
-   . forall n:Nat . not suc(n) <= 0 %(Nat_leq_def2)%,
-   . forall m:Nat; n:Nat
-         . suc(m) <= suc(n) <=> m <= n %(Nat_leq_def3)%,
-   . forall m:Nat; n:Nat . m >= n <=> n <= m %(Nat_geq_def)%,
-   . forall m:Nat; n:Nat
-         . m < n <=> m <= n /\ not m = n %(Nat_less_def)%,
-   . forall m:Nat; n:Nat . m > n <=> m < n %(Nat_greater_def)%,
-   . forall m:Nat . 0 + m = m %(Nat_add_0)%,
-   . forall m:Nat; n:Nat . suc(n) + m = suc(n + m) %(Nat_add_suc)%,
-   . forall m:Nat . 0 * m = 0 %(Nat_mult_0)%,
-   . forall m:Nat; n:Nat . suc(n) * m = n * m + m %(Nat_mult_suc)%,
-   . forall m:Nat . m ^ 0 = 1 %(Nat_power_0)%,
-   . forall m:Nat; n:Nat . m ^ suc(n) = m * m ^ n %(Nat_power_suc)%,
-   . forall m:Nat; n:Nat
-         . min(m, n) = m when m <= n else n %(Nat_min_def)%,
-   . forall m:Nat; n:Nat
-         . max(m, n) = n when m <= n else m %(Nat_max_def)%,
-   . forall m:Nat . + m = m %(plus_def)%,
-   . forall n:Nat . abs(n) = n %(Nat_abs)%,
-   . forall m:Nat . odd(m) <=> not even(m) %(Nat_odd_def)%,
-   . even(0) %(Nat_even_0)%,
-   . forall m:Nat . even(suc(m)) <=> odd(m) %(Nat_even_suc)%,
-   . 0 ! = 1 %(Nat_factorial_0)%,
-   . forall n:Nat . suc(n) ! = suc(n) * n ! %(Nat_factorial_suc)%,
-   . forall m:Nat; n:Nat; r:Nat
-         . m -? n = r <=> m = r + n %(Nat_sub_def)%,
-   . forall m:Nat . not def m /? 0 %(Nat_divide_0)%,
-   . forall m:Nat; n:Nat; r:Nat
-         . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%,
-   . forall m:Nat; n:Nat; r:Nat
-         . m div n = r <=>
-               (exists s:Nat . m = n * r + s /\ s < n) %(Nat_div)%,
-   . forall m:Nat; n:Nat; s:Nat
-         . m mod n = s <=>
-               (exists r:Nat . m = n * r + s /\ s < n) %(Nat_mod)%,
-   . forall m:Nat; n:Nat . m quot n = m div n %(Nat_quot)%,
-   . forall m:Nat; n:Nat . m rem n = m mod n %(Nat_rem)%,
-   . 1 = suc(0) %(Nat_1_def)%,  . 2 = suc(1) %(Nat_2_def)%,
-   . 3 = suc(2) %(Nat_3_def)%,  . 4 = suc(3) %(Nat_4_def)%,
-   . 5 = suc(4) %(Nat_5_def)%,  . 6 = suc(5) %(Nat_6_def)%,
-   . 7 = suc(6) %(Nat_7_def)%,  . 8 = suc(7) %(Nat_8_def)%,
-   . 9 = suc(8) %(Nat_9_def)%,
-   . forall m:Nat; n:Nat
-         . m @@ n = m * suc(9) + n %(Nat_decimal_def)%,
-   . forall p:Nat . p in Pos <=> p > 0,
-   . forall x:Nat; y:Nat . min(x, y) = min(y, x) %(ga_comm_min)%,
-   . forall x:Nat; y:Nat . max(x, y) = max(y, x) %(ga_comm_max)%,
-   . forall x:Nat; y:Nat; z:Nat
-         . min(x, min(y, z)) = min(min(x, y), z) %(ga_assoc_min)%,
-   . forall x:Nat; y:Nat; z:Nat
-         . max(x, max(y, z)) = max(max(x, y), z) %(ga_assoc_max)%,
-   . forall m:Nat; n:Nat . def m -? n <=> m >= n %(Nat_sub_dom)%,
-   . forall m:Nat; n:Nat
-         . def m /? n <=> m mod n = 0 %(Nat_divide_dom)%,
-   . forall m:Nat; n:Nat . def m div n <=> not n = 0 %(Nat_div_dom)%,
-   . forall m:Nat; n:Nat . def m mod n <=> not n = 0 %(Nat_mod_dom)%,
-   . forall m:Nat; n:Nat
-         . def m quot n <=> not n = 0 %(Nat_quot_dom)%,
-   . forall m:Nat; n:Nat . def m rem n <=> not n = 0 %(Nat_rem_dom)%,
-   . forall r:Nat; s:Nat; t:Nat
-         . (r + s) * t = r * t + s * t %(Nat_distr)%,
-   . forall m:Nat . max(m, 0) = m %(Nat_max_unit)%,
-   . forall m:Nat . min(m, 0) = 0 %(Nat_min_0)%,
-  generated{sort Int; op __-__ : Nat *
-                                 Nat -> Int} %(ga_generated_Int)%,
-   . forall a:Nat; b:Nat; c:Nat; d:Nat
-         . a - b = c : Nat - d : Nat <=>
-               a : Nat + d : Nat = c + b %(Int_equality)%,
-   . forall a:Nat . inj(a : Nat) : Int = a - 0 %(Int_Nat_embedding)%,
-   . forall a:Nat; b:Nat; c:Nat; d:Nat
-         . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
-           + inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
-               inj(a : Nat + c : Nat) : Int - inj(b
-                                                  + d) : Int : Int %(Int_add_def)%,
-   . forall a:Nat; b:Nat; c:Nat; d:Nat
-         . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
-           * inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
-               inj(a : Nat * c : Nat + b * d) : Int - inj(b * c + a : Nat
-                                                                  * d : Nat) : Int : Int %(Int_mult_def)%,
-   . forall m:Int; n:Int . m - n = m + - n %(Int_sub_def)%,
-   . forall m:Int . + m = m %(Int_pos_def)%,
-   . forall a:Nat; b:Nat
-         . - inj(a : Nat) : Int - inj(b : Nat) : Int : Int : Int =
-               inj(b : Nat) : Int - inj(a : Nat) : Int : Int %(Int_neg_def)%,
-   . forall m:Int
-         . sign(m) =
-               inj(0 : Nat) : Int
-                   when m = inj(0 : Nat) : Int
-                   else inj(1 : Pos) : Int
-                            when m : Int > inj(0 : Nat) : Int
-                            else - inj(1 : Pos) : Int : Int %(Int_sign_def)%,
-   . forall m:Int; n:Int . m <= n <=> n - m in Nat %(Int_leq_def)%,
-   . forall m:Int; n:Int . m >= n <=> n <= m %(Int_geq_def)%,
-   . forall m:Int; n:Int
-         . m < n <=> m <= n /\ not m = n %(Int_less_def)%,
-   . forall m:Int; n:Int . m > n <=> m < n %(Int_greater_def)%,
-   . forall m:Int; n:Int
-         . min(m, n) = m when m <= n else n %(Int_min_def)%,
-   . forall m:Int; n:Int
-         . max(m, n) = n when m <= n else m %(Int_max_def)%,
-   . forall m:Int
-         . inj(abs(m)) : Int = - m if
-               m : Int < inj(0 : Nat) : Int %(Int_abs_def)%,
-   . forall a:Nat
-         . - inj(1 : Pos) : Int : Int ^ a : Nat : Int =
-               inj(1 : Pos) : Int
-                   when even(inj(a : Nat) : Int)
-                   else - inj(1 : Pos) : Int : Int %(Int_neg1_power_def)%,
-   . forall m:Int; a:Nat
-         . m ^ a =
-               sign(m) ^ a * inj(abs(m) ^ a) : Int : Int %(Int_power_def)%,
-   . forall m:Int
-         . even(m) <=> even(inj(abs(m)) : Int) %(Int_even_def)%,
-   . forall m:Int . odd(m) <=> not even(m) %(Int_odd_def)%,
-   . forall m:Int; n:Int
-         . m /? n =
-               sign(m) * sign(n) * inj(abs(m)
-                                       /? abs(n)) : Int : Int %(Int_divide)%,
-   . forall m:Int; n:Int
-         . inj(m mod n) : Int < inj(abs(n)) : Int if
-               not n = inj(0 : Nat) : Int %(Int_mod_range)%,
-   . forall m:Int; n:Int
-         . m = (m div n) * n + inj(m mod n) : Int : Int if
-               not n = inj(0 : Nat) : Int %(Int_mod__div_def)%,
-   . forall m:Int
-         . not def m : Int mod inj(0 : Nat) : Int : Nat %(Int_mod_zero)%,
-   . forall m:Int
-         . not def m : Int div inj(0 : Nat) : Int : Int %(Int_div_zero)%,
-   . forall m:Int; n:Int
-         . m quot n =
-               sign(m) * sign(n) * inj(abs(m)
-                                       quot abs(n)) : Int : Int %(Int_quot_def)%,
-   . forall m:Int; n:Int
-         . m rem n =
-               sign(m) * sign(n) * inj(abs(m)
-                                       rem abs(n)) : Int : Int %(Int_rem_def)%,
-   . forall a:Nat; b:Nat
-         . def a -? b =>
-               inj(a -? b) : Int =
-                   inj(a : Nat) : Int
-                   - inj(b : Nat) : Int : Int %(Int_Nat_sub_compat)%,
-   . forall m:Int
-         . m = sign(m) * inj(abs(m)) : Int : Int %(Int_abs_decomp)%,
-   . forall m:Int
-         . odd(m) <=> odd(inj(abs(m)) : Int) %(Int_odd_alt)%,
-   . forall m:Int; n:Int; r:Int
-         . m /? n = r <=>
-               not n = inj(0 : Nat) : Int /\ n * r = n %(Int_divide_dom1)%,
-   . forall m:Int; n:Int
-         . def m /? n <=> m mod n = 0 %(Int_divide_dom2)%,
-   . forall m:Int; n:Int
-         . def m mod n <=> not n = inj(0 : Nat) : Int %(Int_mod_dom)%,
-   . forall m:Int; n:Int
-         . m mod n = m : Int mod inj(abs(n)) : Int : Nat %(Int_mod_abs)%,
-   . forall m:Int; n:Int
-         . def m div n <=> not n = inj(0 : Nat) : Int %(Int_div_dom)%,
-   . forall m:Int; n:Int
-         . def m quot n <=> not n = inj(0 : Nat) : Int %(Int_quot_dom)%,
-   . forall m:Int; n:Int
-         . def m rem n <=> not n = inj(0 : Nat) : Int %(Int_rem_dom)%,
-   . forall m:Int; n:Int
-         . m = (m quot n) * n + (m rem n) if
-               not n = inj(0 : Nat) : Int %(Int_quot_rem)%,
-  generated{sort Rat; op __/__ : Int *
-                                 Pos -> Rat} %(ga_generated_Rat)%,
-   . forall i:Int; j:Int; p:Pos; q:Pos
-         . i / p = j / q <=>
-               i : Int * inj(q : Pos) : Int : Int =
-                   j : Int * inj(p : Pos) : Int : Int %(Rat_equality)%,
-   . forall i:Int . i / 1 = inj(i : Int) : Rat %(embeddingIntToRat)%,
-   . forall p:Pos; q:Pos; i:Int; j:Int
-         . (i / p) <= (j / q) <=>
-               i : Int * inj(q : Pos) : Int : Int <= j : Int
-                                                     * inj(p : Pos) : Int : Int %(Rat_leq_def)%,
-   . forall x:Rat; y:Rat . x >= y <=> y <= x %(Rat_geq_def)%,
-   . forall x:Rat; y:Rat
-         . x < y <=> x <= y /\ not x = y %(Rat_less_def)%,
-   . forall x:Rat; y:Rat . x > y <=> y < x %(Rat_greater_def)%,
-   . forall p:Pos; q:Pos; i:Int; j:Int
-         . (i / p) + (j / q) =
-               i : Int * inj(q : Pos) : Int : Int + j : Int
-                                                    * inj(p : Pos) : Int : Int : Int
-               / (p * q) : Rat %(Rat_add_def)%,
-   . forall x:Rat; y:Rat . x - y = x + - y %(Rat_sub_def)%,
-   . forall p:Pos; q:Pos; i:Int; j:Int
-         . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%,
-   . forall x:Rat
-         . not def x : Rat / inj(0 : Nat) : Rat : Rat %(Rat_divide_def1)%,
-   . forall x:Rat; y:Rat; z:Rat
-         . (x / y = z <=> z = x * y) if
-               not y = inj(0 : Nat) : Rat %(Rat_divide_def2)%,
-   . forall x:Rat . + x = x %(Rat_plus_def)%,
-   . forall p:Pos; i:Int . - (i / p) = - i / p %(Rat_minus_def)%,
-   . forall p:Pos; i:Int
-         . abs(i / p) = inj(abs(i)) : Int / p : Pos : Rat %(Rat_abs_def)%,
-   . forall x:Rat
-         . x : Rat ^ inj(0 : Nat) : Int : Rat =
-               inj(1 : Pos) : Rat %(Rat_power_0)%,
-   . forall n:Nat; x:Rat
-         . x : Rat ^ inj(suc(n)) : Int : Rat =
-               x : Rat * x : Rat
-                         ^ inj(n : Nat) : Int : Rat : Rat %(Rat_power_suc)%,
-   . forall p:Pos; x:Rat
-         . x : Rat ^ - inj(p : Pos) : Int : Int : Rat =
-               inj(1 : Pos) : Rat / x : Rat
-                                    ^ inj(p : Pos) : Int : Rat : Rat %(Rat_power_neg)%,
-   . forall x:Rat; y:Rat
-         . min(x, y) = x when x <= y else y %(Rat_min_def)%,
-   . forall x:Rat; y:Rat
-         . max(x, y) = y when x <= y else x %(Rat_max_def)%,
-   . forall i:Int; j:Int; p:Pos; q:Pos
-         . (i / p) / (j / q) =
-               (i / p) * inj(q : Pos) : Rat / inj(j : Int) : Rat : Rat : Rat if
-               not j = inj(0 : Nat) : Int %(Rat_divide_rule)%,
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall a:s . (var a : s) = (var a : s),
-   . forall X1:a; X2:t; X3:t; X4:t; X5:t
-         . a(c(X1, X2, X3, X4, X5)) = X2 %(ga_selector_a)%,
-   . forall X1:a; X2:t; X3:t; X4:t; X5:t
-         . b(c(X1, X2, X3, X4, X5)) = X3 %(ga_selector_b)%,
-   . forall X1:a; X2:t; X3:t; X4:t; X5:t
-         . a(c(X1, X2, X3, X4, X5)) = X4 %(ga_selector_a)%,
-   . forall X1:a; X2:t; X3:t; X4:t; X5:t
-         . d(c(X1, X2, X3, X4, X5)) = X5 %(ga_selector_d)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
-   . forall X1:a; X2:t; X3:t; X4:t; Y1:a; Y2:t; Y3:t; Y4:t
-         . c(X1, X2, X3, X4) = c(Y1, Y2, Y3, Y4) <=>
-               X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4 %(ga_injective_c)%,
-   . forall X1:a; Y1:a
-         . c(X1) = c(Y1) <=> X1 = Y1 %(ga_injective_c)%,
-   . not c : s in s2 %(ga_disjoint_c_sort_s2)%,
-   . not c : s in s1 %(ga_disjoint_c_sort_s1)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . not c(X1, X2, X3, X4) in s2 %(ga_disjoint_c_sort_s2)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . not c(X1, X2, X3, X4) in s1 %(ga_disjoint_c_sort_s1)%,
-   . forall X1:a . not c(X1) in s2 %(ga_disjoint_c_sort_s2)%,
-   . forall X1:a . not c(X1) in s1 %(ga_disjoint_c_sort_s1)%,
-   . forall Y1:a; Y2:t; Y3:t; Y4:t
-         . not c = c(Y1, Y2, Y3, Y4) %(ga_disjoint_c_c)%,
-   . forall Y1:a . not c = c(Y1) %(ga_disjoint_c_c)%,
-   . forall X1:a; X2:t; X3:t; X4:t; Y1:a
-         . not c(X1, X2, X3, X4) = c(Y1) %(ga_disjoint_c_c)%,
-   . not def a(c) %(ga_selector_undef_a_c)%,
-   . forall X1:a . not def a(c(X1)) %(ga_selector_undef_a_c)%,
-   . not def b(c) %(ga_selector_undef_b_c)%,
-   . forall X1:a . not def b(c(X1)) %(ga_selector_undef_b_c)%,
-   . not def d(c) %(ga_selector_undef_d_c)%,
-   . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
-  generated{sort s; op c : s; op c : a ->? s;
-                    op c : a * t * t * t -> s; op inj : s1 -> s;
-                    op inj : s2 -> s} %(ga_generated_s)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
-  generated{sort s; op c : s; op c : a ->? s;
-                    op c : a * t * t * t -> s; op inj : s1 -> s;
-                    op inj : s2 -> s} %(ga_generated_s)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-   . forall X1:a; X2:t; X3:t; X4:t
-         . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
-  generated{sort s, t; op c : s; op c : a ->? s;
-                       op c : a * t * t * t -> s; op inj : s1 -> s; op inj : s2 -> s;
-                       op inj : t -> s} %(ga_generated_s_t)%,
-   . true %(The true formula)%,  . true %(and this)%,
-   . forall x:b . x in a <=> true,
-   . forall x:s; y:s; z:s
-         . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
-   . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
-   . forall x:s . c(x, x) = x %(ga_idem_c)%,
-   . forall x:s; y:s; z:s
-         . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
-   . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
-   . forall x:s . c(x, x) = x %(ga_idem_c)%,  . a : s = a : s,
-   . forall x, y:s; z:t . c(x, y, z) = a,  . a : s = a : s,
-   . forall x, y:s; z:t . c(x, y, z) = a,
-   . forall x, y:s; z:t . c(x, y, z) <=> false,
-   . forall X1:Data1; X2:Data2
-         . sel1(Cons31(X1, X2)) = X1 %(ga_selector_sel1)%,
-   . forall X1:Data1; X2:Data2
-         . sel2(Cons31(X1, X2)) = X2 %(ga_selector_sel2)%,
-   . forall X1:Data2; X2:Data1
-         . sel2(Cons32(X1, X2)) = X1 %(ga_selector_sel2)%,
-   . forall X1:Data2; X2:Data1
-         . sel1(Cons32(X1, X2)) = X2 %(ga_selector_sel1)%,
-   . forall X1:Data1; X2:Data2
-         . sel1(Cons41(X1, X2)) = X1 %(ga_selector_sel1)%,
-   . forall X1:Data1; X2:Data2
-         . sel2(Cons41(X1, X2)) = X2 %(ga_selector_sel2)%,
-   . forall X1:Data2; X2:Data1
-         . sel2(Cons42(X1, X2)) = X1 %(ga_selector_sel2)%,
-   . forall X1:Data2; X2:Data1
-         . sel1(Cons42(X1, X2)) = X2 %(ga_selector_sel1)%,
-   . forall X1:Data1; X2:List; Y1:Data1; Y2:List
-         . Cons(X1, X2) = Cons(Y1, Y2) <=>
-               X1 = Y1 /\ X2 = Y2 %(ga_injective_Cons)%,
-   . forall Y1:Data1; Y2:List
-         . not Nil = Cons(Y1, Y2) %(ga_disjoint_Nil_Cons)%,
-  generated{sort List; op Cons : Data1 * List -> List;
-                       op Nil : List} %(ga_generated_List)%,
-  generated{sort Set; op Add : Data1 * Set -> Set;
-                      op Mt : Set} %(ga_generated_Set)%,
-  generated{sort Set; op Add : Data1 * Set -> Set;
-                      op Mt : Set} %(ga_generated_Set)%,
-  generated{sort nat; op 0 : nat;
-                      op succ : nat -> nat} %(ga_generated_nat)%,
-   . false,  . true,  . forall x:s . not p /\ not q(x) /\ q(x),
-   . forall x:s . not p \/ not q(x) \/ q(x),
-   . forall x:s
-         . not p /\ not q(x) /\ q(x) =>
-               not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x),
-   . forall x:s
-         . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if
-               not p /\ not q(x) /\ q(x),
-   . forall x:s
-         . not p /\ not q(x) /\ q(x) <=>
-               (exists x:s
-                    . not p \/ not q(x) \/ q(x) <=>
-                          (exists! x:s . not p /\ not q(x) /\ q(x))),
-   . forall x:s . def f(x),  . forall x:s . f(x) =e= inj(g(x)) : s,
-   . forall x:s . f(x) = inj(g(x)) : s,  . forall r1:t . r1 in s,
-   . forall x:s . def g(x),  . forall x:s . def g(x) as s,
-   . forall x:s . def f(x),  . forall x:s . def g(x),  . p,
-   . forall x:s . q(x),
-   . forall y:s; z:s; x:s . def x * y * z + z * y * x,  . def {},
-   . forall x:s . def { x },  . true,
-   . not True = False %(ga_disjoint_True_False)%,
-  generated{sort Boolean; op False : Boolean;
-                          op True : Boolean} %(ga_generated_Boolean)%,
-   . Not False = True %(Not_False)%,
-   . Not True = False %(Not_True)%,
-   . False And False = False %(And_def1)%,
-   . False And True = False %(And_def2)%,
-   . True And False = False %(And_def3)%,
-   . True And True = True %(And_def4)%,
-   . forall x:Boolean; y:Boolean
-         . x Or y = Not (Not x And Not y) %(Or_def)%,
-   . forall n:Nat
-         . def chr(n) <=> inj(n : Nat) : Int <= inj(255) : Int %(chr_dom)%,
-   . forall c:Char . chr(ord(c)) = (var c : Char) %(chr_def)%,
-   . forall n:Nat
-         . ord(chr(n)) = n if
-               inj(n : Nat) : Int <= inj(255) : Int %(ord_def)%,
-   . '\000' = chr(0) %(slash_000)%,
-   . '\001' = chr(inj(1 : Pos) : Nat) : Char %(slash_001)%,
-   . '\002' = chr(2) %(slash_002)%,  . '\003' = chr(3) %(slash_003)%,
-   . '\004' = chr(4) %(slash_004)%,  . '\005' = chr(5) %(slash_005)%,
-   . '\006' = chr(6) %(slash_006)%,  . '\007' = chr(7) %(slash_007)%,
-   . '\008' = chr(8) %(slash_008)%,  . '\009' = chr(9) %(slash_009)%,
-   . '\010' =
-         chr(inj(1 : Pos) : Nat @@ 0 : Nat : Nat) : Char %(slash_010)%,
-   . '\011' =
-         chr(inj(1 : Pos) : Nat
-             @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_011)%,
-   . '\012' =
-         chr(inj(1 : Pos) : Nat @@ 2 : Nat : Nat) : Char %(slash_012)%,
-   . '\013' =
-         chr(inj(1 : Pos) : Nat @@ 3 : Nat : Nat) : Char %(slash_013)%,
-   . '\014' =
-         chr(inj(1 : Pos) : Nat @@ 4 : Nat : Nat) : Char %(slash_014)%,
-   . '\015' =
-         chr(inj(1 : Pos) : Nat @@ 5 : Nat) : Char %(slash_015)%,
-   . '\016' =
-         chr(inj(1 : Pos) : Nat @@ 6 : Nat) : Char %(slash_016)%,
-   . '\017' =
-         chr(inj(1 : Pos) : Nat @@ 7 : Nat) : Char %(slash_017)%,
-   . '\018' =
-         chr(inj(1 : Pos) : Nat @@ 8 : Nat) : Char %(slash_018)%,
-   . '\019' =
-         chr(inj(1 : Pos) : Nat @@ 9 : Nat) : Char %(slash_019)%,
-   . '\020' = chr(20) %(slash_020)%,
-   . '\021' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_021)%,
-   . '\022' = chr(2 : Nat @@ 2 : Nat) %(slash_022)%,
-   . '\023' = chr(2 : Nat @@ 3 : Nat) %(slash_023)%,
-   . '\024' = chr(2 : Nat @@ 4 : Nat) %(slash_024)%,
-   . '\025' = chr(25) %(slash_025)%,
-   . '\026' = chr(26) %(slash_026)%,
-   . '\027' = chr(27) %(slash_027)%,
-   . '\028' = chr(28) %(slash_028)%,
-   . '\029' = chr(29) %(slash_029)%,
-   . '\030' = chr(30) %(slash_030)%,
-   . '\031' =
-         chr(3 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_031)%,
-   . '\032' = chr(3 : Nat @@ 2 : Nat) %(slash_032)%,
-   . '\033' = chr(3 : Nat @@ 3 : Nat) %(slash_033)%,
-   . '\034' = chr(3 : Nat @@ 4 : Nat) %(slash_034)%,
-   . '\035' = chr(35) %(slash_035)%,
-   . '\036' = chr(36) %(slash_036)%,
-   . '\037' = chr(37) %(slash_037)%,
-   . '\038' = chr(38) %(slash_038)%,
-   . '\039' = chr(39) %(slash_039)%,
-   . '\040' = chr(40) %(slash_040)%,
-   . '\041' =
-         chr(4 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_041)%,
-   . '\042' = chr(4 : Nat @@ 2 : Nat) %(slash_042)%,
-   . '\043' = chr(4 : Nat @@ 3 : Nat) %(slash_043)%,
-   . '\044' = chr(4 : Nat @@ 4 : Nat) %(slash_044)%,
-   . '\045' = chr(45) %(slash_045)%,
-   . '\046' = chr(46) %(slash_046)%,
-   . '\047' = chr(47) %(slash_047)%,
-   . '\048' = chr(48) %(slash_048)%,
-   . '\049' = chr(49) %(slash_049)%,
-   . '\050' = chr(50) %(slash_050)%,
-   . '\051' =
-         chr(5 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_051)%,
-   . '\052' = chr(52) %(slash_052)%,
-   . '\053' = chr(53) %(slash_053)%,
-   . '\054' = chr(54) %(slash_054)%,
-   . '\055' = chr(55) %(slash_055)%,
-   . '\056' = chr(56) %(slash_056)%,
-   . '\057' = chr(57) %(slash_057)%,
-   . '\058' = chr(58) %(slash_058)%,
-   . '\059' = chr(59) %(slash_059)%,
-   . '\060' = chr(60) %(slash_060)%,
-   . '\061' =
-         chr(6 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_061)%,
-   . '\062' = chr(62) %(slash_062)%,
-   . '\063' = chr(63) %(slash_063)%,
-   . '\064' = chr(64) %(slash_064)%,
-   . '\065' = chr(65) %(slash_065)%,
-   . '\066' = chr(66) %(slash_066)%,
-   . '\067' = chr(67) %(slash_067)%,
-   . '\068' = chr(68) %(slash_068)%,
-   . '\069' = chr(69) %(slash_069)%,
-   . '\070' = chr(70) %(slash_070)%,
-   . '\071' =
-         chr(7 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_071)%,
-   . '\072' = chr(72) %(slash_072)%,
-   . '\073' = chr(73) %(slash_073)%,
-   . '\074' = chr(74) %(slash_074)%,
-   . '\075' = chr(75) %(slash_075)%,
-   . '\076' = chr(76) %(slash_076)%,
-   . '\077' = chr(77) %(slash_077)%,
-   . '\078' = chr(78) %(slash_078)%,
-   . '\079' = chr(79) %(slash_079)%,
-   . '\080' = chr(80) %(slash_080)%,
-   . '\081' =
-         chr(8 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_081)%,
-   . '\082' = chr(82) %(slash_082)%,
-   . '\083' = chr(83) %(slash_083)%,
-   . '\084' = chr(84) %(slash_084)%,
-   . '\085' = chr(85) %(slash_085)%,
-   . '\086' = chr(86) %(slash_086)%,
-   . '\087' = chr(87) %(slash_087)%,
-   . '\088' = chr(88) %(slash_088)%,
-   . '\089' = chr(89) %(slash_089)%,
-   . '\090' = chr(90) %(slash_090)%,
-   . '\091' =
-         chr(9 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_091)%,
-   . '\092' = chr(92) %(slash_092)%,
-   . '\093' = chr(93) %(slash_093)%,
-   . '\094' = chr(94) %(slash_094)%,
-   . '\095' = chr(95) %(slash_095)%,
-   . '\096' = chr(96) %(slash_096)%,
-   . '\097' = chr(97) %(slash_097)%,
-   . '\098' = chr(98) %(slash_098)%,
-   . '\099' = chr(99) %(slash_099)%,
-   . '\100' =
-         chr(inj(1 : Pos) : Nat @@ 00 : Nat) : Char %(slash_100)%,
-   . '\101' =
-         chr(inj(1 : Pos) : Nat @@ 0 : Nat
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_101)%,
-   . '\102' =
-         chr(inj(1 : Pos) : Nat @@ 02 : Nat) : Char %(slash_102)%,
-   . '\103' =
-         chr(inj(1 : Pos) : Nat @@ 03 : Nat) : Char %(slash_103)%,
-   . '\104' =
-         chr(inj(1 : Pos) : Nat @@ 04 : Nat) : Char %(slash_104)%,
-   . '\105' =
-         chr(inj(1 : Pos) : Nat @@ 05 : Nat) : Char %(slash_105)%,
-   . '\106' =
-         chr(inj(1 : Pos) : Nat @@ 06 : Nat) : Char %(slash_106)%,
-   . '\107' =
-         chr(inj(1 : Pos) : Nat @@ 07 : Nat) : Char %(slash_107)%,
-   . '\108' =
-         chr(inj(1 : Pos) : Nat @@ 08 : Nat) : Char %(slash_108)%,
-   . '\109' =
-         chr(inj(1 : Pos) : Nat @@ 09 : Nat) : Char %(slash_109)%,
-   . '\110' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 0 : Nat : Nat : Nat) : Char %(slash_110)%,
-   . '\111' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_111)%,
-   . '\112' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 2 : Nat : Nat : Nat) : Char %(slash_112)%,
-   . '\113' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 3 : Nat : Nat : Nat) : Char %(slash_113)%,
-   . '\114' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 4 : Nat : Nat : Nat) : Char %(slash_114)%,
-   . '\115' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 5 : Nat : Nat) : Char %(slash_115)%,
-   . '\116' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 6 : Nat : Nat) : Char %(slash_116)%,
-   . '\117' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 7 : Nat : Nat) : Char %(slash_117)%,
-   . '\118' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 8 : Nat : Nat) : Char %(slash_118)%,
-   . '\119' =
-         chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
-                                   @@ 9 : Nat : Nat) : Char %(slash_119)%,
-   . '\120' =
-         chr(inj(1 : Pos) : Nat @@ 20 : Nat) : Char %(slash_120)%,
-   . '\121' =
-         chr(inj(1 : Pos) : Nat @@ 2 : Nat
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_121)%,
-   . '\122' =
-         chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                    @@ 2 : Nat) : Nat) : Char %(slash_122)%,
-   . '\123' =
-         chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                    @@ 3 : Nat) : Nat) : Char %(slash_123)%,
-   . '\124' =
-         chr(inj(1 : Pos) : Nat @@ (2 : Nat
-                                    @@ 4 : Nat) : Nat) : Char %(slash_124)%,
-   . '\125' =
-         chr(inj(1 : Pos) : Nat @@ 25 : Nat) : Char %(slash_125)%,
-   . '\126' =
-         chr(inj(1 : Pos) : Nat @@ 26 : Nat) : Char %(slash_126)%,
-   . '\127' =
-         chr(inj(1 : Pos) : Nat @@ 27 : Nat) : Char %(slash_127)%,
-   . '\128' =
-         chr(inj(1 : Pos) : Nat @@ 28 : Nat) : Char %(slash_128)%,
-   . '\129' =
-         chr(inj(1 : Pos) : Nat @@ 29 : Nat) : Char %(slash_129)%,
-   . '\130' =
-         chr(inj(1 : Pos) : Nat @@ 30 : Nat) : Char %(slash_130)%,
-   . '\131' =
-         chr(inj(1 : Pos) : Nat @@ 3 : Nat
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_131)%,
-   . '\132' =
-         chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                    @@ 2 : Nat) : Nat) : Char %(slash_132)%,
-   . '\133' =
-         chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                    @@ 3 : Nat) : Nat) : Char %(slash_133)%,
-   . '\134' =
-         chr(inj(1 : Pos) : Nat @@ (3 : Nat
-                                    @@ 4 : Nat) : Nat) : Char %(slash_134)%,
-   . '\135' =
-         chr(inj(1 : Pos) : Nat @@ 35 : Nat) : Char %(slash_135)%,
-   . '\136' =
-         chr(inj(1 : Pos) : Nat @@ 36 : Nat) : Char %(slash_136)%,
-   . '\137' =
-         chr(inj(1 : Pos) : Nat @@ 37 : Nat) : Char %(slash_137)%,
-   . '\138' =
-         chr(inj(1 : Pos) : Nat @@ 38 : Nat) : Char %(slash_138)%,
-   . '\139' =
-         chr(inj(1 : Pos) : Nat @@ 39 : Nat) : Char %(slash_139)%,
-   . '\140' =
-         chr(inj(1 : Pos) : Nat @@ 40 : Nat) : Char %(slash_140)%,
-   . '\141' =
-         chr(inj(1 : Pos) : Nat @@ 4 : Nat
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_141)%,
-   . '\142' =
-         chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                    @@ 2 : Nat) : Nat) : Char %(slash_142)%,
-   . '\143' =
-         chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                    @@ 3 : Nat) : Nat) : Char %(slash_143)%,
-   . '\144' =
-         chr(inj(1 : Pos) : Nat @@ (4 : Nat
-                                    @@ 4 : Nat) : Nat) : Char %(slash_144)%,
-   . '\145' =
-         chr(inj(1 : Pos) : Nat @@ 45 : Nat) : Char %(slash_145)%,
-   . '\146' =
-         chr(inj(1 : Pos) : Nat @@ 46 : Nat) : Char %(slash_146)%,
-   . '\147' =
-         chr(inj(1 : Pos) : Nat @@ 47 : Nat) : Char %(slash_147)%,
-   . '\148' =
-         chr(inj(1 : Pos) : Nat @@ 48 : Nat) : Char %(slash_148)%,
-   . '\149' =
-         chr(inj(1 : Pos) : Nat @@ 49 : Nat) : Char %(slash_149)%,
-   . '\150' =
-         chr(inj(1 : Pos) : Nat @@ 50 : Nat) : Char %(slash_150)%,
-   . '\151' =
-         chr(inj(1 : Pos) : Nat @@ 5
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_151)%,
-   . '\152' =
-         chr(inj(1 : Pos) : Nat @@ 52 : Nat) : Char %(slash_152)%,
-   . '\153' =
-         chr(inj(1 : Pos) : Nat @@ 53 : Nat) : Char %(slash_153)%,
-   . '\154' =
-         chr(inj(1 : Pos) : Nat @@ 54 : Nat) : Char %(slash_154)%,
-   . '\155' =
-         chr(inj(1 : Pos) : Nat @@ 55 : Nat) : Char %(slash_155)%,
-   . '\156' =
-         chr(inj(1 : Pos) : Nat @@ 56 : Nat) : Char %(slash_156)%,
-   . '\157' =
-         chr(inj(1 : Pos) : Nat @@ 57 : Nat) : Char %(slash_157)%,
-   . '\158' =
-         chr(inj(1 : Pos) : Nat @@ 58 : Nat) : Char %(slash_158)%,
-   . '\159' =
-         chr(inj(1 : Pos) : Nat @@ 59 : Nat) : Char %(slash_159)%,
-   . '\160' =
-         chr(inj(1 : Pos) : Nat @@ 60 : Nat) : Char %(slash_160)%,
-   . '\161' =
-         chr(inj(1 : Pos) : Nat @@ 6
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_161)%,
-   . '\162' =
-         chr(inj(1 : Pos) : Nat @@ 62 : Nat) : Char %(slash_162)%,
-   . '\163' =
-         chr(inj(1 : Pos) : Nat @@ 63 : Nat) : Char %(slash_163)%,
-   . '\164' =
-         chr(inj(1 : Pos) : Nat @@ 64 : Nat) : Char %(slash_164)%,
-   . '\165' =
-         chr(inj(1 : Pos) : Nat @@ 65 : Nat) : Char %(slash_165)%,
-   . '\166' =
-         chr(inj(1 : Pos) : Nat @@ 66 : Nat) : Char %(slash_166)%,
-   . '\167' =
-         chr(inj(1 : Pos) : Nat @@ 67 : Nat) : Char %(slash_167)%,
-   . '\168' =
-         chr(inj(1 : Pos) : Nat @@ 68 : Nat) : Char %(slash_168)%,
-   . '\169' =
-         chr(inj(1 : Pos) : Nat @@ 69 : Nat) : Char %(slash_169)%,
-   . '\170' =
-         chr(inj(1 : Pos) : Nat @@ 70 : Nat) : Char %(slash_170)%,
-   . '\171' =
-         chr(inj(1 : Pos) : Nat @@ 7
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_171)%,
-   . '\172' =
-         chr(inj(1 : Pos) : Nat @@ 72 : Nat) : Char %(slash_172)%,
-   . '\173' =
-         chr(inj(1 : Pos) : Nat @@ 73 : Nat) : Char %(slash_173)%,
-   . '\174' =
-         chr(inj(1 : Pos) : Nat @@ 74 : Nat) : Char %(slash_174)%,
-   . '\175' =
-         chr(inj(1 : Pos) : Nat @@ 75 : Nat) : Char %(slash_175)%,
-   . '\176' =
-         chr(inj(1 : Pos) : Nat @@ 76 : Nat) : Char %(slash_176)%,
-   . '\177' =
-         chr(inj(1 : Pos) : Nat @@ 77 : Nat) : Char %(slash_177)%,
-   . '\178' =
-         chr(inj(1 : Pos) : Nat @@ 78 : Nat) : Char %(slash_178)%,
-   . '\179' =
-         chr(inj(1 : Pos) : Nat @@ 79 : Nat) : Char %(slash_179)%,
-   . '\180' =
-         chr(inj(1 : Pos) : Nat @@ 80 : Nat) : Char %(slash_180)%,
-   . '\181' =
-         chr(inj(1 : Pos) : Nat @@ 8
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_181)%,
-   . '\182' =
-         chr(inj(1 : Pos) : Nat @@ 82 : Nat) : Char %(slash_182)%,
-   . '\183' =
-         chr(inj(1 : Pos) : Nat @@ 83 : Nat) : Char %(slash_183)%,
-   . '\184' =
-         chr(inj(1 : Pos) : Nat @@ 84 : Nat) : Char %(slash_184)%,
-   . '\185' =
-         chr(inj(1 : Pos) : Nat @@ 85 : Nat) : Char %(slash_185)%,
-   . '\186' =
-         chr(inj(1 : Pos) : Nat @@ 86 : Nat) : Char %(slash_186)%,
-   . '\187' =
-         chr(inj(1 : Pos) : Nat @@ 87 : Nat) : Char %(slash_187)%,
-   . '\188' =
-         chr(inj(1 : Pos) : Nat @@ 88 : Nat) : Char %(slash_188)%,
-   . '\189' =
-         chr(inj(1 : Pos) : Nat @@ 89 : Nat) : Char %(slash_189)%,
-   . '\190' =
-         chr(inj(1 : Pos) : Nat @@ 90 : Nat) : Char %(slash_190)%,
-   . '\191' =
-         chr(inj(1 : Pos) : Nat @@ 9
-                                   @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_191)%,
-   . '\192' =
-         chr(inj(1 : Pos) : Nat @@ 92 : Nat) : Char %(slash_192)%,
-   . '\193' =
-         chr(inj(1 : Pos) : Nat @@ 93 : Nat) : Char %(slash_193)%,
-   . '\194' =
-         chr(inj(1 : Pos) : Nat @@ 94 : Nat) : Char %(slash_194)%,
-   . '\195' =
-         chr(inj(1 : Pos) : Nat @@ 95 : Nat) : Char %(slash_195)%,
-   . '\196' =
-         chr(inj(1 : Pos) : Nat @@ 96 : Nat) : Char %(slash_196)%,
-   . '\197' =
-         chr(inj(1 : Pos) : Nat @@ 97 : Nat) : Char %(slash_197)%,
-   . '\198' =
-         chr(inj(1 : Pos) : Nat @@ 98 : Nat) : Char %(slash_198)%,
-   . '\199' =
-         chr(inj(1 : Pos) : Nat @@ 99 : Nat) : Char %(slash_199)%,
-   . '\200' = chr(200) %(slash_200)%,
-   . '\201' =
-         chr(2 : Nat @@ 0 : Nat
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_201)%,
-   . '\202' = chr(202) %(slash_202)%,
-   . '\203' = chr(203) %(slash_203)%,
-   . '\204' = chr(204) %(slash_204)%,
-   . '\205' = chr(205) %(slash_205)%,
-   . '\206' = chr(206) %(slash_206)%,
-   . '\207' = chr(207) %(slash_207)%,
-   . '\208' = chr(208) %(slash_208)%,
-   . '\209' = chr(209) %(slash_209)%,
-   . '\210' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 0 : Nat : Nat : Nat) : Char %(slash_210)%,
-   . '\211' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_211)%,
-   . '\212' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 2 : Nat : Nat : Nat) : Char %(slash_212)%,
-   . '\213' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 3 : Nat : Nat : Nat) : Char %(slash_213)%,
-   . '\214' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 4 : Nat : Nat : Nat) : Char %(slash_214)%,
-   . '\215' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 5 : Nat : Nat) : Char %(slash_215)%,
-   . '\216' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 6 : Nat : Nat) : Char %(slash_216)%,
-   . '\217' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 7 : Nat : Nat) : Char %(slash_217)%,
-   . '\218' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 8 : Nat : Nat) : Char %(slash_218)%,
-   . '\219' =
-         chr(2 : Nat @@ inj(1 : Pos) : Nat
-                        @@ 9 : Nat : Nat) : Char %(slash_219)%,
-   . '\220' = chr(220) %(slash_220)%,
-   . '\221' =
-         chr(2 : Nat @@ 2 : Nat
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_221)%,
-   . '\222' = chr(2 @@ (2 : Nat @@ 2 : Nat)) %(slash_222)%,
-   . '\223' = chr(2 @@ (2 : Nat @@ 3 : Nat)) %(slash_223)%,
-   . '\224' = chr(2 @@ (2 : Nat @@ 4 : Nat)) %(slash_224)%,
-   . '\225' = chr(225) %(slash_225)%,
-   . '\226' = chr(226) %(slash_226)%,
-   . '\227' = chr(227) %(slash_227)%,
-   . '\228' = chr(228) %(slash_228)%,
-   . '\229' = chr(229) %(slash_229)%,
-   . '\230' = chr(230) %(slash_230)%,
-   . '\231' =
-         chr(2 : Nat @@ 3 : Nat
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_231)%,
-   . '\232' = chr(2 @@ (3 : Nat @@ 2 : Nat)) %(slash_232)%,
-   . '\233' = chr(2 @@ (3 : Nat @@ 3 : Nat)) %(slash_233)%,
-   . '\234' = chr(2 @@ (3 : Nat @@ 4 : Nat)) %(slash_234)%,
-   . '\235' = chr(235) %(slash_235)%,
-   . '\236' = chr(236) %(slash_236)%,
-   . '\237' = chr(237) %(slash_237)%,
-   . '\238' = chr(238) %(slash_238)%,
-   . '\239' = chr(239) %(slash_239)%,
-   . '\240' = chr(240) %(slash_240)%,
-   . '\241' =
-         chr(2 : Nat @@ 4 : Nat
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_241)%,
-   . '\242' = chr(2 @@ (4 : Nat @@ 2 : Nat)) %(slash_242)%,
-   . '\243' = chr(2 @@ (4 : Nat @@ 3 : Nat)) %(slash_243)%,
-   . '\244' = chr(2 @@ (4 : Nat @@ 4 : Nat)) %(slash_244)%,
-   . '\245' = chr(245) %(slash_245)%,
-   . '\246' = chr(246) %(slash_246)%,
-   . '\247' = chr(247) %(slash_247)%,
-   . '\248' = chr(248) %(slash_248)%,
-   . '\249' = chr(249) %(slash_249)%,
-   . '\250' = chr(250) %(slash_250)%,
-   . '\251' =
-         chr(2 : Nat @@ 5
-                        @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_251)%,
-   . '\252' = chr(252) %(slash_252)%,
-   . '\253' = chr(253) %(slash_253)%,
-   . '\254' = chr(254) %(slash_254)%,
-   . '\255' = chr(255) %(slash_255)%,
-   . ' ' = '\032' %(printable_32)%,  . '!' = '\033' %(printable_33)%,
-   . '\"' = '\034' %(printable_34)%,
-   . '#' = '\035' %(printable_35)%,  . '$' = '\036' %(printable_36)%,
-   . '%' = '\037' %(printable_37)%,  . '&' = '\038' %(printable_38)%,
-   . '\'' = '\039' %(printable_39)%,
-   . '(' = '\040' %(printable_40)%,  . ')' = '\041' %(printable_41)%,
-   . '*' = '\042' %(printable_42)%,  . '+' = '\043' %(printable_43)%,
-   . ',' = '\044' %(printable_44)%,  . '-' = '\045' %(printable_45)%,
-   . '.' = '\046' %(printable_46)%,  . '/' = '\047' %(printable_47)%,
-   . '0' = '\048' %(printable_48)%,  . '1' = '\049' %(printable_49)%,
-   . '2' = '\050' %(printable_50)%,  . '3' = '\051' %(printable_51)%,
-   . '4' = '\052' %(printable_52)%,  . '5' = '\053' %(printable_53)%,
-   . '6' = '\054' %(printable_54)%,  . '7' = '\055' %(printable_55)%,
-   . '8' = '\056' %(printable_56)%,  . '9' = '\057' %(printable_57)%,
-   . ':' = '\058' %(printable_58)%,  . ';' = '\059' %(printable_59)%,
-   . '<' = '\060' %(printable_60)%,  . '=' = '\061' %(printable_61)%,
-   . '>' = '\062' %(printable_62)%,  . '?' = '\063' %(printable_63)%,
-   . '@' = '\064' %(printable_64)%,  . 'A' = '\065' %(printable_65)%,
-   . 'B' = '\066' %(printable_66)%,  . 'C' = '\067' %(printable_67)%,
-   . 'D' = '\068' %(printable_68)%,  . 'E' = '\069' %(printable_69)%,
-   . 'F' = '\070' %(printable_70)%,  . 'G' = '\071' %(printable_71)%,
-   . 'H' = '\072' %(printable_72)%,  . 'I' = '\073' %(printable_73)%,
-   . 'J' = '\074' %(printable_74)%,  . 'K' = '\075' %(printable_75)%,
-   . 'L' = '\076' %(printable_76)%,  . 'M' = '\077' %(printable_77)%,
-   . 'N' = '\078' %(printable_78)%,  . 'O' = '\079' %(printable_79)%,
-   . 'P' = '\080' %(printable_80)%,  . 'Q' = '\081' %(printable_81)%,
-   . 'R' = '\082' %(printable_82)%,  . 'S' = '\083' %(printable_83)%,
-   . 'T' = '\084' %(printable_84)%,  . 'U' = '\085' %(printable_85)%,
-   . 'V' = '\086' %(printable_86)%,  . 'W' = '\087' %(printable_87)%,
-   . 'X' = '\088' %(printable_88)%,  . 'Y' = '\089' %(printable_89)%,
-   . 'Z' = '\090' %(printable_90)%,  . '[' = '\091' %(printable_91)%,
-   . '\\' = '\092' %(printable_92)%,
-   . ']' = '\093' %(printable_93)%,  . '^' = '\094' %(printable_94)%,
-   . '_' = '\095' %(printable_95)%,  . '`' = '\096' %(printable_96)%,
-   . 'a' = '\097' %(printable_97)%,  . 'b' = '\098' %(printable_98)%,
-   . 'c' = '\099' %(printable_99)%,
-   . 'd' = '\100' %(printable_100)%,
-   . 'e' = '\101' %(printable_101)%,
-   . 'f' = '\102' %(printable_102)%,
-   . 'g' = '\103' %(printable_103)%,
-   . 'h' = '\104' %(printable_104)%,
-   . 'i' = '\105' %(printable_105)%,
-   . 'j' = '\106' %(printable_106)%,
-   . 'k' = '\107' %(printable_107)%,
-   . 'l' = '\108' %(printable_108)%,
-   . 'm' = '\109' %(printable_109)%,
-   . 'n' = '\110' %(printable_110)%,
-   . 'o' = '\111' %(printable_111)%,
-   . 'p' = '\112' %(printable_112)%,
-   . 'q' = '\113' %(printable_113)%,
-   . 'r' = '\114' %(printable_114)%,
-   . 's' = '\115' %(printable_115)%,
-   . 't' = '\116' %(printable_116)%,
-   . 'u' = '\117' %(printable_117)%,
-   . 'v' = '\118' %(printable_118)%,
-   . 'w' = '\119' %(printable_119)%,
-   . 'x' = '\120' %(printable_120)%,
-   . 'y' = '\121' %(printable_121)%,
-   . 'z' = '\122' %(printable_122)%,
-   . '{' = '\123' %(printable_123)%,
-   . '|' = '\124' %(printable_124)%,
-   . '}' = '\125' %(printable_125)%,
-   . '~' = '\126' %(printable_126)%,
-   . ' ' = '\160' %(printable_160)%,
-   . '¡' = '\161' %(printable_161)%,
-   . '¢' = '\162' %(printable_162)%,
-   . '£' = '\163' %(printable_163)%,
-   . '¤' = '\164' %(printable_164)%,
-   . '¥' = '\165' %(printable_165)%,
-   . '¦' = '\166' %(printable_166)%,
-   . '§' = '\167' %(printable_167)%,
-   . '¨' = '\168' %(printable_168)%,
-   . '©' = '\169' %(printable_169)%,
-   . 'ª' = '\170' %(printable_170)%,
-   . '«' = '\171' %(printable_171)%,
-   . '¬' = '\172' %(printable_172)%,
-   . '­' = '\173' %(printable_173)%,
-   . '®' = '\174' %(printable_174)%,
-   . '¯' = '\175' %(printable_175)%,
-   . '°' = '\176' %(printable_176)%,
-   . '±' = '\177' %(printable_177)%,
-   . '²' = '\178' %(printable_178)%,
-   . '³' = '\179' %(printable_179)%,
-   . '´' = '\180' %(printable_180)%,
-   . 'µ' = '\181' %(printable_181)%,
-   . '¶' = '\182' %(printable_182)%,
-   . '·' = '\183' %(printable_183)%,
-   . '¸' = '\184' %(printable_184)%,
-   . '¹' = '\185' %(printable_185)%,
-   . 'º' = '\186' %(printable_186)%,
-   . '»' = '\187' %(printable_187)%,
-   . '¼' = '\188' %(printable_188)%,
-   . '½' = '\189' %(printable_189)%,
-   . '¾' = '\190' %(printable_190)%,
-   . '¿' = '\191' %(printable_191)%,
-   . 'À' = '\192' %(printable_192)%,
-   . 'Á' = '\193' %(printable_193)%,
-   . 'Â' = '\194' %(printable_194)%,
-   . 'Ã' = '\195' %(printable_195)%,
-   . 'Ä' = '\196' %(printable_196)%,
-   . 'Å' = '\197' %(printable_197)%,
-   . 'Æ' = '\198' %(printable_198)%,
-   . 'Ç' = '\199' %(printable_199)%,
-   . 'È' = '\200' %(printable_200)%,
-   . 'É' = '\201' %(printable_201)%,
-   . 'Ê' = '\202' %(printable_202)%,
-   . 'Ë' = '\203' %(printable_203)%,
-   . 'Ì' = '\204' %(printable_204)%,
-   . 'Í' = '\205' %(printable_205)%,
-   . 'Î' = '\206' %(printable_206)%,
-   . 'Ï' = '\207' %(printable_207)%,
-   . 'Ð' = '\208' %(printable_208)%,
-   . 'Ñ' = '\209' %(printable_209)%,
-   . 'Ò' = '\210' %(printable_210)%,
-   . 'Ó' = '\211' %(printable_211)%,
-   . 'Ô' = '\212' %(printable_212)%,
-   . 'Õ' = '\213' %(printable_213)%,
-   . 'Ö' = '\214' %(printable_214)%,
-   . '×' = '\215' %(printable_215)%,
-   . 'Ø' = '\216' %(printable_216)%,
-   . 'Ù' = '\217' %(printable_217)%,
-   . 'Ú' = '\218' %(printable_218)%,
-   . 'Û' = '\219' %(printable_219)%,
-   . 'Ü' = '\220' %(printable_220)%,
-   . 'Ý' = '\221' %(printable_221)%,
-   . 'Þ' = '\222' %(printable_222)%,
-   . 'ß' = '\223' %(printable_223)%,
-   . 'à' = '\224' %(printable_224)%,
-   . 'á' = '\225' %(printable_225)%,
-   . 'â' = '\226' %(printable_226)%,
-   . 'ã' = '\227' %(printable_227)%,
-   . 'ä' = '\228' %(printable_228)%,
-   . 'å' = '\229' %(printable_229)%,
-   . 'æ' = '\230' %(printable_230)%,
-   . 'ç' = '\231' %(printable_231)%,
-   . 'è' = '\232' %(printable_232)%,
-   . 'é' = '\233' %(printable_233)%,
-   . 'ê' = '\234' %(printable_234)%,
-   . 'ë' = '\235' %(printable_235)%,
-   . 'ì' = '\236' %(printable_236)%,
-   . 'í' = '\237' %(printable_237)%,
-   . 'î' = '\238' %(printable_238)%,
-   . 'ï' = '\239' %(printable_239)%,
-   . 'ð' = '\240' %(printable_240)%,
-   . 'ñ' = '\241' %(printable_241)%,
-   . 'ò' = '\242' %(printable_242)%,
-   . 'ó' = '\243' %(printable_243)%,
-   . 'ô' = '\244' %(printable_244)%,
-   . 'õ' = '\245' %(printable_245)%,
-   . 'ö' = '\246' %(printable_246)%,
-   . '÷' = '\247' %(printable_247)%,
-   . 'ø' = '\248' %(printable_248)%,
-   . 'ù' = '\249' %(printable_249)%,
-   . 'ú' = '\250' %(printable_250)%,
-   . 'û' = '\251' %(printable_251)%,
-   . 'ü' = '\252' %(printable_252)%,
-   . 'ý' = '\253' %(printable_253)%,
-   . 'þ' = '\254' %(printable_254)%,
-   . 'ÿ' = '\255' %(printable_255)%,
-   . forall c:Char
-         . isLetter(c) <=>
-               (inj(ord('A')) : Int <= inj(ord(c)) : Int
-                /\ inj(ord(c)) : Int <= inj(ord('Z')) : Int)
-               \/ (inj(ord('a')) : Int <= inj(ord(c)) : Int
-                   /\ inj(ord(c)) : Int <= inj(ord('z')) : Int) %(isLetter_def)%,
-   . forall c:Char
-         . isDigit(c) <=>
-               inj(ord('0')) : Int <= inj(ord(c)) : Int
-               /\ inj(ord(c)) : Int <= inj(ord('9')) : Int %(isDigit_def)%,
-   . forall c:Char
-         . isPrintable(c) <=>
-               (inj(ord(' ')) : Int <= inj(ord(c)) : Int
-                /\ inj(ord(c)) : Int <= inj(ord('~')) : Int)
-               \/ (inj(ord(' ')) : Int <= inj(ord(c)) : Int
-                   /\ inj(ord(c)) : Int <= inj(ord('ÿ')) : Int) %(isPrintable_def)%,
-   . '\o000' : Char = '\000' : Char %(slash_o000)%,
-   . '\o001' = '\001' %(slash_o001)%,
-   . '\o002' = '\002' %(slash_o002)%,
-   . '\o003' = '\003' %(slash_o003)%,
-   . '\o004' = '\004' %(slash_o004)%,
-   . '\o005' = '\005' %(slash_o005)%,
-   . '\o006' = '\006' %(slash_o006)%,
-   . '\o007' = '\007' %(slash_o007)%,
-   . '\o010' = '\008' %(slash_o010)%,
-   . '\o011' = '\009' %(slash_o011)%,
-   . '\o012' = '\010' %(slash_o012)%,
-   . '\o013' = '\011' %(slash_o013)%,
-   . '\o014' = '\012' %(slash_o014)%,
-   . '\o015' = '\013' %(slash_o015)%,
-   . '\o016' = '\014' %(slash_o016)%,
-   . '\o017' = '\015' %(slash_o017)%,
-   . '\o020' = '\016' %(slash_o020)%,
-   . '\o021' = '\017' %(slash_o021)%,
-   . '\o022' = '\018' %(slash_o022)%,
-   . '\o023' = '\019' %(slash_o023)%,
-   . '\o024' = '\020' %(slash_o024)%,
-   . '\o025' = '\021' %(slash_o025)%,
-   . '\o026' = '\022' %(slash_o026)%,
-   . '\o027' = '\023' %(slash_o027)%,
-   . '\o030' = '\024' %(slash_o030)%,
-   . '\o031' = '\025' %(slash_o031)%,
-   . '\o032' = '\026' %(slash_o032)%,
-   . '\o033' = '\027' %(slash_o033)%,
-   . '\o034' = '\028' %(slash_o034)%,
-   . '\o035' = '\029' %(slash_o035)%,
-   . '\o036' = '\030' %(slash_o036)%,
-   . '\o037' = '\031' %(slash_o037)%,
-   . '\o040' = '\032' %(slash_o040)%,
-   . '\o041' = '\033' %(slash_o041)%,
-   . '\o042' = '\034' %(slash_o042)%,
-   . '\o043' = '\035' %(slash_o043)%,
-   . '\o044' = '\036' %(slash_o044)%,
-   . '\o045' = '\037' %(slash_o045)%,
-   . '\o046' = '\038' %(slash_o046)%,
-   . '\o047' = '\039' %(slash_o047)%,
-   . '\o050' = '\040' %(slash_o050)%,
-   . '\o051' = '\041' %(slash_o051)%,
-   . '\o052' = '\042' %(slash_o052)%,
-   . '\o053' = '\043' %(slash_o053)%,
-   . '\o054' = '\044' %(slash_o054)%,
-   . '\o055' = '\045' %(slash_o055)%,
-   . '\o056' = '\046' %(slash_o056)%,
-   . '\o057' = '\047' %(slash_o057)%,
-   . '\o060' = '\048' %(slash_o060)%,
-   . '\o061' = '\049' %(slash_o061)%,
-   . '\o062' = '\050' %(slash_o062)%,
-   . '\o063' = '\051' %(slash_o063)%,
-   . '\o064' = '\052' %(slash_o064)%,
-   . '\o065' = '\053' %(slash_o065)%,
-   . '\o066' = '\054' %(slash_o066)%,
-   . '\o067' = '\055' %(slash_o067)%,
-   . '\o070' = '\056' %(slash_o070)%,
-   . '\o071' = '\057' %(slash_o071)%,
-   . '\o072' = '\058' %(slash_o072)%,
-   . '\o073' = '\059' %(slash_o073)%,
-   . '\o074' = '\060' %(slash_o074)%,
-   . '\o075' = '\061' %(slash_o075)%,
-   . '\o076' = '\062' %(slash_o076)%,
-   . '\o077' = '\063' %(slash_o077)%,
-   . '\o100' = '\064' %(slash_o100)%,
-   . '\o101' = '\065' %(slash_o101)%,
-   . '\o102' = '\066' %(slash_o102)%,
-   . '\o103' = '\067' %(slash_o103)%,
-   . '\o104' = '\068' %(slash_o104)%,
-   . '\o105' = '\069' %(slash_o105)%,
-   . '\o106' = '\070' %(slash_o106)%,
-   . '\o107' = '\071' %(slash_o107)%,
-   . '\o110' = '\072' %(slash_o110)%,
-   . '\o111' = '\073' %(slash_o111)%,
-   . '\o112' = '\074' %(slash_o112)%,
-   . '\o113' = '\075' %(slash_o113)%,
-   . '\o114' = '\076' %(slash_o114)%,
-   . '\o115' = '\077' %(slash_o115)%,
-   . '\o116' = '\078' %(slash_o116)%,
-   . '\o117' = '\079' %(slash_o117)%,
-   . '\o120' = '\080' %(slash_o120)%,
-   . '\o121' = '\081' %(slash_o121)%,
-   . '\o122' = '\082' %(slash_o122)%,
-   . '\o123' = '\083' %(slash_o123)%,
-   . '\o124' = '\084' %(slash_o124)%,
-   . '\o125' = '\085' %(slash_o125)%,
-   . '\o126' = '\086' %(slash_o126)%,
-   . '\o127' = '\087' %(slash_o127)%,
-   . '\o130' = '\088' %(slash_o130)%,
-   . '\o131' = '\089' %(slash_o131)%,
-   . '\o132' = '\090' %(slash_o132)%,
-   . '\o133' = '\091' %(slash_o133)%,
-   . '\o134' = '\092' %(slash_o134)%,
-   . '\o135' = '\093' %(slash_o135)%,
-   . '\o136' = '\094' %(slash_o136)%,
-   . '\o137' = '\095' %(slash_o137)%,
-   . '\o140' = '\096' %(slash_o140)%,
-   . '\o141' = '\097' %(slash_o141)%,
-   . '\o142' = '\098' %(slash_o142)%,
-   . '\o143' = '\099' %(slash_o143)%,
-   . '\o144' = '\100' %(slash_o144)%,
-   . '\o145' = '\101' %(slash_o145)%,
-   . '\o146' = '\102' %(slash_o146)%,
-   . '\o147' = '\103' %(slash_o147)%,
-   . '\o150' = '\104' %(slash_o150)%,
-   . '\o151' = '\105' %(slash_o151)%,
-   . '\o152' = '\106' %(slash_o152)%,
-   . '\o153' = '\107' %(slash_o153)%,
-   . '\o154' = '\108' %(slash_o154)%,
-   . '\o155' = '\109' %(slash_o155)%,
-   . '\o156' = '\110' %(slash_o156)%,
-   . '\o157' = '\111' %(slash_o157)%,
-   . '\o160' = '\112' %(slash_o160)%,
-   . '\o161' = '\113' %(slash_o161)%,
-   . '\o162' = '\114' %(slash_o162)%,
-   . '\o163' = '\115' %(slash_o163)%,
-   . '\o164' = '\116' %(slash_o164)%,
-   . '\o165' = '\117' %(slash_o165)%,
-   . '\o166' = '\118' %(slash_o166)%,
-   . '\o167' = '\119' %(slash_o167)%,
-   . '\o170' = '\120' %(slash_o170)%,
-   . '\o171' = '\121' %(slash_o171)%,
-   . '\o172' = '\122' %(slash_o172)%,
-   . '\o173' = '\123' %(slash_o173)%,
-   . '\o174' = '\124' %(slash_o174)%,
-   . '\o175' = '\125' %(slash_o175)%,
-   . '\o176' = '\126' %(slash_o176)%,
-   . '\o177' = '\127' %(slash_o177)%,
-   . '\o200' = '\128' %(slash_o200)%,
-   . '\o201' = '\129' %(slash_o201)%,
-   . '\o202' = '\130' %(slash_o202)%,
-   . '\o203' = '\131' %(slash_o203)%,
-   . '\o204' = '\132' %(slash_o204)%,
-   . '\o205' = '\133' %(slash_o205)%,
-   . '\o206' = '\134' %(slash_o206)%,
-   . '\o207' = '\135' %(slash_o207)%,
-   . '\o210' = '\136' %(slash_o210)%,
-   . '\o211' = '\137' %(slash_o211)%,
-   . '\o212' = '\138' %(slash_o212)%,
-   . '\o213' = '\139' %(slash_o213)%,
-   . '\o214' = '\140' %(slash_o214)%,
-   . '\o215' = '\141' %(slash_o215)%,
-   . '\o216' = '\142' %(slash_o216)%,
-   . '\o217' = '\143' %(slash_o217)%,
-   . '\o220' = '\144' %(slash_o220)%,
-   . '\o221' = '\145' %(slash_o221)%,
-   . '\o222' = '\146' %(slash_o222)%,
-   . '\o223' = '\147' %(slash_o223)%,
-   . '\o224' = '\148' %(slash_o224)%,
-   . '\o225' = '\149' %(slash_o225)%,
-   . '\o226' = '\150' %(slash_o226)%,
-   . '\o227' = '\151' %(slash_o227)%,
-   . '\o230' = '\152' %(slash_o230)%,
-   . '\o231' = '\153' %(slash_o231)%,
-   . '\o232' = '\154' %(slash_o232)%,
-   . '\o233' = '\155' %(slash_o233)%,
-   . '\o234' = '\156' %(slash_o234)%,
-   . '\o235' = '\157' %(slash_o235)%,
-   . '\o236' = '\158' %(slash_o236)%,
-   . '\o237' = '\159' %(slash_o237)%,
-   . '\o240' = '\160' %(slash_o240)%,
-   . '\o241' = '\161' %(slash_o241)%,
-   . '\o242' = '\162' %(slash_o242)%,
-   . '\o243' = '\163' %(slash_o243)%,
-   . '\o244' = '\164' %(slash_o244)%,
-   . '\o245' = '\165' %(slash_o245)%,
-   . '\o246' = '\166' %(slash_o246)%,
-   . '\o247' = '\167' %(slash_o247)%,
-   . '\o250' = '\168' %(slash_o250)%,
-   . '\o251' = '\169' %(slash_o251)%,
-   . '\o252' = '\170' %(slash_o252)%,
-   . '\o253' = '\171' %(slash_o253)%,
-   . '\o254' = '\172' %(slash_o254)%,
-   . '\o255' = '\173' %(slash_o255)%,
-   . '\o256' = '\174' %(slash_o256)%,
-   . '\o257' = '\175' %(slash_o257)%,
-   . '\o260' = '\176' %(slash_o260)%,
-   . '\o261' = '\177' %(slash_o261)%,
-   . '\o262' = '\178' %(slash_o262)%,
-   . '\o263' = '\179' %(slash_o263)%,
-   . '\o264' = '\180' %(slash_o264)%,
-   . '\o265' = '\181' %(slash_o265)%,
-   . '\o266' = '\182' %(slash_o266)%,
-   . '\o267' = '\183' %(slash_o267)%,
-   . '\o270' = '\184' %(slash_o270)%,
-   . '\o271' = '\185' %(slash_o271)%,
-   . '\o272' = '\186' %(slash_o272)%,
-   . '\o273' = '\187' %(slash_o273)%,
-   . '\o274' = '\188' %(slash_o274)%,
-   . '\o275' = '\189' %(slash_o275)%,
-   . '\o276' = '\190' %(slash_o276)%,
-   . '\o277' = '\191' %(slash_o277)%,
-   . '\o300' = '\192' %(slash_o300)%,
-   . '\o301' = '\193' %(slash_o301)%,
-   . '\o302' = '\194' %(slash_o302)%,
-   . '\o303' = '\195' %(slash_o303)%,
-   . '\o304' = '\196' %(slash_o304)%,
-   . '\o305' = '\197' %(slash_o305)%,
-   . '\o306' = '\198' %(slash_o306)%,
-   . '\o307' = '\199' %(slash_o307)%,
-   . '\o310' = '\200' %(slash_o310)%,
-   . '\o311' = '\201' %(slash_o311)%,
-   . '\o312' = '\202' %(slash_o312)%,
-   . '\o313' = '\203' %(slash_o313)%,
-   . '\o314' = '\204' %(slash_o314)%,
-   . '\o315' = '\205' %(slash_o315)%,
-   . '\o316' = '\206' %(slash_o316)%,
-   . '\o317' = '\207' %(slash_o317)%,
-   . '\o320' = '\208' %(slash_o320)%,
-   . '\o321' = '\209' %(slash_o321)%,
-   . '\o322' = '\210' %(slash_o322)%,
-   . '\o323' = '\211' %(slash_o323)%,
-   . '\o324' = '\212' %(slash_o324)%,
-   . '\o325' = '\213' %(slash_o325)%,
-   . '\o326' = '\214' %(slash_o326)%,
-   . '\o327' = '\215' %(slash_o327)%,
-   . '\o330' = '\216' %(slash_o330)%,
-   . '\o331' = '\217' %(slash_o331)%,
-   . '\o332' = '\218' %(slash_o332)%,
-   . '\o333' = '\219' %(slash_o333)%,
-   . '\o334' = '\220' %(slash_o334)%,
-   . '\o335' = '\221' %(slash_o335)%,
-   . '\o336' = '\222' %(slash_o336)%,
-   . '\o337' = '\223' %(slash_o337)%,
-   . '\o340' = '\224' %(slash_o340)%,
-   . '\o341' = '\225' %(slash_o341)%,
-   . '\o342' = '\226' %(slash_o342)%,
-   . '\o343' = '\227' %(slash_o343)%,
-   . '\o344' = '\228' %(slash_o344)%,
-   . '\o345' = '\229' %(slash_o345)%,
-   . '\o346' = '\230' %(slash_o346)%,
-   . '\o347' = '\231' %(slash_o347)%,
-   . '\o350' = '\232' %(slash_o350)%,
-   . '\o351' = '\233' %(slash_o351)%,
-   . '\o352' = '\234' %(slash_o352)%,
-   . '\o353' = '\235' %(slash_o353)%,
-   . '\o354' = '\236' %(slash_o354)%,
-   . '\o355' = '\237' %(slash_o355)%,
-   . '\o356' = '\238' %(slash_o356)%,
-   . '\o357' = '\239' %(slash_o357)%,
-   . '\o360' = '\240' %(slash_o360)%,
-   . '\o361' = '\241' %(slash_o361)%,
-   . '\o362' = '\242' %(slash_o362)%,
-   . '\o363' = '\243' %(slash_o363)%,
-   . '\o364' = '\244' %(slash_o364)%,
-   . '\o365' = '\245' %(slash_o365)%,
-   . '\o366' = '\246' %(slash_o366)%,
-   . '\o367' = '\247' %(slash_o367)%,
-   . '\o370' = '\248' %(slash_o370)%,
-   . '\o371' = '\249' %(slash_o371)%,
-   . '\o372' = '\250' %(slash_o372)%,
-   . '\o373' = '\251' %(slash_o373)%,
-   . '\o374' = '\252' %(slash_o374)%,
-   . '\o375' = '\253' %(slash_o375)%,
-   . '\o376' = '\254' %(slash_o376)%,
-   . '\o377' : Char = '\255' : Char %(slash_o377)%,
-   . '\x00' : Char = '\000' : Char %(slash_x00)%,
-   . '\x01' = '\001' %(slash_x01)%,  . '\x02' = '\002' %(slash_x02)%,
-   . '\x03' = '\003' %(slash_x03)%,  . '\x04' = '\004' %(slash_x04)%,
-   . '\x05' = '\005' %(slash_x05)%,  . '\x06' = '\006' %(slash_x06)%,
-   . '\x07' = '\007' %(slash_x07)%,  . '\x08' = '\008' %(slash_x08)%,
-   . '\x09' = '\009' %(slash_x09)%,  . '\x0A' = '\010' %(slash_x0A)%,
-   . '\x0B' = '\011' %(slash_x0B)%,  . '\x0C' = '\012' %(slash_x0C)%,
-   . '\x0D' = '\013' %(slash_x0D)%,  . '\x0E' = '\014' %(slash_x0E)%,
-   . '\x0F' = '\015' %(slash_x0F)%,  . '\x10' = '\016' %(slash_x10)%,
-   . '\x11' = '\017' %(slash_x11)%,  . '\x12' = '\018' %(slash_x12)%,
-   . '\x13' = '\019' %(slash_x13)%,  . '\x14' = '\020' %(slash_x14)%,
-   . '\x15' = '\021' %(slash_x15)%,  . '\x16' = '\022' %(slash_x16)%,
-   . '\x17' = '\023' %(slash_x17)%,  . '\x18' = '\024' %(slash_x18)%,
-   . '\x19' = '\025' %(slash_x19)%,  . '\x1A' = '\026' %(slash_x1A)%,
-   . '\x1B' = '\027' %(slash_x1B)%,  . '\x1C' = '\028' %(slash_x1C)%,
-   . '\x1D' = '\029' %(slash_x1D)%,  . '\x1E' = '\030' %(slash_x1E)%,
-   . '\x1F' = '\031' %(slash_x1F)%,  . '\x20' = '\032' %(slash_x20)%,
-   . '\x21' = '\033' %(slash_x21)%,  . '\x22' = '\034' %(slash_x22)%,
-   . '\x23' = '\035' %(slash_x23)%,  . '\x24' = '\036' %(slash_x24)%,
-   . '\x25' = '\037' %(slash_x25)%,  . '\x26' = '\038' %(slash_x26)%,
-   . '\x27' = '\039' %(slash_x27)%,  . '\x28' = '\040' %(slash_x28)%,
-   . '\x29' = '\041' %(slash_x29)%,  . '\x2A' = '\042' %(slash_x2A)%,
-   . '\x2B' = '\043' %(slash_x2B)%,  . '\x2C' = '\044' %(slash_x2C)%,
-   . '\x2D' = '\045' %(slash_x2D)%,  . '\x2E' = '\046' %(slash_x2E)%,
-   . '\x2F' = '\047' %(slash_x2F)%,  . '\x30' = '\048' %(slash_x30)%,
-   . '\x31' = '\049' %(slash_x31)%,  . '\x32' = '\050' %(slash_x32)%,
-   . '\x33' = '\051' %(slash_x33)%,  . '\x34' = '\052' %(slash_x34)%,
-   . '\x35' = '\053' %(slash_x35)%,  . '\x36' = '\054' %(slash_x36)%,
-   . '\x37' = '\055' %(slash_x37)%,  . '\x38' = '\056' %(slash_x38)%,
-   . '\x39' = '\057' %(slash_x39)%,  . '\x3A' = '\058' %(slash_x3A)%,
-   . '\x3B' = '\059' %(slash_x3B)%,  . '\x3C' = '\060' %(slash_x3C)%,
-   . '\x3D' = '\061' %(slash_x3D)%,  . '\x3E' = '\062' %(slash_x3E)%,
-   . '\x3F' = '\063' %(slash_x3F)%,  . '\x40' = '\064' %(slash_x40)%,
-   . '\x41' = '\065' %(slash_x41)%,  . '\x42' = '\066' %(slash_x42)%,
-   . '\x43' = '\067' %(slash_x43)%,  . '\x44' = '\068' %(slash_x44)%,
-   . '\x45' = '\069' %(slash_x45)%,  . '\x46' = '\070' %(slash_x46)%,
-   . '\x47' = '\071' %(slash_x47)%,  . '\x48' = '\072' %(slash_x48)%,
-   . '\x49' = '\073' %(slash_x49)%,  . '\x4A' = '\074' %(slash_x4A)%,
-   . '\x4B' = '\075' %(slash_x4B)%,  . '\x4C' = '\076' %(slash_x4C)%,
-   . '\x4D' = '\077' %(slash_x4D)%,  . '\x4E' = '\078' %(slash_x4E)%,
-   . '\x4F' = '\079' %(slash_x4F)%,  . '\x50' = '\080' %(slash_x50)%,
-   . '\x51' = '\081' %(slash_x51)%,  . '\x52' = '\082' %(slash_x52)%,
-   . '\x53' = '\083' %(slash_x53)%,  . '\x54' = '\084' %(slash_x54)%,
-   . '\x55' = '\085' %(slash_x55)%,  . '\x56' = '\086' %(slash_x56)%,
-   . '\x57' = '\087' %(slash_x57)%,  . '\x58' = '\088' %(slash_x58)%,
-   . '\x59' = '\089' %(slash_x59)%,  . '\x5A' = '\090' %(slash_x5A)%,
-   . '\x5B' = '\091' %(slash_x5B)%,  . '\x5C' = '\092' %(slash_x5C)%,
-   . '\x5D' = '\093' %(slash_x5D)%,  . '\x5E' = '\094' %(slash_x5E)%,
-   . '\x5F' = '\095' %(slash_x5F)%,  . '\x60' = '\096' %(slash_x60)%,
-   . '\x61' = '\097' %(slash_x61)%,  . '\x62' = '\098' %(slash_x62)%,
-   . '\x63' = '\099' %(slash_x63)%,  . '\x64' = '\100' %(slash_x64)%,
-   . '\x65' = '\101' %(slash_x65)%,  . '\x66' = '\102' %(slash_x66)%,
-   . '\x67' = '\103' %(slash_x67)%,  . '\x68' = '\104' %(slash_x68)%,
-   . '\x69' = '\105' %(slash_x69)%,  . '\x6A' = '\106' %(slash_x6A)%,
-   . '\x6B' = '\107' %(slash_x6B)%,  . '\x6C' = '\108' %(slash_x6C)%,
-   . '\x6D' = '\109' %(slash_x6D)%,  . '\x6E' = '\110' %(slash_x6E)%,
-   . '\x6F' = '\111' %(slash_x6F)%,  . '\x70' = '\112' %(slash_x70)%,
-   . '\x71' = '\113' %(slash_x71)%,  . '\x72' = '\114' %(slash_x72)%,
-   . '\x73' = '\115' %(slash_x73)%,  . '\x74' = '\116' %(slash_x74)%,
-   . '\x75' = '\117' %(slash_x75)%,  . '\x76' = '\118' %(slash_x76)%,
-   . '\x77' = '\119' %(slash_x77)%,  . '\x78' = '\120' %(slash_x78)%,
-   . '\x79' = '\121' %(slash_x79)%,  . '\x7A' = '\122' %(slash_x7A)%,
-   . '\x7B' = '\123' %(slash_x7B)%,  . '\x7C' = '\124' %(slash_x7C)%,
-   . '\x7D' = '\125' %(slash_x7D)%,  . '\x7E' = '\126' %(slash_x7E)%,
-   . '\x7F' = '\127' %(slash_x7F)%,  . '\x80' = '\128' %(slash_x80)%,
-   . '\x81' = '\129' %(slash_x81)%,  . '\x82' = '\130' %(slash_x82)%,
-   . '\x83' = '\131' %(slash_x83)%,  . '\x84' = '\132' %(slash_x84)%,
-   . '\x85' = '\133' %(slash_x85)%,  . '\x86' = '\134' %(slash_x86)%,
-   . '\x87' = '\135' %(slash_x87)%,  . '\x88' = '\136' %(slash_x88)%,
-   . '\x89' = '\137' %(slash_x89)%,  . '\x8A' = '\138' %(slash_x8A)%,
-   . '\x8B' = '\139' %(slash_x8B)%,  . '\x8C' = '\140' %(slash_x8C)%,
-   . '\x8D' = '\141' %(slash_x8D)%,  . '\x8E' = '\142' %(slash_x8E)%,
-   . '\x8F' = '\143' %(slash_x8F)%,  . '\x90' = '\144' %(slash_x90)%,
-   . '\x91' = '\145' %(slash_x91)%,  . '\x92' = '\146' %(slash_x92)%,
-   . '\x93' = '\147' %(slash_x93)%,  . '\x94' = '\148' %(slash_x94)%,
-   . '\x95' = '\149' %(slash_x95)%,  . '\x96' = '\150' %(slash_x96)%,
-   . '\x97' = '\151' %(slash_x97)%,  . '\x98' = '\152' %(slash_x98)%,
-   . '\x99' = '\153' %(slash_x99)%,  . '\x9A' = '\154' %(slash_x9A)%,
-   . '\x9B' = '\155' %(slash_x9B)%,  . '\x9C' = '\156' %(slash_x9C)%,
-   . '\x9D' = '\157' %(slash_x9D)%,  . '\x9E' = '\158' %(slash_x9E)%,
-   . '\x9F' = '\159' %(slash_x9F)%,  . '\xA0' = '\160' %(slash_xA0)%,
-   . '\xA1' = '\161' %(slash_xA1)%,  . '\xA2' = '\162' %(slash_xA2)%,
-   . '\xA3' = '\163' %(slash_xA3)%,  . '\xA4' = '\164' %(slash_xA4)%,
-   . '\xA5' = '\165' %(slash_xA5)%,  . '\xA6' = '\166' %(slash_xA6)%,
-   . '\xA7' = '\167' %(slash_xA7)%,  . '\xA8' = '\168' %(slash_xA8)%,
-   . '\xA9' = '\169' %(slash_xA9)%,  . '\xAA' = '\170' %(slash_xAA)%,
-   . '\xAB' = '\171' %(slash_xAB)%,  . '\xAC' = '\172' %(slash_xAC)%,
-   . '\xAD' = '\173' %(slash_xAD)%,  . '\xAE' = '\174' %(slash_xAE)%,
-   . '\xAF' = '\175' %(slash_xAF)%,  . '\xB0' = '\176' %(slash_xB0)%,
-   . '\xB1' = '\177' %(slash_xB1)%,  . '\xB2' = '\178' %(slash_xB2)%,
-   . '\xB3' = '\179' %(slash_xB3)%,  . '\xB4' = '\180' %(slash_xB4)%,
-   . '\xB5' = '\181' %(slash_xB5)%,  . '\xB6' = '\182' %(slash_xB6)%,
-   . '\xB7' = '\183' %(slash_xB7)%,  . '\xB8' = '\184' %(slash_xB8)%,
-   . '\xB9' = '\185' %(slash_xB9)%,  . '\xBA' = '\186' %(slash_xBA)%,
-   . '\xBB' = '\187' %(slash_xBB)%,  . '\xBC' = '\188' %(slash_xBC)%,
-   . '\xBD' = '\189' %(slash_xBD)%,  . '\xBE' = '\190' %(slash_xBE)%,
-   . '\xBF' = '\191' %(slash_xBF)%,  . '\xC0' = '\192' %(slash_xC0)%,
-   . '\xC1' = '\193' %(slash_xC1)%,  . '\xC2' = '\194' %(slash_xC2)%,
-   . '\xC3' = '\195' %(slash_xC3)%,  . '\xC4' = '\196' %(slash_xC4)%,
-   . '\xC5' = '\197' %(slash_xC5)%,  . '\xC6' = '\198' %(slash_xC6)%,
-   . '\xC7' = '\199' %(slash_xC7)%,  . '\xC8' = '\200' %(slash_xC8)%,
-   . '\xC9' = '\201' %(slash_xC9)%,  . '\xCA' = '\202' %(slash_xCA)%,
-   . '\xCB' = '\203' %(slash_xCB)%,  . '\xCC' = '\204' %(slash_xCC)%,
-   . '\xCD' = '\205' %(slash_xCD)%,  . '\xCE' = '\206' %(slash_xCE)%,
-   . '\xCF' = '\207' %(slash_xCF)%,  . '\xD0' = '\208' %(slash_xD0)%,
-   . '\xD1' = '\209' %(slash_xD1)%,  . '\xD2' = '\210' %(slash_xD2)%,
-   . '\xD3' = '\211' %(slash_xD3)%,  . '\xD4' = '\212' %(slash_xD4)%,
-   . '\xD5' = '\213' %(slash_xD5)%,  . '\xD6' = '\214' %(slash_xD6)%,
-   . '\xD7' = '\215' %(slash_xD7)%,  . '\xD8' = '\216' %(slash_xD8)%,
-   . '\xD9' = '\217' %(slash_xD9)%,  . '\xDA' = '\218' %(slash_xDA)%,
-   . '\xDB' = '\219' %(slash_xDB)%,  . '\xDC' = '\220' %(slash_xDC)%,
-   . '\xDD' = '\221' %(slash_xDD)%,  . '\xDE' = '\222' %(slash_xDE)%,
-   . '\xDF' = '\223' %(slash_xDF)%,  . '\xE0' = '\224' %(slash_xE0)%,
-   . '\xE1' = '\225' %(slash_xE1)%,  . '\xE2' = '\226' %(slash_xE2)%,
-   . '\xE3' = '\227' %(slash_xE3)%,  . '\xE4' = '\228' %(slash_xE4)%,
-   . '\xE5' = '\229' %(slash_xE5)%,  . '\xE6' = '\230' %(slash_xE6)%,
-   . '\xE7' = '\231' %(slash_xE7)%,  . '\xE8' = '\232' %(slash_xE8)%,
-   . '\xE9' = '\233' %(slash_xE9)%,  . '\xEA' = '\234' %(slash_xEA)%,
-   . '\xEB' = '\235' %(slash_xEB)%,  . '\xEC' = '\236' %(slash_xEC)%,
-   . '\xED' = '\237' %(slash_xED)%,  . '\xEE' = '\238' %(slash_xEE)%,
-   . '\xEF' = '\239' %(slash_xEF)%,  . '\xF0' = '\240' %(slash_xF0)%,
-   . '\xF1' = '\241' %(slash_xF1)%,  . '\xF2' = '\242' %(slash_xF2)%,
-   . '\xF3' = '\243' %(slash_xF3)%,  . '\xF4' = '\244' %(slash_xF4)%,
-   . '\xF5' = '\245' %(slash_xF5)%,  . '\xF6' = '\246' %(slash_xF6)%,
-   . '\xF7' = '\247' %(slash_xF7)%,  . '\xF8' = '\248' %(slash_xF8)%,
-   . '\xF9' = '\249' %(slash_xF9)%,  . '\xFA' = '\250' %(slash_xFA)%,
-   . '\xFB' = '\251' %(slash_xFB)%,  . '\xFC' = '\252' %(slash_xFC)%,
-   . '\xFD' = '\253' %(slash_xFD)%,  . '\xFE' = '\254' %(slash_xFE)%,
-   . '\xFF' : Char = '\255' : Char %(slash_xFF)%,
-   . NUL = '\000' %(NUL_def)%,  . SOH = '\001' %(SOH_def)%,
-   . SYX = '\002' %(SYX_def)%,  . ETX = '\003' %(ETX_def)%,
-   . EOT = '\004' %(EOT_def)%,  . ENQ = '\005' %(ENQ_def)%,
-   . ACK = '\006' %(ACK_def)%,  . BEL = '\007' %(BEL_def)%,
-   . BS = '\008' %(BS_def)%,  . HT = '\009' %(HT_def)%,
-   . LF = '\010' %(LF_def)%,  . VT = '\011' %(VT_def)%,
-   . FF = '\012' %(FF_def)%,  . CR = '\013' %(CR_def)%,
-   . SO = '\014' %(SO_def)%,  . SI = '\015' %(SI_def)%,
-   . DLE = '\016' %(DLE_def)%,  . DC1 = '\017' %(DC1_def)%,
-   . DC2 = '\018' %(DC2_def)%,  . DC3 = '\019' %(DC3_def)%,
-   . DC4 = '\020' %(DC4_def)%,  . NAK = '\021' %(NAK_def)%,
-   . SYN = '\022' %(SYN_def)%,  . ETB = '\023' %(ETB_def)%,
-   . CAN = '\024' %(CAN_def)%,  . EM = '\025' %(EM_def)%,
-   . SUB = '\026' %(SUB_def)%,  . ESC = '\027' %(ESC_def)%,
-   . FS = '\028' %(FS_def)%,  . GS = '\029' %(GS_def)%,
-   . RS = '\030' %(RS_def)%,  . US = '\031' %(US_def)%,
-   . SP = '\032' %(SP_def)%,  . DEL = '\127' %(DEL_def)%,
-   . NL = LF %(NL_def)%,  . NP = FF %(NP_def)%,
-   . '\n' = NL %(slash_n)%,  . '\t' = HT %(slash_t)%,
-   . '\v' = VT %(slash_v)%,  . '\b' = BS %(slash_b)%,
-   . '\r' = CR %(slash_r)%,  . '\f' = FF %(slash_f)%,
-   . '\a' = BEL %(slash_a)%,  . '\?' = '?' %(slash_quest)%,
-   . forall x:a; y:a; z:a
-         . x || (y || z) = (x || y) || z %(ga_assoc___||__)%,
-   . (b || b) || b = b ]
+(sorts ABCDEFGHIJKLMONOPQRSTUVWXYZ, Boolean, Char, Data1, Data2,
+       Data3, Data4, Forest, Int, List, Nat, Pos, Rat, Set, Tree, a, a',
+       a'b''2, a_b_c, ab2, ab_2_3_a, abc, abcdefghijlklmnopqrstuvwxyz, b,
+       c, d, e, nat, s, t, x0123456789,
+       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ
+ sorts Data1 < Data2; Int < Rat; Nat < Int, Rat;
+       Pos < Int, Nat, Rat; a < a, b, c, d, e; b < a, b, c, d, e;
+       c < a, b, c, d, e; d < a, b, c, d, e; e < a, b, c, d, e; s < s, t;
+       s1 < s, t; s2 < s, t; t < s, t
+ op ' ' : Char
+ op '!' : Char
+ op '!' : s
+ op '#' : Char
+ op '$' : Char
+ op '$' : s
+ op '%' : Char
+ op '&' : Char
+ op '&' : s
+ op '(' : Char
+ op '(' : s
+ op ')' : Char
+ op ')' : s
+ op '*' : Char
+ op '+' : Char
+ op ',' : Char
+ op '-' : Char
+ op '.' : Char
+ op '/' : Char
+ op '/' : s
+ op '0' : Char
+ op '0' : s
+ op '1' : Char
+ op '1' : s
+ op '2' : Char
+ op '2' : s
+ op '3' : Char
+ op '3' : s
+ op '4' : Char
+ op '4' : s
+ op '5' : Char
+ op '5' : s
+ op '6' : Char
+ op '6' : s
+ op '7' : Char
+ op '7' : s
+ op '8' : Char
+ op '8' : s
+ op '9' : Char
+ op '9' : s
+ op ':' : Char
+ op ';' : Char
+ op '<' : Char
+ op '=' : Char
+ op '=' : s
+ op '>' : Char
+ op '?' : Char
+ op '?' : s
+ op '@' : Char
+ op 'A' : Char
+ op 'B' : Char
+ op 'C' : Char
+ op 'D' : Char
+ op 'E' : Char
+ op 'F' : Char
+ op 'G' : Char
+ op 'H' : Char
+ op 'I' : Char
+ op 'J' : Char
+ op 'K' : Char
+ op 'L' : Char
+ op 'M' : Char
+ op 'N' : Char
+ op 'O' : Char
+ op 'P' : Char
+ op 'Q' : Char
+ op 'R' : Char
+ op 'S' : Char
+ op 'T' : Char
+ op 'U' : Char
+ op 'V' : Char
+ op 'W' : Char
+ op 'X' : Char
+ op 'Y' : Char
+ op 'Z' : Char
+ op '[' : Char
+ op '\"' : Char
+ op '\"' : s
+ op '\'' : Char
+ op '\000' : Char
+ op '\000' : s
+ op '\001' : Char
+ op '\002' : Char
+ op '\003' : Char
+ op '\004' : Char
+ op '\005' : Char
+ op '\006' : Char
+ op '\007' : Char
+ op '\008' : Char
+ op '\009' : Char
+ op '\010' : Char
+ op '\011' : Char
+ op '\012' : Char
+ op '\013' : Char
+ op '\014' : Char
+ op '\015' : Char
+ op '\016' : Char
+ op '\017' : Char
+ op '\018' : Char
+ op '\019' : Char
+ op '\020' : Char
+ op '\021' : Char
+ op '\022' : Char
+ op '\023' : Char
+ op '\024' : Char
+ op '\025' : Char
+ op '\026' : Char
+ op '\027' : Char
+ op '\028' : Char
+ op '\029' : Char
+ op '\030' : Char
+ op '\031' : Char
+ op '\032' : Char
+ op '\033' : Char
+ op '\034' : Char
+ op '\035' : Char
+ op '\036' : Char
+ op '\037' : Char
+ op '\038' : Char
+ op '\039' : Char
+ op '\040' : Char
+ op '\041' : Char
+ op '\042' : Char
+ op '\043' : Char
+ op '\044' : Char
+ op '\045' : Char
+ op '\046' : Char
+ op '\047' : Char
+ op '\048' : Char
+ op '\049' : Char
+ op '\050' : Char
+ op '\051' : Char
+ op '\052' : Char
+ op '\053' : Char
+ op '\054' : Char
+ op '\055' : Char
+ op '\056' : Char
+ op '\057' : Char
+ op '\058' : Char
+ op '\059' : Char
+ op '\060' : Char
+ op '\061' : Char
+ op '\062' : Char
+ op '\063' : Char
+ op '\064' : Char
+ op '\065' : Char
+ op '\066' : Char
+ op '\067' : Char
+ op '\068' : Char
+ op '\069' : Char
+ op '\070' : Char
+ op '\071' : Char
+ op '\072' : Char
+ op '\073' : Char
+ op '\074' : Char
+ op '\075' : Char
+ op '\076' : Char
+ op '\077' : Char
+ op '\078' : Char
+ op '\079' : Char
+ op '\080' : Char
+ op '\081' : Char
+ op '\082' : Char
+ op '\083' : Char
+ op '\084' : Char
+ op '\085' : Char
+ op '\086' : Char
+ op '\087' : Char
+ op '\088' : Char
+ op '\089' : Char
+ op '\090' : Char
+ op '\091' : Char
+ op '\092' : Char
+ op '\093' : Char
+ op '\094' : Char
+ op '\095' : Char
+ op '\096' : Char
+ op '\097' : Char
+ op '\098' : Char
+ op '\099' : Char
+ op '\100' : Char
+ op '\101' : Char
+ op '\102' : Char
+ op '\103' : Char
+ op '\104' : Char
+ op '\105' : Char
+ op '\106' : Char
+ op '\107' : Char
+ op '\108' : Char
+ op '\109' : Char
+ op '\110' : Char
+ op '\111' : Char
+ op '\112' : Char
+ op '\113' : Char
+ op '\114' : Char
+ op '\115' : Char
+ op '\116' : Char
+ op '\117' : Char
+ op '\118' : Char
+ op '\119' : Char
+ op '\120' : Char
+ op '\121' : Char
+ op '\122' : Char
+ op '\123' : Char
+ op '\124' : Char
+ op '\125' : Char
+ op '\126' : Char
+ op '\127' : Char
+ op '\128' : Char
+ op '\129' : Char
+ op '\130' : Char
+ op '\131' : Char
+ op '\132' : Char
+ op '\133' : Char
+ op '\134' : Char
+ op '\135' : Char
+ op '\136' : Char
+ op '\137' : Char
+ op '\138' : Char
+ op '\139' : Char
+ op '\140' : Char
+ op '\141' : Char
+ op '\142' : Char
+ op '\143' : Char
+ op '\144' : Char
+ op '\145' : Char
+ op '\146' : Char
+ op '\147' : Char
+ op '\148' : Char
+ op '\149' : Char
+ op '\150' : Char
+ op '\151' : Char
+ op '\152' : Char
+ op '\153' : Char
+ op '\154' : Char
+ op '\155' : Char
+ op '\156' : Char
+ op '\157' : Char
+ op '\158' : Char
+ op '\159' : Char
+ op '\160' : Char
+ op '\161' : Char
+ op '\162' : Char
+ op '\163' : Char
+ op '\164' : Char
+ op '\165' : Char
+ op '\166' : Char
+ op '\167' : Char
+ op '\168' : Char
+ op '\169' : Char
+ op '\170' : Char
+ op '\171' : Char
+ op '\172' : Char
+ op '\173' : Char
+ op '\174' : Char
+ op '\175' : Char
+ op '\176' : Char
+ op '\177' : Char
+ op '\178' : Char
+ op '\179' : Char
+ op '\180' : Char
+ op '\181' : Char
+ op '\182' : Char
+ op '\183' : Char
+ op '\184' : Char
+ op '\185' : Char
+ op '\186' : Char
+ op '\187' : Char
+ op '\188' : Char
+ op '\189' : Char
+ op '\190' : Char
+ op '\191' : Char
+ op '\192' : Char
+ op '\193' : Char
+ op '\194' : Char
+ op '\195' : Char
+ op '\196' : Char
+ op '\197' : Char
+ op '\198' : Char
+ op '\199' : Char
+ op '\200' : Char
+ op '\201' : Char
+ op '\202' : Char
+ op '\203' : Char
+ op '\204' : Char
+ op '\205' : Char
+ op '\206' : Char
+ op '\207' : Char
+ op '\208' : Char
+ op '\209' : Char
+ op '\210' : Char
+ op '\211' : Char
+ op '\212' : Char
+ op '\213' : Char
+ op '\214' : Char
+ op '\215' : Char
+ op '\216' : Char
+ op '\217' : Char
+ op '\218' : Char
+ op '\219' : Char
+ op '\220' : Char
+ op '\221' : Char
+ op '\222' : Char
+ op '\223' : Char
+ op '\224' : Char
+ op '\225' : Char
+ op '\226' : Char
+ op '\227' : Char
+ op '\228' : Char
+ op '\229' : Char
+ op '\230' : Char
+ op '\231' : Char
+ op '\232' : Char
+ op '\233' : Char
+ op '\234' : Char
+ op '\235' : Char
+ op '\236' : Char
+ op '\237' : Char
+ op '\238' : Char
+ op '\239' : Char
+ op '\240' : Char
+ op '\241' : Char
+ op '\242' : Char
+ op '\243' : Char
+ op '\244' : Char
+ op '\245' : Char
+ op '\246' : Char
+ op '\247' : Char
+ op '\248' : Char
+ op '\249' : Char
+ op '\250' : Char
+ op '\251' : Char
+ op '\252' : Char
+ op '\253' : Char
+ op '\254' : Char
+ op '\255' : Char
+ op '\255' : s
+ op '\?' : Char
+ op '\\' : Char
+ op '\\' : s
+ op '\a' : Char
+ op '\b' : Char
+ op '\f' : Char
+ op '\n' : Char
+ op '\n' : s
+ op '\o000' : Char
+ op '\o000' : s
+ op '\o001' : Char
+ op '\o002' : Char
+ op '\o003' : Char
+ op '\o004' : Char
+ op '\o005' : Char
+ op '\o006' : Char
+ op '\o007' : Char
+ op '\o010' : Char
+ op '\o011' : Char
+ op '\o012' : Char
+ op '\o013' : Char
+ op '\o014' : Char
+ op '\o015' : Char
+ op '\o016' : Char
+ op '\o017' : Char
+ op '\o020' : Char
+ op '\o021' : Char
+ op '\o022' : Char
+ op '\o023' : Char
+ op '\o024' : Char
+ op '\o025' : Char
+ op '\o026' : Char
+ op '\o027' : Char
+ op '\o030' : Char
+ op '\o031' : Char
+ op '\o032' : Char
+ op '\o033' : Char
+ op '\o034' : Char
+ op '\o035' : Char
+ op '\o036' : Char
+ op '\o037' : Char
+ op '\o040' : Char
+ op '\o041' : Char
+ op '\o042' : Char
+ op '\o043' : Char
+ op '\o044' : Char
+ op '\o045' : Char
+ op '\o046' : Char
+ op '\o047' : Char
+ op '\o050' : Char
+ op '\o051' : Char
+ op '\o052' : Char
+ op '\o053' : Char
+ op '\o054' : Char
+ op '\o055' : Char
+ op '\o056' : Char
+ op '\o057' : Char
+ op '\o060' : Char
+ op '\o061' : Char
+ op '\o062' : Char
+ op '\o063' : Char
+ op '\o064' : Char
+ op '\o065' : Char
+ op '\o066' : Char
+ op '\o067' : Char
+ op '\o070' : Char
+ op '\o071' : Char
+ op '\o072' : Char
+ op '\o073' : Char
+ op '\o074' : Char
+ op '\o075' : Char
+ op '\o076' : Char
+ op '\o077' : Char
+ op '\o100' : Char
+ op '\o101' : Char
+ op '\o102' : Char
+ op '\o103' : Char
+ op '\o104' : Char
+ op '\o105' : Char
+ op '\o106' : Char
+ op '\o107' : Char
+ op '\o110' : Char
+ op '\o111' : Char
+ op '\o112' : Char
+ op '\o113' : Char
+ op '\o114' : Char
+ op '\o115' : Char
+ op '\o116' : Char
+ op '\o117' : Char
+ op '\o120' : Char
+ op '\o121' : Char
+ op '\o122' : Char
+ op '\o123' : Char
+ op '\o124' : Char
+ op '\o125' : Char
+ op '\o126' : Char
+ op '\o127' : Char
+ op '\o130' : Char
+ op '\o131' : Char
+ op '\o132' : Char
+ op '\o133' : Char
+ op '\o134' : Char
+ op '\o135' : Char
+ op '\o136' : Char
+ op '\o137' : Char
+ op '\o140' : Char
+ op '\o141' : Char
+ op '\o142' : Char
+ op '\o143' : Char
+ op '\o144' : Char
+ op '\o145' : Char
+ op '\o146' : Char
+ op '\o147' : Char
+ op '\o150' : Char
+ op '\o151' : Char
+ op '\o152' : Char
+ op '\o153' : Char
+ op '\o154' : Char
+ op '\o155' : Char
+ op '\o156' : Char
+ op '\o157' : Char
+ op '\o160' : Char
+ op '\o161' : Char
+ op '\o162' : Char
+ op '\o163' : Char
+ op '\o164' : Char
+ op '\o165' : Char
+ op '\o166' : Char
+ op '\o167' : Char
+ op '\o170' : Char
+ op '\o171' : Char
+ op '\o172' : Char
+ op '\o173' : Char
+ op '\o174' : Char
+ op '\o175' : Char
+ op '\o176' : Char
+ op '\o177' : Char
+ op '\o200' : Char
+ op '\o201' : Char
+ op '\o202' : Char
+ op '\o203' : Char
+ op '\o204' : Char
+ op '\o205' : Char
+ op '\o206' : Char
+ op '\o207' : Char
+ op '\o210' : Char
+ op '\o211' : Char
+ op '\o212' : Char
+ op '\o213' : Char
+ op '\o214' : Char
+ op '\o215' : Char
+ op '\o216' : Char
+ op '\o217' : Char
+ op '\o220' : Char
+ op '\o221' : Char
+ op '\o222' : Char
+ op '\o223' : Char
+ op '\o224' : Char
+ op '\o225' : Char
+ op '\o226' : Char
+ op '\o227' : Char
+ op '\o230' : Char
+ op '\o231' : Char
+ op '\o232' : Char
+ op '\o233' : Char
+ op '\o234' : Char
+ op '\o235' : Char
+ op '\o236' : Char
+ op '\o237' : Char
+ op '\o240' : Char
+ op '\o241' : Char
+ op '\o242' : Char
+ op '\o243' : Char
+ op '\o244' : Char
+ op '\o245' : Char
+ op '\o246' : Char
+ op '\o247' : Char
+ op '\o250' : Char
+ op '\o251' : Char
+ op '\o252' : Char
+ op '\o253' : Char
+ op '\o254' : Char
+ op '\o255' : Char
+ op '\o256' : Char
+ op '\o257' : Char
+ op '\o260' : Char
+ op '\o261' : Char
+ op '\o262' : Char
+ op '\o263' : Char
+ op '\o264' : Char
+ op '\o265' : Char
+ op '\o266' : Char
+ op '\o267' : Char
+ op '\o270' : Char
+ op '\o271' : Char
+ op '\o272' : Char
+ op '\o273' : Char
+ op '\o274' : Char
+ op '\o275' : Char
+ op '\o276' : Char
+ op '\o277' : Char
+ op '\o300' : Char
+ op '\o301' : Char
+ op '\o302' : Char
+ op '\o303' : Char
+ op '\o304' : Char
+ op '\o305' : Char
+ op '\o306' : Char
+ op '\o307' : Char
+ op '\o310' : Char
+ op '\o311' : Char
+ op '\o312' : Char
+ op '\o313' : Char
+ op '\o314' : Char
+ op '\o315' : Char
+ op '\o316' : Char
+ op '\o317' : Char
+ op '\o320' : Char
+ op '\o321' : Char
+ op '\o322' : Char
+ op '\o323' : Char
+ op '\o324' : Char
+ op '\o325' : Char
+ op '\o326' : Char
+ op '\o327' : Char
+ op '\o330' : Char
+ op '\o331' : Char
+ op '\o332' : Char
+ op '\o333' : Char
+ op '\o334' : Char
+ op '\o335' : Char
+ op '\o336' : Char
+ op '\o337' : Char
+ op '\o340' : Char
+ op '\o341' : Char
+ op '\o342' : Char
+ op '\o343' : Char
+ op '\o344' : Char
+ op '\o345' : Char
+ op '\o346' : Char
+ op '\o347' : Char
+ op '\o350' : Char
+ op '\o351' : Char
+ op '\o352' : Char
+ op '\o353' : Char
+ op '\o354' : Char
+ op '\o355' : Char
+ op '\o356' : Char
+ op '\o357' : Char
+ op '\o360' : Char
+ op '\o361' : Char
+ op '\o362' : Char
+ op '\o363' : Char
+ op '\o364' : Char
+ op '\o365' : Char
+ op '\o366' : Char
+ op '\o367' : Char
+ op '\o370' : Char
+ op '\o371' : Char
+ op '\o372' : Char
+ op '\o373' : Char
+ op '\o374' : Char
+ op '\o375' : Char
+ op '\o376' : Char
+ op '\o377' : Char
+ op '\o377' : s
+ op '\r' : Char
+ op '\t' : Char
+ op '\v' : Char
+ op '\x00' : Char
+ op '\x00' : s
+ op '\x01' : Char
+ op '\x02' : Char
+ op '\x03' : Char
+ op '\x04' : Char
+ op '\x05' : Char
+ op '\x06' : Char
+ op '\x07' : Char
+ op '\x08' : Char
+ op '\x09' : Char
+ op '\x0A' : Char
+ op '\x0B' : Char
+ op '\x0C' : Char
+ op '\x0D' : Char
+ op '\x0E' : Char
+ op '\x0F' : Char
+ op '\x10' : Char
+ op '\x11' : Char
+ op '\x12' : Char
+ op '\x13' : Char
+ op '\x14' : Char
+ op '\x15' : Char
+ op '\x16' : Char
+ op '\x17' : Char
+ op '\x18' : Char
+ op '\x19' : Char
+ op '\x1A' : Char
+ op '\x1B' : Char
+ op '\x1C' : Char
+ op '\x1D' : Char
+ op '\x1E' : Char
+ op '\x1F' : Char
+ op '\x20' : Char
+ op '\x21' : Char
+ op '\x22' : Char
+ op '\x23' : Char
+ op '\x24' : Char
+ op '\x25' : Char
+ op '\x26' : Char
+ op '\x27' : Char
+ op '\x28' : Char
+ op '\x29' : Char
+ op '\x2A' : Char
+ op '\x2B' : Char
+ op '\x2C' : Char
+ op '\x2D' : Char
+ op '\x2E' : Char
+ op '\x2F' : Char
+ op '\x30' : Char
+ op '\x31' : Char
+ op '\x32' : Char
+ op '\x33' : Char
+ op '\x34' : Char
+ op '\x35' : Char
+ op '\x36' : Char
+ op '\x37' : Char
+ op '\x38' : Char
+ op '\x39' : Char
+ op '\x3A' : Char
+ op '\x3B' : Char
+ op '\x3C' : Char
+ op '\x3D' : Char
+ op '\x3E' : Char
+ op '\x3F' : Char
+ op '\x40' : Char
+ op '\x41' : Char
+ op '\x42' : Char
+ op '\x43' : Char
+ op '\x44' : Char
+ op '\x45' : Char
+ op '\x46' : Char
+ op '\x47' : Char
+ op '\x48' : Char
+ op '\x49' : Char
+ op '\x4A' : Char
+ op '\x4B' : Char
+ op '\x4C' : Char
+ op '\x4D' : Char
+ op '\x4E' : Char
+ op '\x4F' : Char
+ op '\x50' : Char
+ op '\x51' : Char
+ op '\x52' : Char
+ op '\x53' : Char
+ op '\x54' : Char
+ op '\x55' : Char
+ op '\x56' : Char
+ op '\x57' : Char
+ op '\x58' : Char
+ op '\x59' : Char
+ op '\x5A' : Char
+ op '\x5B' : Char
+ op '\x5C' : Char
+ op '\x5D' : Char
+ op '\x5E' : Char
+ op '\x5F' : Char
+ op '\x60' : Char
+ op '\x61' : Char
+ op '\x62' : Char
+ op '\x63' : Char
+ op '\x64' : Char
+ op '\x65' : Char
+ op '\x66' : Char
+ op '\x67' : Char
+ op '\x68' : Char
+ op '\x69' : Char
+ op '\x6A' : Char
+ op '\x6B' : Char
+ op '\x6C' : Char
+ op '\x6D' : Char
+ op '\x6E' : Char
+ op '\x6F' : Char
+ op '\x70' : Char
+ op '\x71' : Char
+ op '\x72' : Char
+ op '\x73' : Char
+ op '\x74' : Char
+ op '\x75' : Char
+ op '\x76' : Char
+ op '\x77' : Char
+ op '\x78' : Char
+ op '\x79' : Char
+ op '\x7A' : Char
+ op '\x7B' : Char
+ op '\x7C' : Char
+ op '\x7D' : Char
+ op '\x7E' : Char
+ op '\x7F' : Char
+ op '\x80' : Char
+ op '\x81' : Char
+ op '\x82' : Char
+ op '\x83' : Char
+ op '\x84' : Char
+ op '\x85' : Char
+ op '\x86' : Char
+ op '\x87' : Char
+ op '\x88' : Char
+ op '\x89' : Char
+ op '\x8A' : Char
+ op '\x8B' : Char
+ op '\x8C' : Char
+ op '\x8D' : Char
+ op '\x8E' : Char
+ op '\x8F' : Char
+ op '\x90' : Char
+ op '\x91' : Char
+ op '\x92' : Char
+ op '\x93' : Char
+ op '\x94' : Char
+ op '\x95' : Char
+ op '\x96' : Char
+ op '\x97' : Char
+ op '\x98' : Char
+ op '\x99' : Char
+ op '\x9A' : Char
+ op '\x9B' : Char
+ op '\x9C' : Char
+ op '\x9D' : Char
+ op '\x9E' : Char
+ op '\x9F' : Char
+ op '\xA0' : Char
+ op '\xA1' : Char
+ op '\xA2' : Char
+ op '\xA3' : Char
+ op '\xA4' : Char
+ op '\xA5' : Char
+ op '\xA6' : Char
+ op '\xA7' : Char
+ op '\xA8' : Char
+ op '\xA9' : Char
+ op '\xAA' : Char
+ op '\xAB' : Char
+ op '\xAC' : Char
+ op '\xAD' : Char
+ op '\xAE' : Char
+ op '\xAF' : Char
+ op '\xB0' : Char
+ op '\xB1' : Char
+ op '\xB2' : Char
+ op '\xB3' : Char
+ op '\xB4' : Char
+ op '\xB5' : Char
+ op '\xB6' : Char
+ op '\xB7' : Char
+ op '\xB8' : Char
+ op '\xB9' : Char
+ op '\xBA' : Char
+ op '\xBB' : Char
+ op '\xBC' : Char
+ op '\xBD' : Char
+ op '\xBE' : Char
+ op '\xBF' : Char
+ op '\xC0' : Char
+ op '\xC1' : Char
+ op '\xC2' : Char
+ op '\xC3' : Char
+ op '\xC4' : Char
+ op '\xC5' : Char
+ op '\xC6' : Char
+ op '\xC7' : Char
+ op '\xC8' : Char
+ op '\xC9' : Char
+ op '\xCA' : Char
+ op '\xCB' : Char
+ op '\xCC' : Char
+ op '\xCD' : Char
+ op '\xCE' : Char
+ op '\xCF' : Char
+ op '\xD0' : Char
+ op '\xD1' : Char
+ op '\xD2' : Char
+ op '\xD3' : Char
+ op '\xD4' : Char
+ op '\xD5' : Char
+ op '\xD6' : Char
+ op '\xD7' : Char
+ op '\xD8' : Char
+ op '\xD9' : Char
+ op '\xDA' : Char
+ op '\xDB' : Char
+ op '\xDC' : Char
+ op '\xDD' : Char
+ op '\xDE' : Char
+ op '\xDF' : Char
+ op '\xE0' : Char
+ op '\xE1' : Char
+ op '\xE2' : Char
+ op '\xE3' : Char
+ op '\xE4' : Char
+ op '\xE5' : Char
+ op '\xE6' : Char
+ op '\xE7' : Char
+ op '\xE8' : Char
+ op '\xE9' : Char
+ op '\xEA' : Char
+ op '\xEB' : Char
+ op '\xEC' : Char
+ op '\xED' : Char
+ op '\xEE' : Char
+ op '\xEF' : Char
+ op '\xF0' : Char
+ op '\xF1' : Char
+ op '\xF2' : Char
+ op '\xF3' : Char
+ op '\xF4' : Char
+ op '\xF5' : Char
+ op '\xF6' : Char
+ op '\xF7' : Char
+ op '\xF8' : Char
+ op '\xF9' : Char
+ op '\xFA' : Char
+ op '\xFB' : Char
+ op '\xFC' : Char
+ op '\xFD' : Char
+ op '\xFE' : Char
+ op '\xFF' : Char
+ op '\xFF' : s
+ op ']' : Char
+ op '^' : Char
+ op '^' : s
+ op '_' : Char
+ op '`' : Char
+ op 'a' : Char
+ op 'a' : s
+ op 'b' : Char
+ op 'c' : Char
+ op 'd' : Char
+ op 'e' : Char
+ op 'f' : Char
+ op 'g' : Char
+ op 'h' : Char
+ op 'i' : Char
+ op 'j' : Char
+ op 'k' : Char
+ op 'l' : Char
+ op 'm' : Char
+ op 'n' : Char
+ op 'o' : Char
+ op 'p' : Char
+ op 'q' : Char
+ op 'r' : Char
+ op 's' : Char
+ op 't' : Char
+ op 'u' : Char
+ op 'v' : Char
+ op 'w' : Char
+ op 'x' : Char
+ op 'y' : Char
+ op 'z' : Char
+ op '{' : Char
+ op '|' : Char
+ op '}' : Char
+ op '~' : Char
+ op '¡' : Char
+ op '¢' : Char
+ op '£' : Char
+ op '¤' : Char
+ op '¥' : Char
+ op '¦' : Char
+ op '§' : Char
+ op '§' : s
+ op '¨' : Char
+ op '©' : Char
+ op 'ª' : Char
+ op '«' : Char
+ op '¬' : Char
+ op '­' : Char
+ op '®' : Char
+ op '¯' : Char
+ op '°' : Char
+ op '±' : Char
+ op '²' : Char
+ op '³' : Char
+ op '´' : Char
+ op 'µ' : Char
+ op '¶' : Char
+ op '·' : Char
+ op '¸' : Char
+ op '¹' : Char
+ op 'º' : Char
+ op '»' : Char
+ op '¼' : Char
+ op '½' : Char
+ op '¾' : Char
+ op '¿' : Char
+ op 'À' : Char
+ op 'Á' : Char
+ op 'Â' : Char
+ op 'Ã' : Char
+ op 'Ä' : Char
+ op 'Å' : Char
+ op 'Æ' : Char
+ op 'Ç' : Char
+ op 'È' : Char
+ op 'É' : Char
+ op 'Ê' : Char
+ op 'Ë' : Char
+ op 'Ì' : Char
+ op 'Í' : Char
+ op 'Î' : Char
+ op 'Ï' : Char
+ op 'Ð' : Char
+ op 'Ñ' : Char
+ op 'Ò' : Char
+ op 'Ó' : Char
+ op 'Ô' : Char
+ op 'Õ' : Char
+ op 'Ö' : Char
+ op '×' : Char
+ op 'Ø' : Char
+ op 'Ù' : Char
+ op 'Ú' : Char
+ op 'Û' : Char
+ op 'Ü' : Char
+ op 'Ý' : Char
+ op 'Þ' : Char
+ op 'ß' : Char
+ op 'ß' : s
+ op 'à' : Char
+ op 'á' : Char
+ op 'â' : Char
+ op 'ã' : Char
+ op 'ä' : Char
+ op 'å' : Char
+ op 'æ' : Char
+ op 'ç' : Char
+ op 'è' : Char
+ op 'é' : Char
+ op 'ê' : Char
+ op 'ë' : Char
+ op 'ì' : Char
+ op 'í' : Char
+ op 'î' : Char
+ op 'ï' : Char
+ op 'ð' : Char
+ op 'ñ' : Char
+ op 'ò' : Char
+ op 'ó' : Char
+ op 'ô' : Char
+ op 'õ' : Char
+ op 'ö' : Char
+ op '÷' : Char
+ op 'ø' : Char
+ op 'ù' : Char
+ op 'ú' : Char
+ op 'û' : Char
+ op 'ü' : Char
+ op 'ý' : Char
+ op 'þ' : Char
+ op 'ÿ' : Char
+ op +__ : Int -> Int
+ op +__ : Nat -> Nat
+ op +__ : Rat -> Rat
+ op - : s -> s
+ op -__ : Int -> Int
+ op -__ : Rat -> Rat
+ op 0 : Int
+ op 0 : Nat
+ op 0 : Rat
+ op 0 : nat
+ op 1 : Int
+ op 1 : Nat
+ op 1 : Pos
+ op 1 : Rat
+ op 1 : s
+ op 2 : Nat
+ op 2 : s
+ op 3 : Nat
+ op 3 : s
+ op 4 : Nat
+ op 4 : s
+ op 5 : Nat
+ op 6 : Nat
+ op 7 : Nat
+ op 8 : Nat
+ op 9 : Nat
+ op ACK : Char
+ op Add : Data1 * Set -> Set
+ op BEL : Char
+ op BS : Char
+ op CAN : Char
+ op CR : Char
+ op Cons : Data1 * List -> List
+ op Cons : Tree * Forest -> Forest
+ op Cons21 : Data1 * Data2 -> Data2
+ op Cons22 : Data2 * Data1 -> Data2
+ op Cons31 : Data1 * Data2 -> Data3
+ op Cons32 : Data2 * Data1 -> Data3
+ op Cons41 : Data1 * Data2 ->? Data4
+ op Cons42 : Data2 * Data1 ->? Data4
+ op DC1 : Char
+ op DC2 : Char
+ op DC3 : Char
+ op DC4 : Char
+ op DEL : Char
+ op DLE : Char
+ op EM : Char
+ op ENQ : Char
+ op EOT : Char
+ op ESC : Char
+ op ETB : Char
+ op ETX : Char
+ op FF : Char
+ op FS : Char
+ op False : Boolean
+ op Forest : Tree
+ op GS : Char
+ op HT : Char
+ op LF : Char
+ op Leaf : Data1 -> Tree
+ op Mt : Set
+ op NAK : Char
+ op NL : Char
+ op NP : Char
+ op NUL : Char
+ op Nil : Forest
+ op Nil : List
+ op Not__ : Boolean -> Boolean
+ op RS : Char
+ op SI : Char
+ op SO : Char
+ op SOH : Char
+ op SP : Char
+ op SUB : Char
+ op SYN : Char
+ op SYX : Char
+ op True : Boolean
+ op US : Char
+ op VT : Char
+ op __! : Nat -> Nat
+ op __*__ : Int * Int -> Int
+ op __*__ : Nat * Nat -> Nat
+ op __*__ : Pos * Pos -> Pos
+ op __*__ : Rat * Rat -> Rat
+ op __*__ : s * s -> s
+ op __+__ : Int * Int -> Int
+ op __+__ : Nat * Nat -> Nat
+ op __+__ : Nat * Pos -> Pos
+ op __+__ : Pos * Nat -> Pos
+ op __+__ : Rat * Rat -> Rat
+ op __+__ : s * s -> s
+ op __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
+ op __-__ : Int * Int -> Int
+ op __-__ : Nat * Nat -> Int
+ op __-__ : Rat * Rat -> Rat
+ op __-__ : s * s -> s
+ op __-?__ : Nat * Nat ->? Nat
+ op __/__ : Int * Pos -> Rat
+ op __/__ : s * s -> s
+ op __/__ : Rat * Rat ->? Rat
+ op __/?__ : Int * Int ->? Int
+ op __/?__ : Nat * Nat ->? Nat
+ op __@@__ : Nat * Nat -> Nat
+ op __@@__ : s * s -> s
+ op __And__ : Boolean * Boolean -> Boolean
+ op __Or__ : Boolean * Boolean -> Boolean
+ op __^__ : Int * Nat -> Int
+ op __^__ : Nat * Nat -> Nat
+ op __^__ : Rat * Int -> Rat
+ op __a : b
+ op __and'__ : s
+ op __div__ : Int * Int ->? Int
+ op __div__ : Nat * Nat ->? Nat
+ op __exp__ : s * s -> s
+ op __frac__ : s * s -> s
+ op __mod__ : Int * Int ->? Nat
+ op __mod__ : Nat * Nat ->? Nat
+ op __quot__ : Int * Int ->? Int
+ op __quot__ : Nat * Nat ->? Nat
+ op __rem__ : Int * Int ->? Int
+ op __rem__ : Nat * Nat ->? Nat
+ op __||__ : a * a -> a
+ op a : Data1
+ op a : b
+ op a : s
+ op a : s -> t
+ op abs : Int -> Nat
+ op abs : Nat -> Nat
+ op abs : Rat -> Rat
+ op b : Data1
+ op b : a
+ op b : s -> s
+ op b : s -> t
+ op c : Data1
+ op c : b
+ op c : d
+ op c : s
+ op c : t
+ op c : a -> s
+ op c : a * t * t * t -> s
+ op c : a * t * t * t * t -> s
+ op c : s * s -> s
+ op c : s * s * s -> s
+ op c : s * s * t -> s
+ op chr : Nat ->? Char
+ op d : t
+ op d : s -> t
+ op e : t
+ op f : s ->? s
+ op g : s -> t
+ op g : s ->? s
+ op max : Int * Int -> Int
+ op max : Nat * Nat -> Nat
+ op max : Rat * Rat -> Rat
+ op min : Int * Int -> Int
+ op min : Nat * Nat -> Nat
+ op min : Rat * Rat -> Rat
+ op ord : Char -> Nat
+ op pre : Nat ->? Nat
+ op sel1 : Data3 ->? Data1
+ op sel1 : Data4 ->? Data1
+ op sel2 : Data3 ->? Data2
+ op sel2 : Data4 ->? Data2
+ op sign : Int -> Int
+ op suc : Nat -> Nat
+ op suc : Nat -> Pos
+ op succ : nat -> nat
+ op {__} : s -> s
+ op {} : s
+ pred __<__ : Int * Int
+ pred __<__ : Nat * Nat
+ pred __<__ : Rat * Rat
+ pred __<__ : a * a
+ pred __<=__ : Int * Int
+ pred __<=__ : Nat * Nat
+ pred __<=__ : Rat * Rat
+ pred __>__ : Int * Int
+ pred __>__ : Nat * Nat
+ pred __>__ : Rat * Rat
+ pred __>=__ : Int * Int
+ pred __>=__ : Nat * Nat
+ pred __>=__ : Rat * Rat
+ pred a : ()
+ pred b : s
+ pred c : s * s
+ pred c : s * s * s
+ pred c : s * s * t
+ pred even : Int
+ pred even : Nat
+ pred isDigit : Char
+ pred isLetter : Char
+ pred isPrintable : Char
+ pred odd : Int
+ pred odd : Nat
+ pred p : ()
+ pred q : s,[  . forall X1:Nat
+                     . pre(suc(X1)) = X1 %(ga_selector_pre)%,
+               . forall X1:Nat; Y1:Nat
+                     . suc(X1) = suc(Y1) <=> X1 = Y1 %(ga_injective_suc)%,
+               . forall Y1:Nat . not 0 = suc(Y1) %(ga_disjoint_0_suc)%,
+               . not def pre(0) %(ga_selector_undef_pre_0)%,
+              generated{sort Nat; op 0 : Nat;
+                                  op suc : Nat -> Nat} %(ga_generated_Nat)%,
+               . forall n:Nat . 0 <= n %(Nat_leq_def1)%,
+               . forall n:Nat . not suc(n) <= 0 %(Nat_leq_def2)%,
+               . forall m:Nat; n:Nat
+                     . suc(m) <= suc(n) <=> m <= n %(Nat_leq_def3)%,
+               . forall m:Nat; n:Nat . m >= n <=> n <= m %(Nat_geq_def)%,
+               . forall m:Nat; n:Nat
+                     . m < n <=> m <= n /\ not m = n %(Nat_less_def)%,
+               . forall m:Nat; n:Nat . m > n <=> m < n %(Nat_greater_def)%,
+               . forall m:Nat . 0 + m = m %(Nat_add_0)%,
+               . forall m:Nat; n:Nat . suc(n) + m = suc(n + m) %(Nat_add_suc)%,
+               . forall m:Nat . 0 * m = 0 %(Nat_mult_0)%,
+               . forall m:Nat; n:Nat . suc(n) * m = n * m + m %(Nat_mult_suc)%,
+               . forall m:Nat . m ^ 0 = 1 %(Nat_power_0)%,
+               . forall m:Nat; n:Nat . m ^ suc(n) = m * m ^ n %(Nat_power_suc)%,
+               . forall m:Nat; n:Nat
+                     . min(m, n) = m when m <= n else n %(Nat_min_def)%,
+               . forall m:Nat; n:Nat
+                     . max(m, n) = n when m <= n else m %(Nat_max_def)%,
+               . forall m:Nat . + m = m %(plus_def)%,
+               . forall n:Nat . abs(n) = n %(Nat_abs)%,
+               . forall m:Nat . odd(m) <=> not even(m) %(Nat_odd_def)%,
+               . even(0) %(Nat_even_0)%,
+               . forall m:Nat . even(suc(m)) <=> odd(m) %(Nat_even_suc)%,
+               . 0 ! = 1 %(Nat_factorial_0)%,
+               . forall n:Nat . suc(n) ! = suc(n) * n ! %(Nat_factorial_suc)%,
+               . forall m:Nat; n:Nat; r:Nat
+                     . m -? n = r <=> m = r + n %(Nat_sub_def)%,
+               . forall m:Nat . not def m /? 0 %(Nat_divide_0)%,
+               . forall m:Nat; n:Nat; r:Nat
+                     . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%,
+               . forall m:Nat; n:Nat; r:Nat
+                     . m div n = r <=>
+                           (exists s:Nat . m = n * r + s /\ s < n) %(Nat_div)%,
+               . forall m:Nat; n:Nat; s:Nat
+                     . m mod n = s <=>
+                           (exists r:Nat . m = n * r + s /\ s < n) %(Nat_mod)%,
+               . forall m:Nat; n:Nat . m quot n = m div n %(Nat_quot)%,
+               . forall m:Nat; n:Nat . m rem n = m mod n %(Nat_rem)%,
+               . 1 = suc(0) %(Nat_1_def)%,  . 2 = suc(1) %(Nat_2_def)%,
+               . 3 = suc(2) %(Nat_3_def)%,  . 4 = suc(3) %(Nat_4_def)%,
+               . 5 = suc(4) %(Nat_5_def)%,  . 6 = suc(5) %(Nat_6_def)%,
+               . 7 = suc(6) %(Nat_7_def)%,  . 8 = suc(7) %(Nat_8_def)%,
+               . 9 = suc(8) %(Nat_9_def)%,
+               . forall m:Nat; n:Nat
+                     . m @@ n = m * suc(9) + n %(Nat_decimal_def)%,
+               . forall p:Nat . p in Pos <=> p > 0,
+               . forall x:Nat; y:Nat . min(x, y) = min(y, x) %(ga_comm_min)%,
+               . forall x:Nat; y:Nat . max(x, y) = max(y, x) %(ga_comm_max)%,
+               . forall x:Nat; y:Nat; z:Nat
+                     . min(x, min(y, z)) = min(min(x, y), z) %(ga_assoc_min)%,
+               . forall x:Nat; y:Nat; z:Nat
+                     . max(x, max(y, z)) = max(max(x, y), z) %(ga_assoc_max)%,
+               . forall m:Nat; n:Nat . def m -? n <=> m >= n %(Nat_sub_dom)%,
+               . forall m:Nat; n:Nat
+                     . def m /? n <=> m mod n = 0 %(Nat_divide_dom)%,
+               . forall m:Nat; n:Nat . def m div n <=> not n = 0 %(Nat_div_dom)%,
+               . forall m:Nat; n:Nat . def m mod n <=> not n = 0 %(Nat_mod_dom)%,
+               . forall m:Nat; n:Nat
+                     . def m quot n <=> not n = 0 %(Nat_quot_dom)%,
+               . forall m:Nat; n:Nat . def m rem n <=> not n = 0 %(Nat_rem_dom)%,
+               . forall r:Nat; s:Nat; t:Nat
+                     . (r + s) * t = r * t + s * t %(Nat_distr)%,
+               . forall m:Nat . max(m, 0) = m %(Nat_max_unit)%,
+               . forall m:Nat . min(m, 0) = 0 %(Nat_min_0)%,
+              generated{sort Int; op __-__ : Nat *
+                                             Nat -> Int} %(ga_generated_Int)%,
+               . forall a:Nat; b:Nat; c:Nat; d:Nat
+                     . a - b = c : Nat - d : Nat <=>
+                           a : Nat + d : Nat = c + b %(Int_equality)%,
+               . forall a:Nat . inj(a : Nat) : Int = a - 0 %(Int_Nat_embedding)%,
+               . forall a:Nat; b:Nat; c:Nat; d:Nat
+                     . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
+                       + inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
+                           inj(a : Nat + c : Nat) : Int - inj(b
+                                                              + d) : Int : Int %(Int_add_def)%,
+               . forall a:Nat; b:Nat; c:Nat; d:Nat
+                     . inj(a : Nat) : Int - inj(b : Nat) : Int : Int
+                       * inj(c : Nat) : Int - inj(d : Nat) : Int : Int : Int =
+                           inj(a : Nat * c : Nat + b * d) : Int - inj(b * c + a : Nat
+                                                                              * d : Nat) : Int : Int %(Int_mult_def)%,
+               . forall m:Int; n:Int . m - n = m + - n %(Int_sub_def)%,
+               . forall m:Int . + m = m %(Int_pos_def)%,
+               . forall a:Nat; b:Nat
+                     . - inj(a : Nat) : Int - inj(b : Nat) : Int : Int : Int =
+                           inj(b : Nat) : Int - inj(a : Nat) : Int : Int %(Int_neg_def)%,
+               . forall m:Int
+                     . sign(m) =
+                           inj(0 : Nat) : Int
+                               when m = inj(0 : Nat) : Int
+                               else inj(1 : Pos) : Int
+                                        when m : Int > inj(0 : Nat) : Int
+                                        else - inj(1 : Pos) : Int : Int %(Int_sign_def)%,
+               . forall m:Int; n:Int . m <= n <=> n - m in Nat %(Int_leq_def)%,
+               . forall m:Int; n:Int . m >= n <=> n <= m %(Int_geq_def)%,
+               . forall m:Int; n:Int
+                     . m < n <=> m <= n /\ not m = n %(Int_less_def)%,
+               . forall m:Int; n:Int . m > n <=> m < n %(Int_greater_def)%,
+               . forall m:Int; n:Int
+                     . min(m, n) = m when m <= n else n %(Int_min_def)%,
+               . forall m:Int; n:Int
+                     . max(m, n) = n when m <= n else m %(Int_max_def)%,
+               . forall m:Int
+                     . inj(abs(m)) : Int = - m if
+                           m : Int < inj(0 : Nat) : Int %(Int_abs_def)%,
+               . forall a:Nat
+                     . - inj(1 : Pos) : Int : Int ^ a : Nat : Int =
+                           inj(1 : Pos) : Int
+                               when even(inj(a : Nat) : Int)
+                               else - inj(1 : Pos) : Int : Int %(Int_neg1_power_def)%,
+               . forall m:Int; a:Nat
+                     . m ^ a =
+                           sign(m) ^ a * inj(abs(m) ^ a) : Int : Int %(Int_power_def)%,
+               . forall m:Int
+                     . even(m) <=> even(inj(abs(m)) : Int) %(Int_even_def)%,
+               . forall m:Int . odd(m) <=> not even(m) %(Int_odd_def)%,
+               . forall m:Int; n:Int
+                     . m /? n =
+                           sign(m) * sign(n) * inj(abs(m)
+                                                   /? abs(n)) : Int : Int %(Int_divide)%,
+               . forall m:Int; n:Int
+                     . inj(m mod n) : Int < inj(abs(n)) : Int if
+                           not n = inj(0 : Nat) : Int %(Int_mod_range)%,
+               . forall m:Int; n:Int
+                     . m = (m div n) * n + inj(m mod n) : Int : Int if
+                           not n = inj(0 : Nat) : Int %(Int_mod__div_def)%,
+               . forall m:Int
+                     . not def m : Int mod inj(0 : Nat) : Int : Nat %(Int_mod_zero)%,
+               . forall m:Int
+                     . not def m : Int div inj(0 : Nat) : Int : Int %(Int_div_zero)%,
+               . forall m:Int; n:Int
+                     . m quot n =
+                           sign(m) * sign(n) * inj(abs(m)
+                                                   quot abs(n)) : Int : Int %(Int_quot_def)%,
+               . forall m:Int; n:Int
+                     . m rem n =
+                           sign(m) * sign(n) * inj(abs(m)
+                                                   rem abs(n)) : Int : Int %(Int_rem_def)%,
+               . forall a:Nat; b:Nat
+                     . def a -? b =>
+                           inj(a -? b) : Int =
+                               inj(a : Nat) : Int
+                               - inj(b : Nat) : Int : Int %(Int_Nat_sub_compat)%,
+               . forall m:Int
+                     . m = sign(m) * inj(abs(m)) : Int : Int %(Int_abs_decomp)%,
+               . forall m:Int
+                     . odd(m) <=> odd(inj(abs(m)) : Int) %(Int_odd_alt)%,
+               . forall m:Int; n:Int; r:Int
+                     . m /? n = r <=>
+                           not n = inj(0 : Nat) : Int /\ n * r = n %(Int_divide_dom1)%,
+               . forall m:Int; n:Int
+                     . def m /? n <=> m mod n = 0 %(Int_divide_dom2)%,
+               . forall m:Int; n:Int
+                     . def m mod n <=> not n = inj(0 : Nat) : Int %(Int_mod_dom)%,
+               . forall m:Int; n:Int
+                     . m mod n = m : Int mod inj(abs(n)) : Int : Nat %(Int_mod_abs)%,
+               . forall m:Int; n:Int
+                     . def m div n <=> not n = inj(0 : Nat) : Int %(Int_div_dom)%,
+               . forall m:Int; n:Int
+                     . def m quot n <=> not n = inj(0 : Nat) : Int %(Int_quot_dom)%,
+               . forall m:Int; n:Int
+                     . def m rem n <=> not n = inj(0 : Nat) : Int %(Int_rem_dom)%,
+               . forall m:Int; n:Int
+                     . m = (m quot n) * n + (m rem n) if
+                           not n = inj(0 : Nat) : Int %(Int_quot_rem)%,
+              generated{sort Rat; op __/__ : Int *
+                                             Pos -> Rat} %(ga_generated_Rat)%,
+               . forall i:Int; j:Int; p:Pos; q:Pos
+                     . i / p = j / q <=>
+                           i : Int * inj(q : Pos) : Int : Int =
+                               j : Int * inj(p : Pos) : Int : Int %(Rat_equality)%,
+               . forall i:Int . i / 1 = inj(i : Int) : Rat %(embeddingIntToRat)%,
+               . forall p:Pos; q:Pos; i:Int; j:Int
+                     . (i / p) <= (j / q) <=>
+                           i : Int * inj(q : Pos) : Int : Int <= j : Int
+                                                                 * inj(p : Pos) : Int : Int %(Rat_leq_def)%,
+               . forall x:Rat; y:Rat . x >= y <=> y <= x %(Rat_geq_def)%,
+               . forall x:Rat; y:Rat
+                     . x < y <=> x <= y /\ not x = y %(Rat_less_def)%,
+               . forall x:Rat; y:Rat . x > y <=> y < x %(Rat_greater_def)%,
+               . forall p:Pos; q:Pos; i:Int; j:Int
+                     . (i / p) + (j / q) =
+                           i : Int * inj(q : Pos) : Int : Int + j : Int
+                                                                * inj(p : Pos) : Int : Int : Int
+                           / (p * q) : Rat %(Rat_add_def)%,
+               . forall x:Rat; y:Rat . x - y = x + - y %(Rat_sub_def)%,
+               . forall p:Pos; q:Pos; i:Int; j:Int
+                     . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%,
+               . forall x:Rat
+                     . not def x : Rat / inj(0 : Nat) : Rat : Rat %(Rat_divide_def1)%,
+               . forall x:Rat; y:Rat; z:Rat
+                     . (x / y = z <=> z = x * y) if
+                           not y = inj(0 : Nat) : Rat %(Rat_divide_def2)%,
+               . forall x:Rat . + x = x %(Rat_plus_def)%,
+               . forall p:Pos; i:Int . - (i / p) = - i / p %(Rat_minus_def)%,
+               . forall p:Pos; i:Int
+                     . abs(i / p) = inj(abs(i)) : Int / p : Pos : Rat %(Rat_abs_def)%,
+               . forall x:Rat
+                     . x : Rat ^ inj(0 : Nat) : Int : Rat =
+                           inj(1 : Pos) : Rat %(Rat_power_0)%,
+               . forall n:Nat; x:Rat
+                     . x : Rat ^ inj(suc(n)) : Int : Rat =
+                           x : Rat * x : Rat
+                                     ^ inj(n : Nat) : Int : Rat : Rat %(Rat_power_suc)%,
+               . forall p:Pos; x:Rat
+                     . x : Rat ^ - inj(p : Pos) : Int : Int : Rat =
+                           inj(1 : Pos) : Rat / x : Rat
+                                                ^ inj(p : Pos) : Int : Rat : Rat %(Rat_power_neg)%,
+               . forall x:Rat; y:Rat
+                     . min(x, y) = x when x <= y else y %(Rat_min_def)%,
+               . forall x:Rat; y:Rat
+                     . max(x, y) = y when x <= y else x %(Rat_max_def)%,
+               . forall i:Int; j:Int; p:Pos; q:Pos
+                     . (i / p) / (j / q) =
+                           (i / p) * inj(q : Pos) : Rat / inj(j : Int) : Rat : Rat : Rat if
+                           not j = inj(0 : Nat) : Int %(Rat_divide_rule)%,
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall a:s . (var a : s) = (var a : s),
+               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+                     . a(c(X1, X2, X3, X4, X5)) = X2 %(ga_selector_a)%,
+               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+                     . b(c(X1, X2, X3, X4, X5)) = X3 %(ga_selector_b)%,
+               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+                     . a(c(X1, X2, X3, X4, X5)) = X4 %(ga_selector_a)%,
+               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+                     . d(c(X1, X2, X3, X4, X5)) = X5 %(ga_selector_d)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
+               . forall X1:a; X2:t; X3:t; X4:t; Y1:a; Y2:t; Y3:t; Y4:t
+                     . c(X1, X2, X3, X4) = c(Y1, Y2, Y3, Y4) <=>
+                           X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4 %(ga_injective_c)%,
+               . forall X1:a; Y1:a
+                     . c(X1) = c(Y1) <=> X1 = Y1 %(ga_injective_c)%,
+               . not c : s in s2 %(ga_disjoint_c_sort_s2)%,
+               . not c : s in s1 %(ga_disjoint_c_sort_s1)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . not c(X1, X2, X3, X4) in s2 %(ga_disjoint_c_sort_s2)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . not c(X1, X2, X3, X4) in s1 %(ga_disjoint_c_sort_s1)%,
+               . forall X1:a . not c(X1) in s2 %(ga_disjoint_c_sort_s2)%,
+               . forall X1:a . not c(X1) in s1 %(ga_disjoint_c_sort_s1)%,
+               . forall Y1:a; Y2:t; Y3:t; Y4:t
+                     . not c = c(Y1, Y2, Y3, Y4) %(ga_disjoint_c_c)%,
+               . forall Y1:a . not c = c(Y1) %(ga_disjoint_c_c)%,
+               . forall X1:a; X2:t; X3:t; X4:t; Y1:a
+                     . not c(X1, X2, X3, X4) = c(Y1) %(ga_disjoint_c_c)%,
+               . not def a(c) %(ga_selector_undef_a_c)%,
+               . forall X1:a . not def a(c(X1)) %(ga_selector_undef_a_c)%,
+               . not def b(c) %(ga_selector_undef_b_c)%,
+               . forall X1:a . not def b(c(X1)) %(ga_selector_undef_b_c)%,
+               . not def d(c) %(ga_selector_undef_d_c)%,
+               . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
+              generated{sort s; op c : s; op c : a ->? s;
+                                op c : a * t * t * t -> s; op inj : s1 -> s;
+                                op inj : s2 -> s} %(ga_generated_s)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
+              generated{sort s; op c : s; op c : a ->? s;
+                                op c : a * t * t * t -> s; op inj : s1 -> s;
+                                op inj : s2 -> s} %(ga_generated_s)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
+               . forall X1:a; X2:t; X3:t; X4:t
+                     . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
+              generated{sort s, t; op c : s; op c : a ->? s;
+                                   op c : a * t * t * t -> s; op inj : s1 -> s; op inj : s2 -> s;
+                                   op inj : t -> s} %(ga_generated_s_t)%,
+               . true %(The true formula)%,  . true %(and this)%,
+               . forall x:b . x in a <=> true,
+               . forall x:s; y:s; z:s
+                     . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
+               . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
+               . forall x:s . c(x, x) = x %(ga_idem_c)%,
+               . forall x:s; y:s; z:s
+                     . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
+               . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
+               . forall x:s . c(x, x) = x %(ga_idem_c)%,  . a : s = a : s,
+               . forall x, y:s; z:t . c(x, y, z) = a,  . a : s = a : s,
+               . forall x, y:s; z:t . c(x, y, z) = a,
+               . forall x, y:s; z:t . c(x, y, z) <=> false,
+               . forall X1:Data1; X2:Data2
+                     . sel1(Cons31(X1, X2)) = X1 %(ga_selector_sel1)%,
+               . forall X1:Data1; X2:Data2
+                     . sel2(Cons31(X1, X2)) = X2 %(ga_selector_sel2)%,
+               . forall X1:Data2; X2:Data1
+                     . sel2(Cons32(X1, X2)) = X1 %(ga_selector_sel2)%,
+               . forall X1:Data2; X2:Data1
+                     . sel1(Cons32(X1, X2)) = X2 %(ga_selector_sel1)%,
+               . forall X1:Data1; X2:Data2
+                     . sel1(Cons41(X1, X2)) = X1 %(ga_selector_sel1)%,
+               . forall X1:Data1; X2:Data2
+                     . sel2(Cons41(X1, X2)) = X2 %(ga_selector_sel2)%,
+               . forall X1:Data2; X2:Data1
+                     . sel2(Cons42(X1, X2)) = X1 %(ga_selector_sel2)%,
+               . forall X1:Data2; X2:Data1
+                     . sel1(Cons42(X1, X2)) = X2 %(ga_selector_sel1)%,
+               . forall X1:Data1; X2:List; Y1:Data1; Y2:List
+                     . Cons(X1, X2) = Cons(Y1, Y2) <=>
+                           X1 = Y1 /\ X2 = Y2 %(ga_injective_Cons)%,
+               . forall Y1:Data1; Y2:List
+                     . not Nil = Cons(Y1, Y2) %(ga_disjoint_Nil_Cons)%,
+              generated{sort List; op Cons : Data1 * List -> List;
+                                   op Nil : List} %(ga_generated_List)%,
+              generated{sort Set; op Add : Data1 * Set -> Set;
+                                  op Mt : Set} %(ga_generated_Set)%,
+              generated{sort Set; op Add : Data1 * Set -> Set;
+                                  op Mt : Set} %(ga_generated_Set)%,
+              generated{sort nat; op 0 : nat;
+                                  op succ : nat -> nat} %(ga_generated_nat)%,
+               . false,  . true,  . forall x:s . not p /\ not q(x) /\ q(x),
+               . forall x:s . not p \/ not q(x) \/ q(x),
+               . forall x:s
+                     . not p /\ not q(x) /\ q(x) =>
+                           not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x),
+               . forall x:s
+                     . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if
+                           not p /\ not q(x) /\ q(x),
+               . forall x:s
+                     . not p /\ not q(x) /\ q(x) <=>
+                           (exists x:s
+                                . not p \/ not q(x) \/ q(x) <=>
+                                      (exists! x:s . not p /\ not q(x) /\ q(x))),
+               . forall x:s . def f(x),  . forall x:s . f(x) =e= inj(g(x)) : s,
+               . forall x:s . f(x) = inj(g(x)) : s,  . forall r1:t . r1 in s,
+               . forall x:s . def g(x),  . forall x:s . def g(x) as s,
+               . forall x:s . def f(x),  . forall x:s . def g(x),  . p,
+               . forall x:s . q(x),
+               . forall y:s; z:s; x:s . def x * y * z + z * y * x,  . def {},
+               . forall x:s . def { x },  . true,
+               . not True = False %(ga_disjoint_True_False)%,
+              generated{sort Boolean; op False : Boolean;
+                                      op True : Boolean} %(ga_generated_Boolean)%,
+               . Not False = True %(Not_False)%,
+               . Not True = False %(Not_True)%,
+               . False And False = False %(And_def1)%,
+               . False And True = False %(And_def2)%,
+               . True And False = False %(And_def3)%,
+               . True And True = True %(And_def4)%,
+               . forall x:Boolean; y:Boolean
+                     . x Or y = Not (Not x And Not y) %(Or_def)%,
+               . forall n:Nat
+                     . def chr(n) <=> inj(n : Nat) : Int <= inj(255) : Int %(chr_dom)%,
+               . forall c:Char . chr(ord(c)) = (var c : Char) %(chr_def)%,
+               . forall n:Nat
+                     . ord(chr(n)) = n if
+                           inj(n : Nat) : Int <= inj(255) : Int %(ord_def)%,
+               . '\000' = chr(0) %(slash_000)%,
+               . '\001' = chr(inj(1 : Pos) : Nat) : Char %(slash_001)%,
+               . '\002' = chr(2) %(slash_002)%,  . '\003' = chr(3) %(slash_003)%,
+               . '\004' = chr(4) %(slash_004)%,  . '\005' = chr(5) %(slash_005)%,
+               . '\006' = chr(6) %(slash_006)%,  . '\007' = chr(7) %(slash_007)%,
+               . '\008' = chr(8) %(slash_008)%,  . '\009' = chr(9) %(slash_009)%,
+               . '\010' =
+                     chr(inj(1 : Pos) : Nat @@ 0 : Nat : Nat) : Char %(slash_010)%,
+               . '\011' =
+                     chr(inj(1 : Pos) : Nat
+                         @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_011)%,
+               . '\012' =
+                     chr(inj(1 : Pos) : Nat @@ 2 : Nat : Nat) : Char %(slash_012)%,
+               . '\013' =
+                     chr(inj(1 : Pos) : Nat @@ 3 : Nat : Nat) : Char %(slash_013)%,
+               . '\014' =
+                     chr(inj(1 : Pos) : Nat @@ 4 : Nat : Nat) : Char %(slash_014)%,
+               . '\015' =
+                     chr(inj(1 : Pos) : Nat @@ 5 : Nat) : Char %(slash_015)%,
+               . '\016' =
+                     chr(inj(1 : Pos) : Nat @@ 6 : Nat) : Char %(slash_016)%,
+               . '\017' =
+                     chr(inj(1 : Pos) : Nat @@ 7 : Nat) : Char %(slash_017)%,
+               . '\018' =
+                     chr(inj(1 : Pos) : Nat @@ 8 : Nat) : Char %(slash_018)%,
+               . '\019' =
+                     chr(inj(1 : Pos) : Nat @@ 9 : Nat) : Char %(slash_019)%,
+               . '\020' = chr(20) %(slash_020)%,
+               . '\021' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_021)%,
+               . '\022' = chr(2 : Nat @@ 2 : Nat) %(slash_022)%,
+               . '\023' = chr(2 : Nat @@ 3 : Nat) %(slash_023)%,
+               . '\024' = chr(2 : Nat @@ 4 : Nat) %(slash_024)%,
+               . '\025' = chr(25) %(slash_025)%,
+               . '\026' = chr(26) %(slash_026)%,
+               . '\027' = chr(27) %(slash_027)%,
+               . '\028' = chr(28) %(slash_028)%,
+               . '\029' = chr(29) %(slash_029)%,
+               . '\030' = chr(30) %(slash_030)%,
+               . '\031' =
+                     chr(3 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_031)%,
+               . '\032' = chr(3 : Nat @@ 2 : Nat) %(slash_032)%,
+               . '\033' = chr(3 : Nat @@ 3 : Nat) %(slash_033)%,
+               . '\034' = chr(3 : Nat @@ 4 : Nat) %(slash_034)%,
+               . '\035' = chr(35) %(slash_035)%,
+               . '\036' = chr(36) %(slash_036)%,
+               . '\037' = chr(37) %(slash_037)%,
+               . '\038' = chr(38) %(slash_038)%,
+               . '\039' = chr(39) %(slash_039)%,
+               . '\040' = chr(40) %(slash_040)%,
+               . '\041' =
+                     chr(4 : Nat @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_041)%,
+               . '\042' = chr(4 : Nat @@ 2 : Nat) %(slash_042)%,
+               . '\043' = chr(4 : Nat @@ 3 : Nat) %(slash_043)%,
+               . '\044' = chr(4 : Nat @@ 4 : Nat) %(slash_044)%,
+               . '\045' = chr(45) %(slash_045)%,
+               . '\046' = chr(46) %(slash_046)%,
+               . '\047' = chr(47) %(slash_047)%,
+               . '\048' = chr(48) %(slash_048)%,
+               . '\049' = chr(49) %(slash_049)%,
+               . '\050' = chr(50) %(slash_050)%,
+               . '\051' =
+                     chr(5 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_051)%,
+               . '\052' = chr(52) %(slash_052)%,
+               . '\053' = chr(53) %(slash_053)%,
+               . '\054' = chr(54) %(slash_054)%,
+               . '\055' = chr(55) %(slash_055)%,
+               . '\056' = chr(56) %(slash_056)%,
+               . '\057' = chr(57) %(slash_057)%,
+               . '\058' = chr(58) %(slash_058)%,
+               . '\059' = chr(59) %(slash_059)%,
+               . '\060' = chr(60) %(slash_060)%,
+               . '\061' =
+                     chr(6 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_061)%,
+               . '\062' = chr(62) %(slash_062)%,
+               . '\063' = chr(63) %(slash_063)%,
+               . '\064' = chr(64) %(slash_064)%,
+               . '\065' = chr(65) %(slash_065)%,
+               . '\066' = chr(66) %(slash_066)%,
+               . '\067' = chr(67) %(slash_067)%,
+               . '\068' = chr(68) %(slash_068)%,
+               . '\069' = chr(69) %(slash_069)%,
+               . '\070' = chr(70) %(slash_070)%,
+               . '\071' =
+                     chr(7 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_071)%,
+               . '\072' = chr(72) %(slash_072)%,
+               . '\073' = chr(73) %(slash_073)%,
+               . '\074' = chr(74) %(slash_074)%,
+               . '\075' = chr(75) %(slash_075)%,
+               . '\076' = chr(76) %(slash_076)%,
+               . '\077' = chr(77) %(slash_077)%,
+               . '\078' = chr(78) %(slash_078)%,
+               . '\079' = chr(79) %(slash_079)%,
+               . '\080' = chr(80) %(slash_080)%,
+               . '\081' =
+                     chr(8 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_081)%,
+               . '\082' = chr(82) %(slash_082)%,
+               . '\083' = chr(83) %(slash_083)%,
+               . '\084' = chr(84) %(slash_084)%,
+               . '\085' = chr(85) %(slash_085)%,
+               . '\086' = chr(86) %(slash_086)%,
+               . '\087' = chr(87) %(slash_087)%,
+               . '\088' = chr(88) %(slash_088)%,
+               . '\089' = chr(89) %(slash_089)%,
+               . '\090' = chr(90) %(slash_090)%,
+               . '\091' =
+                     chr(9 @@ inj(1 : Pos) : Nat : Nat) : Char %(slash_091)%,
+               . '\092' = chr(92) %(slash_092)%,
+               . '\093' = chr(93) %(slash_093)%,
+               . '\094' = chr(94) %(slash_094)%,
+               . '\095' = chr(95) %(slash_095)%,
+               . '\096' = chr(96) %(slash_096)%,
+               . '\097' = chr(97) %(slash_097)%,
+               . '\098' = chr(98) %(slash_098)%,
+               . '\099' = chr(99) %(slash_099)%,
+               . '\100' =
+                     chr(inj(1 : Pos) : Nat @@ 00 : Nat) : Char %(slash_100)%,
+               . '\101' =
+                     chr(inj(1 : Pos) : Nat @@ 0 : Nat
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_101)%,
+               . '\102' =
+                     chr(inj(1 : Pos) : Nat @@ 02 : Nat) : Char %(slash_102)%,
+               . '\103' =
+                     chr(inj(1 : Pos) : Nat @@ 03 : Nat) : Char %(slash_103)%,
+               . '\104' =
+                     chr(inj(1 : Pos) : Nat @@ 04 : Nat) : Char %(slash_104)%,
+               . '\105' =
+                     chr(inj(1 : Pos) : Nat @@ 05 : Nat) : Char %(slash_105)%,
+               . '\106' =
+                     chr(inj(1 : Pos) : Nat @@ 06 : Nat) : Char %(slash_106)%,
+               . '\107' =
+                     chr(inj(1 : Pos) : Nat @@ 07 : Nat) : Char %(slash_107)%,
+               . '\108' =
+                     chr(inj(1 : Pos) : Nat @@ 08 : Nat) : Char %(slash_108)%,
+               . '\109' =
+                     chr(inj(1 : Pos) : Nat @@ 09 : Nat) : Char %(slash_109)%,
+               . '\110' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 0 : Nat : Nat : Nat) : Char %(slash_110)%,
+               . '\111' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_111)%,
+               . '\112' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 2 : Nat : Nat : Nat) : Char %(slash_112)%,
+               . '\113' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 3 : Nat : Nat : Nat) : Char %(slash_113)%,
+               . '\114' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 4 : Nat : Nat : Nat) : Char %(slash_114)%,
+               . '\115' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 5 : Nat : Nat) : Char %(slash_115)%,
+               . '\116' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 6 : Nat : Nat) : Char %(slash_116)%,
+               . '\117' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 7 : Nat : Nat) : Char %(slash_117)%,
+               . '\118' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 8 : Nat : Nat) : Char %(slash_118)%,
+               . '\119' =
+                     chr(inj(1 : Pos) : Nat @@ inj(1 : Pos) : Nat
+                                               @@ 9 : Nat : Nat) : Char %(slash_119)%,
+               . '\120' =
+                     chr(inj(1 : Pos) : Nat @@ 20 : Nat) : Char %(slash_120)%,
+               . '\121' =
+                     chr(inj(1 : Pos) : Nat @@ 2 : Nat
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_121)%,
+               . '\122' =
+                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
+                                                @@ 2 : Nat) : Nat) : Char %(slash_122)%,
+               . '\123' =
+                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
+                                                @@ 3 : Nat) : Nat) : Char %(slash_123)%,
+               . '\124' =
+                     chr(inj(1 : Pos) : Nat @@ (2 : Nat
+                                                @@ 4 : Nat) : Nat) : Char %(slash_124)%,
+               . '\125' =
+                     chr(inj(1 : Pos) : Nat @@ 25 : Nat) : Char %(slash_125)%,
+               . '\126' =
+                     chr(inj(1 : Pos) : Nat @@ 26 : Nat) : Char %(slash_126)%,
+               . '\127' =
+                     chr(inj(1 : Pos) : Nat @@ 27 : Nat) : Char %(slash_127)%,
+               . '\128' =
+                     chr(inj(1 : Pos) : Nat @@ 28 : Nat) : Char %(slash_128)%,
+               . '\129' =
+                     chr(inj(1 : Pos) : Nat @@ 29 : Nat) : Char %(slash_129)%,
+               . '\130' =
+                     chr(inj(1 : Pos) : Nat @@ 30 : Nat) : Char %(slash_130)%,
+               . '\131' =
+                     chr(inj(1 : Pos) : Nat @@ 3 : Nat
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_131)%,
+               . '\132' =
+                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
+                                                @@ 2 : Nat) : Nat) : Char %(slash_132)%,
+               . '\133' =
+                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
+                                                @@ 3 : Nat) : Nat) : Char %(slash_133)%,
+               . '\134' =
+                     chr(inj(1 : Pos) : Nat @@ (3 : Nat
+                                                @@ 4 : Nat) : Nat) : Char %(slash_134)%,
+               . '\135' =
+                     chr(inj(1 : Pos) : Nat @@ 35 : Nat) : Char %(slash_135)%,
+               . '\136' =
+                     chr(inj(1 : Pos) : Nat @@ 36 : Nat) : Char %(slash_136)%,
+               . '\137' =
+                     chr(inj(1 : Pos) : Nat @@ 37 : Nat) : Char %(slash_137)%,
+               . '\138' =
+                     chr(inj(1 : Pos) : Nat @@ 38 : Nat) : Char %(slash_138)%,
+               . '\139' =
+                     chr(inj(1 : Pos) : Nat @@ 39 : Nat) : Char %(slash_139)%,
+               . '\140' =
+                     chr(inj(1 : Pos) : Nat @@ 40 : Nat) : Char %(slash_140)%,
+               . '\141' =
+                     chr(inj(1 : Pos) : Nat @@ 4 : Nat
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_141)%,
+               . '\142' =
+                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
+                                                @@ 2 : Nat) : Nat) : Char %(slash_142)%,
+               . '\143' =
+                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
+                                                @@ 3 : Nat) : Nat) : Char %(slash_143)%,
+               . '\144' =
+                     chr(inj(1 : Pos) : Nat @@ (4 : Nat
+                                                @@ 4 : Nat) : Nat) : Char %(slash_144)%,
+               . '\145' =
+                     chr(inj(1 : Pos) : Nat @@ 45 : Nat) : Char %(slash_145)%,
+               . '\146' =
+                     chr(inj(1 : Pos) : Nat @@ 46 : Nat) : Char %(slash_146)%,
+               . '\147' =
+                     chr(inj(1 : Pos) : Nat @@ 47 : Nat) : Char %(slash_147)%,
+               . '\148' =
+                     chr(inj(1 : Pos) : Nat @@ 48 : Nat) : Char %(slash_148)%,
+               . '\149' =
+                     chr(inj(1 : Pos) : Nat @@ 49 : Nat) : Char %(slash_149)%,
+               . '\150' =
+                     chr(inj(1 : Pos) : Nat @@ 50 : Nat) : Char %(slash_150)%,
+               . '\151' =
+                     chr(inj(1 : Pos) : Nat @@ 5
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_151)%,
+               . '\152' =
+                     chr(inj(1 : Pos) : Nat @@ 52 : Nat) : Char %(slash_152)%,
+               . '\153' =
+                     chr(inj(1 : Pos) : Nat @@ 53 : Nat) : Char %(slash_153)%,
+               . '\154' =
+                     chr(inj(1 : Pos) : Nat @@ 54 : Nat) : Char %(slash_154)%,
+               . '\155' =
+                     chr(inj(1 : Pos) : Nat @@ 55 : Nat) : Char %(slash_155)%,
+               . '\156' =
+                     chr(inj(1 : Pos) : Nat @@ 56 : Nat) : Char %(slash_156)%,
+               . '\157' =
+                     chr(inj(1 : Pos) : Nat @@ 57 : Nat) : Char %(slash_157)%,
+               . '\158' =
+                     chr(inj(1 : Pos) : Nat @@ 58 : Nat) : Char %(slash_158)%,
+               . '\159' =
+                     chr(inj(1 : Pos) : Nat @@ 59 : Nat) : Char %(slash_159)%,
+               . '\160' =
+                     chr(inj(1 : Pos) : Nat @@ 60 : Nat) : Char %(slash_160)%,
+               . '\161' =
+                     chr(inj(1 : Pos) : Nat @@ 6
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_161)%,
+               . '\162' =
+                     chr(inj(1 : Pos) : Nat @@ 62 : Nat) : Char %(slash_162)%,
+               . '\163' =
+                     chr(inj(1 : Pos) : Nat @@ 63 : Nat) : Char %(slash_163)%,
+               . '\164' =
+                     chr(inj(1 : Pos) : Nat @@ 64 : Nat) : Char %(slash_164)%,
+               . '\165' =
+                     chr(inj(1 : Pos) : Nat @@ 65 : Nat) : Char %(slash_165)%,
+               . '\166' =
+                     chr(inj(1 : Pos) : Nat @@ 66 : Nat) : Char %(slash_166)%,
+               . '\167' =
+                     chr(inj(1 : Pos) : Nat @@ 67 : Nat) : Char %(slash_167)%,
+               . '\168' =
+                     chr(inj(1 : Pos) : Nat @@ 68 : Nat) : Char %(slash_168)%,
+               . '\169' =
+                     chr(inj(1 : Pos) : Nat @@ 69 : Nat) : Char %(slash_169)%,
+               . '\170' =
+                     chr(inj(1 : Pos) : Nat @@ 70 : Nat) : Char %(slash_170)%,
+               . '\171' =
+                     chr(inj(1 : Pos) : Nat @@ 7
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_171)%,
+               . '\172' =
+                     chr(inj(1 : Pos) : Nat @@ 72 : Nat) : Char %(slash_172)%,
+               . '\173' =
+                     chr(inj(1 : Pos) : Nat @@ 73 : Nat) : Char %(slash_173)%,
+               . '\174' =
+                     chr(inj(1 : Pos) : Nat @@ 74 : Nat) : Char %(slash_174)%,
+               . '\175' =
+                     chr(inj(1 : Pos) : Nat @@ 75 : Nat) : Char %(slash_175)%,
+               . '\176' =
+                     chr(inj(1 : Pos) : Nat @@ 76 : Nat) : Char %(slash_176)%,
+               . '\177' =
+                     chr(inj(1 : Pos) : Nat @@ 77 : Nat) : Char %(slash_177)%,
+               . '\178' =
+                     chr(inj(1 : Pos) : Nat @@ 78 : Nat) : Char %(slash_178)%,
+               . '\179' =
+                     chr(inj(1 : Pos) : Nat @@ 79 : Nat) : Char %(slash_179)%,
+               . '\180' =
+                     chr(inj(1 : Pos) : Nat @@ 80 : Nat) : Char %(slash_180)%,
+               . '\181' =
+                     chr(inj(1 : Pos) : Nat @@ 8
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_181)%,
+               . '\182' =
+                     chr(inj(1 : Pos) : Nat @@ 82 : Nat) : Char %(slash_182)%,
+               . '\183' =
+                     chr(inj(1 : Pos) : Nat @@ 83 : Nat) : Char %(slash_183)%,
+               . '\184' =
+                     chr(inj(1 : Pos) : Nat @@ 84 : Nat) : Char %(slash_184)%,
+               . '\185' =
+                     chr(inj(1 : Pos) : Nat @@ 85 : Nat) : Char %(slash_185)%,
+               . '\186' =
+                     chr(inj(1 : Pos) : Nat @@ 86 : Nat) : Char %(slash_186)%,
+               . '\187' =
+                     chr(inj(1 : Pos) : Nat @@ 87 : Nat) : Char %(slash_187)%,
+               . '\188' =
+                     chr(inj(1 : Pos) : Nat @@ 88 : Nat) : Char %(slash_188)%,
+               . '\189' =
+                     chr(inj(1 : Pos) : Nat @@ 89 : Nat) : Char %(slash_189)%,
+               . '\190' =
+                     chr(inj(1 : Pos) : Nat @@ 90 : Nat) : Char %(slash_190)%,
+               . '\191' =
+                     chr(inj(1 : Pos) : Nat @@ 9
+                                               @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_191)%,
+               . '\192' =
+                     chr(inj(1 : Pos) : Nat @@ 92 : Nat) : Char %(slash_192)%,
+               . '\193' =
+                     chr(inj(1 : Pos) : Nat @@ 93 : Nat) : Char %(slash_193)%,
+               . '\194' =
+                     chr(inj(1 : Pos) : Nat @@ 94 : Nat) : Char %(slash_194)%,
+               . '\195' =
+                     chr(inj(1 : Pos) : Nat @@ 95 : Nat) : Char %(slash_195)%,
+               . '\196' =
+                     chr(inj(1 : Pos) : Nat @@ 96 : Nat) : Char %(slash_196)%,
+               . '\197' =
+                     chr(inj(1 : Pos) : Nat @@ 97 : Nat) : Char %(slash_197)%,
+               . '\198' =
+                     chr(inj(1 : Pos) : Nat @@ 98 : Nat) : Char %(slash_198)%,
+               . '\199' =
+                     chr(inj(1 : Pos) : Nat @@ 99 : Nat) : Char %(slash_199)%,
+               . '\200' = chr(200) %(slash_200)%,
+               . '\201' =
+                     chr(2 : Nat @@ 0 : Nat
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_201)%,
+               . '\202' = chr(202) %(slash_202)%,
+               . '\203' = chr(203) %(slash_203)%,
+               . '\204' = chr(204) %(slash_204)%,
+               . '\205' = chr(205) %(slash_205)%,
+               . '\206' = chr(206) %(slash_206)%,
+               . '\207' = chr(207) %(slash_207)%,
+               . '\208' = chr(208) %(slash_208)%,
+               . '\209' = chr(209) %(slash_209)%,
+               . '\210' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 0 : Nat : Nat : Nat) : Char %(slash_210)%,
+               . '\211' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_211)%,
+               . '\212' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 2 : Nat : Nat : Nat) : Char %(slash_212)%,
+               . '\213' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 3 : Nat : Nat : Nat) : Char %(slash_213)%,
+               . '\214' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 4 : Nat : Nat : Nat) : Char %(slash_214)%,
+               . '\215' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 5 : Nat : Nat) : Char %(slash_215)%,
+               . '\216' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 6 : Nat : Nat) : Char %(slash_216)%,
+               . '\217' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 7 : Nat : Nat) : Char %(slash_217)%,
+               . '\218' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 8 : Nat : Nat) : Char %(slash_218)%,
+               . '\219' =
+                     chr(2 : Nat @@ inj(1 : Pos) : Nat
+                                    @@ 9 : Nat : Nat) : Char %(slash_219)%,
+               . '\220' = chr(220) %(slash_220)%,
+               . '\221' =
+                     chr(2 : Nat @@ 2 : Nat
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_221)%,
+               . '\222' = chr(2 @@ (2 : Nat @@ 2 : Nat)) %(slash_222)%,
+               . '\223' = chr(2 @@ (2 : Nat @@ 3 : Nat)) %(slash_223)%,
+               . '\224' = chr(2 @@ (2 : Nat @@ 4 : Nat)) %(slash_224)%,
+               . '\225' = chr(225) %(slash_225)%,
+               . '\226' = chr(226) %(slash_226)%,
+               . '\227' = chr(227) %(slash_227)%,
+               . '\228' = chr(228) %(slash_228)%,
+               . '\229' = chr(229) %(slash_229)%,
+               . '\230' = chr(230) %(slash_230)%,
+               . '\231' =
+                     chr(2 : Nat @@ 3 : Nat
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_231)%,
+               . '\232' = chr(2 @@ (3 : Nat @@ 2 : Nat)) %(slash_232)%,
+               . '\233' = chr(2 @@ (3 : Nat @@ 3 : Nat)) %(slash_233)%,
+               . '\234' = chr(2 @@ (3 : Nat @@ 4 : Nat)) %(slash_234)%,
+               . '\235' = chr(235) %(slash_235)%,
+               . '\236' = chr(236) %(slash_236)%,
+               . '\237' = chr(237) %(slash_237)%,
+               . '\238' = chr(238) %(slash_238)%,
+               . '\239' = chr(239) %(slash_239)%,
+               . '\240' = chr(240) %(slash_240)%,
+               . '\241' =
+                     chr(2 : Nat @@ 4 : Nat
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_241)%,
+               . '\242' = chr(2 @@ (4 : Nat @@ 2 : Nat)) %(slash_242)%,
+               . '\243' = chr(2 @@ (4 : Nat @@ 3 : Nat)) %(slash_243)%,
+               . '\244' = chr(2 @@ (4 : Nat @@ 4 : Nat)) %(slash_244)%,
+               . '\245' = chr(245) %(slash_245)%,
+               . '\246' = chr(246) %(slash_246)%,
+               . '\247' = chr(247) %(slash_247)%,
+               . '\248' = chr(248) %(slash_248)%,
+               . '\249' = chr(249) %(slash_249)%,
+               . '\250' = chr(250) %(slash_250)%,
+               . '\251' =
+                     chr(2 : Nat @@ 5
+                                    @@ inj(1 : Pos) : Nat : Nat : Nat) : Char %(slash_251)%,
+               . '\252' = chr(252) %(slash_252)%,
+               . '\253' = chr(253) %(slash_253)%,
+               . '\254' = chr(254) %(slash_254)%,
+               . '\255' = chr(255) %(slash_255)%,
+               . ' ' = '\032' %(printable_32)%,  . '!' = '\033' %(printable_33)%,
+               . '\"' = '\034' %(printable_34)%,
+               . '#' = '\035' %(printable_35)%,  . '$' = '\036' %(printable_36)%,
+               . '%' = '\037' %(printable_37)%,  . '&' = '\038' %(printable_38)%,
+               . '\'' = '\039' %(printable_39)%,
+               . '(' = '\040' %(printable_40)%,  . ')' = '\041' %(printable_41)%,
+               . '*' = '\042' %(printable_42)%,  . '+' = '\043' %(printable_43)%,
+               . ',' = '\044' %(printable_44)%,  . '-' = '\045' %(printable_45)%,
+               . '.' = '\046' %(printable_46)%,  . '/' = '\047' %(printable_47)%,
+               . '0' = '\048' %(printable_48)%,  . '1' = '\049' %(printable_49)%,
+               . '2' = '\050' %(printable_50)%,  . '3' = '\051' %(printable_51)%,
+               . '4' = '\052' %(printable_52)%,  . '5' = '\053' %(printable_53)%,
+               . '6' = '\054' %(printable_54)%,  . '7' = '\055' %(printable_55)%,
+               . '8' = '\056' %(printable_56)%,  . '9' = '\057' %(printable_57)%,
+               . ':' = '\058' %(printable_58)%,  . ';' = '\059' %(printable_59)%,
+               . '<' = '\060' %(printable_60)%,  . '=' = '\061' %(printable_61)%,
+               . '>' = '\062' %(printable_62)%,  . '?' = '\063' %(printable_63)%,
+               . '@' = '\064' %(printable_64)%,  . 'A' = '\065' %(printable_65)%,
+               . 'B' = '\066' %(printable_66)%,  . 'C' = '\067' %(printable_67)%,
+               . 'D' = '\068' %(printable_68)%,  . 'E' = '\069' %(printable_69)%,
+               . 'F' = '\070' %(printable_70)%,  . 'G' = '\071' %(printable_71)%,
+               . 'H' = '\072' %(printable_72)%,  . 'I' = '\073' %(printable_73)%,
+               . 'J' = '\074' %(printable_74)%,  . 'K' = '\075' %(printable_75)%,
+               . 'L' = '\076' %(printable_76)%,  . 'M' = '\077' %(printable_77)%,
+               . 'N' = '\078' %(printable_78)%,  . 'O' = '\079' %(printable_79)%,
+               . 'P' = '\080' %(printable_80)%,  . 'Q' = '\081' %(printable_81)%,
+               . 'R' = '\082' %(printable_82)%,  . 'S' = '\083' %(printable_83)%,
+               . 'T' = '\084' %(printable_84)%,  . 'U' = '\085' %(printable_85)%,
+               . 'V' = '\086' %(printable_86)%,  . 'W' = '\087' %(printable_87)%,
+               . 'X' = '\088' %(printable_88)%,  . 'Y' = '\089' %(printable_89)%,
+               . 'Z' = '\090' %(printable_90)%,  . '[' = '\091' %(printable_91)%,
+               . '\\' = '\092' %(printable_92)%,
+               . ']' = '\093' %(printable_93)%,  . '^' = '\094' %(printable_94)%,
+               . '_' = '\095' %(printable_95)%,  . '`' = '\096' %(printable_96)%,
+               . 'a' = '\097' %(printable_97)%,  . 'b' = '\098' %(printable_98)%,
+               . 'c' = '\099' %(printable_99)%,
+               . 'd' = '\100' %(printable_100)%,
+               . 'e' = '\101' %(printable_101)%,
+               . 'f' = '\102' %(printable_102)%,
+               . 'g' = '\103' %(printable_103)%,
+               . 'h' = '\104' %(printable_104)%,
+               . 'i' = '\105' %(printable_105)%,
+               . 'j' = '\106' %(printable_106)%,
+               . 'k' = '\107' %(printable_107)%,
+               . 'l' = '\108' %(printable_108)%,
+               . 'm' = '\109' %(printable_109)%,
+               . 'n' = '\110' %(printable_110)%,
+               . 'o' = '\111' %(printable_111)%,
+               . 'p' = '\112' %(printable_112)%,
+               . 'q' = '\113' %(printable_113)%,
+               . 'r' = '\114' %(printable_114)%,
+               . 's' = '\115' %(printable_115)%,
+               . 't' = '\116' %(printable_116)%,
+               . 'u' = '\117' %(printable_117)%,
+               . 'v' = '\118' %(printable_118)%,
+               . 'w' = '\119' %(printable_119)%,
+               . 'x' = '\120' %(printable_120)%,
+               . 'y' = '\121' %(printable_121)%,
+               . 'z' = '\122' %(printable_122)%,
+               . '{' = '\123' %(printable_123)%,
+               . '|' = '\124' %(printable_124)%,
+               . '}' = '\125' %(printable_125)%,
+               . '~' = '\126' %(printable_126)%,
+               . ' ' = '\160' %(printable_160)%,
+               . '¡' = '\161' %(printable_161)%,
+               . '¢' = '\162' %(printable_162)%,
+               . '£' = '\163' %(printable_163)%,
+               . '¤' = '\164' %(printable_164)%,
+               . '¥' = '\165' %(printable_165)%,
+               . '¦' = '\166' %(printable_166)%,
+               . '§' = '\167' %(printable_167)%,
+               . '¨' = '\168' %(printable_168)%,
+               . '©' = '\169' %(printable_169)%,
+               . 'ª' = '\170' %(printable_170)%,
+               . '«' = '\171' %(printable_171)%,
+               . '¬' = '\172' %(printable_172)%,
+               . '­' = '\173' %(printable_173)%,
+               . '®' = '\174' %(printable_174)%,
+               . '¯' = '\175' %(printable_175)%,
+               . '°' = '\176' %(printable_176)%,
+               . '±' = '\177' %(printable_177)%,
+               . '²' = '\178' %(printable_178)%,
+               . '³' = '\179' %(printable_179)%,
+               . '´' = '\180' %(printable_180)%,
+               . 'µ' = '\181' %(printable_181)%,
+               . '¶' = '\182' %(printable_182)%,
+               . '·' = '\183' %(printable_183)%,
+               . '¸' = '\184' %(printable_184)%,
+               . '¹' = '\185' %(printable_185)%,
+               . 'º' = '\186' %(printable_186)%,
+               . '»' = '\187' %(printable_187)%,
+               . '¼' = '\188' %(printable_188)%,
+               . '½' = '\189' %(printable_189)%,
+               . '¾' = '\190' %(printable_190)%,
+               . '¿' = '\191' %(printable_191)%,
+               . 'À' = '\192' %(printable_192)%,
+               . 'Á' = '\193' %(printable_193)%,
+               . 'Â' = '\194' %(printable_194)%,
+               . 'Ã' = '\195' %(printable_195)%,
+               . 'Ä' = '\196' %(printable_196)%,
+               . 'Å' = '\197' %(printable_197)%,
+               . 'Æ' = '\198' %(printable_198)%,
+               . 'Ç' = '\199' %(printable_199)%,
+               . 'È' = '\200' %(printable_200)%,
+               . 'É' = '\201' %(printable_201)%,
+               . 'Ê' = '\202' %(printable_202)%,
+               . 'Ë' = '\203' %(printable_203)%,
+               . 'Ì' = '\204' %(printable_204)%,
+               . 'Í' = '\205' %(printable_205)%,
+               . 'Î' = '\206' %(printable_206)%,
+               . 'Ï' = '\207' %(printable_207)%,
+               . 'Ð' = '\208' %(printable_208)%,
+               . 'Ñ' = '\209' %(printable_209)%,
+               . 'Ò' = '\210' %(printable_210)%,
+               . 'Ó' = '\211' %(printable_211)%,
+               . 'Ô' = '\212' %(printable_212)%,
+               . 'Õ' = '\213' %(printable_213)%,
+               . 'Ö' = '\214' %(printable_214)%,
+               . '×' = '\215' %(printable_215)%,
+               . 'Ø' = '\216' %(printable_216)%,
+               . 'Ù' = '\217' %(printable_217)%,
+               . 'Ú' = '\218' %(printable_218)%,
+               . 'Û' = '\219' %(printable_219)%,
+               . 'Ü' = '\220' %(printable_220)%,
+               . 'Ý' = '\221' %(printable_221)%,
+               . 'Þ' = '\222' %(printable_222)%,
+               . 'ß' = '\223' %(printable_223)%,
+               . 'à' = '\224' %(printable_224)%,
+               . 'á' = '\225' %(printable_225)%,
+               . 'â' = '\226' %(printable_226)%,
+               . 'ã' = '\227' %(printable_227)%,
+               . 'ä' = '\228' %(printable_228)%,
+               . 'å' = '\229' %(printable_229)%,
+               . 'æ' = '\230' %(printable_230)%,
+               . 'ç' = '\231' %(printable_231)%,
+               . 'è' = '\232' %(printable_232)%,
+               . 'é' = '\233' %(printable_233)%,
+               . 'ê' = '\234' %(printable_234)%,
+               . 'ë' = '\235' %(printable_235)%,
+               . 'ì' = '\236' %(printable_236)%,
+               . 'í' = '\237' %(printable_237)%,
+               . 'î' = '\238' %(printable_238)%,
+               . 'ï' = '\239' %(printable_239)%,
+               . 'ð' = '\240' %(printable_240)%,
+               . 'ñ' = '\241' %(printable_241)%,
+               . 'ò' = '\242' %(printable_242)%,
+               . 'ó' = '\243' %(printable_243)%,
+               . 'ô' = '\244' %(printable_244)%,
+               . 'õ' = '\245' %(printable_245)%,
+               . 'ö' = '\246' %(printable_246)%,
+               . '÷' = '\247' %(printable_247)%,
+               . 'ø' = '\248' %(printable_248)%,
+               . 'ù' = '\249' %(printable_249)%,
+               . 'ú' = '\250' %(printable_250)%,
+               . 'û' = '\251' %(printable_251)%,
+               . 'ü' = '\252' %(printable_252)%,
+               . 'ý' = '\253' %(printable_253)%,
+               . 'þ' = '\254' %(printable_254)%,
+               . 'ÿ' = '\255' %(printable_255)%,
+               . forall c:Char
+                     . isLetter(c) <=>
+                           (inj(ord('A')) : Int <= inj(ord(c)) : Int
+                            /\ inj(ord(c)) : Int <= inj(ord('Z')) : Int)
+                           \/ (inj(ord('a')) : Int <= inj(ord(c)) : Int
+                               /\ inj(ord(c)) : Int <= inj(ord('z')) : Int) %(isLetter_def)%,
+               . forall c:Char
+                     . isDigit(c) <=>
+                           inj(ord('0')) : Int <= inj(ord(c)) : Int
+                           /\ inj(ord(c)) : Int <= inj(ord('9')) : Int %(isDigit_def)%,
+               . forall c:Char
+                     . isPrintable(c) <=>
+                           (inj(ord(' ')) : Int <= inj(ord(c)) : Int
+                            /\ inj(ord(c)) : Int <= inj(ord('~')) : Int)
+                           \/ (inj(ord(' ')) : Int <= inj(ord(c)) : Int
+                               /\ inj(ord(c)) : Int <= inj(ord('ÿ')) : Int) %(isPrintable_def)%,
+               . '\o000' : Char = '\000' : Char %(slash_o000)%,
+               . '\o001' = '\001' %(slash_o001)%,
+               . '\o002' = '\002' %(slash_o002)%,
+               . '\o003' = '\003' %(slash_o003)%,
+               . '\o004' = '\004' %(slash_o004)%,
+               . '\o005' = '\005' %(slash_o005)%,
+               . '\o006' = '\006' %(slash_o006)%,
+               . '\o007' = '\007' %(slash_o007)%,
+               . '\o010' = '\008' %(slash_o010)%,
+               . '\o011' = '\009' %(slash_o011)%,
+               . '\o012' = '\010' %(slash_o012)%,
+               . '\o013' = '\011' %(slash_o013)%,
+               . '\o014' = '\012' %(slash_o014)%,
+               . '\o015' = '\013' %(slash_o015)%,
+               . '\o016' = '\014' %(slash_o016)%,
+               . '\o017' = '\015' %(slash_o017)%,
+               . '\o020' = '\016' %(slash_o020)%,
+               . '\o021' = '\017' %(slash_o021)%,
+               . '\o022' = '\018' %(slash_o022)%,
+               . '\o023' = '\019' %(slash_o023)%,
+               . '\o024' = '\020' %(slash_o024)%,
+               . '\o025' = '\021' %(slash_o025)%,
+               . '\o026' = '\022' %(slash_o026)%,
+               . '\o027' = '\023' %(slash_o027)%,
+               . '\o030' = '\024' %(slash_o030)%,
+               . '\o031' = '\025' %(slash_o031)%,
+               . '\o032' = '\026' %(slash_o032)%,
+               . '\o033' = '\027' %(slash_o033)%,
+               . '\o034' = '\028' %(slash_o034)%,
+               . '\o035' = '\029' %(slash_o035)%,
+               . '\o036' = '\030' %(slash_o036)%,
+               . '\o037' = '\031' %(slash_o037)%,
+               . '\o040' = '\032' %(slash_o040)%,
+               . '\o041' = '\033' %(slash_o041)%,
+               . '\o042' = '\034' %(slash_o042)%,
+               . '\o043' = '\035' %(slash_o043)%,
+               . '\o044' = '\036' %(slash_o044)%,
+               . '\o045' = '\037' %(slash_o045)%,
+               . '\o046' = '\038' %(slash_o046)%,
+               . '\o047' = '\039' %(slash_o047)%,
+               . '\o050' = '\040' %(slash_o050)%,
+               . '\o051' = '\041' %(slash_o051)%,
+               . '\o052' = '\042' %(slash_o052)%,
+               . '\o053' = '\043' %(slash_o053)%,
+               . '\o054' = '\044' %(slash_o054)%,
+               . '\o055' = '\045' %(slash_o055)%,
+               . '\o056' = '\046' %(slash_o056)%,
+               . '\o057' = '\047' %(slash_o057)%,
+               . '\o060' = '\048' %(slash_o060)%,
+               . '\o061' = '\049' %(slash_o061)%,
+               . '\o062' = '\050' %(slash_o062)%,
+               . '\o063' = '\051' %(slash_o063)%,
+               . '\o064' = '\052' %(slash_o064)%,
+               . '\o065' = '\053' %(slash_o065)%,
+               . '\o066' = '\054' %(slash_o066)%,
+               . '\o067' = '\055' %(slash_o067)%,
+               . '\o070' = '\056' %(slash_o070)%,
+               . '\o071' = '\057' %(slash_o071)%,
+               . '\o072' = '\058' %(slash_o072)%,
+               . '\o073' = '\059' %(slash_o073)%,
+               . '\o074' = '\060' %(slash_o074)%,
+               . '\o075' = '\061' %(slash_o075)%,
+               . '\o076' = '\062' %(slash_o076)%,
+               . '\o077' = '\063' %(slash_o077)%,
+               . '\o100' = '\064' %(slash_o100)%,
+               . '\o101' = '\065' %(slash_o101)%,
+               . '\o102' = '\066' %(slash_o102)%,
+               . '\o103' = '\067' %(slash_o103)%,
+               . '\o104' = '\068' %(slash_o104)%,
+               . '\o105' = '\069' %(slash_o105)%,
+               . '\o106' = '\070' %(slash_o106)%,
+               . '\o107' = '\071' %(slash_o107)%,
+               . '\o110' = '\072' %(slash_o110)%,
+               . '\o111' = '\073' %(slash_o111)%,
+               . '\o112' = '\074' %(slash_o112)%,
+               . '\o113' = '\075' %(slash_o113)%,
+               . '\o114' = '\076' %(slash_o114)%,
+               . '\o115' = '\077' %(slash_o115)%,
+               . '\o116' = '\078' %(slash_o116)%,
+               . '\o117' = '\079' %(slash_o117)%,
+               . '\o120' = '\080' %(slash_o120)%,
+               . '\o121' = '\081' %(slash_o121)%,
+               . '\o122' = '\082' %(slash_o122)%,
+               . '\o123' = '\083' %(slash_o123)%,
+               . '\o124' = '\084' %(slash_o124)%,
+               . '\o125' = '\085' %(slash_o125)%,
+               . '\o126' = '\086' %(slash_o126)%,
+               . '\o127' = '\087' %(slash_o127)%,
+               . '\o130' = '\088' %(slash_o130)%,
+               . '\o131' = '\089' %(slash_o131)%,
+               . '\o132' = '\090' %(slash_o132)%,
+               . '\o133' = '\091' %(slash_o133)%,
+               . '\o134' = '\092' %(slash_o134)%,
+               . '\o135' = '\093' %(slash_o135)%,
+               . '\o136' = '\094' %(slash_o136)%,
+               . '\o137' = '\095' %(slash_o137)%,
+               . '\o140' = '\096' %(slash_o140)%,
+               . '\o141' = '\097' %(slash_o141)%,
+               . '\o142' = '\098' %(slash_o142)%,
+               . '\o143' = '\099' %(slash_o143)%,
+               . '\o144' = '\100' %(slash_o144)%,
+               . '\o145' = '\101' %(slash_o145)%,
+               . '\o146' = '\102' %(slash_o146)%,
+               . '\o147' = '\103' %(slash_o147)%,
+               . '\o150' = '\104' %(slash_o150)%,
+               . '\o151' = '\105' %(slash_o151)%,
+               . '\o152' = '\106' %(slash_o152)%,
+               . '\o153' = '\107' %(slash_o153)%,
+               . '\o154' = '\108' %(slash_o154)%,
+               . '\o155' = '\109' %(slash_o155)%,
+               . '\o156' = '\110' %(slash_o156)%,
+               . '\o157' = '\111' %(slash_o157)%,
+               . '\o160' = '\112' %(slash_o160)%,
+               . '\o161' = '\113' %(slash_o161)%,
+               . '\o162' = '\114' %(slash_o162)%,
+               . '\o163' = '\115' %(slash_o163)%,
+               . '\o164' = '\116' %(slash_o164)%,
+               . '\o165' = '\117' %(slash_o165)%,
+               . '\o166' = '\118' %(slash_o166)%,
+               . '\o167' = '\119' %(slash_o167)%,
+               . '\o170' = '\120' %(slash_o170)%,
+               . '\o171' = '\121' %(slash_o171)%,
+               . '\o172' = '\122' %(slash_o172)%,
+               . '\o173' = '\123' %(slash_o173)%,
+               . '\o174' = '\124' %(slash_o174)%,
+               . '\o175' = '\125' %(slash_o175)%,
+               . '\o176' = '\126' %(slash_o176)%,
+               . '\o177' = '\127' %(slash_o177)%,
+               . '\o200' = '\128' %(slash_o200)%,
+               . '\o201' = '\129' %(slash_o201)%,
+               . '\o202' = '\130' %(slash_o202)%,
+               . '\o203' = '\131' %(slash_o203)%,
+               . '\o204' = '\132' %(slash_o204)%,
+               . '\o205' = '\133' %(slash_o205)%,
+               . '\o206' = '\134' %(slash_o206)%,
+               . '\o207' = '\135' %(slash_o207)%,
+               . '\o210' = '\136' %(slash_o210)%,
+               . '\o211' = '\137' %(slash_o211)%,
+               . '\o212' = '\138' %(slash_o212)%,
+               . '\o213' = '\139' %(slash_o213)%,
+               . '\o214' = '\140' %(slash_o214)%,
+               . '\o215' = '\141' %(slash_o215)%,
+               . '\o216' = '\142' %(slash_o216)%,
+               . '\o217' = '\143' %(slash_o217)%,
+               . '\o220' = '\144' %(slash_o220)%,
+               . '\o221' = '\145' %(slash_o221)%,
+               . '\o222' = '\146' %(slash_o222)%,
+               . '\o223' = '\147' %(slash_o223)%,
+               . '\o224' = '\148' %(slash_o224)%,
+               . '\o225' = '\149' %(slash_o225)%,
+               . '\o226' = '\150' %(slash_o226)%,
+               . '\o227' = '\151' %(slash_o227)%,
+               . '\o230' = '\152' %(slash_o230)%,
+               . '\o231' = '\153' %(slash_o231)%,
+               . '\o232' = '\154' %(slash_o232)%,
+               . '\o233' = '\155' %(slash_o233)%,
+               . '\o234' = '\156' %(slash_o234)%,
+               . '\o235' = '\157' %(slash_o235)%,
+               . '\o236' = '\158' %(slash_o236)%,
+               . '\o237' = '\159' %(slash_o237)%,
+               . '\o240' = '\160' %(slash_o240)%,
+               . '\o241' = '\161' %(slash_o241)%,
+               . '\o242' = '\162' %(slash_o242)%,
+               . '\o243' = '\163' %(slash_o243)%,
+               . '\o244' = '\164' %(slash_o244)%,
+               . '\o245' = '\165' %(slash_o245)%,
+               . '\o246' = '\166' %(slash_o246)%,
+               . '\o247' = '\167' %(slash_o247)%,
+               . '\o250' = '\168' %(slash_o250)%,
+               . '\o251' = '\169' %(slash_o251)%,
+               . '\o252' = '\170' %(slash_o252)%,
+               . '\o253' = '\171' %(slash_o253)%,
+               . '\o254' = '\172' %(slash_o254)%,
+               . '\o255' = '\173' %(slash_o255)%,
+               . '\o256' = '\174' %(slash_o256)%,
+               . '\o257' = '\175' %(slash_o257)%,
+               . '\o260' = '\176' %(slash_o260)%,
+               . '\o261' = '\177' %(slash_o261)%,
+               . '\o262' = '\178' %(slash_o262)%,
+               . '\o263' = '\179' %(slash_o263)%,
+               . '\o264' = '\180' %(slash_o264)%,
+               . '\o265' = '\181' %(slash_o265)%,
+               . '\o266' = '\182' %(slash_o266)%,
+               . '\o267' = '\183' %(slash_o267)%,
+               . '\o270' = '\184' %(slash_o270)%,
+               . '\o271' = '\185' %(slash_o271)%,
+               . '\o272' = '\186' %(slash_o272)%,
+               . '\o273' = '\187' %(slash_o273)%,
+               . '\o274' = '\188' %(slash_o274)%,
+               . '\o275' = '\189' %(slash_o275)%,
+               . '\o276' = '\190' %(slash_o276)%,
+               . '\o277' = '\191' %(slash_o277)%,
+               . '\o300' = '\192' %(slash_o300)%,
+               . '\o301' = '\193' %(slash_o301)%,
+               . '\o302' = '\194' %(slash_o302)%,
+               . '\o303' = '\195' %(slash_o303)%,
+               . '\o304' = '\196' %(slash_o304)%,
+               . '\o305' = '\197' %(slash_o305)%,
+               . '\o306' = '\198' %(slash_o306)%,
+               . '\o307' = '\199' %(slash_o307)%,
+               . '\o310' = '\200' %(slash_o310)%,
+               . '\o311' = '\201' %(slash_o311)%,
+               . '\o312' = '\202' %(slash_o312)%,
+               . '\o313' = '\203' %(slash_o313)%,
+               . '\o314' = '\204' %(slash_o314)%,
+               . '\o315' = '\205' %(slash_o315)%,
+               . '\o316' = '\206' %(slash_o316)%,
+               . '\o317' = '\207' %(slash_o317)%,
+               . '\o320' = '\208' %(slash_o320)%,
+               . '\o321' = '\209' %(slash_o321)%,
+               . '\o322' = '\210' %(slash_o322)%,
+               . '\o323' = '\211' %(slash_o323)%,
+               . '\o324' = '\212' %(slash_o324)%,
+               . '\o325' = '\213' %(slash_o325)%,
+               . '\o326' = '\214' %(slash_o326)%,
+               . '\o327' = '\215' %(slash_o327)%,
+               . '\o330' = '\216' %(slash_o330)%,
+               . '\o331' = '\217' %(slash_o331)%,
+               . '\o332' = '\218' %(slash_o332)%,
+               . '\o333' = '\219' %(slash_o333)%,
+               . '\o334' = '\220' %(slash_o334)%,
+               . '\o335' = '\221' %(slash_o335)%,
+               . '\o336' = '\222' %(slash_o336)%,
+               . '\o337' = '\223' %(slash_o337)%,
+               . '\o340' = '\224' %(slash_o340)%,
+               . '\o341' = '\225' %(slash_o341)%,
+               . '\o342' = '\226' %(slash_o342)%,
+               . '\o343' = '\227' %(slash_o343)%,
+               . '\o344' = '\228' %(slash_o344)%,
+               . '\o345' = '\229' %(slash_o345)%,
+               . '\o346' = '\230' %(slash_o346)%,
+               . '\o347' = '\231' %(slash_o347)%,
+               . '\o350' = '\232' %(slash_o350)%,
+               . '\o351' = '\233' %(slash_o351)%,
+               . '\o352' = '\234' %(slash_o352)%,
+               . '\o353' = '\235' %(slash_o353)%,
+               . '\o354' = '\236' %(slash_o354)%,
+               . '\o355' = '\237' %(slash_o355)%,
+               . '\o356' = '\238' %(slash_o356)%,
+               . '\o357' = '\239' %(slash_o357)%,
+               . '\o360' = '\240' %(slash_o360)%,
+               . '\o361' = '\241' %(slash_o361)%,
+               . '\o362' = '\242' %(slash_o362)%,
+               . '\o363' = '\243' %(slash_o363)%,
+               . '\o364' = '\244' %(slash_o364)%,
+               . '\o365' = '\245' %(slash_o365)%,
+               . '\o366' = '\246' %(slash_o366)%,
+               . '\o367' = '\247' %(slash_o367)%,
+               . '\o370' = '\248' %(slash_o370)%,
+               . '\o371' = '\249' %(slash_o371)%,
+               . '\o372' = '\250' %(slash_o372)%,
+               . '\o373' = '\251' %(slash_o373)%,
+               . '\o374' = '\252' %(slash_o374)%,
+               . '\o375' = '\253' %(slash_o375)%,
+               . '\o376' = '\254' %(slash_o376)%,
+               . '\o377' : Char = '\255' : Char %(slash_o377)%,
+               . '\x00' : Char = '\000' : Char %(slash_x00)%,
+               . '\x01' = '\001' %(slash_x01)%,  . '\x02' = '\002' %(slash_x02)%,
+               . '\x03' = '\003' %(slash_x03)%,  . '\x04' = '\004' %(slash_x04)%,
+               . '\x05' = '\005' %(slash_x05)%,  . '\x06' = '\006' %(slash_x06)%,
+               . '\x07' = '\007' %(slash_x07)%,  . '\x08' = '\008' %(slash_x08)%,
+               . '\x09' = '\009' %(slash_x09)%,  . '\x0A' = '\010' %(slash_x0A)%,
+               . '\x0B' = '\011' %(slash_x0B)%,  . '\x0C' = '\012' %(slash_x0C)%,
+               . '\x0D' = '\013' %(slash_x0D)%,  . '\x0E' = '\014' %(slash_x0E)%,
+               . '\x0F' = '\015' %(slash_x0F)%,  . '\x10' = '\016' %(slash_x10)%,
+               . '\x11' = '\017' %(slash_x11)%,  . '\x12' = '\018' %(slash_x12)%,
+               . '\x13' = '\019' %(slash_x13)%,  . '\x14' = '\020' %(slash_x14)%,
+               . '\x15' = '\021' %(slash_x15)%,  . '\x16' = '\022' %(slash_x16)%,
+               . '\x17' = '\023' %(slash_x17)%,  . '\x18' = '\024' %(slash_x18)%,
+               . '\x19' = '\025' %(slash_x19)%,  . '\x1A' = '\026' %(slash_x1A)%,
+               . '\x1B' = '\027' %(slash_x1B)%,  . '\x1C' = '\028' %(slash_x1C)%,
+               . '\x1D' = '\029' %(slash_x1D)%,  . '\x1E' = '\030' %(slash_x1E)%,
+               . '\x1F' = '\031' %(slash_x1F)%,  . '\x20' = '\032' %(slash_x20)%,
+               . '\x21' = '\033' %(slash_x21)%,  . '\x22' = '\034' %(slash_x22)%,
+               . '\x23' = '\035' %(slash_x23)%,  . '\x24' = '\036' %(slash_x24)%,
+               . '\x25' = '\037' %(slash_x25)%,  . '\x26' = '\038' %(slash_x26)%,
+               . '\x27' = '\039' %(slash_x27)%,  . '\x28' = '\040' %(slash_x28)%,
+               . '\x29' = '\041' %(slash_x29)%,  . '\x2A' = '\042' %(slash_x2A)%,
+               . '\x2B' = '\043' %(slash_x2B)%,  . '\x2C' = '\044' %(slash_x2C)%,
+               . '\x2D' = '\045' %(slash_x2D)%,  . '\x2E' = '\046' %(slash_x2E)%,
+               . '\x2F' = '\047' %(slash_x2F)%,  . '\x30' = '\048' %(slash_x30)%,
+               . '\x31' = '\049' %(slash_x31)%,  . '\x32' = '\050' %(slash_x32)%,
+               . '\x33' = '\051' %(slash_x33)%,  . '\x34' = '\052' %(slash_x34)%,
+               . '\x35' = '\053' %(slash_x35)%,  . '\x36' = '\054' %(slash_x36)%,
+               . '\x37' = '\055' %(slash_x37)%,  . '\x38' = '\056' %(slash_x38)%,
+               . '\x39' = '\057' %(slash_x39)%,  . '\x3A' = '\058' %(slash_x3A)%,
+               . '\x3B' = '\059' %(slash_x3B)%,  . '\x3C' = '\060' %(slash_x3C)%,
+               . '\x3D' = '\061' %(slash_x3D)%,  . '\x3E' = '\062' %(slash_x3E)%,
+               . '\x3F' = '\063' %(slash_x3F)%,  . '\x40' = '\064' %(slash_x40)%,
+               . '\x41' = '\065' %(slash_x41)%,  . '\x42' = '\066' %(slash_x42)%,
+               . '\x43' = '\067' %(slash_x43)%,  . '\x44' = '\068' %(slash_x44)%,
+               . '\x45' = '\069' %(slash_x45)%,  . '\x46' = '\070' %(slash_x46)%,
+               . '\x47' = '\071' %(slash_x47)%,  . '\x48' = '\072' %(slash_x48)%,
+               . '\x49' = '\073' %(slash_x49)%,  . '\x4A' = '\074' %(slash_x4A)%,
+               . '\x4B' = '\075' %(slash_x4B)%,  . '\x4C' = '\076' %(slash_x4C)%,
+               . '\x4D' = '\077' %(slash_x4D)%,  . '\x4E' = '\078' %(slash_x4E)%,
+               . '\x4F' = '\079' %(slash_x4F)%,  . '\x50' = '\080' %(slash_x50)%,
+               . '\x51' = '\081' %(slash_x51)%,  . '\x52' = '\082' %(slash_x52)%,
+               . '\x53' = '\083' %(slash_x53)%,  . '\x54' = '\084' %(slash_x54)%,
+               . '\x55' = '\085' %(slash_x55)%,  . '\x56' = '\086' %(slash_x56)%,
+               . '\x57' = '\087' %(slash_x57)%,  . '\x58' = '\088' %(slash_x58)%,
+               . '\x59' = '\089' %(slash_x59)%,  . '\x5A' = '\090' %(slash_x5A)%,
+               . '\x5B' = '\091' %(slash_x5B)%,  . '\x5C' = '\092' %(slash_x5C)%,
+               . '\x5D' = '\093' %(slash_x5D)%,  . '\x5E' = '\094' %(slash_x5E)%,
+               . '\x5F' = '\095' %(slash_x5F)%,  . '\x60' = '\096' %(slash_x60)%,
+               . '\x61' = '\097' %(slash_x61)%,  . '\x62' = '\098' %(slash_x62)%,
+               . '\x63' = '\099' %(slash_x63)%,  . '\x64' = '\100' %(slash_x64)%,
+               . '\x65' = '\101' %(slash_x65)%,  . '\x66' = '\102' %(slash_x66)%,
+               . '\x67' = '\103' %(slash_x67)%,  . '\x68' = '\104' %(slash_x68)%,
+               . '\x69' = '\105' %(slash_x69)%,  . '\x6A' = '\106' %(slash_x6A)%,
+               . '\x6B' = '\107' %(slash_x6B)%,  . '\x6C' = '\108' %(slash_x6C)%,
+               . '\x6D' = '\109' %(slash_x6D)%,  . '\x6E' = '\110' %(slash_x6E)%,
+               . '\x6F' = '\111' %(slash_x6F)%,  . '\x70' = '\112' %(slash_x70)%,
+               . '\x71' = '\113' %(slash_x71)%,  . '\x72' = '\114' %(slash_x72)%,
+               . '\x73' = '\115' %(slash_x73)%,  . '\x74' = '\116' %(slash_x74)%,
+               . '\x75' = '\117' %(slash_x75)%,  . '\x76' = '\118' %(slash_x76)%,
+               . '\x77' = '\119' %(slash_x77)%,  . '\x78' = '\120' %(slash_x78)%,
+               . '\x79' = '\121' %(slash_x79)%,  . '\x7A' = '\122' %(slash_x7A)%,
+               . '\x7B' = '\123' %(slash_x7B)%,  . '\x7C' = '\124' %(slash_x7C)%,
+               . '\x7D' = '\125' %(slash_x7D)%,  . '\x7E' = '\126' %(slash_x7E)%,
+               . '\x7F' = '\127' %(slash_x7F)%,  . '\x80' = '\128' %(slash_x80)%,
+               . '\x81' = '\129' %(slash_x81)%,  . '\x82' = '\130' %(slash_x82)%,
+               . '\x83' = '\131' %(slash_x83)%,  . '\x84' = '\132' %(slash_x84)%,
+               . '\x85' = '\133' %(slash_x85)%,  . '\x86' = '\134' %(slash_x86)%,
+               . '\x87' = '\135' %(slash_x87)%,  . '\x88' = '\136' %(slash_x88)%,
+               . '\x89' = '\137' %(slash_x89)%,  . '\x8A' = '\138' %(slash_x8A)%,
+               . '\x8B' = '\139' %(slash_x8B)%,  . '\x8C' = '\140' %(slash_x8C)%,
+               . '\x8D' = '\141' %(slash_x8D)%,  . '\x8E' = '\142' %(slash_x8E)%,
+               . '\x8F' = '\143' %(slash_x8F)%,  . '\x90' = '\144' %(slash_x90)%,
+               . '\x91' = '\145' %(slash_x91)%,  . '\x92' = '\146' %(slash_x92)%,
+               . '\x93' = '\147' %(slash_x93)%,  . '\x94' = '\148' %(slash_x94)%,
+               . '\x95' = '\149' %(slash_x95)%,  . '\x96' = '\150' %(slash_x96)%,
+               . '\x97' = '\151' %(slash_x97)%,  . '\x98' = '\152' %(slash_x98)%,
+               . '\x99' = '\153' %(slash_x99)%,  . '\x9A' = '\154' %(slash_x9A)%,
+               . '\x9B' = '\155' %(slash_x9B)%,  . '\x9C' = '\156' %(slash_x9C)%,
+               . '\x9D' = '\157' %(slash_x9D)%,  . '\x9E' = '\158' %(slash_x9E)%,
+               . '\x9F' = '\159' %(slash_x9F)%,  . '\xA0' = '\160' %(slash_xA0)%,
+               . '\xA1' = '\161' %(slash_xA1)%,  . '\xA2' = '\162' %(slash_xA2)%,
+               . '\xA3' = '\163' %(slash_xA3)%,  . '\xA4' = '\164' %(slash_xA4)%,
+               . '\xA5' = '\165' %(slash_xA5)%,  . '\xA6' = '\166' %(slash_xA6)%,
+               . '\xA7' = '\167' %(slash_xA7)%,  . '\xA8' = '\168' %(slash_xA8)%,
+               . '\xA9' = '\169' %(slash_xA9)%,  . '\xAA' = '\170' %(slash_xAA)%,
+               . '\xAB' = '\171' %(slash_xAB)%,  . '\xAC' = '\172' %(slash_xAC)%,
+               . '\xAD' = '\173' %(slash_xAD)%,  . '\xAE' = '\174' %(slash_xAE)%,
+               . '\xAF' = '\175' %(slash_xAF)%,  . '\xB0' = '\176' %(slash_xB0)%,
+               . '\xB1' = '\177' %(slash_xB1)%,  . '\xB2' = '\178' %(slash_xB2)%,
+               . '\xB3' = '\179' %(slash_xB3)%,  . '\xB4' = '\180' %(slash_xB4)%,
+               . '\xB5' = '\181' %(slash_xB5)%,  . '\xB6' = '\182' %(slash_xB6)%,
+               . '\xB7' = '\183' %(slash_xB7)%,  . '\xB8' = '\184' %(slash_xB8)%,
+               . '\xB9' = '\185' %(slash_xB9)%,  . '\xBA' = '\186' %(slash_xBA)%,
+               . '\xBB' = '\187' %(slash_xBB)%,  . '\xBC' = '\188' %(slash_xBC)%,
+               . '\xBD' = '\189' %(slash_xBD)%,  . '\xBE' = '\190' %(slash_xBE)%,
+               . '\xBF' = '\191' %(slash_xBF)%,  . '\xC0' = '\192' %(slash_xC0)%,
+               . '\xC1' = '\193' %(slash_xC1)%,  . '\xC2' = '\194' %(slash_xC2)%,
+               . '\xC3' = '\195' %(slash_xC3)%,  . '\xC4' = '\196' %(slash_xC4)%,
+               . '\xC5' = '\197' %(slash_xC5)%,  . '\xC6' = '\198' %(slash_xC6)%,
+               . '\xC7' = '\199' %(slash_xC7)%,  . '\xC8' = '\200' %(slash_xC8)%,
+               . '\xC9' = '\201' %(slash_xC9)%,  . '\xCA' = '\202' %(slash_xCA)%,
+               . '\xCB' = '\203' %(slash_xCB)%,  . '\xCC' = '\204' %(slash_xCC)%,
+               . '\xCD' = '\205' %(slash_xCD)%,  . '\xCE' = '\206' %(slash_xCE)%,
+               . '\xCF' = '\207' %(slash_xCF)%,  . '\xD0' = '\208' %(slash_xD0)%,
+               . '\xD1' = '\209' %(slash_xD1)%,  . '\xD2' = '\210' %(slash_xD2)%,
+               . '\xD3' = '\211' %(slash_xD3)%,  . '\xD4' = '\212' %(slash_xD4)%,
+               . '\xD5' = '\213' %(slash_xD5)%,  . '\xD6' = '\214' %(slash_xD6)%,
+               . '\xD7' = '\215' %(slash_xD7)%,  . '\xD8' = '\216' %(slash_xD8)%,
+               . '\xD9' = '\217' %(slash_xD9)%,  . '\xDA' = '\218' %(slash_xDA)%,
+               . '\xDB' = '\219' %(slash_xDB)%,  . '\xDC' = '\220' %(slash_xDC)%,
+               . '\xDD' = '\221' %(slash_xDD)%,  . '\xDE' = '\222' %(slash_xDE)%,
+               . '\xDF' = '\223' %(slash_xDF)%,  . '\xE0' = '\224' %(slash_xE0)%,
+               . '\xE1' = '\225' %(slash_xE1)%,  . '\xE2' = '\226' %(slash_xE2)%,
+               . '\xE3' = '\227' %(slash_xE3)%,  . '\xE4' = '\228' %(slash_xE4)%,
+               . '\xE5' = '\229' %(slash_xE5)%,  . '\xE6' = '\230' %(slash_xE6)%,
+               . '\xE7' = '\231' %(slash_xE7)%,  . '\xE8' = '\232' %(slash_xE8)%,
+               . '\xE9' = '\233' %(slash_xE9)%,  . '\xEA' = '\234' %(slash_xEA)%,
+               . '\xEB' = '\235' %(slash_xEB)%,  . '\xEC' = '\236' %(slash_xEC)%,
+               . '\xED' = '\237' %(slash_xED)%,  . '\xEE' = '\238' %(slash_xEE)%,
+               . '\xEF' = '\239' %(slash_xEF)%,  . '\xF0' = '\240' %(slash_xF0)%,
+               . '\xF1' = '\241' %(slash_xF1)%,  . '\xF2' = '\242' %(slash_xF2)%,
+               . '\xF3' = '\243' %(slash_xF3)%,  . '\xF4' = '\244' %(slash_xF4)%,
+               . '\xF5' = '\245' %(slash_xF5)%,  . '\xF6' = '\246' %(slash_xF6)%,
+               . '\xF7' = '\247' %(slash_xF7)%,  . '\xF8' = '\248' %(slash_xF8)%,
+               . '\xF9' = '\249' %(slash_xF9)%,  . '\xFA' = '\250' %(slash_xFA)%,
+               . '\xFB' = '\251' %(slash_xFB)%,  . '\xFC' = '\252' %(slash_xFC)%,
+               . '\xFD' = '\253' %(slash_xFD)%,  . '\xFE' = '\254' %(slash_xFE)%,
+               . '\xFF' : Char = '\255' : Char %(slash_xFF)%,
+               . NUL = '\000' %(NUL_def)%,  . SOH = '\001' %(SOH_def)%,
+               . SYX = '\002' %(SYX_def)%,  . ETX = '\003' %(ETX_def)%,
+               . EOT = '\004' %(EOT_def)%,  . ENQ = '\005' %(ENQ_def)%,
+               . ACK = '\006' %(ACK_def)%,  . BEL = '\007' %(BEL_def)%,
+               . BS = '\008' %(BS_def)%,  . HT = '\009' %(HT_def)%,
+               . LF = '\010' %(LF_def)%,  . VT = '\011' %(VT_def)%,
+               . FF = '\012' %(FF_def)%,  . CR = '\013' %(CR_def)%,
+               . SO = '\014' %(SO_def)%,  . SI = '\015' %(SI_def)%,
+               . DLE = '\016' %(DLE_def)%,  . DC1 = '\017' %(DC1_def)%,
+               . DC2 = '\018' %(DC2_def)%,  . DC3 = '\019' %(DC3_def)%,
+               . DC4 = '\020' %(DC4_def)%,  . NAK = '\021' %(NAK_def)%,
+               . SYN = '\022' %(SYN_def)%,  . ETB = '\023' %(ETB_def)%,
+               . CAN = '\024' %(CAN_def)%,  . EM = '\025' %(EM_def)%,
+               . SUB = '\026' %(SUB_def)%,  . ESC = '\027' %(ESC_def)%,
+               . FS = '\028' %(FS_def)%,  . GS = '\029' %(GS_def)%,
+               . RS = '\030' %(RS_def)%,  . US = '\031' %(US_def)%,
+               . SP = '\032' %(SP_def)%,  . DEL = '\127' %(DEL_def)%,
+               . NL = LF %(NL_def)%,  . NP = FF %(NP_def)%,
+               . '\n' = NL %(slash_n)%,  . '\t' = HT %(slash_t)%,
+               . '\v' = VT %(slash_v)%,  . '\b' = BS %(slash_b)%,
+               . '\r' = CR %(slash_r)%,  . '\f' = FF %(slash_f)%,
+               . '\a' = BEL %(slash_a)%,  . '\?' = '?' %(slash_quest)%,
+               . forall x:a; y:a; z:a
+                     . x || (y || z) = (x || y) || z %(ga_assoc___||__)%,
+               . (b || b) || b = b ])
+*** Hint 17.9, redeclared as total 'min'
+*** Hint 17.14, redeclared as total 'max'
 *** Error 90.19, no typing for: suc(0) : Pos
+*** Hint 98.10, redeclared op 'min'
+*** Hint 98.15, redeclared op 'max'
+*** Hint 121.18, redeclared sort 'Int'
+*** Hint 121.12, redeclared sort 'Nat'
+*** Hint 209.17, redeclared sort 'Rat'
+*** Hint 209.11, redeclared sort 'Int'
 *** Error 261.9, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
@@ -1390,41 +2600,70 @@
 *** Error 268.9, unknown sort 'b'
 *** Error 268.6, wrong number of places '__a'
 *** Error 268.15, unknown sort 'b'
+*** Hint 269.6, redeclared sort 's'
 *** Error 270.3, unexpected mixfix token: a
+*** Hint 285.6, redeclared sort 's'
 *** Error 285.17, unknown sort 's2'
 *** Error 285.20, unknown sort 's1'
 *** Error 285.31, unknown sort 'a'
+*** Hint 285.41, redeclared op 'a'
 *** Error 285.34, duplicates at '(285,41)' for 'a : s -> t'
 *** Error 285.52, unknown sort 'a'
 *** Error 285.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 285.50, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : a ->? s'
+*** Hint 286.11, redeclared sort 's'
 *** Error 286.22, unknown sort 's2'
 *** Error 286.25, unknown sort 's1'
+*** Hint 286.30, redeclared op 'c'
 *** Error 286.36, unknown sort 'a'
+*** Hint 286.39, redeclared op 'a'
+*** Hint 286.41, redeclared op 'b'
+*** Hint 286.46, redeclared op 'd'
 *** Error 286.55, unknown sort 'a'
+*** Hint 286.53, redeclared op 'c'
 *** Error 286.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 286.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : a ->? s'
+*** Hint 287.16, redeclared sort 's'
 *** Error 287.27, unknown sort 's2'
 *** Error 287.30, unknown sort 's1'
+*** Hint 287.35, redeclared op 'c'
 *** Error 287.41, unknown sort 'a'
+*** Hint 287.39, redeclared op 'c'
+*** Hint 287.44, redeclared op 'a'
+*** Hint 287.46, redeclared op 'b'
+*** Hint 287.51, redeclared op 'd'
 *** Error 287.60, unknown sort 'a'
+*** Hint 287.58, redeclared op 'c'
 *** Error 287.35, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 287.58, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : a ->? s'
 *** Error 290.16, unknown sort 'a'
 *** Error 290.20, unknown sort 'a'
+*** Hint 290.9, redeclared pred '__<__'
 *** Error 292.7, unknown sort 'b'
 *** Error 292.13, unknown sort 'b'
+*** Hint 292.10, redeclared op 'c'
+*** Hint 293.13, redeclared sort 's'
+*** Hint 293.6, redeclared sort 's'
+*** Hint 293.9, redeclared sort 't'
+*** Hint 294.6, redeclared sort 's'
 *** Error 294.17, unknown sort 's2'
 *** Error 294.20, unknown sort 's1'
+*** Hint 294.25, redeclared op 'c'
 *** Error 294.31, unknown sort 'a'
+*** Hint 294.29, redeclared as total 'c'
 *** Error 294.38, unknown sort 'a'
+*** Hint 294.36, redeclared op 'c'
+*** Hint 294.41, redeclared op 'a'
+*** Hint 294.43, redeclared op 'b'
+*** Hint 294.48, redeclared op 'd'
 *** Error 294.57, unknown sort 'a'
+*** Warning 294.55, partially redeclared 'c'
 *** Error 294.29, duplicates at '(294,55)' for 'c : a -> s'
 *** Error 294.25, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
@@ -1432,8 +2671,12 @@
   must appear in alternative 'c : a -> s'
 *** Error 294.55, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : a ->? s'
+*** Hint 300.6, redeclared sort 's'
+*** Hint 301.6, redeclared sort 't'
 *** Error 304.6, unknown sort 'b'
+*** Hint 304.4, redeclared op 'a'
 *** Error 305.6, unknown sort 'd'
+*** Hint 312.6, redeclared sort 't'
 *** Error 316.3, ambiguous term
    . (op a : b) = (op a : b)
    . (var a : s) = (var a : s)
@@ -1446,6 +2689,9 @@
 *** Error 321.5, ambiguous term
    . (op a : b) = (op a : b)
    . (var a : s) = (var a : s)
+*** Hint 323.6, redeclared sort 's'
+*** Hint 325.9, redeclared sort 's'
+*** Hint 336.47, redeclared op ''\\''
 *** Error , ambiguous term
   (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
   (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
@@ -1455,12 +2701,50 @@
 *** Error 343.14, no operation with 2 arguments found for '__E__'
 *** Error 343.29, no operation with 2 arguments found for '__E__'
 *** Error 343.45, no operation with 2 arguments found for '__E__'
+*** Hint 350.11, redeclared sort 's'
 *** Error 351.11, wrong number of places '__and'__'
+*** Hint 353.12, redeclared sort 'a'
+*** Hint 354.13, redeclared sort 'b'
+*** Hint 354.11, redeclared sort 'a'
+*** Hint 355.12, redeclared sort 'a'
+*** Hint 355.14, redeclared sort 'b'
+*** Hint 355.16, redeclared sort 'c'
+*** Hint 356.12, redeclared sort 'a'
+*** Hint 356.14, redeclared sort 'b'
+*** Hint 356.16, redeclared sort 'c'
+*** Hint 356.18, redeclared sort 'd'
+*** Hint 356.20, redeclared sort 'e'
+*** Hint 357.11, redeclared sort 'a'
+*** Hint 358.12, redeclared sort 's'
+*** Hint 358.14, redeclared sort 't'
 *** Error , ambiguous term
   (op a : s) : s
   (var a : s) : s
+*** Warning 363.9, partially redeclared 'a'
+*** Warning 364.9, partially redeclared 'b'
+*** Warning 365.9, partially redeclared 'c'
 *** Error , ambiguous term
   (op a : s) : s
   (var a : s) : s
+*** Warning 366.9, partially redeclared 'c'
+*** Hint 367.9, redeclared op 'a'
+*** Warning 369.9, partially redeclared 'a'
+*** Warning 370.9, partially redeclared 'c'
+*** Hint 373.12, redeclared sort 's'
+*** Hint 373.14, redeclared sort 't'
+*** Hint 384.64, redeclared op 'sel2'
+*** Hint 384.77, redeclared op 'sel1'
+*** Hint 386.65, redeclared op 'sel2'
+*** Hint 386.78, redeclared op 'sel1'
+*** Hint 388.27, redeclared sort 'Data1'
+*** Hint 388.34, redeclared sort 'Data2'
+*** Hint 388.41, redeclared sort 'Data3'
+*** Hint 393.22, redeclared sort 'Set'
+*** Hint 393.30, redeclared op 'Mt'
+*** Hint 393.35, redeclared op 'Add'
+*** Hint 395.11, redeclared sort 't'
+*** Hint 395.9, redeclared sort 's'
 *** Error 426.26, no predicate with 0 arguments found for 'e'
 *** Error 427.12, no predicate with 0 arguments found for 'e'
+*** Hint 811.11, redeclared op '' ''
+*** Hint 1486.6, redeclared sort 'a'

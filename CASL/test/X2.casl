@@ -1,0 +1,5 @@
+sort a, t, s1, s2
+
+free type s ::= sort s2,s1 | c | c(a; a,b:t; d:t) | c(a)?
+generated type s ::= sort s2,s1 | c | c(a) | c(a; a,b:t; d:t) | c(a)?
+

@@ -1,0 +1,9 @@
+sort Nat < Int
+ops     __ -?__: Nat * Nat ->? Nat;
+        __ -?__: Int * Int ->? Int;
+
+op 0 : Nat
+op 0 : Int
+var m : Nat 
+
+     . def(0)                      %(Nat_divide_0)%

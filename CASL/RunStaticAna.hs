@@ -50,19 +50,22 @@ getSign ga =
     do b <- basicSpec []
        return $ localAna ga b
 
-props :: GlobalAnnos -> BASIC_SPEC () () () -> Result [Named (FORMULA ())]
+props :: GlobalAnnos -> BASIC_SPEC () () () 
+      -> Result (Sign () (), [Named (FORMULA ())])
 props ga bs = 
     let Result ds ms = 
             basicCASLAnalysis (bs, emptySign (), ga)
-        es = filter ((<= Error)  . diagKind) ds
-        in case ms of 
-           Just (_newBs, _difSig, accSig, sents) -> Result es $ Just 
-                     $ map (mapNamed $ simplifySen (error "props1")
+        in Result ds $ case ms of 
+           Just (_newBs, difSig, accSig, sents) -> Just (difSig, 
+                     map (mapNamed $ simplifySen (error "props1")
                                      (error "props2") accSig)
-                       sents
-           Nothing -> Result ds Nothing
+                       sents)
+           Nothing -> Nothing
 
-getProps :: GlobalAnnos -> AParser () (Result [Named (FORMULA ())])
+getProps :: GlobalAnnos 
+         -> AParser () (Result (Sign () (), [Named (FORMULA ())]))
 getProps ga = 
     do b <- basicSpec []
        return $ props ga b
+
+         

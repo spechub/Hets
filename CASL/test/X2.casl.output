@@ -1,0 +1,68 @@
+(sorts a, s, s1, s2, t
+ sorts s1 < s; s2 < s
+ op a : s -> t
+ op b : s -> t
+ op c : s
+ op c : a -> s
+ op c : a * t * t * t -> s
+ op d : s -> t,[  . forall X1:a; X2:t; X3:t; X4:t
+                        . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
+                  . forall X1:a; X2:t; X3:t; X4:t; Y1:a; Y2:t; Y3:t; Y4:t
+                        . c(X1, X2, X3, X4) = c(Y1, Y2, Y3, Y4) <=>
+                              X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4 %(ga_injective_c)%,
+                  . forall X1:a; Y1:a
+                        . c(X1) = c(Y1) <=> X1 = Y1 %(ga_injective_c)%,
+                  . not c in s2 %(ga_disjoint_c_sort_s2)%,
+                  . not c in s1 %(ga_disjoint_c_sort_s1)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . not c(X1, X2, X3, X4) in s2 %(ga_disjoint_c_sort_s2)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . not c(X1, X2, X3, X4) in s1 %(ga_disjoint_c_sort_s1)%,
+                  . forall X1:a . not c(X1) in s2 %(ga_disjoint_c_sort_s2)%,
+                  . forall X1:a . not c(X1) in s1 %(ga_disjoint_c_sort_s1)%,
+                  . forall Y1:a; Y2:t; Y3:t; Y4:t
+                        . not c = c(Y1, Y2, Y3, Y4) %(ga_disjoint_c_c)%,
+                  . forall Y1:a . not c = c(Y1) %(ga_disjoint_c_c)%,
+                  . forall X1:a; X2:t; X3:t; X4:t; Y1:a
+                        . not c(X1, X2, X3, X4) = c(Y1) %(ga_disjoint_c_c)%,
+                  . not def a(c) %(ga_selector_undef_a_c)%,
+                  . forall X1:a . not def a(c(X1)) %(ga_selector_undef_a_c)%,
+                  . not def b(c) %(ga_selector_undef_b_c)%,
+                  . forall X1:a . not def b(c(X1)) %(ga_selector_undef_b_c)%,
+                  . not def d(c) %(ga_selector_undef_d_c)%,
+                  . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
+                 generated{sort s; op c : s; op c : a ->? s;
+                                   op c : a * t * t * t -> s; op inj : s1 -> s;
+                                   op inj : s2 -> s} %(ga_generated_s)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
+                  . forall X1:a; X2:t; X3:t; X4:t
+                        . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
+                 generated{sort s; op c : s; op c : a ->? s;
+                                   op c : a * t * t * t -> s; op inj : s1 -> s;
+                                   op inj : s2 -> s} %(ga_generated_s)% ])
+*** Error 3.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative 'c : s'
+*** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative 'c : a ->? s'
+*** Hint 4.16, redeclared sort 's'
+*** Hint 4.35, redeclared op 'c'
+*** Hint 4.39, redeclared as total 'c'
+*** Hint 4.46, redeclared op 'c'
+*** Hint 4.51, redeclared op 'a'
+*** Hint 4.53, redeclared op 'b'
+*** Hint 4.58, redeclared op 'd'
+*** Warning 4.65, partially redeclared 'c'
+*** Error 4.39, duplicates at '(4,65)' for 'c : a -> s'
+*** Error 4.35, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative 'c : s'
+*** Error 4.39, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative 'c : a -> s'
+*** Error 4.65, total selectors 'a : s -> t,b : s -> t,d : s -> t'
+  must appear in alternative 'c : a ->? s'

@@ -1,0 +1,9 @@
+  sorts Nat < Int
+  op 0 : Nat
+  op __ - __ : Nat * Nat -> Int
+
+
+var a :s 
+
+forall a : Nat
+  . def a - 0

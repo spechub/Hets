@@ -23,6 +23,11 @@ do
     runwrongcheck $i casl
 done
 
+for j in [X-Z]*.casl; 
+do
+    runchecker sentences $j $j.output
+done
+
 runchecker analysis BasicSpec.casl BasicSpec.analysis.output
 runchecker signature BasicSpec.casl BasicSpec.signature.output
 runchecker sentences BasicSpec.casl BasicSpec.sentences.output

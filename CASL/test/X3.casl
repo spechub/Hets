@@ -1,0 +1,7 @@
+  sorts s = t
+  ops g:s->?s;
+      g:s->t;
+
+var x : s
+
+  . def g(x)
