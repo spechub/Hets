@@ -1,21 +1,30 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+make mixfix analysis checkable by RunParsers
+
+-}
+
 module CASL.RunMixfixParser where
 
 import Common.AnnoState
 import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
 import Common.Lib.Set
 import Common.Id
 import Common.Result
 import Common.Lexer
-import Common.Lib.Pretty
-import Common.PrettyPrint
 import Common.PPUtils
 
 import Common.Token
 import CASL.Formula
-import Common.Anno_Parser
 import CASL.ShowMixfix -- (showTerm, showFormula)
 
 -- start testing

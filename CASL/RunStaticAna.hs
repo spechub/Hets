@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003 
+Licence     :  All rights reserved.
+
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+make static analysis checkable by RunParsers 
+
+-}
+
 module CASL.RunStaticAna where
 
 import CASL.StaticAna
@@ -20,10 +33,10 @@ runAna ga =
 
 localAna :: GlobalAnnos -> BASIC_SPEC -> Result Sign
 localAna ga bs = 
-    let Result ds (Just (_newBs, diffSig, _accSig, _sents)) = 
+    let Result ds (Just (_newBs, difSig, _accSig, _sents)) = 
 	    basicAnalysis (bs, emptyEnv, ga)
 	es = filter ((<= Error)  . diagKind) ds
-	in Result es $ Just diffSig
+	in Result es $ Just difSig
 
 getSign :: GlobalAnnos -> AParser (Result Sign)
 getSign ga = 

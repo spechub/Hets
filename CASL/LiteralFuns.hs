@@ -1,13 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich and Uni Bremen 2002-2003 
+Licence     :  All rights reserved.
 
-{- HetCATS/CASL/Print_AS_Basic.hs
-   $Id$
-   Authors: Klaus Lüttich
-   Year:    2002
-   
-   Functions to test Ids [TERM]s for literals of CASL
-
-   todo:
-   
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+    
+   functions to test ids with argument terms for literals of CASL
 -}
 
 
@@ -32,8 +32,6 @@ import Data.Char (isDigit)
 import Common.Id
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions (getLiteralType)
-
 
 isLiteral :: GlobalAnnos -> Id -> [TERM] -> Bool
 isLiteral ga i trm =

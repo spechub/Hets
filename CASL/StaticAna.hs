@@ -147,11 +147,6 @@ addSentences ds =
     do e <- get
        put e { sentences = ds ++ sentences e }
 
-mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
-mapAnM f al = 
-    do il <- mapM (f . item) al
-       return $ zipWith ( \ a i -> a { item = i }) al il
-		
 -- * traversing all data types of the abstract syntax
 
 ana_BASIC_SPEC :: GlobalAnnos -> BASIC_SPEC -> State Env BASIC_SPEC

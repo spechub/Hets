@@ -1,16 +1,20 @@
 
-{- HetCATS/CASL/MixfixParser.hs
-   $Id$
-   Author:  Christian Maeder
-   Year:    2002
+{- |
+Module      :  $Header$
+Copyright   :  Christian Maeder and Uni Bremen 2002-2003 
+Licence     :  All rights reserved.
 
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable
+    
    Mixfix analysis of terms
 
    Missing features:
-   - the positions of Ids from %string, %list, %number and %floating annotations
+   - the positions of ids from string, list, number and floating annotations
      is not changed within applications (and might be misleading)
    - using (Set State) instead of [State] avoids explosion
-     but detection of local ambiguities (that of subterms) is more difficult
+     but detection of local ambiguities (that of subterms) is more difficult,
      solution: equal list states should be merged into a single state
                that stores the local ambiguity
 -}
@@ -29,7 +33,6 @@ import Control.Monad
 import Common.Lib.Parsec
 import qualified Char as C
 import Data.List(intersperse)
-import Common.GlobalAnnotationsFunctions
 import CASL.Formula(updFormulaPos)
 import qualified CASL.ShowMixfix as ShowMixfix (showTerm)
 

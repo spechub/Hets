@@ -1,16 +1,14 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
+Licence     :  All rights reserved.
 
-{- HetCATS/CASL/Print_AS_Basic.hs
-   $Id$
-   Authors: Christian Maeder
-            Klaus Lüttich
-   Year:    2002
-   
-   printing AS_BASIC data types
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  non-portable (rank-2-polymorphism)
+    
+   pretty printing data types of 'BASIC_SPEC'
 
-   todo:
-     - improving printing of applications and predications
-       consider string-, number-, list- and floating-annotations
-       and also prec-, lassoc- and rassoc-annotations
 -}
 
 module CASL.Print_AS_Basic where
@@ -23,7 +21,6 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
 import CASL.LiteralFuns
 
 import Common.Print_AS_Annotation
@@ -769,7 +766,7 @@ print_Literal pf parens_fun
 			  in bas_d <> e_doc <> ex_d
     | isList   ga li ts = let list_body = commaT_fun ga $ listElements li
 			      (openL, closeL, comps) = getListBrackets $ 
-						       listBrackets ga li
+						       listBrackets li
  			  in hcat(map (pf ga) openL) <+> list_body 
 			     <+> hcat(map (pf ga) closeL)
 			     <> pf ga (Id [] comps [])
@@ -805,6 +802,10 @@ print_Literal pf parens_fun
 			   ListNull _ -> []
 			   ListCons _ n -> collectElements (Just n) i ts
 			   _ -> error "listElements"
+	  listBrackets i = case getLiteralType ga i of
+			   ListNull b -> b
+			   ListCons b _ -> b
+			   _ -> error "listBrackets"
 
 print_Literal_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_text =
@@ -902,10 +903,8 @@ condParensAppl pf parens_fun ga o_i t mdir =
 	| isInfix i_i && o_i == i_i -> 
 	    case mdir of
 		      Nothing -> condParensPrec 
-		      Just ALeft | isLAssoc amap o_i -> t'
-				 | otherwise -> parens_fun t'
-		      Just ARight | isRAssoc amap o_i -> t'
-				  | otherwise -> parens_fun t'
+		      Just ass | isAssoc ass amap o_i -> t'
+			       | otherwise -> parens_fun t'
 	| otherwise -> condParensPrec 
     	where i_i = case o of
 			  Op_name i          -> i
