@@ -20,10 +20,7 @@ The HasCASL parser reuses the token (in \texttt{HToken.hs}) and
 \texttt{itemList} parser (in \texttt{ParseItem.hs}) from \texttt{CASL} as well
 as ids and annotations from the \texttt{Common} directory.
 
-The concrete syntax of HasCASL is given as plain text in
-\texttt{Concrete-Syntax.txt}. The abstract syntax is given in
-\texttt{As.hs}. The document \texttt{Abstract-Syntax.txt} is out-dated and was
-intended as a human readable abstract syntax.
+The abstract and concrete syntax of HasCASL are given in the summary
 
 The data types in \texttt{As.hs} usually contain alternatives (Haskell
 constructors) for different representation before and after the static
@@ -34,7 +31,7 @@ depends on a global environment. Parsing alone only depends on its input
 \section{Static Analysis}
 
 HasCASL entities are -- in hierarchical
-order -- kinds, types and terms, where predicate types and formulae are
+order -- kinds, types and terms, where predicate types and formulas are
 special cases of types and terms respectively.
 
 Kinds are constructed from classes, types from type
@@ -42,7 +39,8 @@ constructors and terms from values, i.e. operations or predicates.
 
 Classes, type constructors and values may be declared by giving them a name.
 A type constructor must at least be declared with a kind and a value with a
-type. (An implicit kind will always be the universe class \texttt{Type}.)
+type (-scheme). (An implicit kind will always be the universe class
+\texttt{Type}.)
 
 Usually, declarations are extended with further properties or even a unique
 definition.
@@ -50,60 +48,23 @@ definition.
 In opposition to the hierarchy a class can be defined as a downset of a type
 and a subtype can be defined via a predicate.
 
-\subsection{Classes}
+\subsection{Kinds}
 
-The major representation of a class is given by an intersection class over
-class names only. The universe class \texttt{Type} is simply an empty
-intersection. Nested intersection classes are flattened already by the
-parser. A trivial intersection class is a single class name.
-
-\subsubsection*{Class declarations}
-\begin{itemize}
-\item A class name can be declared as a subclass of an intersection class. If
-  this intersection class is trivial then the superclass name is also regarded
-  as a new or repeated declaration.
-  
-  A cyclic subclass relation is prohibited.
-\item An undeclared class name may be defined as a synonym (or alias) for an
-  intersection class. For the purpose of comparing classes, synonyms are
-  expanded.
-\item An undeclared class name may be defined as the downset of a type,
-  comprising all subtypes of the given type. (The variable name for the
-  subtype is ignored.)
-  
-  The downset of a type is a subclass of the downset of a
-  supertype.
-\item No superclasses can be declared for downsets or intersection classes
-
-\end{itemize}
-
-\subsubsection*{Remarks}
-
-The class name of a downsets within an intersection class is not further
-expanded, although one may have different classe names for the same downset.
-Furthermore, type variables may be declared with an anonymous downset.
+Kinds and classes are basically constructed from the universe class
+\texttt{Type} (or \emph{star} in Haskell) and the builtin kind constructor
+($\to$). The argument of a function kind may be extended by a variance.  A
+kind or class denotes a set of types or type constructors. A class maybe
+declared to be subclass of a (previously declared class) or kind. Special
+kinds are the downset of a type, being a subset of all subtypes of a given
+type and the intersection kind.
 
 Class names are token ids, that is, simple ids with an optional compound list,
 because types within downsets may also be compound ids.
 
-Class declarations may be repeated, sub- and superclass declarations are
-accumulated as long as they are non-cyclic.
+Class declarations may be repeated, All redeclarations issue a warning. 
 
-Class definitions may be repeated, if they remain equal, otherwise it is an
-error. Two downsets should be equal if the corresponding types are equal. (For
-type equality type aliases must be expanded.) Currently class equality for
-downsets is ignored.
-
-All redeclarations issue a warning. 
-
-The optional list of basic-items and the ``\texttt{instance}''-tag for a class
-are not handled yet.
-
-\subsection{Kinds}
-
-Kinds are constructed from classes and the builtin kind constructor ($\to$).
 The application of a type constructor (\texttt{Pair : Type -> Type -> Type})
-is thus written curried (\texttt{Pair Nat Nat}). 
+is written curried (\texttt{Pair Nat Nat}). 
 
 (Infix and outfix type constructors are currently only builtin.)
 
@@ -116,21 +77,12 @@ In Haskell kinds are written using the star (*) instead of \texttt{Type}, but
 in HasCASL any class names are legal to indicate a more specific
 applicability. 
 
-Furthermore, classes in argument position may be marked as co- or contra
-variant to indicate subtype relations of applied type constructors.
+Furthermore, classes in argument position may be marked as co- ($+$) or contra
+($-$) variant to indicate subtype relations of applied type constructors.
 
 \begin{verbatim}
 __ -> __ : Type- -> Type+ -> Type
 \end{verbatim}
-
-\subsection{Constructor classes}
-
-A class describes a set of types. The universe class \texttt{Type} is the
-class of all types. 
-
-A constructor class describes a set of type constructors
-of a specific kind. Therefore classes (except downsets) can be declared with
-additional kinds. 
 
 \begin{verbatim}
 class Monad : Type -> Type
@@ -138,14 +90,6 @@ class Monad : Type -> Type
 
 The classes given within the kind of a class must not depend on the declared
 class itself.
-
-During kind inference, constructor classes are replaced by there kind. The kind
-of a plain class is the universe class \texttt{Type}.
-
-The kinds of intersections and super classes must be equal.
-
-Constructor classes must not have a variance ($+$ or $-$) within a kind. (This
-cannot be checked by the parser.)
 
 \subsection{Types}
 
@@ -170,7 +114,8 @@ Everything else to the right of a $?$ is regarded as follows:
 \item empty braces or brackets are taken as an id (with two tokens) as above
 \item braces or brackets with one argument refer to an unary outfix type
   constructor $\{\_\_\}$ or $[\_\_]$.
-\item braces or brackets with more arguments are considered illegal.
+\item brackets with one or more arguments in argument positions are considered
+  as a compound list of a preceding identifier. 
 \item parenthesis may only contains a single argument. Tuple do not exist.
 \item The empty tuple is illegal. Instead the builtin type 
   \texttt{Unit} should be used.
@@ -179,10 +124,6 @@ Everything else to the right of a $?$ is regarded as follows:
 Mixfix type expressions with several components are simply regarded as
 unparenthesized prefix applications. The first component must be the
 type constructor.
-
-Square brackets with several arguments could be taken as compound lists for a
-preceding token. (Singleton compound lists are not supported, but regarded as
-type construction, i.e. for the list type.)
 
 Type names cannot be overloaded! 
 
@@ -205,11 +146,8 @@ result (kind or type) is written to the right of a colon.
 If a result (kind or type) is omitted, a default is substituted. No kind
 defaults to the \emph{universe} and no result type for an operation indicates
 a predicate declaration (although the builtin \texttt{Pred} type constructor
-is recommended). The keyword \texttt{pred} is only kept for compatibility with
-CASL and not recommended.
-
-For simplicity only the value notation -- that does have no parenthesis on the
-left hand side -- is supported. 
+is recommended). The keyword \texttt{pred} was kept for compatibility with
+CASL.
 
 The pattern notation may be seen as a generalization of the value notation,
 because the result may be of higher order, but even then the mixing of places
@@ -217,9 +155,8 @@ and parenthesized arguments should be forbidden.
 
 The number of places must be equal or less to the number of arguments.
 
-(For operations arguments of products are also counted. However, if a place is
-given for a first product component, then places must follow for all
-components of that product.)
+Places of operation ids only stand for the components of a first product
+argument.
 
 \subsubsection*{Type declarations}
 
@@ -235,7 +172,7 @@ components of that product.)
 \item Type patterns may be declared to be isomorphic, this corresponds to a
   trivial cyclic subtype relation.
 \item A type pattern may be defined as predicate subtype via a
-  formula. For a repeated definition the equality of the formulae is
+  formula. For a repeated definition the equality of the formulas is
   undecidable and not thoroughly checked (but left to a proof tool).  
 \item A type pattern may be a type alias. When comparing types these aliases
   are replaced with there definition (with proper argument substitution). 
@@ -249,27 +186,22 @@ downset (and using $<$ instead of a colon) or an intersection class (where
 class names can also refer to a downset).
 
 A wrongly spelled (or non-existing) class name causes the analysis to assume
-that not a type but value variable is declared (most likely causing a type
+that not a type but a value variable is declared (most likely causing a type
 error). Keeping class and type names disjoint is not further enforced.
 
 \subsection{Data types}
 
-Currently, monomorphic data type definitions are collected. Constructor ids
-and selector ids within one alternative must be disjoint (although this is to
-restrictive, because only the qualified names must be disjoint). For missing
-selectors unique (non-CASL) ids are generated. 
+Constructor ids and selector ids within one alternative must be disjoint
+(although this is to restrictive, because only the qualified names must be
+disjoint).
 
-\subsection{Terms and formulae}
+\subsection{Terms and formulas}
 
-For a uniform mixfix- and type- analysis, terms and formulae are not
+For a uniform mixfix- and type- analysis, terms and formulas are not
 distinguished and all treated as terms. If the first argument of a mixfix
-operation is a (unnested) product type, the individual component arguments may
-be placed according to the place holders. Otherwise curried arguments will be
-expected at place holder positions. Thus a classical infix operation may
-either have a curried type or conform to the CASL notation with a product
-argument. For a curried type, trailing place holders may be omitted, since the
-unparenthesized prefix notation (always) means (unlike CASL) function
-application.
+operation is a product type, the individual component arguments may be placed
+according to the place holders. Thus a classical infix operation conforms to
+the CASL notation with a product argument. 
 
 Currently, class constraints and sub/supertype information is ignored during
 type analysis, but typed terms (via \texttt{:}) are checked for unifying
@@ -279,21 +211,16 @@ Type casts (via \texttt{as}) or type containment tests (via\texttt{in})
 only check for a (unique) type and omit subtype reasoning (that may be done
 later, possibly involving a proof tool).
 
-(Literate notations, i.e. for lists, have not yet been added to the analysis.)
-
 \subsubsection{Binding terms}
 
-Binding terms are quantified formulae, lambda terms, case- and
+Binding terms are quantified formulas, lambda terms, case- and
 let-expressions. Left-hand-side patterns add variable bindings that may
-occur in right-hand-side expressions. 
-
-Currently, patterns are not analysed.
+occur in right-hand-side expressions. Patterns are almost treated like terms.
 
 \subsubsection{Operation definitions}
 
-Operations may be given via a defining term. Operation's arguments on the left
-hand side of an equal sign are moved to the right hand side following a
-lambda.
+Operations may be given via a defining term, which correspond to a formula
+that is generated. 
 
 \subsubsection{Program equations}
 
@@ -302,13 +229,11 @@ patterns on the left hand side, the so called definition target, must be a
 simple prefix identifier with arguments in parenthesis or must have been
 declared previously (with place holders and a signature type).
 
-Currently, program equations are not analysed due to the missing
-pattern analysis.
 
-\subsubsection{Formulae}
+\subsubsection{Formulas}
 
-Formulae are simply treated as terms of a ``logical'' type. The fact that
-terms may not contain arbitrary formulae must be ruled out later on.
+Formulas are simply treated as terms of a ``logical'' type. The fact that
+terms may not contain arbitrary formulas must be ruled out later on.
 
 Predicates are treated like (special) operations. 
 
@@ -317,13 +242,11 @@ Predicates are treated like (special) operations.
 HasCASL only relies on stuff from \texttt{Common}.
 
 \begin{description}
-\item[Abstract-Syntax.txt] outdated
 \item[As.hs] abstract syntax
 \item[AsToLe.hs] the static analysis
 \item[AsUtils.hs] helpers for \texttt{As}
 \item[ClassAna.hs] analyse classes
 \item[ClassDecl.hs] analyse class declarations
-\item[Concrete-Syntax.txt] concrete syntax
 \item[DataAna.hs] analyse data type definitions
 \item[HToken.hs] extension of \texttt{Common.Token} for HasCASL
   (further keywords)
@@ -331,19 +254,17 @@ HasCASL only relies on stuff from \texttt{Common}.
 \item[Logic\_HasCASL.hs] instance for \texttt{Logic.Logic}
 \item[Merge.hs] consistently merge together repeated or extended items
 \item[MixAna.hs] top-level mixfix-analysis
-\item[MixParserState.hs] states containing types and argument terms during
-  combined mixfix- and type- analysis
-\item[Morphism.hs] dummy morphisms for \texttt{Logic\_HasCASL}
+\item[Morphism.hs] morphisms for \texttt{Logic\_HasCASL}
 \item[OpDecl.hs] analyse declarations
 \item[ParseItem.hs] parsing basic (HasCASL) items
-\item[ParseTerm.hs] parsing classes, types, terms and formulae
+\item[ParseTerm.hs] parsing classes, types, terms and formulas
 \item[PrintAs.hs] pretty printing the abstract syntax
 \item[PrintLe.hs] pretty printing the analysed abstract syntax
 \item[RunStaticAna.hs] wrapper for \texttt{Common.RunParsers}
 \item[TypeAna.hs] analyse types
 \item[TypeDecl.hs] analyse type declarations
 \item[Unify.hs] unification of types
-\item[hacapa.lhs] counterpart to \texttt{CASL/capa.lhs} 
+\item[hacapa.hs] counterpart to \texttt{CASL/capa.hs} 
 \end{description}
 
 The binary produced by \texttt{ghc-call} is named \texttt{hacapa}.
