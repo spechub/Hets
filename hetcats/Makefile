@@ -19,6 +19,7 @@ HC         = ghc
 PERL       = perl
 DRIFT      = $(PERL) ../utils/DrIFT
 AG         = $(PERL) ../utils/ag
+HADDOCK    = $(PERL) ../utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
@@ -31,7 +32,7 @@ AG_FLAGS   = -mdcfs
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake clean; gmake'
 ### If you need Profiling comment out the following line 
-# HC_PROF    = -prof -auto-all -Wall
+#HC_PROF    = -prof -auto-all -Wall 
 
 HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE) 
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
@@ -59,6 +60,10 @@ objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 drifted_files = ../AS_Architecture.hs ../AS_Library.hs ../AS_Annotation.hs\
 ../CASL/AS_Basic_CASL.hs ../AS_Structured.hs
 
+# this variable holds the modules that should be documented
+# the imported parsec library is not included!
+doc_sources = $(filter-out ../parsec/% ,$(sources))
+
 ####################################################################
 ### targets
 
@@ -74,6 +79,24 @@ hetcats-make: hetcats.lhs ../utils/create_sources.pl $(drifted_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hetcats $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
+
+###############################
+### TAGS files for (x)emacs 
+# load them with "M-x" "visit-tags-table" from
+# "HetCATS/hetcats/hetcats.TAGS"
+# use "M-." to search for a tag
+# !!Beware this is somewhat instable, because it uses an absolute path!!
+hetcats.TAGS: $(sources) 
+	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
+	  $(sources); mv TAGS $@; mv tags hetcats.tags
+
+###############################
+### Documentation via haddock
+doc: docs/index.html ../utils/hd-lib
+
+docs/index.html: $(doc_sources)
+	$(HADDOCK) $(doc_sources) -o docs -h \
+          -t 'HetCATS -- a heterogenous CASL tool set'
 
 ###############
 ### clean up
