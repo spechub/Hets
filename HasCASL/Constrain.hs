@@ -59,6 +59,9 @@ noC = Set.empty
 joinC :: Constraints -> Constraints -> Constraints
 joinC = Set.union
 
+insertC :: Constrain -> Constraints -> Constraints
+insertC = Set.insert
+
 substC :: Subst -> Constraints -> Constraints
 substC s = Set.image (\ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
@@ -72,7 +75,7 @@ simplify tm rs =
              (es, cs) = simplify tm rt
              in (ds ++ es, case m of
                                  Just _ -> cs
-	                         Nothing -> Set.insert r cs)
+	                         Nothing -> insertC r cs)
    
 entail :: Monad m => TypeMap -> Constrain -> m ()
 entail tm p = 
@@ -222,10 +225,12 @@ atomize tm (t1, t2) =
                   (_, ks) = getRawKindAppl r1 as1 
               in assert (r1 == r2 && length as1 == length as2) $
                  (top1, top2) : (concat $ zipWith ( \ k (a1, a2) -> 
-                      case k of
-                      ExtKind _ CoVar _ -> [(a1, a2)]
-                      ExtKind _ ContraVar _ -> [(a2,a1)]
-                      _ -> [(a1, a2), (a2, a1)]) ks $ zip as1 as2)
+                      let l1 = atomize tm (a1, a2)
+                          l2 = atomize tm (a2, a1)
+                      in case k of
+                      ExtKind _ CoVar _ -> l1
+                      ExtKind _ ContraVar _ -> l2
+                      _ -> l1 ++ l2) ks $ zip as1 as2)
           _ -> error "atomize"
 
 getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
@@ -253,7 +258,7 @@ collapser l =
     else Result 
          (map ( \ (cs, _) -> 
                 let (c1, rs) = Set.deleteFindMin cs
-                    c2 = Set.deleteFindMin rs
+                    c2 = Set.findMin rs
                 in Diag Hint ("contradicting type inclusions for '"
                          ++ showPretty c1 "' and '" 
                          ++ showPretty c2 "'") nullPos) ws) Nothing
@@ -275,8 +280,8 @@ preClose tm cs =
                case collapser as of
                    Result ds Nothing -> return $ Result ds Nothing
                    Result _ (Just s2) -> let s = compSubst s2 s1 in 
-                     return $ return (s, Set.union (substC s qs) $ 
-                       foldr ( \ (t1, t2) -> Set.insert $ Subtyping t1 t2)
+                     return $ return (s, joinC (substC s qs) $ 
+                       foldr ( \ (t1, t2) -> insertC $ Subtyping t1 t2)
                        Set.empty $ Rel.toList $ Rel.transReduce 
                             $ Rel.fromSet $ foldr ( \ p ->
                                 let q@(t1, t2) = subst s2 p in
