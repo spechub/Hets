@@ -16,12 +16,13 @@ parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
 module Parse_AS where
 import AnnoState
 import Id
---import Keywords
+import Token
+import Keywords
 import Lexer
 import AS_Modal
-import AS_Annotation
-import Maybe
-import Parsec
+-- import AS_Annotation
+-- import Maybe
+import Common.Lib.Parsec
 --import Formula
 --import SortItem
 --import OpItem
@@ -29,14 +30,30 @@ import Parsec
 import ItemList
 
 -- aus CASL, kann bleiben
-basicSpec :: GenParser Char st BASIC_SPEC
-basicSpec = (fmap Basic_spec $ many1 $ -- 
-	    try $ bind addLeftAnno annos basicItems)               --BasicItem
-            <|> try (oBraceT >> cBraceT >> return (Basic_spec [])) --Klammern
+basicSpec :: AParser BASIC_SPEC
+basicSpec = (fmap Basic_spec $ many1 $ 
+	    try $ annoParser basicItems)
+            <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
 
 basicItems :: AParser BASIC_ITEMS
 basicItems = fmap Sig_items sigItems
-	    -- <|> dotFormulae    -- später!
+	    <|> dotFormulae    -- später!
 
 sigItems :: AParser SIG_ITEMS
-sigItems = sortItems <|> opItems <|> predItems <|> typeItems
+sigItems = propItems 
+
+propItem :: AParser PROP_ITEM 
+propItem = do s <- sortId ; -- Props are the same as sorts (in declaration)
+		    commaPropDecl s
+		    <|> 
+		    return (Prop_decl [s] [])
+
+propItems :: AParser SIG_ITEMS
+propItems = itemList propS propItem Prop_items
+
+commaPropDecl :: Id -> AParser PROP_ITEM
+commaPropDecl s = do c <- anComma
+		     (is, cs) <- sortId `separatedBy` anComma
+		     let l = s : is 
+		         p = tokPos c : map tokPos cs in return (Prop_decl l p)
+

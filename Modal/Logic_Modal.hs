@@ -27,8 +27,8 @@ instance Category Modal Sign Morphism
     where
        -- ide :: id -> object -> morphism
        ide Modal sigma = (sigma, listToFM [(i,i) | i<- setToList sigma], sigma)
-       -- o :: id -> morphism -> morphism -> Maybe morphism
-       o Modal (sigma1 ,m1,_) (_,m2,sigma2) =  
+       -- comp :: id -> morphism -> morphism -> Maybe morphism
+       comp Modal (sigma1 ,m1,_) (_,m2,sigma2) =  
 	   Just (sigma1,plusFM m1 m2,sigma2)
        -- dom, cod :: id -> morphism -> object
        dom Modal (sigma,_,_) = sigma
@@ -42,9 +42,9 @@ instance Category Modal Sign Morphism
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax Modal BASIC_SPEC 
-		SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
+-- instance Syntax Modal BASIC_SPEC 
+-- 		SYMB_ITEMS SYMB_MAP_ITEMS
+--       where 
 --         parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
 --         parse_symb_items :: id -> Maybe(ParseFun symb_items)
 --         parse_symb_map_items :: id -> Maybe(ParseFun symb_map_items)
