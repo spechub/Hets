@@ -24,7 +24,7 @@ plusT = asKey plusS
 minusT = asKey minusS
 dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
 crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
-
+barT = asKey barS
 quMarkT = asKey quMark
 
 qColonT = asKey (colonS++quMark)
@@ -374,6 +374,10 @@ primTerm = termToken
 	   <|> brackets term
 		   (BracketTerm Squares)
  	   <|> parenTerm
+           <|> forallTerm
+	   <|> exTerm
+	   <|> lambdaTerm
+	   <|> caseTerm
 
 
 parenTerm = do o <- oParenT
@@ -420,8 +424,33 @@ qualPredName o = do { v <- asKey predS
 			      (map tokPos [o,v,c,p]))
 		  }
 
-term = do ts <- many1 primTerm
-	  return (if length ts == 1 then head ts else MixfixTerm ts)
+
+
+typeQual = try $
+	      do q <- colonT
+	         return (OfType, q)
+	      <|> 
+	      do q <- asKey (asS)
+	         return (AsType, q)
+	      <|> 
+	      do q <- asKey (inS)
+	         return (InType, q)
+
+
+typedTerm f = do (q, p) <- typeQual
+		 t <- parseType
+		 return (TypedTerm f q t (tokPos p))
+
+mixTerm = do ts <- many1 primTerm
+	     let t = if length ts == 1 then head ts else MixfixTerm ts
+		 in typedTerm t <|> return t
+
+term = do t <- mixTerm  
+	  whereTerm t <|> return t
+
+-----------------------------------------------------------------------------
+-- quantified term
+-----------------------------------------------------------------------------
 
 forallTerm = do f <- try forallT
 		(vs, ps) <- genVarDecls `separatedBy` semiT
@@ -465,3 +494,24 @@ lamPattern = do (vs, ps) <- varDecls `separatedBy` semiT
 	     <|> 
 	     many (bracketParser patterns oParenT cParenT semiT 
 		      (BracketPattern Parens)) 
+
+-----------------------------------------------------------------------------
+-- case-term, where-term
+-----------------------------------------------------------------------------
+
+caseTerm = do c <- try(asKey caseS)
+	      t <- term
+	      o <- asKey ofS
+	      (ts, ps) <- patternTermPair funS `separatedBy` barT
+	      return (CaseTerm t ts (map tokPos (c:o:ps)))
+
+patternTermPair :: String -> GenParser Char st ProgEq
+patternTermPair sep = do p <- pattern
+			 s <- asKey sep
+			 t <- term
+			 return (ProgEq p t (tokPos s))
+
+whereTerm t = do w <- try $ asKey whereS
+		 (ts, ps) <- patternTermPair equalS `separatedBy` commaT
+		 return (WhereTerm t ts (map tokPos (w:ps)))
+           

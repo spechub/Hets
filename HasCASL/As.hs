@@ -199,7 +199,7 @@ data Term = CondTerm Term Formula Term [Pos]
           -- pos "\", dot (plus "!") 
 	  | CaseTerm Term [ProgEq] [Pos]
 	  -- pos "case", "of", "|"s 
-	  | LetTerm [ProgEq] Term [Pos]
+	  | WhereTerm Term [ProgEq] [Pos]
 	  -- pos "let", ";"s, "in"
 	  | TermToken Token
           | MixfixTerm [Term]
@@ -226,7 +226,7 @@ data Pattern = PatternVars [VarDecl] [Pos]
 	     -- pos "@"
 	       deriving (Show,Eq)
 
-data ProgEq = ProgEq Pattern Term [Pos] deriving (Show,Eq)
+data ProgEq = ProgEq Pattern Term Pos deriving (Show,Eq)
 	    -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls
