@@ -5,14 +5,21 @@
    Year:    2002
 
 -}
+{- |
+   Maintainer  :  hets@tzi.de
+   Stability   :  provisional
+   Portability :  portable
 
-module CASL.ShowMixfix where
+   This module provides show functions for mixfix errors
+-}
+
+module CASL.ShowMixfix (showTerm, showFormula) where
 
 import CASL.AS_Basic_CASL
 import Common.Id
 import Common.Keywords
-import Data.List
 
+-- | shows Terms fully bracketed for mixfix errors
 showTerm :: TERM -> String
 showTerm (Simple_id s)               = tokStr s 
 showTerm (Qual_var v s _ )           = "("++varS++ tokStr v ++colonS 
