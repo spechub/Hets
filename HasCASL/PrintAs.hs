@@ -15,7 +15,7 @@ import HToken
 import Pretty
 import PrettyPrint
 import GlobalAnnotations(GlobalAnnos)
-import Print_AS_Annotation
+import Print_AS_Annotation()
 
 commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 commas ga l = fcat $ punctuate comma (map (printText0 ga) l)
@@ -226,8 +226,7 @@ instance PrettyPrint Variance where
 instance PrettyPrint ExtClass where 
     printText0 ga (ExtClass c v _) = printText0 ga c <> printText0 ga v 
 				     <> space
-    printText0 ga (KindAppl k1 k2) = parens (printText0 ga k1)
-				     <> ptext funS <> printText0 ga k2 
+    printText0 ga (KindArg k) = parens (printText0 ga k)
 
 instance PrettyPrint ProdClass where 
     printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
@@ -241,7 +240,8 @@ instance PrettyPrint Kind where
 			     <> printText0 ga c
 
 instance PrettyPrint Class where 
-    printText0 ga (Downset t) = braces $ text lessS <+> printText0 ga t
+    printText0 ga (Downset t) = braces $ 
+				text "_" <+> text lessS <+> printText0 ga t
     printText0 ga (Intersection c _) = if null c then ptext "Type"
 			   else if null $ tail c then printText0 ga $ head c
 			   else parens $ commas ga c 
@@ -311,13 +311,13 @@ instance PrettyPrint ClassDecl where
     printText0 ga (ClassDefn n c _) =  printText0 ga n 
 			       <> text equalS 
 			       <> printText0 ga c
-    printText0 ga (DownsetDefn c v t _) = printText0 ga c
+    printText0 ga (DownsetDefn c v t _) =
+	let pv = printText0 ga v in 
+			       printText0 ga c
 			       <> text equalS 
-			       <> braces (printText0 ga v 
-					   <> text dotS
-					   <> printText0 ga v 
-					   <> (text lessS
-					       <+> printText0 ga t))
+			       <> braces (pv <> text dotS <> pv
+					   <> text lessS
+					       <+> printText0 ga t)
 
 instance PrettyPrint TypeItem where 
     printText0 ga (TypeDecl l k _) = commas ga l <> 

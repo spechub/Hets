@@ -282,7 +282,7 @@ data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
 data ExtClass = ExtClass Class Variance Pos
                 -- pos "+" or "-" (or nullPos)
-	      | KindAppl Kind Kind  -- extension
+	      | KindArg Kind  -- extension for HO kinds
 		deriving (Show, Eq)
 
 data ProdClass = ProdClass [ExtClass] [Pos] 

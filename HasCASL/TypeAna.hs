@@ -75,10 +75,9 @@ anaExtClass :: ExtClass -> State Env ExtClass
 anaExtClass (ExtClass c v p) = 
     do ca <- anaClassAppl c
        return $ ExtClass ca v p
-anaExtClass (KindAppl k1 k2) =
-    do n1 <- anaKind k1
-       n2 <- anaKind k2
-       return $ KindAppl n1 n2
+anaExtClass (KindArg k) =
+    do n <- anaKind k
+       return $ KindArg n
 
 anaProdClass :: ProdClass -> State Env ProdClass
 anaProdClass (ProdClass l p) =
@@ -217,7 +216,7 @@ posOfProdClass (ProdClass s ps) =
 
 posOfExtClass :: ExtClass -> Pos
 posOfExtClass (ExtClass c _ _) = posOfClass c
-posOfExtClass (KindAppl k _) = posOfKind k
+posOfExtClass (KindArg k) = posOfKind k
 
 posOfClass :: Class -> Pos 
 posOfClass (Downset t) = posOfType t
@@ -241,13 +240,11 @@ eqProdClass (ProdClass s1 _) (ProdClass s2 _) =
 eqExtClass :: ExtClass -> ExtClass -> Bool
 eqExtClass (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
     eqClass c1 c2 && v1 == v2
-eqExtClass (KindAppl f1 a1) (KindAppl f2 a2) =
-    eqKind f1 f2 && eqKind a1 a2
+eqExtClass (KindArg k1) (KindArg k2) = eqKind k1 k2
 eqExtClass _ _ = False
 
 eqClass :: Class -> Class -> Bool
-eqClass(Intersection i1 _) (Intersection i2 _) =
-    i1 == i2
+eqClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
 eqClass (Downset t1) (Downset t2) = eqType t1 t2
 eqClass _ _ = False
 
