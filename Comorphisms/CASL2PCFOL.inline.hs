@@ -177,6 +177,7 @@ generateAxioms sig =
         indentity=mkId [mkSimpleId "_indentity"]
         membership=mkId[mkSimpleId "_membership"]
         functionmono=mkId[mkSimpleId "_function_monotonicity"]
+        predmono==mkId[mkSimpleId "_predicate_monotonicity"]
         rel2List=Rel.toList(sortRel sig)
         pred2List = map   (\(x,y)->(x,Set.toList y))   (Map.toList(predMap sig))
 
