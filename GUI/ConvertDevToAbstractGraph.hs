@@ -93,6 +93,14 @@ type DGraphToAGraphEdge = Map.Map (LIB_NAME,(Descr,Descr,String)) Descr
 type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node) 
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
+
+type GInfo = (IORef (GlobalContext, LibEnv, [([DGRule], [DGChange])], DGraph),
+              IORef Descr,
+              IORef ConversionMaps,
+              Descr,
+              LIB_NAME,
+              GraphInfo)
+
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = 
     do HTk.initHTk [HTk.withdrawMainWin]
@@ -213,32 +221,32 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
       -- the link types
                  [("globaldef",
                    Solid 
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenu gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
 		  ("def",
                    Solid $$$ Color "Steelblue"
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenu gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
                    Solid $$$ Color "Green"
-		   $$$ createLocalEdgeMenuThmEdge
+		   $$$ createLocalEdgeMenuThmEdge gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
-		   $$$ createLocalEdgeMenuThmEdge
+		   $$$ createLocalEdgeMenuThmEdge gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
-		   $$$ createLocalEdgeMenuThmEdge
+		   $$$ createLocalEdgeMenuThmEdge gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
-		   $$$ createLocalEdgeMenuThmEdge
+		   $$$ createLocalEdgeMenuThmEdge gInfo
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
-		   $$$ createLocalEdgeMenu
+		   $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
                  [("globaldef","globaldef","globaldef"),
 		  ("globaldef","def","def"),
@@ -461,34 +469,42 @@ createLocalMenuButtonShowNumberOfNode =
 -- -------------------------------------------------------------
 -- methods to create the local menus for the edges
 -- -------------------------------------------------------------
-createLocalEdgeMenu = 
+createLocalEdgeMenu gInfo = 
     LocalMenu (Menu (Just "edge menu")
-	       [createLocalMenuButtonShowMorphismOfEdge,
-		createLocalMenuButtonShowOriginOfEdge]
+	       [createLocalMenuButtonShowMorphismOfEdge gInfo,
+		createLocalMenuButtonShowOriginOfEdge gInfo,
+                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
 	      )
 
-createLocalEdgeMenuThmEdge =
+createLocalEdgeMenuThmEdge gInfo =
    LocalMenu (Menu (Just "thm egde menu")
-              [createLocalMenuButtonShowMorphismOfEdge,
-		createLocalMenuButtonShowOriginOfEdge,
-	        createLocalMenuButtonShowProofStatusOfThm]
+              [createLocalMenuButtonShowMorphismOfEdge gInfo,
+		createLocalMenuButtonShowOriginOfEdge gInfo,
+	        createLocalMenuButtonShowProofStatusOfThm gInfo]
 	      )
 
-createLocalMenuButtonShowMorphismOfEdge = 
+createLocalMenuButtonShowMorphismOfEdge _ = 
   (Button "Show morphism" 
                       (\ (_,descr,maybeLEdge)  -> 
 		        do showMorphismOfEdge descr maybeLEdge
 		           return ()
                        ))
 
-createLocalMenuButtonShowOriginOfEdge =
+createLocalMenuButtonShowOriginOfEdge _ =
     (Button "Show origin"
          (\ (_,descr,maybeLEdge) ->
 	   do showOriginOfEdge descr maybeLEdge
 	      return ()
 	  ))
 
-createLocalMenuButtonShowProofStatusOfThm =
+createLocalMenuButtonCheckconsistencyOfEdge gInfo = 
+  (Button "Check consistency" 
+                      (\ (ginfo,descr,maybeLEdge)  -> 
+		        do checkconsistencyOfEdge descr gInfo maybeLEdge
+		           return ()
+                       ))
+
+createLocalMenuButtonShowProofStatusOfThm _ =
    (Button "Show proof status"
         (\ (_,descr,maybeLEdge) ->
           do showProofStatusOfThm descr maybeLEdge
@@ -725,6 +741,26 @@ showProofStatusOfThm _ (Just ledge) =
 showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
 		++ "in the development graph")
+
+{- check consistency of the edge -}
+checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
+checkconsistencyOfEdge _ (ref,_,_,_,_,_) (Just (_,target,linklab)) = do 
+  (_,_,_,dgraph) <- readIORef ref
+  let dgnode = lab' (context target dgraph)
+  case dgnode of
+    (DGNode name _ (G_l_sentence_list lid sens) _) -> do   
+      GMorphism cid sign1 morphism2 <- return $ dgl_morphism linklab
+      let morphism2' = case coerce (targetLogic cid) lid morphism2 of
+           Just m -> m
+           _ -> error "checkconsistencyOfEdge: wrong logic"
+          res = consCheck lid morphism2' sens
+      createTextDisplay "Result of consistency check" 
+           (show res) [size(50,50)]
+
+checkconsistencyOfEdge descr _ Nothing = 
+      createTextDisplay "Error" 
+          ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph") [size(30,10)]
 
 
 getProofStatusOfThm :: (LEdge DGLinkLab) -> ThmLinkStatus

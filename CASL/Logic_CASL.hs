@@ -31,6 +31,7 @@ import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
+import CASL.CCC.FreeTypes
 import Data.Dynamic
 
 import CASL.CCC.OnePoint
@@ -142,8 +143,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
-      provers CASL = [] 
-      cons_checkers CASL = []
+      consCheck CASL = checkFreeType
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS

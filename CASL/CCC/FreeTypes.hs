@@ -31,6 +31,7 @@
 
 module CASL.CCC.FreeTypes where
 
+import Debug.Trace
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism              
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
@@ -38,19 +39,27 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
+import Common.AS_Annotation
+import Common.PrettyPrint
 
-checkFreeType :: Eq f=> Morphism f e m -> [FORMULA f] -> Maybe Bool
-checkFreeType m fs 
+checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
+checkFreeType m fsn 
        | any (\s->not $ elem s srts) sorts = Nothing
-       | all (\s->not $ elem s f_Inhabited) sorts = Just False
+       | any (\s->not $ elem s f_Inhabited) sorts = Just False   -- check if *new* sorts are inhabited
        | elem Nothing l_Syms =  Nothing
        | (any id $ map (\s->elem s sorts) $ ops_sorts++preds_sorts) =Nothing
        | not $ and $ map checkTerm leadingTerms =Nothing
        | not $ and $ map checkVar leadingTerms =Nothing 
        | not $ and $ map checkPatterns leadingPatterns=Nothing
        | otherwise = Just True
-   where sig = imageOfMorphism m
-         sorts= Set.toList (sortSet sig)
+   where fs1 = map sentence (filter is_user_or_sort_gen fsn)
+         fs = trace (showPretty fs1 "") fs1
+         is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
+             where name = senName ax
+         sig = imageOfMorphism m
+         sorts1= Set.toList (sortSet sig)
+         sorts = trace (showPretty sorts1 "") sorts1  -- "old" sorts
+         -- newSorts = sortSet (mtarget m) Set.\\ sorts
          fconstrs= concat $ map fc fs
          fc f= case f of
                      Sort_gen_ax constrs True -> constrs
@@ -167,7 +176,7 @@ groupAxioms phis = do
     where filterA [] _=[]
           filterA (p:ps) symb=let fp=fst p
                                   p'= if elem fp symb then []
-                                      else [(fp,snd$unzip$filter (\p'->(fst p')==fp) (p:ps))]
+                                      else [(fp,snd $ unzip $ filter (\p'->(fst p')==fp) (p:ps))]
                                   symb'= if not $ (elem fp symb) then fp:symb
                                          else symb
                               in p'++(filterA ps symb')
