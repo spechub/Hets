@@ -140,7 +140,7 @@ doc: docs/index.html utils/hd-lib
 
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          -i/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
+          --read-interface=http://www.haskell.org/ghc/docs/latest/html/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
@@ -150,10 +150,6 @@ apache_doc:
 	$(RM) docs/*.html 
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
-
-a_docs_base:
-	$(RM) -r a-docs/base
-	cp -r /home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base a-docs
 
 post_doc4apache:
 	$(PERL) utils/post_process_docs.pl docs \
