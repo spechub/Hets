@@ -195,7 +195,7 @@ tupleComponent =
 altComponent :: AParser Components
 altComponent = 
     tupleComponent
-    <|> do i <- hconsId
+    <|> do i <- typeId
 	   return (NoSelector $ idToType i)
 		      
 compType :: [UninstOpId] -> [Token] -> AParser [Components]
