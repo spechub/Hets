@@ -51,12 +51,7 @@ instance Show Id where
 	let (toks, places) = splitMixToken ts 
 	    front = concat (map show toks)
 	    rest = concat (map show places)
-	    sep c = if (isAlpha c || isDigit c || c == '\'' || c == '_') 
-		  then "" else " "
-            comps = if null is then "" else 
-		    (sep (last front)) ++ "[" ++  
-		    (foldr1 (\i s -> i ++ ',':s) (map show is)) ++
-		    (sep (last (show (last is)))) ++ "]" 
+            comps = if null is then "" else show is 
 	in
         showString (front ++ comps ++ rest) 
 
