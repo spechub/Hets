@@ -1,11 +1,2212 @@
+{-
+instances:
+(Num Int, (inst__Prelude_Num_Int, []))
+(Num Integer, (inst__Prelude_Num_Integer, []))
+(Num Rational, (inst__Prelude_Num_Rational, []))
+(Num Double, (inst__Prelude_Num_Double, []))
+(Eq Int, (inst__Prelude_Eq_Int, []))
+(Ord Int, (inst__Prelude_Ord_Int, []))
+(Enum Int, (inst__Prelude_Enum_Int, []))
+(Eq Char, (inst__Prelude_Eq_Char, []))
+(Eq Integer, (inst__Prelude_Eq_Integer, []))
+(Eq Rational, (inst__Prelude_Eq_Rational, []))
+(Eq Double, (inst__Prelude_Eq_Double, []))
+(Ord Char, (inst__Prelude_Ord_Char, []))
+(Ord Integer, (inst__Prelude_Ord_Integer, []))
+(Ord Rational, (inst__Prelude_Ord_Rational, []))
+(Ord Double, (inst__Prelude_Ord_Double, []))
+(Show Int, (inst__Prelude_Show_Int, []))
+(Show Char, (inst__Prelude_Show_Char, []))
+(Show Integer, (inst__Prelude_Show_Integer, []))
+(Show Rational, (inst__Prelude_Show_Rational, []))
+(Show Double, (inst__Prelude_Show_Double, []))
+(Fractional Rational, (inst__Prelude_Fractional_Rational, []))
+(Fractional Double, (inst__Prelude_Fractional_Double, []))
+(Eq Bool, (derived__Prelude_Eq_Bool, []))
+(Ord Bool, (derived__Prelude_Ord_Bool, []))
+(Show Bool, (derived__Prelude_Show_Bool, []))
+(Eq Ordering, (derived__Prelude_Eq_Ordering, []))
+(Ord Ordering, (derived__Prelude_Ord_Ordering, []))
+(Show Ordering, (derived__Prelude_Show_Ordering, []))
+(Eq [a], (derived__Prelude_Eq_34_65, [Eq a]))
+(Ord [a], (derived__Prelude_Ord_34_69, [Ord a]))
+(Show [a], (derived__Prelude_Show_34_59, [Show a]))
+(Eq (), (derived__Prelude_Eq_184_27, []))
+(Ord (), (derived__Prelude_Ord_184_31, []))
+(Show (), (derived__Prelude_Show_184_36, []))
+(Eq (a, b), (derived__Prelude_Eq_188_20, [Eq a,
+					  Eq b]))
+(Ord (a, b), (derived__Prelude_Ord_188_24, [Ord a,
+					    Ord b]))
+(Show (a, b), (derived__Prelude_Show_188_14, [Show a,
+					      Show b]))
+(Eq (a, b, c), (derived__Prelude_Eq_192_20, [Eq a,
+					     Eq b, Eq c]))
+(Ord (a, b, c), (derived__Prelude_Ord_192_24, [Ord a,
+					       Ord b, Ord c]))
+(Show (a, b,
+       c), (derived__Prelude_Show_192_14, [Show a, Show b,
+					   Show c]))
+(Eq (a, b, c, d), (derived__Prelude_Eq_196_20, [Eq a,
+						Eq b, Eq c, Eq d]))
+(Ord (a, b, c,
+      d), (derived__Prelude_Ord_196_24, [Ord a, Ord b,
+					 Ord c, Ord d]))
+(Show (a, b, c,
+       d), (derived__Prelude_Show_196_14, [Show a, Show b,
+					   Show c, Show d]))
 
+types:
+() :: (*, data)
+(,) :: (*->*->*, data)
+Prelude.(,,) :: (*->*->*->*, data)
+Prelude.(,,,) :: (*->*->*->*->*, data)
+((->)) :: (*->*->*, data)
+Bool :: (*, data)
+Bounded ::
+    (*->Pred, class _ a
+		    where
+			minBound :: a
+			maxBound :: a)
+Char :: (*, data)
+Double :: (*, data)
+Enum ::
+    (*->Pred, class _ a
+		    where
+			succ :: a -> a
+			pred :: a -> a
+			toEnum :: Int -> a
+			fromEnum :: a -> Int
+			enumFrom :: a -> [a]
+			enumFromThen :: a -> a -> [a]
+			enumFromTo :: a -> a -> [a]
+			enumFromThenTo :: a -> a -> a -> [a])
+Eq ::
+    (*->Pred, class _ a
+		    where
+			(==) :: a -> a -> Bool
+			(/=) :: a -> a -> Bool)
+Fractional ::
+    (*->Pred, class Num a => _ a
+		    where
+			(/) :: a -> a -> a
+			recip :: a -> a
+			fromRational :: Rational -> a)
+Int :: (*, data)
+Integer :: (*, data)
+Integral ::
+    (*->Pred, class (Real a, Enum a) => _ a
+		    where
+			quot :: a -> a -> a
+			rem :: a -> a -> a
+			div :: a -> a -> a
+			mod :: a -> a -> a
+			quotRem :: a -> a -> (a, a)
+			divMod :: a -> a -> (a, a)
+			toInteger :: a -> Integer)
+Num ::
+    (*->Pred, class (Eq a, Show a) => _ a
+		    where
+			(+) :: a -> a -> a
+			(-) :: a -> a -> a
+			(*) :: a -> a -> a
+			negate :: a -> a
+			abs :: a -> a
+			signum :: a -> a
+			fromInteger :: Integer -> a)
+Ord ::
+    (*->Pred, class Eq a => _ a
+		    where
+			compare :: a -> a -> Ordering
+			(<) :: a -> a -> Bool
+			(<=) :: a -> a -> Bool
+			(>=) :: a -> a -> Bool
+			(>) :: a -> a -> Bool
+			max :: a -> a -> a
+			min :: a -> a -> a)
+Ordering :: (*, data)
+Rational :: (*, data)
+Real ::
+    (*->Pred, class (Num a, Ord a) => _ a
+		    where
+			toRational :: a -> Rational)
+RealFrac ::
+    (*->Pred, class (Real a, Fractional a) => _ a
+		    where
+			properFraction ::
+			    forall a . (Integral a) => a -> (a, a)
+			truncate :: forall a . (Integral a) => a -> a
+			round :: forall a . (Integral a) => a -> a
+			ceiling :: forall a . (Integral a) => a -> a
+			floor :: forall a . (Integral a) => a -> a)
+Show ::
+    (*->Pred, class _ a
+		    where
+			showsPrec :: Int -> a -> ShowS
+			show :: a -> String
+			showList :: [a] -> ShowS)
+ShowS :: (*, type _ = String -> String)
+String :: (*, type _ = String)
+[] :: (*->*, data)
 
- ---- Type checking AModule "Main" ----
+values:
+($--*) :: forall a . (Num a) => a -> a -> a
+($--+) :: forall a . (Num a) => a -> a -> a
+($---) :: forall a . (Num a) => a -> a -> a
+($--/) :: forall a . (Fractional a) => a -> a -> a
+($--/=) :: forall a . (Eq a) => a -> a -> Bool
+($--<) :: forall a . (Ord a) => a -> a -> Bool
+($--<=) :: forall a . (Ord a) => a -> a -> Bool
+($--==) :: forall a . (Eq a) => a -> a -> Bool
+($-->) :: forall a . (Ord a) => a -> a -> Bool
+($-->=) :: forall a . (Ord a) => a -> a -> Bool
+(&&) :: Bool -> Bool -> Bool
+(*) :: forall a . (Num a) => a -> a -> a
+(+) :: forall a . (Num a) => a -> a -> a
+(++) :: forall a . [a] -> [a] -> [a]
+(-) :: forall a . (Num a) => a -> a -> a
+(.) :: forall a b c . (a -> b) -> (c -> a) -> c -> b
+(/) :: forall a . (Fractional a) => a -> a -> a
+(/=) :: forall a . (Eq a) => a -> a -> Bool
+(<) :: forall a . (Ord a) => a -> a -> Bool
+(<=) :: forall a . (Ord a) => a -> a -> Bool
+(==) :: forall a . (Eq a) => a -> a -> Bool
+(>) :: forall a . (Ord a) => a -> a -> Bool
+(>=) :: forall a . (Ord a) => a -> a -> Bool
+abs :: forall a . (Num a) => a -> a
+ceiling ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+compare :: forall a . (Ord a) => a -> a -> Ordering
+default__abs :: forall a . (Num a) => a -> a
+default__ceiling ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+default__compare ::
+    forall a . (Ord a) => a -> a -> Ordering
+default__div ::
+    forall a . (Integral a) => a -> a -> a
+default__divMod ::
+    forall a . (Integral a) => a -> a -> (a, a)
+default__enumFrom :: forall a . (Enum a) => a -> [a]
+default__enumFromThen ::
+    forall a . (Enum a) => a -> a -> [a]
+default__enumFromThenTo ::
+    forall a . (Enum a) => a -> a -> a -> [a]
+default__enumFromTo ::
+    forall a . (Enum a) => a -> a -> [a]
+default__floor ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+default__fromEnum :: forall a . (Enum a) => a -> Int
+default__fromInteger ::
+    forall a . (Num a) => Integer -> a
+default__fromRational ::
+    forall a . (Fractional a) => Rational -> a
+default__max :: forall a . (Ord a) => a -> a -> a
+default__maxBound :: forall a . (Bounded a) => a
+default__min :: forall a . (Ord a) => a -> a -> a
+default__minBound :: forall a . (Bounded a) => a
+default__mod ::
+    forall a . (Integral a) => a -> a -> a
+default__negate :: forall a . (Num a) => a -> a
+default__pred :: forall a . (Enum a) => a -> a
+default__properFraction ::
+    forall a b . (RealFrac a, Integral b) => a -> (b, a)
+default__quot ::
+    forall a . (Integral a) => a -> a -> a
+default__quotRem ::
+    forall a . (Integral a) => a -> a -> (a, a)
+default__recip :: forall a . (Fractional a) => a -> a
+default__rem ::
+    forall a . (Integral a) => a -> a -> a
+default__round ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+default__show :: forall a . (Show a) => a -> String
+default__showList ::
+    forall a . (Show a) => [a] -> ShowS
+default__showsPrec ::
+    forall a . (Show a) => Int -> a -> ShowS
+default__signum :: forall a . (Num a) => a -> a
+default__succ :: forall a . (Enum a) => a -> a
+default__toEnum :: forall a . (Enum a) => Int -> a
+default__toInteger ::
+    forall a . (Integral a) => a -> Integer
+default__toRational ::
+    forall a . (Real a) => a -> Rational
+default__truncate ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+derived__Prelude_Eq_184_27 :: Eq ()
+derived__Prelude_Eq_188_20 ::
+    forall a b . (Eq a) -> (Eq b) -> Eq (a, b)
+derived__Prelude_Eq_192_20 ::
+    forall a b c .
+	(Eq a) -> (Eq b) -> (Eq c) -> Eq (a, b, c)
+derived__Prelude_Eq_196_20 ::
+    forall a b c d .
+	(Eq a) ->
+	(Eq b) -> (Eq c) -> (Eq d) -> Eq (a, b, c, d)
+derived__Prelude_Eq_34_65 ::
+    forall a . (Eq a) -> Eq [a]
+derived__Prelude_Eq_Bool :: Eq Bool
+derived__Prelude_Eq_Ordering :: Eq Ordering
+derived__Prelude_Ord_184_31 :: Ord ()
+derived__Prelude_Ord_188_24 ::
+    forall a b . (Ord a) -> (Ord b) -> Ord (a, b)
+derived__Prelude_Ord_192_24 ::
+    forall a b c .
+	(Ord a) -> (Ord b) -> (Ord c) -> Ord (a, b, c)
+derived__Prelude_Ord_196_24 ::
+    forall a b c d .
+	(Ord a) ->
+	(Ord b) -> (Ord c) -> (Ord d) -> Ord (a, b, c, d)
+derived__Prelude_Ord_34_69 ::
+    forall a . (Ord a) -> Ord [a]
+derived__Prelude_Ord_Bool :: Ord Bool
+derived__Prelude_Ord_Ordering :: Ord Ordering
+derived__Prelude_Show_184_36 :: Show ()
+derived__Prelude_Show_188_14 ::
+    forall a b . (Show a) -> (Show b) -> Show (a, b)
+derived__Prelude_Show_192_14 ::
+    forall a b c .
+	(Show a) -> (Show b) -> (Show c) -> Show (a, b, c)
+derived__Prelude_Show_196_14 ::
+    forall a b c d .
+	(Show a) ->
+	(Show b) -> (Show c) -> (Show d) -> Show (a, b, c, d)
+derived__Prelude_Show_34_59 ::
+    forall a . (Show a) -> Show [a]
+derived__Prelude_Show_Bool :: Show Bool
+derived__Prelude_Show_Ordering :: Show Ordering
+div :: forall a . (Integral a) => a -> a -> a
+divMod :: forall a . (Integral a) => a -> a -> (a, a)
+enumFrom :: forall a . (Enum a) => a -> [a]
+enumFromThen :: forall a . (Enum a) => a -> a -> [a]
+enumFromThenTo ::
+    forall a . (Enum a) => a -> a -> a -> [a]
+enumFromTo :: forall a . (Enum a) => a -> a -> [a]
+error :: forall a . String -> a
+even :: forall a . (Integral a) => a -> Bool
+flip :: forall a b c . (a -> b -> c) -> b -> a -> c
+floor ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+foldrC ::
+    forall a b c .
+	(a -> b) -> (c -> a -> a) -> a -> [c] -> b
+fromEnum :: forall a . (Enum a) => a -> Int
+fromInteger :: forall a . (Num a) => Integer -> a
+fromIntegral ::
+    forall a b . (Integral a, Num b) => a -> b
+fromRational ::
+    forall a . (Fractional a) => Rational -> a
+head :: forall a . [a] -> a
+inst__Prelude_Enum_Int :: Enum Int
+inst__Prelude_Eq_Char :: Eq Char
+inst__Prelude_Eq_Double :: Eq Double
+inst__Prelude_Eq_Int :: Eq Int
+inst__Prelude_Eq_Integer :: Eq Integer
+inst__Prelude_Eq_Rational :: Eq Rational
+inst__Prelude_Fractional_Double :: Fractional Double
+inst__Prelude_Fractional_Rational ::
+    Fractional Rational
+inst__Prelude_Num_Double :: Num Double
+inst__Prelude_Num_Int :: Num Int
+inst__Prelude_Num_Integer :: Num Integer
+inst__Prelude_Num_Rational :: Num Rational
+inst__Prelude_Ord_Char :: Ord Char
+inst__Prelude_Ord_Double :: Ord Double
+inst__Prelude_Ord_Int :: Ord Int
+inst__Prelude_Ord_Integer :: Ord Integer
+inst__Prelude_Ord_Rational :: Ord Rational
+inst__Prelude_Show_Char :: Show Char
+inst__Prelude_Show_Double :: Show Double
+inst__Prelude_Show_Int :: Show Int
+inst__Prelude_Show_Integer :: Show Integer
+inst__Prelude_Show_Rational :: Show Rational
+lexOrder :: Ordering -> Ordering -> Ordering
+main :: t212
+map :: forall a b . (a -> b) -> [a] -> [b]
+max :: forall a . (Ord a) => a -> a -> a
+maxBound :: forall a . (Bounded a) => a
+min :: forall a . (Ord a) => a -> a -> a
+minBound :: forall a . (Bounded a) => a
+mod :: forall a . (Integral a) => a -> a -> a
+myfoldr ::
+    forall a b . (a -> b -> b) -> b -> [a] -> b
+negate :: forall a . (Num a) => a -> a
+not :: Bool -> Bool
+odd :: forall a . (Integral a) => a -> Bool
+otherwise :: Bool
+pred :: forall a . (Enum a) => a -> a
+primError :: forall a . String -> a
+properFraction ::
+    forall a b . (RealFrac a, Integral b) => a -> (b, a)
+quot :: forall a . (Integral a) => a -> a -> a
+quotRem ::
+    forall a . (Integral a) => a -> a -> (a, a)
+recip :: forall a . (Fractional a) => a -> a
+rem :: forall a . (Integral a) => a -> a -> a
+round ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+show :: forall a . (Show a) => a -> String
+showArgument ::
+    forall a . (Show a) => a -> String -> String
+showChar :: Char -> ShowS
+showList :: forall a . (Show a) => [a] -> ShowS
+showParen :: Bool -> ShowS -> ShowS
+showParenArg :: Int -> ShowS -> ShowS
+showString :: String -> ShowS
+shows :: forall a . (Show a) => a -> ShowS
+showsPrec :: forall a . (Show a) => Int -> a -> ShowS
+signum :: forall a . (Num a) => a -> a
+subtract :: forall a . (Num a) => a -> a -> a
+succ :: forall a . (Enum a) => a -> a
+tail :: forall a . [a] -> [a]
+toEnum :: forall a . (Enum a) => Int -> a
+toInteger :: forall a . (Integral a) => a -> Integer
+toRational :: forall a . (Real a) => a -> Rational
+truncate ::
+    forall a b . (RealFrac a, Integral b) => a -> b
+() :: ()
+(,) :: forall a b . a -> b -> (a, b)
+Prelude.(,,) ::
+    forall a b c . a -> b -> c -> (a, b, c)
+Prelude.(,,,) ::
+    forall a b c d . a -> b -> c -> d -> (a, b, c, d)
+(:) :: forall a . a -> [a] -> [a]
+EQ :: Ordering
+False :: Bool
+GT :: Ordering
+LT :: Ordering
+True :: Bool
+[] :: forall a . [a]
 
-
-
- ---- the types of identifiers ---- 
-
-Main.1_myfoldr :: (a -> b -> b) -> b -> [a] -> b
-Main.2_foldrC :: (a -> b) -> (c -> a -> a) -> a -> [c] -> b
-Main.3_main :: Integer
+scope:
+Prelude.&& |-> Prelude.&&, Value
+() |-> Prelude.(), Type [()] []
+() |-> Prelude.(), con of ()
+(,) |-> Prelude.(,), Type [(,)] []
+(,) |-> Prelude.(,), con of (,)
+Prelude.(,,) |-> Prelude.(,,), Type [(,,)] []
+Prelude.(,,) |-> Prelude.(,,), con of (,,)
+Prelude.(,,,) |-> Prelude.(,,,), Type [(,,,)] []
+Prelude.(,,,) |-> Prelude.(,,,), con of (,,,)
+Prelude.* |-> Prelude.*, method of Num
+Prelude.+ |-> Prelude.+, method of Num
+Prelude.++ |-> Prelude.++, Value
+Prelude.- |-> Prelude.-, method of Num
+(->) |-> Prelude.->, Type [] []
+Prelude.. |-> Prelude.., Value
+Prelude./ |-> Prelude./, method of Fractional
+Prelude./= |-> Prelude./=, method of Eq
+Prelude.: |-> Prelude.:, con of []
+Prelude.< |-> Prelude.<, method of Ord
+Prelude.<= |-> Prelude.<=, method of Ord
+Prelude.== |-> Prelude.==, method of Eq
+Prelude.> |-> Prelude.>, method of Ord
+Prelude.>= |-> Prelude.>=, method of Ord
+Prelude.Bool |-> Prelude.Bool, Type [False, True] []
+Prelude.Bounded |-> Prelude.Bounded, Class [minBound,
+					    maxBound]
+Prelude.Char |-> Prelude.Char, Type [] []
+Prelude.Double |-> Prelude.Double, Type [] []
+Prelude.EQ |-> Prelude.EQ, con of Ordering
+Prelude.Enum |-> Prelude.Enum, Class [succ, pred,
+				      toEnum, fromEnum, enumFrom, enumFromThen,
+				      enumFromTo, enumFromThenTo]
+Prelude.Eq |-> Prelude.Eq, Class [==, /=]
+Prelude.False |-> Prelude.False, con of Bool
+Prelude.Fractional |-> Prelude.Fractional, Class [/,
+						  recip, fromRational]
+Prelude.GT |-> Prelude.GT, con of Ordering
+Prelude.Int |-> Prelude.Int, Type [] []
+Prelude.Integer |-> Prelude.Integer, Type [] []
+Prelude.Integral |-> Prelude.Integral, Class [quot,
+					      rem, div, mod, quotRem, divMod,
+					      toInteger]
+Prelude.LT |-> Prelude.LT, con of Ordering
+Prelude.Num |-> Prelude.Num, Class [+, -, *, negate,
+				    abs, signum, fromInteger]
+Prelude.Ord |-> Prelude.Ord, Class [compare, <, <=,
+				    >=, >, max, min]
+Prelude.Ordering |-> Prelude.Ordering, Type [LT, EQ,
+					     GT] []
+Prelude.Rational |-> Prelude.Rational, Type [] []
+Prelude.Real |-> Prelude.Real, Class [toRational]
+Prelude.RealFrac |-> Prelude.RealFrac, Class [properFraction,
+					      truncate, round, ceiling, floor]
+Prelude.Show |-> Prelude.Show, Class [showsPrec,
+				      show, showList]
+Prelude.ShowS |-> Prelude.ShowS, Type [] []
+Prelude.String |-> Prelude.String, Type [] []
+Prelude.True |-> Prelude.True, con of Bool
+[] |-> Prelude.[], Type [[], :] [head, tail]
+[] |-> Prelude.[], con of []
+Prelude.abs |-> Prelude.abs, method of Num
+Prelude.ceiling |-> Prelude.ceiling, method of RealFrac
+Prelude.compare |-> Prelude.compare, method of Ord
+Prelude.div |-> Prelude.div, method of Integral
+Prelude.divMod |-> Prelude.divMod, method of Integral
+Prelude.enumFrom |-> Prelude.enumFrom, method of Enum
+Prelude.enumFromThen |-> Prelude.enumFromThen, method of Enum
+Prelude.enumFromThenTo |-> Prelude.enumFromThenTo, method of Enum
+Prelude.enumFromTo |-> Prelude.enumFromTo, method of Enum
+Prelude.error |-> Prelude.error, Value
+Prelude.even |-> Prelude.even, Value
+Prelude.flip |-> Prelude.flip, Value
+Prelude.floor |-> Prelude.floor, method of RealFrac
+Prelude.foldrC |-> Prelude.foldrC, Value
+Prelude.fromEnum |-> Prelude.fromEnum, method of Enum
+Prelude.fromInteger |-> Prelude.fromInteger, method of Num
+Prelude.fromIntegral |-> Prelude.fromIntegral, Value
+Prelude.fromRational |-> Prelude.fromRational, method of Fractional
+Prelude.head |-> Prelude.head, field of []
+Prelude.lexOrder |-> Prelude.lexOrder, Value
+Prelude.main |-> Prelude.main, Value
+Prelude.map |-> Prelude.map, Value
+Prelude.max |-> Prelude.max, method of Ord
+Prelude.maxBound |-> Prelude.maxBound, method of Bounded
+Prelude.min |-> Prelude.min, method of Ord
+Prelude.minBound |-> Prelude.minBound, method of Bounded
+Prelude.mod |-> Prelude.mod, method of Integral
+Prelude.myfoldr |-> Prelude.myfoldr, Value
+Prelude.negate |-> Prelude.negate, method of Num
+Prelude.not |-> Prelude.not, Value
+Prelude.odd |-> Prelude.odd, Value
+Prelude.otherwise |-> Prelude.otherwise, Value
+Prelude.pred |-> Prelude.pred, method of Enum
+Prelude.primError |-> Prelude.primError, Value
+Prelude.properFraction |-> Prelude.properFraction, method of RealFrac
+Prelude.quot |-> Prelude.quot, method of Integral
+Prelude.quotRem |-> Prelude.quotRem, method of Integral
+Prelude.recip |-> Prelude.recip, method of Fractional
+Prelude.rem |-> Prelude.rem, method of Integral
+Prelude.round |-> Prelude.round, method of RealFrac
+Prelude.show |-> Prelude.show, method of Show
+Prelude.showArgument |-> Prelude.showArgument, Value
+Prelude.showChar |-> Prelude.showChar, Value
+Prelude.showList |-> Prelude.showList, method of Show
+Prelude.showParen |-> Prelude.showParen, Value
+Prelude.showParenArg |-> Prelude.showParenArg, Value
+Prelude.showString |-> Prelude.showString, Value
+Prelude.shows |-> Prelude.shows, Value
+Prelude.showsPrec |-> Prelude.showsPrec, method of Show
+Prelude.signum |-> Prelude.signum, method of Num
+Prelude.subtract |-> Prelude.subtract, Value
+Prelude.succ |-> Prelude.succ, method of Enum
+Prelude.tail |-> Prelude.tail, field of []
+Prelude.toEnum |-> Prelude.toEnum, method of Enum
+Prelude.toInteger |-> Prelude.toInteger, method of Integral
+Prelude.toRational |-> Prelude.toRational, method of Real
+Prelude.truncate |-> Prelude.truncate, method of RealFrac
+&& |-> Prelude.&&, Value
+() |-> Prelude.(), Type [()] []
+() |-> Prelude.(), con of ()
+(,) |-> Prelude.(,), Type [(,)] []
+(,) |-> Prelude.(,), con of (,)
+(,,) |-> Prelude.(,,), Type [(,,)] []
+(,,) |-> Prelude.(,,), con of (,,)
+(,,,) |-> Prelude.(,,,), Type [(,,,)] []
+(,,,) |-> Prelude.(,,,), con of (,,,)
+* |-> Prelude.*, method of Num
++ |-> Prelude.+, method of Num
+++ |-> Prelude.++, Value
+- |-> Prelude.-, method of Num
+-> |-> Prelude.->, Type [] []
+. |-> Prelude.., Value
+/ |-> Prelude./, method of Fractional
+/= |-> Prelude./=, method of Eq
+: |-> Prelude.:, con of []
+< |-> Prelude.<, method of Ord
+<= |-> Prelude.<=, method of Ord
+== |-> Prelude.==, method of Eq
+> |-> Prelude.>, method of Ord
+>= |-> Prelude.>=, method of Ord
+Bool |-> Prelude.Bool, Type [False, True] []
+Bounded |-> Prelude.Bounded, Class [minBound,
+				    maxBound]
+Char |-> Prelude.Char, Type [] []
+Double |-> Prelude.Double, Type [] []
+EQ |-> Prelude.EQ, con of Ordering
+Enum |-> Prelude.Enum, Class [succ, pred, toEnum,
+			      fromEnum, enumFrom, enumFromThen, enumFromTo,
+			      enumFromThenTo]
+Eq |-> Prelude.Eq, Class [==, /=]
+False |-> Prelude.False, con of Bool
+Fractional |-> Prelude.Fractional, Class [/, recip,
+					  fromRational]
+GT |-> Prelude.GT, con of Ordering
+Int |-> Prelude.Int, Type [] []
+Integer |-> Prelude.Integer, Type [] []
+Integral |-> Prelude.Integral, Class [quot, rem, div,
+				      mod, quotRem, divMod, toInteger]
+LT |-> Prelude.LT, con of Ordering
+Num |-> Prelude.Num, Class [+, -, *, negate, abs,
+			    signum, fromInteger]
+Ord |-> Prelude.Ord, Class [compare, <, <=, >=, >,
+			    max, min]
+Ordering |-> Prelude.Ordering, Type [LT, EQ, GT] []
+Rational |-> Prelude.Rational, Type [] []
+Real |-> Prelude.Real, Class [toRational]
+RealFrac |-> Prelude.RealFrac, Class [properFraction,
+				      truncate, round, ceiling, floor]
+Show |-> Prelude.Show, Class [showsPrec, show,
+			      showList]
+ShowS |-> Prelude.ShowS, Type [] []
+String |-> Prelude.String, Type [] []
+True |-> Prelude.True, con of Bool
+[] |-> Prelude.[], Type [[], :] [head, tail]
+[] |-> Prelude.[], con of []
+abs |-> Prelude.abs, method of Num
+ceiling |-> Prelude.ceiling, method of RealFrac
+compare |-> Prelude.compare, method of Ord
+div |-> Prelude.div, method of Integral
+divMod |-> Prelude.divMod, method of Integral
+enumFrom |-> Prelude.enumFrom, method of Enum
+enumFromThen |-> Prelude.enumFromThen, method of Enum
+enumFromThenTo |-> Prelude.enumFromThenTo, method of Enum
+enumFromTo |-> Prelude.enumFromTo, method of Enum
+error |-> Prelude.error, Value
+even |-> Prelude.even, Value
+flip |-> Prelude.flip, Value
+floor |-> Prelude.floor, method of RealFrac
+foldrC |-> Prelude.foldrC, Value
+fromEnum |-> Prelude.fromEnum, method of Enum
+fromInteger |-> Prelude.fromInteger, method of Num
+fromIntegral |-> Prelude.fromIntegral, Value
+fromRational |-> Prelude.fromRational, method of Fractional
+head |-> Prelude.head, field of []
+lexOrder |-> Prelude.lexOrder, Value
+main |-> Prelude.main, Value
+map |-> Prelude.map, Value
+max |-> Prelude.max, method of Ord
+maxBound |-> Prelude.maxBound, method of Bounded
+min |-> Prelude.min, method of Ord
+minBound |-> Prelude.minBound, method of Bounded
+mod |-> Prelude.mod, method of Integral
+myfoldr |-> Prelude.myfoldr, Value
+negate |-> Prelude.negate, method of Num
+not |-> Prelude.not, Value
+odd |-> Prelude.odd, Value
+otherwise |-> Prelude.otherwise, Value
+pred |-> Prelude.pred, method of Enum
+primError |-> Prelude.primError, Value
+properFraction |-> Prelude.properFraction, method of RealFrac
+quot |-> Prelude.quot, method of Integral
+quotRem |-> Prelude.quotRem, method of Integral
+recip |-> Prelude.recip, method of Fractional
+rem |-> Prelude.rem, method of Integral
+round |-> Prelude.round, method of RealFrac
+show |-> Prelude.show, method of Show
+showArgument |-> Prelude.showArgument, Value
+showChar |-> Prelude.showChar, Value
+showList |-> Prelude.showList, method of Show
+showParen |-> Prelude.showParen, Value
+showParenArg |-> Prelude.showParenArg, Value
+showString |-> Prelude.showString, Value
+shows |-> Prelude.shows, Value
+showsPrec |-> Prelude.showsPrec, method of Show
+signum |-> Prelude.signum, method of Num
+subtract |-> Prelude.subtract, Value
+succ |-> Prelude.succ, method of Enum
+tail |-> Prelude.tail, field of []
+toEnum |-> Prelude.toEnum, method of Enum
+toInteger |-> Prelude.toInteger, method of Integral
+toRational |-> Prelude.toRational, method of Real
+truncate |-> Prelude.truncate, method of RealFrac
+-}
+module Dummy where
+import Prelude (error, Show, Eq, Ord)
+import MyLogic
+otherwise = True
+lexOrder EQ o = o
+lexOrder o _ = o
+showArgument d198 x
+    =   (.){-String String String-} (showChar ' ')
+	    (showsPrec{-t193-} d198
+		 (fromInteger{-Int-} inst__Prelude_Num_Int 10)
+		 x)
+main
+    =   myfoldr{-t212 t212-} ((+){-t212-} d205)
+	    (fromInteger{-t212-} d205 0)
+	    [fromInteger{-t212-} d205 1,
+	     fromInteger{-t212-} d205 2,
+	     fromInteger{-t212-} d205 3]
+data Integer
+data Rational
+data Double
+data Char
+data Int
+data a -> b
+data Bool = False | True deriving (Show, Eq, Ord)
+not :: Bool -> Bool
+not True = False
+not False = True
+(&&) :: Bool -> Bool -> Bool
+(&&) a b = if a then True else b
+data Ordering = LT | EQ | GT deriving (Show, Eq, Ord)
+class Eq a where (==),(/=) :: a -> a -> Bool
+($--/=) d223 x y = not ((==){-a-} d223 x y)
+($--==) d229 x y = not ((/=){-a-} d229 x y)
+data [a]
+    = [] | (:) {head :: a, tail :: [a]}
+    deriving (Show, Eq, Ord)
+(++) :: [a] -> [a] -> [a]
+(++) [] ys = ys
+(++) ((:){-a-} x xs) ys
+    = (:){-a-} x ((++){-a-} xs ys)
+map :: (a -> b) -> [a] -> [b]
+map f [] = []
+map f ((:){-a-} x xs)
+    = (:){-b-} (f x) (map{-a b-} f xs)
+type String = String
+foreign import primError :: String -> a
+error :: String -> a
+error = primError{-a-}
+(.) :: (b -> c) -> (a -> b) -> a -> c
+(.) f g = \ x -> f (g x)
+type ShowS = String -> String
+class Eq a => Ord a
+  where
+      compare :: a -> a -> Ordering
+      (<),(<=),(>=),(>) :: a -> a -> Bool
+      max,min :: a -> a -> a
+default__compare d269 x y
+    | (==){-a-} d266 x y = EQ
+    | (<=){-a-} d269 x y = LT
+    | otherwise = GT
+  where
+      d266 = super1_Ord{-a-} d269
+      {-
+      d266 :: Eq a
+      -}
+($--<=) d277 x y
+    =   (/=){-Ordering-} derived__Prelude_Eq_Ordering
+	    (compare{-a-} d277 x y)
+	    GT
+($--<) d285 x y
+    =   (==){-Ordering-} derived__Prelude_Eq_Ordering
+	    (compare{-a-} d285 x y)
+	    LT
+($-->=) d293 x y
+    =   (/=){-Ordering-} derived__Prelude_Eq_Ordering
+	    (compare{-a-} d293 x y)
+	    LT
+($-->) d301 x y
+    =   (==){-Ordering-} derived__Prelude_Eq_Ordering
+	    (compare{-a-} d301 x y)
+	    GT
+default__max d307 x y
+    | (<=){-a-} d307 x y = y
+    | otherwise = x
+default__min d313 x y
+    | (<=){-a-} d313 x y = x
+    | otherwise = y
+shows :: Show a => a -> ShowS
+shows d322
+    =   showsPrec{-a-} d322
+	    (fromInteger{-Int-} inst__Prelude_Num_Int 0)
+showChar :: Char -> ShowS
+showChar = (:){-Char-}
+showString :: String -> ShowS
+showString = (++){-Char-}
+showParen :: Bool -> ShowS -> ShowS
+showParen b p
+    =   if b
+	then (.){-String String String-}
+		 ((.){-String String String-} (showChar '(') p)
+		 (showChar ')')
+	else p
+showParenArg :: Int -> ShowS -> ShowS
+showParenArg d
+    =   showParen
+	    ((<=){-Int-} inst__Prelude_Ord_Int
+		 (fromInteger{-Int-} inst__Prelude_Num_Int 10)
+		 d)
+class Show a
+  where
+      showsPrec :: Int -> a -> ShowS
+      show :: a -> String
+      showList :: [a] -> ShowS
+default__showsPrec d349 _ x s
+    = (++){-Char-} (show{-a-} d349 x) s
+default__show d357 x
+    =   showsPrec{-a-} d357
+	    (fromInteger{-Int-} inst__Prelude_Num_Int 0)
+	    x
+	    ""
+default__showList d387 [] = showString "[]"
+default__showList d387 ((:){-a-} x xs)
+    =   (.){-String String String-}
+	    ((.){-String String String-} (showChar '[')
+		 (shows{-a-} d387 x))
+	    (showl{-a-} d387 xs)
+  where
+      showl d375 [] = showChar ']'
+      showl d375 ((:){-t364-} x xs)
+	  =   (.){-String String String-}
+		  ((.){-String String String-} (showChar ',')
+		       (shows{-t364-} d375 x))
+		  (showl{-t364-} d375 xs)
+      {-
+      showl ::
+	  forall a . (Show a) => [a] -> String -> String
+      -}
+class (Eq a, Show a) => Num a
+  where
+      (+),(-),(*) :: a -> a -> a
+      negate :: a -> a
+      abs,signum :: a -> a
+      fromInteger :: Integer -> a
+($--+) d396
+    = error{-(a -> a -> a)-} "No default for method +"
+($---) d399
+    = error{-(a -> a -> a)-} "No default for method -"
+($--*) d402
+    = error{-(a -> a -> a)-} "No default for method *"
+default__negate d405
+    = error{-(a -> a)-} "No default for method negate"
+default__abs d408
+    = error{-(a -> a)-} "No default for method abs"
+default__signum d411
+    = error{-(a -> a)-} "No default for method signum"
+default__fromInteger d414
+    =   error{-(Integer -> a)-}
+	    "No default for method fromInteger"
+class Num a => Fractional a
+  where
+      (/) :: a -> a -> a
+      recip :: a -> a
+      fromRational :: Rational -> a
+($--/) d419
+    = error{-(a -> a -> a)-} "No default for method /"
+default__recip d422
+    = error{-(a -> a)-} "No default for method recip"
+default__fromRational d425
+    =   error{-(Rational -> a)-}
+	    "No default for method fromRational"
+instance Num Int
+  where
+      super1_Num = super{-(Eq Int)-} inst__Prelude_Eq_Int
+      super2_Num
+	  = super{-(Show Int)-} inst__Prelude_Show_Int
+      (+) = ($--+){-Int-} inst__Prelude_Num_Int
+      (-) = ($---){-Int-} inst__Prelude_Num_Int
+      (*) = ($--*){-Int-} inst__Prelude_Num_Int
+      negate = default__negate{-Int-} inst__Prelude_Num_Int
+      abs = default__abs{-Int-} inst__Prelude_Num_Int
+      signum = default__signum{-Int-} inst__Prelude_Num_Int
+      fromInteger
+	  = default__fromInteger{-Int-} inst__Prelude_Num_Int
+      {-
+      super1_Num :: Eq Int
+      super2_Num :: Show Int
+      (+) :: Int -> Int -> Int
+      (-) :: Int -> Int -> Int
+      (*) :: Int -> Int -> Int
+      negate :: Int -> Int
+      abs :: Int -> Int
+      signum :: Int -> Int
+      fromInteger :: Integer -> Int
+      -}
+instance Num Integer
+  where
+      super1_Num
+	  = super{-(Eq Integer)-} inst__Prelude_Eq_Integer
+      super2_Num
+	  = super{-(Show Integer)-} inst__Prelude_Show_Integer
+      (+) = ($--+){-Integer-} inst__Prelude_Num_Integer
+      (-) = ($---){-Integer-} inst__Prelude_Num_Integer
+      (*) = ($--*){-Integer-} inst__Prelude_Num_Integer
+      negate
+	  =   default__negate{-Integer-}
+		  inst__Prelude_Num_Integer
+      abs =   default__abs{-Integer-}
+		  inst__Prelude_Num_Integer
+      signum
+	  =   default__signum{-Integer-}
+		  inst__Prelude_Num_Integer
+      fromInteger
+	  =   default__fromInteger{-Integer-}
+		  inst__Prelude_Num_Integer
+      {-
+      super1_Num :: Eq Integer
+      super2_Num :: Show Integer
+      (+) :: Integer -> Integer -> Integer
+      (-) :: Integer -> Integer -> Integer
+      (*) :: Integer -> Integer -> Integer
+      negate :: Integer -> Integer
+      abs :: Integer -> Integer
+      signum :: Integer -> Integer
+      fromInteger :: Integer -> Integer
+      -}
+instance Num Rational
+  where
+      super1_Num
+	  = super{-(Eq Rational)-} inst__Prelude_Eq_Rational
+      super2_Num
+	  =   super{-(Show Rational)-}
+		  inst__Prelude_Show_Rational
+      (+) = ($--+){-Rational-} inst__Prelude_Num_Rational
+      (-) = ($---){-Rational-} inst__Prelude_Num_Rational
+      (*) = ($--*){-Rational-} inst__Prelude_Num_Rational
+      negate
+	  =   default__negate{-Rational-}
+		  inst__Prelude_Num_Rational
+      abs =   default__abs{-Rational-}
+		  inst__Prelude_Num_Rational
+      signum
+	  =   default__signum{-Rational-}
+		  inst__Prelude_Num_Rational
+      fromInteger
+	  =   default__fromInteger{-Rational-}
+		  inst__Prelude_Num_Rational
+      {-
+      super1_Num :: Eq Rational
+      super2_Num :: Show Rational
+      (+) :: Rational -> Rational -> Rational
+      (-) :: Rational -> Rational -> Rational
+      (*) :: Rational -> Rational -> Rational
+      negate :: Rational -> Rational
+      abs :: Rational -> Rational
+      signum :: Rational -> Rational
+      fromInteger :: Integer -> Rational
+      -}
+instance Num Double
+  where
+      super1_Num
+	  = super{-(Eq Double)-} inst__Prelude_Eq_Double
+      super2_Num
+	  = super{-(Show Double)-} inst__Prelude_Show_Double
+      (+) = ($--+){-Double-} inst__Prelude_Num_Double
+      (-) = ($---){-Double-} inst__Prelude_Num_Double
+      (*) = ($--*){-Double-} inst__Prelude_Num_Double
+      negate
+	  = default__negate{-Double-} inst__Prelude_Num_Double
+      abs = default__abs{-Double-} inst__Prelude_Num_Double
+      signum
+	  = default__signum{-Double-} inst__Prelude_Num_Double
+      fromInteger
+	  =   default__fromInteger{-Double-}
+		  inst__Prelude_Num_Double
+      {-
+      super1_Num :: Eq Double
+      super2_Num :: Show Double
+      (+) :: Double -> Double -> Double
+      (-) :: Double -> Double -> Double
+      (*) :: Double -> Double -> Double
+      negate :: Double -> Double
+      abs :: Double -> Double
+      signum :: Double -> Double
+      fromInteger :: Integer -> Double
+      -}
+instance Eq Int
+  where
+      (==) = ($--==){-Int-} inst__Prelude_Eq_Int
+      (/=) = ($--/=){-Int-} inst__Prelude_Eq_Int
+      {-
+      (==) :: Int -> Int -> Bool
+      (/=) :: Int -> Int -> Bool
+      -}
+instance Ord Int
+  where
+      super1_Ord = super{-(Eq Int)-} inst__Prelude_Eq_Int
+      compare
+	  = default__compare{-Int-} inst__Prelude_Ord_Int
+      (<) = ($--<){-Int-} inst__Prelude_Ord_Int
+      (<=) = ($--<=){-Int-} inst__Prelude_Ord_Int
+      (>=) = ($-->=){-Int-} inst__Prelude_Ord_Int
+      (>) = ($-->){-Int-} inst__Prelude_Ord_Int
+      max = default__max{-Int-} inst__Prelude_Ord_Int
+      min = default__min{-Int-} inst__Prelude_Ord_Int
+      {-
+      super1_Ord :: Eq Int
+      compare :: Int -> Int -> Ordering
+      (<) :: Int -> Int -> Bool
+      (<=) :: Int -> Int -> Bool
+      (>=) :: Int -> Int -> Bool
+      (>) :: Int -> Int -> Bool
+      max :: Int -> Int -> Int
+      min :: Int -> Int -> Int
+      -}
+instance Enum Int
+  where
+      succ = default__succ{-Int-} inst__Prelude_Enum_Int
+      pred = default__pred{-Int-} inst__Prelude_Enum_Int
+      toEnum
+	  = default__toEnum{-Int-} inst__Prelude_Enum_Int
+      fromEnum
+	  = default__fromEnum{-Int-} inst__Prelude_Enum_Int
+      enumFrom
+	  = default__enumFrom{-Int-} inst__Prelude_Enum_Int
+      enumFromThen
+	  = default__enumFromThen{-Int-} inst__Prelude_Enum_Int
+      enumFromTo
+	  = default__enumFromTo{-Int-} inst__Prelude_Enum_Int
+      enumFromThenTo
+	  =   default__enumFromThenTo{-Int-}
+		  inst__Prelude_Enum_Int
+      {-
+      succ :: Int -> Int
+      pred :: Int -> Int
+      toEnum :: Int -> Int
+      fromEnum :: Int -> Int
+      enumFrom :: Int -> [Int]
+      enumFromThen :: Int -> Int -> [Int]
+      enumFromTo :: Int -> Int -> [Int]
+      enumFromThenTo :: Int -> Int -> Int -> [Int]
+      -}
+instance Eq Char
+  where
+      (==) = ($--==){-Char-} inst__Prelude_Eq_Char
+      (/=) = ($--/=){-Char-} inst__Prelude_Eq_Char
+      {-
+      (==) :: Char -> Char -> Bool
+      (/=) :: Char -> Char -> Bool
+      -}
+instance Eq Integer
+  where
+      (==) = ($--==){-Integer-} inst__Prelude_Eq_Integer
+      (/=) = ($--/=){-Integer-} inst__Prelude_Eq_Integer
+      {-
+      (==) :: Integer -> Integer -> Bool
+      (/=) :: Integer -> Integer -> Bool
+      -}
+instance Eq Rational
+  where
+      (==) = ($--==){-Rational-} inst__Prelude_Eq_Rational
+      (/=) = ($--/=){-Rational-} inst__Prelude_Eq_Rational
+      {-
+      (==) :: Rational -> Rational -> Bool
+      (/=) :: Rational -> Rational -> Bool
+      -}
+instance Eq Double
+  where
+      (==) = ($--==){-Double-} inst__Prelude_Eq_Double
+      (/=) = ($--/=){-Double-} inst__Prelude_Eq_Double
+      {-
+      (==) :: Double -> Double -> Bool
+      (/=) :: Double -> Double -> Bool
+      -}
+instance Ord Char
+  where
+      super1_Ord = super{-(Eq Char)-} inst__Prelude_Eq_Char
+      compare
+	  = default__compare{-Char-} inst__Prelude_Ord_Char
+      (<) = ($--<){-Char-} inst__Prelude_Ord_Char
+      (<=) = ($--<=){-Char-} inst__Prelude_Ord_Char
+      (>=) = ($-->=){-Char-} inst__Prelude_Ord_Char
+      (>) = ($-->){-Char-} inst__Prelude_Ord_Char
+      max = default__max{-Char-} inst__Prelude_Ord_Char
+      min = default__min{-Char-} inst__Prelude_Ord_Char
+      {-
+      super1_Ord :: Eq Char
+      compare :: Char -> Char -> Ordering
+      (<) :: Char -> Char -> Bool
+      (<=) :: Char -> Char -> Bool
+      (>=) :: Char -> Char -> Bool
+      (>) :: Char -> Char -> Bool
+      max :: Char -> Char -> Char
+      min :: Char -> Char -> Char
+      -}
+instance Ord Integer
+  where
+      super1_Ord
+	  = super{-(Eq Integer)-} inst__Prelude_Eq_Integer
+      compare
+	  =   default__compare{-Integer-}
+		  inst__Prelude_Ord_Integer
+      (<) = ($--<){-Integer-} inst__Prelude_Ord_Integer
+      (<=) = ($--<=){-Integer-} inst__Prelude_Ord_Integer
+      (>=) = ($-->=){-Integer-} inst__Prelude_Ord_Integer
+      (>) = ($-->){-Integer-} inst__Prelude_Ord_Integer
+      max =   default__max{-Integer-}
+		  inst__Prelude_Ord_Integer
+      min =   default__min{-Integer-}
+		  inst__Prelude_Ord_Integer
+      {-
+      super1_Ord :: Eq Integer
+      compare :: Integer -> Integer -> Ordering
+      (<) :: Integer -> Integer -> Bool
+      (<=) :: Integer -> Integer -> Bool
+      (>=) :: Integer -> Integer -> Bool
+      (>) :: Integer -> Integer -> Bool
+      max :: Integer -> Integer -> Integer
+      min :: Integer -> Integer -> Integer
+      -}
+instance Ord Rational
+  where
+      super1_Ord
+	  = super{-(Eq Rational)-} inst__Prelude_Eq_Rational
+      compare
+	  =   default__compare{-Rational-}
+		  inst__Prelude_Ord_Rational
+      (<) = ($--<){-Rational-} inst__Prelude_Ord_Rational
+      (<=) = ($--<=){-Rational-} inst__Prelude_Ord_Rational
+      (>=) = ($-->=){-Rational-} inst__Prelude_Ord_Rational
+      (>) = ($-->){-Rational-} inst__Prelude_Ord_Rational
+      max =   default__max{-Rational-}
+		  inst__Prelude_Ord_Rational
+      min =   default__min{-Rational-}
+		  inst__Prelude_Ord_Rational
+      {-
+      super1_Ord :: Eq Rational
+      compare :: Rational -> Rational -> Ordering
+      (<) :: Rational -> Rational -> Bool
+      (<=) :: Rational -> Rational -> Bool
+      (>=) :: Rational -> Rational -> Bool
+      (>) :: Rational -> Rational -> Bool
+      max :: Rational -> Rational -> Rational
+      min :: Rational -> Rational -> Rational
+      -}
+instance Ord Double
+  where
+      super1_Ord
+	  = super{-(Eq Double)-} inst__Prelude_Eq_Double
+      compare
+	  = default__compare{-Double-} inst__Prelude_Ord_Double
+      (<) = ($--<){-Double-} inst__Prelude_Ord_Double
+      (<=) = ($--<=){-Double-} inst__Prelude_Ord_Double
+      (>=) = ($-->=){-Double-} inst__Prelude_Ord_Double
+      (>) = ($-->){-Double-} inst__Prelude_Ord_Double
+      max = default__max{-Double-} inst__Prelude_Ord_Double
+      min = default__min{-Double-} inst__Prelude_Ord_Double
+      {-
+      super1_Ord :: Eq Double
+      compare :: Double -> Double -> Ordering
+      (<) :: Double -> Double -> Bool
+      (<=) :: Double -> Double -> Bool
+      (>=) :: Double -> Double -> Bool
+      (>) :: Double -> Double -> Bool
+      max :: Double -> Double -> Double
+      min :: Double -> Double -> Double
+      -}
+instance Show Int
+  where
+      showsPrec
+	  = default__showsPrec{-Int-} inst__Prelude_Show_Int
+      show = default__show{-Int-} inst__Prelude_Show_Int
+      showList
+	  = default__showList{-Int-} inst__Prelude_Show_Int
+      {-
+      showsPrec :: Int -> Int -> ShowS
+      show :: Int -> String
+      showList :: [Int] -> ShowS
+      -}
+instance Show Char
+  where
+      showsPrec
+	  = default__showsPrec{-Char-} inst__Prelude_Show_Char
+      show = default__show{-Char-} inst__Prelude_Show_Char
+      showList
+	  = default__showList{-Char-} inst__Prelude_Show_Char
+      {-
+      showsPrec :: Int -> Char -> ShowS
+      show :: Char -> String
+      showList :: String -> ShowS
+      -}
+instance Show Integer
+  where
+      showsPrec
+	  =   default__showsPrec{-Integer-}
+		  inst__Prelude_Show_Integer
+      show
+	  = default__show{-Integer-} inst__Prelude_Show_Integer
+      showList
+	  =   default__showList{-Integer-}
+		  inst__Prelude_Show_Integer
+      {-
+      showsPrec :: Int -> Integer -> ShowS
+      show :: Integer -> String
+      showList :: [Integer] -> ShowS
+      -}
+instance Show Rational
+  where
+      showsPrec
+	  =   default__showsPrec{-Rational-}
+		  inst__Prelude_Show_Rational
+      show
+	  =   default__show{-Rational-}
+		  inst__Prelude_Show_Rational
+      showList
+	  =   default__showList{-Rational-}
+		  inst__Prelude_Show_Rational
+      {-
+      showsPrec :: Int -> Rational -> ShowS
+      show :: Rational -> String
+      showList :: [Rational] -> ShowS
+      -}
+instance Show Double
+  where
+      showsPrec
+	  =   default__showsPrec{-Double-}
+		  inst__Prelude_Show_Double
+      show
+	  = default__show{-Double-} inst__Prelude_Show_Double
+      showList
+	  =   default__showList{-Double-}
+		  inst__Prelude_Show_Double
+      {-
+      showsPrec :: Int -> Double -> ShowS
+      show :: Double -> String
+      showList :: [Double] -> ShowS
+      -}
+instance Fractional Rational
+  where
+      super1_Fractional
+	  = super{-(Num Rational)-} inst__Prelude_Num_Rational
+      (/) =   ($--/){-Rational-}
+		  inst__Prelude_Fractional_Rational
+      recip
+	  =   default__recip{-Rational-}
+		  inst__Prelude_Fractional_Rational
+      fromRational
+	  =   default__fromRational{-Rational-}
+		  inst__Prelude_Fractional_Rational
+      {-
+      super1_Fractional :: Num Rational
+      (/) :: Rational -> Rational -> Rational
+      recip :: Rational -> Rational
+      fromRational :: Rational -> Rational
+      -}
+instance Fractional Double
+  where
+      super1_Fractional
+	  = super{-(Num Double)-} inst__Prelude_Num_Double
+      (/) =   ($--/){-Double-}
+		  inst__Prelude_Fractional_Double
+      recip
+	  =   default__recip{-Double-}
+		  inst__Prelude_Fractional_Double
+      fromRational
+	  =   default__fromRational{-Double-}
+		  inst__Prelude_Fractional_Double
+      {-
+      super1_Fractional :: Num Double
+      (/) :: Double -> Double -> Double
+      recip :: Double -> Double
+      fromRational :: Rational -> Double
+      -}
+subtract :: Num a => a -> a -> a
+subtract d785 = flip{-a a a-} ((-){-a-} d785)
+flip :: (a -> b -> c) -> b -> a -> c
+flip f x y = f y x
+class Enum a
+  where
+      succ,pred :: a -> a
+      toEnum :: Int -> a
+      fromEnum :: a -> Int
+      enumFrom :: a -> [a]
+      enumFromThen :: a -> a -> [a]
+      enumFromTo :: a -> a -> [a]
+      enumFromThenTo :: a -> a -> a -> [a]
+default__succ d810
+    =   (.){-Int a a-}
+	    ((.){-Int a Int-} (toEnum{-a-} d810)
+		 (flip{-Int Int Int-}
+		      ((+){-Int-} inst__Prelude_Num_Int)
+		      (fromInteger{-Int-} inst__Prelude_Num_Int 1)))
+	    (fromEnum{-a-} d810)
+default__pred d826
+    =   (.){-Int a a-}
+	    ((.){-Int a Int-} (toEnum{-a-} d826)
+		 (subtract{-Int-} inst__Prelude_Num_Int
+		      (fromInteger{-Int-} inst__Prelude_Num_Int 1)))
+	    (fromEnum{-a-} d826)
+default__enumFrom d837 x
+    =   map{-Int a-} (toEnum{-a-} d837)
+	    (enumFrom{-Int-} inst__Prelude_Enum_Int
+		 (fromEnum{-a-} d837 x))
+default__enumFromTo d851 x y
+    =   map{-Int a-} (toEnum{-a-} d851)
+	    (enumFromTo{-Int-} inst__Prelude_Enum_Int
+		 (fromEnum{-a-} d851 x)
+		 (fromEnum{-a-} d851 y))
+default__enumFromThen d865 x y
+    =   map{-Int a-} (toEnum{-a-} d865)
+	    (enumFromThen{-Int-} inst__Prelude_Enum_Int
+		 (fromEnum{-a-} d865 x)
+		 (fromEnum{-a-} d865 y))
+default__enumFromThenTo d882 x y z
+    =   map{-Int a-} (toEnum{-a-} d882)
+	    (enumFromThenTo{-Int-} inst__Prelude_Enum_Int
+		 (fromEnum{-a-} d882 x)
+		 (fromEnum{-a-} d882 y)
+		 (fromEnum{-a-} d882 z))
+default__toEnum d885
+    = error{-(Int -> a)-} "No default for method toEnum"
+default__fromEnum d888
+    =   error{-(a -> Int)-}
+	    "No default for method fromEnum"
+class Bounded a
+  where
+      minBound :: a
+      maxBound :: a
+default__minBound d898
+    = error{-a-} "No default for method minBound"
+default__maxBound d901
+    = error{-a-} "No default for method maxBound"
+data () = () deriving (Eq, Ord, Show)
+data (a, b) = (,) a b deriving (Show, Eq, Ord)
+data (a, b, c)
+    = Prelude.(,,) a b c deriving (Show, Eq, Ord)
+data (a, b, c, d)
+    = Prelude.(,,,) a b c d deriving (Show, Eq, Ord)
+class (Num a, Ord a) => Real a
+  where toRational :: a -> Rational
+default__toRational d905
+    =   error{-(a -> Rational)-}
+	    "No default for method toRational"
+class (Real a, Enum a) => Integral a
+  where
+      quot,rem :: a -> a -> a
+      div,mod :: a -> a -> a
+      quotRem,divMod :: a -> a -> (a, a)
+      toInteger :: a -> Integer
+default__quot d910
+    = error{-(a -> a -> a)-} "No default for method quot"
+default__rem d913
+    = error{-(a -> a -> a)-} "No default for method rem"
+default__div d916
+    = error{-(a -> a -> a)-} "No default for method div"
+default__mod d919
+    = error{-(a -> a -> a)-} "No default for method mod"
+default__quotRem d922
+    =   error{-(a -> a -> (a, a))-}
+	    "No default for method quotRem"
+default__divMod d925
+    =   error{-(a -> a -> (a, a))-}
+	    "No default for method divMod"
+default__toInteger d928
+    =   error{-(a -> Integer)-}
+	    "No default for method toInteger"
+fromIntegral :: (Integral a, Num b) => a -> b
+fromIntegral d942 d943
+    =   (.){-Integer b a-} (fromInteger{-b-} d943)
+	    (toInteger{-a-} d942)
+even,odd :: Integral a => a -> Bool
+even d954 n
+    =   (==){-a-} d947
+	    (rem{-a-} d954 n (fromInteger{-a-} d951 2))
+	    (fromInteger{-a-} d951 0)
+  where
+      d951 = super1_Real{-a-} (super1_Integral{-a-} d954)
+      d947
+	  =   super1_Num{-a-}
+		  (super1_Real{-a-} (super1_Integral{-a-} d954))
+      {-
+      d951 :: Num a
+      d947 :: Eq a
+      -}
+odd d959 n = not (even{-a-} d959 n)
+class (Real a, Fractional a) => RealFrac a
+  where
+      properFraction :: Integral b => a -> (b, a)
+      truncate,round :: Integral b => a -> b
+      ceiling,floor :: Integral b => a -> b
+default__truncate d968 d969 x
+    = m
+  where
+      (m, _) = properFraction{-a b-} d968 d969 x
+      {-
+      m :: b
+      -}
+default__round d1009 d1010 x
+    =   let (n, r) = properFraction{-a b-} d1009 d1010 x
+	    m   =   if (<){-a-} d980 r (fromInteger{-a-} d982 0)
+		    then (-){-b-} d984 n (fromInteger{-b-} d984 1)
+		    else (+){-b-} d984 n (fromInteger{-b-} d984 1)
+	    {-
+	    r :: a
+	    n :: b
+	    m :: b
+	    -}
+	in case signum{-a-} d982
+		    ((-){-a-} d982 (abs{-a-} d982 r)
+			 (fromRational{-a-} d998 1 % 2)) of
+	       negate{-a-} d1000 (fromInteger{-a-} d1002 1) -> n
+	       fromInteger{-a-} d1004 0
+		   -> if even{-b-} d1010 n then n else m
+	       fromInteger{-a-} d1008 1 -> m
+  where
+      d998 = super2_RealFrac{-a-} d1009
+      d984 = super1_Real{-b-} (super1_Integral{-b-} d1010)
+      d982 = super1_Real{-a-} (super1_RealFrac{-a-} d1009)
+      d980 = super2_Real{-a-} (super1_RealFrac{-a-} d1009)
+      {-
+      d998 :: Fractional a
+      d984 :: Num b
+      d982 :: Num a
+      d980 :: Ord a
+      -}
+default__ceiling d1027 d1028 x
+    =   if (>){-a-} d1020 r (fromInteger{-a-} d1022 0)
+	then (+){-b-} d1024 n (fromInteger{-b-} d1024 1)
+	else n
+  where
+      d1024 = super1_Real{-b-} (super1_Integral{-b-} d1028)
+      d1022 = super1_Real{-a-} (super1_RealFrac{-a-} d1027)
+      d1020 = super2_Real{-a-} (super1_RealFrac{-a-} d1027)
+      (n, r) = properFraction{-a b-} d1027 d1028 x
+      {-
+      d1024 :: Num b
+      d1022 :: Num a
+      d1020 :: Ord a
+      r :: a
+      n :: b
+      -}
+default__floor d1045 d1046 x
+    =   if (<){-a-} d1038 r (fromInteger{-a-} d1040 0)
+	then (-){-b-} d1042 n (fromInteger{-b-} d1042 1)
+	else n
+  where
+      d1042 = super1_Real{-b-} (super1_Integral{-b-} d1046)
+      d1040 = super1_Real{-a-} (super1_RealFrac{-a-} d1045)
+      d1038 = super2_Real{-a-} (super1_RealFrac{-a-} d1045)
+      (n, r) = properFraction{-a b-} d1045 d1046 x
+      {-
+      d1042 :: Num b
+      d1040 :: Num a
+      d1038 :: Ord a
+      r :: a
+      n :: b
+      -}
+default__properFraction d1049 d1050
+    =   error{-(a -> (b, a))-}
+	    "No default for method properFraction"
+myfoldr :: (a -> b -> b) -> b -> [a] -> b
+myfoldr
+    = \ f z xs -> foldrC{-b b a-} (\ x -> x) f z xs
+foldrC :: (a -> b) -> (c -> a -> a) -> a -> [c] -> b
+foldrC
+    =   \ c f z l ->
+	    case l of
+		[] -> c z
+		(:){-c-} x xs
+		    -> foldrC{-a b c-} (\ n -> c (f x n)) f z xs
+instance Eq Bool
+  where
+      (==) False False = True
+      (==) True True = True
+      (==) _ _ = False
+      (/=) = ($--/=){-Bool-} derived__Prelude_Eq_Bool
+      {-
+      (==) :: Bool -> Bool -> Bool
+      (/=) :: Bool -> Bool -> Bool
+      -}
+instance Ord Bool
+  where
+      super1_Ord
+	  = super{-(Eq Bool)-} derived__Prelude_Eq_Bool
+      compare x y
+	  =   let cno False
+		      =   let t1101 :: Int
+			      t1101 = fromInteger{-Int-} inst__Prelude_Num_Int 0
+			      {- t1101 :: Int -}
+			  in t1101
+		  cno True = fromInteger{-Int-} inst__Prelude_Num_Int 1
+		  {- cno :: Bool -> Int -}
+	      in compare{-Int-} inst__Prelude_Ord_Int (cno x)
+		     (cno y)
+      (<) = ($--<){-Bool-} derived__Prelude_Ord_Bool
+      (<=) = ($--<=){-Bool-} derived__Prelude_Ord_Bool
+      (>=) = ($-->=){-Bool-} derived__Prelude_Ord_Bool
+      (>) = ($-->){-Bool-} derived__Prelude_Ord_Bool
+      max = default__max{-Bool-} derived__Prelude_Ord_Bool
+      min = default__min{-Bool-} derived__Prelude_Ord_Bool
+      {-
+      super1_Ord :: Eq Bool
+      compare :: Bool -> Bool -> Ordering
+      (<) :: Bool -> Bool -> Bool
+      (<=) :: Bool -> Bool -> Bool
+      (>=) :: Bool -> Bool -> Bool
+      (>) :: Bool -> Bool -> Bool
+      max :: Bool -> Bool -> Bool
+      min :: Bool -> Bool -> Bool
+      -}
+instance Show Bool
+  where
+      showsPrec d False = showString "False"
+      showsPrec d True = showString "True"
+      show
+	  = default__show{-Bool-} derived__Prelude_Show_Bool
+      showList
+	  =   default__showList{-Bool-}
+		  derived__Prelude_Show_Bool
+      {-
+      showsPrec :: Int -> Bool -> ShowS
+      show :: Bool -> String
+      showList :: [Bool] -> ShowS
+      -}
+instance Eq Ordering
+  where
+      (==) LT LT = True
+      (==) EQ EQ = True
+      (==) GT GT = True
+      (==) _ _ = False
+      (/=)
+	  = ($--/=){-Ordering-} derived__Prelude_Eq_Ordering
+      {-
+      (==) :: Ordering -> Ordering -> Bool
+      (/=) :: Ordering -> Ordering -> Bool
+      -}
+instance Ord Ordering
+  where
+      super1_Ord
+	  = super{-(Eq Ordering)-} derived__Prelude_Eq_Ordering
+      compare x y
+	  =   let cno LT
+		      =   let t1152 :: Int
+			      t1152 = fromInteger{-Int-} inst__Prelude_Num_Int 0
+			      {- t1152 :: Int -}
+			  in t1152
+		  cno EQ = fromInteger{-Int-} inst__Prelude_Num_Int 1
+		  cno GT = fromInteger{-Int-} inst__Prelude_Num_Int 2
+		  {- cno :: Ordering -> Int -}
+	      in compare{-Int-} inst__Prelude_Ord_Int (cno x)
+		     (cno y)
+      (<) =   ($--<){-Ordering-}
+		  derived__Prelude_Ord_Ordering
+      (<=)
+	  = ($--<=){-Ordering-} derived__Prelude_Ord_Ordering
+      (>=)
+	  = ($-->=){-Ordering-} derived__Prelude_Ord_Ordering
+      (>) =   ($-->){-Ordering-}
+		  derived__Prelude_Ord_Ordering
+      max =   default__max{-Ordering-}
+		  derived__Prelude_Ord_Ordering
+      min =   default__min{-Ordering-}
+		  derived__Prelude_Ord_Ordering
+      {-
+      super1_Ord :: Eq Ordering
+      compare :: Ordering -> Ordering -> Ordering
+      (<) :: Ordering -> Ordering -> Bool
+      (<=) :: Ordering -> Ordering -> Bool
+      (>=) :: Ordering -> Ordering -> Bool
+      (>) :: Ordering -> Ordering -> Bool
+      max :: Ordering -> Ordering -> Ordering
+      min :: Ordering -> Ordering -> Ordering
+      -}
+instance Show Ordering
+  where
+      showsPrec d LT = showString "LT"
+      showsPrec d EQ = showString "EQ"
+      showsPrec d GT = showString "GT"
+      show
+	  =   default__show{-Ordering-}
+		  derived__Prelude_Show_Ordering
+      showList
+	  =   default__showList{-Ordering-}
+		  derived__Prelude_Show_Ordering
+      {-
+      showsPrec :: Int -> Ordering -> ShowS
+      show :: Ordering -> String
+      showList :: [Ordering] -> ShowS
+      -}
+instance Eq a => Eq [a]
+  where
+      (==) d1208 []{-a-} []{-a-} = True
+      (==) d1208 ((:){-a-} x1 x2) ((:){-a-} y1 y2)
+	  =   (&&) ((==){-a-} d1208 x1 y1)
+		  ((==){-[a]-} d1204 x2 y2)
+	where
+	    d1204 = derived__Prelude_Eq_34_65{-a-} d1208
+	    {-
+	    d1204 :: Eq [a]
+	    -}
+      (==) d1208 _ _ = False
+      (/=) d1212
+	  = ($--/=){-[a]-} d1211
+	where
+	    d1211 = derived__Prelude_Eq_34_65{-a-} d1212
+	    {-
+	    d1211 :: Eq [a]
+	    -}
+      {-
+      (==) :: forall a . (Eq a) => [a] -> [a] -> Bool
+      (/=) :: forall a . (Eq a) => [a] -> [a] -> Bool
+      -}
+instance Ord a => Ord [a]
+  where
+      super1_Ord d1217
+	  = super{-(Eq [a])-} d1216
+	where
+	    d1218 = super1_Ord{-a-} d1217
+	    d1216 = derived__Prelude_Eq_34_65{-a-} d1218
+	    {-
+	    d1218 :: Eq a
+	    d1216 :: Eq [a]
+	    -}
+      compare d1251 ((:){-a-} x1 x2) ((:){-a-} y1 y2)
+	  =   lexOrder (compare{-a-} d1251 x1 y1)
+		  (compare{-[a]-} d1229 x2 y2)
+	where
+	    d1229 = derived__Prelude_Ord_34_69{-a-} d1251
+	    {-
+	    d1229 :: Ord [a]
+	    -}
+      compare d1251 x y
+	  =   let cno []{-t1242-}
+		      =   let t1235 :: Int
+			      t1235 = fromInteger{-Int-} inst__Prelude_Num_Int 0
+			      {- t1235 :: Int -}
+			  in t1235
+		  cno ((:){-t1242-} _ _)
+		      = fromInteger{-Int-} inst__Prelude_Num_Int 1
+		  {- cno :: forall a . [a] -> Int -}
+	      in compare{-Int-} inst__Prelude_Ord_Int (cno{-a-} x)
+		     (cno{-a-} y)
+      (<) d1255
+	  = ($--<){-[a]-} d1254
+	where
+	    d1254 = derived__Prelude_Ord_34_69{-a-} d1255
+	    {-
+	    d1254 :: Ord [a]
+	    -}
+      (<=) d1260
+	  = ($--<=){-[a]-} d1259
+	where
+	    d1259 = derived__Prelude_Ord_34_69{-a-} d1260
+	    {-
+	    d1259 :: Ord [a]
+	    -}
+      (>=) d1265
+	  = ($-->=){-[a]-} d1264
+	where
+	    d1264 = derived__Prelude_Ord_34_69{-a-} d1265
+	    {-
+	    d1264 :: Ord [a]
+	    -}
+      (>) d1270
+	  = ($-->){-[a]-} d1269
+	where
+	    d1269 = derived__Prelude_Ord_34_69{-a-} d1270
+	    {-
+	    d1269 :: Ord [a]
+	    -}
+      max d1275
+	  = default__max{-[a]-} d1274
+	where
+	    d1274 = derived__Prelude_Ord_34_69{-a-} d1275
+	    {-
+	    d1274 :: Ord [a]
+	    -}
+      min d1280
+	  = default__min{-[a]-} d1279
+	where
+	    d1279 = derived__Prelude_Ord_34_69{-a-} d1280
+	    {-
+	    d1279 :: Ord [a]
+	    -}
+      {-
+      super1_Ord :: forall a . (Ord a) => Eq [a]
+      compare ::
+	  forall a . (Ord a) => [a] -> [a] -> Ordering
+      (<) :: forall a . (Ord a) => [a] -> [a] -> Bool
+      (<=) :: forall a . (Ord a) => [a] -> [a] -> Bool
+      (>=) :: forall a . (Ord a) => [a] -> [a] -> Bool
+      (>) :: forall a . (Ord a) => [a] -> [a] -> Bool
+      max :: forall a . (Ord a) => [a] -> [a] -> [a]
+      min :: forall a . (Ord a) => [a] -> [a] -> [a]
+      -}
+instance Show a => Show [a]
+  where
+      showsPrec d1300 d []{-a-} = showString "[]"
+      showsPrec d1300 d ((:){-a-} x1 x2)
+	  =   showParenArg d
+		  ((.){-String String String-} (showString ":")
+		       ((.){-String String String-}
+			    (showArgument{-a-} d1300 x1)
+			    (showArgument{-[a]-} d1298 x2)))
+	where
+	    d1298 = derived__Prelude_Show_34_59{-a-} d1300
+	    {-
+	    d1298 :: Show [a]
+	    -}
+      show d1304
+	  = default__show{-[a]-} d1303
+	where
+	    d1303 = derived__Prelude_Show_34_59{-a-} d1304
+	    {-
+	    d1303 :: Show [a]
+	    -}
+      showList d1309
+	  = default__showList{-[a]-} d1308
+	where
+	    d1308 = derived__Prelude_Show_34_59{-a-} d1309
+	    {-
+	    d1308 :: Show [a]
+	    -}
+      {-
+      showsPrec ::
+	  forall a . (Show a) => Int -> [a] -> ShowS
+      show :: forall a . (Show a) => [a] -> String
+      showList :: forall a . (Show a) => [[a]] -> ShowS
+      -}
+instance Eq ()
+  where
+      (==) () () = True
+      (/=) = ($--/=){-()-} derived__Prelude_Eq_184_27
+      {-
+      (==) :: () -> () -> Bool
+      (/=) :: () -> () -> Bool
+      -}
+instance Ord ()
+  where
+      super1_Ord
+	  = super{-(Eq ())-} derived__Prelude_Eq_184_27
+      compare x y
+	  =   let cno ()
+		      =   let t1323 :: Int
+			      t1323 = fromInteger{-Int-} inst__Prelude_Num_Int 0
+			      {- t1323 :: Int -}
+			  in t1323
+		  {- cno :: () -> Int -}
+	      in compare{-Int-} inst__Prelude_Ord_Int (cno x)
+		     (cno y)
+      (<) = ($--<){-()-} derived__Prelude_Ord_184_31
+      (<=) = ($--<=){-()-} derived__Prelude_Ord_184_31
+      (>=) = ($-->=){-()-} derived__Prelude_Ord_184_31
+      (>) = ($-->){-()-} derived__Prelude_Ord_184_31
+      max = default__max{-()-} derived__Prelude_Ord_184_31
+      min = default__min{-()-} derived__Prelude_Ord_184_31
+      {-
+      super1_Ord :: Eq ()
+      compare :: () -> () -> Ordering
+      (<) :: () -> () -> Bool
+      (<=) :: () -> () -> Bool
+      (>=) :: () -> () -> Bool
+      (>) :: () -> () -> Bool
+      max :: () -> () -> ()
+      min :: () -> () -> ()
+      -}
+instance Show ()
+  where
+      showsPrec d () = showString "()"
+      show
+	  = default__show{-()-} derived__Prelude_Show_184_36
+      showList
+	  =   default__showList{-()-}
+		  derived__Prelude_Show_184_36
+      {-
+      showsPrec :: Int -> () -> ShowS
+      show :: () -> String
+      showList :: [()] -> ShowS
+      -}
+instance (Eq a, Eq b) => Eq (a, b)
+  where
+      (==) d1370 d1371 ((,){-a b-} x1 x2)
+	   ((,){-a b-} y1 y2)
+	  =   (&&) ((==){-a-} d1370 x1 y1)
+		  ((==){-b-} d1371 x2 y2)
+      (/=) d1375 d1376
+	  = ($--/=){-(a, b)-} d1374
+	where
+	    d1374 = derived__Prelude_Eq_188_20{-a b-} d1375 d1376
+	    {-
+	    d1374 :: Eq (a, b)
+	    -}
+      {-
+      (==) ::
+	  forall a b . (Eq a, Eq b) => (a, b) -> (a, b) -> Bool
+      (/=) ::
+	  forall a b . (Eq a, Eq b) => (a, b) -> (a, b) -> Bool
+      -}
+instance (Ord a, Ord b) => Ord (a, b)
+  where
+      super1_Ord d1382 d1383
+	  = super{-(Eq (a, b))-} d1381
+	where
+	    d1384 = super1_Ord{-a-} d1382
+	    d1385 = super1_Ord{-b-} d1383
+	    d1381 = derived__Prelude_Eq_188_20{-a b-} d1384 d1385
+	    {-
+	    d1384 :: Eq a
+	    d1385 :: Eq b
+	    d1381 :: Eq (a, b)
+	    -}
+      compare d1399 d1400 ((,){-a b-} x1 x2)
+	      ((,){-a b-} y1 y2)
+	  =   lexOrder (compare{-a-} d1399 x1 y1)
+		  (compare{-b-} d1400 x2 y2)
+      (<) d1404 d1405
+	  = ($--<){-(a, b)-} d1403
+	where
+	    d1403
+		= derived__Prelude_Ord_188_24{-a b-} d1404 d1405
+	    {-
+	    d1403 :: Ord (a, b)
+	    -}
+      (<=) d1411 d1412
+	  = ($--<=){-(a, b)-} d1410
+	where
+	    d1410
+		= derived__Prelude_Ord_188_24{-a b-} d1411 d1412
+	    {-
+	    d1410 :: Ord (a, b)
+	    -}
+      (>=) d1418 d1419
+	  = ($-->=){-(a, b)-} d1417
+	where
+	    d1417
+		= derived__Prelude_Ord_188_24{-a b-} d1418 d1419
+	    {-
+	    d1417 :: Ord (a, b)
+	    -}
+      (>) d1425 d1426
+	  = ($-->){-(a, b)-} d1424
+	where
+	    d1424
+		= derived__Prelude_Ord_188_24{-a b-} d1425 d1426
+	    {-
+	    d1424 :: Ord (a, b)
+	    -}
+      max d1432 d1433
+	  = default__max{-(a, b)-} d1431
+	where
+	    d1431
+		= derived__Prelude_Ord_188_24{-a b-} d1432 d1433
+	    {-
+	    d1431 :: Ord (a, b)
+	    -}
+      min d1439 d1440
+	  = default__min{-(a, b)-} d1438
+	where
+	    d1438
+		= derived__Prelude_Ord_188_24{-a b-} d1439 d1440
+	    {-
+	    d1438 :: Ord (a, b)
+	    -}
+      {-
+      super1_Ord ::
+	  forall a b . (Ord a, Ord b) => Eq (a, b)
+      compare ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> Ordering
+      (<) ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> Bool
+      (<=) ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> Bool
+      (>=) ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> Bool
+      (>) ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> Bool
+      max ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> (a, b)
+      min ::
+	  forall a b .
+	      (Ord a, Ord b) => (a, b) -> (a, b) -> (a, b)
+      -}
+instance (Show a, Show b) => Show (a, b)
+  where
+      showsPrec d1459 d1460 d ((,){-a b-} x1 x2)
+	  =   showParenArg d
+		  ((.){-String String String-} (showString "(,)")
+		       ((.){-String String String-}
+			    (showArgument{-a-} d1459 x1)
+			    (showArgument{-b-} d1460 x2)))
+      show d1464 d1465
+	  = default__show{-(a, b)-} d1463
+	where
+	    d1463
+		= derived__Prelude_Show_188_14{-a b-} d1464 d1465
+	    {-
+	    d1463 :: Show (a, b)
+	    -}
+      showList d1471 d1472
+	  = default__showList{-(a, b)-} d1470
+	where
+	    d1470
+		= derived__Prelude_Show_188_14{-a b-} d1471 d1472
+	    {-
+	    d1470 :: Show (a, b)
+	    -}
+      {-
+      showsPrec ::
+	  forall a b .
+	      (Show a, Show b) => Int -> (a, b) -> ShowS
+      show ::
+	  forall a b . (Show a, Show b) => (a, b) -> String
+      showList ::
+	  forall a b . (Show a, Show b) => [(a, b)] -> ShowS
+      -}
+instance (Eq a, Eq b, Eq c) => Eq (a, b, c)
+  where
+      (==) d1494 d1495 d1496 ((,,){-a b c-} x1 x2 x3)
+	   ((,,){-a b c-} y1 y2 y3)
+	  =   (&&) ((==){-a-} d1494 x1 y1)
+		  ((&&) ((==){-b-} d1495 x2 y2)
+		       ((==){-c-} d1496 x3 y3))
+      (/=) d1500 d1501 d1502
+	  = ($--/=){-(a, b, c)-} d1499
+	where
+	    d1499
+		=   derived__Prelude_Eq_192_20{-a b c-} d1500 d1501
+			d1502
+	    {-
+	    d1499 :: Eq (a, b, c)
+	    -}
+      {-
+      (==) ::
+	  forall a b c .
+	      (Eq a, Eq b, Eq c) => (a, b, c) -> (a, b, c) -> Bool
+      (/=) ::
+	  forall a b c .
+	      (Eq a, Eq b, Eq c) => (a, b, c) -> (a, b, c) -> Bool
+      -}
+instance (Ord a, Ord b, Ord c) => Ord (a, b, c)
+  where
+      super1_Ord d1509 d1510 d1511
+	  = super{-(Eq (a, b, c))-} d1508
+	where
+	    d1512 = super1_Ord{-a-} d1509
+	    d1513 = super1_Ord{-b-} d1510
+	    d1514 = super1_Ord{-c-} d1511
+	    d1508
+		=   derived__Prelude_Eq_192_20{-a b c-} d1512 d1513
+			d1514
+	    {-
+	    d1512 :: Eq a
+	    d1513 :: Eq b
+	    d1514 :: Eq c
+	    d1508 :: Eq (a, b, c)
+	    -}
+      compare d1534 d1535 d1536 ((,,){-a b c-} x1 x2 x3)
+	      ((,,){-a b c-} y1 y2 y3)
+	  =   lexOrder (compare{-a-} d1534 x1 y1)
+		  (lexOrder (compare{-b-} d1535 x2 y2)
+		       (compare{-c-} d1536 x3 y3))
+      (<) d1540 d1541 d1542
+	  = ($--<){-(a, b, c)-} d1539
+	where
+	    d1539
+		=   derived__Prelude_Ord_192_24{-a b c-} d1540 d1541
+			d1542
+	    {-
+	    d1539 :: Ord (a, b, c)
+	    -}
+      (<=) d1549 d1550 d1551
+	  = ($--<=){-(a, b, c)-} d1548
+	where
+	    d1548
+		=   derived__Prelude_Ord_192_24{-a b c-} d1549 d1550
+			d1551
+	    {-
+	    d1548 :: Ord (a, b, c)
+	    -}
+      (>=) d1558 d1559 d1560
+	  = ($-->=){-(a, b, c)-} d1557
+	where
+	    d1557
+		=   derived__Prelude_Ord_192_24{-a b c-} d1558 d1559
+			d1560
+	    {-
+	    d1557 :: Ord (a, b, c)
+	    -}
+      (>) d1567 d1568 d1569
+	  = ($-->){-(a, b, c)-} d1566
+	where
+	    d1566
+		=   derived__Prelude_Ord_192_24{-a b c-} d1567 d1568
+			d1569
+	    {-
+	    d1566 :: Ord (a, b, c)
+	    -}
+      max d1576 d1577 d1578
+	  = default__max{-(a, b, c)-} d1575
+	where
+	    d1575
+		=   derived__Prelude_Ord_192_24{-a b c-} d1576 d1577
+			d1578
+	    {-
+	    d1575 :: Ord (a, b, c)
+	    -}
+      min d1585 d1586 d1587
+	  = default__min{-(a, b, c)-} d1584
+	where
+	    d1584
+		=   derived__Prelude_Ord_192_24{-a b c-} d1585 d1586
+			d1587
+	    {-
+	    d1584 :: Ord (a, b, c)
+	    -}
+      {-
+      super1_Ord ::
+	  forall a b c . (Ord a, Ord b, Ord c) => Eq (a, b, c)
+      compare ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> Ordering
+      (<) ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> Bool
+      (<=) ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> Bool
+      (>=) ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> Bool
+      (>) ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> Bool
+      max ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> (a, b, c)
+      min ::
+	  forall a b c .
+	      (Ord a, Ord b, Ord c) =>
+		  (a, b, c) -> (a, b, c) -> (a, b, c)
+      -}
+instance (Show a, Show b, Show c) => Show (a, b, c)
+  where
+      showsPrec d1614 d1615 d1616 d
+		((,,){-a b c-} x1 x2 x3)
+	  =   showParenArg d
+		  ((.){-String String String-} (showString "(,,)")
+		       ((.){-String String String-}
+			    (showArgument{-a-} d1614 x1)
+			    ((.){-String String String-}
+				 (showArgument{-b-} d1615 x2)
+				 (showArgument{-c-} d1616 x3))))
+      show d1620 d1621 d1622
+	  = default__show{-(a, b, c)-} d1619
+	where
+	    d1619
+		=   derived__Prelude_Show_192_14{-a b c-} d1620 d1621
+			d1622
+	    {-
+	    d1619 :: Show (a, b, c)
+	    -}
+      showList d1629 d1630 d1631
+	  = default__showList{-(a, b, c)-} d1628
+	where
+	    d1628
+		=   derived__Prelude_Show_192_14{-a b c-} d1629 d1630
+			d1631
+	    {-
+	    d1628 :: Show (a, b, c)
+	    -}
+      {-
+      showsPrec ::
+	  forall a b c .
+	      (Show a, Show b, Show c) => Int -> (a, b, c) -> ShowS
+      show ::
+	  forall a b c .
+	      (Show a, Show b, Show c) => (a, b, c) -> String
+      showList ::
+	  forall a b c .
+	      (Show a, Show b, Show c) => [(a, b, c)] -> ShowS
+      -}
+instance (Eq a, Eq b, Eq c, Eq d) => Eq (a, b, c, d)
+  where
+      (==) d1660 d1661 d1662 d1663
+	   ((,,,){-a b c d-} x1 x2 x3 x4)
+	   ((,,,){-a b c d-} y1 y2 y3 y4)
+	  =   (&&) ((==){-a-} d1660 x1 y1)
+		  ((&&) ((==){-b-} d1661 x2 y2)
+		       ((&&) ((==){-c-} d1662 x3 y3)
+			    ((==){-d-} d1663 x4 y4)))
+      (/=) d1667 d1668 d1669 d1670
+	  = ($--/=){-(a, b, c, d)-} d1666
+	where
+	    d1666
+		=   derived__Prelude_Eq_196_20{-a b c d-} d1667 d1668
+			d1669
+			d1670
+	    {-
+	    d1666 :: Eq (a, b, c, d)
+	    -}
+      {-
+      (==) ::
+	  forall a b c d .
+	      (Eq a, Eq b, Eq c, Eq d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      (/=) ::
+	  forall a b c d .
+	      (Eq a, Eq b, Eq c, Eq d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      -}
+instance (Ord a, Ord b, Ord c, Ord d) =>
+	 Ord (a, b, c, d)
+  where
+      super1_Ord d1678 d1679 d1680 d1681
+	  = super{-(Eq (a, b, c, d))-} d1677
+	where
+	    d1682 = super1_Ord{-a-} d1678
+	    d1683 = super1_Ord{-b-} d1679
+	    d1684 = super1_Ord{-c-} d1680
+	    d1685 = super1_Ord{-d-} d1681
+	    d1677
+		=   derived__Prelude_Eq_196_20{-a b c d-} d1682 d1683
+			d1684
+			d1685
+	    {-
+	    d1682 :: Eq a
+	    d1683 :: Eq b
+	    d1684 :: Eq c
+	    d1685 :: Eq d
+	    d1677 :: Eq (a, b, c, d)
+	    -}
+      compare d1711 d1712 d1713 d1714
+	      ((,,,){-a b c d-} x1 x2 x3 x4)
+	      ((,,,){-a b c d-} y1 y2 y3 y4)
+	  =   lexOrder (compare{-a-} d1711 x1 y1)
+		  (lexOrder (compare{-b-} d1712 x2 y2)
+		       (lexOrder (compare{-c-} d1713 x3 y3)
+			    (compare{-d-} d1714 x4 y4)))
+      (<) d1718 d1719 d1720 d1721
+	  = ($--<){-(a, b, c, d)-} d1717
+	where
+	    d1717
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1718
+			d1719
+			d1720
+			d1721
+	    {-
+	    d1717 :: Ord (a, b, c, d)
+	    -}
+      (<=) d1729 d1730 d1731 d1732
+	  = ($--<=){-(a, b, c, d)-} d1728
+	where
+	    d1728
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1729
+			d1730
+			d1731
+			d1732
+	    {-
+	    d1728 :: Ord (a, b, c, d)
+	    -}
+      (>=) d1740 d1741 d1742 d1743
+	  = ($-->=){-(a, b, c, d)-} d1739
+	where
+	    d1739
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1740
+			d1741
+			d1742
+			d1743
+	    {-
+	    d1739 :: Ord (a, b, c, d)
+	    -}
+      (>) d1751 d1752 d1753 d1754
+	  = ($-->){-(a, b, c, d)-} d1750
+	where
+	    d1750
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1751
+			d1752
+			d1753
+			d1754
+	    {-
+	    d1750 :: Ord (a, b, c, d)
+	    -}
+      max d1762 d1763 d1764 d1765
+	  = default__max{-(a, b, c, d)-} d1761
+	where
+	    d1761
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1762
+			d1763
+			d1764
+			d1765
+	    {-
+	    d1761 :: Ord (a, b, c, d)
+	    -}
+      min d1773 d1774 d1775 d1776
+	  = default__min{-(a, b, c, d)-} d1772
+	where
+	    d1772
+		=   derived__Prelude_Ord_196_24{-a b c d-} d1773
+			d1774
+			d1775
+			d1776
+	    {-
+	    d1772 :: Ord (a, b, c, d)
+	    -}
+      {-
+      super1_Ord ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) => Eq (a, b, c, d)
+      compare ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Ordering
+      (<) ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      (<=) ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      (>=) ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      (>) ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> Bool
+      max ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> (a, b, c, d)
+      min ::
+	  forall a b c d .
+	      (Ord a, Ord b, Ord c, Ord d) =>
+		  (a, b, c, d) -> (a, b, c, d) -> (a, b, c, d)
+      -}
+instance (Show a, Show b, Show c, Show d) =>
+	 Show (a, b, c, d)
+  where
+      showsPrec d1811 d1812 d1813 d1814 d
+		((,,,){-a b c d-} x1 x2 x3 x4)
+	  =   showParenArg d
+		  ((.){-String String String-} (showString "(,,,)")
+		       ((.){-String String String-}
+			    (showArgument{-a-} d1811 x1)
+			    ((.){-String String String-}
+				 (showArgument{-b-} d1812 x2)
+				 ((.){-String String String-}
+				      (showArgument{-c-} d1813 x3)
+				      (showArgument{-d-} d1814 x4)))))
+      show d1818 d1819 d1820 d1821
+	  = default__show{-(a, b, c, d)-} d1817
+	where
+	    d1817
+		=   derived__Prelude_Show_196_14{-a b c d-} d1818
+			d1819
+			d1820
+			d1821
+	    {-
+	    d1817 :: Show (a, b, c, d)
+	    -}
+      showList d1829 d1830 d1831 d1832
+	  = default__showList{-(a, b, c, d)-} d1828
+	where
+	    d1828
+		=   derived__Prelude_Show_196_14{-a b c d-} d1829
+			d1830
+			d1831
+			d1832
+	    {-
+	    d1828 :: Show (a, b, c, d)
+	    -}
+      {-
+      showsPrec ::
+	  forall a b c d .
+	      (Show a, Show b, Show c, Show d) =>
+		  Int -> (a, b, c, d) -> ShowS
+      show ::
+	  forall a b c d .
+	      (Show a, Show b, Show c, Show d) =>
+		  (a, b, c, d) -> String
+      showList ::
+	  forall a b c d .
+	      (Show a, Show b, Show c, Show d) =>
+		  [(a, b, c, d)] -> ShowS
+      -}

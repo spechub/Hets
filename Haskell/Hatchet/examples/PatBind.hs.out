@@ -1,14 +1,7 @@
-
-
- ---- Type checking AModule "Main" ----
-
-
-
- ---- the types of identifiers ---- 
-
-Main.1_foo :: Int -> Int
-Main.2_main :: Int
-Main.4_newPatRhs_From_Desugaring0 :: (Int,Int)
-Main.5_tup :: (Int,Int)
-Main.6_h :: Int
-Main.7_t :: Int
+*** Error , PatBind.hs:8,9:
+  In the declaration of foo:
+    PatBind.hs:8,9: (type check):
+      PatBind.hs:13,19:
+	In the declaration of tup t h:
+	  PatBind.hs:13,19: (type check):
+	    Not in scope: $

@@ -1,0 +1,235 @@
+module Prelude where
+
+data Integer
+data Rational
+data Double
+data Char
+data Int
+
+data (->) a b
+
+data Bool = False | True deriving (Show, Eq, Ord)
+
+not              :: Bool -> Bool
+not True         =  False
+not False        =  True
+
+otherwise = True
+
+(&&) :: Bool -> Bool -> Bool
+a && b = if a then True else b
+
+data  Ordering  =  LT | EQ | GT
+          deriving (Show, Eq, Ord)
+
+lexOrder EQ o = o
+lexOrder o  _ = o
+
+class  Eq a  where
+    (==), (/=)       :: a -> a -> Bool
+
+    x /= y           =  not (x == y)
+    x == y           =  not (x /= y)
+
+data [a] = [] | (:) { head :: a , tail :: [a] } deriving (Show, Eq, Ord)
+
+(++) :: [a] -> [a] -> [a]
+[]     ++ ys = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+
+map :: (a -> b) -> [a] -> [b]
+map f []     = []
+map f (x:xs) = f x : map f xs
+
+type  String = [Char]
+
+foreign import primError       :: String -> a
+
+error            :: String -> a
+error = primError
+
+(.)              :: (b -> c) -> (a -> b) -> a -> c
+f . g            =  \ x -> f (g x)
+
+type  ShowS    = String -> String
+
+class  (Eq a) => Ord a  where
+    compare              :: a -> a -> Ordering
+    (<), (<=), (>=), (>) :: a -> a -> Bool
+    max, min             :: a -> a -> a
+
+        -- Minimal complete definition:
+        --      (<=) or compare
+        -- Using compare can be more efficient for complex types.
+    compare x y
+         | x == y    =  EQ
+         | x <= y    =  LT
+         | otherwise =  GT
+
+    x <= y           =  compare x y /= GT
+    x <  y           =  compare x y == LT
+    x >= y           =  compare x y /= LT
+    x >  y           =  compare x y == GT
+
+-- note that (min x y, max x y) = (x,y) or (y,x)
+    max x y
+         | x <= y    =  y
+         | otherwise =  x
+    min x y
+         | x <= y    =  x
+         | otherwise =  y
+
+shows            :: (Show a) => a -> ShowS
+shows            =  showsPrec 0
+
+showChar         :: Char -> ShowS
+showChar         =  (:)
+
+showString       :: String -> ShowS
+showString       =  (++)
+
+showParen        :: Bool -> ShowS -> ShowS
+showParen b p    =  if b then showChar '(' . p . showChar ')' else p
+
+-- Basic printing combinators (nonstd, for use in derived Show instances):
+
+showParenArg :: Int -> ShowS -> ShowS
+showParenArg d = showParen (10<=d)
+
+showArgument x = showChar ' ' . showsPrec 10 x
+
+class  Show a  where
+    showsPrec        :: Int -> a -> ShowS
+    show             :: a -> String
+    showList         :: [a] -> ShowS
+
+    showsPrec _ x s   = show x ++ s
+
+    show x        = showsPrec 0 x ""
+
+    showList []       = showString "[]"
+    showList (x:xs)   = showChar '[' . shows x . showl xs
+                        where showl []     = showChar ']'
+                              showl (x:xs) = showChar ',' . shows x .
+                                             showl xs
+
+
+class  (Eq a, Show a) => Num a  where
+    (+), (-), (*)    :: a -> a -> a
+    negate           :: a -> a
+    abs, signum      :: a -> a
+    fromInteger      :: Integer -> a
+
+class  (Num a) => Fractional a  where
+    (/)              :: a -> a -> a
+    recip            :: a -> a
+    fromRational     :: Rational -> a
+
+instance Num Int
+instance Num Integer
+instance Num Rational
+instance Num Double
+instance Eq Int
+instance Ord Int
+instance Enum Int
+instance Eq Char
+instance Eq Integer
+instance Eq Rational
+instance Eq Double
+instance Ord Char
+instance Ord Integer
+instance Ord Rational
+instance Ord Double
+instance Show Int
+instance Show Char
+instance Show Integer
+instance Show Rational
+instance Show Double
+instance Fractional Rational
+instance Fractional Double
+
+subtract         :: (Num a) => a -> a -> a
+subtract         =  flip (-)
+
+flip             :: (a -> b -> c) -> b -> a -> c
+flip f x y       =  f y x
+
+class  Enum a  where
+    succ, pred       :: a -> a
+    toEnum           :: Int -> a
+    fromEnum         :: a -> Int
+    enumFrom         :: a -> [a]             -- [n..]
+    enumFromThen     :: a -> a -> [a]        -- [n,n'..]
+    enumFromTo       :: a -> a -> [a]        -- [n..m]
+    enumFromThenTo   :: a -> a -> a -> [a]   -- [n,n'..m]
+
+        -- Minimal complete definition:
+        --      toEnum, fromEnum
+--
+-- NOTE: these default methods only make sense for types
+--   that map injectively into Int using fromEnum
+--  and toEnum.
+    succ             =  toEnum . (+1) . fromEnum
+    pred             =  toEnum . (subtract 1) . fromEnum
+    enumFrom x       =  map toEnum [fromEnum x ..]
+    enumFromTo x y   =  map toEnum [fromEnum x .. fromEnum y]
+    enumFromThen x y =  map toEnum [fromEnum x, fromEnum y ..]
+    enumFromThenTo x y z =
+                        map toEnum [fromEnum x, fromEnum y .. fromEnum z]
+
+class  Bounded a  where
+    minBound         :: a
+    maxBound         :: a
+
+data  ()  =  () deriving (Eq, Ord, Show)
+
+data  (a,b)
+   =  (,) a b
+   deriving (Show, Eq, Ord)
+
+data  (a,b,c)
+   =  (,,) a b c
+   deriving (Show, Eq, Ord)
+
+data  (a,b,c, d)
+   =  (,,,) a b c d
+   deriving (Show, Eq, Ord)
+
+class  (Num a, Ord a) => Real a  where
+    toRational       ::  a -> Rational
+
+class  (Real a, Enum a) => Integral a  where
+    quot, rem        :: a -> a -> a
+    div, mod         :: a -> a -> a
+    quotRem, divMod  :: a -> a -> (a,a)
+    toInteger        :: a -> Integer
+
+fromIntegral     :: (Integral a, Num b) => a -> b
+fromIntegral     =  fromInteger . toInteger
+
+even, odd        :: (Integral a) => a -> Bool
+even n           =  n `rem` 2 == 0
+odd n            =  not (even n)
+
+class  (Real a, Fractional a) => RealFrac a  where
+    properFraction   :: (Integral b) => a -> (b,a)
+    truncate, round  :: (Integral b) => a -> b
+    ceiling, floor   :: (Integral b) => a -> b
+
+        -- Minimal complete definition:
+        --      properFraction
+    truncate x       =  m  where (m,_) = properFraction x
+
+    round x          =  let (n,r) = properFraction x
+                            m     = if r < 0 then n - 1 else n + 1
+                          in case signum (abs r - 0.5) of
+                                -1 -> n
+                                0  -> if even n then n else m
+                                1  -> m
+
+    ceiling x        =  if r > 0 then n + 1 else n
+                        where (n,r) = properFraction x
+
+    floor x          =  if r < 0 then n - 1 else n
+                        where (n,r) = properFraction x
+

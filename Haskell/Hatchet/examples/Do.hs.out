@@ -1,14 +1,4 @@
-
-
- ---- Type checking AModule "Main" ----
-
-
-
- ---- the types of identifiers ---- 
-
-Main.1_io :: [Char] -> IO ()
-Main.2_main :: IO ()
-Main.3_boo :: IO a
-Main.5_k :: [Char]
-Main.7_q :: [Char]
-Main.8_newGameState1 :: [a]
+*** Error , Do.hs:6,5:
+  In the declaration of io:
+    Do.hs:6,5: (type check):
+      '>>=' unknown or ambiguous

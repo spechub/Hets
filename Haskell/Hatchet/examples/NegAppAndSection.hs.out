@@ -1,10 +1,4 @@
-
-
- ---- Type checking AModule "Main" ----
-
-
-
- ---- the types of identifiers ---- 
-
-Main.1_main :: [Bool]
-Main.2_foo :: [Int]
+*** Error , NegAppAndSection.hs:5,8:
+  In the declaration of main:
+    NegAppAndSection.hs:5,8: (type check):
+      Not in scope: elem

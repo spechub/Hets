@@ -37,6 +37,7 @@ PERL       = perl
 HAPPY      = happy
 DRIFT      = $(DRIFT_ENV) utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
+APPENDPRELUDESTRING = utils/appendHaskellPreludeString
 HADDOCK    = haddock
 CPPP       = cpp 
 
@@ -158,7 +159,8 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
 derived_sources = $(drifted_files) hetcats/Version.hs $(happy_files) \
-                  $(inline_axiom_files) Modal/ModalSystems.hs
+                  $(inline_axiom_files) Modal/ModalSystems.hs \
+                  Haskell/PreludeString.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
@@ -430,7 +432,7 @@ HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs
 ### Haskell analysis
 hana: Haskell/hana
 
-Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs
+Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL to Haskell translation
@@ -480,6 +482,9 @@ hets.hs: hetcats/Version.hs
 ## rules for DrIFT
 .SUFFIXES:
 
+%: %.hs
+	$(HC) --make -o $@ $<
+
 %.hs: %.ly
 	$(HAPPY) $<
 
@@ -492,6 +497,11 @@ hets.hs: hetcats/Version.hs
 ## rules for inlineAxioms
 %.hs: %.inline.hs $(INLINEAXIOMS)
 	$(INLINEAXIOMS) $< > $@
+
+## rule for appendHaskellPreludeString
+Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
+        $(APPENDPRELUDESTRING)
+	$(APPENDPRELUDESTRING) < $< > $@
 
 ## rule for cpp and haddock 
 %.hspp: %.hs
