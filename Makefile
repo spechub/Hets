@@ -25,11 +25,12 @@ DRIFT      = $(DRIFT_ENV) $(PERL) utils/DrIFT
 AG         = $(PERL) utils/ag
 HADDOCK    = $(PERL) utils/haddock
 
-HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall -O2
+HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 # please remove '-O2' if compilation lasts to long on your system
 # but please don't commit to cvs server
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci -package uni-server
+HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \
+             -package uni-server
 
 AG_FLAGS   = -mdcfs
 
@@ -76,22 +77,30 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
-genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Annotation.der.hs Common/Named.hs \
-                Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
+genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
+                Common/AS_Annotation.der.hs Common/Named.hs \
+                Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
+                Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
+                CASL/Sublogic.hs \
                 CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
-                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs HasCASL/AsToIds.hs\
+                HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs \
+                HasCASL/Morphism.hs HasCASL/AsToIds.hs \
                 CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
-                Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
+                Haskell/Hatchet/AnnotatedHsSyn.hs \
+                Haskell/Hatchet/MultiModuleBasics.hs \
                 Haskell/Hatchet/HsSyn.hs \
                 Haskell/Hatchet/Representation.hs\
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
                 Haskell/Hatchet/Env.hs 
 
-gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs ATC/Named.hs \
+gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs \
+                   ATC/Named.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
-                   ATC/AS_Structured.hs ATC/AS_Architecture.hs ATC/DevGraph.hs \
-                   CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs 
+                   ATC/AS_Structured.hs ATC/AS_Architecture.hs \
+                   ATC/DevGraph.hs \
+                   CASL/ATC_CASL.hs Haskell/ATC_Haskell.hs \
+                   HasCASL/ATC_HasCASL.hs CspCASL/ATC_CspCASL.hs 
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
@@ -104,7 +113,9 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 ####################################################################
 ### targets
 
-.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg clean_genRules genRules
+.PHONY : clean d_clean real_clean bin_clean check hetana hetpa hetdg \
+         clean_genRules genRules
+
 .SECONDARY : %.hs %.d $(generated_rule_files)
 #.PRECIOUS: sources_hetcats.mk
 
@@ -165,7 +176,7 @@ post_doc4apache:
 
 genRules: $(generated_rule_files)
 
-$(generated_rule_files): $(genrule_files) $(genrule_header_files)
+$(generated_rule_files): $(genrule_files)# $(genrule_header_files)
 	$(MAKE) clean_genRules
 	$(foreach file,$(atc_files),$(gen_atc_files))
 	utils/genRules -r $(rule) -o CASL    -h ATC/CASL.header.hs $(casl_files)
