@@ -88,6 +88,7 @@ setErrorMessage msg (ParseError pos msgs)
  
     
 mergeError :: ParseError -> ParseError -> ParseError
+-- mergeError (ParseError _ []) p = p
 mergeError (ParseError pos msgs1) (ParseError _ msgs2)
     = ParseError pos (msgs1 ++ msgs2)
     
