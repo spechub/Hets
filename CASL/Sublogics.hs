@@ -79,6 +79,7 @@ import Common.Id ( Id, Pos )
 import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.Sign
+import Data.Dynamic
 
 ------------------------------------------------------------------------------
 -- Datatypes for CASL sublogics
@@ -1286,6 +1287,9 @@ pr_epsilon l1 s = let
                   in
                     embedMorphism new s
 
-------------------------------------------------------------------------------
--- THE END
-------------------------------------------------------------------------------
+-- Typeable instance
+casl_SublocigsTc :: TyCon
+casl_SublocigsTc = mkTyCon "CASL.Sublogics.CASL_Sublogics"
+
+instance Typeable CASL.Sublogics.CASL_Sublogics where
+  typeOf _ = mkAppTy casl_SublocigsTc []

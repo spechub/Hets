@@ -131,28 +131,6 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          --               -> Result Morphism
          extend_morphism CASL _s m _s1 _s2 = return m
 
-casl_SublocigsTc, sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
-    :: TyCon
-casl_SublocigsTc = mkTyCon "CASL.Sublogics.CASL_Sublogics"
-sentenceTc       = mkTyCon "CASL.Sign.Sentence"
-signTc           = mkTyCon "CASL.Sign.Sign"
-morphismTc       = mkTyCon "CASL.Sign.Morphism"
-symbolTc         = mkTyCon "CASL.Sign.Symbol"
-rawSymbolTc      = mkTyCon "CASL.Sign.RawSymbol"
-
-instance Typeable CASL.Sublogics.CASL_Sublogics where
-  typeOf _ = mkAppTy casl_SublocigsTc []
-instance Typeable Sentence where
-  typeOf _ = mkAppTy sentenceTc []
-instance Typeable Sign where
-  typeOf _ = mkAppTy signTc []
-instance Typeable Morphism where
-  typeOf _ = mkAppTy morphismTc []
-instance Typeable Symbol where
-  typeOf _ = mkAppTy symbolTc []
-instance Typeable RawSymbol where
-  typeOf _ = mkAppTy rawSymbolTc []
-
 instance Logic CASL CASL.Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 

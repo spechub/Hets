@@ -8,6 +8,7 @@ import Common.Lib.Map hiding (map, filter)
 import Common.Lib.Graph
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
+import Data.Dynamic
 import Common.GlobalAnnotations()
 
 type SortId = Id  -- non-mixfix, but possibly compound
@@ -249,3 +250,23 @@ embedMorphism a b =
                                                              _ -> Nothing) l
   in
     Morphism a b (fromList slist) (fromList flist) (fromList plist)
+
+-- Typeable instance
+sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
+    :: TyCon
+sentenceTc       = mkTyCon "CASL.Sign.Sentence"
+signTc           = mkTyCon "CASL.Sign.Sign"
+morphismTc       = mkTyCon "CASL.Sign.Morphism"
+symbolTc         = mkTyCon "CASL.Sign.Symbol"
+rawSymbolTc      = mkTyCon "CASL.Sign.RawSymbol"
+
+instance Typeable Sentence where
+  typeOf _ = mkAppTy sentenceTc []
+instance Typeable Sign where
+  typeOf _ = mkAppTy signTc []
+instance Typeable Morphism where
+  typeOf _ = mkAppTy morphismTc []
+instance Typeable Symbol where
+  typeOf _ = mkAppTy symbolTc []
+instance Typeable RawSymbol where
+  typeOf _ = mkAppTy rawSymbolTc []
