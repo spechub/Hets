@@ -33,6 +33,7 @@ main = do
 			 Ok _ (HsModule _ _ _ decls) -> 
                            show (hatAna decls emptyModuleInfo)
 			 Failed msg -> msg
+-- OK and Failed are constructors of HsParseMonad.ParseResult
 	else do 
 	     p <- getProgName
              putStrLn("Usage: "++p++" <file>")

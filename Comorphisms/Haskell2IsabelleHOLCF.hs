@@ -29,9 +29,8 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Comorphisms.Haskell2IsabelleHOLCF where
 
---import Common.Lib.Parsec.Char as Char
 import Logic.Logic
--- import Logic.Comorphism
+import Logic.Comorphism
 -- import Common.Id
 import Common.Result as Result
 import qualified Common.Lib.Map as Map
@@ -48,30 +47,41 @@ import Haskell.Hatchet.MultiModuleBasics as MMB
 --                                          emptyModuleInfo,
 --                                        joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl,AHsName) 
+import Haskell.Hatchet.HsSyn    (HsDecl)
 import Haskell.Hatchet.FiniteMaps as FiniteMaps
 import Haskell.Hatchet.Representation as Rep
+import Haskell.Logic_Haskell as LH
+--import Haskell.HatParser                 (HsDecls,
+--                                          hatParser)
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
--- import Isabelle.Logic_Isabelle
--- import Isabelle.IsaPrint
+import Isabelle.Logic_Isabelle
+import Isabelle.IsaPrint
 
 -- | The identity of the comorphism
 data Haskell2IsabelleHOLCF = Haskell2IsabelleHOLCF deriving (Show)
 
+type HsDecls = [HsDecl]
+
 instance Language Haskell2IsabelleHOLCF -- default definition is okay
 
 {-
-instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
-               Haskell Haskell_Sublogics
-               BasicSpec Le.Sentence SymbItems SymbMapItems
-               Env Morphism
-               Symbol RawSymbol ()
-               Isabelle () () IsaSign.Sentence () ()
-               IsaSign.Sign 
-               () () () ()  where
-    sourceLogic _ = Haskell
-    sourceSublogic _ = Haskell_SL
+class (Language cid,
+       Logic lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+       Logic lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
+  Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+             | cid -> lid1, cid -> lid2
+
+    sourceSublogic _ =   Haskell_SL
                        { has_sub = False,   -- subsorting
                          has_part = True,  -- partiality
                          has_eq = True,    -- equality
@@ -81,16 +91,42 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
                          has_polymorphism = False
                          has_type_constructors = False,  which_logic = HOL
                        }
+
+instance Sentences Haskell Sentence () Sign Morphism Symbol where
+    map_sen Haskell _m s = return s
+    print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
+	if null lab then empty 
+	else space <> text "{-" <+> text lab <+> text "-}" 
+    provers Haskell = [] 
+    cons_checkers Haskell = []
+
+instance Logic Haskell Haskell_Sublogics
+               HsDecls  SYMB_ITEMS SYMB_MAP_ITEMS
+               Sign 
+               Morphism
+               Symbol RawSymbol ()
+-}
+
+instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
+               Haskell ()
+               HsDecls AHsDecl () ()
+               ModuleInfo ()
+               () () ()
+               Isabelle () () IsaSign.Sentence () ()
+               IsaSign.Sign 
+               () () () ()  where
+    sourceLogic _ = Haskell
+--    sourceSublogic _ = ()
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
 
     --map_morphism _ morphism1 -> Maybe morphism2
-    map_sentence _ sign phi =
-            Just $ Sentence {senTerm = (transSentence sign phi)}
+--    map_sentence _ sign phi =
+--            Just $ Sentence {senTerm = (transSentence sign phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
--}
+
 ---------------------------- Signature -----------------------------
 
 -- The args of Sign can be accessed by selector functions,
@@ -136,18 +172,16 @@ mychr :: Int -> Char
 mychr n = 'n'
 
 transSignature :: MMB.ModuleInfo
-                   -> Result.Result(IsaSign.Sign,[Named IsaSign.Sentence]) 
+                   -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 
 transSignature sign = transSignature1 ["var"++ [mychr n] | n <- [1 ..] ] sign
 
 type NewNames = [String]
 
 transSignature1 :: NewNames -> MMB.ModuleInfo
-                   -> Result.Result(IsaSign.Sign,[Named IsaSign.Sentence]) 
+                   -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 
 transSignature1 ns sign = let datatypeList = transDatatype ns (tyconsMembers sign) (FiniteMaps.toListFM $ dconsAssumps sign) in 
- Result.Result 
-  [] 
   (Just ( IsaSign.Sign{
     baseSig = "MainHC",
     tsig = emptyTypeSig 

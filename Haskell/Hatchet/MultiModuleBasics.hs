@@ -56,6 +56,7 @@ getTyconsMembers (AHsModule _ _ _ decls)
 getInfixDecls :: AHsModule -> [AHsDecl]
 getInfixDecls (AHsModule _ _ _ decls)
    = [ d | d@(AHsInfixDecl _ _ _ _) <- decls ]
+-- filters decls taking members of form (AHsInfixDecl _ _ _) 
 
 emptyModuleInfo :: ModuleInfo
 emptyModuleInfo 

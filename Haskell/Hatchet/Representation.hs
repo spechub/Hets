@@ -28,8 +28,7 @@ import qualified Haskell.Hatchet.Utils as Utils                   (fromAHsName,
                                  nameSupply)
 import Haskell.Hatchet.FiniteMaps               (FiniteMap)
 
---------------------------------------------------------------------------------
-
+-------------------------------------------------------------------------------
 -- Types
 
 data Type  = TVar Tyvar

@@ -168,7 +168,7 @@ data HsExp
 	| HsLet [HsDecl] HsExp                        -- above needs patch to HsParser.ly
 	| HsIf HsExp HsExp HsExp
 	| HsCase HsExp [HsAlt]
-	| HsDo [HsStmt]
+	| HsDo [HsStmt]                               -- do
 	| HsTuple [HsExp]
 	| HsList [HsExp]
 	| HsParen HsExp
