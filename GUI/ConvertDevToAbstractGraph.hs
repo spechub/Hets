@@ -98,7 +98,7 @@ convertGraph graphMem libname libEnv =
                      
        Nothing -> error ("development graph with libname "
                           ++ (show libname)
-                           ++ "does not exist")
+                           ++ " does not exist")
 
 
 {- initializes an empty abstract graph with the needed node and edge types,
@@ -220,26 +220,35 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                  ) ]
                  [("globaldef",
                    Solid 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ LocalMenu (Menu (Just "edge menu")
+				 [(Button "Show morphism" 
+                      (\ (name,descr,gid)  ->
+                        do convMaps <- readIORef convRef
+		           putStrLn name
+		           putStrLn (show descr)
+		           putStrLn (show gid)
+		           return ()
+                       ))])
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
 		  ("def",
                    Dotted $$$ Color "Steelblue"
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
                   ("proventhm",
                    Solid $$$ Color "Green" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
-		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int)),
+		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int)),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
-                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int))]
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms (String,Int,Int))]
                  [("globaldef","globaldef","globaldef"),
 		  ("globaldef","def","def"),
                   ("globaldef","proventhm","proventhm"),
