@@ -4,6 +4,7 @@ module Common.ATerm.ReadWrite (
 	readATerm,       -- :: String -> ATermTable
 	writeATerm,      -- :: ATermTable -> String
 	writeSharedATerm,-- :: ATermTable -> String
+	writeSharedATermSDoc -- :: ATermTable -> SDoc  
 ) where
 
 {-
@@ -33,7 +34,7 @@ import Char
 import List
 import Array
 import Data.FiniteMap
-import Common.Lib.Pretty
+import Common.SimpPretty
 -- import Numeric don't use showInt: can't show negative numbers
 
 --- From String to ATerm ------------------------------------------------------
@@ -215,9 +216,9 @@ class Next_Abb a where
 --- From ATerm to String  -----------------------------------------------------
 
 -- a helper data Type for ShowS functions paired with the associated length
-data Doc_len = Doc_len {-# UNPACK #-} !Doc {-# UNPACK #-} !Int
+data Doc_len = Doc_len SDoc {-# UNPACK #-} !Int
 
-data Write_struct = WS {-# UNPACK #-} !WriteTable {-# UNPACK #-} !Doc_len
+data Write_struct = WS WriteTable {-# UNPACK #-} !Doc_len
 
 -- an error generated every time when at least one non-empty
 -- ATermString is expected!! The Argument should be the thoring
@@ -235,16 +236,14 @@ showLen = snd-}
 writeATerm :: ATermTable -> String
 writeATerm at           = writeAT at $ ""
 
-writeSharedATerm :: ATermTable -> String 
-writeSharedATerm at	= 
+writeSharedATermSDoc :: ATermTable -> SDoc
+writeSharedATermSDoc at =     
     case writeTAF at emptyWTable of
-    (WS _ (Doc_len doc _)) -> (rend (char '!'<>doc)) 
-    _ -> fatal_error "writeSharedATerm"
-    where rend d = fullRender OneLineMode 100 1.5 string_txt_comp "" d
-	  string_txt_comp td = case td of
-			       Chr  c -> showChar   c
-			       Str  s -> showString s
-			       PStr s -> showString s
+    (WS _ (Doc_len doc _)) -> (char '!'<>doc) 
+    _ -> fatal_error "writeSharedATermSDoc"
+
+writeSharedATerm :: ATermTable -> String 
+writeSharedATerm = render . writeSharedATermSDoc
 
 -- non-shared --
 {-
@@ -476,8 +475,8 @@ addWAbbrev at (WTab ai_abb_map (da,i)) =
     let ai = getTopIndex at
     in if ai == -1 
        then error (show (getATerm at) ++ " not found")
-       else WTab (addToFM ai_abb_map ai da) 
-		 (abbrevD (i+1),i+1)
+       else let new_map = (addToFM ai_abb_map ai da) 
+	    in seq new_map $ WTab new_map (abbrevD (i+1),i+1)
 
 -- the String Argument is not used and serves as dummy for ease of code change
 addRAbbrev :: ATermTable -> ReadTable -> ReadTable
