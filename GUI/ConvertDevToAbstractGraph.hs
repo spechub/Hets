@@ -421,7 +421,7 @@ createLocalMenuButtonShowOriginOfEdge =
 	  ))
 
 createLocalMenuButtonShowProofStatusOfThm =
-   (Button "Show proof base"
+   (Button "Show proof status"
         (\ (_,descr,maybeLEdge) ->
           do showProofStatusOfThm descr maybeLEdge
 	     return ()

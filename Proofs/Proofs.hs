@@ -153,11 +153,12 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    proofBasis = getLabelsOfInsertedEdges changes -- alle eingefuegten Kanten als proofBasis ??
     provenEdge = (source,
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
 			  dgl_type = 
-			    (GlobalThm (Proven [])
+			    (GlobalThm (Proven proofBasis)
 			     conservativity conservStatus),
 			  dgl_origin = DGProof}
 		  )
@@ -518,7 +519,7 @@ calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath [] = Nothing
 calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
   case maybeMorphismOfFurtherPath of
-    Nothing -> Just morphism
+    Nothing -> Nothing --Just morphism
     Just morphismOfFurtherPath ->
 		  comp Grothendieck morphism morphismOfFurtherPath
 
@@ -630,3 +631,10 @@ getThmLinkStatus (edgeType:list) =
     LocalThm status _ _ -> status:(getThmLinkStatus list)
     otherwise -> error ("getThmLinkStatus not yet implemented for "
 		       ++(show edgeType))
+
+getLabelsOfInsertedEdges :: [DGChange] -> [DGLinkLab]
+getLabelsOfInsertedEdges [] = []
+getLabelsOfInsertedEdges (change:list) =
+  case change of
+    (InsertEdge (_,_,label)) -> label:(getLabelsOfInsertedEdges list)
+    otherwise -> getLabelsOfInsertedEdges list
