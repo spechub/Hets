@@ -102,9 +102,10 @@ mapTheory (sig, sents) =
 			 map ( \ (Construct o args p _sels) ->
 			       (o, j, getConstrType (TypeName j star 0) p
 				     $ map (mapType im) args)) alts) dts
-	newEnv = execState (mapM_ ( \ (o, j, ty) -> 
-				    addOpId o (simpleTypeScheme ty) [] 
-				    $ ConstructData j) constr) env
+	newEnv = execState (mapM_ ( \ (mo, j, ty) -> case mo of
+		    Just o -> addOpId o (simpleTypeScheme ty) [] 
+				  $ ConstructData j
+		    Nothing -> return Nothing) constr) env
 	in (newEnv, newSents)
 
 mapSig :: Sign f e -> Env
@@ -167,7 +168,7 @@ toSentence sig f = case f of
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind []
                           (map ( \ (i, t, ps) -> 
 			       let args = opArgs t in 
-			       Construct i 
+			       Construct (Just i) 
 				 (if null args then []
 				  else [mkProductType (map toType args) ps])
 			       (mapPart $ opKind t) [])

@@ -120,11 +120,13 @@ kindToTypeArgs i k = case k of
 
 -- | Translation of an alternative constructor for a datatype definition.
 --   Uses 'translateRecord'.
-translateAltDefn :: IdMap -> AltDefn -> HsConDecl
-translateAltDefn tm (Construct uid ts _ _) = 
-    HsConDecl nullLoc
+translateAltDefn :: IdMap -> AltDefn -> [HsConDecl]
+translateAltDefn tm (Construct muid ts _ _) = 
+    case muid of
+    Just uid -> [HsConDecl nullLoc
 	      (HsIdent (translateIdWithType UpperId uid))
-	      (map getType $ map (mapType tm) ts)
+	      $ map getType $ map (mapType tm) ts]
+    Nothing -> []
 
 getType :: Type -> HsBangType
 getType t = HsBangedTy (translateType t)
@@ -333,7 +335,7 @@ translateDt (DataEntry im i _ args alts) =
 	               [] -- empty HsContext
 	               hsname
 		       (map getArg args) -- type arguments
-		       (map (translateAltDefn im) alts) -- [HsConDecl] 
+		       (concatMap (translateAltDefn im) alts) -- [HsConDecl] 
 		       derives
 
 translateSentence ::  Env -> Named Sentence -> [Named HsDecl] 

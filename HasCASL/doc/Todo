@@ -13,21 +13,18 @@ class names are not considered for mapping (Morphism.hs)
 exhaustive and overlapping patterns are not checked for several
 program equations or case patterns. (Merge.hs?)
 
+Sentences for attributes comm, assoc, unit are not generated yet.
+
 
 
 datatyoes:
-sentences fo attributes comm, assoc, unit, definitions 
-are not generated yet. Data types result in special data type
-sentences that imply the usual equations.
 
-The selector positions can not be reconstructed from the AltDefn
-(Le.hs) entries, thus equations should be generated!
+Data types result in special data type sentences that imply the usual
+equations, but at least selector equations should be generated (so
+that they may become program equations)
 
-Maybe the whole morphism (or the typeIdMap) should be stored with
-datatypes, because (illegal) renaming of other components to a
-generated type will change the type (even if the generated types are
-renamed as well!)
-
+Operations (constructors) in DatatypeDefns are not renamed (selectors
+are also not renamed in DatatypeSens, because they are not used)
 
 
 terms:
@@ -49,6 +46,12 @@ Disallow "=" and "<=>" after "op" to avoid overloading with builtin
 names (Builtin.hs) or check for the type when changing terms to
 program equations (ProgEq.hs).
 
+Add a "bottom" or a missing case term to convert conditional equations
+(implications) to when-else terms.
+
+Convert executable formulas "f" or "not f" to program equations "f =
+True" or "f = False"
+
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
@@ -57,15 +60,14 @@ executable terms (ProgEq.hs).
 
 shorter printing of terms
 
-terms in sentences are not quantified over global variables 
+terms in sentences (from formulas and definitions) are not quantified
+over global variables
 
 
 
 misc:
 hiding of sub- or supertypes is a problem, with respect to dependent
 operations. (SymbolMapAnalysis.hs)
-
-empty maps for id morphisms don't work yet
 
 
 
@@ -87,10 +89,10 @@ be looked up in the target signature.)
 Maybe the translated type should be stored as value rather than only
 the funKind.
 
-id mappings should be represented by empty maps
+id mappings should be represented by empty maps (as for HasCASL)
 
 Maybe in CASL.Morphism.compose the target(m1) only needs to be a
-subsignature of the source(m2) 
+subsignature of the source(m2) (as for HasCASL)
 
 
 
@@ -120,3 +122,6 @@ comparing symbol sets with (symbol-) equality may be a problem
 
 legal_obj (Logic.hs) is currently unused 
 signatures should be always legal by construction
+
+Design a comand line interface to trigger various outputs and
+translations (without daVinci!) to allow for profiling 

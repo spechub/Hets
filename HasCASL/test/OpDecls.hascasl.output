@@ -86,6 +86,51 @@ y : s %(op)% = (op __<=__<=__ : s * s * s -> s)
 z : s %(op)% = (op __+__ : s * s -> s)
                  ((op x : s) as s, (op x : s) as t as s)
 %% Sentences -------------------------------------------------------------
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op c : s, (op __+__ : s * s -> s)(op a : s, op b : s)) %(def_c)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op d : s, (op __+__ : s * s -> s)(op a : s, op a : s)) %(def_d)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op e : s * s -> s, op __+__ : s * s -> s) %(def_e)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op f : s * s -> s, op __+__ : s * s -> s) %(def_f)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op g : s * s, (op a : s, op b : s)) %(def_g)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op h : s, (op __+__ : s * s -> s)(op a : s, op b : s)) %(def_h)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op i : s,
+   (op __+__ : s * s -> s)((op a : s) : s, (op b : s) : s)) %(def_i)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op i1 : s, (op incr : s -> s)(op a : s)) %(def_i1)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op i2 : s, (op incr : s -> s)(op a : s)) %(def_i2)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op i3 : s, (op incr : s -> s)(op a : s)) %(def_i3)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op l1 : s,
+   (op __<=__<=__ : s * s * s -> s)
+     (op a : s, op b : s, op c : s)) %(def_l1)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op l2 : s * s * s -> s, op __<=__<=__ : s * s * s -> s) %(def_l2)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op l3 : s,
+   (op __<=__<=__ : s * s * s -> s)
+     (op a : s, op b : s, op c : s)) %(def_l3)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op l4 : s,
+   (op __<=__<=__ : s * s * s -> s)
+     (op a : s, op b : s, op c : s)) %(def_l4)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op l5 : s * s * s, (op a : s, op b : s, op c : s)) %(def_l5)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op y : s,
+   (op __<=__<=__ : s * s * s -> s)
+     (op a : s, var x : s, (op a : s) : s)) %(def_y)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op z : s,
+   (op __+__ : s * s -> s)
+     ((op x : s) as s, (op x : s) as t as s)) %(def_z)%
 (op x : s) in s %(bla_label)%
 (op x : s) in t
 %% Diagnostics -----------------------------------------------------------

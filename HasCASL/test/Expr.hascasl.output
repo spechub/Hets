@@ -18,8 +18,8 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 bool : Type %[type bool ::=
-                        True : -> __
-                        False : -> __]%
+                        True : bool
+                        False : bool]%
 %% Assumptions -----------------------------------------------------------
 False : bool %(construct bool)%
 True : bool %(construct bool)%
@@ -47,5 +47,20 @@ notA : bool %(op)% = case (op a : bool) of
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 type bool ::=
-          True : -> __
-          False : -> __ %(ga_bool)%
+          True : bool
+          False : bool %(ga_bool)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op a : bool, op True : bool) %(def_a)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op notA : bool,
+   case (op a : bool) of
+       (op True : bool) -> (op False : bool) | 
+       (op False : bool) -> (op True : bool)) %(def_notA)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op b : bool,
+   let (var x : bool) = (op True : bool);
+       (var y : bool) = (op False : bool);
+       (var z : bool) = (var x : bool)
+   in (op True : bool)) %(def_b)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  (op b : bool -> bool, \ (var x : bool) . (var x : bool)) %(def_b)%

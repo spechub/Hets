@@ -48,6 +48,17 @@ getPartiality as t = case t of
    LazyType _ _ -> if null as then Partial else error "getPartiality"
    _ -> Total
 
+
+-- | compute the type given by the input
+typeIdToType :: Id -> [TypeArg] -> Kind -> Type
+typeIdToType i nAs k = let      
+    fullKind = typeArgsListToKind nAs k
+    ti = TypeName i fullKind 0
+    mkType ty [] = ty
+    mkType ty ((TypeArg ai ak _ _): rest) =
+	mkType (TypeAppl ty (TypeName ai ak 1)) rest
+    in mkType ti nAs
+
 -- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 

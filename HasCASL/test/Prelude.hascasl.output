@@ -132,8 +132,8 @@ __-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c ->? d
 __->__ : Type- -> Type+ -> Type < s ->? t
 __->?__ : Type- -> Type+ -> Type
 bool : Flatcpo %[free type bool ::=
-                                true : -> __
-                                false : -> __]%
+                                true : bool
+                                false : bool]%
 c : Cpo %(var)%
 d : Cpo %(var)%
 f : Flatcpo %(var)%
@@ -176,6 +176,12 @@ program (op def[_var_1] : forall s : Type . Pred s) =
             \ (var x : s) . () %(pe_def)%
 program (op tt[_var_4] : forall s : Type . Pred s) =
             \ (var x : s) . () %(pe_tt)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  ((op __res__ : s * t ->? s)(var x : s, var y : t),
+   var x : s) %(def___res__)%
+(fun __=__ : forall a : Type . a * a ->? Unit)
+  ((op fst : s * t ->? s)(var x : s, var y : t),
+   var x : s) %(def_fst)%
 (pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
   (\ (var x : s, var y : t) . def (x res y),
    \ (var x : s, var y : t) . (def y) und (def x))
@@ -187,8 +193,8 @@ program (op tt[_var_4] : forall s : Type . Pred s) =
        (var x : _var_36, var x : _var_36),
    op tt[_var_36] : forall s : Type . Pred s)
 free type bool ::=
-               true : -> __
-               false : -> __ %(ga_bool)%
+               true : bool
+               false : bool %(ga_bool)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'

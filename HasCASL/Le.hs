@@ -36,11 +36,11 @@ type ClassMap = Map.Map ClassId ClassInfo
 
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord) 
 
-data AltDefn = Construct UninstOpId [Type] Partiality [Selector] 
-               -- argument types
+data AltDefn = Construct (Maybe UninstOpId) [Type] Partiality [[Selector]] 
+               -- only argument types
                deriving (Show, Eq, Ord) 
 
-data Selector = Select UninstOpId Type Partiality -- only result type
+data Selector = Select (Maybe UninstOpId) Type Partiality -- only result type
                 deriving (Show, Eq, Ord) 
 
 type IdMap = Map.Map Id Id

@@ -15,6 +15,7 @@ module HasCASL.PrintLe where
 import HasCASL.As
 import HasCASL.HToken
 import Common.Id
+import HasCASL.AsUtils
 import HasCASL.PrintAs
 import HasCASL.Le
 import Data.Maybe
@@ -50,20 +51,20 @@ instance PrettyPrint TypeDefn where
     printText0 ga (DatatypeDefn dd)  = 
 	text " %[" <> printText0 ga dd <> text "]%"
 
-instance PrettyPrint AltDefn where
-    printText0 ga (Construct i ts p sels) = 
-	printText0 ga i <+> colon 
-	<+> listSep_text (space<>text funS<>space) ga ts <+>
-	    text (case p of 
-		   Partial -> funS ++ quMark
-		   Total -> funS) <+> text place 
-	<+> hcat (map (parens . printText0 ga) sels) 
+printAltDefn :: GlobalAnnos -> Type -> AltDefn -> Doc
+printAltDefn ga dt (Construct mi ts p sels) = case mi of 
+        Just i -> printText0 ga i <+> colon 
+		  <+> printText0 ga (getConstrType dt p ts) 
+		  <+> fcat (map (parens . semiT_text ga) sels)
+	Nothing -> text (typeS ++ sS) <+> commaT_text ga ts
 
 instance PrettyPrint Selector where
-    printText0 ga (Select i t p) = 
-	printText0 ga i <+> (case p of 
+    printText0 ga (Select mi t p) = 
+	(case mi of 
+	Just i -> printText0 ga i <+> (case p of 
 			     Partial -> text ":?"
-			     Total -> colon) <+> printText0 ga t
+			     Total -> colon) <> space
+	Nothing -> empty) <> printText0 ga t
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo _ ks sups defn) =
@@ -102,13 +103,13 @@ instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 ga (Just c) =  printText0 ga c
 
 instance PrettyPrint DataEntry where 
-    printText0 ga (DataEntry im i k args alts) =  
+    printText0 ga (DataEntry im i k args alts) =
 	printGenKind k <> text typeS <+> printText0 ga i 
-			 <+> (printList0 ga args 
-				       <+> text defnS $$ 
-					   vcat (map (printText0 ga) alts))
-	$$ nest 2 (if Map.isEmpty im then empty else 
-	   text withS <+> text (typeS ++ sS) <+> printText0 ga im)
+		  <> hcat (map (parens . printText0 ga) args) 
+          <+> (text defnS $$ vcat (map (printAltDefn ga $ 
+					typeIdToType i args star) alts))
+	$$ nest 2 (noPrint (Map.isEmpty im) 
+	   (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
 		       
 instance PrettyPrint Sentence where 
     printText0 ga s = case s of

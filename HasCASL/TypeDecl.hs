@@ -14,7 +14,6 @@ analyse type decls
 module HasCASL.TypeDecl where
 
 import Data.Maybe
-import Data.List
 
 import Common.Lexer
 import Common.Id
@@ -241,13 +240,8 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
 				    k alts newDerivs ps
 
 dataPatToType :: DatatypeDecl -> (Id, Type)
-dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = let      
-    fullKind = typeArgsListToKind nAs k
-    ti = TypeName i fullKind 0
-    mkType ty [] = ty
-    mkType ty ((TypeArg ai ak _ _): rest) =
-	mkType (TypeAppl ty (TypeName ai ak 1)) rest
-    in (i, mkType ti nAs)
+dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) =
+     (i, typeIdToType i nAs k)
 dataPatToType _ = error "dataPatToType"
 
 -- | add a supertype to a given type id
@@ -277,29 +271,30 @@ anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
     do let dt = snd $ dataPatToType d
 	   fullKind = typeArgsListToKind nAs k
-	   (calts, subats) = partition ( \ a -> case a of 
-					Subtype _ _ -> False
-					_ -> True) $ map item alts
-	   subts = concatMap (  \ (Subtype ts _) -> ts) subats   
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) nAs
-       newAlts <- anaAlts tys dt calts
-       newTs <- mapM anaStarType subts
+       mNewAlts <- fromResult (anaAlts tys dt (map item alts) . typeMap)
        putTypeMap tm
-       mapM_ (addDataSubtype dt) (catMaybes newTs)
-       mapM_ ( \ (Construct c tc p sels) -> do
-			     let ty = TypeScheme nAs 
-			                   ([] :=> getConstrType dt p tc) []
-			     addOpId c ty
-			                [] (ConstructData i)
-			     mapM_ ( \ (Select s ts pa) -> 
-				     addOpId s (TypeScheme nAs 
-					 ([] :=> getSelType dt pa ts) []) 
-				     [] (SelectData [ConstrInfo c ty] i)
-			           ) sels) newAlts
-       addTypeId True (DatatypeDefn $ 
-	   DataEntry Map.empty i genKind nAs newAlts) inst fullKind i
-       return d 
+       case mNewAlts of 
+         Nothing -> return d
+         Just newAlts -> do 
+	   mapM_ (addDataSubtype dt) $ foldr 
+	     ( \ (Construct mc ts _ _) l -> case mc of
+	       Nothing -> ts ++ l
+	       Just _ -> l) [] newAlts
+           mapM_ ( \ (Construct mc tc p sels) -> case mc of 
+	       Nothing -> return ()
+	       Just c -> do
+	           let ty = TypeScheme nAs ([] :=> getConstrType dt p tc) []
+	           addOpId c ty [] (ConstructData i)
+	           mapM_ ( \ (Select ms ts pa) -> case ms of 
+			   Just s -> addOpId s (TypeScheme nAs 
+				      ([] :=> getSelType dt pa ts) []) 
+			               [] $ SelectData [ConstrInfo c ty] i
+			   Nothing -> return Nothing) $ concat sels) newAlts
+           addTypeId True (DatatypeDefn $ 
+	       DataEntry Map.empty i genKind nAs newAlts) inst fullKind i
+           return d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 
 -- | analyse a pseudo type (represented as a 'TypeScheme')

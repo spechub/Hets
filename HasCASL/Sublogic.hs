@@ -750,7 +750,7 @@ sl_altDefn :: AltDefn -> HasCASL_Sublogics
 sl_altDefn (Construct _ l p m) =
   comp_list [(comp_list $ map sl_type l),
              (sl_partiality p),
-             (comp_list $ map sl_selector m)]
+             (comp_list $ map sl_selector $ concat m)]
 
 sl_selector :: Selector -> HasCASL_Sublogics
 sl_selector (Select _ t p) = sublogics_max (sl_type t)

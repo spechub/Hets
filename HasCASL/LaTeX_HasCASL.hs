@@ -13,15 +13,15 @@ Portability :  portable
 module HasCASL.LaTeX_HasCASL where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Morphism
-import Common.PrettyPrint
-
-import Common.Keywords
 import HasCASL.HToken
+
+import Common.PrettyPrint
+import Common.Keywords
 import Common.Lib.Pretty
 import Common.Id
-import Common.PPUtils
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
 import Common.AS_Annotation(mapAnM)
@@ -512,14 +512,12 @@ instance PrintLaTeX TypeDefn where
     printLatex0 ga (DatatypeDefn de)  = text " \\%[" <>
 	printLatex0 ga de <> text "]\\%"
 
-instance PrintLaTeX AltDefn where
-    printLatex0 ga (Construct i ts p sels) = 
-	printLatex0 ga i <+> colon 
-	<+> listSep_text (space<>hc_sty_axiom "\\rightarrow"<>space) ga ts <+>
-	    hc_sty_plain_keyword (case p of 
-		   Partial -> "\\rightarrow" ++ quMark
-		   Total -> "\\rightarrow") <+> text "\\_" 
-	<+> hcat (map (parens . printLatex0 ga) sels) 
+printAltDefn :: GlobalAnnos -> Type -> AltDefn -> Doc
+printAltDefn ga dt (Construct mi ts p sels) = case mi of 
+        Just i -> printLatex0 ga i <+> colon 
+		  <+> printLatex0 ga (getConstrType dt p ts) 
+		  <+> fcat (map (parens . semiT_latex ga) sels)
+	Nothing -> hc_sty_plain_keyword (typeS ++ sS) <+> commaT_latex ga ts
 
 instance PrintLaTeX Selector where
     printLatex0 ga (Select i t p) = 
@@ -566,12 +564,12 @@ instance PrintLaTeX a => PrintLaTeX (Maybe a) where
 instance PrintLaTeX DataEntry where 
     printLatex0 ga (DataEntry im i k args alts) =  
 	printGenKind k <> hc_sty_plain_keyword typeS <+> printLatex0 ga i 
-			 <+> (printList0 ga args 
-				       <+> hc_sty_axiom defnS $$ 
-					   vcat (map (printLatex0 ga) alts))
-	$$ nest 2 (if Map.isEmpty im then empty else 
-	   hc_sty_plain_keyword withS <+> hc_sty_plain_keyword (typeS ++ sS) 
-		   <+> printMap0 ga (hc_sty_axiom mapsTo) im)
+	     <> hcat (map (parens . printLatex0 ga) args)
+	    <+> (hc_sty_axiom defnS $$ 
+		 vcat (map (printAltDefn ga $ typeIdToType i args star) alts))
+	$$ nest 2 (noPrint (Map.isEmpty im) 
+	   (hc_sty_plain_keyword withS <+> hc_sty_plain_keyword (typeS ++ sS) 
+		   <+> printMap0 ga (hc_sty_axiom mapsTo) im))
 
 instance PrintLaTeX Sentence where 
     printLatex0 ga s = case s of

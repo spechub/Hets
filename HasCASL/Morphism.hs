@@ -85,13 +85,16 @@ mapDataEntry m (DataEntry tm i k args alts) =
 	    (typeArgsListToKind args star) 0) alts
 
 mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
-mapAlt m tm args dt (Construct i ts p sels) = 
-    let sc = TypeScheme args 
+mapAlt m tm args dt c@(Construct mi ts p sels) = 
+    case mi of
+    Just i -> 
+      let sc = TypeScheme args 
 	     ([] :=> getConstrType dt p (map (mapType tm) ts)) []
-	(j, TypeScheme _ (_ :=> ty) _) = 
-	    mapFunSym (typeIdMap m) (funMap m) (i, sc)
-    in Construct j ts (getPartiality ts ty) sels
-       -- do not change (unused) selectors
+	  (j, TypeScheme _ (_ :=> ty) _) = 
+	      mapFunSym (typeIdMap m) (funMap m) (i, sc)
+	  in Construct (Just j) ts (getPartiality ts ty) sels
+                -- do not change (unused) selectors
+    Nothing -> c
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = return $ case s of 
