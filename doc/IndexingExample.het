@@ -1,0 +1,24 @@
+
+library IndexingExample
+
+spec A =
+     sorts A,B,C < T
+     preds R1 : A * B;
+	   R2 : B * C;
+	   R3 : C * T
+end
+
+spec B =
+     sorts A,B,F,G < T
+     preds R1 : A * B;
+	   R2 : B * G;
+	   R3 : F * T
+end
+
+spec Combination =
+     A 
+     with A |-> A[A]
+     and 
+     B with A |-> A[B]
+
+end

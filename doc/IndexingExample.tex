@@ -1,0 +1,23 @@
+\begin{hetcasl}
+
+\SPEC \=\SIdIndex{A} \= \Ax{=}\\
+\>\SORTS \=\Id{A}, \Id{B}, \Id{C} \Ax{<} \Id{T}\\
+\>\PREDS \=\Id{R1} : \Id{A} \Ax{\times}  \Id{B};\\
+\>\> \Id{R2} : \Id{B} \Ax{\times}  \Id{C};\\
+\>\> \Id{R3} : \Id{C} \Ax{\times}  \Id{T}\\
+\END\\
+\\
+\SPEC \=\SIdIndex{B} \= \Ax{=}\\
+\>\SORTS \=\Id{A}, \Id{B}, \Id{F}, \Id{G} \Ax{<} \Id{T}\\
+\>\PREDS \=\Id{R1} : \Id{A} \Ax{\times}  \Id{B};\\
+\>\> \Id{R2} : \Id{B} \Ax{\times}  \Id{G};\\
+\>\> \Id{R3} : \Id{F} \Ax{\times}  \Id{T}\\
+\END\\
+\\
+\SPEC \=\SIdIndex{Combination} \= \Ax{=}\\
+\>\SId{A} \WITH \KWC[ID]{sorts} \KWC[ID]{indexed\_by} \Id{A}\\ 
+\AND\\
+\>\SId{B} \WITH \KWC[ID]{indexed\_by} \Id{B}\\
+\END\\
+
+\end{hetcasl}

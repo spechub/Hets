@@ -1,0 +1,82 @@
+
+\documentclass{article}
+
+\usepackage{isolatin1,xspace,url}
+\usepackage{../utils/hetcasl} 
+
+\newcommand{\CASL}{\textsc{Casl}\xspace}
+\newcommand{\CASLDL}{\textsc{Casl\_DL}\xspace}
+
+\begin{document}
+\author{Klaus Lüttich}
+
+\title{Proposals for changes collected from Hets Users}
+
+\date{March 8, 2005}
+\maketitle
+
+\section{Introduction}
+
+These document tries to describe request from different Hets users. It
+also tries to propose how to solve these issues. Most of these
+requests are related to ontology development and therefore are
+contributed by people from LOA in Trento, Italy. But some are just deficiencies
+which was not thought of during the development of \CASL and its
+ReferenceManual.
+
+\section{Labels of instantiated formulas}
+\paragraph{Problem:}
+If a prarmetrised specification is is instantiated with different
+parameters in the same specification all axiom labels from the
+parametrised specifications point to different instantiations of these
+axioms. If such theories are translated to Isabelle for proving
+several axioms have the same label. For this problem the \CASL
+Reference Manual and Hets do not offer any solution.
+
+\paragraph{Proposed solution:} Treating underscores as seperators in
+axiom labels and substituting words (only alphabetic charactars) which
+are the same string as ids mentioned as sort, pred and / or
+op symbols in the signature of parameter specifications with their
+actual instances. 
+
+Consider the following example:
+\begin{hetcasl}
+\SPEC \SId{GSpec} [\SORT[KW] \Id{s}] =\\
+\>\PRED \Id{R} : \Id{s} \Ax{\times} \Id{s}\\
+\>\FORALL \Id{x}: \Id{s}\\
+\>\BULLET \Id{R}(\Id{x}, \Id{x}) \hspace*{4cm} \casllabel{Ax1\_s}\\
+\END\\
+\\
+\SPEC \SId{Combination} =\\
+\> \SId{GSpec} [\SORT[KW] \Id{A}]\\
+\AND
+\> \SId{GSpec} [\SORT[KW] \Id{B}]\\
+\END
+\end{hetcasl}
+
+Combination has than this theory:
+\begin{verbatim}
+sorts A,B
+
+forall x : A . R(x, x) %(Ax1_A)% 
+forall x : B . R(x, x) %(Ax1_B)% 
+\end{verbatim}
+
+\section{Quick indexing of (all) symbols in a theory}
+
+\paragraph{Problem:} If you want to join two theories which have
+overlaps in their signatures such tthat for many sorts the same names
+were used. And even the symbols for predicates overlap. Giving a
+complete mapping of all distinct ids of sorts, preds and / or ops to
+different ids can be very tedious and it could easily lead to errors
+as one can overlook some symbols which have the same id.
+
+\paragraph{Proposed solution:} Add a compound to all ids or only to
+the sorts, preds or ops. this could be achieved by a new keyword in
+symbol mappings of translations: \KW{indexed\_by} It could be used as
+in this example: 
+
+\input{IndexingExample}
+
+\end{document}
+ 
