@@ -485,7 +485,7 @@ progItems = do p <- pluralKeyword programS
 	       (es, ps) <- annotedProgEq `separatedBy` dotT
 	       return (ProgItems es (map tokPos (p:d:ps))) 
 
-annotedProgEq = bind appendAnno (annoParser (patternTermPair True equalS))
+annotedProgEq = bind appendAnno (annoParser (patternTermPair True True equalS))
 		lineAnnos
 
 basicItems = fmap SigItems sigItems
