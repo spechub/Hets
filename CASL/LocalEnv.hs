@@ -7,6 +7,7 @@ import AS_Annotation
 import FiniteMap
 import Graph
 import List(intersperse)
+import Maybe(mapMaybe)
 
 type SortId = Id  -- non-mixfix, but possibly compound
 
@@ -168,8 +169,34 @@ type Fun_map =  FiniteMap Id [(OpType, Id, Bool)]
                            total -}
 type Pred_map = FiniteMap Id [(PredType,Id)]
 
+instance (Show a,Show b,Ord a) => Show (FiniteMap a b) where
+  showsPrec _ = shows . fmToList
+
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
-                         deriving (Eq)
+                         deriving (Eq,Show)
+
+embedMorphism :: Sign -> Sign -> Morphism
+embedMorphism a b =
+  let
+    l     = case a of (SignAsList x) -> x
+    slist = map (\x -> (x,x)) $ map sortId $ map item $
+            mapMaybe (\x -> case x of (ASortItem s) -> Just s;
+                                                  _ -> Nothing) l
+    flist = map (\x -> (opId x,[(opType x,opId x,(opKind.opType) x == Total)]))
+            $ map item $ mapMaybe (\x -> case x of (AnOpItem o) -> Just o;
+                                                              _ -> Nothing) l
+    plist = map (\x -> (predId x,[(predType x,predId x)])) $
+            map item $ mapMaybe (\x -> case x of (APredItem p) -> Just p;
+                                                             _ -> Nothing) l
+  in
+    Morphism a b (mkmap slist) (mkmap flist) (mkmap plist)
+  where
+    domap :: (Ord a) => FiniteMap a b -> [(a,b)] -> FiniteMap a b
+    domap m []        = m
+    domap m ((a,b):t) = domap (addToFM m a b) t
+
+    mkmap :: (Ord a) => [(a,b)] -> FiniteMap a b
+    mkmap = domap emptyFM
