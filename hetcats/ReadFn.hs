@@ -21,7 +21,6 @@ import ATC.Sml_cats
 import Syntax.AS_Library
 import ATC.AS_Library
 
---import Syntax.Parse_AS_Structured
 import Syntax.Parse_AS_Library
 import Common.Lib.Parsec
 import Comorphisms.LogicGraph
@@ -34,24 +33,27 @@ import Version
 import Static.DevGraph
 import ATC.DevGraph
 
+
+
+read_LIB_DEFN_M :: Monad m => FilePath -> String -> m LIB_DEFN
+read_LIB_DEFN_M file input = 
+    if null input then fail ("empty input file: " ++ file) else
+    case runParser (library (defaultLogic, logicGraph)) emptyAnnos
+	 file input of
+	 Left err  -> fail (showErr err)
+	 Right ast -> return ast
+
 read_LIB_DEFN :: HetcatsOpts -> FilePath -> IO LIB_DEFN
 read_LIB_DEFN opt file = 
     do putIfVerbose opt 3 ("Reading file: " ++ file)
+       input <- readFile file
        ld <- case guess file (intype opt) of
          ATermIn _  -> read_sml_ATerm file
          ASTreeIn _ -> error "Abstract Syntax Trees aren't implemented yet"
          CASLIn     -> do
-            input <- readFile file
-            case runParser (library (defaultLogic, logicGraph)) emptyAnnos
-		 file input of
-               Left err  -> error (show err)
-               Right ast -> return ast
+            read_LIB_DEFN_M file input
          HetCASLIn  -> do
-            input <- readFile file
-            case runParser (library (defaultLogic, logicGraph)) emptyAnnos
-		 file input of
-               Left err  -> error (show err)
-               Right ast -> return ast
+            read_LIB_DEFN_M file input
          _         -> error "Unknown InType wanted in read_LIB_DEFN"
        return ld
 
@@ -77,19 +79,3 @@ fromShATermString str =
 
 globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile
-{-do str <- readFile fp
-                                 att <- return $ readATerm str
-                                 case getATerm att of
-                                  ShAAppl "globalcontext" [versionnr,aterm] [] -> if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
-					                  			   then return $ fromShATerm $ getATermByIndex1 aterm att
-                                                                                   else return $ error "Wrong version number!"
-                                  _                                            -> return $ error "Couldn't convert ShATerm back from file"-}
-
-
-
-
-
-
-
-
-

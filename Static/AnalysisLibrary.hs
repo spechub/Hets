@@ -65,21 +65,17 @@ anaFile logicGraph defaultLogic opts libenv fname = do
       return Nothing
     Just fname'' -> do
       input <- readFile fname''
-      case runParser (library (defaultLogic,logicGraph)) emptyAnnos
-	   fname'' input of
-        Left err -> do putStrLn (show err)
-                       return Nothing
-        Right ast -> do
-          Result diags res <-
+      ast <- read_LIB_DEFN_M fname'' input
+      Result diags res <-
             ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
                                     libenv ast)
           -- no diags expected here, since these are handled in ana_LIB_DEFN
           -- sequence (map (putStrLn . show) diags)
-          case res of 
+      case res of 
             Nothing -> return()
             Just (ln,_,_,lenv) ->
               writeFileInfo opts diags fname'' ln lenv
-          return res
+      return res
 
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME 
