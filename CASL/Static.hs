@@ -879,6 +879,25 @@ sig_DATATYPE_DECL sigma (Datatype_decl s alternative_list _) =
                  (sig_ALTERNATIVE_list sigma s (map item alternative_list))
                  s emptyExtPos
 
+ana_select :: Annotations -> SortId -> Id -> OpType
+              -> (SigLocalEnv, [Component]) -> [Id] -> SortId -> [Pos]
+              -> FunKind -> ExtPos -> (SigLocalEnv, [Component])
+ana_select ann s f ws (sigma,c) f_n s' pos kind top_pos =
+  let
+    optype = OpType kind [opRes ws] s'
+  in
+    (sigma { selectors = (selectors sigma) ++
+                         (map (\(x,p) -> toAnnoted
+                                         (OpItem x optype []
+                                          (Just (Select [opTypeIdToSymbol ws f]
+                                                 (idToSortSymbol s)))
+                                          (toItemPos (getName $ localEnv sigma) p)
+                                         []) ann)
+                              (zip f_n (toExtPos Nothing pos
+                                                 tokPos_select))) },
+              c ++ (map (\x -> Component (Just x) optype
+                                         (Just (toListPos top_pos))) f_n));
+
 ana_COMPONENTS :: Annotations -> SortId -> Id -> OpType
                   -> (SigLocalEnv, [Component]) -> COMPONENTS -> ExtPos
                   -> Result (SigLocalEnv, [Component])
@@ -886,33 +905,9 @@ ana_COMPONENTS ann s f ws (sigma,c) components top_pos =
   return
    (case components of
       Total_select f_n s' pos
-        -> let
-             optype = OpType Total [opRes ws] s'
-           in
-             (sigma { selectors = (selectors sigma) ++ (map
-                                  (\(x,p) -> toAnnoted
-                                  (OpItem x optype []
-                                   (Just (Select [opTypeIdToSymbol ws f]
-                                                 (idToSortSymbol s)))
-                                   (toItemPos (getName $ localEnv sigma) p)
-                                   []) ann) (zip f_n 
-                                            (zip pos (tokPos_select pos)))) },
-              c ++ (map (\x -> Component (Just x) optype
-                                         (Just (toListPos top_pos))) f_n));
+        -> ana_select ann s f ws (sigma,c) f_n s' pos Total top_pos
       Partial_select f_n s' pos
-        -> let
-             optype = OpType Partial [opRes ws] s'
-           in
-             (sigma { selectors = (selectors sigma) ++ (map
-                                  (\(x,p) -> toAnnoted
-                                  (OpItem x optype []
-                                   (Just (Select [opTypeIdToSymbol ws f]
-                                                 (idToSortSymbol s)))
-                                   (toItemPos (getName $ localEnv sigma) p)
-                                   []) ann) (zip f_n
-                                            (zip pos (tokPos_select pos)))) },
-              c ++ (map (\x -> Component (Just x) optype
-                                         (Just (toListPos top_pos))) f_n));
+        -> ana_select ann s f ws (sigma,c) f_n s' pos Partial top_pos
       AS_Basic_CASL.Sort s'
         -> (sigma,c ++ [Component Nothing (OpType Total [s'] s)
                                   (Just (toListPos top_pos))]))
