@@ -2,14 +2,11 @@
 
 .PHONY: check
 
-check: hatch
-	./runcheck.sh ../hatch
+check: hana
+	./runcheck.sh ../../hana
 
-output: hatch
-	./runcheck.sh ../hatch set
-
-hatch:
-	if test ! -x ../hatch; then (cd ..; ./ghc-call); fi
+output: hana
+	./runcheck.sh ../../hana set
 
 %: 
 	(cd ../../..; $(MAKE) $@)
