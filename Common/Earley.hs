@@ -315,10 +315,12 @@ getLWeight ga argItem opItem =
     let op = rule opItem
 	arg = lWeight argItem
 	num = length $ args opItem in
-    if isLeftArg op num then 
-       case precRel (prec_annos ga) op arg of
-            Lower -> op 
-	    _ -> if arg == unitId then op else arg
+    if isLeftArg op num then
+       if begPlace arg then 
+	  case precRel (prec_annos ga) op arg of
+	    Higher -> arg
+	    _ -> op
+       else op
     else lWeight opItem
 
 getRWeight :: GlobalAnnos -> Item a b -> Item a b -> Id 
@@ -327,9 +329,11 @@ getRWeight ga argItem opItem =
 	arg = rWeight argItem
 	num = length $ args opItem in 
     if isRightArg op num then 
-       case precRel (prec_annos ga) op arg of
-            Lower -> op
-	    _ -> if arg == unitId then op else arg
+       if endPlace arg then 
+	  case precRel (prec_annos ga) op arg of
+            Higher -> arg
+	    _ -> op
+       else op
     else rWeight opItem
 
 -- | shortcut for a function that constructs an expression
@@ -402,7 +406,6 @@ checkPrecs ga rs argItem opItem =
 		   Higher -> False
 		   _ -> case (begPlace arg, endPlace op) of 
 		        (True, True) -> arg == op && isAssoc ALeft assocs op
-					|| not (isInfix rarg)
 			(False, True) -> True
 			(_, False) -> False
 	    else not (begPlace arg && isNonCompound arg 
@@ -420,7 +423,6 @@ checkPrecs ga rs argItem opItem =
 		     Higher -> False
 		     _ -> case (begPlace op, endPlace arg) of
 		        (True, True) -> arg == op && isAssoc ARight assocs op
-					|| not (isInfix larg)
 			(False, True) -> False
 			(_, False) -> True
 		 else not (endPlace arg && isNonCompound op 
