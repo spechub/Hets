@@ -33,7 +33,7 @@ import OpItem
 
 datatype = do { s <- sortId
 	      ; e <- asKey defnS
-	      ;	a <- annotations
+	      ;	a <- annos
 	      ; (Annoted v _ _ b:as, ps) <- aAlternative `separatedBy` asKey barS
 	      ; return (Datatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
@@ -85,7 +85,7 @@ compSort is cs = do { c <- colonST
 -- ------------------------------------------------------------------------
 
 typeItems = do { p <- pluralKeyword typeS
-	       ; a <- annotations
+	       ; a <- annos
 	       ; (v:vs, ts, b:ans) <- itemAux datatype
 	       ; let s = Annoted v [] a b
 		     r = zipWith appendAnno vs ans 
@@ -109,7 +109,7 @@ basicItems = fmap Sig_items sigItems
 			 }
 		      <|> 
 		      do { o <- oBraceT
-			 ; a <- annotations
+			 ; a <- annos
 			 ; i:is <- many1 sigItems
 			 ; c <- cBraceT
 			 ; return (Sort_gen ((Annoted i [] a [])  
@@ -118,7 +118,7 @@ basicItems = fmap Sig_items sigItems
 			 }
 		    }
 	     <|> do { v <- pluralKeyword varS
-		    ; (vs, ps, _) <- itemAux varDecl  -- ignore annotations
+		    ; (vs, ps) <- varItems
 		    ; return (Var_items vs (map tokPos (v:ps)))
 		    }
 	     <|> do { f <- asKey forallS 
@@ -133,6 +133,20 @@ basicItems = fmap Sig_items sigItems
 					   (\ x y -> Annoted x [] [] y) 
 					   fs ans) (map tokPos (a:ps)))
 		    }
+
+varItems = do { v <- varDecl
+	      ; do { s <- semiT
+		   ; do { try lookAheadItemKeyword
+			; return ([v], [s])
+			}
+	             <|> 
+	             do { (vs, ts) <- varItems
+			; return (v:vs, s:ts)
+			}
+		   }
+		<|>
+		return ([v], [])
+	      }
              
 dotFormulae = do { d <- dotT
 		 ; (fs, ds) <- aFormula `separatedBy` dotT
@@ -149,7 +163,7 @@ dotFormulae = do { d <- dotT
 		   else return (Axiom_items fs ps)
 		 }
 
-aFormula = bind appendAnno formula annotations
+aFormula = bind appendAnno formula lineAnnos
 
 -- ------------------------------------------------------------------------
 -- basicSpec
@@ -159,4 +173,4 @@ basicSpec = (oBraceT >> cBraceT >> return (Basic_spec []))
 	    <|> 
 	    fmap Basic_spec (many1 aBasicItems)
 
-aBasicItems = bind (\ x y -> Annoted y [] x []) annotations basicItems
+aBasicItems = bind (\ x y -> Annoted y [] x []) annos basicItems

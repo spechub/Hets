@@ -88,7 +88,7 @@ opItem = do { (os, cs)  <- parseId `separatedBy` commaT
 	    }
 
 opBody o h = do { e <- equalT
-		; a <- annotations
+		; a <- annos
 		; t <- term
 		; return (Op_defn o h (Annoted t [] a []) [tokPos e])
 		}
@@ -104,7 +104,7 @@ opAttrs os t c = do { q <- commaT
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
 
 opItems =   do { p <- pluralKeyword opS
-	       ; a <- annotations
+	       ; a <- annos
 	       ; (v:vs, ts, b:ans) <- itemAux opItem
 	       ; let s = Annoted v [] a b
 		     r = zipWith appendAnno vs ans 
@@ -131,7 +131,7 @@ predItem = do { (ps, cs)  <- parseId `separatedBy` commaT
 		
 		
 predBody p h = do { e <- asKey equivS
-		  ; a <- annotations
+		  ; a <- annos
 		  ; f <- formula
 		  ; return (Pred_defn p h (Annoted f [] a []) [tokPos e])
 		  }
@@ -142,7 +142,7 @@ predTypeCont ps cs = do { c <- colonT
 			}
 
 predItems =   do { p <- pluralKeyword predS
-		 ; a <- annotations
+		 ; a <- annos
 		 ; (v:vs, ts, b:ans) <- itemAux predItem
 		 ; let s = Annoted v [] a b
 		       r = zipWith appendAnno vs ans 

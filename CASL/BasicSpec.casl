@@ -39,7 +39,7 @@ op a:b;  %(bla4)%
    c:d %(bla5)%
 
 %(bla6)%
-vars a:t; %(bla7-ignored)%
+vars a:t; 
 	a,b:s ; %(bla8-ignored)%
 
 %(type)%

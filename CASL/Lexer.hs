@@ -209,9 +209,9 @@ labelAnn = comment '(' ')'
 
 blankChars = "\t\v\f \160" -- non breaking space
 
-skip :: GenParser Char st a -> GenParser Char st a
-skip p = p << skipMany(single (oneOf (newlineChars ++ blankChars)) 
-		       <|> commentOut <?> "")
+skip :: GenParser Char st ()
+skip = skipMany(single (oneOf (newlineChars ++ blankChars)) 
+		       <|> commentOut <?> "") >> return () 
 
 -- ----------------------------------------------
 -- annotations starting with %word
@@ -222,7 +222,7 @@ annote = try(char '%' <:> scanAnyWords) <++>
 	  <|> textLine)
 
 -- annotations between items
-ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
+ann = many ((annote <|> labelAnn <|> commentGroup <|> commentLine) << skip)
       <?> "annotation"
 
 -- ----------------------------------------------

@@ -65,7 +65,7 @@ import Lexer
 import Id (Id(Id), Token(..), Pos, place, isPlace)
 import ParsecPos (SourcePos, sourceLine, sourceColumn) -- for setTokPos
 import ParsecPrim (GenParser, (<?>), (<|>), getPosition, many, try)
-import ParsecCombinator (many1, option, sepBy1)
+import ParsecCombinator (many1, option, sepBy1, notFollowedBy)
 import ParsecChar (char, string)
 
 -- ----------------------------------------------
@@ -91,8 +91,17 @@ scanWords = reserved formula_words scanTermWords
 setTokPos :: SourcePos -> String -> Token
 setTokPos p s = Token s (sourceLine p, sourceColumn p)
 
+skipSmart = do {p <- getPosition
+	       ; try (do { skip
+			 ; q <- getPosition
+			 ; if sourceLine q == sourceLine p then return ()
+			   else notFollowedBy (char '%') >> return ()
+			 })
+		<|> return ()
+	       }
+
 makeToken :: GenParser Char st String -> GenParser Char st Token
-makeToken parser = skip(bind setTokPos getPosition parser)
+makeToken parser = bind setTokPos getPosition (parser << skipSmart)
 
 asKey = makeToken . toKey
 

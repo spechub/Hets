@@ -19,7 +19,7 @@ import Keywords
 import Lexer
 import AS_Basic_CASL
 import AS_Annotation
-import Anno_Parser
+import Anno_Parser (comment, annote)
 import Maybe
 import Parsec
 import Token
@@ -27,14 +27,33 @@ import Formula
 
 pluralKeyword s = makeToken (keyWord (string s <++> option "" (string "s")))
 
-optSemi :: GenParser Char st (Maybe Token, [Annotation])
-optSemi = bind (,) (option Nothing (fmap Just semiT)) annotations
+-- following annotations
+anno = 	comment <|> annote  -- position not included yet
 
-isStartKeyword s = s `elem` "}":"]":dotS:cDot:casl_reserved_words
+lineAnnos = do { p <- getPosition
+	       ; do { a <- anno  
+		    ; skip
+		    ; q <- getPosition
+		    ; if sourceLine q == sourceLine p then
+		      do { l <- lineAnnos
+			 ; return (a:l)
+			 }
+		      else return [a]
+		    }
+		 <|> return []
+	       }
+
+optSemi :: GenParser Char st (Maybe Token, [Annotation])
+optSemi = bind (,) (option Nothing (fmap Just semiT)) lineAnnos
+
+-- skip to leading annotation and read it
+annos = skip >> many (anno << skip)
+
+isStartKeyword s = s `elem` "%":"}":"]":dotS:cDot:casl_reserved_words
 
 lookAheadItemKeyword :: GenParser Char st ()
 lookAheadItemKeyword = 
-    do { c <- lookAhead (many1 scanLPD <|> many (oneOf ("}]"++signChars)))
+    do { c <- lookAhead (many1 scanLPD <|> single (oneOf ("%}]"++signChars)))
        ; if isStartKeyword c then return () else unexpected c
        }
 
@@ -80,7 +99,7 @@ isoDecl s = do { e <- equalT
 	       }
 
 subSortDefn :: (Id, Pos) -> GenParser Char st SORT_ITEM
-subSortDefn (s, e) = do { a <- annotations
+subSortDefn (s, e) = do { a <- annos
 			; o <- oBraceT
 			; v <- varId
 			; c <- colonT
@@ -112,7 +131,7 @@ sortItem = do { s <- sortId ;
 appendAnno x y =  Annoted x [] [] y
 
 sortItems = do { p <- pluralKeyword sortS
-	       ; a <- annotations
+	       ; a <- annos
 	       ; (v:vs, ts, b:ans) <- itemAux sortItem
 	       ; let s = Annoted v [] a b
 		     r = zipWith appendAnno vs ans 
