@@ -61,6 +61,8 @@ Common/                     Modules common to all logics
 Common/ATerm/                 Conversion from and to ATerms (Klaus Luettich)
 Common/Lib/                   Third-party modules
 Common/Lib/Parsec/              Parsec combinator parser (Christian Maeder)
+Common/PrettyPrint.hs       pretty printing (Klaus Luettich)
+                               pretty printing should get an own directory
 Comorphisms/                Comorphisms of the logic graph (Till Mossakowski)
 CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
 doc/                        Documentation (Till Mossakowski)
