@@ -113,7 +113,8 @@ transTheory trSig trForm (sign,sens) =
                                    (predMap sign))
                   (opMap sign),
     dataTypeTab = makeDtDefs sign $ sens,
-    syn = () },
+    syn = (), 
+    showLemmas = False },
      map (mapNamed (mapSen trForm sign)) sens)  -- for now, no new sentences
   where 
     insertOps op ts m = 

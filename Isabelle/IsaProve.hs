@@ -96,7 +96,7 @@ isaProve thName (sig,axs) goals = do
              writeFile fileName theory 
              system ("cp "++fileName++" "++origName)
              return ()
-  isabelle <- getEnv "ISABELLE"
+  isabelle <- getEnv "HETS_ISABELLE"
   isa <- newChildProcess (isabelle ++ "/Isabelle") [arguments [fileName]]
   htk <- initHTk [withdrawMainWin]
   t <- createToplevel [text "Proof confirmation window"]
@@ -114,7 +114,9 @@ isaProve thName (sig,axs) goals = do
   where
       disAxs = disambiguateSens [] $ nameSens $ transSens axs
       (lemmas, decs) = unzip (map formLemmas disAxs)
-      showLemma = concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
+      showLemma = if showLemmas sig 
+                   then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
+                   else ""
       showAxs = concat $ map ((++"\n") . showSen) disAxs
       disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
       showGoals = concat $ map showGoal disGoals

@@ -162,7 +162,8 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    constTab :: Map.Map String Typ,
                    dataTypeTab :: DataTypeTab,
                    -- needs HOLCF, extend this with domains
-                   syn :: Syntax
+                   syn :: Syntax,
+                   showLemmas :: Bool
                  }
              deriving (Eq)
 
@@ -181,4 +182,5 @@ emptySign = Sign { baseSig = "Pure",
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
                    dataTypeTab = [],
-                   syn = () }
+                   syn = (),
+                   showLemmas = False }

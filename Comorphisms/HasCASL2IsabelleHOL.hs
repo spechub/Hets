@@ -96,8 +96,9 @@ transSignature sign =
                                (assumps sign),
     -- translation of datatype declarations
     dataTypeTab = transDatatype (typeMap sign),
-    syn = () }, 
-    [])
+    syn = (),
+    showLemmas = True },
+    [] ) 
    where 
     extractTypeName typeId typeInfo m = if isDatatypeDefn typeInfo then m
                                           else Map.insert (showIsa typeId) 0 m

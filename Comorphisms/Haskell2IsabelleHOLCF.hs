@@ -112,7 +112,8 @@ transSignature sign =
                                Map.empty 
                                (assumps sign),
     dataTypeTab = transDatatype (typeMap sign),
-    syn = () },
+    syn = (),
+    showLemmas = False },
     [] )  -- for now, no sentences
    where 
     extractTypeName typeId typeInfo m = if isDatatypeDefn typeInfo then m
