@@ -185,10 +185,12 @@ instance PrettyPrint Pattern where
 			  <+> printText0 ga t 
 			  <+> fcat (map (parens.printText0 ga) args)
     printText0 ga (PatternToken t) = printText0 ga t
-    printText0 ga (BracketPattern  k l _) = 
+    printText0 ga (BracketPattern k l _) = 
 	case l of 
 	       [TuplePattern _ _] -> printText0 ga $ head l 
-	       _ -> bracket k $ commas ga l
+	       _ -> case k of 
+		    Parens -> bracket k $ semis ga l
+		    _ -> bracket k $ commas ga l
     printText0 ga (TuplePattern ps _) = parens $ commas ga ps
     printText0 ga (MixfixPattern ps) = fsep (map (printText0 ga) ps)
     printText0 ga (TypedPattern p t _) = printText0 ga p 
@@ -329,7 +331,7 @@ instance PrettyPrint TypeItem where
 					  case k of 
 					  Nothing -> empty
 					  Just j -> space <> colon <> 
-					           printText ga j)
+					           printText0 ga j)
 				       <+> text assignS
 				       <+> printPseudoType ga t
     printText0 ga (Datatype t) = printText0 ga t

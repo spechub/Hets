@@ -85,11 +85,16 @@ prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
 -- the functions 'commaT', 'semiT', 'crossT' and 'semiAnno' are good
 -- for ASCII pretty printing but don't work well for LaTeX output.
 
+listSep :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
+listSep separator ga = fsep . punctuate separator . map (printText0 ga)
+
+commaT_text :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
+commaT_text = listSep comma
+
 commaT,semiT,crossT :: PrettyPrint a => (GlobalAnnos -> a -> Doc) -> 
 		       GlobalAnnos -> [a] -> Doc
-commaT pf ga l = fsep $ punctuate comma $ map (pf ga) l
-
 semiT pf ga l = fsep $ punctuate semi $ map (pf ga) l
+commaT pf ga l = fsep $ punctuate comma $ map (pf ga) l
 
 crossT pf ga l = fsep $ punctuate (space<>char '*') $ map (pf ga) l
 

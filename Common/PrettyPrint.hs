@@ -40,14 +40,11 @@ import Common.Lib.Pretty
 import Common.GlobalAnnotations
 import Common.LaTeX_funs
 
-
 -- This type class allows pretty printing of instantiating Datatypes
 -- for infomation on the predefined functions see above
 class Show a => PrettyPrint a where
-    printLatex, printLatex0, printText, printText0 :: GlobalAnnos -> a -> Doc
+    printLatex0, printText0 :: GlobalAnnos -> a -> Doc
     printLatex0 ga a = printText0 ga a
-    printLatex  ga a = printLatex0  ga a
-    printText   ga a = printText0 ga a
 
 -- shortcut
 noPrint :: Bool -> Doc -> Doc

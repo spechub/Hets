@@ -26,7 +26,7 @@ import Common.GlobalAnnotations
 import Data.List
 
 instance PrettyPrint SPEC where
-    --- This implementation don't uses the grouping information 
+    --- This implementation doesn't use the grouping information 
     --- it detects this information by precedence rules
     printText0 ga (Basic_spec aa) =
 	nest 4 $ printText0 ga aa
@@ -66,56 +66,16 @@ instance PrettyPrint SPEC where
 	     condBracesGroupSpec printText0 sp_braces ga aa
     printText0 ga (Group aa _) =
 	printText0 ga aa
+        -- maybe?: condBracesGroupSpec printText0 sp_braces ga aa
     printText0 ga (Spec_inst aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
 	in nest 4 (hang aa' 4 ab')
     printText0 ga (Qualified_spec ln asp _) =
 	ptext "logic" <+> (printText0 ga ln) <> colon $$ (printText0 ga asp)
-    --- Another implementation of printText 
-    --- This implementation uses simply the supplied grouping information
-    printText ga (Basic_spec aa) =
-	nest 4 $ printText ga aa
-    printText ga (Translation aa ab) =
-	let aa' = printText ga aa
-	    ab' = printText ga ab
-	in hang aa' 4 ab'
-    printText ga (Reduction aa ab) =
-	let aa' = printText ga aa
-	    ab' = printText ga ab
-	in hang aa' 4 ab'
-    printText ga (Union aa _) = 
-	fsep $ intersperse' aa 
-	where intersperse' [] = [] 
-	      intersperse' (x:xs) =
-		  (printText ga x):
-		  map (\y -> ptext "and" $$ printText ga y) xs
-    printText ga (Extension aa _) =
-	fsep $ printList aa
-	       -- intersperse (ptext "then") $ map (printText ga) aa
-	where printList [] = []
-	      printList (x:xs) = 
-		  (printText ga x):
-		    map (spAnnotedPrint printText (<+>) ga (ptext "then")) xs
-    printText ga (Free_spec aa _) =
-	hang (ptext "free") 5 $ printText ga aa
-    printText ga (Local_spec aa ab _) =
-	let aa' = printText ga aa
-	    ab' = printText ga ab
-	in (hang (ptext "local") 4 aa') $$ 
-	   (hang (ptext "within") 4 ab')
-    printText ga (Closed_spec aa _) =
-	hang (ptext "closed") 4 $ printText ga aa
-    printText ga (Group aa _) =
-	lbrace $+$ printText ga aa $$ rbrace
-    printText ga (Spec_inst aa ab _) =
-	let aa' = printText ga aa
-	    ab' = print_fit_arg_list printText sp_brackets sep ga ab
-	in nest 4 (hang aa' 4 ab')
-    printText ga (Qualified_spec ln asp _) =
-	ptext "logic" <+> (printText ga ln) <> colon $$ (printText ga asp)
-
-     
+    --- Another implementation of printText was deleted
+    --- nobody wants to maintain almost duplicate code
+    --- use global annotations for different printing options
 
     printLatex0 ga (Basic_spec aa) =
         tabbed_nest_latex $ nest_latex 8 $ printLatex0 ga aa
@@ -194,11 +154,6 @@ instance PrettyPrint RESTRICTION where
 
 {- Is declared in Print_AS_Library
 instance PrettyPrint SPEC_DEFN where
-    printText0 ga (Spec_defn aa ab ac _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	    ac' = printText0 ga ac
-	in aa' <+> ab' <+> ac'
 -}
 
 instance PrettyPrint G_mapping where
@@ -294,12 +249,6 @@ instance PrettyPrint FIT_ARG where
 
 {- This can be found in Print_AS_Library
 instance PrettyPrint VIEW_DEFN where
-    printText0 ga (View_defn aa ab ac ad _) =
-	let aa' = printText0 ga aa
-	    ab' = printText0 ga ab
-	    ac' = printText0 ga ac
-	    ad' = printText0 ga ad
-	in aa' <+> ab' <+> ac' <+> ad'
 -}
 
 instance PrettyPrint Logic_code where
