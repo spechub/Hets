@@ -40,6 +40,9 @@ main =
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
+       -- hier: testen, ob intype opt = HaskellIn. In diesem Falle anaHaskellFile aufrufen
+       --        und dann showGraph auf das Resultat anwenden
+       --         andernfalls wie folgt weitermachen:
        ld <- read_LIB_DEFN opt file
        -- (env,ld') <- analyse_LIB_DEFN opt
        (ld',env) <- 
@@ -65,7 +68,12 @@ processFile opt file =
                           -- write_GLOBAL_ENV env
             Not     -> write_LIB_DEFN file (opt { outdir = odir }) ld'
 
--- showGraph :: FilePath -> HetcatsOpts -> Maybe Env... -> IO ()?
+{- showGraph :: FilePath -> HetcatsOpts -> (Maybe (LIB_NAME, -- filename
+                                                      HsModule, -- as tree
+                                                      DGraph,   -- development graph
+                                                      LibEnv    -- DGraphs for imported modules 
+                                                      )  -> IO ()
+-}
 showGraph file opt env =
     case env of
         Just (ln,_,_,libenv) -> do

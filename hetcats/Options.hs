@@ -160,7 +160,7 @@ data GuiType = Only | Also | Not
                deriving (Show, Eq)
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | GuessIn
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | HaskellIn | GuessIn
               deriving (Show, Eq)
 
 -- | 'ATType' describes distinct types of ATerms
@@ -256,6 +256,7 @@ parseInType1 :: String -> InType
 parseInType1 "casl"             = CASLIn
 parseInType1 "hetcasl"          = HetCASLIn
 parseInType1 "het"              = HetCASLIn
+parseInType1 "hs"               = HaskellIn
 parseInType1 "spec"             = HetCASLIn
 parseInType1 "gen_trm"          = ATermIn NonBAF
 parseInType1 "tree.gen_trm"     = ATermIn NonBAF
