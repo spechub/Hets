@@ -49,7 +49,7 @@ import Data.Maybe
 
 import Configuration
 
-import System.Posix.IO
+--import System.Posix.IO
 import ChildProcess
 import Directory
 import System

@@ -18,12 +18,10 @@ Portability :  non-portable(Logic)
    check that libname coincides with filename (otherwise internal error occurs)
 -}
 
-
 module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN, anaString) where
 
 import Logic.Logic
 import Logic.Grothendieck
-import Comorphisms.LogicGraph
 import Common.Lib.Graph
 import Static.DevGraph
 import qualified Syntax.AS_Structured
@@ -40,12 +38,10 @@ import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
 import Options
-import System
-import List
-
 import ReadFn
 import WriteFn (writeFileInfo)
-import System.Posix.Files
+import Data.List(nub)
+import System(getEnv)
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
@@ -486,5 +482,3 @@ refViewsig ln dg (src,mor,extsig) =
   where
   (_,[src1]) = refNodesigs ln dg [(Nothing,src)]
   (dg2,extsig1) = refExtsig ln dg Nothing extsig
-
-
