@@ -108,12 +108,13 @@ alternative = do s <- pluralKeyword sortS
 		   <|> return (Total_construct i [] [])
 
 isSortId :: Id -> Bool
-isSortId (Id is _ _) = length is == 1 && not (null (tokStr (head is))) 
-		       && head (tokStr (head is)) `elem` caslLetters
+isSortId (Id is _ _) = case is of 
+		       [Token (c:_) _] -> c `elem` caslLetters
+		       _ -> False
 
 component :: AParser COMPONENTS
 component = do (is, cs) <- parseId `separatedBy` anComma
-	       if length is == 1 && isSortId (head is) then
+	       if isSingle is && isSortId (head is) then
 		 compSort is cs 
 		 <|> return (Sort (head is))
 		 else compSort is cs

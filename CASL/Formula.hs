@@ -62,7 +62,7 @@ restTerm k = startTerm k <|> typedTerm <|> castedTerm
 
 mixTerm k = 
     do l <- startTerm k <:> many (restTerm k)
-       return (if length l == 1 then head l else Mixfix_term l)
+       return (if isSingle l then head l else Mixfix_term l)
 
 whenTerm k = 
            do t <- mixTerm k 

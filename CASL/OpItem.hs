@@ -71,7 +71,7 @@ toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: AParser OP_ITEM 
 opItem = do (os, cs)  <- parseId `separatedBy` anComma
-	    if length os == 1 then 
+	    if isSingle os then 
 	      do c <- colonST
 		 t <- opType
 		 if isConstant t then 
@@ -107,7 +107,7 @@ opAttrs os t c = do q <- anComma
 
 predItem :: AParser PRED_ITEM 
 predItem = do (ps, cs)  <- parseId `separatedBy` anComma
-	      if length ps == 1 then
+	      if isSingle ps then
 		predBody (head ps) (Pred_head [] [])
 		<|> 
 		do h <- predHead

@@ -80,7 +80,7 @@ listId :: Id -> Id
 listId i = Id [listToken] [i] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listToken && length cs == 1
+isListId (Id ts cs _) = not (null ts) && head ts == listToken && isSingle cs
 
 listStates :: GlobalAnnos -> Int -> [State]
 listStates g i = 
@@ -214,7 +214,7 @@ stateToAppl (State (ide, _) rs a _ _) =
            || vs == [predTok]
            || vs == [parenTok]
        then case head ar of 
-            Mixfix_parenthesized ts _ -> if length ts == 1 then head ts
+            Mixfix_parenthesized ts _ -> if isSingle ts then head ts
 					 else head ar
 	    har -> har
        else if vs == [opTok, parenTok]
