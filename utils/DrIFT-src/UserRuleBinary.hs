@@ -1,8 +1,12 @@
 -- stub module to add your own rules.
-module UserRuleBinary (userRuleBinary) where
+module UserRuleBinary (userRulesBinary) where
 
 import List (nub,intersperse)
 import RuleUtils -- useful to have a look at this too
+
+userRulesBinary = [
+    ("Binary", userRuleBinary, "Binary", "efficient binary encoding of terms", Nothing)
+    ]
 
 {- datatype that rules manipulate :-
 

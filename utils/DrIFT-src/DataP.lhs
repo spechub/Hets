@@ -15,7 +15,7 @@ needs to be fixed.
 
 >data Statement = DataStmt | NewTypeStmt deriving (Eq,Show)
 >data Data = D {	name :: Name,		-- type name
->			constraints :: [(Class,[Var])], 
+>			constraints :: [(Class,Var)], 
 >			vars :: [Var],		-- Parameters
 >			body :: [Body],
 >			derives :: [Class],		-- derived classes
@@ -39,7 +39,7 @@ needs to be fixed.
 >	        x <- constructorP
 >	        xs <- many variable
 >	        symbol "="
->	        b <- (conrecdecl {-+++ infixdecl-}) `sepby1` symbol "|"
+>	        b <- (conrecdecl +++ infixdecl) `sepby1` symbol "|"
 >		d <- opt deriveP
 >               return $D x con xs b d DataStmt
 
@@ -56,13 +56,17 @@ needs to be fixed.
 
 >---------------------------------------------------------------------------
 >constructorP = token $
->       do {x <- upper;xs <- many alphanum;return (x:xs)}
+>       do {x <- upper;xs <- many alphanum;return (x:xs)} +++ do 
+>               string "(:"
+>               y <- many1 $ sat (\x -> (not . isAlphaNum) x  && (not . isSpace) x && (not . (== ')')) x )
+>               char ')'
+>               return ("(:" ++ y ++ ")")
 
+>
 >infixconstr = token $ do
 >	x <- char ':'
 >	y <- many1 $ sat (\x -> (not . isAlphaNum) x  && (not . isSpace) x)
->	z <- char ':'
->	return (x:y++[z])
+>	return (x:y)
 >	
 
 >variable = identifier [ "data","deriving","newtype", "type",
@@ -85,7 +89,7 @@ needs to be fixed.
 >	t1 <- type2
 >	x <- infixconstr
 >	ts <- many1 type2
->	return $ Body x [] (t1:ts)
+>	return $ Body ("(" ++ x ++ ")") [] (t1:ts)
 
 >record = do
 >       symbol "{"
@@ -97,7 +101,7 @@ needs to be fixed.
 >	where
 >	constrs = fmap (\x -> [x]) one +++ 
 >		  bracket (symbol "(") (one `sepby` symbol ",") (symbol ")")
->	one = do{c <- constructorP; vs <- many1 variable; return (c,vs)}
+>	one = do{c <- constructorP; v <- variable; return (c,v)}
 
 >deriveP = do{symbol "deriving"; one +++ more}
 >	where
@@ -107,7 +111,6 @@ needs to be fixed.
 >			(symbol ")")
 >---------------------------------------------------------------------------
 >data Type	= Arrow Type Type -- fn
->		| Apply Type Type -- application
 >		| LApply Type [Type] -- proper application
 >		| Var String	  -- variable
 >		| Con String      -- constructor
@@ -121,7 +124,7 @@ needs to be fixed.
 >            as <- many1 type2
 >            return (LApply c as)) +++
 >        type2
->type2 = var +++ con +++ list +++ tuple
+>type2 = (char '!') +++ return '!' >> var +++ con +++ list +++ tuple
 
 >var = fmap Var variable
 

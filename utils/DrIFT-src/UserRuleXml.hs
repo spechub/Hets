@@ -1,8 +1,11 @@
 -- stub module to add your own rules.
-module UserRuleXml (userRuleXml) where
+module UserRuleXml (userRulesXml) where
 
 import List (nub,sortBy)
 import RuleUtils -- useful to have a look at this too
+
+userRulesXml :: [RuleDef]
+userRulesXml = [("Haskell2Xml", userRuleXml, "Representation", "encode terms as XML", Nothing)]
 
 {- datatype that rules manipulate :-
 
@@ -88,7 +91,7 @@ toConstr ns c =
   where
 
     deepvars (Arrow t1 t2)  = []
-    deepvars (Apply t1 t2)  = deepvars t1 ++ deepvars t2
+    --deepvars (Apply t1 t2)  = deepvars t1 ++ deepvars t2
     deepvars (LApply c ts)  = concatMap deepvars ts
     deepvars (Var s)        = [s]
     deepvars (Con s)        = []
@@ -145,10 +148,10 @@ simplest typ cs fv =
 
     find :: String -> Type -> (Maybe Int,Doc)
     find v (Arrow t1 t2)  = (Nothing,error "can't derive Haskell2XML for arrow type")
-    find v (Apply t1 t2)  = let (d1,pat1) = find v t1
-                                (d2,pat2) = find v t2
-                            in perhaps (combine [d1,d2])
-                                       (pat1 <+> snd (perhaps d2 pat2))
+--    find v (Apply t1 t2)  = let (d1,pat1) = find v t1
+--                                (d2,pat2) = find v t2
+--                            in perhaps (combine [d1,d2])
+--                                       (pat1 <+> snd (perhaps d2 pat2))
     find v (LApply c ts)
         | c == (Con typ)  = (Nothing, text "_")
         | otherwise       = let (_,cpat)  = find v c

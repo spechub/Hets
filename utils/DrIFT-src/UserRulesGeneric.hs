@@ -1,17 +1,18 @@
 
 module UserRulesGeneric(userRulesGeneric) where
 
-import StandardRules
+-- import StandardRules
 import RuleUtils
 import List(intersperse)
 
 
-userRulesGeneric :: [Rule]
+userRulesGeneric :: [RuleDef]
 userRulesGeneric =  [
-    ("ATermConvertible", atermfn),
-    ("Typeable", typeablefn),
-    ("Term", dyntermfn),
-    ("Observable", observablefn)
+    ("ATermConvertible", atermfn, "Representation", "encode terms in the ATerm format", Nothing),
+    ("Typeable", typeablefn, "General", "derive Typeable for Dynamic", Nothing),
+    ("Term", dyntermfn, "Generics","Strafunski representation via Dynamic", Nothing),
+    ("HFoldable", hfoldfn, "Generics", "Strafunski hfoldr", Nothing),
+    ("Observable", observablefn, "Debugging", "HOOD observable", Nothing)
     ]
 
 
@@ -53,15 +54,26 @@ doublequote str
 mkList :: [Doc] -> Doc
 mkList xs = text "[" <> hcat (punctuate comma xs) <> text "]"
 
-
--- TODO Constructors!
 typeablefn :: Data -> Doc
-typeablefn  dat  = tcname <+> equals <+> text "mkTyCon" <+> text (doublequote $ name dat) $$
+typeablefn  dat  
+  = tcname <+> equals <+> text "mkTyCon" <+> text (doublequote $ name dat) $$
     instanceheader "Typeable" dat $$ block (
-	[text "typeOf _ = mkAppTy"  <+> tcname <+> text "[]"]) where
-    tcname = text ("_tc_" ++ (name dat)  ++ "Tc")
+	[ text "typeOf x = mkAppTy"  <+> 
+	  tcname <+> 
+	  text "[" <+> hcat (sepWith comma (map getV' (vars dat))) <+> text "]" $$ 
+	  wheres ]) 
+    where
+      tcname = text ("_tc_" ++ (name dat)  ++ "Tc")
+      wheres = where_decls (map getV (vars dat))
+      tpe    = text (name dat) <+> hcat (sepWith space (map text (vars dat)))
+      getV' var
+        = text "typeOf" <+> parens (text "get" <> text var <+> text "x")
+      getV var 
+        = text "get" <> text var <+> text "::" <+> tpe <+> text "->" <+> text var $$
+          text "get" <> text var <+> equals <+> text "undefined"
 
-
+where_decls [] = empty 
+where_decls ds = text "  where" $$ block ds
 
 dyntermfn :: Data -> Doc
 dyntermfn dat = instanceheader "Term" dat $$ block [ 
@@ -71,13 +83,13 @@ dyntermfn dat = instanceheader "Term" dat $$ block [
 	    f cv c = text "f" <+> ppCons cv c <+> equals <+> mkList (map (text "explode" <+>) $ vrs c cv)
 	    g cv c = text "g" <+> ppCons underscores c <+> text "xs" <+> 
 --		text "|" <+> mkList (vrs c cv) <+> text "<- TermRep.fArgs xs" <+> equals <+> text "toDyn" <+> parens (parens (text (constructor c) <+> hsep (map h (vrs c cv))) <> text "::a" ) 
-		equals <+> text "case TermRep.fArgs xs of" <+> mkList (vrs c cv) <+> text "->" <+> text "toDyn" <+> parens (parens (text (constructor c) <+> hsep (map h (vrs c cv))) <> text "::"<>a<>text "" ) 
+		equals <+> text "case TermRep.fArgs xs of" <+> mkList (vrs c cv) <+> text "->" <+> text "toDyn" <+> parens (parens (text (constructor c) <+> hsep (map h (vrs c cv))) <> text "::"<>a<>text "" ) <> text " ; _ -> error \"Term explosion error.\""
 	    h n = parens $ text "TermRep.fDyn" <+> n
 	    cvs = mknss cs namesupply
 	    cs = body dat
 	    vrs c cv = take (length (types c)) cv
 	    underscores = repeat $ text "_"
-	    a = text (name dat)
+	    a = text (name dat) <+> hcat (sepWith space (map text (vars dat)))
     
 
 -- begin observable 
@@ -93,6 +105,9 @@ observablefn  dat =
 observefn cv c = 
     text "observer" <+> ppCons cv c <+> text "= send"  <+> text (doublequote (constructor c)) <+> parens (text "return" <+> text (constructor c) <+> hsep (map f (take (length (types c)) cv))) where
     f n = text "<<" <+> n
+
+
+
 
 
 
@@ -139,3 +154,38 @@ childFromATerm v
   = (addPrime v) <+> text "=" <+> text "fromATerm" <+> v
 
 -- end of ATermConvertible derivation
+
+-- begin of HFoldable derivation 
+-- Author: Joost Visser and Ralf Laemmel
+
+hfoldfn dat
+  = instanceSkeleton "HFoldable" 
+      [ (make_hfoldr (name dat), default_hfoldr),
+        (make_conof (name dat), default_conof)
+      ] 
+      dat
+
+make_hfoldr name body
+  = let cvs = head (mknss [body] namesupply)
+    in text "hfoldr'" <+> 
+       text "alg" <+>
+       ppCons cvs body <+>
+       text "=" <+>
+       foldl (\rest var -> text "hcons alg" <+> var  <+> parens rest) 
+             (text "hnil alg" <+> text (constructor body))
+             cvs 
+
+default_hfoldr
+  = empty
+  
+make_conof name body
+  = let cvs = head (mknss [body] namesupply)
+    in text "conOf" <+> 
+       ppCons cvs body <+>
+       text "=" <+>
+       text (doublequote (constructor body))
+
+default_conof
+  = empty
+
+

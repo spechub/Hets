@@ -10,7 +10,27 @@ import DataP (Statement(..),Data(..),Type(..),Name,Var,Class,
 
 type Tag = String
 type Rule = (Tag,Data -> Doc)
+-- Rule (name, rule, category, helpline, helptext)
+type RuleDef = (Tag, Data -> Doc, String, String, Maybe String)
 
+x = text "x"
+f = text "f"
+
+rArrow = text "->"
+lArrow = text "<-"
+--equals = text "="
+blank = text "_"
+semicolon = char ';'
+
+
+prettyType :: Type -> Doc
+--prettyType (Apply t1 t2) = parens (prettyType t1 <+> prettyType t2)
+prettyType (Arrow x y) = parens (prettyType x <+> text "->" <+> prettyType y)
+prettyType (List x) = brackets (prettyType x)
+prettyType (Tuple xs) = tuple (map prettyType xs)
+prettyType (Var s) = text s
+prettyType (Con s) = text s
+prettyType (LApply t ts) = prettyType t <+> hsep (map prettyType ts)
 
 -- New Pretty Printers ---------------
 
@@ -55,7 +75,7 @@ simpleInstance s d = hsep [text "instance"
 		, text s
 		, opt1 (texts (name d : vars d)) parenSpace id]
    where
-   constr = map (\(c,vs) -> text c <+> sep (map text vs)) (constraints d) ++
+   constr = map (\(c,v) -> text c <+> text v) (constraints d) ++
 		      map (\x -> text s <+> text x) (vars d)	
    parenSpace = parens . hcat . sepWith space
 
@@ -89,6 +109,9 @@ varNames' = map (<> (char '\'')) . varNames
 pattern :: Constructor -> [a] -> Doc
 pattern c l = parens $ fsep (text c : varNames l)
 
+pattern_ :: Constructor -> [a] -> Doc
+pattern_ c l = parens $ fsep (text c : replicate (length l) (text "_"))
+
 pattern' :: Constructor -> [a] -> Doc
 pattern' c l = parens $ fsep (text c : varNames' l)
 
@@ -97,3 +120,5 @@ hasRecord :: Data -> Bool
 hasRecord d =   statement d == DataStmt
 		&& any (not . null . labels) (body d)
 
+tuple :: [Doc] -> Doc
+tuple xs = parens $ hcat (punctuate (char ',') xs)
