@@ -1,6 +1,6 @@
 parse error at (line 1, column 13):
 unexpected "="
-expecting "[", "{", "%%", "%{", "%(", "%", ";", "sort", "op", "pred", "type", "class", "program", "generated", "free", "var", "forall", dot, "axiom" or end of input
+expecting [<id>,...,<id>], "{", "%%", "%{", "%(", "%", ";", "sort", "op", "pred", "type", "class", "program", "generated", "free", "var", "forall", dot, "axiom" or end of input
 
 parse error at (line 2, column 9):
 unexpected end of input

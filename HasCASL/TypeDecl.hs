@@ -50,7 +50,7 @@ anaTypeItem inst (TypeDecl pats kind _) =
 anaTypeItem inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
        mapM_ (anaTypePattern inst nullKind) pats
-       let rs = map (fromJust . maybeResult) $ 
+       let _rs = map (fromJust . maybeResult) $ 
 		filter (isJust . maybeResult) $ 
 		map convertTypePattern pats
        return ()
@@ -113,7 +113,7 @@ typePatternToTokens (BracketTypePattern pk ts ps) =
 		Squares -> concat $ expand "[" "]" tts ps 
 		Braces ->  concat $ expand "{" "}" tts ps
 typePatternToTokens (TypePatternArgs as) =
-    map ( \ (TypeArg v _ _ _) -> Token "__" (tokPos v)) as
+    map ( \ (TypeArg v _ _ _) -> Token "__" (posOfId v)) as
 
 -- compound Ids not supported yet
 getToken :: GenParser Token st Token

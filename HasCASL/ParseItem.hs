@@ -266,7 +266,7 @@ isoClassDecl :: ClassId -> GenParser Char st ClassDecl
 isoClassDecl s = 
     do { e <- equalT
        ;     do o <- oBraceT
-		i <- typeVar
+		i <- pToken scanWords
 		d <- dotT
                 j <- asKey (tokStr i)
 		l <- lessT

@@ -16,11 +16,11 @@ import ClassDecl
 import FiniteMap
 import Id
 import Le
+import Lexer 
 import Maybe
 import Monad
 import MonadState
 import OpDecl
-import ParseTerm(isSimpleId)
 import Result
 import TypeAna
 import TypeDecl
@@ -58,6 +58,10 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
+
+isSimpleId :: Id -> Bool
+isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
+			 `elem` caslLetters
 convertTypeToClass :: ClassMap -> Type -> Result Class
 convertTypeToClass cMap (TypeToken t) = 
        if tokStr t == "Type" then Result [] (Just $ universe) else 
@@ -83,7 +87,7 @@ optAnaVarDecl vd@(VarDecl v t s q) =
        do cMap <- getClassMap 
 	  let Result _ mc = convertTypeToClass cMap t 
 	      in case mc of
-	       Just c -> anaTypeVarDecl(TypeVarDecl v (PlainClass c) s q)
+	       Just c -> anaTypeVarDecl(TypeArg v (PlainClass c) s q)
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
 
@@ -99,8 +103,8 @@ anaVarDecl(VarDecl v oldT _ p) =
 				       ++ showId v "'") p ]
 			     else  putAssumps $ addToFM as v (ts:l)
 
-anaTypeVarDecl :: TypeVarDecl -> State Env ()
-anaTypeVarDecl(TypeVarDecl t k _ _) = 
+anaTypeVarDecl :: TypeArg -> State Env ()
+anaTypeVarDecl(TypeArg t k _ _) = 
     do nk <- anaKind k
        addTypeKind t k
        addTypeVar t

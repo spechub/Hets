@@ -37,7 +37,7 @@ posOfTypePattern (BracketTypePattern _ ts ps) =
     else head ps
 posOfTypePattern (TypePatternArgs as) = 
     if null as then nullPos else 
-       let TypeArg t _ _ _ = head as in tokPos t
+       let TypeArg t _ _ _ = head as in posOfId t
 
 -- ---------------------------------------------------------------------
 

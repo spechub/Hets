@@ -14,7 +14,7 @@ import Id
 import Keywords
 import Lexer
 import Token(casl_reserved_ops, casl_reserved_words
-	    , start, mixId)
+	    , start, comps, mixId)
 import Parsec
 
 -- ----------------------------------------------
@@ -57,18 +57,22 @@ hascasl_reserved_words =
 scanWords, scanSigns :: GenParser Char st String
 scanWords = reserved hascasl_reserved_words scanAnyWords 
 scanSigns = reserved hascasl_reserved_ops scanAnySigns 
+
 -- ----------------------------------------------
 -- non-compound mixfix ids (variables)
 -- ----------------------------------------------
-hcKeys :: ([String], [String])
-hcKeys = (hascasl_reserved_ops, hascasl_reserved_words)
 
+restrictedVar :: [String] -> GenParser Char st Id
+restrictedVar ops = fmap (\l -> Id l [] []) 
+				 (start (ops ++ hascasl_reserved_ops, 
+					 hascasl_reserved_words))
 var :: GenParser Char st Id
-var = fmap (\l -> Id l [] []) (start hcKeys)
+var = restrictedVar []
 
 -- ----------------------------------------------
 -- bracketed lists
 -- ----------------------------------------------
+
 bracketParser :: GenParser Char st a -> GenParser Char st Token 
 	 -> GenParser Char st Token -> GenParser Char st Token
 	 -> ([a] -> [Pos] -> b) -> GenParser Char st b
@@ -87,22 +91,24 @@ brackets parser k = bracketParser parser oBracketT cBracketT commaT k
 -- mixIds
 -- ----------------------------------------------
 
-hcMixId, uninstOpId, typeId :: GenParser Char st Id
-hcMixId = mixId hcKeys hcKeys
-uninstOpId = hcMixId
-typeId = hcMixId
+hcKeys :: ([String], [String])
+hcKeys = (hascasl_reserved_ops, hascasl_reserved_words)
+
+uninstOpId, typeId :: GenParser Char st Id
+uninstOpId = mixId hcKeys hcKeys
+typeId = mixId (lessS:hascasl_reserved_ops, hascasl_reserved_words) hcKeys
 
 -- ----------------------------------------------
 -- TYPE-VAR Ids
 -- ----------------------------------------------
 
--- no compound ids (just a word) 
-typeVar :: GenParser Char st Token
-typeVar = pToken scanWords
+-- no compound ids 
+typeVar :: GenParser Char st Id
+typeVar = restrictedVar [lessS]
 
 -- simple id with compound list
 classId :: GenParser Char st Id
 classId = 
-    do s <- typeVar
-       (c, p) <- option ([], []) $ brackets hcMixId (,) 
+    do s <- pToken scanWords
+       (c, p) <- option ([], []) $ comps hcKeys 
        return (Id [s] c p)

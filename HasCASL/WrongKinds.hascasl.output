@@ -12,7 +12,7 @@ expecting cross or "->"
 
 parse error at (line 4, column 4):
 unexpected product result kind
-expecting casl char, underline word, "[", "+", "-", cross or "->"
+expecting casl char, underline word, [<id>,...,<id>], "+", "-", cross or "->"
 
 parse error at (line 5, column 6):
 unexpected variance of result kind
@@ -24,7 +24,7 @@ expecting cross or "->"
 
 parse error at (line 7, column 10):
 unexpected product result kind
-expecting casl char, underline word, "[", "+", "-", cross or "->"
+expecting casl char, underline word, [<id>,...,<id>], "+", "-", cross or "->"
 
 parse error at (line 8, column 11):
 unexpected "+"
@@ -48,7 +48,7 @@ expecting cross or "->"
 
 parse error at (line 13, column 5):
 unexpected "-"
-expecting casl char, underline word, "[", "," or ")"
+expecting casl char, underline word, [<id>,...,<id>], "," or ")"
 
 parse error at (line 14, column 4):
 unexpected ","

@@ -5,8 +5,8 @@ d
 e = a
 h < (a,b,e)
 Type Constructors
-s : Type
-t : Type
+s :Type
+t :Type
 Type Variables : (s,t)
 Assumptions
 Warning (3,21) unchecked type 's'

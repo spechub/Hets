@@ -209,14 +209,6 @@ instance PrettyPrint VarDecl where
     printText0 ga (VarDecl v t _ _) = printText0 ga v <+> colon
 						 <+> printText0 ga t
 
-instance PrettyPrint TypeVarDecl where 
-    printText0 ga (TypeVarDecl v c _ _) = 
-	printText0 ga v <+> 
-	case c of 
-	PlainClass (Downset t) -> 
-	    text lessS <+> printText0 ga t
-	_ -> colon <+> printText0 ga c
-
 instance PrettyPrint GenVarDecl where 
     printText0 ga (GenVarDecl v) = printText0 ga v
     printText0 ga (GenTypeVarDecl tv) = printText0 ga tv

@@ -16,26 +16,37 @@ import List
 import MonadState
 import Result
 
-data ClassInfo = ClassInfo { classId :: ClassId
-			   , superClasses :: [ClassId]
+-----------------------------------------------------------------------------
+-- classInfo
+-----------------------------------------------------------------------------
+
+data ClassInfo = ClassInfo { superClasses :: [ClassId]
 			   , classDefn :: Maybe Class
 			   , instances :: [Qual Pred]
 			   } deriving (Show, Eq)
 
-newClassInfo :: ClassId -> ClassInfo
-newClassInfo cid = ClassInfo cid [] Nothing []
+newClassInfo :: ClassInfo
+newClassInfo = ClassInfo [] Nothing []
 
 -----------------------------------------------------------------------------
 
 type ClassMap = FiniteMap ClassId ClassInfo
 
 -----------------------------------------------------------------------------
+-- typeInfo
+-----------------------------------------------------------------------------
+
+-- data TypeInfo = TypeInfo { 
+
+-----------------------------------------------------------------------------
+
+type TypeKinds = FiniteMap TypeId [Kind]
+
+-----------------------------------------------------------------------------
 -- assumptions
 -----------------------------------------------------------------------------
 
 type Assumps = FiniteMap Id [TypeScheme]
-
-type TypeKinds = FiniteMap TypeId [Kind]
 
 -----------------------------------------------------------------------------
 -- local env

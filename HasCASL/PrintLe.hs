@@ -23,7 +23,7 @@ noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
 
 instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo _ sups defn insts) =
+    printText0 ga (ClassInfo sups defn insts) =
 	(noPrint (isNothing defn)
 	   (ptext equalS <+> printText0 ga defn)
 	<> noPrint (null sups || isNothing defn) space
@@ -47,7 +47,7 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
 	    vcat(map (\ (a, b) -> printText0 ga a <+> printText0 ga b) l)
 
 instance PrettyPrint [Kind] where
-    printText0 ga l = colon <+> printList0 ga l
+    printText0 ga l = colon <> printList0 ga l
 
 instance PrettyPrint [TypeScheme] where
     printText0 ga l = colon <+> printList0 ga l

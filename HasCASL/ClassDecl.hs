@@ -59,7 +59,7 @@ anaClassDecl sups defn ci =
        cMap <- getClassMap
        case lookupFM cMap ci of
             Nothing -> putClassMap $ addToFM cMap ci  
-		       (newClassInfo ci) { superClasses = sups, 
+		       newClassInfo { superClasses = sups, 
 					   classDefn = defn }
 	    Just info -> do 
 	        addDiag $ mkDiag Warning "redeclared class" ci

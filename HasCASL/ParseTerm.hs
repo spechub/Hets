@@ -210,52 +210,45 @@ makeVarDecls :: [Var] -> [Token] -> Type -> Pos -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma (tokPos p))
 		     (init vs) ps ++ [VarDecl (last vs) t Other q]
 
-varDeclDownSet :: [TypeVar] -> [Token] -> GenParser Char st [TypeVarDecl]
+varDeclDownSet :: [TypeId] -> [Token] -> GenParser Char st [TypeArg]
 varDeclDownSet vs ps = 
 		    do l <- lessT
 		       t <- parseType
-		       return (makeTypeVarDecls vs ps (Downset t) (tokPos l))
+		       return (makeTypeVarDecls vs ps 
+			       (PlainClass (Downset t)) (tokPos l))
 
-typeVarDecls :: GenParser Char st [TypeVarDecl]
+typeVarDecls :: GenParser Char st [TypeArg]
 typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 		  do   c <- colT
-		       t <- parseClass
+		       t <- kind
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				universe nullPos)
+				nullKind nullPos)
 
-makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
-makeTypeVarDecls vs ps c q = let cl = PlainClass c in 
+makeTypeVarDecls :: [TypeId] -> [Token] -> Kind -> Pos -> [TypeArg]
+makeTypeVarDecls vs ps cl q = 
     zipWith (\ v p -> 
-	     TypeVarDecl (simpleIdToId v) cl Comma (tokPos p))
+	     TypeArg v cl Comma (tokPos p))
 		(init vs) ps 
-		++ [TypeVarDecl (simpleIdToId $ last vs) cl Other q]
+		++ [TypeArg (last vs) cl Other q]
 
 genVarDecls:: GenParser Char st [GenVarDecl]
-genVarDecls = do (vs, ps) <- var `separatedBy` commaT
-		 if all isSimpleId vs then 
-		       fmap (map GenVarDecl) (varDeclType vs ps)
-		       <|> fmap (map GenTypeVarDecl)
-			       (varDeclDownSet (map (\ (Id ts _ _) 
-						     -> head ts) vs) ps)
-		    else 
-		    fmap (map GenVarDecl) (varDeclType vs ps)
-
-isSimpleId :: Id -> Bool
-isSimpleId (Id ts _ _) = null (tail ts) && head (tokStr (head ts)) 
-			 `elem` caslLetters
+genVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
+		 fmap (map GenVarDecl) (varDeclType vs ps)
+		      <|> fmap (map GenTypeVarDecl)
+			       (varDeclDownSet vs ps)
 				 
 -----------------------------------------------------------------------------
 -- typeArgs
 -----------------------------------------------------------------------------
 
-extTypeVar :: GenParser Char st (TypeVar, Variance, Pos) 
-extTypeVar = do t <- typeVar
+extTypeVar :: GenParser Char st (TypeId, Variance, Pos) 
+extTypeVar = do t <- restrictedVar [lessS, plusS, minusS]
 		do   a <- plusT
 		     return (t, CoVar, tokPos a)
 	 	  <|>
-		  do a <- plusT
+		  do a <- minusT
 		     return (t, ContraVar, tokPos a)
 		  <|> return (t, InVar, nullPos)
 
@@ -284,7 +277,6 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
                          zipWith (mergeVariance Comma e) (init ts) 
 				     (map tokPos ps)
 			     ++ [mergeVariance Other e (last ts) q]
-
 
 -----------------------------------------------------------------------------
 -- type pattern

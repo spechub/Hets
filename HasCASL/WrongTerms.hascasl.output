@@ -100,7 +100,7 @@ expecting __
 
 parse error at (line 26, column 9):
 unexpected "a"
-expecting "{", __, "," or ":"
+expecting "{", __, ",", ":" or "<"
 
 parse error at (line 27, column 13):
 unexpected ".!" or "!"

@@ -54,7 +54,7 @@ data ClassDecl = ClassDecl [ClassId] [Pos]
                -- pos ","s, "<"
                | ClassDefn ClassId Class [Pos]
                -- pos "="
-               | DownsetDefn ClassId TypeVar Type [Pos] 
+               | DownsetDefn ClassId Token Type [Pos] 
 	       -- pos " =" "{", dot, "<", typeVar,  "}"
                  deriving (Show, Eq)
                           
@@ -113,7 +113,7 @@ data Qual t = [Pred] :=> t
 
 -- no curried notation for bound variables 
 data TypeScheme = SimpleTypeScheme Type
-                | TypeScheme [TypeVarDecl] (Qual Type) [Pos]
+                | TypeScheme [TypeArg] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot 
                   deriving (Show, Eq)
 
@@ -177,7 +177,7 @@ data Formula = TermFormula Term
 	     -- pos "def"
 	     | QuantifiedFormula Quantifier [VarDecl] Formula [Pos]
              -- pos quantifier, ";"s, dot
-	     | PolyFormula [TypeVarDecl] Formula [Pos]
+	     | PolyFormula [TypeArg] Formula [Pos]
              -- pos "forall", ";"s, dot
 	       deriving (Show, Eq)
 
@@ -239,15 +239,10 @@ data SeparatorKind = Comma | Other deriving (Show, Eq)
 data VarDecl = VarDecl Var Type SeparatorKind Pos deriving (Show, Eq)
 	       -- pos "," or ":" 
 
--- currently TypeId is a simple Token and Kind is only a Class
-data TypeVarDecl = TypeVarDecl TypeId Kind SeparatorKind Pos 
-                   -- pos "," or ":" 
-		   deriving (Show, Eq)
-
-data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show, Eq)
+data TypeVarDecls = TypeVarDecls [TypeArg] [Pos] deriving (Show, Eq)
 		    -- pos "[", ";"s, "]"
 
-data TypeArg = TypeArg TypeVar Kind SeparatorKind Pos
+data TypeArg = TypeArg TypeId Kind SeparatorKind Pos
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show, Eq)
 
@@ -255,7 +250,7 @@ data TypeArgs = TypeArgs [TypeArg] [Pos] deriving (Show, Eq)
 	        -- pos ";"s
 
 data GenVarDecl = GenVarDecl VarDecl
-		| GenTypeVarDecl TypeVarDecl
+		| GenTypeVarDecl TypeArg
 		  deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
@@ -301,5 +296,4 @@ type TypeId = Id
 type UninstOpId = Id
 
 type Var = Id
-type TypeVar = Token
 type ClassId = Id -- TOKEN-ID (one token with compound list, like CASL sorts)
