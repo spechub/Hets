@@ -17,7 +17,6 @@ module ToHaskell.TranslateAna (
        -- * Translation of a map of assumptions
        , translateAssumps
        , distinctOpIds
-       , newName
        -- ** Translation of terms
        , translateTerm
        -- ** Translation of pattern
@@ -25,17 +24,13 @@ module ToHaskell.TranslateAna (
        -- * Translation of a map of types
        , translateTypeMap
        , translateData
-       -- ** Translation of identifiers
-       , IdCase
-       , translateIdWithType
-       , translateId
        -- * Testing
        , idToHaskell
        ) where
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.Unify
+--import HasCASL.Unify
 import Haskell.Language.Syntax
 import Common.Id
 import qualified Common.Lib.Map as Map hiding (map)
@@ -44,6 +39,8 @@ import Common.AnnoState
 import Common.PPUtils
 import Data.Char
 import Data.List
+import ToHaskell.TranslateId
+import ToHaskell.UniqueId
 -------------------------------------------------------------------------
 -- einige "Konstanten"
 -------------------------------------------------------------------------
@@ -82,10 +79,10 @@ translateAna env =
     HsModule nullLoc (Module "HasCASLModul") 
 	     Nothing -- Maybe[HsExportSpec]
 	     [(HsImportDecl nullLoc
-	                    (Module "ToHaskell.SpecialPrelude") 
+	                    (Module "Prelude") 
                             False 
 	                    Nothing 
-		            Nothing)]
+		            (Just (False, [HsIVar (HsIdent "undefined")])))]
              ((translateTypeMap (typeMap env)) ++ 
              (translateAssumps (assumps env) (typeMap env)))   -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
@@ -121,7 +118,6 @@ translateData (tid,info) =
 	                (translateType ty)
 	   )]
        --Vars: eine var (= Id) oder Liste von Vars
-       -- Was wird daraus in Haskell? -> ignorieren
        DatatypeDefn _ typeargs altDefns -> 
  	  [(HsDataDecl nullLoc
 	               [] -- empty HsContext
@@ -193,36 +189,11 @@ translateAssumps as tm =
   in  concat $ map (translateAssump distAs tm) $ distList
       --error ("List: " ++ show distList ++ "\n Map: " ++ show distAs)
 
--- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
--- | Generates distinct names for overloaded function identifiers.
-distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfos)]
-distinctOpIds [] = []
-distinctOpIds ((i,OpInfos info):(idInfoList)) = 
-  let len = length info in
-  if len == 0 then
-     distinctOpIds idInfoList
-  else 
-     if len == 1 then
-        ((i,OpInfos info):(distinctOpIds (idInfoList)))
-     else -- if len > 1
-        ((newName i len,OpInfos $ [head info]):
-         (distinctOpIds((i, OpInfos $ tail info):(idInfoList))))
-
--- Durchnummerierung von überladenen Funktionsnamen
--- | Adds a number to the name of an identifier.
-newName :: Id -> Int -> Id
-newName (Id tlist idlist poslist) len = 
-  let newTok = (Token (show len) nullPos) 
-  in (Id (tlist ++ [newTok]) idlist poslist)
-
--- uebersetzt eindeutig benannte Funktionen 
--- (d.h. OpInfos enthält nur ein Element)
--- (Funktionsdeklarationen und -definitionen)
 -- | Converts one distinct named function in HasCASL to the corresponding
 -- haskell declaration.
 -- Generates a definition (Prelude.undefined) for functions that are not 
 -- defined in HasCASL.
-translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfos) -> [HsDecl]
+translateAssump :: Assumps -> TypeMap -> (Id,OpInfos) -> [HsDecl]
 translateAssump as tm (i, opinf) = 
   let fname = translateIdWithType LowerId i
       res = HsTypeSig nullLoc
@@ -288,231 +259,100 @@ getRhs as tm t = HsUnGuardedRhs (translateTerm as tm t)
 
 -- |Converts a term in HasCASL to an expression in haskell
 translateTerm :: Assumps -> TypeMap -> Term -> HsExp --HsFunBind
-translateTerm as tm t = case t of
-  --CondTerm _t1 _form _t2 _pos -> [] -- -> HsIf
-  --HsIf HsExp HsExp HsExp, wie passt das zusammen?
+translateTerm as tm t = 
+  let err = error ("Unexpected term: " ++ show t) in
+  case t of
+    --CondTerm _t1 _form _t2 _pos -> 
+	--error ("CondTerm not yet translated" ++ show t)
+    --HsIf HsExp HsExp HsExp, wie passt das zusammen?
 
-  QualVar v ty _pos ->
-      (HsExpTypeSig 
-        nullLoc 
-        (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
-        (HsQualType [] $ translateType ty))
+    QualVar v ty _pos ->
+        (HsExpTypeSig 
+          nullLoc 
+          (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
+          (HsQualType [] $ translateType ty))
+      
+    -- zur id der opid muss der evtl. umbenannte eindeutige Name gefunden 
+    -- werden; hierzu muss ts mit den TypeSchemes aus Assumps auf 
+    -- Unifizierbarkeit geprueft werden; 
+    -- hierzu benoetigt man die Assumps und die TypeMap;
+    QualOp (InstOpId uid types _) ts _pos -> 
+    -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen 
+    -- vergleichen, bei passendem TypeScheme die id (also den Schluessel) 
+    -- als HsVar verwenden
+      let oid = findUniqueId uid ts tm as 
+      in case oid of
+            Just i ->
+		(HsVar (UnQual (HsIdent (translateIdWithType LowerId i))))
+	    _ -> error("problem with finding opid: " ++ show uid ++ "\n" 
+                     ++ show ts ++ "\n" ++ show types)
 
-  -- zur id der opid muss der evtl. umbenannte eindeutige Name gefunden werden
-  -- hierzu muss ts mit den TypeSchemes aus Assumps auf Unifizierbarkeit
-  -- geprueft werden; hierzu benoetigt man die Assumps und die TypeMap;
-  QualOp (InstOpId uid types _) ts _pos -> 
-  -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen vergleichen,
-  -- bei passendem TypeScheme die id (also den Schluessel) als HsVar verwenden
-    let fittingAs = Map.filter (canUnify tm ts) as 
-    in if Map.size fittingAs == 1 then
-         -- gut, eine Uebereinstimmung
-          let oid = head $ Map.keys $ fittingAs
-          in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
-       else
-          if Map.size fittingAs > 1 then
-          --falls mehr als ein passendes TypeScheme gefunden wurde
-          --kann auf "Ähnlichkeit" mit der Id getestet werden
-            let oid = findSimilarId uid  (Map.keys  fittingAs)
-            in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
-          else error("problem with finding opid: " ++ show uid ++ "\n" 
-                     ++ show ts ++ "\n" ++ show types ++ "\n" ++ 
-                     show (Map.size fittingAs))
+    ApplTerm t1 t2 _pos ->
+	HsApp(translateTerm as tm t1)(translateTerm as tm t2)
+    TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
+    TypedTerm t1 tqual ty _pos ->
+      let res = (HsExpTypeSig nullLoc 
+	                    (translateTerm as tm t1)
+                            (HsQualType [] $ translateType ty)) in
+      case tqual of 
+        OfType -> res
+        --AsType -> (HsFunBind [HsMatch nullLoc (HsIdent "unsafeCoerce") ....
+        --hier können nur HsExp berechnet werden,evtl. muss an einer "höheren"
+        --Stelle der Funktionsaufruf der Cast-funktion gebastelt werden;
+        --bei AsType könnte t1::ty reichen, da Subtypen als Typsynonyme
+        --übersetzt werden
+        AsType -> res
+        InType -> error ("Translation of \"InType\" not possible: " ++ show t)
 
-  ApplTerm t1 t2 _pos -> HsApp(translateTerm as tm t1)(translateTerm as tm t2)
-  TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
-  TypedTerm t1 tqual ty _pos -> -- -> HsExpTypeSig
-    case tqual of 
-      OfType -> (HsExpTypeSig nullLoc 
-	                     (translateTerm as tm t1)
-                             (HsQualType [] $ translateType ty))
-      --AsType -> (HsFunBind [HsMatch nullLoc (HsIdent "unsafeCoerce") ....
-      --hier koennen nur HsExp berechnet werden, evtl. muss an einer "hoeheren"
-      --Stelle der Funktionsaufruf der Cast-funktion gebastelt werden
-      --bei AsType koennte t1::ty reichen, da Subtypen als Typsynonyme
-      --uebersetzt werden
-      AsType -> (HsExpTypeSig nullLoc 
-	                     (translateTerm as tm t1)
-                             (HsQualType [] $ translateType ty))
-      --InType ->
-      --Funktionsaufruf einer Testfunktion, evtl. an "hoeherer" Stelle
-      _ -> error "TypedTerm not yet finished"
+    QuantifiedTerm _quant _vars _t1 _pos -> -- forall ... ?
+        error ("Translation of QuantifiedTerm not possible" ++ show t)
+    LambdaTerm pats _part t1 _pos -> 
+        HsLambda nullLoc
+                 (map (translatePattern tm as) pats)
+	         (translateTerm as tm t1)
 
-  --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... ?
+    CaseTerm t1 progeqs _pos -> 
+        HsCase (translateTerm as tm t1) (translateCaseProgEqs progeqs)
 
-  LambdaTerm pats _part t1 _pos -> 
-      HsLambda nullLoc
-               (map translatePattern pats)
-	       (translateTerm as tm t1)
+    LetTerm progeqs t1 _pos -> 
+        HsLet (translateProgEqs progeqs) (translateTerm as tm t1)
 
-  CaseTerm t1 progeqs _pos -> 
-      HsCase (translateTerm as tm t1) (translateCaseProgEqs progeqs)
-
-  LetTerm progeqs t1 _pos -> 
-      HsLet (translateProgEqs progeqs) (translateTerm as tm t1)
-
-  TermToken _ttok -> error ("unexpected term (TermToken): " ++ show t)
-  MixfixTerm _ts -> error ("unexpected term (MixfixTerm): " ++ show t)
-  BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
-  _ -> error ("translateTerm not finished; Term: " ++ show t)
-
-findSimilarId :: Id -> [Id] -> Id
-findSimilarId i ilist = 
-  let filtered = filter (== i) ilist
-  in if filtered == [] then
-       head $ filter (isSimilarId i) ilist
-     else head filtered
-
-isSimilarId :: Id -> Id -> Bool
-isSimilarId (Id tlist1 idlist1 _) (Id tlist2 idlist2 _) =
-  idlist1 == idlist2 && areSimilarTokens tlist1 tlist2
-
-areSimilarTokens :: [Token] -> [Token] -> Bool
-areSimilarTokens [] [] = True
-areSimilarTokens (_t:_ts) [] = False
-areSimilarTokens [] (_t:ts) = length ts == 0
-areSimilarTokens (t1:ts1) (t2:ts2) = 
-   t1 == t2 && areSimilarTokens ts1 ts2
-
-
-canUnify :: TypeMap -> TypeScheme -> OpInfos -> Bool
-canUnify tm ts (OpInfos infos) = 
-    or $ map (isUnifiable tm 0 ts) (map opType infos)
+    TermToken _ttok -> err
+    MixfixTerm _ts -> err
+    BracketTerm _ _ _ -> err
 
 --Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
 -- | Conversion of patterns form HasCASL to haskell.
-translatePattern :: Pattern -> HsPat
-translatePattern pat = 
+translatePattern :: TypeMap -> Assumps -> Pattern -> HsPat
+translatePattern tm as pat = 
   let err = error ("unexpected pattern: " ++ show pat) in
     case pat of
-    PatternVar (VarDecl v _ty _sepki _pos) 
-	-> HsPVar $ HsIdent $ translateIdWithType LowerId v
-    --PatternConstr .... -> HsPRec HsQname [HsPatField]
-    PatternConstr _ioid _ts _pats _pos -> error "PatternConstr nyi"
-    PatternToken _ -> err
-    BracketPattern _ _ _ -> err
-    TuplePattern pats _pos -> HsPTuple $ map translatePattern pats
-    MixfixPattern _ -> err
-    TypedPattern p _ty _pos -> translatePattern p --Typ evtl implizit
-    --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
-    AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
+      PatternVar (VarDecl v _ty _sepki _pos) 
+	  -> HsPVar $ HsIdent $ translateIdWithType LowerId v
+      --PatternConstr .... -> HsPRec HsQname [HsPatField]
+      PatternConstr (InstOpId uid _t _p) ts pats _pos -> 
+        let oid = findUniqueId uid ts tm as
+	in case oid of
+	     Just i -> 
+		 HsPApp (UnQual $ HsIdent $ translateIdWithType LowerId i)
+	                (map (translatePattern tm as) pats)
+	     _ -> error ("Proplem with finding of unique id" ++ show pat)
+      PatternToken _ -> err
+      BracketPattern _ _ _ -> err
+      TuplePattern pats _pos -> HsPTuple $ map (translatePattern tm as) pats
+      MixfixPattern _ -> err
+      TypedPattern p _ty _pos -> translatePattern tm as p --Typ evtl implizit
+      --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
+      AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
 
 -- Uebersetzung der ProgEqs fuer einen HasCASL-Caseterm
 translateCaseProgEqs :: [ProgEq] -> [HsAlt]
 translateCaseProgEqs _progeqs = []
 
+--translateCaseProgEq :: ProgEq -> HsAlt
+--translateCaseProgEq (ProgEq pat t _pos) = error "nyi"
+
 --Uebersetzung der ProgEqs fuer einen HasCASL-Letterm
 translateProgEqs :: [ProgEq] -> [HsDecl]
 translateProgEqs _progeqs = []
 
-------------------------------------------------------------------------
--- Translation of Id's
-------------------------------------------------------------------------
-
--- | Converts an HasCASL identifier to a valid name in haskell 
--- regarding wether it should start with a lower or upper case letter.
-translateIdWithType :: IdCase -> Id -> String
-translateIdWithType ty (Id tlist idlist _poslist) = 
-  let s = translateId (Id tlist idlist _poslist)
-  in if ty == UpperId then
-        if (isLower $ head $ tokStr $ head tlist) || (head s == '_') then
-	  "A_" ++ s
-	else firstDigit s
-     else -- if ty == LowerId then
-        if isUpper $ head $ tokStr $ head tlist then
-           "a_" ++ s
-        else firstDigit s
-
--- | To determine, wether an identifier in haskell should start with an 
--- upper case or lower case letter.
-data IdCase = UpperId | LowerId deriving (Eq,Show)
-
--- | Converts an HasCASL identifier to a valid name in haskell.
-translateId :: Id -> String
-translateId (Id tlist idlist _poslist) = 
-    (translateTokens tlist) ++ (translateCompound idlist)
-
-
-translateTokens :: [Token] -> String
-translateTokens [] = ""
-translateTokens (t:ts) = 
-    let str = tokStr t
-        res = translateTokens ts in
-    if isPlace t then
-      subPlace ++ res
-    else (concatMap symbolMapping str) ++ res
-
-startsWithDigit :: String -> Bool
-startsWithDigit s = isDigit $ head s
-
-firstDigit :: String -> String
-firstDigit s = if startsWithDigit s then
-	         "_D" ++ s
-	       else s
-
-subPlace :: String
-subPlace = "_2"
-
-symbolMapping :: Char -> String
-symbolMapping c = Map.findWithDefault [c] c symbolMap
-
-translateCompound :: [Id] -> String
---  [      ,      ]
--- _C     _k     _J
-translateCompound [] = ""
-translateCompound ids = "_C" ++
-                        (concat $ intersperse "_k" $ map translateId ids) ++
-                        "_J"
-
-symbolMap :: Map.Map Char String
-symbolMap = Map.fromList symbolTable
-
-symbolTable :: [(Char,String)]
-symbolTable = 
--- Special / reserved
-   [('_' , "_1"),    -- \95
-    ('{' , "_b"),    -- \123
-    ('}' , "_r"),    -- \125
-    ('[' , "_s"),    -- \91
-    (']' , "_q"),    -- \93
-    ('.' , "_d"),    -- \46
-    ('\'', "_p"),
--- Symbols
-    ('+' , "_P"),    -- \43
-    ('-' , "_M"),    -- \45
-    ('*' , "_T"),    -- \42
-    ('/' , "_D"),    -- \47
-    ('\\', "_B"),    -- \92
-    ('&' , "_A"),    -- \38
-    ('=' , "_I"),    -- \61
-    ('<' , "_L"),    -- \60
-    ('>' , "_G"),    -- \62
-    ('!' , "_E"),    -- \33
-    ('?' , "_Q"),    -- \63
-    (':' , "_C"),    -- \58
-    ('$' , "_S"),    -- \36
-    ('@' , "_O"),    -- \64
-    ('#' , "_H"),    -- \35
-    ('^' , "_V"),    -- \94
-    ('|' , "_I"),    -- \124
-    ('~' , "_N"),    -- \126
-    ('¡' , "_e"),    -- \161
-    ('¢' , "_c"),    -- \162   
-    ('£' , "_l"),    -- \163
-    ('§' , "_f"),    -- \167
-    ('©' , "_a"),    -- \169
-    ('¬' , "_n"),    -- \172
-    ('°' , "_h"),    -- \176
-    ('±' , "_k"),    -- \177
-    ('²' , "_w"),    -- \178
-    ('³' , "_t"),    -- \179
-    ('µ' , "_y"),    -- \181
-    ('¶' , "_j"),    -- \182
-    ('·' , "_i"),    -- \183
-    ('¹' , "_o"),    -- \185
-    ('¿' , "_q"),    -- \191
-    ('×' , "_m"),    -- \215
-    ('÷' , "_g")]    -- \247
-
-
-type DistinctOpId = Id
