@@ -1,0 +1,13 @@
+package
+identification
+  name=haterm
+  version=1.0
+  location=http://www.cwi.nl/~jvisser/downloads
+  info=http://www.cs.vu.nl/Strafunski
+  description='Haskell ATerm Library: Haskell support for ATerms'
+  keywords=Haskell, ATerms, ATerm, Strafunski
+
+interface
+  
+requires
+  

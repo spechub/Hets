@@ -1,0 +1,65 @@
+dnl Copyright (C) 2001 Merijn de Jonge <mdejonge@cwi.nl>
+dnl                    Eelco Visser <visser@acm.org>
+dnl                    Joost Visser <jvisser@cwi.nl>
+dnl
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+
+dnl $Id$
+
+AC_INIT(configure.in)
+AM_INIT_AUTOMAKE(__PACKAGE__,__VERSION__)
+
+dnl Let aclocal use macros in ./config directory
+ACLOCAL="${ACLOCAL} -I ./ac-macros"
+
+
+
+dnl Package switches.
+
+dnl Example:
+dnl
+dnl AC_ARG_WITH(aterm,    
+dnl    [  --with-aterm            Specify location of aterm library, default: ${prefix}], ATERM=$withval, ATERM=${prefix})
+dnl AC_SUBST(ATERM)
+
+
+
+AC_REVISION($Id$)
+
+AC_PROG_CC
+AC_PROG_INSTALL
+
+
+AC_PATH_PROGS(SH, sh)
+
+TOOLS=__TOOLS__
+UNRELEASED=__UNRELEASED__
+RELEASED=__RELEASED__
+
+AC_SUBST(TOOLS)
+AC_SUBST(RELEASED)
+AC_SUBST(UNRELEASED)
+
+AC_OUTPUT( 
+	Makefile 
+	VERSION 
+
+        ac-macros/Makefile
+	src/Makefile 
+	
+        __MAKEFILES__
+
+)

@@ -1,0 +1,126 @@
+-------------------------
+The Haskell ATerm Library
+-------------------------
+
+
+Author:		Joost Visser, CWI, 2002
+
+
+ATerms
+------
+
+  The ATerms provide a generic format for representation and exchange
+  of (annotated) terms.
+
+  ATerms were developed in the context of the ASF+SDF Meta-Environment.
+  They are also used by the rewriting language Stratego, by the
+  transformation tool bundle XT, by the visitor generator JJForester, and
+  by numerous other tools developed at CWI, Universiteit Utrecht, and
+  elsewhere.
+
+  The ATerm Library (http://www.cwi.nl/projects/MetaEnv/aterm/) provides
+  implementations of the ATerm Library in C and Java, including numerous
+  ATerm command line utilities implemented in C.
+
+This package
+------------
+
+  This package provides support for ATerms in Haskell. Currently this
+  includes the following:
+
+  * Representation of ATerms			(ATermAbstractSyntax.hs)
+  * Reading and writing ATerms to/from Strings  (ATermReadWrite.hs)
+  * Conversion betweens ATerms and user types	(ATermConversion.hs)
+
+How to install
+--------------
+
+The modules of this library can be used as-is, but if you want to run checks,
+install source files, or create a (re-)distribution, you need to configure
+and build it. This is done as follows:
+
+  ./reconf
+  ./configure
+  gmake
+
+Or, if you additionally want to install the library:
+
+  ./reconf
+  ./configure --prefix=<dir>
+  gmake install
+
+To run checks:
+
+  gmake check
+
+Note that hugs and runhugs must be in your path.
+
+
+How to use
+----------
+
+  1. Search path
+
+       Make sure the src directory is in your Haskell search path.
+       For Hugs, this means you should use the -P command line switch.
+
+  2. Import ATermLib
+
+       Import the top level module ATermLib into your Haskell program.
+
+  3. Provide ATermConvertible instances
+
+       Provide instances of the ATermConvertible class for all the 
+       datatypes that you want to convert to/from ATerms. You can 
+       peek at Test.hs to figure out how.
+
+       Automatic generation of instances is supported by the 
+       DrIFT-Strafunski pre-compiler. See below.
+
+
+Automatic instance generation
+-----------------------------
+
+  The pre-compiler DrIFT from the Strafunski distribution can
+  be used to generate instances of the ATermConvertible class
+  automatically from your datatype definitions.
+
+  1. Get the Strafunski version of DrIFT from 
+
+       http://www.cs.vu.nl/Strafunski/
+
+  2. Add the following DrIFT directive to your file:
+
+       {-! global: ATermConvertible !-}
+
+  3. Import the Haskell ATermLib into your file:
+
+       import ATermLib
+
+  4. Run DrIFT on your file.
+
+       DrIFT YourFile.hs.src > YourFile.hs
+
+
+  
+Links
+-----
+
+  Strafunski
+    http://www.cs.vu.nl/Strafunski/
+
+  ATerm Library for C and Java
+    http://www.cwi.nl/projects/MetaEnv/aterm/
+
+  ATerm Library for Java (alternative implementation)
+    http://www.loria.fr/equipes/protheo/SOFTWARES/ELAN/Toolkit/
+
+  XT (transformation tool bundle)
+    http://www.program-transformation.org/xt
+
+  Stratego
+    http://www.stratego-language.org
+
+  JJForester
+    http://www.jjforester.org
+

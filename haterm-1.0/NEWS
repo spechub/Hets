@@ -1,0 +1,22 @@
+Release 1.0 of The Haskell ATerm Library  is now available from
+
+  http://www.cwi.nl/~jvisser/downloads/haterm-1.0.tar.gz
+
+This package provides support for ATerms in Haskell. Currently this
+includes the following:
+
+  * Representation of ATerms                    (no sharing)
+  * Reading and writing ATerms to/from Strings  (plain text and TAF)
+  * Conversion betweens ATerms and user types   (marshalling)
+
+For marshalling user types to/from ATerms, instances of the class
+ATermConvertible must be provided. The pre-compiler DrIFT from the
+Strafunski distribution can be used to generate such instances
+automatically from your datatype definitions. You can get the
+Strafunski version of DrIFT from:
+
+  http://www.cs.vu.nl/Strafunski/
+
+Feedback is much appreciated!
+	--Joost Visser
+

@@ -1,0 +1,11 @@
+module Test where
+
+import ATermLib
+
+data SortA = A1 SortA SortB
+           | A2
+           deriving (Read,Show,Eq)
+data SortB = B1 SortA
+           deriving (Read,Show,Eq)
+
+{-! global : ATermConvertible !-}
