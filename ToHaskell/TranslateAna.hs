@@ -143,9 +143,9 @@ translateAssumps as tm =
   concat $ map (translateAssump as tm) $ distinctOpIds $ Map.toList as
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
-distinctOpIds :: [(Id,[OpInfo])] -> [(DistinctOpId, OpInfo)]
+distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfo)]
 distinctOpIds [] = []
-distinctOpIds ((i,info):(idInfoList)) = 
+distinctOpIds ((i,OpInfos info):(idInfoList)) = 
   let len = length info in
   if len == 0 then
      distinctOpIds idInfoList
@@ -153,7 +153,8 @@ distinctOpIds ((i,info):(idInfoList)) =
      if len == 1 then
         ((i,head info):(distinctOpIds (idInfoList)))
      else -- if len > 1
-        ((newName i len,head info):(distinctOpIds((i,tail info):(idInfoList))))
+        ((newName i len,head info):(distinctOpIds((i, OpInfos $ tail info)
+						  :(idInfoList))))
 
 -- Durchnummerierung von überladenen Funktionsnamen
 newName :: Id -> Int -> Id
@@ -269,8 +270,9 @@ translateTerm as tm t = case t of
   BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
   _ -> error ("translateTerm not finished; Term: " ++ show t)
 
-canUnify :: TypeMap -> TypeScheme -> [OpInfo] -> Bool
-canUnify tm ts infos = or $ map (isUnifiable tm 0 ts) (map opType infos)
+canUnify :: TypeMap -> TypeScheme -> OpInfos -> Bool
+canUnify tm ts (OpInfos infos) = 
+    or $ map (isUnifiable tm 0 ts) (map opType infos)
 
 -- uebersetzt die Typen aus InstOpId zu Expressions 
 -- (fuer die zweite Expression fuer die HsApp aus einer QualOp)
