@@ -1,8 +1,3 @@
- {- list of datatype definitions
-    each of these consists of a list of (mututally recursive) datatypes
-    each datatype consists of its name (Typ) and a list of constructors
-    each constructor consists of its name (String) and list of argument types
- -}                      
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
@@ -13,7 +8,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Data structures for Isabelle sigantures and theories.
+   Data structures for Isabelle signatures and theories.
    Adapted from Isabelle.
 -}
 
@@ -43,11 +38,6 @@ data IsaClass  = IsaClass { classId :: String, classDef :: [Axiom] }
               | ClFun IsaClass IsaClass          
               deriving (Ord, Eq, Show)   
 
---instance PPrint IsaClass where
---   pprint (IsaClass c _) = text "(" <> text c <> text ")"
---   pprint (ClFun c1 c2) =   
---           text "(" <> pprint c1 <> text ")->(" <> pprint c2 <> text ")"
-
 type Sort  = [IsaClass]
 
 domain:: Sort
@@ -76,7 +66,7 @@ data Typ = Type  { typeId   :: String,
                    typeSort  :: Sort}
          | TVar  { indexname :: Indexname, -- (String,Int)
                    typeSort  :: Sort }
-         deriving (Eq, Ord)
+         deriving (Eq, Ord, Show)
 
 noType :: Typ
 noType = dummyT
@@ -90,14 +80,23 @@ boolType = Type "bool" [holType] []
 mkOptionType :: Typ -> Typ
 mkOptionType t = Type "option" [holType] [t]
 
+prodS :: String 
+prodS = "*"    -- this is printed as it is!
+
 mkProductType :: Typ -> Typ -> Typ
-mkProductType t1 t2 = Type "*" [ho_ho_ho] [t1,t2]
+mkProductType t1 t2 = Type prodS [ho_ho_ho] [t1,t2]
+
+typeApplS :: String 
+typeApplS = "typeAppl" -- maybe this should be " " for printing
 
 mkTypeAppl :: Typ -> Typ -> Typ
-mkTypeAppl t1 t2 = Type "typeAppl" [ho_ho_ho] [t1,t2]
+mkTypeAppl t1 t2 = Type typeApplS [ho_ho_ho] [t1,t2]
+
+funS :: String 
+funS = "fun"  -- may be this should be "=>" for printing
 
 mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type "fun" [ho_ho_ho] [s,t] -- was "-->" before
+mkFunType s t = Type funS [ho_ho_ho] [s,t] -- was "-->" before
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 mkCurryFunType :: [Typ] -> Typ -> Typ
@@ -139,7 +138,7 @@ mkDomAppl t1 t2 = Type "domAppl" domain [t1,t2]
   It is possible to create meaningless terms containing loose bound vars
   or type mismatches.  But such terms are not allowed in rules. -}
 
-data Flag = IsCont | NotCont deriving (Eq,Ord)
+data Flag = IsCont | NotCont deriving (Eq, Ord ,Show)
 
 data Term =
         Const { termBasicId::String, 
@@ -170,11 +169,11 @@ data Term =
               inId::Term, 
               flag::Flag }   -- Let
       | Fix { funId::Term }
-      deriving (Eq, Ord)
+      deriving (Eq, Ord, Show)
 
 --      | CApp { funId::Term, termId::Term, proofObl::ProofObl } -- application
 
-data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord) 
+data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
 
 
 -------------------- from src/Pure/sorts.ML ------------------------
@@ -242,7 +241,7 @@ data TypeSig =
     univ_witness:: Maybe (Typ, Sort),
     abbrs:: Map.Map String ([String], Typ),
     arities:: Arities }
-   deriving (Eq)
+   deriving (Eq, Show)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
@@ -265,7 +264,7 @@ data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    syn :: Syntax,
                    showLemmas :: Bool
                  }
-             deriving (Eq)
+             deriving (Eq, Show)
 
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes

@@ -12,6 +12,7 @@ Portability :  portable
 -}
 {-
   todo: brackets in (? x . p x) ==> q
+  properly construct docs
 -}
 
 module Isabelle.IsaPrint where
@@ -23,31 +24,34 @@ import qualified Common.Lib.Map as Map
 
 ------------------- Printing functions -------------------
 
-instance Show Sentence where
-  show s = show (senTerm s)
+instance PrettyPrint IsaClass where
+     printText0 _ (IsaClass c _) = parens $ text c
+     printText0 ga (ClFun c1 c2) = parens (printText0 ga c1)
+      <> text "->" <> parens (printText0 ga c2)
 
 instance PrintLaTeX Sentence where
     printLatex0 = printText0
 
 instance PrettyPrint Sentence where
-    printText0 _ = text . show
+    printText0 _ = text . showTerm . senTerm
 
-instance Show Typ where
-  show = showTyp 1000
+instance PrettyPrint Typ where
+  printText0 _ = text . showTyp 1000
 
 showTyp :: Integer -> Typ -> String
-showTyp pri (Type "typeAppl" _ [s,t]) =
-  if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
-    else showTyp pri s ++ sp ++ showTyp pri t
-  where withTFrees tv =
-          case tv of
-            TFree _ _ -> True
-            Type _ _ ts -> and (map withTFrees ts)
-            _      -> False
-showTyp pri (Type "fun" _ [s,t]) = 
-  bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
-showTyp pri (Type "*" _ [s,t]) =
-  lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
+showTyp pri (Type str _ [s,t]) 
+  | str == typeApplS = 
+     if withTFrees t then showTyp pri t ++ sp ++ showTyp pri s
+        else showTyp pri s ++ sp ++ showTyp pri t
+  | str == funS =
+       bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 11 t)
+  | str == prodS = 
+       lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
+            where withTFrees tv =
+                      case tv of
+                              TFree _ _ -> True
+                              Type _ _ ts -> and (map withTFrees ts)
+                              _      -> False
 showTyp _ (Type name _ args) = 
   case args of
     []     -> name
@@ -62,17 +66,18 @@ showTyp _ (Type name _ args) =
 showTyp _ (TFree v _) = "\'" ++ v
 showTyp _ (TVar (v,_) _) = "?\'" ++ v
 
-instance Show TypeSig where
-  show tysig =
-    if Map.isEmpty (tycons tysig) then em
-      else Map.foldWithKey showTycon em (tycons tysig) 
+instance PrettyPrint TypeSig where
+  printText0 _ tysig =
+    if Map.isEmpty (tycons tysig) then empty
+      else text $ Map.foldWithKey showTycon em (tycons tysig) 
     where showTycon t arity rest =
             "typedecl "++
             (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
              else em) ++ show t  ++"\n"++rest
 
-instance Show Term where
-  show = showTerm -- outerShowTerm   -- back to showTerm, because meta !! causes problems with show ?thesis
+instance PrettyPrint Term where
+  printText0 _ = text . showTerm -- outerShowTerm   
+  -- back to showTerm, because meta !! causes problems with show ?thesis
 
 showTerm :: Term -> String
 showTerm (Const c _ _) = c
@@ -116,7 +121,7 @@ showCaseAlt (pat, term) =
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
-  (s++sp++showTerm var++" :: "++show typ++" . "++showTerm term)
+  (s++sp++showTerm var++" :: "++showTyp 1000 typ++" . "++showTerm term)
 
 outerShowTerm :: Term -> String
 outerShowTerm (App (Const "All" _ _) (Abs v ty t _) _) = 
@@ -132,7 +137,7 @@ outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
 outerShowQuant s var typ term =
-  (s++sp++showTerm var++" :: "++show typ++" . "++outerShowTerm term)
+  (s++sp++showTerm var++" :: "++showTyp 1000 typ++" . "++outerShowTerm term)
 
 
 {-   
@@ -191,10 +196,10 @@ toPrecTree trm =
     App c1@(Const "All" _ _) a2@(Abs _ _ _ _) _-> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
             [toPrecTree c1, toPrecTree a2]
-    App c1@(Const "Ex" t1 c) a2@(Abs _ _ _ _) _ -> 
+    App c1@(Const "Ex" _ _) a2@(Abs _ _ _ _) _ -> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
             [toPrecTree c1, toPrecTree a2]
-    App c1@(Const "Ex1" t1 c) a2@(Abs _ _ _ _) _ -> 
+    App c1@(Const "Ex1" _ _) a2@(Abs _ _ _ _) _ -> 
        Node (isaAppPrec (Const "QUANT" noType isaTerm)) 
             [toPrecTree c1, toPrecTree a2]
     App t1 t2 _ -> 
@@ -221,9 +226,6 @@ toPrecTree trm =
                [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec trm) []
 
-
--- instance Show PrecTermTree where
---    show = showPTree
 
 data Assoc = LeftAs | NoAs | RightAs
 
@@ -375,36 +377,33 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
 -- st (t1 `App` t2) = "App(["++st t1++"],["++st t2++"])"
 
 
-instance Show Sign where
-  show sig =
-    baseSig sig ++":\n\n"++
-    shows (tsig sig) (showDataTypeDefs (dataTypeTab sig))
-      ++ (showsConstTab (constTab sig))
+instance PrettyPrint Sign where
+  printText0 ga sig = text
+    (baseSig sig) <> colon $$
+    printText0 ga (tsig sig) $$
+    showDataTypeDefs (dataTypeTab sig) $$
+    showsConstTab (constTab sig)
     where
     showsConstTab tab =
-     if Map.isEmpty tab then ""
-      else "\nconsts\n" ++ Map.foldWithKey showConst "" tab
-    showConst c t rest = show c ++ " :: " ++ "\"" ++ show t 
-                                ++ "\"" ++ showDecl c ++ "\n" ++ rest
+     if Map.isEmpty tab then empty
+      else text("consts") $$ Map.foldWithKey showConst empty tab
+    showConst c t rest = text (show c ++ " :: " ++ "\"" ++ showTyp 1000 t 
+                                ++ "\"" ++ showDecl c) $$ rest
     showDecl c = sp ++ sp ++ sp ++ "( \"" ++ c ++ "\" )"
-    showDataTypeDefs dtDefs = concat $ map showDataTypeDef dtDefs
+    showDataTypeDefs dtDefs = vcat $ map (text . showDataTypeDef) dtDefs
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
        ++ (concat $ map (("and "++) . showDataType) dts) ++ "\n"
     showDataType (_,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
-       show t ++ " = " ++ showOp op 
+       showTyp 1000 t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
                     TFree _ _-> show arg
                     _      -> "\"" ++ show arg ++ "\""
-
-
-instance PrettyPrint Sign where
-    printText0 _ = text . show
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
