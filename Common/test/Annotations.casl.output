@@ -1,8 +1,8 @@
 %% many legal annotations for testing purposes
 %{group comment 
-  %{
-    over many lines
-  %% } % }%
+%{
+  over many lines
+%% } % }%
 %%line comment starting immidiately after %%containing %{ }% , ending in %%
 %(one_line_label)%
 %(multi 
