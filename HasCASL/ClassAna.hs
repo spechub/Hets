@@ -11,7 +11,6 @@ module HasCASL.ClassAna where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.Merge
 import Common.Id
 import HasCASL.Le
 import Data.List

@@ -13,7 +13,6 @@ import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.ClassAna
 import HasCASL.ClassDecl
-import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
 import Common.Lexer 
