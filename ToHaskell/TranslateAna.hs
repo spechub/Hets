@@ -185,7 +185,8 @@ translateType t =
 
 
 toProgPos :: Pos -> SrcLoc
-toProgPos p = SrcLoc (sourceName p) 0 (sourceLine p) (sourceColumn p)
+toProgPos p = if isNullPos p then loc0 else let SourcePos n l c = p
+              in SrcLoc n (1000 + (l-1) * 80 + c) l c 
 
 mkHsIdent :: IdCase -> Id -> SN HsName
 mkHsIdent c i = SN (UnQual $ translateIdWithType c i)
@@ -258,14 +259,15 @@ translatePattern env pat = case pat of
           let tp = translatePattern env p1
               a = translatePattern env p2
               in case struct tp of
-                 HsPApp u os -> rec $ HsPApp u (os ++ [a])
+                 HsPApp u os -> rec $ HsPParen $ rec $ HsPApp u (os ++ [a])
+                 HsPParen (Pat (HsPApp u os)) -> 
+                     rec $ HsPParen $ rec $ HsPApp u (os ++ [a])
                  _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _ -> 
           rec $ HsPTuple $ map (translatePattern env) pats
       TypedTerm _ InType _ _ -> error "translatePattern InType"
       TypedTerm p _ _ty _ -> translatePattern env p 
                                  --the type is implicit
-      --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern (VarDecl v ty _ _) p _ -> 
             let (c, i) = translateId env v $ simpleTypeScheme ty
                 hp = translatePattern env p
@@ -292,8 +294,8 @@ translateLetProgEq env (ProgEq pat t ps) =
 
 -- | Translation of a toplevel program equation
 translateProgEq :: Env -> ProgEq -> HsDecl
-translateProgEq env (ProgEq pat t ps) =
-    let loc = toProgPos ps in case getAppl pat of
+translateProgEq env (ProgEq pat t _) =
+    let loc = toProgPos $ posOfTerm pat in case getAppl pat of
     Just (uid, sc, args) -> 
         let (_, ui) = translateId env uid sc
         in hsFunBind loc [HsMatch loc ui
