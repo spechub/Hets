@@ -16,9 +16,6 @@ module Comorphisms.HasCASL2Haskell where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Common.Lib.Map as Map
-import Common.Lib.Set as Set
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -27,7 +24,9 @@ import Data.Dynamic
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.SymbItem
 import HasCASL.Symbol
+import HasCASL.RawSym
 import HasCASL.Morphism
 
 import ToHaskell.TranslateAna
@@ -71,7 +70,7 @@ instance Comorphism HasCASL2Haskell
 mapSignature :: Env -> Maybe(ModuleInfo,[Named AHsDecl]) 
 mapSignature sign = do 
      anaFun <- basic_analysis Haskell
-     let Result ds mt = anaFun (translateAna sign,  
+     let Result _ mt = anaFun (translateAna sign,  
 				empty_signature Haskell,
 				emptyGlobalAnnos)
      (_, _, r, hs) <- mt

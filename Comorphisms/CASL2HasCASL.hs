@@ -33,6 +33,8 @@ import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Symbol
+import HasCASL.SymbItem
+import HasCASL.RawSym
 import HasCASL.Morphism
 
 -- | The identity of the comorphism
@@ -56,7 +58,7 @@ instance Comorphism CASL2HasCASL
                BasicSpec Term SymbItems SymbMapItems
                HasCASL.Le.Env 
                HasCASL.Morphism.Morphism
-               HasCASL.Morphism.Symbol HasCASL.Morphism.RawSymbol () where
+               HasCASL.Symbol.Symbol HasCASL.RawSym.RawSymbol () where
     sourceLogic _ = CASL
     sourceSublogic _ = CASL_SL
                       { has_sub = False, -- no subsorting in HasCASL yet...
