@@ -111,13 +111,13 @@ data Qual t = [Pred] :=> t
 data TypeScheme = TypeScheme [TypeArg] (Qual Type) [Pos]
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
-                  deriving (Show, Eq)
+                  deriving (Show)
 
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] ([] :=> t) []
 
 
-data Partiality = Partial | Total deriving (Show, Eq)
+data Partiality = Partial | Total deriving (Show, Eq, Ord)
 
 data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
@@ -134,7 +134,7 @@ data PredItem = PredDecl [OpId] TypeScheme [Pos]
 data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq, Ord)
 
 data OpAttr = BinOpAttr BinOpAttr [Pos] 
-	    | UnitOpAttr Term [Pos] deriving (Show, Eq)
+	    | UnitOpAttr Term [Pos] deriving (Show)
 
 data DatatypeDecl = DatatypeDecl 
                     TypePattern 
@@ -149,24 +149,24 @@ data Alternative = Constructor UninstOpId [Components] Partiality [Pos]
 		   -- pos: "?"
 		 | Subtype [Type] [Pos]
 		   -- pos: "type", ","s
-		   deriving (Show, Eq)
+		   deriving (Show)
 
 data Components = Selector UninstOpId Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
 		| NoSelector Type
 		| NestedComponents [Components] [Pos]
 		  -- pos : "(", ";"s, ")"
-		  deriving (Show, Eq)
+		  deriving (Show)
 
 data Quantifier = Universal | Existential | Unique
-		  deriving (Show, Eq)
+		  deriving (Show, Eq, Ord)
 
-data TypeQual = OfType | AsType | InType deriving (Show, Eq)
+data TypeQual = OfType | AsType | InType deriving (Show, Eq, Ord)
 
-data BracketKind = Parens | Squares | Braces deriving (Show, Eq)
+data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
 
-data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq)
-data EqOp = EqualOp | ExEqualOp deriving (Show, Eq)
+data LogOp = NotOp | AndOp | OrOp | ImplOp | EquivOp deriving (Show, Eq, Ord)
+data EqOp = EqualOp | ExEqualOp deriving (Show, Eq, Ord)
 
 -- proper formulae only exist after static analysis
 data Formula = TermFormula Term 	  
@@ -180,7 +180,7 @@ data Formula = TermFormula Term
              -- pos quantifier, ";"s, dot
 	     | PolyFormula [TypeArg] Formula [Pos]
              -- pos "forall", ";"s, dot
-	       deriving (Show, Eq)
+	       deriving (Show)
 
 -- parse quantified formulae as terms first
 -- eases also parsing of formulae in parenthesis
@@ -210,7 +210,7 @@ data Term = CondTerm Term Formula Term [Pos]
           | MixfixTerm [Term]
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
-	    deriving (Show, Eq)
+	    deriving (Show)
 
 data Pattern = PatternVars [VarDecl] [Pos]
              -- pos ";"s 
@@ -226,22 +226,22 @@ data Pattern = PatternVars [VarDecl] [Pos]
 	     | TypedPattern Pattern Type [Pos]	     -- pos ":"  
 	     | AsPattern Pattern Pattern [Pos]
 	     -- pos "@"
-	       deriving (Show, Eq)
+	       deriving (Show)
 
-data ProgEq = ProgEq Pattern Term Pos deriving (Show, Eq)
+data ProgEq = ProgEq Pattern Term Pos deriving (Show)
 	    -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls
 -- ----------------------------------------------------------------------------
 
-data SeparatorKind = Comma | Other deriving (Show, Eq)
+data SeparatorKind = Comma | Other deriving (Show)
 
-data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show, Eq)
+data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving (Show)
 	       -- pos "," or ":" 
 
 data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
-	       deriving (Show, Eq)
+	       deriving (Show)
 
 data GenVarDecl = GenVarDecl VarDecl
 		| GenTypeVarDecl TypeArg
@@ -312,4 +312,77 @@ instance Eq Type where
     LazyType t1 _ == LazyType t2 _ = t1 == t2 
     ProductType l1 _ == ProductType l2 _ = l1 == l2
     FunType f1 a1 g1 _ == FunType f2 a2 g2 _ = (f1, a1, g1) == (f2, a2, g2)
+    _ == _ = False
+
+instance Eq TypeArg where
+    TypeArg i1 k1 _ _ == TypeArg i2 k2 _ _ = (i1, k1) == (i2, k2)
+
+-- this is strict syntactic equality
+-- unification only captures analysed types and ignores lazy types! 
+instance Eq TypeScheme where
+    TypeScheme v1 t1 _ == TypeScheme v2 t2 _ = (v1, t1) == (v2, t2) 
+
+instance Eq VarDecl where
+    VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
+
+instance Eq Formula where
+    TermFormula t1 == TermFormula t2 = t1 == t2
+    ConnectFormula o1 l1 _ == ConnectFormula o2 l2 _ = (o1, l1) == (o2, l2)
+    EqFormula e1 s1 t1 _ == EqFormula e2 s2 t2 _ = 
+	e1 == e2 && ((s1, t1) == (s2, t2) || (t1, s1) == (s2, t2))
+    DefFormula t1 _ == DefFormula t2 _ = t1 == t2
+    QuantifiedFormula q1 v1 f1 _ == QuantifiedFormula q2 v2 f2 _ =
+	(q1, v1, f1) == (q2, v2, f2)
+    PolyFormula a1 f1 _ == PolyFormula a2 f2 _ = (a1, f1) == (a2, f2)
+    _ == _ = False
+		    
+instance Eq Term where
+    CondTerm s1 f1 t1 _ == CondTerm s2 f2 t2 _ = (s1, f1, t1) == (s2, f2, t2)
+    QualVar v1 t1 _ == QualVar v2 t2 _ = (v1, t1) == (v2, t2) 
+    QualOp i1 s1 _ == QualOp  i2 s2 _ = (i1, s1) == (i2, s2) 
+    ApplTerm s1 t1 _ == ApplTerm s2 t2 _ = (s1, t1) == (s2, t2) 
+    TupleTerm l1 _ == TupleTerm l2 _ = l1 == l2
+    TypedTerm s1 q1 t1 _ == TypedTerm s2 q2 t2 _ = (q1, t1, s1) == (q2, t2, s2)
+    QuantifiedTerm q1 v1 t1 _ == QuantifiedTerm q2 v2 t2 _ =
+	(q1, v1, t1) == (q2, v2, t2)
+    LambdaTerm v1 p1 t1 _ == LambdaTerm v2 p2 t2 _ = 
+	(p1, v1, t1) == (p2, v2, t2)
+    CaseTerm t1 e1 _ ==  CaseTerm t2 e2 _ = (t1, e1) == (t2, e2)
+    LetTerm e1 t1 _ == LetTerm e2 t2 _  = (t1, e1) == (t2, e2)
+    TermToken t1 == TermToken t2 = t1 == t2
+    MixfixTerm l1 == MixfixTerm l2 = l1 == l2
+    BracketTerm b1 l1 _ == BracketTerm b2 l2 _ = (b1, l1) == (b2, l2) 
+    _ == _ = False
+
+instance Eq Pattern where
+    PatternVars l1 _ == PatternVars l2 _ = l1 == l2 
+    PatternConstr i1 t1 l1 _ == PatternConstr i2 t2 l2 _ = 
+	(i1, l1, t1) == (i2, l2, t2)
+    PatternToken t1 == PatternToken t2 = t1 == t2
+    BracketPattern b1 l1 _ == BracketPattern b2 l2 _ = (b1, l1) == (b2, l2) 
+    TuplePattern l1 _ == TuplePattern l2 _ = l1 == l2
+    MixfixPattern l1 == MixfixPattern l2 = l1 == l2
+    TypedPattern p1 t1 _ == TypedPattern p2 t2 _ = (p1, t1) == (p2, t2) 
+    AsPattern p1 q1 _ == AsPattern p2 q2 _ = (p1, q1) == (p2, q2) 
+    _ == _ = False
+
+instance Eq ProgEq where
+   ProgEq p1 t1 _ == ProgEq p2 t2 _ = (p1, t1) == (p2, t2) 
+
+instance Eq OpAttr where 
+    BinOpAttr b1 _ == BinOpAttr b2 _ = b1 == b2
+    UnitOpAttr t1 _ == UnitOpAttr t2 _= t1 == t2
+    _ == _ = False
+
+instance Eq Alternative where 
+    Constructor i1 l1 p1 _ == Constructor i2 l2 p2 _ =
+	(i1, l1, p1) == (i2, l2, p2)
+    Subtype t1 _ == Subtype t2 _ = t1 == t2
+    _ == _ = False
+
+instance Eq Components where 
+    Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
+	(i1, t1, p1) == (i2, t2, p2)
+    NoSelector t1 == NoSelector t2 = t1 == t2
+    NestedComponents l1 _ == NestedComponents l2 _ = l1 == l2 
     _ == _ = False
