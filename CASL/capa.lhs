@@ -36,7 +36,7 @@ lineParser = [
  ("ShowFormMix", toStringParser testFormulaMix)]
 
 fileParser = [("BasicSpec", fromAParser basicSpec)
-	      , ("analysis", fromAParser runAna)
+	      , ("analysis", toStringParser runAna)
 	     ]
 
 \end{code}

@@ -1,19 +1,19 @@
 module CASL.RunStaticAna where
 
-import CASL.Static
-import CASL.Sign
+import CASL.StaticAna
 import Common.AnnoState
+import Common.GlobalAnnotations
 import Common.Result
-import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Lib.State
 import CASL.Parse_AS_Basic
-import CASL.PrintSign
+import CASL.AS_Basic_CASL
 
-instance PrettyPrint LocalEnv where
-    printText0 ga l = (printText0 ga $ getSign l)
---		     $$ ( vcat $ map (printText0 ga) $ getPsi l)
+localAnalysis :: GlobalAnnos -> BASIC_SPEC -> Result BASIC_SPEC
+localAnalysis ga bs = 
+    let (newbs, sig) = runState (ana_BASIC_SPEC ga bs) emptyEnv
+	in Result (envDiags sig) $ Just newbs
 
-runAna :: AParser (Result LocalEnv)
-runAna = 
+runAna :: GlobalAnnos -> AParser (Result BASIC_SPEC)
+runAna ga = 
     do b <- basicSpec
-       return $ ana_BASIC_SPEC emptyLocalEnv b
+       return $ localAnalysis ga b
