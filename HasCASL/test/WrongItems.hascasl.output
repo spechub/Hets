@@ -4,7 +4,7 @@ expecting [<id>,...,<id>], "%%", "%{", "%(", "%", ",", ":", "<", "{", ";", "sort
 
 parse error at 2.9:
 unexpected end of input
-expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?" or "="
+expecting casl char, underline word, "?", words, "__", signs, "(", "{", "[", "%%", "%{", "%(", "%", ":", cross, "->", "->?", "-->", "-->?", "=e=" or "="
 
 parse error at 3.5:
 unexpected "?"
