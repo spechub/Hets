@@ -109,7 +109,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                  deriving (Show, Eq)
 
 -- | a tuple pattern for 'SubtypeDefn' 
-data Vars = Var Var | VarTuple [Vars] [Pos] deriving (Show, Eq)
+data Vars = Var Var | VarTuple [Vars] [Pos] deriving Show
 
 data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos "("s, ")"s 
@@ -390,6 +390,11 @@ instance Eq TypeArg where
 -- unification only captures analysed types and ignores lazy types! 
 instance Eq TypeScheme where
     TypeScheme v1 t1 _ == TypeScheme v2 t2 _ = (v1, t1) == (v2, t2) 
+
+instance Eq Vars where
+    Var v1 == Var v2 = v1 == v2
+    VarTuple l1 _ == VarTuple l2 _ = l1 == l2
+    _ == _ = False
 
 instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 

@@ -174,7 +174,7 @@ inferAppl inf appl mt t1 t2 = do
 infer :: Maybe Type -> Term -> State Env [(Subst, Type, Term)]
 infer mt trm = do
     tm <- gets typeMap
-    let mUnify = unify tm mt . Just
+    let mUnify = mgu tm mt . Just
 	uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
     case trm of 
@@ -201,7 +201,7 @@ infer mt trm = do
 					      -> (eps, ty, oi)) insts
 		     Just inTy -> do 
                          let rs = concatMap ( \ (ty, oi) ->
-				  let Result _ ms = unify tm inTy ty in
+				  let Result _ ms = mgu tm inTy ty in
 				  case ms of Nothing -> []
 					     Just s -> [(s, ty, oi)]) insts
 			 if null rs then 
@@ -235,7 +235,7 @@ infer mt trm = do
 	    Just ty -> do 
 	        vs <- freshVars ts
 	        let pt = ProductType vs []
-	            Result ds ms = unify tm ty pt
+	            Result ds ms = mgu tm ty pt
 		uniDiags ds
 	        case ms of 
 		     Nothing -> return []
@@ -365,7 +365,7 @@ Quantifier [GenVarDecl] Term [Pos]
 inferPat :: Maybe Type -> Pattern -> State Env [(Subst, Type, Pattern)]
 inferPat mt pat = do 
     tm <- gets typeMap
-    let mUnify = unify tm mt . Just
+    let mUnify = mgu tm mt . Just
 	uniDiags = addDiags . map (improveDiag pat)
     as <- gets assumps
     case pat of
@@ -392,7 +392,7 @@ inferPat mt pat = do
 					      -> (eps, ty, oi)) insts
 		     Just inTy -> do 
                          let rs = concatMap ( \ (ty, oi) ->
-				  let Result _ ms = unify tm inTy ty in
+				  let Result _ ms = mgu tm inTy ty in
 				  case ms of Nothing -> []
 					     Just s -> [(s, ty, oi)]) insts
 			 if null rs then 
@@ -422,7 +422,7 @@ inferPat mt pat = do
 	    Just ty -> do
 	        vs <- freshVars ts
 	        let pt = ProductType vs []
-	            Result ds ms = unify tm ty pt
+	            Result ds ms = mgu tm ty pt
 	        uniDiags ds
 	        case ms of 
 		     Nothing -> return []

@@ -49,6 +49,7 @@ addTypeId warn defn _ kind i =
 addTypeKind :: Bool -> TypeDefn -> Id -> Kind -> State Env () 
 addTypeKind warn d i k = 
     do tk <- gets typeMap
+       c <- gets counter
        let rk = rawKind k
        case Map.lookup i tk of
 	      Nothing -> putTypeMap $ Map.insert i 
@@ -58,7 +59,7 @@ addTypeKind warn d i k =
 		     then do let isKnownInst = k `elem` ks
 				 insts = if isKnownInst then ks else
 					mkIntersection (k:ks)
-				 Result ds mDef = merge defn d
+				 Result ds mDef = mergeTypeDefn tk c defn d
 			     if warn && isKnownInst && case (defn, d) of 
 			         (PreDatatype, DatatypeDefn _ _ _) -> False
 			         _ -> True
@@ -145,7 +146,7 @@ addOpId i sc attrs defn =
           if null l then do putAssumps $ Map.insert i 
 					(OpInfos (oInfo : r )) as
 			    return $ Just i
-	  else do let Result es mo = merge (head l) oInfo
+	  else do let Result es mo = mergeOpInfo tm c (head l) oInfo
 		  addDiags $ map (improveDiag i) es
 		  case mo of 
 		      Nothing -> return Nothing

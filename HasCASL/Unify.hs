@@ -47,10 +47,13 @@ compSubst :: Subst -> Subst -> Subst
 compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2  
 
 -- | unifiability of type schemes including instantiation with fresh variables 
--- and looking up type aliases
+-- (and looking up type aliases)
 isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
-isUnifiable tm c sc1 sc2 = isJust $ maybeResult $ fst $
-			   runState (unifIable tm sc1 sc2) c
+isUnifiable tm c = asSchemes c (unify tm) 
+
+-- | test if second scheme is a substitution instance
+instScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
+instScheme tm c = asSchemes c (subsume tm) 
 
 -- | lift 'State' Int to 'State' Env
 toEnvState :: State Int a -> State Env a 
@@ -60,11 +63,14 @@ toEnvState p =
        put s { counter = c }
        return r 
 
-unifIable :: TypeMap -> TypeScheme -> TypeScheme -> State Int (Result Subst)
-unifIable tm sc1 sc2 =
+toSchemes :: (Type -> Type -> a) -> TypeScheme -> TypeScheme -> State Int a
+toSchemes f sc1 sc2 =
     do t1 <- freshInst sc1
        t2 <- freshInst sc2
-       return $ unify tm t1 t2
+       return $ f t1 t2
+
+asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
+asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
 -- -------------------------------------------------------------------------
 freshInst :: TypeScheme -> State Int Type
@@ -100,9 +106,13 @@ class Unifiable a where
     subst :: Subst -> a -> a
     match :: TypeMap -> (Bool, a) -> (Bool, a) -> Result Subst
 
--- | is a matching where both sides may contribute substitutions
-unify :: Unifiable a => TypeMap -> a -> a -> Result Subst
-unify tm a b = match tm (True, a) (True, b)
+-- | most general unifier via 'match' 
+-- where both sides may contribute substitutions
+mgu :: Unifiable a => TypeMap -> a -> a -> Result Subst
+mgu tm a b = match tm (True, a) (True, b)
+
+unify :: Unifiable a => TypeMap -> a -> a -> Bool
+unify tm a b = isJust $ maybeResult $ mgu tm a b 
 
 subsume :: Unifiable a => TypeMap -> a -> a -> Bool
 subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)

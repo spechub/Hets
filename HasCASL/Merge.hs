@@ -28,9 +28,10 @@ import Common.Result
 instance Mergeable Env where
     merge e1 e2 =
 	do cMap <- merge (classMap e1) $ classMap e2
-	   tMap <- merge (typeMap e1) $ typeMap e2
 	   let m = max (counter e1) $ counter e2
-	   as <- mergeAssumps tMap m 
+	   tMap <- mergeMap (mergeTypeInfo Map.empty m) 
+		   (typeMap e1) $ typeMap e2
+	   as <- mergeMap (mergeOpInfos tMap m) 
 		 (assumps e1) $ assumps e2
 	   return $ Env cMap tMap as (sentences e1 ++ sentences e2) 
 		      (envDiags e1 ++ envDiags e2) m
@@ -81,15 +82,17 @@ instance Mergeable Kind where
 mergeList :: Eq a => [a] -> [a] -> Result [a]
 mergeList l1 l2 = return $ nub (l1 ++ l2)
 
-instance Mergeable TypeInfo where
-    merge t1 t2 = do k <- merge (typeKind t1) $ typeKind t2
-		     o <- mergeList (otherTypeKinds t1) $ otherTypeKinds t2
-		     s <- mergeList (superTypes t1) $ superTypes t2
-	             d <- merge (typeDefn t1) $ typeDefn t2
-		     return $ TypeInfo k o s d 
+mergeTypeInfo :: TypeMap -> Int -> TypeInfo -> TypeInfo -> Result TypeInfo 
+mergeTypeInfo tm c t1 t2 = 
+    do k <- merge (typeKind t1) $ typeKind t2
+       o <- mergeList (otherTypeKinds t1) $ otherTypeKinds t2
+       s <- mergeList (superTypes t1) $ superTypes t2
+       d <- mergeTypeDefn tm c (typeDefn t1) $ typeDefn t2
+       return $ TypeInfo k o s d 
 
-instance Mergeable TypeDefn where
-    merge d1 d2 = 
+
+mergeTypeDefn :: TypeMap -> Int -> TypeDefn -> TypeDefn -> Result TypeDefn
+mergeTypeDefn tm c d1 d2 = 
 	case (d1, d2) of 
 	    (TypeVarDefn, TypeVarDefn) -> return d1
 	    (TypeVarDefn, _) -> fail "merge: TypeVarDefn"
@@ -101,32 +104,48 @@ instance Mergeable TypeDefn where
 --	    (AliasTypeDefn _, NoTypeDefn) -> fail "merge: AliasTypeDefn"
 	    (NoTypeDefn, _) -> return d2
 	    (_, NoTypeDefn) -> return d1
+	    (AliasTypeDefn s1, AliasTypeDefn s2) -> 
+		do s <- mergeScheme tm c s1 s2
+		   return $ AliasTypeDefn s
+	    (Supertype v1 s1 t1, Supertype v2 s2 t2) -> 
+		do s <- mergeScheme tm c s1 s2
+		   v <- merge v1 v2
+		   t <- merge t1 t2
+		   return $ Supertype v s t
 	    (_, _) -> if d1 == d2 then return d1 else
 		      fail "merge: TypeDefn"
 
-mergeAssumps :: TypeMap -> Int -> Assumps -> Assumps -> Result Assumps
-mergeAssumps tm c = mergeMap (mergeOpInfos tm c)
+instance Mergeable Vars where
+    merge t1 t2 = if t1 == t2 then return t1 
+		  else fail ("different variables for subtype definition\n\t" 
+			     ++ showPretty t1 "\n\t"
+			     ++ showPretty t2 "\n\t")
 
 mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
 mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
     foldM ( \ l o -> 
 	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
 	   in if null es then return (o:l)
-	      else do r <- merge (head es) o
+	      else do r <- mergeOpInfo tm c (head es) o
 	              return (r : us)) l1 l2 
 
-instance Mergeable OpInfo where
-    merge o1 o2 = 
-	do sc <- merge (opType o1) $ opType o2
+mergeScheme :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Result TypeScheme
+mergeScheme tm c s1 s2 = let b = instScheme tm c s2 s1 in
+    if instScheme tm c s1 s2 then 
+       if b then return s1 
+	  else fail ("found scheme is only a subsitution instance" 
+		     ++ expected s1 s2)
+       else if b then 
+	    fail ("expected scheme is only a subsitution instance" 
+		     ++ expected s1 s2)
+	    else fail ("wrong type scheme" ++ expected s1 s2)  
+
+mergeOpInfo :: TypeMap -> Int -> OpInfo -> OpInfo -> Result OpInfo
+mergeOpInfo tm c o1 o2 = 
+	do sc <- mergeScheme tm c (opType o1) $ opType o2
            as <- mergeAttrs (opAttrs o1) $ opAttrs o2
  	   d <- merge (opDefn o1) $ opDefn o2
 	   return $ OpInfo sc as d
-
-
-instance Mergeable TypeScheme where
-    merge s1 s2 = if s1 == s2 then return s1 
-		  else fail ("wrong type scheme"
-			     ++ expected s1 s2)
 
 -- instance Mergeable [OpAttr] where
 mergeAttrs :: [OpAttr] -> [OpAttr] -> Result [OpAttr]
@@ -144,8 +163,8 @@ mergeAttrs l1 l2 =
 
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) = 
-	if t1 == t2 then return $ UnitOpAttr t1 (p1 ++ p2)
-	   else fail "unequal unit elements"
+	do t <- merge t1 t2
+	   return $ UnitOpAttr t1 (p1 ++ p2)
     merge _ _ = fail "merge: OpAttr"
 
 instance Mergeable OpBrand where

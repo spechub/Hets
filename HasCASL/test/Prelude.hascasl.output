@@ -13,7 +13,7 @@ predfun true, false : Unit ->? Unit
 predfun __/\__, __\/__, __=>__, __if__, __<=>__ : Unit ×
 						  Unit ->? Unit
 predfun not : Unit ->? Unit
-predfun : forall s : Type .  s × s ->? Unit
+predfun __=__ : forall s : Type .  s × s ->? Unit
 	%% =e=
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%% (builtin) type (constructors)
@@ -40,22 +40,22 @@ op __res__ : s × t ->? s = (var x : s)
 op fst : s × t ->? s = (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (fun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
-						      y : t) . def (x res y),
-						   \ (x : s, y : t) . (def y) und (def x))
-. (fun __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
-							     t ->? s),
+. (predfun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+							  y : t) . def (x res y),
+						       \ (x : s, y : t) . (def y) und (def x))
+. (predfun __=__ : forall a : Type .  a ×
+				      a ->? Unit) ((op fst : s × t ->? s),
 						   (op __res__ : s × t ->? s))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 predfun eq : forall s : Type .  s × s ->? Unit
-. (fun __=__ : forall a : Type .  a ×
-				  a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
-											  s ->? Unit) ((var x : s),
-												       (var x : s)),
-					       (op tt : forall s : Type .  s ->? Unit))
-. (fun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : _var_45,
-						      y : s) . x res eq (x, y),
+. (predfun __=__ : forall a : Type .  a ×
+				      a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
+											      s ->? Unit) ((var x : s),
+													   (var x : s)),
+						   (op tt : forall s : Type .  s ->? Unit))
+. (predfun __=__ : forall a : Type .  a ×
+				      a ->? Unit) (\ (x : _var_45, y : s) . x res eq (x, y),
 						   \ (x : _var_46, y : s) . y res eq (x, y))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
@@ -153,7 +153,7 @@ Y : forall p : Pcpo .  (p -->? p) --> p %(Op)%
 __/\__ : Unit × Unit ->? Unit %(Pred)%
 __<<=__ : forall c : Cpo .  c × c ->? Unit %(Pred)%
 __<=>__ : Unit × Unit ->? Unit %(Pred)%
-__=__ : forall a : Type .  a × a ->? Unit %(Fun)%
+__=__ : forall a : Type .  a × a ->? Unit %(Pred)%
 __=>__ : Unit × Unit ->? Unit %(Pred)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Pred)%
@@ -179,19 +179,19 @@ true : bool %(construct bool)%
 tt : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
 undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
 %% Sentences -------------------------------------------------------------
-(fun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
-						    y : t) . def (x res y),
-						 \ (x : s, y : t) . (def y) und (def x)) %()%
-(fun __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
-							   t ->? s),
-						 (op __res__ : s × t ->? s)) %()%
-(fun __=__ : forall a : Type .  a ×
-				a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
-											s ->? Unit) ((var x : s),
-												     (var x : s)),
-					     (op tt : forall s : Type .  s ->? Unit)) %()%
-(fun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : _var_45,
-						    y : s) . x res eq (x, y),
+(predfun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+							y : t) . def (x res y),
+						     \ (x : s, y : t) . (def y) und (def x)) %()%
+(predfun __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
+							       t ->? s),
+						     (op __res__ : s × t ->? s)) %()%
+(predfun __=__ : forall a : Type .  a ×
+				    a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
+											    s ->? Unit) ((var x : s),
+													 (var x : s)),
+						 (op tt : forall s : Type .  s ->? Unit)) %()%
+(predfun __=__ : forall a : Type .  a ×
+				    a ->? Unit) (\ (x : _var_45, y : s) . x res eq (x, y),
 						 \ (x : _var_46, y : s) . y res eq (x, y)) %()%
 %% Diagnostics -----------------------------------------------------------
 Error (line 4, column 7) illegal universe class declaration 'Type'
@@ -200,10 +200,6 @@ Hint (line 6, column 7) is type variable 't'
 Warning (line 11, column 6) redeclared type 'Unit'
 FatalError (line 14, column 11) illegal type pattern argument: __
 FatalError (line 15, column 8) illegal type pattern argument: __
-Error (line 22, column 8) wrong type scheme of '__=__'
-  expected: forall a : Type .  a × a ->? Unit
-     found: forall s : Type .  s × s ->? Unit
-
 Warning (line 27, column 8) redeclared type '__->?__'
 FatalError (line 31, column 6) illegal type pattern: __ * __ * __
 Error (line 46, column 11) unexpected mixfix token: und

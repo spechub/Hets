@@ -112,8 +112,6 @@ Hint (line 1, column 6) is type variable 'S'
 Hint (line 1, column 8) is type variable 'T'
 Warning (line 3, column 18) redeclared type 'S'
 Warning (line 3, column 8) redeclared type 'Pred'
-Error (line 3, column 8) merge: TypeDefn of 'Pred'
-
 Warning (line 4, column 17) redeclared type 'S'
 Error (line 11, column 9) expected tuple argument for '__union__'
 Error (line 11, column 20) expected tuple argument for '__intersection__'
