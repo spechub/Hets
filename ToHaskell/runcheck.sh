@@ -5,6 +5,9 @@
 
 PA=$1
 SET=$2
+ANNOS=../Common/test/Empty.annos
+
+. ../Common/test/checkFunctions.sh
 
 . ./checkFunctions.sh
 
