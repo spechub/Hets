@@ -504,12 +504,12 @@ hetana: Static/hetana.hs Static/*.hs
 atctest: ATC/ATCTest.hs ATC/*.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-atctest2: Common/ATerm/atctest2.hs Common/SimpPretty.hs \
+atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs \
           Common/ATerm/*.hs Common/Lib/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATerm.Lib test system
-atermlibtest: Common/ATerm/atermlibtest.hs Common/SimpPretty.hs \
+atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
               Common/ATerm/*.hs Common/Lib/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
