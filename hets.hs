@@ -43,6 +43,7 @@ import GUI.ConvertDevToAbstractGraph
 import InfoBus 
 import Events
 import Destructible
+import DialogWin (useHTk)
 #endif
 
 -- for checking the whole ATerm interface
@@ -175,6 +176,8 @@ showGraph file opt env =
             putIfVerbose opt 3 "Initializing Converter"
 #ifdef UNI_PACKAGE
             graphMem <- initializeConverter
+            useHTk -- All messages are displayed in TK dialog windows 
+                   -- from this point on
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv opt
             GUI.AbstractGraphView.redisplay gid gv
