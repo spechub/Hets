@@ -9,17 +9,18 @@
 #
 # PATH=$PATH:/home/linux-bkb/bin:/usr/bin:/bin
 # 43 2 * * *      (cd /home.local/luettich/HetCATS ; time make apache_doc) > /home.local/luettich/HetCATS/make_apache_doc.log 2>&1
-# 2 3 * * *       /usr/bin/perl /home.local/luettich/HetCATS/utils/examine_doc_log.pl /home.local/luettich/HetCATS/make_apache_doc.log 'luettich@tzi.de' > /dev/null 2>&1
+# 2 3 * * *       /usr/bin/perl /home.local/luettich/HetCATS/utils/examine_doc_log.pl /home.local/luettich/HetCATS/make_apache_doc.log 'make -C /home.local/luettich/HDocs/HetCATS -f utils/mv_binary.mk' 'luettich@tzi.de' > /dev/null 2>&1
 #
 #
 #
-# Usage: examine_doc_log.pl /path/to/log_file 'luettich@tzi.de'...
+# Usage: examine_doc_log.pl /path/to/log_file /hets/src/dir 'luettich@tzi.de'...
 
 use strict;
 
-exit 5 if @ARGV < 2;
+exit 5 if @ARGV < 3;
 
 my $logfile = shift @ARGV;
+my $success_cmd = shift @ARGV;
 my $email_address = join " ", @ARGV;
 
 print STDERR "read: $logfile\nmailto: $email_address\n";
@@ -78,11 +79,6 @@ if ($fail == 0) {
     # post process positive lines
     unless (exists $test_vars{'modified_lines'} 
 	    && $test_vars{'modified_lines'} > 0) {
-	$fail++;
-	$report .= "";
-    }
-    unless (exists $test_vars{'modified_lines'} 
-	    && $test_vars{'modified_lines'} > 0) {
 	$report .= "no HTML file was modified\n";
 	$fail ++;
     }
@@ -91,7 +87,14 @@ if ($fail == 0) {
 # send report as mail
 if ($fail > 0) {
     print STDERR "\n$fail test(s) failed -- sending Mail with report:\n\n$report\n";
-    open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
- print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
-    close MAIL;
+#    open MAIL, "| /usr/bin/mail -i -n -s 'Error Report of make apache_doc' $email_address";
+# print MAIL "$fail tests failed!\n\nSee following report for details:\n\n$report\n";
+ #   close MAIL;
+} 
+
+# compilation complete?
+if ($report !~ m/An error during compiling 'hets' occured./o) {
+    # daily snapshot compilation complete, start command
+    system "$success_cmd";
 }
+
