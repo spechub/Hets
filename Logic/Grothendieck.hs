@@ -686,3 +686,17 @@ data G_prover = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
      G_prover lid (Prover sign sentence proof_tree symbol)
+
+------------------------------------------------------------------
+-- Coercion
+------------------------------------------------------------------
+
+coerceTheories :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+      lid -> G_theory -> Result sign
+coerceTheories lid (G_theory lid2 sign2 sens2)
+  = rcoerce lid lid2 nullPos sign2
