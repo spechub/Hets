@@ -152,9 +152,92 @@ comp_list_helper x (h:t) = comp_list_helper (sublogics_max x h) t
 comp_list :: [CASL_Sublogics] -> CASL_Sublogics
 comp_list l = comp_list_helper bottom l
 
+and_list :: [Bool] -> Bool
+and_list []    = True
+and_list (h:t) = h && (and_list t)
+
 mb :: (a -> CASL_Sublogics) -> Maybe a -> CASL_Sublogics
 mb f Nothing = bottom
 mb f (Just x) = f x
+
+------------------------------------------------------------------------------
+-- functions to analyse formulae
+------------------------------------------------------------------------------
+
+is_atomic_f :: FORMULA -> Bool
+is_atomic_f (Quantification q _ f _) = (is_atomic_q q) && (is_atomic_f f)
+is_atomic_f (Conjunction l _) = and_list ((map is_atomic_f) l)
+is_atomic_f (True_atom _) = True
+is_atomic_f (Predication _ _ _) = True
+is_atomic_f (Definedness _ _) = True
+is_atomic_f (Existl_equation _ _ _) = True
+is_atomic_f _ = False
+
+is_atomic_q :: QUANTIFIER -> Bool
+is_atomic_q (Universal) = True
+is_atomic_q _ = False
+
+is_horn_f :: FORMULA -> Bool
+is_horn_f (Quantification q _ f _) = (is_atomic_q q) && (is_horn_f f)
+is_horn_f (Implication f g _) = (is_horn_p_conj f) && (is_horn_a g)
+is_horn_f _ = False
+
+is_horn_p_conj :: FORMULA -> Bool
+is_horn_p_conj (Conjunction l _) = and_list ((map is_horn_p_a) l)
+is_horn_p_conj _ = False
+
+is_horn_a :: FORMULA -> Bool
+is_horn_a (True_atom _) = True
+is_horn_a (Predication _ _ _) = True
+is_horn_a (Definedness _ _) = True
+is_horn_a (Existl_equation _ _ _) = True
+is_horn_a (Strong_equation _ _ _) = True
+is_horn_a (Membership _ _ _) = True
+is_horn_a _ = False
+
+is_horn_p_a :: FORMULA -> Bool
+is_horn_p_a (True_atom _) = True
+is_horn_p_a (Predication _ _ _) = True
+is_horn_p_a (Definedness _ _) = True
+is_horn_p_a (Existl_equation _ _ _) = True
+is_horn_p_a (Membership _ _ _) = True
+is_horn_p_a _ = False
+
+is_ghorn_f :: FORMULA -> Bool
+is_ghorn_f (Quantification q _ f _) = (is_atomic_q q) && (is_ghorn_f f)
+is_ghorn_f (Conjunction l _) = (is_ghorn_c_conj l) || (is_ghorn_f_conj l)
+is_ghorn_f (Implication f g _) = (is_ghorn_prem f) && (is_ghorn_conc g)
+is_ghorn_f (Equivalence f g _) = (is_ghorn_prem f) && (is_ghorn_prem g)
+is_ghorn_f (True_atom _) = True
+is_ghorn_f (Predication _ _ _) = True
+is_ghorn_f (Definedness _ _) = True
+is_ghorn_f (Existl_equation _ _ _) = True
+is_ghorn_f (Strong_equation _ _ _) = True
+is_ghorn_f (Membership _ _ _) = True
+is_ghorn_f _ = False
+
+is_ghorn_c_conj :: [FORMULA] -> Bool
+is_ghorn_c_conj l = and_list ((map is_ghorn_conc) l)
+
+is_ghorn_f_conj :: [FORMULA] -> Bool
+is_ghorn_f_conj l = and_list ((map is_ghorn_f) l)
+
+is_ghorn_p_conj :: [FORMULA] -> Bool
+is_ghorn_p_conj l = and_list ((map is_ghorn_prem) l)
+
+is_ghorn_prem :: FORMULA -> Bool
+is_ghorn_prem (Conjunction l _) = is_ghorn_p_conj l
+is_ghorn_prem x = is_horn_p_a x
+
+is_ghorn_conc :: FORMULA -> Bool
+is_ghorn_conc (Conjunction l _) = is_ghorn_c_conj l
+is_ghorn_conc x = is_horn_a x
+
+get_logic :: FORMULA -> CASL_Sublogics
+get_logic f = if (is_atomic_f f) then bottom else
+              if (is_horn_f f) then need_horn else
+              if (is_ghorn_f f) then need_ghorn else
+              need_fol
 
 ------------------------------------------------------------------------------
 -- functions to compute minimal sublogic for a given element
