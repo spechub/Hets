@@ -87,7 +87,7 @@ instance Show TypeSig where
              else em) ++ show t  ++"\n"++rest
 
 instance Show Term where
-  show = outerShowTerm
+  show = showTerm -- outerShowTerm   -- back to showTerm, because meta !! causes problems with show ?thesis
 
 showTerm :: Term -> String
 showTerm (Const (c,_)) = c
