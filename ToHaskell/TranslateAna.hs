@@ -171,8 +171,8 @@ translateTokens [] = ""
 translateTokens (t:ts) = 
     let str = tokStr t
         res = translateTokens ts in
-    if isMultiSign str then
-      (multiSignMapping str) ++ res
+    if isPlace t then
+      subPlace ++ res
     else (concatMap symbolMapping str) ++ res
 
 startsWithDigit :: String -> Bool
@@ -183,27 +183,8 @@ firstDigit s = if startsWithDigit s then
 	         "_D" ++ s
 	       else s
 
-isSign :: Char -> Bool
-isSign c = any (c ==) signChars
-
-isMultiSign :: String -> Bool
-isMultiSign s = (any (s ==) multiSigns) || (and $ map isSign s)
-
-multiSigns :: [String]
-multiSigns = ["__","||","==","&&","/\\","\\/","::"]
--- to be completed
-
-multiSignMapping :: String -> String
-multiSignMapping s = case s of
-  "__"  -> "_2"
-  "||"  -> "_3"
-  "=="  -> "_4"
-  "&&"  -> "_5"
-  "/\\" -> "_6"
-  "\\/" -> "_7"
-  "::"  -> "_8"
-  _     -> concatMap symbolMapping s --falsche Übersetzung
--- to be completed (s. multiSigns)
+subPlace :: String
+subPlace = "_2"
 
 symbolMapping :: Char -> String
 symbolMapping c = case c of 
