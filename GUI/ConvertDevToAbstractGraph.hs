@@ -1,4 +1,4 @@
--- needs ghc
+ -- needs ghc
 
 {- GUI/ConvertDevToAbstractGraph.hs
    $Id$
@@ -220,32 +220,32 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
                  ) ]
                  [("globaldef",
                    Solid 
-		   $$$ LocalMenu (Menu (Just "edge menu")
-				 [(Button "Show morphism" 
-                      (\ (_,descr,arcValue)  -> 
-		        do convMaps <- readIORef convRef
-                           showMorphismOfEdge convMaps descr arcValue dGraph
-		           return ()
-                       ))])
+		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
 		  ("def",
                    Dotted $$$ Color "Steelblue"
+		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("proventhm",
-                   Solid $$$ Color "Green" 
+                   Solid $$$ Color "Green"
+		   $$$ createLocalEdgeMenu 
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
                    Solid $$$ Color "Red" 
+		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localproventhm",
                    Dashed $$$ Color "Green" 
+		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
                    Dashed $$$ Color "Red" 
+		   $$$ createLocalEdgeMenu
 		   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   -- > ######### welche Farbe fuer reference ##########
                   ("reference",
                    Dotted $$$ Color "Grey"
+		   $$$ createLocalEdgeMenu
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
                  [("globaldef","globaldef","globaldef"),
 		  ("globaldef","def","def"),
@@ -403,7 +403,23 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes ioRefSubtreeEvents ac
 		                    Nothing -> do putStrLn "undo not possible"
 		                                  return()
                       )
+
 		    )
+
+-- -------------------------------------------------------------
+-- methods to create the local menus for the edges
+-- -------------------------------------------------------------
+createLocalEdgeMenu = 
+    LocalMenu (Menu (Just "edge menu")
+	       createLocalMenuButtonShowMorphismOfEdge
+	      )
+
+createLocalMenuButtonShowMorphismOfEdge = 
+  [(Button "Show morphism" 
+                      (\ (_,descr,maybeLEdge)  -> 
+		        do showMorphismOfEdge descr maybeLEdge
+		           return ()
+                       ))]
 -- ------------------------------
 -- end of local menu definitions
 -- ------------------------------
@@ -451,13 +467,13 @@ getSublogicOfNode descr ab2dgNode dgraph =
                        ++ (show descr) 
                         ++ " has no corresponding node in the development graph")
 
-showMorphismOfEdge :: ConversionMaps -> Descr -> Maybe (LEdge DGLinkLab) -> DGraph -> IO()
-showMorphismOfEdge convMaps descr gid dgraph =
-  case Map.lookup descr (abstr2dgEdge convMaps) of
-    Just (libname,edge) -> 
-      error "showMorphismOfEdge is not yet implemented"
---      putStrLn (show (dgl_morphism linklab))
-    Nothing -> putStrLn ("error determing morphism of edge "++(show descr))
+{- prints the morphism of the edge -}
+showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
+showMorphismOfEdge _ (Just (_,_,linklab)) = 
+      putStrLn (show (dgl_morphism linklab))
+showMorphismOfEdge descr Nothing = 
+      putStrLn ("edge "++(show descr)++" has no corresponding edge"
+		++ "in the development graph")
 
 
 {- converts the nodes of the development graph, if it has any,
