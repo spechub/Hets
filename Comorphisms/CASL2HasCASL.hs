@@ -24,9 +24,9 @@ import Data.Dynamic
 
 -- CASL
 import CASL.Logic_CASL 
-import qualified CASL.AS_Basic_CASL as Cas
 import CASL.Sublogic
 import CASL.Sign
+import qualified CASL.AS_Basic_CASL as Cas
 import qualified CASL.Morphism as CasM
 
 import HasCASL.Logic_HasCASL
@@ -35,9 +35,6 @@ import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.VarDecl
 import HasCASL.Unify
-import HasCASL.Symbol
-import HasCASL.SymbItem
-import HasCASL.RawSym
 import HasCASL.Morphism
 
 -- | The identity of the comorphism

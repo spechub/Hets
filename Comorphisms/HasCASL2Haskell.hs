@@ -24,9 +24,6 @@ import Data.Dynamic
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.SymbItem
-import HasCASL.Symbol
-import HasCASL.RawSym
 import HasCASL.Morphism
 
 import ToHaskell.TranslateAna

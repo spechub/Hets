@@ -16,18 +16,12 @@ module HasCASL.SymbItem where
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.AS_Annotation
 import Common.AnnoState
 import Common.Lib.Parsec
 
 import HasCASL.HToken
 import HasCASL.ParseTerm
 import HasCASL.As
-import HasCASL.PrintAs
-
-import Common.PrettyPrint
-import Common.Lib.Pretty as PP
-import Common.PPUtils
 
 -- * parsers for symbols
 -- | parse a (typed) symbol 
