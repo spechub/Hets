@@ -14,8 +14,7 @@ module Haskell.HatAna (module Haskell.HatAna, PNT, HsDeclI) where
 import Common.AS_Annotation 
 import Common.Result 
 import Common.GlobalAnnotations
-import PropPosSyntax hiding (ModuleName, Id, HsName)
-import TiModule
+import PropPosSyntax hiding (Id, HsName)
 import Modules
 import MUtils
 import ReAssocModule
@@ -146,7 +145,8 @@ hatAna (hs@(HsDecls ds), e, _) = do
        fixs = mapFst getQualified $ getInfixes parsedMod
        fixMap = Map.fromList fixs `Map.union` fixities e
        rm = reAssocModule wm [(mod_Prelude, Map.toList fixMap)] parsedMod
-       (sm, _) = scopeModule (wm, [(mod_Prelude, expScope)]) rm
+       (HsModule _ _ _ _ sds, _) = 
+           scopeModule (wm, [(mod_Prelude, expScope)]) rm
        ent2pnt (Ent m (HsCon i) t) = 
            HsCon (topName Nothing m (bn i) (origt m t))
        ent2pnt (Ent m (HsVar i) t) = 
@@ -162,8 +162,8 @@ hatAna (hs@(HsDecls ds), e, _) = do
                extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
                . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)
-   HsModule _ _ _ _  fs :>: (is, (ts, vs)) <- 
-        lift $ inMyEnv $ tcModule findPredef sm
+   fs :>: (is, (ts, vs)) <- 
+        lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
    return (hs, diffSign accSign e, accSign, map emptyName fs)
 
