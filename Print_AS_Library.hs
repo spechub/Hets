@@ -40,7 +40,7 @@ instance PrettyPrint LIB_ITEM where
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	    spec_head = (hang (ptext "spec" <+> aa' <+> ab') 2 equals)
-	    ac' = spAnnotedPrintText0 ga (spec_head) ac
+	    ac' = spAnnotedPrint printText0 ga (spec_head) ac
          -- nesting is done by the instance for SPEC now
 	in ac' $$ ptext "end\n"
 	   
@@ -50,8 +50,8 @@ instance PrettyPrint LIB_ITEM where
 	    -- ac' = printText0 ga ac
 	    (frm,to) = case ac of 
 		       AS_Struct.View_type vaa vab _ -> 
-			   (condBracesGroupSpec ga vaa, 
-			    condBracesGroupSpec ga vab)
+			   (condBracesGroupSpec printText0 ga vaa, 
+			    condBracesGroupSpec printText0 ga vab)
 	    ad' = sep $ punctuate comma $ map (printText0 ga) ad
 	    eq' = if null ad then empty else equals
 	in (hang (hang (hang (hang (ptext "view" <+> aa' <+> ab') 

@@ -101,18 +101,19 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
 	    ras' = printText0 ga rras
         in las' $+$ (hang i' 0 la) $$ ras'
 
-spAnnotedPrintText0 :: (PrettyPrint a) => 
-		       GlobalAnnos -> Doc -> (Annoted a) -> Doc
-spAnnotedPrintText0 ga keyw ai = 
+spAnnotedPrint :: (PrettyPrint a) => 
+		    (forall b .PrettyPrint b => GlobalAnnos -> b -> Doc) ->
+		    GlobalAnnos -> Doc -> (Annoted a) -> Doc
+spAnnotedPrint pf ga keyw ai = 
     case ai of 
     Annoted i _ las _ ->
-	let i'   = printText0 ga i
+	let i'   = pf ga i
             (msa,as) = case las of
 		       []     -> (Nothing,[]) 
 		       (x:xs) | isSemanticAnno x -> (Just x,xs)
 		       xs     -> (Nothing,xs)
 	    san      = case msa of
 		       Nothing -> empty
-		       Just a  -> printText0 ga a 
-	    as' = printText0 ga as
+		       Just a  -> pf ga a 
+	    as' = pf ga as
         in keyw <+> san $$ as' $$ i'
