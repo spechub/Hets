@@ -31,6 +31,7 @@ import Data.Maybe
 import Common.Lib.Parsec
 import Common.Id (Token(..),nullPos,place)
 import Common.Lexer (bind)
+import Data.List
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
@@ -38,13 +39,24 @@ import qualified Common.Lib.Set as Set
 
 -- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
-addGlobalAnnos ga annos = 
-    do n_prec_annos <- store_prec_annos (prec_annos  ga) annos
+addGlobalAnnos ga all_annos = do
+    do let (annos, rest_annos) = partition ( \ a -> case a of 
+	    Prec_anno _ _ _ _-> True
+	    Assoc_anno _ _ _ -> True
+            Display_anno _ _ _ -> True
+	    Number_anno _ _ -> True
+            String_anno _ _ _ -> True
+	    Float_anno _ _ _ -> True
+	    List_anno _ _ _ _ -> True
+	    _ -> False) all_annos
+	   ds = map ( \ d -> mkDiag Error "unexpected annotation" d) 
+		rest_annos
+       Result ds (Just ())
+       n_prec_annos <- store_prec_annos (prec_annos  ga) annos
        n_assoc_annos <- store_assoc_annos (assoc_annos ga) annos
        n_display_annos <- store_display_annos (display_annos ga) annos
        n_literal_annos <- store_literal_annos (literal_annos ga) annos
        n_literal_map <- store_literal_map (literal_map ga) annos
-
        return ga { prec_annos =  n_prec_annos
 		 , assoc_annos = n_assoc_annos 
 		 , display_annos = n_display_annos
