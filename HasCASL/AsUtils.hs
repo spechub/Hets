@@ -83,10 +83,10 @@ typeIdToType :: DataPat -> Type
 typeIdToType (i, nAs, k) = let      
     fullKind = typeArgsListToKind nAs k
     ti = TypeName i fullKind 0
-    mkType ty [] = ty
-    mkType ty ((TypeArg ai ak _ _): rest) =
-	mkType (TypeAppl ty (TypeName ai ak 1)) rest
-    in mkType ti nAs
+    mkType _ ty [] = ty
+    mkType n ty ((TypeArg ai ak _ _): rest) =
+	mkType (n-1) (TypeAppl ty (TypeName ai ak n)) rest
+    in mkType (-1) ti nAs
 
 -- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind

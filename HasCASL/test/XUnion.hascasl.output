@@ -3,10 +3,8 @@ type Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 type Graph : Type -> Type -> Type := \ (N : Type)
                                        (E : Type) . Set N_v-1 * (E_v-2 ->? N_v-1) *
                                                     (E_v-2 ->? N_v-1)
-op __union__ : forall N : Type; E : Type .
-                 Graph N_v-1 E_v-2 * Graph N_v-1 E_v-2 -> Graph N_v-1 E_v-2;
-   __union__, __intersection__, __\\__ : forall S : Type .
-                                           Set S_v-1 * Set S_v-1 -> Set S_v-1
+op __union__ : Graph N E * Graph N E -> Graph N E;
+   __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
 . (fun __=__[Set N * (E ->? N) * (E ->? N)]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)

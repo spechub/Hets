@@ -2,18 +2,14 @@ var S : Type; T : Type
 type Bool; Pred : Type -> Type := \ S : Type . S_v-1 ->? Unit;
      Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 op True, False : Bool
-op emptySet : forall S : Type . Set S_v-1;
-   {__} : forall S : Type . S_v-1 -> Set S_v-1;
-   __isIn__ : forall S : Type . S_v-1 * Set S_v-1 ->? Unit;
-   __subset__ : forall S : Type . Pred (Set S_v-1 * Set S_v-1);
-   __union__, __intersection__, __\\__ : forall S : Type .
-                                           Set S_v-1 * Set S_v-1 -> Set S_v-1;
-   __disjoint__ : forall S : Type . Pred (Set S_v-1 * Set S_v-1);
-   __*__ : forall S : Type; T : Type .
-             Set S_v-1 * Set T_v-2 -> Set (S_v-1 * T_v-2);
-   __disjointUnion__ : forall S : Type .
-                         Set S_v-1 * Set S_v-1 -> Set (S_v-1 * Bool);
-   inl, inr : forall S : Type . S_v-1 -> S_v-1 * Bool
+op emptySet : Set S; {__} : S -> Set S;
+   __isIn__ : S * Set S ->? Unit;
+   __subset__ : Pred (Set (S) * Set (S));
+   __union__, __intersection__, __\\__ : Set S * Set S -> Set S;
+   __disjoint__ : Pred (Set (S) * Set (S));
+   __*__ : Set S * Set T -> Set (S * T);
+   __disjointUnion__ : Set S * Set S -> Set (S * Bool);
+   inl, inr : S -> S * Bool
 forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
 . (fun not__ : Unit ->? Unit)
     ((op __isIn__[S] : forall S : Type . S_v-1 * Set S_v-1 ->? Unit)

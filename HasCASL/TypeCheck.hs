@@ -51,18 +51,15 @@ checkPattern ga pat = do
 		  np <- anaPattern p 
 		  typeCheck Nothing np
 
-freshInstList :: TypeScheme -> State Int (Type, Constraints, [Type])
-freshInstList (TypeScheme tArgs (_ :=> t) _) = 
-    do m <- mkSubst tArgs
-       let ts = map snd m 
-       return ( repl (Map.fromList $ zip tArgs ts) t
-	      , Set.fromList $ map ( \ ty@(TypeName _ k _)
-				     -> Kinding ty k) ts
-	      ,	ts)
+instantiate :: TypeScheme -> State Env (Type, [Type], Constraints)
+instantiate sc = do
+     (typ, inst) <- toEnvState $ freshInstList sc
+     return (typ, inst, Set.fromList $ map ( \ ty@(TypeName _ k _)
+				     -> Kinding ty k) inst)
 
-instantiate :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
-instantiate oi = do
-     (ty, cs, inst) <- toEnvState $ freshInstList $ opType oi
+instOpInfo :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
+instOpInfo oi = do
+     (ty, inst, cs) <- instantiate $ opType oi
      return (ty, inst, cs, oi)
 
 lookupError :: Type -> [OpInfo] -> String
@@ -162,7 +159,7 @@ infer mt trm = do
 		Just s -> let ty = subst s t in 
 		    return [(s, noC, ty, QualVar $ VarDecl v ty ok ps)] 
 	QualOp b (InstOpId i ts qs) sc ps -> do
-	    (ty, cs, inst) <- toEnvState $ freshInstList sc
+	    (ty, inst, cs) <- instantiate sc
 	    let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
 			       (Just ty, inst)
 	    uniDiags ds 
@@ -174,7 +171,7 @@ infer mt trm = do
 	ResolvedMixTerm i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
-	       insts <- mapM instantiate ois 
+	       insts <- mapM instOpInfo ois 
 	       ls <- case mt of 
 		     Nothing -> return $ map ( \ (ty, is, cs, oi) 
 					      -> (eps, ty, is, cs, oi)) insts

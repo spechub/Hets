@@ -1,7 +1,7 @@
 class Eq < Type
 class Ord < Eq
 type a : Ord
-op f : forall e : Ord . e_v-1 -> e_v-1
+op f : forall e : Ord . e -> e
 op c : a
 . (fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     ((op f[a] : forall e : Ord . e_v-1 -> e_v-1)

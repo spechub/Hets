@@ -247,13 +247,17 @@ anaType (mk, t) tm =
        newk <- inferKind mk newTy tm
        return (newk, newTy)
 
+mkGenVars :: [TypeArg] -> Type -> Type
+mkGenVars fvs newTy = 
+    let ts = zipWith ( \ (TypeArg i k _ _) n -> 
+				  TypeName i k n) fvs [-1, -2..]
+	m = Map.fromList $ zip fvs ts
+    in  repl m newTy
+
 generalize :: TypeScheme -> Result TypeScheme
 generalize (TypeScheme newArgs (q :=> newTy) p) = do
  	       let fvs = varsOf newTy
-		   ts = zipWith ( \ (TypeArg i k _ _) n -> 
-				  TypeName i k n) fvs [-1, -2..]
-		   m = Map.fromList $ zip fvs ts
-		   qTy = q :=> repl m newTy
+		   qTy = q :=> mkGenVars fvs newTy
                    ds = unboundTypevars newArgs newTy
 	       if null ds then
 	          return $ TypeScheme newArgs qTy p

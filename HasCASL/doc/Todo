@@ -90,6 +90,9 @@ conversion HsSyn and AHsSyn is stupid
 
 AxiomBinds are not renamed 
 
+Axioms result in "tiExpr: could not find type scheme for: Empty.allof"
+(but not if a .hs file is used)
+
 PrintModuleInfo is entirely faked and unusable for showing a Haskell
 theory that was directly read in (form a .het file and Haskell code in
 curly braces.)

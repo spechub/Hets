@@ -1,23 +1,25 @@
 var a : Type; b : Type
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
-op f : forall a : Type; b : Type . a_v1 * b_v2 ->? Pair a_v-1 b_v-2
+op f : forall a : Type; b : Type .
+         a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
      = \ (var a : a, var b : b)
          .! (op Pair[a; b]
              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
               (var a : a, var b : b)
-op g : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1
-program (op g[_var_10_v10; _var_11_v11]
+op g : Pair a b ->? a
+program (op g[_var_8_v8; _var_9_v9]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_10_v10; _var_11_v11]
+          ((op Pair[_var_8_v8; _var_9_v9]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_10_v10, var b : _var_11_v11))
-          = (var a : _var_10_v10)
+             (var a : _var_8_v8, var b : _var_9_v9))
+          = (var a : _var_8_v8)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pair
   : Type -> Type -> Type
      %[free type Pair(a : Type)(b : Type)
-         ::= Pair : a_v1 * b_v2 -> Pair a_v1 b_v1 (fst : a_v1; snd : b_v2)]%
+         ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+               (fst : a_v-1; snd : b_v-2)]%
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
@@ -42,7 +44,7 @@ __when__else__
   : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall a : Type . a_v-1 %(fun)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-f : forall a : Type; b : Type . a_v1 * b_v2 ->? Pair a_v-1 b_v-2
+f : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
     %(op)%
       = \ (var a : a, var b : b)
           .! (op Pair[a; b]
@@ -64,34 +66,34 @@ snd
 true : Unit %(fun)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-forall a : Type; b : Type; x_1_1 : a_v1; x_1_2 : b_v2
+forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op fst : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> a_v-1)
          ((op Pair
            : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-            (var x_1_1 : a_v1, var x_1_2 : b_v2)),
-       var x_1_1 : a_v1) %(ga_select_fst)%
-forall a : Type; b : Type; x_1_1 : a_v1; x_1_2 : b_v2
+            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
+       var x_1_1 : a_v-1) %(ga_select_fst)%
+forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op snd : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> b_v-2)
          ((op Pair
            : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-            (var x_1_1 : a_v1, var x_1_2 : b_v2)),
-       var x_1_2 : b_v2) %(ga_select_snd)%
+            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
+       var x_1_2 : b_v-2) %(ga_select_snd)%
 free type Pair(a : Type)(b : Type)
-  ::= Pair : a_v1 * b_v2 -> Pair a_v1 b_v1
-        (fst : a_v1; snd : b_v2) %(ga_Pair)%
-forall a : Type; b : Type; a : a; b : b
+  ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+        (fst : a_v-1; snd : b_v-2) %(ga_Pair)%
+forall a : a; b : b
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op f
-        : forall a : Type; b : Type . a_v1 * b_v2 ->? Pair a_v-1 b_v-2)
+        : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2)
          (var a : a, var b : b),
        (op Pair[a; b]
         : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
          (var a : a, var b : b)) %(def_f)%
-program (op g[_var_10_v10; _var_11_v11]
+program (op g[_var_8_v8; _var_9_v9]
          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1)
-          ((op Pair[_var_10_v10; _var_11_v11]
+          ((op Pair[_var_8_v8; _var_9_v9]
             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-             (var a : _var_10_v10, var b : _var_11_v11))
-          = (var a : _var_10_v10) %(pe_g)%
+             (var a : _var_8_v8, var b : _var_9_v9))
+          = (var a : _var_8_v8) %(pe_g)%

@@ -1,6 +1,6 @@
 type s
 op a : s
-op __=[s]__ : forall a : Type . a_v-1 * a_v-1 -> Unit
+op __=[s]__ : forall a : Type . a * a -> Unit
 . (op __=[s]__[s] : forall a : Type . a_v-1 * a_v-1 -> Unit)
     (op a : s, op a : s)
 %% Type Constructors -----------------------------------------------------

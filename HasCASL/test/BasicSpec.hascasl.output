@@ -25,7 +25,7 @@ forall x : t; y : t
   (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     (var x : t, var y : t)
 type s
-op a : ? s
+op a : (? s)
 type Data1 ::= a | 
                b | 
                c

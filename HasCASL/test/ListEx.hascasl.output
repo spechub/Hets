@@ -23,29 +23,29 @@ free type even2(a : Type+) ::= rek (odd2 (odd2 a));
 List
   : Type+ -> Type
      %[free type List(a : Type+)
-         ::= Nil : List a_v1
-             Cons : a_v2 * List a_v2 -> List a_v1
-               (head : a_v2; tail : List a_v2)]%
+         ::= Nil : List a_v-1
+             Cons : a_v-1 * List a_v-1 -> List a_v-1
+               (head : a_v-1; tail : List a_v-1)]%
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Tree
   : Type+ -> Type
      %[free type Tree(a : Type+)
-         ::= Leaf : Tree a_v1
-             Branch : Tree a_v2 * Tree a_v2 -> Tree a_v1
-               (head : Tree a_v2; tail : Tree a_v2)]%
+         ::= Leaf : Tree a_v-1
+             Branch : Tree a_v-1 * Tree a_v-1 -> Tree a_v-1
+               (head : Tree a_v-1; tail : Tree a_v-1)]%
 Tree1
   : Type+ -> Type
      %[generated type Tree1(a : Type+)
-         ::= Leaf : Tree1 a_v1
-             Branch : Tree a_v2 * Tree1 a_v2 -> Tree1 a_v1
-               (head : Tree a_v2; tail : Tree1 a_v2)]%
+         ::= Leaf : Tree1 a_v-1
+             Branch : Tree a_v-1 * Tree1 a_v-1 -> Tree1 a_v-1
+               (head : Tree a_v-1; tail : Tree1 a_v-1)]%
 Tree2
   : Type+ -> Type
      %[type Tree2(a : Type+)
-         ::= Leaf : Tree2 a_v1
-             Branch : Tree a_v2 * Tree2 a_v2 -> Tree2 a_v1
-               (head : Tree a_v2; tail : Tree2 a_v2)]%
+         ::= Leaf : Tree2 a_v-1
+             Branch : Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1
+               (head : Tree a_v-1; tail : Tree2 a_v-1)]%
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -57,16 +57,16 @@ b : Type %(var_1)%
 even
   : Type+ -> Type
      %[free type even(a : Type+)
-         ::= rek : odd a_v2 -> even a_v1 (odd a_v2)]%
+         ::= rek : odd a_v-1 -> even a_v-1 (odd a_v-1)]%
 even2 : Type+ -> Type %(data type)%
 odd
   : Type+ -> Type
      %[free type odd(a : Type+)
-         ::= rek : even a_v2 -> odd a_v1 (even a_v2)]%
+         ::= rek : even a_v-1 -> odd a_v-1 (even a_v-1)]%
 odd2
   : Type+ -> Type
      %[free type odd2(a : Type+)
-         ::= rek : even2 a_v2 -> odd2 a_v1 (even2 a_v2)]%
+         ::= rek : even2 a_v-1 -> odd2 a_v-1 (even2 a_v-1)]%
 %% Assumptions -----------------------------------------------------------
 Branch
   : forall a : Type+ . Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1
@@ -133,94 +133,94 @@ tail
 true : Unit %(fun)%
 ¬__ : Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-forall a : Type+; x_1_1 : a_v2; x_1_2 : List a_v2
+forall a : Type+; x_1_1 : a_v-1; x_1_2 : List a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op head : forall a : Type+ . List a_v-1 -> a_v-1)
          ((op Cons : forall a : Type+ . a_v-1 * List a_v-1 -> List a_v-1)
-            (var x_1_1 : a_v2, var x_1_2 : List a_v2)),
-       var x_1_1 : a_v2) %(ga_select_head)%
-forall a : Type+; x_1_1 : a_v2; x_1_2 : List a_v2
+            (var x_1_1 : a_v-1, var x_1_2 : List a_v-1)),
+       var x_1_1 : a_v-1) %(ga_select_head)%
+forall a : Type+; x_1_1 : a_v-1; x_1_2 : List a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op tail : forall a : Type+ . List a_v-1 -> List a_v-1)
          ((op Cons : forall a : Type+ . a_v-1 * List a_v-1 -> List a_v-1)
-            (var x_1_1 : a_v2, var x_1_2 : List a_v2)),
-       var x_1_2 : List a_v2) %(ga_select_tail)%
+            (var x_1_1 : a_v-1, var x_1_2 : List a_v-1)),
+       var x_1_2 : List a_v-1) %(ga_select_tail)%
 free type List(a : Type+)
-  ::= Nil : List a_v1
-      Cons : a_v2 * List a_v2 -> List a_v1
-        (head : a_v2; tail : List a_v2) %(ga_List)%
+  ::= Nil : List a_v-1
+      Cons : a_v-1 * List a_v-1 -> List a_v-1
+        (head : a_v-1; tail : List a_v-1) %(ga_List)%
 free type List(a : Type+)
-  ::= Nil : List a_v1
-      Cons : a_v2 * List a_v2 -> List a_v1
-        (head : a_v2; tail : List a_v2) %(ga_List)%
+  ::= Nil : List a_v-1
+      Cons : a_v-1 * List a_v-1 -> List a_v-1
+        (head : a_v-1; tail : List a_v-1) %(ga_List)%
 free type List(a : Type+)
-  ::= Nil : List a_v1
-      Cons : a_v2 * List a_v2 -> List a_v1
-        (head : a_v2; tail : List a_v2) %(ga_List)%
+  ::= Nil : List a_v-1
+      Cons : a_v-1 * List a_v-1 -> List a_v-1
+        (head : a_v-1; tail : List a_v-1) %(ga_List)%
 free type List(a : Type+)
-  ::= Nil : List a_v1
-      Cons : a_v2 * List a_v2 -> List a_v1
-        (head : a_v2; tail : List a_v2) %(ga_List)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree a_v2
+  ::= Nil : List a_v-1
+      Cons : a_v-1 * List a_v-1 -> List a_v-1
+        (head : a_v-1; tail : List a_v-1) %(ga_List)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op head : forall a : Type+ . Tree a_v-1 -> Tree a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree a_v-1 -> Tree a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree a_v2)),
-       var x_1_1 : Tree a_v2) %(ga_select_head)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree a_v2
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree a_v-1)),
+       var x_1_1 : Tree a_v-1) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op tail : forall a : Type+ . Tree a_v-1 -> Tree a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree a_v-1 -> Tree a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree a_v2)),
-       var x_1_2 : Tree a_v2) %(ga_select_tail)%
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree a_v-1)),
+       var x_1_2 : Tree a_v-1) %(ga_select_tail)%
 free type Tree(a : Type+)
-  ::= Leaf : Tree a_v1
-      Branch : Tree a_v2 * Tree a_v2 -> Tree a_v1
-        (head : Tree a_v2; tail : Tree a_v2) %(ga_Tree)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree1 a_v2
+  ::= Leaf : Tree a_v-1
+      Branch : Tree a_v-1 * Tree a_v-1 -> Tree a_v-1
+        (head : Tree a_v-1; tail : Tree a_v-1) %(ga_Tree)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree1 a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op head : forall a : Type+ . Tree1 a_v-1 -> Tree a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree1 a_v-1 -> Tree1 a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree1 a_v2)),
-       var x_1_1 : Tree a_v2) %(ga_select_head)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree1 a_v2
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree1 a_v-1)),
+       var x_1_1 : Tree a_v-1) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree1 a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op tail : forall a : Type+ . Tree1 a_v-1 -> Tree1 a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree1 a_v-1 -> Tree1 a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree1 a_v2)),
-       var x_1_2 : Tree1 a_v2) %(ga_select_tail)%
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree1 a_v-1)),
+       var x_1_2 : Tree1 a_v-1) %(ga_select_tail)%
 generated type Tree1(a : Type+)
-  ::= Leaf : Tree1 a_v1
-      Branch : Tree a_v2 * Tree1 a_v2 -> Tree1 a_v1
-        (head : Tree a_v2; tail : Tree1 a_v2) %(ga_Tree1)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree2 a_v2
+  ::= Leaf : Tree1 a_v-1
+      Branch : Tree a_v-1 * Tree1 a_v-1 -> Tree1 a_v-1
+        (head : Tree a_v-1; tail : Tree1 a_v-1) %(ga_Tree1)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree2 a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op head : forall a : Type+ . Tree2 a_v-1 -> Tree a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree2 a_v2)),
-       var x_1_1 : Tree a_v2) %(ga_select_head)%
-forall a : Type+; x_1_1 : Tree a_v2; x_1_2 : Tree2 a_v2
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree2 a_v-1)),
+       var x_1_1 : Tree a_v-1) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a_v-1; x_1_2 : Tree2 a_v-1
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op tail : forall a : Type+ . Tree2 a_v-1 -> Tree2 a_v-1)
          ((op Branch
            : forall a : Type+ . Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1)
-            (var x_1_1 : Tree a_v2, var x_1_2 : Tree2 a_v2)),
-       var x_1_2 : Tree2 a_v2) %(ga_select_tail)%
+            (var x_1_1 : Tree a_v-1, var x_1_2 : Tree2 a_v-1)),
+       var x_1_2 : Tree2 a_v-1) %(ga_select_tail)%
 type Tree2(a : Type+)
-  ::= Leaf : Tree2 a_v1
-      Branch : Tree a_v2 * Tree2 a_v2 -> Tree2 a_v1
-        (head : Tree a_v2; tail : Tree2 a_v2) %(ga_Tree2)%
+  ::= Leaf : Tree2 a_v-1
+      Branch : Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1
+        (head : Tree a_v-1; tail : Tree2 a_v-1) %(ga_Tree2)%
 free type even(a : Type+)
-  ::= rek : odd a_v2 -> even a_v1 (odd a_v2)
+  ::= rek : odd a_v-1 -> even a_v-1 (odd a_v-1)
 free type odd(a : Type+)
-  ::= rek : even a_v2 -> odd a_v1 (even a_v2) %(ga_even_odd)%
+  ::= rek : even a_v-1 -> odd a_v-1 (even a_v-1) %(ga_even_odd)%
 free type odd2(a : Type+)
-  ::= rek : even2 a_v2 -> odd2 a_v1 (even2 a_v2) %(ga_even2_odd2)%
+  ::= rek : even2 a_v-1 -> odd2 a_v-1 (even2 a_v-1) %(ga_even2_odd2)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'b'
 *** Hint 2.5, is type variable 'a'
@@ -229,10 +229,10 @@ free type odd2(a : Type+)
 	b : Type in 'List b_v1'
 *** Error 6.57, unexpected type argument 'b_v1'
 *** Error 7.50, illegal polymorphic recursion
-  expected: List a_v1
-     found: List (List a_v2)
+  expected: List a_v-1
+     found: List (List a_v-1)
 
 *** Error 14.27, illegal polymorphic recursion
-  expected: odd2 a_v1
-     found: odd2 (odd2 a_v2)
+  expected: odd2 a_v-1
+     found: odd2 (odd2 a_v-1)
 

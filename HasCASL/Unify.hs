@@ -83,10 +83,13 @@ asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
 asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
 -- -------------------------------------------------------------------------
+freshInstList :: TypeScheme -> State Int (Type, [Type])
+freshInstList (TypeScheme tArgs (_ :=> t) _) = 
+    do ts <- mkSubst tArgs
+       return (repl(Map.fromList $ zip tArgs ts) t, ts)
+
 freshInst :: TypeScheme -> State Int Type
-freshInst (TypeScheme tArgs (_ :=> t) _) = 
-    do m <- mkSubst tArgs 
-       return $ repl (Map.fromList $ zip tArgs $ map snd m) t
+freshInst = fmap fst . freshInstList 
 
 freshVar :: Pos -> State Int (Id, Int) 
 freshVar p = 
@@ -94,13 +97,13 @@ freshVar p =
        put (c + 1)
        return (simpleIdToId $ Token ("_var_" ++ show c) p, c)
 
-mkSingleSubst :: TypeArg -> State Int (Int, Type)
+mkSingleSubst :: TypeArg -> State Int Type
 mkSingleSubst tv@(TypeArg _ k _ _) =
     do (ty, c) <- freshVar $ posOfTypeArg tv
-       return (c, TypeName ty k c)
+       return (TypeName ty k c)
 
-mkSubst :: [TypeArg] -> State Int [(Int, Type)]
-mkSubst tas = mapM mkSingleSubst tas
+mkSubst :: [TypeArg] -> State Int [Type]
+mkSubst = mapM mkSingleSubst
  		   
 type Subst = Map.Map Int Type
 
