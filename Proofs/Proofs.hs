@@ -215,11 +215,11 @@ globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dgraph historyElement [] = (dgraph, historyElement)
 globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  if null proofBasis
+  if not (null proofBasis) || isIdentityEdge ledge dgraph
    then
-     globSubsumeAux dgraph (rules,changes) list
-   else 
      globSubsumeAux (insEdge newEdge (delLEdge ledge dgraph)) (newRules,newChanges) list
+   else 
+     globSubsumeAux dgraph (rules,changes) list
 
   where
     morphism = dgl_morphism edgeLab
@@ -236,6 +236,13 @@ globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
                )
     newRules = (GlobSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+isIdentityEdge :: LEdge DGLinkLab -> DGraph -> Bool
+isIdentityEdge (src,tgt,edgeLab) dgraph =
+  if isDGRef nodeLab then undefined --isIdentityEdge ...
+   else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
+
+  where nodeLab = lab' (context src dgraph)
 
 
 {- returns the DGLinkLab of the given LEdge -}
