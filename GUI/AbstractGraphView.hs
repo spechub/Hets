@@ -339,13 +339,20 @@ makepathsMain :: AbstractionGraph -> [Descr] -> Maybe ([(Descr,Descr,String)],[(
 makepathsMain g node_list =
   -- try to determine the in- and outgoing edges of the nodes
   case sequence (map (fetchEdgesOfNode g) node_list) of
-     -- try to make paths of these edges
-     Just edgelistPairs -> case sequence (map (makepaths g node_list) edgelistPairs) of
-                                         -- return the paths to add and the edges to remove
-                                         Just paths -> Just (nub (concat paths),edgelistPairs)
-					 Nothing -> Nothing
-     Nothing -> Nothing    
-  
+    -- try to make paths of these edges
+    Just edgelistPairs -> 
+      case sequence (map (makepaths g node_list) edgelistPairs) of
+        -- the paths to add (dangling ones are removed) and the edges to remove
+        Just paths -> 
+	  Just (removeDanglingEdges (nub (concat paths)) node_list,
+		edgelistPairs)
+        Nothing -> Nothing
+    Nothing -> Nothing    
+
+-- removes those edges whose source or target node will be hidden
+removeDanglingEdges :: [(Descr,Descr,String)] -> [Descr] -> [(Descr,Descr,String)]
+removeDanglingEdges edges nodes =
+  [edge| edge@(src,tgt,_) <- edges, notElem src nodes && notElem tgt nodes]
 
 -- returns a list of paths (ie source, target and type) to be added
 makepaths :: AbstractionGraph ->  [Descr] -> ([Descr],[Descr]) -> Maybe [(Descr,Descr,String)]
