@@ -14,18 +14,18 @@ Mixfix analysis of terms, adapted from the CASL analysis
 module HasCASL.MixAna where 
 
 import HasCASL.As
-import HasCASL.AsUtils()
+import HasCASL.PrintAs
 import HasCASL.Le
 import Common.GlobalAnnotations
 import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
 import Common.Lexer
+import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Control.Monad
 import Control.Monad.State
 import qualified Char as C
-import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
 import HasCASL.Unify
 
@@ -72,13 +72,24 @@ opTok = mkSimpleId "(o)"
 predTok = mkSimpleId "(p)"
 litTok = mkSimpleId "\""
 
+mkRuleId :: [Token] -> Id
+mkRuleId toks = Id toks [] []
+applId, parenId, colonId, asId, inId, varId, opId, litId :: Id
+applId       = mkRuleId [termTok, termTok]
+parenId      = mkRuleId [parenTok]
+colonId      = mkRuleId [termTok, colonTok]
+asId         = mkRuleId [termTok, asTok]
+inId  	     = mkRuleId [termTok, inTok]
+varId	     = mkRuleId [varTok]
+opId	     = mkRuleId [opTok]
+litId	     = mkRuleId [litTok]
 
 mkState :: Int -> (Id, OpInfo) -> State Int PState 
 mkState i (ide, info) = 
     do let sc = opType info
+	   side = stripFinalPlaces ide
        t <- freshInst sc
-       return $ PState ide sc t [] [] 
-			      (getTokenList termStr $ stripFinalPlaces ide) i
+       return $ PState side sc t [] [] (getTokenList termStr side) i
 
 mkApplState :: Int -> (Id, OpInfo) -> State Int PState 
 mkApplState i (ide, info) =     
@@ -123,19 +134,19 @@ initialState g ids i =
     do ls <- listStates g i
        ts <- tupleStates i
        l1 <- mapM (mkState i) ids
-       l2 <- mapM (mkApplState i) ids   
+       l2 <- mapM (mkApplState i) $ filter (isMixfix . fst) ids   
        let ty = MixfixType []
 	   sc = simpleTypeScheme ty
-	   mkTokState toks = PState (Id toks [] []) sc ty
-			     [] [] toks i
-       return (mkTokState [parenTok] : 
-	       mkTokState [termTok, colonTok] :
-	       mkTokState [termTok, asTok] :
-	       mkTokState [termTok, inTok] :
-	       mkTokState [varTok] :
-	       mkTokState [opTok] :
-	       mkTokState [litTok] :
-	       mkTokState [termTok, termTok] :
+	   mkTokState r = PState r sc ty
+			     [] [] (getTokenList place r) i
+       return (mkTokState parenId : 
+	       mkTokState colonId :
+	       mkTokState asId :
+	       mkTokState inId :
+	       mkTokState varId :
+	       mkTokState opId :
+	       mkTokState litId :
+	       mkTokState applId :
 	       ls ++ ts ++ l1 ++ l2)
 
 
@@ -156,12 +167,12 @@ scan trm i cm =
        foldr (\ (PState o sc ty b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
-                   if t == commaTok && o == listId then 
+                   if t == commaTok then 
 	      -- list elements separator
 	             (PState o sc ty p a 
 		      (termTok : commaTok : tail ts) k)
                      : (PState o sc ty p a (termTok : tail ts) k) : l
-              else if t == parenTok then
+              else if t == parenTok || t == litTok then
                      (PState o sc ty b (trm : a) (tail ts) k) : l
               else if t == varTok || t == opTok || t == predTok then
                      (PState o sc ty b [trm] (tail ts) k) : l
@@ -176,16 +187,19 @@ scan trm i cm =
 
 stateToAppl :: PState -> Term
 stateToAppl p = 
-    let vs = getTokenList place $ ruleId p
+    let r = ruleId p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
-    in if  vs == [termTok, colonTok] 
-	   || vs == [termTok, asTok] 
-	   || vs == [varTok] 
-           || vs == [opTok]
-           || vs == [predTok]
-           || vs == [parenTok]
+    in if r == colonId 
+	   || r == asId 
+	   || r == inId 
+	   || r == litId 
+	   || r == parenId 
+	   || r == varId 
+	   || r == opId 
        then head ar
+       else if r == applId then
+	    ApplTerm (head ar) (head (tail ar)) qs 
        else foldr (\ (a, q) t -> ApplTerm t a [q]) 
 		(QualOp (InstOpId (ruleId p) [] []) (ruleScheme p) qs) 
 		$ zip ar (posList p ++ repeat (if null qs then nullPos
@@ -270,18 +284,25 @@ expandType tm oldT =
 	   LazyType t _ -> t
 	   _ -> oldT
 
+addArgState :: PState -> PState -> PState
+addArgState arg op = op { ruleArgs = stateToAppl arg : ruleArgs op }
+ 
 filterByType :: ParseMap -> PState -> PState -> Maybe PState
-filterByType cm argState opState = 
+filterByType cm argState opState =
     let tm = typeAliases cm in
+    if ruleId opState == applId && null (ruleArgs opState) then 
+       Just (addArgState argState opState) { ruleType = ruleType argState }
+    else 
     case expandType tm $ ruleType opState of
 		FunType t1 _ t2 _ -> 
 		    case expandType tm t1 of 
 		    argType -> 
 			do s <- maybeResult $ unify tm argType
 				$ ruleType argState
-			   return opState {ruleType = subst s t2,
-					   ruleArgs = stateToAppl argState:
-						   ruleArgs opState}
+			   return (addArgState argState opState) 
+				      {ruleType = subst s t2}
+		TypeName _ _ v -> if v == 0 then Nothing
+				  else Just $ addArgState argState opState
 		_ -> Nothing
 
 -- final complete/reduction phase 
@@ -290,7 +311,8 @@ filterByType cm argState opState =
 collectArg :: GlobalAnnos -> ParseMap -> PState -> [PState]
 -- pre: finished rule 
 collectArg g m s@(PState _ _ _ _ _ _ k) = 
-    mapMaybe (filterByType m s)
+    map (\ p -> p { restRule = tail $ restRule p })  
+    $ mapMaybe (filterByType m s)
     $ filter (filterByPrec g s)
     $ lookUp (parseMap m) k
 
@@ -377,16 +399,13 @@ resolve g ops p trm =
         ts = getAppls g i m 
     in if null ts then if null ds then 
                         plain_error trm ("no resolution for term: "
-					     ++ show trm)
+					     ++ showPretty trm "")
 					    (nullPos)
 		       else Result ds (Just trm)
        else if null $ tail ts then Result ds (Just (head ts))
 	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
-			 (concat  
-			 $ intersperse "\n\t" 
-			 $ map (show) 
+			 (concatMap ( \ t -> showPretty t "\n\t" )
 			 $ take 5 ts)) (nullPos) : ds) (Just trm)
-
 
 resolveTerm ::  Term -> State Env (Result Term)
 resolveTerm t = 

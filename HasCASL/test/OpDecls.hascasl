@@ -1,0 +1,8 @@
+type s
+
+op a, b  : s
+
+op __ + __ : s  -> s -> s, idem, assoc, comm;
+
+op c :? s = a + b
+

@@ -15,7 +15,7 @@ op true, false: logical
 ops __/\__, __\/__, __=>__, __if__,__<=>__ : logical * logical -> logical
 op not : logical -> logical
 
-%% op __=__,__=e=__ : t * t -> logical
+op __=__ : t -> t -> logical %% =e=
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
