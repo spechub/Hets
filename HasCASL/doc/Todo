@@ -2,6 +2,7 @@ general:
 pToken, oBraceT, etc. do not allow to be followed by (a line-comment)
 annotations. Call wrapAnnos if needed.
 
+report other uninspected annotations
 
 haddockify code
 
@@ -55,6 +56,9 @@ exhaustive and overlapping patterns are not checked for several
 program equations or case patterns. (Merge.hs?)
 
 Sentences for attributes comm, assoc, unit are not generated yet.
+
+Test shadowing in MixAna with warning.
+
 
 
 
