@@ -193,9 +193,10 @@ emptySign :: Sign
 emptySign = SignAsMap emptyFM empty
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
-	       deriving (Show, Eq)
+    	         deriving (Show, Eq, Ord)
 
-data Kind = SortKind | FunKind | PredKind deriving (Show, Eq)
+data Kind = SortKind | FunKind | PredKind
+            deriving (Show, Eq, Ord)
 
 data Axiom = AxiomDecl [VarDecl] Formula [Pos]  
 	       -- pos: "var/forall", semi colons, dot
