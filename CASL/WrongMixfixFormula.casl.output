@@ -1,0 +1,2 @@
+forall aa:s . (aa <= ab) => p
+Error: in line 1 at char 21: unexpected mixfix token: ab

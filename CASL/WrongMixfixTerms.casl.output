@@ -11,9 +11,9 @@ Error: in line 4 at char 1: no resolution for term: a +
 +
 Error: in line 5 at char 1: no resolution for term: +
 a < b
-Error: in line 6 at char 3: unexpected term or token: <
+Error: in line 6 at char 3: unexpected mixfix token: <
 __ < __ (a, b)
-Error: in line 7 at char 3: unexpected term or token: <
+Error: in line 7 at char 3: unexpected mixfix token: <
 __ * __
 Error: in line 8 at char 1: no resolution for term: __ * __
 ([a], (a) (b), a +, __ < __ (a, b))
@@ -22,9 +22,9 @@ Error: in line 9 at char 2: ambiguous mixfix term
 	[ a ]
 Error: in line 9 at char 7: no resolution for term: (a) (b)
 Error: in line 9 at char 15: no resolution for term: a +
-Error: in line 9 at char 22: unexpected term or token: <
+Error: in line 9 at char 22: unexpected mixfix token: <
 [[a], (a) (b), a +, __ < __ (a, b)]
-Error: in line 10 at char 13: unexpected term or token: ,
+Error: in line 10 at char 13: unexpected mixfix token: ,
 a when a +b else b
 Error: in line 11 at char 8: not a predicate: __+__
 a when (op a : b) else b

@@ -32,3 +32,4 @@ while while a do b od do while c do d od od
 A A 0 B B
 b + A 0 B + b
 - A 0 B
+a ! ! !

@@ -32,3 +32,4 @@ a ::%[Infix]% ((A 0 B) ::[])
 A (A 0 B) B
 %[Infix]% (b +(A 0 B)) +b
 -(A 0 B)
+%[MixWithPost]% %[MixWithPost]% a ! ! !
