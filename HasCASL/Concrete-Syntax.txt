@@ -234,7 +234,7 @@ TYPE-OP         ::= ":" | as | in
 LET-TERM        ::= let PROG-EQ ; ... ; PROG-EQ in TERM
 
 %% ";" is already used as item-separator
-CASE-TERM       ::= case TERM of PATTERN = TERM "|" ... "|" PATTERN = TERM
+CASE-TERM       ::= case TERM of PATTERN -> TERM "|" ... "|" PATTERN -> TERM
 
 QUANT-TERM      ::= QUANTIFIER VAR-DECL ;...; VAR-DECL "." TERM 
                   | forall TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM 
