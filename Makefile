@@ -56,12 +56,12 @@ HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
+logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
+
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
-
-logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
 
 # some modules from uni for haddock
 # if uni/server is included also HaXml sources are needed
@@ -196,9 +196,9 @@ CspCASL_files := CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 Hatchet_files := Haskell/Hatchet/AnnotatedHsSyn.hs \
                 Haskell/Hatchet/MultiModuleBasics.hs \
                 Haskell/Hatchet/HsSyn.hs \
-                Haskell/Hatchet/Representation.hs\
+                Haskell/Hatchet/Representation.hs \
                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-                Haskell/Hatchet/Env.hs \
+                Haskell/Hatchet/Env.hs Hatchet/HatParser.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
