@@ -269,7 +269,7 @@ skip_Group sp =
 --       
 -- | 
 -- prints the keyword or spec head with following semantic annotation
--- if any and/or only the list of non sematic annotations if any and
+-- if any and the list of non sematic annotations if any and
 -- then the following item from Annoted a
 spAnnotedPrint :: (a -> Doc) -- ^ print function for the item
 	       -> (Annotation -> Doc) -- ^ print function for the annotation
