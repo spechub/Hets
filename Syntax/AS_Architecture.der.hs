@@ -10,6 +10,7 @@ Portability :  non-portable(Grothendieck)
 
    These data structures describe the abstract syntax tree for heterogenous 
    architectural specifications in HetCASL.
+   Follows Sect. II:2.2.4 of the CASL Reference Manual.
 -}
 
 {-

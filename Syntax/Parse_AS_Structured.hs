@@ -9,6 +9,8 @@ Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
    Parsing the Structured part of hetrogenous specifications.
+   Concerning the homogeneous syntax, this follows Sect II:3.1.3 
+   of the CASL Reference Manual.
 
 -}
 {-

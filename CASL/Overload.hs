@@ -9,7 +9,12 @@
     Portability :  portable
 
     Overload resolution
-
+    Follows Sect. III:3.3 of the CASL Reference Manual.
+    The algorthim is from
+    Till Mossakowski, Kolyang, Bernd Krieg-Brueckner: 
+    Static semantic analysis and theorem proving for CASL.
+    12th Workshop on Algebraic Development Techniques, Tarquinia 1997, 
+    LNCS 1376, p. 333-348
 -}
 
 -- does anyone ever need anything else from me?
@@ -213,7 +218,7 @@ minExpFORMULA_pred sign predicate terms pos = do
                     preds_equal = (pred1 == pred2)              -- ::  Bool
                     preds_equiv = leqP sign pred1 pred2         -- ::  Bool
                     types_equal = and ( zipWith (==) ts1 ts2 )  -- ::  Bool
-                in b1 && b2 && (preds_equal || (preds_equiv && types_equal))
+                in  b1 && b2 && (preds_equal || (preds_equiv && types_equal))
 
 {-----------------------------------------------------------
     Minimal Expansions of a Strong/Existl. Equation Formula

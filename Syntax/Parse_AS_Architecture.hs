@@ -9,10 +9,7 @@
    Portability :  non-portable (via imports)
 
    Parsing the architectural part of heterogenous specifications.
-   www.cofi.info
-   from 25 March 2001
-
-   C.2.3 Architectural Specifications
+   Follows Sect. II:3.1.4 of the CASL Reference Manual.
 
    TODO:
    - make sure the precedence is OK

@@ -9,6 +9,7 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
    Proofs in development graphs.
+   Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 
 {- 
@@ -19,10 +20,6 @@ Portability :  non-portable(Logic)
    H. Hussmann (ed.): Fundamental Approaches to Software Engineering 2001,
    Lecture Notes in Computer Science 2029, p. 269-283,
    Springer-Verlag 2001.
-
-   T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
-   CASL Proof calculus. In: CASL reference manual, part IV.
-   Available from http://www.cofi.info
 
 todo:
 

@@ -8,6 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
    parse SIG-ITEMS, BASIC-ITEMS, BASIC-SPEC 
+   Follows Sect. II:3.1 of the CASL Reference Manual.
 -}
 
 {- 

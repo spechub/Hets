@@ -3,11 +3,13 @@ sources directly obtained via cvs).
 
 The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
-The sources need to be compiled with ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc).
-
 The output of hets, if the input is successfully accepted, can be
 displayed by "daVinci".
+
+SYSTEM requirements:
+- A Linux, Solaris or Macintosh OS-X machine with 64 MB RAM
+- Tcl/Tk
+- daVinci (comes with this distribution)
 
 daVinci is maintained by b-novative and b-novative holds all rights.
 This release may be accompanied with free binary releases of daVinci
@@ -28,6 +30,11 @@ b-novative may have one in the mean time
 
 For best quality, get the latest version of daVinci from b-novative.
 
+INSTALLATION:
+
+You can either copy the folder Hets to your local file system, 
+or directly start from the CD-ROM.
+
 For hets to find daVinci, the environment variables DAVINCIHOME and
 UNIDAVINCI must be set to the installation directory of daVinci and to
 the actual executable, respectively. 
@@ -37,9 +44,11 @@ export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
 
 A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
 
-If you need to rebuild the hets binary follow the instructions in INSTALL
-(This README belongs a to release created by "make release", in case
-that you obtained the HetCATS sources as CVS tree)
+HETS SOURCES:
+
+If you need to rebuild the hets binary follow the instructions in INSTALL.
+The sources need to be compiled with ghc Glasgow Haskell Compiler
+(www.haskell.org/ghc).
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski

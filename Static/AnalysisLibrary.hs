@@ -8,15 +8,11 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
    Analysis of libraries
-
+   Follows the verification semantics sketched in Chap. IV:6
+   of the CASL Reference Manual.
 -}
 
-{-   Follows the extended static semantic rules in:
-
-   T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
-   CASL Proof calculus.
-   To appear in the CASL reference manual, see http://www.cofi.info.
-
+{-   
    Todo:
    Generalization to heterogeneous views
    check that libname coincides with filename (otherwise internal error occurs)

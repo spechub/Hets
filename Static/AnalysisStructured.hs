@@ -10,12 +10,8 @@
 
    Analysis of structured specifications
 
-   Follows the extended static semantic rules in:
-
-   T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
-   CASL Proof calculus.
-   Available from <http://www.informatik.uni-bremen.de/~till/calculus.ps>
-   To appear in the CASL book.
+   Follows the verfication semantic rules in Chap. IV:4.7
+   of the CASL Reference Manual.
 -}
 
 {-
