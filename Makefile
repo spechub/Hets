@@ -13,8 +13,8 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = Common/ATerm:ghc:Modal:hetcats
-CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:$(INCLUDE_PATH)
+INCLUDE_PATH = Common/ATerm:ghc:hetcats
+CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CSP-CASL:$(INCLUDE_PATH)
 
 HC         = ghc
 PERL       = perl
