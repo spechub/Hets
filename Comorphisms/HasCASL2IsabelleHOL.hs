@@ -86,7 +86,7 @@ transSignature :: Env
                    -> Maybe(IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
   Just(IsaSign.Sign{
-    baseSig = "Main",
+    baseSig = "MainHC",
     tsig = emptyTypeSig 
             {tycons = Map.foldWithKey extractTypeName Map.empty (typeMap sign)},
     constTab = Map.foldWithKey insertOps Map.empty (assumps sign),
@@ -143,7 +143,7 @@ transTerm _ (QualVar var typ _) =
 transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | opId == trueId = Const ("True",dummyT)
   | opId == falseId = Const ("False",dummyT)
-  | otherwise = Const((getNameOfOpId opId),dummyT)
+  | otherwise = Const("Some",dummyT) `App` Const((getNameOfOpId opId),dummyT)
    where getNameOfOpId (Id (tok:toks) a b) = if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
                                                 else tokStr tok
          getNameOfOpId (Id [] _ _) = error "Operation without name"
@@ -190,7 +190,7 @@ transLog sign opId term1 term
   | opId == orId = (foldl1 binDisj (map (transTerm sign) (getPhis term)))
   | opId == implId = (binImpl (transTerm sign (head (getPhis term))) 
                            (transTerm sign (last (getPhis term))))
-  | opId == eqvId = (binEq (transTerm sign (head (getPhis term))) 
+  | opId == eqvId = (binEqv (transTerm sign (head (getPhis term))) 
                          (transTerm sign (last (getPhis term))))
   | opId == notId = (Const ("Not",dummyT) `App` (transTerm sign term))
   | opId == defId = (Const ("defOp",dummyT) `App` (transTerm sign term))
@@ -226,6 +226,11 @@ binImpl phi1 phi2 =
 binEq :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 binEq phi1 phi2 = 
   Const("op =",dummyT) `App` phi1 `App` phi2
+
+-- For precedence disdinction <=>/=
+binEqv :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
+binEqv phi1 phi2 = 
+  Const("op <=>",dummyT) `App` phi1 `App` phi2
 
 prod :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 prod term1 term2 =
