@@ -97,6 +97,8 @@ parseLogicAux =
                       do c <- colonT
                          parseLogAfterColon (Just f) [l,c]
                       <|> parseOptLogTarget Nothing (Just e) [l]
+                      <|> return (Logic_code (Just f) Nothing Nothing 
+                                  [tokPos l])
          <|> do f <- asKey funS  -- parse at least a logic target after "logic"
                 t <- logicName
                 return (Logic_code Nothing Nothing (Just t) (map tokPos [l,f]))
@@ -109,7 +111,6 @@ parseLogAfterColon e l =
        parseOptLogTarget e (Just s) l
          <|> return (Logic_code e (Just s) Nothing (map tokPos l))
     <|> parseOptLogTarget e Nothing l
-    <|> return (Logic_code e Nothing Nothing (map tokPos l))
 
 -- parse an optional logic target (given encoding e or source s) 
 parseOptLogTarget :: Maybe Token -> Maybe Logic_name -> [Token] 
