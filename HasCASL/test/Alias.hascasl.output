@@ -1,7 +1,7 @@
 var s : Type
-type MyPred : Type := \ s : Type . s ->? Unit
+type MyPred(s :  ) : Type := \ s : Type . s ->? Unit
 %% Type Constructors -----------------------------------------------------
-MyPred : Type := \ s : Type . s ->? Unit
+MyPred : Type -> Type := \ s : Type . s ->? Unit
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __-->__ : Type- -> Type+ -> Type
@@ -22,3 +22,4 @@ if__then__else__ : forall a : Type .  Unit × a × a ->? a
 not__ : Unit ->? Unit
 %% Diagnostics -----------------------------------------------------------
 Hint (line 1, column 5) is type variable 's'
+Warning (line 2, column 13) redeclared type 's'

@@ -75,25 +75,26 @@ anaTypeItem _ _ inst (TypeDecl pats kind ps) =
     do ak <- anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
        addDiags ds
-       mis <- mapM (addTypeId NoTypeDefn inst ak) is
+       mis <- mapM (addTypePattern NoTypeDefn inst ak) is
        return $ TypeDecl (idsToTypePatterns mis) ak ps
 
 anaTypeItem _ _ inst (SubtypeDecl pats t ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds  
-       mis <- mapM (addTypeId NoTypeDefn inst star) is 
+       mis <- mapM (addTypePattern NoTypeDefn inst star) is 
        let newPats = idsToTypePatterns mis 
        mt <- anaStarType t
        case mt of
            Nothing -> return $ TypeDecl newPats star ps
-           Just newT -> do mapM_ (addSuperType newT) is
+           Just newT -> do mapM_ (addSuperType newT) $ map fst is
 			   return $ SubtypeDecl newPats newT ps
 
 anaTypeItem _ _ inst (IsoDecl pats ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
+	   js = map fst is
        addDiags ds
-       mis <- mapM (addTypeId NoTypeDefn inst star) is
-       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
+       mis <- mapM (addTypePattern NoTypeDefn inst star) is
+       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) js) js 
        return $ IsoDecl (idsToTypePatterns mis) ps
 
 anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) = 
@@ -116,17 +117,18 @@ anaTypeItem ga _ inst (SubtypeDefn pat v t f ps) =
        putAssumps as
        case m of 
 	      Nothing -> return $ TypeDecl [] star ps
-	      Just (i, _, _) -> case (mt, mv) of 
+	      Just i -> case (mt, mv) of 
 		  (Just newF, Just _) -> do 
 		      let newT = fromJust mty	       
-		      mi <- addTypeId (Supertype v newT $ item newF) 
+		      mi <- addTypePattern (Supertype v newT $ item newF) 
 			    inst star i
-		      addSuperType newT i
+		      addSuperType newT $ fst i
 		      case mi of 
 			      Nothing -> return $ TypeDecl [] star ps
 			      Just _ -> return $ SubtypeDefn
-					(TypePattern i [] []) v newT newF ps 
-		  _ -> do mi <- addTypeId NoTypeDefn inst star i
+				            (TypePattern (fst i) (snd i) []) 
+					    v newT newF ps 
+		  _ -> do mi <- addTypePattern NoTypeDefn inst star i
 			  return $ TypeDecl (idsToTypePatterns [mi]) star ps
 	   
 anaTypeItem _ _ inst (AliasType pat mk sc ps) = 
@@ -134,11 +136,13 @@ anaTypeItem _ _ inst (AliasType pat mk sc ps) =
        addDiags ds
        (ik, mt) <- anaPseudoType mk sc
        case m of 
-	      Just (i, _, _) -> case mt of 
+	      Just i -> case mt of 
 		  Nothing -> return $ TypeDecl [] star ps
 		  Just nsc -> do let newPty = generalize nsc
-				 addTypeId (AliasTypeDefn newPty) inst ik i 
-				 return $ AliasType (TypePattern i [] [])
+				 addTypePattern (AliasTypeDefn newPty) 
+						inst ik i 
+				 return $ AliasType 
+					    (TypePattern (fst i) (snd i)[])
 					   (Just ik) newPty ps
 	      _ -> return $ TypeDecl [] star ps
 
@@ -161,8 +165,8 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
        addDiags ds
        case m of 
 	      Nothing -> return $ DatatypeDecl pat k [] newDerivs ps
-	      Just (i, _, _) -> 
-		  do let dt = TypeName i k 0
+	      Just (i, as) -> 
+		  do let dt = TypeName i (typeArgsListToKind as k) 0
                      newAlts <- anaAlts dt 
 				$ map item alts
 		     mapM_ ( \ (Construct c tc p sels) -> do
@@ -174,8 +178,9 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs ps) =
 						getSelType dt pa ts) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-		     mi <- addTypeId (DatatypeDefn genKind [] newAlts) inst k i
-		     return $ DatatypeDecl (TypePattern i [] []) k 
+		     mi <- addTypePattern (DatatypeDefn genKind [] newAlts) 
+			   inst k (i, as)
+		     return $ DatatypeDecl (TypePattern i as []) k 
 			    (case mi of Nothing -> [] 
 			                Just _ -> alts)
 			    newDerivs ps
@@ -199,6 +204,15 @@ anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
            Nothing -> return (newK, Nothing)
 	   Just newTy -> return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
 
+-- | add a type pattern 
+addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])  
+	       -> State Env (Maybe Id) -- , [TypeArg]))
+
+addTypePattern defn inst kind (i, as) =
+    do newAs <- mapM anaTypeVarDecl as 
+       let fullKind = typeArgsListToKind (catMaybes newAs) kind
+       addTypeId defn inst fullKind i
+
 -- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
@@ -206,15 +220,15 @@ typeArgsListToKind tArgs k =
        else typeArgsListToKind (init tArgs) 
 	    (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
 
--- | convert mixfix type patterns to ids
-convertTypePatterns :: [TypePattern] -> Result [Id]
+-- | convert type patterns
+convertTypePatterns :: [TypePattern] -> Result [(Id, [TypeArg])]
 convertTypePatterns [] = Result [] $ Just []
 convertTypePatterns (s:r) =
     let Result d m = convertTypePattern s
 	Result ds (Just l) = convertTypePatterns r
 	in case m of 
 		  Nothing -> Result (d++ds) $ Just l
-		  Just (i, _, _) -> Result (d++ds) $ Just (i:l)
+		  Just i -> Result (d++ds) $ Just (i:l)
 
 
 illegalTypePattern, illegalTypePatternArg  :: TypePattern -> Result a 
@@ -224,28 +238,38 @@ illegalTypePatternArg tp = fatal_error ("illegal type pattern argument: " ++
 				  showPretty tp "") $ getMyPos tp
 
 -- | convert a 'TypePattern'
-convertTypePattern :: TypePattern -> Result (Id, [TypeArg], Int)
-convertTypePattern (TypePattern t as _) = return (t, as, 0)
+convertTypePattern :: TypePattern -> Result (Id, [TypeArg])
+convertTypePattern (TypePattern t as _) = return (t, as)
 convertTypePattern tp@(TypePatternToken t) = 
     if isPlace t then illegalTypePattern tp
-       else return (simpleIdToId t, [], 0) 
+       else return (simpleIdToId t, []) 
+convertTypePattern tp@(MixfixTypePattern 
+		       [ra, ri@(TypePatternToken inTok), rb]) =
+    if head (tokStr inTok) `elem` signChars
+       then let inId = Id [Token place $ getMyPos ra, inTok, 
+			   Token place $ getMyPos rb] [] [] in
+       case (ra, rb) of 
+            (TypePatternToken (Token "__" _),
+	     TypePatternToken (Token "__" _)) -> return (inId, [])
+	    _ -> do a <- convertToTypeArg ra
+		    b <- convertToTypeArg rb
+	            return (inId, [a, b])
+    else case ra of 
+         TypePatternToken t1 -> do 
+	     a <- convertToTypeArg ri
+	     b <- convertToTypeArg rb
+	     return (simpleIdToId t1, [a, b])
+	 _ -> illegalTypePattern tp
 convertTypePattern tp@(MixfixTypePattern (TypePatternToken t1 : rp)) =
     if isPlace t1 then 
        case rp of 
 	       [TypePatternToken inId, TypePatternToken t2] -> 
 		   if isPlace t2 && head (tokStr inId) `elem` signChars
-		     then return (Id [t1,inId,t2] [] [], [], 2)
+		     then return (Id [t1,inId,t2] [] [], [])
 		   else illegalTypePattern tp
 	       _ -> illegalTypePattern tp
     else do as <- mapM convertToTypeArg rp 
-	    return (simpleIdToId t1, as, 0)
-convertTypePattern tp@(MixfixTypePattern 
-		       [TypePatternArg a _, TypePatternToken inId, rb]) =
-    if head (tokStr inId) `elem` signChars
-       then do b <- convertToTypeArg rb
-	       return (Id [Token place $ getMyPos a, inId, 
-			   Token place $ getMyPos rb] [] [], [a, b], 0)
-    else illegalTypePattern tp
+	    return (simpleIdToId t1, as)
 convertTypePattern (BracketTypePattern bk [ap] ps) =
     case bk of 
     Parens -> convertTypePattern ap
@@ -254,11 +278,10 @@ convertTypePattern (BracketTypePattern bk [ap] ps) =
 		       Token c $ last ps] [] [] in  
          case ap of 
 	 TypePatternToken t -> if isPlace t then 
-	     return (tid, [], 1)
- 	     else return (tid, [TypeArg (simpleIdToId t) MissingKind Other []]
-			 , 0)
+	     return (tid, [])
+ 	     else return (tid, [TypeArg (simpleIdToId t) MissingKind Other []])
 	 _ -> do a <- convertToTypeArg ap
-		 return (tid, [a], 0)
+		 return (tid, [a])
 convertTypePattern tp = illegalTypePattern tp
 
 convertToTypeArg :: TypePattern -> Result TypeArg

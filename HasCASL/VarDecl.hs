@@ -46,16 +46,9 @@ addTypeId defn _ kind i =
 	  else do addDiags [mkDiag Error "wrong arity of" i]
                   return Nothing
 
--- | store prefix type ids both with and without following places 
-addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
-addTypeKind d i k = 
-    if isPrefix i then do addSingleTypeKind d i k
-			  addSingleTypeKind d (stripFinalPlaces i) k
-    else addSingleTypeKind d i k
-
 -- | store type as is
-addSingleTypeKind :: TypeDefn -> Id -> Kind -> State Env () 
-addSingleTypeKind d i k = 
+addTypeKind :: TypeDefn -> Id -> Kind -> State Env () 
+addTypeKind d i k = 
     do tk <- gets typeMap
        let rk = rawKind k
        case Map.lookup i tk of
@@ -71,11 +64,18 @@ addSingleTypeKind d i k =
 					  sups defn) tk
 			else addDiags $ diffKindDiag i ok rk 
 
--- | analyse a type argument
+-- | analyse a type argument and look up a missing kind
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
 anaTypeVarDecl(TypeArg t k s ps) = 
-    do nk <- anaKind k
-       addTypeVarDecl $ TypeArg t nk s ps
+    case k of 
+    MissingKind -> do 
+       tk <- gets typeMap
+       let m = getKind tk t
+       case m of 
+ 	      Nothing -> anaTypeVarDecl(TypeArg t star s ps)
+	      Just oldK -> anaTypeVarDecl(TypeArg t oldK s ps)
+    _ -> do nk <- anaKind k
+	    addTypeVarDecl $ TypeArg t nk s ps
 
 -- | add an analysed type argument
 addTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)

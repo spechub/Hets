@@ -33,7 +33,7 @@ program tt : forall s : Type .  s ->? Unit = \ x : s . ()
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type
-type s < s ->? t
+type __->__ < s ->? t
 %% total functions
 op __res__ : s × t ->? s = (var x : s)
 op fst : s × t ->? s = (var x : s)
@@ -103,12 +103,12 @@ type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type c < c ->? d
+type __-->?__ < c ->? d
 program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type c < c -->? d
+type __-->__ < c -->? d
 var f : c --> d; g : c --> d
 program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_103,
 						    g : _var_104)
@@ -132,20 +132,20 @@ Unit : Pcpo := Unit
 __*__ : (Pcpo+ -> Pcpo+ -> Pcpo, Cpo+ -> Cpo+ -> Cpo,
 	 Type+ -> Type+ -> Type)
 __-->__ : (Cpo- -> Pcpo+ -> Pcpo, Cpo- -> Cpo+ -> Cpo,
-	   Type- -> Type+ -> Type)
-__-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type)
-__->__ : Type- -> Type+ -> Type
+	   Type- -> Type+ -> Type) < c -->? d
+__-->?__ : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c ->? d
+__->__ : Type- -> Type+ -> Type < s ->? t
 __->?__ : Type- -> Type+ -> Type
 __×__ : Type+ -> Type+ -> Type
 bool : Flatcpo %[free type __ ::=
 		      true : -> __
 		      false : -> __]%
-c : Cpo < (c -->? d, c ->? d) %(var)%
+c : Cpo %(var)%
 d : Cpo %(var)%
 f : Flatcpo %(var)%
 nat : Flatcpo
 p : Pcpo %(var)%
-s : Type < (? s, s ->? t) %(var)%
+s : Type < ? s %(var)%
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo .  (p -->? p) --> p
@@ -221,6 +221,11 @@ Error (line 46, column 9) unexpected pattern '__ und __ (x, y : Unit)'
 Error (line 46, column 9) illegal toplevel pattern '__ und __ (x, y : Unit)'
 Warning (line 50, column 8) redeclared type '__->__'
 Warning (line 52, column 6) redeclared type 's'
+Warning (line 52, column 11) redeclared type 't'
+Error (line 52, column 8) incompatible kind of: __->__
+  expected: Type- -> Type+ -> Type
+     found: Type -> Type -> Type
+
 Error (line 54, column 3) expected further mixfix token: ["/\\","<=>","=","=>","=e="]
 Error (line 54, column 42) ambiguous mixfix term
 	def f x
@@ -304,6 +309,12 @@ Error (line 0, column 0) undeclared type '_var_76'
 Error (line 0, column 0) undeclared type '_var_77'
 Error (line 0, column 0) undeclared type '_var_78'
 Error (line 159, column 45) unexpected mixfix token: und
+Warning (line 169, column 7) redeclared type 'c'
+Warning (line 169, column 14) redeclared type 'd'
+Error (line 169, column 9) incompatible kind of: __-->?__
+  expected: Type- -> Type+ -> Type
+     found: Type -> Type -> Type
+
 Error (line 170, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 171, column 35) unexpected mixfix token: und
 Error (line 174, column 45) unexpected mixfix token: +
@@ -327,6 +338,12 @@ Error (line 170, column 20) no typing for '(__=__)(__ in c -->? d,
 						       (sup (\ n : nat .! f (s (n + m))),
 							f (sup (s))))))'
 Error (line 176, column 16) unexpected mixfix token: [
+Warning (line 181, column 7) redeclared type 'c'
+Warning (line 181, column 13) redeclared type 'd'
+Error (line 181, column 9) incompatible kind of: __-->__
+  expected: Type- -> Type+ -> Type
+     found: Type -> Type -> Type
+
 Error (line 182, column 4) expected further mixfix token: ["/\\","<<=","<=>","=","=>"]
 Error (line 182, column 46) ambiguous mixfix term
 	def f x
