@@ -74,7 +74,7 @@ instance PrettyPrint BASIC_ITEMS where
 	text forallS <+> semiT printText0 ga l
 		 $$ printText0 ga (Axiom_items f p)
     printText0 ga (Axiom_items f _) = 
-	vcat $ map (\x -> char '.' <+> printText0 ga x) f
+	vcat $ map (printAnnotedFormula_Text0 ga) f
 
     printLatex0 ga (Sig_items s) = printLatex0 ga s 
     printLatex0 ga (Free_datatype l _) = 
@@ -114,7 +114,38 @@ instance PrettyPrint BASIC_ITEMS where
 	hc_sty_axiom "\\forall" <\+> semiT_latex printLatex0 ga l
 		 $$ printLatex0 ga (Axiom_items f p)
     printLatex0 ga (Axiom_items f _) = 
-	vcat $ map (\x -> hc_sty_axiom "\\bullet" <\+> printLatex0 ga x) f
+	vcat $ map (printAnnotedFormula_Latex0 ga) f
+
+printAnnotedFormula_Text0 :: GlobalAnnos -> Annoted FORMULA -> Doc
+printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
+	let i'   = char '.' <+> printText0 ga i
+	    las' = if not $ null las then 
+	               ptext "\n" <> printAnnotationList_Text0 ga las
+		   else
+		       empty
+	    (la,rras) = case ras of
+			[]     -> (empty,[])
+			r@(l:xs)
+			    | isLabel l -> (printText0 ga l,xs)
+			    | otherwise -> (empty,r)
+	    ras' = printAnnotationList_Text0 ga rras
+        in las' $+$ (hang i' 0 la) $$ ras'
+
+printAnnotedFormula_Latex0 :: GlobalAnnos -> Annoted FORMULA -> Doc
+printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
+	let i'   = hc_sty_axiom "\\bullet" <\+> printLatex0 ga i
+	    las' = if not $ null las then 
+	              casl_latex 0 "\n" <> printAnnotationList_Latex0 ga las
+	           else
+		      empty
+	    (la,rras) = case ras of
+			[]     -> (empty,[])
+			r@(l:xs)
+			    | isLabel l -> (printLatex0 ga l,xs)
+			    | otherwise -> (empty,r)
+	    ras' = printAnnotationList_Latex0 ga rras
+        in  las' $+$ (hang_latex i' 0 la) $$ ras'
+
 
 instance PrettyPrint SIG_ITEMS where
     printText0 ga (Sort_items l _) =  
