@@ -16,7 +16,7 @@
 \newlength{\@hetcaslmaxwidth}
 \newlength{\@remhetcaslwidth}
 
-\newlength{\@KWwidth}% 
+\newlength{\@KWwidth}%
 % The next two length variables will be used in \KW
 \newlength{\@realWidth}\newlength{\@neededWidth}
 
@@ -66,7 +66,8 @@
 \ifthenelse{\@KWwidth > \@realWidth}%
 {\setlength{\@neededWidth}{\@KWwidth}}%
 {\setlength{\@neededWidth}{\@realWidth}}}%
-\makebox[% set the width of the box not smaller than the width of the KeyWord
+\makebox[% set the width of the box not smaller
+% than the width of the KeyWord
 \@neededWidth]%
 [l]{\textbf{##2}}%
 }%
@@ -74,24 +75,97 @@
 % of specifications, views and libraries
 \newcommand{\SId}[1]{\textsc{##1}}%
 % \SIdIndex prints its argument like \SId but sets an Index Entry if
-% redifined 
-\newcommand{\SIdIndex}[1]{\SId{##1}%
-  }%
+% redifined
+\newcommand{\SIdIndex}[1]{\SId{##1}}%
 % \Id prints its argument in italic face as one word, for all other
 % identifiers not covered by \SId and only containing letters, numbers
 % and \_
 \newcommand{\Id}[1]{\textit{##1}}%
 % \AX prints its argument in math modus
 \newcommand{\Ax}[1]{\ensuremath{##1}}%
+
 %%%%% Heng todo:
 %% Makros aus casl.sty definieren
 \newcommand{\LBRACE}            {\{}
+\newcommand{\RBRACE}            {\}}
 \newcommand{\FREE}              {\KW{free}} %plain_keyword
+\newcommand{\FREELBRACE}        {\FREE~\LBRACE}
+\newcommand{\GENERATED}         {\KW{generated}}
+% \newcommand{\TYPE}              {\KW{type}}
+% \newcommand{\TYPES}             {\KW{types}}
+\newcommand{\FREETYPE}          {\FREE~\TYPE}
+\newcommand{\FREETYPES}         {\FREE~\TYPES}
+\newcommand{\GENERATEDTYPE}     {\GENERATED~\TYPE} %{\KW{generated~type}}
+\newcommand{\GENERATEDTYPES}    {\GENERATED~\TYPES}
+
+\newcommand{\VARS}              {\KW{vars}}
+\newcommand{\AXIOM}             {\KW{axiom}}
+\newcommand{\AXIOMS}            {\KW{axioms}}
+
+\newcommand{\HIDE}              {\KW{hide}}
+\newcommand{\REVEAL}            {\KW{reveal}}
+\newcommand{\WITH}              {\KW{with}}
 \newcommand{\THEN}              {\KW[view]{then}} % hetcasl_keyword
-\newcommand{\GENERATEDTYPE}     {\KW{generated~type}}
+%\newcommand{\THENCONS}          {\THEN~\ANNOTEWORD{cons}}
+%\newcommand{\THENDEF}           {\THEN~\ANNOTEWORD{def}}
+%\newcommand{\THENIMPLIES}       {\THEN~\ANNOTEWORD{implies}}
+\newcommand{\AND}               {\KW{and}}
+\newcommand{\LOCAL}             {\KW{local}}
+\newcommand{\THENLOCAL}         {\THEN~\LOCAL}
+\newcommand{\WITHIN}            {\KW{within}}
+\newcommand{\CLOSED}            {\KW{closed}}
+\newcommand{\FIT}               {\KW{fit}}
+\newcommand{\TO}                {\KW{to}}
+\newcommand{\LOGIC}             {\KW{logic}}
+
+\newcommand{\SPEC}              {\KW[view]{spec}}
+\newcommand{\VIEW}              {\KW[view]{view}}
+\newcommand{\END}               {\KW{end}}
+
+\newcommand{\ARCH}              {\KW{arch}}
+\newcommand{\ARCHSPEC}          {\ARCH~\KW{spec}}
+\newcommand{\UNITSPEC}          {\KW{unit}~\KW{spec}}
+\newcommand{\UNITS}             {\KW{units}}
+\newcommand{\GIVEN}             {\KW{given}}
+\newcommand{\RESULT}            {\KW{result}}
+
+\newcommand{\LIBRARY}           {\KW{library}}
+\newcommand{\FROM}              {\KW[view]{from}}
+\newcommand{\GET}               {\KW{get}}
+\newcommand{\VERSION}           {\KW{version}}
+
+\newcommand{\PROD}              {\Ax{\times}}
+\newcommand{\TOTAL}             {\Ax{\rightarrow}}
+\newcommand{\PARTIAL}           {\Ax{\rightarrow}}
+\newcommand{\MAPSTO}            {\Ax{\mapsto}}
+
 \newcommand{\ASSOC}             {\Id{assoc}}
+\newcommand{\COMM}              {\Id{comm}}
+\newcommand{\IDEM}              {\Id{idem}}
+\newcommand{\UNIT}              {\Id{unit}}
+
 \newcommand{\EXISTS}            {\Ax{\exists}}
-%%%% SORT, OP, PRED : drei Varianten 
+\newcommand{\EXISTSUNIQUE}      {\AX{\exists!}}
+\newcommand{\IMPLIES}           {\Ax{\Rightarrow}}
+\newcommand{\IFF}               {\Ax{\Leftrightarrow}}
+\newcommand{\EEQ}               {\Ax{\stackrel{e}{=}}}
+\newcommand{\A}                 {\Ax{\wedge}}
+\newcommand{\V}                 {\Ax{\vee}}
+\newcommand{\IN}                {\Ax{\in}}
+\newcommand{\NOT}               {\Ax{\neg}}
+\newcommand{\FORALL}            {\Ax{\forall}}
+\newcommand{\BULLET}            {\Ax{\;\bullet\;}}
+
+\newcommand{\IF}                {\Id{if}}
+\newcommand{\WHEN}              {\Id{when}}
+\newcommand{\ELSE}              {\Id{else}}
+\newcommand{\DEF}               {\Id{def}}
+\newcommand{\VAR}               {\Id{var}}
+\newcommand{\AS}                {\Id{as}}
+\newcommand{\TRUE}              {\Id{true}}
+\newcommand{\FALSE}             {\Id{false}}
+
+%%%% SORT, OP, PRED : drei Varianten   %% Type auch
 \newcommand{\KWC}[2][preds]{%
 \ifthenelse{\equal{##1}{KW}}%
 {%KW as parameter
@@ -104,15 +178,25 @@
 \KW[preds]{##2}}}%
 }%% end of KWC definition
 \newcommand{\SORT}[1][preds]{\KWC[##1]{sort}}
+\newcommand{\SORTS}[1][preds]{\KWC[##1]{sorts}}
+\newcommand{\OP}[1][preds]{\KWC[##1]{op}}
+\newcommand{\OPS}[1][preds]{\KWC[##1]{ops}}
+\newcommand{\PRED}[1][preds]{\KWC[##1]{pred}}
+\newcommand{\PREDS}[1][preds]{\KWC[##1]{preds}}
+\newcommand{\TYPE}[1][preds]{\KWC[##1]{type}}
+\newcommand{\TYPES}[1][preds]{\KWC[##1]{type}}
+
 %% 1. mit \KWC[preds]{} default
-%% 2. mit \KWC[KW]{} 
+%% 2. mit \KWC[KW]{}
 %% 3. mit \KWC[ID]{}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % starting a library
-\newcommand{\library}[1]{\textbf{library}\ \textsc{##1}\ } 
+\newcommand{\library}[1]{\KW{library}\ \SId{##1}\ }
 % printing a version number
-%\newcommand{\version}[1]{\textnormal{\textbf{version}\ ##1}}
+%\newcommand{\version}[1]{\KW{version}\ ##1}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % comments, annotations and labels
 \newcommand{\commentline}[1]{\textbf{\%\%}{\small##1}}
 %
@@ -143,7 +227,7 @@
 \textnormal{\textbf{get}}}%
 {\endgroup}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% specifications 
+%% specifications
 % specdefn starts a new spec defn
 % arguments: ##1 ::= opt. semantic-anno
 %            ##2 ::= spec name
