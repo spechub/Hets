@@ -17,6 +17,7 @@ module Haskell.HatParser where
 
 import Haskell.Wrapper
 import HsModule
+import LexerOptions
 import PropLexer
 import PropParser as HsParser
 import PropPosSyntax
@@ -39,7 +40,7 @@ hatParser = do p <- getPosition
                s <- hStuff
 --               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
-                   ts = pLexerPass0 (Flags True) s
+                   ts = pLexerPass0 lexerflags0 s
                    r = parseTokens (HsParser.parse) "" ts 
                case r of
 		           Right (HsModule _ _ _ _ ds) -> 
