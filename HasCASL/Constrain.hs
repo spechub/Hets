@@ -94,6 +94,7 @@ byInst tm c = case c of
 	       _ -> error "byInst: unexpected Type" 
 	   _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
+                       else if unify tm t1 t2 then return noC
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
 
