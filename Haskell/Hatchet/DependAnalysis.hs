@@ -19,25 +19,19 @@
 
 module Haskell.Hatchet.DependAnalysis (getBindGroups, showBindGroups, debugBindGroups) where
 
-import Haskell.Hatchet.Digraph (
-	preorder,
+import Data.Tree (flatten)
+import Data.Graph (
 	scc,
-	buildG )
+	buildG ) -- non-portable
 
 import Haskell.Hatchet.FiniteMaps (
 	FiniteMap,
 	lookupFM,
-	addToFM,
-	unitFM,
 	listToFM,
-	sizeFM,
-	toListFM )
+	sizeFM )
 
 import List (
 	nub ) 
-
-import Haskell.Hatchet.Utils (
-	getDeclName )
 
 --------------------------------------------------------------------------------
 
@@ -85,7 +79,7 @@ buildNameGroups :: Ord name      =>
 buildNameGroups ns es
 	= [ mapOnList intToNameFM group | group <- intGroups ] 
 	where
-	intGroups = map preorder $ scc $ buildG (1, sizeFM nameToIntFM) intEdges
+	intGroups = map flatten $ scc $ buildG (1, sizeFM nameToIntFM) intEdges
 	intEdges = mapOnTuple nameToIntFM es
 	nameToIntFM = listToFM nameIntList
 	intToNameFM = listToFM [ (y,x) | (x,y) <- nameIntList ]
