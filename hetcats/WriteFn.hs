@@ -19,6 +19,7 @@ import System.IO
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 import Syntax.GlobalLibraryAnnotations
+import Common.GlobalAnnotations (GlobalAnnos)
 import Version
 import Common.ConvertGlobalAnnos
 import Common.ATerm.Lib
@@ -36,8 +37,8 @@ import Debug.Trace
   @param opt - Options Either default or given on the comandline
   @param ld  - a LIB_DEFN read as ATerm or parsed
 -}
-write_LIB_DEFN :: FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-write_LIB_DEFN file opt ld = sequence_ $ map write_type $ outtypes opt
+write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
+write_LIB_DEFN ga file opt ld = sequence_ $ map write_type $ outtypes opt
     where
     write_type :: OutType -> IO ()
     write_type t = 
@@ -46,13 +47,13 @@ write_LIB_DEFN file opt ld = sequence_ $ map write_type $ outtypes opt
 	    PrettyOut PrettyAscii -> printAscii t 
             PrettyOut PrettyLatex -> do
                 putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
-                write_casl_latex opt (casl_latex_filename file opt) ld
+                write_casl_latex opt ga (casl_latex_filename file opt) ld
             _ -> do putStrLn ( "Error: the OutType \"" ++ 
                         show t ++ "\" is not implemented")
                     return ()
     printAscii ty = do
                 putIfVerbose opt 3 ("Generating OutType: " ++ (show ty))
-                write_casl_asc opt (casl_asc_filename file opt) ld
+                write_casl_asc opt ga (casl_asc_filename file opt) ld
 {---
   Produces the filename of the pretty printed CASL-file.
   @param opt   - Options from the command line 
@@ -64,11 +65,11 @@ casl_asc_filename file opt =
     in (outdir opt) ++ "/" ++ base ++ ".pp.casl"
       -- maybe an optin out-file is better
 
-write_casl_asc :: HetcatsOpts -> FilePath -> LIB_DEFN -> IO ()
-write_casl_asc opt oup ld =
+write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
+write_casl_asc opt ga oup ld =
     do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (printText0_eGA (initGlobalAnnos ld)))
-       hPutStr hout $ printLIB_DEFN_text ld
+       putIfVerbose opt 3 (show (printText0_eGA ga))
+       hPutStr hout $ printLIB_DEFN_text ga ld
 
 casl_latex_filename :: FilePath -> HetcatsOpts -> FilePath
 casl_latex_filename file opt =
@@ -80,15 +81,15 @@ debug_latex_filename :: FilePath -> FilePath
 debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") . 
                        fileparse [".pp.tex"]
 
-write_casl_latex :: HetcatsOpts -> FilePath -> LIB_DEFN -> IO ()
-write_casl_latex opt oup ld =
+write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
+write_casl_latex opt ga oup ld =
     do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (printText0_eGA (initGlobalAnnos ld)))
-       hPutStr hout $ printLIB_DEFN_latex ld
+       putIfVerbose opt 3 (show (printText0_eGA ga))
+       hPutStr hout $ printLIB_DEFN_latex ga ld
        hClose hout
        doIfVerbose opt 5
         (do dout <- openFile (debug_latex_filename oup) WriteMode
-            hPutStr dout $ printLIB_DEFN_debugLatex ld
+            hPutStr dout $ printLIB_DEFN_debugLatex ga ld
             hClose dout)
        return ()
 
@@ -102,8 +103,8 @@ writeShATermFileSDoc fp atcon =
 versionedATermTable :: (ATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =     
     let (att0,versionnr) = toShATerm emptyATermTable hetcats_version
-	(att1,aterm) = seq att0 $ toShATerm att0 atcon
-    in seq att1 $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+	(att1,aterm) = {- seq att0 $-} toShATerm att0 atcon
+    in {-seq att1 $-} fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
                            
 toShATermString :: (ATermConvertible a) => a -> String
 toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
@@ -121,6 +122,6 @@ writeFileInfo opts file ln lenv =
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
-      --return ()
+      return ()
       --writeFile (envFile++"-string") (show gctx)
-      putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
+      --putIfVerbose opts 1 ("Writing "++envFile); globalContexttoShATerm envFile gctx
