@@ -190,6 +190,12 @@ comp(id,x)=x fpr comorphism names
 
 Generalie CASL2Modal
 
+Comorphisms: also map of theories; with default definition
+CASL->Haskell with free DTs (mark sortgens) + recursion
+
+Coding of subsorts as unary predicates (for ontologies)
+Translation between Achim's ontology data structure and CASL (in Hets)
+
 - List[Dec] wird List[Pos]
 - George wg. Schlieﬂen von Fenstern
 - node numbers do not match
@@ -228,6 +234,7 @@ Development graph calculus, Strategies for DG rules
 Management of change
 Integrate provers
   Otter model checker
+  FOL-prover by Uli Furhbach
   modal logic: IRIT, Toulouse. Tableaux prover LOTREC, Andreas Herzig
                Isabelle codings: www.inf.ethz.ch/~vigano
   Renate Schmidt, Manchester: uses FOL prover for description logic
