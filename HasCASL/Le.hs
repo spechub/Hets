@@ -44,7 +44,7 @@ data Selector = Select UninstOpId Type Partiality -- only result type
 
 data TypeDefn = NoTypeDefn
               | PreDatatype     -- auxiliary entry for DatatypeDefn
-              | Supertype Vars Type Term 
+              | Supertype Vars TypeScheme Term 
 	      | DatatypeDefn GenKind [TypeArg] [AltDefn]
 	      | AliasTypeDefn TypeScheme
 	      | TypeVarDefn deriving (Show, Eq)

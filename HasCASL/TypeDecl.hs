@@ -123,37 +123,55 @@ anaTypeItem _ _ inst _ (IsoDecl pats ps) =
 anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds
-       mty <- anaStarType t
-       let Result es mvds = case mty of 
-				     Nothing -> Result [] Nothing
-				     Just ty -> anaVars v ty 
-       addDiags es
-       as <- gets assumps
-       mv <- case mvds of 
-		       Nothing -> return Nothing
-		       Just vds -> do checkUniqueVars vds
-				      mvs <- mapM addVarDecl vds
-				      if all isJust mvs then 
-					 return $ Just v
-					 else return Nothing
-       mt <- anaFormula ga f
-       putAssumps as
        case m of 
-	      Nothing -> return $ TypeDecl [] star ps
-	      Just i -> case (mt, mv) of 
-		  (Just newF, Just _) -> do 
-		      let newT = fromJust mty	       
-		      mi <- addTypePattern (Supertype v newT $ item newF) 
-			    inst star i
-		      addSuperType newT $ fst i
-		      case mi of 
-			      Nothing -> return $ TypeDecl [] star ps
-			      Just _ -> return $ SubtypeDefn
-				            (TypePattern (fst i) (snd i) []) 
-					    v newT newF ps 
-		  _ -> do mi <- addTypePattern NoTypeDefn inst star i
-			  return $ TypeDecl (idsToTypePatterns [mi]) star ps
-	   
+	      Nothing -> return $ SubtypeDefn pat v t f ps
+	      Just (i, as) -> do 
+	          tm <- gets typeMap
+	          newAs <- mapM anaTypeVarDecl as 
+                  mt <- anaStarType t
+		  let nAs = catMaybes newAs
+		      newPat = TypePattern i nAs []
+		  case mt of 
+			  Nothing -> return $ SubtypeDefn newPat v t f ps
+			  Just ty -> do
+			      let newPty = TypeScheme nAs ([]:=>ty) []
+				  fullKind = typeArgsListToKind nAs star
+				  Result es mvds = anaVars v ty 
+			      addDiags es
+			      checkUniqueTypevars nAs
+			      addSuperType ty i
+			      if i `occursIn` ty then do 
+			         addDiags [mkDiag Error 
+				     "illegal recursive subtype definition" ty]
+				 return $ SubtypeDefn newPat v ty f ps
+				 else case mvds of 
+					    Nothing -> return $ SubtypeDefn 
+						         newPat v ty f ps
+					    Just vds -> do 
+						checkUniqueVars vds
+						ass <- gets assumps
+				                mapM_ addVarDecl vds
+						mf <- anaFormula ga f
+						putTypeMap tm
+						putAssumps ass 
+						case mf of 
+						    Nothing -> do 
+						        addTypeId True 
+							  (AliasTypeDefn 
+							   newPty) inst 
+							  fullKind i
+							return $ AliasType
+							       newPat 
+							       (Just fullKind)
+							       newPty ps
+						    Just newF -> do 
+						        addTypeId True
+						          (Supertype v newPty
+							  $ item newF)
+						           inst fullKind i
+							return $ SubtypeDefn 
+							       newPat v ty 
+							       newF ps
 anaTypeItem _ _ inst _ (AliasType pat mk sc ps) = 
     do let Result ds m = convertTypePattern pat
        addDiags ds

@@ -17,7 +17,7 @@ var nt : a -> (b -> c) -> c -> d
 var o4 : nt r List s
 type s1, r1, t1 < t
 type s2 = r2 = t2
-type s3
+type s3 : Type := t
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
@@ -41,7 +41,7 @@ r2 : Type < (t2, r2, s2)
 s : Type
 s1 : Type < t
 s2 : Type < (t2, r2, s2)
-s3 : Type
+s3 : Type := t
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)
