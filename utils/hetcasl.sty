@@ -7,7 +7,7 @@
 \RequirePackage{tabularx}
 \RequirePackage{calc}
 \RequirePackage[latin1]{inputenc}
-% \RequirePackage{alltt}
+\RequirePackage{xspace}
 
 \newcounter{@opentabulars}
 \setcounter{@opentabulars}{0}
@@ -84,57 +84,59 @@
 % \AX prints its argument in math modus
 \newcommand{\Ax}[1]{\ensuremath{##1}}%
 
-\newcommand{\ANNOTEWORD}[1]{\%\KW{##1}}
+\newcommand{\ANNOTEWORD}[1]{{\small{}\KW{\%##1}}}
 
 %%%%% Heng todo:
 %% Makros aus casl.sty definieren
 \newcommand{\LBRACE}            {\{}
 \newcommand{\RBRACE}            {\}}
-\newcommand{\FREE}              {\KW{free}} %plain_keyword
+\newcommand{\FREE}              {\KW{free}\xspace} %plain_keyword
 \newcommand{\FREELBRACE}        {\FREE~\LBRACE}
-\newcommand{\GENERATED}         {\KW{generated}}
+\newcommand{\GENERATED}         {\KW{generated}\xspace}
 % \newcommand{\TYPE}              {\KW{type}}
 % \newcommand{\TYPES}             {\KW{types}}
-\newcommand{\FREETYPE}          {\FREE~\TYPE}
-\newcommand{\FREETYPES}         {\FREE~\TYPES}
-\newcommand{\GENERATEDTYPE}     {\GENERATED~\TYPE} %{\KW{generated~type}}
-\newcommand{\GENERATEDTYPES}    {\GENERATED~\TYPES}
+\newcommand{\FREETYPE}          {\FREE~\TYPE\xspace}
+\newcommand{\FREETYPES}         {\FREE~\TYPES\xspace}
+\newcommand{\GENERATEDTYPE}     {\GENERATED~\TYPE\xspace} %{\KW{generated~type}}
+\newcommand{\GENERATEDTYPES}    {\GENERATED~\TYPES\xspace}
 
-\newcommand{\VARS}              {\KW{vars}}
-\newcommand{\AXIOM}             {\KW{axiom}}
-\newcommand{\AXIOMS}            {\KW{axioms}}
+\newcommand{\VARS}              {\KW{vars}\xspace}
+\newcommand{\AXIOM}             {\KW{axiom}\xspace}
+\newcommand{\AXIOMS}            {\KW{axioms}\xspace}
 
-\newcommand{\HIDE}              {\KW{hide}}
-\newcommand{\REVEAL}            {\KW{reveal}}
-\newcommand{\WITH}              {\KW{with}}
-\newcommand{\THEN}              {\KW[view]{then}} % hetcasl_keyword
-\newcommand{\THENCONS}          {\THEN~\ANNOTEWORD{cons}}
-\newcommand{\THENDEF}           {\THEN~\ANNOTEWORD{def}}
-\newcommand{\THENIMPLIES}       {\THEN~\ANNOTEWORD{implies}}
-\newcommand{\AND}               {\KW{and}}
-\newcommand{\LOCAL}             {\KW{local}}
+\newcommand{\HIDE}              {\KW{hide}\xspace}
+\newcommand{\REVEAL}            {\KW{reveal}\xspace}
+\newcommand{\WITH}              {\KW{with}\xspace}
+\newcommand{\THEN}              {\KW[view]{then}\xspace} % hetcasl_keyword
+\newcommand{\THENCONS}          {\THEN~\ANNOTEWORD{cons}\xspace}
+\newcommand{\THENDEF}           {\THEN~\ANNOTEWORD{def}\xspace}
+\newcommand{\THENIMPLIES}       {\THEN~\ANNOTEWORD{implies}\xspace}
+\newcommand{\THENIMPLIED}       {\THEN~\ANNOTEWORD{implied\xspace}
+\newcommand{\THENMONO}          {\THEN~\ANNOTEWORD{mono}\xspace}
+\newcommand{\AND}               {\KW{and}\xspace}
+\newcommand{\LOCAL}             {\KW{local}\xspace}
 \newcommand{\THENLOCAL}         {\THEN~\LOCAL}
-\newcommand{\WITHIN}            {\KW{within}}
-\newcommand{\CLOSED}            {\KW{closed}}
-\newcommand{\FIT}               {\KW{fit}}
-\newcommand{\TO}                {\KW{to}}
-\newcommand{\LOGIC}             {\KW{logic}}
+\newcommand{\WITHIN}            {\KW{within}\xspace}
+\newcommand{\CLOSED}            {\KW{closed}\xspace}
+\newcommand{\FIT}               {\KW{fit}\xspace}
+\newcommand{\TO}                {\KW{to}\xspace}
+\newcommand{\LOGIC}             {\KW{logic}\xspace}
 
-\newcommand{\SPEC}              {\KW[view]{spec}}
-\newcommand{\VIEW}              {\KW[view]{view}}
-\newcommand{\END}               {\KW{end}}
+\newcommand{\SPEC}              {\KW[view]{spec}\xspace}
+\newcommand{\VIEW}              {\KW[view]{view}\xspace}
+\newcommand{\END}               {\KW{end}\xspace}
 
-\newcommand{\ARCH}              {\KW{arch}}
-\newcommand{\ARCHSPEC}          {\ARCH~\KW{spec}}
-\newcommand{\UNITSPEC}          {\KW{unit}~\KW{spec}}
-\newcommand{\UNITS}             {\KW{units}}
-\newcommand{\GIVEN}             {\KW{given}}
-\newcommand{\RESULT}            {\KW{result}}
+\newcommand{\ARCH}              {\KW{arch}\xspace}
+\newcommand{\ARCHSPEC}          {\ARCH~\KW{spec}\xspace}
+\newcommand{\UNITSPEC}          {\KW{unit}~\KW{spec}\xspace}
+\newcommand{\UNITS}             {\KW{units}\xspace}
+\newcommand{\GIVEN}             {\KW{given}\xspace}
+\newcommand{\RESULT}            {\KW{result}\xspace}
 
-\newcommand{\LIBRARY}           {\KW{library}}
-\newcommand{\FROM}              {\KW[view]{from}}
-\newcommand{\GET}               {\KW{get}}
-\newcommand{\VERSION}           {\KW{version}}
+\newcommand{\LIBRARY}           {\KW{library}\xspace}
+\newcommand{\FROM}              {\KW[view]{from}\xspace}
+\newcommand{\GET}               {\KW{get}\xspace}
+\newcommand{\VERSION}           {\KW{version}\xspace}
 
 \newcommand{\PROD}              {\Ax{\times}}
 \newcommand{\TOTAL}             {\Ax{\rightarrow}}
@@ -144,7 +146,7 @@
 \newcommand{\ASSOC}             {\Id{assoc}}
 \newcommand{\COMM}              {\Id{comm}}
 \newcommand{\IDEM}              {\Id{idem}}
-\newcommand{\UNIT}              {\Id{unit}}
+\newcommand{\UNIT}              {\Id{unit}\xspace}
 
 \newcommand{\EXISTS}            {\Ax{\exists}}
 \newcommand{\EXISTSUNIQUE}      {\AX{\exists!}}
@@ -158,14 +160,14 @@
 \newcommand{\FORALL}            {\Ax{\forall}}
 \newcommand{\BULLET}            {\Ax{\;\bullet\;}}
 
-\newcommand{\IF}                {\Id{if}}
-\newcommand{\WHEN}              {\Id{when}}
-\newcommand{\ELSE}              {\Id{else}}
-\newcommand{\DEF}               {\Id{def}}
-\newcommand{\VAR}               {\Id{var}}
-\newcommand{\AS}                {\Id{as}}
-\newcommand{\TRUE}              {\Id{true}}
-\newcommand{\FALSE}             {\Id{false}}
+\newcommand{\IF}                {\Id{if}\xspace}
+\newcommand{\WHEN}              {\Id{when}\xspace}
+\newcommand{\ELSE}              {\Id{else}\xspace}
+\newcommand{\DEF}               {\Id{def}\xspace}
+\newcommand{\VAR}               {\Id{var}\xspace}
+\newcommand{\AS}                {\Id{as}\xspace}
+\newcommand{\TRUE}              {\Id{true}\xspace}
+\newcommand{\FALSE}             {\Id{false}\xspace}
 
 %%%% SORT, OP, PRED : drei Varianten   %% Type auch
 \newcommand{\KWC}[2][preds]{%
@@ -179,14 +181,14 @@
 {% else to ID as parameter
 \KW[preds]{##2}}}%
 }%% end of KWC definition
-\newcommand{\SORT}[1][preds]{\KWC[##1]{sort}}
-\newcommand{\SORTS}[1][preds]{\KWC[##1]{sorts}}
-\newcommand{\OP}[1][preds]{\KWC[##1]{op}}
-\newcommand{\OPS}[1][preds]{\KWC[##1]{ops}}
-\newcommand{\PRED}[1][preds]{\KWC[##1]{pred}}
-\newcommand{\PREDS}[1][preds]{\KWC[##1]{preds}}
-\newcommand{\TYPE}[1][preds]{\KWC[##1]{type}}
-\newcommand{\TYPES}[1][preds]{\KWC[##1]{type}}
+\newcommand{\SORT}[1][preds]{\KWC[##1]{sort}\xspace}
+\newcommand{\SORTS}[1][preds]{\KWC[##1]{sorts}\xspace}
+\newcommand{\OP}[1][preds]{\KWC[##1]{op}\xspace}
+\newcommand{\OPS}[1][preds]{\KWC[##1]{ops}\xspace}
+\newcommand{\PRED}[1][preds]{\KWC[##1]{pred}\xspace}
+\newcommand{\PREDS}[1][preds]{\KWC[##1]{preds}\xspace}
+\newcommand{\TYPE}[1][preds]{\KWC[##1]{type}\xspace}
+\newcommand{\TYPES}[1][preds]{\KWC[##1]{type}\xspace}
 
 %% 1. mit \KWC[preds]{} default
 %% 2. mit \KWC[KW]{}
