@@ -18,11 +18,9 @@ import Logic.Logic
 import Logic.Comorphism
 import Common.Id
 import qualified Common.Lib.Map as Map
-import Common.Lib.Set as Set
 import Data.List
-import Common.PrettyPrint
-import Common.AS_Annotation (Named, mapNamedM)
-import Debug.Trace
+import Common.AS_Annotation (Named)
+-- import Debug.Trace
 -- HasCASL
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
@@ -95,12 +93,12 @@ transSignature sign =
     syn = () },
     [] )  -- for now, no sentences
    where 
-    extractTypeName typeId _ map = Map.insert (showIsa typeId) 0 map
-    insertOps opName opInfs map = 
+    extractTypeName typeId _ m = Map.insert (showIsa typeId) 0 m
+    insertOps opName opInfs m = 
      let opIs = opInfos opInfs
      in if (length opIs) == 1 then
-       Map.insert (showIsa opName) (transOpInfo (head opIs)) map
-       else foldl (\m1 (opInf,i) -> Map.insert (showIsaI opName i) (transOpInfo opInf) m1) map
+       Map.insert (showIsa opName) (transOpInfo (head opIs)) m
+       else foldl (\m1 (opInf,i) -> Map.insert (showIsaI opName i) (transOpInfo opInf) m1) m
               (zip opIs [1..length opIs])
  
 transOpInfo :: OpInfo -> Typ
@@ -109,14 +107,13 @@ transOpInfo opInf = case (opDefn opInf) of
                       NoOpDefn _    -> transOpType (opType opInf)
 
 transOpType :: TypeScheme -> Typ
-transOpType (TypeScheme _ (_ :=> opType) _) = transType opType
+transOpType (TypeScheme _ (_ :=> op) _) = transType op
 
 transPredType :: TypeScheme -> Typ
-transPredType  (TypeScheme _ (_ :=> predType) _) = 
-       case predType of
+transPredType  (TypeScheme _ (_ :=> pre) _) = 
+       case pre of
          FunType tp _ _ _ -> (transType tp) --> boolType
          _                -> error "Wrong predicate type"
---                                                 (transType predType) --> boolType
 
 transType :: Type -> Typ
 transType typ = case typ of
@@ -146,6 +143,8 @@ transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | otherwise = Const((getNameOfOpId opId),dummyT)
    where getNameOfOpId (Id (tok:toks) a b) = if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
                                                 else tokStr tok
+         getNameOfOpId (Id [] _ _) = error "Operation without name"
+
 transTerm sign (ApplTerm term1 term2 _) =
         case term1 of
            QualOp Fun (InstOpId opId _ _) _ _ -> transLog sign opId term1 term2 
@@ -153,13 +152,14 @@ transTerm sign (ApplTerm term1 term2 _) =
                                      `App` (transTerm sign term2)
 transTerm sign (QuantifiedTerm quant varDecls phi _) = 
   foldr (quantify quant) (transTerm sign phi) (map toPair varDecls)
-transTerm sign (TypedTerm term _ typ _) = transTerm sign term
+transTerm sign (TypedTerm term _ _ _) = transTerm sign term
 transTerm sign (LambdaTerm pats Partial body _) = 
   Const("Some",dummyT) `App` (foldr (abstraction sign) (transTerm sign body) pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) = foldl1 prod (map (transTerm sign) terms)
 
+let2lambda :: ProgEq -> As.Term -> As.Term
 let2lambda (ProgEq pat term _) body = 
   ApplTerm (LambdaTerm [pat] Partial body [nullPos]) term [nullPos]
 
@@ -194,6 +194,7 @@ transLog sign opId term1 term
   | otherwise = (transTerm sign term1) `App` (transTerm sign term)
        where getPhis (TupleTerm phis _) = phis
 
+quantify :: Quantifier -> (Var,Type) -> IsaSign.Term -> IsaSign.Term
 quantify q (v,t) phi  = 
   Const (qname q,dummyT) `App` Abs ((Const(transVar v, dummyT)),transType t,phi)
   where
@@ -201,21 +202,31 @@ quantify q (v,t) phi  =
   qname Existential = "Ex"
   qname Unique      = "Ex1"
 
+binConj :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 binConj phi1 phi2 = 
   Const("op &",dummyT) `App` phi1 `App` phi2
+
+binDisj :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 binDisj phi1 phi2 = 
   Const("op |",dummyT) `App` phi1 `App` phi2
+
+binImpl :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 binImpl phi1 phi2 = 
   Const("op -->",dummyT) `App` phi1 `App` phi2
+
+binEq :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 binEq phi1 phi2 = 
   Const("op =",dummyT) `App` phi1 `App` phi2
 
+prod :: IsaSign.Term -> IsaSign.Term -> IsaSign.Term
 prod term1 term2 =
   Const("Pair",dummyT) `App` term1 `App` term2
 
+abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
 abstraction sign pat body = Abs((transTerm sign pat), getType pat, body)
                          -- Abs((trace "abstraction, transTerm" (transTerm sign pat)), (trace "abstraction, getType" (getType pat)), body)
 
+toPair :: GenVarDecl -> (Var,Type)
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
 
 
