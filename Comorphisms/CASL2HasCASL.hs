@@ -112,8 +112,7 @@ mapSignature sign = Just (initialEnv {
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 
                            $ Set.toList $ sortSet sign,
-    assumps = Map.map OpInfos $ Map.unionWith (++) opmap predmap,
-				     }, [])
+    assumps = Map.map OpInfos $ Map.unionWith (++) opmap predmap }, [])
   where
     opmap   = Map.map (map trOpType . Set.toList) $ opMap sign 
     predmap = Map.map (map trPredType . Set.toList) $ predMap sign
