@@ -237,7 +237,7 @@ isCompound (Id _ cs _) = not $ null cs
 class PosItem a where
     up_pos    :: (Pos -> Pos)    -> a -> a
     up_pos_l  :: ([Pos] -> [Pos]) -> a -> a
-    get_pos   :: a -> Maybe Pos
+    get_pos   :: a -> Maybe Pos  -- not a nullPos  
     get_pos_l :: a -> Maybe [Pos]
     up_pos_err  :: String -> a
     up_pos_err fn = 
@@ -246,8 +246,32 @@ class PosItem a where
     up_pos_l _  = id
     get_pos   _ = Nothing
     get_pos_l _ = Nothing
+
+-- a Pos list should not contain nullPos
     
 -------------------------------------------------------------------------
+
+-- | get a reasonable position
+getMyPos :: PosItem a => a -> Pos
+getMyPos a = 
+    case get_pos a of
+    Just p -> p
+    Nothing -> 
+	case get_pos_l a of 
+	Just l -> headPos l
+	Nothing -> nullPos
+
+-- | get a reasonable position for a list
+posOf :: PosItem a => [a] -> Pos
+posOf l = if null l then nullPos else 
+	  let q = getMyPos $ head l 
+	      in if q == nullPos then posOf $ tail l
+		 else q
+
+-- | get a reasonable position for a list with an additional position list
+firstPos :: PosItem a => [a] -> [Pos] -> Pos
+firstPos l ps = let p = posOf l in 
+			if p == nullPos then headPos ps else p
 
 -- | handcoded instance
 instance PosItem Token where
