@@ -33,31 +33,19 @@ Portability :  non-portable
 module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
 import CspCASL.AS_CSP_CASL
+import CspCASL.CCKeywords
 import CspCASL.Parse_hugo
 import CspCASL.LaTeX_AS_CSP_CASL
+import CspCASL.ATC_CspCASL
 
 import CASL.AS_Basic_CASL
-
-import Logic.ParsecInterface
-import Common.AS_Annotation
-import Common.AnnoState(emptyAnnos)
-import Common.Lib.Parsec
-import Common.Lib.Map
-import Logic.Logic
-import Common.Lexer((<<))
-
-import qualified CASL.Sublogic
-import CASL.StaticAna
 import CASL.SymbolParser
 import CASL.Logic_CASL(CASL(CASL))
 
+import Logic.Logic
 import Data.Dynamic
 
-import Common.PrettyPrint
-import Common.PrintLaTeX
-import Common.Lib.Pretty
 
-import CspCASL.ATC_CspCASL
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -84,9 +72,9 @@ instance Category CspCASL () ()
 instance Syntax CspCASL Basic_CSP_CASL_C_SPEC
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CspCASL = Just(toParseFun basicCspCaslCSpec emptyAnnos)
-	 parse_symb_items CspCASL = Just(toParseFun symbItems ())
-	 parse_symb_map_items CspCASL = Just(toParseFun symbMapItems ())
+         parse_basic_spec CspCASL = Just basicCspCaslCSpec
+	 parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
+	 parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
 -- lattices (for sublogics)
 

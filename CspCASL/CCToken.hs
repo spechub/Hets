@@ -17,21 +17,19 @@ module CspCASL.CCToken
 
 where
 
-import Common.Id (Token(..))
+import Common.Id
 import Common.Token
-import Common.Lexer
 import CspCASL.CCKeywords
 import Common.AnnoState
 
-csp_casl_reserved_words :: [String]
+{- csp_casl_reserved_words :: [String]
 csp_casl_reserved_words = casl_reserved_words ++
-                          [dataS, channelS, processS] ++
                           csp_casl_keywords
+-}
 
 channelName, var :: AParser Token                          --, namedProcess 
-channelName = pToken (reserved csp_casl_reserved_words scanAnyWords)
-
-var = pToken (reserved csp_casl_reserved_words scanAnyWords)
+channelName = var
+var = varId csp_casl_keywords
 
 --namedProcess = pToken (reserved csp_casl_reserved_words scanAnyWords)
 

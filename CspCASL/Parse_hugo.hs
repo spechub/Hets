@@ -18,6 +18,7 @@ import CspCASL.AS_CSP_CASL
 import CASL.AS_Basic_CASL(OP_NAME)
 import CspCASL.CCToken
 import CspCASL.CCLexer
+import CspCASL.CCKeywords
 
 import Common.Lib.Parsec
 
@@ -58,7 +59,7 @@ namedCspCaslCSpec = try ( do { ccspecT
                              }                       
 
 specName :: AParser SPEC_NAME
-specName = varId                     
+specName = var                    
 
 cspCaslCSpec :: AParser CSP_CASL_C_SPEC
 cspCaslCSpec = do { d <- dataDefn
@@ -85,7 +86,7 @@ basicCspCaslCSpec = do { c <- channelDecl
                      
 dataDefn :: AParser DATA_DEFN
 dataDefn = do { dataT
-              ; d  <- basicSpec
+              ; d  <- basicSpec csp_casl_keywords
               ; return d
               }
 
@@ -98,7 +99,7 @@ channelDecl = do { channelT
 channelItem :: AParser CHANNEL_ITEM
 channelItem = do { (ns, ps) <- channelName `separatedBy` commaT
 	               ; colonT
-	               ; s        <- sortId
+	               ; s        <- sortId csp_casl_keywords
 	               ; return (Channel_decl ns s)
                  }
 
@@ -145,7 +146,7 @@ processEquation = try ( do { np <- namedProcess
 genericEquation :: AParser GENERIC_EQUATION
 genericEquation = do { pn <- processName
      	               ; oRBracketT
-	                   ; vi <- varId
+	                   ; vi <- var
 	                   ; colonT
 	                   ; es <- eventSet             
 	                   ; return (Generic pn vi es)
@@ -155,7 +156,7 @@ genericEquation = do { pn <- processName
 genericNamedProcess :: AParser GEN_NAMED_PROCESS
 genericNamedProcess = do { pn <- processName
                          ; oRBracketT
-	                       ; t  <- term
+	                       ; t  <- term csp_casl_keywords
 	                       ; cRBracketT
 	                       ; return (Generic_named pn t)
 	                       }
@@ -168,10 +169,10 @@ namedProcess = do { pn <- processName
 -- MiniParser via Umbennung; eventuell Passenderes wählen
 
 processName :: AParser PROCESS_NAME
-processName = varId
+processName = var
 
 channelId :: AParser Token
-channelId = varId
+channelId = var
 
 
 primProcess :: AParser PROCESS
@@ -182,7 +183,7 @@ primProcess =      do { skipT
                       ; return Stop
                       }
 	        <|> try (do { ifT
-		                  ; f  <- formula
+		                  ; f  <- formula csp_casl_keywords
 		                  ; thenT
 		                  ; p1 <- process
 		                  ; elseT
@@ -191,19 +192,19 @@ primProcess =      do { skipT
 		                  }
 		              )
 	        <|>      do { ifT
-		                  ; f <- formula
+		                  ; f <- formula csp_casl_keywords
 		                  ; thenT
 		                  ; p <- process
 		                  ; return (Conditional_process f p)
 		                  }
 	        <|>      do { whenT                    
-		                  ; f <- formula
+		                  ; f <- formula csp_casl_keywords
 		                  ; thenT
 		                  ; p <- process
 		                  ; return (Guarded_command f p)
 		                  }
       	  <|>      do { varT
-      	              ; v  <- varId
+      	              ; v  <- var
 		                  ; colonT                  -- ':'
 		                  ; es <- eventSet
 		                  ; multiPreT               -- '->'
@@ -398,31 +399,31 @@ process = try ( do { cp  <- choiceProcess
 
 
 opList :: AParser OP_NAME
-opList = do { pid <- parseId
+opList = do { pid <- parseId csp_casl_keywords
             ; return pid
 	          }
 
 eventSet :: AParser EVENT_SET
-eventSet = do { si <- sortId
+eventSet = do { si <- sortId csp_casl_keywords
 	            ; return (Event_set si)
 	            }
 	            
 event :: AParser EVENT
 event = try (do { ci <- channelId
 	              ; sendT
-	              ; t <- term
+	              ; t <- term csp_casl_keywords
 	              ; return (Send ci t)
 	              }
 	          ) 
 	  <|> try (do { ci <- channelId
 	              ; receiveT
-	              ; v  <- varId
+	              ; v  <- var
 	              ; colonT
-	              ; si <- sortId              
+	              ; si <- sortId csp_casl_keywords             
 	              ; return (Receive ci v si)
 	              }
 	          )     
-	  <|>      do { t <- term
+	  <|>      do { t <- term csp_casl_keywords
 	              ; return (Term t)
 	              }
 

@@ -27,11 +27,11 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [
- ("Terms", fromAParser (term :: AParser (TERM ()))),
- ("Formula", fromAParser (formula :: AParser (FORMULA ()))),
- ("SortItem", fromAParser (sortItems :: AParser (SIG_ITEMS () ()))),
- ("OpItem", fromAParser (opItems :: AParser (SIG_ITEMS () ()))),
- ("PredItem", fromAParser (predItems :: AParser (SIG_ITEMS () ()))),
+ ("Terms", fromAParser (term [] :: AParser (TERM ()))),
+ ("Formula", fromAParser (formula [] :: AParser (FORMULA ()))),
+ ("SortItem", fromAParser (sortItems [] :: AParser (SIG_ITEMS () ()))),
+ ("OpItem", fromAParser (opItems [] :: AParser (SIG_ITEMS () ()))),
+ ("PredItem", fromAParser (predItems [] :: AParser (SIG_ITEMS () ()))),
  ("MixfixTerms", toStringParser resolveTerm),
  ("MixfixFormula", toStringParser resolveForm),
  ("ShowTerms", fromAParser testTerm),
@@ -39,7 +39,7 @@ lineParser = [
  ("ShowForm", fromAParser testFormula),
  ("ShowFormMix", toStringParser testFormulaMix)]
 
-fileParser = [("BasicSpec", fromAParser (basicSpec 
+fileParser = [("BasicSpec", fromAParser (basicSpec []
 					 :: AParser (BASIC_SPEC () () ())))
 	      , ("analysis", toStringParser runAna)
 	      , ("signature", toStringParser getSign)

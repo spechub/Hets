@@ -14,9 +14,10 @@ module Modal.Logic_Modal where
 
 import Modal.AS_Modal
 import Modal.ModalSign
-import Common.AS_Annotation
-import Common.AnnoState(emptyAnnos)
-import Common.Lib.Parsec
+import Modal.ATC_Modal
+import Modal.Print_AS
+import Modal.Parse_AS
+import Modal.LaTeX_Modal
 import Logic.Logic
 
 import CASL.Sign
@@ -25,9 +26,9 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
+import CASL.Parse_AS_Basic
 import CASL.MapSentence
-import Modal.ATC_Modal
-import Modal.LaTeX_Modal
+import CASL.SymbolParser
 import Data.Dynamic
 
 data Modal = Modal deriving Show
@@ -73,9 +74,9 @@ instance Category Modal MSign ModalMor
 instance Syntax Modal M_BASIC_SPEC
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec Modal = Nothing
-	 parse_symb_items Modal = Nothing
-	 parse_symb_map_items Modal = Nothing
+         parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
+	 parse_symb_items Modal = Just $ symbItems modal_reserved_words
+	 parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
 
 -- Modal logic
 

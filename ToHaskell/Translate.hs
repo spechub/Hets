@@ -1,7 +1,7 @@
 module ToHaskell.Translate where
 
 import HasCASL.As
-import Haskell.Language.Syntax
+import Haskell.Hatchet.HsSyn
 import Common.AS_Annotation
 import Common.Id
 import Common.Lib.Parsec.Pos
@@ -12,7 +12,7 @@ translate :: BasicSpec -> HsModule
 -- From where can I get the Module's name?
 --translate x = error (show x)
 translate (BasicSpec annotedBasicItems) = 
-          HsModule (SrcLoc "" 1 1) (Module "HasCASLModul") Nothing [] 
+          HsModule (Module "HasCASLModul") Nothing [] 
                    (translateBasicItems annotedBasicItems)
 
 -------------------------------------------------------------
@@ -59,8 +59,7 @@ translateProgEq (Annoted (ProgEq pat term pos) _ _ _) =
 patBind :: Pattern -> Term -> Pos -> HsDecl
 -- x = y
 patBind (PatternToken ptok) (TermToken ttok) pos = 
-  HsPatBind (SrcLoc {srcFilename = sourceName pos, srcLine = sourceLine pos, 
-                     srcColumn = sourceColumn pos}) 
+  HsPatBind (SrcLoc (sourceLine pos) $ sourceColumn pos) 
             (HsPVar (HsIdent (tokStr ptok))) 
             (HsUnGuardedRhs (HsVar (UnQual (HsIdent (tokStr ttok))))) 
             []
@@ -75,9 +74,9 @@ funBind :: Pattern -> Term -> Pos -> HsDecl
 funBind (MixfixPattern (p:ps)) term pos = 
   case p of 
     PatternToken ptok -> 
-      HsFunBind [HsMatch (SrcLoc {srcFilename = "", srcLine = sourceLine pos,
-                                  srcColumn = sourceColumn pos})
-                         (HsIdent (tokStr ptok))
+      HsFunBind [HsMatch (SrcLoc (sourceLine pos)
+			  $ sourceColumn pos)
+                         (UnQual $ HsIdent $ tokStr ptok)
 	                 (hsPats ps)
 	                 (hsRhs term)
                          []

@@ -33,7 +33,7 @@ localAnalysis ga bs =
 
 runAna :: GlobalAnnos -> AParser (Result (BASIC_SPEC () () ()))
 runAna ga = 
-    do b <- basicSpec
+    do b <- basicSpec []
        return $ localAnalysis ga b
 
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
@@ -45,7 +45,7 @@ localAna ga bs =
 
 getSign :: GlobalAnnos -> AParser (Result (Sign () ()))
 getSign ga = 
-    do b <- basicSpec
+    do b <- basicSpec []
        return $ localAna ga b
 
 props :: GlobalAnnos -> BASIC_SPEC () () () -> Result [Named (FORMULA ())]
@@ -57,5 +57,5 @@ props ga bs =
 
 getProps :: GlobalAnnos -> AParser (Result [Named (FORMULA ())])
 getProps ga = 
-    do b <- basicSpec
+    do b <- basicSpec []
        return $ props ga b

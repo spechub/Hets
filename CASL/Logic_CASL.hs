@@ -109,9 +109,9 @@ instance Category CASL CASLSign CASLMor
 instance Syntax CASL CASLBasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CASL = Just basicSpec
-	 parse_symb_items CASL = Just symbItems
-	 parse_symb_map_items CASL = Just symbMapItems
+         parse_basic_spec CASL = Just $ basicSpec []
+	 parse_symb_items CASL = Just $ symbItems []
+	 parse_symb_map_items CASL = Just $ symbMapItems []
 
 -- lattices (for sublogics)
 
@@ -128,7 +128,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       map_sen CASL = mapSen
       parse_sentence CASL = Just
         ( \ _sign str ->
-	  case runParser (aFormula << eof) emptyAnnos "" str of
+	  case runParser (aFormula [] << eof) emptyAnnos "" str of
 	  Right x -> return $ item x
 	  Left err -> fail $ show err )
       sym_of CASL = symOf

@@ -28,17 +28,17 @@ modalFormula =
 	      do o <- oBracketT
 	         m <- modality
 		 c <- cBracketT
-		 f <- formula
+		 f <- formula modal_reserved_words
 		 return (Box m f $ toPos o [] c)
               <|> 
 	      do o <- asSeparator "<"
 	         m <- modality
 		 c <- asSeparator ">"
-		 f <- formula 
+		 f <- formula modal_reserved_words
 		 return (Diamond m f $ toPos o [] c)
 
 modality :: AParser MODALITY
-modality = do t <- term 
+modality = do t <- term modal_reserved_words
 	      let r = return $ Term_mod t
 	      case t of 
 		     Mixfix_token tm -> 
@@ -58,8 +58,8 @@ rigor = (asKey rigidS >> return Rigid)
 rigidSigItems :: AParser M_SIG_ITEM
 rigidSigItems = 
     do r <- rigor
-       do itemList opS opItem (Rigid_op_items r)
-	 <|> itemList predS predItem (Rigid_pred_items r)
+       do itemList modal_reserved_words opS opItem (Rigid_op_items r)
+	 <|> itemList modal_reserved_words predS predItem (Rigid_pred_items r)
 
 instance AParsable M_SIG_ITEM where
   aparser = rigidSigItems
@@ -70,11 +70,13 @@ mKey = asKey modalityS <|> asKey modalityS
 mBasic :: AParser M_BASIC_ITEM
 mBasic = 
     do c <- mKey
-       auxItemList startKeyword [c] simpleId Simple_mod_decl
+       auxItemList (modal_reserved_words ++ startKeyword)
+		       [c] simpleId Simple_mod_decl
     <|>
     do t <- asKey termS
        c <- mKey
-       auxItemList startKeyword [t, c] sortId Term_mod_decl
+       auxItemList (modal_reserved_words ++ startKeyword) 
+		       [t, c] (sortId modal_reserved_words) Term_mod_decl
 		
 instance AParsable M_BASIC_ITEM where
   aparser = mBasic

@@ -142,11 +142,11 @@ annosParser parser =
 
 -- | parse an item list preceded by a singular or plural keyword,
 -- interspersed with semicolons and an optional semicolon at the end
-itemList :: String -> AParser b
+itemList :: [String] -> String -> ([String] -> AParser b)
                -> ([Annoted b] -> [Pos] -> a) -> AParser a
-itemList kw ip constr = 
+itemList ks kw ip constr = 
     do p <- pluralKeyword kw
-       auxItemList startKeyword [p] ip constr	      
+       auxItemList (ks++startKeyword) [p] (ip ks) constr	      
 
 -- | generalized version of 'itemList' 
 -- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'

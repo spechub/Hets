@@ -14,6 +14,7 @@ module Modal.LaTeX_Modal where
 
 import Modal.AS_Modal
 import Modal.ModalSign
+import Modal.Print_AS
 import Common.PrettyPrint
 
 instance PrintLaTeX M_FORMULA where 

@@ -29,20 +29,13 @@ module ToHaskell.TranslateAna (
        , translateData
        , translateAltDefn
        , translateRecord
-       -- * Testing
-       , idToHaskell
        ) where
 
 import HasCASL.As
 import HasCASL.Le
 import Haskell.Hatchet.HsSyn
 import Common.Id
-import qualified Common.Lib.Map as Map hiding (map)
-import Common.Token
-import Common.AnnoState
-import Common.PPUtils
-import Data.Char
-import Data.List
+import qualified Common.Lib.Map as Map
 import ToHaskell.TranslateId
 import ToHaskell.UniqueId
 
@@ -353,9 +346,3 @@ functionUndef s =
 	      (HsPVar (HsIdent s))
 	      (HsUnGuardedRhs (HsVar (UnQual (HsIdent "undefined"))))
 	      []
-
--------------------------------------------------------------------------
-
--- | Function for the test of the translation of identifiers.
-idToHaskell :: AParser WrapString
-idToHaskell = fmap (WrapString . translateId) parseId 

@@ -13,9 +13,9 @@ main :: IO ()
 main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, StringParser)]
-lineParser = [("MixIds", fromAParser parseId),
-	      ("VarIds", fromAParser varId),
-	      ("SortIds", fromAParser sortId),
+lineParser = [("MixIds", fromAParser $ parseId []),
+	      ("VarIds", fromAParser $ varId []),
+	      ("SortIds", fromAParser $ sortId []),
 	      ("Annos", fromAParser annotation)]
 
 fileParser = [("Annotations", \ ga -> fmap (show . vcat . map 

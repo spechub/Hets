@@ -33,26 +33,28 @@ import CASL.Formula
 import Data.List(sort)
 
 -- stupid cast
-argDecl :: AParser ARG_DECL
-argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) varDecl
+argDecl :: [String] -> AParser ARG_DECL
+argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
 
 -- non-empty
-predHead :: AParser PRED_HEAD
-predHead = do o <- oParenT
-	      (vs, ps) <- argDecl `separatedBy` anSemi
-	      p <- cParenT
-	      return (Pred_head vs (map tokPos (o:ps++[p])))
+predHead :: [String] -> AParser PRED_HEAD
+predHead ks = 
+    do o <- oParenT
+       (vs, ps) <- argDecl ks `separatedBy` anSemi
+       p <- cParenT
+       return $ Pred_head vs $ map tokPos (o:ps++[p])
 
-opHead :: AParser OP_HEAD
-opHead = do Pred_head vs ps <- predHead
-	    c <- colonST
-	    (b, s, _) <- opSort
-	    let qs = ps ++ [tokPos c] in 
-	      return (if b then Partial_op_head vs s qs
-	              else Total_op_head vs s qs)
+opHead :: [String] -> AParser OP_HEAD
+opHead ks = 
+    do Pred_head vs ps <- predHead ks
+       c <- colonST
+       (b, s, _) <- opSort ks
+       let qs = ps ++ [tokPos c]
+       return $ if b then Partial_op_head vs s qs
+	      else Total_op_head vs s qs
 
-opAttr :: AParsable f => AParser (OP_ATTR f, Token)
-opAttr =    do p <- asKey assocS
+opAttr :: AParsable f => [String] -> AParser (OP_ATTR f, Token)
+opAttr ks = do p <- asKey assocS
 	       return (Assoc_op_attr, p)
 	    <|> 
 	    do p <- asKey commS
@@ -62,7 +64,7 @@ opAttr =    do p <- asKey assocS
 	       return (Idem_op_attr, p)
 	    <|> 
 	    do p <- asKey unitS
-	       t <- term
+	       t <- term ks
 	       return (Unit_op_attr t, p)
 
 isConstant :: OP_TYPE -> Bool
@@ -75,35 +77,39 @@ toHead c (Total_op_type [] s _) = Total_op_head [] s [c]
 toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
 toHead _ _ = error "toHead got non-empty argument type"
 
-opItem :: AParsable f => AParser (OP_ITEM f)
-opItem = do (os, cs)  <- parseId `separatedBy` anComma
-	    if isSingle os then 
+opItem :: AParsable f => [String] -> AParser (OP_ITEM f)
+opItem ks = 
+    do (os, cs)  <- parseId ks `separatedBy` anComma
+       if isSingle os then 
 	      do c <- colonST
-		 t <- opType
+		 t <- opType ks
 		 if isConstant t then 
-		   opBody (head os) (toHead (tokPos c) t)
-		   <|> opAttrs os t [c]  -- this always succeeds
-		   else opAttrs os t [c]
+		   opBody ks (head os) (toHead (tokPos c) t)
+		   <|> opAttrs ks os t [c]  -- this always succeeds
+		   else opAttrs ks os t [c]
 	      <|>
-	      do h <- opHead
-		 opBody (head os) h
+	      do h <- opHead ks
+		 opBody ks (head os) h
 	      else
 	      do c <- colonST
-		 t <- opType
-		 opAttrs os t (cs++[c])
+		 t <- opType ks
+		 opAttrs ks os t (cs++[c])
 
-opBody :: AParsable f => OP_NAME -> OP_HEAD -> AParser (OP_ITEM f)
-opBody o h = do e <- equalT
-		a <- annos
-		t <- term
-		return (Op_defn o h (Annoted t [] a []) [tokPos e])
+opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD -> AParser (OP_ITEM f)
+opBody ks o h = 
+    do e <- equalT
+       a <- annos
+       t <- term ks
+       return $ Op_defn o h (Annoted t [] a []) [tokPos e]
 	  
-opAttrs :: AParsable f => [OP_NAME] -> OP_TYPE -> [Token] -> AParser (OP_ITEM f)
-opAttrs os t c = do q <- anComma 
-		    (as, cs) <- opAttr `separatedBy` anComma
-		    let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
-		      in return (Op_decl os t (map fst as) ps)
-                 <|> return (Op_decl os t [] (map tokPos c)) 
+opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token] 
+	-> AParser (OP_ITEM f)
+opAttrs ks os t c = 
+    do q <- anComma 
+       (as, cs) <- opAttr ks `separatedBy` anComma
+       let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
+       return (Op_decl os t (map fst as) ps)
+   <|> return (Op_decl os t [] (map tokPos c)) 
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
 
@@ -111,25 +117,28 @@ opAttrs os t c = do q <- anComma
 -- predicates
 -- ----------------------------------------------------------------------
 
-predItem :: AParsable f => AParser (PRED_ITEM f)
-predItem = do (ps, cs)  <- parseId `separatedBy` anComma
-	      if isSingle ps then
-		predBody (head ps) (Pred_head [] [])
+predItem :: AParsable f => [String] -> AParser (PRED_ITEM f)
+predItem ks = 
+    do (ps, cs)  <- parseId ks `separatedBy` anComma
+       if isSingle ps then
+		predBody ks (head ps) (Pred_head [] [])
 		<|> 
-		do h <- predHead
-		   predBody (head ps) h
+		do h <- predHead ks
+		   predBody ks (head ps) h
 		<|> 
-		predTypeCont ps cs
-		else predTypeCont ps cs
+		predTypeCont ks ps cs
+		else predTypeCont ks ps cs
 		
-predBody :: AParsable f => PRED_NAME -> PRED_HEAD -> AParser (PRED_ITEM f)	
-predBody p h = do e <- asKey equivS
-		  a <- annos
-		  f <- formula
-		  return (Pred_defn p h (Annoted f [] a []) [tokPos e])
+predBody :: AParsable f => [String] -> PRED_NAME -> PRED_HEAD 
+	 -> AParser (PRED_ITEM f)	
+predBody ks p h = 
+    do e <- asKey equivS
+       a <- annos
+       f <- formula ks
+       return $ Pred_defn p h (Annoted f [] a []) [tokPos e]
 
-predTypeCont :: [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
-predTypeCont ps cs = do c <- colonT
-			t <- predType
-			return (Pred_decl ps t (map tokPos (cs++[c])))
-
+predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
+predTypeCont ks ps cs = 
+    do c <- colonT
+       t <- predType ks
+       return $ Pred_decl ps t $ map tokPos (cs++[c])

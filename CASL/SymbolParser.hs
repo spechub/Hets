@@ -24,22 +24,23 @@ import CASL.Formula
 -- symbol
 -- ------------------------------------------------------------------------
 
-symb :: GenParser Char st SYMB
-symb = do i <- parseId
-	  do c <- colonST 
-	     t <- opOrPredType
+symb :: [String] -> GenParser Char st SYMB
+symb ks = 
+    do i <- parseId ks
+       do    c <- colonST 
+	     t <- opOrPredType ks 
 	     return (Qual_id i t [tokPos c])
-	    <|> return (Symb_id i)
+	 <|> return (Symb_id i)
 
-opOrPredType :: GenParser Char st TYPE
-opOrPredType = 
-    do (b, s, p) <- opSort
+opOrPredType :: [String] -> GenParser Char st TYPE
+opOrPredType ks = 
+    do (b, s, p) <- opSort ks
        if b then return (O_type (Partial_op_type [] s [p]))
 	 else do c <- crossT 
-		 (ts, ps) <- sortId `separatedBy` crossT
-		 fmap O_type (opFunSort (s:ts) (c:ps))
+		 (ts, ps) <- sortId ks `separatedBy` crossT
+		 fmap O_type (opFunSort ks (s:ts) (c:ps))
 		   <|> return (P_type (Pred_type (s:ts) (map tokPos (c:ps))))
-	     <|> fmap O_type (opFunSort [s] [])
+	     <|> fmap O_type (opFunSort ks [s] [])
 	     <|> return (A_type s)
     <|> fmap P_type predUnitType
 
@@ -47,12 +48,13 @@ opOrPredType =
 -- symbol or map, symbKind 
 -- ------------------------------------------------------------------------
 
-symbMap :: GenParser Char st SYMB_OR_MAP
-symbMap =   do s <- symb
-	       do   f <- pToken $ toKey mapsTo
-		    t <- symb
-		    return (Symb_map s t [tokPos f])
-		  <|> return (Symb s)
+symbMap :: [String] -> GenParser Char st SYMB_OR_MAP
+symbMap ks = 
+    do s <- symb ks
+       do    f <- pToken $ toKey mapsTo
+	     t <- symb ks
+	     return (Symb_map s t [tokPos f])
+         <|> return (Symb s)
 
 symbKind :: GenParser Char st (SYMB_KIND, Token)
 symbKind = try(
@@ -69,52 +71,50 @@ symbKind = try(
 -- symb-items
 -- ------------------------------------------------------------------------
 
-symbItemsList :: GenParser Char st SYMB_ITEMS_LIST
-symbItemsList = do (is, ps) <- symbItems `separatedBy` commaT
-		   return (Symb_items_list is (map tokPos ps))
+symbItemsList :: [String] -> GenParser Char st SYMB_ITEMS_LIST
+symbItemsList ks = 
+    do (is, ps) <- symbItems ks `separatedBy` commaT
+       return (Symb_items_list is (map tokPos ps))
 
-symbItems :: GenParser Char st SYMB_ITEMS
-symbItems = do -- s <- symb
-	       (is, ps) <- symbs
-	       return (Symb_items Implicit is (map tokPos (ps)))
---	       return (Symb_items Implicit [s] [])
-	    <|> 
-	    do (k, p) <- symbKind
-               (is, ps) <- symbs
-	       return (Symb_items k is (map tokPos (p:ps)))
+symbItems :: [String] -> GenParser Char st SYMB_ITEMS
+symbItems ks = 
+    do (is, ps) <- symbs ks
+       return (Symb_items Implicit is (map tokPos (ps)))
+    <|> 
+    do (k, p) <- symbKind
+       (is, ps) <- symbs ks
+       return (Symb_items k is (map tokPos (p:ps)))
 
-symbs :: GenParser Char st ([SYMB], [Token])
-symbs = do s <- symb 
-	   do   c <- commaT `followedWith` symb
-	        (is, ps) <- symbs
-		return (s:is, c:ps)
-	     <|> return ([s], [])
+symbs :: [String] -> GenParser Char st ([SYMB], [Token])
+symbs ks = 
+    do s <- symb ks
+       do   c <- commaT `followedWith` symb ks
+	    (is, ps) <- symbs ks
+	    return (s:is, c:ps)
+         <|> return ([s], [])
 
 -- ------------------------------------------------------------------------
 -- symb-map-items
 -- ------------------------------------------------------------------------
 
-symbMapItemsList :: GenParser Char st SYMB_MAP_ITEMS_LIST
-symbMapItemsList = do (is, ps) <- symbMapItems `separatedBy` commaT
-		      return (Symb_map_items_list is (map tokPos ps))
+symbMapItemsList :: [String] -> GenParser Char st SYMB_MAP_ITEMS_LIST
+symbMapItemsList ks = 
+    do (is, ps) <- symbMapItems ks `separatedBy` commaT
+       return (Symb_map_items_list is (map tokPos ps))
 
-symbMapItems :: GenParser Char st SYMB_MAP_ITEMS
-symbMapItems = 
-            do s <- symbMap
-	       return (Symb_map_items Implicit [s] [])
-	    <|> 
-	    do (k, p) <- symbKind
-               (is, ps) <- symbMaps
-	       return (Symb_map_items k is (map tokPos (p:ps)))
+symbMapItems :: [String] -> GenParser Char st SYMB_MAP_ITEMS
+symbMapItems ks = 
+    do s <- symbMap ks
+       return (Symb_map_items Implicit [s] [])
+    <|> 
+    do (k, p) <- symbKind
+       (is, ps) <- symbMaps ks
+       return (Symb_map_items k is (map tokPos (p:ps)))
 
-symbMaps :: GenParser Char st ([SYMB_OR_MAP], [Token])
-symbMaps = 
-        do s <- symbMap 
-	   do   c <- commaT `followedWith` symb
-	        (is, ps) <- symbMaps
-		return (s:is, c:ps)
-	     <|> return ([s], [])
-
-
-
-    
+symbMaps :: [String] -> GenParser Char st ([SYMB_OR_MAP], [Token])
+symbMaps ks = 
+    do s <- symbMap ks
+       do   c <- commaT `followedWith` symb ks
+	    (is, ps) <- symbMaps ks
+	    return (s:is, c:ps)
+         <|> return ([s], [])

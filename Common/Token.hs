@@ -217,36 +217,38 @@ mixId keys idKeys =
 		  u <- many placeT
 		  return (Id (l++u) c p)
 
--- | the Casl key strings (signs first) 
-casl_keys :: ([String], [String])
-casl_keys = (casl_reserved_fops, casl_reserved_fwords) 
+-- | the Casl key strings (signs first) with additional keywords
+casl_keys :: [String] -> ([String], [String])
+casl_keys ks = (ks ++ casl_reserved_fops, ks ++ casl_reserved_fwords) 
 
 -- | Casl ids for operations and predicates
-parseId :: GenParser Char st Id
-parseId = mixId casl_keys casl_keys
+parseId :: [String] -> GenParser Char st Id
+parseId ks = mixId (casl_keys ks) (casl_keys ks)
 
 -- | disallow 'barS' with in the top-level of constructor names
-consId :: GenParser Char st Id
-consId = mixId (barS:casl_reserved_fops, casl_reserved_fwords) casl_keys
+consId :: [String] -> GenParser Char st Id
+consId ks = mixId (barS:ks++casl_reserved_fops, 
+		   ks++casl_reserved_fwords) $ casl_keys ks
 
 -- | Casl sorts are simple words ('varId'), 
 -- but may have a compound list ('comps')
-sortId :: GenParser Char st Id
-sortId = do s <- varId
-	    (c, p) <- option ([], []) (comps casl_keys)
-	    return (Id [s] c p)
+sortId :: [String] -> GenParser Char st Id
+sortId ks = 
+    do s <- varId ks
+       (c, p) <- option ([], []) (comps $ casl_keys ks)
+       return (Id [s] c p)
 
 -- ----------------------------------------------
 -- * parser for simple 'Id's
 -- ----------------------------------------------
 
 -- | parse a simple word not in 'casl_reserved_fwords'  
-varId :: GenParser Char st Token
-varId = pToken (reserved casl_reserved_fwords scanAnyWords)
+varId :: [String] -> GenParser Char st Token
+varId ks = pToken (reserved (ks++casl_reserved_fwords) scanAnyWords)
 
--- | same as 'varId'.  'SIMPLE_ID' for spec- and view names
+-- | like 'varId'.  'SIMPLE_ID' for spec- and view names
 simpleId :: GenParser Char st Token
-simpleId = varId 
+simpleId = varId []
 
 -- ----------------------------------------------
 -- * parser for key 'Token's 

@@ -16,14 +16,12 @@ Portability :  portable
 
 module Common.Anno_Parser where
 
-import Common.Lib.Parsec hiding (label)
+import Common.Lib.Parsec
 import Common.Lib.Parsec.Error
 import Common.Lib.Parsec.Pos
 
 import Common.Lexer
 import Common.Token
-import Common.ListBrackets
-
 import Common.Id
 import Common.AS_Annotation
 
@@ -52,7 +50,7 @@ commentGroup = do try (string "%{")
 			   [incSourceColumn sp (-2)]
 
 annote :: GenParser Char st Annotation
-annote = label <|> 
+annote = anno_label <|> 
 	 do start_source_pos <- getPosition
 	    i <- try anno_ident
 	    anno <- ((annote_group i) <|> (annote_line i))
@@ -72,11 +70,12 @@ annote = label <|>
 			  incSourceColumn sp (-2)
 		      _ -> sp
 
-label :: GenParser Char st Annotation
-label = do try(string "%(")
-	   label_lines <- manyTill anyChar $ string ")%"
-	   sp <- getPosition
-	   return (Label (lines label_lines) [incSourceColumn sp (-2)])
+anno_label :: GenParser Char st Annotation
+anno_label = 
+    do try(string "%(")
+       label_lines <- manyTill anyChar $ string ")%"
+       sp <- getPosition
+       return (Label (lines label_lines) [incSourceColumn sp (-2)])
 
 anno_ident :: GenParser Char st Annote_word
 anno_ident = fmap Annote_word $ string "%" >> casl_words
@@ -145,6 +144,26 @@ parse_internal p sp inp = parse (do setPosition sp
 				)
 			        (sourceName sp)
 			        inp 
+
+checkForPlaces :: [Token] -> GenParser Char st [Token] 
+checkForPlaces ts = 
+    do let ps = filter isPlace ts
+       if null ps then nextListToks $ topMix3 ([], [])
+	  -- topMix3 starts with square brackets 
+	  else if isSingle ps then return []
+	       else unexpected "multiple places"
+
+nextListToks :: GenParser Char st [Token] -> GenParser Char st [Token]
+nextListToks f = 
+    do ts <- f  
+       cs <- checkForPlaces ts
+       return (ts ++ cs)
+
+caslListBrackets :: GenParser Char st Id
+caslListBrackets = 
+    do l <- nextListToks $ afterPlace ([], [])
+       (c, p) <- option ([], []) $ comps ([], [])
+       return $ Id l c p
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
     :: GenParser Char st Annotation

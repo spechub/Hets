@@ -35,24 +35,14 @@ import CASL.OpItem
 -- sigItems
 -- ------------------------------------------------------------------------
 
-sortItems :: (AParsable s, AParsable f) => 
-             AParser (SIG_ITEMS s f)
-sortItems = itemList sortS sortItem Sort_items
-
-typeItems :: (AParsable s, AParsable f) => 
-             AParser (SIG_ITEMS s f)
-typeItems = itemList typeS datatype Datatype_items
-
-opItems :: (AParsable s, AParsable f) => 
-           AParser (SIG_ITEMS s f)
-opItems = itemList opS opItem Op_items
-
-predItems :: (AParsable s, AParsable f) => AParser (SIG_ITEMS s f)
-predItems = itemList predS predItem Pred_items
-
-sigItems :: (AParsable s, AParsable f) => AParser (SIG_ITEMS s f)
-sigItems = fmap Ext_SIG_ITEMS aparser <|>
-	   sortItems <|> opItems <|> predItems <|> typeItems
+sortItems, typeItems, opItems, predItems, sigItems 
+    :: (AParsable s, AParsable f) => [String] -> AParser (SIG_ITEMS s f)
+sortItems ks = itemList ks sortS sortItem Sort_items
+typeItems ks = itemList ks typeS datatype Datatype_items
+opItems   ks = itemList ks opS opItem Op_items
+predItems ks = itemList ks predS predItem Pred_items
+sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
+	   sortItems ks <|> opItems ks <|> predItems ks <|> typeItems ks
 
 ---- helpers ----------------------------------------------------------------
 
@@ -78,61 +68,61 @@ axiomToLocalVarAxioms ai a vs posl =
 -- ------------------------------------------------------------------------
 
 basicItems :: (AParsable b, AParsable s, AParsable f) => 
-              AParser (BASIC_ITEMS b s f)
-basicItems = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items sigItems
+	      [String] -> AParser (BASIC_ITEMS b s f)
+basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 	     <|> do f <- asKey freeS
-		    ti <- typeItems
+		    ti <- typeItems ks
 		    return (datatypeToFreetype ti (tokPos f))
 	     <|> do g <- asKey generatedS
-		    do t <- typeItems
+		    do t <- typeItems ks
 		       return (Sort_gen [Annoted t [] [] []] [tokPos g])
 		      <|> 
 		      do o <- oBraceT
-			 is <- annosParser sigItems
+			 is <- annosParser (sigItems ks)
 			 c <- cBraceT
 			 return (Sort_gen is
 				   (toPos g [o] c)) 
 	     <|> do v <- pluralKeyword varS
-		    (vs, ps) <- varItems
+		    (vs, ps) <- varItems ks
 		    return (Var_items vs (map tokPos (v:ps)))
 	     <|> do f <- forallT 
-		    (vs, ps) <- varDecl `separatedBy` anSemi 
+		    (vs, ps) <- varDecl ks `separatedBy` anSemi 
 		    a <- annos
-		    ai <- dotFormulae
+		    ai <- dotFormulae ks
 		    return (axiomToLocalVarAxioms ai a vs (map tokPos (f:ps)))
-	     <|> dotFormulae
-             <|> itemList axiomS formula Axiom_items
+	     <|> dotFormulae ks
+             <|> itemList ks axiomS formula Axiom_items
 
-varItems :: AParser ([VAR_DECL], [Token])
-varItems = do v <- varDecl
-	      do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
-		 do tryItemEnd startKeyword
-		    return ([v], [s])
-	           <|> 
-	             do (vs, ts) <- varItems
-			return (v:vs, s:ts)
-		<|>
-		return ([v], [])
+varItems :: [String] -> AParser ([VAR_DECL], [Token])
+varItems ks = 
+    do v <- varDecl ks
+       do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
+	  do   tryItemEnd (ks ++ startKeyword)
+	       return ([v], [s])
+	    <|> do (vs, ts) <- varItems ks
+		   return (v:vs, s:ts)
+         <|> return ([v], [])
              
-dotFormulae :: (AParsable b, AParsable s, AParsable f) => AParser (BASIC_ITEMS b s f)
-dotFormulae = do d <- dotT
-		 (fs, ds) <- aFormula `separatedBy` dotT
-		 (m, an) <- optSemi
-		 let ps = map tokPos (d:ds) 
-		     ns = init fs ++ [appendAnno (last fs) an]
-		     in case m of 
-			Nothing -> return (Axiom_items ns ps)
-			Just t -> return (Axiom_items ns
-			       (ps ++ [tokPos t]))
+dotFormulae :: (AParsable b, AParsable s, AParsable f) => 
+	       [String] -> AParser (BASIC_ITEMS b s f)
+dotFormulae ks = 
+    do d <- dotT
+       (fs, ds) <- aFormula ks `separatedBy` dotT
+       (m, an) <- optSemi
+       let ps = map tokPos (d:ds) 
+	   ns = init fs ++ [appendAnno (last fs) an]
+       case m of 
+           Nothing -> return $ Axiom_items ns ps
+	   Just t -> return $ Axiom_items ns (ps ++ [tokPos t])
 
-aFormula  :: AParsable f => AParser (Annoted (FORMULA f))
-aFormula = bind appendAnno (annoParser formula) lineAnnos
+aFormula  :: AParsable f => [String] -> AParser (Annoted (FORMULA f))
+aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 
 -- ------------------------------------------------------------------------
 -- basicSpec
 -- ------------------------------------------------------------------------
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) => 
-	     AParser (BASIC_SPEC b s f)
-basicSpec = (fmap Basic_spec $ annosParser basicItems)
+	     [String] -> AParser (BASIC_SPEC b s f)
+basicSpec ks = (fmap Basic_spec $ annosParser $ basicItems ks)
             <|> (oBraceT >> cBraceT >> return (Basic_spec []))

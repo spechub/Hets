@@ -17,6 +17,7 @@ module CspCASL.CCLexer where
 import CspCASL.CCKeywords
 import Common.Id (Token(..))
 import Common.AnnoState
+import Common.Keywords
  
 ccspecT, dataT, endT, channelT, processT, letT, inT, skipT, stopT, 
   ifT, thenT, elseT, whenT, varT, multiPreT, prefixT, oRBracketT, 
@@ -59,5 +60,5 @@ oRenamingT  = asKey oRenamingS
 cRenamingT  = asKey cRenamingS
 sendT       = asKey sendS
 receiveT    = asKey receiveS
-semicolonT  = asKey semicolonS
+semicolonT  = anSemi
 chanRenT    = asKey chanRenS 
