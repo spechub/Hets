@@ -400,7 +400,7 @@ subSymsOf sy = case symbType sy of
      _ -> Set.empty
 
 closeSymbSet :: SymbolSet -> SymbolSet
-closeSymbSet = Set.unions . map subSymsOf . Set.toList
+closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
