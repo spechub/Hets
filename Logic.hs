@@ -54,11 +54,19 @@ module Logic where
 
 import Id
 import AS_Annotation
+import GlobalAnnotations
+
 import Set
 import FiniteMap
 import Graph
 import Error
 import Dynamic
+
+import Pretty (Doc)
+import PrettyPrint
+
+-- debugging 
+-- import IOExts (trace)
 
 -- maps
 
@@ -86,9 +94,13 @@ class (Eq object, Eq morphism) =>
 
 -- abstract syntax, parsing and printing
 
-class (Show basic_spec, Eq basic_spec, Show sentence, Show symb_items, 
-       Show symb_map_items, Eq symb_items, Eq symb_map_items) =>
+class (PrettyPrint basic_spec, Eq basic_spec, Show basic_spec,
+       Show sentence, PrettyPrint symb_items, Show symb_items,
+       Show symb_map_items,
+       PrettyPrint symb_map_items, Eq symb_items, Eq symb_map_items) =>
       Syntax id basic_spec sentence symb_items symb_map_items
+        | id -> basic_spec, id -> sentence, id -> symb_items,
+          id -> symb_map_items
       where 
          -- parsing
          parse_basic_spec :: id -> String -> Result basic_spec
@@ -96,7 +108,21 @@ class (Show basic_spec, Eq basic_spec, Show sentence, Show symb_items,
          parse_symb_map_items :: id -> String -> Result [symb_map_items]
          comment_line :: id -> String
          comment_group :: id -> (String,String)
-
+	 -- printing via class PrettyPrint
+	 print_basic_spec_latex :: id -> GlobalAnnos -> basic_spec -> Doc
+	 print_basic_spec_latex _ = printLatex
+	 print_basic_spec_text  :: id -> GlobalAnnos -> basic_spec -> Doc
+	 print_basic_spec_text  _ = printText
+	 print_symb_items_latex :: id -> GlobalAnnos -> symb_items -> Doc
+	 print_symb_items_latex _ = printLatex
+	 print_symb_items_text  :: id -> GlobalAnnos -> symb_items -> Doc
+	 print_symb_items_text  _ = printText
+	 print_symb_map_items_latex :: 
+	     id -> GlobalAnnos -> symb_map_items -> Doc
+	 print_symb_map_items_latex _ = printLatex 
+	 print_symb_map_items_text  :: 
+	     id -> GlobalAnnos -> symb_map_items -> Doc
+	 print_symb_map_items_text  _ = printText
 
 -- lattices (for sublogics)
 
