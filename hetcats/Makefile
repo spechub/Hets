@@ -21,7 +21,7 @@ DRIFT      = $(PERL) ../utils/DrIFT
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances 
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package util -package data
+HC_PACKAGE = -package data
 
 ### Profiling and Warnings (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -34,7 +34,7 @@ HCI_OPTS    = $(HC_FLAGS) $(HC_PACKAGE) $(HC_INCLUDE)
 HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 
 ### list of directories to run checks in
-TESTDIRS    = ../test
+TESTDIRS    = ../CASL ../test
 
 ####################################################################
 ## sources for hetcats (semi - manually produced with a perl script)
