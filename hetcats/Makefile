@@ -13,7 +13,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc:../Modal
+INCLUDE_PATH = ../parsec:../haterm-1.0/src:../fgl:../pretty:..:../CASL:../HasCASL:../aterm_conv:../ghc:../Modal:../Haskell
 
 HC         = ghc
 PERL       = perl
@@ -23,7 +23,7 @@ HADDOCK    = $(PERL) ../utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package data
+HC_PACKAGE = -package data -package haskell-src
 
 AG_FLAGS   = -mdcfs
 
@@ -152,6 +152,13 @@ capa: ../CASL/capa
 hacapa: ../HasCASL/hacapa
 
 ../HasCASL/hacapa: ../HasCASL/hacapa.lhs $(drifted_files) ../HasCASL/*.hs 
+	$(RM) $@
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### Haskell parser
+hapa: ../Haskell/hapa
+
+../Haskell/hapa: ../Haskell/hapa.lhs ../Haskell/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
