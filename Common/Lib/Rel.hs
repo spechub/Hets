@@ -46,7 +46,7 @@ module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
-newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving (Eq, Ord)
+newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 
 empty :: Rel a
 empty = Rel Map.empty
