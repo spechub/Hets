@@ -193,7 +193,7 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl justStruct
        (pardnsigs, diag', buc') <- insNodes diag args buc
        (_, diag'') <- extendDiagramIncl lgraph diag' pardnsigs resnsig (renderText Nothing (printText exp))
        -- analyse the unit term
-       (p@(Diag_node_sig n pnsig), diag''', dg''', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg'') 
+       (p@(Diag_node_sig _ pnsig), diag''', dg''', ut') <- ana_UNIT_TERM lgraph defl (gannos, genv, dg'') 
 				                                     curl justStruct (buc', diag'') (item ut)
        -- check amalgamability conditions
        let pos = getPos_UNIT_EXPRESSION exp
@@ -299,7 +299,7 @@ ana_UNIT_TERM lgraph defl gctx curl justStruct uctx am@(Amalgamation uts poss) =
        -- check amalgamability conditions
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability (headPos poss) diag sink
-       (q@(Diag_node_sig n _), diag') <- extendDiagramIncl lgraph diag dnsigs sig (renderText Nothing (printText am))
+       (q, diag') <- extendDiagramIncl lgraph diag dnsigs sig (renderText Nothing (printText am))
        return (q, diag', dg'', Amalgamation uts' poss)
 -- LOCAL-UNIT
 ana_UNIT_TERM lgraph defl gctx@(gannos, genv, _) curl justStruct uctx (Local_unit udds ut poss) =
@@ -338,7 +338,7 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 		   -- check amalgamability conditions
 		   sink <- inclusionSink lgraph (pI : (map third morphSigs)) sigA
 		   () <- assertAmalgamability pos diagA sink
-		   (qB, diag') <- extendDiagramIncl lgraph diagA [pI] resultSig ""
+		   (qB@(Diag_node_sig nqB _), diag') <- extendDiagramIncl lgraph diagA [pI] resultSig ""
 		   -- insert nodes p^F_i and appropriate edges to the diagram
 		   let ins diag dg [] = do return (diag, dg)
 		       ins diag dg ((morph, _, targetNode) : morphNodes) = 
@@ -351,8 +351,9 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 		   (diag'', dg4) <- ins diag' dg''' morphSigs
 		   -- check amalgamability conditions
 		   (sigR, dg5) <- extendDGraph dg4 resultSig (gEmbed sigMorExt) DGExtension
-		   sink <- inclusionSink lgraph (qB : (map third morphSigs)) sigR
-		   () <- assertAmalgamability pos diag'' sink
+		   sink <-  inclusionSink lgraph (map third morphSigs) sigR
+		   let sink' = (nqB, gEmbed sigMorExt) : sink
+		   () <- assertAmalgamability pos diag'' sink'
 		   (q, diag''') <- extendDiagram diag'' qB (gEmbed sigMorExt) sigR
 				                 (renderText Nothing (printText uappl))
 		   diag4 <- insInclusionEdges lgraph diag''' (map third morphSigs) q
