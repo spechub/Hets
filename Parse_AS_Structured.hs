@@ -15,6 +15,7 @@ module Parse_AS_Structured where
 
 import Grothendieck
 import LogicGraph
+import Logic
 
 import AS_Structured
 import AS_Annotation
@@ -23,6 +24,7 @@ import Id(tokPos)
 import Keywords
 import Lexer
 import Parsec
+import Id
 
 import Maybe(maybeToList)
 
@@ -35,52 +37,56 @@ annoParser parser = bind (\x y -> Annoted y [] x []) annos parser
 -- simpleId as spec- and view-name 
 simpleId = pToken (reserved casl_reserved_words scanAnyWords)
 
-spec :: [AnyLogic] -> GenParser Char st SPEC
--- first logic is the current logic!
 
-reSpec p = annoParser (simpleSpec p) >>= (renaming p <|> restriction p)
 
-parseMaps :: [AnyLogic] -> GenParser Char st G_symb_map_items_list
-parseMaps p@(Logic l:: _) = fmap G_symb_map_items_list 
-			    (parse_symb_map_items_list l)
+spec :: AnyLogic -> GenParser Char st SPEC
+-- current logic
+spec l = reSpec l 
 
-renaming p s = 
+reSpec :: AnyLogic -> GenParser Char st SPEC
+reSpec l = annoParser (simpleSpec l) >>= (renaming l ) -- <|> restriction l
+
+parseMaps :: AnyLogic -> GenParser Char st (G_symb_map_items_list, [Token])
+parseMaps (Logic l) = do (cs, ps) <- parse_symb_map_items l `separatedBy` commaT
+			 return (G_symb_map_items_list l cs, ps) 
+
+renaming l s = 
     do w <- asKey withS
-       m <- parseMaps p
-       return (Translation s (Renaming m [tokPos w]))
+       (m, ps) <- parseMaps l
+       return (Translation s (Renaming m (map tokPos (w:ps))))
 
-simpleSpec p = groupSpec p <|> fmap Basic_spec p
+simpleSpec :: AnyLogic -> GenParser Char st SPEC
+simpleSpec l@(Logic i) = groupSpec l <|> fmap (Basic_spec . G_basic_spec i) 
+			                 (parse_basic_spec i)
 
-aSpec p = do a <- annos
-	     s <- spec p
-	     return (Annoted s [] a [])
+aSpec l = annoParser (spec l)
 
-groupSpec p = do o <- oBraceT
-		 a <- aSpec p
+groupSpec l = do b <- oBraceT
+		 a <- aSpec l
 		 c <- cBraceT
-		 return (Group a (map tokPos [o, c])) 
+		 return (Group a (map tokPos [b, c])) 
 	      <|>
 	      do n <- simpleId
-		 f <- fitArgs p
+		 f <- fitArgs l
 		 return (Spec_inst n f)
 
-fitArgs :: GenParser Char st G_basic_spec -> GenParser Char st [Annoted FIT_ARG]
+fitArgs :: AnyLogic -> GenParser Char st [Annoted FIT_ARG]
 -- toDo
-fitArgs p = return []
+fitArgs l = return []
 
 optEnd = option Nothing (fmap Just (asKey endS))
 
-specDefn p = 
+specDefn l = 
     do s <- asKey specS 
        n <- simpleId
-       g <- generics p
+       g <- generics l
        e <- asKey equalS
-       a <- aSpec p
-       o <- optEnd
-       return (Spec_defn n g a (map tokPos ([s, e] ++ Maybe.maybeToList o)))
+       a <- aSpec l
+       q <- optEnd
+       return (Spec_defn n g a (map tokPos ([s, e] ++ Maybe.maybeToList q)))
        
 -- toDo
-generics p = return (Genericity (Params []) (Imported []) [])
+generics l = return (Genericity (Params []) (Imported []) [])
 
 
 
