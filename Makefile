@@ -52,7 +52,7 @@ HC_OPTS     = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS  = +RTS -K10m -RTS
 
 ### list of directories to run checks in
-TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples
+TESTDIRS    = Common CASL HasCASL Haskell/Hatchet/examples ToHaskell/test
 
 
 ####################################################################
