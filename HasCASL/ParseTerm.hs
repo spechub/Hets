@@ -39,11 +39,11 @@ quColon = do c <- colT
 -----------------------------------------------------------------------------
 -- kind
 -----------------------------------------------------------------------------
--- universe is just a special className ("Type")
+-- universe is just a special classId ("Type")
 parseClass :: GenParser Char st Class
 parseClass = fmap (\c -> if showId c "" == "Type" 
 		   then Intersection [] [posOfId c]
-		   else Intersection [c] []) className
+		   else Intersection [c] []) classId
              <|> 
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
@@ -351,16 +351,16 @@ pattern :: GenParser Char st Pattern
 pattern = asPattern True
 
 -----------------------------------------------------------------------------
--- instOpName
+-- instOpId
 -----------------------------------------------------------------------------
 -- places may follow instantiation lists
 
-instOpName :: GenParser Char st InstOpName
-instOpName = do i@(Id is cs ps) <- uninstOpName
-		if isPlace (last is) then return (InstOpName i []) 
+instOpId :: GenParser Char st InstOpId
+instOpId = do i@(Id is cs ps) <- uninstOpId
+	      if isPlace (last is) then return (InstOpId i []) 
 		   else do l <- many (brackets parseType Types)
 			   u <- many placeT
-			   return (InstOpName (Id (is++u) cs ps) l)
+			   return (InstOpId (Id (is++u) cs ps) l)
 
 -----------------------------------------------------------------------------
 -- typeScheme
@@ -436,7 +436,7 @@ varTerm o = do v <- asKey varS
 
 qualOpName :: Token -> GenParser Char st Term
 qualOpName o = do { v <- asKey opS
-		  ; i <- instOpName
+		  ; i <- instOpId
  	          ; (c, t) <- partialTypeScheme
 		  ; p <- cParenT
 		  ; return (QualOp i t (toPos o [v, c] p))
@@ -452,7 +452,7 @@ predType t = FunType t PFunArr (BracketType Parens [] [posOfType t]) []
 
 qualPredName :: Token -> GenParser Char st Term
 qualPredName o = do { v <- asKey predS
-		    ; i <- instOpName
+		    ; i <- instOpId
 		    ; c <- colT 
 		    ; t <- typeScheme
 		    ; p <- cParenT

@@ -93,12 +93,12 @@ brackets parser k = bracketParser parser oBracketT cBracketT commaT k
 
 -- allow type_ops as op_symbols (like "*")
 
-uninstOpName, typeName :: GenParser Char st Id
-uninstOpName = mixId (hascasl_reserved_fops, hascasl_reserved_fwords)
+uninstOpId, typeId :: GenParser Char st Id
+uninstOpId = mixId (hascasl_reserved_fops, hascasl_reserved_fwords)
 	       (hascasl_reserved_fops, hascasl_reserved_fwords)
 
 -- prohibit type_ops on the top-level
-typeName = mixId (hascasl_type_ops ++ hascasl_reserved_fops,
+typeId = mixId (hascasl_type_ops ++ hascasl_reserved_fops,
 		  hascasl_reserved_fwords)
 	   (hascasl_reserved_fops, hascasl_reserved_fwords)
 
@@ -110,8 +110,8 @@ typeName = mixId (hascasl_type_ops ++ hascasl_reserved_fops,
 typeVar :: GenParser Char st Token
 typeVar = pToken scanWords
 
-className :: GenParser Char st Id
-className = 
+classId :: GenParser Char st Id
+classId = 
     do s <- typeVar
-       (c, p) <- option ([], []) $ brackets typeName (,) 
+       (c, p) <- option ([], []) $ brackets typeId (,) 
        return (Id [s] c p)

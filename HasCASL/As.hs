@@ -48,13 +48,13 @@ data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos]
                  -- pos "{", ";"s "}"
                  deriving (Show, Eq)
 
-data ClassDecl = ClassDecl [ClassName] [Pos]
+data ClassDecl = ClassDecl [ClassId] [Pos]
                -- pos ","s
-               | SubclassDecl [ClassName] Class [Pos]
+               | SubclassDecl [ClassId] Class [Pos]
                -- pos ","s, "<"
-               | ClassDefn ClassName Class [Pos]
+               | ClassDefn ClassId Class [Pos]
                -- pos "="
-               | DownsetDefn ClassName TypeVar Type [Pos] 
+               | DownsetDefn ClassId TypeVar Type [Pos] 
 	       -- pos " =" "{", dot, "<", typeVar,  "}"
                  deriving (Show, Eq)
                           
@@ -71,7 +71,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
 	       | Datatype DatatypeDecl
                  deriving (Show, Eq)
 
-data TypePattern = TypePattern TypeName [TypeArg] [Pos]
+data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos "("s, ")"s 
                  | TypePatternToken Token
                  | MixfixTypePattern [TypePattern]
@@ -85,7 +85,7 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show, Eq)
 
-data Type = TypeConstrAppl TypeName Int Kind [Type] [Pos]  -- analysed
+data Type = TypeConstrAppl TypeId Int Kind [Type] [Pos]  -- analysed
             -- Int > 0 means generalized
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
@@ -121,7 +121,7 @@ posOfType (FunType t _ _ ps) =
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
              deriving (Show, Eq)
 
-data Pred = IsIn ClassName [Type]
+data Pred = IsIn ClassId [Type]
               deriving (Show, Eq)
 
 data Qual t = [Pred] :=> t
@@ -135,15 +135,15 @@ data TypeScheme = SimpleTypeScheme Type
 
 data Partiality = Partial | Total deriving (Show, Eq)
 
-data OpItem = OpDecl [OpName] TypeScheme [OpAttr] [Pos]
+data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
-            | OpDefn OpName [Pattern] TypeScheme Partiality Term [Pos]
+            | OpDefn OpId [Pattern] TypeScheme Partiality Term [Pos]
                -- pos "("s, ")"s, ":" or ":?", "="
               deriving (Show, Eq)
 
-data PredItem = PredDecl [OpName] TypeScheme [Pos]
+data PredItem = PredDecl [OpId] TypeScheme [Pos]
                -- pos ","s, ":", ","s
-              | PredDefn OpName [Pattern] Formula [Pos]
+              | PredDefn OpId [Pattern] Formula [Pos]
                -- pos "("s, ")"s, "<=>"
               deriving (Show, Eq)
 
@@ -160,13 +160,13 @@ data DatatypeDecl = DatatypeDecl
 		     -- pos "::=", "|"s, "deriving"
 		     deriving (Show, Eq)
 
-data Alternative = Constructor UninstOpName [Components] Partiality [Pos]
+data Alternative = Constructor UninstOpId [Components] Partiality [Pos]
 		   -- pos: "?"
 		 | Subtype [Type] [Pos]
 		   -- pos: "type", ","s
 		   deriving (Show, Eq)
 
-data Components = Selector UninstOpName Partiality Type SeparatorKind Pos 
+data Components = Selector UninstOpId Partiality Type SeparatorKind Pos 
 		-- pos ",", ":" or ":?"
 		| NoSelector Type
 		| NestedComponents [Components] [Pos]
@@ -204,7 +204,7 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos "when", "else"
 	  | QualVar Var Type [Pos]
 	  -- pos "(", "var", ":", ")"
-	  | QualOp InstOpName TypeScheme [Pos]
+	  | QualOp InstOpId TypeScheme [Pos]
 	  -- pos "(", "op", ":", ")" 
 	  | ApplTerm Term Term [Pos]  -- analysed
 	  -- pos?
@@ -229,7 +229,7 @@ data Term = CondTerm Term Formula Term [Pos]
 
 data Pattern = PatternVars [VarDecl] [Pos]
              -- pos ";"s 
-	     | PatternConstr InstOpName TypeScheme [Pattern] [Pos] 
+	     | PatternConstr InstOpId TypeScheme [Pattern] [Pos] 
 	     -- constructor or toplevel operation applied to arguments
 	     -- pos "("s, ")"s
              | PatternToken Token
@@ -255,8 +255,8 @@ data SeparatorKind = Comma | Other deriving (Show, Eq)
 data VarDecl = VarDecl Var Type SeparatorKind Pos deriving (Show, Eq)
 	       -- pos "," or ":" 
 
--- currently TypeName is a simple Token and Kind is only a Class
-data TypeVarDecl = TypeVarDecl TypeName Kind SeparatorKind Pos 
+-- currently TypeId is a simple Token and Kind is only a Class
+data TypeVarDecl = TypeVarDecl TypeId Kind SeparatorKind Pos 
                    -- pos "," or ":" 
 		   deriving (Show, Eq)
 
@@ -295,7 +295,7 @@ data Kind = Kind [ProdClass] Class [Pos]
 	    deriving (Show, Eq)
 
 data Class = Downset Type   -- not parsed directly
-	   | Intersection { iclass :: [ClassName], classPos :: [Pos] }  
+	   | Intersection { iclass :: [ClassId], classPos :: [Pos] }  
 	   -- pos "(", ","s, ")"
 	     deriving (Show, Eq)
 
@@ -312,18 +312,18 @@ nullKind = Kind [] universe []
 -- op names
 -- ----------------------------------------------------------------------------
 
-data OpName = OpName UninstOpName [TypeVarDecls] deriving (Show, Eq)
+data OpId = OpId UninstOpId [TypeVarDecls] deriving (Show, Eq)
 
 data Types = Types [Type] [Pos] deriving (Show, Eq) -- [TYPE, ..., TYPE]
-data InstOpName = InstOpName UninstOpName [Types] deriving (Show, Eq)
+data InstOpId = InstOpId UninstOpId [Types] deriving (Show, Eq)
 
 -- ----------------------------------------------------------------------------
 -- ids
 -- ----------------------------------------------------------------------------
 
-type TypeName = Id
-type UninstOpName = Id
+type TypeId = Id
+type UninstOpId = Id
 
 type Var = Id
 type TypeVar = Token
-type ClassName = Id -- TOKEN-ID (one token with compound list, like CASL sorts)
+type ClassId = Id -- TOKEN-ID (one token with compound list, like CASL sorts)

@@ -11,30 +11,28 @@ module Le where
 
 import Id
 import As
-import AsUtils
 import MonadState
 import FiniteMap
 import List
 import Result
-import Set
 
-data ClassInfo = ClassInfo { classId :: ClassName
-			   , superClasses :: [ClassName]
+data ClassInfo = ClassInfo { classId :: ClassId
+			   , superClasses :: [ClassId]
 			   , classDefn :: Class
 			   , instances :: [Qual Pred]
 			   } deriving (Show, Eq)
 
-newClassInfo :: ClassName -> ClassInfo
+newClassInfo :: ClassId -> ClassInfo
 newClassInfo cid = ClassInfo cid [] (Intersection [] []) []
 
 -----------------------------------------------------------------------------
 
-type ClassEnv = FiniteMap ClassName ClassInfo
+type ClassMap = FiniteMap ClassId ClassInfo
 
 -- transitiv super classes 
 -- PRE: all superclasses and defns must be defined in ClassEnv
 -- and there must be no cycle!
-allSuperClasses :: ClassEnv -> ClassName -> [ClassName]
+allSuperClasses :: ClassMap -> ClassId -> [ClassId]
 allSuperClasses ce ci = 
     case lookupFM ce ci of 
     Just info -> nub $
@@ -43,7 +41,7 @@ allSuperClasses ce ci =
 		      ++  concatMap (allSuperClasses ce) (superClasses info)
     Nothing -> error "allSuperClasses"
 
-defCEntry :: ClassEnv -> ClassName  -> [ClassName] -> Class -> ClassEnv
+defCEntry :: ClassMap -> ClassId  -> [ClassId] -> Class -> ClassMap
 defCEntry ce cid sups defn = addToFM ce cid 
 			   (newClassInfo cid) { superClasses = sups
 					      , classDefn = defn } 
@@ -54,21 +52,24 @@ defCEntry ce cid sups defn = addToFM ce cid
 
 type Assumps = FiniteMap Id [TypeScheme]
 
-type TypeKinds = FiniteMap TypeName Kind
+type TypeKinds = FiniteMap TypeId [Kind]
+
+type ClassSyns = FiniteMap ClassId [ClassId]
 
 -----------------------------------------------------------------------------
 -- local env
 -----------------------------------------------------------------------------
 
-data Env = Env { classEnv :: ClassEnv
+data Env = Env { classMap :: ClassMap
+	       , classSyns :: ClassSyns
                , typeKinds :: TypeKinds
-	       , typeVars :: Set TypeName
+	       , typeVars :: [TypeId]
 	       , assumps :: Assumps
 	       , envDiags :: [Diagnosis]
 	       } deriving Show
 
 initialEnv :: Env
-initialEnv = Env emptyFM emptyFM emptySet emptyFM []
+initialEnv = Env emptyFM emptyFM emptyFM [] emptyFM []
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =
@@ -76,12 +77,22 @@ appendDiags ds =
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
 
+getClassMap :: State Env ClassMap
+getClassMap = gets classMap
 
-getClassEnv :: State Env ClassEnv
-getClassEnv = gets classEnv
+putClassMap :: ClassMap -> State Env ()
+putClassMap ce = do { e <- get; put e { classMap = ce } }
 
-putClassEnv :: ClassEnv -> State Env ()
-putClassEnv ce = do { e <- get; put e { classEnv = ce } }
+getClassSyns :: State Env ClassSyns
+getClassSyns = gets classSyns
+
+getClassEnv :: State Env (ClassMap, ClassSyns)
+getClassEnv = do cMap <- getClassMap
+		 cSyns <- getClassSyns
+		 return (cMap, cSyns)
+
+putClassSyns :: ClassSyns -> State Env ()
+putClassSyns ce = do { e <- get; put e { classSyns = ce } }
 
 getTypeKinds :: State Env TypeKinds
 getTypeKinds = gets typeKinds
@@ -95,12 +106,12 @@ getAssumps = gets assumps
 putAssumps :: Assumps -> State Env ()
 putAssumps as =  do { e <- get; put e { assumps = as } }
 
-getTypeVars :: State Env (Set TypeName)
+getTypeVars :: State Env [TypeId]
 getTypeVars = gets typeVars
 
-putTypeVars :: (Set TypeName) -> State Env ()
+putTypeVars :: [TypeId] -> State Env ()
 putTypeVars ts =  do { e <- get; put e { typeVars = ts } }
 
-addTypeVar :: TypeName -> State Env ()
+addTypeVar :: TypeId -> State Env ()
 addTypeVar t = do ts <- getTypeVars 
-		  putTypeVars $ addToSet ts t
+		  putTypeVars $ insert t ts

@@ -249,8 +249,8 @@ instance PrettyPrint Class where
 instance PrettyPrint Types where
     printText0 ga (Types l _) = Pretty.brackets $ commas ga l
 
-instance PrettyPrint InstOpName where
-    printText0 ga (InstOpName n l) = printText0 ga n 
+instance PrettyPrint InstOpId where
+    printText0 ga (InstOpId n l) = printText0 ga n 
 				     <> fcat(map (printText0 ga) l)
 
 ------------------------------------------------------------------------
@@ -394,7 +394,7 @@ instance PrettyPrint Components where
     printText0 ga (NoSelector t) = printText0 ga t
     printText0 ga (NestedComponents l _) = parens $ semis ga l
 
-instance PrettyPrint OpName where 
-    printText0 ga (OpName n ts) = printText0 ga n 
+instance PrettyPrint OpId where 
+    printText0 ga (OpId n ts) = printText0 ga n 
 				  <+> fcat(map (printText0 ga) ts)
 

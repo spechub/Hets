@@ -211,7 +211,7 @@ pseudoTypeDef t k l =
 -----------------------------------------------------------------------------
 
 component :: GenParser Char st [Components]
-component = do { (is, cs) <- uninstOpName `separatedBy` commaT
+component = do { (is, cs) <- uninstOpId `separatedBy` commaT
                ; if length is == 1 then
                  compType is cs 
                  <|> return [NoSelector (mkType(head is))]
@@ -237,7 +237,7 @@ tupleComponent =
 	   c <- cParenT
 	   return (NestedComponents cs (toPos o ps c))
 		      
-compType :: [UninstOpName] -> [Token] -> GenParser Char st [Components]
+compType :: [UninstOpId] -> [Token] -> GenParser Char st [Components]
 compType is cs = do { c <- colT 
                     ; t <- parseType
 		    ; return (makeComps is (cs++[c]) Total t)
@@ -258,7 +258,7 @@ alternative = do { s <- pluralKeyword sortS <|> pluralKeyword typeS
                  ; return (Subtype ts (map tokPos (s:cs)))
                  }
               <|> 
-              do { i <- uninstOpName
+              do { i <- uninstOpId
                  ; cs <- many tupleComponent
 		 ; do { q <- quMarkT
 		      ; return (Constructor i cs Partial [tokPos q])
@@ -297,14 +297,14 @@ dataItems = itemList typeS dataItem FreeDatatype
 -- classItem
 -----------------------------------------------------------------------------
 
-subClassDecl :: ([ClassName], [Token]) -> GenParser Char st ClassDecl
+subClassDecl :: ([ClassId], [Token]) -> GenParser Char st ClassDecl
 subClassDecl (l, p) = 
     do { t <- lessT
        ; s <- parseClass
        ; return (SubclassDecl l s (map tokPos (p++[t])))
        }
 
-isoClassDecl :: ClassName -> GenParser Char st ClassDecl
+isoClassDecl :: ClassId -> GenParser Char st ClassDecl
 isoClassDecl s = 
     do { e <- equalT
        ;     do o <- oBraceT
@@ -321,7 +321,7 @@ isoClassDecl s =
        }
 
 classDecl :: GenParser Char st ClassDecl
-classDecl = do   (is, cs) <- className `separatedBy` commaT
+classDecl = do   (is, cs) <- classId `separatedBy` commaT
 		 if length is == 1 then 
 		    subClassDecl (is, cs)
 		    <|>
@@ -370,13 +370,13 @@ typeVarDeclSeq =
        c <- cBracketT
        return (TypeVarDecls (concat ts) (toPos o cs c))
 
-opName :: GenParser Char st OpName
-opName = do i@(Id is cs ps) <- uninstOpName
-	    if isPlace $ last is then return (OpName i [])
+opId :: GenParser Char st OpId
+opId = do i@(Id is cs ps) <- uninstOpId
+	  if isPlace $ last is then return (OpId i [])
 	      else 
 	        do ts <- many typeVarDeclSeq
 		   u <- many placeT
-		   return (OpName (Id (is++u) cs ps) ts)
+		   return (OpId (Id (is++u) cs ps) ts)
 
 opAttr :: GenParser Char st OpAttr
 opAttr = do a <- asKey assocS
@@ -392,7 +392,7 @@ opAttr = do a <- asKey assocS
 	    t <- term
 	    return (UnitOpAttr t (tokPos a))
 
-opDecl :: [OpName] -> [Token] -> GenParser Char st OpItem
+opDecl :: [OpId] -> [Token] -> GenParser Char st OpItem
 opDecl os ps = do c <- colT
 		  t <- typeScheme
 		  do   d <- commaT
@@ -400,7 +400,7 @@ opDecl os ps = do c <- colT
 		       return (OpDecl os t as (map tokPos (ps++[c,d]++cs))) 
 		    <|> return (OpDecl os t [] (map tokPos (ps++[c])))
 
-opDeclOrDefn :: OpName -> GenParser Char st OpItem
+opDeclOrDefn :: OpId -> GenParser Char st OpItem
 opDeclOrDefn o = 
     do c <- colT
        t <- typeScheme
@@ -427,7 +427,7 @@ opDeclOrDefn o =
        return (OpDefn o [] (SimpleTypeScheme t) Partial f (toPos c [] e))
 
 opItem :: GenParser Char st OpItem
-opItem = do (os, ps) <- opName `separatedBy` commaT
+opItem = do (os, ps) <- opId `separatedBy` commaT
 	    if length os == 1 then
 		    opDeclOrDefn (head os)
 		    else opDecl os ps
@@ -439,12 +439,12 @@ opItems = itemList opS opItem OpItems
 -- predItem
 -----------------------------------------------------------------------------
 
-predDecl :: [OpName] -> [Token] -> GenParser Char st PredItem
+predDecl :: [OpId] -> [Token] -> GenParser Char st PredItem
 predDecl os ps = do c <- colT
 		    t <- typeScheme
 		    return (PredDecl os t (map tokPos (ps++[c])))
 
-predDefn :: OpName -> GenParser Char st PredItem
+predDefn :: OpId -> GenParser Char st PredItem
 predDefn o = do ps <- many (bracketParser patterns oParenT cParenT semiT 
 		      (BracketPattern Parens)) 
 		e <- asKey equivS
@@ -452,7 +452,7 @@ predDefn o = do ps <- many (bracketParser patterns oParenT cParenT semiT
 		return (PredDefn o ps (TermFormula f) [tokPos e]) 
 
 predItem :: GenParser Char st PredItem
-predItem = do (os, ps) <- opName `separatedBy` commaT
+predItem = do (os, ps) <- opId `separatedBy` commaT
 	      if length os == 1 then 
 		 predDecl os ps
 		 <|> 

@@ -16,14 +16,7 @@ import List(intersperse)
 import Maybe
 import Monad
 import MonadState
-import Set
 import Result
-
--- ---------------------------------------------------------------------
-instance Show a => Show (Set a) where
-    showsPrec _ s = showString "{" 
-		. showSepList (showString ",") shows (setToList s)
-		. showString "}"
 
 anaList :: Monad m => (a -> m (Result b)) -> [a] -> m (Result [b])
 anaList f l = 
@@ -64,7 +57,7 @@ posOfTypePattern (TypePatternArgs as) =
        let TypeArg t _ _ _ = head as in tokPos t
 
 -- ---------------------------------------------------------------------
-showClassList :: [ClassName] -> ShowS
+showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (length is > 1)
 		   $ showSepList ("," ++) showId is
 

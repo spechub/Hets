@@ -14,7 +14,7 @@ import AsUtils
 import GlobalAnnotationsFunctions(emptyGlobalAnnos)
 import Id
 import Le
-import List(nub)
+import List(nub, sort)
 import Maybe
 import MonadState
 import Pretty
@@ -27,39 +27,33 @@ import Result
 -- analyse class
 -- ---------------------------------------------------------------------------
 
-anaClassName :: Bool -> ClassName -> State Env (Result [ClassName])
+
+resolveClassSyns :: ClassSyns -> ClassId -> [ClassId]
+resolveClassSyns cSyns ci = 
+    case lookupFM cSyns ci of 
+    Nothing -> [ci] 
+    Just cs -> sort $ nub $ concatMap (resolveClassSyns cSyns) cs
+
+anaClassId :: ClassMap -> ClassId -> [Diagnosis]
 -- True: declare the class
-anaClassName b ci = 
-    do ce <- getClassEnv
-       if isJust $ lookupFM ce ci then return $ return [ci]
-	 else if b then 
-		do putClassEnv $ defCEntry ce ci [] universe
-                   return $ return [ci]
-	      else 	  
-		return $ plain_error [] 
+anaClassId cMap ci = 
+       if isJust $ lookupFM cMap ci then []
+	      else [Diag Error 
 		    ("undeclared class '" ++ showId ci "'")
-		    (posOfId ci)
+		    $ posOfId ci]
 
-anaClass :: Bool -> Class -> State Env Class
-anaClass b c@(As.Intersection cs ps) = 
-    if null cs
-       then 
-       do if null ps then return ()  -- no warning 
-	    else appendDiags [Diag Warning
-				 "redundant universe class" 
-				 (head ps)]
-	  return c
-       else
-    do Result ds (Just l) <- anaList (anaClassName (b && null (tail cs))) cs
-       appendDiags ds
-       return $ Intersection (nub $ concat l) ps
+anaClass :: Class -> State Env Class
+anaClass (Intersection cs ps) = 
+    do cMap <- getClassMap
+       let l = zip (map (anaClassId cMap) cs) cs
+	   restCs = map snd $ filter (\ (x, _) -> null x) l  
+	   ds = concatMap fst l 
+	   in do appendDiags ds 
+		 return $ Intersection restCs ps 
 
-anaClass _ (Downset t) = 
+anaClass (Downset t) = 
     do newT <- anaType t
        return $ Downset newT
-
-anaClassAppl :: Class -> State Env Class
-anaClassAppl c = anaClass False c
 
 -- ----------------------------------------------------------------------------
 -- analyse kind
@@ -67,13 +61,13 @@ anaClassAppl c = anaClass False c
 
 anaKind :: Kind -> State Env Kind
 anaKind (Kind args c p) = 
-    do ca <- anaClassAppl c
+    do ca <- anaClass c
        newArgs <- mapM anaProdClass args
        return $ Kind newArgs ca p
 
 anaExtClass :: ExtClass -> State Env ExtClass
 anaExtClass (ExtClass c v p) = 
-    do ca <- anaClassAppl c
+    do ca <- anaClass c
        return $ ExtClass ca v p
 anaExtClass (KindArg k) =
     do n <- anaKind k
@@ -95,14 +89,14 @@ checkTypeKind i k =
            Nothing -> return [Diag Error 
 		      ("unknown type '" ++ showId i "'")
 				   (posOfId i)]
-	   Just k2 -> if eqKind k2 k 
+	   Just ks -> if eqKind k $ head ks
 			  then return []
 			  else return [Diag Error
 				       ("incompatible type kinds\n" ++ 
 					indent 2 (showPretty k . 
 						  showChar '\n' .  
-						  showPretty k2) "")
-				   (posOfKind k)]
+						  showPretty (head ks)) "")
+					$ posOfKind k ]
 
 anaTypeId :: Id -> State Env Type
 anaTypeId i = 
@@ -113,7 +107,7 @@ anaTypeId i =
 				   ("unidentified type '" ++ showId i "'")
 				   (posOfId i)]
 		      return (TypeConstrAppl i 0 nullKind [] []) 
-	   Just k -> return $ TypeConstrAppl i 0 k [] []
+	   Just ks -> return $ TypeConstrAppl i 0 (head ks) [] []
 
 anaType :: Type -> State Env Type
 anaType (t@(TypeConstrAppl i v k ts _)) =
