@@ -33,10 +33,7 @@ spec Set = Bool and InternalLogic and Extensionality then
        Set := \ S . S ->? Unit;
        Pred := \ S . S ->? Unit;
        %%Bool : Type; 
-  ops __=__ : S * S ->? Unit;
-      __=__ : Set S * Set S ->? Unit;
-      __=__ : Set (S*Bool) * Set (S*Bool) ->? Unit;
-      __=__ : (S*Bool) * (S*Bool) ->? Unit;
+  ops __=__ : forall S:Type . S -> S ->? Unit;
       __<=>__,__=>__,__/\__,__\/__ : Unit * Unit ->? Unit;
       false, true : Bool;
       not__ : Unit ->? Unit;
