@@ -1,7 +1,7 @@
 type s, t
 op snd : s × t -> t
-program snd : s × t -> t ((x : s, y : t)) = (op y : t)
-program snd : s × t -> t ((x : s, y : t)) : t = (op y : t)
+program snd : s × t -> t ((x : s, y : t)) = (var y : t)
+program snd : s × t -> t ((x : s, y : t)) : t = (var y : t)
 program (x : s, y : s) = (x : s, y : s)
 op a : s
 program b : s = a
@@ -13,7 +13,7 @@ t : Type
 %% Assumptions -----------------------------------------------------------
 a : s
 b : s = (op a : s)
-snd : s × t -> t = \ (x : s, y : t) . (op y : t)
+snd : s × t -> t = \ (x : s, y : t) . (var y : t)
 %% Diagnostics -----------------------------------------------------------
 Error (line 7, column 10) no toplevel pattern '(x : s, y : s)'
 Error (line 10, column 9) no toplevel pattern 'b : s'

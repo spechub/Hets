@@ -35,8 +35,8 @@ program __ und __ (x, y : Unit) : Unit = ()
 type __->__ : Type- -> Type+ -> Type
 type s->t < s ->? t
 %% total functions
-op __res__(x : s, y : t) : s = (op x : s)
-op fst(x : s, y : t) : s = (op x : s)
+op __res__(x : s, y : t) : s = (var x : s)
+op fst(x : s, y : t) : s = (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
 . (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s))
@@ -140,14 +140,14 @@ __=__ : s × s ->? Unit
 __=>__ : Unit × Unit ->? Unit
 __\/__ : Unit × Unit ->? Unit
 __if__ : Unit × Unit ->? Unit
-__res__ : s = \ (x : s, y : t) .! (op x : s)
+__res__ : s = \ (x : s, y : t) .! (var x : s)
 bottom : p
 def : (Pred)(s) = \ x : _var_36 . ()
 eq : s × s ->? Unit
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : Unit ->? Unit
-fst : s = \ (x : s, y : t) .! (op x : s)
+fst : s = \ (x : s, y : t) .! (var x : s)
 g : c --> d %(var)%
 not : Unit ->? Unit
 sup : (nat -> c) ->? c
@@ -238,6 +238,10 @@ Hint (line 184, column 13) not a class 'c --> d'
 FatalError (line 186, column 10) no resolution for 'f <<= g'
 Error (line 186, column 20) unexpected mixfix token 'f'
 Error (line 192, column 3) unexpected mixfix token 'all'
+Error (line 192, column 8) wrong type scheme of 'f'
+  expected: c --> d
+     found: c --> c
+
 Error (line 192, column 38) unexpected mixfix token ')'
 Error (line 193, column 32) unexpected mixfix token 'impl'
 FatalError (line 195, column 27) no resolution for 'Y (\ x : c -->? p .! x)'

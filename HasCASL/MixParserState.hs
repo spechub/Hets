@@ -42,19 +42,17 @@ incrIndex, decrIndex :: Index -> Index
 incrIndex (Index i) = Index (i + 1)
 decrIndex (Index i) = Index (i - 1)
 
-data PState a = PState { ruleId :: Id        -- the rule to match
-		     , ruleScheme :: TypeScheme -- to make id unique
-                     , ruleType :: Type    -- type of Id
-                     , posList :: [Pos]    -- positions of Id tokens
-		     , ruleArgs :: [a]  -- currently collected arguments 
-		                           -- both in reverse order
-		     , restRule :: [Token] -- part of the rule after the "dot"
-		     , stateNo :: Index -- index into the ParseMap/input string
-		     }
-
-instance Eq (PState a) where
-    PState r1 s1 _ _ _ t1 p1 == PState r2 s2 _ _ _ t2 p2 =
-	(r1, s1, t1, p1) == (r2, s2, t2, p2)
+data PState a = PState 
+    { ruleId :: Id        -- the rule to match
+    , isVar :: Bool        
+    , ruleScheme :: TypeScheme -- to make id unique
+    , ruleType :: Type    -- type of Id
+    , posList :: [Pos]    -- positions of Id tokens
+    , ruleArgs :: [a]  -- currently collected arguments 
+      -- both in reverse order
+    , restRule :: [Token] -- part of the rule after the "dot"
+    , stateNo :: Index -- index into the ParseMap/input string
+    }
 
 instance Show (PState a) where
     showsPrec _ p = 
@@ -69,8 +67,6 @@ instance Show (PState a) where
 			  . shows i . showChar '}'
                           . showChar ':' 
 	                  . showPretty (ruleType p)  
-
-
 
 termStr :: String
 termStr = "_"
@@ -98,9 +94,10 @@ inId  	     = mkRuleId [inTok]
 opId	     = mkRuleId [opTok]
 unknownId    = mkRuleId [unknownTok]
 
-mkPState :: Index -> Id -> TypeScheme -> Type -> [Token] -> PState a
-mkPState ind ide sc ty toks = 
+mkPState :: Index -> Id -> Bool -> TypeScheme -> Type -> [Token] -> PState a
+mkPState ind ide var sc ty toks = 
     PState { ruleId = ide
+	   , isVar = var
 	   , ruleScheme = sc
 	   , ruleType = ty
 	   , posList = []
@@ -111,6 +108,9 @@ mkPState ind ide sc ty toks =
 mkMixfixState :: Index -> (Id, OpInfo) -> State Int (PState a)
 mkMixfixState i (ide, info) = 
     do let sc = opType info
+	   var = case opDefn info of 
+				  VarDefn -> True
+				  _ -> False
        t <- freshInst sc
        let stripped = case t of 
 			     FunType t1 _ _ _ -> 
@@ -118,13 +118,16 @@ mkMixfixState i (ide, info) =
 					 ProductType _ _ -> ide
 					 _ -> stripFinalPlaces ide
 			     _ -> stripFinalPlaces ide
-       return $ mkPState i stripped sc t $ getTokenList termStr stripped
+       return $ mkPState i stripped var sc t $ getTokenList termStr stripped
 
 mkPlainApplState :: Index -> (Id, OpInfo) -> State Int (PState a) 
 mkPlainApplState i (ide, info) =     
     do let sc = opType info
+	   var = case opDefn info of 
+				  VarDefn -> True
+				  _ -> False
        t <- freshInst sc
-       return $ mkPState i ide sc t $ getPlainTokenList ide
+       return $ mkPState i ide var sc t $ getPlainTokenList ide
 
 listToken :: Token 
 listToken = mkSimpleId "[]"
@@ -144,8 +147,8 @@ listStates g i =
     do tvar <- freshVar
        let ty = TypeName tvar star 1
 	   lists = list_lit $ literal_annos g
-	   listState co toks = mkPState i (listId co) (simpleTypeScheme $ 
-					   BracketType Squares [] []) 
+	   listState co toks = mkPState i (listId co) False 
+			       (simpleTypeScheme $ BracketType Squares [] []) 
 			       ty toks
 	   in return $ concatMap ( \ (bs, n, c) ->
 	     let (b1, b2, cs) = getListBrackets bs 
@@ -159,13 +162,12 @@ listStates g i =
 -- these are the possible matches for the nonterminal (T)
 -- the same states are used for the predictions  
 
-
 mkTokState :: Index -> Id -> State Int (PState a) 
 mkTokState i r = 
     do tvar <- freshVar
        let ty = TypeName tvar star 1
            sc = simpleTypeScheme ty
-       return $ mkPState i r sc ty $ getTokenList termStr r
+       return $ mkPState i r False sc ty $ getTokenList termStr r
 
 mkApplTokState :: Index -> Id -> State Int (PState a) 
 mkApplTokState i r = 
@@ -176,7 +178,7 @@ mkApplTokState i r =
 	   tappl = FunType ty1 PFunArr ty2 []
 	   t2appl = FunType tappl PFunArr tappl []
            sc = simpleTypeScheme t2appl
-       return $ mkPState i r sc t2appl $ getTokenList termStr r
+       return $ mkPState i r False sc t2appl $ getTokenList termStr r
 
 mkTupleTokState :: Index -> Id -> State Int (PState a) 
 mkTupleTokState i r = 
@@ -187,7 +189,7 @@ mkTupleTokState i r =
 	   tuple = ProductType [ty1, ty2] []
 	   tappl = FunType ty1 PFunArr (FunType ty2 PFunArr tuple []) []
            sc = simpleTypeScheme tappl
-       return $ mkPState i r sc tappl $ getTokenList termStr r
+       return $ mkPState i r False sc tappl $ getTokenList termStr r
 
 
 mkParenTokState :: Index -> Id -> State Int (PState a) 
@@ -196,7 +198,7 @@ mkParenTokState i r =
        let ty1 = TypeName tv1 star 1
 	   tappl = FunType ty1 PFunArr ty1 []
            sc = simpleTypeScheme tappl
-       return $ mkPState i r sc tappl $ getTokenList termStr r
+       return $ mkPState i r False sc tappl $ getTokenList termStr r
 
 initialState :: GlobalAnnos -> Assumps -> Index -> State Int [PState a]
 initialState g as i = 
@@ -273,8 +275,9 @@ stateToAppl p =
        else if r == applId then
 	    ApplTerm (head ar) (head (tail ar)) qs 
        else if r == tupleId || r == unitId then TupleTerm ar qs
-       else addFunArguments (ty, QualOp (InstOpId (setIdePos r ar qs) [] []) 
-			     sc qs) 
+       else let newI = setIdePos r ar qs in 
+		if null ar && isVar p then QualVar newI ty []
+       else addFunArguments (ty, QualOp (InstOpId newI [] []) sc qs) 
 		$ concatMap expandArgument ar
 
 expandArgument :: Term -> [Term]
