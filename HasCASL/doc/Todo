@@ -13,8 +13,10 @@ synonyms. Function and product types are builtin. Subtypes relations
 of these builtin types and user defined types are problematic. The
 unit type is a separat type!
 
-class names are not considered for mapping (Morphism.hs)
+class names are not considered for mapping (Morphism.hs) 
 
+contradicting mappings are not checked for identity mappings in
+morphismUnion
 
 
 datatypes:
@@ -65,15 +67,6 @@ Test shadowing in MixAna with warning.
 CASL:
 Overload.hs should generate Applications for constants rather than
 Var_decls (partially implemented)
-
-Maybe funKind should be ignored as fun_map key for lookup. (Also the
-FunKind value of the mapping seems to be redundant, as it could also
-be looked up in the target signature.)
-
-Maybe the translated type should be stored as value rather than only
-the funKind.
-
-id mappings should be represented by empty maps (as for HasCASL)
 
 Maybe in CASL.Morphism.compose the target(m1) only needs to be a
 subsignature of the source(m2) (as for HasCASL)
