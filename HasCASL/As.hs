@@ -70,14 +70,18 @@ data VARIANCE = CoVar | ContraVar | InVar
 		deriving (Show,Eq)
 			  
 data TYPE_ITEM = Type_val_decl [TYPE_NAME] KIND [Pos]
-	       | Type_fun_decl TYPENAME [TYPE_ARG_DECL] [CLASS] [Pos]
-               | Type_alias
+	       | Type_fun_decl [TYPE_PATTERN] [CLASS] [Pos]
+               | Type_alias 
 	       | Subtype_decl
 	         -- pos: commas
 		 deriving (Show,Eq)
 
-data TYPE_ARG_DECL = Type_arg_decl [TYPEVAR] EXT_CLASS [pos]
-		   | Type_arg_var [TYPEVAR]
+data TYPE_PATTERN = Type_pattern TYPE_NAME [TYPE_ARG_DECL] [Pos]
+		    deriving (Show,Eq)
+
+data TYPE_ARG_DECL = Type_arg_decl [TYPEVAR] EXT_CLASS [Pos]
+		   | Type_arg_var [TYPEVAR] [Pos]
+		     deriving (Show,Eq)
 
 
 data SORT_ITEM = Sort_decl [SORT] [Pos]
