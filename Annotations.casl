@@ -38,3 +38,8 @@ __ [__ ])%
 %HTML SUM<sub>__<sup>__
 %LATEX \sum_{__}^{__}
 )%
+
+%number __@@__
+%floating __frac__, __exp__
+%string eStr, __++__
+%list [__], nil, cons 
