@@ -1,3 +1,13 @@
+{- todo:
+
+
+Testbeispiele:
+
+writeATerm (fst (addATerm (AAppl "f" [][]) emptyATermTable))
+
+
+
+-}
 module ATermReadWrite (
 
 	readATerm,
