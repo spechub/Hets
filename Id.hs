@@ -17,8 +17,6 @@
 
 module Id where
 
-{-! global : ATermConvertible !-}
-
 import Char
 import Pretty
 import PrettyPrint
@@ -35,7 +33,7 @@ type Region = (Pos,Pos)
 -- tokens as supplied by the scanner
 data Token = Token { tokStr :: String
 		   , tokPos :: Pos
-		   } {-! ==> token(..) !-} deriving (Show)
+		   } deriving (Show)
 
 showTok :: Token -> ShowS
 showTok = showString . tokStr
@@ -64,7 +62,7 @@ isPlace(Token t _) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
 -- TokenOrPlace list must be non-empty!
-data Id = Id [TokenOrPlace] [Id] [Pos] {-! ==> compound-id(..) !-}
+data Id = Id [TokenOrPlace] [Id] [Pos] 
                                  -- pos of "[", commas, "]" 
 	  deriving (Eq, Ord, Show)
 
@@ -99,8 +97,8 @@ type SIMPLE_ID = Token
 class PosItem a where
     up_pos    :: (Pos -> Pos)    -> a -> a
     up_pos_l  :: ([Pos] -> [Pos]) -> a -> a
-    get_pos   :: a -> Pos
-    get_pos_l :: a -> [Pos]
+    get_pos   :: a -> Maybe Pos
+    get_pos_l :: a -> Maybe [Pos]
     up_pos_err  :: String -> a
     up_pos_err fn = 
 	error ("function \"" ++ fn ++ "\" is not implemented")
@@ -110,3 +108,12 @@ class PosItem a where
     get_pos_l _ = error "function \"get_pos_l\" not implemented"    
     
 -------------------------------------------------------------------------
+
+-- Two fine instances, DrIFTed but handcopied
+instance PosItem Token where
+    up_pos fn1 (Token aa ab) = (Token aa (fn1 ab))
+    get_pos (Token _ ab) = Just ab
+
+instance PosItem Id where
+    up_pos_l fn1 (Id aa ab ac) = (Id aa ab (fn1 ac))
+    get_pos_l (Id _ _ ac) = Just ac
