@@ -86,7 +86,7 @@ top_logics _ Nothing = Nothing
 top_logics (Just (G_sublogics a (al::sublogics))) (Just (G_sublogics b bl)) =
   if ((language_name a)==(language_name b)) then
     case (coerce a b bl)::Maybe sublogics of
-      Just bl1 -> Just (G_sublogics a (meet al bl1))
+      Just bl1 -> Just (G_sublogics a (join al bl1))
       Nothing  -> Nothing
   else
     Nothing
