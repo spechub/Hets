@@ -20,7 +20,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
-import Comorphisms.CASL2PCFOL
+--import Comorphisms.CASL2PCFOL
 
 
 --CASL
@@ -35,26 +35,43 @@ import Data.List
 
 
 sig2FOL::Sign f e-> Sign f e
-sig2FOL  sig =sig {opMap=newopMap,predMap=newpredMap }
+sig2FOL  sig =sig {opMap=newOpMap,predMap=newpredMap }
  where
-   -- [SORT] 
-   oldmap = opMap sig
    sig2sort=Set.toList(sortSet sig)
    undef x = OpType{opKind = Total, opArgs=[],opRes=x}
    setundef = Set.fromList (map undef sig2sort)
    map2list = Map.toList(opMap sig)
    set2list = map (\(x,y)->(x,Set.toList y)) map2list
-   op2Total op = OpType{opKind=Total}
-   botton = mkId[mkSimpleId "_Botton"]
-   par2total (x,y)=if ((opKind (head y))==Partial) then (botton,( map op2Total y)) else (x,y)
-   newop= map par2total set2list
-   newpar = concat [y|(x,y)<-newop,(x==botton)]
-   newopMap = (Map.insert botton (Set.fromList(newpar)) (Map.insert botton setundef oldmap ))
+   par2total [] = []
+   par2total (x:xs) = if ((opKind x)==Partial) then  (x{opKind=Total}):(par2total xs) else  x:(par2total xs)
+   newTotalMap =Map.fromList [(x,Set.fromList(par2total y))|(x,y)<-set2list]
+   bottom = mkId[mkSimpleId "_bottom"]
+   newOpMap  = Map.insert bottom setundef newTotalMap
    d=mkId[mkSimpleId "_D"]
    undefpred x = PredType{predArgs=[x]}
    setundefpred = Set.fromList(map undefpred sig2sort)
-   newpredMap = Map.insert d setundefpred (predMap sig) 
-
-
+   newpredMap = Map.insert d setundefpred (predMap sig)
+ 
+{-
+generateFOLAxioms:: Sign f e->[Named(FORMULAR f)]
+generateFOLAxioms   sig = 
+  concat
+   ([inlineAxioms CASL 
+      " sort s             \
+      \ exits x:s._D(x)            %( )%
+      |s<-sortList   ]) 
+{-
+     inlineAxioms CASL
+      " sort s              \
+      \ not _D(_bottom)     \       %( )%
+      
+        | s<-sortList ]) 
+     
+-}      
+ where 
+  sortList = Set.toList (sortSet sig)
+  sortf s = Id [mkSimpleId "_bottom"] [s] [] 
+  
+-}   
 
 
