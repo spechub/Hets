@@ -122,7 +122,7 @@ happy_files = Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
-doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
+doc_sources = $(filter-out ./Isabelle/IsaSign.hs ,$(sources))
 
 ####################################################################
 ### targets
@@ -176,11 +176,10 @@ docs/index.html: $(doc_sources)
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
-	cvs up -d
+	$(RM) docs/*.*
 	$(MAKE) distclean
+	cvs up -d
 	$(MAKE) hetcats-make
-	$(RM) docs/*.html
-	(cd docs; cvs up -d) 
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
 
