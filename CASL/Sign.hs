@@ -1,6 +1,6 @@
 module Sign where
 
--- $Header$
+-- $Id$
 
 import Id
 import AS_Annotation
@@ -84,7 +84,10 @@ data SortItem = SortItem { sortId :: SortId
                          , sortPos :: ItemPos -- "sort/type", ",", "<" or "="
                          , altSorts :: [ItemPos] -- alternative positions
 			 }                       -- of repeated decls
-		deriving (Show, Eq)
+		deriving Show
+
+instance Eq SortItem where
+  (==) a b = (sortId a)==(sortId b)
 
 data BinOpAttr = Assoc | Comm | Idem deriving (Show, Eq) 
 
@@ -104,7 +107,10 @@ data OpItem = OpItem { opId :: Id
                      , opPos :: ItemPos  -- "op" or "," 
 	                      -- plus optional colon, OP_ATTR sep. by commas
 		     , altOps :: [ItemPos]   
-		     } deriving (Show, Eq)
+		     } deriving Show
+
+instance Eq OpItem where
+  (==) a b = ((opId a)==(opId b)) && ((opType a)==(opType b))
 
 data PredDefn = PredDef [VarDecl] Formula [Pos] 
                 -- pos: "(", semicolons, ")", "<=>"
@@ -115,7 +121,10 @@ data PredItem = PredItem { predId :: Id
 			 , predDefn :: Maybe PredDefn
 			 , predPos :: ItemPos -- "pred" or ","  
 			 , altPreds :: [ItemPos] 
-			 } deriving (Show, Eq)
+			 } deriving Show
+
+instance Eq PredItem where
+  (==) a b = ((predId a)==(predId b)) && ((predType a)==(predType b))
 
 data TypeQualifier = OfType | AsType deriving (Show, Eq)
 
@@ -157,7 +166,13 @@ data Formula = Quantified Quantifier [VarDecl] Formula [Pos]
 data SigItem = ASortItem (Annoted SortItem)
 	     | AnOpItem (Annoted OpItem)
 	     | APredItem (Annoted PredItem)
-	       deriving (Show, Eq)
+	       deriving Show
+
+instance Eq SigItem where
+  (==) (ASortItem a) (ASortItem b) = (item a)==(item b)
+  (==) (AnOpItem  a) (AnOpItem  b) = (item a)==(item b)
+  (==) (APredItem a) (APredItem b) = (item a)==(item b)
+  (==) _ _ = False
 
 -- lost are unused global vars
 -- (and annotations for several ITEMS)
