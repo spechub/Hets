@@ -172,3 +172,4 @@ data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
+                         deriving (Eq)
