@@ -20,8 +20,6 @@ import MonadState
 import FiniteMap
 import TypeInference
 
-initialEnv = Env emptyFM emptyFM []
-
 ana :: String -> State Env ()
 ana s =   do e <- get
 	     case parse (basicSpec << eof) "" s of

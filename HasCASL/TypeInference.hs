@@ -45,6 +45,7 @@ import FiniteMap
 import List -- (nub, (\\), intersect, union, partition)
 import Monad(msum)
 import MonadState
+import Maybe
 
 enumId  :: Int -> Id
 enumId n = Id[Token "v" nullPos, Token (show n) nullPos][][]
@@ -153,6 +154,8 @@ defined :: Maybe a -> Bool
 defined (Just _) = True
 defined Nothing  = False
 
+
+{-
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
 
 infixr 5 <:>
@@ -164,7 +167,7 @@ addClass                              :: Id -> [Id] -> EnvTransformer
 addClass i is ce
  | i `elemFM` ce                       = fail "class already defined"
  | not $ null $ is \\ keysFM ce        = fail "superclass not defined"
- | otherwise                           = return (addToFM ce i (is, []))
+ | otherwise                           = return (addToFM ce i (is, [], []))
 
 addPreludeClasses :: EnvTransformer
 addPreludeClasses  = addCoreClasses
@@ -177,18 +180,18 @@ addInst ps p@(IsIn i _) ce
  | not $ i `elemFM` ce          = fail "no class for instance"
  | any (overlap p) qs           = fail "overlapping instance"
  | otherwise                    = return (addToFM ce i c)
-   where its = insts ce i
+   where (sups, syns, its) = fromMaybe ([], [], []) $ lookupFM ce i
          qs  = [ q | (_ :=> q) <- its ]
-         c   = (super ce i, (ps:=>p) : its)
+         c   = (sups, syns, (ps:=>p) : its)
 
 overlap       :: Pred -> Pred -> Bool
 overlap p q    = defined (mguPred p q)
 
 exampleInsts ::  EnvTransformer
 exampleInsts =   addPreludeClasses
-
+-}
 -----------------------------------------------------------------------------
-
+{-
 bySuper :: ClassEnv -> Pred -> [Pred]
 bySuper ce p@(IsIn i t)
  = p : concat [ bySuper ce (IsIn i' t) | i' <- super ce i ]
@@ -235,7 +238,7 @@ reduce ce ps = do qs <- toHnfs ce ps
 
 scEntail        :: ClassEnv -> [Pred] -> Pred -> Bool
 scEntail ce ps p = any (p `elem`) (map (bySuper ce) ps)
-
+-}
 -----------------------------------------------------------------------------
 -- Scheme:	Type schemes
 -----------------------------------------------------------------------------

@@ -12,7 +12,6 @@ module Le where
 import Id
 import Keywords
 import HToken
-import FiniteMap
 
 type TypeId = Id
 
@@ -164,12 +163,30 @@ data Alternative = Construct Id Type [Component]
 -- full function type of a selector (result sort is component sort)
 data Component = Component (Maybe Id) Type 
 
-data ClassItem = ClassItem { classId :: Id
-			   , subClasses :: [ClassId]
+data ClassItem = ClassItem { classId :: ClassId
 			   , superClasses :: [ClassId]
-			   , classDefn :: Maybe Class 
+			   , classDefn :: [ClassId]
+			   , instances :: [Qual Pred]
                            , classBody :: [SigItem]
 			   }
+
+newClassItem :: ClassId -> ClassItem
+newClassItem cid = ClassItem cid [] [] [] []
+
+showClassItem :: ClassItem -> ShowS
+showClassItem info =
+    let syns = classDefn info
+	sups = superClasses info
+        insts = instances info
+    in noShow (null syns) (showString equalS . showClassList syns)
+    . noShow (null sups) (showString lessS . showClassList sups)
+    . noShow (null insts) (showString "\ninstances: " .
+			showSepList (showString ",") (showQual showPred) insts)
+
+showClassList :: [Id] -> ShowS
+showClassList is = showParen (length is > 1)
+		   $ showSepList (showString ",") showId is
+
 
 data TypeRel = TypeRel [Tyvar] Type Type
 

@@ -18,6 +18,7 @@ import MonadState
 import FiniteMap
 import Result
 import List
+import Maybe
 
 ----------------------------------------------------------------------------
 -- FiniteMap stuff
@@ -39,34 +40,23 @@ indent i s = showString $ concat $
 	     intersperse ('\n' : replicate i ' ') (lines $ s "")
 
 -----------------------------------------------------------------------------
--- class instances
------------------------------------------------------------------------------
 
-type ClassInst    = ([Id], [Inst]) -- super classes and instances
-type Inst     = Qual Pred
+type ClassEnv = FiniteMap ClassId Le.ClassItem
 
-showInst :: Inst -> ShowS
-showInst = showQual showPred
+-- transitiv super classes 
+-- PRE: all superclasses and defns must be defined in ClassEnv
+-- and there must be no cycle!
+allSuperClasses :: ClassEnv -> ClassId -> [ClassId]
+allSuperClasses ce ci = 
+    case lookupFM ce ci of 
+    Just info -> nub $
+		      ci: concatMap (allSuperClasses ce) (classDefn info) 
+		      ++  concatMap (allSuperClasses ce) (superClasses info)
+    Nothing -> error "allSuperClasses"
 
-showClassInst :: ClassInst -> ShowS
-showClassInst (sups, insts) =
-    noShow (null sups) (showString "super classes: " . 
-			showSepList (showString ",") showId sups)
-    . noShow (null insts) (showString "\ninstances: " .
-			showSepList (showString ",") showInst insts)
-
------------------------------------------------------------------------------
-
-type ClassEnv = FiniteMap Id ClassInst
-
-super     :: ClassEnv -> Id -> [Id]
-super ce i = case lookupFM ce i of Just (is, _) -> is
-				   Nothing -> []
-
-insts     :: ClassEnv -> Id -> [Inst]
-insts ce i = case lookupFM ce i of Just (_, its) -> its
-				   Nothing -> []
-
+addToCE ce cid sups defn = addToFM ce cid 
+			   (newClassItem cid) { superClasses = sups
+					      , classDefn = defn } 
 
 -----------------------------------------------------------------------------
 -- assumptions
@@ -74,29 +64,42 @@ insts ce i = case lookupFM ce i of Just (_, its) -> its
 
 type Assumps = FiniteMap Id [Scheme]
 
+type TypeKinds = FiniteMap TypeId [Le.Kind]
+
 
 -----------------------------------------------------------------------------
 -- local env
 -----------------------------------------------------------------------------
 
-data Env = Env { classenv :: ClassEnv
+data Env = Env { classEnv :: ClassEnv
+               , typeKinds :: TypeKinds
 	       , assumps :: Assumps
-	       , diags :: [Diagnosis]
-	       } deriving Show
+	       , envDiags :: [Diagnosis]
+	       } 
 
-showEnv e = showMap showId showClassInst (classenv e) .
+initialEnv = Env emptyFM emptyFM emptyFM []
+
+
+showEnv e = showMap showId showClassItem (classEnv e) .
+	    showString "\nType Constructors\n" .
+	    showMap showId (showSepList (showString ", ") showKind)
+		    (typeKinds e) .
 	    showString "\nAssumptions\n" .
 	    showMap showId (showSepList (showString ", ") showScheme) 
 		    (assumps e) .
 	    showChar '\n' .
-	    showList (reverse $ diags e)
+	    showList (reverse $ envDiags e)
 
+appendDiags ds =
+    if null ds then return () else
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
 
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
 
-writeMsg e s = put (e {diags = s : diags e})
+writeMsg e s = put $ e {envDiags = s : envDiags e}
 
 anaBasicSpec (BasicSpec l) = mapM_ anaAnnotedBasicItem l
 
@@ -111,8 +114,18 @@ anaSigItems(TypeItems inst l _) = mapM_ (anaAnnotedTypeItem inst) l
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeDecl t
 
-optAnaVarDecl = error "nyi"
-anaTypeDecl = error "nyi"
+optAnaVarDecl =		 error "nyi"
+
+{-
+optAnaVarDecl(VarDecl v t _ _) = 
+    let mc = TypeToClass t in 
+	     if isSimpleId v && isJust mc then
+		ana
+
+-}
+
+anaTypeDecl= error "nyi"
+
 
 anaAnnotedClassItem inst aci = 
     let As.ClassItem d l _ = item aci in
@@ -121,47 +134,93 @@ anaAnnotedClassItem inst aci =
 
 anaClassDecls (ClassDecl cls _) = mapM_ (anaClassDecl []) cls
 anaClassDecls (SubclassDecl cls supcl _) =
-    do scls <- anaSupClass supcl
+    do Result ds (Just scls) <- anaClass True supcl
+       appendDiags ds
        mapM_ (anaClassDecl scls) cls
+
+
+anaClassDecls (ClassDefn c syncl _) =
+    do Result ds (Just scls) <- anaClass False syncl
+       appendDiags ds
+       e <- get
+       let ci = simpleIdToId c
+           ce = classEnv e
+           mc = lookupFM ce ci in 
+	 case mc of 
+	   Nothing -> put $ e { classEnv = addToCE ce ci [] scls }
+	   Just info -> 
+	     do writeMsg e (Warning ("redeclared class '"
+				    ++ showId ci "'") 
+			  $ posOfId ci)
+	        let supers = zip (map (allSuperClasses ce) scls) scls 
+		    (cycles, nocycles) = partition ((ci `elem`) . fst) supers in 
+		  do if not $ null cycles then
+		       appendDiags [Error 
+				    ("cyclic class definition via '"
+				     ++ showClassList (map snd cycles) "'")
+				   $ posOfId (snd $ head cycles)]
+		       else return ()  
+		     e1 <- get
+		     put $ e1 { classEnv = addToFM ce ci 
+				info { classDefn = nub $ map snd nocycles 
+							 ++ classDefn info }
+			      }
 	       
-anaSupClass (As.ClassName c) = 
-    do anaClassDecl [] c
-       return [simpleIdToId c]
-
-anaSupClass (As.Intersection cs _) = 
-    do cs <- mapM anaSupClass cs
-       return $ nub $ concat cs
-
-anaSupClass (As.Universe p) =
+anaClass b (As.ClassName c) = 
     do e <- get
-       writeMsg e (Warning "redundant universe class" p)
-       return []
+       let ci = simpleIdToId c
+           ce = classEnv e
+           mc = lookupFM ce ci in 
+	 if isJust mc then return $ return [ci]
+	 else if b then 
+		do put $ e { classEnv = addToCE ce ci [] [] }
+                   return $ return [ci]
+	      else 	  
+		return $ non_fatal_error [] 
+		    ("undeclared class '" ++ tokStr c ++  "'")
+		    (tokPos c)
 
-anaClassDecl l t = 
-    let i = simpleIdToId t
-    in do e <- get
-	  let cs = classenv e 
-	      m = lookupFM cs i 
-	    in case m of 
-	    Nothing -> put (e {classenv = addToFM cs i (l, [])})
-	    Just (sups, insts) -> 
+anaClass b (As.Intersection cs _) = 
+    do cs <- mapM (anaClass False) cs
+       return $ Result (concatMap diags cs) 
+		  (Just $ nub $ concatMap (fromJust . maybeResult) cs)
+
+anaClass _ (As.Universe p) =
+    return $ warning [] "redundant universe class" p
+
+anaClassDecl scls c = 
+    do e <- get
+       let ci = simpleIdToId c
+           ce = classEnv e
+           mc = lookupFM ce ci in 
+	 case mc of 
+	    Nothing -> put $ e { classEnv = addToCE ce ci scls [] }
+	    Just info -> 
 		do writeMsg e (Warning ("redeclared class '"
-					++ showId i "'") 
-			      $ posOfId i)
-		   if null l then return ()
-		      else 
-		      do e1 <- get
-			 put (e1 {classenv = addToFM cs i 
-				  (nub (l ++ sups), insts)})
-			 let ds = filter (`elem` sups) l in
+					++ showId ci "'") 
+			      $ posOfId ci)
+		   if null scls then return ()
+		      else let supers = zip (map (allSuperClasses ce) scls) scls 
+			       (cycles, nocycles) = 
+				   partition ((ci `elem`) . fst) supers
+			       sups = superClasses info in
+		      do if not $ null cycles then
+			      appendDiags 
+			      [Error 
+			       ("cyclic class relation via '"
+				      ++ showClassList (map snd cycles) "'")
+			      $ posOfId (snd $ head cycles)]
+			   else return ()  
+			 e1 <- get
+			 put $ e1 { classEnv = addToFM ce ci 
+				  (info { superClasses = 
+					 nub $ map snd nocycles ++ sups }) }
+			 let ds = filter (`elem` sups) scls in
 			     if null $ ds then return ()
-				else 
-				do e2 <- get
-				   writeMsg e2 (Warning 
-						("repeated superclass(es) '"
-						 ++ showSepList (showString ",")
-						 showId ds "'") 
-					       $ posOfId (head ds))
+				else appendDiags [Warning 
+						  ("repeated superclass '"
+						   ++ showClassList ds "'")
+						 $ posOfId (head ds)]
 
 anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 
@@ -169,39 +228,35 @@ anaTypeItem inst (TypeDecl pats kind _) =
     mapM_ (anaTypePattern inst kind) pats 
 
 anaTypePattern inst kind (TypePatternToken t) = 
-    let i = simpleIdToId t
-    in 
-    do k <- anaPlainKind kind
-       let ty = [] :=> TCon (Tycon i k)
-	 in do addTypeScheme i (Scheme [] ty)
-	       anaKind kind ty
-       
+    let ty = simpleIdToId t
+    in do k <- anaKind kind ty 
+	  addTypeKind ty k
 
-anaPlainKind (Kind [] _  _) = return star 
-anaKind (Kind [] (As.Universe _) _) _ = return ()
-anaKind (Kind [] (As.ClassName ci) _) (qs :=> t) = 
-    let i = simpleIdToId ci in
-    do e <- get
-       let cs = classenv e 
-           m = lookupFM cs i 
-	 in case m of 
-	    Nothing -> writeMsg e (Error ("undeclared class '"
-					  ++ showId i "'")
-				   $ posOfId i)
-	    Just (sc, is) -> put (e {classenv =
-				     addToFM cs i (sc, 
-						   (qs :=> 
-						    (i `IsIn` t))
-						   : is)})
+anaKind (Kind [] (As.Universe _) _) _ = return star
+anaKind (Kind [] (As.ClassName c) _) t = 
+    let ci = simpleIdToId c 
+	k = Star $ ExtClass (Le.ClassName ci) InVar
+    in do e <- get
+	  let ce = classEnv e 
+	      mc = lookupFM ce ci 
+	    in case mc of 
+	       Nothing -> do writeMsg e (Error ("undeclared class '"
+					     ++ tokStr c ++ "'")
+				     $ tokPos c)
+			     return star
+	       Just info -> do put $ e { classEnv =
+				      addToFM ce ci info 
+				      { instances = 
+					[] :=> (ci `IsIn` TCon (Tycon t k))
+					: instances info } }
+			       return k
 
-
--- addTypeScheme :: Id -> Scheme -> State Env ()
-addTypeScheme i sc = do 
-		     e <- get 
-		     let as = assumps e 
-                         l = lookUp as i in
-                       if sc `elem` l then
-			  writeMsg e (Warning ("repeated declaration for '" 
-					       ++ showId i "'")
-				     $ posOfId i)
-		       else put (e {assumps = addToFM as i (sc:l)})
+addTypeKind t k = 
+    do e <- get 
+       let tk = typeKinds e 
+           l = lookUp tk t in
+	 if k `elem` l then
+	    writeMsg e (Warning ("redeclared type '" 
+					       ++ showId t "'")
+				     $ posOfId t)
+		       else put $ e { typeKinds = addToFM tk t (k:l) }
