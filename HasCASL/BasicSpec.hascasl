@@ -1,4 +1,15 @@
+class Type
+
+var t:Type
+
+class TYPE = Type; TYPE={x.x < t}
+
+type Pred __ : Type- -> Type; Unit:TYPE
+
+type ?
+
 class a, b, c
+class a, b, c <d; a=b
 
 var s:c
 

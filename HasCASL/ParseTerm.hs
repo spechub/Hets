@@ -38,11 +38,8 @@ forallT = asKey forallS
 -----------------------------------------------------------------------------
 -- kind
 -----------------------------------------------------------------------------
-
-parseClass = do t <- asKey typeS
-		return (Universe (tokPos t))
-             <|>
-	     fmap ClassName className
+-- universe is just a special className ("Type")
+parseClass = fmap ClassName className
              <|> 
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
@@ -81,12 +78,6 @@ curriedKind os ps = do a <- asKey funS
 -----------------------------------------------------------------------------
 -- a parsed type may also be interpreted as a kind (by the mixfix analysis)
 
-idToken b = pToken (scanQuotedChar <|> scanDotWords 
-		 <|> scanDigit <|> scanWords <|> placeS <|> 
-		  reserved ((if b then formula_ops else funS:formula_ops)
-			    ++ hascasl_reserved_ops) 
-		  scanAnySigns)
-
 typeToken :: GenParser Char st Type
 typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|> 
 				    reserved (hascasl_type_ops ++
@@ -95,6 +86,13 @@ typeToken = fmap TypeToken (pToken (scanWords <|> placeS <|>
 				    scanAnySigns))
 
 braces p c = bracketParser p oBraceT cBraceT commaT c
+
+-- [...] may contain types or ids
+idToken b = pToken (scanQuotedChar <|> scanDotWords 
+		 <|> scanDigit <|> scanWords <|> placeS <|> 
+		  reserved ((if b then formula_ops else funS:formula_ops)
+			    ++ hascasl_reserved_ops) 
+		  scanAnySigns)
 
 primTypeOrId = fmap TypeToken (idToken True) 
 	       <|> braces typeOrId (BracketType Braces)
@@ -156,32 +154,32 @@ arrowT = do a <- noQuMark funS
 parseType :: GenParser Char st Type
 parseType = funType  
 
--- afer a colon
-
-typeOrKind = parseType <|> fmap TypeToken (asKey typeS)
-
 -----------------------------------------------------------------------------
 -- var decls, typevar decls, genVarDecls
 -----------------------------------------------------------------------------
 
 varDecls :: GenParser Char st [VarDecl]
 varDecls = do (vs, ps) <- var `separatedBy` commaT
-	      c <- colonT
-	      t <- parseType
-	      return (makeVarDecls vs ps t (tokPos c))
+	      varDeclType vs ps
+
+varDeclType vs ps = do c <- colonT
+		       t <- parseType
+		       return (makeVarDecls vs ps t (tokPos c))
 
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma (tokPos p))
 		     (init vs) ps ++ [VarDecl (last vs) t Other q]
+
+varDeclDownSet vs ps = 
+		    do l <- lessT
+		       t <- parseType
+		       return (makeTypeVarDecls vs ps (Downset t) (tokPos l))
 
 typeVarDecls :: GenParser Char st [TypeVarDecl]
 typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 		  do   c <- colonT
 		       t <- parseClass
 		       return (makeTypeVarDecls vs ps t (tokPos c))
-		    <|>
-		    do l <- lessT
-		       t <- parseType
-		       return (makeTypeVarDecls vs ps (Downset t) (tokPos l))
+		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
 				(Universe nullPos) nullPos)
 
@@ -197,32 +195,11 @@ idToToken (Id ts _ _) = head ts
 
 genVarDecls = do (vs, ps) <- var `separatedBy` commaT
 		 if all isSimpleId vs then 
-		    do   c <- colonT
-			 do    t <- parseType
-			       return (map GenVarDecl 
-				 (makeVarDecls vs ps t (tokPos c)))
-                            <|>
-			    do t <- asKey typeS
-			       return(map GenTypeVarDecl
-				  (makeTypeVarDecls 
-				   (map idToToken vs) ps 
-				   (Universe (tokPos t)) (tokPos c)))
-		       <|>
-		       do l <- lessT
-			  t <- parseType
-			  return (map GenTypeVarDecl 
-				  (makeTypeVarDecls 
-				   (map idToToken vs) ps 
-				   (Downset t) (tokPos l)))
-		       <|> return(map GenTypeVarDecl 
-				  (makeTypeVarDecls 
-				   (map idToToken vs) ps 
-				   (Universe nullPos) nullPos)) 
-		    else
-		    do   c <- colonT
-			 t <- parseType
-			 return (map GenVarDecl 
-				 (makeVarDecls vs ps t (tokPos c)))
+		       fmap (map GenVarDecl) (varDeclType vs ps)
+		       <|> fmap (map GenTypeVarDecl)
+			       (varDeclDownSet (map idToToken vs) ps)
+		    else 
+		    fmap (map GenVarDecl) (varDeclType vs ps)
 				 
 -----------------------------------------------------------------------------
 -- typeArgs

@@ -21,6 +21,7 @@ main = do {l <- getArgs;
 	   else if opt == "term" then checkLines term file
 	   else if opt == "typepattern" then checkLines typePattern file
 	   else if opt == "pattern" then checkLines pattern file
+	   else if opt == "item" then checkLines basicSpec file
 	   else if opt == "items" then parseSpec file
 	   else print ("unknown option: " ++ opt) 
 	  }

@@ -289,10 +289,10 @@ classDecl = do   (is, cs) <- className `separatedBy` commaT
 		 if length is == 1 then 
 		    subClassDecl (is, cs)
 		    <|>
-		    return (ClassDecl is (map tokPos cs))
-		   else 
                     isoClassDecl (head is)
 		    <|>
+		    return (ClassDecl is (map tokPos cs))
+		   else 
 		    subClassDecl (is, cs)
 		    <|>
 		    return (ClassDecl is (map tokPos cs))

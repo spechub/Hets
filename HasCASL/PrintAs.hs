@@ -32,18 +32,20 @@ bracket Braces t = braces t
 
 instance PrettyPrint Type where 
     printText0(TypeConstrAppl name kind args _) = printText0 name 
-			  <+> colon
-			  <+> printText0 kind
-			  <+> parens (commas args)
+			  <> (case kind of 
+			       Kind [] (Universe _) _ -> empty
+			       _ -> space <> colon <> printText0(kind))
+			  <> if null args then empty else parens (commas args)
     printText0(TypeToken t) = printText0(t)
     printText0(BracketType k l _) = bracket k $ commas l
     printText0(KindedType t kind _) = printText0(t)  
-			  <+> colon
-			  <+> printText0(kind)
+			  <> (case kind of 
+			       Kind [] (Universe _) _ -> empty
+			       _ -> space <> colon <> printText0(kind))
     printText0(MixfixType ts) = hsep (map printText0 ts)
     printText0(TupleType args _) = parens $ commas args
     printText0(LazyType t _) = text quMark <+> printText0(t)  
-    printText0(ProductType ts _) = hsep (punctuate (text " *") 
+    printText0(ProductType ts _) = hsep (punctuate (text " * ") 
 					 (map printText0 ts))
     printText0(FunType t1 arr t2 _) = printText0 t1
 				      <+> printText0 arr
@@ -181,20 +183,21 @@ instance PrettyPrint Variance where
     printText0 InVar = empty
 
 instance PrettyPrint ExtClass where 
-    printText0(ExtClass c v _) = printText0 c <> printText0 v
+    printText0(ExtClass c v _) = printText0 c <> printText0 v <> space
 
 instance PrettyPrint ProdClass where 
     printText0(ProdClass l _) = hcat $ punctuate (text timesS) 
 			       (map printText0 l)
 
 instance PrettyPrint Kind where 
-    printText0(Kind l c _) = (hcat $ punctuate (text funS) 
-				  (map printText0 l))
-				 <> text funS 
-				 <> printText0 c
+    printText0(Kind l c _) = (if null l then empty else 
+			      (hcat $ punctuate (text funS) 
+			       (map printText0 l))
+			      <> text funS) 
+			     <> printText0 c
 
 instance PrettyPrint Class where 
-    printText0(Universe _) = text typeS
+    printText0(Universe _) = empty
     printText0(ClassName n) = printText0 n
     printText0(Downset t) = braces $ text lessS <+> printText0 t
     printText0(Intersection c _) = parens $ commas c 
@@ -251,23 +254,28 @@ instance PrettyPrint Instance where
     printText0 _ = empty
 		      
 instance PrettyPrint ClassItem where 
-    printText0 (ClassItem d l _) = printText0 d $$ braces (semis l)
+    printText0 (ClassItem d l _) = printText0 d $$ 
+				   if null l then empty else braces (semis l)
 
 instance PrettyPrint ClassDecl where 
     printText0 (ClassDecl l _) = commas l
-    printText0 (SubclassDecl l s _) = commas l <+> text lessS <+> printText0 s
+    printText0 (SubclassDecl l s _) = commas l <> text lessS <> printText0 s
     printText0 (ClassDefn n c _) =  printText0 n 
-			       <+> text equalS 
-			       <+> printText0 c
+			       <> text equalS 
+			       <> printText0 c
     printText0 (DownsetDefn c v t _) = printText0 c
-			       <+> text equalS 
-			       <+> braces (printText0 v 
-					   <+> text dotS
-					   <+> printText0 v 
-					   <+> text lessS
-					   <+> printText0 t)
+			       <> text equalS 
+			       <> braces (printText0 v 
+					   <> text dotS
+					   <> printText0 v 
+					   <> (text lessS
+					       <+> printText0 t))
+
 instance PrettyPrint TypeItem where 
-    printText0 (TypeDecl l k _) = commas l <+> colon <+> printText0 k
+    printText0 (TypeDecl l k _) = commas l <> 
+				  case k of 
+				  Kind [] (Universe _) _ -> empty
+				  _ -> space <> colon <> printText0 k
     printText0 (SubtypeDecl l t _) = commas l <+> text lessS <+> printText0 t
     printText0 (IsoDecl l _) = cat(punctuate (text " = ") (map printText0 l) )
     printText0 (SubtypeDefn p v t f _) = printText0 p
@@ -277,9 +285,10 @@ instance PrettyPrint TypeItem where
 					   <+> printText0 t 
 					   <+> text dotS
 					   <+> printText0 f)
-    printText0 (AliasType p k t _) =  printText0 p
-				       <+> colon
-				       <+> printText0 k
+    printText0 (AliasType p k t _) =  (printText0 p <>
+				       case k of 
+				       Kind [] (Universe _) _ -> empty
+				       _ -> space <> colon <> printText0 k)
 				       <+> text assignS
 				       <+> printText0 t
     printText0 (Datatype t) = printText0 t
@@ -312,9 +321,10 @@ instance PrettyPrint OpAttr where
     printText0 (UnitOpAttr t _) = text unitS <+> printText0 t
 
 instance PrettyPrint DatatypeDecl where 
-    printText0 (DatatypeDecl p k as d _) = printText0 p
-				  <+> colon
-				  <+> printText0 k
+    printText0 (DatatypeDecl p k as d _) = (printText0 p <>
+				       case k of 
+				       Kind [] (Universe _) _ -> empty
+				       _ -> space <> colon <> printText0 k)
 				  <+> text defnS
 				  <+> vcat(punctuate (text " | ") 
 					   (map printText0 as))
