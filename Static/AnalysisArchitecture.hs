@@ -251,7 +251,7 @@ ana_UNIT_TERM :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 	      -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
 
 -- UNIT-REDUCTION
-ana_UNIT_TERM lgraph defl gctx curl@(Logic lid) justStruct uctx red@(Unit_reduction ut restr) =
+ana_UNIT_TERM lgraph defl gctx curl justStruct uctx red@(Unit_reduction ut restr) =
     do (p, diag, dg, ut') <- ana_UNIT_TERM lgraph defl gctx curl justStruct uctx (item ut)
        (incl, msigma) <- ana_RESTRICTION dg (emptyG_sign curl) (getSig (getSigFromDiag p)) justStruct restr
        let pos = getPos_UNIT_TERM red
