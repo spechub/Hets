@@ -8,6 +8,30 @@ Sonja (Till)
 
 Diplom: Encoding for HasCASL in Isabelle/HOL(CF)
 
+Interface Hets <-> ISabelle
+
+in IsaProve.hs
+  Hets muss eine Pipe als Inode erzeugen
+  und dann auf Beweisterme warten
+  und auf "Ende" warten
+  und dann Proof_status sen proof_tree entsprechend ausfüllen
+    (siehe Logic/Prover.hs)
+
+Isabelle (im .thy file, dass von IsaProve.hs erzeugt wird)
+  Beweisterme (siehe Kapitel im RefMan)
+  ML "proofs := 1" (am Anfang des .thy file)
+  am Ende jedes Theorems: Beweisterm in die Pipe schreiben
+    (Pipenamen direkt angeben, vom thy-file-Namen abgeleitet)
+    mit pretty_proof_of und Pretty.string_of
+    und Start- und Endmarker
+  am Schluss "Ende" ausgeben
+
+
+Funktion basicInferenceNode in Proofs/Proofs.hs:
+  Theorem link nur dann grün, wenn alle Goals bewiesen wurden
+
+Emacs: uni/emacs, George fragen (ger@)
+
 ************************************************
 Jorina (Till)
 ************************************************
