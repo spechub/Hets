@@ -1,4 +1,4 @@
-ccspec(ccspec) =
+ccspec hugo =
   data 
 
       sort s 

@@ -43,18 +43,14 @@ interim = try ( do { nc <- namedCspCaslCSpec
 
 namedCspCaslCSpec :: AParser NAMED_CSP_CASL_C_SPEC
 namedCspCaslCSpec = try ( do { ccspecT
-                             ; oRBracketT
                              ; n <- specName
-                             ; cRBracketT
                              ; equalT
                              ; c <- cspCaslCSpec
                              ; return (Named_csp_casl_spec n c)
                              }
                         )
                 <|>       do { ccspecT
-                             ; oRBracketT
                              ; n <- specName
-                             ; cRBracketT
                              ; equalT
                              ; c <- cspCaslCSpec
                              ; endT

@@ -37,5 +37,5 @@ run p input
 main :: IO ()
 main = do { l <- getArgs
           ; c <- readFile (head l)
-          ; run cspCaslCSpec c
+          ; run interim c
           }
