@@ -39,7 +39,8 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 CPPP       = cpp 
 
-HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction
+HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
+             -fallow-overlapping-instances -fallow-undecidable-instances
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
@@ -67,7 +68,7 @@ PFE_TOOLDIR := $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
       base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
-      base/transforms base/transforms/Deriving hs2html \
+      base/transforms base/transforms/Deriving hs2html pfe property base \
       property/pfe property/syntax property/AST property/transforms \
       property/TI property/defs property/parse2 property/parse2/Parser \
       hs2stratego hs2stratego/AST
