@@ -40,9 +40,9 @@ type __->__ : Type- -> Type+ -> Type
 type __->__(s : Type)(t : Type) < s_v1 ->? t_v2
 %% total functions
 op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-     = \ (var x : s, var y : t) .! (var x : s) as s
+     = \ (var x : s, var y : t) .! (var x : s) as s_v1
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-     = \ (var x : s, var y : t) .! (var x : s) as s
+     = \ (var x : s, var y : t) .! (var x : s) as s_v1
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
 . (fun __=__[_var_27_v27 * _var_29_v29 ->? _var_27_v27]
@@ -178,7 +178,7 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __res__
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
+    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s_v1
 __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall p : Pcpo . p_v-1 %(fun)%
@@ -192,7 +192,7 @@ false
   : Unit %(fun)%
 fst
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
+    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s_v1
 g : c --> d %(var)%
 not : Unit ->? Unit %(pred)%
 not__ : ? Unit ->? Unit %(fun)%
@@ -219,12 +219,12 @@ forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
-       (var x : s) as s) %(def___res__)%
+       (var x : s) as s_v1) %(def___res__)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
-       (var x : s) as s) %(def_fst)%
+       (var x : s) as s_v1) %(def_fst)%
 (fun __=__[_var_27_v27 * _var_29_v29 ->? _var_27_v27]
  : forall s : Type . s_v-1 * s_v-1 ->? Unit)
   (op fst[_var_27_v27; _var_29_v29]

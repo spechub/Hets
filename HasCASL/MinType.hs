@@ -54,6 +54,8 @@ eqTerm t1 t2 = case (t1, t2) of
          eqTerm tf1 tf2 && eqTerm ta1 ta2
      (TupleTerm ts1 _, TupleTerm ts2 _) -> 
          length ts1 == length ts2 && and (zipWith eqTerm ts1 ts2)
+     (QuantifiedTerm q1 vs1 f1 _, QuantifiedTerm q2 vs2 f2 _) -> 
+         (q1, vs1) == (q2, vs2) && eqTerm f1 f2
      _ -> False
 
 -- | store assumptions

@@ -236,7 +236,7 @@ infer mt trm = do
                                (posOfId i) ]
                             else return ()
                          return rs
-               return $ typeNub tm q2p $ map ( \ (s, ty, is, cs, oi) -> 
+               return $ {- typeNub tm q2p $ -} map ( \ (s, ty, is, cs, oi) -> 
                               case opDefn oi of
                               VarDefn -> (s, cs, ty, QualVar $ 
                                           VarDecl i ty Other ps)
@@ -302,7 +302,7 @@ infer mt trm = do
                             return $ map ( \ (s2, cs, typ, tr) ->
                                 (compSubst s s2, 
                                  substC s $ insertC (Subtyping ty typ) cs,
-                                 typ, TypedTerm tr qual ty ps)) rs
+                                 ty, TypedTerm tr qual ty ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
             let Result ds ms = mUnify logicalType

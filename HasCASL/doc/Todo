@@ -32,7 +32,10 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 types:
-Lazy typings are not handled yet
+Lazy typings are not handled yet. Make sure that no supertypes are
+declared for type synonyms. Cyclic atomic supertypes are not supported
+yet. In MinType the equality of terms and the overload relation of
+their types is not properly computed!
 
 
 

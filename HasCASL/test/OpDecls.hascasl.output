@@ -164,9 +164,61 @@ y : s
 (op x : s) in s %(bla_label)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
+*** Hint 13.14, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op b : t) as s'
+
+*** Hint 13.14, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op b : s) as s'
+
+*** Hint 13.14, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : s, op b : t) as s'
+
+*** Hint 15.17, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op a : t) as s'
+
+*** Hint 15.17, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op a : s) as s'
+
+*** Hint 15.17, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : s, op a : t) as s'
+
 *** Hint 17.24, contradicting type inclusions for 's' and 't' of '(op __+__ : t * t -> t) as s * s -> s'
 
 *** Hint 19.25, contradicting type inclusions for 's' and 't' of '(op __+__ : t * t -> t) as s * s -> s'
+
+*** Hint 23.16, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op b : t) as s'
+
+*** Hint 23.16, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : t, op b : s) as s'
+
+*** Hint 23.16, contradicting type inclusions for 's' and 't' of '(op __+__ : s * s -> s)(op a : s, op b : t) as s'
+
+*** Hint 25.23, contradicting type inclusions for 's' and 't' of '(op a : t) : s'
+
+*** Hint 25.30, contradicting type inclusions for 's' and 't' of '(op b : t) : s'
+
+*** Hint 25.23, contradicting type inclusions for 's' and 't' of '(op a : t) : s'
+
+*** Hint 25.30, contradicting type inclusions for 's' and 't' of '(op b : t) : s'
+
+*** Hint 30.13, contradicting type inclusions for 's' and 't' of '(op incr : s -> s)(op a : t) as s'
+
+*** Hint 31.13, contradicting type inclusions for 's' and 't' of '(op incr : s -> s)(op a : t) as s'
+
+*** Hint 32.14, contradicting type inclusions for 's' and 't' of '(op incr : s -> s)(op a : t) as s'
+
+*** Hint 36.14, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
+
+*** Hint 36.14, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
+
+*** Hint 36.14, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
+
+*** Hint 38.16, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
+
+*** Hint 38.16, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
+
+*** Hint 38.16, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
+
+*** Hint 39.17, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s) as s'
+
+*** Hint 39.17, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : t, op b : s, op c : s) as s'
+
+*** Hint 39.17, contradicting type inclusions for 's' and 't' of '(op __<=__<=__ : s * s * s -> s)(op a : s, op b : t, op c : s) as s'
+
+*** Hint 44.42, contradicting type inclusions for 's' and 't' of '(op a : t) : s'
 
 *** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t as s'
 
