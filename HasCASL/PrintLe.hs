@@ -17,6 +17,7 @@ import PrettyPrint
 import Pretty
 import FiniteMap
 import Keywords
+import GlobalAnnotations
 
 noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
@@ -33,9 +34,10 @@ instance PrettyPrint Le.ClassItem where
 	) $$ noPrint (null insts) 
              (ptext "Instances" $$ 
 	      vcat (map (printText0 ga) insts))
+    printText0 _ _ = error "PrintLe.printText0 for Le.ClassItem"
 
-instance PrettyPrint a => PrettyPrint [a] where 
-    printText0 ga l = noPrint (null l)
+printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
+printList0 ga l = noPrint (null l)
 		      (if null $ tail l then printText0 ga $ head l
 		       else parens $ commas ga l)
 
@@ -45,6 +47,12 @@ instance (PrettyPrint a, Ord a, PrettyPrint b)
 	let l = fmToList m in
 	    vcat(map (\ (a, b) -> printText0 ga a <+> ptext "->"
 		 <+> printText0 ga b) l)
+
+instance PrettyPrint [Kind] where
+    printText0 = printList0
+
+instance PrettyPrint [TypeScheme] where
+    printText0 = printList0
 
 instance PrettyPrint Env where
     printText0 ga e = printText0 ga (classEnv e)
