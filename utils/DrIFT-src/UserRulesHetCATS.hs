@@ -160,6 +160,7 @@ shatermfn dat
       ] 
       dat 
       $$ (makeFromShATermFn dat)
+      $$ (makeFromToATermErrors dat)
 
 makeToShATerm name body
   = let cvs = head (mknss [body] namesupply)
@@ -207,6 +208,18 @@ makeFromShATermFn dat =
 	choose_att = text (if is_upper_d_const then "att'" else "att")
 	is_upper_d_const = and (map isUpper_ (name dat))
 	    where isUpper_ x = x == '_' || isUpper x 
+
+makeFromToATermErrors dat = 
+    block ((text "fromShATerm _ =" <+> errorFn "fromShATerm"): 
+	   [text "toShATerm _ =" <+> errorFn "toShATerm"])
+	where 
+	errorFn fn_name = text "error \"function " 
+			  <> (esc_quotes fn_name) 
+			  <> text " not derived (implemented) for data type " 
+			  <> (esc_quotes $ name dat)
+			  <> text "\""
+	esc_quotes str = text "\\\"" <> text str <> text "\\\""
+
 	
 makeFromShATerm body
   = let cvs = head (mknss [body] namesupply)
