@@ -107,7 +107,7 @@ ideMor e = embedMorphism e e
 compIdMap :: IdMap -> IdMap -> IdMap
 compIdMap im1 im2 = Map.foldWithKey ( \ i j -> 
                        Map.insert i $ Map.findWithDefault j j im2)
-                             im2 $ im1
+                             im2 im1
 
 compMor :: Morphism -> Morphism -> Result Morphism
 compMor m1 m2 = 
@@ -137,40 +137,6 @@ showEnvDiff e1 e2 =
     "Signature 1:\n" ++ showPretty e1 "\nSignature 2:\n" 
            ++ showPretty e2 "\nDifference\n" ++ showPretty 
               (diffEnv e1 e2) ""
-
-symbMapToMorphism :: Env -> Env -> SymbolMap -> Result Morphism
--- consider partial symbol map
-symbMapToMorphism sigma1 sigma2 smap = do
-  type_map1 <- Map.foldWithKey myIdMap (return Map.empty) $ typeMap sigma1
-  fun_map1 <- Map.foldWithKey myAsMap (return Map.empty) $ assumps sigma1
-  return (mkMorphism sigma1 sigma2)
-         { typeIdMap = type_map1
-         , funMap = fun_map1}
-  where
-  myIdMap i k m = do
-    m1 <- m 
-    sym <- maybeToResult (posOfId i)
-             ("symbMapToMorphism - Could not map type "++showId i "")
-             $ Map.lookup (Symbol { symName = i
-                                  , symType = TypeAsItemType 
-                                               $ typeKind k
-                                  , symEnv = sigma1 }) smap
-    return (Map.insert i (symName sym) m1)
-  myAsMap i (OpInfos ots) m = foldr (insFun i) m ots
-  insFun i ot m = do
-    let osc = opType ot
-    m1 <- m
-    sym <- maybeToResult (posOfId i)
-             ("symbMapToMorphism - Could not map op "++showId i "")
-             $ Map.lookup (Symbol { symName = i
-                                  , symType = OpAsItemType osc
-                                  , symEnv = sigma1 }) smap
-    k <- case symType sym of
-        OpAsItemType sc -> return sc
-        _ -> Result [mkDiag Error
-                     "symbMapToMorphism - Wrong result symbol type for op" i]
-             Nothing
-    return (Map.insert (i, osc) (symName sym, k) m1)
 
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
