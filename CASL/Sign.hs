@@ -119,7 +119,7 @@ instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
         $$ 
         (if Rel.isEmpty (sortRel s) then empty
             else ptext (sortS++sS) <+> 
-             (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
+             (fsep . punctuate semi $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
         $$ printSetMap (ptext opS) empty ga (opMap s)
         $$ printSetMap (ptext predS) space ga (predMap s)
         $$ printText0 ga (extendedInfo s)
