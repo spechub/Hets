@@ -560,7 +560,7 @@ getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
 getAbbrevTerm i at (RTab abb_ai_map _) =  
     case lookupWithDefaultFM abb_ai_map 
                  (error ("Index "++show i++" not found")) i of
-    ai -> snd $  getATermByIndex ai at 
+    ai -> getATerm $ getATermByIndex1 ai at 
 
 {-
 (!!!)              :: [b] -> Integer -> b
