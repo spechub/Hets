@@ -2,20 +2,23 @@
 
 free type Bool ::= True | False
 
-op nicht : Bool -> Bool
-program nicht x = case x of False -> True | True -> False
+op neg : Bool -> Bool
+program neg x = case x of False -> True | True -> False
 
-op und : Bool * Bool -> Bool
-program und (x,y) = case (x,y) of (False, False) -> False
+op wedge : Bool * Bool -> Bool
+program wedge (x,y) = case (x,y) of (False, False) -> False
 				| (True, False)  -> False
 				| (False, True)  -> False
 				| (True, True)   -> True
 
-op or : Bool * Bool -> Bool
-program or (x,y) = nicht (und ((nicht (x)), (nicht (y))))
+op vee : Bool * Bool -> Bool
+program vee (x,y) = neg (wedge ((neg (x)), (neg (y))))
 
-op implies : Bool * Bool -> Bool
-program implies (x,y) = nicht ( und (x,y))
+op le : Bool * Bool -> Bool
+program le (x,y) = vee ((neg (x)), y) 
 
-op iff : Bool * Bool -> Bool
-program iff (x,y) = und ((implies (x,y)), (implies (y,x)))
+op eq : Bool * Bool -> Bool
+program eq (x,y) = wedge ((le (x,y)), (le (y,x)))
+
+op ne : Bool * Bool -> Bool
+program ne (x,y) = wedge ( (vee(x,y)), (neg(wedge(x,y))) )
