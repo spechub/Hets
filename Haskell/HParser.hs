@@ -11,14 +11,14 @@
    (they start with 3)
 -}
 
-module HParser where
+module Haskell.HParser where
 
-import Wrapper
-import Language.Haskell.Syntax
-import Language.Haskell.Pretty
-import Language.Haskell.Parser
+import Haskell.Wrapper
+import Haskell.Language.Syntax
+import Haskell.Language.Pretty
+import Haskell.Language.Parser
 import Common.Lib.Parsec
-import PrettyPrint
+import Common.PrettyPrint
 import Common.Lib.Pretty
 
 instance PrettyPrint HsDecls where

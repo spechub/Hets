@@ -13,7 +13,7 @@ needs "-package haskell-src"
 module Main where
 
 import System.Environment
-import Wrapper
+import Haskell.Wrapper
 import Common.Lib.Parsec
 
 main :: IO ()

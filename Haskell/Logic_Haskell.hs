@@ -14,15 +14,15 @@
 
 -}
 
-module Logic_Haskell where
+module Haskell.Logic_Haskell where
 
-import AS_Basic_CASL
-import Print_AS_Basic
+import CASL.AS_Basic_CASL
+import CASL.Print_AS_Basic
 import Language.Haskell.Syntax
-import HParser
-import SymbolParser
-import ParsecInterface
-import Logic
+import Haskell.HParser
+import CASL.SymbolParser
+import Logic.ParsecInterface
+import Logic.Logic
 import Data.Dynamic
 
 -- a dummy datatype for the LogicGraph and for identifying the right

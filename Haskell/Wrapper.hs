@@ -14,10 +14,10 @@
    may be userdefined in Haskell
 -}
 
-module Wrapper where
+module Haskell.Wrapper where
 
 import Common.Lib.Parsec
-import Lexer
+import Common.Lexer
 
  
 hStuff, stuff :: GenParser Char st String
