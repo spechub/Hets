@@ -41,14 +41,14 @@ import Version
 read_LIB_DEFN_M :: Monad m => AnyLogic -> FilePath -> String -> m LIB_DEFN
 read_LIB_DEFN_M defl file input = 
     if null input then fail ("empty input file: " ++ file) else
-    case runParser (library (defl, logicGraph)) emptyAnnos
+    case runParser (library (defl, logicGraph)) (emptyAnnos defl)
 	 file input of
 	 Left err  -> fail (showErr err)
 	 Right ast -> return ast
 
 read_LIB_DEFN_M_WI :: Monad m => AnyLogic -> FilePath -> String -> m (String, LIB_DEFN)
 read_LIB_DEFN_M_WI defl file input  =
-       case runParser (library (defl, logicGraph)) emptyAnnos
+       case runParser (library (defl, logicGraph)) (emptyAnnos defl)
 	    file input of
 	    Left err  -> return (showErr err, Lib_defn (Lib_id (Indirect_link "" [])) [] [] [])  
 	    Right ast -> return ("",ast)

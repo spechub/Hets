@@ -23,7 +23,7 @@ import Text.ParserCombinators.Parsec
 import CASL.Formula
 import CASL.OpItem
 
-modalFormula :: AParser M_FORMULA
+modalFormula :: AParser st M_FORMULA
 modalFormula = 
     do o <- oBracketT
        m <- modality []
@@ -42,7 +42,7 @@ modalFormula =
        let p = tokPos d
        return (Diamond (Simple_mod $ Token emptyS p) f [p])
 
-modality :: [String] -> AParser MODALITY
+modality :: [String] -> AParser st MODALITY
 modality ks = 
     do t <- term (ks ++ modal_reserved_words)
        return $ Term_mod t
@@ -51,11 +51,11 @@ modality ks =
 instance AParsable M_FORMULA where
   aparser = modalFormula
 
-rigor :: AParser RIGOR
+rigor :: AParser st RIGOR
 rigor = (asKey rigidS >> return Rigid) 
 	<|> (asKey flexibleS >> return Flexible)
 
-rigidSigItems :: AParser M_SIG_ITEM
+rigidSigItems :: AParser st M_SIG_ITEM
 rigidSigItems = 
     do r <- rigor
        do itemList modal_reserved_words opS opItem (Rigid_op_items r)
@@ -64,10 +64,10 @@ rigidSigItems =
 instance AParsable M_SIG_ITEM where
   aparser = rigidSigItems
 
-mKey :: AParser Token
+mKey :: AParser st Token
 mKey = asKey modalityS <|> asKey modalitiesS
 
-mBasic :: AParser M_BASIC_ITEM
+mBasic :: AParser st M_BASIC_ITEM
 mBasic = 
     do (as, fs, ps) <- mItem simpleId
        return (Simple_mod_decl as fs ps)
@@ -76,7 +76,7 @@ mBasic =
        (as, fs, ps) <- mItem (sortId modal_reserved_words)
        return (Term_mod_decl as fs (tokPos t : ps))
 
-mItem :: AParser a -> AParser ([Annoted a], [AnModFORM], [Pos])
+mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], [Pos])
 mItem pr = do 
        c <- mKey
        (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)

@@ -49,7 +49,7 @@ import Data.Maybe(maybeToList)
 
 
 -- | Parse a library of specifications
-library :: (AnyLogic, LogicGraph) -> AParser LIB_DEFN
+library :: (AnyLogic, LogicGraph) -> AParser st LIB_DEFN
 library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
@@ -59,7 +59,7 @@ library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
                return (Lib_defn ln ls ps an)
 
 -- | Parse library name
-libName :: AParser LIB_NAME
+libName :: AParser st LIB_NAME
 libName = do libid <- libId
              v <- option Nothing (fmap Just version)
              return (case v of
@@ -67,7 +67,7 @@ libName = do libid <- libId
                Just v1 -> Lib_version libid v1)
 
 -- | Parse the library version
-version :: AParser VERSION_NUMBER
+version :: AParser st VERSION_NUMBER
 version = do s <- asKey versionS
              pos <- getPos
              n <- many1 digit `sepBy1` (string ".")
@@ -76,7 +76,7 @@ version = do s <- asKey versionS
 
 
 -- | Parse library ID
-libId :: AParser LIB_ID
+libId :: AParser st LIB_ID
 libId = do pos <- getPos
            path <- scanAnyWords `sepBy1` (string "/")
            skip
@@ -84,7 +84,7 @@ libId = do pos <- getPos
            -- ??? URL need to be added
 
 -- | Parse the library elements
-libItems :: (AnyLogic, LogicGraph) -> AParser [Annoted LIB_ITEM]
+libItems :: (AnyLogic, LogicGraph) -> AParser st [Annoted LIB_ITEM]
 libItems l@(_, lG) = 
     (eof >> return [])
     <|> do 
@@ -95,7 +95,7 @@ libItems l@(_, lG) =
 
 
 -- | Parse an element of the library
-libItem :: (AnyLogic, LogicGraph) -> AParser (LIB_ITEM, AnyLogic)
+libItem :: (AnyLogic, LogicGraph) -> AParser st (LIB_ITEM, AnyLogic)
 libItem l@(lgc, lG) = 
      -- spec defn
     do s <- asKey specS 
@@ -158,7 +158,7 @@ libItem l@(lgc, lG) =
 	       (Genericity (Params []) (Imported []) []) a [], lgc)	
 
 -- | Parse view type
-viewType :: (AnyLogic, LogicGraph) -> AParser VIEW_TYPE
+viewType :: (AnyLogic, LogicGraph) -> AParser st VIEW_TYPE
 viewType l = do sp1 <- annoParser (groupSpec l)
                 s <- asKey toS
                 sp2 <- annoParser (groupSpec l)
@@ -166,7 +166,7 @@ viewType l = do sp1 <- annoParser (groupSpec l)
 
 
 -- | Parse item name or name map
-itemNameOrMap :: AParser ITEM_NAME_OR_MAP
+itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
 itemNameOrMap = do i1 <- simpleId
                    i' <- option Nothing (do
                       s <- asKey "|->"

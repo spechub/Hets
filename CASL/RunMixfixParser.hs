@@ -56,30 +56,30 @@ stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
-resolveForm :: GlobalAnnos -> AParser (Result (FORMULA ()))
+resolveForm :: GlobalAnnos -> AParser () (Result (FORMULA ()))
 resolveForm ga = 
       resolveFormula (const $ const return) 
                      ga stdOps stdPreds `fmap` formula []
 
-resolveTerm :: GlobalAnnos -> AParser (Result (TERM ()))
+resolveTerm :: GlobalAnnos -> AParser () (Result (TERM ()))
 resolveTerm ga = 
       resolveMixfix (const $ const return) ga stdOps stdPreds `fmap` term []
 
-testTerm ::  AParser WrapString
-testTerm = do t <- term [] :: AParser (TERM ())
+testTerm ::  AParser () WrapString
+testTerm = do t <- term [] :: AParser () (TERM ())
               return $ WrapString $ showTerm t ""
 
-testTermMix :: GlobalAnnos -> AParser WrapString
+testTermMix :: GlobalAnnos -> AParser () WrapString
 testTermMix ga = do Result ds mt <- resolveTerm ga
                     return $ WrapString $ 
                         case mt of Just t -> showTerm t ""
                                    _ -> show ds
 
-testFormula :: AParser WrapString
-testFormula = do f <- formula [] :: AParser (FORMULA ())
+testFormula :: AParser () WrapString
+testFormula = do f <- formula [] :: AParser () (FORMULA ())
                  return $ WrapString $ showFormula f ""
 
-testFormulaMix :: GlobalAnnos -> AParser WrapString
+testFormulaMix :: GlobalAnnos -> AParser () WrapString
 testFormulaMix ga = do Result ds m <- resolveForm ga
                        return $ WrapString $ 
                            case m of Just f -> showFormula f ""

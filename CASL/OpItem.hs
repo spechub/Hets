@@ -33,18 +33,18 @@ import CASL.Formula
 import Data.List(sort)
 
 -- stupid cast
-argDecl :: [String] -> AParser ARG_DECL
+argDecl :: [String] -> AParser st ARG_DECL
 argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
 
 -- non-empty
-predHead :: [String] -> AParser PRED_HEAD
+predHead :: [String] -> AParser st PRED_HEAD
 predHead ks = 
     do o <- oParenT
        (vs, ps) <- argDecl ks `separatedBy` anSemi
        p <- cParenT
        return $ Pred_head vs $ map tokPos (o:ps++[p])
 
-opHead :: [String] -> AParser OP_HEAD
+opHead :: [String] -> AParser st OP_HEAD
 opHead ks = 
     do Pred_head vs ps <- predHead ks
        c <- colonST
@@ -53,7 +53,7 @@ opHead ks =
        return $ if b then Partial_op_head vs s qs
 	      else Total_op_head vs s qs
 
-opAttr :: AParsable f => [String] -> AParser (OP_ATTR f, Token)
+opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = do p <- asKey assocS
 	       return (Assoc_op_attr, p)
 	    <|> 
@@ -77,7 +77,7 @@ toHead c (Total_op_type [] s _) = Total_op_head [] s [c]
 toHead c (Partial_op_type [] s _) = Partial_op_head [] s [c] 
 toHead _ _ = error "toHead got non-empty argument type"
 
-opItem :: AParsable f => [String] -> AParser (OP_ITEM f)
+opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
 opItem ks = 
     do (os, cs)  <- parseId ks `separatedBy` anComma
        if isSingle os then 
@@ -95,7 +95,8 @@ opItem ks =
 		 t <- opType ks
 		 opAttrs ks os t (cs++[c])
 
-opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD -> AParser (OP_ITEM f)
+opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD 
+       -> AParser st (OP_ITEM f)
 opBody ks o h = 
     do e <- equalT
        a <- annos
@@ -103,7 +104,7 @@ opBody ks o h =
        return $ Op_defn o h (Annoted t [] a []) [tokPos e]
 	  
 opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token] 
-	-> AParser (OP_ITEM f)
+	-> AParser st (OP_ITEM f)
 opAttrs ks os t c = 
     do q <- anComma 
        (as, cs) <- opAttr ks `separatedBy` anComma
@@ -117,7 +118,7 @@ opAttrs ks os t c =
 -- predicates
 -- ----------------------------------------------------------------------
 
-predItem :: AParsable f => [String] -> AParser (PRED_ITEM f)
+predItem :: AParsable f => [String] -> AParser st (PRED_ITEM f)
 predItem ks = 
     do (ps, cs)  <- parseId ks `separatedBy` anComma
        if isSingle ps then
@@ -130,14 +131,14 @@ predItem ks =
 		else predTypeCont ks ps cs
 		
 predBody :: AParsable f => [String] -> PRED_NAME -> PRED_HEAD 
-	 -> AParser (PRED_ITEM f)	
+	 -> AParser st (PRED_ITEM f)	
 predBody ks p h = 
     do e <- asKey equivS
        a <- annos
        f <- formula ks
        return $ Pred_defn p h (Annoted f [] a []) [tokPos e]
 
-predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser (PRED_ITEM f)
+predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser st (PRED_ITEM f)
 predTypeCont ks ps cs = 
     do c <- colonT
        t <- predType ks

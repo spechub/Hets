@@ -35,7 +35,7 @@ import CASL.Formula
 -- sortItem
 -- ------------------------------------------------------------------------
 
-commaSortDecl :: [String] -> Id -> AParser (SORT_ITEM f)
+commaSortDecl :: [String] -> Id -> AParser st (SORT_ITEM f)
 commaSortDecl ks s = 
     do c <- anComma
        (is, cs) <- sortId ks `separatedBy` anComma
@@ -43,14 +43,14 @@ commaSortDecl ks s =
 	   p = map tokPos (c:cs) 
        subSortDecl ks (l, p) <|> return (Sort_decl l p)
 
-isoDecl :: AParsable f => [String] -> Id -> AParser (SORT_ITEM f)
+isoDecl :: AParsable f => [String] -> Id -> AParser st (SORT_ITEM f)
 isoDecl ks s = 
     do e <- equalT
        subSortDefn ks (s, tokPos e) <|> 
            (do (l, p) <- sortId ks `separatedBy` equalT
 	       return (Iso_decl (s:l) (map tokPos (e:p))))
 
-subSortDefn :: AParsable f => [String] -> (Id, Pos) -> AParser (SORT_ITEM f)
+subSortDefn :: AParsable f => [String] -> (Id, Pos) -> AParser st (SORT_ITEM f)
 subSortDefn ks (s, e) = 
     do a <- annos
        o <- oBraceT
@@ -63,13 +63,13 @@ subSortDefn ks (s, e) =
        return $ Subsort_defn s v t (Annoted f [] a []) 
 		  (e: map tokPos [o, c, d, p])
 
-subSortDecl :: [String] -> ([Id], [Pos]) -> AParser (SORT_ITEM f)
+subSortDecl :: [String] -> ([Id], [Pos]) -> AParser st (SORT_ITEM f)
 subSortDecl ks (l, p) = 
     do t <- lessT
        s <- sortId ks
        return $ Subsort_decl l s (p++[tokPos t])
 
-sortItem :: AParsable f => [String] -> AParser (SORT_ITEM f) 
+sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f) 
 sortItem ks = 
     do s <- sortId ks
        subSortDecl ks ([s],[]) <|> commaSortDecl ks s
@@ -79,7 +79,7 @@ sortItem ks =
 -- typeItem
 -- ------------------------------------------------------------------------
 
-datatype :: [String] -> AParser DATATYPE_DECL
+datatype :: [String] -> AParser st DATATYPE_DECL
 datatype ks = 
     do s <- sortId ks
        addAnnos
@@ -90,13 +90,13 @@ datatype ks =
        return (Datatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
 
-aAlternative :: [String] -> AParser (Annoted ALTERNATIVE)
+aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks = 
     do a <- alternative ks
        an <- annos
        return (Annoted a [] [] an)
 
-alternative :: [String] -> AParser ALTERNATIVE
+alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks = 
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
@@ -117,14 +117,14 @@ isSortId (Id is _ _) = case is of
 		       [Token (c:_) _] -> c `elem` caslLetters
 		       _ -> False
 
-component :: [String] -> AParser COMPONENTS
+component :: [String] -> AParser st COMPONENTS
 component ks = 
     do (is, cs) <- parseId ks `separatedBy` anComma
        if isSingle is && isSortId (head is) then
 	  compSort ks is cs <|> return (Sort (head is))
 	  else compSort ks is cs
 
-compSort :: [String] -> [OP_NAME] -> [Token] -> AParser COMPONENTS
+compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs = 
     do c <- colonST
        (b, t, _) <- opSort ks

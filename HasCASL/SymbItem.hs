@@ -24,7 +24,7 @@ import HasCASL.As
 
 -- * parsers for symbols
 -- | parse a (typed) symbol 
-symb :: AParser Symb
+symb :: AParser st Symb
 symb = do i <- uninstOpId
           do c <- colT 
              t <- typeScheme
@@ -37,7 +37,7 @@ symb = do i <- uninstOpId
              <|> return (Symb i Nothing [])
                
 -- | parse a mapped symbol
-symbMap :: AParser SymbOrMap
+symbMap :: AParser st SymbOrMap
 symbMap =   do s <- symb
                do   f <- asKey mapsTo
                     t <- symb
@@ -45,7 +45,7 @@ symbMap =   do s <- symb
                   <|> return (SymbOrMap s Nothing [])
 
 -- | parse kind of symbols
-symbKind :: AParser (SymbKind, Token)
+symbKind :: AParser st (SymbKind, Token)
 symbKind = try(
         do q <- pluralKeyword opS 
            return (SK_op, q)
@@ -67,7 +67,7 @@ symbKind = try(
         <?> "kind"
 
 -- | parse symbol items
-symbItems :: AParser SymbItems
+symbItems :: AParser st SymbItems
 symbItems = do s <- symb
                return (SymbItems Implicit [s] [] [])
             <|> 
@@ -75,7 +75,7 @@ symbItems = do s <- symb
                (is, ps) <- symbs
                return (SymbItems k is [] (map tokPos (p:ps)))
 
-symbs :: AParser ([Symb], [Token])
+symbs :: AParser st ([Symb], [Token])
 symbs = do s <- symb 
            do   c <- anComma `followedWith` symb
                 (is, ps) <- symbs
@@ -83,7 +83,7 @@ symbs = do s <- symb
              <|> return ([s], [])
 
 -- | parse symbol mappings
-symbMapItems :: AParser SymbMapItems
+symbMapItems :: AParser st SymbMapItems
 symbMapItems = 
             do s <- symbMap
                return (SymbMapItems Implicit [s] [] [])
@@ -92,7 +92,7 @@ symbMapItems =
                (is, ps) <- symbMaps
                return (SymbMapItems k is [] (map tokPos (p:ps)))
 
-symbMaps :: AParser ([SymbOrMap], [Token])
+symbMaps :: AParser st ([SymbOrMap], [Token])
 symbMaps = 
         do s <- symbMap 
            do   c <- anComma `followedWith` symb

@@ -123,7 +123,7 @@ piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent "inlineAxioms")))
   case lookupLogic_in_LG "inlineAxioms: " logStr of
     Logic lid -> case parse_basic_spec lid of
       Nothing -> error ("No parser for logic "++logStr)
-      Just p -> case runParser p emptyAnnos "inlineAxioms" str of
+      Just p -> case runParser p (emptyAnnos ()) "inlineAxioms" str of
         Left err -> error (show err)
         Right ast -> case basic_analysis lid of
           Nothing -> error ("No static analysis for logic "++logStr)

@@ -24,7 +24,7 @@ import CASL.Formula
 import CASL.OpItem
 import CASL.Parse_AS_Basic (sigItems)
 
-cocaslFormula :: AParser C_FORMULA
+cocaslFormula :: AParser st C_FORMULA
 cocaslFormula = 
     do o <- oBracketT
        m <- modality []
@@ -38,7 +38,7 @@ cocaslFormula =
        f <- formula cocasl_reserved_words
        return (Diamond m f $ toPos o [] c)
 
-modality :: [String] -> AParser MODALITY
+modality :: [String] -> AParser st MODALITY
 modality ks = 
     do t <- term (prodS : ks ++ cocasl_reserved_words)
 	    -- put the term in parens if you need to use "*"
@@ -50,7 +50,7 @@ instance AParsable C_FORMULA where
   aparser = cocaslFormula
 
 
-cBasic :: AParser C_BASIC_ITEM
+cBasic :: AParser st C_BASIC_ITEM
 cBasic =  do f <- asKey cofreeS
              ti <- coSigItems 
              return (codatatypeToCofreetype ti (tokPos f))
@@ -64,10 +64,10 @@ cBasic =  do f <- asKey cofreeS
 	          return (CoSort_gen is
 		            (toPos g [o] c)) 
 
-coSigItems :: AParser C_SIG_ITEM
+coSigItems :: AParser st C_SIG_ITEM
 coSigItems = itemList cocasl_reserved_words cotypeS codatatype CoDatatype_items
 
-codatatype :: [String] -> AParser CODATATYPE_DECL
+codatatype :: [String] -> AParser st CODATATYPE_DECL
 codatatype ks = 
     do s <- sortId ks
        addAnnos
@@ -78,13 +78,13 @@ codatatype ks =
        return (CoDatatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
 
-acoAlternative :: [String] -> AParser (Annoted COALTERNATIVE)
+acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks = 
     do a <- coalternative ks
        an <- annos
        return (Annoted a [] [] an)
 
-coalternative :: [String] -> AParser COALTERNATIVE
+coalternative :: [String] -> AParser st COALTERNATIVE
 coalternative ks = 
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
@@ -105,7 +105,7 @@ coalternative ks =
 	      <|> return (CoTotal_construct i cs qs)
 	 <|> return (CoTotal_construct i [] [])
 
-cocomponent :: [String] -> AParser COCOMPONENTS
+cocomponent :: [String] -> AParser st COCOMPONENTS
 cocomponent ks = 
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST

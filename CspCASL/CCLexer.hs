@@ -24,7 +24,7 @@ ccspecT, dataT, endT, channelT, processT, letT, inT, skipT, stopT,
   cRBracketT, oSBracketT, cSBracketT, sendT, receiveT, extChoiceT, 
   intChoiceT, synParaT, interParaT, oAlPaT, cAlPaT, oGenPaT, mGenPaT, 
   semicolonT, cGenPaT, hidingT, oRenamingT, cRenamingT, chanRenT 
-            :: AParser Token
+            :: AParser st Token
 
 ccspecT     = asKey ccspecS
 dataT       = asKey dataS

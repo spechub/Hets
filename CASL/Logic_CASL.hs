@@ -148,11 +148,7 @@ instance LatticeWithTop CASL_Sublogics where
 
 instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       map_sen CASL = mapSen (const return)
-      parse_sentence CASL = Just
-        ( \ _sign str ->
-          case runParser (aFormula [] << eof) emptyAnnos "" str of
-          Right x -> return $ item x
-          Left err -> fail $ show err )
+      parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName

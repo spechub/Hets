@@ -27,7 +27,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.AnnoState
 
-bParser :: GlobalAnnos -> AParser (BasicSpec, Env)
+bParser :: GlobalAnnos -> AParser () (BasicSpec, Env)
 bParser ga = do b <- basicSpec
                 return $ runState (anaBasicSpec ga b) initialEnv
 
@@ -35,7 +35,7 @@ anaParser :: StringParser
 anaParser ga = do (a, e) <- bParser ga
                   return $ show (printText0 ga a $$ printText0 ga e)
 
-type SenParser = GlobalAnnos -> AParser [Named Sentence]
+type SenParser = GlobalAnnos -> AParser () [Named Sentence]
 
 senParser :: SenParser
 senParser = fmap (reverse . sentences . snd) . bParser

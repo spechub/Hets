@@ -36,7 +36,7 @@ import CASL.OpItem
 -- ------------------------------------------------------------------------
 
 sortItems, typeItems, opItems, predItems, sigItems 
-    :: (AParsable s, AParsable f) => [String] -> AParser (SIG_ITEMS s f)
+    :: (AParsable s, AParsable f) => [String] -> AParser st (SIG_ITEMS s f)
 sortItems ks = itemList ks sortS sortItem Sort_items
 typeItems ks = itemList ks typeS datatype Datatype_items
 opItems   ks = itemList ks opS opItem Op_items
@@ -68,7 +68,7 @@ axiomToLocalVarAxioms ai a vs posl =
 -- ------------------------------------------------------------------------
 
 basicItems :: (AParsable b, AParsable s, AParsable f) => 
-	      [String] -> AParser (BASIC_ITEMS b s f)
+	      [String] -> AParser st (BASIC_ITEMS b s f)
 basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 	     <|> do f <- asKey freeS
 		    ti <- typeItems ks
@@ -93,7 +93,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 	     <|> dotFormulae ks
              <|> itemList ks axiomS formula Axiom_items
 
-varItems :: [String] -> AParser ([VAR_DECL], [Token])
+varItems :: [String] -> AParser st ([VAR_DECL], [Token])
 varItems ks = 
     do v <- varDecl ks
        do s <- try (addAnnos >> Common.Lexer.semiT << addLineAnnos)
@@ -104,7 +104,7 @@ varItems ks =
          <|> return ([v], [])
              
 dotFormulae :: (AParsable b, AParsable s, AParsable f) => 
-	       [String] -> AParser (BASIC_ITEMS b s f)
+	       [String] -> AParser st (BASIC_ITEMS b s f)
 dotFormulae ks = 
     do d <- dotT
        (fs, ds) <- aFormula ks `separatedBy` dotT
@@ -115,7 +115,7 @@ dotFormulae ks =
            Nothing -> return $ Axiom_items ns ps
 	   Just t -> return $ Axiom_items ns (ps ++ [tokPos t])
 
-aFormula  :: AParsable f => [String] -> AParser (Annoted (FORMULA f))
+aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 
 -- ------------------------------------------------------------------------
@@ -123,6 +123,6 @@ aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 -- ------------------------------------------------------------------------
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) => 
-	     [String] -> AParser (BASIC_SPEC b s f)
+	     [String] -> AParser st (BASIC_SPEC b s f)
 basicSpec ks = (fmap Basic_spec $ annosParser $ basicItems ks)
             <|> (oBraceT >> cBraceT >> return (Basic_spec []))

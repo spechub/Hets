@@ -27,7 +27,7 @@ csp_casl_reserved_words = casl_reserved_words ++
                           csp_casl_keywords
 -}
 
-channelName, var :: AParser Token                          --, namedProcess 
+channelName, var :: AParser st Token                          --, namedProcess 
 channelName = var
 var = varId csp_casl_keywords
 

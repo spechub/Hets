@@ -34,7 +34,7 @@ localAnalysis ga bs =
                        $ emptySign () 
         in Result (envDiags sig) $ Just newBs
 
-runAna :: GlobalAnnos -> AParser (Result (BASIC_SPEC () () ()))
+runAna :: GlobalAnnos -> AParser () (Result (BASIC_SPEC () () ()))
 runAna ga = 
     do b <- basicSpec []
        return $ localAnalysis ga b
@@ -48,7 +48,7 @@ localAna ga bs =
         es = filter ((<= Error)  . diagKind) ds
         in Result es $ Just difSig
 
-getSign :: GlobalAnnos -> AParser (Result (Sign () ()))
+getSign :: GlobalAnnos -> AParser () (Result (Sign () ()))
 getSign ga = 
     do b <- basicSpec []
        return $ localAna ga b
@@ -62,7 +62,7 @@ props ga bs =
         es = filter ((<= Error)  . diagKind) ds
         in Result es $ Just sents
 
-getProps :: GlobalAnnos -> AParser (Result [Named (FORMULA ())])
+getProps :: GlobalAnnos -> AParser () (Result [Named (FORMULA ())])
 getProps ga = 
     do b <- basicSpec []
        return $ props ga b

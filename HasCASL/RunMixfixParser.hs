@@ -63,7 +63,7 @@ stdOps, stdPreds :: Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
-resolveTerm :: GlobalAnnos -> AParser (Result Term)
+resolveTerm :: GlobalAnnos -> AParser () (Result Term)
 resolveTerm ga = do 
        trm <- term  
        let ids = stdOps `Set.union` stdPreds
@@ -78,7 +78,7 @@ resolveTerm ga = do
        return $ getResolved showPretty (posOfTerm trm) 
                           toMixTerm chart
 
-testTermMix :: GlobalAnnos -> AParser WrapString
+testTermMix :: GlobalAnnos -> AParser () WrapString
 testTermMix ga = do Result ds mt <- resolveTerm ga
                     return $ WrapString $ 
                         case mt of Just t -> show $ printText0 ga t

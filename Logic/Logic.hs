@@ -112,9 +112,9 @@ class (Language lid, PrintTypeConv basic_spec,
           lid -> symb_map_items
       where 
          -- parsing
-         parse_basic_spec :: lid -> Maybe(AParser basic_spec)
-         parse_symb_items :: lid -> Maybe(AParser symb_items)
-         parse_symb_map_items :: lid -> Maybe(AParser symb_map_items)
+         parse_basic_spec :: lid -> Maybe(AParser st basic_spec)
+         parse_symb_items :: lid -> Maybe(AParser st symb_items)
+         parse_symb_map_items :: lid -> Maybe(AParser st symb_map_items)
          -- default implementations
          parse_basic_spec _ = Nothing
          parse_symb_items _ = Nothing
@@ -139,7 +139,7 @@ class (Category lid sign morphism, Ord sentence,
       simplify_sen :: lid -> sign -> sentence -> sentence
       simplify_sen _ _ = id  -- default implementation
          -- parsing of sentences
-      parse_sentence :: lid -> Maybe (sign -> String -> Result sentence)
+      parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing
            -- print a sentence with comments
       print_named :: lid -> GlobalAnnos -> Named sentence -> Doc

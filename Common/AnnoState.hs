@@ -31,48 +31,55 @@ import Data.List(delete)
 
 
 -- | parsers that can collect annotations via side effects
-type AParser a = GenParser Char AnnoState a
+type AParser st a = GenParser Char (AnnoState st) a
 
 class AParsable a where
-  aparser :: AParser a
+  aparser :: AParser st a
 
 -- used for CASL extensions. If there is no extension, just fail
 instance AParsable () where
   aparser = pzero
 
 -- | just the list of currently collected annotations
-data AnnoState = AnnoState { toAnnos :: [Annotation] }
+data AnnoState st = AnnoState { toAnnos :: [Annotation] 
+                              , userState :: st }
 
 -- | no annotations
-emptyAnnos :: AnnoState
-emptyAnnos = AnnoState []
+emptyAnnos :: st -> AnnoState st
+emptyAnnos st = AnnoState [] st
 
 -- | add further annotations to the input state
-parseAnnos :: AnnoState -> GenParser Char st AnnoState 
-parseAnnos (AnnoState as) = 
+parseAnnos :: AnnoState a -> GenParser Char st (AnnoState a)
+parseAnnos (AnnoState as b) = 
     do a <- skip >> annotations
-       return $ AnnoState (as ++ a) 
+       return $ AnnoState (as ++ a) b
 
 -- | add only annotations on consecutive lines to the input state 
-parseLineAnnos :: AnnoState -> GenParser Char st AnnoState 
-parseLineAnnos (AnnoState as) = 
+parseLineAnnos :: AnnoState a -> GenParser Char st (AnnoState a)
+parseLineAnnos (AnnoState as b) = 
     do l <- mLineAnnos
-       return $ AnnoState (as ++ l) 
+       return $ AnnoState (as ++ l) b
 
 -- | add annotations to the internal state
-addAnnos :: AParser ()
+addAnnos :: AParser st ()
 addAnnos = getState >>= parseAnnos >>= setState
 
 -- | add only annotations on consecutive lines to the internal state 
-addLineAnnos :: AParser ()
+addLineAnnos :: AParser st ()
 addLineAnnos = getState >>= parseLineAnnos >>= setState
+
+getUserState :: AParser st st
+getUserState =  fmap userState getState
+
+setUserState :: st -> AParser st ()
+setUserState st = getState >>= \ s -> setState s { userState = st }
 
 -- | extract all annotation from the internal state,
 -- resets the internal state to 'emptyAnnos'
-getAnnos :: AParser [Annotation]
-getAnnos = do AnnoState a <- getState 
-	      setState emptyAnnos 
-	      return a
+getAnnos :: AParser st [Annotation]
+getAnnos = do aSt <- getState 
+	      setState aSt { toAnnos = [] }
+	      return $ toAnnos aSt
 
 -- | annotations on consecutive lines 
 mLineAnnos :: GenParser Char st [Annotation]
@@ -86,15 +93,15 @@ mLineAnnos =
 
 
 -- | explicitly parse annotations, reset internal state 
-annos :: AParser [Annotation]
+annos :: AParser st [Annotation]
 annos = addAnnos >> getAnnos
 
 -- | explicitly parse annotations on consecutive lines. reset internal state
-lineAnnos :: AParser [Annotation]
+lineAnnos :: AParser st [Annotation]
 lineAnnos = addLineAnnos >> getAnnos
 
 -- | optional semicolon followed by annotations on consecutive lines
-optSemi :: AParser (Maybe Token, [Annotation])
+optSemi :: AParser st (Maybe Token, [Annotation])
 optSemi = do (a1, s) <- try $ bind (,) annos Common.Lexer.semiT
              a2 <- lineAnnos                         
              return (Just s, a1 ++ a2)
@@ -102,7 +109,7 @@ optSemi = do (a1, s) <- try $ bind (,) annos Common.Lexer.semiT
                  return (Nothing, a)
 
 -- | succeeds if the previous item is finished 
-tryItemEnd :: [String] -> AParser ()
+tryItemEnd :: [String] -> AParser st ()
 tryItemEnd l = 
     try (do c <- lookAhead (annos >>
 			      (single (oneOf "\"([{")
@@ -120,13 +127,13 @@ startKeyword = dotS:cDot:
 		   (delete existsS casl_reserved_words)
 
 -- | parse preceding annotations and the following item
-annoParser :: AParser a 
-	   -> AParser (Annoted a)
+annoParser :: AParser st a 
+	   -> AParser st (Annoted a)
 annoParser parser = bind addLeftAnno annos parser
 
 -- | parse an item list preceded and followed by annotations
-annosParser :: AParser a 
-	    -> AParser [Annoted a]
+annosParser :: AParser st a 
+	    -> AParser st [Annoted a]
 annosParser parser = 
     do a <- annos 
        l <- many1 $ bind (,) parser annos
@@ -137,24 +144,24 @@ annosParser parser =
 
 -- | parse an item list preceded by a singular or plural keyword,
 -- interspersed with semicolons and an optional semicolon at the end
-itemList :: [String] -> String -> ([String] -> AParser b)
-               -> ([Annoted b] -> [Pos] -> a) -> AParser a
+itemList :: [String] -> String -> ([String] -> AParser st b)
+               -> ([Annoted b] -> [Pos] -> a) -> AParser st a
 itemList ks kw ip constr = 
     do p <- pluralKeyword kw
        auxItemList (ks++startKeyword) [p] (ip ks) constr	      
 
 -- | generalized version of 'itemList' 
 -- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'
-auxItemList :: [String] -> [Token] -> AParser b
-            -> ([Annoted b] -> [Pos] -> a) -> AParser a
+auxItemList :: [String] -> [Token] -> AParser st b
+            -> ([Annoted b] -> [Pos] -> a) -> AParser st a
 auxItemList startKeywords ps parser constr = do
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in 
 	   return (constr r (map tokPos (ps++ts)))
 
 -- | parse an item list without a starting keyword
-itemAux :: [String] -> AParser a 
-	-> AParser ([a], [Token], [[Annotation]])
+itemAux :: [String] -> AParser st a 
+	-> AParser st ([a], [Token], [[Annotation]])
 itemAux startKeywords itemParser = 
     do a <- itemParser
        (m, an) <- optSemi
@@ -167,21 +174,21 @@ itemAux startKeywords itemParser =
 
 
 -- | collect preceding and trailing annotations
-wrapAnnos :: AParser a -> AParser a
+wrapAnnos :: AParser st a -> AParser st a
 wrapAnnos p = try (addAnnos >> p) << addAnnos
 
 -- | parse an annoted keyword
-asKey :: String -> AParser Token
+asKey :: String -> AParser st Token
 asKey s = wrapAnnos $ pToken $ toKey s
 
 -- * annoted keywords
-anComma, commaT, anSemi, semiT :: AParser Token
+anComma, commaT, anSemi, semiT :: AParser st Token
 anComma = wrapAnnos Common.Lexer.commaT
 commaT = anComma
 anSemi = wrapAnnos Common.Lexer.semiT
 semiT = anSemi
 
-equalT, colonT, lessT, dotT :: AParser Token
+equalT, colonT, lessT, dotT :: AParser st Token
 equalT = wrapAnnos $ pToken $ 
 	 (((lookAhead $ keySign $ string exEqual) 
 			  >> unexpected exEqual)
@@ -191,7 +198,7 @@ colonT = asKey colonS
 lessT = asKey lessS
 dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
 
-asT, barT, forallT :: AParser Token
+asT, barT, forallT :: AParser st Token
 asT = asKey asS
 barT = asKey barS
 forallT = asKey forallS
