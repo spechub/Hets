@@ -192,11 +192,4 @@ embedMorphism a b =
             map item $ mapMaybe (\x -> case x of (APredItem p) -> Just p;
                                                              _ -> Nothing) l
   in
-    Morphism a b (mkmap slist) (mkmap flist) (mkmap plist)
-  where
-    domap :: (Ord a) => FiniteMap a b -> [(a,b)] -> FiniteMap a b
-    domap m []        = m
-    domap m ((a,b):t) = domap (addToFM m a b) t
-
-    mkmap :: (Ord a) => [(a,b)] -> FiniteMap a b
-    mkmap = domap emptyFM
+    Morphism a b (listToFM slist) (listToFM flist) (listToFM plist)
