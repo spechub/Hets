@@ -104,6 +104,16 @@ anaProdClass (ProdClass l p) =
 -- analyse type
 -- ---------------------------------------------------------------------------
 
+eqKindDiag :: Kind -> Kind -> [Diagnosis]
+eqKindDiag k1 k2 = 
+    if eqKind k1 k2 then []
+       else [ Diag Error
+	      ("incompatible kinds\n" ++ 
+	       indent 2 (showPretty k1 . 
+			 showChar '\n' .  
+			 showPretty k2) "")
+	    $ posOfKind k1 ]
+
 checkTypeKind :: Id -> Kind -> State Env [Diagnosis]
 checkTypeKind i k = 
     do tk <- getTypeKinds
@@ -111,14 +121,7 @@ checkTypeKind i k =
            Nothing -> return [Diag Error 
 		      ("unknown type '" ++ showId i "'")
 				   (posOfId i)]
-	   Just ks -> if eqKind k $ head ks
-			  then return []
-			  else return [Diag Error
-				       ("incompatible type kinds\n" ++ 
-					indent 2 (showPretty k . 
-						  showChar '\n' .  
-						  showPretty (head ks)) "")
-					$ posOfKind k ]
+	   Just ks -> return $ eqKindDiag k $ head ks
 
 indent :: Int -> ShowS -> ShowS
 indent i s = showString $ concat $ 
@@ -221,6 +224,11 @@ getBrackets k =
 -- --------------------------------------------------------------------------
 showPretty :: PrettyPrint a => a -> ShowS
 showPretty = showString . render . printText0 emptyGlobalAnnos 
+
+missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
+missingAna t ps = appendDiags [Diag FatalError 
+			       ("no analysis yet for: " ++ showPretty t "")
+			      $ if null ps then nullPos else head ps]
 
 posOfKind :: Kind -> Pos
 posOfKind (Kind l c ps) = 
