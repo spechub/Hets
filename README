@@ -58,7 +58,7 @@ version_nr                  Current version (Till Mossakowski)
 ATC/                        Conversion from and to ATerms (Klaus Luettich)
 CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder/Martin Kuehl)
 Common/                     Modules common to all logics
-Common/ATerm/                 Conversion from and to ATerms (Klaus Luettich)
+Common/ATerm/                 Conversion from and to ATerms (Christian Maeder)
 Common/Lib/                   Set, Map, Graph, Rel modules (Christian Maeder)
 Common/Lib/Parsec/              Parsec combinator parser (Christian Maeder)
 Common/PrettyPrint.hs       pretty printing (Klaus Luettich)
