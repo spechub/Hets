@@ -31,18 +31,29 @@ program def : forall s : Type .  s ->? Unit = \ x : s . ()
 	%% def is also total (identical to tt) 
 program tt : forall s : Type .  s ->? Unit = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
-program __ und __ (x, y : Unit) : Unit : Unit = ()
+program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
 type __->__ : Type- -> Type+ -> Type
 type __->__(s : Type)(t : Type) < s ->? t
 %% total functions
-op __res__(x : s; y : t) : s = x
-op fst(x : s; y : t) : s = x
+op __res__ : s × t ->? s = (var x : s)
+op fst : s × t ->? s = (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
+. (predfun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+							  y : t) . def (x res y),
+						       \ (x : s, y : t) . (def y) und (def x))
+. (predfun __=__ : forall a : Type .  a ×
+				      a ->? Unit) ((op fst : s × t ->? s),
+						   (op __res__ : s × t ->? s))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 predfun eq : forall s : Type .  s × s ->? Unit
+. (predfun __=__ : forall a : Type .  a ×
+				      a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
+											      s ->? Unit) ((var x : s),
+													   (var x : s)),
+						   (op tt : forall s : Type .  s ->? Unit))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
@@ -82,9 +93,9 @@ class instance Flatcpo < Cpo
 var c : Cpo; d : Cpo
 type instance __*__ : Cpo+ -> Cpo+ -> Cpo
 var x1 : c; x2 : c; y1 : d; y2 : d
-program __<<=__ : forall c : Cpo .  c × c ->? Unit ((x1 : _var_47,
-						     y1 : _var_48),
-						    (x2 : _var_49, y2 : _var_50))
+program __<<=__ : forall c : Cpo .  c × c ->? Unit ((x1 : _var_67,
+						     y1 : _var_68),
+						    (x2 : _var_69, y2 : _var_70))
 	= (x1 <<= x2) und (y1 <<= y2)
 type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
@@ -97,12 +108,12 @@ program f <<= [c -->? d] g =
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__(c : Cpo)(d : Cpo) < c -->? d
 var f : c --> d; g : c --> d
-program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_73,
-						    g : _var_74)
+program __<<=__ : forall c : Cpo .  c × c ->? Unit (f : _var_81,
+						    g : _var_82)
 	= f <<= [c -->? d] g
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 op Y : forall p : Pcpo .  (p -->? p) --> p
-op undefined : c -->? p = Y (\ x : c -->? p .! x)
+op undefined : c -->? p = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -144,15 +155,17 @@ __=>__ : Unit × Unit ->? Unit %(Pred)%
 __=e=__ : forall a : Type .  a × a ->? Unit %(Fun)%
 __\/__ : Unit × Unit ->? Unit %(Pred)%
 __if__ : Unit × Unit ->? Unit %(Pred)%
+__res__ : s × t ->? s %(Op)% = \ (x : s, y : t) .! (var x : s)
 __when__else__ : forall a : Type .  a × Unit × a ->? a %(Fun)%
 bottom : forall p : Pcpo .  p %(Op)%
-def : forall s : Type .  s ->? Unit %(Op)%
+def : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
 def__ : forall a : Type .  a ->? Unit %(Fun)%
 eq : forall s : Type .  s × s ->? Unit %(Pred)%
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : Unit ->? Unit %(Pred)%
       : Unit %(Fun)%
+fst : s × t ->? s %(Op)% = \ (x : s, y : t) .! (var x : s)
 g : c --> d %(var)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not : Unit ->? Unit %(Pred)%
@@ -161,7 +174,20 @@ sup : forall c : Cpo .  (nat -> c) ->? c %(Op)%
 true : bool %(construct bool)%
      : Unit ->? Unit %(Pred)%
      : Unit %(Fun)%
-tt : forall s : Type .  s ->? Unit %(Op)%
+tt : forall s : Type .  s ->? Unit %(Op)% = \ x : s . ()
+undefined : c -->? p %(Op)% = (op Y : forall p : Pcpo .  (p -->? p) --> p) (\ x : c -->? p .! (var x : c -->? p))
+%% Sentences -------------------------------------------------------------
+(predfun __=__ : forall a : Type .  a × a ->? Unit) (\ (x : s,
+							y : t) . def (x res y),
+						     \ (x : s, y : t) . (def y) und (def x)) %()%
+(predfun __=__ : forall a : Type .  a × a ->? Unit) ((op fst : s ×
+							       t ->? s),
+						     (op __res__ : s × t ->? s)) %()%
+(predfun __=__ : forall a : Type .  a ×
+				    a ->? Unit) (\ x : s . (predfun eq : forall s : Type .  s ×
+											    s ->? Unit) ((var x : s),
+													 (var x : s)),
+						 (op tt : forall s : Type .  s ->? Unit)) %()%
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.7, illegal universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'
@@ -171,175 +197,73 @@ tt : forall s : Type .  s ->? Unit %(Op)%
 *** FatalError 15.8, illegal type pattern argument: __
 *** Warning 27.8, redeclared type '__->?__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
-*** Error 42.24, ambiguous mixfix term
-	__(())
-	()
-*** Error 42.23, ambiguous mixfix term
-	__(\ x : s . ())
-	\ x : s . ()
-*** Error 44.23, ambiguous mixfix term
-	__(())
-	()
-*** Error 44.22, ambiguous mixfix term
-	__(\ x : s . ())
-	\ x : s . ()
 *** Error 46.11, unexpected mixfix token: und
 *** Error 46.9, unexpected pattern '__ und __ (x, y : Unit)'
-*** Error 46.40, ambiguous mixfix term
-	__(())
-	()
+*** Error 46.9, illegal toplevel pattern '__ und __ (x, y : Unit)'
 *** Warning 50.8, redeclared type '__->__'
 *** Error 52.8, incompatible kind of: __->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 54.49, ambiguous mixfix term
-	__(def f (__(x)))
-	(def__)(__(f (__(x))))
-	def f (__(x))
-*** Error 54.50, ambiguous mixfix term
-	__(all (__(\ x : s . def f (x))))
-	all (__(\ x : s . def f (x)))
-*** Error 54.3, ambiguous mixfix term
-	__(__)
-	__
-*** Hint 54.3, no type match for: __
-  with type: '_var_8 ->? _var_9'
-  known types:
-    
-*** Error 54.3, wrongly typed application '__ __'
-*** Hint 54.16, wrong result type 'Unit'
-  for application '(__=__) (__(__) in s -> t,
-	 __(\ f : s ->? t . all (\ x : s . def f (x))))'
-*** Error 54.16, no typing for '(__=__)(__(__) in s -> t,
-	__(\ f : s ->? t . all (\ x : s . def f (x))))'
-*** Error 58.31, ambiguous mixfix term
-	__(x)
-	x
-*** Error 59.27, ambiguous mixfix term
-	__(x)
-	x
+*** Error 54.42, ambiguous mixfix term
+	(def__)(f x)
+	def f x
+*** Error 54.32, unexpected mixfix token: all
+*** Error 54.6, unexpected mixfix token: :
 *** Hint 60.9, no type match for: snd
-  with type: '_var_10 ->? t' (line 60, column 28)
+  with type: '_var_8 ->? t' (line 60, column 28)
   known types:
     
 *** Hint 60.9, wrong result type 't' (line 60, column 28)
   for application 'snd (x : s, y : t)'
 *** Error 60.9, no typing for 'snd(x : s, y : t) : t'
-*** Error 65.30, ambiguous mixfix term
-	__(def ((__res__)(x, y)))
-	def ((__res__)(x, y))
-	(def__)(__((__res__)(x, y)))
-*** Error 65.69, ambiguous mixfix term
-	__((def__)(__(y)) und ((def__)(__(x))))
-	(def__)(__(y)) und ((def__)(__(x)))
 *** Error 65.18, ambiguous mixfix term
-	__(\ (x : s, y : t) . def (x res y))
-	\ (x : s, y : t) . def (x res y)
-*** Error 65.52, ambiguous mixfix term
-	__(\ (x : s, y : t) . (def y) und (def x))
-	\ (x : s, y : t) . (def y) und (def x)
-*** Hint 65.31, no type match for: __
-  with type: '_var_15 ->? _var_14'
+	def ((__res__)(x, y))
+	(def__)((__res__)(x, y))
+*** Error 65.59, unexpected mixfix token: und
+*** Error 65.18, unexpected term 'def (x res y)'
+*** Error 65.52, unexpected term '(def y) und (def x)'
+*** Error , undeclared type '_var_38'
+*** Hint 75.21, no type match for: eq
+  with type: '_var_51 ->? t' (line 58, column 22)
   known types:
-    
-*** Hint 65.31, wrong result type '_var_14'
-  for application '__ (__(\ (x : s, y : t) . def (x res y)))'
-*** Hint 65.33, wrong result type 'Unit'
-  for application '(__=__) (__(__(\ (x : s, y : t) . def (x res y))),
-	 __(__(\ (x : s, y : t) . (def y) und (def x))))'
-*** Error 65.33, no typing for '(__=__)(__(__(\ (x : s, y : t) . def (x res y))),
-	__(__(\ (x : s, y : t) . (def y) und (def x))))'
-*** Error 66.16, ambiguous mixfix term
-	__((__res__))
-	(__res__)(__, __)
-*** Hint 66.3, no type match for: __
-  with type: '_var_20 ->? _var_19'
-  known types:
-    
-*** Hint 66.3, wrong result type '_var_19'
-  for application '__ fst'
-*** Hint 66.7, wrong result type 'Unit'
-  for application '(__=__) (__(fst), __(__((__res__))))'
-*** Error 66.7, no typing for '(__=__)(__(fst), __(__((__res__))))'
-*** Error 74.18, ambiguous mixfix term
-	__(eq (__(x), __(x)))
-	eq (__(x), __(x))
-*** Error 74.11, ambiguous mixfix term
-	__(\ x : s . eq (x, x))
-	\ x : s . eq (x, x)
-*** Hint 74.19, no type match for: __
-  with type: '_var_25 ->? _var_24'
-  known types:
-    
-*** Hint 74.19, wrong result type '_var_24'
-  for application '__ (__(\ x : s . eq (x, x)))'
-*** Hint 74.21, wrong result type 'Unit'
-  for application '(__=__) (__(__(\ x : s . eq (x, x))), __(tt))'
-*** Error 74.21, no typing for '(__=__)(__(__(\ x : s . eq (x, x))), __(tt))'
-*** Error 75.24, ambiguous mixfix term
-	(__(x), __(y))
-	(x, __(y))
-	(__(x), __(y))
-	(x, __(y))
-*** Error 75.53, ambiguous mixfix term
-	(__(x), __(y))
-	(x, __(y))
-	(__(x), __(y))
-	(x, __(y))
-*** Error 75.17, ambiguous mixfix term
-	__(\ (x : _var_26, y : s) . (__res__)(x, eq (__(x), __(y))))
-	\ (x : _var_26, y : s) . (__res__)(x, eq (__(x), __(y)))
-*** Error 75.46, ambiguous mixfix term
-	__(\ (x : _var_27, y : s) . (__res__)(y, eq (__(x), __(y))))
-	\ (x : _var_27, y : s) . (__res__)(y, eq (__(x), __(y)))
-*** Hint 75.28, no type match for: __
-  with type: '_var_32 ->? _var_31'
-  known types:
-    
-*** Hint 75.28, wrong result type '_var_31'
-  for application '__ (__(\ (x : _var_26, y : s) . (__res__)(x, eq (__(x), __(y)))))'
+    'forall s : Type .  s × s ->? Unit' (line 72, column 11)
+*** Hint 75.21, wrong result type 't' (line 58, column 22)
+  for application 'eq (x, y)'
+*** Hint 75.17, wrong result type '_var_45'
+  for application '(__res__) (x, eq (x, y))'
 *** Hint 75.30, wrong result type 'Unit'
-  for application '(__=__) (__(__(\ (x : _var_26, y : s) . (__res__)(x,
-						  eq (__(x), __(y))))),
-	 __(__(\ (x : _var_27, y : s) . (__res__)(y, eq (__(x), __(y))))))'
-*** Error 75.30, no typing for '(__=__)(__(__(\ (x : _var_26, y : s) . (__res__)(x,
-						 eq (__(x), __(y))))),
-	__(__(\ (x : _var_27, y : s) . (__res__)(y, eq (__(x), __(y))))))'
+  for application '(__=__) (\ (x : _var_38, y : s) . (__res__)(x, eq (x, y)),
+	 \ (x : _var_39, y : s) . (__res__)(y, eq (x, y)))'
+*** Error 75.30, no typing for '(__=__)(\ (x : _var_38, y : s) . (__res__)(x, eq (x, y)),
+	\ (x : _var_39, y : s) . (__res__)(y, eq (x, y)))'
 *** Warning 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
 
 *** Error 85.11, cyclic super type '? s'
 *** Hint 87.9, no type match for: all
-  with type: '_var_33 ->? Unit ->? Unit'
+  with type: '_var_53 ->? Unit ->? Unit'
   known types:
     
 *** Hint 87.9, wrong result type 'Unit ->? Unit'
   for application 'all (p : s ->? Unit)'
 *** Error 87.9, no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with type: '_var_35 ->? Unit ->? Unit'
+  with type: '_var_55 ->? Unit ->? Unit'
   known types:
     
 *** Hint 90.9, wrong result type 'Unit ->? Unit'
-  for application 'And (x : _var_34, y : Unit ->? Unit)'
-*** Error 90.9, no typing for 'And(x : _var_34, y : Unit ->? Unit) : Unit ->? Unit'
+  for application 'And (x : _var_54, y : Unit ->? Unit)'
+*** Error 90.9, no typing for 'And(x : _var_54, y : Unit ->? Unit) : Unit ->? Unit'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.9, unexpected pattern '__ impl __ (x, y : Pred Unit)'
-*** Error 93.63, ambiguous mixfix term
-	__(eq (__(x), __(x And y)))
-	eq (__(x), __(x And y))
+*** Error 93.53, unexpected mixfix token: x
 *** Error 95.11, unexpected mixfix token: or
 *** Error 95.9, unexpected pattern '__ or __ (x, y : Pred Unit)'
-*** Error 96.50, ambiguous mixfix term
-	__(__(__(x impl r) und (__(y impl r))) impl r)
-	__(__(x impl r) und (__(y impl r))) impl r
-*** Error 96.51, ambiguous mixfix term
-	__(all (__(\ r : Unit ->? Unit . ((x impl r) und (y impl r)) impl
-				 r)))
-	all (__(\ r : Unit ->? Unit . ((x impl r) und (y impl r)) impl r))
+*** Error 96.19, unexpected mixfix token: x
+*** Error 95.48, unexpected mixfix token: all
 *** Hint 98.9, no type match for: ex
-  with type: '_var_38 ->? Unit ->? Unit'
+  with type: '_var_58 ->? Unit ->? Unit'
   known types:
     
 *** Hint 98.9, wrong result type 'Unit ->? Unit'
@@ -347,251 +271,65 @@ tt : forall s : Type .  s ->? Unit %(Op)%
 *** Error 98.9, no typing for 'ex(p : s ->? Unit) : Unit ->? Unit'
 *** Error 101.13, unexpected mixfix token: )
 *** Error 101.9, unexpected pattern 'ff ()'
-*** Error 101.51, ambiguous mixfix term
-	__(r ())
-	r ()
-*** Error 101.52, ambiguous mixfix term
-	__(all (__(\ r : Unit ->? Unit . r ())))
-	all (__(\ r : Unit ->? Unit . r ()))
+*** Error 101.29, unexpected mixfix token: all
 *** Hint 103.9, no type match for: neg
-  with type: '_var_40 ->? Unit ->? Unit'
+  with type: '_var_60 ->? Unit ->? Unit'
   known types:
     
 *** Hint 103.9, wrong result type 'Unit ->? Unit'
   for application 'neg (r : Unit ->? Unit)'
 *** Error 103.9, no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit'
-*** Error 108.42, ambiguous mixfix term
-	__(f (__(x)))
-	f (__(x))
-*** Error 108.63, ambiguous mixfix term
-	__(eq (__(\ . f (x)), __(g (__(x)))) impl eq (__(f), __(g)))
-	eq (__(\ . f (x)), __(g (__(x)))) impl eq (__(f), __(g))
-*** Error 108.64, ambiguous mixfix term
-	__(all (__(\ x : s . eq (\ . f (x), g (x)) impl eq (f, g))))
-	all (__(\ x : s . eq (\ . f (x), g (x)) impl eq (f, g)))
-*** Error 108.65, ambiguous mixfix term
-	__(all (__(\ (f : _var_41, g : _var_42) : s ->? t . all
-						    (\ x : s . eq (\ . f (x), g (x)) impl eq
-							       (f, g)))))
-	all (__(\ (f : _var_41, g : _var_42) : s ->? t . all
-						 (\ x : s . eq (\ . f (x), g (x)) impl eq (f, g))))
+*** Error 108.51, unexpected mixfix token: impl
+*** Error 108.22, unexpected mixfix token: all
+*** Error 108.3, unexpected mixfix token: all
 *** Hint 117.5, is type variable 'c'
-*** Error 121.20, ambiguous mixfix term
-	__(x <<= x)
-	(__<<=__)(__(x), __(x))
-	x <<= x
-	(__<<=__)(__(x), x)
-*** Error 121.21, ambiguous mixfix term
-	__(all (__(\ x : c . x <<= x)))
-	all (__(\ x : c . x <<= x))
-*** Error 122.57, ambiguous mixfix term
-	__(__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-					     __(z)))) impl x <<= z)
-	(__<<=__)(__(__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-						       __(z)))) impl x),
-	  __(z))
-	__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-					  __(z)))) impl x <<= z
-	(__<<=__)(__(__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-						       __(z)))) impl x),
-	  z)
-*** Error 122.58, ambiguous mixfix term
-	__(all (__(\ (x : _var_43, y : _var_44, z : c) . ((x <<= y) und
-						  (y <<= z))
-						 impl x <<= z)))
-	all (__(\ (x : _var_43, y : _var_44, z : c) . ((x <<= y) und
-					       (y <<= z))
-					      impl x <<= z))
-*** Error 123.57, ambiguous mixfix term
-	__(__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-					     __(x)))) impl eq (__(x), __(y)))
-	__((__<<=__)(__(x), __(y)) und ((__<<=__)(__(y),
-					  __(x)))) impl eq (__(x), __(y))
-*** Error 123.58, ambiguous mixfix term
-	__(all (__(\ (x : _var_45, y : _var_46, z : c) . ((x <<= y) und
-						  (y <<= x))
-						 impl eq (x, y))))
-	all (__(\ (x : _var_45, y : _var_46, z : c) . ((x <<= y) und
-					       (y <<= x))
-					      impl eq (x, y)))
+*** Error 121.3, unexpected mixfix token: all
+*** Error 122.31, unexpected mixfix token: und
+*** Error 122.3, unexpected mixfix token: all
+*** Error 123.31, unexpected mixfix token: und
+*** Error 123.3, unexpected mixfix token: all
 *** Error 125.55, unexpected mixfix token: Suc
-*** Error 125.62, ambiguous mixfix term
-	__(all (__(\ n : nat . s (n) <<= s (Suc (n)))))
-	all (__(\ n : nat . s (n) <<= s (Suc (n))))
-*** Error 126.59, ambiguous mixfix term
-	__(s (__(n)) <<= x)
-	(__<<=__)(__(s (__(n))), __(x))
-	s (__(n)) <<= x
-	(__<<=__)(__(s (__(n))), x)
-*** Error 126.60, ambiguous mixfix term
-	__(all (__(\ n : nat . s (n) <<= x)))
-	all (__(\ n : nat . s (n) <<= x))
-*** Error 131.72, ambiguous mixfix term
-	__(isBound (__(x), __(s)) impl sup (__(s)) <<= x)
-	(__<<=__)(__(isBound (__(x), __(s)) impl sup (__(s))), __(x))
-	isBound (__(x), __(s)) impl sup (__(s)) <<= x
-	(__<<=__)(__(isBound (__(x), __(s)) impl sup (__(s))), x)
-*** Error 131.74, ambiguous mixfix term
-	__(def (__(sup s)) impl (__(isBound (__(sup s),
-				     __(s)) und all (__(\ x : c . isBound (x, s) impl sup (s) <<=
-								  x)))))
-	(def__)(__(__(sup s) impl (__(isBound (__(sup s),
-				       __(s)) und all (__(\ x : c . isBound (x, s) impl sup (s) <<=
-								    x))))))
-	def (__(sup s)) impl (__(isBound (__(sup s),
-				  __(s)) und all (__(\ x : c . isBound (x, s) impl sup (s) <<= x))))
-*** Error 131.75, ambiguous mixfix term
-	__(all (__(\ s : nat -> c . def (sup s) impl
-			    (isBound (sup s, s) und all
-			     (\ x : c . isBound (x, s) impl sup (s) <<= x)))))
-	all (__(\ s : nat -> c . def (sup s) impl
-			 (isBound (sup s, s) und all
-			  (\ x : c . isBound (x, s) impl sup (s) <<= x))))
-*** Error 134.46, ambiguous mixfix term
-	__(isChain (__(s)) impl def (__(sup (__(s)))))
-	isChain (__(s)) impl ((def__)(__(__(sup (__(s))))))
-	isChain (__(s)) impl def (__(sup (__(s))))
-*** Error 134.47, ambiguous mixfix term
-	__(all (__(\ s : nat -> c . isChain (s) impl def (sup (s)))))
-	all (__(\ s : nat -> c . isChain (s) impl def (sup (s))))
+*** Error 125.32, unexpected mixfix token: all
+*** Error 126.38, unexpected mixfix token: all
+*** Error 131.42, unexpected mixfix token: isBound
+*** Error 130.32, unexpected mixfix token: impl
+*** Error 130.3, unexpected mixfix token: all
+*** Error 134.20, unexpected mixfix token: isChain
+*** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
-*** Error 143.26, ambiguous mixfix term
-	__(bottom <<= x)
-	(__<<=__)(__(bottom), __(x))
-	bottom <<= x
-	(__<<=__)(__(bottom), x)
-*** Error 143.27, ambiguous mixfix term
-	__(all (__(\ x : p . bottom <<= x)))
-	all (__(\ x : p . bottom <<= x))
+*** Error 143.3, unexpected mixfix token: all
 *** Hint 148.6, is type variable 'f'
 *** Error 150.15, unexpected mixfix token: [
 *** Hint 153.5, is type variable 'c'
 *** Warning 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
-*** Error , undeclared type '_var_47'
-*** Error , undeclared type '_var_48'
-*** Error , undeclared type '_var_49'
-*** Error , undeclared type '_var_50'
-*** Error 159.59, ambiguous mixfix term
-	__((__<<=__)(__(x1), __(x2)) und ((__<<=__)(__(y1), __(y2))))
-	(__<<=__)(__(x1), __(x2)) und ((__<<=__)(__(y1), __(y2)))
+*** Error , undeclared type '_var_67'
+*** Error , undeclared type '_var_68'
+*** Error , undeclared type '_var_69'
+*** Error , undeclared type '_var_70'
+*** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 171.61, ambiguous mixfix term
-	__((def__)(__(__(f x) und x <<= y)) impl def (__(f y)))
-	(def__)(__(__(f x) und x <<= y)) impl ((def__)(__(__(f y))))
-	(def__)(__(__(f x) und x <<= y)) impl def (__(f y))
+*** Error 171.35, unexpected mixfix token: und
 *** Error 174.45, unexpected mixfix token: +
-*** Error 174.61, ambiguous mixfix term
-	__(def f (__(s (__(m)))) und eq (__(sup (__(\ n : nat .! f
-							 (s (n + m))))),
-				 __(f (__(sup (__(s)))))))
-	(def__)(__(f (__(s (__(m)))) und eq (__(sup (__(\ n : nat .! f
-							     (s (n + m))))),
-				     __(f (__(sup (__(s))))))))
-	def f (__(s (__(m)))) und eq (__(sup (__(\ n : nat .! f
-						      (s (n + m))))),
-			      __(f (__(sup (__(s))))))
-*** Error 174.62, ambiguous mixfix term
-	__(isChain (__(s)) und ((def__)(__(f (__(sup (__(s))))))) impl ex (__(\ m : nat . def
-										  f (s (m)) und eq
-										  (sup
-										   (\ n : nat .! f
-												 (s
-												  (n
-												   +
-												   m))),
-										   f (sup (s))))))
-	isChain (__(s)) und ((def__)(__(f (__(sup (__(s))))))) impl ex (__(\ m : nat . def
-									       f (s (m)) und eq
-									       (sup
-										(\ n : nat .! f
-											      (s
-											       (n +
-												m))),
-										f (sup (s)))))
-*** Error 174.63, ambiguous mixfix term
-	__(all (__(\ (x : _var_60, y : c) . (def (f x) und x <<= y) impl
-				    def (f y))) und all (__(\ s : nat -> c . (isChain (s) und def f
-									      (sup (s)))
-									     impl ex
-									     (\ m : nat . def f
-											  (s (m))
-											  und eq
-											  (sup
-											   (\ n : nat .! f
-													 (s
-													  (n
-													   +
-													   m))),
-											   f
-											   (sup
-											    (s)))))))
-	all (__(\ (x : _var_60, y : c) . (def (f x) und x <<= y) impl def
-				 (f y))) und all (__(\ s : nat -> c . (isChain (s) und def f
-								       (sup (s)))
-								      impl ex
-								      (\ m : nat . def f (s (m)) und
-										   eq
-										   (sup
-										    (\ n : nat .! f
-												  (s
-												   (n
-												    +
-												    m))),
-										    f (sup (s))))))
-*** Error 170.4, ambiguous mixfix term
-	__(__)
-	__
-*** Hint 170.4, no type match for: __
-  with type: '_var_65 ->? _var_66'
-  known types:
-    
-*** Error 170.4, wrongly typed application '__ __'
-*** Hint 170.20, wrong result type 'Unit'
-  for application '(__=__) (__(__) in c -->? d,
-	 __(\ f : c ->? d . all
-			    (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-			    (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-					      (\ m : nat . def f (s (m)) und eq
-							   (sup (\ n : nat .! f (s (n + m))),
-							    f (sup (s)))))))'
-*** Error 170.20, no typing for '(__=__)(__(__) in c -->? d,
-	__(\ f : c ->? d . all
-			   (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
-			   (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
-					     (\ m : nat . def f (s (m)) und eq
-							  (sup (\ n : nat .! f (s (n + m))),
-							   f (sup (s)))))))'
+*** Error 173.40, unexpected mixfix token: und
+*** Error 172.28, unexpected mixfix token: isChain
+*** Error 171.9, unexpected mixfix token: all
+*** Error 170.7, unexpected mixfix token: :
 *** Error 176.16, unexpected mixfix token: [
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
 
-*** Error 182.53, ambiguous mixfix term
-	__(def f (__(x)))
-	(def__)(__(f (__(x))))
-	def f (__(x))
-*** Error 182.54, ambiguous mixfix term
-	__(all (__(\ x : c . def f (x))))
-	all (__(\ x : c . def f (x)))
-*** Error 182.4, ambiguous mixfix term
-	__(__)
-	__
-*** Hint 182.4, no type match for: __
-  with type: '_var_71 ->? _var_72'
-  known types:
-    
-*** Error 182.4, wrongly typed application '__ __'
-*** Hint 182.18, wrong result type 'Unit'
-  for application '(__=__) (__(__) in c --> d,
-	 __(\ f : c -->? d . all (\ x : c . def f (x))))'
-*** Error 182.18, no typing for '(__=__)(__(__) in c --> d,
-	__(\ f : c -->? d . all (\ x : c . def f (x))))'
-*** Error , undeclared type '_var_73'
-*** Error , undeclared type '_var_74'
+*** Error 182.46, ambiguous mixfix term
+	(def__)(f x)
+	def f x
+*** Error 182.36, unexpected mixfix token: all
+*** Error 182.7, unexpected mixfix token: :
+*** Error , undeclared type '_var_81'
+*** Error , undeclared type '_var_82'
 *** Error 186.25, unexpected mixfix token: [
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-
@@ -601,25 +339,6 @@ tt : forall s : Type .  s ->? Unit %(Op)%
   expected: Cpo-
      found: Type
 
-*** Error 193.46, ambiguous mixfix term
-	__(eq (__(f (__(x))), __(x)) impl Y (__(f)) <<= x)
-	(__<<=__)(__(eq (__(f (__(x))), __(x)) impl Y (__(f))), __(x))
-	eq (__(f (__(x))), __(x)) impl Y (__(f)) <<= x
-	(__<<=__)(__(eq (__(f (__(x))), __(x)) impl Y (__(f))), x)
-*** Error 193.47, ambiguous mixfix term
-	__(eq (__(f (__(Y (__(f))))),
-       __(Y (__(f)))) und all (__(\ x : p . eq (f (x), x) impl Y (f) <<=
-					    x)))
-	eq (__(f (__(Y (__(f))))), __(Y (__(f)))) und all (__(\ x : p . eq
-								(f (x), x) impl Y (f) <<= x))
-*** Error 193.48, ambiguous mixfix term
-	__(all (__(\ f : p -->? p . eq (f (Y (f)), Y (f)) und all
-			    (\ x : p . eq (f (x), x) impl Y (f) <<= x))))
-	all (__(\ f : p -->? p . eq (f (Y (f)), Y (f)) und all
-			 (\ x : p . eq (f (x), x) impl Y (f) <<= x)))
-*** Error 195.45, ambiguous mixfix term
-	__(x)
-	x
-*** Error 195.46, ambiguous mixfix term
-	__(Y (__(\ x : c -->? p .! x)))
-	Y (__(\ x : c -->? p .! x))
+*** Error 193.32, unexpected mixfix token: impl
+*** Error 192.40, unexpected mixfix token: und
+*** Error 192.3, unexpected mixfix token: all
