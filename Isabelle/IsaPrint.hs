@@ -398,7 +398,7 @@ instance PrettyPrint Sign where
           showName (TFree v _) = v
           showName (TVar (v, _) _)  = v
           showName (Type n _ _ _) = n
-          proof = "apply (case_tac a)\napply (auto)\ndone\n"
+          proof = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in
         "lemma" ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
                 ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
