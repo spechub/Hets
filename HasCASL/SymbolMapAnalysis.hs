@@ -21,6 +21,7 @@ module HasCASL.SymbolMapAnalysis
 
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.TypeCheck
 import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.Morphism
@@ -78,11 +79,11 @@ inducedFromMorphism rmap sigma = do
 					  k m)
 	                    Map.empty srcTypeMap
       sigma' = Map.foldWithKey (mapOps myTypeIdMap op_Map) sigma
-				 { typeMap = tarTypeMap, assumps = Map.empty }
+	       { typeMap = addUnit tarTypeMap, assumps = Map.empty }
                               $ assumps sigma
   -- return assembled morphism
   Result (envDiags sigma') $ Just ()
-  return $ (mkMorphism sigma sigma' {envDiags = []}) 
+  return $ (mkMorphism sigma (diffEnv sigma' preEnv))
 	     { typeIdMap = myTypeIdMap
 	     , funMap = op_Map }
 
@@ -124,7 +125,7 @@ mapOpSym :: TypeMap -> IdMap -> Id -> TySc -> RawSymbol
 mapOpSym tm type_Map i ot rsy = let sc1@(TySc sc) = mapTySc type_Map ot in 
       case rsy of
       ASymbol (Symbol id' (OpAsItemType sc2@(TySc ot'))) ->
-        if isUnifiable tm 0 sc ot'
+        if isUnifiable (addUnit tm) 0 sc ot'
            then return (id', sc2)
            else pplain_error (i, sc1)
              (ptext "Operation symbol " <+> printText (idToOpSymbol i sc1) 

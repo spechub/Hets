@@ -16,6 +16,7 @@ import HasCASL.Le
 import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsToLe
+import HasCASL.TypeCheck
 import HasCASL.PrintAs
 import HasCASL.PrintLe
 import HasCASL.Unify
@@ -264,7 +265,8 @@ mergeOpInfos tm c (OpInfos l1) (OpInfos l2) =
 mergeOps :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo]
 mergeOps _ _ [] l = return l
 mergeOps tm c (o:os) l2 = do 
-    let (es, us) = partition (isUnifiable tm c (opType o) . opType) l2
+    let (es, us) = partition (isUnifiable (addUnit tm) c 
+			      (opType o) . opType) l2
     l1 <- mergeOps tm c os us 
     if null es then return (o : l1)
        else do r <- mergeOpInfo tm c o $ head es
