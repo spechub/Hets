@@ -75,8 +75,6 @@ import UnsafeCoerce
 
 -- for Conversion to ATerms 
 import Common.ATerm.Lib -- (ATermConvertible)
-import ATC.Graph -- for Diagram
-import ATC.AS_Annotation -- for Named
 
 -- diagrams are just graphs
 type Diagram object morphism = Graph object morphism
@@ -125,8 +123,14 @@ rcoerce i1 i2 pos a = -- rcoerce1 i1 i2 pos a undefined
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
 
-class (Language lid, Eq sign, Show sign, Eq morphism, Show morphism) => 
-      Category lid sign morphism | lid -> sign, lid -> morphism where
+class (PrintLaTeX a, Typeable a, ATermConvertible a) => PrintTypeConv a
+class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
+
+instance (PrintLaTeX a, Typeable a, ATermConvertible a) => PrintTypeConv a
+instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
+
+class (Language lid, EqPrintTypeConv sign, EqPrintTypeConv morphism)
+    => Category lid sign morphism | lid -> sign, lid -> morphism where
          ide :: lid -> sign -> morphism
          comp :: lid -> morphism -> morphism -> Maybe morphism
            -- diagrammatic order
@@ -136,13 +140,10 @@ class (Language lid, Eq sign, Show sign, Eq morphism, Show morphism) =>
 
 -- abstract syntax, parsing and printing
 
-class (Language lid, PrintLaTeX basic_spec, 
-       PrintLaTeX symb_items, Eq symb_items,
-       PrintLaTeX symb_map_items, Eq symb_map_items ,
-       ATermConvertible basic_spec, 
-       ATermConvertible symb_items, 
-       ATermConvertible symb_map_items ) =>
-      Syntax lid basic_spec symb_items symb_map_items
+class (Language lid, PrintTypeConv basic_spec, 
+       EqPrintTypeConv symb_items, 
+       EqPrintTypeConv symb_map_items) 
+    => Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec, lid -> symb_items,
           lid -> symb_map_items
       where 
@@ -151,26 +152,12 @@ class (Language lid, PrintLaTeX basic_spec,
          parse_symb_items :: lid -> Maybe(AParser symb_items)
          parse_symb_map_items :: lid -> Maybe(AParser symb_map_items)
 
-         fromShATerm_basic_spec :: lid -> ATermTable -> basic_spec
-	 fromShATerm_basic_spec _ att = fromShATerm att
-         fromShATerm_symb_items :: lid -> ATermTable -> symb_items
-         fromShATerm_symb_items _ att = fromShATerm att
-         fromShATerm_symb_map_items :: lid -> ATermTable -> symb_map_items
-         fromShATerm_symb_map_items _ att = fromShATerm att
-	 fromShATerm_symb_items_list :: lid -> ATermTable -> [symb_items]
-         fromShATerm_symb_items_list _ att = fromShATerm att
-         fromShATerm_symb_map_items_list 
-	     :: lid -> ATermTable -> [symb_map_items]
-         fromShATerm_symb_map_items_list _ att = fromShATerm att
-	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Ord sentence,
-       PrettyPrint sentence, PrintLaTeX sign, PrintLaTeX morphism, 
-       Ord symbol, Show symbol, PrintLaTeX symbol,
-       ATermConvertible sentence, ATermConvertible symbol,
-       ATermConvertible sign, ATermConvertible morphism,
-       ATermConvertible proof_tree)
+       Ord symbol, 
+       PrintTypeConv sentence, PrintTypeConv symbol,
+       ATermConvertible proof_tree, Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
           lid -> symbol, lid -> proof_tree
@@ -186,28 +173,12 @@ class (Category lid sign morphism, Ord sentence,
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
-      fromShATerm_sentence :: lid -> ATermTable -> sentence
-      fromShATerm_sentence _ att = fromShATerm att
-      fromShATerm_symbol :: lid -> ATermTable -> symbol
-      fromShATerm_symbol _ att = fromShATerm att
-      fromShATerm_sign :: lid -> ATermTable -> sign
-      fromShATerm_sign _ att = fromShATerm att
-      fromShATerm_sign_list :: lid -> ATermTable -> [sign]
-      fromShATerm_sign_list _ att = fromShATerm att
-      fromShATerm_morphism :: lid -> ATermTable -> morphism
-      fromShATerm_morphism _ att = fromShATerm att
-      fromShATerm_proof_tree :: lid -> ATermTable -> proof_tree
-      fromShATerm_proof_tree _ att = fromShATerm att
-      fromShATerm_l_sentence_list :: lid -> ATermTable -> [Named sentence]
-      fromShATerm_l_sentence_list _ att = fromShATerm att
-      fromShATerm_diagram :: lid -> ATermTable -> Diagram sign morphism
-      fromShATerm_diagram _ att = fromShATerm att
 
 -- static analysis
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
-      , Ord raw_symbol, PrintLaTeX raw_symbol)
+      , Ord raw_symbol, PrintLaTeX raw_symbol, Typeable raw_symbol)
     => StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 
@@ -275,11 +246,8 @@ class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
        LatticeWithTop sublogics, ATermConvertible sublogics,
-       Typeable sublogics, Typeable basic_spec, Typeable sentence, 
-       Typeable symb_items, Typeable symb_map_items, Typeable sign, 
-       Typeable morphism, Typeable symbol, Typeable raw_symbol, 
-       Typeable proof_tree) =>
-      Logic lid sublogics
+       Typeable sublogics) 
+    => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         | lid -> sublogics, lid -> basic_spec, lid -> sentence, 
@@ -336,8 +304,6 @@ class (StaticAnalysis lid
 	 proj_sublogic_epsilon li _ s = ide li s
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 	 proj_sublogic_symbol _ _ _ = Nothing
-         fromShATerm_sublogics :: lid -> ATermTable -> sublogics
-         fromShATerm_sublogics _ att = fromShATerm att
  
 ----------------------------------------------------------------
 -- Existential type covering any logic
