@@ -13,11 +13,9 @@ Morphism on 'Env' (as for CASL)
 module HasCASL.Morphism where
 
 import HasCASL.Le
-import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsToLe
 import HasCASL.TypeCheck
-import HasCASL.PrintAs
 import HasCASL.PrintLe
 import HasCASL.Unify
 import HasCASL.Merge
@@ -27,195 +25,24 @@ import Common.Keywords
 import Common.Result
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Common.Lib.State
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Data.List(partition)
 
--- new type to defined a different Eq and Ord instance
-data TySc = TySc TypeScheme deriving Show
-
-instance Eq TySc where
-    TySc sc1 == TySc sc2 = 
-	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
-	    in maybe False (const True) ms
-
-instance Ord TySc where
--- this does not match with Eq TypeScheme!
-    TySc sc1 <= TySc sc2 = 
-	TySc sc1 == TySc sc2 || 
-	         let (t1, c) = runState (freshInst sc1) 1
-		     t2 = evalState (freshInst sc2) c
-		     v1 = varsOf t1
-		     v2 = varsOf t2
-                 in case compare (Set.size v1) $ Set.size v2 of 
-			LT -> True
-			EQ -> t1 <= subst (Map.fromAscList $
-			    zipWith (\ v (TypeArg i k _ _) ->
-				     (v, TypeName i k 1)) 
-					   (Set.toList v1) $ Set.toList v2) t2
-			GT -> False 		   
-
-data SymbolType = OpAsItemType TySc
-		| TypeAsItemType Kind
-		| ClassAsItemType Kind
-		  deriving (Show, Eq, Ord)
-
-instance PrettyPrint SymbolType where
-    printText0 ga t = case t of 
-      OpAsItemType (TySc sc) -> printText0 ga sc
-      TypeAsItemType k -> printText0 ga k
-      ClassAsItemType k -> printText0 ga k
-
-data Symbol = Symbol {symName :: Id, symbType :: SymbolType} 
-	      deriving (Show, Eq, Ord)
-
-data RawSymbol = ASymbol Symbol | AnID Id | AKindedId SymbKind Id
-    	         deriving (Show, Eq, Ord)
-
-type SymbolMap = Map.Map Symbol Symbol 
-type RawSymbolMap = Map.Map RawSymbol RawSymbol
-type SymbolSet = Set.Set Symbol 
-
-idToTypeSymbol :: Id -> Kind -> Symbol
-idToTypeSymbol idt k = Symbol idt $ TypeAsItemType k
-
-idToClassSymbol :: Id -> Kind -> Symbol
-idToClassSymbol idt k = Symbol idt $ ClassAsItemType k
-
-idToOpSymbol :: Id -> TySc -> Symbol
-idToOpSymbol idt typ = Symbol idt $ OpAsItemType typ
-
-idToRaw :: Id -> RawSymbol
-idToRaw x = AnID x
-
-rawSymName :: RawSymbol -> Id
-rawSymName (ASymbol sym) = symName sym
-rawSymName (AnID i) = i
-rawSymName (AKindedId _ i) = i
-
-symbTypeToKind :: SymbolType -> SymbKind
-symbTypeToKind (OpAsItemType _)    = SK_op
-symbTypeToKind (TypeAsItemType _)  = SK_type
-symbTypeToKind (ClassAsItemType _) = SK_class
-
-symbolToRaw :: Symbol -> RawSymbol
-symbolToRaw sym = ASymbol sym
-
-symOf :: Env -> SymbolSet
-symOf sigma = 
-    let classes = Map.foldWithKey ( \ i ks s -> 
-			Set.insert (Symbol i $ ClassAsItemType $
-				    Intersection (classKinds ks) []) s) 
-		  Set.empty $ classMap sigma
-	types = Map.foldWithKey ( \ i ti s -> 
-			Set.insert (Symbol i $ TypeAsItemType $
-				    typeKind ti) s) 
-		classes $ typeMap sigma
-        ops = Map.foldWithKey ( \ i ts s0 ->
-		      foldr ( \ t s1 -> 
-			  Set.insert (Symbol i $ OpAsItemType $ TySc $
-				      opType t) s1) s0 $ opInfos ts)
-	      types $ assumps sigma
-	in ops
-
-statSymbMapItems :: [SymbMapItems] -> Result RawSymbolMap
-statSymbMapItems sl = do 
-    rs <- mapM ( \ (SymbMapItems kind l _ _)
-		 -> mapM (symbOrMapToRaw kind) l) sl
-    foldr ( \ (r1, r2) mm -> do
-	    m <- mm
-	    if Map.member r1 m then do 
-	        Result [Diag Error ("duplicate mapping for: " ++ 
-			  showPretty r1 "\n ignoring: " ++ showPretty r2 "")
-		       $ posOfId $ rawSymName r2] $ Just ()
-	        return m
-	      else return $ Map.insert r1 r2 m) 
-	  (return Map.empty) $ concat rs
- 
-symbOrMapToRaw :: SymbKind -> SymbOrMap -> Result (RawSymbol, RawSymbol)
-symbOrMapToRaw k (SymbOrMap s mt _) = do
-    s1 <- symbToRaw k s  
-    s2 <- symbToRaw k $ case mt of Nothing -> s
-				   Just t -> t
-    return (s1, s2)
-
-statSymbItems :: [SymbItems] -> Result [RawSymbol]
-statSymbItems sl = do rs <- mapM (\ (SymbItems kind l _ _) 
-				  -> mapM (symbToRaw kind) l) sl
-		      return $ concat rs
-
-symbToRaw :: SymbKind -> Symb -> Result RawSymbol
-symbToRaw k (Symb idt mt _)     = case mt of 
-    Nothing -> return $ symbKindToRaw k idt
-    Just (SymbType sc@(TypeScheme vs (_ :=> t) _)) -> 
-	let r = return $ ASymbol $ idToOpSymbol idt (TySc sc)
-	    rk = if null vs then Nothing else 
-		 convertTypeToKind t 
-	    rrk = maybeToResult (getMyPos t) 
-	                   ("not a kind: " ++ showPretty t "") rk
-	in case k of 
-	      SK_op -> r
-	      SK_fun -> r
-	      SK_pred -> return $ ASymbol $ idToOpSymbol idt $ 
-			 TySc $ predTypeScheme sc
-	      SK_class -> do ck <- rrk
-			     return $ ASymbol $ idToClassSymbol idt ck
-	      _ -> do ck <- rrk
-		      return $ ASymbol $ idToTypeSymbol idt ck
-
-convertTypeToKind :: Type -> Maybe Kind
-convertTypeToKind (FunType t1 FunArr t2 ps) = 
-    do k1 <- convertTypeToKind t1
-       k2 <- convertTypeToKind t2
-       case k2 of 
-	       ExtKind _ _ _ -> Nothing
-	       _ -> Just $ FunKind k1 k2 ps
-
-convertTypeToKind (BracketType Parens [] _) = 
-    Nothing
-convertTypeToKind (BracketType Parens [t] _) = 
-    convertTypeToKind t
-convertTypeToKind (BracketType Parens ts ps) = 
-       do ks <- mapM convertTypeToKind ts
-	  Just $ Intersection ks ps
-
-convertTypeToKind (MixfixType [t1, TypeToken t]) = 
-    let s = tokStr t 
-	v = case s of 
-		   "+" -> CoVar 
-		   "-" -> ContraVar 
-		   _ -> InVar
-    in case v of 
-	      InVar -> Nothing
-	      _ -> do k1 <- convertTypeToKind t1
-		      Just $ ExtKind k1 v [tokPos t]
-convertTypeToKind(TypeToken t) = 
-       if tokStr t == "Type" then Just $ Universe [tokPos t] else
-          let ci = simpleIdToId t in
-          Just $ ClassKind ci MissingKind
-convertTypeToKind _ = Nothing
-
-symbKindToRaw :: SymbKind -> Id -> RawSymbol
-symbKindToRaw Implicit = AnID 
-symbKindToRaw sk = AKindedId $ case sk of 
-		   SK_pred -> SK_op
-		   SK_fun -> SK_op
-		   SK_sort -> SK_type
-		   _ -> sk
-
-matchSymb :: Symbol -> RawSymbol -> Bool
-matchSymb x                               (ASymbol y)            =  x==y
-matchSymb (Symbol idt _)                  (AnID di)              = idt==di
-matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_op di)   = idt==di
-matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_fun di)  = idt==di
-matchSymb (Symbol idt (OpAsItemType _))   (AKindedId SK_pred di) = idt==di
-matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_type di) = idt==di
-matchSymb (Symbol idt (TypeAsItemType _)) (AKindedId SK_sort di) = idt==di
-matchSymb (Symbol idt (ClassAsItemType _))(AKindedId SK_class di)= idt==di
-matchSymb _                               _                      = False
-
 type IdMap = Map.Map Id Id
+
+type FunMap = Map.Map (Id, TySc) (Id, TySc)
+
+data Morphism = Morphism { msource :: Env
+			 , mtarget :: Env
+			 , classIdMap :: IdMap  -- ignore
+			 , typeIdMap :: IdMap 
+                         , funMap :: FunMap } 
+                         deriving (Eq, Show)
+
+instance PrettyPrint Morphism where
+  printText0 ga m = braces (printText0 ga (msource m)) 
+		    $$ text mapsTo
+		    <+> braces (printText0 ga (mtarget m))
 
 mapType :: IdMap -> Type -> Type
 -- include classIdMap later
@@ -238,20 +65,6 @@ mapType m t = case t of
 	   ProductType l ps -> ProductType (map (mapType m) l) ps
            FunType t1 a t2 ps -> FunType (mapType m t1) a (mapType m t2) ps
 
--- | type ids within a type
-subSyms :: Type -> SymbolSet
-subSyms t = case t of
-	   TypeName i k n ->
-	       if n == 0 then Set.single $ idToTypeSymbol i k
-	       else Set.empty
-	   TypeAppl t1 t2 -> Set.union (subSyms t1) (subSyms t2)
-	   TypeToken _ -> Set.empty
-	   BracketType _ l _ -> Set.unions $ map subSyms l
-	   KindedType tk _ _ -> subSyms tk
-	   MixfixType l -> Set.unions $ map subSyms l
-	   LazyType tl _ -> subSyms tl
-	   ProductType l _ -> Set.unions $ map subSyms l
-           FunType t1 _ t2 _ -> Set.union (subSyms t1) (subSyms t2)
 
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 -- rename clashing type arguments later
@@ -261,8 +74,6 @@ mapTypeScheme m (TypeScheme args (q :=> t) ps) =
 mapTySc :: IdMap -> TySc -> TySc
 mapTySc m (TySc s1) = TySc (mapTypeScheme m s1)
 
-
-type FunMap = Map.Map (Id, TySc) (Id, TySc)
 
 mapFunSym :: IdMap -> FunMap -> (Id, TySc) -> Maybe (Id, TySc)
 mapFunSym tm fm (i, sc) = do
@@ -298,13 +109,6 @@ mergeEnv e1 e2 =
 	   return initialEnv { classMap = cMap
 			     , typeMap = tMap
 			     , assumps = as }
-
-data Morphism = Morphism { msource :: Env
-			 , mtarget :: Env
-			 , classIdMap :: IdMap  -- ignore
-			 , typeIdMap :: IdMap 
-                         , funMap :: FunMap } 
-                         deriving (Eq, Show)
 
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
@@ -360,7 +164,7 @@ symbMapToMorphism sigma1 sigma2 smap = do
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map sort "++showId i "")
              $ Map.lookup (Symbol { symName = i
-				  , symbType = TypeAsItemType 
+				  , symType = TypeAsItemType 
 				               $ typeKind k}) smap
     return (Map.insert i (symName sym) m1)
   myAsMap i (OpInfos ots) m = foldr (insFun i) m ots
@@ -370,8 +174,8 @@ symbMapToMorphism sigma1 sigma2 smap = do
     sym <- maybeToResult nullPos 
              ("symbMapToMorphism - Could not map op "++showId i "")
              $ Map.lookup (Symbol { symName = i
-				  , symbType = OpAsItemType osc}) smap
-    k <- case symbType sym of
+				  , symType = OpAsItemType osc}) smap
+    k <- case symType sym of
         OpAsItemType sc -> return sc
         _ -> plain_error osc
               ("symbMapToMorphism - Wrong result symbol type for op"
@@ -448,29 +252,3 @@ morphismToSymbMap mor =
              Map.insert (idToOpSymbol id1 t1) 
                         (idToOpSymbol id2 t2) m)
          typeSymMap $ funMap mor 
-
-instance PrettyPrint Morphism where
-  printText0 ga m = braces (printText0 ga (msource m)) 
-		    $$ text mapsTo
-		    <+> braces (printText0 ga (mtarget m))
-
-instance PrettyPrint Symbol where
-  printText0 ga s = text (case symbType s of 
-			  OpAsItemType _ -> opS
-			  TypeAsItemType _ -> typeS
-			  ClassAsItemType _ -> classS) <+> 
-                    printText0 ga (symName s) <+> text colonS <+> 
-		    printText0 ga (symbType s)
-
-instance PrettyPrint RawSymbol where
-  printText0 ga rs = case rs of
-      ASymbol s -> printText0 ga s
-      AnID i -> printText0 ga i
-      AKindedId k i -> text (case k of 
-           SK_type -> typeS
-           SK_sort -> sortS			     
-           SK_op -> opS 
-	   SK_fun -> funS
-	   SK_pred -> predS
-           SK_class -> classS
-	   Implicit -> "") <+> printText0 ga i

@@ -15,6 +15,8 @@ module HasCASL.LaTeX_HasCASL where
 import HasCASL.As
 import HasCASL.PrintAs
 import HasCASL.Le
+import HasCASL.RawSym
+import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.PrintLe
 import HasCASL.Morphism
@@ -40,7 +42,3 @@ instance PrintLaTeX SymbItems where
 
 instance PrintLaTeX SymbMapItems where
     printLatex0 = printText0
-
-
-
-	

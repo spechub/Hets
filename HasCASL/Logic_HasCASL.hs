@@ -9,7 +9,7 @@ Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
    Here is the place where the class Logic is instantiated for HasCASL.
-   Also the instances for Syntax an Category.
+   Also the instances for Syntax and Category.
 
    todo:
      - writing real functions
@@ -21,19 +21,13 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.AsToLe
+import HasCASL.RawSym
+import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.ParseItem
-import HasCASL.TypeCheck
-import Common.Result
-import Logic.ParsecInterface
 import Logic.Logic
-import Common.AnnoState(emptyAnnos)
 import Data.Dynamic
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import Common.Lib.State
 import HasCASL.Morphism
-import Common.PrettyPrint
 import HasCASL.ATC_HasCASL
 import HasCASL.LaTeX_HasCASL
 import HasCASL.SymbolMapAnalysis
@@ -79,10 +73,9 @@ instance Typeable Morphism where
 instance Syntax HasCASL BasicSpec
 		SymbItems SymbMapItems
       where 
-         parse_basic_spec HasCASL = Just(toParseFun basicSpec emptyAnnos)
-	 parse_symb_items HasCASL = Just(toParseFun symbItems emptyAnnos)
-	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems 
-					     emptyAnnos)
+         parse_basic_spec HasCASL = Just basicSpec
+	 parse_symb_items HasCASL = Just symbItems
+	 parse_symb_map_items HasCASL = Just symbMapItems
 
 instance Category HasCASL Env Morphism where 
     ide HasCASL e = ideMor e

@@ -8,167 +8,150 @@ Stability   :  experimental
 Portability :  portable
 
    
-   HasCASL symbols for structured specs 
+   HasCASL analysed symbols of a signature
 -}
 
 module HasCASL.Symbol where
 
+import HasCASL.Le
+import HasCASL.HToken
+import HasCASL.As
+import HasCASL.Unify
+import HasCASL.Merge
 import Common.Id
 import Common.Keywords
-import Common.Lexer
-import Common.AS_Annotation
-import Common.AnnoState
-import Common.Lib.Parsec
-
-import HasCASL.HToken
-import HasCASL.ParseTerm
-import HasCASL.As
-import HasCASL.PrintAs
-
+import Common.Result
 import Common.PrettyPrint
-import Common.Lib.Pretty as PP
-import Common.PPUtils
+import Common.Lib.Pretty
+import Common.Lib.State
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
+-- new type to defined a different Eq and Ord instance
+data TySc = TySc TypeScheme deriving Show
 
--- * symbol data types
--- | symbols 
-data SymbItems = SymbItems SymbKind [Symb] [Annotation] [Pos] 
-		  -- pos: kind, commas
-		  deriving (Show, Eq)
+instance Eq TySc where
+    TySc sc1 == TySc sc2 = 
+	let Result _ ms = mergeScheme Map.empty 0 sc1 sc2 
+	    in maybe False (const True) ms
 
--- | mapped symbols 
-data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] [Pos]
-		      -- pos: kind commas
-		      deriving (Show, Eq)
+instance Ord TySc where
+-- this does not match with Eq TypeScheme!
+    TySc sc1 <= TySc sc2 = 
+	TySc sc1 == TySc sc2 || 
+	         let (t1, c) = runState (freshInst sc1) 1
+		     t2 = evalState (freshInst sc2) c
+		     v1 = varsOf t1
+		     v2 = varsOf t2
+                 in case compare (Set.size v1) $ Set.size v2 of 
+			LT -> True
+			EQ -> t1 <= subst (Map.fromAscList $
+			    zipWith (\ v (TypeArg i k _ _) ->
+				     (v, TypeName i k 1)) 
+					   (Set.toList v1) $ Set.toList v2) t2
+			GT -> False 		   
 
--- | kind of symbols
-data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred 
-	      | SK_class
-		 deriving (Show, Eq, Ord)
+data SymbolType = OpAsItemType TySc
+		| TypeAsItemType Kind
+		| ClassAsItemType Kind
+		  deriving (Show, Eq, Ord)
 
--- | type annotated symbols
-data Symb = Symb Id (Maybe SymbType) [Pos] 
-	    -- pos: colon (or empty)
-	    deriving (Show, Eq)
+instance PrettyPrint SymbolType where
+    printText0 ga t = case t of 
+      OpAsItemType (TySc sc) -> printText0 ga sc
+      TypeAsItemType k -> printText0 ga k
+      ClassAsItemType k -> printText0 ga k
 
--- | type for symbols
-data SymbType = SymbType TypeScheme
-	    deriving (Show, Eq)
+data Symbol = Symbol {symName :: Id, symType :: SymbolType} 
+	      deriving (Show, Eq, Ord)
 
--- | mapped symbol
-data SymbOrMap = SymbOrMap Symb (Maybe Symb) [Pos]
-		   -- pos: "|->" (or empty)
-		   deriving (Show, Eq)
+instance PrettyPrint Symbol where
+  printText0 ga s = text (case symType s of 
+			  OpAsItemType _ -> opS
+			  TypeAsItemType _ -> typeS
+			  ClassAsItemType _ -> classS) <+> 
+                    printText0 ga (symName s) <+> text colonS <+> 
+		    printText0 ga (symType s)
 
+type SymbolMap = Map.Map Symbol Symbol 
+type SymbolSet = Set.Set Symbol 
 
--- * parsers for symbols
--- | parse a (typed) symbol 
-symb :: AParser Symb
-symb = do i <- uninstOpId
-	  do c <- colT 
-	     t <- typeScheme
-	     return (Symb i (Just $ SymbType t) [tokPos c])
-	    <|> 
-            do c <- qColonT 
-	       t <- parseType 
-	       return (Symb i (Just $ SymbType $ simpleTypeScheme $ 
-				  LazyType t [tokPos c]) [tokPos c])
-             <|> return (Symb i Nothing [])
-	       
--- | parse a mapped symbol
-symbMap :: AParser SymbOrMap
-symbMap =   do s <- symb
-	       do   f <- asKey mapsTo
-		    t <- symb
-		    return (SymbOrMap s (Just t) [tokPos f])
-		  <|> return (SymbOrMap s Nothing [])
+idToTypeSymbol :: Id -> Kind -> Symbol
+idToTypeSymbol idt k = Symbol idt $ TypeAsItemType k
 
--- | parse kind of symbols
-symbKind :: AParser (SymbKind, Token)
-symbKind = try(
-        do q <- pluralKeyword opS 
-	   return (SK_op, q)
-        <|>
-        do q <- pluralKeyword functS 
-	   return (SK_fun, q)
-        <|>
-        do q <- pluralKeyword predS 
-	   return (SK_pred, q)
-        <|>
-        do q <- pluralKeyword typeS 
-	   return (SK_type, q)
-        <|>
-        do q <- pluralKeyword sortS 
-	   return (SK_sort, q)
-        <|>
-        do q <- asKey (classS ++ "es") <|> asKey classS
-	   return (SK_class, q))
-	<?> "kind"
+idToClassSymbol :: Id -> Kind -> Symbol
+idToClassSymbol idt k = Symbol idt $ ClassAsItemType k
 
--- | parse symbol items
-symbItems :: AParser SymbItems
-symbItems = do s <- symb
-	       return (SymbItems Implicit [s] [] [])
-	    <|> 
-	    do (k, p) <- symbKind
-               (is, ps) <- symbs
-	       return (SymbItems k is [] (map tokPos (p:ps)))
+idToOpSymbol :: Id -> TySc -> Symbol
+idToOpSymbol idt typ = Symbol idt $ OpAsItemType typ
 
-symbs :: AParser ([Symb], [Token])
-symbs = do s <- symb 
-	   do   c <- anComma `followedWith` symb
-	        (is, ps) <- symbs
-		return (s:is, c:ps)
-	     <|> return ([s], [])
+checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
+checkSymbols s1 s2 r = 
+    let s = s1 Set.\\ s2 in
+    if Set.isEmpty s then r else
+       pfatal_error 
+       (ptext "unknown symbols: " 
+          <+> printText s) $ posOfId $ symName $ Set.findMin s
 
--- | parse symbol mappings
-symbMapItems :: AParser SymbMapItems
-symbMapItems = 
-            do s <- symbMap
-	       return (SymbMapItems Implicit [s] [] [])
-	    <|> 
-	    do (k, p) <- symbKind
-               (is, ps) <- symbMaps
-	       return (SymbMapItems k is [] (map tokPos (p:ps)))
+hideSymbol :: Symbol -> Env -> Env
+hideSymbol sym sig = 
+    let i = symName sym
+	tm = typeMap sig
+	as = assumps sig in
+    case symType sym of 
+    ClassAsItemType _ -> sig
+    TypeAsItemType _ -> sig { typeMap = 
+			      Map.delete i tm }
+    OpAsItemType (TySc ot) -> 
+	let OpInfos os = Map.findWithDefault (OpInfos []) i as
+	    rs = filter (not . isUnifiable tm 0 ot . opType) os
+        in sig { assumps = if null rs then Map.delete i as
+		          else Map.insert i (OpInfos rs) as }
 
-symbMaps :: AParser ([SymbOrMap], [Token])
-symbMaps = 
-        do s <- symbMap 
-	   do   c <- anComma `followedWith` symb
-	        (is, ps) <- symbMaps
-		return (s:is, c:ps)
-	     <|> return ([s], [])
+plainHide :: SymbolSet -> Env -> Env
+plainHide syms sigma = 
+    let (opSyms, otherSyms) = Set.partition (\ sy -> case symType sy of
+					      OpAsItemType _ -> True
+					      _ -> False) syms
+    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms 
 
--- pretty printing
+-- | type ids within a type
+subSyms :: Type -> SymbolSet
+subSyms t = case t of
+	   TypeName i k n ->
+	       if n == 0 then Set.single $ idToTypeSymbol i k
+	       else Set.empty
+	   TypeAppl t1 t2 -> Set.union (subSyms t1) (subSyms t2)
+	   TypeToken _ -> Set.empty
+	   BracketType _ l _ -> Set.unions $ map subSyms l
+	   KindedType tk _ _ -> subSyms tk
+	   MixfixType l -> Set.unions $ map subSyms l
+	   LazyType tl _ -> subSyms tl
+	   ProductType l _ -> Set.unions $ map subSyms l
+           FunType t1 _ t2 _ -> Set.union (subSyms t1) (subSyms t2)
 
--- | print symbol kind
-printSK :: SymbKind -> Doc
-printSK k = 
-    case k of Implicit -> empty
-	      _ -> ptext (drop 3 $ show k) <> PP.space 
+subSymsOf :: Symbol -> SymbolSet
+subSymsOf sy = case symType sy of
+     OpAsItemType (TySc (TypeScheme _ (_ :=> ty) _)) -> subSyms ty
+     _ -> Set.empty
 
-instance PrettyPrint Symb where
-    printText0 ga (Symb i mt _) =
-	printText0 ga i <> (case mt of Nothing -> empty
-			               Just (SymbType t) -> 
-					  empty <+> colon <+>
-					    printText0 ga t)
+closeSymbSet :: SymbolSet -> SymbolSet
+closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 
 
-instance PrettyPrint SymbItems where
-    printText0 ga (SymbItems k syms _ _) =
-	printSK k <> commaT_text ga syms
+symOf :: Env -> SymbolSet
+symOf sigma = 
+    let classes = Map.foldWithKey ( \ i ks s -> 
+			Set.insert (Symbol i $ ClassAsItemType $
+				    Intersection (classKinds ks) []) s) 
+		  Set.empty $ classMap sigma
+	types = Map.foldWithKey ( \ i ti s -> 
+			Set.insert (Symbol i $ TypeAsItemType $
+				    typeKind ti) s) 
+		classes $ typeMap sigma
+        ops = Map.foldWithKey ( \ i ts s0 ->
+		      foldr ( \ t s1 -> 
+			  Set.insert (Symbol i $ OpAsItemType $ TySc $
+				      opType t) s1) s0 $ opInfos ts)
+	      types $ assumps sigma
+	in ops
 
-instance PrettyPrint SymbOrMap where
-    printText0 ga (SymbOrMap s mt _) =
-	printText0 ga s <> (case mt of Nothing -> empty
-			               Just t -> 
-					  empty <+> ptext mapsTo <+>
-					    printText0 ga t)
-
-instance PrettyPrint SymbMapItems where
-    printText0 ga (SymbMapItems k syms _ _) =
-	printSK k <> commaT_text ga syms
-
-
-
-	

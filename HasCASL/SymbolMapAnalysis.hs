@@ -8,8 +8,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
     
-The symbol map analysis for the HasCASL logic
-(adapted from CASL version r1.8 of 24.1.2004)
+symbol map analysis for the HasCASL logic
 
 -}
 module HasCASL.SymbolMapAnalysis
@@ -23,7 +22,9 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.TypeCheck
 import HasCASL.AsToLe
+import HasCASL.SymbItem
 import HasCASL.Symbol
+import HasCASL.RawSym
 import HasCASL.Morphism
 import HasCASL.ClassAna
 import HasCASL.Unify
@@ -201,14 +202,14 @@ testMatch rmap sym1 sym2 =
   match1 rsy1 rsy2 b = b && ((sym1 `matchSymb` rsy1) <= (sym2 `matchSymb`rsy2))
 
 canBeMapped :: RawSymbolMap -> Symbol -> Symbol -> Bool
-canBeMapped rmap sym1@(Symbol {symbType = ClassAsItemType _k1}) 
-                 sym2@(Symbol {symbType = ClassAsItemType _k2}) = 
+canBeMapped rmap sym1@(Symbol {symType = ClassAsItemType _k1}) 
+                 sym2@(Symbol {symType = ClassAsItemType _k2}) = 
    testMatch rmap sym1 sym2
-canBeMapped rmap sym1@(Symbol {symbType = TypeAsItemType _k1}) 
-                 sym2@(Symbol {symbType = TypeAsItemType _k2}) = 
+canBeMapped rmap sym1@(Symbol {symType = TypeAsItemType _k1}) 
+                 sym2@(Symbol {symType = TypeAsItemType _k2}) = 
    testMatch rmap sym1 sym2
-canBeMapped rmap sym1@(Symbol {symbType = OpAsItemType _ot1}) 
-                 sym2@(Symbol {symbType = OpAsItemType _ot2}) = 
+canBeMapped rmap sym1@(Symbol {symType = OpAsItemType _ot1}) 
+                 sym2@(Symbol {symType = OpAsItemType _ot2}) = 
    testMatch rmap sym1 sym2
 canBeMapped _ _ _ = False
 
@@ -219,7 +220,7 @@ preservesName sym1 sym2 = symName sym1 == symName sym2
 -- try to extend a symbol map with a yet unmapped symbol
 extendSymbMap :: TypeMap -> SymbolMap -> Symbol -> Symbol -> Maybe SymbolMap
 extendSymbMap tm akmap sym1 sym2 =
-  if case (symbType sym1, symbType sym2) of 
+  if case (symType sym1, symType sym2) of 
     (ClassAsItemType k1, ClassAsItemType k2) -> rawKind k1 == rawKind k2
     (TypeAsItemType k1, TypeAsItemType k2) ->  rawKind k1 == rawKind k2
     (OpAsItemType sc1@(TySc _), OpAsItemType (TySc ot2)) ->
@@ -374,44 +375,6 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
               ptext "Map1" <+> printText smap1 $$
               ptext "Map2" <+> printText smap2) 
             ""
-
-checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
-checkSymbols s1 s2 r = 
-    let s = s1 Set.\\ s2 in
-    if Set.isEmpty s then r else
-       pfatal_error 
-       (ptext "unknown symbols: " 
-          <+> printText s) $ posOfId $ symName $ Set.findMin s
-
-hideSymbol :: Symbol -> Env -> Env
-hideSymbol sym sig = 
-    let i = symName sym
-	tm = typeMap sig
-	as = assumps sig in
-    case symbType sym of 
-    ClassAsItemType _ -> sig
-    TypeAsItemType _ -> sig { typeMap = 
-			      Map.delete i tm }
-    OpAsItemType (TySc ot) -> 
-	let OpInfos os = Map.findWithDefault (OpInfos []) i as
-	    rs = filter (not . isUnifiable tm 0 ot . opType) os
-        in sig { assumps = if null rs then Map.delete i as
-		          else Map.insert i (OpInfos rs) as }
-
-plainHide :: SymbolSet -> Env -> Env
-plainHide syms sigma = 
-    let (opSyms, otherSyms) = Set.partition (\ sy -> case symbType sy of
-					      OpAsItemType _ -> True
-					      _ -> False) syms
-    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms 
-
-subSymsOf :: Symbol -> SymbolSet
-subSymsOf sy = case symbType sy of
-     OpAsItemType (TySc (TypeScheme _ (_ :=> ty) _)) -> subSyms ty
-     _ -> Set.empty
-
-closeSymbSet :: SymbolSet -> SymbolSet
-closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s)) 
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
