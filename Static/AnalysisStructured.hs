@@ -481,7 +481,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
 
   Spec_inst spname afitargs poss -> do
-   let pos = headPos poss
+   let pos = if null poss then tokPos spname else head poss
        adj = adjustPos pos
    case Map.lookup spname genv of
     Nothing -> plain_error (sp,nsig,dg) 
