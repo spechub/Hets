@@ -49,6 +49,7 @@ import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library 
 
+
 {- proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
    Ri is a list of rules that transforms DGi-1 to DGi
@@ -223,8 +224,9 @@ globSubsumeAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
-    proofBasis = selectProofBasis edgeLab allPaths
-    (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    filteredPaths = [path| path <- allPaths, notElem ledge path]
+    proofBasis = selectProofBasis edgeLab filteredPaths
+    (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
@@ -273,8 +275,8 @@ locDecompAux dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt 
---	getAllProvenLocGlobPathsOfMorphismBetween dgraph morphism source target
-    proofBasis = selectProofBasis edgeLab allPaths
+    filteredPaths = [path|path <- allPaths, notElem ledge path]
+    proofBasis = selectProofBasis edgeLab filteredPaths
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
