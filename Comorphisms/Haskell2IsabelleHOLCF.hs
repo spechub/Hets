@@ -29,6 +29,7 @@ Portability :  non-portable (imports Logic.Logic)
 
 module Comorphisms.Haskell2IsabelleHOLCF where
 
+--import Common.Lib.Parsec.Char as Char
 import Logic.Logic
 -- import Logic.Comorphism
 -- import Common.Id
@@ -77,19 +78,19 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
                          has_pred = True,  -- predicates
                          has_ho = True,  -- higher order
                          has_type_classes = False,
-                         has_polymorphism = False,
-                         has_type_constructors = False,
-                         which_logic = HOL
+                         has_polymorphism = False
+                         has_type_constructors = False,  which_logic = HOL
                        }
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_sign _ = transSignature
+
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
             Just $ Sentence {senTerm = (transSentence sign phi)}
     --map_symbol :: cid -> symbol1 -> Set symbol2
--}
 
+-}
 ---------------------------- Signature -----------------------------
 
 -- The args of Sign can be accessed by selector functions,
@@ -131,12 +132,20 @@ fm2map :: Ord k => FiniteMaps.FiniteMap k a -> Map.Map k a
 fm2map f = Map.fromList $ FiniteMaps.toListFM f
 -- maybe better using envToList instead of fmToList, see Env.hs
 
-type NewNames = [String]
+mychr :: Int -> Char
+mychr n = 'n'
 
-transSignature :: NewNames -> MMB.ModuleInfo
+transSignature :: MMB.ModuleInfo
                    -> Result.Result(IsaSign.Sign,[Named IsaSign.Sentence]) 
 
-transSignature ns sign = let datatypeList = transDatatype ns (tyconsMembers sign) (FiniteMaps.toListFM $ dconsAssumps sign) in 
+transSignature sign = transSignature1 ["var"++ [mychr n] | n <- [1 ..] ] sign
+
+type NewNames = [String]
+
+transSignature1 :: NewNames -> MMB.ModuleInfo
+                   -> Result.Result(IsaSign.Sign,[Named IsaSign.Sentence]) 
+
+transSignature1 ns sign = let datatypeList = transDatatype ns (tyconsMembers sign) (FiniteMaps.toListFM $ dconsAssumps sign) in 
  Result.Result 
   [] 
   (Just ( IsaSign.Sign{
@@ -146,8 +155,8 @@ transSignature ns sign = let datatypeList = transDatatype ns (tyconsMembers sign
                                       Map.empty 
                                       (fm2map $ kinds sign)},
     constTab = Map.fromList $ extractConsts datatypeList,
-    dataTypeTab = inDearrowize datatypeList, 
-    domainTab = [],
+    dataTypeTab = [], 
+    domainTab = inDearrowize datatypeList,
     showLemmas = False,
     syn = () },
     [] ))                                 -- for now, no sentences
