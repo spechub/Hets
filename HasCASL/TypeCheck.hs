@@ -15,6 +15,7 @@ type inference
 module HasCASL.TypeCheck where
 
 import HasCASL.Unify 
+import HasCASL.Merge
 import HasCASL.VarDecl
 import HasCASL.As
 import HasCASL.Le
@@ -91,23 +92,16 @@ checkPattern ga pat = do
 		  (np, _) <- extractBindings p 
 		  typeCheck inferPat Nothing np
 
-mUnifySc :: Maybe Type -> OpInfo
-	 -> State Env (Maybe (Subst, Type, OpInfo))
-mUnifySc mt oi = do
-     tm <- gets typeMap
+instantiate :: OpInfo -> State Env (Type, OpInfo)
+instantiate oi = do
      ty <- toEnvState $ freshInst $ opType oi
-     let Result ds ms = mUnify tm mt ty
-     addDiags ds		 
-     case ms of Nothing -> return Nothing
-		Just s -> return $ Just (s, subst s ty, oi)
+     return (ty, oi)
 
-lookupError :: Maybe Type -> [OpInfo] -> String
-lookupError mt ois = 
-    (case mt of 
-     Nothing -> ""
-     Just ty -> "with type: " ++  showPretty ty "\n")
-    ++ "known types:\n  " ++
-       showSepList (showString "\n  ") (showPretty . opType) ois "" 
+lookupError :: Type -> [OpInfo] -> String
+lookupError ty ois = 
+    "  with type: " ++  showPrettyWithPos ty "\n"
+    ++ "  known types:\n    " ++
+       showSepList ("\n    "++) (showPrettyWithPos . opType) ois "" 
 
 checkList :: (Maybe Type -> a -> State Env [(Subst, Type, a)])
 	  -> [Maybe Type] -> [a] -> State Env [(Subst, [Type], [a])]
@@ -134,9 +128,10 @@ typeCheck inf mt trm =
 	       let (_,_,t) = head alts in
 		   return $ Just t
 	  else do addDiags [Diag Error 
-			 ("ambiguous typings \n\t" ++
-			  showSepList (showString "\n\t") 
-			  showPretty (take 5 $ map ( \ (_,_,t) -> t) alts) "")
+			 ("ambiguous typings \n  " ++
+			  showSepList ("\n  "++) 
+			  showPrettyWithPos 
+			  (take 5 $ map ( \ (_,_,t) -> t) alts) "")
 			    $ getMyPos trm]
 	          return Nothing
 
@@ -164,46 +159,59 @@ inferAppl inf appl mt t1 t2 = do
 			  (s, subst s rty, 
 			   appl tf ta)) args) ops
 	    let res = concat combs 
+		origAppl = appl t1 t2
 	    if null res then 
-	       do addDiags [mkDiag (case mt of Nothing -> Error
-				               _ -> Hint)
-			    "wrongly typed application" 
-			    (appl t1 t2)]
-		  return res
-	       else  return res
+	       addDiags [case mt of 
+		       Nothing -> mkDiag Error
+				  "wrongly typed application" origAppl
+		       Just ty -> mkDiag Hint 
+			    ("wrong result type "
+			    ++ showPrettyWithPos ty "\n  for application")
+		            origAppl]
+	       else return ()
+	    return res
 
 infer :: Maybe Type -> Term -> State Env [(Subst, Type, Term)]
 infer mt trm = do
     tm <- gets typeMap
+    let mUnify = unify tm mt . Just
+	uniDiags = addDiags . map (improveDiag trm)
     as <- gets assumps
     case trm of 
         QualVar v t ps -> do 
-	    let Result ds ms = mUnify tm mt t
-	    addDiags ds 
+	    let Result ds ms = mUnify t
+	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
 		Just s -> let ty = (subst s t) in 
 			      return [(s, ty, QualVar v ty ps)] 
 	QualOp b io sc ps -> do
 	    ty <- toEnvState $ freshInst sc
-	    let Result ds ms = mUnify tm mt ty
-	    addDiags ds 
+	    let Result ds ms = mUnify ty
+	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
 		Just s -> return [(s, subst s ty, QualOp b io sc ps)]
 	ResolvedMixTerm i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
-	       mls <- mapM (mUnifySc mt) ois
-	       let ls = catMaybes mls
-	       if null ls then 
-		  do addDiags [Diag (case mt of Nothing -> Error
-				                _ -> Hint)
+	       insts <- mapM instantiate ois 
+	       ls <- case mt of 
+		     Nothing -> return $ map ( \ (ty, oi) 
+					      -> (eps, ty, oi)) insts
+		     Just inTy -> do 
+                         let rs = concatMap ( \ (ty, oi) ->
+				  let Result _ ms = unify tm inTy ty in
+				  case ms of Nothing -> []
+					     Just s -> [(s, ty, oi)]) insts
+			 if null rs then 
+			    addDiags [Diag Hint
 			       ("no type match for: " ++ showId i "\n"
-				++ lookupError mt ois)
+				++ lookupError inTy ois)
 			       (posOfId i) ]
-		     return []
-	          else return $ map ( \ (s, ty, oi) -> 
+		            else return ()
+			 return rs
+	       return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, ty, QualVar i ty ps)
 			      x -> let br = case x of
@@ -228,7 +236,7 @@ infer mt trm = do
 	        vs <- freshVars ts
 	        let pt = ProductType vs []
 	            Result ds ms = unify tm ty pt
-		addDiags ds
+		uniDiags ds
 	        case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
@@ -239,8 +247,8 @@ infer mt trm = do
 	TypedTerm t qual ty ps -> do 
 	    case qual of 
 		OfType -> do
-		    let Result ds ms = mUnify tm mt ty
-		    addDiags ds
+		    let Result ds ms = mUnify ty
+		    uniDiags ds
 		    case ms of 
 		        Nothing -> return []
 			Just s -> do 
@@ -249,29 +257,29 @@ infer mt trm = do
 				(compSubst s s2, typ, 
 				 TypedTerm tr qual ty ps)) rs
 		InType -> do 
-		    let Result ds ms = mUnify tm mt logicalType
-		    addDiags ds
+		    let Result ds ms = mUnify logicalType
+		    uniDiags ds
 		    case ms of 
 		        Nothing -> return []
 			Just s -> do 
-			    rs <- infer Nothing t 
+			    rs <- infer Nothing t -- Nothing 
 			    return $ map ( \ (s2, _, tr) -> 
 				(compSubst s s2, logicalType, 
 				 TypedTerm tr qual ty ps)) rs
 		AsType -> do
-		    let Result ds ms = mUnify tm mt ty
-		    addDiags ds
+		    let Result ds ms = mUnify ty
+		    uniDiags ds
 		    case ms of 
 		        Nothing -> return []
 			Just s -> do 
-			    rs <- infer Nothing t 
+			    rs <- infer Nothing t -- Nothing
 			    return $ map ( \ (s2, _, tr) -> 
 				(compSubst s s2, ty, 
 				 TypedTerm tr qual ty ps)) rs
 	QuantifiedTerm quant decls t ps -> do
 	    mapM_ addGenVarDecl decls
-	    let Result ds ms = mUnify tm mt logicalType
-	    addDiags ds
+	    let Result ds ms = mUnify logicalType
+	    uniDiags ds
 	    case ms of 
 		Nothing -> return []
 		Just _ -> do 
@@ -285,8 +293,8 @@ infer mt trm = do
 	    let fty l = if null l then rty else 
 			FunType (head l) PFunArr (fty $ tail l) []
 		myty = fty vs
-                Result ds ms = mUnify tm mt myty
-	    addDiags ds 
+                Result ds ms = mUnify myty
+	    uniDiags ds 
 	    case ms of 
 	        Nothing -> return []
 		Just s -> do 
@@ -357,34 +365,44 @@ Quantifier [GenVarDecl] Term [Pos]
 inferPat :: Maybe Type -> Pattern -> State Env [(Subst, Type, Pattern)]
 inferPat mt pat = do 
     tm <- gets typeMap
+    let mUnify = unify tm mt . Just
+	uniDiags = addDiags . map (improveDiag pat)
     as <- gets assumps
     case pat of
 	PatternVar (VarDecl v t sk ps) -> do  
-	    let Result ds ms = mUnify tm mt t
-	    addDiags ds 
+	    let Result ds ms = mUnify t
+	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
 		Just s -> do let ty = (subst s t) 
 			     return [(s, ty, PatternVar (VarDecl v ty sk ps))]
 	PatternConstr io sc qs -> do
 	    ty <- toEnvState $ freshInst sc
-	    let Result ds ms = mUnify tm mt ty
-	    addDiags ds 
+	    let Result ds ms = mUnify ty
+	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
 		Just s -> return [(s, subst s ty, PatternConstr io sc qs)]
 	ResolvedMixPattern i ts ps ->
 	    if null ts then do 
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
-	       mls <- mapM (mUnifySc mt) ois
-	       let ls = catMaybes mls
-	       if null ls then do addDiags [Diag (case mt of Nothing -> Error
-				                             _ -> Hint) 
-			           ("no type match for: " ++ showId i "\n"
-				    ++ lookupError mt ois)
-					    (posOfId i) ]
-				  return []
-	          else return $ map ( \ (s, ty, oi) -> 
+	       insts <- mapM instantiate ois 
+	       ls <- case mt of 
+		     Nothing -> return $ map ( \ (ty, oi) 
+					      -> (eps, ty, oi)) insts
+		     Just inTy -> do 
+                         let rs = concatMap ( \ (ty, oi) ->
+				  let Result _ ms = unify tm inTy ty in
+				  case ms of Nothing -> []
+					     Just s -> [(s, ty, oi)]) insts
+			 if null rs then 
+			    addDiags [Diag Hint
+			       ("no type match for: " ++ showId i "\n"
+				++ lookupError inTy ois)
+			       (posOfId i) ]
+		            else return ()
+			 return rs
+	       return $ map ( \ (s, ty, oi) -> 
 			      case opDefn oi of
 			      VarDefn -> (s, ty, 
 					  PatternVar $ VarDecl i ty Other ps)
@@ -405,7 +423,7 @@ inferPat mt pat = do
 	        vs <- freshVars ts
 	        let pt = ProductType vs []
 	            Result ds ms = unify tm ty pt
-	        addDiags ds
+	        uniDiags ds
 	        case ms of 
 		     Nothing -> return []
 		     Just s  -> do 
@@ -414,8 +432,8 @@ inferPat mt pat = do
                                    (compSubst s su, ProductType tys ps, 
 				    TuplePattern trms ps)) ls
 	TypedPattern p ty ps -> do 
-		    let Result ds ms = mUnify tm mt ty
-		    addDiags ds
+		    let Result ds ms = mUnify ty
+		    uniDiags ds
 		    case ms of 
 		        Nothing -> return []
 			Just s -> do 

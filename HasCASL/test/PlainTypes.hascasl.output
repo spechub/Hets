@@ -92,10 +92,8 @@ Error (line 32, column 15) incompatible kind of: List
   expected: b -> c
      found: a -> b
 
-Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
-Hint (line 11, column 9) type 't' is not unifiable with 'tuple3 r s t'
 Error (line 38, column 19) ambiguous typings 
-	(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
-						 (var x : t))
-	(fun __=__ : forall a : Type .  a ×
-				a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))
+  '(fun __=__ : forall a : Type .  a × a ->? Unit) ((var x : t),
+						 (var x : t))' (line 38, column 19)
+  '(fun __=__ : forall a : Type .  a ×
+				a ->? Unit) ((var x : tuple3 r s t), (var x : tuple3 r s t))' (line 38, column 19)

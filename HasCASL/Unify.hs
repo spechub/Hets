@@ -18,6 +18,7 @@ import Common.PrettyPrint
 import Common.Id
 import HasCASL.Le
 import Common.Lib.State
+import Common.Lib.Parsec
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Data.List
@@ -43,9 +44,6 @@ generalize (TypeScheme vs q@(_ :=> ty) ps) =
 
 compSubst :: Subst -> Subst -> Subst
 compSubst s1 s2 = Map.union (Map.map (subst s2) s1) s2  
-
-mUnify :: TypeMap -> Maybe Type -> Type -> Result Subst
-mUnify tm mt ty = unify tm mt (Just ty)
 
 -- | unifiability of type schemes including instantiation with fresh variables 
 -- and looking up type aliases
@@ -132,24 +130,18 @@ instance Unifiable Type where
 			else let (a1, b1) = expandAlias tm t1 
 				 (a2, b2) = expandAlias tm t2 in
 			if b1 || b2 then unify tm a1 a2
-			   else Result [mkDiag Hint 
-					("type '" ++ showId i1 
-					 "' is not unifiable with") i2]
-					Nothing
+			   else uniResult "typename" i1 
+				    "is not unifiable with typename" i2
     unify tm t1@(TypeName i1 k1 v1) t2 =
 	if v1 > 0 then 
 	   if i1 `occursIn` t2 then 
-	      Result [mkDiag Hint 
-			       ("var '" ++ showId i1 
-				"' occurs in") t2] Nothing
+	      uniResult "var" i1 "occurs in" t2
 	   else return $
 			Map.single (TypeArg i1 k1 Other []) t2
 	else let (a1, b1) = expandAlias tm t1 in
 		 if b1 then unify tm a1 t2
-		   else Result 
-			    [mkDiag Hint 
-			     ("type '" ++ showId i1 
-			      "' is not unifiable with") t2] Nothing
+		   else uniResult "typename" i1  
+			    "is not unifiable with type" t2
     unify tm t2 t1@(TypeName _ _ _) = unify tm t1 t2
     unify tm t12@(TypeAppl t1 t2) t34@(TypeAppl t3 t4) = 
 	let (ta, a) = expandAlias tm t12
@@ -159,9 +151,25 @@ instance Unifiable Type where
     unify tm (ProductType p1 _) (ProductType p2 _) = unify tm p1 p2
     unify tm (FunType t1 _ t2 _) (FunType t3 _ t4 _) = 
 	unify tm (t1, t2) (t3, t4)
-    unify _ t1 t2 = Result [mkDiag Hint 
-			    ("type '" ++ showPretty t1 
-			     "' is not unifiable with") t2] Nothing
+    unify _ t1 t2 = uniResult "type" t1  
+			    "is not unifiable with type" t2
+
+showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
+showPrettyWithPos a = let p = getMyPos a 
+			  s = ("'" ++) . showPretty a . ("'" ++)
+			  n = sourceName p in 
+    if nullPos == p then s else s . (" (" ++) .
+       (if null n then id else (n ++) . (", " ++))
+       . ("line " ++) . shows (sourceLine p)
+       . (", column " ++) . shows (sourceColumn p)
+       .  (")" ++) 
+
+uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
+	      String -> a -> String -> b -> Result Subst
+uniResult s1 a s2 b = 
+      Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
+			 showPrettyWithPos a "\n  " ++ s2 ++ " " ++
+			 showPrettyWithPos b "") nullPos] Nothing
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
@@ -180,8 +188,10 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     unify _ [] [] = return eps
     unify tm (a1:r1) (a2:r2) = unify tm (a1, r1) (a2, r2)
     unify tm [] l = unify tm l [] 
-    unify _ (a:_) [] = Result [mkDiag Hint 
-			 ("unification failed at") a] Nothing
+    unify _ (a:_) [] = uniResult "type component" a 
+		       "is not unifiable with the empty list" 
+		       (mkSimpleId "[]")
+
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     subst s = fmap (subst s) 

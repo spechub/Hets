@@ -220,14 +220,19 @@ Error (line 54, column 42) ambiguous mixfix term
 	(def__)(f) x
 Error (line 54, column 32) unexpected mixfix token: all
 Error (line 54, column 3) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_13 ->? _var_14'
-Hint (line 54, column 16) wrongly typed application '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
+Hint (line 54, column 32) in type of '\ f : s ->? t . all (\ x : s . def f (x))'
+  type 'Unit'
+  is not unifiable with type '_var_13 ->? _var_14'
+
+Hint (line 54, column 16) wrong result type 'Unit'
+  for application '(__=__) (__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
 Error (line 54, column 16) no typing for '(__=__)(__ in s -> t, \ f : s ->? t . all (\ x : s . def f (x)))'
 Hint (line 60, column 9) no type match for: snd
-with type: _var_15 ->? t
-known types:
-  
-Hint (line 60, column 9) wrongly typed application 'snd (x : s, y : t)'
+  with type: '_var_15 ->? t' (line 60, column 28)
+  known types:
+    
+Hint (line 60, column 9) wrong result type 't' (line 60, column 28)
+  for application 'snd (x : s, y : t)'
 Error (line 60, column 9) no typing for 'snd(x : s, y : t) : t'
 Error (line 65, column 18) ambiguous mixfix term
 	def ((__res__)(x, y))
@@ -249,16 +254,18 @@ Warning (line 85, column 6) redeclared type 's'
 Error (line 85, column 6) merge: TypeVarDefn of 's'
 
 Hint (line 87, column 9) no type match for: all
-with type: _var_61 ->? Unit ->? Unit
-known types:
-  
-Hint (line 87, column 9) wrongly typed application 'all (p : s ->? Unit)'
+  with type: '_var_61 ->? Unit ->? Unit'
+  known types:
+    
+Hint (line 87, column 9) wrong result type 'Unit ->? Unit'
+  for application 'all (p : s ->? Unit)'
 Error (line 87, column 9) no typing for 'all(p : s ->? Unit) : Unit ->? Unit'
 Hint (line 90, column 9) no type match for: And
-with type: _var_63 ->? Unit ->? Unit
-known types:
-  
-Hint (line 90, column 9) wrongly typed application 'And (x : _var_62, y : Unit ->? Unit)'
+  with type: '_var_63 ->? Unit ->? Unit'
+  known types:
+    
+Hint (line 90, column 9) wrong result type 'Unit ->? Unit'
+  for application 'And (x : _var_62, y : Unit ->? Unit)'
 Error (line 90, column 9) no typing for 'And(x : _var_62, y : Unit ->? Unit) : Unit ->? Unit'
 Error (line 93, column 11) unexpected mixfix token: impl
 Error (line 93, column 9) unexpected pattern '__ impl __ (x, y : Pred Unit)'
@@ -268,19 +275,21 @@ Error (line 95, column 9) unexpected pattern '__ or __ (x, y : Pred Unit)'
 Error (line 96, column 19) unexpected mixfix token: x
 Error (line 95, column 48) unexpected mixfix token: all
 Hint (line 98, column 9) no type match for: ex
-with type: _var_66 ->? Unit ->? Unit
-known types:
-  
-Hint (line 98, column 9) wrongly typed application 'ex (p : s ->? Unit)'
+  with type: '_var_66 ->? Unit ->? Unit'
+  known types:
+    
+Hint (line 98, column 9) wrong result type 'Unit ->? Unit'
+  for application 'ex (p : s ->? Unit)'
 Error (line 98, column 9) no typing for 'ex(p : s ->? Unit) : Unit ->? Unit'
 Error (line 101, column 13) unexpected mixfix token: )
 Error (line 101, column 9) unexpected pattern 'ff ()'
 Error (line 101, column 29) unexpected mixfix token: all
 Hint (line 103, column 9) no type match for: neg
-with type: _var_68 ->? Unit ->? Unit
-known types:
-  
-Hint (line 103, column 9) wrongly typed application 'neg (r : Unit ->? Unit)'
+  with type: '_var_68 ->? Unit ->? Unit'
+  known types:
+    
+Hint (line 103, column 9) wrong result type 'Unit ->? Unit'
+  for application 'neg (r : Unit ->? Unit)'
 Error (line 103, column 9) no typing for 'neg(r : Unit ->? Unit) : Unit ->? Unit'
 Error (line 108, column 51) unexpected mixfix token: impl
 Error (line 108, column 22) unexpected mixfix token: all
@@ -325,8 +334,16 @@ Error (line 173, column 40) unexpected mixfix token: und
 Error (line 172, column 28) unexpected mixfix token: isChain
 Error (line 171, column 9) unexpected mixfix token: all
 Error (line 170, column 4) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_94 ->? _var_95'
-Hint (line 170, column 20) wrongly typed application '(__=__) (__ in c -->? d,
+Hint (line 171, column 9) in type of '\ f : c ->? d . all
+		(\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
+		(\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
+				  (\ m : nat . def f (s (m)) und eq
+					       (sup (\ n : nat .! f (s (n + m))), f (sup (s)))))'
+  type 'Unit'
+  is not unifiable with type '_var_94 ->? _var_95'
+
+Hint (line 170, column 20) wrong result type 'Unit'
+  for application '(__=__) (__ in c -->? d,
 	 \ f : c ->? d . all
 			 (\ (x, y : c) . (def (f x) und x <<= y) impl def (f y)) und all
 			 (\ s : nat -> c . (isChain (s) und def f (sup (s))) impl ex
@@ -351,8 +368,12 @@ Error (line 182, column 46) ambiguous mixfix term
 	(def__)(f) x
 Error (line 182, column 36) unexpected mixfix token: all
 Error (line 182, column 4) unexpected term '__'
-Hint (line 0, column 0) type 'Unit' is not unifiable with '_var_101 ->? _var_102'
-Hint (line 182, column 18) wrongly typed application '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
+Hint (line 182, column 36) in type of '\ f : c -->? d . all (\ x : c . def f (x))'
+  type 'Unit'
+  is not unifiable with type '_var_101 ->? _var_102'
+
+Hint (line 182, column 18) wrong result type 'Unit'
+  for application '(__=__) (__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
 Error (line 182, column 18) no typing for '(__=__)(__ in c --> d, \ f : c -->? d . all (\ x : c . def f (x)))'
 Error (line 0, column 0) undeclared type '_var_103'
 Error (line 0, column 0) undeclared type '_var_104'

@@ -130,28 +130,32 @@ Error (line 20, column 12) unexpected mixfix token: res
 Error (line 20, column 10) unexpected pattern '__ res __ (x : s, y : t)'
 Error (line 20, column 37) unexpected mixfix token: x
 Hint (line 21, column 1) no type match for: fst
-with type: _var_4 ->? s
-known types:
-  
-Hint (line 21, column 1) wrongly typed application 'fst (x : s, y : t)'
+  with type: '_var_4 ->? s' (line 21, column 20)
+  known types:
+    
+Hint (line 21, column 1) wrong result type 's' (line 21, column 20)
+  for application 'fst (x : s, y : t)'
 Error (line 21, column 1) no typing for 'fst(x : s, y : t) : s'
 Hint (line 22, column 1) no type match for: snd
-with type: _var_5 ->? t
-known types:
-  
-Hint (line 22, column 1) wrongly typed application 'snd (x : s, y : t)'
+  with type: '_var_5 ->? t' (line 22, column 20)
+  known types:
+    
+Hint (line 22, column 1) wrong result type 't' (line 22, column 20)
+  for application 'snd (x : s, y : t)'
 Error (line 22, column 1) no typing for 'snd(x : s, y : t) : t'
 Hint (line 28, column 9) no type match for: all
-with type: _var_6 ->? ? Unit
-known types:
-  
-Hint (line 28, column 9) wrongly typed application 'all (p : ? s)'
+  with type: '_var_6 ->? ? Unit' (line 28, column 26)
+  known types:
+    
+Hint (line 28, column 9) wrong result type '? Unit' (line 28, column 26)
+  for application 'all (p : ? s)'
 Error (line 28, column 9) no typing for 'all(p : ? s) : ? Unit'
 Hint (line 30, column 9) no type match for: And
-with type: _var_8 ->? ? Unit
-known types:
-  
-Hint (line 30, column 9) wrongly typed application 'And (x : _var_7, y : ? Unit)'
+  with type: '_var_8 ->? ? Unit' (line 30, column 31)
+  known types:
+    
+Hint (line 30, column 9) wrong result type '? Unit' (line 30, column 31)
+  for application 'And (x : _var_7, y : ? Unit)'
 Error (line 30, column 9) no typing for 'And(x : _var_7, y : ? Unit) : ? Unit'
 Error (line 32, column 12) unexpected mixfix token: impl
 Error (line 34, column 12) unexpected mixfix token: or
@@ -159,10 +163,11 @@ Error (line 34, column 10) unexpected pattern '__ or __ (x, y : (? Unit))'
 Error (line 35, column 19) unexpected mixfix token: x
 Error (line 34, column 44) unexpected mixfix token: all
 Hint (line 37, column 3) no type match for: ex
-with type: _var_10 ->? ? Unit
-known types:
-  
-Hint (line 37, column 3) wrongly typed application 'ex (p : ? s)'
+  with type: '_var_10 ->? ? Unit' (line 37, column 18)
+  known types:
+    
+Hint (line 37, column 3) wrong result type '? Unit' (line 37, column 18)
+  for application 'ex (p : ? s)'
 Error (line 37, column 3) no typing for 'ex(p : ? s) : ? Unit'
 Error (line 40, column 7) unexpected mixfix token: )
 Error (line 40, column 3) unexpected pattern 'ff ()'
