@@ -543,9 +543,7 @@ hets.hs: hetcats/Version.hs
 	$(HAPPY) -o $@ $<
 
 %.hs: %.der.hs utils/DrIFT
-	$(DRIFT_ENV)
-	export DERIVEPATH
-	$(DRIFT) $(DRIFT_OPTS) $< > $@
+	($(DRIFT_ENV);	export DERIVEPATH; $(DRIFT) $(DRIFT_OPTS) $< > $@)
 
 ## rules for inlineAxioms
 %.hs: %.inline.hs $(INLINEAXIOMS)
