@@ -144,6 +144,7 @@ type Haskell_Sublogics = ()
 
 type Sentence = AHsDecl
 instance Ord AHsDecl where
+  compare x y = undefined
 
 type Symbol = ()
 type RawSymbol = ()
