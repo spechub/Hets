@@ -291,7 +291,7 @@ infer mt trm = do
                                 Just ty -> insertC (Subtyping nTy
                                                    $ subst su ty) cs, nTy,
                                 assert (and $ zipWith (==) tys 
-                                       $ map getTypeOf trms) $
+                                       $ map (subst su . getTypeOf) trms) $
                                 mkTupleTerm trms ps)) ls
         TypedTerm t qual ty ps -> do 
             case qual of 
