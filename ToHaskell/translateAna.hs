@@ -1,21 +1,22 @@
 module Main where
 
-import HasCASL.ParseItem
 import Haskell.Language.Pretty
 import Haskell.Language.Syntax
 import ToHaskell.TranslateAna
 import Common.AnnoState
 import Common.Lib.Parsec
-import System.Environment
+import Common.Lib.State
 import Common.AnnoState
+import System.Environment
 import HasCASL.Le
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
-import Common.Lib.State
+
 
 hParser :: AParser HsModule
 hParser = do b <- basicSpec
 	     return $ translateAna $ snd $ (runState (anaBasicSpec b)) initialEnv
+
 	  
 main :: IO ()
 main = do l <- getArgs
