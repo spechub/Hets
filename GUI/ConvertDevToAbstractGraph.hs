@@ -116,7 +116,9 @@ type GInfo = (IORef ProofStatus,
               LIB_NAME,
               GraphInfo,
               IORef InternalNames, -- show internal names?
-              HetcatsOpts)
+              HetcatsOpts,
+	      IORef [[Node]]
+	     )
 
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = 
@@ -180,7 +182,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
 --  graphId <- newIORef 0
-  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, showInternalNames, hetsOpts)
+  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, showInternalNames, hetsOpts, ioRefVisibleNodes)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
          -- action on "open"
@@ -392,7 +394,7 @@ openProofStatus filename ioRefProofStatus convRef hetsOpts =
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
              -> IO ()
-proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _) proofFun 
+proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _, ioRefVisibleNodes) proofFun 
   = do
   proofStatus <- readIORef ioRefProofStatus
   Res.Result diags res <- proofFun proofStatus
@@ -407,7 +409,8 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _) proofF
       convMaps <- readIORef convRef
       --putStrLn (showPretty convMaps "")
       (newDescr,convMapsAux)
-         <- applyChanges gid ln actGraphInfo descr convMaps history
+         <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
+	    convMaps history
       let newConvMaps = 
 	      convMapsAux {libname2dg =
 			Map.insert ln newGlobContext (libname2dg convMapsAux)}
@@ -454,7 +457,7 @@ createLocalMenuNodeTypeSpec color convRef dGraph ioRefSubtreeEvents
 
 -- local menu for the nodetypes internal and locallyEmpty_internal
 createLocalMenuNodeTypeInternal color convRef dGraph 
-                                gInfo@(_,_,_,_,_,_,showInternalNames,_) =
+                                gInfo@(_,_,_,_,_,_,showInternalNames,_,_) =
                  Ellipse $$$ Color color
 		 $$$ ValueTitleSource (\ (s,_,_) -> do
                        b <- newSimpleBroadcaster ""
@@ -478,7 +481,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph
 
 -- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createLocalMenuNodeTypeDgRef color convRef actGraphInfo 
-			     ioRefGraphMem graphMem (_,_,_,_,_,_,_,hetsOpts) = 
+			     ioRefGraphMem graphMem (_,_,_,_,_,_,_,hetsOpts,_) = 
                  Box $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s)
 		 $$$ LocalMenu (Button "Show referenced library"
@@ -504,7 +507,8 @@ createLocalMenuNodeTypeDgRef color convRef actGraphInfo
 
 
 -- menu button for local menus
-createMenuButtonGInfo title menuFun ginfo@(ioProofStatus,_,convRef,_,_,_,_,_) =
+createMenuButtonGInfo title menuFun 
+		      (ioProofStatus,_,convRef,_,_,_,_,_,_) =
                     (Button title 
                       (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
@@ -542,7 +546,7 @@ createLocalMenuButtonTranslateTheory gInfo =
 -}
 --createLocalMenuTaxonomy :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
 --                     DGraph -> IO ()
-createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_,_) convRef dGraph =
+createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_,_,_) convRef dGraph =
       (Menu (Just "Taxonomy graphs")
        [createMenuButton "Subsort graph" 
 	       (passTh displaySubsortGraph) convRef dGraph,
@@ -559,7 +563,7 @@ createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_,_) convRef dGraph =
  
 
 
-createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_) = 
+createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_,_) = 
   createMenuButtonGInfo "Show sublogic" (getSublogicOfNode proofStatus) gInfo
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButtonGInfo "Show origin" showOriginOfNode 
@@ -753,7 +757,7 @@ lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-getTheoryOfNode  (proofStatusRef,_,_,_,_,_,_,hetsOpts) descr ab2dgNode dgraph = do
+getTheoryOfNode  (proofStatusRef,_,_,_,_,_,_,hetsOpts,_) descr ab2dgNode dgraph = do
  r <- lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph
  case r of
   Res.Result diags res -> do
@@ -787,7 +791,7 @@ displayTheory ext node dgraph gth =
 used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts) descr ab2dgNode dgraph = do
+translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
    (_libname, node) <- 
@@ -864,7 +868,7 @@ showOriginOfNode descr ab2dgNode dgraph =
 
 {- start local theorem proving or consistency checking at a node -}
 --proveAtNode :: Bool -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
-proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_,_) descr ab2dgNode dgraph = 
+proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_,_,_) descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just libNode -> 
       do convMaps <- readIORef convRef
@@ -911,7 +915,7 @@ showProofStatusOfThm descr Nothing =
 
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts) (Just (source,target,linklab)) = do 
+checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_) (Just (source,target,linklab)) = do 
   (_,libEnv,_,dgraph) <- readIORef ref
   let dgtar = lab' (context target dgraph)
   case dgtar of
@@ -1161,23 +1165,32 @@ notElemR list element = notElem element list
 
 
 -- -- ################ einbindung von proofs.hs ############
-applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> ConversionMaps
+applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
+	          -> ConversionMaps
 	          -> [([DGRule],[DGChange])]
 		  -> IO (Descr, ConversionMaps)
-applyChanges gid libname graphInfo eventDescr convMaps history =
+applyChanges gid libname graphInfo eventDescr ioRefVisibleNodes
+	     convMaps history =
   case history of
     [] -> return (eventDescr, convMaps)
     (historyElem:list) ->
       case snd historyElem of
 	[] -> return (eventDescr, convMaps)
-	changes@(x:xs) -> 
-          applyChangesAux gid libname graphInfo eventDescr convMaps changes
+	changes@(x:xs) -> do
+          visibleNodes <- readIORef ioRefVisibleNodes
+          (newVisibleNodes, newEventDescr, newConvMaps) <- 
+              applyChangesAux gid libname graphInfo visibleNodes
+			  eventDescr convMaps changes
+	  writeIORef ioRefVisibleNodes newVisibleNodes
+	  return (newEventDescr, newConvMaps)
 
-applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> Descr
+applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> [[Node]] -> Descr
 		  -> ConversionMaps -> [DGChange]
-	          -> IO (Descr, ConversionMaps)
-applyChangesAux _ _ _ eventDescr convMaps [] = return (eventDescr+1, convMaps)
-applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
+	          -> IO ([[Node]], Descr, ConversionMaps)
+applyChangesAux _ _ _ visibleNodes eventDescr convMaps [] =
+    return (visibleNodes, eventDescr+1, convMaps)
+applyChangesAux gid libname graphInfo visibleNodes eventDescr
+		convMaps (change:changes) =
   case change of
     InsertNode lnode@(node,nodelab) -> do
       nodetype <- getDGNodeType nodelab
@@ -1187,12 +1200,13 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
       case err of
 	Nothing ->
 	  do let dgNode = (libname,node)
+                 newVisibleNodes = map (insertElem node) visibleNodes
 		 newConvMaps = 
 		     convMaps {dg2abstrNode = 
 			       Map.insert dgNode descr (dg2abstrNode convMaps),
 			       abstr2dgNode =
 			       Map.insert descr dgNode (abstr2dgNode convMaps)}
-	     applyChangesAux gid libname graphInfo (descr+1) 
+	     applyChangesAux gid libname graphInfo newVisibleNodes (descr+1) 
 			     newConvMaps changes
 	Just msg ->
 	       error ("applyChangesAux: could not add node " ++ (show node)
@@ -1206,12 +1220,13 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 	  (Result descr err) <- delnode gid abstrNode graphInfo
 	  case err of
 	    Nothing -> do
-		let newConvMaps =
+                let newVisibleNodes = map (removeElem node) visibleNodes
+		    newConvMaps =
 		        convMaps {dg2abstrNode =
 				  Map.delete dgnode (dg2abstrNode convMaps),
 				  abstr2dgNode =
 				  Map.delete abstrNode (abstr2dgNode convMaps)}
-	        applyChangesAux gid libname graphInfo (descr+1)
+	        applyChangesAux gid libname graphInfo newVisibleNodes (descr+1)
 			        newConvMaps changes
 	    Just msg -> error ("applyChangesAux: could not delete node "
 			       ++ (show node) ++ " with name " 
@@ -1237,8 +1252,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 		               Map.insert dgEdge descr (dg2abstrEdge convMaps),
 	                       abstr2dgEdge =
 		               Map.insert descr dgEdge (abstr2dgEdge convMaps)}
-                       applyChangesAux gid libname graphInfo (descr+1)
-			 	 newConvMaps changes
+                       applyChangesAux gid libname graphInfo visibleNodes
+				 (descr+1) newConvMaps changes
 	          Just msg -> 
                    error ("applyChangesAux: could not add link from "
 			  ++ (show src) ++ " to " ++ (show tgt) ++ ":\n"
@@ -1262,8 +1277,8 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 				 abstr2dgEdge = 
 				     Map.delete abstrEdge (abstr2dgEdge 
 							   convMaps)}
- 		        applyChangesAux gid libname graphInfo (descr+1)
-				 newConvMaps changes
+ 		        applyChangesAux gid libname graphInfo visibleNodes
+				 (descr+1) newConvMaps changes
  		   Just msg -> error ("applyChangesAux: could not delete edge "
 			              ++ (show abstrEdge) ++ ":\n"
 				      ++msg)
@@ -1274,3 +1289,10 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			      ++ " and origin " ++ (show (dgl_origin edgelab))
 			      ++ " of development "
                          ++ "graph does not exist in abstraction graph")
+
+
+removeElem :: Eq a => a -> [a] -> [a]
+removeElem element list = [e | e <- list, e /= element]
+
+insertElem :: a -> [a] -> [a]
+insertElem element list = element:list
