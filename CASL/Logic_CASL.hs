@@ -32,6 +32,7 @@ import CASL.ATC_CASL
 import CASL.Sublogic
 import CASL.StaticAna
 import CASL.Morphism
+import CASL.SymbolMapAnalysis
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -121,10 +122,9 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          -- generated_sign, cogenerated_sign :: id -> [RawSymbol]
          --                -> Sign -> Result Morphism
          induced_from_morphism CASL = inducedFromMorphism
-         induced_from_to_morphism CASL _rmap sigmaS _sigmaT =
-           return (ide CASL sigmaS) -- ???
          --induced_from_to_morphism :: id -> EndoMap RawSymbol
          --               -> Sign -> Sign -> Result Morphism
+         induced_from_to_morphism CASL = inducedFromToMorphism
          -- extend_morphism :: id -> Sign -> Morphism -> Sign -> Sign
          --               -> Result Morphism
          extend_morphism CASL _s m _s1 _s2 = return m -- ???

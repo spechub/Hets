@@ -126,7 +126,7 @@ module Common.Lib.Set  (
             , valid
             ) where
 
-import Prelude hiding (filter, all)
+import Prelude hiding (filter, all, any)
 
 {-
 -- just for testing
@@ -376,11 +376,11 @@ all p (Bin _ x l r)
   | otherwise = False
 
 -- | /O(n)/. Does some element satisfy the predicate?
-exists :: Ord a => (a -> Bool) -> Set a -> Bool
-exists p Tip = False
-exists p (Bin _ x l r)
+any :: Ord a => (a -> Bool) -> Set a -> Bool
+any p Tip = False
+any p (Bin _ x l r)
   | p x       = True
-  | otherwise = (exists p l) || (exists p r)
+  | otherwise = (any p l) || (any p r)
 
 {--------------------------------------------------------------------
   Fold

@@ -73,7 +73,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
-import Common.Lib.Set hiding (filter)
+import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List hiding (union)
 import Common.PrettyPrint
@@ -322,12 +322,12 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name just_struct sp =
       let sys = sym_of lid sigma
           sys1 = sym_of lid sigma1
           sys2 = sym_of lid sigma2
-      mor3 <- cogenerated_sign lid (toList (sys1 `difference` sys)) sigma2
+      mor3 <- cogenerated_sign lid (Set.toList (sys1 `Set.difference` sys)) sigma2
       let sigma3 = dom lid mor3
           gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
-      if sys2 `difference` sys1 `subset` sys3 then return ()
+      if sys2 `Set.difference` sys1 `Set.subset` sys3 then return ()
         else plain_error () 
          "attempt to hide symbols from the local environment" (headPos pos)
       let node_contents = DGNode {
@@ -599,7 +599,7 @@ ana_restr1 dg (G_sign lid sigma) (GMorphism cid sigma1 mor)
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
   let sys' = filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys) 
-                    (toList sys)
+                      (Set.toList sys)
 --     if sys' `disjoint` () then return ()
 --      else plain_error () "attempt to hide symbols from the local environment" pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
@@ -637,14 +637,14 @@ ana_RESTRICTION dg gSigma@(G_sign lid sigma) gSigma'@(G_sign lid' sigma')
      sis' <- rcoerce lid1 lid' (headPos pos) sis
      rmap <- stat_symb_map_items lid' sis'
      let sys'' = 
-          fromList
-           [sy | sy <- toList sys', rsy <- Map.keys rmap, matches lid' sy rsy]
+          Set.fromList
+           [sy | sy <- Set.toList sys', rsy <- Map.keys rmap, matches lid' sy rsy]
      sys1 <- rcoerce lid lid' (headPos pos) sys
         -- ??? this is too simple in case that local env is translated
         -- to a different logic
-     if sys1 `disjoint` sys'' then return ()
+     if sys1 `Set.disjoint` sys'' then return ()
       else plain_error () "attempt to hide symbols from the local environment" (headPos pos)
-     mor1 <- generated_sign lid' (toList (sys1 `union` sys'')) sigma'
+     mor1 <- generated_sign lid' (Set.toList (sys1 `Set.union` sys'')) sigma'
      mor2 <- induced_from_morphism lid' rmap (dom lid' mor1)
      return (gEmbed (G_morphism lid' mor1),
              Just (gEmbed (G_morphism lid' mor2)))

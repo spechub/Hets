@@ -22,6 +22,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Data.Dynamic
+import Common.PrettyPrint
 
 data SymbType = OpAsItemType OpType
 	      | PredAsItemType PredType
@@ -283,32 +284,3 @@ legalMor mor =
         sigma2 = mtarget mor
         smap = sort_map mor
 
-inducedFromMorphism :: Map.EndoMap RawSymbol -> Sign -> Result Morphism
-inducedFromMorphism rmap sigma = do
-  sortMap <- Set.fold 
-              (\s m -> do s' <- mapSort s
-                          m1 <- m
-                          return $ Map.insert s s' m1) 
-              (return Map.empty) sortsSigma
-  let sigma' = 
-        sigma {sortSet = Set.image (\s -> Map.find s sortMap) sortsSigma}
-      mor = Morphism { msource = sigma,
-                   mtarget = sigma',
-                   sort_map = sortMap,
-                   fun_map = Map.empty,
-                   pred_map = Map.empty }
-  return mor
-  where 
-  sortsSigma = sortSet sigma
-  mapSort s = 
-    case Set.size rsys of
-          0 -> return s
-          1 -> return $ rawSymName $ Set.findMin rsys
-          _ -> plain_error s 
-                 ("Sort "++show s++" mapped ambiguously: "++show rsys) 
-                 nullPos
-    where
-    rsys = Map.foldWithKey 
-             (\rsy1 rsy2 set -> if (idToSortSymbol s) `matches` rsy1
-                                 then Set.insert rsy2 set
-                                 else set) Set.empty rmap
