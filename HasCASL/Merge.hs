@@ -122,7 +122,7 @@ mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $
     foldM ( \ l o -> 
 	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
 	   in if null es then return (o:l)
-	      else do r <- merge o $ head es
+	      else do r <- merge (head es) o
 	              return (r : us)) l1 l2 
 
 instance Mergeable OpInfo where
