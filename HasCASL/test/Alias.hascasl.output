@@ -28,8 +28,8 @@ __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-a1 : Type -> Type -> Type := \ (a : Type)
-                               (b : Type) . a -> b -> Unit
+a1
+  : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> b -> Unit
 a2 : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> Unit
 a3 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit
 a4 : Type -> Type -> Type := \ (a : Type)(a : Type) . a -> Unit

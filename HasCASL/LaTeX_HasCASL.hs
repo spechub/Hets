@@ -520,10 +520,11 @@ printAltDefn ga dt (Construct mi ts p sels) = case mi of
 	Nothing -> hc_sty_plain_keyword (typeS ++ sS) <+> commaT_latex ga ts
 
 instance PrintLaTeX Selector where
-    printLatex0 ga (Select i t p) = 
-	printLatex0 ga i <+> (case p of 
+    printLatex0 ga (Select mi t p) = (case mi of
+        Just i -> printLatex0 ga i <+> (case p of 
 			     Partial -> hc_sty_axiom ":?"
-			     Total -> colon) <+> printLatex0 ga t
+			     Total -> colon) <> space
+	Nothing -> empty) <> printLatex0 ga t
 
 instance PrintLaTeX TypeInfo where
     printLatex0 ga (TypeInfo _ ks sups defn) =
@@ -556,10 +557,6 @@ instance PrintLaTeX OpInfo where
  
 instance PrintLaTeX OpInfos where
     printLatex0 ga (OpInfos l) = vcat $ map (printLatex0 ga) l
-
-instance PrintLaTeX a => PrintLaTeX (Maybe a) where
-    printLatex0 _ Nothing = empty
-    printLatex0 ga (Just c) =  printLatex0 ga c
 
 instance PrintLaTeX DataEntry where 
     printLatex0 ga (DataEntry im i k args alts) =  

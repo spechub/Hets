@@ -38,8 +38,8 @@ __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : s %(op)%
 b : s %(op)% = (op a : s)
-c : t %(op)% = (op snd : s * t -> t)
-                 ((op x : s) : s, (op y : t) : t)
+c : t
+    %(op)% = (op snd : s * t -> t)((op x : s) : s, (op y : t) : t)
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%

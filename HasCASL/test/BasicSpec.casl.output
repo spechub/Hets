@@ -113,8 +113,8 @@ forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
   %(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
-  forall m : Int; n : Int; r : Int; a : Nat; b : Nat . def (a -? b)
-                                                       => a -? b = a - b
+  forall m : Int; n : Int; r : Int; a : Nat; b : Nat
+    . def (a -? b) => a -? b = a - b
   %(Int_rem_def)%
   %% then %implies
   %(Int_Nat_sub_compat)%
@@ -161,8 +161,8 @@ forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
 . max (x, y) = y
   when x <= y else
   x
-  forall i : Int; j : Int; p : Pos; q : Pos . (i / p) - (j / q) =
-                                              (i * q - j * p) / (p * q)
+  forall i : Int; j : Int; p : Pos; q : Pos
+    . (i / p) - (j / q) = (i * q - j * p) / (p * q)
   %(Rat_max_def)%
   %% then %implies
   %(Rat_sub_rule)%
@@ -311,9 +311,11 @@ var x : s
   not p \/ not q (x) \/ q (x)
   if
   not p /\ not q (x) /\ q (x)
-  forall x : s . not p /\ not q (x) /\ q (x) <=>
-                 exists x : s . not p \/ not q (x) \/ q (x) <=>
-                                exists! x : s . not p /\ not q (x) /\ q (x)
+  forall x : s
+    . not p /\ not q (x) /\ q (x) <=>
+      exists x : s
+        . not p \/ not q (x) \/ q (x) <=>
+          exists! x : s . not p /\ not q (x) /\ q (x)
 . def f (x)
 . f (x) =e= g (x)
 . f (x) = g (x)
@@ -798,16 +800,16 @@ op ' ' : Char = '\032' %(printable_32)%;
    'ý' : Char = '\253' %(printable_253)%;
    'þ' : Char = '\254' %(printable_254)%;
    'ÿ' : Char = '\255' %(printable_255)%
-pred isLetter(c : Char) :? Unit = ((ord ('A') <= ord (c) /\ ord (c)
-                                    <= ord ('Z'))
-                                   \/ (ord ('a') <= ord (c) /\ ord (c) <= ord ('z')))
+pred isLetter(c : Char) :? Unit
+       = ((ord ('A') <= ord (c) /\ ord (c) <= ord ('Z')) \/
+          (ord ('a') <= ord (c) /\ ord (c) <= ord ('z')))
      %(isLetter_def)%;
-     isDigit(c : Char) :? Unit = ord ('0') <= ord (c) /\ ord (c) <= ord
-                                 ('9')
+     isDigit(c : Char) :? Unit
+       = ord ('0') <= ord (c) /\ ord (c) <= ord ('9')
      %(isDigit_def)%;
-     isPrintable(c : Char) :? Unit = ((ord (' ') <= ord (c) /\ ord (c)
-                                       <= ord ('~'))
-                                      \/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')))
+     isPrintable(c : Char) :? Unit
+       = ((ord (' ') <= ord (c) /\ ord (c) <= ord ('~')) \/
+          (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')))
      %(isPrintable_def)%
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :

@@ -20,7 +20,7 @@ Sentences for attributes comm, assoc, unit are not generated yet.
 datatyoes:
 
 Data types result in special data type sentences that imply the usual
-equations, but at least selector equations should be generated (so
+equations, only selector equations are generated (so
 that they may become program equations)
 
 Operations (constructors) in DatatypeDefns are not renamed (selectors
@@ -60,7 +60,7 @@ executable terms (ProgEq.hs).
 
 shorter printing of terms
 
-terms in sentences (from formulas and definitions) are not quantified
+terms in sentences (from formulas) are not quantified
 over global variables
 
 

@@ -28,7 +28,7 @@ import Common.Keywords
 
 instance PrettyPrint ClassInfo where
     printText0 ga (ClassInfo ks) =
-	   space <> text lessS <+> printList0 ga ks
+	   text lessS <+> printList0 ga ks
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
@@ -38,11 +38,11 @@ printGenKind k = case k of
 
 instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
-    printText0 _ PreDatatype = space <> text "%(data type)%"
-    printText0 _ TypeVarDefn = space <> text "%(var)%"
-    printText0 ga (AliasTypeDefn s) = space <> text assignS 
+    printText0 _ PreDatatype = text "%(data type)%"
+    printText0 _ TypeVarDefn = text "%(var)%"
+    printText0 ga (AliasTypeDefn s) = text assignS 
 				      <+> printPseudoType ga s
-    printText0 ga (Supertype v t f) = space <> text equalS <+> 
+    printText0 ga (Supertype v t f) = text equalS <+> 
 					 braces (printText0 ga v 
 					   <+> colon
 					   <+> printText0 ga t 
@@ -53,60 +53,56 @@ instance PrettyPrint TypeDefn where
 
 printAltDefn :: GlobalAnnos -> Type -> AltDefn -> Doc
 printAltDefn ga dt (Construct mi ts p sels) = case mi of 
-        Just i -> printText0 ga i <+> colon 
-		  <+> printText0 ga (getConstrType dt p ts) 
-		  <+> fcat (map (parens . semiT_text ga) sels)
+        Just i -> hang (printText0 ga i <+> colon 
+			<+> printText0 ga (getConstrType dt p ts))
+		  2 $ fcat (map (parens . semiT_text ga) sels)
 	Nothing -> text (typeS ++ sS) <+> commaT_text ga ts
 
 instance PrettyPrint Selector where
     printText0 ga (Select mi t p) = 
 	(case mi of 
 	Just i -> printText0 ga i <+> (case p of 
-			     Partial -> text ":?"
+			     Partial -> text (colonS++quMark)
 			     Total -> colon) <> space
 	Nothing -> empty) <> printText0 ga t
 
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo _ ks sups defn) =
-	space <> colon <+> printList0 ga ks
+	hang (colon <+> printList0 ga ks
 	<> noPrint (null sups)
-	   (space <> text lessS <+> printList0 ga sups)
-        <> printText0 ga defn
+	   (space <> text lessS <+> printList0 ga sups))
+        2 $ printText0 ga defn
 
 instance PrettyPrint ConstrInfo where
     printText0 ga (ConstrInfo i t) = 
 	printText0 ga i <+> colon <+> printText0 ga t
 
 instance PrettyPrint OpDefn where
-    printText0 _ (NoOpDefn b) = space <> text ("%(" ++ show b ++ ")%")
-    printText0 _ VarDefn = space <> text "%(var)%"
-    printText0 _ (ConstructData i) = space <> text ("%(construct " ++
+    printText0 _ (NoOpDefn b) = text ("%(" ++ show b ++ ")%")
+    printText0 _ VarDefn = text "%(var)%"
+    printText0 _ (ConstructData i) = text ("%(construct " ++
 				     showId i ")%")
-    printText0 ga (SelectData c i) = space <> text ("%(select from " ++
+    printText0 ga (SelectData c i) = text ("%(select from " ++
 				     showId i " constructed by")
 				    $$ printList0 ga c <> text ")%"
-    printText0 ga (Definition b t) = printText0 ga (NoOpDefn b) <+> 
-				     text equalS <+> printText0 ga t
+    printText0 ga (Definition b t) = hang (printText0 ga (NoOpDefn b))
+				     2 (text equalS <+> printText0 ga t)
  
 instance PrettyPrint OpInfo where
-    printText0 ga o = space <> colon <+> printText0 ga (opType o)
+    printText0 ga o = hang (colon <+> printText0 ga (opType o)
 		      <> (case opAttrs o of 
 			  [] -> empty 
-			  l -> comma <> commaT_text ga l)
-		      <>  printText0 ga (opDefn o)
+			  l -> comma <> commaT_text ga l))
+		      2 $ printText0 ga (opDefn o)
  
 instance PrettyPrint OpInfos where
     printText0 ga (OpInfos l) = vcat $ map (printText0 ga) l
 
-instance PrettyPrint a => PrettyPrint (Maybe a) where
-    printText0 _ Nothing = empty
-    printText0 ga (Just c) =  printText0 ga c
-
 instance PrettyPrint DataEntry where 
-    printText0 ga (DataEntry im i k args alts) =
-	printGenKind k <> text typeS <+> printText0 ga i 
-		  <> hcat (map (parens . printText0 ga) args) 
-          <+> (text defnS $$ vcat (map (printAltDefn ga $ 
+    printText0 ga (DataEntry im i k args alts) = hang
+	(printGenKind k <> text typeS <+> printText0 ga i 
+		  <> hcat (map (parens . printText0 ga) args))
+          2 (text defnS <+> vcat (map (printAltDefn ga $ 
 					typeIdToType i args star) alts))
 	$$ nest 2 (noPrint (Map.isEmpty im) 
 	   (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
@@ -136,8 +132,8 @@ instance PrettyPrint Env where
 			   => GlobalAnnos -> Map.Map a b -> Doc
 	      printMap0 g m =
 		  let l = Map.toList m in
-			  vcat(map (\ (a, b) -> printText0 g a 
-				    <> printText0 g b) l)
+			  vcat(map (\ (a, b) -> hang (printText0 g a) 
+				    2 $ printText0 g b) l)
 
 instance PrettyPrint SymbolType where
     printText0 ga t = case t of 

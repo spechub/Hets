@@ -30,11 +30,12 @@ forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
 . (fun __<=>__ : Unit * Unit ->? Unit)
     ((op __subset__[S] : forall S : Type . Pred (Set S * Set S))
        (var s : Set S, var s' : Set S),
-     forall x : S . (fun __=>__ : Unit * Unit ->? Unit)
-                      ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-                         (var x : S, var s : Set S),
-                       (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-                         (var x : S, var s' : Set S)))
+     forall x : S
+       . (fun __=>__ : Unit * Unit ->? Unit)
+           ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+              (var x : S, var s : Set S),
+            (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+              (var x : S, var s' : Set S)))
 . (fun __<=>__ : Unit * Unit ->? Unit)
     ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
        (var x : S,
@@ -104,8 +105,8 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
-__*__ : forall S : Type; T : Type .
-          Set S * Set T -> Set (S * T) %(op)%
+__*__
+  : forall S : Type; T : Type . Set S * Set T -> Set (S * T) %(op)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a * a ->? Unit %(fun)%
@@ -114,8 +115,8 @@ __=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : Unit * Unit ->? Unit %(fun)%
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
-__disjointUnion__ : forall S : Type .
-                      Set S * Set S -> Set (S * Bool) %(op)%
+__disjointUnion__
+  : forall S : Type . Set S * Set S -> Set (S * Bool) %(op)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
@@ -124,14 +125,16 @@ __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 emptySet : forall S : Type . Set S %(op)%
-false : Bool %(op)%
-      : Unit %(fun)%
+false
+  : Bool %(op)%
+  : Unit %(fun)%
 if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 inl : forall S : Type . S -> S * Bool %(op)%
 inr : forall S : Type . S -> S * Bool %(op)%
 not__ : Unit ->? Unit %(fun)%
-true : Bool %(op)%
-     : Unit %(fun)%
+true
+  : Bool %(op)%
+  : Unit %(fun)%
 {__} : forall S : Type . S -> Set S %(op)%
 %% Sentences -------------------------------------------------------------
 (fun not__ : Unit ->? Unit)
@@ -150,11 +153,12 @@ true : Bool %(op)%
 (fun __<=>__ : Unit * Unit ->? Unit)
   ((op __subset__[S] : forall S : Type . Pred (Set S * Set S))
      (var s : Set S, var s' : Set S),
-   forall x : S . (fun __=>__ : Unit * Unit ->? Unit)
-                    ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-                       (var x : S, var s : Set S),
-                     (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-                       (var x : S, var s' : Set S)))
+   forall x : S
+     . (fun __=>__ : Unit * Unit ->? Unit)
+         ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+            (var x : S, var s : Set S),
+          (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+            (var x : S, var s' : Set S)))
 (fun __<=>__ : Unit * Unit ->? Unit)
   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
      (var x : S,

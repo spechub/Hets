@@ -292,8 +292,9 @@ anaDatatype genKind inst tys
 				      ([] :=> getSelType dt pa ts) []) 
 			               [] $ SelectData [ConstrInfo c ty] i
 			   Nothing -> return Nothing) $ concat sels) newAlts
-           addTypeId True (DatatypeDefn $ 
-	       DataEntry Map.empty i genKind nAs newAlts) inst fullKind i
+	   let de = DataEntry Map.empty i genKind nAs newAlts
+           addTypeId True (DatatypeDefn de) inst fullKind i
+	   appendSentences $ makeDataSelEqs de
            return d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 

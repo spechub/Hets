@@ -1,8 +1,9 @@
 var a : Type; b : Type
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
-op f : a * b ->? Pair a b = \ (var a : a, var b : b) .!
-                              (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
-                                (var a : a, var b : b)
+op f : a * b ->? Pair a b
+     = \ (var a : a, var b : b)
+         .! (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
+              (var a : a, var b : b)
 op g : forall a : Type; b : Type . Pair a b ->? a
 program (op g[_var_6; _var_7]
          : forall a : Type; b : Type . Pair a b ->? a)
@@ -11,9 +12,10 @@ program (op g[_var_6; _var_7]
              (var a : _var_6, var b : _var_7))
           = (var a : _var_6)
 %% Type Constructors -----------------------------------------------------
-Pair : Type -> Type -> Type %[free type Pair(a : Type)(b : Type) ::=
-                                                                 Pair : a * b -> Pair a b (fst : a;
-                                                                                           snd : b)]%
+Pair
+  : Type -> Type -> Type
+     %[free type Pair(a : Type)(b : Type)
+         ::= Pair : a * b -> Pair a b (fst : a; snd : b)]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
@@ -24,8 +26,8 @@ __->?__ : Type- -> Type+ -> Type
 a : Type %(var)%
 b : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-Pair : forall a : Type; b : Type .
-         a * b -> Pair a b %(construct Pair)%
+Pair
+  : forall a : Type; b : Type . a * b -> Pair a b %(construct Pair)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a * a ->? Unit %(fun)%
@@ -35,31 +37,49 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
-f : a * b ->? Pair a b %(op)% = \ (var a : a, var b : b) .!
-                                  (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
-                                    (var a : a, var b : b)
+f : a * b ->? Pair a b
+    %(op)%
+      = \ (var a : a, var b : b)
+          .! (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
+               (var a : a, var b : b)
 false : Unit %(fun)%
-fst : forall a : Type; b : Type .
-        Pair a b -> a %(select from Pair constructed by
-                     Pair : forall a : Type; b : Type . a * b -> Pair a b)%
-g : forall a : Type; b : Type .
-      Pair a b ->? a %(op)% = \ (op Pair[_var_6; _var_7]
-                                 : forall a : Type; b : Type . a * b -> Pair a b)
-                                  (var a : _var_6, var b : _var_7) .
-                                (var a : _var_6)
+fst
+  : forall a : Type; b : Type . Pair a b -> a
+    %(select from Pair constructed by
+    Pair : forall a : Type; b : Type . a * b -> Pair a b)%
+g : forall a : Type; b : Type . Pair a b ->? a
+    %(op)%
+      = \ (op Pair[_var_6; _var_7]
+           : forall a : Type; b : Type . a * b -> Pair a b)
+            (var a : _var_6, var b : _var_7)
+          . (var a : _var_6)
 if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
-snd : forall a : Type; b : Type .
-        Pair a b -> b %(select from Pair constructed by
-                     Pair : forall a : Type; b : Type . a * b -> Pair a b)%
+snd
+  : forall a : Type; b : Type . Pair a b -> b
+    %(select from Pair constructed by
+    Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-free type Pair(a : Type)(b : Type) ::=
-                                   Pair : a * b -> Pair a b (fst : a; snd : b) %(ga_Pair)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  ((op f : a * b ->? Pair a b)(var a : a, var b : b),
-   (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
-     (var a : a, var b : b)) %(def_f)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op fst : forall a : Type; b : Type . Pair a b -> a)
+         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+            (var x_1_1 : a, var x_1_2 : b)),
+       var x_1_1 : a) %(ga_select_fst)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op snd : forall a : Type; b : Type . Pair a b -> b)
+         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+            (var x_1_1 : a, var x_1_2 : b)),
+       var x_1_2 : b) %(ga_select_snd)%
+free type Pair(a : Type)(b : Type)
+  ::= Pair : a * b -> Pair a b (fst : a; snd : b) %(ga_Pair)%
+forall a : a; b : b
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op f : a * b ->? Pair a b)(var a : a, var b : b),
+       (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)
+         (var a : a, var b : b)) %(def_f)%
 program (op g[_var_6; _var_7]
          : forall a : Type; b : Type . Pair a b ->? a)
           ((op Pair[_var_6; _var_7]

@@ -20,24 +20,29 @@ free type even(a : Type+) ::= rek (odd a);
 free type even2(a : Type+) ::= rek (odd2 (odd2 a));
           odd2(a : Type+) ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------
-List : Type+ -> Type %[free type List(a : Type+) ::=
-                                                 Nil : List a
-                                                 Cons : a * List a -> List a (head : a;
-                                                                              tail : List a)]%
+List
+  : Type+ -> Type
+     %[free type List(a : Type+)
+         ::= Nil : List a
+             Cons : a * List a -> List a (head : a; tail : List a)]%
 Pred : Type -> Type := \ a : Type . a ->? Unit
-Tree : Type+ -> Type %[free type Tree(a : Type+) ::=
-                                                 Leaf : Tree a
-                                                 Branch : Tree a * Tree a -> Tree a (head : Tree a;
-                                                                                     tail : Tree a)]%
-Tree1 : Type+ -> Type %[generated type Tree1(a : Type+) ::=
-                                                        Leaf : Tree1 a
-                                                        Branch : Tree a *
-                                                                 Tree1 a -> Tree1 a (head : Tree a;
-                                                                                     tail : Tree1 a)]%
-Tree2 : Type+ -> Type %[type Tree2(a : Type+) ::=
-                                              Leaf : Tree2 a
-                                              Branch : Tree a * Tree2 a -> Tree2 a (head : Tree a;
-                                                                                    tail : Tree2 a)]%
+Tree
+  : Type+ -> Type
+     %[free type Tree(a : Type+)
+         ::= Leaf : Tree a
+             Branch : Tree a * Tree a -> Tree a (head : Tree a; tail : Tree a)]%
+Tree1
+  : Type+ -> Type
+     %[generated type Tree1(a : Type+)
+         ::= Leaf : Tree1 a
+             Branch : Tree a * Tree1 a -> Tree1 a
+               (head : Tree a; tail : Tree1 a)]%
+Tree2
+  : Type+ -> Type
+     %[type Tree2(a : Type+)
+         ::= Leaf : Tree2 a
+             Branch : Tree a * Tree2 a -> Tree2 a
+               (head : Tree a; tail : Tree2 a)]%
 Unit : Type := Unit
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -46,23 +51,29 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 a : Type+ %(var)%
 b : Type %(var)%
-even : Type+ -> Type %[free type even(a : Type+) ::=
-                                                 rek : odd a -> even a (odd a)]%
+even
+  : Type+ -> Type
+     %[free type even(a : Type+) ::= rek : odd a -> even a (odd a)]%
 even2 : Type+ -> Type %(data type)%
-odd : Type+ -> Type %[free type odd(a : Type+) ::=
-                                               rek : even a -> odd a (even a)]%
-odd2 : Type+ -> Type %[free type odd2(a : Type+) ::=
-                                                 rek : even2 a -> odd2 a (even2 a)]%
+odd
+  : Type+ -> Type
+     %[free type odd(a : Type+) ::= rek : even a -> odd a (even a)]%
+odd2
+  : Type+ -> Type
+     %[free type odd2(a : Type+)
+         ::= rek : even2 a -> odd2 a (even2 a)]%
 %% Assumptions -----------------------------------------------------------
-Branch : forall a : Type+ .
-           Tree a * Tree2 a -> Tree2 a %(construct Tree2)%
-       : forall a : Type+ .
-           Tree a * Tree1 a -> Tree1 a %(construct Tree1)%
-       : forall a : Type+ . Tree a * Tree a -> Tree a %(construct Tree)%
+Branch
+  : forall a : Type+ . Tree a * Tree2 a -> Tree2 a
+    %(construct Tree2)%
+  : forall a : Type+ . Tree a * Tree1 a -> Tree1 a
+    %(construct Tree1)%
+  : forall a : Type+ . Tree a * Tree a -> Tree a %(construct Tree)%
 Cons : forall a : Type+ . a * List a -> List a %(construct List)%
-Leaf : forall a : Type+ . Tree2 a %(construct Tree2)%
-     : forall a : Type+ . Tree1 a %(construct Tree1)%
-     : forall a : Type+ . Tree a %(construct Tree)%
+Leaf
+  : forall a : Type+ . Tree2 a %(construct Tree2)%
+  : forall a : Type+ . Tree1 a %(construct Tree1)%
+  : forall a : Type+ . Tree a %(construct Tree)%
 Nil : forall a : Type+ . List a %(construct List)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
@@ -74,66 +85,117 @@ __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-head : forall a : Type+ .
-         Tree2 a -> Tree a %(select from Tree2 constructed by
-                          Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
-     : forall a : Type+ .
-         Tree1 a -> Tree a %(select from Tree1 constructed by
-                          Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
-     : forall a : Type+ .
-         Tree a -> Tree a %(select from Tree constructed by
-                         Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
-     : forall a : Type+ . List a -> a %(select from List constructed by
-                                     Cons : forall a : Type+ . a * List a -> List a)%
+head
+  : forall a : Type+ . Tree2 a -> Tree a
+    %(select from Tree2 constructed by
+    Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
+  : forall a : Type+ . Tree1 a -> Tree a
+    %(select from Tree1 constructed by
+    Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
+  : forall a : Type+ . Tree a -> Tree a
+    %(select from Tree constructed by
+    Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
+  : forall a : Type+ . List a -> a
+    %(select from List constructed by
+    Cons : forall a : Type+ . a * List a -> List a)%
 if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
-rek : forall a : Type+ . even2 a -> odd2 a %(construct odd2)%
-    : forall a : Type+ . even a -> odd a %(construct odd)%
-    : forall a : Type+ . odd a -> even a %(construct even)%
-tail : forall a : Type+ .
-         Tree2 a -> Tree2 a %(select from Tree2 constructed by
-                           Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
-     : forall a : Type+ .
-         Tree1 a -> Tree1 a %(select from Tree1 constructed by
-                           Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
-     : forall a : Type+ .
-         Tree a -> Tree a %(select from Tree constructed by
-                         Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
-     : forall a : Type+ .
-         List a -> List a %(select from List constructed by
-                         Cons : forall a : Type+ . a * List a -> List a)%
+rek
+  : forall a : Type+ . even2 a -> odd2 a %(construct odd2)%
+  : forall a : Type+ . even a -> odd a %(construct odd)%
+  : forall a : Type+ . odd a -> even a %(construct even)%
+tail
+  : forall a : Type+ . Tree2 a -> Tree2 a
+    %(select from Tree2 constructed by
+    Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)%
+  : forall a : Type+ . Tree1 a -> Tree1 a
+    %(select from Tree1 constructed by
+    Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)%
+  : forall a : Type+ . Tree a -> Tree a
+    %(select from Tree constructed by
+    Branch : forall a : Type+ . Tree a * Tree a -> Tree a)%
+  : forall a : Type+ . List a -> List a
+    %(select from List constructed by
+    Cons : forall a : Type+ . a * List a -> List a)%
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-free type List(a : Type+) ::=
-                          Nil : List a
-                          Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
-free type List(a : Type+) ::=
-                          Nil : List a
-                          Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
-free type List(a : Type+) ::=
-                          Nil : List a
-                          Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
-free type List(a : Type+) ::=
-                          Nil : List a
-                          Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
-free type Tree(a : Type+) ::=
-                          Leaf : Tree a
-                          Branch : Tree a * Tree a -> Tree a (head : Tree a;
-                                                              tail : Tree a) %(ga_Tree)%
-generated type Tree1(a : Type+) ::=
-                                Leaf : Tree1 a
-                                Branch : Tree a * Tree1 a -> Tree1 a (head : Tree a;
-                                                                      tail : Tree1 a) %(ga_Tree1)%
-type Tree2(a : Type+) ::=
-                      Leaf : Tree2 a
-                      Branch : Tree a * Tree2 a -> Tree2 a (head : Tree a;
-                                                            tail : Tree2 a) %(ga_Tree2)%
-free type even(a : Type+) ::=
-                          rek : odd a -> even a (odd a)
-free type odd(a : Type+) ::=
-                         rek : even a -> odd a (even a) %(ga_even_odd)%
-free type odd2(a : Type+) ::=
-                          rek : even2 a -> odd2 a (even2 a) %(ga_even2_odd2)%
+forall a : Type+; x_1_1 : a; x_1_2 : List a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op head : forall a : Type+ . List a -> a)
+         ((op Cons : forall a : Type+ . a * List a -> List a)
+            (var x_1_1 : a, var x_1_2 : List a)),
+       var x_1_1 : a) %(ga_select_head)%
+forall a : Type+; x_1_1 : a; x_1_2 : List a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op tail : forall a : Type+ . List a -> List a)
+         ((op Cons : forall a : Type+ . a * List a -> List a)
+            (var x_1_1 : a, var x_1_2 : List a)),
+       var x_1_2 : List a) %(ga_select_tail)%
+free type List(a : Type+)
+  ::= Nil : List a
+      Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
+free type List(a : Type+)
+  ::= Nil : List a
+      Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
+free type List(a : Type+)
+  ::= Nil : List a
+      Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
+free type List(a : Type+)
+  ::= Nil : List a
+      Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op head : forall a : Type+ . Tree a -> Tree a)
+         ((op Branch : forall a : Type+ . Tree a * Tree a -> Tree a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree a)),
+       var x_1_1 : Tree a) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op tail : forall a : Type+ . Tree a -> Tree a)
+         ((op Branch : forall a : Type+ . Tree a * Tree a -> Tree a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree a)),
+       var x_1_2 : Tree a) %(ga_select_tail)%
+free type Tree(a : Type+)
+  ::= Leaf : Tree a
+      Branch : Tree a * Tree a -> Tree a
+        (head : Tree a; tail : Tree a) %(ga_Tree)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree1 a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op head : forall a : Type+ . Tree1 a -> Tree a)
+         ((op Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree1 a)),
+       var x_1_1 : Tree a) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree1 a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op tail : forall a : Type+ . Tree1 a -> Tree1 a)
+         ((op Branch : forall a : Type+ . Tree a * Tree1 a -> Tree1 a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree1 a)),
+       var x_1_2 : Tree1 a) %(ga_select_tail)%
+generated type Tree1(a : Type+)
+  ::= Leaf : Tree1 a
+      Branch : Tree a * Tree1 a -> Tree1 a
+        (head : Tree a; tail : Tree1 a) %(ga_Tree1)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree2 a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op head : forall a : Type+ . Tree2 a -> Tree a)
+         ((op Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree2 a)),
+       var x_1_1 : Tree a) %(ga_select_head)%
+forall a : Type+; x_1_1 : Tree a; x_1_2 : Tree2 a
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op tail : forall a : Type+ . Tree2 a -> Tree2 a)
+         ((op Branch : forall a : Type+ . Tree a * Tree2 a -> Tree2 a)
+            (var x_1_1 : Tree a, var x_1_2 : Tree2 a)),
+       var x_1_2 : Tree2 a) %(ga_select_tail)%
+type Tree2(a : Type+)
+  ::= Leaf : Tree2 a
+      Branch : Tree a * Tree2 a -> Tree2 a
+        (head : Tree a; tail : Tree2 a) %(ga_Tree2)%
+free type even(a : Type+) ::= rek : odd a -> even a (odd a)
+free type odd(a : Type+)
+  ::= rek : even a -> odd a (even a) %(ga_even_odd)%
+free type odd2(a : Type+)
+  ::= rek : even2 a -> odd2 a (even2 a) %(ga_even2_odd2)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'b'
 *** Hint 2.5, is type variable 'a'

@@ -24,6 +24,7 @@ import HasCASL.As
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
+import HasCASL.AsUtils
 import HasCASL.Unify
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
@@ -68,10 +69,6 @@ patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr
 tuplePatternToType :: [VarDecl] -> Type
 tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) []
 
-mkApplTerm :: Term -> [Term] -> Term
-mkApplTerm trm args = if null args then trm
-       else mkApplTerm (ApplTerm trm (head args) []) $ tail args
-
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
 anaOpItem ga br ods@(OpDecl is sc attr ps) = 
     do mSc <- anaTypeScheme sc
@@ -92,7 +89,6 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
 	   monoPats = map (map makeMonomorph) newPats
-	   toQualVar (VarDecl v t _ qs) = QualVar v t qs
 	   pats = map (\ l -> mkTupleTerm (map toQualVar l) []) monoPats
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> scTy) qs) -> do 
@@ -113,7 +109,10 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 				      ot = QualOp br (InstOpId i [] []) 
 					  lastSc []
 				      lhs = mkApplTerm ot pats
-				      f = mkEqTerm eqId ps lhs lastTrm
+				      ef = mkEqTerm eqId ps lhs lastTrm
+				      f = mkForall (map GenTypeVarDecl tArgs
+					  ++ (map GenVarDecl $ 
+					      concatMap extractVars pats)) ef
 				  addOpId i lastSc [] $ Definition br lamTrm
 				  appendSentences [NamedSen 
 						   ("def_" ++ showId i "")

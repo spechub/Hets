@@ -211,19 +211,19 @@ printTerm ga b trm =
         TypedTerm term q typ _ -> hang (printText0 ga term
 			  <+> printText0 ga q)
 			  4 $ printText0 ga typ
-        QuantifiedTerm q vs t _ -> printText0 ga q
-					  <+> semiT_text ga vs 
-					  <+> text dotS    
-					  <+> printText0 ga t
+        QuantifiedTerm q vs t _ -> hang (printText0 ga q
+					  <+> semiT_text ga vs)
+					  2 (text dotS    
+					  <+> printText0 ga t)
         LambdaTerm ps q t _ -> hang (text lamS
 				      <+> (case ps of
 					   [p] -> printText0 ga p
 					   _ -> fcat $ map 
-					      (parens . printTerm ga False) ps)
-				      <+> (case q of 
+					     (parens . printTerm ga False) ps))
+				      2 ((case q of 
 					   Partial -> text dotS
-					   Total -> text $ dotS ++ exMark))
-				      2 $ printText0 ga t
+					   Total -> text $ dotS ++ exMark)
+					 <+> printText0 ga t)
         CaseTerm t es _  -> hang (text caseS
 				   <+> printText0 ga t
 				   <+> text ofS)
@@ -368,12 +368,12 @@ instance PrettyPrint OpItem where
 					<> (if null as then empty 
 					    else comma <> space)
 					<> commaT_text ga as)
-        OpDefn n ps s p t _ -> 
-	    printText0 ga n <> fcat (map (parens . semiT_text ga) ps)
-			    <+> colon <> printText0 ga p
- 			    <+> printText0 ga s 
-			    <+> text equalS
-			    <+> printText0 ga t
+        OpDefn n ps s p t _ -> hang
+	    (hang (printText0 ga n <> fcat (map (parens . semiT_text ga) ps))
+			    2 (colon <> printText0 ga p
+ 			    <+> printText0 ga s)) 
+			    2 (text equalS
+			       <+> printText0 ga t)
 
 instance PrettyPrint BinOpAttr where 
     printText0 _ a = text $ case a of

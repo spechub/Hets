@@ -1,13 +1,15 @@
 type bool ::= True | 
               False
 op a : bool = (op True : bool)
-op notA : bool = case (op a : bool) of
-                     (op True : bool) -> (op False : bool) | 
-                     (op False : bool) -> (op True : bool)
-op b : bool = let (var x : bool) = (op True : bool);
-                  (var y : bool) = (op False : bool);
-                  (var z : bool) = (var x : bool)
-              in (op True : bool)
+op notA : bool
+     = case (op a : bool) of
+           (op True : bool) -> (op False : bool) | 
+           (op False : bool) -> (op True : bool)
+op b : bool
+     = let (var x : bool) = (op True : bool);
+           (var y : bool) = (op False : bool);
+           (var z : bool) = (var x : bool)
+       in (op True : bool)
 op b : bool -> bool = \ (var x : bool) . (var x : bool)
 %% Type Constructors -----------------------------------------------------
 Pred : Type -> Type := \ a : Type . a ->? Unit
@@ -17,9 +19,11 @@ __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
-bool : Type %[type bool ::=
-                        True : bool
-                        False : bool]%
+bool
+  : Type
+     %[type bool
+         ::= True : bool
+             False : bool]%
 %% Assumptions -----------------------------------------------------------
 False : bool %(construct bool)%
 True : bool %(construct bool)%
@@ -33,22 +37,27 @@ __if__ : Unit * Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
 a : bool %(op)% = (op True : bool)
 b : bool -> bool %(op)% = \ (var x : bool) . (var x : bool)
-  : bool %(op)% = let (var x : bool) = (op True : bool);
-                      (var y : bool) = (op False : bool);
-                      (var z : bool) = (var x : bool)
-                  in (op True : bool)
+  : bool
+    %(op)%
+      = let (var x : bool) = (op True : bool);
+            (var y : bool) = (op False : bool);
+            (var z : bool) = (var x : bool)
+        in (op True : bool)
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 if__then__else__ : forall a : Type . Unit * a * a ->? a %(fun)%
 not__ : Unit ->? Unit %(fun)%
-notA : bool %(op)% = case (op a : bool) of
-                         (op True : bool) -> (op False : bool) | 
-                         (op False : bool) -> (op True : bool)
+notA
+  : bool
+    %(op)%
+      = case (op a : bool) of
+            (op True : bool) -> (op False : bool) | 
+            (op False : bool) -> (op True : bool)
 true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-type bool ::=
-          True : bool
-          False : bool %(ga_bool)%
+type bool
+  ::= True : bool
+      False : bool %(ga_bool)%
 (fun __=__ : forall a : Type . a * a ->? Unit)
   (op a : bool, op True : bool) %(def_a)%
 (fun __=__ : forall a : Type . a * a ->? Unit)

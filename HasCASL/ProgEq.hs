@@ -33,15 +33,11 @@ isConstructor o = case opDefn o of
 		    ConstructData _ -> True
 		    _ -> False
 
-isSelector :: OpInfo -> Bool
-isSelector o = case opDefn o of
-		    SelectData _ _ -> True
-		    _ -> False
-
 isOp :: OpInfo -> Bool
 isOp o = case opDefn o of
 		    NoOpDefn _ -> True
 		    Definition _ _ -> True
+		    SelectData _ _ -> True
 		    _ -> False
 
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool

@@ -17,6 +17,23 @@ import HasCASL.PrintAs -- to reexport instances
 import Common.Id
 import Common.PrettyPrint
 
+-- | construct term from id
+mkOpTerm :: Id -> TypeScheme -> Term
+mkOpTerm i sc = QualOp Op (InstOpId i [] []) sc []
+
+-- | bind a term
+mkForall :: [GenVarDecl] -> Term -> Term
+mkForall vl f = if null vl then f else QuantifiedTerm Universal vl f []
+
+-- | convert declared to qualified variables
+toQualVar :: VarDecl -> Term
+toQualVar (VarDecl v ty _ ps) = QualVar v ty ps
+
+-- | construct application with curried arguments
+mkApplTerm :: Term -> [Term] -> Term
+mkApplTerm trm args = if null args then trm
+       else mkApplTerm (ApplTerm trm (head args) []) $ tail args
+
 -- | get the type of a constructor with given curried argument types
 getConstrType :: Type -> Partiality -> [Type] -> Type
 getConstrType dt p ts = (case p of 
