@@ -110,7 +110,7 @@
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\ 
--- Version 0.3 --}
+-- Version 0.35 --}
 \author{Till Mossakowski\\[1em]
 Department of Computer Science\\ and Bremen
 Institute for Safe Systems,\\ University of Bremen, Germany.\\[1em]
@@ -156,9 +156,11 @@ $$\xymatrix{
 \Text{\CspCASL}
 &
 \Text{\ModalCASL}
+&
+\Text{\CoCASL}
  \\
 &
-\Text{\CASL} \ar[u] \ar[ur] \ar[urr]
+\Text{\CASL} \ar[u] \ar[ur] \ar[urr] \ar[urrr]
 &
 }$$
 \caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
@@ -168,9 +170,10 @@ $$\xymatrix{
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
 \CASL & x & x & (x) \\\hline
+\CoCASL & x & x & (x) \\\hline
 \ModalCASL & x & x & - \\\hline
 \HasCASL & x & (x) & - \\\hline
-Haskell & x & x & -\\\hline
+Haskell/HasSLe & x & x & -\\\hline
 \CspCASL & (x) & - & - \\\hline
 Structured specifications & x & x & (x) \\\hline
 Architectural specifications & x & - & -\\\hline
@@ -386,7 +389,7 @@ calling \Hets).
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.hs} & Haskell & Haskell\\\hline
+\texttt{.hs} & Haskell/HasSLe & Haskell\\\hline
 \end{tabular}
 
 \medskip
@@ -443,7 +446,8 @@ Here, the construct \texttt{data List} refers to the \CASL specification
 }
 
 The ending \texttt{.hs} is available for directly reading in
-Haskell programs, and hence supports the Haskell module system.
+Haskell programs and HasSLe specifications, 
+and hence supports the Haskell module system.
 By contrast, in \HetCASL libraries (ending with \texttt{.het}),
 the logic Haskell has to be chosen explicitly, and the \CASL structuring
 syntax needs to be used:
