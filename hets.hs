@@ -18,6 +18,7 @@ import Options
 import Static.AnalysisLibrary
 import Static.DevGraph
 import System.Environment
+import ToHaskell.TranslateAna
 --import Syntax.Print_HetCASL
 --import GUI.ConvertDevToAbstractGraph -- requires uni-package
 
