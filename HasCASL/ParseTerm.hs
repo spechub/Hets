@@ -576,12 +576,28 @@ lambdaTerm b =
 		return (LambdaTerm pl k t (toPos l [] d))
 
 lamPattern :: AParser [Pattern]
-lamPattern = do (vs, ps) <- varDecls `separatedBy` anSemi
-		return [PatternVars (concat vs) (map tokPos ps)]
-	     <|> 
-	     many (bracketParser patterns oParenT cParenT anSemi 
-		      (BracketPattern Parens)) 
+lamPattern = 
+    do  lookAhead lamDot 
+	return []
+      <|> do p <- lamVarDecls 
+		  <|> (bracketParser patterns oParenT cParenT 
+		       anSemi (BracketPattern Parens))
+	     ps <- lamPattern
+	     return (p : ps)
 
+lamVarDecls :: AParser Pattern
+lamVarDecls = do (vs, ps) <- var `separatedBy` anComma
+		 do  vds <- varDeclType vs ps   
+                     do  s <- anSemi
+			 (vvs, pps) <- varDecls `separatedBy` anSemi
+			 return (PatternVars (vds ++ concat vvs) 
+				 (map tokPos (s:pps)))
+		       <|> return (PatternVars vds (map tokPos ps))
+	           <|> return (TuplePattern (map ( \ (Id ts _ _) -> 
+					     MixfixPattern $ 
+						   map PatternToken ts) vs) 
+			       (map tokPos ps))
+		    
 -----------------------------------------------------------------------------
 -- case-term
 -----------------------------------------------------------------------------

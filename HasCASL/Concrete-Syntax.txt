@@ -240,7 +240,10 @@ QUANT-TERM      ::= QUANTIFIER VAR-DECL ;...; VAR-DECL "." TERM
                   | forall TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM 
 		  | \ LAMBDA-DOT TERM     % for unit
 		  | \ VAR-DECL LAMBDA-DOT TERM
+		  | \ VAR , ... , VAR LAMBDA-DOT TERM
 		  | \ (PATTERN) ... (PATTERN) LAMBDA-DOT TERM
+
+
 
 %% case/lambda-Terms must be without formula ingredients
 
