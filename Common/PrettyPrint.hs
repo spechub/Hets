@@ -467,6 +467,3 @@ printId pf ga mdf i =
 instance PrettyPrint () where
    printText0 _ga _s = text "()"
 
-
-instance PrettyPrint String where
-   printText0 _ga s = text s
