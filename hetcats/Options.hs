@@ -14,8 +14,8 @@
    extension of the options. 
 
    TODO:
-     - Posix Spezifikation zu command line interfaces
-     - Dokumentation zu GetOpt im package util vom ghc
+     - Posix Spezifikation zu command line interfaces \/
+     - Dokumentation zu System.Console.GetOpt vom ghc \/
      - Flag und HetCATSOpts Datentyp anpassen
      - options Liste erweitern
      - parse funktionen schreiben
@@ -98,13 +98,14 @@ data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
 data ATFlag = BAF | NonBAF
 	       deriving (Show,Eq)
 
+-- differences between HetCASLOut and Global_Env ??
 data OutType = HetCASLOut OutFormat | Global_Env OutFormat
 	       deriving (Show,Eq)
 
 data OutFormat = XML | Ascii | Latex
 	       deriving (Show,Eq)
 
-data AnaFlag = Static
+data AnaFlag = Static | None
 	       deriving (Show,Eq)
 
 
@@ -133,16 +134,14 @@ form_opt_rec flags inp_files =
 		          OutTypes ot -> ot
 			  _           -> defaultOt
 	    where defaultOt = outtypes default_HetcatsOpts
-    in do if Help `elem` flags then 
-	     do putStrLn $ "\n" ++ hetcats_usage
-		exitWith ExitSuccess
-	   else 
-	     if Version `elem` flags then 
-		do putStrLn $ "version of hetcats: " ++ hetcats_version
-		   exitWith ExitSuccess
-	     else
-	        return ()
-          in_file <- check_in_file req_in_file
+    in do if Help `elem` flags -- called with --help
+	     then do putStrLn $ "\n" ++ hetcats_usage
+		     exitWith ExitSuccess
+	     else if Version `elem` flags -- called with --version
+		  then do putStrLn $ "version of hetcats: " ++ hetcats_version
+		          exitWith ExitSuccess
+	          else return () -- called w/o --help or --version
+	  in_file <- check_in_file req_in_file
 	  od <- check_out_dir flags in_file
 	  return $ default_HetcatsOpts { infile  = in_file 
 				       , outdir  = od 
@@ -204,7 +203,7 @@ options =
             "chatty output on stderr"
  , Option ['V'] ["version"] (NoArg Version)       
             "show version number"
- , Option ['h'] ["help"] (NoArg Help) 
+ , Option ['h'] ["help", "usage"] (NoArg Help) 
             "show usage information"
  , Option ['i'] ["input-type"]  (ReqArg inp_type "TYPE")  
             "TYPE of input file: gen-trm | gen-trm-baf | hetcasl (default) | casl (via cats)"
@@ -239,14 +238,13 @@ inp_type s | "gen-trm" `isPrefixOf` s = InType $ trm_type s
 out_types :: String -> Flag
 out_types s | ',' `elem` s = case merge_out_types $ split_types s of
 			     [x] -> x
-			     _ -> error "another thing went wrong!!"
+			     _ -> error "internal error after merging OutTypes"
 	    | s == "hetcasl-latex"  = OutTypes [HetCASLOut Latex]
 	    | s == "hetcasl-ascii"  = OutTypes [HetCASLOut Ascii]
 	    | s == "global-env-xml" = OutTypes [Global_Env XML]
 	    | otherwise = error ("unknown output type: " ++ s ++ "\n" ++
 				 hetcats_usage)
     where split_types = map out_types . splitOn ',' 
-
 
 merge_out_types :: [Flag] -> [Flag]
 merge_out_types flags = 
@@ -255,9 +253,7 @@ merge_out_types flags =
 			OutTypes _ -> True
 			_          -> False
 	concatTypes l ot = case ot of
-			     OutTypes l' -> l++l'
-			     _ -> error "something went very wrong!!"
+			   OutTypes l' -> l++l'
+			   _ -> error "internal error in merging OutTypes"
 	ots' = foldl concatTypes [] ots
     in if null ots' then flags' else (OutTypes ots'):flags'  
-
-
