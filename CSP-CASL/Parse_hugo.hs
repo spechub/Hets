@@ -12,21 +12,26 @@
 
 module Parse_hugo where
 
-import CCKeywords
+--import CCKeywords
+
 import AS_CSP_CASL
+import AS_Basic_CASL(OP_NAME)
 import CCToken
 import CCLexer
 
 import Prelude
 import Parsec
 
+import Id (Token(..))
 import Token
-import Lexer
+import Lexer(separatedBy)
 import Parse_AS_Basic
 import Formula
-import AS_Basic_CASL
 
-cspCaslCSpec :: GenParser Char st CSP_CASL_C_SPEC
+import AnnoState
+--import AS_Basic_CASL
+
+cspCaslCSpec :: AParser CSP_CASL_C_SPEC
 cspCaslCSpec =    do { d <- dataDefn
                      ; c <- channelDecl
                      ; p <- processDefn
@@ -35,101 +40,101 @@ cspCaslCSpec =    do { d <- dataDefn
               <|> do { d <- dataDefn
                      ; c <- channelDecl
                      ; p <- processDefn
-                     ; e <- asKey endS
+                     ; endT
                      ; return  (Csp_casl_c_spec d c p)
                      }
                      
-dataDefn :: GenParser Char st DATA_DEFN
-dataDefn = do { rd <- asKey dataS
+dataDefn :: AParser DATA_DEFN
+dataDefn = do { dataT
               ; d  <- basicSpec
               ; return d
               }
 
-channelDecl :: GenParser Char st CHANNEL_DECL
-channelDecl = do { rc       <- asKey channelS
-                 ; (cs, ps) <- channelItem `separatedBy` semiT
+channelDecl :: AParser CHANNEL_DECL
+channelDecl = do { channelT
+                 ; (cs, ps) <- channelItem `separatedBy` semicolonT
                  ; return (Channel_items cs)
                  }
 
-channelItem :: GenParser Char st CHANNEL_ITEM
+channelItem :: AParser CHANNEL_ITEM
 channelItem = do { (ns, ps) <- channelName `separatedBy` commaT
-	               ; c        <- colonT
+	               ; colonT
 	               ; s        <- sortId
 	               ; return (Channel_decl ns s)
                  }
 
               
-processDefn :: GenParser Char st PROCESS_DEFN
-processDefn = do { rp <- asKey processS
+processDefn :: AParser PROCESS_DEFN
+processDefn = do { processT
                  ; p  <- process
                  ; return (Basic p)
                  }
 
 
 -- MiniParser via Umbennung; eventuell Passenderes wählen
-processId = varId
+
+processName :: AParser PROCESS_NAME
+processName = varId
+
+channelId :: AParser Token
 channelId = varId
 
 
-primProcess :: GenParser Char st PROCESS
-primProcess =      do { rs <- asKey skipS
+primProcess :: AParser PROCESS
+primProcess =      do { skipT
                       ; return Skip
                       }
-          <|>      do { rs <- asKey stopS
+          <|>      do { stopT
                       ; return Stop
                       }
-	        <|> try (do { asKey "if"
-		                  ; f <- formula
-		                  ; asKey "then"
+	        <|> try (do { ifT
+		                  ; f  <- formula
+		                  ; thenT
 		                  ; p1 <- process
-		                  ; asKey "else"
+		                  ; elseT
 		                  ; p2 <- process
-		                  ; return (Conditional f p1 p2)
+		                  ; return (Conditional_choice f p1 p2)
 		                  }
 		              )
-	        <|>      do { asKey "if"
+	        <|>      do { ifT
 		                  ; f <- formula
-		                  ; asKey "then"
-		                  ; p1 <- process
-		              --    ; asKey "else"
-		              --    ; p2 <- process
-		                  ; return (Conditional f p1 p2)
+		                  ; thenT
+		                  ; p <- process
+		                  ; return (Conditional_process f p)
 		                  }
-	        <|>      do { asKey "when"                    --else?
+	        <|>      do { whenT                    
 		                  ; f <- formula
-		                  ; asKey "then"
-		                  ; p1 <- process
-		              --    ; asKey "else"
-		              --    ; p2 <- process
-		                  ; return (Guarded_command f p1)
+		                  ; thenT
+		                  ; p <- process
+		                  ; return (Guarded_command f p)
 		                  }
-      	  <|>      do { asKey "var"
-		                  ; v  <- varId
-		                  ; colonT
+      	  <|>      do { varT
+      	              ; v  <- varId
+		                  ; colonT                  -- ':'
 		                  ; es <- eventSet
-		                  ; asKey "->"
-		                  ; p  <- renamedProcess
+		                  ; multiPreT               -- '->'
+		                  ; p  <- hidRenProcess
 		                  ; return (Multiple_prefix v es p)
 		              }
 	        <|> try ( do { e <- event
-         	             ; asKey "->" 
-	                     ; p <- renamedProcess
+         	             ; prefixT 
+	                     ; p <- hidRenProcess
 	                     ; return (Prefix e p)
 	                     }
 	                )
-	        <|>       do { o <- asKey oRBracketS
+	        <|>       do { oRBracketT
                        ; p <- process
-                       ; c <- asKey cRBracketS
+                       ; cRBracketT
                        ; return p
                        } 
-	        <|> try ( do { i <- processId
-                       ; oParenT
+	        <|> try ( do { i <- processName
+                       ; oRBracketT
 	                     ; t <- term
-	                     ; cParenT
+	                     ; cRBracketT
 	                     ; return (Generic_named_process i t)
 	                     }
 	                )
-          <|>       do { i <- processId
+          <|>       do { i <- processName
                        ; return (Named_process i)
                        }
                        
@@ -140,43 +145,186 @@ primProcess =      do { rs <- asKey skipS
 --		             ; return (Guarded f p)
 --                 }
 
-renamedProcess :: GenParser Char st PROCESS
-renamedProcess = try (do { p <- primProcess
-		                     ; asKey "[["
-		                     ; asKey "]]"
-		                     ; return p
-		                     }
-		                 )
-		         <|>      do { p <- primProcess
-		                     ; return p
-		                     } 
+--renamedProcess :: AParser PROCESS
+--renamedProcess = try (do { p <- primProcess
+--		                     ; oRenamingT
+--		                     
+--		                     ; cRenamingT
+--		                     ; return p
+--		                     }
+--		                 )
+--		         <|>      do { p <- primProcess
+--		                     ; return p
+--		                     } 
 
-seqProcess :: GenParser Char st PROCESS
+
+seqProcess :: AParser PROCESS
 seqProcess = try ( do { rp <- hidRenProcess 
-                      ; semiT
+                      ; semicolonT
                       ; sp <- seqProcess
-                      ; return (Sequential rp sp)
+                      ; return (Sequential [rp, sp])
                       }
                  )
          <|>       do { hrp <- hidRenProcess
                       ; return hrp
                       }  
 
-eventSet :: GenParser Char st EVENT_SET
+
+sortRenaming :: AParser SORT_RENAMING
+sortRenaming = do { (procs, ps) <- opList `separatedBy` commaT
+                  ; return (Op_list procs)
+                  }
+
+channelRenaming :: AParser CHANNEL_RENAMING
+channelRenaming = do { cn1 <- channelName
+	                   ; chanRenT
+	                   ; cn2 <- channelName
+	                   ; return (Channel_renaming cn1 cn2)
+	                   } 
+
+hidRenProcess :: AParser PROCESS
+hidRenProcess = try ( do { pp <- primProcess
+                         ; hidingT
+	                       ; es  <- eventSet
+      	                 ; return (Hiding pp es)
+	                       }
+	                  )
+            <|> try ( do { pp <- primProcess
+                         ; oRenamingT
+	                       ; sr <- sortRenaming
+                         ; cRenamingT
+	                       ; return (Csp_sort_renaming pp sr)
+	                       }
+	                  )
+            <|> try ( do { pp <- primProcess
+                         ; oRenamingT
+	                       ; sr <- channelRenaming
+                         ; cRenamingT
+	                       ; return (Csp_channel_renaming pp sr)
+	                       }
+	                  )	                  
+            <|>       do { pp <- primProcess
+                         ; return pp
+                         }             
+          
+
+intChoiceProcess :: AParser PROCESS
+intChoiceProcess = try ( do { sp  <- seqProcess
+                            ; intChoiceT
+                            ; icp <- intChoiceProcess
+                            ; return (Internal_choice [sp, icp])
+                            }
+                       )
+               <|>       do { sp <- seqProcess
+                            ; return sp
+                            }  
+ 
+extChoiceProcess :: AParser PROCESS
+extChoiceProcess = try ( do { sp  <- seqProcess
+                            ; extChoiceT
+                            ; ecp <- extChoiceProcess
+                            ; return (External_choice [sp, ecp])
+                            }
+                       )
+               <|>       do { sp <- seqProcess
+                            ; return sp
+                            }                        
+
+choiceProcess :: AParser PROCESS
+choiceProcess = try ( do { sp  <- seqProcess 
+                         ; extChoiceT
+                         ; ecp <- extChoiceProcess 
+                         ; return (External_choice [sp, ecp])
+                         }
+                    )
+            <|> try ( do { sp  <- seqProcess 
+                         ; intChoiceT
+                         ; icp <- intChoiceProcess 
+                         ; return (Internal_choice [sp, icp])
+                         }
+                    )
+            <|>       do { sp <- seqProcess
+                         ; return sp
+                         }           
+
+
+synParaProcess :: AParser PROCESS
+synParaProcess = try ( do { cp  <- choiceProcess
+                          ; synParaT
+                          ; spp <- synParaProcess
+                          ; return (Synchronous_parallel [cp, spp])
+                          }
+                     )
+             <|>       do { cp <- choiceProcess
+                          ; return cp
+                          }                   
+
+interParaProcess :: AParser PROCESS
+interParaProcess = try ( do { cp  <- choiceProcess
+                            ; interParaT
+                            ; ipp <- interParaProcess
+                            ; return (Interleaving_parallel [cp, ipp])
+                            }
+                       )
+               <|>       do { cp <- choiceProcess
+                            ; return cp
+                            }                   
+
+process :: AParser PROCESS
+process = try ( do { cp  <- choiceProcess
+                   ; synParaT
+                   ; spp <- synParaProcess
+                   ; return (Synchronous_parallel [cp, spp])
+                   }
+	            )
+      <|> try ( do { cp  <- choiceProcess 
+                   ; interParaT
+                   ; ipp <- interParaProcess
+                   ; return (Interleaving_parallel [cp, ipp])
+                   }
+	            )
+      <|> try ( do { cp1 <- choiceProcess
+                   ; oGenPaT
+	                 ; es1 <- eventSet
+                   ; mGenPaT
+	                 ; es2 <- eventSet	                 
+	                 ; cGenPaT
+	                 ; cp2 <- choiceProcess
+	                 ; return (General_parallel cp1 es1 es2 cp2)
+	                 }
+	            )   
+      <|> try ( do { cp1 <- choiceProcess
+                   ; oAlPaT
+	                 ; es  <- eventSet
+	                 ; cAlPaT
+	                 ; cp2 <- choiceProcess
+	                 ; return (Alphabet_parallel cp1 es cp2)
+	                 }
+	            )	            	                         	            
+      <|>       do { ch <- choiceProcess
+                   ; return ch
+                   } 
+
+
+opList :: AParser OP_NAME
+opList = do { pid <- parseId
+            ; return pid
+	          }
+
+eventSet :: AParser EVENT_SET
 eventSet = do { si <- sortId
 	            ; return (ESort si)
 	            }
-
 	            
-event :: GenParser Char st EVENT
+event :: AParser EVENT
 event = try (do { ci <- channelId
-	              ; asKey "!"
+	              ; sendT
 	              ; t <- term
 	              ; return (Send ci t)
 	              }
 	          ) 
 	  <|> try (do { ci <- channelId
-	              ; asKey "?"
+	              ; receiveT
 	              ; v  <- varId
 	              ; colonT
 	              ; si <- sortId              
@@ -188,102 +336,18 @@ event = try (do { ci <- channelId
 	              }
 
 
-sortRenaming :: GenParser Char st SORT_RENAMING
-sortRenaming = do { (procs, ps) <- opList `separatedBy` asKey ","
-                      ; return (if length procs == 1 then head procs
-                                                     else Op_list procs)
-                  }
-
-
-opList :: GenParser Char st SORT_RENAMING
-opList = do { si <- parseId
-            ; return si
-	          }
-
-
-channelRenaming :: GenParser Char st CHANNEL_RENAMING
-channelRenaming = do { cn1 <- channelName
-	                   ; asKey "<-"
-	                   ; cn2 <- channelName
-	                   ; return (Channel_renaming cn1 cn2)
-	                   } 
-
-
-hidRenProcess :: GenParser Char st PROCESS
-hidRenProcess = try ( do { pp <- primProcess
-                         ; hidingT
-	                       ; es  <- eventSet
-      	                 ; return (Hiding pp es)
-	                       }
-	                  )
-            <|> try ( do { pp <- primProcess
-                         ; oRenamingT
-	                       ; sr <- sortRenaming
-                         ; cRenamingT
-	                       ; return (Renaming pp sr)
-	                       }
-	                  )
-            <|>       do { pp <- primProcess
-                         ; return pp
-                         }             
-          
- 
-         
-                 
-
-choiceProcess :: GenParser Char st PROCESS
-choiceProcess = try ( do { (procs, ps) <- seqProcess `separatedBy` extChoiceT
-                         ; return (if length procs == 1 then head procs
-                                                        else External_choice procs)
-                         }
-                    )
-            <|> try ( do { (procs, ps) <- seqProcess `separatedBy` intChoiceT
-                         ; return (if length procs == 1 then head procs
-                                                        else Internal_choice procs)
-                         }
-                    )
-            <|>       do { sp <- seqProcess
-                         ; return sp
-                         }           
-
-
-process :: GenParser Char st PROCESS
-process = try ( do { cp1 <- choiceProcess
-                   ; oAlPaT
-	                 ; es  <- eventSet
-	                 ; cAlPaT
-	                 ; cp2 <- choiceProcess
-	                 ; return (Alphabet_parallel cp1 es cp2)
-	                 }
-	            )
-      <|> try ( do { cp1 <- choiceProcess
-                   ; oGenPaT
-	                 ; es1 <- eventSet
-                   ; mGenPaT
-	                 ; es2 <- eventSet	                 
-	                 ; cGenPaT
-	                 ; cp2 <- choiceProcess
-	                 ; return (General_parallel cp1 es1 es2 cp2)
-	                 }
-	            )
-      <|> try ( do { (procs, ps) <- choiceProcess `separatedBy` synParaT
-                   ; return (if length procs == 1 then head procs
-                                                  else Synchronous_parallel procs)
-                   }
-	            )
-      <|> try ( do { (procs, ps) <- choiceProcess `separatedBy` interParaT
-                   ; return (if length procs == 1 then head procs
-                                                  else Interleaving_parallel procs)
-                   }
-	            )           	            	            
-      <|>       do { ch <- choiceProcess
-                   ; return ch
-                   } 
-
 
 {-
 namedProcess :: GenParser Char st PROCESS
 namedProcess = do { pn <- sortId
                   ; return (Named_process pn)
                   }
+
+
+      <|> try ( do { (procs, ps) <- choiceProcess `separatedBy` interParaT
+                   ; return (if length procs == 1 then head procs
+                                                  else Interleaving_parallel procs)
+                   }
+	            )
+
 -}
