@@ -20,6 +20,8 @@
 
    Name views in devgraphs?
 
+   spec <name> not found: line number!
+
    Issue warning for unions of non-disjoint signatures
      (and offer tool for renaming?)
 
