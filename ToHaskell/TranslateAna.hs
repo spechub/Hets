@@ -16,8 +16,17 @@ module ToHaskell.TranslateAna (
          translateAna
        -- * Translation of a map of assumptions
        , translateAssumps
+       , distinctOpIds
+       , newName
        -- * Translation of a map of types
        , translateTypeMap
+       , translateData
+       -- ** Translation of identifiers
+       , IdCase
+       , translateIdWithType
+       , translateId
+       -- * Testing
+       , idToHaskell
        ) where
 
 import HasCASL.As
@@ -52,6 +61,7 @@ functionUndef s =
 -- Funktion zum Aufruf des Parsers fuer ID's
 -------------------------------------------------------------------------
 
+-- | Function for the test of the translation if identifiers.
 idToHaskell :: AParser WrapString
 idToHaskell = fmap (WrapString . translateId) parseId 
 
@@ -59,8 +69,9 @@ idToHaskell = fmap (WrapString . translateId) parseId
 -- Translation of an HasCASL-Environement
 -------------------------------------------------------------------------
 
--- | Convert an abstract syntax of HasCASL (after the static analysis) 
+-- | Converts an abstract syntax of HasCASL (after the static analysis) 
 -- to the top datatype of the asbtract syntax of haskell.
+-- Calls 'translateTypeMap' and 'translateAssumps'.
 translateAna :: Env -> HsModule
 --translateAna env = error (show env)
 translateAna env = 
@@ -80,11 +91,13 @@ translateAna env =
 -- Translation of types
 -------------------------------------------------------------------------
 
--- | Convert all HasCASL types to data or type declarations in haskell.
+-- | Converts all HasCASL types to data or type declarations in haskell.
+-- Uses 'translateData'.
 translateTypeMap :: TypeMap -> [HsDecl]
 translateTypeMap m = concat $ map translateData (Map.assocs m)
 
--- muss translateData eine Liste von HsDecl's oder eine HsDecl liefern?
+-- | Converts one type to a data or type declaration in haskell.
+-- Uses 'translateIdWithType'.
 translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
@@ -139,14 +152,14 @@ getType :: Type -> HsBangType
 getType t = HsBangedTy (translateType t)
 
 getDataArgs :: [TypeArg] -> [HsName]
-getDataArgs = map getAliasArg
+getDataArgs = map getArg
     
 getAliasArgs :: TypeScheme -> [HsName]
 getAliasArgs (TypeScheme arglist (_plist :=> _t) _poslist) = 
-    map getAliasArg arglist
+    map getArg arglist
 
-getAliasArg :: TypeArg -> HsName
-getAliasArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
+getArg :: TypeArg -> HsName
+getArg (TypeArg tid _ _ _) = (HsIdent (translateIdWithType LowerId tid))
 -- ist UpperId oder LowerId hier richtig?
 
 getAliasType :: TypeScheme -> HsType
@@ -157,7 +170,7 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -- Translation of functions
 -------------------------------------------------------------------------
 
--- | Convert functions in HasCASL to the coresponding haskell declarations.
+-- | Converts functions in HasCASL to the coresponding haskell declarations.
 translateAssumps :: Assumps -> TypeMap -> [HsDecl]
 translateAssumps as tm =
   let distList =  distinctOpIds $ Map.toList as
@@ -166,6 +179,7 @@ translateAssumps as tm =
       --error ("List: " ++ show distList ++ "\n Map: " ++ show distAs)
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
+-- | Generates distinct names for overloaded function identifiers.
 distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfos)]
 distinctOpIds [] = []
 distinctOpIds ((i,OpInfos info):(idInfoList)) = 
@@ -180,6 +194,7 @@ distinctOpIds ((i,OpInfos info):(idInfoList)) =
          (distinctOpIds((i, OpInfos $ tail info):(idInfoList))))
 
 -- Durchnummerierung von überladenen Funktionsnamen
+-- | Adds a number to the name of an identifier.
 newName :: Id -> Int -> Id
 newName (Id tlist idlist poslist) len = 
   let newTok = (Token (show len) nullPos) 
@@ -277,7 +292,7 @@ translateTerm as tm t = case t of
           if Map.size fittingAs > 1 then
           --falls mehr als ein passendes TypeScheme gefunden wurde
           --kann auf "Ähnlichkeit" mit der Id getestet werden
-            let oid = head $ Map.keys $ fittingAs
+            let oid = findSimilarId uid  (Map.keys  fittingAs)
             in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
           else error("problem with finding opid: " ++ show uid ++ "\n" 
                      ++ show ts ++ "\n" ++ show types ++ "\n" ++ 
@@ -312,20 +327,24 @@ translateTerm as tm t = case t of
   BracketTerm _ _ _ -> error ("unexpected term (BracketTerm): " ++ show t)
   _ -> error ("translateTerm not finished; Term: " ++ show t)
 
-findTypeSchemeMap :: Assumps -> TypeScheme -> [Id]
-findTypeSchemeMap as ts = findTypeSchemeList (Map.toList as) ts
+findSimilarId :: Id -> [Id] -> Id
+findSimilarId i ilist = 
+  let filtered = filter (== i) ilist
+  in if filtered == [] then
+       head $ filter (isSimilarId i) ilist
+     else head filtered
 
--- hier wird mit einer eindeutigen Benennung der Ids gearbeitet,
--- daher enthält OpInfos jeweils nur ein OpInfo
-findTypeSchemeList :: [(UninstOpId,OpInfos)] -> TypeScheme -> [Id]
-findTypeSchemeList [] _ts = []
-findTypeSchemeList ((id1,infos):idInfoList) ts = 
-  if (opType $ head $ opInfos infos) == ts then
-    ((id1):(findTypeSchemeList idInfoList ts))
-  else findTypeSchemeList idInfoList ts
+isSimilarId :: Id -> Id -> Bool
+isSimilarId (Id tlist1 idlist1 _) (Id tlist2 idlist2 _) =
+  idlist1 == idlist2 && areSimilarTokens tlist1 tlist2
 
-isEqualTs :: TypeScheme -> TypeScheme -> Bool
-isEqualTs (TypeScheme _ (_ :=> t1) _) (TypeScheme _ (_ :=> t2) _) = t1 == t2
+areSimilarTokens :: [Token] -> [Token] -> Bool
+areSimilarTokens [] [] = True
+areSimilarTokens (_t:_ts) [] = False
+areSimilarTokens [] (_t:ts) = length ts == 0
+areSimilarTokens (t1:ts1) (t2:ts2) = 
+   t1 == t2 && areSimilarTokens ts1 ts2
+
 
 canUnify :: TypeMap -> TypeScheme -> OpInfos -> Bool
 canUnify tm ts (OpInfos infos) = 
@@ -347,6 +366,8 @@ translateProgEqs _progeqs = []
 -- Translation of Id's
 ------------------------------------------------------------------------
 
+-- | Converts an HasCASL identifier to a valid name in haskell 
+-- regarding wether it should start with a lower or upper case letter.
 translateIdWithType :: IdCase -> Id -> String
 translateIdWithType ty (Id tlist idlist _poslist) = 
   let s = translateId (Id tlist idlist _poslist)
@@ -359,10 +380,11 @@ translateIdWithType ty (Id tlist idlist _poslist) =
            "a_" ++ s
         else firstDigit s
 
-
+-- | To determine, wether an identifier in haskell should start with an 
+-- upper case or lower case letter.
 data IdCase = UpperId | LowerId deriving (Eq,Show)
 
-
+-- | Converts an HasCASL identifier to a valid name in haskell.
 translateId :: Id -> String
 translateId (Id tlist idlist _poslist) = 
     (translateTokens tlist) ++ (translateCompound idlist)
