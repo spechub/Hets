@@ -9,12 +9,10 @@ ANNOS=../Common/test/Empty.annos
 
 . ../Common/test/checkFunctions.sh
 
-. ./checkFunctions.sh
-
-
 for j in *.hs; 
 do
-    runmycheck $j hs
+    i=`basename $j .hs`
+    runmycheck $i hs
 done
 
 
