@@ -1,10 +1,14 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/TypeDecl.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2003
-   
-   analyse type decls
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  non-portable (MonadState)
+    
+analyse type decls
+
 -}
 
 module HasCASL.TypeDecl where
@@ -13,7 +17,6 @@ import HasCASL.As
 import HasCASL.AsUtils
 import Common.AS_Annotation
 import HasCASL.ClassAna
-import HasCASL.ClassDecl
 import qualified Common.Lib.Map as Map
 import Common.Id
 import HasCASL.Le
@@ -26,21 +29,11 @@ import Common.Lib.Parsec.Error
 
 import Common.Result
 import Common.PrettyPrint
+import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.DataAna
-import HasCASL.Reader
 import HasCASL.Unify
 import HasCASL.Merge
-
--- ---------------------------------------------------------------------------
--- analyse types as state
--- ---------------------------------------------------------------------------
-
-fromReadR :: a -> ReadR (ClassMap, TypeMap) a -> State Env a 
-fromReadR a r = toState a ( \ e -> (classMap e, typeMap e)) r
-
-anaTypeS :: (Kind, Type) -> State Env (Kind, Type) 
-anaTypeS kt = fromReadR kt $ anaType kt 
 
 -- check with merge
 compatibleTypeDefn :: TypeDefn -> TypeDefn -> Id -> [Diagnosis]
@@ -64,10 +57,10 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
 addTypeId defn _ kind i = 
-    do nk <- toState kind classMap $ expandKind kind
+    do nk <- expandKind kind
        if placeCount i <= kindArity TopLevel nk then
 	  addTypeKind defn i kind
-	  else addDiag $ mkDiag Error "wrong arity of" i
+	  else addDiags [mkDiag Error "wrong arity of" i]
 
 -- | store prefix type ids both with and without following places 
 addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
@@ -85,10 +78,10 @@ addSingleTypeKind d i k =
 			 (TypeInfo k [] [] d) tk
 	      Just (TypeInfo ok ks sups defn) -> 
 		  -- check with merge
-		  do checkKindsS i k ok
+		  do checkKinds i k ok
 		     if any (==k) (ok:ks)
-			then addDiag $ mkDiag Warning 
-				 "redeclared type" i
+			then addDiags [mkDiag Warning 
+				 "redeclared type" i]
 				 else putTypeMap $ Map.insert i 
 					 (TypeInfo ok
 					       (k:ks) sups defn) tk
@@ -110,40 +103,39 @@ addSuperType t i =
 
 anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
 anaTypeItem _ inst (TypeDecl pats kind _) = 
-    do anaKindS kind
+    do anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
-       appendDiags ds
+       addDiags ds
        mapM_ (addTypeId NoTypeDefn inst kind) is   
 anaTypeItem _ inst (SubtypeDecl pats t _) = 
-    do anaTypeS (star, t)
+    do newT <- anaStarType t
        let Result ds (Just is) = convertTypePatterns pats
-       appendDiags ds
+       addDiags ds
        mapM_ (addTypeId NoTypeDefn inst star) is   
-       mapM_ (addSuperType t) is
+       mapM_ (addSuperType newT) is
 
 anaTypeItem _ inst (IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
-       appendDiags ds
+       addDiags ds
        mapM_ (addTypeId NoTypeDefn inst star) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
 
 anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
-    do (k, newT) <- anaTypeS (star, t)
-       checkKindsS t star k
-       addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
-		   $ firstPos [v] ps
+    do newT <- anaStarType t
+       addDiags [Diag Warning ("unchecked formula '" ++ showPretty f "'")
+		   $ firstPos [v] ps]
        let Result ds m = convertTypePattern pat
-       appendDiags ds
+       addDiags ds
        case m of 
 	      Nothing -> return ()
 	      Just i -> do addTypeId (Supertype v newT $ item f) 
-				     inst k i
+				     inst star i
 			   addSuperType newT i
 	   
 anaTypeItem _ inst (AliasType pat mk sc _) = 
     do (ik, newPty) <- anaPseudoType mk sc
        let Result ds m = convertTypePattern pat
-       appendDiags ds
+       addDiags ds
        case m of 
 	      Just i -> addTypeId (AliasTypeDefn newPty) inst ik i 
 	      _ -> return ()
@@ -152,19 +144,19 @@ anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d
 
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
 anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
-    do k <- anaKindS kind
-       checkKindsS pat star k
+    do k <- anaKind kind
+       checkKinds pat star k
        case derivs of 
-		   Just c -> do (dk, _) <- anaClassS (star, c)
-				checkKindsS c star dk
+		   Just c -> do (dk, _) <- anaClass c
+				checkKinds c star dk
 		   Nothing -> return ()
        let Result ds m = convertTypePattern pat
-       appendDiags ds
+       addDiags ds
        case m of 
 	      Nothing -> return ()
 	      Just i -> 
 		  do let dt = TypeName i k 0
-                     newAlts <- fromReadR [] $ anaAlts dt 
+                     newAlts <- anaAlts dt 
 				$ map item alts
 		     mapM_ ( \ (Construct c tc p sels) -> do
 			     let ty = simpleTypeScheme $ getConstrType dt p tc
@@ -181,15 +173,15 @@ anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
 	    Nothing -> return star
-	    Just j -> anaKindS j
+	    Just j -> anaKind j
        tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       (sk, newTy) <- anaTypeS (k, ty)
+       (sk, newTy) <- anaType (k, ty)
        let newPty = TypeScheme tArgs (q :=> newTy) p
            newK = typeArgsListToKind tArgs sk
        case mk of 
 	      Nothing -> return ()
-	      Just j -> checkKindsS ty j newK
+	      Just j -> checkKinds ty j newK
        putTypeMap tm       -- forget local variables 
        return (newK, newPty)
 
@@ -204,7 +196,7 @@ typeArgToKind (TypeArg _ k _ _) = k
 
 anaTypeVarDecl :: TypeArg -> State Env ()
 anaTypeVarDecl(TypeArg t k _ _) = 
-    do nk <- anaKindS k
+    do nk <- anaKind k
        addTypeId TypeVarDefn Plain nk t
 
 kindArity :: ApplMode -> Kind -> Int
@@ -314,7 +306,7 @@ addOpId i sc attrs defn =
        if null l then putAssumps $ Map.insert i 
 			 (OpInfos (oInfo : r )) as
 	  else do let Result ds mo = merge (head l) oInfo
-		  appendDiags $ map (improveDiag i) ds
+		  addDiags $ map (improveDiag i) ds
 		  case mo of 
 		      Nothing -> return ()
 		      Just oi -> putAssumps $ Map.insert i 

@@ -14,33 +14,34 @@ analyse alternatives of data types
 module HasCASL.DataAna where
 
 import HasCASL.As
-import HasCASL.AsUtils
 import Common.Id
+import Common.Lib.State
 import Common.Result
 import HasCASL.Le
-import Data.Maybe
+import HasCASL.ClassAna
 import HasCASL.TypeAna
-import HasCASL.Reader
 
-anaAlts :: Type -> [Alternative] -> ReadR (ClassMap, TypeMap) [AltDefn]
-anaAlts dt alts = do l <- foldReadR (anaAlt dt) alts
-		     lift $ Result (checkUniqueness $ map 
+anaAlts :: Type -> [Alternative] -> State Env [AltDefn]
+anaAlts dt alts = do ll <- mapM (anaAlt dt) alts
+		     let l = concat ll
+		     addDiags (checkUniqueness $ map 
 				    ( \ (Construct i _ _ _) -> i) l) 
-				    $ Just l
+		     return l
 
-anaAlt :: Type -> Alternative -> ReadR (ClassMap, TypeMap) AltDefn 
+
+anaAlt :: Type -> Alternative -> State Env [AltDefn] 
 anaAlt _ (Subtype ts ps) = 
-    do kts <- mapM anaType $ map ( \ t -> (star, t)) ts
-       mapM ( \ (ki, ti) -> checkKindsR ti star ki) kts
-       lift $ Result [Diag Warning "data subtype ignored" $ firstPos ts ps]
-	    $ Nothing 
+    do mapM_ anaStarType ts
+       addDiags [Diag Warning "data subtype ignored" $ firstPos ts ps]
+       return []
+
 anaAlt dt (Constructor i cs p _) = 
     do newCs <- mapM (anaComp i dt) $ zip cs $ map (:[]) [1..]
        let sels = concatMap snd newCs
 	   con = Construct i (map fst newCs) p sels
 	   -- check for disjoint selectors 
-       lift $ Result (checkUniqueness $ map ( \ (Select s _ _) -> s ) sels)
-	    $ Just con
+       addDiags (checkUniqueness $ map ( \ (Select s _ _) -> s ) sels)
+       return [con]
 
 
 getConstrType :: Type -> Partiality -> [Type] -> Type
@@ -62,14 +63,12 @@ makePartial t =
 	   _ -> LazyType t []  
 
 anaComp :: Id -> Type -> (Components, [Int]) 
-	-> ReadR (ClassMap, TypeMap) (Type, [Selector]) 
+	-> State Env (Type, [Selector]) 
 anaComp _ _ (Selector s p t _ _, _) =
-    do (k, ct) <- anaType (star, t) 
-       checkKindsR t star k
+    do ct <- anaStarType t
        return (ct, [Select s ct p])
 anaComp con rt (NoSelector t, i) =
-    do (k, ct) <- anaType (star, t) 
-       checkKindsR t star k
+    do ct <- anaStarType t
        return (ct, [Select (simpleIdToId $ mkSimpleId 
 			    ("%(" ++ showPretty rt "." ++ 
 			     showId con ".sel_" ++ show i ++ ")%"))

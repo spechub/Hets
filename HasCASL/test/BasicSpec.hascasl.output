@@ -60,7 +60,7 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 tt : s ->? Unit = \ x : s . ()
 x : s %(var)%
 %% Diagnostics -----------------------------------------------------------
-Error (line 1, column 7) illegal universe class declaration
+Error (line 1, column 7) illegal universe class declaration 'Type'
 Warning (line 5, column 32) unchecked type 't'
 Warning (line 5, column 20) redeclared class 'TYPE'
 Error (line 5, column 20) inconsistent redefinition of 'TYPE'
@@ -72,8 +72,8 @@ Warning (line 11, column 19) redeclared class 'a'
 Error (line 11, column 19) class cannot become an alias class 'a'
 Hint (line 16, column 9) not a class 's'
 Error (line 20, column 25) unexpected mixfix token 'y : _var_45 : t'
-Error (line 21, column 12) unexpected mixfix token 'y : _var_46 : t'
-Error (line 22, column 12) unexpected mixfix token 'y : _var_47 : t'
+Error (line 21, column 12) unexpected mixfix token 'y : _var_82 : t'
+Error (line 22, column 12) unexpected mixfix token 'y : _var_119 : t'
 Error (line 28, column 14) unexpected mixfix token 'p : s : ? s'
 Error (line 30, column 17) unexpected mixfix token 'y : Unit : ? Unit'
 Error (line 32, column 23) unexpected mixfix token 'y : Unit : ? Unit'
@@ -88,9 +88,9 @@ Error (line 45, column 8) wrong type scheme of 'x'
 Hint (line 45, column 18) not a class 't'
 Error (line 47, column 5) unexpected mixfix token '='
 Warning (line 57, column 11) redeclared type 's'
-Warning (line 61, column 73) data subtype ignored
-Error (line 61, column 52) undeclared type 'Data2'
 Error (line 61, column 36) undeclared type 'Data2'
+Error (line 61, column 52) undeclared type 'Data2'
+Warning (line 61, column 73) data subtype ignored
 Error (line 66, column 8) unexpected mixfix token 'true'
 Hint (line 66, column 23) not a class 's'
 Error (line 66, column 25) unexpected mixfix token 'e'

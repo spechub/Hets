@@ -1,10 +1,13 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/TypeAna.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2003
-   
-   analyse given classes and types
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
+   analyse types
 -}
 
 module HasCASL.TypeAna where
@@ -16,20 +19,14 @@ import Common.Id
 import HasCASL.Le
 import Data.List
 import Data.Maybe
-import HasCASL.Reader
-import HasCASL.PrintAs()
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
-import Common.PrettyPrint
-
-checkKindsR :: (PosItem a, PrettyPrint a) => 
-	       a -> Kind -> Kind -> ReadR (ClassMap, TypeMap) ()
-checkKindsR p k1 = withReadR fst . checkKinds  p k1
+import Common.Lib.State
 
 data ApplMode = OnlyArg | TopLevel 
 
-mkTypeConstrAppls :: ApplMode -> Type -> ReadR TypeMap Type
+mkTypeConstrAppls :: ApplMode -> Type -> State Env Type
 mkTypeConstrAppls _ t@(TypeName _ _ _) = 
        return t 
 
@@ -40,7 +37,7 @@ mkTypeConstrAppls m (TypeAppl t1 t2) =
 
 mkTypeConstrAppls _ (TypeToken t) = 
     do let i = simpleIdToId t
-       tk <- ask
+       tk <- gets typeMap
        let m = getKind tk i
 	   c = if isTypeVar tk i then 1 else 0
        case m of 
@@ -52,23 +49,22 @@ mkTypeConstrAppls m t@(BracketType b ts ps) =
        let toks@[o,c] = mkBracketToken b ps 
 	   i = if null ts then Id toks [] [] 
 	       else Id [o, Token place $ posOfType $ head ts, c] [] []
-       tk <- ask
+       tk <- gets typeMap
        let mk = getKind tk i
 	   n = case mk of Just k -> TypeName i k 0
 			  _ -> t
-	   ds = [Diag Error ("illegal type: " ++ showPretty t "")
-		$ posOfType t]
+	   ds = [mkDiag Error "illegal type" t]
        if null ts then return n
 	  else if null $ tail ts 
 	       then return $ case b of 
 			   Parens -> head args 
 			   _ -> TypeAppl n (head args)
-	       else do lift $ Result (case m of
-			      TopLevel -> ds
+	       else do case m of
+			      TopLevel -> do addDiags ds
 			      OnlyArg -> case b of 
-						Parens -> []
-						_ -> ds) 
-					     $ Just $ BracketType b args ps
+					 Parens -> return ()
+					 _ -> do addDiags ds
+		       return $ BracketType b args ps
 
 mkTypeConstrAppls _ (MixfixType []) = error "mkTypeConstrAppl (MixfixType [])"
 mkTypeConstrAppls _ (MixfixType (f:a)) =
@@ -93,7 +89,7 @@ mkTypeConstrAppls _ (FunType t1 a t2 ps) =
        newT2 <- mkTypeConstrAppls TopLevel t2
        return $ FunType newT1 a newT2 ps
 
-expandApplKind :: Class -> ReadR ClassMap Kind
+expandApplKind :: Class -> State Env Kind
 expandApplKind c = 
     case c of
     Intersection s _ -> if Set.isEmpty s then return star else
@@ -103,55 +99,54 @@ expandApplKind c =
 		  _ -> return k
     _ -> return star
 
-inferKind :: Type -> ReadR (ClassMap, TypeMap) Kind
-inferKind (TypeName i k _) = do j <- withReadR snd $ getIdKind i
-				checkKindsR i k j
+inferKind :: Type -> State Env Kind
+inferKind (TypeName i k _) = do j <- getIdKind i
+				checkKinds i k j
 				return j
-
 inferKind (TypeAppl t1 t2) = 
     do mk1 <- inferKind t1 
        case mk1 of 
-		KindAppl k1 k2 _ -> do checkKind t2 k1
+		KindAppl k1 k2 _ -> do checkTypeKind t2 k1
 				       return k2
 		ExtClass c _ _ -> 
-			   do k <- withReadR fst $ expandApplKind c 
+			   do k <- expandApplKind c 
 			      case k of
-			            KindAppl k1 k2 _ -> do checkKind t2 k1
+			            KindAppl k1 k2 _ -> do checkTypeKind t2 k1
 							   return k2
-				    _ -> do lift $ Result 
+				    _ -> do addDiags
 					       [mkDiag Error 
 						"incompatible kind of type" 
-						t1] Nothing
-
+						t1] 
+					    return star
 inferKind (FunType t1 _ t2 _) = 
-    do checkKind t1 star 
-       checkKind t2 star
+    do checkTypeKind t1 star 
+       checkTypeKind t2 star
        return star 
 inferKind (ProductType ts _) = 
-    do ms <- mapM ( \ t -> checkKind t star) ts 
+    do mapM_ ( \ t -> checkTypeKind t star) ts 
        return star 
 inferKind (LazyType t _) = 
-    do checkKind t star
+    do checkTypeKind t star
        return star 
-inferKind (TypeToken t) = withReadR snd $ getIdKind $ simpleIdToId t
+inferKind (TypeToken t) = getIdKind $ simpleIdToId t
 inferKind (KindedType t k _) =
-    do checkKind t k
+    do checkTypeKind t k
        return k
 inferKind t =
-    lift $ Result [mkDiag Error "unresolved type" t] Nothing
+    do addDiags [mkDiag Error "unresolved type" t] 
+       return star
 
-checkKind :: Type -> Kind -> ReadR (ClassMap, TypeMap) ()
-checkKind t j = do
-	k <- inferKind t 
-	checkKindsR t j k
+checkTypeKind :: Type -> Kind -> State Env ()
+checkTypeKind t j = do k <- inferKind t 
+		       checkKinds t j k
 
-getIdKind :: Id -> ReadR TypeMap Kind
+getIdKind :: Id -> State Env Kind
 getIdKind i = 
-    do tk <- ask
+    do tk <- gets typeMap
        let m = getKind tk i
        case m of
-	    Nothing -> lift $ Result [mkDiag Error "undeclared type" i]
-                          Nothing
+	    Nothing -> do addDiags [mkDiag Error "undeclared type" i]
+                          return star
 	    Just k -> return k
 
 getKind :: TypeMap -> Id -> Maybe Kind
@@ -166,11 +161,15 @@ isTypeVar tk i =
        Just (TypeInfo _ _ _ TypeVarDefn) -> True
        _ -> False
 
-anaType :: (Kind, Type) -> ReadR (ClassMap, TypeMap) (Kind, Type)
+anaType :: (Kind, Type) -> State Env (Kind, Type)
 anaType (k, t) = 
-    do newT <- withReadR snd $ mkTypeConstrAppls TopLevel t
-       newK <- inferKind newT `joinReadR` return k
+    do newT <- mkTypeConstrAppls TopLevel t
+       newK <- inferKind newT 
+       checkKinds newT newK k
        return (newK, newT)
+
+anaStarType :: Type -> State Env Type
+anaStarType t = fmap snd $ anaType (star, t)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

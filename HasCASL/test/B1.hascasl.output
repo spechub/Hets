@@ -18,9 +18,9 @@ y : Type %(var)%
 x : y %(var)%
 %% Diagnostics -----------------------------------------------------------
 Warning (line 3, column 14) redundant universe class
-Error (line 3, column 7) illegal universe class declaration
-Error (line 4, column 7) illegal universe class declaration
-Error (line 6, column 7) illegal universe class declaration
+Error (line 3, column 7) illegal universe class declaration 'Type'
+Error (line 4, column 7) illegal universe class declaration 'Type'
+Error (line 6, column 7) illegal universe class declaration 'Type'
 Warning (line 8, column 11) implicit declaration of superclass 'a'
 Warning (line 8, column 7) redeclared class 'd'
 Error (line 10, column 24) undeclared class 'h'

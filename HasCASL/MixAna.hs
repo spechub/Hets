@@ -22,12 +22,11 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Unify
+import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.TypeDecl
-import HasCASL.Reader
 import HasCASL.MixParserState
 import Data.Maybe
 
@@ -149,54 +148,39 @@ iterStates ga as tm cm ty terms pm =
             MixfixTerm ts -> self (ts ++ tail terms) pm
             BracketTerm b ts ps -> self 
 	       (expandPos TermToken (getBrackets b) ts ps ++ tail terms) pm
-	    (QualVar v tyq ps) -> 
-		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
-		    case mt of 
-		    Just (_, typq) ->
-			let mi = findOpId as tm (varCount pm) v typq in 
+	    t@(QualVar v typ _) -> 
+			let mi = findOpId as tm (varCount pm) v typ in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (Just typq, QualVar v typq ps) pm
+				      (Just typ, t) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
-		    Nothing -> pm { failDiags = es }
-	    (QualOp io@(InstOpId v _ _) (TypeScheme vs (qs :=> tyq) ps1) ps2) 
-		-> let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) 
-		    in
-		    case mt of 
-		    Just (_, typq) ->
-			let mi = findOpId as tm (varCount pm) v typq in 
+	    t@(QualOp (InstOpId v _ _) (TypeScheme _ (_ :=> typ) _) _) ->
+			let mi = findOpId as tm (varCount pm) v typ in 
 			    case mi of 
 			    Just _ -> self (tail terms) $ nextState ga as tm 
-				      (Just typq, QualOp io 
-				       (TypeScheme vs (qs :=> typq) ps1)
-				       ps2) pm
+				      (Just typ, t) pm
 			    Nothing -> pm { failDiags = 
 					    [mkDiag Error 
 					     "value not found" v] }
-		    Nothing -> pm { failDiags = es }
-	    TypedTerm hd tqual tyq ps -> 
-		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
-	        case mt of 
-		Just (_, typq) -> 
-		    let (Result ds mtt, c2) = runRState
+	    TypedTerm hd tqual typ ps -> 
+		    let (Result ds mtt, c2) = runState
 			   (case tqual of 
-			        OfType -> resolve ga as tm cm (typq, hd)
+			        OfType -> resolve ga as tm cm (typ, hd)
 			        _ -> resolveAny ga as tm cm hd) 
 				       $ varCount pm
-			pm2 = pm { varCount = c2, failDiags = es++ds }
+			pm2 = pm { varCount = c2, failDiags = ds }
 			in case mtt of  
 			Just (_, ttt) -> self (tail terms) 
 				   $ nextState ga as tm 
 				   (Just (case tqual of 
 				    InType -> logicalType
-				    _ -> typq), 
-				    TypedTerm ttt tqual typq ps) pm2
+				    _ -> typ), 
+				    TypedTerm ttt tqual typ ps) pm2
 			Nothing -> pm2
-		Nothing -> pm { failDiags = es }
 	    QuantifiedTerm quant decls hd ps ->
-		let (Result ds mtt, c2) = runRState 
+		let (Result ds mtt, c2) = runState 
 		        (resolve ga as tm cm (logicalType, hd)) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
@@ -205,26 +189,26 @@ iterStates ga as tm cm ty terms pm =
 			  QuantifiedTerm quant decls tt ps) pm2
 		    Nothing -> pm2
 	    LambdaTerm decls part hd ps -> 
-		let (Result ds mtt, c2) = runRState 
+		let (Result ds mtt, c2) = runState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
-		    Just (typq, tt) -> self (tail terms) $ nextState ga as tm 
-		         (Just typq, LambdaTerm decls part tt ps) pm2
+		    Just (typ, tt) -> self (tail terms) $ nextState ga as tm 
+		         (Just typ, LambdaTerm decls part tt ps) pm2
 		    Nothing -> pm2
 	    CaseTerm hd (ProgEq pat e1 pps : _) ps -> 
- 		let (Result ds mtt, c2) = runRState 
+ 		let (Result ds mtt, c2) = runState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
-                    (Result es frst, c3) = runRState 
+                    (Result es frst, c3) = runState 
 		            (resolveAny ga as tm cm e1) c2
  		    pm2 = pm { varCount = c3, failDiags = ds++es }
 		    in case (mtt, frst)  of 
-		    (Just (_, tt), Just (typq, te)) -> self (tail terms) 
+		    (Just (_, tt), Just (typ, te)) -> self (tail terms) 
 		                            $ nextState ga as tm 
-		         (Just typq, CaseTerm tt [ProgEq pat te pps] ps) pm2
+		         (Just typ, CaseTerm tt [ProgEq pat te pps] ps) pm2
 		    _ -> pm2
 	    LetTerm eqs hd ps ->
-		let (Result ds mtt, c2) = runRState 
+		let (Result ds mtt, c2) = runState 
 		            (resolveAny ga as tm cm hd) $ varCount pm
 		    pm2 = pm { varCount = c2, failDiags = ds }
 		    in case mtt of 
@@ -268,9 +252,9 @@ checkResultType tm t pm =
 		 $ lookUp m i) m }
 
 resolveAny :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> Term -> RState Int (Type, Term)
+	-> Term -> State Int (Result (Type, Term))
 resolveAny ga as tm cm trm =
-    do tvar <- liftS freshVar
+    do tvar <- freshVar
        resolve ga as tm cm (TypeName tvar star 1, trm)
 
 resolveFromParseMap :: (PosItem a, PrettyPrint a) => (PState a -> a) 
@@ -290,32 +274,23 @@ resolveFromParseMap f tm (ty, a) pm0 =
 				 $ take 5 ts) ++ "for" ) a : ds) Nothing
 
 resolve :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> (Type, Term) -> RState Int (Type, Term)
+	-> (Type, Term) -> State Int (Result (Type, Term))
 resolve ga as tm cm (ty, trm) =
-    do c <- liftS get
-       liftR $ resolveFromParseMap (toAppl ga) tm (ty, trm) $ 
-	      resolveToParseMap ga as tm cm c ty trm
+    do c <- get
+       let pm = resolveToParseMap ga as tm cm c ty trm
+       put (varCount pm) 
+       return $ resolveFromParseMap (toAppl ga) tm (ty, trm) pm 
 
-toEnvRState :: RState Int a -> RState Env a 
-toEnvRState p = 
-    do s <- liftS get
-       let (r, c) = runRState p $ counter s
-       liftS $ put s { counter = c }
-       liftR r 
-
-resolveTerm :: GlobalAnnos -> Type -> Term -> RState Env Term
-resolveTerm ga ty trm = 
-    do s <- liftS $ get
-       (_, r) <- toEnvRState $ resolve ga
-	    (assumps s) (typeMap s) (classMap s) (ty, trm)
-       return r
-
-toRResultState :: RState s a -> State s (Result a)
-toRResultState r = 
-    do s <- get 
-       let (r', s') = runRState r s 
-       put s'
-       return r'
+resolveTerm :: GlobalAnnos -> Type -> Term -> State Env (Maybe Term)
+resolveTerm ga ty oldTrm = 
+    do trm <- anaTypesInTerm oldTrm
+       s <- get
+       let (Result ds mr, c2) = runState (resolve ga
+	    (assumps s) (typeMap s) (classMap s) (ty, trm))
+			(counter s)
+       put s { counter = c2 }
+       addDiags ds
+       return $ fmap snd mr 
 
 -- ---------------------------------
 -- patterns
@@ -392,19 +367,15 @@ iterPatStates ga as tm knowns cm ty pats pm =
             MixfixPattern ts -> self (ts ++ tail pats) pm
             BracketPattern b ts ps -> self 
 	       (expandPos PatternToken (getBrackets b) ts ps ++ tail pats) pm
-	    TypedPattern hd tyq ps -> 
-		let (Result es mt) = (readR $ anaType (star, tyq)) (cm, tm) in
-	        case mt of 
-		Just (_, typq) -> 
-		    let (Result ds mtt, c2) = runRState
- 			   (resolvePat ga as tm cm (typq, hd)) $ varCount pm
-			pm2 = pm { varCount = c2, failDiags = es++ds }
+	    TypedPattern hd typ ps -> 
+		    let (Result ds mtt, c2) = runState
+ 			   (resolvePat ga as tm cm (typ, hd)) $ varCount pm
+			pm2 = pm { varCount = c2, failDiags = ds }
 			in case mtt of  
 			Just (_, ttt) -> self (tail pats) 
 				   $ nextPatState ga as tm knowns
-				   (Just typq, TypedPattern ttt typq ps) pm2
+				   (Just typ, TypedPattern ttt typ ps) pm2
 			Nothing -> pm2
-		Nothing -> pm { failDiags = es }
 	    t@(PatternToken _) -> self (tail pats)
 				  $ nextPatState ga as tm knowns
 				 (Nothing, t) pm
@@ -429,82 +400,195 @@ resolvePatToParseMap ga as tm cm c ty trm =
 			, parseMap = Map.single startIndex initStates }
 
 resolveAnyPat :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> Pattern -> RState Int (Type, Pattern)
+	-> Pattern -> State Int (Result (Type, Pattern))
 resolveAnyPat ga as tm cm trm =
-    do tvar <- liftS $ freshVar
+    do tvar <- freshVar
        resolvePat ga as tm cm (TypeName tvar star 1, trm)
 
 resolvePat :: GlobalAnnos -> Assumps -> TypeMap -> ClassMap 
-	-> (Type, Pattern) -> RState Int (Type, Pattern)
+	-> (Type, Pattern) -> State Int (Result (Type, Pattern))
 resolvePat ga as tm cm (ty, trm) =
-    do c <- liftS $ get
+    do c <- get
        let pm = resolvePatToParseMap ga as tm cm c ty trm
 	   c2 = varCount pm
-       (newTy, pat) <- liftR $ resolveFromParseMap patFromState tm (ty, trm) pm
-       let (r, (c3, _)) = runRState (specializePatVars tm 
-				  (newTy, pat)) (c2, Map.empty)
-       liftS $ put c3
-       liftR r 
+           r = resolveFromParseMap patFromState tm (ty, trm) pm
+       case maybeResult r of
+	   Nothing -> do put c2
+			 return r
+	   Just (newTy, pat) -> 
+	       do let (r2, (c3, _, ds)) = runState (specializePatVars tm 
+						    (newTy, pat)) 
+					  (c2, Map.empty, [])
+		  put c3
+		  return $ Result ds $ Just r2 
        
 
-resolvePattern :: GlobalAnnos -> Pattern -> RState Env (Type, Pattern)
-resolvePattern ga pat = 
-    do s <- liftS $ get
-       toEnvRState $ resolveAnyPat ga
-		      (assumps s) (typeMap s) (classMap s) pat
+resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe (Type, Pattern))
+resolvePattern ga oldPat = 
+    do pat <- anaTypesInPattern oldPat
+       s <- get
+       let (Result ds mr, c) = runState (resolveAnyPat ga
+		      (assumps s) (typeMap s) (classMap s) pat) $ counter s
+       put s { counter = c}
+       addDiags ds
+       return mr
+
+-- ---------------------------------------------------------------------------
+-- resolve types in terms and patterns
+-- ---------------------------------------------------------------------------
+
+anaTypesInTerm :: Term -> State Env Term
+anaTypesInTerm trm = 
+    case trm of
+	   QualVar v t ps -> 
+	       do ty <- anaStarType t
+		  return $ QualVar v ty ps
+	   QualOp io (TypeScheme vs (qs :=> t) ps1) ps ->
+	       do ty <- anaStarType t
+		  return $ QualOp io (TypeScheme vs (qs :=> ty) ps1) ps
+	   ApplTerm t1 t2 ps -> 
+	       do t3 <- anaTypesInTerm t1
+		  t4 <- anaTypesInTerm t2
+		  return $ ApplTerm t3 t4 ps
+	   TupleTerm ts ps -> 
+	       do tys <- mapM anaTypesInTerm ts
+		  return $ TupleTerm tys ps
+	   TypedTerm t1 q t ps ->
+	       do t2 <- anaTypesInTerm t1
+		  ty <- anaStarType t
+		  return $ TypedTerm t2 q ty ps 
+	   QuantifiedTerm q vs t ps -> 
+	       do e <- anaTypesInTerm t 
+		  return $ QuantifiedTerm q vs e ps
+	   LambdaTerm pats part t ps -> 
+	       do nPats <- mapM anaTypesInPattern pats
+	          e <- anaTypesInTerm t 
+		  return $ LambdaTerm nPats part e ps
+	   CaseTerm t es ps ->
+	       do e <- anaTypesInTerm t
+		  nEs <- mapM anaTypesInProgEq es
+		  return $ CaseTerm e nEs ps
+	   LetTerm es t ps ->
+	       do nEs <- mapM anaTypesInProgEq es
+		  e <- anaTypesInTerm t
+		  return $ LetTerm nEs e ps
+	   MixfixTerm ts -> 
+	       fmap MixfixTerm $ mapM anaTypesInTerm ts
+	   BracketTerm b ts ps -> 
+	       do nTs <- mapM anaTypesInTerm ts
+		  return $ BracketTerm b nTs ps
+	   _ -> return trm
+
+
+anaTypesInPattern :: Pattern -> State Env Pattern 
+anaTypesInPattern pat = 
+    case pat of 
+	     PatternVar (VarDecl v t k ps) ->
+		 do ty <- anaStarType t
+		    return $ PatternVar (VarDecl v ty k ps)
+	     PatternConstr io (TypeScheme vs (qs :=> t) ps1) pats ps ->
+		 do ty <- anaStarType t
+		    nPats <- mapM anaTypesInPattern pats
+		    return $ PatternConstr io (TypeScheme vs (qs :=> ty) ps1)
+			   nPats ps
+             PatternToken _ -> return pat
+	     BracketPattern b pats ps ->
+		 do nPats <- mapM anaTypesInPattern pats
+		    return $ BracketPattern b nPats ps 
+	     TuplePattern pats ps -> 
+		 do nPats <- mapM anaTypesInPattern pats
+		    return $ TuplePattern nPats ps 
+	     MixfixPattern pats -> 
+		 fmap MixfixPattern $ mapM anaTypesInPattern pats
+	     TypedPattern p t ps -> 
+		 do nPat <- anaTypesInPattern p
+		    ty <- anaStarType t
+		    return $ TypedPattern nPat ty ps 
+	     AsPattern p1 p2 ps ->
+		 do p3 <- anaTypesInPattern p1 
+		    p4 <- anaTypesInPattern p2
+		    return $ AsPattern p3 p4 ps
+
+anaTypesInProgEq :: ProgEq -> State Env ProgEq
+anaTypesInProgEq (ProgEq p t ps) = 
+    do pat <- anaTypesInPattern p 
+       trm <- anaTypesInTerm t
+       return $ (ProgEq pat trm ps)
 
 -- ---------------------------------------------------------------------------
 -- specialize 
 -- ---------------------------------------------------------------------------
 
-getArgsRes :: Type -> [a] -> ([Type], Type)
-getArgsRes t [] = ([], t)
+getArgsRes :: Type -> [a] -> Result ([Type], Type)
+getArgsRes t [] = return ([], t)
 getArgsRes (FunType t1 _ t2 _) (_:r) = 
-    let (as, res) = getArgsRes t2 r in
-		    (t1:as, res)
-getArgsRes _ _ = error "getArgsRes"
+    do (as, res) <- getArgsRes t2 r 
+       return (t1:as, res)
+getArgsRes t _ = Result [mkDiag FatalError "too many arguments for type" t]
+		 Nothing
 
 specializePatVars :: TypeMap -> (Type, Pattern) 
-		  -> RState (Int, Subst) (Type, Pattern)
-specializePatVars tm (ty, pat) = 
-    case pat of 
-    PatternVar (VarDecl v vty k ps) 
-        -> do (c, oldSubst) <- liftS get
-	      newSubst <- liftR $ unify tm (subst oldSubst ty) 
-			  $ subst oldSubst vty 
-	      liftS $ put (c, newSubst)
-	      return (subst newSubst ty, 
-		      PatternVar $ VarDecl v (subst newSubst vty) k ps)
-    PatternConstr i sc args ps
-        -> do (c, oldSubst) <- liftS get
-	      let (ity, c2) = runState (freshInst sc) c
-		  (ats, res) = getArgsRes ity args
-	      newSubst <- liftR $ unify tm (subst oldSubst ty) 
-			  $ subst oldSubst res 
-	      liftS $ put (c2, newSubst) 	      
-	      largs <- mapM (specializePatVars tm) $ zip ats args
-	      (_, lastSubst) <- liftS get
-              return (subst lastSubst res, 
-		      PatternConstr i sc (map snd largs) ps)
+		  -> State (Int, Subst, [Diagnosis]) (Type, Pattern)
+specializePatVars tm (ty, pat) = do
+  (c, oldSubst, ds) <- get
+  case pat of 
+    PatternVar (VarDecl v vty k ps) -> 
+	do let r = unify tm (subst oldSubst ty) $ subst oldSubst vty
+	   case maybeResult r of 
+	       Nothing -> do put (c, oldSubst, diags r ++ ds)
+			     return (ty, pat)
+	       Just newSubst -> 
+		   do put (c, newSubst, ds)
+		      return (subst newSubst ty, 
+			      PatternVar $ VarDecl v 
+			      (subst newSubst vty) k ps)
+    PatternConstr i sc args ps ->
+        do let (ity, c2) = runState (freshInst sc) c
+	       argsRes = getArgsRes ity args
+           case maybeResult argsRes of 
+	       Nothing -> do put (c2, oldSubst, diags argsRes ++ ds)
+			     return (ty, pat)
+	       Just (ats, res) -> 
+		   do let r = unify tm (subst oldSubst ty) 
+			      $ subst oldSubst res 
+		      case maybeResult r of 
+		          Nothing -> do put (c2, oldSubst, diags r ++ ds)
+					return (ty, pat)
+			  Just newSubst -> 
+			      do put (c2, newSubst, ds) 	      
+				 largs <- mapM (specializePatVars tm) 
+					  $ zip ats args
+				 (_, lastSubst, _) <- get
+				 return (subst lastSubst res, 
+				         PatternConstr i sc (map snd largs) ps)
     TuplePattern args ps ->
 	case ty of 
 		ProductType ats qs -> 
 		    if length ats == length args then 
 		    do largs <- mapM (specializePatVars tm) $ zip ats args
-		       (_, lastSubst) <- liftS get
+		       (_, lastSubst,_) <- get
 		       return (subst lastSubst $ ProductType (map fst largs) qs
 			      , TuplePattern (map snd largs) ps)
-		    else error "wrong TuplePattern in specializePatVars"
-		_ -> error "TuplePattern in specializePatVars"
+		    else do put (c, oldSubst, mkDiag Error
+				 "wrong number of arguments for tuple" ty : ds)
+	                    return (ty, pat) 
+		_ -> do put (c, oldSubst, mkDiag Error
+			     "wrong type for tuple" pat : ds)
+			return (ty, pat)
     TypedPattern tpat vty ps ->
-        do (c, oldSubst) <- liftS get
-	   newSubst <- liftR $ unify tm (subst oldSubst ty) 
+	do let r = unify tm (subst oldSubst ty) 
 		       $ subst oldSubst vty 
-	   liftS $ put (c, newSubst)
-           (newTy, newPat) <- specializePatVars tm 
-			      (subst newSubst vty, tpat) 
-	   return (newTy, case newPat of 
-		   PatternVar _ -> newPat 
-		   TypedPattern _ _ _ -> newPat
-		   _ -> TypedPattern newPat newTy ps)
-    _ -> error "specializePatVars"
+           case maybeResult r of
+	       Nothing -> do put (c, oldSubst, diags r ++ ds)
+			     return (ty, pat)
+               Just newSubst -> 
+		   do put (c, newSubst, ds)
+	              (newTy, newPat) <- specializePatVars tm 
+					 (subst newSubst vty, tpat) 
+		      return (newTy, case newPat of 
+			      PatternVar _ -> newPat 
+			      TypedPattern _ _ _ -> newPat
+			      _ -> TypedPattern newPat newTy ps)
+    _ -> do put (c, oldSubst, mkDiag Error
+		 "unexpected pattern" pat : ds)
+	    return (ty, pat)

@@ -26,16 +26,16 @@ import Common.Named
 import Common.Result
 import Common.PrettyPrint
 import HasCASL.OpDecl
+import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import HasCASL.MixAna
-import HasCASL.Reader
 
 ----------------------------------------------------------------------------
 -- analysis
 -----------------------------------------------------------------------------
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
-missingAna t ps = appendDiags [Diag FatalError 
+missingAna t ps = addDiags [Diag FatalError 
 			       ("no analysis yet for: " ++ showPretty t "")
 			      $ if null ps then nullPos else head ps]
 
@@ -53,15 +53,15 @@ anaBasicItem ga (AxiomItems decls fs _) =
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
-       ds <- mapM (( \ (TermFormula t) -> 
-		     toRResultState $ resolveTerm ga logicalType t ) . item) fs
+       ts <- mapM (( \ (TermFormula t) -> 
+		     resolveTerm ga logicalType t ) . item) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore
-       appendDiags $ concatMap diags ds
-       let sens = concat $ zipWith ( \ r f -> 
-			    case maybeResult r of 
-			    Just t -> [NamedSen (getRLabel f) $ TermFormula t]
-			    Nothing -> [] ) ds fs
+       let sens = concat $ zipWith ( \ mt f -> 
+			    case mt of 
+			    Nothing -> []
+			    Just t -> [NamedSen (getRLabel f) $ TermFormula t])
+		  ts fs
        appendSentences sens
 
 appendSentences :: [Named Formula] -> State Env ()
@@ -83,26 +83,52 @@ anaGenVarDecl :: GenVarDecl -> State Env ()
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
 anaGenVarDecl(GenTypeVarDecl t) = anaTypeVarDecl t
 
-convertTypeToClass :: Type -> ReadR ClassMap Class
+typeIsClass, typeIsKind :: Type -> State Env Bool
+typeIsClass (TypeToken t) = 
+    if tokStr t == "Type" then return True
+       else do let ci = simpleIdToId t 
+	       isClassId ci
+typeIsClass (BracketType Parens ts _) = 
+    do bs <- mapM typeIsClass ts 
+       return $ and bs
+typeIsClass _ = return False
+
+typeIsKind (FunType t1 FunArr t2 _) = 
+    do b1 <- typeIsKind t1 
+       b2 <- typeIsKind t2
+       return (b1 && b2) 
+typeIsKind (BracketType Parens [t] _) = 
+    typeIsKind t
+
+typeIsKind (MixfixType [t1, TypeToken t]) = 
+    let s = tokStr t 
+	v = case s of 
+		   "+" -> CoVar 
+		   "-" -> ContraVar 
+		   _ -> InVar
+    in case v of 
+	      InVar -> return False
+	      _ -> typeIsClass t1
+
+typeIsKind t = typeIsClass t
+
+convertTypeToClass :: Type -> State Env Class
 convertTypeToClass (TypeToken t) = 
        if tokStr t == "Type" then return universe else do
           let ci = simpleIdToId t
-          mapReadR ( \ (Result _ m) -> 
-              case m of 
-		     Just _ -> Result [] (Just $ Intersection 
-					      (Set.single ci) [])
-                     Nothing -> Result 
-				    [mkDiag Hint "not a class" ci] Nothing )
-	      $ anaClassId ci
-
+	  b <- isClassId ci
+	  if b then return ()
+	     else addDiags [mkDiag Hint "not a class" ci] 
+	  return $ Intersection  (Set.single ci) []
 convertTypeToClass (BracketType Parens ts ps) = 
        do cs <- mapM convertTypeToClass ts
 	  return $ Intersection (Set.unions $ map iclass cs) ps
 
-convertTypeToClass t = lift $ Result [mkDiag Hint "not a class" t] Nothing
+convertTypeToClass t = 
+    do addDiags [mkDiag Hint "not a class" t]
+       return universe
 
-convertTypeToKind :: Type -> ReadR ClassMap Kind
-
+convertTypeToKind :: Type -> State Env Kind
 convertTypeToKind (FunType t1 FunArr t2 ps) = 
     do k1 <- convertTypeToKind t1
        k2 <- convertTypeToKind t2
@@ -112,14 +138,15 @@ convertTypeToKind (BracketType Parens [t] _) =
     do k <- convertTypeToKind t
        return $ k
 
-convertTypeToKind (MixfixType [t1, TypeToken t]) = 
+convertTypeToKind ty@(MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
 	v = case s of 
 		   "+" -> CoVar 
 		   "-" -> ContraVar 
 		   _ -> InVar
     in case v of 
-	      InVar -> lift $ Result [] Nothing
+	      InVar -> do addDiags [mkDiag Hint "no kind" ty]
+			  return star
 	      _ -> do k1 <- convertTypeToClass t1
 		      return $ ExtClass k1 v [tokPos t]
 
@@ -130,15 +157,15 @@ convertTypeToKind t =
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 
     if isSimpleId v then
-       do mc <- toMaybeState classMap $ convertTypeToKind t 
-	  case mc of
-	       Just c -> anaTypeVarDecl(TypeArg v c s q)
-	       Nothing -> anaVarDecl vd
+    do b <- typeIsKind t
+       k <- convertTypeToKind t
+       if b then 
+	     anaTypeVarDecl(TypeArg v k s q)
+          else anaVarDecl vd
     else anaVarDecl vd
 
 anaVarDecl(VarDecl v oldT _ _) = 
-		   do (k, t) <- anaTypeS (star, oldT)
-		      checkKindsS v star k
+		   do t <- anaStarType oldT
 		      addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------
@@ -158,26 +185,23 @@ anaAnnotedClassItem ga _ aci =
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env ()
 anaProgEq ga (ProgEq pat trm _) =
-    do Result es mp <- toRResultState $ resolvePattern ga pat
-       appendDiags es
+    do mp <- resolvePattern ga pat
        case mp of 
 	   Nothing -> return ()
 	   Just (ty, newPat) -> do
 	       let bs = extractBindings newPat
 	       e <- get
 	       mapM_ anaVarDecl bs
-	       Result ts mt <- toRResultState $ resolveTerm ga ty trm
+	       mt <- resolveTerm ga ty trm
 	       put e
-	       appendDiags ts
 	       case mt of 
 		   Nothing -> return ()
-		   Just newTerm -> 
-		       case removeResultType newPat of
+		   Just newTerm ->case removeResultType newPat of
 		       PatternConstr (InstOpId i _tys _) sc args ps ->
 				addOpId i sc [] $ Definition $ 
 					if null args then newTerm
 					else LambdaTerm args Partial newTerm ps
-		       _ -> appendDiags $ [mkDiag Error 
+		       _ -> addDiags $ [mkDiag Error 
 					   "no toplevel pattern" newPat]
 		       where removeResultType p = 
 				 case p of 

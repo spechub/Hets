@@ -1,9 +1,12 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Licence     :  All rights reserved.
 
-{- HetCATS/HasCASL/ClassAna.hs
-   $Id$
-   Authors: Christian Maeder
-   Year:    2003
-   
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
+
    analyse given classes
 -}
 
@@ -19,8 +22,15 @@ import HasCASL.PrintAs()
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.Lib.State
 import Common.Result
-import HasCASL.Reader
+
+-- | add diagnostic messages 
+addDiags :: [Diagnosis] -> State Env ()
+addDiags ds =
+    if null ds then return () else
+    do e <- get
+       put $ e {envDiags = ds ++ envDiags e}
 
 -- ---------------------------------------------------------------------------
 -- analyse class
@@ -29,6 +39,8 @@ import HasCASL.Reader
 -- transitiv super classes 
 -- PRE: all superclasses and defns must be defined in ClassEnv
 -- and there must be no cycle!
+
+-- | get all superclass ids 
 allSuperClasses :: ClassMap -> ClassId -> Set.Set ClassId
 allSuperClasses ce ci = 
     let recurse = Set.unions . map (allSuperClasses ce) in
@@ -39,15 +51,21 @@ allSuperClasses ce ci =
                  `Set.union` recurse (Set.toList $ superClasses info)
     Nothing -> error "allSuperClasses"
 
-anaClassId :: ClassId -> ReadR ClassMap Kind
+-- | test if 'ClassId' is declared 
+isClassId :: ClassId -> State Env Bool
+isClassId ci = 
+    do cMap <- gets classMap
+       return $ isJust $ Map.lookup ci cMap
+
+anaClassId :: ClassId -> State Env Kind
 anaClassId ci = 
-    do cMap <- ask
+    do cMap <- gets classMap
        case Map.lookup ci cMap of
-	    Nothing -> lift $ Result [mkDiag Error "undeclared class" ci]
-		       Nothing
+	    Nothing -> do addDiags [mkDiag Error "undeclared class" ci]
+			  return star
 	    Just i -> return $ classKind i
 
-expandKind :: Kind -> ReadR ClassMap Kind
+expandKind :: Kind -> State Env Kind
 expandKind (ExtClass c _ _) = 
     case c of
     Intersection s _ ->
@@ -60,27 +78,31 @@ expandKind (KindAppl k1 k2 ps) =
        k4 <- expandKind k2
        return $ KindAppl k3 k4 ps
     
-anaClass :: Class -> ReadR ClassMap (Kind, Class)
-anaClass (Intersection s ps) =
-    do l <- foldReadR ( \ ci -> fmap ( \ ki -> (ki, ci) ) 
-			$ anaClassId ci) $ Set.toList s
-       let (ks, restCs) = unzip l
+anaClass :: Class -> State Env (Kind, Class)
+anaClass ic@(Intersection s ps) =
+    do l <- mapM ( \ ci -> do b <- isClassId ci
+		              ki <- anaClassId ci
+		              if b then return [(ki, ci)]
+		                  else return []
+		 ) $ Set.toList s
+       let (ks, restCs) = unzip (concat l)
 	   k = if null ks then star else head ks
-       mapM ( \ (ki, ci) -> 
-			 checkKinds ci k ki) l
+       mapM ( \ ki -> 
+			 checkKinds ic k ki) ks
        return (k, Intersection (Set.fromList restCs) ps)
 
 anaClass (Downset t) = 
-    lift $ Result [downsetWarning t] $ Just (star, Downset t)
+    do addDiags [downsetWarning t] 
+       return (star, Downset t)
 
 downsetWarning :: Type -> Diagnosis
 downsetWarning t = mkDiag Warning "unchecked type" t
 
--- ----------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
 -- analyse kind
--- ----------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
 
-anaKind :: Kind -> ReadR ClassMap Kind
+anaKind :: Kind -> State Env Kind
 anaKind (KindAppl k1 k2 p) = 
     do k1e <- anaKind k1 
        k2e <- anaKind k2
@@ -94,11 +116,12 @@ anaKind (ExtClass k v p) =
 -- ---------------------------------------------------------------------
 
 checkKinds :: (PosItem a, PrettyPrint a) => 
-	      a -> Kind -> Kind -> ReadR ClassMap ()
+	      a -> Kind -> Kind -> State Env ()
 checkKinds p k1 k2 =
     do k3 <- expandKind k1
        k4 <- expandKind k2
-       lift $ Result (eqKindDiag p k3 k4) $ Just ()
+       addDiags (eqKindDiag p k3 k4)
+       return ()
 
 eqKindDiag :: (PosItem a, PrettyPrint a) => a -> Kind -> Kind -> [Diagnosis]
 eqKindDiag a k1 k2 = 

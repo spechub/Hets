@@ -59,15 +59,18 @@ y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 (op __=__ : s × s ->? Unit) ((op fst : s), (op __res__ : s)) %()%
 %% Diagnostics -----------------------------------------------------------
-Error (line 4, column 7) illegal universe class declaration
+Error (line 4, column 7) illegal universe class declaration 'Type'
+Error (line 14, column 44) incompatible kind of: t ->? Unit
+  expected: Type
+  inferred: Type -> Type
 Warning (line 15, column 16) redeclared type 't'
 Hint (line 40, column 9) not a class 's'
 Error (line 46, column 21) unexpected mixfix token 'y : Unit : Unit'
 FatalError (line 54, column 3) no resolution for '__'
-Error (line 60, column 20) unexpected mixfix token 'y : _var_56 : t'
+Error (line 60, column 20) unexpected mixfix token 'y : _var_140 : t'
 Error (line 65, column 22) unexpected mixfix token '('
-Error (line 75, column 26) unexpected mixfix token 'y'
 FatalError (line 74, column 11) no resolution for '(\ x : s . eq (x, x)) = tt'
+Error (line 75, column 26) unexpected mixfix token 'y'
 Warning (line 85, column 6) redeclared type 's'
 Error (line 87, column 14) unexpected mixfix token 'p : (Pred)(s) : (Pred)(s)'
 Error (line 90, column 17) unexpected mixfix token 'y : (Pred)(Unit) : (Pred)(Unit)'
@@ -78,13 +81,13 @@ Error (line 101, column 12) unexpected mixfix token '('
 Error (line 103, column 14) unexpected mixfix token 'r : (Pred)(Unit) : (Pred)(Unit)'
 Error (line 108, column 39) unexpected mixfix token 'f'
 Warning (line 115, column 13) redundant universe class
-Error (line 123, column 28) unexpected mixfix token 'y'
-Error (line 122, column 28) unexpected mixfix token 'y'
 FatalError (line 121, column 14) no resolution for 'x <<= x'
+Error (line 122, column 28) unexpected mixfix token 'y'
+Error (line 123, column 28) unexpected mixfix token 'y'
 Error (line 125, column 44) unexpected mixfix token 's'
 Error (line 126, column 50) unexpected mixfix token 's'
-Error (line 134, column 20) unexpected mixfix token 'isChain'
 Error (line 131, column 42) unexpected mixfix token 'isBound'
+Error (line 134, column 20) unexpected mixfix token 'isChain'
 FatalError (line 143, column 15) no resolution for 'bottom <<= x'
 Error (line 150, column 15) unexpected mixfix token '['
 Warning (line 153, column 5) redeclared type 'c'

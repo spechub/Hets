@@ -13,13 +13,14 @@ Portability :  portable
 module HasCASL.OpDecl where
 
 import HasCASL.As
-import HasCASL.ClassDecl
 import HasCASL.TypeDecl
 import HasCASL.Le
 import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
 import HasCASL.Unify
+import HasCASL.ClassAna
+import HasCASL.TypeAna
 import HasCASL.MixAna
 
 anaOpItem :: GlobalAnnos -> OpItem -> State Env ()
@@ -31,20 +32,18 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
 		 LambdaTerm pats partial trm ps 
        (i, newSc) <- getUninstOpId sc o
        ty <- toEnvState $ freshInst newSc
-       Result ds mt <- toRResultState $ resolveTerm ga ty newTrm
-       appendDiags ds 
+       mt <- resolveTerm ga ty newTrm
        case mt of 
-	       Just t -> addOpId i newSc [] $ Definition t
-	       _ -> return ()
+	       Nothing -> return ()
+	       Just lastTrm -> addOpId i newSc [] $ Definition lastTrm
 
 getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
     do let newArgs = args ++ tvs
            sc = TypeScheme newArgs q ps
-       appendDiags $ checkUniqueness
+       addDiags $ checkUniqueness
 		       $ map (\ (TypeArg v _ _ _) -> v) newArgs
-       (k, newSc) <- anaTypeScheme sc
-       checkKindsS i star k
+       newSc <- anaTypeScheme sc
        return (i, newSc)
 
 
@@ -53,11 +52,11 @@ anaOpId sc attrs o =
     do (i, newSc) <- getUninstOpId sc o
        addOpId i newSc attrs NoOpDefn
 
-anaTypeScheme :: TypeScheme -> State Env (Kind, TypeScheme)
+anaTypeScheme :: TypeScheme -> State Env TypeScheme
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
     do tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       (ik, newTy) <- anaTypeS (star, ty)
+       newTy <- anaStarType ty
        let newPty = TypeScheme tArgs (q :=> newTy) p
        putTypeMap tm       -- forget local variables 
-       return (ik, newPty)
+       return newPty

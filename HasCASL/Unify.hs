@@ -28,7 +28,7 @@ import Data.Maybe
 -- and looking up type aliases
 isUnifiable :: TypeMap -> Int -> TypeScheme -> TypeScheme -> Bool
 isUnifiable tm c sc1 sc2 = isJust $ maybeResult $ fst $
-			   runRState (unifIable tm sc1 sc2) c
+			   runState (unifIable tm sc1 sc2) c
 
 -- | lift 'State' Int to 'State' Env
 toEnvState :: State Int a -> State Env a 
@@ -38,38 +38,11 @@ toEnvState p =
        put s { counter = c }
        return r 
 
--- | yet another (exotic) monad
-data RState s a = RState { runRState :: s -> (Result a, s) }
-
-instance Functor (RState s) where
-	fmap f m = RState $ \s -> let
-		(a, s') = runRState m s
-		in (fmap f a, s')
-
-instance Monad (RState s) where
-	return a = RState $ \ s -> (return a, s)
-	m >>= k  = RState $ \ s -> 
-		   let (Result ds a, s') = runRState m s
-		   in case a of 
-			     Nothing -> (Result ds Nothing, s')
-		             Just b -> runRState (k b) s'
-	fail str = RState $ \ s -> (fail str, s) 
-
--- | lift 'Result' to 'RState'
-liftR :: Result a -> RState s a
-liftR r = RState $ \ s ->  (r, s)
-
--- | lift 'State' to 'RState'
-liftS :: State s a -> RState s a 
-liftS m = RState $ \ s -> 
-	  let (a, s') = runState m s
-	      in (return a, s')
-
-unifIable :: TypeMap -> TypeScheme -> TypeScheme -> RState Int Subst
+unifIable :: TypeMap -> TypeScheme -> TypeScheme -> State Int (Result Subst)
 unifIable tm sc1 sc2 =
-    do t1 <- liftS $ freshInst sc1
-       t2 <- liftS $ freshInst sc2
-       liftR $ unify tm t1 t2
+    do t1 <- freshInst sc1
+       t2 <- freshInst sc2
+       return $ unify tm t1 t2
 
 -- -------------------------------------------------------------------------
 freshInst :: TypeScheme -> State Int Type
