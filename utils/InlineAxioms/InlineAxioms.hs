@@ -40,7 +40,7 @@ module Main where -- Comorphisms.PreProcessor where
 
 import Haskell.Hatchet.HsPretty as HP
 import Haskell.Hatchet.HsSyn
-import Haskell.Haskell2DG
+import Haskell.Hatchet.TIPhase (parseFile, parseHsSource)
 
 import Common.GlobalAnnotations 
 import Common.AnnoState
