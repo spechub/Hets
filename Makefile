@@ -14,7 +14,7 @@
 
 INCLUDE_PATH = ghc:hetcats
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
-CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH)
+CLEAN_PATH = Common:Logic:CASL:Syntax:Static:GUI:HasCASL:Haskell:Haskell/Language:Modal:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:$(INCLUDE_PATH):Haskell/Hatchet
 
 DRIFT_ENV = DERIVEPATH='.:ghc:hetcats:/home/linux-bkb/ghc/ghc-latest/lib/ghc-6.0.1/imports'
 
@@ -76,13 +76,13 @@ genrule_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs Common/AS_Anno
                 Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
                 CASL/Morphism.hs CASL/StaticAna.hs CASL/AS_Basic_CASL.der.hs \
                 HasCASL/Le.hs HasCASL/As.hs HasCASL/Symbol.hs HasCASL/Morphism.hs \
-                CspCASL/AS_CSP_CASL.hs Haskell/Language/Syntax.hs \
+                CspCASL/AS_CSP_CASL.hs \
                 Static/DevGraph.hs \
-#                 Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
-#                 Haskell/Hatchet/HsSyn.hs \
-#                 Haskell/Hatchet/Representation.hs\
-#                 Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
-#                 Haskell/Hatchet/Env.hs 
+                Haskell/Hatchet/AnnotatedHsSyn.hs Haskell/Hatchet/MultiModuleBasics.hs \
+                Haskell/Hatchet/HsSyn.hs \
+                Haskell/Hatchet/Representation.hs\
+                Haskell/Hatchet/Class.hs Haskell/Hatchet/KindInference.hs \
+                Haskell/Hatchet/Env.hs 
 
 gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs ATC/Named.hs \
                    ATC/AS_Library.hs ATC/GlobalAnnotations.hs \
@@ -91,7 +91,7 @@ gendrifted_files = ATC/Graph.hs ATC/Id.hs ATC/Result.hs ATC/AS_Annotation.hs ATC
 
 generated_rule_files = $(patsubst %.hs,%.der.hs,$(gendrifted_files))
 
-happy_files = Haskell/Language/Parser.hs
+happy_files = Haskell/Language/Parser.hs Haskell/Hatchet/HsParser.hs
 
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
@@ -227,7 +227,7 @@ real_clean: bin_clean lib_clean
 distclean: real_clean clean_genRules d_clean
 	$(RM) hetcats/Version.hs
 	$(RM) $(drifted_files)
-	$(RM) Haskell/Language/Parser.hs
+	$(RM) $(happy_files)
 
 ####################################################################
 ### test targets
