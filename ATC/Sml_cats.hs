@@ -804,7 +804,7 @@ instance ATermConvertibleSML ARG_DECL where
 --	    Just aterm = getATermSp att' $ ShAAppl "arg-decl" [ShAAppl "" [] _] _
             aterm = case getATerm att' of
 		    ShAAppl "arg-decl" [i] _ ->
-			    snd $ getATermByIndex i att 
+			    getATerm $ getATermByIndex1 i att 
                     x         -> from_sml_ShATermError "arg-decl" x
 	    (pos_l,att') =
 		case getATerm att of
@@ -1052,7 +1052,7 @@ instance ATermConvertibleSML (FORMULA ()) where
 		in (Negation aa' ab')
             -- the following things are from SML-type ATOM 
             (ShAAppl "atom" [i] _) -> 
-              case snd (getATermByIndex i att') of 
+              case getATerm (getATermByIndex1 i att') of 
 	       (ShAAppl "ttrue" [] _) ->
 		 let
 		 aa' = pos_l
