@@ -8,8 +8,8 @@ module Modal.Logic_Modal where
 
 import Logic.Logic
 import Common.Id
-import FiniteMap
-import Common.Lib.Set
+import Common.Lib.Map as Map
+import Common.Lib.Set as Set
 import Data.Maybe
 import Modal.AS_Modal
 
@@ -20,16 +20,17 @@ instance Language Modal where  -- default definition is okay
 type Sign = Set Id 
 instance Show Sign where
 
-type Morphism = (Sign, FiniteMap Id Id, Sign)
+type Morphism = (Sign, EndoMap Id, Sign)
 
 
 instance Category Modal Sign Morphism  
     where
        -- ide :: id -> object -> morphism
-       ide Modal sigma = (sigma, listToFM [(i,i) | i<- toList sigma], sigma)
+       ide Modal sigma = (sigma, Map.fromList 
+			  [(i,i) | i<- Set.toList sigma], sigma)
        -- comp :: id -> morphism -> morphism -> Maybe morphism
        comp Modal (sigma1 ,m1,_) (_,m2,sigma2) =  
-	   Just (sigma1,plusFM m1 m2,sigma2)
+	   Just (sigma1,Map.union m1 m2,sigma2)
        -- dom, cod :: id -> morphism -> object
        dom Modal (sigma,_,_) = sigma
        cod Modal (_,_,sigma) = sigma
@@ -37,7 +38,7 @@ instance Category Modal Sign Morphism
        legal_obj Modal _ = True
        -- legal_mor :: id -> morphism -> Bool
        legal_mor Modal (sigma,m,_)
-		| keysFM m == toList sigma	 = True 
+		| Map.keys m == Set.toList sigma	 = True 
 		| True	 = False
 
 -- abstract syntax, parsing (and printing)

@@ -17,7 +17,7 @@ module Common.GlobalAnnotations where
 import Common.Id
 
 import Common.Lib.Graph
-import FiniteMap
+import Common.Lib.Map
 
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , assoc_annos    :: AssocMap
@@ -26,7 +26,7 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph
 		      , literal_map    :: LiteralMap
 		      } deriving (Show)
 
-type PrecedenceGraph = (FiniteMap Id Node,Graph Id Int)
+type PrecedenceGraph = (Map Id Node,Graph Id Int)
 
 data PrecRel = Higher | Lower | ExplGroup Direct
 	       deriving (Show)
@@ -34,13 +34,13 @@ data PrecRel = Higher | Lower | ExplGroup Direct
 data Direct = BothDirections | NoDirection
 	      deriving (Show)
 
-type AssocMap = FiniteMap Id AssocEither
+type AssocMap = Map Id AssocEither
 
 data AssocEither = ALeft | ARight deriving (Show,Eq)
 
-type DisplayMap = FiniteMap Id [(String,String)]
+type DisplayMap = Map Id [(String,String)]
 
-type LiteralMap = FiniteMap Id LiteralType
+type LiteralMap = Map Id LiteralType
 
 data LiteralType = StringCons | StringNull
 		 | ListBrackets | ListCons | ListNull
@@ -53,7 +53,4 @@ data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
 		       , number_lit :: Maybe Id
 		       , float_lit  :: Maybe (Id,Id)
 		       } deriving (Show)
-
-instance (Show a,Show b) => Show (FiniteMap a b) where
-    show = show . fmToList
 

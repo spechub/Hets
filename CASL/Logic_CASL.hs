@@ -22,7 +22,7 @@ import Logic.ParsecInterface
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
 import Common.Lib.Parsec
-import FiniteMap
+import Common.Lib.Map
 import CASL.Sign
 import Logic.Logic
 import Common.Lexer((<<))
@@ -42,9 +42,9 @@ instance Category CASL Sign Morphism
          -- ide :: id -> object -> morphism
 	 ide CASL sigma = Morphism { msource = sigma,
                                      mtarget = sigma,
-				     sort_map = emptyFM,
-				     fun_map = emptyFM,
-				     pred_map = emptyFM
+				     sort_map = empty,
+				     fun_map = empty,
+				     pred_map = empty
                                    }
          -- o :: id -> morphism -> morphism -> Maybe morphism
 	 comp CASL sigma1 _sigma2 = Just sigma1 -- ???
@@ -110,13 +110,13 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          sym_name CASL = CASL.Static.symName
          
          -- add_sign :: id -> Sign -> Sign -> Sign
-	 add_sign CASL s1 s2 = s1 {getMap = plusFM (getMap s1) (getMap s2)}
+	 add_sign CASL s1 s2 = s1 {getMap = union (getMap s1) (getMap s2)}
          empty_signature CASL = emptySign
          signature_union CASL sigma1 _sigma2 = return sigma1 -- ??? incorrect
          morphism_union CASL mor1 _mor2 = return mor1 -- ??? incorrect
          -- final_union :: id -> Sign -> Sign -> Result Sign
 	 final_union CASL s1 s2 = return $ 
-	          s1 {getMap = plusFM (getMap s1) (getMap s2)}
+	          s1 {getMap = union (getMap s1) (getMap s2)}
          is_subsig CASL = CASL.Static.isSubSig
          cogenerated_sign CASL _rsys sigma = return (ide CASL sigma)
          generated_sign CASL _rsys sigma = return (ide CASL sigma)
@@ -131,19 +131,27 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence ()
          --               -> Result Morphism
          extend_morphism CASL _s m _s1 _s2 = return m
 
-instance Typeable CASL.Sublogics.CASL_Sublogics where
-  typeOf _ = mkAppTy (mkTyCon "CASL_Sublogics") []
-instance Typeable Sentence where
-  typeOf _ = mkAppTy (mkTyCon "Sentence") []
-instance Typeable Sign where
-  typeOf _ = mkAppTy (mkTyCon "Sign") []
-instance Typeable Morphism where
-  typeOf _ = mkAppTy (mkTyCon "Morphism") []
-instance Typeable Symbol where
-  typeOf _ = mkAppTy (mkTyCon "Symbol") []
-instance Typeable RawSymbol where
-  typeOf _ = mkAppTy (mkTyCon "RawSymbol") []
+casl_SublocigsTc, sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
+    :: TyCon
+casl_SublocigsTc = mkTyCon "CASL.Sublogics.CASL_Sublogics"
+sentenceTc       = mkTyCon "CASL.Sign.Sentence"
+signTc           = mkTyCon "CASL.Sign.Sign"
+morphismTc       = mkTyCon "CASL.Sign.Morphism"
+symbolTc         = mkTyCon "CASL.Sign.Symbol"
+rawSymbolTc      = mkTyCon "CASL.Sign.RawSymbol"
 
+instance Typeable CASL.Sublogics.CASL_Sublogics where
+  typeOf _ = mkAppTy casl_SublocigsTc []
+instance Typeable Sentence where
+  typeOf _ = mkAppTy sentenceTc []
+instance Typeable Sign where
+  typeOf _ = mkAppTy signTc []
+instance Typeable Morphism where
+  typeOf _ = mkAppTy morphismTc []
+instance Typeable Symbol where
+  typeOf _ = mkAppTy symbolTc []
+instance Typeable RawSymbol where
+  typeOf _ = mkAppTy rawSymbolTc []
 
 instance Logic CASL CASL.Sublogics.CASL_Sublogics
                BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS

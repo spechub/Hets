@@ -8,7 +8,7 @@
 
 module UnsafeCoerce where
 
-import GlaExts(unsafeCoerce#)
+import GHC.Exts(unsafeCoerce#)
 
 unsafeCoerce :: a -> b
 unsafeCoerce = unsafeCoerce#

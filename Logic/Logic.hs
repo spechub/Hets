@@ -54,7 +54,7 @@ module Logic.Logic where
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Lib.Set
-import FiniteMap
+import Common.Lib.Map
 import Common.Lib.Graph
 import Common.Result
 import Logic.Prover -- for one half of class Sentences
@@ -68,7 +68,7 @@ import UnsafeCoerce
 
 -- maps
 
-type EndoMap a = FiniteMap a a
+type EndoMap a = Map a a
 
 -- diagrams are just graphs
 
@@ -263,12 +263,18 @@ class (StaticAnalysis lid
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 
 
+setTc :: TyCon
+setTc = mkTyCon "Common.Lib.Set.Set"
+
 instance Typeable a => Typeable (Set a) where
-  typeOf l = mkAppTy (mkTyCon "Set") []
+  typeOf s = mkAppTy setTc [typeOf ((undefined:: Set a -> a) s)]
 
-instance (Typeable a,Typeable b) => Typeable (FiniteMap a b) where
-  typeOf l = mkAppTy (mkTyCon "FiniteMap") []
+mapTc :: TyCon
+mapTc = mkTyCon "Common.Lib.Map.Map"
 
+instance (Typeable a, Typeable b) => Typeable (Map a b) where
+  typeOf m = mkAppTy mapTc [typeOf ((undefined :: Map a b -> a) m),
+                            typeOf ((undefined :: Map a b -> b) m)]
 
 {- class hierarchy:
                             Language

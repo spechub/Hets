@@ -53,10 +53,10 @@ Error (19,1) ambiguous mixfix term
 A [a] A [a] p
 Error (20,1) ambiguous mixfix term
 	A [ a ] (A [ a ] p)
+	A [ a ] (A [ a ] p)
 	A [ a ] (A [a] p)
 	A [ a ] (A [ a ] p)
-	A [ a ] (A [ a ] p)
-	A [ a ] A [ a ] p
+	A [ a ] (A [a] p)
 A [a] !
 Error (21,1) ambiguous mixfix term
 	A [a] !

@@ -25,16 +25,14 @@ module CASL.LiteralFuns ( CASL.LiteralFuns.isLiteral
 		   ) where
 
 -- debugging
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 
 import Data.Char (isDigit)
 
 import Common.Id
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions (isLiteral,getLiteralType		   
-				  , nullList, nullStr
-				  )
+import Common.GlobalAnnotationsFunctions (isLiteral, getLiteralType, nullStr)
 
 
 isLiteral :: GlobalAnnos -> Id -> [TERM] -> Bool

@@ -1,6 +1,6 @@
 
 {- |
-   > HetCATS/pretty/LaTeX_funs.hs
+   > HetCATS/Common/LaTeX_funs.hs
    > $Id$
    > Author: Klaus Lüttich
    > Year: 2002
@@ -77,10 +77,11 @@ module Common.LaTeX_funs (
                    hc_sty_id
 ) where
 
-import FiniteMap
+import Common.Lib.Map hiding (isEmpty, empty, map)
 import Data.Char
 import Data.Maybe (isJust,fromJust)
 import Data.List (isPrefixOf)
+import Prelude hiding (lookup)
 
 -- for the debug hack
 import Debug.Trace
@@ -131,7 +132,7 @@ data Word_type = Keyword | StructId | Normal
 
 calc_word_width :: Word_type -> String -> Int
 calc_word_width wt s = 
-    case lookupFM wFM s of
+    case lookup s wFM of
     Just l  -> l
     Nothing -> sum_char_width_deb (  showString "In map \""
 				   . showsPrec 0 wt 
@@ -176,15 +177,15 @@ itCorrection s
  
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
-		   -> FiniteMap String Int 
-		   -> FiniteMap Char [String]  -> String -> Int
+		   -> Map String Int 
+		   -> Map Char [String]  -> String -> Int
 sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
 	  sum_char_width' [c] r 
 	      | c == ' '  = r + lookupWithDefault_cFM "~"
 	      | otherwise = r + lookupWithDefault_cFM (c:[])
 	  sum_char_width' full@(c1:rest@(c2:cs)) r 
-	      | isLigature (c1:c2:[]) = case lookupFM cFM (c1:c2:[]) of
+	      | isLigature (c1:c2:[]) = case lookup (c1:c2:[]) cFM of
 					Just l  -> sum_char_width' cs (r+l)
 					Nothing -> sum_char_width' rest nl
 	      | (c1:c2:[]) == "\\ " =  
@@ -194,10 +195,10 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 	      | otherwise = case prefixIsKey full key_cFM of
 			    Just key -> sum_char_width' 
 				           (drop (length key) full) 
-			                   (r + (fromJust $ lookupFM cFM key))
+			                   (r + (fromJust $ lookup key cFM))
 			    Nothing -> sum_char_width' rest nl 
 	      where nl = r + lookupWithDefault_cFM (c1:[])
-	  lookupWithDefault_cFM s' = case lookupFM cFM s' of
+	  lookupWithDefault_cFM s' = case lookup s' cFM of
 				     Nothing -> condTrace 
 					           ((pref_fun
 						     . showString s' 
@@ -207,9 +208,9 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 						   2200
 				     Just w  -> w    
 
-prefixIsKey :: String -> FiniteMap Char [String] -> Maybe String
+prefixIsKey :: String -> Map Char [String] -> Maybe String
 prefixIsKey [] _ = Nothing
-prefixIsKey ls@(c:_) key_cFM = case lookupFM key_cFM c of 
+prefixIsKey ls@(c:_) key_cFM = case lookup c key_cFM of 
 			       Just ws -> firstJust $ map testPrefix ws
 			       Nothing -> Nothing
     where testPrefix s = if ((flip isPrefixOf) ls) s 
@@ -221,7 +222,7 @@ prefixIsKey ls@(c:_) key_cFM = case lookupFM key_cFM c of
 isLigature :: String -> Bool
 isLigature s 
     | (length s) /= 2 = False
-    | otherwise = lookupWithDefaultFM ligatures False s
+    | otherwise = findWithDefault False s ligatures
 
 keyword_width, structid_width, axiom_width, annotationbf_width,
   annotation_width, comment_width, normal_width

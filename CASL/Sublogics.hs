@@ -74,7 +74,7 @@ module CASL.Sublogics ( -- datatypes
 ------------------------------------------------------------------------------
 
 import Data.Maybe ( catMaybes, fromJust, isJust, isNothing, mapMaybe )
-import FiniteMap ( emptyFM, isEmptyFM, fmToList, listToFM )
+import Common.Lib.Map ( empty, isEmpty, toList, fromList )
 import Common.Id ( Id, Pos )
 import Common.AS_Annotation
 import CASL.AS_Basic_CASL
@@ -694,7 +694,7 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign -> CASL_Sublogics
 sl_sign (SignAsMap m _) =
-  comp_list $ map sl_sigitem $ concat $ map snd $ fmToList m
+  comp_list $ map sl_sigitem $ concat $ map snd $ toList m
 
 sl_sigitem :: SigItem -> CASL_Sublogics
 sl_sigitem (ASortItem i) = sl_sortitem $ item i
@@ -1141,7 +1141,7 @@ pr_sign sl (SignAsMap m g) =
                       case res of [] -> Nothing;
                                    _ -> Just (i,res))
         in
-          SignAsMap (listToFM $ mapMaybe doPart $ fmToList m) g
+          SignAsMap (fromList $ mapMaybe doPart $ toList m) g
 
 pr_sigitem :: CASL_Sublogics -> SigItem -> Maybe SigItem
 pr_sigitem l (ASortItem s) =
@@ -1256,10 +1256,10 @@ pr_morphism l1 (Morphism s t sm fm pm) =
 -- can be kept or removed as a whole
 --
 pr_pred_map :: CASL_Sublogics -> Pred_map -> Pred_map
-pr_pred_map l x = if (has_pred l) then x else emptyFM
+pr_pred_map l x = if (has_pred l) then x else empty
 
 pr_fun_map :: CASL_Sublogics -> Fun_map -> Fun_map
-pr_fun_map l m = listToFM $ map (pr_fun_map_entries l) $ fmToList m
+pr_fun_map l m = fromList $ map (pr_fun_map_entries l) $ toList m
 
 pr_fun_map_entries :: CASL_Sublogics -> (Id,[(OpType,Id,Bool)])
                       -> (Id,[(OpType,Id,Bool)])

@@ -22,8 +22,9 @@ import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import FiniteMap
-import Common.Lib.Set hiding (filter, split)
+import Common.Lib.Map hiding (member, fromList, toList, 
+			      map, split, filter, union)
+import Common.Lib.Set hiding (filter, split, single, insert)
 import Common.Lexer (caslChar)
 import Control.Monad
 import Common.Lib.Parsec
@@ -165,10 +166,10 @@ initialState g ids i =
        map (mkState i) is ++ 
        map (mkApplState i) is
 
-type ParseMap = FiniteMap Int [State]
+type ParseMap = Map Int [State]
 
-lookUp :: (Ord a, MonadPlus m) => FiniteMap a (m b) -> a -> (m b)
-lookUp ce = lookupWithDefaultFM ce mzero
+lookUp :: (Ord a, MonadPlus m) => Map a (m b) -> a -> (m b)
+lookUp ce k = findWithDefault mzero k ce
 
 -- match (and shift) a token (or partially finished term)
 
@@ -183,7 +184,7 @@ scan trm i m =
           Mixfix_qual_pred _ -> predTok
           _ -> varTok
   in
-    addToFM m (i+1) ( 
+    insert (i+1) ( 
        foldr (\ (State o b a ts k) l ->
 	      if null ts || head ts /= t then l 
 	      else let p = tokPos t : b in 
@@ -199,7 +200,7 @@ scan trm i m =
 	      else if t == colonTok || t == asTok then
 	             (State o b [mkTerm $ head a] [] k) : l
 	           else (State o p a (tail ts) k) : l) [] 
-	      (lookUp m i))
+	      (lookUp m i)) m
      where mkTerm t1 = case trm of 
 	                  Mixfix_sorted_term s ps -> Sorted_term t1 s ps
 	                  Mixfix_cast s ps -> Cast t1 s ps
@@ -362,7 +363,7 @@ complRec g m l = let l1 = compl g m l in
     if null l1 then l else complRec g m l1 ++ l
 
 complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = addToFM m i $ complRec g m $ lookUp m i 
+complete g i m = insert i (complRec g m $ lookUp m i) m
 
 -- predict which rules/ids might match for (the) nonterminal(s) (termTok)
 -- provided the "dot" is followed by a nonterminal 
@@ -371,7 +372,7 @@ predict :: GlobalAnnos -> Set Id -> Int -> ParseMap -> ParseMap
 predict g is i m = if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
 			 && head ts == termTok) 
 		 (lookUp m i)
-		 then addToFM_C (++) m i (initialState g is i)
+		 then insertWith (++) i (initialState g is i) m
 		 else m 
 
 type Chart = (Int, [Diagnosis], ParseMap)
@@ -447,7 +448,7 @@ getAppls g i m =
 resolveMixfix :: GlobalAnnos -> Set Id -> Set Id -> Bool -> TERM -> Result TERM
 resolveMixfix g ops preds mayBeFormula trm =
     let (i, ds, m) = iterateStates g ops preds [trm] 
-		     (0, [], unitFM 0 $ initialState g 
+		     (0, [], single 0 $ initialState g 
 		      (if mayBeFormula then ops `union` preds else ops) 0)
         ts = getAppls g i m
     in if null ts then if null ds then 

@@ -4,7 +4,7 @@ module CASL.Sign where
 
 import Common.Id
 import Common.AS_Annotation
-import FiniteMap
+import Common.Lib.Map hiding (map, filter)
 import Common.Lib.Graph
 import Data.List(intersperse)
 import Data.Maybe(mapMaybe)
@@ -181,7 +181,7 @@ instance Eq SigItem where
 -- lost are unused global vars
 -- (and annotations for several ITEMS)
 
-data Sign = SignAsMap { getMap   :: (FiniteMap Id [SigItem]),
+data Sign = SignAsMap { getMap   :: (Map Id [SigItem]),
                         getGraph :: (Graph SortId ()) }
 	  deriving Show
 
@@ -189,7 +189,7 @@ instance Eq Sign where
   (==) (SignAsMap m _) (SignAsMap n _) = n==m
 
 emptySign :: Sign
-emptySign = SignAsMap emptyFM empty
+emptySign = SignAsMap Common.Lib.Map.empty Common.Lib.Graph.empty
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
     	         deriving (Show, Eq, Ord)
@@ -218,11 +218,11 @@ getLabel (GenItems l _) = let srts = filter (\x ->
 				 (intersperse "__" 
 				      (map (show . symbId) srts))
 
-type Sort_map = FiniteMap Id Id
-type Fun_map =  FiniteMap Id [(OpType, Id, Bool)] 
+type Sort_map = Map Id Id
+type Fun_map =  Map Id [(OpType, Id, Bool)] 
 			{- The third field is true iff the target symbol is
                            total -}
-type Pred_map = FiniteMap Id [(PredType,Id)]
+type Pred_map = Map Id [(PredType,Id)]
 
 data Morphism = Morphism {msource,mtarget :: Sign,
                           sort_map :: Sort_map, 
@@ -237,7 +237,7 @@ data Morphism = Morphism {msource,mtarget :: Sign,
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =
   let
-    l     = case a of (SignAsMap x _) -> concat $ map snd $ fmToList x
+    l     = case a of (SignAsMap x _) -> concat $ map snd $ toList x
     slist = map (\x -> (x,x)) $ map sortId $ map item $
             mapMaybe (\x -> case x of (ASortItem s) -> Just s;
                                                   _ -> Nothing) l
@@ -248,4 +248,4 @@ embedMorphism a b =
             map item $ mapMaybe (\x -> case x of (APredItem p) -> Just p;
                                                              _ -> Nothing) l
   in
-    Morphism a b (listToFM slist) (listToFM flist) (listToFM plist)
+    Morphism a b (fromList slist) (fromList flist) (fromList plist)

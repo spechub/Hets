@@ -36,8 +36,9 @@ module CASL.Static {-( basicAnalysis, statSymbMapItems, statSymbItems,
 
 import Data.Maybe
 import Control.Monad(foldM) -- instead of foldResult
-import FiniteMap
-import Common.Lib.Set hiding (filter)
+import Common.Lib.Map hiding (map, filter)
+import Prelude hiding (lookup)
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -76,7 +77,7 @@ data LocalEnv = Env { getName   :: Filename,
 
 data SigLocalEnv = SigEnv { localEnv  :: LocalEnv,
                             selectors :: [Annoted OpItem],
-                            w         :: FiniteMap Symbol [Symbol],
+                            w         :: Map Symbol [Symbol],
                             flag      :: Bool }
 
 data Annotations = Annotations { annosOptPos :: [Pos],
@@ -101,7 +102,7 @@ toAnnoted :: a ->Annotations -> Annoted a
 toAnnoted a (Annotations x y z) = Annoted a x y z
 
 toSigLocalEnv :: LocalEnv -> SigLocalEnv
-toSigLocalEnv env = SigEnv env [] emptyFM False
+toSigLocalEnv env = SigEnv env [] empty False
 
 emptyGlobal :: GlobalVars
 emptyGlobal = Global []
@@ -351,7 +352,7 @@ chainPos env f items positions addPos toStrFun =
 hasElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Bool
 hasElem sigma f idt =
   let
-    res = lookupFM (getMap sigma) idt
+    res = lookup idt (getMap sigma)
   in
     if (isJust res) then
       or $ map (f idt) (fromJust res)
@@ -361,7 +362,7 @@ hasElem sigma f idt =
 getElem :: Sign -> (Id -> SigItem -> Bool) -> Id -> Maybe SigItem
 getElem sigma f idt =
   if (hasElem sigma f idt) then
-    Just (head $ filter (f idt) $ fromJust $ lookupFM (getMap sigma) idt)
+    Just (head $ filter (f idt) $ fromJust $ lookup idt $ getMap sigma)
   else
     Nothing
 
@@ -423,13 +424,13 @@ getPred sigma idt = fromJust $ lookupPred sigma idt
 updateSigItem :: Sign -> Id -> SigItem -> Sign
 updateSigItem sigma idt itm =
   let
-    res = lookupFM (getMap sigma) idt
+    res = lookup idt $ getMap sigma
     new = if (isNothing res) then
             [itm]
           else
              [ x | x<-(fromJust res), x /= itm ] ++ [itm]
   in
-    sigma { getMap = addToFM (getMap sigma) idt new }
+    sigma { getMap = insert idt new (getMap sigma)}
 
 ------------------------------------------------------------------------------
 -- functions for SortItem generation and modification
@@ -978,7 +979,7 @@ ana_DATATYPE_DECL sigma' sigma decl@(Annoted (Datatype_decl s alternative_list
                              (map item alternatives)
      let defn  = let
                    gen_items = concat $ map (\(x,y) -> x:y)
-                                            (fmToList $ w delta)
+                                            (toList $ w delta)
                  in
                    Datatype alternatives Loose gen_items pos
      return delta { localEnv = (localEnv delta)
@@ -1071,7 +1072,7 @@ checkSortsExist sigma _pos =
   let
     _sorts = filter (\x -> case x of ASortItem _ -> True;
                                                _ -> False)
-                    (concat $ map snd $ fmToList $ getMap sigma)
+                    (concat $ map snd $ toList $ getMap sigma)
   in 
     if (null _sorts) then
       fatal_error "sort-gen did not declare any sorts" _pos
@@ -1134,12 +1135,12 @@ basicAnalysis (spec,sigma,ga) = -- return(emptySign,emptySign,[])
 -- FIXME
 --
 signDiff :: Sign -> Sign -> Sign
-signDiff a b = emptySign {getMap = minusFM (getMap a) (getMap b)}
+signDiff a b = emptySign {getMap = difference (getMap a) (getMap b)}
 
 checkItem :: Sign -> (Id,SigItem) -> Bool
 checkItem sigma (idt,si) =
   let
-    res   = lookupFM (getMap sigma) idt
+    res   = lookup idt $ getMap sigma
     items = if (isJust res) then
               fromJust res
             else
@@ -1154,7 +1155,7 @@ unfoldSigItems (idt,h:t) = (idt,h):(unfoldSigItems (idt,t))
 isSubSig :: Sign -> Sign -> Bool
 isSubSig sub super =
   and $ map (checkItem super) $ concat $ map unfoldSigItems
-      $ fmToList $ getMap sub
+      $ toList $ getMap sub
 
 ------------------------------------------------------------------------------
 --
@@ -1181,8 +1182,9 @@ sigItemToSymbol (AnOpItem  o) = Symbol (opId $ item o)
 sigItemToSymbol (APredItem p) = Symbol (predId $ item p)
                                        (PredType (predType $ item p))
 
-symOf :: Sign -> Set Symbol
-symOf sigma = fromList $ map sigItemToSymbol $ concat $ eltsFM $ getMap sigma
+symOf :: Sign -> Set.Set Symbol
+symOf sigma = Set.fromList $ map sigItemToSymbol 
+	      $ concat $ elems $ getMap sigma
 
 idToSortSymbol :: Id -> Symbol
 idToSortSymbol idt = Symbol idt CASL.Sign.Sort
@@ -1214,14 +1216,14 @@ predMapEntryToSymbol sigma (idt,(typ,newId):t) =
 symmapOf :: Morphism -> EndoMap Symbol
 symmapOf (Morphism src _ sorts funs preds) =
   let
-    sortMap = listToFM $ zip (map idToSortSymbol $ keysFM sorts)
-                             (map idToSortSymbol $ eltsFM sorts)
-    funMap  = listToFM $ concat $ map (funMapEntryToSymbol src)
-                                      (fmToList funs)
-    predMap = listToFM $ concat $ map (predMapEntryToSymbol src)
-                                      (fmToList preds)
+    sortMap = fromList $ zip (map idToSortSymbol $ keys sorts)
+                             (map idToSortSymbol $ elems sorts)
+    funMap  = fromList $ concat $ map (funMapEntryToSymbol src)
+                                      (toList funs)
+    predMap = fromList $ concat $ map (predMapEntryToSymbol src)
+                                      (toList preds)
   in
-    foldl plusFM emptyFM [sortMap,funMap,predMap]
+    foldl union empty [sortMap,funMap,predMap]
 
 matches :: Symbol -> RawSymbol -> Bool
 matches x                            (ASymbol y)              =  x==y
@@ -1235,7 +1237,7 @@ symName :: Symbol -> Id
 symName (Symbol idt _) = idt
 
 statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result (EndoMap RawSymbol)
-statSymbMapItems sl =  return (listToFM $ concat $ map s1 sl)
+statSymbMapItems sl =  return (fromList $ concat $ map s1 sl)
   where
   s1 (Symb_map_items kind l _) = map (symbOrMapToRaw kind) l
  

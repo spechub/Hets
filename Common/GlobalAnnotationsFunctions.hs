@@ -29,17 +29,19 @@ import Common.GlobalAnnotations
 
 import Common.Lib.Graph
 import Common.GraphUtils
-import FiniteMap
+import Common.Lib.Map hiding (filter, map)
 
+import Prelude hiding (lookup)
 import Data.List (nub,mapAccumL)
 import Data.Maybe (fromJust)
 
 emptyGlobalAnnos :: GlobalAnnos
-emptyGlobalAnnos = GA { prec_annos    = (emptyFM,empty)
-		      , assoc_annos   = emptyFM
-		      , display_annos = emptyFM
+emptyGlobalAnnos = GA { prec_annos    = (Common.Lib.Map.empty, 
+					 Common.Lib.Graph.empty)
+		      , assoc_annos   = Common.Lib.Map.empty
+		      , display_annos = Common.Lib.Map.empty
 		      , literal_annos = emptyLiteralAnnos
-		      , literal_map   = emptyFM
+		      , literal_map   = Common.Lib.Map.empty
 		      } 
  
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
@@ -59,7 +61,7 @@ store_prec_annos (nm,pgr) ans =
         		      _                 -> False) ans
 	ids        = nub $ concatMap allPrecIds pans
 	id_nodes   = zip (newNodes (length ids) pgr) ids
-	node_map   = addListToFM nm $ map (\(x,y) -> (y,x)) id_nodes
+	node_map   = nm `union` fromList (map (\(x,y) -> (y,x)) id_nodes)
 	the_edges  = concat $ (\(_,l) -> l) $ 
 		     mapAccumL (labelEdges (+1)) 1 $ 
 			            map (mkNodePairs node_map) pans
@@ -67,10 +69,10 @@ store_prec_annos (nm,pgr) ans =
         reflexiveClosure (-5) $ transitiveClosure (-3) $ 
 			         insEdges the_edges $ insNodes id_nodes pgr)
 	
-mkNodePairs :: FiniteMap Id Node -> Annotation -> [(Node,Node)]
+mkNodePairs :: Map Id Node -> Annotation -> [(Node,Node)]
 mkNodePairs nmap pan = 
     map (\(s,t) -> (lookup' s,lookup' t)) $ mkPairs pan
-    where lookup' i = case lookupFM nmap i of
+    where lookup' i = case lookup i nmap of
 		      Just n  -> n
 		      Nothing -> error $ "no node for " ++ show i
 
@@ -90,8 +92,8 @@ precRel (imap,g) out_id in_id =
     (True,False)  -> Higher
     (True,True)   -> ExplGroup BothDirections
     (False,False) -> ExplGroup NoDirection
-    where i_n = lookupFM imap in_id
-	  o_n = lookupFM imap out_id
+    where i_n = lookup in_id imap
+	  o_n = lookup out_id imap
 	  mn1 `inSuc` mn2 = inRel (suc g) mn1 mn2
 	  mn1 `inPre` mn2 = inRel (pre g) mn1 mn2
 	  inRel rel mn1 mn2 = case mn1 of 
@@ -103,8 +105,8 @@ precRel (imap,g) out_id in_id =
 ---------------------------------------------------------------------------
 
 store_assoc_annos :: AssocMap ->  [Annotation] -> AssocMap
-store_assoc_annos am ans = addListToFM am assocs
-    where assocs = concat $ map conn $ filter assocA ans
+store_assoc_annos am ans = am `union` fromList assos
+    where assos = concat $ map conn $ filter assocA ans
 	  conn (Lassoc_anno is _) = map (conn' ALeft)  is
 	  conn (Rassoc_anno is _) = map (conn' ARight) is
 	  conn _ = error "filtering isn't implented correct"
@@ -122,7 +124,7 @@ isRAssoc = isAssoc ARight
 
 isAssoc :: AssocEither -> AssocMap -> Id -> Bool
 isAssoc ae amap i =
-    case lookupFM amap i of
+    case lookup i amap of
     Nothing              -> False
     Just ae' | ae' == ae -> True
 	     | otherwise -> False
@@ -130,7 +132,7 @@ isAssoc ae amap i =
 ---------------------------------------------------------------------------
 
 store_display_annos :: DisplayMap -> [Annotation] -> DisplayMap
-store_display_annos dm ans = addListToFM dm disps
+store_display_annos dm ans = dm `union` fromList disps
     where disps = map conn $ filter displayA ans
 	  conn (Display_anno i sxs _) = (i,sxs)
 	  conn _ = error "filtering isn't implemented correct"
@@ -143,7 +145,7 @@ store_display_annos dm ans = addListToFM dm disps
 
 up_literal_map :: LiteralMap -> LiteralAnnos -> LiteralMap
 up_literal_map lmap la =
-    let oids = fmToList lmap
+    let oids = toList lmap
 	(sids,rem_str) = case string_lit la of
 			 Nothing      -> ([],False)
 			 Just (i1,i2) -> ([(i1,StringCons),(i2,StringNull)],
@@ -176,16 +178,17 @@ up_literal_map lmap la =
 		   map fst $ filter (\(_,x) ->    x == Floating 
 					       || x == Fraction) oids  
 		 else [])
-    in addListToFM (delListFromFM lmap remids) $ lids ++ fids ++ nid ++ sids
+    in (foldr delete lmap remids) `union` 
+       fromList (lids ++ fids ++ nid ++ sids)
 
 isLiteral :: LiteralMap -> Id -> Bool
-isLiteral lmap i = case lookupFM lmap i of
+isLiteral lmap i = case lookup i lmap of
 		   Just _  -> True
 		   Nothing -> False
 
 getLiteralType :: LiteralMap -> Id -> LiteralType
 getLiteralType lmap i =
-    case lookupFM lmap i of
+    case lookup i lmap of
     Just t  -> t
     Nothing -> error $ show i ++ " is not a literal id"
 emptyLiteralAnnos :: LiteralAnnos

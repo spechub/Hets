@@ -26,7 +26,7 @@ HADDOCK    = $(PERL) utils/haddock
 
 HC_FLAGS   = -fglasgow-exts -fallow-overlapping-instances -Wall
 HC_INCLUDE = -i$(INCLUDE_PATH)
-HC_PACKAGE = -package data 
+HC_PACKAGE = 
 
 AG_FLAGS   = -mdcfs
 
