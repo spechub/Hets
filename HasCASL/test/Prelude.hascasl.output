@@ -376,14 +376,14 @@ free type bool
 *** Hint 10.18, wrong result type '_var_68_v68 ->? _var_69_v69' (176.27)
   for application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])'
 *** Error 10.18, wrongly typed application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-  (var g : _var_64_v64)'
+    (var g : _var_64_v64)'
 *** Error 176.13, wrongly typed application '__<<=__
-  (var f : _var_61_v61,
-   __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-     (var g : _var_64_v64))'
+    (var f : _var_61_v61,
+     __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
+       (var g : _var_64_v64))'
 *** Error 176.13, no typing for '__<<=__(var f : _var_61_v61,
-        __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-          (var g : _var_64_v64))'
+          __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
+            (var g : _var_64_v64))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
