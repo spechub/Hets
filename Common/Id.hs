@@ -91,6 +91,11 @@ splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
 
+-- prefix ids do not need to be followed by places in HasCASL
+stripFinalPlaces :: Id -> Id
+stripFinalPlaces (Id ts cs ps) =
+    Id (fst $ splitMixToken ts) cs ps 
+
 -- reconstruct token list 
 -- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] = 
 -- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
