@@ -15,14 +15,19 @@ module Modal.AS_Modal where
 
 import Common.Id
 import Common.AS_Annotation 
+import Common.GlobalAnnotations
 import CASL.AS_Basic_CASL
+import Common.Lib.Pretty
+import Common.PrettyPrint
 
 -- DrIFT command
 {-! global: UpPos !-}
 
 data M_BASIC_SPEC =
-     M_Basic_spec [Annoted (BASIC_ITEMS M_BASIC_ITEM () M_FORMULA)]
+     M_Basic_spec [Annoted ModalBasicItems]
 		  deriving (Show,Eq)
+
+type ModalBasicItems = BASIC_ITEMS M_BASIC_ITEM () M_FORMULA
 
 data M_BASIC_ITEM =
 	         Flexible_Op_items [Annoted (OP_ITEM M_FORMULA)] [Pos]
@@ -31,11 +36,13 @@ data M_BASIC_ITEM =
 		 -- pos: pred, semi colons
              deriving (Eq, Show)
 
+type ModalFORMULA = FORMULA M_FORMULA
+
 data M_FORMULA = 
-	       Box (Either Id (TERM M_FORMULA)) (FORMULA M_FORMULA) [Pos]
+	       Box (Either Id (TERM M_FORMULA)) () [Pos]
                -- The identifier and the term specify the kind of the modality
 	       -- pos: "[]"	    
-	     | Diamond (Either Id (TERM M_FORMULA)) (FORMULA M_FORMULA) [Pos]
+	     | Diamond (Either Id (TERM M_FORMULA)) (ModalFORMULA) [Pos]
                -- The identifier and the term specify the kind of the modality
                -- pos: "<>"
              deriving (Eq, Show)
