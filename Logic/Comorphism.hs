@@ -69,10 +69,11 @@ class (Language cid,
                       -> Result (sign2,[Named sentence2])
     --default implementations
     map_sign cid sign = map_theory cid (sign,[])
-    map_theory cid (sign,sens) = do
+{-    map_theory cid (sign,sens) = do
        (sign',sens') <- map_sign cid sign
        sens'' <- mapM (mapNamedM $ map_sentence cid sign) sens
        return (sign',sens'++sens'')
+-}
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
           -- also covers semi-comorphisms
