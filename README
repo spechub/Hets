@@ -1,6 +1,9 @@
 This README belongs to a Hets release (and does not apply to
 sources directly obtained via cvs).
 
+Information not contained here can be found in the Hets user guide
+(doc/UserGuide.pdf) or on the Hets web page (www.tzi.de/cofi/hets).
+
 The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
 The sources need to be compiled with ghc Glasgow Haskell Compiler
@@ -45,7 +48,9 @@ The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (maeder@tzi.de) and Till Mossakowski
 (till@tzi.de). The mailing list is hets@tzi.de.
 
-Sources with maintainers:
+Overview of source modules, with maintainers:
+For more details, see the Haddock documentation in docs/
+(after generation with "make doc") 
 --------------------------------------------------------
 
 LICENCE.txt                 Licence information (english) (Till Mossakowski)
