@@ -44,6 +44,12 @@ _2_Ie_I_2 = undefined
 _2_B_D_2 :: ((), ()) -> ()
 _2_B_D_2 = undefined
  
+_2if_2 :: ((), ()) -> ()
+_2if_2 = undefined
+ 
+_2when_2else_2 :: (a, (), a) -> a
+_2when_2else_2 = undefined
+ 
 a :: A_s
 a = undefined
  
@@ -56,6 +62,9 @@ c = snd (((x :: A_s), (y :: A_t)))
 def_2 :: a -> ()
 def_2 = undefined
  
+false :: ()
+false = undefined
+ 
 if_2then_2else_2 :: ((), a, a) -> a
 if_2then_2else_2 = undefined
  
@@ -64,6 +73,9 @@ not_2 = undefined
  
 snd :: (A_s, A_t) -> A_t
 snd = \ (x, y) -> (y :: A_t)
+ 
+true :: ()
+true = undefined
  
 x :: A_s
 x = undefined

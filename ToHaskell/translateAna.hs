@@ -1,7 +1,7 @@
 module Main where
 
-import Haskell.Language.Pretty
-import Haskell.Language.Syntax
+import Haskell.Hatchet.HsPretty
+import Haskell.Hatchet.HsSyn
 import ToHaskell.TranslateAna
 import Common.AnnoState
 import Common.Lib.Parsec
@@ -13,11 +13,10 @@ import HasCASL.Le
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
 
-
-hParser :: AParser HsModule
+hParser :: AParser [HsDecl]
 hParser = do b <- basicSpec
-	     return $ translateAna $ snd $ (runState (anaBasicSpec emptyGlobalAnnos b)) initialEnv
-
+	     return $ translateAna $ snd $ 
+		   (runState (anaBasicSpec emptyGlobalAnnos b)) initialEnv
 	  
 main :: IO ()
 main = do l <- getArgs
@@ -26,6 +25,9 @@ main = do l <- getArgs
 		let r = runParser hParser emptyAnnos (head l) s 
 	        case r of 
 		       --Right x -> putStrLn $ show x
-		       Right x -> putStrLn $ prettyPrint x
+		       Right hs -> do
+		           putStrLn "module HasCASLModul where"
+		           putStrLn "import Prelude (undefined, Show)"
+			   mapM_ (putStrLn . render . ppHsDecl) hs
 		       Left err -> putStrLn $ show err
 	     else putStrLn "missing argument"

@@ -177,7 +177,7 @@ translateAssump as tm (i, opinf) =
 --   Uses 'translateType'.
 translateTypeScheme :: TypeScheme -> HsQualType
 translateTypeScheme (TypeScheme _arglist (_plist :=> t) _poslist) = 
-  HsQualType [] (translateType t)
+  HsUnQualType (translateType t)
 -- The context (in the _plist) is not yet used in HasCASL
 -- arglist ??
 
@@ -245,7 +245,7 @@ translateTerm as tm t =
         HsParen (HsExpTypeSig 
 		 nullLoc 
 		 (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
-		 (HsQualType [] $ translateType ty))      
+		 (HsUnQualType $ translateType ty))      
     QualOp _ (InstOpId uid _types _) ts _pos -> 
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for "Unifizierbarkeit" with the 
@@ -265,7 +265,7 @@ translateTerm as tm t =
     TypedTerm t1 tqual ty _pos ->
       let res = (HsExpTypeSig nullLoc 
 	                    (translateTerm as tm t1)
-                            (HsQualType [] $ translateType ty)) in
+                            (HsUnQualType $ translateType ty)) in
       case tqual of 
         OfType -> HsParen res
         AsType -> HsParen res

@@ -25,12 +25,6 @@ type A_s = A_t
 data A_t = A_t
 	 deriving Show
  
-_2_P_23 :: A_t -> A_t -> A_t
-_2_P_23 = undefined
- 
-_2_P_22 :: (A_t, A_t) -> A_t
-_2_P_22 = undefined
- 
 _2_P_2 :: (A_s, A_s) -> A_s
 _2_P_2 = undefined
  
@@ -55,14 +49,14 @@ _2_Ie_I_2 = undefined
 _2_B_D_2 :: ((), ()) -> ()
 _2_B_D_2 = undefined
  
-a2 :: A_t
-a2 = undefined
+_2if_2 :: ((), ()) -> ()
+_2if_2 = undefined
+ 
+_2when_2else_2 :: (a, (), a) -> a
+_2when_2else_2 = undefined
  
 a :: A_s
 a = undefined
- 
-b2 :: A_t
-b2 = undefined
  
 b :: A_s
 b = undefined
@@ -81,6 +75,9 @@ e = _2_P_2
  
 f :: (A_s, A_s) -> A_s
 f = _2_P_2
+ 
+false :: ()
+false = undefined
  
 g :: (A_s, A_s)
 g = (a, b)
@@ -123,6 +120,9 @@ l5 = (a, b, c)
  
 not_2 :: () -> ()
 not_2 = undefined
+ 
+true :: ()
+true = undefined
  
 x :: A_s
 x = undefined
