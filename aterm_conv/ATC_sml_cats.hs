@@ -1023,11 +1023,7 @@ instance ATermConvertible TERM where
 	    pat_list = [(AAppl "var-or-const" [ ]) ,(AAppl "qual-var" [ ]) ,
 			(AAppl "application" [ ]) ,(AAppl "sorted-term" [ ]) ,
 			(AAppl "cast" [ ]) ,(AAppl "conditional" [ ]) ]
-	    (pos_l,att') =
-		case getATerm att of
-		(AAppl "pos-TERM" [reg_i,p_flag,item_i]) ->
-		    (fromATerm_reg reg_i att,getATermByIndexSp1 item_i att)
-		_  -> ([],att)
+	    (pos_l,p_flag,att') = skipPosFlag "pos-TERM" att
 
 instance ATermConvertible OP_SYMB where
     toATerm _ _ = error "*** toATerm for \"OP_SYMB\" not implemented"
