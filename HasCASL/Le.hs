@@ -38,7 +38,7 @@ type ClassMap = FiniteMap ClassId ClassInfo
 data GenKind = Free | Generated | Loose deriving (Show, Eq) 
 
 data TypeDefn = NoTypeDefn
-              | SubTypeDefn TypeId Type Formula 
+              | Supertype TypeId Type Formula 
 	      | DatatypeDefn GenKind -- ...
 	      | AliasTypeDefn TypeScheme
 	      | TypeVarDefn deriving (Show, Eq)

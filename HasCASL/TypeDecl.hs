@@ -11,6 +11,7 @@ module TypeDecl where
 
 import As
 import AsUtils
+import AS_Annotation(item)
 import ClassAna
 import FiniteMap
 import Id
@@ -69,21 +70,32 @@ anaTypeItem inst (TypeDecl pats kind _) =
     do k <- anaKind kind
        let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
-       mapM_ (anaTypeId inst kind) is   
+       mapM_ (anaTypeId NoTypeDefn inst kind) is   
 anaTypeItem inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
        let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
-       mapM_ (anaTypeId inst nullKind) is   
+       mapM_ (anaTypeId NoTypeDefn inst nullKind) is   
        mapM_ (addSuperType t) is
 
 anaTypeItem inst (IsoDecl pats _) = 
     do let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
-       mapM_ (anaTypeId inst nullKind) is
+       mapM_ (anaTypeId NoTypeDefn inst nullKind) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i 0)) is) is 
 
-anaTypeItem _ (SubtypeDefn t _ _ _ p) = missingAna t p
+anaTypeItem inst (SubtypeDefn pat v t f ps) = 
+    do newT <- anaType t
+       addDiag $ Diag Warning ("unchecked formula '" ++ showPretty f "'")
+		   $ firstPos [v] ps
+       let Result ds m = convertTypePattern pat
+       appendDiags ds
+       case m of 
+	      Nothing -> return ()
+	      Just i -> do anaTypeId (Supertype v newT $ item f) 
+				     inst nullKind i
+			   addSuperType newT i
+	   
 anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
 anaTypeItem _ (AliasType t _ _ p) = missingAna t p
 
@@ -101,12 +113,12 @@ kindArity m (PlainClass _) = case m of
 			     TopLevel -> 0
 			     OnlyArg -> 1
 
-anaTypeId :: Instance -> Kind -> Id -> State Env ()
+anaTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
-anaTypeId _ kind i@(Id ts _ _)  = 
+anaTypeId defn _ kind i@(Id ts _ _)  = 
     let n = length $ filter isPlace ts 
     in if n == 0 || n == kindArity TopLevel kind then
-       addTypeKind NoTypeDefn i kind
+       addTypeKind defn i kind
        else addDiag $ mkDiag Error "wrong arity of" i
 
 convertTypePatterns :: [TypePattern] -> Result [Id]

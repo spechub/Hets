@@ -91,16 +91,14 @@ optAnaVarDecl vd@(VarDecl v t s q) =
 	       Nothing -> anaVarDecl vd
     else anaVarDecl vd
 
-anaVarDecl(VarDecl v oldT _ p) = 
+anaVarDecl(VarDecl v oldT _ _) = 
 		   do t <- anaType oldT
 		      as <- getAssumps
 		      let l = lookupWithDefaultFM as [] v 
 			  ts = SimpleTypeScheme t in 
 			  if ts `elem` l then 
-			     appendDiags 
-				     [Diag Warning 
-				      ("repeated variable '" 
-				       ++ showId v "'") p ]
+			     addDiag $ mkDiag Warning 
+				      "repeated variable '" v
 			     else  putAssumps $ addToFM as v (ts:l)
 
 anaTypeVarDecl :: TypeArg -> State Env ()

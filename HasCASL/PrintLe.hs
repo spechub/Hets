@@ -40,7 +40,7 @@ instance PrettyPrint TypeDefn where
     printText0 _ NoTypeDefn = empty
     printText0 _ TypeVarDefn = space <> ptext "%(var)%"
     printText0 ga (AliasTypeDefn s) = space <> ptext assignS <+> printText ga s
-    printText0 ga (SubTypeDefn v t f) =  space <> ptext equalS <+> 
+    printText0 ga (Supertype v t f) = space <> ptext equalS <+> 
 					 braces (printText0 ga v 
 					   <+> colon
 					   <+> printText0 ga t 

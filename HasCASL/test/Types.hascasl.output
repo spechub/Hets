@@ -12,6 +12,7 @@ r2 :Type< (t2,r2,s2)
 s :Type
 s1 :Type< t
 s2 :Type< (t2,r2,s2)
+s3 :Type< t = {x : t . x = x}
 t :Type
 t1 :Type< t
 t2 :Type< (t2,r2,s2)
@@ -31,7 +32,7 @@ y : (tuple3)((r,s))
 z : (m)(([__])(__))
 Error (12,16) incompatible kind of type '(r,s)'
 Error (18,14) undeclared type '__'
-Error (18,14) incompatible kind of type '([__])(__)'
+Error (18,11) incompatible kind of type '([__])(__)'
 Error (28,12) incompatible kind of type 'tuple3'
 Error (30,10) undeclared type 'a'
 Error (30,15) undeclared type 'b'
@@ -39,3 +40,4 @@ Error (30,20) undeclared type 'c'
 Error (30,25) undeclared type 'c'
 Error (30,30) undeclared type 'd'
 Error (32,10) undeclared type 'nt'
+Warning (38,9) unchecked formula 'x = x'

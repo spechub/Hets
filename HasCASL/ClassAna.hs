@@ -69,8 +69,6 @@ downsetWarning :: Type -> State Env ()
 downsetWarning t = 
     addDiag $ mkDiag Warning "unchecked type" t
 
-instance PosItem Type where
-    get_pos = Just . posOfType
 
 -- ----------------------------------------------------------------------------
 -- analyse kind
