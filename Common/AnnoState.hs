@@ -75,7 +75,6 @@ getAnnos = do AnnoState a <- getState
 -- | annotations on consecutive lines 
 mLineAnnos :: GenParser Char st [Annotation]
 mLineAnnos = 
-    do p <- getPosition
        do a <- annotationL
 	  skipSmart
 	  do  l <- mLineAnnos
