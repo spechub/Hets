@@ -16,7 +16,7 @@ import Le
 import List
 import Maybe
 import MonadState
-import PrintAs()
+import PrintAs(showPretty)
 import FiniteMap
 import Result
 
@@ -68,23 +68,19 @@ downsetWarning t =
 -- ----------------------------------------------------------------------------
 
 anaKind :: Kind -> State Env Kind
-anaKind (Kind args c p) = 
-    do ca <- anaClass c
-       newArgs <- mapM anaProdClass args
-       return $ Kind newArgs ca p
-
-anaExtClass :: ExtClass -> State Env ExtClass
-anaExtClass (ExtClass c v p) = 
-    do ca <- anaClass c
-       return $ ExtClass ca v p
-anaExtClass (KindArg k) =
-    do n <- anaKind k
-       return $ KindArg n
-
-anaProdClass :: ProdClass -> State Env ProdClass
-anaProdClass (ProdClass l p) =
-    do cs <- mapM anaExtClass l
+anaKind (KindAppl k1 k2 p) = 
+    do k3 <- anaKind k1
+       k4 <- anaKind k2
+       return $ KindAppl k3 k4 p
+anaKind (ProdClass l p) =
+    do cs <- mapM anaKind l
        return $ ProdClass cs p
+anaKind (ExtClass k v p) = 
+    do k1 <- anaKind k
+       return $ ExtClass k1 v p
+anaKind (PlainClass c) = 
+    do c1 <- anaClass c
+       return $ PlainClass c1
 
 -- ---------------------------------------------------------------------------
 -- analyse type
@@ -107,26 +103,24 @@ eqKindDiag k1 k2 =
 data EqMode = Compatible | SameSyntax
 
 eqKind :: EqMode -> Kind -> Kind -> Bool
-eqKind emod (Kind p1 c1 _) (Kind p2 c2 _) =
-    eqListBy (eqProdClass emod) p1 p2 && 
-    case emod of Compatible -> True
-		 SameSyntax -> eqClass c1 c2
+eqKind emod (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
+    eqKind emod p1 p2 && eqKind emod c1 c2
+eqKind emod (ProdClass s1 _) (ProdClass s2 _) =
+    eqListBy (eqKind emod) s1 s2
+eqKind emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
+    eqKind emod c1 c2 && 
+	   case emod of Compatible -> True
+			SameSyntax -> v1 == v2
+eqKind emod (PlainClass c1) (PlainClass c2) = 
+	   case emod of Compatible -> True
+			SameSyntax -> eqClass c1 c2
+
+eqKind _ _ _ = False
 
 eqListBy :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 eqListBy _ [] [] = True
 eqListBy f (h1:t1) (h2:t2) = f h1 h2 && eqListBy f t1 t2
 eqListBy _ _ _ = False
-
-eqProdClass :: EqMode -> ProdClass -> ProdClass -> Bool
-eqProdClass emod (ProdClass s1 _) (ProdClass s2 _) =
-    eqListBy (eqExtClass emod) s1 s2
-
-eqExtClass :: EqMode -> ExtClass -> ExtClass -> Bool
-eqExtClass emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    case emod of Compatible -> True
-		 SameSyntax -> eqClass c1 c2 && v1 == v2
-eqExtClass emod (KindArg k1) (KindArg k2) = eqKind emod k1 k2
-eqExtClass _ _ _ = False
 
 eqClass :: Class -> Class -> Bool
 eqClass(Intersection i1 _) (Intersection i2 _) = i1 == i2
@@ -134,12 +128,5 @@ eqClass (Downset t1) (Downset t2) = t1 == t2
 eqClass _ _ = False
 
 -- ---------------------------------------------------------------------
-
-kindArity :: Kind -> Int
-kindArity(Kind args _ _) = 
-    sum $ map prodClassArity args
-
-prodClassArity :: ProdClass -> Int
-prodClassArity (ProdClass l _) = length l
 
 

@@ -12,13 +12,14 @@ module Main where
 
 import ParseItem
 import ParseTerm
-import PrintAs
+import PrintLe
 import HToken
 import RunParsers
-import RunStaticAna
+-- import RunStaticAna
 
 main :: IO ()
 main = exec lineParser fileParser
+       where _just_avoid_unused_import_warning = noPrint
 
 lineParser, fileParser :: [(String, HetParser)]
 lineParser = [
@@ -31,6 +32,7 @@ lineParser = [
  ("BasicItems", HetParser basicItems),
  ("Items", HetParser basicSpec)]
 
-fileParser = [("BasicSpec", HetParser basicSpec),
-	     ("analysis", HetParser anaParser)]
+fileParser = [ ("BasicSpec", HetParser basicSpec)
+--	     , ("analysis", HetParser anaParser)
+	     ]
 \end{code}

@@ -13,19 +13,10 @@ import As
 import Id
 
 posOfKind :: Kind -> Pos
-posOfKind (Kind l c ps) = 
-    if null l then posOfClass c
-       else if null ps then posOfProdClass $ head l
-	    else head ps
-
-posOfProdClass :: ProdClass -> Pos
-posOfProdClass (ProdClass s ps) = 
-    if null s then if null ps then nullPos else head ps 
-       else posOfExtClass $ head s
-
-posOfExtClass :: ExtClass -> Pos
-posOfExtClass (ExtClass c _ _) = posOfClass c
-posOfExtClass (KindArg k) = posOfKind k
+posOfKind (KindAppl _ _ p) = p 
+posOfKind (ProdClass s ps) = head ps
+posOfKind (ExtClass _ _ p) = p
+posOfKind (PlainClass c) = posOfClass c
 
 posOfClass :: Class -> Pos 
 posOfClass (Downset t) = posOfType t
@@ -51,7 +42,8 @@ posOfTypePattern (TypePatternArgs as) =
 -- ---------------------------------------------------------------------
 
 posOfType :: Type -> Pos
-posOfType (TypeConstrAppl i _ _ _ _) = posOfId i
+posOfType (TypeName i _) = posOfId i
+posOfType (TypeAppl _ t2) = posOfType t2
 posOfType (TypeToken t) = tokPos t
 posOfType (BracketType _ ts ps) = 
     if null ps then 

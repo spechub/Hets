@@ -39,10 +39,13 @@ quColon = do c <- colT
 -- kind
 -----------------------------------------------------------------------------
 -- universe is just a special classId ("Type")
-parseClass :: GenParser Char st Class
-parseClass = fmap (\c -> if showId c "" == "Type" 
+parseClassId :: GenParser Char st Class
+parseClassId = fmap (\c -> if showId c "" == "Type" 
 		   then Intersection [] [posOfId c]
 		   else Intersection [c] []) classId
+
+parseClass :: GenParser Char st Class
+parseClass = parseClassId
              <|> 
 	     do o <- oParenT
 		(cs, ps) <- parseClass `separatedBy` commaT
@@ -50,8 +53,14 @@ parseClass = fmap (\c -> if showId c "" == "Type"
 		return (Intersection (nub $ concatMap iclass cs) 
 			(toPos o ps c))
 
-extClass :: GenParser Char st ExtClass
-extClass = do c <- parseClass
+parsePlainClass :: GenParser Char st Kind
+parsePlainClass = 
+             fmap PlainClass parseClassId 
+             <|> 
+	     do oParenT >> kind << cParenT
+
+extClass :: GenParser Char st Kind
+extClass = do c <- parsePlainClass
 	      do s <- plusT
 	         return (ExtClass c CoVar (tokPos s))
 	       <|> 
@@ -59,26 +68,17 @@ extClass = do c <- parseClass
 	          return (ExtClass c ContraVar (tokPos s))
 	       <|> return (ExtClass c InVar nullPos)
 
-prodClass :: GenParser Char st ProdClass
+prodClass :: GenParser Char st Kind
 prodClass = do (cs, ps) <- extClass `separatedBy` crossT
-	       return (ProdClass cs (map tokPos ps))
+	       return $ if length cs == 1 then head cs 
+		      else ProdClass cs (map tokPos ps)
 
 kind :: GenParser Char st Kind
-kind = kindOrClass [] []
-
-kindOrClass, curriedKind :: [ProdClass] -> [Token] -> GenParser Char st Kind
-kindOrClass os ps = do c@(ProdClass cs _) <- prodClass
-		       if let isClass (ExtClass _ InVar _) = True
-			      isClass _ = False
-			  in length cs == 1 && isClass (head cs)
-		         then curriedKind (os++[c]) ps 
-				<|> return (Kind os ( (\ (ExtClass e _ _) 
-						       -> e) (head cs)) 
-				     (map tokPos ps))
-		         else curriedKind (os++[c]) ps
-
-curriedKind os ps = do a <- asKey funS
-		       kindOrClass os (ps++[a])
+kind = do k1 <- prodClass
+	  do a <- asKey funS
+	     k2 <- kind
+	     return $ KindAppl k1 k2 $ tokPos a
+	    <|> return k1
 
 -----------------------------------------------------------------------------
 -- type
@@ -149,12 +149,11 @@ prodType = do (ts, ps) <- mixType `separatedBy` crossT
 	      return (if length ts == 1 then head ts 
 		      else ProductType ts (map tokPos ps)) 
 
-funType = do (ts, as) <- prodType `separatedBy` arrowT
-	     return (makeFun ts as)
-	       where makeFun [t] [] = t
-	             makeFun [t,r] [a] = FunType t (fst a) r [snd a]
-		     makeFun (t:r) (a:b) = makeFun [t, makeFun r b] [a]
-		     makeFun _ _ = error "makeFun got illegal argument"
+funType = do t1 <- prodType 
+	     do a <- arrowT
+		t2 <- funType
+		return $ FunType t1 (fst a) t2 [snd a] 
+	       <|> return t1
 
 arrowT :: GenParser Char st (Arrow, Pos)
 arrowT = do a <- noQuMark funS
@@ -205,7 +204,7 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 				universe nullPos)
 
 makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
-makeTypeVarDecls vs ps c q = let cl = Kind [] c [] in 
+makeTypeVarDecls vs ps c q = let cl = PlainClass c in 
     zipWith (\ v p -> 
 	     TypeVarDecl (simpleIdToId v) cl Comma (tokPos p))
 		(init vs) ps 
@@ -244,22 +243,21 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
                    if let isInVar(_, InVar, _) = True
 			  isInVar(_,_,_) = False
 		      in all isInVar ts then 
-		      do k <- extClass
+		      do k <- kind
 			 return (makeTypeArgs ts ps (tokPos c) k)
-		      else do k <- parseClass
+		      else do k <- kind
 			      return (makeTypeArgs ts ps (tokPos c) 
 				      (ExtClass k InVar nullPos))
 	        <|> 
 	        do l <- lessT
 		   t <- parseType
 		   return (makeTypeArgs ts ps (tokPos l)
-			   (ExtClass (Downset t) InVar nullPos))
-		<|> return (makeTypeArgs ts ps nullPos extUniverse)
+			   (PlainClass (Downset t)))
+		<|> return (makeTypeArgs ts ps nullPos nullKind)
 		where mergeVariance k e (t, InVar, _) p = 
 			  TypeArg t e k p 
-		      mergeVariance k (ExtClass c _ _) (t, v, ps) p =
-			  TypeArg t (ExtClass c v ps) k p
-		      mergeVariance k e (t, _, _) p = TypeArg t e k p
+		      mergeVariance k e (t, v, ps) p =
+			  TypeArg t (ExtClass e v ps) k p
 		      makeTypeArgs ts ps q e = 
                          zipWith (mergeVariance Comma e) (init ts) 
 				     (map tokPos ps)

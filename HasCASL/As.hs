@@ -85,8 +85,9 @@ data PseudoType = SimplePseudoType Type
                 -- pos "\" "("s, ")"s, dot 
                   deriving (Show, Eq)
 
-data Type = TypeConstrAppl TypeId Int (Maybe Kind) [Type] [Pos]  -- analysed
+data Type = TypeName TypeId Int  -- analysed
             -- Int > 0 means generalized
+	  | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           -- pos "," (between type arguments)
@@ -246,7 +247,7 @@ data TypeVarDecl = TypeVarDecl TypeId Kind SeparatorKind Pos
 data TypeVarDecls = TypeVarDecls [TypeVarDecl] [Pos] deriving (Show, Eq)
 		    -- pos "[", ";"s, "]"
 
-data TypeArg = TypeArg TypeVar ExtClass SeparatorKind Pos
+data TypeArg = TypeArg TypeVar Kind SeparatorKind Pos
 	       -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
 	       deriving (Show, Eq)
 
@@ -263,18 +264,13 @@ data GenVarDecl = GenVarDecl VarDecl
 
 data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
-data ExtClass = ExtClass Class Variance Pos
-                -- pos "+" or "-" (or nullPos)
-	      | KindArg Kind  -- extension for HO kinds
-		deriving (Show, Eq)
-
-data ProdClass = ProdClass [ExtClass] [Pos] 
-                 -- pos crosses 
-		 deriving (Show, Eq)
-                
-
-data Kind = Kind [ProdClass] Class [Pos] 
-	    -- pos "->"s (first order)
+data Kind = PlainClass Class
+            | ExtClass Kind Variance Pos
+	     -- pos "+" or "-" 
+	    | ProdClass [Kind] [Pos] 
+	    -- pos crosses
+	    | KindAppl Kind Kind Pos
+	    -- pos "->" 
 	    deriving (Show, Eq)
 
 data Class = Downset Type   -- not parsed directly
@@ -285,11 +281,8 @@ data Class = Downset Type   -- not parsed directly
 universe :: Class
 universe = Intersection [] []
 
-extUniverse :: ExtClass
-extUniverse = ExtClass universe InVar nullPos
-	       
 nullKind :: Kind
-nullKind = Kind [] universe []
+nullKind = PlainClass universe
 
 -- ----------------------------------------------------------------------------
 -- op names

@@ -7,7 +7,7 @@
    printing As data types
 -}
 
-module PrintAs where
+module PrintAs (showPretty, commas) where
 
 import As
 import Keywords
@@ -15,7 +15,12 @@ import HToken
 import Pretty
 import PrettyPrint
 import GlobalAnnotations(GlobalAnnos)
-import Print_AS_Annotation()
+import GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import Print_AS_Annotation
+
+showPretty :: PrettyPrint a => a -> ShowS
+showPretty = showString . render . printText0 emptyGlobalAnnos 
+	     where _just_avoid_unused_import_warning = smallSpace_latex
 
 commas, semis :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 commas ga l = fcat $ punctuate comma (map (printText0 ga) l)
@@ -36,18 +41,15 @@ bracket Braces t = braces t
 
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-			      Kind [] (Intersection [] _) _ -> empty
+			      PlainClass (Intersection [] _) -> empty
 			      _ -> space <> colon <> printText0 ga kind
 
 instance PrettyPrint Type where 
-    printText0 ga (TypeConstrAppl name i kind args _) = printText0 ga name 
+    printText0 ga (TypeName name i) = printText0 ga name 
     			  <> if i == 0 then empty 
 			     else parens (int i)
-			  <> (case kind of 
-				Nothing -> empty
-			        Just k -> printKind ga k)
-			  <> if null args then empty 
-			     else parens (commas ga args)
+    printText0 ga (TypeAppl t1 t2) = parens (printText0 ga t1) 
+    			  <> parens (printText0 ga t2) 
     printText0 ga (TypeToken t) = printText0 ga t
     printText0 ga (BracketType k l _) = bracket k $ commas ga l
     printText0 ga (KindedType t kind _) = printText0 ga t  
@@ -211,7 +213,7 @@ instance PrettyPrint TypeVarDecl where
     printText0 ga (TypeVarDecl v c _ _) = 
 	printText0 ga v <+> 
 	case c of 
-	Kind [] (Downset t) _ -> 
+	PlainClass (Downset t) -> 
 	    text lessS <+> printText0 ga t
 	_ -> colon <+> printText0 ga c
 
@@ -228,21 +230,24 @@ instance PrettyPrint Variance where
     printText0 _ ContraVar = text minusS
     printText0 _ InVar = empty
 
-instance PrettyPrint ExtClass where 
-    printText0 ga (ExtClass c v _) = printText0 ga c <> printText0 ga v 
-				     <> space
-    printText0 ga (KindArg k) = parens (printText0 ga k)
-
-instance PrettyPrint ProdClass where 
-    printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
-			       (map (printText0 ga) l)
-
 instance PrettyPrint Kind where
-    printText0 ga (Kind l c _) = (if null l then empty else 
-			      (fcat $ punctuate (text funS) 
-			       (map (printText0 ga) l))
-			      <> text funS) 
-			     <> printText0 ga c
+    printText0 ga (PlainClass c) = printText0 ga c
+    printText0 ga (ExtClass k v _) = (case k of 
+					    PlainClass _ -> id
+					    _ -> parens) (printText0 ga k)
+						 <> printText0 ga v 
+    printText0 ga (ProdClass l _) = fcat $ punctuate (text timesS) 
+			       (map (\ k ->
+				     (case k of KindAppl _ _ _ -> parens
+				                ProdClass _ _ -> parens
+				                _ -> id)
+				     (printText0 ga k)) l)
+    printText0 ga (KindAppl k1 k2 _) = 
+			  (case k1 of 
+				  KindAppl _ _ _ -> parens
+				  _ -> id) (printText0 ga k1)
+			  <> text funS 
+			  <> printText0 ga k2
 
 instance PrettyPrint Class where 
     printText0 ga (Downset t) = braces $ 
