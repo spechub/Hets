@@ -15,8 +15,6 @@
 
 module AS_Annotation where
 import Id
-import PrettyPrint
-import Pretty
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -63,10 +61,5 @@ data Annoted a = Annoted { item::a
 		 deriving (Show,Eq) 
 
 
-printList l = vcat (map printText0 l)
 
-instance PrettyPrint a => PrettyPrint (Annoted a) where
-    printText0(Annoted i _ l r) = printList l $$  (printText0 i <+> printList r)
 
-instance PrettyPrint Annotation where
-    printText0 a = ptext (show a)
