@@ -1,0 +1,188 @@
+\documentclass{article}
+
+\parindent 0pt
+\parskip 5pt
+
+\begin{document}
+
+\title{CASL basic items}
+
+\author{C. Maeder}
+
+\maketitle
+
+\section{Preliminaries}
+
+see the documentation for HetCATS
+
+
+\section{Compiling the CASL parser}
+
+\texttt{cd HetCATS/CASL} and call \texttt{./ghc-call} (a script that contains
+all necessary ghc options and parameters). An alternative is to call
+\texttt{gmake capa} in the top directory.
+
+This creates a binary called \texttt{capa} that can parse (and pretty
+print) ``Basic Specification with Subsorts'' of the CASL Summary
+version 1.0.1 \\ (www.brics.dk/Projects/CoFI/Documents/CASL/Summary/).
+
+Structured specifications (see \texttt{Static/hetpa.hs}) must be parsed by the heterogenous parser
+.
+
+Note: if module \texttt{AS\_Basic\_CASL} can not be found, then
+\texttt{AS\_Basic\_CASL.hs} was not ``drifted'' (i.e., derived from
+\texttt{AS\_Basic\_CASL.der.hs}). 
+
+Also \texttt{Common/AS\_Annotation.hs} must have been drifted.
+
+\section{Testing}
+
+A test call might be: 
+
+\texttt{./capa BasicSpec.casl}
+
+The binary \texttt{capa} is also used to test various parsers. Test cases are
+given as \texttt{*.casl} files.
+
+Calling \texttt{./runcheck.sh ./capa} performs many tests and compares the
+results with corresponding \texttt{*.output} files.
+
+Alternatively a test can be run using \texttt{runhugs}. For this the
+file \texttt{capa.lhs} is executable and the test can be run
+by \texttt{./runcheck.sh ./capa.lhs}.
+
+\texttt{Wrong*.casl} files contain wrong CASL code and should produce
+error messages. Apart from extra tests, correct (\texttt{Bla.casl})
+and wrong files (\texttt{WrongBla.casl}) are tested. If a \texttt{diff}
+with the expected output fails, then also the number of
+``\texttt{error}'' occurrences (in the produced output) is counted. For a
+successful comparison a ``\texttt{passed}'' is emitted.
+
+Calling ``\texttt{./runcheck.sh ./capa set}'' will update the
+\texttt{*.output} files (and a subsequent \texttt{./runcheck.sh ./capa} should
+always pass). 
+
+Alternatively, all checks can be preformed by \texttt{make check}. Output
+files will be overwritten by \texttt{make output}. With \texttt{cvs up} or
+\texttt{cvs diff} changes can be compared to checked-in versions of the output
+files.
+
+\section{Source files in \texttt{HetCATS/CASL}}
+
+\begin{description}
+\item[AS\_Basic\_CASL.der.hs] defines the abstract syntax tree for CASL
+\item[Formula.hs] parser \texttt{term} and \texttt{formula}
+\item[ItemList.hs] parses items (separated by semicolons) generically
+  (\texttt{itemList}) and annotations between or following these
+  items. 
+\item[Latin.hs] used by \texttt{Static.hs}
+\item[LiteralFuns.hs] used by \texttt{Print\_AS\_Basic.hs}
+\item[Logic\_CASL.hs] contains the instance for the class \texttt{Logic.Logic}
+\item[MixfixParser.hs] uses precedence and associativity to resolve
+  mixfix terms (and formulae). Also \%list, \%string, \%number and
+  \%floating annotations are resolved 
+\item[OpItem.hs] parsers \texttt{opItem(s)} and \texttt{predItem(s)}
+\item[Parse\_AS\_Basic.hs] supplies the top-level parsers \texttt{basicSpec,
+  basicItems, dotFormulae} and \texttt{sigItems}
+\item[Print\_AS\_Basic.hs] pretty prints data types of
+  \texttt{AS\_Basic\_CASL.hs}
+\item[RunMixfixParser.hs] is an additional driver to test the mixfix
+  analysis
+\item[RunParsers.hs] contains the driver called in Main for test parsers and
+  is reused in \texttt{HetCATS/HasCASL}. (It declares an existential type.)
+\item[RunStaticAna.hs] is an additional driver to test the static 
+  analysis (call \texttt{capa analysis <file>})  
+\item[Sign.hs] is the analysed abstract syntax and the signature for an
+  instance of the class \texttt{Logic}.
+\item[SortItem.hs] parser \texttt{sortItem(s)} (requires \texttt{Formula.hs}
+  for subsort definitions)
+\item[Static.hs] implements the static analysis
+\item[Sublogics.hs] used by \texttt{Logic\_CASL.hs}
+\item[SymbolParser.hs] parses symbols and symbol maps that are not needed for
+  basic specs but for heterogeneous structured specifications
+  (\texttt{Logic\_CASL.hs}). These parsers do not deal with annotations,
+  currently
+\item[TypeItem.hs] parsers \texttt{datatype} and \texttt{typeItems}
+\item[capa.lhs] is the main module that simply lists the test parsers
+  and is executable for hugs
+\end{description}
+
+\section{Remarks}
+
+The following files have been moved to the \texttt{Common} directory.
+
+\begin{description}
+\item[Token.hs] generic parser for mixfix ids and some keyword parsers
+  (reused in \texttt{HetCATS/HasCASL}). The haskell data types
+  \texttt{Token} and \texttt{Id} are defined in \texttt{Common/Id.hs}!
+\item[Lexer.hs] various scanners and extensions of the Parsec library 
+\item[Keywords.hs] CASL keywords as named identifiers (to be used
+  for parsing and printing and thus ensuring consistent spellings)
+\end{description}
+
+The above files rely on the data types in \texttt{Id.hs} and
+\texttt{AS\_Annotation.der.hs} in the \texttt{Common} directory. For pretty
+printing the class in \texttt{PrettyPrint.hs} is required.
+\texttt{PrettyPrint.hs} in turn relies on
+\texttt{GlobalAnnotations.hs} and \texttt{LaTeX\_funs.hs} and
+\texttt{LaTeX\_maps.hs} (to consider \%display annotations).
+
+\texttt{Common/Lib/Pretty.lhs} is an adapted copy of\\
+\texttt{//research.microsoft.com/\~{}simonpj/downloads/pretty-printer/pretty.html}
+that is also included as Haskell (\texttt{text}) library. 
+
+\texttt{PrettyPrint.hs} supplies an instance for \texttt{Id}. The
+instance for annotations is given in \texttt{Print\_AS\_Annotation.hs}.
+\texttt{CASL/Print\_AS\_Basic} further imports
+\texttt{Common.PPUtils}. (Pretty printing requires ``glasgow extensions''.)
+
+\texttt{GlobalAnnotations.hs} contains the \texttt{PrecedenceGraph} and
+imports \texttt{Map} and \texttt{Graph}. \texttt{Graph} has its own
+implementation of maps, namely \texttt{SimpleMap.hs}.  
+
+\texttt{Graph} came
+from \texttt{www.cs.orst.edu/\~{}erwig/fgl/}.  
+
+\texttt{Map} and \texttt{Set}
+come from \texttt{www.cs.uu.nl/\~{}daan/ddata.html}.
+
+With \texttt{GlobalAnnotations.hs} also
+\texttt{GlobalAnnotationsFunctions.hs} is sometimes needed. The later
+depends on \texttt{GraphUtils.hs}. 
+
+\texttt{CASL/MixfixParser.hs} uses \texttt{Result.hs} to combine
+diagnostic messages (and \texttt{Set} to combine states).
+
+The actually parser combinators come from 
+\texttt{www.cs.uu.nl/\~{}daan/parsec.html} that are part of the
+Haskell library but also have been slightly extended (by
+\texttt{consumeNothing}) and included in the \texttt{Common/Lib}
+subdirectory. \texttt{Parsec.hs} simply re-exports parts from
+\texttt{Prim.hs}, \texttt{Combinator.hs},
+\texttt{Char.hs}, \texttt{Error.hs} and
+\texttt{Pos.hs}. 
+
+\texttt{Parsec.Pos} is reused in \texttt{Id.hs}.
+
+\texttt{Anno\_Parser.hs} uses the mixfix ids from \texttt{Token.hs}.
+(\texttt{CaslLanguage.hs} that is based on \texttt{Parsec.Token} and
+\texttt{Parsec.Language} supplies an alternative parser for ids.)
+\texttt{Anno\_Parser.hs} further uses \texttt{Parsec.Perm} (that relies on
+glasgow extensions).
+
+The \texttt{MixfixParser} only operates on \texttt{FORMULA} and
+\texttt{TERM} from \texttt{AS\_Basic\_CASL} and not on
+types in \texttt{Sign.hs}. 
+
+Type checking (considering subtypes and overloading) of terms and
+formulae (plus their conversions to the types in \texttt{Sign.hs}) is
+still missing.
+
+\section{Scripts}
+
+\texttt{runcheck.sh} includes \texttt{checkFunctions.sh}.
+\texttt{iterate.sh} checks differences between the working copy and
+the most recent cvs version.
+
+\end{document}
+
