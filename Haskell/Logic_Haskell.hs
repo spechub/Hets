@@ -33,16 +33,42 @@ import Haskell.HatAna
 
 import Logic.Logic             
 
+instance ATermConvertible HsDecls
+instance ATermConvertible Sign
+instance ATermConvertible (HsDeclI PNT)
+
 hsDeclsTc :: TyCon
 hsDeclsTc = mkTyCon "Haskell.HatParser.HsDecls"
-
-instance ATermConvertible HsDecls
 
 instance Typeable HsDecls where
     typeOf _ = mkTyConApp hsDeclsTc []
 
+tyconSign :: TyCon
+tyconSign = mkTyCon "Haskell.HatAna.Sign"
+
+instance Typeable Sign where
+  typeOf _ = mkTyConApp tyconSign []
+
+tyconPNT :: TyCon
+tyconPNT = mkTyCon "Haskell.HatAna.PNT"
+
+instance Typeable PNT where
+  typeOf _ = mkTyConApp tyconPNT []
+
+hsDeclItc :: TyCon
+hsDeclItc = mkTyCon "Haskell.HatAna.HsDeclI"
+
+instance Typeable i => Typeable (HsDeclI i) where 
+  typeOf s = mkTyConApp hsDeclItc [typeOf $ (undefined :: HsDeclI a -> a) s]
+
 instance PrintLaTeX HsDecls where
   printLatex0 = printText0
+
+instance PrintLaTeX Sign where
+     printLatex0 = printText0
+
+instance PrintLaTeX (HsDeclI PNT) where
+     printLatex0 = printText0
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -51,8 +77,9 @@ data Haskell = Haskell deriving (Show)
 instance Language Haskell where
  description _ = 
   "Haskell - a purely functional programming language,\ 
-  \featuring static typing, higher-order functions, polymorphism, type classes and monadic effects\ 
-  \See http://www.haskell.org"
+  \ featuring static typing, higher-order functions, polymorphism,\
+  \ type classes and monadic effects.\ 
+  \ See http://www.haskell.org"
 
 type Morphism = ()
 
@@ -76,7 +103,7 @@ type Haskell_Sublogics = ()
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell Sentence () Sign Morphism Symbol where
+instance Sentences Haskell (HsDeclI PNT) () Sign Morphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
 	if null lab then empty 
@@ -85,19 +112,20 @@ instance Sentences Haskell Sentence () Sign Morphism Symbol where
     cons_checkers Haskell = []
 
 instance StaticAnalysis Haskell HsDecls
-               Sentence () 
+               (HsDeclI PNT) () 
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
                Symbol RawSymbol where
     basic_analysis Haskell = Just hatAna 
-    empty_signature Haskell = emptyEnv
+    empty_signature Haskell = emptySign
+    signature_union Haskell s = return . addSign s
     final_union Haskell = signature_union Haskell
     inclusion Haskell _ _ = return ()
     is_subsig Haskell = isSubSign
 
 instance Logic Haskell Haskell_Sublogics
-               HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
+               HsDecls (HsDeclI PNT) SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
                Symbol RawSymbol ()

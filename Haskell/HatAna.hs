@@ -9,7 +9,7 @@ Portability :  non-portable
 
 -}
 
-module Haskell.HatAna where
+module Haskell.HatAna (module Haskell.HatAna, PNT, HsDeclI) where
 
 import Common.AS_Annotation 
 import Common.Result 
@@ -44,52 +44,39 @@ import Common.DynamicUtils
 import Data.Dynamic
 import Data.List((\\))
 import Data.Set
+import qualified Common.Lib.Map as Map
 
 data Sign = Sign 
     { instances :: [TiInstanceDB.Instance PNT]
-    , types :: [TiClasses.TAssump PNT]
-    , values :: [TiTypes.Assump PNT] 
+    , types :: Map.Map (HsIdentI PNT) (Kind, TypeInfo PNT)
+    , values :: Map.Map (HsIdentI PNT) (Scheme PNT) 
     , scope :: Rel QName Ents.Entity
-    , fixities :: [(HsIdentI (SN Id), HsFixity)] 
+    , fixities :: Map.Map (HsIdentI (SN Id)) HsFixity
     } deriving (Show, Eq)
 
 diffSign :: Sign -> Sign -> Sign
-diffSign e1 e2 = 
-     emptyEnv { instances = instances e1 \\ instances e2
-              , types = types e1 \\ types e2
-              , values = values e1 \\ values e2 
-              , scope = scope e1 `minusSet` scope e2 
-              , fixities = fixities e1 \\ fixities e2
-              }
+diffSign e1 e2 = emptySign 
+    { instances = instances e1 \\ instances e2
+    , types = types e1 `Map.difference` types e2
+    , values = values e1 `Map.difference` values e2 
+    , scope = scope e1 `minusSet` scope e2 
+    , fixities = fixities e1 `Map.difference` fixities e2
+    }
+
+addSign :: Sign -> Sign -> Sign
+addSign e1 e2 = emptySign 
+    { instances = let is = instances e2 in (instances e1 \\ is) ++ is
+    , types = types e1 `Map.union` types e2
+    , values = values e1 `Map.union` values e2 
+    , scope = scope e1 `union` scope e2 
+    , fixities = fixities e1 `Map.union` fixities e2
+    }
 
 isSubSign :: Sign -> Sign -> Bool
-isSubSign e1 e2 = diffSign e1 e2 == emptyEnv
+isSubSign e1 e2 = diffSign e1 e2 == emptySign
 
 instance Eq (TypeInfo i) where
     _ == _ = True
-
-type Sentence = HsDeclI PNT
-
-instance ATermConvertible Sign
-instance ATermConvertible (HsDeclI PNT)
-
-tyconSign :: TyCon
-tyconSign = mkTyCon "Haskell.HatAna.Sign"
-
-instance Typeable Sign where
-  typeOf _ = mkTyConApp tyconSign []
-
-tyconPNT :: TyCon
-tyconPNT = mkTyCon "Haskell.HatAna.PNT"
-
-instance Typeable PNT where
-  typeOf _ = mkTyConApp tyconPNT []
-
-hsDeclItc :: TyCon
-hsDeclItc = mkTyCon "Haskell.HatAna.HsDeclI"
-
-instance Typeable i => Typeable (HsDeclI i) where 
-  typeOf s = mkTyConApp hsDeclItc [typeOf $ (undefined :: HsDeclI a -> a) s]
 
 instance Ord (HsDeclI PNT) where
     s1 <= s2 = s1 == s2
@@ -97,24 +84,20 @@ instance Ord (HsDeclI PNT) where
 instance PrettyPrint (HsDeclI PNT) where
      printText0 _ = text . HatPretty.pp
 
-instance PrintLaTeX (HsDeclI PNT) where
-     printLatex0 = printText0
-
 instance PrettyPrint Sign where
     printText0 _ Sign { instances = is, types = ts, values = vs }
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
                    vcat (map (text . HatPretty.pp) is)) $$ 
-          (if null ts then empty else
+          (if Map.isEmpty ts then empty else
               text "\ntypes:" $$ 
-                   vcat (map (text . HatPretty.pp) ts)) $$
-          (if null vs then empty else
+                   vcat (map (text . HatPretty.pp) 
+                         [ a :>: b | (a, b) <- Map.toList ts ])) $$
+          (if Map.isEmpty vs then empty else
               text "\nvalues:" $$ 
-                   vcat (map (text . HatPretty.pp) vs)) $$
+                   vcat (map (text . HatPretty.pp) 
+                         [ a :>: b | (a, b) <- Map.toList vs ])) $$
           text "-}"
-
-instance PrintLaTeX Sign where
-     printLatex0 = printText0
 
 extendSign :: Sign -> [TiInstanceDB.Instance PNT]
             -> [TiClasses.TAssump PNT] 
@@ -122,19 +105,22 @@ extendSign :: Sign -> [TiInstanceDB.Instance PNT]
             -> Rel QName Ents.Entity
             -> [(HsIdentI (SN Id), HsFixity)]
             -> Sign
-extendSign e is ts vs s fs = 
-      e { instances = is ++ instances e 
-        , types = ts ++ types e
-        , values = vs ++ values e 
-        , scope = s `union` scope e 
-        , fixities = fs ++ fixities e } 
+extendSign e is ts vs s fs = addSign e emptySign 
+    { instances = is 
+    , types = Map.fromList [ (a, b) | (a :>: b) <- ts ]
+    , values = Map.fromList [ (a, b) | (a :>: b) <- vs ] 
+    , scope = s
+    , fixities = Map.fromList fs 
+    } 
 
-emptyEnv :: Sign
-emptyEnv = Sign { instances = []
-                , types = []
-                , values = [] 
-                , scope = emptyRel 
-                , fixities = [] }
+emptySign :: Sign
+emptySign = Sign 
+    { instances = []
+    , types = Map.empty
+    , values = Map.empty 
+    , scope = emptyRel 
+    , fixities = Map.empty 
+    }
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) -> 
           Result (HsDecls, Sign, Sign, [Named (HsDeclI PNT)])
@@ -146,16 +132,17 @@ hatAna (hs@(HsDecls ds), e, _) = do
        wm :: WorkModuleI QName (SN Id)
        wm = mkWM (osc, emptyRel)
        fixs = mapFst getQualified $ getInfixes pmod
-       rm = reAssocModule wm [(mn, fixs ++ fixities e)] pmod
+       fixMap = Map.fromList fixs `Map.union` fixities e
+       rm = reAssocModule wm [(mn, Map.toList fixMap)] pmod
        (sm, _) = scopeModule (wm, 
                               [] :: [(ModuleName, Rel (SN Id) (Ent (SN Id)))])
                  rm
-   (amod@(HsModule _ _ _ _  fs) :>: (is, (ts, vs))) <- 
+   (HsModule _ _ _ _  fs :>: (is, (ts, vs))) <- 
             lift $ inMyEnv $ tcModule 
                       (sm :: HsModuleI (SN ModuleName) PNT [HsDeclI PNT])
-   return (hs, extendSign emptyEnv is ts vs insc fixs, 
-             extendSign e is ts vs insc fixs, map emptyName fs)
+   let accSign = extendSign e is ts vs insc fixs
+   return (hs, diffSign accSign e, accSign, map emptyName fs)
    where
-   inMyEnv = extendts (values e) 
-               . extendkts (types e) 
+   inMyEnv = extendts [ a :>: b | (a, b) <- Map.toList $ values e ] 
+               . extendkts [ a :>: b | (a, b) <- Map.toList $ types e ] 
                . extendIEnv (instances e)     
