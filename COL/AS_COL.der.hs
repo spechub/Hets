@@ -16,7 +16,6 @@ module COL.AS_COL where
 import Common.Id
 import Common.AS_Annotation 
 import CASL.AS_Basic_CASL
-import CASL.ATC_CASL
 
 -- DrIFT command
 {-! global: UpPos !-}
