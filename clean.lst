@@ -67,7 +67,7 @@ Haskell/wrap.lhs
 Haskell/Hatchet/Main.hs
 Haskell/Language
 Lottery
-Modal
+Modal/Basic.mod
 Static/hetana.hs
 Syntax/hetpa.hs
 ToHaskell/Makefile
