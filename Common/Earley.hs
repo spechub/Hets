@@ -17,7 +17,7 @@ module Common.Earley (
                      varTok, exprTok, typeTok
 		     , applId, parenId, typeId, exprId, varId
 		     , tupleId, unitId, unknownId, isUnknownId, unToken
-		     , Knowns, mkId, protect, listRules, mixRule
+		     , Knowns, protect, listRules, mixRule
 		     , getTokenPlaceList
 		     , endPlace, begPlace
                      -- * resolution chart
@@ -139,9 +139,6 @@ varTok = mkSimpleId "(var )"
 unknownTok :: Token
 unknownTok = mkSimpleId "(?)"
 
--- | construct an 'Id' from a token list
-mkId :: [Token] -> Id
-mkId toks = Id toks [] []
 -- | the invisible application rule with two places
 applId :: Id
 applId       = mkId [placeTok, placeTok]

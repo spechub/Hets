@@ -82,9 +82,11 @@ isPlace (Token t _) = t == place
 -- | mixfix and compound identifiers
 data Id = Id [Token] [Id] [Pos] 
           -- pos of square brackets and commas of a compound list
-	  deriving (Show)
+	  deriving Show
 
--- for pretty printing see PrettyPrint.hs
+-- | construct an 'Id' from a token list
+mkId :: [Token] -> Id
+mkId toks = Id toks [] []
 
 -- ignore positions
 instance Eq Id where
@@ -118,6 +120,7 @@ showId (Id ts is _) =
 	let (toks, places) = splitMixToken ts 
 	    showToks = showSepList id showTok
 	in  showToks toks . showIds is . showToks places
+-- for pretty printing see PrettyPrint.hs
 
 -- ** splitting identifiers
 
@@ -312,6 +315,6 @@ instance PosItem Id where
 
 -- handcoded instance
 instance PosItem () where
-    up_pos_l fn1 () = ()
+    up_pos_l _ () = ()
     get_pos_l () = Nothing
     get_pos () = Nothing
