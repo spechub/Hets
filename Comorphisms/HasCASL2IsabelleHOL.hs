@@ -139,8 +139,8 @@ transPredType  (TypeScheme _ (_ :=> pre) _) =
          _                -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
 
 transType :: Type -> Typ
-transType (TypeName typeId _ i) = trace ("typeName "++show typeId++" i "++show i++"\n") (if i == 0 then Type(showIsa typeId,[])
-                                   else TVar((showIsa typeId,0),[]))
+transType (TypeName typeId _ i) = if i == 0 then Type(showIsa typeId,[])
+                                    else TVar((showIsa typeId,0),[])
 transType (ProductType types _) = foldr1 IsaSign.mkProductType 
                                          (map transType types)
 transType (FunType type1 arr type2 _) = 
@@ -148,7 +148,7 @@ transType (FunType type1 arr type2 _) =
     PFunArr -> (transType type1) --> (mkOptionType (transType type2))
     FunArr  -> (transType type1) --> (transType type2)
     _       -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported function type"
-transType (TypeAppl type1 type2) = Type("appl", [transType type1] ++ [transType type2])
+transType (TypeAppl type1 type2) = Type("typeAppl", [transType type1] ++ [transType type2])
 transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type"
 
 
@@ -166,7 +166,7 @@ transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) =
 transDataEntry _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported datatype definition"
 
 mkDName :: TypeId -> [TypeArg] -> Typ
-mkDName tyId tyArgs = Type(showIsa tyId,(map transTypeArg tyArgs))
+mkDName tyId tyArgs = Type(showIsa tyId,(map transTypeArg tyArgs)) --Type("typeAppl",(Type(showIsa tyId,[])):(map transTypeArg tyArgs)) --
 
 transTypeArg :: TypeArg -> Typ
 transTypeArg (TypeArg tyId _ _ _) = TVar((showIsa tyId,0),[])
@@ -189,7 +189,7 @@ transVar = showIsa
 transSentence :: Env -> Le.Sentence -> IsaSign.Term
 transSentence e s = case s of
     Le.Formula t      -> transTerm e t
-    DatatypeSen l     -> con "Ich bin gar kein richtiger Term..." -- !!!!!!!!!!!!!!!!PFUI!!!!!!!!!!!!!!!!!!!!!!
+    DatatypeSen l     -> con "Ich bin gar kein richtiges Axiom..." -- transDataEntryAx (head l)
     ProgEqSen _ _ _pe -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: program"
 
 
@@ -208,10 +208,10 @@ transTerm sign (ApplTerm term1 term2 _) =
        QualOp Pred _ _ _ -> con "pApp" 
                               `App` (transTerm sign term1) 
                               `App` (transTerm sign term2)
-       QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app" sign term1 term2
-                                                        else mkApp "apt" sign term1 term2
-       _                 -> mkApp "app" sign term1 term2
-     where mkApp s sign t1 t2 = con s 
+       QualOp Op _ typeScheme _ -> if isPart typeScheme then mkApp "app" --sign term1 term2
+                                                        else mkApp "apt" --sign term1 term2
+       _                 -> mkApp "app" -- sign term1 term2
+     where mkApp s = con s 
                                  `App` (transTerm sign term1) 
                                  `App` (transTerm sign term2)
            isPart (TypeScheme _ (_ :=> op) _) = 
@@ -219,8 +219,8 @@ transTerm sign (ApplTerm term1 term2 _) =
                FunType _ PFunArr _ _ -> True
                FunType _ FunArr _ _  -> False
                _                     -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong operation type"
-transTerm sign (QuantifiedTerm quant varDecls phi _) = 
-  foldr (quantify quant) 
+transTerm sign (QuantifiedTerm quan varDecls phi _) = 
+  foldr (quantify quan) 
         (transTerm sign phi) 
         (map toPair varDecls)
 transTerm sign (TypedTerm term _ _ _) = transTerm sign term
@@ -236,9 +236,11 @@ transTerm sign (LetTerm Let eqs body _) =
   transTerm sign (foldr let2lambda body eqs)
 transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
---   conSome `App` (foldl1 (binConst pairC) 
---                         (map (transTerm sign) terms))
 transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
+
+
+--transDataEntryAx :: DataEntry -> IsaSign.Term
+--transDataEntryAx (DataEntry _ _ _ _ alts) = transAltDefnAx alts
 
 
 let2lambda :: ProgEq -> As.Term -> As.Term
@@ -302,7 +304,7 @@ transTermAbs _ (QualVar (VarDecl var typ _ _)) =
     IsaSign.Free(transVar var, transType typ)
 transTermAbs sign (TupleTerm terms _) = foldl1 (binConst isaPair) 
                                                (map (transTermAbs sign) terms)
-transTermAbs sign (QualOp _ (InstOpId opId _ _) _ _) = con (getNameOfOpId opId)
+transTermAbs _ (QualOp _ (InstOpId opId _ _) _ _) = con (getNameOfOpId opId)
 transTermAbs sign term = transTerm sign term
 
 getNameOfOpId :: Id -> String
