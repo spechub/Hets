@@ -130,6 +130,8 @@ instance Logic CASL CASL.Sublogic.CASL_Sublogics
          sublogic_names CASL = CASL.Sublogic.sublogics_name
          all_sublogics CASL = CASL.Sublogic.sublogics_all
 
+         data_logic CASL = Nothing
+
          is_in_basic_spec CASL = CASL.Sublogic.in_basic_spec
          is_in_sentence CASL = CASL.Sublogic.in_sentence
          is_in_symb_items CASL = CASL.Sublogic.in_symb_items
