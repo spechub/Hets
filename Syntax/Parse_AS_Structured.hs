@@ -32,10 +32,9 @@ module Syntax.Parse_AS_Structured where
 import Logic.Grothendieck
 import Logic.Logic
 
-import CASL.Logic_CASL  -- we need the default logic
+-- import CASL.Logic_CASL  -- we don't need the default logic
 
 import Syntax.AS_Structured
-import Syntax.AS_Library
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id(tokPos)
@@ -43,44 +42,41 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Common.Lib.Parsec
-import Common.Lib.Parsec.Char (digit)
-import qualified Common.Lib.Map as Map
 import Common.Id
-import Data.List
+import Data.List((\\))
 
-import Data.Maybe(maybeToList)
+-- import Syntax.Print_AS_Structured  -- for test purposes
 
-import Syntax.Print_AS_Structured  -- for test purposes
-import Syntax.Print_HetCASL
 
 ------------------------------------------------------------------------
 -- annotation adapter
 ------------------------------------------------------------------------
 
-
-annoParser2 parser = bind (\x (Annoted y pos l r) -> Annoted y pos (x++l) r) annos parser
+annoParser2 :: AParser (Annoted a) -> AParser (Annoted a)
+annoParser2 parser = bind (\x (Annoted y pos l r) -> 
+			   Annoted y pos (x++l) r) annos parser
 
 emptyAnno :: a -> Annoted a
 emptyAnno x = Annoted x [] [] []
-
 
 ------------------------------------------------------------------------
 -- logic and encoding names
 ------------------------------------------------------------------------
 
 -- exclude colon (because encoding must be recognized)
--- ecclude dot to recognize optional sublogic name
-
-otherChars = "_`"
+-- exclude dot to recognize optional sublogic name
+-- include underscore and backquote
  
 -- better list what is allowed rather than exclude what is forbidden
 -- white spaces und non-printables should be not allowed!
+encodingName :: AParser Token
 encodingName = pToken(reserved (funS:casl_reserved_words) (many1 
-		    (oneOf (otherChars ++ (signChars \\ ":.")) 
+		    (oneOf ("_`" ++ (signChars \\ ":.")) 
 		     <|> scanLPD)))
 
 -- keep these identical in order to
 -- decide after seeing ".", ":" or "->" what was meant
+logicName :: AParser Logic_name
 logicName = do e <- encodingName
 	       do string dotS
 		  s <- encodingName
@@ -94,10 +90,10 @@ logicName = do e <- encodingName
 parseLogic :: AParser Logic_code
 parseLogic = 
     do l <- asKey logicS
-       do e <- logicName  -- try to parse encoding or logic source after "logic" 
+       do e <- logicName -- try to parse encoding or logic source after "logic"
           case e of 
-		 Logic_name _ (Just _) -> parseOptLogTarget Nothing (Just e) [l]
-		 Logic_name f Nothing -> 
+	      Logic_name _ (Just _) -> parseOptLogTarget Nothing (Just e) [l]
+	      Logic_name f Nothing -> 
 		      do c <- asKey colonS
 			 parseLogAfterColon (Just f) [l,c]
 		      <|> parseOptLogTarget Nothing (Just e) [l]
@@ -106,6 +102,7 @@ parseLogic =
 		return (Logic_code Nothing Nothing (Just t) (map tokPos [l,f]))
 
 -- parse optional logic source and target after a colon (given an encoding e)
+parseLogAfterColon :: Maybe Token -> [Token] -> AParser Logic_code
 parseLogAfterColon e l =
     do s <- logicName
        parseOptLogTarget e (Just s) l
@@ -114,6 +111,8 @@ parseLogAfterColon e l =
     <|> return (Logic_code e Nothing Nothing (map tokPos l))
 
 -- parse an optional logic target (given encoding e or source s) 
+parseOptLogTarget :: Maybe Token -> Maybe Logic_name -> [Token] 
+		  -> AParser Logic_code
 parseOptLogTarget e s l =
     do f <- asKey funS
        do t <- logicName
@@ -128,22 +127,14 @@ parseOptLogTarget e s l =
 
 notFollowedWith :: GenParser tok st a -> GenParser tok st b 
 		-> GenParser tok st a 
+p1 `notFollowedWith` p2 = try $ do pp <- (try (p1 >> p2) >> return pzero)
+                                         <|> return p1
+				   pp 
+-- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
+-- by Andrew Pimlott
 
-p1 `notFollowedWith` p2 = try ((p1 >> p2 >> pzero) <|> p1)
-
+plainComma :: AParser Token
 plainComma = anComma `notFollowedWith` asKey logicS
-
--- rearrange list to keep current logic as first element
--- does not consume anything! (may only fail)
-{-switchLogic :: Logic_code -> LogicGraph -> GenParser Char st LogicGraph
-switchLogic n l@(Logic i : _) =
-       let s = case n of 
-	       Logic_code _ _ (Just (Logic_name t _)) _ -> tokStr t
-	       _ -> language_name i
-	   (f, r) =  partition (\ (Logic x) -> language_name x == s) l
-       in if null f then fail ("unknown language " ++ s)
-	  else return (f++r)
--}
 
 ------------------------------------------------------------------------
 -- parse G_mapping (if you modify this, do so for G_hiding, too!)
@@ -151,11 +142,9 @@ switchLogic n l@(Logic i : _) =
 
 parseItemsMap :: AnyLogic -> AParser (G_symb_map_items_list, [Token])
 parseItemsMap (Logic lid) = 
-   do (cs, ps) <- callParser (parse_symb_map_items lid) (language_name lid) "symbol maps"
-                      `separatedBy` anComma 
-            -- ??? should be plainComma, but does not work for reveal s,t!
+   do (cs, ps) <- callParser (parse_symb_map_items lid) 
+		  (language_name lid) "symbol maps" `separatedBy` plainComma 
       return (G_symb_map_items_list lid cs, ps)
-
 
 parseMapping :: (AnyLogic, LogicGraph) -> AParser ([G_mapping], [Token])
 parseMapping l =
@@ -174,12 +163,12 @@ parseMapping l =
 -- parse G_hiding (copied from above, but code sharing would be better!) 
 ------------------------------------------------------------------------
 
-parseItemsList :: (AnyLogic, LogicGraph) -> AParser (G_symb_items_list, [Token])
-parseItemsList l@(Logic lid, _) = 
-   do (cs, ps) <- callParser (parse_symb_items lid) (language_name lid) "symbols"
-                      `separatedBy` plainComma
+parseItemsList :: (AnyLogic, LogicGraph) 
+	       -> AParser (G_symb_items_list, [Token])
+parseItemsList (Logic lid, _) = 
+   do (cs, _ps) <- callParser (parse_symb_items lid) 
+		  (language_name lid) "symbols" `separatedBy` plainComma
       return (G_symb_items_list lid cs, []) 
-
 
 parseHiding :: (AnyLogic, LogicGraph) -> AParser ([G_hiding], [Token])
 parseHiding l =
@@ -194,8 +183,9 @@ parseHiding l =
 	       return (G_symb_list m : gs, ps ++ c : qs)
 	     <|> return ([G_symb_list m], ps)
 
-parseRevealing :: (AnyLogic, LogicGraph) -> AParser (G_symb_map_items_list, [Token])
-parseRevealing l = error "Parse_AS_Structured.hs:parseRevealing"
+parseRevealing :: (AnyLogic, LogicGraph) 
+	       -> AParser (G_symb_map_items_list, [Token])
+parseRevealing _ = error "Parse_AS_Structured.hs:parseRevealing"
 
 ------------------------------------------------------------------------
 -- specs
@@ -205,13 +195,13 @@ spec :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 spec l = do (sps,ps) <- annoParser2 (specA l) `separatedBy` (asKey thenS)
             return (case sps of
                     [sp] -> sp
-                    otherwise -> emptyAnno (Extension sps (map tokPos ps)))
+                    _ -> emptyAnno (Extension sps (map tokPos ps)))
 
 specA :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specA l = do (sps,ps) <- annoParser (specB l) `separatedBy` (asKey andS)
              return (case sps of
                      [sp] -> sp
-                     otherwise -> emptyAnno (Union sps (map tokPos ps)))
+                     _ -> emptyAnno (Union sps (map tokPos ps)))
 
 specB :: (AnyLogic, LogicGraph) -> AParser SPEC
 specB l = do p1 <- asKey localS
@@ -226,7 +216,8 @@ specC :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 specC l@(Logic lid, lG) =     
               try(do p1 <- asKey "data"
                      case data_logic lid of
-                       Nothing -> fail ("No data logic for " ++ language_name lid)
+                       Nothing -> fail ("No data logic for " 
+					++ language_name lid)
                        Just (Logic dlid) -> do
                          sp1 <- groupSpec (Logic dlid, lG)
                          sp2 <- specD l
@@ -238,11 +229,15 @@ specC l@(Logic lid, lG) =
           <|> do sp <- annoParser (specD l)
                  translation_list l sp
           
+translation_list :: (AnyLogic, LogicGraph) -> Annoted SPEC 
+		 -> AParser (Annoted SPEC)
 translation_list l sp =
      do sp' <- translation l sp
         translation_list l sp'
  <|> return sp
 
+translation :: (AnyLogic, LogicGraph) -> Annoted SPEC 
+	    -> AParser (Annoted SPEC)
 translation l sp =
      do p <- asKey withS
         (m, ps) <- parseMapping l
@@ -297,7 +292,7 @@ callParser p name itemType = do
 	 Just pa -> pa
 
 basicSpec :: (AnyLogic, LogicGraph) -> AParser SPEC
-basicSpec l@(Logic lid, _) = 
+basicSpec (Logic lid, _) = 
               do bspec <- callParser (parse_basic_spec lid) (language_name lid)
                             "basic specification"
                  return (Basic_spec (G_basic_spec lid bspec))
@@ -306,18 +301,18 @@ basicSpec l@(Logic lid, _) =
 logicSpec :: (AnyLogic, LogicGraph) -> AParser SPEC
 logicSpec (oldlog, lG) = do
    s1 <- asKey logicS
-   log <- logicName
-   let Logic_name t _ = log
+   lid <- logicName
+   let Logic_name t _ = lid
    s2 <- asKey ":"
-   let newlog = lookupLogicName log lG
+   let newlog = lookupLogicName lid lG
        logtrans = coercelog newlog oldlog
    sp <- annoParser (specE (newlog, lG))
-   let sp1 = Qualified_spec log sp (map tokPos [s1,t,s2])
+   let sp1 = Qualified_spec lid sp (map tokPos [s1,t,s2])
    return (logtrans sp1)
 
 lookupLogicName :: Logic_name -> LogicGraph -> AnyLogic
-lookupLogicName (Logic_name log sublog) lg = 
-    lookupLogic "Parser: " (tokStr log) lg
+lookupLogicName (Logic_name lid _sublog) lg = 
+    lookupLogic "Parser: " (tokStr lid) lg
 
 {- a code snippit to lookup the sublogic:
       case sublog of
@@ -329,15 +324,19 @@ lookupLogicName (Logic_name log sublog) lg =
                               " in logic "++tokStr log++" unknown")
             Just sub -> Logic lid  -- ??? can we throw away sublogic?
 -}
+coercelog :: AnyLogic -> AnyLogic -> a -> a
 coercelog (Logic newlid) (Logic oldlid) =
   if newlang == oldlang then id
    else error ("Cannot coerce from "++newlang++" to "++oldlang)
   where newlang = language_name newlid
         oldlang = language_name oldlid
-   -- \sp -> Translation (emptyAnno sp) (Renaming [G_logic_translation (Logic_code...)] [])
+   -- \sp -> Translation (emptyAnno sp) 
+   --		  (Renaming [G_logic_translation (Logic_code...)] [])
 
+aSpec :: (AnyLogic, LogicGraph) -> AParser (Annoted SPEC)
 aSpec l = annoParser2 (spec l)
 
+groupSpec :: (AnyLogic, LogicGraph) -> AParser SPEC
 groupSpec l = do b <- oBraceT
 		 a <- aSpec l
 		 c <- cBraceT
@@ -368,15 +367,17 @@ fittingArg l@(Logic lid, _) =
                   return (Fit_view vn fa (tokPos s:ps) an)
             <|>
                do sp <- aSpec l
-                  (symbit,ps) <- option (G_symb_map_items_list lid [],[]) 
+                  (symbit,ps) <- option (G_symb_map_items_list lid [],[])
                                  (do s <- asKey fitS               
-                                     (m, ps) <- parseItemsMap $ fst l
-                                     return (m,[tokPos s]))
+                                     (m, qs) <- parseItemsMap $ fst l
+                                     return (m, map tokPos (s : qs)))
                   return (Fit_spec sp symbit ps)
 
 
+optEnd :: AParser (Maybe Token)
 optEnd = option Nothing (fmap Just (asKey endS))
        
+generics :: (AnyLogic, LogicGraph) -> AParser GENERICITY
 generics l = do 
    (pa,ps1) <- params l
    (imp,ps2) <- option ([],[]) (imports l)
@@ -393,6 +394,7 @@ param l = do b <- oBracketT
              c <- cBracketT
              return (pa,[tokPos b,tokPos c])
 
+imports :: (AnyLogic, LogicGraph) -> AParser ([Annoted SPEC], [Pos])
 imports l = do s <- asKey givenS
                (sps,ps) <- annoParser (groupSpec l) `separatedBy` anComma
                return (sps,map tokPos (s:ps))
