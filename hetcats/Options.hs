@@ -85,6 +85,7 @@ data HetcatsOpts =
           , outtypes :: [OutType]  -- list of output types to be generated
           , rawopts  :: [RawOpt]   -- raw options for the pretty printer
           , verbose  :: Int        -- greater than null to turn verbosity on
+	  , defLogic :: String     -- initial logic 
           }
     deriving (Eq)
 
@@ -92,6 +93,7 @@ instance Show HetcatsOpts where
     show opts =    " --verbose="      ++ show (verbose opts)
                 ++ showGui (gui opts)
                 ++ showAnalysis (analysis opts)
+                ++ " --logice="  ++ defLogic opts
                 ++ " --input-type="   ++ show (intype opts)
                 ++ " --output-types=" ++ showOutTypes (outtypes opts)
                 ++ " " ++ showRaw (rawopts opts)
@@ -115,15 +117,14 @@ instance Show HetcatsOpts where
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts (Analysis x) = opts { analysis = x }
 makeOpts opts (Gui x)      = opts { gui = x }
-makeOpts opts (Help)       = opts -- skipped
 makeOpts opts (InType x)   = opts { intype = x }
 makeOpts opts (LibDir x)   = opts { libdir = x }
 makeOpts opts (OutDir x)   = opts { outdir = x }
 makeOpts opts (OutTypes x) = opts { outtypes = x }
 makeOpts opts (Raw x)      = opts { rawopts = x }
 makeOpts opts (Verbose x)  = opts { verbose = x }
-makeOpts opts (Version)    = opts -- skipped
-makeOpts _     x           = hetsError Intern ("unrecognized Flag: " ++ (show x))
+makeOpts opts (DefaultLogic x) = opts { defLogic = x }
+makeOpts opts _    = opts -- skipped
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 -- basic values when the user specifies nothing else
@@ -139,6 +140,7 @@ defaultHetcatsOpts =
           -- better default options, but not implemented yet:
           --, outtypes = [HetCASLOut OutASTree OutXml]
           , rawopts  = []
+	  , defLogic = "CASL"
           , verbose  = 1
           }
 
@@ -154,6 +156,7 @@ data Flag = Analysis AnaType     -- to analyse or not to analyse
           | Raw      [RawOpt]    -- raw options passed on to the pretty-printer
           | Verbose  Int         -- how verbose shall we be?
           | Version              -- print version number
+	  | DefaultLogic String  -- default logic to start with
             deriving (Show,Eq)
 
 -- | 'AnaType' describes the type of analysis we want performed
@@ -215,11 +218,13 @@ options :: [OptDescr Flag]
 options =
     [ Option ['v'] ["verbose"] (OptArg parseVerbosity "Int")
       "chatty output to stderr"
+    , Option ['l'] ["logic"] (ReqArg DefaultLogic "LOGIC")
+      "choose initial logic, the default is CASL"
     , Option ['q'] ["quiet"] (NoArg Quiet)
       "no output at all to stderr. overrides --verbose!"
     , Option ['g'] ["gui"] (NoArg (Gui Also))
       "show graphical output in a GUI window"
-    , Option ['G'] ["only-gui"] (NoArg (Gui Only))
+    , Option ['G'] ["only-gui"] (NoArg $ Gui Only)
       "show graphical output in a GUI window - don't write Output to file"
     , Option ['V'] ["version"] (NoArg Version)
       "print version number and exit"
@@ -227,15 +232,15 @@ options =
       "print usage information and exit"
     , Option ['i'] ["input-type"]  (ReqArg parseInType "ITYPE")
       "ITYPE of input file: \n\t(tree.)?gen_trm(.baf)? | het(casl)? | casl | ast(.baf)?"
-    , Option ['O'] ["output-dir"]  (ReqArg (\x -> OutDir x) "DIR")
+    , Option ['O'] ["output-dir"]  (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option ['o'] ["output-types"] (ReqArg parseOutTypes "OTYPES")
       "OTYPES of output files, a comma seperated list of OTYPE\n\tOTYPE is (pp.(het|tex|html))\n\t\t|(ast|[fh]?dg(.nax)?).(het|trm|taf|html|xml)\n\t\t|(graph.(dot|ps|davinci))\n\t\t|env\n\t\t(default: dg.taf)"
-    , Option ['p'] ["just-parse"]  (NoArg (Analysis Skip))
+    , Option ['p'] ["just-parse"]  (NoArg $ Analysis Skip)
       "skip static analysis - just parse"
-    , Option ['s'] ["just-structured"]  (NoArg (Analysis Structured))
+    , Option ['s'] ["just-structured"]  (NoArg $ Analysis Structured)
       "skip basic analysis - just do structured analysis"
-    , Option ['L'] ["hets-libdir"]  (ReqArg (\x -> LibDir x) "DIR")
+    , Option ['L'] ["hets-libdir"]  (ReqArg LibDir "DIR")
       "CASL library directory"
     , Option ['r'] ["raw"] (ReqArg parseRawOpts "RAW")
       "raw options passed to the pretty-printer \n\tRAW is (ascii|text|(la)?tex)=STRING where STRING is passed to the appropiate pretty-printer"
@@ -384,7 +389,7 @@ parseRawOpts s =
 -- | guesses the InType
 guess :: String -> InType -> InType
 guess file GuessIn = guessInType file
-guess file itype   = itype
+guess _file itype  = itype
 
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
@@ -539,12 +544,12 @@ doIfVerbose opts level func =
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
-showDiags opts diags = do
+showDiags opts ds = do
   sequence $ map (putStrLn . show) -- take maxdiags
-           $ filter (relevantDiagKind . diagKind) $ diags
+           $ filter (relevantDiagKind . diagKind) ds
   return ()
   where relevantDiagKind FatalError = True
         relevantDiagKind Error = True
         relevantDiagKind Warning = (verbose opts) >= 1
-        relevantDiagKind Hint = (verbose opts) >= 3
+        relevantDiagKind Hint = (verbose opts) >= 2
         relevantDiagKind Debug  = (verbose opts) >= 3
