@@ -6,18 +6,13 @@
 ------------------------------------------------------------------------------
 {- todo:
 
-  [Pos] in LocalEnv.SortDefn
+  [Pos] in LocalEnv.SortDefn -> Christian Maeder fragen
   What if Datatype is removed (only situation where a sort can be removed
-  entirely) but preds or Sort_map still exist?
+  entirely) but preds or Sort_map still exist?  -> in Sort_decl umwandeln
 
   all_sublogics :: id -> [sublogics]
-  morphisms
-  projections
-    proj_sublogic_basic_spec: annehmen, dass Formeln und Terme voll getypt sind
-       Subsorten-Decls/Defns: ggf. zu normalen Sorten-Decls reduzieren
-       Formeln mit unbekannten Features weglassen
-       Operations + Prädikate: jeweils pro Typ weglassen, wenn Typ nicht in Sublogic
-   Sublogic ggf. hochsetzen (für subsorted atomic logic)
+  Sublogic ggf. hochsetzen (für subsorted atomic logic)
+  Morphism umstellen, in Zusammenarbeit mit Klaus
 
   in eignem File:
   Hochziehen auf strukturierte Ebene
@@ -28,23 +23,6 @@
       (Vergleich von Logic-ids mit language_name), ansonsten Nothing
 
   Testen mit hetcats/hetcats.hs (Klaus kontakten)
-
-Korrespondenz abstrakt-konkret:
-  class Logic id sublogics
-        basic_spec sentence symb_items symb_map_items
-        local_env sign morphism symbol raw_symbol 
-
-  instance Logic CASL Sublogics.CASL_Sublogics
-               BASIC_SPEC Sentence SYMB_ITEMS SYMB_MAP_ITEMS
-	       LocalEnv Sign 
-	       String -- morphism 
-	       Symbol RawSymbol 
-
-  Weitere Instanzen mit HasCASL, CASL-LTL etc.
-    (nur sich selbst als Sublogic)
-  Logic-Representations (Sublogic immer = top)
-
-  Alles zusammenfassen in LogicGraph.hs
 
 -}
 
@@ -927,7 +905,8 @@ pr_fun_map_entry l (t,i,b) =
       Just (t,i,b) else Nothing
 
 pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
-pr_epsilon l s = (Morphism s (pr_sign l s) emptyFM emptyFM emptyFM)
+pr_epsilon l s = (Morphism (pr_sign l s) s emptyFM emptyFM emptyFM)
+  -- Einbettungs-Signaturmorphismus, ueber Funktion in LocalEnv.hs
 
 ------------------------------------------------------------------------------
 -- the end
