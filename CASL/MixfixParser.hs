@@ -64,12 +64,13 @@ instance Show State where
 				 . showSepList (showString "") showTok d
 				 . shows p . showChar '}'
 	where first = take (length v - length d) v
-	      v = getTokenList True r
+	      v = getTokenList place r
 
-
+termStr :: String
+termStr = "(T)"
 commaTok, parenTok, termTok :: Token
 commaTok = mkSimpleId "," -- for list elements 
-termTok = mkSimpleId "(T)"
+termTok = mkSimpleId termStr
 parenTok = mkSimpleId "(..)" 
 
 colonTok, asTok, varTok, opTok, predTok :: Token
@@ -102,22 +103,22 @@ expandPos f o c ts ps =
 	    		    
 -- all tokens including "," within compound lists as sequence
 -- either generate literal places or the non-terminal termTok
-getTokenList :: Bool -> Id -> [Token]
-getTokenList asLiteral (Id ts cs ps) = 
+getTokenList :: String -> Id -> [Token]
+getTokenList placeStr (Id ts cs ps) = 
     let (pls, toks) = span isPlace (reverse ts) 
         cts = if null cs then [] else concat 
-	      $ expandPos (:[]) "[" "]" (map (getTokenList True) cs) ps
+	      $ expandPos (:[]) "[" "]" (map (getTokenList place) cs) ps
 	      -- although positions will be replaced (by scan)
-        convert = if asLiteral then reverse else 
-		  map (\ t -> if isPlace t then termTok else t) . reverse 
+        convert = map (\ t -> if isPlace t then t {tokStr = placeStr} else t) 
+		  . reverse 
     in convert toks ++ cts ++ convert pls
 
 mkState :: Int -> Id -> State 
-mkState i ide = State ide [] [] (getTokenList False ide) i
+mkState i ide = State ide [] [] (getTokenList termStr ide) i
 
 mkApplState :: Int -> Id -> State
 mkApplState i ide = State ide [] [] 
-		    (getTokenList True ide ++ [parenTok]) i
+		    (getTokenList place ide ++ [parenTok]) i
 
 listId :: Id
 -- unique id (usually "[]" yields two tokens)
@@ -267,7 +268,7 @@ setPlainIdePos (Id ts cs _) ps =
 
 setIdePos :: Id -> [TERM] -> [Pos] -> Id
 setIdePos i@(Id ts _ _) ar ps =
-   let nt = length $ getTokenList True i 
+   let nt = length $ getTokenList place i 
        np = length ps
        na = length $ filter isPlace ts       
        (_, toks) = span isPlace (reverse ts) 
@@ -291,7 +292,7 @@ setIdePos i@(Id ts _ _) ar ps =
 
 stateToAppl :: State -> TERM
 stateToAppl (State ide rs a _ _) = 
-    let vs = getTokenList True ide 
+    let vs = getTokenList place ide 
         ar = reverse a
         qs = reverse rs
     in if  vs == [termTok, colonTok] 
