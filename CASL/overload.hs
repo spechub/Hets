@@ -18,7 +18,8 @@ import CASL.AS_Basic -- FORMULA
 import Common.Result -- Result
 
 {-
-
+=======
+>>>>>>> 1.5
 Idee: 
 - global Infos aus Sign berechnen + mit durchreichen
   (connected compenents, s.u.)
@@ -217,7 +218,7 @@ fun get_conn_components (env:local_env) : local_env1 =
 		      Symtab_id.map (compute_conn_components (leqP env)) preds) )
 	end
 
--}
+---
 
 {- 
 
