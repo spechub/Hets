@@ -1,24 +1,24 @@
 module Main where
 
-import ParseType
 import ParseTerm
-import Token
-import BasicItem
--- import LocalEnv
+import PrintAs
+import HToken
 import Parsec
 import ParsecPos
+import Pretty
+import PrettyPrint
 import System
 
 main = do {l <- getArgs;
 	   if length l < 2 then print 
 	   "usage: main {id,type,term,items} <filename>"
-	   else let option = head l 
+	   else let opt = head l 
 	            file = head (tail l)
-	   in if option == "id" then checkLines parseId file
-	   else if option == "type" then checkLines parseType file
-	   else if option == "term" then checkLines parseTerm file
-	   else if option == "items" then parseSpec file
-	   else print ("unknown option: " ++ option) 
+	   in if opt == "id" then checkLines uninstOpName file
+	   else if opt == "type" then checkLines parseType file
+	   else if opt == "term" then checkLines term file
+--	   else if opt == "items" then parseSpec file
+	   else print ("unknown option: " ++ opt) 
 	  }
 
 checkLines p fileName = do { s <- readFile fileName
@@ -36,12 +36,12 @@ parseLine p line n = let pos = setSourceLine (initialPos "") n
 				     }
 		     in result (parse parser "" line)
 
-
+{-
 parseSpec fileName =  do { r <- parseFromFile basicSpec fileName
 			 ; putStrLn (result r)
 			 }
-	
+-}	
    
 result r = case r of Left err -> "parse error at " ++ show err ++ "\n"
-		     Right x  -> show x
+		     Right x  -> render (printText0 x)
 

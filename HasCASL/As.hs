@@ -200,11 +200,9 @@ data Term = CondTerm Term Formula Term [Pos]
 	  | CaseTerm Term [ProgEq] [Pos]
 	  -- pos "case", "of", "|"s 
 	  | WhereTerm Term [ProgEq] [Pos]
-	  -- pos "let", ";"s, "in"
+	  -- pos "where", ";"s
 	  | TermToken Token
           | MixfixTerm [Term]
-	  | TypeMixfixTerm TypeQual Type [Pos]
-	  -- pos ":", "as" or "in"
 	  | BracketTerm BracketKind [Term] [Pos]
 	  -- pos brackets, ","s 
 	    deriving (Show,Eq)
