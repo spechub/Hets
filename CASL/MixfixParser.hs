@@ -22,324 +22,57 @@ Portability :  portable
 module CASL.MixfixParser ( resolveFormula, resolveMixfix)
     where 
 import CASL.AS_Basic_CASL 
-import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lexer
 import Control.Monad
 import Common.Lib.Parsec
-import Data.List(intersperse)
+import Common.Earley
 import CASL.Formula(updFormulaPos)
 import CASL.ShowMixfix 
+-- import Control.Exception (assert)
 
-showTrm :: GlobalAnnos -> TERM -> String
-showTrm _ t = showTerm t ""
+type SItem = Item TERM Bool  -- True means predicate
 
--- Earley Algorithm
+mkSItem :: Index -> Bool -> Id -> SItem 
+mkSItem i b ide = mkMixfixItem i (ide,b) 
 
-data State = State (Id, Bool)  -- True means predicate
-                   [Pos]    -- positions of Id tokens
-                   [TERM]   -- currently collected arguments 
-		                               -- both in reverse order
-		   [Token]  -- only tokens after the "dot" are given 
-		   Int      -- index into the ParseMap/input string
+mkSingleArgSItem :: Index -> Bool -> Id -> SItem
+mkSingleArgSItem i b ide = mkItem i ide b 
+    (getPlainTokenList ide ++ getTokenPlaceList parenId)
 
-termStr :: String
-termStr = "(T)"
-commaTok, parenTok, termTok :: Token
-commaTok = mkSimpleId "," -- for list elements 
-termTok = mkSimpleId termStr
-parenTok = mkSimpleId "(..)" 
+mkArgsSItem :: Index -> Bool -> Id -> SItem
+mkArgsSItem i b ide = mkItem i ide b 
+    (getPlainTokenList ide ++ getTokenPlaceList tupleId)
 
-colonTok, asTok, varTok, opTok, predTok :: Token
-colonTok = mkSimpleId ":"
-asTok = mkSimpleId "as"
-varTok = mkSimpleId "(v)"
-opTok = mkSimpleId "(o)"
-predTok = mkSimpleId "(p)"
-
-mkState :: Int -> Bool -> Id -> State 
-mkState i b ide = State (ide, b) [] [] (getTokenList termStr ide) i
-
-mkApplState :: Int -> Bool -> Id -> State
-mkApplState i b ide = State (ide, b) [] [] 
-		    (getPlainTokenList ide ++ [parenTok]) i
-
-
-listToken :: Token 
-listToken = mkSimpleId "[]"
-listId :: Id -> Id
--- unique id (usually "[]" yields two tokens)
-listId i = Id [listToken] [i] []
-
-isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listToken && isSingle cs
-
-listStates :: GlobalAnnos -> Int -> [State]
-listStates g i = 
-    let lists = list_lit $ literal_annos g
-        listState co toks = State (listId co, False) [] [] toks i
-    in concatMap ( \ (bs, n, c) ->
-       let (b1, b2, cs) = getListBrackets bs 
-	   e = Id (b1 ++ b2) cs [] in
-	   (if e == n then [] -- add b1 ++ b2 if its not yet included by n
-	       else [listState c $ getPlainTokenList e]) ++
-                   [listState c (b1 ++ [termTok] ++ b2) 
-		   , listState c (b1 ++ [termTok, commaTok] ++ b2)]
-		   ) $ Set.toList lists
+singleArgId, multiArgsId :: Id
+singleArgId = mkRuleId (getPlainTokenList exprId ++
+				 getPlainTokenList parenId)
+multiArgsId = mkRuleId (getPlainTokenList exprId ++
+				 getPlainTokenList tupleId)
 
 -- these are the possible matches for the nonterminal TERM
 -- the same states are used for the predictions  
 
-initialState :: GlobalAnnos -> ([Id], [Id]) -> Int -> [State]
-initialState g (ops, preds) i = 
-    let mkPredState b toks = State (Id toks [] [], b) [] [] toks i
-	mkTokState = mkPredState False
-    in concat [mkTokState [parenTok] : 
-       mkTokState [termTok, colonTok] :
-       mkTokState [termTok, asTok] :
-       mkTokState [varTok] :
-       mkTokState [opTok] :
-       mkTokState [opTok, parenTok] :
-       mkPredState True [predTok] :
-       mkPredState True [predTok, parenTok] :
-       listStates g i, 
-       map (mkState i True) preds,
-       map (mkApplState i True) preds,
-       map (mkState i False) ops,
-       map (mkApplState i False) ops]
+initialSItem :: GlobalAnnos -> ([Id], [Id]) -> Index -> [SItem]
+initialSItem g (ops, preds) i = 
+    concat [mkSItem i False parenId : 
+       mkSItem i False typeId :
+       mkSItem i False exprId :
+       mkSItem i False varId :
+       mkSItem i False singleArgId :
+       mkSItem i False multiArgsId :
+       listStates False g i, 
+       map (mkSItem i True) preds,
+       map (mkSingleArgSItem i True) preds,
+       map (mkArgsSItem i True) preds,
+       map (mkSItem i False) ops,
+       map (mkSingleArgSItem i False) ops,
+       map (mkArgsSItem i False) ops]
 
-type ParseMap = Map.Map Int [State]
-
-lookUp :: (Ord a, MonadPlus m) => Map.Map a (m b) -> a -> (m b)
-lookUp ce k = Map.findWithDefault mzero k ce
-
--- match (and shift) a token (or partially finished term)
-
-scan :: TERM -> Int -> ParseMap -> ParseMap
-scan trm i m = 
-  let t = case trm of 
-	  Mixfix_token x -> x
-	  Mixfix_sorted_term _ _ -> colonTok
-	  Mixfix_cast _ _ -> asTok
-          Mixfix_parenthesized _ _ -> parenTok
-	  Application (Qual_op_name _ _ _) [] _ -> opTok
-          Mixfix_qual_pred _ -> predTok
-          _ -> varTok
-  in
-    Map.insert (i+1) ( 
-       foldr (\ (State o b a ts k) l ->
-	      if null ts || head ts /= t then l 
-	      else let p = tokPos t : b in 
-                   if t == commaTok && isListId (fst o) then 
-	      -- list elements separator
-	             (State o p a 
-		      (termTok : commaTok : tail ts) k)
-                     : (State o p a (termTok : tail ts) k) : l
-              else if t == parenTok then
-                     (State o b (trm : a) (tail ts) k) : l
-              else if t == varTok || t == opTok || t == predTok then
-                     (State o b [trm] (tail ts) k) : l
-	      else if t == colonTok || t == asTok then
-	             (State o b [mkTerm $ head a] [] k) : l
-	           else (State o p a (tail ts) k) : l) [] 
-	      (lookUp m i)) m
-     where mkTerm t1 = case trm of 
-	                  Mixfix_sorted_term s ps -> Sorted_term t1 s ps
-	                  Mixfix_cast s ps -> Cast t1 s ps
-			  _ -> t1
-	      
--- precedence graph stuff
-
-checkArg :: GlobalAnnos -> AssocEither -> Id -> Id -> Bool
-checkArg g dir op arg = 
-    if arg == op 
-       then isAssoc dir (assoc_annos g) op || not (isInfix op)
-       else 
-       case precRel (prec_annos g) op arg of
-       Lower -> True
-       NoDirection -> not $ isInfix arg
-       _ -> False
-
-checkAnyArg :: GlobalAnnos -> Id -> Id -> Bool
-checkAnyArg g op arg = 
-    case precRel (prec_annos g) op arg of
-    BothDirections -> isInfix op && op == arg
-    _ -> True				       
-
-isLeftArg, isRightArg :: Id -> Int -> Bool
-isLeftArg (Id ts _ _) n = n + 1 == (length $ takeWhile isPlace ts)
-
-isRightArg (Id ts _ _) n = n == (length $ filter isPlace ts) - 
-	      (length $ takeWhile isPlace (reverse ts))
-	  
-filterByPrec :: GlobalAnnos -> State -> State -> Bool
-filterByPrec _ _ (State _ _ _ [] _) = False 
-filterByPrec g (State (argIde, predArg) _ _ _ _) 
-		 (State (opIde, predOp) _ args (hd:_) _) = 
-       if hd == termTok then 
-	  if predArg
-	  then False 
-	  else if isListId opIde || isListId argIde || predOp
-	       then True else 
-	       let n = length args in
-		    if isLeftArg opIde n then 
-		       if isPostfix opIde && (isPrefix argIde
-					      || isInfix argIde) then False
-		       else checkArg g ALeft opIde argIde 
-		    else if isRightArg opIde n then 
-                            if isPrefix opIde && isInfix argIde then False
-	                    else checkArg g ARight opIde argIde
-                         else checkAnyArg g opIde argIde
-       else False
-
--- constructing the parse tree from (the final) parser state(s)
-
-stateToAppl :: State -> TERM
-stateToAppl (State (ide, _) rs a _ _) = 
-    let vs = getPlainTokenList ide 
-        ar = reverse a
-        qs = reverse rs
-    in if  vs == [termTok, colonTok] 
-	   || vs == [termTok, asTok] 
-	   || vs == [varTok] 
-           || vs == [opTok]
-           || vs == [predTok]
-           || vs == [parenTok]
-       then case head ar of 
-            Mixfix_parenthesized ts _ -> if isSingle ts then head ts
-					 else head ar
-	    har -> har
-       else if vs == [opTok, parenTok]
-		 then let Application q _ _ = head ar
-                          Mixfix_parenthesized ts ps = head a
-                      in Application q ts ps 
-		 else if vs == [predTok, parenTok] 
-		      then Mixfix_term [head ar, head a] 
-                      else case ar of 
-		           [Mixfix_parenthesized ts ps] -> 
-			       Application (Op_name 
-					    (setIdePos ide ts qs))
-				ts ps
-			   _ -> let newIde@(Id (t:_) _ _) = setIdePos ide ar qs
-                                    pos = if isPlace t then posOfTerm $ head ar
-					  else tokPos t
-			        in Application (Op_name newIde) ar [pos]
-				   -- true mixfix
-
-asListAppl :: GlobalAnnos -> State -> TERM
-asListAppl g s@(State (i,_) bs a _ _) =
-    if isListId i then    
-           let Id _ [f] _ = i
-	       ListCons b c = getLiteralType g f
-	       (b1, _, _) = getListBrackets b
-	       cl = length $ getPlainTokenList b
-               nb1 = length b1
-               ra = reverse a
-               na = length ra
-               nb = length bs
-	       mkList [] ps = asAppl c [] (head ps)
-	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
-	   in if null a then asAppl c [] (if null bs then nullPos else last bs)
-	      else if nb + 2 == cl + na then
-		   let br = reverse bs 
-		       br1 = drop (nb1 - 1) br 
-	           in  mkList (reverse a) br1  
-		   else error "asListAppl"
-    else stateToAppl s
-
--- final complete/reduction phase 
--- when a grammar rule (mixfix Id) has been fully matched
-
-collectArg :: GlobalAnnos -> ParseMap -> State -> [State]
--- pre: finished rule 
-collectArg g m s@(State _ _ _ _ k) = 
-    map (\ (State o b a ts k1) ->
-	 State o b (asListAppl g s : a) 
-	 (tail ts) k1)
-    $ filter (filterByPrec g s)
-    $ lookUp m k
-
-compl :: GlobalAnnos -> ParseMap -> [State] -> [State]
-compl g m l = 
-  concat $ map (collectArg g m) 
-  $ filter (\ (State _ _ _ ts _) -> null ts) l
-
-complRec :: GlobalAnnos -> ParseMap -> [State] -> [State]
-complRec g m l = 
-    let l1 = compl g m l in 
-	if null l1 then l else complRec g m l1 ++ l
-
-complete :: GlobalAnnos -> Int  -> ParseMap -> ParseMap
-complete g i m = 
-    Map.insert i (complRec g m $ lookUp m i) m
-
--- predict which rules/ids might match for (the) nonterminal(s) (termTok)
--- provided the "dot" is followed by a nonterminal 
-
-predict :: GlobalAnnos -> [Id] -> Int -> ParseMap -> ParseMap
-predict g ops i m = 
-    if i /= 0 && any (\ (State _ _ _ ts _) -> not (null ts) 
-		      && head ts == termTok) (lookUp m i)
-    then Map.insertWith (++) i (initialState g (ops, []) i) m
-    else m 
-
-type Chart = (Int, [Diagnosis], ParseMap)
-
-nextState :: GlobalAnnos -> [Id] -> TERM 
-	  -> Chart -> Chart
-nextState g ops trm (i, ds, m) = 
-    let m1 = complete g (i+1) $
-		 scan trm i $
-		 predict g ops i m
-    in if null (lookUp m1 (i+1)) && null ds
-		    then (i+1, Diag Error ("unexpected mixfix token: " 
-				      ++ showTrm g trm)
-			       (posOfTerm trm) : ds, m)
-       else (i+1, ds, m1)
-
-type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
-
-iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart -> Chart
-iterateStates g ids@(ops, _, _) maybeFormula terms c@(i, ds, m) = 
-    let self = iterateStates g ids maybeFormula
-	expand = expandPos Mixfix_token 
-	oneStep = nextState g (Set.toList ops)
-	resolvePred = resolveMixTrm g ids
-        resolveTerm = resolvePred maybeFormula
-    in if null terms then c
-       else case head terms of
-            Mixfix_term ts -> self (ts ++ tail terms) c
-            Mixfix_bracketed ts ps -> 
-		self (expand ("[", "]") ts ps ++ tail terms) c
-	    Mixfix_braced ts ps -> 
-		self (expand ("{", "}") ts ps ++ tail terms) c
-	    Mixfix_parenthesized ts ps -> 
-		let Result mds v = 
-			do tsNew <- mapM resolveTerm ts
-			   return $ Mixfix_parenthesized tsNew ps
-                    tNew = case v of Nothing -> head terms
-				     Just x -> x
-		in self (tail terms) (oneStep tNew (i, ds++mds, m))
-	    Conditional t1 f2 t3 ps -> 
-                let Result mds v = 
-			do t4 <- resolvePred False t1
-			   f5 <- resolveMixFrm g ids f2 		 
-			   t6 <- resolvePred False t3 
-			   return (Conditional t4 f5 t6 ps)
-                    tNew = case v of Nothing -> head terms
-				     Just x -> x
-		in self (tail terms) (oneStep tNew (i, ds++mds, m)) 
-            Mixfix_token t -> let (ds1, trm) = 
-				      convertMixfixToken (literal_annos g) t
-			      in self (tail terms) 
-				     (oneStep trm (i, ds1++ds, m))
-	    t ->  self (tail terms) (oneStep t c)
-
-
+-- | meaningful position of a term
 posOfTerm :: TERM -> Pos
 posOfTerm trm =
     case trm of
@@ -352,16 +85,128 @@ posOfTerm trm =
 		  Qual_pred_name _ _ ps -> first (Just ps)
               Application (Qual_op_name _ _ ps) [] [] -> first (Just ps)
 	      _ -> first $ get_pos_l trm 
-              
     where first ps = case ps of 
 		    Nothing -> nullPos
 		    Just l -> if null l then nullPos else head l
 
-getAppls :: GlobalAnnos -> Int -> ParseMap -> [TERM]
-getAppls g i m = 
-    map (asListAppl g) $ 
-	filter (\ (State _ _ _ ts k) -> null ts && k == 0) $ 
-	     lookUp m i
+-- | construct application
+asAppl :: Id -> [TERM] -> Pos -> TERM
+asAppl f as p = let pos = if null as then [] else [p]
+		  in Application (Op_name f) as pos
+
+-- | constructing the parse tree from (the final) parser state(s)
+stateToAppl :: SItem -> TERM
+stateToAppl st = 
+    let ide = rule st 
+        ar = reverse $ args st
+        qs = reverse $ posList st
+    in if  ide == typeId
+	   || ide == exprId 
+           || ide == parenId
+	   || ide == varId
+       then assert (isSingle ar) $ 
+	    case head ar of 
+            Mixfix_parenthesized ts _ -> if isSingle ts then head ts
+					 else head ar
+	    har -> har
+       else if ide == singleArgId || ide == multiArgsId
+	    then case head ar of
+		 Application q ts _  -> assert (null ts) $ 
+					Application q (tail ar) qs
+		 har@(Mixfix_qual_pred _) -> Mixfix_term [har,
+				   Mixfix_parenthesized (tail ar) qs]
+		 _ -> error "stateToAppl"
+	    else let newIde@(Id (t:_) _ _) = setIdePos ide ar qs
+		     pos = if isPlace t then posOfTerm $ head ar
+					  else tokPos t
+			        in Application (Op_name newIde) ar [pos]
+				   -- true mixfix
+
+asListAppl :: GlobalAnnos -> SItem -> TERM
+asListAppl g s =
+    let i = rule s
+        ra = reverse $ args s
+        br = reverse $ posList s in
+    if isListId i then    
+           let Id _ [f] _ = i
+	       ListCons b c = getLiteralType g f
+	       (b1, _, _) = getListBrackets b
+	       cl = length $ getPlainTokenList b
+               nb1 = length b1
+               na = length ra
+               nb = length br
+	       mkList [] ps = asAppl c [] (head ps)
+	       mkList (hd:tl) ps = asAppl f [hd, mkList tl (tail ps)] (head ps)
+	   in if null ra then asAppl c [] 
+		  (if null br then nullPos else head br)
+	      else if nb + 2 == cl + na then
+		   let br1 = drop (nb1 - 1) br 
+	           in  mkList ra br1  
+		   else error "asListAppl"
+    else stateToAppl s
+
+type IdSet = (Set.Set Id, Set.Set Id, Set.Set Id)
+
+type Chart = State TERM Bool
+
+addType :: TERM -> TERM -> TERM
+addType tt t = 
+    case tt of
+    Mixfix_sorted_term s ps -> Sorted_term t s ps
+    Mixfix_cast s ps -> Cast t s ps
+    _ -> error "addType"
+
+initSItems ::  GlobalAnnos -> IdSet -> Bool -> Index -> [SItem]
+initSItems ga (ops, preds, _) maybeFormula = 
+    initialSItem ga (Set.toList ops,  if maybeFormula then 
+		     Set.toList preds else [])
+
+nextStep :: GlobalAnnos -> IdSet -> Bool -> Chart -> (TERM, Token) -> Chart
+nextStep ga ids maybeFormula =
+    nextState (initSItems ga ids maybeFormula)
+    addType Set.empty (asListAppl ga) ga
+
+
+iterateStates :: GlobalAnnos -> IdSet -> Bool -> [TERM] -> Chart 
+	      -> Chart
+iterateStates g ids maybeFormula terms c = 
+    let self = iterateStates g ids maybeFormula
+	expand = expandPos Mixfix_token 
+	oneStep = nextStep g ids maybeFormula c
+	resolvePred = resolveMixTrm g ids
+    in if null terms then c
+       else case head terms of
+            Mixfix_term ts -> self (ts ++ tail terms) c
+            Mixfix_bracketed ts ps -> 
+		self (expand ("[", "]") ts ps ++ tail terms) c
+	    Mixfix_braced ts ps -> 
+		self (expand ("{", "}") ts ps ++ tail terms) c
+	    Mixfix_parenthesized ts ps -> 
+		self (expand ("(", ")") ts ps ++ tail terms) c
+	    Conditional t1 f2 t3 ps -> 
+                let Result mds v = 
+			do t4 <- resolvePred False t1
+			   f5 <- resolveMixFrm g ids f2 		 
+			   t6 <- resolvePred False t3 
+			   return (Conditional t4 f5 t6 ps)
+                    tNew = case v of Nothing -> head terms
+				     Just x -> x
+		    c2 = self (tail terms) (oneStep (tNew, varTok))
+		in c2 {solveDiags = mds ++ solveDiags c2 }
+            Mixfix_token t -> let (ds1, trm) = 
+				      convertMixfixToken (literal_annos g) t
+			          c2 = self (tail terms) $ oneStep $ 
+				       case trm of 
+						Mixfix_token tok -> (trm, tok)
+						_ -> (trm, varTok)
+				  in c2 {solveDiags = ds1 ++ solveDiags c2 }
+	    t@(Mixfix_sorted_term _ _) -> self (tail terms) 
+					  (oneStep (t, typeTok))
+	    t@(Mixfix_cast _ _) -> self (tail terms) 
+					  (oneStep (t, typeTok))
+	    t@(Qual_var _ _ _) -> self (tail terms) 
+					  (oneStep (t, varTok))
+	    t ->  self (tail terms) (oneStep (t, exprTok))
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds = 
@@ -376,23 +221,10 @@ resolveMixfix g ops preds maybeFormula t =
 
 resolveMixTrm :: GlobalAnnos -> IdSet -> Bool 
 	      -> TERM -> Result TERM
-resolveMixTrm g ids@(ops, preds, _) mayBeFormula trm =
-    let (i, ds, m) = iterateStates g ids mayBeFormula [trm] 
-		     (0, [], Map.single 0 $ initialState g 
-		      (Set.toList ops, if mayBeFormula then 
-					    Set.toList preds else []) 0)
-        ts = getAppls g i m
-    in if null ts then if null ds then 
-                        plain_error trm ("no resolution for term: "
-					     ++ showTrm g trm)
-					    (posOfTerm trm)
-		       else Result ds (Just trm)
-       else if null $ tail ts then Result ds (Just (head ts))
-	    else Result (Diag Error ("ambiguous mixfix term\n\t" ++ 
-			 (concat  
-			 $ intersperse "\n\t" 
-			 $ map (showTrm g) 
-			 $ take 5 ts)) (posOfTerm trm) : ds) (Just trm)
+resolveMixTrm ga ids maybeFormula trm =
+	getResolved showTerm (posOfTerm trm) (asListAppl ga)
+	   $ iterateStates ga ids maybeFormula [trm] $ 
+	    initState $ initSItems ga ids maybeFormula
 
 resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> FORMULA 
 	       -> Result FORMULA
@@ -456,8 +288,8 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 		  do p <- mkPredication t0
 		     return $ if null ps then p 
                             else updFormulaPos (head ps) (last ps) p
-		 Application (Op_name ide) args ps -> 
-		     let p = Predication (Pred_name ide) args ps in
+		 Application (Op_name ide) as ps -> 
+		     let p = Predication (Pred_name ide) as ps in
 		     if ide `Set.member` preds 
 		     then return p else 
 			  plain_error p 
@@ -470,7 +302,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 		  return $ Predication qide ts ps
                  Mixfix_term _ -> return $ Mixfix_formula t -- still wrong
 		 _ -> plain_error (Mixfix_formula t)
-	                ("not a formula: " ++ showTrm g t)
+	                ("not a formula: " ++ showTerm t "")
 			(posOfTerm t)
        f -> return f
 
@@ -530,9 +362,6 @@ makeFloatTerm f d e t@(Token s p) =
 					  $ incSourceColumn p (offset + 1))]
 		$ incSourceColumn p offset
 
-asAppl :: Id -> [TERM] -> Pos -> TERM
-asAppl f args p = let pos = if null args then [] else [p]
-		  in Application (Op_name f) args pos
 
 -- analyse Mixfix_token
 convertMixfixToken::  LiteralAnnos -> Token  -> ([Diagnosis], TERM) 
@@ -553,3 +382,5 @@ convertMixfixToken ga t =
     where te =  Mixfix_token t
           err s = ([Diag Error ("missing %" ++ s ++ " annotation") (tokPos t)]
 		  , te)
+
+
