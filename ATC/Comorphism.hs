@@ -46,14 +46,7 @@ instance (Comorphism cid1
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3) =>
-          ATermConvertible (CompComorphism cid1
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1 
-            cid2
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3) where
+          ATermConvertible (CompComorphism cid1 cid2) where
      toShATerm att0 (CompComorphism cid1 cid2) = 
 	 let (att1,i1) = toShATerm att0 (language_name cid1)
              (att2,i2) = toShATerm att1 (language_name cid2)
