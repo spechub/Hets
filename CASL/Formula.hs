@@ -42,7 +42,7 @@ module Formula (term, formula
 
 import Id
 import Keywords
-import Lexer -- (separatedBy,(<:>),scanFloat,scanString)
+import Lexer
 import Token
 import AS_Basic_CASL
 import Parsec
@@ -59,8 +59,8 @@ crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 simpleTerm :: GenParser Char st TERM
 simpleTerm = fmap Mixfix_token (pToken(scanFloat <|> scanString 
 		       <|>  scanQuotedChar <|> scanDotWords 
-		       <|>  reserved casl_reserved_words scanAnyWords
-		       <|>  reserved casl_reserved_ops scanAnySigns
+		       <|>  reserved casl_reserved_fwords scanAnyWords
+		       <|>  reserved casl_reserved_fops scanAnySigns
 		       <|>  placeS <?> "id/literal" )) 
 
 startTerm, restTerm, mixTerm, whenTerm  :: GenParser Char st TERM
