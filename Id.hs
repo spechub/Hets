@@ -11,23 +11,18 @@ nullPos = (0,0)
 type Region = (Pos,Pos)
  
 -- tokens as supplied by the scanner
-data Token = Token { showTok :: String
+data Token = Token { tokStr :: String
 		   , tokPos :: Pos
-		   } -- not deriving (Show, Eq, Ord)!
+		   } deriving (Show)
+
+showTok :: Token -> ShowS
+showTok = showString . tokStr
 
 instance Eq Token where
    Token s1 _ == Token s2 _ = s1 == s2
  
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
-
-instance Show Token where
-   showsPrec _ = showString . showTok
-   showList = showPlainList
-
-
-showPlainList :: Show a => [a] -> ShowS
-showPlainList = showSepList (showString "") shows
 
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
 showSepList _ _ [] = showString ""
@@ -44,16 +39,16 @@ isPlace(Token t _) = t == place
  
 -- an identifier may be mixfix (though not for a sort) and compound
 -- TokenOrPlace list must be non-empty!
-data Id = Id [TokenOrPlace] [Id] deriving (Eq, Ord)
- 
-instance Show Id where
-    showsPrec _ = showId 
+data Id = Id [TokenOrPlace] [Id] [Pos] deriving (Eq, Ord, Show)
+                                 -- pos of "[", commas, "]" 
 
-showId (Id ts is) = 
+showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
-            comps = if null is then showString "" else shows is 
-	in
-        shows toks . comps . shows places
+            comps = if null is then showString "" else 
+                  showString "[" . showSepList (showString ",") showId is
+		  . showString "]"
+	    showToks = showSepList (showString "") showTok
+	in  showToks toks . comps . showToks places
 
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
 	      (reverse toks, reverse pls)
