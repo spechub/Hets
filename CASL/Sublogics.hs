@@ -707,22 +707,102 @@ pr_datatype_decl l d = pr_check l sl_datatype_decl d
 pr_symbol :: CASL_Sublogics -> Symbol -> Maybe Symbol
 pr_symbol l s = pr_check l sl_symbol s
 
--- FIXME:
-
 pr_sig_items :: CASL_Sublogics -> SIG_ITEMS -> Maybe SIG_ITEMS
-pr_sig_items l i = Nothing
+pr_sig_items l (Sort_items s p) =
+             let
+               res = (mapMaybe (pr_annoted l pr_sort_item)) s
+             in
+               if (res==[]) then Nothing else
+               Just (Sort_items res p)
+pr_sig_items l (Op_items o p) =
+             let
+               res = (mapMaybe (pr_annoted l pr_op_item)) o
+             in
+               if (res==[]) then Nothing else
+               Just (Op_items res p)
+pr_sig_items l (Pred_items i p) =
+             if (has_pred l) then
+               Just (Pred_items i p)
+             else
+               Nothing
+pr_sig_items l (Datatype_items d p) =
+             let
+               res = (mapMaybe (pr_annoted l pr_datatype_decl)) d
+             in
+               if (res==[]) then Nothing else
+               Just (Datatype_items res p)
+
+pr_op_item :: CASL_Sublogics -> OP_ITEM -> Maybe OP_ITEM
+pr_op_item l i = pr_check l sl_op_item i
+
+pr_sort_item :: CASL_Sublogics -> SORT_ITEM -> Maybe SORT_ITEM
+pr_sort_item l (Sort_decl s p) = Just (Sort_decl s p)
+pr_sort_item l (Subsort_decl sl s p) =
+             if (has_sub l) then
+               Just (Subsort_decl sl s p)
+             else
+               Just (Sort_decl (s:sl) [])
+pr_sort_item l (Subsort_defn s1 v s2 f p) =
+             if (has_sub l) then
+               Just (Subsort_defn s1 v s2 f p)
+             else
+               Just (Sort_decl [s1] [])
+pr_sort_item l (Iso_decl s p) = Just (Iso_decl s p)
 
 pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS
-pr_symb_items l i = Just i
+pr_symb_items l (Symb_items k s p) =
+              if (in_x l k sl_symb_kind) then
+                let
+                  res = (mapMaybe (pr_symb l)) s
+                in
+                  if (res==[]) then Nothing else
+                  Just (Symb_items k res p)
+              else
+                Nothing
 
 pr_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Maybe SYMB_MAP_ITEMS
-pr_symb_map_items l i = Just i
+pr_symb_map_items l (Symb_map_items k s p) =
+                  if (in_x l k sl_symb_kind) then
+                    let
+                      res = (mapMaybe (pr_symb_or_map l)) s
+                    in
+                      if (res==[]) then Nothing else
+                      Just (Symb_map_items k res p)
+                  else
+                    Nothing
+
+pr_symb_or_map :: CASL_Sublogics -> SYMB_OR_MAP -> Maybe SYMB_OR_MAP
+pr_symb_or_map l (Symb s) =
+               let
+                 res = pr_symb l s
+               in
+                 if (isNothing res) then Nothing else
+                 Just (Symb (fromJust res))
+pr_symb_or_map l (Symb_map s t p) =
+               let
+                 a = pr_symb l s
+                 b = pr_symb l t
+               in
+                 if ((isJust a) && (isJust b)) then
+                   Just (Symb_map s t p)
+                 else
+                   Nothing
+
+pr_symb :: CASL_Sublogics -> SYMB -> Maybe SYMB
+pr_symb l (Symb_id i) = Just (Symb_id i)
+pr_symb l (Qual_id i t p) =
+        if (in_x l t sl_type) then
+          Just (Qual_id i t p)
+        else
+          Nothing
+
+-- FIXME:
 
 pr_sign :: CASL_Sublogics -> Sign -> Sign
 pr_sign l s = s
 
--- pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
--- pr_morphism l m = m
+pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
+pr_morphism l m = m
 
 -- pr_epsilon :: CASL_Sublogics -> Sign -> Morphism
 -- pr_epsilon l s = 
