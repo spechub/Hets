@@ -12,7 +12,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats
+INCLUDE_PATH = ghc:hetcats:fgl
 COMMONLIB_PATH = Common/Lib:Common/Lib/Parsec:Common/ATerm
 CLEAN_PATH = utils/DrIFT-src:utils/GenerateRules:utils/InlineAxioms:Common:Logic:CASL:CASL/CCC:Syntax:Static:GUI:HasCASL:Haskell:Modal:CoCASL:COL:CspCASL:ATC:ToHaskell:Proofs:Comorphisms:Isabelle:$(INCLUDE_PATH):Haskell/Hatchet
 
@@ -164,6 +164,11 @@ uni_sources = $(wildcard ../uni/davinci/haddock/*.hs) \
   $(wildcard ../uni/util/haddock/*.hs) \
   $(wildcard ../uni/posixutil/haddock/*.hs)
 
+tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
+                   Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
+tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
+
+
 ####################################################################
 ### targets
 
@@ -198,6 +203,10 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
 hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files) $(inline_axiom_files) Modal/ModalSystems.hs
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make 
+
+taxonomy: Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs Taxonomy/MMiSSOntologyGraph.hs \
+          Taxonomy/OntoParser.hs
+	ghc --make -o Taxonomy/taxonomyTool Taxonomy/taxonomyTool.hs $(HC_OPTS) -package uni-util 
 
 ###############################
 ### TAGS files for (x)emacs 
