@@ -149,7 +149,7 @@ nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig
    that the signatures share common logic. Would it be possible to deduce 
    a common logic for given signatures based on logic graph? -}
 nodeSigUnion lgraph dg nodeSigs orig =
-  do sigUnion@(G_sign lid _) <- homogeneousGsigManyUnion nullPos (map getSig nodeSigs)
+  do sigUnion@(G_sign lid _) <- homogeneousGsigManyUnion (map getSig nodeSigs)
      let nodeContents = DGNode {dgn_name = Nothing,
 				dgn_sign = sigUnion,
 				dgn_sens = G_l_sentence_list lid [],
@@ -175,7 +175,8 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
 extendDGraph _ n@(EmptyNode _) _ _ =
-    do fatal_error "Internal error: trying to add a morphism originating from an empty node" nullPos
+    do fail "Internal error: \
+             \trying to add a morphism originating from an empty node"
 extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
     let targetSig = cod Grothendieck morph
         nodeContents = DGNode {dgn_name = Nothing,
@@ -200,7 +201,8 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
 extendDGraphRev _ n@(EmptyNode _) _ _ =
-    do fatal_error "Internal error: trying to add a morphism pointing to an empty node" nullPos
+    do fail "Internal error: \
+             \trying to add a morphism pointing to an empty node"
 extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
     let sourceSig = dom Grothendieck morph
         nodeContents = DGNode {dgn_name = Nothing,

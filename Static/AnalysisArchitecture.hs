@@ -322,9 +322,9 @@ ana_UNIT_TERM lgraph defl (gannos, genv, dg) curl justStruct uctx@(buc, diag)
 		   -- compute morphA (\sigma^A)
 		   G_sign lidI sigI <- return (getSig (getSigFromDiag pI))
 		   let idI = G_morphism lidI (ide lidI sigI)
-		   morphA <- homogeneousMorManyUnion (headPos poss) (idI : (map first morphSigs))
+		   morphA <- homogeneousMorManyUnion (idI : (map first morphSigs))
 		   -- compute sigMorExt (\sigma^A(\Delta))
-		   (sigR, sigMorExt) <- extendMorphism (headPos poss) (getSig sigF) (getSig resultSig) (getSig sigA) morphA
+		   (sigR, sigMorExt) <- extendMorphism (getSig sigF) (getSig resultSig) (getSig sigA) morphA
 		   (qB, diag') <- extendDiagram lgraph diagA [pI] resultSig ""
 		   -- insert nodes p^F_i and appropriate edges to the diagram
 		   let ins diag dg [] = do return (diag, dg)

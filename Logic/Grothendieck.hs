@@ -494,38 +494,38 @@ gEmbed (G_morphism lid mor) =
 
 -- | heterogeneous union of two Grothendieck signatures
 --   the left signature determines the result logic
-gsigLeftUnion :: LogicGraph -> Pos -> G_sign -> G_sign -> Result G_sign
-gsigLeftUnion lg pos gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
+gsigLeftUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
+gsigLeftUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
   if language_name lid1 == language_name lid2 
-     then homogeneousGsigUnion pos gsig1 gsig2
+     then homogeneousGsigUnion gsig1 gsig2
      else do
       GMorphism incl _ _ <- ginclusion lg 
           (G_sign lid2 (empty_signature lid2))
           (G_sign lid1 (empty_signature lid1))
       let lid1' = targetLogic incl
           lid2' = sourceLogic incl
-      sigma1' <- rcoerce lid1 lid1' pos sigma1
-      sigma2' <- rcoerce lid2 lid2' pos sigma2
-      (sigma2'',_) <- maybeToResult pos "gsigLeftUnion: signature mapping failed" 
+      sigma1' <- coerce lid1 lid1' sigma1
+      sigma2' <- coerce lid2 lid2' sigma2
+      (sigma2'',_) <- maybeToMonad "gsigLeftUnion: signature mapping failed" 
                        (map_sign incl sigma2')  -- where to put axioms???
       sigma3 <- signature_union lid1' sigma1' sigma2''
       return (G_sign lid1' sigma3)
 
 
 -- | homogeneous Union of two Grothendieck signatures
-homogeneousGsigUnion :: Pos -> G_sign -> G_sign -> Result G_sign
-homogeneousGsigUnion pos (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
-  sigma2' <- rcoerce lid2 lid1 pos sigma2
+homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
+homogeneousGsigUnion (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
+  sigma2' <- coerce lid2 lid1 sigma2
   sigma3 <- signature_union lid1 sigma1 sigma2'
   return (G_sign lid1 sigma3)
 
 -- | homogeneous Union of a list of Grothendieck signatures
-homogeneousGsigManyUnion :: Pos -> [G_sign] -> Result G_sign
-homogeneousGsigManyUnion pos [] =
-  fatal_error "homogeneous union of emtpy list of signatures" pos
-homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
+homogeneousGsigManyUnion :: [G_sign] -> Result G_sign
+homogeneousGsigManyUnion [] =
+  fail "homogeneous union of emtpy list of signatures"
+homogeneousGsigManyUnion (G_sign lid sigma : gsigmas) = do
   sigmas <- let coerce_lid (G_sign lid1 sigma1) = 
-                    rcoerce lid lid1 pos sigma1
+                    coerce lid lid1 sigma1
              in sequence (map coerce_lid gsigmas)
   bigSigma <- let sig_union s1 s2 = do
                        s1' <- s1
@@ -535,16 +535,16 @@ homogeneousGsigManyUnion pos (G_sign lid sigma : gsigmas) = do
 
 
 -- | homogeneous Union of a list of morphisms
-homogeneousMorManyUnion :: Pos -> [G_morphism] -> Result G_morphism
-homogeneousMorManyUnion pos [] =
-  fatal_error "homogeneous union of emtpy list of morphisms" pos
-homogeneousMorManyUnion pos (G_morphism lid mor : gmors) = do
+homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism
+homogeneousMorManyUnion [] =
+  fail "homogeneous union of emtpy list of morphisms"
+homogeneousMorManyUnion (G_morphism lid mor : gmors) = do
   mors <- let coerce_lid (G_morphism lid1 mor1) = 
-                    rcoerce lid lid1 pos mor1
+                    coerce lid lid1 mor1
              in sequence (map coerce_lid gmors)
   bigMor <- let mor_union s1 s2 = do
                        s1' <- s1
-                       adjustPos pos $ morphism_union lid s1' s2
+                       morphism_union lid s1' s2
                 in foldl mor_union (return mor) mors
   return (G_morphism lid bigMor)
 
@@ -592,7 +592,7 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
                            (G_l_sentence_list lid sens) = do
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
-  sens' <- rcoerce lid (sourceLogic cid) nullPos sens
+  sens' <- coerce lid (sourceLogic cid) sens
   sens'' <- maybeToResult nullPos "Could not map sentences" 
               $ sequence $ map (mapNamedM (map_sentence cid sign1)) $ sens'
   sens''' <- sequence $ map (mapNamedM (map_sen tlid morphism2)) $ sens''
@@ -603,7 +603,7 @@ joinG_l_sentence_list :: G_l_sentence_list -> G_l_sentence_list
                             -> Maybe G_l_sentence_list
 joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
                       (G_l_sentence_list lid2 sens2) = do
-  sens2' <- resultToMaybe $ rcoerce lid1 lid2 nullPos sens2
+  sens2' <- coerce lid1 lid2 sens2
   return (G_l_sentence_list lid1 (sens1++sens2'))
 
 -- | Flatten a list of G_l_sentence_list's
