@@ -322,8 +322,7 @@ mixType = do ts <- many1 lazyType
 -- | 'mixType' possibly interspersed with 'crossT' 
 prodType :: AParser Type
 prodType = do (ts, ps) <- mixType `separatedBy` crossT
-	      return (if isSingle ts then head ts 
-		      else ProductType ts (map tokPos ps)) 
+	      return $ mkProductType ts (map tokPos ps)
 
 -- | a (right associativ) function type  
 parseType :: AParser Type

@@ -132,7 +132,7 @@ mkTypeConstrAppls _ (LazyType t p) =
 mkTypeConstrAppls _ (ProductType ts ps) =
     do mTs <- mapM (mkTypeConstrAppls TopLevel) ts
        if all isJust mTs then
-	  return $ Just $ ProductType (catMaybes mTs) ps
+	  return $ Just $ mkProductType (catMaybes mTs) ps
 	  else return Nothing
 
 mkTypeConstrAppls _ (FunType t1 a t2 ps) =

@@ -222,7 +222,7 @@ infer mt trm = do
 				       QualOp br (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)
-		 (if isSingle ts then head ts else TupleTerm ts ps) ps
+		 (mkTupleTerm ts ps) ps
 	ApplTerm t1 t2 ps -> inferAppl infer ( \ x y -> ApplTerm x y ps) 
 			     mt t1 t2
 	TupleTerm ts ps -> 
@@ -230,11 +230,11 @@ infer mt trm = do
             Nothing -> do 		    
                 ls <- checkList infer (map (const Nothing) ts) ts 
 		return $ map ( \ (su, tys, trms) ->
-                                   (su, ProductType tys ps, 
-				    TupleTerm trms ps)) ls
+                                   (su, mkProductType tys ps, 
+				    mkTupleTerm trms ps)) ls
 	    Just ty -> do 
 	        vs <- freshVars ts
-	        let pt = ProductType vs []
+	        let pt = mkProductType vs []
 	            Result ds ms = mgu tm ty pt
 		uniDiags ds
 	        case ms of 
@@ -242,8 +242,8 @@ infer mt trm = do
 		     Just s  -> do 
                          ls <- checkList infer (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
-                                   (compSubst s su, ProductType tys ps, 
-				    TupleTerm trms ps)) ls
+                                   (compSubst s su, mkProductType tys ps, 
+				    mkTupleTerm trms ps)) ls
 	TypedTerm t qual ty ps -> do 
 	    case qual of 
 		OfType -> do
@@ -409,7 +409,7 @@ inferPat mt pat = do
 			      _ -> (s, ty, PatternConstr (InstOpId i [] [])
 						  (opType oi) ps)) ls
 	    else inferPat mt $ ApplPattern (ResolvedMixPattern i [] ps)
-		 (if isSingle ts then head ts else TuplePattern ts ps) ps
+		 (mkTuplePattern ts ps) ps
 	ApplPattern p1 p2 ps -> inferAppl inferPat 
 				( \ x y -> ApplPattern x y ps) mt p1 p2
 	TuplePattern ts ps -> 
@@ -417,11 +417,11 @@ inferPat mt pat = do
 	    Nothing -> do 	    
                 ls <- checkList inferPat (map (const Nothing) ts) ts 
 		return $ map ( \ (su, tys, trms) ->
-                                     (su, ProductType tys ps, 
-				    TuplePattern trms ps)) ls
+                                     (su, mkProductType tys ps, 
+				    mkTuplePattern trms ps)) ls
 	    Just ty -> do
 	        vs <- freshVars ts
-	        let pt = ProductType vs []
+	        let pt = mkProductType vs []
 	            Result ds ms = mgu tm ty pt
 	        uniDiags ds
 	        case ms of 
@@ -429,8 +429,8 @@ inferPat mt pat = do
 		     Just s  -> do 
                          ls <- checkList inferPat (map (Just . subst s) vs) ts 
 			 return $ map ( \ (su, tys, trms) ->
-                                   (compSubst s su, ProductType tys ps, 
-				    TuplePattern trms ps)) ls
+                                   (compSubst s su, mkProductType tys ps, 
+				    mkTuplePattern trms ps)) ls
 	TypedPattern p ty ps -> do 
 		    let Result ds ms = mUnify ty
 		    uniDiags ds

@@ -137,6 +137,9 @@ data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor)
           -- pos arrow
             deriving (Show)
 
+mkProductType :: [Type] -> [Pos] -> Type
+mkProductType ts ps = if isSingle ts then head ts else ProductType ts ps
+
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
              deriving (Eq, Ord)
 
@@ -255,6 +258,9 @@ data Term = QualVar Var Type [Pos]
 	  -- pos brackets, ","s 
 	    deriving (Show)
 
+mkTupleTerm :: [Term] -> [Pos] -> Term
+mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
+
 data Pattern = PatternVar VarDecl
              -- pos ";"s
 	     | PatternConstr InstOpId TypeScheme [Pos] 
@@ -271,6 +277,9 @@ data Pattern = PatternVar VarDecl
 	     -- pos brackets, ","s
 	     | MixfixPattern [Pattern] 
 	       deriving (Show)
+
+mkTuplePattern :: [Pattern] -> [Pos] -> Pattern
+mkTuplePattern ps qs = if isSingle ps then head ps else TuplePattern ps qs
 
 data ProgEq = ProgEq Pattern Term Pos deriving (Show)
 	    -- pos "=" (or "->" following case-of)

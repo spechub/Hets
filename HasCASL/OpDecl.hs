@@ -65,7 +65,7 @@ patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr
 tuplePatternToType :: Pattern -> Type
 tuplePatternToType (PatternVar (VarDecl _ t _ _)) = t
 tuplePatternToType (TuplePattern ps qs) = 
-    ProductType (map tuplePatternToType ps) qs
+    mkProductType (map tuplePatternToType ps) qs
 tuplePatternToType _ = error "tuplePatternToType"
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env OpItem
@@ -86,7 +86,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        putAssumps $ filterVars as
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
-	   pats = map (\ l -> TuplePattern (map PatternVar l) []) newPats
+	   pats = map (\ l -> mkTuplePattern (map PatternVar l) []) newPats
        case mSc of 
 		Just newSc@(TypeScheme tArgs (qu :=> _) qs) -> do 
 		    ty <- toEnvState $ freshInst newSc

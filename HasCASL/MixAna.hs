@@ -114,7 +114,7 @@ toMixTerm ide _ ar qs =
     if ide == applId then assert (length ar == 2) $
        let [op, arg] = ar in ApplTerm op arg qs
     else if ide == tupleId || ide == unitId then
-	 TupleTerm ar qs
+	 mkTupleTerm ar qs
     else ResolvedMixTerm ide ar qs
 
 type TermChart = Chart Term ()
@@ -292,7 +292,7 @@ extractBindings pat =
 	 return (ApplPattern p3 p4 ps, l1 ++ l2) 
     TuplePattern pats ps -> do 
          l <- mapM extractBindings pats
-	 return (TuplePattern (map fst l) ps, concatMap snd l)
+	 return (mkTuplePattern (map fst l) ps, concatMap snd l)
     TypedPattern p ty ps -> do 
          mt <- anaStarType ty 
 	 let newT = case mt of Just t -> t
@@ -355,14 +355,14 @@ toPat i _ ar qs =
     if i == applId then assert (length ar == 2) $
 	   let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId then
-         TuplePattern ar qs
+         mkTuplePattern ar qs
     else if isUnknownId i then
          PatternVar (VarDecl (simpleIdToId $ unToken i) 
 		     (MixfixType []) Other qs)
     else ResolvedMixPattern i 
 	     (if null ar then [] 
 	     else if isSingle ar then [head ar] 
-	     else [TuplePattern ar qs]) qs
+	     else [mkTuplePattern ar qs]) qs
 
 type PatChart = Chart Pattern ()
 

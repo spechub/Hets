@@ -72,9 +72,8 @@ anaComps :: Id -> [(Id, Type)] -> Type -> ([Component], [Int])
 anaComps con tys rt (cs, i) =
     do newCs <- mapM (anaComp con tys rt) $ zip cs $ map (:i) [1..]
        let mts = map fst newCs
-       if all isJust mts then 
-          return (Just $ ProductType (catMaybes mts) [],
-                  concatMap snd newCs)
+       if all isJust mts then return (Just $ mkProductType (catMaybes mts) [], 
+				      concatMap snd newCs)
           else return  (Nothing, [])
 
 anaComp :: Id -> [(Id, Type)] -> Type -> (Component, [Int]) 
