@@ -24,7 +24,7 @@ import Common.Result
 data ApplMode = OnlyArg | TopLevel 
 
 mkTypeConstrAppls :: ApplMode -> Type -> State Env Type
-mkTypeConstrAppls _ t@(TypeName _ _) = 
+mkTypeConstrAppls _ t@(TypeName _ _ _) = 
        return t 
 
 mkTypeConstrAppls m (TypeAppl t1 t2) = 
@@ -32,15 +32,24 @@ mkTypeConstrAppls m (TypeAppl t1 t2) =
        t4 <- mkTypeConstrAppls OnlyArg t2
        return $ TypeAppl t3 t4 
 
-mkTypeConstrAppls _ (TypeToken t) = return $
-    TypeName (simpleIdToId t) 0
+mkTypeConstrAppls _ (TypeToken t) = 
+    do let i = simpleIdToId t
+       tk <- getTypeMap
+       let m = getKind tk i
+	   c = if isTypeVar tk i then 1 else 0
+       case m of 
+	      Just k -> return $ TypeName i k c 
+	      _ -> return $ TypeToken t
 
 mkTypeConstrAppls m t@(BracketType b ts ps) =
     do args <- mapM (mkTypeConstrAppls m) ts
        let toks@[o,c] = mkBracketToken b ps 
 	   i = if null ts then Id toks [] [] 
 	       else Id [o, Token place $ posOfType $ head ts, c] [] []
-	   n = TypeName i 0 
+       tk <- getTypeMap 
+       let mk = getKind tk i
+	   n = case mk of Just k -> TypeName i k 0
+			  _ -> t
 	   ds = [Diag Error ("illegal type: " ++ showPretty t "")
 		$ posOfType t]
        if null ts then return n
@@ -90,7 +99,10 @@ expandApplKind cMap c =
     _ -> star
 
 inferKind :: Type -> State Env (Maybe Kind)
-inferKind (TypeName i _) = getIdKind i
+inferKind (TypeName i k _) = do mk <- getIdKind i
+				return $ case mk of 
+						 Nothing -> Just k
+						 _ -> mk
 inferKind (TypeAppl t1 t2) = 
     do m1 <- inferKind t1 
        case m1 of 
@@ -163,7 +175,13 @@ getKind tk i =
        case Map.lookup i tk of
        Nothing -> Nothing
        Just (TypeInfo k _ _ _) -> Just k
-    
+
+isTypeVar :: TypeMap -> Id -> Bool
+isTypeVar tk i = 
+       case Map.lookup i tk of
+       Just (TypeInfo _ _ _ TypeVarDefn) -> True
+       _ -> False
+
 anaType :: Type -> State Env (Maybe Kind, Type)
 anaType t = 
     do newT <- mkTypeConstrAppls TopLevel t

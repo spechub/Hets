@@ -80,10 +80,14 @@ data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
 	       , assumps :: Assumps
 	       , envDiags :: [Diagnosis]
+	       , counter :: Int
 	       } deriving Show
 
+instance Eq Env where
+    Env c1 t1 a1 _ _ == Env c2 t2 a2 _ _ = (c1, t1, a1) == (c2, t2, a2)
+
 initialEnv :: Env
-initialEnv = Env empty empty empty []
+initialEnv = Env empty empty empty [] 1
 
 appendDiags :: [Diagnosis] -> State Env ()
 appendDiags ds =
@@ -99,6 +103,12 @@ indent i s = showString $ concat $
 	     intersperse ('\n' : replicate i ' ') (lines $ s "")
 
 -- ---------------------------------------------------------------------
+
+getCounter :: State Env Int
+getCounter = gets counter
+
+putCounter :: Int -> State Env ()
+putCounter i = do { e <- get; put e { counter = i } }
 
 getClassMap :: State Env ClassMap
 getClassMap = gets classMap

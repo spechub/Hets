@@ -63,6 +63,8 @@ objects    = $(patsubst %.lhs,%.o,$(sources:%.hs=%.o))
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs\
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs
 
+happy_files = Haskell/Language/Parser.hs
+
 # this variable holds the modules that should be documented
 # the imported parsec library is not included!
 doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
@@ -74,11 +76,17 @@ doc_sources = $(filter-out Nothing/Nothing% ,$(sources))
 .SECONDARY : %.hs %.d 
 #.PRECIOUS: sources_hetcats.mk
 
-hets: $(objects)
-	$(RM) $@
-	$(HC) -o $@ $(HC_OPTS) $(objects)
+all:
+	$(HC) --make -o hets hets.hs $(HC_OPTS)
 
-hetcats-make: hets.hs utils/create_sources.pl $(drifted_files)
+hets: $(sources)
+	$(HC) --make -o $@ hets.hs $(HC_OPTS)
+
+hets-old: $(objects)
+	$(RM) $@
+	$(HC) -o hets $(HC_OPTS) $(objects)
+
+hetcats-make: hets.hs utils/create_sources.pl $(drifted_files) $(happy_files)
 	$(RM) hetcats-make sources_hetcats.mk
 	$(HC) --make -o hets $< $(HC_OPTS) 2>&1 | tee hetcats-make && \
          $(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
@@ -189,12 +197,9 @@ HasCASL/hacapa: HasCASL/hacapa.lhs CASL/capa HasCASL/*.hs
 ### Haskell parser
 hapa: Haskell/hapa
 
-Haskell/hapa: Haskell/hapa.lhs Haskell/*.hs $(drifted_files) Haskell/Language/Parser.hs
+Haskell/hapa: Haskell/hapa.lhs Haskell/*.hs Haskell/Language/*.hs $(happy_files)
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
-
-Haskell/Language/Parser.hs: Haskell/Language/Parser.ly
-	$(HAPPY) $<
 
 ### Haskell wrap parser
 wrap: Haskell/wrap
@@ -204,12 +209,12 @@ Haskell/wrap: Haskell/wrap.lhs Haskell/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
-hetpa: Syntax/hetpa.hs $(drifted_files) Haskell/Language/Parser.hs *.hs 
+hetpa: Syntax/hetpa.hs Syntax/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
-hetana: Static/hetana.hs $(drifted_files) *.hs 
+hetana: Static/hetana.hs Static/*.hs 
 	$(RM) $@
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
@@ -234,7 +239,7 @@ hets.hs: hetcats/Version.hs
 ####################################################################
 ## rules for DrIFT
 
-%.ly: %.hs
+%.hs: %.ly
 	$(HAPPY) $<
 
 %.hs: %.ag.hs

@@ -67,7 +67,7 @@ instance PosItem Type where
 posOfType :: Type -> Pos
 posOfType ty = 
     case ty of
-    TypeName i _ -> posOfId i
+    TypeName i _ _ -> posOfId i
     TypeAppl t1 t2 -> posOf [t1, t2]
     TypeToken t -> tokPos t
     BracketType _ ts ps -> firstPos ts ps

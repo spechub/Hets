@@ -15,6 +15,7 @@
 module HasCASL.Logic_HasCASL where
 
 import HasCASL.As
+import HasCASL.Le
 import CASL.AS_Basic_CASL(SYMB_ITEMS, SYMB_MAP_ITEMS)
 import HasCASL.PrintAs
 import CASL.Print_AS_Basic
@@ -28,15 +29,32 @@ import Data.Dynamic
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data HasCASL = HasCASL deriving (Show)
-instance Language HasCASL where  -- default definition is okay
+instance Language HasCASL -- default definition is okay
 
-type Sign = BasicSpec
-data Morphism = NoMorphism deriving (Eq, Show)
-
-instance Category HasCASL Sign Morphism  
-    where
+type Sign = Env
+type Morphism = ()
+type HasCASL_Sublogics = ()
+type Sentence = Formula
+type Symbol = ()
+type RawSymbol = ()
 
 -- abstract syntax, parsing (and printing)
+
+basicSpecTc :: TyCon
+basicSpecTc = mkTyCon "HasCASL.As.BasicSpec"
+signTc :: TyCon
+signTc = mkTyCon "HasCASL.Le.Env"
+sentenceTc :: TyCon
+sentenceTc = mkTyCon "HasCASL.As.Formula"
+
+instance Typeable BasicSpec where
+    typeOf _ = mkAppTy basicSpecTc []
+
+instance Typeable Sign where
+    typeOf _ = mkAppTy signTc []
+
+instance Typeable Sentence where
+    typeOf _ = mkAppTy sentenceTc []
 
 instance Syntax HasCASL BasicSpec
 		SYMB_ITEMS SYMB_MAP_ITEMS
@@ -45,38 +63,18 @@ instance Syntax HasCASL BasicSpec
 	 parse_symb_items HasCASL = Just(toParseFun symbItems ())
 	 parse_symb_map_items HasCASL = Just(toParseFun symbMapItems ())
 
-data HasCASL_Sublogics = NoSublogic deriving (Eq, Ord, Show)
+instance Category HasCASL Sign Morphism  
 
-instance LatticeWithTop HasCASL_Sublogics where
-
-type Sentence = Formula
-
-data Symbol = DummySymbol deriving (Eq, Ord, Show)
-data RawSymbol = DummyRawSymbol deriving (Eq, Show)
-
-instance Sentences HasCASL Sentence () Sign Morphism Symbol where
+instance Sentences HasCASL Sentence () Sign Morphism Symbol
 
 instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
-               Symbol RawSymbol where
-
-instance Typeable HasCASL_Sublogics where
-  typeOf _ = mkAppTy (mkTyCon "HasCASL_Sublogics") []
-instance Typeable BasicSpec where
-  typeOf _ = mkAppTy (mkTyCon "BasicSpec") []
-instance Typeable Sentence where
-  typeOf _ = mkAppTy (mkTyCon "Sentence") []
-instance Typeable Morphism where
-  typeOf _ = mkAppTy (mkTyCon "Morphism") []
-instance Typeable Symbol where
-  typeOf _ = mkAppTy (mkTyCon "Symbol") []
-instance Typeable RawSymbol where
-  typeOf _ = mkAppTy (mkTyCon "RawSymbol") []
+               Symbol RawSymbol
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
-               Symbol RawSymbol () where
+               Symbol RawSymbol ()

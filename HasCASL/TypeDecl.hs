@@ -78,7 +78,7 @@ anaTypeItem _ inst (IsoDecl pats _) =
     do let Result ds (Just is) = convertTypePatterns pats
        appendDiags ds
        mapM_ (anaTypeId NoTypeDefn inst star) is
-       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i 0)) is) is 
+       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) is) is 
 
 anaTypeItem _ inst (SubtypeDefn pat v t f ps) = 
     do (mk, newT) <- anaType t

@@ -10,7 +10,6 @@
 module HasCASL.OpDecl where
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import Common.Id
@@ -19,10 +18,10 @@ import Control.Monad.State
 import Common.PrettyPrint
 import HasCASL.PrintAs(showPretty)
 import Common.Lib.Parsec.Pos
-import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.TypeDecl
 import Data.List
+import Data.Maybe
 
 missingAna :: PrettyPrint a => a -> [Pos] -> State Env ()
 missingAna t ps = appendDiags [Diag FatalError 
@@ -74,23 +73,3 @@ shortPosShow p = showParen True (shows (sourceLine p) . showString "," .
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> State Env () 
 addOpId i sc attrs = missingAna i [posOfId i]
 
-{-
-unifiable :: TypeScheme -> TypeScheme -> State Env 
-unifiable sc1 sc2 =
-    do t1 <- freshInst sc1
-       t2 <- freshInst sc2
-       unify t1 t2
-
-freshInst (TypeScheme tArgs (q :=> t) _) = 
-    do i <- getState
-       setState (i + length tArgs)
-       return $ subst (mkSubst tArgs i) t 
--}
-type Subst = Map.Map TypeId Type
-
-mkSubst :: [TypeArg] -> Integer -> Subst
-mkSubst [] _ = Map.empty
-mkSubst (TypeArg v _ _ _:r) i =
-     let tId = simpleIdToId $ mkSimpleId ("_var_" ++ show i)
-     in Map.insert v (TypeName tId 0) $ mkSubst r (i+1) 
- 		   

@@ -12,6 +12,9 @@ module Main where
 
 import Options
 import System.Environment
+import Static.AnalysisLibrary
+import Logic.LogicGraph
+-- import GUI.ConvertDevToAbstractGraph -- requires uni-package
 
 import ReadFn
 import WriteFn

@@ -28,7 +28,7 @@ import Data.Dynamic
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 data Haskell = Haskell deriving (Show)
-instance Language Haskell where  -- default definition is okay
+instance Language Haskell  -- default definition is okay
 
 type Sign = HsDecls
 type Morphism = ()
@@ -36,7 +36,6 @@ type Morphism = ()
 instance Typeable HsDecl
 
 instance Category Haskell Sign Morphism  
-    where
 
 -- abstract syntax, parsing (and printing)
 
@@ -49,23 +48,21 @@ instance Syntax Haskell HsDecls
 
 type Haskell_Sublogics = ()
 
-instance LatticeWithTop Haskell_Sublogics where
-
 type Sentence = HsDecls
 
 type Symbol = ()
 type RawSymbol = ()
 
-instance Sentences Haskell Sentence () Sign Morphism Symbol where
+instance Sentences Haskell Sentence () Sign Morphism Symbol
 
 instance StaticAnalysis Haskell HsDecls Sentence () 
                SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism 
-               Symbol RawSymbol where
+               Symbol RawSymbol
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
                Sign 
                Morphism
-               Symbol RawSymbol () where
+               Symbol RawSymbol ()

@@ -81,8 +81,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 		 -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId Int  -- analysed
-            -- Int > 0 means generalized
+data Type = TypeName TypeId Kind Int  -- analysed (Int for internal use) 
 	  | TypeAppl Type Type
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]

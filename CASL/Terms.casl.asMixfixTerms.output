@@ -31,7 +31,7 @@ Error (19,1) unexpected mixfix token: .a
 'a' [a, b]
 Error (20,1) unexpected mixfix token: 'a'
 __ * __
-Error (21,1) no resolution for term: __ * __
+Error (21,1) no resolution for term: (__,*,__)
 (a __ b)
 Error (22,7) unexpected mixfix token: b
 (a __ b) a
@@ -86,12 +86,12 @@ a when b else c
 # as b
 Error (53,1) unexpected mixfix token: #
 a b when b c else a f g when f a f else f a f g when f a f else f
-Error (54,1) no resolution for term: a b
-Error (54,10) no resolution for term: b c
-Error (54,19) no resolution for term: a f g
-Error (54,30) no resolution for term: f a f
-Error (54,41) no resolution for term: f a f g
-Error (54,54) no resolution for term: f a f
+Error (54,1) no resolution for term: (a,b)
+Error (54,10) no resolution for term: (b,c)
+Error (54,19) no resolution for term: (a,f,g)
+Error (54,30) no resolution for term: (f,a,f)
+Error (54,41) no resolution for term: (f,a,f,g)
+Error (54,54) no resolution for term: (f,a,f)
 (pred y : bb)
 (pred y : bb)
 (pred y : ())
