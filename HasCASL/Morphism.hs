@@ -176,9 +176,29 @@ mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
 
 ideMor :: Env -> Morphism
-ideMor e = mkMorphism e e  -- plus identity functions
-compMor :: Morphism -> Morphism -> Morphism
-compMor m1 m2 = mkMorphism (msource m1) (mtarget m2) -- plus composed functions
+ideMor e = (mkMorphism e e) 
+	   { typeIdMap = Map.foldWithKey ( \ i _ m -> 
+				Map.insert i i m) Map.empty $ typeMap e
+	   , funMap = Map.foldWithKey ( \ i ts m ->
+			  foldr ( \ t m2 -> let v = (i, opType t) in
+				  Map.insert v v m2) m
+					$ opInfos ts) Map.empty
+	                                    $ assumps e
+	   }  
+
+compMor :: Morphism -> Morphism -> Maybe Morphism
+compMor m1 m2 = 
+  if mtarget m1 == msource m2 then Just 
+      (mkMorphism (msource m1) (mtarget m2))
+      { typeIdMap = Map.map ( \ i -> Map.findWithDefault i i $ typeIdMap m2)
+			     $ typeIdMap m1 
+      , funMap = Map.foldWithKey ( \ (i1, sc1) (i2, sc2) m -> 
+		       Map.insert (i1, sc1) 
+		       (Map.findWithDefault (i2, sc2) (i2, sc2) $ 
+			funMap m2) m) Map.empty $ funMap m1
+      }
+   else Nothing
+
 
 inclusionMor :: Env -> Env -> Result Morphism
 inclusionMor e1 e2 = return (mkMorphism e1 e2)
@@ -228,7 +248,19 @@ symbMapToMorphism sigma1 sigma2 smap = do
 legalEnv :: Env -> Bool
 legalEnv _ = True -- maybe a closure test?
 legalMor :: Morphism -> Bool
-legalMor m = legalEnv (msource m) && legalEnv (mtarget m)  -- and what else?
+legalMor m = let s = msource m
+		 t = mtarget m
+		 ts = typeIdMap m
+		 fs = funMap m
+	     in  
+	     all (`elem` (Map.keys $ typeMap s)) 
+		  (Map.keys ts)
+	     && all (`elem` (Map.keys $ typeMap t))
+		(Map.elems ts)
+	     && all ((`elem` (Map.keys $ assumps s)) . fst)
+		(Map.keys fs)
+	     && all ((`elem` (Map.keys $ assumps t)) . fst)
+		(Map.elems fs)
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
@@ -236,7 +268,23 @@ morphismUnion m1 m2 = do s <- merge (msource m1) $ msource m2
 			 return $ mkMorphism s t
 
 morphismToSymbMap :: Morphism -> Map.Map Symbol Symbol
-morphismToSymbMap _ = Map.empty
+morphismToSymbMap mor = 
+  let
+    tm = typeMap $ msource mor 
+    typeSymMap = 
+      Map.foldWithKey
+         ( \ s1 s2 m -> let k = typeKind $ 
+	                        Map.findWithDefault starTypeInfo s1 tm 
+	   in Map.insert (idToTypeSymbol s1 k) (idToTypeSymbol s2 k) m)
+         Map.empty $ 
+         typeIdMap mor
+   in Map.foldWithKey
+         ( \ (id1,t1) (id2,t2) m -> 
+             Map.insert (idToOpSymbol id1 t1) 
+                        (idToOpSymbol id2 t2) m)
+         typeSymMap $ funMap mor 
+
+
 
 -- | Check if two OpTypes are equal except from totality or partiality
 compatibleOpTypes :: TypeScheme -> TypeScheme -> Bool

@@ -120,6 +120,9 @@ subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
 
+starTypeInfo :: TypeInfo
+starTypeInfo = TypeInfo star [] [] NoTypeDefn
+
 instance Unifiable Type where
     subst m t = case t of
 	   TypeName i k _ -> 
@@ -145,9 +148,9 @@ instance Unifiable Type where
     match tm (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
 	if i1 == i2 ||
 	   (any (occursIn tm i1) $ superTypes $ 
-	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) i2 tm)
+	       Map.findWithDefault starTypeInfo i2 tm)
            || (any (occursIn tm i2) $ superTypes $ 
-	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) i1 tm)
+	       Map.findWithDefault starTypeInfo i1 tm)
 	   then return eps
 	else if v1 > 0 && b1 then return $ 
 	        Map.single (TypeArg i1 k1 Other []) t2
@@ -231,7 +234,7 @@ occursIn :: TypeMap -> TypeId -> Type -> Bool
 occursIn tm i t = 
     case t of 
 	   TypeName j _ _ -> i == j || (any (occursIn tm i) $ superTypes $ 
-	       Map.findWithDefault (TypeInfo star [] [] NoTypeDefn) j tm)
+	       Map.findWithDefault starTypeInfo j tm)
 	   TypeAppl t1 t2 -> occursIn tm i t1 || occursIn tm i t2
 	   TypeToken tk -> i == simpleIdToId tk 
 	   BracketType _ l _ -> any (occursIn tm i) l

@@ -34,7 +34,6 @@ import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import HasCASL.Morphism
 import Common.PrettyPrint
-import CASL.ATC_CASL
 import HasCASL.ATC_HasCASL
 
 type HasCASL_Sublogics = ()
@@ -68,7 +67,7 @@ instance Syntax HasCASL BasicSpec
 
 instance Category HasCASL Env Morphism where 
     ide HasCASL e = ideMor e
-    comp HasCASL m1 m2 = Just $ compMor m1 m2
+    comp HasCASL m1 m2 = compMor m1 m2
     dom HasCASL m = msource m
     cod HasCASL m = mtarget m
     legal_obj HasCASL e = legalEnv e
