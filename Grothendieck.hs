@@ -37,50 +37,50 @@ data Grothendieck = Grothendieck
 
 data G_basic_spec = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_basic_spec basic_spec
 
 data G_sentence = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_sentence sentence
 
 data G_anno = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_anno anno
 
 data G_sign = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_sign sign
 
 data G_morphism = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_morphism morphism
 
 data G_symbol = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         G_symbol symbol
 
 

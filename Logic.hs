@@ -131,7 +131,7 @@ class (Show basic_spec, Show sentence, Show symb_items,
 -- sublogics
 
 data Sublogic basic_spec sentence symb_items symb_map_items anno
-              sign morphism symbol raw_symbol =
+              sign local_env morphism symbol raw_symbol =
      Sublogic {sublogic_name :: String,
                is_in_basic_spec :: basic_spec -> Bool,
                is_in_sentence :: sentence -> Bool,
@@ -194,7 +194,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
        Category id sign morphism) =>
       Logic id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol 
+        local_env sign morphism symbol raw_symbol 
         | id -> basic_spec, id -> sentence, id -> symb_items,
           id -> symb_map_items, id -> anno, id -> local_env,
           id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
@@ -243,7 +243,7 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
 
          -- sublogics
          sublogics :: [Sublogic basic_spec sentence symb_items symb_map_items anno
-                       sign morphism symbol raw_symbol]
+                                local_env sign morphism symbol raw_symbol]
          included_logic :: String -> String -> Bool
 
          -- provers
@@ -278,21 +278,25 @@ class (Syntax basic_spec sentence symb_items symb_map_items anno,
 
 data (Logic id1
         basic_spec1 sentence1 symb_items1 symb_map_items1 anno1
-        sign1 morphism1 symbol1 raw_symbol1,
+        local_env1 sign1 morphism1 symbol1 raw_symbol1,
       Logic id2
         basic_spec2 sentence2 symb_items2 symb_map_items2 anno2
-        sign2 morphism2 symbol2 raw_symbol2) =>
-  LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 sign1 morphism1 symbol1 raw_symbol1
-            id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 sign2 morphism2 symbol2 raw_symbol2
+        local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
+  LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 
+                local_env1 sign1 morphism1 symbol1 raw_symbol1
+            id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 
+                local_env2 sign2 morphism2 symbol2 raw_symbol2
      =
      LogicRepr {repr_name :: String,
                 source :: id1,
                 target :: id2,
                 map_basic_spec :: basic_spec1->basic_spec2,
-                map_sentence :: sign1 -> sentence1 -> Maybe sentence2, -- also cover semi-representations
+                map_sentence :: sign1 -> sentence1 -> Maybe sentence2,
+                      -- also cover semi-representations
                 map_anno :: anno1 -> anno2,
                 map_sign :: sign1 -> sign2,
-                project_sign :: Maybe (sign2 -> sign1,morphism2),  -- right adjoint and counit
+                project_sign :: Maybe (sign2 -> sign1,morphism2),  
+                      -- right adjoint and counit
                 map_morphism :: morphism1 -> morphism2,
                 map_symbol :: symbol1 -> symbol2
                }

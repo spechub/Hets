@@ -29,26 +29,28 @@ import Logic
 
 data AnyLogic = forall id
         basic_spec sentence symb_items symb_map_items anno
-        sign morphism symbol raw_symbol .
+        local_env sign morphism symbol raw_symbol .
         Logic id
          basic_spec sentence symb_items symb_map_items anno
-         sign morphism symbol raw_symbol =>
+         local_env sign morphism symbol raw_symbol =>
         Ins id
 
 data AnyRepresentation = forall id1
         basic_spec1 sentence1 symb_items1 symb_map_items1 anno1
-        sign1 morphism1 symbol1 raw_symbol1
+        local_env1 sign1 morphism1 symbol1 raw_symbol1
         id2
         basic_spec2 sentence2 symb_items2 symb_map_items2 anno2
-        sign2 morphism2 symbol2 raw_symbol2 .
+        local_env2 sign2 morphism2 symbol2 raw_symbol2 .
       (Logic id1
         basic_spec1 sentence1 symb_items1 symb_map_items1 anno1
-        sign1 morphism1 symbol1 raw_symbol1,
+        local_env1 sign1 morphism1 symbol1 raw_symbol1,
       Logic id2
         basic_spec2 sentence2 symb_items2 symb_map_items2 anno2
-        sign2 morphism2 symbol2 raw_symbol2) =>
-  Repr(LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 sign1 morphism1 symbol1 raw_symbol1
-                 id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 sign2 morphism2 symbol2 raw_symbol2)
+        local_env2 sign2 morphism2 symbol2 raw_symbol2) =>
+  Repr(LogicRepr id1 basic_spec1 sentence1 symb_items1 symb_map_items1 anno1 
+                     local_env1 sign1 morphism1 symbol1 raw_symbol1
+                 id2 basic_spec2 sentence2 symb_items2 symb_map_items2 anno2 
+                     local_env2 sign2 morphism2 symbol2 raw_symbol2)
 
 
 {-   Composition of representations
