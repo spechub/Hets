@@ -217,7 +217,7 @@ transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | opId == trueId =  con "True"
   | opId == falseId = con "False"
   | otherwise = conSome `App` con (getNameOfOpId opId)
-transTerm sign (ApplTerm term1 term2 p) =
+transTerm sign (ApplTerm term1 term2 _) =
   testTerm term1
   where
 --  trace ("Constructors?? "++ show (ApplTerm term1 term2 p) ++ "\n")
@@ -264,14 +264,15 @@ transTerm sign (TupleTerm terms _) =
   foldl1 (binConst pairC) (map (transTerm sign) terms)
 transTerm sign (CaseTerm term pEqs _) = 
 --  trace ("pEqs " ++ show pEqs ++ "\n")
-  let alts = map (transCaseAlt sign) pEqs
+  let alts = arangeCaseAlts sign pEqs
   in
     case term of
       QualVar (VarDecl decl _ _ _) -> Case (IsaSign.Free(transVar decl, dummyT), alts)
-      _                            -> Case (transTerm sign term,
-                                             (con "None", con "None"):
-                                              [(conSome `App` IsaSign.Free("x", dummyT),
-                                                Case (IsaSign.Free("x", dummyT), alts))])
+      _                            -> 
+              Case (transTerm sign term,
+                    (con "None", con "None"):
+                    [(conSome `App` IsaSign.Free("caseVar", dummyT),
+                      Case (IsaSign.Free("caseVar", dummyT), alts))])
 transTerm _ _ = 
   error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
@@ -329,91 +330,118 @@ transTotalLambda sign (TupleTerm terms _) =
 transTotalLambda sign (CaseTerm term pEqs _) = 
 --  trace ("pEqs " ++ show pEqs ++ "\n")
   Case (transTotalLambda sign term, map transCaseAltTotal pEqs)
-  where transCaseAltTotal (ProgEq pat term _) = (transPat sign pat, transTotalLambda sign term)
+  where transCaseAltTotal (ProgEq pat term _) = 
+                (transPat sign pat, transTotalLambda sign term)
 transTotalLambda _ _ = 
   error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax."
 
 
--- transCaseEx :: [InstOpId] -> As.Term -> IsaSign.Term
--- transCaseEx sign term =
---   case term of
---     QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, dummyT)
---     _                            -> transTerm sign term
+transCaseEx :: Env -> As.Term -> IsaSign.Term
+transCaseEx sign term =
+  case term of
+    QualVar (VarDecl decl _ _ _) -> IsaSign.Free(transVar decl, dummyT)
+    _                            -> transTerm sign term
 
 
--- arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
--- arangeCaseAlts sign pEqs = 
---   let pats = map stripProgEq pEqs
---   in
---     case pats of
---       (QualVar _):[] -> transCaseAlt sign pEqs
---       _              -> sortCaseAlts sign pEqs
+arangeCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
+arangeCaseAlts sign pEqs = 
+  let pats = map stripProgEq pEqs
+  in
+    case pats of
+      (QualVar _):[] -> map (transCaseAlt sign) pEqs
+      _              -> sortCaseAlts sign pEqs
 
--- sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
--- sortCaseAlts sign pEqs = 
---   concat (map unfoldCons (map (groupCons pEqs) (getCons sign)))
+sortCaseAlts :: Env -> [ProgEq]-> [(IsaSign.Term, IsaSign.Term)]
+sortCaseAlts sign pEqs = 
+  concat (map (unfoldCons sign) (map (groupCons pEqs) 
+                                     (getCons sign (getName (head pEqs)))))
 
-
--- --  CaseTerm term (concat (map unfoldCons 
--- --                        (map (groupCons pEqs) (grepCons (map filt pEqs))))) p
-      
-
--- groupCons :: [ProgEq] -> InstOpId -> [ProgEq]
--- groupCons pEqs name =  filter hasSameName pEqs
---   where hasSameName (ProgEq pat _ _) = 
---           case pat of
---             QualOp _ n _ _    -> n == name
---             ApplTerm t1 t2 _  -> hasSameName t1
---             TypedTerm t _ _ _ -> hasSameName t
---             -- TupleTerm
---             _                 -> False
-
--- unfoldCons :: [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
--- unfoldCons pEqs =
---   let pats = map stripProgEq pEqs
---   in
---     if and (map noArgs pats) then transCaseAlt pEqs
---         else testArg pEqs
---   where noArgs (QualOp _ _ _ _) = True
---         noArgs _                = False
-
---         isVar (ProgEq pat _ _) = case pat of
---                                    QualVar _ -> True
---                                    _         -> False
-                                    
---         ppEqs = zip (map stripProgEq pEqs) pEqs
+getName :: ProgEq -> TypeId
+getName (ProgEq pat _ _) = 
+  getTypeName pat 
+  where getTypeName pat = case pat of
+                            QualVar (VarDecl _ typ _ _) -> name typ
+                            QualOp _ _ (TypeScheme _ typ _) _ -> name typ
+                            TypedTerm _ _ typ _ -> name typ
+                            ApplTerm  t _ _ -> getTypeName t
+                            -- TupleTerm
+        name t = case t of 
+                   TypeName tyId _ 0 -> tyId
+                   TypeAppl t _      -> name t
+                   -- FunType t1 _ t2   -> 
+                   -- ProductType
+                   _                -> 
+                      error "[Comorphims.HasCASL2IsabelleHOL] Not supported type"
 
 
--- testArg :: [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
--- testArg pEqs = 
---   let pats = stripProgEq pEqs
---   in
---     if and (map argIsVar ppEqs) then transCaseAlt pEqs
---       else map (substArg ppEqs)
---   where argIsVar pat = case pat of
---                               ApplTerm _ t _ -> case t of
---                                                   QualVar _ -> True
---                                                   ApplTerm _ t _ -> argIsVar t
---                                                   _         -> False
---                               QualVar _      -> True
---                               TypedTerm t _ _ -> argIsVar t
---                               -- TupleTerm
---                               _              -> False
---          substArg (pat, pEq) =
---            case pat of
---              ApplTerm t1 t2 _  -> (t1, addPat pEq)
---              _                 -> pat
---          where
---            addPat (ProgEq pat term) = 
-         
-                                                  
--- VarDecl Var Type SeparatorKind [Pos]
+getCons :: Env -> TypeId -> [UninstOpId]
+getCons sign tId = 
+  sld (typeDefn (Map.find tId (typeMap sign)))
+  where sld (DatatypeDefn (DataEntry _ _ _ _ altDefns)) =
+          catMaybes (map ll altDefns)
+        ll (Construct i _ _ _) = i
 
--- stripProgEq :: ProgEq -> Pattern
--- stripProgEq (ProgEq pat _ _) = case pat of
---                                  TypedTerm t _ _ _ -> stripProgEq t
---                                  -- TupleTerm      ->
---                                  _                 -> pat
+
+groupCons :: [ProgEq] -> UninstOpId -> [ProgEq]
+groupCons pEqs name =  filter hasSameName pEqs
+  where hasSameName (ProgEq pat _ _) = 
+           hsn pat
+        hsn pat =
+          case pat of
+            QualOp _ (InstOpId n _ _) _ _    -> n == name
+            ApplTerm t1 t2 _  -> hsn t1
+            TypedTerm t _ _ _ -> hsn t
+            -- TupleTerm
+            _                 -> False
+
+unfoldCons :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
+unfoldCons sign pEqs =
+  let pats = map stripProgEq pEqs
+  in
+    if and (map noArgs pats) || and (map argIsVar pats) 
+      then map (transCaseAlt sign) pEqs
+        else substArg sign pEqs
+  where noArgs t = case t of
+                     QualOp _ _ _ _ -> True
+                     QualVar _      -> True
+                     _              -> False
+        argIsVar pat = case pat of
+                         ApplTerm _ t _  -> case t of
+                                              QualVar _ -> True
+                                              ApplTerm _ t _ -> argIsVar t
+                                              _         -> False
+                         QualVar _       -> True
+                         TypedTerm t _ _ _ -> argIsVar t
+                         -- TupleTerm
+                         _               -> False
+
+substArg :: Env -> [ProgEq] -> [(IsaSign.Term, IsaSign.Term)]
+substArg sign pEqs =
+  let frontCons = transPat sign (getFrontCons pEqs)
+      varName = "consVar" ++ show (length pEqs)
+      newPat = frontCons `App` IsaSign.Free(varName, dummyT)
+      varId = (mkId [(mkSimpleId varName)])
+      newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) Other [])
+      newTerm = transTerm sign (CaseTerm newVar newPEqs [])
+      newPEqs = map getNewPEqs pEqs
+  in
+     [(newPat, newTerm)]
+  where getFrontCons ((ProgEq pat _ _):pEqs) = 
+          case pat of 
+            ApplTerm t _ _ -> t
+            _              -> pat
+        getNewPEqs (ProgEq pat term p) =  
+          case pat of
+            ApplTerm _ t _ -> ProgEq t term p
+            _              -> ProgEq pat term p
+                                                 
+--  VarDecl Var Type SeparatorKind [Pos]
+
+stripProgEq :: ProgEq -> Pattern
+stripProgEq (ProgEq pat t pos) = case pat of
+                                 TypedTerm p _ _ _ -> stripProgEq (ProgEq p t pos)
+                                 -- TupleTerm      ->
+                                 _                 -> pat
 
 
 -- -- grep the names of all constructors
