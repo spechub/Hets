@@ -689,3 +689,4 @@ coerceTheory :: forall lid sublogics
       lid -> G_theory -> Result (sign, [Named sentence])
 coerceTheory lid (G_theory lid2 sign2 sens2)
   = rcoerce lid lid2 nullPos (sign2,sens2)
+

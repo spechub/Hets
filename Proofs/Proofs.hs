@@ -452,18 +452,23 @@ locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  case (maybeTheorySrc,maybeTheoryTgt) of
-    (Just (G_theory lidSrc _ _),Just theoryTgt)  ->
-      case maybeResult ( coerceTheory lidSrc theoryTgt) of
+  case (maybeTheoryTgt, maybeTranslatedAxiomsSrc) of
+    (Just theoryTgt,Just (G_l_sentence_list lidSrc sensSrc)) ->
+      case maybeResult (coerceTheory lidSrc theoryTgt) of
         Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
-	Just _ -> locSubsumeAux libEnv newGraph (newRules,newChanges) list
+	Just (_,sentencesTgt) ->
+          if (all (`elem` sentencesTgt) sensSrc) 
+            then locSubsumeAux libEnv newGraph (newRules,newChanges) list
+            else locSubsumeAux libEnv dgraph (rules,changes) list
     otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
 		 locSubsumeAux libEnv dgraph (rules,changes) list
 
   where
-    (Result errSrc maybeTheorySrc) = computeTheory libEnv dgraph src
     (Result errTgt maybeTheoryTgt) = computeTheory libEnv dgraph tgt
     morphism = dgl_morphism edgeLab
+    localAxiomsSrc = dgn_sens (snd (labNode' (context src dgraph)))
+    maybeTranslatedAxiomsSrc
+	= maybeResult (translateG_l_sentence_list morphism localAxiomsSrc)
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
@@ -477,6 +482,16 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newGraph = insEdge newEdge auxGraph
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+
+{-sentencesInG_l_sentence_list :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree  =>
+       [a] -> G_l_sentence_list -> Bool
+sentencesInG_l_sentence_list sentences (G_l_sentence_list i nl)
+  = all (`elem` nl) sentences-}
 
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
