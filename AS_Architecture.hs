@@ -1,12 +1,15 @@
 
 {- HetCATS/AS_Architecture.hs
    $Id$
-   Klaus Luettich
+   Author: Klaus Lüttich
+   Year:   2002
 
    These data structures describe the abstract syntax tree for heterogenous 
    architectural specifications in HetCASL.
 
    todo:
+     - ATermConversion SML-CATS
+     - LaTeX Pretty Printing
 -}
 
 module AS_Architecture where
@@ -42,7 +45,7 @@ data UNIT_SPEC_DEFN = Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 
 data UNIT_SPEC = Unit_type [SPEC] SPEC [Pos]
 	         -- pos: opt "*"s , "->"
-{-	       | Spec_name SPEC_NAME [Pos]  ??? -}
+	       | Spec_name SPEC_NAME
 	       | Arch_unit_spec ARCH_SPEC [Pos]
 		 -- pos: "arch","spec"
 	       | Closed_unit_spec UNIT_SPEC [Pos]
