@@ -13,6 +13,7 @@ import Common.GlobalAnnotationsFunctions
 import Data.IORef
 import Syntax.Print_HetCASL
 import Static.DGToSpec
+import List(nub)
 
 pretty x = show $ printText0 emptyGlobalAnnos x
 
@@ -369,22 +370,23 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
 	Just (_,dgraph,_) -> 
 	  do let -- allDgNodes = Common.Lib.Graph.nodes dgraph
                  allNodes = getNodeDescriptors (head visibleNodes) libname convMaps -- allDgNodes libname convMaps
-                 dgNodesOfSubtree = getNodesOfSubtree dgraph parentNode
+                 dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph visibleNodes parentNode))
                  -- the selected node (parentNode) shall not be hidden either,
                  -- and we already know its descriptor (descr)
-		 nodesOfSubtree = descr:(getNodeDescriptors dgNodesOfSubtree libname convMaps)
+		 nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree libname convMaps
 	         nodesToHide = filter (notElemR nodesOfSubtree) allNodes
+	     putStr ("all nodes: " ++ (show allNodes)++"\n nodes of the subtree: "++(show nodesOfSubtree)++"\n nodes to hide: "++(show nodesToHide)++ "\n visible nodes: " ++ (show (head visibleNodes)) ++ "\n")
 	     graphMem <- readIORef ioRefGraphMem
 	     (Result eventDescr errorMsg) <- hidenodes abstractGraph nodesToHide (graphInfo graphMem)
-	     return (eventDescr, (nodesOfSubtree:visibleNodes), errorMsg)
+	     return (eventDescr, (dgNodesOfSubtree:visibleNodes), errorMsg)
 {-	     case errorMsg of 
 	       Just text -> return (-1,text)
 	       Nothing -> return (eventDescr,
 			  return convMaps-}
         Nothing ->
-	    error ("Selected node belongs to unknown library: " ++ (show libname))
+	    error ("showJustSubtree: Selected node belongs to unknown library: " ++ (show libname))
     Nothing ->
-      error ("there is no node with the descriptor "
+      error ("showJustSubtree: there is no node with the descriptor "
 	         ++ show descr)
 
     where libname2dgMap = libname2dg convMaps
@@ -396,13 +398,16 @@ getNodeDescriptors [] _ _ = []
 getNodeDescriptors (node:nodelist) libname convMaps =
   case Map.lookup (libname,node) (dg2abstrNode convMaps) of
     Just descr -> descr:(getNodeDescriptors nodelist libname convMaps)
-    Nothing -> error ("There is no descriptor for dgnode " ++ (show node))
+    Nothing -> error ("getNodeDescriptors: There is no descriptor for dgnode " ++ (show node))
 
 
-getNodesOfSubtree :: DGraph -> Node -> [Node]
-getNodesOfSubtree dgraph node = (concat (map (getNodesOfSubtree dgraph) predOfNode))++predOfNode
+getNodesOfSubtree :: DGraph -> [[Node]] -> Node -> [Node]
+getNodesOfSubtree dgraph visibleNodes node = (concat (map (getNodesOfSubtree dgraph visibleNodes) predOfNode))++predOfNode
 
-    where predOfNode = pre dgraph node
+    where predOfNode = filter (elemR (head visibleNodes)) (pre dgraph node)
+
+elemR :: Eq a => [a] -> a -> Bool
+elemR list element = elem element list
 
 notElemR :: Eq a => [a] -> a -> Bool
 notElemR list element = notElem element list
