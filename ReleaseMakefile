@@ -91,13 +91,13 @@ all: hets-optimized
 
 hets-opt: hetcats/Version.hs
 	$(MAKE) distclean
-	$(MAKE) driftedSources
+	$(MAKE) derivedSources
 	$(MAKE) hets-optimized
 
 hets-optimized:
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS)
 
-driftedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
+derivedSources: $(drifted_files) $(happy_files) hetcats/Version.hs
 
 utils/DrIFT:
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
