@@ -21,7 +21,9 @@ import Data.List (isPrefixOf)
 import List (mapAccumL)
 
 import Common.Lib.Map hiding (map)
-import Common.ATerm.Lib
+-- better recompilation checking without 'import Common.ATerm.Lib'
+import Common.ATerm.AbstractSyntax
+import Common.ATerm.ReadWrite
 
 import Common.Utils
 
@@ -38,7 +40,7 @@ import Syntax.AS_Architecture
 import Syntax.AS_Library
 
 -- for debugging only
---import IOExts (trace)
+-- import Debug.Trace (trace)
 
 -- the following module provides the ability to parse the "unparsed-anno"
 import Common.Lib.Parsec (parse,setPosition)
