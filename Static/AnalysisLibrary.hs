@@ -36,7 +36,6 @@ import Common.AnalyseAnnos
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
-import Common.Result
 import Common.PrettyPrint
 import Common.AnnoState
 import Options
@@ -44,7 +43,7 @@ import System
 import List
 import Directory
 
---import ReadFn
+import ReadFn
 import WriteFn (writeFileInfo)
 
 -- | parsing and static analysis for files
@@ -53,10 +52,7 @@ anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
               -> IO (Maybe (LIB_NAME,LIB_DEFN,DGraph,LibEnv))
 anaFile logicGraph defaultLogic opts libenv fname = do
   putIfVerbose opts 1  ("Reading " ++ fname)
-  let names = map (fname++) ("":(map ("."++) downloadExtensions))
-  -- look for the first existing file
-  existFlags <- sequence (map doesFileExist names)
-  let fname' = find fst (zip existFlags names) >>= (return . snd)
+  fname' <- existsAnSource fname
   case fname' of
     Nothing -> do
       putStrLn (fname++" not found.")
@@ -102,15 +98,34 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
                               _ -> p++"/"
                   return (path1++file)
                 Direct_link _ _ -> error "No direct links implemented yet"
-     -- read and analyze the library,
-     res <- anaFile logicGraph defaultLogic opts libenv fname
-     putStrLn ""
-     -- and just return the libenv
-     return (case res of 
+     -- check if and env file is there and read it if it is recent
+     let env_fname = fname++".env"
+		     -- fname is sufficient here, because anaFile
+		     -- trys all possible suffices with this basename
+     recent_env_file <- checkRecentEnv env_fname fname
+     if recent_env_file 
+	then do (Result dias mgc) <- globalContextfromShATerm env_fname
+		-- the conversion/reading might yield an error that
+		-- should be caught here
+		maybe (do showDiags opts dias
+		          anaLibFile' fname)
+                      (\ gc -> do 
+                       putIfVerbose opts 1 "Read environment from file... "
+		       putStrLn ""
+		       return (Map.insert libname gc libenv))
+		      mgc
+	else anaLibFile' fname
+ where anaLibFile' :: FilePath -> IO LibEnv
+       anaLibFile' fname =
+         do
+         -- read and analyze the library,
+         res <- anaFile logicGraph defaultLogic opts libenv fname
+	 putStrLn ""
+	 -- and just return the libenv
+	 return (case res of 
                Just (_,_,_,libenv') -> libenv'
                Nothing -> libenv) 
   
-
 -- | analyze a LIB_DEFN
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
 -- call this function as follows:
