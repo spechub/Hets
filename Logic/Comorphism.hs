@@ -154,20 +154,10 @@ tyconCompComorphism = mkTyCon "Logic.Comorphism.CompComorphism"
 instance Typeable (CompComorphism cid1 cid2) where
   typeOf _ = mkTyConApp tyconCompComorphism []
 
-instance (Comorphism cid1
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2, 
-          Comorphism cid2
-            lid4 sublogics4 basic_spec4 sentence4 symb_items4 symb_map_items4
-                sign4 morphism4 symbol4 raw_symbol4 proof_tree4
-            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
-                sign3 morphism3 symbol3 raw_symbol3 proof_tree3)
+instance (Language cid1, Language cid2)
           => Language (CompComorphism cid1 cid2) where
    language_name (CompComorphism cid1 cid2) = 
-     language_name cid1++";"
-     ++language_name cid2
+     language_name cid1++ ";" ++language_name cid2
 
 
 instance (Comorphism cid1
