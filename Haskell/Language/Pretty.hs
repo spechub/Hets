@@ -381,6 +381,8 @@ instance Pretty HsDecl where
 		markLine pos $
 		mySep ([pretty assoc, int prec]
 		       ++ (punctuate comma . map pretty $ opList))
+        pretty (HsAxiomBind bind) = text "{-# AXIOMS " <> pretty bind <> 
+                                     text " #-}"
 
 instance Pretty HsAssoc where
 	pretty HsAssocNone  = text "infix"
@@ -642,6 +644,57 @@ ppHsContext context = mySep [parenList (map ppHsAsst context), text "=>"]
 ppHsAsst :: HsAsst -> Doc
 ppHsAsst (a,ts) = myFsep (ppHsQName a : map ppHsTypeArg ts)
 
+------------------------- Axioms --------------------------
+
+instance Pretty Binding where
+        pretty NullBind                  = text ""
+        pretty (AndBindings bind1 bind2) = pretty bind1 <>
+                                            text ";" $$ pretty bind2
+        pretty (AxiomDecl axName f)      = text "\"" <> text axName <> 
+                                            text "\"" <+> pretty f
+
+instance Pretty AxiomBndr where
+         pretty (AxiomBndr name)       = pretty name
+         pretty (AxiomBndrSig name qt) = text "(" <> pretty name <> 
+                                          text "::" <> pretty qt <> text ")"
+
+instance Pretty Quantifier where
+         pretty (AxForall    varList) = ppQuant "forall" varList
+         pretty (AxExists    varList) = ppQuant "exists" varList
+         pretty (AxExistsOne varList) = ppQuant "exists!" varList
+
+ppQuant :: String -> [AxiomBndr] -> Doc
+ppQuant s list = text s <+> (axVarList . map pretty $ list) <+> 
+                  text "."
+
+instance Pretty Formula where
+         pretty (AxQuant quant f) = pretty quant <+> pretty f
+         pretty (AxAnd f1 f2)     = ppLogOp f1 f2 "/\\"
+         pretty (AxOr f1 f2)      = ppLogOp f1 f2 "\\/"
+         pretty (AxImpl f1 f2)    = ppLogOp f1 f2 "=>"
+         pretty (AxEquiv f1 f2)   = ppLogOp f1 f2 "<=>"
+         pretty (AxNot f)         = text "not" <+> pretty f
+         pretty (AxPar f)         = text "(" <> pretty f <> text ")"
+         pretty (AxEq e1 e2 _)    = pretty e1 <+> equals <+> pretty e2
+         pretty (AxPred p)        = pretty p
+
+ppLogOp :: Formula -> Formula -> String -> Doc
+ppLogOp f1 f2 s = pretty f1 <+> text s <+> pretty f2
+
+-- instance Pretty QuantVars where
+--         pretty (QuantVars quant axBndrList) =
+
+-- instance Pretty LogOp where
+--          pretty AndOp   = text "/\"
+--          pretty OrOp    =
+--          pretty ImplOp  =
+--          pretty EquivOp =
+
+-- instance Pretty Formula where
+--         pretty (AxQuant qvars f)   =
+--         pretty (AxLogOp logOp f f) =
+--         pretty (AxNot f)           =
+--         pretty (AxEq exp exp src)  =
 ------------------------- pp utils -------------------------
 maybePP :: (a -> Doc) -> Maybe a -> Doc
 maybePP _ Nothing = empty
@@ -650,6 +703,9 @@ maybePP pp (Just a) = pp a
 parenList :: [Doc] -> Doc
 parenList = parens . myFsepSimple . punctuate comma
 
+axVarList :: [Doc] -> Doc
+axVarList = myFsepSimple . punctuate space
+
 braceList :: [Doc] -> Doc
 braceList = braces . myFsepSimple . punctuate comma
 
@@ -657,7 +713,7 @@ bracketList :: [Doc] -> Doc
 bracketList = brackets . myFsepSimple
 
 -- Wrap in braces and semicolons, with an extra space at the start in
--- case the first doc begins with "-", which would be scanned as {-
+-- case the first doc begins with "-", which would be scanned as { - 
 flatBlock :: [Doc] -> Doc
 flatBlock = braces . (space <>) . hsep . punctuate semi
 
