@@ -117,6 +117,7 @@ apache_doc:
 	$(MAKE) doc
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
+	mv docs/* a-docs/
 
 ###############
 ### clean up
