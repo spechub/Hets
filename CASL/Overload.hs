@@ -251,7 +251,7 @@ minExpFORMULA_pred mef ga sign predicate terms pos = do
     permuted_exps <- return (permute expansions)
     -- convert each permutation to a profile (Step 3)
     -- then inject arguments that don't match the predicate's expected type
-    profiles <- return $ -- map (map insert_injections) TODO: fix inlineAxioms
+    profiles <- return $ map (map insert_injections) $
                        map get_profile permuted_exps
     -- collect generated profiles into equivalence classes (Step 5)
     -- by the computed equivalence relation (Step 4)
@@ -567,7 +567,7 @@ minExpTerm_op mef ga sign op terms pos = do
     permuted_exps <- return (permute expansions)
     -- convert each permutation to a profile (Step 3)
     -- then inject arguments that don't match the function's expected type
-    profiles <- return $ -- map (map insert_injections) TODO: fix inlineAxioms
+    profiles <- return $ map (map insert_injections) $
                        map get_profile permuted_exps
     -- collect generated profiles into equivalence classes (Step 5)
     -- by the computed equivalence relation (Step 4)
@@ -743,7 +743,7 @@ inject argument result_type
     where argument_type = term_sort argument
 
 injName :: Id.Id
-injName = Id.mkId [Id.Token {Id.tokStr="_inj",
+injName = Id.mkId [Id.Token {Id.tokStr="inj",
                              Id.tokPos=Id.nullPos}]
 
 injOpSymb :: SORT -> SORT -> OP_SYMB
