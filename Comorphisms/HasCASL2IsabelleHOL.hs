@@ -30,6 +30,7 @@ import HasCASL.Logic_HasCASL
 -- import HasCASL.MiniLe
 import HasCASL.Le as Le
 import HasCASL.As as As
+import HasCASL.Builtin
 import HasCASL.Morphism
 
 -- Isabelle
@@ -91,8 +92,8 @@ transSignature sign =
     constTab = Map.foldWithKey insertOps Map.empty (assumps sign),
     dataTypeTab = [],
     syn = () },
-     [] )  -- for now, no sentences
-  where 
+    [] )  -- for now, no sentences
+   where 
     extractTypeName typeId _ map = Map.insert (showIsa typeId) 0 map
     insertOps opName opInfs map = 
      let opIs = opInfos opInfs
@@ -138,20 +139,17 @@ transTerm _ (QualVar var typ _) =
     let tp = transType typ 
 	otp = tp --> mkOptionType tp
 	in  Const("Some", otp) `App` IsaSign.Free(transVar var, tp)
-transTerm _ (QualOp _ opId _ _) =
-       let op = getOp opId
-       in
-         case op of
-           "true"  -> Const ("True",dummyT)
-           "false" -> Const ("False",dummyT)
-           _       -> Const(op,dummyT)
-transTerm sign (ApplTerm term1 term2 _) = 
-       case term1 of
-         QualOp Fun opId logType _ -> transLog sign term1 term2
--- geht das so mit logType?? Vermutlich nicht!! Falls nicht dann
--- gehen die Ids auch nicht!!!
-         _ -> Const("app",dummyT) `App` (transTerm sign term1) 
-                                  `App` (transTerm sign term2)
+transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
+  | opId == trueId = Const ("True",dummyT)
+  | opId == falseId = Const ("False",dummyT)
+  | otherwise = Const((getNameOfOpId opId),dummyT)
+   where getNameOfOpId (Id (tok:toks) a b) = if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
+                                                else tokStr tok
+transTerm sign (ApplTerm term1 term2 _) =
+        case term1 of
+           QualOp Fun (InstOpId opId _ _) _ _ -> transLog sign opId term1 term2 
+           _ ->  Const("app",dummyT) `App` (transTerm sign term1) 
+                                     `App` (transTerm sign term2)
 transTerm sign (QuantifiedTerm quant varDecls phi _) = 
   foldr (quantify quant) (transTerm sign phi) (map toPair varDecls)
 transTerm sign (TypedTerm term _ typ _) = transTerm sign term
@@ -168,48 +166,32 @@ let2lambda (ProgEq pat term _) body =
 -- data Term =
 --         Const (String, Typ)
 --       | Free  (String, Typ)
---       | Abs   (String, Typ, Term)
+--       | Abs   (Term, Typ, Term)
 --       | App Term  Term
-
--- getVarName :: As.Term -> String
--- getVarName term = case term of
---                     QualVar var _ _ -> transVar var
---                     TypedTerm term _ _ _ -> getVarName term
--- --                    TupleTerm terms _ -> evalName terms
---                     _ -> error "Illegal pattern in lambda abstraction"
 
 getType :: As.Term -> Typ
 getType term = case term of
-                    QualVar _ typ _ -> transType typ
+                    QualVar _ typ _ ->  transType typ
                     TypedTerm _ _ typ _ -> transType typ
---                    TupleTerm terms _ -> evalType terms
+                    TupleTerm terms _ -> evalTupleType terms
                     _ -> error "Illegal pattern in lambda abstraction"
+    where evalTupleType t = foldr1 IsaSign.mkProductType (map getType t)
 
-transLog :: Env -> As.Term -> As.Term -> IsaSign.Term
-transLog sign (QualOp a opId b c) term = 
-       let op = getOp opId
-       in
-       case op of
-         "/\\"  -> (foldl1 binConj (map (transTerm sign) (getPhis term)))
-         "\\/"  -> (foldl1 binDisj (map (transTerm sign) (getPhis term)))
-         "=>"   -> (binImpl (transTerm sign (head (getPhis term))) 
+transLog :: Env -> Id -> As.Term -> As.Term -> IsaSign.Term
+transLog sign opId term1 term
+  | opId == andId = (foldl1 binConj (map (transTerm sign) (getPhis term)))
+  | opId == orId = (foldl1 binDisj (map (transTerm sign) (getPhis term)))
+  | opId == implId = (binImpl (transTerm sign (head (getPhis term))) 
                            (transTerm sign (last (getPhis term))))
-         "<=>"  -> (binEq (transTerm sign (head (getPhis term))) 
+  | opId == eqvId = (binEq (transTerm sign (head (getPhis term))) 
                          (transTerm sign (last (getPhis term))))
-         "\172" -> (Const ("Not",dummyT) `App` (transTerm sign term))
-         "def"  -> (Const ("defOp",dummyT) `App` (transTerm sign term))
---       "=e="   ->
-         "="    -> (binEq (transTerm sign (head (getPhis term))) 
+  | opId == notId = (Const ("Not",dummyT) `App` (transTerm sign term))
+  | opId == defId = (Const ("defOp",dummyT) `App` (transTerm sign term))
+--  | opId == exId = 
+  | opId == eqId = (binEq (transTerm sign (head (getPhis term))) 
                          (transTerm sign (last (getPhis term))))
-         _      -> (transTerm sign (QualOp a opId b c)) `App` (transTerm sign term)
+  | otherwise = (transTerm sign term1) `App` (transTerm sign term)
        where getPhis (TupleTerm phis _) = phis
-
-getOp (InstOpId uInst _ _) = getTokenName uInst
-getTokenName (Id (tok:toks) a b) = if (tokStr tok) == "__" then getTokenName (Id toks a b)
-                                     else tokStr tok --trace ("Token...: "++ (show toks) ++ "\n\n") (tokStr (head toks))
-
--- mkSome :: Var -> String
--- mkSome var = "Some "++(transVar var)
 
 quantify q (v,t) phi  = 
   Const (qname q,dummyT) `App` Abs ((Const(transVar v, dummyT)),transType t,phi)
@@ -230,7 +212,8 @@ binEq phi1 phi2 =
 prod term1 term2 =
   Const("Pair",dummyT) `App` term1 `App` term2
 
-abstraction sign pat body = Abs((transTerm sign pat), (getType pat), body)
+abstraction sign pat body = Abs((transTerm sign pat), getType pat, body)
+                         -- Abs((trace "abstraction, transTerm" (transTerm sign pat)), (trace "abstraction, getType" (getType pat)), body)
 
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
 
