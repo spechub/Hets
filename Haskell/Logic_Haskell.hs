@@ -21,6 +21,8 @@ import Data.Dynamic
 
 import Common.Result                     (Result (..))
 import Common.PrettyPrint
+import Common.Lib.Pretty
+import Common.AS_Annotation
 
 import Haskell.ATC_Haskell      -- generated ATerm conversions
 import Haskell.PrintModuleInfo
@@ -93,6 +95,9 @@ type RawSymbol = ()
 
 instance Sentences Haskell Sentence () Sign Morphism Symbol where
     map_sen Haskell _m s = return s
+    print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
+	if null lab then empty 
+	else space <> text "{-" <+> text lab <+> text "-}" 
     provers Haskell = [] 
     cons_checkers Haskell = []
 
