@@ -44,14 +44,12 @@ data ARCH_SPEC = Basic_arch_spec [Annoted UNIT_DECL_DEFN]
 		 -- pos: "{","}"
 		 deriving (Show)
 
-data UNIT_DECL = Unit_decl UNIT_NAME REF_SPEC [Pos] 
-		 -- pos: ":"
-                 deriving (Show)
 
-data UNIT_DECL_DEFN = Unit_decl_defn UNIT_DECL
-		    | Unit_defn UNIT_NAME UNIT_EXPRESSION [Pos]
-		      -- pos: "="
-		      deriving (Show)
+data UNIT_DECL_DEFN = Unit_decl UNIT_NAME REF_SPEC [Annoted UNIT_TERM] [Pos]
+                      -- pos: ":", opt ("given"; Annoted holds pos of commas)
+                    | Unit_defn UNIT_NAME UNIT_EXPRESSION [Pos]
+                      -- pos: "="
+                      deriving (Show)
 
 data UNIT_SPEC_DEFN = Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 		      -- pos: "unit","spec","=", opt "end"
@@ -73,9 +71,13 @@ data REF_SPEC = Unit_spec UNIT_SPEC
 		 -- after the opening brace is a [Annotation] allowed
 	      | Compose_ref [REF_SPEC] [Pos]
 		 -- pos: "then"
-              | Component_ref [UNIT_DECL] [Pos]
+              | Component_ref [UNIT_REF] [Pos]
                 -- pos "{", commas and "}"
 		 deriving (Show)
+
+data UNIT_REF = Unit_ref UNIT_NAME REF_SPEC [Pos] 
+		 -- pos: ":"
+                 deriving (Show)
 
 data UNIT_EXPRESSION = Unit_expression [UNIT_BINDING] (Annoted UNIT_TERM) [Pos]
 		       -- pos: opt "lambda",semi colons, "."

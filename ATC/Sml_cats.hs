@@ -1761,7 +1761,7 @@ from_sml_ATermRESULT_UNIT att =
 --------------------------------------------------------------------------
 
 
-instance ATermConvertibleSML UNIT_DECL where
+instance ATermConvertibleSML UNIT_REF where
     to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
     from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
     to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_DECL_DEFN\" not implemented"
@@ -1780,7 +1780,7 @@ instance ATermConvertibleSML UNIT_DECL where
                       let aa'  = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                           ab'  = from_sml_ShATerm (getATermByIndex1 ab att)
                           ad'  = ps
-                      in (Unit_decl aa' ab' ad')
+                      in (Unit_ref aa' ab' ad')
                    _ -> from_sml_ShATermError "UNIT_DECL" aterm2
             _ -> from_sml_ShATermError "UNIT-DECL-DEFN" aterm
         where
@@ -1806,11 +1806,13 @@ instance ATermConvertibleSML UNIT_DECL_DEFN where
                                   _  -> ([],att1)
                     aterm2 = getATerm att2
                 in case aterm2 of
-                   ShAAppl "unit-decl" [aa,ab,_] _ -> 
-                      let aa'  = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
-                          ab'  = from_sml_ShATerm (getATermByIndex1 ab att)
-                          ad'  = ps
-                      in (Unit_decl_defn $ Unit_decl aa' ab' ad')
+                   ShAAppl "unit-decl" [aa,ab,ac] _ ->
+                    let aa' = from_sml_ATermSIMPLE_ID $ getATermByIndex1 aa att
+                        ab' = from_sml_ShATerm $ getATermByIndex1 ab att
+                        ac' = from_sml_ATermUNIT_IMPORTS $
+                                         getATermByIndex1 ac att
+                        ad' = ps
+                    in Unit_decl aa' ab' ac' ad'
                    _ -> from_sml_ShATermError "UNIT_DECL" aterm2
             (ShAAppl "unit-defn-case" [ udn ] _)  ->
                 from_sml_ATermUNIT_DEFN $ getATermByIndex1 udn att
@@ -1826,6 +1828,21 @@ instance ATermConvertibleSML UNIT_DECL_DEFN where
                 (ShAAppl "pos-UNIT-DECL-DEFN" [_,item_i] _) ->
                     getATermByIndex1 item_i att
                 _  -> att
+
+---- a helper for the SML-datatype UNIT_IMPORTS ------------------------
+
+from_sml_ATermUNIT_IMPORTS :: ATermTable -> [Annoted UNIT_TERM]
+from_sml_ATermUNIT_IMPORTS att =
+    case aterm of
+             (ShAAppl "unit-imports" [ aa ] _)  ->
+                 from_sml_ShATerm $ getATermByIndex1 aa att
+             _ -> from_sml_ShATermError "UNIT_IMPORTS" aterm
+    where aterm = getATerm att'
+          att' =
+              case getATerm att of
+              (ShAAppl "pos-UNIT-IMPORTS" [_,item_i] _) ->
+                  getATermByIndex1 item_i att
+              _  -> att
 
 -------------------------------------------------------------------------
 from_sml_ATermUNIT_DEFN :: ATermTable -> UNIT_DECL_DEFN

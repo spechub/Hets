@@ -20,7 +20,6 @@ import Syntax.AS_Architecture
 import Syntax.LaTeX_AS_Structured
 import Syntax.Print_AS_Structured
 import Syntax.Print_AS_Architecture
-import Logic.Grothendieck
 
 instance PrintLaTeX ARCH_SPEC where
     printLatex0 ga (Basic_arch_spec aa ab _) =
@@ -32,14 +31,21 @@ instance PrintLaTeX ARCH_SPEC where
     printLatex0 ga (Group_arch_spec aa _) =
 	braces $ printLatex0 ga aa
 
-instance PrintLaTeX UNIT_DECL where
-    printLatex0 ga (Unit_decl aa ab _) =
+instance PrintLaTeX UNIT_REF where
+    printLatex0 ga (Unit_ref aa ab _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab
 	in aa' <> colon <+> ab'
 
 instance PrintLaTeX UNIT_DECL_DEFN where
-    printLatex0 ga (Unit_decl_defn u) = printLatex0 ga u
+    printLatex0 ga (Unit_decl aa ab ac _) =
+        let aa' = simple_id_latex aa
+            ab' = printLatex0 ga ab
+            ac' = if null ac then empty
+                  else ptext "given" <+>
+                       (fcat $  punctuate (comma <> space) $
+                                   map (printLatex0 ga) ac)
+        in hang (aa' <> colon <+> ab') 4  ac'
     printLatex0 ga (Unit_defn aa ab _) =
 	let aa' = simple_id_latex aa
 	    ab' = printLatex0 ga ab

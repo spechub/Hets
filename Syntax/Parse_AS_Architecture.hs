@@ -113,29 +113,30 @@ unitDeclDefns l =
 -- UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 -- @
 unitDeclDefn :: LogicGraph -> AParser AnyLogic UNIT_DECL_DEFN
-unitDeclDefn l = 
-        -- unit declaration 
-    try (do decl <- unitDecl l
-            return $ Unit_decl_defn decl)
-    <|> -- unit definition
-    do defn <- unitDefn l
-       return defn
-
-
+unitDeclDefn l = do 
+    name <- simpleId
+    do c <- asKey ":"     -- unit declaration 
+       decl <- refSpec l
+       (gs, ps) <- option ([], [])
+                            (do kGiven <- asKey givenS
+                                guts <- groupUnitTerms l
+                                return (guts, [kGiven]))
+       return (Unit_decl name decl gs $ map tokPos (c:ps)) 
+     <|> -- unit definition
+     do kEqu <- asKey equalS
+        expr <- unitExpr l
+        return (Unit_defn name (item expr) [tokPos kEqu])
 
 -- | Parse unit declaration
 -- @
 -- UNIT-DECL ::= UNIT-NAME : REF-SPEC
 -- @
-unitDecl :: LogicGraph -> AParser AnyLogic UNIT_DECL
-unitDecl l = 
+unitRef :: LogicGraph -> AParser AnyLogic UNIT_REF
+unitRef l = 
         do name <- simpleId
 	   sep1 <- asKey ":"
 	   usp <- refSpec l
-           option () $ do  -- ignore given stuff
-               asKey givenS
-               unexpected givenS
-	   return $ Unit_decl name usp [tokPos sep1]
+	   return $ Unit_ref name usp [tokPos sep1]
 
 
 -- | Parse unit specification
@@ -188,7 +189,7 @@ basicRefSpec l =
        return (Arch_unit_spec asp (toPos kArch [] kSpec))
     <|> -- component spec 
     do  o <- oBraceT
-        (us, ps) <- unitDecl l `separatedBy` anComma
+        (us, ps) <- unitRef l `separatedBy` anComma
         c <- oBraceT
         return (Component_ref us $ toPos c ps o)
 

@@ -37,14 +37,21 @@ instance PrettyPrint ARCH_SPEC where
     printText0 ga (Group_arch_spec aa _) =
 	braces $ printText0 ga aa
 
-instance PrettyPrint UNIT_DECL where
-    printText0 ga (Unit_decl aa ab  _) =
+instance PrettyPrint UNIT_REF where
+    printText0 ga (Unit_ref aa ab  _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab
 	in aa' <> colon <+> ab'
 
 instance PrettyPrint UNIT_DECL_DEFN where
-    printText0 ga (Unit_decl_defn u) = printText0 ga u
+    printText0 ga (Unit_decl aa ab ac _) =
+        let aa' = printText0 ga aa
+            ab' = printText0 ga ab
+            ac' = if null ac then empty
+                  else text givenS <+>
+                       (fcat $  punctuate (comma <> space) $
+                                   map (printText0 ga) ac)
+        in hang (aa' <> colon <+> ab') 4  ac'
     printText0 ga (Unit_defn aa ab _) =
 	let aa' = printText0 ga aa
 	    ab' = printText0 ga ab

@@ -91,19 +91,19 @@ ana_UNIT_DECL_DEFNS' lgraph defl gctx@(gannos, genv, _) curl opts uctx (udd : ud
        return (uctx'', dg'', (replaceAnnoted udd' udd) : udds')
 
 
--- | Analyse unit declaration
-ana_UNIT_DECL :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL -> Result (ExtStUnitCtx, DGraph, UNIT_DECL)
+-- | Analyse unit refs
+ana_UNIT_REF :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
+              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_REF -> Result (ExtStUnitCtx, DGraph, UNIT_REF)
 -- ^ returns 1. extended static unit context 2. possibly modified development graph 
 -- 3. possibly modified UNIT_DECL_DEFN
 
 -- unit declaration
-ana_UNIT_DECL lgraph defl gctx@(gannos, genv, _) curl opts 
-                   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp pos) =
+ana_UNIT_REF lgraph defl gctx@(gannos, genv, _) curl opts 
+                   uctx@(buc, _) (Unit_ref un@(Token _ unpos) usp pos) =
     do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx pos []
        let impSig = getSigFromDiag dns
        (usig, dg'', usp') <- ana_REF_SPEC lgraph defl (gannos, genv, dg') curl opts impSig usp
-       let ud' = Unit_decl un usp' pos
+       let ud' = Unit_ref un usp' pos
        if Map.member un buc 
           then
           plain_error (uctx, dg'', ud')
@@ -127,9 +127,27 @@ ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 -- 3. possibly modified UNIT_DECL_DEFN
 
 -- unit declaration
-ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx (Unit_decl_defn usp) = do
-    (uctx', df, usp') <- ana_UNIT_DECL lgraph defl gctx curl opts uctx usp
-    return (uctx', df, Unit_decl_defn usp')
+ana_UNIT_DECL_DEFN lgraph defl gctx@(gannos, genv, _) curl opts
+                   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp uts pos) =
+    do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx pos uts
+       let impSig = getSigFromDiag dns
+       (usig, dg'', usp') <- ana_REF_SPEC lgraph defl (gannos, genv, dg') curl opts impSig usp
+       let ud' = Unit_decl un usp' uts' pos
+       if Map.member un buc
+          then
+          plain_error (uctx, dg'', ud')
+                      ("Unit " ++ showPretty un " already declared/defined")
+                      unpos
+          else
+          case usig of
+               Par_unit_sig (argSigs, resultSig) ->
+                   do (resultSig', dg''') <- nodeSigUnion lgraph dg'' (resultSig : [impSig]) DGImports
+                      let basedParUSig = Based_par_unit_sig (dns, (argSigs, resultSig'))
+                      return ((Map.insert un basedParUSig buc, diag'), dg''', ud')
+               Unit_sig nsig ->
+                   do (nsig', dg''') <- nodeSigUnion lgraph dg'' (impSig : [nsig]) DGImports
+                      (dn', diag'') <- extendDiagramIncl lgraph diag' [dns] nsig' (renderText Nothing (printText un))
+                      return ((Map.insert un (Based_unit_sig dn') buc, diag''), dg''', ud')
 -- unit definition
 ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _) 
                    (Unit_defn un@(Token _ unpos) uexp poss) =
