@@ -7,7 +7,6 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-
    Wrapper for Haskell parsing.
    Parses Haskell declarations (not a whole module), for use
      in heterogeneous specifications
@@ -26,6 +25,7 @@ import ParseMonad
 import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.Result
 -- import Debug.Trace
 
 instance PrettyPrint HsDecls where
@@ -38,12 +38,15 @@ data HsDecls = HsDecls { hsDecls :: [HsDecl] } deriving (Show, Eq)
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
---               trace ("@"++s++"@") (return ())
 	       let (l, c) = (sourceLine p, sourceColumn p)
-                   ts = pLexerPass0 lexerflags0 s
-                   r = parseTokens (HsParser.parse) "" ts 
-               case r of
-		           Right (HsModule _ _ _ _ ds) -> 
---			       trace (showPretty ds " OK!") $ 
+                   ts = pLexerPass0 lexerflags0 
+                        (replicate (l-1) '\n' ++
+                         replicate (c-1) ' ' ++ s)
+               case parseTokens (HsParser.parse) "" ts of
+		           Result _ (Just (HsModule _ _ _ _ ds)) -> 
 				     return $ HsDecls ds
-			   Left msg -> unexpected msg
+			   Result ds Nothing -> unexpected 
+                               ('\n' : unlines (map diagString ds)
+                                 ++ "(in Haskell code after " ++ shows p ")")
+                                                       
+ 
