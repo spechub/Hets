@@ -305,13 +305,13 @@ logicSpec (oldlog, lG) = do
    lid <- logicName
    let Logic_name t _ = lid
    s2 <- asKey ":"
-   let newlog = lookupLogicName lid lG
-       logtrans = coercelog newlog oldlog
+   newlog <- lookupLogicName lid lG
+   logtrans <- coercelog newlog oldlog
    sp <- annoParser (specE (newlog, lG))
    let sp1 = Qualified_spec lid sp (map tokPos [s1,t,s2])
    return (logtrans sp1)
 
-lookupLogicName :: Logic_name -> LogicGraph -> AnyLogic
+lookupLogicName :: Monad m => Logic_name -> LogicGraph -> m AnyLogic
 lookupLogicName (Logic_name lid _sublog) lg = 
     lookupLogic "Parser: " (tokStr lid) lg
 
@@ -325,10 +325,10 @@ lookupLogicName (Logic_name lid _sublog) lg =
                               " in logic "++tokStr log++" unknown")
             Just sub -> Logic lid  -- ??? can we throw away sublogic?
 -}
-coercelog :: AnyLogic -> AnyLogic -> a -> a
+coercelog :: Monad m => AnyLogic -> AnyLogic -> m (a -> a)
 coercelog (Logic newlid) (Logic oldlid) =
-  if newlang == oldlang then id
-   else error ("Cannot coerce from "++newlang++" to "++oldlang)
+  if newlang == oldlang then return id
+   else fail ("Cannot coerce from "++newlang++" to "++oldlang)
   where newlang = language_name newlid
         oldlang = language_name oldlid
    -- \sp -> Translation (emptyAnno sp) 

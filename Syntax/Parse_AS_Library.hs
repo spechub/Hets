@@ -50,13 +50,15 @@ import Data.Maybe(maybeToList)
 
 -- | Parse a library of specifications
 library :: (AnyLogic, LogicGraph) -> AParser LIB_DEFN
-library l = do s1 <- asKey libraryS -- 'library' keyword
-	       ln <- libName        -- library name
+library l = do (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
+			   (do s1 <- asKey libraryS -- 'library' keyword
+			       n <- libName         -- library name
+			       return ([tokPos s1], n))
                an <- annos          -- annotations 
-               ls <- libItems l     -- librart elements
+               ls <- libItems l     -- library elements
                eof
-               return (Lib_defn ln ls [tokPos s1] an)
-               
+               return (Lib_defn ln ls ps an)
+
 -- | Parse library name
 libName :: AParser LIB_NAME
 libName = do libid <- libId
@@ -146,10 +148,13 @@ libItem l@(lgc, lG) =
                 (map tokPos ([s1, s2] ++ ps ++ maybeToList q)), lgc)
   <|> -- logic
     do s1 <- asKey logicS
-       logN <- logicName
-       let Logic_name t _ = logN
-       return (Logic_decl logN (map tokPos [s1,t]),
-	      lookupLogicName logN lG)
+       logN@(Logic_name t _) <- logicName
+       newLog <- lookupLogicName logN lG
+       return (Logic_decl logN (map tokPos [s1,t]), newLog)
+  <|> 
+     do a <- aSpec l
+        return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
+	       (Genericity (Params []) (Imported []) []) a [], lgc)	
 
 -- | Parse view type
 viewType :: (AnyLogic, LogicGraph) -> AParser VIEW_TYPE

@@ -62,7 +62,8 @@ preLogicGraph =
     inclusions =  Map.empty
              }
 
+-- currently only used in ATC/Grothendieck.hs
 lookupLogic_in_LG :: String -> String -> AnyLogic
 lookupLogic_in_LG errorPrefix logname =
-    lookupLogic errorPrefix logname preLogicGraph
+    propagateErrors $ lookupLogic errorPrefix logname preLogicGraph
 

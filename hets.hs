@@ -27,6 +27,7 @@ import Options
 import System.Environment
 
 import Comorphisms.LogicGraph
+import Logic.Grothendieck
 import Static.AnalysisLibrary
 import Static.DevGraph
 
@@ -55,27 +56,33 @@ processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
        case guess file (intype opt) of
-             HaskellIn -> do  r <- anaHaskellFile opt file
-                              showGraph file opt r
-             _         -> 
-                do
+             HaskellIn -> do  
+	         r <- anaHaskellFile opt file
+                 case gui opt of
+		     Not -> return ()
+                     _ -> showGraph file opt r
+             _ -> do
                   ld <- read_LIB_DEFN opt file
                -- (env,ld') <- analyse_LIB_DEFN opt
                   (ld'@(Lib_defn libname _ _ _),env) <- 
                      case (analysis opt) of
                              Skip        -> do
                                 putIfVerbose opt 2
-                                    ("Skipping static analysis on file: " ++ file)
+                                 ("Skipping static analysis on file: " ++ file)
                                 return (ld, Nothing)
                              _       -> do
                                 putIfVerbose opt 2 ("Analyzing file: " ++ file)
-                                Common.Result.Result diags res <- ioresToIO 
-                                     (ana_LIB_DEFN logicGraph defaultLogic opt emptyLibEnv ld)
-                                showDiags opt diags
+				defl <- lookupLogic 
+					"logic from command line: " 
+					(defLogic opt) logicGraph
+                                Common.Result.Result ds res <- ioresToIO 
+                                     (ana_LIB_DEFN logicGraph defl opt 
+				      emptyLibEnv ld)
+                                showDiags opt ds
                                 case res of
                                  Just (ln,ld1,_,lenv) -> do
                                    when (EnvOut `elem` outtypes opt)
-				        (writeFileInfo opt diags file ln lenv)
+				        (writeFileInfo opt ds file ln lenv)
 				   --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)
@@ -137,13 +144,12 @@ checkFile opts fp ln lenv =
 			          r_dGraph      == dGraph]))))
            mread_gctx
 		         
-{- showGraph :: FilePath -> HetcatsOpts -> (Maybe (LIB_NAME, -- filename
-                                                      HsModule, -- as tree
-                                                      DGraph,   -- development graph
-                                                      LibEnv    -- DGraphs for imported modules 
-                                                      )  -> IO ()
--}
-
+showGraph :: FilePath -> HetcatsOpts -> 
+	     Maybe (LIB_NAME, -- filename
+                    a,   -- as tree
+                    b,   -- development graph
+                    LibEnv    -- DGraphs for imported modules 
+                   )  -> IO ()
 showGraph file opt env =
     case env of
         Just (ln,_,_,libenv) -> do
@@ -152,7 +158,7 @@ showGraph file opt env =
             putIfVerbose opt 3 "Initializing Converter"
             graphMem <- initializeConverter
             putIfVerbose opt 3 "Converting Graph"
-            (gid, gv, cmaps) <- convertGraph graphMem ln libenv
+            (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
             GUI.AbstractGraphView.redisplay gid gv
             putIfVerbose opt 1 "Hit Return when finished"
             getLine

@@ -19,10 +19,7 @@ Portability :  non-portable(Logic)
 -}
 
 
-module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN)
-where
-
-import Debug.Trace
+module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN) where
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -30,8 +27,6 @@ import Common.Lib.Graph
 import Static.DevGraph
 import qualified Syntax.AS_Structured
 import Syntax.Parse_AS_Structured (lookupLogicName)
-import Syntax.Parse_AS_Library(library)
-import Common.Lib.Parsec
 import Syntax.AS_Library
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
@@ -43,11 +38,9 @@ import Common.Result
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
-import Common.AnnoState
 import Options
 import System
 import List
-import Directory
 
 import ReadFn
 import WriteFn (writeFileInfo)
@@ -65,7 +58,7 @@ anaFile logicGraph defaultLogic opts libenv fname = do
       return Nothing
     Just fname'' -> do
       input <- readFile fname''
-      ast <- read_LIB_DEFN_M fname'' input
+      ast <- read_LIB_DEFN_M defaultLogic fname'' input
       Result diags res <-
             ioresToIO (ana_LIB_DEFN logicGraph defaultLogic opts
                                     libenv ast)
@@ -274,7 +267,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l 
              (Logic_decl ln pos) = do
-  let log = lookupLogicName ln lgraph
+  log <- lookupLogicName ln lgraph
   ioToIORes (putIfVerbose opts 1  ("logic "++show log))
   return (Logic_decl ln pos,gctx,log,libenv)
 

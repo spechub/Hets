@@ -325,23 +325,16 @@ isIdComorphism (Comorphism cid) =
     _ -> False
 
 -- | Compose comorphisms
-compComorphism :: AnyComorphism -> AnyComorphism -> Maybe AnyComorphism
+compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
     if language_name (targetLogic cid1) == 
        language_name (sourceLogic cid2) 
        then case (isIdComorphism cm1,isIdComorphism cm2) of
-         (True,_) -> Just cm2
-         (_,True) -> Just cm1
-         _ ->  Just $ Comorphism (CompComorphism cid1 cid2)
-       else Nothing
-
--- | Compose comorphisms, deliver a Result
-compComorphismRes :: AnyComorphism -> AnyComorphism -> Result AnyComorphism
-compComorphismRes cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
-  maybeToResult nullPos 
-        ("Cannot compose comorphism "++language_name cid1++
+         (True,_) -> return cm2
+         (_,True) -> return cm1
+         _ ->  return $ Comorphism (CompComorphism cid1 cid2)
+       else fail ("Cannot compose comorphism "++language_name cid1++
 		  " with "++language_name cid2)
-        (compComorphism cm1 cm2)
 
 -- | Logic graph
 data LogicGraph = LogicGraph {
@@ -354,32 +347,30 @@ emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty
 
 -- | find a logic in a logic graph
-lookupLogic :: String -> String -> LogicGraph -> AnyLogic
+lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname (logics logicGraph) of
-    Nothing -> error (error_prefix++" in LogicGraph logic \""
+    Nothing -> fail (error_prefix++" in LogicGraph logic \""
                       ++logname++"\" unknown")
-    Just lid -> lid
+    Just lid -> return lid
 
 -- | find a comorphism in a logic graph
-lookupComorphism :: String -> LogicGraph -> Result AnyComorphism
+lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism coname logicGraph = do
   let nameList = splitBy ';' coname
   cs <- sequence $ map lookupN nameList
   case cs of
-    c:cs1 -> foldM compComorphismRes c cs1
+    c:cs1 -> foldM compComorphism c cs1
     _ -> fail ("Illgegal comorphism name: "++coname)
   where 
   lookupN name = 
     case name of
       'i':'d':'_':logic -> do
-         l <- maybeToResult 
-                nullPos ("Cannot find logic "++logic)
+         l <- maybe (fail ("Cannot find logic "++logic)) return
                  $ Map.lookup logic (logics logicGraph)
          case l of
            Logic lid -> return $ Comorphism $ IdComorphism lid
-      _ -> maybeToResult 
-            nullPos ("Cannot find logic comorphism "++name) 
+      _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | auxiliary existential type needed for composition of comorphisms
