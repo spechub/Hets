@@ -67,17 +67,21 @@ addSuperType t i =
 anaTypeItem :: Instance -> TypeItem -> State Env ()
 anaTypeItem inst (TypeDecl pats kind _) = 
     do k <- anaKind kind
-       mapM_ (anaTypePattern inst k) pats 
+       let Result ds (Just is) = convertTypePatterns pats
+       appendDiags ds
+       mapM_ (anaTypeId inst kind) is   
 anaTypeItem inst (SubtypeDecl pats t _) = 
     do sup <- anaType t
-       mapM_ (anaTypePattern inst nullKind) pats
-       let rs = map (fromJust . maybeResult) $ 
-		filter (isJust . maybeResult) $ 
-		map convertTypePattern pats
-       mapM_ (addSuperType t) rs
+       let Result ds (Just is) = convertTypePatterns pats
+       appendDiags ds
+       mapM_ (anaTypeId inst nullKind) is   
+       mapM_ (addSuperType t) is
 
-anaTypeItem inst (IsoDecl pats p) = 
-    mapM_ (anaTypePattern inst nullKind) pats
+anaTypeItem inst (IsoDecl pats _) = 
+    do let Result ds (Just is) = convertTypePatterns pats
+       appendDiags ds
+       mapM_ (anaTypeId inst nullKind) is
+       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i 0)) is) is 
 
 anaTypeItem _ (SubtypeDefn t _ _ _ p) = missingAna t p
 anaTypeItem _ (Datatype (DatatypeDecl t _ _ _ p)) = missingAna t p
@@ -97,17 +101,13 @@ kindArity m (PlainClass _) = case m of
 			     TopLevel -> 0
 			     OnlyArg -> 1
 
-anaTypePattern :: Instance -> Kind -> TypePattern -> State Env ()
+anaTypeId :: Instance -> Kind -> Id -> State Env ()
 -- type args not yet considered for kind construction 
-anaTypePattern _ kind t = 
-    let Result ds mi = convertTypePattern t
-    in if typePatternArgs t == 0 || 
-       typePatternArgs t == kindArity TopLevel kind then
-       case mi of 
-	       Just ti -> addTypeKind NoTypeDefn ti kind
-	       Nothing -> appendDiags ds
-       else appendDiags [Diag Error "non-matching kind arity"
-					    $ posOfTypePattern t]
+anaTypeId _ kind i@(Id ts _ _)  = 
+    let n = length $ filter isPlace ts 
+    in if n == 0 || n == kindArity TopLevel kind then
+       addTypeKind NoTypeDefn i kind
+       else addDiag $ mkDiag Error "wrong arity of" i
 
 convertTypePatterns :: [TypePattern] -> Result [Id]
 convertTypePatterns [] = Result [] $ Just []
@@ -161,13 +161,6 @@ makeMixTypeId t =
 			     (errorMessages err)) 
 		(let p = errorPos err in (sourceLine p, sourceColumn p))
     Right x -> return x
-
-typePatternArgs :: TypePattern -> Int
-typePatternArgs (TypePattern _ as _) = length as
-typePatternArgs (TypePatternToken t) = if isPlace t then 1 else 0
-typePatternArgs (MixfixTypePattern ts) = sum (map typePatternArgs ts)
-typePatternArgs (BracketTypePattern _ ts _) = sum (map typePatternArgs ts)
-typePatternArgs (TypePatternArgs as) = length as
 
 hasPlaces, hasTypeArgs :: TypePattern -> Bool
 hasPlaces (TypePattern _ _ _) = False

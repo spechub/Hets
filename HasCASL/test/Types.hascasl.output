@@ -1,0 +1,41 @@
+a
+b
+c
+d
+Type Constructors
+List :a ->b
+[__] :a ->b
+m :(a ->b) ->c
+r :Type
+r1 :Type< t
+r2 :Type< (t2,r2,s2)
+s :Type
+s1 :Type< t
+s2 :Type< (t2,r2,s2)
+t :Type
+t1 :Type< t
+t2 :Type< (t2,r2,s2)
+tuple1 :b ->a
+tuple3 :a ×b ×c ->d
+{__} :a ->b
+Assumptions
+nt : a × b -> c × c -> d
+o1 : m
+o2 : (m)(tuple1)
+o3 : (m)(tuple3)
+o4 : (nt)((r,List,s))
+u : ([__])(r)
+v : ((m)(List),({__})(s))
+x : (tuple3)((r,s,t))
+y : (tuple3)((r,s))
+z : (m)(([__])(__))
+Error (12,16) incompatible kind of type '(r,s)'
+Error (18,14) undeclared type '__'
+Error (18,14) incompatible kind of type '([__])(__)'
+Error (28,12) incompatible kind of type 'tuple3'
+Error (30,10) undeclared type 'a'
+Error (30,15) undeclared type 'b'
+Error (30,20) undeclared type 'c'
+Error (30,25) undeclared type 'c'
+Error (30,30) undeclared type 'd'
+Error (32,10) undeclared type 'nt'
