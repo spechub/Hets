@@ -576,14 +576,11 @@ inducedFromToMorphism extEm rmap sigma1 sigma2 = do
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
    else let sortSet2 = sortSet sigma2 in 
-        if Set.size symset1 == 1 && Set.size sortSet2 == 1 then
-           return Morphism 
-                      { msource = sigma1
-                      , mtarget = sigma2 
-                      , sort_map = Map.single (symName $ Set.findMin symset1) 
-                                   $ Set.findMin sortSet2
-                      , fun_map = Map.empty
-                      , pred_map = Map.empty }
+        if Map.isEmpty rmap && Set.size symset1 == 1 && Set.size sortSet2 == 1 
+           then return mor1 
+                    { mtarget = sigma2 
+                    , sort_map = Map.single (symName $ Set.findMin symset1) 
+                                 $ Set.findMin sortSet2 }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
