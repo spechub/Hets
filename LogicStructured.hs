@@ -1,64 +1,201 @@
-------------------------------------------------------------------------------
--- HetCATS/LogicStructured.hs
--- $Id$
--- Authors: Pascal Schmidt
--- Year:    2002
-------------------------------------------------------------------------------
-{- todo:
+{- --------------------------------------------------------------------------
+   HetCATS/LogicStructured.hs
+   $Id$
+   Authors: Pascal Schmidt
+   Year:    2002
+-----------------------------------------------------------------------------
+   SUMMARY
+   
+   This module provides routines to calculate the sublogic of a structured
+   item - a structured specification, a view, an architectural
+   specification, or a library. The calculation succeeds for homogenous
+   items (only one language occuring inside) and returns Nothing otherwise.
 
-  Anpassung für logic_code
+-----------------------------------------------------------------------------
+   TODO
 
--}
+   IMAGINABLE FUTURE EXTENSIONS:
 
-module LogicStructured ( -- AS_Structured.SPEC -> Maybe G_Sublogics
-                         min_sublogic_spec,
+   sl_logic_code could be extended to do some extra checking for encodings
+     and logic projections/translations that only change the encoding if,
+     maybe only in some languages, the encoding implies a specific
+     sublanguage (i.e. in CASL one could encode partial functions by
+     introducing supersorts with bottom element so that functions are
+     then total with the supersort as the result sort, in that case, the 
+     encoding implies a CASL_sublogics with has_part = False. Similar
+     for encoding out subsorts with normal sorts and projection functions,
+     that kind of encoding would imply a CASL_sublogics with has_sub
+     set to False).
 
-                         -- AS_Library.LIB_DEFN -> Maybe G_Sublogics
-                         min_sublogic_lib
+   evaluate logic_code/name should functions that can turn a language and/or
+     encoding name into an id or even sublogics be implemented
+
+   see if it would be possible to analyse items pulled in via download_items
+     for their language/sublogic, this could for example be possible when
+     the library import function(s) to load the named items from the
+     library files would be implemented
+    
+   arch_spec_name/spec_name G_sublogics could perhaps be computed if
+     the named spec is also in the given lib_defn or spec_defn
+-------------------------------------------------------------------------- -}
+
+-----------------------------------------------------------------------------
+-- export declaration
+-----------------------------------------------------------------------------
+
+module LogicStructured ( -- SPEC_DEFN -> Maybe G_Sublogics
+                         min_sublogic_spec_defn,
+                         
+                         -- VIEW_DEFN -> Maybe G_Sublogics
+                         min_sublogic_view_defn,
+
+                         -- LIB_DEFN -> Maybe G_Sublogics
+                         min_sublogic_lib_defn,
+                         
+                         -- ARCH_SPEC_DEFN -> Maybe G_Sublogics
+                         min_sublogic_arch_spec_defn,
+                         
+                         -- UNIT_SPEC_DEFN -> Maybe G_Sublogics
+                         min_sublogic_unit_spec_defn
 
                        ) where
 
-import Maybe
-import Id
+-----------------------------------------------------------------------------
+-- imports from other modules
+-----------------------------------------------------------------------------
+
+import Maybe ( isJust )
+
 import AS_Structured
 import AS_Architecture
 import qualified AS_Library
-import AS_Annotation
-import Logic
-import Grothendieck
 
+import AS_Annotation ( Annoted(..) )
 
+import Logic ( coerce, language_name, meet, min_sublogic_symb_items,
+               min_sublogic_symb_map_items, min_sublogic_basic_spec,
+               top )
+
+import Grothendieck( G_basic_spec(..), G_sublogics(..),
+                     G_symb_items_list(..), G_symb_map_items_list(..) )
+
+-----------------------------------------------------------------------------
+-- module implementation
+-----------------------------------------------------------------------------
+
+{- --------------------------------------------------------------------------
+  IngoreMaybe datatype
+-----------------------------------------------------------------------------
+  This is an "extension" to the Maybe datatype to handle the fact that
+  there are three cases when descending into a sub-portion of a spec/lib
+  to calculate the logic/sublogic:
+  a) logic can be computed (i.e. basic_spec or smyb_map_items occurs
+     which have min_sublogics functions from Logic.hs available)
+     and all items given are in the same language
+  b) logic cannot be computed because of different languages occuring
+     in the input
+  c) the subtree does not have a computable but also does not imply
+     a language (i.e. logic_translation with null effect because
+     only source logic name is given which does not itself imply a
+     logic but only reinforces the computed logic of the item(s)
+     being translated)
+  The IgnoreNothing handles case c) because it will not influence the
+  result of the computation functions (map_logics_ign and top_logics_ign).
+  IgnoreNothing never leaves this module since all functions exported
+  are on types that always allow to decide whether a common sublogic can
+  be computed or not.
+-------------------------------------------------------------------------- -}
+
+data IgnoreMaybe a = RealJust a
+                   | RealNothing
+                   | IgnoreNothing
+
+-- drop IgnoreNothing from a list to get Maybe list
+--
+dropIgnore :: [IgnoreMaybe a] -> [Maybe a]
+dropIgnore []                = []
+dropIgnore ((RealJust x):t)  = (Just x):(dropIgnore t)
+dropIgnore (RealNothing:t)   = Nothing:(dropIgnore t)
+dropIgnore (IgnoreNothing:t) = dropIgnore t
+
+-- convert from Maybe to IgnoreMaybe
+--
+toIgnore :: Maybe a -> IgnoreMaybe a
+toIgnore (Just x) = RealJust x
+toIgnore _        = RealNothing
+
+-- convert from IgnoreMaybe to Maybe
+-- IgnoreNothing is propagated (wrt to the meaning given above) to Nothing
+--
+toMaybe :: IgnoreMaybe a -> Maybe a
+toMaybe (RealJust x) = Just x
+toMaybe _            = Nothing
+
+-----------------------------------------------------------------------------
+-- Computations on Maybe/IgnoreMaybe G_sublogics datatype
+-----------------------------------------------------------------------------
+
+-- extension of meet from Logic.hs to Maybe G_sublogics
+-- coerce stuff done by Till
+--
 top_logics :: Maybe G_sublogics -> Maybe G_sublogics -> Maybe G_sublogics
 top_logics Nothing _ = Nothing
 top_logics _ Nothing = Nothing
 top_logics (Just (G_sublogics a (al::sublogics))) (Just (G_sublogics b bl)) =
   if ((language_name a)==(language_name b)) then
-    case coerce a b bl::Maybe sublogics of
+    case (coerce a b bl)::Maybe sublogics of
       Just bl1 -> Just (G_sublogics a (meet al bl1))
-      Nothing -> Nothing
+      Nothing  -> Nothing
   else
     Nothing
 
-{-
--- FIXME
--- dummy version of above function
-top_logics :: Maybe G_sublogics -> Maybe G_sublogics -> Maybe G_sublogics
-top_logics Nothing _ = Nothing
-top_logics _ Nothing = Nothing
-top_logics (Just a) (Just b) = Just a
--}
+-- version of top_logics that ignores IgnoreNothing argument(s)
+--
+top_logics_ign :: IgnoreMaybe G_sublogics -> IgnoreMaybe G_sublogics
+                  -> IgnoreMaybe G_sublogics
+top_logics_ign IgnoreNothing _ = IgnoreNothing
+top_logics_ign _ IgnoreNothing = IgnoreNothing
+top_logics_ign a b = toIgnore $ top_logics (toMaybe a) (toMaybe b)
 
+-- compute Maybe G_sublogics from a list by folding top_logics
+--
 map_logics :: [Maybe G_sublogics] -> Maybe G_sublogics
-map_logics [] = Nothing
+map_logics []    = Nothing
 map_logics (h:t) = foldr top_logics h t
 
--- functions on datatypes from AS_Structured
+-- version of map_logics handling IgnoreNothing inputs
+-- list with only IgnoreNothing elements turns to single IgnoreNothing
+--
+map_logics_ign :: [IgnoreMaybe G_sublogics] -> IgnoreMaybe G_sublogics
+map_logics_ign l = let
+                     tryDrop = dropIgnore l
+                   in
+                     if ((length tryDrop)==0) then
+                       IgnoreNothing
+                     else
+                       toIgnore $ map_logics tryDrop
 
+-----------------------------------------------------------------------------
+-- Computations functions simply recurse down into all datatype members.
+-- All functions ignore Pos lists and names since they have no impact on
+-- the sublogic needed. Other elements are ignored if they also have no
+-- impact on the sublogic.
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-- Functions to compute minimally needed sublogics for datatypes from
+-- AS_Structured module
+-----------------------------------------------------------------------------
+
+-- calls function from Logic.hs to calculate sublogic of Basic_spec
+--
 sl_spec :: SPEC -> Maybe G_sublogics
 sl_spec (Basic_spec (G_basic_spec i b)) = 
   Just (G_sublogics i (min_sublogic_basic_spec i b))
-sl_spec (Translation s r) = top_logics (sl_spec $ item s) (sl_renaming r)
-sl_spec (Reduction s r) = top_logics (sl_spec $ item s) (sl_restriction r)
+sl_spec (Translation s r) =
+  toMaybe $ top_logics_ign (toIgnore $ sl_spec $ item s) (sl_renaming r)
+sl_spec (Reduction s r) =
+  toMaybe $ top_logics_ign (toIgnore $ sl_spec $ item s) (sl_restriction r)
 sl_spec (Union l _) = map_logics $ map sl_spec $ map item l
 sl_spec (Extension l _) = map_logics $ map sl_spec $ map item l
 sl_spec (Free_spec s _) = sl_spec $ item s
@@ -68,85 +205,49 @@ sl_spec (Group s _) = sl_spec $ item s
 sl_spec (Spec_inst _ l) = map_logics $ map sl_fit_arg $ map item l
 sl_spec (Qualified_spec _ s _) = sl_spec $ item s
 
-sl_renaming :: RENAMING -> Maybe G_sublogics
-sl_renaming (Renaming l _) = map_logics $ map sl_g_mapping l
+sl_renaming :: RENAMING -> IgnoreMaybe G_sublogics
+sl_renaming (Renaming l _) = map_logics_ign $ map sl_g_mapping l
 
-sl_restriction :: RESTRICTION -> Maybe G_sublogics
-sl_restriction (Hidden l _) = map_logics $ map sl_g_hiding l
-sl_restriction (Revealed l _) = sl_g_symb_map_items_list l
+sl_restriction :: RESTRICTION -> IgnoreMaybe G_sublogics
+sl_restriction (Hidden l _) = map_logics_ign $ map sl_g_hiding l
+sl_restriction (Revealed l _) = toIgnore $ sl_g_symb_map_items_list l
 
-sl_g_mapping :: G_mapping -> Maybe G_sublogics
-sl_g_mapping (G_symb_map l) = sl_g_symb_map_items_list l
+sl_g_mapping :: G_mapping -> IgnoreMaybe G_sublogics
+sl_g_mapping (G_symb_map l) = toIgnore $ sl_g_symb_map_items_list l
 sl_g_mapping (G_logic_translation c) = sl_logic_code c
 
-sl_g_hiding :: G_hiding -> Maybe G_sublogics
-sl_g_hiding (G_symb_list l) = sl_g_symb_items_list l
+sl_g_hiding :: G_hiding -> IgnoreMaybe G_sublogics
+sl_g_hiding (G_symb_list l) = toIgnore $ sl_g_symb_items_list l
 sl_g_hiding (G_logic_projection c) = sl_logic_code c
 
--- CHECK
--- is this how Logic_code should go into the sublogics calculation,
--- the target logic taking precedence if given, then the encoding
--- if it is given (gives more precise logic than source logic because it
--- also knows the sublogic involved), then source logic with least
--- precedence?
-sl_logic_code :: Logic_code -> Maybe G_sublogics
-sl_logic_code (Logic_code t n m _) =
-  if (isJust m) then
-    sl_logic_name $ fromJust m
+-- find out whether a Logic_code really changes the language
+-- see TODO section for possible extensions for (isJust enc) and
+-- (try!=src) cases
+--
+sl_logic_code :: Logic_code -> IgnoreMaybe G_sublogics
+sl_logic_code (Logic_code enc src trg _) =
+  if (isJust enc) then
+    RealNothing             -- encoding given, could change sublogic
   else
-    if (isJust t) then
-      sl_encoding $ fromJust t
-    else
-      if (isJust n) then
-        sl_logic_name $ fromJust n
+    if (isJust src) then
+      if (isJust trg) then
+        if (trg==src) then
+          IgnoreNothing     -- projection/translation that does nothing
+        else
+          RealNothing       -- projection/translation that changes things
       else
-        Nothing
+        IgnoreNothing       -- just source logic given,
+    else
+      IgnoreNothing         -- empty projection/translation, shouldn't happen
 
--- CHECK
--- is the encoding really a sublogic name?
-sl_encoding :: Token -> Maybe G_sublogics
-sl_encoding x = logic_from_sublogic_name $ tokStr x
-
--- CHECK
--- is Logic_name t1 (maybe t2) meant as t1 being a language_name
--- and t2 being a sublogic_name?
-sl_logic_name :: Logic_name -> Maybe G_sublogics
-sl_logic_name (Logic_name t Nothing) = logic_from_name $ tokStr t
-sl_logic_name (Logic_name t (Just e)) = sl_encoding e
-
--- CHECK
--- if I get this right, these function would have to iterate over
--- all instances of Logic and check whether the given encoding
--- string is a member of all_sublogics of the Logic, then run some
--- function turning that sublogic name back into a sublogic type?
--- That would make these: (logic_from_name, logic_from_sublogic_name)
--- part of Logic.hs
--- And then, how do we iterate over all members of a class?
--- Otherwise, to avoid these somewhat ugly (Maybe type) functions,
--- Logic_code/name would have to use something like
---     Logic_code (Maybe sublogics) (Maybe id) (Maybe id) [Pos]
---     Logic_name id (Maybe sublogics)
-
--- FIXME
--- one of the functions needed for string to logic conversion
--- should return (id,sub) with
---   id  = which logic it is
---   sub = top sublogic for the logic 
-logic_from_name :: String -> Maybe G_sublogics
-logic_from_name s = Nothing
-
--- FIXME
--- another needed function
--- should return (id,sub) with
---    sub = sublogic to be found identifical in name to string
---    id  = logic in which this sublogic resides
-logic_from_sublogic_name :: String -> Maybe G_sublogics
-logic_from_sublogic_name s = Nothing
-
+-- calls function from Logic.hs to compute sublogics
+--
 sl_g_symb_items_list :: G_symb_items_list -> Maybe G_sublogics
 sl_g_symb_items_list (G_symb_items_list i l) =
   Just (G_sublogics i (foldr meet top ((map (min_sublogic_symb_items i)) l)))
-  
+
+-- calls function from Logic.hs to compute sublogics
+-- 
 sl_g_symb_map_items_list :: G_symb_map_items_list -> Maybe G_sublogics
 sl_g_symb_map_items_list (G_symb_map_items_list i l) =
   Just
@@ -171,38 +272,50 @@ sl_fit_arg (Fit_spec s l _) = top_logics (sl_spec $ item s)
 sl_fit_arg (Fit_view _ l _ _) = map_logics $ map sl_fit_arg $ map item l
 
 sl_view_defn :: VIEW_DEFN -> Maybe G_sublogics
-sl_view_defn (View_defn _ g t l _) =
-  map_logics ([sl_genericity g,sl_view_type t] ++ ((map sl_g_mapping) l))
+sl_view_defn (View_defn _ g t l _) = toMaybe $ map_logics_ign
+  ((toIgnore $ sl_genericity g):(toIgnore $ sl_view_type t):
+    (map sl_g_mapping l))
 
 sl_view_type :: VIEW_TYPE -> Maybe G_sublogics
 sl_view_type (View_type a b _) = top_logics (sl_spec $ item a)
                                             (sl_spec $ item b)
 
--- functions on datatypes from AS_Library
+-----------------------------------------------------------------------------
+-- Functions to compute minimally needed sublogics for datatypes from
+-- AS_Library module
+-----------------------------------------------------------------------------
 
 sl_lib_defn :: AS_Library.LIB_DEFN -> Maybe G_sublogics
 sl_lib_defn (AS_Library.Lib_defn _ l _ _) =
   map_logics $ map sl_lib_item $ map item l
 
--- FIXME
--- Download_items, how can we know the logic of imported stuff?
+-- sl_lib_item returns Nothing on Download_items because it is only
+-- a list of names with insufficient information to calculate G_sublogics
+-- sl_lib_item returns Nothing on Logic because the target logic of
+-- logic projection/translation is not convertible to G_sublogics yet
+--
 sl_lib_item :: AS_Library.LIB_ITEM -> Maybe G_sublogics
 sl_lib_item (AS_Library.Spec_defn _ g s _) =
   top_logics (sl_genericity g) (sl_spec $ item s)
-sl_lib_item (AS_Library.View_defn _ g t l _) =
-  map_logics ((sl_genericity g):(sl_view_type t):((map sl_g_mapping) l))
+sl_lib_item (AS_Library.View_defn _ g t l _) = toMaybe $ map_logics_ign
+  ((toIgnore $ sl_genericity g):(toIgnore $ sl_view_type t):
+    (map sl_g_mapping l))
 sl_lib_item (AS_Library.Arch_spec_defn _ s _) = sl_arch_spec $ item s
 sl_lib_item (AS_Library.Unit_spec_defn _ s _) = sl_unit_spec s
 sl_lib_item (AS_Library.Download_items _ l _) = Nothing
-sl_lib_item (AS_Library.Logic n _) = sl_logic_name n
+sl_lib_item (AS_Library.Logic n _) = Nothing
 
--- functions on types from AS_Architecture
+-----------------------------------------------------------------------------
+-- Functions to compute minimally needed sublogics for datatypes from
+-- AS_Architecture module
+-----------------------------------------------------------------------------
 
 sl_arch_spec_defn :: ARCH_SPEC_DEFN -> Maybe G_sublogics
 sl_arch_spec_defn (Arch_spec_defn _ s _) = sl_arch_spec $ item s
 
--- FIXME
--- how to handle Arch_spec_name which doesn't have info?
+-- sl_arch_spec returns Nothing on Arch_spec_name because the name
+-- does not carry enough information needed to calculate G_sublogics
+--
 sl_arch_spec :: ARCH_SPEC -> Maybe G_sublogics
 sl_arch_spec (Basic_arch_spec l e _) =  map_logics
   ((sl_unit_expression $ item e):(map sl_unit_decl_defn $ map item l))
@@ -217,8 +330,9 @@ sl_unit_decl_defn (Unit_defn _ e _) = sl_unit_expression e
 sl_unit_spec_defn :: UNIT_SPEC_DEFN -> Maybe G_sublogics
 sl_unit_spec_defn (Unit_spec_defn _ s _) = sl_unit_spec s
 
--- FIXME
--- how to handle Spec_name which doesn't have info?
+-- sl_unit_spec returns Nothing on Spec_name because the name does
+-- not carry enough information needed to calculate G_sublogics
+--
 sl_unit_spec :: UNIT_SPEC -> Maybe G_sublogics
 sl_unit_spec (Unit_type l s _) =
   map_logics ((sl_spec $ item s):(map sl_spec $ map item l))
@@ -234,10 +348,10 @@ sl_unit_binding :: UNIT_BINDING -> Maybe G_sublogics
 sl_unit_binding (Unit_binding _ s _) = sl_unit_spec s
 
 sl_unit_term :: UNIT_TERM -> Maybe G_sublogics
-sl_unit_term (Unit_reduction t r) =
-  top_logics (sl_unit_term $ item t) (sl_restriction r)
-sl_unit_term (Unit_translation t r) =
-  top_logics (sl_unit_term $ item t) (sl_renaming r)
+sl_unit_term (Unit_reduction t r) = toMaybe $
+  top_logics_ign (toIgnore $ sl_unit_term $ item t) (sl_restriction r)
+sl_unit_term (Unit_translation t r) = toMaybe $
+  top_logics_ign (toIgnore $ sl_unit_term $ item t) (sl_renaming r)
 sl_unit_term (Amalgamation l _) = map_logics $ map sl_unit_term $ map item l
 sl_unit_term (Local_unit l t _) =
   map_logics ((sl_unit_term $ item t):(map sl_unit_decl_defn $ map item l))
@@ -248,8 +362,19 @@ sl_fit_arg_unit :: FIT_ARG_UNIT -> Maybe G_sublogics
 sl_fit_arg_unit (Fit_arg_unit t l _) =
   top_logics (sl_unit_term $ item t) (sl_g_symb_map_items_list l)
 
--- top level stuff for this module
+-----------------------------------------------------------------------------
+-- Alias exported function to names similar to the calculation functions
+-- from Logic.hs, different naming convention in this module since
+-- internal functions don't need to have overly verbose names that would
+-- make the code hard to read
+-----------------------------------------------------------------------------
 
-min_sublogic_spec = sl_spec
+min_sublogic_spec_defn = sl_spec_defn
+min_sublogic_view_defn = sl_view_defn
+min_sublogic_lib_defn = sl_lib_defn
+min_sublogic_arch_spec_defn = sl_arch_spec_defn
+min_sublogic_unit_spec_defn = sl_unit_spec_defn
 
-min_sublogic_lib = sl_lib_defn
+-----------------------------------------------------------------------------
+-- THE END
+-----------------------------------------------------------------------------
