@@ -356,6 +356,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                 SA_cons -> Cons
                 SA_def -> Def
                 SA_mono -> Mono
+                _ -> error "Static.AnalysisStructured: this cannot happen"
            -- insert a theorem link according to p. 319 of the CASL Reference Manual
            -- the theorem link is trivally proved by the parallel definition link,
            -- but for clarity, we leave it open here
@@ -643,6 +644,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        nB <- adj $ maybeToMonad
              "Internal error: empty body spec" (getNode body)
        incl1 <- adj $ ginclusion lg (getSig nsig) gsigmaRes
+       incl2 <- adj $ ginclusion lg gsigma' gsigmaRes
+       morDelta' <- comp Grothendieck (gEmbed morDelta) incl2
        let [node] = newNodes 0 dg'
            node_contents = DGNode {
              dgn_name = name,
@@ -657,7 +660,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                         Nothing -> id
                         Just n -> insEdgeNub (n,node,link1)
            link2 = (nB,node,DGLink {
-             dgl_morphism = gEmbed morDelta,
+             dgl_morphism = morDelta',
              dgl_type = GlobalDef,
              dgl_origin = DGSpecInst spname})
            parLinks = catMaybes (map (parLink gsigmaRes node) actualargs)
