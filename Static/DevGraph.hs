@@ -134,6 +134,9 @@ getLogic (EmptyNode l) = l
 
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
+{- TODO: this implementation uses homogenousGsigManyUnion, so requires
+   that the signatures share common logic. Would it be possible to deduce 
+   a common logic for given signatures based on logic graph? -}
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid _) <- homogeneousGsigManyUnion nullPos (map getSig nodeSigs)
      let nodeContents = DGNode {dgn_name = Nothing,
@@ -151,6 +154,30 @@ nodeSigUnion lgraph dg nodeSigs orig =
 										     dgl_origin = orig }) dg)
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig (node, sigUnion), dg'')
+
+-- | Extend the development graph with given morphism originating
+-- from given NodeSig
+extendDGraph :: DGraph    -- ^ the development graph to be extended
+	     -> NodeSig   -- ^ the NodeSig from which the morphism originates
+	     -> GMorphism -- ^ the morphism to be inserted
+	     -> DGOrigin  
+	     -> Result (NodeSig, DGraph)
+-- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
+extendDGraph _ n@(EmptyNode _) _ _ =
+    do fatal_error "Trying to add a morphism originating from an empty node" nullPos
+extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
+    let targetSig = cod Grothendieck morph
+        nodeContents = DGNode {dgn_name = Nothing,
+			       dgn_sign = targetSig,
+			       dgn_sens = G_l_sentence_list lid [],			       
+			       dgn_origin = orig}
+	linkContents = DGLink {dgl_morphism = morph,
+			       dgl_type = GlobalDef, -- TODO: other type
+			       dgl_origin = orig}
+	[node] = newNodes 0 dg
+	dg' = insNode (node, nodeContents) dg
+	dg'' = insEdge (n, node, linkContents) dg'
+    in do return (NodeSig (node, targetSig), dg'')
 
 
 data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic
@@ -183,7 +210,8 @@ type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 
 -- * Types for architectural and unit specification analysis
 
--- ** Basic types (as defined for basic static semantics in Chap. III:5.1)
+-- ** Basic types 
+-- (as defined for basic static semantics in Chap. III:5.1)
 type ParUnitSig = ([NodeSig], NodeSig)
 
 data UnitSig = Unit_sig NodeSig
@@ -201,12 +229,15 @@ type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
--- ** Additional types (as defined for extended static semantics in Chap. III:5.6.1)
-data DiagNodeLab = DiagNode { dn_sig :: NodeSig }
+-- ** Additional types 
+-- (as defined for extended static semantics in Chap. III:5.6.1)
+data DiagNodeLab = DiagNode { dn_sig :: NodeSig } 
+		   deriving Show
 emptyDiagNodeLab :: AnyLogic -> DiagNodeLab
 emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l }
 
 data DiagLinkLab = DiagLink 
+		   deriving Show
 type BasedParUnitSig = (DiagNodeSig, ParUnitSig)
 
 type Diag = Diagram DiagNodeLab DiagLinkLab
@@ -215,11 +246,18 @@ emptyDiag = Graph.empty
 
 data DiagNodeSig = Diag_node_sig Node NodeSig
 		 | Empty_node AnyLogic
+		   deriving Show
 emptyDiagNodeSig :: AnyLogic -> DiagNodeSig
 emptyDiagNodeSig l = Empty_node l
 
+-- | Return a signature stored within given diagram node sig
+getSigFromDiag :: DiagNodeSig -> NodeSig
+getSigFromDiag (Diag_node_sig _ ns) = ns
+getSigFromDiag (Empty_node l) = EmptyNode l
+
 data BasedUnitSig = Based_unit_sig DiagNodeSig 
 		  | Based_par_unit_sig BasedParUnitSig
+		    deriving Show
 
 type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
