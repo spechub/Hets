@@ -17,16 +17,28 @@
 module PrettyPrint where
 
 import Pretty
+import GlobalAnnotations
 
 -- This type class allows pretty printing of instantiating Datatypes
 -- for infomation on the predefined functions see above
 class Show a => PrettyPrint a where
-    printLatex, printLatex0, printText, printText0  :: a -> Doc
-    printLatex0 a = printText0 a
-    printLatex  a = printText  a
-    printText  a = printText0 a
+    printLatex, printLatex0, printText, printText0 :: GlobalAnnos -> a -> Doc
+    printLatex0 ga a = printText0 ga a
+    printLatex  ga a = printText  ga a
+    printText   ga a = printText0 ga a
 
+-- some useful instances ---------------------------------------------
+instance PrettyPrint String where
+    printText0  ga = ptext
+    printLatex0 ga = ptext
 
+instance (PrettyPrint a) => PrettyPrint [a] where
+    printText0  ga l = cat $ map (printText0  ga) l
+    printLatex0 ga l = cat $ map (printLatex0 ga) l
+    printText   ga l = cat $ map (printText   ga) l
+    printLatex  ga l = cat $ map (printLatex  ga) l
+
+----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 100 1.5)
 latexStyle, textStyle :: Style
 latexStyle = style {lineLength=80, ribbonsPerLine= 1.7} 
