@@ -1,13 +1,14 @@
-#!/home/maeder/bin/runhugs
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-HetCATS/CASL/capa.lhs
-$Id$
-Authors: Christian Maeder
-Year:    2002
+Maintainer  :  hets@tzi.de
+Stability   :  experimental
+Portability :  portable 
    
 test some parsers (and printers)
-
-\begin{code}
+-}
 
 module Main where
 
@@ -39,5 +40,3 @@ fileParser = [("BasicSpec", fromAParser basicSpec)
 	      , ("analysis", toStringParser runAna)
 	      , ("signature", toStringParser getSign)
 	     ]
-
-\end{code}
