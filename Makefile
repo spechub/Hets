@@ -79,7 +79,7 @@ PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
 PFE_PATHS = $(subst $(space),:,$(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS)))
 pfe_sources = $(wildcard $(subst :,/*hs , $(PFE_PATHS)))
 PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
-#-fallow-undecidable-instances -fno-monomorphism-restriction 
+happy_files = $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 endif
 
 
@@ -155,7 +155,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs,$(inline_axiom_files))
 
-derived_sources = $(drifted_files) hetcats/Version.hs \
+derived_sources = $(drifted_files) hetcats/Version.hs $(happy_files) \
                   $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
@@ -341,9 +341,6 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
 	   -i$(LEX_DIR):$(LEX_DIR)Gen:$(LEX_DIR)Spec \
               $@.hs -o $@
 
-## bad rule without programatica
-Haskell/HatParser.o: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
-
 ###############
 ### clean up
 
@@ -391,8 +388,7 @@ real_clean: bin_clean lib_clean clean
 
 ### additionally removes files not in CVS tree
 distclean: real_clean clean_genRules d_clean
-	$(RM) hetcats/Version.hs
-	$(RM) $(drifted_file) $(inline_axiom_files)
+	$(RM) $(derived_files) 
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 
 ####################################################################
