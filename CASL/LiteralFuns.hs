@@ -25,7 +25,7 @@ module CASL.LiteralFuns ( isLiteral
 			) where
 
 -- debugging
--- import Debug.Trace (trace)
+import Debug.Trace (trace)
 
 import Data.Char (isDigit)
 
@@ -33,7 +33,7 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
 
-isLiteral :: GlobalAnnos -> Id -> [TERM f] -> Bool
+isLiteral :: Show f => GlobalAnnos -> Id -> [TERM f] -> Bool
 isLiteral ga i trm =
        or [ isNumber ga i trm 
 	  , isString ga i trm
@@ -85,8 +85,9 @@ convCASLChar t = case tokStr t of
 			error ("convCASLChar: " ++ cs ++
 			       " is not a valid CASL Char")
 
-isList :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isList ga i trms = (case getLiteralType ga i of 
+isList :: Show f =>  GlobalAnnos -> Id -> [TERM f] -> Bool
+isList ga i trms = trace ("isList: "++show i++"; "++show trms) $
+                   (case getLiteralType ga i of 
 		     ListNull _ -> null trms
 		     ListCons _ n -> listTest n i trms
 		     _ -> False)
@@ -119,6 +120,7 @@ isFrac _ _ _ = False
 splitAppl :: TERM f -> (Id,[TERM f])
 splitAppl t = case t of
 	      Application oi ts _ -> (op_id oi,ts)
+              Simple_id i -> (mkId [i],[])
 	      _ -> error "splitAppl: no Application found"
 
 
