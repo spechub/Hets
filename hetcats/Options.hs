@@ -75,13 +75,14 @@ data HetcatsOpts = HcOpt { verbose  :: Int     -- ^greater than null for
 			 , intype   :: InType
 			 , outtypes :: [OutType]
 			 , rawoptions :: [Flag]
+			 , analysis :: Bool
 			 } deriving (Show,Eq)
 
 default_HetcatsOpts :: HetcatsOpts
 default_HetcatsOpts = HcOpt { verbose = 0
 			    , libdir  = ""
-			    , outdir = "." -- or like cats the same as
-			                   -- that of the input file	     
+			    , outdir = "."
+		           -- or like cats: same as that of the input file
 			    , infile = ""
 			    , intype   = SML_Gen_ATerm NonBAF
 			    , outtypes = [HetCASLOut Ascii]
@@ -90,6 +91,7 @@ default_HetcatsOpts = HcOpt { verbose = 0
 			    , intype   = HetCASLIn
 			    , outtypes = [Global_Env [XML]] -}
 			    , rawoptions = []
+			    , analysis = True
 			    }
 
 data InType = SML_Gen_ATerm ATFlag | CASLIn | HetCASLIn
@@ -213,6 +215,8 @@ options =
             "select TYPE of output files: hetcasl-latex | hetcasl-ascii | global-env"
  , Option ['L'] ["casl-libdir"]  (ReqArg (\x -> LibDir x) "DIR") 
             "CASL library directory"
+ , Option ['p'] ["just--parse"]  (NoArg (Analysis [None]))
+            "skip static analysis - just parse"
  ]
 
 -- | parse the optional Argument to --verbose
