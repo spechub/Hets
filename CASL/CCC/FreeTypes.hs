@@ -44,32 +44,35 @@ import Common.PrettyPrint
 
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
-       | any (\s->not $ elem s srts) sorts = Nothing
-       | any (\s->not $ elem s f_Inhabited) sorts = Just False   -- check if *new* sorts are inhabited
-       | elem Nothing l_Syms =  Nothing
-       | (any id $ map (\s->elem s sorts) $ ops_sorts++preds_sorts) =Nothing
-       | not $ and $ map checkTerm leadingTerms =Nothing
-       | not $ and $ map checkVar leadingTerms =Nothing 
-       | not $ and $ map checkPatterns leadingPatterns=Nothing
+       | any (\s->not $ elem s srts) newSorts = Nothing
+       | any (\s->not $ elem s f_Inhabited) newSorts = Just False   -- check if *new* sorts are inhabited
+       | elem Nothing l_Syms = Nothing                                                                  
+       | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
+       | not $ and $ map checkTerm leadingTerms = Nothing                  --   ?
+       | not $ and $ map checkVar leadingTerms = Nothing 
+       | not $ and $ map checkPatterns leadingPatterns = Nothing           --   ?    
        | otherwise = Just True
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
-         fs = trace (showPretty fs1 "") fs1
+         fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
          sorts1= Set.toList (sortSet sig)
-         sorts = trace (showPretty sorts1 "") sorts1  -- "old" sorts
-         -- newSorts = sortSet (mtarget m) Set.\\ sorts
+         sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
+         newSorts1 = Set.toList $ sortSet (mtarget m)
+         newSorts= trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
          fconstrs= concat $ map fc fs
          fc f= case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
          (srts,constructors,_)=recover_Sort_gen_ax fconstrs 
          f_Inhabited=inhabited fconstrs
-         op_preds= filter (\f->case f of
-                                 Quantification _ _ _ _ -> True
+         op_preds1= filter (\f->case f of
+                                 Quantification Universal _ _ _ -> True
                                  _ -> False) fs
-         l_Syms=map leadingSym op_preds
+         op_preds= trace (showPretty op_preds1 "leading") op_preds1
+         l_Syms=map leadingSymb op_preds
+        -- l_Syms=trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
          filterOp symb= case symb of
                          Just (Left (Qual_op_name _ op _))->[res_OP_TYPE op]
                          _ ->[]
@@ -90,9 +93,10 @@ checkFreeType m fsn
                                            check (p:ps)=if elem p ps then False
                                                         else check ps
                                        in check ts
-         leadingPatterns=map (\l-> case l of
+         leadingPatterns=map (\l-> case l of                     
                                      Just (Left (Application _ ts _))->ts
-                                     Just (Right (Predication _ ts _))->ts) $ 
+                                     Just (Right (Predication _ ts _))->ts
+                                     _ ->[]) $ 
                          map leading_Term_Predication fs
          isNil t = case t of
                      Application _ ts _-> if length ts==0 then True
@@ -126,29 +130,33 @@ checkFreeType m fsn
                 | length ts==1 =(all isVar $ patternsOfTerm $ head ts)&& (checkVar $ head ts)
                 | otherwise = checkMatrix $ map patternsOfTerm ts
     
-leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
+leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
        tp<-leading_Term_Predication f
-       return (extract_leading_symb tp) 
-{-
-leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
-leadingSym f = leading (f,False,False)
+       return (extract_leading_symb tp)
+ 
+
+leadingSymb :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
+leadingSymb f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
-                            ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)
+                            ((Quantification Universal _ f' _),b1',b2')  -> leading (f',b1',b2')
                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                             ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                             ((Predication predS _ _),_,_) -> return (Right predS)
-                            ((Strong_equation t _ _),_,_) -> case t of
+                            ((Strong_equation t _ _),_,_) -> case (term t) of
                                                               Application opS _ _ -> return (Left opS)                 
                                                               _ -> Nothing
-                            ((Existl_equation t _ _),_,_) -> case t of
+                            ((Existl_equation t _ _),_,_) -> case (term t) of
                                                               Application opS _ _ -> return (Left opS)
                                                               _ -> Nothing
                             _ -> Nothing 
--}          
+        term t = case t of
+                  Sorted_term t' _ _ ->term t'
+                  _ -> t
+ 
 
-leading_Term_Predication ::  FORMULA f -> Maybe(Either (TERM f) (FORMULA f))
-leading_Term_Predication f =leading (f,False,False)
+leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
+leading_Term_Predication f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
                             ((Quantification Universal _ f' _),_,_)  -> leading (f',b1,b2)
                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
@@ -161,6 +169,12 @@ leading_Term_Predication f =leading (f,False,False)
                                                               Application _ _ _ -> return (Left t)
                                                               _ -> Nothing
                             _ -> Nothing
+{-
+        term t = case t of
+                  Sorted_term t' _ _ ->term t'
+                  _ -> t
+-} 
+
 
 extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
 extract_leading_symb lead = case lead of
