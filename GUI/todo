@@ -29,7 +29,7 @@ Jorina
  GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
  HidingThm GMorphism ThmLinkStatus 
 
-- es muss geprüft werden, ob die benutzten theorem links solche
+(X) es muss geprüft werden, ob die benutzten theorem links solche
   sind, die nicht in ihrer DGLinkLab-Liste den aktuell zu beweisenden
   Theorem-Link enthalten
 
