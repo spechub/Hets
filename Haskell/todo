@@ -11,9 +11,63 @@ In Logic_Haskell.hs:
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- was von importierten Modulen reinkommt
                             GlobalAnnos) ->   -- global annotations
-                           Result (basic_spec,  -- wie oben zurückgeben
+                           Result (basic_spec,  -- renamed module
                                   sign,sign, -- (gesamt, delta)
                                   -- delta = Deklarationen im Modul
                                   -- gesamt = importiert + delta 
                                             (mittels Vereinigungsfunktion)
                                   [Named sentence] -- Programmdefinitionen))
+
+tiModule :: [String]                    -- dump flags
+         -> AHsModule                   -- syntax of module after parsing
+                                            das ist basic_spec
+         -> ModuleInfo                  -- info about imported entities
+                                            das ist sign
+         -> IO (Timing,              -- timing values for each stage
+                Env Scheme,          -- output variable assumptions (may be local, and pattern variables)
+                Env Scheme,          -- output data cons assumptions
+                ClassHierarchy,      -- output class Hierarchy
+                KindEnv,             -- output kinds
+                IdentTable,          -- info about identifiers in the module
+                AHsModule,           -- renamed module (als basic_spec
+                                         zurückgeben + sentences extrahieren)
+                [AHsDecl])           -- synonyms defined in this module
+
+sign = ModuleInfo, aus der tiModule-Ausgabe konstruieren wie in Main.hs
+
+
+type AxiomName = String
+
+data Binding
+--  = NullBind
+  = AndBindings    Binding Binding
+  | AxiomDecl      AxiomName Formula
+  deriving (Eq,Show)
+
+data AxiomBndr
+ = AxiomBndr HsName
+ | AxiomBndrSig HsName HsQualType
+  deriving (Eq,Show)
+
+data Quantifier
+  = AxForall [AxiomBndr]
+   | AxExists [AxiomBndr]
+   | AxExistsOne [AxiomBndr]
+  deriving (Eq,Show)
+
+data Formula
+  = AxQuant   Quantifier Formula
+  | AxEq      Formula HsExp SrcLoc
+  | AxExp     HsExp
+  deriving (Eq,Show)
+
+Erweiterung der statischen Analyse auf Formula, d.h.
+tiFormula ::  TypeEnv -> Formula -> TI ([Pred], TypeEnv, Type)
+
+unter Benutzung von tiExpr
+
+Analyse von "AxQuant   Quantifier Formula" ähnlich wie 
+  tiExpr env expr@(AHsLambda sloc pats e)
+
+tiFormula an geeigneter Stelle in tiProgram (oder Unterfunktion davon)
+einbinden
