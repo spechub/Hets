@@ -50,7 +50,7 @@ needs to be fixed.
 >	x <- constructorP
 >	xs <- many variable
 >	symbol "="
->	b <- condecl 
+>	b <- conrecdecl 
 >	d <- opt deriveP
 >       return $ D x con xs [b] d NewTypeStmt
 
