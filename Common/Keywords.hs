@@ -28,6 +28,7 @@ withinS,
   sortS,
   revealS,
   resultS,
+  propS,
   localS,
   libraryS,
   lambdaS,
@@ -147,6 +148,7 @@ inS  = "in"
 lambdaS  = "lambda"
 libraryS  = "library"
 localS  = "local"
+propS = "prop"
 resultS  = "result"
 revealS  = "reveal" 
 sortS  = "sort"

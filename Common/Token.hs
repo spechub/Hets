@@ -89,8 +89,8 @@ casl_reserved_words =
     [andS, archS, asS, assocS, axiomS, axiomS ++ sS, closedS, commS, endS, 
     existsS, fitS, forallS, freeS, fromS, generatedS, getS, givenS,
     hideS, idemS, inS, lambdaS, libraryS, localS, 
-    opS, opS ++ sS, predS, predS ++ sS, resultS, revealS, sortS, 
-    sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
+    opS, opS ++ sS, predS, predS ++ sS, propS, propS ++ sS, resultS, revealS, 
+    sortS, sortS ++ sS, specS, thenS, toS, typeS, typeS ++ sS, 
     unitS, unitS ++ sS, varS, varS ++ sS, versionS, viewS, withS, withinS]
 
 -- these words are legal in terms, but illegal in declarations
