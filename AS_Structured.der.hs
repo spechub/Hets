@@ -9,13 +9,15 @@
    structured specifications in HetCASL.
 
    todo:
-     - ATermConversion SML-CATS
+     - ATermConversion SML-CATS has now his own module 
+       (s. HetCATS/aterm_conv/)
      - LaTeX Pretty Printing
 -}
 
-{-! global: ATermConvertible !-}
-
 module AS_Structured where
+
+-- DrIFT command:
+{-! global: UpPos !-}
 
 import Id
 import AS_Annotation
