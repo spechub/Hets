@@ -5,8 +5,8 @@
 *** Error 3.1, expected further mixfix token: ["p","x"]
 *** Error 4.3, expected further mixfix token: ["(__)"]
 *** Error 5.1, expected further mixfix token: ["(__)","__"]
-*** Error 6.3, unexpected mixfix token: <
-*** Error 7.3, unexpected mixfix token: <
+a < b
+a < b
 *** Error 8.4, expected further mixfix token: ["(","(op )","(var )"]
 *** Error 9.1, unexpected mixfix token: (
 *** Error 10.13, unexpected mixfix token: ,
@@ -77,5 +77,4 @@
 	A__([__]__(a,+__(b)))
 	__[__]__(A,a,+__(b))
 	__+__(A__([__](a)),b)
-	__+__(A[a],b)
-*** Error 34.4, expected further mixfix token: ["*","+","-","-->","::"]
+*** Error 34.4, expected further mixfix token: ["!=","/=","<","<=","<>"]

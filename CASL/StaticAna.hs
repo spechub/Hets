@@ -337,7 +337,7 @@ ana_OP_ITEM ga aoi =
  	   let vars =  concatMap ( \ (Arg_decl v _ _) -> v) args
 	       allOps = foldr ( \ v s -> Set.insert (simpleIdToId v) s) 
 			ops vars 
-	       Result ds mt = resolveMixfix newGa allOps preds False $ item at
+	       Result ds mt = resolveMixfix newGa allOps preds $ item at
 	   addDiags ds
 	   case mt of 
 	     Nothing -> return aoi { item = Op_decl [i] ty [] ps }
@@ -369,7 +369,7 @@ ana_OP_ATTR ga ty ois oa =
 	do ops <- gets allOpIds
 	   preds <- gets allPredIds 
 	   newGa <- gets $ addAssocs ga
-	   let Result ds mt = resolveMixfix newGa ops preds False t
+	   let Result ds mt = resolveMixfix newGa ops preds t
 	   addDiags ds
 	   case mt of 
 	     Nothing -> return Nothing

@@ -48,11 +48,10 @@ singleOpArgId = mkId (getPlainTokenList exprId ++ [exprTok])
 multiArgsId = mkId (getPlainTokenList exprId ++
 				 getPlainTokenList tupleId)
 
-initRules ::  GlobalAnnos -> IdSet -> Int -> [Rule]
-initRules ga (opS, predS, _) maybeFormula = 
+initRules ::  GlobalAnnos -> IdSet -> [Rule]
+initRules ga (opS, predS, _) = 
     let ops = Set.toList opS
-	preds = if maybeFormula > 0 then 
-		     Set.toList predS else []
+	preds = Set.toList predS
     in concat [ mkRule typeId :
        mkRule exprId :
        mkRule varId :
@@ -131,13 +130,13 @@ filterByPredicate bArg bOp =
 
 type TermChart f = Chart (TERM f)
 
-iterateCharts :: GlobalAnnos -> IdSet -> Int -> [TERM f] -> TermChart f 
+iterateCharts :: GlobalAnnos -> IdSet -> [TERM f] -> TermChart f 
 	      -> TermChart f
-iterateCharts g ids maybeFormula terms c = 
-    let self = iterateCharts g ids maybeFormula
+iterateCharts g ids terms c = 
+    let self = iterateCharts g ids
 	expand = expandPos Mixfix_token 
 	oneStep = nextChart addType filterByPredicate toAppl g c
-	resolveTerm = resolveMixTrm g ids 0
+	resolveTerm = resolveMixTrm g ids
     in if null terms then c
        else case head terms of
             Mixfix_term ts -> self (ts ++ tail terms) c
@@ -147,7 +146,7 @@ iterateCharts g ids maybeFormula terms c =
 		self (expand ("{", "}") ts ps ++ tail terms) c
 	    Mixfix_parenthesized ts ps -> 
 		if isSingle ts then 
-		   let Result mds v = resolveMixTrm g ids maybeFormula
+		   let Result mds v = resolveMixTrm g ids
 				      $ head ts
 		       tNew = case v of Nothing -> head ts
 					Just x -> x
@@ -190,18 +189,17 @@ mkIdSet ops preds =
     let both = Set.intersection ops preds in
 	(ops, Set.difference preds both, preds)
 
-resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> Bool -> TERM f 
+resolveMixfix :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> TERM f 
 	      -> Result (TERM f)
-resolveMixfix g ops preds maybeFormula t = 
-    let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) 
-			  (if maybeFormula then 1 else 0) t 
+resolveMixfix g ops preds t = 
+    let r@(Result ds _) = resolveMixTrm g (mkIdSet ops preds) t 
 	in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: GlobalAnnos -> IdSet -> Int -> TERM f -> Result (TERM f)
-resolveMixTrm ga ids maybeFormula trm =
+resolveMixTrm :: GlobalAnnos -> IdSet -> TERM f -> Result (TERM f)
+resolveMixTrm ga ids trm =
 	getResolved showTerm (posOfTerm trm) toAppl
-	   $ iterateCharts ga ids maybeFormula [trm] $ 
-	    initChart (initRules ga ids maybeFormula) Set.empty
+	   $ iterateCharts ga ids [trm] $ 
+	    initChart (initRules ga ids) Set.empty
 
 resolveFormula :: GlobalAnnos -> Set.Set Id -> Set.Set Id -> (FORMULA f)
 	       -> Result (FORMULA f)
@@ -212,7 +210,7 @@ resolveFormula g ops preds f =
 resolveMixFrm :: GlobalAnnos -> IdSet-> FORMULA f -> Result (FORMULA f)
 resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
     let self = resolveMixFrm g ids 
-	resolveTerm = resolveMixTrm g ids 0 in
+	resolveTerm = resolveMixTrm g ids in
     case frm of 
        Quantification q vs fOld ps -> 
 	   let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) -> 
@@ -257,7 +255,7 @@ resolveMixFrm g ids@(ops, onlyPreds, preds) frm =
 	   do tNew <- resolveTerm tOld  
 	      return $ Membership tNew s ps
        Mixfix_formula tOld -> 
-	   do tNew <- resolveMixTrm g ids 1 tOld
+	   do tNew <- resolveMixTrm g ids tOld
 	      mkPredication tNew
          where mkPredication t = 
 	         case t of 

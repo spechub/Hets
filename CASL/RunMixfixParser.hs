@@ -62,7 +62,7 @@ resolveForm ga =
 
 resolveTerm :: GlobalAnnos -> AParser (Result (TERM ()))
 resolveTerm ga = 
-      resolveMixfix ga stdOps stdPreds False `fmap` term []
+      resolveMixfix ga stdOps stdPreds `fmap` term []
 
 testTerm ::  AParser WrapString
 testTerm = do t <- term [] :: AParser (TERM ())

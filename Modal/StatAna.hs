@@ -45,7 +45,7 @@ minExpForm ga s form =
 	          Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
 		  Term_mod t -> let
 		    r = do 
-		      t1 <- resolveMixfix newGa (allOpIds s) preds False t
+		      t1 <- resolveMixfix newGa (allOpIds s) preds t
 		      ts <- minExpTerm minExpForm ga s t1
 		      t2 <- is_unambiguous t ts ps
 		      let srt = term_sort t2
