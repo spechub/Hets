@@ -1,6 +1,6 @@
-type B%%,C,Int
-%%free type AT ::= A (s1 : Int; s2 : B)
-%%op  + : AT * B -> C
-%%op  f : B -> B
-%%op  f : C -> C
+type B,C,Int
+free type AT ::= A (s1 : Int; s2 : B)
+op  + : AT * B -> C
+op  f : B -> B
+op  f : C -> C
 type s < B

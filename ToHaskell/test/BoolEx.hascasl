@@ -1,0 +1,24 @@
+%% Example for testing the translation from HasCASL to haskell.
+
+free type Bool ::= True | False
+
+op neg : Bool -> Bool
+program neg x = case x of False -> True | True -> False
+
+op wedge : Bool * Bool -> Bool
+program wedge (x,y) = case (x,y) of (False, False) -> False
+				| (True, False)  -> False
+				| (False, True)  -> False
+				| (True, True)   -> True
+
+op vee : Bool * Bool -> Bool
+program vee (x,y) = neg (wedge ((neg (x)), (neg (y))))
+
+op le : Bool * Bool -> Bool
+program le (x,y) = vee ((neg (x)), y) 
+
+op eq : Bool * Bool -> Bool
+program eq (x,y) = wedge ((le (x,y)), (le (y,x)))
+
+op ne : Bool * Bool -> Bool
+program ne (x,y) = wedge ( (vee(x,y)), (neg(wedge(x,y))) )
