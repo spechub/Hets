@@ -148,6 +148,9 @@ strPosPredDecl :: [Pos] -> [TokenKind]
 strPosPredDecl []    = []
 strPosPredDecl (h:t) = (toComma $ length t) ++ [Colon]
 
+strPosVarDecl :: [Pos] -> [TokenKind]
+strPosVarDecl = strPosPredDecl
+
 strPosPredDefn :: [Pos] -> [TokenKind]
 strPosPredDefn _ = [Key]
 
@@ -162,8 +165,8 @@ strPosArgDecls (_:(_:t)) = (Key:(toSemi $ length t)) ++ [Key]
 strPosPRED_ITEM :: [Pos] -> [TokenKind]
 strPosPRED_ITEM = strPosSORT_ITEM
 
-strPosVarItems :: [Pos] -> [TokenKind]
-strPosVarItems = strPosSORT_ITEM
+strPosVAR_ITEM :: [Pos] -> [TokenKind]
+strPosVAR_ITEM = strPosSORT_ITEM
 
 strPosVAR_DECL :: [Pos] -> [TokenKind]
 strPosVAR_DECL = strPosPredDecl
@@ -672,17 +675,19 @@ addSIG_ITEMS sigma (Datatype_items _ _p) = return sigma
 ------------------------------------------------------------------------------
 -- VAR-ITEMS
 ------------------------------------------------------------------------------
-{-
-addVAR_DECL :: SORT -> LocalEnv -> VAR -> (Pos, String) -> Result LocalEnv
-addVAR_DECL s env v pos =
-  do env' <- checkSortExists env (fst pos) s
-     return env' { getGlobal = Global (setAddOne (global $ getGlobal env')
-                               (VarDecl v s (getListPos pos))) }
 
-addVarItems :: LocalEnv -> VAR_DECL -> (Pos, String) -> Result LocalEnv
-addVarItems env (Var_decl v s p) pos =
-  chainPos env (addVAR_DECL s) v [] p strPosVAR_DECL
--}
+addVAR_DECL :: LocalEnv -> VAR_DECL -> ExtPos -> Result LocalEnv
+addVAR_DECL sigma (Var_decl x_n s _pos') _pos =
+  do checkSortExists sigma (fst _pos) s
+     let _extPos = zip _pos' (strPosVarDecl _pos')
+     let _decls  = toVarDecls s _extPos x_n
+     return sigma { getGlobal = Global (setAdd (global $ getGlobal sigma)
+                                                _decls) }
+
+addVAR_ITEMS :: LocalEnv -> [VAR_DECL] -> [Pos] -> Result LocalEnv
+addVAR_ITEMS sigma _v _pos =
+  chainPos sigma addVAR_DECL _v [] _pos strPosVAR_ITEM
+
 ------------------------------------------------------------------------------
 -- BASIC-ITEMS
 ------------------------------------------------------------------------------
@@ -693,7 +698,7 @@ addBASIC_ITEMS sigma _itm =
     (Sig_items _s)              -> addSIG_ITEMS sigma _s;
     (Free_datatype _l _p)       -> return sigma;
     (Sort_gen _s _p)            -> return sigma;
-    (Var_items _v _p)           -> return sigma;
+    (Var_items _v _p)           -> addVAR_ITEMS sigma _v _p;
     (Local_var_axioms _v _f _p) -> return sigma;
     (Axiom_items _f _p)         -> return sigma
 
