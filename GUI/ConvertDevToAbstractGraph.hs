@@ -38,6 +38,7 @@ import qualified HTk
 import qualified Common.Lib.Map as Map hiding (isEmpty)
 import Common.Lib.Graph
 import Common.Id
+import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.PrettyPrint
 import qualified Common.Result as Res
 import Syntax.AS_Library
@@ -45,6 +46,7 @@ import Syntax.AS_Library
 import Data.IORef
 import List(nub)
 
+import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -56,6 +58,21 @@ data ConversionMaps = ConversionMaps {
                         abstr2dgNode :: AGraphToDGraphNode,
 		        abstr2dgEdge :: AGraphToDGraphEdge,
                         libname2dg :: LibEnv}
+                      deriving Show
+
+instance PrettyPrint String where
+    printText0 ga c = ptext (take 25 c)
+
+instance  Common.PrettyPrint.PrettyPrint ConversionMaps where
+  printText0 ga convMaps =
+       ptext "dg2abstrNode"
+    Pretty.$$ (printText0 ga $ dg2abstrNode convMaps)
+    Pretty.$$ ptext "dg2abstrEdge"
+    Pretty.$$ (printText0 ga $ dg2abstrEdge convMaps)
+    Pretty.$$ ptext "abstr2dgNode"
+    Pretty.$$ (printText0 ga $ abstr2dgNode convMaps)
+    Pretty.$$ ptext "abstr2dgEdge"
+    Pretty.$$ (printText0 ga $ abstr2dgEdge convMaps)
 
 data GraphMem = GraphMem {
 		  graphInfo :: GraphInfo,
@@ -246,6 +263,7 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun
       writeIORef ioRefProofStatus newProofStatus
       descr <- readIORef event
       convMaps <- readIORef convRef
+      --putStrLn (showPretty convMaps "")
       (newDescr,newConvMaps)
          <- applyChanges gid ln actGraphInfo descr convMaps history
       writeIORef event newDescr
