@@ -188,7 +188,7 @@ instance Show TypeSig where
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data Sign = Sign { baseSig :: String, -- like Pure, HOL etc.
+data Sign = Sign { baseSig :: String, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: Map.Map String Typ,
                    syn :: Syntax

@@ -147,3 +147,11 @@ HetCASL/Hets (Till)
 Ontologien: neuer SFB-Antrag (Frühjahr 2005)
 Abstract robotics (cxl, paolo)
 AWE II / General FM (cxl, bkb)
+
+Text formatting
+===============
+Datatype with abstract formatting syntax 
+different "style sheets" for different output formats (ASCII, HTML, LaTeX)
+Priorities of line breaks?
+How to handle text width in LaTeX?
+
