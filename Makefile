@@ -41,8 +41,7 @@ HADDOCK    = haddock
 CPPP       = cpp 
 
 HC_FLAGS   = -Wall -fglasgow-exts -fno-monomorphism-restriction \
-             -fallow-overlapping-instances -fallow-undecidable-instances
-# -ddump-minimal-imports 
+             -fallow-overlapping-instances -fallow-undecidable-instances -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
@@ -511,7 +510,7 @@ hets.hs: hetcats/Version.hs
 
 ## rule for appendHaskellPreludeString
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
-        $(APPENDPRELUDESTRING)
+        $(APPENDPRELUDESTRING) Haskell/ProgramaticaPrelude.hs
 	$(APPENDPRELUDESTRING) < $< > $@
 
 ## rule for cpp and haddock 
