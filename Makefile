@@ -109,6 +109,7 @@ doc: docs/index.html utils/hd-lib
 
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
+          -i/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base,/home/linux-bkb/ghc/ghc-6.0/share/ghc-6.0/html/base/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
