@@ -145,6 +145,12 @@ iterateCharts ga terms chart =
 			let newP = case mp of Just pat -> pat
 					      Nothing -> p
 		        recurse $ AsPattern vd newP ps
+		    TypedTerm trm k ty ps -> do
+                        -- assume that type is analysed
+		        mt <- resolve ga trm
+			let newT = case mt of Just tr -> tr
+					      Nothing -> trm
+		        recurse $ TypedTerm newT k ty ps
 		    _ -> error ("iterCharts: " ++ show t)
 
 -- * equation stuff 

@@ -107,7 +107,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        mty <- anaStarType scTy
        case mty of 
 	   Just ty -> do 
-               mt <- resolveTerm ga (Just ty) trm
+               mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
 	       putAssumps as
 	       putTypeMap tm
 	       mSc <- fromResult $ const $ generalize $ 
@@ -152,7 +152,8 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 	       let exbs = extractVars newPat
 	       checkUniqueVars exbs
 	       mapM_ addVarDecl exbs
-	       mt <- resolveTerm ga Nothing trm
+	       mt <- resolveTerm ga Nothing trm 
+               -- guarantee that type of pattern and term are equal!
 	       putAssumps as
 	       case mt of 
 		   Just newTerm  -> let newPrg = ProgEq newPat newTerm qs in
