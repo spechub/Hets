@@ -35,9 +35,11 @@ instance Language CASL where  -- default definition is okay
 instance Category CASL Sign Morphism  
     where
          -- ide :: id -> object -> morphism
-	 ide CASL _ = fun_err "ide"
+	 ide CASL sigma = fun_err "ide" {-Morphism { msource = sigma,
+                                     mtarget = sigma,
+                                     sort_map = -}
          -- o :: id -> morphism -> morphism -> Maybe morphism
-	 o CASL _ _ = fun_err "o"
+	 comp CASL _ _ = fun_err "comp"
          -- dom, cod :: id -> morphism -> object
 	 dom CASL _ = fun_err "dom"
 	 cod CASL _ = fun_err "cod"

@@ -44,7 +44,7 @@ data DGNode = DGNode {
 data DGLink = DGLink {
               -- dgl_name :: String,
               -- dgl_src, dgl_tar :: DGNode,  -- already in graph structure
-              dgl_morphism :: G_morphism,
+              dgl_morphism :: GMorphism,
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
 
@@ -86,4 +86,7 @@ type LibEntry = (GlobalEnv,DGraph)
 type LibEnv = FiniteMap SIMPLE_ID LibEntry
 
 
-get_dgn_name :: DGNode -> Maybe String
+get_dgn_name :: DGNode -> Maybe SIMPLE_ID
+get_dgn_name (DGNode _ _ (DGSpecInst name)) = Just name
+get_dgn_name (DGRef name _ _) = Just name
+get_dgn_name _ = Nothing

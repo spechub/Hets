@@ -76,26 +76,34 @@ data Diagram object morphism = Graph object morphism
 
 -- languages, define like "data CASL = CASL deriving Show" 
 
-class Show id => Language id where
-    language_name :: id -> String
+class Show lid => Language lid where
+    language_name :: lid -> String
     language_name i = show i
 
 -- (a bit unsafe) coercion using the language name
-coerce :: (Language id1, Language id2) => id1 -> id2 -> a -> Maybe b
+coerce :: (Language lid1, Language lid2) => lid1 -> lid2 -> a -> Maybe b
 coerce i1 i2 a = if language_name i1 == language_name i2 then 
 		 (Just $ unsafeCoerce a) else Nothing
+
+rcoerce :: (Language lid1, Language lid2) => lid1 -> lid2 -> Pos-> a -> Result b
+rcoerce i1 i2 pos a =
+  maybeToResult pos 
+                ("Logic "++ language_name i1 ++ " expected, but "
+                            ++ language_name i2++" found")
+                (coerce i1 i2 a)
 
 -- Categories are given by a quotient,
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
 
-class (Language id, Eq sign, Show sign, Eq morphism) => 
-      Category id sign morphism | id -> sign, id -> morphism where
-         ide :: id -> sign -> morphism
-         o :: id -> morphism -> morphism -> Maybe morphism
-         dom, cod :: id -> morphism -> sign
-         legal_obj :: id -> sign -> Bool
-         legal_mor :: id -> morphism -> Bool
+class (Language lid, Eq sign, Show sign, Eq morphism) => 
+      Category lid sign morphism | lid -> sign, lid -> morphism where
+         ide :: lid -> sign -> morphism
+         comp :: lid -> morphism -> morphism -> Maybe morphism
+           -- diagrammatic order
+         dom, cod :: lid -> morphism -> sign
+         legal_obj :: lid -> sign -> Bool
+         legal_mor :: lid -> morphism -> Bool
 
 -- abstract syntax, parsing and printing
 
@@ -103,48 +111,48 @@ type ParseFun a = FilePath -> Int -> Int -> String -> (a,String,Int,Int)
                   -- args: filename, line, column, input text
                   -- result: value, remaining text, line, column 
 
-class (Language id, PrettyPrint basic_spec, Eq basic_spec,
+class (Language lid, PrettyPrint basic_spec, Eq basic_spec,
        PrettyPrint symb_items, Eq symb_items,
        PrettyPrint symb_map_items, Eq symb_map_items) =>
-      Syntax id basic_spec symb_items symb_map_items
-        | id -> basic_spec, id -> symb_items,
-          id -> symb_map_items
+      Syntax lid basic_spec symb_items symb_map_items
+        | lid -> basic_spec, lid -> symb_items,
+          lid -> symb_map_items
       where 
          -- parsing
-         parse_basic_spec :: id -> Maybe(ParseFun basic_spec)
-         parse_symb_items :: id -> Maybe(ParseFun symb_items)
-         parse_symb_map_items :: id -> Maybe(ParseFun symb_map_items)
+         parse_basic_spec :: lid -> Maybe(ParseFun basic_spec)
+         parse_symb_items :: lid -> Maybe(ParseFun symb_items)
+         parse_symb_map_items :: lid -> Maybe(ParseFun symb_map_items)
 
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
-class (Category id sign morphism, Show sentence, 
+class (Category lid sign morphism, Show sentence, 
        Ord symbol, Show symbol)
-    => Sentences id sentence sign morphism symbol
-        | id -> sentence, id -> sign, id -> morphism,
-          id -> symbol
+    => Sentences lid sentence sign morphism symbol
+        | lid -> sentence, lid -> sign, lid -> morphism,
+          lid -> symbol
       where
          -- sentence translation
-      map_sen :: id -> morphism -> sentence -> Result sentence
+      map_sen :: lid -> morphism -> sentence -> Result sentence
          -- parsing of sentences
-      parse_sentence :: id -> sign -> String -> Result sentence
+      parse_sentence :: lid -> sign -> String -> Result sentence
            -- is a term parser needed as well?
-      provers :: id -> [Prover sentence symbol]
-      cons_checkers :: id -> [Cons_checker 
+      provers :: lid -> [Prover sentence symbol]
+      cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
 -- static analysis
 
-class ( Syntax id basic_spec symb_items symb_map_items
-      , Sentences id sentence sign morphism symbol
+class ( Syntax lid basic_spec symb_items symb_map_items
+      , Sentences lid sentence sign morphism symbol
       , Show raw_symbol, Eq raw_symbol)
-    => StaticAnalysis id 
+    => StaticAnalysis lid 
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol 
-        | id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items, 
-          id -> sign, id -> morphism, id -> symbol, id -> raw_symbol
+        | lid -> basic_spec, lid -> sentence, lid -> symb_items,
+          lid -> symb_map_items, 
+          lid -> sign, lid -> morphism, lid -> symbol, lid -> raw_symbol
       where
          -- static analysis of basic specifications and symbol maps
-         basic_analysis :: id -> 
+         basic_analysis :: lid -> 
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
@@ -153,36 +161,36 @@ class ( Syntax id basic_spec symb_items symb_map_items
                            -- the second output sign united with the input sing
                            -- should yield the first output sign
          stat_symb_map_items :: 
-	     id -> symb_map_items -> Result (EndoMap raw_symbol)
-         stat_symb_items :: id -> symb_items -> Result [raw_symbol] 
+	     lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
+         stat_symb_items :: lid -> symb_items -> Result [raw_symbol] 
          -- architectural sharing analysis for one morphism
-         ensures_amalgamability :: id ->
+         ensures_amalgamability :: lid ->
               (Diagram sign morphism, Node, sign, LEdge morphism, morphism) -> 
                Result (Diagram sign morphism)
          -- do we need it also for sinks consisting of two morphisms?
 
          -- symbols and symbol maps
-         symbol_to_raw :: id -> symbol -> raw_symbol
-         id_to_raw :: id -> Id -> raw_symbol 
-         sym_of :: id -> sign -> Set symbol
-         symmap_of :: id -> morphism -> EndoMap symbol
-         matches :: id -> symbol -> raw_symbol -> Bool
-         sym_name :: id -> symbol -> Id 
+         symbol_to_raw :: lid -> symbol -> raw_symbol
+         id_to_raw :: lid -> Id -> raw_symbol 
+         sym_of :: lid -> sign -> Set symbol
+         symmap_of :: lid -> morphism -> EndoMap symbol
+         matches :: lid -> symbol -> raw_symbol -> Bool
+         sym_name :: lid -> symbol -> Id 
    
          -- operations on signatures and morphisms
-         add_sign :: id -> sign -> sign -> sign
-         empty_signature :: id -> sign
-         signature_union :: id -> sign -> sign -> Result sign
-         final_union :: id -> sign -> sign -> Result sign
-         is_subsig :: id -> sign -> sign -> Bool
+         add_sign :: lid -> sign -> sign -> sign
+         empty_signature :: lid -> sign
+         signature_union :: lid -> sign -> sign -> Result sign
+         final_union :: lid -> sign -> sign -> Result sign
+         is_subsig :: lid -> sign -> sign -> Bool
          generated_sign, cogenerated_sign :: 
-	     id -> [raw_symbol] -> sign -> Result morphism
+	     lid -> [raw_symbol] -> sign -> Result morphism
          induced_from_morphism :: 
-	     id -> EndoMap raw_symbol -> sign -> Result morphism
+	     lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_to_morphism :: 
-	     id -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
+	     lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism 
          extend_morphism :: 
-	     id -> sign -> morphism -> sign -> sign -> Result morphism
+	     lid -> sign -> morphism -> sign -> sign -> Result morphism
 
 -- sublogics
 
@@ -193,44 +201,44 @@ class Ord l => LatticeWithTop l where
 
 -- logics
 
-class (StaticAnalysis id 
+class (StaticAnalysis lid 
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol,
        LatticeWithTop sublogics) =>
-      Logic id sublogics
+      Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol 
-        | id -> sublogics, id -> basic_spec, id -> sentence, id -> symb_items,
-          id -> symb_map_items,
-          id -> sign, id -> morphism, id ->symbol, id -> raw_symbol
+        | lid -> sublogics, lid -> basic_spec, lid -> sentence, lid -> symb_items,
+          lid -> symb_map_items,
+          lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
 	  where
-         sublogic_names :: id -> sublogics -> [String] 
+         sublogic_names :: lid -> sublogics -> [String] 
              -- the first name is the principal name
-         all_sublogics :: id -> [sublogics]
+         all_sublogics :: lid -> [sublogics]
 
-         is_in_basic_spec :: id -> sublogics -> basic_spec -> Bool
-         is_in_sentence :: id -> sublogics -> sentence -> Bool
-         is_in_symb_items :: id -> sublogics -> symb_items -> Bool
-         is_in_symb_map_items :: id -> sublogics -> symb_map_items -> Bool
-         is_in_sign :: id -> sublogics -> sign -> Bool
-         is_in_morphism :: id -> sublogics -> morphism -> Bool
-         is_in_symbol :: id -> sublogics -> symbol -> Bool
+         is_in_basic_spec :: lid -> sublogics -> basic_spec -> Bool
+         is_in_sentence :: lid -> sublogics -> sentence -> Bool
+         is_in_symb_items :: lid -> sublogics -> symb_items -> Bool
+         is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
+         is_in_sign :: lid -> sublogics -> sign -> Bool
+         is_in_morphism :: lid -> sublogics -> morphism -> Bool
+         is_in_symbol :: lid -> sublogics -> symbol -> Bool
 
-         min_sublogic_basic_spec :: id -> basic_spec -> sublogics
-         min_sublogic_sentence :: id -> sentence -> sublogics
-         min_sublogic_symb_items :: id -> symb_items -> sublogics
-         min_sublogic_symb_map_items :: id -> symb_map_items -> sublogics
-         min_sublogic_sign :: id -> sign -> sublogics
-         min_sublogic_morphism :: id -> morphism -> sublogics
-         min_sublogic_symbol :: id -> symbol -> sublogics
+         min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
+         min_sublogic_sentence :: lid -> sentence -> sublogics
+         min_sublogic_symb_items :: lid -> symb_items -> sublogics
+         min_sublogic_symb_map_items :: lid -> symb_map_items -> sublogics
+         min_sublogic_sign :: lid -> sign -> sublogics
+         min_sublogic_morphism :: lid -> morphism -> sublogics
+         min_sublogic_symbol :: lid -> symbol -> sublogics
 
-         proj_sublogic_basic_spec :: id -> sublogics -> basic_spec -> basic_spec
-         proj_sublogic_symb_items :: id -> sublogics -> symb_items -> Maybe symb_items
-         proj_sublogic_symb_map_items :: id -> sublogics -> symb_map_items -> Maybe symb_map_items
-         proj_sublogic_sign :: id -> sublogics -> sign -> sign 
-         proj_sublogic_morphism :: id -> sublogics -> morphism -> morphism
-         proj_sublogic_epsilon :: id -> sublogics -> sign -> morphism
-         proj_sublogic_symbol :: id -> sublogics -> symbol -> Maybe symbol
+         proj_sublogic_basic_spec :: lid -> sublogics -> basic_spec -> basic_spec
+         proj_sublogic_symb_items :: lid -> sublogics -> symb_items -> Maybe symb_items
+         proj_sublogic_symb_map_items :: lid -> sublogics -> symb_map_items -> Maybe symb_map_items
+         proj_sublogic_sign :: lid -> sublogics -> sign -> sign 
+         proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
+         proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
+         proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 
 
 {- class hierarchy:

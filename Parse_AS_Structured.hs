@@ -12,7 +12,7 @@
 
    todo:
     fixing of details concerning annos
-    logic translations
+    logic translations and implicit coercions
     arch specs
 -}
 
@@ -153,11 +153,11 @@ switchLogic n l@(Logic i : _) =
 
 parseItemsMap :: GenParser Char AnyLogic (G_symb_map_items_list, [Token])
 parseItemsMap = 
-   do Logic id <- getState
-      (cs, ps) <- callParser (parse_symb_map_items id) (language_name id) "symbol maps"
+   do Logic lid <- getState
+      (cs, ps) <- callParser (parse_symb_map_items lid) (language_name lid) "symbol maps"
                       `separatedBy` commaT 
             -- ??? should be plainComma, but does not work for reveal s,t!
-      return (G_symb_map_items_list id cs, ps)
+      return (G_symb_map_items_list lid cs, ps)
 
 
 parseMapping :: LogicGraph -> GenParser Char AnyLogic ([G_mapping], [Token])
@@ -179,10 +179,10 @@ parseMapping l =
 
 parseItemsList :: LogicGraph -> GenParser Char AnyLogic (G_symb_items_list, [Token])
 parseItemsList l = 
-   do Logic id <- getState
-      (cs, ps) <- callParser (parse_symb_items id) (language_name id) "symbols"
+   do Logic lid <- getState
+      (cs, ps) <- callParser (parse_symb_items lid) (language_name lid) "symbols"
                       `separatedBy` plainComma
-      return (G_symb_items_list id cs, []) 
+      return (G_symb_items_list lid cs, []) 
 
 
 parseHiding :: LogicGraph -> GenParser Char AnyLogic ([G_hiding], [Token])
@@ -286,10 +286,10 @@ callParser p name itemType = do
 
 
 basicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
-basicSpec l = do Logic id <- getState
-                 bspec <- callParser (parse_basic_spec id) (language_name id)
+basicSpec l = do Logic lid <- getState
+                 bspec <- callParser (parse_basic_spec lid) (language_name lid)
                             "basic specification"
-                 return (Basic_spec (G_basic_spec id bspec))
+                 return (Basic_spec (G_basic_spec lid bspec))
 
 
 logicSpec :: LogicGraph -> GenParser Char AnyLogic SPEC
@@ -298,24 +298,35 @@ logicSpec l = do
    log <- logicName
    let Logic_name t _ = log
    s2 <- asKey ":"
-   setState (lookupLogic log l) 
+   oldlog <- getState
+   let newlog = lookupLogic log l
+       logtrans = coercelog newlog oldlog
+   setState newlog
    sp <- annoParser (specE l)
-   return (Qualified_spec log sp (map tokPos [s1,t,s2]))
+   setState oldlog
+   let sp1 = Qualified_spec log sp (map tokPos [s1,t,s2])
+   return (logtrans sp1)
 
 
 lookupLogic (Logic_name log sublog) (logics,_) =
-  case find (\(Logic id) -> language_name id == tokStr log) logics of
+  case find (\(Logic lid) -> language_name lid == tokStr log) logics of
     Nothing -> error ("logic "++tokStr log++" unknown")
-    Just (Logic id) -> 
+    Just (Logic lid) -> 
       case sublog of
-        Nothing -> Logic id
+        Nothing -> Logic lid
         Just s ->
-         case find (\sub -> tokStr s `elem` sublogic_names id sub) 
-                   (all_sublogics id) of
+         case find (\sub -> tokStr s `elem` sublogic_names lid sub) 
+                   (all_sublogics lid) of
             Nothing -> error ("sublogic "++tokStr s++
                               " in logic "++tokStr log++" unknown")
-            Just sub -> Logic id  -- ??? can we throw away sublogic?
+            Just sub -> Logic lid  -- ??? can we throw away sublogic?
 
+coercelog (Logic newlid) (Logic oldlid) =
+  if newlang == oldlang then id
+   else error ("Cannot coerce from "++newlang++" to "++oldlang)
+  where newlang = language_name newlid
+        oldlang = language_name oldlid
+   -- \sp -> Translation (emptyAnno sp) (Renaming [G_logic_translation (Logic_code...)] [])
 
 aSpec l = annoParser2 (spec l)
 
@@ -349,8 +360,8 @@ fittingArg l = do (an,s) <- try (do an <- annos
                   return (Fit_view vn fa (tokPos s:ps) an)
             <|>
                do sp <- aSpec l
-                  Logic id <- getState
-                  (symbit,ps) <- option (G_symb_map_items_list id [],[]) 
+                  Logic lid <- getState
+                  (symbit,ps) <- option (G_symb_map_items_list lid [],[]) 
                                  (do s <- asKey fitS               
                                      (m, ps) <- parseItemsMap 
                                      return (m,[tokPos s]))
@@ -420,11 +431,11 @@ viewType l = do sp1 <- annoParser (groupSpec l)
                 sp2 <- annoParser (groupSpec l)
                 return (View_type sp1 sp2 [tokPos s])
 
-libName = do lid <- libId
+libName = do libid <- libId
              v <- option Nothing (fmap Just version)
              return (case v of
-               Nothing -> Lib_id lid
-               Just v1 -> Lib_version lid v1)
+               Nothing -> Lib_id libid
+               Just v1 -> Lib_version libid v1)
 
 libId = do pos <- getPosition
            path <- scanAnyWords `sepBy1` (string "/")

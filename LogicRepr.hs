@@ -25,20 +25,20 @@ import Maybe(catMaybes)
 
 -- Simple logic representations (possibly also morphisms via adjointness)
 
-data (Logic id1 sublogics1
+data (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1,
-      Logic id2 sublogics2
+      Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
         sign2 morphism2 symbol2 raw_symbol2) =>
-  LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+  LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2
      =
      LogicRepr {repr_name :: String,
-                source :: id1, source_sublogic :: sublogics1,
-                target :: id2, target_sublogic :: sublogics2,
+                source :: lid1, source_sublogic :: sublogics1,
+                target :: lid2, target_sublogic :: sublogics2,
                 -- the translation functions are partial 
                 -- because the target may be a sublanguage
                 -- map_basic_spec :: basic_spec1 -> Maybe basic_spec2,
@@ -58,31 +58,76 @@ data (Logic id1 sublogics1
                   -- codings may be more complex
                }
 
-comp_repr :: 
-     (Logic id1 sublogics1
+instance (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1,
-      Logic id2 sublogics2
+      Logic lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        sign2 morphism2 symbol2 raw_symbol2) =>
+  Eq (LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2)
+  where
+  r1==r2 = repr_name r1 == repr_name r2 &&
+           language_name (source r1) == language_name (source r2) &&
+           language_name (target r1) == language_name (target r2) &&
+           coerce (source r1) (source r2) (source_sublogic r1) ==
+             Just  (source_sublogic r2) &&
+           coerce (target r1) (target r2) (target_sublogic r1) ==
+             Just  (target_sublogic r2)
+
+id_repr :: 
+     Logic lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol => 
+  lid -> 
+    LogicRepr lid sublogics basic_spec sentence symb_items symb_map_items
+                  sign morphism symbol raw_symbol
+              lid sublogics basic_spec sentence symb_items symb_map_items
+                  sign morphism symbol raw_symbol
+id_repr lid = 
+     LogicRepr {repr_name = "id_"++language_name lid,
+                source = lid, source_sublogic = top,
+                target = lid, target_sublogic = top,
+                map_sign = \sigma -> Just(sigma,[]),
+                projection= Just (-- the right adjoint functor Psi
+                                    id, id, 
+                                    -- the counit 
+                                    ide lid,
+                                    -- corresponding symbol translation
+                                    Just),  
+                map_morphism = Just,
+                map_sentence = \sigma -> Just,
+                map_symbol = unitSet
+               }
+
+-- composition of logic representations (diagrammatic order)
+comp_repr :: 
+     (Logic lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1,
+      Logic lid2 sublogics2
         basic_spec2 sentence2 symb_items2 symb_map_items2 
         sign2 morphism2 symbol2 raw_symbol2,
-      Logic id3 sublogics3
+      Logic lid3 sublogics3
         basic_spec3 sentence3 symb_items3 symb_map_items3 
         sign3 morphism3 symbol3 raw_symbol3
      ) =>
-     LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+     LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1
-            id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2
 
- ->  LogicRepr id2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+ ->  LogicRepr lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2
-            id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
+            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3
 
  ->  Maybe (
-     LogicRepr id1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+     LogicRepr lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1
-            id3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
+            lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 )
 
 comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
@@ -93,22 +138,15 @@ comp_repr r1 r2 = if target_sublogic r1 <= source_sublogic r2 then
    target_sublogic = target_sublogic r2,
    map_sentence = 
        \si1 se1 -> 
-       case map_sign r1 si1 of 
-       Nothing -> Nothing
-       Just (si2, _) -> 
-           case map_sentence r1 si1 se1 of
-           Nothing -> Nothing
-           Just se2 -> map_sentence r2 si2 se2 ,
+         do (si2,_) <- map_sign r1 si1
+            se2 <- map_sentence r1 si1 se1 
+            map_sentence r2 si2 se2 ,
    map_sign = 
        \si1 -> 
-       case map_sign r1 si1 of 
-       Nothing -> Nothing
-       Just (si2, se2s) ->   
-           case map_sign r2 si2 of
-           Nothing -> Nothing
-           Just (si3, se3s) -> Just (si3, se3s ++ 
-				     catMaybes 
-				     (map (map_sentence r2 si2) se2s)) ,
+         do (si2, se2s) <- map_sign r1 si1
+            (si3, se3s) <- map_sign r2 si2 
+            return (si3, se3s ++ catMaybes 
+				  (map (map_sentence r2 si2) se2s)) ,
 
    projection = undefined ,
 

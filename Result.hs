@@ -45,6 +45,12 @@ plain_error x s p = Result [Diag Error s p] $ Just x
 warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
+maybeToResult :: Pos -> String -> Maybe a -> Result a
+maybeToResult pos err (Just x) = return x
+maybeToResult pos err Nothing = 
+  fatal_error err pos
+
+
 instance Show Diagnosis where
     showsPrec _ (Diag k s sp) = 
 	shows k . colonS . 

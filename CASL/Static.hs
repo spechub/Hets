@@ -1228,9 +1228,11 @@ matches _                            _                        = False
 symName :: Symbol -> Id
 symName (Symbol idt _) = idt
 
-statSymbMapItems :: SYMB_MAP_ITEMS -> Result (EndoMap RawSymbol)
-statSymbMapItems (Symb_map_items kind l _) =
-  return (listToFM $ map (symbOrMapToRaw kind) l)
+statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result (EndoMap RawSymbol)
+statSymbMapItems sl =  return (listToFM $ concat $ map s1 sl)
+  where
+  s1 (Symb_map_items kind l _) = map (symbOrMapToRaw kind) l
+ 
   
 symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> (RawSymbol,RawSymbol)
 symbOrMapToRaw k (Symb s) = (symbToRaw k s,symbToRaw k s)

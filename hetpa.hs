@@ -6,7 +6,6 @@ import Parse_AS_Structured
 import System
 import Parsec
 import LogicGraph
-import Print_AS_Structured  -- for test purposes
 import Print_HetCASL
 
 parsefile fname = do
