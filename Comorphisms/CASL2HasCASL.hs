@@ -13,6 +13,7 @@ module Comorphisms.CASL2HasCASL where
 
 import Logic.Logic
 import Logic.Comorphism
+import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.Dynamic
@@ -67,15 +68,40 @@ sortTypeinfo = TypeInfo { typeKind = star,
 			 , superTypes = [],
 			 , typeDefn = NoTypeDefn
 			 } 
+makeType :: Id -> HasCASL.As.Type
+makeType ide = TypeName ide star 0
+
+trOpType :: CASL.StaticAna.OpType -> HasCASL.Le.OpInfo
+trOpType ot = OpInfo { opType = TypeScheme [] ([] :=> t) [],
+		       opAttrs = [],
+		       opDefn = NoOpDefn
+		     }
+               where t = FunType arg arrow res []
+                     arrow = case opKind ot of
+                       CASL.StaticAna.Total -> FunArr 
+                       CASL.StaticAna.Partial -> PFunArr
+                     arg = ProductType (map makeType $ opArgs ot) []
+                     res = makeType $ opRes ot
+
+trPredType :: CASL.StaticAna.PredType -> HasCASL.Le.OpInfo
+trPredType pt = OpInfo { opType = TypeScheme [] ([] :=> t) [],
+		         opAttrs = [],
+		         opDefn = NoOpDefn
+		     }
+               where t = predType arg
+                     arg = ProductType (map makeType $ predArgs pt) []
 
 mapSignature :: CASL.StaticAna.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
 mapSignature sign = Just (HasCASL.Le.Env { 
     classMap = Map.empty,
     typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 
                            $ Set.toList $ sortSet sign,
-    assumps = undefined, --opMap sign predMap sign,
+    assumps = Map.map OpInfos $ Map.unionWith (++) opmap predmap,
     HasCASL.Le.sentences = [],	 
     HasCASL.Le.envDiags = [],
     counter = 1
   }, [])
+  where
+    opmap   = Map.map (map trOpType . Set.toList) $ opMap sign 
+    predmap = Map.map (map trPredType . Set.toList) $ predMap sign
 
