@@ -314,3 +314,7 @@ instance Category Grothendieck G_sign GMorphism where
      legal_mor lid2 mor && case map_sign r sigma of
         Just (sigma',_) -> sigma' == cod lid2 mor
         Nothing -> False
+
+gEmbed :: G_morphism -> GMorphism
+gEmbed (G_morphism lid mor) =
+  GMorphism lid lid (id_repr lid) (dom lid mor) mor

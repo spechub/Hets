@@ -13,6 +13,8 @@
    todo:
     fixing of details concerning annos
     logic translations and implicit coercions
+    "and" should do union of involved logics
+       therefore, logic should be explicit argument instead of kept in the state
     arch specs
 -}
 

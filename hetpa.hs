@@ -7,6 +7,7 @@ import System
 import Parsec
 import LogicGraph
 import Print_HetCASL
+import DevGraph
 
 parsefile fname = do
   input <- readFile fname

@@ -184,7 +184,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          final_union :: lid -> sign -> sign -> Result sign
          is_subsig :: lid -> sign -> sign -> Bool
          generated_sign, cogenerated_sign :: 
-	     lid -> [raw_symbol] -> sign -> Result morphism
+	     lid -> [symbol] -> sign -> Result morphism
          induced_from_morphism :: 
 	     lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_to_morphism :: 

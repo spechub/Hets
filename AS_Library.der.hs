@@ -85,6 +85,19 @@ data VERSION_NUMBER = Version_number [String] [Pos]
 type URL = String
 type PATH = String
 
+instance Ord LIB_ID where
+  Direct_link s1 _ < Direct_link s2 _ = s1<s2
+  Direct_link _ _ < Indirect_link _ _ = True
+  Indirect_link _ _ < Direct_link _ _ = False
+  Indirect_link s1 _ < Indirect_link s2 _ = s1<s2
+
+getLIB_ID :: LIB_NAME -> LIB_ID
+getLIB_ID (Lib_version libid _) = libid
+getLIB_ID (Lib_id libid) = libid
+
+instance Ord LIB_NAME where
+  ln1 < ln2 = getLIB_ID ln1 < getLIB_ID ln2
+
 -- functions for casts
 cast_S_L_Spec_defn :: AS_Structured.SPEC_DEFN -> LIB_ITEM 
 cast_L_S_Spec_defn :: LIB_ITEM  -> AS_Structured.SPEC_DEFN

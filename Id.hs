@@ -26,6 +26,9 @@ type Pos = SourcePos
 
 nullPos :: Pos 
 nullPos = newPos "" 0 0 
+
+nullPosList :: [Pos]
+nullPosList = nullPos:nullPosList
  
 type Region = (Pos,Pos)
  
