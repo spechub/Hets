@@ -1,3 +1,3 @@
-ghc --make -Wall -i:.. translateAna.hs -o translateAna
+ghc --make -Wall -i:.. h2h.hs -o translateAna
 
 
