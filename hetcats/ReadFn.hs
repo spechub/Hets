@@ -28,15 +28,15 @@ read_LIB_DEFN opt file =
          ASTreeIn _ -> error "Abstract Syntax Trees aren't implemented yet"
          CASLIn     -> do
             input <- readFile file
-         case runParser (library logicGraph) defaultLogic file input of
-            Left err  -> error (show err)
-            Right ast -> return ast
+            case runParser (library logicGraph) defaultLogic file input of
+               Left err  -> error (show err)
+               Right ast -> return ast
          HetCASLIn  -> do
             input <- readFile file
-         case runParser (library logicGraph) defaultLogic file input of
-            Left err  -> error (show err)
-            Right ast -> return ast
-         _          -> error "Unknown InType wanted in read_LIB_DEFN"
+            case runParser (library logicGraph) defaultLogic file input of
+               Left err  -> error (show err)
+               Right ast -> return ast
+               _         -> error "Unknown InType wanted in read_LIB_DEFN"
        return ld
     where
     guess GuessIn = guessInType file

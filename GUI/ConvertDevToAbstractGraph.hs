@@ -38,8 +38,6 @@ import Logic.Grothendieck
 import Logic.Logic
 
 
-pretty x = show $ printText0 emptyGlobalAnnos x
-
 
 {- Maps used to track which node resp edge of the abstract graph correspondes with which of the development graph and vice versa
 and one Map to store which libname belongs to which development graph-}
@@ -80,7 +78,7 @@ convertGraph graphMem libname libEnv =
             libname2dg = libEnv}
 
      case Map.lookup libname libEnv of
-       Just (_,dgraph,_) -> if (isEmpty dgraph) then 
+       Just (_,_,dgraph) -> if (isEmpty dgraph) then 
                                   do (abstractGraph,graphInfo,convRef) <- initializeGraph graphMem libname
 									  dgraph convMaps
                                      return (abstractGraph, graphInfo,convMaps)
@@ -486,7 +484,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
-	  Just (_,dgraph,_) -> 
+	  Just (_,_,dgraph) -> 
             do let (_,(DGRef _ refLibname refNode)) = labNode' (context node dgraph)
 	       case Map.lookup refLibname libname2dgMap of
                  Just (_,refDgraph,_) -> convertGraph graphMem refLibname (libname2dg convMaps)
@@ -508,7 +506,7 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,parentNode) ->
       case Map.lookup libname libname2dgMap of
-	Just (_,dgraph,_) -> 
+	Just (_,_,dgraph) -> 
 	  do let -- allDgNodes = Common.Lib.Graph.nodes dgraph
                  allNodes = getNodeDescriptors (head visibleNodes) libname convMaps -- allDgNodes libname convMaps
                  dgNodesOfSubtree = nub (parentNode:(getNodesOfSubtree dgraph visibleNodes parentNode))

@@ -24,6 +24,8 @@ import WriteFn
 import Syntax.Print_HetCASL
 
 import Debug.Trace
+import Common.Result
+import Static.DevGraph
 
 main :: IO ()
 main = 
@@ -38,8 +40,8 @@ processFile opt file =
        -- (env,ld') <- analyse_LIB_DEFN opt
        (ld',env) <- if (analysis opt)
                        then do Result diags res <- 
-                         ioresToIO 
-                           (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ld)
+                                ioresToIO 
+                                  (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv opt ld)
                                -- sequence (map (putStrLn . show) diags)
                                return (ld, res)
                        else return (ld, Nothing)

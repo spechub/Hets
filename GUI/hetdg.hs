@@ -30,11 +30,12 @@ import Static.DotGraph
 import GUI.ConvertDevToAbstractGraph
 
 import GUI.AbstractGraphView
+import Options
 
 proceed fname showdg = do
-  res <- anaFile logicGraph defaultLogic fname False
+  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts fname 
   case res of
-    (_,Just (ln,dg,libenv)) -> 
+    Just (ln,dg,libenv) -> 
       if showdg then do
        graphMem <- initializeConverter
        (gid,gv,cmaps) <- convertGraph graphMem ln libenv

@@ -114,7 +114,7 @@ infile = head . infiles
 {- | the default HetcatsOpts, used when nothing else is specified -}
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
-    HcOpt { verbose  = 0
+    HcOpt { verbose  = 1
 	  , analysis = True
 	  , intype   = GuessIn -- ATermIn NonBAF
 	  , outtypes = [HetCASLOut OutASTree OutAscii]
@@ -433,3 +433,8 @@ hetsError Intern errorString = error ("Internal Error: " ++ errorString)
 hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hetcats [OPTION...] file"
+
+putIfVerbose :: HetcatsOpts -> Int -> String -> IO()
+putIfVerbose opts level str =
+  if (verbose opts >= level) then putStrLn str
+    else return ()

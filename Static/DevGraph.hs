@@ -118,9 +118,10 @@ data GlobalEntry = SpecEntry ExtGenSig
 
 type GlobalEnv = Map SIMPLE_ID GlobalEntry
 
-type LibEntry = (GlobalEnv,DGraph,GlobalAnnos)
+type GlobalContext = (GlobalAnnos,GlobalEnv,DGraph)
 
-type LibEnv = Map LIB_NAME LibEntry
+type LibEnv = Map LIB_NAME GlobalContext
+
 
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
