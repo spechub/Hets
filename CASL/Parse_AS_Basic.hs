@@ -100,5 +100,7 @@ dotFormulae = do d <- dotT
 -- ------------------------------------------------------------------------
 
 basicSpec :: GenParser Char st BASIC_SPEC
-basicSpec = fmap Basic_spec $ annosParser basicItems
+basicSpec = (fmap Basic_spec $ many1 $ 
+	    try $ bind addLeftAnno annos basicItems)
+            <|> try (oBraceT >> cBraceT >> return (Basic_spec []))
 

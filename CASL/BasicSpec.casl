@@ -1481,4 +1481,3 @@ forall x:s.e
           '\a' : Char = BEL;             %(slash_a)%
           '\?' : Char = '?';             %(slash_quest)%
 
-%(bla2)%
