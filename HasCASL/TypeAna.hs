@@ -20,6 +20,7 @@ import HasCASL.Unify
 import Data.List
 import Data.Maybe
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
@@ -33,7 +34,10 @@ anaKindM k env =
     case k of
     MissingKind -> mkError "missing kind" k
     Downset v t _ ps -> do (rk, newT) <- anaType (Nothing, t) (typeMap env)
-			   return $ Downset v newT rk ps
+                           -- let ds = unboundTypevars [] newT
+                           -- if null ds then 
+                           return $ Downset v newT rk ps
+                           -- else Result ds Nothing 
     ClassKind ci _ -> anaClassId ci (classMap env)
     Intersection ks ps -> do newKs <- mapM ( \ ek -> anaKindM ek env) ks
                              if null newKs then return k
@@ -199,13 +203,30 @@ mkTypeAppl :: Type -> [Type] -> Type
 mkTypeAppl t as = 
     if null as then t else mkTypeAppl (TypeAppl t $ head as) $ tail as
     
+cyclicType :: Id -> Type -> Bool
+cyclicType i ty = Set.member i $ idsOf (==0) ty
+
 lesserType :: TypeMap -> Type -> Type -> Bool    
-lesserType tm t1 t2 = case t1 of
-    ExpandedType _ t -> lesserType tm t t2
-    _ -> case t2 of 
-        ExpandedType _ t -> lesserType tm t1 t
-        _ -> let (top1, as1) = getTypeAppl tm t1
-                 (top2, as2) = getTypeAppl tm t2 in
+lesserType tm t1 t2 = case (t1, t2) of
+    (ExpandedType _ t, _) -> lesserType tm t t2
+    (_, ExpandedType _ t) -> lesserType tm t1 t
+    (LazyType t _, _) -> lesserType tm t t2
+    (_, LazyType t _) -> lesserType tm t1 t
+    (KindedType t _ _, _) -> lesserType tm t t2
+    (_, KindedType t _ _) -> lesserType tm t1 t
+    (ProductType ts1 _, ProductType ts2 _) -> 
+        if length ts1 == length ts2 then 
+           and $ zipWith (lesserType tm) ts1 ts2
+           else False
+    (FunType ta1 a1 tr1 _, FunType ta2 a2 tr2 _) -> 
+        (case (a1, a2) of 
+        (ContFunArr, _) -> True
+        (_, PFunArr) -> True
+        (PContFunArr, FunArr) -> False
+        (FunArr, PContFunArr) -> False
+        _ -> a1 == a2) && lesserType tm tr1 tr2 && lesserType tm ta2 ta1
+    _ -> let (top1, as1) = getTypeAppl tm t1
+             (top2, as2) = getTypeAppl tm t2 in
             case (top1, top2) of   
             (TypeName i1 k1 _, TypeName i2 k2 _) ->
                 let rk = rawKind k1
@@ -214,8 +235,8 @@ lesserType tm t1 t2 = case t1 of
                               FunKind ka kr _ -> ka : kindArgs kr (tail as)
                               _ -> []
                     kas = kindArgs rk as1
-                    ts1 = filter (/= top1) $ superTypes $ Map.findWithDefault 
-                               starTypeInfo i1 tm                
+                    ts1 = filter (not . cyclicType i1) $ superTypes 
+                          $ Map.findWithDefault starTypeInfo i1 tm
                     l1 = length as1
                 in if i1 == i2 then
                        if rawKind k2 == rk && l1 == length as2

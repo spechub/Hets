@@ -86,12 +86,12 @@ checkList _ _ = error "checkList"
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm = 
     do alts <- infer mt trm
+       tm <- gets typeMap
        let p = getMyPos trm
        if null alts then 
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
 	  else if null $ tail alts then do
-	       tm <- gets typeMap
 	       let (s, cs, _, t) = head alts
 		   (ds, rcs) = simplify tm cs 
 		   es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
@@ -99,14 +99,23 @@ typeCheck mt trm =
 		      mkDiag Error "unresolved constraint" c)
 	              (Set.toList rcs))
 	       return $ Just $ substTerm s t
-	  else do addDiags [Diag Error 
+	  else let falts = filter ( \ (_, cs, _, _) -> 
+                             Set.isEmpty $ snd $ simplify tm cs) alts in
+               if null falts then do
+                  addDiags [mkDiag Error "no constraint resolution for" trm]
+                  return Nothing
+               else if null $ tail falts then
+                    let (s, _, _, t) = head falts in
+                    return $ Just $ substTerm s t
+                    else 
+                    do addDiags [Diag Error 
 			 ("ambiguous typings \n  " ++
 			  showSepList ("\n  "++) 
 			  showPrettyWithPos 
 			  (take 5 $ map ( \ (s,_,_,t) -> 
-					  substTerm s t) alts) "")
+					  substTerm s t) falts) "")
 			    p]
-	          return Nothing
+	               return Nothing
 
 freshTypeVar :: Pos -> State Env Type		  
 freshTypeVar p = 
@@ -132,11 +141,9 @@ inferAppl ps mt t1 t2 = do
                        let m1 = mgu tm tya sfty 
                            m2 = mgu tm tya $ FunType logicalType 
                                         PFunArr sfty ps
-                           mkAT m b = case maybeResult m of 
-                                Nothing -> []
-                                Just s -> let rs = compSubst sa $ 
-                                                   compSubst sf s in
-                                        [(rs, 
+                           mkAT b s = 
+                               let rs = compSubst sa $ compSubst sf s in
+                                        (rs, 
                                           substC rs cs `joinC` 
                                               substC rs cr,
                                           subst rs rty, 
@@ -144,10 +151,17 @@ inferAppl ps mt t1 t2 = do
                                           (substTerm rs 
                                            (if b then ApplTerm tf  
                                             (TupleTerm [] ps) ps else tf))
-                                            ta ps)]
-                           l1 = mkAT m1 False
-                           l2 = mkAT m2 True
-                           in if null l1 then l2 else l1
+                                            ta ps)
+                           mkATM b = maybe [] ((:[]) . mkAT b) . maybeResult
+                           l1 = mkATM False m1
+                           l2 = mkATM True m2
+                           (as, acs, ty, atrm) = mkAT False eps
+                           in if null l1 then 
+                                 if null l2 then 
+                                        [(as, Subtyping (subst sf tya) sfty
+                                            `Set.insert` acs, ty, atrm)]
+                                 else l2 
+                               else l1
 			  ) args) ops
 	    let res = concat combs 
 		origAppl = ApplTerm t1 t2 ps

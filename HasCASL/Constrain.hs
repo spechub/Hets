@@ -93,7 +93,9 @@ byInst tm c = case c of
 		       return $ Set.fromList $ zipWith Kinding args newKs
 	       _ -> error "byInst: unexpected Type" 
 	   _ -> error "byInst: unexpected Kind" 
-    _ -> return noC
+    Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
+                       else fail ("unable to prove: " ++ showPretty t1 " < " 
+                                  ++ showPretty t2 "")
 
 maxKind :: TypeMap -> Kind -> Kind -> Maybe Kind
 maxKind tm k1 k2 = if lesserKind tm k1 k2 then Just k1 else 

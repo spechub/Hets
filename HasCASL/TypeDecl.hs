@@ -19,7 +19,6 @@ import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
@@ -28,7 +27,6 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.AsUtils
-import HasCASL.Unify
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
@@ -213,9 +211,6 @@ anaTypeItem _ _ inst _ t@(AliasType pat mk sc ps) =
 anaTypeItem _ gk inst tys (Datatype d) = 
     do newD <- anaDatatype gk inst tys d 
        return $ Datatype newD
-
-cyclicType :: Id -> Type -> Bool
-cyclicType i ty = Set.member i $ idsOf (==0) ty
 
 ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 
