@@ -25,7 +25,6 @@ import Common.Lib.State
 import Common.Result
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
@@ -46,16 +45,16 @@ appendSentences fs =
        put $ e {sentences = reverse fs ++ sentences e}
 
 anaStarType :: Type -> State Env (Maybe Type)
-anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)
-		   return $ fmap snd mp
+anaStarType t = do mp <- fromResult $ anaStarTypeR t . typeMap
+                   return $ fmap snd mp
 
 anaInstTypes :: [Type] -> State Env [Type]
 anaInstTypes ts = if null ts then return []
-   else do mp <- fromResult (anaType (Nothing, head ts) . typeMap)
-	   rs <- anaInstTypes $ tail ts
-	   return $ case mp of
-		   Nothing -> rs
-		   Just (_, ty) -> ty:rs
+   else do mp <- fromResult $ anaType (Nothing, head ts) . typeMap
+           rs <- anaInstTypes $ tail ts
+           return $ case mp of
+                   Nothing -> rs
+                   Just (_, ty) -> ty:rs
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs ty p) =
@@ -67,8 +66,10 @@ anaTypeScheme (TypeScheme tArgs ty p) =
        putTypeMap tm       -- forget local variables 
        case mt of 
            Nothing -> return Nothing
-	   Just newTy -> fromResult $ const $ generalize 
-			 $ TypeScheme newArgs newTy p
+           Just newTy -> generalizeS $ TypeScheme newArgs newTy p
+
+generalizeS :: TypeScheme -> State Env (Maybe TypeScheme)
+generalizeS = fromResult . const . generalize
 
 anaKind :: Kind -> State Env Kind
 anaKind k = toState star $ anaKindM k
@@ -77,7 +78,7 @@ toState :: a -> (Env -> Result a) -> State Env a
 toState bot r = do
      ma <- fromResult r
      case ma of 
-	  Nothing -> return bot  
+          Nothing -> return bot  
           Just a -> return a
 
 fromResult :: (Env -> Result a) -> State Env (Maybe a)
@@ -100,9 +101,9 @@ addTypeId :: Bool -> TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
 addTypeId warn defn _ kind i = 
     do let nk = rawKind kind
        if placeCount i <= kindArity TopLevel nk then
-	  do addTypeKind warn defn i kind
-	     return $ Just i 
-	  else do addDiags [mkDiag Error "wrong arity of" i]
+          do addTypeKind warn defn i kind
+             return $ Just i 
+          else do addDiags [mkDiag Error "wrong arity of" i]
                   return Nothing
 
 -- | store type as is (warn on redeclared types)
@@ -111,30 +112,30 @@ addTypeKind warn d i k =
     do tk <- gets typeMap
        let rk = rawKind k
        case Map.lookup i tk of
-	      Nothing -> case d of
-	          TypeVarDefn _ -> do 
-		      (_, v) <- toEnvState $ freshVar (posOfId i) 
-		      putTypeMap $ Map.insert i 
-			 (TypeInfo rk [k] [] $ TypeVarDefn v) tk
-		  _ -> putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tk
-	      Just (TypeInfo ok ks sups defn) -> 
-		  if rk == ok
-		     then do let isKnownInst = k `elem` ks
-				 insts = if isKnownInst then ks else
-					Set.toList $ mkIntersection (k:ks)
-				 Result ds mDef = mergeTypeDefn defn d
-			     if warn && isKnownInst && case (defn, d) of 
-			         (PreDatatype, DatatypeDefn _) -> False
-			         _ -> True
-				then
-			        addDiags [mkDiag Hint 
-					  "redeclared type" i]
-				else return ()
-		             case mDef of
-			         Just newDefn -> putTypeMap $ Map.insert i 
-					 (TypeInfo ok insts sups newDefn) tk
-				 Nothing -> addDiags $ map (improveDiag i) ds
-		     else addDiags $ diffKindDiag i ok rk 
+              Nothing -> case d of
+                  TypeVarDefn _ -> do 
+                      (_, v) <- toEnvState $ freshVar (posOfId i) 
+                      putTypeMap $ Map.insert i 
+                         (TypeInfo rk [k] [] $ TypeVarDefn v) tk
+                  _ -> putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tk
+              Just (TypeInfo ok ks sups defn) -> 
+                  if rk == ok
+                     then do let isKnownInst = k `elem` ks
+                                 insts = if isKnownInst then ks else
+                                        Set.toList $ mkIntersection (k:ks)
+                                 Result ds mDef = mergeTypeDefn defn d
+                             if warn && isKnownInst && case (defn, d) of 
+                                 (PreDatatype, DatatypeDefn _) -> False
+                                 _ -> True
+                                then
+                                addDiags [mkDiag Hint 
+                                          "redeclared type" i]
+                                else return ()
+                             case mDef of
+                                 Just newDefn -> putTypeMap $ Map.insert i 
+                                         (TypeInfo ok insts sups newDefn) tk
+                                 Nothing -> addDiags $ map (improveDiag i) ds
+                     else addDiags $ diffKindDiag i ok rk 
 
 -- | analyse a type argument and look up a missing kind
 anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
@@ -144,10 +145,10 @@ anaTypeVarDecl(TypeArg t k s ps) =
        tk <- gets typeMap
        let rm = getIdKind tk t
        case maybeResult rm of 
- 	      Nothing -> anaTypeVarDecl(TypeArg t star s ps)
-	      Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
+              Nothing -> anaTypeVarDecl(TypeArg t star s ps)
+              Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
     _ -> do nk <- anaKind k
-	    addTypeVarDecl True $ TypeArg t nk s ps
+            addTypeVarDecl True $ TypeArg t nk s ps
 
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env (Maybe TypeArg)
@@ -160,12 +161,12 @@ kindArity :: ApplMode -> Kind -> Int
 kindArity m k = 
     case k of 
     FunKind k1 k2 _ -> case m of 
-		       TopLevel -> kindArity OnlyArg k1 + 
-				   kindArity TopLevel k2
-		       OnlyArg -> 1
+                       TopLevel -> kindArity OnlyArg k1 + 
+                                   kindArity TopLevel k2
+                       OnlyArg -> 1
     Intersection [] _ -> case m of
-		  TopLevel -> 0
-		  OnlyArg -> 1
+                  TopLevel -> 0
+                  OnlyArg -> 1
     ClassKind _ ck -> kindArity m ck
     Downset _ _ dk _ -> kindArity m dk
     Intersection (k1:_) _ -> kindArity m k1
@@ -193,35 +194,35 @@ partitionOpId e i sc =
 
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
-	-> State Env (Maybe UninstOpId)
+        -> State Env (Maybe UninstOpId)
 addOpId i sc attrs defn = 
     do e <- get
        let as = assumps e
            tm = typeMap e
            TypeScheme _ ty _ = sc 
            ds = if placeCount i > 1 then case unalias ty of 
-		   FunType arg _ _ _ -> case unalias arg of
-		       ProductType ts _ -> if placeCount i /= length ts then 
-			    [mkDiag Error "wrong number of places in" i]
-		            else [] 
-		       _ -> [mkDiag Error "expected tuple argument for" i]
-		   _ -> [mkDiag Error "expected function type for" i]
-		 else []
+                   FunType arg _ _ _ -> case unalias arg of
+                       ProductType ts _ -> if placeCount i /= length ts then 
+                            [mkDiag Error "wrong number of places in" i]
+                            else [] 
+                       _ -> [mkDiag Error "expected tuple argument for" i]
+                   _ -> [mkDiag Error "expected function type for" i]
+                 else []
            (l, r) = partitionOpId e i sc
-	   oInfo = OpInfo sc attrs defn 
+           oInfo = OpInfo sc attrs defn 
        if null ds then 
-	       do let Result es mo = foldM (mergeOpInfo tm) oInfo l
-		  addDiags $ map (improveDiag i) es
-	          if i `elem` map fst bList then addDiags $ [mkDiag Error 
-			  "illegal overloading of predefined identifier" i]
-		      else return ()
-		  case mo of 
-		      Nothing -> return Nothing
-		      Just oi -> do putAssumps $ Map.insert i 
-						   (OpInfos (oi : r)) as
-				    return $ Just i
-	  else do addDiags ds
-		  return Nothing
+               do let Result es mo = foldM (mergeOpInfo tm) oInfo l
+                  addDiags $ map (improveDiag i) es
+                  if i `elem` map fst bList then addDiags $ [mkDiag Error 
+                          "illegal overloading of predefined identifier" i]
+                      else return ()
+                  case mo of 
+                      Nothing -> return Nothing
+                      Just oi -> do putAssumps $ Map.insert i 
+                                                   (OpInfos (oi : r)) as
+                                    return $ Just i
+          else do addDiags ds
+                  return Nothing
 
 ----------------------------------------------------------------------------
 -- GenVarDecl
@@ -229,9 +230,9 @@ addOpId i sc attrs defn =
 
 addGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
 addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
-				 return $ fmap GenVarDecl mv
+                                 return $ fmap GenVarDecl mv
 addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl True t 
-				     return $ fmap GenTypeVarDecl mt
+                                     return $ fmap GenTypeVarDecl mt
 
 anaGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
 anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
@@ -244,9 +245,9 @@ convertTypeToKind (FunType t1 FunArr t2 ps) =
        mk2 <- convertTypeToKind t2
        case (mk1, mk2) of
            (Just k1, Just k2) -> case k2 of 
-	       ExtKind _ _ _ -> return Nothing
-	       _ -> return $ Just $ FunKind k1 k2 ps
-	   _ -> return Nothing
+               ExtKind _ _ _ -> return Nothing
+               _ -> return $ Just $ FunKind k1 k2 ps
+           _ -> return Nothing
 
 convertTypeToKind (BracketType Parens [] _) = 
     return Nothing
@@ -254,51 +255,51 @@ convertTypeToKind (BracketType Parens [t] _) =
     convertTypeToKind t
 convertTypeToKind (BracketType Parens ts ps) = 
        do cs <- mapM convertTypeToKind ts
-	  if all isJust cs then 
-	     do let k:ks = catMaybes cs 
-		    rk = rawKind k
-		if all ((==rk) . rawKind) ks then
-		   return $ Just $ Intersection (k:ks) ps
-		   else return Nothing
-	     else return Nothing
+          if all isJust cs then 
+             do let k:ks = catMaybes cs 
+                    rk = rawKind k
+                if all ((==rk) . rawKind) ks then
+                   return $ Just $ Intersection (k:ks) ps
+                   else return Nothing
+             else return Nothing
 convertTypeToKind (MixfixType [t1, TypeToken t]) = 
     let s = tokStr t 
-	mv = case s of 
-		   "+" -> Just CoVar 
-		   "-" -> Just ContraVar 
-		   _ -> Nothing
+        mv = case s of 
+                   "+" -> Just CoVar 
+                   "-" -> Just ContraVar 
+                   _ -> Nothing
     in case mv of 
-	      Nothing -> do return Nothing
-	      Just v -> do 
-		  mk1 <- convertTypeToKind t1
-		  case mk1 of 
-			  Just k1 -> return $ Just $ ExtKind k1 v [tokPos t]
-			  _ -> return Nothing
+              Nothing -> do return Nothing
+              Just v -> do 
+                  mk1 <- convertTypeToKind t1
+                  case mk1 of 
+                          Just k1 -> return $ Just $ ExtKind k1 v [tokPos t]
+                          _ -> return Nothing
 convertTypeToKind(TypeToken t) = 
        if tokStr t == "Type" then return $ Just $ Intersection [] [tokPos t] 
-	  else do
+          else do
           let ci = simpleIdToId t
-	  cm <- gets classMap					       
-	  let rm = anaClassId ci cm
-	  case maybeResult rm of 
-		  Nothing -> return Nothing
-		  Just k -> return $ Just $ ClassKind ci k
+          cm <- gets classMap                                          
+          let rm = anaClassId ci cm
+          case maybeResult rm of 
+                  Nothing -> return Nothing
+                  Just k -> return $ Just $ ClassKind ci k
 convertTypeToKind _ = 
     do return Nothing
 
 optAnaVarDecl :: VarDecl -> State Env (Maybe GenVarDecl)
 optAnaVarDecl vd@(VarDecl v t s q) = 
     let varDecl = do mvd <- anaVarDecl vd
-		     case mvd of 
-		         Nothing -> return Nothing
-			 Just nvd -> do mmvd <- addVarDecl $ makeMonomorph nvd
-					return $ fmap GenVarDecl mmvd
+                     case mvd of 
+                         Nothing -> return Nothing
+                         Just nvd -> do mmvd <- addVarDecl $ makeMonomorph nvd
+                                        return $ fmap GenVarDecl mmvd
     in if isSimpleId v then
     do mk <- convertTypeToKind t
        case mk of 
-	   Just k -> do addDiags [mkDiag Hint "is type variable" v]
-			tv <- anaTypeVarDecl $ TypeArg v k s q
-			return $ fmap GenTypeVarDecl tv 
+           Just k -> do addDiags [mkDiag Hint "is type variable" v]
+                        tv <- anaTypeVarDecl $ TypeArg v k s q
+                        return $ fmap GenTypeVarDecl tv 
            _ -> varDecl
     else varDecl
 
@@ -307,15 +308,15 @@ makeMonomorph (VarDecl v t sk ps) = VarDecl v (monoType t) sk ps
 
 monoType :: Type -> Type
 monoType t = repl (Map.fromList $ map ( \ a@(TypeArg i k _ _) -> 
-			                (a, TypeName i k 0)) $ varsOf t) t
+                                        (a, TypeName i k 0)) $ varsOf t) t
 
 -- | analyse 
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
 anaVarDecl(VarDecl v oldT sk ps) = 
     do mt <- anaStarType oldT
        return $ case mt of 
-	       Nothing -> Nothing
-	       Just t -> Just $ VarDecl v t sk ps
+               Nothing -> Nothing
+               Just t -> Just $ VarDecl v t sk ps
 
 -- | add a local variable with an analysed type
 addVarDecl :: VarDecl -> State Env (Maybe VarDecl) 
@@ -334,7 +335,7 @@ checkUniqueVars = addDiags . checkUniqueness . map getVar
 -- | check uniqueness of type variables 
 checkUniqueTypevars :: [TypeArg] -> State Env ()
 checkUniqueTypevars = addDiags . checkUniqueness 
-		      . map getTypeVar
+                      . map getTypeVar
 
 -- | filter out assumption
 filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps
@@ -351,34 +352,34 @@ anaPattern pat =
                      return $ QualVar newVd
     ResolvedMixTerm i pats ps -> do 
          l <- mapM anaPattern pats
-	 return $ ResolvedMixTerm i l ps
+         return $ ResolvedMixTerm i l ps
     ApplTerm p1 p2 ps -> do
          p3 <- anaPattern p1
          p4 <- anaPattern p2
-	 return $ ApplTerm p3 p4 ps
+         return $ ApplTerm p3 p4 ps
     TupleTerm pats ps -> do 
          l <- mapM anaPattern pats
-	 return $ TupleTerm l ps
+         return $ TupleTerm l ps
     TypedTerm p q ty ps -> do 
          mt <- anaStarType ty 
-	 let newT = case mt of Just t -> t
-			       _ -> ty
+         let newT = case mt of Just t -> t
+                               _ -> ty
          case p of 
-	     QualVar (VarDecl v (MixfixType []) ok qs) ->
-		 let newVd = VarDecl v newT ok (qs ++ ps) in
-		 return $ QualVar newVd
-	     _ -> do newP <- anaPattern p
-		     return $ TypedTerm newP q newT ps
+             QualVar (VarDecl v (MixfixType []) ok qs) ->
+                 let newVd = VarDecl v newT ok (qs ++ ps) in
+                 return $ QualVar newVd
+             _ -> do newP <- anaPattern p
+                     return $ TypedTerm newP q newT ps
     AsPattern vd p2 ps -> do
          newVd <- checkVarDecl vd
          p4 <- anaPattern p2
-	 return $ AsPattern newVd p4 ps
+         return $ AsPattern newVd p4 ps
     _ -> return pat
     where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
-	    MixfixType [] -> do
-	        (tvar, c) <- toEnvState $ freshVar $ posOfVarDecl vd
-		return $ VarDecl v (TypeName tvar star c) ok ps
-	    _ -> do mt <- anaStarType t 
-		    case mt of 
-		        Just ty -> return $ VarDecl v ty ok ps 
-		        _ -> return vd
+            MixfixType [] -> do
+                (tvar, c) <- toEnvState $ freshVar $ posOfId v
+                return $ VarDecl v (TypeName tvar star c) ok ps
+            _ -> do mt <- anaStarType t 
+                    case mt of 
+                        Just ty -> return $ VarDecl v ty ok ps 
+                        _ -> return vd

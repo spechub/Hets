@@ -13,6 +13,7 @@ Portability :  portable
 module HasCASL.Le where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result(Diagnosis)
@@ -43,10 +44,20 @@ data AltDefn = Construct (Maybe UninstOpId) [Type] Partiality [[Selector]]
 data Selector = Select (Maybe UninstOpId) Type Partiality -- only result type
                 deriving (Show, Eq, Ord) 
 
-type IdMap = Map.Map Id Id
+type IdMap = Map.Map TypeId TypeId
+
+mapType :: IdMap -> Type -> Type
+mapType m ty = if Map.isEmpty m then ty else 
+              rename ( \ i k n ->
+               let t = TypeName i k n in
+               if n == 0 then 
+                  case Map.lookup i m of
+                  Just j -> TypeName j k 0
+                  _ -> t
+               else t) ty
 
 data DataEntry = DataEntry IdMap TypeId GenKind [TypeArg] [AltDefn]
-		  deriving (Show, Eq, Ord)
+                  deriving (Show, Eq, Ord)
 
 data TypeDefn = NoTypeDefn
               | PreDatatype     -- auxiliary entry for DatatypeDefn
@@ -72,7 +83,7 @@ isTypeVarDefn t = case typeDefn t of
 data Sentence = Formula Term
               | DatatypeSen [DataEntry]
               | ProgEqSen UninstOpId TypeScheme ProgEq
-	        deriving (Show, Eq, Ord)
+                deriving (Show, Eq, Ord)
  
 -----------------------------------------------------------------------------
 
@@ -101,6 +112,11 @@ isVarDefn :: OpInfo -> Bool
 isVarDefn o = case opDefn o of 
               VarDefn -> True
               _       -> False 
+
+isConstructor :: OpInfo -> Bool
+isConstructor o = case opDefn o of
+                    ConstructData _ -> True
+                    _ -> False
 
 data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 
@@ -160,7 +176,7 @@ idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 -- note that the type of a qualified raw symbol is not analysed!
 data RawSymbol = AnID Id | AKindedId SymbKind Id 
                | AQualId Id SymbolType
-	       | ASymbol Symbol
+               | ASymbol Symbol
                  deriving (Show, Eq, Ord)
 
 type RawSymbolMap = Map.Map RawSymbol RawSymbol

@@ -32,8 +32,8 @@ unboundTypevars args ct =
     let restVars = varsOf ct List.\\ args in
     if null restVars then []
        else [mkDiag Error ("unbound type variable(s)\n\t"
-				  ++ showSepList ("," ++) showPretty 
-				  restVars " in") ct]
+                                  ++ showSepList ("," ++) showPretty 
+                                  restVars " in") ct]
 
 -- | vars
 varsOf :: Type -> [TypeArg]
@@ -47,16 +47,16 @@ genVarsOf = map snd . leaves (<0)
 leaves :: (Int -> Bool) -> Type -> [(Int, TypeArg)]
 leaves b t = 
     case t of 
-	   TypeName j k i -> if b(i)
-			     then [(i, TypeArg j k Other [])]
-			     else []
-	   TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-	   ExpandedType _ t2 -> leaves b t2
-	   KindedType tk _ _ -> leaves b tk
-	   LazyType tl _ -> leaves b tl
-	   ProductType l _ -> foldl List.union [] $ map (leaves b) l
-	   FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
-	   _ -> error ("leaves: " ++ show t)
+           TypeName j k i -> if b(i)
+                             then [(i, TypeArg j k Other [])]
+                             else []
+           TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
+           ExpandedType _ t2 -> leaves b t2
+           KindedType tk _ _ -> leaves b tk
+           LazyType tl _ -> leaves b tl
+           ProductType l _ -> foldl List.union [] $ map (leaves b) l
+           FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
+           _ -> error ("leaves: " ++ show t)
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
@@ -94,8 +94,8 @@ freshInstList (TypeScheme tArgs t _) =
     do let vs = genVarsOf t
        ts <- mkSubst vs
        return (rename ( \ i k n -> if n < 0 then 
-			ts !! (-1-n) else TypeName i k n) t, 
-	       map (mapArg $ zip vs ts) tArgs)
+                        ts !! (-1-n) else TypeName i k n) t, 
+               map (mapArg $ zip vs ts) tArgs)
 
 mapArg :: [(TypeArg, a)] -> TypeArg -> a
 mapArg ts (TypeArg i k _ _) = 
@@ -115,7 +115,7 @@ mkSingleSubst tv@(TypeArg _ k _ _) =
 
 mkSubst :: [TypeArg] -> State Int [Type]
 mkSubst = mapM mkSingleSubst
- 		   
+                   
 type Subst = Map.Map Int Type
 
 eps :: Subst
@@ -151,36 +151,11 @@ getTypeVar(TypeArg v _ _ _) = v
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
 idsOf b = Set.fromList . map (getTypeVar . snd) . leaves b
 
-mapType :: IdMap -> Type -> Type
-mapType m ty = if Map.isEmpty m then ty else 
-	      rename ( \ i k n ->
-	       let t = TypeName i k n in
-	       if n == 0 then 
-		  case Map.lookup i m of
-		  Just j -> TypeName j k 0
-		  _ -> t
-	       else t) ty
-
-rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
-rename m t = case t of
-	   TypeName i k n -> m i k n
-	   TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
-	   ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
-	   TypeToken _ -> t
-	   BracketType b l ps ->
-	       BracketType b (map (rename m) l) ps
-	   KindedType tk k ps -> 
-	       KindedType (rename m tk) k ps
-	   MixfixType l -> MixfixType $ map (rename m) l
-	   LazyType tl ps -> LazyType (rename m tl) ps
-	   ProductType l ps -> ProductType (map (rename m) l) ps
-           FunType t1 a t2 ps -> FunType (rename m t1) a (rename m t2) ps
-
 instance Unifiable Type where
     subst m = rename (\ i k n -> 
-	       case Map.lookup n m of
-	       Just s -> s
-	       _ -> TypeName i k n)
+               case Map.lookup n m of
+               Just s -> s
+               _ -> TypeName i k n)
     match tm rel t1 (b2, ExpandedType _ t2) = match tm rel t1 (b2, t2)
     match tm rel (b1, ExpandedType _ t1) t2 = match tm rel (b1, t1) t2
     match tm rel t1 (b2, LazyType t2 _) = match tm rel t1 (b2, t2)
@@ -188,7 +163,6 @@ instance Unifiable Type where
     match tm rel t1 (b2, KindedType t2 _ _) = match tm rel t1 (b2, t2)
     match tm rel (b1, KindedType t1 _ _) t2 = match tm rel (b1, t1) t2
     match _ rel (b1, t1@(TypeName i1 _k1 v1)) (b2, t2@(TypeName i2 _k2 v2)) =
---      if rawKind k1 == rawKind k2 then kinds should be equal anyway
         if rel i1 i2 && v1 == v2
            then return eps
         else if v1 > 0 && b1 then return $ 
@@ -197,8 +171,6 @@ instance Unifiable Type where
                      Map.single v2 t1
                         else uniResult "typename" t1 
                                     "is not unifiable with typename" t2
-{-      else uniResult "typename" i1 
-                                    "differs in raw kind of typename" i2 -}
     match _tm _ (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
            if null $ leaves (==v1) t2 then 
@@ -218,16 +190,16 @@ instance Unifiable Type where
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
 showPrettyWithPos a =  let p = getMyPos a in
-	showChar '\'' . showPretty a . showChar '\'' 
+        showChar '\'' . showPretty a . showChar '\'' 
            . noShow (nullPos == p) (showChar ' ' . 
-				     showParen True (showPos p))
+                                     showParen True (showPos p))
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
-	      String -> a -> String -> b -> Result Subst
+              String -> a -> String -> b -> Result Subst
 uniResult s1 a s2 b = 
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
-			 showPrettyWithPos a "\n  " ++ s2 ++ " " ++
-			 showPrettyWithPos b "") nullPos] Nothing
+                         showPrettyWithPos a "\n  " ++ s2 ++ " " ++
+                         showPrettyWithPos b "") nullPos] Nothing
 
 instance PosItem a => PosItem (a, b) where
     get_pos   = get_pos . fst
@@ -240,15 +212,15 @@ instance PosItem a => PosItem [a] where
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
     match tm rel (b1, (t1, t2)) (b2, (t3, t4)) =
-	let r1@(Result _ m1) = match tm rel (b1, t1) (b2, t3) in
-	   case m1 of
-	       Nothing -> r1
-	       Just s1 -> let r2@(Result _ m2) = match tm rel 
+        let r1@(Result _ m1) = match tm rel (b1, t1) (b2, t3) in
+           case m1 of
+               Nothing -> r1
+               Just s1 -> let r2@(Result _ m2) = match tm rel 
                                    (b1, if b1 then subst s1 t2 else t2)
-				   (b2, if b2 then subst s1 t4 else t4)
-			      in case m2 of 
-				     Nothing -> r2
-				     Just s2 -> return $ compSubst s1 s2
+                                   (b2, if b2 then subst s1 t4 else t4)
+                              in case m2 of 
+                                     Nothing -> r2
+                                     Just s2 -> return $ compSubst s1 s2
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
     subst s = map (subst s) 
@@ -257,8 +229,8 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
         match tm rel (b1, (a1, r1)) (b2, (a2, r2))
     match tm rel (b1, []) l = match tm rel l (b1, [])
     match _ _ (_, (a:_)) (_, []) = uniResult "type component" a 
-		       "is not unifiable with the empty list" 
-		       (mkSimpleId "[]")
+                       "is not unifiable with the empty list" 
+                       (mkSimpleId "[]")
 
 instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     subst s = fmap (subst s) 
@@ -268,9 +240,9 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
 
 repl :: Map.Map TypeArg Type -> Type -> Type
 repl m = rename ( \ i k n -> 
-		 case Map.lookup (TypeArg i k Other []) m of
-		      Just s -> s 
-		      Nothing -> TypeName i k n)
+                 case Map.lookup (TypeArg i k Other []) m of
+                      Just s -> s 
+                      Nothing -> TypeName i k n)
 
 expand :: TypeMap -> TypeScheme -> TypeScheme
 expand = mapTypeOfScheme . expandAlias  
@@ -279,29 +251,29 @@ expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
     let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
-	  ExpandedType t $ repl (Map.fromList (zip ps $ reverse as)) ta
-	  else ta
+          ExpandedType t $ repl (Map.fromList (zip ps $ reverse as)) ta
+          else ta
 
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
 expandAliases tm t = case t of 
     TypeName i _ _ -> case Map.lookup i tm of 
             Just (TypeInfo _ _ _ 
-		  (AliasTypeDefn (TypeScheme l ty _))) ->
-		     (l, [], ty, True)
-	    Just (TypeInfo _ _ _
-		  (Supertype _ (TypeScheme l ty _) _)) ->
+                  (AliasTypeDefn (TypeScheme l ty _))) ->
+                     (l, [], ty, True)
+            Just (TypeInfo _ _ _
+                  (Supertype _ (TypeScheme l ty _) _)) ->
                      case ty of 
                      TypeName _ _ _ -> wrap t
                      _ -> (l, [], ty, True)
-	    _ -> wrap t
+            _ -> wrap t
     TypeAppl t1 t2 -> 
-	let (ps, as, ta, b) = expandAliases tm t1 
-	    t3 = expandAlias tm t2
-	in if b then 
-	  (ps, t3:as, ta, b)  -- reverse later on
-	  else wrap $ TypeAppl t1 t3
+        let (ps, as, ta, b) = expandAliases tm t1 
+            t3 = expandAlias tm t2
+        in if b then 
+          (ps, t3:as, ta, b)  -- reverse later on
+          else wrap $ TypeAppl t1 t3
     FunType t1 a t2 ps -> 
-	wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
+        wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
     ProductType ts ps -> wrap $ ProductType (map (expandAlias tm) ts) ps
     LazyType ty ps -> wrap $ LazyType (expandAlias tm ty) ps
     ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAlias tm t2

@@ -1,7 +1,7 @@
 {- |
 
 Module      :  $Header$
-Copyright   :  (c) Pascal Schmidt, Christiantian Maeder, and Uni Bremen 2002-2003
+Copyright   :  (c) Pascal Schmidt, Christian Maeder, and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
@@ -38,7 +38,7 @@ module HasCASL.Sublogic ( -- * datatypes
                    in_sentence,
                    in_symbItems,
                    in_symbMapItems,
-		   in_env,
+                   in_env,
                    in_morphism,
                    in_symbol,
 
@@ -53,8 +53,6 @@ module HasCASL.Sublogic ( -- * datatypes
                    
                  ) where
 
-
-import Data.Maybe
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 import HasCASL.As
@@ -541,7 +539,7 @@ sl_type :: Type -> HasCASL_Sublogics
 sl_type (TypeAppl t1 t2) = comp_list [need_hol, (sl_type t1), (sl_type t2)] -}
 sl_type (TypeName _ _ v) = if v /= 0 then need_polymorphism else bottom
 sl_type (TypeAppl t1 t2) = comp_list [need_type_constructors,
-			   (sl_type t1), (sl_type t2)]
+                           (sl_type t1), (sl_type t2)]
 sl_type (BracketType _ l _) = comp_list $ map sl_type l
 sl_type (KindedType t k _) = sublogics_max (sl_type t) (sl_kind k)
 sl_type (ExpandedType _ t) = sl_type t
@@ -572,9 +570,9 @@ sl_arrow _ = bottom
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
 sl_typeScheme (TypeScheme l t _) = 
   comp_list ((comp_list $ map sl_typeArg l) :  
-	     case unalias t of 
-	     FunType t1 a t2 _ -> [(sl_type t1), (sl_arrow a), (sl_type t2)]
-	     _ -> [sl_type t])
+             case unalias t of 
+             FunType t1 a t2 _ -> [(sl_type t1), (sl_arrow a), (sl_type t2)]
+             _ -> [sl_type t])
 
 sl_opItem :: OpItem -> HasCASL_Sublogics
 sl_opItem (OpDecl l t m _) = 
@@ -728,7 +726,7 @@ sl_env e =
                     then bottom else need_type_classes
         types = comp_list $ map sl_typeInfo (Map.elems (typeMap e))
         ops = comp_list $ map sl_opInfos (Map.elems (assumps e))
-	in comp_list [classes, types, ops]
+        in comp_list [classes, types, ops]
 
 
 sl_typeInfo :: TypeInfo -> HasCASL_Sublogics

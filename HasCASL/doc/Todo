@@ -14,11 +14,6 @@ unit type is a separat type!
 
 class names are not considered for mapping (Morphism.hs)
 
-exhaustive and overlapping patterns are not checked for several
-program equations or case patterns. (Merge.hs?)
-
-Sentences for attributes comm, assoc, unit are not generated yet.
-
 
 
 datatypes:
@@ -56,17 +51,20 @@ shorter printing of terms
 terms in sentences (from formulas) are not quantified
 over global variables
 
+exhaustive and overlapping patterns are not checked for several
+program equations or case patterns. (Merge.hs?)
 
+Sentences for attributes comm, assoc, unit are not generated yet.
 
-Symbols: 
-raw symbol maps must be preprocessed to find matching symbols in
-SymbolMapAnalysis.directOpMap
+the LHS type of a program equation is not propagated to the RHS
+
+the types of local variables must be subject to substitution
 
 
 
 CASL:
 Overload.hs should generate Applications for constants rather than
-Var_decls (partially implemented)
+Var_decls (partially implemented) Upcase does not work
 
 convert TERM to Mixfix_bracketed terms and use printText0 rather than
 showTerm from ShowMixfix
@@ -104,6 +102,9 @@ formulas are not translated to Hassle Axioms
 
 free types with subtypes components get too few constructors (and
 become disjoint types)
+
+SimpleDatatypes.casl cannot be translated, because of wrong names
+
 
 
 

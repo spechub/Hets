@@ -10,13 +10,6 @@ Portability :  portable
    convert some formulas to program equations
 -}
 
-{- missing: morphism mapping of new sentences
-            use extractVars for typeCheck,
-	    split up extractBindings in MixAna,
-	    check patterns during typeCheck by isLHS
-	    (rather than by hiding non constructors)
--}
-
 module HasCASL.ProgEq where
 
 import Common.Result
@@ -29,26 +22,21 @@ import HasCASL.VarDecl
 import HasCASL.Builtin
 import HasCASL.AsUtils
 
-isConstructor :: OpInfo -> Bool
-isConstructor o = case opDefn o of
-		    ConstructData _ -> True
-		    _ -> False
-
 isOp :: OpInfo -> Bool
 isOp o = case opDefn o of
-		    NoOpDefn _ -> True
-		    Definition _ _ -> True
-		    SelectData _ _ -> True
-		    _ -> False
+                    NoOpDefn _ -> True
+                    Definition _ _ -> True
+                    SelectData _ _ -> True
+                    _ -> False
 
 isOpKind :: (OpInfo -> Bool) -> Env -> Term -> Bool
 isOpKind f e t = case t of
     TypedTerm trm OfType _ _ -> isOpKind f e trm
     QualOp _ (InstOpId i _ _) sc _ -> 
-	if i `elem` map fst bList then False else 
-	   let mi = findOpId e i sc in case mi of
-		    Nothing -> False
-		    Just oi -> f oi
+        if i `elem` map fst bList then False else 
+           let mi = findOpId e i sc in case mi of
+                    Nothing -> False
+                    Just oi -> f oi
     _ -> False
 
 isVar, isConstrAppl, isPat, isLHS, isExecutable :: Env -> Term -> Bool
@@ -87,7 +75,7 @@ isExecutable e t =
     CaseTerm trm ps _ -> isExecutable e trm &&
        all ( \ (ProgEq p c _) -> isPat e p && isExecutable e c) ps
     LetTerm _ ps trm _ -> all ( \ (ProgEq p c _) -> 
-	   (isPat e p || isLHS e p) && isExecutable e c) ps
+           (isPat e p || isLHS e p) && isExecutable e c) ps
            && isExecutable e trm
     _ -> error "isExecutable"
 
@@ -95,52 +83,52 @@ mkProgEq, mkCondEq, mkConstTrueEq, mkQuantEq :: Env -> Term -> Maybe ProgEq
 mkProgEq e t = case getTupleAp t of
     Just (i, [a, b]) -> 
        let cond p r = 
-	     let pvs = map getVar $ extractVars p
-	         rvs = map getVar $ extractVars r
-	     in isLHS e p && isExecutable e r && 
-		 null (checkUniqueness pvs) && 
-		      Set.fromList rvs `Set.subset` Set.fromList pvs 
+             let pvs = map getVar $ extractVars p
+                 rvs = map getVar $ extractVars r
+             in isLHS e p && isExecutable e r && 
+                 null (checkUniqueness pvs) && 
+                      Set.fromList rvs `Set.subset` Set.fromList pvs 
        in if i `elem` [eqId, exEq, eqvId] then 
-	      if cond a b
-		 then Just $ ProgEq a b $ posOfId i
-		 else if cond a b then Just $ ProgEq a b $ posOfId i
-		      else mkConstTrueEq e t
-	  else mkConstTrueEq e t
+              if cond a b
+                 then Just $ ProgEq a b $ posOfId i
+                 else if cond a b then Just $ ProgEq a b $ posOfId i
+                      else mkConstTrueEq e t
+          else mkConstTrueEq e t
     _ -> case getAppl t of 
-	Just (i, _, [f]) -> if i `elem` [notId, negId] then
-	    case mkConstTrueEq e f of
-	    Just (ProgEq p _ ps) -> Just $ ProgEq p 
-		(mkQualOp falseId unitType []) ps
-	    Nothing -> Nothing
-	    else mkConstTrueEq e t
-	_ -> mkConstTrueEq e t
+        Just (i, _, [f]) -> if i `elem` [notId, negId] then
+            case mkConstTrueEq e f of
+            Just (ProgEq p _ ps) -> Just $ ProgEq p 
+                (mkQualOp falseId unitType []) ps
+            Nothing -> Nothing
+            else mkConstTrueEq e t
+        _ -> mkConstTrueEq e t
 
 mkConstTrueEq e t = 
     let vs = map getVar $ extractVars t in
-	if isLHS e t && null (checkUniqueness vs) then
-	   Just $ ProgEq t (mkQualOp trueId unitType []) $ posOfTerm t
-	   else Nothing
+        if isLHS e t && null (checkUniqueness vs) then
+           Just $ ProgEq t (mkQualOp trueId unitType []) $ posOfTerm t
+           else Nothing
 
 bottom :: Term
 bottom = mkQualOp botId botType []
 
 mkCondEq e t = case getTupleAp t of
     Just (i, [p, r]) -> 
-	if i == implId then mkCond e p r 
-	else if i == infixIf then mkCond e r p
-	else mkProgEq e t
+        if i == implId then mkCond e p r 
+        else if i == infixIf then mkCond e r p
+        else mkProgEq e t
     _ -> mkProgEq e t
     where
     mkCond env f p = case mkProgEq env p of 
       Just (ProgEq lhs rhs ps) -> 
-	  let pvs = map getVar $ extractVars lhs
-	      fvs = map getVar $ extractVars f 
+          let pvs = map getVar $ extractVars lhs
+              fvs = map getVar $ extractVars f 
           in if isExecutable env f &&
-	     Set.fromList fvs `Set.subset` Set.fromList pvs then
-	     Just (ProgEq lhs 
-		   (mkTerm whenElse whenType [] 
-		    $ TupleTerm [rhs, f, bottom] []) ps)
-	     else Nothing
+             Set.fromList fvs `Set.subset` Set.fromList pvs then
+             Just (ProgEq lhs 
+                   (mkTerm whenElse whenType [] 
+                    $ TupleTerm [rhs, f, bottom] []) ps)
+             else Nothing
       Nothing -> Nothing
 
 mkQuantEq e t = case t of 
@@ -148,7 +136,7 @@ mkQuantEq e t = case t of
     -- ignore quantified variables
     -- do not allow conditional equations
     _ -> mkCondEq e t
-	
+        
 getTupleAp :: Term -> Maybe (Id, [Term])
 getTupleAp t = case getAppl t of
    Just (i, _, [tu]) -> case getTupleArgs tu of
@@ -164,26 +152,11 @@ getTupleArgs t = case t of
     TupleTerm ts _ -> Just ts
     _ -> Nothing
 
-getAppl :: Term -> Maybe (Id, TypeScheme, [Term])
-getAppl = thrdM reverse . getAppl2
-    where
-    thrdM :: (c -> c) -> Maybe (a, b, c) -> Maybe (a, b, c)
-    thrdM f = fmap ( \ (a, b, c) -> (a, b, f c))
-    getAppl2 :: Term -> Maybe (Id, TypeScheme, [Term])
-    getAppl2 t = case t of 
-        TypedTerm trm q _ _ -> case q of 
-            InType -> Nothing
-	    _ -> getAppl trm 
-	QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
-	QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
-	ApplTerm t1 t2 _ -> thrdM (t2:) $ getAppl2 t1
-        _ -> Nothing
-
 translateSen :: Env -> Sentence -> Sentence
 translateSen env s = case s of 
-	Formula t -> case mkQuantEq env t of
-		 Nothing -> s 
-		 Just pe@(ProgEq p _ _) -> case getAppl p of
-		     Nothing -> s 
-		     Just (i, sc, _) -> ProgEqSen i sc pe
-	_ -> s 
+        Formula t -> case mkQuantEq env t of
+                 Nothing -> s 
+                 Just pe@(ProgEq p _ _) -> case getAppl p of
+                     Nothing -> s 
+                     Just (i, sc, _) -> ProgEqSen i sc pe
+        _ -> s 

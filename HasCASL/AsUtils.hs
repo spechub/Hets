@@ -7,15 +7,49 @@ Maintainer  :  hets@tzi.de
 Stability   :  experimental
 Portability :  portable 
    
-   compute meaningful positions for various data types of the abstract syntax
+   utility functions and computations of meaningful positions for
+   various data types of the abstract syntax
 -}
 
 module HasCASL.AsUtils where
 
 import HasCASL.As
-import HasCASL.PrintAs -- to reexport instances
+import HasCASL.PrintAs()
 import Common.Id
 import Common.PrettyPrint
+
+-- | recursively substitute type names within a type 
+rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
+rename m t = case t of
+           TypeName i k n -> m i k n
+           TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
+           ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
+           TypeToken _ -> t
+           BracketType b l ps ->
+               BracketType b (map (rename m) l) ps
+           KindedType tk k ps -> 
+               KindedType (rename m tk) k ps
+           MixfixType l -> MixfixType $ map (rename m) l
+           LazyType tl ps -> LazyType (rename m tl) ps
+           ProductType l ps -> ProductType (map (rename m) l) ps
+           FunType t1 a t2 ps -> FunType (rename m t1) a (rename m t2) ps
+
+{- | decompose an 'ApplTerm' into an application of an operation and a
+     list of arguments -}
+getAppl :: Term -> Maybe (Id, TypeScheme, [Term])
+getAppl = thrdM reverse . getAppl2
+    where
+    thrdM :: (c -> c) -> Maybe (a, b, c) -> Maybe (a, b, c)
+    thrdM f = fmap ( \ (a, b, c) -> (a, b, f c))
+    getAppl2 :: Term -> Maybe (Id, TypeScheme, [Term])
+    getAppl2 t = case t of 
+        TypedTerm trm q _ _ -> case q of 
+            InType -> Nothing
+            _ -> getAppl trm 
+        QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
+        QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
+        ApplTerm t1 t2 _ -> thrdM (t2:) $ getAppl2 t1
+        _ -> Nothing
 
 -- | extract bindings from an analysed pattern
 extractVars :: Pattern -> [VarDecl]
@@ -49,17 +83,17 @@ getConstrType :: DataPat -> Partiality -> [Type] -> Type
 getConstrType dt p ts = (case p of 
      Total -> id 
      Partial -> addPartiality ts) $
-		       foldr ( \ c r -> FunType c FunArr r [] ) 
-			     (typeIdToType dt) ts
+                       foldr ( \ c r -> FunType c FunArr r [] ) 
+                             (typeIdToType dt) ts
 
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
 addPartiality as t = case as of 
         [] -> LazyType t []
-	_ : rs -> case t of 
-	   FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
-	       else FunType t1 a (addPartiality rs t2) ps
-	   _ -> error "addPartiality"
+        _ : rs -> case t of 
+           FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
+               else FunType t1 a (addPartiality rs t2) ps
+           _ -> error "addPartiality"
 
 -- | get the partiality from a constructor type 
 -- with a given number of curried arguments
@@ -69,9 +103,9 @@ getPartiality as t = case t of
    FunType _ a t2 _ -> case as of 
      [] -> Total
      [_] -> case a of 
-	    PFunArr  -> Partial
-	    PContFunArr -> Partial
-	    _ -> Total
+            PFunArr  -> Partial
+            PContFunArr -> Partial
+            _ -> Total
      _:rs -> getPartiality rs t2
    LazyType _ _ -> if null as then Partial else error "getPartiality"
    _ -> Total
@@ -85,7 +119,7 @@ typeIdToType (i, nAs, k) = let
     ti = TypeName i fullKind 0
     mkType _ ty [] = ty
     mkType n ty ((TypeArg ai ak _ _): rest) =
-	mkType (n-1) (TypeAppl ty (TypeName ai ak n)) rest
+        mkType (n-1) (TypeAppl ty (TypeName ai ak n)) rest
     in mkType (-1) ti nAs
 
 -- | extent a kind to expect further type arguments
@@ -93,7 +127,7 @@ typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
        else typeArgsListToKind (init tArgs) 
-	    (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
+            (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
 
 -- | generate a comparison string 
 expected :: PrettyPrint a => a -> a -> String

@@ -33,7 +33,6 @@ import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Lib.State
-import Data.Maybe
 
 substTerm :: Subst -> Term -> Term
 substTerm s = mapTerm (id, subst s)
