@@ -112,7 +112,7 @@ data Conservativity = None | Cons | Mono | Def
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
-              | DGLocal | DGClosed | DGClosedLenv 
+              | DGLocal | DGClosed | DGClosedLenv | DGData
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
