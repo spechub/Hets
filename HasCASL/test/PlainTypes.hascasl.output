@@ -44,7 +44,7 @@ s2 : Type
 s3 : Type := t
 t : Type
 t1 : Type < t
-t2 : Type < (r2, s2)
+t2 : Type < s2
 tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
@@ -95,6 +95,7 @@ y : tuple3 r s %(var)%
      found: a -> b
 
 *** Error 36.6, cyclic super type 's2'
+*** Error 36.9, cyclic super type 'r2'
 *** Error 36.9, cyclic super type 'r2'
 *** Error 36.9, cyclic super type 'r2'
 *** Error 36.12, cyclic super type 't2'

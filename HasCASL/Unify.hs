@@ -25,19 +25,24 @@ import Common.Result
 import Data.List
 import Data.Maybe
 
+-- | vars
 varsOf :: Type -> Set.Set TypeArg
-varsOf t = 
+varsOf = leaves True
+
+-- | vars or other ids 
+leaves :: Bool -> Type -> Set.Set TypeArg
+leaves b t = 
     case t of 
-	   TypeName j k i -> if i > 0 then Set.single $ TypeArg j k Other [] 
+	   TypeName j k i -> if let c = i == 0 in 
+				    if b then not c else c 
+			     then Set.single $ TypeArg j k Other [] 
 			     else Set.empty
-	   TypeAppl t1 t2 -> varsOf t1 `Set.union` varsOf t2
-	   TypeToken _ -> Set.empty
-	   BracketType _ l _ -> Set.unions $ map varsOf l
-	   KindedType tk _ _ -> varsOf tk
-	   MixfixType l -> Set.unions $ map varsOf l
-	   LazyType tl _ -> varsOf tl
-	   ProductType l _ -> Set.unions $ map varsOf l
-	   FunType t1 _ t2 _ -> varsOf t1 `Set.union` varsOf t2
+	   TypeAppl t1 t2 -> leaves b t1 `Set.union` leaves b t2
+	   KindedType tk _ _ -> leaves b tk
+	   LazyType tl _ -> leaves b tl
+	   ProductType l _ -> Set.unions $ map (leaves b) l
+	   FunType t1 _ t2 _ -> leaves b t1 `Set.union` leaves b t2
+	   _ -> error ("leaves: " ++ show t)
 
 generalize :: TypeScheme -> TypeScheme
 generalize (TypeScheme _ q@(_ :=> ty) ps) =
@@ -117,16 +122,17 @@ subsume tm a b = isJust $ maybeResult $ match tm (False, a) (True, b)
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
 
-starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo star [] [] NoTypeDefn
+idsOf :: Bool -> Type -> Set.Set TypeId
+idsOf b = Set.image ( \ (TypeArg j _ _ _) -> j) . leaves b
+
+occursIn :: TypeMap -> TypeId -> Type -> Bool
+occursIn tm i t = 
+    Set.any (relatedTypeIds tm i) $ Set.union (idsOf True t)
+       $ idsOf False t
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
-relatedTypeIds tm i1 i2 = 
-    i1 == i2 ||
-	   (any (occursIn tm i1) $ superTypes $ 
-	       Map.findWithDefault starTypeInfo i2 tm)
-           || (any (occursIn tm i2) $ superTypes $ 
-	       Map.findWithDefault starTypeInfo i1 tm)
+relatedTypeIds tm i1 i2 =  
+    not $ Set.disjoint (superIds tm i1) $ superIds tm i2
 
 instance Unifiable Type where
     subst m t = case t of
@@ -225,20 +231,6 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ (_, Nothing) = return eps
     match tm (b1, Just a1) (b2, Just a2) = match tm (b1, a1) (b2, a2)
 
-occursIn :: TypeMap -> TypeId -> Type -> Bool
-occursIn tm i t = 
-    case t of 
-	   TypeName j _ _ -> i == j || (any (occursIn tm i) $ superTypes $ 
-	       Map.findWithDefault starTypeInfo j tm)
-	   TypeAppl t1 t2 -> occursIn tm i t1 || occursIn tm i t2
-	   TypeToken tk -> i == simpleIdToId tk 
-	   BracketType _ l _ -> any (occursIn tm i) l
-	   KindedType tk _ _ -> occursIn tm i tk
-	   MixfixType l -> any (occursIn tm i) l
-	   LazyType tl _ -> occursIn tm i tl
-	   ProductType l _ -> any (occursIn tm i) l
-	   FunType t1 _ t2 _ -> occursIn tm i t1 || occursIn tm i t2
-
 unalias :: TypeMap -> Type -> Type
 unalias tm = fst . expandAlias tm
 
@@ -285,3 +277,25 @@ expandAliases tm (KindedType t k ps) =
 	in ([], [], KindedType newT k ps, b)
 
 expandAliases _ t = ([], [], t, False)
+
+-- | super type ids
+superIds :: TypeMap -> Id -> Set.Set Id
+superIds tm i = supIds tm (Set.single i) $   
+		Set.unions $ map superTypeToId $ superTypes 
+		     $ Map.findWithDefault starTypeInfo i tm
+
+supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
+supIds tm known new = 
+    if Set.isEmpty new then known else 
+    let more = Set.unions $ map (superIds tm) $ Set.toList new 
+	newKnown = Set.union known new
+	in supIds tm newKnown (more Set.\\ newKnown)
+
+starTypeInfo :: TypeInfo
+starTypeInfo = TypeInfo star [] [] NoTypeDefn
+
+superTypeToId :: Type -> Set.Set Id
+superTypeToId t = 
+    case t of
+	   TypeName i _ _ -> Set.single i
+	   _ -> Set.empty

@@ -17,7 +17,6 @@ import HasCASL.As
 import Common.Id
 import Common.Lib.State
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
 import Common.Result
 import HasCASL.Le
 import HasCASL.TypeAna
@@ -111,12 +110,7 @@ checkMonomorphRecursion :: Type	-> (Id, Type) -> State Env Bool
 checkMonomorphRecursion t (i, rt) = do 
     tm <- gets typeMap
     if occursIn tm i $ unalias tm t then 
-       if t == rt || t `elem` superTypes 
-	      (Map.findWithDefault starTypeInfo i tm)
-          || (case t of 
-	      TypeName j _ _ -> rt `elem` superTypes 
-			       (Map.findWithDefault starTypeInfo j tm)
-	      _ -> False)
+       if equalSubs tm t rt 
 	  then return True
        else do addDiags [Diag Error  ("illegal polymorphic recursion" 
 				      ++ expected rt t) $ getMyPos t]
