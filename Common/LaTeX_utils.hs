@@ -78,7 +78,7 @@ tabList_latex l = let h' = startTab_latex <> head l
 
 -- Heng: case Anweisung einführen, wie in hc_sty_hetcasl_keyword
 hc_sty_casl_keyword :: String -> Doc
-hc_sty_casl_keyword str
+hc_sty_casl_keyword str =
       case str of 
       "sort" -> sp_t "\\SORT"
       "sorts" -> sp_t "\\SORTS"
