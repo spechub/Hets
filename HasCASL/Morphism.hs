@@ -238,6 +238,21 @@ mapType m t = case t of
 	   ProductType l ps -> ProductType (map (mapType m) l) ps
            FunType t1 a t2 ps -> FunType (mapType m t1) a (mapType m t2) ps
 
+-- | type ids within a type
+subSyms :: Type -> SymbolSet
+subSyms t = case t of
+	   TypeName i k n ->
+	       if n == 0 then Set.single $ idToTypeSymbol i k
+	       else Set.empty
+	   TypeAppl t1 t2 -> Set.union (subSyms t1) (subSyms t2)
+	   TypeToken _ -> Set.empty
+	   BracketType _ l _ -> Set.unions $ map subSyms l
+	   KindedType tk _ _ -> subSyms tk
+	   MixfixType l -> Set.unions $ map subSyms l
+	   LazyType tl _ -> subSyms tl
+	   ProductType l _ -> Set.unions $ map subSyms l
+           FunType t1 _ t2 _ -> Set.union (subSyms t1) (subSyms t2)
+
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 -- rename clashing type arguments later
 mapTypeScheme m (TypeScheme args (q :=> t) ps) =

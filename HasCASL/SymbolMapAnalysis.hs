@@ -178,7 +178,8 @@ mapOps type_Map op_Map i ots e =
 	let sc = TySc $ opType ot
 	    (id', TySc sc') = Map.findWithDefault (i, mapTySc type_Map sc)
 			 (i, sc) op_Map
-	    in execState (addOpId id' sc' [] (NoOpDefn Op)) e')
+	    in execState (addOpId id' sc' (opAttrs ot) (opDefn ot)) e')
+                   -- things in opAttrs and opDefns need renaming too!
     e $ opInfos ots
  
 -- Some auxiliary functions for inducedFromToMorphism
@@ -363,34 +364,60 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
               ptext "Map2" <+> printText smap2) 
             ""
 
-generatedSign :: SymbolSet -> Env -> Result Morphism
-generatedSign sys sigma = do
-  if not (sys `Set.subset` symset)   -- 2.
-   then pfatal_error 
-         (ptext "Revealing: The following symbols" 
-          <+> printText(sys Set.\\ symset)
-          <+> ptext "are not in the signature") nullPos
-   else return $ embedMorphism sigma2 sigma    -- 7.
-  where
-  symset = symOf sigma   -- 1. 
-  sigma2 = Set.fold revealSym initialEnv sys  -- 4. 
-  revealSym sy sigma1 = case symbType sy of  -- 4.1.
-    TypeAsItemType k ->      -- 4.1.1.
-      sigma1 {typeMap = Map.insert (symName sy) (TypeInfo k [] [] 
-						NoTypeDefn) $ typeMap sigma1}
-    OpAsItemType (TySc ot) ->     -- 4.1.2./4.1.3.
-      execState (addOpId (symName sy) ot [] (NoOpDefn Op)) sigma1
-    _ -> sigma1 
+checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
+checkSymbols s1 s2 r = 
+    let s = s1 Set.\\ s2 in
+    if Set.isEmpty s then r else
+       pfatal_error 
+       (ptext "unknown symbols: " 
+          <+> printText s) $ posOfId $ symName $ Set.findMin s
 
+hideSymbol :: Symbol -> Env -> Env
+hideSymbol sym sig = 
+    let i = symName sym
+	tm = typeMap sig
+	as = assumps sig in
+    case symbType sym of 
+    ClassAsItemType _ -> sig
+    TypeAsItemType _ -> sig { typeMap = 
+			      Map.delete i tm }
+    OpAsItemType (TySc ot) -> 
+	let OpInfos os = Map.findWithDefault (OpInfos []) i as
+	    rs = filter (not . isUnifiable tm 0 ot . opType) os
+        in sig { assumps = if null rs then Map.delete i as
+		          else Map.insert i (OpInfos rs) as }
+
+plainHide :: SymbolSet -> Env -> Env
+plainHide syms sigma = 
+    let (opSyms, otherSyms) = Set.partition (\ sy -> case symbType sy of
+					      OpAsItemType _ -> True
+					      _ -> False) syms
+    in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms 
+
+subSymsOf :: Symbol -> SymbolSet
+subSymsOf sy = case symbType sy of
+     OpAsItemType (TySc (TypeScheme _ (_ :=> ty) _)) -> subSyms ty
+     _ -> Set.empty
+
+closeSymbSet :: SymbolSet -> SymbolSet
+closeSymbSet = Set.unions . map subSymsOf . Set.toList
+
+-- | reveal the symbols in the set
+generatedSign :: SymbolSet -> Env -> Result Morphism
+generatedSign syms sigma = 
+    let signSyms = symOf sigma 
+	closedSyms = closeSymbSet syms
+	subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
+    in checkSymbols closedSyms signSyms $ 
+       return $ embedMorphism subSigma sigma
+
+-- | hide the symbols in the set
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
-cogeneratedSign symset sigma = do
-  if not (symset `Set.subset` symset0)   -- 2.
-   then pfatal_error 
-         (ptext "Hiding: The following symbols" 
-          <+> printText(symset Set.\\ symset0)
-          <+> ptext "are not in the signature") nullPos
-   else generatedSign symset1 sigma -- 4./5.
-  where
-  symset0 = symOf sigma   -- 1. 
-  symset1 = Set.fold revealSym symset0 symset  -- 3. 
-  revealSym sy symset2 = Set.delete sy symset2
+cogeneratedSign syms sigma = 
+    let signSyms = symOf sigma 
+	allSyms = Set.fold ( \ sy se -> 
+			       if Set.disjoint syms $ subSymsOf sy then
+			       se else Set.insert sy se) syms signSyms
+	subSigma = plainHide allSyms sigma
+	in checkSymbols syms signSyms $ 
+	   return $ embedMorphism subSigma sigma
