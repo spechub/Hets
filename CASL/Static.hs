@@ -917,8 +917,8 @@ ana_subsort :: Annoted ALTERNATIVE -> (SigLocalEnv, [Annoted Alternative])
                -> Result (SigLocalEnv, [Annoted Alternative])
 ana_subsort ann (sigma,alternatives) s_n pos =
   do checkSortExists (localEnv sigma) (fst pos) s_n
-     return (sigma,alternatives ++ [cloneAnnos ann
-                                    (Subsort s_n (toListPos pos))])
+     return (sigma { flag = True },
+             alternatives ++ [cloneAnnos ann (Subsort s_n (toListPos pos))])
 
 ana_construct :: Annoted ALTERNATIVE
                  -> Sign -> SortId -> (SigLocalEnv, [Annoted Alternative])
