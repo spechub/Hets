@@ -8,7 +8,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-   Datatypes for options, a list of options hetcats understands.
+   Datatypes for options, a list of options hets understands.
    Useful functions to parse and check the user-provided functions
    and for filling in default values.
 
@@ -29,7 +29,7 @@ Portability :  non-portable(DevGraph)
 
 {- Optionen:
 
-Usage: hetcats [OPTION...] file ... file
+Usage: hets [OPTION...] file ... file
   -v[Int]   --verbose[=Int]       chatty output to stderr
   -q        --quiet               no output to stderr
   -V        --version             print version number and exit
@@ -520,7 +520,7 @@ hetsError Intern errorString = error ("Internal Error: " ++ errorString)
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
 hetsUsage = usageInfo header options
-    where header = "Usage: hetcats [OPTION...] file"
+    where header = "Usage: hets [OPTION...] file"
 
 -- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts' 
 -- Verbosity exceeds the given level
