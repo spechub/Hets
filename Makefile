@@ -162,8 +162,7 @@ derived_sources = $(drifted_files) $(happy_files) hetcats/Version.hs \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = ./Isabelle/Logic_Isabelle.hs \
     ./Proofs/Proofs.hs hets.hs ./CASL/CCC/FreeTypes.hs \
-    ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs \
-    ./Taxonomy/AbstractGraphView.hs 
+    ./Comorphisms/LogicList.hs ./Comorphisms/LogicGraph.hs
 
 # this variable holds the modules that should be documented
 doc_sources = $(filter-out $(cpp_sources), $(filter-out $(pfe_sources), \
