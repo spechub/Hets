@@ -618,5 +618,5 @@ basicAnalysis (bs, inSig, ga) = do
     return ( newBs
 	   , remPartOpsS diff
 	   , remPartOpsS cleanSig
-	   , checked_sents ) 
+	   , reverse checked_sents ) 
 
