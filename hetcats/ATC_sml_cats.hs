@@ -42,8 +42,8 @@ import AS_Architecture
 import AS_Library
 
 -- the following module provides the ability to parse the "unparsed-anno"
-import Parsec (parse,setPosition)
-import ParsecPos (newPos)
+import Common.Lib.Parsec (parse,setPosition)
+import Common.Lib.Parsec.Pos (newPos)
 import qualified Anno_Parser (annotations,parse_anno)
 import Lexer(skip)
 
