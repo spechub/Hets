@@ -95,10 +95,13 @@ typeAppl t ts =
 
 binTypeAppl :: Typ -> Typ -> Typ
 binTypeAppl t1 t2 = case t1 of
-    Type n s [] -> Type n s []
-    Type n s ((TVar _ _):ts) -> Type n s (t2:ts) 
- --   Type _ _ (t2:_) -> t1
-    _ -> error "IsaSign.binTypeAppl, unsupported type application"                
+    Type n s ts -> Type n s (t2:ts) 
+    _ -> error "IsaSign.binTypeAppl, unsupported type application"                 
+--binTypeAppl t1 t2 = case t1 of
+--    Type n s [] -> Type n s []
+--    Type n s ((TVar _ _):ts) -> Type n s (t2:ts) 
+----   Type _ _ (t2:_) -> t1
+--    _ -> error "IsaSign.binTypeAppl, unsupported type application"                
 
 -- mkContAppl :: Typ -> Typ -> Typ 
 -- mkContAppl t1 t2 = Type "domAppl" dom [t1,t2]
@@ -168,22 +171,26 @@ funS = "fun"  -- may be this should be "=>" for printing
 data Continuity = IsCont | NotCont deriving (Eq, Ord ,Show)
 
 data Term =
-        Const { termName   :: VName }
---                termType     :: Typ} 
+        Const { termName     :: VName,
+                termType     :: Typ } 
 --                defaultClass :: IsaClass }  -- constants, with default class
-      | Free  { termName   :: VName }  
---                termType     :: Typ} 
+      | Free  { termName   :: VName,  
+                termType     :: Typ } 
 --               defaultClass :: IsaClass }  -- free variables
---    | Var   (Indexname, Typ)
---    | Bound Int
-      | Abs   { absVars    :: [(Term,Typ)], 
+      | Var  Indexname Typ
+      | Bound Int
+      | Abs   { absVar     :: Term,
+                termType   :: Typ, 
                 termId     :: Term, 
                 continuity :: Continuity }  -- lambda abstraction
-      | App { funId :: Term, 
-              argId :: Term, 
-              continuity   :: Continuity }    -- application
-      | Case { termId      :: Term, 
-               caseSubst   :: [(Term, Term)] } 
+--      | Abs   { absVars    :: [(Term,Typ)], 
+--                termId     :: Term, 
+--                continuity :: Continuity }  -- lambda abstraction
+      | App  { funId :: Term, 
+               argId :: Term, 
+               continuity   :: Continuity }    -- application
+      | Case { termId       :: Term, 
+               caseSubst    :: [(Term, Term)] } 
 --               continuity  :: Continuity }  -- case
       | If { ifId   :: Term, 
              thenId :: Term, 
@@ -196,6 +203,7 @@ data Term =
       | Paren Term
       | Wildcard
       | Fix Term 
+      | Bottom Term
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
