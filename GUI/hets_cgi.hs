@@ -54,7 +54,7 @@ import System.Posix.Process
 import System.Posix.Env
 import Version
 
-type Diag = String
+type DiagStr = String
 type HtmlTitle = String
 type ResAna  = String
 type SelectedBox = (Bool, Bool, Bool, Bool)
@@ -77,12 +77,12 @@ page1 title =
       -- Input field
       input   <- p (makeTextarea "" (attr "rows" "22" ## attr "cols" "68"))
       -- check box
-      selectTree <- checkboxInputField (attr "valus" "yes")
-      text "output parse tree"
       selectEnv <- checkboxInputField (attr "valus" "yes")
       text "output pretty print ASCII"
       selectTex <- checkboxInputField (attr "valus" "yes")
       text "output pretty print LaTeX"
+      selectTree <- checkboxInputField (attr "valus" "yes")
+      text "output parse tree"
       selectAchiv <- p $ b ( checkboxInputField(attr "checked" "checked") ##
 			 text "If this checkbox is selected, your input will be logged!")
       -- submit/reset botton
@@ -117,7 +117,7 @@ handle (F5 input box1 box2 box3 box4) =
       getRandom = getStdRandom (randomR (100000,999999))
 
 -- Analyze the input
-anaInput :: String -> SelectedBox -> FilePath -> IO([Diag],[(HtmlTitle, ResAna)])
+anaInput :: String -> SelectedBox -> FilePath -> IO([DiagStr],[(HtmlTitle, ResAna)])
 anaInput contents showS@(_,_,_,willAchiv) outputfiles =
    do 
    setEnv "HETS_LIB" "/home/cofi/jiang/HetCATS/CASL-lib" True
@@ -125,7 +125,7 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
    Common.Result.Result ds res <- ioresToIO 
 				  (ana_LIB_DEFN logicGraph defaultLogic 
 				   defaultHetcatsOpts{outputToStdout = False} emptyLibEnv ast)
-   let diagStrs  = take ((length ds)-1) (Prelude.map show ds)
+   let diagStrs  = filterDiagStr [] $ take ((length ds)-1) (Prelude.map show ds) 
    if parseErrors == "" then
       if hasErrors ds then
 	 return (diagStrs, [])
@@ -139,6 +139,13 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
       else return (parseErrors:diagStrs, [])
 
    where 
+      filterDiagStr :: [String] -> [DiagStr] -> [DiagStr]
+      filterDiagStr str [] = str
+      filterDiagStr str (hdiags:rdiags) 
+		    | "*** FatalError" == take 14 hdiags = hdiags:str
+		    | otherwise = filterDiagStr (hdiags:str) rdiags
+      
+      addSpnToDiags :: [LIB_ITEM] -> [DiagStr] -> [DiagStr] 
       addSpnToDiags [] ds = ds
       addSpnToDiags (Spec_defn spn _ _ _:re) ds = addSpnToDiags re (("Analyzing spec " ++ showPretty spn ""):ds )
       addSpnToDiags (View_defn vn _ _ _ _:re) ds = addSpnToDiags re (("Analyzing view " ++ showPretty vn ""):ds )
@@ -147,11 +154,11 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
       addSpnToDiags (Logic_decl _ _:re) ds =  addSpnToDiags re ("":ds)
       addSpnToDiags (Download_items ln _ _:re) ds = addSpnToDiags re (("Analyzing from " ++ showPretty ln "\n"):ds)
 						    
-      anaInput_aux :: [Diag]
+      anaInput_aux :: [DiagStr]
 		      -> Maybe(LIB_NAME, LIB_DEFN, DGraph, LibEnv)
 		      -> FilePath
                       -> SelectedBox 
-		      -> IO([Diag],[(HtmlTitle, ResAna)])
+		      -> IO([DiagStr],[(HtmlTitle, ResAna)])
       anaInput_aux diags res outputfiles (showTree, showEnv, showTex, _) =
 	  case res of 
 	       Just (libName, libDefn, _, libEnv) ->
@@ -227,7 +234,7 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
 			 return $ fileSize fstatus
       
 -- Print the result		    
-printR :: String -> ([Diag], [(HtmlTitle, ResAna)]) -> SelectedBox -> FilePath 
+printR :: String -> ([DiagStr], [(HtmlTitle, ResAna)]) -> SelectedBox -> FilePath 
           -> WithHTML x CGI ()
 printR str (diags, result) selectedBoxes outputFiles =
     do 
@@ -248,7 +255,7 @@ printR str (diags, result) selectedBoxes outputFiles =
 	   )
     where 
         printRes :: SelectedBox -> FilePath -> 
-		    [(Diag, ResAna)] -> WithHTML x CGI ()
+		    [(DiagStr, ResAna)] -> WithHTML x CGI ()
 	printRes _ _ [] = CGI.empty
 	printRes (isTree, isEnv, isTex, willAchiv) outputfiles 
 		     ((title_ana, text_ana):rR) =
