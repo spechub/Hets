@@ -185,10 +185,8 @@ docs/index.html: $(doc_sources)
 
 apache_doc:
 	$(RM) docs/*.*
-	$(MAKE) distclean
 	cvs up -d
-	$(MAKE) hetcats-make
-	strip hets
+	$(MAKE) hets-opt
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
 
