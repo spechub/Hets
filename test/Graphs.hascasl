@@ -6,11 +6,13 @@ version 0.9
 
 %left_assoc __intersection__  %[ Should go to StructuredDatatypes ]%
 
-from Basic/StructuredDatatypes get List
-from Basic/Numbers get Nat
+%%from Basic/StructuredDatatypes get List
+%%from Basic/Numbers get Nat
 
 logic HasCASL
 
+spec Nat = {}
+spec List = {}
 spec InternalLogic = {}
 
 spec Extensionality = {}
@@ -251,7 +253,7 @@ spec DirectedGraph =
   Set
 then
   var N,E : Type
-  type Graph N E = { g : Set N * E->?N * E->?N  .
+  type Graph N E = { (n,source,target) : Set N * (E->?N) * (E->?N)  .
                       dom source=dom target 
                       /\ (source : dom source --> n)
                       /\ (target : dom target --> n) }
@@ -352,7 +354,7 @@ end
 spec SimpleGraph =
   RichDirectedGraph
 then
-  type SimpleGraph N E = {g:Graph N E .
+  type SimpleGraph N E = {(nn,source,target):Graph N E .
                           forall e1,e2:E . source e1 = source e2
                                           /\ target e1 = target e2 => e1=e2 }
   type LoopFreeGraph N E = {g:Graph N E . loopFree g}
@@ -398,7 +400,7 @@ and
   AbstractSetConstructions[SetRepresentation with S |-> E]
 and GraphHomomorphism
 then
-  type Congruence = {gp : Graph N E * PER N * PER E
+  type Congruence = {(g,rn,re) : Graph N E * PER N * PER E
                           . nodes g = dom rn /\ edges g = dom re /\
                             forall e1,e2:E . (e1,e2) isIn re =>
                                (sourceMap g e1,sourceMap g e2) isIn rn /\

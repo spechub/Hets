@@ -1,0 +1,138 @@
+library Petri
+version 0.1
+
+logic HasCASL
+
+spec Nat = {}
+
+spec Set = {}
+
+spec MultiSet = Nat and Set then
+  var Elem : Type
+  type  MultiSet Elem = Elem ->? Nat
+then %def
+  ops __ isIn__ : Pred (Elem * MultiSet Elem);
+      __ <= __ : Pred (MultiSet Elem * MultiSet Elem);
+      {} : Elem -> MultiSet Elem;
+      {__} : Elem -> MultiSet Elem;
+      __ + __, __ - __, __intersection__: MultiSet Elem * MultiSet Elem -> MultiSet Elem;
+      freq : Elem * MultiSet Elem -> Nat;
+      setToMultiSet : Set Elem -> MultiSet Elem
+
+ forall x,y : Elem; B,C,D,E:MultiSet Elem; S: Set Elem
+
+     . freq(x,B) = if def B x then B x else 0     %(freq_def)%
+     . freq(x,B + C) = freq(x,B) + freq(x,C)      %(freq_union)%
+
+     . x isIn B <=> freq(x,B) > 0                     %(MultiSet_isIn)%
+
+     . B <= C <=> 
+       forall x: Elem . freq(x,B) <= freq(x,C)         %(MultiSet_subseteq)%
+
+     . freq (x,setToMultiSet S) = if x isIn S then 1 else 0
+
+     . B intersection C = D <=> 
+       forall x: Elem . freq(x,D) = min (freq(x,B), freq(x,C))
+                                                  %(MultiSet_cap)%
+     . B - C = D <=>
+           forall x: Elem .
+           ( freq(x,B) >= freq(x,C) => freq(x,B) = freq(x,D) + freq(x,C) )
+           /\
+           ( freq(x,B) <= freq(x,C) => freq(x,D) = 0 )             
+       %(MultiSet_diff)%
+then %implies
+  ops __ intersection __: MultiSet Elem * MultiSet Elem -> MultiSet Elem,
+                          assoc, comm, idem
+end
+
+
+spec PetriNet = 
+  Set and Map 
+then
+  sorts P,T 
+  type Net = {ppp : Set P  *  (T ->? Set P) * (T ->? Set P)  
+                      	. dom pre=dom post /\
+                     	pre :: dom  pre  -> p /\
+                     	post :: dom post  -> p }
+
+  op __union__ : Net * Net -> Net
+
+  forall n1,n2:Net
+  . n1 union n2 =
+    let (p1,pre1,post1) = n1
+        (p2,pre2,post2) = n2
+    in (p1 union p2,
+        \t:T . if def pre1(t) then if def pre2(t) then pre1(t) + pre2(t)
+                                                else pre1(t)
+                            else pre2(t),
+        \t:T . if def post1(t) then if def post2(t) then post1(t) + post2(t)
+                                                  else post1(t)
+                            else post2(t)) 
+        as Net
+end
+
+
+spec PetriSystem = 
+  MultiSet and PetriNet 
+then
+  type Marking = MultiSet P
+  type System = {nm : Net * Marking 
+                          . let (p,pre,post) = n 
+                            in forall x:P . x isIn m => x isIn p }
+
+  ops  marking   : System ->  Marking;
+       net       : System -> Net;
+       empty     : Marking;
+        __[__]>  : System * T -> System; 
+       __union__ : System * System -> System
+
+  forall sys,sys1,sys2:System; n:Net; x:P; m:Marking; t:T
+  . empty = {}
+  . net sys = let (n,m) = sys in n
+  . marking sys = let (n,m) = sys in m
+  . def sys[t]> <=> (t isIn dom pre 
+      /\ forall x:P . x isIn pre(t) => x isIn marking(sys))
+  . def sys[t]> => sys[t]> = (net(sys), 
+       marking(sys) - setToMultiSet(pre(t)) + setToMultiSet(post(t))) 
+           as System
+  . sys1 union sys2 = 
+      (net(sys1) union net(sys2), marking(sys1) + marking(sys2)) as System
+end 
+
+spec WorkflowNet [SetRepresentation with S |-> P]
+                 [SetRepresentation with S |-> T] = 
+  PetriSystem
+and AbstractSetConstructions[SetRepresentation with S |-> P fit S |-> P]
+and AbstractSetConstructions[SetRepresentation with T |-> P fit T |-> P]
+then
+  type WNet={(sys,i,o): System x P x P .
+                 let ((p,pre,post),m) = sys in
+                   i isIn p
+                /\ o isIn p
+                /\ not i isIn range(post)
+                /\ not o isIn range(pre) }
+
+  ops input, output : WorkflowNet -> P;
+      system : WorkflowNet -> System;
+      __union__ : WorkflowNet * WorkflowNet -> WorkflowNet
+
+  forall w,w1,w2:WorkflowNet; sys:System; i,o:P
+  . system w = let (sys,i,o) = w in sys
+  . input w = let (sys,i,o) = w in i
+  . output w = let (sys,i,o) = w in o
+  . w1~ union w2 =
+    let (((p1,pre1,post1),m1),i1,o1) = w1
+        (((p2,pre2,post2),m2),i2,o2) = w2
+        r = \ (x,y) . x=y \/ (x=inl o1 /\ y=inr i2) \/ (y=inl o1 /\ x=inr i2)
+        p = (p1 coproduct p2) factor r
+        q = coeq r
+        t = (dom pre1)~ coproduct~ (dom pre2)
+        pre t = if def left t then image~ (q o inl)~ (pre1 (left t))
+                else if def right t then image~ (q o inr)~ (pre2 (right t))
+                else undefined
+        post t = if def left t then image~ (q o inl)~ (post1 (left t))
+                else if def right t then image~ (q o inr)~ (post2 (right t))
+                else undefined
+        m = map~ (q o inl)~ m1~ +~ map~ (q o inr)~ m2
+    in (((p,pre,post),m),i1,o2)~ as WNet
+end
