@@ -73,4 +73,4 @@ diamondS = "<>"
 greaterS = ">"
 
 cocasl_reserved_words :: [String]
-cocasl_reserved_words = [cotypeS, cotypesS, cogeneratedS, diamondS, greaterS]
+cocasl_reserved_words = [cotypeS, cotypesS, cogeneratedS, diamondS]
