@@ -40,6 +40,7 @@ import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Result
+import Common.Id
 
 {-
    function checkFreeType:
@@ -66,18 +67,28 @@ checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)]
 
 -- checkFreeType1 :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
-       | Set.any (\s->not $ elem s srts) newSorts = return Nothing 
-                   --   warning Nothing "sort s is not in srts" pos
-       | Set.any (\s->not $ elem s f_Inhabited) newSorts = return (Just False)
-                   --   warning (Just False) "sort s is not inhabited" pos
-       | elem Nothing l_Syms = return Nothing
-                   --   warning Nothing "formula f is illegal" pos
+       | Set.any (\s->not $ elem s srts) newSorts =
+                   let (Id _ _ ps) = head $ filter (\s->not $ elem s srts) newL
+                       pos = head ps
+                   in warning Nothing "sort s is not in srts" pos
+       | Set.any (\s->not $ elem s f_Inhabited) newSorts =
+                   let (Id _ _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
+                       pos = head ps
+                   in warning (Just False) "sort s is not inhabited" pos
+       | elem Nothing l_Syms =
+                   let (Quantification _ _ _ ps) = head $ filter (\f->(leadingSym f) == Nothing) op_preds
+                       pos = head ps
+                   in warning Nothing "formula f is illegal" pos
        | any id $ map find_ot id_ots ++ map find_pt id_pts = return Nothing
                    --   warning Nothing "leading symbol ist not new" pos
-       | not $ and $ map checkTerm leadingTerms = return Nothing   
-                   --   warning Nothing "the leading term consist of not only variables and constructors" pos              
-       | not $ and $ map checkVar leadingTerms = return Nothing 
-                   --   warning Nothing "a variable occurs twice in a leading term" pos
+       | not $ and $ map checkTerm leadingTerms =
+                   let (Application _ _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
+                       pos = head ps
+                   in warning Nothing "the leading term consist of not only variables and constructors" pos              
+       | not $ and $ map checkVar leadingTerms =
+                   let (Application _ _ ps) = head $ filter (\t->not $ checkVar t) leadingTerms
+                       pos = head ps
+                   in warning Nothing "a variable occurs twice in a leading term" pos
        | not $ checkPatterns leadingPatterns = return Nothing
                    --   warning Nothing "patterns overlap" pos            
        | otherwise = return (Just True)
@@ -92,6 +103,7 @@ checkFreeType m fsn
          allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
          newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts     -- new sorts
          newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
+         newL = Set.toList newSorts
          oldOpMap = opMap sig
          oldPredMap = predMap sig 
          fconstrs = concat $ map fc fs
