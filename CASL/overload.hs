@@ -127,30 +127,39 @@ minExpTerm_simple sign var
           ops = case Map.lookup (simpleIdToId var) (opMap sign) of
                   Nothing -> []
                   Just os -> map (opRes) $ Set.elems $ Set.filter (const) os
-          sorts = minimize sign (vars ++ ops)
-          in equivalenceClasses leqF sorts
+          all_sorts = (vars ++ ops)
+          sorts = filter (leastSort sign all_sorts) all_sorts
+          in qualifyTerm $ equivalenceClasses leqF sorts
+    where
+    leastSort sign sorts x = null $ filter (> x) sorts -- > defined in sign
 
+minExpTerm_qual :: Sign -> VAR -> SORT -> [[TERM]]
 minExpTerm_qual sign var sort
-    = let
-      met_var = minExpTerm_simple sign var
-      make_met = \c -> [ (var, sort) |
-                         (var', sort') <- c, sort' <= sort, var' == var ]
-      in
-      map make_met met_var
+    = let expandedVar = minExpTerm_simple sign var
+          selectExpansions c = [ (var, sort) |
+                                 sorted <- c,
+                                 fits sorted ]
+          fits (Sorted_term (Simple_id v) s _)
+               = (v == var) && (s <= sort)
+          in qualifyTerm $ map selectExpansions expandedVar
 
+minExpTerm_sorted :: Sign -> TERM -> SORT -> [[TERM]]
 minExpTerm_sorted sign term sort
-    = let
-      met_var = minExpTerm sign term -- ist das der einzige Unterschied?
-      make_met = \c -> [ (term, sort) |
-                         (term', sort') <- c, sort' <= sort, term' == term ]
-      in
-      map make_met met_var
+    = let expandedTerm = minExpTerm sign term
+          selectExpansions c = [ (term, sort) |
+                                 sorted <- c,
+                                 fits sorted ]
+          fits (Sorted_term t s _)
+               = (t == term) && (s <= sort)
+          in qualifyTerm $ map selectExpansions expandedTerm
 
-minExpTerm_op sign op terms = [[]]
--- the lean mean difficulty machine :\)
--- das gilt, nehme ich an, auch als Fall fuer Praedikat-Applikation?
--- dafuer sehe ich naemlich ansonsten keinen anderen...
-
+minExpTerm_op :: Sign -> OP_SYMB -> [TERM] -> [[TERM]]
+minExpTerm_op sign op terms
+    = let expandedTerms = map minExpTerm sign terms
+          expansions = permute expandedTerms
+          computeProfile cs
+              = map (id . permute) cs
+          profiles = map computeProfile expansions
 
 -- -- --
 -- ein Problem koennten noch die Definitionen von sort' <= sort und
