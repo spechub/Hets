@@ -200,7 +200,7 @@ mkParenTokState i r =
 
 initialState :: GlobalAnnos -> Assumps -> Index -> State Int [PState a]
 initialState g as i = 
-    do let ids = concatMap (\ (ide, l) -> map ( \ e -> (ide, e)) l) 
+    do let ids = concatMap (\ (ide, l) -> map ( \ e -> (ide, e)) $ opInfos l) 
 		 $ Map.toList as
        ls <- listStates g i
        l1 <- mapM (mkMixfixState i) ids

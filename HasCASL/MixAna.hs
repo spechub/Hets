@@ -340,7 +340,7 @@ patFromState p =
 
 initialPatState :: Assumps -> Index -> State Int [PState a]
 initialPatState as i = 
-    do let ids = concatMap (\ (ide, l) -> map ( \ e -> (ide, e)) l) 
+    do let ids = concatMap (\ (ide, l) -> map ( \ e -> (ide, e)) $ opInfos l) 
 		 $ Map.toList as
        l1 <- mapM (mkMixfixState i) ids
        l2 <- mapM (mkPlainApplState i) $ filter (isMixfix . fst) ids

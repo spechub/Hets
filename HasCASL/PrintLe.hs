@@ -4,7 +4,7 @@ Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
 
 Maintainer  :  hets@tzi.de
 Stability   :  experimental
-Portability :  non-portable (instances for lists) 
+Portability :  portable
 
 pretty printing a HasCASL environment
 
@@ -77,12 +77,6 @@ instance PrettyPrint TypeInfo where
 	   (space <> ptext lessS <+> printList0 ga sups)
         <> printText0 ga defn
 
-instance PrettyPrint [Kind] where
-    printText0 ga l = space <> colon <+> printList0 ga l
-
-instance PrettyPrint [Type] where
-    printText0 ga l = space <> colon <+> printList0 ga l
-
 instance PrettyPrint OpDefn where
     printText0 _ NoOpDefn = empty
     printText0 _ VarDefn = space <> ptext "%(var)%"
@@ -100,9 +94,9 @@ instance PrettyPrint OpInfo where
 			  [] -> empty 
 			  l -> comma <> commaT_text ga l)
 		      <>  printText0 ga (opDefn o)
-
-instance PrettyPrint [OpInfo] where
-    printText0 ga l = vcat $ map (printText0 ga) l
+ 
+instance PrettyPrint OpInfos where
+    printText0 ga (OpInfos l) = vcat $ map (printText0 ga) l
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
     printText0 _ Nothing = empty

@@ -48,7 +48,8 @@ improveDiag v d = d { diagString = let f:l = lines $ diagString d in
 		    , diagPos = getMyPos v
 		    , diagKind = case diagKind d of 
 		                 FatalError -> Error
-		                 w -> w }
+		                 w -> w 
+		    }
 
 mergeMap :: (Ord a, PosItem a, PrettyPrint a) => (b -> b -> Result b) 
 	 -> Map.Map a b -> Map.Map a b -> Result  (Map.Map a b)
@@ -119,8 +120,8 @@ instance Mergeable TypeDefn where
 mergeAssumps :: TypeMap -> Int -> Assumps -> Assumps -> Result Assumps
 mergeAssumps tm c = mergeMap (mergeOpInfos tm c)
 
-mergeOpInfos :: TypeMap -> Int -> [OpInfo] -> [OpInfo] -> Result [OpInfo] 
-mergeOpInfos tm c l1 l2 = 
+mergeOpInfos :: TypeMap -> Int -> OpInfos -> OpInfos -> Result OpInfos 
+mergeOpInfos tm c (OpInfos l1) (OpInfos l2) = fmap OpInfos $  
     foldM ( \ l o -> 
 	   let (es, us) = partition (isUnifiable tm c (opType o) . opType) l
 	   in if null es then return (o:l)
@@ -130,7 +131,7 @@ mergeOpInfos tm c l1 l2 =
 instance Mergeable OpInfo where
     merge o1 o2 = 
 	do sc <- merge (opType o1) $ opType o2
-           as <- merge (opAttrs o1) $ opAttrs o2
+           as <- mergeAttrs (opAttrs o1) $ opAttrs o2
  	   d <- merge (opDefn o1) $ opDefn o2
 	   return $ OpInfo sc as d
 
@@ -145,8 +146,9 @@ instance Mergeable TypeScheme where
 		  else fail ("wrong type scheme"
 			     ++ expected s1 s2)
 
-instance Mergeable [OpAttr] where
-    merge l1 l2 = 
+-- instance Mergeable [OpAttr] where
+mergeAttrs :: [OpAttr] -> [OpAttr] -> Result [OpAttr]
+mergeAttrs l1 l2 = 
 	let binAttr a = case a of BinOpAttr _ _ -> True
 				  _ -> False
 	    (l1b, l1u) = partition binAttr l1

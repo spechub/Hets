@@ -1,4 +1,3 @@
-#!/home/maeder/bin/runhugs
 
 HetCATS/HasCASL/hacapa.lhs
 $Id$

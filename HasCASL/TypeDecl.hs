@@ -11,7 +11,7 @@ module HasCASL.TypeDecl where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import Common.AS_Annotation(item)
+import Common.AS_Annotation
 import HasCASL.ClassAna
 import HasCASL.ClassDecl
 import qualified Common.Lib.Map as Map
@@ -303,8 +303,8 @@ putAssumps as =  do { e <- get; put e { assumps = as } }
 partitionOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme
 	 -> ([OpInfo], [OpInfo])
 partitionOpId as tm c i sc = 
-    let l = Map.findWithDefault [] i as 
-	in partition (isUnifiable tm c sc . opType) l
+    let l = Map.findWithDefault (OpInfos []) i as 
+	in partition (isUnifiable tm c sc . opType) $ opInfos l
 
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
@@ -315,9 +315,10 @@ addOpId i sc attrs defn =
        let (l,r) = partitionOpId as tm c i sc
 	   oInfo = OpInfo sc attrs defn 
        if null l then putAssumps $ Map.insert i 
-			 (oInfo : r ) as
+			 (OpInfos (oInfo : r )) as
 	  else do let Result ds mo = merge (head l) oInfo
 		  appendDiags $ map (improveDiag i) ds
 		  case mo of 
 		      Nothing -> return ()
-		      Just oi -> putAssumps $ Map.insert i (oi : r ) as
+		      Just oi -> putAssumps $ Map.insert i 
+				 (OpInfos (oi : r )) as

@@ -77,7 +77,9 @@ data OpDefn = NoOpDefn
 	    | VarDefn deriving (Show, Eq)
 
 
-type Assumps = Map UninstOpId [OpInfo]
+newtype OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
+
+type Assumps = Map UninstOpId OpInfos
 
 -----------------------------------------------------------------------------
 -- local env
