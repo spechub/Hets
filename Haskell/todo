@@ -1,16 +1,7 @@
-Hatchet einbinden
-
-In neuem Modul (Haskell2DG):
-
-- bevor ein importiertes Modul rekursiv mit anaHaskellFile bearbeitet wird,
-  zunächst gucken, ob es schon im LibEnv verzeichnet ist, dann kann
-  anaHaskellFile entfallen, stattdessen direkt Infos aus LibEnv rausholen
-
-- globale Einbindung: siehe Kommentare zu processFile in hets.hs
-
 In Logic_Haskell.hs: 
 - importierte Module müssen nicht eingelesenw werden, 
     stattdessen übergebene sig benutzen
+
 - Funktion(Konstante) für Prelude-Signatur bereitstellen
 
 - in instance StaticAnalysis Funktion basic_analysis hinzufügen   
