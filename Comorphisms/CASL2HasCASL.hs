@@ -13,20 +13,13 @@ module Comorphisms.CASL2HasCASL where
 
 import Logic.Logic
 import Logic.Comorphism
+import qualified Common.Lib.Map as Map
+import Common.Lib.Set as Set
+import Data.Dynamic
 
 -- CASL
 import CASL.Logic_CASL 
 import CASL.AS_Basic_CASL
---import CASL.Print_AS_Basic
---import CASL.Parse_AS_Basic
---import CASL.SymbolParser
---import Logic.ParsecInterface
---import Common.AS_Annotation
---import Common.AnnoState(emptyAnnos)
---import Common.Lib.Parsec
---import Common.Lib.Map
---import Logic.Logic
---import Common.Lexer((<<))
 import CASL.Sublogic
 import CASL.StaticAna
 import CASL.Morphism
@@ -34,17 +27,10 @@ import CASL.Morphism
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
---import HasCASL.PrintLe
---import HasCASL.AsToLe
 import HasCASL.Symbol
---import HasCASL.ParseItem
 import HasCASL.Morphism
 
-import Common.Lib.Set
-import Data.Dynamic
-
--- Logic comorphisms (possibly also morphisms via adjointness)
-
+-- The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
 instance Language CASL2HasCASL -- default definition is okay
 
@@ -60,11 +46,36 @@ instance Comorphism CASL2HasCASL
                HasCASL.Morphism.Morphism
                HasCASL.Morphism.Symbol HasCASL.Morphism.RawSymbol () where
     sourceLogic _ = CASL
-    source_sublogic _ = CASL.Sublogic.top
+    sourceSublogic _ = CASL_SL
+                      { has_sub = False, -- no subsorting in HasCASL yet...
+                        has_part = True,
+                        has_cons = True,
+                        has_eq = True,
+                        has_pred = True,
+                        which_logic = FOL
+                      }
     targetLogic _ = HasCASL
-    target_sublogic _ = ()
-    --map_sign _ -> sign1 -> Maybe (sign2,[sentence2])
+    targetSublogic _ = ()
+    map_sign _ = mapSignature
     --map_morphism _ morphism1 -> Maybe morphism2
     --map_sentence _ sign1 -> sentence1 -> Maybe sentence2
     --map_symbol :: cid -> symbol1 -> Set symbol2
+
+sortTypeinfo :: TypeInfo
+sortTypeinfo = TypeInfo { typeKind = star,
+			 , otherTypeKinds = [],
+			 , superTypes = [],
+			 , typeDefn = NoTypeDefn
+			 } 
+
+mapSignature :: CASL.StaticAna.Sign -> Maybe(HasCASL.Le.Env,[Term]) 
+mapSignature sign = Just (HasCASL.Le.Env { 
+    classMap = Map.empty,
+    typeMap = Map.fromList $ map (\s -> (s,sortTypeinfo)) 
+                           $ Set.toList $ sortSet sign,
+    assumps = undefined, --opMap sign predMap sign,
+    HasCASL.Le.sentences = [],	 
+    HasCASL.Le.envDiags = [],
+    counter = 1
+  }, [])
 

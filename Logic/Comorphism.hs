@@ -42,9 +42,9 @@ class (Language cid,
              | cid -> lid1, cid -> lid2
   where
     sourceLogic :: cid -> lid1
-    source_sublogic :: cid -> sublogics1
+    sourceSublogic :: cid -> sublogics1
     targetLogic :: cid -> lid2
-    target_sublogic :: cid -> sublogics2
+    targetSublogic :: cid -> sublogics2
     -- the translation functions are partial 
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
@@ -82,8 +82,8 @@ instance Logic lid sublogics
          where
            sourceLogic (IdComorphism lid) = lid
            targetLogic (IdComorphism lid) = lid
-           source_sublogic _ = top
-           target_sublogic _ = top
+           sourceSublogic _ = top
+           targetSublogic _ = top
            map_sign _ = \sigma -> Just(sigma,[])
            map_morphism _ = Just
            map_sentence _ = \_ -> Just
@@ -170,10 +170,10 @@ instance (Comorphism cid1
      sourceLogic cid1
    targetLogic (CompComorphism _ cid2) = 
      targetLogic cid2
-   source_sublogic (CompComorphism cid1 _) = 
-     source_sublogic cid1
-   target_sublogic (CompComorphism _ cid2) = 
-     target_sublogic cid2
+   sourceSublogic (CompComorphism cid1 _) = 
+     sourceSublogic cid1
+   targetSublogic (CompComorphism _ cid2) = 
+     targetSublogic cid2
    map_sentence (CompComorphism cid1 cid2) = 
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
@@ -224,10 +224,10 @@ instance (Logic lid1 sublogics1
   r1==r2 = language_name r1 == language_name r2 &&
            language_name (source r1) == language_name (source r2) &&
            language_name (target r1) == language_name (target r2) &&
-           coerce (source r1) (source r2) (source_sublogic r1) ==
-             Just  (source_sublogic r2) &&
-           coerce (target r1) (target r2) (target_sublogic r1) ==
-             Just  (target_sublogic r2)
+           coerce (source r1) (source r2) (sourceSublogic r1) ==
+             Just  (sourceSublogic r2) &&
+           coerce (target r1) (target r2) (targetSublogic r1) ==
+             Just  (targetSublogic r2)
 
 instance (Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -282,12 +282,12 @@ comp_comorphism ::
             lid3 sublogics3 basic_spec3 sentence3 symb_items3 symb_map_items3
                 sign3 morphism3 symbol3 raw_symbol3 proof_tree3 )
 
-comp_comorphism r1 r2 = if target_sublogic r1 <<= source_sublogic r2 then
+comp_comorphism r1 r2 = if targetSublogic r1 <<= sourceSublogic r2 then
    Just(Comorphism{ 
    language_name = language_name r1++";"++language_name r2,
    source = source r1, target = target r2,
-   source_sublogic = source_sublogic r1, 
-   target_sublogic = target_sublogic r2,
+   sourceSublogic = sourceSublogic r1, 
+   targetSublogic = targetSublogic r2,
    map_sentence = 
        \si1 se1 -> 
          do (si2,_) <- map_sign r1 si1
