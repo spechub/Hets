@@ -40,7 +40,7 @@ varsOf t =
 
 generalize :: TypeScheme -> TypeScheme
 generalize (TypeScheme vs q@(_ :=> ty) ps) =
-    TypeScheme (nub (varsOf ty ++ vs)) q ps
+    TypeScheme (nub (varsOf ty)) q ps
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
