@@ -426,7 +426,7 @@ generatedItems = do g <- asKey generatedS
                          i:is <- many1 sigItems
                          c <- cBraceT
                          return (GenItems ((Annoted i [] a [])  
-                                            : map (\x -> Annoted x [] [] []) is)
+                                           : map (\x -> Annoted x [] [] []) is)
                                    (toPos g [o] c)) 
 
 -----------------------------------------------------------------------------
@@ -487,11 +487,9 @@ dotFormulae = do d <- dotT
                         Just t -> return (AxiomItems []
                                (init fs ++ [appendAnno (last fs) an])
                                (ps ++ [tokPos t]))
-
                    else return (AxiomItems [] fs ps)
     where aFormula = bind appendAnno 
 		     (annoParser (fmap TermFormula term)) lineAnnos
-
 
 basicItems = fmap SigItems sigItems
 	     <|> classItems
