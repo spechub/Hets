@@ -1,11 +1,15 @@
+
 {- HetCATS/AS_Library.hs
    $Id$
-   Klaus Luettich
+   Author: Klaus Lüttich
+   Year:   2002
 
    These data structures describe the abstract syntax tree for heterogenous 
    libraries in HetCASL.
 
    todo:
+     - ATermConversion SML-CATS
+     - LaTeX Pretty Printing
 -}
 
 module AS_Library where
@@ -39,6 +43,10 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
 
 	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
 		-- pos: "from","get",commas, opt "end"
+	      | Logic String String [Pos]
+	      --      ^ logic ^
+	      --              | opt sub_logic
+		-- pos:  "logic", first string, snd string
 		deriving (Show,Eq)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
