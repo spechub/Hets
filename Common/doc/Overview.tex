@@ -1,0 +1,124 @@
+\documentclass{article}
+
+\parindent 0pt
+\parskip 5pt
+
+\begin{document}
+
+\title{Common infrastructure for the CASL language family}
+
+\author{C. Maeder}
+
+\maketitle
+
+\section{Preliminaries}
+
+see the documentation for HetCATS
+
+\section{Commonalities for all CASL extensions}
+
+The directory \texttt{Common} contains basic utilities and data types that are
+needed by most other directories of \texttt{HetCATS}. The basic types are
+simple ids (= tokens), mixfix- and compound- ids, annotations and global
+annotations. For these types, parsing, pretty printing and latex printing is
+provided for.
+
+\subsection{Compiling a test program}
+
+\texttt{cd HetCATS/Common} and call \texttt{./ghc-call} (a script that contains
+all necessary ghc options and parameters). An alternative is to call
+\texttt{gmake capa} in the top directory.
+
+This creates a binary called \texttt{annos} that can parse (and pretty
+print) various ids and annotations. 
+
+Basic CASL specifications must be parsed by \texttt{CASL/capa}.
+
+Note: if module \texttt{/AS\_Annotation.hs} can not be found, then
+it was not ``drifted'' (i.e., derived from \texttt{AS\_Annotation.der.hs}). 
+
+\section{Testing}
+
+A test call might be: 
+
+\texttt{./annos < test/Annotations.casl}
+
+Test cases are given as \texttt{*.casl} or \texttt{*.annos} files in the
+\texttt{test} subdirectory. Calling \texttt{./runcheck.sh ../annos} performs
+many tests and compares the results with corresponding \texttt{*.output}
+files.
+
+\texttt{WrongMixIds.casl} contains wrong CASL ids and should produce
+an error message for every line. 
+
+If a \texttt{diff}
+with the expected output fails, then also the number of
+``\texttt{error}'' occurrences (in the produced output) is counted. For a
+successful comparison a ``\texttt{passed}'' is emitted.
+
+Calling ``\texttt{./runcheck.sh ../annos set}'' will update the
+\texttt{*.output} files (and a subsequent \texttt{./runcheck.sh ../annos}
+should always pass).
+
+Alternatively, all checks can be preformed by \texttt{make check}. Output
+files will be overwritten by \texttt{make output}. With \texttt{cvs up} or
+\texttt{cvs diff} changes can be compared to checked-in versions of the output
+files.
+
+The script \texttt{test/checkFunctions.sh} is reused in various other
+test directories.  
+
+\section{Source files in \texttt{HetCATS/Common}}
+
+\begin{description}
+\item[AS\_Annotation.der.hs] data types for annotations
+\item[AnnoState.hs] collecting annotations when parsing
+\item[Anno\_Parser.hs] actual parsing of annotations
+\item[CaslLanguage.hs] (unused) parser for CASL mixfix ids based on
+  \texttt{Parsec.Token} and \texttt{Parsec.Language}
+\item[GlobalAnnotations.hs] data type for global annotations (a
+  \texttt{PrecedenceGraph} is based on a relation \texttt{Common.Lib.Rel})
+\item[GlobalAnnotationsFunctions.hs] conversion to global annotations
+\item[GraphUtils.hs] no longer used?
+\item[Id.hs] data types for \texttt{Token} and \texttt{Id} 
+  (reuses \texttt{Parsec.Pos})
+\item[Keywords.hs] most keywords as named identifiers (to be used
+  for parsing and printing and thus ensuring consistent spellings)
+\item[LaTeX\_funs.hs] utilities for \LaTeX{} printing
+\item[LaTeX\_maps.hs] generated tables for \LaTeX{} printing
+\item[Lexer.hs] various scanners and extensions of the Parsec library 
+\item[ListBrackets.hs] parser for list brackets in list annotations 
+\item[Named.hs] encapsulate named sentences 
+\item[PPUtils.hs] pretty printing utilities
+\item[PrettyPrint.hs] the class for pretty printing 
+\item[Print\_AS\_Annotation.hs] pretty print annotations 
+\item[Result.hs] diagnostics and monadic results
+\item[RunParsers.hs] reusable test driver
+\item[Token.hs] generic parser for ids and some keyword parsers
+  (reused in \texttt{HasCASL})
+\item[Utils.hs] utility functions (inspired by perl)
+\item[annos.hs] main test program for ids and annotations
+\item[test\_parser.hs] (unused) test driver for ids and annotations
+\end{description}
+
+\section{Other libraries}
+
+The directory \texttt{Common/Lib} contains further source files.
+
+\texttt{Common/Lib/Pretty.lhs} is an adapted copy of\\
+\texttt{//research.microsoft.com/\~{}simonpj/downloads/pretty-printer/pretty.html}
+that is also included as Haskell (\texttt{text}) library. 
+
+\texttt{Map} and \texttt{Set}
+come from \texttt{www.cs.uu.nl/\~{}daan/ddata.html}.
+
+The actually parser combinators come from 
+\texttt{www.cs.uu.nl/\~{}daan/parsec.html} that are part of the
+Haskell library but also have been slightly extended (by
+\texttt{consumeNothing}) and included in the \texttt{Common/Lib}
+subdirectory. \texttt{Parsec.hs} simply re-exports parts from
+\texttt{Prim.hs}, \texttt{Combinator.hs},
+\texttt{Char.hs}, \texttt{Error.hs} and
+\texttt{Pos.hs}. 
+
+\end{document}
