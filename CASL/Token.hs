@@ -64,14 +64,33 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
 module Token ( casl_reserved_ops, casl_reserved_words
              , formula_ops, formula_words
 	     , casl_reserved_fops, casl_reserved_fwords
+	     , equalT, colonT, colonST, quMarkT, lessT, dotT, crossT
+	     , asT, barT, forallT
              , start, mixId, parseId, sortId, varId) 
     where
 
 import Keywords
 import Lexer
 import Id (Id(Id), Token(..), Pos, toPos, isPlace)
-import ParsecPrim (GenParser, (<?>), (<|>), many)
-import ParsecCombinator (many1, option)
+import Parsec
+
+-- ----------------------------------------------
+-- keyword tokens
+-- ----------------------------------------------
+
+equalT, colonT, colonST, quMarkT, lessT, dotT, crossT :: GenParser Char st Token
+equalT = asKey equalS
+colonT = asKey colonS
+colonST = pToken (string colonS) -- if "?" may immediately follow as in ":?" 
+quMarkT = asKey quMark
+lessT = asKey lessS
+dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
+crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
+
+asT, barT, forallT :: GenParser Char st Token
+asT = asKey asS
+barT = asKey barS
+forallT = asKey forallS
 
 -- ----------------------------------------------
 -- casl keyword handling

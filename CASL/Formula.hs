@@ -36,7 +36,6 @@
 -}
 
 module Formula (term, formula
-	       , equalT, colonT, colonST, quMarkT, dotT, crossT
 	       , varDecl, opSort, opFunSort, opType, predType, predUnitType
 	       , updFormulaPos) 
     where
@@ -47,15 +46,6 @@ import Lexer
 import Token
 import AS_Basic_CASL
 import Parsec
-
-equalT, colonT, colonST, quMarkT, dotT, crossT :: GenParser Char st Token
-equalT = asKey equalS
-colonT = asKey colonS
-colonST = pToken (string colonS) -- if "?" may immediately follow as in ":?" 
-quMarkT = asKey quMark
-
-dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
-crossT = try(asKey prodS <|> asKey timesS) <?> "cross"
 
 simpleTerm :: GenParser Char st TERM
 simpleTerm = fmap Mixfix_token (pToken(scanFloat <|> scanString 
@@ -88,7 +78,7 @@ typedTerm = do c <- colonT
                t <- sortId
                return (Mixfix_sorted_term t [tokPos c])
 
-castedTerm = do c <- asKey asS
+castedTerm = do c <- asT
 		t <- sortId
 		return (Mixfix_cast t [tokPos c])
 
@@ -163,7 +153,7 @@ quant = try(
         do q <- asKey existsS
 	   return (Existential, tokPos q)
         <|>
-        do q <- asKey forallS
+        do q <- forallT
 	   return (Universal, tokPos q))
         <?> "quantifier"
        

@@ -98,9 +98,6 @@ itemAux itemParser =
 -- sortItem
 -- ------------------------------------------------------------------------
 
-lessT :: GenParser Char st Token
-lessT = asKey lessS
-
 commaSortDecl :: Id -> GenParser Char st SORT_ITEM
 commaSortDecl s = do c <- commaT 
 		     (is, cs) <- sortId `separatedBy` commaT

@@ -35,7 +35,7 @@ datatype = do s <- sortId
 	      e <- asKey defnS
 	      a <- annos
 	      (Annoted v _ _ b:as, ps) <- aAlternative 
-		`separatedBy` asKey barS
+		`separatedBy` barT
 	      return (Datatype_decl s (Annoted v [] a b:as) 
 			(map tokPos (e:ps)))
 
@@ -112,7 +112,7 @@ basicItems = fmap Sig_items sigItems
 	     <|> do v <- pluralKeyword varS
 		    (vs, ps) <- varItems
 		    return (Var_items vs (map tokPos (v:ps)))
-	     <|> do f <- asKey forallS 
+	     <|> do f <- forallT 
 		    (vs, ps) <- varDecl `separatedBy` semiT 
 		    Axiom_items fs ds <- dotFormulae
 		    return (Local_var_axioms vs fs (map tokPos (f:ps) ++ ds))
