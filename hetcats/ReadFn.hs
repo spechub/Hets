@@ -13,7 +13,7 @@ module ReadFn where
 
 import Options
 
-import ATC_sml_cats
+import ATC.Sml_cats
 import Syntax.AS_Library
 
 read_LIB_DEFN :: HetcatsOpts -> IO LIB_DEFN
