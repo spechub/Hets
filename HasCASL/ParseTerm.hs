@@ -56,57 +56,51 @@ parseClass = parseClassId
 			(toPos o ps c))
 
 parsePlainClass :: AParser Kind
-parsePlainClass = 
-             fmap PlainClass parseClassId 
+parsePlainClass =
+             do ci <- parseClassId 
+		return $ ExtClass ci InVar []
              <|> 
 	     do o <- oParenT
 		f <- funKind
 		case f of 
-		  PlainClass k -> do
+		  ExtClass k InVar _ -> do
 		      p <- anComma
 		      (cs, ps) <- parseClass `separatedBy` anComma
 		      c <- cParenT
-		      return $ PlainClass $ Intersection 
+		      return $ ExtClass (Intersection 
 				 (nub $ concatMap iclass (k:cs)) 
-					    (toPos o (p:ps) c)
+					    (toPos o (p:ps) c))
+		                         InVar []
 		    <|> do cParenT >> return f
 		  _ ->  cParenT >> return f
 
 extClass :: AParser Kind
 extClass = do c <- parsePlainClass
-	      case c of ExtClass _ _ _ -> return c
-			_ -> do 
-			     s <- plusT
-			     return (ExtClass c CoVar [tokPos s])
-			 <|> do 
-			     s <- minusT
-			     return (ExtClass c ContraVar [tokPos s])
-			 <|> return c
-
-prodClass :: AParser Kind
-prodClass = do (cs, ps) <- extClass `separatedBy` crossT
-	       return $ if length cs == 1 then head cs 
-		      else ProdClass cs (map tokPos ps)
-
-noProductKind :: Kind -> AParser Kind
-noProductKind k = case k of 
-		     ProdClass _ _ -> unexpected "product result kind"
-		     _ -> return k
+	      case c of 
+		  ExtClass k InVar _ -> 
+		      do s <- plusT
+			 return (ExtClass k CoVar [tokPos s])
+		      <|> do s <- minusT
+			     return (ExtClass k ContraVar [tokPos s])
+		      <|> return (ExtClass k InVar [])
+		  _ -> return c
 
 noExtKind :: Kind -> AParser Kind
 noExtKind k = case k of 
-		     ExtClass _ _ _ -> unexpected "variance of result kind"
+		     ExtClass _ CoVar _ -> err
+		     ExtClass _ ContraVar _ -> err
 		     _ -> return k
+    where  err = unexpected "variance of result kind"
 
 funKind, kind :: AParser Kind
 funKind = 
-    do k1 <- prodClass
+    do k1 <- extClass
        do a <- asKey funS
 	  k2 <- kind
 	  return $ KindAppl k1 k2 $ [tokPos a]
         <|> return k1
 
-kind = funKind >>= noProductKind >>= noExtKind
+kind = funKind >>= noExtKind
 
 -----------------------------------------------------------------------------
 -- type
@@ -221,7 +215,7 @@ varDeclDownSet vs ps =
 		    do l <- lessT
 		       t <- parseType
 		       return (makeTypeVarDecls vs ps 
-			       (PlainClass (Downset t)) (tokPos l))
+			       (ExtClass (Downset t) InVar []) (tokPos l))
 
 typeVarDecls :: AParser [TypeArg]
 typeVarDecls = do (vs, ps) <- typeVar `separatedBy` anComma
@@ -265,21 +259,21 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` anComma
                    if let isInVar(_, InVar, _) = True
 			  isInVar(_,_,_) = False
 		      in all isInVar ts then 
-		      do k <- funKind >>= noProductKind
+		      do k <- funKind
 			 return (makeTypeArgs ts ps [tokPos c] k)
-		      else do k <- funKind >>= noProductKind
+		      else do k <- parseClass
 			      return (makeTypeArgs ts ps [tokPos c] 
 				      (ExtClass k InVar []))
 	        <|> 
 	        do l <- lessT
 		   t <- parseType
 		   return (makeTypeArgs ts ps [tokPos l]
-			   (PlainClass (Downset t)))
+			   (ExtClass (Downset t) InVar []))
 		<|> return (makeTypeArgs ts ps [] star)
-		where mergeVariance k e (t, InVar, _) p = 
-			  TypeArg t e k p 
-		      mergeVariance k e (t, v, ps) p =
+		where mergeVariance k (ExtClass e InVar _) (t, v, ps) p =
 			  TypeArg t (ExtClass e v [ps]) k p
+		      mergeVariance k e (t, _, _) p = 
+			  TypeArg t e k p 
 		      makeTypeArgs ts ps q e = 
                          zipWith (mergeVariance Comma e) (init ts) 
 				     (map ((:[]). tokPos) ps)

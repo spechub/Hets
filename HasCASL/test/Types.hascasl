@@ -6,10 +6,10 @@ type [__], {__} : a -> b
 
 var u: [r]; v:{s}
 
-type tuple3 : a * b * c -> d 
+type tuple3 : a -> b -> c -> d 
 
-var x : tuple3 (r, s, t)
-var y : tuple3 (r, s)
+var x : tuple3 r s t
+var y : tuple3 r s
 
 type tuple1 : (b) -> a
 
@@ -27,9 +27,9 @@ var o2 : m tuple1
 
 var o3 : m tuple3
 
-var nt : a * (b -> c) * c -> d
+var nt : a -> (b -> c) -> c -> d
 
-var o4 : nt (r, List, s)
+var o4 : nt r List s
  
 type s1,r1,t1 < t
 

@@ -118,15 +118,9 @@ inferKind (KindedType t k _) =
 inferKind t@(MixfixType _) = 
     do unresolvedType t
        return Nothing
-inferKind t@(BracketType b ts _) =
-    case b of 
-	   Parens -> do
-	      ms <- mapM inferKind ts
-	      if all isJust ms then
-		 return $ Just $ ProdClass (map fromJust ms) []
-		 else return Nothing
-	   _ -> do unresolvedType t
-		   return Nothing
+inferKind t =
+    do unresolvedType t
+       return Nothing
 
 checkKind :: Type -> Kind -> State Env ()
 checkKind t j = do

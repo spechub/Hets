@@ -44,7 +44,7 @@ bracket Braces t = braces t
 
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga kind = case kind of 
-			      PlainClass (Intersection [] _) -> empty
+			      ExtClass (Intersection [] _) InVar _ -> empty
 			      _ -> space <> colon <> printText0 ga kind
 
 instance PrettyPrint Type where 
@@ -227,17 +227,8 @@ instance PrettyPrint Variance where
     printText0 _ InVar = empty
 
 instance PrettyPrint Kind where
-    printText0 ga (PlainClass c) = printText0 ga c
-    printText0 ga (ExtClass k v _) = (case k of 
-					    PlainClass _ -> id
-					    _ -> parens) (printText0 ga k)
+    printText0 ga (ExtClass k v _) = printText0 ga k
 						 <> printText0 ga v 
-    printText0 ga (ProdClass l _) = fcat $ punctuate (space <> text timesS) 
-			       (map (\ k ->
-				     (case k of KindAppl _ _ _ -> parens
-				                ProdClass _ _ -> parens
-				                _ -> id)
-				     (printText0 ga k)) l)
     printText0 ga (KindAppl k1 k2 _) = 
 			  (case k1 of 
 				  KindAppl _ _ _ -> parens

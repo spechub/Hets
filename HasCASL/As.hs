@@ -254,11 +254,8 @@ data GenVarDecl = GenVarDecl VarDecl
 
 data Variance = CoVar | ContraVar | InVar deriving (Show, Eq)
 
-data Kind = PlainClass Class
-            | ExtClass Kind Variance [Pos]
+data Kind = ExtClass Class Variance [Pos]
 	     -- pos "+" or "-" 
-	    | ProdClass [Kind] [Pos] 
-	    -- pos crosses
 	    | KindAppl Kind Kind [Pos]
 	    -- pos "->" 
 	    deriving (Show, Eq)
@@ -272,7 +269,7 @@ universe :: Class
 universe = Intersection [] []
 
 star :: Kind
-star = PlainClass universe
+star = ExtClass universe InVar []
 
 -- ----------------------------------------------------------------------------
 -- op names

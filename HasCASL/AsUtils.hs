@@ -30,9 +30,7 @@ posOfKind :: Kind -> Pos
 posOfKind k = 
     case k of 
     KindAppl k1 k2 ps -> firstPos [k1,k2] ps 
-    ProdClass cs ps -> firstPos cs ps
     ExtClass c _ ps -> firstPos [c] ps
-    PlainClass c -> posOfClass c
 
 instance PosItem Class where
     get_pos = Just . posOfClass

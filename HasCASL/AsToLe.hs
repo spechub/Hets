@@ -76,9 +76,6 @@ convertTypeToClass cMap (BracketType Parens ts ps) =
 convertTypeToClass _ t = Result [mkDiag Hint "not a class" t] Nothing
 
 convertTypeToKind :: ClassMap -> Type -> Result Kind
-convertTypeToKind cMap (ProductType ts ps) = 
-       do ks <- mapM (convertTypeToKind cMap) ts
-	  return $ ProdClass ks ps
 
 convertTypeToKind cMap (FunType t1 FunArr t2 ps) = 
     do k1 <- convertTypeToKind cMap t1
@@ -97,10 +94,12 @@ convertTypeToKind cMap (MixfixType [t1, TypeToken t]) =
 		   _ -> InVar
     in case v of 
 	      InVar -> Result [] Nothing
-	      _ -> do k1 <- convertTypeToKind cMap t1
+	      _ -> do k1 <- convertTypeToClass cMap t1
 		      return $ ExtClass k1 v [tokPos t]
 
-convertTypeToKind cMap t = convertTypeToClass cMap t >>= (return . PlainClass)
+convertTypeToKind cMap t = 
+    do c <-  convertTypeToClass cMap t
+       return $ ExtClass c InVar []
 
 optAnaVarDecl, anaVarDecl :: VarDecl -> State Env ()
 optAnaVarDecl vd@(VarDecl v t s q) = 

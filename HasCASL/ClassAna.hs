@@ -79,15 +79,9 @@ anaKind (KindAppl k1 k2 p) =
     do k3 <- anaKind k1
        k4 <- anaKind k2
        return $ KindAppl k3 k4 p
-anaKind (ProdClass l p) =
-    do cs <- mapM anaKind l
-       return $ ProdClass cs p
 anaKind (ExtClass k v p) = 
-    do k1 <- anaKind k
+    do k1 <- anaClass k
        return $ ExtClass k1 v p
-anaKind (PlainClass c) = 
-    do c1 <- anaClass c
-       return $ PlainClass c1
 
 -- ---------------------------------------------------------------------------
 -- analyse type
@@ -112,19 +106,8 @@ data EqMode = Compatible | SameSyntax
 eqKind :: EqMode -> Kind -> Kind -> Bool
 eqKind emod (KindAppl p1 c1 _) (KindAppl p2 c2 _) =
     eqKind emod p1 p2 && eqKind emod c1 c2
-eqKind emod (ProdClass s1 _) (ProdClass s2 _) =
-    eqListBy (eqKind emod) s1 s2
 eqKind emod (ExtClass c1 v1 _) (ExtClass c2 v2 _) = 
-    eqKind emod c1 c2 && 
-	   case emod of Compatible -> True
-			SameSyntax -> v1 == v2
-eqKind emod (ExtClass c1 _ _) c2 =
-    case emod of Compatible -> eqKind emod c1 c2
-		 SameSyntax -> False
-eqKind emod c2 (ExtClass c1 _ _) =
-    case emod of Compatible -> eqKind emod c2 c1
-		 SameSyntax -> False
-eqKind emod (PlainClass c1) (PlainClass c2) = 
+    v1 == v2 && 
 	   case emod of Compatible -> True
 			SameSyntax -> eqClass c1 c2
 eqKind _ _ _ = False

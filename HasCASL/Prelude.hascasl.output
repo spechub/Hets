@@ -41,6 +41,12 @@ FatalError (15,38) no analysis yet for: __<=>__
 FatalError (16,4) no analysis yet for: not
 Warning (27,11) redeclared type 'Unit'
 FatalError (29,1) no analysis yet for: . 1 = ()
+Error (38,40) incompatible kinds
+Type-
+  Type
+Error (38,21) incompatible kinds
+Type ->Type
+  Type- ->Type
 Warning (39,16) redeclared type 't'
 Error (45,14) undeclared type 'Pred'
 Error (45,14) undeclared type 'Pred'

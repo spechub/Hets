@@ -151,8 +151,9 @@ typeArgsListToKind tArgs k =
 	    (KindAppl (typeArgsToKind $ last tArgs) k []) 
 
 typeArgsToKind :: TypeArgs -> Kind
-typeArgsToKind (TypeArgs l ps) = if length l == 1 then typeArgToKind $ head l 
-				 else ProdClass (map typeArgToKind l) ps
+typeArgsToKind (TypeArgs l ps) = 
+    if length l == 1 then typeArgToKind $ head l 
+       else error "ProdClass (map typeArgToKind l) ps"
 typeArgToKind :: TypeArg -> Kind
 typeArgToKind (TypeArg _ k _ _) = k
 
@@ -171,11 +172,7 @@ kindArity m (KindAppl k1 k2 _) =
 	       TopLevel -> kindArity OnlyArg k1 + 
 			   kindArity TopLevel k2
 	       OnlyArg -> 1
-kindArity m (ProdClass ks _) = 
-    case m of TopLevel -> 0
-	      OnlyArg -> sum $ map (kindArity m) ks
-kindArity m (ExtClass k _ _) = kindArity m k
-kindArity m (PlainClass _) = case m of
+kindArity m (ExtClass _ _ _) = case m of
 			     TopLevel -> 0
 			     OnlyArg -> 1
 
