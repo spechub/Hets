@@ -172,6 +172,10 @@ true : bool %(construct bool)%
      : Unit %(fun)%
 tt : forall s : Type . Pred s %(op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
+program (op def[_var_1] : forall s : Type . Pred s) =
+            \ (var x : s) . () %(pe_def)%
+program (op tt[_var_4] : forall s : Type . Pred s) =
+            \ (var x : s) . () %(pe_tt)%
 (pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
   (\ (var x : s, var y : t) . def (x res y),
    \ (var x : s, var y : t) . (def y) und (def x)) %()%

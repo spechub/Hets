@@ -13,16 +13,18 @@ analyse generic var (or type var) decls
 
 module HasCASL.VarDecl where
 
-import HasCASL.As
-import HasCASL.ClassAna
+import Data.Maybe
+import Data.List
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
-import HasCASL.Le
-import Data.Maybe
-import Data.List
+import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
+
+import HasCASL.As
+import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.Unify
@@ -33,6 +35,12 @@ addDiags :: [Diagnosis] -> State Env ()
 addDiags ds =
     do e <- get
        put $ e {envDiags = ds ++ envDiags e}
+
+-- | add sentences
+appendSentences :: [Named Sentence] -> State Env ()
+appendSentences fs =
+    do e <- get
+       put $ e {sentences = sentences e ++ fs}
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = do mp <- fromResult (anaType (Just star, t) . typeMap)

@@ -48,6 +48,20 @@ snd : s * t -> t %(op)% = \ (var x : s, var y : t) . (var y : t)
 true : Unit %(fun)%
 x : s %(op)%
 y : t %(op)%
+%% Sentences -------------------------------------------------------------
+program (op snd : s * t -> t)(var x : s, var y : t) =
+            (var y : t) %(pe_snd)%
+program (op snd : s * t -> t)(var x : s, var y : t) =
+            (var y : t) %(pe_snd)%
+program (op snd : s * t -> t)(var x : s, var y : t) =
+            (var y : t) : t %(pe_snd)%
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t) %(pe_snd)%
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t) %(pe_snd)%
+program (op snd : s * t -> t)(var x : s, var y : t) : t =
+            (var y : t) %(pe_snd)%
+program (op b : s) : s = (op a : s) %(pe_b)%
 %% Diagnostics -----------------------------------------------------------
 *** Warning 6.10, different terms of 'snd'
 	\ (var x : s, var y : t) . (var y : t)

@@ -106,6 +106,7 @@ sel2 : Data4 ->? Data2 %(select from Data4 constructed by
 true : Unit %(fun)%
 tt : s ->? Unit %(op)% = \ (var x : s) . ()
 %% Sentences -------------------------------------------------------------
+program (pred tt : s) = \ (var x : s) . () %(pe_tt)%
 (fun __=__[t] : forall a : Type . a * a ->? Unit)
   (var x : t, var y : t) %()%
 type Data1 (|-> Data1) ::=

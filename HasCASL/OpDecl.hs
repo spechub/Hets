@@ -12,17 +12,20 @@ Portability :  portable
 
 module HasCASL.OpDecl where
 
-import HasCASL.As
-import HasCASL.VarDecl
-import HasCASL.Le
+import Data.Maybe
+
+import Common.Id
+import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
 import Common.GlobalAnnotations
+
+import HasCASL.As
+import HasCASL.VarDecl
+import HasCASL.Le
 import HasCASL.Unify
 import HasCASL.TypeCheck
 import HasCASL.MixAna
-import Data.Maybe
-import Data.List
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs (_ :=> ty) _) (UnitOpAttr trm ps) = 
@@ -146,11 +149,14 @@ anaProgEq ga pe@(ProgEq pat trm qs) =
 		       let (topPat, args) = getApplConstr newPat 
 			   defTrm = if null args then newTerm
 					else LambdaTerm (reverse args) 
-					     Partial newTerm []	
+					     Partial newTerm []
+			   newPrg = ProgEq newPat newTerm qs
 		       in case topPat of 
 		       QualOp _ (InstOpId i _tys _) sc _ -> do
 			   addOpId i sc [] $ Definition Op defTrm
-			   return $ ProgEq newPat newTerm qs
+			   appendSentences [NamedSen ("pe_" ++ showId i "")
+					    $ ProgEqSen i sc newPrg]
+			   return newPrg
 		       _ -> do addDiags $ [mkDiag Error 
 					   "illegal toplevel pattern"
 					   topPat]

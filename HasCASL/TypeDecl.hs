@@ -13,22 +13,22 @@ analyse type decls
 
 module HasCASL.TypeDecl where
 
-import HasCASL.As
-import HasCASL.Le
-import HasCASL.ClassAna
-import HasCASL.Unify
+import Data.Maybe
+import Data.List
+
 import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import qualified Common.Lib.Set as Set
-import Data.Maybe
-import Data.List
-
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
+
+import HasCASL.As
+import HasCASL.Le
 import HasCASL.ClassAna
+import HasCASL.Unify
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
@@ -90,13 +90,6 @@ addDataSen tys = do
 	sen = NamedSen ("ga_" ++ showSepList (showString "_") showId tis "") 
 	      $ DatatypeSen ds
     if null tys then return () else appendSentences [sen]
-
-
--- | add sentences
-appendSentences :: [Named Sentence] -> State Env ()
-appendSentences fs =
-    do e <- get
-       put $ e {sentences = sentences e ++ fs}
 
 ana1TypeItem :: TypeItem -> State Env (Maybe TypeItem)
 ana1TypeItem (Datatype d) = 
