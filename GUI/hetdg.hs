@@ -3,20 +3,20 @@ module Main
 where
 
 import Parse_AS_Structured
-import System
-import Parsec
+import System.Environment
+import Common.Lib.Parsec
 import LogicGraph
 import Print_HetCASL
 import DevGraph
 import AnalysisLibrary
 import IO
 import AS_Library
-import Graph
+import Common.Lib.Graph
 import DotGraph
 
 import ConvertDevToAbstractGraph
 
-import Char
+import Data.Char
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
