@@ -263,13 +263,9 @@ getDataGenSig :: [Annoted DATATYPE_DECL] -> (Set.Set Id, Set.Set Component)
 getDataGenSig dl = 
     let alts = map (( \ (Datatype_decl s al _) -> (s, al)) . item) dl
         sorts = map fst alts
-        cs = concatMap ( \ (s, al) -> map (( \ a -> 
-              let (i, ty, _) = getConsType s a
-              in Component i ty)) 
-                       $ filter ( \ a ->
-                                  case a of 
-                                  Subsorts _ _ -> False
-                                  _ -> True)
+        mkComponent (i, ty, _) = Component i ty
+        cs = concatMap ( \ (s, al) -> concatMap (( \ a -> 
+              map mkComponent (getConsType s a)))
                        $ map item al) alts
         in (Set.fromList sorts, Set.fromList cs)
 
@@ -532,7 +528,7 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
                                Subsorts _ _ -> False
                                _ -> True) allts
                sbs = concatMap ( \ (Subsorts ss _) -> ss) subs
-               comps = map (getConsType s) alts
+               comps = concatMap (getConsType s) alts
                ttrips = map (( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
                                . selForms1 "X" ) comps 
                sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
@@ -600,14 +596,16 @@ makeUndefForm (s, ty) (i, vs, t, sels) =
                 (Application (Qual_op_name s (toOP_TYPE ty) p) [t] p)
                 p) p) p
 
-getConsType :: SORT -> ALTERNATIVE -> (Id, OpType, [COMPONENTS])
+getConsType :: SORT -> ALTERNATIVE -> [(Id, OpType, [COMPONENTS])]
 getConsType s c = 
-    let (part, i, il) = case c of 
-                        Subsorts _ _ ->  error "getConsType"
-                        Total_construct a l _ -> (Total, a, l)
-                        Partial_construct a l _ -> (Partial, a, l)
-        in (i, OpType part (concatMap 
+    let getConsTypeAux (part, i, il) = 
+          (i, OpType part (concatMap 
                             (map (opRes . snd) . getCompType s) il) s, il)
+     in case c of 
+        Subsorts srts _ ->  
+             [(injName, OpType Total [s1] s,[Sort s1]) | s1<-srts]
+        Total_construct a l _ -> [getConsTypeAux (Total, a, l)]
+        Partial_construct a l _ -> [getConsTypeAux (Partial, a, l)]
 
 getCompType :: SORT -> COMPONENTS -> [(Maybe Id, OpType)]
 getCompType s (Total_select l cs _) = 
@@ -663,7 +661,7 @@ ana_ALTERNATIVE s c =
     Subsorts ss _ ->
         do mapM_ (addSubsort s) ss
            return Nothing
-    _ -> do let cons@(i, ty, il) = getConsType s c
+    _ -> do let [cons@(i, ty, il)] = getConsType s c
             addOp ty i
             ul <- mapM (ana_COMPONENTS s) il
             let ts = concatMap fst ul

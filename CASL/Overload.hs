@@ -454,11 +454,7 @@ minExpTerm_op1 mef ga sign op terms pos = do
                   , (opRes op'))                                -- ::  SORT
             | otherwise
                 = ((Application
-                    (Qual_op_name
-                     (Id.mkId [Id.Token {Id.tokStr="_inj",
-                                         Id.tokPos=Id.nullPos}])
-                     (Total_op_type [(opRes op')] result [Id.nullPos])
-                     [])
+                    (injOpSymb (opRes op') result)
                     [(Application
                       (Qual_op_name name (toOP_TYPE op') [])
                       terms' [])]
@@ -687,6 +683,17 @@ leqP ::
                 Sign f e -> PredType -> PredType -> Bool
 leqP sign p1 p2 = zipped_all are_legal (predArgs p1) (predArgs p2)
     where are_legal a b = have_common_subsorts sign [a, b]
+
+
+injName :: Id.Id
+injName = Id.mkId [Id.Token {Id.tokStr="_inj",
+                             Id.tokPos=Id.nullPos}]
+
+injOpSymb :: SORT -> SORT -> OP_SYMB
+injOpSymb s1 s2 = 
+  Qual_op_name injName
+               (Total_op_type [s1] s2 [Id.nullPos])
+               []
 
 {-
 
