@@ -1260,5 +1260,5 @@ pred q : s
 *** Error 343.5, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E (3 @@ 4)
 *** Error 343.20, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E +(3 @@ 4)
 *** Error 343.36, No correct typing for  ((1 @@ 2) ::: (3 @@ 4)) E -(3 @@ 4)
-*** Error 426.26, No correct typing for  . e
-*** Error 427.12, No correct typing for  . e
+*** Error 426.26, No correct typing for   . e
+*** Error 427.12, No correct typing for   . e
