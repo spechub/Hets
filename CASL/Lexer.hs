@@ -19,7 +19,7 @@ module Lexer ( bind, (<<), (<:>), (<++>),
 	     , begDoEnd, flat, single, separatedBy, caslLetters, scanLPD
 	     , checkWith, scanAnySigns, scanAnyWords, scanDotWords 
 	     , scanDigit, scanFloat, scanQuotedChar, scanString
-	     , reserved, placeS, placeT, pToken, asKey
+	     , reserved, placeS, placeT, pToken, asKey, toKey
 	     , oBraceT, cBraceT, oBracketT, cBracketT, oParenT, cParenT
 	     , commaT, semiT, skip, pluralKeyword
 	     ) where
