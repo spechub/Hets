@@ -13,7 +13,6 @@ Portability :  non-portable (imports Logic.Logic)
 -}
 
 {- todo: option for omitting writing of env
-         destroy all graphs at the end
 -}
 
 module Main where
@@ -26,9 +25,6 @@ import Common.GlobalAnnotations (emptyGlobalAnnos)
 import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
 import Options
 import System.Environment
-import Events
-import Destructible
-import Data.IORef
 
 import Comorphisms.LogicGraph
 import Logic.Grothendieck
@@ -45,6 +41,7 @@ import qualified Common.Lib.Map as Map
 
 import ReadFn
 import WriteFn
+import GUI.WebInterface
 --import ProcessFn
 
 import Haskell.Haskell2DG
@@ -60,6 +57,12 @@ processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
        case guess file (intype opt) of
+             WebIn -> do
+		 case web opt of
+		   Yes  -> do
+			   str <- readFile file
+			   webInterface str opt 
+		   No   -> return () 
              HaskellIn -> do  
 	         r <- anaHaskellFile opt file
                  case gui opt of
@@ -67,7 +70,7 @@ processFile opt file =
                      _ -> showGraph file opt r
              _ -> do
                   ld <- read_LIB_DEFN opt file
-               -- (env,ld') <- analyse_LIB_DEFN opt
+--                (env,ld') <- analyse_LIB_DEFN opt
                   (ld'@(Lib_defn libname _ _ _),env) <- 
                      case (analysis opt) of
                              Skip        -> do
@@ -116,9 +119,9 @@ processFile opt file =
 						   ld'
                                     -- write_GLOBAL_ENV env
                       Not     -> write_LIB_DEFN globalAnnos 
-				                file 
-						(opt { outdir = odir }) 
-						ld'
+                                                        file     
+							(opt { outdir = odir }) 
+							ld'
 
 checkFile ::  HetcatsOpts -> FilePath -> LIB_NAME -> LibEnv -> IO ()
 checkFile opts fp ln lenv =
@@ -164,12 +167,9 @@ showGraph file opt env =
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
             GUI.AbstractGraphView.redisplay gid gv
-            --putIfVerbose opt 1 "Hit CTRL-C when finished"
-            (gs,_) <- readIORef gv
-            case lookup gid gs of
-              Just graph -> sync(destroyed (theGraph graph))
-              Nothing -> return ()
-            return ()  -- Should destroy all other graphs as well!
+            putIfVerbose opt 1 "Hit Return when finished"
+            getLine
+            return ()
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
