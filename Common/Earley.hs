@@ -32,10 +32,7 @@ import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
--- import Control.Exception (assert)
-
-assert :: Bool -> a -> a
-assert b a = if b then a else error ("assert")
+import Control.Exception (assert)
 
 -- | reconstruct the token list of an 'Id'.
 -- Replace top-level places with the input String 
@@ -528,7 +525,7 @@ initChart ruleS knownS= Chart { prevTable = Map.empty
 			, solveDiags = [] }
 
 -- | extract resolved result
-getResolved :: PosItem a => (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
+getResolved :: (a -> ShowS) -> Pos -> ToExpr a b -> Chart a b 
 	    -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
@@ -568,9 +565,9 @@ getResolved pp p toExpr st =
 		       else Result ((showAmbigs pp p $
 			    map (fst . mkExpr toExpr) result) : ds) Nothing 
 				   
-showAmbigs :: PosItem a => (a -> ShowS) -> Pos -> [a] -> Diagnosis
+showAmbigs :: (a -> ShowS) -> Pos -> [a] -> Diagnosis
 showAmbigs pp p as = 
     Diag Error ("ambiguous mixfix term\n\t" ++ 
 		showSepList (showString "\n\t") pp
-		(take 5 as) "") $ firstPos as [p]
+		(take 5 as) "") p
 
