@@ -36,7 +36,7 @@ import Common.Id
 --     should be added
 --      or should it be kept separately?
 -- what about open theorems of a node???
-data DGNode = DGNode {
+data DGNodeLab = DGNode {
                 dgn_name :: Maybe SIMPLE_ID,
                 dgn_sign :: G_sign, -- only the delta
                 dgn_sens :: G_l_sentence_list, 
@@ -49,18 +49,18 @@ data DGNode = DGNode {
                 dgn_node :: Node
               }
 
-isDGRef :: DGNode -> Bool
+isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _) = False
 isDGRef (DGRef _ _ _) = True
 
-locallyEmpty ::  DGNode -> Bool
+locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence _ sens) _) = 
   sigma == empty_signature lid && null sens
 locallyEmpty (DGRef _ _ _) = True
            
-data DGLink = DGLink {
+data DGLinkLab = DGLink {
               -- dgl_name :: String,
-              -- dgl_src, dgl_tar :: DGNode,  -- already in graph structure
+              -- dgl_src, dgl_tar :: DGNodeLab,  -- already in graph structure
               dgl_morphism :: GMorphism,
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
@@ -88,10 +88,10 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGLocal | DGClosed | DGClosedLenv 
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView | DGFitViewImp 
-              | DGFitViewA | DGFitViewAImp
+              | DGFitViewA | DGFitViewAImp | DGProof
               deriving (Eq,Show)
 
-type DGraph = Graph DGNode DGLink
+type DGraph = Graph DGNodeLab DGLinkLab
 
 data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
 
@@ -126,7 +126,7 @@ type LibEnv = Map LIB_NAME GlobalContext
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
-get_dgn_name :: DGNode -> Maybe SIMPLE_ID
+get_dgn_name :: DGNodeLab -> Maybe SIMPLE_ID
 get_dgn_name (DGNode (Just name) _ _ _) = Just name
 get_dgn_name (DGRef (Just name) _ _) = Just name
 get_dgn_name _ = Nothing

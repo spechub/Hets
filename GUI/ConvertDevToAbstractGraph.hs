@@ -384,7 +384,7 @@ if the given list of nodes is emtpy, it returns the conversion maps unchanged
 otherwise it adds the converted first node to the abstract graph and to the affected conversion maps
 and afterwards calls itself with the remaining node list -}
 convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
-		     [LNode DGNode] -> LIB_NAME -> IO ConversionMaps
+		     [LNode DGNodeLab] -> LIB_NAME -> IO ConversionMaps
 convertNodesAux convMaps descr graphInfo [] libname = return convMaps
 convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname = 
   do nodetype <- (getDGNodeType dgnode)
@@ -400,14 +400,14 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
      return newConvMaps
 
 -- gets the name of a development graph node as a string						  
-getDGNodeName :: DGNode -> String
+getDGNodeName :: DGNodeLab -> String
 getDGNodeName dgnode =
   case get_dgn_name dgnode of
     Just simpleId -> tokStr simpleId
     Nothing -> ""
 
 -- gets the type of a development graph edge as a string
-getDGNodeType :: DGNode -> IO String
+getDGNodeType :: DGNodeLab -> IO String
 getDGNodeType dgnode =
   do let nodetype = getDGNodeTypeAux dgnode
      case (isDGRef dgnode) of
@@ -416,7 +416,7 @@ getDGNodeType dgnode =
                   Just _ -> return (nodetype++"spec")
                   Nothing -> return (nodetype++"internal")
     
-getDGNodeTypeAux :: DGNode -> String
+getDGNodeTypeAux :: DGNodeLab -> String
 getDGNodeTypeAux dgnode = if (locallyEmpty dgnode) then "locallyEmpty_"
                            else ""
 
@@ -450,12 +450,12 @@ convertEdges convMaps descr graphInfo dgraph libname
 				libname
 
 -- function context from Graph.hs with inverse arguments
-invContext :: DGraph -> Node -> Context DGNode DGLink
+invContext :: DGraph -> Node -> Context DGNodeLab DGLinkLab
 invContext dgraph node = context node dgraph
 
 {- auxiliar function for convertEges --> not yet implemented! -}
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
-                    [LEdge DGLink] -> LIB_NAME -> IO ConversionMaps
+                    [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps descr graphInfo [] libname = return convMaps
 convertEdgesAux convMaps descr graphInfo ((src,tar,edge):lEdges) libname = 
   do let srcnode = Map.lookup (libname,src) (dg2abstrNode convMaps)
