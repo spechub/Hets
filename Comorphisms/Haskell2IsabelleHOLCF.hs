@@ -404,7 +404,9 @@ prettyType t
 trType :: Type -> Typ
 trType t =   case t of TVar a -> TFree (show a, dom)
                        TCon a -> Type (show a, dom, [])
-                       TAp a b -> mkTypeAppl (trType a) (trType b))
+--                       TAp a b -> mkTypeAppl (trType a) (trType b))
+-- changed mkTypeAppl: First argument has to be a string (typeconstructor);
+--                     second argument list of constructor's arguments
                        TGen a -> TFree (show a, dom)
                        TArrow a b -> mkContFun (trType a) (trType b)
                        TTuple as -> gDomProduct as

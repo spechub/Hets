@@ -146,7 +146,7 @@ transPredType  (TypeScheme _ pre _) =
 
 -- types composed of simple types
 transType :: Type -> Typ
-transType (TypeName tId _ i)       = 
+transType (TypeName tId _ i)          = 
     if i == 0 then Type (showIsa tId) [] [] [] -- translate kind here!!
        else TFree (showIsa tId) []
 transType (ProductType types _)       = foldl1 IsaSign.prodType 
@@ -157,8 +157,14 @@ transType (FunType type1 arr type2 _) =
     FunArr  -> mkFunType (transType type1) (transType type2)
     _       -> 
       error "[Comorphisms.HasCASL2IsabelleHOL] Not supported function type"
-transType (TypeAppl type1 type2)      = 
-    mkTypeAppl (transType type1) $ transType type2
+transType (TypeAppl type1 type2) = 
+    mkTypeAppl c (ts ++ [transType type2])
+    where (c, ts) = stripAppl type1 "" []
+          stripAppl t c ts =
+            case t of
+              TypeAppl t1 t2 -> stripAppl t1 c ((transType t2):ts)
+              TypeName i _ _ -> (showIsa i, ts)
+              _              -> error "HasCASL2IsabelleHOL.transType"
 transType _ = error "[Comorphisms.HasCASL2IsabelleHOL] Not supported type"
 
 
@@ -236,14 +242,15 @@ transTerm sign (ApplTerm term1 term2 _) =
        QualOp Fun (InstOpId opId _ _) _ _ -> 
          if opId == whenElse then transWhenElse sign term2
            else transLog sign opId term1 term2 
-       QualOp Pred _ _ _ -> termAppl (termAppl (con "pApp") 
-                                      (transTerm sign term1)) 
-                            (transTerm sign term2)
-       QualOp Op _ typeScheme _ -> 
+       QualOp Pred _ _ _                  -> 
+         termAppl (termAppl (con "pApp") (transTerm sign term1)) 
+                                          (transTerm sign term2)
+       QualOp Op _ typeScheme _           -> 
          if isPart typeScheme then mkApp "app"
            else mkApp "apt"
-       ApplTerm t1 _ _ -> transApplTerm t1
-       _               -> mkApp "app"
+       ApplTerm t' _ _                    -> transApplTerm t'
+       TypedTerm t' _ _ _                 -> transApplTerm t'
+       _                                  -> mkApp "app"
    mkApp s = termAppl (termAppl (con s) (transTerm sign term1)) 
              (transTerm sign term2)
    isPart (TypeScheme _ op _) = 
@@ -746,4 +753,4 @@ sT (CaseTerm t peqs _) = "Case "++sT t++" "-- ++showPEQ peqs
 sT t = show t
 
 
-showCM cm = "MATRIX -+- Cons: PB: "++show (patBrand cm)++" Pats: "++concat (map sT (args cm))++" newArgs: "++concat (map sT (newArgs cm))++" term: "++sT (term cm)
+-- showCM cm = "MATRIX -+- Cons: PB: "++show (patBrand cm)++" Pats: "++concat (map sT (args cm))++" newArgs: "++concat (map sT (newArgs cm))++" term: "++sT (term cm)
