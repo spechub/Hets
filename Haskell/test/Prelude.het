@@ -10,7 +10,7 @@ data Int
 
 data (->) a b
 
-data Bool = False | True deriving (Eq, Ord, Show)
+data Bool = False | True deriving (Show, Eq, Ord)
 
 not              :: Bool -> Bool
 not True         =  False
@@ -22,7 +22,7 @@ otherwise = True
 a && b = if a then True else b
 
 data  Ordering  =  LT | EQ | GT
-          deriving (Eq, Ord, Show)
+          deriving (Show, Eq, Ord)
 
 lexOrder EQ o = o
 lexOrder o  _ = o
@@ -33,7 +33,7 @@ class  Eq a  where
     x /= y           =  not (x == y)
     x == y           =  not (x /= y)
 
-data [a] = [] | (:) { head :: a , tail :: [a] } deriving (Eq, Ord)
+data [a] = [] | (:) { head :: a , tail :: [a] } deriving (Show, Eq, Ord)
 (++) :: [a] -> [a] -> [a]
 
 []     ++ ys = ys
@@ -96,8 +96,6 @@ showParenArg d = showParen (10<=d)
 
 showArgument x = showChar ' ' . showsPrec 10 x
 
-showArgument x = showChar ' ' . showList x
-
 class  Show a  where
     showsPrec        :: Int -> a -> ShowS
     show             :: a -> String
@@ -125,9 +123,6 @@ class  (Num a) => Fractional a  where
     recip            :: a -> a
     fromRational     :: Rational -> a
 
-instance  (Show a) => Show [a]  where
-    showsPrec p      = showList
-
 instance Num Int
 instance Num Integer
 instance Num Rational
@@ -154,25 +149,13 @@ data  ()  =  () deriving (Eq, Ord, Show)
 
 data  (a,b)
    =  (,) a b
-   deriving (Eq, Ord)
+   deriving (Show, Eq, Ord)
 
-instance  (Show a, Show b) => Show (a,b)  where
-    showsPrec p (x,y) = showChar '(' . shows x . showChar ',' .
-                                       shows y . showChar ')'
 data  (a,b,c)
    =  (,,) a b c
-   deriving (Eq, Ord)
+   deriving (Show, Eq, Ord)
+
+data  (a,b,c, d)
+   =  (,,,) a b c d
+   deriving (Show, Eq, Ord)
 }
-%% deriving Show does not work for lists and tuples 
-%% overloaded constants require type signature!
-%[
-a = 'a'
-
-b :: Int
-b = 1
-
-c :: Double
-c = 1.1
-
-s = ""
-]%
