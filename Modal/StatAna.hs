@@ -19,8 +19,6 @@ Portability :  portable
 
 module Modal.StatAna where
 
-import Debug.Trace
-
 import Modal.AS_Modal
 import Modal.Print_AS
 import Modal.ModalSign
@@ -34,7 +32,6 @@ import CASL.Overload
 import CASL.MapSentence
 
 import Common.AS_Annotation
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Lib.State
 import Common.Id
@@ -55,23 +52,17 @@ resolveM_FORMULA ga ids cf = case cf of
        nm <- resolveMODALITY ga ids m
        nf <- resolveMixFrm resolveM_FORMULA ga ids f
        return $ Diamond nm nf ps
-   _ -> error "resolveC_FORMULA"
 
 noExtMixfixM :: M_FORMULA -> Bool
 noExtMixfixM mf =
     let noInner = noMixfixF noExtMixfixM in
-    (const $ 
-     trace "Modal.StatAna.noExtMixfixM: implementation \
-           \is commented out, until MixfixParser is fixed" True) mf
-{-
     case mf of
     Box _ f _     -> noInner f
     Diamond _ f _ -> noInner f
--}
+
 minExpForm :: Min M_FORMULA ModalSign
 minExpForm ga s form = 
-    let ops = formulaIds s
-        minMod md ps = case md of
+    let minMod md ps = case md of
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do
@@ -225,7 +216,7 @@ ana_M_FORMULA b (ExtFORMULA (Diamond m phi pos)) = do
 ana_M_FORMULA b phi@(Quantification _ _ phi1 pos) = 
   if b then ana_M_FORMULA b phi1
     else anaError phi pos
-ana_M_FORMULA _ phi@(Predication _ _ pos) =
+ana_M_FORMULA _ phi@(Predication _ _ _pos) =
   return phi -- should lookup predicate!
 ana_M_FORMULA _ phi@(Definedness _ pos) =
   anaError phi pos
