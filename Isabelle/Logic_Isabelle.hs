@@ -78,6 +78,7 @@ instance Sentences Isabelle Sentence () Sign () ()  where
 	else text lab <+> colon <> space) <> printText0 ga sen
 #ifdef UNI_PACKAGE
       provers Isabelle = [isabelleProver] 
+      cons_checkers Isabelle = [isabelleConsChecker]
 #endif
     -- other default implementations are fine
 
@@ -87,6 +88,7 @@ instance StaticAnalysis Isabelle () Sentence ()
                () () ()  where
          sign_to_basic_spec Isabelle _sigma _sens = ()
          empty_signature Isabelle = emptySign
+         inclusion Isabelle _ _ = return ()
 
 instance Logic Isabelle () () Sentence () ()
                Sign 

@@ -678,7 +678,7 @@ data G_prover = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_cons_checker lid (ConsChecker (TheoryMorphism sign sentence morphism))
+       G_cons_checker lid (ConsChecker sign sentence morphism proof_tree)
 
 
 

@@ -39,6 +39,7 @@ data Proof_status proof_tree = Open String
                                String, -- name of prover
                                proof_tree,
                                Tactic_script)
+                      | Consistent Tactic_script
      deriving (Eq, Show, Read)
 
 data Prover sign sen proof_tree symbol = 
@@ -61,11 +62,14 @@ data Prover sign sen proof_tree symbol =
               replay :: proof_tree -> Maybe sen -- what about the theory???
 -}
 
-data ConsChecker morphism = 
-     ConsChecker {cons_checker_name :: String,
-                   cons_checker_sublogic :: String,
-                   cons_check :: morphism -> IO(Maybe Bool, Tactic_script)
-                  }
+data ConsChecker sign sentence morphism proof_tree = 
+ ConsChecker { 
+   cons_checker_name :: String,
+   cons_checker_sublogic :: String,
+   cons_check :: String -> TheoryMorphism sign sentence morphism 
+                 -- name of target theory, theory extension
+                        -> IO([Proof_status proof_tree])
+  }
 
 
 proverTc :: TyCon
@@ -76,7 +80,7 @@ instance Typeable (Prover sign sen proof_tree symbol) where
 
 consCheckerTc :: TyCon
 consCheckerTc      = mkTyCon "Logic.Prover.ConsChecker"
-instance Typeable (ConsChecker mor) where
+instance Typeable (ConsChecker sign sen mor proof_tree) where
     typeOf _ = mkTyConApp consCheckerTc []
 
 

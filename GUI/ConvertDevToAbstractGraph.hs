@@ -571,7 +571,7 @@ getTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
   return (node, gth)
     ) of
   Res.Result [] (Just (n, gth)) ->  
-    displayTheory "Theory" n dgraph (simplifyTh gth)
+    displayTheory "Theory" n dgraph gth
   Res.Result diags _ -> showDiags defaultHetcatsOpts diags
 
 printTheory :: G_theory -> String
@@ -584,7 +584,7 @@ displayTheory :: String -> Node -> DGraph -> G_theory
 	      -> IO ()
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context node dgraph)
-        str = printTheory gth in case dgnode of
+        str = printTheory (simplifyTh gth) in case dgnode of
            (DGNode name (G_sign _ _) _ _) ->
               let thname = case name of
                    Nothing -> "InternalNode"++show node

@@ -181,8 +181,7 @@ class (Category lid sign morphism, Ord sentence,
       sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sign sentence proof_tree symbol]
       provers _ = []
-      cons_checkers :: lid -> [ConsChecker 
-                              (TheoryMorphism sign sentence morphism)] 
+      cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree] 
       cons_checkers _ = []
       consCheck :: lid -> Theory sign sentence -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)

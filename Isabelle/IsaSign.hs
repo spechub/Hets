@@ -137,9 +137,9 @@ data Term =
                 defaultClass :: IsaClass }  -- free variables
       -- | Var   (Indexname, Typ)
       -- | Bound Int
-      | Abs   { termId   :: Term, 
+      | Abs   { absVar   :: Term, 
                 termType :: Typ, 
-                absVar   :: Term,
+                termId   :: Term,
                 flag     :: Flag }  -- lambda abstraction
       | App { funId :: Term, 
               argId :: Term, 

@@ -59,19 +59,26 @@ isabelleProver :: Prover Sign Sentence () ()
 isabelleProver =
      Prover { prover_name = "Isabelle",
               prover_sublogic = "Isabelle",
-              prove = isaProve
+              prove = isaProve False
             }
+
+isabelleConsChecker :: ConsChecker Sign Sentence () ()
+isabelleConsChecker =
+     ConsChecker { cons_checker_name = "Isabelle-refute",
+                   cons_checker_sublogic = "Isabelle",
+                   cons_check = \ thn mor -> isaProve True thn (t_target mor) [] }
 
                  -- input: theory name, theory, goals
                  -- output: proof status for goals and lemmas
-isaProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
+isaProve :: Bool -> String -> (Sign,[Named Sentence]) -> [Named Sentence] 
               -> IO([Proof_status ()])
-isaProve thName (sig,axs) goals = do
-  let fileName = thName++".thy"
-      origName = thName++".orig.thy"
-      patchName = thName++".patch"
-      proofedName = thName++".proofed.thy"
-      theory = showTheory
+isaProve checkCons thName (sig,axs) goals = do
+  let thName' = thName++if checkCons then "_c" else ""
+      fileName = thName'++".thy"
+      origName = thName'++".orig.thy"
+      patchName = thName'++".patch"
+      provedName = thName'++".proved.thy"
+      theory = if checkCons then showConsTheory else showTheory
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
   case (ex,exorig) of
@@ -96,14 +103,14 @@ isaProve thName (sig,axs) goals = do
   isabelle <- getEnv "HETS_ISABELLE"
   isa <- newChildProcess (isabelle ++ "/bin/Isabelle") [arguments [fileName]]
   t <- createToplevel [text "Proof confirmation window"]
-  b <- newButton t [text "Please press me when current theory is proofed!",size(50,10)]
+  b <- newButton t [text "Please press me when current theory is proved!",size(50,10)]
   pack b []
   clickedb <- clicked b
   sync (clickedb >>> destroy t)
   closeChildProcessFds isa
-  proofedThy <- readFile fileName
-  let newThy = withoutThms theory ++ onlyThms proofedThy ++ checkThm ++ concat (map checkThms disGoals)
-  writeFile proofedName newThy
+  provedThy <- readFile fileName
+  let newThy = withoutThms theory ++ onlyThms provedThy ++ checkThm ++ concat (map checkThms disGoals)
+  writeFile provedName newThy
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
   where
@@ -117,8 +124,8 @@ isaProve thName (sig,axs) goals = do
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
       showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) goal
-      showTheory = thyPath
-                   ++ "theory " ++ getFN thName ++ " = " 
+      showTheory = "theory " ++ getFN thName ++ " = " 
+                   ++ thyPath
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals
                    ++ "\nend\n"
@@ -135,6 +142,15 @@ isaProve thName (sig,axs) goals = do
       thyPath = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
                    ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
                    ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
+      showConsTheory = 
+         "theory " ++ getFN thName ++ " = " 
+         ++ baseSig sig++" : \n"
+         ++ "lemma inconsistent:\n "
+         ++ "\"~( (" 
+         ++ concat (intersperse " ) & \\\n(" 
+               (map (showConsAx . mapNamed freeTypesSen) disAxs))
+         ++ ") )\"\nrefute\noops\n\n"
+      showConsAx ax = showPretty (sentence ax) ""
 
 -- translate special characters in sentence names
 transSens :: [Named a] -> [Named a]
@@ -180,3 +196,27 @@ formLemmas sen =
   where 
   lemmaName s = (s, s++"'")
   dec s = "declare " ++ s ++ " [simp]"
+
+
+-- remove type constants from a term
+freeTypesSen (Sentence t) = Sentence (freeTypesTerm t)
+
+freeTypesTerm :: Term -> Term
+freeTypesTerm (Const "O" t s) = Const "OO" (freeTypesTyp t) s
+freeTypesTerm (Const c t s) = Const c (freeTypesTyp t) s
+freeTypesTerm (Free v t s) = Free v (freeTypesTyp t) s
+freeTypesTerm (Abs v ty t f) = Abs v (freeTypesTyp ty) (freeTypesTerm t) f
+freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
+freeTypesTerm (Case term alts f) = 
+  Case (freeTypesTerm term) (map freeTypesTermPair alts) f
+freeTypesTerm (If t1 t2 t3 f) =
+  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) f
+freeTypesTerm (Let defs body f) = 
+  Let (map freeTypesTermPair defs) (freeTypesTerm body) f
+freeTypesTerm (Fix f) =
+  Fix (freeTypesTerm f)
+
+freeTypesTermPair (t1,t2) = (freeTypesTerm t1,freeTypesTerm t2)
+
+freeTypesTyp (Type t _ s _) = TFree t s
+freeTypesTyp t = t

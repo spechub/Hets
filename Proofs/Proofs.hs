@@ -1179,8 +1179,8 @@ basicInferenceNode checkCons lg (ln,node)
                                   t_target = (sign'',sens''),
                                   t_morphism = incl } 
        p' <- resToIORes $ rcoerce lidT lid4 nullPos p
-       (res,_) <- ioToIORes $ cons_check p' mor
-       let nextHistoryElem = error "Proofs.Proofs: basic inference"
+       ps <- ioToIORes $ cons_check p' thName mor
+       let nextHistoryElem = ([LocalInference],[])
          -- ??? to be implemented
        return (globalContext, libEnv, nextHistoryElem:history, dGraph)
    )
