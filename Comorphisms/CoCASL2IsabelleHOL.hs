@@ -61,7 +61,7 @@ instance Comorphism CoCASL2IsabelleHOL
     map_theory _ = transTheory sigTrCoCASL formTrCoCASL
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign =
-      Just . mapSen formTrCoCASL sign
+      return . mapSen formTrCoCASL sign
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 

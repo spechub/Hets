@@ -46,11 +46,10 @@ import Modal.Utils
 -- generated function
 import Modal.ModalSystems
 
-import Data.Maybe (mapMaybe,isJust,fromJust)
+import Data.Maybe
+-- Debugging
 import Control.Exception (assert)
 
--- Debugging
-import Debug.Trace
 
 -- | The identity of the comorphism
 data Modal2CASL = Modal2CASL deriving (Show)
@@ -81,9 +80,9 @@ instance Comorphism Modal2CASL
                       }
     map_sign Modal2CASL sig = 
 	case transSig sig of 
-	mme ->  Just (caslSign mme,relFormulas mme)
-    map_morphism Modal2CASL = Just . mapMor
-    map_sentence Modal2CASL sig = Just . transSen sig
+	mme ->  return (caslSign mme,relFormulas mme)
+    map_morphism Modal2CASL = return . mapMor
+    map_sentence Modal2CASL sig = return . transSen sig
     map_symbol Modal2CASL = Set.single . mapSym
 
 data ModName = SimpleM SIMPLE_ID
@@ -395,10 +394,12 @@ addWorld_ :: (Ord a) => (SORT -> a -> a)
 	  -> Map.Map OP_NAME (Set.Set a)
 addWorld_ f fws k set mp = Map.insert (addPlace k) (Set.image (f fws) set) mp
 
+{-
 -- List of sort ids for possible Worlds
 worldSorts :: [SORT]
 worldSorts = map mkSORT ("World":map (\x -> "World" ++ show x) [(1::Int)..])
     where mkSORT s = mkId [mkSimpleId s]
+-}
 
 freshWorldSort :: Set.Set SORT -> SORT
 freshWorldSort _sorSet = mkId [mkSimpleId "g_World"]

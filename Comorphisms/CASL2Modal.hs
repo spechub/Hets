@@ -57,9 +57,9 @@ instance Comorphism CASL2Modal
                       }
     targetLogic CASL2Modal = Modal
     targetSublogic CASL2Modal = ()
-    map_sign CASL2Modal sig = let e = mapSig sig in Just (e, [])
-    map_morphism CASL2Modal = Just . mapMor
-    map_sentence CASL2Modal _ = Just . mapSen
+    map_sign CASL2Modal sig = let e = mapSig sig in return (e, [])
+    map_morphism CASL2Modal = return . mapMor
+    map_sentence CASL2Modal _ = return . mapSen
     map_symbol CASL2Modal = Set.single . mapSym
 
 mapSig :: CASLSign -> MSign

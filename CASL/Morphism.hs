@@ -258,7 +258,7 @@ symbMapToMorphism extEm sigma1 sigma2 smap = do
   where
   mapMSort s m = do
     m1 <- m 
-    sym <- maybeToResult nullPos 
+    sym <- maybeToMonad
              ("symbMapToMorphism - Could not map sort "++showPretty s "")
              $ Map.lookup (Symbol {symName = s, 
                                    symbType = SortAsItemType}) smap
@@ -266,7 +266,7 @@ symbMapToMorphism extEm sigma1 sigma2 smap = do
   mapFun i ots m = Set.fold (insFun i) m ots
   insFun i ot m = do
     m1 <- m
-    sym <- maybeToResult nullPos 
+    sym <- maybeToMonad
              ("symbMapToMorphism - Could not map op "++showPretty i "")
              $ Map.lookup (Symbol {symName = i, 
                                    symbType = OpAsItemType ot}) smap
@@ -279,7 +279,7 @@ symbMapToMorphism extEm sigma1 sigma2 smap = do
   mapPred i pts m = Set.fold (insPred i) m pts
   insPred i pt m = do
     m1 <- m
-    sym <- maybeToResult nullPos 
+    sym <- maybeToMonad
              ("symbMapToMorphism - Could not map pred "++showPretty i "")
              $ Map.lookup (Symbol {symName = i, symbType = PredAsItemType pt}) 
                smap
@@ -327,8 +327,8 @@ idMor :: Ext f e m -> Sign f e -> Morphism f e m
 idMor extEm sigma = embedMorphism extEm sigma sigma
 
 compose :: (Eq e, Eq f) => (m -> m -> m)
-        -> Morphism f e m -> Morphism f e m -> Maybe (Morphism f e m)
-compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then Just $ 
+        -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
+compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $ 
   let sMap1 = sort_map mor1 
       sMap2 = sort_map mor2 
   in Morphism {
@@ -344,7 +344,7 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then Just $
                   (j, mapPredType sMap1 ot)) $ pred_map mor1,
       extended_map = comp (extended_map mor1) (extended_map mor2)
       }
-    else Nothing
+    else fail "target of first and source of second morphism are different"
 
 legalSign ::  Sign f e -> Bool
 legalSign sigma =

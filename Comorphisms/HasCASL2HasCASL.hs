@@ -42,9 +42,9 @@ instance Comorphism HasCASL2HasCASL
     sourceSublogic HasCASL2HasCASL = top
     targetLogic HasCASL2HasCASL = HasCASL
     targetSublogic HasCASL2HasCASL = top
-    map_morphism HasCASL2HasCASL = Just
-    map_sentence HasCASL2HasCASL env = Just . translateSen env
+    map_morphism HasCASL2HasCASL = return
+    map_sentence HasCASL2HasCASL env = return . translateSen env
     map_symbol HasCASL2HasCASL = single 
-    map_theory HasCASL2HasCASL (sig, sen) = Just 
+    map_theory HasCASL2HasCASL (sig, sen) = return 
       (sig, map  (mapNamed (translateSen sig)) sen)
 

@@ -54,9 +54,9 @@ instance Comorphism CspCASL2Modal
     sourceSublogic CspCASL2Modal = ()
     targetLogic CspCASL2Modal = Modal
     targetSublogic CspCASL2Modal = ()
-    map_sign CspCASL2Modal sig = let e = mapSig sig in Just (e, [])
-    map_morphism CspCASL2Modal = Just . mapMor
-    map_sentence CspCASL2Modal _ = Just . mapSen
+    map_sign CspCASL2Modal sig = let e = mapSig sig in return (e, [])
+    map_morphism CspCASL2Modal = return . mapMor
+    map_sentence CspCASL2Modal _ = return . mapSen
     map_symbol CspCASL2Modal = Set.single . mapSym
 
 mapSig :: CSPSign -> MSign
@@ -84,7 +84,7 @@ mapSym = error "CspCASL2Modal.mapSym not yet implemented"
 
 
 mapSen :: () -> ModalFORMULA
-mapSen f = True_atom []
+mapSen _f = True_atom []
 
 {- case f of 
     Quantification q vs frm ps ->

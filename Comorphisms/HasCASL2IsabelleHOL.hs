@@ -17,6 +17,7 @@ module Comorphisms.HasCASL2IsabelleHOL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
+import Common.Result
 import qualified Common.Lib.Map as Map
 import Data.List
 import Data.Maybe
@@ -67,8 +68,8 @@ instance Comorphism HasCASL2IsabelleHOL
     -- map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign phi =
        case transSentence sign phi of
-         Nothing   -> Nothing
-         Just (ts) -> Just $ Sentence {senTerm = ts}
+         Nothing   -> fail "translation not implemented"
+         Just (ts) -> return $ Sentence {senTerm = ts}
     -- map_symbol :: cid -> symbol1 -> Set symbol2
 
 
@@ -76,9 +77,9 @@ instance Comorphism HasCASL2IsabelleHOL
 
 
 transSignature :: Env
-                   -> Maybe (IsaSign.Sign,[Named IsaSign.Sentence]) 
+                   -> Result (IsaSign.Sign,[Named IsaSign.Sentence]) 
 transSignature sign = 
-  Just (IsaSign.emptySign {
+  return (IsaSign.emptySign {
     baseSig = "MainHC",
     -- translation of typeconstructors
     tsig = emptyTypeSig 

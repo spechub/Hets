@@ -61,11 +61,11 @@ instance Comorphism CASL2HasCASL
                       }
     targetLogic CASL2HasCASL = HasCASL
     targetSublogic CASL2HasCASL = HasSub.top
-    map_sign CASL2HasCASL sig = let e = mapSig sig in Just (e, [])
-    map_morphism CASL2HasCASL = Just . mapMor
-    map_sentence CASL2HasCASL sig = Just . toSentence sig
+    map_sign CASL2HasCASL sig = let e = mapSig sig in return (e, [])
+    map_morphism CASL2HasCASL = return . mapMor
+    map_sentence CASL2HasCASL sig = return . toSentence sig
     map_symbol CASL2HasCASL = Set.single . mapSym
-    map_theory CASL2HasCASL = Just . mapTheory
+    map_theory CASL2HasCASL = return . mapTheory
 
 toType :: Id -> Type
 toType i = TypeName i star 0

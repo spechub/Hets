@@ -19,6 +19,7 @@ module Comorphisms.CASL2IsabelleHOL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.AS_Annotation
+import Common.Result
 import qualified Common.Lib.Map as Map
 import Common.Lib.Set as Set
 import Data.List as List
@@ -35,9 +36,6 @@ import CASL.Morphism
 import CASL.Quantification 
 
 -- Isabelle
-import Isabelle.IsaPrint as IsaPrint
-
-
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
@@ -88,7 +86,7 @@ instance Comorphism CASL2IsabelleHOL
     map_theory _ = transTheory sigTrCASL formTrCASL
     --map_morphism _ morphism1 -> Maybe morphism2
     map_sentence _ sign =
-      Just . mapSen formTrCASL sign
+      return . mapSen formTrCASL sign
     --map_symbol :: cid -> symbol1 -> Set symbol2
 
 ------------------------------ Ids ---------------------------------
@@ -99,10 +97,10 @@ instance Comorphism CASL2IsabelleHOL
 transTheory :: SignTranslator f e ->
                FormulaTranslator f e ->
                (CASL.Sign.Sign f e, [Named (FORMULA f)])
-                   -> Maybe IsaTheory 
+                   -> Result IsaTheory 
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (extendedInfo sign)) $
-  Just(IsaSign.emptySign {
+  return (IsaSign.emptySign {
     baseSig = "Main",
     tsig = emptyTypeSig {arities = 
                Set.fold (\s -> let s1 = showIsa s in
@@ -138,7 +136,7 @@ makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
   where
   delDoubles xs = delDouble xs []
   delDouble [] _  = []
-  delDouble (x:xs) sortList = let (Type s a b c) = fst (head x) in
+  delDouble (x:xs) sortList = let (Type s _a _b _c) = fst (head x) in
       if (length sortList) == 
          (length (addSortList s sortList)) then
 	delDouble xs sortList
@@ -254,10 +252,10 @@ transFORMULA sign tr (Existl_equation t1 t2 _) =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Strong_equation t1 t2 _) =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
-transFORMULA sign tr (Membership t1 s _) =
+transFORMULA _sign _tr (Membership _t1 _s _) =
   trace "WARNING: ignoring membership formula" $ true
   --error "No translation for membership"
-transFORMULA sign tr (Sort_gen_ax constrs _) =
+transFORMULA _sign _tr (Sort_gen_ax _constrs _) =
    trace "WARNING: ignoring sort generation constraints" 
           $ true
   --error "No translation for sort generation constraints"

@@ -62,9 +62,9 @@ instance Comorphism CASL2CspCASL
                       }
     targetLogic CASL2CspCASL = CspCASL
     targetSublogic CASL2CspCASL = ()
-    map_sign CASL2CspCASL sig = let e = mapSig sig in Just (e, [])
-    map_morphism CASL2CspCASL = Just . mapMor
-    map_sentence CASL2CspCASL sig = Just . (const ()) -- toSentence sig
+    map_sign CASL2CspCASL sig = let e = mapSig sig in return (e, [])
+    map_morphism CASL2CspCASL = return . mapMor
+    map_sentence CASL2CspCASL sig = return . (const ()) -- toSentence sig
     --map_symbol CASL2CspCASL = Set.single . mapSym
 
 mapSig :: CASLSign -> CSPSign
