@@ -18,12 +18,12 @@ Error (line 17, column 1) unexpected mixfix token: <
 Error (line 18, column 1) unexpected mixfix token: <=
 Error (line 19, column 1) unexpected mixfix token: .a
 Error (line 20, column 1) unexpected mixfix token: 'a'
-Error (line 21, column 1) expected further mixfix token: ["(var )","(op )","("]
+Error (line 21, column 4) expected further mixfix token: ["(var )","(op )","("]
 Error (line 22, column 7) unexpected mixfix token: b
-Error (line 23, column 1) expected further mixfix token: ["p","x","["]
+Error (line 23, column 10) expected further mixfix token: ["p","x","["]
 Error (line 23, column 7) unexpected mixfix token: b
 Error (line 24, column 8) unexpected mixfix token: b
-Error (line 25, column 1) expected further mixfix token: ["p","x","["]
+Error (line 25, column 11) expected further mixfix token: ["p","x","["]
 Error (line 25, column 8) unexpected mixfix token: b
 Error (line 26, column 7) unexpected mixfix token: b
 Error (line 27, column 7) unexpected mixfix token: b
@@ -53,7 +53,7 @@ Error (line 50, column 2) unexpected mixfix token: predy
 Error (line 51, column 2) unexpected mixfix token: predy
 a when b else c
 Error (line 53, column 1) unexpected mixfix token: #
-Error (line 54, column 1) expected further mixfix token: ["p","x"]
+Error (line 54, column 3) expected further mixfix token: ["p","x"]
 (pred y : bb)
 (pred y : bb)
 (pred y : ())

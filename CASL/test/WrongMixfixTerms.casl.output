@@ -3,11 +3,11 @@ Error (line 1, column 1) ambiguous mixfix term
 	[__](a)
 Error (line 2, column 1) expected further mixfix token: ["p","x"]
 Error (line 3, column 1) expected further mixfix token: ["p","x"]
-Error (line 4, column 1) expected further mixfix token: ["(__)"]
+Error (line 4, column 3) expected further mixfix token: ["(__)"]
 Error (line 5, column 1) expected further mixfix token: ["(__)","__"]
 Error (line 6, column 3) unexpected mixfix token: <
 Error (line 7, column 3) unexpected mixfix token: <
-Error (line 8, column 1) expected further mixfix token: ["(var )","(op )","("]
+Error (line 8, column 4) expected further mixfix token: ["(var )","(op )","("]
 Error (line 9, column 1) unexpected mixfix token: (
 Error (line 10, column 13) unexpected mixfix token: ,
 Error (line 11, column 10) not a predicate: __+__

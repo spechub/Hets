@@ -25,6 +25,7 @@ module Common.Earley (
 		     , tupleId, unitId, unknownId
 		     , Knowns
 		     , mkRuleId
+		     , protect
 		     , listRules
 		     , getTokenPlaceList
                      -- * resolution chart
@@ -43,11 +44,11 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
--- import Control.Exception (assert)
--- import Debug.Trace(trace)
+import Control.Exception (assert)
+import Debug.Trace(trace)
 
-assert :: Bool -> a -> a
-assert b a = if b then a else error ("assert")
+--assert :: Bool -> a -> a
+--assert b a = if b then a else error ("assert")
 
 -- | a special index type for more type safety
 newtype Index = Index Int deriving (Eq, Ord, Show)
@@ -95,8 +96,10 @@ termTok = mkSimpleId termStr
 placeTok = mkSimpleId place
 oParenTok = mkSimpleId "(" 
 cParenTok = mkSimpleId ")" 
-listToken :: Token 
-listToken = mkSimpleId "[]"
+listTok :: Token 
+listTok = mkSimpleId "[]" -- impossible token
+protectTok :: Token 
+protectTok = mkSimpleId "()" -- impossible token
 
 -- | token for type annotations
 typeTok :: Token
@@ -141,12 +144,23 @@ unknownId :: Id
 unknownId    = mkRuleId [unknownTok]
 
 listId :: (Id, Id) -> Id
--- unique id (usually "[]" yields two tokens)
-listId (f,c) = Id [listToken] [f,c] []
+listId (f,c) = Id [listTok] [f,c] []
 
 isListId :: Id -> Bool
-isListId (Id ts cs _) = not (null ts) && head ts == listToken 
+isListId (Id ts cs _) = not (null ts) && head ts == listTok 
 			&& assert (length cs == 2) True
+
+-- | interpret placeholders as literal places
+protect :: Id -> Id
+protect i = Id [protectTok] [i] []
+
+unProtect :: Id -> Id
+unProtect (Id _ [i] _) = i
+unProtect _ = error "unProtect"
+
+isProtected :: Id -> Bool
+isProtected (Id ts cs _) = not (null ts) && head ts == protectTok
+			   && isSingle cs
 
 isUnknownId :: Id -> Bool
 isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
@@ -177,7 +191,7 @@ asListAppl toExpr i b ra br =
 	     || i == parenId
 	     || i == varId
 	     then assert (isSingle ra) $ head ra
-	     else toExpr i b ra br
+    else toExpr (if isProtected i then unProtect i else i) b ra br
 
 -- | construct the list rules
 listRules :: b -> GlobalAnnos -> [(Id, b, [Token])]
@@ -210,21 +224,25 @@ scanItem addType knowns (trm, t) p =
 	ide = rule p
 	q = p { posList = tokPos t : posList p }
     in if null ts then [] else 
+          let tt = tail ts
+	      r = q { rest = tt }
+	      in
 	  if head ts == t then 
 	       if t == commaTok then
-	       -- tuple or list (or compound) elements separator 
-		  [ q { rest = termTok : ts }
-		  , q { rest = tail ts }]
+		  assert (not $ null tt) $ 
+		  if head tt == termTok then
+	       -- tuple or list elements separator 
+		  [ r, q { rest = termTok : ts } ]
+	          else [r] 
               else if t == exprTok || t == varTok then 
-		   [q { rest = tail ts, args = trm : args p }]
+		   [r { args = trm : args p }]
               else if t == typeTok then 
-		   assert (null (tail ts) && isSingle as) $
+		   assert (null tt && isSingle as) $
 		   [q { rest = [], args = [addType trm $ head as] }]
-	      else [q { rest = tail ts}]
+	      else [r]
 	  else if isUnknownId ide
 	         && not (tokStr t `Set.member` knowns) then
-	       [q { rest = tail ts
-		  , rule = mkRuleId [unknownTok, t]}]
+	       [r { rule = mkRuleId [unknownTok, t]}]
 	       else []
 
 scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a b]
@@ -250,7 +268,8 @@ mkExpr toExpr item =
 		    setPlainIdePos orig rs
 	inf =  info item
 	as = reverse $ args item
-	in (asListAppl toExpr ide inf as qs, head qs)
+	in (asListAppl toExpr ide inf as qs, 
+	    if null ps then nullPos else head ps)
 
 reduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
        -> ToExpr a b -> Item a b -> [Item a b]
@@ -268,14 +287,25 @@ reduce ga table filt toExpr item =
 		   else False )
 	$ lookUp table $ index item
 
+reduceCompleted :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
+		-> ToExpr a b -> [Item a b] -> [Item a b]
+reduceCompleted ga table filt toExpr = 
+    concatMap (reduce ga table filt toExpr) . filter (null . rest)
+
+recReduce :: GlobalAnnos -> Table a b -> (b -> b -> Maybe Bool) 
+	  -> ToExpr a b	-> [Item a b] -> [Item a b]
+recReduce ga table filt toExpr items = 
+    let reduced = reduceCompleted ga table filt toExpr items 
+	in if null reduced then items
+	   else recReduce ga table filt toExpr reduced ++ items
+
 complete :: (b -> b -> Maybe Bool) -> ToExpr a b -> GlobalAnnos 
 	 -> Table a b -> [Item a b] -> [Item a b]
 complete filt toExpr ga table items = 
-    let completedItems = filter (null . rest) items
-        reducedItems = concatMap (reduce ga table filt toExpr) completedItems 
-    in 	if null reducedItems 
-	then items
-	else complete filt toExpr ga table reducedItems ++ items
+    let reducedItems = recReduce ga table filt toExpr $ 
+		       reduceCompleted ga table filt toExpr items 
+	in reducedItems
+	   ++ items
 
 predict :: [Item a b] -> [Item a b] -> [Item a b]
 predict rs items =
@@ -382,11 +412,18 @@ getResolved pp p toExpr st =
 		          let expected = if null rest2 
 					 then filter (not . null . rest) rest1 
 					 else rest2 
+			      withpos = assert (not $ null expected) $ 
+					filter (not . null . posList) expected
+			      (pos, errs) = if null withpos then (p, expected) 
+					    else (last $ sort $ map 
+						  (head . posList) withpos
+						  , withpos)
+			      q = if pos == nullPos then p else pos
 			      in Result (Diag Error 
 			       ("expected further mixfix token: " 
 				++ show (take 5 $ nub 
 					$ map (tokStr . head . rest) 
-					 expected)) p : ds) Nothing
+					 errs)) q : ds) Nothing
 		       else if null $ tail result then
 			    let har = head result 
 				ams = ambigs har

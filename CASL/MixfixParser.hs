@@ -41,13 +41,13 @@ mkRule :: Id -> Rule
 mkRule = mixRule False
 
 mkSingleArgRule :: Bool -> Id -> Rule
-mkSingleArgRule b ide = (ide, b, getPlainTokenList ide ++ [varTok])
+mkSingleArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [varTok])
 
 mkSingleOpArgRule :: Bool -> Id -> Rule
-mkSingleOpArgRule b ide = (ide, b, getPlainTokenList ide ++ [exprTok])
+mkSingleOpArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [exprTok])
 
 mkArgsRule :: Bool -> Id -> Rule
-mkArgsRule b ide = (ide, b, getPlainTokenList ide 
+mkArgsRule b ide = (protect ide, b, getPlainTokenList ide 
 		      ++ getTokenPlaceList tupleId)
 
 singleArgId, singleOpArgId, multiArgsId :: Id

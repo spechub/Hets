@@ -1,7 +1,7 @@
 (pred y : bb)
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
-Error (line 4, column 1) expected further mixfix token: [":","!=","/=","<","<="]
+Error (line 4, column 20) expected further mixfix token: [":","!=","/=","<","<="]
 Error (line 5, column 7) unexpected mixfix token: <
 Error (line 6, column 3) unexpected mixfix token: #=
 Error (line 7, column 10) unexpected mixfix token: predy
