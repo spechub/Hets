@@ -68,7 +68,7 @@
                           assoc, comm, idem
 
   sorts P, T
-  type Net = {(p,pre,post) : Set P  *  (V ->? MultiSet P) * (V ->? MultiSet P)                                . dom pre=dom post /\
+  type Net = {(p,pre,post) : Set P  *  (T ->? MultiSet P) * (T ->? MultiSet P)                                . dom pre=dom post /\
             (forall p1:MultiSet P . p1 isIn range pre => MultiSetToSet p1 subset p)
             /\ (forall p1:MultiSet P . p1 isIn range pre => MultiSetToSet p1 subset p) }
   ops places : Net  -> Set P;

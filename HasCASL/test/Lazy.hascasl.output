@@ -17,15 +17,15 @@ __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 t : Type
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit * Unit ->? Unit %(fun)%
-__<=>__ : Unit * Unit ->? Unit %(fun)%
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
-__=>__ : Unit * Unit ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
-__\/__ : Unit * Unit ->? Unit %(fun)%
-__if__ : Unit * Unit ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__
-  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 a : t %(op)%
 b : t %(op)%
 bottom : forall a : Type . a_v-1 %(fun)%
@@ -35,9 +35,9 @@ def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 f : ? t -> t %(op)%
 false : Unit %(fun)%
 g : t -> ? t %(op)%
-not__ : Unit ->? Unit %(fun)%
+not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
-¬__ : Unit ->? Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op f : ? t -> t)(op a : t),

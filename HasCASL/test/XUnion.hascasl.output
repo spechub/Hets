@@ -38,18 +38,18 @@ __-->?__ : Type- -> Type+ -> Type
 __->__ : Type- -> Type+ -> Type
 __->?__ : Type- -> Type+ -> Type
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit * Unit ->? Unit %(fun)%
-__<=>__ : Unit * Unit ->? Unit %(fun)%
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
-__=>__ : Unit * Unit ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
-__\/__ : Unit * Unit ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __\\__
   : forall S : Type .
       Set S_v-1@(S_v-1 ->? Unit) *
       Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)
     %(op)%
-__if__ : Unit * Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __intersection__
   : forall S : Type .
       Set S_v-1@(S_v-1 ->? Unit) *
@@ -69,13 +69,13 @@ __union__
                                                                   (E_v-2 ->? N_v-1))
     %(op)%
 __when__else__
-  : forall a : Type . a_v-1 * Unit * a_v-1 ->? a_v-1 %(fun)%
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall a : Type . a_v-1 %(fun)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
-not__ : Unit ->? Unit %(fun)%
+not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
-¬__ : Unit ->? Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__[Set N@(N ->? Unit) * (E ->? N) * (E ->? N)]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
