@@ -181,7 +181,7 @@ tax_objects = $(patsubst %.hs,%.o,$(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
          lib_clean distclean check capa hacapa h2h clean_genRules genRules \
-         taxonomy hets.cgi count doc apache_doc post_doc4apache \
+         taxonomy count doc apache_doc post_doc4apache \
          derivedSources install_hets install release
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
