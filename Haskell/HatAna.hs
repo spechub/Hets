@@ -25,7 +25,7 @@ import qualified Common.Lib.Set as Set
 
 import Data.List
 import Data.Char
-import Data.Set as DSet
+import qualified Data.Set as DSet
 
 type Scope = Rel (SN HsName) (Ent (SN String))
 

@@ -21,6 +21,7 @@ import Common.Utils
 import Common.Result
 
 import System.IO
+import System.IO.Error(try)
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 import Syntax.GlobalLibraryAnnotations
