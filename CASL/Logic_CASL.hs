@@ -73,7 +73,7 @@ instance StaticAnalysis CASL BASIC_SPEC Sentence
                Sign 
                Morphism 
                Symbol RawSymbol where
-         basic_analysis CASL = Just Static.basic_analysis
+         basic_analysis CASL = Just Static.basicAnalysis
          stat_symb_map_items CASL = Static.statSymbMapItems
          stat_symb_items CASL = Static.statSymbItems
          -- ensures_amalgamability :: id
