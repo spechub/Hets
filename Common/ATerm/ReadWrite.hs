@@ -40,7 +40,7 @@ module Common.ATerm.ReadWrite (
 import Common.ATerm.AbstractSyntax
 
 -- added by KL
-import Char
+import Data.Char
 import qualified Common.DFiniteMap as IntMap
 import Common.SimpPretty
 
