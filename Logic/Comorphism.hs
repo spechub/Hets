@@ -24,6 +24,9 @@ import Common.Lib.Set
 import Data.Maybe(catMaybes)
 import Data.Dynamic
 
+import Common.ATerm.Lib
+--import Logic.Grothendieck
+--import Logic.LogicGraph
 -- Logic comorphisms (possibly also morphisms via adjointness)
 
 
@@ -56,6 +59,10 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set symbol2
+    fromShATerm_sign1 :: (ATermConvertible sign) => cid -> ATermTable -> sign
+    fromShATerm_sign1 cid att = fromShATerm att
+    fromShATerm_morphism2 :: (ATermConvertible morphism) => cid -> ATermTable -> morphism
+    fromShATerm_morphism2 cid att = fromShATerm att
 
 
 data IdComorphism lid  = 

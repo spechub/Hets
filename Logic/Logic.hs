@@ -68,7 +68,9 @@ import Data.Dynamic
 import UnsafeCoerce
 
 -- for Conversion to ATerms 
-import Common.ATerm.Lib (ATermConvertible)
+import Common.ATerm.Lib -- (ATermConvertible)
+import ATC.Named
+import ATC.Graph
 
 -- maps
 
@@ -132,10 +134,10 @@ type ParseFun a = Pos -> String -> (a,String, Pos)
 
 class (Language lid, PrettyPrint basic_spec, 
        PrettyPrint symb_items, Eq symb_items,
-       PrettyPrint symb_map_items, Eq symb_map_items
-{-       ATermConvertible basic_spec, 
+       PrettyPrint symb_map_items, Eq symb_map_items ,
+       ATermConvertible basic_spec, 
        ATermConvertible symb_items, 
-       ATermConvertible symb_map_items -}) =>
+       ATermConvertible symb_map_items ) =>
       Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec, lid -> symb_items,
           lid -> symb_map_items
@@ -145,14 +147,24 @@ class (Language lid, PrettyPrint basic_spec,
          parse_symb_items :: lid -> Maybe(ParseFun symb_items)
          parse_symb_map_items :: lid -> Maybe(ParseFun symb_map_items)
 
-
+         fromShATerm_basic_spec :: lid -> ATermTable -> basic_spec
+	 fromShATerm_basic_spec lid att = fromShATerm att
+         fromShATerm_symb_items :: lid -> ATermTable -> symb_items
+         fromShATerm_symb_items lid att = fromShATerm att
+         fromShATerm_symb_map_items :: lid -> ATermTable -> symb_map_items
+         fromShATerm_symb_map_items lid att = fromShATerm att
+	 fromShATerm_symb_items_list :: lid -> ATermTable -> [symb_items]
+         fromShATerm_symb_items_list lid att = fromShATerm att
+         fromShATerm_symb_map_items_list :: lid -> ATermTable -> [symb_map_items]
+         fromShATerm_symb_map_items_list lid att = fromShATerm att
+	 				      
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Show sentence, PrettyPrint sign,
-       Ord symbol, Show symbol
-       {-ATermConvertible sentence, ATermConvertible symbol,
+       Ord symbol, Show symbol ,
+       ATermConvertible sentence, ATermConvertible symbol,
        ATermConvertible sign, ATermConvertible morphism,
-       ATermConvertible proof_tree-})
+       ATermConvertible proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
           lid -> symbol, lid -> proof_tree
@@ -165,6 +177,22 @@ class (Category lid sign morphism, Show sentence, PrettyPrint sign,
       provers :: lid -> [Prover sentence proof_tree symbol]
       cons_checkers :: lid -> [Cons_checker 
 			      (TheoryMorphism sign sentence morphism)] 
+      fromShATerm_sentence :: lid -> ATermTable -> sentence
+      fromShATerm_sentence lid att = fromShATerm att
+      fromShATerm_symbol :: lid -> ATermTable -> symbol
+      fromShATerm_symbol lid att = fromShATerm att
+      fromShATerm_sign :: lid -> ATermTable -> sign
+      fromShATerm_sign lid att = fromShATerm att
+      fromShATerm_sign_list :: lid -> ATermTable -> [sign]
+      fromShATerm_sign_list lid att = fromShATerm att
+      fromShATerm_morphism :: lid -> ATermTable -> morphism
+      fromShATerm_morphism lid att = fromShATerm att
+      fromShATerm_proof_tree :: lid -> ATermTable -> proof_tree
+      fromShATerm_proof_tree lid att = fromShATerm att
+      fromShATerm_l_sentence_list :: lid -> ATermTable -> [Named sentence]
+      fromShATerm_l_sentence_list lid att = fromShATerm att
+      fromShATerm_diagram :: lid -> ATermTable -> Diagram sign morphism
+      fromShATerm_diagram lid att = fromShATerm att
 
 -- static analysis
 
@@ -242,7 +270,7 @@ instance LatticeWithTop () where
 class (StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics,
+       LatticeWithTop sublogics,ATermConvertible sublogics,
        Typeable sublogics, Typeable basic_spec, Typeable sentence, 
        Typeable symb_items, Typeable symb_map_items, Typeable sign, 
        Typeable morphism, Typeable symbol, Typeable raw_symbol, 
@@ -285,6 +313,9 @@ class (StaticAnalysis lid
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
          proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
 
+         fromShATerm_sublogics :: lid -> ATermTable -> sublogics
+         fromShATerm_sublogics lid att = fromShATerm att
+ 
 ----------------------------------------------------------------
 -- Existential type covering any logic
 ----------------------------------------------------------------
