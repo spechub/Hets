@@ -102,8 +102,6 @@ true : Unit %(Fun)%
 	b : Type in 'List b'
 *** Hint 5.11, redeclared type 'List'
 *** Error 6.57, unexpected type argument 'b'
-*** Error 6.50, unbound type variable(s)
-	b : Type in 'List a b'
 *** Hint 6.11, redeclared type 'List'
 *** Error 7.50, illegal polymorphic recursion
   expected: List a

@@ -20,17 +20,16 @@ import Data.List
 import Data.Maybe
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
-import Common.Lib.State
 import Common.Result
 
-anaClassId :: ClassId -> State Env (Maybe Kind)
-anaClassId ci = 
-    do cMap <- gets classMap
+mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
+mkError s c = Result [mkDiag Error s c] Nothing
+
+anaClassId :: ClassId -> ClassMap -> Result Kind
+anaClassId ci cMap = 
        case Map.lookup ci cMap of
-	    Nothing -> do addDiags [mkDiag Error "undeclared class" ci]
-			  return Nothing
-	    Just (ClassInfo l) ->  return $ Just $ ClassKind ci $ 
-				   toIntersection l
+	    Nothing -> mkError "undeclared class" ci
+	    Just (ClassInfo l) -> return $ ClassKind ci $ toIntersection l
 
 toIntersection :: [Kind] -> Kind
 toIntersection l = case mkIntersection l of
@@ -105,12 +104,12 @@ maxVar v1 v2 = if v1 == v2 then Just v1 else Nothing
 minVar v1 v2 = if v1 == v2 then Just v1 else Just InVar
 
 checkKinds :: (PosItem a, PrettyPrint a) => 
-              a -> Kind -> Kind -> State Env ()
+              a -> Kind -> Kind -> [Diagnosis]
 checkKinds p k1 k2 =
     do let k3 = rawKind k1
            k4 = rawKind k2
-       if k3 == k4 then return ()
-	  else addDiags $ diffKindDiag p k1 k2
+       if k3 == k4 then []
+	  else diffKindDiag p k1 k2
 
 cyclicClassId :: ClassId -> Kind -> Bool
 cyclicClassId ci k =

@@ -3,7 +3,7 @@ class Type < Type
 class Type < Type
 class Type < Type
 class d < Type
-class a < (d, e, g)
+class a < Type
 class a < d
 class a < a
 class a < b
@@ -20,7 +20,7 @@ var x : b
 var x : {_ < t}
 type  : b
 %% Classes ---------------------------------------------------------------
-a < (b, d, e, g)
+a < (b, d)
 b < (c, d, e)
 c < Type
 d < Type

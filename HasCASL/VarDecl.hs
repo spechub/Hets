@@ -80,8 +80,8 @@ anaTypeVarDecl(TypeArg t k s ps) =
     case k of 
     MissingKind -> do 
        tk <- gets typeMap
-       let m = getKind tk t
-       case m of 
+       let rm = getIdKind tk t
+       case maybeResult rm of 
  	      Nothing -> anaTypeVarDecl(TypeArg t star s ps)
 	      Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
     _ -> do nk <- anaKind k
@@ -210,11 +210,10 @@ convertTypeToKind (MixfixType [t1, TypeToken t]) =
 convertTypeToKind(TypeToken t) = 
        if tokStr t == "Type" then return $ Just $ Universe [tokPos t] else do
           let ci = simpleIdToId t
-	  e <- get					       
-	  mk <- anaClassId ci
-	  case mk of 
-		  Nothing -> do put e
-				return Nothing
+	  cm <- gets classMap					       
+	  let rm = anaClassId ci cm
+	  case maybeResult rm of 
+		  Nothing -> return Nothing
 		  Just k -> return $ Just $ ClassKind ci k
 convertTypeToKind _ = 
     do return Nothing

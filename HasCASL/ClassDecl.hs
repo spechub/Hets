@@ -57,7 +57,7 @@ addClassDecl kind ci =
 	    Just info -> do 
 		addDiags [mkDiag Warning "redeclared class" ci]
 		let superClasses = classKinds info
-		checkKinds ci kind $ head superClasses
+		addDiags $ checkKinds ci kind $ head superClasses
 	        if kind `elem` superClasses then
 		   return () 
 		   else if cyclicClassId ci kind then

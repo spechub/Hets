@@ -154,9 +154,9 @@ matchSymb sy rsy = let ty = symType sy in
 anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
 anaSymbolType t = 
     case t of 
-    ClassAsItemType k -> do ak <- anaKindM k
+    ClassAsItemType k -> do ak <- fromResult $ anaKindM k
 			    return $ fmap ClassAsItemType ak
-    TypeAsItemType k -> do ak <- anaKindM k
+    TypeAsItemType k -> do ak <- fromResult $ anaKindM k
 			   return $ fmap TypeAsItemType ak
     OpAsItemType sc -> do as <- anaTypeScheme sc
 			  return $ fmap OpAsItemType as	

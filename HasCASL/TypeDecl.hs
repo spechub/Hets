@@ -199,15 +199,16 @@ cyclicType tm i ty = Set.member i $ idsOf (==0) (unalias tm ty)
 ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 
     do k <- anaKind kind
-       checkKinds pat star k
-       cs <- mapM anaClassId derivs
-       let jcs = catMaybes cs
+       addDiags $ checkKinds pat star k
+       cm <- gets classMap
+       let rms = map ( \ c -> anaClassId c cm) derivs
+           jcs = catMaybes $ map maybeResult rms
            newDerivs = foldr( \ ck l -> case ck of 
 				           ClassKind ci _ -> ci:l
 				           _ -> l) [] jcs
            Result ds m = convertTypePattern pat
-       addDiags ds
-       mapM_ (checkKinds pat star) jcs
+       addDiags (ds ++ concatMap diags rms) 
+       addDiags $ concatMap (checkKinds pat star) jcs
        case m of 
 	      Nothing -> return Nothing
 	      Just (i, as) -> do 
@@ -289,18 +290,19 @@ anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
 	    Nothing -> return Nothing
-	    Just j -> anaKindM j
+	    Just j -> fromResult $ anaKindM j
        tm <- gets typeMap    -- save global variables  
        mapM_ anaTypeVarDecl tArgs
-       (sk, mt) <- anaType (k, ty)
-       let newK = typeArgsListToKind tArgs sk
-       case mk of
-           Nothing -> return ()
-	   Just j -> checkKinds ty j newK
+       mp <- fromResult (anaType (k, ty) . typeMap)
        putTypeMap tm       -- forget local variables 
-       case mt of 
-           Nothing -> return (newK, Nothing)
-	   Just newTy -> return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
+       case mp of
+           Nothing -> return (star, Nothing)
+	   Just (sk, newTy) -> do 
+	      let newK = typeArgsListToKind tArgs sk
+	      case k of 
+		     Nothing -> return () 
+		     Just j -> addDiags $ checkKinds ty j newK
+	      return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
 
 -- | add a type pattern 
 addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])  

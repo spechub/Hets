@@ -4,17 +4,17 @@ type [__], {__} : a -> b
 var u : [r]; v : {s}
 type tuple3 : a -> b -> c -> d
 var x : tuple3 r s t
-var y : tuple3 r s
+var
 type tuple1 : b -> a
 type m : (a -> b) -> c
 var
 type List : a -> b
 var v : m List
-var o1 : m
-var o2 : m tuple1
-var o3 : m tuple3
+var
+var
+var
 var nt : a -> (b -> c) -> c -> d
-var o4 : nt r List s
+var
 type s1, r1, t1 < t
 type s2 = r2 = t2
 type s3 : Type := t
@@ -61,16 +61,11 @@ def__ : forall a : Type .  a ->? Unit %(Fun)%
 false : Unit %(Fun)%
 if__then__else__ : forall a : Type .  Unit × a × a ->? a %(Fun)%
 not__ : Unit ->? Unit %(Fun)%
-o1 : m %(var)%
-o2 : m tuple1 %(var)%
-o3 : m tuple3 %(var)%
-o4 : nt r List s %(var)%
 true : Unit %(Fun)%
 u : [r] %(var)%
 v : m List %(var)%
   : {s} %(var)%
 x : tuple3 r s t %(var)%
-y : tuple3 r s %(var)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 12.9, incompatible kind of: tuple3 r s
   expected: Type
