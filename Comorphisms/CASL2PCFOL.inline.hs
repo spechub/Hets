@@ -50,23 +50,32 @@ encodeSig sig = error "encodeSig not yet implemented"
                      +  ein Id "_proj" mit Typmegen {s'->?s | s<=s' }
         predMap = ...   pro s einen neuen Id "_elem_s" einfügen, mit entsprechender Typmenge ( alle  s' mit s<=s') 
        }
-
+zu benutzen: Map.insert, supersortsOf, Set.fromList . map f . Set.toList
+wobei f aus einer Sorte s' einen Typ s->s' erzeugt 
 -}
 
 
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = 
   concat 
-   ([inlineAxioms CASL
+  ([inlineAxioms CASL
      "  sorts s < s' \
       \ op inj : s->s' \
-      \ forall x,y:s . inj(x)=inj(y) => x=y  %(ga_embedding_injectivity)% "++
+      \ forall x,y:s . inj(x)=e=inj(y) => x=e=y   %(ga_embedding_injectivity)% "++
     inlineAxioms CASL
      " sort s< s' \
       \ op pr : s'->?s ; inj:s->s' \
-      \ forall x :s . pr(inj(x))=e=x          %(projection)% " 
-          | (s,s') <- rel2List]++          
-    [ inlineAxioms CASL
+      \ forall x:s . pr(inj(x))=e=x           %(projection)% " ++
+    inlineAxioms CASL
+      " sort s<s' \
+      \ op pr : s'->?s \
+      \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(projection_transitiv)% " ++
+    inlineAxioms CASL
+      " sort s \
+      \ op inj : s->s \
+      \ forall x:s . inj(x)=e=x               %(indentity)%"             
+          | (s,s') <- rel2List]++               
+   [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
@@ -143,7 +152,10 @@ Reading ../CASL-lib/encode.casl
 Analyzing spec sp
 Writing ../CASL-lib/encode.env
 *Main> sig
-Sign {sortSet = {s,s'}, sortRel = {(s,s')}, opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}}}, assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
+Sign {sortSet = {s,s'}, 
+sortRel = {(s,s')}, 
+opMap = {inj:={OpType {opKind = Total, opArgs = [s], opRes = s'}}}, 
+assocOps = {}, predMap = {}, varMap = {}, sentences = [], envDiags = [], extendedInfo = ()}
 *Main> sens <- getCASLSens "../CASL-lib/encode.casl"
 
 <interactive>:1: Warning: Defined but not used: sens
@@ -151,7 +163,13 @@ Reading ../CASL-lib/encode.casl
 Analyzing spec sp
 Writing ../CASL-lib/encode.env
 *Main> sens
-[NamedSen {senName = "ga_embedding_injectivity", sentence = Implication (Strong_equation (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) [Sorted_term (Qual_var x s []) s []] []) s' []) (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) [Sorted_term (Qual_var y s []) s []] []) s' []) [../CASL-lib/encode.casl:7.16]) (Strong_equation (Sorted_term (Qual_var x s []) s []) (Sorted_term (Qual_var y s []) s []) [../CASL-lib/encode.casl:7.28]) True [../CASL-lib/encode.casl:7.24]}]
+[NamedSen {senName = "ga_embedding_injectivity", 
+sentence = Implication (Strong_equation (Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) 
+[Sorted_term (Qual_var x s []) s []] []) s' []) 
+(Sorted_term (Application (Qual_op_name inj (Total_op_type [s] s' []) []) 
+[Sorted_term (Qual_var y s []) s []] []) s' []) [../CASL-lib/encode.casl:7.16])
+ (Strong_equation (Sorted_term (Qual_var x s []) s []) (Sorted_term (Qual_var y s []) s []) 
+ [../CASL-lib/encode.casl:7.28]) True [../CASL-lib/encode.casl:7.24]}]
 *Main>
 
 -}
