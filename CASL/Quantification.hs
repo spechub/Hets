@@ -14,83 +14,64 @@ module CASL.Quantification where
 
 import CASL.AS_Basic_CASL
 import Common.Id
-
--- Free variables
-
-flatVAR_DECL :: VAR_DECL -> [(VAR, SORT)]
-flatVAR_DECL (Var_decl vlist s _) = map (\v -> (v,s)) vlist
+import Data.List(nubBy)
+import qualified Common.Lib.Set as Set
 
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
-flatVAR_DECLs = concat . map flatVAR_DECL
+flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
 
-isFree :: VAR -> FORMULA -> Bool
-isFree v (Quantification _ vdecl phi _) =
-  not (v `elem` (map fst $ flatVAR_DECLs vdecl))
-  && isFree v phi
-isFree v (Conjunction phis _) =
-  any (isFree v) phis
-isFree v (Disjunction phis _) =
-  any (isFree v) phis
-isFree v (Implication phi1 phi2 _) =
-  isFree v phi1 || isFree v phi2
-isFree v (Equivalence phi1 phi2 _) =
-  isFree v phi1 || isFree v phi2
-isFree v (Negation phi _) =
-  isFree v phi
-isFree v (True_atom _) =
-  False
-isFree v (False_atom _) =
-  False
-isFree v (Predication _ args _) =
-  any (isFreeInTerm v) args
-isFree v (Definedness t _) =
-  isFreeInTerm v t
-isFree v (Existl_equation t1 t2 _) =
-  isFreeInTerm v t1 || isFreeInTerm v t2
-isFree v (Strong_equation t1 t2 _) =
-  isFreeInTerm v t1 || isFreeInTerm v t2
-isFree v (Membership t s _) =
-  isFreeInTerm v t
-isFree v (Sort_gen_ax sorts ops) =
-  False
-isFree v (Mixfix_formula _) = 
-  False
-isFree v (Unparsed_formula _ _) = 
-  False
-
-isFreeInTerm :: VAR -> TERM -> Bool
-isFreeInTerm v (Qual_var v1 s _) = v==v1
-isFreeInTerm v (Application _ args _) =
-  any (isFreeInTerm v) args
-isFreeInTerm v (Sorted_term t s _) =
-  isFreeInTerm v t
-isFreeInTerm v (Cast t s _) =
-  isFreeInTerm v t
-isFreeInTerm v (Conditional t1 phi t2 _) =
-  isFree v phi || isFreeInTerm v t1 || isFreeInTerm v t2
-isFreeInTerm v (Simple_id v1) = v==v1
-isFreeInTerm v (Unparsed_term _ _) = False
-isFreeInTerm v (Mixfix_qual_pred _) = False
-isFreeInTerm v (Mixfix_term _) = False
-isFreeInTerm v (Mixfix_token _) = False
-isFreeInTerm v (Mixfix_sorted_term _ _) = False
+freeVars :: FORMULA -> Set.Set VAR
+freeVars f = case f of 
+    Quantification _ vdecl phi _ -> foldr Set.delete (freeVars phi) $ 
+		    concatMap ( \ (Var_decl vs _ _) -> vs) vdecl
+    Conjunction phis _ -> Set.unions $ map freeVars  phis
+    Disjunction phis _ -> Set.unions $ map freeVars phis
+    Implication phi1 phi2 _ -> freeVars phi1 `Set.union` freeVars phi2
+    Equivalence phi1 phi2 _ -> freeVars phi1 `Set.union` freeVars phi2
+    Negation phi _ -> freeVars phi
+    Predication _ args _ -> Set.unions $ map freeTermVars args
+    Definedness t _ -> freeTermVars t
+    Existl_equation t1 t2 _ -> freeTermVars t1 `Set.union` freeTermVars t2
+    Strong_equation t1 t2 _ -> freeTermVars t1 `Set.union` freeTermVars t2
+    Membership t _ _ -> freeTermVars t
+    _ -> Set.empty
 
 
--- quantify only over free variables
+freeTermVars :: TERM -> Set.Set VAR
+freeTermVars t = case t of 
+    Simple_id v -> Set.single v
+    Qual_var v _ _ -> Set.single v
+    Application _ args _ -> Set.unions $ map freeTermVars args
+    Sorted_term st _ _ -> freeTermVars st
+    Cast st _ _ -> freeTermVars st
+    Conditional t1 phi t2 _ -> freeVars phi `Set.union` 
+			       freeTermVars t1 `Set.union` freeTermVars t2
+    _ -> Set.empty
+
+-- quantify only over free variables (and only once)
 effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA -> [Pos] -> FORMULA
-effQuantify q vdecl phi pos =
-  if null vdecl'' then phi
-     else Quantification q vdecl' phi pos
-  where
-  filterVAR_DECL phi (Var_decl vs s pos) =
-    Var_decl (filter (flip isFree phi) vs) s pos
-  vdecl' = map (filterVAR_DECL phi) vdecl
-  vdecl'' = flatVAR_DECLs vdecl'
-
--- strip superfluous quantifications
+effQuantify q vdecls phi pos =
+    let fvs = freeVars phi 
+	filterVAR_DECL (Var_decl vs s ps) =
+	    Var_decl (filter (`Set.member` fvs) vs) s ps
+	flatVAR_DECL (Var_decl vs s ps) = 
+	    map (\v -> Var_decl [v] s ps) vs
+	newDecls = concatMap (flatVAR_DECL . filterVAR_DECL) vdecls
+	myNub = nubBy (\ (Var_decl v1 _ _) (Var_decl v2 _ _) -> v1 == v2)
+	in if null newDecls then phi else 
+	   Quantification q (reverse $ myNub $ reverse newDecls) phi pos
+	
+-- strip superfluous (or nested) quantifications
 stripQuant :: FORMULA -> FORMULA
 stripQuant (Quantification quant vdecl phi pos) =
-  effQuantify quant vdecl phi pos
+    let newF = stripQuant phi 
+	qF = effQuantify quant vdecl phi pos in 
+	case newF of 
+		 Quantification quant2 vd2 f2 ps -> 
+		     if quant == quant2 then 
+			effQuantify quant (vdecl ++ vd2) f2 (pos ++ ps)
+		     else qF
+		 _ -> qF
 stripQuant (Conjunction phis pos) =
   Conjunction (map stripQuant phis) pos
 stripQuant (Disjunction phis pos) =
