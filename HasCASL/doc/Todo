@@ -1,0 +1,94 @@
+general:
+haddockify code
+adapt language summary (C.1.1, A-2, C-3 - C-8)
+
+checking legality of internal and external terms is missing
+
+subtypes are treated like type synonyms
+
+class constraints are not checked in function applications
+
+exhaustive and overlapping patterns are not checked for several
+program equations or case patterns. (Merge.hs?)
+
+datatyoes:
+sentences fo attributes comm, assoc, unit, definitions 
+are not generated yet. Data types result in special data type
+sentences that imply the usual equations.
+
+The selector positions can not be reconstructed from the AltDefn
+(Le.hs) entries, thus equations should be generated!
+
+Name mapping is not done for datatype sentences (Morphism.hs)
+
+terms:
+mutual recursive let-equations (and what not?) are not supported yet
+(TypeCheck.hs)
+
+Maybe TypeCheck should generate new type variables for unknown
+variables (with type "MixfixType []") rather than MixAna
+(extractBindings).
+
+a wild card pattern (just "__" with lowest precedence?) is missing
+
+as-patterns are only partially implemented
+
+if-then-else is currently build in, but schould be user-definable.
+Allow for "op if__then__else : ..." . 
+
+Disallow "=" and "<=>" after "op" to avoid overloading with builtin
+names (Builtin.hs) or check for the type when changing terms to
+program equations (ProgEq.hs).
+
+checking for a legal let-Pattern (a variable applied to arguments) for
+executable terms (ProgEq.hs).
+
+"__ __" has highest precedence and ":" has (strong) postfix precedence
+(adapt language summary C.2.1)
+
+misc:
+hiding of sub- or supertypes is a problem, with respect to dependent
+operations. (SymbolMapAnalysis.hs, RelationsAndOrders.casl)
+
+shorter printing of terms
+
+CASL:
+Overload.hs should generated Applications for constants rather than
+Var_decls
+
+convert TERM to Mixfix_bracketed terms and use printText0 rather than
+showTerm from ShowMixfix
+
+assoc ops are partial and may not be found via the fun_map of
+morphisms, but the morphism should also map this partial functions
+correctly, since morphisms should be applicable for subsignatures.
+
+Maybe funKind should be ignored as fun_map key for lookup. (Also the
+FunKind value of the mapping seems to be redundant, as it could also
+be looked up in the target signature.)
+
+Maybe in CASL.Morphism.compose the target(m1) only needs to be a
+subsignature of the source(m2) 
+
+Hatchet/Haskell:
+conversion HsSyn and AHsSyn is stupid
+
+AxiomBinds are not renamed 
+
+PrintModuleInfo is entirely faked and unusable for showing a Haskell
+theory that was directly read in (form a .het file and Haskell code in
+curly braces.)
+
+ToHaskell:
+formulas are not translated to Hassle Axioms
+
+overloaded names are not properly distinguished (Secd.het __+__)
+
+free types with subtypes components get too few constructors (and
+become disjoint types)
+
+HetAna/Logic:
+comparing symbol sets with (symbol-) equality may be a problem
+
+legal_obj (Logic.hs) is currently unused 
+signatures should be always legal by construction
