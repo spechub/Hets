@@ -785,7 +785,7 @@ anaForm mef ga ops preds sign f = do
     resF <- resolveFormula putParen mixResolve ga ops preds f
     anaF <- minExpFORMULA mef ga sign 
          $ assert (noMixfixF checkMix resF) resF
-    return (resF, injFormula putInj anaF)
+    return (resF, anaF)
 
 anaTerm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
         -> Sign f e -> SORT -> [Pos] -> (TERM f) -> Result (TERM f, TERM f)
@@ -793,7 +793,7 @@ anaTerm mef ga ops preds sign srt pos t = do
     resT <- resolveMixfix putParen mixResolve ga ops preds t
     anaT <- oneExpTerm mef ga sign 
          $ assert (noMixfixT checkMix resT) $ Sorted_term resT srt pos
-    return (resT, injTerm putInj anaT)
+    return (resT, anaT)
 
 basicAnalysis :: Resolver f
               => Min f e -- ^ type analysis of f
