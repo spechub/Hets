@@ -92,7 +92,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
       then x R y
      here, R_i is the relation for the result type of sel_j, or the equality
   -}
-  prem (s::SORT,i) = 
+  prem (s,i) = 
     let -- get all selectors with first argument sort s
         sels = List.filter isSelForS ops
         isSelForS (Qual_op_name _ t _) = case (args_OP_TYPE t) of
@@ -131,7 +131,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
   concls = conjs (map concl (zip sorts indices))
-  concl (s,i::Int) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
+  concl (s,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
                      (var "v") NotCont) 
                              (binEq (var "u") (var "v"))
 formTrCoCASL sign (Box mod phi _) = 

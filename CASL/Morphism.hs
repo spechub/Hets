@@ -421,9 +421,10 @@ morphismUnion uniteM addSigExt mor1 mor2 = do
       (omap, omap3) = Map.foldWithKey ( \ p@(i, ot) v m@(m1, m2) -> 
              if Map.member p omap1 then m
              else let oty = ot { opKind = case opKind ot of
-                                         Total -> Partial
-                                         Partial -> Total }
-                   in case Map.lookup (i, oty) omap1 of
+                                          Total -> Partial
+                                          Partial -> Total 
+                               } 
+                  in case Map.lookup (i, oty) omap1 of
                       Just v2 -> let m3 = Map.delete p m2 in 
                                  if v == v2 then (m1, m3)
                                  else (m1, Map.insert (i, oty) v m3)

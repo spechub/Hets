@@ -647,12 +647,12 @@ findComorphismPaths lg (G_sublogics lid sub) =
   idc = Comorphism (IdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 5
-  iterateComp n (l::[(AnyComorphism,[AnyComorphism])]) =
+  iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
     if n>5 || l==newL then newL else iterateComp (n+1) newL
     where 
     newL = List.nub (l ++ (concat (map extend l)))
     -- extend comorphism list in all directions, but no cylces
-    extend (coMor,comps::[AnyComorphism]) =  
+    extend (coMor,comps) =  
        let addCoMor c = 
             case compComorphism coMor c of
               Nothing -> Nothing

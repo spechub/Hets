@@ -484,8 +484,8 @@ checkRecentEnv fp1 base2 =
    do fp1_exists <- doesFileExist fp1
       if not fp1_exists then return False 
        else do
-      maybe_source_file <- existsAnSource base2
-      maybe (return False) 
+        maybe_source_file <- existsAnSource base2
+        maybe (return False) 
 	     (\ fp2 ->     do fp1_time <- getModificationTime fp1
 	                      fp2_time <- getModificationTime fp2
 		              return (fp1_time > fp2_time))

@@ -146,7 +146,7 @@ evaluateOnePointFORMULA sig (Strong_equation (Sorted_term _ sort1 _) (Sorted_ter
              && (Set.member sort2 (sortSet sig)==False) then Just True
         else Nothing 
 
--- todo: auc prÅ¸fen, ob Sorte von t in sortSet sig     
+-- todo: auch pruefen, ob Sorte von t in sortSet sig     
 evaluateOnePointFORMULA sig (Membership (Sorted_term _ sort1 _) sort2 _)=
         if (Set.member sort1 (sortSet sig)==False)
              && (Set.member sort2 (sortSet sig)==False) then Just True
