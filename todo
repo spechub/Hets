@@ -148,6 +148,7 @@ Management of change
 Integrate provers
   Otter model checker
   modal logic: IRIT, Toulouse. Tableaux prover LOTREC, Andreas Herzig
+               Isabelle codings: www.inf.ethz.ch/~vigano
   Renate Schmidt, Manchester: uses FOL prover for description logic
                               (as efficient as DL-specific tools!)
   Look at PROSPER toolkit

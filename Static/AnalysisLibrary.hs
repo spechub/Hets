@@ -22,6 +22,8 @@ Portability :  non-portable(Logic)
 module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN)
 where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Grothendieck
 import Common.Lib.Graph
@@ -390,7 +392,7 @@ refExtsig ln dg name (imps,params,gsigmaP,body) =
 refViewsig ln dg (src,mor,extsig) =
   (dg2,(src1,mor,extsig1))
   where
-  (dg1,[src1]) = refNodesigs ln dg [(Nothing,src)]
+  (_,[src1]) = refNodesigs ln dg [(Nothing,src)]
   (dg2,extsig1) = refExtsig ln dg Nothing extsig
 
 

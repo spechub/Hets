@@ -148,6 +148,19 @@ pplain_error x s p = plain_error x (show s) p
 warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
+-- | add a warning, using pretty printed Doc
+pwarning :: a -> Doc -> Pos -> Result a
+pwarning x s p = warning x (show s) p
+
+-- | add a hint
+hint :: a -> String -> Pos -> Result a
+hint x s p = Result [Diag Hint s p] $ Just x  
+
+-- | add a hint, using pretty printed Doc
+phint :: a -> Doc -> Pos -> Result a
+phint x s p = hint x (show s) p
+
+
 -- | add a fatal error message to a failure (Nothing)
 maybeToResult :: Pos -> String -> Maybe a -> Result a
 maybeToResult p s m = Result (case m of 

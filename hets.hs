@@ -11,6 +11,10 @@ Portability :  non-portable (imports Logic.Logic)
    to call.
 
 -}
+
+{- todo: option for omitting writing of env
+-}
+
 module Main where
 
 import Monad (when)
