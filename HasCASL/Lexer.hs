@@ -2,20 +2,33 @@ module Lexer where
 
 import Char
 import Id
--- import Parsec
-
 import ParsecPos
 import ParsecPrim
 import ParsecCombinator
 import ParsecChar
 
+-- ----------------------------------------------
+-- no-bracket-signs
+-- ----------------------------------------------
+signChars = "!#$&*+-./:<=>?@\\^|~" ++ "°¢£ß©¨∞±≤≥µ∂∑πø◊˜"
+
+-- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
+
+--    \172 neg
+--    \183 middle dot
+--    \215 times 
+
+scanAnySigns = many1 (oneOf signChars) <?> "signs"
+
+scanPlace = try (string place) <?> "place"
 
 -- ----------------------------------------------
 -- casl letters
 -- ----------------------------------------------
 caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++ 
 	      "¿¡¬√ƒ≈∆«»… ÀÃÕŒœ—“”‘’÷ÿŸ⁄€‹›ﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ¯˘˙˚¸˝ˇ"
-{-
+
+{- see http://www.htmlhelp.com/reference/charset/
               ['\192' .. '\207'] ++ -- \208 ETH 
               ['\209' .. '\214'] ++ -- \215 times
               ['\216' .. '\221'] ++ -- \222 THORN
@@ -24,6 +37,7 @@ caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++
               ['\248' .. '\253'] ++ -- \254 thorn
               ['\255'] 
 -}
+
 caslLetter :: Parser Char
 caslLetter = oneOf caslLetters <?> "casl letter"
 
@@ -53,27 +67,10 @@ singleUnderline = try (do { c <- char '_'
 
 scanUnderlineWord = singleUnderline <:> many1 scanLPD <?> "word"
 
--- excluded or "casl-builtin" ids in terms and formulae
-casl_reserved_words = 
-    "and arch as assoc axiom axioms closed comm end " ++
-    "exists fit forall free from generated get given " ++
-    "hide idem in lambda library local op ops pred preds " ++
-    "result reveal sort sorts spec then to type types " ++
-    "unit units var vars version view with within"
-
-reserved :: [String] -> Parser String -> Parser String
-reserved l p = do { r <- p 
-		  ; if r `elem` l 
-		    then unexpected ("reserved keyword: " ++ r)
-		    else return r
-		  }
-
 scanAnyWords :: Parser String
 scanAnyWords = do { ws <- scanLetterWord <:> many scanUnderlineWord <?> "words"
 		  ; return (concat ws)
 		  } 
-
-scanWords = reserved (words casl_reserved_words) scanAnyWords
 
 scanDot = try (do { d <- char '.'
 		  ; lookAhead caslLetter
@@ -83,29 +80,13 @@ scanDot = try (do { d <- char '.'
 scanDotWords = scanDot <:> scanAnyWords <?> "dot-words"
 
 -- ----------------------------------------------
--- no-bracket-signs
--- ----------------------------------------------
-signChars = "!#$&*+-./:<=>?@\\^|~" ++ "°¢£ß©¨∞±≤≥µ∂∑πø◊˜"
-
--- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
-
--- see http://www.htmlhelp.com/reference/charset/
---    \172 neg
---    \183 middle dot
---    \215 times 
-
-casl_reserved_ops = [":",":?","::=",".","\183","|","|->","->","->?"]
-
-scanAnySigns = many1 (oneOf signChars) <?> "signs"
-scanSigns = reserved casl_reserved_ops scanAnySigns
-
--- ----------------------------------------------
 -- parsec/Functor extension
 single :: (Functor f) => f a -> f [a]
 single p = fmap (:[]) p 
 
 -- see ParsecToken.number
-value base s = foldl (\x d -> base*x + toInteger (digitToInt d)) 0 s
+value :: Int -> String -> Int
+value base s = foldl (\x d -> base*x + (digitToInt d)) 0 s
 
 -- ----------------------------------------------
 -- casl escape chars for quoted chars and literal strings
@@ -226,7 +207,7 @@ skip p = do {t <- p ;
 
 -- starting with %word
 annote = 
-    do { w <- try ((char '%') >> scanWords);
+    do { w <- try ((char '%') >> scanAnyWords);
          (do { try(char '(');
 		   t <- middleText ')';
 	       string ")%";
@@ -243,7 +224,7 @@ ann = many (skip (annote <|> labelAnn <|> commentGroup <|> commentLine))
       <?> "annotation"
 
 -- ----------------------------------------------
--- no-bracket-token, literal or place (for terms)
+-- lexical tokens with position
 -- ----------------------------------------------
 
 setTokPos :: SourcePos -> String -> Token
@@ -253,91 +234,4 @@ makeToken parser = skip(do { p <- getPosition;
 		             s <- parser;
 			     return (setTokPos p s)
 			   })
-
-scanPlace = try (string place) <?> "place"
-
-scToken = scanWords <|> scanDigit <|> scanQuotedChar <|>
-	       scanDotWords
-
-scanMixLeaf = makeToken(try scanFloat <|> scanString <|> scToken 
-			<|> try (string "=e=") <|> scanSigns <|> scanPlace)
-
-
-
--- ----------------------------------------------
--- balanced brackets
--- ----------------------------------------------
-
-balanced = many (noneOf brackets
-		 <|>
-		 between (char '[')(char ']') balanced
-                 <|>			    
-		 between (char '{')(char '}') balanced) >> return ' ' 
-
-isBalanced ts = let s = concat (map show ts) in
-		    case parse (balanced >> eof) "" s of 
-						      Right _ -> True 
-						      _ -> False
-
-
-
--- ----------------------------------------------
--- bracket-token (for ids)
--- ----------------------------------------------
-
-brackets = "{}[]"
-
--- bracket signs must not be separated by spaces
-anyBracketSigns = fmap concat (many1 (scanAnySigns 
-				   <|> single (oneOf brackets) 
-				   <?> "bracket signs"))
-
-bracketSigns = reserved casl_reserved_ops anyBracketSigns 
-
-bracketToken = makeToken (scToken <|> bracketSigns <?> "id")
-
-comps = between (skip (char '[')) (skip (char ']')) 
-	(sepBy1 parseId (skip (char ','))) <?> "[<id>,...,<id>]"
-
-placeToken = makeToken scanPlace
-
--- several tokens between places are not allowed
--- the last token may have a compound list (for the whole mixfix id) 
-
-mixId l = do {  b <- many placeToken <?> "id"
-	     ;  (if isBalanced l then
-		 ((lookAhead ( char ']') <?> "") >> return (l ++ b))
-		else fail "")
-                <|> continue (l ++ b)
-	     }
-
-continue l = do { t <- bracketToken
-		; let s = l ++ [t] in
-	              (do { p <- many1 placeToken
-			  ; option (s ++ p) (mixId (s ++ p))
-			  })
-	              <|> return s
-		}
-
-compEnd p = do { c <- comps
-	       ; l <- many placeToken
-	       ; return (Id (p ++ l) c)
-	       }
-
-parseId = do { l <- mixId [];
-	       if isBalanced l then
-	       if null l then unexpected "empty id"
-	       else if isPlace (last l) then
-	               if all isPlace l then unexpected "places only"
-	               else return (Id l [])
-	             else option (Id l []) (compEnd l)
-	       else unexpected ("unbalanced brackets id: " ++ (show (Id l [])))
-	     }
-
-
-		
-
-
-
-
 

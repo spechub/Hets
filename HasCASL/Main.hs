@@ -1,6 +1,6 @@
 module Main where
 
-import Lexer
+import Token
 import BasicItem
 import LocalEnv
 import Parsec

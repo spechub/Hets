@@ -2,6 +2,7 @@ module BasicItem where
 
 import Id
 import Lexer
+import Token
 import Type
 import Term
 import LocalEnv
