@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-choose one (or more) minimal or maximal typings
+choose a minimal type
 
 -}
 
@@ -21,21 +21,16 @@ import HasCASL.TypeAna
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
 
-typeNub :: Bool -> TypeMap -> (a -> (Type, Term)) -> [a] -> [a]
-typeNub b tm f l = 
+typeNub :: TypeMap -> (a -> (Type, Term)) -> [a] -> [a]
+typeNub tm f l = 
   case l of 
        [] -> []
        x : xs -> (if any ( \ y -> comp (f x) (f y)) xs then [] else [x]) 
-                     ++ typeNub b tm f xs
+                     ++ typeNub tm f xs
   where
   comp :: (Type, Term) -> (Type, Term) -> Bool
   comp (ty1, t1) (ty2, t2) = 
-    if eqTerm t1 t2 then let r = lesserType tm ty2 ty1 in
-       if lesserType tm ty1 ty2 then
-          if r then True
-          else not b 
-       else if r then b
-            else False
+    if eqTerm t1 t2 then lesserType tm ty2 ty1
     else False
 
 eqTerm :: Term -> Term -> Bool
