@@ -63,6 +63,11 @@ instance PrintLaTeX SPEC where
 					  sp_braces_latex2 mkw ga aa)
 	where mkw = 
 		  mkMaybeKeywordTuple Nothing $ hc_sty_plain_keyword "free"
+    printLatex0 ga (Cofree_spec aa _) =
+	tabbed_nest_latex (condBracesGroupSpec printLatex0 
+					  sp_braces_latex2 mkw ga aa)
+	where mkw = 
+		  mkMaybeKeywordTuple Nothing $ hc_sty_plain_keyword "cofree"
     printLatex0 ga (Local_spec aa ab _) =
 	let aa' = sp_braces_latex2 $ set_tabbed_nest_latex $ 
 	          (cond_space<> printLatex0 ga aa)
