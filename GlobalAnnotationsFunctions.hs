@@ -15,7 +15,8 @@
 
 module GlobalAnnotationsFunctions 
     ( emptyGlobalAnnos, addGlobalAnnos
-    , precRel, isLAssoc, isRAssoc, isLiteral, getLiteralType
+    , precRel, isLAssoc, isRAssoc, isAssoc, isLiteral, getLiteralType
+    , store_prec_annos, store_assoc_annos
     ) 
     where
 
