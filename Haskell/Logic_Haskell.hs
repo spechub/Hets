@@ -17,8 +17,6 @@
 module Haskell.Logic_Haskell (Haskell(..), empty_signature) where
 
 import CASL.AS_Basic_CASL       (SYMB_ITEMS, SYMB_MAP_ITEMS)
--- import CASL.ATC_CASL
--- import CASL.Print_AS_Basic
 import CASL.SymbolParser        (symbItems, symbMapItems)
 import Logic.ParsecInterface    (toParseFun)
 import Logic.Logic              (Language,
@@ -102,6 +100,35 @@ type RawSymbol = ()
 
 instance Sentences Haskell Sentence () Sign Morphism Symbol
 
+preludeSign :: ModuleInfo
+preludeSign = ModuleInfo {
+               moduleName = AModule "Prelude",
+               varAssumps = (listToEnv $ map assumpToPair preludeDefs),
+               tyconsMembers = tyconsMembersHaskellPrelude, 
+               dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
+               classHierarchy = listToEnv preludeClasses,
+               kinds = (listToEnv preludeTyconAndClassKinds),
+               infixDecls = preludeInfixDecls,
+               synonyms = preludeSynonyms
+              }
+
+
+
+{-   basic_analysis :: lid ->
+                       Maybe((basic_spec,       -- abstract syntax tree
+                              sign,             -- signature of imported modules
+                              GlobalAnnos) ->   -- global annotations
+                       Result (basic_spec,      -- renamed module
+                               sign,sign,       -- (total, delta)
+                                  -- delta = deklarations in the modul
+                                  -- total = imported + delta 
+                               [Named sentence] -- programdefinitions))
+
+  basic_analysis calculates from the abstract syntax tree the types of
+  all functions and tests wether all used identifiers are declared
+
+-}
+
 instance StaticAnalysis Haskell HsDecls
                Sentence () 
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -117,10 +144,10 @@ instance StaticAnalysis Haskell HsDecls
   			let basicMod = HsModule (Module "Anonymous") Nothing [] basicSpec
 
           -- re-group matches into their associated funbinds (patch up the output from the parser)
-                            moduleSyntaxFixedFunBinds = fixFunBindsInModule basicMod;
+                            moduleSyntaxFixedFunBinds = fixFunBindsInModule basicMod
 
           -- map the abstract syntax into the annotated abstract syntax
-  			    annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds;
+  			    annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds
 
   		            (moduleEnv,
    			     dataConEnv,
@@ -139,7 +166,8 @@ instance StaticAnalysis Haskell HsDecls
     						  synonyms = moduleSynonyms }
                         in
 			    Result {diags = [],
-				    maybeResult = Just (basicSpec, modInfo, (joinModuleInfo sig modInfo), 
+				    maybeResult = Just(basicSpec, modInfo, 
+                                                       (joinModuleInfo sig modInfo), 
                                                        (extractSentences annotatedSyntax)) }
 
 instance Logic Haskell Haskell_Sublogics
