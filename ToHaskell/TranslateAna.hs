@@ -55,7 +55,7 @@ translateData (tid,info) =
 		    [] -- [HsQName]  (für deriving) woher?
 	 )]
     Supertype _ _ _ -> [] -- Was wird daraus in Haskell? -> ignorieren
-    DatatypeDefn _ altDefns -> 
+    DatatypeDefn _ _ altDefns -> 
 	[(HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
 	            (HsIdent (translateIdWithType UpperId tid))
@@ -68,12 +68,12 @@ translateData (tid,info) =
 -- Achtung: falsche Positionsangabe
 
 translateAltDefn :: AltDefn -> HsConDecl
-translateAltDefn (Construct uid ts _sel) = 
+translateAltDefn (Construct uid ts _ _sel) = 
     HsConDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	      (HsIdent (translateIdWithType UpperId uid))
 	      (getArgTypes ts)
 
-getArgTypes :: TypeScheme -> [HsBangType]
+getArgTypes :: [Type] -> [HsBangType]
 getArgTypes _ts = []
 
 -------------------------------------------------------------------------
