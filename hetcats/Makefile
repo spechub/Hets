@@ -63,18 +63,21 @@ hetcats-make: hetcats.hs ../utils/create_sources.pl $(drifted_files)
          $(PERL) ../utils/create_sources.pl hetcats-make sources_hetcats.mk
 ###############
 ### clean up
-.PHONY : clean d_clean real_clean
+.PHONY : clean d_clean real_clean bin_clean
 
 ### removes *.hi and *.o in all include directories and the binary 'hetcats'
 clean:
-	rm -f hetcats
-	rm -f capa
-	rm -f hacapa
 	THIS_DIR=`pwd`;\
          for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
          cd $$p ; rm -f *.hi *.o ; cd $$THIS_DIR;\
          done; \
          unset p THIS_DIR
+
+### additionally removes binarys
+bin_clean: clean
+	rm -f hetcats
+	rm -f capa
+	rm -f hacapa
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
