@@ -23,7 +23,7 @@ Portability  : non-portable
        the ProcessID
        .. done
      - english sentences in the output need corrections
-       .. ???
+       .. done
      - when the HTML-PrettyPrinting is available: generated HTML-Code 
        instead of poorly rendered ASCII has to be inserted as response
        .. ???
@@ -43,6 +43,7 @@ import Maybe
 import Random
 import IO
 import Time
+import System.Cmd
 import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
@@ -97,14 +98,11 @@ handle (F5 input box1 box2 box3 box4) =
     in  do
 	random <- io $ getRandom
 	processID <- io $ getProcessID
-	let outputfileTEX = "/home/www/cofi/hets-tmp/result" ++ (show processID) ++
-			    (show random) ++ ".pp.tex"
-	    outputfileASC = "/home/www/cofi/hets-tmp/result" ++ (show processID) ++
-			    (show random) ++ ".txt"
-	res <- io $ anaInput str (tree, env, tex) (outputfileASC, outputfileTEX)
+	let outputfile = "/home/www/cofi/hets-tmp/result" ++ (show processID) ++
+			    (show random)
+	res <- io $ anaInput str (tree, env, tex) outputfile
 	ask $ html ( do CGI.head (title $ text "HETS results")
-			CGI.body $ printR str res (tree, env, tex) 
-	                   	     (outputfileASC, outputfileTEX))
+			CGI.body $ printR str res (tree, env, tex) outputfile)
 	io $ saveLog achiv str
     where
       -- log file
@@ -137,18 +135,18 @@ handle (F5 input box1 box2 box3 box4) =
 		     return $ fileSize fstatus
 
 -- Analyze the input
-anaInput :: String -> (Bool,Bool,Bool) -> (FilePath, FilePath) -> IO([(String, String)])
-anaInput contents showS outputfileS =
+anaInput :: String -> (Bool,Bool,Bool) -> FilePath -> IO([(String, String)])
+anaInput contents showS outputfiles =
    do 
       res  <- anaString logicGraph defaultLogic defaultHetcatsOpts{outputToStdout = False} emptyLibEnv contents Nothing
-      anaInput_aux res outputfileS showS 
+      anaInput_aux res outputfiles showS 
 
    where 		
       anaInput_aux :: Maybe(LIB_NAME, LIB_DEFN, DGraph, LibEnv) 
-		      -> (FilePath, FilePath)
+		      -> FilePath
                       -> (Bool, Bool, Bool) 
 		      -> IO([(String, String)])
-      anaInput_aux res (outputfileASC, outputfileTEX) (showTree, showEnv, showTex) =
+      anaInput_aux res outputfiles (showTree, showEnv, showTex) =
 	  case res of 
 	    Just (libName, libDefn, _, libEnv) ->
 	      do 
@@ -159,13 +157,28 @@ anaInput contents showS outputfileS =
 		 resTex <- write_casl_latex_stdout defaultHetcatsOpts globalAnnos libDefn
 		 if showTex then
 		    do
-                    write_casl_latex defaultHetcatsOpts globalAnnos outputfileTEX libDefn
-		    setFileMode outputfileTEX fileMode
+		    let pptexFile = outputfiles ++ ".pp.tex"
+			latexFile = outputfiles ++ ".tex"
+			pdfFile   = outputfiles ++ ".pdf"
+			tmpFile   = outputfiles ++ ".tmp"
+		    write_casl_latex defaultHetcatsOpts globalAnnos (pptexFile) libDefn
+		    rawSystem "cp" ["/home/www/cofi/hets-tmp/mould.m", latexFile]
+		    setFileMode pptexFile fileMode
+		    setFileMode latexFile fileMode
+		    appendFile latexFile ("\\input{"++ pptexFile ++"}\n" ++ "\\end{document}\n")
+                    
+                    system ("/usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex " ++
+			   latexFile ++ " > " ++ tmpFile)
+                    system "mv result* /home/www/cofi/hets-tmp/"
+		    setFileMode pdfFile fileMode
+		    return()
+			       
 		    else return()
 		 if showEnv then
 		    do
-		    write_casl_asc defaultHetcatsOpts globalAnnos outputfileASC libDefn
-		    setFileMode outputfileASC fileMode
+		    let txtFile = outputfiles ++ ".txt"
+		    write_casl_asc defaultHetcatsOpts globalAnnos txtFile libDefn
+		    setFileMode txtFile fileMode
 		    else return()
 	         return $ selectOut [showTree, showEnv, showTex] libDefn resAsc resTex
 	    Nothing -> return ([])
@@ -182,7 +195,7 @@ anaInput contents showS outputfileS =
 		| otherwise = selectOut rb libDefn ra rt
 
 -- Print the result		    
-printR :: String -> [(String, String)] -> (Bool, Bool, Bool) -> (FilePath, FilePath) 
+printR :: String -> [(String, String)] -> (Bool, Bool, Bool) -> FilePath 
           -> WithHTML x CGI ()
 printR str result selectedBoxes outputFiles =
     do 
@@ -202,37 +215,33 @@ printR str result selectedBoxes outputFiles =
 		      text "cofi@informatik.uni-bremen.de"
 	   )
     where 
-        printRes :: (Bool, Bool, Bool) -> (FilePath, FilePath) -> 
+        printRes :: (Bool, Bool, Bool) -> FilePath -> 
 		    [(String, String)] -> WithHTML x CGI ()
 	printRes _ _ [] = CGI.empty
-	printRes (isTree, isEnv, isTex) (outputfileASC, outputfileTEX) 
+	printRes (isTree, isEnv, isTex) outputfiles 
 		     ((title_ana, text_ana):rR) =
           do h3 $ text title_ana
        	     p $ mapM_ (\l -> text l >> br CGI.empty) $ lines text_ana
 	     if isTree then
-		printRes (False, isEnv, isTex) (outputfileASC, outputfileTEX) rR
+		printRes (False, isEnv, isTex) outputfiles rR
 		else if isEnv then
 		        do  
 			p $ i(do text "You can here the " 
 			         hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
-					      (drop 24 outputfileASC))) $ text "ACSII file" 
+					      (drop 24 (outputfiles++".txt")))) $ text "ACSII file" 
 			         text " download. The file will be deleted after 30 minutes.\n" 
 			      )
-			printRes (isTree, False, isTex) (outputfileASC, outputfileTEX) rR
+			printRes (isTree, False, isTex) outputfiles rR
 			else if isTex then
 			        do
 				p $ i(do  text "You can here the " 
 				          hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
-						       (drop 24 outputfileTEX))) $ text "LaTeX file" 
+						       (drop 24 (outputfiles++".pdf")))) $ text "PDF file" 
 				          text " download. The file will be deleted after 30 minutes.\n" 
 				     )
 				p $ i( do  text "For compiling the LaTeX output, you need " 
 				           hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
 				           text "."
 				     )
-				printRes (isTree, isEnv, False) (outputfileASC, outputfileTEX) rR
-				else printRes (isTree, isEnv, isTex) (outputfileASC, outputfileTEX) rR
-
-
-
-
+				printRes (isTree, isEnv, False) outputfiles rR
+				else printRes (isTree, isEnv, isTex) outputfiles rR
