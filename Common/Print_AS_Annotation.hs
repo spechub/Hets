@@ -45,7 +45,7 @@ instance PrettyPrint Annotation where
 	let aa' = printText0 ga aa
 	    ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
 	in printGroup (ptext "display") $ aa' <+> ab'
-	   where printPair (s1,s2) = ptext (showDF s1) <+> ptext s2
+	   where printPair (s1,s2) = ptext ("%" ++ showDF s1) <+> ptext s2
 		 nullSnd (_,s2) = not $ null s2
     printText0 ga (String_anno aa ab _) =
 	let aa' = printText0 ga aa
@@ -119,7 +119,7 @@ instance PrettyPrint Annotation where
 	let aa' = printSmallId_latex ga aa
 	    ab' = fsep_latex $ map printPair $ filter nullSnd ab
 	in printLatexGroup "display" $ aa' <\\+> ab'
-	   where printPair (s1,s2) = la (showDF s1) <\\+> la s2
+	   where printPair (s1,s2) = la ("\\%" ++ showDF s1) <\\+> la s2
 		 la = casl_annotation_latex . escape_latex  
 		 nullSnd (_,s2) = not $ null s2
     printLatex0 ga (String_anno aa ab _) =
