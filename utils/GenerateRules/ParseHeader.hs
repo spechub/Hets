@@ -3,32 +3,67 @@ module ParseHeader where
 import Parsec
 
 type Data   = String
+type Exclude = String
 
-header :: Parser [Data]
-header = instances []
-            
-instances :: [Data] -> Parser [Data]
-instances ds = do try comment
-                  instances ds
-               <|>
-               do d <- try instances'
-                  instances (d:ds) 
-               <|> 
-               do try anyToken
-                  instances ds
-               <|>
-               do eof
-                  return ds
+header :: Parser [Exclude]
+header = do (d,e) <- instances [] []
+            return (d ++ e)
+
+instances :: [Data] -> [Exclude] -> Parser ([Data],[Exclude])
+instances ds ex = do ex' <- try excludeRule
+                     instances ds (ex':ex) 
+		  <|>
+                  do try comment
+                     instances ds ex
+                  <|>
+                  do d <- try instances'
+                     instances (d:ds) ex 
+                  <|> 
+                  do try anyToken
+                     instances ds ex
+                  <|>
+                  do eof
+                     return (ds,ex)
+
+excludeRule :: Parser Exclude
+excludeRule = do string "{-|"
+                 spaces
+                 string "Exclude:"
+                 spaces
+                 i <- identifier
+                 spaces
+	         string "|-}"
+                 return i
 
 instances' :: Parser Data
 instances' = do string "instance"
                 spaces
+                (try constraints) <|> spaces
+                spaces 
                 identifier
 		spaces
-		d <- identifier
+		dataConstructor
+
+
+constraints :: Parser ()
+constraints = do try (between (char '(')  (char ')') (sepBy1 constraint (char ','))) <|> sepBy1 constraint (char ',') 
+                 spaces
+                 string "=>"
+		 spaces
+                 return ()  
+
+constraint :: Parser () 
+constraint = do spaces
+	        identifier
                 spaces 
-                string "where"
-                return d
+                many1 lower 
+		spaces
+
+dataConstructor:: Parser String
+dataConstructor = (try identifier) <|> do char '('
+                                          identifier
+                                   
+           
 
 identifier :: Parser String
 identifier = do x <- upper

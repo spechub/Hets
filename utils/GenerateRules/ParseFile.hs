@@ -34,11 +34,11 @@ modulename :: Parser Import
 modulename = do string "module"
                 spaces
                 m <- identifier
-                spaces
+		manyTill anyChar (try (string "where"))
                 return m
 
 dataType :: Parser Data
-dataType = do string "data"
+dataType = do try (string "data") <|> (string "newtype")
 	      spaces
               d <- identifier
               many (noneOf "=") 
