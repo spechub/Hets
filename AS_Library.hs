@@ -18,36 +18,48 @@ import AS_Structured
 import Grothendieck
 
 
-data LIB_DEFN = Lib_defn LIB_NAME [LIB_ITEM] [Pos]
+data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
+	        -- pos: "library"
+	        -- list of annotations is parsed preceding the first LIB_ITEM
+	        -- the last LIB_ITEM may be annotated with a following comment
+	        -- the first LIB_ITEM cannot be annotated
 		deriving (Show,Eq)
 
-data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos] 
+{- for information on the list of Pos see the documentation in
+   AS_Structured.hs and AS_Architecture.hs -}
 
+data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) [Pos]
+	      
 	      | View_defn VIEW_NAME GENERICITY VIEW_TYPE 
-		          G_symb_map_items_list [Pos] 
+		          G_symb_map_items_list [Pos]
 
 	      | Arch_spec_defn ARCH_SPEC_NAME (Annoted ARCH_SPEC) [Pos]
 
 	      | Unit_spec_defn SPEC_NAME UNIT_SPEC [Pos]
 
 	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
+		-- pos: "from","get",commas, opt "end"
 		deriving (Show,Eq)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
 		      | Item_name_map ITEM_NAME ITEM_NAME [Pos]
+			-- pos: "|->"
 			deriving (Show,Eq)
 
 type ITEM_NAME = SIMPLE_ID
 
-data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER [Pos]
-	      | Lib_id LIB_ID [Pos]
+data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER
+	      | Lib_id LIB_ID
 		deriving (Show,Eq)
 
 data LIB_ID = Direct_link URL [Pos]
+	      -- pos: start of URL
 	    | Indirect_link PATH [Pos]
+	      -- pos: start of PATH
 	      deriving (Show,Eq)
 
-data VERSION_NUMBER = Version_number [Int] [Pos] 
+data VERSION_NUMBER = Version_number [String] [Pos]
+		      -- pos: "version", start of first string
 		      deriving (Show,Eq) 
 
 type URL = String
