@@ -1,4 +1,5 @@
--- $Id$
+-- |
+-- > $Id$
 
 module Latin ( toASCII, fromASCII ) where
 
