@@ -15,7 +15,7 @@ Portability :  non-portable(Logic)
 
 -}
 
-module Haskell.Logic_Haskell (Haskell(..), empty_signature, preludeSign) where
+module Haskell.Logic_Haskell (Haskell(..)) where
 
 import Data.Dynamic            
 
@@ -26,32 +26,11 @@ import Haskell.ATC_Haskell      -- generated ATerm conversions
 import Haskell.PrintModuleInfo
 import Haskell.HatParser                 (HsDecls,
                                           hatParser)
-import Haskell.HaskellUtils              (extractSentences)
-import Haskell.ExtHaskellCvrt            (cvrtHsModule)
-
-import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
-                                          joinModuleInfo,
-                                          getTyconsMembers,
-                                          getInfixDecls)
-import Haskell.Hatchet.TIHetsModule          (tiModule)
-import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl (..),
-                                          AModule (..))
-import Haskell.Hatchet.Env               (listToEnv,
-                                          emptyEnv)
-import Haskell.Hatchet.HaskellPrelude    (preludeDefs,
-                                          tyconsMembersHaskellPrelude,
-                                          preludeDataCons,
-                                          preludeClasses,
-                                          preludeTyconAndClassKinds,
-                                          preludeInfixDecls,
-                                          preludeSynonyms)
-import Haskell.Hatchet.SynConvert        (toAHsModule)
-import Haskell.Hatchet.Utils             (getAModuleName)
-import Haskell.Hatchet.HsParsePostProcess (fixFunBindsInModule)
-import Haskell.Hatchet.HsSyn             (HsModule (..), HsDecl,
-                                          Module (..))
+import Haskell.HatAna
+import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
+                                          joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
-import Haskell.Hatchet.Type              (assumpToPair)
+import Haskell.Hatchet.HsSyn    (HsDecl)
 
 import Logic.Logic             
 
@@ -110,17 +89,6 @@ type RawSymbol = ()
 instance Sentences Haskell Sentence () Sign Morphism Symbol where
     map_sen Haskell _m s = return s
 
-preludeSign :: ModuleInfo
-preludeSign = ModuleInfo {
-               moduleName = AModule "Prelude",
-               varAssumps = (listToEnv $ map assumpToPair preludeDefs),
-               tyconsMembers = tyconsMembersHaskellPrelude, 
-               dconsAssumps = (listToEnv $ map assumpToPair preludeDataCons),
-               classHierarchy = listToEnv preludeClasses,
-               kinds = (listToEnv preludeTyconAndClassKinds),
-               infixDecls = preludeInfixDecls,
-               synonyms = preludeSynonyms
-              }
 
 instance StaticAnalysis Haskell HsDecls
                Sentence () 
@@ -132,50 +100,15 @@ instance StaticAnalysis Haskell HsDecls
 
   where
     empty_signature Haskell 
-       = ModuleInfo { varAssumps = emptyEnv,
-                      moduleName = AModule "EmptyModule",
-		                -- error "Unspecified module name",
-                      dconsAssumps = emptyEnv,
-                      classHierarchy = emptyEnv,
-                      tyconsMembers = [], 
-                      kinds = emptyEnv,
-                      infixDecls = [],
-                      synonyms = [] }
+       = emptySign
     signature_union Haskell sig1 sig2 = return (joinModuleInfo sig1 sig2)
     inclusion Haskell _ _ = return ()
     basic_analysis Haskell = Just(basicAnalysis)
       where basicAnalysis (basicSpec, sig, _) = 	            
-             let basicMod = cvrtHsModule (HsModule (Module "Anonymous") 
-                                                   Nothing [] basicSpec)
-
-          -- re-group matches into their associated funbinds 
-          -- (patch up the output from the parser)
-                 moduleSyntaxFixedFunBinds = fixFunBindsInModule basicMod
-
-          -- map the abstract syntax into the annotated abstract syntax
-  		 annotatedSyntax = toAHsModule moduleSyntaxFixedFunBinds
-
-                 (moduleEnv,
-   		  dataConEnv,
-   		  newClassHierarchy,
-   		  newKindInfoTable,
-   		  _moduleIds,
-   		  moduleRenamed,
-   		  moduleSynonyms) = tiModule [] annotatedSyntax sig
-  		 modInfo = ModuleInfo {
-                            varAssumps = moduleEnv, 
-    		            moduleName = getAModuleName annotatedSyntax,
-    			    dconsAssumps = dataConEnv, 
-    			    classHierarchy = newClassHierarchy,
-    			    kinds = newKindInfoTable,
-    			    tyconsMembers = getTyconsMembers moduleRenamed,
-    			    infixDecls = getInfixDecls moduleRenamed,
-    			    synonyms = moduleSynonyms }
-             in
-	        Result {diags = [],
-		        maybeResult = Just(basicSpec, modInfo, 
-                        (joinModuleInfo sig modInfo), 
-                        (extractSentences annotatedSyntax)) }
+             let (modInfo, sens) = hatAna basicSpec sig
+             in Result [] $ Just (basicSpec, modInfo, 
+				  -- should be the difference
+				  modInfo, sens)
 
 instance Logic Haskell Haskell_Sublogics
                HsDecls Sentence SYMB_ITEMS SYMB_MAP_ITEMS
