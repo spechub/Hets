@@ -229,10 +229,9 @@ module Pretty (
 				-- -> a
   ) where
 
-infixl 7 <> 
+infixl 6 <> 
 infixl 6 <+>
-infixl 5 $$
-infixl 4 $+$
+infixl 5 $$, $+$
 \end{code}
 
 *********************************************************
