@@ -50,13 +50,16 @@ data M_FORMULA =
                -- pos: "<>"
              deriving (Eq, Ord, Show)
 
-modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS :: String 
+modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS, diamondS, greaterS 
+    :: String 
 modalityS = "modality"
 modalitiesS = init modalityS ++ "ies"
 flexibleS = "flexible"
 rigidS = "rigid"
 termS = "term"
 emptyS = "empty" 
+diamondS = "<>"
+greaterS = ">"
 
 modal_reserved_words :: [String]
-modal_reserved_words = termS:rigidS:flexibleS:modalityS:[modalitiesS]
+modal_reserved_words = diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]

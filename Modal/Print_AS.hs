@@ -43,9 +43,13 @@ instance PrettyPrint M_SIG_ITEM where
 
 instance PrettyPrint M_FORMULA where
     printText0 ga (Box t f _) = 
-       ptext "[" <> printText0 ga t <> ptext"]" <+> printText0 ga f
+       brackets (printText0 ga t) <> printText0 ga f
     printText0 ga (Diamond t f _) = 
-       ptext "<" <> printText0 ga t <> ptext">" <+> printText0 ga f
+	let sp = case t of 
+			 Simple_mod _ -> (<>)
+			 _ -> (<+>)
+	    in ptext lessS `sp` printText0 ga t `sp` ptext greaterS 
+		   <+> printText0 ga f
 
 instance PrettyPrint MODALITY where
     printText0 ga (Simple_mod ident) = 
