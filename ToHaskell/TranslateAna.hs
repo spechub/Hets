@@ -37,6 +37,7 @@ import qualified Common.Lib.Map as Map hiding (map)
 import Common.Token
 import Common.AnnoState
 import Common.PPUtils
+import Common.Named
 import Data.Char
 import Data.List
 import ToHaskell.TranslateId
@@ -62,7 +63,7 @@ functionUndef s =
 -- Funktion zum Aufruf des Parsers fuer ID's
 -------------------------------------------------------------------------
 
--- | Function for the test of the translation if identifiers.
+-- | Function for the test of the translation of identifiers.
 idToHaskell :: AParser WrapString
 idToHaskell = fmap (WrapString . translateId) parseId 
 
@@ -84,7 +85,9 @@ translateAna env =
 	                    Nothing 
 		            (Just (False, [HsIVar (HsIdent "undefined")])))]
              ((translateTypeMap (typeMap env)) ++ 
-             (translateAssumps (assumps env) (typeMap env)))   -- [HsDecl]
+             (translateAssumps (assumps env) (typeMap env)) ++
+	     (concatMap (translateSentences (assumps env) (typeMap env)) 
+	          (sentences env)))                      -- [HsDecl]
 -- Achtung: env enthält noch andere zu übersetzende Argumente 
 -- (z.B. classMap, sentences) !!
 
@@ -102,21 +105,24 @@ translateTypeMap m = concat $ map translateData (Map.assocs m)
 translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
+      len = length $ superTypes info
   in case (typeDefn info) of
        NoTypeDefn ->  -- z.B. bei sorts
-          [(HsDataDecl nullLoc
+         if len == 0 || (len == 1 && isSameId tid (head $ superTypes info))then
+           [(HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
 		       [] -- [HsName] no type arguments
 		       [(HsConDecl nullLoc hsname [])]
 		       [] -- [HsQName]  (für deriving) woher?
-	   )]
-       Supertype vars ty _form -> --evtl so noch nicht richtig
-	   [(HsTypeDecl nullLoc
-                        hsname
-                        (getVars vars)
-	                (translateType ty)
-	   )]
+	    )]
+	 else (map (typeSynonym hsname)(superTypes info))
+       Supertype _vars _ty _form ->[] --evtl so noch nicht richtig
+	   --[(HsTypeDecl nullLoc
+           --             hsname
+           --             (getVars vars)
+	   --             (translateType ty)
+	   --)]
        --Vars: eine var (= Id) oder Liste von Vars
        DatatypeDefn _ typeargs altDefns -> 
  	  [(HsDataDecl nullLoc
@@ -134,9 +140,17 @@ translateData (tid,info) =
 	   )]
        TypeVarDefn -> [] -- werden in Haskell ignoriert
 
-getVars :: Vars -> [HsName]
-getVars (Var var) = [HsIdent (translateIdWithType LowerId var)]
-getVars (VarTuple varlist _) = concatMap getVars varlist
+isSameId :: TypeId -> Type -> Bool
+isSameId tid (TypeName tid2 _ _) = tid == tid2
+isSameId _tid _ty = False
+
+typeSynonym :: HsName -> Type -> HsDecl
+typeSynonym hsname ty = 
+  HsTypeDecl nullLoc hsname [] (translateType ty)
+
+--getVars :: Vars -> [HsName]
+--getVars (Var var) = [HsIdent (translateIdWithType LowerId var)]
+--getVars (VarTuple varlist _) = concatMap getVars varlist
 
 translateAltDefn :: AltDefn -> HsConDecl
 translateAltDefn (Construct uid ts _ []) = 
@@ -187,7 +201,6 @@ translateAssumps as tm =
   let distList =  distinctOpIds $ Map.toList as
       distAs = Map.fromList distList
   in  concat $ map (translateAssump distAs tm) $ distList
-      --error ("List: " ++ show distList ++ "\n Map: " ++ show distAs)
 
 -- | Converts one distinct named function in HasCASL to the corresponding
 -- haskell declaration.
@@ -205,7 +218,6 @@ translateAssump as tm (i, opinf) =
     SelectData _ _ -> []   -- sind implizit durch Datentypdefinition gegeben
     Definition term -> 
       (translateFunDef as tm i (opType $ head $ opInfos opinf) term)
-                        -- zu HsFunBind übersetzen!! 
     VarDefn -> []
 
 translateTypeScheme :: TypeScheme -> HsQualType
@@ -254,77 +266,79 @@ getPattern :: Term -> [HsPat]
 getPattern _t = []
 
 getRhs :: Assumps -> TypeMap -> Term -> HsRhs
-getRhs as tm t = HsUnGuardedRhs (translateTerm as tm t) 
+getRhs as tm t = HsUnGuardedRhs (translateTerm as tm Nothing t) 
 
 
 -- |Converts a term in HasCASL to an expression in haskell
-translateTerm :: Assumps -> TypeMap -> Term -> HsExp --HsFunBind
-translateTerm as tm t = 
+translateTerm :: Assumps -> TypeMap -> Maybe IdCase-> Term -> HsExp
+translateTerm as tm idc t = 
   let err = error ("Unexpected term: " ++ show t) in
   case t of
-    --CondTerm _t1 _form _t2 _pos -> 
-	--error ("CondTerm not yet translated" ++ show t)
-    --HsIf HsExp HsExp HsExp, wie passt das zusammen?
-
     QualVar v ty _pos ->
-        (HsExpTypeSig 
-          nullLoc 
-          (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
-          (HsQualType [] $ translateType ty))
+        HsParen (HsExpTypeSig 
+		 nullLoc 
+		 (HsVar (UnQual (HsIdent (translateIdWithType LowerId v))))
+		 (HsQualType [] $ translateType ty))
       
     -- zur id der opid muss der evtl. umbenannte eindeutige Name gefunden 
     -- werden; hierzu muss ts mit den TypeSchemes aus Assumps auf 
     -- Unifizierbarkeit geprueft werden; 
     -- hierzu benoetigt man die Assumps und die TypeMap;
-    QualOp (InstOpId uid types _) ts _pos -> 
+    QualOp (InstOpId uid _types _) ts _pos -> 
     -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen 
     -- vergleichen, bei passendem TypeScheme die id (also den Schluessel) 
     -- als HsVar verwenden
       let oid = findUniqueId uid ts tm as 
       in case oid of
-            Just i ->
-		(HsVar (UnQual (HsIdent (translateIdWithType LowerId i))))
-	    _ -> error("problem with finding opid: " ++ show uid ++ "\n" 
-                     ++ show ts ++ "\n" ++ show types)
+        Just i ->
+	  --hier wird manchmal UpperId und manchmal LowerId benötigt??
+	  case idc of
+	    Just c ->
+	      (HsVar (UnQual (HsIdent (translateIdWithType c i))))
+	    _ -> 
+	      (HsVar (UnQual (HsIdent (translateIdWithType LowerId i))))
+        _ -> error("Problem with finding opid for term: " ++ show t)
 
     ApplTerm t1 t2 _pos ->
-	HsApp(translateTerm as tm t1)(translateTerm as tm t2)
-    TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
+	HsApp(translateTerm as tm idc t1)(translateTerm as tm idc t2)
+    TupleTerm ts _pos -> HsTuple (map (translateTerm as tm idc) ts)
     TypedTerm t1 tqual ty _pos ->
       let res = (HsExpTypeSig nullLoc 
-	                    (translateTerm as tm t1)
+	                    (translateTerm as tm idc t1)
                             (HsQualType [] $ translateType ty)) in
       case tqual of 
-        OfType -> res
+        OfType -> HsParen res
         --AsType -> (HsFunBind [HsMatch nullLoc (HsIdent "unsafeCoerce") ....
         --hier können nur HsExp berechnet werden,evtl. muss an einer "höheren"
         --Stelle der Funktionsaufruf der Cast-funktion gebastelt werden;
         --bei AsType könnte t1::ty reichen, da Subtypen als Typsynonyme
         --übersetzt werden
-        AsType -> res
+        AsType -> HsParen res
         InType -> error ("Translation of \"InType\" not possible: " ++ show t)
 
-    QuantifiedTerm _quant _vars _t1 _pos -> -- forall ... ?
+    QuantifiedTerm _quant _vars _t1 _pos -> -- forall ...
         error ("Translation of QuantifiedTerm not possible" ++ show t)
     LambdaTerm pats _part t1 _pos -> 
         HsLambda nullLoc
-                 (map (translatePattern tm as) pats)
-	         (translateTerm as tm t1)
+                 (map (translatePattern as tm (Just LowerId)) pats)
+	         (translateTerm as tm idc t1)
 
     CaseTerm t1 progeqs _pos -> 
-        HsCase (translateTerm as tm t1) (translateCaseProgEqs progeqs)
+        HsCase (translateTerm as tm (Just LowerId) t1)
+	       (map(translateCaseProgEq as tm)progeqs)
 
     LetTerm progeqs t1 _pos -> 
-        HsLet (translateProgEqs progeqs) (translateTerm as tm t1)
+        HsLet (map (translateLetProgEq as tm) progeqs)
+	      (translateTerm as tm (Just UpperId) t1)
 
     TermToken _ttok -> err
     MixfixTerm _ts -> err
     BracketTerm _ _ _ -> err
 
---Uebersetzung der Liste von Pattern aus HasCASL-Lambdaterm
+--Uebersetzung von Pattern
 -- | Conversion of patterns form HasCASL to haskell.
-translatePattern :: TypeMap -> Assumps -> Pattern -> HsPat
-translatePattern tm as pat = 
+translatePattern :: Assumps -> TypeMap -> Maybe IdCase -> Pattern -> HsPat
+translatePattern as tm idc pat = 
   let err = error ("unexpected pattern: " ++ show pat) in
     case pat of
       PatternVar (VarDecl v _ty _sepki _pos) 
@@ -333,26 +347,45 @@ translatePattern tm as pat =
       PatternConstr (InstOpId uid _t _p) ts pats _pos -> 
         let oid = findUniqueId uid ts tm as
 	in case oid of
-	     Just i -> 
-		 HsPApp (UnQual $ HsIdent $ translateIdWithType LowerId i)
-	                (map (translatePattern tm as) pats)
-	     _ -> error ("Proplem with finding of unique id" ++ show pat)
+	  Just i ->
+	    --hier wird manchmal UpperId und manchmal LowerId benötigt??
+	    case idc of
+	      Just c ->
+		 HsPApp (UnQual $ HsIdent $ translateIdWithType c i)
+	                (map (translatePattern as tm idc) pats)
+	      _ ->
+		 HsPApp (UnQual $ HsIdent $ translateIdWithType UpperId i)
+	                (map (translatePattern as tm  idc) pats)
+	  _ -> error ("Proplem with finding of unique id" ++ show pat)
       PatternToken _ -> err
       BracketPattern _ _ _ -> err
-      TuplePattern pats _pos -> HsPTuple $ map (translatePattern tm as) pats
+      TuplePattern pats _pos -> HsPTuple $ map (translatePattern as tm idc) pats
       MixfixPattern _ -> err
-      TypedPattern p _ty _pos -> translatePattern tm as p --Typ evtl implizit
+      TypedPattern p _ty _pos -> translatePattern as tm idc p --Typ implizit
       --AsPattern pattern pattern pos -> HsPAsPat name pattern ??
       AsPattern _p1 _p2 _pos -> error "AsPattern nyi"
 
--- Uebersetzung der ProgEqs fuer einen HasCASL-Caseterm
-translateCaseProgEqs :: [ProgEq] -> [HsAlt]
-translateCaseProgEqs _progeqs = []
+-- Uebersetzung der ProgEq fuer einen HasCASL-Caseterm
+translateCaseProgEq :: Assumps -> TypeMap -> ProgEq -> HsAlt
+translateCaseProgEq as tm (ProgEq pat t _pos) = 
+  HsAlt nullLoc
+	(translatePattern as tm (Just UpperId) pat)
+	(HsUnGuardedAlt (translateTerm as tm Nothing t))
+	[]
 
---translateCaseProgEq :: ProgEq -> HsAlt
---translateCaseProgEq (ProgEq pat t _pos) = error "nyi"
+-- Uebersetzung der ProgEq fuer einen HasCASL-Letterm
+translateLetProgEq ::Assumps ->  TypeMap -> ProgEq -> HsDecl
+translateLetProgEq as tm (ProgEq pat t _pos) = 
+  HsPatBind nullLoc
+	    (translatePattern as tm (Just LowerId) pat)
+	    (HsUnGuardedRhs (translateTerm as tm (Just UpperId) t))
+	    []
 
---Uebersetzung der ProgEqs fuer einen HasCASL-Letterm
-translateProgEqs :: [ProgEq] -> [HsDecl]
-translateProgEqs _progeqs = []
+	     
+-------------------------------------------------------------------------
+-- Translation of sentences
+-------------------------------------------------------------------------
 
+translateSentences :: Assumps -> TypeMap -> Named Term -> [HsDecl]
+--translateSentences _as _tm nt = error (show nt) 
+translateSentences _as _tm _nt = []
