@@ -15,7 +15,9 @@ usage.
 
 module CspCASL.CCKeywords where
 
-ccspecS, dataS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
+import Common.Keywords(dataS)
+
+ccspecS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
   , interParaS, hidingS, prefixS, sendS, receiveS, chanRenS :: String
 
 oRBracketS, cRBracketS, oSBracketS, cSBracketS, multiPreS, extChoiceS
@@ -25,7 +27,6 @@ oRBracketS, cRBracketS, oSBracketS, cSBracketS, multiPreS, extChoiceS
 -- throughout Hets, certainly it's used in Common/Keywords.hs
 
 ccspecS    = "ccspec"
-dataS      = "data"
 channelS   = "channel"
 processS   = "process"
 letS       = "let"
