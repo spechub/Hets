@@ -620,6 +620,14 @@ sl_symbtype (OpAsItemType t) = sl_optype t
 sl_symbtype (PredType _) = need_pred
 sl_symbtype _ = bottom
 
+sl_Alternative :: Alternative -> CASL_Sublogics
+sl_Alternative (Construct i t c _) =
+  sublogics_max (sl_optype t) (comp_list $ map sl_Component c)
+sl_Alternative (Subsort _ _) = need_sub
+
+sl_Component :: Component -> CASL_Sublogics
+sl_Component (Component _ t _) = sl_optype t
+
 ------------------------------------------------------------------------------
 -- comparison functions
 ------------------------------------------------------------------------------
@@ -825,10 +833,72 @@ pr_symb l (Qual_id i t p) =
         else
           Nothing
 
--- FIXME:
-
 pr_sign :: CASL_Sublogics -> Sign -> Sign
-pr_sign l s = s
+pr_sign l (SignAsList s) = SignAsList (mapMaybe (pr_sigitem l) s)
+
+pr_sigitem :: CASL_Sublogics -> SigItem -> Maybe SigItem
+pr_sigitem l (ASortItem s) =
+  Just (ASortItem (fromJust (pr_annoted l pr_sortitem s)))
+pr_sigitem l (AnOpItem o)  =
+  let
+    res = pr_annoted l pr_opitem o
+  in
+    if (isJust res) then Just (AnOpItem (fromJust res))
+    else Nothing
+pr_sigitem l (APredItem p) =
+  let
+    res = pr_annoted l pr_preditem p
+  in
+    if (isJust res) then Just (APredItem (fromJust res))
+    else Nothing
+
+pr_sortitem :: CASL_Sublogics -> SortItem -> Maybe SortItem
+pr_sortitem l (SortItem id rels def pos alt) =
+  if (has_sub l) then
+    Just (SortItem id rels (pr_sortdefn l def) pos alt)
+  else
+    Just (SortItem id (SortRels [] [] [] []) (pr_sortdefn l def) pos alt)
+
+pr_sortdefn :: CASL_Sublogics -> Maybe SortDefn -> Maybe SortDefn
+pr_sortdefn l Nothing = Nothing
+pr_sortdefn l (Just (SubsortDefn v f p)) =
+  if (has_sub l) then
+    let
+      res = pr_Formula l f
+    in
+      if (isJust res) then Just (SubsortDefn v (fromJust res) p)
+      else Nothing
+  else
+    Nothing
+pr_sortdefn l (Just (Datatype alt kind items p)) =
+  let
+    a = mapMaybe (pr_annoted l pr_Alternative) alt
+    b = pr_genitems l items
+  in
+    if (isJust b) then
+    Just (Datatype a kind (fromJust b) p)
+    else Nothing
+
+pr_genitems :: CASL_Sublogics -> GenItems -> Maybe GenItems
+pr_genitems l i = let
+                    res = mapMaybe (pr_symbol l) i
+                  in
+                    if (res==[]) then Nothing else
+                    Just res
+
+pr_Alternative :: CASL_Sublogics -> Alternative -> Maybe Alternative
+pr_Alternative l a = pr_check l sl_Alternative a
+
+pr_Formula :: CASL_Sublogics -> Formula -> Maybe Formula
+pr_Formula l f = pr_check l sl_Formula f
+
+pr_opitem :: CASL_Sublogics -> OpItem -> Maybe OpItem
+pr_opitem l i = pr_check l sl_opitem i
+
+pr_preditem :: CASL_Sublogics -> PredItem -> Maybe PredItem
+pr_preditem l i = pr_check l sl_preditem i
+
+-- FIXME:
 
 pr_morphism :: CASL_Sublogics -> Morphism -> Morphism
 pr_morphism l m = m
