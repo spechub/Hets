@@ -19,9 +19,9 @@ import IO
 import IOExts (trace)
 import Print_HetCASL
 import AS_Library (LIB_DEFN()) 
+import GlobalLibraryAnnotations
 
 -- for debugging
-import GlobalAnnotationsFunctions
 
 {---
   Write the given LIB_DEFN in every format that HetcatsOpts includes.

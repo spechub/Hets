@@ -14,13 +14,12 @@
 
 
 module GlobalAnnotationsFunctions 
-    ( emptyGlobalAnnos,initGlobalAnnos,setGlobalAnnos,addGlobalAnnos
+    ( emptyGlobalAnnos, addGlobalAnnos
     , precRel, isLAssoc, isRAssoc, isLiteral, getLiteralType
     ) 
     where
 
 import Id
-import AS_Library
 import AS_Annotation
 import Print_AS_Annotation
 import PrettyPrint
@@ -39,13 +38,6 @@ emptyGlobalAnnos = GA { prec_annos    = (emptyFM,empty)
 		      , literal_map   = emptyFM
 		      } 
  
-initGlobalAnnos :: LIB_DEFN -> GlobalAnnos
-initGlobalAnnos ld = setGlobalAnnos emptyGlobalAnnos ld
-
-setGlobalAnnos :: GlobalAnnos -> LIB_DEFN -> GlobalAnnos
-setGlobalAnnos ga ld = addGlobalAnnos ga annos
-    where annos = case ld of Lib_defn _ _ _ as -> as	  
-
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> GlobalAnnos
 addGlobalAnnos ga annos = 
     let ga'= ga { prec_annos    = store_prec_annos    (prec_annos  ga)   annos

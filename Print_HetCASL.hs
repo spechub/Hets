@@ -16,8 +16,8 @@ module Print_HetCASL where
 
 import Pretty
 import PrettyPrint
-import GlobalAnnotations
-import GlobalAnnotationsFunctions
+import GlobalAnnotationsFunctions(emptyGlobalAnnos)
+import GlobalLibraryAnnotations
 
 import AS_Library
 import Print_AS_Library
