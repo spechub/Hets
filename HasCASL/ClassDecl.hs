@@ -22,7 +22,7 @@ import Data.Maybe
 import Common.Lib.State
 import Common.Result
 import HasCASL.ClassAna
-
+import HasCASL.TypeAna
 
 -- ---------------------------------------------------------------------------
 -- analyse class decls
@@ -64,8 +64,8 @@ anaClassDecls (ClassDefn ci k ic _) =
        addClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
-    do addDiags [downsetWarning t]
-       addClassDecl star Set.empty (Just $ Downset t) ci
+    do mt <- anaStarType t 
+       addClassDecl star Set.empty (fmap Downset mt) ci
 
 -- ---------------------------------------------------------------------------
 -- store class decls

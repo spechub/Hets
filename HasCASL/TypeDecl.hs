@@ -32,49 +32,7 @@ import Common.PrettyPrint
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.DataAna
-import HasCASL.Unify
-import HasCASL.Merge
-
--- ---------------------------------------------------------------------------
--- storing type ids with their kind and definition
--- ---------------------------------------------------------------------------
-
--- | store a complete type map
-putTypeMap :: TypeMap -> State Env ()
-putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
-
--- | store type id and check the kind
-addTypeId :: TypeDefn -> Instance -> Kind -> Id -> State Env ()
--- type args not yet considered for kind construction 
-addTypeId defn _ kind i = 
-    do nk <- expandKind kind
-       if placeCount i <= kindArity TopLevel nk then
-	  addTypeKind defn i kind
-	  else addDiags [mkDiag Error "wrong arity of" i]
-
--- | store prefix type ids both with and without following places 
-addTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
-addTypeKind d i k = 
-    if isPrefix i then do addSingleTypeKind d i k
-			  addSingleTypeKind d (stripFinalPlaces i) k
-    else addSingleTypeKind d i k
-
--- | store type as is
-addSingleTypeKind :: TypeDefn -> Id -> Kind -> State Env ()
-addSingleTypeKind d i k = 
-    do tk <- gets typeMap
-       case Map.lookup i tk of
-	      Nothing -> putTypeMap $ Map.insert i 
-			 (TypeInfo k [] [] d) tk
-	      Just (TypeInfo ok ks sups defn) -> 
-		  -- check with merge
-		  do checkKinds i k ok
-		     if any (==k) (ok:ks)
-			then addDiags [mkDiag Warning 
-				 "redeclared type" i]
-				 else putTypeMap $ Map.insert i 
-					 (TypeInfo ok
-					       (k:ks) sups defn) tk
+import HasCASL.VarDecl
 
 -- | add a supertype to a given type id
 addSuperType :: Type -> Id -> State Env ()
@@ -87,10 +45,7 @@ addSuperType t i =
 					      (TypeInfo ok ks (t:sups) defn)
 					      tk
 
--- ---------------------------------------------------------------------------
--- analyse type items
--- ---------------------------------------------------------------------------
-
+-- | analyse a 'TypeItem'
 anaTypeItem :: GenKind -> Instance -> TypeItem -> State Env ()
 anaTypeItem _ inst (TypeDecl pats kind _) = 
     do anaKind kind
@@ -136,11 +91,13 @@ anaTypeItem _ inst (AliasType pat mk sc _) =
        case m of 
 	      Just i -> case mt of 
 		  Nothing -> return ()
-		  Just newPty -> addTypeId (AliasTypeDefn newPty) inst ik i 
+		  Just newPty -> do addTypeId (AliasTypeDefn newPty) inst ik i 
+				    return ()
 	      _ -> return ()
 
 anaTypeItem gk inst (Datatype d) = anaDatatype gk inst d 
 
+-- | analyse a 'DatatypeDecl'
 anaDatatype :: GenKind -> Instance -> DatatypeDecl -> State Env ()
 anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
     do k <- anaKind kind
@@ -166,8 +123,10 @@ anaDatatype genKind inst (DatatypeDecl pat kind alts derivs _) =
 						getSelType dt pa ts) 
 				     [] (SelectData [ConstrInfo c ty] i)
 			           ) sels) newAlts
-		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i 
+		     addTypeId (DatatypeDefn genKind [] newAlts) inst k i
+		     return ()
 
+-- | analyse a pseudo type (represented as a 'TypeScheme')
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
 anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
     do k <- case mk of 
@@ -185,30 +144,14 @@ anaPseudoType mk (TypeScheme tArgs (q :=> ty) p) =
            Nothing -> return (newK, Nothing)
 	   Just newTy -> return (newK, Just $ TypeScheme tArgs (q :=> newTy) p)
 
+-- | extent a kind to expect further type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
        else typeArgsListToKind (init tArgs) 
-	    (KindAppl (typeArgToKind $ last tArgs) k []) 
+	    (KindAppl (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
 
-typeArgToKind :: TypeArg -> Kind
-typeArgToKind (TypeArg _ k _ _) = k
-
-anaTypeVarDecl :: TypeArg -> State Env ()
-anaTypeVarDecl(TypeArg t k _ _) = 
-    do nk <- anaKind k
-       addTypeId TypeVarDefn Plain nk t
-
-kindArity :: ApplMode -> Kind -> Int
-kindArity m (KindAppl k1 k2 _) =
-    case m of 
-	       TopLevel -> kindArity OnlyArg k1 + 
-			   kindArity TopLevel k2
-	       OnlyArg -> 1
-kindArity m (ExtClass _ _ _) = case m of
-			     TopLevel -> 0
-			     OnlyArg -> 1
-
+-- | convert mixfix type patterns to ids
 convertTypePatterns :: [TypePattern] -> Result [Id]
 convertTypePatterns [] = Result [] $ Just []
 convertTypePatterns (s:r) =
@@ -218,22 +161,23 @@ convertTypePatterns (s:r) =
 		  Nothing -> Result (d++ds) $ Just l
 		  Just i -> Result (d++ds) $ Just (i:l)
 
-convertTypePattern, makeMixTypeId :: TypePattern -> Result Id
+-- | convert a 'TypePattern' to a type 'Id' via 'makeMixTypeId'
+convertTypePattern :: TypePattern -> Result Id
 convertTypePattern (TypePattern t _ _) = return t
 convertTypePattern(TypePatternToken t) = 
     if isPlace t then fatal_error ("illegal type '__'") (tokPos t)
        else return $ (simpleIdToId t)
 
 convertTypePattern t =
-    if {- hasPlaces t && -} hasTypeArgs t then
+    if hasTypeArgs t then
        fatal_error ( "arguments in type patterns not yet supported")
-		   -- "illegal mix of '__' and '(...)'"  
                    (posOfTypePattern t)
     else makeMixTypeId t
 
 -- trailing places are not necessary for curried kinds
 -- and will be ignored to avoid different Ids "Pred" and "Pred__"
 
+-- | decompose a 'TypePattern' into tokens
 typePatternToTokens :: TypePattern -> [Token]
 typePatternToTokens (TypePattern ti _ _) = getPlainTokenList ti
 typePatternToTokens (TypePatternToken t) = [t]
@@ -248,14 +192,19 @@ typePatternToTokens (TypePatternArg (TypeArg v _ _ _) _) =
     [Token "__" (posOfId v)]
 
 -- compound Ids not supported yet
+-- | get the next 'Token' from a token list
 getToken :: GenParser Token st Token
 getToken = token tokStr tokPos Just
 
+-- | parse a type 'Id' from a token list
 parseTypePatternId :: GenParser Token st Id
 parseTypePatternId =
     do ts <- many1 getToken 
        return $ Id ts [] []
 
+-- | convert a 'TypePattern' to a type 'Id' via 'typePatternToTokens' 
+-- and 'parseTypePatternId' 
+makeMixTypeId :: TypePattern -> Result Id
 makeMixTypeId t = 
     case parse parseTypePatternId "" (typePatternToTokens t) of
     Left err -> fatal_error (showErrorMessages "or" "unknown parse error" 
@@ -264,47 +213,11 @@ makeMixTypeId t =
 		(errorPos err)
     Right x -> return x
 
-hasPlaces, hasTypeArgs :: TypePattern -> Bool
-hasPlaces (TypePattern _ _ _) = False
-hasPlaces (TypePatternToken t) = isPlace t
-hasPlaces (MixfixTypePattern ts) = any hasPlaces ts
-hasPlaces (BracketTypePattern _ ts _) = any hasPlaces ts
-hasPlaces (TypePatternArg _ _) = False
-
+-- | check for type arguments
+hasTypeArgs:: TypePattern -> Bool
 hasTypeArgs (TypePattern _ _ _) = True
 hasTypeArgs (TypePatternToken _) = False
 hasTypeArgs (MixfixTypePattern ts) = any hasTypeArgs ts
 hasTypeArgs (BracketTypePattern _ ts _) = any hasTypeArgs ts
 hasTypeArgs (TypePatternArg _ _) = True
 
--- ---------------------------------------------------------------------------
--- for storing selectors and constructors
--- ---------------------------------------------------------------------------
-
--- | store assumptions
-putAssumps :: Assumps -> State Env ()
-putAssumps as =  do { e <- get; put e { assumps = as } }
-
--- | find information for qualified operation
-partitionOpId :: Assumps -> TypeMap -> Int -> UninstOpId -> TypeScheme
-	 -> ([OpInfo], [OpInfo])
-partitionOpId as tm c i sc = 
-    let l = Map.findWithDefault (OpInfos []) i as 
-	in partition (isUnifiable tm c sc . opType) $ opInfos l
-
--- | storing an operation
-addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn -> State Env () 
-addOpId i sc attrs defn = 
-    do as <- gets assumps
-       tm <- gets typeMap
-       c <- gets counter
-       let (l,r) = partitionOpId as tm c i sc
-	   oInfo = OpInfo sc attrs defn 
-       if null l then putAssumps $ Map.insert i 
-			 (OpInfos (oInfo : r )) as
-	  else do let Result ds mo = merge (head l) oInfo
-		  addDiags $ map (improveDiag i) ds
-		  case mo of 
-		      Nothing -> return ()
-		      Just oi -> putAssumps $ Map.insert i 
-				 (OpInfos (oi : r )) as

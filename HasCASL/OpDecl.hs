@@ -13,7 +13,7 @@ Portability :  portable
 module HasCASL.OpDecl where
 
 import HasCASL.As
-import HasCASL.TypeDecl
+import HasCASL.VarDecl
 import HasCASL.Le
 import Common.Lib.State
 import Common.Result
@@ -39,7 +39,8 @@ anaOpItem ga (OpDefn o pats sc partial trm ps) =
 	       mt <- resolveTerm ga ty newTrm
 	       case mt of 
 	           Nothing -> return ()
-		   Just lastTrm -> addOpId i newSc [] $ Definition lastTrm
+		   Just lastTrm -> do addOpId i newSc [] $ Definition lastTrm
+				      return ()
 
 getUninstOpId :: TypeScheme -> OpId -> State Env (UninstOpId, Maybe TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
@@ -56,7 +57,8 @@ anaOpId sc attrs o =
     do (i, mSc) <- getUninstOpId sc o
        case mSc of 
            Nothing -> return () 
-	   Just newSc -> addOpId i newSc attrs NoOpDefn
+	   Just newSc -> do addOpId i newSc attrs NoOpDefn
+			    return ()
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
@@ -67,3 +69,35 @@ anaTypeScheme (TypeScheme tArgs (q :=> ty) p) =
        case mt of 
            Nothing -> return Nothing
 	   Just newTy -> return $ Just $ TypeScheme tArgs (q :=> newTy) p
+
+-- ----------------------------------------------------------------------------
+-- ProgEq
+-- ----------------------------------------------------------------------------
+
+anaProgEq :: GlobalAnnos -> ProgEq -> State Env ()
+anaProgEq ga (ProgEq pat trm _) =
+    do mp <- resolvePattern ga pat
+       case mp of 
+	   Nothing -> return ()
+	   Just (ty, newPat) -> do
+	       let bs = extractBindings newPat
+	       e <- get
+	       mapM_ anaVarDecl bs
+	       mt <- resolveTerm ga ty trm
+	       put e
+	       case mt of 
+		   Nothing -> return ()
+		   Just newTerm ->case removeResultType newPat of
+		       PatternConstr (InstOpId i _tys _) sc args ps ->
+			   do addOpId i sc [] $ Definition $ 
+			          if null args then newTerm
+				     else LambdaTerm args Partial newTerm ps
+			      return ()
+		       _ -> addDiags $ [mkDiag Error 
+					   "no toplevel pattern" newPat]
+		       where removeResultType p = 
+				 case p of 
+				 TypedPattern tp _ _ -> 
+				     removeResultType tp
+				 _ -> p
+

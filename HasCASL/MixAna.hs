@@ -26,7 +26,7 @@ import HasCASL.Le
 import HasCASL.Unify
 import HasCASL.ClassAna
 import HasCASL.TypeAna
-import HasCASL.TypeDecl
+import HasCASL.VarDecl
 import HasCASL.MixParserState
 import Data.Maybe
 

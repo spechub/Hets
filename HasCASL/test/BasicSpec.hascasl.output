@@ -47,7 +47,6 @@ tt : s ->? Unit = \ x : s . ()
 x : s %(var)%
 %% Diagnostics -----------------------------------------------------------
 Error (line 1, column 7) illegal universe class declaration 'Type'
-Warning (line 5, column 32) unchecked type 't'
 Warning (line 5, column 20) redeclared class 'TYPE'
 Error (line 5, column 20) inconsistent redefinition of 'TYPE'
 Warning (line 11, column 16) implicit declaration of superclass 'd'

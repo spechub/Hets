@@ -17,7 +17,6 @@ import HasCASL.As
 import HasCASL.Le
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.GlobalAnnotationsFunctions
 import Common.Result
 import Common.Id
 import Common.PrettyPrint
