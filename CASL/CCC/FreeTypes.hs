@@ -47,7 +47,7 @@ checkFreeType m fs
        | (any id $ map (\s->elem s sorts) $ ops_sorts++preds_sorts) =Nothing
        | not $ and $ map checkTerm leadingTerms =Nothing
        | not $ and $ map checkVar leadingTerms =Nothing 
---     | not $ and $ map checkPatterns leadingPatterns=Nothing
+       | not $ and $ map checkPatterns leadingPatterns=Nothing
        | otherwise = Just True
    where sig = imageOfMorphism m
          sorts= Set.toList (sortSet sig)
@@ -77,7 +77,6 @@ checkFreeType m fs
                                           all (\t-> case t of
                                                      Qual_var _ _ _-> True
                                                      _ -> False) ts
-
          checkVar (Application _ ts _)=let check [] = True
                                            check (p:ps)=if elem p ps then False
                                                         else check ps
@@ -94,37 +93,30 @@ checkFreeType m fs
                       Application _ ts _-> if length ts>0 then True
                                           else False
                       _ -> False
+         isApp t = case t of
+                     Application _ _ _->True
+                     _ -> False
          isVar t = case t of
                      Qual_var _ _ _ ->True
                      _ -> False
-         
+         allIdentic ts= all (\t-> t== (head ts)) ts           
          patternsOfTerm t= case t of
                               Application (Qual_op_name _ _ _) ts _->ts
-                              _ -> [] 
+                              _ -> []
+         checkMatrix ps 
+                | length ps <=1 = True
+                | allIdentic ps = False
+                | all isApp $ map head ps = (checkMatrix $ map tail $ filter (\p->isNil $ head p) ps) &&
+                                            (checkMatrix $ map (\p'->(patternsOfTerm $ head p')++(tail p')) $ 
+                                                                             filter (\p->isCons $ head p) ps)
+                | all isVar $ map head ps = if allIdentic $ map head ps then checkMatrix $ map tail ps
+                                            else False
+                | otherwise = False     
          checkPatterns [] = True
-         checkPatterns ts  
+         checkPatterns ts
                 | length ts==1 =(all isVar $ patternsOfTerm $ head ts)&& (checkVar $ head ts)
-              --  | otherwise = 
-
-     
-{-
-         filterOp symb= case symb of
-                          Just (Left o)->[o]
-                          _ -> []
-         filterPred symb=case symb of
-                           Just (Right p)->[p]
-                           _ -> [] 
-         ops= concat $ map filterOp l_Syms
-         ops_sorts= map res_OP_TYPE $ 
-                    concat $ map (\o->case o of
-                                       Qual_op_name _ op _->[op]
-                                       _ -> [] ) ops 
-         preds=concat $ map filterPred l_Syms
-         preds_sorts= concat $ map (\p->case p of
-                                          Qual_pred_name _ p' _->case p' of
-                                                                  Pred_type s _->s) preds
--}
-
+                | otherwise = checkMatrix $ map patternsOfTerm ts
+    
 leadingSym :: FORMULA f -> Maybe(Either OP_SYMB PRED_SYMB)
 leadingSym f = do
        tp<-leading_Term_Predication f
