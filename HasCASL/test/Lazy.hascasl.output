@@ -36,7 +36,7 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 8.9, in type of 'g(c)'
+*** Hint 8.9, in type of '(op g : t -> ? t)(op c : Unit ->? t)'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.8)
 

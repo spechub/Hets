@@ -347,10 +347,13 @@ monotonic tm v t =
                 _ -> error "monotonic"
 
 -- | find monotonicity based instantiation
-monoSubst :: TypeMap -> Rel.Rel Type -> Type -> Subst
-monoSubst tm r t = 
+monoSubst :: TypeMap -> Map.Map Id Type -> Rel.Rel Type -> Type -> Subst
+monoSubst tm vm r t = 
     let varSet = Set.fromList . leaves (> 0)
-        vs = Set.toList $ Set.unions $ map varSet $ Set.toList $ Rel.nodes r
+        fvs = Set.union (varSet t) $ Set.unions $ map varSet 
+              $ Set.toList $ Rel.nodes r
+        avs = Set.unions $ map varSet $ Map.elems vm
+        vs = Set.toList (fvs Set.\\ avs)
         monos = filter ( \ (TypeArg n k _ _, i) -> case monotonic tm i t of
                                 (True, _) -> 1 == Set.size 
                                     (Rel.predecessors r $ TypeName n k i)
@@ -381,12 +384,13 @@ monoSubst tm r t =
                 v = Set.findMin $ Rel.predecessors r $ TypeName n k i 
                in Map.single i v 
 
-monoSubsts :: TypeMap -> Rel.Rel Type -> Type -> Subst
-monoSubsts tm r t = 
-    let s = monoSubst tm (Rel.transReduce $ Rel.irreflex r) t in
+monoSubsts :: TypeMap -> Map.Map Id Type -> Rel.Rel Type -> Type -> Subst
+monoSubsts tm vs r t = 
+    let s = monoSubst tm vs (Rel.transReduce $ Rel.irreflex r) t in
     if Map.isEmpty s then s else
        compSubst s $ 
-            monoSubsts tm (Rel.transReduce $ Rel.irreflex $
+            monoSubsts tm (Map.map (subst s) vs)
+                           (Rel.transReduce $ Rel.irreflex $
                            Rel.image (subst s) r) 
                            $ subst s t 
 
@@ -395,4 +399,4 @@ fromTypeMap = Map.foldWithKey (\ t ti r ->
                     foldr (Rel.insert (TypeName t (typeKind ti) 0)) r
                                   [ ty | ty@(TypeName _ _ _) <- 
                                     superTypes ti ]) Rel.empty 
- 
+

@@ -164,23 +164,13 @@ y : s
 (op x : s) in s %(bla_label)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
-*** Hint 17.24, contradicting type inclusions for 's' and 't' of '__+__ as s * s -> s'
+*** Hint 17.24, contradicting type inclusions for 's' and 't' of '(op __+__ : t * t -> t) as s * s -> s'
 
-*** Hint 19.25, contradicting type inclusions for 's' and 't' of '__+__ as s * s -> s'
+*** Hint 19.25, contradicting type inclusions for 's' and 't' of '(op __+__ : t * t -> t) as s * s -> s'
 
-*** Hint 25.23, contradicting type inclusions for 's' and 't' of 'a'
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t'
 
-*** Hint 25.30, contradicting type inclusions for 's' and 't' of 'b'
-
-*** Hint 25.23, contradicting type inclusions for 's' and 't' of 'a'
-
-*** Hint 25.30, contradicting type inclusions for 's' and 't' of 'b'
-
-*** Hint 44.42, contradicting type inclusions for 's' and 't' of 'a'
-
-*** Hint 46.26, contradicting type inclusions for 's' and 't' of 'x as t'
-
-*** Hint 46.26, contradicting type inclusions for 's' and 't' of 'x as t'
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of '(op x : s) as t'
 
 *** Error 46.22, untypable application '__+__(x as s, x as t as s)'
 *** Error 46.22, no typing for '__+__(x as s, x as t as s) as s'

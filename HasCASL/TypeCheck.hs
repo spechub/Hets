@@ -75,7 +75,8 @@ checkList :: [Maybe Type] -> [Term]
           -> State Env [(Subst, Constraints, [Type], [Term])]
 checkList [] [] = return [(eps, noC, [], [])]
 checkList (ty : rty) (trm : rt) = do 
-      fts <- infer ty trm
+      fts1 <- infer ty trm
+      fts <- reduce False fts1
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       rts <- checkList (map (fmap (subst sf)) rty) rt
                       return $ map ( \ (sr, cr, tys, tts) ->
@@ -88,10 +89,11 @@ checkList (ty : rty) (trm : rt) = do
                      $ concat combs
 checkList _ _ = error "checkList"
 
-typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
-typeCheck mt trm = 
-    do alts1 <- infer mt trm
+reduce :: Bool -> [(Subst, Constraints, Type, Term)] 
+       -> State Env [(Subst, Constraints, Type, Term)]
+reduce b alts = do
        tm <- gets typeMap
+       vs <- gets localVars
        combs <- mapM ( \ (s, cr, ty, tr) -> do 
            Result ds mc <- toEnvState $ preClose tm cr
            addDiags $ map (improveDiag tr) ds 
@@ -99,13 +101,21 @@ typeCheck mt trm =
                Nothing -> []
                Just (cs, cc) -> let 
                    s1 = compSubst s cs
-                   ms = monoSubsts tm (foldr (uncurry Rel.insert) 
+                   ms = if b then monoSubsts tm (Map.map (subst s1) vs) 
+                       (foldr (uncurry Rel.insert) 
                                        (fromTypeMap tm) 
                                         $ toListC cc) (subst s1 ty)
+                       else eps
                    s2 = compSubst s1 ms 
                    in [(s2, substC ms cc, subst s2 ty, 
-                                     substTerm s2 tr)]) alts1
-       let alts = concat combs
+                                     substTerm s2 tr)]) alts
+       return $ concat combs
+
+typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
+typeCheck mt trm = 
+    do alts1 <- infer mt trm
+       alts <- reduce True alts1
+       tm <- gets typeMap
        let p = getMyPos trm
        if null alts then 
           do addDiags [mkDiag Error "no typing for" trm]
@@ -154,7 +164,6 @@ inferAppl :: [Pos] -> Maybe Type -> Term  -> Term
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl ps mt t1 t2 = do
             let origAppl = ApplTerm t1 t2 ps
-            tm <- gets typeMap
             aty <- freshTypeVar $ posOfTerm t2
             rty <- case mt of 
                 Nothing -> freshTypeVar $ posOfTerm t1
@@ -168,16 +177,10 @@ inferAppl ps mt t1 t2 = do
 --                   let args = typeNub tm q2p (args1 ++ args2)
                 combs2 <- mapM ( \ (sa, ca, _, ta) -> do
                     let sr = compSubst sf sa
-                        cr = joinC ca $ substC sa cf
-                    Result ds mc <- toEnvState $ preClose tm cr
-                    addDiags $ map (improveDiag origAppl) ds 
-                    return $ case mc of 
-                        Nothing -> []
-                        Just (cs, cc) -> let sall = compSubst sr cs in
-                            [(sall, cc, subst sall rty, 
+                    return [(sr, joinC ca $ substC sa cf, subst sr rty, 
                                      ApplTerm tf ta ps)]) args
                 return $ concat combs2) ops
-            let res = concat combs 
+            res <- reduce False $ concat combs 
             if null res then 
                addDiags [case mt of 
                        Nothing -> mkDiag Error
@@ -199,18 +202,11 @@ infer mt trm = do
     as <- gets assumps
     vs <- gets localVars
     case trm of 
-        qv@(QualVar (VarDecl v t qs ps))  -> do
+        qv@(QualVar (VarDecl _ t _ _))  -> do
             case mt of 
                  Nothing -> return [(eps, noC, t, qv)]
-                 Just ty -> do 
-                     Result ds mc <- toEnvState $ preClose tm 
-                                    $ insertC (Subtyping t ty) noC
-                     addDiags $ map (improveDiag v) ds 
-                     return $ case mc of 
-                                Nothing -> []
-                                Just (s, cc) -> let nty = subst s t in 
-                                     [(s, cc, nty,
-                                       QualVar $ VarDecl v nty qs ps)]
+                 Just ty -> reduce False 
+                            [(eps, insertC (Subtyping t ty) noC, t, qv)]
         QualOp br (InstOpId i ts qs) sc ps -> do
             (ty, inst, cs) <- instantiate sc
             let Result ds ms = mgu tm (if null ts then inst else ts) inst
@@ -235,16 +231,9 @@ infer mt trm = do
                      Nothing -> return $ map ( \ (ty, is, cs, oi) 
                                               -> (eps, ty, is, cs, oi)) insts
                      Just inTy -> do 
-                         combs <- mapM ( \ (ty, is, cs, oi) -> do 
-                            Result ds mc <- toEnvState $ preClose tm 
-                                    $ insertC (Subtyping ty inTy) cs
-                            addDiags $ map (improveDiag i) ds 
-                            return $ case mc of 
-                                Nothing -> []
-                                Just (s, cc) -> [(s, subst s ty
-                                                 , map (subst s) is
-                                                 , cc, oi)]) insts
-                         let rs = concat combs
+                         let rs = map ( \ (ty, is, cs, oi) ->
+                                  (eps, ty, is, 
+                                   insertC (Subtyping ty inTy) cs, oi)) insts
                          if null rs then 
                             addDiags [Diag Hint
                                ("no type match for: " ++ showId i "\n"
@@ -252,8 +241,7 @@ infer mt trm = do
                                (posOfId i) ]
                             else return ()
                          return rs
-               return $ typeNub tm q2p $
-                        map ( \ (s, ty, is, cs, oi) -> 
+               reduce False $ typeNub tm q2p $ map ( \ (s, ty, is, cs, oi) -> 
                               case opDefn oi of
                               VarDefn -> (s, cs, ty, QualVar $ 
                                           VarDecl i ty Other ps)
@@ -300,7 +288,7 @@ infer mt trm = do
                            else return []
                         Just s -> do 
                             rs <- infer (Just $ subst s ty) t 
-                            return $ map ( \ (s2, cs, typ, tr) -> 
+                            reduce False $ map ( \ (s2, cs, typ, tr) -> 
                                 (compSubst s s2, substC s cs, typ, 
                                  TypedTerm tr qual ty ps)) rs
                 InType -> do 
@@ -310,7 +298,7 @@ infer mt trm = do
                         Nothing -> return []
                         Just s -> do 
                             rs <- infer Nothing t
-                            return $ map ( \ (s2, cs, typ, tr) -> 
+                            reduce False $ map ( \ (s2, cs, typ, tr) -> 
                                 (compSubst s s2, 
                                  substC s $ insertC (Subtyping ty typ) cs, 
                                  logicalType, 
@@ -322,18 +310,10 @@ infer mt trm = do
                         Nothing -> return []
                         Just s -> do 
                             rs <- infer Nothing t
-                            combs <- mapM ( \ (s2, cs, typ, tr) -> do
-                                let s1 = compSubst s s2
-                                Result es mc <- toEnvState $ preClose tm 
-                                    $ insertC (Subtyping ty typ) cs
-                                addDiags $ map (improveDiag trm) es 
-                                return $ case mc of 
-                                     Nothing -> []
-                                     Just (s3, cc) -> 
-                                         [(compSubst s1 s3, cc,
-                                           subst s3 typ,
-                                           TypedTerm tr qual ty ps)]) rs
-                            return $ concat combs
+                            reduce False $ map ( \ (s2, cs, typ, tr) ->
+                                (compSubst s s2, 
+                                 substC s $ insertC (Subtyping ty typ) cs,
+                                 typ, TypedTerm tr qual ty ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
             let Result ds ms = mUnify logicalType
@@ -344,7 +324,7 @@ infer mt trm = do
                     rs <- infer (Just logicalType) t 
                     putLocalVars vs
                     putTypeMap tm
-                    return $ map ( \ (s, cs, typ, tr) -> 
+                    reduce False $ map ( \ (s, cs, typ, tr) -> 
                         (s, cs, typ, QuantifiedTerm quant decls tr ps)) rs
         LambdaTerm pats part resTrm ps -> do 
             pvs <- freshVars pats
@@ -365,7 +345,7 @@ infer mt trm = do
                        let newS = compSubst s s2 
                        es <- infer (Just $ subst newS rty) resTrm
                        putLocalVars vs
-                       return $ map ( \ (s3, cr, _, rtm) -> 
+                       reduce False $ map ( \ (s3, cr, _, rtm) -> 
                                       (compSubst newS s3, 
                                        substC s3 cs `joinC` cr,
                                        subst s3 (subst newS myty), 
@@ -381,7 +361,7 @@ infer mt trm = do
                 else return () 
             rs <- mapM ( \ (s1, cs, oty, otrm) -> do 
                  es <- inferCaseEqs oty (subst s1 rty) eqs
-                 return $ map ( \ (s2, cr, _, ty, nes) ->
+                 reduce False $ map ( \ (s2, cr, _, ty, nes) ->
                                 (compSubst s1 s2, 
                                  substC s2 cs `joinC` cr, ty, 
                                  CaseTerm otrm nes ps)) es) ts
@@ -392,7 +372,7 @@ infer mt trm = do
                mapM_ addLocalVar $ concatMap (\ (ProgEq p _ _) -> 
                                              extractVars p) nes
                ts <- infer mt inTrm 
-               return $ map ( \ (s2, cr, ty, nt) -> 
+               reduce False $ map ( \ (s2, cr, ty, nt) -> 
                               (compSubst s1 s2, 
                                substC s2 cs `joinC` cr,
                                ty, 
@@ -401,7 +381,7 @@ infer mt trm = do
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do 
            pats <- infer mt pat
-           return $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1, 
+           reduce False $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1, 
                           AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
         _ -> do ty <- freshTypeVar $ posOfTerm trm
                 addDiags [mkDiag Error "unexpected term" trm]
