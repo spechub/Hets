@@ -56,7 +56,7 @@ public class OWLToATerm implements OWLValidationConstants {
 
 	static public void main(String[] args) {
 
-		if (args.length != 1) { System.out.println("Usage: OWLToATerm <URI>");
+		if (args.length != 1) { System.out.println("Usage: processor <URI>");
 		  System.exit(1); }
 		 
 		OWLRDFParser rdfParser = null;
