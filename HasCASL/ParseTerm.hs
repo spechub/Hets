@@ -198,7 +198,7 @@ typeVarDecls = do (vs, ps) <- typeVar `separatedBy` commaT
 		       return (makeTypeVarDecls vs ps t (tokPos c))
 		    <|> varDeclDownSet vs ps
 		    <|> return (makeTypeVarDecls vs ps 
-				(Intersection [] []) nullPos)
+				universe nullPos)
 
 makeTypeVarDecls :: [TypeVar] -> [Token] -> Class -> Pos -> [TypeVarDecl]
 makeTypeVarDecls vs ps c q = let cl = Kind [] c [] in 
@@ -250,8 +250,7 @@ typeArgs = do (ts, ps) <- extTypeVar `separatedBy` commaT
 		   t <- parseType
 		   return (makeTypeArgs ts ps (tokPos l)
 			   (ExtClass (Downset t) InVar nullPos))
-		<|> return (makeTypeArgs ts ps nullPos 
-			   (ExtClass (Intersection [] []) InVar nullPos))
+		<|> return (makeTypeArgs ts ps nullPos extUniverse)
 		where mergeVariance k e (t, InVar, _) p = 
 			  TypeArg t e k p 
 		      mergeVariance k (ExtClass c _ _) (t, v, ps) p =

@@ -281,6 +281,15 @@ data Class = Downset Type   -- not parsed directly
 	   -- pos "(", ","s, ")"
 	     deriving (Show, Eq)
 
+universe :: Class
+universe = Intersection [] []
+
+extUniverse :: ExtClass
+extUniverse = ExtClass universe InVar nullPos
+	       
+nullKind :: Kind
+nullKind = Kind [] universe []
+
 -- ----------------------------------------------------------------------------
 -- op names
 -- ----------------------------------------------------------------------------

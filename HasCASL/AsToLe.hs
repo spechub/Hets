@@ -130,40 +130,22 @@ anaAnnotedClassItem inst aci =
     do anaClassDecls d 
        mapM_ anaAnnotedBasicItem l
 
-anaClassDecls (ClassDecl cls _) = mapM_ (anaClassDecl []) cls
+anaClassDecls (ClassDecl cls _) = 
+    mapM_ (anaClassDecl [] universe) cls
 anaClassDecls (SubclassDecl cls supcl _) =
     do Intersection scls _ <- anaSuperClass supcl
-       mapM_ (anaClassDecl scls) cls
+       mapM_ (anaClassDecl scls universe) cls
 
 
 anaClassDecls (ClassDefn ci syncl ps) =
     do scls@(Intersection icls _) <- anaClassAppl syncl
-       ce <- getClassEnv
-       case lookupFM ce ci of 
-	   Nothing -> putClassEnv $ defCEntry ce ci [] scls 
-	   Just info -> 
-	     do appendDiags [Warning ("redeclared class '"
-				    ++ tokStr ci ++ "'") 
-			  $ tokPos ci]
-	        let supers = zip (map (allSuperClasses ce) icls) icls 
-		    (cycles, nocycles) = partition ((ci `elem`) . fst) supers 
-		    Intersection iClasses qs = classDefn info in
-		  do if not $ null cycles then
-		       appendDiags [Error 
-				    ("cyclic class definition via '"
-				     ++ showClassList (map snd cycles) "'")
-				   $ tokPos (snd $ head cycles)]
-		       else return ()  
-		     putClassEnv $ addToFM ce ci 
-				info { classDefn = Intersection ( 
-				       nub $ map snd nocycles 
-				       ++ iClasses) (ps ++ qs) }
+       anaClassDecl [] scls ci
 	       
 anaClassName b ci = 
     do ce <- getClassEnv
        if isJust $ lookupFM ce ci then return $ return [ci]
 	 else if b then 
-		do putClassEnv $ defCEntry ce ci [] (Intersection [] [])
+		do putClassEnv $ defCEntry ce ci [] universe
                    return $ return [ci]
 	      else 	  
 		return $ non_fatal_error [] 
@@ -189,40 +171,55 @@ anaClassAppl c =
        appendDiags ds
        return ca
 
-anaClassDecl scls ci = 
+anaClassDecl cs cdef@(Intersection is ps) ci = 
     if tokStr ci == "Type" then 
        appendDiags [Error "illegal universe class declaration" (tokPos ci)]
     else 
     do ce <- getClassEnv
        case lookupFM ce ci of 
 	    Nothing -> putClassEnv $ defCEntry ce ci 
-				 scls (Intersection [] [])
+				 cs cdef
 	    Just info -> 
-		do appendDiags [Warning ("redeclared class '"
+		let getSups = allSuperClasses ce
+		    checkCycle = (ci `elem`) . fst
+		    scs = zip (map getSups cs) cs
+		    (scycs, sOk) = partition checkCycle scs
+		    oldCs = superClasses info
+		    iss = zip (map getSups is) is
+		    (icycs, iOk) = partition checkCycle iss
+		    Intersection oldIs qs = classDefn info
+		    defCs = map snd sOk
+		    newCs = nub $ defCs ++ oldCs
+		    defIs = map snd iOk
+		    newIs = Intersection (nub $ defIs ++ oldIs) 
+			       (ps ++ qs)
+		    cycles = map snd $ scycs ++ icycs
+		in do appendDiags [Warning ("redeclared class '"
 					++ tokStr ci ++ "'") 
 			      $ tokPos ci]
-		   if null scls then return ()
-		      else let supers = zip (map (allSuperClasses ce) scls)
-					scls 
-			       (cycles, nocycles) = 
-				   partition ((ci `elem`) . fst) supers
-			       sups = superClasses info in
-		      do if not $ null cycles then
+		      if not $ null cycles then
 			      appendDiags 
 			      [Error 
 			       ("cyclic class relation via '"
-				      ++ showClassList (map snd cycles) "'")
-			      $ tokPos (snd $ head cycles)]
+				      ++ showClassList cycles "'")
+			      $ tokPos (head cycles)]
 			   else return ()  
-			 putClassEnv $ addToFM ce ci 
-				  (info { superClasses = 
-					 nub $ map snd nocycles ++ sups })
-			 let ds = filter (`elem` sups) scls in
-			     if null $ ds then return ()
-				else appendDiags [Warning 
-						  ("repeated superclass '"
-						   ++ showClassList ds "'")
-						 $ tokPos (head ds)]
+		      putClassEnv $ addToFM ce ci 
+				  (info { superClasses = newCs, 
+					  classDefn = newIs })
+		      let ds = filter (`elem` oldCs) defCs in
+			    if null ds then return ()
+			       else appendDiags 
+					[Warning 
+					 ("repeated superclass declaration '"
+					  ++ showClassList ds "'")
+					$ tokPos (head ds)]
+		      if null oldIs then return ()
+			     else appendDiags
+					[Warning 
+					 ("merged definition '"
+					  ++ showClassList defIs "'")
+					$ tokPos (head defIs)]
 
 anaAnnotedTypeItem inst i = anaTypeItem inst $ item i
 

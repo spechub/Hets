@@ -78,9 +78,6 @@ itemAux itemParser =
 -- sortItem
 -- ------------------------------------------------------------------------
 
-nullKind :: Kind
-nullKind = Kind [] (Intersection [] []) []
-
 commaTypeDecl :: TypePattern -> GenParser Char st TypeItem
 commaTypeDecl s = do { c <- commaT 
 		     ; (is, cs) <- typePattern `separatedBy` commaT
