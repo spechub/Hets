@@ -73,7 +73,8 @@ instance Language Haskell where
   "Haskell - a purely functional programming language,\ 
   \ featuring static typing, higher-order functions, polymorphism,\
   \ type classes and monadic effects.\ 
-  \ See http://www.haskell.org"
+  \ See http://www.haskell.org. This version is based on Programatica,\
+  \ see http://www.cse.ogi.edu/PacSoft/projects/programatica/"
 
 type HaskellMorphism = DefaultMorphism Sign
 

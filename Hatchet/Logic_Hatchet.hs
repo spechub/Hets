@@ -62,10 +62,11 @@ instance PrintLaTeX AHsDecl where
 data Hatchet = Hatchet deriving (Show)
 instance Language Hatchet where
  description _ = 
-  "Hatchet's Haskell - a purely functional programming language, \ 
+  "Haskell - a purely functional programming language, \ 
   \featuring static typing, higher-order functions, polymorphism, \
   \type classes and monadic effects. \ 
-  \See http://www.haskell.org"
+  \See http://www.haskell.org. This version is based on Hatchet,\
+  \ see http://www.cs.mu.oz.au/~bjpop/hatchet.html"
 
 type Sign = ModuleInfo 
 type Morphism = ()
