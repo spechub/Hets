@@ -17,14 +17,15 @@ module Print_AS_Basic where
 
 -- debugging
 import List (mapAccumL)
+import Char (isDigit)
 
 import Id
 import AS_Basic_CASL
 import AS_Annotation
 import GlobalAnnotations
-import GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc,isLiteral
-				  ,getLiteralType
-				  )
+import GlobalAnnotationsFunctions (precRel,isLAssoc,isRAssoc
+				  ,nullStr,nullList,bracketList)
+import LiteralFuns
 
 import Print_AS_Annotation
 
@@ -467,7 +468,6 @@ instance PrettyPrint TERM where
     printText0 ga (Qual_var n t _) = 
 	parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
     printText0 ga (Application o l _) = 
-    {- TODO: consider string-, number-, list- and floating-annotations -}
 	let (o_id,isQual) = 
 		case o of
 		       Op_name i          -> (i,False)
@@ -476,8 +476,10 @@ instance PrettyPrint TERM where
 	in if isQual then 
 	     print_prefix_appl_text ga o' l
 	   else 
-	     if isLiteral (literal_map ga) o_id then
-	       print_Literal_text ga o_id l
+	     if isLiteral ga o_id l then
+	       {-trace ("a literal application: " 
+		      ++ show (Application o l [])) $ -}
+		     print_Literal_text ga o_id l
 	     else
 	       condPrint_Mixfix_text ga o_id l
     printText0 ga (Sorted_term t s _) = 
@@ -515,7 +517,7 @@ instance PrettyPrint TERM where
 	in if isQual then 
 	     print_prefix_appl_latex ga o' l
 	   else 
-	     if isLiteral (literal_map ga) o_id then
+	     if isLiteral ga o_id l then
 	       print_Literal_latex ga o_id l
 	     else
 	       condPrint_Mixfix_latex ga o_id l
@@ -536,9 +538,12 @@ instance PrettyPrint TERM where
 					     <> printLatex0 ga s
     printLatex0 ga (Mixfix_cast s _) = text asS
 				     <+> printLatex0 ga s
-    printLatex0 ga (Mixfix_parenthesized l _) = parens (commaT printLatex0 ga l)
-    printLatex0 ga (Mixfix_bracketed l _) =   brackets (commaT printLatex0 ga l)
-    printLatex0 ga (Mixfix_braced l _) =        braces (commaT printLatex0 ga l)
+    printLatex0 ga (Mixfix_parenthesized l _) = 
+	parens_latex (commaT_latex printLatex0 ga l)
+    printLatex0 ga (Mixfix_bracketed l _) =   
+	brackets (commaT printLatex0 ga l)
+    printLatex0 ga (Mixfix_braced l _) =        
+	braces (commaT printLatex0 ga l)
 
 instance PrettyPrint OP_SYMB where
     printText0 ga (Op_name o) = printText0 ga o
@@ -709,40 +714,81 @@ print_Literal :: (forall a .PrettyPrint a => GlobalAnnos -> a -> Doc) ->
 		          -- ^ a function that prints a nice 
 			  -- comma seperated list like commaT 
 			  -- or commaT_latex
+		 Doc -> -- ^ a document containing the dot for a Fraction
+		 Doc -> -- ^ a document containing the 'E' of a Floating
 		 GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal pf parens_fun 
-	      beside_fun fsep_fun commaT_fun 
+	      beside_fun fsep_fun commaT_fun dot_doc e_doc
 	      ga li ts 
-    | all (isSimple li) ts = case getLiteralType lmap li of
-			     _ -> condPrint_Mixfix pf parens_fun 
-						   beside_fun fsep_fun 
-						   commaT_fun 
-						   ga li ts
+    | isSignedNumber ga li ts = let [t_ts] = ts
+				in pf ga li <> 
+				       ((uncurry p_l) (splitAppl t_ts))
+    | isNumber ga li ts = hcat $ map (pf ga) $ toksNumber li
+    | isFrac   ga li ts = let [lt,rt] = ts
+			      (lni,lnt) = splitAppl lt
+			      (rni,rnt) = splitAppl rt
+			      ln = p_l lni lnt
+			      rn = p_l rni rnt
+			  in ln <> dot_doc <> rn
+    | isFloat  ga li ts = let [bas,ex] = ts
+			      (bas_i,bas_t) = splitAppl bas
+			      (ex_i,ex_t)   = splitAppl ex
+			      bas_d = p_l bas_i bas_t
+			      ex_d  = p_l ex_i ex_t
+			  in bas_d <> e_doc <> ex_d
+    | isList   ga li ts = let list_body = commaT_fun ga $ listElements li
+			      tops = case bracketList ga of
+				     Id topsi [] _ -> topsi
+				     _  -> error 
+					   "malformed bracket id for lists"
+			      fill top = if isPlace top then list_body
+					 else pf ga top
+			  in hcat $ map fill tops
+    | isString ga li ts = pf ga $ 
+			  (\s -> let r = '"':(s ++ "\"") in seq r r) $ 
+			  concatMap convCASLChar $ toksString li
+{- -> condPrint_Mixfix pf parens_fun
+  beside_fun fsep_fun 
+  commaT_fun 
+  ga li ts -- TODO:-}
     | otherwise = condPrint_Mixfix pf parens_fun 
 		                   beside_fun fsep_fun commaT_fun 
 				   ga li ts
-    where isSimple i t = case t of
-			 Application o its _ 
-			     | oi == i   -> all (isSimple i) its
-			     | otherwise -> False
-			     where oi = 
-				     case o of 
-				     Qual_op_name _ _ _ -> 
-					 error "cannot lierally Print Qual_id" 
-				     Op_name x -> x
-			 Simple_id _ -> True
-			 _           -> False
-	  lmap = literal_map ga
+    where p_l = print_Literal pf parens_fun
+				 beside_fun fsep_fun
+				 commaT_fun dot_doc e_doc ga
+
+	  toksNumber i   = if tokIsDigit then
+			     [tok]
+			   else
+			     map (termToTok "number") $
+				 collectElements Nothing i ts
+	     where tok = case i of
+			 Id []     _ _ -> error "malformed Id!!!"
+			 Id [tokk] [] _ -> tokk
+			 Id (x:_) _ _ -> x 
+		   tokIsDigit = (isDigit $ head $ tokStr $ tok) && null ts
+	  toksString i   = if i == nullStr' then [] 
+			   else map (termToTok "string") $ 
+				   collectElements (Just nullStr') i ts
+	  termToTok tokType x = case basicTerm x of
+				Just tokk -> tokk
+				Nothing   -> error ("malformed " ++ tokType)
+	  nullStr' = nullStr ga
+	  nullList' = nullList ga 
+	  listElements i = if i == nullList' then []
+			   else collectElements (Just nullList') i ts
 
 print_Literal_text :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_text =
     print_Literal printText0 parens (<+>) fsep (commaT printText0)
+		  (char '.') (char 'E')
 
 print_Literal_latex :: GlobalAnnos -> Id -> [TERM] -> Doc
 print_Literal_latex =
     print_Literal printLatex0 parens_latex
 		  (<\+>) fsep_latex (commaT_latex printLatex0)
-
+		  (casl_normal_latex ".") (casl_normal_latex "E")
 
 -- printing consitent mixfix application or predication
 {- TODO: consider string-, number-, list- and floating-annotations -}
@@ -800,10 +846,9 @@ print_mixfix_appl pf parens_fun
 	  fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
 	  pr :: [TERM] -> TokenOrPlace -> ([TERM],Doc)
 	  pr [] top = ([], pf ga top)
-	  pr tS@(t:ts) top | isPlace top = (ts,
-					    condParensAppl pf parens_fun
-					                   ga oid t Nothing)
-			   | otherwise   = (tS,pf ga top)
+	  pr tS@(t:ts) top 
+	      | isPlace top = (ts,pf ga t)
+	      | otherwise   = (tS,pf ga top)
 
 condParensAppl :: (GlobalAnnos -> TERM -> Doc) -> 
 		  (Doc -> Doc) -> -- ^ a function that surrounds 
@@ -818,7 +863,8 @@ condParensAppl pf parens_fun ga o_i t mdir =
     case t of
     Simple_id _ -> t'
     Application _ [] _ -> t'
-    Application o _ _ 
+    Application o it _
+	| isLiteral ga i_i it -> t'
         -- ordinary appl (no place)
 	| isOrdAppl i_i -> t' 
 	-- postfix appl
@@ -828,6 +874,8 @@ condParensAppl pf parens_fun ga o_i t mdir =
 	| isOrdAppl o_i && isPrefix i_i  -> t'
 	| isPostfix o_i && isPrefix i_i  -> parens_fun t'
 	-- infix appl (left and right arg/place)
+	|    (isInfix i_i && isSurround o_i)
+	  || (isInfix o_i && isSurround i_i) -> t'
 	| isInfix i_i && o_i == i_i -> 
 	    case mdir of
 		      Nothing -> condParensPrec 
@@ -844,7 +892,8 @@ condParensAppl pf parens_fun ga o_i t mdir =
 			       Lower       -> t'
 			       ExplGroup _ -> parens_fun t'
 	      amap = assoc_annos ga
-    
+    Sorted_term _ _ _ -> t'
+    Cast _ _ _ -> t'
     _ -> parens_fun t'
     where t' = pf ga t
 
