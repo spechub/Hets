@@ -45,6 +45,14 @@ lift m = ReadR $ \_ -> m
 mapReadR :: (Result a -> Result b) -> ReadR r a -> ReadR r b
 mapReadR f m = ReadR $ f . readR m
 
+joinReadR :: ReadR r a -> ReadR r a -> ReadR r a 
+joinReadR r1 r2 =
+    ReadR $ \ r -> let re@(Result ds m1) = readR r1 r in
+		   case m1 of Nothing -> 
+				 let Result rs m2 = readR r2 r
+				     in Result (ds++rs) m2
+			      Just _ -> re
+
 foldReadR :: (a -> ReadR r b) -> [a] -> ReadR r [b]
 foldReadR _ [] = return []
 foldReadR m (h:t) = ReadR $ \ r ->

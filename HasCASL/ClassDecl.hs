@@ -19,6 +19,7 @@ import Data.List
 import Data.Maybe
 import Common.Lib.State
 import Common.Result
+import Common.PrettyPrint
 import HasCASL.ClassAna
 import HasCASL.Reader
 
@@ -67,7 +68,8 @@ anaKindS k = toState k classMap $ anaKind k
 anaClassS :: (Kind, Class) -> State Env (Kind, Class)
 anaClassS c = toState c classMap $ anaClass $ snd c
 
-checkKindsS :: Pos -> Kind -> Kind -> State Env ()
+checkKindsS :: (PosItem a, PrettyPrint a) => 
+	       a -> Kind -> Kind -> State Env ()
 checkKindsS p k1 k2 = do toMaybeState classMap $ checkKinds  p k1 k2
 			 return ()
 
@@ -98,13 +100,13 @@ anaClassDecls (SubclassDecl cls k sc@(Intersection supcls ps) qs) =
 				      "implicit declaration of superclass" hd
 		    mapM_ (anaClassDecl ak (Set.single hd) Nothing) cls
 		  else do (sk, Intersection newSups _) <- anaClassS (ak, sc)
-			  checkKindsS (posOfId hd) sk ak
+			  checkKindsS hd sk ak
 			  mapM_ (anaClassDecl ak newSups Nothing) cls
 
 anaClassDecls (ClassDefn ci k ic _) =
     do ak <- anaKindS k
        (dk, newIc) <- anaClassS (ak, ic)
-       checkKindsS (posOfId ci) dk ak
+       checkKindsS ci dk ak
        anaClassDecl ak Set.empty (Just newIc) ci 
 
 anaClassDecls (DownsetDefn ci _ t _) = 
@@ -129,7 +131,7 @@ anaClassDecl kind sups defn ci =
 		let oldDefn = classDefn info
 		    oldSups = superClasses info
 		    oldKind = classKind info
-		checkKindsS (posOfId ci) kind oldKind
+		checkKindsS ci kind oldKind
 		if isJust defn then
 		   if isJust oldDefn then
 		      appendDiags $ mergeDefns ci 

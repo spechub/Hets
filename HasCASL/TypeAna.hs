@@ -23,6 +23,10 @@ import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.PrettyPrint
 
+checkKindsR :: (PosItem a, PrettyPrint a) => 
+	       a -> Kind -> Kind -> ReadR (ClassMap, TypeMap) ()
+checkKindsR p k1 = withReadR fst . checkKinds  p k1
+
 data ApplMode = OnlyArg | TopLevel 
 
 mkTypeConstrAppls :: ApplMode -> Type -> ReadR TypeMap Type
@@ -101,7 +105,7 @@ expandApplKind c =
 
 inferKind :: Type -> ReadR (ClassMap, TypeMap) Kind
 inferKind (TypeName i k _) = do j <- withReadR snd $ getIdKind i
-				withReadR fst $ checkKinds (posOfId i) k j
+				checkKindsR i k j
 				return j
 
 inferKind (TypeAppl t1 t2) = 
@@ -139,7 +143,7 @@ inferKind t =
 checkKind :: Type -> Kind -> ReadR (ClassMap, TypeMap) ()
 checkKind t j = do
 	k <- inferKind t 
-	withReadR fst $ checkKinds (posOfType t) j k
+	checkKindsR t j k
 
 getIdKind :: Id -> ReadR TypeMap Kind
 getIdKind i = 
@@ -162,11 +166,11 @@ isTypeVar tk i =
        Just (TypeInfo _ _ _ TypeVarDefn) -> True
        _ -> False
 
-anaType :: Type -> ReadR (ClassMap, TypeMap) (Kind, Type)
-anaType t = 
+anaType :: (Kind, Type) -> ReadR (ClassMap, TypeMap) (Kind, Type)
+anaType (k, t) = 
     do newT <- withReadR snd $ mkTypeConstrAppls TopLevel t
-       k <- inferKind newT
-       return (k, newT)
+       newK <- inferKind newT `joinReadR` return k
+       return (newK, newT)
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 

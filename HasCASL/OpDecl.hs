@@ -10,9 +10,7 @@
 module HasCASL.OpDecl where
 
 import HasCASL.As
-import HasCASL.ClassAna
 import HasCASL.ClassDecl
-import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import Common.Id
 import HasCASL.Le
@@ -51,7 +49,7 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args _) =
            sc = TypeScheme newArgs q ps
        appendDiags $ checkDifferentTypeArgs newArgs
        (k, newSc) <- anaTypeScheme sc
-       checkKindsS (posOfId i) k star
+       checkKindsS i star k
        return (i, newSc)
 
 

@@ -24,7 +24,6 @@ import HasCASL.OpDecl
 import Common.Result
 import Common.PrettyPrint
 import HasCASL.PrintAs
-import HasCASL.TypeAna
 import HasCASL.TypeDecl
 import HasCASL.MixAna
 import HasCASL.Reader
@@ -131,7 +130,7 @@ optAnaVarDecl vd@(VarDecl v t s q) =
 
 anaVarDecl(VarDecl v oldT _ _) = 
 		   do (k, t) <- anaTypeS (star, oldT)
-		      checkKindsS (posOfId v) k star
+		      checkKindsS v star k
 		      addOpId v (simpleTypeScheme t) [] VarDefn
 
 -- ----------------------------------------------------------------------------

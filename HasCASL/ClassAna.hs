@@ -10,7 +10,7 @@
 module HasCASL.ClassAna where
 
 import HasCASL.As
-import HasCASL.AsUtils()
+import HasCASL.AsUtils
 import Common.Id
 import HasCASL.Le
 import Data.List
@@ -66,8 +66,8 @@ anaClass (Intersection s ps) =
 			$ anaClassId ci) $ Set.toList s
        let (ks, restCs) = unzip l
 	   k = if null ks then star else head ks
-       foldReadR ( \ (ki, ci) -> 
-			 checkKinds (posOfId ci) k ki) l
+       mapM ( \ (ki, ci) -> 
+			 checkKinds ci k ki) l
        return (k, Intersection (Set.fromList restCs) ps)
 
 anaClass (Downset t) = 
@@ -93,21 +93,26 @@ anaKind (ExtClass k v p) =
 -- comparing kinds 
 -- ---------------------------------------------------------------------
 
-checkKinds :: Pos -> Kind -> Kind -> ReadR ClassMap ()
+checkKinds :: (PosItem a, PrettyPrint a) => 
+	      a -> Kind -> Kind -> ReadR ClassMap ()
 checkKinds p k1 k2 =
     do k3 <- expandKind k1
        k4 <- expandKind k2
        lift $ Result (eqKindDiag p k3 k4) $ Just ()
 
-eqKindDiag :: Pos -> Kind -> Kind -> [Diagnosis]
-eqKindDiag p k1 k2 = 
+eqKindDiag :: (PosItem a, PrettyPrint a) => a -> Kind -> Kind -> [Diagnosis]
+eqKindDiag a k1 k2 = 
     if eqKind k1 k2 then []
        else [ Diag Error
-	      (indent 2 (showString "incompatible kinds\n" .
+	      (indent 2 (showString "incompatible kind of: " .
+			 showPretty a .
+			 showChar '\n' .  
+			 showString "expected: " .
 			 showPretty k1 . 
 			 showChar '\n' .  
+			 showString "inferred: " .
 			 showPretty k2) "")
-	    $ p ]
+	    $ posOf [a] ]
 
 indent :: Int -> ShowS -> ShowS
 indent i s = showString $ concat $ 
