@@ -54,6 +54,8 @@ write_LIB_DEFN ga file opt ld = sequence_ $ map write_type $ outtypes opt
             PrettyOut PrettyLatex -> do
                 putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
                 write_casl_latex opt ga (casl_latex_filename file opt) ld
+	    EnvOut -> return () -- implemented in hets.hs 
+				-- (requires environment)
             _ -> do putStrLn ( "Error: the OutType \"" ++ 
                         show t ++ "\" is not implemented")
                     return ()
