@@ -1,6 +1,22 @@
-module AS_Basic_CASL where
 
--- $Header$
+{- HetCATS/CASL/AS_Basic_CASL.hs
+   $Id$
+   Authors: Klaus Lüttich
+            Christian Maeder
+   Year:    2002
+
+   This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and 
+   Symb_map_items.
+
+   todo:
+     - ATerm conversion
+     - Pretty printing
+
+
+   $Header$
+-}
+
+module AS_Basic_CASL where
 
 import Id
 import AS_Annotation 
