@@ -94,6 +94,13 @@ instance PrettyPrint Id where
 
 type SIMPLE_ID = Token
 
+---- some useful predicates for Ids -------------------------------------
+isMixfix :: Id -> Bool
+isMixfix (Id tops _ _) = any isPlace tops 
+
+isCompound :: Id -> Bool
+isCompound (Id _ cs _) = not $ null cs
+
 ---- helper class -------------------------------------------------------
 
 {- This class is derivable with DrIFT in HetCATS/utils ! 
