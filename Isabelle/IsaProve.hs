@@ -14,6 +14,25 @@ Portability :  portable
 -}
 {-
   todo: thy files in subdir
+  
+  Interface between Isabelle and Hets:
+  Hets writes Isabelle .thy file and opens window with button (GUI/HTkUtils.hs, uni/htk/test, ask cxl)
+  User extends .thy file with proofs
+  User presses button
+  Hets reads in user-modified .thy file
+  Hets write new .thy file (different name), consisting of
+    - original theory (i.e. put theory string into variable)
+    - proof part of user-modified file (look for first "\ntheorem")
+    - ML code for check_theorem
+    - ML "check_theorem \"name1\" \"theorem1\" name.thy"   (name: thName)
+      ...
+    - ML "check_theorem \"namen\" "\theoremn\" name.thy"
+  Hets runs new .thy file in Isar batch mode (system " .... ")
+  Hets inspects log file and extracts proven theorems
+
+  fun check_theorem name thm thy =
+    aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy name))), snd(read_axm (sign_of thy) (name,thm)))
+    handle _ => false;
 -}
 
 module Isabelle.IsaProve where
