@@ -160,16 +160,19 @@ hetcats.TAGS: $(sources)
 ### Documentation via haddock
 doc: docs/index.html utils/hd-lib
 
+
+## put Prelude.html and other base files into docs!
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h \
-          --read-interface=http://www.haskell.org/ghc/docs/latest/html/libraries/base,/home/linux-bkb/ghc/ghc-6.0.1/share/ghc-6.0.1/html/base/base.haddock \
+   -i utils/base.haddock \
           -t 'hets -- a heterogenous Specification (CASL) tool set'
 
 apache_doc:
 	cvs up -d
 	$(MAKE) distclean
 	$(MAKE) hetcats-make
-	$(RM) docs/*.html 
+	$(RM) docs/*.html
+	(cd docs; cvs up -d) 
 	$(MAKE) doc
 	$(MAKE) post_doc4apache
 
@@ -197,7 +200,7 @@ release:
 	ln -s ../uni uni
 	(cd HetCATS; $(MAKE) driftedSources; ./clean.sh; \
            find . -name CVS | xargs -r $(RM) -r; \
-           $(RM) clean.lst; $(RM) Makefile; mv ReleaseMakefile Makefile)
+           $(RM) clean.*; $(RM) Makefile; mv ReleaseMakefile Makefile)
 	tar zcvf HetCATS.tgz HetCATS
 
 #############################
