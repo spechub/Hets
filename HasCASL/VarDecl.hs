@@ -76,15 +76,12 @@ generalize (TypeScheme newArgs (q :=> newTy) p) = do
 				  TypeName i k n) fvs [-1, -2..]
 		   m = Map.fromList $ zip fvs ts
 		   qTy = q :=> repl m newTy
-		   restVars = fvs List.\\ newArgs
-	       if null restVars then
+                   ds = unboundTypevars newArgs newTy
+	       if null ds then
 	          return $ Just $ TypeScheme newArgs qTy p
 	          else if null newArgs then 
 		       return $ Just $ TypeScheme fvs qTy p
-		  else do addDiags [mkDiag Error 
-				    ("unbound type variable(s)\n\t"
-				     ++ showSepList ("," ++) showPretty 
-				     restVars " in") newTy]
+		  else do addDiags ds
                           return Nothing
 
 anaKind :: Kind -> State Env Kind

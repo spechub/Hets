@@ -27,7 +27,6 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
-
 mkSelId :: String -> Int -> Int -> Id
 mkSelId str n m = mkId [mkSimpleId (str ++ "_" ++ show n ++ "_" ++ show m)]
 
@@ -121,9 +120,10 @@ getSelType dt p rt = (case p of
 anaCompType :: [(Id, Type)] -> Type -> Type -> TypeMap -> Result Type
 anaCompType tys dt t tm = do
     (_, ct) <- anaType (Just star, t) tm
-    ct2 <- unboundTypevars (varsOf dt) ct
-    mapM (checkMonomorphRecursion ct2 tm) tys
-    return ct2
+    let ds = unboundTypevars (varsOf dt) ct 
+    if null ds then return () else Result ds Nothing
+    mapM (checkMonomorphRecursion ct tm) tys
+    return ct
  
 checkMonomorphRecursion :: Type	-> TypeMap -> (Id, Type) -> Result ()
 checkMonomorphRecursion t tm (i, rt) = 
@@ -132,11 +132,3 @@ checkMonomorphRecursion t tm (i, rt) =
        else Result [Diag Error  ("illegal polymorphic recursion" 
 				 ++ expected rt t) $ getMyPos t] Nothing
     else return ()
-
-unboundTypevars :: [TypeArg] -> Type -> Result Type
-unboundTypevars args ct = 
-    let restVars = varsOf ct List.\\ args in
-    if null restVars then return ct
-       else Result [mkDiag Error ("unbound type variable(s)\n\t"
-				  ++ showSepList ("," ++) showPretty 
-				  restVars " in") ct] Nothing
