@@ -77,12 +77,18 @@ instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
 
 printFormulaAux :: PrettyPrint f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
 printFormulaAux ga f =
-  vcat $ map (printAnnotedFormula_Text0 ga) f
+  vcat $ map (printAnnotedFormula_Text0 ga True) f
 
+printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos -> [[Annoted (FORMULA f)]] -> Doc
+printFormulaOfModalSign ga f =
+    vcat $ map (rekuPF ga) f 
+	where rekuPF ::PrettyPrint f =>  GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
+              rekuPF ga tf = fsep $ punctuate semi  $ map (printAnnotedFormula_Text0 ga False) tf
+			     
 printAnnotedFormula_Text0 :: PrettyPrint f => 
-                             GlobalAnnos -> Annoted (FORMULA f) -> Doc
-printAnnotedFormula_Text0 ga (Annoted i _ las ras) =
-	let i'   = char '.' <+> printFORMULA ga i
+			     GlobalAnnos -> Bool ->  Annoted (FORMULA f) -> Doc
+printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
+        let i'   = (if withDot then (char '.' <+>) else id) $  printFORMULA ga i
 	    las' = if not $ null las then 
 	               ptext "\n" <> printAnnotationList_Text0 ga las
 		   else
