@@ -74,12 +74,12 @@ isString ga i trs = case getLiteralType ga i of
 	  stringTest ii = case getLiteralType ga ii of 
 			  StringNull -> True 
 			  _ -> case ii of
-			       Id [t] [] _ -> head (tokStr t) == '\''
+			       Id [t] [] _ -> take 1 (tokStr t) == "\'"
 			       _           -> False
 
 convCASLChar :: Token -> String
 convCASLChar t = case tokStr t of
-		 cs | head cs == '\''
+		 cs | not (null cs) && head cs == '\''
 		      && last cs == '\'' -> init $ tail cs
 		    | otherwise -> 
 			error ("convCASLChar: " ++ cs ++
