@@ -107,7 +107,7 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode Node 
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
-
+  deriving (Eq)
 data BasicProof =
   forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -179,7 +179,7 @@ globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
 {- if the list of paths is empty from the beginning, nothing is done
    otherwise the unprovenThm edge is replaced by a proven one -}
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] = 
-  if null changes then (dgraph, [])
+  if null changes then (dgraph, changes)
    else ((insEdge provenEdge (delLEdge edge dgraph)),
 	    ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
 
@@ -197,7 +197,9 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
  ((node,path):list) =
-  globDecompForOneEdgeAux newGraph edge newChanges list
+  if elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
+    then globDecompForOneEdgeAux dgraph edge changes list
+   else globDecompForOneEdgeAux newGraph edge newChanges list
 
   where
     morphism = case calculateMorphismOfPath path of

@@ -935,34 +935,33 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
     InsertNode lNode -> error "insert node not yet implemented"
     DeleteNode node -> error "delete node not yet implemented"
     InsertEdge ledge@(src,tgt,edgelab) -> 
-      do
-        let dg2abstrNodeMap = dg2abstrNode convMaps
-        case (Map.lookup (libname,src) dg2abstrNodeMap,
-	      Map.lookup (libname,tgt) dg2abstrNodeMap) of
-          (Just abstrSrc, Just abstrTgt) ->
-            do let dgEdge = (libname, (src,tgt,show edgelab))
-	       (Result descr err) <- 
-                  addlink gid (getDGLinkType (dgl_type edgelab))
+      do let dg2abstrNodeMap = dg2abstrNode convMaps
+         case (Map.lookup (libname,src) dg2abstrNodeMap,
+	       Map.lookup (libname,tgt) dg2abstrNodeMap) of
+           (Just abstrSrc, Just abstrTgt) ->
+             do let dgEdge = (libname, (src,tgt,show edgelab))
+	        (Result descr err) <- 
+                   addlink gid (getDGLinkType (dgl_type edgelab))
 			      "" (Just ledge) abstrSrc abstrTgt graphInfo
-	       case err of
-	         Nothing ->
-	           do let newConvMaps = convMaps 
+	        case err of
+	          Nothing ->
+	            do let newConvMaps = convMaps 
                               {dg2abstrEdge =
 		               Map.insert dgEdge descr (dg2abstrEdge convMaps),
 	                       abstr2dgEdge =
 		               Map.insert descr dgEdge (abstr2dgEdge convMaps)}
- 	              applyChangesAux gid libname graphInfo (descr+1)
-				 newConvMaps changes
-	         Just _ -> 
+                       applyChangesAux gid libname graphInfo (descr+1)
+			 	 newConvMaps changes
+	          Just _ -> 
 -- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
 -- Momentane Lösung: ignorieren...
 	           applyChangesAux gid libname graphInfo eventDescr
 			         convMaps changes
-          otherwise -> 
+           otherwise -> 
 -- -- ##### was machen, wenn Einfügen nicht erfolgreich?! ###
 -- Momentane Lösung: ignorieren...
-	    applyChangesAux gid libname graphInfo eventDescr
-			         convMaps changes
+	     applyChangesAux gid libname graphInfo eventDescr
+		 	         convMaps changes
    
 
     DeleteEdge (src,tgt,edgelab) -> 
@@ -991,4 +990,4 @@ applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
 			      ++ " of type " ++ (show (dgl_type edgelab))
 			      ++ " and origin " ++ (show (dgl_origin edgelab))
 			      ++ " of development "
-                         ++ "graph does not exist in abstraction graph")
+                         ++ "graph does not exist in abstraction graph" ++ (showPretty convMaps "\n"))
