@@ -46,37 +46,41 @@ import Common.Lib.Pretty
 checkFreeType :: (PrettyPrint f, Eq f) => Morphism f e m -> [Named (FORMULA f)] -> Maybe Bool
 checkFreeType m fsn 
        | Set.any (\s->not $ elem s srts) newSorts = Nothing     
-       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False   
- --      | any (\s->not $ elem s srts) newSorts = Nothing     
- --      | any (\s->not $ elem s f_Inhabited) newSorts = Just False  
+       | Set.any (\s->not $ elem s f_Inhabited) newSorts = Just False            
+             --      | any (\s->not $ elem s srts) newSorts = Nothing     
+             --      | any (\s->not $ elem s f_Inhabited) newSorts = Just False  
        | elem Nothing l_Syms = Nothing
-       | any id $ map (\s->Set.member s oldSorts) $ ops_sorts ++ preds_sorts = Nothing                            
- --      | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
+       | any id $ map (\s->Set.member s oldSorts) $ ops_sorts ++ preds_sorts = Nothing     -- 2       
+             --      | any id $ map (\s->elem s sorts) $ ops_sorts ++ preds_sorts = Nothing
        | not $ and $ map checkTerm leadingTerms = Nothing                 
        | not $ and $ map checkVar leadingTerms = Nothing 
-       | not $ checkPatterns leadingPatterns = Nothing              
+ --      | not $ checkPatterns leadingPatterns = Nothing             --  1,2             
        | otherwise = Just True
    where fs1 = map sentence (filter is_user_or_sort_gen fsn)
          fs = trace (showPretty fs1 "Axiom") fs1                   -- Axiom
          is_user_or_sort_gen ax = take 12 name == "ga_generated" || take 3 name /= "ga_"
              where name = senName ax
          sig = imageOfMorphism m
-         oldSorts = sortSet sig
-         allSorts = sortSet $ mtarget m
-         newSorts = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+         oldSorts1 = sortSet sig
+         oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1          --   old sorts
+         allSorts1 = sortSet $ mtarget m
+         allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
+         newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
+         newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
    --      sorts1 = Set.toList $ sortSet sig
    --      sorts = trace (showPretty sorts1 "old sorts") sorts1            -- "old" sorts
    --      newSorts2 = Set.toList $ sortSet (mtarget m)
    --      newSorts1 = filter (\s->not $ elem s sorts) newSorts2
    --      newSorts = trace (showPretty newSorts1 "new sorts") newSorts1    -- "new" sorts 
          fconstrs = concat $ map fc fs
+   --      fconstrs = trace (showPretty fconstrs1 "fconstrs") fconstrs1
          fc f = case f of
                      Sort_gen_ax constrs True -> constrs
                      _->[]
          (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
          srts = trace (showPretty srts1 "srts") srts1      --   srts
          constructors = trace (showPretty constructors1 "constructors") constructors1       -- constructors
-         f_Inhabited1 = inhabited fconstrs
+         f_Inhabited1 = inhabited (Set.toList oldSorts) fconstrs
          f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1      --  f_inhabited
          op_preds1 = filter (\f->case f of
                                   Quantification Universal _ _ _ -> True
@@ -167,7 +171,7 @@ leadingSym f = do
        tp<-leading_Term_Predication f
        return (extract_leading_symb tp)
  
-
+{-
 leadingSymb :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSymb f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
@@ -185,6 +189,7 @@ leadingSymb f = leading (f,False,False)
         term t = case t of
                   Sorted_term t' _ _ ->term t'
                   _ -> t
+-}
  
 
 leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
@@ -227,10 +232,11 @@ groupAxioms phis = do
                                          else symb
                               in p'++(filterA ps symb')
 
+
 instance (PrettyPrint a, PrettyPrint b) => PrettyPrint (Either a b) where
   printText0 ga (Left x) = printText0 ga x
   printText0 ga (Right x) = printText0 ga x
 
 instance PrettyPrint a => PrettyPrint (Maybe a) where
   printText0 ga (Just x) = printText0 ga x
-  printText0 ga Nothing = ptext "Nothing"
+  printText0 ga Nothing = ptext "Nothing" 
