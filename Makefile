@@ -14,6 +14,7 @@
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = Static:Common/ATerm:HasCASL:ghc:Modal:Haskell:GUI:hetcats
+CLEAN_PATH = Common/Lib:Common/Lib/Parsec:Common:Logic:CASL:Syntax:$(INCLUDE_PATH)
 
 HC         = ghc
 PERL       = perl
@@ -103,7 +104,7 @@ docs/index.html: $(doc_sources)
 
 ### removes *.hi and *.o in all include directories
 clean:
-	for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
+	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
 	(cd $$p ; $(RM) *.hi *.hi.bak *.o) ; done
 
 ### additionally removes binaries
@@ -111,11 +112,14 @@ bin_clean: clean
 	$(RM) hets
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
+	$(RM) Syntax/hetpa
+	$(RM) Static/hetana
+	$(RM) GUI/hetdg
 
 ### additonally removes *.d (dependency files) in every include directory
 ### also delete *.d.bak (dependency file backups)
 d_clean: clean
-	for p in $(subst :, ,$(INCLUDE_PATH)) . ; do \
+	for p in $(subst :, ,$(CLEAN_PATH)) . ; do \
 	(cd $$p ; $(RM) *.d *.d.bak) ; done
 
 ### additionally removes the files that define the sources-variable
