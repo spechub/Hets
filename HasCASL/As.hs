@@ -65,12 +65,14 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s, "<"
                | IsoDecl [TypePattern] [Pos]
                -- pos "="s
-               | SubtypeDefn TypePattern Var Type (Annoted Formula) [Pos]
+               | SubtypeDefn TypePattern Vars Type (Annoted Formula) [Pos]
                -- pos "=", "{", ":", dot, "}"
                | AliasType TypePattern (Maybe Kind) TypeScheme [Pos]
                -- pos ":="
 	       | Datatype DatatypeDecl
                  deriving (Show, Eq)
+
+data Vars = Var Var | VarTuple [Vars] [Pos] deriving (Show, Eq)
 
 data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos "("s, ")"s 

@@ -62,10 +62,17 @@ isoDecl s = do e <- equalT
 	         <|> do (l, p) <- typePattern `separatedBy` equalT
 			return (IsoDecl (s:l) (map tokPos (e:p)))
 
+vars :: AParser Vars
+vars = fmap Var var 
+       <|> do o <- oParenT
+	      (vs, ps) <- vars `separatedBy` anComma
+	      c <- cParenT
+	      return (VarTuple vs $ toPos o ps c)
+
 subTypeDefn :: (TypePattern, Token) -> AParser TypeItem
 subTypeDefn (s, e) = do a <- annos
 			o <- oBraceT
-			v <- var
+			v <- vars
 			c <- colT
 			t <- parseType
 			d <- dotT -- or bar

@@ -30,7 +30,12 @@ SORT-ITEM       ::= TYPE-PATTERN , ... , TYPE-PATTERN
                   | TYPE-PATTERN , ... , TYPE-PATTERN : KIND
                   | TYPE-PATTERN , ... , TYPE-PATTERN < TYPE 
                   | TYPE-PATTERN = ... = TYPE-PATTERN
-                  | TYPE-PATTERN = { VAR : TYPE "." FORMULA }
+                  | TYPE-PATTERN = { VARS : TYPE "." FORMULA }
+
+VARS            ::= VAR 
+		  | (VARS, ..., VARS)
+
+%% for several VARS the following TYPE must be a matching product
 
 TYPE-ITEM       ::= SORT-ITEM
                   | TYPE-PATTERN := PSEUDOTYPE

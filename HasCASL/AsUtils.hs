@@ -51,6 +51,16 @@ posOfClass c =
     Intersection is ps -> firstPos (toList is) ps
 
 -- ---------------------------------------------------------------------
+
+posOfVars :: Vars -> Pos
+posOfVars vr = 
+    case vr of 
+    Var v -> posOfId v
+    VarTuple vs ps -> firstPos vs ps
+
+instance PosItem Vars where
+    get_pos = Just . posOfVars
+
 instance PosItem TypePattern where
     get_pos = Just . posOfTypePattern
 

@@ -306,6 +306,10 @@ instance PrettyPrint ClassDecl where
 					   <> text lessS
 					       <+> printText0 ga t)
 
+instance PrettyPrint Vars where
+    printText0 ga (Var v) = printText0 ga v
+    printText0 ga (VarTuple vs _) = parens $ commaT_text ga vs
+
 instance PrettyPrint TypeItem where 
     printText0 ga (TypeDecl l k _) = commaT_text ga l <> 
 				  printKind ga k

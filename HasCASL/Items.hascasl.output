@@ -6,3 +6,4 @@ type a :Monad := \ t:Type .  t -> t
 free type Term ::= Var Variable | 
 		   Lam Variable Term | 
 		   App Term Term
+type WNet = {(sys, i, o) : T × T × T . i = o}
