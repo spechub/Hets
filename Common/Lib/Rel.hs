@@ -321,7 +321,7 @@ rmReflex = Rel . Map.mapWithKey Set.delete . toMap
 -- |
 -- intransitive kernel of a reflexive and transitive closure
 --
--- * every left element is related to all symmetric right elements if (transClosure r == r)
+-- * only the lowest (according to Ord) left element is related to all symmetric right elements if (transClosure r == r)
 --
 -- * Warning: all reflexive relations are removed!!
 intransKernel :: (Show a ,Ord a) => Rel a -> Rel a
@@ -331,27 +331,15 @@ intransKernel r =
         dirRight set = set Set.\\ transRight set
         transRight =  Set.unions . map lkup . Set.toList
         lkup = (\ e -> maybe Set.empty id (Map.lookup e rmap))
-        addSym sm mp =        
-            let checkAllSym m = 
-                    Set.fold (\k cm -> if Map.member k cm 
-                                         then cm 
-                                         else Map.insert k 
-                                              (Map.find k sm) cm) 
-                               m $ Set.unions $ Map.elems sm
-            in Rel $ checkAllSym 
-                   $ Map.mapWithKey 
-                         (\ k s -> Set.delete k $
-                                   Set.unions (s:catMaybes (concatMap  
-                                        (\x-> let ms = Map.lookup x sm
-                                              in maybe ([ms]) 
-                                                    (\ _ -> [ms,
-                                                             Map.lookup x 
-                                                               mp]) 
-                                                    ms) 
-                                            (k:Set.toList s)))) 
-                   $ mp 
-    in addSym (symmetricMap r) $ 
-       Map.foldWithKey insDirR Map.empty rmap
+        filterEmptySet = Map.filter (not . Set.isEmpty)  
+        addSym sm =                     
+            Map.mapWithKey 
+                      (\ k s -> Set.delete k $ 
+                                Set.union s $ 
+                                Map.findWithDefault Set.empty k sm)
+    in Rel $ filterEmptySet $ 
+             addSym (symmetricMap r) $ 
+             Map.foldWithKey insDirR Map.empty rmap
 
 {--------------------------------------------------------------------
   remove symmetric relations (Added by K.L.)
