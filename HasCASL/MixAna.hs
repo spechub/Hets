@@ -29,6 +29,7 @@ import HasCASL.TypeAna
 import HasCASL.VarDecl
 import HasCASL.MixParserState
 import Data.Maybe
+import Control.Exception(assert)
 
 -- import Debug.Trace
 
@@ -72,7 +73,7 @@ collectArg :: GlobalAnnos -> TypeMap -> PMap a -> (PState a -> a)
 collectArg ga tm m f
 	   s@(PState { ruleId = argIde, stateNo = arg, ruleType = argType }) =
     map (\ p -> p { restRule = tail $ restRule p })  
-    $ mapMaybe (filterByType tm (argType, f s))
+    $ mapMaybe (filterByType tm argType (f s))
     $ filter (filterByPrec ga argIde)
     $ lookUp m arg
 
@@ -403,11 +404,11 @@ patFromState p =
         sc@(TypeScheme _ (_ :=> ty) _) = ruleScheme p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
-    in if  r == inId 
+    in if r == inId 
 	   || r == opId 
 	   || r == parenId
-       then head ar
-       else if r == applId then
+       then assert (isSingle ar) $ head ar
+       else if r == applId then assert (not $ null ar) $
 	    case head ar of 
 	    PatternConstr instOp isc args ps ->
 		PatternConstr instOp isc (args ++ tail ar) (ps ++ qs)  
@@ -415,8 +416,8 @@ patFromState p =
        else if r == tupleId || r == unitId then
 	    TuplePattern ar qs
        else if isUnknownId r then 
-	        if null $ tail ts then error "patFromState"
-	        else PatternVar (VarDecl (Id [head $ tail ts] [] []) 
+	        assert (length ts == 2) $ 
+		     PatternVar (VarDecl (Id [head $ tail ts] [] []) 
 				 (ruleType p) Other qs)
 	    else let newI = setIdePos r ar qs in 
 		     if null ar && isVar p then PatternVar 

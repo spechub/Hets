@@ -25,6 +25,7 @@ import qualified Common.Lib.Set as Set
 import Common.Lib.State
 import Data.Maybe
 import HasCASL.Unify
+import Control.Exception (assert)
 
 -- avoid confusion with the variable counter Int
 newtype Index = Index Int deriving (Eq, Ord, Show)
@@ -225,7 +226,8 @@ scanState tm knowns (mty, trm) t p =
     do let ts = restRule p
        if null ts then return [] else 
 	  if head ts == t then 
-	       if t == commaTok then -- tuple elements separator 
+	       if t == commaTok then assert (ruleId p == tupleId) $
+	       -- tuple elements separator 
 	       do tvar <- freshVar
 		  let nextTy = TypeName tvar star 1
                       newTy = case ruleType p of 
@@ -238,22 +240,17 @@ scanState tm knowns (mty, trm) t p =
 		  return [ p { restRule = termTok : commaTok : tail ts
 			     , ruleType = newTy }
 			 , p { restRule = termTok : tail ts }]
-              else return $
-		   if t == opTok || t == inTok then
-		      case mty of 
-		      Nothing -> [p { restRule = tail ts }]
-		      Just ty -> 
-			  let mp = do q <- filterByType tm (ty,trm) p
-				      return q { ruleType = ty, 
-						 restRule = tail ts }
-			       in maybeToList mp
- 	      else case mty of
-	           Nothing -> [p { restRule = tail ts
-			         , posList = tokPos t : posList p }]
-		   Just ty -> maybeToList 
-		       (do q <- filterByType tm (ty,trm) p
-			   return q { ruleType = ty, restRule = tail ts
-                                    , posList = tokPos t : posList q })
+              else return $ case mty of 
+	              Just ty -> maybeToList $
+		            do q <- filterByType tm ty trm p
+			       return q { ruleType = ty
+					, restRule = tail ts
+					, posList = tokPos t : posList q }
+		      Nothing -> if t == opTok || t == inTok then
+				 assert (null (tail ts) && null (ruleArgs p)) 
+				 [ p { restRule = [], ruleArgs = [trm] } ]
+				 else [ p { restRule = tail ts 
+					  , posList = tokPos t : posList p } ]
 	  else return $ if ruleId p == unknownId 
 	         && not (tokStr t `Set.member` knowns) then
 	       [p { restRule = tail ts, posList = tokPos t : posList p
@@ -272,12 +269,12 @@ stateToAppl p =
         sc@(TypeScheme _ (_ :=> ty) _) = ruleScheme p
         ar = reverse $ ruleArgs p
 	qs = reverse $ posList p
-    in if  not (null ar) && (r == inId 
+    in if r == inId 
 	   || r == parenId 
-	   || r == opId) 
-       then head ar
-       else if r == applId && length ar == 2 then
-	    ApplTerm (head ar) (head (tail ar)) qs 
+	   || r == opId
+       then assert (isSingle ar) head ar
+       else if r == applId then
+	    assert (length ar == 2) $ ApplTerm (head ar) (head (tail ar)) qs 
        else if r == tupleId || r == unitId then TupleTerm ar qs
        else let newI = setIdePos r ar qs in 
 		if null ar && isVar p then QualVar newI ty []
@@ -329,6 +326,7 @@ toAppl g s = let i = ruleId s in
                nb = length br
 	       mkList [] (p:_) = asAppl c [] p
 	       mkList (hd:tl) (p:ps) = asAppl f [hd, mkList tl ps] p
+	       mkList _ _ = error "mkList: empty pos list"
 	   in if null ra then asAppl c [] 
 		  (if null br then nullPos else head br)
 	      else if nb + 2 == cl + na then
@@ -398,24 +396,24 @@ expandType tm oldT =
 addArgState :: a -> PState a -> PState a
 addArgState arg op = op { ruleArgs = arg : ruleArgs op }
 
-filterByType :: TypeMap -> (Type, a) -> PState a -> Maybe (PState a)
-filterByType tm argState@(_, argTerm) opState =
+filterByType :: TypeMap -> Type -> a -> PState a -> Maybe (PState a)
+filterByType tm argType argTerm opState =
 	case expandType tm $ ruleType opState of
 		FunType t1 _ t2 _ -> 
-		    filterByArgument tm t1 [] t2 argState opState
+		    filterByArgument tm t1 [] t2 argType argTerm opState
 		TypeName _ _ v -> if v == 0 then Nothing
 				  else Just $ addArgState argTerm opState
 		_ -> Nothing
 
-filterByArgument :: TypeMap -> Type -> [Type] -> Type -> (Type, a) 
+filterByArgument :: TypeMap -> Type -> [Type] -> Type -> Type -> a 
 		 -> PState a -> Maybe (PState a)
-filterByArgument tm t1 tl t2 argState@(argType, argTerm) opState =
-    let ms = maybeResult $ unify tm t1 argType in 
+filterByArgument tm t1 tl t2 argType argTerm opState =
+    let ms = maybeResult $ unify tm t1 argType in
 	case ms of 
 	Nothing -> 
 	           case expandType tm t1 of 
 		   ProductType (t:ts) _ -> filterByArgument tm t 
-					   (ts++tl) t2 argState opState
+					   (ts++tl) t2 argType argTerm opState
 		   _ -> Nothing
 	Just s -> let newType = subst s $ foldr 
 			      ( \ t ty -> FunType t PFunArr ty []) t2 tl
