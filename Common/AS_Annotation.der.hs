@@ -40,7 +40,7 @@ swapTable = map swap
 
 -- | drop the first 3 characters from the show result
 toTable :: (Show a) => [a] -> [(a, String)]
-toTable = map ( \ a -> (a, drop 3 $ show a))
+toTable = map $ \a -> (a, drop 3 $ show a)
 
 -- | a lookup table for the textual representation of display formats
 display_format_table :: [(Display_format, String)]
