@@ -167,25 +167,26 @@ makeToShATerm name body
     in text "toShATerm att0" <+> -- this first Argument is an ATermTable
        ppCons cvs body <+>
        text "=" $$ nest 4 
-       ((if null cvs then text "let lat = []" $$ text "in"
-	 else
-	 text "let" <+>
-	 vcat ((childToShATerm "att" cvs (types body))++
-	       [text "lat = [" <+>
-		hcat (intersperse (text ",") (map addPrime cvs)) <+>  
-		text "]" ]) $$
-	 text "in") <+> 
-	text "addATerm (ShAAppl" <+>
-	doubleQuotes (text (constructor body)) <+>
-	text " lat [])" <+> 
-	text ("att"++(show (length cvs))))
+       ( case childToShATerm "att" cvs (types body) of
+	 childs ->
+           ( vcat (childs)) $$ 
+	    text "addATerm (ShAAppl" <+>
+	    doubleQuotes (text (constructor body)) <+>
+	    (if null cvs then text "[] [])" 
+		else (char '[' <+>
+		      hcat (punctuate comma (map addPrime cvs)) <+>  
+		      text "] [])")) <+>
+	    text ("att"++(show (length cvs))) <+> 
+            (if null cvs then empty 
+	                 else hcat $ replicate (length childs) (char '}')))
 
 
 childToShATerm s vs ts = 
     let (_,vs') = List.mapAccumL childToATerm' (0,ts) vs in vs'
     where childToATerm' (i,t:ts) v = 
 	      ((i+1,ts), 
-	       attN_v' <+> text "=" <+> text ("toShATerm") <+> attO <+> v)
+	      text "case" <+> text ("toShATerm") <+> attO <+> v 
+	       <+> text "of { " <+>  attN_v' <+> text "->")
 	      where attN_v' = hcat [text "(",text (s++(show (i+1))),
 			      text ",", addPrime v, text ")"]
 		    attO = text (s++(show i))
@@ -228,8 +229,10 @@ makeFromShATerm body
        hcat (intersperse (text ",") cvs) <+> 
        text "] _)" <+>
        text "->" $$ nest 4 (
-	    (text "let") <+> block ((kids cvs)++
-		   [text "in" <+> ppCons (map addPrime cvs) body]))
+	    block ((kids cvs)++
+		   [ppCons (map addPrime cvs) body <+> 
+		    if null cvs then empty
+		      else (hcat $ replicate (length cvs) (char '}'))]))
    where kids cvs = let (_,ks) = (List.mapAccumL 
 				     (childFromShATerm (text "att")) 
 			             (types body)
@@ -240,9 +243,9 @@ makeFromShATerm body
 {-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"] -}
 childFromShATerm atn (t:ts) v
     = ( ts
-      , (addPrime v) <+> text "=" <+> 
-	      (text ("fromShATerm") <+> 
-	       parens (text "getATermByIndex1" <+> v <+> atn))
+      , (text "case fromShATerm" <+> 
+	 parens (text "getATermByIndex1" <+> v <+> atn) <+> 
+	 text "of { " <+> (addPrime v) <+> text "->")
       )
 
 
