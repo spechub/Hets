@@ -38,18 +38,18 @@ unboundTypevars args ct =
 
 -- | vars
 varsOf :: Type -> [TypeArg]
-varsOf = leaves (/=0)
+varsOf = map fst . leaves (/=0)
 
 -- | bound vars
 genVarsOf :: Type -> [TypeArg]
-genVarsOf = leaves (<0)
+genVarsOf = map fst . leaves (<0)
 
 -- | vars or other ids 
-leaves :: (Int -> Bool) -> Type -> [TypeArg]
+leaves :: (Int -> Bool) -> Type -> [(TypeArg, Int)]
 leaves b t = 
     case t of 
 	   TypeName j k i -> if b(i)
-			     then [TypeArg j k Other []]
+			     then [(TypeArg j k Other [], i)]
 			     else []
 	   TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
 	   ExpandedType _ t2 -> leaves b t2
@@ -93,7 +93,7 @@ asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 freshInstList :: TypeScheme -> State Int (Type, [Type])
 freshInstList (TypeScheme tArgs t _) = 
     do let vs = genVarsOf t
-       ts <- mkSubst vs  
+       ts <- mkSubst vs
        return (rename ( \ i k n -> if n < 0 then 
 			ts !! (-1-n) else TypeName i k n) t, 
 	       map (mapArg $ zip vs ts) tArgs)
@@ -150,14 +150,14 @@ getTypeVar :: TypeArg -> Id
 getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.fromList . map getTypeVar . leaves b
+idsOf b = Set.fromList . map (getTypeVar . fst) . leaves b
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool
 occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
-relatedTypeIds tm i1 i2 = -- i1 == i2 
-    not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
+relatedTypeIds _tm i1 i2 = i1 == i2 
+--    not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
 
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
@@ -198,18 +198,18 @@ instance Unifiable Type where
     match tm rel (b1, LazyType t1 _) t2 = match tm rel (b1, t1) t2
     match tm rel t1 (b2, KindedType t2 _ _) = match tm rel t1 (b2, t2)
     match tm rel (b1, KindedType t1 _ _) t2 = match tm rel (b1, t1) t2
-    match _ rel (b1, t1@(TypeName i1 k1 v1)) (b2, t2@(TypeName i2 k2 v2)) =
-      if rawKind k1 == rawKind k2 then
+    match _ rel (b1, t1@(TypeName i1 _k1 v1)) (b2, t2@(TypeName i2 _k2 v2)) =
+--      if rawKind k1 == rawKind k2 then kinds should be equal anyway
         if rel i1 i2 && v1 == v2
            then return eps
         else if v1 > 0 && b1 then return $ 
                 Map.single v1 t2
                 else if v2 > 0 && b2 then return $
                      Map.single v2 t1
-                        else uniResult "typename" i1 
-                                    "is not unifiable with typename" i2
-      else uniResult "typename" i1 
-                                    "differs in raw kind of typename" i2
+                        else uniResult "typename" t1 
+                                    "is not unifiable with typename" t2
+{-      else uniResult "typename" i1 
+                                    "differs in raw kind of typename" i2 -}
     match _tm _ (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
            if null $ leaves (==v1) t2 then 
@@ -243,6 +243,10 @@ uniResult s1 a s2 b =
 instance PosItem a => PosItem (a, b) where
     get_pos   = get_pos . fst
     get_pos_l = get_pos_l . fst
+
+instance PosItem a => PosItem [a] where
+    get_pos l = let p = posOf l in 
+                 if p == nullPos then Nothing else Just p
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)
@@ -297,7 +301,9 @@ expandAliases tm t = case t of
 		     (l, [], ty, True)
 	    Just (TypeInfo _ _ _
 		  (Supertype _ (TypeScheme l ty _) _)) ->
-		     (l, [], ty, True)
+                     case ty of 
+                     TypeName _ _ _ -> wrap t
+                     _ -> (l, [], ty, True)
 	    _ -> wrap t
     TypeAppl t1 t2 -> 
 	let (ps, as, ta, b) = expandAliases tm t1 

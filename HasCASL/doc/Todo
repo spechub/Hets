@@ -8,9 +8,8 @@ haddockify code
 checking legality of internal and external terms is missing
 
 subtypes are treated like type synonyms. Function and product types
-are builtin. The unit type is the empty product type. Subtypes
-relations of these builtin types and user defined types are
-problematic.
+are builtin. Subtypes relations of these builtin types and user
+defined types are problematic. The unit type is a separat type!
 
 class names are not considered for mapping (Morphism.hs)
 
@@ -32,16 +31,10 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 types:
-currently certain subtype relations are checked, but unification still
-checks relatedTypeIds (and fails in Secd.hascasl and Numbers.casl
-without this)
+(Add known function subtypings '__->__ < __->?__', does not seem to be
+necessary, though.)
 
-"Unit" must be recognized by the parser if class memberships are added
-for Unit. 
-
-(shape unify must repeatedly consider the whole list)
-
-Add known function subtypings '__->__ < __->?__'
+Lazy typings are not handled yet
 
 
 

@@ -17,7 +17,7 @@ Ord < Eq
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -52,8 +52,10 @@ true : Unit %(fun)%
 (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op f[t] : forall e : Ord . e_v-1 -> e_v-1)(op b : t), op b : t)
 %% Diagnostics -----------------------------------------------------------
-*** Error 16.7, unresolved constraint 't : Ord'
 *** Hint 16.7, 
   expected: Ord
      found: Eq
 
+*** Error 16.7, in term'(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  ((op f[t] : forall e : Ord . e_v-1 -> e_v-1)(op b : t), op b : t)' of type 'Unit'
+ unresolved constraints '{ t : Ord }'

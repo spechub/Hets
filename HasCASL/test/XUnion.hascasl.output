@@ -7,7 +7,7 @@ op __union__ : Graph N E * Graph N E -> Graph N E;
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N));
        g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
-. (fun __=__[Set N@(N ->? Unit) * (E ->? N) * (E ->? N)]
+. (fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
     ((op __union__[N; E]
       : forall N : Type; E : Type .
@@ -31,7 +31,7 @@ N : Type %(var_2)%
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 S : Type %(var_1)%
 Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -77,7 +77,7 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[Set N@(N ->? Unit) * (E ->? N) * (E ->? N)]
+(fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op __union__[N; E]
     : forall N : Type; E : Type .
@@ -94,3 +94,11 @@ true : Unit %(fun)%
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
+*** Hint 9.6, in type of 'g'
+  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.21)
+  is not unifiable with type '_var_16_v16 ->? _var_17_v17' (6.51)
+
+*** Hint 9.6, no type match for: g
+  with (maximal) type: _var_16_v16 ->? _var_17_v17
+  known types:
+    Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))

@@ -28,11 +28,11 @@ op def, tt : Pred s
 var x : s
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . ()
+          = \ (var x : s) : s_v1 . ()
         %% def is also total (identical to tt) 
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . ()
+          = \ (var x : s) : s_v1 . ()
         %% tt is total "op tt(x: s): unit = ()"
 program __ und __ (x, y : Unit) : Unit = ()
 %% total function type
@@ -40,16 +40,16 @@ type __->__ : Type- -> Type+ -> Type
 type __->__(s : Type)(t : Type) < s_v1 ->? t_v2
 %% total functions
 op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-     = \ (var x : s, var y : t) .! (var x : s)
+     = \ (var x : s, var y : t) .! (var x : s) as s
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-     = \ (var x : s, var y : t) .! (var x : s)
+     = \ (var x : s, var y : t) .! (var x : s) as s
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (fun __=__[_var_12_v12 * _var_13_v13 ->? _var_12_v12]
+. (fun __=__[_var_30_v30 * _var_31_v31 ->? _var_30_v30]
    : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-    (op fst[_var_12_v12; _var_13_v13]
+    (op fst[_var_30_v30; _var_31_v31]
      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
-     op __res__[_var_12_v12; _var_13_v13]
+     op __res__[_var_30_v30; _var_31_v31]
      : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
@@ -98,9 +98,9 @@ program neg (r : Pred Unit) : Pred Unit = r impl ff
 type nat
 class Cpo < Type
       {var c : Cpo; pred __<<=__ : c * c; ;
-       pred isChain(s : nat -> c_v52) :? Unit
+       pred isChain(s : nat -> c_v102) :? Unit
               = all (\ n : nat . s (n) <<= s (Suc (n)));
-       pred isBound(x : c_v52; s : nat -> c_v52) :? Unit
+       pred isBound(x : c_v102; s : nat -> c_v102) :? Unit
               = all (\ n : nat . s (n) <<= x);
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
@@ -117,12 +117,12 @@ type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo
 type Unit : Pcpo
 %% Pcont
 type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
-type __-->?__(c : Cpo)(d : Cpo) < c_v52 ->? d_v57
+type __-->?__(c : Cpo)(d : Cpo) < c_v102 ->? d_v107
 program f <<= [c -->? d] g =
             all (\ x : c . def (f x) impl f (x) <<= g (x))
 %% Tcont
 type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type __-->__(c : Cpo)(d : Cpo) < c_v52 -->? d_v57
+type __-->__(c : Cpo)(d : Cpo) < c_v102 -->? d_v107
 var f : c --> d; g : c --> d
 program (pred __<<=__[c --> d] : forall c : Cpo . c_v-1 * c_v-1)
           (var f : c --> d, var g : c --> d)
@@ -143,15 +143,16 @@ Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Pcpo := Unit
+Unit : Pcpo
 __*__
   : (Cpo+ -> Cpo+ -> Cpo, Pcpo+ -> Pcpo+ -> Pcpo,
      Type+ -> Type+ -> Type)
 __-->__
   : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Pcpo+ -> Pcpo,
-     Type- -> Type+ -> Type) < c_v52 -->? d_v57
+     Type- -> Type+ -> Type) < c_v102 -->? d_v107
 __-->?__
-  : (Cpo- -> Cpo+ -> Pcpo, Type- -> Type+ -> Type) < c_v52 ->? d_v57
+  : (Cpo- -> Cpo+ -> Pcpo,
+     Type- -> Type+ -> Type) < c_v102 ->? d_v107
 __->__ : Type- -> Type+ -> Type < s_v1 ->? t_v2
 __->?__ : Type- -> Type+ -> Type
 bool
@@ -159,11 +160,11 @@ bool
      %[free type bool
          ::= true : bool
              false : bool]%
-c : Cpo %(var_52)%
-d : Cpo %(var_57)%
-f : Flatcpo %(var_56)%
+c : Cpo %(var_102)%
+d : Cpo %(var_107)%
+f : Flatcpo %(var_106)%
 nat : Flatcpo
-p : Pcpo %(var_55)%
+p : Pcpo %(var_105)%
 s : Type %(var_1)%
 t : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
@@ -177,7 +178,7 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __res__
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-    %(op)% = \ (var x : s, var y : t) .! (var x : s)
+    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
 __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall p : Pcpo . p_v-1 %(fun)%
@@ -191,7 +192,7 @@ false
   : Unit %(fun)%
 fst
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
-    %(op)% = \ (var x : s, var y : t) .! (var x : s)
+    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
 g : c --> d %(var)%
 not : Unit ->? Unit %(pred)%
 not__ : ? Unit ->? Unit %(fun)%
@@ -210,25 +211,25 @@ y2 : d %(var)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_3_v3]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . () %(pe_def)%
+          = \ (var x : s) : s_v1 . () %(pe_def)%
 program (op tt[_var_6_v6]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit))
-          = \ (var x : s) : s . () %(pe_tt)%
+          = \ (var x : s) : s_v1 . () %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
-       var x : s) %(def___res__)%
+       (var x : s) as s) %(def___res__)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
-       var x : s) %(def_fst)%
-(fun __=__[_var_12_v12 * _var_13_v13 ->? _var_12_v12]
+       (var x : s) as s) %(def_fst)%
+(fun __=__[_var_30_v30 * _var_31_v31 ->? _var_30_v30]
  : forall s : Type . s_v-1 * s_v-1 ->? Unit)
-  (op fst[_var_12_v12; _var_13_v13]
+  (op fst[_var_30_v30; _var_31_v31]
    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1,
-   op __res__[_var_12_v12; _var_13_v13]
+   op __res__[_var_30_v30; _var_31_v31]
    : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
 (fun __=__[s ->? Unit] : forall s : Type . s_v-1 * s_v-1 ->? Unit)
   (\ (var x : s) : s
@@ -296,14 +297,14 @@ free type bool
 
 *** Error 85.11, illegal supertype for variable '? s_v1'
 *** Hint 87.9, no type match for: all
-  with (maximal) type: _var_45_v45 ->? Unit ->? Unit
+  with (maximal) type: _var_95_v95 ->? Unit ->? Unit
   known types:
     
 *** Hint 87.9, untypable application (with result type: Unit ->? Unit)
  'all(var p : s_v1 ->? Unit)'
 *** Error 87.9, no typing for 'all(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 90.9, no type match for: And
-  with (maximal) type: _var_46_v46 ->? Unit ->? Unit
+  with (maximal) type: _var_96_v96 ->? Unit ->? Unit
   known types:
     
 *** Hint 90.9, untypable application (with result type: Unit ->? Unit)
@@ -312,21 +313,21 @@ free type bool
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 *** Hint 98.9, no type match for: ex
-  with (maximal) type: _var_47_v47 ->? Unit ->? Unit
+  with (maximal) type: _var_97_v97 ->? Unit ->? Unit
   known types:
     
 *** Hint 98.9, untypable application (with result type: Unit ->? Unit)
  'ex(var p : s_v1 ->? Unit)'
 *** Error 98.9, no typing for 'ex(var p : s_v1 ->? Unit) : Unit ->? Unit'
 *** Hint 101.9, no type match for: ff
-  with (maximal) type: _var_48_v48 ->? Unit ->? Unit
+  with (maximal) type: _var_98_v98 ->? Unit ->? Unit
   known types:
     
 *** Hint 101.9, untypable application (with result type: Unit ->? Unit)
  'ff()'
 *** Error 101.9, no typing for 'ff() : Unit ->? Unit'
 *** Hint 103.9, no type match for: neg
-  with (maximal) type: _var_49_v49 ->? Unit ->? Unit
+  with (maximal) type: _var_99_v99 ->? Unit ->? Unit
   known types:
     
 *** Hint 103.9, untypable application (with result type: Unit ->? Unit)
@@ -369,20 +370,21 @@ free type bool
 *** Error 171.9, unexpected mixfix token: all
 *** Error 170.7, unexpected mixfix token: :
 *** Hint 10.18, no type match for: __::__
-  with (maximal) type: _var_70_v70 ->? _var_68_v68 ->? _var_69_v69
+  with (maximal) type: _var_133_v133 ->? _var_132_v132 ->? _var_131_v131
   known types:
     
-*** Hint 10.18, untypable application (with result type: _var_68_v68 ->? _var_69_v69)
- '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])'
-*** Error 10.18, untypable application '__::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-    (var g : _var_64_v64)'
+*** Hint 10.18, untypable application (with result type: _var_132_v132 ->? _var_131_v131)
+ '__::__(c(var -->? : _var_122_v122)(var d : _var_123_v123), [])'
+*** Hint 10.18, untypable application (with result type: _var_131_v131)
+ '__::__(c(var -->? : _var_122_v122)(var d : _var_123_v123), [])
+    (var g : _var_124_v124)'
 *** Error 176.13, untypable application '__<<=__
-    (var f : _var_61_v61,
-     __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-       (var g : _var_64_v64))'
-*** Error 176.13, no typing for '__<<=__(var f : _var_61_v61,
-          __::__(c(var -->? : _var_62_v62)(var d : _var_63_v63), [])
-            (var g : _var_64_v64))'
+    (var f : _var_121_v121,
+     __::__(c(var -->? : _var_122_v122)(var d : _var_123_v123), [])
+       (var g : _var_124_v124))'
+*** Error 176.13, no typing for '__<<=__(var f : _var_121_v121,
+          __::__(c(var -->? : _var_122_v122)(var d : _var_123_v123), [])
+            (var g : _var_124_v124))'
 *** Error 181.9, incompatible kind of: __-->__
   expected: Type- -> Type+ -> Type
      found: Type -> Type -> Type
@@ -393,7 +395,7 @@ free type bool
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Error 186.26, unexpected mixfix token: c
-*** Error 190.9, incompatible kind of: p_v55 -->? p_v55
+*** Error 190.9, incompatible kind of: p_v105 -->? p_v105
   expected: Cpo-
      found: Type
 

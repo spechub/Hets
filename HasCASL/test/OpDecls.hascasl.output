@@ -5,38 +5,42 @@ op __+__ : s * s -> s
 op __+__ : t * t -> t
 op : t -> t -> t
 op a, b : t
-op c : s = (op __+__ : t * t -> t)(op a : t, op b : t)
-op d : s = (op __+__ : t * t -> t)(op a : t, op a : t)
-op e : s * s -> s = (op __+__ : t * t -> t)
-op f : s * s -> s = (op __+__ : t * t -> t)
-op g : s * s = (op a : t, op b : t)
-op h : s = (op __+__ : t * t -> t)(op a : t, op b : t)
-op i : s = (op __+__ : t * t -> t)((op a : t) : s, (op b : t) : s)
+op c : s = (op __+__ : s * s -> s)(op a : s, op b : s) as s
+op d : s = (op __+__ : s * s -> s)(op a : s, op a : s) as s
+op e : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
+op f : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
+op g : s * s = (op a : s, op b : s) as s * s
+op h : s = (op __+__ : s * s -> s)(op a : s, op b : s) as s
+op i : s
+     = (op __+__ : s * s -> s)((op a : s) : s, (op b : s) : s) as s
 op incr : s -> s
-op i1 : s = (op incr : s -> s)(op a : t)
-op i2 : s = (op incr : s -> s)(op a : t)
-op i3 : s = (op incr : s -> s)(op a : t)
+op i1 : s = (op incr : s -> s)(op a : s) as s
+op i2 : s = (op incr : s -> s)(op a : s) as s
+op i3 : s = (op incr : s -> s)(op a : s) as s
 op __<=__<=__ : s * s * s -> s
 op l1 : s
-     = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
-op l2 : s * s * s -> s = (op __<=__<=__ : s * s * s -> s)
+     = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+           s
+op l2 : s * s * s -> s
+     = (op __<=__<=__ : s * s * s -> s) as s * s * s -> s
 op l3 : s
-     = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
+     = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+           s
 op l4 : s
-     = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
-op l5 : s * s * s = (op a : t, op b : t, op c : s)
+     = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+           s
+op l5 : s * s * s = (op a : s, op b : s, op c : s) as s * s * s
 op x : s
 op y : s
      = (op __<=__<=__ : s * s * s -> s)
-         (op a : s, var x : s, (op a : t) : s)
-op z : s
-     = (op __+__ : t * t -> t)((op x : s) as s, (op x : s) as t as s)
+         (op a : s, var x : s, (op a : s) : s) as
+           s
+op z : s = (x as s) + ((x as t) as s)
 . (op x : s) in s %(bla_label)%
-. (op x : s) in t
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -45,7 +49,9 @@ __->?__ : Type- -> Type+ -> Type
 s : Type < t
 t : Type < t
 %% Assumptions -----------------------------------------------------------
-__+__ : t * t -> t %(op)%
+__+__
+  : t * t -> t %(op)%
+  : s * s -> s %(op)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=__<=__ : s * s * s -> s %(op)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -57,94 +63,127 @@ __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 a : t %(op)%
+  : s %(op)%
 b : t %(op)%
+  : s %(op)%
 bottom : forall a : Type . a_v-1 %(fun)%
-c : s %(op)% = (op __+__ : t * t -> t)(op a : t, op b : t)
-d : s %(op)% = (op __+__ : t * t -> t)(op a : t, op a : t)
+c : s %(op)% = (op __+__ : s * s -> s)(op a : s, op b : s) as s
+d : s %(op)% = (op __+__ : s * s -> s)(op a : s, op a : s) as s
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-e : s * s -> s %(op)% = (op __+__ : t * t -> t)
-f : s * s -> s %(op)% = (op __+__ : t * t -> t)
+e : s * s -> s %(op)% = (op __+__ : s * s -> s) as s * s -> s
+f : s * s -> s %(op)% = (op __+__ : s * s -> s) as s * s -> s
 false : Unit %(fun)%
-g : s * s %(op)% = (op a : t, op b : t)
-h : s %(op)% = (op __+__ : t * t -> t)(op a : t, op b : t)
+g : s * s %(op)% = (op a : s, op b : s) as s * s
+h : s %(op)% = (op __+__ : s * s -> s)(op a : s, op b : s) as s
 i : s
-    %(op)% = (op __+__ : t * t -> t)((op a : t) : s, (op b : t) : s)
-i1 : s %(op)% = (op incr : s -> s)(op a : t)
-i2 : s %(op)% = (op incr : s -> s)(op a : t)
-i3 : s %(op)% = (op incr : s -> s)(op a : t)
+    %(op)%
+      = (op __+__ : s * s -> s)((op a : s) : s, (op b : s) : s) as s
+i1 : s %(op)% = (op incr : s -> s)(op a : s) as s
+i2 : s %(op)% = (op incr : s -> s)(op a : s) as s
+i3 : s %(op)% = (op incr : s -> s)(op a : s) as s
 incr : s -> s %(op)%
 l1
   : s
     %(op)%
-      = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
-l2 : s * s * s -> s %(op)% = (op __<=__<=__ : s * s * s -> s)
+      = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+            s
+l2
+  : s * s * s -> s
+    %(op)% = (op __<=__<=__ : s * s * s -> s) as s * s * s -> s
 l3
   : s
     %(op)%
-      = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
+      = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+            s
 l4
   : s
     %(op)%
-      = (op __<=__<=__ : s * s * s -> s)(op a : t, op b : t, op c : s)
-l5 : s * s * s %(op)% = (op a : t, op b : t, op c : s)
+      = (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+            s
+l5 : s * s * s %(op)% = (op a : s, op b : s, op c : s) as s * s * s
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 x : s %(op)%
 y : s
     %(op)%
       = (op __<=__<=__ : s * s * s -> s)
-          (op a : s, var x : s, (op a : t) : s)
-z : s
-    %(op)%
-      = (op __+__ : t * t -> t)((op x : s) as s, (op x : s) as t as s)
+          (op a : s, var x : s, (op a : s) : s) as
+            s
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op c : s, (op __+__ : t * t -> t)(op a : t, op b : t)) %(def_c)%
+  (op c : s,
+   (op __+__ : s * s -> s)(op a : s, op b : s) as s) %(def_c)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op d : s, (op __+__ : t * t -> t)(op a : t, op a : t)) %(def_d)%
+  (op d : s,
+   (op __+__ : s * s -> s)(op a : s, op a : s) as s) %(def_d)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op e : s * s -> s, op __+__ : t * t -> t) %(def_e)%
+  (op e : s * s -> s,
+   (op __+__ : s * s -> s) as s * s -> s) %(def_e)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op f : s * s -> s, op __+__ : t * t -> t) %(def_f)%
+  (op f : s * s -> s,
+   (op __+__ : s * s -> s) as s * s -> s) %(def_f)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op g : s * s, (op a : t, op b : t)) %(def_g)%
+  (op g : s * s, (op a : s, op b : s) as s * s) %(def_g)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op h : s, (op __+__ : t * t -> t)(op a : t, op b : t)) %(def_h)%
+  (op h : s,
+   (op __+__ : s * s -> s)(op a : s, op b : s) as s) %(def_h)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op i : s,
-   (op __+__ : t * t -> t)((op a : t) : s, (op b : t) : s)) %(def_i)%
+   (op __+__ : s * s -> s)((op a : s) : s, (op b : s) : s) as
+       s) %(def_i)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op i1 : s, (op incr : s -> s)(op a : t)) %(def_i1)%
+  (op i1 : s, (op incr : s -> s)(op a : s) as s) %(def_i1)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op i2 : s, (op incr : s -> s)(op a : t)) %(def_i2)%
+  (op i2 : s, (op incr : s -> s)(op a : s) as s) %(def_i2)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op i3 : s, (op incr : s -> s)(op a : t)) %(def_i3)%
+  (op i3 : s, (op incr : s -> s)(op a : s) as s) %(def_i3)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l1 : s,
-   (op __<=__<=__ : s * s * s -> s)
-     (op a : t, op b : t, op c : s)) %(def_l1)%
+   (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+       s) %(def_l1)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op l2 : s * s * s -> s, op __<=__<=__ : s * s * s -> s) %(def_l2)%
+  (op l2 : s * s * s -> s,
+   (op __<=__<=__ : s * s * s -> s) as s * s * s -> s) %(def_l2)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l3 : s,
-   (op __<=__<=__ : s * s * s -> s)
-     (op a : t, op b : t, op c : s)) %(def_l3)%
+   (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+       s) %(def_l3)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op l4 : s,
-   (op __<=__<=__ : s * s * s -> s)
-     (op a : t, op b : t, op c : s)) %(def_l4)%
+   (op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) as
+       s) %(def_l4)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op l5 : s * s * s, (op a : t, op b : t, op c : s)) %(def_l5)%
+  (op l5 : s * s * s,
+   (op a : s, op b : s, op c : s) as s * s * s) %(def_l5)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op y : s,
    (op __<=__<=__ : s * s * s -> s)
-     (op a : s, var x : s, (op a : t) : s)) %(def_y)%
-(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op z : s,
-   (op __+__ : t * t -> t)
-     ((op x : s) as s, (op x : s) as t as s)) %(def_z)%
+     (op a : s, var x : s, (op a : s) : s) as
+       s) %(def_y)%
 (op x : s) in s %(bla_label)%
-(op x : s) in t
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
+*** Hint 17.24, contradicting type inclusions for 's' and 't' of '__+__ as s * s -> s'
+
+*** Hint 19.25, contradicting type inclusions for 's' and 't' of '__+__ as s * s -> s'
+
+*** Hint 25.23, contradicting type inclusions for 's' and 't' of 'a'
+
+*** Hint 25.30, contradicting type inclusions for 's' and 't' of 'b'
+
+*** Hint 25.23, contradicting type inclusions for 's' and 't' of 'a'
+
+*** Hint 25.30, contradicting type inclusions for 's' and 't' of 'b'
+
+*** Hint 44.42, contradicting type inclusions for 's' and 't' of 'a'
+
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of 'x as t'
+
+*** Hint 46.26, contradicting type inclusions for 's' and 't' of 'x as t'
+
+*** Error 46.22, untypable application '__+__(x as s, x as t as s)'
+*** Error 46.22, no typing for '__+__(x as s, x as t as s) as s'
+*** Hint 50.3, contradicting type inclusions for 's' and 't' of '(op x : s) in t'
+
+*** Error 50.3, no typing for 'x in t'

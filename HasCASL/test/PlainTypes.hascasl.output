@@ -17,9 +17,7 @@ var nt : a -> (b -> c) -> c -> d
 var
 type s1, r1, t1 < t
 type s2 = r2 = t2
-type s3 = {x : t . (fun __=__[tuple3 r s t]
-                    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                     (var x : tuple3 r s t, var x : tuple3 r s t)}
+type s3 : Type := t
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
@@ -29,7 +27,7 @@ d < Type
 List : a -> b
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 [__] : a -> b
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
@@ -44,11 +42,7 @@ r2 : Type < (t2, r2, s2)
 s : Type
 s1 : Type < t
 s2 : Type < (t2, r2, s2)
-s3
-  : Type < t
-    = {x : t . (fun __=__[tuple3 r s t]
-                : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-                 (var x : tuple3 r s t, var x : tuple3 r s t)}
+s3 : Type := t
 t : Type
 t1 : Type < t
 t2 : Type < (t2, r2, s2)
@@ -98,3 +92,12 @@ x : tuple3 r s t %(var)%
   expected: b -> c
      found: a -> b
 
+*** Hint 38.19, contradicting type inclusions for 'r2' and 's2' of '__=__'
+
+*** Hint 38.19, no type match for: __=__
+  with (maximal) type: _var_2_v2 ->? Unit
+  known types:
+    forall a : Type . a_v-1 * a_v-1 ->? Unit
+*** Hint 38.19, untypable application (with result type: Unit)
+ '__=__(x, x)'
+*** Error 38.19, no typing for '__=__(x, x)'

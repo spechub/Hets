@@ -46,7 +46,7 @@ Tree2
          ::= Leaf : Tree2 a_v-1
              Branch : Tree a_v-1 * Tree2 a_v-1 -> Tree2 a_v-1
                (head : Tree a_v-1; tail : Tree2 a_v-1)]%
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type

@@ -3,13 +3,10 @@ op f : ? t -> t
 op g : t -> (? t)
 op a, b : t
 op c, d : Unit ->? t
-. (fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    ((op f : ? t -> t)(op a : t),
-     (op g : t -> ? t)()(op c : Unit ->? t))
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -38,7 +35,13 @@ g : t -> ? t %(op)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
-%% Sentences -------------------------------------------------------------
-(fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  ((op f : ? t -> t)(op a : t),
-   (op g : t -> ? t)()(op c : Unit ->? t))
+%% Diagnostics -----------------------------------------------------------
+*** Hint 8.9, in type of 'g(c)'
+  typename 't' (3.8)
+  is not unifiable with type 'Unit ->? t' (6.8)
+
+*** Hint 8.9, untypable application (with result type: _var_6_v6)
+ 'g(c)'
+*** Hint 8.7, untypable application (with result type: Unit)
+ '__=__(f(a), g(c))'
+*** Error 8.7, no typing for '__=__(f(a), g(c))'

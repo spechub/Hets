@@ -1,20 +1,23 @@
 type bool ::= True | 
               False
-op a : bool = (op True : bool)
+op a : bool = (op True : bool) as bool
 op notA : bool
      = case (op a : bool) of
            (op True : bool) -> (op False : bool) | 
-           (op False : bool) -> (op True : bool)
+           (op False : bool) -> (op True : bool) as
+           bool
 op b : bool
      = let (var x : bool) = (op True : bool);
            (var y : bool) = (op False : bool);
            (var z : bool) = (var x : bool)
-       in (op True : bool)
-op b : bool -> bool = \ (var x : bool) . (var x : bool)
+       in (op True : bool) as
+           bool
+op b : bool -> bool
+     = \ (var x : bool) . (var x : bool) as bool -> bool
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -37,14 +40,16 @@ __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
-a : bool %(op)% = (op True : bool)
-b : bool -> bool %(op)% = \ (var x : bool) . (var x : bool)
+a : bool %(op)% = (op True : bool) as bool
+b : bool -> bool
+    %(op)% = \ (var x : bool) . (var x : bool) as bool -> bool
   : bool
     %(op)%
       = let (var x : bool) = (op True : bool);
             (var y : bool) = (op False : bool);
             (var z : bool) = (var x : bool)
-        in (op True : bool)
+        in (op True : bool) as
+            bool
 bottom : forall a : Type . a_v-1 %(fun)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
@@ -54,7 +59,8 @@ notA
     %(op)%
       = case (op a : bool) of
             (op True : bool) -> (op False : bool) | 
-            (op False : bool) -> (op True : bool)
+            (op False : bool) -> (op True : bool) as
+            bool
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
@@ -62,17 +68,20 @@ type bool
   ::= True : bool
       False : bool %(ga_bool)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op a : bool, op True : bool) %(def_a)%
+  (op a : bool, (op True : bool) as bool) %(def_a)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op notA : bool,
    case (op a : bool) of
        (op True : bool) -> (op False : bool) | 
-       (op False : bool) -> (op True : bool)) %(def_notA)%
+       (op False : bool) -> (op True : bool) as
+       bool) %(def_notA)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op b : bool,
    let (var x : bool) = (op True : bool);
        (var y : bool) = (op False : bool);
        (var z : bool) = (var x : bool)
-   in (op True : bool)) %(def_b)%
+   in (op True : bool) as
+       bool) %(def_b)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op b : bool -> bool, \ (var x : bool) . (var x : bool)) %(def_b)%
+  (op b : bool -> bool,
+   \ (var x : bool) . (var x : bool) as bool -> bool) %(def_b)%

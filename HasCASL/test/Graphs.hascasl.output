@@ -137,7 +137,7 @@ Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 S : Type %(var_1)%
 Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 T : Type %(var_2)%
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type

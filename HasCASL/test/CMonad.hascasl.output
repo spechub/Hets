@@ -10,16 +10,16 @@ op fmap : (a -> b) -> f a -> f b
 op empty : List a
 type Set : Functor
 op emptySet : Set a
-. (fun __=__[Set _var_8_v8]
+. (fun __=__[Set _var_14_v14]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    (op fail[Set; _var_8_v8]
+    (op fail[Set; _var_14_v14]
      : forall m : Monad; a : Type . m_v-1 a_v-2,
-     op emptySet[_var_8_v8] : forall a : Type . Set a_v-1)
-. (fun __=__[List _var_13_v13]
+     op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)
+. (fun __=__[List _var_26_v26]
    : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-    (op fail[List; _var_13_v13]
+    (op fail[List; _var_26_v26]
      : forall m : Monad; a : Type . m_v-1 a_v-2,
-     op empty[_var_13_v13] : forall a : Type . List a_v-1)
+     op empty[_var_26_v26] : forall a : Type . List a_v-1)
 op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
@@ -56,7 +56,7 @@ List : Monad
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Set : Functor
-Unit : Type := Unit
+Unit : Type
 __*__ : Type+ -> Type+ -> Type
 __-->__ : Type- -> Type+ -> Type
 __-->?__ : Type- -> Type+ -> Type
@@ -101,16 +101,16 @@ true : Unit %(fun)%
 x : m a %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__[Set _var_8_v8]
+(fun __=__[Set _var_14_v14]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op fail[Set; _var_8_v8]
+  (op fail[Set; _var_14_v14]
    : forall m : Monad; a : Type . m_v-1 a_v-2,
-   op emptySet[_var_8_v8] : forall a : Type . Set a_v-1)
-(fun __=__[List _var_13_v13]
+   op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)
+(fun __=__[List _var_26_v26]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-  (op fail[List; _var_13_v13]
+  (op fail[List; _var_26_v26]
    : forall m : Monad; a : Type . m_v-1 a_v-2,
-   op empty[_var_13_v13] : forall a : Type . List a_v-1)
+   op empty[_var_26_v26] : forall a : Type . List a_v-1)
 (fun __=__[List a -> List b]
  : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   ((op fmap[a; b; List]
@@ -140,8 +140,13 @@ x : m a %(var)%
 *** Hint 7.8, is type variable 'b'
 *** Hint 9.5, is type variable 'm'
 *** Hint 15.5, is type variable 'f'
-*** Error 25.8, unresolved constraint 'Set : Monad'
 *** Hint 25.8, 
   expected: Monad
      found: Functor
 
+*** Error 25.8, in term'(fun __=__[Set _var_14_v14]
+ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  (op fail[Set; _var_14_v14]
+   : forall m : Monad; a : Type . m_v-1 a_v-2,
+   op emptySet[_var_14_v14] : forall a : Type . Set a_v-1)' of type 'Unit'
+ unresolved constraints '{ Set : Monad }'
