@@ -1,49 +1,5 @@
 Hatchet/HsSyn
 
-- gepunktete Modulnamen (export/import/dekl.)
-  * mit einem Punkt: geht
-  * mit mehreren: Lexer veraendern, so dass er z.B. import A.B.C.D als
-    QConId(A.B.C.,D) einliest
   * Fehler (???) beim Parsen von hets.hs beheben
 
-In Logic_Haskell.hs: 
-
-type AxiomName = String
-
-data Binding
---  = NullBind
-  = AndBindings    Binding Binding
-  | AxiomDecl      AxiomName Formula
-  deriving (Eq,Show)
-
-data AxiomBndr
- = AxiomBndr HsName
- | AxiomBndrSig HsName HsQualType
-  deriving (Eq,Show)
-
-data Quantifier
-  = AxForall [AxiomBndr]
-   | AxExists [AxiomBndr]
-   | AxExistsOne [AxiomBndr]
-  deriving (Eq,Show)
-
-data Formula
-  = AxQuant   Quantifier Formula
-  | AxEq      Formula HsExp SrcLoc   -- müssten zwei HsExp's sein!
-  | AxExp     HsExp
-  deriving (Eq,Show)
-
-Erweiterung der statischen Analyse auf Formula, d.h.
-tiFormula ::  TypeEnv -> Formula -> TI ([Pred], TypeEnv, Type)
-
-unter Benutzung von tiExpr
-
-Analyse von "AxQuant   Quantifier Formula" ähnlich wie 
-  tiExpr env expr@(AHsLambda sloc pats e)
-  allerdings wird body wieder mit tiFormula analysiert, nicht mit tiExpr
-
-tiFormula an geeigneter Stelle in tiProgram (oder Unterfunktion davon)
-einbinden
-
-
-Zeilennummern in Hatchet-Parser einbauen (neue Version angucken)
+ - Zeilennummern in Hatchet-Parser einbauen (neue Version angucken)
