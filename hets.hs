@@ -34,23 +34,18 @@ main =
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
-    do trace ("proceccing file: " ++ file) (return ())
-       ld <- read_LIB_DEFN opt file
+    do ld <- read_LIB_DEFN opt file
        -- (env,ld') <- analyse_LIB_DEFN opt
-       if (analysis opt)
-          then do let odir = if (null (outdir opt)) then (dirname file)
-                                else (outdir opt)
-                  trace ("selected OutDir: " ++ odir) (return ())
-                  write_LIB_DEFN (opt { outdir = odir }) ld
-                  -- write_GLOBAL_ENV env
-          else putStrLn (take 200 (show (printText0_eGA ld)) ++ "\n...")
-{-
-  (ast,env) <- 
-    if just_parse then return (ld,Nothing)
-     else do
-       Result diags res <- ioresToIO (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ast)
-       sequence (map (putStrLn . show) diags)
-       return (ast, Just res)
-  write_LIB_DEFN opt ast
--}
+       (ld',env) <- if (analysis opt)
+                       then do Result diags res <- 
+                         ioresToIO 
+                           (ana_LIB_DEFN logicGraph defaultLogic emptyLibEnv ld)
+                               -- sequence (map (putStrLn . show) diags)
+                               return (ld, res)
+                       else return (ld, Nothing)
+       let odir = if (null (outdir opt)) then (dirname file)
+                     else (outdir opt)
+       trace ("selected OutDir: " ++ odir) (return ())
+       write_LIB_DEFN (opt { outdir = odir }) ld'
+       -- write_GLOBAL_ENV env
 
