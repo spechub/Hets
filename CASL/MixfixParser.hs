@@ -78,20 +78,17 @@ posOfTerm :: TERM -> Pos
 posOfTerm trm =
     case trm of
 	      Mixfix_token t -> tokPos t
-	      Mixfix_term ts -> posOfTerm (head ts)
+	      Mixfix_term ts -> posOf ts
 	      Simple_id i -> tokPos i
 	      Mixfix_qual_pred p -> 
 		  case p of 
 		  Pred_name i -> posOfId i
-		  Qual_pred_name _ _ ps -> first (Just ps)
+		  Qual_pred_name _ _ ps -> headPos ps
               Application o [] [] -> 
 		  case o of 
 		  Op_name i ->  posOfId i
-		  Qual_op_name _ _ ps -> first (Just ps)
-	      _ -> first $ get_pos_l trm 
-    where first ps = case ps of 
-		    Nothing -> nullPos
-		    Just l -> if null l then nullPos else head l
+		  Qual_op_name _ _ ps -> headPos ps
+	      _ -> getMyPos trm 
 
 -- | construct application
 asAppl :: Id -> [TERM] -> [Pos] -> TERM

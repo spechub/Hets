@@ -808,7 +808,9 @@ print_mixfix_appl pf parens_fun
 	  terms_b_comp' :: [TERM]
 	  first_term    :: Doc
 	  (tps_b_comp',terms_b_comp',first_term) = 
-	      if (isPlace $ head tps_b_comp) 
+	      if null tps_b_comp then -- invisible Id 
+		([], terms_b_comp, empty) 
+	      else if (isPlace $ head tps_b_comp) 
 	      then
 	         (tail tps_b_comp,
 		  tail terms_b_comp,

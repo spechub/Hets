@@ -33,7 +33,7 @@ stdOpsL, stdPredsL :: [String]
 stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__", 
         "__-__", "+__", "__E__", "__@@__", "[]", "__::__", "__:::__",
 	"-__", "__!"] ++ 
-          [ "____p", "q____","____x____", "{____}",
+          [ "____", "____p", "q____","____x____", "{____}",
           "repeat__until__", "while__do__od", 
 	    "__where__but__", "__where__done",
            "__ --> __", "__{__}--__-->{__}__", 
@@ -71,7 +71,7 @@ testTerm = do t <- term
 testTermMix :: GlobalAnnos -> AParser WrapString
 testTermMix ga = do Result ds mt <- resolveTerm ga
 		    return $ WrapString $ 
-			case mt of Just t -> showTerm t ""
+			case mt of Just t -> show t
 				   _ -> show ds
 
 testFormula :: AParser WrapString
