@@ -193,6 +193,7 @@ binImpl phi1 phi2 =
 binEq phi1 phi2 = 
   Const("op =",dummyT) `App` phi1 `App` phi2
 true = Const ("True",dummyT)
+false = Const ("False",dummyT)
 
 prodType t1 t2 = Type("*",[t1,t2])
 
@@ -212,7 +213,7 @@ transPRED_SYMB sign (Qual_pred_name p pt _) =
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
                     return $ showIsaI p (i+1)) of
     Just str -> str
-    Nothing -> error "showIsa p"
+    Nothing -> error "CASL2Isabelle: showIsa p"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
 mapSen trFrom sign phi = 
@@ -224,9 +225,11 @@ transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e
 transFORMULA sign tr (Quantification quant vdecl phi _) =
   foldr (quantify quant) (transFORMULA sign tr phi) (flatVAR_DECLs vdecl)
 transFORMULA sign tr (Conjunction phis _) =
-  foldl1 binConj (map (transFORMULA sign tr) phis)
+  if null phis then true
+  else foldl1 binConj (map (transFORMULA sign tr) phis)
 transFORMULA sign tr (Disjunction phis _) =
-  foldl1 binDisj (map (transFORMULA sign tr) phis)
+  if null phis then false
+  else foldl1 binDisj (map (transFORMULA sign tr) phis)
 transFORMULA sign tr (Implication phi1 phi2 _ _) =
   binImpl (transFORMULA sign tr phi1) (transFORMULA sign tr phi2)
 transFORMULA sign tr (Equivalence phi1 phi2 _) =

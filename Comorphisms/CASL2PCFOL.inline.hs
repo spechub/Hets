@@ -110,7 +110,7 @@ encodeSig sig = sig {sortRel=newsortRel,opMap=priopMap,predMap=newpredMap}
  new1List (x,y) = (x,(newList y))
  nList = map new1List udupredList 
  predSet x  =  Set.fromList(map pred x) 
- eleminsert m (x,y)  = Map.insert (Id [mkSimpleId "_elem_"] [x] []) (predSet y) (m) 
+ eleminsert m (x,y)  = Map.insert (membership x) (predSet y) (m) 
  newpredMap  = foldl (eleminsert) (oldpredMap) (nList) 
 
 
@@ -134,40 +134,45 @@ generateAxioms sig =
     inlineAxioms CASL
       " sort s \
       \ op inj : s->s \
-      \ forall x:s . inj(x)=e=x               %(identity)%" ++
-    inlineAxioms CASL                
+      \ forall x:s . inj(x)=e=x               %(identity)%" 
+          | (s,s') <- rel2List]++
+   [inlineAxioms CASL                
       " sort s<s' \
       \ op pr : s' -> ?s \
-      \ forall x:s . x in s <=>def(pr(x))            %(mebership)%"                               
-          | (s,s') <- rel2List]++
-
+      \ pred mem : s' \
+      \ forall x:s . mem(x) <=>def(pr(x))            %(mebership)%"
+          | (s,s') <- rel2List, let mem=membership s]++
    [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(transitive)% "  
           |(s,s')<-rel2List,s''<-Set.toList(supersortsOf s' sig)] ++
---s_i -> w_i
    [inlineAxioms CASL
     " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i; w_j  \
-    \ op f:w'_i->s' ; f:w''_i->s'' ; inj: s' -> s ; inj: s''->s ; inj: w_i->w'_i ; inj:w_i -> w''_i  \
+    \ ops f:w'_i->s' ; f:w''_i->s'' ; \
+    \     inj: s' -> s ; inj: s''->s ; inj: w_i->w'_i ; inj:w_i -> w''_i  \
     \ var u_j : w_i   \
-    \ forall u_i : w_i . inj((op f:w'_i->s')(inj(u_j)))=inj((op f:w''_i->s'')(inj(u_j)))       %(function_monotonicity)%"
+    \ forall u_i : w_i . \
+    \ inj((op f:w'_i->s')(inj(u_j)))=inj((op f:w''_i->s'')(inj(u_j))) \
+    \                                              %(function_monotonicity)%"
     
           |(f,l)<- ftTL,t1<-l,t2<-l,length(opArgs t1)==length(opArgs t2),
-           t1<t2,let w'=(opArgs t1),let w''=(opArgs t2),let s'=(opRes t1),let s''=(opRes t2),
-           s<-Set.toList(supersortsOf s' sig),s1<-Set.toList(supersortsOf s'' sig),s1==s,
+           t1<t2,let w'=(opArgs t1),let w''=(opArgs t2),
+           let s'=(opRes t1),let s''=(opRes t2),
+           s<-Set.toList(supersortsOf s' sig),
+           s1<-Set.toList(supersortsOf s'' sig),s1==s,
            w<- permute (map (findsubsort sig)  (zip w' w'')),
            let u = [mkSimpleId ("u"++show i) | i<-[1..length w]]   ]++
    [inlineAxioms CASL                                 
-   " sort w'_i ; w''_i ; w_i  \                                                                                                              
-    \ pred p: w'_i;  pred p: w''_i;   inj:w_i->w'_i;   inj:w_i->w''_i \                                                                
-    \ forall  v_i:w_i . (pred p:w'_i)(inj(v_i))=(pred p:w''_i)(inj(v_i))     %(predicate_monotonicity)%"                             
-          |(f,l)<-pred2List,t1<-l,t2<-l, length(predArgs t1)==length(predArgs t2),                                                           
-          t1<t2,let w'=(predArgs t1),let w''=(predArgs t2),                                                                                 
-          w<- permute (map (findsubsort sig)  (zip w' w'')),                                                                                 
+   " sort w'_i ; w''_i ; w_i  \ 
+    \ pred p: w'_i;  pred p: w''_i;   inj:w_i->w'_i;   inj:w_i->w''_i \ 
+    \ forall  v_i:w_i . (pred p:w'_i)(inj(v_i))=(pred p:w''_i)(inj(v_i)) \
+    \                                           %(predicate_monotonicity)%"
+        | (f,l)<-pred2List, t1<-l, t2<-l, 
+          length(predArgs t1)==length(predArgs t2),
+          t1<t2, let w'=(predArgs t1), let w''=(predArgs t2), 
+          w<-permute (map (findsubsort sig)  (zip w' w'')),
           let v = [mkSimpleId ("v"++show i) | i<-[1..length w]] ]) 
-
-
 
     where 
         x = mkSimpleId "x"
@@ -177,7 +182,6 @@ generateAxioms sig =
         gaem_inj=mkId [mkSimpleId "ga_embedding_injectivity"]
         pr_trans=mkId [mkSimpleId "_pr_trans"]
         indentity=mkId [mkSimpleId "_indentity"]
-        membership=mkId[mkSimpleId "_membership"]
         functionmono=mkId[mkSimpleId "_function_monotonicity"]
         predmono=mkId[mkSimpleId "_predicate_monotonicity"]
         rel2List=Rel.toList(sortRel sig)
@@ -220,7 +224,7 @@ f2Formula  f = case f of
 
 
 membership::SORT -> Id
-membership t =Id [mkSimpleId "_membership"] [t] []
+membership t =Id [mkSimpleId ("_membership_"++show t)] [] []
 
 spos2PT::TERM f -> [Pos] -> PRED_TYPE
 spos2PT f pos =(Pred_type [(term2SSort f)] pos)
