@@ -122,8 +122,9 @@ showTerm (If t1 t2 t3) =
 showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
--- showTerm t = showPTree (toPrecTree t)     NO GOOD - it loops
-showTerm t = "(IsaPrint.showTerm, error: unsupported term)"
+showTerm t = showPTree (toPrecTree t) 
+ --   NO GOOD - it loops
+-- showTerm t = "(IsaPrint.showTerm, error: unsupported term)"
 -- showTerm t = "(IsaPrint.showTerm, error: "++(show t)++" unsupported term)"
 
 
