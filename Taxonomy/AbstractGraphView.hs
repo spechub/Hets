@@ -1,3 +1,5 @@
+{-# OPTIONS -cpp #-}
+
 module Taxonomy.AbstractGraphView where
 
 {- Interface for graph viewing and abstraction.
@@ -10,7 +12,14 @@ module Taxonomy.AbstractGraphView where
    
 -}
 
+
+#ifdef UNI_PACKAGE
+import Logic.Grothendieck
+#endif
+
 import DaVinciGraph
+
+import Computation
 
 import GraphDisp
 import GraphConfigure
@@ -137,7 +146,7 @@ initgraphs :: IO GraphInfo
 initgraphs = do newRef <- newIORef ([],0)
                 return newRef
 
-makegraph :: String -> [GlobalMenu] -> 
+makegraph :: String -> [GlobalMenu] ->
              [(String,DaVinciNodeTypeParms (String,Descr,Descr))] -> 
              [(String,DaVinciArcTypeParms (String,Descr))] ->
              CompTable -> GraphInfo -> IO Result 
@@ -145,7 +154,8 @@ makegraph title menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
   let graphParms  = 
        foldr ($$) (GraphTitle title $$
-                   OptimiseLayout True $$ 
+                   OptimiseLayout True $$
+		   AllowClose (return True) $$
 	           emptyGraphParms)
                    menus 
       abstractNodetypeparams = LocalMenu

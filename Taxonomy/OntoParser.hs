@@ -15,7 +15,7 @@ module Taxonomy.OntoParser (
 where
 
 import Taxonomy.MMiSSOntology
-import Computation hiding (try)
+--import Computation hiding (try)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
@@ -104,7 +104,7 @@ generateOntology onto (f:fs) =
 
 		RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) -> 
 		  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue 
-		  in case fromWithError weOnto of
+		  in case  weOnto of
 		       Left err -> weOnto
 		       Right o -> insertRelationType o name sourceClass targetClass
 
@@ -119,7 +119,7 @@ generateOntology onto (f:fs) =
 
 		otherwise -> hasValue(onto)
   
-  in case fromWithError weOnto of
+  in case  weOnto of
        Left err -> weOnto
        Right o -> generateOntology o fs
 

@@ -19,7 +19,7 @@ module Taxonomy.MMiSSOntology (
   InsertMode(..),
   OntoObjectType(..),
   ClassType(..),
-
+  WithError(..),
   {-- 
    AutoInsert: When a new class is to be inserted and the given SuperClass is not
                present in the ontology, it is automatically inserted with just it's name.
@@ -91,18 +91,20 @@ module Taxonomy.MMiSSOntology (
 
   getRelationGraph,
   -- :: MMiSSOntology -> Gr String String
-  
+
+  hasError, hasValue  
 )
 
 where
 
-import Computation hiding (try)
+--import Computation hiding (try)
 import Data.List
 import Data.FiniteMap 
 
 import Data.Graph.Inductive
 import Data.Graph.Inductive.Tree
 
+import Control.Monad.Error
 
 type ClassName = String
 type ObjectName = String
@@ -113,6 +115,14 @@ type SuperRel = String
 type RelName = String
 type RelationText = String
 type AutoInserted = Bool
+
+type WithError a = Either String a
+
+hasError :: String -> WithError a 
+hasError = Left
+
+hasValue :: a -> WithError a 
+hasValue = Right
 
 data RelationProperty = InversOf String | Functional 
                         deriving (Eq, Read, Show)

@@ -8,7 +8,7 @@ import IO
 import System
 import List
 
-import Computation
+--import Computation
 import AtomString
 import Taxonomy.OntoParser
 import Taxonomy.MMiSSOntology
@@ -47,7 +47,7 @@ main =
                          else return(Nothing)
       weOntology <- parseMMiSSOntologyFile filename
 
-      onto <- case fromWithError weOntology of
+      onto <- case weOntology of
                 Left message -> let str = "The following errors occured during parsing:\n" 
                                 in error (str ++ message)
                 Right o -> let messages = isComplete o

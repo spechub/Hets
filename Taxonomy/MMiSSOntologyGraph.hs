@@ -21,6 +21,7 @@ import Taxonomy.MMiSSOntology
 import Data.Graph.Inductive
 import Data.Graph.Inductive.Query.TransClos
 
+
 import qualified Taxonomy.AbstractGraphView as A
 
 
@@ -37,9 +38,9 @@ displayClassGraph onto startClass =
                                           [] -> return (getPureClassGraph (getClassGraph onto))
                                           ((p,v,l,s):_) -> return(([],v,l,[]) & empty)
      A.Result gid err <-
-       A.makegraph (getOntologyName onto)
-           [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
-           [("class", Box $$$ Color "azure2" $$$
+       A.makegraph  (getOntologyName onto)
+	   [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
+           [("class", Box $$$ Color "lightsteelblue" $$$
                    createLocalMenu onto ginfo main
                    $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
                    emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
