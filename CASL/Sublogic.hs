@@ -953,18 +953,18 @@ pr_pred_map l x = if (has_pred l) then x else Map.empty
 pr_fun_map :: CASL_Sublogics -> Fun_map -> Fun_map
 pr_fun_map l m = Map.fromList $ map (pr_fun_map_entries l) $ Map.toList m
 
-pr_fun_map_entries :: CASL_Sublogics -> (Id, Set.Set (OpType,Id,Bool))
-                      -> (Id, Set.Set (OpType,Id,Bool))
+pr_fun_map_entries :: CASL_Sublogics -> (Id, Set.Set (OpType,Id,FunKind))
+                      -> (Id, Set.Set (OpType,Id,FunKind))
 pr_fun_map_entries l (i,ll) = (i, Set.fromList $ 
 			       mapMaybe (pr_fun_map_entry l) $ Set.toList ll)
 
-pr_fun_map_entry :: CASL_Sublogics -> (OpType,Id,Bool)
-                    -> Maybe (OpType,Id,Bool)
+pr_fun_map_entry :: CASL_Sublogics -> (OpType,Id,FunKind)
+                    -> Maybe (OpType,Id,FunKind)
 pr_fun_map_entry l (t,i,b) =
                  if (has_part l) then
                    Just (t,i,b)
                  else
-                   if ((in_x l t sl_optype) && (not b)) then
+                   if ((in_x l t sl_optype) && b == Partial) then
                      Just (t,i,b)
                    else
                      Nothing

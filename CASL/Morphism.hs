@@ -10,8 +10,6 @@ Portability :  portable
     
 the symbol and morphism stuff for a logic
 
-- implement 'symmapOf' 
-
 -}
 
 module CASL.Morphism where
@@ -38,10 +36,8 @@ data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
 data Kind = SortKind | FunKind | PredKind
             deriving (Show, Eq, Ord)
 
-type Sort_map = Map.Map Id Id
-type Fun_map =  Map.Map Id (Set.Set (OpType, Id, Bool)) 
-			{- The third field is true iff the target symbol is
-                           total -}
+type Sort_map = Map.Map SORT SORT
+type Fun_map =  Map.Map Id (Set.Set (OpType, Id, FunKind)) 
 type Pred_map = Map.Map Id (Set.Set (PredType, Id))
 
 data Morphism = Morphism {msource,mtarget :: Sign,
@@ -49,6 +45,20 @@ data Morphism = Morphism {msource,mtarget :: Sign,
                           fun_map :: Fun_map, 
                           pred_map :: Pred_map}
                          deriving (Eq, Show)
+
+mapSort :: Sort_map -> SORT -> SORT
+mapSort sorts s = Map.findWithDefault s s sorts
+
+mapOpType :: Sort_map -> OpType -> OpType
+mapOpType sorts t = t { opArgs = map (mapSort sorts) $ opArgs t
+		      , opRes = mapSort sorts $ opRes t }
+
+makeTotal :: FunKind -> OpType -> OpType
+makeTotal Total t = t { opKind = Total }
+makeTotal _ t = t
+
+mapPredType :: Sort_map -> PredType -> PredType
+mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
 
 embedMorphism :: Sign -> Sign -> Morphism
 embedMorphism a b =
@@ -58,7 +68,7 @@ embedMorphism a b =
     , sort_map = Map.fromList $ map (\x -> (x,x)) $
       Set.toList $ sortSet a 
     , fun_map = Map.mapWithKey ( \ i -> Set.fromList . map 
-				 ( \ e -> (e, i, opKind e == Total)) 
+				 ( \ e -> (e, i, opKind e)) 
 				 . Set.toList) $ opMap a 
     , pred_map = Map.mapWithKey ( \ i -> Set.fromList . map 
 				 ( \ e -> (e, i)) 
@@ -68,11 +78,11 @@ embedMorphism a b =
 -- Typeable instance
 sentenceTc, signTc, morphismTc, symbolTc, rawSymbolTc 
     :: TyCon
-sentenceTc       = mkTyCon "CASL.Sign.Sentence"
-signTc           = mkTyCon "CASL.Sign.Sign"
-morphismTc       = mkTyCon "CASL.Sign.Morphism"
-symbolTc         = mkTyCon "CASL.Sign.Symbol"
-rawSymbolTc      = mkTyCon "CASL.Sign.RawSymbol"
+sentenceTc       = mkTyCon "CASL.Morphism.Sentence"
+signTc           = mkTyCon "CASL.Morphism.Sign"
+morphismTc       = mkTyCon "CASL.Morphism.Morphism"
+symbolTc         = mkTyCon "CASL.Morphism.Symbol"
+rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
 instance Typeable Sentence where
   typeOf _ = mkAppTy sentenceTc []
@@ -145,14 +155,36 @@ symbKindToRaw (Ops_kind)   idt = AKindedId FunKind  idt
 symbKindToRaw (Preds_kind) idt = AKindedId PredKind idt
 
 symmapOf :: Morphism -> Map.Map Symbol Symbol
-symmapOf (Morphism src _ sorts funs preds) =
+symmapOf (Morphism src _ sorts ops preds) =
   let
-    sortMap = Map.fromList $ zip (map idToSortSymbol $ Map.keys sorts)
-                             (map idToSortSymbol $ Map.elems sorts)
-    funMap  = Map.empty -- do more here
-    predMap = Map.empty
+    sortSymMap = Map.fromList $ map 
+		 ( \ (a, b) -> (idToSortSymbol a, idToSortSymbol b))
+		 $ Map.toList sorts
+    opSymMap = Map.fromList $ concatMap 
+        ( \ (i, t :: Set.Set (OpType, Id, FunKind)) -> 
+	      concatMap 
+	          ( \ o -> 
+		    let ot = mapOpType sorts o
+		    in map ( \ (_, j, k) -> 
+			     (idToOpSymbol i o, idToOpSymbol j 
+			                        $ makeTotal k ot))
+			    $ Set.toList $ Set.filter 
+		           ( \ (ty, _ , _) -> 
+			     makeTotal Total ty == makeTotal Total ot) t)
+	      $ Set.toList $ Map.findWithDefault Set.empty i $ opMap src)
+	$ Map.toList ops 
+    predSymMap = Map.fromList $ concatMap 
+        ( \ (i, t :: Set.Set (PredType, Id)) -> 
+	      concatMap 
+	          ( \ p -> 
+		    let pt = mapPredType sorts p
+		    in map ( \ (_, j) -> 
+			     (idToPredSymbol i p, idToPredSymbol j pt))
+			    $ Set.toList $ Set.filter ((==pt) . fst) t)
+	      $ Set.toList $ Map.findWithDefault Set.empty i $ predMap src)
+	$ Map.toList preds 
   in
-    foldl Map.union Map.empty [sortMap,funMap,predMap]
+    foldr Map.union sortSymMap [opSymMap,predSymMap]
 
 matches :: Symbol -> RawSymbol -> Bool
 matches x                            (ASymbol y)              =  x==y
