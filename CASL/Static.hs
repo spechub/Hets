@@ -673,7 +673,7 @@ addSIG_ITEMS sigma (Pred_items _l _p)    = chainPos sigma addPRED_ITEM _l
 addSIG_ITEMS sigma (Datatype_items _ _p) = return sigma
 
 ------------------------------------------------------------------------------
--- VAR-ITEMS
+-- VAR-DECL
 ------------------------------------------------------------------------------
 
 addVAR_DECL :: LocalEnv -> VAR_DECL -> ExtPos -> Result LocalEnv
@@ -683,6 +683,10 @@ addVAR_DECL sigma (Var_decl x_n s _pos') _pos =
      let _decls  = toVarDecls s _extPos x_n
      return sigma { getGlobal = Global (setAdd (global $ getGlobal sigma)
                                                 _decls) }
+
+------------------------------------------------------------------------------
+-- VAR-ITEMS
+------------------------------------------------------------------------------
 
 addVAR_ITEMS :: LocalEnv -> [VAR_DECL] -> [Pos] -> Result LocalEnv
 addVAR_ITEMS sigma _v _pos =
