@@ -8,15 +8,9 @@ var s : c
 op tt : s ->? Unit
 var x : s
 program tt = \ x : s . ()
-program __ res __ (x : s; y : t) : s = x;
-	fst (x : s; y : t) : s = x; snd (x : s; y : t) : t = y
-. (\ x : s; y : t . def (x res y)) =
-  (\ x : s; y : t . (def y) res (def x))
-. fst = (__ res __)
+program __ res __ (x : s, y : t) : s = x;
+	fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
 op eq : s × s ->? Unit
-. (\ x : s . eq (x, x)) = tt
-. (\ x : s; y : s . x res eq (x, y)) =
-  (\ x : s; y : s . y res eq (x, y))
 type s < ? s
 program all (p : (? s)) : (? ()) = eq (p, tt)
 program And (x, y : (? ())) : (? ()) = t1 () res t2 ()

@@ -302,7 +302,7 @@ resolveTerm ga ty trm =
 extractBindings :: Pattern -> [VarDecl]
 extractBindings pat = 
     case pat of
-    PatternVars l _ -> l
+    PatternVar l -> [l]
     PatternConstr _ _ ps _ -> concatMap extractBindings ps
     TuplePattern ps _ -> concatMap extractBindings ps
     TypedPattern p _ _ -> extractBindings p
@@ -335,8 +335,8 @@ patFromState p =
 	    TuplePattern ar qs
        else if isUnknownId r then 
 	        if null $ tail ts then error "patFromState"
-	        else PatternVars [VarDecl (Id [head $ tail ts] [] []) 
-				 (ruleType p) Other qs] qs
+	        else PatternVar (VarDecl (Id [head $ tail ts] [] []) 
+				 (ruleType p) Other qs)
 	    else PatternConstr (InstOpId (setIdePos r ar qs) [] []) sc ar qs
 
 initialPatState :: Assumps -> Index -> State Int [PState a]

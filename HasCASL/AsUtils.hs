@@ -105,7 +105,7 @@ instance PosItem Pattern where
 posOfPat :: Pattern -> Pos
 posOfPat pat =
     case pat of
-    PatternVars vs ps -> firstPos vs ps
+    PatternVar vs -> getMyPos vs
     PatternConstr (InstOpId i _ _) _ _ qs -> firstPos [i] qs
     PatternToken t -> tokPos t
     BracketPattern _ ps qs -> firstPos ps qs

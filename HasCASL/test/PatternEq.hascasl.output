@@ -2,15 +2,10 @@
 s : Type
 t : Type
 %% Assumptions -----------------------------------------------------------
-snd : s × t -> t = \ (x : _var_35, y : _var_45) . (op y : _var_45)
+snd : s × t -> t = \ (x : _var_26, y : _var_36) . (op y : _var_36)
 %% Diagnostics -----------------------------------------------------------
 Error (line 5, column 9) different terms of 'snd'
-	\ (x : _var_35, y : _var_45) . (op y : _var_45)
-	\ (x : s : s, y : t : t) . (op y : t)
-	
-
-Error (line 6, column 9) different terms of 'snd'
-	\ (x : _var_35, y : _var_45) . (op y : _var_45)
+	\ (x : _var_26, y : _var_36) . (op y : _var_36)
 	\ (x : s : s, y : t : t) . (op y : t)
 	
 

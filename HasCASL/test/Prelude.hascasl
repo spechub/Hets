@@ -57,12 +57,12 @@ type s -> t < s ->? t
 %% total functions
 op __res__ (x: s; y: t) : s = x 
 op fst (x: s; y: t) : s = x 
-program snd (x: s; y: t) : t = y 
+program snd (x: s, y: t) : t = y 
 
 
 %% trivial because its the strict function property
 
-. (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) und (def x)) 
+. (\ (x:s, y:t). def (x res y)) =  (\ (x:s, y:t). (def y) und (def x)) 
 . fst = (__ res__)
 
 
@@ -72,7 +72,7 @@ program snd (x: s; y: t) : t = y
 pred eq : s * s
 
 . (\x: s. eq(x, x)) = tt
-. (\x, y:s. x res eq(x,y)) = (\x, y:s. y res eq(x,y))
+. (\(x, y:s). x res eq(x,y)) = (\(x, y:s). y res eq(x,y))
 
 %% then %def
 
@@ -105,7 +105,7 @@ program neg (r: Pred Unit) : Pred Unit = r impl ff
 %% the type instance for the first "eq" should be "?t" 
 %% this is explicitely enforced by "\ .f(x)"
 
-. all(\f,g: s->?t. all(\x:s. eq(\ . f(x), g(x)) impl eq(f, g)))
+. all(\(f,g): s->?t. all(\x:s. eq(\ . f(x), g(x)) impl eq(f, g)))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
@@ -119,8 +119,8 @@ var c : Cpo
 pred __<<=__ : c * c
 
 . all(\x: c. x <<= x)                   %(reflexive)%
-. all(\x,y,z: c. ((x <<= y) und (y <<= z)) impl x <<= z)   %(transitive)%
-. all(\x,y,z: c. ((x <<= y) und (y <<= x)) impl eq(x,y))  %(antisymmetric)%
+. all(\(x,y,z: c). ((x <<= y) und (y <<= z)) impl x <<= z)   %(transitive)%
+. all(\(x,y,z: c). ((x <<= y) und (y <<= x)) impl eq(x,y))  %(antisymmetric)%
 
 pred isChain (s: nat -> c) <=> all(\n:nat. s(n) <<= s(Suc(n)))
 pred isBound (x: c; s: nat -> c) <=> all(\n:nat. s(n) <<= x)  
@@ -168,7 +168,7 @@ type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
 
  type c -->? d < c ->? d
  . __ in c -->? d  = \f : c ->? d . 
-	all(\x,y: c. (def (f x) und x <<= y) impl def (f y)) und
+	all(\(x,y: c). (def (f x) und x <<= y) impl def (f y)) und
 	all(\s: nat -> c. (isChain(s) und def f(sup(s))) impl 
 		ex(\m:nat. def f(s(m)) und 
 			eq(sup(\n:nat.!f(s(n+m))), f(sup(s)))))

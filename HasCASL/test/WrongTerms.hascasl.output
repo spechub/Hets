@@ -172,5 +172,5 @@ expecting casl char, "%%", "%{", "%(", "%", "=e=", "=", id/literal, "{", "[", "(
 
 parse error at (line 44, column 11):
 unexpected "@"
-expecting quoted char, dot-words, digit, words, "__", "{", "[", "(", "%%", "%{", "%(", "%", ":", ",", ";" or ")"
+expecting quoted char, dot-words, digit, words, "__", "{", "[", "(", "%%", "%{", "%(", "%", ":", "," or ")"
 

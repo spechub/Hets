@@ -17,22 +17,11 @@ var x : s
 
 program tt = \x: s . () 
 
-program  __res__ (x: s; y: t) : s = x ;
-fst (x: s; y: t) : s = x ; 
-snd (x: s; y: t) : t = y 
-
-
-
-. (\x:s; y:t. def (x res y)) =  (\x:s; y:t. (def y) res (def x)) 
-. fst = (__ res__)
-
-
+program  __res__ (x: s, y: t) : s = x ;
+fst (x: s, y: t) : s = x ; 
+snd (x: s, y: t) : t = y 
 
 pred eq : s * s
-
-. (\x: s. eq(x, x)) = tt
-. (\x, y:s. x res eq(x,y)) = (\x, y:s. y res eq(x,y))
-
 
 type s < ?s
 

@@ -343,14 +343,8 @@ primPattern :: TokenMode -> AParser Pattern
 primPattern b = tokenPattern b 
 		<|> mkBraces pattern (BracketPattern Braces) 
 		<|> mkBrackets pattern (BracketPattern Squares)
-		<|> bracketParser patterns oParenT cParenT anSemi 
+		<|> bracketParser pattern oParenT cParenT anComma
 			(BracketPattern Parens)
-
-patterns :: AParser Pattern
-patterns = do (ts, ps) <- pattern `separatedBy` anComma
-	      let tp = if isSingle ts then head ts 
-		       else TuplePattern ts (map tokPos ps)
-		  in return tp
 
 mixPattern :: TokenMode -> AParser Pattern
 mixPattern b = 
@@ -572,25 +566,10 @@ lamPattern :: AParser [Pattern]
 lamPattern = 
     do  lookAhead lamDot 
 	return []
-      <|> do p <- lamVarDecls 
-		  <|> (bracketParser patterns oParenT cParenT 
-		       anSemi (BracketPattern Parens))
+      <|> do p <- pattern
 	     ps <- lamPattern
 	     return (p : ps)
 
-lamVarDecls :: AParser Pattern
-lamVarDecls = do (vs, ps) <- var `separatedBy` anComma
-		 do  vds <- varDeclType vs ps   
-                     do  s <- anSemi
-			 (vvs, pps) <- varDecls `separatedBy` anSemi
-			 return (PatternVars (vds ++ concat vvs) 
-				 (map tokPos (s:pps)))
-		       <|> return (PatternVars vds (map tokPos ps))
-	           <|> return (TuplePattern (map ( \ (Id ts _ _) -> 
-					     MixfixPattern $ 
-						   map PatternToken ts) vs) 
-			       (map tokPos ps))
-		    
 -----------------------------------------------------------------------------
 -- case-term
 -----------------------------------------------------------------------------

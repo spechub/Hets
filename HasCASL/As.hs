@@ -222,14 +222,14 @@ data Term = CondTerm Term Formula Term [Pos]
 	  -- pos brackets, ","s 
 	    deriving (Show)
 
-data Pattern = PatternVars [VarDecl] [Pos]
+data Pattern = PatternVar VarDecl
              -- pos ";"s 
 	     | PatternConstr InstOpId TypeScheme [Pattern] [Pos] 
 	     -- constructor or toplevel operation applied to arguments
 	     -- pos "("s, ")"s
              | PatternToken Token
 	     | BracketPattern BracketKind [Pattern] [Pos]
-	     -- pos brackets, ";"s, ","s
+	     -- pos brackets, ","s
 	     | TuplePattern [Pattern] [Pos]
 	     -- pos ","s
 	     | MixfixPattern [Pattern] -- or HO-Pattern
@@ -365,7 +365,7 @@ instance Eq Term where
     _ == _ = False
 
 instance Eq Pattern where
-    PatternVars l1 _ == PatternVars l2 _ = l1 == l2 
+    PatternVar l1 == PatternVar l2 = l1 == l2 
     PatternConstr i1 t1 l1 _ == PatternConstr i2 t2 l2 _ = 
 	(i1, l1, t1) == (i2, l2, t2)
     PatternToken t1 == PatternToken t2 = t1 == t2

@@ -117,7 +117,7 @@ PRED-ITEM       ::= OP-NAME, ..., OP-NAME: TYPE-SCHEME  %% a product!
 %% because a TYPE consumes the following input
 
 OP-ARGS         ::= ARG-DECLS ... ARG-DECLS
-ARG-DECLS       ::= ( PATTERN ; ... ; PATTERN ) | ()
+ARG-DECLS       ::= ( VAR-DECL ; ... ; VAR-DECL )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unknown IDs will become new variables
@@ -135,7 +135,7 @@ PRIM-PATTERN    ::= "__"
 		  | NO-BRACKET-TOKEN         %% part of ID or VAR
                   | [ PATTERNS ] | [ ]       %% mixfix/compound/instantiation 
 		  | { PATTERNS } | { }       %% mixfix 
-		  | ( PATTERNS ; ... ; PATTERNS ) | ( )   
+		  | ( PATTERNS ) | ( )   
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -239,11 +239,7 @@ CASE-TERM       ::= case TERM of PATTERN -> TERM "|" ... "|" PATTERN -> TERM
 QUANT-TERM      ::= QUANTIFIER VAR-DECL ;...; VAR-DECL "." TERM 
                   | forall TYPE-VAR-DECL ;...; TYPE-VAR-DECL "." TERM 
 		  | \ LAMBDA-DOT TERM     % for unit
-		  | \ VAR-DECL LAMBDA-DOT TERM
-		  | \ VAR , ... , VAR LAMBDA-DOT TERM
-		  | \ (PATTERN) ... (PATTERN) LAMBDA-DOT TERM
-
-
+		  | \ PATTERNS  ... PATTERNS LAMBDA-DOT TERM
 
 %% case/lambda-Terms must be without formula ingredients
 

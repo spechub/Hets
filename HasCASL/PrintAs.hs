@@ -193,18 +193,13 @@ instance PrettyPrint Term where
     printText0 ga (BracketTerm k l _) = bracket k $ commaT_text ga l
 
 instance PrettyPrint Pattern where 
-    printText0 ga (PatternVars vs _) = semiT_text ga vs
+    printText0 ga (PatternVar v) = printText0 ga v
     printText0 ga (PatternConstr n t args _) = printText0 ga n 
 			  <+> colon
 			  <+> printText0 ga t 
 			  <+> fcat (map (parens.printText0 ga) args)
     printText0 ga (PatternToken t) = printText0 ga t
-    printText0 ga (BracketPattern k l _) = 
-	case l of 
-	       [TuplePattern _ _] -> printText0 ga $ head l 
-	       _ -> case k of 
-		    Parens -> bracket k $ semiT_text ga l
-		    _ -> bracket k $ commaT_text ga l
+    printText0 ga (BracketPattern k l _) = bracket k $ commaT_text ga l
     printText0 ga (TuplePattern ps _) = parens $ commaT_text ga ps
     printText0 ga (MixfixPattern ps) = fsep (map (printText0 ga) ps)
     printText0 ga (TypedPattern p t _) = printText0 ga p 
