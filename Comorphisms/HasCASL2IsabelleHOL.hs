@@ -144,9 +144,6 @@ transTerm _ (QualOp _ (InstOpId opId _ _) _ _)
   | opId == trueId = Const ("True",dummyT)
   | opId == falseId = Const ("False",dummyT)
   | otherwise = Const("Some",dummyT) `App` Const((getNameOfOpId opId),dummyT)
-   where getNameOfOpId (Id (tok:toks) a b) = if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
-                                                else tokStr tok
-         getNameOfOpId (Id [] _ _) = error "Operation without name"
 
 transTerm sign (ApplTerm term1 term2 _) =
         case term1 of
@@ -162,7 +159,7 @@ transTerm sign (LambdaTerm pats Partial body _) =
     else Const("Some",dummyT) `App` (foldr (abstraction sign) (transTerm sign body) pats)
 transTerm sign (LetTerm Let eqs body _) = 
   transTerm sign (foldr let2lambda body eqs)
-transTerm sign (TupleTerm terms _) = foldl1 prod (map (transTerm sign) terms)
+transTerm sign (TupleTerm terms _) = Const("Some",dummyT) `App` (foldl1 prod (map (transTermAbs sign) terms))
 transTerm _ _ = error "Not supported (abstract) syntax in use."
 
 let2lambda :: ProgEq -> As.Term -> As.Term
@@ -241,7 +238,24 @@ abstraction sign pat body = Abs((transTermAbs sign pat), getType pat, body)
 
 transTermAbs :: Env -> As.Term -> IsaSign.Term
 transTermAbs _ (QualVar var typ _) = IsaSign.Free(transVar var, transType typ)
+transTermAbs sign (QualOp a (InstOpId opId b c) d e) = 
+  if (isLogId opId) then transTerm sign (QualOp a (InstOpId opId b c) d e)
+    else Const((getNameOfOpId opId),dummyT)
 transTermAbs sign term = transTerm sign term
+
+getNameOfOpId :: Id -> String
+getNameOfOpId (Id [] _ _) = error "Operation without name"
+getNameOfOpId (Id (tok:toks) a b) = if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
+                                                else tokStr tok
+isLogId :: Id -> Bool
+isLogId i = (i == andId) 
+         || (i == orId) 
+         || (i == implId) 
+         || (i == eqvId) 
+         || (i == notId) 
+         || (i == defId) 
+         || (i == exEq) 
+         || (i == eqId) 
 
 toPair :: GenVarDecl -> (Var,Type)
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
