@@ -105,7 +105,7 @@ apache_doc:
 	cvs up -d
 	$(RM) docs/*.html 
 	$(MAKE) doc
-        $(PERL) utils/post_process_docs.pl docs \
+	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
 
 ###############
