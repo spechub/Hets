@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 module ATermLib (
 
 	module ATermAbstractSyntax,

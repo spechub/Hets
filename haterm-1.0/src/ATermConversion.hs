@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-overlapping-instances #-}
 module ATermConversion where
 
 import ATermAbstractSyntax
@@ -33,29 +34,39 @@ instance ATermConvertible Integer where
 		   otherwise -> fromATermError "Integer" aterm
 	where aterm = getATerm at
 
+instance ATermConvertible Int where
+    toATerm at x    = toATerm at (toInteger x)
+    fromATerm at    = case mi of
+		      (Just i) -> i
+		      Nothing  -> error ("Integer to big for Int: "++(show x))
+	where mi = if toInteger ((fromInteger::Integer->Int) x) == x then 
+			      Just (fromInteger x)
+	           else       Nothing 
+	      x::Integer = fromATerm at
 
-toATermStr at s      = addATerm (AAppl s' []) at
-    where s'  = concat ["\"",s'',"\""]
-	  s'' = concatMap conv s
-	  conv '\"' = "\\\""
-	  conv '\n' = "\\\n"
-	  conv '\t' = "\\\t"
-	  conv '\\' = "\\\\"
-	  conv x    = [x]
-fromATermStr at = case aterm of
-		  (AAppl s []) -> conv s'
-		      where s' = case s of
+instance ATermConvertible String where
+    toATerm at s      = addATerm (AAppl s' []) at
+	where s'  = concat ["\"",s'',"\""]
+	      s'' = concatMap conv s
+	      conv x | x `elem` "\n\\\t\"\r" = '\\':[x]
+	      conv x | (fromEnum x) < 32     = 
+			 error ('\"':x:'\"':" is not convertible") 
+	      conv x    = [x]
+    fromATerm at = case aterm of
+		   (AAppl s []) -> conv s'
+		       where s' = case s of
 				  ('\"':so) -> case reverse so of
-			                         ('\"':sr) -> reverse sr
-						 _         -> err
+					       ('\"':sr) -> reverse sr
+					       _         -> err
 				  _         -> err
-			    conv ('\\':x:xs) = 
-				 if x == '\n' then x:(conv xs)
+			     conv ""          = ""
+			     conv ('\\':x:xs) = 
+				 if x `elem` "\n\\\t\"\r" then x:(conv xs)
 				 else err
-			    conv (x:xs)      = x:(conv xs)
-		  otherwise    -> err 
-    where aterm = getATerm at
-	  err   = fromATermError "String" aterm
+			     conv (x:xs)      = x:(conv xs)
+		   otherwise    -> err 
+	where aterm = getATerm at
+	      err   = fromATermError "String" aterm
 
 instance ATermConvertible a => ATermConvertible [a] where
     toATerm at l       = addATerm (AList l') at'
@@ -66,6 +77,17 @@ instance ATermConvertible a => ATermConvertible [a] where
 	where aterm  = getATerm at
 	      conv t = fromATerm (getATermByIndexSp1 t at)
 
+instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) 
+    where
+    toATerm at (x,y) = addATerm (AAppl "tuple" [x',y']) at'
+	where (at' ,y') = toATerm at'' y
+	      (at'',x') = toATerm at   x
+    fromATerm at = case aterm of 
+		   (AAppl "tuple" [x,y]) -> (x',y')
+		       where x' = fromATerm (getATermByIndexSp1 x at)
+			     y' = fromATerm (getATermByIndexSp1 y at)
+		   otherwise             -> fromATermError "(a,b)" aterm
+	where aterm = getATerm at 
 
 --- some helpers needed and used by DrIFT instances ---------------------------
 -- throws an error in case that there is no ATerm in the list
