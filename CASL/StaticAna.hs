@@ -114,7 +114,7 @@ allPredIds = Set.fromDistinctAscList . Map.keys . predMap
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds = 
     do e <- get
-       put e { sentences = ds ++ sentences e }
+       put e { sentences = sentences e ++ ds }
 
 -- * traversing all data types of the abstract syntax
 
@@ -680,7 +680,7 @@ basicAnalysis :: (Eq f, PrettyPrint f) => Min f e -- ^ type analysis of f
 basicAnalysis mef ab as dif (bs, inSig, ga) = do 
     let (newBs, accSig) = runState (ana_BASIC_SPEC ab as ga bs) inSig
         ds = reverse $ envDiags accSig
-        sents = reverse $ sentences accSig
+        sents = sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
         diff = diffSig cleanSig inSig 
             { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig } 
@@ -689,5 +689,5 @@ basicAnalysis mef ab as dif (bs, inSig, ga) = do
     return ( newBs
            , diff
            , cleanSig
-           , reverse checked_sents ) 
+           ,  checked_sents ) 
 
