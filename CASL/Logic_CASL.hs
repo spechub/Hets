@@ -17,6 +17,7 @@ import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
+import CASL.MapSentence
 import Logic.ParsecInterface
 import Common.AS_Annotation
 import Common.AnnoState(emptyAnnos)
@@ -75,7 +76,7 @@ instance LatticeWithTop CASL_Sublogics where
 -- CASL logic
 
 instance Sentences CASL FORMULA () Sign Morphism Symbol where
-      map_sen CASL _morphism s = return s -- ???
+      map_sen CASL = mapSen
       parse_sentence CASL = Just
         ( \ _sign str ->
 	  case runParser (aFormula << eof) emptyAnnos "" str of
