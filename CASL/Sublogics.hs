@@ -243,13 +243,24 @@ adjust_logic x = if (adjust_check x) then
 adjust_check :: CASL_Sublogics -> Bool
 adjust_check x = (has_sub x) && (which_logic x == Atomic)
 
-mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [Pos]
-mapMaybePos [] f l = []
-mapMaybePos p f [] = p
-mapMaybePos (p1:pl) f (h:t) = if (isJust (f h)) then
-                                p1:(mapMaybePos pl f t)
-                              else
-                                mapMaybePos pl f t
+-- map a function returning Maybe over a list of arguments
+-- . a list of Pos is maintained by removing an element if the
+--   function f returns Nothing on the corresponding element of
+--   the argument list
+-- . leftover elements in the Pos list after the argument
+--   list is exhausted are appended at the end with Nothing
+--   as a substitute for f's result
+--
+mapMaybePos :: [Pos] -> (a -> Maybe b) -> [a] -> [(Maybe b,Pos)]
+mapMaybePos [] f l          = []
+mapMaybePos (p1:pl) f []    = (Nothing,p1):(mapMaybePos pl f [])
+mapMaybePos (p1:pl) f (h:t) = let
+                                res = f h
+                              in
+                                if (isJust res) then
+                                  (res,p1):(mapMaybePos pl f t)
+                                else
+                                  mapMaybePos pl f t
 
 -- tl n times if possible
 tln :: Int -> [a] -> [a]
@@ -270,9 +281,8 @@ topn n (h:t) = h:(topn (n-1) t)
 --  kept
 mapPos :: Int -> [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
 mapPos c p f l = let
-                   pp  = tln c p
-                   res = mapMaybe f l
-                   pos = mapMaybePos pp f l
+                   (res,pos) = (\(x,y) -> (catMaybes x,y)) 
+                               $ unzip $ mapMaybePos (tln c p) f l
                  in
                    (res,(topn c p)++pos)
 
