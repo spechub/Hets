@@ -28,6 +28,8 @@ introduce symbol functor (additionally to signature symbol functor)
 
 module CASL.SymbolMapAnalysis where
 
+import Debug.Trace
+
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
@@ -764,7 +766,8 @@ Output: signature "Sigma1"<=Sigma.
 cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e 
                 -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma = do
-  if not (symset `Set.subset` symset0)   -- 2.
+  if trace ("symset "++show symset++"\nsymset0 "++show symset0)
+           (not (symset `Set.subset` symset0))   -- 2.
    then pfatal_error 
          (ptext "Hiding: The following symbols" 
           <+> printText(symset Set.\\ symset0)

@@ -128,7 +128,7 @@ import Common.Lib.Parsec.Pos -- for testing purposes
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
 -- the SIMPLE_ID may be a name if the specification shall be named,
--- flag: shall only the structure be analysed?
+-- options: here we need the info: shall only the structure be analysed?
 ana_SPEC :: LogicGraph -> GlobalContext -> NodeSig -> Maybe SIMPLE_ID -> 
             HetcatsOpts -> SPEC -> Result (SPEC,NodeSig,DGraph)
 
@@ -142,7 +142,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        (bspec', _sigma_local, sigma_complete, ax) <- 
           if analysis opts == Structured 
            then return (bspec,empty_signature lid, empty_signature lid,[])
-           else do b <- maybeToResult (newPos "b" 0 0) 
+           else do b <- maybeToResult nullPos
                           ("no basic analysis for logic "
                                          ++language_name lid) 
                           (basic_analysis lid)
@@ -1094,8 +1094,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                    Set.\\ Map.image h symsP
   when (not (Set.isEmpty illShared))
    (pplain_error () (ptext 
-     "Symbols shared between actual parameter and body\
-    \ must be in formal parameter"
+     "Symbols shared between actual parameter and body must be in formal parameter"
      $$ printText illShared ) nullPos)
   let newIdentifications = Map.kernel hmor Set.\\ Map.kernel h
                            Set.\\ Set.fromList (map (\x -> (x,x)) (Map.keys hmor))

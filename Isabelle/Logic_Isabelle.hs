@@ -16,7 +16,10 @@ module Isabelle.Logic_Isabelle where
 import Data.Dynamic
 
 import Isabelle.IsaSign
+import Isabelle.IsaPrint
+#ifdef UNI_PACKAGE
 import Isabelle.IsaProve
+#endif
 
 import Logic.Logic
 import Common.Result
@@ -31,11 +34,11 @@ import ATC.IsaSign
 data Isabelle = Isabelle deriving (Show)
 instance Language Isabelle where
  description _ = 
-  "Isabelle - a generic theorem prover\
-  \This logic corresponds to the logic of Isabelle,\
-  \a weak intuitionistic type theory\
-  \Also, the logics encoded in Isabelle, like FOL, HOL; HOLCF, ZF are made available\
-  \See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
+  "Isabelle - a generic theorem prover\n"++
+  "This logic corresponds to the logic of Isabelle,\n"++
+  "a weak intuitionistic type theory\n"++
+  "Also, the logics encoded in Isabelle, like FOL, HOL; HOLCF, ZF are made available\n"++
+  "See http://www.cl.cam.ac.uk/Research/HVG/Isabelle/"
 
 sentenceTc, signTc :: TyCon
 
@@ -76,7 +79,11 @@ instance Sentences Isabelle Sentence () Sign () ()  where
 	(if null lab then empty 
 	else text lab <+> colon <> space) <> printText0 ga sen
       parse_sentence Isabelle = Nothing
+#ifdef UNI_PACKAGE
       provers Isabelle = [isabelleProver] 
+#else
+      provers Isabelle = [] 
+#endif
       cons_checkers Isabelle = []
 
 instance StaticAnalysis Isabelle () Sentence ()

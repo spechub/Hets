@@ -38,10 +38,10 @@ data Modal = Modal deriving Show
 
 instance Language Modal  where
  description _ = 
-  "ModalCASL extends CASL by modal operators. Syntax for ordinary\n\
-  \modalities, multi-modal logics as well as  term-modal\n\
-  \logic (also covering dynamic logic) is provided.\n\
-  \Specific modal logics can be obtained via restrictions to\n\
+  "ModalCASL extends CASL by modal operators. Syntax for ordinary\n\ 
+  \modalities, multi-modal logics as well as  term-modal\n\ 
+  \logic (also covering dynamic logic) is provided.\n\ 
+  \Specific modal logics can be obtained via restrictions to\n\ 
   \sublanguages."
 
 type MSign = Sign M_FORMULA ModalSign

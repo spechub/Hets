@@ -15,6 +15,8 @@ Portability :  non-portable (imports Logic.Logic)
 {- todo: option for omitting writing of env
 -}
 
+#include <uni.hs>
+
 module Main where
 
 import Monad (when)
@@ -32,8 +34,11 @@ import Static.AnalysisLibrary
 import Static.DevGraph
 
 --import Syntax.Print_HetCASL
+#ifdef UNI_PACKAGE
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
+import GUI.WebInterface
+#endif
 
 -- for checking the whole ATerm interface
 import Syntax.AS_Library (LIB_DEFN(..), LIB_NAME()) 
@@ -41,7 +46,6 @@ import qualified Common.Lib.Map as Map
 
 import ReadFn
 import WriteFn
-import GUI.WebInterface
 --import ProcessFn
 
 import Haskell.Haskell2DG
@@ -61,7 +65,11 @@ processFile opt file =
 		 case web opt of
 		   Yes  -> do
 			   str <- readFile file
+#ifdef UNI_PACKAGE
 			   webInterface str opt 
+#else
+                           fail "No web interface; UNI_PACKAGE option has been disabled"
+#endif
 		   No   -> return () 
              HaskellIn -> do  
 	         r <- anaHaskellFile opt file
@@ -163,6 +171,7 @@ showGraph file opt env =
             putIfVerbose opt 2 ("Trying to display " ++ file
                                 ++ "in a graphical Window")
             putIfVerbose opt 3 "Initializing Converter"
+#ifdef UNI_PACKAGE
             graphMem <- initializeConverter
             putIfVerbose opt 3 "Converting Graph"
             (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
@@ -170,6 +179,7 @@ showGraph file opt env =
             --putIfVerbose opt 1 "Hit Return when finished"
             getLine
             return ()
+#endif
         Nothing -> putIfVerbose opt 1
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")

@@ -34,8 +34,9 @@ DRIFT      = $(DRIFT_ENV) utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK    = haddock
 
-HC_FLAGS   = -Wall  
+HC_FLAGS   = -Wall -fglasgow-exts -cpp  
 # -fglasgow-exts comes in via  ../uni/uni-package.conf
+# but added it here in case of compilation without uni
 
 HC_INCLUDE = -i$(INCLUDE_PATH)
 HC_PACKAGE = -package-conf ../uni/uni-package.conf  -package uni-davinci \

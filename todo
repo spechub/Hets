@@ -336,6 +336,8 @@ Encodings
 Errors:
 Klaus' wayfinding example
 
+ask Detlef: critical pairs, Fossacs paper by Francesco
+
 UniForM workbench:
 first steps towards CASL instance, using ATerms and re-using MMISS instance
 variants for specs (needed for DOLCE: CASL variant, DL variant, ...)

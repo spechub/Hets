@@ -49,6 +49,8 @@ todo for Jorina:
      siehe auch Seite 302 des CASL Reference Manual
 -}
 
+#include <uni.hs>
+
 module Proofs.Proofs where
 
 import Logic.Logic
@@ -65,8 +67,9 @@ import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library 
+#ifdef UNI_PACKAGE
 import GUI.HTkUtils
-
+#endif
 
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
@@ -834,6 +837,7 @@ getProvers lg gsub =
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
+#ifdef UNI_PACKAGE
 selectProver provers = do
    sel <- ioToIORes $ listBox 
                 "Choose a translation to a prover-supported logic"
@@ -842,6 +846,7 @@ selectProver provers = do
            Just j -> return j
            _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
    return (provers!!i)
+#endif
  
 -- applies basic inference to a given node
 basicInferenceNode :: LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
