@@ -4,7 +4,10 @@ adapt language summary (C.1.1, A-2, C-3 - C-8)
 
 checking legality of internal and external terms is missing
 
-subtypes are treated like type synonyms
+subtypes are treated like type synonyms. Function and product types
+are builtin. The unit type is the empty product type. Subtypes
+relations of these builtin types and user defined types are
+problematic.
 
 class constraints are not checked in function applications
 
@@ -38,8 +41,6 @@ variables (with type "MixfixType []") rather than MixAna
 a wild card pattern (just "__" with lowest precedence?) is missing
 
 as-patterns are only partially implemented
-
-Allow for "op if__then__else : ..." . 
 
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).

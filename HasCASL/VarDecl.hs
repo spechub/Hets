@@ -15,6 +15,7 @@ module HasCASL.VarDecl where
 
 import Data.Maybe
 import Data.List
+import Control.Monad
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -204,17 +205,15 @@ addOpId i sc attrs defn =
            (l,r) = partitionOpId e i sc
 	   oInfo = OpInfo sc attrs defn 
        if null ds then 
-          if null l then do
-	     if i `elem` map fst bList then addDiags $ 
-	        [mkDiag Error "illegal overloading of predefined identifier" i]
-                else putAssumps $ Map.insert i (OpInfos (oInfo : r)) as
-	     return $ Just i
-	  else do let Result es mo = mergeOpInfo tm c (head l) oInfo
+	       do let Result es mo = foldM (mergeOpInfo tm c) oInfo l
 		  addDiags $ map (improveDiag i) es
+	          if i `elem` map fst bList then addDiags $ [mkDiag Error 
+			  "illegal overloading of predefined identifier" i]
+		      else return ()
 		  case mo of 
 		      Nothing -> return Nothing
 		      Just oi -> do putAssumps $ Map.insert i 
-						   (OpInfos (oi : r )) as
+						   (OpInfos (oi : r)) as
 				    return $ Just i
 	  else do addDiags ds
 		  return Nothing

@@ -41,15 +41,15 @@ op __res__ : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 op fst : s * t ->? s = \ (var x : s, var y : t) .! (var x : s)
 program snd (x : s, y : t) : t = y
 %% trivial because its the strict function property
-. (pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
+. (fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
     (\ (var x : s, var y : t) . def (x res y),
      \ (var x : s, var y : t) . (def y) und (def x))
-. (pred __=__[s * t ->? s] : forall a : Type . a * a)
+. (fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
     (op fst : s * t ->? s, op __res__ : s * t ->? s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : forall s : Type . s * s
-. (pred __=__[_var_36 ->? Unit] : forall a : Type . a * a)
+. (fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
     (\ (var x : _var_36)
        . (pred eq[_var_36] : forall s : Type . s * s)
            (var x : _var_36, var x : _var_36),
@@ -146,29 +146,35 @@ p : Pcpo %(var)%
 s : Type %(var)%
 t : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-__/\__ : Unit * Unit ->? Unit %(pred)%
+__/\__ : Unit * Unit ->? Unit %(fun)%
 __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-__<=>__ : Unit * Unit ->? Unit %(pred)%
-__=__ : forall a : Type . a * a ->? Unit %(pred)%
-__=>__ : Unit * Unit ->? Unit %(pred)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall s : Type . s * s ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : Unit * Unit ->? Unit %(pred)%
-__if__ : Unit * Unit ->? Unit %(pred)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
 __res__
   : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
 __when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(op)%
+bottom : forall p : Pcpo . p %(fun)%
 def : forall s : Type . Pred s %(op)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 eq : forall s : Type . s * s ->? Unit %(pred)%
 f : c --> d %(var)%
-false : Unit %(fun)%
+false
+  : bool %(construct bool)%
+  : Unit ->? Unit %(pred)%
+  : Unit %(fun)%
 fst : s * t ->? s %(op)% = \ (var x : s, var y : t) .! (var x : s)
 g : c --> d %(var)%
 not : Unit ->? Unit %(pred)%
 not__ : Unit ->? Unit %(fun)%
 sup : forall c : Cpo . (nat -> c) ->? c %(op)%
-true : Unit %(fun)%
+true
+  : bool %(construct bool)%
+  : Unit ->? Unit %(pred)%
+  : Unit %(fun)%
 tt : forall s : Type . Pred s %(op)%
 %% Sentences -------------------------------------------------------------
 program (op def[_var_1] : forall s : Type . Pred s) =
@@ -183,12 +189,12 @@ forall x : s; y : t
   . (fun __=__ : forall a : Type . a * a ->? Unit)
       ((op fst : s * t ->? s)(var x : s, var y : t),
        var x : s) %(def_fst)%
-(pred __=__[s * t ->? _var_18] : forall a : Type . a * a)
+(fun __=__[s * t ->? _var_18] : forall s : Type . s * s ->? Unit)
   (\ (var x : s, var y : t) . def (x res y),
    \ (var x : s, var y : t) . (def y) und (def x))
-(pred __=__[s * t ->? s] : forall a : Type . a * a)
+(fun __=__[s * t ->? s] : forall s : Type . s * s ->? Unit)
   (op fst : s * t ->? s, op __res__ : s * t ->? s)
-(pred __=__[_var_36 ->? Unit] : forall a : Type . a * a)
+(fun __=__[_var_36 ->? Unit] : forall s : Type . s * s ->? Unit)
   (\ (var x : _var_36)
      . (pred eq[_var_36] : forall s : Type . s * s)
          (var x : _var_36, var x : _var_36),
@@ -205,6 +211,12 @@ free type bool
 *** FatalError 15.8, illegal type pattern argument: __
 *** Error 17.6, illegal overloading of predefined identifier 'true'
 *** Error 17.12, illegal overloading of predefined identifier 'false'
+*** Error 19.9, illegal overloading of predefined identifier '__/\__'
+*** Error 19.17, illegal overloading of predefined identifier '__\/__'
+*** Error 19.25, illegal overloading of predefined identifier '__=>__'
+*** Error 19.33, illegal overloading of predefined identifier '__if__'
+*** Error 19.40, illegal overloading of predefined identifier '__<=>__'
+*** Error 22.8, illegal overloading of predefined identifier '__=__'
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
 *** FatalError 31.6, illegal type pattern: __ * __ * __
@@ -304,6 +316,7 @@ free type bool
 *** Error 134.20, unexpected mixfix token: isChain
 *** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
+*** Error 141.4, illegal overloading of predefined identifier 'bottom'
 *** Error 143.3, unexpected mixfix token: all
 *** Hint 148.6, is type variable 'f'
 *** Error 150.15, unexpected mixfix token: [
