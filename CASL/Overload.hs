@@ -710,7 +710,7 @@ minExpTerm_cond  mef ga sign term1 formula term2 pos = do
                           (TERM f, SORT)
           qualify_cond f (ts, s) = case ts of
               [t1, t2] -> (Conditional t1 f t2 [], s)
-              _        -> (Unparsed_term "" [], s)
+              _        -> error "Overload qualify_cond"
           -- generate profiles by checking whether
           -- the (two) terms have a common supersort
           get_profile :: [[TERM f]] -> [([TERM f], SORT)]
