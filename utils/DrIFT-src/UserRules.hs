@@ -277,13 +277,15 @@ childToATerm s vs ts =
     let (_,vs') = List.mapAccumL childToATerm' (0,ts) vs in vs'
     where childToATerm' (i,t:ts) v = 
 	      ((i+1,ts), 
-	       attN_v' <+> text "=" <+> text ("toATerm"++str) <+> attO <+> v)
+	       attN_v' <+> text "=" <+> text ("toATerm") <+> attO <+> v)
 	      where attN_v' = hcat [text "(",text (s++(show (i+1))),
 			      text ",", addPrime v, text ")"]
 		    attO = text (s++(show i))
-		    str = case t of
+{-		    str = case t of
 			  Con "String" -> "Str"
-			  otherwise    -> ""
+			  otherwise    -> ""-}
+
+
 makeFromATermFn dat = 
     block (text "fromATerm att =": 
 	   [block (fnstart:(block cases):[whereblock])])
@@ -321,12 +323,12 @@ makeFromATerm name body
 defaultFromATerm name = empty
 {-  = hsep $ texts ["fromATerm", "u", "=", "fromATermError", (doublequote name), "u"] -}
 childFromATerm atn (t:ts) v
-    = (ts,(addPrime v) <+> text "=" <+> text ("fromATerm"++str) <+> 
+    = (ts,(addPrime v) <+> text "=" <+> text ("fromATerm") <+> 
        parens (text "getATermByIndexSp1" <+> v <+> atn))
-    where str = case t of
+{-    where str = case t of
 		Con "String" -> "Str"
 		otherwise    -> ""
-
+-}
 con body = let atc       = aterm_constructor body
 	       (fc,atc') = case atc of
 				    Const c ac -> (c,ac)
