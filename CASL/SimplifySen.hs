@@ -65,21 +65,13 @@ rmTypesT minT rmTypE_func signT termT =
     case termT of
          Qual_var v _ _ -> Simple_id v
 	 Sorted_term (Application (Qual_op_name name typ pos1) terms pos2) sort pos3 ->
-	       let opmap = opMap signT -- =  Map Id (Set OpType)
-		   maybeOpset = Map.lookup name opmap
+	       let -- opmap = opMap signT -- =  Map Id (Set OpType)
+		   -- maybeOpset = Map.lookup name opmap
 		   terms' = map rmTypesTCall terms
-	       in  case maybeOpset of
-	           Just otSet -> let opType1 = toOpType typ
-				     realSet = assert (not $ Set.isEmpty otSet && opType1 `elem` (Set.toList otSet)) otSet    
-		                 in  if not $ (null terms || (null $ opArgs opType1)) 
-				     then Application (Op_name name) terms' pos2
-				     else if Set.size realSet == 1 then
-				        Application (Op_name name) terms' pos2 
-					else Application (Op_name name) terms' pos2
-					{-   if checkLeqF opType1 $ Set.toList realSet then 
-					        Application (Qual_op_name name typ pos1) terms' pos2
-						else Sorted_term (Application (Op_name name) terms' pos2) sort pos3 -}
-		   Nothing -> error "Set of OP_NAME not found."
+	       in  -- case maybeOpset of
+	           -- Just otSet -> Application (Op_name name) terms' pos2
+		   -- Nothing -> error "Set of OP_NAME not found."
+                   Application (Op_name name) terms' pos2
          Sorted_term t _ _ -> rmTypesTCall t 
 	 Cast term sort pos -> Cast (anaTermC term) sort pos
 	 Application opSymb@(Op_name _) ts pos -> Application opSymb (map rmTypesTCall ts) pos
@@ -91,7 +83,6 @@ rmTypesT minT rmTypE_func signT termT =
    where  rmTypesTCall = rmTypesT minT rmTypE_func signT
 	  anaTermC = anaTerm minT rmTypE_func signT
 	  checkLeqF ot1 ot2 = or $ map (leqF signT ot1) ot2
-	  -- checkLeqP pt1 pt2 = or $ Prelude.map (leqP sign pt1) pt2
 
 {- |
    analyzes the TERM if it is the Minimal Expansions of a TERM
