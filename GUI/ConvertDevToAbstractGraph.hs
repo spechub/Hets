@@ -18,7 +18,6 @@
 module GUI.ConvertDevToAbstractGraph where
 
 import Proofs.Proofs
-import Common.GlobalAnnotations
 
 import Static.DevGraph
 import GUI.AbstractGraphView
@@ -82,14 +81,14 @@ convertGraph graphMem libname libEnv =
 
      case Map.lookup libname libEnv of
 
-       Just (_,_,dgraph) -> 
+       Just globContext@(_,_,dgraph) -> 
 	 if (isEmpty dgraph) then 
 	   do (abstractGraph,graphInfo,convRef) <-
-	          initializeGraph graphMem libname dgraph convMaps
+	          initializeGraph graphMem libname dgraph convMaps globContext
               return (abstractGraph, graphInfo,convMaps)
           else 
 	    do (abstractGraph,graphInfo,convRef) <-
-		   initializeGraph graphMem libname dgraph convMaps
+		   initializeGraph graphMem libname dgraph convMaps globContext
                newConvMaps <- convertNodes convMaps abstractGraph
 			      graphInfo dgraph libname
 	       finalConvMaps <- convertEdges newConvMaps abstractGraph 
@@ -105,13 +104,16 @@ convertGraph graphMem libname libEnv =
 {- initializes an empty abstract graph with the needed node and edge types,
 return type equals the one of convertGraph -}
 initializeGraph :: IORef GraphMem ->LIB_NAME -> DGraph -> ConversionMaps
-                     -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ioRefGraphMem ln dGraph convMaps = do 
+                     -> GlobalContext 
+		     -> IO (Descr,GraphInfo,IORef ConversionMaps)
+initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do 
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
 -- ### noch ueberarbeiten...
-  ioRefProofStatus <- newIORef ((emptyGlobalAnnos, Map.empty::(Map.Map SIMPLE_ID GlobalEntry), dGraph),[([]::[DGRule], []::[DGChange])], dGraph)
+  ioRefProofStatus <- newIORef (globContext,
+		                [([]::[DGRule], []::[DGChange])],
+				dGraph)
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
@@ -128,25 +130,32 @@ initializeGraph ioRefGraphMem ln dGraph convMaps = do
                               writeIORef event descr
                               redisplay gid actGraphInfo
                               return ()    ),
+
                   Button "Show" 
                           (do --gid <- readIORef graphId
 			      descr <- readIORef event
                               showIt gid descr actGraphInfo
                               redisplay gid actGraphInfo
-                              return ()    ),
-		  Button "Proof"
-		          (do proofStatus <- readIORef ioRefProofStatus
-			      let newProofStatus@(_,history,_) =
-			            globSubsume proofStatus
-			      writeIORef ioRefProofStatus newProofStatus
-			      convMaps <- readIORef convRef
-			      (descr,newConvMaps)
-			         <- applyChanges gid actGraphInfo 
-			              convMaps history
-			      writeIORef event descr
-			      writeIORef convRef newConvMaps
-			      redisplay gid actGraphInfo
-			      return ()    )])]
+                              return ()    )]),
+
+	        GlobalMenu(Menu (Just "proofs")
+                  [Button "Global Subsumption"
+                           (do proofStatus <- readIORef ioRefProofStatus
+			       let newProofStatus@(_,history,_) =
+			             globSubsume proofStatus
+			       writeIORef ioRefProofStatus newProofStatus
+			       descr <- readIORef event
+			       convMaps <- readIORef convRef
+			       (newDescr,newConvMaps)
+			          <- applyChanges gid ln actGraphInfo descr 
+			               convMaps history
+			       writeIORef event newDescr
+			       writeIORef convRef newConvMaps
+			       redisplay gid actGraphInfo
+			       return ()    ),
+                   Button "Global Decomposition"
+                          (do return ()    )])]
+
                [("spec", 
 		 createLocalMenuNodeTypeSpec "Magenta" convRef dGraph
                               ioRefSubtreeEvents ioRefVisibleNodes
@@ -580,17 +589,42 @@ doGlobSubsume convMaps gid actGraphInfo = undefined
 {- den DGraph aus den convMaps holen, globSubsume drauf aufrufen
 anhand der History den AbstrGraph anpassen -}
 
-applyChanges :: Descr -> GraphInfo -> ConversionMaps -> [([DGRule],[DGChange])]
+applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> ConversionMaps
+	          -> [([DGRule],[DGChange])]
 		  -> IO (Descr, ConversionMaps)
-applyChanges gid graphInfoRef convMaps history =
-  do graphInfo <- readIORef graphInfoRef
-     case history of
-       [] -> return (snd graphInfo, convMaps)
-       (historyElem:list) ->
-          case snd historyElem of
-	    [] -> return (snd graphInfo, convMaps)
-	    changes@(x:xs) -> applyChangesAux gid (snd graphInfo) convMaps changes
+applyChanges gid libname graphInfo eventDescr convMaps history =
+  case history of
+    [] -> return (eventDescr, convMaps)
+    (historyElem:list) ->
+      case snd historyElem of
+	[] -> return (eventDescr, convMaps)
+	changes@(x:xs) -> 
+          applyChangesAux gid libname graphInfo eventDescr convMaps changes
 
-applyChangesAux :: Descr -> Descr -> ConversionMaps -> [DGChange]
+applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> Descr
+		  -> ConversionMaps -> [DGChange]
 	          -> IO (Descr, ConversionMaps)
-applyChangesAux gid event convMaps changes = undefined
+applyChangesAux _ _ _ eventDescr convMaps [] = return (eventDescr, convMaps)
+applyChangesAux gid libname graphInfo eventDescr convMaps (change:changes) =
+  case change of
+    InsertNode lNode -> undefined
+    DeleteNode node -> undefined
+    InsertEdge lEdge -> undefined -- edge neu erzeugen, eventDescr neu holen
+ -- da der alte für die erzeugte edge verwendet wurde
+    DeleteEdge (src,tgt,_) ->
+       case Map.lookup (libname, (src,tgt)) (dg2abstrEdge convMaps) of
+         Just edge ->
+           do -- woher das graphMem nehmen?!
+              -- dellink gid edge graphInfo
+ 	      applyChangesAux gid libname graphInfo eventDescr convMaps changes
+	 Nothing -> error ("applyChangesAux: deleted edge of development "
+                      ++ "graph does not exist in abstraction graph")
+    
+
+{- data DGChange = InsertNode (LNode DGNodeLab)
+              | DeleteNode Node 
+              | InsertEdge (LEdge DGLinkLab)
+              | DeleteEdge (LEdge DGLinkLab)
+convMaps {dg2abstrNode = Map.insert (libname, node) newDescr (dg2abstrNode convMaps)
+
+-}
