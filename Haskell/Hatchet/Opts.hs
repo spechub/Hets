@@ -20,7 +20,7 @@ module Haskell.Hatchet.Opts
              makeUsageInfo,
              usageHeader) where
 
-import Haskell.Hatchet.GetOpt
+import System.Console.GetOpt
               (OptDescr (..),
                ArgDescr (..),
                getOpt,
