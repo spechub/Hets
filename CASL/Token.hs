@@ -66,7 +66,7 @@ module Token ( casl_reserved_ops, casl_reserved_words
 	     , casl_reserved_fops, casl_reserved_fwords
 	     , equalT, colonT, colonST, quMarkT, lessT, dotT, crossT
 	     , asT, barT, forallT
-             , start, mixId, parseId, sortId, varId) 
+             , start, comps, mixId, parseId, sortId, varId) 
     where
 
 import Keywords
