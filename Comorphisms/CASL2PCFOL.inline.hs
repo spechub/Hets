@@ -111,8 +111,7 @@ encodeSig sig = sig {sortRel=newsortRel,opMap=priopMap,predMap=newpredMap}
  predSet x  =  Set.fromList(map pred x) 
  eleminsert m (x,y)  = Map.insert (Id [mkSimpleId "_elem_"] [x] []) (predSet y) (m) 
  newpredMap  = foldl (eleminsert) (oldpredMap) (nList) 
- 
- 
+
 
 
 
@@ -156,7 +155,18 @@ generateAxioms sig =
            t1<t2,let w'=(opArgs t1),let w''=(opArgs t2),let s'=(opRes t1),let s''=(opRes t2),
            s<-Set.toList(supersortsOf s' sig),s1<-Set.toList(supersortsOf s'' sig),s1==s,
            w<- permute (map (findsubsort sig)  (zip w' w'')),
-           let u = [mkSimpleId ("u"++show i) | i<-[1..length w]]   ])
+           let u = [mkSimpleId ("u"++show i) | i<-[1..length w]]   ]++
+   [inlineAxioms CASL                                 
+   " sort w'_i ; w''_i ; w_i  \                                                                                                              
+    \ pred p: w'_i;  pred p: w''_i;   inj:w_i->w'_i;   inj:w_i->w''_i \                                                                
+    \ forall  v_i:w_i . (pred p:w'_i)(inj(v_i))=(pred p:w''_i)(inj(v_i))     %(predicate_monotonicity)%"                             
+          |(f,l)<-pred2List,t1<-l,t2<-l, length(predArgs t1)==length(predArgs t2),                                                           
+          t1<t2,let w'=(predArgs t1),let w''=(predArgs t2),                                                                                 
+          w<- permute (map (findsubsort sig)  (zip w' w'')),                                                                                 
+          let v = [mkSimpleId ("v"++show i) | i<-[1..length w]] ]) 
+
+
+
     where 
         x = mkSimpleId "x"
         y = mkSimpleId "y"
@@ -168,14 +178,10 @@ generateAxioms sig =
         membership=mkId[mkSimpleId "_membership"]
         functionmono=mkId[mkSimpleId "_function_monotonicity"]
         rel2List=Rel.toList(sortRel sig)
+        pred2List = map   (\(x,y)->(x,Set.toList y))   (Map.toList(predMap sig))
 
-        findsubsort::Sign f e-> (SORT,SORT)->[SORT]
         findsubsort   sig (x,y) = [s|s<-Set.toList(subsortsOf x sig),s1<-Set.toList(subsortsOf y sig),s1==s]
-
         ftTL= step1 sig     --[(Id,[OpType])]
-        
-
-
         step1::Sign f e ->[(Id,[OpType])]
 	step1  sig =map (\(x,y) -> (x,Set.toList y)) (Map.toList(opMap sig)) 
 
@@ -184,12 +190,49 @@ generateAxioms sig =
    replace Membership by:    Predication of "_elem_s"
    replace Cast by:          Application of "_pr"
 -}
+
+
 encodeFORMULA :: [Named (FORMULA f)] -> [Named (FORMULA f)]
-encodeFORMULA = error "encodeFORMULA not yet implemented"
+encodeFORMULA  [ ]  = [ ]
+encodeFORMULA  l = map nf2NFormula l
+
+f2Formula::FORMULA f->FORMULA f
+f2Formula  f = case f of
+    Quantification q vs frm ps ->Quantification q vs (f2Formula frm) ps
+    Conjunction fs ps ->  Conjunction (map f2Formula fs) ps
+    Disjunction fs ps ->  Disjunction (map f2Formula fs) ps
+    Implication f1 f2 b ps ->Implication (f2Formula f1) (f2Formula f2) b ps
+    Equivalence f1 f2 ps ->  Equivalence (f2Formula f1) (f2Formula f2) ps
+    Negation frm ps -> Negation (f2Formula frm) ps
+    True_atom ps -> True_atom ps
+    False_atom ps -> False_atom ps
+    Existl_equation t1 t2 ps -> Existl_equation (t2term t1) (t2term t2) ps
+    Strong_equation t1 t2 ps -> Strong_equation (t2term  t1) (t2term  t2) ps
+    Predication pn as qs -> Predication pn (map t2term  as) qs
+    Definedness t ps -> Definedness (t2term  t) ps
+    Membership t ty ps -> Predication (Pred_name membership) [t] ps
+    Sort_gen_ax constrs isFree -> Sort_gen_ax constrs isFree
+    _ -> error "FORMULA error"
+    where    
+    membership=mkId[mkSimpleId "_membership"]
 
 
- 
+t2term::TERM f-> TERM f
+t2term t = case t of
+    Qual_var v ty ps -> Qual_var v ty ps
+    Application opsym as qs  -> Application opsym (map t2term as) qs
+    Sorted_term trm ty ps -> Sorted_term (t2term trm) ty ps
+    Cast trm ty ps -> Application (Op_name pr) [trm] ps
+    Conditional t1 f t2 ps ->
+       Conditional (t2term t1) (f2Formula f) (t2term t2) ps
+    _ -> error "TERM error"
+   where    
+    pr=mkId [mkSimpleId "_pr"]
 
+nf2NFormula::Named (FORMULA f) -> Named (FORMULA f)
+nf2NFormula nf = nf{
+                    sentence=(f2Formula (sentence nf))
+                    }
        
         
     
