@@ -180,17 +180,17 @@ ana_BASIC_ITEMS ab as ga bi =
 toSortGenAx :: [Pos] -> (Set.Set Id, Set.Set Component) -> State (Sign f e) ()
 toSortGenAx ps (sorts, ops) = do
     let sortList = Set.toList sorts
-        opSymbs = map ( \ c ->  Qual_op_name (compId c)  
+        opSyms = map ( \ c ->  Qual_op_name (compId c)  
 		      (toOP_TYPE $ compType c) []) $ Set.toList ops
         resType _ (Op_name _) = False
         resType s (Qual_op_name _ t _) = res_OP_TYPE t ==s
-        getIndex s = fromJust $ findIndex (==s) sortList
+        getIndex s = maybe 0 id $ findIndex (==s) sortList
         addIndices (Op_name _) = 
           error "CASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) = 
             (os,map getIndex $ args_OP_TYPE t)
         collectOps s = 
-          Constraint s (map addIndices $ filter (resType s) opSymbs) s
+          Constraint s (map addIndices $ filter (resType s) opSyms) s
         constrs = map collectOps sortList
         f =  Sort_gen_ax constrs
     if null sortList then 
