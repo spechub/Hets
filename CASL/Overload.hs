@@ -233,20 +233,6 @@ minExpTerm_op sign op terms
         qualify_op (op, terms) = ((Application op terms []), (op_result op))
 
 {-----------------------------------------------------------
-    Construct a TERM of type Sorted_term
-    from each (TERM, SORT) tuple
------------------------------------------------------------}
-qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
-qualifyTerms = map (map qualify_term)
-    where qualify_term term sort = Sorted_term sort term []
-
--- TODO: implement me for real - used by minExpTerm_op
--- minimize :: Sign -> [XX] -> [XX]
-minimize :: (Ord a) => Sign -> [a] -> [a]
-minimize sign as
-    = concat $ map (\a -> if null (filter (<a) as then [a] else []) as
-
-{-----------------------------------------------------------
     Divide a Set (list) into equivalence classes w.r.to eq
 -----------------------------------------------------------}
 equivalence_Classes :: (a -> a -> Bool) -> [a] -> [[a]]
@@ -255,7 +241,7 @@ equivalence_Classes eq (x:l)
     = let (xs, ys) = partition (eq x) l
            xs'     = (x:xs)
       in xs':(equiv eq ys)
--- komplexere Implementation: siehe unten, Till's SML-version...
+      -- komplexere Implementation: siehe unten, Till's SML-version...
 
 {-----------------------------------------------------------
     Transform a list [l1,l2, ... ln] to (in sloppy notation)
@@ -275,6 +261,28 @@ zipped_all                 :: (a -> b -> Bool) -> [a] -> [b] -> Bool
 zipped_all _ []     []     = True
 zipped_all p (a:as) (b:bs) = (p a b) && (zipped_all p as bs)
 zipped_all _  _      _     = False
+
+{-----------------------------------------------------------
+    Construct a TERM of type Sorted_term
+    from each (TERM, SORT) tuple
+-----------------------------------------------------------}
+qualifyTerms :: [[(TERM, SORT)]] -> [[TERM]]
+qualifyTerms = map (map qualify_term)
+    where qualify_term term sort = Sorted_term sort term []
+
+{-----------------------------------------------------------
+    For each C in P (see above), let C' choose _one_
+    f:s \in C for each s minimal such that f:s \in C
+-----------------------------------------------------------}
+minimize :: Sign -> [(OP_SYMB, [TERM])] -> [(OP_SYMB, [TERM])]
+minimize sign ops_n_terms = concat $ map least ops_n_terms
+    where
+        -- results :: Set.Set SORT
+        results = Set.fromList (map (op_result . fst) ops_n_terms)
+        -- reduce :: (OP_SYMB, [TERM]) -> [(OP_SYMB, [TERM])]
+        reduce x@(op,_) = if (least (op_result op) results) then [x] else []
+        -- least :: SORT -> Set.Set SORT -> Bool
+        least s ss = 1 == Set.size (Set.intersection ss (subsortsOf s sign))
 
 {-----------------------------------------------------------
     These are used by minExpTerm_op only,
@@ -303,6 +311,7 @@ op_result op                    = case (op_type op) of
 term_sort                       :: TERM -> SORT
 term_sort (Sorted_term _ s _)   = s
 term_sort _                     = error "Critical: Unsorted Term in term_sort!"
+{------------------------- done? --------------------------}
 
 {-----------------------------------------------------------
     Return True if s1 <= s2
@@ -311,7 +320,9 @@ leq_SORT :: Sign -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
 -- leq_SORT = (flip Set.member) . (flip supersortsOf)
 
+
 leqF :: a -> a -> Bool -- Funktionsgleichheit
+
 leqP :: a -> a -> Bool -- Praedikatsgleichheit
 
 
