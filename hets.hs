@@ -174,7 +174,7 @@ showGraph file opt env =
     case env of
         Just (ln,_,_,libenv) -> do
             putIfVerbose opt 2 ("Trying to display " ++ file
-                                ++ "in a graphical Window")
+                                ++ " in a graphical window")
             putIfVerbose opt 3 "Initializing Converter"
 #ifdef UNI_PACKAGE
             graphMem <- initializeConverter
