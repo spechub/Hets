@@ -75,7 +75,9 @@ warning :: a -> String -> Pos -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
 maybeToResult :: Pos -> String -> Maybe a -> Result a
-maybeToResult p s m = Result [Diag FatalError s p] m
+maybeToResult p s m = Result (case m of 
+		              Nothing -> [Diag FatalError s p]
+			      Just _ -> []) m
 
 instance Show Diagnosis where
     showsPrec _ = showPretty
