@@ -74,14 +74,17 @@ instance Eq Id where
 instance Ord Id where
     Id tops1 ids1 _ <= Id tops2 ids2 _ = tops1 <= tops2 && ids1 <= ids2
 
+showIds :: [Id] -> ShowS
+showIds is = if null is then id 
+	     else showString "[" 
+		      . showSepList (showString ",") showId is
+		      . showString "]"
+
 showId :: Id -> ShowS
 showId (Id ts is _) = 
 	let (toks, places) = splitMixToken ts 
-            comps = if null is then id else 
-                  showString "[" . showSepList (showString ",") showId is
-		  . showString "]"
 	    showToks = showSepList id showTok
-	in  showToks toks . comps . showToks places
+	in  showToks toks . showIds is . showToks places
 
 splitMixToken :: [Token] -> ([Token],[Token])
 splitMixToken l = let (pls, toks) = span isPlace (reverse l) in
