@@ -381,8 +381,9 @@ isLeftArg op num = begPlace op && num == 0
 isRightArg :: Id -> Int -> Bool
 isRightArg op num = endPlace op && num + 1 == placeCount op
 
-joinIds :: Id -> Id -> Id
-joinIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps 
+joinRIds, joinLIds :: Id -> Id -> Id
+joinRIds (Id ts1 _ _) (Id ts2 cs ps) = Id (init ts1 ++ ts2) cs ps 
+joinLIds (Id ts1 _ _) (Id ts2 cs ps) = Id (ts1 ++ tail ts2) cs ps 
 
 -- | check precedences of an argument and a top-level operator.
 -- (The 'Int' is the number of current arguments of the operator.)
@@ -413,7 +414,7 @@ checkPrecs filt ga rs argItem opItem =
 			(False, True) -> True
 			(_, False) -> False
 	    else not (begPlace arg && isNonCompound arg 
-		      && joinIds arg op `elem` rs)
+		      && joinLIds arg op `elem` rs)
 	 else if isRightArg op num then case filt argPrec opPrec of 
 	        Just b -> b     
                 Nothing ->
@@ -431,7 +432,7 @@ checkPrecs filt ga rs argItem opItem =
 			(False, True) -> False
 			(_, False) -> True
 		 else not (endPlace arg && isNonCompound op 
-			  && joinIds op arg `elem` rs)
+			  && joinRIds op arg `elem` rs)
 	 else True
 
 reduceCompleted :: GlobalAnnos -> Table a b -> [Id] 
