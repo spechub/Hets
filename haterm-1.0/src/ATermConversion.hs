@@ -99,11 +99,11 @@ instance ATermConvertible a => ATermConvertible [a] where
 
 instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) 
     where
-    toATerm at (x,y) = addATerm (AAppl "tuple" [x',y']) at'
+    toATerm at (x,y) = addATerm (AAppl "" [x',y']) at'
 	where (at' ,y') = toATerm at'' y
 	      (at'',x') = toATerm at   x
     fromATerm at = case aterm of 
-		   (AAppl "tuple" [x,y]) -> (x',y')
+		   (AAppl "" [x,y]) -> (x',y')
 		       where x' = fromATerm (getATermByIndexSp1 x at)
 			     y' = fromATerm (getATermByIndexSp1 y at)
 		   _  -> fromATermError "(a,b)" aterm
