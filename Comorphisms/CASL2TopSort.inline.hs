@@ -39,7 +39,7 @@ import CASL.Sign
 import CASL.Morphism 
 import CASL.Sublogic
 import CASL.Utils
-import CASL.Overload (injName)
+import CASL.Inject (injName)
 
 -- | The identity of the comorphism
 data CASL2TopSort = CASL2TopSort deriving (Show)

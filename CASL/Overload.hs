@@ -16,7 +16,7 @@
       LNCS 1376, p. 333-348
 -}
 
-module CASL.Overload(minExpFORMULA, minExpTerm, Min(), injName,
+module CASL.Overload(minExpFORMULA, minExpTerm, Min(),
                      is_unambiguous, term_sort, leqF)  where
 
 import CASL.Sign
@@ -39,10 +39,10 @@ import Data.Maybe
       - equivalent candidates should be sorted is a suitable way
       - pass global annos for pretty-printing to hasSolutions and
         is_unambiguous
-      - implement a separate injection module 
       - move functions from ListUtils to the (single) module of use
       - check SimplifySen
       - maybe change *_commm_* input list to tuple or curried arguments
+      - for variables there should only be a single choice (shadowing)
 -}
 
 -- | the type of the type checking function of extensions
@@ -472,10 +472,6 @@ minExpTerm_cond  mef ga sign f term1 term2 pos = do
               else map ( \ s -> f (Sorted_term t1 s pos)
                                 (Sorted_term t2 s pos))
                    $ minimalSupers sign s1 s2)) pairs
-
--- | the name of injections
-injName :: Id
-injName = mkId [mkSimpleId "inj"]
 
 {-----------------------------------------------------------
     Let P be a set of equivalence classes of qualified terms.
