@@ -111,7 +111,7 @@ transOpInfo :: OpInfo -> Typ
 transOpInfo (OpInfo opT _ opDef) = case opDef of
                       NoOpDefn Pred -> transPredType opT
                       NoOpDefn _    -> transOpType opT
-                      _             -> error "Not supported operation declaration and/or definition"
+                      _             -> error "[Comorphims.HasCASL2IsabelleHOL] Not supported operation declaration and/or definition"
 
 
 transOpType :: TypeScheme -> Typ
@@ -122,7 +122,7 @@ transPredType :: TypeScheme -> Typ
 transPredType  (TypeScheme _ (_ :=> pre) _) = 
        case pre of
          FunType tp _ _ _ -> (transType tp) --> boolType
-         _                -> error "Wrong predicate type"
+         _                -> error "[Comorphims.HasCASL2IsabelleHOL] Wrong predicate type"
 
 
 transType :: Type -> Typ
@@ -131,7 +131,7 @@ transType (ProductType types _) = foldr1 IsaSign.mkProductType
                                          (map transType types)
 transType (FunType type1 _ type2 _) = (transType type1) 
                                         --> (mkOptionType (transType type2))
-transType _ = error "Not supported type in use"
+transType _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported type in use"
 
 
 
@@ -144,8 +144,8 @@ transVar = showIsa
 transSentence :: Env -> Le.Sentence -> IsaSign.Term
 transSentence e s = case s of
     Le.Formula t      -> transTerm e t
-    DatatypeSen _     -> error "transSentence: data type"
-    ProgEqSen _ _ _pe -> error "transSentence: program"
+    DatatypeSen _     -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: data type"
+    ProgEqSen _ _ _pe -> error "[Comorphims.HasCASL2IsabelleHOL] transSentence: program"
 
 
 transTerm :: Env -> As.Term -> IsaSign.Term
@@ -184,7 +184,7 @@ transTerm sign (LetTerm Let eqs body _) =
 transTerm sign (TupleTerm terms _) = 
   conSome `App` (foldl1 (binConst pairC) 
                         (map (transTerm sign) terms))
-transTerm _ _ = error "Not supported (abstract) syntax in use."
+transTerm _ _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported (abstract) syntax in use."
 
 
 let2lambda :: ProgEq -> As.Term -> As.Term
@@ -197,7 +197,7 @@ getType term = case term of
                     QualVar _ typ _     ->  transType typ
                     TypedTerm _ _ typ _ -> transType typ
                     TupleTerm terms _   -> evalTupleType terms
-                    _ -> error "Illegal pattern in lambda abstraction"
+                    _ -> error "[Comorphims.HasCASL2IsabelleHOL] Illegal pattern in lambda abstraction"
   where evalTupleType t = foldr1 IsaSign.mkProductType 
                                  (map getType t)
 
@@ -227,7 +227,7 @@ transLog sign opId opTerm term
              t1 = head ts
              t2 = last ts
              getTerms (TupleTerm terms _) = terms
-             getTerms _ = error "Wrong formula definition?!"
+             getTerms _ = error "[Comorphims.HasCASL2IsabelleHOL] Wrong formula definition?!"
 
 
 quantify :: Quantifier -> (Var,Type) -> IsaSign.Term -> IsaSign.Term
@@ -251,7 +251,7 @@ transTermAbs sign (QualOp _ (InstOpId opId _ _) _ _) = con (getNameOfOpId opId)
 transTermAbs sign term = transTerm sign term
 
 getNameOfOpId :: Id -> String
-getNameOfOpId (Id [] _ _) = error "Operation without name"
+getNameOfOpId (Id [] _ _) = error "[Comorphims.HasCASL2IsabelleHOL] Operation without name"
 getNameOfOpId (Id (tok:toks) a b) = 
   if (tokStr tok) == "__" then getNameOfOpId (Id toks a b)
     else tokStr tok
@@ -270,7 +270,7 @@ getNameOfOpId (Id (tok:toks) a b) =
 
 toPair :: GenVarDecl -> (Var,Type)
 toPair (GenVarDecl (VarDecl var typ _ _)) = (var,typ)
-toPair _ = error "Not supported GenVarDecl in use"
+toPair _ = error "[Comorphims.HasCASL2IsabelleHOL] Not supported GenVarDecl in use"
 
 
 binConst :: String -> IsaSign.Term -> IsaSign.Term -> IsaSign.Term
