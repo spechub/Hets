@@ -70,7 +70,7 @@ translateData :: (TypeId, TypeInfo) -> [HsDecl]
 translateData (tid,info) = 
   let hsname = (HsIdent (translateIdWithType UpperId tid))
   in case (typeDefn info) of
-       NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
+       NoTypeDefn ->  -- z.B. bei sorts
           [(HsDataDecl nullLoc
 	               [] -- empty HsContext
 	               hsname
@@ -139,11 +139,13 @@ getAliasType (TypeScheme _arglist (_plist :=> t) _poslist) = translateType t
 -------------------------------------------------------------------------
 
 translateAssumps :: Assumps -> TypeMap -> [HsDecl]
-translateAssumps as tm = 
-  concat $ map (translateAssump as tm) $ distinctOpIds $ Map.toList as
+translateAssumps as tm =
+  let distList =  distinctOpIds $ Map.toList as
+      distAs = Map.fromList distList
+  in  concat $ map (translateAssump distAs tm) $ distList
 
 -- Funktion, die evtl. überladenen Operationen eindeutige Namen gibt
-distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfo)]
+distinctOpIds :: [(Id,OpInfos)] -> [(DistinctOpId, OpInfos)]
 distinctOpIds [] = []
 distinctOpIds ((i,OpInfos info):(idInfoList)) = 
   let len = length info in
@@ -151,10 +153,10 @@ distinctOpIds ((i,OpInfos info):(idInfoList)) =
      distinctOpIds idInfoList
   else 
      if len == 1 then
-        ((i,head info):(distinctOpIds (idInfoList)))
+        ((i,OpInfos info):(distinctOpIds (idInfoList)))
      else -- if len > 1
-        ((newName i len,head info):(distinctOpIds((i, OpInfos $ tail info)
-						  :(idInfoList))))
+        ((newName i len,OpInfos $ [head info]):
+         (distinctOpIds((i, OpInfos $ tail info):(idInfoList))))
 
 -- Durchnummerierung von überladenen Funktionsnamen
 newName :: Id -> Int -> Id
@@ -162,19 +164,21 @@ newName (Id tlist idlist poslist) len =
   let newTok = (Token (show len) nullPos) 
   in (Id (tlist ++ [newTok]) idlist poslist)
 
--- uebersetzt eindeutig benannte Funktionen
+-- uebersetzt eindeutig benannte Funktionen 
+-- (d.h. OpInfos enthaält nur ein Element)
 -- (Funktionsdeklarationen und -definitionen)
-translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfo) -> [HsDecl]
+translateAssump :: Assumps -> TypeMap -> (DistinctOpId,OpInfos) -> [HsDecl]
 translateAssump as tm (i, opinf) = 
   let fname = translateIdWithType LowerId i
       res = HsTypeSig nullLoc
                        [(HsIdent fname)]
-                       (translateTypeScheme (opType opinf))
-  in case (opDefn opinf) of
+                       (translateTypeScheme (opType $ head $ opInfos opinf))
+  in case (opDefn $ head $ opInfos opinf) of
     NoOpDefn -> [res, (functionUndef fname)]
-    ConstructData _ -> []
-    SelectData _ _ -> []
-    Definition term -> (translateFunDef as tm i (opType opinf) term)
+    ConstructData _ -> []  -- sind implizit durch Datentypdefinition gegeben
+    SelectData _ _ -> []   -- sind implizit durch Datentypdefinition gegeben
+    Definition term -> 
+      (translateFunDef as tm i (opType $ head $ opInfos opinf) term)
                         -- zu HsFunBind übersetzen!! 
     VarDefn -> []
 
@@ -204,14 +208,20 @@ translateType t = case t of
 
 -- translateFunDef liefert idealerweise eine HsTypSig und ein HsFunBind
 translateFunDef :: Assumps -> TypeMap -> Id -> TypeScheme -> Term -> [HsDecl]
-translateFunDef as tm i _ts term = 
-  [HsFunBind [HsMatch nullLoc
-	             (HsIdent (translateIdWithType LowerId i)) --HsName
+--translateFunDef as tm i ts term = error ("Typescheme: " ++ show ts ++ "\n Term: " ++ show term)
+translateFunDef as tm i ts term = 
+  let fname = translateIdWithType LowerId i
+  in [HsTypeSig nullLoc 
+             [(HsIdent fname)] 
+              (translateTypeScheme ts)] ++
+     [HsFunBind [HsMatch nullLoc
+	             (HsIdent fname) --HsName
 	             (getPattern term) -- [HsPat]
 	             (getRhs as tm term) -- HsRhs
 	             [] -- {-where-} [HsDecl]
-	     ]
-   ]
+	       ]
+     ]
+
 
 getPattern :: Term -> [HsPat]
 getPattern _t = []
@@ -233,8 +243,6 @@ translateTerm as tm t = case t of
   -- hierzu muss ts mit den TypeSchemes aus Assumps auf Unifizierbarkeit
   -- geprueft werden; hierzu benoetigt man die Assumps und die TypeMap;
   -- data OpId = OpId UninstOpId [TypeArg] [Pos]
-  -- als Ergebnis erhaelt man HsApp (translateTerm t1) (translateTerm t2)
-  -- wobei t1 und t2 in den TypeArg von der opid enthalten sind
   QualOp (InstOpId uid types _) ts _pos -> 
   -- zunaechst alle TypeSchemes aus den Assumps mit dem gegebenen vergleichen,
   -- bei passendem TupeScheme die id (also denSchluessel) als HsExp
@@ -243,14 +251,13 @@ translateTerm as tm t = case t of
     in if Map.size fittingAs == 1 then
           -- gut, eine Uebereinstimmung -> HsApp basteln
           let oid = head $ Map.keys $ fittingAs
-          in HsApp (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
-                   (translateTypes types)
+          in (HsVar (UnQual (HsIdent (translateIdWithType LowerId oid))))
        else error "problem with finding opid"
   ApplTerm t1 t2 _pos -> HsApp(translateTerm as tm t1)(translateTerm as tm t2)
 
   TupleTerm ts _pos -> HsTuple (map (translateTerm as tm) ts)
 
-  --TypedTerm _t1 _tqual _ty _pos -> [] -- -> ??
+  --TypedTerm _t1 _tqual _ty _pos -> [] -- -> HsExpTypeSig
 
   --QuantifiedTerm _quant _vars _t1 _pos -> [] -- forall ... kommt das vor??
 
@@ -290,6 +297,7 @@ translateCaseProgEqs _progeqs = []
 --Uebersetzung der ProgEqs fuer einen HasCASL-Letterm
 translateProgEqs :: [ProgEq] -> [HsDecl]
 translateProgEqs _progeqs = []
+
 ------------------------------------------------------------------------
 -- Translation of Id's
 ------------------------------------------------------------------------
