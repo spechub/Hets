@@ -892,7 +892,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts
       (showPretty spname
        " is a unit specification, not a view") pos
     Just (RefEntry) -> 
-     plain_error (fv,dg, error "no fit view") 
+     plain_error (fv,dg,error "no fit view") 
       (showPretty spname
        " is a refinement specification, not a view") pos
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
