@@ -182,6 +182,8 @@
 (require 'compile)
 (setq casl-error-list nil)
 
+(defvar hets-program nil)
+
 (defun casl-run-hets ()
   "Run hets process to compile the current CASL file."
   (interactive)
@@ -189,17 +191,7 @@
   (setq old-buffer (current-buffer))
   (if hets-program 
       (setq casl-hets-program hets-program)
-    (let ((hide-buffer (get-buffer-create "** hide **")))
-      (call-process shell-file-name nil hide-buffer nil "-c" "which hets")
-      (set-buffer hide-buffer)
-      (goto-char (point-min))
-      (if (looking-at "which")
-	  (progn (message "no hets program have been found. Run /home/linux-bkb/bin/hets...")
-		 (setq casl-hets-programm "/home/linux-bkb/bin/hets"))
-	(re-search-forward "\\(.+hets\\)" nil t 1) 
-	(setq casl-hets-program (match-string-no-properties 0))
-	(pop-to-buffer old-buffer)
-	(kill-buffer hide-buffer))))
+      (setq casl-hets-program "hets"))
   (let* ((casl-hets-file-name (buffer-file-name))
 	 (outbuf (get-buffer-create "*hets-run*")))
     (set-buffer outbuf)
