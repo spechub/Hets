@@ -97,7 +97,7 @@ makeTotal _ t = t
 mapOpSym :: Sort_map -> Fun_map -> (Id, OpType) -> (Id, OpType)
 mapOpSym sMap fMap (i, ot) = 
     let mot = mapOpType sMap ot in
-    case Map.lookup (i, ot {opKind = Partial} ) fMap of 
+    case Map.lookup (i, mot {opKind = Partial} ) fMap of 
     Nothing -> (i, mot)
     Just (j, k) -> (j, makeTotal k mot)
 
@@ -109,8 +109,8 @@ mapPredType :: Sort_map -> PredType -> PredType
 mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
-mapPredSym sMap fMap (i, pt) = 
-    (Map.findWithDefault i (i, pt) fMap, mapPredType sMap pt)
+mapPredSym sMap fMap (i, pt) = let mpt = mapPredType sMap pt in
+    (Map.findWithDefault i (i, mpt) fMap, mpt)
 
 type Ext f e m = Sign f e -> Sign f e -> m
 
