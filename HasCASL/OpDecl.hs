@@ -27,7 +27,7 @@ anaOpItem (OpDefn o pats sc partial trm ps) =
 		 LambdaTerm pats partial trm ps 
        (i, newSc) <- getUninstOpId sc o
        ty <- toEnvState $ freshInst newSc
-       Result ds mt <- resolveTermWithType (Just ty) newTrm
+       Result ds mt <- resolveTerm ty newTrm
        appendDiags ds 
        case mt of 
 	       Just t -> addOpId i newSc [] $ Definition t

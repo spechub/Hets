@@ -15,8 +15,7 @@ t : a
 x : (a, {_ < t}, b) %(var)%
 y : Type %(var)%
 %% Assumptions -----------------------------------------------------------
-x : s %(var)%
-  : y %(var)%
+x : y %(var)%
 %% Diagnostics -----------------------------------------------------------
 Warning (line 3, column 14) redundant universe class
 Error (line 3, column 7) illegal universe class declaration
@@ -43,6 +42,6 @@ Warning (line 27, column 21) unchecked type 't'
 Hint (line 31, column 26) not a class 'y'
 Hint (line 33, column 9) not a class 's'
 Error (line 33, column 9) undeclared type 's'
-Hint (line 31, column 26) type 's' is not unifiable with 'y'
+Error (line 33, column 5) illegal overloading of 'x'
 Warning (line 37, column 9) unchecked type 't'
 Error (line 39, column 6) wrong arity of 'a__'

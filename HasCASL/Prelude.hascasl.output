@@ -40,11 +40,13 @@ __=__ : s -> s -> logical
 __=>__ : logical × logical -> logical
 __\/__ : logical × logical -> logical
 __if__ : logical × logical -> logical
+__res__ : s = \ (x : s; y : t) .! x
 bottom : p
 def : (Pred)(s)
 f : c --> d %(var)%
 false : bool %(construct bool)%
       : logical %(construct logical)%
+fst : s = \ (x : s; y : t) .! x
 g : c --> d %(var)%
 not : logical -> logical
 sup : nat -> c ->? c
@@ -61,7 +63,7 @@ Error (line 4, column 7) illegal universe class declaration
 Warning (line 13, column 4) repeated value 'true'
 Warning (line 13, column 10) repeated value 'false'
 Warning (line 27, column 11) redeclared type 'Unit'
-Error (line 29, column 5) unexpected mixfix token '='
+Error (line 29, column 7) wrong tuple '()'
 Warning (line 39, column 16) redeclared type 't'
 Hint (line 46, column 9) not a class 's'
 FatalError (line 48, column 1) no analysis yet for: program def = \ x : s . ()
@@ -69,16 +71,9 @@ FatalError (line 48, column 1) no analysis yet for: program def = \ x : s . ()
 FatalError (line 50, column 1) no analysis yet for: program tt = \ x : s . ()
 	%% tt is total "op tt(x: s): unit = ()"
 FatalError (line 52, column 1) no analysis yet for: program __ und __ (x, y : Unit) : Unit = ()
-Error (line 60, column 16) unexpected mixfix token '='
-FatalError (line 64, column 31) no resolution for term: \ (x : s; y : t) .! x
-FatalError (line 65, column 27) no resolution for term: \ (x : s; y : t) .! x
 FatalError (line 66, column 1) no analysis yet for: program snd (x : s; y : t) : t = y
-Error (line 72, column 3) unexpected mixfix token 'fst'
-Error (line 72, column 13) unexpected mixfix token 'res'
-Error (line 71, column 30) unexpected mixfix token '='
 FatalError (line 78, column 1) no analysis yet for: pred eq : s × s
-Error (line 81, column 28) unexpected mixfix token '='
-Error (line 80, column 21) unexpected mixfix token '='
+FatalError (line 80, column 11) no resolution for term: (\ x : s . eq (x, x)) = tt
 Warning (line 91, column 6) redeclared type 's'
 FatalError (line 93, column 1) no analysis yet for: program all (p : Pred (s)) : Pred Unit = eq (p, tt)
 FatalError (line 96, column 1) no analysis yet for: program And (x, y : Pred Unit) : Pred Unit = t1 () und t2 ()
@@ -108,10 +103,8 @@ Hint (line 163, column 13) not a class 'c'
 Hint (line 163, column 25) not a class 'd'
 Hint (line 163, column 25) not a class 'd'
 FatalError (line 165, column 1) no analysis yet for: program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2)
-Error (line 176, column 20) unexpected mixfix token '='
 FatalError (line 182, column 3) no analysis yet for: program f <<= [c -->? d] g =
 	all (\ x : c . def (f x) impl f (x) <<= g (x))
-Error (line 188, column 18) unexpected mixfix token '='
 Hint (line 190, column 13) not a class 'c --> d'
 Hint (line 190, column 13) not a class 'c --> d'
 FatalError (line 192, column 2) no analysis yet for: program f <<= g = f <<= [c -->? d] g

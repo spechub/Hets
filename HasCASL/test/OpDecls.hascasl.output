@@ -5,25 +5,18 @@ t : Type
 __+__ : t -> t -> t
       : t × t -> t
       : s × s -> s
-      : s -> s -> s,idem, assoc, comm
 a : t
   : s
 b : t
   : s
+c : s = (op __+__ : s × s -> s) ((op a : s), (op b : s))
+d : s = (op __+__ : s × s -> s) ((op a : s), (op a : s))
+e : s × s -> s = (op __+__ : s × s -> s)
+f : s × s -> s = (op __+__ : s × s -> s)
+g : s × s = ((op a : s), (op b : s))
 %% Diagnostics -----------------------------------------------------------
-Hint (line 5, column 14) type 's × s' is not unifiable with 's'
 Hint (line 7, column 14) type 't' is not unifiable with 's'
-Hint (line 5, column 14) type 't × t' is not unifiable with 's'
 Hint (line 8, column 14) type 't' is not unifiable with 't × t'
 Hint (line 7, column 14) type 't' is not unifiable with 's × s'
-Hint (line 5, column 14) type 't' is not unifiable with 's'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
 Hint (line 3, column 12) type 't' is not unifiable with 's'
-Error (line 13, column 12) ambiguous mixfix term: a + b
-	(op __+ : s -> s -> s) (op a : s) (op b : s)
-	(op __+__ : s × s -> s) ((op a : s), (op b : s))
-	
-Error (line 15, column 13) ambiguous mixfix term: a
-	(op a : t)
-	(op a : s)
-	

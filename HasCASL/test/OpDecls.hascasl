@@ -2,7 +2,7 @@ type s, t
 
 op a, b  : s
 
-op __ + __ : s  -> s -> s, idem, assoc, comm;
+%% op __ + __ : s  -> s -> s, idem, assoc, comm;
 
 op __ + __ : s * s -> s
 op __ + __ : t * t -> t
@@ -12,4 +12,10 @@ op a,b : t
 
 op c : s = a + b
 
-op d : s = (a)
+op d : s = ((a) + (a))
+
+op e : s * s -> s = __ + __  
+
+op f : s * s -> s = (__ + __)  
+
+op g : s * s = (a, b)

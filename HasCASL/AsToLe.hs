@@ -54,8 +54,8 @@ anaBasicItem (AxiomItems decls fs _) =
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
        mapM_ anaGenVarDecl decls
-       ds <- mapM (( \ (TermFormula t) -> resolveTermWithType 
-		     (Just logicalType)  t ) . item) fs
+       ds <- mapM (( \ (TermFormula t) -> resolveTerm logicalType  t ) 
+		   . item) fs
        appendDiags $ concatMap diags ds
        putTypeMap tm -- restore 
        putAssumps as -- restore
