@@ -65,7 +65,7 @@ import AS_Structured
 import AS_Architecture
 import qualified AS_Library
 import AS_Annotation ( Annoted(..) )
-import Logic ( coerce, language_name, meet, min_sublogic_symb_items,
+import Logic ( coerce, join, language_name, min_sublogic_symb_items,
                min_sublogic_symb_map_items, min_sublogic_basic_spec,
                top )
 import Grothendieck( G_basic_spec(..), G_sublogics(..),
@@ -186,14 +186,14 @@ sl_logic_code (Logic_code enc src trg _) =
 --
 sl_g_symb_items_list :: G_symb_items_list -> Maybe G_sublogics
 sl_g_symb_items_list (G_symb_items_list i l) =
-  Just (G_sublogics i (foldr meet top ((map (min_sublogic_symb_items i)) l)))
+  Just (G_sublogics i (foldr join top ((map (min_sublogic_symb_items i)) l)))
 
 -- calls function from Logic.hs to compute sublogics
 -- 
 sl_g_symb_map_items_list :: G_symb_map_items_list -> Maybe G_sublogics
 sl_g_symb_map_items_list (G_symb_map_items_list i l) =
   Just
-  (G_sublogics i (foldr meet top ((map (min_sublogic_symb_map_items i)) l)))
+  (G_sublogics i (foldr join top ((map (min_sublogic_symb_map_items i)) l)))
   
 sl_spec_defn :: SPEC_DEFN -> Maybe G_sublogics
 sl_spec_defn (Spec_defn _ g s _) = top_logics (sl_genericity g)
