@@ -25,7 +25,7 @@ instance PrettyPrint Annotation where
 	let aa' = printText0 ga aa
 	in ptext "%%" <> aa' <> ptext "\n"
     printText0 ga (Comment_group aa _) =
-	let aa' = printText0 ga aa
+	let aa' = vcat $ map ptext aa
 	in ptext "%{" <> aa' <> ptext "}%"
     printText0 ga (Annote_line aa ab _) =
 	let aa' = printText0 ga aa
