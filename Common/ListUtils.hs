@@ -12,7 +12,7 @@ Portability :  portable
 
 module Common.ListUtils where
 
-import Data.List                ( groupBy )
+import Data.List(partition)
 
 -- | split list at separator elements, avoid empty sublists
 splitBy :: Eq a => a -> [a] -> [[a]]
@@ -22,7 +22,10 @@ splitBy x xs = let (l, r) = break (==x) xs in
 
 -- | Divide a Set (List) into equivalence classes w.r. to eq
 equivalence_Classes         :: (a -> a -> Bool) -> [a] -> [[a]]
-equivalence_Classes = groupBy
+equivalence_Classes eq l = case l of
+    [] -> []
+    x : r -> let (xs, ys) = partition (eq x) r
+             in (x : xs) : equivalence_Classes eq ys 
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
