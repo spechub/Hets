@@ -30,6 +30,9 @@ are also not renamed in DatatypeSens, because they are not used)
 
 
 terms: 
+avoid returning unresolved types (via recurse t) and terms
+that will cause runtime errors later on (MixAna.hs)
+
 polymorphic (and constrained) let bindings are not supported
 yet, because variables are monomorph
 
@@ -91,6 +94,9 @@ AxiomBinds are not renamed
 PrintModuleInfo is entirely faked and unusable for showing a Haskell
 theory that was directly read in (form a .het file and Haskell code in
 curly braces.)
+
+for logic Haskell static analysis is not executed because its result
+is unused (also parser error messages are poor)
 
 
 

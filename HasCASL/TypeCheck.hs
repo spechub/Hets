@@ -25,6 +25,7 @@ import HasCASL.MapTerm
 import HasCASL.Constrain
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
@@ -50,15 +51,18 @@ checkPattern ga pat = do
 		  np <- anaPattern p 
 		  typeCheck Nothing np
 
-freshInstList :: TypeScheme -> State Int (Type, [Type])
+freshInstList :: TypeScheme -> State Int (Type, Constraints, [Type])
 freshInstList (TypeScheme tArgs (_ :=> t) _) = 
     do m <- mkSubst tArgs 
-       return (subst (Map.fromList m) t, map snd m)
+       return ( subst (Map.fromList m) t
+	      , Set.fromList $ map ( \ (TypeArg _ k _ _, ty) 
+				     -> Kinding ty k) m
+	      ,	map snd m)
 
-instantiate :: OpInfo -> State Env (Type, [Type], OpInfo)
+instantiate :: OpInfo -> State Env (Type, [Type], Constraints, OpInfo)
 instantiate oi = do
-     (ty, inst) <- toEnvState $ freshInstList $ opType oi
-     return (ty, inst, oi)
+     (ty, cs, inst) <- toEnvState $ freshInstList $ opType oi
+     return (ty, inst, cs, oi)
 
 lookupError :: Type -> [OpInfo] -> String
 lookupError ty ois = 
@@ -87,9 +91,12 @@ typeCheck mt trm =
        if null alts then 
 	  do addDiags [mkDiag Error "no typing for" trm]
 	     return Nothing
-	  else if null $ tail alts then
-	       let (s,_,_,t) = head alts in
-		   return $ Just $ substTerm s t
+	  else if null $ tail alts then do
+	       let (s, cs, _, t) = head alts
+	       addDiags $ map (	\ c -> 
+		      mkDiag Error "unresolved constraint" c)
+	              $ Set.toList $ simplify noC cs  
+	       return $ Just $ substTerm s t
 	  else do addDiags [Diag Error 
 			 ("ambiguous typings \n  " ++
 			  showSepList ("\n  "++) 
@@ -150,13 +157,13 @@ infer mt trm = do
 		Just s -> let ty = subst s t in 
 		    return [(s, noC, ty, QualVar $ VarDecl v ty ok ps)] 
 	QualOp b (InstOpId i ts qs) sc ps -> do
-	    (ty, inst) <- toEnvState $ freshInstList sc
+	    (ty, cs, inst) <- toEnvState $ freshInstList sc
 	    let Result ds ms = mgu tm (mt, if null ts then inst else ts) 
 			       (Just ty, inst)
 	    uniDiags ds 
 	    case ms of 
 		Nothing -> return []
-		Just s -> return [(s, noC, subst s ty, QualOp b 
+		Just s -> return [(s, substC s cs, subst s ty, QualOp b 
 				   (InstOpId i (map (subst s) inst) qs)
 				   sc ps)]
 	ResolvedMixTerm i ts ps ->
@@ -164,14 +171,15 @@ infer mt trm = do
 	       let ois = opInfos $ Map.findWithDefault (OpInfos []) i as
 	       insts <- mapM instantiate ois 
 	       ls <- case mt of 
-		     Nothing -> return $ map ( \ (ty, is, oi) 
-					      -> (eps, ty, is, oi)) insts
+		     Nothing -> return $ map ( \ (ty, is, cs, oi) 
+					      -> (eps, ty, is, cs, oi)) insts
 		     Just inTy -> do 
-                         let rs = concatMap ( \ (ty, is, oi) ->
+                         let rs = concatMap ( \ (ty, is, cs, oi) ->
 				  let Result _ ms = mgu tm inTy ty in
 				  case ms of Nothing -> []
-					     Just s -> [(s, ty, 
-							 map (subst s) is
+					     Just s -> [(s, ty
+							, map (subst s) is
+							, substC s cs
 							, oi)]) insts
 			 if null rs then 
 			    addDiags [Diag Hint
@@ -180,15 +188,15 @@ infer mt trm = do
 			       (posOfId i) ]
 		            else return ()
 			 return rs
-	       return $ map ( \ (s, ty, is, oi) -> 
+	       return $ map ( \ (s, ty, is, cs, oi) -> 
 			      case opDefn oi of
-			      VarDefn -> (s, noC, ty, QualVar $ 
+			      VarDefn -> (s, cs, ty, QualVar $ 
 					  VarDecl i ty Other ps)
 			      x -> let br = case x of
 				            NoOpDefn b -> b
 				            Definition b _ -> b
 				            _ -> Op in 
-				      (s, noC, ty, 
+				      (s, cs, ty, 
 				       QualOp br (InstOpId i is [])
 						  (opType oi) ps)) ls
 	    else infer mt $ ApplTerm (ResolvedMixTerm i [] ps)

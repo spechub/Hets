@@ -1,0 +1,54 @@
+class Eq < Type
+class Ord < Eq
+type a : Ord
+op f : forall e : Ord . e -> e
+op c : a
+. (fun __=__[a] : forall a : Type . a * a ->? Unit)
+    ((op f[a] : forall e : Ord . e -> e)
+       ((op f[a] : forall e : Ord . e -> e)(op c : a)),
+     op c : a)
+type t : Eq
+op b : t
+. (fun __=__[t] : forall a : Type . a * a ->? Unit)
+    ((op f[t] : forall e : Ord . e -> e)(op b : t), op b : t)
+%% Classes ---------------------------------------------------------------
+Eq < Type
+Ord < Eq
+%% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
+Pred : Type -> Type := \ a : Type . a ->? Unit
+Unit : Type := Unit
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type
+__-->?__ : Type- -> Type+ -> Type
+__->__ : Type- -> Type+ -> Type
+__->?__ : Type- -> Type+ -> Type
+a : Ord
+t : Eq
+%% Assumptions -----------------------------------------------------------
+__/\__ : Unit * Unit ->? Unit %(fun)%
+__<=>__ : Unit * Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
+__=>__ : Unit * Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
+__\/__ : Unit * Unit ->? Unit %(fun)%
+__if__ : Unit * Unit ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * Unit * a ->? a %(fun)%
+b : t %(op)%
+bottom : forall a : Type . a %(fun)%
+c : a %(op)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+f : forall e : Ord . e -> e %(op)%
+false : Unit %(fun)%
+not__ : Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+¬__ : Unit ->? Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+(fun __=__[a] : forall a : Type . a * a ->? Unit)
+  ((op f[a] : forall e : Ord . e -> e)
+     ((op f[a] : forall e : Ord . e -> e)(op c : a)),
+   op c : a)
+(fun __=__[t] : forall a : Type . a * a ->? Unit)
+  ((op f[t] : forall e : Ord . e -> e)(op b : t), op b : t)
+%% Diagnostics -----------------------------------------------------------
+*** Error 14.8, unresolved constraint 't : Ord'

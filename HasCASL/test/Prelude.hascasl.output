@@ -330,6 +330,7 @@ free type bool
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
+*** Error 159.23, unresolved constraint '_var_79 * _var_80 : Cpo'
 *** Error 159.45, unexpected mixfix token: und
 *** Error 169.9, incompatible kind of: __-->?__
   expected: Type- -> Type+ -> Type
@@ -365,6 +366,7 @@ free type bool
 	def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
+*** Error 186.16, unresolved constraint '_var_103 : Cpo'
 *** Error 186.26, unexpected mixfix token: c
 *** Error 190.9, incompatible kind of: p -->? p
   expected: Cpo-
