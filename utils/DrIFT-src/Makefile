@@ -4,7 +4,7 @@
 # Author: Klaus Lüttich
 # Year:   2002
 
-# A Makefile to compile DrIFT in comfort way for two plattforms.
+# A Makefile to compile DrIFT in a comfortable way for various plattforms.
 
 ####################################################################
 ## include The uname variable
@@ -22,6 +22,8 @@ sources = DrIFT.hs
 
 ####################################################################
 ### targets
+macintosh: DrIFT.macintosh
+
 solaris: DrIFT.solaris
 
 linux: DrIFT.linux
@@ -29,7 +31,7 @@ linux: DrIFT.linux
 DrIFT.$(UNAME): DrIFT.tmp
 	mv DrIFT.tmp $@
 
-install: DrIFT.linux DrIFT.solaris
+install: DrIFT.linux DrIFT.solaris DrIFT.macintosh
 	cp $^ ..
 
 DrIFT.tmp: $(sources)
@@ -48,6 +50,7 @@ clean-bin: clean
 uname.mk:
 	rm -f $@
 	$(PERL) -e  '$$un=`uname`;print "UNAME=";\
+                     $$un =~ m"Darwin" && do {print "macintosh"};\
                      $$un =~ m"SunOS" && do {print "solaris"};\
                      $$un =~ m"Linux" && do {print "linux"};\
                      print "\n"' > $@

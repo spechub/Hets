@@ -1,6 +1,6 @@
 
 
-# A Makefile to compile genRules in comfort way for two plattforms.
+# A Makefile to compile genRules in a comfortable way for various plattforms.
 
 ####################################################################
 ## include The uname variable
@@ -18,6 +18,8 @@ sources = GenerateRules.hs
 
 ####################################################################
 ### targets
+macintosh: genRules.macintosh
+
 solaris: genRules.solaris
 
 linux: genRules.linux
@@ -25,7 +27,7 @@ linux: genRules.linux
 genRules.$(UNAME): genRules.tmp
 	mv genRules.tmp $@
 
-install: genRules.linux genRules.solaris
+install: genRules.linux genRules.solaris genRules.macintosh
 	cp $^ ..
 
 genRules.tmp: $(sources)
@@ -44,6 +46,7 @@ clean-bin: clean
 uname.mk:
 	rm -f $@
 	$(PERL) -e  '$$un=`uname`;print "UNAME=";\
+                     $$un =~ m"Darwin" && do {print "macintosh"};\
                      $$un =~ m"SunOS" && do {print "solaris"};\
                      $$un =~ m"Linux" && do {print "linux"};\
                      print "\n"' > $@

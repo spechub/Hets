@@ -8,6 +8,7 @@ my $suf = 'unknown';
 
 $un =~ m"^SunOS" && do {$suf = "solaris"};    
 $un =~ m"^Linux" && do {$suf = "linux"};
+$un =~ m"^Darwin" && do {$suf = "macintosh"};
 
 if($suf eq 'unknown') {
     print STDERR "Unknown system\nSupported systems: solaris (SunOS), Linux\n";
