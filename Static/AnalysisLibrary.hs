@@ -8,11 +8,11 @@
 
    T. Mossakowski, S. Autexier, D. Hutter, P. Hoffman:
    CASL Proof calculus.
-   Available from http://www.informatik.uni-bremen.de/~till/calculus.ps
-   To appear in the CASL book.
+   To appear in the CASL reference manual, see http://www.cofi.info.
 
    Todo:
-
+   Generalization to heterogeneous views
+   check that libname coincides with filename (otherwise internal error occurs)
 -}
 
 
@@ -268,10 +268,13 @@ ana_ITEM_NAME_OR_MAP1 ln genv' res old new pos = do
     Just _ -> fatal_error (showPretty new " already used") pos 
   case entry of
     SpecEntry extsig ->
-      let (dg1,extsig1) = refExtsig ln dg new extsig
+      let (dg1,extsig1) = refExtsig ln dg (Just new) extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1,dg1)
-    ViewEntry vsig -> ana_err "view download"
+    ViewEntry vsig -> 
+      let (dg1,vsig1) = refViewsig ln dg vsig
+          genv1 = Map.insert new (ViewEntry vsig1) genv
+      in return (genv1,dg1)
     ArchEntry asig -> ana_err "arch spec download"
     UnitEntry usig -> ana_err "unit spec download"
 
@@ -295,8 +298,13 @@ refExtsig ln dg name (imps,params,gsigmaP,body) =
   params' = map (\x -> (Nothing,x)) params
   (dg1,imps1:body1:params1) =  
     refNodesigs ln dg
-       ((Nothing,imps):(Just name,body):params')
+       ((Nothing,imps):(name,body):params')
 
+refViewsig ln dg (src,mor,extsig) =
+  (dg2,(src1,mor,extsig1))
+  where
+  (dg1,[src1]) = refNodesigs ln dg [(Nothing,src)]
+  (dg2,extsig1) = refExtsig ln dg Nothing extsig
 
 homogenize1 res 
      (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
