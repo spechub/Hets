@@ -37,11 +37,11 @@ translateData (tid,info) =
     NoTypeDefn ->  -- z.B. bei sorts, was wird daraus?
         ((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
-	            (HsIdent (translateIdWithType TypeId tid))
+	            (HsIdent (translateIdWithType UpperId tid))
 		    [] -- [HsName]
 		    [(HsConDecl 
                        (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-                       (HsIdent (translateIdWithType ConId tid))
+                       (HsIdent (translateIdWithType UpperId tid))
 		       [])
 		    ]
 		    [] -- [HsQName]  (für deriving) woher?
@@ -50,7 +50,7 @@ translateData (tid,info) =
     DatatypeDefn _ _ -> 
 	((HsDataDecl (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
 	            [] -- HsContext
-	            (HsIdent (translateIdWithType TypeId tid))
+	            (HsIdent (translateIdWithType UpperId tid))
 		    [] -- [HsName]
 		    [] -- [HsConDecl] woher?? (im Env nicht enthalten?)
 		    [] -- [HsQName]  (für deriving) woher?
@@ -74,7 +74,7 @@ translateAssump (i, (x:xs)) = ((translateSignature i x):
 translateSignature :: Id -> OpInfo -> HsDecl
 translateSignature i opinf = 
   HsTypeSig (SrcLoc {srcFilename = "", srcLine = 0, srcColumn = 0})
-             [(HsIdent (translateIdWithType FunId i))]
+             [(HsIdent (translateIdWithType LowerId i))]
              (HsQualType [] (translateTypeScheme (opType opinf)))
 -- Achtung: falsche Positionsangabe
 
@@ -92,11 +92,12 @@ translateType t = case t of
   BracketType _ _ _ -> error ("unexpected type (BracketType): " ++ show t)
   TypeToken _ -> error ("unexpected type (TypeToken): " ++ show t)
   TypeAppl t1 t2 -> HsTyApp (translateType t1) (translateType t2)
-  TypeName tid _kind n -> if n > 0 then
-			    HsTyVar (HsIdent (translateIdWithType VarId tid))
-			  else
-			    HsTyCon (UnQual (HsIdent (translateIdWithType ConId tid)))
-             
+  TypeName tid _kind n -> 
+      if n > 0 then
+	 HsTyVar (HsIdent (translateIdWithType LowerId tid))
+      else
+         HsTyCon (UnQual (HsIdent (translateIdWithType UpperId tid)))
+--Missing: Übersetzung der Kind's             
 
 {------------------------------------------------------------------------
  Translation of Id's
@@ -138,28 +139,26 @@ Ersatzzeichen für reservierte Zeichen und für Symbole:
     ~  -> _N
 ------------------------------------------------------------------------}
 
-translateIdWithType :: IdType -> Id -> String
+translateIdWithType :: IdCase -> Id -> String
 translateIdWithType ty (Id tlist _idlist _poslist) = 
   let s = translateId (Id tlist _idlist _poslist)
-  in if (ty == TypeId || ty == ConId) then
+  in if ty == UpperId then
         if isLower $ head $ tokStr $ head tlist then
 	  "A_" ++ s
-	else s
-     else -- if (ty == FunId || ty == VarId) then
+	else firstDigit s
+     else -- if ty == LowerId then
         if isUpper $ head $ tokStr $ head tlist then
            "a_" ++ s
-        else s
+        else firstDigit s
 
 
-data IdType = TypeId
-	     | FunId
-	     | VarId
-	     | ConId
-	    deriving (Eq,Show)
+data IdCase = UpperId | LowerId deriving (Eq,Show)
+
 
 translateId :: Id -> String
 translateId (Id tlist idlist _poslist) = 
     (translateTokens tlist) ++ (translateCompound idlist)
+
 
 translateTokens :: [Token] -> String
 translateTokens [] = ""
@@ -170,29 +169,46 @@ translateTokens (t:ts) =
       (multiSignMapping str) ++ res
     else (concatMap symbolMapping str) ++ res
 
---isSign :: Char -> Bool
---isSign c = any (c ==) signChars
+startsWithDigit :: String -> Bool
+startsWithDigit s = isDigit $ head s
+
+firstDigit :: String -> String
+firstDigit s = if startsWithDigit s then
+	         "_D" ++ s
+	       else s
+
+isSign :: Char -> Bool
+isSign c = any (c ==) signChars
 
 isMultiSign :: String -> Bool
-isMultiSign s = any (s ==) multiSigns
+isMultiSign s = (any (s ==) multiSigns) || (and $ map isSign s)
 
 multiSigns :: [String]
 multiSigns = ["__","||","==","&&","/\\","\\/","::"]
 -- to be completed
 
 multiSignMapping :: String -> String
-multiSignMapping _ = ""
+multiSignMapping s = case s of
+  "__"  -> "_2"
+  "||"  -> "_3"
+  "=="  -> "_4"
+  "&&"  -> "_5"
+  "/\\" -> "_6"
+  "\\/" -> "_7"
+  "::"  -> "_8"
+  _     -> concatMap symbolMapping s --falsche Übersetzung
+-- to be completed (s. multiSigns)
 
 symbolMapping :: Char -> String
 symbolMapping c = case c of 
 -- Special / reserviert
-    '_' -> "_1"     -- \95
-    '{' -> "_b"     -- \123
-    '}' -> "_r"     -- \125
+    '_'  -> "_1"    -- \95
+    '{'  -> "_b"    -- \123
+    '}'  -> "_r"    -- \125
     '['  -> "_s"    -- \91
     ']'  -> "_q"    -- \93
     '.'  -> "_d"    -- \46
-
+    '\'' -> "_p"
 -- Symbole
     '+'  -> "_P"    -- \43
     '-'  -> "_M"    -- \45
@@ -215,7 +231,7 @@ symbolMapping c = case c of
     '¡'  -> "_e"    -- \161
     '¢'  -> "_c"    -- \162   
     '£'  -> "_l"    -- \163
-    '§'  -> "_p"    -- \167
+    '§'  -> "_f"    -- \167
     '©'  -> "_a"    -- \169
     '¬'  -> "_n"    -- \172
     '°'  -> "_h"    -- \176
@@ -232,94 +248,11 @@ symbolMapping c = case c of
     _    -> [c]
 
 
-{-translateTokens :: LSS -> [Token] -> String
-translateTokens _ [] = ""
-translateTokens lss tlist = 
-  let t = tokStr (head tlist)
-      specialRes = translateTokens TrSpecial (tail tlist) 
-      symbolRes = translateTokens TrSymbol (tail tlist) in
-  case t of
-   
--- Special 
-    "_"  -> if lss == TrSpecial then "_1" ++ specialRes
-	    else "_r_1" ++ specialRes
-    "__" -> if lss == TrSpecial then "_2" ++ specialRes
-	    else "_r_2" ++ specialRes
-    "{"  -> if lss == TrSpecial then "_b" ++ specialRes
-	    else "_r_b" ++ specialRes
-    "}"  -> if lss == TrSpecial then "_d" ++ specialRes
-	    else "_r_d" ++ specialRes
-    "["  -> if lss == TrSpecial then "_s" ++ specialRes
-	    else "_r_s" ++ specialRes
-    "]"  -> if lss == TrSpecial then "_q" ++ specialRes
-	    else "_r_q" ++ specialRes
-    "."  -> if lss == TrSpecial then  "_p" ++ specialRes
-	    else "_r_p" ++ specialRes
-
--- Symbols 
-    "+"  -> if lss == TrSymbol then "_P" ++ symbolRes
-	    else "_Z_P" ++ symbolRes
-    "-"  -> if lss == TrSymbol then "_M" ++ symbolRes
-	    else "_Z_M" ++ symbolRes
-    "*"  -> if lss == TrSymbol then "_T" ++ symbolRes
-	    else "_Z_T" ++ symbolRes
-    "/"  -> if lss == TrSymbol then "_D" ++ symbolRes
-	    else "_Z_D" ++ symbolRes
-    "\\" -> if lss == TrSymbol then "_B" ++ symbolRes
-	    else "_Z_B" ++ symbolRes     -- \
-    "&"  -> if lss == TrSymbol then "_A" ++ symbolRes
-	    else "_Z_A" ++ symbolRes
-    "="  -> if lss == TrSymbol then "_E" ++ symbolRes
-	    else "_Z_E" ++ symbolRes
-    "<"  -> if lss == TrSymbol then "_L" ++ symbolRes
-	    else "_Z_L" ++ symbolRes
-    ">"  -> if lss == TrSymbol then "_G" ++ symbolRes
-	    else "_Z_G" ++ symbolRes
-    "!"  -> if lss == TrSymbol then "_I" ++ symbolRes
-	    else "_Z_I" ++ symbolRes
-    "?"  -> if lss == TrSymbol then "_Q" ++ symbolRes
-	    else "_Z_Q" ++ symbolRes
-    ":"  -> if lss == TrSymbol then "_C" ++ symbolRes
-	    else "_Z_C" ++ symbolRes
-    "$"  -> if lss == TrSymbol then "_S" ++ symbolRes
-	    else "_Z_S" ++ symbolRes
-    "@"  -> if lss == TrSymbol then "_O" ++ symbolRes
-	    else "_Z_O" ++ symbolRes
-    "#"  -> if lss == TrSymbol then "_H" ++ symbolRes
-	    else "_Z_H" ++ symbolRes
-    "^"  -> if lss == TrSymbol then "_V" ++ symbolRes
-	    else "_Z_V" ++ symbolRes
-    "~"  -> if lss == TrSymbol then "_N" ++ symbolRes
-	    else "_Z_N" ++ symbolRes
-
-    _    -> --if and (map isAlpha  t) then
-	      if (lss == TrLetter || lss == TrAny) then t
-	      else "_A" ++ t
-	    --else error ("Fix me: unexpected token" ++ show t)
--}
-
-data LSS = TrLetter | TrSpecial | TrSymbol | TrAny
-	   deriving (Eq,Show)
-
 translateCompound :: [Id] -> String
 --  [      ,      ]
 -- _C     _k     _J
 translateCompound [] = ""
 translateCompound ids = "_C" ++
-                        (concat (intersperse "_k" (map translateId ids)))++
+                        (concat $ intersperse "_k" $ map translateId ids) ++
                         "_J"
-
-{-substituteUnderlinesInTokens :: [Token] -> [Token]
-substituteUnderlinesInTokens tlist = map substituteUnderlinesInToken tlist
-
-substituteUnderlinesInToken :: Token -> Token
-substituteUnderlinesInToken t = Token {tokStr = substituteUnderlines (tokStr t),
-                                   tokPos = tokPos t}
--}
-
-substituteUnderlines :: String -> String
-substituteUnderlines [] = []
-substituteUnderlines (x:xs)
-  | x == '_' = "_1" ++ substituteUnderlines xs
-  | otherwise = (x:(substituteUnderlines xs))
 
