@@ -71,34 +71,56 @@ sigTrCoCASL _ _ = id
 -- | extended formula translation for CoCASL
 formTrCoCASL :: FormulaTranslator C_FORMULA CoCASLSign
 formTrCoCASL sign (CoSort_gen_ax sorts ops _) = 
-  foldr (quantifyIsa "ALL") phi predDecls
+  foldr (quantifyIsa "All") phi predDecls
   where
+  -- phi expresses: all bisimulations are the equality
   phi = prems `binImpl` concls
-  indices = [1..length sorts]
+  -- indices and predicates for all involved sorts
+  indices = [0..length sorts - 1]
   predDecls = zip [rvar i | i<-indices] (map binPred sorts)
   binPred s = let s' = transSort s in [s',s'] ---> boolType
+  -- premises: all relations are bisimulations
   prems = conj (map prem (zip sorts indices))
+  {- generate premise for s, where s is the i-th sort
+     for all x,y of that sort, 
+      if all sel_j(x) R_j sel_j(y), where sel_j ranges over the selectors for s
+      then x R y
+     here, R_i is the relation for the result type of sel_j, or the equality
+  -}
   prem (s::SORT,i) = 
-    let sels = List.filter 
-                (\(Qual_op_name _ t _) -> head (args_OP_TYPE t) == s) ops
+    let -- get all selectors with first argument sort s
+        sels = List.filter isSelForS ops
+        isSelForS (Qual_op_name _ t _) = case (args_OP_TYPE t) of
+           (s1:_) -> s1 == s
+           _ -> False 
+        isSelForS _ = False
         premSel opsymb@(Qual_op_name n t _) =
-         let args = tail $ args_OP_TYPE t
+         let -- get extra parameters of the selectors
+             args = tail $ args_OP_TYPE t
              indicesArgs = [1..length args]
              res = res_OP_TYPE t
+             -- variables for the extra parameters
              varDecls = zip [xvar i | i<-indicesArgs] (map transSort args)
+             -- the selector ...
              top = Const (transOP_SYMB sign opsymb,dummyT)
+             -- applied to x and extra parameter vars
              rhs = foldl App (top `App` var "x") (map (var . xvar) indicesArgs)
+             -- applied to y and extra parameter vars
              lhs = foldl App (top `App` var "y") (map (var . xvar) indicesArgs)
-             chi = if res `elem` sorts
+             chi = -- is the result of selector non-observable? 
+                   if res `elem` sorts
+                     -- then apply corresponding relation
                      then var (rvar (fromJust (findIndex (==res) sorts)))
                            `App` rhs `App` lhs
+                     -- else use equality
                      else binEq rhs lhs
-          in foldr (quantifyIsa "ALL") chi varDecls
+          in foldr (quantifyIsa "All") chi varDecls
         prem1 = conj (map premSel sels)
         concl1 = var (rvar i) `App` var "x" `App` var "y"
         psi = prem1 `binImpl` concl1
         typS = transSort s
-     in foldr (quantifyIsa "ALL") psi [("x",typS),("y",typS)]
+     in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
+  -- conclusion: all relations are the equality
   concls = conj (map concl (zip sorts indices))
   concl (s,i::Int) = binEq (var (rvar i)) (Const("op =",dummyT))
 formTrCoCASL sign (Box mod phi _) = 
