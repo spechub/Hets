@@ -137,7 +137,7 @@ transVar = showIsaSid
 
 
 quantify q (v,t) phi  = 
-  Const (qname q,dummyT) `App` Abs (transVar v,transSort t,phi)
+  Const (qname q,dummyT) `App` Abs ( (Const(transVar v, dummyT)) ,transSort t,phi)
   where
   qname Universal = "All"
   qname Existential = "Ex"
