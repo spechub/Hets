@@ -102,12 +102,13 @@ type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 
-type GInfo = (IORef (GlobalContext, LibEnv, [([DGRule], [DGChange])], DGraph),
+type GInfo = (IORef ProofStatus,
               IORef Descr,
               IORef ConversionMaps,
               Descr,
               LIB_NAME,
-              GraphInfo)
+              GraphInfo,
+              HetcatsOpts)
 
 initializeConverter :: IO (IORef GraphMem)
 initializeConverter = 
@@ -122,9 +123,9 @@ initializeConverter =
 and returns the descriptor of the latter, the graphInfo it is contained in
 and the conversion maps (see above)-}
 
-convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv 
+convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv -> HetcatsOpts
 	     -> IO (Descr, GraphInfo, ConversionMaps)
-convertGraph graphMem libname libEnv =
+convertGraph graphMem libname libEnv hetsOpts =
   do --nextGraphId <- newIORef 0
      let convMaps = ConversionMaps
            {dg2abstrNode = Map.empty::DGraphToAGraphNode, 
@@ -136,19 +137,17 @@ convertGraph graphMem libname libEnv =
      case Map.lookup libname libEnv of
 
        Just globContext@(_,_,dgraph) -> 
-	 if (isEmpty dgraph) then 
-	   do (abstractGraph,graphInfo,convRef) <-
-	          initializeGraph graphMem libname dgraph convMaps globContext
-              return (abstractGraph, graphInfo,convMaps)
-          else 
-	    do (abstractGraph,graphInfo,convRef) <-
-		   initializeGraph graphMem libname dgraph convMaps globContext
-               newConvMaps <- convertNodes convMaps abstractGraph
-			      graphInfo dgraph libname
-	       finalConvMaps <- convertEdges newConvMaps abstractGraph 
-				graphInfo dgraph libname
-               writeIORef convRef finalConvMaps
-               return (abstractGraph, graphInfo, finalConvMaps)
+	do (abstractGraph,graphInfo,convRef) <-
+	          initializeGraph graphMem libname dgraph convMaps globContext hetsOpts
+	   if (isEmpty dgraph) then 
+                return (abstractGraph, graphInfo,convMaps)
+            else 
+	     do newConvMaps <- convertNodes convMaps abstractGraph
+	 		       graphInfo dgraph libname
+	        finalConvMaps <- convertEdges newConvMaps abstractGraph 
+		 		graphInfo dgraph libname
+                writeIORef convRef finalConvMaps
+                return (abstractGraph, graphInfo, finalConvMaps)
                      
        Nothing -> error ("development graph with libname "
                           ++ (show libname)
@@ -158,9 +157,9 @@ convertGraph graphMem libname libEnv =
 {- initializes an empty abstract graph with the needed node and edge types,
 return type equals the one of convertGraph -}
 initializeGraph :: IORef GraphMem ->LIB_NAME -> DGraph -> ConversionMaps
-                     -> GlobalContext 
+                     -> GlobalContext -> HetcatsOpts
 		     -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do 
+initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do 
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
@@ -172,7 +171,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
       actGraphInfo = graphInfo graphMem
 --  graphId <- newIORef 0
-  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo)
+  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, hetsOpts)
   Result descr _ <- 
     makegraph ("Development graph for "++show ln) 
          -- action on "open"
@@ -181,7 +180,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 	         maybeFilePath <- sync event
                  case maybeFilePath of
 	           Just filePath ->
-	             do openProofStatus filePath ioRefProofStatus convRef
+	             do openProofStatus filePath ioRefProofStatus convRef hetsOpts
                    Nothing ->
 	             do error ("Could not open file.")
               )
@@ -250,11 +249,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 		 createLocalMenuNodeTypeInternal "LightGrey" convRef dGraph gInfo),
                 ("dg_ref", 
 		 createLocalMenuNodeTypeDgRef "SteelBlue" convRef actGraphInfo 
-					      ioRefGraphMem graphMem
+					      ioRefGraphMem graphMem gInfo
                  ),
 		("locallyEmpty_dg_ref", 
 		 createLocalMenuNodeTypeDgRef "LightSteelBlue" convRef 
-		        actGraphInfo ioRefGraphMem graphMem
+		        actGraphInfo ioRefGraphMem graphMem gInfo
                  ) ]
       -- the link types
                  [("globaldef",
@@ -349,8 +348,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext = do
 
 
 openProofStatus :: FilePath -> (IORef ProofStatus) -> (IORef ConversionMaps)
-		-> IO()
-openProofStatus filename ioRefProofStatus convRef =
+		-> HetcatsOpts -> IO()
+openProofStatus filename ioRefProofStatus convRef hetsOpts =
   do resultProofStatus <- proofStatusFromShATerm filename
      case Res.maybeResult resultProofStatus of
        Nothing -> error ("Could not read proof status from file '" 
@@ -364,7 +363,7 @@ openProofStatus filename ioRefProofStatus convRef =
 	    case length lns of
               1 -> do let libname = head lns
                       (gid, actGraphInfo, convMaps) 
-			  <- convertGraph graphMem' libname libEnv'
+			  <- convertGraph graphMem' libname libEnv' hetsOpts
                       writeIORef convRef convMaps
                       redisplay gid actGraphInfo
 		      return ()
@@ -373,7 +372,7 @@ openProofStatus filename ioRefProofStatus convRef =
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
              -> IO ()
-proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo) proofFun 
+proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _) proofFun 
   = do
   proofStatus <- readIORef ioRefProofStatus
   Res.Result diags res <- proofFun proofStatus
@@ -450,7 +449,7 @@ createLocalMenuNodeTypeInternal color convRef dGraph gInfo =
 
 -- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createLocalMenuNodeTypeDgRef color convRef actGraphInfo 
-			     ioRefGraphMem graphMem = 
+			     ioRefGraphMem graphMem (_,_,_,_,_,_,hetsOpts) = 
                  Box $$$ Color color
 		 $$$ ValueTitle (\ (s,_,_) -> return s)
 		 $$$ LocalMenu (Button "Show referenced library"
@@ -458,11 +457,11 @@ createLocalMenuNodeTypeDgRef color convRef actGraphInfo
 		        do convMaps <- readIORef convRef
                            --g <- readIORef graphId
 		           (refDescr, newGraphInfo, refConvMaps) <- 
-		                showReferencedLibrary ioRefGraphMem descr
+		                showReferencedLibrary ioRefGraphMem descr 
 		                              gid
 		                              actGraphInfo
 		                              convMaps
-		           
+		                              hetsOpts
 --writeIORef convRef newConvMaps
                            writeIORef ioRefGraphMem 
 				      graphMem{graphInfo = newGraphInfo, 
@@ -490,10 +489,10 @@ createMenuButton title menuFun convRef dGraph =
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
 createLocalMenuButtonShowSignature = 
   createMenuButton "Show signature" getSignatureOfNode
-createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_) = 
+createLocalMenuButtonShowTheory (proofStatus,_,_,_,_,_,_) = 
   createMenuButton "Show theory" (getTheoryOfNode proofStatus)
-createLocalMenuButtonTranslateTheory (proofStatus,_,_,_,_,_) = 
-  createMenuButton "Translate theory" (translateTheoryOfNode proofStatus)
+createLocalMenuButtonTranslateTheory gInfo = 
+  createMenuButton "Translate theory" (translateTheoryOfNode gInfo)
 
 
 {- | 
@@ -502,7 +501,7 @@ createLocalMenuButtonTranslateTheory (proofStatus,_,_,_,_,_) =
 -}
 --createLocalMenuTaxonomy :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
 --                     DGraph -> IO ()
-createLocalMenuTaxonomy (proofStatus,_,_,_,_,_) convRef dGraph =
+createLocalMenuTaxonomy (proofStatus,_,_,_,_,_,_) convRef dGraph =
       (Menu (Just "Taxonomy graphs")
        [createMenuButton "Subsort graph" 
 	       (passTh displaySubsortGraph) convRef dGraph,
@@ -519,7 +518,7 @@ createLocalMenuTaxonomy (proofStatus,_,_,_,_,_) convRef dGraph =
  
 
 
-createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_) = 
+createLocalMenuButtonShowSublogic (proofStatus,_,_,_,_,_,_) = 
   createMenuButton "Show sublogic" (getSublogicOfNode proofStatus)
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButton "Show origin" showOriginOfNode 
@@ -736,9 +735,9 @@ displayTheory ext node dgraph gth =
 
 {- translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
-translateTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
+translateTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
-translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
+translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,opts) descr ab2dgNode dgraph = do
  (_,libEnv,_,_) <- readIORef proofStatusRef
  case (do
    (_libname, node) <- 
@@ -769,9 +768,9 @@ translateTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
          Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
             (G_theory lidT sign'' sens1)
      )
-    showDiags defaultHetcatsOpts diags
+    showDiags opts diags
     return ()
-  Res.Result diags _ -> showDiags defaultHetcatsOpts diags
+  Res.Result diags _ -> showDiags opts diags
 
 {- outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -819,7 +818,7 @@ showOriginOfNode descr ab2dgNode dgraph =
 
 {- start local theorem proving or consistency checking at a node -}
 --proveAtNode :: Bool -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
-proveAtNode checkCons gInfo@(_,_,convRef,_,_,_) descr ab2dgNode dgraph = 
+proveAtNode checkCons gInfo@(_,_,convRef,_,_,_,_) descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just libNode -> 
       do convMaps <- readIORef convRef
@@ -861,7 +860,7 @@ showProofStatusOfThm descr Nothing =
 
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_) (Just (source,target,linklab)) = do 
+checkconsistencyOfEdge _ (ref,_,_,_,_,_,_) (Just (source,target,linklab)) = do 
   (_,libEnv,_,dgraph) <- readIORef ref
   let dgtar = lab' (context target dgraph)
   case dgtar of
@@ -1025,8 +1024,8 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges)
 
 
 showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo 
-	      -> ConversionMaps -> IO (Descr, GraphInfo, ConversionMaps)
-showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
+	      -> ConversionMaps -> HetcatsOpts -> IO (Descr, GraphInfo, ConversionMaps)
+showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps hetsOpts =
   case Map.lookup descr (abstr2dgNode convMaps) of
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
@@ -1035,7 +1034,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps =
 		       labNode' (context node dgraph)
 	       case Map.lookup refLibname libname2dgMap of
                  Just (_,refDgraph,_) -> 
-		     convertGraph graphMem refLibname (libname2dg convMaps)
+		     convertGraph graphMem refLibname (libname2dg convMaps) hetsOpts
 		 Nothing -> error ("The referenced library ("
 				     ++ (show refLibname)
 				     ++ ") is unknown")

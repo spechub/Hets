@@ -40,7 +40,6 @@ import Static.PrintDevGraph
 #ifdef UNI_PACKAGE
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
-import GUI.WebInterface
 import InfoBus 
 import Events
 import Destructible
@@ -69,16 +68,6 @@ processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opt file = 
     do putIfVerbose opt 2 ("Processing file: " ++ file)
        case guess file (intype opt) of
-             WebIn -> do
-                 case web opt of
-                   WebType -> do
-                           str <- readFile file
-#ifdef UNI_PACKAGE
-                           webInterface str opt 
-#else
-                           fail "No web interface; UNI_PACKAGE option has been disabled during compilation of Hets"
-#endif
-                   NoWeb   -> return () 
 {-
 #ifdef PROGRAMATICA
              HaskellIn -> do  
@@ -187,7 +176,7 @@ showGraph file opt env =
 #ifdef UNI_PACKAGE
             graphMem <- initializeConverter
             putIfVerbose opt 3 "Converting Graph"
-            (gid, gv, _cmaps) <- convertGraph graphMem ln libenv
+            (gid, gv, _cmaps) <- convertGraph graphMem ln libenv opt
             GUI.AbstractGraphView.redisplay gid gv
             graph <- get_graphid gid gv
             sync(destroyed graph)
