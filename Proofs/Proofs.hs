@@ -189,6 +189,7 @@ getAllProvenLocGlobPathsTo dgraph node path =
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     locGlobPaths = [(getSourceNode edge, (edge:path))| edge <- localEdges]
 
+-- applies global subsumption to all unproven global theorem edges if possible
 globSubsume ::  ProofStatus -> ProofStatus
 globSubsume proofStatus@(globalContext,history,dGraph) =
 -- -- ##### überprüfung überflüssig?! #####
@@ -201,6 +202,8 @@ globSubsume proofStatus@(globalContext,history,dGraph) =
     nextDGraph = fst result
     nextHistoryElem = snd result
 
+-- auxiliary function for globSubsume (above)
+-- the actual implementation
 globSubsumeAux :: DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
 globSubsumeAux dGraph historyElement [] = (dGraph, historyElement)
@@ -265,31 +268,8 @@ locSubsumeAux dgraph (rules,changes) ((ledge@(source,target,edgeLab)):list) =
     newRules = (LocSubsumption ledge):rules
     newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
 
-{-
-
-existsDefPathOfMorphism :: DGraph -> GMorphism -> Node -> Node -> Bool
-existsDefPathOfMorphism dgraph morphism src tgt =
-  existsDefPathOfMorphismAux dgraph morphism tgt ([]::[LEdge DGLinkLab]) src
-
-existsDefPathOfMorphismAux :: DGraph -> GMorphism -> Node -> [LEdge DGLinkLab]
-			        -> Node -> Bool
-existsDefPathOfMorphismAux dgraph morphism tgt path src =
-  if null outGoingEdges then False
-   else
-     if elem morphism filteredMorphismsOfPathsToTgt then True
-      else or [existsDefPathOfMorphismAux dgraph morphism tgt
-	       ((fst step):path) (snd step)| step <- nextStep]
-
-  where 
-    outGoingEdges = out dgraph src
-    globalDefEdges = filter isGlobalDef outGoingEdges
-    nextStep = [(edge, getTargetNode edge)| edge <- globalDefEdges]
-    defEdgesToTgt = [edge| edge <- globalDefEdges, tgt == getTargetNode edge]
-    defPathsToTgt = [edge:path| edge <- defEdgesToTgt]
-    morphismsOfPathsToTgt = map calculateMorphismOfPath defPathsToTgt
-    filteredMorphismsOfPathsToTgt = getFilteredMorphisms morphismsOfPathsToTgt
-
--}
+-- checks if there is a path of globalDef edges with the given morphism
+-- between the given source and target node
 existsDefPathOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
 				    -> Bool
 existsDefPathOfMorphismBetween dgraph morphism src tgt =
@@ -303,6 +283,8 @@ existsDefPathOfMorphismBetween dgraph morphism src tgt =
 	  map calculateMorphismOfPath allDefPathsBetween
       filteredMorphismsOfDefPaths = getFilteredMorphisms morphismsOfDefPaths 
 
+-- returns all paths of globalDef edges between the given source and target
+-- node
 getAllDefPathsBetween :: DGraph -> Node -> Node -> [LEdge DGLinkLab]
 		           -> [[LEdge DGLinkLab]]
 getAllDefPathsBetween dgraph src tgt path =
@@ -344,6 +326,10 @@ getAllLocDefPathsBetween dgraph src tgt = undefined
     nextStep = [(edge, getTargetNode edge)| edge <- localDefEdges]
 -}
 -- Reihenfolge der Komposition überprüfen
+
+-- ----------------------------------------
+-- determines the morphism of a given path
+-- ----------------------------------------
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath [] = error "getMorphismOfPath: empty path"
 calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
@@ -356,22 +342,32 @@ calculateMorphismOfPath path@((src,tgt,edgeLab):furtherPath) =
     morphism = dgl_morphism edgeLab
     maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
 
+-- removes the "Nothing"s from a list of Maybe GMorphism
+-- returns the remaining elements as plain GMorphisms
 getFilteredMorphisms :: [Maybe GMorphism] -> [GMorphism]
 getFilteredMorphisms morphisms =
   [morph| (Just morph) <- filter isValidMorphism morphisms]
 
+-- returns if True if the given Maybe GMorphisms is not "Nothing"
 isValidMorphism :: Maybe GMorphism -> Bool
 isValidMorphism morphism =
   case morphism of
     Nothing -> False
     otherwise -> True
 
+
+-- ------------------------------------
+-- methods to get the nodes of an edge
+-- ------------------------------------
 getSourceNode :: LEdge DGLinkLab -> Node
 getSourceNode (source,_,_) = source
 
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
 
+-- -------------------------------------
+-- methods to check the type of an edge
+-- -------------------------------------
 isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
