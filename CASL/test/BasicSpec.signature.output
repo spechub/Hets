@@ -1134,6 +1134,7 @@ op __quot__ : Int * Int ->? Int
 op __quot__ : Nat * Nat ->? Nat
 op __rem__ : Int * Int ->? Int
 op __rem__ : Nat * Nat ->? Nat
+op __||__ : a * a -> a
 op a : Data1
 op a : b
 op a : s
@@ -1142,6 +1143,7 @@ op abs : Int -> Nat
 op abs : Nat -> Nat
 op abs : Rat -> Rat
 op b : Data1
+op b : a
 op b : s -> s
 op b : s -> t
 op c : Data1

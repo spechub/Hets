@@ -1482,3 +1482,9 @@ forall x:s.e
           '\a' : Char = BEL;             %(slash_a)%
           '\?' : Char = '?';             %(slash_quest)%
 
+
+sort a;
+ops __||__ : a * a -> a, assoc
+
+op b : a 
+. b || b || b = b 

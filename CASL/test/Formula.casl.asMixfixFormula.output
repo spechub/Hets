@@ -11,7 +11,7 @@ exists! a:v . x
 exists! a:v . x
 exists! a:v . x
 forall a:v . x
-b => a
+a if b
 def x
 *** Error 15.4, unexpected mixfix token: #
 *** Error 16.2, unexpected mixfix token: }
@@ -26,7 +26,7 @@ b in s
 a =e= b
 a = b
 a => b => c => d
-d => c => b => a
+a if b if c if d
 a <=> b
-def d => not c => b \/ c => a /\ b
+a /\ b if b \/ c if not c if def d
 m div n = r <=> exists s:Nat . m = n * r + s /\ s < n

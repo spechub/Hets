@@ -114,8 +114,8 @@ forall m, n, r, s:Int; a, b, c, d:Nat
 . (odd (m)) <=> not (even (m)) %(Int_odd_def)%
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
 %(Int_divide)%
-. not n = 0 => (m mod n < abs (n)) %(Int_mod_range)%
-. not n = 0 => m = (m div n) * n + (m mod n) %(Int_mod__div_def)%
+. (m mod n < abs (n)) if not n = 0 %(Int_mod_range)%
+. m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
@@ -134,7 +134,7 @@ forall m, n, r:Int; a, b:Nat
 . def (m div n) <=> not n = 0 %(Int_div_dom)%
 . def (m quot n) <=> not n = 0 %(Int_quot_dom)%
 . def (m rem n) <=> not n = 0 %(Int_rem_dom)%
-. not n = 0 => m = (m quot n) * n + (m rem n) %(Int_quot_rem)%
+. m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%
 %% end
 generated type Rat ::= __/__(Int; Pos)
 forall i, j:Int; p, q:Pos
@@ -159,7 +159,7 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 . x - y = x + (- y) %(Rat_sub_def)%
 . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%
 . not def x / 0 %(Rat_divide_def1)%
-. not y = 0 => (x / y = z <=> z = x * y) %(Rat_divide_def2)%
+. (x / y = z <=> z = x * y) if not y = 0 %(Rat_divide_def2)%
 . + x = x %(Rat_plus_def)%
 . - (i / p) = (- i) / p %(Rat_minus_def)%
 . abs (i / p) = abs (i) / p %(Rat_abs_def)%
@@ -171,7 +171,7 @@ forall p, q:Pos; n:Nat; i, j:Int; x, y, z:Rat
 %% then %implies
 forall i, j:Int; p, q:Pos
 . (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
-. not j = 0 => (i / p) / (j / q) = (i / p) * (q / j)
+. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
 %(Rat_divide_rule)%
 pred __<__ : a * a
 ops __a : b;
@@ -314,8 +314,8 @@ var x:s
 . not p \/ not q (x) \/ (q (x))
 . not p /\ not q (x) /\ (q (x)) =>
       not p \/ not q (x) \/ (q (x)) => not p /\ not q (x) /\ (q (x))
-. not p /\ not q (x) /\ (q (x)) =>
-      not p \/ not q (x) \/ (q (x)) => not p /\ not q (x) /\ (q (x))
+. not p /\ not q (x) /\ (q (x)) if not p \/ not q (x) \/ (q (x)) if
+      not p /\ not q (x) /\ (q (x))
 forall x:s
 . not p /\ not q (x) /\ (q (x)) <=>
       exists x:s
@@ -1379,3 +1379,7 @@ ops '\n': Char = NL; %(slash_n)%
     '\f': Char = FF; %(slash_f)%
     '\a': Char = BEL; %(slash_a)%
     '\?': Char = '?' %(slash_quest)%
+sort a
+op __||__ : a * a -> a, assoc
+op b : a
+. b || b || b = b
