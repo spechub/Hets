@@ -14,6 +14,8 @@ module Taxonomy.OntoParser (
 
 where
 
+import Data.Maybe
+
 import Taxonomy.MMiSSOntology
 --import Computation hiding (try)
 import Text.ParserCombinators.Parsec
@@ -97,7 +99,7 @@ generateOntology onto [] = hasValue(onto)
 generateOntology onto (f:fs) =
   let weOnto = case f of
 		ClassDeclFrag (ClassDecl name defaultText super) -> 
-		  insertClass onto name defaultText super Nothing
+		  insertClass onto name defaultText (maybeToList super) Nothing
 
 		ObjectDeclFrag (ObjectDecl name defaultText instanceOf) -> 
 		  insertObject onto name defaultText instanceOf

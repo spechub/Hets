@@ -4,7 +4,6 @@ module Taxonomy.MMiSSOntologyGraph (
 )
 where
 
-
 import Data.FiniteMap
 import Data.List
 import Control.Monad
@@ -26,7 +25,6 @@ import qualified Taxonomy.AbstractGraphView as A
 
 
 displayClassGraph :: MMiSSOntology -> Maybe String -> IO ()
-
 displayClassGraph onto startClass =
   do main <- H.initHTk []
      ginfo <- A.initgraphs
@@ -206,7 +204,7 @@ showObjectsForVisible onto gv (name,descr,gid) =
                                              (map (context oldGraph) (nodes oldGraph)))
                 objectList = map (\(nid,_) -> nid) 
                                  (filter (findObjectsOfClass classesInOldGraph) 
-                                            (getTypedNodes (getClassGraph onto) OntoObject))
+                                            (getTypedNodes (getClassGraph onto) [OntoObject]))
                 objectGr = nfilter (`elem` objectList) (getClassGraph onto)
             updateDaVinciGraph (makeObjectGraph oldGraph (getPureClassGraph (getClassGraph onto)) objectGr) gid gv
             A.redisplay gid gv
@@ -219,7 +217,7 @@ showWholeObjectGraph :: MMiSSOntology -> A.GraphInfo -> (String, Int, Int) -> IO
 showWholeObjectGraph onto gv (name,descr,gid) = 
   do oldGv <- readIORef gv
      (A.Result descr error) <- purgeGraph gid gv
-     let objectList = map (\(nid,_) -> nid) (getTypedNodes (getClassGraph onto) OntoObject)
+     let objectList = map (\(nid,_) -> nid) (getTypedNodes (getClassGraph onto) [OntoObject])
          objectGraph = nfilter (`elem` objectList) (getClassGraph onto)
      updateDaVinciGraph (makeObjectGraph empty (getClassGraph onto) objectGraph) gid gv
      case error of
@@ -691,11 +689,13 @@ myGetNodes gid gv =
        Nothing -> return([])
 
 
-getPureClassGraph :: Gr (String,String,OntoObjectType) String -> Gr (String,String,OntoObjectType) String
+getPureClassGraph :: Gr (String,String,OntoObjectType) String 
+                  -> Gr (String,String,OntoObjectType) String
 -- getPureClassGraph g = efilter (\(_,_,edgeType) -> edgeType == "isa") g
 getPureClassGraph g = 
-  let classNodeList = map (\(nid,_) -> nid) (getTypedNodes g OntoClass)
-  in nfilter (`elem` classNodeList) g
+    let classNodeList = map (\(nid,_) -> nid) 
+                            (getTypedNodes g [OntoClass,OntoPredicate])
+    in nfilter (`elem` classNodeList) g
 
 
 nfilter :: DynGraph gr => (Node -> Bool) -> gr a b -> gr a b 
@@ -707,10 +707,11 @@ nfilter f = ufold cfilter empty
                          s' = filter (\(b,w)->f w) s
 
 
-getTypedNodes :: Gr (String,String,OntoObjectType) String -> OntoObjectType 
-                 -> [LNode (String, String, OntoObjectType)]
-getTypedNodes g t = 
-  map labNode' (gsel (\(_,_,(_,_,objType),_) -> objType == t) g)
+getTypedNodes :: Gr (String,String,OntoObjectType) String 
+              -> [OntoObjectType] 
+              -> [LNode (String, String, OntoObjectType)]
+getTypedNodes g ts = 
+  map labNode' (gsel (\(_,_,(_,_,objType),_) -> objType `elem` ts) g)
 
 {--
 createRelationDialog :: H.HTk -> [A.RelationViewSpec] -> IO()
