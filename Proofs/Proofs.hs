@@ -733,10 +733,9 @@ theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
       cs = [context l dgraph|l<- leaves]
       labs = [lab' c|c <- cs]
   (auxGraph,changes) <- handleLeaves dgraph leaves
---  (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
-  let furtherChanges = []
-      finalGraph = auxGraph
-      finalChanges = removeContraryChanges (furtherChanges++changes)
+  (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
+  let finalChanges = removeContraryChanges (changes++furtherChanges)
+  putStrLn (showChanges finalChanges)
   return (globalContext, libEnv,
 	  ([TheoremHideShift],finalChanges):history, finalGraph)
 
@@ -781,7 +780,7 @@ hasIngoingHidingDef dgraph node =
     globalDefEdges = filter isGlobalDef inGoingEdges
     next = map getSourceNode globalDefEdges
 
--- was machen, wenn der Knoten ein DGRef ist??
+
 handleLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
 handleLeaves dgraph [] = return (dgraph,[])
 handleLeaves dgraph (node:list) = do
@@ -837,7 +836,102 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
 -- was machen, wenn der Knoten ein DGRef ist??
 handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
 handleNonLeaves dgraph [] = return (dgraph,[])
-handleNonLeaves dgraph (node:list) = undefined
+handleNonLeaves dgraph (node:list) = do
+  let nodeLab = lab' (context node dgraph)
+  case dgn_nf nodeLab of
+    Just _ -> handleNonLeaves dgraph list
+    Nothing -> do
+      (auxGraph, changes) <- createNfsForPredecessors dgraph node
+      let newDefInEdges = [edge| edge <- inn auxGraph node,
+			  isGlobalDef edge || isHidingDef edge]
+          newPredecessors = [src| (src,_,_) <- newDefInEdges]
+          diagram = makeDiagram auxGraph (node:newPredecessors) newDefInEdges
+          Result diags res = gWeaklyAmalgamableCocone diagram
+      case res of
+        Nothing -> do sequence $ map (putStrLn . show) diags
+		      (finalGraph, furtherChanges) <- 
+			  handleNonLeaves auxGraph list
+		      return (finalGraph, changes ++ furtherChanges)
+        Just (sign,map) -> do
+          let [nfNode] = newNodes 0 auxGraph
+              nfDGNode = (nfNode, DGNode {dgn_name = dgn_name nodeLab,
+					  dgn_sign = dgn_sign nodeLab, 
+					  --actually: sign
+					  dgn_sens = dgn_sens nodeLab,
+					  dgn_nf = Just nfNode,
+					  dgn_sigma = dgn_sigma nodeLab,
+					  dgn_origin = DGProof
+					 })
+          (auxGraph', changes') <- 
+	      setNfOfNode (insNode nfDGNode auxGraph) node nfNode
+          let (auxGraph'',changes'') = insertEdgesToNf auxGraph' nfNode map
+          (finalGraph,furtherChanges) <- handleNonLeaves auxGraph'' list
+          return (finalGraph, changes ++ [InsertNode nfDGNode]
+		              ++ changes' ++ changes'' ++ furtherChanges)
+
+createNfsForPredecessors :: DGraph -> Node -> IO (DGraph, [DGChange])
+createNfsForPredecessors dgraph node = do
+  handleNonLeaves dgraph predecessors
+
+  where
+    defInEdges =  [edge| edge@(src,_,_) <- inn dgraph node,
+		   (isGlobalDef edge || isHidingDef edge) 
+		   && node /= src]
+    predecessors = [src| (src,_,_) <- defInEdges]
+
+
+insertEdgesToNf :: DGraph -> Node -> (Map.Map Node GMorphism)
+		   -> (DGraph,[DGChange])
+insertEdgesToNf dgraph nfNode map =
+    insertEdgesToNfAux  dgraph nfNode (Map.toList map)
+    
+insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)] 
+		   -> (DGraph,[DGChange])
+insertEdgesToNfAux dgraph _ [] = (dgraph,[])
+insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
+  (finalGraph, (InsertEdge ledge):changes)
+
+  where
+    ledge = (node, nfNode, DGLink {dgl_morphism = morph,
+				   dgl_type = GlobalDef,
+				   dgl_origin = DGProof
+				  })    
+    auxGraph = insEdge ledge dgraph
+    (finalGraph,changes) = insertEdgesToNfAux auxGraph nfNode list
+
+-- was machen, wenn der Knoten ein DGRef ist??
+setNfOfNode :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
+setNfOfNode dgraph node nf_node = do
+  (finalGraph,changes) <- adoptEdges auxGraph node newNode
+  return (delNode node finalGraph,
+	  ((InsertNode newDgNode):changes)++[DeleteNode oldDgNode])
+
+  where
+    nodeLab = lab' (context node dgraph)
+    oldDgNode = labNode' (context node dgraph)
+    [newNode] = newNodes 0 dgraph
+    newDgNode = (newNode, DGNode {dgn_name = dgn_name nodeLab,
+				  dgn_sign = dgn_sign nodeLab,
+				  dgn_sens = dgn_sens nodeLab,
+				  dgn_nf = Just nf_node,
+				  dgn_sigma = dgn_sigma nodeLab,
+				  dgn_origin = DGProof
+				 })
+    auxGraph = insNode newDgNode dgraph
+
+
+makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagram = makeDiagramAux empty
+
+makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagramAux diagram _ [] [] = diagram
+makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
+  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
+    where morphEdge = if isHidingDef edge then (tgt,src,dgl_morphism lab) 
+		       else (src,tgt,dgl_morphism lab)
+makeDiagramAux diagram dgraph (node:list) edges =
+  makeDiagramAux (insNode sigNode diagram) dgraph list edges
+    where sigNode = (node, dgn_sign (lab' (context node dgraph)))
 
 -- ----------------------------------------------
 -- methods that keep the change list clean
