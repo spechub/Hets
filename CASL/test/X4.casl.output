@@ -1,4 +1,4 @@
 (sorts Int, Nat
  sorts Nat < Int
  op 0 : Nat
- op __-__ : Nat * Nat -> Int,[  . forall a:Nat . def a - 0 ])
+ op __-__ : Nat * Nat -> Int,[  . forall a: Nat . def a - 0 ])

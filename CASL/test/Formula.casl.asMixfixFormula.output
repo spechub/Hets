@@ -6,11 +6,11 @@
 *** Error 6.3, unexpected mixfix token: #=
 *** Error 7.10, unexpected mixfix token: predy
 *** Error 7.1, unexpected mixfix token: exists1
- . exists predy:bb . a
- . exists! a:v . x
- . exists! a:v . x
- . exists! a:v . x
- . forall a:v . x
+ . exists predy: bb . a
+ . exists! a: v . x
+ . exists! a: v . x
+ . exists! a: v . x
+ . forall a: v . x
  . a if b
  . def x
 *** Error 15.4, unexpected mixfix token: #
@@ -29,4 +29,4 @@
  . a if b if c if d
  . a <=> b
  . a /\ b if b \/ c if not c if def d
- . m div n = r <=> (exists s:Nat . m = n * r + s /\ s < n)
+ . m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n)

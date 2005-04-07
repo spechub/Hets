@@ -1,4 +1,4 @@
 (sorts s, t
  sorts s < s, t; t < s, t
  op g : s -> t
- op g : s ->? s,[  . forall x:s . def g(x) ])
+ op g : s ->? s,[  . forall x: s . def g(x) ])

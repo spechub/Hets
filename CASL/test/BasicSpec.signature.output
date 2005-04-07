@@ -1200,7 +1200,7 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-*** Error 90.19, no typing for: (suc(0)) : Pos
+*** Error 90.19, no typing for: suc(0): Pos
 *** Error 261.9, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
@@ -1277,10 +1277,10 @@ pred q : s
 *** Error 343.45, no operation with 2 arguments found for '__E__'
 *** Error 351.11, wrong number of places '__and'__'
 *** Error , ambiguous term
-  (op a : s) : s
-  (var a : s) : s
+  (op a : s): s
+  (var a : s): s
 *** Error , ambiguous term
-  (op a : s) : s
-  (var a : s) : s
+  (op a : s): s
+  (var a : s): s
 *** Error 426.26, no predicate with 0 arguments found for 'e'
 *** Error 427.12, no predicate with 0 arguments found for 'e'

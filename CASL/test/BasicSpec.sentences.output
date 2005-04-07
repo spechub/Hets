@@ -1199,277 +1199,285 @@
  pred odd : Int
  pred odd : Nat
  pred p : ()
- pred q : s,[  . forall X1:Nat
+ pred q : s,[  . forall X1: Nat
                      . pre(suc(X1)) = X1 %(ga_selector_pre)%,
-               . forall X1:Nat; Y1:Nat
+               . forall X1: Nat; Y1: Nat
                      . suc(X1) = suc(Y1) <=> X1 = Y1 %(ga_injective_suc)%,
-               . forall Y1:Nat . not 0 = suc(Y1) %(ga_disjoint_0_suc)%,
+               . forall Y1: Nat . not 0 = suc(Y1) %(ga_disjoint_0_suc)%,
                . not def pre(0) %(ga_selector_undef_pre_0)%,
               generated{sort Nat; op 0 : Nat;
                                   op suc : Nat -> Nat} %(ga_generated_Nat)%,
-               . forall n:Nat . 0 <= n %(Nat_leq_def1)%,
-               . forall n:Nat . not suc(n) <= 0 %(Nat_leq_def2)%,
-               . forall m:Nat; n:Nat
+               . forall n: Nat . 0 <= n %(Nat_leq_def1)%,
+               . forall n: Nat . not suc(n) <= 0 %(Nat_leq_def2)%,
+               . forall m: Nat; n: Nat
                      . suc(m) <= suc(n) <=> m <= n %(Nat_leq_def3)%,
-               . forall m:Nat; n:Nat . m >= n <=> n <= m %(Nat_geq_def)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat . m >= n <=> n <= m %(Nat_geq_def)%,
+               . forall m: Nat; n: Nat
                      . m < n <=> m <= n /\ not m = n %(Nat_less_def)%,
-               . forall m:Nat; n:Nat . m > n <=> m < n %(Nat_greater_def)%,
-               . forall m:Nat . 0 + m = m %(Nat_add_0)%,
-               . forall m:Nat; n:Nat . suc(n) + m = suc(n + m) %(Nat_add_suc)%,
-               . forall m:Nat . 0 * m = 0 %(Nat_mult_0)%,
-               . forall m:Nat; n:Nat . suc(n) * m = n * m + m %(Nat_mult_suc)%,
-               . forall m:Nat . m ^ 0 = 1 %(Nat_power_0)%,
-               . forall m:Nat; n:Nat . m ^ suc(n) = m * m ^ n %(Nat_power_suc)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat . m > n <=> m < n %(Nat_greater_def)%,
+               . forall m: Nat . 0 + m = m %(Nat_add_0)%,
+               . forall m: Nat; n: Nat . suc(n) + m = suc(n + m) %(Nat_add_suc)%,
+               . forall m: Nat . 0 * m = 0 %(Nat_mult_0)%,
+               . forall m: Nat; n: Nat . suc(n) * m = n * m + m %(Nat_mult_suc)%,
+               . forall m: Nat . m ^ 0 = 1 %(Nat_power_0)%,
+               . forall m: Nat; n: Nat
+                     . m ^ suc(n) = m * m ^ n %(Nat_power_suc)%,
+               . forall m: Nat; n: Nat
                      . min(m, n) = m when m <= n else n %(Nat_min_def)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat
                      . max(m, n) = n when m <= n else m %(Nat_max_def)%,
-               . forall m:Nat . + m = m %(plus_def)%,
-               . forall n:Nat . abs(n) = n %(Nat_abs)%,
-               . forall m:Nat . odd(m) <=> not even(m) %(Nat_odd_def)%,
+               . forall m: Nat . + m = m %(plus_def)%,
+               . forall n: Nat . abs(n) = n %(Nat_abs)%,
+               . forall m: Nat . odd(m) <=> not even(m) %(Nat_odd_def)%,
                . even(0) %(Nat_even_0)%,
-               . forall m:Nat . even(suc(m)) <=> odd(m) %(Nat_even_suc)%,
+               . forall m: Nat . even(suc(m)) <=> odd(m) %(Nat_even_suc)%,
                . 0 ! = 1 %(Nat_factorial_0)%,
-               . forall n:Nat . suc(n) ! = suc(n) * n ! %(Nat_factorial_suc)%,
-               . forall m:Nat; n:Nat; r:Nat
+               . forall n: Nat . suc(n) ! = suc(n) * n ! %(Nat_factorial_suc)%,
+               . forall m: Nat; n: Nat; r: Nat
                      . m -? n = r <=> m = r + n %(Nat_sub_def)%,
-               . forall m:Nat . not def m /? 0 %(Nat_divide_0)%,
-               . forall m:Nat; n:Nat; r:Nat
+               . forall m: Nat . not def m /? 0 %(Nat_divide_0)%,
+               . forall m: Nat; n: Nat; r: Nat
                      . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%,
-               . forall m:Nat; n:Nat; r:Nat
+               . forall m: Nat; n: Nat; r: Nat
                      . m div n = r <=>
-                           (exists s:Nat . m = n * r + s /\ s < n) %(Nat_div)%,
-               . forall m:Nat; n:Nat; s:Nat
+                           (exists s: Nat . m = n * r + s /\ s < n) %(Nat_div)%,
+               . forall m: Nat; n: Nat; s: Nat
                      . m mod n = s <=>
-                           (exists r:Nat . m = n * r + s /\ s < n) %(Nat_mod)%,
-               . forall m:Nat; n:Nat . m quot n = m div n %(Nat_quot)%,
-               . forall m:Nat; n:Nat . m rem n = m mod n %(Nat_rem)%,
+                           (exists r: Nat . m = n * r + s /\ s < n) %(Nat_mod)%,
+               . forall m: Nat; n: Nat . m quot n = m div n %(Nat_quot)%,
+               . forall m: Nat; n: Nat . m rem n = m mod n %(Nat_rem)%,
                . 1 = suc(0) %(Nat_1_def)%,  . 2 = suc(1) %(Nat_2_def)%,
                . 3 = suc(2) %(Nat_3_def)%,  . 4 = suc(3) %(Nat_4_def)%,
                . 5 = suc(4) %(Nat_5_def)%,  . 6 = suc(5) %(Nat_6_def)%,
                . 7 = suc(6) %(Nat_7_def)%,  . 8 = suc(7) %(Nat_8_def)%,
                . 9 = suc(8) %(Nat_9_def)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat
                      . m @@ n = m * suc(9) + n %(Nat_decimal_def)%,
-               . forall p:Nat . p in Pos <=> p > 0,
-               . forall x:Nat; y:Nat . min(x, y) = min(y, x) %(ga_comm_min)%,
-               . forall x:Nat; y:Nat . max(x, y) = max(y, x) %(ga_comm_max)%,
-               . forall x:Nat; y:Nat; z:Nat
+               . forall p: Nat . p in Pos <=> p > 0,
+               . forall x: Nat; y: Nat . min(x, y) = min(y, x) %(ga_comm_min)%,
+               . forall x: Nat; y: Nat . max(x, y) = max(y, x) %(ga_comm_max)%,
+               . forall x: Nat; y: Nat; z: Nat
                      . min(x, min(y, z)) = min(min(x, y), z) %(ga_assoc_min)%,
-               . forall x:Nat; y:Nat; z:Nat
+               . forall x: Nat; y: Nat; z: Nat
                      . max(x, max(y, z)) = max(max(x, y), z) %(ga_assoc_max)%,
-               . forall m:Nat; n:Nat . def m -? n <=> m >= n %(Nat_sub_dom)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat . def m -? n <=> m >= n %(Nat_sub_dom)%,
+               . forall m: Nat; n: Nat
                      . def m /? n <=> m mod n = 0 %(Nat_divide_dom)%,
-               . forall m:Nat; n:Nat . def m div n <=> not n = 0 %(Nat_div_dom)%,
-               . forall m:Nat; n:Nat . def m mod n <=> not n = 0 %(Nat_mod_dom)%,
-               . forall m:Nat; n:Nat
+               . forall m: Nat; n: Nat
+                     . def m div n <=> not n = 0 %(Nat_div_dom)%,
+               . forall m: Nat; n: Nat
+                     . def m mod n <=> not n = 0 %(Nat_mod_dom)%,
+               . forall m: Nat; n: Nat
                      . def m quot n <=> not n = 0 %(Nat_quot_dom)%,
-               . forall m:Nat; n:Nat . def m rem n <=> not n = 0 %(Nat_rem_dom)%,
-               . forall r:Nat; s:Nat; t:Nat
+               . forall m: Nat; n: Nat
+                     . def m rem n <=> not n = 0 %(Nat_rem_dom)%,
+               . forall r: Nat; s: Nat; t: Nat
                      . (r + s) * t = r * t + s * t %(Nat_distr)%,
-               . forall m:Nat . max(m, 0) = m %(Nat_max_unit)%,
-               . forall m:Nat . min(m, 0) = 0 %(Nat_min_0)%,
+               . forall m: Nat . max(m, 0) = m %(Nat_max_unit)%,
+               . forall m: Nat . min(m, 0) = 0 %(Nat_min_0)%,
               generated{sort Int; op __-__ : Nat *
                                              Nat -> Int} %(ga_generated_Int)%,
-               . forall a:Nat; b:Nat; c:Nat; d:Nat
-                     . a - b = c : Nat - d : Nat <=>
-                           a : Nat + d : Nat = c + b %(Int_equality)%,
-               . forall a:Nat . a = a - 0 %(Int_Nat_embedding)%,
-               . forall a:Nat; b:Nat; c:Nat; d:Nat
-                     . (a - b) + (c : Int - d : Int) =
-                           (a : Nat + c : Nat) - (b + d) %(Int_add_def)%,
-               . forall a:Nat; b:Nat; c:Nat; d:Nat
-                     . (a - b) * (c : Int - d : Int) =
-                           (a : Nat * c : Nat + b * d) - (b * c + a : Nat
-                                                                  * d : Nat) %(Int_mult_def)%,
-               . forall m:Int; n:Int . m - n = m + - n %(Int_sub_def)%,
-               . forall m:Int . + m = m %(Int_pos_def)%,
-               . forall a:Nat; b:Nat . - (a - b) = b - a %(Int_neg_def)%,
-               . forall m:Int
+               . forall a: Nat; b: Nat; c: Nat; d: Nat
+                     . a - b = c: Nat - d: Nat <=>
+                           a: Nat + d: Nat = c + b %(Int_equality)%,
+               . forall a: Nat . a = a - 0 %(Int_Nat_embedding)%,
+               . forall a: Nat; b: Nat; c: Nat; d: Nat
+                     . (a - b) + (c: Int - d: Int) =
+                           (a: Nat + c: Nat) - (b + d) %(Int_add_def)%,
+               . forall a: Nat; b: Nat; c: Nat; d: Nat
+                     . (a - b) * (c: Int - d: Int) =
+                           (a: Nat * c: Nat + b * d) - (b * c + a: Nat
+                                                                * d: Nat) %(Int_mult_def)%,
+               . forall m: Int; n: Int . m - n = m + - n %(Int_sub_def)%,
+               . forall m: Int . + m = m %(Int_pos_def)%,
+               . forall a: Nat; b: Nat . - (a - b) = b - a %(Int_neg_def)%,
+               . forall m: Int
                      . sign(m) =
                            0 when m = 0 else 1 when m > 0 else - 1 %(Int_sign_def)%,
-               . forall m:Int; n:Int . m <= n <=> n - m in Nat %(Int_leq_def)%,
-               . forall m:Int; n:Int . m >= n <=> n <= m %(Int_geq_def)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int . m <= n <=> n - m in Nat %(Int_leq_def)%,
+               . forall m: Int; n: Int . m >= n <=> n <= m %(Int_geq_def)%,
+               . forall m: Int; n: Int
                      . m < n <=> m <= n /\ not m = n %(Int_less_def)%,
-               . forall m:Int; n:Int . m > n <=> m < n %(Int_greater_def)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int . m > n <=> m < n %(Int_greater_def)%,
+               . forall m: Int; n: Int
                      . min(m, n) = m when m <= n else n %(Int_min_def)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
                      . max(m, n) = n when m <= n else m %(Int_max_def)%,
-               . forall m:Int . abs(m) = - m if m < 0 %(Int_abs_def)%,
-               . forall a:Nat
+               . forall m: Int . abs(m) = - m if m < 0 %(Int_abs_def)%,
+               . forall a: Nat
                      . - 1 ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%,
-               . forall m:Int; a:Nat
+               . forall m: Int; a: Nat
                      . m ^ a = sign(m) ^ a * abs(m) ^ a %(Int_power_def)%,
-               . forall m:Int . even(m) <=> even(abs(m)) %(Int_even_def)%,
-               . forall m:Int . odd(m) <=> not even(m) %(Int_odd_def)%,
-               . forall m:Int; n:Int
+               . forall m: Int . even(m) <=> even(abs(m)) %(Int_even_def)%,
+               . forall m: Int . odd(m) <=> not even(m) %(Int_odd_def)%,
+               . forall m: Int; n: Int
                      . m /? n = sign(m) * sign(n) * (abs(m) /? abs(n)) %(Int_divide)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
                      . (m mod n) < abs(n) if not n = 0 %(Int_mod_range)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
                      . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%,
-               . forall m:Int . not def m mod 0 %(Int_mod_zero)%,
-               . forall m:Int . not def m div 0 %(Int_div_zero)%,
-               . forall m:Int; n:Int
+               . forall m: Int . not def m mod 0 %(Int_mod_zero)%,
+               . forall m: Int . not def m div 0 %(Int_div_zero)%,
+               . forall m: Int; n: Int
                      . m quot n =
                            sign(m) * sign(n) * (abs(m) quot abs(n)) %(Int_quot_def)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
                      . m rem n =
                            sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%,
-               . forall a:Nat; b:Nat
+               . forall a: Nat; b: Nat
                      . def a -? b => a -? b = a - b %(Int_Nat_sub_compat)%,
-               . forall m:Int . m = sign(m) * abs(m) %(Int_abs_decomp)%,
-               . forall m:Int . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%,
-               . forall m:Int; n:Int; r:Int
+               . forall m: Int . m = sign(m) * abs(m) %(Int_abs_decomp)%,
+               . forall m: Int . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%,
+               . forall m: Int; n: Int; r: Int
                      . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
                      . def m /? n <=> m mod n = 0 %(Int_divide_dom2)%,
-               . forall m:Int; n:Int . def m mod n <=> not n = 0 %(Int_mod_dom)%,
-               . forall m:Int; n:Int . m mod n = m mod abs(n) %(Int_mod_abs)%,
-               . forall m:Int; n:Int . def m div n <=> not n = 0 %(Int_div_dom)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
+                     . def m mod n <=> not n = 0 %(Int_mod_dom)%,
+               . forall m: Int; n: Int . m mod n = m mod abs(n) %(Int_mod_abs)%,
+               . forall m: Int; n: Int
+                     . def m div n <=> not n = 0 %(Int_div_dom)%,
+               . forall m: Int; n: Int
                      . def m quot n <=> not n = 0 %(Int_quot_dom)%,
-               . forall m:Int; n:Int . def m rem n <=> not n = 0 %(Int_rem_dom)%,
-               . forall m:Int; n:Int
+               . forall m: Int; n: Int
+                     . def m rem n <=> not n = 0 %(Int_rem_dom)%,
+               . forall m: Int; n: Int
                      . m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%,
               generated{sort Rat; op __/__ : Int *
                                              Pos -> Rat} %(ga_generated_Rat)%,
-               . forall i:Int; j:Int; p:Pos; q:Pos
+               . forall i: Int; j: Int; p: Pos; q: Pos
                      . i / p = j / q <=> i * q = j * p %(Rat_equality)%,
-               . forall i:Int . i / 1 = i %(embeddingIntToRat)%,
-               . forall p:Pos; q:Pos; i:Int; j:Int
+               . forall i: Int . i / 1 = i %(embeddingIntToRat)%,
+               . forall p: Pos; q: Pos; i: Int; j: Int
                      . (i / p) <= (j / q) <=> (i * q) <= (j * p) %(Rat_leq_def)%,
-               . forall x:Rat; y:Rat . x >= y <=> y <= x %(Rat_geq_def)%,
-               . forall x:Rat; y:Rat
+               . forall x: Rat; y: Rat . x >= y <=> y <= x %(Rat_geq_def)%,
+               . forall x: Rat; y: Rat
                      . x < y <=> x <= y /\ not x = y %(Rat_less_def)%,
-               . forall x:Rat; y:Rat . x > y <=> y < x %(Rat_greater_def)%,
-               . forall p:Pos; q:Pos; i:Int; j:Int
+               . forall x: Rat; y: Rat . x > y <=> y < x %(Rat_greater_def)%,
+               . forall p: Pos; q: Pos; i: Int; j: Int
                      . (i / p) + (j / q) = (i * q + j * p) / (p * q) %(Rat_add_def)%,
-               . forall x:Rat; y:Rat . x - y = x + - y %(Rat_sub_def)%,
-               . forall p:Pos; q:Pos; i:Int; j:Int
+               . forall x: Rat; y: Rat . x - y = x + - y %(Rat_sub_def)%,
+               . forall p: Pos; q: Pos; i: Int; j: Int
                      . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%,
-               . forall x:Rat . not def x / 0 %(Rat_divide_def1)%,
-               . forall x:Rat; y:Rat; z:Rat
+               . forall x: Rat . not def x / 0 %(Rat_divide_def1)%,
+               . forall x: Rat; y: Rat; z: Rat
                      . (x / y = z <=> z = x * y) if not y = 0 %(Rat_divide_def2)%,
-               . forall x:Rat . + x = x %(Rat_plus_def)%,
-               . forall p:Pos; i:Int . - (i / p) = - i / p %(Rat_minus_def)%,
-               . forall p:Pos; i:Int . abs(i / p) = abs(i) / p %(Rat_abs_def)%,
-               . forall x:Rat . x ^ 0 = 1 %(Rat_power_0)%,
-               . forall n:Nat; x:Rat . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%,
-               . forall p:Pos; x:Rat . x ^ - p = 1 / (x ^ p) %(Rat_power_neg)%,
-               . forall x:Rat; y:Rat
+               . forall x: Rat . + x = x %(Rat_plus_def)%,
+               . forall p: Pos; i: Int . - (i / p) = - i / p %(Rat_minus_def)%,
+               . forall p: Pos; i: Int . abs(i / p) = abs(i) / p %(Rat_abs_def)%,
+               . forall x: Rat . x ^ 0 = 1 %(Rat_power_0)%,
+               . forall n: Nat; x: Rat
+                     . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%,
+               . forall p: Pos; x: Rat . x ^ - p = 1 / (x ^ p) %(Rat_power_neg)%,
+               . forall x: Rat; y: Rat
                      . min(x, y) = x when x <= y else y %(Rat_min_def)%,
-               . forall x:Rat; y:Rat
+               . forall x: Rat; y: Rat
                      . max(x, y) = y when x <= y else x %(Rat_max_def)%,
-               . forall i:Int; j:Int; p:Pos; q:Pos
+               . forall i: Int; j: Int; p: Pos; q: Pos
                      . (i / p) / (j / q) = (i / p) * (q / j) if
                            not j = 0 %(Rat_divide_rule)%,
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall a:s . (var a : s) = (var a : s),
-               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall a: s . (var a : s) = (var a : s),
+               . forall X1: a; X2: t; X3: t; X4: t; X5: t
                      . a(c(X1, X2, X3, X4, X5)) = X2 %(ga_selector_a)%,
-               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+               . forall X1: a; X2: t; X3: t; X4: t; X5: t
                      . b(c(X1, X2, X3, X4, X5)) = X3 %(ga_selector_b)%,
-               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+               . forall X1: a; X2: t; X3: t; X4: t; X5: t
                      . a(c(X1, X2, X3, X4, X5)) = X4 %(ga_selector_a)%,
-               . forall X1:a; X2:t; X3:t; X4:t; X5:t
+               . forall X1: a; X2: t; X3: t; X4: t; X5: t
                      . d(c(X1, X2, X3, X4, X5)) = X5 %(ga_selector_d)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
-               . forall X1:a; X2:t; X3:t; X4:t; Y1:a; Y2:t; Y3:t; Y4:t
+               . forall X1: a; X2: t; X3: t; X4: t; Y1: a; Y2: t; Y3: t; Y4: t
                      . c(X1, X2, X3, X4) = c(Y1, Y2, Y3, Y4) <=>
                            X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4 %(ga_injective_c)%,
-               . forall X1:a; Y1:a
+               . forall X1: a; Y1: a
                      . c(X1) = c(Y1) <=> X1 = Y1 %(ga_injective_c)%,
-               . forall x:s
+               . forall x: s
                      . not (x in s2 /\ x in s1) %(ga_disjoint_sorts_s2_s1)%,
-               . not c : s in s2 %(ga_disjoint_c_sort_s2)%,
-               . not c : s in s1 %(ga_disjoint_c_sort_s1)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . not c: s in s2 %(ga_disjoint_c_sort_s2)%,
+               . not c: s in s1 %(ga_disjoint_c_sort_s1)%,
+               . forall X1: a; X2: t; X3: t; X4: t
                      . not c(X1, X2, X3, X4) in s2 %(ga_disjoint_c_sort_s2)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . not c(X1, X2, X3, X4) in s1 %(ga_disjoint_c_sort_s1)%,
-               . forall X1:a . not c(X1) in s2 %(ga_disjoint_c_sort_s2)%,
-               . forall X1:a . not c(X1) in s1 %(ga_disjoint_c_sort_s1)%,
-               . forall Y1:a; Y2:t; Y3:t; Y4:t
+               . forall X1: a . not c(X1) in s2 %(ga_disjoint_c_sort_s2)%,
+               . forall X1: a . not c(X1) in s1 %(ga_disjoint_c_sort_s1)%,
+               . forall Y1: a; Y2: t; Y3: t; Y4: t
                      . not c = c(Y1, Y2, Y3, Y4) %(ga_disjoint_c_c)%,
-               . forall Y1:a . not c = c(Y1) %(ga_disjoint_c_c)%,
-               . forall X1:a; X2:t; X3:t; X4:t; Y1:a
+               . forall Y1: a . not c = c(Y1) %(ga_disjoint_c_c)%,
+               . forall X1: a; X2: t; X3: t; X4: t; Y1: a
                      . not c(X1, X2, X3, X4) = c(Y1) %(ga_disjoint_c_c)%,
                . not def a(c) %(ga_selector_undef_a_c)%,
-               . forall X1:a . not def a(c(X1)) %(ga_selector_undef_a_c)%,
+               . forall X1: a . not def a(c(X1)) %(ga_selector_undef_a_c)%,
                . not def b(c) %(ga_selector_undef_b_c)%,
-               . forall X1:a . not def b(c(X1)) %(ga_selector_undef_b_c)%,
+               . forall X1: a . not def b(c(X1)) %(ga_selector_undef_b_c)%,
                . not def d(c) %(ga_selector_undef_d_c)%,
-               . forall X1:a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
+               . forall X1: a . not def d(c(X1)) %(ga_selector_undef_d_c)%,
               generated{sort s; op c : s; op c : a ->? s;
                                 op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                 op g__inj : s2 -> s} %(ga_generated_s)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
               generated{sort s; op c : s; op c : a ->? s;
                                 op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                 op g__inj : s2 -> s} %(ga_generated_s)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . a(c(X1, X2, X3, X4)) = X2 %(ga_selector_a)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . b(c(X1, X2, X3, X4)) = X3 %(ga_selector_b)%,
-               . forall X1:a; X2:t; X3:t; X4:t
+               . forall X1: a; X2: t; X3: t; X4: t
                      . d(c(X1, X2, X3, X4)) = X4 %(ga_selector_d)%,
               generated{sort s, t; op c : s; op c : a ->? s;
                                    op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                    op g__inj : s2 -> s; op g__inj : t -> s} %(ga_generated_s_t)%,
                . true %(The true formula)%,  . true %(and this)%,
-               . forall x:b . x in a <=> true,
-               . forall x:s; y:s; z:s
+               . forall x: b . x in a <=> true,
+               . forall x: s; y: s; z: s
                      . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
-               . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
-               . forall x:s . c(x, x) = x %(ga_idem_c)%,
-               . forall x:s; y:s; z:s
+               . forall x: s; y: s . c(x, y) = c(y, x) %(ga_comm_c)%,
+               . forall x: s . c(x, x) = x %(ga_idem_c)%,
+               . forall x: s; y: s; z: s
                      . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
-               . forall x:s; y:s . c(x, y) = c(y, x) %(ga_comm_c)%,
-               . forall x:s . c(x, x) = x %(ga_idem_c)%,  . a : s = a : s,
-               . forall x, y:s; z:t . c(x, y, z) = a,  . a : s = a : s,
-               . forall x, y:s; z:t . c(x, y, z) = a,
-               . forall x, y:s; z:t . c(x, y, z) <=> false,
-               . forall X1:Data1; X2:Data2
+               . forall x: s; y: s . c(x, y) = c(y, x) %(ga_comm_c)%,
+               . forall x: s . c(x, x) = x %(ga_idem_c)%,  . a: s = a: s,
+               . forall x, y: s; z: t . c(x, y, z) = a,  . a: s = a: s,
+               . forall x, y: s; z: t . c(x, y, z) = a,
+               . forall x, y: s; z: t . c(x, y, z) <=> false,
+               . forall X1: Data1; X2: Data2
                      . sel1(Cons31(X1, X2)) = X1 %(ga_selector_sel1)%,
-               . forall X1:Data1; X2:Data2
+               . forall X1: Data1; X2: Data2
                      . sel2(Cons31(X1, X2)) = X2 %(ga_selector_sel2)%,
-               . forall X1:Data2; X2:Data1
+               . forall X1: Data2; X2: Data1
                      . sel2(Cons32(X1, X2)) = X1 %(ga_selector_sel2)%,
-               . forall X1:Data2; X2:Data1
+               . forall X1: Data2; X2: Data1
                      . sel1(Cons32(X1, X2)) = X2 %(ga_selector_sel1)%,
-               . forall X1:Data1; X2:Data2
+               . forall X1: Data1; X2: Data2
                      . sel1(Cons41(X1, X2)) = X1 %(ga_selector_sel1)%,
-               . forall X1:Data1; X2:Data2
+               . forall X1: Data1; X2: Data2
                      . sel2(Cons41(X1, X2)) = X2 %(ga_selector_sel2)%,
-               . forall X1:Data2; X2:Data1
+               . forall X1: Data2; X2: Data1
                      . sel2(Cons42(X1, X2)) = X1 %(ga_selector_sel2)%,
-               . forall X1:Data2; X2:Data1
+               . forall X1: Data2; X2: Data1
                      . sel1(Cons42(X1, X2)) = X2 %(ga_selector_sel1)%,
-               . forall X1:Data1; X2:List; Y1:Data1; Y2:List
+               . forall X1: Data1; X2: List; Y1: Data1; Y2: List
                      . Cons(X1, X2) = Cons(Y1, Y2) <=>
                            X1 = Y1 /\ X2 = Y2 %(ga_injective_Cons)%,
-               . forall Y1:Data1; Y2:List
+               . forall Y1: Data1; Y2: List
                      . not Nil = Cons(Y1, Y2) %(ga_disjoint_Nil_Cons)%,
               generated{sort List; op Cons : Data1 * List -> List;
                                    op Nil : List} %(ga_generated_List)%,
@@ -1479,26 +1487,26 @@
                                   op Mt : Set} %(ga_generated_Set)%,
               generated{sort nat; op 0 : nat;
                                   op succ : nat -> nat} %(ga_generated_nat)%,
-               . false,  . true,  . forall x:s . not p /\ not q(x) /\ q(x),
-               . forall x:s . not p \/ not q(x) \/ q(x),
-               . forall x:s
+               . false,  . true,  . forall x: s . not p /\ not q(x) /\ q(x),
+               . forall x: s . not p \/ not q(x) \/ q(x),
+               . forall x: s
                      . not p /\ not q(x) /\ q(x) =>
                            not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x),
-               . forall x:s
+               . forall x: s
                      . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if
                            not p /\ not q(x) /\ q(x),
-               . forall x:s
+               . forall x: s
                      . not p /\ not q(x) /\ q(x) <=>
-                           (exists x:s
+                           (exists x: s
                                 . not p \/ not q(x) \/ q(x) <=>
-                                      (exists! x:s . not p /\ not q(x) /\ q(x))),
-               . forall x:s . def f(x),  . forall x:s . f(x) =e= g(x),
-               . forall x:s . f(x) = g(x),  . forall r1:t . r1 in s,
-               . forall x:s . def g(x),  . forall x:s . def g(x) as s,
-               . forall x:s . def f(x),  . forall x:s . def g(x),  . p,
-               . forall x:s . q(x),
-               . forall y:s; z:s; x:s . def x * y * z + z * y * x,  . def {},
-               . forall x:s . def { x },  . true,
+                                      (exists! x: s . not p /\ not q(x) /\ q(x))),
+               . forall x: s . def f(x),  . forall x: s . f(x) =e= g(x),
+               . forall x: s . f(x) = g(x),  . forall r1: t . r1 in s,
+               . forall x: s . def g(x),  . forall x: s . def g(x) as s,
+               . forall x: s . def f(x),  . forall x: s . def g(x),  . p,
+               . forall x: s . q(x),
+               . forall y: s; z: s; x: s . def x * y * z + z * y * x,  . def {},
+               . forall x: s . def { x },  . true,
                . not True = False %(ga_disjoint_True_False)%,
               generated{sort Boolean; op False : Boolean;
                                       op True : Boolean} %(ga_generated_Boolean)%,
@@ -1508,51 +1516,51 @@
                . False And True = False %(And_def2)%,
                . True And False = False %(And_def3)%,
                . True And True = True %(And_def4)%,
-               . forall x:Boolean; y:Boolean
+               . forall x: Boolean; y: Boolean
                      . x Or y = Not (Not x And Not y) %(Or_def)%,
-               . forall n:Nat . def chr(n) <=> n <= 255 %(chr_dom)%,
-               . forall c:Char . chr(ord(c)) = (var c : Char) %(chr_def)%,
-               . forall n:Nat . ord(chr(n)) = n if n <= 255 %(ord_def)%,
+               . forall n: Nat . def chr(n) <=> n <= 255 %(chr_dom)%,
+               . forall c: Char . chr(ord(c)) = (var c : Char) %(chr_def)%,
+               . forall n: Nat . ord(chr(n)) = n if n <= 255 %(ord_def)%,
                . '\000' = chr(0) %(slash_000)%,  . '\001' = chr(1) %(slash_001)%,
                . '\002' = chr(2) %(slash_002)%,  . '\003' = chr(3) %(slash_003)%,
                . '\004' = chr(4) %(slash_004)%,  . '\005' = chr(5) %(slash_005)%,
                . '\006' = chr(6) %(slash_006)%,  . '\007' = chr(7) %(slash_007)%,
                . '\008' = chr(8) %(slash_008)%,  . '\009' = chr(9) %(slash_009)%,
                . '\010' = chr(10) %(slash_010)%,
-               . '\011' = chr(1 : Nat @@ 1 : Nat) %(slash_011)%,
-               . '\012' = chr(1 : Nat @@ 2 : Nat) %(slash_012)%,
-               . '\013' = chr(1 : Nat @@ 3 : Nat) %(slash_013)%,
-               . '\014' = chr(1 : Nat @@ 4 : Nat) %(slash_014)%,
+               . '\011' = chr(1: Nat @@ 1: Nat) %(slash_011)%,
+               . '\012' = chr(1: Nat @@ 2: Nat) %(slash_012)%,
+               . '\013' = chr(1: Nat @@ 3: Nat) %(slash_013)%,
+               . '\014' = chr(1: Nat @@ 4: Nat) %(slash_014)%,
                . '\015' = chr(15) %(slash_015)%,
                . '\016' = chr(16) %(slash_016)%,
                . '\017' = chr(17) %(slash_017)%,
                . '\018' = chr(18) %(slash_018)%,
                . '\019' = chr(19) %(slash_019)%,
                . '\020' = chr(20) %(slash_020)%,
-               . '\021' = chr(2 : Nat @@ 1 : Nat) %(slash_021)%,
-               . '\022' = chr(2 : Nat @@ 2 : Nat) %(slash_022)%,
-               . '\023' = chr(2 : Nat @@ 3 : Nat) %(slash_023)%,
-               . '\024' = chr(2 : Nat @@ 4 : Nat) %(slash_024)%,
+               . '\021' = chr(2: Nat @@ 1: Nat) %(slash_021)%,
+               . '\022' = chr(2: Nat @@ 2: Nat) %(slash_022)%,
+               . '\023' = chr(2: Nat @@ 3: Nat) %(slash_023)%,
+               . '\024' = chr(2: Nat @@ 4: Nat) %(slash_024)%,
                . '\025' = chr(25) %(slash_025)%,
                . '\026' = chr(26) %(slash_026)%,
                . '\027' = chr(27) %(slash_027)%,
                . '\028' = chr(28) %(slash_028)%,
                . '\029' = chr(29) %(slash_029)%,
                . '\030' = chr(30) %(slash_030)%,
-               . '\031' = chr(3 : Nat @@ 1 : Nat) %(slash_031)%,
-               . '\032' = chr(3 : Nat @@ 2 : Nat) %(slash_032)%,
-               . '\033' = chr(3 : Nat @@ 3 : Nat) %(slash_033)%,
-               . '\034' = chr(3 : Nat @@ 4 : Nat) %(slash_034)%,
+               . '\031' = chr(3: Nat @@ 1: Nat) %(slash_031)%,
+               . '\032' = chr(3: Nat @@ 2: Nat) %(slash_032)%,
+               . '\033' = chr(3: Nat @@ 3: Nat) %(slash_033)%,
+               . '\034' = chr(3: Nat @@ 4: Nat) %(slash_034)%,
                . '\035' = chr(35) %(slash_035)%,
                . '\036' = chr(36) %(slash_036)%,
                . '\037' = chr(37) %(slash_037)%,
                . '\038' = chr(38) %(slash_038)%,
                . '\039' = chr(39) %(slash_039)%,
                . '\040' = chr(40) %(slash_040)%,
-               . '\041' = chr(4 : Nat @@ 1 : Nat) %(slash_041)%,
-               . '\042' = chr(4 : Nat @@ 2 : Nat) %(slash_042)%,
-               . '\043' = chr(4 : Nat @@ 3 : Nat) %(slash_043)%,
-               . '\044' = chr(4 : Nat @@ 4 : Nat) %(slash_044)%,
+               . '\041' = chr(4: Nat @@ 1: Nat) %(slash_041)%,
+               . '\042' = chr(4: Nat @@ 2: Nat) %(slash_042)%,
+               . '\043' = chr(4: Nat @@ 3: Nat) %(slash_043)%,
+               . '\044' = chr(4: Nat @@ 4: Nat) %(slash_044)%,
                . '\045' = chr(45) %(slash_045)%,
                . '\046' = chr(46) %(slash_046)%,
                . '\047' = chr(47) %(slash_047)%,
@@ -1619,40 +1627,40 @@
                . '\108' = chr(108) %(slash_108)%,
                . '\109' = chr(109) %(slash_109)%,
                . '\110' = chr(110) %(slash_110)%,
-               . '\111' = chr(1 @@ (1 : Nat @@ 1 : Nat)) %(slash_111)%,
-               . '\112' = chr(1 @@ (1 : Nat @@ 2 : Nat)) %(slash_112)%,
-               . '\113' = chr(1 @@ (1 : Nat @@ 3 : Nat)) %(slash_113)%,
-               . '\114' = chr(1 @@ (1 : Nat @@ 4 : Nat)) %(slash_114)%,
+               . '\111' = chr(1 @@ (1: Nat @@ 1: Nat)) %(slash_111)%,
+               . '\112' = chr(1 @@ (1: Nat @@ 2: Nat)) %(slash_112)%,
+               . '\113' = chr(1 @@ (1: Nat @@ 3: Nat)) %(slash_113)%,
+               . '\114' = chr(1 @@ (1: Nat @@ 4: Nat)) %(slash_114)%,
                . '\115' = chr(115) %(slash_115)%,
                . '\116' = chr(116) %(slash_116)%,
                . '\117' = chr(117) %(slash_117)%,
                . '\118' = chr(118) %(slash_118)%,
                . '\119' = chr(119) %(slash_119)%,
                . '\120' = chr(120) %(slash_120)%,
-               . '\121' = chr(1 @@ (2 : Nat @@ 1 : Nat)) %(slash_121)%,
-               . '\122' = chr(1 @@ (2 : Nat @@ 2 : Nat)) %(slash_122)%,
-               . '\123' = chr(1 @@ (2 : Nat @@ 3 : Nat)) %(slash_123)%,
-               . '\124' = chr(1 @@ (2 : Nat @@ 4 : Nat)) %(slash_124)%,
+               . '\121' = chr(1 @@ (2: Nat @@ 1: Nat)) %(slash_121)%,
+               . '\122' = chr(1 @@ (2: Nat @@ 2: Nat)) %(slash_122)%,
+               . '\123' = chr(1 @@ (2: Nat @@ 3: Nat)) %(slash_123)%,
+               . '\124' = chr(1 @@ (2: Nat @@ 4: Nat)) %(slash_124)%,
                . '\125' = chr(125) %(slash_125)%,
                . '\126' = chr(126) %(slash_126)%,
                . '\127' = chr(127) %(slash_127)%,
                . '\128' = chr(128) %(slash_128)%,
                . '\129' = chr(129) %(slash_129)%,
                . '\130' = chr(130) %(slash_130)%,
-               . '\131' = chr(1 @@ (3 : Nat @@ 1 : Nat)) %(slash_131)%,
-               . '\132' = chr(1 @@ (3 : Nat @@ 2 : Nat)) %(slash_132)%,
-               . '\133' = chr(1 @@ (3 : Nat @@ 3 : Nat)) %(slash_133)%,
-               . '\134' = chr(1 @@ (3 : Nat @@ 4 : Nat)) %(slash_134)%,
+               . '\131' = chr(1 @@ (3: Nat @@ 1: Nat)) %(slash_131)%,
+               . '\132' = chr(1 @@ (3: Nat @@ 2: Nat)) %(slash_132)%,
+               . '\133' = chr(1 @@ (3: Nat @@ 3: Nat)) %(slash_133)%,
+               . '\134' = chr(1 @@ (3: Nat @@ 4: Nat)) %(slash_134)%,
                . '\135' = chr(135) %(slash_135)%,
                . '\136' = chr(136) %(slash_136)%,
                . '\137' = chr(137) %(slash_137)%,
                . '\138' = chr(138) %(slash_138)%,
                . '\139' = chr(139) %(slash_139)%,
                . '\140' = chr(140) %(slash_140)%,
-               . '\141' = chr(1 @@ (4 : Nat @@ 1 : Nat)) %(slash_141)%,
-               . '\142' = chr(1 @@ (4 : Nat @@ 2 : Nat)) %(slash_142)%,
-               . '\143' = chr(1 @@ (4 : Nat @@ 3 : Nat)) %(slash_143)%,
-               . '\144' = chr(1 @@ (4 : Nat @@ 4 : Nat)) %(slash_144)%,
+               . '\141' = chr(1 @@ (4: Nat @@ 1: Nat)) %(slash_141)%,
+               . '\142' = chr(1 @@ (4: Nat @@ 2: Nat)) %(slash_142)%,
+               . '\143' = chr(1 @@ (4: Nat @@ 3: Nat)) %(slash_143)%,
+               . '\144' = chr(1 @@ (4: Nat @@ 4: Nat)) %(slash_144)%,
                . '\145' = chr(145) %(slash_145)%,
                . '\146' = chr(146) %(slash_146)%,
                . '\147' = chr(147) %(slash_147)%,
@@ -1719,40 +1727,40 @@
                . '\208' = chr(208) %(slash_208)%,
                . '\209' = chr(209) %(slash_209)%,
                . '\210' = chr(210) %(slash_210)%,
-               . '\211' = chr(2 @@ (1 : Nat @@ 1 : Nat)) %(slash_211)%,
-               . '\212' = chr(2 @@ (1 : Nat @@ 2 : Nat)) %(slash_212)%,
-               . '\213' = chr(2 @@ (1 : Nat @@ 3 : Nat)) %(slash_213)%,
-               . '\214' = chr(2 @@ (1 : Nat @@ 4 : Nat)) %(slash_214)%,
+               . '\211' = chr(2 @@ (1: Nat @@ 1: Nat)) %(slash_211)%,
+               . '\212' = chr(2 @@ (1: Nat @@ 2: Nat)) %(slash_212)%,
+               . '\213' = chr(2 @@ (1: Nat @@ 3: Nat)) %(slash_213)%,
+               . '\214' = chr(2 @@ (1: Nat @@ 4: Nat)) %(slash_214)%,
                . '\215' = chr(215) %(slash_215)%,
                . '\216' = chr(216) %(slash_216)%,
                . '\217' = chr(217) %(slash_217)%,
                . '\218' = chr(218) %(slash_218)%,
                . '\219' = chr(219) %(slash_219)%,
                . '\220' = chr(220) %(slash_220)%,
-               . '\221' = chr(2 @@ (2 : Nat @@ 1 : Nat)) %(slash_221)%,
-               . '\222' = chr(2 @@ (2 : Nat @@ 2 : Nat)) %(slash_222)%,
-               . '\223' = chr(2 @@ (2 : Nat @@ 3 : Nat)) %(slash_223)%,
-               . '\224' = chr(2 @@ (2 : Nat @@ 4 : Nat)) %(slash_224)%,
+               . '\221' = chr(2 @@ (2: Nat @@ 1: Nat)) %(slash_221)%,
+               . '\222' = chr(2 @@ (2: Nat @@ 2: Nat)) %(slash_222)%,
+               . '\223' = chr(2 @@ (2: Nat @@ 3: Nat)) %(slash_223)%,
+               . '\224' = chr(2 @@ (2: Nat @@ 4: Nat)) %(slash_224)%,
                . '\225' = chr(225) %(slash_225)%,
                . '\226' = chr(226) %(slash_226)%,
                . '\227' = chr(227) %(slash_227)%,
                . '\228' = chr(228) %(slash_228)%,
                . '\229' = chr(229) %(slash_229)%,
                . '\230' = chr(230) %(slash_230)%,
-               . '\231' = chr(2 @@ (3 : Nat @@ 1 : Nat)) %(slash_231)%,
-               . '\232' = chr(2 @@ (3 : Nat @@ 2 : Nat)) %(slash_232)%,
-               . '\233' = chr(2 @@ (3 : Nat @@ 3 : Nat)) %(slash_233)%,
-               . '\234' = chr(2 @@ (3 : Nat @@ 4 : Nat)) %(slash_234)%,
+               . '\231' = chr(2 @@ (3: Nat @@ 1: Nat)) %(slash_231)%,
+               . '\232' = chr(2 @@ (3: Nat @@ 2: Nat)) %(slash_232)%,
+               . '\233' = chr(2 @@ (3: Nat @@ 3: Nat)) %(slash_233)%,
+               . '\234' = chr(2 @@ (3: Nat @@ 4: Nat)) %(slash_234)%,
                . '\235' = chr(235) %(slash_235)%,
                . '\236' = chr(236) %(slash_236)%,
                . '\237' = chr(237) %(slash_237)%,
                . '\238' = chr(238) %(slash_238)%,
                . '\239' = chr(239) %(slash_239)%,
                . '\240' = chr(240) %(slash_240)%,
-               . '\241' = chr(2 @@ (4 : Nat @@ 1 : Nat)) %(slash_241)%,
-               . '\242' = chr(2 @@ (4 : Nat @@ 2 : Nat)) %(slash_242)%,
-               . '\243' = chr(2 @@ (4 : Nat @@ 3 : Nat)) %(slash_243)%,
-               . '\244' = chr(2 @@ (4 : Nat @@ 4 : Nat)) %(slash_244)%,
+               . '\241' = chr(2 @@ (4: Nat @@ 1: Nat)) %(slash_241)%,
+               . '\242' = chr(2 @@ (4: Nat @@ 2: Nat)) %(slash_242)%,
+               . '\243' = chr(2 @@ (4: Nat @@ 3: Nat)) %(slash_243)%,
+               . '\244' = chr(2 @@ (4: Nat @@ 4: Nat)) %(slash_244)%,
                . '\245' = chr(245) %(slash_245)%,
                . '\246' = chr(246) %(slash_246)%,
                . '\247' = chr(247) %(slash_247)%,
@@ -1923,18 +1931,18 @@
                . 'ý' = '\253' %(printable_253)%,
                . 'þ' = '\254' %(printable_254)%,
                . 'ÿ' = '\255' %(printable_255)%,
-               . forall c:Char
+               . forall c: Char
                      . isLetter(c) <=>
                            (ord('A') <= ord(c) /\ ord(c) <= ord('Z'))
                            \/ (ord('a') <= ord(c) /\ ord(c) <= ord('z')) %(isLetter_def)%,
-               . forall c:Char
+               . forall c: Char
                      . isDigit(c) <=>
                            ord('0') <= ord(c) /\ ord(c) <= ord('9') %(isDigit_def)%,
-               . forall c:Char
+               . forall c: Char
                      . isPrintable(c) <=>
                            (ord(' ') <= ord(c) /\ ord(c) <= ord('~'))
                            \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ')) %(isPrintable_def)%,
-               . '\o000' : Char = '\000' : Char %(slash_o000)%,
+               . '\o000': Char = '\000': Char %(slash_o000)%,
                . '\o001' = '\001' %(slash_o001)%,
                . '\o002' = '\002' %(slash_o002)%,
                . '\o003' = '\003' %(slash_o003)%,
@@ -2189,8 +2197,8 @@
                . '\o374' = '\252' %(slash_o374)%,
                . '\o375' = '\253' %(slash_o375)%,
                . '\o376' = '\254' %(slash_o376)%,
-               . '\o377' : Char = '\255' : Char %(slash_o377)%,
-               . '\x00' : Char = '\000' : Char %(slash_x00)%,
+               . '\o377': Char = '\255': Char %(slash_o377)%,
+               . '\x00': Char = '\000': Char %(slash_x00)%,
                . '\x01' = '\001' %(slash_x01)%,  . '\x02' = '\002' %(slash_x02)%,
                . '\x03' = '\003' %(slash_x03)%,  . '\x04' = '\004' %(slash_x04)%,
                . '\x05' = '\005' %(slash_x05)%,  . '\x06' = '\006' %(slash_x06)%,
@@ -2318,7 +2326,7 @@
                . '\xF9' = '\249' %(slash_xF9)%,  . '\xFA' = '\250' %(slash_xFA)%,
                . '\xFB' = '\251' %(slash_xFB)%,  . '\xFC' = '\252' %(slash_xFC)%,
                . '\xFD' = '\253' %(slash_xFD)%,  . '\xFE' = '\254' %(slash_xFE)%,
-               . '\xFF' : Char = '\255' : Char %(slash_xFF)%,
+               . '\xFF': Char = '\255': Char %(slash_xFF)%,
                . NUL = '\000' %(NUL_def)%,  . SOH = '\001' %(SOH_def)%,
                . SYX = '\002' %(SYX_def)%,  . ETX = '\003' %(ETX_def)%,
                . EOT = '\004' %(EOT_def)%,  . ENQ = '\005' %(ENQ_def)%,
@@ -2341,12 +2349,12 @@
                . '\v' = VT %(slash_v)%,  . '\b' = BS %(slash_b)%,
                . '\r' = CR %(slash_r)%,  . '\f' = FF %(slash_f)%,
                . '\a' = BEL %(slash_a)%,  . '\?' = '?' %(slash_quest)%,
-               . forall x:a; y:a; z:a
+               . forall x: a; y: a; z: a
                      . x || (y || z) = (x || y) || z %(ga_assoc___||__)%,
                . (b || b) || b = b ])
 *** Hint 17.9, redeclared as total 'min'
 *** Hint 17.14, redeclared as total 'max'
-*** Error 90.19, no typing for: (suc(0)) : Pos
+*** Error 90.19, no typing for: suc(0): Pos
 *** Hint 98.10, redeclared op 'min'
 *** Hint 98.15, redeclared op 'max'
 *** Hint 121.18, redeclared sort 'Int'
@@ -2480,14 +2488,14 @@
 *** Hint 358.12, redeclared sort 's'
 *** Hint 358.14, redeclared sort 't'
 *** Error , ambiguous term
-  (op a : s) : s
-  (var a : s) : s
+  (op a : s): s
+  (var a : s): s
 *** Warning 363.9, partially redeclared 'a'
 *** Warning 364.9, partially redeclared 'b'
 *** Warning 365.9, partially redeclared 'c'
 *** Error , ambiguous term
-  (op a : s) : s
-  (var a : s) : s
+  (op a : s): s
+  (var a : s): s
 *** Warning 366.9, partially redeclared 'c'
 *** Hint 367.9, redeclared op 'a'
 *** Warning 369.9, partially redeclared 'a'
