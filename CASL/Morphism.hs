@@ -483,34 +483,9 @@ instance PrettyPrint RawSymbol where
 instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) => 
     PrettyPrint (Morphism f e m) where
   printText0 ga mor = 
-   (if null sorts then empty
-       else text (sortS ++ sS) <+> (fsep $ punctuate comma sorts))
-   $$ 
-   (if null ops then empty
-       else text (opS ++ sS) <+> (fsep $ punctuate comma ops))
-   $$
-   (if null preds then empty
-       else text (predS ++ sS) <+> (fsep $ punctuate comma preds))
+   printText0 ga (Map.filterWithKey (/=) $ morphismToSymbMap mor)
    $$ printText0 ga (extended_map mor)
    $$ nest 1 colon $$ 
    nest 3 (braces (space <> printText0 ga (msource mor) <> space))
    $$ nest 1 (text funS) 
    $$ nest 4 (braces (space <>  printText0 ga (mtarget mor) <> space))
-   where sMap = sort_map mor
-         sorts = map print_sort_map (Map.toList sMap)
-         print_sort_map (s1,s2) = 
-           printText0 ga s1 <+> text mapsTo <+> printText0 ga s2
-         ops = map print_op_map (Map.toList $ fun_map mor)
-         print_op_map ((id1,ot),(id2, kind)) =
-           printText0 ga id1 <+> colon 
-                    <> printText0 ga (toOP_TYPE ot)
-           <+> text mapsTo <+> 
-           printText0 ga id2 <+> colon <> 
-                      (printText0 ga $ toOP_TYPE $ mapOpTypeK sMap kind ot)
-         preds = map print_pred_map (Map.toList $ pred_map mor)
-         print_pred_map ((id1,pt),id2) = 
-            printText0 ga id1 <+> colon 
-                    <+> printText0 ga (toPRED_TYPE pt)
-           <+> text mapsTo <+> 
-           printText0 ga id2 <+> colon <+> 
-                      (printText0 ga $ toPRED_TYPE $ mapPredType sMap pt)
