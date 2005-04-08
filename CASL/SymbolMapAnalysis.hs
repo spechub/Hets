@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2002-2003
+Copyright   :  (c) Till Mossakowski, C. Maeder and Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
@@ -19,8 +19,7 @@ shorted warning about (non)intended maps
 remove identity subsort relations resulting from non-injective renaming
 (or add them to ALL signatures)
 
-overloading stuff is missing (wait for Martin's implementation of leqF
-and leqP)
+overloading stuff (leqF and leqP) is missing 
 
 introduce symbol functor (additionally to signature symbol functor)
 
@@ -630,11 +629,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
                  Nothing -> fail "No signature morphism for symbol map found"
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
-     rm <- symbMapToMorphism extEm sigma1 sigma2 smap1
-     pwarning rm (
-        text "please check if the following morphism matches your intention"
-        $$ printText rm) nullPos
-
+     symbMapToMorphism extEm sigma1 sigma2 smap1
 
      -- 4. recursive depth first function
      -- ambiguous map leads to fatal error (similar to exception)
@@ -645,17 +640,12 @@ tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
        if Map.isEmpty posmap2 then return $ Just akmap -- 4a.
         else do
           --trace ("trying to map: "++showPretty sym1 "") (return ())
-          (akmap1,stopBT,immF) <- 
+          akmap1 <- 
              tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset1
-          (akmap2,stopBT2,_immF2) <- 
-            if isNothing akmap1 && not stopBT
+          if isNothing akmap1
              -- 6. no map for symset1, hence try symset2
              then tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset2
-             else return (akmap1,stopBT,immF) -- otherwise, use symset1 only
-          when ((akmap2,stopBT2)==(Nothing,False) && immF)
-            (phint () (text "Possibly no mapping for "<+>printText sym1)
-                   nullPos)
-          return akmap2
+             else return akmap1
        where
        -- 4b. take symbol with minimal remaining values (MRV)
        (card,(sym1,symset):_symsets) = Map.findMin posmap2
@@ -664,25 +654,25 @@ tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
 
      -- 5. to 7.
 tryToInduce1 :: Sign f e -> Sign f e -> SymbolMap -> PosMap -> Symbol
-             -> Set.Set Symbol -> Result (Maybe SymbolMap, Bool, Bool)
+             -> Set.Set Symbol -> Result (Maybe SymbolMap)
 tryToInduce1 sigma1 sigma2 akmap posmap sym1 symset = do
        Set.fold (tryToInduce2 sigma1 sigma2 akmap posmap sym1) 
-                       (return (Nothing,False,False)) symset
+                       (return Nothing) symset
 
 tryToInduce2 :: Sign f e -> Sign f e -> SymbolMap -> PosMap -> Symbol
-             -> Symbol -> Result (Maybe SymbolMap, Bool, Bool)
-             -> Result (Maybe SymbolMap, Bool, Bool)
+             -> Symbol -> Result (Maybe SymbolMap)
+             -> Result (Maybe SymbolMap)
 tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
        -- 5.1. to 5.3. consistency check
-       (akmapSoFar1,stopBackTrack,_) <- akmapSoFar
+       akmapSoFar1 <- akmapSoFar
        {-(trace ("map "++(case akmapSoFar1 of
                          Just x -> showPretty x " + "
                          Nothing -> "")
         ++showPretty sym1 " |-> " ++showPretty sym2 "; stopBackTrack: "
         ++show stopBackTrack) (return ())) -}
-       (akmap',stopBackTrack',immediateFailure) <- 
+       akmap' <- 
         case extendSymbMap akmap sym1 sym2 of
-         Nothing -> return (Nothing,stopBackTrack,True)
+         Nothing -> return Nothing
          -- constraint propagation
          Just akmap1 -> do
            let posmap1 = case symbType sym1 of
@@ -694,33 +684,23 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
                 --           for an operation/predicate symbol
                 _ -> restrictOps sym1 sym2 posmap
                  -- 5.9. omitted until overload relation will be available !!??
-               noNewSortMaps = posmap1==Just posmap
            -- 5.10.
-           -- case posmap1 of
-           --   Just x -> trace ("posmap1: Something") (return ())
-           --   Nothing -> trace ("posmap1: Nothing") (return ())
-           case (posmap1,noNewSortMaps&&stopBackTrack) of
-             (Just posmap2,False) -> do
-                pm <- tryToInduce sigma1 sigma2 akmap1 posmap2
-                return (pm,noNewSortMaps,False)
-             -- if there is no posmap left, or
-             -- if there are no new sort maps and a similar tree already
-             -- has been searched (stopBackTrack), stop searching here
-             -- and keep the old stopBackTrack flag
-             _ -> return (Nothing,stopBackTrack,True)
+           case posmap1 of
+             Just posmap2 -> do
+                tryToInduce sigma1 sigma2 akmap1 posmap2
+             _ -> return Nothing
        -- 6./7. uniqueness check
        case (akmap',akmapSoFar1) of
          -- stop backtracking next time if there haven't been new sort maps
-         (Nothing,Nothing) -> return (Nothing,stopBackTrack',immediateFailure)
-         (Just smap,Nothing) -> return (Just smap,stopBackTrack',
-                                             immediateFailure)
-         (Nothing,Just smap) -> return (Just smap,stopBackTrack',
-                                             immediateFailure)
+         (Nothing,Nothing) -> return Nothing
+         (Just smap,Nothing) -> return $ Just smap
+         (Nothing,Just smap) -> return $ Just smap
          (Just smap1,Just smap2) -> 
+            let shorten = Map.filterWithKey (/=) in
             fail $ shows 
              (text "Ambiguous symbol map" $$ 
-              text "Map1" <+> printText smap1 $$
-              text "Map2" <+> printText smap2) 
+              text "Map1" <+> printText (shorten smap1) $$
+              text "Map2" <+> printText (shorten smap2)) 
             ""
 
 {-
