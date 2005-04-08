@@ -193,17 +193,15 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+collect the patches for programatica (or create a package)
+-    conv (SN i p) = PN i (S p)
++    conv (SN i p) = PN i (Sn (show i) p)
+in programatica/tools/base/parse2/NumberNames.hs 
+fixes translation error of Pair
+
 simplification of HasCASL sentences (omit types)
 
 analyse the ghc-6.4 difference in Logic/Comorphism.hs
-
-"free type Pair[S,T] ::= pair(first :S; second: T)" cannot be
-translated from CASL to Haskell, because generated selector variables
-become identical positions and are not distinguished by programmatica
-(letting Eq,Ord derive in base/defs/UniqueNames.hs does not work!)
-
-check for superfluous quantifications in HasCASL's function types
-(sonja's bug)
 
 Logic COL is a ruin (with wrongly qualified module names)
 
@@ -222,8 +220,8 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] [Pos]
 
 homogenizeGM should be moved to Static.AnalysisStructured
 
-logic coding form the comand line with printing of results
-(started)
+logic coding from the comand line with printing of results
+(started -v5)
 
 Haskell modules: hiding, renaming
 
