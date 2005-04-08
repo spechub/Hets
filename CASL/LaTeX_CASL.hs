@@ -14,7 +14,6 @@ Portability :  portable
 module CASL.LaTeX_CASL where
 
 import Common.Keywords
-import CASL.AS_Basic_CASL
 import CASL.LaTeX_AS_Basic
 import CASL.Sign
 import CASL.Morphism
@@ -34,35 +33,36 @@ instance PrintLaTeX PredType where
 
 instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
     printLatex0 ga s = 
-	ptext sortS <+> commaT_latex ga (Set.toList $ sortSet s) 
+	casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s) 
 	$$ 
         (if Rel.isEmpty (sortRel s) then empty
-            else ptext sortS <+> 
+            else casl_keyword_latex sortS <\+> 
              (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
 	$$ 
 	vcat (map (\ (i, t) -> 
-		   ptext opS <+>
-		   printLatex0 ga i <+> colon <>
+		   casl_keyword_latex opS <\+>
+		   printLatex0 ga i <\+> colon_latex <>
 		   printLatex0 ga t) 
 	      $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
 	       $ Map.toList $ opMap s)
 	$$ 
 	vcat (map (\ (i, t) -> 
-		   ptext predS <+>
-		   printLatex0 ga i <+> colon <+>
+		   casl_keyword_latex predS <\+>
+		   printLatex0 ga i <\+> colon_latex <\+>
 		   printLatex0 ga (toPRED_TYPE t)) 
 	     $ concatMap (\ (o, ts) ->
 			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
 	     $ Map.toList $ predMap s)
      where printRel (subs, supersorts) =
-             printLatex0 ga subs <+> ptext lessS <+> printSet ga supersorts
+             printLatex0 ga subs <\+> hc_sty_axiom lessS 
+                             <\+> printSet ga supersorts
 
 instance PrintLaTeX Symbol where
   printLatex0 ga sy = 
     printLatex0 ga (symName sy) <> 
     (if isEmpty t then empty
-      else ptext colonS <> t)
+      else colon_latex <> t)
     where
     t = printLatex0 ga (symbType sy)
 
@@ -72,43 +72,25 @@ instance PrintLaTeX SymbType where
   printLatex0 _ SortAsItemType = empty 
 
 instance PrintLaTeX Kind where
-  printLatex0 _ SortKind = ptext sortS
-  printLatex0 _ FunKind = ptext opS
-  printLatex0 _ PredKind = ptext predS
+  printLatex0 _ SortKind = casl_keyword_latex sortS
+  printLatex0 _ FunKind = casl_keyword_latex opS
+  printLatex0 _ PredKind = casl_keyword_latex predS
 
 instance PrintLaTeX RawSymbol where
   printLatex0 ga rsym = case rsym of
     ASymbol sy -> printLatex0 ga sy
     AnID i -> printLatex0 ga i
-    AKindedId k i -> printLatex0 ga k <+> printLatex0 ga i
+    AKindedId k i -> printLatex0 ga k <\+> printLatex0 ga i
 
 instance (PrintLaTeX f, PrintLaTeX e, PrintLaTeX m) => 
     PrintLaTeX (Morphism f e m) where
   printLatex0 ga mor = 
-   (if null sorts then empty
-       else ptext sortS <+> (fsep $ punctuate comma sorts))
-   $$ 
-   (if null ops then empty
-       else ptext opS <+> (fsep $ punctuate comma ops))
-   $$
-   (if null preds then empty
-       else ptext predS <+> (fsep $ punctuate comma preds))
+   let printPair (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto" 
+                               <\+> printLatex0 ga s2 
+   in braces_latex (vcat (map printPair $ Map.toList $ Map.filterWithKey (/=) 
+                         $ morphismToSymbMap mor))
    $$ printLatex0 ga (extended_map mor)
-   <+>
-   ptext " : " $$ 
-   ptext "{" <+>  printLatex0 ga (msource mor) <+> ptext "}" <+> 
-   ptext "->" <+> 
-   ptext "{" <+>  printLatex0 ga (mtarget mor) <+> ptext "}"
-   where sorts = map print_sort_map (Map.toList $ sort_map mor)
-         print_sort_map (s1,s2) = 
-           printLatex0 ga s1 <+> ptext "|->" <+> printLatex0 ga s2
-         ops = map print_op_map (Map.toList $ fun_map mor)
-         print_op_map ((id1,ot),(id2, _)) = 
-           printLatex0 ga (Qual_op_name id1 (toOP_TYPE ot) [])
-           <+> ptext "|->" <+> 
-           printLatex0 ga id2
-         preds = map print_pred_map (Map.toList $ pred_map mor)
-         print_pred_map ((id1,pt),id2) = 
-           printLatex0 ga (Qual_pred_name id1 (toPRED_TYPE pt) [])
-           <+> ptext "|->" <+> 
-           printLatex0 ga id2
+   <\+> colon_latex $$ 
+   braces_latex (printLatex0 ga $ msource mor) <\+> 
+   hc_sty_axiom "\\rightarrow" <\+> 
+   braces_latex (printLatex0 ga $ mtarget mor)
