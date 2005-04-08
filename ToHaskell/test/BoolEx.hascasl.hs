@@ -32,14 +32,14 @@ vee :: (Bool, Bool) -> Bool
 wedge :: (Bool, Bool) -> Bool
 neg x
     =   case x of
-	    False -> True
-	    True -> False
+            False -> True
+            True -> False
 wedge (x, y)
     =   case (x, y) of
-	    (False, False) -> False
-	    (True, False) -> False
-	    (False, True) -> False
-	    (True, True) -> True
+            (False, False) -> False
+            (True, False) -> False
+            (False, True) -> False
+            (True, True) -> True
 vee (x, y) = neg (wedge (neg x, neg y))
 le (x, y) = vee (neg x, y)
 eq (x, y) = wedge (le (x, y), le (y, x))

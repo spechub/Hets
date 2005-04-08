@@ -21,7 +21,7 @@ scope:
 Prelude.A__cons |-> Prelude.A__cons, con of List
 Prelude.A__nil |-> Prelude.A__nil, con of List
 Prelude.List |-> Prelude.List, Type [A__nil,
-				     A__cons] []
+                                     A__cons] []
 A__cons |-> Prelude.A__cons, con of List
 A__nil |-> Prelude.A__nil, con of List
 List |-> Prelude.List, Type [A__nil, A__cons] []

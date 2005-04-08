@@ -25,15 +25,15 @@ notA :: Bool
 a = True
 notA
     =   case a of
-	    True -> False
-	    False -> True
+            True -> False
+            False -> True
 b   =   let x = True
-	    y = False
-	    z = x
-	    {-
-	    x :: Bool
-	    y :: Bool
-	    z :: Bool
-	    -}
-	in True
+            y = False
+            z = x
+            {-
+            x :: Bool
+            y :: Bool
+            z :: Bool
+            -}
+        in True
 b_02 = \ x -> x

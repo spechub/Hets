@@ -34,7 +34,7 @@ scope:
 Prelude.A__0 |-> Prelude.A__0, con of Nat
 Prelude.Cons |-> Prelude.Cons, con of List_FNat_J
 Prelude.List_FNat_J |-> Prelude.List_FNat_J, Type [Nil,
-						   Cons] []
+                                                   Cons] []
 Prelude.Nat |-> Prelude.Nat, Type [A__0, Succ] []
 Prelude.Nil |-> Prelude.Nil, con of List_FNat_J
 Prelude.Succ |-> Prelude.Succ, con of Nat
@@ -48,7 +48,7 @@ Prelude.sorter |-> Prelude.sorter, Value
 A__0 |-> Prelude.A__0, con of Nat
 Cons |-> Prelude.Cons, con of List_FNat_J
 List_FNat_J |-> Prelude.List_FNat_J, Type [Nil,
-					   Cons] []
+                                           Cons] []
 Nat |-> Prelude.Nat, Type [A__0, Succ] []
 Nil |-> Prelude.Nil, con of List_FNat_J
 Succ |-> Prelude.Succ, con of Nat
@@ -69,7 +69,7 @@ is_1ordered :: List_FNat_J -> Unit
 permutation :: (List_FNat_J, List_FNat_J) -> Unit
 permutation
     =   error{-((List_FNat_J, List_FNat_J) -> Unit)-}
-	    "permutation"
+            "permutation"
 prec :: Nat -> Nat
 sorter :: List_FNat_J -> List_FNat_J
 sorter
@@ -81,7 +81,7 @@ a___2_L_E_2 ((Succ x), A__0) = false
 a___2_L_E_2 ((Succ x), (Succ y)) = a___2_L_E_2 (x, y)
 a___2_L_E_2 (x, y)
     =   a___2when_2else_2{-Unit-}
-	    (true, a___2_E_2{-Nat-} (x, y), bottom{-Unit-})
+            (true, a___2_E_2{-Nat-} (x, y), bottom{-Unit-})
 data List_FNat_J
     = Nil | Cons !(Nat, List_FNat_J)
     deriving (Show, Eq, Ord)
@@ -89,12 +89,12 @@ is_1ordered Nil = true
 is_1ordered (Cons (x, Nil)) = true
 is_1ordered (Cons (x, (Cons (y, a__L))))
     =   a___2_S_B_2
-	    (a___2_L_E_2 (x, y), is_1ordered (Cons (y, a__L)))
+            (a___2_L_E_2 (x, y), is_1ordered (Cons (y, a__L)))
 insert (x, Nil) = Cons (x, Nil)
 insert (x, (Cons (y, a__L)))
     =   a___2when_2else_2{-List_FNat_J-}
-	    (Cons (x, insert (y, a__L)), a___2_L_E_2 (x, y),
-	     Cons (y, insert (x, a__L)))
+            (Cons (x, insert (y, a__L)), a___2_L_E_2 (x, y),
+             Cons (y, insert (x, a__L)))
 insert_1sort Nil = Nil
 insert_1sort (Cons (x, a__L))
     = insert (x, insert_1sort a__L)
