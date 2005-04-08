@@ -1,0 +1,360 @@
+free type Tree(a : Type) ::= Leaf (a) | 
+                             Node (Tree a) (a) | 
+                             EmptyLeaf
+free type Nat ::= Zero | 
+                  Suc (Nat)
+op caseTree : forall a : Type . Tree Nat -> Tree Nat
+forall h : Tree Nat; n : Nat; t : Tree Nat
+. ((fun __=__[Tree Nat]
+    : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       Tree Nat * Tree Nat ->? Unit)
+    ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
+     (case (var t : Tree Nat) of
+          (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
+              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                  Tree _var_14_v14 | 
+          ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat
+            ->
+              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                  Tree _var_14_v14 | 
+          (((op Node[Nat]
+             : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                Tree Nat -> Nat -> Tree Nat)
+             ((op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat
+            ->
+              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                  Tree _var_14_v14 | 
+          (((op Node[Nat]
+             : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                Tree Nat -> Nat -> Tree Nat)
+             ((((op Node[Nat]
+                 : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                    Tree Nat -> Nat -> Tree Nat)
+                 (var h : Tree Nat) :
+                   Nat -> Tree Nat)
+                (var n : Nat) :
+                  Tree Nat) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat
+            ->
+              (var h : Tree Nat) | 
+          (((op Node[Nat]
+             : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                Tree Nat -> Nat -> Tree Nat)
+             (((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+                   Nat -> Tree Nat)
+                (var n : Nat) :
+                  Tree Nat) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat
+            ->
+              ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+                   Nat -> Tree Nat)
+                (var n : Nat) :
+                  Tree Nat) :
+         Tree Nat) :
+      Unit
+%% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
+Nat
+  : Type
+     %[free type Nat
+         ::= Zero : Nat
+             Suc : Nat -> Nat (Nat)]%
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Tree
+  : Type -> Type
+     %[free type Tree(a : Type)
+         ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
+             Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
+             EmptyLeaf : Tree a_v-1]%
+Unit : Type
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
+__->?__ : Type- -> Type+ -> Type
+%% Assumptions -----------------------------------------------------------
+EmptyLeaf : forall a : Type . Tree a_v-1 %(construct Tree)%
+Leaf : forall a : Type . a_v-1 -> Tree a_v-1 %(construct Tree)%
+Node
+  : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1
+    %(construct Tree)%
+Suc : Nat -> Nat %(construct Nat)%
+Zero : Nat %(construct Nat)%
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+caseTree : Tree Nat -> Tree Nat %(op)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+false : Unit %(fun)%
+not__ : ? Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
+%% Sentences -------------------------------------------------------------
+free type Tree(a : Type)
+  ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
+      Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
+      EmptyLeaf : Tree a_v-1 %(ga_Tree)%
+free type Nat
+  ::= Zero : Nat
+      Suc : Nat -> Nat (Nat) %(ga_Nat)%
+((fun __=__[Tree Nat] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     Tree Nat * Tree Nat ->? Unit)
+  ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
+   (case (var t : Tree Nat) of
+        (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
+            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                Tree _var_14_v14 | 
+        ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+             Nat -> Tree Nat)
+          (var n : Nat) :
+            Tree Nat
+          ->
+            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                Tree _var_14_v14 | 
+        (((op Node[Nat]
+           : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+              Tree Nat -> Nat -> Tree Nat)
+           ((op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat) :
+             Nat -> Tree Nat)
+          (var n : Nat) :
+            Tree Nat
+          ->
+            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
+                Tree _var_14_v14 | 
+        (((op Node[Nat]
+           : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+              Tree Nat -> Nat -> Tree Nat)
+           ((((op Node[Nat]
+               : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                  Tree Nat -> Nat -> Tree Nat)
+               (var h : Tree Nat) :
+                 Nat -> Tree Nat)
+              (var n : Nat) :
+                Tree Nat) :
+             Nat -> Tree Nat)
+          (var n : Nat) :
+            Tree Nat
+          ->
+            (var h : Tree Nat) | 
+        (((op Node[Nat]
+           : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+              Tree Nat -> Nat -> Tree Nat)
+           (((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+                 Nat -> Tree Nat)
+              (var n : Nat) :
+                Tree Nat) :
+             Nat -> Tree Nat)
+          (var n : Nat) :
+            Tree Nat
+          ->
+            ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+                 Nat -> Tree Nat)
+              (var n : Nat) :
+                Tree Nat) :
+       Tree Nat) :
+    Unit
+%% Diagnostics -----------------------------------------------------------
+*** Warning 4.23, unused type variables '[ a : Type ]'
+*** Hint 8.14, in type of '(var t : Tree Nat)'
+  type 'Tree Nat' (7.18)
+  is not unifiable with type 'Unit ->? Tree Nat' (4.27)
+
+*** Hint 10.27, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 10.27, variable shadows global name(s) 'n'
+*** Hint 11.27, in type of '(op EmptyLeaf[_var_24_v24] : forall a : Type . Tree a_v-1) :
+    Tree _var_24_v24'
+  type 'Tree _var_24_v24' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 11.37, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 11.37, variable shadows global name(s) 'n'
+*** Hint 12.33, in type of '(var h : Tree Nat)'
+  type 'Tree Nat' (6.10)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 12.35, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 12.28, in type of '(op Node[_var_36_v36]
+ : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+    Tree _var_36_v36 -> _var_36_v36 -> Tree _var_36_v36'
+  type 'Tree _var_34_v34' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 12.28, untypable application (with result type: _var_34_v34 ->? Unit ->? Tree Nat)
+ 'Node(h)'
+*** Hint 12.28, untypable application (with result type: Unit ->? Tree Nat)
+ 'Node(h)(n)'
+*** Hint 12.37, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 12.33, variable shadows global name(s) 'h'
+*** Hint 12.35, variable shadows global name(s) 'n'
+*** Hint 12.37, variable shadows global name(s) 'n'
+*** Hint 13.33, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 13.28, in type of '(op Leaf[_var_44_v44] : forall a : Type . a_v-1 -> Tree a_v-1) :
+    _var_44_v44 -> Tree _var_44_v44'
+  type 'Tree _var_43_v43' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 13.28, untypable application (with result type: Unit ->? Tree Nat)
+ 'Leaf(n)'
+*** Hint 13.36, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 13.33, variable shadows global name(s) 'n'
+*** Hint 13.36, variable shadows global name(s) 'n'
+*** Hint 13.46, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (6.15)
+
+*** Hint 8.14, in type of '(var t : Tree Nat)'
+  type 'Tree Nat' (7.18)
+  is not unifiable with type 'Unit ->? Tree Nat' (4.27)
+
+*** Hint 10.27, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 10.27, variable shadows global name(s) 'n'
+*** Hint 11.27, in type of '(op EmptyLeaf[_var_64_v64] : forall a : Type . Tree a_v-1) :
+    Tree _var_64_v64'
+  type 'Tree _var_64_v64' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 11.37, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 11.37, variable shadows global name(s) 'n'
+*** Hint 12.33, in type of '(var h : Tree Nat)'
+  type 'Tree Nat' (6.10)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 12.35, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 12.28, in type of '(op Node[_var_76_v76]
+ : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+    Tree _var_76_v76 -> _var_76_v76 -> Tree _var_76_v76'
+  type 'Tree _var_74_v74' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 12.28, untypable application (with result type: _var_74_v74 ->? Unit ->? Tree Nat)
+ 'Node(h)'
+*** Hint 12.28, untypable application (with result type: Unit ->? Tree Nat)
+ 'Node(h)(n)'
+*** Hint 12.37, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 12.33, variable shadows global name(s) 'h'
+*** Hint 12.35, variable shadows global name(s) 'n'
+*** Hint 12.37, variable shadows global name(s) 'n'
+*** Hint 13.33, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 13.28, in type of '(op Leaf[_var_84_v84] : forall a : Type . a_v-1 -> Tree a_v-1) :
+    _var_84_v84 -> Tree _var_84_v84'
+  type 'Tree _var_83_v83' (1.13)
+  is not unifiable with type 'Unit ->? Tree Nat' (1.39)
+
+*** Hint 13.28, untypable application (with result type: Unit ->? Tree Nat)
+ 'Leaf(n)'
+*** Hint 13.36, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (7.23)
+
+*** Hint 13.33, variable shadows global name(s) 'n'
+*** Hint 13.36, variable shadows global name(s) 'n'
+*** Hint 13.46, in type of '(var n : Nat)'
+  typename 'Nat' (7.10)
+  is not unifiable with type 'Unit ->? Nat' (6.15)
+
+*** Hint 8.5, in type of '((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
+ (case (var t : Tree Nat) of
+      (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
+          (op EmptyLeaf[_var_54_v54] : forall a : Type . Tree a_v-1) :
+              Tree _var_54_v54 | 
+      ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+           Nat -> Tree Nat)
+        (var n : Nat) :
+          Tree Nat
+        ->
+          (op EmptyLeaf[_var_54_v54] : forall a : Type . Tree a_v-1) :
+              Tree _var_54_v54 | 
+      (((op Node[Nat]
+         : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+            Tree Nat -> Nat -> Tree Nat)
+         ((op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat) :
+           Nat -> Tree Nat)
+        (var n : Nat) :
+          Tree Nat
+        ->
+          (op EmptyLeaf[_var_54_v54] : forall a : Type . Tree a_v-1) :
+              Tree _var_54_v54 | 
+      (((op Node[Nat]
+         : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+            Tree Nat -> Nat -> Tree Nat)
+         ((((op Node[Nat]
+             : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+                Tree Nat -> Nat -> Tree Nat)
+             (var h : Tree Nat) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat) :
+           Nat -> Tree Nat)
+        (var n : Nat) :
+          Tree Nat
+        ->
+          (var h : Tree Nat) | 
+      (((op Node[Nat]
+         : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
+            Tree Nat -> Nat -> Tree Nat)
+         (((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat) :
+           Nat -> Tree Nat)
+        (var n : Nat) :
+          Tree Nat
+        ->
+          ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
+               Nat -> Tree Nat)
+            (var n : Nat) :
+              Tree Nat) :
+     Tree Nat)'
+  type 'Tree Nat * Tree Nat' (4.39)
+  is not unifiable with type 'Unit ->? _var_5_v5 * _var_5_v5'
+

@@ -1,0 +1,14 @@
+  free type Tree a ::= Leaf a | Node (Tree a) a | EmptyLeaf
+  free type Nat ::= Zero | Suc Nat
+
+ops caseTree : forall a . Tree Nat -> Tree Nat
+
+forall h:Tree Nat;
+       n:Nat; t: Tree Nat
+  . caseTree t = case t of
+                   EmptyLeaf -> EmptyLeaf
+                   | Leaf n -> EmptyLeaf
+                   | Node EmptyLeaf n -> EmptyLeaf
+                   | Node (Node h n)n  -> h
+                   | Node (Leaf n) n -> Leaf n
+

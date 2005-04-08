@@ -197,11 +197,21 @@ partitionOpId e i sc =
     let l = Map.findWithDefault (OpInfos []) i $ assumps e
     in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
 
+checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
+checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
+    let ls = map snd $ leaves (< 0) t -- generic vars
+        rest = tArgs List.\\ ls
+    if null rest then return sc
+      else do
+      addDiags [mkDiag Warning "unused type variables" rest]
+      return $ TypeScheme ls t ps
+
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
         -> State Env (Maybe UninstOpId)
-addOpId i sc attrs defn = 
-    do e <- get
+addOpId i oldSc attrs defn = 
+    do sc <- checkUnusedTypevars oldSc
+       e <- get
        let as = assumps e
            tm = typeMap e
            TypeScheme _ ty _ = sc 
