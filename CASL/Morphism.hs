@@ -232,50 +232,37 @@ typedSymbKindToRaw k idt t =
 
 symbMapToMorphism :: Ext f e m -> Sign f e -> Sign f e 
                   -> SymbolMap -> Result (Morphism f e m)
-symbMapToMorphism extEm sigma1 sigma2 smap = do
-  sort_map1 <- Set.fold mapMSort (return Map.empty) (sortSet sigma1)
-  fun_map1 <- Map.foldWithKey mapFun (return Map.empty)  (opMap sigma1)
-  pred_map1 <- Map.foldWithKey mapPred (return Map.empty) (predMap sigma1)
-  return (Morphism { msource = sigma1,
+symbMapToMorphism extEm sigma1 sigma2 smap = let
+  sort_map1 = Set.fold mapMSort Map.empty (sortSet sigma1)
+  mapMSort s m = 
+    case Map.lookup (Symbol {symName = s, symbType = SortAsItemType}) smap
+    of Just sym -> let t = symName sym in if s == t then m else
+                           Map.insert s t m
+       Nothing -> m
+  fun_map1 = Map.foldWithKey mapFun Map.empty (opMap sigma1)
+  pred_map1 = Map.foldWithKey mapPred Map.empty (predMap sigma1)
+  mapFun i ots m = Set.fold (insFun i) m ots
+  insFun i ot m = 
+    case Map.lookup (Symbol {symName = i, symbType = OpAsItemType ot}) smap
+    of Just sym -> let j = symName sym in case symbType sym of
+         OpAsItemType oty -> let k = opKind oty in 
+            if j == i && opKind ot == k then m
+            else Map.insert (i, oty {opKind = Partial}) (j, k) m
+         _ -> m
+       _ -> m
+  mapPred i pts m = Set.fold (insPred i) m pts
+  insPred i pt m =
+    case Map.lookup (Symbol {symName = i, symbType = PredAsItemType pt}) smap
+    of Just sym -> let j = symName sym in  case symbType sym of
+         PredAsItemType pty -> if i == j then m else Map.insert (i, pty) j m
+         _ -> m
+       _ -> m 
+  in return (Morphism { msource = sigma1,
              mtarget = sigma2,
              sort_map = sort_map1,
              fun_map = fun_map1,
              pred_map = pred_map1,
              extended_map = extEm sigma1 sigma2})
-  where
-  mapMSort s m = do
-    m1 <- m 
-    sym <- maybeToMonad
-             ("symbMapToMorphism - Could not map sort "++showPretty s "")
-             $ Map.lookup (Symbol {symName = s, 
-                                   symbType = SortAsItemType}) smap
-    return (Map.insert s (symName sym) m1)
-  mapFun i ots m = Set.fold (insFun i) m ots
-  insFun i ot m = do
-    m1 <- m
-    sym <- maybeToMonad
-             ("symbMapToMorphism - Could not map op "++showPretty i "")
-             $ Map.lookup (Symbol {symName = i, 
-                                   symbType = OpAsItemType ot}) smap
-    k <- case symbType sym of
-        OpAsItemType oty -> return $ opKind oty
-        _ -> plain_error Total
-              ("symbMapToMorphism - Wrong result symbol type for op"
-               ++showPretty i "") nullPos 
-    return (Map.insert (i, ot) (symName sym,k) m1)
-  mapPred i pts m = Set.fold (insPred i) m pts
-  insPred i pt m = do
-    m1 <- m
-    sym <- maybeToMonad
-             ("symbMapToMorphism - Could not map pred "++showPretty i "")
-             $ Map.lookup (Symbol {symName = i, symbType = PredAsItemType pt}) 
-               smap
-    case symbType sym of
-        PredAsItemType _ot -> return ()
-        _ -> plain_error ()
-              ("symbMapToMorphism - Wrong result symbol type for pred"
-               ++showPretty i "") nullPos 
-    return (Map.insert (i, pt) (symName sym) m1)
       
 morphismToSymbMap ::  Morphism f e m -> SymbolMap
 morphismToSymbMap mor =
