@@ -341,26 +341,6 @@ Fail: illegal node type in sublogic computation
 
 J¸rgen Zimmer, Saarbr¸cken+Edinburgh, Beweiserkennung f¸r versch. Logiken im MathWeb
 
-spec VarTestIncorrect =
-     sorts s,t
-     vars x:s; y:t
-     forall x:t; y:s
-     . x = y
-end
-
-spec VarTestCorrect =
-     sorts s,t
-     %% vars x:s; y:t
-     forall x:t; y:s
-     . x = y
-end
-
-Incorrect geht durch, weil die Typanalyse nicht funktioniert und Correct
-wird abgelehnt, weil x und y nicht denselben Typ haben, was das richtige
-Verhalten auch im ersten Fall w\x{00E4}re.
-
-
-
 for CSP-CASL example: with logic
 heterogeneous static ana
 
@@ -389,7 +369,7 @@ better display of internal nodes (use tooltip?)
 update Hets, CASL, daVinci on web page
 
 
-CASL2PCFOL: x_i -> t_i, t=[inj(x_i)]
+CASL2PCFOL: x_i -> t_i, t=[inj(x_i)] (and what not!)
 
 packing of binaries: add hets-update, refer to TclTk
 
@@ -433,7 +413,7 @@ CASL->Haskell with free DTs (mark sortgens) + recursion
 
 
 - List[Dec] wird List[Pos]
-- George wg. Schlieﬂen von Fenstern
+
 - node numbers do not match
 - thm links with external target should be provable as well
 
