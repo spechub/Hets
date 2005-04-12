@@ -720,7 +720,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
               let title = "Signature of "++showName name
                in createTextDisplay title (showPretty sig "") [size(80,50)]
               --putStrLn ((showPretty sig) "\n")
-           (DGRef _ _ _) -> error 
+           (DGRef _ _ _ _ _) -> error 
 			    "nodes of type dg_ref do not have a signature"
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
@@ -771,7 +771,7 @@ displayTheory ext node dgraph gth =
                   title = ext ++ " of " ++ thname
                in createTextSaveDisplay title (thname++".het") str [size(100,50)]
               --putStrLn ((showPretty sig) "\n")
-           (DGRef _ _ _) -> error 
+           (DGRef _ _ _ _ _) -> error 
 			    "nodes of type dg_ref do not have a theory"
      
 
@@ -1073,7 +1073,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps hetsOpts =
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
 	  Just (_,_,dgraph) -> 
-            do let (_,(DGRef _ refLibname refNode)) = 
+            do let (_,(DGRef _ refLibname refNode _ _)) = 
 		       labNode' (context node dgraph)
 	       case Map.lookup refLibname libname2dgMap of
                  Just (_,refDgraph,_) -> 

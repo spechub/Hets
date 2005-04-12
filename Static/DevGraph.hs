@@ -67,7 +67,9 @@ data DGNodeLab = DGNode {
             | DGRef {
                 dgn_renamed :: NODE_NAME,
                 dgn_libname :: LIB_NAME,
-                dgn_node :: Node
+                dgn_node :: Node,
+		dgn_nf :: Maybe Node,
+		dgn_sigma :: Maybe GMorphism
               } deriving (Show,Eq) 
 
 isInternalNode :: DGNodeLab -> Bool
@@ -77,7 +79,7 @@ isInternalNode _ = False
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName (DGNode n _ _ _ _ _) = showName n
-getDGNodeName (DGRef n _ _) = showName n
+getDGNodeName (DGRef n _ _ _ _) = showName n
 
 emptyName :: NODE_NAME
 emptyName = (mkSimpleId "","",0)
@@ -110,12 +112,12 @@ extName s (n,s1,i) = (n,s1++showInt i++s,0)
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _ _ _) = False
-isDGRef (DGRef _ _ _) = True
+isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence_list _ sens) _ _ _) = 
   is_subsig lid sigma (empty_signature lid) && null sens
-locallyEmpty (DGRef _ _ _) = True
+locallyEmpty (DGRef _ _ _ _ _) = True
            
 data DGLinkLab = DGLink {
               -- dgl_name :: String,

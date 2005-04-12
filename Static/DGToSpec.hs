@@ -59,7 +59,7 @@ dgToSpec dg node = do
          return (Cofree_spec (head apredSps) pos)
     (DGNode _ _ _ _ _ (DGSpecInst name)) ->
          return (Spec_inst name [] pos)
-    (DGRef name _ _) -> return (Spec_inst (getName name) [] pos)
+    (DGRef name _ _ _ _) -> return (Spec_inst (getName name) [] pos)
     _ -> return (Extension apredSps pos)
 
 {- compute the theory of a given node. 

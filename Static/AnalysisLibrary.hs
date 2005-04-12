@@ -126,7 +126,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
                           let libEnv' = (Map.insert libname gc libenv)
                               nodesDGRef =
                                  filter (\ labDG -> case labDG of 
-                                                      DGRef _ _ _ -> True
+                                                      DGRef _ _ _ _ _ -> True
                                                       _ -> False)
                                         (map snd (labNodes dgraph))
                        -- and call anaLibFile with each of the dgn_libname
@@ -503,7 +503,10 @@ refNodesig ln (dg,refdNodes) (name,NodeSig(n,sigma)) =
   let node_contents = DGRef {
         dgn_renamed = makeMaybeName name,
         dgn_libname = ln,
-        dgn_node = n }
+        dgn_node = n,
+	dgn_nf = Nothing,
+	dgn_sigma = Nothing
+	}
       [node] = newNodes 0 dg
    in (insNode (node,node_contents) dg, NodeSig(node,sigma) : refdNodes)
 refNodesig _ln (dg,refdNodes) (_,EmptyNode l) =
