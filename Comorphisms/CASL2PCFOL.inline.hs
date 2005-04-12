@@ -20,6 +20,8 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
+import Common.ListUtils
+import Data.List
 
 -- CASL
 import CASL.Logic_CASL 
@@ -31,8 +33,7 @@ import CASL.Inject
 import CASL.Project
 import CASL.Overload
 import CASL.StaticAna
-import Common.ListUtils
-import Data.List
+import CASL.Simplify
 
 -- | The identity of the comorphism
 data CASL2PCFOL = CASL2PCFOL deriving (Show)
@@ -80,54 +81,60 @@ instance Comorphism CASL2PCFOL
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
-encodeSig sig = if Rel.isEmpty rel then sig -- nothing to do
-    else sig {sortRel = Rel.empty, opMap = projOpMap }
-    where 
-    rel = Rel.irreflex $ sortRel sig
-    relList = Rel.toList $ Rel.union rel $ Rel.fromList
-              $ map ( \ s -> (s, s)) $ Set.toList $ sortSet sig
-              -- we need identity injections for monotonicity formulas
-    total (s, s') = OpType {opKind=Total,opArgs=[s],opRes=s'}
-    partial (s, s') = OpType {opKind=Partial,opArgs=[s'],opRes=s} 
-    setinjOptype = Set.fromList(map total relList)  
-    setprojOptype = Set.fromList (map partial $ Rel.toList rel)  
-    injOpMap = Map.insert injName setinjOptype (opMap sig) 
-    projOpMap = Map.insert projName setprojOptype (injOpMap)  
+encodeSig sig
+  = if null rel then sig else
+      sig{sortRel = Rel.empty, opMap = projOpMap}
+  where rel = Rel.toList $ Rel.irreflex $ sortRel sig
+        total (s, s') = OpType{opKind = Total, opArgs = [s], opRes = s'}
+        partial (s, s') = OpType{opKind = Partial, opArgs = [s'], opRes = s}
+        setinjOptype = Set.fromList $ map total rel
+        setprojOptype = Set.fromList $ map partial rel
+        injOpMap = Map.insert injName setinjOptype $ opMap sig
+        projOpMap = Map.insert projName setprojOptype $ injOpMap
     -- membership predicates are coded out
 
-generateAxioms :: Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = monotonicities sig ++
-  concat 
+generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
+generateAxioms sig = monotonicities sig ++ map (mapNamed $ simplifyFormula id)
+  (concat 
   ([inlineAxioms CASL
      "  sorts s < s' \
       \ op inj : s->s' \
       \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "
     ++ inlineAxioms CASL
-     " sort s< s' \
-      \ op pr : s'->?s ; inj:s->s' \
-      \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% " 
-    ++ inlineAxioms CASL
       " sort s<s' \
       \ op pr : s'->?s \
       \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(ga_projection_injectivity)% " 
-      | (s,s') <- rel2List]                         
+    ++ inlineAxioms CASL
+     " sort s< s' \
+      \ op pr : s'->?s ; inj:s->s' \
+      \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% " 
+      | s <- sorts, 
+        s' <- minSupers s]
    ++ [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "  
-          |(s,s')<-rel2List, s'' <- Set.toList(supersortsOf s' sig),
-           s' /= s'', s'' /= s]
+          | s <- sorts, 
+            s' <- minSupers s,
+            s'' <- minSupers s',
+            s'' /= s]
    ++ [inlineAxioms CASL
      " sort s<s';s'<s \
       \ op inj:s->s' ; inj: s'->s \
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "  
-          |(s,s')<-rel2List, Set.member s $ supersortsOf s' sig])
+          | s <- sorts, 
+            s' <- minSupers s,
+            Set.member s $ supersortsOf s' sig2]))
     where 
         x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = injName
         pr = projName
-        rel2List=Rel.toList $ Rel.irreflex $ sortRel sig
+        minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so 
+                           $ supersortsOf so sig2
+        sorts = Set.toList $ sortSet sig
+        rel = Rel.irreflex $ sortRel sig 
+        sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
 
 monotonicities :: Sign f e -> [Named (FORMULA f)]
 monotonicities sig = 
@@ -181,7 +188,7 @@ makeEquivMonoR o o1 o2 args res =
         t2 = inject [] (Application (Qual_op_name o (toOP_TYPE o2) []) a2 []) 
              res
     in  NamedSen { senName = "ga_function_monotonicity",
-                   sentence = Quantification Universal vds
+                   sentence = mkForall vds
                       (Existl_equation t1 t2 []) [] }
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType 
@@ -200,8 +207,8 @@ makeEquivPred o o1 o2 args =
                       inject [] (toQualVar v) s) vds $ predArgs o2
         t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) []) a1 []
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) []) a2 []
-    in  NamedSen { senName = "ga_function_monotonicity",
-                   sentence = Quantification Universal vds
+    in  NamedSen { senName = "ga_predicate_monotonicity",
+                   sentence = mkForall vds
                       (Equivalence t1 t2 []) [] }
 
 -- | all maximal common subsorts of the two input sorts
