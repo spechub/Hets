@@ -788,24 +788,38 @@ handleLeaves dgraph (node:list) = do
   (finalGraph, furtherChanges) <- handleLeaves auxGraph list
   return (finalGraph, changes ++ furtherChanges)
 
--- was machen, wenn der Knoten ein DGRef ist??
+
 convertToNf :: DGraph -> Node -> IO (DGraph, [DGChange])
 convertToNf dgraph node = do
-  let dgnodelab = lab' (context node dgraph)
-      sign = dgn_sign dgnodelab
+  let nodelab = lab' (context node dgraph)
       [newNode] = newNodes 0 dgraph
-      newDgnode = (newNode, 
-		   DGNode {dgn_name = dgn_name dgnodelab,
-			   dgn_sign = sign,
-			   dgn_sens = dgn_sens dgnodelab,
-			   dgn_nf = Just newNode,
-			   dgn_sigma = Just (ide Grothendieck sign),
-			   dgn_origin = DGProof
-			  })
+      newDgnode = case isDGRef nodelab of
+		    False -> mkNfDGNode newNode nodelab
+		    True -> mkNfDGRef newNode nodelab
       auxGraph = insNode newDgnode dgraph
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
   return (delNode node finalGraph,
-	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,dgnodelab)])
+	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,nodelab)])
+  where 
+    mkNfDGNode :: Node -> DGNodeLab -> LNode DGNodeLab
+    mkNfDGNode newNode nodelab = 
+	(newNode,
+	 DGNode {dgn_name = dgn_name nodelab,
+		 dgn_sign = dgn_sign nodelab,
+		 dgn_sens = dgn_sens nodelab,
+		 dgn_nf = Just newNode,
+		 dgn_sigma = Just (ide Grothendieck (dgn_sign nodelab)),
+		 dgn_origin = DGProof
+		})
+    mkNfDGRef :: Node -> DGNodeLab -> LNode DGNodeLab
+    mkNfDGRef newNode nodelab =
+	(newNode,
+	 DGRef {dgn_renamed = dgn_renamed nodelab,
+		dgn_libname = dgn_libname nodelab,
+		dgn_node = dgn_node nodelab, -- nf im refGraph finden
+		dgn_nf = Just newNode,
+		dgn_sigma = Nothing -- Just (ide Grothendieck sign)
+	       })
 
 
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
@@ -837,8 +851,8 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
 handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
 handleNonLeaves dgraph [] = return (dgraph,[])
 handleNonLeaves dgraph (node:list) = do
-  let nodeLab = lab' (context node dgraph)
-  case dgn_nf nodeLab of
+  let nodelab = lab' (context node dgraph)
+  case dgn_nf nodelab of
     Just _ -> handleNonLeaves dgraph list
     Nothing -> do
       (auxGraph, changes) <- createNfsForPredecessors dgraph node
@@ -854,20 +868,37 @@ handleNonLeaves dgraph (node:list) = do
 		      return (finalGraph, changes ++ furtherChanges)
         Just (sign,map) -> do
           let [nfNode] = newNodes 0 auxGraph
-              nfDGNode = (nfNode, DGNode {dgn_name = dgn_name nodeLab,
-					  dgn_sign = dgn_sign nodeLab, 
-					  --actually: sign
-					  dgn_sens = dgn_sens nodeLab,
-					  dgn_nf = Just nfNode,
-					  dgn_sigma = dgn_sigma nodeLab,
-					  dgn_origin = DGProof
-					 })
+              nfDGNode = case isDGRef nodelab of
+			   False -> mkNfDGNode nfNode nodelab (dgn_sign nodelab) -- actually sign
+			   True -> mkNfDGRef nfNode nodelab sign
+
           (auxGraph', changes') <- 
 	      setNfOfNode (insNode nfDGNode auxGraph) node nfNode
           let (auxGraph'',changes'') = insertEdgesToNf auxGraph' nfNode map
           (finalGraph,furtherChanges) <- handleNonLeaves auxGraph'' list
           return (finalGraph, changes ++ [InsertNode nfDGNode]
 		              ++ changes' ++ changes'' ++ furtherChanges)
+
+  where
+    mkNfDGNode :: Node -> DGNodeLab -> G_sign -> LNode DGNodeLab
+    mkNfDGNode newNode nodelab sign =
+	(newNode, 
+	 DGNode {dgn_name = dgn_name nodelab,
+		 dgn_sign = sign,
+		 dgn_sens = dgn_sens nodelab,
+		 dgn_nf = Just newNode,
+		 dgn_sigma = dgn_sigma nodelab,
+		 dgn_origin = DGProof
+		})
+    mkNfDGRef :: Node -> DGNodeLab -> G_sign -> LNode DGNodeLab
+    mkNfDGRef newNode nodelab sign =
+	(newNode,
+	 DGRef {dgn_renamed = dgn_renamed nodelab,
+		dgn_libname = dgn_libname nodelab,
+		dgn_node = dgn_node nodelab,  -- nf im refGraph finden
+		dgn_nf = Just newNode,
+		dgn_sigma = dgn_sigma nodelab -- so richtig?
+	       })
 
 createNfsForPredecessors :: DGraph -> Node -> IO (DGraph, [DGChange])
 createNfsForPredecessors dgraph node = do
