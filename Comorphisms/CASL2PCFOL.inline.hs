@@ -11,18 +11,8 @@ Portability :  portable
    following Chap. III:3.1 of the CASL Reference Manual
 -}
 
-{-
-   todo
-   predicate_monotonicity  (wie function_monotonicty)
-   encodeFORMULA
-   treat inj(u_i) separately
-   map_morphism should modify sort_map etc.
-   map_sign should avoid to generate OpNames with empty set of profiles
--}
-
 module Comorphisms.CASL2PCFOL where
 
---import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
@@ -40,6 +30,7 @@ import CASL.Sublogic
 import CASL.Inject
 import CASL.Project
 import CASL.Overload
+import CASL.StaticAna
 import Common.ListUtils
 import Data.List
 
@@ -105,70 +96,128 @@ encodeSig sig = if Rel.isEmpty rel then sig -- nothing to do
     -- membership predicates are coded out
 
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = 
+generateAxioms sig = monotonicities sig ++
   concat 
   ([inlineAxioms CASL
      "  sorts s < s' \
       \ op inj : s->s' \
-      \ forall x,y:s . inj(x)=inj(y) => x=y   %(ga_embedding_injectivity)% "
+      \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "
     ++ inlineAxioms CASL
      " sort s< s' \
       \ op pr : s'->?s ; inj:s->s' \
-      \ forall x:s . pr(inj(x))=x             %(ga_projection)% " 
+      \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% " 
     ++ inlineAxioms CASL
       " sort s<s' \
       \ op pr : s'->?s \
       \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(ga_projection_injectivity)% " 
       | (s,s') <- rel2List]                         
-    ++ [inlineAxioms CASL
-      " sort s \
-      \ op inj : s->s \
-      \ forall x:s . inj(x)=x                 %(ga_identity)%" 
-          | s <- Set.toList $ sortSet sig]
    ++ [inlineAxioms CASL
      " sort s<s';s'<s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
-      \ forall x:s . inj(inj(x))=inj(x)      %(ga_transitivity)% "  
+      \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "  
           |(s,s')<-rel2List, s'' <- Set.toList(supersortsOf s' sig),
-           s' /= s'']
+           s' /= s'', s'' /= s]
    ++ [inlineAxioms CASL
-    " sort s'<s ; s''<s ; w'_i ; w''_i ; w_i; w_j  \
-    \ ops f:w'_i->s' ; f:w''_i->s'' ; \
-    \     inj: s' -> s ; inj: s''->s ; inj: w_i->w'_i ; inj:w_i -> w''_i  \
-    \ var u_j : w_i   \
-    \ forall u_i : w_i . \
-    \ inj((op f:w'_i->s')(inj(u_j)))=inj((op f:w''_i->s'')(inj(u_j))) \
-    \                                           %(ga_function_monotonicity)%"
-    
-          |(f,l)<- ftTL, t1<-l,t2<-l, t1 < t2, leqF sig t1 t2,
-           let w' = opArgs t1, let w'' = opArgs t2,
-           let s' = opRes t1, let s'' = opRes t2,
-           s<-Set.toList $ common_supersorts sig s' s'',
-           w<- permute $ map findsubsort $ zip w' w'',
-           let u = [mkSimpleId ("u"++show i) | i<-[1..length w]]]
-   ++ [inlineAxioms CASL                                 
-    " sort w'_i ; w''_i ; w_i  \ 
-    \ pred p: w'_i;  pred p: w''_i;  \
-    \ ops inj:w_i->w'_i;   inj:w_i->w''_i \ 
-    \ forall  v_i:w_i . (pred p:w'_i)(inj(v_i)) <=> (pred p:w''_i)(inj(v_i)) \
-    \                                           %(ga_predicate_monotonicity)%"
-        | (p,l)<-pred2List, t1<-l, t2<-l, t1<t2, 
-          leqP sig t1 t2,
-          let w'= predArgs t1, let w''= predArgs t2, 
-          w<-permute $ map findsubsort $ zip w' w'',
-          let v = [mkSimpleId ("v"++show i) | i<-[1..length w]] ]) 
+     " sort s<s';s'<s \
+      \ op inj:s->s' ; inj: s'->s \
+      \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "  
+          |(s,s')<-rel2List, Set.member s $ supersortsOf s' sig])
     where 
         x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = injName
         pr = projName
         rel2List=Rel.toList $ Rel.irreflex $ sortRel sig
-        pred2List = map (\(i, ps)->(i, Set.toList ps)) 
-                    $ Map.toList $ predMap sig
-        findsubsort (a, b) = Set.toList $ common_subsorts sig a b
-        ftTL = map (\(i, os) -> (i, Set.toList os)) 
-               $ Map.toList $ opMap sig
 
+monotonicities :: Sign f e -> [Named (FORMULA f)]
+monotonicities sig = 
+    concatMap (makeMonos sig) (Map.toList $ opMap sig)
+    ++ concatMap (makePredMonos sig) (Map.toList $ predMap sig)
 
+makeMonos :: Sign f e -> (Id, Set.Set OpType) -> [Named (FORMULA f)]
+makeMonos sig (o, ts) = 
+   concatMap (makeEquivMonos o sig) $ equivalence_Classes (leqF sig) 
+             $ Set.toList ts
+
+makePredMonos :: Sign f e -> (Id, Set.Set PredType) -> [Named (FORMULA f)]
+makePredMonos sig (p, ts) = 
+   concatMap (makeEquivPredMonos p sig) $ equivalence_Classes (leqP sig) 
+             $ Set.toList ts
+
+makeEquivMonos :: Id -> Sign f e -> [OpType] -> [Named (FORMULA f)]
+makeEquivMonos o sig ts = 
+  case ts of
+  [] -> []
+  t : rs -> concatMap (makeEquivMono o sig t) rs ++
+            makeEquivMonos o sig rs
+
+makeEquivPredMonos :: Id -> Sign f e -> [PredType] -> [Named (FORMULA f)]
+makeEquivPredMonos o sig ts = 
+  case ts of
+  [] -> []
+  t : rs -> concatMap (makeEquivPredMono o sig t) rs ++
+            makeEquivPredMonos o sig rs
+
+makeEquivMono :: Id -> Sign f e -> OpType -> OpType -> [Named (FORMULA f)]
+makeEquivMono o sig o1 o2 =     
+      let rs = minimalSupers sig (opRes o1) (opRes o2)
+          args = permute $ zipWith (maximalSubs sig) (opArgs o1) (opArgs o2)
+      in concatMap (makeEquivMonoRs o o1 o2 rs) args 
+
+makeEquivMonoRs :: Id -> OpType -> OpType -> 
+                   [SORT] -> [SORT] -> [Named (FORMULA f)]
+makeEquivMonoRs o o1 o2 rs args = map (makeEquivMonoR o o1 o2 args) rs
+
+makeEquivMonoR :: Id -> OpType -> OpType -> 
+                  [SORT] -> SORT -> Named (FORMULA f)
+makeEquivMonoR o o1 o2 args res = 
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s []) args [1..]
+        a1 = zipWith (\ v s -> 
+                      inject [] (toQualVar v) s) vds $ opArgs o1
+        a2 = zipWith (\ v s -> 
+                      inject [] (toQualVar v) s) vds $ opArgs o2
+        t1 = inject [] (Application (Qual_op_name o (toOP_TYPE o1) []) a1 [])
+             res
+        t2 = inject [] (Application (Qual_op_name o (toOP_TYPE o2) []) a2 []) 
+             res
+    in  NamedSen { senName = "ga_function_monotonicity",
+                   sentence = Quantification Universal vds
+                      (Existl_equation t1 t2 []) [] }
+
+makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType 
+                  -> [Named (FORMULA f)]
+makeEquivPredMono o sig o1 o2 =     
+      let args = permute $ zipWith (maximalSubs sig) (predArgs o1) 
+                 $ predArgs o2
+      in map (makeEquivPred o o1 o2) args 
+
+makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
+makeEquivPred o o1 o2 args = 
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s []) args [1..]
+        a1 = zipWith (\ v s -> 
+                      inject [] (toQualVar v) s) vds $ predArgs o1
+        a2 = zipWith (\ v s -> 
+                      inject [] (toQualVar v) s) vds $ predArgs o2
+        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) []) a1 []
+        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) []) a2 []
+    in  NamedSen { senName = "ga_function_monotonicity",
+                   sentence = Quantification Universal vds
+                      (Equivalence t1 t2 []) [] }
+
+-- | all maximal common subsorts of the two input sorts
+maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
+maximalSubs s s1 s2 = 
+    keepMaximals s id $ Set.toList $ common_subsorts s s1 s2
+
+keepMaximals :: Sign f e -> (a -> SORT) -> [a] -> [a]
+keepMaximals s' f' l = keepMaximals2 s' f' l l
+    where keepMaximals2 s f l1 l2 = case l1 of
+              [] -> l2
+              x : r -> keepMaximals2 s f r $ filter 
+                   ( \ y -> let v = f x 
+                                w = f y 
+                            in leq_SORT s v w ||
+                            not (geq_SORT s v w)) l2
+ 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula id . injFormula id 
