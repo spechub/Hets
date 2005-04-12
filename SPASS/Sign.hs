@@ -25,15 +25,12 @@ data SPOriginType =
       deriving (Eq, Show)
 
 data SPTerm = 
-        SPQuantTerm { termList :: SPTermList,
+        SPQuantTerm { quantSym :: SPQuantSym,
+                      termList :: [SPTerm],
                       term     :: SPTerm }
       | SPSimpleTerm SPSymbol
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}
-      deriving (Eq, Show)
-
-data SPTermList = 
-        SPTermList [SPTerm]
       deriving (Eq, Show)
 
 data SPQuantSym =
