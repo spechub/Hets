@@ -13,6 +13,7 @@ Portability :  portable
 module CASL.Simplify where
 
 import CASL.AS_Basic_CASL
+import Data.List(nub)
 
 simplifyTerm :: Eq f => (f -> f) -> TERM f -> TERM f
 simplifyTerm mf t = case t of
@@ -39,21 +40,25 @@ simplifyFormula mf form = case form of
           True_atom _ -> newF 
           False_atom _ -> newF 
           _ -> Quantification q vs newF ps
-   Conjunction fs ps -> case fs of 
+   Conjunction fs ps -> 
+       case nub $ filter (/= True_atom []) $ map (simplifyFormula mf) fs of 
        [] -> True_atom ps
        [f] -> f 
-       _ -> Conjunction (map (simplifyFormula mf) fs) ps
+       rs -> Conjunction rs ps
    Disjunction fs ps -> 
-       case fs of 
+       case nub $ filter (/= False_atom []) $ map (simplifyFormula mf) fs of 
        [] -> False_atom ps
        [f] -> f 
-       _ -> Disjunction (map (simplifyFormula mf) fs) ps
+       rs -> Disjunction rs ps
    Implication f1 f2 b ps -> let
        f3 = simplifyFormula mf f1
        f4 = simplifyFormula mf f2
        in case f3 of 
        True_atom _ -> f4
-       _ -> Implication f3 f4 b ps
+       False_atom _ -> True_atom ps
+       _ -> case f4 of 
+            True_atom _ -> f4 
+            _ -> if f3 == f4 then True_atom ps else Implication f3 f4 b ps
    Equivalence f1 f2 ps -> let
        f3 = simplifyFormula mf f1
        f4 = simplifyFormula mf f2
