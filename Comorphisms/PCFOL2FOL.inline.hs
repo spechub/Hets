@@ -1,7 +1,7 @@
 {-                                                                          
 Module:  $Header: /repository/HetCATS/Comorphisms/PFOL2FOL.inline.hs,      v 
 1.20 2004/06/02 19:52:39 mnd Exp $                                            
-Copyright   :  (c) Zicheng Wang, Uni Bremen 2002-2004                         
+Copyright   :  (c) Zicheng Wang, C. Maeder, Uni Bremen 2002-2005                         
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt          
                                                                                
 Maintainer  :  hets@tzi.de                                                     
@@ -18,16 +18,13 @@ Portability :  portable
 
 module Comorphisms.PCFOL2FOL where
 
---import Test
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
---import Comorphisms.CASL2PCFOL
-
+import Data.List
 
 --CASL
 import CASL.Logic_CASL
@@ -36,10 +33,7 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic hiding (bottom)
 import CASL.Overload
-import List (nub,delete)
-import Common.ListUtils
-import Data.List
-
+import CASL.Simplify
 
 -- | The identity of the comorphism
 data PCFOL2FOL = PCFOL2FOL deriving (Show)
@@ -78,33 +72,57 @@ instance Comorphism PCFOL2FOL
     map_theory PCFOL2FOL = mkTheoryMapping ( \ sig ->
           let e = sig2FOL sig in return (e, generateFOLAxioms sig)) 
           (map_sentence PCFOL2FOL)
-    map_morphism PCFOL2FOL = return . id
-    map_sentence PCFOL2FOL _ = return . mapSen
-    map_symbol PCFOL2FOL = Set.single . id
+    map_morphism PCFOL2FOL m = return m
+                { msource = sig2FOL $ msource m
+                , mtarget = sig2FOL $ mtarget m
+                , fun_map = Map.map (\ (i, _) -> (i, Total)) $ 
+                            fun_map m }
+    map_sentence PCFOL2FOL sig = 
+        return . simplifyFormula id . totalizeFormula (sortsWithBottom sig) id
+    map_symbol PCFOL2FOL s = 
+      Set.single s { symbType = totalizeSymbType $ symbType s }
 
+totalizeSymbType :: SymbType -> SymbType
+totalizeSymbType t = case t of
+  OpAsItemType ot -> OpAsItemType ot { opKind = Total }
+  _ -> t
 
-sig2FOL::Sign f e-> Sign f e
-sig2FOL  sig =sig {opMap=newOpMap,predMap=newpredMap }
+sortsWithBottom :: Sign f e -> Set.Set SORT
+sortsWithBottom sign = 
+    let ops = Map.elems $ opMap sign
+        resSortsOfPartialFcts = 
+            Set.unions $ map (Set.image opRes . 
+                                 Set.filter ( \ t -> opKind t == Partial))
+            ops
+        collect given = 
+            let more = Set.unions $ map (Set.image opRes . 
+                                 Set.filter ( \ t -> any 
+                                 (flip Set.member given) $ opArgs t)) ops
+            in if Set.subset more given then given
+               else collect $ Set.union more given
+     in collect resSortsOfPartialFcts
+
+sig2FOL :: Sign f e -> Sign f e
+sig2FOL sig = sig { opMap=newOpMap, predMap = newpredMap }
  where
-   sig2sort=Set.toList(sortSet sig)
-   undef x = OpType{opKind = Total, opArgs=[],opRes=x}
-   setundef = Set.fromList (map undef sig2sort)
-   map2list = Map.toList(opMap sig)
-   set2list = map (\(x,y)->(x,Set.toList y)) map2list
-   par2total [] = []
-   par2total (x:xs) = if ((opKind x)==Partial) then  (x{opKind=Total}):(par2total xs) else  x:(par2total xs)
-   newTotalMap =Map.fromList [(x,Set.fromList(par2total y))|(x,y)<-set2list]
-   newOpMap  = Map.insert bottom setundef newTotalMap
-   undefpred x = PredType{predArgs=[x]}
-   setundefpred = Set.fromList(map undefpred sig2sort)
-   newpredMap = Map.insert defPred setundefpred (predMap sig)
+   newTotalMap = Map.map (Set.image $ makeTotal Total) $ opMap sig
+   botType x = OpType {opKind = Total, opArgs=[], opRes=x }
+   bsorts = sortsWithBottom sig
+   botTypes = Set.image botType bsorts
+   newOpMap  = Map.insert bottom botTypes newTotalMap
+   defType x = PredType{predArgs=[x]}
+   defTypes = Set.image defType bsorts
+   newpredMap = Map.insert defPred defTypes $ predMap sig
 
-bottom = mkId[mkSimpleId "_bottom"]
-defPred = mkId[mkSimpleId "_D"]
+bottom :: Id
+bottom = mkId[mkSimpleId "g__bottom"]
+defPred :: Id
+defPred = mkId[mkSimpleId "g__defined"]
  
-generateFOLAxioms :: Sign f e -> [Named(FORMULA f)]
---generateFOLAxioms _ = []
-generateFOLAxioms sig = 
+generateFOLAxioms :: Eq f => Sign f e -> [Named(FORMULA f)]
+generateFOLAxioms sig = filter ((/= True_atom []) . sentence) $ map 
+  (mapNamed (simplifyFormula id . 
+  rmDefs bsorts id)) $
   concat
    ([inlineAxioms CASL 
       " sort s          \
@@ -115,15 +133,14 @@ generateFOLAxioms sig =
       \ op bottom:s         \
       \ pred d:s            \
       \ forall x:s . not d(x) <=> x=bottom            %(ga_notDefBottom)%"
-        | s<-sortList ] ++
+        | s <- sortList ] ++
     [inlineAxioms CASL 
       " sort t             \
       \ sorts s_i          \
       \ sorts s_k          \
       \ op f:s_i->t     \
-      \ preds d:t; d:s_i; d:s_k        \
       \ var y_k:s_k             \
-      \ forall y_i:s_i . d(f(y_i)) <=> d(y_k) /\\ d(y_k) %(ga_totality)%"
+      \ forall y_i:s_i . def f(y_i) <=> def y_k /\\ def y_k %(ga_totality)%"
         | (f,typ) <- opList, opKind typ == Total,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL 
@@ -131,56 +148,113 @@ generateFOLAxioms sig =
       \ sorts s_i          \
       \ sorts s_k          \
       \ op f:s_i->t     \
-      \ preds d:t; d:s_i; d:s_k        \
       \ var y_k:s_k             \
-      \ forall y_i:s_i . d(f(y_i)) => d(y_k) /\\ d(y_k) %(ga_stricntess)%"
+      \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_stricntess)%"
         | (f,typ) <- opList, opKind typ == Partial,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL 
       " sorts s_i          \
       \ sorts s_k          \
       \ pred p:s_i     \
-      \ preds d:s_i; d:s_k        \
       \ var y_k:s_k             \
-      \ forall y_i:s_i . p(y_i) => d(y_k) /\\ d(y_k) %(ga_predicate_strictness)%"
+      \ forall y_i:s_i . p(y_i) => def y_k /\\ def y_k \
+      \ %(ga_predicate_strictness)%"
         | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ] ) 
  where 
   d = defPred
-  sortList = Set.toList (sortSet sig)
+  bsorts = sortsWithBottom sig
+  sortList = Set.toList bsorts
   opList = [(f,t) | (f,types) <- Map.assocs $ opMap sig,
                     t <- Set.toList types ]
   predList = [(p,t) | (p,types) <- Map.assocs $ predMap sig,
                     t <- Set.toList types ]
   x = mkSimpleId "x"
-  bottom = mkId [mkSimpleId "_bottom"]
   mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]
 
-defined t s ps =
-  Predication (Qual_pred_name defPred (Pred_type [s] []) []) [t] ps
+defined :: Set.Set SORT -> TERM f -> SORT -> [Pos] -> FORMULA f
+defined bsorts t s ps =
+  if Set.member s bsorts then  
+     Predication (Qual_pred_name defPred (Pred_type [s] []) []) [t] ps
+  else True_atom ps
 
-defVards [vs@(Var_decl [v] s _)] = head $ defVars vs
-defVards vs = Conjunction (concatMap defVars vs) []
-defVars (Var_decl vns s _) = map (defVar s) vns
-defVar s v = defined (Qual_var v s []) s []
+defVards :: Set.Set SORT -> [VAR_DECL] -> FORMULA f
+defVards bs [vs@(Var_decl [_] _ _)] = head $ defVars bs vs
+defVards bs vs = Conjunction (concatMap (defVars bs) vs) []
+defVars :: Set.Set SORT -> VAR_DECL -> [FORMULA f]
+defVars bs (Var_decl vns s _) = map (defVar bs s) vns
+defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
+defVar bs s v = defined bs (Qual_var v s []) s []
 
-mapSen :: FORMULA f -> FORMULA f
-mapSen f = case f of
-    Quantification q vs frm ps -> 
-       Implication (defVards vs) (Quantification q vs (mapSen frm) ps) False ps
-    Conjunction fs ps -> Conjunction (map mapSen fs) ps
-    Disjunction fs ps -> Disjunction (map mapSen fs) ps
-    Implication f1 f2 b ps -> Implication (mapSen f1) (mapSen f2) b ps
-    Equivalence f1 f2 ps -> Equivalence (mapSen f1) (mapSen f2) ps
-    Negation frm ps -> Negation (mapSen frm) ps
-    True_atom ps -> True_atom ps
-    False_atom ps -> False_atom ps
-    Existl_equation t1 t2 ps ->
-       Conjunction[Strong_equation t1 t2 ps,
-                   defined t1 (term_sort t1) ps] ps
-    Strong_equation t1 t2 ps -> Strong_equation t1 t2 ps
-    Predication pn ts qs -> Predication pn ts qs
-    Definedness t ps -> defined t (term_sort t) ps
-    Membership t ty ps -> error "PCFOL2FOL: no subsorted formula allowed"
-    Sort_gen_ax constrs isFree -> Sort_gen_ax constrs isFree
-    _ -> error "PCFOL2FOL: wrong formula type"
+totalizeTerm :: Set.Set SORT -> (f -> f) -> TERM f -> TERM f
+totalizeTerm bsrts mf t = case t of
+   Application o args ps -> 
+       Application (totalizeOpSymb o) (map (totalizeTerm bsrts mf) args) ps
+   Conditional t1 f t2 ps -> let
+       t3 = totalizeTerm bsrts mf t1
+       newF = totalizeFormula bsrts mf f
+       t4 = totalizeTerm bsrts mf t2
+       in Conditional t3 newF t4 ps 
+   -- casted and sorted terms are coded out
+   _ -> t
+   where totalizeOpSymb o = case o of 
+                            Qual_op_name i (Op_type _ args res ps) qs -> 
+                                Qual_op_name i (Op_type Total args res ps) qs
+                            _ -> o
 
+totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
+totalizeFormula bsrts mf form = case form of 
+   Quantification q vs qf ps -> Implication (defVards bsrts vs) 
+       (Quantification q vs (totalizeFormula bsrts mf qf) ps) False ps
+   Conjunction fs ps -> Conjunction (map (totalizeFormula bsrts mf) fs) ps
+   Disjunction fs ps -> Disjunction (map (totalizeFormula bsrts mf) fs) ps
+   Implication f1 f2 b ps -> let
+       f3 = totalizeFormula bsrts mf f1
+       f4 = totalizeFormula bsrts mf f2
+       in Implication f3 f4 b ps
+   Equivalence f1 f2 ps -> let
+       f3 = totalizeFormula bsrts mf f1
+       f4 = totalizeFormula bsrts mf f2
+       in Equivalence f3 f4 ps
+   Negation nf ps -> let
+       newF = totalizeFormula bsrts mf nf
+       in Negation newF ps
+   Predication p args ps -> 
+       let newArgs = map (totalizeTerm bsrts mf) args in
+       Predication p newArgs ps
+   Definedness t ps -> let 
+       newT = totalizeTerm bsrts mf t
+       srt = term_sort newT 
+       in defined bsrts newT srt ps
+   Existl_equation t1 t2 ps -> let
+       t3 = totalizeTerm bsrts mf t1
+       t4 = totalizeTerm bsrts mf t2
+       in Conjunction[Strong_equation t3 t4 ps,
+                      defined bsrts t3 (term_sort t3) ps] ps
+   Strong_equation t1 t2 ps -> let
+       t3 = totalizeTerm bsrts mf t1
+       t4 = totalizeTerm bsrts mf t2
+       in Strong_equation t3 t4 ps
+   ExtFORMULA ef -> ExtFORMULA $ mf ef
+   -- membership is coded out
+   _ -> form 
+
+rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
+rmDefs bsrts mf form = case form of 
+   Quantification q vs qf ps -> Quantification q vs (rmDefs bsrts mf qf) ps
+   Conjunction fs ps -> Conjunction (map (rmDefs bsrts mf) fs) ps
+   Disjunction fs ps -> Disjunction (map (rmDefs bsrts mf) fs) ps
+   Implication f1 f2 b ps -> let
+       f3 = rmDefs bsrts mf f1
+       f4 = rmDefs bsrts mf f2
+       in Implication f3 f4 b ps
+   Equivalence f1 f2 ps -> let
+       f3 = rmDefs bsrts mf f1
+       f4 = rmDefs bsrts mf f2
+       in Equivalence f3 f4 ps
+   Negation nf ps -> let
+       newF = rmDefs bsrts mf nf
+       in Negation newF ps
+   Definedness t ps -> defined bsrts t (term_sort t) ps
+   ExtFORMULA ef -> ExtFORMULA $ mf ef
+   -- membership is coded out
+   _ -> form 
