@@ -33,7 +33,6 @@ import CASL.Inject
 import CASL.Project
 import CASL.Overload
 import CASL.StaticAna
-import CASL.Simplify
 
 -- | The identity of the comorphism
 data CASL2PCFOL = CASL2PCFOL deriving (Show)
@@ -75,28 +74,30 @@ instance Comorphism CASL2PCFOL
     map_morphism CASL2PCFOL mor = return 
       (mor  { msource =  encodeSig $ msource mor,
               mtarget =  encodeSig $ mtarget mor })
-      -- other components need to be adapted as well!
+      -- other components need not to be adapted!
     map_sentence CASL2PCFOL _ = return . f2Formula
     map_symbol CASL2PCFOL = Set.single . id
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig
-  = if null rel then sig else
+  = if Rel.isEmpty rel then sig else
       sig{sortRel = Rel.empty, opMap = projOpMap}
-  where rel = Rel.toList $ Rel.irreflex $ sortRel sig
+  where 
+        rel = Rel.irreflex $ sortRel sig
         total (s, s') = OpType{opKind = Total, opArgs = [s], opRes = s'}
-        partial (s, s') = OpType{opKind = Partial, opArgs = [s'], opRes = s}
-        setinjOptype = Set.fromList $ map total rel
-        setprojOptype = Set.fromList $ map partial rel
+        partial (s, s') = OpType{opKind = if Rel.member s' s rel 
+                                 then Total 
+                                 else Partial, opArgs = [s'], opRes = s}
+        setinjOptype = Set.image total $ Rel.toSet rel
+        setprojOptype = Set.image partial $ Rel.toSet rel
         injOpMap = Map.insert injName setinjOptype $ opMap sig
         projOpMap = Map.insert projName setprojOptype $ injOpMap
     -- membership predicates are coded out
 
 generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = monotonicities sig ++ map (mapNamed $ simplifyFormula id)
-  (concat 
-  ([inlineAxioms CASL
+generateAxioms sig = monotonicities sig ++ 
+  concat([inlineAxioms CASL
      "  sorts s < s' \
       \ op inj : s->s' \
       \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "
@@ -124,7 +125,7 @@ generateAxioms sig = monotonicities sig ++ map (mapNamed $ simplifyFormula id)
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "  
           | s <- sorts, 
             s' <- minSupers s,
-            Set.member s $ supersortsOf s' sig2]))
+            Set.member s $ supersortsOf s' sig2])
     where 
         x = mkSimpleId "x"
         y = mkSimpleId "y"
@@ -133,7 +134,6 @@ generateAxioms sig = monotonicities sig ++ map (mapNamed $ simplifyFormula id)
         minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so 
                            $ supersortsOf so sig2
         sorts = Set.toList $ sortSet sig
-        rel = Rel.irreflex $ sortRel sig 
         sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
 
 monotonicities :: Sign f e -> [Named (FORMULA f)]
