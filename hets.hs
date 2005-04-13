@@ -195,3 +195,24 @@ showGraph file opt env =
 hasEnvOut :: HetcatsOpts -> Bool
 hasEnvOut = any ( \ o -> case o of EnvOut -> True
                                    _ -> False) . outtypes
+
+
+run  :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
+run file = 
+    do let opt = defaultHetcatsOpts
+       ld <- read_LIB_DEFN opt file
+       defl <- lookupLogic "logic from command line: " 
+                                        (defLogic opt) logicGraph
+       Common.Result.Result ds res <- ioresToIO 
+                                       (ana_LIB_DEFN logicGraph defl opt 
+                                        emptyLibEnv ld)
+       showDiags opt ds
+       return res
+
+
+{- Call this function as follows:
+ghci -fglasgow-exts -fno-monomorphism-restriction  -fallow-overlapping-instances -fallow-undecidable-instances -ighc -ifgl -ihxt
+:l hets.hs
+:module +Common.Lib.Graph
+Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
+-}
