@@ -390,6 +390,11 @@ data VAR_DECL = Var_decl [VAR] SORT [Pos]
    other Pos informations which encode the brackets of every kind
 -}
 
+{- OmDoc: FMP of type OMA, symbol (negation disjunction, etc.) applied to arguments
+    quantifier with OMBIND, type of quantified variable with OMATTR
+    symbols: OMS cd=CASL name=...
+   theory CASL is fixed once and for all, serves as reference point (cd=CASL)
+-}
 data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
 	       -- pos: QUANTIFIER, semi colons, dot
 	     | Conjunction [FORMULA f] [Pos]
@@ -417,9 +422,9 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
 	     | Membership (TERM f) SORT [Pos]
                -- pos: in
 	     | Mixfix_formula (TERM f)  -- Mixfix_ Term/Token/(..)/[..]/{..}
-	     -- a formula left original for mixfix analysis
+	     -- a formula left original for mixfix analysis  -- OmDoc: not needed
 	     | Unparsed_formula String [Pos]
-	       -- pos: first Char in String
+	       -- pos: first Char in String   -- OmDoc: not needed
 	     | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
 	     | ExtFORMULA f
              -- needed for CASL extensions
@@ -454,22 +459,25 @@ data Constraint = Constraint { newSort :: SORT,
 data QUANTIFIER = Universal | Existential | Unique_existential
 		  deriving (Show,Eq,Ord)
 
-data PRED_SYMB = Pred_name PRED_NAME 
+data PRED_SYMB = Pred_name PRED_NAME  -- OmDoc: similar to OP_SYMB
 	       | Qual_pred_name PRED_NAME PRED_TYPE [Pos]
 		 -- pos: "(", pred, colon, ")"
 		 deriving (Show,Eq,Ord)
 
 data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
-	  | Qual_var VAR SORT [Pos]
+                      -- OmDoc: not needed
+	  | Qual_var VAR SORT [Pos]    -- OmDoc: OMV. Type of var?
 	    -- pos: "(", var, colon, ")"
-	  | Application OP_SYMB [TERM f] [Pos]
+	  | Application OP_SYMB [TERM f] [Pos]  -- OmDoc: OMA
 	    -- pos: parens around TERM f if any and seperating commas
-	  | Sorted_term (TERM f) SORT [Pos]
+	  | Sorted_term (TERM f) SORT [Pos] -- OmDoc: ignore
 	    -- pos: colon
-	  | Cast (TERM f) SORT [Pos]
+	  | Cast (TERM f) SORT [Pos] -- OmDoc: application of special symbol PROJ
 	    -- pos: "as"
 	  | Conditional (TERM f) (FORMULA f) (TERM f) [Pos]
+                     -- OmDoc: application of special symobl IfThenElse
 	    -- pos: "when", "else"
+    -- the following are not needed in OmDoc
 	  | Unparsed_term String [Pos]        -- SML-CATS
 
 	  -- A new intermediate state
@@ -488,8 +496,9 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	    -- pos: "{", "}" 
 	    deriving (Show,Eq,Ord)
 
-data OP_SYMB = Op_name OP_NAME
-	     | Qual_op_name OP_NAME OP_TYPE [Pos]
+data OP_SYMB = Op_name OP_NAME   -- OmDoc: not needed
+	     | Qual_op_name OP_NAME OP_TYPE [Pos]  -- OmDoc: OMS
+                    -- problem: CASL overloading! extend OmDoc? or disambiguate name?
 		 -- pos: "(", op, colon, ")"
 	       deriving (Show,Eq,Ord)
 
@@ -554,15 +563,17 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
 type OpMap = Map.Map Id (Set.Set OpType)
 
-data Sign f e = Sign { sortSet :: Set.Set SORT
-               , sortRel :: Rel.Rel SORT         
-               , opMap :: OpMap
-               , assocOps :: OpMap
-               , predMap :: Map.Map Id (Set.Set PredType)
-               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT)
-               , sentences :: [Named (FORMULA f)]        
-               , envDiags :: [Diagnosis]
-               , extendedInfo :: e
+-- OmDoc: theory, with set of symbols
+data Sign f e = Sign { sortSet :: Set.Set SORT  -- OmDoc: type symbols
+               , sortRel :: Rel.Rel SORT  
+                             -- OmDoc: injection object sybmols, e.g. g__injNatInt
+               , opMap :: OpMap -- OmDoc: object symbols
+               , assocOps :: OpMap -- OmDoc: ignore
+               , predMap :: Map.Map Id (Set.Set PredType) -- OmDoc: object symbols
+               , varMap :: Map.Map SIMPLE_ID (Set.Set SORT) -- OmDoc: ignore
+               , sentences :: [Named (FORMULA f)]  -- OmDoc: ignore
+               , envDiags :: [Diagnosis] -- OmDoc: ignore
+               , extendedInfo :: e -- see CoCASL, ModalCASL (later on)
                } deriving Show
 
 {- |
@@ -599,11 +610,12 @@ type Sort_map = Map.Map SORT SORT
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
-data Morphism f e m = Morphism {msource :: Sign f e,
+-- OmDoc Morphism
+data Morphism f e m = Morphism {msource :: Sign f e, 
                           mtarget :: Sign f e,
-                          sort_map :: Sort_map, 
-                          fun_map :: Fun_map, 
-                          pred_map :: Pred_map,
+                          sort_map :: Sort_map, -- OmDoc: value,value pairs
+                          fun_map :: Fun_map,  -- OmDoc: value,value pairs
+                          pred_map :: Pred_map, -- OmDoc: value,value pairs
                           extended_map :: m}
                          deriving (Eq, Show)
 
@@ -1373,7 +1385,7 @@ data G_sign = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_sign lid sign 
+  G_sign lid sign -- OmDoc: lid leads to cd, sign leads to list of symbols
 
 
 -- | Grothendieck signature lists
@@ -1526,6 +1538,8 @@ data GMorphism = forall cid lid1 sublogics1
                  symb_items2 symb_map_items2
                  sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
   GMorphism cid sign1 morphism2 
+   -- OmDoc: cid is logic morphism, morphism2 is CASL signature morphism
+   -- in the first place, ignore cid and sign1
 
 
 data Grothendieck = Grothendieck deriving Show
@@ -1574,43 +1588,51 @@ Module      :  $Header$
 --     should be added
 --      or should it be kept separately?
 -- what about open theorems of a node???
+type NODE_NAME = (SIMPLE_ID, String, Int)
+
 data DGNodeLab = DGNode {
-                dgn_name :: Maybe SIMPLE_ID,
-                dgn_sign :: G_sign,
-                dgn_sens :: G_l_sentence_list,
-                dgn_nf :: Maybe Node,
-                dgn_sigma :: Maybe GMorphism,
-                dgn_origin :: DGOrigin
+                dgn_name :: NODE_NAME,  -- OmDoc: ID / Name
+                dgn_sign :: G_sign,     -- OmDoc: cd / list of symbols
+                dgn_sens :: G_l_sentence_list, -- OmDoc: axioms 
+                                -- (or simple definition, see axiom name part "def")
+                         -- perhaps introduce additional field, 
+                         -- correspondning to OmDocs definitions
+                -- OmDoc assertions: create new field dgn_theorems ::  G_l_sentence_list
+                dgn_nf :: Maybe Node,   -- OmDoc: ???
+                dgn_sigma :: Maybe GMorphism,   -- OmDoc: ???
+                dgn_origin :: DGOrigin   -- OmDoc: ???
               }
             | DGRef {
-                dgn_renamed :: Maybe SIMPLE_ID,
-                dgn_libname :: LIB_NAME,
-                dgn_node :: Node
+                dgn_renamed :: NODE_NAME,  -- OmDoc: ID / Name
+                dgn_libname :: LIB_NAME,   -- OmDoc: URI
+                dgn_node :: Node,          -- OmDoc: ID / Name
+		dgn_nf :: Maybe Node,   -- OmDoc: ???
+		dgn_sigma :: Maybe GMorphism   -- OmDoc: ???
               } deriving (Show,Eq) 
 
            
 data DGLinkLab = DGLink {
               -- dgl_name :: String,
               -- dgl_src, dgl_tar :: DGNodeLab,  -- already in graph structure
-              dgl_morphism :: GMorphism,
+              dgl_morphism :: GMorphism,   -- OmDoc: Morphism. Logic translation?
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
               deriving (Eq,Show)
 
 
-data ThmLinkStatus =  Open | Proven [DGLinkLab] deriving (Eq, Show)
+data ThmLinkStatus =  Open | Proven [DGLinkLab] deriving (Eq, Show) -- OmDoc: proof object
 
-data DGLinkType = LocalDef 
-            | GlobalDef
-            | HidingDef
-            | FreeDef NodeSig -- the "parameter" node
-            | CofreeDef NodeSig -- the "parameter" node
-	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
+data DGLinkType = LocalDef -- OmDoc: imports element of theory, attribute local
+            | GlobalDef -- OmDoc: imports element of theory, attribute global
+            | HidingDef -- OmDoc: ???
+            | FreeDef NodeSig -- the "parameter" node -- OmDoc: ???
+            | CofreeDef NodeSig -- the "parameter" node -- OmDoc: ???
+	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus  -- OmDoc: axiom inclusion
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
-	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
-	    | HidingThm GMorphism ThmLinkStatus
-            | FreeThm GMorphism Bool
+	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus -- OmDoc: theory inclusion
+	    | HidingThm GMorphism ThmLinkStatus -- OmDoc: ???
+            | FreeThm GMorphism Bool -- OmDoc: ???
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
@@ -1618,6 +1640,10 @@ data DGLinkType = LocalDef
 
 data Conservativity = None | Cons | Mono | Def
               deriving (Eq,Ord)
+    -- OmDoc: Def corresponds to OmDoc implicit definition
+    -- inductive definition: only after analysis
+    -- OmDoc has nothing for Cons, Mono
+    -- None can be ignored
 
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
