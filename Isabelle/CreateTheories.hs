@@ -64,10 +64,13 @@ printTheory ln le ga dg (sn, ge) = case ge of
                                     s { senName = transString (senName s)
                                           ++ "_" ++ show i }) sens3 
                            [1::Int .. ]
-                    tn = shows ln "_" ++ showPretty sn ""
+                    -- drop "Basic/"
+                    tn = drop 6 (shows ln "_" ++ showPretty sn "")
                     doc = text "theory" <+> text tn <+> text "=" $$
-                          printText0 ga sign $$ text "axioms" $$
+                          printText0 ga sign $$ 
+                          (if null sens then P.empty else text "axioms" $$
                           vsep (map (print_named Isabelle ga . 
-                                mapNamed (simplify_sen Isabelle sign)) sens)
-                in writeFile (tn ++ ".thy") (show doc)
+                                mapNamed (simplify_sen Isabelle sign)) sens))
+                          $$ text "end"
+                in writeFile (tn ++ ".thy") (shows doc "\n")
     _ -> return ()
