@@ -60,7 +60,7 @@ translations that constitute the logic graph. Note that these modules
 can be compiled independently of the logic independent heterogeneous
 modules listed above. The module "Comorphisms.LogicList" 
 assembles all the logics into one (heterogeneous) list, while
-"Comorphism.LogicGraph" builds up the logic graph,
+"Comorphisms.LogicGraph" builds up the logic graph,
 i.e. it assembles all the (co)morphisms among the logics, 
 and also specifies which ones are standard inclusions.
 This module also provides a partial union for logics, which is
