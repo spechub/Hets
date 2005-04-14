@@ -12,7 +12,7 @@ this hierarchy. For a more detailed background, see
 <a href="http://www.tzi.de/%7Etill/habil/habils.ps">Heterogeneous
 specification and the heterogeneous tool set</a>.
 
-The folder <tt>Logic</tt> contains the infrastructure needed for
+The folder <Logic.html> contains the infrastructure needed for
 institution independence. The module <tt>Logic.Logic</tt> contains all
 the type classes for interfacing institutions mentioned above,
 including the type class <tt>Logic</tt>.  The module
