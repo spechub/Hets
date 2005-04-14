@@ -1,0 +1,1 @@
+module Common.ADoc where
