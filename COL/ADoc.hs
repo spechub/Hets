@@ -1,1 +1,0 @@
-module COL.ADoc where

@@ -1,1 +1,0 @@
-module SPASS.ADoc where

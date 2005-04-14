@@ -1,1 +1,0 @@
-module Hatchet.ADoc where

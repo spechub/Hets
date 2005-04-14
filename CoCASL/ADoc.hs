@@ -1,1 +1,0 @@
-module CoCASL.ADoc where

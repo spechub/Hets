@@ -1,1 +1,0 @@
-module Haskell.ADoc where

@@ -1,1 +1,0 @@
-module Isabelle.ADoc where

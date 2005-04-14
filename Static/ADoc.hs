@@ -1,1 +1,0 @@
-module Static.ADoc where
