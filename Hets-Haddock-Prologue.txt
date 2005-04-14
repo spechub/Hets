@@ -1,1 +1,83 @@
-Hets is ...
+Hets is the main analysis tool for the specification
+language heterogeneous CASL. Heterogeneous CASL (HetCASL) combines
+the specification language CASL with CASL extensions and
+sublanguages, as well as completely different logics and even
+programming languages such as Haskell, including its module system.
+Hets provides parsing, static analysis and proof management
+(via development graphs), as well as many other functionalities.
+
+The Hets modules are grouped using hierarchical modules (where modules
+can be grouped into folders); we here only discuss the top view on
+this hierarchy. For a more detailed background, see 
+<a href="http://www.tzi.de/%7Etill/habil/habils.ps">Heterogeneous
+specification and the heterogeneous tool set</a>.
+
+The folder <tt>Logic</tt> contains the infrastructure needed for
+institution independence. The module <tt>Logic.Logic</tt> contains all
+the type classes for interfacing institutions mentioned above,
+including the type class <tt>Logic</tt>.  The module
+<tt>Logic.Prover</tt> is for the interface to theorem provers,
+rewriters, consistency checkers, model checkers.  The data types
+<tt>Proof_Status</tt> and <tt>Prover</tt> provides the interface to
+provers.  In case of a successful proof, also the list of axioms that
+have been used in the proof can be returned. 
+
+ Module
+<tt>Logic.Comorphism</tt> provides type classes for the various kinds
+of mappings between institutions, and module <tt>Logic.Grothendieck</tt>
+realizes the Grothendieck institution  and also contains a type
+emph{LogicGraph</tt>. This is complemented by folders working in the
+heterogeneous level --- the code in modules in these folders is
+parameterized over an arbitrary but fixed logic graph. The folder
+<tt>Syntax</tt> provides abstract syntax and parsing of heterogeneous
+structured specifications. <tt>Static</tt> is for the static analysis,
+based on the verification static semantics for Heterogeneous CASL.
+<tt>Static.DevGraph</tt> contains the data structures for
+heterogeneous development graphs. Finally, the folder <tt>Proofs</tt>
+contains an implementation of the proof calculus for heterogeneous
+development graphs.
+
+
+The folders <tt>CASL</tt>, <tt>CoCASL</tt>, <tt>HasCASL</tt>,
+<tt>Haskell</tt>, <tt>CspCASL</tt>, <tt>Modal</tt>, <tt>Isabelle</tt>
+contain different instances of the type class <tt>Logic</tt> of the
+module <tt>Logic.Logic</tt>.  These instances always are contained in
+a module named <tt>Logic_xxx</tt>, where <tt>xxx</tt> is the name of
+the language at hand.  Since the integration of a new logic into Hets
+requires writing a new instantiation of the type class <tt>Logic</tt>,
+it is advisable to consult the module <tt>Logic_xxx</tt> (and the modules
+imported there) for some logic that is in some sense similar to the new
+logic to be integrated.
+In particular, we have
+implemented the CASL logic in such a way that much of the folder
+<tt>CASL</tt> can be re-used for CASL extensions as well; this is
+achieved via ``holes'' (realized via polymorphic variables) in the
+types for signatures, morphisms, abstract syntax etc.  This eases
+integration of CASL extensions and keeps the effort quite moderate.
+
+The folder <tt>Comorphisms</tt> contains various comorphisms and other
+translations that constitute the logic graph. Note that these modules
+can be compiled independently of the logic independent heterogeneous
+modules listed above. The module <tt>Comorphisms.LogicList</tt> 
+assembles all the logics into one (heterogeneous) list, while
+<tt>Comorphism.LogicGraph</tt> builds up the logic graph,
+i.e. it assembles all the (co)morphisms among the logics, 
+and also specifies which ones are standard inclusions.
+This module also provides a partial union for logics, which is
+crucial for the static analysis of unions of specifications
+(which may occur explicitly or implicitly).
+
+
+
+Last but not least, there are general purpose folders: <tt>ATC</tt>
+for conversion from and to the <a href="http://catamaran.labs.cs.uu.nl/twiki/pt/bin/view/Tools/ATermFormat">ATerm</a>  format - most of the
+modules have been automatically created using <tt>DriFT</tt> from the
+<tt>utils</tt> folder. The latter also contains a module
+<tt>inlineAxioms</tt> that can be used to write the axioms for
+theoroidal comorphisms in a concise way, namely in the input syntax of
+the respective target logic (the identifiers will turn into Haskell
+variables and can hence be used for easily producing instances of
+axiom schemes). The folder <tt>Common</tt> contains general purpose
+libraries, e.g. for sets, maps and relations, and for parsing and
+pretty printing. The command line interface is contained in
+<tt>hetcats</tt>, the graphical interface in <tt>GUI</tt>. 
