@@ -72,7 +72,7 @@ instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s
       print_named Isabelle ga (NamedSen lab sen) = 
 	(if null lab then empty 
-	else text lab <+> colon <> space) <> printText0 ga sen
+	else text lab <+> colon <> space) <> doubleQuotes (printText0 ga sen)
 #ifdef UNI_PACKAGE
       provers Isabelle = [isabelleProver] 
       cons_checkers Isabelle = [isabelleConsChecker]
