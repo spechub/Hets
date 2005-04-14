@@ -22,18 +22,17 @@ rewriters, consistency checkers, model checkers.  The data types
 provers.  In case of a successful proof, also the list of axioms that
 have been used in the proof can be returned. 
 
- Module
-"Logic.Comorphism" provides type classes for the various kinds
+ Module "Logic.Comorphism" provides type classes for the various kinds
 of mappings between institutions, and module "Logic.Grothendieck"
-realizes the Grothendieck institution  and also contains a type
-'Logic.Grothendieck.LogicGraph'. This is complemented by folders working in the
-heterogeneous level --- the code in modules in these folders is
-parameterized over an arbitrary but fixed logic graph. The folder
-"Syntax" provides abstract syntax and parsing of heterogeneous
-structured specifications. "Static" is for the static analysis,
-based on the verification static semantics for Heterogeneous CASL.
-'Static.DevGraph' contains the data structures for
-heterogeneous development graphs. Finally, the folder "Proofs"
+realizes the Grothendieck institution and also contains a type
+'Logic.Grothendieck.LogicGraph'. This is complemented by folders
+working in the heterogeneous level --- the code in modules in these
+folders is parameterized over an arbitrary but fixed logic graph. The
+folder /Syntax/ (see "Syntax.ADoc") provides abstract syntax and
+parsing of heterogeneous structured specifications. "Static" is for
+the static analysis, based on the verification static semantics for
+Heterogeneous CASL.  'Static.DevGraph' contains the data structures
+for heterogeneous development graphs. Finally, the folder "Proofs"
 contains an implementation of the proof calculus for heterogeneous
 development graphs.
 
