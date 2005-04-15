@@ -2,13 +2,18 @@
 for heterogeneous structured and architectural specifications and
 specification libraries.  Parsing is based on "Common.Lib.Parsec",
 pretty printing  on "Common.Lib.Pretty".
+Some modules deal with global annotations (see "Common.AS_Annotation").
 
 /Abstract syntax/
 
 "Syntax.AS_Structured"	
 "Syntax.AS_Architecture"	
 "Syntax.AS_Library"	
+
+/Global annotations/
+
 "Syntax.GlobalLibraryAnnotations"	
+"Syntax.Print_HetCASL"	
 
 /Parsing/
 
@@ -21,7 +26,6 @@ pretty printing  on "Common.Lib.Pretty".
 "Syntax.Print_AS_Structured"
 "Syntax.Print_AS_Architecture"	
 "Syntax.Print_AS_Library"
-"Syntax.Print_HetCASL"	
 
 /LaTeX pretty printing/
 
