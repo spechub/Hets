@@ -26,10 +26,12 @@ import Common.Lib.Pretty
 type SPIdentifier = String
 
 {- |
-  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
-  the fact that the SPASS syntax list both term and label as optional.
+  SPASS Formula List
 -}
-type SPFormula = Named SPTerm
+data SPFormulaList = 
+        SPFormulaList { originType :: SPOriginType,
+                        formulae   :: [SPFormula] }
+      deriving (Eq, Show)
 
 {- |
   There are axiom formulae and conjecture formulae.
@@ -38,6 +40,12 @@ data SPOriginType =
         SPOriginAxioms
       | SPOriginConjectures
       deriving (Eq, Show)
+
+{- |
+  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
+  the fact that the SPASS syntax lists both term and label as optional.
+-}
+type SPFormula = Named SPTerm
 
 {- |
   A SPASS Term.
@@ -77,7 +85,25 @@ data SPSymbol =
       deriving (Eq, Show)
 
 {- |
-  Creates a Common.Lib.Pretty.Doc from a SPASS Formula.
+  Creates a Common.Lib.Pretty.Doc from a SPASS Formula List
+-}
+printFormulaList :: SPFormulaList-> Doc
+printFormulaList l = text "list_of_formulae" <> parens (printOriginType (originType l)) <> text "."
+  $$ printFormulae (formulae l)
+  $$ text "end_of_list."
+  where
+    printFormulae = foldr (\x fl-> fl <> printFormula x <> text ".") empty
+
+{- |
+  Creates a Doc from a SPASS Origin Type
+-}
+printOriginType :: SPOriginType-> Doc
+printOriginType t = case t of
+  SPOriginAxioms      -> text "axioms"
+  SPOriginConjectures -> text "conjectures"
+
+{- |
+  Creates a Doc from a SPASS Formula.
 -}
 printFormula :: SPFormula-> Doc
 printFormula f = (text "formula") <> parens (printTerm (sentence f) <> comma <> text (senName f))
