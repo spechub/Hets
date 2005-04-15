@@ -1,5 +1,6 @@
 Hets is the main analysis tool for the specification
-language heterogeneous CASL. Heterogeneous CASL (HetCASL) combines
+language heterogeneous CASL. Heterogeneous CASL (HetCASL, see
+<http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm>) combines
 the specification language CASL with CASL extensions and
 sublanguages, as well as completely different logics and even
 programming languages such as Haskell, including its module system.
@@ -20,7 +21,7 @@ folders is parameterized over an arbitrary but fixed logic graph. The
 folder /Syntax/ (see "Syntax.ADoc") provides abstract syntax and
 parsing of heterogeneous structured specifications. "Static" is for
 the static analysis, based on the verification static semantics for
-Heterogeneous CASL.  'Static.DevGraph' contains the data structures
+Heterogeneous CASL.  "Static.DevGraph" contains the data structures
 for heterogeneous development graphs. Finally, the folder "Proofs"
 contains an implementation of the proof calculus for heterogeneous
 development graphs.
