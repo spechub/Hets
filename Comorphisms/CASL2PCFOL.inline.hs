@@ -98,21 +98,21 @@ encodeSig sig
 generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = monotonicities sig ++ 
   concat([inlineAxioms CASL
-     "  sorts s < s' \
+     "  sorts s, s' \
       \ op inj : s->s' \
       \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "
     ++ inlineAxioms CASL
-      " sort s<s' \
+      " sort s, s' \
       \ op pr : s'->?s \
       \ forall x,y:s'. pr(x)=e=pr(y)=>x=e=y   %(ga_projection_injectivity)% " 
     ++ inlineAxioms CASL
-     " sort s< s' \
+     " sort s, s' \
       \ op pr : s'->?s ; inj:s->s' \
       \ forall x:s . pr(inj(x))=e=x             %(ga_projection)% " 
       | s <- sorts, 
         s' <- minSupers s]
    ++ [inlineAxioms CASL
-     " sort s<s';s'<s'' \
+     " sort s, s', s'' \
       \ op inj:s'->s'' ; inj: s->s' ; inj:s->s'' \
       \ forall x:s . inj(inj(x))=e=inj(x)      %(ga_transitivity)% "  
           | s <- sorts, 
@@ -120,7 +120,7 @@ generateAxioms sig = monotonicities sig ++
             s'' <- minSupers s',
             s'' /= s]
    ++ [inlineAxioms CASL
-     " sort s<s';s'<s \
+     " sort s, s' \
       \ op inj:s->s' ; inj: s'->s \
       \ forall x:s . inj(inj(x))=e=x      %(ga_identity)% "  
           | s <- sorts, 
