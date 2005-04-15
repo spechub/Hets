@@ -4,7 +4,7 @@ The "CASL" folder contains the CASL (see
 <http://www.cofi.info/CASL.html>) instance of "Logic.Logic".  All the
 data for this instance is assembled in "CASL.Logic_CASL".
 
-Note that the datastructures are equipped with /holes/, 
+Note that the data structures are equipped with /holes/, 
 represented by type variables, that can be instantiated later on.
 This is needed by CASL extensions, which typically extend
 abstract syntax, signatures and signature morphisms.
@@ -27,7 +27,7 @@ non-terminals of the CASL grammar: "CASL.OpItem", "CASL.SortItem",
 "CASL.Formula", "CASL.Quantification".  The mixfix parser (which is
 called only during static analysis) is provided by
 "CASL.MixfixParser".  "CASL.LiteralFuns" deals with literals (for
-numbers, strings etc.)  "CASL.SymbolParser" provides parsing of symbol
+numbers, strings etc.).  "CASL.SymbolParser" provides parsing of symbol
 maps (occurring in fitting maps or views).  Finally,
 "CASL.RunMixfixParser" and "CASL.capa" provide command-line interfaces
 to the parser.
@@ -35,7 +35,8 @@ to the parser.
 
 /Printing/
 
- Pretty printing of CASL basic specifications is provided in
+ Pretty printing (based on "Common.Lib.Pretty")
+of CASL basic specifications is provided in
 "CASL.Print_AS_Basic". Auxilary modules are "CASL.ShowMixfix" (for
 printing mixfix formulas and terms) and "CASL.Simplify" and
 "CASL.SimplifySen" (for removing redundant type information).
