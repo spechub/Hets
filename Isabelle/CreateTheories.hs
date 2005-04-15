@@ -29,9 +29,11 @@ import Common.Lib.Pretty as P
 import Static.DevGraph
 import Static.DGToSpec
 import CASL.Logic_CASL
+import HasCASL.Logic_HasCASL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2IsabelleHOL
+import Comorphisms.HasCASL2IsabelleHOL
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 import Data.Maybe
@@ -52,25 +54,33 @@ printTheory ln le ga dg (sn, ge) = case ge of
         Just n -> case maybeResult $ computeTheory le dg n of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->
-                let Result _ (Just (sign1, sens1)) = 
-                        map_theory CASL2PCFOL 
-                                       (fromJust $ coerce CASL lid sign0, 
-                                        fromJust $ coerce CASL lid sens0) 
-                    Result _ (Just (sign2, sens2)) = 
-                        map_theory PCFOL2FOL (sign1, sens1) 
-                    Result _ (Just (sign, sens3)) = 
-                        map_theory CASL2IsabelleHOL (sign2, sens2)
-                    sens = zipWith (\ s i -> 
+                let r1 = do 
+                      sign1 <- coerce CASL lid sign0 
+                      sens1 <- coerce CASL lid sens0
+                      th1 <- map_theory CASL2PCFOL (sign1, sens1)
+                      th2 <- map_theory PCFOL2FOL th1
+                      map_theory CASL2IsabelleHOL th2
+                    r2 = do 
+                      sign1 <- coerce HasCASL lid sign0 
+                      sens1 <- coerce HasCASL lid sens0
+                      map_theory HasCASL2IsabelleHOL (sign1, sens1)
+                    r3 = case maybeResult r1 of 
+                         Nothing -> r2
+                         _ -> r1
+                in case maybeResult r3 of 
+                   Nothing -> putStrLn $ showPretty r3 ""
+                   Just (sign, sens2) -> let
+                     sens = zipWith (\ s i -> 
                                     s { senName = transString (senName s)
-                                          ++ "_" ++ show i }) sens3 
+                                          ++ "_" ++ show i }) sens2
                            [1::Int .. ]
-                    -- drop "Basic/"
-                    tn = drop 6 (shows ln "_" ++ showPretty sn "")
-                    doc = text "theory" <+> text tn <+> text "=" $$
+                     tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
+                          ++ "_" ++ showPretty sn ""
+                     doc = text "theory" <+> text tn <+> text "=" $$
                           printText0 ga sign $$ 
                           (if null sens then P.empty else text "axioms" $$
                           vsep (map (print_named Isabelle ga . 
                                 mapNamed (simplify_sen Isabelle sign)) sens))
                           $$ text "end"
-                in writeFile (tn ++ ".thy") (shows doc "\n")
+                     in writeFile (tn ++ ".thy") (shows doc "\n")
     _ -> return ()
