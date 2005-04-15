@@ -10,6 +10,7 @@ Portability :  portable
 
    These datastructures describe the Annotations of (Het)CASL. 
    There is also a paramterized data type for an 'Annoted' 'item'.
+   See also chapter II.5 of the CASL Reference Manual.
 
 -}
 
