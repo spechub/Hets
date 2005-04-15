@@ -9,12 +9,12 @@ Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
  
    Provides data structures for logics (with symbols). Logics are
-   a type class with an "identitiy" type (usually interpreted
+   a type class with an /identity/ type (usually interpreted
    by a singleton set) which serves to treat logics as 
    data. All the functions in the type class take the
    identity as first argument in order to determine the logic.
 
-   For logic (co)morphisms see Comorphism.hs
+   For logic (co)morphisms see "Logic.Comorphism"
 
    References:
 
