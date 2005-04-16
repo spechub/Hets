@@ -21,6 +21,7 @@ spec List[Elem] =
   forall x,y:Elem; l:List[Elem]
   . not x eps  Nil 
   . x eps Cons(y, l) <=> x=y \/ x eps l
+  . Nil = Nil
 end
 
 spec Sorting[TotalOrder] =

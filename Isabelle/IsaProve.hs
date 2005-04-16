@@ -122,8 +122,7 @@ isaProve checkCons thName (sig,axs) goals = do
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
---hier-- 
-      showAxs = concat $ map ((++"\n") . showSen) disAxs
+      showAxs = concat $ map ((++"\n") . showSen) (markSimp disAxs)
       disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
@@ -174,6 +173,31 @@ isaProve checkCons thName (sig,axs) goals = do
                (map (showConsAx . mapNamed freeTypesSen) disAxs))
          ++ ") )\"\nrefute\noops\n\n"
       showConsAx ax = showPretty (sentence ax) ""
+
+markSimp = map (\ax -> ax{senName = senName ax ++ 
+	if isSimpRule (senTerm (sentence ax)) then " [simp]" else ""})  
+
+isSimpRule App {funId = Const {termName = "All"}, argId = arg} = isSimpRule (termId arg)
+isSimpRule App {funId = Const {termName = "Not"}, argId = arg} = isSimpRule arg
+-- hier die argumente noch ueberpruefen?
+isSimpRule Const {termName = t} = True
+
+isSimpRule App {funId = App {funId = fun, argId = arg}, argId = arg2} =
+	case termName fun of 							
+		"op ="    -> (isSimpRule arg) && (isSimpRule arg2)
+		"op =="   -> (isSimpRule arg) && (isSimpRule arg2)
+		"op &"    -> (isSimpRule arg) && (isSimpRule arg2)
+		"op -->"  -> (isSimpRule arg) && (isSimpRule arg2)
+		otherwise -> isConst fun && isSimpRule arg && isSimpRule arg2
+
+isSimpRule Free{}  = True
+isSimpRule Var{}   = True
+isSimpRule Bound{} = True
+isSimpRule Abs{}   = False
+isSimpRule arg     = False
+
+isConst Const {}   = True
+isConst _          = False
 
 -- translate special characters in sentence names
 transSens :: [Named a] -> [Named a]
