@@ -205,9 +205,9 @@ printLogicalPart lp =
   $$ (if not $ null (formulaLists lp) then printFormulaLists (formulaLists lp) else empty)
   where
     printDeclarationList xs = text "list_of_declarations."
-      $$ foldr (\x d-> d $$ printDeclaration x) empty xs
+      $$ foldl (\d x-> d $$ printDeclaration x) empty xs
       $$ text "end_of_list."
-    printFormulaLists = foldr (\x d-> d $$ printFormulaList x) empty
+    printFormulaLists = foldl (\d x-> d $$ printFormulaList x) empty
 
 {- |
   Creates a Doc from a SPASS Symbol List.
@@ -223,7 +223,7 @@ printSymbolList sl = text "list_of_symbols."
   where 
     printSignSymList name list =
       if not $ null list
-        then text name <> brackets (foldr (\x d-> if isEmpty d then printSignSym x else d <> comma $$ printSignSym x) empty list) <> dot
+        then text name <> brackets (foldl (\d x-> if isEmpty d then printSignSym x else d <> comma $$ printSignSym x) empty list) <> dot
         else empty
 
 {-|
@@ -245,7 +245,7 @@ printFormulaList l = text "list_of_formulae" <> parens (printOriginType (originT
   $$ printFormulae (formulae l)
   $$ text "end_of_list."
   where
-    printFormulae = foldr (\x fl-> fl <> printFormula x <> dot) empty
+    printFormulae = foldl (\fl x-> fl <> printFormula x <> dot) empty
 
 {- |
   Creates a Doc from a SPASS Origin Type
@@ -270,7 +270,7 @@ printTerm t = case t of
   SPSimpleTerm sym -> printSymbol sym
   SPComplexTerm{symbol= sym, arguments= args} -> printSymbol sym <> parens (printTermList args)
   where
-    printTermList = foldr (\x tl-> if isEmpty tl then printTerm x else tl <> comma <> (printTerm x)) empty
+    printTermList = foldl (\tl x-> if isEmpty tl then printTerm x else tl <> comma <> (printTerm x)) empty
 
 {- |
   Creates a Doc from a SPASS Quantifier Symbol.
