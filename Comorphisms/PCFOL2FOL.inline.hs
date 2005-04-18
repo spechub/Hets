@@ -203,8 +203,9 @@ totalizeTerm bsrts mf t = case t of
 
 totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
 totalizeFormula bsrts mf form = case form of 
-   Quantification q vs qf ps -> Implication (defVards bsrts vs) 
-       (Quantification q vs (totalizeFormula bsrts mf qf) ps) False ps
+   Quantification q vs qf ps -> Quantification q vs 
+       (Implication (defVards bsrts vs) (totalizeFormula bsrts mf qf) 
+        False ps) ps
    Conjunction fs ps -> Conjunction (map (totalizeFormula bsrts mf) fs) ps
    Disjunction fs ps -> Disjunction (map (totalizeFormula bsrts mf) fs) ps
    Implication f1 f2 b ps -> let
