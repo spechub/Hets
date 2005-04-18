@@ -14,7 +14,8 @@ Portability :  portable
 module OWL_DL.AS where
 
 import Text.XML.HXT.DOM.XmlTreeTypes
-
+import qualified Common.Lib.Map as Map
+ 
 type URIreference = QName
 
 type DatatypeID = URIreference
@@ -25,7 +26,7 @@ type DatavaluedPropertyID = URIreference
 type IndividualvaluedPropertyID = URIreference
 type AnnotationPropertyID = URIreference
 type OntologyPropertyID = URIreference
-type Namespace = NTree XNode
+type Namespace = Map.Map String URIreference
 
 -- | Data structur for Ontologies
 data Ontology = Ontology (Maybe OntologyID)
