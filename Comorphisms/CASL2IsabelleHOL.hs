@@ -111,11 +111,10 @@ transTheory trSig trForm (sign,sens) =
                                 if s1 `elem` dtTypes then id
                                  else Map.insert s1 [(isaTerm, [])]) 
                                Map.empty (sortSet sign)},
-    constTab = delDtTypes (Map.foldWithKey insertOps
-                  (Map.foldWithKey insertPreds
-                                   Map.empty
-                                   (predMap sign))
-                   (opMap sign)),
+    constTab = Map.foldWithKey insertPreds
+                (Map.filterWithKey (isNotIn dtDefs) 
+                $ Map.foldWithKey insertOps Map.empty 
+                $ opMap sign) $ predMap sign,
     dataTypeTab = dtDefs},      
      map (mapNamed (mapSen trForm sign)) real_sens)  
      -- for now, no new sentences
@@ -141,19 +140,12 @@ transTheory trSig trForm (sign,sens) =
       foldl (\m1 (t,i) -> Map.insert (showIsaIT pre i baseSign) 
                           (transPredType t) m1) m 
             (zip (Set.toList ts) [1..Set.size ts])
-    --delete all elements from dataTypeTab in constTab
-    delDtTypes m = Map.fromList (List.filter (isNotIn dtDefs) (Map.toList m))
 
---filter out all elements from dtDef   
-isNotIn :: Eq a => [[(c, [(a, d)])]] -> (a, b) -> Bool
-isNotIn ((d:_):ds) (a,b) = (isNotIn' const' a)  && (isNotIn ds (a,b))
-    where
-    (_, const') = d
-isNotIn _ _ = True
-
-isNotIn' :: Eq a => [(a, b)] -> a -> Bool
-isNotIn' [] _ = True
-isNotIn' (c:cs) a = (a /= (fst c)) && isNotIn' cs a
+-- | filter out constructors from data types  
+isNotIn :: DataTypeTab -> VName -> Typ -> Bool
+isNotIn l a _ = all (all (isNotIn' a . snd)) l where
+    isNotIn' :: VName -> [DataTypeAlt] -> Bool
+    isNotIn' c = all ((/= c) . fst)
 
 -- topoSort 
 -- A(i) = [[j]] with definition of datatype i needs j
