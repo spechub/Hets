@@ -19,6 +19,7 @@ module Comorphisms.CASL2IsabelleHOL where
 import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.AS_Annotation
+import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -294,7 +295,7 @@ var :: String -> Term
 var v = IsaSign.Free v noType
 
 transVar :: VAR -> String
-transVar = showIsaSid
+transVar v = showIsaT (simpleIdToId v) baseSign
 
 xvar :: Int -> String
 xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
