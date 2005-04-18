@@ -15,6 +15,7 @@ import org.mindswap.pellet.PelletOptions;
 import org.mindswap.pellet.utils.ATermUtils;
 // import org.semanticweb.owl.io.abstract_syntax.RenderingVisitor;
 // import org.semanticweb.owl.io.RendererException;
+import org.semanticweb.owl.io.abstract_syntax.Renderer;
 import org.semanticweb.owl.io.vocabulary.OWLVocabularyAdapter;
 // import org.semanticweb.owl.io.vocabulary.RDFSVocabularyAdapter;
 // import org.semanticweb.owl.io.vocabulary.RDFVocabularyAdapter;
@@ -127,6 +128,26 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		return namespaces;
 	}
 
+	
+//
+//    public void visit( OWLDataValue cd ) throws OWLException {
+//    	
+//    	
+//    	pw.print( "\"" + Renderer.escape( cd.getValue() ) + "\"");
+//
+//    	/* Only show it if it's not string */
+//
+//    	URI dvdt = cd.getURI();
+//    	String dvlang = cd.getLang();
+//    	if ( dvdt!=null) {
+//    	    pw.print( "^^" + "<" + dvdt.toString() + ">");
+//    	} else {
+//    	    if (dvlang!=null) {
+//    		pw.print( "@" + dvlang );
+//    	    }
+//    	}	
+//    }
+	
 	public ATermAppl term(OWLDataValue dv) throws OWLException {
 		URI datatypeURI = dv.getURI();
 		String lexicalValue = dv.getValue().toString();
@@ -188,10 +209,11 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		term = visitRend.renderDataProperty(ontology, prop);
 	}
 
+	
 	public void visit(OWLDataValue cd) throws OWLException {
 		term = term(cd);
 	}
-
+	
 	public void visit(OWLDataType ocdt) throws OWLException {
 		term = visitRend.renderDataType(ontology, ocdt);
 	}
