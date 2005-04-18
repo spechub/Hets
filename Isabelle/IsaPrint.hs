@@ -389,7 +389,7 @@ instance PrettyPrint Sign where
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
-       ++ (concat $ map (("and "++) . showDataType) dts) ++ "\n"
+       ++ (concat $ map ((" and "++) . showDataType) dts) ++ "\n"
     showDataType (a,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
        showTyp 1000 t ++ " = " ++ showOp op 
@@ -398,7 +398,7 @@ instance PrettyPrint Sign where
     showDomainDef [] = ""                                                --
     showDomainDef (dt:dts) =                                             --
        "domain " ++ showDomain dt                                      --
-       ++ (concat $ map (("and "++) . showDomain) dts) ++ "\n"           --
+       ++ (concat $ map ((" and "++) . showDomain) dts) ++ "\n"           --
     showDomain (_,[]) = error "IsaPrint.showDomain"                    --
     showDomain (t,op:ops) =                                              --
        showTyp 1000 t ++ " = " ++ showOp op                                --
