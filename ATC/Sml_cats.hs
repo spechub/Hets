@@ -24,7 +24,7 @@ module ATC.Sml_cats (from_sml_ATerm,read_sml_ATerm) where
 
 import Data.List (isPrefixOf, mapAccumL)
 
-import Common.Lib.Map hiding (map)
+import qualified Common.Lib.Map as Map
 -- better recompilation checking without 'import Common.ATerm.Lib'
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
@@ -179,11 +179,11 @@ conv ('\"':sr) = case reverse sr of
                   _         -> error "No matching '\"' found"
 conv _         = error "String doesn't begin with '\"'"
               
-instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b) => ATermConvertibleSML (Map a b) where
-    to_sml_ATerm fm       = to_sml_ATerm (toList fm)
-    from_sml_ATerm at     = fromList $ from_sml_ATerm at
-    to_sml_ShATerm att fm = to_sml_ShATerm att $ toList fm 
-    from_sml_ShATerm att  = fromList $ from_sml_ShATerm att
+instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b) => ATermConvertibleSML (Map.Map a b) where
+    to_sml_ATerm fm       = to_sml_ATerm (Map.toList fm)
+    from_sml_ATerm at     = Map.fromList $ from_sml_ATerm at
+    to_sml_ShATerm att fm = to_sml_ShATerm att $ Map.toList fm 
+    from_sml_ShATerm att  = Map.fromList $ from_sml_ShATerm att
 
 instance ATermConvertibleSML a => ATermConvertibleSML [a] where
     to_sml_ATerm l        = to_sml_ATermList l
