@@ -20,6 +20,7 @@ import Char
 
 import Common.AS_Annotation
 import Common.PrettyPrint
+import Common.GlobalAnnotations
 import Common.Lib.Pretty
 
 {- |
@@ -184,7 +185,7 @@ data SPLogState =
   Helper function. Generates a "." as a Doc.
 -}
 dot :: Doc
-dot = text "."
+dot = char '.'
 
 {- |
   Creates a Doc from a SPASS Problem.
@@ -267,8 +268,8 @@ printFormula f = (text "formula") <> parens (printTerm (sentence f) <> comma <> 
 printTerm :: SPTerm-> Doc
 printTerm t = case t of
   SPQuantTerm{quantSym= qsym, termTermList= tlist, termTerm= t} -> printQuantSym qsym <> parens (brackets (printTermList tlist) <> comma <> printTerm t)
-  SPSimpleTerm sym -> printSymbol sym
-  SPComplexTerm{symbol= sym, arguments= args} -> printSymbol sym <> parens (printTermList args)
+  SPSimpleTerm sym -> printText0 emptyGlobalAnnos sym
+  SPComplexTerm{symbol= sym, arguments= args} -> printText0 emptyGlobalAnnos sym <> parens (printTermList args)
   where
     printTermList = foldl (\tl x-> if isEmpty tl then printTerm x else tl <> comma <> (printTerm x)) empty
 
@@ -284,18 +285,19 @@ printQuantSym qs = case qs of
 {- |
   Creates a Doc from a SPASS Symbol.
 -}
-printSymbol :: SPSymbol-> Doc
-printSymbol s = case s of
-  SPEqual            -> text "equal"
-  SPTrue             -> text "true"
-  SPFalse            -> text "false"
-  SPOr               -> text "or"
-  SPAnd              -> text "and"
-  SPNot              -> text "not"
-  SPImplies          -> text "implies"
-  SPImplied          -> text "implied"
-  SPEquiv            -> text "equiv"
-  SPCustomSymbol cst -> text cst
+-- printSymbol :: SPSymbol-> Doc
+instance PrettyPrint SPSymbol where
+    printText0 ga s = case s of
+     SPEqual            -> text "equal"
+     SPTrue             -> text "true"
+     SPFalse            -> text "false"
+     SPOr               -> text "or"
+     SPAnd              -> text "and"
+     SPNot              -> text "not"
+     SPImplies          -> text "implies"
+     SPImplied          -> text "implied"
+     SPEquiv            -> text "equiv"
+     SPCustomSymbol cst -> text cst
 
 {- |
   Creates a Doc from a SPASS description.
