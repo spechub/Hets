@@ -14,7 +14,6 @@ import System.Console.GetOpt
 import System.Directory
 import System.Environment
 import Text.ParserCombinators.Parsec
-import Common.Utils
 import ParseFile
 import ParseHeader
 import Data.List
@@ -53,7 +52,7 @@ genRules flags files =
     do i_ds <- mapM readParseFile files
        (rule,dir) <- getRuleAndDir flags
        let fileWP = if dir == "ATC" 
-                    then cutSuffix $ basename $ head files
+                    then cutSuffixBasename $ head files
                     else "ATC_" ++ dir
            fName = dir ++ "/" ++ fileWP ++ ".der.hs"
        fps <- getPaths flags 
@@ -176,8 +175,5 @@ getRuleAndDir flags = return (getRule flags,getDir flags)
                       getDir ((Output_Directory s):_) = s
                       getDir (_:xs)                   = getDir xs
 
-cutSuffix :: String -> String
-cutSuffix f = cutS "" f
-              where 
-              cutS s ('.':_) = s
-              cutS s (x:xs)  = cutS (s++ [x]) xs
+cutSuffixBasename :: String -> String
+cutSuffixBasename = takeWhile (/= '.') . reverse . takeWhile (/= '/') . reverse
