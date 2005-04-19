@@ -100,7 +100,14 @@ listBox prompt choices = do
     an undo operation
 -}
 
-type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
+{-type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
+
+
+umstellen auf:-}
+
+type ProofHistory = [([DGRule],[DGChange])]
+type ProofStatus = (LIB_NAME,LibEnv,Map.Map LIB_NAME ProofHistory) 
+
 
 data DGRule = 
    TheoremHideShift
@@ -170,8 +177,39 @@ applyRule = error "Proofs.hs:applyRule"
 automatic :: ProofStatus -> IO ProofStatus
 automatic = automaticRecursive 0
 
-{- applies the rules recursively until no further changes can be made -}
+
+
 automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
+automaticRecursive cnt proofStatus = do
+  (libname,libEnv,proofHistory) <- automaticAux proofStatus
+  proofHistoryAuxList <- blubb cnt (Map.toList proofHistory)
+  let newProofHistory = Map.fromList proofHistoryAuxList
+  automaticRecursive 1 (libname,libEnv,newProofHistory)
+
+
+blubb :: Int -> [(LIB_NAME,ProofHistory)] -> IO [(LIB_NAME,ProofHistory)]
+blubb _ [] = return []
+blubb cnt (history:list) = do
+  newHistory <- automaticRecursiveAux cnt history
+  newList <- blubb cnt list
+  return (newHistory:newList)
+
+automaticRecursiveAux :: Int -> (LIB_NAME,ProofHistory)
+		      -> IO (LIB_NAME,ProofHistory)
+automaticRecursiveAux cnt (libname,history) = do
+  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
+  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
+     return (libname,history)-- ?? - proofStatus
+   else do
+    let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
+	newHistoryElem = (rules, removeContraryChanges changes)
+	newHistory = newHistoryElem:oldHistory
+    return (libname,newHistory)
+
+
+
+{- applies the rules recursively until no further changes can be made -}
+{- automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
 automaticRecursive cnt proofStatus = do
   (globalContext, libEnv, history, dgraph) <- automaticAux proofStatus
   let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
@@ -182,15 +220,56 @@ automaticRecursive cnt proofStatus = do
 	newHistoryElem = (rules, removeContraryChanges changes)
 	newHistory = newHistoryElem:oldHistory
     automaticRecursive 1 (globalContext, libEnv, newHistory, dgraph)
-
+-}
 
 automaticAux :: ProofStatus -> IO ProofStatus
-automaticAux = (hideTheoremShift True).locDecomp.locSubsume.globDecomp.globSubsume
+automaticAux p = do
+  p1 <- globSubsume p
+  p2 <- globDecomp p1
+  p3 <- locSubsume p2
+  p4 <- locDecomp p3
+  hideTheoremShift True p4
 
 concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
 concatHistoryElems [] = ([],[])
 concatHistoryElems ((rules,changes):elems) =
   (rules++(fst (concatHistoryElems elems)),changes++(snd (concatHistoryElems elems)))
+
+-- -------------------------------
+-- methods used in several proofs
+-- -------------------------------
+lookupDgraphError :: LIB_NAME -> a
+lookupDgraphError libname = error ("Could not find lib with name <" 
+				   ++(show libname)++ "> in the given LibEnv")
+
+mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
+mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (globalContext,globalAnnos,_) ->
+      (libname,
+       Map.insert libname (globalContext,globalAnnos,dgraph) libEnv,
+       Map.insert libname (historyElem:history) 
+                  (prepareResultProofHistory proofHistory))
+      
+    where
+      history = case Map.lookup libname proofHistory of
+		  Nothing -> []
+		  Just h -> h
+
+{- mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
+mkResultProofStatus (libname,libEnv,proofHistory) [] =
+  (libname,libEnv,prepareResultProofHistory proofHistory)
+mkResultProofStatus (libname,libEnv,proofHistory) 
+			((ln,dgraph,historyElem):list) =
+  undefined -}
+
+
+prepareResultProofHistory :: Map.Map LIB_NAME ProofHistory
+			  -> Map.Map LIB_NAME ProofHistory
+prepareResultProofHistory proofHistory = Map.map (([],[]):) proofHistory
+
+
 -- ---------------------
 -- global decomposition
 -- ---------------------
@@ -205,15 +284,18 @@ concatHistoryElems ((rules,changes):elems) =
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp :: ProofStatus -> ProofStatus
-globDecomp proofStatus@(globalContext,libEnv,history,dgraph) =
-  (globalContext, libEnv, ((finalHistoryElem):history), finalDGraph)
-
-  where
-    globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-    (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
-    (finalDGraph, finalHistoryElem) 
-	= removeSuperfluousInsertions newDGraph newHistoryElem
+globDecomp :: ProofStatus -> IO ProofStatus
+globDecomp proofStatus@(libname, libEnv,_) =
+  case Map.lookup libname libEnv of
+    Nothing -> return proofStatus
+    Just (_,_,dgraph) -> do
+      let globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+	  (newDGraph, newHistoryElem) 
+	      = globDecompAux dgraph globalThmEdges ([],[])
+	  (finalDGraph, finalHistoryElem) 
+	      = removeSuperfluousInsertions newDGraph newHistoryElem
+          newProofStatus = mkResultProofStatus proofStatus finalDGraph finalHistoryElem
+      return newProofStatus
 
 
 {- removes all superfluous insertions from the list of changes as well as
@@ -320,18 +402,22 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 -- -------------------
 
 -- applies global subsumption to all unproven global theorem edges if possible
-globSubsume ::  ProofStatus -> ProofStatus
-globSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
-  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-
-  where
-    globalThmEdges = filter isUnprovenGlobalThm (labEdges dGraph)
+globSubsume ::  ProofStatus -> IO ProofStatus
+globSubsume proofStatus@(libname,libEnv,_) = 
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dgraph) -> do
+      let globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     -- the 'nub' is just a workaround, because some of the edges in the graph
     -- do not differ from each other in this represetation - which causes
     -- problems on deletion
-    result = globSubsumeAux libEnv dGraph ([],[]) (nub globalThmEdges)
-    nextDGraph = fst result
-    nextHistoryElem = snd result
+	  result = globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
+	  nextDGraph = fst result
+	  nextHistoryElem = snd result
+	  newProofStatus 
+	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+      return newProofStatus
+
 
 {- auxiliary function for globSubsume (above)
    the actual implementation -}
@@ -372,15 +458,18 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 {- a merge of the rules local subsumption, local decomposition I and 
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
-locDecomp ::  ProofStatus -> ProofStatus
-locDecomp proofStatus@(globalContext,libEnv,history,dGraph) =
-  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-
-  where
-    localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
-    result = locDecompAux libEnv dGraph ([],[]) localThmEdges
-    nextDGraph = fst result
-    nextHistoryElem = snd result
+locDecomp ::  ProofStatus -> IO ProofStatus
+locDecomp proofStatus@(libname,libEnv,_) =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dgraph) -> do
+      let localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+	  result = locDecompAux libEnv dgraph ([],[]) localThmEdges
+	  nextDGraph = fst result
+	  nextHistoryElem = snd result
+	  newProofStatus 
+	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+      return newProofStatus
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
@@ -450,15 +539,18 @@ isSameTranslation th morphism path =
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges
-locSubsume :: ProofStatus -> ProofStatus
-locSubsume proofStatus@(globalContext,libEnv,history,dGraph) =
-  (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-
-  where
-    localThmEdges = filter isUnprovenLocalThm (labEdges dGraph)
-    result = locSubsumeAux libEnv dGraph ([],[]) localThmEdges
-    nextDGraph = fst result
-    nextHistoryElem = snd result
+locSubsume :: ProofStatus -> IO ProofStatus
+locSubsume proofStatus@(libname,libEnv,_) =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dgraph) -> do
+      let localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+	  result = locSubsumeAux libEnv dgraph ([],[]) localThmEdges
+	  nextDGraph = fst result
+	  nextHistoryElem = snd result
+	  newProofStatus
+	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+      return newProofStatus
 
 -- auxiliary method for locSubsume
 locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
@@ -502,14 +594,17 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 -- ----------------------------------------------
 
 hideTheoremShift :: Bool -> ProofStatus -> IO ProofStatus
-hideTheoremShift isAutomatic proofStatus@(globalContext,libEnv,history,dGraph)=
-  do result <- hideTheoremShiftAux dGraph ([],[]) hidingThmEdges isAutomatic
-     let nextDGraph = fst result
-         nextHistoryElem = snd result
-     return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-
-  where
-    hidingThmEdges = filter isUnprovenHidingThm (labEdges dGraph)
+hideTheoremShift isAutomatic proofStatus@(libname,libEnv,_) =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dgraph) -> do
+      let hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
+      result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges isAutomatic
+      let nextDGraph = fst result
+	  nextHistoryElem = snd result
+	  newProofStatus
+	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+      return newProofStatus
 
 
 {- auxiliary method for hideTheoremShift -}
@@ -726,18 +821,24 @@ getConservativity edge@(_,_,edgeLab) =
 -- ----------------------------------------------
 
 theoremHideShift :: ProofStatus -> IO ProofStatus
-theoremHideShift proofStatus@(globalContext,libEnv,history,dgraph) = do
-  let allNodes = nodes dgraph
-      (nonLeaves,leaves)
-	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
-      cs = [context l dgraph|l<- leaves]
-      labs = [lab' c|c <- cs]
-  (auxGraph,changes) <- handleLeaves dgraph leaves
-  (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
-  let finalChanges = removeContraryChanges (changes++furtherChanges)
-  putStrLn (showChanges finalChanges)
-  return (globalContext, libEnv,
-	  ([TheoremHideShift],finalChanges):history, finalGraph)
+theoremHideShift proofStatus@(libname,libEnv,_) =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dgraph) -> do
+      let allNodes = nodes dgraph
+	  (nonLeaves,leaves)
+	      = splitByProperty allNodes (hasIngoingHidingDef dgraph)
+	  cs = [context l dgraph|l<- leaves]
+	  labs = [lab' c|c <- cs]
+      (auxGraph,changes) <- handleLeaves dgraph leaves
+      (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
+      let finalChanges = removeContraryChanges (changes++furtherChanges)
+	  newProofStatus
+	      = mkResultProofStatus proofStatus finalGraph
+		([TheoremHideShift],finalChanges)
+      putStrLn (showChanges finalChanges)
+      return newProofStatus
+
 
 showChanges :: [DGChange] -> String
 showChanges [] = ""
@@ -1537,63 +1638,70 @@ selectProver provers = do
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
 basicInferenceNode checkCons lg (ln,node) 
-         proofStatus@(globalContext,libEnv,history,dGraph) =
-  ioresToIO (do 
-    -- compute the theory of the node, and its name
-    G_theory lid1 sign axs <- 
-         resToIORes $ computeTheory libEnv dGraph node
-    ctx <- resToIORes 
-                $ maybeToMonad ("Could node find node "++show node)
-                $ fst $ match node dGraph
-    let nlab = lab' ctx  
-        nodeName = case nlab of
-          DGNode _ _ _ _ _ _-> dgn_name nlab
-          DGRef _ _ _ _ _ -> dgn_renamed nlab
-        thName = showPretty (getLIB_ID ln) "_"
-                 ++ {-maybe (show node)-} showName nodeName
-    -- compute the list of proof goals
-    let inEdges = inn dGraph node
-        localEdges = filter isUnprovenLocalThm inEdges
-    goalslist <- if checkCons then return []
-                  else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
-    G_l_sentence_list lid3 goals <- 
-      if null goalslist then return $ G_l_sentence_list lid1 [] 
-        else resToIORes (maybeToMonad 
-                                  "Logic mismatch for proof goals" 
-                                   (flatG_l_sentence_list goalslist))
-    goals1 <- coerce lid1 lid3 goals
-    -- select a suitable translation and prover
-    let provers = getProvers checkCons lg $ sublogicOfTh $ 
-                            (G_theory lid1 sign (axs++goals1))
-    (prover,Comorphism cid) <- selectProver provers
-    -- Borrowing: translate theory
-    let lidS = sourceLogic cid
-        lidT = targetLogic cid
-    sign' <- coerce lidS lid1 sign
-    axs' <- coerce lidS lid1 axs
-    (sign'',sens'') <- resToIORes $ map_theory cid (sign',axs')
-    case prover of
-     G_prover lid4 p -> do
-       -- Borrowing: translate goal
-       goals' <- coerce lidS lid3 goals
-       goals'' <- resToIORes $ mapM (mapNamedM $ map_sentence cid sign') goals'
-       -- call the prover
-       p' <- coerce lidT lid4 p
-       ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
-       -- update the development graph
-       let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
-       return (globalContext, libEnv, nextHistoryElem:history, nextDGraph)
-     G_cons_checker lid4 p -> do
-       incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
-       let mor = TheoryMorphism { t_source = empty_theory lidT, 
-                                  t_target = (sign'',sens''),
-                                  t_morphism = incl } 
-       p' <- coerce lidT lid4 p
-       ps <- ioToIORes $ cons_check p' thName mor
-       let nextHistoryElem = ([LocalInference],[])
-         -- ??? to be implemented
-       return (globalContext, libEnv, nextHistoryElem:history, dGraph)
-   )
+         proofStatus@(libname,libEnv,proofHistory) =
+  case Map.lookup libname libEnv of
+    Nothing -> lookupDgraphError libname
+    Just (_,_,dGraph) -> 
+      ioresToIO (do 
+        -- compute the theory of the node, and its name
+        G_theory lid1 sign axs <- 
+             resToIORes $ computeTheory libEnv dGraph node
+        ctx <- resToIORes 
+                    $ maybeToMonad ("Could node find node "++show node)
+                    $ fst $ match node dGraph
+        let nlab = lab' ctx  
+            nodeName = case nlab of
+              DGNode _ _ _ _ _ _-> dgn_name nlab
+              DGRef _ _ _ _ _ -> dgn_renamed nlab
+            thName = showPretty (getLIB_ID ln) "_"
+                     ++ {-maybe (show node)-} showName nodeName
+        -- compute the list of proof goals
+        let inEdges = inn dGraph node
+            localEdges = filter isUnprovenLocalThm inEdges
+        goalslist <- if checkCons then return []
+                      else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
+        G_l_sentence_list lid3 goals <- 
+          if null goalslist then return $ G_l_sentence_list lid1 [] 
+            else resToIORes (maybeToMonad 
+                                      "Logic mismatch for proof goals" 
+                                       (flatG_l_sentence_list goalslist))
+        goals1 <- coerce lid1 lid3 goals
+        -- select a suitable translation and prover
+        let provers = getProvers checkCons lg $ sublogicOfTh $ 
+                                (G_theory lid1 sign (axs++goals1))
+        (prover,Comorphism cid) <- selectProver provers
+        -- Borrowing: translate theory
+        let lidS = sourceLogic cid
+            lidT = targetLogic cid
+        sign' <- coerce lidS lid1 sign
+        axs' <- coerce lidS lid1 axs
+        (sign'',sens'') <- resToIORes $ map_theory cid (sign',axs')
+        case prover of
+         G_prover lid4 p -> do
+           -- Borrowing: translate goal
+           goals' <- coerce lidS lid3 goals
+           goals'' <- resToIORes $ mapM (mapNamedM $ map_sentence cid sign') goals'
+           -- call the prover
+           p' <- coerce lidT lid4 p
+           ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
+           -- update the development graph
+           let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
+	       newProofStatus
+		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+           return newProofStatus
+         G_cons_checker lid4 p -> do
+           incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
+           let mor = TheoryMorphism { t_source = empty_theory lidT, 
+                                      t_target = (sign'',sens''),
+                                      t_morphism = incl } 
+           p' <- coerce lidT lid4 p
+           ps <- ioToIORes $ cons_check p' thName mor
+           let nextHistoryElem = ([LocalInference],[])
+             -- ??? to be implemented
+               newProofStatus
+		 = mkResultProofStatus proofStatus dGraph nextHistoryElem
+           return newProofStatus
+       )
 
 proveLocalEdges :: DGraph -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 proveLocalEdges dGraph edges = (nextDGraph,([LocalInference],changes))

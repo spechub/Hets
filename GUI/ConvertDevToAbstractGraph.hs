@@ -174,9 +174,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   event <- newIORef 0
   convRef <- newIORef convMaps
   showInternalNames <- newIORef (InternalNames False [])
-  ioRefProofStatus <- newIORef (globContext, libname2dg convMaps,
-		                [([]::[DGRule], []::[DGChange])],
-				dGraph)
+  let proofHistory = Map.fromList [(key,[([]::[DGRule], []::[DGChange])])|
+				   key <- Map.keys (libname2dg convMaps)]
+  ioRefProofStatus <- newIORef (ln, libname2dg convMaps,proofHistory)
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
   let gid = nextGraphId graphMem -- newIORef (nextGraphId convMaps)
@@ -241,13 +241,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                   [Button "Automatic"
 			  (proofMenu gInfo (fmap return . automatic)),
                    Button "Global Subsumption"
-			  (proofMenuSef gInfo globSubsume),
+			  (proofMenu gInfo (fmap return . globSubsume)),
 		   Button "Global Decomposition"
-			  (proofMenuSef gInfo globDecomp),
+			  (proofMenu gInfo (fmap return . globDecomp)),
 		   Button "Local Subsumption"
-		          (proofMenuSef gInfo locSubsume),
+		          (proofMenu gInfo (fmap return . locSubsume)),
 		   Button "Local Decomposition (merge of rules)"
-			  (proofMenuSef gInfo locDecomp),
+			  (proofMenu gInfo (fmap return . locDecomp)),
 		   Button "Hide Theorem Shift"
 	                  (proofMenu gInfo (fmap return . 
 					    (hideTheoremShift False))),
@@ -376,20 +376,20 @@ openProofStatus filename ioRefProofStatus convRef hetsOpts =
      case Res.maybeResult resultProofStatus of
        Nothing -> error ("Could not read proof status from file '" 
                          ++ (show filename) ++ "'")
-       Just proofStatus@(globCon,libEnv',_,_) ->
+       Just proofStatus@(ln,libEnv',_) ->
          do writeIORef ioRefProofStatus proofStatus
             initGraphInfo <- initgraphs
             graphMem' <- (newIORef GraphMem{nextGraphId = 0, 
 				      graphInfo = initGraphInfo})
-	    let lns = [ln|(ln,gc) <- Map.assocs libEnv', gc == globCon]
+	    {-let lns = [ln|(ln,gc) <- Map.assocs libEnv', gc == globCon]
 	    case length lns of
-              1 -> do let libname = head lns
-                      (gid, actGraphInfo, convMaps) 
-			  <- convertGraph graphMem' libname libEnv' hetsOpts
-                      writeIORef convRef convMaps
-                      redisplay gid actGraphInfo
-		      return ()
-              _ -> error "Could not determine libname of the saved development graph"
+              1 -> do let libname = head lns-}
+            (gid, actGraphInfo, convMaps) 
+			  <- convertGraph graphMem' ln libEnv' hetsOpts
+            writeIORef convRef convMaps
+            redisplay gid actGraphInfo
+	    return ()
+--              _ -> error "Could not determine libname of the saved development graph"
                                   
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
@@ -401,10 +401,11 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _, ioRefV
   case res of
     Nothing -> do sequence $ map (putStrLn . show) diags
                   return ()
-    Just newProofStatus@((globAnnos,globEnv,_),libEnv,history,dgraph) -> do
-      let newGlobContext = (globAnnos,globEnv,dgraph)
-          newLibEnv = Map.insert ln newGlobContext libEnv
-      writeIORef ioRefProofStatus (newGlobContext, newLibEnv, history,dgraph)
+    Just newProofStatus@(ln,libEnv,proofHistory) -> do--((globAnnos,globEnv,_),libEnv,history,dgraph) -> do
+      let (Just history) = Map.lookup ln proofHistory
+          (Just newGlobContext) = Map.lookup ln libEnv--newGlobContext = (globAnnos,globEnv,dgraph)
+          --newLibEnv = Map.insert ln newGlobContext libEnv
+      writeIORef ioRefProofStatus newProofStatus --(ln, newLibEnv,--(newGlobContext, newLibEnv, history,dgraph)
       descr <- readIORef event
       convMaps <- readIORef convRef
       --putStrLn (showPretty convMaps "")
@@ -511,7 +512,8 @@ createMenuButton title menuFun (ioProofStatus,_,convRef,_,_,_,_,_,_) =
                     (Button title 
                       (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
-		           (_,_,_,dGraph) <- readIORef ioProofStatus
+		           (ln,libEnv,_) <- readIORef ioProofStatus
+		           let (Just (_,_,dGraph)) = Map.lookup ln libEnv
                            menuFun descr
 		                   (abstr2dgNode convMaps)
 		                   dGraph
@@ -732,7 +734,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
 lookupTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
                       DGraph -> IO (Res.Result (Node,G_theory))
 lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
- (_,libEnv,_,_) <- readIORef proofStatusRef
+ (_,libEnv,_) <- readIORef proofStatusRef
  case (do
   (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
@@ -781,7 +783,7 @@ used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
                      DGraph -> IO()
 translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode dgraph = do
- (_,libEnv,_,_) <- readIORef proofStatusRef
+ (_,libEnv,_) <- readIORef proofStatusRef
  case (do
    (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
@@ -819,7 +821,7 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
 used by the node menu defined in initializeGraph-}
 getSublogicOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
-  (_,libEnv,_,_) <- readIORef proofStatusRef
+  (_,libEnv,_) <- readIORef proofStatusRef
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
       let dgnode = lab' (context node dgraph)
@@ -905,8 +907,9 @@ showProofStatusOfThm descr Nothing =
 {- check consistency of the edge -}
 checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
 checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_) (Just (source,target,linklab)) = do 
-  (_,libEnv,_,dgraph) <- readIORef ref
-  let dgtar = lab' (context target dgraph)
+  (ln,libEnv,_) <- readIORef ref
+  let (Just (_,_,dgraph)) = Map.lookup ln libEnv
+      dgtar = lab' (context target dgraph)
   case dgtar of
     (DGNode name _ (G_l_sentence_list lid sens) _ _ _) -> do   
       GMorphism cid sign1 morphism2 <- return $ dgl_morphism linklab
