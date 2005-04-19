@@ -707,10 +707,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                 parLinks)
        where
        anaFitArg res (nsig',fa) = do
-         (fas',dg1,args,name) <- res
+         (fas',dg1,args,name') <- res
          (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
-                              spname imps nsig' opts name fa
-         return (fa':fas',dg',arg:args,inc name)
+                              spname imps nsig' opts name' fa
+         return (fa':fas',dg',arg:args,inc name')
        parLink gsigma' node (_mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
         incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigma'
@@ -1130,10 +1130,10 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
                (G_morphism lid1 theta,NodeSig (nA,gsigmaRes)))
        where
        anaFitArg res (nsig',fa) = do
-         (fas',dg1,args,name) <- res
+         (fas',dg1,args,name') <- res
          (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1) 
-                                  spname imps nsig' opts name fa
-         return (fa':fas',dg',arg:args,inc name)
+                                  spname imps nsig' opts name' fa
+         return (fa':fas',dg',arg:args,inc name')
        parLink gsigmaRes node (_mor_i,nsigA_i) = do
         nA_i <- getNode nsigA_i
         incl <- maybeResult $ ginclusion lg (getSig nsigA_i) gsigmaRes
@@ -1236,8 +1236,14 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
    (pplain_error () (ptext 
      "Symbols shared between actual parameter and body must be in formal parameter"
      $$ printText illShared ) nullPos)
-  let newIdentifications = Map.kernel hmor Set.\\ Map.kernel h
-                           Set.\\ Set.fromList (map (\x -> (x,x)) (Map.keys hmor))
+  let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.assocs m 
+      comb1 [] = []
+      comb1 (p : qs) = 
+           comb2 p qs ++ comb1 qs
+      comb2 _ [] = []
+      comb2 p@(a, b) ((c, d) : qs) = let rs = comb2 p qs in
+          if b == d then (a, c) : rs else rs 
+      newIdentifications = myKernel hmor Set.\\ myKernel h
   when (not (Set.isEmpty newIdentifications))
    (pplain_error () (ptext 
      "Fitting morphism leads to forbidden identifications"
