@@ -17,7 +17,7 @@ import HasCASL.As
 import HasCASL.PrintAs()
 import Common.Id
 import Common.PrettyPrint
-import Common.Lib.Set
+import qualified Common.Lib.Set as Set
 
 -- | recursively substitute type names within a type 
 rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
@@ -237,5 +237,5 @@ instance PosItem a => PosItem [a] where
 instance PosItem a => PosItem (a, b) where
     get_pos (a, _) = get_pos [a]
 
-instance PosItem a => PosItem (Set a) where
-    get_pos = get_pos . toList
+instance PosItem a => PosItem (Set.Set a) where
+    get_pos = get_pos . Set.toList
