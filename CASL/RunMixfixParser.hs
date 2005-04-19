@@ -17,7 +17,7 @@ import Common.AnnoState
 import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import Common.Lib.Set
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 import Common.Lexer
@@ -50,10 +50,10 @@ stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
              "__/=__", "even__", "odd__", "__isEmpty",
             "__<=__<=__"] ++ map (:[]) "abcdpqrstuvwxyzPQRSTUVWXYZ" 
 
-mkIds :: [String] -> Set Id
-mkIds = fromList . map (parseString $ parseId [])
+mkIds :: [String] -> Set.Set Id
+mkIds = Set.fromList . map (parseString $ parseId [])
 
-stdOps, stdPreds :: Set Id
+stdOps, stdPreds :: Set.Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
