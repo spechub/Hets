@@ -1239,10 +1239,10 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.assocs m 
       comb1 [] = []
       comb1 (p : qs) = 
-           comb2 p qs ++ comb1 qs
-      comb2 _ [] = []
-      comb2 p@(a, b) ((c, d) : qs) = let rs = comb2 p qs in
-          if b == d then (a, c) : rs else rs 
+           comb2 p qs [] ++ comb1 qs
+      comb2 _ [] rs = rs
+      comb2 p@(a, b) ((c, d) : qs) rs = 
+          comb2 p qs $ if b == d then (a, c) : rs else rs 
       newIdentifications = myKernel hmor Set.\\ myKernel h
   when (not (Set.isEmpty newIdentifications))
    (pplain_error () (ptext 
