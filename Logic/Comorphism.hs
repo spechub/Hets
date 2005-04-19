@@ -27,7 +27,7 @@ Portability :  non-portable (via Logic)
 module Logic.Comorphism where
 
 import Logic.Logic
-import Common.Lib.Set
+import qualified Common.Lib.Set as Set
 import Common.Result
 import Data.Maybe
 import Data.Dynamic
@@ -71,7 +71,7 @@ class (Language cid,
           -- also covers semi-comorphisms
           -- with no sentence translation
           -- - but these are spans!
-    map_symbol :: cid -> symbol1 -> Set symbol2
+    map_symbol :: cid -> symbol1 -> Set.Set symbol2
     constituents :: cid -> [String]
     -- default implementation
     constituents cid = [language_name cid]
@@ -143,7 +143,7 @@ instance Logic lid sublogics
            map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
-           map_symbol _ = single
+           map_symbol _ = Set.single
            constituents _ = []
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
@@ -213,8 +213,8 @@ instance (Comorphism cid1
    map_symbol (CompComorphism cid1 cid2) = \ s1 -> 
          let mycast = fromJust . mcoerce (targetLogic cid1) (sourceLogic cid2)
                                   "Mapping symbol along comorphism"
-         in unions
+         in Set.unions
                 (map (map_symbol cid2 . mycast) 
-                 (toList (map_symbol cid1 s1)))
+                 (Set.toList (map_symbol cid1 s1)))
    constituents (CompComorphism cid1 cid2) = 
       constituents cid1 ++ constituents cid2

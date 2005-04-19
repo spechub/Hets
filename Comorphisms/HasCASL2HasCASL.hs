@@ -23,7 +23,7 @@ import HasCASL.Le
 import HasCASL.Morphism
 import HasCASL.ProgEq
 
-import Common.Lib.Set
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
 -- | The identity of the comorphism
@@ -44,7 +44,7 @@ instance Comorphism HasCASL2HasCASL
     targetSublogic HasCASL2HasCASL = top
     map_morphism HasCASL2HasCASL = return
     map_sentence HasCASL2HasCASL env = return . translateSen env
-    map_symbol HasCASL2HasCASL = single 
+    map_symbol HasCASL2HasCASL = Set.single 
     map_theory HasCASL2HasCASL (sig, sen) = return 
       (sig, map  (mapNamed (translateSen sig)) sen)
 

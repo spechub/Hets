@@ -21,13 +21,12 @@ import HasCASL.AsUtils
 import HasCASL.ParseTerm
 import HasCASL.Le
 import Common.GlobalAnnotations
-import Common.Lib.Set
 import Common.Id
 import Common.Anno_Parser
 import Common.Result
 import Common.Lexer
 import Common.Lib.State
-import Common.Lib.Set as Set
+import qualified Common.Lib.Set as Set
 import Common.PPUtils
 import Common.PrettyPrint
 
@@ -56,10 +55,10 @@ stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
              "__/=__", "even__", "odd__", "__isEmpty",
              "__<=__<=__"] ++ map (:[]) "pqrstuvwxyzPQRSTUVWXYZ" 
 
-mkIds :: [String] -> Set Id
-mkIds = fromList . map (parseString some_id)
+mkIds :: [String] -> Set.Set Id
+mkIds = Set.fromList . map (parseString some_id)
 
-stdOps, stdPreds :: Set Id
+stdOps, stdPreds :: Set.Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
