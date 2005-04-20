@@ -36,8 +36,8 @@ module Common.ATerm.AbstractSyntax
     )
     where
 
-import qualified Common.DFiniteMap as Map
-import qualified Common.DFiniteMap as DMap
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Map as DMap
 -- import UnsafeCoerce(unsafePtrEq)
 
 data ATerm = AAppl String [ATerm] [ATerm]

@@ -41,7 +41,7 @@ import Common.ATerm.AbstractSyntax
 
 -- added by KL
 import Data.Char
-import qualified Common.DFiniteMap as IntMap
+import qualified Common.Lib.Map as IntMap
 import Common.SimpPretty
 
 --import Debug.Trace
