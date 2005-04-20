@@ -359,6 +359,8 @@ transFORMULA sign tr (Predication psymb args _) =
   foldl termAppl
             (con $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
+transFORMULA sign tr (Existl_equation t1 t2 _) =
+  binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (Strong_equation t1 t2 _) =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (ExtFORMULA phi) =
