@@ -33,6 +33,7 @@ import CASL.Sublogic
 import CASL.Sign
 import CASL.Morphism
 import CASL.Quantification 
+import CASL.Overload
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
@@ -359,9 +360,9 @@ transFORMULA sign tr (Predication psymb args _) =
   foldl termAppl
             (con $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
-transFORMULA sign tr (Existl_equation t1 t2 _) =
+transFORMULA sign tr (Existl_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
-transFORMULA sign tr (Strong_equation t1 t2 _) =
+transFORMULA sign tr (Strong_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (ExtFORMULA phi) =
   tr sign phi
@@ -376,9 +377,10 @@ transTERM sign tr (Application opsymb args _) =
   foldl termAppl
             (con $ transOP_SYMB sign opsymb)
             (map (transTERM sign tr) args)
-transTERM sign tr (Conditional t1 phi t2 _) =
+transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
   foldl termAppl (con "If") [transFORMULA sign tr phi,
        transTERM sign tr t1, transTERM sign tr t2]
+transTERM sign tr (Sorted_term t s _) | term_sort t == s = transTERM sign tr t
 transTERM _sign _tr _ =
   error "CASL2IsabelleHOL.transTERM" 
 
