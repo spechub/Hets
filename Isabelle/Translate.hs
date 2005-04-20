@@ -121,7 +121,7 @@ isaPrelude = [("MainHC",["pApp","apt","app","defOp","pair"]),
   "type_definition","types","uminus","unit","unit_case","unit_rec","unit_rec_set","upd_fst",
   "upd_snd","update","updates","updbind","updbinds","uprod","upt","upto","usum","var","vimage",
   "wellorder","wellorder_class","wf","wfrec","wfrec_rel","xnum","xstr","zero","zero_class","zip",
-  "{}","~=>"])]
+  "{}","~=>", "O", "o"])]
 
 showIsa :: Id -> String
 showIsa ident = trace "Please use 'showIsaT :: Id -> IName -> String' instead of showIsa." 
@@ -247,10 +247,10 @@ replaceChar c = if isIsaChar c then [c] else
   ('¥' , "Yen"),
   ('¦' , "Bar1"),
   ('§' , "Paragraph"),
-  ('¨' , "\"),"),
+  ('¨' , "\'"),
   ('©' , "Copyright"),
   ('ª' , "a1"),
-  ('«' , "\"),"),
+  ('«' , "\'"),
   ('¬' , "not"),
   ('­' , "Minus1"),
   ('®' , "Regmark"),
@@ -265,7 +265,7 @@ replaceChar c = if isIsaChar c then [c] else
   ('¸' , "'"),
   ('¹' , "1"),
   ('º' , "2"),
-  ('»' , "\"),"),
+  ('»' , "\'"),
   ('¼' , "Quarter"),
   ('½' , "Half"),
   ('¾' , "Threequarter"),
