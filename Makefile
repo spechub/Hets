@@ -354,7 +354,7 @@ utils/genRules: $(GENERATERULES_deps)
                 GenerateRules.hs -o ../genRules && strip ../genRules)
 
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
-	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) \
+	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
             -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
