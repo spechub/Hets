@@ -75,9 +75,6 @@ module CASL.Sublogic ( -- * datatypes
                    pr_symbol
                  ) where
 
-
---import Debug.Trace
-
 import Data.Maybe
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -315,7 +312,7 @@ sl_form_level (isCompound,leftImp) phi =
     then sl_form_level (isCompound,leftImp) f 
     else need_fol
   (Conjunction l _) -> comp_list $ map (sl_form_level (True,leftImp)) l
-  (Disjunction l _) -> need_fol
+  (Disjunction _ _) -> need_fol
   (Implication l1 l2 _ _) -> 
    if leftImp 
    then need_fol
@@ -330,7 +327,7 @@ sl_form_level (isCompound,leftImp) phi =
     else comp_list [sl_form_level (True,True) l1,
                     sl_form_level (True,True) l2,
                     need_ghorn]
-  (Negation f _) -> need_fol
+  (Negation _ _) -> need_fol -- it won't get worse
   (True_atom _) -> bottom
   (False_atom _) -> need_fol
   (Predication _ _ _) -> bottom
@@ -342,119 +339,17 @@ sl_form_level (isCompound,leftImp) phi =
   (ExtFORMULA _) -> undefined
   _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
 
-{-
--- Atomic Logic (subsection 3.4 of the paper)
 
--- FORMULA, P-ATOM
---
-is_atomic_f :: FORMULA f -> Bool
-is_atomic_f (Quantification q _ f _) = (is_atomic_q q) && (is_atomic_f f)
-is_atomic_f (Conjunction l _) = -- F-CONJUNCTION
-                                (not (null l)) && (and $ map is_atomic_f l)
-is_atomic_f (True_atom _) = True
-is_atomic_f (Predication _ _ _) = True
-is_atomic_f (Definedness _ _) = True
-is_atomic_f (Existl_equation _ _ _) = True
-is_atomic_f _ = False
--}
 -- QUANTIFIER
 --
 is_atomic_q :: QUANTIFIER -> Bool
 is_atomic_q (Universal) = True
 is_atomic_q _ = False
 
-{-
--- Positive Conditional Logic (subsection 3.2 in the paper)
-
--- FORMULA
---
-is_horn_f :: FORMULA f -> Bool
-is_horn_f (Quantification q _ f _) = (is_atomic_q q) && (is_horn_f f)
-is_horn_f (Implication f g _ _) = (is_horn_p_conj f) && (is_horn_a g)
-is_horn_f _ = False
-
--- P-CONJUNCTION
---
-is_horn_p_conj :: FORMULA f -> Bool
-is_horn_p_conj (Conjunction l _) = (not (null l)) && and ((map is_horn_p_a) l)
-is_horn_p_conj _ = False
-
--- ATOM
---
-is_horn_a :: FORMULA f -> Bool
-is_horn_a (True_atom _) = True
-is_horn_a (Predication _ _ _) = True
-is_horn_a (Definedness _ _) = True
-is_horn_a (Existl_equation _ _ _) = True
-is_horn_a (Strong_equation _ _ _) = True
-is_horn_a (Membership _ _ _) = True
-is_horn_a _ = False
-
--- P-ATOM
---
-is_horn_p_a :: FORMULA f -> Bool
-is_horn_p_a (True_atom _) = True
-is_horn_p_a (Predication _ _ _) = True
-is_horn_p_a (Definedness _ _) = True
-is_horn_p_a (Existl_equation _ _ _) = True
-is_horn_p_a (Membership _ _ _) = True
-is_horn_p_a _ = False
-
--- Generalized Positive Conditional Logic (subsection 3.3 of the paper)
-
--- FORMULA, ATOM
---
-is_ghorn_f :: FORMULA f -> Bool
-is_ghorn_f (Quantification q _ f _) = (is_atomic_q q) && (is_ghorn_f f)
-is_ghorn_f (Conjunction l _) = (is_ghorn_c_conj l) || (is_ghorn_f_conj l)
-is_ghorn_f (Implication f g _ _) = (is_ghorn_prem f) && (is_ghorn_conc g)
-is_ghorn_f (Equivalence f g _) = (is_ghorn_prem f) && (is_ghorn_prem g)
-is_ghorn_f (True_atom _) = True
-is_ghorn_f (Predication _ _ _) = True
-is_ghorn_f (Definedness _ _) = True
-is_ghorn_f (Existl_equation _ _ _) = True
-is_ghorn_f (Strong_equation _ _ _) = True
-is_ghorn_f (Membership _ _ _) = True
-is_ghorn_f _ = False
-
--- C-CONJUNCTION
---
-is_ghorn_c_conj :: [FORMULA f] -> Bool
-is_ghorn_c_conj l = (not( null l)) && (and ((map is_ghorn_conc) l))
-
--- F-CONJUNCTION
---
-is_ghorn_f_conj :: [FORMULA f] -> Bool
-is_ghorn_f_conj l = (not( null l)) && (and ((map is_ghorn_f) l))
-
--- P-CONJUNCTION
---
-is_ghorn_p_conj :: [FORMULA f] -> Bool
-is_ghorn_p_conj l = (not( null l)) && (and ((map is_ghorn_prem) l))
-
--- PREMISE
---
-is_ghorn_prem :: FORMULA f -> Bool
-is_ghorn_prem (Conjunction l _) = is_ghorn_p_conj l
-is_ghorn_prem x = is_horn_p_a x
-
--- CONCLUSION
---
-is_ghorn_conc :: FORMULA f -> Bool
-is_ghorn_conc (Conjunction l _) = is_ghorn_c_conj l
-is_ghorn_conc x = is_horn_a x
-
--}
 -- compute logic of a formula by checking all logics in turn
 --
 get_logic :: FORMULA f -> CASL_Sublogics
 get_logic = sl_form_level (False,False)
-
-{- if (is_atomic_f f) then bottom else
-              if (is_horn_f f) then need_horn else
-              if (is_ghorn_f f) then need_ghorn else
-              need_fol
--}
 
 -- for the formula inside a subsort-defn
 --
@@ -487,6 +382,7 @@ sl_basic_items (Local_var_axioms d l _) = sublogics_max
                                                      $ map item l)
 sl_basic_items (Axiom_items l _) = comp_list $ map sl_formula
                                              $ map item l
+sl_basic_items _ = error "CASL.Sublogics.sl_basic_items"
 
 sl_sig_items :: SIG_ITEMS s f -> CASL_Sublogics
 sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map item l
@@ -494,6 +390,7 @@ sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map item l
 sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
 sl_sig_items (Datatype_items l _) = comp_list $ map sl_datatype_decl
                                               $ map item l
+sl_sig_items _ = error "CASL.Sublogics.sl_sig_items"
 
 -- Subsort_defn needs to compute the expression logic needed seperately
 -- because the expressiveness allowed in the formula may be different
@@ -516,8 +413,6 @@ sl_op_item (Op_defn _ h t _) = sublogics_max (sl_op_head h)
 
 sl_op_attr :: OP_ATTR f -> CASL_Sublogics
 sl_op_attr (Unit_op_attr t) = sl_term t
--- sl_op_attr Assoc_op_attr = need_??
--- sl_op_attr Comm_op_attr = need_??
 sl_op_attr _ = need_eq
 
 sl_op_type :: OP_TYPE -> CASL_Sublogics
@@ -550,9 +445,13 @@ sl_var_decl :: VAR_DECL -> CASL_Sublogics
 sl_var_decl _ = bottom
 
 sl_term :: TERM f -> CASL_Sublogics
-sl_term (Cast _ _ _) = need_part
+-- the subterms may make it worse than "need_part"
+sl_term (Cast t _ _) = sublogics_max need_part $ sl_term t
 sl_term (Conditional t f u _) = comp_list [sl_term t,sl_formula f,sl_term u]
-sl_term _ = bottom
+sl_term (Sorted_term t _ _) = sl_term t
+sl_term (Application _ l _) = comp_list $ map sl_term l
+sl_term (Qual_var _ _ _) = bottom
+sl_term _ = error "CASL.Sublogics.sl_term"
 
 sl_formula :: FORMULA f -> CASL_Sublogics
 sl_formula f = sublogics_max (get_logic f) (sl_form f)
@@ -563,7 +462,7 @@ sl_form (Conjunction l _) = comp_list $ map sl_form l
 sl_form (Disjunction l _) = comp_list $ map sl_form l
 sl_form (Implication f g _ _) = sublogics_max (sl_form f) (sl_form g)
 sl_form (Equivalence f g _) = sublogics_max (sl_form f) (sl_form g)
-sl_form (Negation f _) = bottom
+sl_form (Negation f _) = sl_form f
 sl_form (True_atom _) = bottom
 sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
@@ -571,10 +470,11 @@ sl_form (Predication _ l _) = sublogics_max need_pred
 sl_form (Definedness t _) = sl_term t
 sl_form (Existl_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
-sl_form (Membership t _ _) = sublogics_max need_sub (sl_term t)
-sl_form (Mixfix_formula t) = sl_term t
+-- membership is trivially true if there are not subsorts
+sl_form (Membership t _ _) = sl_term t
 sl_form (Unparsed_formula _ _) = bottom
 sl_form (Sort_gen_ax _ _) = need_cons
+sl_form _ = error "CASL.Subligics.sl_form"
 
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
@@ -814,6 +714,7 @@ pr_basic_items l (Axiom_items f p) =
                    (Nothing,[])
                  else
                    (Just (Axiom_items res pos),[])
+pr_basic_items _ _ = error "CASL.Sublogics.pr_basic_items"
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
 pr_datatype_decl l (Datatype_decl s a p) = 
@@ -835,7 +736,7 @@ pr_alternative l (Alt_construct Total n c p) =
                    Nothing
                  else
                    Just (Alt_construct Total n res pos)
-pr_alternative l alt@(Alt_construct Partial n c p) =
+pr_alternative l alt@(Alt_construct Partial _ _ _) =
              if ((has_part l)==True) then
                Just alt
              else
@@ -847,7 +748,7 @@ pr_alternative l (Subsorts s p) =
                  Nothing
 
 pr_components :: CASL_Sublogics -> COMPONENTS -> Maybe COMPONENTS
-pr_components l sel@(Cons_select Partial n s p) =
+pr_components l sel@(Cons_select Partial _ _ _) =
               if ((has_part l)==True) then
                 Just sel
               else
@@ -908,6 +809,7 @@ pr_sig_items l (Datatype_items d p) =
                  (Nothing,lst)
                else
                  (Just (Datatype_items res pos),lst)
+pr_sig_items _ _ = error "CASL.Sublogics.pr_sig_items"
 
 pr_op_item :: CASL_Sublogics -> OP_ITEM f -> Maybe (OP_ITEM f)
 pr_op_item l i = pr_check l sl_op_item i
