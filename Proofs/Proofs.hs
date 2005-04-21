@@ -238,14 +238,14 @@ concatHistoryElems ((rules,changes):elems) =
 -- -------------------------------
 -- methods used in several proofs
 -- -------------------------------
-lookupDgraphError :: LIB_NAME -> a
-lookupDgraphError libname = error ("Could not find lib with name <" 
+lookupDGraphError :: LIB_NAME -> a
+lookupDGraphError libname = error ("Could not find lib with name <" 
 				   ++(show libname)++ "> in the given LibEnv")
 
 mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
 mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
   case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
+    Nothing -> lookupDGraphError libname
     Just (globalContext,globalAnnos,_) ->
       (libname,
        Map.insert libname (globalContext,globalAnnos,dgraph) libEnv,
@@ -403,20 +403,18 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 
 -- applies global subsumption to all unproven global theorem edges if possible
 globSubsume ::  ProofStatus -> IO ProofStatus
-globSubsume proofStatus@(libname,libEnv,_) = 
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dgraph) -> do
-      let globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+globSubsume proofStatus@(ln,libEnv,_) = do
+  let dgraph = lookupDGraph ln proofStatus
+      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     -- the 'nub' is just a workaround, because some of the edges in the graph
     -- do not differ from each other in this represetation - which causes
     -- problems on deletion
-	  result = globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
-	  nextDGraph = fst result
-	  nextHistoryElem = snd result
-	  newProofStatus 
-	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-      return newProofStatus
+      result = globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
+      nextDGraph = fst result
+      nextHistoryElem = snd result
+      newProofStatus 
+	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  return newProofStatus
 
 
 {- auxiliary function for globSubsume (above)
@@ -459,17 +457,15 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
 locDecomp ::  ProofStatus -> IO ProofStatus
-locDecomp proofStatus@(libname,libEnv,_) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dgraph) -> do
-      let localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-	  result = locDecompAux libEnv dgraph ([],[]) localThmEdges
-	  nextDGraph = fst result
-	  nextHistoryElem = snd result
-	  newProofStatus 
-	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-      return newProofStatus
+locDecomp proofStatus@(ln,libEnv,_) = do
+  let dgraph = lookupDGraph ln proofStatus
+      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+      result = locDecompAux libEnv dgraph ([],[]) localThmEdges
+      nextDGraph = fst result
+      nextHistoryElem = snd result
+      newProofStatus 
+	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  return newProofStatus
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
@@ -540,17 +536,15 @@ isSameTranslation th morphism path =
 
 -- applies local subsumption to all unproven local theorem edges
 locSubsume :: ProofStatus -> IO ProofStatus
-locSubsume proofStatus@(libname,libEnv,_) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dgraph) -> do
-      let localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-	  result = locSubsumeAux libEnv dgraph ([],[]) localThmEdges
-	  nextDGraph = fst result
-	  nextHistoryElem = snd result
-	  newProofStatus
-	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-      return newProofStatus
+locSubsume proofStatus@(ln,libEnv,_) = do
+  let dgraph = lookupDGraph ln proofStatus
+      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+      result = locSubsumeAux libEnv dgraph ([],[]) localThmEdges
+      nextDGraph = fst result
+      nextHistoryElem = snd result
+      newProofStatus
+	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  return newProofStatus
 
 -- auxiliary method for locSubsume
 locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
@@ -594,17 +588,15 @@ locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 -- ----------------------------------------------
 
 hideTheoremShift :: Bool -> ProofStatus -> IO ProofStatus
-hideTheoremShift isAutomatic proofStatus@(libname,libEnv,_) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dgraph) -> do
-      let hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
-      result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges isAutomatic
-      let nextDGraph = fst result
-	  nextHistoryElem = snd result
-	  newProofStatus
-	      = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-      return newProofStatus
+hideTheoremShift isAutomatic proofStatus@(ln,_,_) = do
+  let dgraph = lookupDGraph ln proofStatus
+      hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
+  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges isAutomatic
+  let nextDGraph = fst result
+      nextHistoryElem = snd result
+      newProofStatus
+	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  return newProofStatus
 
 
 {- auxiliary method for hideTheoremShift -}
@@ -821,24 +813,33 @@ getConservativity edge@(_,_,edgeLab) =
 -- ----------------------------------------------
 
 theoremHideShift :: ProofStatus -> IO ProofStatus
-theoremHideShift proofStatus@(libname,libEnv,_) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dgraph) -> do
-      let allNodes = nodes dgraph
-	  (nonLeaves,leaves)
-	      = splitByProperty allNodes (hasIngoingHidingDef dgraph)
-	  cs = [context l dgraph|l<- leaves]
-	  labs = [lab' c|c <- cs]
-      (auxGraph,changes) <- handleLeaves dgraph leaves
-      (finalGraph,furtherChanges) <- handleNonLeaves auxGraph nonLeaves
-      let finalChanges = removeContraryChanges (changes++furtherChanges)
-	  newProofStatus
-	      = mkResultProofStatus proofStatus finalGraph
-		([TheoremHideShift],finalChanges)
-      putStrLn (showChanges finalChanges)
-      return newProofStatus
+theoremHideShift proofStatus@(ln,_,_) = do
+  let dgraph = lookupDGraph ln proofStatus
+      allNodes = nodes dgraph
+      (nonLeaves,leaves) 
+	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
+  auxProofstatus <- handleLeaves (prepareProofStatus proofStatus) leaves
+  finalProofstatus <- handleNonLeaves auxProofstatus nonLeaves
+  return (reviseProofStatus finalProofstatus)
 
+
+prepareProofStatus :: ProofStatus -> ProofStatus
+prepareProofStatus (ln,libEnv,history) = 
+  (ln,libEnv,Map.map prepareHistory history)
+
+prepareHistory :: [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
+prepareHistory [] = [([],[])]
+prepareHistory history@((_,[]):_) = history
+prepareHistory history = ([],[]):history
+
+reviseProofStatus :: ProofStatus -> ProofStatus
+reviseProofStatus proofstatus@(ln,libEnv,historyMap) =
+  (ln, libEnv, Map.map reviseHistory historyMap)
+
+reviseHistory :: ProofHistory -> ProofHistory
+reviseHistory [] = []
+reviseHistory ((_,changes):history) =
+  ([TheoremHideShift],(removeContraryChanges changes)):history
 
 showChanges :: [DGChange] -> String
 showChanges [] = ""
@@ -882,25 +883,67 @@ hasIngoingHidingDef dgraph node =
     next = map getSourceNode globalDefEdges
 
 
-handleLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
-handleLeaves dgraph [] = return (dgraph,[])
-handleLeaves dgraph (node:list) = do
-  (auxGraph, changes) <- convertToNf dgraph node
-  (finalGraph, furtherChanges) <- handleLeaves auxGraph list
-  return (finalGraph, changes ++ furtherChanges)
+handleLeaves :: ProofStatus -> [Node] -> IO ProofStatus
+handleLeaves proofstatus [] = return proofstatus
+handleLeaves proofstatus (node:list) = do
+  auxProofstatus <- convertToNf proofstatus node
+  handleLeaves auxProofstatus list
 
 
-convertToNf :: DGraph -> Node -> IO (DGraph, [DGChange])
-convertToNf dgraph node = do
-  let nodelab = lab' (context node dgraph)
+lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
+lookupGlobalContext ln (_,libEnv,_) =
+  case Map.lookup ln libEnv of
+    Nothing -> lookupDGraphError ln
+    Just globalContext -> globalContext
+
+lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
+lookupDGraph ln proofstatus = dgraph
+  where
+    (_,_,dgraph) = lookupGlobalContext ln proofstatus
+
+lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
+lookupHistory ln (_,_,historyMap) =
+  case Map.lookup ln historyMap of
+    Nothing -> []
+    Just history -> history
+
+updateHistory :: LIB_NAME -> [DGChange] -> ProofStatus -> ProofStatus
+updateHistory ln changes proofstatus@(l,libEnv,historyMap) =
+  (l, libEnv,
+  Map.insert ln (addChanges changes (lookupHistory ln proofstatus)) historyMap)
+
+updateLibEnv :: LIB_NAME -> DGraph -> ProofStatus -> ProofStatus
+updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
+  (l,
+   Map.insert ln 
+   (updateDGraphInGlobalContext dgraph (lookupGlobalContext ln proofstatus))
+   libEnv,
+   historyMap)
+
+updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
+		  -> ProofStatus
+updateProofStatus ln dgraph changes proofstatus =
+  updateHistory ln changes proofstatusAux
+  where
+    proofstatusAux = updateLibEnv ln dgraph proofstatus
+
+updateDGraphInGlobalContext :: DGraph -> GlobalContext -> GlobalContext
+updateDGraphInGlobalContext dgraph (gAnnos,gEnv,_) = (gAnnos,gEnv,dgraph)
+
+
+convertToNf :: ProofStatus -> Node -> IO ProofStatus
+convertToNf proofstatus@(ln,libEnv,history) node = do
+  let dgraph = lookupDGraph ln proofstatus
+      nodelab = lab' (context node dgraph)
       [newNode] = newNodes 0 dgraph
       newDgnode = case isDGRef nodelab of
 		    False -> mkNfDGNode newNode nodelab
 		    True -> mkNfDGRef newNode nodelab
       auxGraph = insNode newDgnode dgraph
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
-  return (delNode node finalGraph,
-	  [InsertNode newDgnode] ++ changes ++ [DeleteNode (node,nodelab)])
+  let finalChanges =  [InsertNode newDgnode] ++ changes
+		      ++ [DeleteNode (node,nodelab)]
+  return (updateProofStatus ln finalGraph finalChanges proofstatus)
   where 
     mkNfDGNode :: Node -> DGNodeLab -> LNode DGNodeLab
     mkNfDGNode newNode nodelab = 
@@ -921,6 +964,10 @@ convertToNf dgraph node = do
 		dgn_nf = Just newNode,
 		dgn_sigma = Nothing -- Just (ide Grothendieck sign)
 	       })
+
+addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
+addChanges changes [] = [([],changes)]
+addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
 
 
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
@@ -949,37 +996,38 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 
 -- was machen, wenn der Knoten ein DGRef ist??
-handleNonLeaves :: DGraph -> [Node] -> IO (DGraph,[DGChange])
-handleNonLeaves dgraph [] = return (dgraph,[])
-handleNonLeaves dgraph (node:list) = do
-  let nodelab = lab' (context node dgraph)
+handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
+handleNonLeaves proofstatus [] = return proofstatus
+handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
+  let dgraph = lookupDGraph ln proofstatus
+      nodelab = lab' (context node dgraph)
   case dgn_nf nodelab of
-    Just _ -> handleNonLeaves dgraph list
+    Just _ -> handleNonLeaves proofstatus list
     Nothing -> do
-      (auxGraph, changes) <- createNfsForPredecessors dgraph node
-      let newDefInEdges = [edge| edge <- inn auxGraph node,
+      auxProofstatus <- createNfsForPredecessors proofstatus node
+      let auxGraph = lookupDGraph ln auxProofstatus
+          newDefInEdges = [edge| edge <- inn auxGraph node,
 			  isGlobalDef edge || isHidingDef edge]
           newPredecessors = [src| (src,_,_) <- newDefInEdges]
           diagram = makeDiagram auxGraph (node:newPredecessors) newDefInEdges
           Result diags res = gWeaklyAmalgamableCocone diagram
       case res of
         Nothing -> do sequence $ map (putStrLn . show) diags
-		      (finalGraph, furtherChanges) <- 
-			  handleNonLeaves auxGraph list
-		      return (finalGraph, changes ++ furtherChanges)
+		      handleNonLeaves auxProofstatus list
         Just (sign,map) -> do
           let [nfNode] = newNodes 0 auxGraph
               nfDGNode = case isDGRef nodelab of
 			   False -> mkNfDGNode nfNode nodelab (dgn_sign nodelab) -- actually sign
 			   True -> mkNfDGRef nfNode nodelab sign
 
-          (auxGraph', changes') <- 
+          (auxGraph', changes) <- 
 	      setNfOfNode (insNode nfDGNode auxGraph) node nfNode
-          let (auxGraph'',changes'') = insertEdgesToNf auxGraph' nfNode map
-          (finalGraph,furtherChanges) <- handleNonLeaves auxGraph'' list
-          return (finalGraph, changes ++ [InsertNode nfDGNode]
-		              ++ changes' ++ changes'' ++ furtherChanges)
-
+          let (finalGraph,changes') = insertEdgesToNf auxGraph' nfNode map
+              finalProofstatus = updateProofStatus ln finalGraph 
+				([InsertNode nfDGNode] ++ changes
+				 ++ changes') auxProofstatus
+          handleNonLeaves finalProofstatus list
+	  
   where
     mkNfDGNode :: Node -> DGNodeLab -> G_sign -> LNode DGNodeLab
     mkNfDGNode newNode nodelab sign =
@@ -1001,11 +1049,12 @@ handleNonLeaves dgraph (node:list) = do
 		dgn_sigma = dgn_sigma nodelab -- so richtig?
 	       })
 
-createNfsForPredecessors :: DGraph -> Node -> IO (DGraph, [DGChange])
-createNfsForPredecessors dgraph node = do
-  handleNonLeaves dgraph predecessors
+createNfsForPredecessors :: ProofStatus -> Node -> IO ProofStatus
+createNfsForPredecessors proofstatus@(ln,_,_) node = do
+  handleNonLeaves proofstatus predecessors
 
   where
+    dgraph = lookupDGraph ln proofstatus
     defInEdges =  [edge| edge@(src,_,_) <- inn dgraph node,
 		   (isGlobalDef edge || isHidingDef edge) 
 		   && node /= src]
@@ -1638,10 +1687,8 @@ selectProver provers = do
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
 basicInferenceNode checkCons lg (ln,node) 
-         proofStatus@(libname,libEnv,proofHistory) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDgraphError libname
-    Just (_,_,dGraph) -> 
+         proofStatus@(libname,libEnv,proofHistory) = do
+      let dGraph = lookupDGraph libname proofStatus
       ioresToIO (do 
         -- compute the theory of the node, and its name
         G_theory lid1 sign axs <- 
