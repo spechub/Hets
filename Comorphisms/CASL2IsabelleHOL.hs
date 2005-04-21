@@ -366,7 +366,8 @@ transFORMULA sign tr (Strong_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (ExtFORMULA phi) =
   tr sign phi
-transFORMULA _sign _tr _ = 
+transFORMULA _ _ (Membership t s _) | term_sort t == s = true
+transFORMULA _ _ _ = 
   error "CASL2Isabelle.transFORMULA"
 
 transTERM :: CASL.Sign.Sign f e
@@ -381,6 +382,7 @@ transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
   foldl termAppl (con "If") [transFORMULA sign tr phi,
        transTERM sign tr t1, transTERM sign tr t2]
 transTERM sign tr (Sorted_term t s _) | term_sort t == s = transTERM sign tr t
+transTERM sign tr (Cast t s _) | term_sort t == s = transTERM sign tr t
 transTERM _sign _tr _ =
   error "CASL2IsabelleHOL.transTERM" 
 

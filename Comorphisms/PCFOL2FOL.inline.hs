@@ -194,8 +194,10 @@ totalizeTerm bsrts mf t = case t of
        newF = totalizeFormula bsrts mf f
        t4 = totalizeTerm bsrts mf t2
        in Conditional t3 newF t4 ps 
-   -- casted and sorted terms are coded out
-   _ -> t
+   Sorted_term tr s _ | term_sort tr == s -> totalizeTerm bsrts mf tr
+   Cast tr s _ | term_sort tr == s -> totalizeTerm bsrts mf tr
+   Qual_var _ _ _ -> t
+   _ -> error "PCFOL2CFOL.totalizeTerm"
    where totalizeOpSymb o = case o of 
                             Qual_op_name i (Op_type _ args res ps) qs -> 
                                 Qual_op_name i (Op_type Total args res ps) qs
@@ -236,8 +238,11 @@ totalizeFormula bsrts mf form = case form of
        t4 = totalizeTerm bsrts mf t2
        in Strong_equation t3 t4 ps
    ExtFORMULA ef -> ExtFORMULA $ mf ef
-   -- membership is coded out
-   _ -> form 
+   Membership t s ps | term_sort t == s -> True_atom ps
+   Sort_gen_ax _ _ -> form
+   True_atom _ -> form 
+   False_atom _ -> form 
+   _ -> error "PCFOL2CFOL.totalizeFormula"
 
 rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
 rmDefs bsrts mf form = case form of 
@@ -257,5 +262,4 @@ rmDefs bsrts mf form = case form of
        in Negation newF ps
    Definedness t ps -> defined bsrts t (term_sort t) ps
    ExtFORMULA ef -> ExtFORMULA $ mf ef
-   -- membership is coded out
    _ -> form 
