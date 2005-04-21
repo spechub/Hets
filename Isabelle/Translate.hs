@@ -15,15 +15,16 @@ module Isabelle.Translate (showIsa, showIsaT, showIsaSid, showIsaI, showIsaIT, r
 
 import Common.Id 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Data.Char
 import Data.Maybe
 import Debug.Trace
 import Isabelle.IsaSign
 
 ------------------- Id translation functions -------------------
-isaPrelude :: [(IName,[String])]
-isaPrelude = [("MainHC",["pApp","apt","app","defOp","pair"]),
-
+isaPrelude :: Map.Map IName (Set.Set String)
+isaPrelude = Map.map Set.fromList $ Map.fromList 
+  [("MainHC",["pApp","apt","app","defOp","pair"]),
   ("Pure",["!!","#prop","==","==>","=?=","Goal","TYPE",
   "_DDDOT","_K","_TYPE","_abs","_appl","_aprop","_args","_asms",
   "_bigimpl","_bracket","_classes","_constify","_constrain",
@@ -131,7 +132,8 @@ showIsaT :: Id -> IName -> String
 showIsaT ident theory =  
 -- "stripUnderscores sident" was substided by sident because there is no problem, if reserved words
 -- differ from sident only by underscrores
-  if sident `elem` (selList isaPrelude theory) then sident++"X" else sident
+  if Set.member sident $ Map.findWithDefault Set.empty theory isaPrelude 
+  then sident++"X" else sident
   where 
    sident = transString $ show ident
 
