@@ -965,6 +965,48 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
 		dgn_sigma = Nothing -- Just (ide Grothendieck sign)
 	       })
 
+mkNfNode :: DGraph -> Node -> Node -> ProofStatus
+	    -> IO (ProofStatus,LNode DGNodeLab)
+mkNfNode dgraph node newNode proofstatus = do
+  let nodelab = lab' (context node dgraph)
+  case isDGRef nodelab of
+    True -> mkDGRefNfNode dgraph nodelab newNode proofstatus
+    False -> mkDGNodeNfNode dgraph nodelab newNode proofstatus
+
+
+mkDGNodeNfNode :: DGraph -> DGNodeLab -> Node -> ProofStatus
+	       -> IO (ProofStatus,LNode DGNodeLab)
+mkDGNodeNfNode dgraph nodelab newNode proofstatus = do
+  let lnode = (newNode,
+	 DGNode {dgn_name = dgn_name nodelab,
+		 dgn_sign = dgn_sign nodelab,
+		 dgn_sens = dgn_sens nodelab,
+		 dgn_nf = Just newNode,
+		 dgn_sigma = Just (ide Grothendieck (dgn_sign nodelab)),
+		 dgn_origin = DGProof
+		})
+  return (proofstatus,lnode)
+
+mkDGRefNfNode :: DGraph -> DGNodeLab -> Node -> ProofStatus
+	      -> IO (ProofStatus,(LNode DGNodeLab))
+mkDGRefNfNode dgraph nodelab newNode proofstatus@(ln,_,_) = do
+  auxProofstatus <- theoremHideShift 
+		    (changeCurrentLibName (dgn_libname nodelab) proofstatus)
+  let refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
+      (Just refNf) = dgn_nf (lab' (context (dgn_node nodelab) refGraph))
+  let lnode = (newNode,
+	       DGRef {dgn_renamed = dgn_renamed nodelab,
+		      dgn_libname = dgn_libname nodelab,
+		      dgn_node = refNf,
+		      dgn_nf = Just newNode,
+		      dgn_sigma = Nothing -- Just (ide Grothendieck sign)
+		     })
+  return (changeCurrentLibName ln auxProofstatus,lnode)
+
+
+changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
+changeCurrentLibName ln (_,libEnv,historyMap) = (ln,libEnv,historyMap)
+
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
 addChanges changes [] = [([],changes)]
 addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
