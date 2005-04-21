@@ -113,10 +113,13 @@ data SPOriginType =
       deriving (Eq, Show)
 
 {- |
-  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
+  A SPASS Formula is a labelled SPTerm. Note that this doesn't reflect
   the fact that the SPASS syntax lists both term and label as optional.
 -}
-type SPFormula = Named SPTerm
+data SPFormula =
+        SPFormula { formulaLabel :: SPIdentifier,
+                    formulaTerm  :: SPTerm }
+      deriving (Eq, Show)
 
 {- |
   A SPASS Term.

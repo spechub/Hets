@@ -13,6 +13,7 @@ Portability :  unknown
 -}
 
 import SPASS.Sign
+import SPASS.Print
 
 import Common.AS_Annotation
 import Common.PrettyPrint
@@ -48,20 +49,20 @@ sokratesAxiomFormulae :: SPFormulaList
 sokratesAxiomFormulae = SPFormulaList {originType= SPOriginAxioms,
                                        formulae= [f1, f2] }
   where
-    f1 = NamedSen {senName= "1",
-                   sentence= SPComplexTerm {symbol= SPCustomSymbol "Human",
-                                            arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
-    f2 = NamedSen {senName= "2",
-                   sentence= SPQuantTerm {quantSym= SPForall, 
-                                          termTermList= [SPSimpleTerm (SPCustomSymbol "x")],
-                                          termTerm= SPComplexTerm { symbol= SPImplies,
-                                                                    arguments= [SPComplexTerm {symbol= SPCustomSymbol "Human", arguments= [SPSimpleTerm (SPCustomSymbol "x")]},
-                                                                                SPComplexTerm {symbol= SPCustomSymbol "Mortal", arguments= [SPSimpleTerm (SPCustomSymbol "x")]}] } } }
+    f1 = SPFormula {formulaLabel = "1",
+                    formulaTerm  = SPComplexTerm {symbol= SPCustomSymbol "Human",
+                                                  arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
+    f2 = SPFormula {formulaLabel = "2",
+                   formulaTerm   = SPQuantTerm {quantSym= SPForall, 
+                                                termTermList= [SPSimpleTerm (SPCustomSymbol "x")],
+                                                termTerm= SPComplexTerm { symbol= SPImplies,
+                                                                          arguments= [SPComplexTerm {symbol= SPCustomSymbol "Human", arguments= [SPSimpleTerm (SPCustomSymbol "x")]},
+                                                                                      SPComplexTerm {symbol= SPCustomSymbol "Mortal", arguments= [SPSimpleTerm (SPCustomSymbol "x")]}] } } }
 
 sokratesConjectureFormulae :: SPFormulaList
 sokratesConjectureFormulae = SPFormulaList { originType= SPOriginConjectures,
                                              formulae= [f3] }
   where
-    f3 = NamedSen {senName= "3",
-                   sentence= SPComplexTerm {symbol= SPCustomSymbol "Mortal",
-                                            arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
+    f3 = SPFormula {formulaLabel = "3",
+                    formulaTerm  = SPComplexTerm {symbol= SPCustomSymbol "Mortal",
+                                                  arguments= [SPSimpleTerm (SPCustomSymbol "sokrates")] } }
