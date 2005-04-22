@@ -211,20 +211,5 @@ makeEquivPred o o1 o2 args =
                    sentence = mkForall vds
                       (Equivalence t1 t2 []) [] }
 
--- | all maximal common subsorts of the two input sorts
-maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
-maximalSubs s s1 s2 = 
-    keepMaximals s id $ Set.toList $ common_subsorts s s1 s2
-
-keepMaximals :: Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMaximals s' f' l = keepMaximals2 s' f' l l
-    where keepMaximals2 s f l1 l2 = case l1 of
-              [] -> l2
-              x : r -> keepMaximals2 s f r $ filter 
-                   ( \ y -> let v = f x 
-                                w = f y 
-                            in leq_SORT s v w ||
-                            not (geq_SORT s v w)) l2
- 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula id . injFormula id 

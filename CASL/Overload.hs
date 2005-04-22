@@ -18,7 +18,8 @@
 
 module CASL.Overload(minExpFORMULA, oneExpTerm, Min,
                      is_unambiguous, term_sort, leqF, leqP,
-                     leq_SORT, geq_SORT, minimalSupers, keepMinimals,
+                     minimalSupers, maximalSubs,
+                     keepMinimals, keepMaximals,
                      common_supersorts, common_subsorts)  where
 
 import CASL.Sign
@@ -117,11 +118,6 @@ oneExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e
 oneExpTerm minF ga sign term = do 
     ts <- minExpTerm minF ga sign term
     is_unambiguous ga term ts []
-
--- | all minimal common supersorts of the two input sorts
-minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
-minimalSupers s s1 s2 = 
-    keepMinimals s id $ Set.toList $ common_supersorts s s1 s2
 
 {-----------------------------------------------------------
     - Minimal expansion of an equation formula -
@@ -234,7 +230,6 @@ qualify_pred :: Id -> [Pos] -> (PredType, [TERM f]) -> FORMULA f
 qualify_pred ide pos (pred', terms') = 
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
-
 -- | expansions of an equation formula or a conditional
 minExpTerm_eq :: PrettyPrint f =>
                     Min f e               ->
@@ -311,6 +306,11 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
               Nothing -> qv
               Just s2 -> if s == s2 then qv else []
 
+-- | all minimal common supersorts of the two input sorts
+minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
+minimalSupers s s1 s2 = 
+    keepMinimals s id $ Set.toList $ common_supersorts s s1 s2
+
 keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals s' f' l = keepMinimals2 s' f' l l
     where keepMinimals2 s f l1 l2 = case l1 of
@@ -321,6 +321,21 @@ keepMinimals s' f' l = keepMinimals2 s' f' l l
                             in geq_SORT s v w ||
                             not (leq_SORT s v w)) l2
 
+-- | all maximal common subsorts of the two input sorts
+maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
+maximalSubs s s1 s2 = 
+    keepMaximals s id $ Set.toList $ common_subsorts s s1 s2
+
+keepMaximals :: Sign f e -> (a -> SORT) -> [a] -> [a]
+keepMaximals s' f' l = keepMaximals2 s' f' l l
+    where keepMaximals2 s f l1 l2 = case l1 of
+              [] -> l2
+              x : r -> keepMaximals2 s f r $ filter 
+                   ( \ y -> let v = f x 
+                                w = f y 
+                            in leq_SORT s v w ||
+                            not (geq_SORT s v w)) l2
+ 
 -- | minimal expansion of an (possibly qualified) operator application
 minExpTerm_appl :: PrettyPrint f => Min f e -> GlobalAnnos 
                 -> Sign f e -> Id -> Maybe OpType -> [TERM f] 
@@ -497,9 +512,8 @@ geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
 
 -- | True if both ops are in the overloading relation 
 leqF :: Sign f e -> OpType -> OpType -> Bool
-leqF sign o1 o2 = 
+leqF sign o1 o2 = have_common_supersorts sign (opRes o1) (opRes o2) &&
     zipped_all (have_common_subsorts sign) (opArgs o1) (opArgs o2)
-                && have_common_supersorts sign (opRes o1) (opRes o2)
 
 -- | True if both preds are in the overloading relation 
 leqP :: Sign f e -> PredType -> PredType -> Bool
