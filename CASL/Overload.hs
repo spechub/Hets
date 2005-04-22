@@ -202,23 +202,24 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
     let -- predicates matching that name in the current environment
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $ 
               Map.findWithDefault Set.empty ide $ predMap sign
-        preds =  case mty of 
-                   Nothing -> Set.toList preds'
+        preds = case mty of 
+                   Nothing -> equivalence_Classes (leqP sign) $ 
+                              Set.toList preds'
                    Just ty -> if Set.member ty preds' 
-                              then [ty] else []
+                              then [[ty]] else []
     noOpOrPred preds "predicate" mty ide pos
     expansions <- mapM (minExpTerm mef ga sign) args
-    let get_profile :: [[TERM f]] -> [(PredType, [TERM f])]
-        get_profile cs = [ (pred', ts) |
-                             pred' <- preds,
-                             ts    <- permute cs,
+    let get_profiles :: [[TERM f]] -> [[(PredType, [TERM f])]]
+        get_profiles cs = map (get_profile cs) preds
+        get_profile :: [[TERM f]] -> [PredType] -> [(PredType, [TERM f])]
+        get_profile cs ps = [ (pred', ts) |
+                             pred' <- ps,
+                             ts <- cs,
                              zipped_all (leq_SORT sign)
                              (map term_sort ts)
                              (predArgs pred') ]
         qualForms = qualifyPreds ide poss
-                       $ concatMap (equivalence_Classes $ 
-                                    args_eq sign leqP)
-                       $ map get_profile 
+                       $ concatMap (get_profiles . permute)
                        $ permute expansions
     is_unambiguous ga (Predication (Pred_name ide) args poss) qualForms poss
 
@@ -345,27 +346,25 @@ minExpTerm_appl mef ga sign ide mty args poss = do
     let -- functions matching that name in the current environment
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $ 
               Map.findWithDefault Set.empty ide $ opMap sign
-        ops =  case mty of 
-                   Nothing -> Set.toList ops'
+        ops = case mty of 
+                   Nothing -> equivalence_Classes (leqF sign) $ Set.toList ops'
                    Just ty -> if Set.member ty ops' || 
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops' 
-                              then [ty] else []
+                              then [[ty]] else []
     noOpOrPred ops "operation" mty ide pos
     expansions <- mapM (minExpTerm mef ga sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
-        get_profile :: [[TERM f]] -> [(OpType, [TERM f])]
-        get_profile cs = [ (op', ts) |
-                             op' <- ops,
-                             ts  <- permute cs,
+        get_profiles cs = map (get_profile cs) ops
+        get_profile cs os = [ (op', ts) |
+                             op' <- os,
+                             ts  <- cs,
                              zipped_all (leq_SORT sign)
                              (map term_sort ts)
                              (opArgs op') ]
         qualTerms = qualifyOps ide poss
                        $ map (minimize_op sign) 
-                       $ concatMap (equivalence_Classes 
-                                    $ args_eq sign leqF)
-                       $ map get_profile 
+                       $ concatMap (get_profiles . permute)
                        $ permute expansions
     hasSolutions ga (Application (Op_name ide) args poss) qualTerms poss
 
@@ -376,12 +375,6 @@ qualifyOps ide pos = map $ map $ qualify_op ide pos
 qualify_op :: Id -> [Pos] -> (OpType, [TERM f]) -> TERM f
 qualify_op ide pos (op', terms') = 
     Application (Qual_op_name ide (toOP_TYPE op') pos) terms' pos
-
--- the equivalence relation as descr. on p. 339 (Step 4)
-args_eq :: Sign f e -> (Sign f e -> a -> a -> Bool) 
-        -> (a, [TERM f]) -> (a, [TERM f]) -> Bool
-args_eq sign g (op1, _) (op2, _) =
-    g sign op1 op2
 
 {-----------------------------------------------------------
     - Minimal expansion of a function application or a variable -
