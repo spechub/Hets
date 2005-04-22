@@ -221,7 +221,7 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
                              (predArgs pred') ]
         qualForms = qualifyPreds ide poss
                        $ concatMap (equivalence_Classes $ 
-                                    args_eq sign predArgs leqP)
+                                    args_eq sign leqP)
                        $ map get_profile 
                        $ permute expansions
     is_unambiguous ga (Predication (Pred_name ide) args poss) qualForms poss
@@ -247,15 +247,10 @@ minExpTerm_eq mef ga sign term1 term2 = do
     exps1 <- minExpTerm mef ga sign term1
     exps2 <- minExpTerm mef ga sign term2
     return $ map (minimize_eq sign)
-           $ concatMap (equivalence_Classes $ eq_pair sign)
            $ map getPairs $ permute [exps1, exps2]
 
 getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
 getPairs cs = [ (t1, t2) | [t1,t2] <- permute cs ]
-
-eq_pair :: Sign f e -> (TERM f, TERM f) -> (TERM f, TERM f) -> Bool
-eq_pair s (t1, t2) (t3, t4) = 
-    equiv_term s t1 t3 && equiv_term s t2 t4
 
 minimize_eq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
 minimize_eq s l = keepMinimals s (term_sort . snd) $ 
@@ -354,7 +349,7 @@ minExpTerm_appl mef ga sign ide mty args poss = do
         qualTerms = qualifyOps ide poss
                        $ map (minimize_op sign) 
                        $ concatMap (equivalence_Classes 
-                                    $ args_eq sign opArgs leqF)
+                                    $ args_eq sign leqF)
                        $ map get_profile 
                        $ permute expansions
     hasSolutions ga (Application (Op_name ide) args poss) qualTerms poss
@@ -368,30 +363,10 @@ qualify_op ide pos (op', terms') =
     Application (Qual_op_name ide (toOP_TYPE op') pos) terms' pos
 
 -- the equivalence relation as descr. on p. 339 (Step 4)
-args_eq :: Sign f e -> (a -> [SORT]) -> (Sign f e -> a -> a -> Bool) 
+args_eq :: Sign f e -> (Sign f e -> a -> a -> Bool) 
         -> (a, [TERM f]) -> (a, [TERM f]) -> Bool
-args_eq sign f g (op1,ts1) (op2,ts2)=
+args_eq sign g (op1, _) (op2, _) =
     g sign op1 op2
-    && zipped_all (leq_SORT sign) (map term_sort ts1) (f op2)
-    && zipped_all (leq_SORT sign) (map term_sort ts2) (f op1)
-    && zipped_all (equiv_term sign) ts1 ts2
-
-equiv_term :: Sign f e -> TERM f -> TERM f -> Bool
-equiv_term s t1 t2 = 
-    case (t1, t2) of
-    (Application (Qual_op_name i1 ty1 _) as1 _, 
-     Application (Qual_op_name i2 ty2 _) as2 _) -> 
-       i1 == i2 && leqF s (toOpType ty1) (toOpType ty2) &&
-          zipped_all (equiv_term s) as1 as2
-    (Sorted_term t3 _ _, _) -> equiv_term s t3 t2
-    (_,  Sorted_term t4 _ _) -> equiv_term s t1 t4
-    (Cast t3 _ _, _) -> equiv_term s t3 t2
-    (_, Cast t4 _ _) -> equiv_term s t1 t4
-    (Qual_var v1 _s1 _, Qual_var v2 _s2 _) -> v1 == v2
-    (Conditional c1 _f1 e1 _, Conditional c2 _f2 e2 _) -> 
-        equiv_term s c1 c2 && equiv_term s e1 e2
-    _ -> False
-    
 
 {-----------------------------------------------------------
     - Minimal expansion of a function application or a variable -
