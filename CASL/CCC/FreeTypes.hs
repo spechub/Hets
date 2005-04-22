@@ -48,7 +48,7 @@ import Common.Lib.Pretty
 import Common.Result
 import Common.Id
 #ifdef UNI_PACKAGE
-import Isabelle.IsaProve
+--import Isabelle.IsaProve
 import ChildProcess
 #endif
 import Foreign
