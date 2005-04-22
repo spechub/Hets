@@ -366,6 +366,7 @@ transFORMULA sign tr (Strong_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
 transFORMULA sign tr (ExtFORMULA phi) =
   tr sign phi
+transFORMULA _ _ (Definedness _ _) = true -- totality assumed
 transFORMULA _ _ (Membership t s _) | term_sort t == s = true
 transFORMULA _ _ _ = 
   error "CASL2Isabelle.transFORMULA"
