@@ -537,7 +537,7 @@ sl_symbtype (PredAsItemType _) = need_pred
 sl_symbtype _ = bottom
 
 sl_optype :: OpType -> CASL_Sublogics
-sl_optype (OpType k _ _) = sl_funkind k
+sl_optype k = sl_funkind $ opKind k
 
 sl_funkind :: FunKind -> CASL_Sublogics
 sl_funkind (Partial) = need_part
