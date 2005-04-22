@@ -49,10 +49,10 @@ module CASL.Sublogic ( -- * datatypes
                    in_basic_spec,
                    in_sentence,
                    in_symb_items,
-		   in_symb_items_list,
+                   in_symb_items_list,
                    in_symb_map_items,
-		   in_symb_map_items_list,
-		   in_sign,
+                   in_symb_map_items_list,
+                   in_sign,
                    in_morphism,
                    in_symbol,
 
@@ -98,7 +98,7 @@ data CASL_Formulas = Atomic  -- ^ atomic logic
 data CASL_Sublogics = CASL_SL
                       { has_sub::Bool,   -- ^ subsorting
                         has_part::Bool,  -- ^ partiality
-                        has_cons::Bool,  -- ^ sort generation contraints
+                        has_cons::Bool,  -- ^ sort generation constraints
                         has_eq::Bool,    -- ^ equality
                         has_pred::Bool,  -- ^ predicates
                         which_logic::CASL_Formulas
@@ -307,37 +307,34 @@ mapPos c p f l = let
 sl_form_level :: (Bool,Bool) -> FORMULA f -> CASL_Sublogics
 sl_form_level (isCompound,leftImp) phi =
  case phi of
-  (Quantification q _ f _) -> 
+   Quantification q _ f _ -> 
     if is_atomic_q q 
     then sl_form_level (isCompound,leftImp) f 
     else need_fol
-  (Conjunction l _) -> comp_list $ map (sl_form_level (True,leftImp)) l
-  (Disjunction _ _) -> need_fol
-  (Implication l1 l2 _ _) -> 
-   if leftImp 
-   then need_fol
-   else comp_list [sl_form_level (True,True) l1,
+   Conjunction l _ -> comp_list $ map (sl_form_level (True,leftImp)) l
+   Disjunction _ _ -> need_fol
+   Implication l1 l2 _ _ -> if leftImp then need_fol else 
+               comp_list [sl_form_level (True,True) l1,
                    sl_form_level (True,False) l2,
                    if isCompound 
-		   then need_ghorn 
-		   else need_horn]
-  (Equivalence l1 l2 _) -> 
+                   then need_ghorn 
+                   else need_horn]
+   Equivalence l1 l2 _ -> 
     if leftImp
     then need_fol
     else comp_list [sl_form_level (True,True) l1,
                     sl_form_level (True,True) l2,
                     need_ghorn]
-  (Negation _ _) -> need_fol -- it won't get worse
-  (True_atom _) -> bottom
-  (False_atom _) -> need_fol
-  (Predication _ _ _) -> bottom
-  (Definedness _ _) -> bottom
-  (Existl_equation _ _ _) -> bottom
-  (Strong_equation _ _ _) -> if leftImp then need_fol else need_horn
-  (Membership _ _ _) -> bottom
-  (Sort_gen_ax _ _) -> bottom
-  (ExtFORMULA _) -> undefined
-  _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
+   Negation _ _ -> need_fol -- it won't get worse
+   True_atom _ -> bottom
+   False_atom _ -> need_fol
+   Predication _ _ _ -> bottom
+   Definedness _ _ -> bottom
+   Existl_equation _ _ _ -> bottom
+   Strong_equation _ _ _ -> if leftImp then need_fol else need_horn
+   Membership _ _ _ -> bottom
+   Sort_gen_ax _ _ -> bottom
+   _ -> error "CASL.Sublogic.sl_form_level: illegal FORMULA type"
 
 
 -- QUANTIFIER
@@ -382,7 +379,7 @@ sl_basic_items (Local_var_axioms d l _) = sublogics_max
                                                      $ map item l)
 sl_basic_items (Axiom_items l _) = comp_list $ map sl_formula
                                              $ map item l
-sl_basic_items _ = error "CASL.Sublogics.sl_basic_items"
+sl_basic_items _ = error "CASL.Sublogic.sl_basic_items"
 
 sl_sig_items :: SIG_ITEMS s f -> CASL_Sublogics
 sl_sig_items (Sort_items l _) = comp_list $ map sl_sort_item $ map item l
@@ -390,7 +387,7 @@ sl_sig_items (Op_items l _) = comp_list $ map sl_op_item $ map item l
 sl_sig_items (Pred_items l _) = comp_list $ map sl_pred_item $ map item l
 sl_sig_items (Datatype_items l _) = comp_list $ map sl_datatype_decl
                                               $ map item l
-sl_sig_items _ = error "CASL.Sublogics.sl_sig_items"
+sl_sig_items _ = error "CASL.Sublogic.sl_sig_items"
 
 -- Subsort_defn needs to compute the expression logic needed seperately
 -- because the expressiveness allowed in the formula may be different
@@ -444,14 +441,18 @@ sl_components _ = bottom
 sl_var_decl :: VAR_DECL -> CASL_Sublogics
 sl_var_decl _ = bottom
 
+{- without subsorts casts are trivial and would not even require
+   need_part, but testing term_sort is not save for formulas in basic specs
+   that are only parsed (and resolved) but not enriched with sorts -}
 sl_term :: TERM f -> CASL_Sublogics
 -- the subterms may make it worse than "need_part"
 sl_term (Cast t _ _) = sublogics_max need_part $ sl_term t
+-- check here also for the formula_level!
 sl_term (Conditional t f u _) = comp_list [sl_term t,sl_formula f,sl_term u]
 sl_term (Sorted_term t _ _) = sl_term t
 sl_term (Application _ l _) = comp_list $ map sl_term l
 sl_term (Qual_var _ _ _) = bottom
-sl_term _ = error "CASL.Sublogics.sl_term"
+sl_term _ = error "CASL.Sublogic.sl_term"
 
 sl_formula :: FORMULA f -> CASL_Sublogics
 sl_formula f = sublogics_max (get_logic f) (sl_form f)
@@ -467,14 +468,14 @@ sl_form (True_atom _) = bottom
 sl_form (False_atom _) = bottom
 sl_form (Predication _ l _) = sublogics_max need_pred
                               (comp_list $ map sl_term l)
+-- need_part is tested elsewhere (need_pred not required)
 sl_form (Definedness t _) = sl_term t
 sl_form (Existl_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
--- membership is trivially true if there are not subsorts
+-- need_sub is tested elsewhere (need_pred not required)
 sl_form (Membership t _ _) = sl_term t
-sl_form (Unparsed_formula _ _) = bottom
 sl_form (Sort_gen_ax _ _) = need_cons
-sl_form _ = error "CASL.Subligics.sl_form"
+sl_form _ = error "CASL.Sublogic.sl_form"
 
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
@@ -516,10 +517,10 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 sl_sign :: Sign f e -> CASL_Sublogics
 sl_sign s = 
     let subs = if Rel.isEmpty $ sortRel s then bottom else need_sub
-	preds = if Map.isEmpty $ predMap s then bottom else need_pred
-	partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
-		  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
-	in sublogics_max subs (sublogics_max preds partial)
+        preds = if Map.isEmpty $ predMap s then bottom else need_pred
+        partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
+                  $ Set.unions $ Map.elems $ opMap s then need_part else bottom
+        in sublogics_max subs (sublogics_max preds partial)
 
 sl_sentence :: FORMULA f -> CASL_Sublogics
 sl_sentence = sl_formula
@@ -714,7 +715,7 @@ pr_basic_items l (Axiom_items f p) =
                    (Nothing,[])
                  else
                    (Just (Axiom_items res pos),[])
-pr_basic_items _ _ = error "CASL.Sublogics.pr_basic_items"
+pr_basic_items _ _ = error "CASL.Sublogic.pr_basic_items"
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
 pr_datatype_decl l (Datatype_decl s a p) = 
@@ -809,7 +810,7 @@ pr_sig_items l (Datatype_items d p) =
                  (Nothing,lst)
                else
                  (Just (Datatype_items res pos),lst)
-pr_sig_items _ _ = error "CASL.Sublogics.pr_sig_items"
+pr_sig_items _ _ = error "CASL.Sublogic.pr_sig_items"
 
 pr_op_item :: CASL_Sublogics -> OP_ITEM f -> Maybe (OP_ITEM f)
 pr_op_item l i = pr_check l sl_op_item i
