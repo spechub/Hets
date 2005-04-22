@@ -19,14 +19,16 @@ Portability :  portable
 module Comorphisms.CASL2TopSort where
 
 import Control.Exception (assert)
--- import Debug.Trace (trace)
+
 import Maybe
 import Data.List
 
 import Logic.Logic
 import Logic.Comorphism
+
 import Common.Id
 import Common.Result
+import Common.ListUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -174,8 +176,12 @@ transSig sig
                    dias' = dias ++ dias2 ++ dias3
                in maybe (Result dias' Nothing)
                         (\axs -> Result dias' $ Just $
-                   (sig { sortSet = Set.fromList $ 
-		                    map topSort_PI $ Map.elems subSortMap
+                   (sig { sortSet = 
+                              Set.fromList (map topSort_PI 
+                                                (Map.elems subSortMap))
+                              `Set.union`
+                              (sortSet sig Set.\\
+                               Set.fromDistinctAscList (Map.keys subSortMap)) 
 		        , sortRel = Rel.fromList []
 		        , opMap   = transOpMap subSortMap (opMap sig)
 		        , assocOps= transOpMap subSortMap (assocOps sig)
@@ -589,8 +595,10 @@ genEitherAxiom ssMap =
     genConjunction . (\ (_,osl,_) -> osl) . recover_Sort_gen_ax
     where genConjunction osl = 
             let (injOps,constrs) = partition isInjOp osl
-                groupedInjOps = groupBy sameTarget injOps
-            in if null constrs
+                groupedInjOps = equivalence_Classes sameTarget injOps
+            in {- trace ("inj: "++show injOps++
+                      "constrs: "++show constrs) $ -}
+               if null constrs
                then case groupedInjOps of
                     [] -> Result [Diag Error 
                                   "No injective operation found" nullPos] 
