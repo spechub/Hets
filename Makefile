@@ -38,7 +38,7 @@ INSTALLDIR = \
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
-INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs Common/ListUtils.hs \
+INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Common/Lib/Pretty.hs Common/Keywords.hs Common/Lib/Set.hs \
     Common/Lib/Map.hs Common/Lib/Rel.hs Common/Lib/State.hs Common/Id.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs CASL/ShowMixfix.hs \
