@@ -1,0 +1,8 @@
+(sorts t1, t2, t3, t4, u1, u2
+ sorts t2 < u1; t3 < u2; t4 < u1, u2
+ op a : t2
+ op a : t3
+ op a : t4,[  . def a ])
+*** Hint 3.10, redeclared sort 't3'
+*** Hint 5.6, redeclared sort 't4'
+*** Hint 5.10, redeclared sort 't2'

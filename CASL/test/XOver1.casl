@@ -1,0 +1,9 @@
+sorts t1, t2, t3
+
+sort t4, t3 < u2
+
+sort t4, t2 < u1
+
+op a:t4; a: t2; a: t3
+
+. def a
