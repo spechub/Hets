@@ -247,11 +247,11 @@ sort a = {x : b . true}
 sorts s, t
 op a : s
 op b : s -> s
-ops c : s * s -> s, assoc, comm, idem;
+ops c : s * s -> s, assoc, comm, idem, unit a;
     c : s * s * s -> s
 op a :? s
 op b : s ->? s
-op c : s * s ->? s, assoc, comm, idem
+op c : s * s ->? s, assoc, comm, idem, unit a
 op c : s * s * s ->? s
 op a: s = a
 op c(x, y :s; z :t): s = a
@@ -1497,15 +1497,9 @@ op b : a
 *** Hint 357.11, redeclared sort 'a'
 *** Hint 358.12, redeclared sort 's'
 *** Hint 358.14, redeclared sort 't'
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
 *** Warning 363.9, partially redeclared 'a'
 *** Warning 364.9, partially redeclared 'b'
 *** Warning 365.9, partially redeclared 'c'
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
 *** Warning 366.9, partially redeclared 'c'
 *** Hint 367.9, redeclared op 'a'
 *** Warning 369.9, partially redeclared 'a'

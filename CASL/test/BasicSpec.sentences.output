@@ -1451,10 +1451,14 @@
                      . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
                . forall x: s; y: s . c(x, y) = c(y, x) %(ga_comm_c)%,
                . forall x: s . c(x, x) = x %(ga_idem_c)%,
+               . forall x: s . c(x, a) = x %(ga_right_unit_c)%,
+               . forall x: s . c(a, x) = x %(ga_left_unit_c)%,
                . forall x: s; y: s; z: s
                      . c(x, c(y, z)) = c(c(x, y), z) %(ga_assoc_c)%,
                . forall x: s; y: s . c(x, y) = c(y, x) %(ga_comm_c)%,
-               . forall x: s . c(x, x) = x %(ga_idem_c)%,  . a: s = a: s,
+               . forall x: s . c(x, x) = x %(ga_idem_c)%,
+               . forall x: s . c(x, a) = x %(ga_right_unit_c)%,
+               . forall x: s . c(a, x) = x %(ga_left_unit_c)%,  . a: s = a: s,
                . forall x, y: s; z: t . c(x, y, z) = a,  . a: s = a: s,
                . forall x, y: s; z: t . c(x, y, z) = a,
                . forall x, y: s; z: t . c(x, y, z) <=> false,
@@ -2487,15 +2491,9 @@
 *** Hint 357.11, redeclared sort 'a'
 *** Hint 358.12, redeclared sort 's'
 *** Hint 358.14, redeclared sort 't'
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
 *** Warning 363.9, partially redeclared 'a'
 *** Warning 364.9, partially redeclared 'b'
 *** Warning 365.9, partially redeclared 'c'
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
 *** Warning 366.9, partially redeclared 'c'
 *** Hint 367.9, redeclared op 'a'
 *** Warning 369.9, partially redeclared 'a'

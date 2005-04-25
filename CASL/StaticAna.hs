@@ -443,7 +443,8 @@ ana_OP_ATTR mef ga ty ois oa =
            ops <- gets allOpIds
            preds <- gets allPredIds 
            newGa <- gets $ addAssocs ga
-           let Result ds mt = anaTerm mef newGa ops preds sign rty q t
+           let Result ds mt = anaTerm mef newGa ops preds 
+                              sign { varMap = Map.empty } rty q t
            addDiags ds
            case mt of 
              Nothing -> return Nothing

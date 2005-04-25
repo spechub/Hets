@@ -1276,11 +1276,5 @@ pred q : s
 *** Error 343.29, no operation with 2 arguments found for '__E__'
 *** Error 343.45, no operation with 2 arguments found for '__E__'
 *** Error 351.11, wrong number of places '__and'__'
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
-*** Error , ambiguous term
-  (op a : s): s
-  (var a : s): s
 *** Error 426.26, no predicate with 0 arguments found for 'e'
 *** Error 427.12, no predicate with 0 arguments found for 'e'
