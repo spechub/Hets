@@ -15,10 +15,10 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
    structures and algorithms for specification in-the-large
    are built.
 
-This module heavily works with existential types, see
-<http://www.haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#existential-quantification> and chapter 7 of /Heterogeneous
-specification and the heterogeneous tool set/
-(<http://www.tzi.de/~till/papers/habil.ps>).
+   This module heavily works with existential types, see
+   <http://www.haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#existential-quantification> and chapter 7 of /Heterogeneous
+   specification and the heterogeneous tool set/
+   (<http://www.tzi.de/~till/papers/habil.ps>).
 
    References:
 
@@ -26,17 +26,13 @@ specification and the heterogeneous tool set/
    Grothendieck institutions
    J. applied categorical structures 10, 2002, p. 383-402.
 
-   T. Mossakowski: 
-   Heterogeneous development graphs and heterogeneous borrowing
-   Fossacs 2002, LNCS 2303, p. 326-341
-
-   T. Mossakowski: Foundations of heterogeneous specification
-   Submitted
+   T. Mossakowski:
+   Comorphism-based Grothendieck institutions.
+   In K. Diks, W. Rytter (Eds.), Mathematical foundations of computer science,
+   LNCS 2420, pp. 593-604
 
    T. Mossakowski:
-   Relating CASL with Other Specification Languages:
-        the Institution Level
-   Theoretical Computer Science 286, 2002, p. 367-475
+   Heterogeneous specification and the heterogeneous tool set.
 
    Todo:
    compComorphism: cancellation of id comorphisms if target sublogic is

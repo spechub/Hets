@@ -3,8 +3,12 @@ This folder contains the static analysis of heterogeneous
 specifications (which is based on the static analysis
 of basic specifications, as provided by the individual logics).
 
-"Static.DevGraph" contains data structures for development graphs,
+"Static.DevGraph" contains data structures for
+heterogeneous development graphs,
 which are the result of the static analysis.
+Heterogeneous development graphs are based on the Grothendieck
+logic implemented by the module "Logic.Grothendieck".
+
 "Static.PrintDevGraph" provides pretty printing for development graphs.
 "Static.DGToSpec" converts development graphs back to specifications.
 "Static.DotGraph" draws a development graph using the

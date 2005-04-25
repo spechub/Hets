@@ -1,6 +1,7 @@
 {- |
 
-This folder contains various comorphisms, which are then
+This folder contains various comorphisms (implemented using
+the type class 'Logic.Comorphism.Comorphism'), which are then
 collected to a logic graph in "Comorphisms.LogicGraph".
 The latter is based on the list of logics collected in 	
 "Comorphisms.LogicList".
