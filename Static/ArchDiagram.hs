@@ -10,7 +10,7 @@
    Portability :  non-portable (Logic)
 
    Data types and functions for architectural diagrams.
-
+   Follows the CASL Reference Manual, section III.5.6.
 -}
 
 module Static.ArchDiagram 

@@ -15,6 +15,11 @@ Portability :  non-portable (overlapping instances, dynamics, existentials)
    structures and algorithms for specification in-the-large
    are built.
 
+This module heavily works with existential types, see
+<http://www.haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#existential-quantification> and chapter 7 of /Heterogeneous
+specification and the heterogeneous tool set/
+(<http://www.tzi.de/~till/papers/habil.ps>).
+
    References:
 
    R. Diaconescu:
