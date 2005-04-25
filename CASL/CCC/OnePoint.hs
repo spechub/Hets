@@ -202,8 +202,8 @@ evaluateOnePointFORMULA _ _=error "Fehler" -- or Just False
 -- | Compute the image of a signature morphism
 imageOfMorphism :: Morphism f e m  -> Sign f e
 imageOfMorphism m = 
-        sig {sortSet = Map.image sortMap (sortSet src),
-             sortRel = Rel.image (\a->Map.find a sortMap) (sortRel src), 
+        sig {sortSet = Set.image (mapSort sortMap) (sortSet src),
+             sortRel = Rel.image (mapSort sortMap) (sortRel src), 
              opMap = Map.foldWithKey 
                        (\ident ots l ->  
                            Set.fold (\ot l' -> insertOp
@@ -232,7 +232,8 @@ imageOfMorphism m =
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool
 addsNewSupersorts m = 
-    Set.any (\s->not $ Set.subset (supersortsOf s sig) sorts) sorts
+    Set.any (\s->not $ Set.subset (Set.insert s $ supersortsOf s sig) sorts)
+       sorts
        where sig=imageOfMorphism m
              sorts=sortSet sig   
 {-
