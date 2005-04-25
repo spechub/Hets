@@ -16,32 +16,22 @@
       LNCS 1376, p. 333-348
 -}
 
-module CASL.Overload(minExpFORMULA, oneExpTerm, Min,
+module CASL.Overload(minExpFORMULA, oneExpTerm, Min, combine,
                      is_unambiguous, term_sort, leqF, leqP,
-                     minimalSupers, maximalSubs,
-                     keepMinimals, keepMaximals,
-                     common_supersorts, common_subsorts)  where
+                     minimalSupers, maximalSubs, keepMinimals)  where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
+import qualified Common.Lib.Rel         as Rel
 import qualified Common.Lib.Map         as Map
 import qualified Common.Lib.Set         as Set
 import Common.Lib.State
 
 import Common.Id
 import Common.GlobalAnnotations
-import Common.ListUtils
 import Common.PrettyPrint
 import Common.Result
-
-import Data.Maybe
-
-{-  
-      TODO
-      - equivalent candidates should be sorted in a suitable way
-      - move functions from ListUtils to the (single) module of use
--}
 
 -- | the type of the type checking function of extensions
 type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
@@ -103,7 +93,8 @@ minExpFORMULA mef ga sign formula = case formula of
         ts   <- minExpTerm mef ga sign term
         let fs = map (concatMap ( \ t -> 
                     let s = term_sort t in
-                    if leq_SORT sign sort s then
+                    if sort == s then [True_atom pos]
+                    else if leq_SORT sign sort s then
                     [Membership t sort pos] else
                     map ( \ c -> 
                         Membership (Sorted_term t c pos) sort pos)
@@ -203,8 +194,7 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $ 
               Map.findWithDefault Set.empty ide $ predMap sign
         preds = case mty of 
-                   Nothing -> equivalence_Classes (leqP sign) $ 
-                              Set.toList preds'
+                   Nothing -> leqClasses (leqP' sign) $ Set.toList preds'
                    Just ty -> if Set.member ty preds' 
                               then [[ty]] else []
     noOpOrPred preds "predicate" mty ide pos
@@ -215,12 +205,12 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
         get_profile cs ps = [ (pred', ts) |
                              pred' <- ps,
                              ts <- cs,
-                             zipped_all (leq_SORT sign)
+                             and $ zipWith (leq_SORT sign)
                              (map term_sort ts)
                              (predArgs pred') ]
         qualForms = qualifyPreds ide poss
-                       $ concatMap (get_profiles . permute)
-                       $ permute expansions
+                       $ concatMap (get_profiles . combine)
+                       $ combine expansions
     is_unambiguous ga (Predication (Pred_name ide) args poss) qualForms poss
 
 qualifyPreds :: Id -> [Pos] -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
@@ -243,10 +233,10 @@ minExpTerm_eq mef ga sign term1 term2 = do
     exps1 <- minExpTerm mef ga sign term1
     exps2 <- minExpTerm mef ga sign term2
     return $ map (minimize_eq sign)
-           $ map getPairs $ permute [exps1, exps2]
+           $ map getPairs $ combine [exps1, exps2]
 
 getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
-getPairs cs = [ (t1, t2) | [t1,t2] <- permute cs ]
+getPairs cs = [ (t1, t2) | [t1,t2] <- combine cs ]
 
 minimize_eq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
 minimize_eq s l = keepMinimals s (term_sort . snd) $ 
@@ -284,6 +274,7 @@ minExpTerm mef ga sign top@(Cast term sort pos) = do
     -- find a unique minimal common supersort
     let ts = map (concatMap (\ t -> 
                     let s = term_sort t in
+                    if s == sort then [t] else
                     if leq_SORT sign sort s then
                     [Cast t sort pos] else
                     map ( \ c -> 
@@ -307,36 +298,6 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
               Nothing -> qv
               Just s2 -> if s == s2 then qv else []
 
--- | all minimal common supersorts of the two input sorts
-minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
-minimalSupers s s1 s2 = 
-    keepMinimals s id $ Set.toList $ common_supersorts s s1 s2
-
-keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMinimals s' f' l = keepMinimals2 s' f' l l
-    where keepMinimals2 s f l1 l2 = case l1 of
-              [] -> l2
-              x : r -> keepMinimals2 s f r $ filter 
-                   ( \ y -> let v = f x 
-                                w = f y 
-                            in geq_SORT s v w ||
-                            not (leq_SORT s v w)) l2
-
--- | all maximal common subsorts of the two input sorts
-maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
-maximalSubs s s1 s2 = 
-    keepMaximals s id $ Set.toList $ common_subsorts s s1 s2
-
-keepMaximals :: Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMaximals s' f' l = keepMaximals2 s' f' l l
-    where keepMaximals2 s f l1 l2 = case l1 of
-              [] -> l2
-              x : r -> keepMaximals2 s f r $ filter 
-                   ( \ y -> let v = f x 
-                                w = f y 
-                            in leq_SORT s v w ||
-                            not (geq_SORT s v w)) l2
- 
 -- | minimal expansion of an (possibly qualified) operator application
 minExpTerm_appl :: PrettyPrint f => Min f e -> GlobalAnnos 
                 -> Sign f e -> Id -> Maybe OpType -> [TERM f] 
@@ -347,7 +308,7 @@ minExpTerm_appl mef ga sign ide mty args poss = do
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $ 
               Map.findWithDefault Set.empty ide $ opMap sign
         ops = case mty of 
-                   Nothing -> equivalence_Classes (leqF sign) $ Set.toList ops'
+                   Nothing -> leqClasses (leqF' sign) $ Set.toList ops'
                    Just ty -> if Set.member ty ops' || 
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops' 
@@ -359,13 +320,13 @@ minExpTerm_appl mef ga sign ide mty args poss = do
         get_profile cs os = [ (op', ts) |
                              op' <- os,
                              ts  <- cs,
-                             zipped_all (leq_SORT sign)
+                             and $ zipWith (leq_SORT sign)
                              (map term_sort ts)
                              (opArgs op') ]
         qualTerms = qualifyOps ide poss
                        $ map (minimize_op sign) 
-                       $ concatMap (get_profiles . permute)
-                       $ permute expansions
+                       $ concatMap (get_profiles . combine)
+                       $ combine expansions
     hasSolutions ga (Application (Op_name ide) args poss) qualTerms poss
 
 qualifyOps :: Id -> [Pos] -> [[(OpType, [TERM f])]] -> [[TERM f]]
@@ -380,7 +341,7 @@ qualify_op ide pos (op', terms') =
     - Minimal expansion of a function application or a variable -
   Expand a function application by typing information.
   1. First expand all argument subterms.
-  2. Permute these expansions so we compute the set of tuples
+  2. Combine these expansions so we compute the set of tuples
     { (C_1, ..., C_n) | (C_1, ..., C_n) \in
                         minExpTerm(t_1) x ... x minExpTerm(t_n) }
     where t_1, ..., t_n are the given argument terms.
@@ -460,11 +421,7 @@ minExpTerm_cond  mef ga sign f term1 term2 pos = do
 minimize_op :: Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
 minimize_op sign = keepMinimals sign (opRes . fst)
 
-{-----------------------------------------------------------
-    - Extract the sort from a given term -
-  If the given term contains information about its sort, return that,
-  otherwise signal an error.
------------------------------------------------------------}
+-- | Extract the sort from an analysed term
 term_sort :: TERM f -> SORT
 term_sort term' = case term' of
     Sorted_term _ sort _                  -> sort
@@ -476,39 +433,95 @@ term_sort term' = case term' of
                              ++ shows tok "'")
     _ -> error "term_sort: unsorted TERM after expansion"
 
-
--- | the set of subsorts common to both sorts
-common_subsorts :: Sign f e -> SORT -> SORT -> Set.Set SORT
-common_subsorts sign s1 s2 = Set.intersection (subsortsOf s1 sign) 
+-- | the (possibly incomplete) list of supersorts common to both sorts
+common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
+common_supersorts b sign s1 s2 = 
+    if s1 == s2 then [s1] else 
+    let l1 = supersortsOf s1 sign
+        l2 = supersortsOf s2 sign in
+    if Set.member s2 l1 then if b then [s2] else [s1] else
+    if Set.member s1 l2 then if b then [s1] else [s2] else
+    Set.toList $ if b then Set.intersection l1 l2
+                 else Set.intersection (subsortsOf s1 sign) 
                              $ subsortsOf s2 sign
 
--- | the set of supersorts common to both sorts
-common_supersorts :: Sign f e -> SORT -> SORT -> Set.Set SORT
-common_supersorts sign s1 s2 = Set.intersection (supersortsOf s1 sign) 
-                             $ supersortsOf s2 sign
-
--- True if both sorts have a common subsort
-have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
-have_common_subsorts s s1 s2 = not $ Set.isEmpty $ common_subsorts s s1 s2
+-- | True if both sorts have a common supersort
+have_common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> Bool
+have_common_supersorts b s s1 s2 = not $ null $ common_supersorts b s s1 s2
 
 -- True if both sorts have a common supersort
-have_common_supersorts :: Sign f e -> SORT -> SORT -> Bool
-have_common_supersorts s s1 s2 = not $ Set.isEmpty $ common_supersorts s s1 s2
+have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
+have_common_subsorts = have_common_supersorts False
 
--- | True if s1 is subsort of s2
+-- | if True test if s1 > s2 
+geq_SORT :: Bool -> Sign f e -> SORT -> SORT -> Bool
+geq_SORT b sign s1 s2 = let rel = sortRel sign in
+    if b then Rel.member s2 s1 rel else Rel.member s1 s2 rel
+
+-- | if True test if s1 > s2 
 leq_SORT :: Sign f e -> SORT -> SORT -> Bool
-leq_SORT sign s1 s2 = Set.member s2 (supersortsOf s1 sign)
+leq_SORT sign s1 s2 = s1 == s2 || geq_SORT False sign s1 s2
 
--- | True if s1 is supersort of s2
-geq_SORT :: Sign f e -> SORT -> SORT -> Bool
-geq_SORT sign s1 s2 = Set.member s2 (subsortsOf s1 sign)
+-- | all minimal common supersorts of the two input sorts
+minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
+minimalSupers = minimalSupers1 True
+
+minimalSupers1 :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
+minimalSupers1 b s s1 s2 = 
+    keepMinimals1 b s id $ common_supersorts b s s1 s2
+
+-- | all maximal common subsorts of the two input sorts
+maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
+maximalSubs = minimalSupers1 False
+
+keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
+keepMinimals = keepMinimals1 True
+
+keepMinimals1 :: Bool -> Sign f e -> (a -> SORT) -> [a] -> [a]
+keepMinimals1 b s f l = keepMinimals2 l l
+    where keepMinimals2 l1 l2 = case l1 of
+              [] -> l2
+              x : r -> keepMinimals2 r $ filter 
+                   ( \ y -> let v = f x 
+                                w = f y 
+                            in v == w || geq_SORT b s v w ||
+                            not (geq_SORT b s w v)) l2
 
 -- | True if both ops are in the overloading relation 
 leqF :: Sign f e -> OpType -> OpType -> Bool
-leqF sign o1 o2 = have_common_supersorts sign (opRes o1) (opRes o2) &&
-    zipped_all (have_common_subsorts sign) (opArgs o1) (opArgs o2)
+leqF sign o1 o2 = length (opArgs o1) == length (opArgs o2) && leqF' sign o1 o2
+
+leqF' :: Sign f e -> OpType -> OpType -> Bool
+leqF' sign o1 o2 = have_common_supersorts True sign (opRes o1) (opRes o2) &&
+    and (zipWith (have_common_subsorts sign) (opArgs o1) (opArgs o2))
 
 -- | True if both preds are in the overloading relation 
 leqP :: Sign f e -> PredType -> PredType -> Bool
-leqP sign p1 p2 = 
-    zipped_all (have_common_subsorts sign) (predArgs p1) (predArgs p2)
+leqP sign p1 p2 = length (predArgs p1) == length (predArgs p2) 
+                  && leqP' sign p1 p2
+
+leqP' :: Sign f e -> PredType -> PredType -> Bool
+leqP' sign p1 p2 = 
+    and $ zipWith (have_common_subsorts sign) (predArgs p1) $ predArgs p2 
+
+-- | Divide a Set (List) into equivalence classes w.r. to eq
+leqClasses :: Ord a => (a -> a -> Bool) -> [a] -> [[a]]
+leqClasses eq l = map (Set.toList) $ Set.toList $ Set.fromList $ Map.elems 
+                  $ Rel.sccOfClosure 
+                  $ Rel.transClosure $ leqRel eq l 
+ 
+-- | create the (non-transitive) overload relation
+leqRel :: Ord a => (a -> a -> Bool) -> [a] -> Rel.Rel a
+leqRel eq l = case l of
+    [] -> Rel.empty
+    x : r -> foldr ( \ e s -> 
+                     if eq x e then Rel.insert x e 
+                        $ Rel.insert e x s else s) 
+             (Rel.insert x x $ leqRel eq r) r
+
+-- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
+-- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
+combine      :: [[a]] -> [[a]]
+combine []    = [[]]
+combine (x:l) = concatMap ((`map` combine l) . (:)) x
+-- a better name would be "combine"
