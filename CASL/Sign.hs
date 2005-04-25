@@ -68,11 +68,13 @@ emptySign e = Sign { sortSet = Set.empty
                , envDiags = []
                , extendedInfo = e }
 
+-- | proper subsorts (possibly excluding input sort)
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
-subsortsOf s e = Set.insert s $ Rel.predecessors (sortRel e) s
+subsortsOf s e = Rel.predecessors (sortRel e) s
 
+-- | proper supersorts (possibly excluding input sort)
 supersortsOf :: SORT -> Sign f e -> Set.Set SORT
-supersortsOf s e = Set.insert s $ Rel.succs (sortRel e) s
+supersortsOf s e = Rel.succs (sortRel e) s
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
