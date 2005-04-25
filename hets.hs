@@ -210,8 +210,9 @@ run file =
        return res
 
 
-{- Call this function as follows:
-ghci -fglasgow-exts -fno-monomorphism-restriction  -fallow-overlapping-instances -fallow-undecidable-instances -ighc -ifgl -ihxt
+{- Call this function as follows (be sure that there is no ../uni):
+make hets
+make ghci
 :l hets.hs
 :module +Common.Lib.Graph
 Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
