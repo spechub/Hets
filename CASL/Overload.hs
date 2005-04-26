@@ -17,7 +17,7 @@
 -}
 
 module CASL.Overload(minExpFORMULA, oneExpTerm, Min, combine,
-                     is_unambiguous, term_sort, leqF, leqP,
+                     is_unambiguous, term_sort, leqF, leqP, leq_SORT,
                      minimalSupers, maximalSubs, keepMinimals)  where
 
 import CASL.Sign
@@ -93,8 +93,8 @@ minExpFORMULA mef ga sign formula = case formula of
         ts   <- minExpTerm mef ga sign term
         let fs = map (concatMap ( \ t -> 
                     let s = term_sort t in
-                    if sort == s then [True_atom pos]
-                    else if leq_SORT sign sort s then
+                    if leq_SORT sign sort s then
+                    if leq_SORT sign s sort then [True_atom pos] else
                     [Membership t sort pos] else
                     map ( \ c -> 
                         Membership (Sorted_term t c pos) sort pos)
@@ -194,7 +194,7 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $ 
               Map.findWithDefault Set.empty ide $ predMap sign
         preds = case mty of 
-                   Nothing -> leqClasses (leqP' sign) $ Set.toList preds'
+                   Nothing -> leqClasses (leqP' sign) preds'
                    Just ty -> if Set.member ty preds' 
                               then [[ty]] else []
     noOpOrPred preds "predicate" mty ide pos
@@ -274,8 +274,8 @@ minExpTerm mef ga sign top@(Cast term sort pos) = do
     -- find a unique minimal common supersort
     let ts = map (concatMap (\ t -> 
                     let s = term_sort t in
-                    if s == sort then [t] else
                     if leq_SORT sign sort s then
+                    if leq_SORT sign s sort then [t] else
                     [Cast t sort pos] else
                     map ( \ c -> 
                         Cast (Sorted_term t c pos) sort pos)
@@ -308,7 +308,7 @@ minExpTerm_appl mef ga sign ide mty args poss = do
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $ 
               Map.findWithDefault Set.empty ide $ opMap sign
         ops = case mty of 
-                   Nothing -> leqClasses (leqF' sign) $ Set.toList ops'
+                   Nothing -> leqClasses (leqF' sign) ops'
                    Just ty -> if Set.member ty ops' || 
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops' 
@@ -429,8 +429,6 @@ term_sort term' = case term' of
     Cast _ sort _                         -> sort
     Application (Qual_op_name _ ty _) _ _ -> res_OP_TYPE ty
     Conditional t1 _ _ _                  -> term_sort t1 
-    Simple_id tok ->  error ("term_sort: no sort for a simple id '" 
-                             ++ shows tok "'")
     _ -> error "term_sort: unsorted TERM after expansion"
 
 -- | the (possibly incomplete) list of supersorts common to both sorts
@@ -449,7 +447,7 @@ common_supersorts b sign s1 s2 =
 have_common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> Bool
 have_common_supersorts b s s1 s2 = not $ null $ common_supersorts b s s1 s2
 
--- True if both sorts have a common supersort
+-- True if both sorts have a common subsort
 have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
 have_common_subsorts = have_common_supersorts False
 
@@ -458,11 +456,11 @@ geq_SORT :: Bool -> Sign f e -> SORT -> SORT -> Bool
 geq_SORT b sign s1 s2 = let rel = sortRel sign in
     if b then Rel.member s2 s1 rel else Rel.member s1 s2 rel
 
--- | if True test if s1 > s2 
+-- | if True test if s1 < s2 
 leq_SORT :: Sign f e -> SORT -> SORT -> Bool
-leq_SORT sign s1 s2 = s1 == s2 || geq_SORT False sign s1 s2
+leq_SORT sign s1 s2 = s1 == s2 || Set.member s2 (supersortsOf s1 sign)
 
--- | all minimal common supersorts of the two input sorts
+-- | minimal common supersorts of the two input sorts
 minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
 minimalSupers = minimalSupers1 True
 
@@ -470,22 +468,23 @@ minimalSupers1 :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
 minimalSupers1 b s s1 s2 = 
     keepMinimals1 b s id $ common_supersorts b s s1 s2
 
--- | all maximal common subsorts of the two input sorts
+-- | maximal common subsorts of the two input sorts
 maximalSubs :: Sign f e -> SORT -> SORT -> [SORT]
 maximalSubs = minimalSupers1 False
 
+-- | only keep elements with minimal (and different) sorts
 keepMinimals :: Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals = keepMinimals1 True
 
 keepMinimals1 :: Bool -> Sign f e -> (a -> SORT) -> [a] -> [a]
-keepMinimals1 b s f l = keepMinimals2 l l
-    where keepMinimals2 l1 l2 = case l1 of
-              [] -> l2
-              x : r -> keepMinimals2 r $ filter 
-                   ( \ y -> let v = f x 
-                                w = f y 
-                            in v == w || geq_SORT b s v w ||
-                            not (geq_SORT b s w v)) l2
+keepMinimals1 b s f l = case l of
+    [] -> []
+    x : r1 -> let v = f x 
+                  r2 = filter (\ y -> let w = f y in
+                       not (geq_SORT b s w v) && v /= w) r1
+                  m = keepMinimals1 b s f r2
+              in if any (geq_SORT b s v . f) r2 then m
+                 else x : m 
 
 -- | True if both ops are in the overloading relation 
 leqF :: Sign f e -> OpType -> OpType -> Bool
@@ -504,20 +503,18 @@ leqP' :: Sign f e -> PredType -> PredType -> Bool
 leqP' sign p1 p2 = 
     and $ zipWith (have_common_subsorts sign) (predArgs p1) $ predArgs p2 
 
--- | Divide a Set (List) into equivalence classes w.r. to eq
-leqClasses :: Ord a => (a -> a -> Bool) -> [a] -> [[a]]
-leqClasses eq l = map (Set.toList) $ Set.toList $ Set.fromList $ Map.elems 
-                  $ Rel.sccOfClosure 
-                  $ Rel.transClosure $ leqRel eq l 
- 
--- | create the (non-transitive) overload relation
-leqRel :: Ord a => (a -> a -> Bool) -> [a] -> Rel.Rel a
-leqRel eq l = case l of
-    [] -> Rel.empty
-    x : r -> foldr ( \ e s -> 
+-- | Divide a Set (List) into equivalence classes w.r.t. eq
+leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
+leqClasses eq os = getClasses $ Rel.sccOfClosure $ Rel.transClosure $ leqRel os
+    where getClasses m = if Map.isEmpty m then []
+              else let (_, s) = Map.findMin m in
+                   Set.toList s : getClasses (Set.fold Map.delete m s)
+           -- | create the (non-transitive) overload relation
+          leqRel l = if Set.isEmpty l then Rel.empty else 
+                     let (x, r) = Set.deleteFindMin l in
+                     Rel.insert x x $ Set.fold ( \ e s -> 
                      if eq x e then Rel.insert x e 
-                        $ Rel.insert e x s else s) 
-             (Rel.insert x x $ leqRel eq r) r
+                        $ Rel.insert e x s else s) (leqRel r) r
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
