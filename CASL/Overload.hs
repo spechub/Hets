@@ -509,7 +509,7 @@ leqClasses eq os = getClasses $ Rel.sccOfClosure $ Rel.transClosure $ leqRel os
     where getClasses m = if Map.isEmpty m then []
               else let (_, s) = Map.findMin m in
                    Set.toList s : getClasses (Set.fold Map.delete m s)
-           -- | create the (non-transitive) overload relation
+           -- create the (non-transitive) overload relation
           leqRel l = if Set.isEmpty l then Rel.empty else 
                      let (x, r) = Set.deleteFindMin l in
                      Rel.insert x x $ Set.fold ( \ e s -> 
