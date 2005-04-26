@@ -178,25 +178,25 @@ automatic :: ProofStatus -> IO ProofStatus
 automatic = automaticRecursive 0
 
 
-
 automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
 automaticRecursive cnt proofStatus = do
   (libname,libEnv,proofHistory) <- automaticAux proofStatus
-  proofHistoryAuxList <- blubb cnt (Map.toList proofHistory)
+  proofHistoryAuxList <- automaticRecursiveAux cnt (Map.toList proofHistory)
   let newProofHistory = Map.fromList proofHistoryAuxList
   automaticRecursive 1 (libname,libEnv,newProofHistory)
 
 
-blubb :: Int -> [(LIB_NAME,ProofHistory)] -> IO [(LIB_NAME,ProofHistory)]
-blubb _ [] = return []
-blubb cnt (history:list) = do
-  newHistory <- automaticRecursiveAux cnt history
-  newList <- blubb cnt list
+automaticRecursiveAux :: Int -> [(LIB_NAME,ProofHistory)]
+		      -> IO [(LIB_NAME,ProofHistory)]
+automaticRecursiveAux _ [] = return []
+automaticRecursiveAux cnt (history:list) = do
+  newHistory <- automaticRecursiveForOneLibrary cnt history
+  newList <- automaticRecursiveAux cnt list
   return (newHistory:newList)
 
-automaticRecursiveAux :: Int -> (LIB_NAME,ProofHistory)
+automaticRecursiveForOneLibrary :: Int -> (LIB_NAME,ProofHistory)
 		      -> IO (LIB_NAME,ProofHistory)
-automaticRecursiveAux cnt (libname,history) = do
+automaticRecursiveForOneLibrary cnt (libname,history) = do
   let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
   if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
      return (libname,history)-- ?? - proofStatus
@@ -256,14 +256,6 @@ mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
       history = case Map.lookup libname proofHistory of
 		  Nothing -> []
 		  Just h -> h
-
-{- mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
-mkResultProofStatus (libname,libEnv,proofHistory) [] =
-  (libname,libEnv,prepareResultProofHistory proofHistory)
-mkResultProofStatus (libname,libEnv,proofHistory) 
-			((ln,dgraph,historyElem):list) =
-  undefined -}
-
 
 prepareResultProofHistory :: Map.Map LIB_NAME ProofHistory
 			  -> Map.Map LIB_NAME ProofHistory
@@ -873,6 +865,7 @@ splitByProperty (x:xs) f =
     second = snd next
 
 
+-- bei DGRefs auch ueber lib-Grenze hinaus suchen?
 hasIngoingHidingDef :: DGraph -> Node -> Bool
 hasIngoingHidingDef dgraph node =
   not (null hidingDefEdges) || or (map (hasIngoingHidingDef dgraph) next)
@@ -935,77 +928,80 @@ convertToNf :: ProofStatus -> Node -> IO ProofStatus
 convertToNf proofstatus@(ln,libEnv,history) node = do
   let dgraph = lookupDGraph ln proofstatus
       nodelab = lab' (context node dgraph)
-      [newNode] = newNodes 0 dgraph
-      newDgnode = case isDGRef nodelab of
-		    False -> mkNfDGNode newNode nodelab
-		    True -> mkNfDGRef newNode nodelab
-      auxGraph = insNode newDgnode dgraph
-  (finalGraph,changes) <- adoptEdges auxGraph node newNode
-  let finalChanges =  [InsertNode newDgnode] ++ changes
-		      ++ [DeleteNode (node,nodelab)]
-  return (updateProofStatus ln finalGraph finalChanges proofstatus)
-  where 
-    mkNfDGNode :: Node -> DGNodeLab -> LNode DGNodeLab
-    mkNfDGNode newNode nodelab = 
-	(newNode,
-	 DGNode {dgn_name = dgn_name nodelab,
-		 dgn_sign = dgn_sign nodelab,
-		 dgn_sens = dgn_sens nodelab,
-		 dgn_nf = Just newNode,
-		 dgn_sigma = Just (ide Grothendieck (dgn_sign nodelab)),
-		 dgn_origin = DGProof
-		})
-    mkNfDGRef :: Node -> DGNodeLab -> LNode DGNodeLab
-    mkNfDGRef newNode nodelab =
-	(newNode,
-	 DGRef {dgn_renamed = dgn_renamed nodelab,
-		dgn_libname = dgn_libname nodelab,
-		dgn_node = dgn_node nodelab, -- nf im refGraph finden
-		dgn_nf = Just newNode,
-		dgn_sigma = Nothing -- Just (ide Grothendieck sign)
-	       })
+  case dgn_nf nodelab of
+    Just _ -> return proofstatus
+    Nothing -> do
+      let [newNode] = newNodes 0 dgraph
+      proofstatusAux <- mkNfNode node newNode Nothing proofstatus
+      let auxGraph = lookupDGraph ln proofstatusAux
+      (finalGraph,changes) <- adoptEdges auxGraph node newNode
+      let finalChanges =  changes ++ [DeleteNode (node,nodelab)]
+      return (updateProofStatus ln (delNode node finalGraph)
+	      finalChanges proofstatusAux)
 
-mkNfNode :: DGraph -> Node -> Node -> ProofStatus
-	    -> IO (ProofStatus,LNode DGNodeLab)
-mkNfNode dgraph node newNode proofstatus = do
-  let nodelab = lab' (context node dgraph)
+
+mkNfNode :: Node -> Node -> Maybe G_sign -> ProofStatus -> IO ProofStatus
+mkNfNode node newNode maybeSign proofstatus@(ln,_,_) = do
+  let nodelab = lab' (context node (lookupDGraph ln proofstatus))
   case isDGRef nodelab of
-    True -> mkDGRefNfNode dgraph nodelab newNode proofstatus
-    False -> mkDGNodeNfNode dgraph nodelab newNode proofstatus
+    True -> mkDGRefNfNode nodelab newNode maybeSign proofstatus
+    False -> mkDGNodeNfNode nodelab newNode maybeSign proofstatus
 
 
-mkDGNodeNfNode :: DGraph -> DGNodeLab -> Node -> ProofStatus
-	       -> IO (ProofStatus,LNode DGNodeLab)
-mkDGNodeNfNode dgraph nodelab newNode proofstatus = do
-  let lnode = (newNode,
+-- ist dgn_sigma so richtig?
+mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
+	       -> IO ProofStatus
+mkDGNodeNfNode nodelab newNode maybeSign proofstatus = do
+  let (sign,sigma) = case maybeSign of
+		       Nothing -> (dgn_sign nodelab,
+				  Just (ide Grothendieck (dgn_sign nodelab)))
+		       Just s -> (s,dgn_sigma nodelab)
+      lnode = (newNode,
 	 DGNode {dgn_name = dgn_name nodelab,
-		 dgn_sign = dgn_sign nodelab,
+		 dgn_sign = sign,
 		 dgn_sens = dgn_sens nodelab,
 		 dgn_nf = Just newNode,
-		 dgn_sigma = Just (ide Grothendieck (dgn_sign nodelab)),
+		 dgn_sigma = sigma,
 		 dgn_origin = DGProof
 		})
-  return (proofstatus,lnode)
+  return (insertNfNode proofstatus lnode)
 
-mkDGRefNfNode :: DGraph -> DGNodeLab -> Node -> ProofStatus
-	      -> IO (ProofStatus,(LNode DGNodeLab))
-mkDGRefNfNode dgraph nodelab newNode proofstatus@(ln,_,_) = do
-  auxProofstatus <- theoremHideShift 
+-- ist dgn_sigma so richtig?
+-- was soll mit dem sign gemacht werden, das ja ggf. aus gweakly.. stammt?
+mkDGRefNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
+	      -> IO ProofStatus
+mkDGRefNfNode nodelab newNode maybeSign proofstatus@(ln,_,_) = do
+  auxProofstatus@(_,auxLibEnv,_)
+      <- theoremHideShift 
 		    (changeCurrentLibName (dgn_libname nodelab) proofstatus)
   let refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
       (Just refNf) = dgn_nf (lab' (context (dgn_node nodelab) refGraph))
+      sigma = case maybeSign of
+		Just sign -> dgn_sigma nodelab
+		Nothing -> case getSignature auxLibEnv refGraph refNf of
+	                     Nothing -> Nothing
+			     Just sign -> Just (ide Grothendieck sign)
   let lnode = (newNode,
 	       DGRef {dgn_renamed = dgn_renamed nodelab,
 		      dgn_libname = dgn_libname nodelab,
 		      dgn_node = refNf,
 		      dgn_nf = Just newNode,
-		      dgn_sigma = Nothing -- Just (ide Grothendieck sign)
+		      dgn_sigma = sigma
 		     })
-  return (changeCurrentLibName ln auxProofstatus,lnode)
+  return (insertNfNode (changeCurrentLibName ln auxProofstatus) lnode)
+
+
+insertNfNode :: ProofStatus -> LNode DGNodeLab -> ProofStatus
+insertNfNode proofstatus@(ln,_,_) dgnode =
+  updateProofStatus ln 
+		    (insNode dgnode (lookupDGraph ln proofstatus))
+		    [InsertNode dgnode]
+		    proofstatus
 
 
 changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
 changeCurrentLibName ln (_,libEnv,historyMap) = (ln,libEnv,historyMap)
+
 
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
 addChanges changes [] = [([],changes)]
@@ -1037,7 +1033,7 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
     (finalGraph,furtherChanges) 
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 
--- was machen, wenn der Knoten ein DGRef ist??
+
 handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleNonLeaves proofstatus [] = return proofstatus
 handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
@@ -1048,48 +1044,31 @@ handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
     Nothing -> do
       auxProofstatus <- createNfsForPredecessors proofstatus node
       let auxGraph = lookupDGraph ln auxProofstatus
-          newDefInEdges = [edge| edge <- inn auxGraph node,
-			  isGlobalDef edge || isHidingDef edge]
-          newPredecessors = [src| (src,_,_) <- newDefInEdges]
-          diagram = makeDiagram auxGraph (node:newPredecessors) newDefInEdges
+          defInEdges = [edge| edge <- inn auxGraph node,
+			isGlobalDef edge || isHidingDef edge]
+          predecessors = [src| (src,_,_) <- defInEdges]
+          diagram = makeDiagram auxGraph (node:predecessors) defInEdges
           Result diags res = gWeaklyAmalgamableCocone diagram
       case res of
         Nothing -> do sequence $ map (putStrLn . show) diags
 		      handleNonLeaves auxProofstatus list
         Just (sign,map) -> do
           let [nfNode] = newNodes 0 auxGraph
-              nfDGNode = case isDGRef nodelab of
-			   False -> mkNfDGNode nfNode nodelab (dgn_sign nodelab) -- actually sign
-			   True -> mkNfDGRef nfNode nodelab sign
-
-          (auxGraph', changes) <- 
-	      setNfOfNode (insNode nfDGNode auxGraph) node nfNode
-          let (finalGraph,changes') = insertEdgesToNf auxGraph' nfNode map
-              finalProofstatus = updateProofStatus ln finalGraph 
-				([InsertNode nfDGNode] ++ changes
-				 ++ changes') auxProofstatus
+          auxProofstatus'<- mkNfNode node nfNode (Just (dgn_sign nodelab))
+			             auxProofstatus
+			    -- actually it is sign instead of dgn_sign nodelab
+          finalProofstatus <- linkNfNode node nfNode map auxProofstatus'
           handleNonLeaves finalProofstatus list
-	  
-  where
-    mkNfDGNode :: Node -> DGNodeLab -> G_sign -> LNode DGNodeLab
-    mkNfDGNode newNode nodelab sign =
-	(newNode, 
-	 DGNode {dgn_name = dgn_name nodelab,
-		 dgn_sign = sign,
-		 dgn_sens = dgn_sens nodelab,
-		 dgn_nf = Just newNode,
-		 dgn_sigma = dgn_sigma nodelab,
-		 dgn_origin = DGProof
-		})
-    mkNfDGRef :: Node -> DGNodeLab -> G_sign -> LNode DGNodeLab
-    mkNfDGRef newNode nodelab sign =
-	(newNode,
-	 DGRef {dgn_renamed = dgn_renamed nodelab,
-		dgn_libname = dgn_libname nodelab,
-		dgn_node = dgn_node nodelab,  -- nf im refGraph finden
-		dgn_nf = Just newNode,
-		dgn_sigma = dgn_sigma nodelab -- so richtig?
-	       })
+
+
+linkNfNode :: Node -> Node -> Map.Map Node GMorphism -> ProofStatus
+	   -> IO ProofStatus
+linkNfNode node nfNode map proofstatus@(ln,_,_) = do
+  (auxGraph, changes) <- 
+      setNfOfNode (lookupDGraph ln proofstatus) node nfNode
+  let (finalGraph,changes') = insertEdgesToNf auxGraph nfNode map
+  return (updateProofStatus ln finalGraph (changes ++ changes') proofstatus)
+
 
 createNfsForPredecessors :: ProofStatus -> Node -> IO ProofStatus
 createNfsForPredecessors proofstatus@(ln,_,_) node = do
