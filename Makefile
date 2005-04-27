@@ -164,13 +164,7 @@ HC_OPTS = $(HCI_OPTS) $(HC_PROF)
 DRIFT_OPTS = +RTS -K10m -RTS
 
 ####################################################################
-## sources for hets (semi - manually produced with a perl script)
-
-#GHCMAKE_OUTPUT = $(wildcard hetcats-make)
-
-#ifneq ($(strip $(GHCMAKE_OUTPUT)),)
-#include sources_hetcats.mk
-#else
+## sources for hets 
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs \
     Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
@@ -265,16 +259,9 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
      derivedSources install_hets install release
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
-#.PRECIOUS: sources_hetcats.mk
-
-### call run_hc with
-#   $(call run_hc,<command-that-compiles-hetc-with-ghc>)
-# and it generates hetcats-make 
-# iff there was no error during compilation
-run_hc = ($(1) 2>&1 || $(RM) hetcats-make) | tee hetcats-make 
 
 hets: $(sources) $(derived_sources)
-	$(call run_hc, $(HC) --make -o $@ hets.hs $(HC_OPTS))
+	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-opt: 
 	$(MAKE) distclean
@@ -283,7 +270,7 @@ hets-opt:
 	$(MAKE) hets-optimized
 
 hets-optimized: $(derived_sources) 
-	$(call run_hc, $(HC) --make -O -o hets hets.hs $(HC_OPTS))
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
 	strip hets 
 
 hets-old: $(objects)
@@ -471,7 +458,6 @@ lib_clean:
 
 ### additionally removes the files that define the sources-variable
 real_clean: bin_clean lib_clean clean
-	$(RM) hetcats-make sources_hetcats.mk
 
 ### additionally removes files not in CVS tree
 distclean: real_clean clean_genRules d_clean
@@ -600,8 +586,3 @@ hets.hs: Driver/Version.hs
 Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
     utils/genTransMFormFunc.pl $(INLINEAXIOMS)
 	$(PERL) utils/genTransMFormFunc.pl $< $@
-
-# hetcats-make is created as side-effect of hets or hets-optimized
-sources_hetcats.mk: hetcats-make utils/create_sources.pl
-	$(PERL) utils/create_sources.pl hetcats-make sources_hetcats.mk
-
