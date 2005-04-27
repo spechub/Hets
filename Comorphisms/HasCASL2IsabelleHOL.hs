@@ -219,7 +219,7 @@ transAltDefn _ =
 
 -- simple variables 
 transVar :: Var -> String
-transVar = showIsa
+transVar v = showIsaT v baseSign
 
 
 transSentence :: Env -> Le.Sentence -> Maybe IsaSign.Term
