@@ -21,10 +21,6 @@ module Comorphisms.CoCASL2IsabelleHOL where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
-import Data.List as List
-import Data.Maybe
-import Data.Char
-import Debug.Trace
 -- CoCASL
 import CoCASL.Logic_CoCASL
 import CoCASL.CoCASLSign
@@ -38,6 +34,9 @@ import Comorphisms.CASL2IsabelleHOL
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
+
+import Debug.Trace
+import Data.List
 
 
 -- | The identity of the comorphism
@@ -54,18 +53,18 @@ instance Comorphism CoCASL2IsabelleHOL
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign 
                IsabelleMorphism () () ()  where
-    sourceLogic _ = CoCASL
-    sourceSublogic _ = ()
-    targetLogic _ = Isabelle
-    targetSublogic _ = ()
-    map_theory _ = transTheory sigTrCoCASL formTrCoCASL
+    sourceLogic CoCASL2IsabelleHOL = CoCASL
+    sourceSublogic CoCASL2IsabelleHOL = ()
+    targetLogic CoCASL2IsabelleHOL = Isabelle
+    targetSublogic CoCASL2IsabelleHOL = ()
+    map_theory CoCASL2IsabelleHOL = transTheory sigTrCoCASL formTrCoCASL
     map_morphism CoCASL2IsabelleHOL mor = do
        (sig1,_) <- map_sign CoCASL2IsabelleHOL (Logic.dom CoCASL mor)
        (sig2,_) <- map_sign CoCASL2IsabelleHOL (cod CoCASL mor)
        inclusion Isabelle sig1 sig2
-    map_sentence _ sign =
+    map_sentence CoCASL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign
-    --map_symbol :: cid -> symbol1 -> Set symbol2
+    map_symbol CoCASL2IsabelleHOL _ = error "CoCASL2Isabelle.map_symbol"
 
 
 -- | extended signature translation for CoCASL
@@ -97,8 +96,8 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
   -}
   prem (s,i) = 
     let -- get all selectors with first argument sort s
-        sels = List.filter isSelForS ops
-        isSelForS (Qual_op_name _ t _) = case (args_OP_TYPE t) of
+        sels = filter isSelForS ops
+        isSelForS (Qual_op_name _ t _) = case args_OP_TYPE t of
            (s1:_) -> s1 == s
            _ -> False 
         isSelForS _ = False
@@ -108,26 +107,28 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
              indicesArgs = [1..length args]
              res = res_OP_TYPE t
              -- variables for the extra parameters
-             varDecls = zip [xvar i | i<-indicesArgs] (map transSort args)
+             varDecls = zip [xvar j | j <- indicesArgs] (map transSort args)
              -- the selector ...
 --(c)             top = Const (transOP_SYMB sign opsymb) noType isaTerm
-             top = Const (transOP_SYMB sign opsymb) noType 
+             topC = Const (transOP_SYMB sign opsymb) noType 
              -- applied to x and extra parameter vars
-             appFold = foldl ( \ t1 t2 -> App t1 t2 IsCont)
-             rhs = appFold (App top (var "x") IsCont) 
+             appFold = foldl ( \ t1 t2 -> App t1 t2 NotCont)
+             rhs = appFold (App topC (var "x") NotCont) 
                        (map (var . xvar) indicesArgs)
              -- applied to y and extra parameter vars
-             lhs = appFold (App top (var "y") IsCont) 
+             lhs = appFold (App topC (var "y") NotCont) 
                              (map (var . xvar) indicesArgs)
              chi = -- is the result of selector non-observable? 
                    if res `elem` sorts
                      -- then apply corresponding relation
                      then App (App (var $ 
-                                    rvar (fromJust (findIndex (==res) sorts)))
+                          rvar $ maybe (error "CoCASL2Isabelle.premSel.chi") id
+                               $ findIndex (==res) sorts)
                                rhs NotCont) lhs NotCont
                      -- else use equality
                      else binEq rhs lhs
           in foldr (quantifyIsa "All") chi varDecls
+        premSel _ = error "CoCASL2Isabelle.premSel"
         prem1 = conjs (map premSel sels)
         concl1 = App (App (var $ rvar i) (var "x") NotCont) (var "y") NotCont
         psi = concl1 `binImpl` prem1
@@ -135,9 +136,9 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
      in foldr (quantifyIsa "All") psi [("x",typS),("y",typS)]
   -- conclusion: all relations are the equality
   concls = conjs (map concl (zip sorts indices))
-  concl (s,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
+  concl (_,i) = binImpl (App (App (var $ rvar i) (var "u") NotCont) 
                      (var "v") NotCont) 
                              (binEq (var "u") (var "v"))
-formTrCoCASL sign (BoxOrDiamond _ _mod _phi _) = 
+formTrCoCASL _sign (BoxOrDiamond _ _mod _phi _) = 
    trace "WARNING: ignoring modal forumla" 
           $ true
