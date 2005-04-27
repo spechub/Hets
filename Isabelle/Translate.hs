@@ -11,14 +11,12 @@ Portability :  portable
    translate 'Id' to Isabelle strings
 -}
 
-module Isabelle.Translate (showIsa, showIsaT, showIsaSid, showIsaI, showIsaIT, replaceChar, transString) where
+module Isabelle.Translate (showIsaT, showIsaIT, replaceChar, transString) where
 
 import Common.Id 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.Char
-import Data.Maybe
-import Debug.Trace
 import Isabelle.IsaSign
 
 ------------------- Id translation functions -------------------
@@ -124,38 +122,16 @@ isaPrelude = Map.map Set.fromList $ Map.fromList
   "wellorder","wellorder_class","wf","wfrec","wfrec_rel","xnum","xstr","zero","zero_class","zip",
   "{}","~=>", "O", "o"])]
 
-showIsa :: Id -> String
-showIsa ident = trace "Please use 'showIsaT :: Id -> IName -> String' instead of showIsa." 
-                      (showIsaT ident "Pure")
-
 showIsaT :: Id -> IName -> String 
-showIsaT ident theory =  
--- "stripUnderscores sident" was substided by sident because there is no problem, if reserved words
--- differ from sident only by underscrores
+showIsaT ident theory = let sident = transString $ show ident in
   if Set.member sident $ Map.findWithDefault Set.empty theory isaPrelude 
   then sident++"X" else sident
-  where 
-   sident = transString $ show ident
-
-   selList [] _ = []
-   selList ((l,list):ls) thy = if l == thy then list else selList ls thy
-
--- not in use
--- stripUnderscores :: String -> String
--- stripUnderscores = catMaybes . map (\c -> if c=='_' then Nothing else Just c)
-
-showIsaSid :: SIMPLE_ID -> String
-showIsaSid = transString . show
-
-showIsaI :: Id -> Int -> String
-showIsaI ident i = trace "Please use 'showIsaIT :: Id -> Int -> IName -> String' instead of showIsaI." 
-                      (showIsaIT ident i "Pure")
 
 showIsaIT :: Id -> Int -> IName -> String
 showIsaIT ident i theory = showIsaT ident theory ++ "_" ++ show i
 
 isIsaChar :: Char -> Bool
-isIsaChar c = (isAlphaNum c && isAscii c) || c `elem` "_'"
+isIsaChar c = isAlphaNum c && isAscii c || c `elem` "_'"
 
 replaceChar1 :: Char -> String
 replaceChar1 c | isIsaChar c = [c] 
@@ -164,9 +140,9 @@ replaceChar1 c | isIsaChar c = [c]
 transString :: String -> String
 transString "" = "X"
 transString (c:s) = 
-   if isInf (c:s) then concat $ map replaceChar1 (cut (c:s))
-     else ((if isAlpha c && isAscii c then [c] 
-              else 'X':replaceChar1 c) ++ (concat $ map replaceChar1 s))
+   if isInf (c:s) then concatMap replaceChar1 $ cut (c:s)
+     else (if isAlpha c && isAscii c then [c] 
+              else 'X':replaceChar1 c) ++ concatMap replaceChar1 s
 
 isInf :: String -> Bool
 isInf s = has2Under s && has2Under (reverse s)
