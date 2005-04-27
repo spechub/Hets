@@ -82,7 +82,7 @@ data SPSignSym =
       deriving (Eq, Show)
 
 {- |
-  SPASS Declarations allow for the introduction of sorts.
+  SPASS Declarations allow the introduction of sorts.
 -}
 data SPDeclaration =
         SPSubsortDecl { sortSymA :: SPIdentifier,
@@ -92,8 +92,9 @@ data SPDeclaration =
       | SPSimpleTermDecl SPTerm
       | SPPredDecl { predSym  :: SPIdentifier,
                      sortSyms :: [SPIdentifier] }
-      | SPGenDecl { sortSym  :: SPIdentifier,
-                    funcList :: [SPIdentifier]}
+      | SPGenDecl { sortSym         :: SPIdentifier,
+                    freelyGenerated :: Bool,
+                    funcList        :: [SPIdentifier]}
       deriving (Eq, Show)
 
 {- |
