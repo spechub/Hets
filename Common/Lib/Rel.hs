@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Till Mossakowski, Klaus Lüttich and Uni Bremen 2003
+Copyright   :  (c) Uni Bremen 2003-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -39,7 +39,6 @@ module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Data.List(groupBy)
-import Data.Maybe (catMaybes)
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 -- the invariant is that set values are never empty
@@ -97,7 +96,7 @@ reachable r a = Set.fold reach Set.empty $ succs r a where
     reach e s = if Set.member e s then s 
                     else Set.fold reach (Set.insert e s) $ succs r e
 
--- | predecessors in the given set of a node 
+-- | predecessors of one node in the given set of a nodes 
 preds :: Ord a => Rel a -> a -> Set.Set a -> Set.Set a
 preds r a = Set.filter ( \ s -> member s a r)
 
@@ -125,21 +124,24 @@ irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s ->
               Map.insert k r) Map.empty m 
 
 -- | compute strongly connected components for a transitively closed relation 
-sccOfClosure :: Ord a => Rel a -> Map.Map a (Set.Set a)
+sccOfClosure :: Ord a => Rel a -> [Set.Set a]
 sccOfClosure r@(Rel m) = 
-        fst $ Map.foldWithKey
-               ( \ k v (m1, s) -> 
-                let s1 = Set.delete k s in
-                if Set.member k v then
-                  if Set.member k s then (m1, s1) 
-                     else let s2 = preds r k v in
-                           (Map.insert k s2 m1, Set.union s1 
-                            $ Set.filter (> k) s2)
-                 else (m1, s1)) (Map.empty, Set.empty) m
+        if Map.isEmpty m then []
+        else let ((k, v), p) = Map.deleteFindMin m in
+             if Set.member k v then
+                let c = preds r k v in
+                c : sccOfClosure (Rel $ Set.fold Map.delete p c)
+             else sccOfClosure (Rel p) 
 
--- | collaps strongly connected components to its minimal representative
-collaps :: Ord a => Map.Map a a -> Rel a -> Rel a
-collaps c = image (\ e -> Map.findWithDefault e e c)
+{- | collaps strongly connected components to its minimal representative
+     (input must be transitively closed) -}
+collaps :: Ord a => Rel a -> Rel a
+collaps r = let
+    toCollapsMap l = case l of 
+        [] -> Map.empty
+        x : t -> let (m, s) = Set.deleteFindMin x in
+                     Set.fold ( \ e -> Map.insert e m) (toCollapsMap t) s 
+    in image (\ e -> Map.findWithDefault e e $ toCollapsMap $ sccOfClosure r) r
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a DAG. -}
@@ -263,7 +265,7 @@ find s such that forall y . yRx and x in s (only the maximal element
 of symmetric most right elements is inlcuded in s; all elements in s
 are not symmetric)
 
-  * precondition: (transClosure r == r)
+ * precondition: (transClosure r == r)
 
  * only the greatest element of symmetric elements is shown 
    according to Ord

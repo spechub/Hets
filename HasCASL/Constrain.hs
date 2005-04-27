@@ -269,10 +269,9 @@ getRawKindAppl k args = if null args then (k, []) else
 collapser :: Rel.Rel Type -> Result Subst
 collapser r = 
     let t = Rel.sccOfClosure r
-        t2 = Map.map (Set.partition ( \ e -> case e of 
+        ks = map (Set.partition ( \ e -> case e of 
                                       TypeName _ _ n -> n==0
                                       _ -> error "collapser")) t
-        ks = Map.elems t2
         ws = filter (\ p -> Set.size (fst p) > 1) ks
     in if null ws then
        return $ foldr ( \ (cs, vs) s -> 
