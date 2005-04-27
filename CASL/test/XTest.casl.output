@@ -1,5 +1,5 @@
 (sorts a, b, c, d, x
- sorts a < d; x < a, d
+ sorts x < a; a, x < d
  op o : a
  op o : a -> b
  op o2 : a ->? b

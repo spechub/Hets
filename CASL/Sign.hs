@@ -102,12 +102,12 @@ instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
         (if Rel.isEmpty (sortRel s) then empty
             else ptext (sortS++sS) <+> 
              (fsep . punctuate semi $ map printRel $ Map.toList 
-                       $ Rel.toMap $ sortRel s))
+                       $ Rel.toMap $ Rel.transpose $ sortRel s))
         $$ printSetMap (ptext opS) empty ga (opMap s)
         $$ printSetMap (ptext predS) space ga (predMap s)
         $$ printText0 ga (extendedInfo s)
-     where printRel (subs, supersorts) =
-             printText0 ga subs <+> ptext lessS <+> printSet ga supersorts
+     where printRel (supersort, subsorts) =
+             printSet ga subsorts <+> ptext lessS <+> printText0 ga supersort
 
 printSetMap :: (PrettyPrint k, PrettyPrint a, Ord k, Ord a) => Doc 
             -> Doc -> GlobalAnnos -> Map.Map k (Set.Set a) -> Doc
