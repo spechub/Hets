@@ -64,7 +64,7 @@ instance Comorphism CoCASL2IsabelleHOL
        inclusion Isabelle sig1 sig2
     map_sentence CoCASL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign
-    map_symbol CoCASL2IsabelleHOL _ = error "CoCASL2Isabelle.map_symbol"
+    map_symbol CoCASL2IsabelleHOL _ = error "CoCASL2IsabelleHOL.map_symbol"
 
 
 -- | extended signature translation for CoCASL
@@ -101,7 +101,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
            (s1:_) -> s1 == s
            _ -> False 
         isSelForS _ = False
-        premSel opsymb@(Qual_op_name n t _) =
+        premSel opsymb@(Qual_op_name _n t _) =
          let -- get extra parameters of the selectors
              args = tail $ args_OP_TYPE t
              indicesArgs = [1..length args]
