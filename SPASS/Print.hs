@@ -33,7 +33,6 @@ dot = char '.'
 {- |
   Creates a Doc from a SPASS Problem.
 -}
---printProblem :: SPProblem-> Doc
 instance PrettyPrint SPProblem where
   printText0 ga p = text "begin_problem" <> parens (text (identifier p)) <> dot
     $$ printText0 ga (description p)
@@ -43,7 +42,6 @@ instance PrettyPrint SPProblem where
 {- |
   Creates a Doc from a SPASS Logical Part.
 -}
---printLogicalPart :: SPLogicalPart-> Doc
 instance PrettyPrint SPLogicalPart where
   printText0 ga lp =
     (if isJust (symbolList lp) then printText0 ga (fromJust (symbolList lp)) else empty)
@@ -58,7 +56,6 @@ instance PrettyPrint SPLogicalPart where
 {- |
   Creates a Doc from a SPASS Symbol List.
 -}
---printSymbolList :: SPSymbolList-> Doc
 instance PrettyPrint SPSymbolList where
   printText0 ga sl = text "list_of_symbols."
     $$ printSignSymList "functions" (functions sl)
@@ -76,7 +73,6 @@ instance PrettyPrint SPSymbolList where
 {-|
   Helper function. Creates a Doc from a Signature Symbol.
 -}
---printSignSym :: SPSignSym-> Doc
 instance PrettyPrint SPSignSym where
   printText0 ga (SPSimpleSignSym s) = text s
   printText0 ga ssym = parens (text (sym ssym) <> comma <> int (arity ssym))
@@ -84,7 +80,6 @@ instance PrettyPrint SPSignSym where
 {- |
   Creates a Doc from a SPASS Declaration
 -}
---printDeclaration :: SPDeclaration-> Doc
 instance PrettyPrint SPDeclaration where
   printText0 ga d = case d of
     SPSubsortDecl {sortSymA= a, sortSymB= b} ->
@@ -103,7 +98,6 @@ instance PrettyPrint SPDeclaration where
 {- |
   Creates a Common.Lib.Pretty.Doc from a SPASS Formula List
 -}
---printFormulaList :: SPFormulaList-> Doc
 instance PrettyPrint SPFormulaList where
   printText0 ga l = text "list_of_formulae" <> parens (printText0 ga (originType l)) <> dot
     $$ printFormulae (formulae l)
@@ -114,7 +108,6 @@ instance PrettyPrint SPFormulaList where
 {- |
   Creates a Doc from a SPASS Origin Type
 -}
---printOriginType :: SPOriginType-> Doc
 instance PrettyPrint SPOriginType where
   printText0 ga t = case t of
     SPOriginAxioms      -> text "axioms"
@@ -123,7 +116,6 @@ instance PrettyPrint SPOriginType where
 {- |
   Creates a Doc from a SPASS Formula.
 -}
---printFormula :: SPFormula-> Doc
 instance PrettyPrint SPFormula where
   printText0 ga f =
     (text "formula") <> parens (printText0 ga (formulaTerm f) <> comma <> text (formulaLabel f))
@@ -131,7 +123,6 @@ instance PrettyPrint SPFormula where
 {- |
   Creates a Doc from a SPASS Term.
 -}
---printTerm :: SPTerm-> Doc
 instance PrettyPrint SPTerm where
   printText0 ga t = case t of
     SPQuantTerm{quantSym= qsym, termTermList= tlist, termTerm= t} -> printText0 ga qsym <> parens (brackets (printTermList tlist) <> comma <> printText0 ga t)
@@ -143,7 +134,6 @@ instance PrettyPrint SPTerm where
 {- |
   Creates a Doc from a SPASS Quantifier Symbol.
 -}
---printQuantSym :: SPQuantSym-> Doc
 instance PrettyPrint SPQuantSym where
   printText0 ga qs = case qs of
     SPForall             -> text "forall"
@@ -170,7 +160,6 @@ instance PrettyPrint SPSymbol where
 {- |
   Creates a Doc from a SPASS description.
 -}
---printDescription :: SPDescription-> Doc
 instance PrettyPrint SPDescription where
   printText0 ga d = text "list_of_descriptions."
     $$ text "name" <> parens (spText (name d)) <> dot
@@ -192,7 +181,6 @@ spText s = text "{* " <> text s <> text " *}"
 {- |
   Creates a Doc from an 'SPLogState'.
 -}
---printLogState :: SPLogState-> Doc
 instance PrettyPrint SPLogState where
   printText0 ga s = case s of
     SPStateSatisfiable   -> text "satisfiable"
