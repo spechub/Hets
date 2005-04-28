@@ -1,14 +1,15 @@
 /**
- * Produces abstract syntax from OWL ontologies. 
- *
- *
+ * Produces abstract syntax from OWL ontologies.
+ * 
+ * 
  * Created: Fri Feb 21 09:12:03 2003
- *
+ * 
  * @author Heng Jiang
  * @version $Id$
  */
 
 // import java.io.PrintWriter;
+
 import java.util.Set;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +60,7 @@ import org.semanticweb.owl.model.OWLPropertyAxiom;
 // import org.semanticweb.owl.model.OWLDataRange;
 import org.semanticweb.owl.model.OWLEnumeration;
 import org.semanticweb.owl.io.ShortFormProvider;
-import org.semanticweb.owl.io.abstract_syntax.*;          // for RenderingVisitor
+import org.semanticweb.owl.io.abstract_syntax.*; // for RenderingVisitor
 
 import aterm.ATerm;
 import aterm.ATermAppl;
@@ -78,7 +79,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 	int reservedNames;
 
-	RenderingVisitor visitor;
+	RenderingVisitor2 visitor;
 
 	String[] names = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",
 			"l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
@@ -87,16 +88,27 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 	static PureFactory factory = new PureFactory();
 
 	ATermList emptyList = factory.makeList();
-	
+
+	AFun axFun = factory.makeAFun("Ax", 1, false);
+
+	AFun fcFun = factory.makeAFun("Fc", 1, false);
+
+	AFun annoFun = factory.makeAFun("Anno", 1, false);
+
 	AFun superFun = factory.makeAFun("Super", 1, false);
+
 	AFun domainFun = factory.makeAFun("Domain", 1, false);
+
 	AFun rangeFun = factory.makeAFun("Range", 1, false);
+
 	AFun inverseOfFun = factory.makeAFun("InverseOf", 1, false);
+
+	AFun justFun = factory.makeAFun("Just", 1, false);
 
 	public ATermRender2(OWLOntology ontology) {
 		// this.writer = new StringWriter();
 		// this.pw = new PrintWriter(new StringWriter());
-		visitor = new RenderingVisitor(this, ontology);
+		visitor = new RenderingVisitor2(this, ontology);
 		try {
 			allURIs = OntologyHelper.allURIs(ontology);
 		} catch (Exception e) {
@@ -122,6 +134,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		boolean done = false;
 		ATermList resList = factory.makeList();
+
 		AFun classFun = factory.makeAFun("Class", 5, false);
 		ATermAppl classID = strToATermAppl("");
 		ATermAppl dep = strToATermAppl("");
@@ -131,9 +144,11 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		if (clazz.getURI() != null) {
 			classID = strToATermAppl(shortForm(clazz.getURI()));
-			dep = strToATermAppl((clazz.isDeprecated(ontology) ? "true" : "false"));
+			dep = strToATermAppl1((clazz.isDeprecated(ontology) ? "true"
+					: "false"));
 		}
 
+		
 		/* Bit nasty this -- annotations result in a new axiom */
 		if (!clazz.getAnnotations(ontology).isEmpty()) {
 			annos = makeAnno(clazz.getAnnotations().iterator());
@@ -142,7 +157,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		// Equivalent Class
 		if (!clazz.getEquivalentClasses(ontology).isEmpty()) {
 
-			mod = strToATermAppl("complete");
+			mod = strToATermAppl1("Complete");
 
 			for (Iterator it = clazz.getEquivalentClasses(ontology).iterator(); it
 					.hasNext();) {
@@ -151,18 +166,19 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				visitor.reset();
 				eq.accept(visitor);
 
-//				descs = factory.makeList(factory.makeAppl(factory.makeAFun(
-//						mkOther(visitor.result()), 0, false)), descs);
+				//				descs = factory.makeList(factory.makeAppl(factory.makeAFun(
+				//						mkOther(visitor.result()), 0, false)), descs);
 
 				descs = factory.makeList(mkOther(visitor.result()), descs);
 				done = true;
 			}
-			resList = factory.makeList(factory.makeAppl(classFun, classID, dep,
-					mod, annos, descs.reverse()), resList);
+			resList = factory.makeList(factory.makeAppl(axFun, factory
+					.makeAppl(classFun, classID, dep, mod, annos, descs
+							.reverse())), resList);
 		}
 
 		if (!clazz.getSuperClasses(ontology).isEmpty()) {
-			mod = strToATermAppl("partial");
+			mod = strToATermAppl1("Partial");
 			descs = factory.makeList();
 
 			for (Iterator it = clazz.getSuperClasses(ontology).iterator(); it
@@ -171,14 +187,15 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				visitor.reset();
 				eq.accept(visitor);
 
-//				descs = factory.makeList(factory.makeAppl(factory.makeAFun(
-//						mkOther(visitor.result()), 0, false)), descs);
+				//				descs = factory.makeList(factory.makeAppl(factory.makeAFun(
+				//						mkOther(visitor.result()), 0, false)), descs);
 				descs = factory.makeList(mkOther(visitor.result()), descs);
-				
+
 				done = true;
 			}
-			resList = factory.makeList(factory.makeAppl(classFun, classID, dep,
-					mod, annos, descs.reverse()), resList);
+			resList = factory.makeList(factory.makeAppl(axFun, factory
+					.makeAppl(classFun, classID, dep, mod, annos, descs
+							.reverse())), resList);
 		}
 
 		/*
@@ -205,27 +222,27 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 						visitor.reset();
 						ioe.accept(visitor);
 
-						indivIDs = factory.makeList(
-								factory.makeAppl(factory.makeAFun(
-										visitor.result(), 0, true)),
-								indivIDs);
+						indivIDs = factory.makeList(factory.makeAppl(factory.makeAFun(visitor
+										.result(), 0, true)), indivIDs);
 					}
 					done = true;
 				} catch (ClassCastException ex) {
 					throw new RendererException(ex.getMessage());
 				}
 			}
-			resList = factory.makeList(factory.makeAppl(enumClass, classID,
-					dep, annos, indivIDs.reverse()), resList);
+			resList = factory.makeList(factory.makeAppl(axFun, factory
+					.makeAppl(enumClass, classID, dep, annos, indivIDs
+							.reverse())), resList);
 		}
 
 		if (!done) {
 
 			/* We need to give at least an empty definition */
-			mod = strToATermAppl("partial");
+			mod = strToATermAppl1("Partial");
 
-			resList = factory.makeList(factory.makeAppl(classFun, classID, dep,
-					mod, annos, factory.makeList()), resList);
+			resList = factory.makeList(factory.makeAppl(axFun, factory
+					.makeAppl(classFun, classID, dep, mod, annos, factory
+							.makeList())), resList);
 		}
 
 		// return is an ATermAppl: ATermOfClass(classID, ClassAxiomList)
@@ -237,21 +254,27 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			throws OWLException {
 
 		// Individual (Maybe IndividualID) [Annotation] [Type] [Value]
+		AFun consFun = factory.makeAFun("Indiv", 1, false);
 		AFun indivFun = factory.makeAFun("Individual", 4, false);
-		ATermAppl indivID = strToATermAppl(shortForm(ind.getURI()));
+		ATermAppl indivID = strToATermAppl("");
 		ATermList annos = factory.makeList();
 		ATermList types = factory.makeList();
 		ATermList values = factory.makeList();
-		AFun typeFun = factory.makeAFun("type", 1, false);
-		AFun valueIndivFun = factory.makeAFun("valueIndiv", 2, false);
-		AFun valueDLFun = factory.makeAFun("valueDL", 2, false);
+		AFun typeFun = factory.makeAFun("Type", 1, false);
+		AFun valueIDFun = factory.makeAFun("ValueID", 2, false);
+		AFun valueDLFun = factory.makeAFun("ValueDL", 2, false);
 		
 		if (ind.isAnonymous()) {
 			Map m = ind.getIncomingObjectPropertyValues(ontology);
 			if (!m.isEmpty()) {
-				indivID = strToATermAppl("_");
-		//		return strToATermAppl("");
+				indivID = strToATermAppl("Nothing");
+			} else {
+				indivID = factory.makeAppl(justFun,
+						strToATermAppl(shortForm(ind.getURI())));
 			}
+		} else {
+			indivID = factory.makeAppl(justFun, strToATermAppl(shortForm(ind
+					.getURI())));
 		}
 		// pw.print("Individual(" + shortForm(ind.getURI()));
 		//	}
@@ -261,23 +284,26 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				&& ind.getDataPropertyValues(ontology).keySet().isEmpty()) {
 			// pw.print(")");
 
-			return factory.makeAppl(indivFun, indivID, emptyList, emptyList,
-					emptyList);
+			return factory.makeAppl(fcFun, factory.makeAppl(consFun, factory.makeAppl(indivFun, indivID, emptyList, emptyList,
+					emptyList)));
 		} else {
 
 			annos = makeAnno(ind.getAnnotations(ontology).iterator());
 
 			for (Iterator it = ind.getTypes(ontology).iterator(); it.hasNext();) {
 				OWLDescription eq = (OWLDescription) it.next();
-				
+
 				visitor.reset();
 				eq.accept(visitor);
 
-				ATermAppl resType = factory.makeAppl(typeFun, mkOther(visitor.result()));
+				ATerm resType = mkOther(visitor.result());
+				//ATermAppl resType = factory.makeAppl(typeFun, mkOther(visitor
+				//		.result()));
 				types = factory.makeList(resType, types);
 			}
 
-			// recusive function call for "value IndividualvaluePropertyID Individual" can result in deadlock.
+			// recusive function call for "value IndividualvaluePropertyID
+			// Individual" can result in deadlock.
 			// here is only "value IndivudualvaluePropertyID IndividualID" used.
 			Map propertyValues = ind.getObjectPropertyValues(ontology);
 			for (Iterator it = propertyValues.keySet().iterator(); it.hasNext();) {
@@ -287,16 +313,20 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				for (; valIt.hasNext();) {
 
 					OWLIndividual oi = (OWLIndividual) valIt.next();
-//					visitor.reset();
-//					oi.accept(visitor);
-//					ATermAppl resValue = factory.makeAppl(valueFun, propURI, strToATermAppl(mkOther(visitor.result())));
-					
+					//					visitor.reset();
+					//					oi.accept(visitor);
+					//					ATermAppl resValue = factory.makeAppl(valueFun, propURI,
+					// strToATermAppl(mkOther(visitor.result())));
+
 					ATermAppl propURI = strToATermAppl(shortForm(prop.getURI()));
-// 					ATermAppl resValue = factory.makeAppl(valueIndivFun, propURI, renderIndividual(ontology,oi));
-	
-					AFun ivf = factory.makeAFun("IndividualID", 1, false);
-					ATermAppl iv = factory.makeAppl(ivf, strToATermAppl(shortForm(oi.getURI())));
-					ATermAppl resValue = factory.makeAppl(valueIndivFun, propURI, iv);
+					// 					ATermAppl resValue = factory.makeAppl(valueIndivFun,
+					// propURI, renderIndividual(ontology,oi));
+
+					// AFun ivf = factory.makeAFun("IndividualID", 1, false);
+					// ATermAppl iv = factory.makeAppl(ivf,
+					// 		strToATermAppl(shortForm(oi.getURI())));
+					ATermAppl resValue = factory.makeAppl(valueIDFun, propURI,
+							strToATermAppl(shortForm(oi.getURI())));
 					values = factory.makeList(resValue, values);
 				}
 			}
@@ -313,15 +343,16 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 					OWLDataValue dtv = (OWLDataValue) valIt.next();
 					visitor.reset();
 					dtv.accept(visitor);
-					
+
 					ATermAppl propURI = strToATermAppl(shortForm(prop.getURI()));
-					ATermAppl resValue = factory.makeAppl(valueDLFun, propURI, mkOther(visitor.result()));
+					ATermAppl resValue = factory.makeAppl(valueDLFun, propURI,
+							mkOther(visitor.result()));
 					values = factory.makeList(resValue, values);
 					// pw.print(", value(" + shortForm(prop.getURI()) + ", "
 					//		+ mkOther(visitor.result()) + ")");
-					}
+				}
 			}
-			return factory.makeAppl(indivFun, indivID, annos, types, values);
+			return factory.makeAppl(fcFun, factory.makeAppl(consFun, factory.makeAppl(indivFun, indivID, annos, types, values)));
 		}
 	}
 
@@ -334,12 +365,13 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		AFun apFun = factory.makeAFun("AnnotationProperty", 2, false);
 		Set apSet = prop.getAnnotations();
 		Iterator it = apSet.iterator();
-		// Iterator it = OntologyHelper.getAnnotations(ontology, ontology ,prop).iterator();
-		
+		// Iterator it = OntologyHelper.getAnnotations(ontology, ontology
+		// ,prop).iterator();
+
 		ATermList annoList = makeAnno(it);
 		ATermAppl uri = strToATermAppl(shortForm(prop.getURI()));
 		// pw.print("AnnotationProperty(" + shortForm(prop.getURI()) + ")");
-		return factory.makeAppl(apFun, uri, annoList);
+		return factory.makeAppl(axFun, factory.makeAppl(apFun, uri, annoList));
 	}
 
 	public ATermAppl renderObjectProperty(OWLOntology ontology,
@@ -361,10 +393,10 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		ATermAppl indivID = strToATermAppl(shortForm(prop.getURI()));
 		// pw.print("ObjectProperty(" + shortForm(prop.getURI()));
 
-		ATermAppl function = strToATermAppl("");
+		ATermAppl function = strToATermAppl1("Nothing");
 		ATermAppl symmetric = strToATermAppl("");
 		// AFun inverseOfFun = factory.makeAFun("InverseOf", 1, false);
-		ATermAppl inverseOf = strToATermAppl("");
+		ATermAppl inverseOf = strToATermAppl1("Nothing");
 		// AFun superFun = factory.makeAFun("Super", 1, false);
 		ATermList superList = emptyList;
 		// AFun domainFun = factory.makeAFun("Domain", 1, false);
@@ -376,27 +408,31 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		// get annotations
 		annoList = makeAnno(prop.getAnnotations().iterator());
-		
+
 		// maybe deprecated
-		deprecated = prop.isDeprecated(ontology)? strToATermAppl("true"):strToATermAppl("false");
+		deprecated = prop.isDeprecated(ontology) ? strToATermAppl1("true")
+				: strToATermAppl1("false");
 
 		// function
+		if(prop.isInverseFunctional(ontology) && prop.isFunctional(ontology)){
+			function = factory.makeAppl(justFun, strToATermAppl1("Functional_InverseFunctional"));
+		} else
 		if (prop.isTransitive(ontology)) {
-			function = strToATermAppl("Transitive");
+			function = factory.makeAppl(justFun, strToATermAppl1("Transitive"));
 			// pw.print(", Transitive");
-		}
+		} else
 		if (prop.isFunctional(ontology)) {
-			function = strToATermAppl("Functional");
+			function = factory.makeAppl(justFun, strToATermAppl1("Functional"));
 			// pw.print(", Functional");
-		}
+		} else
 		if (prop.isInverseFunctional(ontology)) {
-			function = strToATermAppl("InverseFunctional");
+			function = factory.makeAppl(justFun, strToATermAppl1("InverseFunctional"));
 			// pw.print(", InverseFunctional");
 		}
-		if (prop.isSymmetric(ontology)) {
-			symmetric = strToATermAppl("Symmetric");
+//		if (prop.isSymmetric(ontology)) {
+		symmetric = prop.isSymmetric(ontology)? strToATermAppl1("true"): strToATermAppl1("false");
 			// pw.print(", Symmetric");
-		}
+//		}
 
 		// only one inverseOf of ObjectProperty (see AS)
 		for (Iterator it = prop.getInverses(ontology).iterator(); it.hasNext();) {
@@ -405,8 +441,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			inv.accept(visitor);
 
-			inverseOf = factory.makeAppl(inverseOfFun,
-					mkOther(visitor.result()));
+			inverseOf = factory.makeAppl(justFun, factory.makeAppl(inverseOfFun,
+					mkOther(visitor.result())));
 			// pw.print(", inverseOf(" + mkOther(visitor.result()) + ")");
 		}
 
@@ -419,8 +455,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			sup.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(superFun,
-					mkOther(visitor.result()));
+			ATermAppl result = (ATermAppl) mkOther(visitor.result());
 			superList = factory.makeList(result, superList);
 
 			// pw.print(", super(" + mkOther(visitor.result()) + ")");
@@ -434,8 +469,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			dom.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(domainFun,
-					mkOther(visitor.result()));
+			ATermAppl result = (ATermAppl) mkOther(visitor.result());
 			domainList = factory.makeList(result, domainList);
 
 			// pw.print(", domain(" + mkOther(visitor.result()) + ")");
@@ -452,8 +486,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			ran.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(rangeFun,
-					mkOther(visitor.result()));
+			ATermAppl result = (ATermAppl) mkOther(visitor.result());
 			rangeList = factory.makeList(result, rangeList);
 			// pw.print(", range(" + mkOther(visitor.result()) + ")");
 		}
@@ -464,22 +497,22 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		ATerm[] aterms = { indivID, deprecated, annoList, superList, inverseOf,
 				symmetric, function, domainList, rangeList };
 
-		return factory.makeAppl(opFun, aterms);
+		return factory.makeAppl(axFun, factory.makeAppl(opFun, aterms));
 	}
 
-	public ATermAppl renderDataProperty(OWLOntology ontology, OWLDataProperty prop)
-			throws OWLException {
+	public ATermAppl renderDataProperty(OWLOntology ontology,
+			OWLDataProperty prop) throws OWLException {
 
-//		Writer writer = new StringWriter();
-//		setWriter(writer);
-		//	DatatypeProperty  DatavaluedPropertyID 
-        //                    Bool -- ^ True == deprecated  
-        //					  [Annotation] 
-        //					  [DatavaluedPropertyID]  -- ^ super properties 
-        //					  (Maybe Func) 
-        //					  [Description] -- ^ Domain 
-        //				      [DataRange] -- ^ Range
-		AFun dtpFun = factory.makeAFun("", 7, false);
+		//		Writer writer = new StringWriter();
+		//		setWriter(writer);
+		//	DatatypeProperty DatavaluedPropertyID
+		//                    Bool -- ^ True == deprecated
+		//					  [Annotation]
+		//					  [DatavaluedPropertyID] -- ^ super properties
+		//					  (Maybe Func)
+		//					  [Description] -- ^ Domain
+		//				      [DataRange] -- ^ Range
+		AFun dtpFun = factory.makeAFun("DatatypeProperty", 7, false);
 		ATermAppl dvpID = strToATermAppl(shortForm(prop.getURI()));
 		ATermList annoList = emptyList;
 		ATermAppl deprecated = strToATermAppl("");
@@ -487,9 +520,9 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		ATermList superList = emptyList;
 		ATermList domainList = emptyList;
 		ATermList rangeList = emptyList;
-	
+
 		// pw.print("DatatypeProperty(" + shortForm(prop.getURI()));
-		
+
 		// get annotations
 		for (Iterator it = prop.getAnnotations().iterator(); it.hasNext();) {
 			annoList = makeAnno(it);
@@ -497,14 +530,14 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		// maybe deprecated
 		if (prop.isDeprecated(ontology)) {
-			deprecated = strToATermAppl("Deprecated");
+			deprecated = strToATermAppl1("Deprecated");
 		}
 		// maybe functional
 		if (prop.isFunctional(ontology)) {
 			//pw.print(", Functional");
-			functional = strToATermAppl("Functional");
+			functional = strToATermAppl1("Functional");
 		}
-		
+
 		// a List of super property
 		for (Iterator it = prop.getSuperProperties(ontology).iterator(); it
 				.hasNext();) {
@@ -513,14 +546,14 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			sup.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(superFun,
-					mkOther(visitor.result()));
+			ATermAppl result = factory.makeAppl(superFun, mkOther(visitor
+					.result()));
 			superList = factory.makeList(result, superList);
 
 			// pw.print(", super(" + mkOther(visitor.result()) + ")");
 		}
 		superList = superList.reverse();
-		
+
 		// a list of domain
 		for (Iterator it = prop.getDomains(ontology).iterator(); it.hasNext();) {
 
@@ -528,8 +561,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			dom.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(domainFun,
-					mkOther(visitor.result()));
+			ATermAppl result = factory.makeAppl(domainFun, mkOther(visitor
+					.result()));
 			domainList = factory.makeList(result, domainList);
 
 			// pw.print(", domain(" + mkOther(visitor.result()) + ")");
@@ -546,38 +579,33 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			ran.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(rangeFun,
-					mkOther(visitor.result()));
+			ATermAppl result = factory.makeAppl(rangeFun, mkOther(visitor
+					.result()));
 			rangeList = factory.makeList(result, rangeList);
 			// pw.print(", range(" + mkOther(visitor.result()) + ")");
 		}
 		rangeList = rangeList.reverse();
-		
-/* 
-		for (Iterator it = prop.getDomains(ontology).iterator(); it.hasNext();) {
 
-			OWLDescription dom = (OWLDescription) it.next();
-			visitor.reset();
-			dom.accept(visitor);
-			pw.print(", domain(" + mkOther(visitor.result()) + ")");
-			// 	    if (it.hasNext()) {
-			// 		pw.print();
-			// 	    }
-		}
-		for (Iterator it = prop.getRanges(ontology).iterator(); it.hasNext();) {
+		/*
+		 * for (Iterator it = prop.getDomains(ontology).iterator();
+		 * it.hasNext();) {
+		 * 
+		 * OWLDescription dom = (OWLDescription) it.next(); visitor.reset();
+		 * dom.accept(visitor); pw.print(", domain(" + mkOther(visitor.result()) +
+		 * ")"); // if (it.hasNext()) { // pw.print(); // } } for (Iterator it =
+		 * prop.getRanges(ontology).iterator(); it.hasNext();) {
+		 * 
+		 * OWLDataRange ran = (OWLDataRange) it.next(); visitor.reset();
+		 * ran.accept(visitor); pw.print(", range(" + mkOther(visitor.result()) +
+		 * ")"); }
+		 */
 
-			OWLDataRange ran = (OWLDataRange) it.next();
-			visitor.reset();
-			ran.accept(visitor);
-			pw.print(", range(" + mkOther(visitor.result()) + ")");
-		}
-*/
+		//		pw.print(")");
+		//		return writer.toString();
+		return factory.makeAppl(axFun, factory.makeAppl(dtpFun, dvpID,
+				deprecated, annoList, superList, functional, domainList,
+				rangeList));
 
-//		pw.print(")");
-//		return writer.toString();
-
-		return factory.makeAppl(dtpFun, dvpID, deprecated, annoList, superList, functional, domainList, rangeList);
-		
 	}
 
 	public ATermAppl renderDataType(OWLOntology ontology, OWLDataType datatype)
@@ -586,7 +614,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		// Writer writer = new StringWriter();
 		// setWriter(writer);
 		// pw.print("Datatype(" + shortForm(datatype.getURI()) + ")");
-		return factory.makeAppl(factory.makeAFun("DataType", 1, false), strToATermAppl(shortForm(datatype.getURI())));
+		return factory.makeAppl(factory.makeAFun("DataType", 1, false),
+				strToATermAppl(shortForm(datatype.getURI())));
 
 	}
 
@@ -600,58 +629,63 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		// pw.print(mkOther(visitor.result()));
 		// eturn writer.toString();
-		if(visitor.result() == null) return strToATermAppl("");
+		if (visitor.result() == null)
+			return strToATermAppl("");
 		return (ATermAppl) mkOther(visitor.result());
 	}
 
 	public ATermAppl renderPropertyAxiom(OWLPropertyAxiom axiom)
 			throws OWLException {
 
-//		Writer writer = new StringWriter();
-//		setWriter(writer);
+		//		Writer writer = new StringWriter();
+		//		setWriter(writer);
 		visitor.reset();
 		axiom.accept(visitor);
 
-//		pw.print(mkOther(visitor.result()));
-//		return writer.toString();
-		if(visitor.result() == null) return strToATermAppl("");
+		//		pw.print(mkOther(visitor.result()));
+		//		return writer.toString();
+		if (visitor.result() == null)
+			return strToATermAppl("");
 
 		return (ATermAppl) mkOther(visitor.result());
 	}
 
 	public ATermAppl renderIndividualAxiom(OWLIndividualAxiom axiom)
 			throws OWLException {
-//		Writer writer = new StringWriter();
-//		setWriter(writer);
+		//		Writer writer = new StringWriter();
+		//		setWriter(writer);
 
 		visitor.reset();
 		axiom.accept(visitor);
-//		pw.print(mkOther(visitor.result()));
-//		return writer.toString();
-		// if(visitor.result() == null) return factory.makeAppl(factory.makeAFun("", 0, true));
+		//		pw.print(mkOther(visitor.result()));
+		//		return writer.toString();
+		// if(visitor.result() == null) return
+		// factory.makeAppl(factory.makeAFun("", 0, true));
 		return (ATermAppl) mkOther(visitor.result());
 	}
 
-	public ATermAppl renderAnnotationInstance(OWLOntology ontology, OWLAnnotationInstance instance)
-		throws OWLException{
-		
+	public ATermAppl renderAnnotationInstance(OWLOntology ontology,
+			OWLAnnotationInstance instance) throws OWLException {
+
 		URI aiID = instance.getProperty().getURI();
-		return renderAnnotationContent(true, instance.getContent(), aiID.toString());
+		return renderAnnotationContent(true, instance.getContent(), aiID
+				.toString());
 	}
-	
+
 	/* Well dodgy coding */
-	public ATermAppl renderAnnotationContent(boolean isOntologyAnnotation, Object o, String annoID)
-			throws OWLException {
+	public ATermAppl renderAnnotationContent(boolean isOntologyAnnotation,
+			Object o, String annoID) throws OWLException {
 
 		// Writer w = new StringWriter();
 		// PrintWriter printW = new PrintWriter(w);
 		ATermAppl aid = strToATermAppl(annoID);
 
-		if(isOntologyAnnotation) {
+		if (isOntologyAnnotation) {
 			AFun defaltFun = factory.makeAFun("OntoAnnotation", 2, false);
-			return factory.makeAppl(defaltFun, aid, strToATermAppl(o.toString()));
+			return factory.makeAppl(annoFun, factory.makeAppl(defaltFun, aid,
+					strToATermAppl(o.toString())));
 		}
-		
+
 		if (o instanceof URI) {
 			AFun uriAnnoFun = factory.makeAFun("URIAnnotation", 2, false);
 			ATerm uriA = strToATermAppl(o.toString());
@@ -661,32 +695,44 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		} else if (o instanceof OWLIndividual) {
 
 			AFun indivFun = factory.makeAFun("IndivAnnotation", 2, false);
-			ATerm indivA = strToATermAppl(((OWLIndividual) o).getURI().toString());
+			ATerm indivA = strToATermAppl(((OWLIndividual) o).getURI()
+					.toString());
 
 			return factory.makeAppl(indivFun, aid, indivA);
 
 		} else if (o instanceof OWLDataValue) {
 
 			AFun dlFun = factory.makeAFun("DLAnnotation", 2, false);
+			AFun tlFun = factory.makeAFun("TypedL", 1, false);
+			AFun plFun = factory.makeAFun("PlainL", 1, false);
+			AFun literalFun = factory.makeAFun("", 2, false);
 
 			OWLDataValue dv = (OWLDataValue) o;
-			String result = escape(dv.getValue());
+			ATermAppl data = strToATermAppl(escape(dv.getValue()));
+			ATermAppl result = strToATermAppl("");
 
 			URI dvdt = dv.getURI();
 			String dvlang = dv.getLang();
 			if (dvdt != null) {
-				result += "^^" + dvdt; // ^^
+				ATermAppl uri = strToATermAppl(shortForm(dvdt));
+				result = factory.makeAppl(tlFun, factory.makeAppl(literalFun,
+						data, uri));
+				// result += "^^" + dvdt; // ^^
+			} else if (dvlang != null) {
+				ATermAppl tag = strToATermAppl(dvlang);
+				result = factory.makeAppl(plFun, factory.makeAppl(literalFun,
+						data, tag));
+				// 					result += "@" + dvlang;
 			} else {
-				if (dvlang != null) {
-					result += "@" + dvlang;
-				}
+				result = factory.makeAppl(plFun, factory.makeAppl(literalFun,
+						data, strToATermAppl("")));
 			}
-			return factory.makeAppl(dlFun, aid, strToATermAppl(result));
-		}else{
-			throw(new OWLException("wrong object by calling the method of renderAnnotationContent."));
-		}
+
+			return factory.makeAppl(dlFun, aid, result);
+		} else
+			return null;
 	}
-	
+
 	/* Replace " with \" and \ with \\ */
 	public static String escape(Object o) {
 		/* Should probably use regular expressions */
@@ -740,40 +786,42 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		AFun nsFun2 = factory.makeAFun("NS", 2, false);
 		ATermList nsList = emptyList;
 		// File file = new File("./namespaces.term");
-//		
-//		try{
-//			if(file.exists()){
-//				file.delete();
-//				file.createNewFile();
-//			}
-//		}catch(Exception e){
-//			System.out.println("Error: can not build file: namespaces.term.");
-//			System.exit(1);
-//		}
-		
+		//		
+		//		try{
+		//			if(file.exists()){
+		//				file.delete();
+		//				file.createNewFile();
+		//			}
+		//		}catch(Exception e){
+		//			System.out.println("Error: can not build file: namespaces.term.");
+		//			System.exit(1);
+		//		}
+
 		// pw.print("Namespaces(");
 		for (Iterator it = known.keySet().iterator(); it.hasNext();) {
 			String ns = (String) it.next();
 			ATermAppl nsA = strToATermAppl(ns);
 			ATermAppl shrt = strToATermAppl((String) known.get(ns));
-			nsList = factory.makeList(factory.makeAppl(nsFun2, shrt, nsA), nsList);
+			nsList = factory.makeList(factory.makeAppl(nsFun2, shrt, nsA),
+					nsList);
 			// pw.print(" NS( " + shrt + ",\"<" + ns + ">\")");
 		}
 		for (int i = 0; i < shortNames.size(); i++) {
 			if (i < names.length) {
 				ATermAppl ns = strToATermAppl((String) shortNames.get(i));
 				ATermAppl nl = strToATermAppl(names[i]);
-				nsList = factory.makeList(factory.makeAppl(nsFun2, nl, ns), nsList);
+				nsList = factory.makeList(factory.makeAppl(nsFun2, nl, ns),
+						nsList);
 				// pw.print(" NS( " + names[i] + ",\"<" + ns + ">\")");
 			}
 		}
-//		
-//		try{
-//			ATermAppl result = factory.makeAppl(nsFun1, nsList.reverse());
-//			result.writeToSharedTextFile(new FileOutputStream(file, true));
-//		}catch(Exception e){
-//			System.out.println("Exception by buildNamespeces: \t" + e);
-//		}
+		//		
+		//		try{
+		//			ATermAppl result = factory.makeAppl(nsFun1, nsList.reverse());
+		//			result.writeToSharedTextFile(new FileOutputStream(file, true));
+		//		}catch(Exception e){
+		//			System.out.println("Exception by buildNamespeces: \t" + e);
+		//		}
 		return factory.makeAppl(nsFun1, nsList.reverse());
 	}
 
@@ -793,9 +841,10 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 				ssp = ssp + "#";
 			}
 			if (known.keySet().contains(ssp)) {
-				// return factory.parse((String) known.get(ssp) + ":" + uri.getFragment()).toString();
-				return (String) known.get(ssp) + "{" + uri.getFragment() + "}";
- 			}
+				// return factory.parse((String) known.get(ssp) + ":" +
+				// uri.getFragment()).toString();
+				return (String) known.get(ssp) + ":" + uri.getFragment();
+			}
 			if (shortNames.contains(ssp)) {
 				/*
 				 * Check whether the fragment is ok, e.g. just contains letters.
@@ -814,19 +863,21 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 									.charAt(i) == '_');
 				}
 				if (fragOk && (shortNames.indexOf(ssp)) < names.length) {
-					// return factory.parse((names[shortNames.indexOf(ssp)]) + ":" + frag).toString();
-					return names[shortNames.indexOf(ssp)] + "{" + frag + "}";
+					// return factory.parse((names[shortNames.indexOf(ssp)]) +
+					// ":" + frag).toString();
+					return names[shortNames.indexOf(ssp)] + ":" + frag;
 				}
 				/* We can't shorten it -- there are too many... */
 				return "<" + uri.toString() + ">";
 			}
 		} catch (URISyntaxException ex) {
-			System.out.println("Exception by buiding an shortform of URI:" + ex);
+			System.out
+					.println("Exception by buiding an shortform of URI:" + ex);
 		}
 		return "<" + uri.toString() + ">";
 	}
 
-	// Return a collection, ordered by the URIs. 
+	// Return a collection, ordered by the URIs.
 	private SortedSet orderedEntities(Set entities) {
 		SortedSet ss = new TreeSet(new Comparator() {
 			public int compare(Object o1, Object o2) {
@@ -846,34 +897,35 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		if (term == null || "".equals(term)) {
 			return strToATermAppl("_");
 		} else {
-			String result = reduceComma(trag(term).trim().replace(' ', ','));
-			try{
+			String result = trag(term);
+
+			try {
 				return factory.parse(result);
-			}catch(Exception e){
+			} catch (Exception e) {
 				return factory.parse("\"" + result + "\"");
 			}
-//			return reduceComma(trag(term).trim().replace(' ', ','));
+			//			return reduceComma(trag(term).trim().replace(' ', ','));
 		}
 	}
-	
-	private String reduceComma(String str){
-		StringBuffer sw = new StringBuffer();
-		boolean hasComma = false;
-		
-		for(int i = 0; i < str.length(); i++){
-			char c = str.charAt(i);
-			if(!hasComma && c == ','){
-				sw.append(c);
-				hasComma = true;
-			}else if(c == ','){
-				continue;
-			}else{
-				sw.append(c);
-				hasComma = false;
-			}
-		}
-		return sw.toString();
-	}
+
+	//	private String reduceComma(String str) {
+	//		StringBuffer sw = new StringBuffer();
+	//		boolean hasComma = false;
+	//
+	//		for (int i = 0; i < str.length(); i++) {
+	//			char c = str.charAt(i);
+	//			if (!hasComma && c == ',') {
+	//				sw.append(c);
+	//				hasComma = true;
+	//			} else if (c == ',') {
+	//				continue;
+	//			} else {
+	//				sw.append(c);
+	//				hasComma = false;
+	//			}
+	//		}
+	//		return sw.toString();
+	//	}
 
 	/* for XML Language trag */
 	private String trag(String str) {
@@ -881,45 +933,73 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		StringBuffer sw = new StringBuffer();
 		// String str = o.toString();
 		boolean changed = false;
+		boolean changed2 = false;
 		for (int i = 0; i < str.length(); i++) {
 			char c = str.charAt(i);
 			if (c != '^' && c != '@') {
 				sw.append(c);
+			} else if(c == '^'){
+				sw.delete(i, ++i);
+				sw.append(',');
+				sw.append('\"');
+				sw.insert(0, "TypedL((");
+				changed = true;
+				
 			} else {
-				if (sw.charAt(sw.length() - 1) == '"') {
-					sw.deleteCharAt(sw.length() - 1);
-					changed = true;
+				sw.deleteCharAt(i);
+				sw.append('\"');
+				if(i == str.length()-1){
+					sw.insert(0, "Plain(");
+					changed2 = true;
+				}else{
+					sw.insert(0, "PlainL((");
 				}
-				sw.append(c);
+				changed = true;
 			}
 		}
-		if (changed)
-			sw.append('"');
+		if (changed2){
+			sw.append("\")");
+		}
+		else if(changed){
+				sw.append("\"))");
+		}
+//			else {
+//				if (sw.charAt(sw.length() - 1) == '"') {
+//					sw.deleteCharAt(sw.length() - 1);
+//					changed = true;
+//				}
+//				sw.append(c);
+//			}
+//		}
+//		if (changed)
+//			sw.append('"');
 		return sw.toString();
+		
 	}
 
-	private String handelDP(String term) {
-		StringBuffer sw = new StringBuffer();
-		for (int i = 0; i < term.length(); i++) {
-			char c = term.charAt(i);
-			if (c != ':') {
-				sw.append(c);
-			} else {
-				for (int j = sw.length() - 1; j >= 0; j--) {
-					if (sw.charAt(j) == ',' || sw.charAt(j) == '(') {
-						sw.insert(j + 1, '"');
-					}
-				}
-				sw.append(c);
-			}
-		}
-		return sw.toString();
-	}
-/*
-	private void setWriter(Writer writer) {
-		this.pw = new PrintWriter(writer);
-	}
-*/
+	//
+	//	private String handelDP(String term) {
+	//		StringBuffer sw = new StringBuffer();
+	//		for (int i = 0; i < term.length(); i++) {
+	//			char c = term.charAt(i);
+	//			if (c != ':') {
+	//				sw.append(c);
+	//			} else {
+	//				for (int j = sw.length() - 1; j >= 0; j--) {
+	//					if (sw.charAt(j) == ',' || sw.charAt(j) == '(') {
+	//						sw.insert(j + 1, '"');
+	//					}
+	//				}
+	//				sw.append(c);
+	//			}
+	//		}
+	//		return sw.toString();
+	//	}
+
+	/*
+	 * private void setWriter(Writer writer) { this.pw = new
+	 * PrintWriter(writer); }
+	 */
 	private ATermList makeAnno(Iterator it) throws OWLException {
 
 		// AFun annoFun = factory.makeAFun("Annotation", 2, false);
@@ -929,18 +1009,24 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		for (; it.hasNext();) {
 			OWLAnnotationInstance oai = (OWLAnnotationInstance) it.next();
 
-			annoCont = renderAnnotationContent(false, oai.getContent(), shortForm(oai
-					.getProperty().getURI()));
+			annoCont = renderAnnotationContent(false, oai.getContent(),
+					shortForm(oai.getProperty().getURI()));
 			annos = factory.makeList(annoCont, annos);
 			visitor.reset();
 			oai.accept(visitor);
 		}
 		return annos.reverse();
 	}
-	
 
 	public static ATermAppl strToATermAppl(String str) {
+		//		if (str.length() > 2 && str.charAt(1) == '{') {
+		//			return factory.makeAppl(factory.makeAFun(str, 0, false));
+		//		} else
 		return factory.makeAppl(factory.makeAFun(str, 0, true));
+	}
+
+	public static ATermAppl strToATermAppl1(String str) {
+		return factory.makeAppl(factory.makeAFun(str, 0, false));
 	}
 
 } // Renderer
