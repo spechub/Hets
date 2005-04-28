@@ -73,8 +73,8 @@ printTheory ln le ga dg (sn, ge) = case ge of
                    Just (sign, sens2) -> let
                      sens = zipWith (\ s i -> 
                                     s { senName = transStringT 
-                                                  (baseSig sign) (senName s)
-                                          ++ "_" ++ show i }) sens2
+                                                  (baseSig sign) (senName s
+                                          ++ "_" ++ show i) }) sens2
                            [1::Int .. ]
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
                           ++ "_" ++ showPretty sn ""
