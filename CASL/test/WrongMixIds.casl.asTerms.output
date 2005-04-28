@@ -158,3 +158,11 @@ parse error at 49.1:
 unexpected "<=>"
 expecting "%", "(", "{", "[" or id/literal
 
+parse error at 50.1:
+unexpected "type"
+expecting "%", "(", "{", "[" or id/literal
+
+parse error at 51.1:
+unexpected "cotype"
+expecting "%", "(", "{", "[" or id/literal
+

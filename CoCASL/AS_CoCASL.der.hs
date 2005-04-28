@@ -58,13 +58,10 @@ data C_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA C_FORMULA) [Pos]
                -- flag: belongs to a cofree type and hence is cofreeness axiom?
              deriving (Eq, Ord, Show)
 
-cotypeS, cotypesS, cogeneratedS, diamondS, greaterS 
+diamondS, greaterS 
     :: String 
-cotypeS = "cotype"
-cotypesS = "cotypes"
-cogeneratedS = "cogenerated"
 diamondS = "<>"
 greaterS = ">"
 
 cocasl_reserved_words :: [String]
-cocasl_reserved_words = [cotypeS, cotypesS, cogeneratedS, diamondS]
+cocasl_reserved_words = [diamondS]

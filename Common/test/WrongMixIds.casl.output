@@ -192,3 +192,11 @@ parse error at 49.1:
 unexpected "<=>"
 expecting id
 
+parse error at 50.1:
+unexpected "type"
+expecting id
+
+parse error at 51.1:
+unexpected "cotype"
+expecting id
+

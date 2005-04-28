@@ -93,8 +93,9 @@ casl_reserved_fops = formula_ops ++ casl_reserved_ops
 -- | reserved keywords
 casl_basic_reserved_words :: [String]
 casl_basic_reserved_words =
-    [axiomS, axiomS ++ sS, existsS, forallS, freeS, generatedS, 
-     opS, opS ++ sS, predS, predS ++ sS, 
+    [axiomS, axiomS ++ sS, cogeneratedS, cotypeS, cotypeS ++ sS,
+     existsS, forallS, freeS, generatedS, 
+     opS, opS ++ sS, predS, predS ++ sS,
      sortS, sortS ++ sS, typeS, typeS ++ sS, varS, varS ++ sS]
 
 -- | reserved keywords
