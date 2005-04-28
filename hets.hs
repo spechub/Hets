@@ -35,6 +35,7 @@ import Logic.Grothendieck
 import Static.AnalysisLibrary
 import Static.DevGraph
 import Static.PrintDevGraph
+import Isabelle.CreateTheories
 
 --import Syntax.Print_HetCASL
 #ifdef UNI_PACKAGE
@@ -101,6 +102,7 @@ processFile opt file =
                                    when (hasEnvOut opt)
                                         (writeFileInfo opt ds file ln lenv)
                                    putIfVerbose opt 5 (showPretty lenv "")
+                                   doIfVerbose opt 5 (printLibEnv lenv)
                                    --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)
