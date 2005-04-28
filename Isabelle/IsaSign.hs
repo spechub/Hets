@@ -269,7 +269,12 @@ emptyTypeSig = TySg {
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data Sign = Sign { baseSig :: IName, -- like Pure, HOL, Main etc.
+data BaseSig = Pure_thy | HOL_thy | HOLCF_thy | Main_thy | MainHC_thy
+             deriving (Eq, Ord, Show) 
+             {- possibly simply supply a theory like MainHC as string 
+                or recursively as Isabelle.Sign -}
+
+data Sign = Sign { baseSig :: BaseSig, -- like Pure, HOL, Main etc.
                    tsig :: TypeSig,
                    constTab :: ConstTab,  -- value cons with type
                    domainTab :: DomainTab,  
@@ -297,7 +302,7 @@ type DomainEntry = (Typ,[DomainAlt])
 type DomainAlt = (VName,[Typ])
 
 emptySign :: Sign
-emptySign = Sign { baseSig = "Pure",
+emptySign = Sign { baseSig = Pure_thy,
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
                    dataTypeTab = [],

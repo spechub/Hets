@@ -166,7 +166,7 @@ isaProve checkCons thName (sig,axs) goals = do
                    ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
       showConsTheory = 
          "theory " ++ getFN thName ++ " = " 
-         ++ baseSig sig++" : \n"
+         ++ showBaseSig (baseSig sig) ++" : \n"
          ++ "lemma inconsistent:\n "
          ++ "\"~( (" 
          ++ concat (intersperse " ) & \\\n(" 

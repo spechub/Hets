@@ -167,7 +167,7 @@ transSignature :: HatAna.Sign -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 
 transSignature sign = Result [] 
  (Just (IsaSign.Sign{
-    baseSig = "MainHC",
+    baseSig = HOLCF_thy,
     tsig = emptyTypeSig 
            { 
              classrel = getClassrel (HatAna.types sign),

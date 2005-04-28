@@ -96,8 +96,8 @@ instance Comorphism CASL2IsabelleHOL
 
 
 ---------------------------- Signature -----------------------------
-baseSign :: String
-baseSign = "Main"
+baseSign :: BaseSig
+baseSign = Main_thy
 
 transTheory :: SignTranslator f e ->
                FormulaTranslator f e ->

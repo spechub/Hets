@@ -79,8 +79,8 @@ instance Comorphism HasCASL2IsabelleHOL
 
 
 -- ============================ Signature ================================== --
-baseSign :: String
-baseSign = "MainHC"
+baseSign :: BaseSig
+baseSign = MainHC_thy
 
 transSignature :: Env
                    -> Result (IsaSign.Sign,[Named IsaSign.Sentence]) 

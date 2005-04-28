@@ -26,6 +26,12 @@ import qualified Common.Lib.Map as Map
 
 ------------------- Printing functions -------------------
 
+showBaseSig :: BaseSig -> String
+showBaseSig = reverse . drop 4 . reverse . show
+
+instance PrettyPrint BaseSig where
+     printText0 _ s = text $ showBaseSig s
+
 instance PrettyPrint IsaClass where
      printText0 _ (IsaClass c) = parens $ text c
 
@@ -370,7 +376,7 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
 
 instance PrettyPrint Sign where
-  printText0 ga sig = text
+  printText0 ga sig = printText0 ga
     (baseSig sig) <> colon $$
     printText0 ga (tsig sig) $$
     showDataTypeDefs (dataTypeTab sig) $$

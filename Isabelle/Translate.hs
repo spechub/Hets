@@ -21,17 +21,18 @@ import Isabelle.IsaSign
 import Isabelle.IsaStrings
 
 ------------------- Id translation functions -------------------
-isaPrelude :: Map.Map IName (Set.Set String)
+isaPrelude :: Map.Map BaseSig (Set.Set String)
 isaPrelude = Map.fromList 
-  [("MainHC", foldr Set.insert mainS ["pApp","apt","app","defOp","pair"]),
-   ("Main", mainS), ("HOLCF", holcfS), ("HOL", holS)]
+  [(MainHC_thy, foldr Set.insert mainS ["pApp","apt","app","defOp","pair"]),
+   (Main_thy, mainS), (HOLCF_thy, holcfS), 
+   (HOL_thy, holS), (Pure_thy, pureS)]
 
-showIsaT :: Id -> IName -> String 
+showIsaT :: Id -> BaseSig -> String 
 showIsaT ident theory = let sident = transString $ show ident in
   if Set.member sident $ Map.findWithDefault Set.empty theory isaPrelude 
   then sident++"X" else sident
 
-showIsaIT :: Id -> Int -> IName -> String
+showIsaIT :: Id -> Int -> BaseSig -> String
 showIsaIT ident i theory = showIsaT ident theory ++ "_" ++ show i
 
 replaceChar1 :: Char -> String
