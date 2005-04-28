@@ -11,7 +11,7 @@ Portability :  portable
    translate 'Id' to Isabelle strings
 -}
 
-module Isabelle.Translate (showIsaT, showIsaIT, replaceChar, transString) where
+module Isabelle.Translate (showIsaT, showIsaIT, transStringT) where
 
 import Common.Id 
 import qualified Common.Lib.Map as Map
@@ -28,189 +28,162 @@ isaPrelude = Map.fromList
    (HOL_thy, holS), (Pure_thy, pureS)]
 
 showIsaT :: Id -> BaseSig -> String 
-showIsaT ident theory = let sident = transString $ show ident in
-  if Set.member sident $ Map.findWithDefault Set.empty theory isaPrelude 
-  then sident++"X" else sident
+showIsaT ide thy = let 
+    rdru = reverse . dropWhile (== '_') 
+    tr = transStringT thy
+    str = show ide 
+    in if isInfix ide then "XX" ++ tr (rdru $ rdru str) else tr str
+    -- otherwise cutting off may lead to a name clash!
 
 showIsaIT :: Id -> Int -> BaseSig -> String
 showIsaIT ident i theory = showIsaT ident theory ++ "_" ++ show i
 
-replaceChar1 :: Char -> String
-replaceChar1 c | isIsaChar c = [c] 
-               | otherwise = replaceChar c++"X"
+transStringT :: BaseSig -> String -> String
+transStringT i s = let t = transString s in
+  if Set.member t $ Map.findWithDefault Set.empty i isaPrelude 
+  then t ++ "X" else t
 
 transString :: String -> String
-transString "" = "X"
-transString (c:s) = 
-   if isInf (c:s) then concatMap replaceChar1 $ cut (c:s)
-     else (if isAlpha c && isAscii c then [c] 
-              else 'X':replaceChar1 c) ++ concatMap replaceChar1 s
+transString str = let 
+    x = 'X'
+    replaceChar1 d | d == x = "YX"  -- code out existing X!
+                   | isIsaChar d = [d] 
+                   | otherwise = replaceChar d ++ [x]
+    in case str of 
+    "" -> [x]
+    c : s -> let l = replaceChar1 c in 
+             (if isDigit c || c `elem` "_'" then [x, c]
+             else l) ++ concatMap replaceChar1 s
 
-isInf :: String -> Bool
-isInf s = has2Under s && has2Under (reverse s)
-
-has2Under :: String -> Bool
-has2Under (fs:sn:_) = fs == '_' && sn == '_'
-has2Under _ = False
-
-cut :: String -> String
-cut = reverse . tail . tail . reverse . tail . tail
-
--- Replacement of special characters
-
+-- | Replacement of special characters (non-injective)
 replaceChar :: Char -> String
-replaceChar c = if isIsaChar c then [c] else 
-                Map.findWithDefault "_" c $ Map.fromList 
+-- <http://www.htmlhelp.com/reference/charset/>
+replaceChar c = if isIsaChar c then [c] else let n = ord c in 
+    if n <= 32 || n >= 127 && n < 160 || n > 255 then "Slash_" ++ show n 
+    else maybe (error "Isabelle.replaceChar") id $ Map.lookup c $ Map.fromList 
  [('!' , "Exclam"),
-  ('#' , "Sharp"),
+  ('"' , "Quot"),
+  ('#' , "Hash"),
   ('$' , "Dollar"),
   ('%' , "Percent"),
   ('&' , "Amp"),
-  ('(' , "OBra"),
-  (')' , "CBra"),
-  ('*' , "x"),
+  ('(' , "OBr"),
+  (')' , "CBr"),
+  ('*' , "x"), 
   ('+' , "Plus"),
   (',' , "Comma"),
   ('-' , "Minus"),
-  ('.' , "Dot"),
-  ('/' , "Div"),
+  ('.' , "Period"), -- Dot?
+  ('/' , "Slash"), -- Div?
   (':' , "Colon"),
   (';' , "Semi"),
   ('<' , "Lt"),
   ('=' , "Eq"),
   ('>' , "Gt"),
-  ('?' , "Q"),
+  ('?' , "Quest"),
   ('@' , "At"),
-  ('\\' , "Back"),
-  ('^' , "Hat"),
-  ('`' , "'"),
-  ('{' , "Cur"),
-  ('|' , "Bar"),
-  ('}' , "Ruc"),
+  ('[' , "OSqBr"),
+  ('\\' , "Bslash"),
+  (']' , "CSqBr"),        
+  ('^' , "Caret"), -- Hat?
+  ('`' , "Grave"),
+  ('{' , "LBrace"),
+  ('|' , "VBar"),
+  ('}' , "RBrace"),
   ('~' , "Tilde"),
-  ('\128' , "A1"),
-  ('\129' , "A2"),
-  ('\130' , "A3"),
-  ('\131' , "A4"),
-  ('\132' , "A5"),
-  ('\133' , "A6"),
-  ('\134' , "AE"),
-  ('\135' , "C"),
-  ('\136' , "E1"),
-  ('\137' , "E2"),
-  ('\138' , "E3"),
-  ('\139' , "E4"),
-  ('\140' , "I1"),
-  ('\141' , "I2"),
-  ('\142' , "I3"),
-  ('\143' , "I4"),
-  ('\144' , "D1"),
-  ('\145' , "N1"),
-  ('\146' , "O1"),
-  ('\147' , "O2"),
-  ('\148' , "O3"),
-  ('\149' , "O4"),
-  ('\150' , "O5"),
-  ('\151' , "x"),
-  ('\152' , "O"),
-  ('\153' , "U1"),
-  ('\154' , "U2"),
-  ('\155' , "U3"),
-  ('\156' , "U4"),
-  ('\157' , "Y"),
-  ('\158' , "F"),
-  ('\159' , "ss"),
-  ('¡' , "SpanishExclam"),
-  ('¢' , "c"),
-  ('£' , "Lb"),
-  ('¤' , "o"),
-  ('¥' , "Yen"),
-  ('¦' , "Bar1"),
-  ('§' , "Paragraph"),
-  ('¨' , "\'"),
-  ('©' , "Copyright"),
-  ('ª' , "a1"),
-  ('«' , "\'"),
+  ('\160', "nbsp"),
+  ('¡' , "iexcl"),
+  ('¢' , "cent"),
+  ('£' , "pound"),
+  ('¤' , "curren"),
+  ('¥' , "yen"),
+  ('¦' , "brvbar"),
+  ('§' , "sect"),
+  ('¨' , "uml"),
+  ('©' , "copy"),
+  ('ª' , "ordf"),
+  ('«' , "laquo"),
   ('¬' , "not"),
-  ('­' , "Minus1"),
-  ('®' , "Regmark"),
-  ('°' , "Degree"),
-  ('±' , "Plusminus"),
-  ('²' , "2"),
-  ('³' , "3"),
-  ('´' , "'"),
-  ('µ' , "Mu"),
-  ('¶' , "q"),
-  ('·' , "Dot"),
-  ('¸' , "'"),
-  ('¹' , "1"),
-  ('º' , "2"),
-  ('»' , "\'"),
-  ('¼' , "Quarter"),
-  ('½' , "Half"),
-  ('¾' , "Threequarter"),
-  ('¿' , "Q"),
-  ('À' , "A7"),
-  ('Á' , "A8"),
-  ('Â' , "A9"),
-  ('Ã' , "A10"),
-  ('Ä' , "A11"),
-  ('Å' , "A12"),
-  ('Æ' , "AE2"),
-  ('Ç' , "C2"),
-  ('È' , "E5"),
-  ('É' , "E6"),
-  ('Ê' , "E7"),
-  ('Ë' , "E8"),
-  ('Ì' , "I5"),
-  ('Í' , "I6"),
-  ('Î' , "I7"),
-  ('Ï' , "I8"),
-  ('Ð' , "D2"),
-  ('Ñ' , "N2"),
-  ('Ò' , "O6"),
-  ('Ó' , "O7"),
-  ('Ô' , "O8"),
-  ('Õ' , "O9"),
-  ('Ö' , "O10"),
-  ('×' , "xx"),
-  ('Ø' , "011"),
-  ('Ù' , "U5"),
-  ('Ú' , "U6"),
-  ('Û' , "U7"),
-  ('Ü' , "U8"),
-  ('Ý' , "Y"),
-  ('Þ' , "F"),
-  ('ß' , "ss"),
-  ('à' , "a2"),
-  ('á' , "a3"),
-  ('â' , "a4"),
-  ('ã' , "a5"),
-  ('ä' , "a6"),
-  ('å' , "a7"),
-  ('æ' , "ae"),
-  ('ç' , "c"),
-  ('è' , "e1"),
-  ('é' , "e2"),
-  ('ê' , "e3"),
-  ('ë' , "e4"),
-  ('ì' , "i1"),
-  ('í' , "i2"),
-  ('î' , "i3"),
-  ('ï' , "i4"),
-  ('ð' , "d"),
-  ('ñ' , "n"),
-  ('ò' , "o1"),
-  ('ó' , "o2"),
-  ('ô' , "o3"),
-  ('õ' , "o4"),
-  ('ö' , "o5"),
-  ('÷' , "Div1"),
-  ('ø' , "o6"),
-  ('ù' , "u1"),
-  ('ú' , "u2"),
-  ('û' , "u3"),
-  ('ü' , "u4"),
-  ('ý' , "y5"),
-  ('þ' , "f"),
-  ('ÿ' , "y")]
+  ('­' , "shy"),
+  ('®' , "reg"),
+  ('\175', "macr"), 
+  ('°' , "deg"),
+  ('±' , "plusmn"),
+  ('²' , "sup2"),
+  ('³' , "sup3"),
+  ('´' , "acute"),
+  ('µ' , "micro"),
+  ('¶' , "para"),
+  ('·' , "middot"),
+  ('¸' , "cedil"),
+  ('¹' , "sup1"),
+  ('º' , "ordm"),
+  ('»' , "raquo"),
+  ('¼' , "quarter"),
+  ('½' , "half"),
+  ('¾' , "frac34"),
+  ('¿' , "iquest"),
+  ('À' , "Agrave"),
+  ('Á' , "Aacute"),
+  ('Â' , "Acirc"),
+  ('Ã' , "Atilde"),
+  ('Ä' , "Auml"),
+  ('Å' , "Aring"),
+  ('Æ' , "AElig"),
+  ('Ç' , "Ccedil"),
+  ('È' , "Egrave"),
+  ('É' , "Eacute"),
+  ('Ê' , "Ecirc"),
+  ('Ë' , "Euml"),
+  ('Ì' , "Igrave"),
+  ('Í' , "Iacute"),
+  ('Î' , "Icirc"),
+  ('Ï' , "Iuml"),
+  ('Ð' , "ETH"),
+  ('Ñ' , "Ntilde"),
+  ('Ò' , "Ograve"),
+  ('Ó' , "Oacute"),
+  ('Ô' , "Ocirc"),
+  ('Õ' , "Otilde"),
+  ('Ö' , "Ouml"),
+  ('×' , "Times"),
+  ('Ø' , "OSlash"),
+  ('Ù' , "Ugrave"),
+  ('Ú' , "Uacute"),
+  ('Û' , "Ucirc"),
+  ('Ü' , "Uuml"),
+  ('Ý' , "Yacute"),
+  ('Þ' , "THORN"),
+  ('ß' , "szlig"),
+  ('à' , "agrave"),
+  ('á' , "aacute"),
+  ('â' , "acirc"),
+  ('ã' , "atilde"),
+  ('ä' , "auml"),
+  ('å' , "aring"),
+  ('æ' , "aelig"),
+  ('ç' , "ccedil"),
+  ('è' , "egrave"),
+  ('é' , "eacute"),
+  ('ê' , "ecirc"),
+  ('ë' , "euml"),
+  ('ì' , "igrave"),
+  ('í' , "iacute"),
+  ('î' , "icirc"),
+  ('ï' , "iuml"),
+  ('ð' , "eth"),
+  ('ñ' , "ntilde"),
+  ('ò' , "ograve"),
+  ('ó' , "oacute"),
+  ('ô' , "ocirc"),
+  ('õ' , "otilde"),
+  ('ö' , "ouml"),
+  ('÷' , "Divide"),
+  ('ø' , "oslash"),
+  ('ù' , "ugrave"),
+  ('ú' , "uacute"),
+  ('û' , "ucirc"),
+  ('ü' , "uuml"),
+  ('ý' , "yacute"),
+  ('þ' , "thorn"),
+  ('ÿ' , "yuml")]

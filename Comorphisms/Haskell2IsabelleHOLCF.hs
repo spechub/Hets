@@ -190,7 +190,7 @@ transSignature sign = Result []
 -- showIsaS x = (Translate.transString) (show x)
 --showIsaS x = (show x)
 showIsaS :: String -> IsaSign.IName
-showIsaS x = Translate.transString x
+showIsaS x = transStringT HOLCF_thy x
 
 
 showIsaPNT :: PNT -> IsaSign.IName

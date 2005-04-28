@@ -36,6 +36,7 @@ import Comorphisms.CASL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
+import Isabelle.IsaSign
 import Data.Maybe
 
 printLibEnv :: LibEnv -> IO ()
@@ -71,7 +72,8 @@ printTheory ln le ga dg (sn, ge) = case ge of
                    Nothing -> putStrLn $ showPretty r3 ""
                    Just (sign, sens2) -> let
                      sens = zipWith (\ s i -> 
-                                    s { senName = transString (senName s)
+                                    s { senName = transStringT 
+                                                  (baseSig sign) (senName s)
                                           ++ "_" ++ show i }) sens2
                            [1::Int .. ]
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)

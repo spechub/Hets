@@ -390,7 +390,7 @@ instance PrettyPrint Sign where
       else text("consts") $$ Map.foldWithKey showConst empty tab
     showConst c t rest = text (show c ++ " :: " ++ "\"" ++ showTyp 1000 t 
                                 ++ "\"" ++ showDecl c) $$ rest
-    showDecl c = sp ++ sp ++ sp ++ "( \"" ++ quote_underscores c ++ "\" )"
+    showDecl c = sp -- ++ sp ++ sp ++ "( \"" ++ quote_underscores c ++ "\" )"
     showDataTypeDefs dtDefs = vcat $ map (text . showDataTypeDef) dtDefs
     showDataTypeDef [] = ""
     showDataTypeDef (dt:dts) = 

@@ -117,13 +117,14 @@ isaProve checkCons thName (sig,axs) goals = do
       patchName = thName'++".patch"
       provedName = thName'++"_proved.thy"
       theory = if checkCons then showConsTheory else showTheory
-      disAxs = disambiguateSens [] $ nameSens $ transSens axs
+      disAxs = transSens (baseSig sig) $ disambiguateSens [] $ nameSens axs
       (lemmas, decs) = unzip (map formLemmas disAxs)
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
       showAxs = concat $ map ((++"\n") . showSen) (markSimp disAxs)
-      disGoals = disambiguateSens disAxs $ nameSens $ transSens goals
+      disGoals = transSens (baseSig sig) $ disambiguateSens disAxs $ nameSens 
+                 goals
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
       showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) goal
@@ -200,8 +201,8 @@ isConst Const {}   = True
 isConst _          = False
 
 -- translate special characters in sentence names
-transSens :: [Named a] -> [Named a]
-transSens = map (\ax -> ax{senName = concatMap replaceChar $ senName ax})
+transSens :: BaseSig -> [Named a] -> [Named a]
+transSens thy = map (\ax -> ax{senName = transStringT thy $ senName ax})
 
 -- disambiguate sentence names
 disambiguateSens :: [Named a] -> [Named a] -> [Named a]
