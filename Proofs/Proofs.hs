@@ -174,8 +174,11 @@ applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
 applyRule = error "Proofs.hs:applyRule"
 
 
+{- automatically applies all rules to the library
+   denoted by the library name of the given proofstatus-}
 automatic :: ProofStatus -> IO ProofStatus
 automatic = automaticRecursive 0
+
 
 {- applies the rules recursively until no further changes can be made -}
 automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
@@ -198,6 +201,8 @@ automaticApplyRules p = do
   hideTheoremShift True p4
 
 
+{- merges for every library the new history elements
+   to one new history element -}
 mergeHistories :: Int -> ProofStatus -> IO (Maybe ProofStatus)
 mergeHistories cnt proofstatus@(ln,libEnv,_) = do
   (numChanges,newProofstatus) <- mergeHistoriesAux cnt (libNames) proofstatus
@@ -209,6 +214,8 @@ mergeHistories cnt proofstatus@(ln,libEnv,_) = do
     libNames = Map.keys libEnv
 
 
+{- auxiliary method for mergeHistories:
+   determined the library names and recursively applies mergeHistory -}
 mergeHistoriesAux :: Int -> [LIB_NAME] -> ProofStatus -> IO (Int,ProofStatus)
 mergeHistoriesAux cnt [] proofstatus = return (0,proofstatus)
 mergeHistoriesAux cnt (ln:list) proofstatus = do
@@ -220,6 +227,8 @@ mergeHistoriesAux cnt (ln:list) proofstatus = do
     Nothing -> mergeHistoriesAux cnt list proofstatus
 
 
+{- merges the new history elements of a single library
+   to one new history elemebt-}
 mergeHistory :: Int -> ProofStatus -> IO (Maybe ProofStatus)
 mergeHistory cnt proofstatus@(ln,libEnv,historyMap) = do
   let history = lookupHistory ln proofstatus
@@ -234,6 +243,7 @@ mergeHistory cnt proofstatus@(ln,libEnv,historyMap) = do
     return (Just (ln,libEnv,Map.insert ln newHistory historyMap))
 
 
+{- concats the given history elements to one history element-}
 concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
 concatHistoryElems [] = ([],[])
 concatHistoryElems ((rules,changes):elems) =
@@ -403,7 +413,7 @@ globSubsume proofStatus@(ln,libEnv,_) = do
   let dgraph = lookupDGraph ln proofStatus
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     -- the 'nub' is just a workaround, because some of the edges in the graph
-    -- do not differ from each other in this represetation - which causes
+    -- do not differ from each other in this representation - which causes
     -- problems on deletion
       result = globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
       nextDGraph = fst result
@@ -887,28 +897,35 @@ handleLeaves proofstatus (node:list) = do
   handleLeaves auxProofstatus list
 
 
+{- returns the global context that belongs to the given library name-}
 lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
 lookupGlobalContext ln (_,libEnv,_) =
   case Map.lookup ln libEnv of
     Nothing -> lookupDGraphError ln
     Just globalContext -> globalContext
 
+{- returns the development graph that belongs to the given library name-}
 lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
 lookupDGraph ln proofstatus = dgraph
   where
     (_,_,dgraph) = lookupGlobalContext ln proofstatus
 
+{- returns the history that belongs to the given library name-}
 lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
 lookupHistory ln (_,_,historyMap) =
   case Map.lookup ln historyMap of
     Nothing -> []
     Just history -> history
 
+{- updates the history belonging to the given library name,
+   inserting the given changes-}
 updateHistory :: LIB_NAME -> [DGChange] -> ProofStatus -> ProofStatus
 updateHistory ln changes proofstatus@(l,libEnv,historyMap) =
   (l, libEnv,
   Map.insert ln (addChanges changes (lookupHistory ln proofstatus)) historyMap)
 
+{- replaces the development graph belonging to the given library name
+   with the given graph-}
 updateLibEnv :: LIB_NAME -> DGraph -> ProofStatus -> ProofStatus
 updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
   (l,
@@ -917,6 +934,8 @@ updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
    libEnv,
    historyMap)
 
+{- updates the library environment and the proof history of the given
+   proofstatus for the given library name-}
 updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
 		  -> ProofStatus
 updateProofStatus ln dgraph changes proofstatus =
@@ -924,10 +943,13 @@ updateProofStatus ln dgraph changes proofstatus =
   where
     proofstatusAux = updateLibEnv ln dgraph proofstatus
 
+{- replaces the development graph of the given global context with
+   the given graph-}
 updateDGraphInGlobalContext :: DGraph -> GlobalContext -> GlobalContext
 updateDGraphInGlobalContext dgraph (gAnnos,gEnv,_) = (gAnnos,gEnv,dgraph)
 
 
+{- converts the given node to its own normal form -}
 convertToNf :: ProofStatus -> Node -> IO ProofStatus
 convertToNf proofstatus@(ln,libEnv,history) node = do
   let dgraph = lookupDGraph ln proofstatus
@@ -943,7 +965,7 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
       return (updateProofStatus ln (delNode node finalGraph)
 	      finalChanges proofstatusAux)
 
-
+{- creates and inserts a normal form node from the given input -}
 mkNfNode :: Node -> Node -> Maybe G_sign -> ProofStatus -> IO ProofStatus
 mkNfNode node newNode maybeSign proofstatus@(ln,_,_) = do
   let nodelab = lab' (context node (lookupDGraph ln proofstatus))
@@ -953,6 +975,7 @@ mkNfNode node newNode maybeSign proofstatus@(ln,_,_) = do
 
 
 -- ist dgn_sigma so richtig?
+{- creates and inserts a normal form node of type DGNode -}
 mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
 	       -> IO ProofStatus
 mkDGNodeNfNode nodelab newNode maybeSign proofstatus = do
@@ -972,6 +995,7 @@ mkDGNodeNfNode nodelab newNode maybeSign proofstatus = do
 
 -- ist dgn_sigma so richtig?
 -- was soll mit dem sign gemacht werden, das ja ggf. aus gweakly.. stammt?
+{- creates and inserts a normal form node of type DGRef -}
 mkDGRefNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
 	      -> IO ProofStatus
 mkDGRefNfNode nodelab newNode maybeSign proofstatus@(ln,_,_) = do
@@ -994,7 +1018,8 @@ mkDGRefNfNode nodelab newNode maybeSign proofstatus@(ln,_,_) = do
 		     })
   return (insertNfNode (changeCurrentLibName ln auxProofstatus) lnode)
 
-
+{- inserts the given node into the development graph belonging
+   to the given library name and updates the proofstatus -}
 insertNfNode :: ProofStatus -> LNode DGNodeLab -> ProofStatus
 insertNfNode proofstatus@(ln,_,_) dgnode =
   updateProofStatus ln 
@@ -1002,16 +1027,18 @@ insertNfNode proofstatus@(ln,_,_) dgnode =
 		    [InsertNode dgnode]
 		    proofstatus
 
-
+{- changes the library name of the given proofstatus to the given name -}
 changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
 changeCurrentLibName ln (_,libEnv,historyMap) = (ln,libEnv,historyMap)
 
 
+{- adds the given changes to the given history -}
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
 addChanges changes [] = [([],changes)]
 addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
 
 
+{- adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 adoptEdges dgraph oldNode newNode = do
   let ingoingEdges = inn dgraph oldNode
@@ -1022,7 +1049,7 @@ adoptEdges dgraph oldNode newNode = do
 	  = adoptEdgesAux auxGraph outgoingEdges newNode False
   return (finalGraph, changes ++ furtherChanges)
 
-
+{- auxiliary method for adoptEdges -}
 adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
 		     -> (DGraph,[DGChange])
 adoptEdgesAux dgraph [] _ _ = (dgraph,[])
@@ -1037,7 +1064,8 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
     (finalGraph,furtherChanges) 
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 
-
+{- handles all nodes that are no leaves
+   (ie node that have ingoing edges of typeHidingDef) -}
 handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleNonLeaves proofstatus [] = return proofstatus
 handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
