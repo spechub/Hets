@@ -1,4 +1,4 @@
-import HUnit
+import Test.HUnit
 import SPASS.Sign
 import SPASS.Print
 
