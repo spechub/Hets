@@ -105,7 +105,7 @@ instance Comorphism CASL2TopSort
 data PredInfo = PredInfo { topSort_PI    :: SORT
                          , directSuperSorts_PI :: Set.Set SORT
                          , predicate_PI  :: PRED_NAME
-                         } deriving (Show,Ord,Eq)
+                         } deriving (Show, Ord, Eq)
 
 type SubSortMap = Map.Map SORT PredInfo
 
@@ -140,7 +140,7 @@ generateSubSortMap sortRels pMap =
                            error ("Something went wrong with: "++
                                   show k++';':show e++';':show s) 
             in PredInfo { topSort_PI = ts
-                        , directSuperSorts_PI = e Set.\\ mR
+                        , directSuperSorts_PI = Set.difference e mR
                         , predicate_PI = k }
         initMap = Map.filterWithKey (\k _ -> not (Set.member k mR))
             (Map.mapWithKey toPredInfo 
@@ -154,7 +154,7 @@ generateSubSortMap sortRels pMap =
 -- generated that each generated unary predicate must hold on at least
 -- one element of the top-sort.
 
-transSig :: Sign f e -> Result (Sign f e,[Named (FORMULA f)])
+transSig :: Sign f e -> Result (Sign f e, [Named (FORMULA f)])
 transSig sig 
     | Rel.isEmpty (sortRel sig) = 
         Result [Diag Hint (
@@ -179,7 +179,7 @@ transSig sig
                               Set.fromList (map topSort_PI 
                                                 (Map.elems subSortMap))
                               `Set.union`
-                              (sortSet sig Set.\\
+                              (sortSet sig `Set.difference`
                                Set.fromDistinctAscList (Map.keys subSortMap)) 
                         , sortRel = Rel.fromList []
                         , opMap   = transOpMap subSortMap (opMap sig)
@@ -203,7 +203,7 @@ transSig sig
                     Map.empty (Map.elems mp)
 
 transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType) 
-             -> Map.Map PRED_NAME (Set.Set PredType,[Diagnosis])
+             -> Map.Map PRED_NAME (Set.Set PredType, [Diagnosis])
 transPredMap subSortMap = Map.map (\s -> (Set.image transType s,[]))
     where transType t = t { predArgs = map (\s -> maybe s topSort_PI 
                                                   (Map.lookup s subSortMap))
@@ -259,7 +259,7 @@ symmetryAxioms ssMap sortRels =
                     "sort ts pred symS:ts\n\
                     \forall xVar : ts\n\
                     \. symS(xVar) %(_symmetric_with_)%")
-                        | s<-(Set.toList(symSet Set.\\ mR)),
+                        | s<-(Set.toList(Set.difference symSet mR)),
                           let ts = lkupTop ssMap s,
                           let symS = fromJust (lkupPRED_NAME ssMap s)] 
                           
@@ -331,7 +331,7 @@ mkProfMapPred ssm = Set.fold seperate Map.empty
           pt2preds = map (lkupPRED_NAME ssm) . predArgs
 
 mkProfMapOp :: OP_NAME -> SubSortMap -> Set.Set OpType 
-              -> Result (Map.Map [SORT] (FunKind,Set.Set [Maybe PRED_NAME]))
+              -> Result (Map.Map [SORT] (FunKind, Set.Set [Maybe PRED_NAME]))
 mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
     where seperate ot r@(Result dias mmap) =
               maybe r  

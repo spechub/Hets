@@ -63,10 +63,10 @@ data Hatchet = Hatchet deriving (Show)
 instance Language Hatchet where
  description _ = 
   "Haskell - a purely functional programming language, \ 
-  \featuring static typing, higher-order functions, polymorphism, \
+  \featuring static typing, higher-order functions, polymorphism, \ 
   \type classes and monadic effects. \ 
-  \See http://www.haskell.org. This version is based on Hatchet,\
-  \ see http://www.cs.mu.oz.au/~bjpop/hatchet.html"
+  \See http://www.haskell.org. This version is based on Hatchet, \ 
+  \see http://www.cs.mu.oz.au/~bjpop/hatchet.html"
 
 type Sign = ModuleInfo 
 type Morphism = ()
