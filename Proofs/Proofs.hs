@@ -177,58 +177,62 @@ applyRule = error "Proofs.hs:applyRule"
 automatic :: ProofStatus -> IO ProofStatus
 automatic = automaticRecursive 0
 
-
-automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
-automaticRecursive cnt proofStatus = do
-  (libname,libEnv,proofHistory) <- automaticAux proofStatus
-  proofHistoryAuxList <- automaticRecursiveAux cnt (Map.toList proofHistory)
-  let newProofHistory = Map.fromList proofHistoryAuxList
-  automaticRecursive 1 (libname,libEnv,newProofHistory)
-
-
-automaticRecursiveAux :: Int -> [(LIB_NAME,ProofHistory)]
-		      -> IO [(LIB_NAME,ProofHistory)]
-automaticRecursiveAux _ [] = return []
-automaticRecursiveAux cnt (history:list) = do
-  newHistory <- automaticRecursiveForOneLibrary cnt history
-  newList <- automaticRecursiveAux cnt list
-  return (newHistory:newList)
-
-automaticRecursiveForOneLibrary :: Int -> (LIB_NAME,ProofHistory)
-		      -> IO (LIB_NAME,ProofHistory)
-automaticRecursiveForOneLibrary cnt (libname,history) = do
-  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
-  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
-     return (libname,history)-- ?? - proofStatus
-   else do
-    let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
-	newHistoryElem = (rules, removeContraryChanges changes)
-	newHistory = newHistoryElem:oldHistory
-    return (libname,newHistory)
-
-
-
 {- applies the rules recursively until no further changes can be made -}
-{- automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
-automaticRecursive cnt proofStatus = do
-  (globalContext, libEnv, history, dgraph) <- automaticAux proofStatus
-  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
-  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
-     return proofStatus
-   else do
-    let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
-	newHistoryElem = (rules, removeContraryChanges changes)
-	newHistory = newHistoryElem:oldHistory
-    automaticRecursive 1 (globalContext, libEnv, newHistory, dgraph)
--}
+automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
+automaticRecursive cnt proofstatus = do
+  auxProofstatus@(ln, libEnv, historyMap) <- automaticApplyRules proofstatus
+  finalProofstatus <- mergeHistories cnt auxProofstatus
+  case finalProofstatus of
+    Nothing -> return proofstatus
+    Just p -> automaticRecursive 1 p
 
-automaticAux :: ProofStatus -> IO ProofStatus
-automaticAux p = do
+
+{- sequentially applies all rules to the given proofstatus,
+   ie to the library denoted by the library name of the proofstatus -}
+automaticApplyRules :: ProofStatus -> IO ProofStatus
+automaticApplyRules p = do
   p1 <- globSubsume p
   p2 <- globDecomp p1
   p3 <- locSubsume p2
   p4 <- locDecomp p3
   hideTheoremShift True p4
+
+
+mergeHistories :: Int -> ProofStatus -> IO (Maybe ProofStatus)
+mergeHistories cnt proofstatus@(ln,libEnv,_) = do
+  (numChanges,newProofstatus) <- mergeHistoriesAux cnt (libNames) proofstatus
+  if (numChanges > 0) then 
+     return (Just (changeCurrentLibName ln newProofstatus))
+    else return Nothing
+
+  where
+    libNames = Map.keys libEnv
+
+
+mergeHistoriesAux :: Int -> [LIB_NAME] -> ProofStatus -> IO (Int,ProofStatus)
+mergeHistoriesAux cnt [] proofstatus = return (0,proofstatus)
+mergeHistoriesAux cnt (ln:list) proofstatus = do
+  ps <- mergeHistory cnt (changeCurrentLibName ln proofstatus)
+  case ps of
+    Just newProofstatus -> do 
+      (i,finalProofstatus) <- mergeHistoriesAux cnt list newProofstatus
+      return (i+1,finalProofstatus)
+    Nothing -> mergeHistoriesAux cnt list proofstatus
+
+
+mergeHistory :: Int -> ProofStatus -> IO (Maybe ProofStatus)
+mergeHistory cnt proofstatus@(ln,libEnv,historyMap) = do
+  let history = lookupHistory ln proofstatus
+      dgraph = lookupDGraph ln proofstatus
+  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
+  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
+     return Nothing
+   else do
+    let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
+	newHistoryElem = (rules, removeContraryChanges changes)
+	newHistory = newHistoryElem:oldHistory
+    return (Just (ln,libEnv,Map.insert ln newHistory historyMap))
+
 
 concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
 concatHistoryElems [] = ([],[])
