@@ -829,46 +829,10 @@ theoremHideShift proofStatus@(ln,_,_) = do
   return (reviseProofStatus finalProofstatus)
 
 
-prepareProofStatus :: ProofStatus -> ProofStatus
-prepareProofStatus (ln,libEnv,history) = 
-  (ln,libEnv,Map.map prepareHistory history)
-
-prepareHistory :: [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
-prepareHistory [] = [([],[])]
-prepareHistory history@((_,[]):_) = history
-prepareHistory history = ([],[]):history
-
-reviseProofStatus :: ProofStatus -> ProofStatus
-reviseProofStatus proofstatus@(ln,libEnv,historyMap) =
-  (ln, libEnv, Map.map reviseHistory historyMap)
-
-reviseHistory :: ProofHistory -> ProofHistory
-reviseHistory [] = []
-reviseHistory ((_,changes):history) =
-  ([TheoremHideShift],(removeContraryChanges changes)):history
-
-showChanges :: [DGChange] -> String
-showChanges [] = ""
-showChanges (change:changes) = 
-  case change of
-    InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
-		       ++ (showChanges changes)
-    DeleteEdge edge -> "DeleteEdge " ++ (showEdgeChange edge)
-		       ++ (showChanges changes)
-    InsertNode node -> "InsertNode " ++ (showNodeChange node)
-		       ++ (showChanges changes)
-    DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
-		       ++ (showChanges changes)
-
-showEdgeChange :: LEdge DGLinkLab -> String
-showEdgeChange (src,tgt,edgelab) =
-  " from " ++ (show src) ++ " to " ++ (show tgt) ++ " and of type " ++ (show (dgl_type edgelab)) ++ "\n\n"
-
-showNodeChange :: LNode DGNodeLab -> String
-showNodeChange (descr, nodelab) =
-  (show descr) ++ " with name " ++ (show (dgn_name nodelab)) ++ "\n\n"
-
-
+{- splits a list into a tuple of lists with all elements
+   that have the given property (ie the given boolean method returns true)
+   in the first list and
+   those without in the second -}
 splitByProperty :: [a] -> (a -> Bool) -> ([a],[a])
 splitByProperty [] _ = ([],[])
 splitByProperty (x:xs) f =
@@ -880,6 +844,11 @@ splitByProperty (x:xs) f =
 
 
 -- bei DGRefs auch ueber lib-Grenze hinaus suchen?
+{- returns True, if the given node has at least one directely or
+   indirectely (ie via an ingoing path of GlobalDef edges) 
+   ingoing HidingDef edge
+   returns False otherwise
+ -}
 hasIngoingHidingDef :: DGraph -> Node -> Bool
 hasIngoingHidingDef dgraph node =
   not (null hidingDefEdges) || or (map (hasIngoingHidingDef dgraph) next)
@@ -890,63 +859,13 @@ hasIngoingHidingDef dgraph node =
     next = map getSourceNode globalDefEdges
 
 
+{- handles all nodes that are leaves
+   (ie nodes that have no ingoing edges of type HidingDef) -}
 handleLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleLeaves proofstatus [] = return proofstatus
 handleLeaves proofstatus (node:list) = do
   auxProofstatus <- convertToNf proofstatus node
   handleLeaves auxProofstatus list
-
-
-{- returns the global context that belongs to the given library name-}
-lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
-lookupGlobalContext ln (_,libEnv,_) =
-  case Map.lookup ln libEnv of
-    Nothing -> lookupDGraphError ln
-    Just globalContext -> globalContext
-
-{- returns the development graph that belongs to the given library name-}
-lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
-lookupDGraph ln proofstatus = dgraph
-  where
-    (_,_,dgraph) = lookupGlobalContext ln proofstatus
-
-{- returns the history that belongs to the given library name-}
-lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
-lookupHistory ln (_,_,historyMap) =
-  case Map.lookup ln historyMap of
-    Nothing -> []
-    Just history -> history
-
-{- updates the history belonging to the given library name,
-   inserting the given changes-}
-updateHistory :: LIB_NAME -> [DGChange] -> ProofStatus -> ProofStatus
-updateHistory ln changes proofstatus@(l,libEnv,historyMap) =
-  (l, libEnv,
-  Map.insert ln (addChanges changes (lookupHistory ln proofstatus)) historyMap)
-
-{- replaces the development graph belonging to the given library name
-   with the given graph-}
-updateLibEnv :: LIB_NAME -> DGraph -> ProofStatus -> ProofStatus
-updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
-  (l,
-   Map.insert ln 
-   (updateDGraphInGlobalContext dgraph (lookupGlobalContext ln proofstatus))
-   libEnv,
-   historyMap)
-
-{- updates the library environment and the proof history of the given
-   proofstatus for the given library name-}
-updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
-		  -> ProofStatus
-updateProofStatus ln dgraph changes proofstatus =
-  updateHistory ln changes proofstatusAux
-  where
-    proofstatusAux = updateLibEnv ln dgraph proofstatus
-
-{- replaces the development graph of the given global context with
-   the given graph-}
-updateDGraphInGlobalContext :: DGraph -> GlobalContext -> GlobalContext
-updateDGraphInGlobalContext dgraph (gAnnos,gEnv,_) = (gAnnos,gEnv,dgraph)
 
 
 {- converts the given node to its own normal form -}
@@ -1027,16 +946,6 @@ insertNfNode proofstatus@(ln,_,_) dgnode =
 		    [InsertNode dgnode]
 		    proofstatus
 
-{- changes the library name of the given proofstatus to the given name -}
-changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
-changeCurrentLibName ln (_,libEnv,historyMap) = (ln,libEnv,historyMap)
-
-
-{- adds the given changes to the given history -}
-addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
-addChanges changes [] = [([],changes)]
-addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
-
 
 {- adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
@@ -1065,7 +974,7 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
 	= adoptEdgesAux auxGraph list node areIngoingEdges
 
 {- handles all nodes that are no leaves
-   (ie node that have ingoing edges of typeHidingDef) -}
+   (ie nodes that have ingoing edges of type HidingDef) -}
 handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleNonLeaves proofstatus [] = return proofstatus
 handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
@@ -1093,15 +1002,9 @@ handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
           handleNonLeaves finalProofstatus list
 
 
-linkNfNode :: Node -> Node -> Map.Map Node GMorphism -> ProofStatus
-	   -> IO ProofStatus
-linkNfNode node nfNode map proofstatus@(ln,_,_) = do
-  (auxGraph, changes) <- 
-      setNfOfNode (lookupDGraph ln proofstatus) node nfNode
-  let (finalGraph,changes') = insertEdgesToNf auxGraph nfNode map
-  return (updateProofStatus ln finalGraph (changes ++ changes') proofstatus)
-
-
+{- creates the normal forms of the predecessors of the given node
+   note: as this method it is called after the normal forms of the leave nodes
+   have already been defined, only handleNonLeaves is called here -}
 createNfsForPredecessors :: ProofStatus -> Node -> IO ProofStatus
 createNfsForPredecessors proofstatus@(ln,_,_) node = do
   handleNonLeaves proofstatus predecessors
@@ -1114,26 +1017,39 @@ createNfsForPredecessors proofstatus@(ln,_,_) node = do
     predecessors = [src| (src,_,_) <- defInEdges]
 
 
-insertEdgesToNf :: DGraph -> Node -> (Map.Map Node GMorphism)
-		   -> (DGraph,[DGChange])
-insertEdgesToNf dgraph nfNode map =
-    insertEdgesToNfAux  dgraph nfNode (Map.toList map)
-    
-insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)] 
-		   -> (DGraph,[DGChange])
-insertEdgesToNfAux dgraph _ [] = (dgraph,[])
-insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
-  (finalGraph, (InsertEdge ledge):changes)
+{- creates an GDiagram with the signatures of the given nodes as nodes
+   and the morphisms of the given edges as edges -}
+makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagram = makeDiagramAux empty
 
-  where
-    ledge = (node, nfNode, DGLink {dgl_morphism = morph,
-				   dgl_type = GlobalDef,
-				   dgl_origin = DGProof
-				  })    
-    auxGraph = insEdge ledge dgraph
-    (finalGraph,changes) = insertEdgesToNfAux auxGraph nfNode list
+
+{- auxiliary method for makeDiagram: first translates all nodes then all edges,
+   the descriptors of the nodes are kept in order to make retranslation easier
+-}
+makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
+makeDiagramAux diagram _ [] [] = diagram
+makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
+  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
+    where morphEdge = if isHidingDef edge then (tgt,src,dgl_morphism lab) 
+		       else (src,tgt,dgl_morphism lab)
+makeDiagramAux diagram dgraph (node:list) edges =
+  makeDiagramAux (insNode sigNode diagram) dgraph list edges
+    where sigNode = (node, dgn_sign (lab' (context node dgraph)))
+
+
+{- sets the normal form of the first given node to the second one and
+   insert the edges to the normal form node according to the given map -}
+linkNfNode :: Node -> Node -> Map.Map Node GMorphism -> ProofStatus
+	   -> IO ProofStatus
+linkNfNode node nfNode map proofstatus@(ln,_,_) = do
+  (auxGraph, changes) <- 
+      setNfOfNode (lookupDGraph ln proofstatus) node nfNode
+  let (finalGraph,changes') = insertEdgesToNf auxGraph nfNode map
+  return (updateProofStatus ln finalGraph (changes ++ changes') proofstatus)
+
 
 -- was machen, wenn der Knoten ein DGRef ist??
+{- sets the normal form of the first node to the second one -}
 setNfOfNode :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 setNfOfNode dgraph node nf_node = do
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
@@ -1154,18 +1070,150 @@ setNfOfNode dgraph node nf_node = do
     auxGraph = insNode newDgNode dgraph
 
 
-makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagram = makeDiagramAux empty
+{- inserts GlobalDef edges to the given node from each node in the map
+   with the corresponding morphism -}
+insertEdgesToNf :: DGraph -> Node -> (Map.Map Node GMorphism)
+		   -> (DGraph,[DGChange])
+insertEdgesToNf dgraph nfNode map =
+    insertEdgesToNfAux  dgraph nfNode (Map.toList map)
+    
 
-makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagramAux diagram _ [] [] = diagram
-makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
-  makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if isHidingDef edge then (tgt,src,dgl_morphism lab) 
-		       else (src,tgt,dgl_morphism lab)
-makeDiagramAux diagram dgraph (node:list) edges =
-  makeDiagramAux (insNode sigNode diagram) dgraph list edges
-    where sigNode = (node, dgn_sign (lab' (context node dgraph)))
+{- auxiliary method for insertEdgesToNf -}
+insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)] 
+		   -> (DGraph,[DGChange])
+insertEdgesToNfAux dgraph _ [] = (dgraph,[])
+insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
+  (finalGraph, (InsertEdge ledge):changes)
+
+  where
+    ledge = (node, nfNode, DGLink {dgl_morphism = morph,
+				   dgl_type = GlobalDef,
+				   dgl_origin = DGProof
+				  })    
+    auxGraph = insEdge ledge dgraph
+    (finalGraph,changes) = insertEdgesToNfAux auxGraph nfNode list
+
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+-- prepare, revise, lookup, update on proofstatus and its components
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{- prepares the all histories of the proof history of the given proofstatus -}
+prepareProofStatus :: ProofStatus -> ProofStatus
+prepareProofStatus (ln,libEnv,history) = 
+  (ln,libEnv,Map.map prepareHistory history)
+
+
+{- prepares the given history for the rule application by appending
+   an empty list tuple to the front of it, if there is not already one
+   with an empty change list-}
+prepareHistory :: [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
+prepareHistory [] = [([],[])]
+prepareHistory history@((_,[]):_) = history
+prepareHistory history = ([],[]):history
+
+
+{- revises the history of the given proofstatus -}
+reviseProofStatus :: ProofStatus -> ProofStatus
+reviseProofStatus proofstatus@(ln,libEnv,historyMap) =
+  (ln, libEnv, Map.map reviseHistory historyMap)
+
+
+{- removes the contrary changes form the given history and adds the name
+   of the proof method (TheoremHideShift) -}
+reviseHistory :: ProofHistory -> ProofHistory
+reviseHistory [] = []
+reviseHistory ((_,changes):history) =
+  ([TheoremHideShift],(removeContraryChanges changes)):history
+
+
+{- returns the global context that belongs to the given library name-}
+lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
+lookupGlobalContext ln (_,libEnv,_) =
+  case Map.lookup ln libEnv of
+    Nothing -> lookupDGraphError ln
+    Just globalContext -> globalContext
+
+{- returns the development graph that belongs to the given library name-}
+lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
+lookupDGraph ln proofstatus = dgraph
+  where
+    (_,_,dgraph) = lookupGlobalContext ln proofstatus
+
+{- returns the history that belongs to the given library name-}
+lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
+lookupHistory ln (_,_,historyMap) =
+  case Map.lookup ln historyMap of
+    Nothing -> []
+    Just history -> history
+
+{- updates the history belonging to the given library name,
+   inserting the given changes-}
+updateHistory :: LIB_NAME -> [DGChange] -> ProofStatus -> ProofStatus
+updateHistory ln changes proofstatus@(l,libEnv,historyMap) =
+  (l, libEnv,
+  Map.insert ln (addChanges changes (lookupHistory ln proofstatus)) historyMap)
+
+{- replaces the development graph belonging to the given library name
+   with the given graph-}
+updateLibEnv :: LIB_NAME -> DGraph -> ProofStatus -> ProofStatus
+updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
+  (l,
+   Map.insert ln 
+   (updateDGraphInGlobalContext dgraph (lookupGlobalContext ln proofstatus))
+   libEnv,
+   historyMap)
+
+{- updates the library environment and the proof history of the given
+   proofstatus for the given library name-}
+updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
+		  -> ProofStatus
+updateProofStatus ln dgraph changes proofstatus =
+  updateHistory ln changes proofstatusAux
+  where
+    proofstatusAux = updateLibEnv ln dgraph proofstatus
+
+{- replaces the development graph of the given global context with
+   the given graph-}
+updateDGraphInGlobalContext :: DGraph -> GlobalContext -> GlobalContext
+updateDGraphInGlobalContext dgraph (gAnnos,gEnv,_) = (gAnnos,gEnv,dgraph)
+
+
+{- changes the library name of the given proofstatus to the given name -}
+changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
+changeCurrentLibName ln (_,libEnv,historyMap) = (ln,libEnv,historyMap)
+
+
+{- adds the given changes to the given history -}
+addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
+addChanges changes [] = [([],changes)]
+addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
+
+-- - - - - - - - - - - - - - - - - - - - - -
+-- debug methods to print a list of changes
+-- - - - - - - - - - - - - - - - - - - - - -
+
+showChanges :: [DGChange] -> String
+showChanges [] = ""
+showChanges (change:changes) = 
+  case change of
+    InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
+		       ++ (showChanges changes)
+    DeleteEdge edge -> "DeleteEdge " ++ (showEdgeChange edge)
+		       ++ (showChanges changes)
+    InsertNode node -> "InsertNode " ++ (showNodeChange node)
+		       ++ (showChanges changes)
+    DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
+		       ++ (showChanges changes)
+
+showEdgeChange :: LEdge DGLinkLab -> String
+showEdgeChange (src,tgt,edgelab) =
+  " from " ++ (show src) ++ " to " ++ (show tgt)
+  ++ " and of type " ++ (show (dgl_type edgelab)) ++ "\n\n"
+
+showNodeChange :: LNode DGNodeLab -> String
+showNodeChange (descr, nodelab) =
+  (show descr) ++ " with name " ++ (show (dgn_name nodelab)) ++ "\n\n"
+
 
 -- ----------------------------------------------
 -- methods that keep the change list clean
