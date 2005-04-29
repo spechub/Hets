@@ -13,6 +13,8 @@ data types for amalgamability options and analysis
 
 module Common.Amalgamate where
 
+import Data.List
+
 {- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis 
      algorithms -}
 
@@ -29,4 +31,24 @@ data Amalgamates = Amalgamates
 -- | The default value for 'DontKnow' amalgamability result
 defaultDontKnow :: Amalgamates
 defaultDontKnow = DontKnow "Unable to assert that amalgamability is ensured"
+
+instance Show CASLAmalgOpt where
+    show o = case o of 
+             Sharing -> "sharing"
+             ColimitThinness -> "colimit-thinness"
+             Cell -> "cell"
+             NoAnalysis -> "none"
+
+instance Read CASLAmalgOpt where
+    readsPrec _ = readShow caslAmalgOpts
+
+-- | input all possible values and read one as it is shown
+readShow :: Show a => [a] -> ReadS a
+readShow l s = case find ( \ o -> isPrefixOf (show o) s) l of
+               Nothing -> []
+               Just t -> [(t, drop (length $ show t) s)]
+             
+-- | possible CASL amalgamability options
+caslAmalgOpts :: [CASLAmalgOpt]
+caslAmalgOpts = [NoAnalysis, Sharing, Cell, ColimitThinness]
 
