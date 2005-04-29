@@ -32,7 +32,7 @@ showIsaT ide thy = let
     rdru = reverse . dropWhile (== '_') 
     tr = transStringT thy
     str = show ide 
-    in if isInfix ide then "XX" ++ tr (rdru $ rdru str) else tr str
+    in if isInfix2 ide then "XX" ++ tr (rdru $ rdru str) else tr str
     -- otherwise cutting off may lead to a name clash!
 
 showIsaIT :: Id -> Int -> BaseSig -> String
@@ -55,7 +55,7 @@ transString str = let
              (if isDigit c || c `elem` "_'" then [x, c]
              else l) ++ concatMap replaceChar1 s
 
--- | Replacement of special characters (non-injective)
+-- | injective replacement of special characters
 replaceChar :: Char -> String
 -- <http://www.htmlhelp.com/reference/charset/>
 replaceChar c = if isIsaChar c then [c] else let n = ord c in 
