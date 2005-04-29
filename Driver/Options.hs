@@ -42,7 +42,7 @@ module Driver.Options
 import Driver.Version
 import Common.Utils
 import Common.Result
-import Common.Amalgamate(CASLAmalgOpt(..))
+import Common.Amalgamate
 
 import System.Directory
 import System.IO.Error
@@ -111,10 +111,10 @@ data HetcatsOpts =        -- for comments see usage info
           , outtypes :: [OutType]  
           , rawopts  :: [RawOpt]   
           , verbose  :: Int        
-	  , defLogic :: String     
-	  , web      :: WebType    
+          , defLogic :: String     
+          , web      :: WebType    
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
-	  , caslAmalg :: [CASLAmalgOpt] 
+          , caslAmalg :: [CASLAmalgOpt] 
           }
 
 instance Show HetcatsOpts where
@@ -160,7 +160,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
           , gui      = Not
-	  , web      = NoWeb
+          , web      = NoWeb
           , infiles  = []
           , intype   = GuessIn
           , libdir   = ""
@@ -169,10 +169,10 @@ defaultHetcatsOpts =
           -- better default options, but not implemented yet:
           --, outtypes = [HetCASLOut OutASTree OutXml]
           , rawopts  = []
-	  , defLogic = "CASL"
+          , defLogic = "CASL"
           , verbose  = 1
           , outputToStdout = True
-	  , caslAmalg = [Cell]
+          , caslAmalg = [Cell]
           }
 
 defaultOutType :: OutType
@@ -190,9 +190,9 @@ data Flag = Analysis AnaType
           | Raw      [RawOpt]    
           | Verbose  Int         
           | Version              
-	  | Web      WebType     
-	  | DefaultLogic String  
-	  | CASLAmalg [CASLAmalgOpt] 
+          | Web      WebType     
+          | DefaultLogic String  
+          | CASLAmalg [CASLAmalgOpt] 
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -257,7 +257,7 @@ aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 data OutType = PrettyOut PrettyType 
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
-	     | EnvOut
+             | EnvOut
 
 instance Show OutType where
     show o = case o of
@@ -374,25 +374,6 @@ instance Show RawOpt where
              RawLatex s -> showRawOpt latexS s
              where showRawOpt f = showEqOpt (rawS ++ "=" ++ f)
 
-instance Show CASLAmalgOpt where
-    show o = case o of 
-             Sharing -> "sharing"
-             ColimitThinness -> "colimit-thinness"
-             Cell -> "cell"
-             NoAnalysis -> "none"
-
-instance Read CASLAmalgOpt where
-    readsPrec _ = readShow caslAmalgOpts
-
-readShow :: Show a => [a] -> ReadS a
-readShow l s = case find ( \ o -> isPrefixOf (show o) s) l of
-               Nothing -> []
-               Just t -> [(t, drop (length $ show t) s)]
-             
--- | possible CASL amalgamability options
-caslAmalgOpts :: [CASLAmalgOpt]
-caslAmalgOpts = [NoAnalysis, Sharing, Cell, ColimitThinness]
-
 -- | 'options' describes all available options and is used to generate usage 
 -- information
 options :: [OptDescr Flag]
@@ -440,9 +421,9 @@ options =
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++ 
        crS ++ joinBar (map show caslAmalgOpts))
-    ] where listS = 
-              "is a comma-separated list without blanks of one or more from:"
-            crS = "\n\t\t"
+    ] where listS = "is a comma-separated list without blanks" 
+                    ++ crS ++ "of one or more from:"
+            crS = "\n  "
             bS = "| "
             joinBar l = "(" ++ joinWith '|' l ++ ")"
             formS = dS ++ joinBar (map show formatList)
@@ -481,10 +462,10 @@ checkRecentEnv fp1 base2 =
        else do
         maybe_source_file <- existsAnSource base2
         maybe (return False) 
-	     (\ fp2 ->     do fp1_time <- getModificationTime fp1
-	                      fp2_time <- getModificationTime fp2
-		              return (fp1_time > fp2_time))
-	     maybe_source_file
+             (\ fp2 ->     do fp1_time <- getModificationTime fp1
+                              fp2_time <- getModificationTime fp2
+                              return (fp1_time > fp2_time))
+             maybe_source_file
 
 -- |
 -- gets a FilePath and checks whether it is a directory or an executable File;
@@ -582,7 +563,7 @@ hetcatsOpts argv =
                infs  <- checkInFiles non_opts
                hcOpts <- return $ 
                          foldr (flip makeOpts) defaultHetcatsOpts flags
-	       let hcOpts' = hcOpts { infiles = infs }
+               let hcOpts' = hcOpts { infiles = infs }
                seq (length $ show hcOpts') $ return $ hcOpts' 
         (_,_,errs) -> hetsError (concat errs)
 
