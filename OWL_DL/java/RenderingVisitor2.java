@@ -145,28 +145,30 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLObjectProperty prop) throws OWLException {
+		// System.out.println("ObjectProperty in RV: " + prop.toString());
 		pw.print("\"" + shortForms.shortForm(prop.getURI()) + "\"");
 	}
 
 	public void visit(OWLDataProperty prop) throws OWLException {
+		// System.out.println("DataProperty in RV: " + prop.toString());
 		pw.print("\"" + shortForms.shortForm(prop.getURI()) + "\"");
 	}
 
 	public void visit(OWLDataValue cd) throws OWLException {
 
-		pw.print("\"" + Renderer.escape(cd.getValue()) + "\"");
-		/* Only show it if it's not string */
+		// pw.print("\"" + Renderer.escape(cd.getValue()) + "\"");
+		String data = Renderer.escape(cd.getValue());
 
 		URI dvdt = cd.getURI();
 		String dvlang = cd.getLang();
 		if (dvdt != null) {
-			
-			pw.print("^^" + "<" + dvdt.toString() + ">");
+			pw.print("TypedL((\"" + data + "\",\"<" + dvdt.toString() + ">\"))");
+			// pw.print("^^" + "<" + dvdt.toString() + ">");
 		} else 
 			if (dvlang != null) {
-
-				pw.print("@" + dvlang);
-			} else pw.print("@");
+				pw.print("PlainL((\"" + data + "\",\"" + dvlang + "\"))");
+				// pw.print("@" + dvlang);
+			} else pw.print("Plain(\"" + data + "\")");
 		
 	}
 
@@ -285,7 +287,7 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLDataValueRestriction restriction) throws OWLException {
-		pw.print("DR(DRCRestriction(");
+		pw.print("DR(DataRestriction(");
 		restriction.getDataProperty().accept(this);
 		/* Changed from hasValue */
 		pw.print(",DRCValue(");

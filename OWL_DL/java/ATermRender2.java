@@ -267,7 +267,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		if (ind.isAnonymous()) {
 			Map m = ind.getIncomingObjectPropertyValues(ontology);
 			if (!m.isEmpty()) {
-				indivID = strToATermAppl("Nothing");
+				indivID = strToATermAppl1("Nothing");
 			} else {
 				indivID = factory.makeAppl(justFun,
 						strToATermAppl(shortForm(ind.getURI())));
@@ -897,7 +897,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		if (term == null || "".equals(term)) {
 			return strToATermAppl("_");
 		} else {
-			String result = trag(term);
+			String result = term;
 
 			try {
 				return factory.parse(result);
@@ -928,54 +928,60 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 	//	}
 
 	/* for XML Language trag */
-	private String trag(String str) {
-		/* Should probably use regular expressions */
-		StringBuffer sw = new StringBuffer();
-		// String str = o.toString();
-		boolean changed = false;
-		boolean changed2 = false;
-		for (int i = 0; i < str.length(); i++) {
-			char c = str.charAt(i);
-			if (c != '^' && c != '@') {
-				sw.append(c);
-			} else if(c == '^'){
-				sw.delete(i, ++i);
-				sw.append(',');
-				sw.append('\"');
-				sw.insert(0, "TypedL((");
-				changed = true;
-				
-			} else {
-				sw.deleteCharAt(i);
-				sw.append('\"');
-				if(i == str.length()-1){
-					sw.insert(0, "Plain(");
-					changed2 = true;
-				}else{
-					sw.insert(0, "PlainL((");
-				}
-				changed = true;
-			}
-		}
-		if (changed2){
-			sw.append("\")");
-		}
-		else if(changed){
-				sw.append("\"))");
-		}
-//			else {
-//				if (sw.charAt(sw.length() - 1) == '"') {
-//					sw.deleteCharAt(sw.length() - 1);
+//	private String trag(String str) {
+//		// System.out.println("str = " + str + ": " + str.length());
+//		
+//		/* Should probably use regular expressions */
+//		StringBuffer sw = new StringBuffer();
+//		
+//		boolean changed = false;
+//		boolean changed2 = false;
+//		for (int i = 0; i < str.length(); i++) {
+//			char c = str.charAt(i);
+//			if (c != '^' && c != '@' ) {
+//				sw.append(c);
+//			} else if(c == '^' && str.charAt(i+1) == '^' && !(changed || changed2)){
+//				sw.append(',');
+//				sw.append('\"');
+//				sw.insert(0, "TypedL((");
+//				changed = true;
+//				i++;
+//				
+//			} else if (!(changed || changed2)){
+//				// sw.deleteCharAt(i);
+//				// sw.append('\"');
+//				if(i == str.length()-1){
+//					sw.insert(0, "Plain(");
+//					changed2 = true;
+//				}else if(sw.charAt(i-1) == '"'){
+//					sw.append(',');
+//					sw.append('"');
+//					sw.insert(0, "PlainL((");
 //					changed = true;
 //				}
-//				sw.append(c);
+//
 //			}
 //		}
-//		if (changed)
-//			sw.append('"');
-		return sw.toString();
-		
-	}
+//		if (changed2){
+//			sw.append(")");
+//		}
+//		else if(changed){
+//				sw.append("\"))");
+//		}
+////			else {
+////				if (sw.charAt(sw.length() - 1) == '"') {
+////					sw.deleteCharAt(sw.length() - 1);
+////					changed = true;
+////				}
+////				sw.append(c);
+////			}
+////		}
+////		if (changed)
+////			sw.append('"');
+//		
+//		return sw.toString();
+//		
+//	}
 
 	//
 	//	private String handelDP(String term) {
