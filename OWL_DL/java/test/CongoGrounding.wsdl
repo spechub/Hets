@@ -1,0 +1,308 @@
+<?xml version="1.0"?>
+  <definitions name="CongoBookBuyingService_WSDL"
+    targetNamespace="http://www.daml.org/services/owl-s/1.0/CongoGrounding.wsdl"
+    xmlns:tns="http://www.daml.org/services/owl-s/1.0/CongoGrounding.wsdl"
+    xmlns:Congo="http://www.daml.org/services/owl-s/1.0/CongoProcess.owl"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:owl-s-wsdl="http://www.daml.org/services/owl-s/wsdl/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+    <!-- ........................................ -->
+    <!-- Messages definition for ExpressCongoBuy -->
+
+    <message name="ExpressCongoBuy_Input">
+      <part name="bookName" owl-s-wsdl:owl-s-parameter="Congo:#ExpressCongoBuyBookISBN"/>
+      <part name="signInInfo" owl-s-wsdl:owl-s-parameter="Congo:#ExpressCongoBuySignInInfo"/>
+    </message>
+    
+    <message name="ExpressCongoBuy_Output">
+      <part name="acknowledgement" owl-s-wsdl:owl-s-parameter="Congo:#ExpressCongoBuyOutput"/>
+    </message>
+    
+    <!-- ........................................ -->
+    <!-- Messages definition for FullCongoBuy -->
+    
+    <!-- SpecifyPaymentMethod -->
+    
+    <message name="SpecifyPaymentMethod_Input">
+      <part name="creditCardNumber" owl-s-wsdl:owl-s-parameter="Congo:#CreditCardNumber"/>
+      <part name="creditCardType" owl-s-wsdl:owl-s-parameter="Congo:#SpecifyPaymentMethodCreditCardType"/>
+      <part name="creditCardExpirationDate" owl-s-wsdl:owl-s-parameter="Congo:#CreditCardExpirationDate"/>
+    </message>
+
+    <!-- CreateAcct -->
+    
+    <message name="CreateAcct_Input">
+      <part name="createAcctInfo" owl-s-wsdl:owl-s-parameter="Congo:#CreateAcctInfo"/>
+    </message>
+    
+    <message name="CreateAcct_Output">
+      <part name="createAcctOutput" owl-s-wsdl:owl-s-parameter="Congo:#CreateAcctOutput"/>
+    </message>
+
+    <!-- LocateBook -->
+    
+    <message name="LocateBook_Input">
+      <part name="bookName" owl-s-wsdl:owl-s-parameter="Congo:#BookName"/>
+    </message>
+    
+    <message name="LocateBook_Output">
+      <part name="locateBookOutput" owl-s-wsdl:owl-s-parameter="Congo:#LocateBookOutput"/>
+    </message>
+
+    <!-- PutInCart -->
+
+    <message name="PutInCart_Input">
+      <part name="bookName" owl-s-wsdl:owl-s-parameter="Congo:#PutInCartBookISBN"/>
+    </message>
+
+    <!-- SignIn -->
+
+    <message name="SignIn_Input">
+      <part name="signInInfo" owl-s-wsdl:owl-s-parameter="Congo:#SignInInfo"/>
+    </message>
+
+    <!-- SpecifyDeliveryDetails -->
+
+    <message name="SpecifyDeliveryDetails_Input">
+      <part name="deliveryAddress" owl-s-wsdl:owl-s-parameter="Congo:#DeliveryAddress"/>
+      <part name="packagingSelection" owl-s-wsdl:owl-s-parameter="Congo:#PackagingSelection"/>
+      <part name="deliveryTypeSelection" owl-s-wsdl:owl-s-parameter="Congo:#DeliveryTypeSelection"/>
+    </message>
+
+    <!-- ........................................ -->
+    <!-- PortType definition for ExpressCongoBuy -->
+
+    <portType name="ExpressCongoBuy_PortType">
+      <operation name="ExpressCongoBuy_operation" owl-s-wsdl:owl-s-process="Congo:#ExpressCongoBuy">
+        <input message="tns:ExpressCongoBuy_Input"/>
+        <output message="tns:ExpressCongoBuy_Output"/>
+      </operation>
+    </portType>
+
+    
+    <!-- ........................................ -->
+    <!-- PortType definition for FullCongoBuy -->
+    
+    <!-- SpecifyPaymentMethod -->
+
+    <portType name="SpecifyPaymentMethod_PortType">
+      <operation name="SpecifyPaymentMethod_operation" owl-s-wsdl:owl-s-process="Congo:#SpecifyPaymentMethod">
+        <input message="tns:SpecifyPaymentMethod_Input"/>
+      </operation>
+    </portType>
+
+    <!-- CreateAcct -->
+
+    <portType name="CreateAcct_PortType">
+      <operation name="CreateAcct_operation" owl-s-wsdl:owl-s-process="Congo:#CreateAcct">
+        <input message="tns:CreateAcct_Input"/>
+        <output message="tns:CreateAcct_Output"/>
+      </operation>
+    </portType>
+
+    <!-- LocateBook -->
+    
+    <portType name="LocateBook_PortType">
+      <operation name="LocateBook_operation" owl-s-wsdl:owl-s-process="Congo:#LocateBook">
+        <input message="tns:LocateBook_Input"/>
+        <output message="tns:LocateBook_Output"/>
+      </operation>
+    </portType>
+
+    <!-- PutInCart -->
+    
+    <portType name="PutInCart_PortType">
+      <operation name="PutInCart_operation" owl-s-wsdl:owl-s-process="Congo:#PutInCart">
+        <input message="tns:PutInCart_Input"/>
+      </operation>
+    </portType>
+
+    <!-- SignIn -->
+    
+    <portType name="SignIn_PortType">
+      <operation name="SignIn_operation" owl-s-wsdl:owl-s-process="Congo:#SignIn">
+        <input message="tns:SignIn_Input"/>
+      </operation>
+    </portType>
+
+    <!-- SpecifyDeliveryDetails -->
+    
+    <portType name="SpecifyDeliveryDetails_PortType">
+      <operation name="SpecifyDeliveryDetails_operation" owl-s-wsdl:owl-s-process="Congo:#SpecifyDeliveryDetails">
+        <input message="tns:SpecifyDeliveryDetails_Input"/>
+      </operation>
+    </portType>
+    
+    <!-- ........................................ -->
+    <!-- Binding definition for ExpressCongoBuy -->
+
+    <binding name="ExpressCongoBuy_SoapBinding" type="tns:ExpressCongoBuy_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="ExpressCongoBuy_operation">
+        <soap:operation soapAction="tns:ExpressCongoBuy"/>
+        <input>
+          <soap:body 
+            parts="bookName signInInfo"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+        <output>
+          <soap:body 
+            parts="orderShipped outOfStock"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </output>
+      </operation>
+    </binding>
+
+    
+    <!-- ........................................ -->
+    <!-- Binding definition for FullCongoBuy -->
+
+    <!-- CreateAcct -->
+    
+    <binding name="CreateAcct_SoapBinding" type="tns:CreateAcct_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="CreateAcct_operation">
+        <soap:operation soapAction="tns:CreateAcct"/>
+        <input>
+          <soap:body 
+            parts="createAcctInfo"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+        <output>
+          <soap:body 
+            parts="createAcctOutput"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </output>
+      </operation>
+    </binding>
+
+
+    <!-- LocateBook -->
+
+    <binding name="LocateBook_SoapBinding" type="tns:LocateBook_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="LocateBook_operation">
+        <soap:operation soapAction="tns:LocateBook"/>
+        <input>
+          <soap:body 
+            parts="bookName"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+        <output>
+          <soap:body 
+            parts="locateBookOutput"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </output>
+      </operation>
+    </binding>
+
+    <!-- PutInCart -->
+
+    <binding name="PutInCart_SoapBinding" type="tns:PutInCart_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="PutInCart_operation">
+        <soap:operation soapAction="tns:PutInCart"/>
+        <input>
+          <soap:body 
+            parts="bookName"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+      </operation>
+    </binding>
+
+    <!-- SignIn -->
+    
+    <binding name="SignIn_SoapBinding" type="tns:SignIn_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="SignIn_operation">
+        <soap:operation soapAction="tns:SignIn"/>
+        <input>
+          <soap:body 
+            parts="signInInfo"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+      </operation>
+    </binding>
+    
+    <!-- SpecifyPaymentMethod -->
+
+    <binding name="SpecifyPaymentMethod_SoapBinding" type="tns:SpecifyPaymentMethod_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="SpecifyPaymentMethod_operation">
+        <soap:operation soapAction="tns:SpecifyPaymentMethod"/>
+        <input>
+          <soap:body 
+            parts="creditCardNumber creditCardType creditCardExpirationDate"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+      </operation>
+    </binding>
+
+    <!-- SpecifyDeliveryDetails -->
+    
+    <binding name="SpecifyDeliveryDetails_SoapBinding" type="tns:SpecifyDeliveryDetails_PortType">
+      <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <operation name="SpecifyDeliveryDetails_operation">
+        <soap:operation soapAction="tns:SpecifyDeliveryDetails"/>
+        <input>
+          <soap:body 
+            parts="deliveryAddress packagingSelection deliveryTypeSelection"
+            use="encoded"
+            namespace="http://www.daml.org/services/owl-s/1.0/Congo-Service.daml"/>
+        </input>
+      </operation>
+    </binding>
+    
+    
+    <!-- ........................................ -->
+    <!-- Service definition for ExpressCongoBuy -->
+
+    <service name="ExpressCongoBuy_Service">
+      <documentation> 
+        WSDL description of request to buy books from Congo 
+      </documentation>
+      <port name="ExpressCongoBuy_Port" binding="tns:ExpressCongoBuy_SoapBinding">
+        <soap:address location="http://www.Congo.com/ExpressCongoBuy"/>
+      </port>
+    </service>
+
+    
+
+    <!-- ........................................ -->
+    <!-- Service definition for FullCongoBuy -->
+
+    <service name="FullCongoBuy_servoce">
+      <documentation> 
+        WSDL description of request to buy books from Congo 
+      </documentation>
+      <port name="SpecifyPaymentMethod_Port" binding="tns:SpecifyPaymentMethod_SoapBinding">
+        <soap:address location="http://www.Congo.com/SpecifyPaymentMethod"/>
+      </port>
+      <port name="CreateAcct_Port" binding="tns:CreateAcct_SoapBinding">
+        <soap:address location="http://www.Congo.com/CreateAcct"/>
+      </port>
+      <port name="LocateBook_Port" binding="tns:LocateBook_SoapBinding">
+        <soap:address location="http://www.Congo.com/LocateBook"/>
+      </port>
+      <port name="PutInCart_Port" binding="tns:PutInCart_SoapBinding">
+        <soap:address location="http://www.Congo.com/PutInCart"/>
+      </port>
+      <port name="SignIn_Port" binding="tns:SignIn_SoapBinding">
+        <soap:address location="http://www.Congo.com/SignIn"/>
+      </port>
+      <port name="SpecifyDeliveryDetails_Port" binding="tns:SpecifyDeliveryDetails_SoapBinding">
+        <soap:address location="http://www.Congo.com/SpecifyDeliveryDetails"/>
+      </port>
+    </service>
+
+  </definitions>
