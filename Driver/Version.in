@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   template for generating the Version module of hetcats
+   template for generating the Version module of Hets
 
    >>>HEADER<<<
 -}

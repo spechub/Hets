@@ -82,9 +82,13 @@ the respective target logic (the identifiers will turn into Haskell
 variables and can hence be used for easily producing instances of
 axiom schemes). 
 
-The command line interface is contained in
-"Driver", the graphical interface in "GUI". 
-The latter is based on the 
-UniForM Workbench <http://www.informatik.uni-bremen.de/uniform/wb>.
-There are lots of top-level modules listed below belonging to the Workbench;
-unfortunately, the Workbench does not use hierarchical module names yet.
+The command line interface is contained in "Driver", the graphical
+interface in "GUI". The latter is based on the UniForM Workbench
+<http://www.informatik.uni-bremen.de/uniform/wb>.  The UniForm
+Workbench provides an event system and encapsulations of TclTk
+<http://www.informatik.uni-bremen.de/htk/> and uDraw(Graph)
+<http://www.informatik.uni-bremen.de/uDrawGraph/en/index.html> (see
+module "GraphDisp").  There
+are lots of top-level modules listed below belonging to the Workbench;
+unfortunately, the Workbench does not use hierarchical module names
+yet.
