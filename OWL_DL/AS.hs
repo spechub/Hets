@@ -13,10 +13,13 @@ Portability :  portable
 
 module OWL_DL.AS where
 
+{-! global: ShATermConvertible !-}
+
 import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
  
-type URIreference = QName
+-- type URIreference = QName
+type URIreference = String
 
 type DatatypeID = URIreference
 type ClassID = URIreference
@@ -29,14 +32,14 @@ type OntologyPropertyID = URIreference
 type Namespace = Map.Map String URIreference
 
 -- | Data structur for Ontologies
-data Ontology = Ontology (Maybe OntologyID)
-                   -- for Ontology header:OntologyAnnotations & AnnotationProperties
+data Ontology = Ontology 
+                         (Maybe OntologyID)
                          [Directive] 
-                         [Namespace]     -- NTrees XNode : namespaces
+--                         [Namespace]     -- NTrees XNode : namespaces
                 deriving (Show, Eq)
 data Directive = Anno Annotation | Ax Axiom | Fc Fact
                  deriving (Show, Eq)
-data Annotation = OntAnnotation
+data Annotation = OntoAnnotation
                          OntologyPropertyID
                          OntologyID
                 | URIAnnotation 
@@ -53,6 +56,7 @@ data Annotation = OntAnnotation
 -- | Data literal
 data DataLiteral = TypedL TypedLiteral 
                  | PlainL PlainLiteral
+                 | Plain  LexicalForm
                  | RDFSL  RDFSLiteral
                    deriving (Show, Eq)
 
@@ -77,7 +81,7 @@ data Fact = Indiv Individual
                   [IndividualID]
             deriving (Show, Eq)
 
-data Individual = Individual (Maybe IndividualID) [Annotation] (Maybe Type) (Maybe Value)
+data Individual = Individual (Maybe IndividualID) [Annotation] [Type] [Value]
                   deriving (Show, Eq)
 data Value = ValueID    IndividualvaluedPropertyID IndividualID
            | ValueIndiv IndividualvaluedPropertyID Individual
@@ -173,13 +177,13 @@ data Restriction = DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent
 data Drcomponent = DRCAllValuesFrom Description
                  | DRCSomeValuesFrom DataRange
                  | DRCValue DataLiteral
-                 | DRCCardinatlity Cardinality
+                 | DRCCardinality Cardinality
                    deriving (Show, Eq)
                    
 data Ircomponent = IRCAllValuesFrom Description
                  | IRCSomeValuesFrom Description
                  | IRCValue IndividualID
-                 | IRCCardinatlity Cardinality
+                 | IRCCardinality Cardinality
                    deriving (Show, Eq)
 
 data Cardinality = MinCardinality Int
