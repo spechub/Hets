@@ -360,7 +360,7 @@ checkFreeType (osig,osens) m fsn
   interface to cime system, using newChildProcess
   transform CASL signature to Cime signature, CASL formulas to Cime rewrite rules
 
-Example:
+Example1:
 
 spec NatJT2 = {} then
   free type Nat ::= 0 | suc(Nat)
@@ -416,7 +416,7 @@ __+__(suc(x),y) -> suc(__+__(x,y)); ";
 termcrit "dp";
 termination axioms;
 
-
+Example2:
 spec NatJT1 = 
   sort Elem
   free type Bool ::= True | False
@@ -454,11 +454,14 @@ elemT(x,Branch(f)) -> elemF(x,f);
 elemF(x,Nil) -> False; 
 elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 
--}      
+-}
+{-  
+         --because the cime symbols '[' and ']' do not know, the symbols are replaced by '|' 
          idStrT id = map (\s-> case s of
                                  '[' -> '|'
                                  ']' -> '|'
-                                 _ -> s) $ idStr id
+                                 _ -> s) $ idStr id                                                              -- aus
+-}
          oldfs1 = map sentence (filter is_user_or_sort_gen osens)
          oldfs = trace (showPretty oldfs1 "old formulas") oldfs1               -- old formulas
          old_axioms = filter (\f->case f of                      
@@ -482,6 +485,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
               "Termination proof found." -> return True
               "Quitting." -> return False
               _ -> rP cp
+{-
          --  OP_SYMB -> Signature of CiME
          opStr o_s = case o_s of                -- kontext analyse
                        Qual_op_name op_n (Op_type k a_sorts _ _) _ -> case (length a_sorts) of 
@@ -493,7 +497,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                             5 -> (idStrT op_n) ++ " : 5"
                                                                             6 -> (idStrT op_n) ++ " : 6"
                                                                             _ -> error "Termination_Signature_OpS"
-                       _ -> error "Termination_Signature_OpS: Op_name"
+                       _ -> error "Termination_Signature_OpS: Op_name"                             -- aus
          --  PRED_SYMB -> Signature of CiME
          predStr p_s = case p_s of
                        Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
@@ -505,13 +509,14 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                       5 -> (idStrT pred_n) ++ " : 5"
                                                                       6 -> (idStrT pred_n) ++ " : 6"
                                                                       _ -> error "Termination_Signature_PredS"
-                       _ -> error "Termination_Signature_PredS"
+                       _ -> error "Termination_Signature_PredS: Pred_name"                          -- aus
+-}
          noDouble [] = []
          noDouble (x:xs) 
                   | elem x xs = noDouble xs
                   | otherwise = x:(noDouble xs)
 
-{-
+{- |||||||||||||||||||||
          --  collection of signature
          --  operation
          sigComb sig1 sig2 | null sig2 =sig1             
@@ -524,12 +529,12 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          --  build signature of operation together 
          opSignStr signs str                      
                  | null signs = str
-                 | otherwise =  opSignStr (tail signs) (str ++ (opStr $ head signs) ++ "; ")
+                 | otherwise =  opSignStr (tail signs) (str ++ (opS_cime $ head signs) ++ "; ")
          --  build signature of predication together 
          predSignStr signs str                      
                  | null signs = str
-                 | otherwise =  predSignStr (tail signs) (str ++ (predStr $ head signs) ++ "; ")
-
+                 | otherwise =  predSignStr (tail signs) (str ++ (predS_cime $ head signs) ++ "; ")
+{-
          --  all variable of a axiom
          varOfAxiom f = case f of
                           Quantification Universal v_d _ _ -> concat $  map (\v-> case v of
@@ -541,13 +546,15 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                           Quantification Unique_existential v_d _ _ -> concat $  map (\v-> case v of
                                                                                    Var_decl vs _ _ -> vs
                                                                                    _ -> error "Termination_Variable") v_d
-                          _ -> [] 
+                          _ -> []                                                                                -- aus
+-}
          allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
          --  transform variables to string
          varsStr vars str                               
                  | null vars = str
                  | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
+{-
          --  transform a axiom to string
          f_str f = case f of
                      Quantification Universal _ f' _ -> f_str f'
@@ -556,18 +563,20 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                      Implication f1 f2 _ _ -> error "Termination_Axioms_Implication" 
                      Equivalence f1 f2 _ -> error "Termination_Axioms_Equivalence"
                      Negation f' _ -> error "Termination_Axioms_Negation"
-                     True_atom _ -> "Termination_Axioms_True"	    
-	             False_atom _ -> "Termination_Axioms_False"
+                     True_atom _ -> error "Termination_Axioms_True"	    
+	             False_atom _ -> error "Termination_Axioms_False"
                      Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
-                     Definedness t _ -> "Termination_Axioms_Definedness"
+                     Definedness t _ -> error "Termination_Axioms_Definedness"
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
                      Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
                      _ -> error "Termination_Axioms"
          --  condition of term
          t_f_str f =case f of
-                     Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
-                     _ -> error "Termination_Term-Formula"
-         termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map termStr ts
+                      Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
+                      _ -> error "Termination_Term-Formula"                          -- aus
+-}
+--         termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map term_cime ts
+{-
          --  transform a term to string
          termStr t = case (term t) of
                        (Qual_var var _ _) -> tokStr var
@@ -576,14 +585,15 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                                          (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
                        (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
                                                   ")")
-                       _ -> error "Termination_Term"
+                       _ -> error "Termination_Term"                               -- aus
+-}
          --  transform all axioms to string
          axiomStr axioms str
                  | null axioms = str
-                 | otherwise = axiomStr (tail axioms) (str ++ (f_str $ (head axioms)) ++ "; ")                    
+                 | otherwise = axiomStr (tail axioms) (str ++ (axiom_cime $ (head axioms)) ++ "; ")                    
          proof = unsafePerformIO (do
-            --     cim <- newChildProcess "/home/xinga/bin/cime" []
-                 cim <- newChildProcess "cime" []
+                 cim <- newChildProcess "/home/xinga/bin/cime-2.02-Linux" []
+            --     cim <- newChildProcess "cime" []
                  sendMsg cim ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
                               (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";")
@@ -636,11 +646,11 @@ leadingSymPos f = leading (f,False,False)
                                                                 _ -> (Nothing,(get_pos_l f))
                              _ -> (Nothing,(get_pos_l f)) 
 
-
+-- Sorted_term is always ignored
 term :: TERM f -> TERM f
 term t = case t of
            Sorted_term t' _ _ ->term t'
-           _ -> t 
+           _ -> t                                     
 
 leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
@@ -743,8 +753,29 @@ opTyp_Axiom f = case (leadingSym f) of
                   Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
                   _ -> Nothing 
 
+type Cime = String
+
 idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
+
+{- transform Id to cime
+   because cime these symbols '[' and ']' do not know, 
+   these symbols are replaced by '|'       (idStrT)
+-}
+id_cime :: Id -> Cime 
+id_cime id = map (\s-> case s of
+                            '[' -> '|'
+                            ']' -> '|'
+                            _ -> s) $ idStr id
+
+{- It filters all variables of a axiom
+-}
+varOfAxiom :: FORMULA f -> [VAR]
+varOfAxiom f = case f of
+                 Quantification _ v_d _ _ -> concat $  map (\v-> case v of
+                                                                   Var_decl vs _ _ -> vs
+                                                                   _ -> error "Termination_Variable") v_d
+                 _ -> [] 
 
 opSymStr :: OP_SYMB -> String 
 opSymStr os = case os of
@@ -762,3 +793,105 @@ noDouble (x:xs)
     | elem x xs = noDouble xs
     | otherwise = x:(noDouble xs)
 -}
+
+{- transform a term to cime (termStr)
+-}
+term_cime :: TERM f -> Cime
+term_cime t = case (term t) of
+                (Qual_var var _ _) -> tokStr var
+                (Application (Qual_op_name opn _ _) ts _) -> if null ts then (id_cime opn)
+                                                             else ((id_cime opn) ++ "(" ++ 
+                                                                  (tail $ concat $ map (\s->"," ++ s) $ map term_cime ts) ++ ")")
+                (Conditional t1 f t2 _) -> ("when_else(" ++ (term_cime t1) ++ "," ++ (t_f_str f) ++  "," ++ (term_cime t2)  ++")")        -- !!!!
+                _ -> error "Termination_Term"
+     where t_f_str f =case f of                     --  condition of term
+                        Strong_equation t1 t2 _ -> ("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ")")
+                        _ -> error "Termination_Term-Formula"
+
+{- transform OP_SYMB to Signature of cime (opStr)
+   P.S. max 6 argument per operation
+-}
+opS_cime :: OP_SYMB -> Cime
+opS_cime o_s = case o_s of                -- kontext analyse
+                 Qual_op_name op_n (Op_type _ a_sorts _ _) _ -> case (length a_sorts) of 
+                                                                  0 -> (id_cime op_n) ++ " : constant"
+                                                                  1 -> (id_cime op_n) ++ " : unary"
+                                                                  2 -> (id_cime op_n) ++ " : binary"
+                                                                  3 -> (id_cime op_n) ++ " : 3"
+                                                                  4 -> (id_cime op_n) ++ " : 4"
+                                                                  5 -> (id_cime op_n) ++ " : 5"
+                                                                  6 -> (id_cime op_n) ++ " : 6"
+                                                                  _ -> error "Termination_Signature_OP_SYMB "
+                 _ -> error "Termination_Signature_OP_SYMB: Op_name"
+
+{- transform PRED_SYMB to Signature of cime (predStr)
+   P.S. max 6 argument per operation
+-}
+predS_cime :: PRED_SYMB -> Cime
+predS_cime p_s = case p_s of
+                   Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
+                                                                  0 -> (id_cime pred_n) ++ " : constant"
+                                                                  1 -> (id_cime pred_n) ++ " : unary"
+                                                                  2 -> (id_cime pred_n) ++ " : binary"
+                                                                  3 -> (id_cime pred_n) ++ " : 3"
+                                                                  4 -> (id_cime pred_n) ++ " : 4"
+                                                                  5 -> (id_cime pred_n) ++ " : 5"
+                                                                  6 -> (id_cime pred_n) ++ " : 6"
+                                                                  _ -> error "Termination_Signature_PRED_SYMB"
+                   _ -> error "Termination_Signature_PRED_SYMB: Pred_name"
+
+{- transform Implication to cime (phi => f(t_1,...,t_m)=t)
+     Example: 
+                X=e => f(t_1,...,t_m)=t
+     cime -->   f(t_1,...,t_m) -> U(X,t_1,...t_m)
+                U(e,t_1,...t_m) -> t
+   P.S. Bool ignore
+-}
+impli_cime :: Int -> FORMULA f -> Cime
+impli_cime index (Implication f1 f2 _ _) = ax1  ++ ax2
+    where i=show index
+          ax1= ""
+          ax2= ""
+
+{- transform Equivalence to cime (p(t_1,...,t_m) <=> phi)
+     Example:
+                p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
+     cime -->   p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t   --> f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),tt_1,...,tt_n)
+                                                            U1(True,tt_1,...,tt_n) -> t
+          -->   f(tt_1,...,tt_n)=t => p(t_1,...,t_m)    --> p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n),t_1,...,t_m)
+                                                            U2(t,t_1,...,t_m) -> True 
+-}
+equiv_cime :: FORMULA f -> Cime
+equiv_cime f = " "
+
+{- transform Implication and Equivalence to cime (phi1  => p(t_1,...,t_m)<=>phi)
+     Example:
+                X=e => p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
+     cime -->   X=e =>  p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t   --> f(tt_1,...,tt_n) -> U1(X,p(t_1,...,t_m),tt_1,...,tt_n)
+                                                                    U1(e,True,tt_1,...,tt_n) -> t
+          -->   X=e =>  f(tt_1,...,tt_n)=t => p(t_1,...,t_m)    --> p(t_1,...,t_m) -> U2(X,f(tt_1,...,tt_n),t_1,...,t_m)
+                                                                    U2(e,t,t_1,...,t_m) -> True 
+-}
+impli_equiv_cime :: FORMULA f -> Cime
+impli_equiv_cime f = " "
+
+{- transform a axiom to cime (f_str)
+-}
+axiom_cime :: FORMULA f -> Cime
+axiom_cime f = case f of
+                 Quantification _ _ f' _ -> axiom_cime f'
+                 Conjunction fs _ -> error "Termination_Axioms_Conjunction"
+                 Disjunction fs _ -> error "Termination_Axioms_Disjunction"
+                 Implication _ f' _ _ -> case f' of
+                                            (Equivalence _ _ _) -> (impli_equiv_cime f) 
+                                            _ -> impli_cime 1 f 
+                 Equivalence _ _ _ -> equiv_cime f
+                 Negation f' _ -> error "Termination_Axioms_Negation"
+                 True_atom _ -> error "Termination_Axioms_True"	    
+	         False_atom _ -> error "Termination_Axioms_False"
+                 Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
+                 Definedness t _ -> error "Termination_Axioms_Definedness"
+                 Existl_equation t1 t2 _ -> (term_cime t1) ++ " -> " ++ (term_cime t2)
+                 Strong_equation t1 t2 _ -> (term_cime t1) ++ " -> " ++ (term_cime t2)                   
+                 _ -> error "Termination_Axioms"
+    where termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map term_cime ts
