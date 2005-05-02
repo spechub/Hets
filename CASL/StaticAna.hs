@@ -433,11 +433,21 @@ sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 ana_OP_ATTR :: Resolver f => Min f e -> GlobalAnnos 
             -> OpType -> [Id] -> (OP_ATTR f)
             -> State (Sign f e) (Maybe (OP_ATTR f))
-ana_OP_ATTR mef ga ty ois oa = 
-    let sty = toOP_TYPE ty
+ana_OP_ATTR mef ga ty ois oa = do
+  let   sty = toOP_TYPE ty
         rty = opRes ty 
-        q = [posOfId rty] in
-    case oa of 
+        atys = opArgs ty 
+        p' = posOfId rty
+        q = [p']
+  case atys of 
+         [t1,t2] | t1 == t2 -> case oa of 
+              Comm_op_attr -> return ()
+              _ -> if t1 == rty then return () 
+                   else addDiags [Diag Error 
+                             "result sort must be equal to argument sorts" p']
+         _ -> addDiags [Diag Error
+                        "expecting two arguments of equal sort" p'] 
+  case oa of 
     Unit_op_attr t ->
         do sign <- get
            ops <- gets allOpIds
@@ -467,7 +477,6 @@ ana_OP_ATTR mef ga ty ois oa =
       return $ Just oa
     Comm_op_attr -> do 
       let ns = map mkSimpleId ["x", "y"]
-          atys = opArgs ty 
           vs = zipWith ( \ v t -> Var_decl [v] t (map posOfId atys) ) ns atys
           args = map toQualVar vs
           makeComm i = let p = [posOfId i]
@@ -477,10 +486,7 @@ ana_OP_ATTR mef ga ty ois oa =
             (Strong_equation  
              (Application qi args p)
              (Application qi (reverse args) p) p) p
-      case atys of 
-         [_,_] -> addSentences $ map makeComm ois
-         _ -> addDiags [Diag Error "expecting two arguments for commutativity" 
-                       $ posOfId rty]
+      addSentences $ map makeComm ois      
       return $ Just oa
     Idem_op_attr -> do 
       let v = mkSimpleId "x"
