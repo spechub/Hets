@@ -279,11 +279,12 @@ public class OWL2ATerm implements OWLValidationConstants {
 				for (Iterator caIt = cas.iterator(); caIt.hasNext();) {
 					// atermList.add(ploader.term((OWLClassAxiom)
 					// classIt.next()));
-					ATermList res = (ATermList) ploader.term((OWLClassAxiom) caIt.next());
-					while(!res.isEmpty()){
-						alist = factory.makeList(res.getFirst(), alist);
-						res = res.getNext();
-					}
+					
+					// ATermList res = (ATermList) ploader.term((OWLClassAxiom) caIt.next());
+					// while(!res.isEmpty()){
+						alist = factory.makeList(ploader.term((OWLClassAxiom) caIt.next()), alist);
+					//	res = res.getNext();
+					// }
 				}
 			}
 
