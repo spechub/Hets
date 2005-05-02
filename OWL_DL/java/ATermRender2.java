@@ -37,6 +37,7 @@ import java.net.URISyntaxException;
 import org.semanticweb.owl.model.OWLDataRange;
 import org.semanticweb.owl.model.OWLException;
 import org.semanticweb.owl.model.OWLIndividual;
+import org.semanticweb.owl.model.OWLObject;
 import org.semanticweb.owl.model.OWLObjectProperty;
 import org.semanticweb.owl.model.OWLAnnotationProperty;
 import org.semanticweb.owl.model.OWLDataProperty;
@@ -614,9 +615,12 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		// Writer writer = new StringWriter();
 		// setWriter(writer);
 		// pw.print("Datatype(" + shortForm(datatype.getURI()) + ")");
-		return factory.makeAppl(factory.makeAFun("DataType", 1, false),
-				strToATermAppl(shortForm(datatype.getURI())));
-
+		AFun dataTypeFun = factory.makeAFun("DataType", 3, false);
+		ATermAppl isdep = datatype.isDeprecated(ontology)? strToATermAppl1("true"): strToATermAppl1("false");
+		ATermList annos = makeAnno(datatype.getAnnotations(ontology).iterator());
+		ATermAppl result = factory.makeAppl(dataTypeFun,
+				strToATermAppl(shortForm(datatype.getURI())), isdep, annos);
+		return factory.makeAppl(axFun, result);
 	}
 
 	public ATermAppl renderClassAxiom(OWLClassAxiom axiom) throws OWLException {
@@ -1024,6 +1028,18 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		return annos.reverse();
 	}
 
+	public ATerm mkSimpleDescription(OWLDescription o) throws OWLException{
+		visitor.reset();
+		o.accept(visitor);
+		return mkOther(visitor.result());
+	}
+	
+	public ATerm mkSimpleIndividual(OWLIndividual o) throws OWLException{
+		visitor.reset();
+		o.accept(visitor);
+		return mkOther(visitor.result());
+	}
+	
 	public static ATermAppl strToATermAppl(String str) {
 		//		if (str.length() > 2 && str.charAt(1) == '{') {
 		//			return factory.makeAppl(factory.makeAFun(str, 0, false));
@@ -1035,4 +1051,5 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		return factory.makeAppl(factory.makeAFun(str, 0, false));
 	}
 
+	
 } // Renderer
