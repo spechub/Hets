@@ -175,9 +175,9 @@ public class OWL2ATerm implements OWLValidationConstants {
 			OWLOntology ontology) {
 
 		try {
-			final String AT_LITE = "Lite";
-			final String AT_DL = "DL";
-			final String AT_FULL = "Full";
+			final String AT_LITE = "OWL-Lite";
+			final String AT_DL = "OWL-DL";
+			final String AT_FULL = "OWL-Full";
 			OWL2ATermLoader ploader = new OWL2ATermLoader(new KnowledgeBase(),
 					ontology);
 			ATermFactory factory = new PureFactory();
@@ -195,13 +195,13 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// Validation as ATerm appended in ATermList.
 			switch (valid) {
 			case LITE:
-				validation = factory.makeAFun(AT_LITE, 0, false);
+				validation = factory.makeAFun(AT_LITE, 0, true);
 				break;
 			case DL:
-				validation = factory.makeAFun(AT_DL, 0, false);
+				validation = factory.makeAFun(AT_DL, 0, true);
 				break;
 			case FULL:
-				validation = factory.makeAFun(AT_FULL, 0, false);
+				validation = factory.makeAFun(AT_FULL, 0, true);
 				break;
 			}
 			// atermList.add(factory.makeAppl(validation));
@@ -410,7 +410,7 @@ class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants 
 		// System.out.println(SpeciesValidator.readableCode( code ));
 
 		ATermAppl aa = factory.makeAppl(factory.makeAFun("Message", 3, false),
-				factory.parse(level(l)), factory.parse("\""
+				factory.parse("\"" + level(l) + "\""), factory.parse("\""						
 						+ SpeciesValidator.readableCode(code) + "\""), factory
 						.parse("\"" + str + "\""));
 		messageList = factory.makeList(aa, messageList);
