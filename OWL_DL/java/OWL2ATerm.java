@@ -231,16 +231,20 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// other annotation property
 			Set oaps = ontology.getAnnotationProperties();
 			
-			
+			ATerm ontologyID;
 			// Build ontology header
-			ATerm ontologyID = factory.parse("\"<" + ontology.getURI().toString() + ">\"");
+			if(ontology.getURI() != null){
+				ontologyID = factory.parse("Just(\"<" + ontology.getURI().toString() + ">\")");
+			} else{
+				ontologyID = factory.parse("Nothing");
+			}
 			// imports other ontology
 			AFun axFun = factory.makeAFun("Ax", 1, false);
 			AFun ontologyProperty = factory.makeAFun("OntologyProperty", 2, false);
 			AFun annoFun = factory.makeAFun("URIAnnotation", 2, false);
 			ATermAppl importID = factory.makeAppl(factory.makeAFun("owl:imports", 0, true));
 			ATermList importList = factory.makeList();
-// System.out.println("WO? Anno");			
+ //System.out.println("WO? Anno");			
 			// Annotation (Properties): version, comment, label, etc. 
 			if(aps != null){
 				for(Iterator apIt = aps.iterator(); apIt.hasNext();){
