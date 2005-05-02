@@ -58,10 +58,10 @@ commentGroup = do
 
 annote :: GenParser Char st Annotation
 annote = anno_label <|> do 
-    start_source_pos <- getPos
+    p <- getPos
     i <- try anno_ident
-    anno <- annote_group i <|> annote_line i
-    case parse_anno anno start_source_pos of
+    anno <- annote_group p i <|> annote_line p i
+    case parse_anno anno p of
       Left  err -> do 
         setPosition (errorPos err)
         fail (tail (showErrorMessages "or" "unknown parse error"
@@ -80,18 +80,18 @@ anno_label = do
 anno_ident :: GenParser Char st Annote_word
 anno_ident = fmap Annote_word $ string "%" >> casl_words
 
-annote_group :: Annote_word -> GenParser Char st Annotation
-annote_group s = do 
+annote_group :: Pos -> Annote_word -> GenParser Char st Annotation
+annote_group p s = do 
     char '(' -- ) 
     annote_lines <- manyTill anyChar $ try $ string ")%"
     q <- getPos
-    return $ Unparsed_anno s (Group_anno $ lines annote_lines) [dec q]
+    return $ Unparsed_anno s (Group_anno $ lines annote_lines) [p, dec q]
 
-annote_line :: Annote_word -> GenParser Char st Annotation
-annote_line s = do 
+annote_line :: Pos -> Annote_word -> GenParser Char st Annotation
+annote_line p s = do 
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno s (Line_anno line) [q]
+    return $ Unparsed_anno s (Line_anno line) [p, q]
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
@@ -113,22 +113,21 @@ parse_anno anno sp =
         case lookup kw $ swapTable semantic_anno_table of
         Just sa -> semantic_anno sa txt sp 
         _  -> let nsp = Id.incSourceColumn sp (length kw + 1)
-                  ps = sp : qs
                   inp = case txt of 
                         Line_anno str -> str 
                         Group_anno ls -> unlines ls
                   mkAssoc dir p = do 
                         res <- p
-                        return (Assoc_anno dir res ps) in
+                        return (Assoc_anno dir res qs) in
                   case kw of
              "left_assoc"  -> parse_internal (mkAssoc ALeft commaIds) nsp inp
              "right_assoc" -> parse_internal (mkAssoc ARight commaIds) nsp inp
-             "prec"     -> parse_internal (prec_anno ps)     nsp inp
-             "display"  -> parse_internal (display_anno ps)  nsp inp
-             "number"   -> parse_internal (number_anno ps)   nsp inp
-             "string"   -> parse_internal (string_anno ps)   nsp inp
-             "list"     -> parse_internal (list_anno ps)     nsp inp
-             "floating" -> parse_internal (floating_anno ps) nsp inp
+             "prec"     -> parse_internal (prec_anno qs)     nsp inp
+             "display"  -> parse_internal (display_anno qs)  nsp inp
+             "number"   -> parse_internal (number_anno qs)   nsp inp
+             "string"   -> parse_internal (string_anno qs)   nsp inp
+             "list"     -> parse_internal (list_anno qs)     nsp inp
+             "floating" -> parse_internal (floating_anno qs) nsp inp
              _ -> Right anno
     _ -> Right anno
 
