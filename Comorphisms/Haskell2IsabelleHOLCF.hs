@@ -17,7 +17,6 @@ import Data.Maybe
 import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.Result as Result
-import Common.Id as Id
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 
@@ -29,11 +28,9 @@ import Haskell.HatAna as HatAna
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
-import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Translate as Translate
 
 -- Programatica
-import FiniteMap
 import HsTypeStruct  
 import HsKindStruct
 import HsTypeMaps 
@@ -41,20 +38,25 @@ import HsName
 import HsIdent 
 import TypedIds
 import OrigTiMonad 
+
 import TiTypes
 import TiKinds
 import TiInstanceDB -- as TiInst
+ 
 import TiTEnv
 import TiKEnv
 import TiEnvFM
+
 import PNT 
 import PosName
 import UniqueNames
+
 import PropSyntaxRec 
 import HsExpStruct
 import HsPatStruct
 import HsExpMaps
 import HsPatMaps
+
 import SyntaxRec
 import TiPropDecorate
 import PropSyntaxStruct
@@ -117,67 +119,40 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
        inclusion Isabelle sig1 sig2
     map_theory Haskell2IsabelleHOLCF (sign, sens) = do
         sign' <- transSignature sign
-        sens'' <- mapM (transSentence sign . sentence) sens
+        sens'' <- mapM (transSentence . sentence) sens
         return (sign', concat sens'')
+    map_symbol Haskell2IsabelleHOLCF _ = 
+        error "Haskell2IsabelleHOLCF.map_symbol"
 
 ------------------------------ Theory translation -------------------------------
 
-transSentence :: HatAna.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
-transSentence sign (TiPropDecorate.Dec d) = case d of
+transSentence :: PrDecl -> Result [Named IsaSign.Sentence]
+transSentence (TiPropDecorate.Dec d) = case d of
              PropSyntaxStruct.Base p -> case p of
                 HsDeclStruct.HsFunBind _ [x] -> do 
-                    (nam, def) <- transMatch x
-                    return [NamedSen nam $ ConstDef def]
+                    s <- transMatch x
+                    return [s]
                 _ -> return []
              _ -> return []
 
--- fuctionDecl :: PNT -> [HsTypeI PNT] -> HsTypeI PNT -> IsaTerm
--- functionDecl n c t = 
+{- Relevant theories in Programatica: base/Ti/TiClasses (for
+tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).  -}
 
-{-
-transMatchList ::  [HsDeclStruct.HsMatchI PNT PrExp PrPat ds] -> Result IsaTerm
-transMatchList ls = do ts <- transMatchListR ls
-                       return $ Fix (mkIsaOrM ts) 
-
-mkIsaOrM :: [IsaTerm] -> IsaTerm
-mkIsaOrM ts = case ts of
-  [] -> IsaSign.Bottom
-  x:xs -> IsaConsts.mkIsaOr x (mkIsaOrM xs)
-
-transMatchListR ::  [HsDeclStruct.HsMatchI PNT PrExp PrPat ds] -> Result [IsaTerm]
-transMatchListR ls = case ls of
-   [] -> return [IsaSign.Bottom]
-   x:xs -> do t <- transMatch x
-              ts <- transMatchListR xs
-              return (case xs of 
-                       [] -> [t]
-                       y:ys -> t:ts)
--}
-
-{- Use the fact that hatAna2 (in HatAna) returns the HsDecls without modifying them (first component). Check how hatAna2 is used by
- the translation. It should not be hard to pick the unchecked values. Get them printed out by Hets with show_theory. Then see what 
-can be done. Relevant theories in Programatica: base/Ti/TiClasses (for tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).
--}
-
--- fixWrap :: IsaTerm -> IsaTerm
--- fixWrap x = let y = (Free "XX" noType) in Fix (Abs y (App (App XEqXEqX y IsCont) x IsCont))
-
-transMatch :: HsDeclStruct.HsMatchI PNT PrExp PrPat ds -> Result (IName, IsaTerm) 
+transMatch :: HsDeclStruct.HsMatchI PNT PrExp PrPat ds 
+           -> Result (Named Sentence) 
 transMatch t = case t of 
-  (HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _) -> 
+  HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _ -> 
          let tx = transExp x
              df = showIsaName nm
-         in return $ (df, IsaEq (Const df noType) (termMAbs IsCont (map transPat ps) tx))
---         in return $ termMAppl IsCont (Const "IsaEq" noType) [termMAppl IsCont (Const (showIsaPNT nm) noType) (map transPat ps), Fix tx]
--- App (App (Const "IsaEq" noType) (Const (showIsaPNT nm) noType) IsCont) tx IsCont
---         in return $ App (App (Const "IsaEq" noType) (Const (showIsaPNT nm) noType) IsCont) tx IsCont
-  _ -> warning ("",IsaSign.Bottom) "Haskell2IsabelleHOLCF.transMatch, case not supported" nullPos
+         in return $ NamedSen df $ ConstDef $
+            IsaEq (Const df noType) $ termMAbs IsCont (map transPat ps) tx
+  _ -> fail "Haskell2IsabelleHOLCF.transMatch, case not supported"
 
 ------------------------------ Signature translation -----------------------------
 
 transSignature :: HatAna.Sign -> Result IsaSign.Sign
 
-transSignature sign = Result [] $ Just $ IsaSign.Sign 
+transSignature sign = Result [] $ Just $ IsaSign.emptySign
   { baseSig = HOLCF_thy,
     tsig = emptyTypeSig 
            { 
@@ -186,9 +161,9 @@ transSignature sign = Result [] $ Just $ IsaSign.Sign
              arities = getArities (HatAna.instances sign) 
            },
     constTab = getConstTab (HatAna.values sign),
-    dataTypeTab = [],
-    domainTab = getDomainTab (HatAna.values sign),
-    showLemmas = False }
+    domainTab = getDomainTab (HatAna.values sign)
+  }
+
 
 ------------------------------- Signature --------------------------------------
 -------------------------------- Name translation -----------------------------
@@ -359,7 +334,6 @@ getValInfo n = case n of
 transFromScheme :: HsScheme -> IsaType
 transFromScheme s = case s of 
     Forall _ _ (c TiTypes.:=> t) -> transType c t
-    _ -> error "Haskell2IsabelleHOLCF.transFromScheme"
 
 ----------------------------- getting Classrel (from KEnv) -----------------------
 
@@ -648,16 +622,6 @@ transExp t = case t of
     (TiPropDecorate.TiSpec (HsVar x) s _) -> Free (showIsaName x) (transFromScheme s)
     (TiPropDecorate.TiSpec (HsCon x) s _) -> transCN s x
     (TiPropDecorate.TiTyped x _) -> transExp x
-    _ -> Bottom
---    _ -> error "Haskell2IsabelleHOLCF.transExp"
-
--- transExp :: PropSyntaxRec.HsExpI PNT -> IsaTerm
--- transExp t = case t of 
---    (PropSyntaxRec.Exp e) -> transE showIsaS transExp transPat e
-
---    transE showIsaS transExp transE transLocalDecs e
---  where
---  transLocalDecs (a,b) = (transE a, transE b)
 
 transPat :: PrPat -> IsaPattern
 transPat x = case x of 
