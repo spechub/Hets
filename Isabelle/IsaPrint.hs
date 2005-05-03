@@ -17,7 +17,7 @@ Portability :  portable
 
 module Isabelle.IsaPrint where
 
-import Isabelle.IsaSign
+import Isabelle.IsaSign 
 import Isabelle.IsaConsts
 import Common.Lib.Pretty
 import Common.PrettyPrint
@@ -38,22 +38,72 @@ instance PrettyPrint IsaClass where
 instance PrintLaTeX Sentence where
   printLatex0 = printText0
 
+{- test for sentence translation -}
 instance PrettyPrint Sentence where
-    printText0 _ = text . showTerm . senTerm
+    printText0 _ = showIsaDef
+--    printText0 _ = text . showTerm . senTerm
+--    printText0 _ = text . show
+
+showIsaDef :: Sentence -> Doc
+showIsaDef x = let d = senDef x
+  in 
+  if d == "" then empty
+  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm x)++"\"")
 
 instance PrettyPrint Typ where
-  printText0 _ = text . showTyp 1000
+  printText0 _ = text . showTyp Unquoted 1000
 
-showTyp :: Integer -> Typ -> String
-showTyp pri (Type str _ [s,t]) 
-  | str == funS =
-       bracketize (pri<=10) (showTyp 10 s ++ " => " ++ showTyp 10 t)
-  | str == "dFun" =
-       bracketize (pri<=10) (showTyp 10 s ++ " -> " ++ showTyp 10 t)
-  | str == prodS = 
-       lb ++ showTyp pri s ++ " * " ++ showTyp pri t ++ rb
-  | str == "**" = 
-       lb ++ showTyp pri s ++ " ** " ++ showTyp pri t ++ rb
+showClass :: Sort -> String
+showClass s = case s of 
+   [] -> ""
+   (IsaClass x):(a:as) -> x ++ "," ++ showClass (a:as)
+   (IsaClass x) : [] -> x
+
+showSort :: Sort -> String
+showSort s = "{"++(showClass s)++"}"
+
+data SynFlag = Unquoted | Quoted | Null 
+
+showTyp :: SynFlag -> Integer -> Typ -> String
+showTyp a pri t = case t of 
+ (TFree v s) -> case a of
+   Unquoted -> lb ++ "\'" ++ v ++ "::" ++ (showSort s) ++ rb
+   Quoted -> "\'" ++ v ++ "::\"" ++ (showSort s) ++ "\""
+   Null ->  "\'" ++ v
+ (TVar (v,_) s) -> case a of
+   Unquoted -> lb ++ "?\'" ++ v ++ "::" ++ (showSort s) ++ rb
+   Quoted -> "?\'" ++ v ++ "::\"" ++ (showSort s) ++ "\""
+   Null ->  "?\'" ++ v
+ (Type name _ args) -> case args of 
+   [] -> name
+   arg:[] ->  showTyp a 10 arg ++ sp ++ name
+   [t1,t2] -> showTypeOp a pri name t1 t2 
+   _  -> lb ++ (rearrangeVarsInType a pri name args) ++ rb
+ where rearrangeVarsInType x p n as = 
+            let (tyVars,types) = foldl split ([],[]) as
+            in (encloseTup x p (concRev tyVars types)) ++ sp ++ n 
+       split (tv,ty) k = case k of 
+                        TFree _ _ -> (tv++[k],ty)
+                        _       -> (tv,ty++[k])
+       concRev a b = reverse a ++ reverse b
+       encloseTup f g l = if (length l) < 2 then showTypTup f g l else lb++(showTypTup f g l)++rb 
+       showTypTup f g l = case l of
+          [] -> []
+          [a] -> showTyp f g a
+          a:b:as -> (showTyp f g a)++","++sp++(showTypTup f g (b:as)) 
+       showTypeOp x p n r1 r2
+          | n == funS =
+             bracketize (p<=10) (showTyp x 10 r1 ++ " => " ++ showTyp x 10 r2)
+          | n == "dFun" =
+             bracketize (p<=10) (showTyp x 10 r1 ++ " -> " ++ showTyp x 10 r2)
+          | n == prodS = 
+             lb ++ showTyp x p r1 ++ " * " ++ showTyp x p r2 ++ rb
+          | n == "**" = 
+             lb ++ showTyp x p r1 ++ " ** " ++ showTyp x p r2 ++ rb
+          | True = rearrangeVarsInType x p n [r1,r2]
+
+
+{-
 showTyp _ (Type name _ args) = 
   case args of
     []     -> name
@@ -65,8 +115,9 @@ showTyp _ (Type name _ args) =
               where split (tv,ty) t = case t of 
                                         TFree _ _ -> (tv++[t],ty)
                                         _       -> (tv,ty++[t])
-showTyp _ (TFree v _) = "\'" ++ v
-showTyp _ (TVar (v,_) _) = "?\'" ++ v
+showTyp _ (TFree v s) = lb ++ "\'" ++ v ++ "::" ++ (showSort s) ++ rb
+showTyp _ (TVar (v,_) s) = lb ++ "?\'" ++ v ++ "::" ++ (showSort s) ++ rb
+-}
 
 instance PrettyPrint TypeSig where
   printText0 _ tysig =
@@ -93,7 +144,7 @@ typedVars2st :: (a -> String) -> (b -> String) -> [(a,b)] -> String
 typedVars2st f g ls = concat [" (" ++ (f x) ++ "::" ++ (g y) ++ ")" | (x,y) <- ls]
 
 showTypedVars :: [(Term,Typ)] -> String
-showTypedVars ls = typedVars2st showTerm (showTyp 1000) ls
+showTypedVars ls = typedVars2st showTerm (showTyp Unquoted 1000) ls
 ---
 
 
@@ -106,14 +157,30 @@ showQuantStr s | s == allS = "!"
 showTerm :: Term -> String
 showTerm (Const c _) = c
 showTerm (Free v _) = v
-showTerm (Abs v _ t NotCont) = lb++"%"++(showTerm v)++" . "++showTerm t++rb
-showTerm (Abs v _ t IsCont) = lb++"LAM"++(showTerm v)++" . "++showTerm t++rb
+-- showTerm (Free "XEqXEqX" _) = "="
+-- showTerm (Const "XEqXEqX" _) = "="
+
+showTerm (Abs v y t l) | v == (Const "DIC" noType) = showTerm t
+                       | v == (Free "DIC" noType) = showTerm t
+                       | l == NotCont = lb++"%"++(showTerm v)++"::"++(showTyp Unquoted 1000 y)++". "++showTerm t++rb
+                       | l == IsCont = lb++"LAM"++sp++(showTerm v)++"::"++(showTyp Unquoted 1000 y)++". "++showTerm t++rb
+
+showTerm (Paren t) = showTerm t 
+showTerm (Fix t) = lb++"fix"++sp++(showTerm t)++rb
 --showTerm (Abs vs t NotCont) = lb++"%"++(showTypedVars vs)++" . "++showTerm t++rb
 --showTerm (Abs vs t IsCont) = lb++"LAM"++(showTypedVars vs)++" . "++showTerm t++rb
 -- showTerm (Abs vs t NotCont) = lb++"% "++(stringMap (show . fst) vs)++" . "++showTerm t++rb
 -- showTeshowTerm (Abs vs t IsCont) = lb++"LAM "++(stringMap (show . fst) vs)++" . "++showTerm t++rb
+-- showTerm (App t (Const "DIC" noType) _) = showTerm t
+showTerm (App (App (Free "EqXEqX" _) t1 IsCont) t2 IsCont) = "Def"++lb ++(showTerm t1)++"="++(showTerm t2)++rb
+showTerm (App (App (Free "EqXEqX" _) t1 _) t2 _) = lb++(showTerm t1)++"="++(showTerm t2)++rb
 showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
   showQuant (showQuantStr q) v ty t
+showTerm (App t1 t2 NotCont) = lb++(showTerm t1)++sp++(showTerm t2)++rb
+showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
+showTerm Bottom = "UU"
+
+showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "==" ++ sp ++ (showTerm t2) ++ rb
 showTerm (Case term alts) =
   let sAlts = map showCaseAlt alts
   in 
@@ -125,14 +192,18 @@ showTerm (Case term alts) =
 showTerm (If t1 t2 t3) = 
     lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
            ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
+showTerm (CIf t1 t2 t3) = 
+    lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
+           ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
 showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
-showTerm t = showPTree (toPrecTree t) 
+showTerm t@(App _ _ _) = showPTree (toPrecTree t) 
+
+-- showTerm t = show t -- "FUNNY"
  --   NO GOOD - it loops
 -- showTerm t = "(IsaPrint.showTerm, error: unsupported term)"
 -- showTerm t = "(IsaPrint.showTerm, error: "++(show t)++" unsupported term)"
-
 
 showPat :: Bool -> (Term, Term) -> String
 showPat b (pat, term) = 
@@ -140,7 +211,6 @@ showPat b (pat, term) =
   in
     if b then ";" ++ s
       else s
-
 
 showCaseAlt :: (Term, Term) -> String
 showCaseAlt (pat, term) =
@@ -152,7 +222,7 @@ showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
-  (s++sp++(showTerm var)++" :: "++showTyp 1000 typ++" . "++showTerm term)
+  (s++sp++(showTerm var)++" :: "++showTyp Unquoted 1000 typ++" . "++showTerm term)
 -- showQuant :: String -> [String] -> Term -> String
 -- showQuant s vs term = 
 --  (s++sp++(stringMap showTerm vs)++" . "++showTerm term)
@@ -171,7 +241,7 @@ outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
 outerShowQuant s var typ term =
-  (s++sp++(showTerm var)++" :: "++showTyp 1000 typ++" . "++outerShowTerm term)
+  (s++sp++(showTerm var)++" :: "++showTyp Unquoted 1000 typ++" . "++outerShowTerm term)
 
 
 {-   
@@ -367,6 +437,11 @@ quant (Node (PrecTerm (Const q _) _) [])
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
 
+listEnum :: [a] -> [(a,Int)]
+listEnum l = case l of
+ [] -> []
+ a:as -> (a,length (a:as)):(listEnum as)
+
 pr :: PrecTermTree -> Precedence
 pr (Node (PrecTerm _ p) _) = p
 
@@ -377,19 +452,24 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
 
 instance PrettyPrint Sign where
   printText0 ga sig = printText0 ga
-    (baseSig sig) <> colon $$
+    (baseSig sig) <> colon $$ text "\n" $$
     printText0 ga (tsig sig) $$
     showDataTypeDefs (dataTypeTab sig) $$
     showDomainDefs (domainTab sig) $$    --
     showsConstTab (constTab sig) $$
---    showCaseLemmata (dataTypeTab sig)
-    showCaseLemmata (domainTab sig)      --
+    showCaseLemmata (dataTypeTab sig) 
+--    showDomLemmata (domainTab sig)      --
     where
     showsConstTab tab =
      if Map.isEmpty tab then empty
-      else text("consts") $$ Map.foldWithKey showConst empty tab
-    showConst c t rest = text (show c ++ " :: " ++ "\"" ++ showTyp 1000 t 
+      else text("consts") $$ Map.foldWithKey showConst empty tab $$ text "\n"
+    showConst c t rest = 
+--     case (snd t) of 
+--      IsaVal ->  
+         text (show c ++ " :: " ++ "\"" ++ showTyp Unquoted 1000 t -- (fst t) 
                                 ++ "\"" ++ showDecl c) $$ rest
+--      IsaConst -> rest
+--    showDecl c = sp ++ sp ++ sp ++ "( \"" ++ quote_underscores c ++ "\" )"
     showDecl c = sp -- ++ sp ++ sp ++ "( \"" ++ quote_underscores c ++ "\" )"
     showDataTypeDefs dtDefs = vcat $ map (text . showDataTypeDef) dtDefs
     showDataTypeDef [] = ""
@@ -398,22 +478,24 @@ instance PrettyPrint Sign where
        ++ (concat $ map ((" and "++) . showDataType) dts) ++ "\n"
     showDataType (a,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
-       showTyp 1000 t ++ " = " ++ showOp op 
+       showTyp Quoted 1000 t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
     showDomainDefs dtDefs = vcat $ map (text . showDomainDef) dtDefs   -- 
     showDomainDef [] = ""                                                --
     showDomainDef (dt:dts) =                                             --
        "domain " ++ showDomain dt                                      --
-       ++ (concat $ map ((" and "++) . showDomain) dts) ++ "\n"           --
+       ++ (concat $ map (("\n and "++) . showDomain) dts) ++ "\n"           --
     showDomain (_,[]) = error "IsaPrint.showDomain"                    --
     showDomain (t,op:ops) =                                              --
-       showTyp 1000 t ++ " = " ++ showOp op                                --
-       ++ (concat $ map ((" | "++) . showOp) ops)                          --
+       showTyp Quoted 1000 t ++ " = " ++ showDOp op                                --
+       ++ (concat $ map ((" | "++) . showDOp) ops)                          --
+    showDOp (opname,args) =
+       opname ++ (concat $ [sp++lb++opname++"_"++(show n)++"::"++sp++(showArg x)++rb | (x,n) <- listEnum args])
     showOp (opname,args) =
        opname ++ (concat $ map ((sp ++) . showArg) args)
     showArg arg = case arg of
-                    TFree _ _ -> showTyp 1000 arg
-                    _         -> "\"" ++ showTyp 1000 arg ++ "\""
+                    TFree _ _ -> showTyp Null 1000 arg
+                    _         -> "\"" ++ showTyp Null 1000 arg ++ "\""
     showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
     showCaseLemmata1 dts = concat $ map showCaseLemma dts
     showCaseLemma (_, []) = ""
@@ -448,6 +530,41 @@ instance PrettyPrint Sign where
         "lemma" ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
                 ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
+                ++ proof
+    showDomLemmata dtDefs = text (concat $ map showDomLemmata1 dtDefs)
+    showDomLemmata1 dts = concat $ map showDomLemma dts
+    showDomLemma (_, []) = ""
+    showDomLemma (tyCons, (c:cons)) = 
+      let cs = "case caseVar of" ++ sp
+          sc b = showCons b c ++ (concat $ map (("   | " ++) . (showCons b)) cons)
+          clSome = sc True
+          cl = sc False
+          showCons b (cName, args) =
+            let pat = cName ++ (concat $ map (("$" ++) . showArg) args) 
+                            ++ sp ++ "=>" ++ sp 
+                term = showCaseTerm cName args 
+            in
+               if b then pat ++ "Def" ++ sp ++ lb ++ term ++ rb ++ "\n"
+                 else pat ++ term ++ "\n"
+          showCaseTerm name args = if null name then sa 
+                                     else [toLower (head name)] ++ sa
+            where sa = (concat $ map ((sp ++) . showArg) args)
+          showArg (TFree [] _) = "varName"
+          showArg (TFree (n:ns) _) = [toLower n] ++ ns
+          showArg (TVar ([], _) _) = "varName"
+          showArg (TVar ((n:ns), _) _) = [toLower n] ++ ns
+          showArg (Type [] _ _) = "varName"
+          showArg (Type m@(n:ns) _ s) = 
+            if m == "typeAppl" || m == "fun" || m == "*"  then concat $ map showArg s
+              else [toLower n] ++ ns
+          showName (TFree v _) = v
+          showName (TVar (v, _) _)  = v
+          showName (Type n _ _) = n
+          proof = "apply (case_tac caseVar)\napply (auto)\ndone\n"
+      in
+        "lemma" ++ sp ++ "case_" ++ showName tyCons ++ "_SomeProm" ++ sp
+                ++ "[simp]:" ++ sp ++ "\"" ++ lb ++ cs ++ clSome ++ rb ++ sp
+                ++ "=\n" ++ "Def" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
                 ++ proof
 
 quote_underscores :: String -> String
