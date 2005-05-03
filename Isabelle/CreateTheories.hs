@@ -87,7 +87,7 @@ printTheory ln le ga dg (sn, ge) = case ge of
                           (if null sens then P.empty else text "defs" $$
                           vsep (map (printText0 ga) sens)) $$ text "\n" $$
                           text "end"
-                          $$ (text $ show (IsaSign.constTab sign))               
+--                          $$ (text $ show (IsaSign.constTab sign))               
  {-                         (text $ show (IsaSign.domainTab sign)) <+> text "\n" $$ 
                           (text $ show (IsaSign.constTab sign))               
   **                      (if null sens then P.empty else text "axioms" $$
