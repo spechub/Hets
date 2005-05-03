@@ -352,7 +352,7 @@ liftMapByListF ma mb h k cs f = mb [(h a, k b) | (a, b) <- ma f, cs a]
 ------------------------------- getting ConstTab ------------------------------
 
 getConstTab ::  VaMap -> IsaSign.ConstTab
-getConstTab f = Map.map fst (getAConstTab f)  
+getConstTab f = Map.map fst (Map.filter (\x -> (snd x) == IsaVal) (getAConstTab f))  
 
 getAConstTab ::  VaMap -> IsaSign.AConstTab
 getAConstTab f =   
