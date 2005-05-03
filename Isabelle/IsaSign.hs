@@ -65,19 +65,6 @@ data IsaKind  = Star
 
 ------------------------------------------------------------------------------
 
-{- 
-data Typ = TCons  { typeId    :: TName,
-                   typeSort  :: Sort,
-                   typeArgs  :: Int } 
-         | TAppl { constructor :: Typ,
-                   argument    :: Typ }
-         | TFree { typeId    :: TName,
-                   typeSort  :: Sort }
-         | TVar  { indexname :: Indexname, -- (String,Int)
-                   typeSort  :: Sort }
-         deriving (Eq, Ord, Show)
--}
-
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
 data Typ = Type  { typeId    :: TName,
                    typeSort  :: Sort,
@@ -98,15 +85,6 @@ binTypeAppl :: Typ -> Typ -> Typ
 binTypeAppl t1 t2 = case t1 of
     Type n s ts -> Type n s (t2:ts) 
     _ -> error "IsaSign.binTypeAppl, unsupported type application"                 
---binTypeAppl t1 t2 = case t1 of
---    Type n s [] -> Type n s []
---    Type n s ((TVar _ _):ts) -> Type n s (t2:ts) 
-----   Type _ _ (t2:_) -> t1
---    _ -> error "IsaSign.binTypeAppl, unsupported type application"                
-
--- mkContAppl :: Typ -> Typ -> Typ 
--- mkContAppl t1 t2 = Type "domAppl" dom [t1,t2]
-
 noType :: Typ
 noType = dummyT
 
@@ -151,10 +129,6 @@ mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
 mkContSum :: Typ -> Typ -> Typ
 mkContSum t1 t2 = Type "++" dom [t1,t2]
 
--- not so useful, could be omitted
--- typeApplS :: TName 
--- typeApplS = "typeAppl" -- maybe this should be " " for printing
-
 prodS :: TName
 prodS = "*"    -- this is printed as it is!
 
@@ -174,10 +148,8 @@ data Continuity = IsCont | NotCont deriving (Eq, Ord ,Show)
 data Term =
         Const { termName     :: VName,
                 termType     :: Typ } 
---                defaultClass :: IsaClass }  -- constants, with default class
       | Free  { termName   :: VName,  
                 termType     :: Typ } 
---               defaultClass :: IsaClass }  -- free variables
       | Var  Indexname Typ
       | Bound Int
       | IsaEq { firstTerm  :: Term,
@@ -186,25 +158,19 @@ data Term =
                 termType   :: Typ, 
                 termId     :: Term, 
                 continuity :: Continuity }  -- lambda abstraction
---      | Abs   { absVars    :: [(Term,Typ)], 
---                termId     :: Term, 
---                continuity :: Continuity }  -- lambda abstraction
       | App  { funId :: Term, 
                argId :: Term, 
                continuity   :: Continuity }    -- application
       | Case { termId       :: Term, 
                caseSubst    :: [(Term, Term)] } 
---               continuity  :: Continuity }  -- case
       | CIf { ifId   :: Term, 
              thenId :: Term, 
              elseId :: Term } 
       | If { ifId   :: Term, 
              thenId :: Term, 
              elseId :: Term } 
---             continuity   :: Continuity }        -- If then else
       | Let { letSubst    :: [(Term, Term)], 
               inId        :: Term } 
---              continuity  :: Continuity }   -- Let
       | Tuples [Term] Continuity 
       | Paren Term
       | Wildcard
@@ -233,11 +199,8 @@ termMFAbs c ts t =
    v:vs -> if v == (Const "DIC" noType) then (termMFAbs c vs t) else 
       termMFAbs c vs (Fix (Abs v noType t c))  
 
-data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord, Show) 
 
--- type Definition = (IName, Term)
--- type Sentence = [Definition]
-
+data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord, Show)
 
 -------------------- from src/Pure/sorts.ML ------------------------
 
@@ -251,10 +214,8 @@ data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord,
   represented by lists of classes.  Normal forms of sorts are sorted
   lists of minimal classes (wrt. current class inclusion).
 
-  (already defined in Pure/term.ML) -}
+  (already defined in Pure/term.ML)
 
-{- sort signature information -}
-{-
   classrel:
     table representing the proper subclass relation; entries (c, cs)
     represent the superclasses cs of c;
@@ -264,15 +225,11 @@ data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord,
     that type constructor t has the arities ars; an element (c, Ss) of
     ars represents the arity t::(Ss)c;
 
-type Classrel = Map.Map IsaClass [IsaClass]
-type Arities = Map.Map IName [(IsaClass, [Sort])] -- function names are mapped to arities
-
 -}
 
 type Classrel = Map.Map IsaClass [IsaClass]
 type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
 type Abbrs = Map.Map TName ([TName], Typ)
--- type Arities = Map.Map TName [(IsaClass, [Sort])] old!!!
 
 data TypeSig =
   TySg {
@@ -281,7 +238,8 @@ data TypeSig =
     log_types:: [TName],
     univ_witness:: Maybe (Typ, Sort),
     abbrs:: Abbrs, -- constructor name, variable names, type.
-    arities:: Arities } -- actually isa-instances. the former field tycons can be computed.
+    arities:: Arities } 
+    -- actually isa-instances. the former field tycons can be computed.
     deriving (Eq, Show)
 
 emptyTypeSig :: TypeSig
