@@ -516,7 +516,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                   | elem x xs = noDouble xs
                   | otherwise = x:(noDouble xs)
 
-{- |||||||||||||||||||||
+{-
          --  collection of signature
          --  operation
          sigComb sig1 sig2 | null sig2 =sig1             
@@ -563,8 +563,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                      Implication f1 f2 _ _ -> error "Termination_Axioms_Implication" 
                      Equivalence f1 f2 _ -> error "Termination_Axioms_Equivalence"
                      Negation f' _ -> error "Termination_Axioms_Negation"
-                     True_atom _ -> error "Termination_Axioms_True"	    
-	             False_atom _ -> error "Termination_Axioms_False"
+                     True_atom _ -> error "Termination_Axioms_True"         
+                     False_atom _ -> error "Termination_Axioms_False"
                      Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
                      Definedness t _ -> error "Termination_Axioms_Definedness"
                      Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
@@ -780,12 +780,12 @@ varOfAxiom f = case f of
 opSymStr :: OP_SYMB -> String 
 opSymStr os = case os of
                 Op_name on -> idStr on
-	        Qual_op_name on _ _ -> idStr on
+                Qual_op_name on _ _ -> idStr on
 
 predSymStr :: PRED_SYMB -> String
 predSymStr ps = case ps of 
                   Pred_name pn -> idStr pn 
-	          Qual_pred_name pn _ _ -> idStr pn
+                  Qual_pred_name pn _ _ -> idStr pn
 {-
 noDouble :: (Eq a) => [a] -> [a]
 noDouble [] = []
@@ -887,8 +887,8 @@ axiom_cime f = case f of
                                             _ -> impli_cime 1 f 
                  Equivalence _ _ _ -> equiv_cime f
                  Negation f' _ -> error "Termination_Axioms_Negation"
-                 True_atom _ -> error "Termination_Axioms_True"	    
-	         False_atom _ -> error "Termination_Axioms_False"
+                 True_atom _ -> error "Termination_Axioms_True"     
+                 False_atom _ -> error "Termination_Axioms_False"
                  Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
                  Definedness t _ -> error "Termination_Axioms_Definedness"
                  Existl_equation t1 t2 _ -> (term_cime t1) ++ " -> " ++ (term_cime t2)
