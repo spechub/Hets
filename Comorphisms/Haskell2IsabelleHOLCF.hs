@@ -319,14 +319,17 @@ liftMapByListF ma mb h k cs f = mb [(h a, k b) | (a, b) <- ma f, cs a]
 
 ------------------------------- getting ConstTab ------------------------------
 
-getConstTab ::  VaMap -> IsaSign.ConstTab
+data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
+type AConstTab = Map.Map VName (Typ,IsaVT)
+
+getConstTab ::  VaMap -> ConstTab
 getConstTab f = Map.map fst (Map.filter (\x -> (snd x) == IsaVal) (getAConstTab f))  
 
-getAConstTab ::  VaMap -> IsaSign.AConstTab
+getAConstTab ::  VaMap -> AConstTab
 getAConstTab f =   
     liftMapByListD Map.toList Map.fromList showIsaName transFromScheme getValInfo f
 
-getValInfo :: HsId -> IsaSign.IsaVT
+getValInfo :: HsId -> IsaVT
 getValInfo n = case n of 
    HsCon x -> IsaConst
    _ -> IsaVal
@@ -508,14 +511,14 @@ getHsType f n = case Map.lookup n f of
     Just t -> t
     _ -> error "Haskell2IsabelleHOLCF.getHsType"
 
-getDomainEntry :: IsaSign.AConstTab -> HsId -> [IsaSign.DomainEntry]
+getDomainEntry :: AConstTab -> HsId -> [IsaSign.DomainEntry]
 getDomainEntry ctab t = case t of
   HsCon (PNT _ (TypedIds.ConstrOf _ d) _) -> 
      [(getDomType ctab (showIsaName t), [(b, getFieldTypes ctab b) | 
             b <- [showIsaName c | (PN c _) <- map conName (constructors d)]])]
   _ -> []
 
-getDomType :: IsaSign.AConstTab -> VName -> IsaType
+getDomType :: AConstTab -> VName -> IsaType
 getDomType ctab c = let x = Map.lookup c ctab in
                            case x of
                                   Nothing -> error "Haskell2IsabelleHOLCF.getTheType"
@@ -527,7 +530,7 @@ getHeadType t = case t of
   IsaSign.Type "dFun" _ [t1,t2] -> getHeadType t2
   _ -> t
 
-getFieldTypes :: IsaSign.AConstTab -> VName -> [IsaType]
+getFieldTypes :: AConstTab -> VName -> [IsaType]
 getFieldTypes ctab c = let x = Map.lookup c ctab in
                            case x of
                                   Nothing -> []

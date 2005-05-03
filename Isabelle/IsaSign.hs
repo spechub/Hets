@@ -256,10 +256,7 @@ data Sign = Sign { baseSig :: BaseSig, -- like Pure, HOL, Main etc.
     each constructor consists of its name (String) and list of argument types
  -}                      
 
-data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
-
 type ConstTab = Map.Map VName Typ
-type AConstTab = Map.Map VName (Typ,IsaVT)
 
 type DataTypeTab = [DataTypeTabEntry]
 type DataTypeTabEntry = [DataTypeEntry] -- (type,[value cons])
