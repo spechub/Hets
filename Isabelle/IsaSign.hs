@@ -180,6 +180,8 @@ data Term =
 --               defaultClass :: IsaClass }  -- free variables
       | Var  Indexname Typ
       | Bound Int
+      | IsaEq { firstTerm  :: Term,
+                secondTerm :: Term }
       | Abs   { absVar     :: Term,
                 termType   :: Typ, 
                 termId     :: Term, 
@@ -193,6 +195,9 @@ data Term =
       | Case { termId       :: Term, 
                caseSubst    :: [(Term, Term)] } 
 --               continuity  :: Continuity }  -- case
+      | CIf { ifId   :: Term, 
+             thenId :: Term, 
+             elseId :: Term } 
       | If { ifId   :: Term, 
              thenId :: Term, 
              elseId :: Term } 
@@ -207,7 +212,28 @@ data Term =
       | Bottom 
       deriving (Eq, Ord, Show)
 
-data Sentence = Sentence { senTerm :: Term } deriving (Eq, Ord, Show) 
+termMAbs :: Continuity -> [Term] -> Term -> Term
+termMAbs c ts t = 
+ case ts of 
+   [] -> t
+   v:vs -> if v == (Const "DIC" noType) then (termMAbs c vs t) else 
+      termMAbs c vs (Abs v (termType v) t c)  
+
+termMAppl :: Continuity -> Term -> [Term] -> Term
+termMAppl c t ts = 
+ case ts of 
+   [] -> t
+   v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
+      termMAppl c (App t v c) vs 
+
+termMFAbs :: Continuity -> [Term] -> Term -> Term
+termMFAbs c ts t = 
+ case ts of 
+   [] -> t
+   v:vs -> if v == (Const "DIC" noType) then (termMFAbs c vs t) else 
+      termMFAbs c vs (Fix (Abs v noType t c))  
+
+data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord, Show) 
 
 -- type Definition = (IName, Term)
 -- type Sentence = [Definition]
@@ -289,7 +315,10 @@ data Sign = Sign { baseSig :: BaseSig, -- like Pure, HOL, Main etc.
     each constructor consists of its name (String) and list of argument types
  -}                      
 
+data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
+
 type ConstTab = Map.Map VName Typ
+type AConstTab = Map.Map VName (Typ,IsaVT)
 
 type DataTypeTab = [DataTypeTabEntry]
 type DataTypeTabEntry = [DataTypeEntry] -- (type,[value cons])
