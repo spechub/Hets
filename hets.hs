@@ -102,7 +102,7 @@ processFile opt file =
                                    when (hasEnvOut opt)
                                         (writeFileInfo opt ds file ln lenv)
                                    putIfVerbose opt 5 (showPretty lenv "")
-                                   doIfVerbose opt 5 (printLibEnv lenv)
+                                   doIfVerbose opt 7 (printLibEnv lenv)
                                    --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)
