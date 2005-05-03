@@ -33,8 +33,10 @@ import HasCASL.Logic_HasCASL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2IsabelleHOL
-import Comorphisms.HasCASL2IsabelleHOL
+import Comorphisms.Haskell2IsabelleHOLCF
+import Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
+import Haskell.Logic_Haskell
 import Isabelle.Translate
 import Isabelle.IsaSign
 import Data.Maybe
@@ -55,34 +57,41 @@ printTheory ln le ga dg (sn, ge) = case ge of
         Just n -> case maybeResult $ computeTheory le dg n of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->
-                let r1 = do 
-                      sign1 <- coerce CASL lid sign0 
+                let r1 = Result [] Nothing
+{-                      sign1 <- coerce CASL lid sign0 
                       sens1 <- coerce CASL lid sens0
                       th1 <- map_theory CASL2PCFOL (sign1, sens1)
                       th2 <- map_theory PCFOL2FOL th1
-                      map_theory CASL2IsabelleHOL th2
+                      map_theory CASL2IsabelleHOL th2  -}
                     r2 = do 
-                      sign1 <- coerce HasCASL lid sign0 
-                      sens1 <- coerce HasCASL lid sens0
-                      map_theory HasCASL2IsabelleHOL (sign1, sens1)
+                      sign1 <- coerce Haskell lid sign0 
+                      sens1 <- coerce Haskell lid sens0
+                      map_theory Haskell2IsabelleHOLCF (sign1, sens1)
                     r3 = case maybeResult r1 of 
                          Nothing -> r2
                          _ -> r1
                 in case maybeResult r3 of 
                    Nothing -> putStrLn $ showPretty r3 ""
-                   Just (sign, sens2) -> let
+                   Just (sign, sens2) -> let 
+                     sens = sens2
+{-  let
                      sens = zipWith (\ s i -> 
                                     s { senName = transStringT 
                                                   (baseSig sign) (senName s
                                           ++ "_" ++ show i) }) sens2
-                           [1::Int .. ]
+                           [1::Int .. ]                                        -}
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
                           ++ "_" ++ showPretty sn ""
                      doc = text "theory" <+> text tn <+> text "=" $$
                           printText0 ga sign $$ 
-                          (if null sens then P.empty else text "axioms" $$
+                          (if null sens then P.empty else text "defs" $$
+                          vsep (map (printText0 ga) sens)) $$ text "\n" $$
+                          text "end"
+                          $$ (text $ show (IsaSign.constTab sign))               
+ {-                         (text $ show (IsaSign.domainTab sign)) <+> text "\n" $$ 
+                          (text $ show (IsaSign.constTab sign))               
+  **                      (if null sens then P.empty else text "axioms" $$
                           vsep (map (print_named Isabelle ga . 
-                                mapNamed (simplify_sen Isabelle sign)) sens))
-                          $$ text "end"
+                                mapNamed (simplify_sen Isabelle sign)) sens))   -}
                      in writeFile (tn ++ ".thy") (shows doc "\n")
     _ -> return ()
