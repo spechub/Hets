@@ -19,7 +19,7 @@ import Logic.Comorphism
 import Common.Result as Result
 import Common.Id as Id
 import qualified Common.Lib.Map as Map
-import Common.AS_Annotation (Named)
+import Common.AS_Annotation
 
 -- Haskell
 import Haskell.Logic_Haskell as LH
@@ -109,32 +109,27 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
     sourceSublogic Haskell2IsabelleHOLCF = ()
     targetLogic Haskell2IsabelleHOLCF = Isabelle
     targetSublogic Haskell2IsabelleHOLCF = ()
-    map_sentence Haskell2IsabelleHOLCF = transSentence
+    map_sentence Haskell2IsabelleHOLCF _ _ = 
+        fail "map_sentence Haskell2IsabelleHOLCF not supoorted"
     map_morphism Haskell2IsabelleHOLCF mor = do
        (sig1,_) <- map_sign Haskell2IsabelleHOLCF (Logic.dom Haskell mor)
        (sig2,_) <- map_sign Haskell2IsabelleHOLCF (cod Haskell mor)
        inclusion Isabelle sig1 sig2
-    map_theory Haskell2IsabelleHOLCF = 
-        mkTheoryMapping transSignature transSentence
+    map_theory Haskell2IsabelleHOLCF (sign, sens) = do
+        sign' <- transSignature sign
+        sens'' <- mapM (transSentence sign . sentence) sens
+        return (sign', concat sens'')
 
 ------------------------------ Theory translation -------------------------------
-{-
-transSentence :: HatAna.Sign -> PrDecl -> Result IsaSign.Sentence
-transSentence s d = let Result a x = transSentenceX s d
-  in case x of 
-    Just (Sentence _ true) -> Result [] Nothing
-    _ -> Result a x 
--}
--- transSentence :: HatAna.Sign -> PrDecl -> Result IsaSign.Sentence
-transSentence :: HatAna.Sign -> PrDecl -> Result IsaSign.Sentence
+
+transSentence :: HatAna.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
 transSentence sign (TiPropDecorate.Dec d) = case d of
              PropSyntaxStruct.Base p -> case p of
-                HsDeclStruct.HsFunBind _ [x] -> do ts <- transMatch x
-                                                   return (Sentence (fst ts) (snd ts))    
---                                                Result [] (Just (Sentence $ transMatchList ls)) 
---                HsDeclStruct.HsTypeSig _ ls c t -> Result [] (Just (Sentence (functionDeclList ls c t)))
-                _ -> warning (Sentence "" true) "Haskell2IsabelleHOLCF.transSentence 2, not yet supported"  nullPos
-             _ -> warning (Sentence "" true) "Haskell2IsabelleHOLCF.transSentence 1, case not yet supported" nullPos
+                HsDeclStruct.HsFunBind _ [x] -> do 
+                    (nam, def) <- transMatch x
+                    return [NamedSen nam $ ConstDef def]
+                _ -> return []
+             _ -> return []
 
 -- fuctionDecl :: PNT -> [HsTypeI PNT] -> HsTypeI PNT -> IsaTerm
 -- functionDecl n c t = 
@@ -180,11 +175,10 @@ transMatch t = case t of
 
 ------------------------------ Signature translation -----------------------------
 
-transSignature :: HatAna.Sign -> Result (IsaSign.Sign, [Named IsaSign.Sentence]) 
+transSignature :: HatAna.Sign -> Result IsaSign.Sign
 
-transSignature sign = Result [] 
- (Just (IsaSign.Sign{
-    baseSig = HOLCF_thy,
+transSignature sign = Result [] $ Just $ IsaSign.Sign 
+  { baseSig = HOLCF_thy,
     tsig = emptyTypeSig 
            { 
              classrel = getClassrel (HatAna.types sign),
@@ -194,8 +188,7 @@ transSignature sign = Result []
     constTab = getConstTab (HatAna.values sign),
     dataTypeTab = [],
     domainTab = getDomainTab (HatAna.values sign),
-    showLemmas = False },
-    [] ))  -- for now, no sentences
+    showLemmas = False }
 
 ------------------------------- Signature --------------------------------------
 -------------------------------- Name translation -----------------------------

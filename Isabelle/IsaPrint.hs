@@ -21,6 +21,7 @@ import Isabelle.IsaSign
 import Isabelle.IsaConsts
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.AS_Annotation
 import Data.Char
 import qualified Common.Lib.Map as Map
 
@@ -40,15 +41,12 @@ instance PrintLaTeX Sentence where
 
 {- test for sentence translation -}
 instance PrettyPrint Sentence where
-    printText0 _ = showIsaDef
---    printText0 _ = text . showTerm . senTerm
---    printText0 _ = text . show
+      printText0 _ = text . showTerm . senTerm
 
-showIsaDef :: Sentence -> Doc
-showIsaDef x = let d = senDef x
-  in 
+showIsaDef :: Named Sentence -> Doc
+showIsaDef x = let d = senName x in 
   if d == "" then empty
-  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm x)++"\"")
+  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm $ sentence x)++"\"")
 
 instance PrettyPrint Typ where
   printText0 _ = text . showTyp Unquoted 1000

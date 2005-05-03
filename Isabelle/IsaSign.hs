@@ -178,7 +178,11 @@ data Term =
       | Bottom 
       deriving (Eq, Ord, Show)
 
-data Sentence = Sentence { senDef :: IName, senTerm :: Term } 
+data Sentence = Sentence { senTerm :: Term } -- axiom
+              | Theorem { thmFlag :: Bool  -- True for "theorem"
+                        , senTerm :: Term 
+                        , thmProof :: Maybe String }
+              | ConstDef { senTerm :: Term }
                 deriving (Eq, Ord, Show)
 
 -------------------- from src/Pure/sorts.ML ------------------------
