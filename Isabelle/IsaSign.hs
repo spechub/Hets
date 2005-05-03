@@ -178,29 +178,8 @@ data Term =
       | Bottom 
       deriving (Eq, Ord, Show)
 
-termMAbs :: Continuity -> [Term] -> Term -> Term
-termMAbs c ts t = 
- case ts of 
-   [] -> t
-   v:vs -> if v == (Const "DIC" noType) then (termMAbs c vs t) else 
-      termMAbs c vs (Abs v (termType v) t c)  
-
-termMAppl :: Continuity -> Term -> [Term] -> Term
-termMAppl c t ts = 
- case ts of 
-   [] -> t
-   v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
-      termMAppl c (App t v c) vs 
-
-termMFAbs :: Continuity -> [Term] -> Term -> Term
-termMFAbs c ts t = 
- case ts of 
-   [] -> t
-   v:vs -> if v == (Const "DIC" noType) then (termMFAbs c vs t) else 
-      termMFAbs c vs (Fix (Abs v noType t c))  
-
-
-data Sentence = Sentence { senDef :: IName, senTerm :: Term } deriving (Eq, Ord, Show)
+data Sentence = Sentence { senDef :: IName, senTerm :: Term } 
+                deriving (Eq, Ord, Show)
 
 -------------------- from src/Pure/sorts.ML ------------------------
 

@@ -676,3 +676,18 @@ transPat x = case x of
 --    _ -> error "Haskell2IsabelleHOLCF.transPat"
 -- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
 -- transPat (Pat p) = transP showIsaS transPat p
+
+termMAbs :: Continuity -> [Term] -> Term -> Term
+termMAbs c ts t = 
+ case ts of 
+   [] -> t
+   v:vs -> if v == (Const "DIC" noType) then (termMAbs c vs t) else 
+      termMAbs c vs (IsaSign.Abs v (termType v) t c)  
+
+termMAppl :: Continuity -> Term -> [Term] -> Term
+termMAppl c t ts = 
+ case ts of 
+   [] -> t
+   v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
+      termMAppl c (App t v c) vs 
+
