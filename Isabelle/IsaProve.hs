@@ -247,7 +247,7 @@ formLemmas sen =
 
 
 -- remove type constants from a term
-freeTypesSen (Sentence t) = Sentence (freeTypesTerm t)
+freeTypesSen (Sentence x t) = Sentence x (freeTypesTerm t)
 
 freeTypesTerm :: Term -> Term
 --freeTypesTerm (Const "O") = Const "OO"  
