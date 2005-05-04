@@ -68,8 +68,7 @@ instance Ord (TiDecl PNT) where
     s1 <= s2 = show s1 <= show s2
 
 instance PrettyPrint (TiDecl PNT) where
-     printText0 _ = text . show -- HatPretty.pp
---     printText0 _ = text . pp
+     printText0 _ = text . pp
 
 instance PrettyPrint Sign where
     printText0 _ Sign { instances = is, types = ts, 
@@ -92,10 +91,8 @@ instance PrettyPrint Sign where
           text "\nscope:" $$ 
           text (pp sc) $$
           text "-}" $$
-          text "module Dummy where" 
+          text "module Dummy where"
           $$ text "import MyLogic"
-          $$ (text $ show ts)
-          $$ (text $ show vs)
 
 extendSign :: Sign -> [Instance PNT]
             -> [TAssump PNT] 
