@@ -104,7 +104,7 @@ processFile opt file =
                                    when (hasEnvOut opt)
                                         (writeFileInfo opt ds file ln lenv)
                                    putIfVerbose opt 5 (showPretty lenv "")
-#ifdef PROGRMATICA                                  
+#ifdef PROGRAMATICA                                  
                                    doIfVerbose opt 5 (printLibEnv lenv)
 #endif
                                    --checkFile opt file ln lenv
