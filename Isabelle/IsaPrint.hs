@@ -174,7 +174,7 @@ showTerm (App (App (Free "EqXEqX" _) t1 IsCont) t2 IsCont) = "Def"++lb ++(showTe
 showTerm (App (App (Free "EqXEqX" _) t1 _) t2 _) = lb++(showTerm t1)++"="++(showTerm t2)++rb
 showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
   showQuant (showQuantStr q) v ty t
-showTerm (App t1 t2 NotCont) = lb++(showTerm t1)++sp++(showTerm t2)++rb
+showTerm t@(App t1 t2 NotCont) = showPTree (toPrecTree t) 
 showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
 
@@ -196,12 +196,6 @@ showTerm (CIf t1 t2 t3) =
 showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
-showTerm t@(App _ _ _) = showPTree (toPrecTree t) 
-
--- showTerm t = show t -- "FUNNY"
- --   NO GOOD - it loops
--- showTerm t = "(IsaPrint.showTerm, error: unsupported term)"
--- showTerm t = "(IsaPrint.showTerm, error: "++(show t)++" unsupported term)"
 
 showPat :: Bool -> (Term, Term) -> String
 showPat b (pat, term) = 
