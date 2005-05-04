@@ -11,7 +11,8 @@ Portability :  portable
    translate 'Id' to Isabelle strings
 -}
 
-module Isabelle.Translate (showIsaT, showIsaIT, transStringT, isaPrelude) where
+module Isabelle.Translate (showIsaT, showIsaIT, transStringT, 
+                           transString, isaPrelude) where
 
 import Common.Id 
 import qualified Common.Lib.Map as Map

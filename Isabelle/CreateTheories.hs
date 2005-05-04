@@ -113,7 +113,7 @@ disambiguate sign axs =
         rename given n = if Set.member n given then number given 2 n else n
         accFun s a = let m = senName a
                          n = if null m then number s 1 "Ax" 
-                                 else rename s m 
+                                 else rename s (transString m) 
                      in (Set.insert n s, a { senName = n})
      in snd $ mapAccumR accFun s0 axs
 
