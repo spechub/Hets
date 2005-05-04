@@ -21,7 +21,7 @@ COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
-    Haskell/Hatchet Hatchet Taxonomy $(PFE_PATHS)
+    Haskell/Hatchet Hatchet Taxonomy CASL_DL $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty = 
@@ -69,7 +69,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet
+logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet CASL_DL
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -180,7 +180,7 @@ objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs \
+    Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     $(gendrifted_files)
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
@@ -210,6 +210,8 @@ Hatchet_files = Haskell/Hatchet/AnnotatedHsSyn.hs \
     Haskell/Hatchet/Representation.hs Haskell/Hatchet/Class.hs \
     Haskell/Hatchet/KindInference.hs Haskell/Hatchet/Env.hs \
     Hatchet/HatParser.hs
+
+CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -388,6 +390,9 @@ HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) utils/genRules
 Modal/ATC_Modal.der.hs: $(Modal_files) utils/genRules
 	utils/genRules -r $(rule) -o Modal $(Modal_files)
 
+CASL_DL/ATC_CASL_DL.der.hs: $(CASL_DL_files) utils/genRules
+	utils/genRules -r $(rule) -o CASL_DL $(CASL_DL_files)
+
 CoCASL/ATC_CoCASL.der.hs: $(CoCASL_files) utils/genRules
 	utils/genRules -r $(rule) -o CoCASL $(CoCASL_files)
 
@@ -526,6 +531,11 @@ atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
 
 hatermdiff: Common/ATerm/ATermDiffMain.hs Common/SimpPretty.hs \
     Common/ATerm/*.hs Common/Lib/*.hs
+	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
+
+### OWL_DL test target
+OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
+   Common/Lib/*.hs OWL_DL/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
 
 ### HetCASL with dev graph
