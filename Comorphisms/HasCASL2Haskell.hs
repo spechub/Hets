@@ -54,17 +54,17 @@ instance Comorphism HasCASL2Haskell
                Sign
                HaskellMorphism
                () () () where
-    sourceLogic _ = HasCASL
-    sourceSublogic _ = top
-    targetLogic _ = Haskell
-    targetSublogic _ = ()
-    map_morphism _ mor = do
+    sourceLogic HasCASL2Haskell = HasCASL
+    sourceSublogic HasCASL2Haskell = top
+    targetLogic HasCASL2Haskell = Haskell
+    targetSublogic HasCASL2Haskell = ()
+    map_morphism HasCASL2Haskell mor = do
        (sig1,_) <- map_sign HasCASL2Haskell (dom HasCASL mor)
        (sig2,_) <- map_sign HasCASL2Haskell (cod HasCASL mor)
        inclusion Haskell sig1 sig2
-    map_sentence _ = mapSingleSentence
-    --map_symbol :: cid -> symbol1 -> Set symbol2
-    map_theory _ = mapTheory
+    map_sentence HasCASL2Haskell = mapSingleSentence
+    map_symbol HasCASL2Haskell _ = error "HasCASL2Haskell.map_symbol"
+    map_theory HasCASL2Haskell = mapTheory
 
 -- former FromHasCASL file
 
