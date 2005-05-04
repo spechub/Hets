@@ -2,10 +2,10 @@ module Main where
 
 import OWL_DL.ReadWrite
 import Common.ATerm.Lib
--- import System(getArgs)
+import System(getArgs)
 import qualified Common.Lib.Map as Map
 
-{-
+
 main :: IO()
 main =
     do filename <- getArgs
@@ -28,7 +28,6 @@ processor filename =
              putStrLn $ show ((fromShATerm $ toATermTable onto)::Ontology)
           _ -> error "false file."
 
--}
 
 processor2 :: String -> IO()
 processor2 filename = 
