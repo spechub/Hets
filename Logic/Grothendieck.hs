@@ -53,7 +53,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.AS_Annotation
-import Common.Print_AS_Annotation
 import Common.DynamicUtils 
 import Data.Dynamic
 import qualified Data.List as List
@@ -372,7 +371,7 @@ isIdComorphism (Comorphism cid) =
 
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
-compComorphism cm1@(Comorphism cid1) cm2@(Comorphism cid2) =
+compComorphism (Comorphism cid1) (Comorphism cid2) =
    case coerce (targetLogic cid1) (sourceLogic cid2) (targetSublogic cid1) of
     Just sl1 -> 
       if sl1 <= sourceSublogic cid2
@@ -444,43 +443,6 @@ lookupComorphism coname logicGraph = do
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
--- | auxiliary existential type needed for composition of comorphisms
-data AnyComorphismAux lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-        lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 = 
-        forall cid .
-      Comorphism cid 
-                 lid1 sublogics1 basic_spec1 sentence1 
-                 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-                 lid2 sublogics2 basic_spec2 sentence2 
-                 symb_items2 symb_map_items2
-                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
-      ComorphismAux cid lid1 lid2 sign1 morphism2
-
-tyconAnyComorphismAux :: TyCon
-tyconAnyComorphismAux = mkTyCon "Logic.Grothendieck.AnyComorphismAux"
-
-instance Typeable (AnyComorphismAux lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-        lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-  where typeOf _ = mkTyConApp tyconG_sign []
-
-instance Show (AnyComorphismAux lid1 sublogics1
-        basic_spec1 sentence1 symb_items1 symb_map_items1
-        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-        lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2
-        sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
-  where show _ = "<AnyComorphismAux>"
-
-
 ------------------------------------------------------------------
 -- The Grothendieck signature category
 ------------------------------------------------------------------
@@ -532,15 +494,13 @@ instance Category Grothendieck G_sign GMorphism where
   comp _ 
        (GMorphism r1 sigma1 mor1) 
        (GMorphism r2 _sigma2 mor2) = 
-    do let lid1 = sourceLogic r1
-           lid2 = targetLogic r1
+    do let lid2 = targetLogic r1
            lid3 = sourceLogic r2
            lid4 = targetLogic r2
-       ComorphismAux r1' _ _ sigma1' mor1' <- 
-         (coerce lid2 lid3 $ ComorphismAux r1 lid1 lid2 sigma1 mor1)
+       mor1' <- coerce lid2 lid3 mor1
        mor1'' <- map_morphism r2 mor1'
        mor <- comp lid4 mor1'' mor2
-       return (GMorphism (CompComorphism r1' r2) sigma1' mor)
+       return (GMorphism (CompComorphism r1 r2) sigma1 mor)
   dom _ (GMorphism r sigma _mor) = 
     G_sign (sourceLogic r) sigma
   cod _ (GMorphism r _sigma mor) = 
@@ -654,13 +614,13 @@ compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
-translateG_theory (GMorphism cid sign1 morphism2)
+translateG_theory (GMorphism cid _ morphism2)
                            (G_theory lid sign sens) = do
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
   sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" sens
   sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
-  (sign'',sens'') <- map_theory cid (sign',sens')
+  (_, sens'') <- map_theory cid (sign',sens')
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return (G_theory tlid (cod tlid morphism2) sens''')
 
