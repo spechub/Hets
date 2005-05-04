@@ -29,10 +29,8 @@ module Logic.Comorphism where
 import Logic.Logic
 import qualified Common.Lib.Set as Set
 import Common.Result
-import Data.Maybe
-import Data.Dynamic
-import Common.DynamicUtils 
 import Common.AS_Annotation
+import Data.Maybe
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -109,12 +107,6 @@ instance Logic lid sublogics
    where 
    show = language_name
 
-idComorphismTc :: TyCon
-idComorphismTc = mkTyCon "Logic.Comorphism.IdComorphism"
-
-instance Typeable (IdComorphism lid sub) where 
-  typeOf _ = mkTyConApp idComorphismTc []
-
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
@@ -147,12 +139,6 @@ instance Logic lid sublogics
            constituents _ = []
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
-
-tyconCompComorphism :: TyCon
-tyconCompComorphism = mkTyCon "Logic.Comorphism.CompComorphism"
-
-instance Typeable (CompComorphism cid1 cid2) where
-  typeOf _ = mkTyConApp tyconCompComorphism []
 
 instance (Language cid1, Language cid2)
           => Language (CompComorphism cid1 cid2) where
