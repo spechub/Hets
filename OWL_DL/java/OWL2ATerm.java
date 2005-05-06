@@ -230,6 +230,14 @@ public class OWL2ATerm implements OWLValidationConstants {
 			Set aps = ontology.getAnnotations(ontology);
 			// other annotation property
 			Set oaps = ontology.getAnnotationProperties();
+			// object property
+			Set ops = ontology.getObjectProperties();
+			// data property
+			Set dps = ontology.getDataProperties();
+			
+//			Set priorVer = ontology.getPriorVersion();
+//			Set bwcw = ontology.getBackwardCompatibleWith();
+//			Set iw = ontology.getIncompatibleWith();
 			
 			ATerm ontologyID;
 			// Build ontology header
@@ -320,12 +328,28 @@ public class OWL2ATerm implements OWLValidationConstants {
 			}
 			
 //System.out.println("WO? AP");
-			//Annotation Property
+			// Annotation Property
 			if(oaps != null){
 				for(Iterator oapIt = oaps.iterator(); oapIt.hasNext();){
 					alist = factory.makeList(ploader.term((OWLAnnotationProperty) oapIt.next()), alist);
 				}
 			}
+			
+			// Object Property
+			if(ops != null){
+				for(Iterator opsIt = ops.iterator(); opsIt.hasNext();){
+					alist = factory.makeList(ploader.term((OWLObjectProperty) opsIt.next()), alist);
+				}
+			}
+
+			// Data Property
+			if(dps != null){
+				for(Iterator dpsIt = dps.iterator(); dpsIt.hasNext();){
+					alist = factory.makeList(ploader.term((OWLDataProperty) dpsIt.next()), alist);
+				}
+			}
+			
+			
 			// System.out.println(atermList.toString());
 			
 			ATermAppl msgTerm = factory.makeAppl(msgFun, messages);

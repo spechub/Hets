@@ -98,11 +98,11 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 	AFun superFun = factory.makeAFun("Super", 1, false);
 
-	AFun domainFun = factory.makeAFun("Domain", 1, false);
+	// AFun domainFun = factory.makeAFun("Domain", 1, false);
 
-	AFun rangeFun = factory.makeAFun("Range", 1, false);
+	// gAFun rangeFun = factory.makeAFun("Range", 1, false);
 
-	AFun inverseOfFun = factory.makeAFun("InverseOf", 1, false);
+	// AFun inverseOfFun = factory.makeAFun("InverseOf", 1, false);
 
 	AFun justFun = factory.makeAFun("Just", 1, false);
 
@@ -442,8 +442,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			inv.accept(visitor);
 
-			inverseOf = factory.makeAppl(justFun, factory.makeAppl(inverseOfFun,
-					mkOther(visitor.result())));
+			inverseOf = factory.makeAppl(justFun, mkOther(visitor.result()));
 			// pw.print(", inverseOf(" + mkOther(visitor.result()) + ")");
 		}
 
@@ -516,8 +515,8 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 		AFun dtpFun = factory.makeAFun("DatatypeProperty", 7, false);
 		ATermAppl dvpID = strToATermAppl(shortForm(prop.getURI()));
 		ATermList annoList = emptyList;
-		ATermAppl deprecated = strToATermAppl("");
-		ATermAppl functional = strToATermAppl("");
+		ATermAppl deprecated = strToATermAppl1("false");
+		ATermAppl functional = strToATermAppl1("false");
 		ATermList superList = emptyList;
 		ATermList domainList = emptyList;
 		ATermList rangeList = emptyList;
@@ -531,12 +530,12 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 
 		// maybe deprecated
 		if (prop.isDeprecated(ontology)) {
-			deprecated = strToATermAppl1("Deprecated");
+			deprecated = strToATermAppl1("true");
 		}
 		// maybe functional
 		if (prop.isFunctional(ontology)) {
 			//pw.print(", Functional");
-			functional = strToATermAppl1("Functional");
+			functional = strToATermAppl1("true");
 		}
 
 		// a List of super property
@@ -562,8 +561,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			dom.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(domainFun, mkOther(visitor
-					.result()));
+			ATermAppl result = (ATermAppl) mkOther(visitor.result());
 			domainList = factory.makeList(result, domainList);
 
 			// pw.print(", domain(" + mkOther(visitor.result()) + ")");
@@ -580,8 +578,7 @@ public class ATermRender2 implements org.semanticweb.owl.io.Renderer,
 			visitor.reset();
 			ran.accept(visitor);
 
-			ATermAppl result = factory.makeAppl(rangeFun, mkOther(visitor
-					.result()));
+			ATermAppl result = (ATermAppl) mkOther(visitor.result());
 			rangeList = factory.makeList(result, rangeList);
 			// pw.print(", range(" + mkOther(visitor.result()) + ")");
 		}

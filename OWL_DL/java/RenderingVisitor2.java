@@ -386,7 +386,7 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLDataType ocdt) throws OWLException {
-		pw.print(shortForms.shortForm(ocdt.getURI()));
+		pw.print("DID(\"" + shortForms.shortForm(ocdt.getURI()) + "\")");
 	}
 
 	public void visit(OWLDataEnumeration enumeration) throws OWLException {
