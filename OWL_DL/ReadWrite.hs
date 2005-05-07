@@ -126,7 +126,7 @@ data Axiom = Class
                    Bool -- ^ True == deprecated  
                    [Annotation] 
                    [DatavaluedPropertyID]  -- ^ super properties 
-                   (Maybe Func) 
+                   Bool -- ^ True == Functional  
                    [Description] -- ^ Domain 
                    [DataRange] -- ^ Range
            | ObjectProperty IndividualvaluedPropertyID 
