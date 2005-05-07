@@ -2,32 +2,22 @@ module Main where
 
 import OWL_DL.ReadWrite
 import Common.ATerm.Lib
-import System(getArgs)
+import System.Exit
+import System(getArgs, system)
 import qualified Common.Lib.Map as Map
+import qualified List as List
 
 
 main :: IO()
 main =
     do filename <- getArgs
        if null filename then
-          putStrLn "Usage: runhugs ToHaskellAS.hs <filename>"
-          else do 
-                  str <- readFile $ head filename  
-                  let aterm = getATermFull $ readATerm str
-                  case aterm of
-                      AAppl "OWLParserOutput" [valid, msg, ns, onto] _ ->
-                          putStrLn $ show ((fromShATerm $ toATermTable onto)::Ontology)
-                      _ -> error "false file."
-
-processor :: String -> IO()
-processor filename = 
-    do d <- readFile filename
-       let aterm = getATermFull $ readATerm d
-       case aterm of
-          AAppl "OWLParserOutput" [valid, msg, ns, onto] _ ->
-             putStrLn $ show ((fromShATerm $ toATermTable onto)::Ontology)
-          _ -> error "false file."
-
+          error "Usage: readAStest <URI>"
+          else do exitCode <- system ("./processor " ++ head filename)
+                  putStrLn $ show exitCode
+                  if exitCode == ExitSuccess then
+                     processor2 "output.term"
+                     else error ("opne file " ++ (head filename) ++ "error")
 
 processor2 :: String -> IO()
 processor2 filename = 
@@ -39,7 +29,7 @@ processor2 filename =
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
-                  putStrLn $ show ((fromShATerm $ toATermTable onto)::Ontology)
+                  putStrLn $ show $ reducedDisjoint ((fromShATerm $ toATermTable onto)::Ontology)
           _ -> error "false file."
 
     where buildNS :: ATerm -> Namespace
@@ -73,4 +63,29 @@ processor2 filename =
                             mkMsg r (Message (("ParserError", fromATerm $ head errors, ""):preRes))
                         _ -> error "unknow message."
 
+          reducedDisjoint :: Ontology -> Ontology
+          reducedDisjoint (Ontology oid directives) = 
+              Ontology oid (rdDisj $  List.nub directives)
 
+            where rdDisj :: [Directive] -> [Directive]
+                  rdDisj [] = []
+                  rdDisj (h:r) = case h of
+                                 Ax (DisjointClasses _ _ _) ->
+                                     if any (eqClass h) r then
+                                        rdDisj r
+                                        else h:(rdDisj r)
+                                 _ -> h:(rdDisj r)
+                  
+                  eqClass :: Directive -> Directive -> Bool
+                  eqClass dj1 dj2 =
+                      case dj1 of
+                      Ax (DisjointClasses c1 c2 _) ->
+                         case dj2 of
+                         Ax (DisjointClasses c3 c4 _) ->
+                             if (c1 == c4 && c2 == c3) 
+                                then True
+                                else False
+                         _ -> False
+                      _ -> False
+
+                                    
