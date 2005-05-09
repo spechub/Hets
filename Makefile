@@ -166,7 +166,7 @@ DRIFT_OPTS = +RTS -K10m -RTS
 ####################################################################
 ## sources for hets 
 
-non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs Logic/Morphism.hs \
+non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
 
 SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
