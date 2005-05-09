@@ -3,28 +3,19 @@
 module RuleUtils (module Pretty,module RuleUtils, module DataP)where
 
 import Pretty
-import DataP (Statement(..),Data(..),Type(..),Name,Var,Class,
-		Body(..),Constructor)
+import DataP (Statement(..), Data(..), Type(..), Name, Var, Class,
+	      Body(..), Constructor)
 
 -- Rule Declarations 
 
 type Tag = String
-type Rule = (Tag,Data -> Doc)
--- Rule (name, rule, category, helpline, helptext)
+type Rule = (Tag, Data -> Doc)
 type RuleDef = (Tag, Data -> Doc, String, String, Maybe String)
-
-x = text "x"
-f = text "f"
 
 rArrow = text "->"
 lArrow = text "<-"
---equals = text "="
-blank = text "_"
-semicolon = char ';'
-
 
 prettyType :: Type -> Doc
---prettyType (Apply t1 t2) = parens (prettyType t1 <+> prettyType t2)
 prettyType (Arrow x y) = parens (prettyType x <+> text "->" <+> prettyType y)
 prettyType (List x) = brackets (prettyType x)
 prettyType (Tuple xs) = tuple (map prettyType xs)
@@ -46,23 +37,23 @@ bracketList = brackets . fcat . sepWith comma
 -- for bulding m1 >> m2 >> m3, f . g . h, etc
 sepWith :: a -> [a] -> [a]
 sepWith _ [] = []
-sepWith a [x] = [x]
+sepWith _ [x] = [x]
 sepWith a (x:xs) = x:a: sepWith a xs
 
 --optional combinator, applys fn if arg is non-[]
 opt :: [a] -> ([a] -> Doc) -> Doc
-opt [] f = empty
+opt [] _ = empty
 opt a f = f a
 
 --equivalent of `opt' for singleton lists
 opt1 :: [a] -> ([a] -> Doc) -> (a -> Doc) -> Doc
 opt1 [] _ _ = empty
 opt1 [x] _ g = g x
-opt1 a f g = f a 
+opt1 a f _ = f a 
 
 -- new simple docs
 commentLine x = text "--" <+> x -- useful for warnings / error messages
-commentBlock x = text "{-" <> x <> text "-}"
+commentBlock x = text "{-" <+> x <+> text "-}"
 
 --- Utility Functions -------------------------------------------------------
 
@@ -71,7 +62,8 @@ commentBlock x = text "{-" <> x <> text "-}"
 -- instance header, handling class constraints etc.
 simpleInstance :: Class -> Data -> Doc
 simpleInstance s d = hsep [text "instance" 
-		, opt constr (\x -> parenList x <+> text "=>")
+		, opt1 constr (\ x -> parenList x <+> text "=>")
+                       ( \ x -> x <+> text "=>")
 		, text s
 		, opt1 (texts (name d : vars d)) parenSpace id]
    where
@@ -96,11 +88,10 @@ instanceSkeleton s ii  d = (simpleInstance s d <+> text "where")
 	functions = concatMap f ii
 	f (i,dflt) = map i (body d) ++ [dflt]      
 
--- little variable name generator, generates (length l) unique names aa - aZ
+-- little variable name generator, generates unique names a - z
 varNames :: [a] -> [Doc]
-varNames l = take (length l) names
-   where names = [text [x,y] | x <- ['a' .. 'z'], 
-                               y <- ['a' .. 'z'] ++ ['A' .. 'Z']]
+varNames l = zipWith (const char) l ['a' .. 'z']
+
 -- variant generating aa' - aZ'
 varNames' :: [a] -> [Doc]
 varNames' = map (<> (char '\'')) . varNames
