@@ -22,21 +22,15 @@ sources = DrIFT.hs
 
 ####################################################################
 ### targets
-macintosh: DrIFT.macintosh
-
-solaris: DrIFT.solaris
-
-linux: DrIFT.linux
-
 DrIFT.$(UNAME): DrIFT.tmp
 	mv DrIFT.tmp $@
 
-install: DrIFT.linux DrIFT.solaris DrIFT.macintosh
+install: DrIFT.$(UNAME)
 	cp $^ ..
 
 DrIFT.tmp: $(sources)
 	rm -f DrIFT.tmp
-	$(HC) --make -o $@ $< 
+	$(HC) -Wall --make -o $@ $< 
 	rm -f uname.mk
 
 ### clean up
@@ -45,7 +39,7 @@ clean:
 	rm -f DrIFT.tmp uname.mk *.hi *.o
 
 clean-bin: clean
-	rm -f DrIFT.solaris DrIFT.linux
+	rm -f DrIFT.solaris DrIFT.linux DrIFT.macintosh
 #########################################################
 uname.mk:
 	rm -f $@
