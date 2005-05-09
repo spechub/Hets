@@ -27,6 +27,7 @@ import ATC.Proofs
 import ATC.Sml_cats
 
 import Common.ATerm.Lib
+import Common.ATerm.ReadWrite
 import Common.AnnoState
 import Common.Id
 import Common.Result
@@ -72,11 +73,11 @@ read_LIB_DEFN opt file =
 readLIB_DEFN_from_file :: FilePath -> IO (Result LIB_DEFN)
 readLIB_DEFN_from_file = readShATermFile
 
-readShATermFile :: (ATermConvertible a) => FilePath -> IO (Result a)
+readShATermFile :: (ShATermConvertible a) => FilePath -> IO (Result a)
 readShATermFile fp = do str <- readFile fp
                         return (fromShATermString str) 
                         
-fromShATermString :: (ATermConvertible a) => String -> Result a
+fromShATermString :: (ShATermConvertible a) => String -> Result a
 fromShATermString str = if null str then Result [dia3] Nothing else
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] -> 

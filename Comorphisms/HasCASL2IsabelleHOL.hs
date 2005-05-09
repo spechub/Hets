@@ -501,7 +501,7 @@ flattenPattern sign peqs = case peqs of
   -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
   -- or the 'TypedTerm' variant of one of them
   _ -> let m = concentrate (matricize peqs) sign in 
-              transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullPos)
+              transCaseAlt sign (ProgEq (shrinkPat m) (term m) [])
 
 
 data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
@@ -649,7 +649,7 @@ redAppl cmxs sign
                cmx { args    = init(args cmx), 
                      newArgs = newVar : (newArgs cmx),
                      term    = CaseTerm newVar newPeqs' [] }
-         newProgEq (p, t) = ProgEq p t nullPos
+         newProgEq (p, t) = ProgEq p t []
 
 -- Input: ProgEqs that were build to replace an argument 
 --        with a case statement
@@ -667,7 +667,7 @@ recArgs sign peqs
         doPEQ (g:gByCs) res
           | isSingle g = doPEQ gByCs (res ++ g)
           | otherwise  = doPEQ gByCs (res ++ [(toPEQ (testPEQs sign g))])
-        toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullPos
+        toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) []
         testPEQs sig ps
           | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
           | otherwise = concentrate (matricize ps) sig

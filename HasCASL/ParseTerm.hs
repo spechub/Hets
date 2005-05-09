@@ -698,4 +698,4 @@ patternTermPair b1 b2 sep =
     do p <- mixPattern b1
        s <- asKey sep
        t <- mixTerm b2
-       return (ProgEq p t (tokPos s))
+       return (ProgEq p t [tokPos s])

@@ -218,14 +218,14 @@ free type odd2(a : Type+)
 *** Hint 1.5, is type variable 'b'
 *** Hint 2.5, is type variable 'a'
 *** Hint 4.11, redeclared type 'List'
-*** Error 5.50, unbound type variable(s)
+*** Error , unbound type variable(s)
   b : Type in 'List b_v1'
-*** Error 6.57, unexpected type argument 'b_v1'
-*** Error 7.50, illegal polymorphic recursion
+*** Error , unexpected type argument 'b_v1'
+*** Error , illegal polymorphic recursion
   expected: List a_v-1
      found: List (List a_v-1)
 
-*** Error 14.27, illegal polymorphic recursion
+*** Error , illegal polymorphic recursion
   expected: odd2 a_v-1
      found: odd2 (odd2 a_v-1)
 

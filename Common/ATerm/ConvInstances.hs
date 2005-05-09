@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  non-portable (SPECIALIZE pragma)
 
 This module provides instances of
-Common.ATerm.Conversion.ATermConvertible.  The purpose is separation
+Common.ATerm.Conversion.ShATermConvertible.  The purpose is separation
 of the class and those instances that are specialized for better
 performance.
 -}
@@ -22,18 +22,13 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set 
 import qualified Common.Lib.Rel as Rel
 import Common.Id
+import Common.Result
 
-instance (Ord a, ATermConvertible a, ATermConvertible b) 
-    => ATermConvertible (Map.Map a b) where
-    {-# SPECIALIZE instance ATermConvertible (Map.Map Id (Set.Set Id)) #-}
-    {-# SPECIALIZE instance (ATermConvertible b, Ord b) 
-      => ATermConvertible (Map.Map Id (Set.Set b)) #-}
-    toATerm fm = let ml = toATerm (Map.toAscList fm)
-                       in (AAppl "Map" [ml] [])
-    fromATerm at     = case at of
-                       (AAppl "Map" [ml] []) -> 
-                           Map.fromDistinctAscList $ fromATerm ml
-                       _ -> fromATermError "Map" at
+instance (Ord a, ShATermConvertible a, ShATermConvertible b) 
+    => ShATermConvertible (Map.Map a b) where
+    {-# SPECIALIZE instance ShATermConvertible (Map.Map Id (Set.Set Id)) #-}
+    {-# SPECIALIZE instance (ShATermConvertible b, Ord b) 
+      => ShATermConvertible (Map.Map Id (Set.Set b)) #-}
     toShATerm att fm = case toShATerm att $ Map.toAscList fm of
                         (att1,i) ->
                            addATerm (ShAAppl "Map" [i] []) att1
@@ -44,14 +39,8 @@ instance (Ord a, ATermConvertible a, ATermConvertible b)
                        u     -> fromShATermError "Map" u
                        where aterm = getATerm att
 
-instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
-    {-# SPECIALIZE instance ATermConvertible (Set.Set Id) #-}
-    toATerm set       = let ml = toATerm (Set.toAscList set)
-                        in (AAppl "Set" [ml] [])
-    fromATerm at     = case at of
-                       (AAppl "Set" [ml] []) -> 
-                           Set.fromDistinctAscList $ fromATerm ml
-                       _ -> fromATermError "Set" at
+instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
+    {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
     toShATerm att set = case  toShATerm att $ Set.toAscList set of
                          (att1,i) ->
                            addATerm (ShAAppl "Set" [i] []) att1
@@ -62,13 +51,8 @@ instance (Ord a,ATermConvertible a) => ATermConvertible (Set.Set a) where
                        u     -> fromShATermError "Set" u
                        where aterm = getATerm att
 
-instance (Ord a,ATermConvertible a) => ATermConvertible (Rel.Rel a) where
-    {-# SPECIALIZE instance ATermConvertible (Rel.Rel Id) #-}
-    toATerm rel       = let ml = toATerm (Rel.toList rel)
-                        in (AAppl "Rel" [ml] [])
-    fromATerm at     = case at of
-                       (AAppl "Rel" [ml] []) -> Rel.fromList $ fromATerm ml
-                       _ -> fromATermError "Rel" at
+instance (Ord a,ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
+    {-# SPECIALIZE instance ShATermConvertible (Rel.Rel Id) #-}
     toShATerm att set = case toShATerm att $ Rel.toList set of
                         (att1,i) -> 
                            addATerm (ShAAppl "Rel" [i] []) att1
@@ -79,17 +63,8 @@ instance (Ord a,ATermConvertible a) => ATermConvertible (Rel.Rel a) where
                        u     -> fromShATermError "Rel" u
                        where aterm = getATerm att
 
-instance (ATermConvertible a) => ATermConvertible (Maybe a) where
-    {-# SPECIALIZE instance ATermConvertible (Maybe Token) #-}
-    toATerm mb = case mb of
-                     Nothing -> (AAppl "Nothing" [] [])
-                     (Just x)  -> let x' = toATerm x
-                                  in (AAppl "Just" [x'] [])
-    fromATerm at  = case at of
-                     (AAppl "Nothing" [] _) -> Nothing
-                     (AAppl "Just" [x] _) -> let x' = fromATerm x
-                                             in (Just x')
-                     _ -> fromATermError "Maybe" at
+instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
+    {-# SPECIALIZE instance ShATermConvertible (Maybe Token) #-}
     toShATerm att mb = case mb of
                      Nothing -> addATerm (ShAAppl "Nothing" [] []) att
                      (Just x)  -> case toShATerm att x of
@@ -104,34 +79,28 @@ instance (ATermConvertible a) => ATermConvertible (Maybe a) where
                       where aterm = getATerm att
 
 
-instance ATermConvertible a => ATermConvertible [a] where
+instance ShATermConvertible a => ShATermConvertible [a] where
     -- for compound Ids, Set.Set and Rel.Rel
-    {-# SPECIALIZE instance ATermConvertible [Id] #-}
+    {-# SPECIALIZE instance ShATermConvertible [Id] #-}
     -- for Id
-    {-# SPECIALIZE instance ATermConvertible [Token] #-}
+    {-# SPECIALIZE instance ShATermConvertible [Token] #-}
     -- for Token and all other Strings
-    {-# SPECIALIZE instance ATermConvertible [Char] #-}
+    {-# SPECIALIZE instance ShATermConvertible [Char] #-}
     -- for all types in AST with [Pos]
-    {-# SPECIALIZE instance ATermConvertible [Pos] #-}
-    toATerm l        = toATermList l
-    fromATerm at     = fromATermList at
+    {-# SPECIALIZE instance ShATermConvertible [Pos] #-}
     toShATerm att l  = toShATermList att l 
     fromShATerm att  = fromShATermList att
 
-instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b) 
+instance (ShATermConvertible a,ShATermConvertible b) => ShATermConvertible (a,b) 
     where
     -- for Maps
-    {-# SPECIALIZE instance ATermConvertible (Id,Id) #-}
-    {-# SPECIALIZE instance ATermConvertible (Id,Set.Set Id) #-}
-    {-# SPECIALIZE instance ATermConvertible b => ATermConvertible (Id,b) #-}
-    {-# SPECIALIZE instance (Ord b,ATermConvertible b) 
-      => ATermConvertible (Id,Set.Set b) #-}
+    {-# SPECIALIZE instance ShATermConvertible (Id,Id) #-}
+    {-# SPECIALIZE instance ShATermConvertible (Id,Set.Set Id) #-}
+    {-# SPECIALIZE instance ShATermConvertible b => ShATermConvertible (Id,b) #-}
+    {-# SPECIALIZE instance (Ord b,ShATermConvertible b) 
+      => ShATermConvertible (Id,Set.Set b) #-}
     -- for Graph nodes
-    {-# SPECIALIZE instance ATermConvertible b => ATermConvertible (Int,b) #-}
-    toATerm (a,b)    = AAppl "" [toATerm a,toATerm b] []
-    fromATerm at     = case at of
-                        (AAppl "" [a,b] _) -> (fromATerm a,fromATerm b)
-                        _                  -> fromATermError "(a,b)" at
+    {-# SPECIALIZE instance ShATermConvertible b => ShATermConvertible (Int,b) #-}
     toShATerm att0 (x,y) = case toShATerm att0 x of
                            (att1,x') -> 
                              case toShATerm att1 y of
@@ -146,16 +115,11 @@ instance (ATermConvertible a,ATermConvertible b) => ATermConvertible (a,b)
                        _  -> fromShATermError "(a,b)" at
                       where at = getATerm att 
 
-instance (ATermConvertible a, ATermConvertible b, ATermConvertible c) 
-    => ATermConvertible (a,b,c) where
+instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c) 
+    => ShATermConvertible (a,b,c) where
     -- for Graph labels
-    {-# SPECIALIZE instance ATermConvertible b 
-      => ATermConvertible (Int,b,Int) #-}
-    toATerm (a,b,c) = AAppl "" [toATerm a, toATerm b, toATerm c] []
-    fromATerm at    = case at of
-                       (AAppl "" [a,b,c] _) -> 
-                           (fromATerm a, fromATerm b, fromATerm c)
-                       _                    -> fromATermError "(a,b,c)" at
+    {-# SPECIALIZE instance ShATermConvertible b 
+      => ShATermConvertible (Int,b,Int) #-}
     toShATerm att0 (a,b,c) = case toShATerm att0 a of
                              (att1,x') -> 
                               case toShATerm att1 b of
@@ -174,13 +138,8 @@ instance (ATermConvertible a, ATermConvertible b, ATermConvertible c)
                        _                 -> fromShATermError "(a,b,c)" at
                       where at = getATerm att
                             
-instance (ATermConvertible a, ATermConvertible b, ATermConvertible c, 
-          ATermConvertible d) => ATermConvertible (a,b,c,d) where
-    toATerm (a,b,c,d) = AAppl "" [toATerm a, toATerm b, toATerm c,toATerm d] []
-    fromATerm at    = case at of
-                       (AAppl "" [a,b,c,d] _) -> 
-                           (fromATerm a, fromATerm b, fromATerm c, fromATerm d)
-                       _                      -> fromATermError "(a,b,c,d)" at
+instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c, 
+          ShATermConvertible d) => ShATermConvertible (a,b,c,d) where
     toShATerm att0 (a,b,c,d) = 
         case toShATerm att0 a of
         (att1,a') -> 
@@ -206,7 +165,7 @@ instance (ATermConvertible a, ATermConvertible b, ATermConvertible c,
       where at = getATerm att
 
 
-instance ATermConvertible Pos where
+instance ShATermConvertible Pos where
     toShATerm att0 sourcepos =
         case toShATerm att0 $ sourceName sourcepos of { (att1,aa') ->
         case toShATerm att1 $ sourceLine sourcepos of { (att2,bb') ->
@@ -222,13 +181,8 @@ instance ATermConvertible Pos where
             u -> fromShATermError "SourcePos" u
         where
             aterm = getATerm att
-    fromATerm _ = error "\"fromATerm\" undefined for data type \"SourcePos\""
-    toATerm _ = error "\"toATerm\" undefined for data type \"SourcePos\""
 
-{- ? Generated by DrIFT : Look, but Don't Touch. (works w/ haddock) ? -}
---  Imported from other files :-
-
-instance ATermConvertible Token where
+instance ShATermConvertible Token where
     toShATerm att0 (Token aa ab) =
        case toShATerm att0 aa of { (att1,aa') ->
        case toShATerm att1 ab of { (att2,ab') ->
@@ -242,10 +196,8 @@ instance ATermConvertible Token where
             u -> fromShATermError "Token" u
         where
             aterm = getATerm att
-    fromATerm _ = error "\"fromATerm\" undefined for data type \"Token\""
-    toATerm _ = error "\"toATerm\" undefined for data type \"Token\""
 
-instance ATermConvertible Id where
+instance ShATermConvertible Id where
     toShATerm att0 (Id aa ab ac) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
@@ -261,5 +213,8 @@ instance ATermConvertible Id where
             u -> fromShATermError "Id" u
         where
             aterm = getATerm att
-    fromATerm _ = error "\"fromATerm\" undefined for data type \"Id\""
-    toATerm _ = error "\"toATerm\" undefined for data type \"Id\""
+
+instance ShATermConvertible Diagnosis where
+    toShATerm _ _ = error "ConvInstances.toShATerm.Diagnosis"
+    fromShATerm _ = error "ConvInstances.fromShaTerm.Diagnosis"
+    -- undefined on purpose since all diags should be deleted

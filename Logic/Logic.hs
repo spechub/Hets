@@ -75,7 +75,7 @@ import Data.Dynamic
 import Common.DynamicUtils 
 
 -- for Conversion to ATerms 
-import Common.ATerm.Lib -- (ATermConvertible)
+import Common.ATerm.Lib -- (ShATermConvertible)
 
 -- passed to ensures_amalgamability
 import Common.Amalgamate
@@ -88,10 +88,10 @@ import Taxonomy.MMiSSOntology (MMiSSOntology)
 -- i.e. we need equality
 -- Should we allow arbitrary composition graphs and build paths?
 
-class (PrintLaTeX a, Typeable a, ATermConvertible a) => PrintTypeConv a
+class (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (PrintLaTeX a, Typeable a, ATermConvertible a) => PrintTypeConv a
+instance (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 class (Language lid, Eq sign, Eq morphism)
@@ -127,7 +127,7 @@ class (Category lid sign morphism, Ord sentence,
        Ord symbol, 
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
-       Eq proof_tree, Show proof_tree, ATermConvertible proof_tree, 
+       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree, 
        Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence, lid -> sign, lid -> morphism,
@@ -256,7 +256,7 @@ instance LatticeWithTop () where
 class (StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics, ATermConvertible sublogics,
+       LatticeWithTop sublogics, ShATermConvertible sublogics,
        Typeable sublogics) 
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

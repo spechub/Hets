@@ -21,6 +21,7 @@ import Common.AS_Annotation
 import HasCASL.HToken
 
 -- * abstract syntax entities 
+{-! global: UpPos !-}
 
 data BasicSpec = BasicSpec [Annoted BasicItem]
                   deriving (Show, Eq)
@@ -251,7 +252,7 @@ data Alternative = Constructor UninstOpId [[Component]] Partiality [Pos]
                    -- pos: "type", ","s
                    deriving Show
 
-data Component = Selector UninstOpId Partiality Type SeparatorKind Pos 
+data Component = Selector UninstOpId Partiality Type SeparatorKind [Pos] 
                 -- pos ",", ":" or ":?"
                 | NoSelector Type
                   deriving Show
@@ -321,7 +322,7 @@ type Pattern = Term
 mkTupleTerm :: [Term] -> [Pos] -> Term
 mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
 
-data ProgEq = ProgEq Pattern Term Pos deriving (Show, Eq, Ord)
+data ProgEq = ProgEq Pattern Term [Pos] deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
 -- ----------------------------------------------------------------------------
 -- (type) var decls

@@ -334,7 +334,7 @@ translatePattern env pat = case pat of
 -- | Translation of a program equation of a case term in HasCASL
 translateCaseProgEq :: Env -> ProgEq -> HsAlt HsExp HsPat [HsDecl]
 translateCaseProgEq env (ProgEq pat t ps) = 
-  HsAlt (toProgPos ps)
+  HsAlt (toProgPos $ headPos ps)
         (translatePattern env pat)
         (HsBody (translateTerm env t))
         []
@@ -342,7 +342,7 @@ translateCaseProgEq env (ProgEq pat t ps) =
 -- | Translation of a program equation of a let term in HasCASL
 translateLetProgEq :: Env -> ProgEq -> HsDecl
 translateLetProgEq env (ProgEq pat t ps) = 
-  hsPatBind (toProgPos ps)
+  hsPatBind (toProgPos $ headPos ps)
             (translatePattern env pat)
             (HsBody (translateTerm env t))
             []

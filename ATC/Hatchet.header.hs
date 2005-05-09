@@ -8,7 +8,7 @@ import Haskell.Hatchet.FiniteMaps
 {-| Exclude: Qual |-}
 {-| Exclude: Assump |-}
 
-instance ATermConvertible Assump where
+instance ShATermConvertible Assump where
     toShATerm att0 (an :>: s) =
        case toShATerm att0 an of { (att1,an') ->
        case toShATerm att1 s  of {  (att2,s') ->
@@ -22,10 +22,8 @@ instance ATermConvertible Assump where
 	    u -> fromShATermError "Assump" u
 	where
 	    aterm = getATerm att
-    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Assump\""
-    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Assump\""
 
-instance (ATermConvertible a) => ATermConvertible (Qual a) where
+instance (ShATermConvertible a) => ShATermConvertible (Qual a) where
     toShATerm att0 (p :=> t) =
 	case toShATerm att0 p of { (att1,p') ->
 	case toShATerm att1 t of { (att2,t') ->	 
@@ -39,13 +37,8 @@ instance (ATermConvertible a) => ATermConvertible (Qual a) where
 	    u -> fromShATermError "Qual" u
 	where
 	    aterm = getATerm att
-    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Qual\""
-    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Qual\""
 
-
-instance (Ord a, ATermConvertible a, ATermConvertible b) => 
-    ATermConvertible (FiniteMap a b) where
+instance (Ord a, ShATermConvertible a, ShATermConvertible b) => 
+    ShATermConvertible (FiniteMap a b) where
     toShATerm att fm = toShATerm att $ toListFM fm 
     fromShATerm att  = listToFM $ fromShATerm att
-    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"FiniteMap\""
-    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"FiniteMap\""

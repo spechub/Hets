@@ -13,10 +13,6 @@ Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
     
 -}
 
-{- todo: correct implementation of variables
-         (shadowing instead of overloading)
--}
-
 module CASL.StaticAna where
 
 import CASL.AS_Basic_CASL
@@ -570,7 +566,7 @@ instance PrettyPrint Component where
         printText0 ga i <+> colon <> printText0 ga ty
 
 instance PosItem Component where
-    get_pos = Just . posOfId . compId
+    get_pos = get_pos . compId
 
 -- | return list of constructors 
 ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State (Sign f e) [Component]

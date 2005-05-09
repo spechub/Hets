@@ -46,9 +46,9 @@ instance PrettyPrint Constrain where
                                       <+> printText0 ga t2
 
 instance PosItem Constrain where
-  get_pos c = Just $ case c of 
-    Kinding ty _ -> posOfType ty
-    Subtyping t1 t2 -> firstPos [t1, t2] []
+  get_pos c = case c of 
+    Kinding ty _ -> get_pos ty
+    Subtyping t1 t2 -> get_pos t1 ++ get_pos t2
 
 type Constraints = Set.Set Constrain
 

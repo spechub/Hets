@@ -39,7 +39,7 @@ true : Unit %(fun)%
   (op a : s, op a : s) :
     Unit
 %% Diagnostics -----------------------------------------------------------
-*** Hint 6.47, in type of '(op a : s, op a : s)'
-  type 's * s' (2.8)
-  is not unifiable with type 'Unit ->? s * s' (6.16)
+*** Hint , in type of '(op a : s, op a : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 

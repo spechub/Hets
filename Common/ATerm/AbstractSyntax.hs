@@ -24,26 +24,17 @@ Portability :  portable
 -}
 
 module Common.ATerm.AbstractSyntax 
-    (ATerm(..),
-     ShATerm(..),
+    (ShATerm(..),
      ATermTable,
      emptyATermTable,
      addATerm,addATermNoFullSharing,
-     getATerm,getATermFull,
+     getATerm,
      getATermIndex,getTopIndex,
-     getATermByIndex1,
-     toATermTable
-    )
-    where
+     getATermByIndex1) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Map as DMap
 -- import UnsafeCoerce(unsafePtrEq)
-
-data ATerm = AAppl String [ATerm] [ATerm]
-           | AList [ATerm]        [ATerm]
-           | AInt  Integer        [ATerm]
-             deriving (Eq,Ord)
 
 data ShATerm = ShAAppl String [Int] [Int]
              | ShAList [Int]        [Int]
@@ -87,37 +78,6 @@ getATerm (ATT _ i_aFM i) =
 
 getTopIndex :: ATermTable -> Int
 getTopIndex (ATT _ _ i) = i
-
-getATermFull :: ATermTable -> ATerm
-getATermFull at = 
-    let t = getATerm at
-    in case t of
-       (ShAInt i as)    -> AInt i (map conv as)
-       (ShAList l as)   -> AList (map conv l) (map conv as)
-       (ShAAppl c l as) -> AAppl c (map conv l) (map conv as)
-    where conv t = getATermFull (getATermByIndex1 t at) 
-
-toATermTable :: ATerm -> ATermTable
-toATermTable at = fst $ addToTable at emptyATermTable
-    where
-    addToTable :: ATerm -> ATermTable -> (ATermTable,Int) 
-    addToTable (AAppl s ats anns) att = 
-        let (att1,ats')  = addToTableList ats att
-            (att2,anns') = addToTableList anns att1
-        in addATerm (ShAAppl s ats' anns') att2
-    addToTable (AList ats anns)   att = 
-        let (att1,ats')  = addToTableList ats att
-            (att2,anns') = addToTableList anns att1
-        in addATerm (ShAList ats' anns') att2
-    addToTable (AInt i anns)      att = 
-        let (att1,anns') = addToTableList anns att
-        in addATerm (ShAInt i anns') att1
-    addToTableList :: [ATerm] -> ATermTable -> (ATermTable,[Int])
-    addToTableList []       att = (att,[])
-    addToTableList (at1:ats) att = 
-        let (att1,i)  = addToTable at1 att
-            (att2,is) = addToTableList ats att1
-        in (att2,i:is)
 
 getATermIndex :: ShATerm -> ATermTable -> Int
 getATermIndex t (ATT a_iDFM _ _) = Map.findWithDefault (-1) t a_iDFM

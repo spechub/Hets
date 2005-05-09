@@ -23,11 +23,11 @@ import System.IO
 import System.IO.Error(try)
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
-import Syntax.GlobalLibraryAnnotations
 import Common.GlobalAnnotations (GlobalAnnos)
 import Driver.Version
-import Common.ConvertGlobalAnnos
+import Common.ConvertGlobalAnnos()
 import Common.ATerm.Lib
+import Common.ATerm.ReadWrite
 import qualified Common.Lib.Map as Map
 
 import ATC.Proofs
@@ -36,8 +36,6 @@ import Proofs.Proofs
 import Static.DevGraph
 import ATC.DevGraph
 import Common.SimpPretty (writeFileSDoc)
--- for debugging
-import Debug.Trace
 
 {---
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
@@ -104,14 +102,14 @@ write_casl_latex opt ga oup ld =
             hClose dout)
        return ()
 
-writeShATermFile :: (ATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFile fp atcon = writeFile fp $ toShATermString atcon 
 
-writeShATermFileSDoc :: (ATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon =
    writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
 
-versionedATermTable :: (ATermConvertible a) => a -> ATermTable
+versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =      
     case  {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version of
     (att0,versionnr) -> 
@@ -119,7 +117,7 @@ versionedATermTable atcon =
 	(att1,aterm) ->  {-# SCC "att3" #-} 
 	    fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
                            
-toShATermString :: (ATermConvertible a) => a -> String
+toShATermString :: (ShATermConvertible a) => a -> String
 toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
                         
 

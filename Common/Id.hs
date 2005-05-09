@@ -286,23 +286,20 @@ posOfId (Id ts _ _) = let l = dropWhile isPlace ts
 
 -- | first 'Pos' or 'nullPos'
 headPos :: [Pos] -> Pos 
-headPos l = if null l then nullPos else head l
+headPos l = case l of 
+    [] -> nullPos
+    h : _ -> h
 
 -- | get a reasonable position
 getMyPos :: PosItem a => a -> Pos
-getMyPos a = 
-    case get_pos a of
-    Just p -> p
-    Nothing -> 
-        case get_pos_l a of 
-        Just l -> headPos l
-        Nothing -> nullPos
+getMyPos = headPos . get_pos
 
 -- | get a reasonable position for a list
 posOf :: PosItem a => [a] -> Pos
-posOf l = if null l then nullPos else 
-          let q = getMyPos $ head l 
-              in if isNullPos q then posOf $ tail l
+posOf l = case l of 
+    [] -> nullPos 
+    h : t -> let q = getMyPos h
+             in if isNullPos q then posOf t
                  else q
 
 -- | get a reasonable position for a list with an additional position list
@@ -319,33 +316,20 @@ firstPos l ps = let p = posOf l in
 -}
 
 class PosItem a where
-    up_pos    :: (Pos -> Pos)    -> a -> a
-    up_pos_l  :: ([Pos] -> [Pos]) -> a -> a
-    get_pos   :: a -> Maybe Pos  -- not a nullPos  
-    get_pos_l :: a -> Maybe [Pos]
-    up_pos_err  :: String -> a
-    up_pos_err fn = 
-        error ("function \"" ++ fn ++ "\" is not implemented")
-    up_pos _    = id
-    up_pos_l _  = id
-    get_pos   _ = Nothing
-    get_pos_l _ = Nothing
+    get_pos   :: a -> [Pos]  -- not a nullPos  
+    get_pos   _ = []
 
 -- a Pos list should not contain nullPos
     
 -- handcoded instance
 instance PosItem Token where
-    up_pos fn1 (Token aa ab) = (Token aa (fn1 ab))
-    get_pos (Token _ ab) = Just ab
+    get_pos (Token _ ab) = if isNullPos ab then [] else [ab]
 
 -- handcoded instance
 instance PosItem Id where
-    up_pos_l fn1 (Id aa ab ac) = (Id aa ab (fn1 ac))
-    get_pos_l (Id _ _ ac) = Just ac
-    get_pos = Just . posOfId
+    get_pos i@(Id _ _ ps) = let p = posOfId i in 
+      if isNullPos p then ps else p : ps
 
 -- handcoded instance
-instance PosItem () where
-    up_pos_l _ () = ()
-    get_pos_l () = Nothing
-    get_pos () = Nothing
+instance PosItem ()
+    -- default is ok

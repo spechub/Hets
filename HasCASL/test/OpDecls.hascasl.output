@@ -192,71 +192,71 @@ z : s
 (op x : s) in t
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
-*** Hint 13.12, in type of '(op a : s, op b : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? t * t' (8.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? t * t'
 
-*** Hint 13.12, in type of '(op a : s, op b : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s' (7.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 
-*** Hint 15.14, in type of '(op a : s, op a : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? t * t' (8.14)
+*** Hint , in type of '(op a : s, op a : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? t * t'
 
-*** Hint 15.14, in type of '(op a : s, op a : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s' (7.14)
+*** Hint , in type of '(op a : s, op a : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 
-*** Hint 23.23, in type of '(op a : s, op b : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? t * t' (8.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? t * t'
 
-*** Hint 23.23, in type of '(op a : s, op b : s)'
-  type 's * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s' (7.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 
-*** Hint 25.23, in type of '(op a : s, op b : s)'
-  type 's * s' (25.27)
-  is not unifiable with type 'Unit ->? t * t' (8.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? t * t'
 
-*** Hint 25.23, in type of '(op a : s, op b : s)'
-  type 's * s' (25.27)
-  is not unifiable with type 'Unit ->? s * s' (7.14)
+*** Hint , in type of '(op a : s, op b : s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 
-*** Hint 30.18, in type of '(op a : s)'
+*** Hint , in type of '(op a : s)'
   typename 's' (3.12)
-  is not unifiable with type 'Unit ->? s' (28.11)
+  is not unifiable with type 'Unit ->? s'
 
-*** Hint 31.19, in type of '(op a : s)'
+*** Hint , in type of '(op a : s)'
   typename 's' (3.12)
-  is not unifiable with type 'Unit ->? s' (28.11)
+  is not unifiable with type 'Unit ->? s'
 
-*** Hint 32.21, in type of '(op a : s)'
+*** Hint , in type of '(op a : s)'
   typename 's' (3.12)
-  is not unifiable with type 'Unit ->? s' (28.11)
+  is not unifiable with type 'Unit ->? s'
 
-*** Hint 36.13, in type of '(op a : s, op b : s, op c : s)'
-  type 's * s * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s * s' (34.21)
+*** Hint , in type of '(op a : s, op b : s, op c : s)'
+  type 's * s * s'
+  is not unifiable with type 'Unit ->? s * s * s'
 
-*** Hint 38.29, in type of '(op a : s, op b : s, op c : s)'
-  type 's * s * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s * s' (34.21)
+*** Hint , in type of '(op a : s, op b : s, op c : s)'
+  type 's * s * s'
+  is not unifiable with type 'Unit ->? s * s * s'
 
-*** Hint 39.31, in type of '(op a : s, op b : s, op c : s)'
-  type 's * s * s' (3.12)
-  is not unifiable with type 'Unit ->? s * s * s' (34.21)
+*** Hint , in type of '(op a : s, op b : s, op c : s)'
+  type 's * s * s'
+  is not unifiable with type 'Unit ->? s * s * s'
 
-*** Hint 44.16, in type of '((op a : s) : s, var x : s, op a : s)'
-  type 's * s * s' (44.20)
-  is not unifiable with type 'Unit ->? s * s * s' (34.21)
+*** Hint , in type of '((op a : s) : s, var x : s, op a : s)'
+  type 's * s * s'
+  is not unifiable with type 'Unit ->? s * s * s'
 
-*** Hint 46.14, in type of '((op x : s) as s, ((op x : s) as t) as s)'
-  type 's * s' (46.19)
-  is not unifiable with type 'Unit ->? t * t' (8.14)
+*** Hint , in type of '((op x : s) as s, ((op x : s) as t) as s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? t * t'
 
-*** Hint 46.14, in type of '((op x : s) as s, ((op x : s) as t) as s)'
-  type 's * s' (46.19)
-  is not unifiable with type 'Unit ->? s * s' (7.14)
+*** Hint , in type of '((op x : s) as s, ((op x : s) as t) as s)'
+  type 's * s'
+  is not unifiable with type 'Unit ->? s * s'
 

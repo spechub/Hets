@@ -110,53 +110,53 @@ true : Unit %(fun)%
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
-  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.21)
-  is not unifiable with type '_var_10_v10 ->? Unit' (6.51)
+  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.27)
+  is not unifiable with type '_var_10_v10 ->? Unit' (2.19)
 
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
-Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
+Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'
   is not unifiable with type 'Unit ->? Set _var_10_v10@(_var_10_v10 ->? Unit) *
-         Set _var_10_v10@(_var_10_v10 ->? Unit)' (6.47)
+         Set _var_10_v10@(_var_10_v10 ->? Unit)'
 
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
-Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
+Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'
   is not unifiable with type 'Unit ->? Graph _var_11_v11 _var_12_v12@(Set _var_11_v11@(_var_11_v11 ->? Unit) *
                                         (_var_12_v12 ->? _var_11_v11) *
                                         (_var_12_v12 ->? _var_11_v11)) *
          Graph _var_11_v11 _var_12_v12@(Set _var_11_v11@(_var_11_v11 ->? Unit) *
                                         (_var_12_v12 ->? _var_11_v11) *
-                                        (_var_12_v12 ->? _var_11_v11))' (5.20)
+                                        (_var_12_v12 ->? _var_11_v11))'
 
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
-  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.21)
-  is not unifiable with type '_var_61_v61 ->? Unit' (6.51)
+  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.27)
+  is not unifiable with type '_var_61_v61 ->? Unit' (2.19)
 
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
-Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
+Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'
   is not unifiable with type 'Unit ->? Set _var_61_v61@(_var_61_v61 ->? Unit) *
-         Set _var_61_v61@(_var_61_v61 ->? Unit)' (6.47)
+         Set _var_61_v61@(_var_61_v61 ->? Unit)'
 
-*** Hint 9.6, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
+*** Hint , in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
-Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
+Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'
   is not unifiable with type 'Unit ->? Graph _var_62_v62 _var_63_v63@(Set _var_62_v62@(_var_62_v62 ->? Unit) *
                                         (_var_63_v63 ->? _var_62_v62) *
                                         (_var_63_v63 ->? _var_62_v62)) *
          Graph _var_62_v62 _var_63_v63@(Set _var_62_v62@(_var_62_v62 ->? Unit) *
                                         (_var_63_v63 ->? _var_62_v62) *
-                                        (_var_63_v63 ->? _var_62_v62))' (5.20)
+                                        (_var_63_v63 ->? _var_62_v62))'
 
-*** Hint 9.8, in type of '(((op __union__[N; _var_63_v63]
+*** Hint , in type of '(((op __union__[N; _var_63_v63]
    : forall N : Type; E : Type .
        Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
                           (E_v-2 ->? N_v-1)) *
@@ -176,6 +176,6 @@ Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (8.17)
                           (_var_63_v63 ->? N)),
  var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)) *
-Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))' (5.45)
+Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))'
   is not unifiable with type 'Unit ->? _var_5_v5 * _var_5_v5'
 

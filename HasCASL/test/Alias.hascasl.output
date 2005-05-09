@@ -60,5 +60,5 @@ true : Unit %(fun)%
 *** Hint 11.19, redeclared type 'a'
 *** Error 11.15, duplicates at '(11,19)' for 'a'
 *** Error 13.9, duplicates at '(13,11)' for 'a'
-*** Error 17.14, illegal recursive type synonym 'a5 a_v14 -> Unit'
-*** Error 23.14, illegal recursive type synonym 'a7 a_v17@(a6 a_v17 -> Unit) -> Unit'
+*** Error 17.19, illegal recursive type synonym 'a5 a_v14 -> Unit'
+*** Error 23.19, illegal recursive type synonym 'a7 a_v17@(a6 a_v17 -> Unit) -> Unit'

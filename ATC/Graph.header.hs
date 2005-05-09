@@ -2,8 +2,8 @@
 {-| Exclude: Graph |-}
 
 
-instance (ATermConvertible a,
-	  ATermConvertible b) => ATermConvertible (Graph a b) where
+instance (ShATermConvertible a,
+	  ShATermConvertible b) => ShATermConvertible (Graph a b) where
     toShATerm att0 graph =
        case toShATerm att0 (labNodes graph) of { (att1,aa') ->
        case toShATerm att1 (labEdges graph) of { (att2,bb') ->
@@ -17,8 +17,5 @@ instance (ATermConvertible a,
 	    u -> fromShATermError "Graph" u
 	where
 	    aterm = getATerm att
-    fromATerm _ = error "function \"fromATerm\" not derived (implemented) for data type \"Graph\""
-    toATerm _ = error "function \"toATerm\" not derived (implemented) for data type \"Graph\""
-
 
 

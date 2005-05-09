@@ -88,16 +88,10 @@ checkFreeType (osig,osens) m fsn
                        sname = concat $ map tokStr ts 
                    in warning (Just False) (sname ++ " is not inhabited") pos
        | elem Nothing l_Syms =
-                   let p = snd $ head $ filter (\f'-> (fst f') == Nothing) $ map leadingSymPos _axioms
-                       pos = case p of
-                               Just p' -> headPos p'
-                               Nothing -> nullPos 
-                   in warning Nothing "axiom is not definitional" pos
+                   let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $ map leadingSymPos _axioms
+                   in warning Nothing "axiom is not definitional" $ headPos pos
        | not $ null $ p_t_axioms ++ pcheck = 
-                   let p = get_pos_l $ head (p_t_axioms ++ pcheck)
-                       pos = case p of
-                               Just p' -> headPos p'
-                               Nothing -> nullPos 
+                   let pos = posOf (p_t_axioms ++ pcheck)
                    in warning Nothing "partial axiom is not definitional" pos
        | any id $ map find_ot id_ots =    
                    let pos = headPos old_op_ps
@@ -627,7 +621,8 @@ leadingSym f = do
        return (extract_leading_symb tp)
  
 
-leadingSymPos ::(PosItem f)=> FORMULA f -> (Maybe (Either OP_SYMB PRED_SYMB),Maybe [Pos])
+leadingSymPos :: PosItem f => FORMULA f 
+              -> (Maybe (Either OP_SYMB PRED_SYMB), [Pos])
 leadingSymPos f = leading (f,False,False)
   where leading (f,b1,b2)= case (f,b1,b2) of
                              ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)
@@ -635,16 +630,16 @@ leadingSymPos f = leading (f,False,False)
                              ((Implication _ f' _ _),False,False) -> leading (f',True,False)
                              ((Equivalence f' _ _),b,False) -> leading (f',b,True)
                              ((Definedness t _),_,_) -> case (term t) of
-                                                          Application opS _ p -> (Just (Left opS),Just p)
-                                                          _ -> (Nothing,(get_pos_l f))
-                             ((Predication predS _ _),_,_) -> ((Just (Right predS)),(get_pos_l f))
+                                                          Application opS _ p -> (Just (Left opS), p)
+                                                          _ -> (Nothing,(get_pos f))
+                             ((Predication predS _ _),_,_) -> ((Just (Right predS)),(get_pos f))
                              ((Strong_equation t _ _),_,_) -> case (term t) of
-                                                                Application opS _ p -> (Just (Left opS),Just p)                 
-                                                                _ -> (Nothing,(get_pos_l f))
+                                                                Application opS _ p -> (Just (Left opS), p)                 
+                                                                _ -> (Nothing,(get_pos f))
                              ((Existl_equation t _ _),_,_) -> case (term t) of
-                                                                Application opS _ p -> (Just (Left opS),Just p)
-                                                                _ -> (Nothing,(get_pos_l f))
-                             _ -> (Nothing,(get_pos_l f)) 
+                                                                Application opS _ p -> (Just (Left opS), p)
+                                                                _ -> (Nothing,(get_pos f))
+                             _ -> (Nothing,(get_pos f)) 
 
 -- Sorted_term is always ignored
 term :: TERM f -> TERM f

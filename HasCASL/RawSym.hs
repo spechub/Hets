@@ -122,7 +122,7 @@ anaSymbolType t =
                           return $ fmap OpAsItemType as 
 
 instance PosItem RawSymbol where
-    get_pos rsy = Just $ posOfId $ rawSymName rsy
+    get_pos = get_pos . rawSymName
 
 matchQualId :: Env -> RawSymbol -> Result RawSymbol
 matchQualId e rsy = 

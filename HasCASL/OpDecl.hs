@@ -144,7 +144,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
 anaProgEq ga pe@(ProgEq _ _ q) =
     do mp <- resolveTerm ga Nothing (LetTerm Program [pe] 
-                                     (BracketTerm Parens [] [q]) [q])
+                                     (BracketTerm Parens [] q) q)
        case mp of 
            Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) -> 
                case getAppl newPat of

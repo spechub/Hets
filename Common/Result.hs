@@ -215,8 +215,7 @@ instance PrettyPrint Diagnosis where
         <+> text s
 
 instance PosItem Diagnosis where
-    up_pos fn1 d  = d { diagPos = fn1 $ diagPos d }
-    get_pos = Just . diagPos
+    get_pos d = let p = diagPos d in if isNullPos p then [] else [p]
 
 instance PrettyPrint a => PrettyPrint (Result a) where
     printText0 g (Result ds m) = vcat ((case m of 

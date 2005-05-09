@@ -32,7 +32,7 @@ true : Unit %(fun)%
 program (op f : a -> a)(v : a @ (var _ : a)) : a =
             (var v : a) %(pe_f)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 5.12, in type of 'v : a @ (var _ : a)'
+*** Hint 5.13, in type of 'v : a @ (var _ : a)'
   typename 'a' (5.16)
-  is not unifiable with type 'Unit ->? a' (3.8)
+  is not unifiable with type 'Unit ->? a'
 

@@ -33,6 +33,7 @@ module Comorphisms.LogicList
 where
 
 import Common.Result
+import qualified Common.Lib.Map as Map
 import Logic.Logic 
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
@@ -40,19 +41,28 @@ import HasCASL.Logic_HasCASL
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
+#ifdef HATCHET
 import Hatchet.Logic_Hatchet
-import CspCASL.Logic_CspCASL
+#endif
 import Isabelle.Logic_Isabelle
+#ifdef CASLEXTENSIONS 
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
-import qualified Common.Lib.Map as Map
+import CspCASL.Logic_CspCASL
+#endif
 
 logicList :: [AnyLogic]
-logicList = [Logic CASL, Logic HasCASL, Logic Hatchet,
+logicList = [Logic CASL, Logic HasCASL,
+#ifdef HATCHET
+             Logic Hatchet,
+#endif
 #ifdef PROGRAMATICA
              Logic Haskell, 
 #endif
-	     Logic CoCASL, Logic Modal, Logic CspCASL, Logic Isabelle]
+#ifdef CASLEXTENSIONS 
+	     Logic CoCASL, Logic Modal, Logic CspCASL, 
+#endif
+             Logic Isabelle]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)

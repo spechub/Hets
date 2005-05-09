@@ -23,7 +23,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 instance PosItem Symbol where
-    get_pos = Just . posOfId . symName 
+    get_pos = get_pos . symName 
 
 checkSymbols :: SymbolSet -> SymbolSet -> Result a -> Result a 
 checkSymbols s1 s2 r = 

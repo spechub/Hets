@@ -181,9 +181,9 @@ compType is cs = do c <- colT
                  do c <- qColonT 
                     t <- parseType
                     return (makeComps is (cs++[c]) Partial t)
-    where makeComps [a] [b] k t = [Selector a k t Other (tokPos b)] 
+    where makeComps [a] [b] k t = [Selector a k t Other [tokPos b]] 
           makeComps (a:r) (b:s) k t = 
-              (Selector a k t Comma (tokPos b)):makeComps r s k t 
+              Selector a k t Comma [tokPos b] : makeComps r s k t 
           makeComps _ _ _ _ = error "makeComps: empty selector list"
 
 alternative :: AParser st Alternative

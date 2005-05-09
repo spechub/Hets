@@ -136,8 +136,7 @@ expected a b =
     "\n  expected: " ++ showPretty a 
     "\n     found: " ++ showPretty b "\n" 
 
-instance PosItem Kind where
-    get_pos = Just . posOfKind
+-- ---------------------------------------------------------------------
 
 posOfKind :: Kind -> Pos
 posOfKind k = 
@@ -149,25 +148,14 @@ posOfKind k =
     FunKind k1 _ ps -> firstPos [k1] ps 
     ExtKind ek _ ps -> firstPos [ek] ps
 
--- ---------------------------------------------------------------------
-
 posOfVars :: Vars -> Pos
 posOfVars vr = 
     case vr of 
     Var v -> posOfId v
     VarTuple vs ps -> firstPos vs ps
 
-instance PosItem Vars where
-    get_pos = Just . posOfVars
-
-instance PosItem TypePattern where
-    get_pos = Just . posOfTypePattern
-
 posOfTypeArg :: TypeArg -> Pos
 posOfTypeArg (TypeArg t _ _ ps) = firstPos [t] ps
-
-instance PosItem TypeArg where
-    get_pos = Just . posOfTypeArg
 
 posOfTypePattern :: TypePattern -> Pos
 posOfTypePattern pat = 
@@ -177,13 +165,6 @@ posOfTypePattern pat =
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _) _ -> posOfId t
--- ---------------------------------------------------------------------
-
-instance PosItem TypeScheme where
-    get_pos (TypeScheme tArgs _ ps) = Just $ firstPos tArgs ps
-
-instance PosItem Type where
-    get_pos = Just . posOfType
 
 posOfType :: Type -> Pos
 posOfType ty = 
@@ -198,10 +179,6 @@ posOfType ty =
     LazyType t ps -> firstPos [t] ps
     ProductType ts ps -> firstPos ts ps
     FunType t1 _ t2 ps -> firstPos [t1,t2] ps
-
--- ---------------------------------------------------------------------
-instance PosItem Term where
-    get_pos = Just . posOfTerm
 
 posOfTerm :: Term -> Pos
 posOfTerm trm =
@@ -222,20 +199,14 @@ posOfTerm trm =
     BracketTerm _ ts ps -> firstPos ts ps 
     AsPattern v _ ps -> firstPos [v] ps
 
--- ---------------------------------------------------------------------
-
 posOfVarDecl :: VarDecl -> Pos
 posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
 
-instance PosItem VarDecl where
-    get_pos = Just . posOfVarDecl
-
 instance PosItem a => PosItem [a] where
-    get_pos l = let p = posOf l in 
-                 if isNullPos p then Nothing else Just p
+    get_pos = concatMap get_pos 
 
 instance PosItem a => PosItem (a, b) where
-    get_pos (a, _) = get_pos [a]
+    get_pos (a, _) = get_pos a
 
 instance PosItem a => PosItem (Set.Set a) where
     get_pos = get_pos . Set.toList

@@ -97,8 +97,8 @@ mkProgEq e t = case getTupleAp t of
                       Set.fromList rvs `Set.subset` Set.fromList pvs 
        in if i `elem` [eqId, exEq, eqvId] then 
               if cond a b
-                 then Just $ ProgEq a b $ posOfId i
-                 else if cond a b then Just $ ProgEq a b $ posOfId i
+                 then Just $ ProgEq a b $ get_pos i
+                 else if cond a b then Just $ ProgEq a b $ get_pos i
                       else mkConstTrueEq e t
           else mkConstTrueEq e t
     _ -> case getAppl t of 
@@ -113,7 +113,7 @@ mkProgEq e t = case getTupleAp t of
 mkConstTrueEq e t = 
     let vs = map getVar $ extractVars t in
         if isLHS e t && null (checkUniqueness vs) then
-           Just $ ProgEq t (mkQualOp trueId unitType []) $ posOfTerm t
+           Just $ ProgEq t (mkQualOp trueId unitType []) $ get_pos t
            else Nothing
 
 bottom :: Term

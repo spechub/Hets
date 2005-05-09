@@ -26,7 +26,7 @@ import Data.Dynamic
 data DefaultMorphism sign = MkMorphism sign sign deriving (Show, Eq)
 
 morTc :: TyCon
-morTc = mkTyCon "Logic.Logic.DefaultMorphism"
+morTc = mkTyCon "Common.DefaultMorphism.DefaultMorphism"
 
 instance Typeable a => Typeable (DefaultMorphism a) where
   typeOf s = mkTyConApp morTc [typeOf ((undefined:: DefaultMorphism a -> a) s)]
@@ -43,7 +43,7 @@ instance PrintLaTeX a => PrintLaTeX (DefaultMorphism a) where
                     $$ nest 1 (text mapsTo)
                     <\+> sp_braces_latex (printLatex0 ga t)
 
-instance (ATermConvertible a) => ATermConvertible (DefaultMorphism a) where
+instance (ShATermConvertible a) => ShATermConvertible (DefaultMorphism a) where
     toShATerm att0 (MkMorphism s t) =
 	case toShATerm att0 s of {  (att1, s') ->
 	case toShATerm att1 t of {  (att2, t') ->
@@ -57,8 +57,6 @@ instance (ATermConvertible a) => ATermConvertible (DefaultMorphism a) where
 	    u -> fromShATermError "MkMorphism" u
 	where
 	    aterm = getATerm att
-    fromATerm _ = error "\"fromATerm\" not implemented for \"DefaultMorphism\""
-    toATerm _ = error "\"toATerm\" not implemented for \"DefaultMorphism\""
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
 domOfDefaultMorphism (MkMorphism s _) = s

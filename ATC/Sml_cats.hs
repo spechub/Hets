@@ -20,9 +20,9 @@ Portability :  non-portable (imports Logic.Grothendieck)
 -}
 
 
-module ATC.Sml_cats (from_sml_ATerm,read_sml_ATerm) where
+module ATC.Sml_cats (read_sml_ATerm) where
 
-import Data.List (isPrefixOf, mapAccumL)
+import Data.List (isPrefixOf)
 
 import qualified Common.Lib.Map as Map
 -- better recompilation checking without 'import Common.ATerm.Lib'
@@ -43,48 +43,21 @@ import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.AS_Library
 
--- for debugging only
--- import Debug.Trace (trace)
-
 -- the following module provides the ability to parse the "unparsed-anno"
 import Text.ParserCombinators.Parsec (parse)
 import qualified Common.Anno_Parser (annotations,parse_anno)
 import Common.Lexer(skip)
 
---from_sml_ATerm :: ATermTable -> LIB_DEFN
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
-
---from_sml_ATerm = fromShATerm
 read_sml_ATerm fn = readFile fn >>= return . from_sml_ATermString 
 
 ----- Convertible class for sml -----------------------------------------
 
 class ATermConvertibleSML t where
-  -- ATerm  
-    -- conversion functions known from Joost Visser
-    to_sml_ATerm   :: t -> ATerm
-    from_sml_ATerm :: ATerm -> t
-    -- conversion functions to omit overlapping instances
-    to_sml_ATermList   :: [t] -> ATerm
-    from_sml_ATermList :: ATerm -> [t]
-
-    -- default functions ignore the Annotation part
-    to_sml_ATermList ts = AList (map to_sml_ATerm ts) []
-    from_sml_ATermList aterm = 
-        case aterm of
-        AList aterms _ -> map from_sml_ATerm aterms
-        _              -> from_sml_ATermError "[a]" aterm
-
-  -- ShATerm
-    -- functions for conversion to an ATermTable
-    to_sml_ShATerm       :: ATermTable -> t -> (ATermTable,Int)  
-    to_sml_ShATermList   :: ATermTable -> [t] -> (ATermTable,Int)  
     from_sml_ShATerm     :: ATermTable -> t
     from_sml_ShATermList :: ATermTable -> [t]
 
-    -- default functions ignore the Annotation part
-    to_sml_ShATermList at ts = addATerm (ShAList inds []) at'
-        where (at',inds) = mapAccumL to_sml_ShATerm at ts
+    -- default function ignores the annotation part
     from_sml_ShATermList at = 
         case aterm of 
         ShAList ats _ ->  map cnvrt ats
@@ -94,14 +67,6 @@ class ATermConvertibleSML t where
 
 from_sml_ATermString :: ATermConvertibleSML a => String -> a
 from_sml_ATermString s   = (\ a -> from_sml_ShATerm a) (readATerm s)
-
-from_sml_ATermError :: String -> ATerm -> a
-from_sml_ATermError t u = 
-    error ("Cannot convert ATerm to " ++ t ++ ": " ++ err)
-    where err = case u of 
-                  AAppl s _ _ -> "!AAppl " ++ s
-                  AList _ _   -> "!AList"
-                  _           -> "!AInt"
 
 from_sml_ShATermError :: String -> ShATerm -> a
 from_sml_ShATermError t u = 
@@ -114,9 +79,6 @@ from_sml_ShATermError t u =
 
 -- basic instances -----------------------------------------------
 instance ATermConvertibleSML Bool where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"Bool\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Bool\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Bool\" not implemented"
     from_sml_ShATerm att = case at of 
                        ShAAppl "true"  [] _ -> True
                        ShAAppl "false" [] _ -> False
@@ -125,18 +87,12 @@ instance ATermConvertibleSML Bool where
 -- for Integer derive : ATermConvertibleSML hand written!
 
 instance ATermConvertibleSML Integer where
-    to_sml_ATerm _    = error "*** to_sml_ATerm for \"Integer\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Integer\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Integer\" not implemented"
     from_sml_ShATerm att = case at of 
                             (ShAInt x _)  -> x
                             _             -> from_sml_ShATermError "Integer" at
                           where at = getATerm att
 
 instance ATermConvertibleSML Int where
-    to_sml_ATerm _    = error "*** to_sml_ATerm for \"Int\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Int\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Int\" not implemented"
     from_sml_ShATerm att = case mi y of
                             (Just i) -> i
                             Nothing  -> error ("Integer to big for Int: "++(show y))
@@ -149,16 +105,10 @@ instance ATermConvertibleSML Int where
                                    else Nothing                    
           
 instance ATermConvertibleSML Char where
-   to_sml_ATerm _ = error "*** to_sml_ATerm for \"Char\" not implemented" 
-   from_sml_ATerm _ = error "*** from_sml_ATerm for \"Char\" not implemented"
-   to_sml_ATermList _ = error "*** to_sml_ATerm for \"String\" not implemented"
-   from_sml_ATermList _ = error "*** from_sml_ATerm for \"String\" not implemented"
-   to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Char\" not implemented"
    from_sml_ShATerm att = case at of
                       (ShAAppl s [] _) -> conv s
                       _                ->  from_sml_ShATermError "Char" at
                       where at = getATerm att 
-   to_sml_ShATermList _ _ = error "*** to_sml_ShATerm for \"String\" not implemented"
    from_sml_ShATermList att = case at of 
                          (ShAAppl s [] _) -> read s
                          _                -> from_sml_ShATermError "String" at
@@ -179,26 +129,15 @@ conv ('\"':sr) = case reverse sr of
                   _         -> error "No matching '\"' found"
 conv _         = error "String doesn't begin with '\"'"
               
-instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b) => ATermConvertibleSML (Map.Map a b) where
-    to_sml_ATerm fm       = to_sml_ATerm (Map.toList fm)
-    from_sml_ATerm at     = Map.fromList $ from_sml_ATerm at
-    to_sml_ShATerm att fm = to_sml_ShATerm att $ Map.toList fm 
+instance (Ord a, ATermConvertibleSML a, ATermConvertibleSML b) 
+    => ATermConvertibleSML (Map.Map a b) where
     from_sml_ShATerm att  = Map.fromList $ from_sml_ShATerm att
 
 instance ATermConvertibleSML a => ATermConvertibleSML [a] where
-    to_sml_ATerm l        = to_sml_ATermList l
-    from_sml_ATerm at     = from_sml_ATermList at
-    to_sml_ShATerm att l  = to_sml_ShATermList att l 
     from_sml_ShATerm att  = from_sml_ShATermList att
 
-instance (ATermConvertibleSML a,ATermConvertibleSML b) => ATermConvertibleSML (a,b) where
-    to_sml_ATerm (a,b)    = AAppl "" [to_sml_ATerm a,to_sml_ATerm b] []
-    from_sml_ATerm at     = case at of
-                        (AAppl "" [a,b] _) -> (from_sml_ATerm a,from_sml_ATerm b)
-                        _                  -> from_sml_ATermError "(a,b)" at
-    to_sml_ShATerm att (x,y) = addATerm (ShAAppl "" [x',y'] []) att' 
-                          where (att' ,y') = to_sml_ShATerm att'' y 
-                                (att'',x') = to_sml_ShATerm att   x 
+instance (ATermConvertibleSML a,ATermConvertibleSML b) 
+    => ATermConvertibleSML (a,b) where
     from_sml_ShATerm att = case at of  
                        (ShAAppl "" [x,y] _) -> (x',y')
                         where x' = from_sml_ShATerm (getATermByIndex1 x att) 
@@ -206,34 +145,18 @@ instance (ATermConvertibleSML a,ATermConvertibleSML b) => ATermConvertibleSML (a
                        _  -> from_sml_ShATermError "(a,b)" at
                       where at = getATerm att 
 
-instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c) => ATermConvertibleSML (a,b,c) where
-    to_sml_ATerm (a,b,c) = AAppl "" [to_sml_ATerm a, to_sml_ATerm b, to_sml_ATerm c] []
-    from_sml_ATerm at    = case at of
-                       (AAppl "" [a,b,c] _) -> (from_sml_ATerm a, from_sml_ATerm b, from_sml_ATerm c)
-                       _                          -> from_sml_ATermError "(a,b,c)" at
-    to_sml_ShATerm att (a,b,c) = addATerm (ShAAppl "" [a',b',c'] []) att1 
-                            where (att1,c')  = to_sml_ShATerm att'' c
-                                  (att'',b') = to_sml_ShATerm att'  b 
-                                  (att',a')  = to_sml_ShATerm att   a
+instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c) 
+    => ATermConvertibleSML (a,b,c) where
     from_sml_ShATerm att = case at of 
                        (ShAAppl "" [a,b,c] _) -> (a',b',c')
                          where a' = from_sml_ShATerm (getATermByIndex1 a att) 
                                b' = from_sml_ShATerm (getATermByIndex1 b att) 
                                c' = from_sml_ShATerm (getATermByIndex1 c att) 
                              
-                       _                            -> from_sml_ShATermError "(a,b,c)" at
+                       _   -> from_sml_ShATermError "(a,b,c)" at
                       where at = getATerm att
                             
 instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c, ATermConvertibleSML d) => ATermConvertibleSML (a,b,c,d) where
-    to_sml_ATerm (a,b,c,d) = AAppl "" [to_sml_ATerm a, to_sml_ATerm b, to_sml_ATerm c,to_sml_ATerm d] []
-    from_sml_ATerm at    = case at of
-                       (AAppl "" [a,b,c,d] _) -> (from_sml_ATerm a, from_sml_ATerm b, from_sml_ATerm c, from_sml_ATerm d)
-                       _                          -> from_sml_ATermError "(a,b,c)" at
-    to_sml_ShATerm att (a,b,c,d) = addATerm (ShAAppl "" [a',b',c',d'] []) att2 
-                              where (att2,d')  = to_sml_ShATerm att1  d
-                                    (att1,c')  = to_sml_ShATerm att'' c
-                                    (att'',b') = to_sml_ShATerm att'  b 
-                                    (att',a')  = to_sml_ShATerm att   a
     from_sml_ShATerm att = case at of 
                        (ShAAppl "" [a,b,c,d] _) -> (a',b',c',d')
                          where a' = from_sml_ShATerm (getATermByIndex1 a att) 
@@ -246,9 +169,6 @@ instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c, A
 
 ----- instances of Id.hs ------------------------------------------------
 instance ATermConvertibleSML Token where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"Token\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Token\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Token\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "token" [ aa ] _)  ->
@@ -266,9 +186,6 @@ instance ATermConvertibleSML Token where
             aterm = getATerm att
 
 instance ATermConvertibleSML Id where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"Id\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Id\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Id\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "compound-id" [ aa,ab ] _)  -> -- TOKEN_OR_MIXFIX,[ID]
@@ -298,9 +215,6 @@ from_sml_ATermTokenTup att =
 
 ----- instances of AS_Annotation.hs -------------------------------------
 instance ATermConvertibleSML Annotation where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"Annotation\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"Annotation\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"Annotation\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "comment-line" [ aa ] _)  ->
@@ -409,9 +323,6 @@ instance ATermConvertibleSML Annotation where
 --- belong to each other. Because I can't declare instances for
 --- certain "Annoted types"
 instance (ATermConvertibleSML a) => ATermConvertibleSML (Annoted a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"(Annoted a)\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"(Annoted a)\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"(Annoted a)\" not implemented"
     from_sml_ShATerm att =
         case aterm of
          (ShAAppl con as _)  ->
@@ -457,25 +368,6 @@ from_sml_ATermAnnotedBasic_Items att =
           annoList = case getATerm att of
                      (ShAAppl _ as _) -> getAnnoList (last as) att
                      _                -> error "Wrong ATerm structure: BASIC_ITEMS"
-{-        att' = let (ShAAppl _ as _) = getATerm att -- pos-BASIC-ITEMS
-                     (ShAAppl _ as' _) = getATerm $  -- sig-items
-                                     getATermByIndex1 (head as) att
-                 in getATermByIndex1 (head as') att -}
-
-{-from_sml_ATermAnnotedSig_Items :: ATermTable -> [SIG_ITEMS]
-from_sml_ATermAnnotedSig_Items att =
--- Sig Items have an anno list which now is attached to
--- the first item
-                  Just "s-items" -> 
-                      let aterm' = getATerm (getATermByIndex1 (head as) att)
-                               as'    = case aterm' of ShAAppl _ as _ -> as
-                  in Annoted (from_sml_ShATerm att)
-                             []
-                             []
-                             (getAnnoList (last as) att)
--}
-
-
 
 -- getAnnoList and toAnnoList are only working with an AIndex as first
 -- argument is given. If getAnnoList is called every ShAAppl that starts _
@@ -517,9 +409,6 @@ parse_disp_anno i pos_l inp =
 
 ----- instances of AS_Basic_CASL.hs -------------------------------------
 instance ATermConvertibleSML (BASIC_SPEC a b c) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_SPEC\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_SPEC\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_SPEC\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "basic-spec" [ aa ] _)  ->
@@ -536,9 +425,6 @@ instance ATermConvertibleSML (BASIC_SPEC a b c) where
                 _  -> att
 
 instance ATermConvertibleSML (BASIC_ITEMS a b c) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"BASIC_ITEMS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"BASIC_ITEMS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"BASIC_ITEMS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "sig-items" [ aa ] _)  ->
@@ -581,9 +467,6 @@ instance ATermConvertibleSML (BASIC_ITEMS a b c) where
                 _  -> ([],att)
 
 instance ATermConvertibleSML (SIG_ITEMS a b) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SIG_ITEMS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SIG_ITEMS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SIG_ITEMS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "sort-items" [ aa,ab ] _)  ->
@@ -624,9 +507,6 @@ instance ATermConvertibleSML (SIG_ITEMS a b) where
                 _  -> ([],att)
 
 instance ATermConvertibleSML (SORT_ITEM a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SORT_ITEM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SORT_ITEM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SORT_ITEM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "sort-decl" [ aa ] _)  ->
@@ -665,9 +545,6 @@ instance ATermConvertibleSML (SORT_ITEM a) where
                 _  -> ([],att)
 
 instance ATermConvertibleSML (OP_ITEM a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ITEM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ITEM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ITEM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "op-decl" [ aa,ab,ac ] _)  ->
@@ -696,9 +573,6 @@ instance ATermConvertibleSML (OP_ITEM a) where
                 _  -> ([],att)
 
 instance ATermConvertibleSML OP_TYPE where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_TYPE\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_TYPE\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_TYPE\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "total-op-type" [ aa,ab ] _)  ->
@@ -740,9 +614,6 @@ from_sml_ATermSORTS att =
 ------------------------------------------------------------------------
 
 instance ATermConvertibleSML OP_HEAD where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_HEAD\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_HEAD\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_HEAD\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "total-op-head" [ aa,ab ] _)  ->
@@ -767,9 +638,6 @@ instance ATermConvertibleSML OP_HEAD where
                 _  -> ([],att)
 
 instance ATermConvertibleSML ARG_DECL where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"ARG_DECL\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"ARG_DECL\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"ARG_DECL\" not implemented"
     from_sml_ShATerm att =
         case aterm of
 --  (ShAAppl "arg-decl" [ ShAAppl "" [aa,ab] _ ] _)  ->
@@ -781,8 +649,6 @@ instance ATermConvertibleSML ARG_DECL where
                 in (Arg_decl aa' ab' ac')
         _                       -> from_sml_ShATermError "ARG_DECL" aterm
         where
-
---          Just aterm = getATermSp att' $ ShAAppl "arg-decl" [ShAAppl "" [] _] _
             aterm = case getATerm att' of
                     ShAAppl "arg-decl" [i] _ ->
                             getATerm $ getATermByIndex1 i att 
@@ -794,9 +660,6 @@ instance ATermConvertibleSML ARG_DECL where
                 _  -> ([],att)
 
 instance ATermConvertibleSML (OP_ATTR a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_ATTR\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_ATTR\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_ATTR\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "associative" [ ] _)  ->
@@ -822,9 +685,6 @@ instance ATermConvertibleSML (OP_ATTR a) where
                 _  -> att
 
 instance ATermConvertibleSML (PRED_ITEM a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_ITEM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_ITEM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_ITEM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "pred-decl" [ aa,ab ] _)  ->
@@ -850,9 +710,6 @@ instance ATermConvertibleSML (PRED_ITEM a) where
                 _  -> ([],att)
 
 instance ATermConvertibleSML PRED_TYPE where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_TYPE\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_TYPE\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_TYPE\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "pred-type" [ aa ] _)  ->
@@ -870,9 +727,6 @@ instance ATermConvertibleSML PRED_TYPE where
                 _  -> ([],att)
 
 instance ATermConvertibleSML PRED_HEAD where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_HEAD\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_HEAD\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_HEAD\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "pred-head" [ aa ] _)  ->
@@ -890,9 +744,6 @@ instance ATermConvertibleSML PRED_HEAD where
                 _  -> ([],att)
 
 instance ATermConvertibleSML DATATYPE_DECL where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"DATATYPE_DECL\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"DATATYPE_DECL\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"DATATYPE_DECL\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "datatype-decl" [ aa,ab,ac ] _)  ->
@@ -913,9 +764,6 @@ instance ATermConvertibleSML DATATYPE_DECL where
                 _  -> ([],att)
 
 instance ATermConvertibleSML ALTERNATIVE where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"ALTERNATIVE\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"ALTERNATIVE\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"ALTERNATIVE\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "total-construct" [ aa,ab ] _)  ->
@@ -945,9 +793,6 @@ instance ATermConvertibleSML ALTERNATIVE where
                 _  -> ([],att)
 
 instance ATermConvertibleSML COMPONENTS where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"COMPONENTS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"COMPONENTS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"COMPONENTS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "total-select" [ aa,ab ] _)  ->
@@ -976,9 +821,6 @@ instance ATermConvertibleSML COMPONENTS where
                 _  -> ([],att)
 
 instance ATermConvertibleSML VAR_DECL where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"VAR_DECL\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"VAR_DECL\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"VAR_DECL\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "" [ aa,ab ] _)  ->
@@ -991,9 +833,6 @@ instance ATermConvertibleSML VAR_DECL where
             aterm = getATerm att
 
 instance ATermConvertibleSML (FORMULA a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"FORMULA\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"FORMULA\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"FORMULA\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "quantification" [ aa,ab,ac ] _)  ->
@@ -1114,9 +953,6 @@ from_sml_ATermVARs att = map from_sml_ATermSIMPLE_ID att_list
 -------------------------------------------------------------------------
 
 instance ATermConvertibleSML QUANTIFIER where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"QUANTIFIER\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"QUANTIFIER\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"QUANTIFIER\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "forall" [ ] _)  ->
@@ -1138,9 +974,6 @@ instance ATermConvertibleSML QUANTIFIER where
                 _  -> att
 
 instance ATermConvertibleSML PRED_SYMB where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"PRED_SYMB\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"PRED_SYMB\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PRED_SYMB\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "pred-symb" [ aa,ab ] _)  ->
@@ -1164,9 +997,6 @@ instance ATermConvertibleSML PRED_SYMB where
                 _  -> ([],att)
 
 instance ATermConvertibleSML (TERM a) where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"TERM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"TERM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"TERM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "var-or-const" [ aa ] _)  ->
@@ -1210,9 +1040,6 @@ instance ATermConvertibleSML (TERM a) where
             (pos_l,_p_flag,att') = skipPosFlag "pos-TERM" att
 
 instance ATermConvertibleSML OP_SYMB where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"OP_SYMB\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"OP_SYMB\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"OP_SYMB\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "op-symb" [ aa,ab ] _)  ->
@@ -1236,9 +1063,6 @@ instance ATermConvertibleSML OP_SYMB where
                 _  -> ([],att)
 
 instance ATermConvertibleSML SYMB_ITEMS where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SYMB_ITEMS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SYMB_ITEMS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SYMB_ITEMS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "symb-items" [ aa,ab ] _)  ->
@@ -1257,9 +1081,6 @@ instance ATermConvertibleSML SYMB_ITEMS where
                 _  -> ([],att)
 
 instance ATermConvertibleSML SYMB_MAP_ITEMS where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SYMB_MAP_ITEMS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SYMB_MAP_ITEMS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SYMB_MAP_ITEMS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "symb-map-items" [ aa,ab ] _)  ->
@@ -1278,9 +1099,6 @@ instance ATermConvertibleSML SYMB_MAP_ITEMS where
                 _  -> ([],att)
 
 instance ATermConvertibleSML SYMB_KIND where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SYMB_KIND\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SYMB_KIND\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SYMB_KIND\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "implicitk" [ ] _)  ->
@@ -1301,9 +1119,6 @@ instance ATermConvertibleSML SYMB_KIND where
                 _  -> att
 
 instance ATermConvertibleSML SYMB where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SYMB\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SYMB\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SYMB\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "symb-id" [ aa ] _)  ->
@@ -1327,9 +1142,6 @@ instance ATermConvertibleSML SYMB where
                 _  -> ([],att)
 
 instance ATermConvertibleSML TYPE where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"TYPE\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"TYPE\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"TYPE\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "op-symb-type" [ aa ] _)  ->
@@ -1350,9 +1162,6 @@ instance ATermConvertibleSML TYPE where
                 _  -> att
 
 instance ATermConvertibleSML SYMB_OR_MAP where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SYMB_OR_MAP\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SYMB_OR_MAP\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SYMB_OR_MAP\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "symb" [ aa ] _)  ->
@@ -1396,9 +1205,6 @@ from_sml_ATermSYMB_MAP att =
 
 ----- instances of AS_Structured.hs -------------------------------------
 instance ATermConvertibleSML SPEC where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"SPEC\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"SPEC\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"SPEC\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "basic" [ aa ] _)  ->
@@ -1468,9 +1274,6 @@ toAnnotedList xs = map merge xs
 --------------------------------------------------------------------------
 
 instance ATermConvertibleSML RENAMING where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"RENAMING\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"RENAMING\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"RENAMING\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "renaming" [ aa ] _)  -> 
@@ -1490,9 +1293,6 @@ instance ATermConvertibleSML RENAMING where
                 _  -> ([],att)
 
 instance ATermConvertibleSML RESTRICTION where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"RESTRICTION\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"RESTRICTION\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"RESTRICTION\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "hide" [ aa ] _)  ->
@@ -1520,35 +1320,9 @@ instance ATermConvertibleSML RESTRICTION where
 {- !!! This will be done by the instance of LIB_ITEM !!!
 
 instance ATermConvertibleSML SPEC_DEFN where
-    to_sml_ATerm att0 (Spec_defn aa ab ac ad) =
-        let (att1,aa') = to_sml_ATerm att0 aa
-            (att2,ab') = to_sml_ATerm att1 ab
-            (att3,ac') = to_sml_ATerm att2 ac
-            (att4,ad') = to_sml_ATerm att3 ad
-            lat = [ aa',ab',ac',ad' ]
-        in addATermSp (AAppl "spec-defn"  lat)  att4
-    from_sml_ShATerm att =
-        case aterm of
-            (ShAAppl "spec-defn" [ aa,ab,ac,ad ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac' = from_sml_ShATerm (getATermByIndex1 ac att)
-                ad' = pos_l
-                in (Spec_defn aa' ab' ac' ad')
-        where
-            aterm = getATerm att'
-            (pos_l,att') =
-                case getATerm att of
-                (ShAAppl "pos-SPEC-DEFN" [reg_i,item_i] _) ->
-                    (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
 -}
 
 instance ATermConvertibleSML GENERICITY where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"GENERICITY\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"GENERICITY\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"GENERICITY\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "genericity" [ aa,ab ] _)  ->
@@ -1567,9 +1341,6 @@ instance ATermConvertibleSML GENERICITY where
                 _  -> ([],att)
 
 instance ATermConvertibleSML PARAMS where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"PARAMS\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"PARAMS\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"PARAMS\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "params" [ aa ] _)  ->
@@ -1586,9 +1357,6 @@ instance ATermConvertibleSML PARAMS where
                 _  -> att
 
 instance ATermConvertibleSML IMPORTED where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"IMPORTED\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"IMPORTED\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"IMPORTED\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "imports" [ aa ] _)  ->
@@ -1605,9 +1373,6 @@ instance ATermConvertibleSML IMPORTED where
                 _  -> att
 
 instance ATermConvertibleSML FIT_ARG where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"FIT_ARG\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"FIT_ARG\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"FIT_ARG\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "fit-spec" [ aa,ab ] _)  ->
@@ -1634,37 +1399,9 @@ instance ATermConvertibleSML FIT_ARG where
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
 instance ATermConvertibleSML VIEW_DEFN where
-    to_sml_ATerm att0 (View_defn aa ab ac ad ae) =
-        let (att1,aa') = to_sml_ATerm att0 aa
-            (att2,ab') = to_sml_ATerm att1 ab
-            (att3,ac') = to_sml_ATerm att2 ac
-            (att4,ad') = to_sml_ATerm att3 ad
-            (att5,ae') = to_sml_ATerm att4 ae
-            lat = [ aa',ab',ac',ad',ae' ]
-        in addATermSp (AAppl "view-defn"  lat)  att5
-    from_sml_ShATerm att =
-        case aterm of
-            (ShAAppl "view-defn" [ aa,ab,ac,ad,ae ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac' = from_sml_ShATerm (getATermByIndex1 ac att)
-                ad' = from_sml_ShATerm (getATermByIndex1 ad att)
-                ae' = pos_l
-                in (View_defn aa' ab' ac' ad' ae')
-        where
-            aterm = getATerm att'
-            (pos_l,att') =
-                case getATerm att of
-                (ShAAppl "pos-VIEW-DEFN" [reg_i,item_i] _) ->
-                    (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
 -}
 
 instance ATermConvertibleSML VIEW_TYPE where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"VIEW_TYPE\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"VIEW_TYPE\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"VIEW_TYPE\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "view-type" [ aa,ab ] _)  ->
@@ -1688,34 +1425,9 @@ instance ATermConvertibleSML VIEW_TYPE where
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
 instance ATermConvertibleSML ARCH_SPEC_DEFN where
-    to_sml_ATerm att0 (Arch_spec_defn aa ab ac) =
-        let (att1,aa') = to_sml_ATerm att0 aa
-            (att2,ab') = to_sml_ATerm att1 ab
-            (att3,ac') = to_sml_ATerm att2 ac
-            lat = [ aa',ab',ac' ]
-        in addATermSp (ShAAppl "arch-spec-defn" lat _)  att3
-    from_sml_ShATerm att =
-        case aterm of
-            (ShAAppl "arch-spec-defn" [ aa,ab,ac ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac' = pos_l
-                in (Arch_spec_defn aa' ab' ac')
-        where
-            aterm = getATerm att'
-            (pos_l,att') =
-                case getATerm att of
-                (ShAAppl "pos-ARCH-SPEC-DEFN" [reg_i,item_i] _) ->
-                    (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
-
 -}
 
 instance ATermConvertibleSML ARCH_SPEC where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"ARCH_SPEC\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"ARCH_SPEC\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"ARCH_SPEC\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "basic-arch-spec" [ aa,ab,ac ] _)  ->
@@ -1762,9 +1474,6 @@ from_sml_ATermRESULT_UNIT att =
 
 
 instance ATermConvertibleSML UNIT_REF where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_DECL_DEFN\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-decl-case" [ udl ] _)  ->
@@ -1792,9 +1501,6 @@ instance ATermConvertibleSML UNIT_REF where
                 _  -> att
 
 instance ATermConvertibleSML UNIT_DECL_DEFN where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_DECL_DEFN\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_DECL_DEFN\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-decl-case" [ udl ] _)  ->
@@ -1865,33 +1571,9 @@ from_sml_ATermUNIT_DEFN att =
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
 instance ATermConvertibleSML UNIT_SPEC_DEFN where
-    to_sml_ATerm att0 (Unit_spec_defn aa ab ac) =
-        let (att1,aa') = to_sml_ATerm att0 aa
-            (att2,ab') = to_sml_ATerm att1 ab
-            (att3,ac') = to_sml_ATerm att2 ac
-            lat = [ aa',ab',ac' ]
-        in addATermSp (ShAAppl "unit-spec-defn" lat _)  att3
-    from_sml_ShATerm att =
-        case aterm of
-            (ShAAppl "unit-spec-defn" [ aa,ab,ac ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac' = pos_l
-                in (Unit_spec_defn aa' ab' ac')
-        where
-            aterm = getATerm att'
-            (pos_l,att') =
-                case getATerm att of
-                (ShAAppl "pos-UNIT-SPEC-DEFN" [reg_i,item_i] _) ->
-                    (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
 -}
 
 instance ATermConvertibleSML UNIT_SPEC where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_SPEC\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_SPEC\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_SPEC\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-type-case" [ aa ] _)  ->
@@ -1918,9 +1600,6 @@ instance ATermConvertibleSML UNIT_SPEC where
                 _  -> ([],att)
 
 instance ATermConvertibleSML REF_SPEC where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_SPEC\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_SPEC\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_SPEC\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-type-case" [ aa ] _)  ->
@@ -1976,9 +1655,6 @@ from_sml_ATermUNIT_TYPE att =
 -------------------------------------------------------------------------
 
 instance ATermConvertibleSML UNIT_EXPRESSION where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_EXPRESSION\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_EXPRESSION\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_EXPRESSION\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-expression" [ aa,ab ] _)  ->
@@ -1997,9 +1673,6 @@ instance ATermConvertibleSML UNIT_EXPRESSION where
                 _  -> ([],att)
 
 instance ATermConvertibleSML UNIT_BINDING where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_BINDING\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_BINDING\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_BINDING\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-binding" [ aa,ab ] _)  ->
@@ -2018,9 +1691,6 @@ instance ATermConvertibleSML UNIT_BINDING where
                 _  -> ([],att)
 
 instance ATermConvertibleSML UNIT_TERM where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"UNIT_TERM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"UNIT_TERM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"UNIT_TERM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "unit-reduction" [ aa,ab ] _)  ->
@@ -2058,9 +1728,6 @@ instance ATermConvertibleSML UNIT_TERM where
             (pos_l,group_flag,att') = skipPosFlag "pos-UNIT-TERM" att
 
 instance ATermConvertibleSML FIT_ARG_UNIT where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"FIT_ARG_UNIT\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"FIT_ARG_UNIT\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"FIT_ARG_UNIT\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "fit-arg-unit" [ aa,ab ] _)  ->
@@ -2080,9 +1747,6 @@ instance ATermConvertibleSML FIT_ARG_UNIT where
 
 ----- instances of AS_LIbrary.hs ----------------------------------------
 instance ATermConvertibleSML LIB_DEFN where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"LIB_DEFN\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"LIB_DEFN\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"LIB_DEFN\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "lib-defn" [ aa,ab,ad ] _)  ->
@@ -2102,9 +1766,6 @@ instance ATermConvertibleSML LIB_DEFN where
                 _  -> ([],att)
 
 instance ATermConvertibleSML LIB_ITEM where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"LIB_ITEM\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"LIB_ITEM\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"LIB_ITEM\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "spec-defn" [ aa,ab,ac,ad ] _)  ->
@@ -2182,9 +1843,6 @@ skipPosFlag mcon att   =
 -----------------------------------------------------------------------
 
 instance ATermConvertibleSML ITEM_NAME_OR_MAP where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"ITEM_NAME_OR_MAP\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"ITEM_NAME_OR_MAP\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"ITEM_NAME_OR_MAP\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "item-name" [ aa ] _)  ->
@@ -2207,9 +1865,6 @@ instance ATermConvertibleSML ITEM_NAME_OR_MAP where
                 _  -> ([],att)
 
 instance ATermConvertibleSML LIB_NAME where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"LIB_NAME\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"LIB_NAME\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"LIB_NAME\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "versioned-lib" [ aa,ab ] _)  ->
@@ -2231,9 +1886,6 @@ instance ATermConvertibleSML LIB_NAME where
                 _  -> att
 
 instance ATermConvertibleSML LIB_ID where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"LIB_ID\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"LIB_ID\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"LIB_ID\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "url" [ aa ] _)  ->
@@ -2256,9 +1908,6 @@ instance ATermConvertibleSML LIB_ID where
                 _  -> ([],att)
 
 instance ATermConvertibleSML VERSION_NUMBER where
-    to_sml_ATerm _ = error "*** to_sml_ATerm for \"VERSION_NUMBER\" not implemented"
-    from_sml_ATerm _ = error "*** from_sml_ATerm for \"VERSION_NUMBER\" not implemented"
-    to_sml_ShATerm _ _ = error "*** to_sml_ShATerm for \"VERSION_NUMBER\" not implemented"
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "version" [ aa ] _)  ->
