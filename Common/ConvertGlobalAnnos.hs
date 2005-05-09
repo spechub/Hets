@@ -14,8 +14,6 @@ convert global annotations to a list of annotations
 
 module Common.ConvertGlobalAnnos where
 
-import Data.List (concatMap)
-
 import Common.Id (tokStr)
 import Common.GlobalAnnotations
 import Common.AS_Annotation
