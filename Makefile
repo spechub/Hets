@@ -160,7 +160,7 @@ happy_files += Haskell/Hatchet/HsParser.hs
 #HC_PROF = -prof -auto-all 
 
 HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
-HC_OPTS = $(HCI_OPTS) $(HC_PROF)
+HC_OPTS = $(HCI_OPTS) $(HC_PROF) -DHATCHET -DCASLEXTENSIONS
 DRIFT_OPTS = +RTS -K10m -RTS
 
 ####################################################################
@@ -180,13 +180,13 @@ objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
+    HasCASL/As.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     $(gendrifted_files)
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
-atc_files = Common/Lib/Graph.hs Common/Id.hs Common/Result.hs \
-    Common/AS_Annotation.der.hs \
+atc_files = Common/Lib/Graph.hs Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
     Static/DevGraph.hs Proofs/Proofs.hs Isabelle/IsaSign.hs 
@@ -229,7 +229,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DFiniteMap.hs Common/DynamicUtils.hs \
-    Isabelle/Logic_Isabelle.hs \
+    Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
