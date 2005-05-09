@@ -46,7 +46,7 @@ getTokenList placeStr (Id ts cs ps) =
 setToksPos :: [Token] -> [Pos] -> ([Token], [Pos])
 setToksPos (h:ts) (p:ps) = 
     let (rt, rp) = setToksPos ts ps
-        in (h {tokPos = p} : rt, rp)
+        in (h {tokPos = [p]} : rt, rp)
 setToksPos ts ps = (ts, ps)
 
 -- | update positions in 'Id'.
@@ -223,7 +223,7 @@ asListAppl toExpr i ra br =
              || i == parenId
              || i == varId
              then assert (isSingle ra) $ head ra
-    else toExpr i ra $ filter (/= nullPos) br
+    else toExpr i ra br
 
 -- | construct the list rules
 listRules :: Int -> GlobalAnnos -> [Rule]
@@ -253,7 +253,7 @@ scanItem addType ks (trm, t) p =
     let ts = rest p
         as = args p
         ide = rule p
-        q = p { posList = tokPos t : posList p }
+        q = p { posList = tokPos t ++ posList p }
     in if null ts then [] else 
           let tt = tail ts
               r = q { rest = tt }
@@ -297,7 +297,7 @@ addArg ga toExpr argItem p =
                p { rest = tail $ rest p
                  , lWeight = getLWeight ga argItem p
                  , rWeight = getRWeight ga argItem p
-                 , posList = q : posList p
+                 , posList = q ++ posList p
                  , args = arg : args p 
                  , ambigs = (if null newAms then ams else newAms : ams)
                    ++ ambigs p }
@@ -331,7 +331,7 @@ getRWeight ga argItem opItem =
 -- | shortcut for a function that constructs an expression
 type ToExpr a = Id -> [a] -> [Pos] -> a 
 
-mkExpr :: ToExpr a -> Item a -> (a, Pos)
+mkExpr :: ToExpr a -> Item a -> (a, [Pos])
 mkExpr toExpr itm = 
     let orig = rule itm
         ps = posList itm
@@ -341,7 +341,7 @@ mkExpr toExpr itm =
                        setPlainIdePos (unProtect orig) rs
                     else setPlainIdePos orig rs
         as = reverse $ args itm
-        in (asListAppl toExpr ide as qs, headPos ps)
+        in (asListAppl toExpr ide as qs, rs)
 
 type Filt = Int -> Int -> Maybe Bool
 
@@ -514,7 +514,7 @@ initChart ruleS knownS =
           , solveDiags = [] }
 
 -- | extract resolved result
-getResolved :: (a -> ShowS) -> Pos -> ToExpr a -> Chart a -> Result a
+getResolved :: (a -> ShowS) -> [Pos] -> ToExpr a -> Chart a -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
         ds = solveDiags st
@@ -527,11 +527,9 @@ getResolved pp p toExpr st =
                                          then filter (not . null . rest) rest1 
                                          else rest2 
                               withpos = filter (not . null . posList) expected
-                              (pos, errs) = if null withpos then (p, expected) 
-                                            else (last $ sort $ map 
-                                                  (head . posList) withpos
-                                                  , withpos)
-                              q = if isNullPos pos then p else pos
+                              (q, errs) = if null withpos then (p, expected) 
+                                            else (concatMap (reverse .  
+                                                  posList) withpos, withpos)
                               in Result (Diag Error 
                                ("expected further mixfix token: " 
                                 ++ show (take 5 $ nub 
@@ -553,7 +551,7 @@ getResolved pp p toExpr st =
                        else Result ((showAmbigs pp p $
                             map (fst . mkExpr toExpr) result) : ds) Nothing 
                                    
-showAmbigs :: (a -> ShowS) -> Pos -> [a] -> Diagnosis
+showAmbigs :: (a -> ShowS) -> [Pos] -> [a] -> Diagnosis
 showAmbigs pp p as = 
     Diag Error ("ambiguous mixfix term\n  " ++ 
                 showSepList (showString "\n  ") pp

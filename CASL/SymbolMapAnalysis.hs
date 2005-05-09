@@ -138,7 +138,7 @@ inducedFromMorphism extEm rmap sigma = do
         <+> printText incorrectRsyms 
         $$ text "are already mapped directly or do not match with signature"
         $$ printText sigma) 
-       nullPos)
+       [])
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold 
               (\s m -> do s' <- sortFun rmap s 
@@ -184,7 +184,7 @@ sortFun rmap s =
           _ -> pplain_error s  -- ambiguity! generate an error 
                  (text "Sort" <+> printText s 
                   <+> text "mapped ambiguously:" <+> printText rsys)
-                 nullPos
+                 []
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
@@ -207,7 +207,7 @@ opFun rmap sort_Map ide ots m =
                 <+> text "is mapped twice:"
                 <+> printText rsy1 <+> text "," <+> printText rsy2
                )
-               nullPos
+               []
        (Just rsy, Nothing) -> 
           Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
        (Nothing, Just rsy) -> 
@@ -238,14 +238,14 @@ mappedOpSym sort_Map ide ot rsy = case rsy of
               <+> text "but should be mapped to type" <+>  
               printText (mapOpType sort_Map ot) 
              )
-             nullPos
+             []
       AnID ide' -> return (ide',opKind ot)
       AKindedId FunKind ide' -> return (ide',opKind ot)
       _ -> pplain_error (ide,opKind ot)
                (text "Operation symbol " <+> printText (idToOpSymbol ide ot)
                 <+> text" is mapped to symbol of wrong kind:" 
                 <+> printText rsy) 
-               nullPos
+               []
 
     -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
@@ -283,7 +283,7 @@ predFun rmap sort_Map ide pts m =
                (text "Predicate" <+> printText ide 
                 <+> text "is mapped twice:"
                 <+> printText rsy1 <+> text "," <+> printText rsy2)
-               nullPos
+               []
        (Just rsy, Nothing) -> 
           Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
        (Nothing, Just rsy) -> 
@@ -314,7 +314,7 @@ mappedPredSym sort_Map ide pt rsy = case rsy of
               <+> text "but should be mapped to type" 
               <+> printText (mapPredType sort_Map pt) 
              )
-             nullPos
+             []
       AnID ide' -> return ide'
       AKindedId PredKind ide' -> return ide'
       _ -> pplain_error ide
@@ -322,7 +322,7 @@ mappedPredSym sort_Map ide pt rsy = case rsy of
                 <+> text "is mapped to symbol of wrong kind: " 
                 <+> printText rsy
                ) 
-               nullPos
+               []
 
     -- insert mapping of pred symbol (ide,pt) to raw symbol rsy into m
 insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
@@ -622,7 +622,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
        Nothing -> return ()
        Just syms -> pfatal_error
          (text "No symbol mapping for "
-           <+> printText (Set.fromList $ map fst syms)) nullPos
+           <+> printText (Set.fromList $ map fst syms)) []
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
@@ -737,7 +737,7 @@ generatedSign extEm sys sigma = do
    then pfatal_error 
          (text "Revealing: The following symbols" 
           <+> printText(sys Set.\\ symset)
-          <+> text "are not in the signature") nullPos
+          <+> text "are not in the signature") []
    else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1. 
@@ -789,7 +789,7 @@ cogeneratedSign extEm symset sigma = do
    then pfatal_error 
          (text "Hiding: The following symbols" 
           <+> printText(symset Set.\\ symset0)
-          <+> text "are not in the signature") nullPos
+          <+> text "are not in the signature") []
    else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1. 

@@ -398,6 +398,4 @@ checkUniqueTypevars = checkUniqueness . map getTypeVar
 
 mkBracketToken :: BracketKind -> [Pos] -> [Token]
 mkBracketToken k ps = 
-    if null ps then mkBracketToken k [nullPos]
-       else zipWith Token ((\ (o,c) -> [o,c]) $ getBrackets k) 
-                [head ps, last ps]
+       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k

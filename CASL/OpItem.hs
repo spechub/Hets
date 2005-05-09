@@ -42,15 +42,15 @@ predHead ks =
     do o <- wrapAnnos oParenT
        (vs, ps) <- argDecl ks `separatedBy` anSemi
        p <- addAnnos >> cParenT
-       return $ Pred_head vs $ map tokPos (o:ps++[p])
+       return $ Pred_head vs $ catPos (o:ps++[p])
 
 opHead :: [String] -> AParser st OP_HEAD
 opHead ks = 
     do Pred_head vs ps <- predHead ks
        c <- anColon
-       (b, s, _) <- opSort ks
-       let qs = ps ++ [tokPos c]
-       return $ Op_head (if b then Partial else Total) vs s qs
+       (b, s, qs) <- opSort ks
+       return $ Op_head (if b then Partial else Total) vs s 
+              (ps ++ tokPos c ++ qs)
 
 opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = do p <- asKey assocS
@@ -70,8 +70,8 @@ isConstant :: OP_TYPE -> Bool
 isConstant(Op_type _ [] _ _) = True
 isConstant _ = False
 
-toHead :: Pos -> OP_TYPE -> OP_HEAD
-toHead c (Op_type k [] s _) = Op_head k [] s [c] 
+toHead :: [Pos] -> OP_TYPE -> OP_HEAD
+toHead c (Op_type k [] s ps) = Op_head k [] s (c ++ ps)
 toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
@@ -98,16 +98,16 @@ opBody ks o h =
     do e <- equalT
        a <- annos
        t <- term ks
-       return $ Op_defn o h (Annoted t [] a []) [tokPos e]
+       return $ Op_defn o h (Annoted t [] a []) $ tokPos e
 	  
 opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token] 
 	-> AParser st (OP_ITEM f)
 opAttrs ks os t c = 
     do q <- anComma 
        (as, cs) <- opAttr ks `separatedBy` anComma
-       let ps = sort (map tokPos (c ++ map snd as ++ (q:cs)))
+       let ps = sort (catPos (c ++ map snd as ++ (q:cs)))
        return (Op_decl os t (map fst as) ps)
-   <|> return (Op_decl os t [] (map tokPos c)) 
+   <|> return (Op_decl os t [] (catPos c)) 
 
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
 
@@ -133,10 +133,10 @@ predBody ks p h =
     do e <- asKey equivS
        a <- annos
        f <- formula ks
-       return $ Pred_defn p h (Annoted f [] a []) [tokPos e]
+       return $ Pred_defn p h (Annoted f [] a []) $ tokPos e
 
 predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser st (PRED_ITEM f)
 predTypeCont ks ps cs = 
     do c <- colonT
        t <- predType ks
-       return $ Pred_decl ps t $ map tokPos (cs++[c])
+       return $ Pred_decl ps t $ catPos (cs++[c])

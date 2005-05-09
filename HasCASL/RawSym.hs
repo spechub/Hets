@@ -57,7 +57,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
         let r = return $ AQualId idt $ OpAsItemType sc
             rk = if null vs then Nothing else 
                  convTypeToKind t 
-            rrk = maybeToResult (getMyPos t) 
+            rrk = maybeToResult (get_pos t) 
                            ("not a kind: " ++ showPretty t "") rk
         in case k of 
               SK_op -> r
@@ -94,9 +94,9 @@ convTypeToKind (MixfixType [t1, TypeToken t]) =
     in case mv of 
               Nothing -> Nothing
               Just v -> do k1 <- convTypeToKind t1
-                           Just $ ExtKind k1 v [tokPos t]
+                           Just $ ExtKind k1 v $ tokPos t
 convTypeToKind (TypeToken t) = 
-       if tokStr t == "Type" then Just $ Intersection [] [tokPos t] else
+       if tokStr t == "Type" then Just $ Intersection [] $ tokPos t else
           let ci = simpleIdToId t in
           Just $ ClassKind ci MissingKind
 convTypeToKind _ = Nothing

@@ -28,20 +28,21 @@ symb :: AParser st Symb
 symb = do i <- uninstOpId
           do c <- colT 
              t <- typeScheme
-             return (Symb i (Just $ SymbType t) [tokPos c])
+             return (Symb i (Just $ SymbType t) $ tokPos c)
             <|> 
             do c <- qColonT 
-               t <- parseType 
+               t <- parseType
+               let p = tokPos c
                return (Symb i (Just $ SymbType $ simpleTypeScheme $ 
-                                  LazyType t [tokPos c]) [tokPos c])
-             <|> return (Symb i Nothing [])
+                                  LazyType t p) p)
+             <|> return (Symb i Nothing $ posOfId i)
                
 -- | parse a mapped symbol
 symbMap :: AParser st SymbOrMap
 symbMap =   do s <- symb
                do   f <- asKey mapsTo
                     t <- symb
-                    return (SymbOrMap s (Just t) [tokPos f])
+                    return (SymbOrMap s (Just t) $ tokPos f)
                   <|> return (SymbOrMap s Nothing [])
 
 -- | parse kind of symbols
@@ -73,7 +74,7 @@ symbItems = do s <- symb
             <|> 
             do (k, p) <- symbKind
                (is, ps) <- symbs
-               return (SymbItems k is [] (map tokPos (p:ps)))
+               return (SymbItems k is [] $ catPos $ p:ps)
 
 symbs :: AParser st ([Symb], [Token])
 symbs = do s <- symb 
@@ -90,7 +91,7 @@ symbMapItems =
             <|> 
             do (k, p) <- symbKind
                (is, ps) <- symbMaps
-               return (SymbMapItems k is [] (map tokPos (p:ps)))
+               return (SymbMapItems k is [] $ catPos $ p:ps)
 
 symbMaps :: AParser st ([SymbOrMap], [Token])
 symbMaps = 

@@ -34,6 +34,10 @@ instance Eq Pos where
 instance Ord Pos where
     compare _ _ = EQ
 
+comparePos :: Pos -> Pos -> Ordering
+comparePos (SourcePos s1 l1 c1) (SourcePos s2 l2 c2) = 
+    compare (s1, l1, c1) (s2, l2, c2)
+
 -- | construct a new position
 newPos :: String -> Int -> Int -> Pos
 newPos = SourcePos 
@@ -41,14 +45,6 @@ newPos = SourcePos
 -- | increment the column counter
 incSourceColumn :: Pos -> Int -> Pos
 incSourceColumn (SourcePos s l c) i = SourcePos s l (c + i)
-
--- | unknown position (0, 0)
-nullPos :: Pos 
-nullPos = newPos "" 0 0 
-
--- | test for unkown position
-isNullPos :: Pos -> Bool
-isNullPos (SourcePos _ l c) = l == 0 && c == 0
 
 -- | show a position
 showPos :: Pos -> ShowS
@@ -63,7 +59,7 @@ showPos p = let name = sourceName p
 
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
-                   , tokPos :: Pos
+                   , tokPos :: [Pos]
                    } --deriving (Show)
 
 instance Show Token where
@@ -74,7 +70,7 @@ type SIMPLE_ID = Token
 
 -- | a 'Token' with 'nullPos'
 mkSimpleId :: String -> Token
-mkSimpleId s = Token s nullPos
+mkSimpleId s = Token s []
 
 extSimpleId :: String -> SIMPLE_ID -> SIMPLE_ID
 extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
@@ -91,9 +87,13 @@ instance Eq Token where
 instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
 
+-- | collect positions
+catPos :: [Token] -> [Pos]
+catPos = concatMap tokPos
+
 -- | shortcut to get positions of surrounding and interspersed tokens
 toPos :: Token -> [Token] -> Token -> [Pos]
-toPos o l c = map tokPos (o:l++[c])
+toPos o l c = catPos $ o:l++[c]
 
 -- * placeholder stuff
 
@@ -183,17 +183,14 @@ expandPos :: (Token -> a) -> (String, String) -> [a] -> [Pos] -> [a]
 -- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
 expandPos f (o, c) ts ps =
     if null ts then if null ps then map (f . mkSimpleId) [o, c]
-       else map f (zipWith Token [o, c] [head ps , last ps])
+       else map f (zipWith Token [o, c] [[head ps] , [last ps]])
     else  let n = length ts + 1
               diff = n - length ps
-              ps1 = if diff > 0 then ps ++ replicate diff nullPos
-                    -- pad with nullPos
-                    else if diff == 0 then ps
-                         else take n $ drop (- diff `div` 2) ps
-                    -- cut off longer lists on both ends
               commas j = if j == 2 then [c] else "," : commas (j - 1)
-              seps = map f
-                (zipWith Token (o : commas n) ps1)
+              ocs = o : commas n
+              seps = map f (if diff == 0 then 
+                            zipWith ( \ s p -> Token s [p])
+                            ocs ps else map mkSimpleId ocs)
           in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
                             
 -- | reconstruct the token list of an 'Id'
@@ -277,35 +274,25 @@ isNonCompound (Id _ cs _) = null cs
 
 -- * position stuff
 
+nullPos :: [Pos]
+nullPos = []
+
 -- | compute a meaningful single position from an 'Id' for diagnostics 
-posOfId :: Id -> Pos
-posOfId (Id ts _ _) = let l = dropWhile isPlace ts 
-                      in if null l then -- for invisible "__ __" (only places)
-                           headPos $ map tokPos ts
-                         else tokPos $ head l
-
--- | first 'Pos' or 'nullPos'
-headPos :: [Pos] -> Pos 
-headPos l = case l of 
-    [] -> nullPos
-    h : _ -> h
-
--- | get a reasonable position
-getMyPos :: PosItem a => a -> Pos
-getMyPos = headPos . get_pos
+posOfId :: Id -> [Pos]
+posOfId (Id ts _ ps) = let l = filter (not . isPlace) ts 
+                       in (if null l then 
+                       -- for invisible "__ __" (only places)
+                          catPos ts
+                          else catPos l) ++ ps
 
 -- | get a reasonable position for a list
-posOf :: PosItem a => [a] -> Pos
-posOf l = case l of 
-    [] -> nullPos 
-    h : t -> let q = getMyPos h
-             in if isNullPos q then posOf t
-                 else q
+posOf :: PosItem a => [a] -> [Pos]
+posOf = concatMap get_pos 
+
 
 -- | get a reasonable position for a list with an additional position list
-firstPos :: PosItem a => [a] -> [Pos] -> Pos
-firstPos l ps = let p = posOf l in 
-                        if isNullPos p then headPos ps else p
+firstPos :: PosItem a => [a] -> [Pos] -> [Pos]
+firstPos l ps = posOf l ++ ps
 
 ---- helper class -------------------------------------------------------
 
@@ -316,19 +303,18 @@ firstPos l ps = let p = posOf l in
 -}
 
 class PosItem a where
-    get_pos   :: a -> [Pos]  -- not a nullPos  
-    get_pos   _ = []
+    get_pos :: a -> [Pos]
+    get_pos _ = []
 
 -- a Pos list should not contain nullPos
     
 -- handcoded instance
 instance PosItem Token where
-    get_pos (Token _ ab) = if isNullPos ab then [] else [ab]
+    get_pos (Token _ p) = p
 
 -- handcoded instance
 instance PosItem Id where
-    get_pos i@(Id _ _ ps) = let p = posOfId i in 
-      if isNullPos p then ps else p : ps
+    get_pos = posOfId
 
 -- handcoded instance
 instance PosItem ()

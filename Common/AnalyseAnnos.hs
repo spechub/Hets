@@ -19,14 +19,13 @@ module Common.AnalyseAnnos where
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Print_AS_Annotation
-import Common.PrettyPrint
+import Common.Print_AS_Annotation()
 import Common.Result
 import Control.Monad(foldM)
 
 import Text.ParserCombinators.Parsec
 import Common.Lexer (bind)
-import Data.List
+import Data.List(partition)
 
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
@@ -278,7 +277,7 @@ parse_display_str an str = case parse (tokenL [])
 			Left err -> Result [mkDiag Warning 
 					           (err' ++show err++"\nin:\n")
 					           an ] 
-				           $ Just [Token str nullPos] 
+				           $ Just [Token str []] 
 			Right i' -> Result [] $ Just i'
     where tokenL acc = 
 	      do isEof <- option False (eof >> return True) 
@@ -291,7 +290,7 @@ parse_display_str an str = case parse (tokenL [])
 			       else tokenL (acc ++ plcs ++tok)
 	  optTok pa = option [] (do t <- pa 
 				    return [t])
-	  mkTok p = bind Token p (return nullPos)
+	  mkTok p = bind Token p (return [])
 	  placeP = mkTok (string place)
 	  nonPlaceP = mkTok $ 
 		         do c <- anyChar 

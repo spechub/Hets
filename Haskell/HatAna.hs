@@ -168,7 +168,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
    case sds of 
        [] -> return ()
        d : _ -> Result [Diag Hint ("\n" ++ pp sds) 
-                       $ formSrcLoc $ srcLoc d] $ Just ()
+                       [formSrcLoc $ srcLoc d]] $ Just ()
    fs :>: (is, (ts, vs)) <- 
         lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
@@ -188,7 +188,7 @@ getHsDecl = maybe (HsFunBind loc0 []) id . basestruct . struct
 preludeConflicts :: [HsDecl] -> ([HsDecl], [Diagnosis])
 preludeConflicts = 
     foldr ( \ d (es, ds) -> let e = getHsDecl d
-                                p = formSrcLoc $ srcLoc e
+                                p = [formSrcLoc $ srcLoc e]
                             in
         if preludeEntity e then 
             (es, 

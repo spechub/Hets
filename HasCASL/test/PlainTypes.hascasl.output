@@ -74,7 +74,7 @@ v : m List %(var)%
 x : tuple3 r s t %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Error , incompatible kind of: tuple3 r s
+*** Error, incompatible kind of: tuple3 r s
   expected: Type
      found: c -> d
 
@@ -97,7 +97,7 @@ x : tuple3 r s t %(var)%
      found: a -> b
 
 *** Hint 38.12, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : t, var x : t)'
+*** Hint, in type of '(var x : t, var x : t)'
   type 't * t'
   is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3'
 

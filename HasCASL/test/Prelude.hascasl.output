@@ -280,8 +280,8 @@ free type bool
 *** Hint 6.5, is type variable 's'
 *** Hint 6.7, is type variable 't'
 *** Hint 11.6, redeclared type 'Unit'
-*** Error , illegal type pattern argument '__'
-*** Error , illegal type pattern argument '__'
+*** Error, illegal type pattern argument '__'
+*** Error, illegal type pattern argument '__'
 *** Error 17.6, illegal overloading of predefined identifier 'true'
 *** Error 17.12, illegal overloading of predefined identifier 'false'
 *** Error 19.9, illegal overloading of predefined identifier '__/\__'
@@ -292,14 +292,14 @@ free type bool
 *** Error 22.8, illegal overloading of predefined identifier '__=__'
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
-*** Error , illegal type pattern '__ * __ * __'
+*** Error, illegal type pattern '__ * __ * __'
 *** Hint 42.16, variable shadows global name(s) 'x'
 *** Hint 44.15, variable shadows global name(s) 'x'
 *** Error 46.11, unexpected mixfix token: und
 *** Hint 50.8, redeclared type '__->__'
 *** Hint 52.8, redeclared type '__->__'
-*** Hint , repeated supertype '__->?__'
-*** Error 54.47, ambiguous mixfix term
+*** Hint, repeated supertype '__->?__'
+*** Error 54.47-54.49, ambiguous mixfix term
   def__(f(x))
   def(f)(x)
 *** Error 54.32, unexpected mixfix token: all
@@ -310,34 +310,34 @@ free type bool
   with (maximal) type: _var_11_v11 ->? t
   known types:
     
-*** Hint , untypable application (with result type: t)
+*** Hint 60.13-60.21, untypable application (with result type: t)
  'snd(x : s, var y : t)'
 *** Error 60.30, no typing for 'program snd(x : s, var y : t) : t = y'
-*** Error 65.22, ambiguous mixfix term
+*** Error 65.22-65.30, ambiguous mixfix term
   def(__res__(x, y))
   def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
-*** Hint , in type of '((op fst[_var_24_v24; _var_25_v25]
+*** Hint 66.9-66.16, in type of '((op fst[_var_24_v24; _var_25_v25]
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
      _var_24_v24 * _var_25_v25 ->? _var_24_v24,
  (op __res__[_var_26_v26; _var_27_v27]
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
      _var_26_v26 * _var_27_v27 ->? _var_26_v26)'
   type '(_var_24_v24 * _var_25_v25 ->? _var_24_v24) *
-(_var_26_v26 * _var_27_v27 ->? _var_26_v26)'
-  is not unifiable with type 'Unit ->? _var_13_v13 * _var_13_v13'
+(_var_26_v26 * _var_27_v27 ->? _var_26_v26)' (66.16)
+  is not unifiable with type 'Unit ->? _var_13_v13 * _var_13_v13' (66.16)
 
 *** Hint 74.5, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var x : s)'
+*** Hint, in type of '(var x : s, var x : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_43_v43 * _var_43_v43'
+  is not unifiable with type 'Unit ->? _var_43_v43 * _var_43_v43' (74.17)
 
 *** Hint 74.5, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var x : s)'
+*** Hint, in type of '(var x : s, var x : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_52_v52 * _var_52_v52'
+  is not unifiable with type 'Unit ->? _var_52_v52 * _var_52_v52' (74.17)
 
-*** Hint , in type of '((\ (var x : s)
+*** Hint 74.3-74.23, in type of '((\ (var x : s)
     . ((pred eq[_var_52_v52] : forall s : Type . s_v-1 * s_v-1) :
            _var_52_v52 * _var_52_v52 ->? Unit)
         (var x : s, var x : s) :
@@ -346,78 +346,78 @@ free type bool
  (op tt[_var_55_v55]
   : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
      Pred _var_55_v55@(_var_55_v55 ->? Unit))'
-  type '(s ->? Unit) * Pred _var_55_v55@(_var_55_v55 ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_37_v37 * _var_37_v37'
+  type '(s ->? Unit) * Pred _var_55_v55@(_var_55_v55 ->? Unit)' (74.23)
+  is not unifiable with type 'Unit ->? _var_37_v37 * _var_37_v37' (74.23)
 
 *** Hint 75.6, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_75_v75 * _var_75_v75'
+  is not unifiable with type 'Unit ->? _var_75_v75 * _var_75_v75' (75.26)
 
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_80_v80 * _var_80_v80'
+  is not unifiable with type 'Unit ->? _var_80_v80 * _var_80_v80' (75.26)
 
-*** Hint , in type of '(var x : s,
+*** Hint 75.21-75.27, in type of '(var x : s,
  ((pred eq[_var_80_v80] : forall s : Type . s_v-1 * s_v-1) :
       _var_80_v80 * _var_80_v80 ->? Unit)
    (var x : s, var y : s) :
      Unit)'
-  type 's * Unit'
-  is not unifiable with type 'Unit ->? _var_69_v69 * _var_70_v70'
+  type 's * Unit' (75.27)
+  is not unifiable with type 'Unit ->? _var_69_v69 * _var_70_v70' (75.27)
 
 *** Hint 75.35, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_94_v94 * _var_94_v94'
+  is not unifiable with type 'Unit ->? _var_94_v94 * _var_94_v94' (75.55)
 
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_99_v99 * _var_99_v99'
+  is not unifiable with type 'Unit ->? _var_99_v99 * _var_99_v99' (75.55)
 
-*** Hint , in type of '(var y : s,
+*** Hint 75.50-75.56, in type of '(var y : s,
  ((pred eq[_var_99_v99] : forall s : Type . s_v-1 * s_v-1) :
       _var_99_v99 * _var_99_v99 ->? Unit)
    (var x : s, var y : s) :
      Unit)'
-  type 's * Unit'
-  is not unifiable with type 'Unit ->? _var_88_v88 * _var_89_v89'
+  type 's * Unit' (75.56)
+  is not unifiable with type 'Unit ->? _var_88_v88 * _var_89_v89' (75.56)
 
 *** Hint 75.6, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_117_v117 * _var_117_v117'
+  is not unifiable with type 'Unit ->? _var_117_v117 * _var_117_v117' (75.26)
 
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_122_v122 * _var_122_v122'
+  is not unifiable with type 'Unit ->? _var_122_v122 * _var_122_v122' (75.26)
 
-*** Hint , in type of '(var x : s,
+*** Hint 75.21-75.27, in type of '(var x : s,
  ((pred eq[_var_122_v122] : forall s : Type . s_v-1 * s_v-1) :
       _var_122_v122 * _var_122_v122 ->? Unit)
    (var x : s, var y : s) :
      Unit)'
-  type 's * Unit'
-  is not unifiable with type 'Unit ->? _var_111_v111 * _var_112_v112'
+  type 's * Unit' (75.27)
+  is not unifiable with type 'Unit ->? _var_111_v111 * _var_112_v112' (75.27)
 
 *** Hint 75.35, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_136_v136 * _var_136_v136'
+  is not unifiable with type 'Unit ->? _var_136_v136 * _var_136_v136' (75.55)
 
-*** Hint , in type of '(var x : s, var y : s)'
+*** Hint, in type of '(var x : s, var y : s)'
   type 's * s'
-  is not unifiable with type 'Unit ->? _var_141_v141 * _var_141_v141'
+  is not unifiable with type 'Unit ->? _var_141_v141 * _var_141_v141' (75.55)
 
-*** Hint , in type of '(var y : s,
+*** Hint 75.50-75.56, in type of '(var y : s,
  ((pred eq[_var_141_v141] : forall s : Type . s_v-1 * s_v-1) :
       _var_141_v141 * _var_141_v141 ->? Unit)
    (var x : s, var y : s) :
      Unit)'
-  type 's * Unit'
-  is not unifiable with type 'Unit ->? _var_130_v130 * _var_131_v131'
+  type 's * Unit' (75.56)
+  is not unifiable with type 'Unit ->? _var_130_v130 * _var_131_v131' (75.56)
 
-*** Hint , in type of '((\ (var x : s, var y : s)
+*** Hint 75.3-75.57, in type of '((\ (var x : s, var y : s)
     . ((op __res__[_var_111_v111; _var_112_v112]
         : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
            _var_111_v111 * _var_112_v112 ->? _var_111_v111)
@@ -439,8 +439,8 @@ free type bool
              Unit) :
           _var_130_v130) :
      _var_127_v127 * _var_128_v128 ->? _var_126_v126)'
-  type '(s * s ->? s) * (s * s ->? s)'
-  is not unifiable with type 'Unit ->? _var_61_v61 * _var_61_v61'
+  type '(s * s ->? s) * (s * s ->? s)' (75.57)
+  is not unifiable with type 'Unit ->? _var_61_v61 * _var_61_v61' (75.57)
 
 *** Hint 85.6, redeclared type 's'
 *** Error 85.6, merge: TypeVarDefn of 's'
@@ -450,7 +450,7 @@ free type bool
   with (maximal) type: _var_152_v152 ->? Unit ->? Unit
   known types:
     
-*** Hint , untypable application (with result type: Unit ->? Unit)
+*** Hint 87.13-87.15, untypable application (with result type: Unit ->? Unit)
  'all(var p : s ->? Unit)'
 *** Error 87.38, no typing for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
@@ -492,7 +492,7 @@ free type bool
 *** Hint 153.8, is type variable 'd'
 *** Error 159.45, unexpected mixfix token: und
 *** Hint 169.9, redeclared type '__-->?__'
-*** Hint , repeated supertype '__->?__'
+*** Hint, repeated supertype '__->?__'
 *** Error 171.35, unexpected mixfix token: und
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.40, unexpected mixfix token: und
@@ -501,13 +501,13 @@ free type bool
 *** Error 170.7, unexpected mixfix token: :
 *** Error 176.51, unexpected mixfix token: impl
 *** Error 176.31, unexpected mixfix token: all
-*** Error 182.51, ambiguous mixfix term
+*** Error 182.51-182.53, ambiguous mixfix term
   def__(f(x))
   def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Error 186.26, unexpected mixfix token: c
-*** Error , incompatible kind of: p_v158 -->? p_v158
+*** Error, incompatible kind of: p_v158 -->? p_v158
   expected: Cpo-
      found: Type
 

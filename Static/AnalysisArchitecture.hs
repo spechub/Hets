@@ -338,7 +338,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx am@(Amalgamation uts poss) =
        (sig, dg'') <- nodeSigUnion lgraph dg' (map getSigFromDiag dnsigs) DGUnion
        -- check amalgamability conditions
        sink <- inclusionSink lgraph dnsigs sig
-       () <- assertAmalgamability opts (headPos poss) diag sink
+       () <- assertAmalgamability opts poss diag sink
        (q, diag') <- extendDiagramIncl lgraph diag dnsigs sig (renderText Nothing (printText am))
        return (q, diag', dg'', Amalgamation uts' poss)
 -- LOCAL-UNIT
@@ -411,7 +411,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx (Group_unit_term ut poss) =
 ana_FIT_ARG_UNITS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
                   -> HetcatsOpts -> ExtStUnitCtx 
                   -> UNIT_TERM      -- ^ the whole application for diagnostic purposes
-                  -> Pos            -- ^ the position of the application (for diagnostic purposes)
+                  -> [Pos]          -- ^ the position of the application (for diagnostic purposes)
                   -> [NodeSig]      -- ^ the signatures of unit's formal parameters
                   -> [FIT_ARG_UNIT] -- ^ the arguments for the unit
                   -> Result ([(G_morphism, NodeSig, DiagNodeSig)], DGraph, Diag)
@@ -443,16 +443,16 @@ ana_FIT_ARG_UNIT :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig (Fit_arg_unit ut symbMap poss) =
     do (p, diag', dg', _) <- ana_UNIT_TERM lgraph defl gctx curl opts uctx (item ut)
        -- compute gMorph (the morphism r|sigma/D(p))
-       let adj = adjustPos (headPos poss)
+       let adj = adjustPos poss
            gsigmaS = getSig nsig
            gsigmaT = getSig (getSigFromDiag p)
        G_sign lidS sigmaS <- return gsigmaS
        G_sign lidT sigmaT <- return gsigmaT
        G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
-       sigmaT' <- rcoerce lidT lidS (headPos poss) sigmaT
+       sigmaT' <- rcoerce lidT lidS poss sigmaT
        mor <- if isStructured opts then return (ide lidS sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
-                         rmap' <- rcoerce lid lidS (headPos poss) rmap
+                         rmap' <- rcoerce lid lidS poss rmap
                          adj $ induced_from_to_morphism lidS rmap' sigmaS sigmaT'
        let gMorph = G_morphism lidS mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
@@ -539,7 +539,7 @@ ana_argSpecs lgraph defl gctx@(gannos, genv, _) opts (argSpec : argSpecs) =
 
 -- | Check that given diagram ensures amalgamability along given set of morphisms
 assertAmalgamability :: HetcatsOpts          -- ^ the program options
-                     -> Pos                  -- ^ the position (for diagnostics)
+                     -> [Pos]                -- ^ the position (for diagnostics)
                      -> Diag                 -- ^ the diagram to be checked
                      -> [(Node, GMorphism)]  -- ^ the sink
                      -> Result ()
@@ -554,7 +554,7 @@ assertAmalgamability opts pos diag sink =
 
 -- | Check the amalgamability assuming common logic for whole diagram
 homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
-                                 -> Pos                 -- ^ the position (for diagnostics)
+                                 -> [Pos]               -- ^ the position (for diagnostics)
                                  -> Diag                -- ^ the diagram to be checked
                                  -> [(Node, GMorphism)] -- ^ the sink
                                  -> Result Amalgamates
@@ -573,41 +573,40 @@ homogeneousEnsuresAmalgamability opts pos diag sink =
 
 -- | Get a position within the source file of a UNIT-TERM
 getPos_UNIT_TERM :: UNIT_TERM
-                 -> Pos
+                 -> [Pos]
 -- UNIT-REDUCTION
 getPos_UNIT_TERM (Unit_reduction _ restr) =
     -- obtain position from RESTRICTION
     case restr of 
-               (Hidden _ poss) -> headPos poss
-               (Revealed _ poss) -> headPos poss
+               (Hidden _ poss) -> poss
+               (Revealed _ poss) -> poss
 -- UNIT-TRANSLATION
 getPos_UNIT_TERM (Unit_translation _ (Renaming _ poss)) =
-    headPos poss
+    poss
 -- AMALGAMATION
 getPos_UNIT_TERM (Amalgamation _ poss) = 
-    headPos poss
+    poss
 -- LOCAL-UNIT
 getPos_UNIT_TERM (Local_unit _ _ poss) = 
-    headPos poss
+    poss
 -- UNIT-APPLICATION
 getPos_UNIT_TERM (Unit_appl (Token _ unpos) _ _) = 
     unpos
 -- GROUP-UNIT-TERM
 getPos_UNIT_TERM (Group_unit_term _ poss) = 
-    headPos poss
+    poss
 
 
 -- | Get a position within the source file of UNIT-IMPORTED
-getPos_UNIT_IMPORTED :: [Pos]
-                     -> Pos
-getPos_UNIT_IMPORTED (_ : (pos : _)) = pos
-getPos_UNIT_IMPORTED _ = nullPos
+getPos_UNIT_IMPORTED :: [Pos] -> [Pos]
+getPos_UNIT_IMPORTED ps = case ps of 
+                          [] -> []
+                          _ : qs -> if null qs then ps else qs
 
 
 -- | Get a position within the source file of UNIT-EXPRESSION
-getPos_UNIT_EXPRESSION :: UNIT_EXPRESSION
-                       -> Pos
+getPos_UNIT_EXPRESSION :: UNIT_EXPRESSION -> [Pos]
 getPos_UNIT_EXPRESSION (Unit_expression _ (Annoted ut _ _ _) []) =
     getPos_UNIT_TERM ut
 getPos_UNIT_EXPRESSION (Unit_expression _ _ poss) = 
-    headPos poss
+    poss

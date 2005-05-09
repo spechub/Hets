@@ -502,64 +502,64 @@ true : Unit %(fun)%
 *** Hint 3.18, redeclared type 'S'
 *** Hint 3.8, redeclared type 'Pred'
 *** Hint 4.17, redeclared type 'S'
-*** Hint , in type of '(var x : S,
+*** Hint, in type of '(var x : S,
  (op emptySet[_var_11_v11]
   : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)) :
      Set _var_11_v11@(_var_11_v11 ->? Unit))'
   type 'S * Set _var_11_v11@(_var_11_v11 ->? Unit)'
   is not unifiable with type 'Unit ->? _var_5_v5 * Set _var_5_v5@(_var_5_v5 ->? Unit)'
 
-*** Hint , in type of '(op __isIn__[_var_13_v13]
+*** Hint, in type of '(op __isIn__[_var_13_v13]
  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
     _var_13_v13 * Set _var_13_v13@(_var_13_v13 ->? Unit) ->? Unit'
   typename 'Unit' (9.32)
-  is not unifiable with type 'Unit ->? ? Unit'
+  is not unifiable with type 'Unit ->? ? Unit' (17.17)
 
-*** Hint , untypable application (with result type: Unit ->? ? Unit)
+*** Hint, untypable application (with result type: Unit ->? ? Unit)
  '__isIn__(x, emptySet)'
-*** Hint , in type of '(var x' : S)'
+*** Hint, in type of '(var x' : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_26_v26'
 
-*** Hint , in type of '(var x' : S)'
+*** Hint, in type of '(var x' : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_31_v31'
 
-*** Hint , in type of '(var x : S,
+*** Hint 18.13-18.14, in type of '(var x : S,
  ((op {__}[_var_31_v31]
    : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit)) :
       _var_31_v31 -> Set _var_31_v31@(_var_31_v31 ->? Unit))
    (var x' : S) :
      Set _var_31_v31@(_var_31_v31 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_19_v19 * Set _var_19_v19@(_var_19_v19 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (18.14)
+  is not unifiable with type 'Unit ->? _var_19_v19 * Set _var_19_v19@(_var_19_v19 ->? Unit)' (18.14)
 
-*** Hint , in type of '(var x : S, var x' : S)'
+*** Hint, in type of '(var x : S, var x' : S)'
   type 'S * S'
   is not unifiable with type 'Unit ->? _var_36_v36 * _var_36_v36'
 
-*** Hint , in type of '(var x' : S)'
+*** Hint, in type of '(var x' : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_48_v48'
 
-*** Hint , in type of '(var x' : S)'
+*** Hint, in type of '(var x' : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_53_v53'
 
-*** Hint , in type of '(var x : S,
+*** Hint 18.13-18.14, in type of '(var x : S,
  ((op {__}[_var_53_v53]
    : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit)) :
       _var_53_v53 -> Set _var_53_v53@(_var_53_v53 ->? Unit))
    (var x' : S) :
      Set _var_53_v53@(_var_53_v53 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_41_v41 * Set _var_41_v41@(_var_41_v41 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (18.14)
+  is not unifiable with type 'Unit ->? _var_41_v41 * Set _var_41_v41@(_var_41_v41 ->? Unit)' (18.14)
 
-*** Hint , in type of '(var x : S, var x' : S)'
+*** Hint, in type of '(var x : S, var x' : S)'
   type 'S * S'
   is not unifiable with type 'Unit ->? _var_58_v58 * _var_58_v58'
 
-*** Hint , in type of '(((op __isIn__[_var_41_v41]
+*** Hint 18.5-18.25, in type of '(((op __isIn__[_var_41_v41]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       _var_41_v41 * Set _var_41_v41@(_var_41_v41 ->? Unit) ->? Unit)
    (var x : S,
@@ -574,57 +574,57 @@ true : Unit %(fun)%
       _var_58_v58 * _var_58_v58 ->? Unit)
    (var x : S, var x' : S) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (18.25)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (18.25)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_66_v66 * Set _var_66_v66@(_var_66_v66 ->? Unit)'
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_71_v71'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_75_v75 * Set _var_75_v75@(_var_75_v75 ->? Unit)'
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_80_v80'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 19.5-19.24, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
      Unit,
  (var s : Set S@(S ->? Unit))(var x : S) : _var_81_v81)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (19.24)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (19.24)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? (_var_90_v90 ->? _var_91_v91) *
          (_var_92_v92 ->? _var_93_v93)'
 
 *** Hint 20.31, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_99_v99 * Set _var_99_v99@(_var_99_v99 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_106_v106 * Set _var_106_v106@(_var_106_v106 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_113_v113 * Set _var_113_v113@(_var_113_v113 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_120_v120 * Set _var_120_v120@(_var_120_v120 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 20.46-20.56, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -634,32 +634,32 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (20.56)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (20.56)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? (_var_130_v130 ->? _var_131_v131) *
          (_var_132_v132 ->? _var_133_v133)'
 
 *** Hint 20.31, variable shadows global name(s) 'x'
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_139_v139 * Set _var_139_v139@(_var_139_v139 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_146_v146 * Set _var_146_v146@(_var_146_v146 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_153_v153 * Set _var_153_v153@(_var_153_v153 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_160_v160 * Set _var_160_v160@(_var_160_v160 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 20.46-20.56, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -669,10 +669,10 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (20.56)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (20.56)
 
-*** Hint , in type of '(((op __subset__[_var_127_v127]
+*** Hint 20.5-20.58, in type of '(((op __subset__[_var_127_v127]
    : forall S : Type .
        Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
                                      Set S_v-1@(S_v-1 ->? Unit) ->? Unit)) :
@@ -694,20 +694,20 @@ true : Unit %(fun)%
           (var x : S, var s' : Set S@(S ->? Unit)) :
             Unit) :
          Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (20.58)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (20.58)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_177_v177@(_var_177_v177 ->? Unit) *
          Set _var_177_v177@(_var_177_v177 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_188_v188@(_var_188_v188 ->? Unit) *
          Set _var_188_v188@(_var_188_v188 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 21.12-21.21, in type of '(var x : S,
  ((op __union__[_var_188_v188]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -716,26 +716,26 @@ true : Unit %(fun)%
       Set _var_188_v188@(_var_188_v188 ->? Unit) -> Set _var_188_v188@(_var_188_v188 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_188_v188@(_var_188_v188 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_170_v170 * Set _var_170_v170@(_var_170_v170 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (21.21)
+  is not unifiable with type 'Unit ->? _var_170_v170 * Set _var_170_v170@(_var_170_v170 ->? Unit)' (21.21)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_203_v203 * Set _var_203_v203@(_var_203_v203 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_210_v210 * Set _var_210_v210@(_var_210_v210 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_217_v217 * Set _var_217_v217@(_var_217_v217 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_224_v224 * Set _var_224_v224@(_var_224_v224 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 21.38-21.48, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -745,20 +745,20 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (21.48)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (21.48)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_238_v238@(_var_238_v238 ->? Unit) *
          Set _var_238_v238@(_var_238_v238 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_249_v249@(_var_249_v249 ->? Unit) *
          Set _var_249_v249@(_var_249_v249 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 21.12-21.21, in type of '(var x : S,
  ((op __union__[_var_249_v249]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -767,26 +767,26 @@ true : Unit %(fun)%
       Set _var_249_v249@(_var_249_v249 ->? Unit) -> Set _var_249_v249@(_var_249_v249 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_249_v249@(_var_249_v249 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_231_v231 * Set _var_231_v231@(_var_231_v231 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (21.21)
+  is not unifiable with type 'Unit ->? _var_231_v231 * Set _var_231_v231@(_var_231_v231 ->? Unit)' (21.21)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_264_v264 * Set _var_264_v264@(_var_264_v264 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_271_v271 * Set _var_271_v271@(_var_271_v271 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_278_v278 * Set _var_278_v278@(_var_278_v278 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_285_v285 * Set _var_285_v285@(_var_285_v285 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 21.38-21.48, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -796,10 +796,10 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (21.48)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (21.48)
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 21.5-21.48, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S,
@@ -823,20 +823,20 @@ true : Unit %(fun)%
       (var x : S, var s' : Set S@(S ->? Unit)) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (21.48)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (21.48)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_302_v302@(_var_302_v302 ->? Unit) *
          Set _var_302_v302@(_var_302_v302 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_313_v313@(_var_313_v313 ->? Unit) *
          Set _var_313_v313@(_var_313_v313 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 22.12-22.28, in type of '(var x : S,
  ((op __intersection__[_var_313_v313]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -845,26 +845,26 @@ true : Unit %(fun)%
       Set _var_313_v313@(_var_313_v313 ->? Unit) -> Set _var_313_v313@(_var_313_v313 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_313_v313@(_var_313_v313 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_295_v295 * Set _var_295_v295@(_var_295_v295 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (22.28)
+  is not unifiable with type 'Unit ->? _var_295_v295 * Set _var_295_v295@(_var_295_v295 ->? Unit)' (22.28)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_328_v328 * Set _var_328_v328@(_var_328_v328 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_335_v335 * Set _var_335_v335@(_var_335_v335 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_342_v342 * Set _var_342_v342@(_var_342_v342 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_349_v349 * Set _var_349_v349@(_var_349_v349 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 22.45-22.55, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -874,20 +874,20 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (22.55)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (22.55)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_363_v363@(_var_363_v363 ->? Unit) *
          Set _var_363_v363@(_var_363_v363 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_374_v374@(_var_374_v374 ->? Unit) *
          Set _var_374_v374@(_var_374_v374 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 22.12-22.28, in type of '(var x : S,
  ((op __intersection__[_var_374_v374]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -896,26 +896,26 @@ true : Unit %(fun)%
       Set _var_374_v374@(_var_374_v374 ->? Unit) -> Set _var_374_v374@(_var_374_v374 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_374_v374@(_var_374_v374 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_356_v356 * Set _var_356_v356@(_var_356_v356 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (22.28)
+  is not unifiable with type 'Unit ->? _var_356_v356 * Set _var_356_v356@(_var_356_v356 ->? Unit)' (22.28)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_389_v389 * Set _var_389_v389@(_var_389_v389 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_396_v396 * Set _var_396_v396@(_var_396_v396 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_403_v403 * Set _var_403_v403@(_var_403_v403 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_410_v410 * Set _var_410_v410@(_var_410_v410 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 22.45-22.55, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -925,10 +925,10 @@ true : Unit %(fun)%
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s' : Set S@(S ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (22.55)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (22.55)
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 22.5-22.55, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S,
@@ -952,20 +952,20 @@ true : Unit %(fun)%
       (var x : S, var s' : Set S@(S ->? Unit)) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (22.55)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (22.55)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_427_v427@(_var_427_v427 ->? Unit) *
          Set _var_427_v427@(_var_427_v427 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_438_v438@(_var_438_v438 ->? Unit) *
          Set _var_438_v438@(_var_438_v438 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 23.12-23.18, in type of '(var x : S,
  ((op __\\__[_var_438_v438]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -974,42 +974,42 @@ true : Unit %(fun)%
       Set _var_438_v438@(_var_438_v438 ->? Unit) -> Set _var_438_v438@(_var_438_v438 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_438_v438@(_var_438_v438 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_420_v420 * Set _var_420_v420@(_var_420_v420 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (23.18)
+  is not unifiable with type 'Unit ->? _var_420_v420 * Set _var_420_v420@(_var_420_v420 ->? Unit)' (23.18)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_453_v453 * Set _var_453_v453@(_var_453_v453 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_461_v461 * Set _var_461_v461@(_var_461_v461 ->? Unit)'
 
-*** Hint , in type of '(op __isIn__[_var_467_v467]
+*** Hint, in type of '(op __isIn__[_var_467_v467]
  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
     _var_467_v467 * Set _var_467_v467@(_var_467_v467 ->? Unit) ->? Unit'
   typename 'Unit' (9.32)
-  is not unifiable with type 'Unit ->? ? Unit'
+  is not unifiable with type 'Unit ->? ? Unit' (23.44)
 
-*** Hint , untypable application (with result type: Unit ->? ? Unit)
+*** Hint, untypable application (with result type: Unit ->? ? Unit)
  '__isIn__(x, s')'
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_470_v470 * Set _var_470_v470@(_var_470_v470 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_478_v478 * Set _var_478_v478@(_var_478_v478 ->? Unit)'
 
-*** Hint , in type of '(op __isIn__[_var_484_v484]
+*** Hint, in type of '(op __isIn__[_var_484_v484]
  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
     _var_484_v484 * Set _var_484_v484@(_var_484_v484 ->? Unit) ->? Unit'
   typename 'Unit' (9.32)
-  is not unifiable with type 'Unit ->? ? Unit'
+  is not unifiable with type 'Unit ->? ? Unit' (23.44)
 
-*** Hint , untypable application (with result type: Unit ->? ? Unit)
+*** Hint, untypable application (with result type: Unit ->? ? Unit)
  '__isIn__(x, s')'
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 23.35-23.49, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -1021,20 +1021,20 @@ true : Unit %(fun)%
       (var x : S, var s' : Set S@(S ->? Unit)) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (23.49)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (23.49)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_494_v494@(_var_494_v494 ->? Unit) *
          Set _var_494_v494@(_var_494_v494 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_505_v505@(_var_505_v505 ->? Unit) *
          Set _var_505_v505@(_var_505_v505 ->? Unit)'
 
-*** Hint , in type of '(var x : S,
+*** Hint 23.12-23.18, in type of '(var x : S,
  ((op __\\__[_var_505_v505]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -1043,42 +1043,42 @@ true : Unit %(fun)%
       Set _var_505_v505@(_var_505_v505 ->? Unit) -> Set _var_505_v505@(_var_505_v505 ->? Unit))
    (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
      Set _var_505_v505@(_var_505_v505 ->? Unit))'
-  type 'S * Set S@(S ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_487_v487 * Set _var_487_v487@(_var_487_v487 ->? Unit)'
+  type 'S * Set S@(S ->? Unit)' (23.18)
+  is not unifiable with type 'Unit ->? _var_487_v487 * Set _var_487_v487@(_var_487_v487 ->? Unit)' (23.18)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_520_v520 * Set _var_520_v520@(_var_520_v520 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_528_v528 * Set _var_528_v528@(_var_528_v528 ->? Unit)'
 
-*** Hint , in type of '(op __isIn__[_var_534_v534]
+*** Hint, in type of '(op __isIn__[_var_534_v534]
  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
     _var_534_v534 * Set _var_534_v534@(_var_534_v534 ->? Unit) ->? Unit'
   typename 'Unit' (9.32)
-  is not unifiable with type 'Unit ->? ? Unit'
+  is not unifiable with type 'Unit ->? ? Unit' (23.44)
 
-*** Hint , untypable application (with result type: Unit ->? ? Unit)
+*** Hint, untypable application (with result type: Unit ->? ? Unit)
  '__isIn__(x, s')'
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_537_v537 * Set _var_537_v537@(_var_537_v537 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s' : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_545_v545 * Set _var_545_v545@(_var_545_v545 ->? Unit)'
 
-*** Hint , in type of '(op __isIn__[_var_551_v551]
+*** Hint, in type of '(op __isIn__[_var_551_v551]
  : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
     _var_551_v551 * Set _var_551_v551@(_var_551_v551 ->? Unit) ->? Unit'
   typename 'Unit' (9.32)
-  is not unifiable with type 'Unit ->? ? Unit'
+  is not unifiable with type 'Unit ->? ? Unit' (23.44)
 
-*** Hint , untypable application (with result type: Unit ->? ? Unit)
+*** Hint, untypable application (with result type: Unit ->? ? Unit)
  '__isIn__(x, s')'
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 23.35-23.49, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -1090,10 +1090,10 @@ true : Unit %(fun)%
       (var x : S, var s' : Set S@(S ->? Unit)) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (23.49)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (23.49)
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 23.5-23.49, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S,
@@ -1119,25 +1119,25 @@ true : Unit %(fun)%
            Unit) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (23.49)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (23.49)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? (_var_560_v560 ->? _var_561_v561) *
          (_var_562_v562 ->? _var_563_v563)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_571_v571@(_var_571_v571 ->? Unit) *
          Set _var_571_v571@(_var_571_v571 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_585_v585@(_var_585_v585 ->? Unit) *
          Set _var_585_v585@(_var_585_v585 ->? Unit)'
 
-*** Hint , in type of '(((op __intersection__[_var_585_v585]
+*** Hint 24.41-24.43, in type of '(((op __intersection__[_var_585_v585]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
        Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)) :
@@ -1148,25 +1148,25 @@ true : Unit %(fun)%
  (op emptySet[_var_594_v594]
   : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)) :
      Set _var_594_v594@(_var_594_v594 ->? Unit))'
-  type 'Set S@(S ->? Unit) * Set _var_594_v594@(_var_594_v594 ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_566_v566 * _var_566_v566'
+  type 'Set S@(S ->? Unit) * Set _var_594_v594@(_var_594_v594 ->? Unit)' (24.43)
+  is not unifiable with type 'Unit ->? _var_566_v566 * _var_566_v566' (24.43)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? (_var_604_v604 ->? _var_605_v605) *
          (_var_606_v606 ->? _var_607_v607)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_615_v615@(_var_615_v615 ->? Unit) *
          Set _var_615_v615@(_var_615_v615 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit))'
   type 'Set S@(S ->? Unit) * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_629_v629@(_var_629_v629 ->? Unit) *
          Set _var_629_v629@(_var_629_v629 ->? Unit)'
 
-*** Hint , in type of '(((op __intersection__[_var_629_v629]
+*** Hint 24.41-24.43, in type of '(((op __intersection__[_var_629_v629]
    : forall S : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
        Set S_v-1@(S_v-1 ->? Unit) -> Set S_v-1@(S_v-1 ->? Unit)) :
@@ -1177,10 +1177,10 @@ true : Unit %(fun)%
  (op emptySet[_var_638_v638]
   : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)) :
      Set _var_638_v638@(_var_638_v638 ->? Unit))'
-  type 'Set S@(S ->? Unit) * Set _var_638_v638@(_var_638_v638 ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_610_v610 * _var_610_v610'
+  type 'Set S@(S ->? Unit) * Set _var_638_v638@(_var_638_v638 ->? Unit)' (24.43)
+  is not unifiable with type 'Unit ->? _var_610_v610 * _var_610_v610' (24.43)
 
-*** Hint , in type of '(((op __disjoint__[_var_601_v601]
+*** Hint 24.19-24.43, in type of '(((op __disjoint__[_var_601_v601]
    : forall S : Type .
        Pred (Set S_v-1 * Set S_v-1)@(Set S_v-1@(S_v-1 ->? Unit) *
                                      Set S_v-1@(S_v-1 ->? Unit) ->? Unit)) :
@@ -1205,20 +1205,20 @@ true : Unit %(fun)%
      : forall S : Type . Set S_v-1@(S_v-1 ->? Unit)) :
         Set _var_624_v624@(_var_624_v624 ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (24.43)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (24.43)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
   type 'Set S@(S ->? Unit) * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_655_v655@(_var_655_v655 ->? Unit) *
          Set _var_656_v656@(_var_656_v656 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
   type 'Set S@(S ->? Unit) * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_671_v671@(_var_671_v671 ->? Unit) *
          Set _var_672_v672@(_var_672_v672 ->? Unit)'
 
-*** Hint , in type of '((var x : S, var y : T),
+*** Hint 25.5-25.22, in type of '((var x : S, var y : T),
  ((op __*__[_var_671_v671; _var_672_v672]
    : forall S : Type; T : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -1231,26 +1231,26 @@ true : Unit %(fun)%
    (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
      Set (_var_671_v671 * _var_672_v672)@(_var_671_v671 *
                                           _var_672_v672 ->? Unit))'
-  type '(S * T) * Set (S * T)@(S * T ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_648_v648 * Set _var_648_v648@(_var_648_v648 ->? Unit)'
+  type '(S * T) * Set (S * T)@(S * T ->? Unit)' (25.22)
+  is not unifiable with type 'Unit ->? _var_648_v648 * Set _var_648_v648@(_var_648_v648 ->? Unit)' (25.22)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_693_v693 * Set _var_693_v693@(_var_693_v693 ->? Unit)'
 
-*** Hint , in type of '(var y : T, var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var y : T, var t : Set T@(T ->? Unit))'
   type 'T * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? _var_700_v700 * Set _var_700_v700@(_var_700_v700 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_707_v707 * Set _var_707_v707@(_var_707_v707 ->? Unit)'
 
-*** Hint , in type of '(var y : T, var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var y : T, var t : Set T@(T ->? Unit))'
   type 'T * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? _var_714_v714 * Set _var_714_v714@(_var_714_v714 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 25.37-25.47, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -1260,20 +1260,20 @@ true : Unit %(fun)%
       T * Set T@(T ->? Unit) ->? Unit)
    (var y : T, var t : Set T@(T ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (25.47)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (25.47)
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
   type 'Set S@(S ->? Unit) * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_728_v728@(_var_728_v728 ->? Unit) *
          Set _var_729_v729@(_var_729_v729 ->? Unit)'
 
-*** Hint , in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit))'
   type 'Set S@(S ->? Unit) * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? Set _var_744_v744@(_var_744_v744 ->? Unit) *
          Set _var_745_v745@(_var_745_v745 ->? Unit)'
 
-*** Hint , in type of '((var x : S, var y : T),
+*** Hint 25.5-25.22, in type of '((var x : S, var y : T),
  ((op __*__[_var_744_v744; _var_745_v745]
    : forall S : Type; T : Type .
        Set S_v-1@(S_v-1 ->? Unit) *
@@ -1286,26 +1286,26 @@ true : Unit %(fun)%
    (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
      Set (_var_744_v744 * _var_745_v745)@(_var_744_v744 *
                                           _var_745_v745 ->? Unit))'
-  type '(S * T) * Set (S * T)@(S * T ->? Unit)'
-  is not unifiable with type 'Unit ->? _var_721_v721 * Set _var_721_v721@(_var_721_v721 ->? Unit)'
+  type '(S * T) * Set (S * T)@(S * T ->? Unit)' (25.22)
+  is not unifiable with type 'Unit ->? _var_721_v721 * Set _var_721_v721@(_var_721_v721 ->? Unit)' (25.22)
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_766_v766 * Set _var_766_v766@(_var_766_v766 ->? Unit)'
 
-*** Hint , in type of '(var y : T, var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var y : T, var t : Set T@(T ->? Unit))'
   type 'T * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? _var_773_v773 * Set _var_773_v773@(_var_773_v773 ->? Unit)'
 
-*** Hint , in type of '(var x : S, var s : Set S@(S ->? Unit))'
+*** Hint, in type of '(var x : S, var s : Set S@(S ->? Unit))'
   type 'S * Set S@(S ->? Unit)'
   is not unifiable with type 'Unit ->? _var_780_v780 * Set _var_780_v780@(_var_780_v780 ->? Unit)'
 
-*** Hint , in type of '(var y : T, var t : Set T@(T ->? Unit))'
+*** Hint, in type of '(var y : T, var t : Set T@(T ->? Unit))'
   type 'T * Set T@(T ->? Unit)'
   is not unifiable with type 'Unit ->? _var_787_v787 * Set _var_787_v787@(_var_787_v787 ->? Unit)'
 
-*** Hint , in type of '(((op __isIn__[S]
+*** Hint 25.37-25.47, in type of '(((op __isIn__[S]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       S * Set S@(S ->? Unit) ->? Unit)
    (var x : S, var s : Set S@(S ->? Unit)) :
@@ -1315,10 +1315,10 @@ true : Unit %(fun)%
       T * Set T@(T ->? Unit) ->? Unit)
    (var y : T, var t : Set T@(T ->? Unit)) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (25.47)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (25.47)
 
-*** Hint , in type of '(((op __isIn__[S * T]
+*** Hint 25.5-25.47, in type of '(((op __isIn__[S * T]
    : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
       (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
    ((var x : S, var y : T),
@@ -1344,40 +1344,40 @@ true : Unit %(fun)%
       (var y : T, var t : Set T@(T ->? Unit)) :
         Unit) :
      Unit)'
-  type 'Unit * Unit'
-  is not unifiable with type 'Unit ->? ? Unit * ? Unit'
+  type 'Unit * Unit' (25.47)
+  is not unifiable with type 'Unit ->? ? Unit * ? Unit' (25.47)
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_798_v798'
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_805_v805'
 
-*** Hint , in type of '(((op inl[_var_805_v805]
+*** Hint 26.13-26.21, in type of '(((op inl[_var_805_v805]
    : forall S : Type . S_v-1 -> S_v-1 * Bool) :
       _var_805_v805 -> _var_805_v805 * Bool)
    (var x : S) :
      _var_805_v805 * Bool,
  (var x : S, op False : Bool))'
-  type '(S * Bool) * (S * Bool)'
-  is not unifiable with type 'Unit ->? _var_793_v793 * _var_793_v793'
+  type '(S * Bool) * (S * Bool)' (26.21)
+  is not unifiable with type 'Unit ->? _var_793_v793 * _var_793_v793' (26.21)
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_818_v818'
 
-*** Hint , in type of '(var x : S)'
+*** Hint, in type of '(var x : S)'
   typename 'S' (16.15)
   is not unifiable with type 'Unit ->? _var_825_v825'
 
-*** Hint , in type of '(((op inr[_var_825_v825]
+*** Hint 27.13-27.20, in type of '(((op inr[_var_825_v825]
    : forall S : Type . S_v-1 -> S_v-1 * Bool) :
       _var_825_v825 -> _var_825_v825 * Bool)
    (var x : S) :
      _var_825_v825 * Bool,
  (var x : S, op True : Bool))'
-  type '(S * Bool) * (S * Bool)'
-  is not unifiable with type 'Unit ->? _var_813_v813 * _var_813_v813'
+  type '(S * Bool) * (S * Bool)' (27.20)
+  is not unifiable with type 'Unit ->? _var_813_v813 * _var_813_v813' (27.20)
 

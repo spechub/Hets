@@ -171,138 +171,138 @@ free type Nat
        Tree Nat) :
     Unit
 %% Diagnostics -----------------------------------------------------------
-*** Warning , unused type variables '[ a : Type ]'
-*** Hint , in type of '(var t : Tree Nat)'
+*** Warning, unused type variables '[ a : Type ]'
+*** Hint, in type of '(var t : Tree Nat)'
   type 'Tree Nat'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
 *** Hint 10.27, variable shadows global name(s) 'n'
-*** Hint , in type of '(op EmptyLeaf[_var_24_v24] : forall a : Type . Tree a_v-1) :
+*** Hint, in type of '(op EmptyLeaf[_var_24_v24] : forall a : Type . Tree a_v-1) :
     Tree _var_24_v24'
   type 'Tree _var_24_v24'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (11.37)
 
 *** Hint 11.37, variable shadows global name(s) 'n'
-*** Hint , in type of '(var h : Tree Nat)'
+*** Hint, in type of '(var h : Tree Nat)'
   type 'Tree Nat'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (12.35)
 
-*** Hint , in type of '(op Node[_var_36_v36]
+*** Hint, in type of '(op Node[_var_36_v36]
  : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
     Tree _var_36_v36 -> _var_36_v36 -> Tree _var_36_v36'
   type 'Tree _var_34_v34'
-  is not unifiable with type 'Unit ->? Tree Nat'
+  is not unifiable with type 'Unit ->? Tree Nat' (12.35)
 
-*** Hint , untypable application (with result type: _var_34_v34 ->? Unit ->? Tree Nat)
+*** Hint, untypable application (with result type: _var_34_v34 ->? Unit ->? Tree Nat)
  'Node(h)'
-*** Hint , untypable application (with result type: Unit ->? Tree Nat)
+*** Hint 12.35, untypable application (with result type: Unit ->? Tree Nat)
  'Node(h)(n)'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (12.37)
 
 *** Hint 12.33, variable shadows global name(s) 'h'
 *** Hint 12.35, variable shadows global name(s) 'n'
 *** Hint 12.37, variable shadows global name(s) 'n'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
-*** Hint , in type of '(op Leaf[_var_44_v44] : forall a : Type . a_v-1 -> Tree a_v-1) :
+*** Hint, in type of '(op Leaf[_var_44_v44] : forall a : Type . a_v-1 -> Tree a_v-1) :
     _var_44_v44 -> Tree _var_44_v44'
   type 'Tree _var_43_v43'
-  is not unifiable with type 'Unit ->? Tree Nat'
+  is not unifiable with type 'Unit ->? Tree Nat' (13.33)
 
-*** Hint , untypable application (with result type: Unit ->? Tree Nat)
+*** Hint, untypable application (with result type: Unit ->? Tree Nat)
  'Leaf(n)'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (13.36)
 
 *** Hint 13.33, variable shadows global name(s) 'n'
 *** Hint 13.36, variable shadows global name(s) 'n'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
-*** Hint , in type of '(var t : Tree Nat)'
+*** Hint, in type of '(var t : Tree Nat)'
   type 'Tree Nat'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
 *** Hint 10.27, variable shadows global name(s) 'n'
-*** Hint , in type of '(op EmptyLeaf[_var_64_v64] : forall a : Type . Tree a_v-1) :
+*** Hint, in type of '(op EmptyLeaf[_var_64_v64] : forall a : Type . Tree a_v-1) :
     Tree _var_64_v64'
   type 'Tree _var_64_v64'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (11.37)
 
 *** Hint 11.37, variable shadows global name(s) 'n'
-*** Hint , in type of '(var h : Tree Nat)'
+*** Hint, in type of '(var h : Tree Nat)'
   type 'Tree Nat'
   is not unifiable with type 'Unit ->? Tree Nat'
 
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (12.35)
 
-*** Hint , in type of '(op Node[_var_76_v76]
+*** Hint, in type of '(op Node[_var_76_v76]
  : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
     Tree _var_76_v76 -> _var_76_v76 -> Tree _var_76_v76'
   type 'Tree _var_74_v74'
-  is not unifiable with type 'Unit ->? Tree Nat'
+  is not unifiable with type 'Unit ->? Tree Nat' (12.35)
 
-*** Hint , untypable application (with result type: _var_74_v74 ->? Unit ->? Tree Nat)
+*** Hint, untypable application (with result type: _var_74_v74 ->? Unit ->? Tree Nat)
  'Node(h)'
-*** Hint , untypable application (with result type: Unit ->? Tree Nat)
+*** Hint 12.35, untypable application (with result type: Unit ->? Tree Nat)
  'Node(h)(n)'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (12.37)
 
 *** Hint 12.33, variable shadows global name(s) 'h'
 *** Hint 12.35, variable shadows global name(s) 'n'
 *** Hint 12.37, variable shadows global name(s) 'n'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
-*** Hint , in type of '(op Leaf[_var_84_v84] : forall a : Type . a_v-1 -> Tree a_v-1) :
+*** Hint, in type of '(op Leaf[_var_84_v84] : forall a : Type . a_v-1 -> Tree a_v-1) :
     _var_84_v84 -> Tree _var_84_v84'
   type 'Tree _var_83_v83'
-  is not unifiable with type 'Unit ->? Tree Nat'
+  is not unifiable with type 'Unit ->? Tree Nat' (13.33)
 
-*** Hint , untypable application (with result type: Unit ->? Tree Nat)
+*** Hint, untypable application (with result type: Unit ->? Tree Nat)
  'Leaf(n)'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
-  is not unifiable with type 'Unit ->? Nat'
+  is not unifiable with type 'Unit ->? Nat' (13.36)
 
 *** Hint 13.33, variable shadows global name(s) 'n'
 *** Hint 13.36, variable shadows global name(s) 'n'
-*** Hint , in type of '(var n : Nat)'
+*** Hint, in type of '(var n : Nat)'
   typename 'Nat' (7.10)
   is not unifiable with type 'Unit ->? Nat'
 
-*** Hint , in type of '((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
+*** Hint 8.18-13.20, in type of '((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
  (case (var t : Tree Nat) of
       (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
           (op EmptyLeaf[_var_54_v54] : forall a : Type . Tree a_v-1) :
@@ -355,6 +355,6 @@ free type Nat
             (var n : Nat) :
               Tree Nat) :
      Tree Nat)'
-  type 'Tree Nat * Tree Nat'
-  is not unifiable with type 'Unit ->? _var_5_v5 * _var_5_v5'
+  type 'Tree Nat * Tree Nat' (13.20)
+  is not unifiable with type 'Unit ->? _var_5_v5 * _var_5_v5' (13.20)
 

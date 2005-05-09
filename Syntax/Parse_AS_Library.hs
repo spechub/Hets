@@ -55,7 +55,7 @@ library (l,lG) =
       (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
-			       return ([tokPos s1], n))
+			       return (tokPos s1, n))
       an <- annos          -- annotations 
       ls <- libItems lG     -- library elements
       return (Lib_defn ln ls ps an)
@@ -74,7 +74,7 @@ version = do s <- asKey versionS
              pos <- getPos
              n <- many1 digit `sepBy1` (string ".")
              skip
-             return (Version_number n ([tokPos s, pos]))
+             return (Version_number n $ tokPos s ++ [pos])
 
 
 -- | Parse library ID
@@ -106,7 +106,7 @@ libItem l =
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a 
-	       (map tokPos ([s, e] ++ maybeToList q)))
+	       (catPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -119,7 +119,7 @@ libItem l =
                             return (m,[s]))          
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap 
-                    (map tokPos ([s1, s2] ++ ps ++ maybeToList q)))
+                    (catPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
        kSpec <- asKey specS
@@ -128,7 +128,7 @@ libItem l =
        usp <- unitSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
-	           (map tokPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
+	        (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
 	       )
   <|> -- ref spec
     do kRef <- asKey refinementS
@@ -137,7 +137,7 @@ libItem l =
        rsp <- refSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Ref_spec_defn name rsp
-	           (map tokPos ([kRef, kEqu] ++ maybeToList kEnd))
+	           (catPos ([kRef, kEqu] ++ maybeToList kEnd))
 	       )
   <|> -- arch spec
     do kArch <- asKey archS
@@ -147,7 +147,7 @@ libItem l =
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-	           (map tokPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
+	        (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
 	       )
   <|> -- download
     do s1 <- asKey fromS
@@ -156,12 +156,12 @@ libItem l =
        (il,ps) <- itemNameOrMap `separatedBy` anComma
        q <- optEnd
        return (Download_items ln il 
-                (map tokPos ([s1, s2] ++ ps ++ maybeToList q)))
+                (catPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s1 <- asKey logicS
        logN@(Logic_name t _) <- logicName
        lookupAndSetLogicName logN l
-       return (Logic_decl logN (map tokPos [s1,t]))
+       return (Logic_decl logN (catPos [s1,t]))
   <|> -- just a spec (turned into "spec spec = sp")
      do a <- aSpec l
         return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
@@ -172,7 +172,7 @@ viewType :: LogicGraph -> AParser AnyLogic VIEW_TYPE
 viewType l = do sp1 <- annoParser (groupSpec l)
                 s <- asKey toS
                 sp2 <- annoParser (groupSpec l)
-                return (View_type sp1 sp2 [tokPos s])
+                return (View_type sp1 sp2 $ tokPos s)
 
 
 -- | Parse item name or name map
@@ -184,5 +184,5 @@ itemNameOrMap = do i1 <- simpleId
                       return (Just (i,s)))
                    return (case i' of
                       Nothing -> Item_name i1
-                      Just (i2,s) -> Item_name_map i1 i2 [tokPos s])
+                      Just (i2,s) -> Item_name_map i1 i2 $ tokPos s)
 

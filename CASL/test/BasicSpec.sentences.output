@@ -2364,7 +2364,7 @@
 *** Hint 121.12, redeclared sort 'Nat'
 *** Hint 209.17, redeclared sort 'Rat'
 *** Hint 209.11, redeclared sort 'Int'
-*** Error 261.9, ambiguous mixfix term
+*** Error 261.9-261.21, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
   __*__(__*__(i, __-__(q, j)), p)
@@ -2465,7 +2465,7 @@
 *** Hint 323.6, redeclared sort 's'
 *** Hint 325.9, redeclared sort 's'
 *** Hint 336.47, redeclared op ''\\''
-*** Error , ambiguous term
+*** Error, ambiguous term
   (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
   (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
 *** Error 342.20, no operation with 2 arguments found for '__E__'

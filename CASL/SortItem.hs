@@ -40,7 +40,7 @@ commaSortDecl ks s =
     do c <- anComma
        (is, cs) <- sortId ks `separatedBy` anComma
        let l = s : is 
-	   p = map tokPos (c:cs) 
+	   p = catPos (c:cs) 
        subSortDecl ks (l, p) <|> return (Sort_decl l p)
 
 isoDecl :: AParsable f => [String] -> Id -> AParser st (SORT_ITEM f)
@@ -48,9 +48,10 @@ isoDecl ks s =
     do e <- equalT
        subSortDefn ks (s, tokPos e) <|> 
            (do (l, p) <- sortId ks `separatedBy` equalT
-	       return (Iso_decl (s:l) (map tokPos (e:p))))
+	       return (Iso_decl (s:l) (catPos (e:p))))
 
-subSortDefn :: AParsable f => [String] -> (Id, Pos) -> AParser st (SORT_ITEM f)
+subSortDefn :: AParsable f => [String] -> (Id, [Pos]) 
+            -> AParser st (SORT_ITEM f)
 subSortDefn ks (s, e) = 
     do a <- annos
        o <- oBraceT << addAnnos
@@ -62,13 +63,13 @@ subSortDefn ks (s, e) =
        a2 <- annos
        p <- cBraceT
        return $ Subsort_defn s v t (Annoted f [] a a2) 
-		  (e: map tokPos [o, c, d, p])
+		  (e ++ catPos [o, c, d, p])
 
 subSortDecl :: [String] -> ([Id], [Pos]) -> AParser st (SORT_ITEM f)
 subSortDecl ks (l, p) = 
     do t <- lessT
        s <- sortId ks
-       return $ Subsort_decl l s (p++[tokPos t])
+       return $ Subsort_decl l s (p ++ tokPos t)
 
 sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f) 
 sortItem ks = 
@@ -87,7 +88,7 @@ datatype ks =
        a <- getAnnos
        (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
        return (Datatype_decl s (Annoted v [] a b:alts) 
-			(map tokPos (e:ps)))
+			(catPos (e:ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks = 
@@ -99,7 +100,7 @@ alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks = 
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
-       return (Subsorts ts (map tokPos (s:cs)))
+       return (Subsorts ts (catPos (s:cs)))
     <|> 
     do i <- consId ks
        do   o <- wrapAnnos oParenT
@@ -107,7 +108,7 @@ alternative ks =
 	    c <- addAnnos >> cParenT
 	    let qs = toPos o ps c 
             do   q <- try (addAnnos >> quMarkT)
-		 return (Alt_construct Partial i cs (qs++[tokPos q]))
+		 return (Alt_construct Partial i cs (qs ++ tokPos q))
 	      <|> return (Alt_construct Total i cs qs)
 	 <|> return (Alt_construct Total i [] [])
 
@@ -126,6 +127,6 @@ component ks =
 compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs = 
     do c <- anColon
-       (b, t, _) <- opSort ks
-       let p = map tokPos (cs++[c]) 
+       (b, t, qs) <- opSort ks
+       let p = catPos (cs++[c]) ++ qs
        return $ Cons_select (if b then Partial else Total) is t p

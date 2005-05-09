@@ -171,7 +171,7 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
 -- edge to that node. The edge is labelled with given signature morphism and
 -- the node contains the target of this morphism. Extends the development graph 
 -- with given morphis as well.
-extendDiagramWithMorphism :: Pos           -- ^ the position (for diagnostics)
+extendDiagramWithMorphism :: [Pos]         -- ^ the position (for diagnostics)
 			  -> LogicGraph
 			  -> Diag          -- ^ the diagram to be extended
 			  -> DGraph        -- ^ the development graph
@@ -198,7 +198,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
 -- edge from that node. The edge is labelled with given signature morphism and
 -- the node contains the source of this morphism. Extends the development graph 
 -- with given morphis as well.
-extendDiagramWithMorphismRev :: Pos           -- ^ the position (for diagnostics)
+extendDiagramWithMorphismRev :: [Pos]         -- ^ the position (for diagnostics)
 			     -> LogicGraph
 			     -> Diag          -- ^ the diagram to be extended
 			     -> DGraph        -- ^ the development graph

@@ -19,7 +19,7 @@ import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
-import HasCASL.PrintLe
+import HasCASL.PrintLe()
 import HasCASL.Unify
 import HasCASL.Builtin
 import HasCASL.MapTerm
@@ -39,7 +39,7 @@ instance (Ord a, PosItem a, PrettyPrint a, Mergeable b)
 improveDiag :: (PosItem a, PrettyPrint a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
                       unlines $ (f ++ " of '" ++ showPretty v "'") : l
-                    , diagPos = getMyPos v
+                    , diagPos = get_pos v
                     }
 
 mergeMap :: (Ord a, PosItem a, PrettyPrint a) => 
@@ -206,4 +206,4 @@ mergeA str t1 t2 = if t1 == t2 then return t1 else
 mergeTerm :: DiagKind -> Term -> Term -> Result Term
 mergeTerm k t1 t2 = if t1 == t2 then return t1 else
             Result [Diag k ("different terms" ++ expected t1 t2) 
-                    nullPos] $ Just t2
+                    []] $ Just t2

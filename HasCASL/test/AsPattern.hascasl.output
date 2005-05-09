@@ -34,5 +34,5 @@ program (op f : a -> a)(v : a @ (var _ : a)) : a =
 %% Diagnostics -----------------------------------------------------------
 *** Hint 5.13, in type of 'v : a @ (var _ : a)'
   typename 'a' (5.16)
-  is not unifiable with type 'Unit ->? a'
+  is not unifiable with type 'Unit ->? a' (5.13)
 

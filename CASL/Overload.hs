@@ -134,7 +134,7 @@ hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> [Pos]
 hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
     [Diag Error ("no typing for: " ++ show (printText0 ga topterm))
-          $ headPos pos] Nothing
+          pos] Nothing
     else return terms
 
 -- | check if there is a unique equivalence class
@@ -146,24 +146,23 @@ is_unambiguous ga topterm ts pos = do
         [ term : _ ] -> return term
         _ -> Result [Diag Error ("ambiguous term\n  " ++ 
                 showSepList (showString "\n  ") (shows . printText0 ga) 
-                (take 5 $ map head terms) "") $ headPos pos] Nothing
+                (take 5 $ map head terms) "") pos] Nothing
 
-checkIdAndArgs :: Id -> [a] -> [Pos] -> Result (Pos, Int)
+checkIdAndArgs :: Id -> [a] -> [Pos] -> Result Int
 checkIdAndArgs ide args poss =     
     let nargs = length args
         pargs = placeCount ide
-        pos = headPos (poss ++ [posOfId ide])
     in if isMixfix ide && pargs /= nargs then 
     Result [Diag Error
        ("expected " ++ shows pargs " argument(s) of mixfix identifier '" 
          ++ showPretty ide "' but found " ++ shows nargs " argument(s)")
-       pos] Nothing
-    else return (pos, nargs)
+       poss] Nothing
+    else return nargs
 
 
 noOpOrPred :: PrettyPrint t =>
-              [a] -> String -> Maybe t -> Id -> (Pos, Int) -> Result ()
-noOpOrPred ops str mty ide (pos, nargs) =
+              [a] -> String -> Maybe t -> Id -> [Pos] -> Int -> Result ()
+noOpOrPred ops str mty ide pos nargs =
     if null ops then case mty of 
            Nothing -> Result [Diag Error 
              ("no " ++ str ++ " with " ++ shows nargs " argument"
@@ -188,8 +187,8 @@ minExpFORMULA_pred :: PrettyPrint f =>
                       [TERM f]              ->
                       [Pos]                 ->
                       Result (FORMULA f)
-minExpFORMULA_pred mef ga sign ide mty args poss = do
-    pos@(_, nargs) <- checkIdAndArgs ide args poss
+minExpFORMULA_pred mef ga sign ide mty args pos = do
+    nargs <- checkIdAndArgs ide args pos
     let -- predicates matching that name in the current environment
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $ 
               Map.findWithDefault Set.empty ide $ predMap sign
@@ -197,7 +196,7 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
                    Nothing -> leqClasses (leqP' sign) preds'
                    Just ty -> if Set.member ty preds' 
                               then [[ty]] else []
-    noOpOrPred preds "predicate" mty ide pos
+    noOpOrPred preds "predicate" mty ide pos nargs
     expansions <- mapM (minExpTerm mef ga sign) args
     let get_profiles :: [[TERM f]] -> [[(PredType, [TERM f])]]
         get_profiles cs = map (get_profile cs) preds
@@ -208,10 +207,10 @@ minExpFORMULA_pred mef ga sign ide mty args poss = do
                              and $ zipWith (leq_SORT sign)
                              (map term_sort ts)
                              (predArgs pred') ]
-        qualForms = qualifyPreds ide poss
+        qualForms = qualifyPreds ide pos
                        $ concatMap (get_profiles . combine)
                        $ combine expansions
-    is_unambiguous ga (Predication (Pred_name ide) args poss) qualForms poss
+    is_unambiguous ga (Predication (Pred_name ide) args pos) qualForms pos
 
 qualifyPreds :: Id -> [Pos] -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
 qualifyPreds ide pos = map $ map $ qualify_pred ide pos 
@@ -302,8 +301,8 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
 minExpTerm_appl :: PrettyPrint f => Min f e -> GlobalAnnos 
                 -> Sign f e -> Id -> Maybe OpType -> [TERM f] 
                 -> [Pos] -> Result [[TERM f]]
-minExpTerm_appl mef ga sign ide mty args poss = do
-    pos@(_, nargs) <- checkIdAndArgs ide args poss
+minExpTerm_appl mef ga sign ide mty args pos = do
+    nargs <- checkIdAndArgs ide args pos
     let -- functions matching that name in the current environment
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $ 
               Map.findWithDefault Set.empty ide $ opMap sign
@@ -313,7 +312,7 @@ minExpTerm_appl mef ga sign ide mty args poss = do
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops' 
                               then [[ty]] else []
-    noOpOrPred ops "operation" mty ide pos
+    noOpOrPred ops "operation" mty ide pos nargs
     expansions <- mapM (minExpTerm mef ga sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
         get_profiles cs = map (get_profile cs) ops
@@ -323,11 +322,11 @@ minExpTerm_appl mef ga sign ide mty args poss = do
                              and $ zipWith (leq_SORT sign)
                              (map term_sort ts)
                              (opArgs op') ]
-        qualTerms = qualifyOps ide poss
+        qualTerms = qualifyOps ide pos
                        $ map (minimize_op sign) 
                        $ concatMap (get_profiles . combine)
                        $ combine expansions
-    hasSolutions ga (Application (Op_name ide) args poss) qualTerms poss
+    hasSolutions ga (Application (Op_name ide) args pos) qualTerms pos
 
 qualifyOps :: Id -> [Pos] -> [[(OpType, [TERM f])]] -> [[TERM f]]
 qualifyOps ide pos = map $ map $ qualify_op ide pos

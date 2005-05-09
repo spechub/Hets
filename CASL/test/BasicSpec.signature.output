@@ -1201,7 +1201,7 @@ pred odd : Nat
 pred p : ()
 pred q : s
 *** Error 90.19, no typing for: suc(0): Pos
-*** Error 261.9, ambiguous mixfix term
+*** Error 261.9-261.21, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
   __*__(__*__(i, __-__(q, j)), p)
@@ -1266,7 +1266,7 @@ pred q : s
 *** Error 321.5, ambiguous term
    . (op a : b) = (op a : b)
    . (var a : s) = (var a : s)
-*** Error , ambiguous term
+*** Error, ambiguous term
   (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
   (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))
 *** Error 342.20, no operation with 2 arguments found for '__E__'

@@ -278,7 +278,7 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
   if Map.member spn genv 
    then resToIORes (plain_error (libItem',gctx,l,libenv)
                                 ("Name "++ showPretty spn " already defined")
-                                (headPos pos))
+                                pos)
    else return (libItem',
                 (gannos,
                  Map.insert spn (SpecEntry (imp,params,parsig,body)) genv,
@@ -314,7 +314,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
      then
      resToIORes (plain_error (asd', gctx', l, libenv)
                              ("Name " ++ showPretty asn " already defined")
-                             (headPos pos))
+                             pos)
      else
      return (asd', 
              (gannos,
@@ -339,7 +339,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
      then
      resToIORes (plain_error (usd, (gannos, genv, dg'), l, libenv)
                              ("Name " ++ showPretty usn " already defined")
-                             (headPos pos))
+                             pos)
      else
      return (usd', 
              (gannos,
@@ -363,7 +363,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
      then
      resToIORes (plain_error (rd, (gannos, genv, dg), l, libenv)
                              ("Name " ++ showPretty rn " already defined")
-                             (headPos pos))
+                             pos)
      else
      return (rd', 
              (gannos,
@@ -389,8 +389,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
   -- we take as the default logic for imported libs 
   -- the global default logic
   
-  let items' = zip items (drop 2 (pos ++ repeat nullPos))
-      analyseMessage = "Analyzing from " ++ showPretty ln "\n"
+  let analyseMessage = "Analyzing from " ++ showPretty ln "\n"
   ioToIORes (putIfVerbose opts 1 analyseMessage)
   if outputToStdout opts then
      return()
@@ -415,7 +414,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
                 ++show ln++" available: "++show (Map.keys libenv')) nullPos)
     Just (gannos', genv', _dg') -> do
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
-                                       (return (genv,dg)) items'
+                                       (return (genv,dg)) items
                                  )
       gannos'' <- resToIORes $ gannos `mergeGlobalAnnos` gannos'
       return (libItem,(gannos'',genv1,dg1),l,libenv')
@@ -428,7 +427,7 @@ ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> GlobalContext
               -> Result (LIB_ITEM, GlobalContext, AnyLogic, LibEnv)
 ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
               vn gen vt gsis pos = do
-  let adj = adjustPos (headPos pos)
+  let adj = adjustPos pos
   (gen',(imp,params,parsig,allparams),dg') <- 
        ana_GENERICITY lgraph gctx l opts (extName "VG" (makeName vn)) gen
   (vt',(src,tar),dg'') <- 
@@ -439,15 +438,15 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
   G_sign lidT sigmaT <- return gsigmaT
   gsis1 <- adj $ Syntax.AS_Structured.homogenizeGM (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
-  sigmaS' <- rcoerce lid lidS (headPos pos) sigmaS
-  sigmaT' <- rcoerce lid lidT (headPos pos) sigmaT
+  sigmaS' <- rcoerce lid lidS pos sigmaS
+  sigmaT' <- rcoerce lid lidT pos sigmaT
   mor <- if isStructured opts then return (ide lid sigmaS')
            else do
              rmap <- adj $ stat_symb_map_items lid sis
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
-  nodeS <- maybeToResult (headPos pos) 
+  nodeS <- maybeToResult pos 
          "Internal error: empty source spec of view" (getNode src)
-  nodeT <- maybeToResult (headPos pos) 
+  nodeT <- maybeToResult pos 
          "Internal error: empty source spec of view" (getNode tar)
   let gmor = gEmbed (G_morphism lid mor)
       link = (nodeS,nodeT,DGLink {
@@ -459,7 +458,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
   if Map.member vn genv 
    then plain_error (View_defn vn gen' vt' gsis pos,gctx,l,libenv)
                     ("Name "++showPretty vn " already defined")
-                    (headPos pos)
+                    pos
    else return (View_defn vn gen' vt' gsis pos,
                 (gannos,
                  Map.insert vn (ViewEntry vsig) genv,
@@ -469,22 +468,22 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
 
 
 ana_ITEM_NAME_OR_MAP :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
-                     -> (ITEM_NAME_OR_MAP, Pos) -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP ln genv' res (Item_name name,pos) = 
-  ana_ITEM_NAME_OR_MAP1 ln genv' res name name pos
-ana_ITEM_NAME_OR_MAP ln genv' res (Item_name_map old new _, pos) = 
-  ana_ITEM_NAME_OR_MAP1 ln genv' res old new pos
+                     -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
+ana_ITEM_NAME_OR_MAP ln genv' res (Item_name name) = 
+  ana_ITEM_NAME_OR_MAP1 ln genv' res name name
+ana_ITEM_NAME_OR_MAP ln genv' res (Item_name_map old new _) = 
+  ana_ITEM_NAME_OR_MAP1 ln genv' res old new
 
 ana_ITEM_NAME_OR_MAP1 :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
-                      -> SIMPLE_ID -> SIMPLE_ID -> Pos
+                      -> SIMPLE_ID -> SIMPLE_ID
                       -> Result (GlobalEnv, DGraph)
-ana_ITEM_NAME_OR_MAP1 ln genv' res old new pos = do
+ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
   (genv,dg) <- res
-  entry <- maybeToResult pos 
+  entry <- maybeToResult []
             (showPretty old " not found") (Map.lookup old genv')
   case Map.lookup new genv of
     Nothing -> return ()
-    Just _ -> fatal_error (showPretty new " already used") pos 
+    Just _ -> fail (showPretty new " already used")
   case entry of
     SpecEntry extsig ->
       let (dg1,extsig1) = refExtsig ln dg (Just new) extsig

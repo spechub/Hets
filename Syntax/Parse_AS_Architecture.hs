@@ -24,7 +24,6 @@ import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
-import Common.Id(tokPos)
 import Common.Keywords
 import Common.Lexer
 import Common.Token
@@ -82,7 +81,7 @@ basicArchSpec l =
        expr <- annoParser2 $ unitExpr l
        (m, an) <- optSemi
        return (emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an) 
-                     (tokPos kUnit : ps ++ map tokPos (kResult:m)))
+                     (tokPos kUnit ++ ps ++ catPos (kResult:m)))
 
 -- | Parse unit declaration or definition
 -- @
@@ -97,7 +96,7 @@ unitDeclDefn l = do
          do kGiven <- asKey givenS
             (guts, qs) <- groupUnitTerm l `separatedBy` anComma
             return (guts, kGiven:qs)
-       return (Unit_decl name decl gs $ map tokPos (c:ps)) 
+       return (Unit_decl name decl gs $ catPos (c:ps)) 
      <|> -- unit definition
      unitDefn' l name
 
@@ -110,7 +109,7 @@ unitRef l =
         do name <- simpleId
            sep1 <- asKey toS
            usp <- refSpec l
-           return $ Unit_ref name usp [tokPos sep1]
+           return $ Unit_ref name usp $ tokPos sep1
 
 
 -- | Parse unit specification
@@ -124,7 +123,7 @@ unitSpec l =
        -- closed unit spec
     do kClosed <- asKey closedS
        uSpec <- unitSpec l
-       return (Closed_unit_spec uSpec [tokPos kClosed])
+       return (Closed_unit_spec uSpec $ tokPos kClosed)
     <|> -- unit type 
 {- NOTE: this can also be a spec name. If this is the case, this unit spec 
            will be converted on the static analysis stage.
@@ -142,13 +141,13 @@ unitRestType :: LogicGraph -> ([Annoted SPEC], [Token])
 unitRestType l (gs, ps) = do 
     a <- asKey funS
     g <- annoParser $ groupSpec l
-    return (Unit_type gs g $ map tokPos (ps ++ [a]))
+    return (Unit_type gs g $ catPos (ps ++ [a]))
 
 refSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
 refSpec l = do 
       (rs, ps) <- basicRefSpec l `separatedBy` (asKey thenS)
       return $ if isSingle rs then head rs
-         else Compose_ref rs $ map tokPos ps
+         else Compose_ref rs $ catPos ps
 
 -- | Parse refinement specification
 -- @
@@ -176,7 +175,7 @@ basicRefSpec l = -- component spec
 refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
 refinedRestSpec l u = do
       b <- asKey behaviourallyS 
-      onlyRefinedRestSpec l [tokPos b] u
+      onlyRefinedRestSpec l (tokPos b) u
     <|> onlyRefinedRestSpec l [] u
 
 onlyRefinedRestSpec :: LogicGraph -> [Pos] -> UNIT_SPEC -> 
@@ -207,7 +206,7 @@ groupUnitTerm l = annoParser $
     do lbr <- oBraceT
        ut <- unitTerm l
        rbr <- cBraceT
-       return (Group_unit_term ut (map tokPos [lbr, rbr]))
+       return (Group_unit_term ut (catPos [lbr, rbr]))
 
 -- | Parse an argument for unit application.
 -- @
@@ -250,7 +249,7 @@ unitTermAmalgamation l =
     do (uts, toks) <- annoParser2 (unitTermLocal l) `separatedBy` (asKey andS)
        return (case uts of
                [ut] -> ut
-               _ -> emptyAnno (Amalgamation uts (map tokPos toks)))
+               _ -> emptyAnno (Amalgamation uts (catPos toks)))
 
 
 -- | Parse local unit term
@@ -266,7 +265,7 @@ unitTermLocal l =
        kWithin <- asKey withinS
        uTerm <- unitTermLocal l
        return (emptyAnno $ Local_unit uDefns uTerm  
-                         (tokPos kLocal : ps ++ [tokPos kWithin]))
+                         (tokPos kLocal ++ ps ++ tokPos kWithin))
     <|> -- translation/reduction
     do ut <- unitTermTransRed l
        return ut
@@ -308,7 +307,7 @@ unitBinding l =
     do name <- simpleId
        kCol <- colonT
        usp <- unitSpec l
-       return (Unit_binding name usp [tokPos kCol])
+       return (Unit_binding name usp $ tokPos kCol)
 
 -- | Parse an unit definition
 -- @
@@ -321,4 +320,4 @@ unitDefn' :: LogicGraph -> SIMPLE_ID -> AParser AnyLogic UNIT_DECL_DEFN
 unitDefn' l name = do
        kEqu <- asKey equalS
        expr <- annoParser2 $ unitExpr l
-       return (Unit_defn name (item expr) (map tokPos [kEqu]))
+       return (Unit_defn name (item expr) $ tokPos kEqu)

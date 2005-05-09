@@ -206,7 +206,7 @@ translateId env uid sc =
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Env -> Term -> HsExp
 translateTerm env t = 
-  let loc = toProgPos $ getMyPos t in
+  let loc = toProgPos $ get_pos t in
   case t of
     QualVar (VarDecl v ty _ _) -> 
         let (c, i) = translateId env v $ simpleTypeScheme ty in 

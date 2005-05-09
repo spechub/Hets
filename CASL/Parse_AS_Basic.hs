@@ -47,10 +47,10 @@ sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
 ---- helpers ----------------------------------------------------------------
 
 datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
-                      SIG_ITEMS s f -> Pos -> BASIC_ITEMS b s f 
+                      SIG_ITEMS s f -> [Pos] -> BASIC_ITEMS b s f 
 datatypeToFreetype d pos =
    case d of
-     Datatype_items ts ps -> Free_datatype ts (pos : ps)
+     Datatype_items ts ps -> Free_datatype ts (pos ++ ps)
      _ -> error "datatypeToFreetype"
 
 axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) => 
@@ -75,7 +75,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 		    return (datatypeToFreetype ti (tokPos f))
 	     <|> do g <- asKey generatedS
 		    do t <- typeItems ks
-		       return (Sort_gen [Annoted t [] [] []] [tokPos g])
+		       return (Sort_gen [Annoted t [] [] []] $ tokPos g)
 		      <|> 
 		      do o <- oBraceT
 			 is <- annosParser (sigItems ks)
@@ -85,12 +85,13 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 				   (toPos g [o] c)) 
 	     <|> do v <- pluralKeyword varS
 		    (vs, ps) <- varItems ks
-		    return (Var_items vs (map tokPos (v:ps)))
+		    return (Var_items vs (catPos (v:ps)))
 	     <|> do f <- forallT 
 		    (vs, ps) <- varDecl ks `separatedBy` anSemi 
 		    a <- annos
 		    ai <- dotFormulae ks
-		    return (axiomToLocalVarAxioms ai a vs (map tokPos (f:ps)))
+		    return (axiomToLocalVarAxioms ai a vs 
+                           $ catPos (f:ps))
 	     <|> dotFormulae ks
              <|> itemList ks axiomS formula Axiom_items
 
@@ -110,9 +111,9 @@ dotFormulae ks =
     do d <- dotT
        (fs, ds) <- aFormula ks `separatedBy` dotT
        (m, an) <- optSemi
-       let ps = map tokPos (d:ds) 
+       let ps = catPos (d:ds) 
 	   ns = init fs ++ [appendAnno (last fs) an]
-       return $ Axiom_items ns (ps ++ map tokPos m)
+       return $ Axiom_items ns (ps ++ catPos m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos

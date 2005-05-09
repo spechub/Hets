@@ -188,7 +188,7 @@ x : m a %(var)%
 *** Hint 7.8, is type variable 'b'
 *** Hint 9.5, is type variable 'm'
 *** Hint 15.5, is type variable 'f'
-*** Hint , in type of '((op fail[_var_13_v13; _var_14_v14]
+*** Hint, in type of '((op fail[_var_13_v13; _var_14_v14]
   : forall m : Monad; a : Type . m_v-1 a_v-2) :
      _var_13_v13 _var_14_v14,
  (op emptySet[_var_15_v15] : forall a : Type . Set a_v-1) :
@@ -196,11 +196,11 @@ x : m a %(var)%
   type '_var_13_v13 _var_14_v14 * Set _var_15_v15'
   is not unifiable with type 'Unit ->? _var_6_v6 * _var_6_v6'
 
-*** Hint , 
+*** Hint, 
   expected: Monad
      found: Functor
 
-*** Error , in term'((fun __=__[Set _var_10_v10]
+*** Error, in term'((fun __=__[Set _var_10_v10]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      Set _var_10_v10 * Set _var_10_v10 ->? Unit)
   ((op fail[Set; _var_10_v10]
@@ -210,7 +210,7 @@ x : m a %(var)%
        Set _var_10_v10) :
     Unit' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
-*** Hint , in type of '((op fail[_var_26_v26; _var_27_v27]
+*** Hint, in type of '((op fail[_var_26_v26; _var_27_v27]
   : forall m : Monad; a : Type . m_v-1 a_v-2) :
      _var_26_v26 _var_27_v27,
  (op empty[_var_28_v28] : forall a : Type . List a_v-1) :
@@ -218,23 +218,23 @@ x : m a %(var)%
   type '_var_26_v26 _var_27_v27 * List _var_28_v28'
   is not unifiable with type 'Unit ->? _var_19_v19 * _var_19_v19'
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_37_v37 -> _var_38_v38' (17.14)
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_48_v48 -> _var_49_v49' (29.13)
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_62_v62 -> _var_63_v63' (17.14)
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_73_v73 -> _var_74_v74' (29.13)
 
-*** Hint , in type of '(((op fmap[_var_62_v62; _var_63_v63; _var_64_v64]
+*** Hint 35.12-35.16, in type of '(((op fmap[_var_62_v62; _var_63_v63; _var_64_v64]
    : forall a : Type; b : Type; f : Functor .
        (a_v-1 -> b_v-2) -> f_v-3 a_v-1 -> f_v-3 b_v-2) :
       (_var_62_v62 -> _var_63_v63) -> _var_64_v64 _var_62_v62 -> _var_64_v64 _var_63_v63)
@@ -246,38 +246,38 @@ x : m a %(var)%
       (_var_73_v73 -> _var_74_v74) -> List _var_73_v73 -> List _var_74_v74)
    (var g : a -> b) :
      List _var_73_v73 -> List _var_74_v74)'
-  type '(_var_64_v64 a -> _var_64_v64 b) * (List a -> List b)'
-  is not unifiable with type 'Unit ->? _var_32_v32 * _var_32_v32'
+  type '(_var_64_v64 a -> _var_64_v64 b) * (List a -> List b)' (35.16)
+  is not unifiable with type 'Unit ->? _var_32_v32 * _var_32_v32' (35.16)
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_96_v96 -> _var_97_v97' (17.14)
 
-*** Hint , in type of '(var x : m a)'
+*** Hint, in type of '(var x : m a)'
   type 'm a'
-  is not unifiable with type 'Unit ->? _var_98_v98 _var_96_v96'
+  is not unifiable with type 'Unit ->? _var_98_v98 _var_96_v96' (37.10)
 
-*** Hint , in type of '(var y : a)'
+*** Hint, in type of '(var y : a)'
   typename 'a' (37.26)
   is not unifiable with type 'Unit ->? a'
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
-  is not unifiable with type 'Unit ->? _var_118_v118'
+  is not unifiable with type 'Unit ->? _var_118_v118' (37.41)
 
-*** Hint , untypable application (with result type: Unit ->? _var_118_v118)
+*** Hint, untypable application (with result type: Unit ->? _var_118_v118)
  'g(y)'
-*** Hint , in type of '(var y : a)'
+*** Hint, in type of '(var y : a)'
   typename 'a' (37.26)
   is not unifiable with type 'Unit ->? a'
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
-  is not unifiable with type 'Unit ->? _var_126_v126'
+  is not unifiable with type 'Unit ->? _var_126_v126' (37.41)
 
-*** Hint , untypable application (with result type: Unit ->? _var_126_v126)
+*** Hint, untypable application (with result type: Unit ->? _var_126_v126)
  'g(y)'
-*** Hint , in type of '(var x : m a,
+*** Hint 37.21-37.41, in type of '(var x : m a,
  (\ (var y : a)
     .! ((op return[_var_126_v126; _var_127_v127]
          : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1) :
@@ -285,39 +285,39 @@ x : m a %(var)%
          ((var g : a -> b)(var y : a) : b) :
            _var_127_v127 _var_126_v126) :
      _var_123_v123 -> _var_127_v127 _var_126_v126)'
-  type 'm a * (a -> _var_127_v127 b)'
+  type 'm a * (a -> _var_127_v127 b)' (37.41)
   is not unifiable with type 'Unit ->? _var_105_v105 _var_106_v106 *
-         (_var_106_v106 -> _var_105_v105 _var_107_v107)'
+         (_var_106_v106 -> _var_105_v105 _var_107_v107)' (37.41)
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
   is not unifiable with type '_var_135_v135 -> _var_136_v136' (17.14)
 
-*** Hint , in type of '(var x : m a)'
+*** Hint, in type of '(var x : m a)'
   type 'm a'
-  is not unifiable with type 'Unit ->? _var_137_v137 _var_135_v135'
+  is not unifiable with type 'Unit ->? _var_137_v137 _var_135_v135' (37.10)
 
-*** Hint , in type of '(var y : a)'
+*** Hint, in type of '(var y : a)'
   typename 'a' (37.26)
   is not unifiable with type 'Unit ->? a'
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
-  is not unifiable with type 'Unit ->? _var_157_v157'
+  is not unifiable with type 'Unit ->? _var_157_v157' (37.41)
 
-*** Hint , untypable application (with result type: Unit ->? _var_157_v157)
+*** Hint, untypable application (with result type: Unit ->? _var_157_v157)
  'g(y)'
-*** Hint , in type of '(var y : a)'
+*** Hint, in type of '(var y : a)'
   typename 'a' (37.26)
   is not unifiable with type 'Unit ->? a'
 
-*** Hint , in type of '(var g : a -> b)'
+*** Hint, in type of '(var g : a -> b)'
   typename 'b' (33.14)
-  is not unifiable with type 'Unit ->? _var_165_v165'
+  is not unifiable with type 'Unit ->? _var_165_v165' (37.41)
 
-*** Hint , untypable application (with result type: Unit ->? _var_165_v165)
+*** Hint, untypable application (with result type: Unit ->? _var_165_v165)
  'g(y)'
-*** Hint , in type of '(var x : m a,
+*** Hint 37.21-37.41, in type of '(var x : m a,
  (\ (var y : a)
     .! ((op return[_var_165_v165; _var_166_v166]
          : forall a : Type; m : Monad . a_v-1 -> m_v-2 a_v-1) :
@@ -325,11 +325,11 @@ x : m a %(var)%
          ((var g : a -> b)(var y : a) : b) :
            _var_166_v166 _var_165_v165) :
      _var_162_v162 -> _var_166_v166 _var_165_v165)'
-  type 'm a * (a -> _var_166_v166 b)'
+  type 'm a * (a -> _var_166_v166 b)' (37.41)
   is not unifiable with type 'Unit ->? _var_144_v144 _var_145_v145 *
-         (_var_145_v145 -> _var_144_v144 _var_146_v146)'
+         (_var_145_v145 -> _var_144_v144 _var_146_v146)' (37.41)
 
-*** Hint , in type of '((((op fmap[a; _var_136_v136; _var_137_v137]
+*** Hint 37.12-37.41, in type of '((((op fmap[a; _var_136_v136; _var_137_v137]
     : forall a : Type; b : Type; f : Functor .
         (a_v-1 -> b_v-2) -> f_v-3 a_v-1 -> f_v-3 b_v-2) :
        (a -> _var_136_v136) -> _var_137_v137 a -> _var_137_v137 _var_136_v136)
@@ -351,6 +351,6 @@ x : m a %(var)%
               _var_158_v158 _var_146_v146) :
         _var_154_v154 -> _var_158_v158 _var_146_v146) :
      _var_144_v144 _var_146_v146)'
-  type 'm b * m b'
-  is not unifiable with type 'Unit ->? _var_90_v90 * _var_90_v90'
+  type 'm b * m b' (37.41)
+  is not unifiable with type 'Unit ->? _var_90_v90 * _var_90_v90' (37.41)
 

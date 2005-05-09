@@ -27,7 +27,7 @@ import Common.Earley
 import Common.ConvertLiteral
 import Common.PrettyPrint
 import CASL.ShowMixfix 
-import CASL.Print_AS_Basic
+import CASL.Print_AS_Basic()
 import Control.Exception (assert)
 
 -- > 0 means predicate
@@ -72,45 +72,38 @@ initRules ga (opS, predS) =
        map (mkArgsRule 0) ops]
 
 -- | meaningful position of a term
-posOfTerm :: TERM f -> Pos
+posOfTerm :: PosItem f => TERM f -> [Pos]
 posOfTerm trm =
     case trm of
               Mixfix_token t -> tokPos t
-              Mixfix_term ts -> headPos $ map posOfTerm ts
-              Simple_id i -> tokPos i
+              Mixfix_term ts -> concatMap posOfTerm ts
               Mixfix_qual_pred p -> 
                   case p of 
                   Pred_name i -> posOfId i
                   Qual_pred_name i _ _ -> posOfId i
-              Application o _ _ -> 
-                  case o of 
+              Application o _ ps -> if null ps then
+                  (case o of 
                   Op_name i ->  posOfId i
-                  Qual_op_name i _ _ -> posOfId i
-              Qual_var v _ _ -> tokPos v
-              Sorted_term t _ _ -> posOfTerm t
-              Cast  t _ _ -> posOfTerm t
-              Conditional t _ _ _ -> posOfTerm t
-              Unparsed_term _ ps -> headPos ps
-              Mixfix_sorted_term _ ps -> headPos ps
-              Mixfix_cast _ ps -> headPos ps
-              Mixfix_parenthesized _ ps -> headPos ps
-              Mixfix_bracketed _ ps -> headPos ps
-              Mixfix_braced _ ps -> headPos ps
+                  Qual_op_name i _ _ -> posOfId i) else ps
+              _ -> get_pos trm
 
 -- | construct application
 asAppl :: Id -> [TERM f] -> [Pos] -> TERM f
-asAppl f as ps = Application (Op_name f) as ps
+asAppl f as ps = Application (Op_name f) as 
+                 $ if null ps then posOfId f else ps
+
 
 -- | constructing the parse tree from (the final) parser state(s)
-toAppl :: Id -> [TERM f] -> [Pos] -> TERM f
+toAppl :: PosItem f => Id -> [TERM f] -> [Pos] -> TERM f
 toAppl ide ar qs = 
        if ide == singleArgId || ide == multiArgsId
             then assert (length ar > 1) $ 
                  let har:tar = ar
-                     ps = posOfTerm har : qs 
+                     hp = posOfTerm har
+                     ps = if null hp then qs else head hp : qs 
                      in case har of
-                 Application q ts _ -> assert (null ts) $ 
-                                        Application q tar ps
+                 Application q ts p -> assert (null ts) $ 
+                                        Application q tar $ ps ++ p
                  Mixfix_qual_pred _ -> Mixfix_term [har,
                                    Mixfix_parenthesized tar ps]
                  _ -> error "stateToAppl"
@@ -135,7 +128,7 @@ type TermChart f = Chart (TERM f)
 
 type MixResolve f = GlobalAnnos -> IdSet -> f -> Result f 
 
-iterateCharts :: PrettyPrint f => (f -> f) 
+iterateCharts :: (PrettyPrint f, PosItem f) => (f -> f) 
               -> MixResolve f -> GlobalAnnos -> IdSet -> [TERM f] 
               -> TermChart f -> TermChart f
 iterateCharts par extR g ids terms c = 
@@ -175,19 +168,18 @@ iterateCharts par extR g ids terms c =
                                   c2 = self (tail terms) $ oneStep $ 
                                        case trm of 
                                                 Mixfix_token tok -> (trm, tok)
-                                                _ -> (trm, varTok 
-                                                      {tokPos = tokPos t})
+                                                _ -> (trm, varTok)
                                   in mixDiags ds1 c2
-            t@(Mixfix_sorted_term _ (p:_)) -> self (tail terms) 
-                            (oneStep (t, typeTok {tokPos = p}))
-            t@(Mixfix_cast _ (p:_)) -> self (tail terms) 
-                            (oneStep (t, typeTok {tokPos = p}))
-            t@(Qual_var _ _ (p:_)) -> self (tail terms) 
-                            (oneStep (t, varTok {tokPos = p}))
-            t@(Application (Qual_op_name _ _ (p:_)) _ _) -> 
-                self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
-            t@(Mixfix_qual_pred (Qual_pred_name _ _ (p:_))) -> 
-                self (tail terms) (oneStep (t, exprTok{tokPos = p} ))
+            t@(Mixfix_sorted_term _ ps) -> self (tail terms) 
+                            (oneStep (t, typeTok {tokPos = ps}))
+            t@(Mixfix_cast _ ps) -> self (tail terms) 
+                            (oneStep (t, typeTok {tokPos = ps}))
+            t@(Qual_var _ _ ps) -> self (tail terms) 
+                            (oneStep (t, varTok {tokPos = ps}))
+            t@(Application (Qual_op_name _ _ ps) _ _) -> 
+                self (tail terms) (oneStep (t, exprTok{tokPos = ps} ))
+            t@(Mixfix_qual_pred (Qual_pred_name _ _ ps)) -> 
+                self (tail terms) (oneStep (t, exprTok{tokPos = ps} ))
             Sorted_term t s ps -> 
                    let Result mds v = resolveTerm t
                        tNew = Sorted_term (case v of Nothing -> t
@@ -201,14 +193,14 @@ mkIdSet ops preds =
     let both = Set.intersection ops preds in
         (ops, Set.difference preds both)
 
-resolveMixfix :: PrettyPrint f => (f -> f) 
+resolveMixfix :: (PrettyPrint f, PosItem f) => (f -> f) 
               -> MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
               -> (TERM f) -> Result (TERM f)
 resolveMixfix par extR g ops preds t = 
     let r@(Result ds _) = resolveMixTrm par extR g (mkIdSet ops preds) t 
         in if null ds then r else Result ds Nothing
 
-resolveMixTrm :: PrettyPrint f => (f -> f) 
+resolveMixTrm :: (PrettyPrint f, PosItem f) => (f -> f) 
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga ids trm =
         getResolved (showTerm par ga) (posOfTerm trm) toAppl
@@ -218,14 +210,14 @@ resolveMixTrm par extR ga ids trm =
 showTerm :: PrettyPrint f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
 showTerm par ga = shows . printText0 ga . mapTerm par 
 
-resolveFormula :: PrettyPrint f => (f -> f) 
+resolveFormula :: (PrettyPrint f, PosItem f) => (f -> f) 
                -> MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
                -> (FORMULA f) -> Result (FORMULA f)
 resolveFormula par extR g ops preds f =     
     let r@(Result ds _) = resolveMixFrm par extR g (mkIdSet ops preds) f 
         in if null ds then r else Result ds Nothing
 
-resolveMixFrm :: PrettyPrint f => (f -> f) 
+resolveMixFrm :: (PrettyPrint f, PosItem f) => (f -> f) 
               -> MixResolve f -> MixResolve (FORMULA f)
 resolveMixFrm par extR g ids@(ops, onlyPreds) frm =
     let self = resolveMixFrm par extR g ids 

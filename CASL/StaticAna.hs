@@ -228,8 +228,8 @@ toSortGenAx :: [Pos] -> Bool -> GenAx -> State (Sign f e) ()
 toSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c -> let ide = compId c in Qual_op_name ide  
-                      (toOP_TYPE $ compType c) [posOfId ide]) $ Set.toList ops
-        injSyms = map ( \ (s, t) -> let p = [posOfId s] in 
+                      (toOP_TYPE $ compType c) $ posOfId ide) $ Set.toList ops
+        injSyms = map ( \ (s, t) -> let p = posOfId s in 
                         Qual_op_name injName 
                         (Op_type Total [s] t p) p) $ Rel.toList 
                   $ Rel.irreflex rel
@@ -246,7 +246,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         constrs = map collectOps sortList
         f =  Sort_gen_ax constrs isFree
     if null sortList then 
-       addDiags[Diag Error "missing generated sort" (headPos ps)]
+       addDiags[Diag Error "missing generated sort" ps]
        else return ()
     addSentences [NamedSen ("ga_generated_" ++ 
                          showSepList (showString "_") showId sortList "") f]
@@ -361,8 +361,8 @@ ana_SORT_ITEM mef ga asi =
            case mf of 
              Nothing -> return asi { item = Subsort_decl [sub] super ps}
              Just (resF, anaF) -> do 
-               let p = [posOfId sub]
-                   pv = [tokPos v]
+               let p = posOfId sub
+                   pv = tokPos v
                addSentences[NamedSen lab $
                              mkForall [Var_decl [v] super pv] 
                              (Equivalence 
@@ -413,7 +413,7 @@ ana_OP_ITEM mef ga aoi =
            case mt of 
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
              Just (resT, anaT) -> do 
-                 let p = [posOfId i]
+                 let p = posOfId i
                  addSentences [NamedSen lab $ mkForall vs 
                      (Strong_equation 
                       (Application (Qual_op_name i ty p) arg ps)
@@ -433,16 +433,15 @@ ana_OP_ATTR mef ga ty ois oa = do
   let   sty = toOP_TYPE ty
         rty = opRes ty 
         atys = opArgs ty 
-        p' = posOfId rty
-        q = [p']
+        q = posOfId rty
   case atys of 
          [t1,t2] | t1 == t2 -> case oa of 
               Comm_op_attr -> return ()
               _ -> if t1 == rty then return () 
                    else addDiags [Diag Error 
-                             "result sort must be equal to argument sorts" p']
+                             "result sort must be equal to argument sorts" q]
          _ -> addDiags [Diag Error
-                        "expecting two arguments of equal sort" p'] 
+                        "expecting two arguments of equal sort" q] 
   case oa of 
     Unit_op_attr t ->
         do sign <- get
@@ -462,7 +461,7 @@ ana_OP_ATTR mef ga ty ois oa = do
       let ns = map mkSimpleId ["x", "y", "z"]
           vs = map ( \ v -> Var_decl [v] rty q) ns
           [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
-          makeAssoc i = let p = [posOfId i] 
+          makeAssoc i = let p = posOfId i 
                             qi = Qual_op_name i sty p in 
             NamedSen ("ga_assoc_" ++ showId i "") $
             mkForall vs
@@ -473,9 +472,10 @@ ana_OP_ATTR mef ga ty ois oa = do
       return $ Just oa
     Comm_op_attr -> do 
       let ns = map mkSimpleId ["x", "y"]
-          vs = zipWith ( \ v t -> Var_decl [v] t (map posOfId atys) ) ns atys
+          vs = zipWith ( \ v t -> Var_decl [v] t 
+                         $ concatMap posOfId atys) ns atys
           args = map toQualVar vs
-          makeComm i = let p = [posOfId i]
+          makeComm i = let p = posOfId i
                            qi = Qual_op_name i sty p in
             NamedSen ("ga_comm_" ++ showId i "") $
             mkForall vs
@@ -488,7 +488,7 @@ ana_OP_ATTR mef ga ty ois oa = do
       let v = mkSimpleId "x"
           vd = Var_decl [v] rty q
           qv = toQualVar vd
-          makeIdem i = let p = [posOfId i] in 
+          makeIdem i = let p = posOfId i in 
             NamedSen ("ga_idem_" ++ showId i "") $
             mkForall [vd]
             (Strong_equation  
@@ -503,8 +503,8 @@ makeUnit b t ty i =
               ++ showId i ""
         v = mkSimpleId "x"
         vty = opRes ty
-        q = [posOfId vty]
-        p = [posOfId i]
+        q = posOfId vty
+        p = posOfId i
         qv = Qual_var v vty q
         args = [qv, t] 
         rargs = if b then args else reverse args
@@ -542,7 +542,7 @@ ana_PRED_ITEM mef ga ap =
            case mt of 
              Nothing -> return ap {item = Pred_decl [i] ty ps}
              Just (resF, anaF) -> do 
-               let p = [posOfId i]
+               let p = posOfId i
                addSentences [NamedSen lab $
                              mkForall vs 
                              (Equivalence (Predication (Qual_pred_name i ty p)
@@ -615,17 +615,17 @@ makeDisjSubsorts d subs = case subs of
      pd = posOfId d
      p1 = posOfId s1
      p2 = posOfId s2
-     p = [pd, p1, p2]
-     v = Var_decl [n] d [pd]
+     p = concat [pd, p1, p2]
+     v = Var_decl [n] d pd
      qv = toQualVar v
      in NamedSen ("ga_disjoint_sorts_" ++ showId s1 "_" ++ showId s2 "") $
      mkForall [v] (Negation (Conjunction [
-              Membership qv s1 [p1], Membership qv s2 [p2]] p) p) p
+              Membership qv s1 p1, Membership qv s2 p2] p) p) p
 
 makeDisjToSort :: (Id, OpType, [COMPONENTS]) -> SORT -> Named (FORMULA f)
 makeDisjToSort a s = 
     let (c, v, t, _) = selForms1 "X" a 
-        p = [posOfId s] in
+        p = posOfId s in
         NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
         mkForall v (Negation (Membership t s p) p) p
 
@@ -633,7 +633,7 @@ makeInjective :: (Id, OpType, [COMPONENTS]) -> Named (FORMULA f)
 makeInjective a = 
     let (c, v1, t1, _) = selForms1 "X" a
         (_, v2, t2, _) = selForms1 "Y" a
-        p = [posOfId c]
+        p = posOfId c
     in NamedSen ("ga_injective_" ++ showId c "") $
        mkForall (v1 ++ v2) 
        (Equivalence (Strong_equation t1 t2 p)
@@ -652,7 +652,7 @@ makeDisjoint l = case l of
   makeDisj a1 a2 = 
     let (c1, v1, t1, _) = selForms1 "X" a1
         (c2, v2, t2, _) = selForms1 "Y" a2
-        p = [posOfId c1, posOfId c2]
+        p = posOfId c1 ++ posOfId c2
     in NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
        mkForall (v1 ++ v2) 
        (Negation (Strong_equation t1 t2 p) p) p
@@ -664,7 +664,7 @@ catSels =  map ( \ (m, t) -> (fromJust m, t)) .
 makeUndefForm :: (Id, OpType) -> (Id, [VAR_DECL], TERM f, [(Id, OpType)])
               -> Maybe (Named (FORMULA f))
 makeUndefForm (s, ty) (i, vs, t, sels) = 
-    let p = [posOfId s] in
+    let p = posOfId s in
     if any ( \ (se, ts) -> s == se && opRes ts == opRes ty ) sels
     then Nothing else
        Just $ NamedSen ("ga_selector_undef_" ++ showId s "_" 
@@ -708,9 +708,9 @@ makeSelForms _ (_, _, _, []) = []
 makeSelForms n (i, vs, t, (mi, ty):rs) =
     (case mi of 
             Nothing -> []
-            Just j -> let p = [posOfId j] 
+            Just j -> let p = posOfId j 
                           rty = opRes ty
-                          q = [posOfId rty] in 
+                          q = posOfId rty in 
               [NamedSen ("ga_selector_" ++ showId j "")
                      $ mkForall vs 
                       (Strong_equation 
@@ -775,7 +775,7 @@ resultToState f a = do
 
 type Ana b f e = GlobalAnnos -> b -> State (Sign f e) b
 
-class PrettyPrint f => Resolver f where
+class (PrettyPrint f, PosItem f) => Resolver f where
    putParen :: f -> f -- ^ put parenthesis around mixfix terms
    mixResolve :: MixResolve f -- ^ resolve mixfix terms 
    checkMix :: (f -> Bool) -- ^ check if a formula extension has been 

@@ -227,7 +227,7 @@ translateType :: Type -> HsType
 translateType t = 
   case t of
   FunType t1 _arr t2 _ -> hsTyFun (translateType t1) (translateType t2)
-  ProductType tlist ps -> hsTyTuple (toProgPos $ headPos ps) 
+  ProductType tlist ps -> hsTyTuple (toProgPos ps) 
                         $ map translateType tlist
   LazyType lt _ -> translateType lt
   KindedType kt _kind _ -> translateType kt
@@ -239,8 +239,8 @@ translateType t =
   _ -> error ("translateType: unexpected type: " ++ show t)
 
 
-toProgPos :: Pos -> SrcLoc
-toProgPos p = if isNullPos p then loc0 else let SourcePos n l c = p
+toProgPos :: [Pos] -> SrcLoc
+toProgPos p = if null p then loc0 else let SourcePos n l c = head p
               in SrcLoc n (1000 + (l-1) * 80 + c) l c 
 
 mkHsIdent :: IdCase -> Id -> SN HsName
@@ -261,7 +261,7 @@ translateId env uid sc =
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Env -> Term -> HsExp
 translateTerm env t = 
-  let loc = toProgPos $ getMyPos t in
+  let loc = toProgPos $ get_pos t in
   case t of
     QualVar (VarDecl v ty _ _) -> 
         let (c, i) = translateId env v $ simpleTypeScheme ty in 
@@ -334,7 +334,7 @@ translatePattern env pat = case pat of
 -- | Translation of a program equation of a case term in HasCASL
 translateCaseProgEq :: Env -> ProgEq -> HsAlt HsExp HsPat [HsDecl]
 translateCaseProgEq env (ProgEq pat t ps) = 
-  HsAlt (toProgPos $ headPos ps)
+  HsAlt (toProgPos ps)
         (translatePattern env pat)
         (HsBody (translateTerm env t))
         []
@@ -342,7 +342,7 @@ translateCaseProgEq env (ProgEq pat t ps) =
 -- | Translation of a program equation of a let term in HasCASL
 translateLetProgEq :: Env -> ProgEq -> HsDecl
 translateLetProgEq env (ProgEq pat t ps) = 
-  hsPatBind (toProgPos $ headPos ps)
+  hsPatBind (toProgPos ps)
             (translatePattern env pat)
             (HsBody (translateTerm env t))
             []

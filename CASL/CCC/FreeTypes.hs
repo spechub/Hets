@@ -78,42 +78,37 @@ checkFreeType :: (PosItem f, PrettyPrint f, Eq f) =>
 checkFreeType (osig,osens) m fsn      
 #ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
-                   let (Id ts _ ps) = head $ filter (\s->not $ elem s srts) newL
-                       pos = headPos ps
+                   let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
                        sname = concat $ map tokStr ts 
                    in warning Nothing (sname ++ " is not freely generated") pos
        | Set.any (\s->not $ elem s f_Inhabited) newSorts =
-                   let (Id ts _ ps) = head $ filter (\s->not $ elem s f_Inhabited) newL
-                       pos = headPos ps
+                   let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) newL
                        sname = concat $ map tokStr ts 
                    in warning (Just False) (sname ++ " is not inhabited") pos
        | elem Nothing l_Syms =
                    let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $ map leadingSymPos _axioms
-                   in warning Nothing "axiom is not definitional" $ headPos pos
+                   in warning Nothing "axiom is not definitional" pos
        | not $ null $ p_t_axioms ++ pcheck = 
                    let pos = posOf (p_t_axioms ++ pcheck)
                    in warning Nothing "partial axiom is not definitional" pos
        | any id $ map find_ot id_ots =    
-                   let pos = headPos old_op_ps
+                   let pos = old_op_ps
                    in warning Nothing ("Op: " ++ old_op_id ++ " ist not new") pos
        | any id $ map find_pt id_pts =    
-                   let pos = headPos old_pred_ps
+                   let pos = old_pred_ps
                    in warning Nothing ("Pedication: " ++ old_pred_id ++ " ist not new")pos
        | not $ and $ map checkTerm leadingTerms =
-                   let (Application os _ ps) = head $ filter (\t->not $ checkTerm t) leadingTerms
-                       pos = headPos ps
+                   let (Application os _ pos) = head $ filter (\t->not $ checkTerm t) leadingTerms
                    in warning Nothing ("a leading term of " ++ (opSymStr os) ++
                       "consist of not only variables and constructors") pos
        | not $ and $ map checkVar leadingTerms =
-                   let (Application os _ ps) = head $ filter (\t->not $ checkVar t) leadingTerms
-                       pos = headPos ps
+                   let (Application os _ pos) = head $ filter (\t->not $ checkVar t) leadingTerms
                    in warning Nothing ("a variable occurs twice in a leading term of " ++ opSymStr os) pos
        | not $ and $ map checkPatterns leadingPatterns = 
-                   let pos = headPos $ snd $ pattern_Pos leadingSymPatterns
-                       symb = fst $ pattern_Pos leadingSymPatterns
+                   let (symb, pos) = pattern_Pos leadingSymPatterns
                    in warning Nothing ("patterns overlap in " ++ symb) pos
        | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
-                   warning Nothing "not terminating" nullPos 
+                   warning Nothing "not terminating" []
 #endif         
        | otherwise = return (Just True)
 #ifdef UNI_PACKAGE

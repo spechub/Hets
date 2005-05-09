@@ -117,7 +117,7 @@ typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck mt trm = 
     do alts <- infer mt trm >>= reduce True 
        tm <- gets typeMap
-       let p = getMyPos trm
+       let p = get_pos trm
        if null alts then 
           do addDiags [mkDiag Error "no typing for" trm]
              return Nothing
@@ -153,7 +153,7 @@ typeCheck mt trm =
                             p]
                        return Nothing
 
-freshTypeVar :: Pos -> State Env Type             
+freshTypeVar :: [Pos] -> State Env Type             
 freshTypeVar p = 
     do (var, c) <- toEnvState $ freshVar p
        return $ TypeName var star c
@@ -296,7 +296,7 @@ infer mt trm = do
         TypedTerm t qual ty ps -> do 
             case qual of 
                 InType -> do 
-                    vTy <- freshTypeVar $ headPos ps
+                    vTy <- freshTypeVar ps
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                            let sTy = subst s ty in
@@ -309,7 +309,7 @@ infer mt trm = do
                                  logicalType, 
                                  TypedTerm tr qual sTy ps)) rs
                 AsType -> do
-                    vTy <- freshTypeVar $ headPos ps
+                    vTy <- freshTypeVar ps
                     rs <- infer Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                         let sTy = subst s ty in

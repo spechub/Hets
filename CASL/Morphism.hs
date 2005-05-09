@@ -175,7 +175,7 @@ statSymbMapItems sl = do
       Nothing -> return $ Map.insert rsy1 rsy2 m1
       Just rsy3 -> 
         plain_error m1 ("Symbol "++showPretty rsy1 " mapped twice to "
-                ++showPretty rsy2 " and "++showPretty rsy3 "") nullPos
+                ++showPretty rsy2 " and "++showPretty rsy3 "") []
 
 pairM :: Monad m => (m a,m b) -> m (a,b)
 pairM (x,y) = do
@@ -208,7 +208,7 @@ typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol
 typedSymbKindToRaw k idt t = 
     let err = plain_error (AnID idt) 
               (showPretty idt ":" ++ showPretty t 
-               "does not have kind" ++showPretty k "") nullPos
+               "does not have kind" ++showPretty k "") []
         aSymb = ASymbol $ case t of 
                  O_type ot -> idToOpSymbol idt $ toOpType ot
                  P_type pt -> idToPredSymbol idt $ toPredType pt
@@ -383,7 +383,7 @@ sigInclusion extEm isSubExt sigma1 sigma2 =
           (text "Attempt to construct inclusion between non-subsignatures:"
            $$ text "Singature 1:" $$ printText sigma1
            $$ text "Singature 2:" $$ printText sigma2)
-           nullPos
+           []
 
 morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
               -> (e -> e -> e) -- ^ join signature extensions
@@ -417,7 +417,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
               (Diag Error 
                ("incompatible mapping of sort " ++ showId i " to " 
                 ++ showId j " and " ++ showId k "")
-               nullPos : ds, m)) ([], smap1) 
+               [] : ds, m)) ([], smap1) 
           (Map.toList smap2 ++ map (\ a -> (a, a)) 
                       (Set.toList $ Set.union us1 us2))
       (ods, omap) = foldr ( \ (isc@(i, ot), jsc@(j, t)) (ds, m) -> 
@@ -428,7 +428,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
               (Diag Error 
                ("incompatible mapping of op " ++ showId i ":" 
                 ++ showPretty ot { opKind = t } " to " 
-                ++ showId j " and " ++ showId k "") nullPos : ds, m))
+                ++ showId j " and " ++ showId k "") [] : ds, m))
            (sds, omap1) (Map.toList omap2 ++ concatMap 
               ( \ (a, s) -> map ( \ ot -> ((a, ot {opKind = Partial}), 
                                            (a, opKind ot))) 
@@ -440,7 +440,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
               (Diag Error 
                ("incompatible mapping of pred " ++ showId i ":" 
                 ++ showPretty pt " to " ++ showId j " and " 
-                ++ showId k "") nullPos : ds, m)) (ods, pmap1) 
+                ++ showId k "") [] : ds, m)) (ods, pmap1) 
           (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map 
               ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))
       s3 = addSig addSigExt s1 s2

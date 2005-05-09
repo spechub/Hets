@@ -284,7 +284,7 @@ reserved l p = try (p `checkWith` \r -> r `notElem` l)
 -- ----------------------------------------------
 
 pToken :: GenParser Char st String -> GenParser Char st Token
-pToken parser = bind (flip Token) getPos (parser << skipSmart)
+pToken parser = bind (\ p s -> Token s [p]) getPos (parser << skipSmart)
 
 pluralKeyword :: String -> GenParser Char st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))

@@ -360,8 +360,8 @@ convertTypePattern tp@(TypePatternToken t) =
 convertTypePattern tp@(MixfixTypePattern 
                        [ra, ri@(TypePatternToken inTok), rb]) =
     if head (tokStr inTok) `elem` signChars
-       then let inId = Id [Token place $ getMyPos ra, inTok, 
-                           Token place $ getMyPos rb] [] [] in
+       then let inId = Id [Token place $ get_pos ra, inTok, 
+                           Token place $ get_pos rb] [] [] in
        case (ra, rb) of 
             (TypePatternToken (Token "__" _),
              TypePatternToken (Token "__" _)) -> return (inId, [])
@@ -392,8 +392,8 @@ convertTypePattern (BracketTypePattern bk [ap] ps) =
     case bk of 
     Parens -> convertTypePattern ap
     _ -> let (o, c) = getBrackets bk
-             tid = Id [Token o $ head ps, Token place $ getMyPos ap, 
-                       Token c $ last ps] [] [] in  
+             tid = Id [Token o ps, Token place $ get_pos ap, 
+                       Token c ps] [] [] in  
          case ap of 
          TypePatternToken t -> if isPlace t then 
              return (tid, [])

@@ -35,7 +35,7 @@ dgToSpec dg node = do
   let (_,_,n,preds) = context node dg
   predSps <- sequence (map (dgToSpec dg . snd) preds)
   let apredSps = map emptyAnno predSps
-      pos = map (\_ -> nullPos) predSps
+      pos = []
   case n of
     (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) _ _ DGBasic) -> 
       do sen' <- rcoerce lid1 lid2 nullPos sen

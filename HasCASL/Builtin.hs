@@ -198,8 +198,8 @@ toBinJunctor :: Id -> [Term] -> [Pos] -> Term
 toBinJunctor i ts ps = case ts of
     [] -> error "toBinJunctor"
     [t] -> t
-    t:rs -> mkLogTerm i [headPos ps] t 
-            (toBinJunctor i rs (if null ps then [] else tail ps))
+    t:rs -> mkLogTerm i ps t 
+            (toBinJunctor i rs ps)
 
 
 

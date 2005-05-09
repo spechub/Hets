@@ -132,7 +132,7 @@ inclusionMor e1 e2 =
      then return (embedMorphism e1 e2)
      else Result [Diag Error 
           ("Attempt to construct inclusion between non-subsignatures:\n"
-           ++ showEnvDiff e1 e2) nullPos] Nothing
+           ++ showEnvDiff e1 e2) []] Nothing
 
 showEnvDiff :: Env -> Env -> String
 showEnvDiff e1 e2 = 

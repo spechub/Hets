@@ -288,10 +288,10 @@ convertTypeToKind (MixfixType [t1, TypeToken t]) =
               Just v -> do 
                   mk1 <- convertTypeToKind t1
                   case mk1 of 
-                          Just k1 -> return $ Just $ ExtKind k1 v [tokPos t]
+                          Just k1 -> return $ Just $ ExtKind k1 v $ tokPos t
                           _ -> return Nothing
 convertTypeToKind(TypeToken t) = 
-       if tokStr t == "Type" then return $ Just $ Intersection [] [tokPos t] 
+       if tokStr t == "Type" then return $ Just $ Intersection [] $ tokPos t 
           else do
           let ci = simpleIdToId t
           cm <- gets classMap                                          

@@ -58,7 +58,7 @@ cBasic =  do f <- asKey cofreeS
              return (codatatypeToCofreetype ti (tokPos f))
       <|> do g <- asKey cogeneratedS
 	     do t <- sigItems cocasl_reserved_words
-		return (CoSort_gen [Annoted t [] [] []] [tokPos g])
+		return (CoSort_gen [Annoted t [] [] []] $ tokPos g)
 	       <|> 
 	       do o <- oBraceT
 	          is <- annosParser (sigItems cocasl_reserved_words)
@@ -77,8 +77,8 @@ codatatype ks =
        addAnnos
        a <- getAnnos
        (Annoted v _ _ b:as, ps) <- acoAlternative ks `separatedBy` barT
-       return (CoDatatype_decl s (Annoted v [] a b:as) 
-			(map tokPos (e:ps)))
+       return $ CoDatatype_decl s (Annoted v [] a b:as) 
+			$ catPos $ e:ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks = 
@@ -90,7 +90,7 @@ coalternative :: [String] -> AParser st COALTERNATIVE
 coalternative ks = 
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
-       return (CoSubsorts ts (map tokPos (s:cs)))
+       return (CoSubsorts ts $ catPos $ s:cs)
     <|> 
     do i <- consId ks
        cocomp (Just i)
@@ -103,7 +103,7 @@ coalternative ks =
 	    c <- cParenT
 	    let qs = toPos o ps c 
             do   q <- quMarkT
-		 return (Co_construct Partial i cs (qs++[tokPos q]))
+		 return (Co_construct Partial i cs $ qs ++ tokPos q)
 	      <|> return (Co_construct Total i cs qs)
 	 <|> return (Co_construct Total i [] [])
 
@@ -112,8 +112,7 @@ cocomponent ks =
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST
        t <- opType ks
-       let p = map tokPos (cs++[c]) 
-       return $ CoSelect is t p
+       return $ CoSelect is t $ catPos $ cs++[c]
 
 instance AParsable C_SIG_ITEM where
   aparser = coSigItems
@@ -124,7 +123,7 @@ instance AParsable C_BASIC_ITEM where
 
 ---- helpers ----------------------------------------------------------------
 
-codatatypeToCofreetype ::  C_SIG_ITEM -> Pos -> C_BASIC_ITEM
+codatatypeToCofreetype ::  C_SIG_ITEM -> [Pos] -> C_BASIC_ITEM
 codatatypeToCofreetype d pos =
    case d of
-     CoDatatype_items ts ps -> CoFree_datatype ts (pos : ps)
+     CoDatatype_items ts ps -> CoFree_datatype ts $ pos ++ ps

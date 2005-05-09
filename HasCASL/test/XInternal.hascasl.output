@@ -38,7 +38,7 @@ true : Unit %(fun)%
   (fun o : s -> t, fun q : s -> t) :
     Unit
 %% Diagnostics -----------------------------------------------------------
-*** Hint , in type of '(fun o : s -> t, fun q : s -> t)'
+*** Hint, in type of '(fun o : s -> t, fun q : s -> t)'
   type '(s -> t) * (s -> t)'
   is not unifiable with type 'Unit ->? _var_2_v2 * _var_2_v2'
 

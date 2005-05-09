@@ -138,26 +138,22 @@ expected a b =
 
 -- ---------------------------------------------------------------------
 
-posOfKind :: Kind -> Pos
-posOfKind k = 
-    case k of 
-    MissingKind -> nullPos
+posOfKind :: Kind -> [Pos]
+posOfKind k = case k of
+    MissingKind -> []
     ClassKind c _ -> posOfId c
-    Downset _ t _ ps -> firstPos [t] ps 
-    Intersection ks ps -> firstPos ks ps
-    FunKind k1 _ ps -> firstPos [k1] ps 
-    ExtKind ek _ ps -> firstPos [ek] ps
+    _ -> get_pos k
 
-posOfVars :: Vars -> Pos
+posOfVars :: Vars -> [Pos]
 posOfVars vr = 
     case vr of 
     Var v -> posOfId v
-    VarTuple vs ps -> firstPos vs ps
+    VarTuple _ ps -> ps
 
-posOfTypeArg :: TypeArg -> Pos
+posOfTypeArg :: TypeArg -> [Pos]
 posOfTypeArg (TypeArg t _ _ ps) = firstPos [t] ps
 
-posOfTypePattern :: TypePattern -> Pos
+posOfTypePattern :: TypePattern -> [Pos]
 posOfTypePattern pat = 
     case pat of
     TypePattern t _ _ -> posOfId t
@@ -166,7 +162,7 @@ posOfTypePattern pat =
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _) _ -> posOfId t
 
-posOfType :: Type -> Pos
+posOfType :: Type -> [Pos]
 posOfType ty = 
     case ty of
     TypeName i _ _ -> posOfId i
@@ -180,7 +176,7 @@ posOfType ty =
     ProductType ts ps -> firstPos ts ps
     FunType t1 _ t2 ps -> firstPos [t1,t2] ps
 
-posOfTerm :: Term -> Pos
+posOfTerm :: Term -> [Pos]
 posOfTerm trm =
     case trm of
     QualVar v -> posOfVarDecl v
@@ -199,7 +195,7 @@ posOfTerm trm =
     BracketTerm _ ts ps -> firstPos ts ps 
     AsPattern v _ ps -> firstPos [v] ps
 
-posOfVarDecl :: VarDecl -> Pos
+posOfVarDecl :: VarDecl -> [Pos]
 posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
 
 instance PosItem a => PosItem [a] where

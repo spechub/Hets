@@ -190,9 +190,9 @@ type Data4
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.7, illegal universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'
-*** Error , unbound type variable(s)
+*** Error, unbound type variable(s)
   t : Type in 't_v1'
-*** Error , illegal type pattern argument '__'
+*** Error, illegal type pattern argument '__'
 *** Error 11.16, undeclared class 'd'
 *** Warning 11.7, redeclared class 'a'
 *** Warning 11.10, redeclared class 'b'
@@ -204,14 +204,14 @@ type Data4
   with (maximal) type: _var_4_v4 ->? s
   known types:
     
-*** Hint , untypable application (with result type: s)
+*** Hint 21.5-21.13, untypable application (with result type: s)
  'fst(x : s, var y : t)'
 *** Error 21.22, no typing for 'program fst(x : s, var y : t) : s = x'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _var_5_v5 ->? t
   known types:
     
-*** Hint , untypable application (with result type: t)
+*** Hint 22.5-22.13, untypable application (with result type: t)
  'snd(x : s, var y : t)'
 *** Error 22.22, no typing for 'program snd(x : s, var y : t) : t = y'
 *** Hint 26.6, redeclared type 's'
@@ -219,7 +219,7 @@ type Data4
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:
     
-*** Hint , untypable application (with result type: ? Unit)
+*** Hint 28.13-28.15, untypable application (with result type: ? Unit)
  'all(var p : ? s)'
 *** Error 28.33, no typing for 'program all(var p : ? s) : ? Unit = eq(p, tt)'
 *** Error 30.40, unexpected mixfix token: t1
@@ -232,11 +232,11 @@ type Data4
 *** Error 38.17, unexpected mixfix token: all
 *** Error 37.27, unexpected mixfix token: all
 *** Error 40.20, unexpected mixfix token: all
-*** Hint , in type of '(var x : t, var y : t)'
+*** Hint, in type of '(var x : t, var y : t)'
   type 't * t'
   is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
 
-*** Hint , in type of '(var x : s, var y : t)'
+*** Hint, in type of '(var x : s, var y : t)'
   type 's * t'
   is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
 

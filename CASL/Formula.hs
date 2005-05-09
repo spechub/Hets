@@ -100,12 +100,12 @@ typedTerm, castedTerm :: [String] -> AParser st (TERM f)
 typedTerm k = 
     do c <- colonT
        t <- sortId k
-       return (Mixfix_sorted_term t [tokPos c])
+       return $ Mixfix_sorted_term t $ tokPos c
 
 castedTerm k = 
     do c <- asT
        t <- sortId k
-       return (Mixfix_cast t [tokPos c])
+       return $ Mixfix_cast t $ tokPos c
 
 terms :: AParsable f => [String] -> AParser st ([TERM f], [Token])
 terms k = 
@@ -129,8 +129,8 @@ qualOpName o =
        p <- cParenT
        return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] []
 
-opSort :: [String] -> GenParser Char st (Bool, Id, Pos)
-opSort k = fmap (\s -> (False, s, nullPos)) (sortId k) <|> 
+opSort :: [String] -> GenParser Char st (Bool, Id, [Pos])
+opSort k = fmap (\s -> (False, s, [])) (sortId k) <|> 
     do q <- quMarkT
        s <- sortId k
        return (True, s, tokPos q)
@@ -138,14 +138,14 @@ opSort k = fmap (\s -> (False, s, nullPos)) (sortId k) <|>
 opFunSort :: [String] -> [Id] -> [Token] -> GenParser Char st OP_TYPE
 opFunSort k ts ps = 
     do a <- pToken (string funS)
-       (b, s, _) <- opSort k
-       let qs = map tokPos (ps ++ [a]) 
-       return $ Op_type (if b then Partial else Total) ts s qs
+       (b, s, qs) <- opSort k
+       return $ Op_type (if b then Partial else Total) ts s 
+                  (catPos (ps ++ [a]) ++ qs)
 
 opType :: [String] -> AParser st OP_TYPE
 opType k = 
     do (b, s, p) <- opSort k
-       if b then return (Op_type Partial [] s [p])
+       if b then return (Op_type Partial [] s p)
 	  else do c <- crossT 
 		  (ts, ps) <- sortId k `separatedBy` crossT
 		  opFunSort k (s:ts) (c:ps)
@@ -197,18 +197,18 @@ varDecl k =
     do (vs, ps) <- varId k `separatedBy` anComma
        c <- colonT
        s <- sortId k
-       return $ Var_decl vs s (map tokPos ps ++[tokPos c])
+       return $ Var_decl vs s (catPos ps ++ tokPos c)
 
 predType :: [String] -> AParser st PRED_TYPE
 predType k = 
     do (ts, ps) <- sortId k `separatedBy` crossT
-       return (Pred_type ts (map tokPos ps))
+       return (Pred_type ts (catPos ps))
     <|> predUnitType
 
 predUnitType :: GenParser Char st PRED_TYPE
 predUnitType = do o <- oParenT
 		  c <- cParenT
-		  return (Pred_type [] [tokPos o, tokPos c])
+		  return $ Pred_type [] (tokPos o ++ tokPos c)
 
 qualPredName :: Token -> AParser st (TERM f)
 qualPredName o = 
@@ -241,18 +241,18 @@ parenFormula k =
 termFormula :: AParsable f => [String] -> (TERM f) -> AParser st (FORMULA f)
 termFormula k t =  do e <- try (asKey exEqual)
 		      r <- whenTerm k
-		      return (Existl_equation t r [tokPos e])
+		      return (Existl_equation t r $ tokPos e)
                    <|>
 		   do try (string exEqual)
 		      unexpected ("sign following " ++ exEqual)
                    <|>
 		   do e <- try equalT
 		      r <- whenTerm k
-		      return (Strong_equation t r [tokPos e])
+		      return (Strong_equation t r $ tokPos e)
                    <|>
 		   do e <- try (asKey inS)
 		      s <- sortId k
-		      return (Membership t s [tokPos e])
+		      return (Membership t s $ tokPos e)
 		   <|> return (Mixfix_formula t)
 
 primFormula :: AParsable f => [String] -> AParser st (FORMULA f)
@@ -260,18 +260,18 @@ primFormula k = do f <- aparser
                    return (ExtFORMULA f)
 		<|>   
               do c <- asKey trueS
-		 return (True_atom [tokPos c])
+		 return (True_atom $ tokPos c)
               <|>
 	      do c <- asKey falseS
-		 return (False_atom [tokPos c])
+		 return (False_atom $ tokPos c)
               <|>
 	      do c <- asKey defS
 		 t <- whenTerm k
-		 return (Definedness t [tokPos c])
+		 return (Definedness t $ tokPos c)
               <|>
 	      do c <- try(asKey notS <|> asKey negS) <?> "\"not\""
 		 f <- primFormula k 
-		 return (Negation f [tokPos c])
+		 return (Negation f $ tokPos c)
               <|> parenFormula k <|> quantFormula k 
 		      <|> (whenTerm k >>= termFormula k)
 
@@ -284,11 +284,11 @@ andOrFormula k =
                do f <- primFormula k
 		  do c <- andKey
 		     (fs, ps) <- primFormula k `separatedBy` andKey
-		     return (Conjunction (f:fs) (map tokPos (c:ps)))
+		     return (Conjunction (f:fs) (catPos (c:ps)))
 		    <|>
 		    do c <- orKey
 		       (fs, ps) <- primFormula k `separatedBy` orKey
-		       return (Disjunction (f:fs) (map tokPos (c:ps)))
+		       return (Disjunction (f:fs) (catPos (c:ps)))
 		    <|> return f
 
 implKey, ifKey :: AParser st Token
@@ -300,15 +300,15 @@ impFormula k =
              do f <- andOrFormula k
 		do c <- implKey
 		   (fs, ps) <- andOrFormula k `separatedBy` implKey
-		   return (makeImpl True (f:fs) (map tokPos (c:ps)))
+		   return (makeImpl True (f:fs) (catPos (c:ps)))
 		  <|>
 		  do c <- ifKey
 		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
-		     return (makeIf (f:fs) (map tokPos (c:ps)))
+		     return (makeIf (f:fs) (catPos (c:ps)))
 		  <|>
 		  do c <- asKey equivS
 		     g <- andOrFormula k
-		     return (Equivalence f g [tokPos c])
+		     return (Equivalence f g $ tokPos c)
 		  <|> return f
 		    where makeImpl b [f,g] p = Implication f g b p
 		          makeImpl b (f:r) (c:p) = 

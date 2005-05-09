@@ -71,7 +71,7 @@ iterateCharts ga terms chart =
                            Nothing -> recurse t
                            Just nTyp -> self tt $ oneStep 
                                         (MixTypeTerm q (monoType nTyp) ps, 
-                                         typeTok {tokPos = headPos ps})
+                                         typeTok {tokPos = ps})
                     BracketTerm b ts ps -> self 
                       (expandPos TermToken (getBrackets b) ts ps ++ tt) chart
                     QualVar (VarDecl v typ ok ps) -> do 

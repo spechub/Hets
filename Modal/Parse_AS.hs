@@ -40,7 +40,7 @@ modalFormula =
     do d <- asKey diamondS
        f <- formula modal_reserved_words
        let p = tokPos d
-       return (BoxOrDiamond False (Simple_mod $ Token emptyS p) f [p])
+       return (BoxOrDiamond False (Simple_mod $ Token emptyS p) f p)
 
 modality :: [String] -> AParser st MODALITY
 modality ks = 
@@ -74,7 +74,7 @@ mBasic =
     <|>
     do t <- asKey termS
        (as, fs, ps) <- mItem (sortId modal_reserved_words)
-       return (Term_mod_decl as fs (tokPos t : ps))
+       return (Term_mod_decl as fs (tokPos t ++ ps))
 
 mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], [Pos])
 mItem pr = do 

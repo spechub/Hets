@@ -93,43 +93,43 @@ true : Unit %(fun)%
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'a'
-*** Hint , in type of '(op nil[_var_13_v13] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_13_v13] : forall a : Type . List a_v-1) :
     List _var_13_v13'
   type 'List _var_13_v13'
   is not unifiable with type 'Unit ->? List _var_9_v9'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_9_v9'
+  is not unifiable with type 'Unit ->? _var_9_v9' (7.12)
 
-*** Hint , in type of '(op nil[_var_21_v21] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_21_v21] : forall a : Type . List a_v-1) :
     List _var_21_v21'
   type 'List _var_21_v21'
   is not unifiable with type 'Unit ->? List _var_17_v17'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_17_v17'
+  is not unifiable with type 'Unit ->? _var_17_v17' (7.25)
 
-*** Hint , in type of '(op nil[_var_30_v30] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_30_v30] : forall a : Type . List a_v-1) :
     List _var_30_v30'
   type 'List _var_30_v30'
   is not unifiable with type 'Unit ->? List _var_26_v26'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_26_v26'
+  is not unifiable with type 'Unit ->? _var_26_v26' (7.12)
 
-*** Hint , in type of '(op nil[_var_38_v38] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_38_v38] : forall a : Type . List a_v-1) :
     List _var_38_v38'
   type 'List _var_38_v38'
   is not unifiable with type 'Unit ->? List _var_34_v34'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_34_v34'
+  is not unifiable with type 'Unit ->? _var_34_v34' (7.25)
 
-*** Hint , in type of '((((op snoc[_var_26_v26]
+*** Hint 7.14-7.25, in type of '((((op snoc[_var_26_v26]
     : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
        List _var_26_v26 -> _var_26_v26 --> List _var_26_v26)
     ((op nil[_var_26_v26] : forall a : Type . List a_v-1) :
@@ -145,28 +145,28 @@ true : Unit %(fun)%
       _var_34_v34 --> List _var_34_v34)
    (var x : a) :
      List _var_34_v34)'
-  type 'List a * List a'
-  is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3'
+  type 'List a * List a' (7.25)
+  is not unifiable with type 'Unit ->? _var_3_v3 * _var_3_v3' (7.25)
 
-*** Hint , in type of '(op nil[_var_57_v57] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_57_v57] : forall a : Type . List a_v-1) :
     List _var_57_v57'
   type 'List _var_57_v57'
   is not unifiable with type 'Unit ->? List (_var_50_v50 ->? _var_51_v51)'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_50_v50'
+  is not unifiable with type 'Unit ->? _var_50_v50' (8.12)
 
-*** Hint , in type of '(op nil[_var_70_v70] : forall a : Type . List a_v-1) :
+*** Hint, in type of '(op nil[_var_70_v70] : forall a : Type . List a_v-1) :
     List _var_70_v70'
   type 'List _var_70_v70'
   is not unifiable with type 'Unit ->? List (_var_63_v63 ->? _var_64_v64)'
 
-*** Hint , in type of '(var x : a)'
+*** Hint, in type of '(var x : a)'
   typename 'a' (6.10)
-  is not unifiable with type 'Unit ->? _var_63_v63'
+  is not unifiable with type 'Unit ->? _var_63_v63' (8.12)
 
-*** Hint , in type of '((((op head[_var_63_v63 ->? _var_64_v64]
+*** Hint 8.14-8.16, in type of '((((op head[_var_63_v63 ->? _var_64_v64]
     : forall a : Type . List a_v-1 -> a_v-1) :
        List (_var_63_v63 ->? _var_64_v64) -> _var_63_v63 ->? _var_64_v64)
     ((op nil[_var_63_v63 ->? _var_64_v64]
@@ -176,6 +176,6 @@ true : Unit %(fun)%
    (var x : a) :
      _var_64_v64,
  var x : a)'
-  type '_var_59_v59 * a'
-  is not unifiable with type 'Unit ->? _var_42_v42 * _var_42_v42'
+  type '_var_59_v59 * a' (8.16)
+  is not unifiable with type 'Unit ->? _var_42_v42 * _var_42_v42' (8.16)
 

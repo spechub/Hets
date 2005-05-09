@@ -89,7 +89,7 @@ mapArg ts (TypeArg i k _ _) =
     maybe (error "mapArg") snd $ 
             find (\ (TypeArg j l _ _, _) -> i == j && k == l) ts
 
-freshVar :: Pos -> State Int (Id, Int) 
+freshVar :: [Pos] -> State Int (Id, Int) 
 freshVar p = 
     do c <- get
        put (c + 1)
@@ -176,17 +176,17 @@ instance Unifiable Type where
                             "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
-showPrettyWithPos a =  let p = getMyPos a in
+showPrettyWithPos a =  let p = get_pos a in
         showChar '\'' . showPretty a . showChar '\'' 
-           . noShow (isNullPos p) (showChar ' ' . 
-                                     showParen True (showPos p))
+           . noShow (null p) (showChar ' ' . 
+               showParen True (showPos $ maximumBy comparePos p))
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
               String -> a -> String -> b -> Result Subst
 uniResult s1 a s2 b = 
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
                          showPrettyWithPos a "\n  " ++ s2 ++ " " ++
-                         showPrettyWithPos b "") nullPos] Nothing
+                         showPrettyWithPos b "") []] Nothing
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)

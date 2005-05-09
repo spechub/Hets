@@ -401,7 +401,9 @@ parse_disp_anno i pos_l inp =
        Left err   -> error ("internal parse error at " ++ (show err))
        Right x  -> x -- trace ("parsed display anno:" ++ show x) x
     where 
-          pos = headPos pos_l
+          pos = case pos_l of 
+                [] -> newPos "" 0 0 
+                h : _ -> h
           inp' = (showId i "") ++ (' ':s_inp)
           s_inp = case reverse inp of
                   rin | "%)" `isPrefixOf` rin -> reverse $ drop 2 rin
@@ -1257,7 +1259,7 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Spec_inst aa' ab' [nullPos])
+                in (Spec_inst aa' ab' nullPos)
             _ -> from_sml_ShATermError "SPEC" aterm
         where
             aterm = getATerm att'
@@ -1964,7 +1966,7 @@ setFstPos (p:_) i = case i of
                            Id (setFstPos' tops) ids pos_l
     where setFstPos' tops | null tops = []
                           | otherwise = (ftop):(tail tops)
-              where ftop = (head tops) { tokPos = p }
+              where ftop = (head tops) { tokPos = [p] }
 setFstPos _ _ = error "wrong call: setFstPos"
 
 -------------------------------------------------------------------------

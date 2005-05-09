@@ -47,24 +47,24 @@ true : Unit %(fun)%
    (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
     Unit
 %% Diagnostics -----------------------------------------------------------
-*** Hint , in type of '(op a : t)'
+*** Hint, in type of '(op a : t)'
   typename 't' (4.10)
   is not unifiable with type 'Unit ->? ? t'
 
-*** Hint , in type of '(op c : Unit ->? t)'
+*** Hint, in type of '(op c : Unit ->? t)'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.8)
 
-*** Hint , in type of '(op a : t)'
+*** Hint, in type of '(op a : t)'
   typename 't' (4.10)
   is not unifiable with type 'Unit ->? ? t'
 
-*** Hint , in type of '(op c : Unit ->? t)'
+*** Hint, in type of '(op c : Unit ->? t)'
   typename 't' (3.8)
   is not unifiable with type 'Unit ->? t' (6.8)
 
-*** Hint , in type of '((op f : ? t -> t)(op a : t) : t,
+*** Hint 8.9-8.11, in type of '((op f : ? t -> t)(op a : t) : t,
  (op g : t -> ? t)(op c : Unit ->? t) : ? t)'
-  type 't * ? t'
-  is not unifiable with type 'Unit ->? _var_2_v2 * _var_2_v2'
+  type 't * ? t' (8.11)
+  is not unifiable with type 'Unit ->? _var_2_v2 * _var_2_v2' (8.11)
 

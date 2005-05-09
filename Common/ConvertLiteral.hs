@@ -19,26 +19,29 @@ import Common.Result
 
 type AsAppl a = Id -> [a] -> [Pos] -> a
 
+inc :: Int -> Pos -> Pos
+inc n p = incSourceColumn p n
+
 makeStringTerm :: Id -> Id -> AsAppl a -> Token -> a
 makeStringTerm c f asAppl tok = 
-  makeStrTerm (incSourceColumn sp 1) str
+  makeStrTerm (map (inc 1) sp) str
   where 
   sp = tokPos tok
   str = init (tail (tokStr tok))
   makeStrTerm p l = 
-    if null l then asAppl c [] [p]
+    if null l then asAppl c [] p
     else let (hd, tl) = splitString caslChar l
-         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] [p], 
-                      makeStrTerm (incSourceColumn p $ length hd) tl] [p]
+         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] []) [] p, 
+                      makeStrTerm (map (inc $ length hd) p) tl] p
 
 makeNumberTerm :: Id -> AsAppl a -> Token -> a
 makeNumberTerm f asAppl t@(Token n p) =
     case n of
            [] -> error "makeNumberTerm"
-           [_] -> asAppl (Id [t] [] []) [] [p]
-           hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] [p], 
+           [_] -> asAppl (Id [t] [] []) [] p
+           hd:tl -> asAppl f [asAppl (Id [Token [hd] p] [] []) [] p, 
                               makeNumberTerm f asAppl (Token tl 
-                                                (incSourceColumn p 1))] [p]
+                                                $ map (inc 1) p)] p
 
 makeFraction :: Id -> Id -> AsAppl a -> Token -> a
 makeFraction f d asAppl t@(Token s p) = 
@@ -46,9 +49,9 @@ makeFraction f d asAppl t@(Token s p) =
         dotOffset = length n 
     in if null r then makeNumberTerm f asAppl t
        else asAppl d [makeNumberTerm f asAppl (Token n p),
-                      makeNumberTerm f asAppl (Token (tail r) 
-                                        (incSourceColumn p $ dotOffset + 1))]
-            [incSourceColumn p dotOffset]
+                      makeNumberTerm f asAppl $ Token (tail r) 
+                                      $ map (inc $ dotOffset + 1) p]
+            $ map (inc dotOffset) p 
 
 makeSignedNumber :: Id -> AsAppl a -> Token -> a
 makeSignedNumber f asAppl t@(Token n p) = 
@@ -57,8 +60,8 @@ makeSignedNumber f asAppl t@(Token n p) =
   hd:tl ->   
     if hd == '-' || hd == '+' then
        asAppl (Id [Token [hd] p] [] []) 
-                  [makeNumberTerm f asAppl (Token tl 
-                                           $ incSourceColumn p 1)] [p]
+                  [makeNumberTerm f asAppl $ Token tl 
+                                         $ map (inc 1) p] p
     else makeNumberTerm f asAppl t
 
 makeFloatTerm :: Id -> Id -> Id -> AsAppl a -> Token -> a
@@ -67,10 +70,9 @@ makeFloatTerm f d e asAppl t@(Token s p) =
         offset = length m
     in if null r then makeFraction f d asAppl t
        else asAppl e [makeFraction f d asAppl (Token m p),
-                      makeSignedNumber f asAppl (Token (tail r)
-                                          $ incSourceColumn p (offset + 1))]
-                [incSourceColumn p offset]
-
+                      makeSignedNumber f asAppl $ Token (tail r)
+                                          $ map (inc $ offset + 1) p]
+                $ map (inc offset) p
 
 -- analyse Mixfix_token
 convertMixfixToken ::  LiteralAnnos -> AsAppl a 

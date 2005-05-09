@@ -28,13 +28,12 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
-mkSelId :: Pos -> String -> Int -> Int -> Id
+mkSelId :: [Pos] -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId 
-    [Token (str ++ "_" ++ show n ++ "_" ++ show m)
-    $ incSourceColumn p (100 * (n-1) + m)]
+    [Token (str ++ "_" ++ show n ++ "_" ++ show m) p]
 
 mkSelVar :: Int -> Int -> Type -> VarDecl
-mkSelVar n m ty = VarDecl (mkSelId (getMyPos ty) "x" n m) ty  Other []
+mkSelVar n m ty = VarDecl (mkSelId (get_pos ty) "x" n m) ty  Other []
 
 genTuple :: Int -> Int -> [Selector] -> [VarDecl]
 genTuple _ _ [] = [] 
@@ -136,7 +135,7 @@ checkMonomorphRecursion t tm p@(i, _, _) =
     if occursIn tm i t then 
        if lesserType tm t rt || lesserType tm rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 
-                                 ++ expected rt t) $ getMyPos t] Nothing
+                                 ++ expected rt t) $ get_pos t] Nothing
     else return ()
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool

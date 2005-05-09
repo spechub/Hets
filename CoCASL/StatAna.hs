@@ -22,7 +22,7 @@ Portability :  portable
 module CoCASL.StatAna where
 
 import CoCASL.AS_CoCASL
-import CoCASL.Print_AS
+import CoCASL.Print_AS()
 import CoCASL.CoCASLSign
 
 import CASL.Sign
@@ -233,7 +233,7 @@ comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT
                      -> Maybe (Named (FORMULA f))
 comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a 
-        p = [posOfId s]
+        p = posOfId s
     (c,t) <- i 
     return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
         mkForall v (Negation (Membership t s p) p) p
@@ -245,7 +245,7 @@ comakeInjective a = do
         (i2, v2, _) = coselForms1 "Y" a
     (c,t1) <- i1
     (_,t2) <- i2
-    let p = [posOfId c]
+    let p = posOfId c
     return $ NamedSen ("ga_injective_" ++ showId c "") $
        mkForall (v1 ++ v2) 
        (Equivalence (Strong_equation t1 t2 p)
@@ -266,7 +266,7 @@ comakeDisj a1 a2 = do
         (i2, v2, _) = coselForms1 "Y" a2
     (c1,t1) <- i1
     (c2,t2) <- i2
-    let p = [posOfId c1, posOfId c2]
+    let p = posOfId c1 ++ posOfId c2
     return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
        mkForall (v1 ++ v2) 
        (Negation (Strong_equation t1 t2 p) p) p
@@ -320,14 +320,14 @@ toCoSortGenAx :: [Pos] -> Bool -> GenAx -> State CSign ()
 toCoSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c -> let ide = compId c in  Qual_op_name ide  
-                      (toOP_TYPE $ compType c) [posOfId ide]) $ Set.toList ops
-        injSyms = map ( \ (s, t) -> let p = [posOfId s] in 
+                      (toOP_TYPE $ compType c) $ posOfId ide) $ Set.toList ops
+        injSyms = map ( \ (s, t) -> let p = posOfId s in 
                         Qual_op_name injName 
                         (Op_type Total [s] t p) p) $ Rel.toList rel
         f = ExtFORMULA $ CoSort_gen_ax sortList 
             (opSyms ++ injSyms) isFree
     if null sortList then 
-              addDiags[Diag Error "missing cogenerated sort" (headPos ps)]
+              addDiags[Diag Error "missing cogenerated sort" ps]
               else return ()
     addSentences [NamedSen ("ga_cogenerated_" ++ 
                          showSepList (showString "_") showId sortList "") f]

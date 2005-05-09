@@ -142,7 +142,7 @@ kindOfType tm ty = case ty of
     TypeName _ k _ -> k
     TypeAppl t1 t2 -> toIntersection 
                 (concatMap snd $ getKindAppl (kindOfType tm t1) [t2]) 
-                [posOfType t1, posOfType t2]
+                $ posOfType t1 ++ posOfType t2
     ExpandedType _ t1 -> kindOfType tm t1
     FunType t1 a t2 _ -> 
        let i = arrowId a
@@ -284,7 +284,7 @@ collapser r =
                     c2 = Set.findMin rs
                 in Diag Hint ("contradicting type inclusions for '"
                          ++ showPretty c1 "' and '" 
-                         ++ showPretty c2 "'") nullPos) ws) Nothing
+                         ++ showPretty c2 "'") []) ws) Nothing
 
 extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
 extendSubst s (t, vs) = Set.fold ( \ (TypeName _ _ n) -> 
