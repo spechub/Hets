@@ -1,5 +1,5 @@
+{-# OPTIONS -cpp #-}
 {-| 
-   
 Module      :  $Header$
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -40,13 +40,16 @@ import Isabelle.Translate
 
 import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
-import Haskell.Logic_Haskell
+
 
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
+#ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
+import Haskell.Logic_Haskell
+#endif
 
 printLibEnv :: LibEnv -> IO ()
 printLibEnv le  = 
@@ -70,10 +73,14 @@ printTheory ln le dg (sn, ge) = case ge of
                       th1 <- map_theory CASL2PCFOL (sign1, sens1)
                       th2 <- map_theory PCFOL2FOL th1
                       map_theory CASL2IsabelleHOL th2
+#ifdef PROGRAMATICA                                  
                     r2 = do 
                       sign1 <- coerce Haskell lid sign0 
                       sens1 <- coerce Haskell lid sens0
                       map_theory Haskell2IsabelleHOLCF (sign1, sens1)
+#else 
+                    r2 = r1
+#endif
                     r4 = do 
                       sign1 <- coerce HasCASL lid sign0 
                       sens1 <- coerce HasCASL lid sens0
