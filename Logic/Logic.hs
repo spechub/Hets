@@ -16,6 +16,22 @@ Portability :  non-portable (various -fglasgow-exts extensions)
 
    For logic (co)morphisms see "Logic.Comorphism"
 
+   This module uses multiparameter type classes
+   (<http://haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#multi-param-type-classes>)
+   with functional dependencies (<http://haskell.org/hawiki/FunDeps>) 
+   for defining an interface for the notion of logic. Multiparameter type 
+   classes are needed because a logic consists of a collection of types,
+   together with operations on these. Functional dependencies
+   are needed because no operation will involve all types of
+   the multiparameter type class; hence we need a method to derive
+   the missing types. We chose an easy way: for each logic, we 
+   introduce a new singleton type that constitutes the identity
+   of the logic. All other types of the multiparameter type class
+   depend on this 'identy constituting' type, and all operations take 
+   the 'identity constituting' type as first arguments. The value
+   of the argument of the 'identity constituting' type is irrelevant
+   (note that there is only one value of such a type anyway).
+
    References:
 
    J. A. Goguen and R. M. Burstall
