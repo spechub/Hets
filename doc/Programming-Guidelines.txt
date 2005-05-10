@@ -1,3 +1,4 @@
+
 Programming guidelines shall help to make the code of a project better
 readable and maintainable by the varying number of contributors.
 
@@ -27,6 +28,7 @@ Also, try to avoid putting comments inside a function body: if the
 function is so complex that you need to separately comment parts of it,
 you should probably" (see "Good Programming Practice")
 
+Put a haddock comment on top of every exported function and data type!
 
 ---------------------------------------------------------------------------
 File Format:
@@ -39,7 +41,7 @@ Module      :  $Header$
 Copyright   :  (c) <You> and Uni Bremen 2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
@@ -52,12 +54,12 @@ this header. The following qualified module name must of course match the file
 name.
 
 Make sure that the Description is changed to meet the module (if the
-header was copied from elsewhere.)
+header was copied from elsewhere). Insert your email address as maintainer.
 
 Try to write portable (Haskell98) code. If you (indirectly) import
 Logic/Logic.hs the code becomes "non-portable".
 
-The $Header$ entry is automatically expanded by cvs (and may wrap
+The Dollar-Header-Dollar entry is automatically expanded by cvs (and will wrap
 around). All other lines should not be longer than 80 (preferably 75)
 characters to avoid wrapped lines (for casual readers)!
 
@@ -90,10 +92,9 @@ mixed case words. (but "tmp" is to be preferred over
 
 
 ---------------------------------------------------------------------------
-Good Programming Practice 
+Good Programming Practice: 
 ---------------------------------------------------------------------------
 
-the Linux kernel coding style says:
 "Functions should be short and sweet, and do just one thing.  They should
 fit on one or two screenfuls of text (the ISO/ANSI screen size is 80x24,
 as we all know), and do one thing and do that well."
@@ -114,13 +115,15 @@ case <longer expression> of
 Avoid the notation with braces and semicolons since the layout rule
 forces you to properly align your alternatives.
 
-Respect compiler warnings. Supply type signature, avoid shadowing and
+Respect compiler warnings. Supply type signatures, avoid shadowing and
 unused variables. Particularly avoid non-exhaustive and
 overlapping patterns. Missing unreachable cases can be filled in using
 "error" with a fixed string "<ModuleName>.<function>" to indicate the
 error position (in case the impossible should happen). Don't invest
 time to "show" the offending value, only do this temporarily when
 debugging the code.
+
+Don't leave unused or commented out code in your files!
 
 
 Case expressions
@@ -145,7 +148,8 @@ previous test). Particularly the call of "head" should be used with
 care or avoided by a case statement.
 
 Avoid mixing "let" and "where". (I prefer "let" and have auxiliary
-function on the top-level that are not exported.)
+function on the top-level that are not exported.) Export lists also
+support the detection of unused functions.
 
 If you notice that ypu're doing the same task again, try to generalize
 your first one in order to avoid duplicate code. It is
@@ -176,15 +180,15 @@ Good:
 
 List Comprehensions
 ---------------------------------------------------------------------------
-Use these only when nice and sweet (I prefer map, filter, foldr)
+Use these only when "short and sweet". (I prefer map, filter, and foldr.)
 
 
 Trace
 ---------------------------------------------------------------------------
 
 Tracing is for debugging purposes only and should not be used as
-feedback for the user. The final code should not be cluttered by
-excessive trace calls.
+feedback for the user. Clean code is not cluttered by trace calls.
+
 
 Application notation
 ---------------------------------------------------------------------------
@@ -219,9 +223,9 @@ Probably wrong:
 f $ x ++ g $ x
 
 But the scope of an expression is also limited by the layout rule, so
-it usually save to use "$" on right hand sides.
+it is usually save to use "$" on right hand sides.
 
-Maybe ok:
+Ok:
 do y <- f $ l
 ++
 do y <- g $ l
@@ -232,17 +236,67 @@ operators) since a clash with template haskell is possible.
 (Also write "\ t" instead of "\t" in lambda expressions)
 
 
-Classes
+Types
 ---------------------------------------------------------------------------
 
-You probably don't need to introduce your own classes.
+Prefer proper data types over type synonyms or tupels even if you have
+to do more constructing and unpacking. This will make it easier to
+supply class instances later on. Don't put class constraints on
+a data type, constraints belong only to the functions that manipulate
+the data. 
+
+Using type synonyms consistently is difficult over a longer time,
+because this is not checked by the compiler.
 
 
-Glasgow extensions
+Glasgow extensions and Classes
 ---------------------------------------------------------------------------
 
-Stay away form extensions as long as possible.
+Stay away form extensions as long as possible. Also use classes with
+care because soon the desire for overlapping instances (like for lists
+and strings) may arise. Then you may want MPTC, functional
+dependencies, undecidable and possibly incoherent instances and then
+you are "in the wild" (SPJ).
 
 
+---------------------------------------------------------------------------
+Final remarks: 
+---------------------------------------------------------------------------
 
-Comments to maeder@tzi.de
+Despite guidelines writing "correct code" (without formal proof
+support yet) still remains the major challenge. As motivation to
+follow these guidelines consider the points that are
+from the "C++ Coding Standard", where I replaced "C++" with "Haskell".
+
+Good Points: 
+
+    * programmers can go into any code and figure out what's going on
+
+    * new people can get up to speed quickly
+
+    * people new to Haskell are spared the need to develop a personal
+      style and defend it to the death
+
+    * people new to Haskell are spared making the same mistakes over
+      and over again
+
+    * people make fewer mistakes in consistent environments
+
+    * programmers have a common enemy :-) 
+
+Bad Points:
+
+    * the standard is usually stupid because it was made by someone
+      who doesn't understand Haskell
+
+    * the standard is usually stupid because it's not what I do
+
+    * standards reduce creativity
+
+    * standards are unnecessary as long as people are consistent
+
+    * standards enforce too much structure
+
+    * people ignore standards anyway 
+
+(Send comments to the "Maintainer" of this file)
