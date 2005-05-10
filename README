@@ -1,94 +1,79 @@
-This README belongs to a Hets release (and does not apply to
-sources directly obtained via cvs).
+This README belongs to a "The heterogeneous tool set" (Hets) release
+(and does not apply to sources directly obtained via cvs).
 
 Information not contained here can be found in the Hets user guide
 (doc/UserGuide.pdf) or on the Hets web page (www.tzi.de/cofi/hets).
 
 The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
+
 The sources need to be compiled with ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc).
+(www.haskell.org/ghc). Haskell is also a part of Hets via
+"Programatica" (www.cse.ogi.edu/PacSoft/projects/programatica).
 
-The output of hets, if the input is successfully accepted, can be
-displayed by "daVinci".
+Beside output written to the console (stdout) or to files hets can
+display graphs using "uDraw(Graph)", formerly "daVinci"  
+(www.informatik.uni-bremen.de/uDrawGraph)
 
-daVinci is maintained by b-novative and b-novative holds all rights.
-This release may be accompanied with free binary releases of daVinci
-Version 2.1, but daVinci 2.1 is no longer supported or maintained!
-However, you are encouraged to obtain the latest version of daVinci
-Presenter (currently 3.0.5) from http://www.b-novative.com that is
-free for academic purposes.
-
-Linux: the linux binary release of daVinci 2.1 relies on the old
-shlibs5 that must be installed on your system (if ./daVinci cannot be
-found/executed, then shlibs5 are missing)
-
-Solaris: the solaris binary release of daVinci 2.1 should work without
-problems
-
-Macintosh (Darwin): there is no release of daVinci for Macintosh, but
-b-novative may have one in the mean time
-
-For best quality, get the latest version of daVinci from b-novative.
-
-For hets to find daVinci, the environment variables DAVINCIHOME and
-UNIDAVINCI must be set to the installation directory of daVinci and to
+For hets to find "uDrawGraph", the environment variables UDG_HOME and
+UNIDAVINCI must be set to the installation directory of uDraw(Graph) and to
 the actual executable, respectively. 
 
-export DAVINCIHOME=<path>/daVinci_V2.1
-export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
+export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
-A typical call of hets is then: <path>/hets -g Basic/Numbers.casl
+A typical call of hets is then: hets -g Basic/Numbers.casl
 
 If you need to rebuild the hets binary follow the instructions in INSTALL
 (This README belongs a to release created by "make release", in case
 that you obtained the HetCATS sources as CVS tree)
 
 The heterogeneous tool set (Hets) is mainly maintained by
-Christian Maeder (maeder@tzi.de) and Till Mossakowski
-(till@tzi.de). The mailing list is hets@tzi.de.
+Christian Maeder (maeder@tzi.de, initials CM) and Till Mossakowski
+(till@tzi.de, initials TM). The mailing list is hets-devel@tzi.de.
 
 Overview of source modules, with maintainers:
 For more details, see the Haddock documentation in docs/
 (after generation with "make doc") 
 --------------------------------------------------------
 
-LICENCE.txt                 Licence information (english) (Till Mossakowski)
-LIZENZ.txt                  Licence information (german)  (Till Mossakowski)
-INSTALL                     Installation and compilation instructions (???)
+LICENCE.txt                 Licence information (english) (TM)
+LIZENZ.txt                  Licence information (german)  (TM)
+INSTALL                     Installation and compilation instructions (CM)
 Makefile                    GNU-Makefile to compile sources (Klaus Luettich)
-README                      This file (Till Mossakowski)
-hets.hs                     Top-level Haskell module for hets (Till Mossakowski)
-version_nr                  Current version (Till Mossakowski)
+README                      This file (TM/CM)
+hets.hs                     Top-level Haskell module for hets (TM)
+version_nr                  Current version (TM)
 ATC/                        Conversion from and to ATerms (Klaus Luettich)
-CASL/                       Instance of Logic: CASL (Till Mossakowski/Christian Maeder/Martin Kuehl)
-CoCASL/                     Instance of Logic: CoCASL (Till Mossakowski)
-CoL/                        Instance of Logic: COL (Till Mossakowski)
+CASL/                       Instance of Logic: CASL (TM/CM/Martin Kuehl)
+CoCASL/                     Instance of Logic: CoCASL (CM/TM)
+COL/                        Instance of Logic: COL (TM)
 Common/                     Modules common to all logics
-Common/ATerm/                 Conversion from and to ATerms (Christian Maeder)
-Common/Lib/                   Set, Map, Graph, Rel modules (Christian Maeder)
-Common/Lib/Parsec/              Parsec combinator parser (Christian Maeder)
+Common/ATerm/                 Conversion from and to ATerms (CM)
+Common/Lib/                   Set, Map, Graph, Rel modules (CM)
 Common/PrettyPrint.hs       pretty printing (Klaus Luettich)
                                pretty printing should get an own directory
-Comorphisms/                Comorphisms of the logic graph (Till Mossakowski)
+Comorphisms/                Comorphisms of the logic graph (TM)
 CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
-doc/                        Documentation (Till Mossakowski)
+doc/                        Documentation (TM)
 docs/                       Haddock generated documentation (Klaus Luettich)
-ghc/                        ghc-specific "coerce" (Christian Maeder)
-GUI/                        GUI for displaying development graphs  (Till Mossakowski/Jorina Gerken)
-HasCASL/                    Instance of Logic: HasCASL (Christian Maeder)
-Haskell/                    Instance of Logic: Haskell (Christian Maeder)
-Haskell/Hatchet/              parsing, printing, analysis of Haskell
-hetcats/                    Command line interface (Klaus Luettich)
-hugs/                       hugs-specific "coerce" (Christian Maeder)
-Isabelle/                   Instance of Logic: Isabelle
-Logic/                      Infrastructure for logic independence (Till Mossakowski)
-Modal/                      Instance of Logic: ModalCASL (Till Mossakowski)
-Proofs/                     Heterogeneous proof engine (Till Mossakowski/Jorina Gerken)
-Static/                     Heterogeneous development graphs and static analysis  (Till Mossakowski/Maciek Makowski)
-Syntax/                     Heterogeneous syntax and parsing (Till Mossakowski, Christian Maeder)
-ToHaskell/                  translation to Haskell (Christian Maeder)
+ghc/                        ghc-specific "coerce" (CM)
+GUI/                        GUI for displaying development graphs  
+                                (TM/Jorina Gerken)
+HasCASL/                    Instance of Logic: HasCASL (CM)
+Haskell/                    Instance of Logic: Haskell 
+                                based on Programatica (CM)
+Hatchet/                    old Haskell Logic (CM)
+Driver/                     Command line interface (Klaus Luettich)
+Isabelle/                   Instance of Logic: Isabelle (CM)
+Logic/                      Infrastructure for logic independence (TM)
+Modal/                      Instance of Logic: ModalCASL (TM)
+Proofs/                     Heterogeneous proof engine (TM/Jorina Gerken)
+Static/                     Heterogeneous development graphs and 
+                                static analysis  (TM/Maciek Makowski)
+Syntax/                     Heterogeneous syntax and parsing (TM/CM)
+ToHaskell/                  translation to Haskell (CM)
 utils/                      Utilities
-utils/DrIFT-src/              DrIFT (for polytpyic conversion functions) (Klaus Luettich)
+utils/DrIFT-src/              DrIFT for polytpyic conversion functions
+                                  (Klaus Luettich)
 utils/GenerateRules/          generate files to be DRIFTed (Klaus Luettich)
-utils/inlineAxioms            parse inline axioms (Till Mossakowski)
+utils/InlineAxioms            parse inline axioms (TM/CM)
