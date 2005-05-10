@@ -11,16 +11,21 @@ Portability :  portable
 
 module Common.ATerm.Unshared
     (ATerm(..),
+     fromATerm,
      getATermFull,
      toATermTable)
     where
 
 import Common.ATerm.AbstractSyntax
+import Common.ATerm.Conversion
 
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
            | AInt  Integer        [ATerm]
              deriving (Eq,Ord)
+
+fromATerm :: ShATermConvertible t => ATerm -> t
+fromATerm = fromShATerm . toATermTable 
 
 getATermFull :: ATermTable -> ATerm
 getATermFull at = 
