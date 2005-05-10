@@ -59,6 +59,9 @@ ex1S = "Ex1"
 
 -- * strings of binary ops
 
+cappl :: String
+cappl = "op $"
+
 conj :: String
 conj = "op &"
 
