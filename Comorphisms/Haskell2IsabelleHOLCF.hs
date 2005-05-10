@@ -176,8 +176,7 @@ class IsaName a where
  showIsaName :: a -> IName
 
 showIsaS :: String -> IsaSign.IName
-showIsaS x | x == "==" = eq
-           | True = transStringT HOLCF_thy x
+showIsaS = transStringT HOLCF_thy
 -- showIsaS x = Translate.transString x
 
 instance IsaName String where
@@ -185,8 +184,7 @@ instance IsaName String where
 
 showIsaHsN :: HsName.HsName -> IName
 showIsaHsN t = case t of  
-       Qual (PlainModule x) y -> ((showIsaS x)++"_"++(showIsaS y))
-       Qual (MainModule x) y -> ((showIsaS x)++"_"++(showIsaS y))
+       Qual _ y -> showIsaS y
        UnQual w -> showIsaS w
 
 instance IsaName HsName.HsName where
@@ -205,13 +203,6 @@ instance IsaName a => IsaName (HId a) where
  showIsaName t =  case t of
                  HsVar x -> showIsaName x
                  HsCon x -> showIsaName x
-
--------------------------------- Identifier translation -----------------------
-
-idTrans :: IsaName a => HId a -> IsaSign.Term
-idTrans t = case t of
-                 HsVar x -> Free (showIsaName x) noType
-                 HsCon x -> Const (showIsaName x) noType
 
 ------------------------------- Kind translation ------------------------------
 
@@ -614,27 +605,22 @@ transCN :: HsScheme -> PNT -> IsaTerm
 transCN s x = let 
   y = showIsaName x
   z = transFromScheme s 
-  f = \w -> Const w z
+  f w = Const w z
   in
-  if elem pcpo (typeSort z) then case y of
-      "TrueX" -> f "TT"
-      "FalseX" -> f "FF"
+  if elem pcpo (typeSort z) then case pp x of
+      "True" -> f "TT"
+      "False" -> f "FF"
       _ -> f y
   else f y
-
-transHV2 :: ConstTab -> HsScheme -> PNT -> IsaTerm
-transHV2 cs s x = let 
-      n = showIsaName x 
-      k = transFromScheme s
-      in 
-      if Map.member n cs then Const n k else Free n k
 
 transHV :: HsScheme -> PNT -> IsaTerm
 transHV s x = let 
       n = showIsaName x 
       k = transFromScheme s
       in 
-      case x of
+   case pp x of 
+   "==" -> Const "nyi" k
+   _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> Free n k
