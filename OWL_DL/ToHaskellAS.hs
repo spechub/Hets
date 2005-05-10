@@ -3,7 +3,8 @@ module Main where
 import OWL_DL.AS
 import OWL_DL.ReadWrite
 
-import Common.ATerm.Lib
+import Common.ATerm.ReadWrite
+import Common.ATerm.Unshared
 import System.Exit
 import System(getArgs, system)
 import qualified Common.Lib.Map as Map
@@ -31,7 +32,7 @@ processor2 filename =
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
-                  putStrLn $ show $ reducedDisjoint ((fromShATerm $ toATermTable onto)::Ontology)
+                  putStrLn $ show $ reducedDisjoint (fromATerm onto::Ontology)
           _ -> error "false file."
 
     where buildNS :: ATerm -> Namespace
