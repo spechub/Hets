@@ -622,21 +622,23 @@ transCN s x = let
       _ -> f y
   else f y
 
-transHV :: ConstTab -> HsScheme -> PNT -> IsaTerm
-transHV cs s x = let 
+transHV2 :: ConstTab -> HsScheme -> PNT -> IsaTerm
+transHV2 cs s x = let 
       n = showIsaName x 
       k = transFromScheme s
       in 
       if Map.member n cs then Const n k else Free n k
 
-transHV2 :: HsScheme -> PNT -> IsaTerm
-transHV2 s x = let 
+transHV :: HsScheme -> PNT -> IsaTerm
+transHV s x = let 
       n = showIsaName x 
       k = transFromScheme s
       in 
       case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
+        PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> Free n k
+        _ -> error "Haskell2IsabelleHOLCF, transHV"
 
 {- !!!!!!!!!!!!!!!
   problem with intorducing Def for computable equality. 
@@ -648,7 +650,7 @@ transExp cs t = case t of
           termMAbs IsCont (map (transPat cs) ps) (transExp cs e)
     (TiPropDecorate.Exp e) -> 
           transE showIsaName (transExp cs) (transPat cs) e
-    (TiPropDecorate.TiSpec (HsVar x) s _) -> transHV2 s x
+    (TiPropDecorate.TiSpec (HsVar x) s _) -> transHV s x
     (TiPropDecorate.TiSpec (HsCon x) s _) -> transCN s x
     (TiPropDecorate.TiTyped x _) -> transExp cs x
 
@@ -656,7 +658,7 @@ transPat :: ConstTab -> PrPat -> IsaPattern
 transPat cs t = case t of 
     (TiDecorate.Pat p) -> transP showIsaName (transPat cs) p
 --    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV cs s x
-    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV2 s x
+    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV s x
     (TiDecorate.TiPSpec (HsCon x) s _) -> transCN s x
     (TiDecorate.TiPTyped x _) -> transPat cs x
     _ -> Bottom
