@@ -13,7 +13,7 @@ Portability :  portable
 
 module OWL_DL.AS where
 
-{-! global: ShATermConvertible !-}
+{- -- global: ShATermConvertible !-}
 
 -- import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map

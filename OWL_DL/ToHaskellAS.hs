@@ -1,6 +1,8 @@
 module Main where
 
+import OWL_DL.AS
 import OWL_DL.ReadWrite
+
 import Common.ATerm.Lib
 import System.Exit
 import System(getArgs, system)
