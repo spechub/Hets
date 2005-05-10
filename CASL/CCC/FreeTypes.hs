@@ -15,8 +15,8 @@
 "free datatypes and recursive equations are consistent"
 
 checkFreeType :: (PrettyPrint f, Eq f) => 
-                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
-                       -> Result (Maybe Bool)
+                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
+                 -> [Named (FORMULA f)] -> Result (Maybe Bool)
 Just (Just True) => Yes, is consistent
 Just (Just False) => No, is inconsistent
 Just Nothing => don't know
@@ -40,41 +40,46 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
+-- import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import Common.AS_Annotation
 import Common.PrettyPrint
-import Common.Lib.Pretty
+-- import Common.Lib.Pretty
 import Common.Result
 import Common.Id
 #ifdef UNI_PACKAGE
---import Isabelle.IsaProve
+-- import Isabelle.IsaProve
 import ChildProcess
 #endif
 import Foreign
 
 {-
    function checkFreeType:
-   - check if leading symbols are new (not in the image of morphism), if not, return Nothing
-   - the leading terms consist of variables and constructors only, if not, return Nothing
+   - check if leading symbols are new (not in the image of morphism), 
+           if not, return Nothing
+   - the leading terms consist of variables and constructors only, 
+           if not, return Nothing
      - split function leading_Symb into 
-       leading_Term_Predication ::  FORMULA f -> Maybe(Either Term (Formula f))
+       leading_Term_Predication
        and 
-       extract_leading_symb :: Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
-     - collect all operation symbols from recover_Sort_gen_ax fconstrs (= constructors)
+       extract_leading_symb
+     - collect all operation symbols from recover_Sort_gen_ax fconstrs 
+                                                       (= constructors)
    - no variable occurs twice in a leading term, if not, return Nothing
    - check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
-       this means: either leading symbol is a variable, and there is just one axiom
+       this means: either leading symbol is a variable, 
+                           and there is just one axiom
                    otherwise, group axioms according to leading symbol
                               no symbol may be a variable
-                              check recursively the arguments of constructor in each group
+                              check recursively the arguments of 
+                              constructor in each group
   - return (Just True)
 -}
 checkFreeType :: (PosItem f, PrettyPrint f, Eq f) => 
-                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)] 
-                  -> Result (Maybe Bool)
+                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
+                 -> [Named (FORMULA f)] -> Result (Maybe Bool)
 checkFreeType (osig,osens) m fsn      
 #ifdef UNI_PACKAGE
        | Set.any (\s->not $ elem s srts) newSorts =
@@ -117,8 +122,9 @@ checkFreeType (osig,osens) m fsn
 
 - each new sort must be a free type,
   i.e. it must occur in a sort generation constraint that is marked as free
-     (Sort_gen_ax constrs True)
-     such that the sort is in srts, where (srts,ops,_)=recover_Sort_gen_ax constrs
+    (Sort_gen_ax constrs True)
+    such that the sort is in srts, 
+        where (srts,ops,_)=recover_Sort_gen_ax constrs
     if not, output "don't know"
   and there must be one term of that sort (inhabited)
     if not, output "no"
@@ -178,8 +184,8 @@ checkFreeType (osig,osens) m fsn
 {-
   check all partial axiom
 -}
-         p_axioms = filter partialAxiom _axioms                       -- all partial axioms
-         t_axioms = filter (not.partialAxiom) _axioms                 -- all total axioms 
+         p_axioms = filter partialAxiom _axioms           -- all partial axioms
+         t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms 
          p_t_axioms = filter (\f-> case (opTyp_Axiom f) of            -- exist partial axioms in total axioms?
                                      Just False -> True
                                      _ -> False) t_axioms
@@ -188,7 +194,8 @@ checkFreeType (osig,osens) m fsn
                                        _ -> False) p_axioms
          opSyms_p = map (\os-> case os of
                                  (Just (Left opS)) -> opS
-                                 _ -> error "partial axiom") $ map leadingSym equi_p_axioms 
+                                 _ -> error "CASL.CCC.FreeTypes.<partial axiom>") $
+                    map leadingSym equi_p_axioms 
          impl_p_axioms = filter (\f-> case f of
                                         Equivalence _ _ _ -> False
                                         Negation _ _ -> False
@@ -253,11 +260,13 @@ checkFreeType (osig,osens) m fsn
                                                                Application op' _ _ -> elem op' constructors && 
                                                                                       checkTerm (term t) 
                                                                _ -> False) ts
+         checkTerm _ = error "CASL.CCC.FreeTypes.<checkTerm>"
 {-
    no variable occurs twice in a leading term, 
       if not, return Nothing
 -} 
          checkVar (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
+         checkVar _ = error "CASL.CCC.FreeTypes<checkVar>"
          allVarOfTerm t = case t of
                             Qual_var _ _ _ -> [t]
                             Sorted_term t' _ _ -> allVarOfTerm  t'
@@ -280,7 +289,7 @@ checkFreeType (osig,osens) m fsn
                                                                      Just (Right (Predication _ ts _))->ts
                                                                      _ -> [])).
                                                          (map leading_Term_Predication)) $ map snd sym_fs)
-                                Nothing -> error "axiom group"
+                                Nothing -> error "CASL.CCC.FreeTypes.<axiom group>"
          leadingPatterns1 = snd $ unzip leadingSymPatterns
    --      leadingPatterns = trace (showPretty leadingPatterns1 (tmp ++ "\n" ++ tmp1 ++ "\n" ++ tmp2 ++ "\n")) leadingPatterns1    --leading Patterns
          leadingPatterns = trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1    --leading Patterns
@@ -393,7 +402,8 @@ forall x, y:Nat
                                                         (var y : Nat) : Nat) : Nat) : Nat
 
 CiME:
-let F = signature "when_else : 3; eq : binary; True,False : constant; 0 : constant; suc : unary; __+__ : binary; ";
+let F = signature "when_else : 3; eq : binary; True,False : constant; 
+                   0 : constant; suc : unary; __+__ : binary; ";
 let X = vars "t1 t2 x y";
 let axioms = TRS F X "
 eq(t1,t1) -> True; 
@@ -427,7 +437,10 @@ then
 end
 
 CiME:
-let F = signature "when_else : 3; eq : binary; True,False : constant; True : constant; False : constant; __or__ : binary; Leaf : unary; Branch : unary; Nil : constant; Cons : binary; elemT : binary; elemF : binary; ";
+let F = signature "when_else : 3; eq : binary; True,False : constant; 
+                   True : constant; False : constant; __or__ : binary; 
+                   Leaf : unary; Branch : unary; Nil : constant; 
+                   Cons : binary; elemT : binary; elemF : binary; ";
 let X = vars "t1 t2 x y t f";
 let axioms = TRS F X "
 eq(t1,t1) -> True;
@@ -443,13 +456,6 @@ elemT(x,Branch(f)) -> elemF(x,f);
 elemF(x,Nil) -> False; 
 elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 
--}
-{-  
-         --because the cime symbols '[' and ']' do not know, the symbols are replaced by '|' 
-         idStrT id = map (\s-> case s of
-                                 '[' -> '|'
-                                 ']' -> '|'
-                                 _ -> s) $ idStr id                                                              -- aus
 -}
          oldfs1 = map sentence (filter is_user_or_sort_gen osens)
          oldfs = trace (showPretty oldfs1 "old formulas") oldfs1               -- old formulas
@@ -474,32 +480,6 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
               "Termination proof found." -> return True
               "Quitting." -> return False
               _ -> rP cp
-{-
-         --  OP_SYMB -> Signature of CiME
-         opStr o_s = case o_s of                -- kontext analyse
-                       Qual_op_name op_n (Op_type k a_sorts _ _) _ -> case (length a_sorts) of 
-                                                                            0 -> (idStrT op_n) ++ " : constant"
-                                                                            1 -> (idStrT op_n) ++ " : unary"
-                                                                            2 -> (idStrT op_n) ++ " : binary"
-                                                                            3 -> (idStrT op_n) ++ " : 3"
-                                                                            4 -> (idStrT op_n) ++ " : 4"
-                                                                            5 -> (idStrT op_n) ++ " : 5"
-                                                                            6 -> (idStrT op_n) ++ " : 6"
-                                                                            _ -> error "Termination_Signature_OpS"
-                       _ -> error "Termination_Signature_OpS: Op_name"                             -- aus
-         --  PRED_SYMB -> Signature of CiME
-         predStr p_s = case p_s of
-                       Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
-                                                                      0 -> (idStrT pred_n) ++ " : constant"
-                                                                      1 -> (idStrT pred_n) ++ " : unary"
-                                                                      2 -> (idStrT pred_n) ++ " : binary"
-                                                                      3 -> (idStrT pred_n) ++ " : 3"
-                                                                      4 -> (idStrT pred_n) ++ " : 4"
-                                                                      5 -> (idStrT pred_n) ++ " : 5"
-                                                                      6 -> (idStrT pred_n) ++ " : 6"
-                                                                      _ -> error "Termination_Signature_PredS"
-                       _ -> error "Termination_Signature_PredS: Pred_name"                          -- aus
--}
          noDouble [] = []
          noDouble (x:xs) 
                   | elem x xs = noDouble xs
@@ -523,63 +503,16 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
          predSignStr signs str                      
                  | null signs = str
                  | otherwise =  predSignStr (tail signs) (str ++ (predS_cime $ head signs) ++ "; ")
-{-
-         --  all variable of a axiom
-         varOfAxiom f = case f of
-                          Quantification Universal v_d _ _ -> concat $  map (\v-> case v of
-                                                                                   Var_decl vs _ _ -> vs
-                                                                                   _ -> error "Termination_Variable") v_d
-                          Quantification Existential v_d _ _ -> concat $  map (\v-> case v of
-                                                                                   Var_decl vs _ _ -> vs
-                                                                                   _ -> error "Termination_Variable") v_d
-                          Quantification Unique_existential v_d _ _ -> concat $  map (\v-> case v of
-                                                                                   Var_decl vs _ _ -> vs
-                                                                                   _ -> error "Termination_Variable") v_d
-                          _ -> []                                                                                -- aus
--}
          allVar vs = foldl (\hv tv->hv ++ (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
          --  transform variables to string
          varsStr vars str                               
                  | null vars = str
                  | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                                else varsStr (tail vars) (str ++ " " ++ (tokStr $ head vars))
-{-
-         --  transform a axiom to string
-         f_str f = case f of
-                     Quantification Universal _ f' _ -> f_str f'
-                     Conjunction fs _ -> error "Termination_Axioms_Conjunction"
-                     Disjunction fs _ -> error "Termination_Axioms_Disjunction"
-                     Implication f1 f2 _ _ -> error "Termination_Axioms_Implication" 
-                     Equivalence f1 f2 _ -> error "Termination_Axioms_Equivalence"
-                     Negation f' _ -> error "Termination_Axioms_Negation"
-                     True_atom _ -> error "Termination_Axioms_True"         
-                     False_atom _ -> error "Termination_Axioms_False"
-                     Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
-                     Definedness t _ -> error "Termination_Axioms_Definedness"
-                     Existl_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)
-                     Strong_equation t1 t2 _ -> (termStr t1) ++ " -> " ++ (termStr t2)                   
-                     _ -> error "Termination_Axioms"
-         --  condition of term
-         t_f_str f =case f of
-                      Strong_equation t1 t2 _ -> ("eq(" ++ (termStr t1) ++ "," ++ (termStr t2) ++ ")")
-                      _ -> error "Termination_Term-Formula"                          -- aus
--}
---         termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map term_cime ts
-{-
-         --  transform a term to string
-         termStr t = case (term t) of
-                       (Qual_var var _ _) -> tokStr var
-                       (Application (Qual_op_name opn _ _) ts _) -> if null ts then (idStrT opn)
-                                                                    else ((idStrT opn) ++ "(" ++ 
-                                                                         (tail $ concat $ map (\s->"," ++ s) $ map termStr ts) ++ ")")
-                       (Conditional t1 f t2 _) -> ("when_else(" ++ (termStr t1) ++ "," ++ (t_f_str f) ++  "," ++ (termStr t2)  ++
-                                                  ")")
-                       _ -> error "Termination_Term"                               -- aus
--}
          --  transform all axioms to string
-         axiomStr axioms str
-                 | null axioms = str
-                 | otherwise = axiomStr (tail axioms) (str ++ (axiom_cime $ (head axioms)) ++ "; ")                    
+         axiomStr axs str
+                 | null axs = str
+                 | otherwise = axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ "; ")                    
          proof = unsafePerformIO (do
                  cim <- newChildProcess "/home/xinga/bin/cime-2.02-Linux" []
             --     cim <- newChildProcess "cime" []
@@ -597,6 +530,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                  sendMsg cim "#quit;"
                  res <-rP cim
                  return res)
+{-
        --  print infomation 
          tmp  = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
                               (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
@@ -607,34 +541,43 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                                      "when_else(t1,True,t2) -> t1; " ++ 
                                                      "when_else(t1,False,t2) -> t2; " ++
                                 (axiomStr (old_axioms ++ axioms) "") ++"\";")    
-                              
+-}
 #endif
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
-       tp<-leading_Term_Predication f
-       return (extract_leading_symb tp)
+  tp<-leading_Term_Predication f
+  return (extract_leading_symb tp)
  
 
 leadingSymPos :: PosItem f => FORMULA f 
               -> (Maybe (Either OP_SYMB PRED_SYMB), [Pos])
 leadingSymPos f = leading (f,False,False)
-  where leading (f,b1,b2)= case (f,b1,b2) of
-                             ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)
-                             ((Negation f' _),b1,b2) -> leading (f',b1,b2)
-                             ((Implication _ f' _ _),False,False) -> leading (f',True,False)
-                             ((Equivalence f' _ _),b,False) -> leading (f',b,True)
-                             ((Definedness t _),_,_) -> case (term t) of
-                                                          Application opS _ p -> (Just (Left opS), p)
-                                                          _ -> (Nothing,(get_pos f))
-                             ((Predication predS _ _),_,_) -> ((Just (Right predS)),(get_pos f))
-                             ((Strong_equation t _ _),_,_) -> case (term t) of
-                                                                Application opS _ p -> (Just (Left opS), p)                 
-                                                                _ -> (Nothing,(get_pos f))
-                             ((Existl_equation t _ _),_,_) -> case (term t) of
-                                                                Application opS _ p -> (Just (Left opS), p)
-                                                                _ -> (Nothing,(get_pos f))
-                             _ -> (Nothing,(get_pos f)) 
+  where 
+  leading (f1,b1,b2)= case (f1,b1,b2) of
+                       ((Quantification _ _ f' _),_,_)  -> 
+                           leading (f',b1,b2)
+                       ((Negation f' _),_,_) -> 
+                           leading (f',b1,b2)
+                       ((Implication _ f' _ _),False,False) -> 
+                           leading (f',True,False)
+                       ((Equivalence f' _ _),_,False) -> 
+                           leading (f',b1,True)
+                       ((Definedness t _),_,_) -> 
+                           case (term t) of
+                             Application opS _ p -> (Just (Left opS), p)
+                             _ -> (Nothing,(get_pos f1))
+                       ((Predication predS _ _),_,_) -> 
+                           ((Just (Right predS)),(get_pos f1))
+                       ((Strong_equation t _ _),_,_) -> 
+                           case (term t) of
+                             Application opS _ p -> (Just (Left opS), p)                 
+                             _ -> (Nothing,(get_pos f1))
+                       ((Existl_equation t _ _),_,_) -> 
+                           case (term t) of
+                             Application opS _ p -> (Just (Left opS), p)
+                             _ -> (Nothing,(get_pos f1))
+                       _ -> (Nothing,(get_pos f1)) 
 
 -- Sorted_term is always ignored
 term :: TERM f -> TERM f
@@ -642,24 +585,33 @@ term t = case t of
            Sorted_term t' _ _ ->term t'
            _ -> t                                     
 
-leading_Term_Predication ::  FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
+leading_Term_Predication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
-    where leading (f,b1,b2)= case (f,b1,b2) of
-                               ((Quantification _ _ f' _),b1,b2)  -> leading (f',b1,b2)     
-                               ((Negation f' _),b1,b2) -> leading (f',b1,b2)
-                               ((Implication _ f' _ _),False,False) -> leading (f',True,False)
-                               ((Equivalence f' _ _),b,False) -> leading (f',b,True)
-                               ((Definedness t _),_,_) -> case (term t) of
-                                                            Application _ _ _ -> return (Left (term t))
-                                                            _ -> Nothing
-                               ((Predication p ts ps),_,_) -> return (Right (Predication p ts ps))
-                               ((Strong_equation t _ _),_,_) -> case (term t) of
-                                                                  Application _ _ _ -> return (Left (term t))
-                                                                  _ -> Nothing
-                               ((Existl_equation t _ _),_,_) -> case (term t) of
-                                                                  Application _ _ _ -> return (Left (term t))
-                                                                  _ -> Nothing
-                               _ -> Nothing
+  where 
+  leading (f1,b1,b2)= case (f1,b1,b2) of
+                       ((Quantification _ _ f' _),_,_)  -> 
+                           leading (f',b1,b2)     
+                       ((Negation f' _),_,_) -> 
+                           leading (f',b1,b2)
+                       ((Implication _ f' _ _),False,False) -> 
+                           leading (f',True,False)
+                       ((Equivalence f' _ _),_,False) -> 
+                           leading (f',b1,True)
+                       ((Definedness t _),_,_) -> case (term t) of
+                                                    Application _ _ _ -> 
+                                                        return (Left (term t))
+                                                    _ -> Nothing
+                       ((Predication p ts ps),_,_) -> 
+                           return (Right (Predication p ts ps))
+                       ((Strong_equation t _ _),_,_) -> 
+                           case (term t) of
+                             Application _ _ _ -> return (Left (term t))
+                             _ -> Nothing
+                       ((Existl_equation t _ _),_,_) -> 
+                           case (term t) of
+                             Application _ _ _ -> return (Left (term t))
+                             _ -> Nothing
+                       _ -> Nothing
  
 
 
@@ -667,6 +619,8 @@ extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
 extract_leading_symb lead = case lead of
                               Left (Application os _ _) -> Left os
                               Right (Predication p _ _) -> Right p
+                              _ -> error "CASL.CCC.FreeTypes"
+
 
 {- group the axioms according to their leading symbol
    output Nothing if there is some axiom in incorrect form -}
@@ -674,13 +628,14 @@ groupAxioms :: [FORMULA f] -> Maybe [(Either OP_SYMB PRED_SYMB,[FORMULA f])]
 groupAxioms phis = do
   symbs <- mapM leadingSym phis
   return (filterA (zip symbs phis) [])
-    where filterA [] _=[]
-          filterA (p:ps) symb=let fp=fst p
-                                  p'= if elem fp symb then []
-                                      else [(fp,snd $ unzip $ filter (\p'->(fst p')==fp) (p:ps))]
-                                  symb'= if not $ (elem fp symb) then fp:symb
-                                         else symb
-                              in p'++(filterA ps symb')
+  where filterA [] _=[]
+        filterA (p:ps) symb=
+            let fp=fst p
+                p'= if elem fp symb then []
+                    else [(fp,snd $ unzip $ filter (\x->(fst x)==fp) (p:ps))]
+                symb'= if not $ (elem fp symb) then fp:symb
+                       else symb
+            in p'++(filterA ps symb')
 
 
 isOp_Pred :: FORMULA f -> Bool
@@ -701,136 +656,150 @@ isOp_Pred f = case f of
                                           _-> False 
                _ -> False
 
+
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = case f of
-                    Quantification _ _ f' _ -> partialAxiom f'
-                    Negation f' _ ->
-                               case f' of
-                                 Definedness t _ -> 
-                                            case (term t) of
-                                              Application opS _ _ -> case (partial_OpSymb opS) of
-                                                                       Just True -> True
-                                                                       _ -> False
-                                              _ -> False
-                                 _ -> False
-                    Implication f' _ _ _ -> 
-                               case f' of
-                                 Definedness t _ -> 
-                                            case (term t) of
-                                              Application opS _ _ -> case (partial_OpSymb opS) of
-                                                                       Just True -> True
-                                                                       _ -> False
-                                              _ -> False
-                                 _ -> False
-                    Equivalence f' _ _ -> 
-                               case f' of
-                                 Definedness t _ -> 
-                                   case (term t) of
-                                     Application opS _ _ -> case (partial_OpSymb opS) of
-                                                              Just True -> True
-                                                              _ -> False
+                   Quantification _ _ f' _ -> partialAxiom f'
+                   Negation f' _ ->
+                       case f' of
+                         Definedness t _ -> 
+                             case (term t) of
+                               Application opS _ _ -> 
+                                   case (partial_OpSymb opS) of
+                                     Just True -> True
                                      _ -> False
-                                 _ -> False
-                    _ -> False                    
+                               _ -> False
+                         _ -> False
+                   Implication f' _ _ _ -> 
+                       case f' of
+                         Definedness t _ -> 
+                             case (term t) of
+                               Application opS _ _ -> 
+                                   case (partial_OpSymb opS) of
+                                     Just True -> True
+                                     _ -> False
+                               _ -> False
+                         _ -> False
+                   Equivalence f' _ _ -> 
+                       case f' of
+                         Definedness t _ -> 
+                             case (term t) of
+                               Application opS _ _ -> 
+                                   case (partial_OpSymb opS) of
+                                     Just True -> True
+                                     _ -> False
+                               _ -> False
+                         _ -> False
+                   _ -> False                    
+
 
 -- leadingTerm is total operation : Just True
 -- leadingTerm is partial operation : Just False
 -- others : Nothing
 opTyp_Axiom :: FORMULA f -> Maybe Bool
-opTyp_Axiom f = case (leadingSym f) of
-                  Just (Left (Op_name _)) -> Nothing
-                  Just (Left (Qual_op_name _ (Op_type Total _ _ _) _)) -> Just True 
-                  Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
-                  _ -> Nothing 
+opTyp_Axiom f = 
+  case (leadingSym f) of
+    Just (Left (Op_name _)) -> Nothing
+    Just (Left (Qual_op_name _ (Op_type Total _ _ _) _)) -> Just True 
+    Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
+    _ -> Nothing 
+
 
 type Cime = String
 
+
 idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
+
 
 {- transform Id to cime
    because cime these symbols '[' and ']' do not know, 
    these symbols are replaced by '|'       (idStrT)
 -}
 id_cime :: Id -> Cime 
-id_cime id = map (\s-> case s of
+id_cime _id = map (\s-> case s of
                             '[' -> '|'
                             ']' -> '|'
-                            _ -> s) $ idStr id
+                            _ -> s) $ idStr _id
+
 
 {- It filters all variables of a axiom
 -}
 varOfAxiom :: FORMULA f -> [VAR]
-varOfAxiom f = case f of
-                 Quantification _ v_d _ _ -> concat $  map (\v-> case v of
-                                                                   Var_decl vs _ _ -> vs
-                                                                   _ -> error "Termination_Variable") v_d
-                 _ -> [] 
+varOfAxiom f = 
+  case f of
+    Quantification Universal v_d _ _ -> 
+        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+    Quantification Existential v_d _ _ -> 
+        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+    Quantification Unique_existential v_d _ _ -> 
+        concat $ map (\(Var_decl vs _ _)-> vs) v_d
+    _ -> []
+
 
 opSymStr :: OP_SYMB -> String 
 opSymStr os = case os of
                 Op_name on -> idStr on
                 Qual_op_name on _ _ -> idStr on
 
+
 predSymStr :: PRED_SYMB -> String
 predSymStr ps = case ps of 
                   Pred_name pn -> idStr pn 
                   Qual_pred_name pn _ _ -> idStr pn
-{-
-noDouble :: (Eq a) => [a] -> [a]
-noDouble [] = []
-noDouble (x:xs) 
-    | elem x xs = noDouble xs
-    | otherwise = x:(noDouble xs)
--}
+
 
 {- transform a term to cime (termStr)
 -}
 term_cime :: TERM f -> Cime
-term_cime t = case (term t) of
-                (Qual_var var _ _) -> tokStr var
-                (Application (Qual_op_name opn _ _) ts _) -> if null ts then (id_cime opn)
-                                                             else ((id_cime opn) ++ "(" ++ 
-                                                                  (tail $ concat $ map (\s->"," ++ s) $ map term_cime ts) ++ ")")
-                (Conditional t1 f t2 _) -> ("when_else(" ++ (term_cime t1) ++ "," ++ (t_f_str f) ++  "," ++ (term_cime t2)  ++")")        -- !!!!
-                _ -> error "Termination_Term"
-     where t_f_str f =case f of                     --  condition of term
-                        Strong_equation t1 t2 _ -> ("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ")")
-                        _ -> error "Termination_Term-Formula"
+term_cime t = 
+  case (term t) of
+    Qual_var var _ _ -> tokStr var
+    Application (Qual_op_name opn _ _) ts _ -> 
+        if null ts then (id_cime opn)
+        else ((id_cime opn) ++ "(" ++ 
+             (tail $ concat $ map (\s->","++s) $ map term_cime ts)++")")
+    Conditional t1 f t2 _ -> 
+        ("when_else("++(term_cime t1)++","++
+         (t_f_str f)++","++(term_cime t2)++")")  
+              -- Achtung
+    _ -> error "CASL.CCC.FreeTypes.<Termination_Term>"
+  where t_f_str f=case f of                     --  condition of term
+                    Strong_equation t1 t2 _ -> 
+                        ("eq("++(term_cime t1)++","++(term_cime t2)++")")
+                    _ -> error "CASL.CCC.FreeTypes.<Termination_Term-Formula>"
+
 
 {- transform OP_SYMB to Signature of cime (opStr)
-   P.S. max 6 argument per operation
 -}
 opS_cime :: OP_SYMB -> Cime
-opS_cime o_s = case o_s of                -- kontext analyse
-                 Qual_op_name op_n (Op_type _ a_sorts _ _) _ -> case (length a_sorts) of 
-                                                                  0 -> (id_cime op_n) ++ " : constant"
-                                                                  1 -> (id_cime op_n) ++ " : unary"
-                                                                  2 -> (id_cime op_n) ++ " : binary"
-                                                                  3 -> (id_cime op_n) ++ " : 3"
-                                                                  4 -> (id_cime op_n) ++ " : 4"
-                                                                  5 -> (id_cime op_n) ++ " : 5"
-                                                                  6 -> (id_cime op_n) ++ " : 6"
-                                                                  _ -> error "Termination_Signature_OP_SYMB "
-                 _ -> error "Termination_Signature_OP_SYMB: Op_name"
+opS_cime o_s = 
+  case o_s of
+    Qual_op_name op_n (Op_type _ a_sorts _ _) _ -> 
+        case (length a_sorts) of 
+          0 -> (id_cime op_n) ++ " : constant"
+          1 -> (id_cime op_n) ++ " : unary"
+          2 -> (id_cime op_n) ++ " : binary"
+          _ -> (id_cime op_n) ++ " : " ++ (show $ length a_sorts) 
+    _ -> error "CASL.CCC.FreeTypes.<Termination_Signature_OP_SYMB: Op_name>"
+
 
 {- transform PRED_SYMB to Signature of cime (predStr)
-   P.S. max 6 argument per operation
 -}
 predS_cime :: PRED_SYMB -> Cime
-predS_cime p_s = case p_s of
-                   Qual_pred_name pred_n (Pred_type sts _) _ -> case (length sts) of
-                                                                  0 -> (id_cime pred_n) ++ " : constant"
-                                                                  1 -> (id_cime pred_n) ++ " : unary"
-                                                                  2 -> (id_cime pred_n) ++ " : binary"
-                                                                  3 -> (id_cime pred_n) ++ " : 3"
-                                                                  4 -> (id_cime pred_n) ++ " : 4"
-                                                                  5 -> (id_cime pred_n) ++ " : 5"
-                                                                  6 -> (id_cime pred_n) ++ " : 6"
-                                                                  _ -> error "Termination_Signature_PRED_SYMB"
-                   _ -> error "Termination_Signature_PRED_SYMB: Pred_name"
+predS_cime p_s = 
+  case p_s of
+    Qual_pred_name pred_n (Pred_type sts _) _ -> 
+        case (length sts) of
+          0 -> (id_cime pred_n) ++ " : constant"
+          1 -> (id_cime pred_n) ++ " : unary"
+          2 -> (id_cime pred_n) ++ " : binary"
+	  _ -> (id_cime pred_n) ++ " : " ++ (show $ length sts)
+    _ -> error "TerCASL.CCC.FreeTypes.<mination_Signature_PRED_SYMB: Pred_name>"
 
-{- transform Implication to cime (phi => f(t_1,...,t_m)=t)
+
+{- transform Implication to cime:
+   (phi => f(t_1,...,t_m)=t)
      Example: 
                 X=e => f(t_1,...,t_m)=t
      cime -->   f(t_1,...,t_m) -> U(X,t_1,...t_m)
@@ -838,50 +807,71 @@ predS_cime p_s = case p_s of
    P.S. Bool ignore
 -}
 impli_cime :: Int -> FORMULA f -> Cime
-impli_cime index (Implication f1 f2 _ _) = ax1  ++ ax2
-    where i=show index
+impli_cime index f = ax1  ++ ax2
+-- impli_cime index (Implication f1 f2 _ _) = ax1  ++ ax2
+    where -- i=show index
           ax1= ""
           ax2= ""
 
-{- transform Equivalence to cime (p(t_1,...,t_m) <=> phi)
+
+{- transform Equivalence to cime: 
+   (p(t_1,...,t_m) <=> phi)
      Example:
-                p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
-     cime -->   p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t   --> f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),tt_1,...,tt_n)
-                                                            U1(True,tt_1,...,tt_n) -> t
-          -->   f(tt_1,...,tt_n)=t => p(t_1,...,t_m)    --> p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n),t_1,...,t_m)
-                                                            U2(t,t_1,...,t_m) -> True 
+             p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
+     cime --> p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t --> 
+                 f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),tt_1,...,tt_n)
+                 U1(True,tt_1,...,tt_n) -> t
+          --> f(tt_1,...,tt_n)=t => p(t_1,...,t_m)  --> 
+                 p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n),t_1,...,t_m)
+                 U2(t,t_1,...,t_m) -> True 
 -}
 equiv_cime :: FORMULA f -> Cime
 equiv_cime f = " "
 
-{- transform Implication and Equivalence to cime (phi1  => p(t_1,...,t_m)<=>phi)
+
+{- transform Implication and Equivalence to cime: 
+   (phi1  => p(t_1,...,t_m)<=>phi)
      Example:
-                X=e => p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
-     cime -->   X=e =>  p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t   --> f(tt_1,...,tt_n) -> U1(X,p(t_1,...,t_m),tt_1,...,tt_n)
-                                                                    U1(e,True,tt_1,...,tt_n) -> t
-          -->   X=e =>  f(tt_1,...,tt_n)=t => p(t_1,...,t_m)    --> p(t_1,...,t_m) -> U2(X,f(tt_1,...,tt_n),t_1,...,t_m)
-                                                                    U2(e,t,t_1,...,t_m) -> True 
+            X=e => p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
+     cime --> X=e =>  p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t  --> 
+                  f(tt_1,...,tt_n) -> U1(X,p(t_1,...,t_m),tt_1,...,tt_n)
+                  U1(e,True,tt_1,...,tt_n) -> t
+          --> X=e =>  f(tt_1,...,tt_n)=t => p(t_1,...,t_m)   --> 
+                  p(t_1,...,t_m) -> U2(X,f(tt_1,...,tt_n),t_1,...,t_m)
+                  U2(e,t,t_1,...,t_m) -> True 
 -}
 impli_equiv_cime :: FORMULA f -> Cime
 impli_equiv_cime f = " "
 
+
 {- transform a axiom to cime (f_str)
 -}
 axiom_cime :: FORMULA f -> Cime
-axiom_cime f = case f of
-                 Quantification _ _ f' _ -> axiom_cime f'
-                 Conjunction fs _ -> error "Termination_Axioms_Conjunction"
-                 Disjunction fs _ -> error "Termination_Axioms_Disjunction"
-                 Implication _ f' _ _ -> case f' of
-                                            (Equivalence _ _ _) -> (impli_equiv_cime f) 
-                                            _ -> impli_cime 1 f 
-                 Equivalence _ _ _ -> equiv_cime f
-                 Negation f' _ -> error "Termination_Axioms_Negation"
-                 True_atom _ -> error "Termination_Axioms_True"     
-                 False_atom _ -> error "Termination_Axioms_False"
-                 Predication p_s ts _ -> ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
-                 Definedness t _ -> error "Termination_Axioms_Definedness"
-                 Existl_equation t1 t2 _ -> (term_cime t1) ++ " -> " ++ (term_cime t2)
-                 Strong_equation t1 t2 _ -> (term_cime t1) ++ " -> " ++ (term_cime t2)                   
-                 _ -> error "Termination_Axioms"
-    where termsStr ts = drop 1 $ concat $ map (\s->","++s) $ map term_cime ts
+axiom_cime f = 
+  case f of
+    Quantification _ _ f' _ -> axiom_cime f'
+    Conjunction _ _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_Conjunction>"
+    Disjunction _ _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_Disjunction>"
+    Implication _ f' _ _ -> 
+        case f' of
+          (Equivalence _ _ _) -> (impli_equiv_cime f) 
+          _ -> impli_cime 1 f 
+    Equivalence _ _ _ -> equiv_cime f
+    Negation _ _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_Negation>"
+    True_atom _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_True>"     
+    False_atom _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_False>"
+    Predication p_s ts _ -> 
+        ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
+    Definedness _ _ -> 
+        error "CASL.CCC.FreeTypes.<Termination_Axioms_Definedness>"
+    Existl_equation t1 t2 _ -> 
+        (term_cime t1) ++ " -> " ++ (term_cime t2)
+    Strong_equation t1 t2 _ -> 
+        (term_cime t1) ++ " -> " ++ (term_cime t2)                   
+    _ -> error "CASL.CCC.FreeTypes.<Termination_Axioms>"
+  where termsStr ts = tail $ concat $ map (\s->","++s) $ map term_cime ts
