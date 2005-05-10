@@ -118,6 +118,9 @@ if ($fail > 0) {
     }
 }
 
+# copy this log file 
+system("/bin/cp $logfile $logfile.old");
+
 # compilation complete?
 if ($report !~ m/An error during compiling 'hets' occured./o) {
     # daily snapshot compilation complete, start command
