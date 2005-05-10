@@ -45,6 +45,7 @@ module Logic.Grothendieck where
 import Logic.Logic
 import Logic.Prover
 import Logic.Comorphism
+import Logic.Morphism
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty
@@ -328,6 +329,8 @@ instance Show G_morphism where
 -- Existential types for the logic graph
 ----------------------------------------------------------------
 
+--- Comorphisms ----
+
 -- | Existential type for comorphisms
 data AnyComorphism = forall cid lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -383,6 +386,44 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
 		  " and "++language_name cid2)
     Nothing -> fail ("Logic mismatch in composition of "++language_name cid1++
 	             " and "++language_name cid2)
+
+--- Morphisms ---
+
+-- | Existential type for morphisms
+data AnyMorphism = forall cid lid1 sublogics1
+        basic_spec1 sentence1 symb_items1 symb_map_items1
+        sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+        lid2 sublogics2
+        basic_spec2 sentence2 symb_items2 symb_map_items2
+        sign2 morphism2 symbol2 raw_symbol2 proof_tree2 .
+      Morphism cid 
+                 lid1 sublogics1 basic_spec1 sentence1 
+                 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+                 lid2 sublogics2 basic_spec2 sentence2 
+                 symb_items2 symb_map_items2
+                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2 =>
+      Morphism cid
+
+{-
+instance Eq AnyMorphism where
+  Morphism cid1 == Morphism cid2 =
+     constituents cid1 == constituents cid2  
+  -- need to be refined, using morphism translations !!! 
+
+
+instance Show AnyMorphism where
+  show (Morphism cid) = 
+    language_name cid
+    ++" : "++language_name (sourceLogic cid)
+    ++" -> "++language_name (targetLogic cid)
+-}
+
+tyconAnyMorphism :: TyCon
+tyconAnyMorphism = mkTyCon "Logic.Grothendieck.AnyMorphism"
+instance Typeable AnyMorphism where
+  typeOf _ = mkTyConApp tyconAnyMorphism []
+
 
 -- | Logic graph
 data LogicGraph = LogicGraph {
