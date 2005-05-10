@@ -27,6 +27,7 @@ import Haskell.HatAna as HatAna
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
+import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate as Translate
 
@@ -119,18 +120,19 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
        inclusion Isabelle sig1 sig2
     map_theory Haskell2IsabelleHOLCF (sign, sens) = do
         sign' <- transSignature sign
-        sens'' <- mapM (transSentence . sentence) sens
+        sens'' <- mapM ((transSentence sign') . sentence) sens
         return (sign', concat sens'')
     map_symbol Haskell2IsabelleHOLCF _ = 
         error "Haskell2IsabelleHOLCF.map_symbol"
 
 ------------------------------ Theory translation -------------------------------
 
-transSentence :: PrDecl -> Result [Named IsaSign.Sentence]
-transSentence (TiPropDecorate.Dec d) = case d of
+transSentence :: 
+    IsaSign.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
+transSentence sign (TiPropDecorate.Dec d) = case d of
              PropSyntaxStruct.Base p -> case p of
                 HsDeclStruct.HsFunBind _ [x] -> do 
-                    s <- transMatch x
+                    s <- transMatch sign x
                     return [s]
                 _ -> return []
              _ -> return []
@@ -138,14 +140,15 @@ transSentence (TiPropDecorate.Dec d) = case d of
 {- Relevant theories in Programatica: base/Ti/TiClasses (for
 tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).  -}
 
-transMatch :: HsDeclStruct.HsMatchI PNT PrExp PrPat ds 
+transMatch :: IsaSign.Sign -> HsDeclStruct.HsMatchI PNT PrExp PrPat ds 
            -> Result (Named Sentence) 
-transMatch t = case t of 
-  HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _ -> 
-         let tx = transExp x
+transMatch sign t = case (t, constTab sign) of 
+  (HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody x) _,
+   cs) -> 
+         let tx = transExp cs x
              df = showIsaName nm
          in return $ NamedSen df $ ConstDef $
-            IsaEq (Const df noType) $ termMAbs IsCont (map transPat ps) tx
+            IsaEq (Const df noType) $ termMAbs IsCont (map (transPat cs) ps) tx
   _ -> fail "Haskell2IsabelleHOLCF.transMatch, case not supported"
 
 ------------------------------ Signature translation -----------------------------
@@ -173,7 +176,8 @@ class IsaName a where
  showIsaName :: a -> IName
 
 showIsaS :: String -> IsaSign.IName
-showIsaS x = transStringT HOLCF_thy x
+showIsaS x | x == "==" = eq
+           | True = transStringT HOLCF_thy x
 -- showIsaS x = Translate.transString x
 
 instance IsaName String where
@@ -618,20 +622,43 @@ transCN s x = let
       _ -> f y
   else f y
 
-transExp :: PrExp -> IsaTerm
-transExp t = case t of 
-    (TiPropDecorate.Exp (HsLambda ps e)) -> termMAbs IsCont (map transPat ps) (transExp e)
-    (TiPropDecorate.Exp e) -> transE showIsaName transExp transPat e
-    (TiPropDecorate.TiSpec (HsVar x) s _) -> Free (showIsaName x) (transFromScheme s)
-    (TiPropDecorate.TiSpec (HsCon x) s _) -> transCN s x
-    (TiPropDecorate.TiTyped x _) -> transExp x
+transHV :: ConstTab -> HsScheme -> PNT -> IsaTerm
+transHV cs s x = let 
+      n = showIsaName x 
+      k = transFromScheme s
+      in 
+      if Map.member n cs then Const n k else Free n k
 
-transPat :: PrPat -> IsaPattern
-transPat x = case x of 
-    (TiDecorate.Pat p) -> transP showIsaName transPat p
-    (TiDecorate.TiPSpec (HsVar x) s _) -> Free (showIsaName x) (transFromScheme s)
-    (TiDecorate.TiPSpec (HsCon x) s _) -> Const (showIsaName x) (transFromScheme s)
-    (TiDecorate.TiPTyped x _) -> transPat x
+transHV2 :: HsScheme -> PNT -> IsaTerm
+transHV2 s x = let 
+      n = showIsaName x 
+      k = transFromScheme s
+      in 
+      case x of
+        PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
+        PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
+
+{- !!!!!!!!!!!!!!!
+  problem with intorducing Def for computable equality. 
+ recursive structure f the translation to be revised. -}
+
+transExp :: ConstTab -> PrExp -> IsaTerm
+transExp cs t = case t of 
+    (TiPropDecorate.Exp (HsLambda ps e)) -> 
+          termMAbs IsCont (map (transPat cs) ps) (transExp cs e)
+    (TiPropDecorate.Exp e) -> 
+          transE showIsaName (transExp cs) (transPat cs) e
+    (TiPropDecorate.TiSpec (HsVar x) s _) -> transHV2 s x
+    (TiPropDecorate.TiSpec (HsCon x) s _) -> transCN s x
+    (TiPropDecorate.TiTyped x _) -> transExp cs x
+
+transPat :: ConstTab -> PrPat -> IsaPattern
+transPat cs t = case t of 
+    (TiDecorate.Pat p) -> transP showIsaName (transPat cs) p
+--    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV cs s x
+    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV2 s x
+    (TiDecorate.TiPSpec (HsCon x) s _) -> transCN s x
+    (TiDecorate.TiPTyped x _) -> transPat cs x
     _ -> Bottom
 --    _ -> error "Haskell2IsabelleHOLCF.transPat"
 -- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
