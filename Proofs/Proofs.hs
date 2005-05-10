@@ -1048,26 +1048,32 @@ linkNfNode node nfNode map proofstatus@(ln,_,_) = do
   return (updateProofStatus ln finalGraph (changes ++ changes') proofstatus)
 
 
--- was machen, wenn der Knoten ein DGRef ist??
 {- sets the normal form of the first node to the second one -}
 setNfOfNode :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 setNfOfNode dgraph node nf_node = do
   (finalGraph,changes) <- adoptEdges auxGraph node newNode
   return (delNode node finalGraph,
-	  ((InsertNode newDgNode):changes)++[DeleteNode oldDgNode])
+	  ((InsertNode newLNode):changes)++[DeleteNode oldLNode])
 
   where
     nodeLab = lab' (context node dgraph)
-    oldDgNode = labNode' (context node dgraph)
+    oldLNode = labNode' (context node dgraph)
     [newNode] = newNodes 0 dgraph
-    newDgNode = (newNode, DGNode {dgn_name = dgn_name nodeLab,
+    newLNode = case isDGRef nodeLab of
+	         True -> (newNode, DGRef {dgn_renamed = dgn_renamed nodeLab,
+					  dgn_libname = dgn_libname nodeLab,
+					  dgn_node = dgn_node nodeLab,
+					  dgn_nf = Just nf_node,
+					  dgn_sigma = dgn_sigma nodeLab
+					 })
+	         False -> (newNode, DGNode {dgn_name = dgn_name nodeLab,
 				  dgn_sign = dgn_sign nodeLab,
 				  dgn_sens = dgn_sens nodeLab,
 				  dgn_nf = Just nf_node,
 				  dgn_sigma = dgn_sigma nodeLab,
 				  dgn_origin = DGProof
 				 })
-    auxGraph = insNode newDgNode dgraph
+    auxGraph = insNode newLNode dgraph
 
 
 {- inserts GlobalDef edges to the given node from each node in the map
