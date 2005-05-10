@@ -1,0 +1,248 @@
+Programming guidelines shall help to make the code of a project better
+readable and maintainable by the varying number of contributors.
+
+It takes some programming experience to develop something like a
+personal "coding style" and guidelines only serve as rough shape
+for code. Guidelines should be followed by all members working on the
+project even if they prefer (or are already used to) different
+guidelines. 
+
+In the following I will describe documentation, file format, naming
+conventions and good programming practice (adapted form Matt's C/C++
+Programming Guidelines and the Linux kernel coding style).
+
+
+---------------------------------------------------------------------------
+Documentation:
+---------------------------------------------------------------------------
+
+Comments are to be written in application terms (i.e. user's point of
+view). Don't use technical terms - that's what the code is for!
+
+Comments should be written using correct spelling and grammar in complete
+sentences with punctation (in English only). 
+
+"Generally, you want your comments to tell WHAT your code does, not HOW. 
+Also, try to avoid putting comments inside a function body: if the
+function is so complex that you need to separately comment parts of it,
+you should probably" (see "Good Programming Practice")
+
+
+---------------------------------------------------------------------------
+File Format:
+---------------------------------------------------------------------------
+
+All Haskell source files start with a haddock header of the form:
+
+{- |
+Module      :  $Header$
+Copyright   :  (c) <You> and Uni Bremen 2005
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+    
+  <Description>
+-}
+
+
+A possible compiler pragma (like {-# OPTIONS -cpp #-}) may precede
+this header. The following qualified module name must of course match the file
+name.
+
+Make sure that the Description is changed to meet the module (if the
+header was copied from elsewhere.)
+
+Try to write portable (Haskell98) code. If you (indirectly) import
+Logic/Logic.hs the code becomes "non-portable".
+
+The $Header$ entry is automatically expanded by cvs (and may wrap
+around). All other lines should not be longer than 80 (preferably 75)
+characters to avoid wrapped lines (for casual readers)!
+
+Expand all your tabs to spaces to avoid the danger of wrongly expanding
+them (or a different display of tabs versus eight spaces). Possibly put
+something like the following in your ~/.emacs file.
+
+  (custom-set-variables '(indent-tabs-mode nil))
+
+The last character in your file should be a newline! Under solaris
+you'll get a warning if this is not the case and sometimes last lines
+without newlines are ignored (i.e. "#endif" without newline). Emacs
+usually asks for a final newline.
+
+The whole module should not be too long (about 400 lines)
+
+
+---------------------------------------------------------------------------
+Naming Conventions:
+---------------------------------------------------------------------------
+
+In Haskell types start with capital and functions with lowercase
+letters, so only avoid infix identifiers! (i.e. "\\" causes preprocessor
+problems and DrIFT has some limitation with infix constructors)
+
+Names (especially global ones) should be descriptive and if you need
+long names write them with underlines and lowercase letters or as
+mixed case words. (but "tmp" is to be preferred over
+"thisVariableIsATemporaryCounter")
+
+
+---------------------------------------------------------------------------
+Good Programming Practice 
+---------------------------------------------------------------------------
+
+the Linux kernel coding style says:
+"Functions should be short and sweet, and do just one thing.  They should
+fit on one or two screenfuls of text (the ISO/ANSI screen size is 80x24,
+as we all know), and do one thing and do that well."
+ 
+It's not fixed how deep you indent (4 or 8 chars). You can break the
+line after "do", "let", "where", and "case .. of". Make sure that
+renamings don't destroy your layout. (If you get to far to the right,
+the code is unreadable anyway and needs to be decomposed.)
+
+Bad:
+case foo of Foo -> "Foo"
+            Bar -> "Bar"
+Good:
+case <longer expression> of
+        Foo -> "Foo"
+        Bar -> "Bar" 
+
+Avoid the notation with braces and semicolons since the layout rule
+forces you to properly align your alternatives.
+
+Respect compiler warnings. Supply type signature, avoid shadowing and
+unused variables. Particularly avoid non-exhaustive and
+overlapping patterns. Missing unreachable cases can be filled in using
+"error" with a fixed string "<ModuleName>.<function>" to indicate the
+error position (in case the impossible should happen). Don't invest
+time to "show" the offending value, only do this temporarily when
+debugging the code.
+
+
+Case expressions
+---------------------------------------------------------------------------
+
+Prefer case expressions over pattern binding declarations.
+
+Not always nice:
+longFunctionName (Foo: _ : _) = e1
+longFunctionName (Bar: _) = e2
+
+Better (I think):
+longFunctionName arg = case arg of 
+        Foo : _ : _ -> e1
+        Bar : _ -> e2
+        _ -> error "Programming-Guidelines.longFunctionName"
+
+For partial functions document their preconditions (if not obvious)
+and make sure that partial functions are only called when
+preconditions are obviously fulfilled (i.e. by a case statement or a
+previous test). Particularly the call of "head" should be used with
+care or avoided by a case statement.
+
+Avoid mixing "let" and "where". (I prefer "let" and have auxiliary
+function on the top-level that are not exported.)
+
+If you notice that ypu're doing the same task again, try to generalize
+your first one in order to avoid duplicate code. It is
+frustrating to change the same error in several places.
+
+
+Records
+---------------------------------------------------------------------------
+
+For (large) records avoid to use of the constructor directly and consider
+that the order and number of fields may change.
+
+
+IO
+---------------------------------------------------------------------------
+
+Try to strictly separate IO, Monad and pure (without do) function
+programming (possibly via different modules). 
+
+Bad:
+   x <- return y
+   ...
+
+Good:
+  let x = y  
+  ...
+
+
+List Comprehensions
+---------------------------------------------------------------------------
+Use these only when nice and sweet (I prefer map, filter, foldr)
+
+
+Trace
+---------------------------------------------------------------------------
+
+Tracing is for debugging purposes only and should not be used as
+feedback for the user. The final code should not be cluttered by
+excessive trace calls.
+
+Application notation
+---------------------------------------------------------------------------
+
+Many parentheses can be avoid using the infix application operator "$"
+with lowest priority. Try at least to avoid unnecessary parentheses in
+standard infix expression.
+
+f x : g x ++ h x 
+
+a == 1 && b == 1 || a == 0 && b == 0  
+
+Rather than putting a large final argument in parentheses (with a
+distant closing one) consider using "$" instead. 
+
+"f (g x)" becomes "f $ g x" and consecutive applications 
+"f (g (h x))" can be written as "f $ g $ h x" or "f . g $ h x". 
+
+A function definition like 
+"f x = g $ h x" can be abbreviated to "f = g . h".
+
+Note that the final argument may even be an infix- or case expression:
+
+map id $ c : l
+
+filter (const True) . map id $ case l of ...
+
+However, be aware that $-terms cannot be composed further in infix
+expressions.
+
+Probably wrong:
+f $ x ++ g $ x
+
+But the scope of an expression is also limited by the layout rule, so
+it usually save to use "$" on right hand sides.
+
+Maybe ok:
+do y <- f $ l
+++
+do y <- g $ l
+
+Last warning: always leave spaces around "$" (and other mixfix
+operators) since a clash with template haskell is possible.  
+
+(Also write "\ t" instead of "\t" in lambda expressions)
+
+
+Classes
+---------------------------------------------------------------------------
+
+You probably don't need to introduce your own classes.
+
+
+Glasgow extensions
+---------------------------------------------------------------------------
+
+Stay away form extensions as long as possible.
+
+
+
+Comments to maeder@tzi.de
