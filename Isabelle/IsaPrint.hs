@@ -135,18 +135,22 @@ showTerm :: Term -> String
 showTerm (Const c _) = c
 showTerm (Free v _) = v
 
-showTerm (Abs v y t l) = lb ++ (case l of 
+showTerm (Abs v y t l) 
+  | y == noType = lb ++ (case l of 
+    NotCont -> "%"
+    IsCont -> "LAM ") ++ showTerm v ++ ". " ++ showTerm t ++ rb
+  | True = lb ++ (case l of 
     NotCont -> "%"
     IsCont -> "LAM ") ++ showTerm v ++ "::" 
-    ++ showTyp Unquoted 1000 y ++ ". " ++ showTerm t ++ rb
+       ++ showTyp Unquoted 1000 y ++ ". " ++ showTerm t ++ rb
 
 showTerm (Paren t) = showTerm t 
 showTerm (Fix t) = lb++"fix"++sp++(showTerm t)++rb
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
-showTerm t@(App t1 t2 _) = showPTree (toPrecTree t) 
+showTerm t@(App t1 t2 NotCont) = showPTree (toPrecTree t) 
 -- showTerm t@(Const c _) = showPTree (toPrecTree t) 
--- showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
+showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
 
 showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "==" 
@@ -272,7 +276,7 @@ binFunct s | s == eqv  = eqvPrec
            | s == conj = andPrec
            | s == disj = orPrec
            | s == impl = implPrec
-           | s == cappl = capplPrec
+--           | s == cappl = capplPrec
            | otherwise = appPrec
 
 toPrecTree :: Term -> PrecTermTree
@@ -280,11 +284,11 @@ toPrecTree trm =
   case trm of
     App c1@(Const q _) a2@(Abs _ _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
        Node (isaAppPrec $ con quantS) [toPrecTree c1, toPrecTree a2]
-    App (App t@(Const o _) t3 _) t2 _ ->
+--    App t1 t2 IsCont -> Node (capplPrec $ con cappl) 
+--                   [toPrecTree t1, toPrecTree t2] 
+    App (App t@(Const o _) t3 NotCont) t2 NotCont ->
       Node (binFunct o t) [toPrecTree t3, toPrecTree t2]
     App t1 t2 NotCont -> Node (isaAppPrec $ con dummyS) 
-                   [toPrecTree t1, toPrecTree t2] 
-    App t1 t2 IsCont -> Node (capplPrec $ con cappl) 
                    [toPrecTree t1, toPrecTree t2] 
     _ -> Node (noPrec trm) []
 
@@ -298,7 +302,7 @@ showPTree (Node (PrecTerm term pre) annos) =
    in
      case term of
           Const c _ | c == eq -> infixP pre "=" LeftAs leftChild rightChild
-                    | c == cappl -> infixP pre "$" LeftAs leftChild rightChild
+--                    | c == cappl -> infixP pre "$" LeftAs leftChild rightChild
                     | c `elem` [conj, disj, impl] ->
                         infixP pre (drop 3 c) RightAs leftChild rightChild
                     | c == dummyS  -> simpleInfix pre leftChild rightChild
