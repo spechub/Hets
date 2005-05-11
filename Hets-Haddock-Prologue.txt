@@ -6,8 +6,8 @@ sublanguages, as well as completely different logics and even
 programming languages such as Haskell, including its module system.
 Hets provides parsing, static analysis and proof management
 (via development graphs), as well as many other functionalities.
-Hets is written in Haskell (see <http://www.haskell.org>).
-See <http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/debugging_e.htm> for debugging and testing Hets.
+Hets is written in Haskell (see <http://www.haskell.org> and
+<http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/developers_e.htm>)
 
 The general background of Hets is explained in /Heterogeneous
 specification and the heterogeneous tool set/
