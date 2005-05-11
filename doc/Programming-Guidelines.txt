@@ -29,6 +29,8 @@ function is so complex that you need to separately comment parts of it,
 you should probably" (see "Good Programming Practice")
 
 Put a haddock comment on top of every exported function and data type!
+Make sure haddock accepts these comments by "make doc" after full
+compilation with "make all".
 
 ---------------------------------------------------------------------------
 File Format:
@@ -253,13 +255,13 @@ Imports
 ---------------------------------------------------------------------------
 
 Standard library modules like Char. List, Maybe, Monad, etc should be
-imported by their hierarchical module name:
+imported by their hierarchical module name (so that haddock finds them):
 
 import Data.List
 import Control.Monad
 import System.Environment 
 
-The libraries for Set, Map and Rel are to imported qualified:
+The libraries for Set, Map and Rel are to be imported qualified:
 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
@@ -316,4 +318,4 @@ Bad Points:
 
     * people ignore standards anyway 
 
-(Send comments to the "Maintainer" of this file)
+Send comments to the "Maintainer" of this file
