@@ -50,8 +50,8 @@ Portability :  portable
 
 
 A possible compiler pragma (like {-# OPTIONS -cpp #-}) may precede
-this header. The following qualified module name must of course match the file
-name.
+this header. The following hierarchical module name must of course
+match the file name.
 
 Make sure that the Description is changed to meet the module (if the
 header was copied from elsewhere). Insert your email address as maintainer.
@@ -226,9 +226,9 @@ But the scope of an expression is also limited by the layout rule, so
 it is usually save to use "$" on right hand sides.
 
 Ok:
-do y <- f $ l
-++
-do y <- g $ l
+        do y <- f $ l
+        ++
+        do y <- g $ l
 
 Last warning: always leave spaces around "$" (and other mixfix
 operators) since a clash with template haskell is possible.  
@@ -249,14 +249,31 @@ Using type synonyms consistently is difficult over a longer time,
 because this is not checked by the compiler.
 
 
+Imports
+---------------------------------------------------------------------------
+
+Standard library modules like Char. List, Maybe, Monad, etc should be
+imported by their hierarchical module name:
+
+import Data.List
+import Control.Monad
+import System.Environment 
+
+The libraries for Set, Map and Rel are to imported qualified:
+
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Rel as Rel
+
+
 Glasgow extensions and Classes
 ---------------------------------------------------------------------------
 
 Stay away form extensions as long as possible. Also use classes with
 care because soon the desire for overlapping instances (like for lists
-and strings) may arise. Then you may want MPTC, functional
-dependencies, undecidable and possibly incoherent instances and then
-you are "in the wild" (SPJ).
+and strings) may arise. Then you may want MPTC (multi-parameter type
+classes), functional dependencies, undecidable and possibly incoherent
+instances and then you are "in the wild" (SPJ).
 
 
 ---------------------------------------------------------------------------
