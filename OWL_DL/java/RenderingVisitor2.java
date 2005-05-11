@@ -390,7 +390,7 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLDataEnumeration enumeration) throws OWLException {
-		pw.print("OneOfData(");
+		pw.print("OneOfData([");
 		for (Iterator it = enumeration.getValues().iterator(); it.hasNext();) {
 			OWLDataValue desc = (OWLDataValue) it.next();
 			desc.accept(this);
@@ -398,7 +398,7 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 				pw.print(",");
 			}
 		}
-		pw.print(")");
+		pw.print("])");
 	}
 
 } // RenderingVisitor

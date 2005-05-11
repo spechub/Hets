@@ -27,6 +27,7 @@ import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 // import java.util.HashMap;
 // import java.util.Iterator;
@@ -61,7 +62,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 			System.out.println("Usage: processor <URI>");
 			System.exit(1);
 		}
-
+		
 		String uriMapping = "";
 		int validation = -1;
 		ATermFactory factory = new PureFactory();
@@ -160,12 +161,14 @@ public class OWL2ATerm implements OWLValidationConstants {
 //			owlParserOutput(validation, messageList, onto)
 //					.writeToSharedTextFile(new FileOutputStream(file, true));
 	
-			System.out.println("Done!");
+			System.out.println("Done!\n");
 		} catch (IOException e) {
 			System.out.println("Error: can not build file: output.term");
-			System.exit(1);
+			System.exit(2);
 		} catch (Exception ex) {
+			System.out.println(ex);
 			System.out.println("OWL parse error: " + ex.getMessage());
+			System.exit(3);
 			// System.out.println();
 			// ex.printStackTrace();
 		}
@@ -246,12 +249,13 @@ public class OWL2ATerm implements OWLValidationConstants {
 			} else{
 				ontologyID = factory.parse("Nothing");
 			}
-			// imports other ontology
+			
 			AFun axFun = factory.makeAFun("Ax", 1, false);
 			AFun ontologyProperty = factory.makeAFun("OntologyProperty", 2, false);
 			AFun annoFun = factory.makeAFun("URIAnnotation", 2, false);
 			ATermAppl importID = factory.makeAppl(factory.makeAFun("owl:imports", 0, true));
 			ATermList importList = factory.makeList();
+			
  //System.out.println("WO? Anno");			
 			// Annotation (Properties): version, comment, label, etc. 
 			if(aps != null){
@@ -259,13 +263,17 @@ public class OWL2ATerm implements OWLValidationConstants {
 					alist = factory.makeList(ploader.term((OWLAnnotationInstance) apIt.next()), alist);
 				}
 			}
+			
+			// import
 			for (Iterator it = ontology.getIncludedOntologies().iterator(); it
 					.hasNext();) {
 				ATermAppl phyURI = factory.makeAppl(factory.makeAFun(((OWLOntology) it.next()).getPhysicalURI().toString(), 0, true));
 				ATermAppl anno = factory.makeAppl(annoFun, importID, phyURI);
 				importList = factory.makeList(anno, importList);
 		    }
-			alist = factory.makeList(factory.makeAppl(axFun, factory.makeAppl(ontologyProperty, importID, importList)), alist);
+			if(!importList.isEmpty()){
+				alist = factory.makeList(factory.makeAppl(axFun, factory.makeAppl(ontologyProperty, importID, importList)), alist);
+			}
 
 //System.out.println("WO? Class");
 			// Classes
@@ -434,17 +442,16 @@ class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants 
 
 		// System.out.println(SpeciesValidator.readableCode( code ));
 
+		if(SpeciesValidator.readableCode(code).equalsIgnoreCase("one of")){
+			System.out.println("HUHU");
+		}
+		
 		ATermAppl aa = factory.makeAppl(factory.makeAFun("Message", 3, false),
-				factory.parse("\"" + level(l) + "\""), factory.parse("\""						
+				factory.parse("\"" + level(l).trim() + "\""), factory.parse("\""						
 						+ SpeciesValidator.readableCode(code) + "\""), factory
-						.parse("\"" + str + "\""));
+						.parse("\"" + reduQuote(str) + "\""));
 		messageList = factory.makeList(aa, messageList);
 
-		/*
-		 * try{ aa.writeToSharedTextFile(new FileOutputStream(file, true));
-		 * }catch(Exception e){ System.out.println(e); }
-		 */
-		// System.out.println(aa);
 	}
 
 	public ATermList getMessageList() {
@@ -459,7 +466,7 @@ class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants 
 		} else if (l == FULL) {
 			return "OWL-Full";
 		} else {
-			return "OTHER   ";
+			return "OTHER";
 		}
 	}
 
@@ -469,5 +476,23 @@ class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants 
 
 	public void ontology(OWLOntology onto) {
 
+	}
+	
+	/* for XML Language trag */
+	private String reduQuote(String str) {
+		// System.out.println("str = " + str + ": " + str.length());
+		
+		/* Should probably use regular expressions */
+		StringBuffer sw = new StringBuffer();
+
+		for (int i = 0; i < str.length(); i++) {
+			char c = str.charAt(i);
+			if(c == '"'){
+				continue;
+			}
+			sw.append(c);
+		}
+		return sw.toString();
+		
 	}
 }
