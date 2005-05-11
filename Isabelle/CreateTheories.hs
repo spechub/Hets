@@ -122,7 +122,7 @@ disambiguate sign axs =
                          n = if null m then number s 1 "Ax" 
                                  else rename s (transString m) 
                      in (Set.insert n s, a { senName = n})
-     in snd $ mapAccumR accFun s0 axs
+     in snd $ mapAccumL accFun s0 axs
 
 createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
