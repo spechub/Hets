@@ -10,8 +10,8 @@ type GParser a = forall st. GenParser Char st a
 
 ------ helper functions ------ 
 
-convToPos :: SourcePos -> Pos
-convToPos = fromSourcePos
+convToPos :: SourcePos -> [Pos]
+convToPos p = [fromSourcePos p]
 
 ------------------------------
 
