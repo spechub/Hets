@@ -17,10 +17,10 @@ main =
        if null filename then
           error "Usage: readAStest <URI>"
           else do exitCode <- system ("./processor " ++ head filename)
-                  putStrLn $ show exitCode
+                  -- putStrLn $ show exitCode
                   if exitCode == ExitSuccess then
                      processor2 "output.term"
-                     else error ("opne file " ++ (head filename) ++ "error")
+                     else error ("process stop!")
 
 processor2 :: String -> IO()
 processor2 filename = 
