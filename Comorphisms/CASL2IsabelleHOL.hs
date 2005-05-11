@@ -258,17 +258,16 @@ makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
 
 makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) -> 
              Maybe [(Typ,[(String,[Typ])])]
-makeDtDef sign (NamedSen _ (Sort_gen_ax constrs True)) =
-  Just(map makeDt srts) 
-  where 
-  (srts,ops,_maps) = recover_Sort_gen_ax constrs
-  makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
-  makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
-  hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
-  hasTheSort _ _ = error "CASL2IsabelleHOL.hasTheSort"
-  transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
-  transArgs _ = error "CASL2IsabelleHOL.transArgs"
-makeDtDef _ _ = Nothing
+makeDtDef sign nf = case sentence nf of 
+  Sort_gen_ax constrs True -> Just(map makeDt srts) where 
+    (srts,ops,_maps) = recover_Sort_gen_ax constrs
+    makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
+    makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
+    hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
+    hasTheSort _ _ = error "CASL2IsabelleHOL.hasTheSort"
+    transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
+    transArgs _ = error "CASL2IsabelleHOL.transArgs"
+  _ -> Nothing
 
 transSort :: SORT -> Typ
 transSort s = Type (showIsaT s baseSign) [] []

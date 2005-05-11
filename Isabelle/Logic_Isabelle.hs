@@ -70,7 +70,7 @@ instance Logic.Logic.Syntax Isabelle () () ()
 
 instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s
-      print_named Isabelle ga (NamedSen lab sen) = 
+      print_named Isabelle ga (NamedSen lab _ sen) = 
 	(if null lab then empty 
 	else text lab <+> colon <> space) <> doubleQuotes (printText0 ga sen)
 #ifdef UNI_PACKAGE

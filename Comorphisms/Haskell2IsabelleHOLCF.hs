@@ -147,7 +147,7 @@ transMatch sign t = case (t, constTab sign) of
    cs) -> 
          let tx = transExp cs x
              df = showIsaName nm
-         in return $ NamedSen df $ ConstDef $
+         in return $ NamedSen df True $ ConstDef $
             IsaEq (Const df noType) $ termMAbs IsCont (map (transPat cs) ps) tx
   _ -> fail "Haskell2IsabelleHOLCF.transMatch, case not supported"
 

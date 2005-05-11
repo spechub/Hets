@@ -150,7 +150,7 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putTypeMap tm -- restore 
        putAssumps as -- restore
        let newFs = catMaybes ts
-           sens = map ( \ f -> NamedSen (getRLabel f) $ Formula $ item f) 
+           sens = map ( \ f -> NamedSen (getRLabel f) True $ Formula $ item f) 
                   newFs 
        appendSentences sens
        return $ AxiomItems (catMaybes ds) newFs ps

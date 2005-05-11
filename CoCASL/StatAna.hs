@@ -235,7 +235,8 @@ comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a 
         p = posOfId s
     (c,t) <- i 
-    return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "") $
+    return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" 
+                       ++ showId s "") True $
         mkForall v (Negation (Membership t s p) p) p
 
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS]) 
@@ -246,7 +247,7 @@ comakeInjective a = do
     (c,t1) <- i1
     (_,t2) <- i2
     let p = posOfId c
-    return $ NamedSen ("ga_injective_" ++ showId c "") $
+    return $ NamedSen ("ga_injective_" ++ showId c "") True $
        mkForall (v1 ++ v2) 
        (Equivalence (Strong_equation t1 t2 p)
         (let ces = zipWith ( \ w1 w2 -> Strong_equation 
@@ -267,9 +268,9 @@ comakeDisj a1 a2 = do
     (c1,t1) <- i1
     (c2,t2) <- i2
     let p = posOfId c1 ++ posOfId c2
-    return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") $
-       mkForall (v1 ++ v2) 
-       (Negation (Strong_equation t1 t2 p) p) p
+    return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" 
+                       ++ showId c2 "") True 
+           $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 -- | return the constructor and the set of total selectors 
 ana_COALTERNATIVE :: SORT -> COALTERNATIVE 
@@ -324,13 +325,14 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
         injSyms = map ( \ (s, t) -> let p = posOfId s in 
                         Qual_op_name injName 
                         (Op_type Total [s] t p) p) $ Rel.toList rel
-        f = ExtFORMULA $ CoSort_gen_ax sortList 
-            (opSyms ++ injSyms) isFree
     if null sortList then 
               addDiags[Diag Error "missing cogenerated sort" ps]
               else return ()
-    addSentences [NamedSen ("ga_cogenerated_" ++ 
-                         showSepList (showString "_") showId sortList "") f]
+    addSentences [NamedSen 
+                  ("ga_cogenerated_" ++ 
+                   showSepList (showString "_") showId sortList "") 
+                  True $ ExtFORMULA $ CoSort_gen_ax sortList 
+                           (opSyms ++ injSyms) isFree]
 
 ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
                 -> Ana ([GenAx], [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) 

@@ -97,7 +97,7 @@ type RawSymbol = ()
 
 instance Sentences Hatchet Sentence () Sign Morphism Symbol where
     map_sen Hatchet _m s = return s
-    print_named Hatchet ga (NamedSen lab sen) = printText0 ga sen <>
+    print_named Hatchet ga (NamedSen lab _ sen) = printText0 ga sen <>
 	if null lab then empty 
 	else space <> text "{-" <+> text lab <+> text "-}" 
     provers Hatchet = [] 

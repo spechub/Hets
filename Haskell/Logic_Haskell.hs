@@ -105,7 +105,7 @@ type RawSymbol = ()
 
 instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
-    print_named Haskell ga (NamedSen lab sen) = printText0 ga sen <>
+    print_named Haskell ga (NamedSen lab _ sen) = printText0 ga sen <>
 	if null lab then empty 
 	else space <> text "{-" <+> text lab <+> text "-}" 
     provers Haskell = [] 

@@ -377,11 +377,8 @@ genArgRest sen_name genProp sl spl fs =
         mquant = genQuantification (genProp sl (map toSortTerm vars))
                                    vars spl 
     in
-    fs ++ 
-    maybe [] (\quant -> 
-                  [NamedSen { senName  = sen_name
-                            , sentence = quant}])
-             mquant
+    maybe fs ( \ quant -> mapNamed (const quant) (emptyName sen_name)
+               : fs) mquant
 
 -- | generate a predication with qualified pred name
 genPredication :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f

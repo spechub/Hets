@@ -136,7 +136,7 @@ createTheoryText sig sens =
     $++$ text "end"       
 
 printNamedSen :: Named Sentence -> Doc
-printNamedSen (NamedSen lab s) = text (case s of
+printNamedSen (NamedSen lab _ s) = text (case s of
     ConstDef _ -> lab ++ "_def"
     Sentence _ -> lab
     Theorem _ _ _ -> "theorem " ++ lab) 
