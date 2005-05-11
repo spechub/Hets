@@ -2,10 +2,8 @@ module Main where
 
 import System
 import Common.ATerm.ReadWrite
-import Common.ATerm.AbstractSyntax
+import Common.ATerm.Unshared
 import Common.ATerm.Diff
-
-import Data.List
 
 main :: IO ()
 main = do args <- getArgs
