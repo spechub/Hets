@@ -14,7 +14,7 @@ Provides functions that calculate differences in ATerms.
 
 module Common.ATerm.Diff (atDiff) where
 
-import Common.ATerm.AbstractSyntax
+import Common.ATerm.Unshared
 
 import Data.List
 
