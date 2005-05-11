@@ -30,7 +30,7 @@ import Common.Result
 --parseFile :: Show a => AParser a -> String -> IO ()
 parseFile parser input filename
 --        = case (runParser parser emptyAnnos "" input) of
-        = case (runParser parser emptyAnnos "" input) of
+        = case (runParser parser (emptyAnnos ()) "" input) of
             Left err -> do { putStr (filename ++ ": ")
                            ; putStr "parse error at "
                            ; print err
@@ -45,7 +45,7 @@ parseFile parser input filename
 
 -- parseFiles: Given a list of filenames, parse each file in turn.
 
-chosenParser :: AParser C3PO
+chosenParser :: AParser () C3PO
 chosenParser = interim
 
 parseFiles :: [String] -> IO()

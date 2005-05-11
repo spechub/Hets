@@ -25,9 +25,9 @@ import Common.GlobalAnnotations
 
 import Common.AnnoState
 
-run :: PrettyPrint a => AParser a -> String -> IO ()
+run :: PrettyPrint a => AParser () a -> String -> IO ()
 run p input
-        = case (runParser p emptyAnnos "" input) of
+        = case (runParser p (emptyAnnos ()) "" input) of
             Left err -> do { putStr "parse error at "
                            ; print err
                            }
