@@ -8,6 +8,24 @@ main = mapM_ print genPatterns
 toNFrm :: [[Named a]] -> Named a
 toNFrm = head . head
 
+{- The perl script will use the following subtitutions:
+
+"°!modalAx" =>
+    "inlineAxioms Modal \"modality empty\\n"++
+    "pred p,q:()\\n"++
+    ". ",
+"°!caslAx" =>
+    "inlineAxioms CASL \"sort world \\n"++
+    "pred rel : world * world\\n"++
+    "forall w1 : world \\n. "
+
+Further it generates a case expression, where the Modalformula forms
+the pattern and the CASL formula is embedded in a call to addTerm.
+
+as variables for modal formulas only 'p','q' and 'r' are recognized.
+  
+-}
+
 genPatterns :: [(Named ModalFORMULA,Named CASLFORMULA)]
 genPatterns = map (\ (x,y) -> (toNFrm x, toNFrm y)) 
  snip><Patterns 
