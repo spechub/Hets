@@ -149,7 +149,12 @@ preconditions are obviously fulfilled (i.e. by a case statement or a
 previous test). Particularly the call of "head" should be used with
 care or avoided by a case statement.
 
-Avoid mixing "let" and "where". (I prefer "let" and have auxiliary
+Usually a case statement (and the import of isJust and formJust from
+Data.Maybe) can be avoided by using the "maybe" function:
+
+    maybe (error "<ModuleName>.<function>") id $ Map.lookup key map
+
+Do avoid mixing "let" and "where". (I prefer "let" and have auxiliary
 function on the top-level that are not exported.) Export lists also
 support the detection of unused functions.
 
@@ -172,12 +177,12 @@ Try to strictly separate IO, Monad and pure (without do) function
 programming (possibly via different modules). 
 
 Bad:
-   x <- return y
-   ...
+        x <- return y
+        ...
 
 Good:
-  let x = y  
-  ...
+        let x = y  
+        ...
 
 
 List Comprehensions
@@ -199,9 +204,9 @@ Many parentheses can be avoid using the infix application operator "$"
 with lowest priority. Try at least to avoid unnecessary parentheses in
 standard infix expression.
 
-f x : g x ++ h x 
+        f x : g x ++ h x 
 
-a == 1 && b == 1 || a == 0 && b == 0  
+        a == 1 && b == 1 || a == 0 && b == 0  
 
 Rather than putting a large final argument in parentheses (with a
 distant closing one) consider using "$" instead. 
@@ -214,15 +219,15 @@ A function definition like
 
 Note that the final argument may even be an infix- or case expression:
 
-map id $ c : l
+        map id $ c : l
 
-filter (const True) . map id $ case l of ...
+        filter (const True) . map id $ case l of ...
 
 However, be aware that $-terms cannot be composed further in infix
 expressions.
 
 Probably wrong:
-f $ x ++ g $ x
+        f $ x ++ g $ x
 
 But the scope of an expression is also limited by the layout rule, so
 it is usually save to use "$" on right hand sides.
