@@ -80,9 +80,9 @@ type PrExp = TiPropDecorate.TiExp PNT
 type PrPat = TiDecorate.TiPat PNT
 
 type HId i = HsIdentI i
+type HPat = SyntaxRec.HsPatI
 -- type HDecl i = PropPosSyntax.HsDecl i
 -- type HExp i = PropPosSyntax.HsExp i
-type HPat = SyntaxRec.HsPatI
 
 type IsaSort = IsaSign.Sort
 type IsaType = IsaSign.Typ
@@ -120,12 +120,19 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
        inclusion Isabelle sig1 sig2
     map_theory Haskell2IsabelleHOLCF (sign, sens) = do
         sign' <- transSignature sign
-        sens'' <- mapM ((transSentence sign') . sentence) sens
-        return (sign', concat sens'')
+        sens'' <- transSentences sign' (map sentence sens)
+        return (sign', sens'')
     map_symbol Haskell2IsabelleHOLCF _ = 
         error "Haskell2IsabelleHOLCF.map_symbol"
 
 ------------------------------ Theory translation -------------------------------
+{- Relevant theories in Programatica: base/Ti/TiClasses (for
+tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).  -}
+
+transSentences :: 
+    IsaSign.Sign -> [PrDecl] -> Result [Named IsaSign.Sentence]
+transSentences sign ls = do xs <- mapM (transSentence sign) ls
+                            return $ fixMRec xs
 
 transSentence :: 
     IsaSign.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
@@ -137,9 +144,6 @@ transSentence sign (TiPropDecorate.Dec d) = case d of
                 _ -> return []
              _ -> return []
 
-{- Relevant theories in Programatica: base/Ti/TiClasses (for
-tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).  -}
-
 transMatch :: IsaSign.Sign -> HsDeclStruct.HsMatchI PNT PrExp PrPat ds 
            -> Result (Named Sentence) 
 transMatch sign t = case (t, constTab sign) of 
@@ -147,10 +151,126 @@ transMatch sign t = case (t, constTab sign) of
    cs) -> 
          let tx = transExp cs x
              df = showIsaName nm
+             y = Map.find df cs
          in return $ NamedSen df True $ ConstDef $
-            IsaEq (Const df noType) $ termMAbs IsCont (map (transPat cs) ps) tx
+              IsaEq (Const df y) $ termMAbs IsCont (map (transPat cs) ps) tx
   _ -> fail "Haskell2IsabelleHOLCF.transMatch, case not supported"
 
+sentAna :: Named Sentence -> (Term, [Term])
+sentAna s = case s of
+  NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
+
+constFilter :: Term -> [Term]
+constFilter t = case t of
+ IsaSign.Const _ _ -> [t]
+ IsaSign.Abs _ _ x _ -> constFilter t
+ IsaSign.App x y _ -> concat $ map constFilter [x,y]
+ IsaSign.CIf x y z -> concat $ map constFilter [x,y,z]
+ IsaSign.If x y z -> concat $ map constFilter [x,y,z]
+ IsaSign.Paren x -> constFilter x
+ IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
+ IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
+ IsaSign.Tuples xs _ -> concat $ map constFilter xs
+ _ -> []
+
+sentDepOn :: Named Sentence -> Named Sentence -> Bool
+sentDepOn x y = depOn (==) (fst . sentAna) (snd . sentAna) x y 
+
+fixMRec :: [[Named Sentence]] -> [Named Sentence]
+fixMRec ls = addFixPoints $ getDepSent ls
+
+getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
+getDepSent ls = case ls of 
+     x:xs -> remove_duplicates (map remove_duplicates (checkDep (abCheckDep (mutRel sentDepOn)) (xs) [x] []))
+     [] -> []
+
+addFixPoints :: [[Named Sentence]] -> [Named Sentence]
+addFixPoints xs = concat $ map fixPoint xs
+
+fixPoint :: [Named Sentence] -> [Named Sentence]
+fixPoint xs = case xs of
+  a:as -> 
+     let jn = joinNames (map extAxName xs) 
+         jt = typTuple (map extAxType xs)
+         jl = Const jn jt
+         jv = Free jn jt
+         ys = [roughRepl jv (extRightH x) (extLeftH x) | x <- xs]
+         jr = Tuples ys IsCont
+         js = Fix $ IsaSign.Abs jv jt jr IsCont 
+     in [NamedSen jn True (ConstDef (IsaEq jl js))]    
+  [] -> []
+--  [a] -> case a of 
+--    NamedSen n (ConstDef (IsaEq lh rh)) -> if sentDepOn a a 
+--       then NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh
+--       else a
+
+extAxName :: Named Sentence -> VName
+extAxName s = case s of 
+  NamedSen n True _ -> n
+  _ -> error "Haskell2IsabelleHOLCF, extAxName"
+
+joinNames :: [VName] -> String
+joinNames ls = concat [x ++ "_X" | x <- ls]
+
+extAxType :: Named Sentence -> Typ
+extAxType s = case s of 
+  NamedSen _ True (ConstDef (IsaEq (Const _ t) _)) -> t
+  _ -> error "Haskell2IsabelleHOLCF, extAxType"
+
+typTuple :: [Typ] -> Typ
+typTuple ts = case ts of 
+  [] -> noType
+  [a] -> a
+  a:as -> mkContProduct a (typTuple as)
+
+extLeftH :: Named Sentence -> Term
+extLeftH s = case s of 
+  NamedSen _ _ (ConstDef (IsaEq t _)) -> t
+  _ -> error "Haskell2IsabelleHOLCF, extLeftH"
+
+extRightH :: Named Sentence -> Term
+extRightH s = case s of 
+  NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
+  _ -> error "Haskell2IsabelleHOLCF, extRightH"
+
+fixPointRep :: Term -> Term -> Term
+fixPointRep t1 t2 = case t1 of
+  Const n x -> Fix $ IsaSign.Abs (Free n x) x (roughRepl (Free n x) t1 t2) IsCont 
+  _ -> error "Haskell2IsabelleHOLCF, fixPointRep"
+
+{- replacement for terms, with possible variable capture -}
+roughRepl :: Term -> Term -> Term -> Term
+roughRepl nt ot t = if (litEq t ot) then nt else case t of
+ IsaSign.Abs v y x c -> IsaSign.Abs v y (roughRepl nt ot x) c
+ IsaSign.App x y c -> IsaSign.App (roughRepl nt ot x) (roughRepl nt ot y) c
+ IsaSign.CIf x y z -> IsaSign.CIf (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) 
+ IsaSign.If x y z -> IsaSign.If (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) 
+ IsaSign.Paren x -> IsaSign.Paren (roughRepl nt ot x) 
+ IsaSign.Case x ys -> IsaSign.Case (roughRepl nt ot x) [(a,roughRepl nt ot b) | (a,b) <- ys]
+ IsaSign.Let xs y -> IsaSign.Let [(a,roughRepl nt ot b) | (a,b) <- xs] (roughRepl nt ot y)
+ IsaSign.Tuples xs c -> IsaSign.Tuples (map (roughRepl nt ot) xs) c
+ IsaSign.Fix x -> IsaSign.Fix (roughRepl nt ot x)
+ _ -> t  
+
+litEq :: Term -> Term -> Bool
+litEq t1 t2 = case (t1,t2) of
+  (Free m x, Const n y) -> if n == m && typEq x y then True else False
+  _ -> False
+
+typEq :: Typ -> Typ -> Bool
+typEq t1 t2 = case (t1,t2) of
+ (IsaSign.Type _ _ ls1,IsaSign.Type _ _ ls2) -> 
+    if typeId t1 == typeId t2 && typeSort t1 == typeSort t2 then typLEq ls1 ls2 else False
+ (TFree _ _,TFree _ _) -> if typeSort t1 == typeSort t2 then True else False
+ (TVar _ _,TVar _ _) -> if t1 == t2 then True else False
+ _ -> False
+
+typLEq :: [Typ] -> [Typ] -> Bool
+typLEq ls1 ls2 = case (ls1,ls2) of
+     ([],[]) -> True
+     (a:as,b:bs) -> typEq a b && typLEq as bs
+     _ -> False
+  
 ------------------------------ Signature translation -----------------------------
 
 transSignature :: HatAna.Sign -> Result IsaSign.Sign
@@ -177,7 +297,6 @@ class IsaName a where
 
 showIsaS :: String -> IsaSign.IName
 showIsaS = transStringT HOLCF_thy
--- showIsaS x = Translate.transString x
 
 instance IsaName String where
  showIsaName x = showIsaS x
@@ -344,7 +463,7 @@ transClassInfo p = map transClass (extClassInfo $ snd p)
 
 extClassInfo :: HsTypeInfo -> [HsClass]
 extClassInfo p = case p of 
-        TiTypes.Class a _ _ _ -> map getInstType a -- ?? error ???
+        TiTypes.Class a _ _ _ -> map getInstType a 
         _ -> error "error Haskell2IsabelleHOLCF.extClassInfo"     
  
 ---------------------------- getting Abbrs (from KEnv) -----------------------------
@@ -423,7 +542,7 @@ prepInst1 i = [(x, [getInstClass y | y <- getInstPrems i, getInstType y == x])
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 getDepDoms ls = case ls of 
-                  x:xs -> remove_duplicates (map remove_duplicates (checkDep (abCheckDep (mutDep subTypForm)) (xs) [x] []))
+                  x:xs -> remove_duplicates (map remove_duplicates (checkDep (abCheckDep (mutRel deDepOn)) (xs) [x] []))
                   [] -> []
 
 {- used to check whether, given two lists of domain entries, there is one that depends on the other -} 
@@ -437,39 +556,21 @@ checkDep f ls ms cs = case ls of
                                    [] -> checkDep f as (a:cs) []
                          [] -> ms 
 
-{-
-checkDep ::  ([x] -> [x] -> Bool) -> [[x]] -> [[x]] -> [[x]] -> [[x]]
-checkDep f ls ms cs = case ls of 
-                         a:as -> case ms of 
-                                   b:bs -> if (f a b) then checkDep f ((a ++ b):as) bs cs else checkDep f (a:as) bs (b:cs)
-                                   [] -> checkDep f as cs []
-                         [] -> ms 
--}
-
 {- mutual dependance between domains -} 
-mutDep :: (a -> b -> Bool) -> (a,[(c,[b])]) -> (a,[(c,[b])]) -> Bool
-mutDep f x y = depOn f x y && depOn f y x
+mutRel :: (a -> a -> Bool) -> a -> a -> Bool
+mutRel f x y = f x y && f y x
 
-depOn :: (a -> b -> Bool) -> (a,[(c,[b])]) -> (a,[(c,[b])]) -> Bool
-depOn f x y = case (x,y) of 
-              ((m,_),(_,ns)) -> genOr (f m) (concat (map snd ns))                       
+depOn :: (a -> b -> Bool) -> (c -> a) -> (c -> [b]) -> c -> c -> Bool
+depOn f g h x y = genOr (f (g x)) (h y) 
 
-{-
-depOn :: DomainEntry -> DomainEntry -> Bool
-depOn x y = case (x,y) of 
-              ((a,_),(_,bs)) -> genOr (subTypForm a) (concat (map snd bs))                       
--}
+deDepOn :: DomainEntry -> DomainEntry -> Bool
+deDepOn x y = depOn subTypForm fst (concat . (map snd) . snd) x y
 
 genOr :: (a -> Bool) -> [a] -> Bool
 genOr f ys = case ys of 
                [] -> False
                x:xs -> if (f x) then True 
                            else (genOr f xs)
-
-{-
-wrapSubTypForm :: Typ -> DomainEntry -> Bool
-wrapSubTypForm t d = 
--}
 
 subTypForm :: Typ -> Typ -> Bool
 subTypForm t1 t2 = case t2 of 
@@ -479,22 +580,14 @@ subTypForm t1 t2 = case t2 of
                   else genOr (subTypForm t1) cs
       _ -> False   
 
--- subSenForm :: 
-
-
 -- singList :: [a] -> [[a]]
 -- singList list = [[a] | a <- list]
-
 ------------------------------- getting DomainTab -----------------------------
 
 getDomainTab :: VaMap -> IsaSign.DomainTab 
 getDomainTab f =  
    getDepDoms $ remove_duplicates [getDomainEntry (getAConstTab f) x | x <- Map.keys f, checkTyCons x]
 --   getDepDoms $ singList [getDomainEntry (getConstTab f) (getHsType f x) | x <- Map.keys f, checkTyCons g x]
-
--- getDomainTab :: TyMap -> VaMap -> IsaSign.DomainTab 
--- getDomainTab g f =  
---     getDepDoms $ singList [getDomainEntry (getConstTab f) (getHsType f x) | x <- Map.keys f]
 
 checkTyCons :: HsId -> Bool
 checkTyCons d = case d of 
@@ -516,8 +609,7 @@ getDomainEntry ctab t = case t of
 getDomType :: AConstTab -> VName -> IsaType
 getDomType ctab c = let x = Map.lookup c ctab in
                            case x of
-                                  Nothing -> error "Haskell2IsabelleHOLCF.getTheType"
---                                  Nothing -> error "Haskell2IsabelleHOLCF.getFieldTypes"
+                                  Nothing -> error "Haskell2IsabelleHOLCF.getDomType"
                                   Just y -> getHeadType $ fst y
 
 getHeadType :: IsaType -> IsaType
@@ -529,7 +621,6 @@ getFieldTypes :: AConstTab -> VName -> [IsaType]
 getFieldTypes ctab c = let x = Map.lookup c ctab in
                            case x of
                                   Nothing -> []
---                                  Nothing -> error "Haskell2IsabelleHOLCF.getFieldTypes"
                                   Just y -> argTypes (fst y)
 
 argTypes :: IsaType -> [IsaType]
@@ -538,11 +629,9 @@ argTypes a = case a of
     _ -> [] 
 
 {- ------------------------------ getting Type Constructors ---------------------
-
 getTyCons :: TyMap -> VaMap -> Map.Map TName IsaType
 getTyCons g f =  
      liftMapByListF Map.toList Map.fromList showIsaH transFromScheme (checkTyCons g) f 
-
 -} --------------------------------- Expressions -------------------------------
 
 mapEI5 :: (i1 -> i2) -> 
@@ -555,17 +644,17 @@ transE :: IsaName i => (i -> VName) -> (e -> IsaTerm) -> (p -> IsaPattern) ->
             (HsExpStruct.EI i e p j h k) -> IsaTerm
 transE trId trE trP e =
  case (mapEI5 trId trE trP e) of 
---   HsId (HsVar "==")              -> Const "Eq" noType     -- CHANGE!!!!
-   HsId (HsVar x)              -> Const "DIC" noType     -- CHANGE!!!!
---   HsId (HsCon c)              -> Const c noType
+   HsId (HsVar x)              -> Const "DIC" noType     
    HsApp x y                   -> termMAppl IsCont x [y]  
---   HsLambda ps e               -> multiAbs ps e 
---   HsLet ds e                  -> Let ds e 
    HsIf x y z                  -> CIf x y z 
---   HsCase e ds                 -> Case e ds 
    HsTuple es                  -> Tuples es IsCont 
    HsParen e                   -> Paren e
    _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
+--   HsId (HsCon c)              -> Const c noType
+--   HsId (HsVar "==")              -> Const "Eq" noType     
+--   HsLambda ps e               -> multiAbs ps e 
+--   HsLet ds e                  -> Let ds e 
+--   HsCase e ds                 -> Case e ds 
 
 multiAbs :: [IsaPattern] -> IsaTerm -> IsaTerm
 multiAbs ps t = case ps of 
@@ -577,24 +666,20 @@ transP :: IsaName i => (i -> VName) -> (p -> IsaPattern) ->
 transP trId trP p =
  case HsPatMaps.mapPI trId trP p of
    HsPId (HsVar x) -> Const "DIC" noType
+   HsPTuple ps -> Tuples ps IsCont 
+   HsPParen p -> Paren p
+   HsPWildCard -> Wildcard
+   _ -> error "Haskell2IsabelleHOLCF.transP, not supported"
+--   HsPList ps -> plist ps
 --   HsPId (HsCon c) -> Const c noType
 --   HsPLit _ lit -> litPat (transL lit) -- new
 --   HsPApp c ps -> App x y IsCont
-   HsPTuple ps -> Tuples ps IsCont 
---   HsPList ps -> plist ps
-   HsPParen p -> Paren p
--- HsPRec
 --   HsPAsPat x p -> AsPattern (x,p)
-   HsPWildCard -> Wildcard
 --   HsPIrrPat p -> twiddlePat p
 --   _ -> not_supported "Pattern" p
-   _ -> error "Haskell2IsabelleHOLCF.transP, not supported"
 
 class IsaName i => TransFunction i j k where
  transFun :: (j i) -> k
-
--- instance TransFunction PNT HPat IsaPattern where
--- transFun = transPat
 
 extVars :: IsaPattern -> VName
 extVars p = case p of 
@@ -617,18 +702,19 @@ transHV :: HsScheme -> PNT -> IsaTerm
 transHV s x = let 
       n = showIsaName x 
       k = transFromScheme s
+      tag = elem pcpo (typeSort k)
       in 
-   case pp x of 
-   "==" -> Const "nyi" k
+   case pp x of  
+   "==" -> if tag == False then Const eq k
+           else 
+     (termMAbs IsCont [Free "x" noType, Free "y" noType] 
+        (App (Const "Def" noType) (termMAppl NotCont (Const eq k) 
+           [Free "x" noType, Free "y" noType]) NotCont))
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> Free n k
         _ -> error "Haskell2IsabelleHOLCF, transHV"
-
-{- !!!!!!!!!!!!!!!
-  problem with intorducing Def for computable equality. 
- recursive structure f the translation to be revised. -}
 
 transExp :: ConstTab -> PrExp -> IsaTerm
 transExp cs t = case t of 
@@ -643,11 +729,11 @@ transExp cs t = case t of
 transPat :: ConstTab -> PrPat -> IsaPattern
 transPat cs t = case t of 
     (TiDecorate.Pat p) -> transP showIsaName (transPat cs) p
---    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV cs s x
     (TiDecorate.TiPSpec (HsVar x) s _) -> transHV s x
     (TiDecorate.TiPSpec (HsCon x) s _) -> transCN s x
     (TiDecorate.TiPTyped x _) -> transPat cs x
     _ -> Bottom
+--    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV cs s x
 --    _ -> error "Haskell2IsabelleHOLCF.transPat"
 -- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
 -- transPat (Pat p) = transP showIsaS transPat p
