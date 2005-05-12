@@ -186,9 +186,8 @@ makeEquivMonoR o o1 o2 args res =
              res
         t2 = inject [] (Application (Qual_op_name o (toOP_TYPE o2) []) a2 []) 
              res
-    in  NamedSen { senName = "ga_function_monotonicity",
-                   sentence = mkForall vds
-                      (Existl_equation t1 t2 []) [] }
+     in NamedSen "ga_function_monotonicity" True
+         $ mkForall vds (Existl_equation t1 t2 []) []
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType 
                   -> [Named (FORMULA f)]
@@ -209,9 +208,8 @@ makeEquivPred o o1 o2 args =
                       inject [] (toQualVar v) s) vds $ predArgs o2
         t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) []) a1 []
         t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) []) a2 []
-    in  NamedSen { senName = "ga_predicate_monotonicity",
-                   sentence = mkForall vds
-                      (Equivalence t1 t2 []) [] }
+    in NamedSen "ga_predicate_monotonicity" True
+        $ mkForall vds (Equivalence t1 t2 []) []
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula id . injFormula id 
