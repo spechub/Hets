@@ -877,7 +877,7 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
     Just _ -> return proofstatus
     Nothing -> do
       let [newNode] = newNodes 0 dgraph
-      proofstatusAux <- mkNfNode node newNode Nothing proofstatus
+      proofstatusAux <- mkNfNodeForLeave node newNode proofstatus
       let auxGraph = lookupDGraph ln proofstatusAux
       (finalGraph,changes) <- adoptEdges auxGraph node newNode
       let finalChanges =  changes ++ [DeleteNode (node,nodelab)]
@@ -885,23 +885,27 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
 	      finalChanges proofstatusAux)
 
 {- creates and inserts a normal form node from the given input -}
-mkNfNode :: Node -> Node -> Maybe G_sign -> ProofStatus -> IO ProofStatus
-mkNfNode node newNode maybeSign proofstatus@(ln,_,_) = do
+mkNfNodeForLeave :: Node -> Node  -> ProofStatus -> IO ProofStatus
+mkNfNodeForLeave node newNode proofstatus@(ln,_,_) = do
   let nodelab = lab' (context node (lookupDGraph ln proofstatus))
   case isDGRef nodelab of
-    True -> mkDGRefNfNode nodelab newNode maybeSign proofstatus
-    False -> mkDGNodeNfNode nodelab newNode maybeSign proofstatus
+    True -> mkDGRefNfNode nodelab newNode True proofstatus
+    False -> mkDGNodeNfNode nodelab newNode Nothing proofstatus
 
 
--- ist dgn_sigma so richtig?
-{- creates and inserts a normal form node of type DGNode -}
-mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
-	       -> IO ProofStatus
-mkDGNodeNfNode nodelab newNode maybeSign proofstatus = do
-  let (sign,sigma) = case maybeSign of
+{- creates and inserts a normal form node of type DGNode:
+   if the given nonLeaveValues is Nothing, ie the original node is a leave,
+   the original node is copied and the dgn_sigma is the identity;
+   if not, dgn_sign and dgn_sigma are taken from the nonLeaveValues and
+   the remaining values are copied from the original node;
+   in both cases the normal form node ist its own normal form -}
+mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe (G_sign, Maybe GMorphism)
+	       -> ProofStatus -> IO ProofStatus
+mkDGNodeNfNode nodelab newNode nonLeaveValues proofstatus = do
+  let (sign,sigma) = case nonLeaveValues of
 		       Nothing -> (dgn_sign nodelab,
 				  Just (ide Grothendieck (dgn_sign nodelab)))
-		       Just s -> (s,dgn_sigma nodelab)
+		       Just x -> x
       lnode = (newNode,
 	 DGNode {dgn_name = dgn_name nodelab,
 		 dgn_sign = sign,
@@ -912,25 +916,32 @@ mkDGNodeNfNode nodelab newNode maybeSign proofstatus = do
 		})
   return (insertNfNode proofstatus lnode)
 
--- ist dgn_sigma so richtig?
--- was soll mit dem sign gemacht werden, das ja ggf. aus gweakly.. stammt?
-{- creates and inserts a normal form node of type DGRef -}
-mkDGRefNfNode :: DGNodeLab -> Node -> Maybe G_sign -> ProofStatus
-	      -> IO ProofStatus
-mkDGRefNfNode nodelab newNode maybeSign proofstatus@(ln,_,_) = do
+
+{- creates and inserts a normal form node of type DGRef:
+   if the given corresponding node is a leave, the normal form node
+   of the referenced node is referenced and its values copied;
+   if not, the original node is copied and the dgn_sigma is the identiy;
+   in both cases the normal form node is its own normal form -}
+mkDGRefNfNode :: DGNodeLab -> Node -> Bool -> ProofStatus -> IO ProofStatus
+mkDGRefNfNode nodelab newNode isLeave proofstatus@(ln,_,_) = do
   auxProofstatus@(_,auxLibEnv,_)
       <- theoremHideShift 
 		    (changeCurrentLibName (dgn_libname nodelab) proofstatus)
   let refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
       (Just refNf) = dgn_nf (lab' (context (dgn_node nodelab) refGraph))
-      sigma = case maybeSign of
-		Just sign -> dgn_sigma nodelab
-		Nothing -> case getSignature auxLibEnv refGraph refNf of
-	                     Nothing -> Nothing
-			     Just sign -> Just (ide Grothendieck sign)
+      refNodelab = lab' (context refNf refGraph)
+      (renamed, libname, sigma) =
+	  if isLeave 
+	     then (dgn_renamed nodelab, dgn_libname nodelab,
+		   case getSignature auxLibEnv refGraph refNf of
+	             Nothing -> Nothing
+		     Just sign -> Just (ide Grothendieck sign)
+		  )
+	   else (dgn_renamed refNodelab, dgn_libname refNodelab,
+			  dgn_sigma refNodelab)
   let lnode = (newNode,
-	       DGRef {dgn_renamed = dgn_renamed nodelab,
-		      dgn_libname = dgn_libname nodelab,
+	       DGRef {dgn_renamed = renamed,
+		      dgn_libname = libname,
 		      dgn_node = refNf,
 		      dgn_nf = Just newNode,
 		      dgn_sigma = sigma
@@ -982,25 +993,35 @@ handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
       nodelab = lab' (context node dgraph)
   case dgn_nf nodelab of
     Just _ -> handleNonLeaves proofstatus list
-    Nothing -> do
-      auxProofstatus <- createNfsForPredecessors proofstatus node
-      let auxGraph = lookupDGraph ln auxProofstatus
-          defInEdges = [edge| edge <- inn auxGraph node,
-			isGlobalDef edge || isHidingDef edge]
-          predecessors = [src| (src,_,_) <- defInEdges]
-          diagram = makeDiagram auxGraph (node:predecessors) defInEdges
-          Result diags res = gWeaklyAmalgamableCocone diagram
-      case res of
-        Nothing -> do sequence $ map (putStrLn . show) diags
-		      handleNonLeaves auxProofstatus list
-        Just (sign,map) -> do
-          let [nfNode] = newNodes 0 auxGraph
-          auxProofstatus'<- mkNfNode node nfNode (Just (dgn_sign nodelab))
-			             auxProofstatus
-			    -- actually it is sign instead of dgn_sign nodelab
-          finalProofstatus <- linkNfNode node nfNode map auxProofstatus'
-          handleNonLeaves finalProofstatus list
-
+    Nothing ->
+      case isDGRef nodelab of
+        True -> do
+          let [nfNode] = newNodes 0 dgraph
+          auxProofstatus' <- mkDGRefNfNode nodelab nfNode False proofstatus
+	  (auxGraph,changes) <- setNfOfNode dgraph node nfNode
+	  let finalProofstatus = updateProofStatus ln auxGraph changes
+				 auxProofstatus'
+	  handleNonLeaves finalProofstatus list
+        False -> do 
+          auxProofstatus <- createNfsForPredecessors proofstatus node
+	  let auxGraph = lookupDGraph ln auxProofstatus
+              defInEdges = [edge| edge <- inn auxGraph node,
+		 	   isGlobalDef edge || isHidingDef edge]
+              predecessors = [src| (src,_,_) <- defInEdges]
+	      diagram = makeDiagram auxGraph (node:predecessors) defInEdges
+	      Result diags res = gWeaklyAmalgamableCocone diagram
+ 	  case res of
+            Nothing -> do sequence $ map (putStrLn . show) diags
+	  	          handleNonLeaves auxProofstatus list
+  	    Just (sign,map) -> do
+	      let [nfNode] = newNodes 0 auxGraph
+		  sigma = Map.lookup node map
+	      auxProofstatus'<- mkDGNodeNfNode nodelab nfNode 
+				               (Just (sign,sigma))
+			                       auxProofstatus
+              finalProofstatus <- linkNfNode node nfNode map auxProofstatus'
+	      handleNonLeaves finalProofstatus list
+			  
 
 {- creates the normal forms of the predecessors of the given node
    note: as this method it is called after the normal forms of the leave nodes
