@@ -21,7 +21,6 @@ import HasCASL.HToken
 import HasCASL.As
 import Text.ParserCombinators.Parsec
 import Data.List
-import Data.Maybe
 
 -- * key sign tokens
 
@@ -128,7 +127,7 @@ extVar vp =
           <|>
           do a <- minusT
              return (t, Just ContraVar, tokPos a)
-          <|> return (t, Nothing, nullPos)
+          <|> return (t, Nothing, [])
 
 -- several 'extTypeVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
@@ -136,7 +135,7 @@ typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
               typeKind ts ps
 
 allIsInVar :: [(TypeId, Maybe Variance, [Pos])] -> Bool
-allIsInVar = all ( \ (_, v, _) -> isNothing v)
+allIsInVar = all ( \ (_, v, _) -> maybe True (const False) v)
 
 
 -- 'parseType' a 'Downset' starting with 'lessT'

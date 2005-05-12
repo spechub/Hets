@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
@@ -82,7 +82,7 @@ inducedFromMorphism rmap1 sigma = do
       else Result [Diag Error 
            ("the following symbols: " ++ showPretty wrongRsyms 
             "\nare already mapped directly or do not match with signature\n"
-            ++ showPretty sigma "") nullPos] Nothing
+            ++ showPretty sigma "") []] Nothing
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
 mapTypeInfo im ti = 
@@ -220,7 +220,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
           else Result [Diag Error ("No symbol mapping found for:\n"
            ++ showPretty rmap "\nOrignal Signature1:\n"
            ++ showPretty sigma1 "\nInduced "
-           ++ showEnvDiff (mtarget mor1) sigma2) nullPos] Nothing
+           ++ showEnvDiff (mtarget mor1) sigma2) []] Nothing
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism

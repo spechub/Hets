@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
@@ -38,8 +38,7 @@ distinctOpIds n ((i,OpInfos info) : idInfoList) =
 -- | Adds a number to the name of an identifier.
 newName :: Id -> Int -> Id
 newName (Id tlist idlist poslist) n = 
-  let newTok = (Token ('0' : show n) nullPos) 
-  in (Id (tlist ++ [newTok]) idlist poslist)
+  Id (tlist ++ [mkSimpleId $ '0' : show n]) idlist poslist
 
 -- | Searches for the real name of an overloaded identifier.
 findUniqueId :: Env -> UninstOpId -> TypeScheme -> Maybe (Id, OpInfo)
