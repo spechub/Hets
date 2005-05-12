@@ -133,6 +133,7 @@ transSentences ::
     IsaSign.Sign -> [PrDecl] -> Result [Named IsaSign.Sentence]
 transSentences sign ls = do xs <- mapM (transSentence sign) ls
                             return $ fixMRec xs
+--                            return $ concat (getDepSent xs) 
 
 transSentence :: 
     IsaSign.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
@@ -151,44 +152,25 @@ transMatch sign t = case (t, constTab sign) of
    cs) -> 
          let tx = transExp cs x
              df = showIsaName nm
-             y = cs Map.! df
+             y = maybe (error "Haskell2IsabelleHOLCF, transMatch") id $ Map.lookup df cs
          in return $ NamedSen df True $ ConstDef $
               IsaEq (Const df y) $ termMAbs IsCont (map (transPat cs) ps) tx
   _ -> fail "Haskell2IsabelleHOLCF.transMatch, case not supported"
 
-sentAna :: Named Sentence -> (Term, [Term])
-sentAna s = case s of
-  NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
-
-constFilter :: Term -> [Term]
-constFilter t = case t of
- IsaSign.Const _ _ -> [t]
- IsaSign.Abs _ _ x _ -> constFilter t
- IsaSign.App x y _ -> concat $ map constFilter [x,y]
- IsaSign.CIf x y z -> concat $ map constFilter [x,y,z]
- IsaSign.If x y z -> concat $ map constFilter [x,y,z]
- IsaSign.Paren x -> constFilter x
- IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
- IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
- IsaSign.Tuples xs _ -> concat $ map constFilter xs
- _ -> []
-
-sentDepOn :: Named Sentence -> Named Sentence -> Bool
-sentDepOn x y = depOn (==) (fst . sentAna) (snd . sentAna) x y 
+------------------- adding fixpoints ---------------------------------------------------------
 
 fixMRec :: [[Named Sentence]] -> [Named Sentence]
 fixMRec ls = addFixPoints $ getDepSent ls
-
-getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
-getDepSent ls = case ls of 
-     x:xs -> remove_duplicates (map remove_duplicates (checkDep (abCheckDep (mutRel sentDepOn)) (xs) [x] []))
-     [] -> []
 
 addFixPoints :: [[Named Sentence]] -> [Named Sentence]
 addFixPoints xs = concat $ map fixPoint xs
 
 fixPoint :: [Named Sentence] -> [Named Sentence]
 fixPoint xs = case xs of
+  [a] -> case a of 
+    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a 
+       then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
+       else xs
   a:as -> 
      let jn = joinNames (map extAxName xs) 
          jt = typTuple (map extAxType xs)
@@ -199,10 +181,6 @@ fixPoint xs = case xs of
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
      in [NamedSen jn True (ConstDef (IsaEq jl js))]    
   [] -> []
---  [a] -> case a of 
---    NamedSen n (ConstDef (IsaEq lh rh)) -> if sentDepOn a a 
---       then NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh
---       else a
 
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
@@ -270,7 +248,7 @@ typLEq ls1 ls2 = case (ls1,ls2) of
      ([],[]) -> True
      (a:as,b:bs) -> typEq a b && typLEq as bs
      _ -> False
-  
+ 
 ------------------------------ Signature translation -----------------------------
 
 transSignature :: HatAna.Sign -> Result IsaSign.Sign
@@ -286,7 +264,6 @@ transSignature sign = Result [] $ Just $ IsaSign.emptySign
     constTab = getConstTab (HatAna.values sign),
     domainTab = getDomainTab (HatAna.values sign)
   }
-
 
 ------------------------------- Signature --------------------------------------
 -------------------------------- Name translation -----------------------------
@@ -499,6 +476,11 @@ transTypeInsts (a,b) = (typeId $ transType [] a, map transInst b)
  
 ------------------------------ auxiliaries ----------------------------------------
 
+removeEL :: Eq a => [[a]] -> [[a]]
+removeEL ls = case ls of 
+ a:as -> if a == [] then removeEL as else a:(removeEL as)
+ [] -> []
+
 remove_duplicates :: (Eq a) => [a] -> [a]
 remove_duplicates ls = remove_dupes ls []
 
@@ -537,40 +519,47 @@ prepInst1 :: HsInstance -> [(HsType, [HsClass])]
 prepInst1 i = [(x, [getInstClass y | y <- getInstPrems i, getInstType y == x]) 
                | x <- map getInstType (getInstPrems i)] 
 
+--------------------------- checking mutual dependencies ---------------------------
 
---------------------------- checking mutual dependencies -----------------------
+abGetDep :: Eq a => (a -> a -> Bool) -> [[a]] -> [[a]]
+abGetDep f ls = case ls of 
+ x:xs -> 
+   remove_duplicates $ removeEL (map remove_duplicates (checkDep (abCheckDep (mutRel f)) (xs) [x] []))
+ [] -> []
 
-getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-getDepDoms ls = case ls of 
-                  x:xs -> remove_duplicates (map remove_duplicates (checkDep (abCheckDep (mutRel deDepOn)) (xs) [x] []))
-                  [] -> []
-
-{- used to check whether, given two lists of domain entries, there is one that depends on the other -} 
+{- used to check whether, given two lists of elements, there is one depending on the other -} 
 abCheckDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 abCheckDep f as bs = genOr (\x -> genOr (f x) bs) as  
 
 checkDep ::  ([x] -> [x] -> Bool) -> [[x]] -> [[x]] -> [[x]] -> [[x]]
 checkDep f ls ms cs = case ls of 
-                         a:as -> case ms of 
-                                   b:bs -> if (f a b) then checkDep f ((a ++ b):as) bs cs else checkDep f (a:as) bs (b:cs)
-                                   [] -> checkDep f as (a:cs) []
-                         [] -> ms 
+  a:as -> case ms of 
+     b:bs -> if (f a b) then checkDep f ((a ++ b):as) bs cs else checkDep f (a:as) bs (b:cs)
+     [] -> checkDep f as (a:cs) []
+  [] -> ms 
 
-{- mutual dependance between domains -} 
+{- mutual dependence -} 
 mutRel :: (a -> a -> Bool) -> a -> a -> Bool
 mutRel f x y = f x y && f y x
 
 depOn :: (a -> b -> Bool) -> (c -> a) -> (c -> [b]) -> c -> c -> Bool
 depOn f g h x y = genOr (f (g x)) (h y) 
 
-deDepOn :: DomainEntry -> DomainEntry -> Bool
-deDepOn x y = depOn subTypForm fst (concat . (map snd) . snd) x y
-
 genOr :: (a -> Bool) -> [a] -> Bool
 genOr f ys = case ys of 
                [] -> False
                x:xs -> if (f x) then True 
                            else (genOr f xs)
+
+-- singList :: [a] -> [[a]]
+-- singList list = [[a] | a <- list]
+----------------------------- mutually recursive domains --------------------------
+
+getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
+getDepDoms ls = abGetDep deDepOn ls   
+
+deDepOn :: DomainEntry -> DomainEntry -> Bool
+deDepOn x y = depOn subTypForm fst (concat . (map snd) . snd) x y
 
 subTypForm :: Typ -> Typ -> Bool
 subTypForm t1 t2 = case t2 of 
@@ -580,14 +569,11 @@ subTypForm t1 t2 = case t2 of
                   else genOr (subTypForm t1) cs
       _ -> False   
 
--- singList :: [a] -> [[a]]
--- singList list = [[a] | a <- list]
 ------------------------------- getting DomainTab -----------------------------
 
 getDomainTab :: VaMap -> IsaSign.DomainTab 
 getDomainTab f =  
    getDepDoms $ remove_duplicates [getDomainEntry (getAConstTab f) x | x <- Map.keys f, checkTyCons x]
---   getDepDoms $ singList [getDomainEntry (getConstTab f) (getHsType f x) | x <- Map.keys f, checkTyCons g x]
 
 checkTyCons :: HsId -> Bool
 checkTyCons d = case d of 
@@ -752,3 +738,28 @@ termMAppl c t ts =
    v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
       termMAppl c (App t v c) vs 
 
+------------------ checking for mutually recursive functions --------------------------------------------
+
+getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
+getDepSent ls = abGetDep sentDepOn ls   
+
+sentDepOn :: Named Sentence -> Named Sentence -> Bool
+sentDepOn x y = depOn (==) (fst . sentAna) (snd . sentAna) x y 
+
+sentAna :: Named Sentence -> (Term, [Term])
+sentAna s = case s of
+  NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
+
+constFilter :: Term -> [Term]
+constFilter t = case t of
+ IsaSign.Const _ _ -> [t]
+ IsaSign.Abs _ _ x _ -> constFilter x
+ IsaSign.App x y _ -> concat $ map constFilter [x,y]
+ IsaSign.CIf x y z -> concat $ map constFilter [x,y,z]
+ IsaSign.If x y z -> concat $ map constFilter [x,y,z]
+ IsaSign.Paren x -> constFilter x
+ IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
+ IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
+ IsaSign.Tuples xs _ -> concat $ map constFilter xs
+ _ -> []
+ 
