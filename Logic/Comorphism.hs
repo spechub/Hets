@@ -135,7 +135,7 @@ instance Logic lid sublogics
            map_theory _ = return
            map_morphism _ = return
            map_sentence _ = \_ -> return
-           map_symbol _ = Set.single
+           map_symbol _ = Set.singleton
            constituents _ = []
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show

@@ -24,7 +24,7 @@ module Logic.Morphism where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Lib.Set
+import qualified Common.Lib.Set as Set
 import Data.Maybe
 import Data.Dynamic
 import Common.DynamicUtils 
@@ -69,7 +69,7 @@ class (Language cid,
           -- also covers semi-morphisms ??
           -- with no sentence translation
           -- - but these are spans!
-    morMap_symbol :: cid -> symbol1 -> Set symbol2
+    morMap_symbol :: cid -> symbol1 -> Set.Set symbol2
     -- morConstituents not needed, because composition only via lax triangles
 
 
@@ -108,10 +108,12 @@ instance Logic lid sublogics
            morTargetLogic (IdMorphism lid _sub) = lid
            morSourceSublogic (IdMorphism _lid sub) = sub
            morTargetSublogic (IdMorphism _lid sub) = sub
+           morMapSublogic _ _ = 
+               error "Logic.Morphism.IdMorphism.morMapSublogic"
            morMap_sign _ = Just
            morMap_morphism _ = Just
            morMap_sentence _ = \_ -> Just
-           morMap_symbol _ = single
+           morMap_symbol _ = Set.singleton
 
 -- composition not needed, use lax triangles instead
 
@@ -131,36 +133,3 @@ class Comorphism cid
     indMorMap_sign :: cid -> sign2 -> Maybe sign1
     indMorMap_morphism :: cid -> morphism2 -> Maybe morphism1
     epsilon :: cid -> sign2 -> Maybe morphism2
-
-{-
-instance InducingComorphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2 => 
-   Morphism cid
-            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
-            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-   where
-    morSourceLogic cid = targetLogic cid
-    morSourceSublogic cid = targetSublogic cid
-    morTargetLogic cid = sourceSublogic cid
-    morTargetSublogic cid = sourceSublogic cid
-    --morMapSublogic :: cid -> sublogics1 -> sublogics2
-    -- the translation functions are partial 
-    -- because the target may be a sublanguage
-    -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
-    -- we do not cover theoroidal morphisms, 
-    --   since there are no relevant examples and they do not compose nicely
-    -- no mapping of theories, since signatrures and sentences are mapped
-    --   contravariantly
-    --morMap_sign :: cid -> sign1 -> Maybe sign2
-    --morMap_morphism :: cid -> morphism1 -> Maybe morphism2
-    --morMap_sentence :: cid -> sign1 -> sentence2 -> Maybe sentence1
-          -- also covers semi-morphisms ??
-          -- with no sentence translation
-          -- - but these are spans!
-    --morMap_symbol :: cid -> symbol1 -> Set symbol2
--}

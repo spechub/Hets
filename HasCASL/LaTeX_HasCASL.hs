@@ -553,7 +553,7 @@ instance PrintLaTeX DataEntry where
             <+> (hc_sty_axiom defnS $$ 
                  vcat (map (printAltDefn ga (i, args, star))
                        alts))
-        $$ nest 2 (noPrint (Map.isEmpty im) 
+        $$ nest 2 (noPrint (Map.null im) 
            (hc_sty_plain_keyword withS <+> hc_sty_plain_keyword (typeS ++ sS) 
                    <+> printMap0 ga (hc_sty_axiom mapsTo) im))
 
@@ -567,11 +567,11 @@ instance PrintLaTeX Sentence where
 instance PrintLaTeX Env where
     printLatex0 ga (Env{classMap=cm, typeMap=tm, 
                        assumps=as, sentences=se, envDiags=_ds}) = 
-        noPrint (Map.isEmpty cm) (header "Classes")
+        noPrint (Map.null cm) (header "Classes")
         $$ printMap0 ga empty cm
-        $$ noPrint (Map.isEmpty tm) (header "Type Constructors")
+        $$ noPrint (Map.null tm) (header "Type Constructors")
         $$ printMap0 ga empty tm
-        $$ noPrint (Map.isEmpty as) (header "Assumptions")
+        $$ noPrint (Map.null as) (header "Assumptions")
         $$ printMap0 ga empty as
         $$ noPrint (null se) (header "Sentences")
         $$ vcat (map (printLatex0 ga) se)

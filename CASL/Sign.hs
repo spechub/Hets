@@ -99,7 +99,7 @@ instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
     printText0 ga s = 
         ptext (sortS++sS) <+> commaT_text ga (Set.toList $ sortSet s) 
         $$ 
-        (if Rel.isEmpty (sortRel s) then empty
+        (if Rel.null (sortRel s) then empty
             else ptext (sortS++sS) <+> 
              (fsep . punctuate semi $ map printRel $ Map.toList 
                        $ Rel.toMap $ Rel.transpose $ sortRel s))
@@ -137,7 +137,7 @@ diffMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b)
            -> Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
 diffMapSet =
     Map.differenceWith ( \ s t -> let d = Set.difference s t in
-                         if Set.isEmpty d then Nothing 
+                         if Set.null d then Nothing 
                          else Just d )
 
 addMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b) 
@@ -159,23 +159,23 @@ addSig ad a b =
 
 isEmptySig :: (e -> Bool) -> Sign f e -> Bool 
 isEmptySig ie s = 
-    Set.isEmpty (sortSet s) && 
-    Rel.isEmpty (sortRel s) && 
-    Map.isEmpty (opMap s) &&
-    Map.isEmpty (predMap s) && ie (extendedInfo s)
+    Set.null (sortSet s) && 
+    Rel.null (sortRel s) && 
+    Map.null (opMap s) &&
+    Map.null (predMap s) && ie (extendedInfo s)
 
 isSubMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
             -> Bool
-isSubMapSet = Map.subsetBy Set.subset
+isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
 
 isSubOpMap :: OpMap -> OpMap -> Bool
-isSubOpMap a b = Map.subsetBy Set.subset a $ addPartOpsM b 
+isSubOpMap a b = Map.isSubmapOfBy Set.isSubsetOf a $ addPartOpsM b 
 
 isSubSig :: (PrettyPrint e, PrettyPrint f) => 
             (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
 isSubSig isSubExt a b = 
-  Set.subset (sortSet a) (sortSet b) 
-          && Rel.subset (sortRel a) (sortRel b)
+  Set.isSubsetOf (sortSet a) (sortSet b) 
+          && Rel.isSubrelOf (sortRel a) (sortRel b)
           && isSubOpMap (opMap a) (opMap b)
           -- ignore associativity properties! 
           && isSubMapSet (predMap a) (predMap b)

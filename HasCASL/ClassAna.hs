@@ -36,7 +36,7 @@ toIntersection l ps = case Set.toList $ mkIntersection l of
 mkIntersection :: [Kind] -> Set.Set Kind
 mkIntersection = Set.unions . map ( \ k -> case k of
                                  Intersection lk _ -> mkIntersection lk
-                                 _ -> Set.single k) 
+                                 _ -> Set.singleton k) 
 
 rawKind :: Kind -> Kind
 rawKind c = 

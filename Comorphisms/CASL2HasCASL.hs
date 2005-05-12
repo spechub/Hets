@@ -63,7 +63,7 @@ instance Comorphism CASL2HasCASL
     targetSublogic CASL2HasCASL = HasSub.top
     map_morphism CASL2HasCASL = return . mapMor
     map_sentence CASL2HasCASL sig = return . toSentence sig
-    map_symbol CASL2HasCASL = Set.single . mapSym
+    map_symbol CASL2HasCASL = Set.singleton . mapSym
     map_theory CASL2HasCASL = return . mapTheory
 
 toType :: Id -> Type

@@ -27,18 +27,19 @@ may destroy the closedness property of a relation.
 
 -}
 
-module Common.Lib.Rel (Rel(), empty, isEmpty, insert, member, toMap,
-                       union , subset, difference, path, delete,
+module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null, 
+                       insert, member, toMap, Common.Lib.Rel.map, 
+                       union , isSubrelOf, difference, path, delete,
                        succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
                        intransKernel, mostRight, rmSym, symmetricSets,
                        restrict, toSet, fromSet, topSort, nodes,
-                       transpose, collaps, transReduce, 
+                       transpose, collaps, transReduce, setInsert,
                        haveCommonLeftElem) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Data.List(groupBy)
+import qualified Data.List as List
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 -- the invariant is that set values are never empty
@@ -48,8 +49,8 @@ empty :: Rel a
 empty = Rel Map.empty
 
 -- | test for 'empty'
-isEmpty :: Rel a -> Bool
-isEmpty (Rel m) = Map.isEmpty m
+null :: Rel a -> Bool
+null (Rel m) = Map.null m
 
 -- | difference of two relations
 difference :: Ord a => Rel a -> Rel a -> Rel a
@@ -59,22 +60,20 @@ difference a b = fromSet (toSet a Set.\\ toSet b)
 union :: Ord a => Rel a -> Rel a -> Rel a
 union a b = fromSet $ Set.union (toSet a) $ toSet b
 
--- | is the first relation a subset of the second
-subset :: Ord a => Rel a -> Rel a -> Bool
-subset a b = Set.subset (toSet a) $ toSet b
+-- | is the first relation a sub-relation of the second
+isSubrelOf :: Ord a => Rel a -> Rel a -> Bool
+isSubrelOf a b = Set.isSubsetOf (toSet a) $ toSet b
 
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
-insert a b (Rel m) = Rel $ Map.setInsert a b m 
+insert a b (Rel m) = Rel $ Map.insert a 
+    (Set.insert b $ Map.findWithDefault Set.empty a m) m  
 
 -- | delete an ordered pair
 delete :: Ord a => a -> a -> Rel a -> Rel a
-delete a b r
-    | member a b r = let s = Set.delete b (Map.find a (toMap r)) 
-                     in if Set.isEmpty s 
-                        then Rel $ Map.delete a $ toMap r 
-                        else Rel $ Map.insert a s $ toMap r
-    | otherwise    = r
+delete a b (Rel m) = 
+    let t = Set.delete b $ Map.findWithDefault Set.empty a m in
+    Rel $ if Set.null t then Map.delete a m else Map.insert a t m
 
 -- | test for an (previously inserted) ordered pair
 member :: Ord a => a -> a -> Rel a -> Bool
@@ -114,19 +113,19 @@ transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
 
 -- | get reverse relation
 transpose :: Ord a => Rel a -> Rel a 
-transpose = fromList . map ( \ (a, b) -> (b, a)) . toList
+transpose = fromList . List.map ( \ (a, b) -> (b, a)) . toList
 
 -- | make relation irreflexive 
 irreflex :: Ord a => Rel a -> Rel a
 irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s -> 
            let r = Set.delete k s in 
-           if Set.isEmpty r then id else
+           if Set.null r then id else
               Map.insert k r) Map.empty m 
 
 -- | compute strongly connected components for a transitively closed relation 
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
 sccOfClosure r@(Rel m) = 
-        if Map.isEmpty m then []
+        if Map.null m then []
         else let ((k, v), p) = Map.deleteFindMin m in
              if Set.member k v then
                 let c = preds r k v in
@@ -141,7 +140,8 @@ collaps r = let
         [] -> Map.empty
         x : t -> let (m, s) = Set.deleteFindMin x in
                      Set.fold ( \ e -> Map.insert e m) (toCollapsMap t) s 
-    in image (\ e -> Map.findWithDefault e e $ toCollapsMap $ sccOfClosure r) r
+    in Common.Lib.Rel.map 
+           (\ e -> Map.findWithDefault e e $ toCollapsMap $ sccOfClosure r) r
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a DAG. -}
@@ -154,7 +154,7 @@ transReduce rel@(Rel m) =
     where
     -- (a, b) in r but no c with (a, c) and (c, b) in r
     covers :: Ord a => a -> a -> Rel a -> Bool
-    covers a b r = Set.all ( \ c -> not $ path c b r) 
+    covers a b r = Set.null $ Set.filter ( \ c -> path c b r) 
                        (Set.delete a $ Set.delete b $ reachable r a)  
 
 -- | convert a list of ordered pairs to a relation 
@@ -163,7 +163,7 @@ fromList = foldr (uncurry insert) empty
 
 -- | convert a relation to a list of ordered pairs
 toList :: Rel a -> [(a, a)]
-toList (Rel m) = concatMap (\ (a , bs) -> map ( \ b -> (a, b) ) 
+toList (Rel m) = concatMap (\ (a , bs) -> List.map ( \ b -> (a, b) ) 
                             (Set.toList bs)) $ Map.toList m
 
 instance (Show a, Ord a) => Show (Rel a) where
@@ -172,10 +172,25 @@ instance (Show a, Ord a) => Show (Rel a) where
 {--------------------------------------------------------------------
   Image (Added by T.M.) (implementation changed by C.M.)
 --------------------------------------------------------------------}
--- | Image of a relation under a function
-image :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-image f (Rel m) = Rel $ Map.foldWithKey 
-    ( \ a v -> Map.insertWith Set.union (f a) $ Set.image f v) Map.empty m 
+
+-- | Insert into a set of values
+setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a) 
+          -> Map.Map k (Set.Set a)
+setInsert kx x t = 
+    Map.insert kx (Set.insert x $ Map.findWithDefault Set.empty kx t) t
+
+-- | the image of a map 
+image :: (Ord k, Ord a) => Map.Map k a -> Set.Set k -> Set.Set a
+image f s =
+  Set.fold ins Set.empty s
+  where ins x = case Map.lookup x f of
+                 Nothing -> id
+                 Just y -> Set.insert y
+
+-- | map the values of a relation
+map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
+map f (Rel m) = Rel $ Map.foldWithKey 
+    ( \ a v -> Map.insertWith Set.union (f a) $ Set.map f v) Map.empty m 
 
 {--------------------------------------------------------------------
   Restriction (Added by T.M.) 
@@ -185,7 +200,7 @@ restrict :: Ord a => Rel a -> Set.Set a -> Rel a
 restrict (Rel m) s = Rel $ Map.foldWithKey 
     ( \ a v -> if Set.member a s then
                    let r = Set.intersection v s in
-                   if Set.isEmpty r then id else Map.insert a r
+                   if Set.null r then id else Map.insert a r
                else id) Map.empty m 
 
 {--------------------------------------------------------------------
@@ -202,9 +217,9 @@ fromSet s = fromAscList $ Set.toList s
 -- | convert a sorted list of ordered pairs to a relation 
 fromAscList :: (Ord a) => [(a, a)] -> Rel a
 fromAscList = Rel . Map.fromDistinctAscList 
-                  . map ( \ l -> (fst (head l), 
-                                  Set.fromDistinctAscList $ map snd l))
-                        . groupBy ( \ (a, _) (b, _) -> a == b)
+                  . List.map ( \ l -> (fst (head l), 
+                                  Set.fromDistinctAscList $ List.map snd l))
+                        . List.groupBy ( \ (a, _) (b, _) -> a == b)
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
@@ -219,12 +234,12 @@ elemSet = Set.unions . Map.elems
 -- | topological sort a relation (more efficient for a closed relation)
 topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r@(Rel m) = 
-    if isEmpty r then []
+    if Map.null m then []
     else let ms = keySet m Set.\\ elemSet m in 
-        if Set.isEmpty ms then case removeCycle r of 
+        if Set.null ms then case removeCycle r of 
            Nothing -> topSort (transClosure r)
            Just (a, cyc, restRel) ->
-               map ( \ s -> if Set.member a s then 
+               List.map ( \ s -> if Set.member a s then 
                      Set.union s cyc else s) $ topSort restRel
         else let (lowM, rest) = 
                      Map.partitionWithKey (\ k _ -> Set.member k ms) m
@@ -238,7 +253,7 @@ topSort r@(Rel m) =
 removeCycle :: Ord a => Rel a -> Maybe (a, Set.Set a, Rel a)
 removeCycle r@(Rel m) = 
     let cycles = Map.filterWithKey Set.member m in
-        if Map.isEmpty cycles then Nothing
+        if Map.null cycles then Nothing
            else let (a, os) = Map.findMin cycles
                     cs = preds r a os
                     m1 = Map.foldWithKey 
@@ -288,7 +303,7 @@ symmetricSets :: (Ord a) => Rel a -> Set.Set (Set.Set a)
 symmetricSets rel = 
     fst $ Map.foldWithKey  
            (\k e (s,seen) -> 
-              if not (Set.isEmpty seen) && 
+              if not (Set.null seen) && 
                  k == Set.findMin seen 
               then (s,seen) 
               else (let sym = Set.fold (\ e1 s1 -> 
@@ -296,7 +311,7 @@ symmetricSets rel =
                                               then Set.insert k $ 
                                                    Set.insert e1 s1
                                               else s1) Set.empty  e 
-                    in if Set.isEmpty sym 
+                    in if Set.null sym 
                        then s 
                        else Set.insert sym s
                    ,Set.insert k seen `Set.union` e))
@@ -331,9 +346,9 @@ intransKernel r =
     let rmap = toMap $ rmReflex $ rmSym r
         insDirR k set m = Map.insert k (dirRight set) m
         dirRight set = set Set.\\ transRight set
-        transRight =  Set.unions . map lkup . Set.toList
+        transRight =  Set.unions . List.map lkup . Set.toList
         lkup = (\ e -> maybe Set.empty id (Map.lookup e rmap))
-        filterEmptySet = Map.filter (not . Set.isEmpty)  
+        filterEmptySet = Map.filter (not . Set.null)  
         addSym sm =                     
             Map.mapWithKey 
                       (\ k s -> Set.delete k $ 

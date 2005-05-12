@@ -26,7 +26,6 @@ import HasCASL.Symbol
 import HasCASL.RawSym
 import HasCASL.Morphism
 import HasCASL.MapTerm
-import HasCASL.Unify
 import HasCASL.VarDecl
 import Common.Id
 import Common.Result
@@ -42,7 +41,7 @@ inducedFromMorphism rmap1 sigma = do
   let syms = symOf sigma
       srcTypeMap = typeMap sigma
       wrongRsyms = Map.foldWithKey
-        (\rsy _ -> if Set.any (matchesND rsy) syms
+        (\rsy _ -> if any (matchesND rsy) $ Set.toList syms
                     then id
                     else Set.insert rsy)
         Set.empty
@@ -55,7 +54,7 @@ inducedFromMorphism rmap1 sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  if Set.isEmpty wrongRsyms then do
+  if Set.null wrongRsyms then do
   -- compute the sort map (as a Map)
       myTypeIdMap <- foldr
               (\ (s, ti) m -> 
@@ -104,7 +103,9 @@ mapTypeDefn im td =
 -- | compute type mapping
 typeFun :: Env -> RawSymbolMap -> Id -> Kind -> Result Id
 typeFun e rmap s k = do
-    let rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
+    let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of 
+                 Nothing -> Set.empty
+                 Just r -> Set.singleton r)
                [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SK_type s]
     -- rsys contains the raw symbols to which s is mapped to
     case Set.size rsys of
@@ -215,7 +216,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
         in if Set.size s1 == 1 && Set.size s2 == 1 
               && symbTypeToKind t1 == SK_type 
               && symbTypeToKind t2 == SK_type then
-          return mor1 { typeIdMap = Map.single n1 n2 } 
+          return mor1 { typeIdMap = Map.singleton n1 n2 } 
           else Result [Diag Error ("No symbol mapping found for:\n"
            ++ showPretty rmap "\nOrignal Signature1:\n"
            ++ showPretty sigma1 "\nInduced "

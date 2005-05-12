@@ -152,7 +152,7 @@ rawSymName (AKindedId _ i) = i
 
 symOf ::  Sign f e -> SymbolSet
 symOf sigma = 
-    let sorts = Set.image idToSortSymbol $ sortSet sigma
+    let sorts = Set.map idToSortSymbol $ sortSet sigma
         ops = Set.fromList $ 
               concatMap (\ (i, ts) -> map ( \ t -> idToOpSymbol i t) 
                          $ Set.toList ts) $ 
@@ -328,11 +328,12 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
 
 legalSign ::  Sign f e -> Bool
 legalSign sigma =
-  Map.foldWithKey (\s sset b -> b && legalSort s && Set.all legalSort sset)
+  Map.foldWithKey (\s sset b -> b && legalSort s && all legalSort 
+                                (Set.toList sset))
                   True (Rel.toMap (sortRel sigma))
-  && Map.fold (\ts b -> b && Set.all legalOpType ts) 
+  && Map.fold (\ts b -> b && all legalOpType (Set.toList ts)) 
               True (opMap sigma)
-  && Map.fold (\ts b -> b && Set.all legalPredType ts) 
+  && Map.fold (\ts b -> b && all legalPredType (Set.toList ts)) 
               True (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
@@ -402,7 +403,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       omap2 = fun_map mor2
       uo1 = foldr delOp (opMap s1) $ Map.keys omap1
       uo2 = foldr delOp (opMap s2) $ Map.keys omap2
-      delOp (n, ot) m = diffMapSet m $ Map.single n $ 
+      delOp (n, ot) m = diffMapSet m $ Map.singleton n $ 
                     Set.fromList [ot {opKind = Partial}, ot {opKind =Total}]
       uo = addMapSet uo1 uo2
       pmap1 = pred_map mor1
@@ -410,7 +411,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       up1 = foldr delPred (predMap s1) $ Map.keys pmap1
       up2 = foldr delPred (predMap s2) $ Map.keys pmap2
       up = addMapSet up1 up2
-      delPred (n, pt) m = diffMapSet m $ Map.single n $ Set.single pt
+      delPred (n, pt) m = diffMapSet m $ Map.singleton n $ Set.singleton pt
       (sds, smap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else 

@@ -65,7 +65,7 @@ instance Comorphism CASL2CspCASL
     map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig (const ())
     map_morphism CASL2CspCASL = return . mapMor
     map_sentence CASL2CspCASL sig = return . (const ()) -- toSentence sig
-    --map_symbol CASL2CspCASL = Set.single . mapSym
+    --map_symbol CASL2CspCASL = Set.singleton . mapSym
 
 mapSig :: CASLSign -> CSPSign
 mapSig sign = 

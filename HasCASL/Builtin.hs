@@ -113,7 +113,7 @@ mkPrecIntMap r =
         m = foldr ( \ (n, s) m1 -> 
                     Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
                  Map.empty $ zip [1..l] t
-        in (m, Map.find eqId m, l)
+        in (m, m Map.! eqId, l)
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"

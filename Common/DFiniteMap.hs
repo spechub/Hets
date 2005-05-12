@@ -223,7 +223,7 @@ fromDistinctAscList = fromList
 -- | Insert into a set of values
 setInsert :: (Ord k, Ord a) => k -> a -> Map k (Set.Set a) -> Map k (Set.Set a)
 setInsert  kx x t = case lookup kx t of
-  Nothing -> insert kx (Set.single x) t
+  Nothing -> insert kx (Set.singleton x) t
   Just xs -> insert kx (Set.insert x xs) t
 
 -- | Insert into a list of values

@@ -722,7 +722,7 @@ sl_symbOrMap (SymbOrMap s (Just t) _) =
 
 sl_env :: Env -> HasCASL_Sublogics
 sl_env e = 
-    let classes = if Map.isEmpty $ classMap e 
+    let classes = if Map.null $ classMap e 
                     then bottom else need_type_classes
         types = comp_list $ map sl_typeInfo (Map.elems (typeMap e))
         ops = comp_list $ map sl_opInfos (Map.elems (assumps e))

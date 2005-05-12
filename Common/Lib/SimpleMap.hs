@@ -42,7 +42,7 @@ delFromFM :: Ord a => FiniteMap a b -> a -> FiniteMap a b
 delFromFM = flip Map.delete
 
 isEmptyFM :: Ord a => FiniteMap a b -> Bool
-isEmptyFM = Map.isEmpty
+isEmptyFM = Map.null
 
 sizeFM :: Ord a => FiniteMap a b -> Int
 sizeFM = Map.size
@@ -52,11 +52,11 @@ lookupFM = flip Map.lookup
 
 
 minFM :: Ord a => FiniteMap a b -> Maybe (a,b)
-minFM m = if Map.isEmpty m then Nothing
+minFM m = if Map.null m then Nothing
           else Just $ Map.findMin m
 
 maxFM :: Ord a => FiniteMap a b -> Maybe (a,b)
-maxFM m = if Map.isEmpty m then Nothing
+maxFM m = if Map.null m then Nothing
           else Just $ Map.findMax m
 
 elemFM :: Ord a => FiniteMap a b -> a -> Bool

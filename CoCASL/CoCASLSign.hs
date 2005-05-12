@@ -41,6 +41,6 @@ diffCoCASLSign a b = a
 
 isSubCoCASLSign :: CoCASLSign -> CoCASLSign -> Bool
 isSubCoCASLSign a b = 
-    Rel.subset (sees a) (sees b)
-    && Rel.subset (constructs a) (constructs b)
+    Rel.isSubrelOf (sees a) (sees b)
+    && Rel.isSubrelOf (constructs a) (constructs b)
     && isSubOpMap (constructors a) (constructors b)

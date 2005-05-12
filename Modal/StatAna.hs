@@ -149,7 +149,9 @@ addRigidOp ty i m = return
 
 addRigidPred :: PredType -> Id -> ModalSign -> Result ModalSign
 addRigidPred ty i m = return
-       m { rigidPreds = Map.setInsert i ty $ rigidPreds m }
+       m { rigidPreds = let rps = rigidPreds m in Map.insert i 
+             (Set.insert ty $ Map.findWithDefault Set.empty i rps) rps }
+
 
 ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
 ana_M_BASIC_ITEM ga bi = do
@@ -222,7 +224,7 @@ getFormPredToks frm = case frm of
     Equivalence f1 f2 _  -> 
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
-    Mixfix_formula (Mixfix_token t) -> Set.single t
+    Mixfix_formula (Mixfix_token t) -> Set.singleton t
     Mixfix_formula t -> getTermPredToks t
     ExtFORMULA (BoxOrDiamond _ _ f _) -> getFormPredToks f
     Predication _ ts _ -> Set.unions $ map getTermPredToks ts

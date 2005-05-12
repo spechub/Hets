@@ -507,7 +507,7 @@ leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
 leqClasses eq os = 
     map (Set.toList) $ Rel.sccOfClosure $ Rel.transClosure $ leqRel os
     where -- create the (non-transitive) overload relation
-          leqRel l = if Set.isEmpty l then Rel.empty else 
+          leqRel l = if Set.null l then Rel.empty else 
                      let (x, r) = Set.deleteFindMin l in
                      Rel.insert x x $ Set.fold ( \ e s -> 
                      if eq x e then Rel.insert x e 

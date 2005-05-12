@@ -153,15 +153,15 @@ instance Unifiable Type where
         if rel i1 i2 && v1 == v2
            then return eps
         else if v1 > 0 && b1 then return $ 
-                Map.single v1 t2
+                Map.singleton v1 t2
                 else if v2 > 0 && b2 then return $
-                     Map.single v2 t1
+                     Map.singleton v2 t1
                         else uniResult "typename" t1 
                                     "is not unifiable with typename" t2
     match _tm _ (b1, TypeName i1 _ v1) (_, t2) =
         if v1 > 0 && b1 then 
            if null $ leaves (==v1) t2 then 
-              return $ Map.single v1 t2
+              return $ Map.singleton v1 t2
            else uniResult "var" i1 "occurs in" t2
         else uniResult "typename" i1  
                             "is not unifiable with type" t2

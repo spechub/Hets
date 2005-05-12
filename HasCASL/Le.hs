@@ -47,7 +47,7 @@ data Selector = Select (Maybe UninstOpId) Type Partiality -- only result type
 type IdMap = Map.Map TypeId TypeId
 
 mapType :: IdMap -> Type -> Type
-mapType m ty = if Map.isEmpty m then ty else 
+mapType m ty = if Map.null m then ty else 
               rename ( \ i k n ->
                let t = TypeName i k n in
                if n == 0 then 

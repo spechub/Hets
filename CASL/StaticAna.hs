@@ -95,7 +95,7 @@ addPred ty i =
            l = Map.findWithDefault Set.empty i m
        if Set.member ty l then 
           addDiags [mkDiag Hint "redeclared pred" i] 
-          else do put e { predMap = Map.setInsert i ty m }
+          else do put e { predMap = Map.insert i (Set.insert ty l) m }
                   addDiags $ checkPlaces (predArgs ty) i
 
 allOpIds :: Sign f e -> Set.Set Id
@@ -319,7 +319,7 @@ getGenSorts si =
            Sort_decl il _ -> (Set.fromList il, Rel.empty)
            Subsort_decl il i _ -> (Set.fromList (i:il)
                                   , foldr (flip Rel.insert i) Rel.empty il)
-           Subsort_defn sub _ super _ _ -> (Set.single sub
+           Subsort_defn sub _ super _ _ -> (Set.singleton sub
                                            , Rel.insert sub super Rel.empty)
            Iso_decl il _ -> (Set.fromList il
                             , foldr ( \ s r -> foldr ( \ t -> 
@@ -331,7 +331,7 @@ getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of 
     Op_decl is ty _ _ -> 
         Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
-    Op_defn i par _ _ -> Set.single $ Component i $ toOpType $ headToType par
+    Op_defn i par _ _ -> Set.singleton $ Component i $ toOpType $ headToType par
 
 ana_SORT_ITEM :: Resolver f => Min f e 
               -> GlobalAnnos -> Annoted (SORT_ITEM  f) 

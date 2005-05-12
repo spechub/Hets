@@ -70,7 +70,7 @@ substC s = Set.fold (insertC . ( \ c -> case c of
 
 simplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
 simplify tm rs = 
-    if Set.isEmpty rs then ([], noC)
+    if Set.null rs then ([], noC)
     else let (r, rt) = Set.deleteFindMin rs 
              Result ds m = entail tm r
              (es, cs) = simplify tm rt
@@ -206,20 +206,20 @@ shapeMgu tm cs =
     (TypeName _ _ v1, _) -> if (v1 > 0) then case t2 of
          ProductType ts ps -> do
              nts <- toPairState $ freshVarsT tm ts
-             let s = Map.single v1 $ ProductType nts ps
+             let s = Map.singleton v1 $ ProductType nts ps
              addSubst s
              shapeMgu tm (zip nts ts ++ subst s rest)
          FunType t3 ar t4 ps -> do
              v3 <- toPairState $ freshTypeVarT tm t3
              v4 <- toPairState $ freshTypeVarT tm t4
-             let s = Map.single v1 $ FunType v3 ar v4 ps
+             let s = Map.singleton v1 $ FunType v3 ar v4 ps
              addSubst s
              shapeMgu tm ((t3, v3) : (v4, t4) : subst s rest)
          _ -> do
              let (topTy, args) = getTypeAppl tm t2
                  (_, ks) = getRawKindAppl (rawKind $ kindOfType tm topTy) args
              vs <- toPairState $ freshVarsT tm args
-             let s = Map.single v1 $ mkTypeAppl topTy vs
+             let s = Map.singleton v1 $ mkTypeAppl topTy vs
              addSubst s
              shapeMgu tm (concat (zipWith zipC ks $ zip vs args) 
                           ++ subst s rest)
@@ -275,7 +275,7 @@ collapser r =
         ws = filter (\ p -> Set.size (fst p) > 1) ks
     in if null ws then
        return $ foldr ( \ (cs, vs) s -> 
-               if Set.isEmpty cs then 
+               if Set.null cs then 
                     extendSubst s $ Set.deleteFindMin vs
                else extendSubst s (Set.findMin cs, vs)) eps ks
     else Result 
@@ -389,7 +389,7 @@ monoSubst tm r t =
                         sl = Set.delete tn $ foldl1 Set.intersection 
                                       $ map (Rel.succs r)
                                       $ Set.toList s
-                    in Map.single i $ Set.findMin $ if Set.isEmpty sl then s
+                    in Map.singleton i $ Set.findMin $ if Set.null sl then s
                        else sl
              else   let (i, TypeArg n k _ _) = head resta
                         tn = TypeName n k i
@@ -397,7 +397,7 @@ monoSubst tm r t =
                         sl = Set.delete tn $ foldl1 Set.intersection 
                                         $ map (Rel.predecessors r)
                                         $ Set.toList s
-                    in Map.single i $ Set.findMin $ if Set.isEmpty sl then s
+                    in Map.singleton i $ Set.findMin $ if Set.null sl then s
                        else sl
           else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
                 (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) monos
@@ -408,10 +408,10 @@ monoSubst tm r t =
 monoSubsts :: TypeMap -> Rel.Rel Type -> Type -> Subst
 monoSubsts tm r t = 
     let s = monoSubst tm (Rel.transReduce $ Rel.irreflex r) t in
-    if Map.isEmpty s then s else
+    if Map.null s then s else
        compSubst s $ 
             monoSubsts tm (Rel.transReduce $ Rel.irreflex $
-                           Rel.image (subst s) r) 
+                           Rel.map (subst s) r) 
                            $ subst s t 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type

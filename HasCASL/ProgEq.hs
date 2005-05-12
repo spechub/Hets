@@ -94,7 +94,7 @@ mkProgEq e t = case getTupleAp t of
                  rvs = map getVar $ extractVars r
              in isLHS e p && isExecutable e r && 
                  null (checkUniqueness pvs) && 
-                      Set.fromList rvs `Set.subset` Set.fromList pvs 
+                      Set.fromList rvs `Set.isSubsetOf` Set.fromList pvs 
        in if i `elem` [eqId, exEq, eqvId] then 
               if cond a b
                  then Just $ ProgEq a b $ get_pos i
@@ -131,7 +131,7 @@ mkCondEq e t = case getTupleAp t of
           let pvs = map getVar $ extractVars lhs
               fvs = map getVar $ extractVars f 
           in if isExecutable env f &&
-             Set.fromList fvs `Set.subset` Set.fromList pvs then
+             Set.fromList fvs `Set.isSubsetOf` Set.fromList pvs then
              Just (ProgEq lhs 
                    (mkTerm whenElse whenType [] 
                     $ TupleTerm [rhs, f, bottom] []) ps)

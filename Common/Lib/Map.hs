@@ -1,87 +1,54 @@
---------------------------------------------------------------------------------
-{-| Module      :  Common.Lib.Map
-    Copyright   :  (c) Daan Leijen 2002
-    License     :  BSD-style
+----------------------------------------------------------------------------- 
+-- |
+-- Module      :  Common.Lib.Map
+-- Copyright   :  (c) Daan Leijen 2002
+-- License     :  BSD-style
+-- Maintainer  :  libraries@haskell.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- An efficient implementation of maps from keys to values (dictionaries).
+--
+-- This module is intended to be imported @qualified@, to avoid name
+-- clashes with Prelude functions.  eg.
+--
+-- >  import Common.Lib.Map as Map
+--
+-- The implementation of 'Map' is based on /size balanced/ binary trees (or
+-- trees of /bounded balance/) as described by:
+--
+--    * Stephen Adams, \"/Efficient sets: a balancing act/\",
+--	Journal of Functional Programming 3(4):553-562, October 1993,
+--	<http://www.swiss.ai.mit.edu/~adams/BB>.
+--
+--    * J. Nievergelt and E.M. Reingold,
+--	\"/Binary search trees of bounded balance/\",
+--	SIAM journal of computing 2(1), March 1973.
+-----------------------------------------------------------------------------
 
-    Maintainer  :  daan@cs.uu.nl
-    Stability   :  provisional
-    Portability :  portable
-
-  An efficient implementation of maps from keys to values (dictionaries). 
-
-  1) The module exports some names that clash with the "Prelude" -- 'lookup', 'map', and 'filter'. 
-      If you want to use "Map" unqualified, these functions should be hidden.
-
-      > import Prelude hiding (lookup,map,filter)
-      > import Map
-
-      Another solution is to use qualified names. This is also the only way how
-      a "Map", "Set", and "MultiSet" can be used within one module. 
-
-      > import qualified Map
-      >
-      > ... Map.single "Paris" "France"
-
-      Or, if you prefer a terse coding style:
-
-      > import qualified Map as M
-      >
-      > ... M.single "Berlin" "Germany"
-
-  2) The implementation of "Map" is based on /size balanced/ binary trees (or
-     trees of /bounded balance/) as described by:
-
-     * Stephen Adams, \"/Efficient sets: a balancing act/\", Journal of Functional
-       Programming 3(4):553-562, October 1993, <http://www.swiss.ai.mit.edu/~adams/BB>.
-
-     * J. Nievergelt and E.M. Reingold, \"/Binary search trees of bounded balance/\",
-       SIAM journal of computing 2(1), March 1973.
-     
-  3) Another implementation of finite maps based on size balanced trees
-      exists as "Data.FiniteMap" in the Ghc libraries. The good part about this library 
-      is that it is highly tuned and thorougly tested. However, it is also fairly old, 
-      uses @#ifdef@'s all  over the place and only supports the basic finite map operations. 
-      The "Map" module overcomes some of these issues:
-        
-      * It tries to export a more complete and consistent set of operations, like
-        'partition', 'adjust', 'mapAccum', 'elemAt' etc. 
-      
-      * It uses the efficient /hedge/ algorithm for both 'union' and 'difference'
-        (a /hedge/ algorithm is not applicable to 'intersection').
-      
-      * It converts ordered lists in linear time ('fromAscList').  
-
-      * It takes advantage of the module system with names like 'empty' instead of 'Data.FiniteMap.emptyFM'.
-      
-      * It sticks to portable Haskell, avoiding @#ifdef@'s and other magic.
--}
-----------------------------------------------------------------------------------
 module Common.Lib.Map  ( 
             -- * Map type
-              Map          -- instance Eq,Ord,Show
-            , EndoMap
+              Map          -- instance Eq,Show
 
             -- * Operators
             , (!), (\\)
 
+
             -- * Query
-            , isEmpty
+            , null
             , size
             , member
             , lookup
-            , find          
             , findWithDefault
             
             -- * Construction
             , empty
-            , single
+            , singleton
 
             -- ** Insertion
             , insert
             , insertWith, insertWithKey, insertLookupWithKey
-            , setInsert
-            , listInsert
-
+            
             -- ** Delete\/Update
             , delete
             , adjust
@@ -97,12 +64,12 @@ module Common.Lib.Map  (
             , unionWith          
             , unionWithKey
             , unions
+	    , unionsWith
 
             -- ** Difference
             , difference
             , differenceWith
             , differenceWithKey
-            , differentKeys
             
             -- ** Intersection
             , intersection           
@@ -115,7 +82,10 @@ module Common.Lib.Map  (
             , mapWithKey
             , mapAccum
             , mapAccumWithKey
-            
+	    , mapKeys
+	    , mapKeysWith
+	    , mapKeysMonotonic
+
             -- ** Fold
             , fold
             , foldWithKey
@@ -123,6 +93,7 @@ module Common.Lib.Map  (
             -- * Conversion
             , elems
             , keys
+	    , keysSet
             , assocs
             
             -- ** Lists
@@ -138,7 +109,7 @@ module Common.Lib.Map  (
             , fromAscListWithKey
             , fromDistinctAscList
 
-            -- * Filter
+            -- * Filter 
             , filter
             , filterWithKey
             , partition
@@ -147,9 +118,9 @@ module Common.Lib.Map  (
             , split         
             , splitLookup   
 
-            -- * Subset
-            , subset, subsetBy
-            , properSubset, properSubsetBy
+            -- * Submap
+            , isSubmapOf, isSubmapOfBy
+            , isProperSubmapOf, isProperSubmapOfBy
 
             -- * Indexed 
             , lookupIndex
@@ -174,15 +145,12 @@ module Common.Lib.Map  (
             , showTree
             , showTreeWith
             , valid
-
-           -- * Misc. additions
-           , image
-           , kernel
             ) where
 
-import Prelude hiding (lookup,map,filter)
-
+import Prelude hiding (lookup,map,filter,foldr,foldl,null)
 import qualified Common.Lib.Set as Set
+import qualified Data.List as List
+import Data.Typeable
 
 {-
 -- for quick check
@@ -195,24 +163,23 @@ import List(nub,sort)
 {--------------------------------------------------------------------
   Operators
 --------------------------------------------------------------------}
-infixl 9 !,\\ 
+infixl 9 !,\\ --
 
--- | /O(log n)/. See 'find'.
+-- | /O(log n)/. Find the value at a key.
+-- Calls 'error' when the element can not be found.
 (!) :: Ord k => Map k a -> k -> a
 m ! k    = find k m
 
 -- | /O(n+m)/. See 'difference'.
-(\\) :: Ord k => Map k a -> Map k a -> Map k a
+(\\) :: Ord k => Map k a -> Map k b -> Map k a
 m1 \\ m2 = difference m1 m2
 
 {--------------------------------------------------------------------
   Size balanced trees.
 --------------------------------------------------------------------}
--- | A Map from keys @k@ and values @a@. 
+-- | A Map from keys @k@ to values @a@. 
 data Map k a  = Tip 
               | Bin {-# UNPACK #-} !Size !k a !(Map k a) !(Map k a) 
-
-type EndoMap a = Map a a
 
 type Size     = Int
 
@@ -220,8 +187,8 @@ type Size     = Int
   Query
 --------------------------------------------------------------------}
 -- | /O(1)/. Is the map empty?
-isEmpty :: Map k a -> Bool
-isEmpty t
+null :: Map k a -> Bool
+null t
   = case t of
       Tip             -> True
       Bin sz k x l r  -> False
@@ -234,15 +201,19 @@ size t
       Bin sz k x l r  -> sz
 
 
--- | /O(log n)/. Lookup the value of key in the map.
-lookup :: Ord k => k -> Map k a -> Maybe a
-lookup k t
+-- | /O(log n)/. Lookup the value at a key in the map.
+lookup :: (Monad m,Ord k) => k -> Map k a -> m a
+lookup k t = case lookup' k t of
+    Just x -> return x
+    Nothing -> fail "Common.Lib.Map.lookup: Key not found"
+lookup' :: Ord k => k -> Map k a -> Maybe a
+lookup' k t
   = case t of
       Tip -> Nothing
       Bin sz kx x l r
           -> case compare k kx of
-               LT -> lookup k l
-               GT -> lookup k r
+               LT -> lookup' k l
+               GT -> lookup' k r
                EQ -> Just x       
 
 -- | /O(log n)/. Is the key a member of the map?
@@ -252,15 +223,16 @@ member k m
       Nothing -> False
       Just x  -> True
 
--- | /O(log n)/. Find the value of a key. Calls @error@ when the element can not be found.
+-- | /O(log n)/. Find the value at a key.
+-- Calls 'error' when the element can not be found.
 find :: Ord k => k -> Map k a -> a
 find k m
   = case lookup k m of
       Nothing -> error "Map.find: element not in the map"
       Just x  -> x
 
--- | /O(log n)/. The expression @(findWithDefault def k map)@ returns the value of key @k@ or returns @def@ when
--- the key is not in the map.
+-- | /O(log n)/. The expression @('findWithDefault' def k map)@ returns
+-- the value at key @k@ or returns @def@ when the key is not in the map.
 findWithDefault :: Ord k => a -> k -> Map k a -> a
 findWithDefault def k m
   = case lookup k m of
@@ -272,25 +244,27 @@ findWithDefault def k m
 {--------------------------------------------------------------------
   Construction
 --------------------------------------------------------------------}
--- | /O(1)/. Create an empty map.
+-- | /O(1)/. The empty map.
 empty :: Map k a
 empty 
   = Tip
 
--- | /O(1)/. Create a map with a single element.
-single :: k -> a -> Map k a
-single k x  
+-- | /O(1)/. A map with a single element.
+singleton :: k -> a -> Map k a
+singleton k x  
   = Bin 1 k x Tip Tip
 
 {--------------------------------------------------------------------
   Insertion
-  [insert] is the inlined version of [insertWith (\k x y -> x)]
 --------------------------------------------------------------------}
 -- | /O(log n)/. Insert a new key and value in the map.
+-- If the key is already present in the map, the associated value is
+-- replaced with the supplied value, i.e. 'insert' is equivalent to
+-- @'insertWith' 'const'@.
 insert :: Ord k => k -> a -> Map k a -> Map k a
 insert kx x t
   = case t of
-      Tip -> single kx x
+      Tip -> singleton kx x
       Bin sz ky y l r
           -> case compare kx ky of
                LT -> balance ky y (insert kx x l) r
@@ -306,33 +280,25 @@ insertWith f k x m
 insertWithKey :: Ord k => (k -> a -> a -> a) -> k -> a -> Map k a -> Map k a
 insertWithKey f kx x t
   = case t of
-      Tip -> single kx x
+      Tip -> singleton kx x
       Bin sy ky y l r
           -> case compare kx ky of
                LT -> balance ky y (insertWithKey f kx x l) r
                GT -> balance ky y l (insertWithKey f kx x r)
                EQ -> Bin sy ky (f ky x y) l r
 
--- | /O(log n)/. The expression (@insertLookupWithKey f k x map@) is a pair where
--- the first element is equal to (@lookup k map@) and the second element
--- equal to (@insertWithKey f k x map@).
+-- | /O(log n)/. The expression (@'insertLookupWithKey' f k x map@)
+-- is a pair where the first element is equal to (@'lookup' k map@)
+-- and the second element equal to (@'insertWithKey' f k x map@).
 insertLookupWithKey :: Ord k => (k -> a -> a -> a) -> k -> a -> Map k a -> (Maybe a,Map k a)
 insertLookupWithKey f kx x t
   = case t of
-      Tip -> (Nothing, single kx x)
+      Tip -> (Nothing, singleton kx x)
       Bin sy ky y l r
           -> case compare kx ky of
                LT -> let (found,l') = insertLookupWithKey f kx x l in (found,balance ky y l' r)
                GT -> let (found,r') = insertLookupWithKey f kx x r in (found,balance ky y l r')
                EQ -> (Just y, Bin sy ky (f ky x y) l r)
-
--- | Insert into a set of values
-setInsert :: (Ord k, Ord a) => k -> a -> Map k (Set.Set a) -> Map k (Set.Set a)
-setInsert  kx x t = insert kx (Set.insert x $ findWithDefault Set.empty kx t) t
-
--- | Insert into a list of values
-listInsert :: Ord k => k -> a -> Map k [a] -> Map k [a]
-listInsert  kx x t = insert kx (x : findWithDefault [] kx t) t
 
 {--------------------------------------------------------------------
   Deletion
@@ -362,16 +328,17 @@ adjustWithKey :: Ord k => (k -> a -> a) -> k -> Map k a -> Map k a
 adjustWithKey f k m
   = updateWithKey (\k x -> Just (f k x)) k m
 
--- | /O(log n)/. The expression (@update f k map@) updates the value @x@
--- at @k@ (if it is in the map). If (@f x@) is @Nothing@, the element is
--- deleted. If it is (@Just y@), the key @k@ is bound to the new value @y@.
+-- | /O(log n)/. The expression (@'update' f k map@) updates the value @x@
+-- at @k@ (if it is in the map). If (@f x@) is 'Nothing', the element is
+-- deleted. If it is (@'Just' y@), the key @k@ is bound to the new value @y@.
 update :: Ord k => (a -> Maybe a) -> k -> Map k a -> Map k a
 update f k m
   = updateWithKey (\k x -> f x) k m
 
--- | /O(log n)/. The expression (@update f k map@) updates the value @x@
--- at @k@ (if it is in the map). If (@f k x@) is @Nothing@, the element is
--- deleted. If it is (@Just y@), the key @k@ is bound to the new value @y@.
+-- | /O(log n)/. The expression (@'updateWithKey' f k map@) updates the
+-- value @x@ at @k@ (if it is in the map). If (@f k x@) is 'Nothing',
+-- the element is deleted. If it is (@'Just' y@), the key @k@ is bound
+-- to the new value @y@.
 updateWithKey :: Ord k => (k -> a -> Maybe a) -> k -> Map k a -> Map k a
 updateWithKey f k t
   = case t of
@@ -411,9 +378,10 @@ findIndex k t
 
 -- | /O(log n)/. Lookup the /index/ of a key. The index is a number from
 -- /0/ up to, but not including, the 'size' of the map. 
-lookupIndex :: Ord k => k -> Map k a -> Maybe Int
-lookupIndex k t
-  = lookup 0 t
+lookupIndex :: (Monad m,Ord k) => k -> Map k a -> m Int
+lookupIndex k t = case lookup 0 t of
+    Nothing -> fail "Common.Lib.Map.lookupIndex: Key not found."
+    Just x -> return x
   where
     lookup idx Tip  = Nothing
     lookup idx (Bin _ kx x l r)
@@ -448,7 +416,8 @@ updateAt f i (Bin sx kx x l r)
   where
     sizeL = size l
 
--- | /O(log n)/. Delete the element at /index/. Defined as (@deleteAt i map = updateAt (\k x -> Nothing) i map@).
+-- | /O(log n)/. Delete the element at /index/.
+-- Defined as (@'deleteAt' i map = 'updateAt' (\k x -> 'Nothing') i map@).
 deleteAt :: Int -> Map k a -> Map k a
 deleteAt i map
   = updateAt (\k x -> Nothing) i map
@@ -469,30 +438,30 @@ findMax (Bin _ kx x l Tip)  = (kx,x)
 findMax (Bin _ kx x l r)    = findMax r
 findMax Tip                 = error "Map.findMax: empty tree has no maximal element"
 
--- | /O(log n)/. Delete the minimal key
+-- | /O(log n)/. Delete the minimal key.
 deleteMin :: Map k a -> Map k a
 deleteMin (Bin _ kx x Tip r)  = r
 deleteMin (Bin _ kx x l r)    = balance kx x (deleteMin l) r
 deleteMin Tip                 = Tip
 
--- | /O(log n)/. Delete the maximal key
+-- | /O(log n)/. Delete the maximal key.
 deleteMax :: Map k a -> Map k a
 deleteMax (Bin _ kx x l Tip)  = l
 deleteMax (Bin _ kx x l r)    = balance kx x l (deleteMax r)
 deleteMax Tip                 = Tip
 
--- | /O(log n)/. Update the minimal key
+-- | /O(log n)/. Update the value at the minimal key.
 updateMin :: (a -> Maybe a) -> Map k a -> Map k a
 updateMin f m
   = updateMinWithKey (\k x -> f x) m
 
--- | /O(log n)/. Update the maximal key
+-- | /O(log n)/. Update the value at the maximal key.
 updateMax :: (a -> Maybe a) -> Map k a -> Map k a
 updateMax f m
   = updateMaxWithKey (\k x -> f x) m
 
 
--- | /O(log n)/. Update the minimal key
+-- | /O(log n)/. Update the value at the minimal key.
 updateMinWithKey :: (k -> a -> Maybe a) -> Map k a -> Map k a
 updateMinWithKey f t
   = case t of
@@ -502,7 +471,7 @@ updateMinWithKey f t
       Bin sx kx x l r    -> balance kx x (updateMinWithKey f l) r
       Tip                -> Tip
 
--- | /O(log n)/. Update the maximal key
+-- | /O(log n)/. Update the value at the maximal key.
 updateMaxWithKey :: (k -> a -> Maybe a) -> Map k a -> Map k a
 updateMaxWithKey f t
   = case t of
@@ -516,19 +485,28 @@ updateMaxWithKey f t
 {--------------------------------------------------------------------
   Union. 
 --------------------------------------------------------------------}
--- | The union of a list of maps: (@unions == foldl union empty@).
+-- | The union of a list of maps:
+--   (@'unions' == 'Prelude.foldl' 'union' 'empty'@).
 unions :: Ord k => [Map k a] -> Map k a
 unions ts
   = foldlStrict union empty ts
 
+-- | The union of a list of maps, with a combining operation:
+--   (@'unionsWith' f == 'Prelude.foldl' ('unionWith' f) 'empty'@).
+unionsWith :: Ord k => (a->a->a) -> [Map k a] -> Map k a
+unionsWith f ts
+  = foldlStrict (unionWith f) empty ts
+
 -- | /O(n+m)/.
 -- The expression (@'union' t1 t2@) takes the left-biased union of @t1@ and @t2@. 
--- It prefers @t1@ when duplicate keys are encountered, ie. (@union == unionWith const@).
+-- It prefers @t1@ when duplicate keys are encountered,
+-- i.e. (@'union' == 'unionWith' 'const'@).
 -- The implementation uses the efficient /hedge-union/ algorithm.
+-- Hedge-union is more efficient on (bigset `union` smallset)?
 union :: Ord k => Map k a -> Map k a -> Map k a
 union Tip t2  = t2
 union t1 Tip  = t1
-union t1 t2  -- hedge-union is more efficient on (bigset `union` smallset)
+union t1 t2
    | size t1 >= size t2  = hedgeUnionL (const LT) (const GT) t1 t2
    | otherwise           = hedgeUnionR (const LT) (const GT) t2 t1
 
@@ -569,10 +547,11 @@ unionWith f m1 m2
 
 -- | /O(n+m)/.
 -- Union with a combining function. The implementation uses the efficient /hedge-union/ algorithm.
+-- Hedge-union is more efficient on (bigset `union` smallset).
 unionWithKey :: Ord k => (k -> a -> a -> a) -> Map k a -> Map k a -> Map k a
 unionWithKey f Tip t2  = t2
 unionWithKey f t1 Tip  = t1
-unionWithKey f t1 t2  -- hedge-union is more efficient on (bigset `union` smallset)
+unionWithKey f t1 t2
   | size t1 >= size t2  = hedgeUnionWithKey f (const LT) (const GT) t1 t2
   | otherwise           = hedgeUnionWithKey flipf (const LT) (const GT) t2 t1
   where
@@ -598,7 +577,7 @@ hedgeUnionWithKey f cmplo cmphi (Bin _ kx x l r) t2
 --------------------------------------------------------------------}
 -- | /O(n+m)/. Difference of two maps. 
 -- The implementation uses an efficient /hedge/ algorithm comparable with /hedge-union/.
-difference :: Ord k => Map k a -> Map k a -> Map k a
+difference :: Ord k => Map k a -> Map k b -> Map k a
 difference Tip t2  = Tip
 difference t1 Tip  = t1
 difference t1 t2   = hedgeDiff (const LT) (const GT) t1 t2
@@ -615,16 +594,16 @@ hedgeDiff cmplo cmphi t (Bin _ kx x l r)
 
 -- | /O(n+m)/. Difference with a combining function. 
 -- The implementation uses an efficient /hedge/ algorithm comparable with /hedge-union/.
-differenceWith :: Ord k => (a -> a -> Maybe a) -> Map k a -> Map k a -> Map k a
+differenceWith :: Ord k => (a -> b -> Maybe a) -> Map k a -> Map k b -> Map k a
 differenceWith f m1 m2
   = differenceWithKey (\k x y -> f x y) m1 m2
 
 -- | /O(n+m)/. Difference with a combining function. When two equal keys are
 -- encountered, the combining function is applied to the key and both values.
--- If it returns @Nothing@, the element is discarded (proper set difference). If
--- it returns (@Just y@), the element is updated with a new value @y@. 
+-- If it returns 'Nothing', the element is discarded (proper set difference). If
+-- it returns (@'Just' y@), the element is updated with a new value @y@. 
 -- The implementation uses an efficient /hedge/ algorithm comparable with /hedge-union/.
-differenceWithKey :: Ord k => (k -> a -> a -> Maybe a) -> Map k a -> Map k a -> Map k a
+differenceWithKey :: Ord k => (k -> a -> b -> Maybe a) -> Map k a -> Map k b -> Map k a
 differenceWithKey f Tip t2  = Tip
 differenceWithKey f t1 Tip  = t1
 differenceWithKey f t1 t2   = hedgeDiffWithKey f (const LT) (const GT) t1 t2
@@ -647,32 +626,27 @@ hedgeDiffWithKey f cmplo cmphi t (Bin _ kx x l r)
     tr          = hedgeDiffWithKey f cmpkx cmphi gt r
 
 
--- | find keys that are mapped differently
-differentKeys :: (Ord k, Eq a) => Map k a -> Map k a -> [k]
-differentKeys f1 f2 =
-        keys $ 
-        differenceWith (\x y -> if x==y then Nothing else Just x)
-                       f2 (f1 `union` f2)
 
 {--------------------------------------------------------------------
   Intersection
 --------------------------------------------------------------------}
 -- | /O(n+m)/. Intersection of two maps. The values in the first
--- map are returned, i.e. (@intersection m1 m2 == intersectionWith const m1 m2@).
-intersection :: Ord k => Map k a -> Map k a -> Map k a
+-- map are returned, i.e. (@'intersection' m1 m2 == 'intersectionWith' 'const' m1 m2@).
+intersection :: Ord k => Map k a -> Map k b -> Map k a
 intersection m1 m2
   = intersectionWithKey (\k x y -> x) m1 m2
 
 -- | /O(n+m)/. Intersection with a combining function.
-intersectionWith :: Ord k => (a -> a -> a) -> Map k a -> Map k a -> Map k a
+intersectionWith :: Ord k => (a -> b -> c) -> Map k a -> Map k b -> Map k c
 intersectionWith f m1 m2
   = intersectionWithKey (\k x y -> f x y) m1 m2
 
 -- | /O(n+m)/. Intersection with a combining function.
-intersectionWithKey :: Ord k => (k -> a -> a -> a) -> Map k a -> Map k a -> Map k a
+-- Intersection is more efficient on (bigset `intersection` smallset)
+intersectionWithKey :: Ord k => (k -> a -> b -> c) -> Map k a -> Map k b -> Map k c
 intersectionWithKey f Tip t = Tip
 intersectionWithKey f t Tip = Tip
-intersectionWithKey f t1 t2  -- intersection is more efficient on (bigset `intersection` smallset)
+intersectionWithKey f t1 t2
   | size t1 >= size t2  = intersectWithKey f t1 t2
   | otherwise           = intersectWithKey flipf t2 t1
   where
@@ -685,75 +659,75 @@ intersectWithKey f t (Bin _ kx x l r)
       Nothing -> merge tl tr
       Just y  -> join kx (f kx y x) tl tr
   where
-    (found,lt,gt) = splitLookup kx t
+    (lt,found,gt) = splitLookup kx t
     tl            = intersectWithKey f lt l
     tr            = intersectWithKey f gt r
 
 
 
 {--------------------------------------------------------------------
-  Subset
+  Submap
 --------------------------------------------------------------------}
 -- | /O(n+m)/. 
--- This function is defined as (@subset = subsetBy (==)@).
-subset :: (Ord k,Eq a) => Map k a -> Map k a -> Bool
-subset m1 m2
-  = subsetBy (==) m1 m2
+-- This function is defined as (@'isSubmapOf' = 'isSubmapOfBy' (==)@).
+isSubmapOf :: (Ord k,Eq a) => Map k a -> Map k a -> Bool
+isSubmapOf m1 m2
+  = isSubmapOfBy (==) m1 m2
 
 {- | /O(n+m)/. 
- The expression (@subsetBy f t1 t2@) returns @True@ if
- all keys in @t1@ are in tree @t2@, and when @f@ returns @True@ when
+ The expression (@'isSubmapOfBy' f t1 t2@) returns 'True' if
+ all keys in @t1@ are in tree @t2@, and when @f@ returns 'True' when
  applied to their respective values. For example, the following 
- expressions are all @True@.
+ expressions are all 'True':
  
- > subsetBy (==) (fromList [('a',1)]) (fromList [('a',1),('b',2)])
- > subsetBy (<=) (fromList [('a',1)]) (fromList [('a',1),('b',2)])
- > subsetBy (==) (fromList [('a',1),('b',2)]) (fromList [('a',1),('b',2)])
+ > isSubmapOfBy (==) (fromList [('a',1)]) (fromList [('a',1),('b',2)])
+ > isSubmapOfBy (<=) (fromList [('a',1)]) (fromList [('a',1),('b',2)])
+ > isSubmapOfBy (==) (fromList [('a',1),('b',2)]) (fromList [('a',1),('b',2)])
 
- But the following are all @False@:
+ But the following are all 'False':
  
- > subsetBy (==) (fromList [('a',2)]) (fromList [('a',1),('b',2)])
- > subsetBy (<)  (fromList [('a',1)]) (fromList [('a',1),('b',2)])
- > subsetBy (==) (fromList [('a',1),('b',2)]) (fromList [('a',1)])
+ > isSubmapOfBy (==) (fromList [('a',2)]) (fromList [('a',1),('b',2)])
+ > isSubmapOfBy (<)  (fromList [('a',1)]) (fromList [('a',1),('b',2)])
+ > isSubmapOfBy (==) (fromList [('a',1),('b',2)]) (fromList [('a',1)])
 -}
-subsetBy :: Ord k => (a->a->Bool) -> Map k a -> Map k a -> Bool
-subsetBy f t1 t2
-  = (size t1 <= size t2) && (subset' f t1 t2)
+isSubmapOfBy :: Ord k => (a->b->Bool) -> Map k a -> Map k b -> Bool
+isSubmapOfBy f t1 t2
+  = (size t1 <= size t2) && (submap' f t1 t2)
 
-subset' f Tip t = True
-subset' f t Tip = False
-subset' f (Bin _ kx x l r) t
+submap' f Tip t = True
+submap' f t Tip = False
+submap' f (Bin _ kx x l r) t
   = case found of
       Nothing -> False
-      Just y  -> f x y && subset' f l lt && subset' f r gt
+      Just y  -> f x y && submap' f l lt && submap' f r gt
   where
-    (found,lt,gt) = splitLookup kx t
+    (lt,found,gt) = splitLookup kx t
 
--- | /O(n+m)/. Is this a proper subset? (ie. a subset but not equal). 
--- Defined as (@properSubset = properSubsetBy (==)@).
-properSubset :: (Ord k,Eq a) => Map k a -> Map k a -> Bool
-properSubset m1 m2
-  = properSubsetBy (==) m1 m2
+-- | /O(n+m)/. Is this a proper submap? (ie. a submap but not equal). 
+-- Defined as (@'isProperSubmapOf' = 'isProperSubmapOfBy' (==)@).
+isProperSubmapOf :: (Ord k,Eq a) => Map k a -> Map k a -> Bool
+isProperSubmapOf m1 m2
+  = isProperSubmapOfBy (==) m1 m2
 
-{- | /O(n+m)/. Is this a proper subset? (ie. a subset but not equal).
- The expression (@properSubsetBy f m1 m2@) returns @True@ when
+{- | /O(n+m)/. Is this a proper submap? (ie. a submap but not equal).
+ The expression (@'isProperSubmapOfBy' f m1 m2@) returns 'True' when
  @m1@ and @m2@ are not equal,
- all keys in @m1@ are in @m2@, and when @f@ returns @True@ when
+ all keys in @m1@ are in @m2@, and when @f@ returns 'True' when
  applied to their respective values. For example, the following 
- expressions are all @True@.
+ expressions are all 'True':
  
-  > properSubsetBy (==) (fromList [(1,1)]) (fromList [(1,1),(2,2)])
-  > properSubsetBy (<=) (fromList [(1,1)]) (fromList [(1,1),(2,2)])
+  > isProperSubmapOfBy (==) (fromList [(1,1)]) (fromList [(1,1),(2,2)])
+  > isProperSubmapOfBy (<=) (fromList [(1,1)]) (fromList [(1,1),(2,2)])
 
- But the following are all @False@:
+ But the following are all 'False':
  
-  > properSubsetBy (==) (fromList [(1,1),(2,2)]) (fromList [(1,1),(2,2)])
-  > properSubsetBy (==) (fromList [(1,1),(2,2)]) (fromList [(1,1)])
-  > properSubsetBy (<)  (fromList [(1,1)])       (fromList [(1,1),(2,2)])
+  > isProperSubmapOfBy (==) (fromList [(1,1),(2,2)]) (fromList [(1,1),(2,2)])
+  > isProperSubmapOfBy (==) (fromList [(1,1),(2,2)]) (fromList [(1,1)])
+  > isProperSubmapOfBy (<)  (fromList [(1,1)])       (fromList [(1,1),(2,2)])
 -}
-properSubsetBy :: (Ord k,Eq a) => (a -> a -> Bool) -> Map k a -> Map k a -> Bool
-properSubsetBy f t1 t2
-  = (size t1 < size t2) && (subset' f t1 t2)
+isProperSubmapOfBy :: Ord k => (a -> b -> Bool) -> Map k a -> Map k b -> Bool
+isProperSubmapOfBy f t1 t2
+  = (size t1 < size t2) && (submap' f t1 t2)
 
 {--------------------------------------------------------------------
   Filter and partition
@@ -763,7 +737,7 @@ filter :: Ord k => (a -> Bool) -> Map k a -> Map k a
 filter p m
   = filterWithKey (\k x -> p x) m
 
--- | /O(n)/. Filter all keys\values that satisfy the predicate.
+-- | /O(n)/. Filter all keys\/values that satisfy the predicate.
 filterWithKey :: Ord k => (k -> a -> Bool) -> Map k a -> Map k a
 filterWithKey p Tip = Tip
 filterWithKey p (Bin _ kx x l r)
@@ -805,20 +779,20 @@ mapWithKey f Tip = Tip
 mapWithKey f (Bin sx kx x l r) 
   = Bin sx kx (f kx x) (mapWithKey f l) (mapWithKey f r)
 
--- | /O(n)/. The function @mapAccum@ threads an accumulating
--- argument through the map in an unspecified order.
+-- | /O(n)/. The function 'mapAccum' threads an accumulating
+-- argument through the map in ascending order of keys.
 mapAccum :: (a -> b -> (a,c)) -> a -> Map k b -> (a,Map k c)
 mapAccum f a m
   = mapAccumWithKey (\a k x -> f a x) a m
 
--- | /O(n)/. The function @mapAccumWithKey@ threads an accumulating
--- argument through the map in unspecified order. (= ascending pre-order)
+-- | /O(n)/. The function 'mapAccumWithKey' threads an accumulating
+-- argument through the map in ascending order of keys.
 mapAccumWithKey :: (a -> k -> b -> (a,c)) -> a -> Map k b -> (a,Map k c)
 mapAccumWithKey f a t
   = mapAccumL f a t
 
--- | /O(n)/. The function @mapAccumL@ threads an accumulating
--- argument throught the map in (ascending) pre-order.
+-- | /O(n)/. The function 'mapAccumL' threads an accumulating
+-- argument throught the map in ascending order of keys.
 mapAccumL :: (a -> k -> b -> (a,c)) -> a -> Map k b -> (a,Map k c)
 mapAccumL f a t
   = case t of
@@ -829,8 +803,8 @@ mapAccumL f a t
                  (a3,r') = mapAccumL f a2 r
              in (a3,Bin sx kx x' l' r')
 
--- | /O(n)/. The function @mapAccumR@ threads an accumulating
--- argument throught the map in (descending) post-order.
+-- | /O(n)/. The function 'mapAccumR' threads an accumulating
+-- argument throught the map in descending order of keys.
 mapAccumR :: (a -> k -> b -> (a,c)) -> a -> Map k b -> (a,Map k c)
 mapAccumR f a t
   = case t of
@@ -841,48 +815,101 @@ mapAccumR f a t
                  (a3,l') = mapAccumR f a2 l
              in (a3,Bin sx kx x' l' r')
 
+-- | /O(n*log n)/. 
+-- @'mapKeys' f s@ is the map obtained by applying @f@ to each key of @s@.
+-- 
+-- The size of the result may be smaller if @f@ maps two or more distinct
+-- keys to the same new key.  In this case the value at the smallest of
+-- these keys is retained.
+
+mapKeys :: Ord k2 => (k1->k2) -> Map k1 a -> Map k2 a
+mapKeys = mapKeysWith (\x y->x)
+
+-- | /O(n*log n)/. 
+-- @'mapKeysWith' c f s@ is the map obtained by applying @f@ to each key of @s@.
+-- 
+-- The size of the result may be smaller if @f@ maps two or more distinct
+-- keys to the same new key.  In this case the associated values will be
+-- combined using @c@.
+
+mapKeysWith :: Ord k2 => (a -> a -> a) -> (k1->k2) -> Map k1 a -> Map k2 a
+mapKeysWith c f = fromListWith c . List.map fFirst . toList
+    where fFirst (x,y) = (f x, y)
+
+
+-- | /O(n)/.
+-- @'mapKeysMonotonic' f s == 'mapKeys' f s@, but works only when @f@
+-- is strictly monotonic.
+-- /The precondition is not checked./
+-- Semi-formally, we have:
+-- 
+-- > and [x < y ==> f x < f y | x <- ls, y <- ls] 
+-- >                     ==> mapKeysMonotonic f s == mapKeys f s
+-- >     where ls = keys s
+
+mapKeysMonotonic :: (k1->k2) -> Map k1 a -> Map k2 a
+mapKeysMonotonic f Tip = Tip
+mapKeysMonotonic f (Bin sz k x l r) =
+    Bin sz (f k) x (mapKeysMonotonic f l) (mapKeysMonotonic f r)
+
 {--------------------------------------------------------------------
   Folds  
 --------------------------------------------------------------------}
--- | /O(n)/. Fold the map in an unspecified order. (= descending post-order).
+
+-- | /O(n)/. Fold the values in the map, such that
+-- @'fold' f z == 'Prelude.foldr' f z . 'elems'@.
+-- For example,
+--
+-- > elems map = fold (:) [] map
+--
 fold :: (a -> b -> b) -> b -> Map k a -> b
 fold f z m
   = foldWithKey (\k x z -> f x z) z m
 
--- | /O(n)/. Fold the map in an unspecified order. (= descending post-order).
+-- | /O(n)/. Fold the keys and values in the map, such that
+-- @'foldWithKey' f z == 'Prelude.foldr' ('uncurry' f) z . 'toAscList'@.
+-- For example,
+--
+-- > keys map = foldWithKey (\k x ks -> k:ks) [] map
+--
 foldWithKey :: (k -> a -> b -> b) -> b -> Map k a -> b
 foldWithKey f z t
-  = foldR f z t
+  = foldr f z t
 
 -- | /O(n)/. In-order fold.
-foldI :: (k -> a -> b -> b -> b) -> b -> Map k a -> b 
-foldI f z Tip               = z
-foldI f z (Bin _ kx x l r)  = f kx x (foldI f z l) (foldI f z r)
+foldi :: (k -> a -> b -> b -> b) -> b -> Map k a -> b 
+foldi f z Tip               = z
+foldi f z (Bin _ kx x l r)  = f kx x (foldi f z l) (foldi f z r)
 
 -- | /O(n)/. Post-order fold.
-foldR :: (k -> a -> b -> b) -> b -> Map k a -> b
-foldR f z Tip              = z
-foldR f z (Bin _ kx x l r) = foldR f (f kx x (foldR f z r)) l
+foldr :: (k -> a -> b -> b) -> b -> Map k a -> b
+foldr f z Tip              = z
+foldr f z (Bin _ kx x l r) = foldr f (f kx x (foldr f z r)) l
 
 -- | /O(n)/. Pre-order fold.
-foldL :: (b -> k -> a -> b) -> b -> Map k a -> b
-foldL f z Tip              = z
-foldL f z (Bin _ kx x l r) = foldL f (f (foldL f z l) kx x) r
+foldl :: (b -> k -> a -> b) -> b -> Map k a -> b
+foldl f z Tip              = z
+foldl f z (Bin _ kx x l r) = foldl f (f (foldl f z l) kx x) r
 
 {--------------------------------------------------------------------
   List variations 
 --------------------------------------------------------------------}
--- | /O(n)/. Return all elements of the map.
+-- | /O(n)/.
+-- Return all elements of the map in the ascending order of their keys.
 elems :: Map k a -> [a]
 elems m
   = [x | (k,x) <- assocs m]
 
--- | /O(n)/. Return all keys of the map.
+-- | /O(n)/. Return all keys of the map in ascending order.
 keys  :: Map k a -> [k]
 keys m
   = [k | (k,x) <- assocs m]
 
--- | /O(n)/. Return all key\/value pairs in the map.
+-- | /O(n)/. The set of all keys of the map.
+keysSet :: Map k a -> Set.Set k
+keysSet m = Set.fromDistinctAscList (keys m)
+
+-- | /O(n)/. Return all key\/value pairs in the map in ascending key order.
 assocs :: Map k a -> [(k,a)]
 assocs m
   = toList m
@@ -916,11 +943,11 @@ toList t      = toAscList t
 
 -- | /O(n)/. Convert to an ascending list.
 toAscList :: Map k a -> [(k,a)]
-toAscList t   = foldR (\k x xs -> (k,x):xs) [] t
+toAscList t   = foldr (\k x xs -> (k,x):xs) [] t
 
 -- | /O(n)/. 
 toDescList :: Map k a -> [(k,a)]
-toDescList t  = foldL (\xs k x -> (k,x):xs) [] t
+toDescList t  = foldl (\xs k x -> (k,x):xs) [] t
 
 
 {--------------------------------------------------------------------
@@ -931,16 +958,20 @@ toDescList t  = foldL (\xs k x -> (k,x):xs) [] t
     fromAscListWith f xs == fromListWith f xs
 --------------------------------------------------------------------}
 -- | /O(n)/. Build a map from an ascending list in linear time.
+-- /The precondition (input list is ascending) is not checked./
 fromAscList :: Eq k => [(k,a)] -> Map k a 
 fromAscList xs
   = fromAscListWithKey (\k x y -> x) xs
 
 -- | /O(n)/. Build a map from an ascending list in linear time with a combining function for equal keys.
+-- /The precondition (input list is ascending) is not checked./
 fromAscListWith :: Eq k => (a -> a -> a) -> [(k,a)] -> Map k a 
 fromAscListWith f xs
   = fromAscListWithKey (\k x y -> f x y) xs
 
--- | /O(n)/. Build a map from an ascending list in linear time with a combining function for equal keys
+-- | /O(n)/. Build a map from an ascending list in linear time with a
+-- combining function for equal keys.
+-- /The precondition (input list is ascending) is not checked./
 fromAscListWithKey :: Eq k => (k -> a -> a -> a) -> [(k,a)] -> Map k a 
 fromAscListWithKey f xs
   = fromDistinctAscList (combineEq f xs)
@@ -959,6 +990,7 @@ fromAscListWithKey f xs
 
 
 -- | /O(n)/. Build a map from an ascending list of distinct elements in linear time.
+-- /The precondition is not checked./
 fromDistinctAscList :: [(k,a)] -> Map k a 
 fromDistinctAscList xs
   = build const (length xs) xs
@@ -968,7 +1000,7 @@ fromDistinctAscList xs
     build c 0 xs   = c Tip xs 
     build c 5 xs   = case xs of
                        ((k1,x1):(k2,x2):(k3,x3):(k4,x4):(k5,x5):xx) 
-                            -> c (bin k4 x4 (bin k2 x2 (single k1 x1) (single k3 x3)) (single k5 x5)) xx
+                            -> c (bin k4 x4 (bin k2 x2 (singleton k1 x1) (singleton k3 x3)) (singleton k5 x5)) xx
     build c n xs   = seq nr $ build (buildR nr c) nl xs
                    where
                      nl = n `div` 2
@@ -1044,8 +1076,8 @@ filterLt cmp (Bin sx kx x l r)
 {--------------------------------------------------------------------
   Split
 --------------------------------------------------------------------}
--- | /O(log n)/. The expression (@split k map@) is a pair @(map1,map2)@ where
--- the keys in @map1@ are smaller than @k@ and the keys in @map2@ larger than @k@.
+-- | /O(log n)/. The expression (@'split' k map@) is a pair @(map1,map2)@ where
+-- the keys in @map1@ are smaller than @k@ and the keys in @map2@ larger than @k@. Any key equal to @k@ is found in neither @map1@ nor @map2@.
 split :: Ord k => k -> Map k a -> (Map k a,Map k a)
 split k Tip = (Tip,Tip)
 split k (Bin sx kx x l r)
@@ -1054,15 +1086,15 @@ split k (Bin sx kx x l r)
       GT -> let (lt,gt) = split k r in (join kx x l lt,gt)
       EQ -> (l,r)
 
--- | /O(log n)/. The expression (@splitLookup k map@) splits a map just
--- like 'split' but also returns @lookup k map@.
-splitLookup :: Ord k => k -> Map k a -> (Maybe a,Map k a,Map k a)
-splitLookup k Tip = (Nothing,Tip,Tip)
+-- | /O(log n)/. The expression (@'splitLookup' k map@) splits a map just
+-- like 'split' but also returns @'lookup' k map@.
+splitLookup :: Ord k => k -> Map k a -> (Map k a,Maybe a,Map k a)
+splitLookup k Tip = (Tip,Nothing,Tip)
 splitLookup k (Bin sx kx x l r)
   = case compare k kx of
-      LT -> let (z,lt,gt) = splitLookup k l in (z,lt,join kx x gt r)
-      GT -> let (z,lt,gt) = splitLookup k r in (z,join kx x l lt,gt)
-      EQ -> (Just x,l,r)
+      LT -> let (lt,z,gt) = splitLookup k l in (lt,z,join kx x gt r)
+      GT -> let (lt,z,gt) = splitLookup k r in (join kx x l lt,z,gt)
+      EQ -> (l,Just x,r)
 
 {--------------------------------------------------------------------
   Utility functions that maintain the balance properties of the tree.
@@ -1109,13 +1141,13 @@ join kx x l@(Bin sizeL ky y ly ry) r@(Bin sizeR kz z lz rz)
 insertMax,insertMin :: k -> a -> Map k a -> Map k a 
 insertMax kx x t
   = case t of
-      Tip -> single kx x
+      Tip -> singleton kx x
       Bin sz ky y l r
           -> balance ky y l (insertMax kx x r)
              
 insertMin kx x t
   = case t of
-      Tip -> single kx x
+      Tip -> singleton kx x
       Bin sz ky y l r
           -> balance ky y (insertMin kx x l) r
              
@@ -1179,7 +1211,7 @@ deleteFindMax t
   - A lower [delta] leads to a more 'perfectly' balanced tree.
   - A higher [delta] performs less rebalancing.
 
-  - Balancing is automaic for random data and a balancing
+  - Balancing is automatic for random data and a balancing
     scheme is only necessary to avoid pathological worst cases.
     Almost any choice will do, and in practice, a rather large
     [delta] may perform better than smaller one.
@@ -1242,7 +1274,7 @@ instance (Eq k,Eq a) => Eq (Map k a) where
 --------------------------------------------------------------------}
 
 instance (Ord k, Ord v) => Ord (Map k v) where
-    compare m1 m2 = compare (toList m1) (toList m2)
+    compare m1 m2 = compare (toAscList m1) (toAscList m2)
 
 {--------------------------------------------------------------------
   Functor
@@ -1277,19 +1309,20 @@ showTree m
     showElem k x  = show k ++ ":=" ++ show x
 
 
-{- | /O(n)/. The expression (@showTreeWith showelem hang wide map@) shows
+{- | /O(n)/. The expression (@'showTreeWith' showelem hang wide map@) shows
  the tree that implements the map. Elements are shown using the @showElem@ function. If @hang@ is
- @True@, a /hanging/ tree is shown otherwise a rotated tree is shown. If
- @wide@ is true, an extra wide version is shown.
+ 'True', a /hanging/ tree is shown otherwise a rotated tree is shown. If
+ @wide@ is 'True', an extra wide version is shown.
 
->  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) True False $ fromDistinctAscList [(x,()) | x <- [1..5]]
+>  Map> let t = fromDistinctAscList [(x,()) | x <- [1..5]]
+>  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) True False t
 >  (4,())
 >  +--(2,())
 >  |  +--(1,())
 >  |  +--(3,())
 >  +--(5,())
 >
->  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) True True $ fromDistinctAscList [(x,()) | x <- [1..5]]
+>  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) True True t
 >  (4,())
 >  |
 >  +--(2,())
@@ -1300,7 +1333,7 @@ showTree m
 >  |
 >  +--(5,())
 >
->  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) False True $ fromDistinctAscList [(x,()) | x <- [1..5]]
+>  Map> putStrLn $ showTreeWith (\k x -> show (k,x)) False True t
 >  +--(5,())
 >  |
 >  (4,())
@@ -1357,7 +1390,6 @@ showsBars bars
 node           = "+--"
 withBar bars   = "|  ":bars
 withEmpty bars = "   ":bars
-
 
 {--------------------------------------------------------------------
   Assertions
@@ -1480,7 +1512,7 @@ prop_Valid
 --------------------------------------------------------------------}
 prop_Single :: Int -> Int -> Bool
 prop_Single k x
-  = (insert k x empty == single k x)
+  = (insert k x empty == singleton k x)
 
 prop_InsertValid :: Int -> Property
 prop_InsertValid k
@@ -1522,7 +1554,7 @@ prop_UnionValid
 
 prop_UnionInsert :: Int -> Int -> Map Int Int -> Bool
 prop_UnionInsert k x t
-  = union (single k x) t == insert k x t
+  = union (singleton k x) t == insert k x t
 
 prop_UnionAssoc :: Map Int Int -> Map Int Int -> Map Int Int -> Bool
 prop_UnionAssoc t1 t2 t3
@@ -1573,25 +1605,4 @@ prop_Ordered
 prop_List :: [Int] -> Bool
 prop_List xs
   = (sort (nub xs) == [x | (x,()) <- toList (fromList [(x,()) | x <- xs])])
-
 -}
-
-{--------------------------------------------------------------------
-  Image
---------------------------------------------------------------------}
-image :: (Ord k, Ord a) => Map k a -> Set.Set k -> Set.Set a
-image f s =
-  Set.fold ins Set.empty s
-  where ins x = case lookup x f of
-                 Nothing -> id
-                 Just y -> Set.insert y
-
-{--------------------------------------------------------------------
-  Kernel
---------------------------------------------------------------------}
-kernel :: (Ord k, Eq a) => Map k a -> Set.Set (k,k)
-kernel f = 
-  Set.fromList [(k1,k2) | k1 <- keysF, k2 <- keysF, lookup k1 f == lookup k2 f]
-  where keysF = keys f
-  
- 

@@ -24,8 +24,8 @@ import qualified Common.Lib.Rel as Rel
 
 imageOfMorphism :: Morphism f e m  -> Sign f e
 imageOfMorphism m =
-        sig {sortSet = Map.image sortMap (sortSet src),
-             sortRel = Rel.image (\a->Map.find a sortMap) (sortRel src),
+        sig {sortSet = Rel.image sortMap (sortSet src),
+             sortRel = Rel.map (\ a -> sortMap Map.! a ) (sortRel src),
              opMap = Map.foldWithKey
                        (\ident ots l ->
                            Set.fold (\ot l' -> insertOp
@@ -43,12 +43,12 @@ imageOfMorphism m =
           funMap = fun_map m
           insertOp (ident,ot) opM =
             case Map.lookup ident opM of
-              Nothing -> Map.insert ident (Set.single ot) opM
+              Nothing -> Map.insert ident (Set.singleton ot) opM
               Just ots -> Map.insert ident (Set.insert ot ots) opM
           pMap = pred_map m
           insertPred (ident,pt) predM =
             case Map.lookup ident predM of
-              Nothing -> Map.insert ident (Set.single pt) predM
+              Nothing -> Map.insert ident (Set.singleton pt) predM
               Just pts -> Map.insert ident (Set.insert pt pts) predM
 
 {-
@@ -77,12 +77,12 @@ imageOfMorphism m =
           funMap = fun_map m
           insertOp (ident,ot) opM = 
             case Map.lookup ident opM of
-              Nothing -> Map.insert ident (Set.single ot) opM
+              Nothing -> Map.insert ident (Set.singleton ot) opM
               Just ots -> Map.insert ident (Set.insert ot ots) opM
           pMap = pred_map m
           insertPred (ident,pt) predM = 
             case Map.lookup ident predM of
-              Nothing -> Map.insert ident (Set.single pt) predM
+              Nothing -> Map.insert ident (Set.singleton pt) predM
               Just pts -> Map.insert ident (Set.insert pt pts) predM
 
 -}

@@ -271,7 +271,7 @@ scanItem addType ks (trm, t) p =
                    assert (null tt && isSingle as) $
                    [q { rest = [], args = [addType trm $ head as] }]
               else [r]
-          else if Set.isEmpty ks then []
+          else if Set.null ks then []
                else if isUnknownId ide
                  && not (tokStr t `Set.member` ks) then
                [r { rule = mkId [unknownTok, t]}]

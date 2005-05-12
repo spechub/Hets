@@ -46,9 +46,9 @@ instance PrettyPrint Morphism where
                 <+> text mapsTo <+>      
                 printText0 ga j <+> colon <+> printText0 ga t) : l)
                [] fm 
-      in (if Map.isEmpty tm then empty
+      in (if Map.null tm then empty
          else text (typeS ++ sS) <+> printText0 ga tm)
-         $$ (if Map.isEmpty fm then empty 
+         $$ (if Map.null fm then empty 
              else text (opS ++ sS) <+> fsep (punctuate comma ds))
          $$ nest 1 colon <+> braces (printText0 ga $ msource m) 
                     $$ nest 1 (text mapsTo)

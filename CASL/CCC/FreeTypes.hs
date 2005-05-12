@@ -82,11 +82,11 @@ checkFreeType :: (PosItem f, PrettyPrint f, Eq f) =>
                  -> [Named (FORMULA f)] -> Result (Maybe Bool)
 checkFreeType (osig,osens) m fsn      
 #ifdef UNI_PACKAGE
-       | Set.any (\s->not $ elem s srts) newSorts =
+       | any (\s->not $ elem s srts) newL =
                    let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
                        sname = concat $ map tokStr ts 
                    in warning Nothing (sname ++ " is not freely generated") pos
-       | Set.any (\s->not $ elem s f_Inhabited) newSorts =
+       | any (\s->not $ elem s f_Inhabited) newL =
                    let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) newL
                        sname = concat $ map tokStr ts 
                    in warning (Just False) (sname ++ " is not inhabited") pos

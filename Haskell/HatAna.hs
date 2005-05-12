@@ -76,15 +76,15 @@ instance PrettyPrint Sign where
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
                    vcat (map (text . pp) is)) $$ 
-          (if Map.isEmpty ts then empty else
+          (if Map.null ts then empty else
               text "\ntypes:" $$ 
                    vcat (map (text . pp) 
                          [ a :>: b | (a, b) <- Map.toList ts ])) $$
-          (if Map.isEmpty vs then empty else
+          (if Map.null vs then empty else
               text "\nvalues:" $$ 
                    vcat (map (text . pp) 
                          [ a :>: b | (a, b) <- Map.toList vs ])) $$
-          (if Map.isEmpty fs then empty else
+          (if Map.null fs then empty else
               text "\nfixities:" $$ 
                    vcat [ text (pp b) <+> text (pp a) 
                               | (a, b) <- Map.toList fs ]) $$

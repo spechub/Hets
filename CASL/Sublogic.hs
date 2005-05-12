@@ -516,8 +516,8 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign f e -> CASL_Sublogics
 sl_sign s = 
-    let subs = if Rel.isEmpty $ sortRel s then bottom else need_sub
-        preds = if Map.isEmpty $ predMap s then bottom else need_pred
+    let subs = if Rel.null $ sortRel s then bottom else need_sub
+        preds = if Map.null $ predMap s then bottom else need_pred
         partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
                   $ Set.unions $ Map.elems $ opMap s then need_part else bottom
         in sublogics_max subs (sublogics_max preds partial)

@@ -42,9 +42,9 @@ basicAnalysis (b, e, ga) =
 
 -- | is the signature empty?
 isEmptyEnv :: Env -> Bool
-isEmptyEnv e = Map.isEmpty (classMap e)
-               && Map.isEmpty (typeMap e)
-               && Map.isEmpty (assumps e)
+isEmptyEnv e = Map.null (classMap e)
+               && Map.null (typeMap e)
+               && Map.null (assumps e)
 
 -- | is the first argument a subsignature of the second?
 isSubEnv :: Env -> Env -> Bool

@@ -75,12 +75,12 @@ instance Comorphism CASL2PCFOL
               mtarget =  encodeSig $ mtarget mor })
       -- other components need not to be adapted!
     map_sentence CASL2PCFOL _ = return . f2Formula
-    map_symbol CASL2PCFOL = Set.single . id
+    map_symbol CASL2PCFOL = Set.singleton . id
 
 -- | Add injection, projection and membership symbols to a signature
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig
-  = if Rel.isEmpty rel then sig else
+  = if Rel.null rel then sig else
       sig{sortRel = Rel.empty, opMap = projOpMap}
   where 
         rel = Rel.irreflex $ sortRel sig
@@ -88,8 +88,8 @@ encodeSig sig
         partial (s, s') = OpType{opKind = if Rel.member s' s rel 
                                  then Total 
                                  else Partial, opArgs = [s'], opRes = s}
-        setinjOptype = Set.image total $ Rel.toSet rel
-        setprojOptype = Set.image partial $ Rel.toSet rel
+        setinjOptype = Set.map total $ Rel.toSet rel
+        setprojOptype = Set.map partial $ Rel.toSet rel
         injOpMap = Map.insert injName setinjOptype $ opMap sig
         projOpMap = Map.insert projName setprojOptype $ injOpMap
     -- membership predicates are coded out

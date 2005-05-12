@@ -139,18 +139,18 @@ checkMonomorphRecursion t tm p@(i, _, _) =
     else return ()
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool
-occursIn tm i =  Set.any (relatedTypeIds tm i) . idsOf (const True)
+occursIn tm i = any (relatedTypeIds tm i) . Set.toList . idsOf (const True)
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
 relatedTypeIds tm i1 i2 = 
-    not $ Set.disjoint (allRelIds tm i1) $ allRelIds tm i2
+    not $ Set.null $ Set.intersection (allRelIds tm i1) $ allRelIds tm i2
 
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
 
 -- | super type ids
 superIds :: TypeMap -> Id -> Set.Set Id
-superIds tm = supIds tm Set.empty . Set.single
+superIds tm = supIds tm Set.empty . Set.singleton
 
 subIds :: TypeMap -> Id -> Set.Set Id
 subIds tm i = foldr ( \ j s ->
@@ -159,7 +159,7 @@ subIds tm i = foldr ( \ j s ->
 
 supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
 supIds tm known new = 
-    if Set.isEmpty new then known else 
+    if Set.null new then known else 
        let more = Set.unions $ map superTypeToId $ 
                   concatMap ( \ i -> superTypes 
                             $ Map.findWithDefault starTypeInfo i tm)
@@ -170,5 +170,5 @@ supIds tm known new =
 superTypeToId :: Type -> Set.Set Id
 superTypeToId t = 
     case t of
-           TypeName i _ _ -> Set.single i
+           TypeName i _ _ -> Set.singleton i
            _ -> Set.empty

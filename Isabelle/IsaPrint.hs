@@ -104,7 +104,7 @@ showTyp a pri t = case t of
 
 instance PrettyPrint TypeSig where
   printText0 _ tysig =
-    if Map.isEmpty (arities tysig) then empty
+    if Map.null (arities tysig) then empty
       else text $ Map.foldWithKey showTycon "" (arities tysig) 
     where showTycon t arity' rest = 
               let arity = if null arity' then
@@ -435,7 +435,7 @@ instance PrettyPrint Sign where
                                    -- this may prints an "o"
     where
     showsConstTab tab =
-     if Map.isEmpty tab then empty
+     if Map.null tab then empty
       else text("consts") $$ Map.foldWithKey showConst empty tab $$ text "\n"
     showConst c t rest = 
          text (show c ++ " :: " ++ "\"" ++ showTyp Unquoted 1000 t -- (fst t) 

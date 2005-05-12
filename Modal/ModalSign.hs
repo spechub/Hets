@@ -49,6 +49,6 @@ isSubModalSign :: ModalSign -> ModalSign -> Bool
 isSubModalSign a b = 
     isSubOpMap (rigidOps a) (rigidOps b)
     && isSubMapSet (rigidPreds a) (rigidPreds b)
-    && Map.subsetBy sublist (modies a) (modies b)
-    && Map.subsetBy sublist (termModies a) (termModies b)
+    && Map.isSubmapOfBy sublist (modies a) (modies b)
+    && Map.isSubmapOfBy sublist (termModies a) (termModies b)
     where sublist = const $ const True

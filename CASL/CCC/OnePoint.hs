@@ -187,7 +187,8 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
 	            if l==newL then newL else iterateInhabited newL
 		             where newL =foldr (\ (as,rs) l'->
                                                   if (all (\s->elem s l') as)
-                                                      && (not (elem rs l'))then rs:l'
+                                                      && (not (elem rs l'))
+                                                  then rs:l'
 					          else l') l argsAndres 
     --      inhabited = iterateInhabited []
           inhabited = iterateInhabited $ Set.toList sorts          
@@ -202,8 +203,8 @@ evaluateOnePointFORMULA _ _=error "Fehler" -- or Just False
 -- | Compute the image of a signature morphism
 imageOfMorphism :: Morphism f e m  -> Sign f e
 imageOfMorphism m = 
-        sig {sortSet = Set.image (mapSort sortMap) (sortSet src),
-             sortRel = Rel.image (mapSort sortMap) (sortRel src), 
+        sig {sortSet = Set.map (mapSort sortMap) (sortSet src),
+             sortRel = Rel.map (mapSort sortMap) (sortRel src), 
              opMap = Map.foldWithKey 
                        (\ident ots l ->  
                            Set.fold (\ot l' -> insertOp
@@ -221,19 +222,19 @@ imageOfMorphism m =
           funMap = fun_map m
           insertOp (ident,ot) opM = 
             case Map.lookup ident opM of
-              Nothing -> Map.insert ident (Set.single ot) opM
+              Nothing -> Map.insert ident (Set.singleton ot) opM
               Just ots -> Map.insert ident (Set.insert ot ots) opM
           pMap = pred_map m
           insertPred (ident,pt) predM = 
             case Map.lookup ident predM of
-              Nothing -> Map.insert ident (Set.single pt) predM
+              Nothing -> Map.insert ident (Set.singleton pt) predM
               Just pts -> Map.insert ident (Set.insert pt pts) predM
 
 -- | Test whether a signature morphism adds new supersorts
 addsNewSupersorts :: Morphism f e m -> Bool
 addsNewSupersorts m = 
-    Set.any (\s->not $ Set.subset (Set.insert s $ supersortsOf s sig) sorts)
-       sorts
+    any (\s->not $ Set.isSubsetOf (Set.insert s $ supersortsOf s sig) sorts)
+       $ Set.toList sorts
        where sig=imageOfMorphism m
              sorts=sortSet sig   
 {-

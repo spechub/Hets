@@ -74,8 +74,8 @@ module Logic.Logic (module Logic.Logic, module Logic.Languages) where
 
 import Common.Id
 import Common.GlobalAnnotations
-import Common.Lib.Set
-import Common.Lib.Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Lib.Graph
 import Common.Lib.Pretty
 import Common.AnnoState
@@ -99,16 +99,20 @@ import Common.Amalgamate
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
-
--- Categories are given by a quotient,
--- i.e. we need equality
--- Should we allow arbitrary composition graphs and build paths?
-
+-- | shortcut for class constraints
 class (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
+
+-- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 instance (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
+
+type EndoMap a = Map.Map a a
+
+-- Categories are given by a quotient,
+-- i.e. we need equality
+-- Should we allow arbitrary composition graphs and build paths?
 
 class (Language lid, Eq sign, Eq morphism)
     => Category lid sign morphism | lid -> sign, lid -> morphism where
@@ -161,7 +165,7 @@ class (Category lid sign morphism, Ord sentence,
            -- print a sentence with comments
       print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
       print_named _ = printText0
-      sym_of :: lid -> sign -> Set symbol
+      sym_of :: lid -> sign -> Set.Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 
       provers :: lid -> [Prover sign sentence proof_tree symbol]
@@ -209,7 +213,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_items l _ = statErr l "stat_symb_items"
          -- amalgamation
          weaklyAmalgamableCocone :: lid -> Diagram sign morphism 
-                                     -> Result (sign, Map Node morphism)
+                                     -> Result (sign, Map.Map Node morphism)
          weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
@@ -237,7 +241,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          inclusion :: lid -> sign -> sign -> Result morphism
          inclusion l _ _ = statErr l "inclusion"
          generated_sign, cogenerated_sign :: 
-             lid -> Set symbol -> sign -> Result morphism
+             lid -> Set.Set symbol -> sign -> Result morphism
          generated_sign l _ _ = statErr l "generated_sign"
          cogenerated_sign l _ _ = statErr l "cogenerated_sign"
          induced_from_morphism :: 
@@ -387,15 +391,15 @@ instance Typeable s => Typeable (Named s) where
 setTc :: TyCon
 setTc = mkTyCon "Common.Lib.Set.Set"
 
-instance Typeable a => Typeable (Set a) where
-  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set a -> a) s)]
+instance Typeable a => Typeable (Set.Set a) where
+  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set.Set a -> a) s)]
 
 mapTc :: TyCon
 mapTc = mkTyCon "Common.Lib.Map.Map"
 
-instance (Typeable a, Typeable b) => Typeable (Map a b) where
-  typeOf m = mkTyConApp mapTc [typeOf ((undefined :: Map a b -> a) m),
-                            typeOf ((undefined :: Map a b -> b) m)]
+instance (Typeable a, Typeable b) => Typeable (Map.Map a b) where
+  typeOf m = mkTyConApp mapTc [typeOf ((undefined :: Map.Map a b -> a) m),
+                            typeOf ((undefined :: Map.Map a b -> b) m)]
 
 {- class hierarchy:
                             Language

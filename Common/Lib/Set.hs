@@ -1,84 +1,54 @@
---------------------------------------------------------------------------------
-{-| Module      :  Common.Lib.Set
-    Copyright   :  (c) Daan Leijen 2002
-    License     :  BSD-style
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Common.Lib.Set
+-- Copyright   :  (c) Daan Leijen 2002
+-- License     :  BSD-style
+-- Maintainer  :  libraries@haskell.org
+-- Stability   :  provisional
+-- Portability :  portable
+--
+-- An efficient implementation of sets.
+--
+-- This module is intended to be imported @qualified@, to avoid name
+-- clashes with "Prelude" functions.  eg.
+--
+-- >  import Common.Lib.Set as Set
+--
+-- The implementation of 'Set' is based on /size balanced/ binary trees (or
+-- trees of /bounded balance/) as described by:
+--
+--    * Stephen Adams, \"/Efficient sets: a balancing act/\",
+--	Journal of Functional Programming 3(4):553-562, October 1993,
+--	<http://www.swiss.ai.mit.edu/~adams/BB>.
+--
+--    * J. Nievergelt and E.M. Reingold,
+--	\"/Binary search trees of bounded balance/\",
+--	SIAM journal of computing 2(1), March 1973.
+--
+-- Note that the implementation is /left-biased/ -- the elements of a
+-- first argument are always perferred to the second, for example in
+-- 'union' or 'insert'.  Of course, left-biasing can only be observed
+-- when equality is an equivalence relation instead of structural
+-- equality.
+-----------------------------------------------------------------------------
 
-    Maintainer  :  daan@cs.uu.nl
-    Stability   :  provisional
-    Portability :  portable
-
-  An efficient implementation of sets. 
-
-  1) The 'filter' function clashes with the "Prelude". 
-      If you want to use "Set" unqualified, this function should be hidden.
-
-      > import Prelude hiding (filter)
-      > import Set
-
-      Another solution is to use qualified names. This is also the only way how
-      a "Map", "Set", and "MultiSet" can be used within one module. 
-
-      > import qualified Set
-      >
-      > ... Set.single "Paris" 
-
-      Or, if you prefer a terse coding style:
-
-      > import qualified Set as S
-      >
-      > ... S.single "Berlin" 
-  
-  2) The implementation of "Set" is based on /size balanced/ binary trees (or
-     trees of /bounded balance/) as described by:
-
-     * Stephen Adams, \"/Efficient sets: a balancing act/\", Journal of Functional
-       Programming 3(4):553-562, October 1993, <http://www.swiss.ai.mit.edu/~adams/BB>.
-
-     * J. Nievergelt and E.M. Reingold, \"/Binary search trees of bounded balance/\",
-       SIAM journal of computing 2(1), March 1973.
-
-  3) Note that the implementation /left-biased/ -- the elements of a first argument
-      are always perferred to the second, for example in 'union' or 'insert'.
-      Off course, left-biasing can only be observed when equality an equivalence relation
-      instead of structural equality.
-
-  4) Another implementation of sets based on size balanced trees
-      exists as "Data.Set" in the Ghc libraries. The good part about this library 
-      is that it is highly tuned and thorougly tested. However, it is also fairly old, 
-      it is implemented indirectly on top of "Data.FiniteMap" and only supports 
-      the basic set operations. 
-      The "Set" module overcomes some of these issues:
-        
-      * It tries to export a more complete and consistent set of operations, like
-        'partition', 'subset' etc. 
-
-      * It uses the efficient /hedge/ algorithm for both 'union' and 'difference'
-        (a /hedge/ algorithm is not applicable to 'intersection').
-      
-      * It converts ordered lists in linear time ('fromAscList').  
-
-      * It takes advantage of the module system with names like 'empty' instead of 'Data.Set.emptySet'.
-      
-      * It is implemented directly, instead of using a seperate finite map implementation. 
--}
----------------------------------------------------------------------------------
 module Common.Lib.Set  ( 
             -- * Set type
-              Set          -- instance Eq, Ord, Show
+              Set          -- instance Eq,Show
 
             -- * Operators
             , (\\)
 
             -- * Query
-            , isEmpty
+            , null
             , size
             , member
-            , subset
-            , properSubset
+            , isSubsetOf
+            , isProperSubsetOf
             
             -- * Construction
             , empty
-            , single
+            , singleton
             , insert
             , delete
             
@@ -86,19 +56,19 @@ module Common.Lib.Set  (
             , union, unions
             , difference
             , intersection
-            , disjoint
             
             -- * Filter
             , filter
             , partition
             , split
             , splitMember
-            , all
-            , any
+
+            -- * Map
+	    , map
+	    , mapMonotonic
 
             -- * Fold
             , fold
-            , image
 
             -- * Min\/Max
             , findMin
@@ -114,10 +84,6 @@ module Common.Lib.Set  (
             , elems
             , toList
             , fromList
-
-            -- ** Maybe
-            , maybeToSet
-            , maybeSetToSet
             
             -- ** Ordered list
             , toAscList
@@ -130,7 +96,9 @@ module Common.Lib.Set  (
             , valid
             ) where
 
-import Prelude hiding (filter, all, any)
+import Prelude hiding (filter,foldr,null,map)
+import qualified Data.List as List
+import Data.Typeable
 
 {-
 -- just for testing
@@ -139,10 +107,11 @@ import List (nub,sort)
 import qualified List
 -}
 
+
 {--------------------------------------------------------------------
   Operators
 --------------------------------------------------------------------}
-infixl 9 \\ 
+infixl 9 \\ --
 
 -- | /O(n+m)/. See 'difference'.
 (\\) :: Ord a => Set a -> Set a -> Set a
@@ -153,7 +122,7 @@ m1 \\ m2 = difference m1 m2
 --------------------------------------------------------------------}
 -- | A set of values @a@.
 data Set a    = Tip 
-              | Bin !Size a !(Set a) !(Set a) 
+              | Bin {-# UNPACK #-} !Size a !(Set a) !(Set a) 
 
 type Size     = Int
 
@@ -161,8 +130,8 @@ type Size     = Int
   Query
 --------------------------------------------------------------------}
 -- | /O(1)/. Is this the empty set?
-isEmpty :: Set a -> Bool
-isEmpty t
+null :: Set a -> Bool
+null t
   = case t of
       Tip           -> True
       Bin sz x l r  -> False
@@ -194,18 +163,20 @@ empty
   = Tip
 
 -- | /O(1)/. Create a singleton set.
-single :: a -> Set a
-single x 
+singleton :: a -> Set a
+singleton x 
   = Bin 1 x Tip Tip
 
 {--------------------------------------------------------------------
   Insertion, Deletion
 --------------------------------------------------------------------}
 -- | /O(log n)/. Insert an element in a set.
+-- If the set already contains an element equal to the given value,
+-- it is replaced with the new value.
 insert :: Ord a => a -> Set a -> Set a
 insert x t
   = case t of
-      Tip -> single x
+      Tip -> singleton x
       Bin sz y l r
           -> case compare x y of
                LT -> balance y (insert x l) r
@@ -228,22 +199,23 @@ delete x t
   Subset
 --------------------------------------------------------------------}
 -- | /O(n+m)/. Is this a proper subset? (ie. a subset but not equal).
-properSubset :: Ord a => Set a -> Set a -> Bool
-properSubset s1 s2
-  = (size s1 < size s2) && (subset s1 s2)
+isProperSubsetOf :: Ord a => Set a -> Set a -> Bool
+isProperSubsetOf s1 s2
+    = (size s1 < size s2) && (isSubsetOf s1 s2)
 
 
 -- | /O(n+m)/. Is this a subset?
-subset :: Ord a => Set a -> Set a -> Bool
-subset t1 t2
-  = (size t1 <= size t2) && (subsetX t1 t2)
+-- @(s1 `isSubsetOf` s2)@ tells whether @s1@ is a subset of @s2@.
+isSubsetOf :: Ord a => Set a -> Set a -> Bool
+isSubsetOf t1 t2
+  = (size t1 <= size t2) && (isSubsetOfX t1 t2)
 
-subsetX Tip t = True
-subsetX t Tip = False
-subsetX (Bin _ x l r) t
-  = found && subsetX l lt && subsetX r gt
+isSubsetOfX Tip t = True
+isSubsetOfX t Tip = False
+isSubsetOfX (Bin _ x l r) t
+  = found && isSubsetOfX l lt && isSubsetOfX r gt
   where
-    (found,lt,gt) = splitMember x t
+    (lt,found,gt) = splitMember x t
 
 
 {--------------------------------------------------------------------
@@ -277,17 +249,20 @@ deleteMax Tip             = Tip
 {--------------------------------------------------------------------
   Union. 
 --------------------------------------------------------------------}
--- | The union of a list of sets: (@unions == foldl union empty@).
+-- | The union of a list of sets: (@'unions' == 'foldl' 'union' 'empty'@).
 unions :: Ord a => [Set a] -> Set a
 unions ts
   = foldlStrict union empty ts
 
 
--- | /O(n+m)/. The union of two sets. Uses the efficient /hedge-union/ algorithm.
+-- | /O(n+m)/. The union of two sets, preferring the first set when
+-- equal elements are encountered.
+-- The implementation uses the efficient /hedge-union/ algorithm.
+-- Hedge-union is more efficient on (bigset `union` smallset).
 union :: Ord a => Set a -> Set a -> Set a
 union Tip t2  = t2
 union t1 Tip  = t1
-union t1 t2  -- hedge-union is more efficient on (bigset `union` smallset)
+union t1 t2
   | size t1 >= size t2  = hedgeUnion (const LT) (const GT) t1 t2
   | otherwise           = hedgeUnion (const LT) (const GT) t2 t1
 
@@ -325,29 +300,23 @@ hedgeDiff cmplo cmphi t (Bin _ x l r)
   Intersection
 --------------------------------------------------------------------}
 -- | /O(n+m)/. The intersection of two sets.
+-- Intersection is more efficient on (bigset `intersection` smallset).
 intersection :: Ord a => Set a -> Set a -> Set a
 intersection Tip t = Tip
 intersection t Tip = Tip
-intersection t1 t2  -- intersection is more efficient on (bigset `intersection` smallset)
-  | size t1 >= size t2  = intersect t1 t2
-  | otherwise           = intersect t2 t1
+intersection t1 t2
+  | size t1 >= size t2  = intersect' t1 t2
+  | otherwise           = intersect' t2 t1
 
-intersect Tip t = Tip
-intersect t Tip = Tip
-intersect t (Bin _ x l r)
+intersect' Tip t = Tip
+intersect' t Tip = Tip
+intersect' t (Bin _ x l r)
   | found     = join x tl tr
   | otherwise = merge tl tr
   where
-    (found,lt,gt) = splitMember x t
-    tl            = intersect lt l
-    tr            = intersect gt r
-
-{--------------------------------------------------------------------
-  Disjointness
---------------------------------------------------------------------}
--- | /O(n+m)/. Are two sets disjoint?
-disjoint :: Ord a => Set a -> Set a -> Bool
-s1 `disjoint` s2 = s1 `intersection` s2 == empty
+    (lt,found,gt) = splitMember x t
+    tl            = intersect' lt l
+    tr            = intersect' gt r
 
 
 {--------------------------------------------------------------------
@@ -372,39 +341,47 @@ partition p (Bin _ x l r)
     (l1,l2) = partition p l
     (r1,r2) = partition p r
 
--- | /O(n)/. Do all elements satisfy the predicate?
-all :: Ord a => (a -> Bool) -> Set a -> Bool
-all p Tip = True
-all p (Bin _ x l r)
-  | p x       = (all p l) && (all p r)
-  | otherwise = False
+{----------------------------------------------------------------------
+  Map
+----------------------------------------------------------------------}
 
--- | /O(n)/. Does some element satisfy the predicate?
-any :: Ord a => (a -> Bool) -> Set a -> Bool
-any p Tip = False
-any p (Bin _ x l r)
-  | p x       = True
-  | otherwise = (any p l) || (any p r)
+-- | /O(n*log n)/. 
+-- @'map' f s@ is the set obtained by applying @f@ to each element of @s@.
+-- 
+-- It's worth noting that the size of the result may be smaller if,
+-- for some @(x,y)@, @x \/= y && f x == f y@
+
+map :: (Ord a, Ord b) => (a->b) -> Set a -> Set b
+map f = fromList . List.map f . toList
+
+-- | /O(n)/. The 
+--
+-- @'mapMonotonic' f s == 'map' f s@, but works only when @f@ is monotonic.
+-- /The precondition is not checked./
+-- Semi-formally, we have:
+-- 
+-- > and [x < y ==> f x < f y | x <- ls, y <- ls] 
+-- >                     ==> mapMonotonic f s == map f s
+-- >     where ls = toList s
+
+mapMonotonic :: (a->b) -> Set a -> Set b
+mapMonotonic f Tip = Tip
+mapMonotonic f (Bin sz x l r) =
+    Bin sz (f x) (mapMonotonic f l) (mapMonotonic f r)
+
 
 {--------------------------------------------------------------------
   Fold
 --------------------------------------------------------------------}
--- | /O(n)/. Fold the elements of a set.
+-- | /O(n)/. Fold over the elements of a set in an unspecified order.
 fold :: (a -> b -> b) -> b -> Set a -> b
 fold f z s
-  = foldR f z s
+  = foldr f z s
 
 -- | /O(n)/. Post-order fold.
-foldR :: (a -> b -> b) -> b -> Set a -> b
-foldR f z Tip           = z
-foldR f z (Bin _ x l r) = foldR f (f x (foldR f z r)) l
-
-{--------------------------------------------------------------------
-  Image (Added by T.M.)
---------------------------------------------------------------------}
--- | /n/. Image of a set under a function
-image :: Ord b => (a -> b) -> Set a -> Set b
-image f t = foldR (insert . f) empty t
+foldr :: (a -> b -> b) -> b -> Set a -> b
+foldr f z Tip           = z
+foldr f z (Bin _ x l r) = foldr f (f x (foldr f z r)) l
 
 {--------------------------------------------------------------------
   List variations 
@@ -414,20 +391,6 @@ elems :: Set a -> [a]
 elems s
   = toList s
 
-{--------------------------------------------------------------------
-  Maybe (Added by T.M.)
---------------------------------------------------------------------}
--- | Convert Maybe a to Set a; Nothing becomes the empty set
-maybeToSet :: Maybe a -> Set a
-maybeToSet Nothing = empty
-maybeToSet (Just x) = single x
-
--- | Convert Maybe (Set a) to Set a; Nothing becomes the empty set
-maybeSetToSet :: Maybe (Set a) -> Set a
-maybeSetToSet Nothing = empty
-maybeSetToSet (Just x) = x
-        
- 
 {--------------------------------------------------------------------
   Lists 
 --------------------------------------------------------------------}
@@ -439,7 +402,7 @@ toList s
 -- | /O(n)/. Convert the set to an ascending list of elements.
 toAscList :: Set a -> [a]
 toAscList t   
-  = foldR (:) [] t
+  = foldr (:) [] t
 
 
 -- | /O(n*log n)/. Create a set from a list of elements.
@@ -455,7 +418,8 @@ fromList xs
   Note that if [xs] is ascending that: 
     fromAscList xs == fromList xs
 --------------------------------------------------------------------}
--- | /O(n)/. Build a map from an ascending list in linear time.
+-- | /O(n)/. Build a set from an ascending list in linear time.
+-- /The precondition (input list is ascending) is not checked./
 fromAscList :: Eq a => [a] -> Set a 
 fromAscList xs
   = fromDistinctAscList (combineEq xs)
@@ -474,6 +438,7 @@ fromAscList xs
 
 
 -- | /O(n)/. Build a set from an ascending list of distinct elements in linear time.
+-- /The precondition (input list is strictly ascending) is not checked./
 fromDistinctAscList :: [a] -> Set a 
 fromDistinctAscList xs
   = build const (length xs) xs
@@ -483,7 +448,7 @@ fromDistinctAscList xs
     build c 0 xs   = c Tip xs 
     build c 5 xs   = case xs of
                        (x1:x2:x3:x4:x5:xx) 
-                            -> c (bin x4 (bin x2 (single x1) (single x3)) (single x5)) xx
+                            -> c (bin x4 (bin x2 (singleton x1) (singleton x3)) (singleton x5)) xx
     build c n xs   = seq nr $ build (buildR nr c) nl xs
                    where
                      nl = n `div` 2
@@ -500,8 +465,12 @@ fromDistinctAscList xs
 instance Eq a => Eq (Set a) where
   t1 == t2  = (size t1 == size t2) && (toAscList t1 == toAscList t2)
 
+{--------------------------------------------------------------------
+  Ord 
+--------------------------------------------------------------------}
+
 instance Ord a => Ord (Set a) where
-  t1 <= t2  = toAscList t1 <= toAscList t2
+    compare s1 s2 = compare (toAscList s1) (toAscList s2) 
 
 {--------------------------------------------------------------------
   Show
@@ -585,9 +554,9 @@ filterLt cmp (Bin sx x l r)
 {--------------------------------------------------------------------
   Split
 --------------------------------------------------------------------}
--- | /O(log n)/. The expression (@split x set@) is a pair @(set1,set2)@
+-- | /O(log n)/. The expression (@'split' x set@) is a pair @(set1,set2)@
 -- where all elements in @set1@ are lower than @x@ and all elements in
--- @set2@ larger than @x@.
+-- @set2@ larger than @x@. @x@ is not found in neither @set1@ nor @set2@.
 split :: Ord a => a -> Set a -> (Set a,Set a)
 split x Tip = (Tip,Tip)
 split x (Bin sy y l r)
@@ -598,13 +567,13 @@ split x (Bin sy y l r)
 
 -- | /O(log n)/. Performs a 'split' but also returns whether the pivot
 -- element was found in the original set.
-splitMember :: Ord a => a -> Set a -> (Bool,Set a,Set a)
-splitMember x Tip = (False,Tip,Tip)
+splitMember :: Ord a => a -> Set a -> (Set a,Bool,Set a)
+splitMember x Tip = (Tip,False,Tip)
 splitMember x (Bin sy y l r)
   = case compare x y of
-      LT -> let (found,lt,gt) = splitMember x l in (found,lt,join y gt r)
-      GT -> let (found,lt,gt) = splitMember x r in (found,join y l lt,gt)
-      EQ -> (True,l,r)
+      LT -> let (lt,found,gt) = splitMember x l in (lt,found,join y gt r)
+      GT -> let (lt,found,gt) = splitMember x r in (join y l lt,found,gt)
+      EQ -> (l,True,r)
 
 {--------------------------------------------------------------------
   Utility functions that maintain the balance properties of the tree.
@@ -651,13 +620,13 @@ join x l@(Bin sizeL y ly ry) r@(Bin sizeR z lz rz)
 insertMax,insertMin :: a -> Set a -> Set a 
 insertMax x t
   = case t of
-      Tip -> single x
+      Tip -> singleton x
       Bin sz y l r
           -> balance y l (insertMax x r)
              
 insertMin x t
   = case t of
-      Tip -> single x
+      Tip -> singleton x
       Bin sz y l r
           -> balance y (insertMin x l) r
              
@@ -685,6 +654,9 @@ glue l r
 
 
 -- | /O(log n)/. Delete and find the minimal element.
+-- 
+-- > deleteFindMin set = (findMin set, deleteMin set)
+
 deleteFindMin :: Set a -> (a,Set a)
 deleteFindMin t 
   = case t of
@@ -693,6 +665,8 @@ deleteFindMin t
       Tip           -> (error "Set.deleteFindMin: can not return the minimal element of an empty set", Tip)
 
 -- | /O(log n)/. Delete and find the maximal element.
+-- 
+-- > deleteFindMax set = (findMax set, deleteMax set)
 deleteFindMax :: Set a -> (a,Set a)
 deleteFindMax t
   = case t of
@@ -808,7 +782,7 @@ showTree s
 {- | /O(n)/. The expression (@showTreeWith hang wide map@) shows
  the tree that implements the set. If @hang@ is
  @True@, a /hanging/ tree is shown otherwise a rotated tree is shown. If
- @wide@ is true, an extra wide version is shown.
+ @wide@ is 'True', an extra wide version is shown.
 
 > Set> putStrLn $ showTreeWith True False $ fromDistinctAscList [1..5]
 > 4
@@ -997,7 +971,7 @@ prop_Valid
 --------------------------------------------------------------------}
 prop_Single :: Int -> Bool
 prop_Single x
-  = (insert x empty == single x)
+  = (insert x empty == singleton x)
 
 prop_InsertValid :: Int -> Property
 prop_InsertValid k
@@ -1039,7 +1013,7 @@ prop_UnionValid
 
 prop_UnionInsert :: Int -> Set Int -> Bool
 prop_UnionInsert x t
-  = union t (single x) == insert x t
+  = union t (singleton x) == insert x t
 
 prop_UnionAssoc :: Set Int -> Set Int -> Set Int -> Bool
 prop_UnionAssoc t1 t2 t3
@@ -1082,3 +1056,4 @@ prop_List :: [Int] -> Bool
 prop_List xs
   = (sort (nub xs) == toList (fromList xs))
 -}
+

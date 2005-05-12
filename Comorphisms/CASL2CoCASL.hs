@@ -61,7 +61,7 @@ instance Comorphism CASL2CoCASL
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor
     map_sentence CASL2CoCASL _ = return . mapSen
-    map_symbol CASL2CoCASL = Set.single . mapSym
+    map_symbol CASL2CoCASL = Set.singleton . mapSym
 
 mapSig :: CASLSign -> CSign
 mapSig sign = 

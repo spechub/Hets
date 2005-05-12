@@ -447,11 +447,14 @@ sortCaseAlts sign peqs =
 -- Returns a list of the constructors of the used datatype
 getCons :: Env -> TypeId -> [UninstOpId]
 getCons sign tyId = 
-  extractIds (typeDefn (Map.find tyId (typeMap sign)))
+  extractIds (typeDefn (findInMap tyId (typeMap sign)))
   where extractIds (DatatypeDefn (DataEntry _ _ _ _ altDefns)) =
           catMaybes (map stripConstruct altDefns)
         extractIds _ = error "HasCASL2Isabelle.extractIds"
         stripConstruct (Construct i _ _ _) = i
+        findInMap :: Ord k => k -> Map.Map k a -> a 
+        findInMap k m = maybe (error "HasCASL2isabelleHOL.findInMap") id $
+                Map.lookup k m
 
 -- Extracts the type of the used datatype in case patterns
 getName :: ProgEq -> TypeId

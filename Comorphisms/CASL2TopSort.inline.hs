@@ -99,7 +99,7 @@ instance Comorphism CASL2TopSort
                                                 (Just . fst)
                                                 mr)
     map_sentence CASL2TopSort = transSen
-    map_symbol CASL2TopSort = Set.single . id
+    map_symbol CASL2TopSort = Set.singleton . id
 
 
 data PredInfo = PredInfo { topSort_PI    :: SORT
@@ -156,7 +156,7 @@ generateSubSortMap sortRels pMap =
 
 transSig :: Sign f e -> Result (Sign f e, [Named (FORMULA f)])
 transSig sig 
-    | Rel.isEmpty (sortRel sig) = 
+    | Rel.null (sortRel sig) = 
         Result [Diag Hint (
         "CASL2TopSort.transSig: Signature is unchanged (no subsorting present)"
                              ) nullPos] (Just (sig,[]))
@@ -198,20 +198,20 @@ transSig sig
                :d1++d2 )   
           newPreds mp = 
               foldr (\ pI nm -> Map.insert (predicate_PI pI) 
-                                           (Set.single  
+                                           (Set.singleton  
                                             (PredType [topSort_PI pI]),[]) nm)
                     Map.empty (Map.elems mp)
 
 transPredMap :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType) 
              -> Map.Map PRED_NAME (Set.Set PredType, [Diagnosis])
-transPredMap subSortMap = Map.map (\s -> (Set.image transType s,[]))
+transPredMap subSortMap = Map.map (\s -> (Set.map transType s,[]))
     where transType t = t { predArgs = map (\s -> maybe s topSort_PI 
                                                   (Map.lookup s subSortMap))
                                            (predArgs t)}
 
 transOpMap :: SubSortMap -> Map.Map OP_NAME (Set.Set OpType) 
            -> Map.Map OP_NAME (Set.Set OpType)
-transOpMap subSortMap = Map.map (tidySet . Set.image transType)
+transOpMap subSortMap = Map.map (tidySet . Set.map transType)
     where tidySet s = Set.fold joinPartial s s
             where joinPartial t@(OpType {opKind = Partial})  
                       | t {opKind = Total} `Set.member` s = Set.delete t
@@ -249,7 +249,7 @@ symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA f)]
 symmetryAxioms ssMap sortRels =
     let symSets = Rel.symmetricSets sortRels
         mR = Rel.mostRight sortRels
-        symTopSorts symSet = not (Set.isEmpty (Set.intersection mR symSet))
+        symTopSorts symSet = not (Set.null (Set.intersection mR symSet))
         xVar = mkSimpleId "x"
         updateLabel ts symS [sen] = 
             sen { senName = show ts++senName sen++show symS }
@@ -326,7 +326,7 @@ generateAxioms subSortMap pMap oMap =
 mkProfMapPred :: SubSortMap -> Set.Set PredType 
               -> Map.Map [SORT] (Set.Set [Maybe PRED_NAME])
 mkProfMapPred ssm = Set.fold seperate Map.empty
-    where seperate pt = Map.setInsert (pt2topSorts pt) (pt2preds pt) 
+    where seperate pt = Rel.setInsert (pt2topSorts pt) (pt2preds pt) 
           pt2topSorts = map (lkupTop ssm) . predArgs
           pt2preds = map (lkupPRED_NAME ssm) . predArgs
 
@@ -341,7 +341,7 @@ mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
                                            (min k1 k2,Set.union s1 s2)) 
                                         (pt2topSorts joinedList) 
                                         (fKind,
-                                         Set.single (pt2preds joinedList)) 
+                                         Set.singleton (pt2preds joinedList)) 
                                         mp)))
                  mmap
               where joinedList = opArgs ot ++ [opRes ot]
@@ -483,7 +483,7 @@ combineTypes subSortMap =
                        foldr (\ t sl -> zipWith ins (predArgs t) sl) 
                                           (replicate arity Map.empty) types)
     where ins so mp = maybe mp 
-                            (\v -> Map.setInsert (topSort_PI v) so mp)
+                            (\v -> Rel.setInsert (topSort_PI v) so mp)
                             (Map.lookup so subSortMap)
 
 -- | Each membership test of a subsort is transformed to a predication
@@ -496,7 +496,7 @@ combineTypes subSortMap =
 
 transSen :: (Show f) => Sign f e -> FORMULA f -> Result (FORMULA f)
 transSen sig f 
-    | Rel.isEmpty (sortRel sig) = 
+    | Rel.null (sortRel sig) = 
         Result [Diag Hint (
         "CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)"
                              ) nullPos] (Just f)

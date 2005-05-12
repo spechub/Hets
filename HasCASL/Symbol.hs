@@ -30,7 +30,7 @@ checkSymbols s1 s2 r =
     let s = foldr ( \ e2 d -> 
                  Set.filter (not . matchSymb e2 . ASymbol) d)
                   s1 $ Set.toList s2 in
-    if Set.isEmpty s then r else
+    if Set.null s then r else
        Result [mkDiag Error "unknown symbols" s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
@@ -71,7 +71,7 @@ subSyms :: Env -> Type -> SymbolSet
 subSyms e t = case t of
            TypeName i k n ->
                if n == 0 then if i == unitTypeId then Set.empty 
-                  else Set.single $ idToTypeSymbol e i k
+                  else Set.singleton $ idToTypeSymbol e i k
                else Set.empty
            TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
            ExpandedType _ t1 -> subSyms e t1

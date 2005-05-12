@@ -39,7 +39,7 @@ freeVars f = case f of
 
 freeTermVars :: TERM f -> Set.Set (VAR, SORT)
 freeTermVars t = case t of 
-    Qual_var v s _ -> Set.single (v, s)
+    Qual_var v s _ -> Set.singleton (v, s)
     Application _ args _ -> Set.unions $ map freeTermVars args
     Sorted_term st _ _ -> freeTermVars st
     Cast st _ _ -> freeTermVars st

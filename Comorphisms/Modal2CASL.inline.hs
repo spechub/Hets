@@ -83,7 +83,7 @@ instance Comorphism Modal2CASL
                      ++ map (mapNamed $ transSen sig) sens)
     map_morphism Modal2CASL = return . mapMor
     map_sentence Modal2CASL sig = return . transSen sig
-    map_symbol Modal2CASL = Set.single . mapSym
+    map_symbol Modal2CASL = Set.singleton . mapSym
 
 data ModName = SimpleM SIMPLE_ID
 	     | SortM   SORT 
@@ -147,7 +147,7 @@ transSig sign =
 			     then [getModTermSort rs,fws,fws]
 			     else [fws,fws] in
                Map.fold (\rs nm -> Map.insert rs 
-			                      (Set.single $ 
+			                      (Set.singleton $ 
 					            PredType $ argSorts rs)
                                               nm) 
 		        mp rels
@@ -238,7 +238,7 @@ mapSen mapEnv@(MME{worldSort = fws,flexPreds=fPreds}) vars
 				       fwsTerm:as')
 			     defTup = (pn,as') in
 		          maybe defTup
-			    (\ ts -> assert (not $ Set.isEmpty ts) 
+			    (\ ts -> assert (not $ Set.null ts) 
                                  (if Set.member (toPredType pType) ts 
 				     then addTup
 			             else defTup))
@@ -346,7 +346,7 @@ mapTERM mapEnv@(MME{worldSort=fws,flexOps=fOps}) vars t = case t of
 				  fwsTerm:as')
 			defTup = (opsym,as') in
 		    maybe defTup
-			  (\ ts -> assert (not $ Set.isEmpty ts) 
+			  (\ ts -> assert (not $ Set.null ts) 
 			    (if Set.member (toOpType opType) ts
 			        then addTup
 			        else defTup))
@@ -390,7 +390,7 @@ addWorld_ :: (Ord a) => (SORT -> a -> a)
 	  -> SORT -> Id -> Set.Set a 
 	  -> Map.Map OP_NAME (Set.Set a) 
 	  -> Map.Map OP_NAME (Set.Set a)
-addWorld_ f fws k set mp = Map.insert (addPlace k) (Set.image (f fws) set) mp
+addWorld_ f fws k set mp = Map.insert (addPlace k) (Set.map (f fws) set) mp
 
 {-
 -- List of sort ids for possible Worlds

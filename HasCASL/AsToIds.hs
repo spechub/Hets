@@ -47,5 +47,5 @@ idsOfOpItem b (OpDecl os _ _ _) =
                   _ -> Set.empty
 idsOfOpItem b (OpDefn (OpId i _ _) _ _ _ _ _) =
         case b of 
-                  Pred -> (Set.single i)
+                  Pred -> (Set.singleton i)
                   _ -> Set.empty

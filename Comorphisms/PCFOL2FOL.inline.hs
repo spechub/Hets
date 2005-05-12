@@ -80,7 +80,7 @@ instance Comorphism PCFOL2FOL
     map_sentence PCFOL2FOL sig = 
         return . simplifyFormula id . totalizeFormula (sortsWithBottom sig) id
     map_symbol PCFOL2FOL s = 
-      Set.single s { symbType = totalizeSymbType $ symbType s }
+      Set.singleton s { symbType = totalizeSymbType $ symbType s }
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of
@@ -91,27 +91,27 @@ sortsWithBottom :: Sign f e -> Set.Set SORT
 sortsWithBottom sign = 
     let ops = Map.elems $ opMap sign
         resSortsOfPartialFcts = 
-            Set.unions $ map (Set.image opRes . 
+            Set.unions $ map (Set.map opRes . 
                                  Set.filter ( \ t -> opKind t == Partial))
             ops
         collect given = 
-            let more = Set.unions $ map (Set.image opRes . 
+            let more = Set.unions $ map (Set.map opRes . 
                                  Set.filter ( \ t -> any 
                                  (flip Set.member given) $ opArgs t)) ops
-            in if Set.subset more given then given
+            in if Set.isSubsetOf more given then given
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
 
 sig2FOL :: Sign f e -> Sign f e
 sig2FOL sig = sig { opMap=newOpMap, predMap = newpredMap }
  where
-   newTotalMap = Map.map (Set.image $ makeTotal Total) $ opMap sig
+   newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs=[], opRes=x }
    bsorts = sortsWithBottom sig
-   botTypes = Set.image botType bsorts
+   botTypes = Set.map botType bsorts
    newOpMap  = Map.insert bottom botTypes newTotalMap
    defType x = PredType{predArgs=[x]}
-   defTypes = Set.image defType bsorts
+   defTypes = Set.map defType bsorts
    newpredMap = Map.insert defPred defTypes $ predMap sig
 
 bottom :: Id

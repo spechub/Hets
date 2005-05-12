@@ -119,7 +119,7 @@ inducedFromMorphism extEm rmap sigma = do
   let syms = symOf sigma
       sortsSigma = sortSet sigma
       incorrectRsyms = Map.foldWithKey
-        (\rsy _ -> if Set.any (matchesND rsy) syms
+        (\rsy _ -> if any (matchesND rsy) $ Set.toList syms
                     then id
                     else Set.insert rsy)
         Set.empty
@@ -132,7 +132,7 @@ inducedFromMorphism extEm rmap sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  when (not (Set.isEmpty incorrectRsyms))
+  when (not (Set.null incorrectRsyms))
     (pfatal_error
        (text "the following symbols:"
         <+> printText incorrectRsyms 
@@ -155,9 +155,9 @@ inducedFromMorphism extEm rmap sigma = do
   -- compute target signature
   let sigma' = 
         sigma
-            {sortSet = Set.image (mapSort sort_Map) sortsSigma,
+            {sortSet = Set.map (mapSort sort_Map) sortsSigma,
              sortRel = Rel.transClosure $ 
-                         Rel.image (mapSort sort_Map) (sortRel sigma),
+                         Rel.map (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
                        Map.empty (opMap sigma),
              assocOps = Map.foldWithKey (mapOps sort_Map op_Map)
@@ -187,7 +187,9 @@ sortFun rmap s =
                  []
     where
     -- get all raw symbols to which s is mapped to
-    rsys = Set.unions $ map (Set.maybeToSet . (\x -> Map.lookup x rmap))
+    rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of 
+                 Nothing -> Set.empty
+                 Just r -> Set.singleton r)
                [ASymbol $ idToSortSymbol s, AnID s, AKindedId SortKind s]
 
   {- to a Fun_map, add everything resulting from mapping (id, ots)
@@ -263,7 +265,7 @@ mapOps sort_Map op_Map ide ots m =
     where
     mapOp ot m1 = 
       let (ide',ot') = mapOpSym sort_Map op_Map (ide,ot)
-      in Map.setInsert ide' ot' m1
+      in Rel.setInsert ide' ot' m1
 
   {- to a Pred_map, add evering resulting from mapping (ide,pts)
   according to rmap -}
@@ -341,7 +343,7 @@ mapPreds sort_Map pred_Map ide pts m =
     where
     mapPred pt m1 = 
       let (ide',pt') = mapPredSym sort_Map pred_Map (ide,pt)
-      in Map.setInsert ide' pt' m1
+      in Rel.setInsert ide' pt' m1
 
 {-
 inducedFromToMorphism :: RawSymbolMap -> sign -> sign -> Result morphism
@@ -504,7 +506,7 @@ type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)),
 -- postpone entries with no default mapping and size > 1
 postponeEntry :: Symbol -> SymbolSet -> Bool
 postponeEntry sym symset = 
-  (not $ Set.any (preservesName sym) symset) && Set.size symset > 1
+  (not $ any (preservesName sym) $ Set.toList symset) && Set.size symset > 1
 
 removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
 removeFromPosmap sym card (posmap1,posmap2) =
@@ -520,7 +522,7 @@ removeFromPosmap sym card (posmap1,posmap2) =
 addToPosmap :: Symbol -> SymbolSet -> PosMap -> PosMap
 addToPosmap sym symset (posmap1,posmap2) =
   (Map.insert sym (symset,card) posmap1,
-   Map.listInsert card (sym,symset) posmap2)
+   listInsert card (sym,symset) posmap2)
   where card = (postponeEntry sym symset,Set.size symset)
 
 -- restrict posmap such that each symbol from symset1 is only mapped
@@ -548,12 +550,12 @@ restrictSorts sym1 sym2 sigma1 sigma2 posmap =
   s2 = symName sym2
   sub1 = subsortsOf s1 sigma1 
   sub2 = subsortsOf s2 sigma2
-  subsyms1 = Set.image idToSortSymbol sub1
-  subsyms2 = Set.image idToSortSymbol sub2
+  subsyms1 = Set.map idToSortSymbol sub1
+  subsyms2 = Set.map idToSortSymbol sub2
   super1 = supersortsOf s1 sigma1
   super2 = supersortsOf s2 sigma2
-  supersyms1 = Set.image idToSortSymbol super1
-  supersyms2 = Set.image idToSortSymbol super2
+  supersyms1 = Set.map idToSortSymbol super1
+  supersyms2 = Set.map idToSortSymbol super2
 
 -- remove all sort mappings that map s1 to a sort different from s2
 removeIncompatibleSortMaps :: Maybe PosMap -> (SORT,SORT) -> Maybe PosMap
@@ -564,7 +566,7 @@ removeIncompatibleSortMaps (Just posmap@(posmap1,_posmap2)) (s1,s2) =
     Just (symset,card) ->
       -- is there some remaining possibility to map the sort? 
       if sym2 `Set.member` symset
-         then Just $ addToPosmap sym1 (Set.single sym2)
+         then Just $ addToPosmap sym1 (Set.singleton sym2)
                    $ removeFromPosmap sym1 card posmap
          -- if not, there is no map!
          else Nothing
@@ -602,17 +604,17 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
    else let sortSet2 = sortSet sigma2 in 
-        if Map.isEmpty rmap && Set.size symset1 == 1 && Set.size sortSet2 == 1 
+        if Map.null rmap && Set.size symset1 == 1 && Set.size sortSet2 == 1 
            then return mor1 
                     { mtarget = sigma2 
-                    , sort_map = Map.single (symName $ Set.findMin symset1) 
+                    , sort_map = Map.singleton (symName $ Set.findMin symset1) 
                                  $ Set.findMin sortSet2 }
    else do -- 2. Compute initial posmap, using all possible mappings of symbols
      let addCard sym s = (s,(postponeEntry sym s,Set.size s))
          ins1 sym = Map.insert sym
                    (addCard sym $ Set.filter (canBeMapped rmap sym) symset2)
          posmap1 = Set.fold ins1 Map.empty symset1
-         ins2 sym1a (symset,card) = Map.listInsert card (sym1a,symset)
+         ins2 sym1a (symset,card) = listInsert card (sym1a,symset)
          posmap2 = Map.foldWithKey ins2 Map.empty posmap1
          posmap = (posmap1,posmap2)
      -- Are there symbols that cannot be mapped at all?
@@ -637,7 +639,7 @@ tryToInduce :: Sign f e -> Sign f e -> SymbolMap -> PosMap
             -> Result (Maybe SymbolMap)
 tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
        --trace("akmap: "++showPretty akmap "") (return ())
-       if Map.isEmpty posmap2 then return $ Just akmap -- 4a.
+       if Map.null posmap2 then return $ Just akmap -- 4a.
         else do
           --trace ("trying to map: "++showPretty sym1 "") (return ())
           akmap1 <- 
@@ -733,7 +735,7 @@ Output: signature "Sigma1"<=Sigma.
 
 generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 generatedSign extEm sys sigma = do
-  if not (sys `Set.subset` symset)   -- 2.
+  if not (sys `Set.isSubsetOf` symset)   -- 2.
    then pfatal_error 
          (text "Revealing: The following symbols" 
           <+> printText(sys Set.\\ symset)
@@ -752,10 +754,10 @@ revealSym sy sigma1 = case symbType sy of  -- 4.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
       sigma1 {sortSet = foldr Set.insert (sortSet sigma1) (opRes ot:opArgs ot),
-              opMap = Map.setInsert (symName sy) ot $ opMap sigma1}
+              opMap = Rel.setInsert (symName sy) ot $ opMap sigma1}
     PredAsItemType pt ->   -- 4.1.4.
       sigma1 {sortSet = foldr Set.insert (sortSet sigma1) (predArgs pt),
-              predMap = Map.setInsert (symName sy) pt $ predMap sigma1}
+              predMap = Rel.setInsert (symName sy) pt $ predMap sigma1}
   -- 5./6.
 
 {-
@@ -785,7 +787,7 @@ cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
 cogeneratedSign extEm symset sigma = do
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
-           (not (symset `Set.subset` symset0))   -- 2.
+           (not (symset `Set.isSubsetOf` symset0))   -- 2.
    then pfatal_error 
          (text "Hiding: The following symbols" 
           <+> printText(symset Set.\\ symset0)
@@ -810,3 +812,8 @@ finalUnion :: (e -> e -> e) -- ^ join signature extensions
            -> Sign f e -> Sign f e -> Result (Sign f e)
 finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2 
   -- ???  Finality check not yet implemented
+
+-- | Insert into a list of values
+listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
+listInsert kx x t = Map.insert kx (x : Map.findWithDefault [] kx t) t
+

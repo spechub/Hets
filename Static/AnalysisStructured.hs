@@ -120,6 +120,7 @@ import Common.Result
 import Common.Id
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Rel as Rel(image, setInsert)
 import Data.List hiding (union)
 import Common.PrettyPrint
 import Common.Lib.Pretty
@@ -462,7 +463,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           gsigma3 = G_sign lid sigma3
           sys3 = sym_of lid sigma3
       when (not( isStructured opts || 
-                 sys2 `Set.difference` sys1 `Set.subset` sys3))
+                 sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
         $ pplain_error () (text 
           "attempt to hide the following symbols from the local environment"
           $$ printText ((sys2 `Set.difference` sys1) `Set.difference` sys3))
@@ -1159,7 +1160,7 @@ idComponents (Id toks comps pos) ids =
 -- 
 componentRelation :: Set.Set Id -> Set.Set (Id,[Id])
 componentRelation ids =
-  Set.image (\id -> (id,idComponents id ids)) ids
+  Set.map (\id -> (id,idComponents id ids)) ids
 -}
 
 mapID :: Map.Map Id (Set.Set Id) -> Id -> Result Id
@@ -1177,7 +1178,7 @@ mapID idmap i@(Id toks comps pos1) =
               <+> printText ids) nullPos
 
 extID1 :: Map.Map Id (Set.Set Id) -> Id 
-              -> Result (Map.EndoMap Id) -> Result (Map.EndoMap Id)
+              -> Result (EndoMap Id) -> Result (EndoMap Id)
 extID1 idmap i@(Id toks comps pos1) m = do
   m1 <- m
   compsnew <- sequence $ map (mapID idmap) comps
@@ -1185,7 +1186,7 @@ extID1 idmap i@(Id toks comps pos1) m = do
    then return m1
    else return (Map.insert i (Id toks compsnew pos1) m1)
 
-extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (Map.EndoMap Id)
+extID :: Set.Set Id -> Map.Map Id (Set.Set Id) -> Result (EndoMap Id)
 extID ids idmap = Set.fold (extID1 idmap) (return Map.empty) ids
 
 
@@ -1202,7 +1203,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   fittingMor <- mcoerce lidM lid "Extension of symbol map" fittingMor1
   let symsP = sym_of lid sigmaP
       symsB = sym_of lid sigmaB
-      idsB = Set.image (sym_name lid) symsB
+      idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
       symbMapToRawSymbMap =
           Map.foldWithKey (\sy1 sy2 -> Map.insert (symbol_to_raw lid sy1) 
@@ -1210,7 +1211,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                           Map.empty
       rh = symbMapToRawSymbMap h
       idh = Map.foldWithKey 
-             (\sy1 sy2 -> Map.setInsert (sym_name lid sy1) (sym_name lid sy2)) 
+             (\sy1 sy2 -> Rel.setInsert (sym_name lid sy1) (sym_name lid sy2)) 
              Map.empty h
   idhExt <- extID idsB idh
   let rIdExt = Map.foldWithKey 
@@ -1224,8 +1225,8 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
       sigmaAD = cod lid mor
   sigma <- final_union lid sigmaA sigmaAD
   let illShared = (sym_of lid sigmaA `Set.intersection` sym_of lid sigmaAD )
-                   Set.\\ Map.image h symsP
-  when (not (Set.isEmpty illShared))
+                   Set.\\ Rel.image h symsP
+  when (not (Set.null illShared))
    (pplain_error () (ptext 
      "Symbols shared between actual parameter and body must be in formal parameter"
      $$ printText illShared ) nullPos)
@@ -1237,7 +1238,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
       comb2 p@(a, b) ((c, d) : qs) rs = 
           comb2 p qs $ if b == d then (a, c) : rs else rs 
       newIdentifications = myKernel hmor Set.\\ myKernel h
-  when (not (Set.isEmpty newIdentifications))
+  when (not (Set.null newIdentifications))
    (pplain_error () (ptext 
      "Fitting morphism leads to forbidden identifications"
      $$ printText newIdentifications) nullPos)

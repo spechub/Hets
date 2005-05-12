@@ -35,7 +35,7 @@ instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
     printLatex0 ga s = 
 	casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s) 
 	$$ 
-        (if Rel.isEmpty (sortRel s) then empty
+        (if Rel.null (sortRel s) then empty
             else casl_keyword_latex sortS <\+> 
              (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
 	$$ 

@@ -67,6 +67,10 @@ instance (PrettyPrint a,  PrettyPrint b) => PrettyPrint (Diagram a b) where
         <+> ptext "\nedges: "
         <+> (printText0 ga (labEdges diag))
 
+-- | find in Map
+findInMap :: Ord k => k -> Map.Map k a -> a 
+findInMap k m = maybe (error "Amalgamability.findInMap") id $
+                Map.lookup k m
 
 -- | Compute the Sorts set -- a disjoint union of all the sorts
 -- in the diagram.
@@ -203,7 +207,7 @@ mergeEquivClassesBy cond rel =
                 to the given tag performing path compression while
                 traversing the referneces. -}
                 findEqcl t tagMap = 
-                    case Map.find t tagMap of 
+                    case findInMap t tagMap of 
                     Eqcl eqcl -> (t, eqcl, tagMap)
                     TagRef t' -> let 
                         (rt, eqcl, tagMap') = findEqcl t' tagMap
@@ -743,7 +747,7 @@ colimitIsThin simeq' embs' c0 =
 
         -- larger: return a list of colimit sorts larger than given sort
         larger srt = 
-            let dl = Set.toList (Map.find srt ordMap)
+            let dl = Set.toList (findInMap srt ordMap)
             in (srt : (foldl (\l -> \so -> l ++ (larger so)) [] dl))
 
         -- s: the map representing sets S_{\geq s1,s2}
@@ -755,8 +759,8 @@ colimitIsThin simeq' embs' c0 =
 
         -- b: the map representing sets B_{s1,s2}
         b = let compB m sp =
-                    let sim' s' s'' = not (Set.isEmpty (Map.find (s', s'') s))
-                        rel = map (\x -> (x, x)) (Set.toList (Map.find sp s))
+                    let sim' s' s'' = not (Set.null (findInMap (s', s'') s))
+                        rel = map (\x -> (x, x)) (Set.toList (findInMap sp s))
                         rel' = mergeEquivClassesBy sim' rel
                     in Map.insert sp (taggedValsToEquivClasses rel') m
             in foldl compB Map.empty [(s1, s2) | s1 <- sortsC, s2 <- sortsC]
@@ -766,7 +770,7 @@ colimitIsThin simeq' embs' c0 =
         embCodS (n, _, cod) =  maybe (error "embCodS") id
                                $ findTag simeqT (n, cod)
         -- checkAllSorts: check the C = B condition for all colimit sorts
-        checkAllSorts m | Map.isEmpty m = {-trace "CT: Yes"-} True
+        checkAllSorts m | Map.null m = {-trace "CT: Yes"-} True
                         | otherwise = 
             let -- checkSort: check if for given colimit sort C = B
           checkSort chs = let 
@@ -777,7 +781,7 @@ colimitIsThin simeq' embs' c0 =
               updC c1 (d, e) = let 
                 s1 = embCodS d
                 s2 = embCodS e
-                in Map.update (\_ -> Just (Map.find (s1, s2) b)) (d, e) c1
+                in Map.update (\_ -> Just (findInMap (s1, s2) b)) (d, e) c1
               in foldl updC c
                      [(d, e) | d <- embsCs, e <- embsCs, inRel c0 [d] [e]]
             c'' = let 
@@ -788,7 +792,7 @@ colimitIsThin simeq' embs' c0 =
                               && (n, cod) == (n2, cod2)) embs' == []
                    then c else let 
                    [absCls] = filter (\ac -> any (s2==) ac) 
-                              (Map.find (s1, s2) b)
+                              (findInMap (s1, s2) b)
                    in foldl (\c2 k -> Map.update (\l -> Just 
                           (l ++ [absCls])) k c2) c1 [(d, e), (e, d)]
               in foldl updC c' [(d, e) | d <- embsCs, 
@@ -800,19 +804,19 @@ colimitIsThin simeq' embs' c0 =
                   sb23 = Set.fromList b23
                   sb13 = Set.fromList b13
                   comm = Set.intersection sb12 (Set.intersection sb23 sb13)
-                  in if Set.isEmpty comm then c2 else let 
-                    c2' = if any (\l -> l == b13) (Map.find (e1, e3) c2) 
+                  in if Set.null comm then c2 else let 
+                    c2' = if any (\l -> l == b13) (findInMap (e1, e3) c2) 
                          then c2 
                          else Map.update (\l -> Just (l ++ [b13])) (e1, e3) c2
-                    in if any (\l -> l == b13) (Map.find (e1, e3) c2') 
+                    in if any (\l -> l == b13) (findInMap (e1, e3) c2') 
                        then c2' 
                        else Map.update (\l -> Just (l ++ [b13])) (e3, e1) c2'
                 s1 = embCodS e1
                 s3 = embCodS e3
                 in foldl updC' c1 [(b12, b23, b13) |
-                                  b12 <- (Map.find (e1, e2) c1),
-                                  b23 <- (Map.find (e2, e3) c1),
-                                  b13 <- (Map.find (s1, s3) b)]
+                                  b12 <- (findInMap (e1, e2) c1),
+                                  b23 <- (findInMap (e2, e3) c1),
+                                  b13 <- (findInMap (s1, s3) b)]
               cFix' = foldl updC cFix [(e1, e2, e3) | 
                                 e1 <- embsCs, e2 <- embsCs, e3 <- embsCs]
               in if cFix' == cFix then cFix else fixUpdRule cFix'
@@ -821,20 +825,20 @@ colimitIsThin simeq' embs' c0 =
             checkIncl ((e1, e2) : embprs) = let 
               s1 = embCodS e1
               s2 = embCodS e2
-              res = if subRelation (Map.find (s1, s2) b) 
-                    (Map.find (e1, e2) c3) == Nothing then checkIncl embprs
+              res = if subRelation (findInMap (s1, s2) b) 
+                    (findInMap (e1, e2) c3) == Nothing then checkIncl embprs
                     else False
               in {- trace ("B[" ++ (show s1) ++ ", " ++ (show s2) ++ ":\n"
-                                      ++ (show (Map.find (s1, s2) b))
+                                      ++ (show (findInMap (s1, s2) b))
                                       ++ "\n" ++ "C[" ++ (show e1) ++
                                       ", " ++ (show e2) ++ ":\n" ++
-                                      (show (Map.find (e1, e2) c3)) ++
+                                      (show (findInMap (e1, e2) c3)) ++
                                       "\n\n") -}  res
             in checkIncl [(e1, e2) | e1 <- embsCs, e2 <- embsCs]
                 -- cs: next colimit sort to process     
                 -- m1: the order map with cs removed
           (cs, m1) = let 
-            [(cs', _)] = take 1 (filter (\(_, lt) -> Set.isEmpty lt) 
+            [(cs', _)] = take 1 (filter (\(_, lt) -> Set.null lt) 
                                                           (Map.toList m))
             m' = Map.delete cs' m
             m'' = foldl (\ma -> \k -> Map.update (\lt -> Just 

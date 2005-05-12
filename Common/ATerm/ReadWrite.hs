@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -39,13 +39,9 @@ module Common.ATerm.ReadWrite (
 
 import Common.ATerm.AbstractSyntax
 
--- added by KL
 import Data.Char
-import qualified Common.Lib.Map as IntMap
+import qualified Common.Lib.Map as Map -- used with Int keys only
 import Common.SimpPretty
-
---import Debug.Trace
--- import Numeric don't use showInt: can't show negative numbers
 
 --- From String to ATerm ------------------------------------------------------
 
@@ -220,14 +216,14 @@ spanNotQuote' (x:xs')   = case spanNotQuote' xs' of
 condAddRElement :: Int -> Int -> ReadTable -> ReadTable
 condAddRElement ai len tbl@(RTab abb_ai_map siz) = 
     if len > 7 || snd (abbrev (siz)) < len then
-       RTab (IntMap.insert siz ai abb_ai_map) (siz + 1)
+       RTab (Map.insert siz ai abb_ai_map) (siz + 1)
     else tbl
 
 condAddWElement :: Int -> Int -> WriteTable -> WriteTable
 condAddWElement ai len tbl@(WTab ai_abb_map da@(Doc_len _ doclen) siz) = 
     if len > 7 || doclen < len then
        let nsize = siz + 1 in
-       WTab (IntMap.insert ai da ai_abb_map) (abbrevD nsize) nsize
+       WTab (Map.insert ai da ai_abb_map) (abbrevD nsize) nsize
     else tbl
     -- length $ abbrev (maxBound::Int) == 7, so every ATerm with a
     -- string size greater than 7 must be added
@@ -281,7 +277,7 @@ writeAT' at (i:is) = let at' = getATermByIndex1 i at
 --shared--
 writeTAF :: ATermTable -> WriteTable -> Write_struct
 writeTAF at tbl@(WTab ai_abb_map _ _) = let i = getTopIndex at in  
-    case IntMap.lookup i ai_abb_map of
+    case Map.lookup i ai_abb_map of
     Just s -> WS tbl s 
     Nothing  -> case writeTAF' at tbl of
                 (WS tbl' d_len@(Doc_len _ len)) -> 
@@ -380,22 +376,22 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- ATermIndex is the Index that is given by getATermIndex.
 
 -- Map: Abbrev     -> ATermIndex
-data ReadTable  = RTab (IntMap.Map Int Int) Int
+data ReadTable  = RTab (Map.Map Int Int) Int
 
 -- 1st Map: ATermIndex -> Abbrev
 -- TODO: implement 2nd Map as WriteCache 
 --         (sf::ShowS,length of String in sf::Int) .. done
-data WriteTable = WTab (IntMap.Map Int Doc_len) Doc_len Int
+data WriteTable = WTab (Map.Map Int Doc_len) Doc_len Int
 
 emptyRTable :: ReadTable
-emptyRTable = RTab IntMap.empty 0
+emptyRTable = RTab Map.empty 0
 
 emptyWTable :: WriteTable
-emptyWTable = WTab IntMap.empty (abbrevD 0) 0
+emptyWTable = WTab Map.empty (abbrevD 0) 0
 
 getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
 getAbbrevTerm i at (RTab abb_ai_map _) =  
-    getATerm $ getATermByIndex1 (IntMap.find i abb_ai_map) at 
+    getATerm $ getATermByIndex1 (abb_ai_map Map.! i) at 
 
 --- Intger Read ---------------------------------------------------------------
 

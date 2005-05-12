@@ -86,14 +86,10 @@ module Common.LaTeX_funs (-- module Common.LaTeX_funs,
                    endAnno
 ) where
 
-import Common.Lib.Map as Map hiding (isEmpty, empty, map)
+import qualified Common.Lib.Map as Map
 import Data.Char
-import Data.Maybe (isJust,fromJust)
 import Data.List (isPrefixOf)
 import Numeric
-
--- for the debug hack
--- import Debug.Trace
 
 import Common.LaTeX_maps
 import Common.Lib.Pretty
@@ -183,15 +179,16 @@ itCorrection s
 		        (r + lookupCorrection (y1:y2:[])) 
 			ys
 	  itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
-	  lookupCorrection str = findWithDefault def_cor str italiccorrection_map 
+	  lookupCorrection str = Map.findWithDefault def_cor str 
+                                 italiccorrection_map 
 	  -- lookupWithDefaultFM correction_map def_cor pc
 	  -- TODO: Build a nice correction map
           def_cor = 610
  
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
-		   -> Map String Int 
-		   -> Map Char [String]  -> String -> Int
+		   -> Map.Map String Int 
+		   -> Map.Map Char [String]  -> String -> Int
 sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
 	  sum_char_width' [c] r 
@@ -208,7 +205,7 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 	      | otherwise = case prefixIsKey full key_cFM of
 			    Just key -> sum_char_width' 
 				        (drop (length key) full) 
-			                (r + (fromJust $ Map.lookup key cFM))
+			                $ r + (cFM Map.! key)
 			    Nothing -> sum_char_width' rest nl 
 	      where nl = r + lookupWithDefault_cFM (c1:[])
 	  lookupWithDefault_cFM s' = case Map.lookup s' cFM of
@@ -221,21 +218,17 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
 						   2200
 				     Just w  -> w    
 
-prefixIsKey :: String -> Map Char [String] -> Maybe String
+prefixIsKey :: String -> Map.Map Char [String] -> Maybe String
 prefixIsKey [] _ = Nothing
-prefixIsKey ls@(c:_) key_cFM = case Map.lookup c key_cFM of 
-			       Just ws -> firstJust $ map testPrefix ws
-			       Nothing -> Nothing
-    where testPrefix s = if ((flip isPrefixOf) ls) s 
-			 then Just s 
-			 else Nothing
-	  firstJust [] = Nothing
-	  firstJust (ms:mss) = if isJust ms then ms else firstJust mss
+prefixIsKey ls@(c:_) key_cFM = case filter (flip isPrefixOf ls) 
+        $ Map.findWithDefault [] c key_cFM of 
+    [] -> Nothing
+    s : _ -> Just s
 
 isLigature :: String -> Bool
 isLigature s 
     | (length s) /= 2 = False
-    | otherwise = findWithDefault False s ligatures
+    | otherwise = Map.findWithDefault False s ligatures
 
 keyword_width, structid_width, axiom_width, annotationbf_width,
   annotation_width, comment_width, normal_width
@@ -273,34 +266,6 @@ d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
 -- @\textit{@ or @}@
 latex_macro :: String -> Doc
 latex_macro = sp_text 0 
-{- an alternative implementation of 
-   latex_text with bad counts for letters etc. :
-
-   case sp_length s 0 of {sl -> sp_text sl s}
-    where
-    sp_length :: String -> Int -> Int 
-    sp_length ""     a   = a
-    sp_length (x:xs) a 
-	| x == '\\' = let (c,rest) = spanLaMacro xs 
-		      in sp_length rest (a+c)
-	| x == '{'  = sp_length xs a 
-	| x == '}'  = sp_length xs a 
-	| otherwise = sp_length xs (a+1) 
-	where spanLaMacro :: String -> (Int, String)
-	      spanLaMacro "" = (1,"") -- lambda
-	      spanLaMacro (x:xs) 
-		  | x == ' '  = (1,xs) -- an explicit space 
-		  | x == '{'  = (1,xs)
-		  | x == '}'  = (1,xs)
-		  | x == '_'  = (1,xs)  
-		  | isAlpha x = let (makro,rest) = 
-					span isAlpha xs
-				in (0,rest) 
-		  | otherwise = (0,x:xs) 
-                                 -- error $ "spanLaMacro: strange " ++ 
-				 --    take 5 (x:xs)
-
--}
 
 comma_latex, semi_latex, space_latex,equals_latex,colon_latex :: Doc 
 comma_latex  = let s = "," in sp_text (normal_width s) s

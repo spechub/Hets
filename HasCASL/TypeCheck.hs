@@ -126,14 +126,14 @@ typeCheck mt trm =
                    (ds, rcs) = simplify tm cs 
                    es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
                addDiags es 
-               if Set.isEmpty rcs then return ()
+               if Set.null rcs then return ()
                   else addDiags [(mkDiag Error ("in term'"
                              ++ showPretty t "' of type '" 
                              ++ showPretty ty "'\n unresolved constraints")
                                  rcs){diagPos = p}]
                return $ Just t
           else let alts3 = filter ( \ (_, cs, _, _) -> 
-                             Set.isEmpty $ snd $ simplify tm cs) alts 
+                             Set.null $ snd $ simplify tm cs) alts 
                    falts = typeNub tm q2p alts3 in
                if null falts then do
                   addDiags [mkDiag Error "no constraint resolution for" trm]
