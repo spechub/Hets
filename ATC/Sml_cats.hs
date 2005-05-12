@@ -93,16 +93,9 @@ instance ATermConvertibleSML Integer where
                           where at = getATerm att
 
 instance ATermConvertibleSML Int where
-    from_sml_ShATerm att = case mi y of
-                            (Just i) -> i
-                            Nothing  -> error ("Integer to big for Int: "++(show y))
-                           where
-                           y::Integer 
-                           y = from_sml_ShATerm att
-                           mi :: (Num a) => Integer -> Maybe a
-                           mi x = if toInteger ((fromInteger::Integer->Int) x) == x 
-                                   then Just (fromInteger x) 
-                                   else Nothing                    
+    from_sml_ShATerm att = let y = from_sml_ShATerm att :: Integer in
+        if toInteger (fromInteger y :: Int) == y then fromInteger y else
+           error $ "Integer to big for Int: " ++ show y
           
 instance ATermConvertibleSML Char where
    from_sml_ShATerm att = case at of
@@ -156,14 +149,16 @@ instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c)
                        _   -> from_sml_ShATermError "(a,b,c)" at
                       where at = getATerm att
                             
-instance (ATermConvertibleSML a, ATermConvertibleSML b, ATermConvertibleSML c, ATermConvertibleSML d) => ATermConvertibleSML (a,b,c,d) where
+instance (ATermConvertibleSML a, ATermConvertibleSML b, 
+          ATermConvertibleSML c, ATermConvertibleSML d) 
+    => ATermConvertibleSML (a,b,c,d) where
     from_sml_ShATerm att = case at of 
                        (ShAAppl "" [a,b,c,d] _) -> (a',b',c',d')
                          where a' = from_sml_ShATerm (getATermByIndex1 a att) 
                                b' = from_sml_ShATerm (getATermByIndex1 b att) 
                                c' = from_sml_ShATerm (getATermByIndex1 c att) 
                                d' = from_sml_ShATerm (getATermByIndex1 d att)
-                       _                            -> from_sml_ShATermError "(a,b,c)" at
+                       _ -> from_sml_ShATermError "(a,b,c)" at
                       where at = getATerm att
 
 
@@ -172,18 +167,10 @@ instance ATermConvertibleSML Token where
     from_sml_ShATerm att =
         case aterm of
             (ShAAppl "token" [ aa ] _)  ->
-                let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = nullPos
-                in (Token aa' ab')
-            (ShAAppl "place" [] _)  ->
-                let
-                aa' = Common.Id.place
-                ab' = nullPos
-                in (Token aa' ab')
+                mkSimpleId $ from_sml_ShATerm (getATermByIndex1 aa att)
+            (ShAAppl "place" [] _)  -> mkSimpleId $ Common.Id.place
             _ -> from_sml_ShATermError "Token" aterm
-        where
-            aterm = getATerm att
+            where aterm = getATerm att
 
 instance ATermConvertibleSML Id where
     from_sml_ShATerm att =
@@ -367,7 +354,7 @@ from_sml_ATermAnnotedBasic_Items att =
           aterm = getATerm att
           annoList = case getATerm att of
                      (ShAAppl _ as _) -> getAnnoList (last as) att
-                     _                -> error "Wrong ATerm structure: BASIC_ITEMS"
+                     _ -> error "Wrong ATerm structure: BASIC_ITEMS"
 
 -- getAnnoList and toAnnoList are only working with an AIndex as first
 -- argument is given. If getAnnoList is called every ShAAppl that starts _
@@ -379,7 +366,7 @@ getAnnoList ai att = case at of
                      ShAAppl c as _ | isPrefixOf "pos-" c -> 
                                     getAnnoList (last as) att
                      ShAAppl _ as _ -> toAnnoList (last as) att
-                     _          -> error "wrong storage or missed 'pos-' contructor" 
+                     _ -> error "wrong storage or missed 'pos-' contructor" 
     where at = getATerm (getATermByIndex1 ai att)
 
 toAnnoList :: Int -> ATermTable -> [Annotation]
@@ -603,7 +590,7 @@ from_sml_ATermSORTS :: ATermTable -> ([SORT],[Pos])
 from_sml_ATermSORTS att = 
         case aterm of
             (ShAAppl "sorts" [ aa ] _)  ->
-                (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)              
+                (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)
             _ -> from_sml_ShATermError "([SORT],[Pos])" aterm
         where
             aterm = getATerm att'
@@ -923,7 +910,7 @@ from_sml_ATermTERMS :: ATermTable -> ([TERM a],[Pos])
 from_sml_ATermTERMS att = 
     case aterm of
              (ShAAppl "terms" [ aa ] _)  ->
-                 (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)             
+                 (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)
              _ -> from_sml_ShATermError "([TERM],[Pos])" aterm
     where aterm = getATerm att'
           (pos_l,att') =
@@ -940,7 +927,7 @@ from_sml_ATermSIMPLE_ID att =
       (ShAAppl "" [ si, _ ] _) -> -- snd element is 'None' 
                                   -- (CASL.grm:((WORDS,None)))
           let s = from_sml_ShATerm $ getATermByIndex1 si att
-          in Token s nullPos
+          in mkSimpleId s
       _ -> from_sml_ShATermError "SIMPLE_ID" aterm
     where aterm = getATerm att
 
@@ -1259,7 +1246,7 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Spec_inst aa' ab' nullPos)
+                in (Spec_inst aa' ab' [])
             _ -> from_sml_ShATermError "SPEC" aterm
         where
             aterm = getATerm att'
