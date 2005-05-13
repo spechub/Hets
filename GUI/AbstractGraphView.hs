@@ -21,7 +21,7 @@ module GUI.AbstractGraphView where
 
 import DaVinciGraph
 import Static.DevGraph (DGLinkLab)
-import Common.Lib.Graph (LEdge)
+import Data.Graph.Inductive.Graph (LEdge)
 import Logic.Logic --mkTyConApp
 
 import GraphDisp

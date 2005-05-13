@@ -16,7 +16,6 @@ import Common.ATerm.Lib
 import Common.Result
 import Comorphisms.LogicGraph
 import Logic.Logic
-import ATC.Graph
 import qualified Common.Lib.Set as Set
 
 instance ShATermConvertible G_basic_spec where

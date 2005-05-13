@@ -49,7 +49,8 @@ import Logic.Morphism
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty
-import Common.Lib.Graph
+import qualified Data.Graph.Inductive.Graph as Graph
+import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
@@ -279,7 +280,7 @@ data G_diagram = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
-        G_diagram lid (Diagram sign morphism) 
+        G_diagram lid (Tree.Gr sign morphism) 
 
 -- | Grothendieck sublogics
 data G_sublogics = forall lid sublogics
@@ -786,8 +787,10 @@ coerceTheory lid (G_theory lid2 sign2 sens2)
 -- Grothendieck diagrams and weakly amalgamable cocones
 ------------------------------------------------------------------
 
-type GDiagram = Diagram G_sign GMorphism
+type GDiagram = Tree.Gr G_sign GMorphism
 
-gWeaklyAmalgamableCocone :: GDiagram -> Result (G_sign,Map.Map Node GMorphism)
-gWeaklyAmalgamableCocone _ = return (undefined,Map.empty) -- dummy implementation
+gWeaklyAmalgamableCocone :: GDiagram 
+                         -> Result (G_sign,Map.Map Graph.Node GMorphism)
+gWeaklyAmalgamableCocone _ = 
+    return (undefined,Map.empty) -- dummy implementation
 

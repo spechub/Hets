@@ -112,12 +112,12 @@ import Data.Maybe
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck
-import Common.Lib.Graph hiding (empty)
 import Static.DevGraph
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
@@ -125,6 +125,12 @@ import Data.List hiding (union)
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Control.Monad 
+
+insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
+insEdgeNub e@(v,w,l) g = 
+   if (l,w) `elem` s then g
+      else insEdge e g
+   where (Just (_,_,_,s),_) = match v g
 
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
@@ -157,7 +163,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGBasic }
-           [node] = newNodes 0 dg
+           node = getNewNode dg
            dg' = insNode (node,node_contents) dg
            link = DGLink {
                     dgl_morphism = incl,
@@ -188,7 +194,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGTranslation }
-          [node] = newNodes 0 dg'
+          node = getNewNode dg'
           link = (n',node,DGLink {
             dgl_morphism = mor,
             dgl_type = GlobalDef,
@@ -220,7 +226,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGHiding }
-               [node] = newNodes 0 dg'
+               node = getNewNode dg'
                link = (n',node,DGLink {
                   dgl_morphism = hmor,
                   dgl_type = HidingDef,
@@ -238,7 +244,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
         -- the case with identity translation leads to a simpler dg
         if tmor' == ide Grothendieck (dom Grothendieck tmor')
          then do
-           let [node1] = newNodes 0 dg'
+           let node1 = getNewNode dg'
                node_contents1 = DGNode {
                  dgn_name = name,
                  dgn_sign = gsigma1, --G_sign lid1 (empty_signature lid1),
@@ -255,7 +261,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                    insEdgeNub link1 $
                    insNode (node1,node_contents1) dg')
          else do
-           let [node1,node''] = newNodes 1 dg'
+           let [node1,node''] = newNodes 2 dg'
                node_contents1 = DGNode {
                  dgn_name = extName "T" name,
                  dgn_sign = gsigma1, --G_sign lid1 (empty_signature lid1),
@@ -307,7 +313,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGUnion }
-          [node] = newNodes 0 dg'
+          node = getNewNode dg'
           insE dgres (n,gsigma) = do
             dg1 <- dgres
             incl <- adj $ ginclusion lg gsigma gbigSigma
@@ -400,7 +406,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_sigma = Nothing,
             dgn_sens = G_l_sentence_list lid' [],
             dgn_origin = DGFree }
-          [node] = newNodes 0 dg'
+          node = getNewNode dg'
           link = (n',node,DGLink {
             dgl_morphism = incl,
             dgl_type = FreeDef nsig,
@@ -426,7 +432,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGCofree }
-          [node] = newNodes 0 dg'
+          node = getNewNode dg'
           link = (n',node,DGLink {
             dgl_morphism = incl,
             dgl_type = CofreeDef nsig,
@@ -475,7 +481,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_sigma = Nothing,
             dgn_sens = G_l_sentence_list lid [],
             dgn_origin = DGLocal }
-          [node] = newNodes 0 dg''
+          node = getNewNode dg''
           link = (n'',node,DGLink {
             dgl_morphism = gEmbed (G_morphism lid mor3),
             dgl_type = HidingDef,
@@ -503,7 +509,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       G_sign lid'' _ <- return gsigma''
       incl1 <- adj $ ginclusion lg gsigma gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma''
-      let [node] = newNodes 0 dg'
+      let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
             dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
@@ -544,7 +550,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       G_sign lid'' _ <- return gsigma''
       incl1 <- adj $ ginclusion lg gsigma gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma''
-      let [node] = newNodes 0 dg'
+      let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
             dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
@@ -617,7 +623,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             -- otherwise, we need to create a new one
            else do
              incl <- adj $ ginclusion lg gsigmaB gsigma
-             let [node] = newNodes 0 dg
+             let node = getNewNode dg
                  node_contents = DGNode {
                    dgn_name = name,
                    dgn_sign = gsigma, -- G_sign lid (empty_signature lid),
@@ -638,7 +644,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
          Just n -> do
            incl1 <- adj $ ginclusion lg (getSig nsig) gsigma
            incl2 <- adj $ ginclusion lg gsigmaB gsigma
-           let [node] = newNodes 0 dg
+           let node = getNewNode dg
                node_contents = DGNode {
                  dgn_name = name,
                  dgn_sign = gsigma, -- G_sign lid (empty_signature lid),
@@ -675,7 +681,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        incl1 <- adj $ ginclusion lg (getSig nsig) gsigmaRes
        incl2 <- adj $ ginclusion lg gsigma' gsigmaRes
        morDelta' <- comp Grothendieck (gEmbed morDelta) incl2
-       let [node] = newNodes 0 dg'
+       let node = getNewNode dg'
            node_contents = DGNode {
              dgn_name = name,
              dgn_sign = gsigmaRes, -- G_sign lid' (empty_signature lid'),
@@ -751,7 +757,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGData }
-          [node] = newNodes 0 dg1
+          node = getNewNode dg1
           link = (n',node,DGLink {
             dgl_morphism = GMorphism cid sigmaD (ide lidP' sigmaD'),
             dgl_type = GlobalDef,
@@ -1001,7 +1007,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
            incl2 <- adj $ ginclusion lg gsigmaT gsigmaA
            incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
            incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
-           let [nA,n'] = newNodes 1 dg
+           let [nA,n'] = newNodes 2 dg
                node_contentsA = DGNode {
                  dgn_name = name,
                  dgn_sign = gsigmaA, 
@@ -1073,7 +1079,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
        incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
        incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
        G_sign lidP _ <- return gsigmaP
-       let [nA,n'] = newNodes 1 dg'
+       let [nA,n'] = newNodes 2 dg'
            node_contentsA = DGNode {
            dgn_name = name,
            dgn_sign = gsigmaRes,
@@ -1299,7 +1305,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
 	dgn_nf = Nothing,
 	dgn_sigma = Nothing,
         dgn_origin = DGFormalParams }
-      [node] = newNodes 0 dg''
+      node = getNewNode dg''
       dg''' = insNode (node,node_contents) dg''
       inslink dgres nsig = do
         dg <- dgres

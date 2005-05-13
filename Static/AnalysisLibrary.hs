@@ -22,7 +22,7 @@ module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN, anaString) where
 
 import Logic.Logic
 import Logic.Grothendieck
-import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Syntax.AS_Structured hiding (View_defn, Spec_defn)
 import Syntax.AS_Library
@@ -506,7 +506,7 @@ refNodesig ln (dg,refdNodes) (name,NodeSig(n,sigma)) =
 	dgn_nf = Nothing,
 	dgn_sigma = Nothing
 	}
-      [node] = newNodes 0 dg
+      node = getNewNode dg
    in (insNode (node,node_contents) dg, NodeSig(node,sigma) : refdNodes)
 refNodesig _ln (dg,refdNodes) (_,EmptyNode l) =
   (dg,EmptyNode l : refdNodes)

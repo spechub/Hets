@@ -38,7 +38,8 @@ import Logic.Grothendieck
 import Syntax.AS_Library
 import Common.GlobalAnnotations
 
-import Common.Lib.Graph as Graph
+import Data.Graph.Inductive.Graph
+import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
@@ -47,6 +48,10 @@ import Common.PPUtils
 import Common.Result
 import Common.Lib.Pretty
 
+getNewNode :: Tree.Gr a b -> Node
+getNewNode g = case newNodes 1 g of 
+               [n] -> n
+               _ -> error "Static.DevGraph.getNewNode" 
 
 -- * Types for structured specification analysis
 
@@ -167,7 +172,7 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
               deriving (Eq,Show)
 
-type DGraph = Graph DGNodeLab DGLinkLab
+type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
 data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
                deriving (Eq,Show)
@@ -202,7 +207,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
 				dgn_nf = Nothing,
 				dgn_sigma = Nothing,
 				dgn_origin = orig }
-	 [node] = newNodes 0 dg
+	 node = getNewNode dg
 	 dg' = insNode (node, nodeContents) dg
 	 inslink dgres nsig = do dg <- dgres
 				 case getNode nsig of
@@ -236,7 +241,7 @@ extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
 			       dgl_origin = orig}
-	[node] = newNodes 0 dg
+	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (n, node, linkContents) dg'
     in do return (NodeSig (node, targetSig), dg'')
@@ -264,7 +269,7 @@ extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
 			       dgl_origin = orig}
-	[node] = newNodes 0 dg
+	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (node, n, linkContents) dg'
     in do return (NodeSig (node, sourceSig), dg'')

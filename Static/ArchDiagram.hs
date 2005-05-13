@@ -19,15 +19,17 @@ where
 import Logic.Comorphism
 import Logic.Logic
 import Logic.Grothendieck
-import Common.PrettyPrint
-import Common.Lib.Graph
+
+import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Graph.Inductive.Tree as Tree
+
+import qualified Common.Lib.Map as Map
 import Common.Lib.Pretty
-import Static.DevGraph
---import Static.AnalysisStructured
+import Common.PrettyPrint
 import Common.Result
 import Common.Id
-import qualified Common.Lib.Graph as Graph
-import qualified Common.Lib.Map as Map
+
+import Static.DevGraph
 
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)
@@ -43,7 +45,7 @@ data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
 
 type BasedParUnitSig = (DiagNodeSig, ParUnitSig)
 
-type Diag = Diagram DiagNodeLab DiagLinkLab
+type Diag = Tree.Gr DiagNodeLab DiagLinkLab
 emptyDiag :: Diag
 emptyDiag = Graph.empty
 
@@ -159,7 +161,7 @@ extendDiagramIncl :: LogicGraph
 -- ^ returns the new node and the extended diagram
 extendDiagramIncl lgraph diag srcNodes newNodeSig desc = 
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-	 [node] = newNodes 0 diag
+	 node = getNewNode diag
 	 diag' = insNode (node, nodeContents) diag
 	 newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
@@ -185,7 +187,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
   if (getSig nsig) == (dom Grothendieck morph) then
      do (targetSig, dg') <- extendDGraph dg nsig morph orig
 	let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
-	    [node] = newNodes 0 diag
+	    node = getNewNode diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
         printDiag (Diag_node_sig node targetSig, diag'', dg') "extendDiagramWithMorphism" diag''
@@ -212,7 +214,7 @@ extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph desc ori
   if (getSig nsig) == (cod Grothendieck morph) then
      do (sourceSig, dg') <- extendDGraphRev dg nsig morph orig
 	let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
-	    [node] = newNodes 0 diag
+	    node = getNewNode diag
  	    diag' = insNode (node, nodeContents) diag
 	    diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
         printDiag (Diag_node_sig node sourceSig, diag'', dg') "extendDiagramWithMorphismRev" diag''
@@ -233,7 +235,7 @@ extendDiagram :: Diag          -- ^ the diagram to be extended
 -- ^ returns the new node and the extended diagram
 extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc = 
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-	 [node] = newNodes 0 diag
+	 node = getNewNode diag
 	 diag' = insNode (node, nodeContents) diag
 	 diag'' = insEdge (n, node, DiagLink { dl_morphism = edgeMorph }) diag'
 	 newDiagNode = Diag_node_sig node newNodeSig
@@ -249,7 +251,7 @@ homogeniseDiagram :: Logic lid sublogics
 			   sign morphism symbol raw_symbol proof_tree
 		  => lid     -- ^ the target logic to which signatures and morphisms will be coerced
 		  -> Diag    -- ^ the diagram to be homogenised
-		  -> Result (Diagram sign morphism)
+		  -> Result (Tree.Gr sign morphism)
 homogeniseDiagram targetLid diag = 
     -- The implementation relies on the representation of graph nodes as
     -- integers. We can therefore just obtain a list of all the labelled nodes
@@ -310,7 +312,7 @@ homogeniseSink targetLid edges =
 
 -- | Create a graph containing descriptions of nodes and edges.
 diagDesc :: Diag 
-	 -> Diagram String String
+	 -> Tree.Gr String String
 diagDesc diag =
     let insNodeDesc g (n, DiagNode { dn_desc = desc }) =
 	    if desc == "" then g else insNode (n, desc) g

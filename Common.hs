@@ -75,8 +75,6 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.ATerm.ReadWrite"
 
- * "Common.Lib.Graph"
-
  * "Common.Lib.Map"
 
  * "Common.Lib.Pretty"
@@ -84,8 +82,6 @@ identifiers and annotations as well as their parsing and printing.
  * "Common.Lib.Rel"
 
  * "Common.Lib.Set"
-
- * "Common.Lib.SimpleMap"
 
  * "Common.Lib.State"
 

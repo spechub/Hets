@@ -1,11 +1,10 @@
 {-# OPTIONS -cpp #-}
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
@@ -21,17 +20,30 @@ module Main where
 
 import Control.Monad (when)
 
-import Common.Utils
-import Common.Result
-import Common.GlobalAnnotations (emptyGlobalAnnos)
-import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
-import Driver.Options
 import System.Environment (getArgs)
--- import System.Posix.Process (exitImmediately)
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
+import Data.Graph.Inductive.Graph
+
+import Common.Utils
+import Common.Result
+import Common.AS_Annotation
+import Common.GlobalAnnotations (emptyGlobalAnnos)
+import qualified Common.Lib.Map as Map
+
+
+import Syntax.AS_Library (LIB_DEFN(..), LIB_NAME()) 
+import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
+
+import Driver.ReadFn
+import Driver.WriteFn
+import Driver.Options
+
 import Comorphisms.LogicGraph
+
+import Logic.Languages
 import Logic.Grothendieck
+
 import Static.AnalysisLibrary
 import Static.DevGraph
 import Static.PrintDevGraph
@@ -41,8 +53,7 @@ import Isabelle.CreateTheories
 -- for extraction functions
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
-import Common.AS_Annotation
-import Logic.Languages
+
 
 --import Syntax.Print_HetCASL
 #ifdef UNI_PACKAGE
@@ -53,13 +64,6 @@ import Events
 import Destructible
 import DialogWin (useHTk)
 #endif
-
--- for checking the whole ATerm interface
-import Syntax.AS_Library (LIB_DEFN(..), LIB_NAME()) 
-import qualified Common.Lib.Map as Map
-
-import Driver.ReadFn
-import Driver.WriteFn
 
 {-
 #ifdef PROGRAMATICA
@@ -168,7 +172,7 @@ checkFile opts fp ln lenv =
                              (map (\b -> if b then "ok" else "DIFF!!") 
                                  [r_globalAnnos == globalAnnos,
                                   r_globalEnv   == globalEnv,
-                                  r_dGraph      == dGraph]))))
+                                  r_dGraph `equal` dGraph]))))
            mread_gctx
                          
 showGraph :: FilePath -> HetcatsOpts -> 
@@ -223,7 +227,7 @@ run file =
 make hets
 make ghci
 :l hets.hs
-:module +Common.Lib.Graph
+:module +Data.Graph.Inductive.Graph
 Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
 -}
 

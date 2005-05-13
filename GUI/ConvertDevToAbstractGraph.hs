@@ -28,14 +28,25 @@ module GUI.ConvertDevToAbstractGraph where
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
+
 import Comorphisms.LogicGraph
+
+import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
+
 import Proofs.Proofs
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
 import GUI.HTkUtils
+import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
+
+import FileDialog
+import Events
+import System.Directory
+import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
+import Sources(toSimpleSource)
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
@@ -44,29 +55,22 @@ import Configuration
 import qualified HTk
 
 import qualified Common.Lib.Map as Map
-import Common.Lib.Graph
-import Common.Id
 import Common.Lib.Pretty as Pretty hiding (isEmpty)
+import Common.Id
 import Common.PrettyPrint
 import qualified Common.Result as Res
-import Syntax.AS_Library
 import Common.GlobalAnnotations
 
 import Driver.Options
 import Driver.WriteFn
 import Driver.ReadFn
-import FileDialog
-import Events
-import System.Directory
-import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
-import Sources(toSimpleSource)
 
+import Data.Graph.Inductive.Graph as Graph
 import Data.IORef
 import Data.Maybe
 import List(nub)
 import Control.Monad
 
-import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -178,7 +182,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                                    key <- Map.keys (libname2dg convMaps)]
   ioRefProofStatus <- newIORef (ln, libname2dg convMaps,proofHistory)
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
-  ioRefVisibleNodes <- newIORef [(Common.Lib.Graph.nodes dGraph)]
+  ioRefVisibleNodes <- newIORef [(Graph.nodes dGraph)]
   let gid = nextGraphId graphMem
       actGraphInfo = graphInfo graphMem
   let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, showInternalNames, hetsOpts, ioRefVisibleNodes)
@@ -706,7 +710,7 @@ getSignatureOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSignatureOfNode descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      do let dgnode = lab' (context node dgraph)
+      do let dgnode = lab' (context dgraph node)
          case dgnode of
            (DGNode name (G_sign _ sig) _ _ _ _) ->
               let title = "Signature of "++showName name
@@ -755,7 +759,7 @@ printTheory (G_theory lid sign sens) =
 displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
 displayTheory ext node dgraph gth =
-    let dgnode = lab' (context node dgraph)
+    let dgnode = lab' (context dgraph node)
         str = printTheory (simplifyTh gth) in case dgnode of
            (DGNode name (G_sign _ _) _ _ _ _) ->
               let thname = showName name
@@ -812,7 +816,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
   (_,libEnv,_) <- readIORef proofStatusRef
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      let dgnode = lab' (context node dgraph)
+      let dgnode = lab' (context dgraph node)
           name = case dgnode of
                        (DGNode name _ _ _ _ _) -> name
                        _ -> emptyName
@@ -834,7 +838,7 @@ showOriginOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 showOriginOfNode descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      do let dgnode = lab' (context node dgraph)
+      do let dgnode = lab' (context dgraph node)
          case dgnode of
            DGNode name _ _ _ _ orig ->    
               let title =  "Origin of node "++showName name
@@ -900,7 +904,7 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_)
   (ln,libEnv,_) <- readIORef ref
   let (_,_,dgraph) = maybe (error "checkconsistencyOfEdge") id 
                      $ Map.lookup ln libEnv
-      dgtar = lab' (context target dgraph)
+      dgtar = lab' (context dgraph target)
   case dgtar of
     DGNode name _ (G_l_sentence_list lid sens) _ _ _ -> 
      case dgl_morphism linklab of 
@@ -1017,10 +1021,6 @@ convertEdges convMaps descr graphInfo dgraph libname
                                 (labEdges dgraph)
                                 libname
 
--- function context from Graph.hs with inverse arguments
-invContext :: DGraph -> Node -> Context DGNodeLab DGLinkLab
-invContext dgraph node = context node dgraph
-
 {- auxiliar function for convertEges --> not yet implemented! -}
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo -> 
                     [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
@@ -1054,7 +1054,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps hetsOpts =
          case Map.lookup libname libname2dgMap of
           Just (_,_,dgraph) -> 
             do let (_,(DGRef _ refLibname refNode _ _)) = 
-                       labNode' (context node dgraph)
+                       labNode' (context dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just (_,refDgraph,_) -> 
                      convertGraph graphMem refLibname (libname2dg convMaps) hetsOpts

@@ -64,7 +64,8 @@ import Logic.Comorphism
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
-import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
+import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.AS_Annotation
@@ -346,6 +347,10 @@ globDecompForOneEdge dgraph edge =
       = getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
     paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
 
+delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
+delLEdge (v,w,_) = delEdge (v,w)
+
+
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
@@ -518,7 +523,7 @@ getSignature libEnv dgraph node =
          getSignature libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (dgn_sign nodeLab)
-    where nodeLab = lab' (context node dgraph)
+    where nodeLab = lab' (context dgraph node)
 
 {- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
 filterByTranslation :: Maybe G_theory -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
@@ -740,13 +745,13 @@ prettyPrintPath dgraph path =
 {- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
-   getDGNodeName $ lab' (context src dgraph)
+   getDGNodeName $ lab' $ context dgraph src
 
 
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
-   getDGNodeName $ lab' (context tgt dgraph)
+   getDGNodeName $ lab' $ context dgraph tgt
 
 
 {- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}
@@ -872,11 +877,11 @@ handleLeaves proofstatus (node:list) = do
 convertToNf :: ProofStatus -> Node -> IO ProofStatus
 convertToNf proofstatus@(ln,libEnv,history) node = do
   let dgraph = lookupDGraph ln proofstatus
-      nodelab = lab' (context node dgraph)
+      nodelab = lab' (context dgraph node)
   case dgn_nf nodelab of
     Just _ -> return proofstatus
     Nothing -> do
-      let [newNode] = newNodes 0 dgraph
+      let newNode = getNewNode dgraph
       proofstatusAux <- mkNfNodeForLeave node newNode proofstatus
       let auxGraph = lookupDGraph ln proofstatusAux
       (finalGraph,changes) <- adoptEdges auxGraph node newNode
@@ -887,7 +892,7 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
 {- creates and inserts a normal form node from the given input -}
 mkNfNodeForLeave :: Node -> Node  -> ProofStatus -> IO ProofStatus
 mkNfNodeForLeave node newNode proofstatus@(ln,_,_) = do
-  let nodelab = lab' (context node (lookupDGraph ln proofstatus))
+  let nodelab = lab' (context (lookupDGraph ln proofstatus) node)
   case isDGRef nodelab of
     True -> mkDGRefNfNode nodelab newNode True proofstatus
     False -> mkDGNodeNfNode nodelab newNode Nothing proofstatus
@@ -928,8 +933,8 @@ mkDGRefNfNode nodelab newNode isLeave proofstatus@(ln,_,_) = do
       <- theoremHideShift 
 		    (changeCurrentLibName (dgn_libname nodelab) proofstatus)
   let refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
-      (Just refNf) = dgn_nf (lab' (context (dgn_node nodelab) refGraph))
-      refNodelab = lab' (context refNf refGraph)
+      (Just refNf) = dgn_nf $ lab' $ context refGraph $ dgn_node nodelab
+      refNodelab = lab' (context refGraph refNf)
       (renamed, libname, sigma) =
 	  if isLeave 
 	     then (dgn_renamed nodelab, dgn_libname nodelab,
@@ -990,13 +995,13 @@ handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleNonLeaves proofstatus [] = return proofstatus
 handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
   let dgraph = lookupDGraph ln proofstatus
-      nodelab = lab' (context node dgraph)
+      nodelab = lab' (context dgraph node)
   case dgn_nf nodelab of
     Just _ -> handleNonLeaves proofstatus list
     Nothing ->
       case isDGRef nodelab of
         True -> do
-          let [nfNode] = newNodes 0 dgraph
+          let nfNode = getNewNode dgraph
           auxProofstatus' <- mkDGRefNfNode nodelab nfNode False proofstatus
 	  (auxGraph,changes) <- setNfOfNode dgraph node nfNode
 	  let finalProofstatus = updateProofStatus ln auxGraph changes
@@ -1014,7 +1019,7 @@ handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
             Nothing -> do sequence $ map (putStrLn . show) diags
 	  	          handleNonLeaves auxProofstatus list
   	    Just (sign,map) -> do
-	      let [nfNode] = newNodes 0 auxGraph
+	      let nfNode = getNewNode auxGraph
 		  sigma = Map.lookup node map
 	      auxProofstatus'<- mkDGNodeNfNode nodelab nfNode 
 				               (Just (sign,sigma))
@@ -1055,7 +1060,7 @@ makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
 		       else (src,tgt,dgl_morphism lab)
 makeDiagramAux diagram dgraph (node:list) edges =
   makeDiagramAux (insNode sigNode diagram) dgraph list edges
-    where sigNode = (node, dgn_sign (lab' (context node dgraph)))
+    where sigNode = (node, dgn_sign (lab' (context dgraph node)))
 
 
 {- sets the normal form of the first given node to the second one and
@@ -1077,9 +1082,9 @@ setNfOfNode dgraph node nf_node = do
 	  ((InsertNode newLNode):changes)++[DeleteNode oldLNode])
 
   where
-    nodeLab = lab' (context node dgraph)
-    oldLNode = labNode' (context node dgraph)
-    [newNode] = newNodes 0 dgraph
+    nodeLab = lab' (context dgraph node)
+    oldLNode = labNode' (context dgraph node)
+    newNode = getNewNode dgraph
     newLNode = case isDGRef nodeLab of
 	         True -> (newNode, DGRef {dgn_renamed = dgn_renamed nodeLab,
 					  dgn_libname = dgn_libname nodeLab,
@@ -1561,7 +1566,7 @@ isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
       Nothing -> False
    else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
 
-  where nodeLab = lab' (context src dgraph)
+  where nodeLab = lab' (context dgraph src)
 
 
 {- returns the DGLinkLab of the given LEdge -}

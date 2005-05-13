@@ -24,7 +24,8 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
-import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
+import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 
 emptyAnno :: SPEC -> Annoted SPEC
@@ -32,7 +33,7 @@ emptyAnno x = Annoted x [] [] []
 
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
-  let (_,_,n,preds) = context node dg
+  let (_,_,n,preds) = context dg node
   predSps <- sequence (map (dgToSpec dg . snd) preds)
   let apredSps = map emptyAnno predSps
       pos = []
@@ -72,7 +73,7 @@ computeLocalTheory libEnv dgraph node =
           computeLocalTheory libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
-    where nodeLab = lab' (context node dgraph)
+    where nodeLab = lab' $ context dgraph node
 
 
 {- if the given node is a DGRef, the referenced node is returned (as a
@@ -85,7 +86,7 @@ getDGNode libEnv dgraph node =
          getDGNode libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (labNode' contextOfNode)
-  where contextOfNode = (context node dgraph)
+  where contextOfNode = context dgraph node
         nodeLab = lab' contextOfNode
 
 getAllGlobDefPathsBeginningWithTypesTo :: [LEdge DGLinkLab -> Bool] -> DGraph 

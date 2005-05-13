@@ -19,22 +19,27 @@ module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
 where
 
 import Driver.Options
+
 import Logic.Logic
 import Logic.Grothendieck
-import Common.Lib.Graph
+
 import Static.DevGraph
 import Static.ArchDiagram
+import Static.AnalysisStructured
+
+import Syntax.Print_AS_Architecture
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
-import Static.AnalysisStructured
+
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.Amalgamate
-import Common.Lib.Graph
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
-import Syntax.Print_AS_Architecture
+
+import Data.Graph.Inductive.Graph as Graph(Node)
+
 
 -- | Analyse an architectural specification
 -- @

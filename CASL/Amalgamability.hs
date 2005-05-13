@@ -29,7 +29,8 @@ module CASL.Amalgamability(-- * Types
 
 import CASL.AS_Basic_CASL
 import Common.Id
-import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
+import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Set as Set
@@ -46,7 +47,7 @@ type CASLSign = Sign () ()
 type CASLMor = Morphism () () ()
 
 -- Miscellaneous types
-type CASLDiag = Diagram CASLSign CASLMor
+type CASLDiag = Tree.Gr CASLSign CASLMor
 type DiagSort = (Node, SORT) 
 type DiagOp = (Node, (Id, OpType))
 type DiagPred = (Node, (Id, PredType))
@@ -60,7 +61,7 @@ type EquivRel a = [EquivClass a]
 type EquivRelTagged a b = [(a, b)]
 
 -- PrettyPrint instance (for diagnostic output)
-instance (PrettyPrint a,  PrettyPrint b) => PrettyPrint (Diagram a b) where
+instance (PrettyPrint a,  PrettyPrint b) => PrettyPrint (Tree.Gr a b) where
     printText0 ga diag = 
         ptext "nodes: " 
         <+> (printText0 ga (labNodes diag))
@@ -458,7 +459,7 @@ sinkEmbs :: CASLDiag          -- ^ the diagram
          -> [DiagEmb]
 sinkEmbs _ [] = []
 sinkEmbs diag ((srcNode, _) : edgs) = 
-    let (_, _, Sign {sortRel = sr}, _) = context srcNode diag
+    let (_, _, Sign {sortRel = sr}, _) = context diag srcNode
     in (map (\(s1, s2) -> (srcNode, s1, s2)) (Rel.toList sr)) 
            ++ (sinkEmbs diag edgs)
     
@@ -1023,7 +1024,7 @@ hasColimitThinnessOpt = any ( \ o -> case o of
 ensuresAmalgamability :: [CASLAmalgOpt]        -- ^ program options
                       -> CASLDiag              -- ^ the diagram to be checked
                       -> [(Node, CASLMor)]     -- ^ the sink
-                      -> Diagram String String 
+                      -> Tree.Gr String String 
                     -- ^ the diagram containing descriptions of nodes and edges
                       -> Result Amalgamates
 ensuresAmalgamability opts diag sink desc = 

@@ -186,7 +186,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 
 genrule_header_files = $(wildcard ATC/*.header.hs)
 
-atc_files = Common/Lib/Graph.hs Common/AS_Annotation.der.hs \
+atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
     Static/DevGraph.hs Proofs/Proofs.hs Isabelle/IsaSign.hs 
