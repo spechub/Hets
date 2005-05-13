@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -13,7 +13,7 @@ Portability :  non-portable(Logic)
 
 module Static.DotGraph where
 
-import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Common.PrettyPrint
 
@@ -29,10 +29,7 @@ edgeAttribute (HidingThm _ _) = " [style=dotted]"
 edgeAttribute (FreeThm _ _) = " [style=dotted]"
 
 showNode :: DGraph -> Node -> String
-showNode dg n = 
-  case get_dgn_name (lab' $ context n dg) of
-    Nothing -> "N"++show n
-    Just x -> showPretty x ""
+showNode dg n = getDGNodeName $ lab' $ context dg n
 
 dotEdge :: DGraph -> (Node, Node, DGLinkLab) -> String
 dotEdge dg (n1,n2,link) = 
@@ -40,8 +37,8 @@ dotEdge dg (n1,n2,link) =
 	       ++ edgeAttribute (dgl_type link) ++ ";"
     
 nodeAttribute :: DGNodeLab -> String
-nodeAttribute (DGNode _ _ _ _) = ""
-nodeAttribute (DGRef _ _ _) =  " [shape=box]"
+nodeAttribute (DGNode _ _ _ _ _ _) = ""
+nodeAttribute (DGRef _ _ _ _ _) =  " [shape=box]"
 
 dotNode :: DGraph -> (Node, DGNodeLab) -> String
 dotNode dg (n,ncontents) =
