@@ -84,12 +84,12 @@ showTyp a pri t = case t of
        split (tv,ty) k = case k of 
                         TFree _ _ -> (tv++[k],ty)
                         _       -> (tv,ty++[k])
-       concRev a b = reverse a ++ reverse b
+       concRev b c = reverse b ++ reverse c
        encloseTup f g l = if (length l) < 2 then showTypTup f g l else lb++(showTypTup f g l)++rb 
        showTypTup f g l = case l of
           [] -> []
-          [a] -> showTyp f g a
-          a:b:as -> (showTyp f g a)++","++sp++(showTypTup f g (b:as)) 
+          [c] -> showTyp f g c
+          c:b:as -> (showTyp f g c)++","++sp++(showTypTup f g (b:as)) 
        showTypeOp x p n r1 r2
           | n == funS =
              bracketize (p<=10) (showTyp x 10 r1 ++ " => " ++ showTyp x 10 r2)
@@ -135,6 +135,15 @@ showTerm :: Term -> String
 showTerm (Const c _) = c
 showTerm (Free v _) = v
 
+showTerm (Tuplex ls c) = case c of
+   IsCont -> "<" ++ (showTupleArgs ls) ++ ">"
+   NotCont -> "(" ++ (showTupleArgs ls) ++ ")" 
+ where 
+   showTupleArgs xs = case xs of 
+     [] -> []
+     [a] -> showTerm a
+     a:as -> (showTerm a) ++ "," ++ showTupleArgs as
+
 showTerm (Abs v y t l) 
   | y == noType = lb ++ (case l of 
     NotCont -> "%"
@@ -148,7 +157,7 @@ showTerm (Paren t) = showTerm t
 showTerm (Fix t) = lb++"fix"++sp++(showTerm t)++rb
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
-showTerm t@(App t1 t2 NotCont) = showPTree (toPrecTree t) 
+showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t) 
 -- showTerm t@(Const c _) = showPTree (toPrecTree t) 
 showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
@@ -162,12 +171,14 @@ showTerm (Case term alts) =
       ++ sp ++ head sAlts
       ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
                                                     (tail sAlts)) ++ rb
-showTerm (If t1 t2 t3) = 
+showTerm (If t1 t2 t3 c) = case c of
+  NotCont -> 
     lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
            ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
-showTerm (CIf t1 t2 t3) = 
+  IsCont -> 
     lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
            ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
+
 showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
@@ -445,7 +456,7 @@ instance PrettyPrint Sign where
     showDataTypeDef (dt:dts) = 
        "datatype " ++ showDataType dt
        ++ (concat $ map ((" and "++) . showDataType) dts) ++ "\n"
-    showDataType (a,[]) = error "IsaPrint.showDataType"
+    showDataType (_,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
        showTyp Quoted 1000 t ++ " = " ++ showOp op 
        ++ (concat $ map ((" | "++) . showOp) ops)
@@ -460,10 +471,10 @@ instance PrettyPrint Sign where
        ++ (concat $ map ((" | "++) . showDOp) ops)
     showDOp (opname,args) =
        opname ++ (concat $ [sp++lb++opname++"_"++(show n)
-           ++"::"++sp++(showArg x)++rb | (x,n) <- listEnum args])
+           ++"::"++sp++(showOpArg x)++rb | (x,n) <- listEnum args])
     showOp (opname,args) =
-       opname ++ (concat $ map ((sp ++) . showArg) args)
-    showArg arg = case arg of
+       opname ++ (concat $ map ((sp ++) . showOpArg) args)
+    showOpArg arg = case arg of
                     TFree _ _ -> showTyp Null 1000 arg
                     _         -> "\"" ++ showTyp Null 1000 arg ++ "\""
     showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
