@@ -177,7 +177,7 @@ fixPoint xs = case xs of
          jl = Const jn jt
          jv = Free jn jt
          ys = [roughRepl jv (extRightH x) (extLeftH x) | x <- xs]
-         jr = Tuples ys IsCont
+         jr = Tuplex ys IsCont
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
      in [NamedSen jn True (ConstDef (IsaEq jl js))]    
   [] -> []
@@ -221,12 +221,11 @@ roughRepl :: Term -> Term -> Term -> Term
 roughRepl nt ot t = if (litEq t ot) then nt else case t of
  IsaSign.Abs v y x c -> IsaSign.Abs v y (roughRepl nt ot x) c
  IsaSign.App x y c -> IsaSign.App (roughRepl nt ot x) (roughRepl nt ot y) c
- IsaSign.CIf x y z -> IsaSign.CIf (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) 
- IsaSign.If x y z -> IsaSign.If (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) 
+ IsaSign.If x y z c -> IsaSign.If (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) c 
  IsaSign.Paren x -> IsaSign.Paren (roughRepl nt ot x) 
  IsaSign.Case x ys -> IsaSign.Case (roughRepl nt ot x) [(a,roughRepl nt ot b) | (a,b) <- ys]
  IsaSign.Let xs y -> IsaSign.Let [(a,roughRepl nt ot b) | (a,b) <- xs] (roughRepl nt ot y)
- IsaSign.Tuples xs c -> IsaSign.Tuples (map (roughRepl nt ot) xs) c
+ IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (roughRepl nt ot) xs) c
  IsaSign.Fix x -> IsaSign.Fix (roughRepl nt ot x)
  _ -> t  
 
@@ -632,8 +631,8 @@ transE trId trE trP e =
  case (mapEI5 trId trE trP e) of 
    HsId (HsVar x)              -> Const "DIC" noType     
    HsApp x y                   -> termMAppl IsCont x [y]  
-   HsIf x y z                  -> CIf x y z 
-   HsTuple es                  -> Tuples es IsCont 
+   HsIf x y z                  -> If x y z IsCont 
+   HsTuple es                  -> Tuplex es IsCont 
    HsParen e                   -> Paren e
    _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
 --   HsId (HsCon c)              -> Const c noType
@@ -652,7 +651,7 @@ transP :: IsaName i => (i -> VName) -> (p -> IsaPattern) ->
 transP trId trP p =
  case HsPatMaps.mapPI trId trP p of
    HsPId (HsVar x) -> Const "DIC" noType
-   HsPTuple ps -> Tuples ps IsCont 
+   HsPTuple ps -> Tuplex ps IsCont 
    HsPParen p -> Paren p
    HsPWildCard -> Wildcard
    _ -> error "Haskell2IsabelleHOLCF.transP, not supported"
@@ -755,11 +754,10 @@ constFilter t = case t of
  IsaSign.Const _ _ -> [t]
  IsaSign.Abs _ _ x _ -> constFilter x
  IsaSign.App x y _ -> concat $ map constFilter [x,y]
- IsaSign.CIf x y z -> concat $ map constFilter [x,y,z]
- IsaSign.If x y z -> concat $ map constFilter [x,y,z]
+ IsaSign.If x y z c -> concat $ map constFilter [x,y,z] 
  IsaSign.Paren x -> constFilter x
  IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
  IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
- IsaSign.Tuples xs _ -> concat $ map constFilter xs
+ IsaSign.Tuplex xs _ -> concat $ map constFilter xs
  _ -> []
  

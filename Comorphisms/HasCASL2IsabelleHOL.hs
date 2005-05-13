@@ -351,7 +351,7 @@ transWhenElse sign t =
       TupleTerm terms _ -> 
         let ts = (map (transTerm sign) terms)
         in case ts of
-           [i, c, e] -> If c i e
+           [i, c, e] -> If c i e NotCont
            _ -> error "HasCASL2IsabelleHOL.transWhenElse.tuple"
       _ -> error "HasCASL2IsabelleHOL.transWhenElse"
 

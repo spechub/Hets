@@ -260,8 +260,8 @@ freeTypesTerm (Abs v ty t f) = Abs (freeTypesTerm v) (freeTypesTyp ty) (freeType
 freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
 freeTypesTerm (Case term alts) = 
   Case (freeTypesTerm term) (map freeTypesTermPair alts)
-freeTypesTerm (If t1 t2 t3) =
-  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) 
+freeTypesTerm (If t1 t2 t3 c) =
+  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) c
 freeTypesTerm (Let defs body) = 
   Let (map freeTypesTermPair defs) (freeTypesTerm body)
 freeTypesTerm (Fix f) =
