@@ -152,8 +152,6 @@ data Term =
                 termType     :: Typ } 
       | Var  Indexname Typ
       | Bound Int
-      | IsaEq { firstTerm  :: Term,
-                secondTerm :: Term }
       | Abs   { absVar     :: Term,
                 termType   :: Typ, 
                 termId     :: Term, 
@@ -161,21 +159,21 @@ data Term =
       | App  { funId :: Term, 
                argId :: Term, 
                continuity   :: Continuity }    -- application
-      | Case { termId       :: Term, 
-               caseSubst    :: [(Term, Term)] } 
-      | CIf { ifId   :: Term, 
-             thenId :: Term, 
-             elseId :: Term } 
       | If { ifId   :: Term, 
              thenId :: Term, 
-             elseId :: Term } 
+             elseId :: Term,
+             continuity :: Continuity } 
+      | Case { termId       :: Term, 
+               caseSubst    :: [(Term, Term)] } 
       | Let { letSubst    :: [(Term, Term)], 
               inId        :: Term } 
-      | Tuples [Term] Continuity 
-      | Paren Term
-      | Wildcard
+      | IsaEq { firstTerm  :: Term,
+                secondTerm :: Term }
+      | Tuplex [Term] Continuity 
       | Fix Term 
       | Bottom 
+      | Paren Term
+      | Wildcard
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { senTerm :: Term } -- axiom
