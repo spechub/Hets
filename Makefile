@@ -21,7 +21,7 @@ COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
-    Haskell/Hatchet Hatchet Taxonomy CASL_DL $(PFE_PATHS)
+    Haskell/Hatchet Hatchet Taxonomy CASL_DL SPASS $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty = 
