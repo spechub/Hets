@@ -103,7 +103,7 @@ instance PrettyPrint SPFormulaList where
     $$ printFormulae (formulae l)
     $$ text "end_of_list."
     where
-      printFormulae = foldl (\fl x-> fl $$ printText0 ga x <> dot) empty
+      printFormulae = foldl (\fl x-> fl $$ printFormula ga x <> dot) empty
 
 {- |
   Creates a Doc from a SPASS Origin Type
@@ -114,11 +114,13 @@ instance PrettyPrint SPOriginType where
     SPOriginConjectures -> text "conjectures"
 
 {- |
-  Creates a Doc from a SPASS Formula.
+  Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
+  'type SPFormula = Named SPTerm' and thus instanciating PrettyPrint is not
+  possible.
 -}
-instance PrettyPrint SPFormula where
-  printText0 ga f =
-    (text "formula") <> parens (printText0 ga (formulaTerm f) <> comma <> text (formulaLabel f))
+printFormula :: GlobalAnnos-> SPFormula-> Doc
+printFormula ga f =
+  text "formula" <> parens (printText0 ga (sentence f) <> comma <> text (senName f))
 
 {- |
   Creates a Doc from a SPASS Term.

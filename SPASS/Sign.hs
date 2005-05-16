@@ -19,6 +19,10 @@ import Char
 
 import Common.AS_Annotation
 
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+
 {- |
   A SPASS Identifier is a String for now. See also 'checkIdentifier' function
   below. Might need conversion functions as well.
@@ -114,13 +118,10 @@ data SPOriginType =
       deriving (Eq, Show)
 
 {- |
-  A SPASS Formula is a labelled SPTerm. Note that this doesn't reflect
+  A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
   the fact that the SPASS syntax lists both term and label as optional.
 -}
-data SPFormula =
-        SPFormula { formulaLabel :: SPIdentifier,
-                    formulaTerm  :: SPTerm }
-      deriving (Eq, Show)
+type SPFormula = Named SPTerm
 
 {- |
   A SPASS Term.
