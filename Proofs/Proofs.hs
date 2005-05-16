@@ -348,8 +348,9 @@ globDecompForOneEdge dgraph edge =
     paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-delLEdge (v,w,_) = delEdge (v,w)
-
+delLEdge (v, w, l) g = case match v g of
+    (Just(p, v', l', s), g') -> (p, v', l', filter (/= (l, w)) s) & g'
+    _ -> g 
 
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
