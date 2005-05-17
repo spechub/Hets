@@ -829,7 +829,7 @@ theoremHideShift proofStatus@(ln,_,_) = do
   let dgraph = lookupDGraph ln proofStatus
       allNodes = nodes dgraph
       (nonLeaves,leaves) 
-	  = splitByProperty allNodes (hasIngoingHidingDef dgraph)
+	  = splitByProperty allNodes (hasIngoingHidingDef proofStatus ln)
   auxProofstatus <- handleLeaves (prepareProofStatus proofStatus) leaves
   finalProofstatus <- handleNonLeaves auxProofstatus nonLeaves
   return (reviseProofStatus finalProofstatus)
@@ -855,14 +855,35 @@ splitByProperty (x:xs) f =
    ingoing HidingDef edge
    returns False otherwise
  -}
-hasIngoingHidingDef :: DGraph -> Node -> Bool
-hasIngoingHidingDef dgraph node =
-  not (null hidingDefEdges) || or (map (hasIngoingHidingDef dgraph) next)
+hasIngoingHidingDef :: ProofStatus -> LIB_NAME -> Node -> Bool
+hasIngoingHidingDef proofstatus ln node =
+  not (null hidingDefEdges) 
+   || or [hasIngoingHidingDef proofstatus ln' node'| (ln',node') <- next]
   where
-    inGoingEdges = inn dgraph node
-    hidingDefEdges = filter isHidingDef inGoingEdges
-    globalDefEdges = filter isGlobalDef inGoingEdges
-    next = map getSourceNode globalDefEdges
+    inGoingEdges = getAllIngoingEdges proofstatus ln node
+    hidingDefEdges = [tuple| tuple <- inGoingEdges, isHidingDef (snd tuple)]
+    globalDefEdges = [tuple| tuple <- inGoingEdges, isGlobalDef (snd tuple)]
+    next = [(l,getSourceNode e)| (l,e) <- globalDefEdges]
+
+
+{- returns all edges that go directly in the given node,
+   in case of a DGRef node also all ingoing edges of the referenced node
+   are returned -}
+getAllIngoingEdges :: ProofStatus -> LIB_NAME -> Node 
+		   -> [(LIB_NAME, LEdge DGLinkLab)]
+getAllIngoingEdges proofstatus ln node =
+  case isDGRef nodelab of
+    False -> inEdgesInThisGraph
+    True -> inEdgesInThisGraph ++ inEdgesInRefGraph
+
+  where 
+    dgraph = lookupDGraph ln proofstatus
+    nodelab = lab' (context dgraph node)
+    inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
+    refLn = dgn_libname nodelab
+    refGraph = lookupDGraph refLn proofstatus
+    refNode = dgn_node nodelab
+    inEdgesInRefGraph = [(refLn,inEdge)| inEdge <- inn refGraph refNode]
 
 
 {- handles all nodes that are leaves
@@ -1024,6 +1045,7 @@ handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
 		  sigma = Map.lookup node map
 	      auxProofstatus'<- mkDGNodeNfNode nodelab nfNode 
 				               (Just (sign,sigma))
+-- use this line until gWeaklyAmalgamableCocone is defined:         (Just (dgn_sign nodelab,sigma))	       
 			                       auxProofstatus
               finalProofstatus <- linkNfNode node nfNode map auxProofstatus'
 	      handleNonLeaves finalProofstatus list
