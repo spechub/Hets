@@ -127,10 +127,10 @@ import Common.Lib.Pretty
 import Control.Monad 
 
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
-insEdgeNub e@(v,w,l) g = 
-   if (l,w) `elem` s then g
-      else insEdge e g
-   where (Just (_,_,_,s),_) = match v g
+insEdgeNub (v, w, l) g = 
+   if (l, w) `elem` s then g
+      else (p, v, l', (l, w) : s) & g'
+   where (Just (p, _, l', s), g') = match v g
 
 -- | analyze a SPEC
 -- Parameters: global context, local environment,
