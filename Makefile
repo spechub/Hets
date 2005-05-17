@@ -358,10 +358,11 @@ release:
             mkdir programatica; \
             ln -s ../../programatica/tools programatica/tools ; fi
 	(cd HetCATS; $(MAKE) derivedSources; \
-            $(MAKE) clean; ./clean.sh; \
+            cp Makefile Makefile.orig; \
+            cp ReleaseMakefile Makefile; \
+            ./clean.sh; \
             find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
-            $(RM) clean.*; mv Makefile Makefile.orig; \
-            mv ReleaseMakefile Makefile)
+            $(RM) clean.*)
 	tar cvf HetCATS.tar HetCATS
 
 install-hets:
