@@ -326,7 +326,7 @@ litEq t1 t2 = case (t1,t2) of
   (Free m x, Const n y) -> if n == m && typEq x y then True else False
   _ -> False
 
-typEq :: Typ -> Typ -> Bool
+typEq :: Typ -> Typ -> Bool     --make some distinction for case noType??
 typEq t1 t2 = case (t1,t2) of
  (IsaSign.Type _ _ ls1,IsaSign.Type _ _ ls2) -> 
     if typeId t1 == typeId t2 && typeSort t1 == typeSort t2 then typLEq ls1 ls2 else False
@@ -362,34 +362,43 @@ transSignature sign = Result [] $ Just $ IsaSign.emptySign
 
 class IsaName a where
  showIsaName :: a -> IName
+ showIsaString :: a -> String
 
 showIsaS :: String -> IsaSign.IName
 showIsaS = transStringT HOLCF_thy
 
 instance IsaName String where
  showIsaName x = showIsaS x
+ showIsaString x = x
 
-showIsaHsN :: HsName.HsName -> IName
-showIsaHsN t = case t of  
-       Qual _ y -> showIsaS y
-       UnQual w -> showIsaS w
+showIsaHsN :: Show a => (String -> a) -> HsName.HsName -> a
+showIsaHsN f t = case t of  
+       Qual _ y -> f y
+       UnQual w -> f w
 
 instance IsaName HsName.HsName where
- showIsaName = showIsaHsN
+ showIsaName = showIsaHsN showIsaS
+ showIsaString = showIsaHsN id
 
 instance IsaName PosName.HsName where
  showIsaName (SN x _) = showIsaName x
+ showIsaString (SN x _) = showIsaString x
 
 instance IsaName PNT.PName where
  showIsaName (PN x _) = showIsaName x
+ showIsaString (PN x _) = showIsaString x
 
 instance IsaName PNT where
  showIsaName (PNT x _ _) = showIsaName x
+ showIsaString (PNT x _ _) = showIsaString x
 
 instance IsaName a => IsaName (HId a) where
  showIsaName t =  case t of
                  HsVar x -> showIsaName x
                  HsCon x -> showIsaName x
+ showIsaString t =  case t of
+                 HsVar x -> showIsaString x
+                 HsCon x -> showIsaString x
 
 ------------------------------- Kind translation ------------------------------
 
@@ -805,42 +814,33 @@ transHV s x = let
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> Free n k
         _ -> error "Haskell2IsabelleHOLCF, transHV"
 
-showNName :: PNT -> String
-showNName n = case n of 
-  PNT (PN (UnQual x) _) _ _ -> x
-  _ -> "other"
-
 transExp :: ConstTab -> PrExp -> IsaTerm
 transExp cs t = case t of 
-    (TiPropDecorate.Exp (HsLambda ps e)) -> 
-          termMAbs IsCont (map (transPat cs) ps) (transExp cs e)
---    (TiPropDecorate.Exp (HsApp (Exp (HsApp (TiSpec (HsVar 
---       (HsLit _ (HsInt n)))))))) -> Const (show n) (IsaSign.Type "int lift" [] [])
-    (TiPropDecorate.Exp (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)) ->
-       case (showNName x) of
+    (TiPropDecorate.Exp (HsLambda ps e)) ->                  -- transfer this case to transE??
+       termMAbs IsCont (map (transPat cs) ps) (transExp cs e)   
+    (TiPropDecorate.Exp (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)) -> 
+       case (showIsaString x) of                   -- transfer to termMAppl??
          "fromInteger" -> transExp cs z
          _ -> transE showIsaName (transExp cs) (transPat cs) 
                 (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)
     (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) ->
-       case (showNName x) of
+       case (showIsaString x) of                   -- transfer to termMAppl?? 
          "fromInteger" -> transExp cs y
          "inst__Prelude_Num_Int" -> transExp cs y
-         _ -> termMAppl IsCont (transExp cs (TiPropDecorate.TiSpec (HsVar x) s w)) [(transExp cs y)] 
---         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)
---         "inst__Prelude_Num_Int" -> transE showIsaName (transExp cs) (transPat cs) y
+         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)
     (TiPropDecorate.Exp (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))) ->
-       case (showNName x) of
+       case (showIsaString x) of                      -- transfer to termMAppl??
          "fromInteger" -> transExp cs y
          "inst__Prelude_Num_Int" -> transExp cs y
-         _ -> termMAppl IsCont (transExp cs y) [(transExp cs (TiPropDecorate.TiSpec (HsVar x) s w))]
---        _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))
-    (TiPropDecorate.Exp (HsLit _ (HsInt n))) -> 
-            Const ("(Def " ++ (show n) ++ ")") (IsaSign.Type "int lift" [] [])
-    (TiPropDecorate.Exp e) -> 
-          transE showIsaName (transExp cs) (transPat cs) e
-    (TiPropDecorate.TiSpec (HsVar x) s _) -> transHV s x
-    (TiPropDecorate.TiSpec (HsCon x) s _) -> transCN s x
-    (TiPropDecorate.TiTyped x _) -> transExp cs x
+         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))
+    (TiPropDecorate.Exp e) -> case e of
+       HsLit _ (HsInt n) -> 
+           Const ("(Def " ++ (show n) ++ ")") (IsaSign.Type "int lift" [] [])
+       _ -> transE showIsaName (transExp cs) (transPat cs) e
+    TiPropDecorate.TiSpec w s _ -> case w of 
+       HsVar x -> transHV s x
+       HsCon x -> transCN s x
+    TiPropDecorate.TiTyped x _ -> transExp cs x
 
 transPat :: ConstTab -> PrPat -> IsaPattern
 transPat cs t = case t of 
