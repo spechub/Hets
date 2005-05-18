@@ -228,7 +228,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = Common/DFiniteMap.hs Common/DynamicUtils.hs \
+cpp_sources = Haskell/Hatchet/FiniteMaps.hs Common/DynamicUtils.hs \
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
