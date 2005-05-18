@@ -60,7 +60,7 @@ toListFM = fmToList
 
 #if __GLASGOW_HASKELL__<=602
 instance (Show k, Show a) => Show (FiniteMap k a) where
-  showsPrec _ m  = showMap (toAscList m)
+  showsPrec _ m  = showMap (fmToList m)
 #endif
 
 showMap :: (Show k,Show a) => [(k,a)] -> ShowS
