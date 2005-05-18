@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-| 
    
 Module      :  $Header$
@@ -20,7 +21,6 @@ module Haskell.Hatchet.FiniteMaps (FiniteMap, zeroFM, unitFM,
 		   filterFM, lookupFM, lookupDftFM, toListFM) where
 
 import Data.FiniteMap
-import Common.DFiniteMap -- re-export Show instance
 
 zeroFM :: Ord k => FiniteMap k e
 zeroFM = emptyFM
@@ -57,3 +57,18 @@ lookupDftFM = lookupWithDefaultFM
 
 toListFM :: Ord k => FiniteMap k e -> [(k, e)]
 toListFM = fmToList
+
+#if __GLASGOW_HASKELL__<=602
+instance (Show k, Show a) => Show (FiniteMap k a) where
+  showsPrec _ m  = showMap (toAscList m)
+#endif
+
+showMap :: (Show k,Show a) => [(k,a)] -> ShowS
+showMap []     
+  = showString "{}" 
+showMap (x:xs) 
+  = showChar '{' . showElem x . showTail xs
+  where
+    showTail []     = showChar '}'
+    showTail (y:ys) = showChar ',' . showElem y . showTail ys
+    showElem (k,v)  = shows k . showString ":=" . shows v
