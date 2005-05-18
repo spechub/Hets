@@ -19,6 +19,7 @@ import Common.Keywords
 import Common.Earley
 import Common.ConvertLiteral
 import Common.Lib.State
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
@@ -236,8 +237,7 @@ resolver ga bs trm =
        vs <- gets localVars
        oldDs <- gets envDiags
        ps@((_, _, m), _) <- gets preIds
-       let keySet = Set.fromDistinctAscList . Map.keys
-           ids = Set.toList $ Set.union (keySet ass) $ keySet vs
+       let ids = Set.toList $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
            ks = Set.union (Set.fromList (tokStr exprTok: inS :
                                          map (:[]) ":{}[](),"))
                     $ Set.unions $ map getKnowns ids

@@ -99,7 +99,7 @@ addPred ty i =
                   addDiags $ checkPlaces (predArgs ty) i
 
 allOpIds :: Sign f e -> Set.Set Id
-allOpIds = Set.fromDistinctAscList . Map.keys . opMap
+allOpIds = Rel.keysSet . opMap
 
 addAssocs :: GlobalAnnos -> Sign f e -> GlobalAnnos
 addAssocs ga e =
@@ -114,7 +114,7 @@ formulaIds e = let ops = allOpIds e in
                `Set.union` ops
 
 allPredIds :: Sign f e -> Set.Set Id
-allPredIds = Set.fromDistinctAscList . Map.keys . predMap
+allPredIds = Rel.keysSet . predMap
 
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds = 

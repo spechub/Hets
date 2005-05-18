@@ -25,6 +25,9 @@ Checking for a 'path' corresponds to checking for a member in the
 transitive (possibly non-reflexive) closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
+The functions 'image', 'keysSet' and 'setInsert' are utility functions
+for plain maps involving sets.
+
 -}
 
 module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null, 
@@ -34,7 +37,7 @@ module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null,
                        transClosure, fromList, toList, image,
                        intransKernel, mostRight, rmSym, symmetricSets,
                        restrict, toSet, fromSet, topSort, nodes,
-                       transpose, collaps, transReduce, setInsert,
+                       transpose, collaps, transReduce, setInsert, keysSet,
                        haveCommonLeftElem) where
 
 import qualified Common.Lib.Map as Map
@@ -101,7 +104,7 @@ preds r a = Set.filter ( \ s -> member s a r)
 
 -- | get direct predecessors inefficiently
 predecessors :: Ord a => Rel a -> a -> Set.Set a
-predecessors r@(Rel m) a = preds r a $ keySet m
+predecessors r@(Rel m) a = preds r a $ keysSet m
 
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
@@ -223,10 +226,10 @@ fromAscList = Rel . Map.fromDistinctAscList
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes (Rel m) = Set.union (keySet m) $ elemSet m
+nodes (Rel m) = Set.union (keysSet m) $ elemSet m
 
-keySet :: Ord a => Map.Map a b -> Set.Set a
-keySet = Set.fromDistinctAscList . Map.keys
+keysSet :: Ord a => Map.Map a b -> Set.Set a
+keysSet = Set.fromDistinctAscList . Map.keys
 
 elemSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
 elemSet = Set.unions . Map.elems
@@ -235,7 +238,7 @@ elemSet = Set.unions . Map.elems
 topSort :: Ord a => Rel a -> [Set.Set a]
 topSort r@(Rel m) = 
     if Map.null m then []
-    else let ms = keySet m Set.\\ elemSet m in 
+    else let ms = keysSet m Set.\\ elemSet m in 
         if Set.null ms then case removeCycle r of 
            Nothing -> topSort (transClosure r)
            Just (a, cyc, restRel) ->
@@ -244,7 +247,7 @@ topSort r@(Rel m) =
         else let (lowM, rest) = 
                      Map.partitionWithKey (\ k _ -> Set.member k ms) m
                  -- no not forget loose ends 
-                 ls = elemSet lowM Set.\\ keySet rest in 
+                 ls = elemSet lowM Set.\\ keysSet rest in 
                  -- put them as low as possible
             ms : (topSort $ Rel $ Set.fold ( \ i -> 
                       Map.insert i Set.empty) rest ls)

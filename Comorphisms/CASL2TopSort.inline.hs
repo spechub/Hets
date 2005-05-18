@@ -180,7 +180,7 @@ transSig sig
                                                 (Map.elems subSortMap))
                               `Set.union`
                               (sortSet sig `Set.difference`
-                               Set.fromDistinctAscList (Map.keys subSortMap)) 
+                               Rel.keysSet subSortMap) 
                         , sortRel = Rel.fromList []
                         , opMap   = transOpMap subSortMap (opMap sig)
                         , assocOps= transOpMap subSortMap (assocOps sig)

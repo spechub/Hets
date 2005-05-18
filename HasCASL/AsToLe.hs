@@ -16,6 +16,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Lib.State
+import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
@@ -107,8 +108,7 @@ anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga b@(BasicSpec l) = do 
     e <- get
     let newAs = assumps e
-        preds = Set.fromDistinctAscList 
-                   $ Map.keys $ Map.filter (any ( \ oi -> 
+        preds = Rel.keysSet $ Map.filter (any ( \ oi -> 
                                  case opDefn oi of
                                  NoOpDefn Pred -> True
                                  Definition Pred _ -> True

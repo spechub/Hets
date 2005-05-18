@@ -69,10 +69,10 @@ negId :: Id
 negId = mkId $ map mkSimpleId [negS, place]
 
 builtinRelIds :: Set.Set Id 
-builtinRelIds = Set.fromDistinctAscList [typeId, eqId, exEq, defId]
+builtinRelIds = Set.fromList [typeId, eqId, exEq, defId]
 
 builtinLogIds :: Set.Set Id 
-builtinLogIds = Set.fromDistinctAscList 
+builtinLogIds = Set.fromList 
                  [andId, eqvId, implId, orId, infixIf, notId] 
 
 addBuiltins :: GlobalAnnos -> GlobalAnnos
@@ -84,11 +84,10 @@ addBuiltins ga =
                   (whenElse, ARight)]
         precs = prec_annos ga
         pMap = Rel.toMap precs          
-        opIds = Set.unions (Set.fromDistinctAscList (Map.keys pMap)
-                            :Map.elems pMap)
+        opIds = Set.unions (Rel.keysSet pMap : Map.elems pMap)
         opIs = Set.toList ((((Set.filter isInfix opIds)
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
-                Set.\\ Set.fromDistinctAscList [applId, whenElse])
+                Set.\\ Set.fromList [applId, whenElse])
 
         logs = [(eqvId, implId), (implId, andId), (implId, orId), 
                 (eqvId, infixIf), (infixIf, andId), (infixIf, orId),
