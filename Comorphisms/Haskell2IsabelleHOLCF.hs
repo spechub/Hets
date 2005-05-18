@@ -795,22 +795,10 @@ transHV s x = let
            [Free "x" noType, Free "y" noType]) NotCont))
    "+" -> if tag == False then Const "op +" k
           else (termMAppl NotCont (Const "fliftbin" noType) [(Const "op +" k)]) 
---     (termMAbs IsCont [Free "x" noType, Free "y" noType]
---        (termMAppl IsCont intPlus [Free "x" noType, Free "y" noType]))
---     where 
---      intPlus = (App (Const "flift1" noType) (IsaSign.Abs (Free "u" noType) noType  
---         (App (Const "flift2" noType) 
---            (IsaSign.Abs (Free "v" noType) noType (termMAppl NotCont (Const "op +" k) 
---               [Free "v" noType, Free "u" noType]) NotCont) NotCont) NotCont) NotCont)
    "-" -> if tag == False then Const "op -" k
-          else (termMAppl NotCont (Const "fliftbin" noType) [(Const "op +" k)]) 
---     (termMAbs IsCont [Free "x" noType, Free "y" noType]
---        (termMAppl IsCont intMinus [Free "x" noType, Free "y" noType]))
---     where 
---       intMinus = (App (Const "flift1" noType) (IsaSign.Abs (Free "u" noType) noType 
---         (App (Const "flift2" noType) 
---           (IsaSign.Abs (Free "v" noType) noType (termMAppl NotCont (Const "op -" k) 
---               [Free "v" noType, Free "u" noType]) NotCont) NotCont) NotCont) NotCont)
+          else (termMAppl NotCont (Const "fliftbin" noType) [(Const "op -" k)]) 
+   "*" -> if tag == False then Const "op *" k
+          else (termMAppl NotCont (Const "fliftbin" noType) [(Const "op *" k)]) 
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
