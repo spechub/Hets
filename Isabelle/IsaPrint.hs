@@ -154,7 +154,7 @@ showTerm (Abs v y t l)
        ++ showTyp Unquoted 1000 y ++ ". " ++ showTerm t ++ rb
 
 showTerm (Paren t) = showTerm t 
-showTerm (Fix t) = lb++"fix"++sp++(showTerm t)++rb
+showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
 showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t) 
@@ -313,6 +313,9 @@ showPTree (Node (PrecTerm term pre) annos) =
    in
      case term of
           Const c _ | c == eq -> infixP pre "=" LeftAs leftChild rightChild
+                    | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
+                    | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
+                    | c == "op *" -> infixP pre "*" LeftAs leftChild rightChild
 --                    | c == cappl -> infixP pre "$" LeftAs leftChild rightChild
                     | c `elem` [conj, disj, impl] ->
                         infixP pre (drop 3 c) RightAs leftChild rightChild
@@ -420,7 +423,6 @@ quant (Node (PrecTerm (Const q _) _) [])
           (Node (PrecTerm (Abs v ty t _) _) []) = 
               lb++showQuant (showQuantStr q) v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
-
 
 listEnum :: [a] -> [(a,Int)]
 listEnum l = case l of
