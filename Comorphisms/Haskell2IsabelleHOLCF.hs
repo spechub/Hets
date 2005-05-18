@@ -168,7 +168,93 @@ addFixPoints xs = concat $ map fixPoint xs
 fixPoint :: [Named Sentence] -> [Named Sentence]
 fixPoint xs = case xs of
   [a] -> case a of 
-    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a 
+    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           -- buggy!!!
+       then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
+       else xs
+  a:as -> 
+     let jn = joinNames (map extAxName xs)
+         ks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
+         jt = typTuple (map extAxType xs)
+         ys = [varsForMFuns jn jt ks (extLeftH x) | x <- xs]
+         jr = Tuplex ys IsCont
+         jl = Const jn jt
+         jv = Free jn jt
+         js = Fix $ IsaSign.Abs jv jt jr IsCont 
+     in [NamedSen jn True (ConstDef (IsaEq jl js))]    
+  [] -> []
+
+listEnum :: [a] -> [(a,Int)]
+listEnum l = case l of
+ [] -> []
+ a:as -> (a,length (a:as)):(listEnum as)
+
+fixPointRep :: Term -> Term -> Term
+fixPointRep t1 t2 = case t1 of
+  Const n x -> Fix $ IsaSign.Abs (Free n x) x (varForFun n x t2) IsCont 
+  _ -> error "Haskell2IsabelleHOLCF, fixPointRep"
+
+{- replacement function -}
+varsForMFuns :: VName -> Typ -> [(VName, (Typ, Int))] -> Term -> Term
+-- roughRepl nt ot t = if (litEq t ot) then nt else case t of
+varsForMFuns vn ty ls t = varsForFuns (\c d -> termPack vn ty $ tElem c d ls) vn ty ls t
+
+varForFun ::  VName -> Typ -> Term -> Term
+varForFun vn ty t = varsForFuns (sElem vn ty) vn ty () t 
+
+sElem :: VName -> Typ -> VName -> Typ -> Maybe Term
+sElem vn ty n t = if vn == n && typEq ty t then Just (Free n ty) else Nothing
+
+varsForFuns :: 
+  (VName -> Typ -> Maybe Term) -> VName -> Typ -> a -> Term -> Term
+varsForFuns f vn ty ls t = case t of
+ IsaSign.Const n t1 -> maybe t id $ f n t1 
+ IsaSign.Abs v y x c -> IsaSign.Abs v y (varsForFuns f vn ty ls x) c
+ IsaSign.App x y c -> IsaSign.App (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) c
+ IsaSign.If x y z c -> 
+     IsaSign.If (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) (varsForFuns f vn ty ls z) c 
+ IsaSign.Case x ys -> 
+     IsaSign.Case (varsForFuns f vn ty ls x) [(a,varsForFuns f vn ty ls b) | (a,b) <- ys]
+ IsaSign.Let xs y -> 
+     IsaSign.Let [(a,varsForFuns f vn ty ls b) | (a,b) <- xs] (varsForFuns f vn ty ls y)
+ IsaSign.IsaEq x y -> IsaSign.IsaEq (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) 
+ IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (varsForFuns f vn ty ls) xs) c
+ IsaSign.Fix x -> IsaSign.Fix (varsForFuns f vn ty ls x)
+ IsaSign.Paren x -> IsaSign.Paren (varsForFuns f vn ty ls x) 
+ _ -> t  
+
+tElem :: VName -> Typ -> [(VName, (Typ, Int))] -> Maybe (Typ, Int)
+tElem x ty ls = let r = [(t,n) | (y,(t,n)) <- ls, y == x, typEq ty t]
+ in case r of 
+  [] -> Nothing
+  [a] -> Just a
+  _ -> error "Haskell2IsabelleHOLCF, tElem"
+
+termPack :: VName -> Typ -> Maybe (Typ, Int) -> Maybe Term
+termPack vn ty m = case m of
+ Nothing -> Nothing
+ Just (_,n) -> Just $ tupleSelector n (Free vn ty) IsCont
+
+tupleSelector :: Int -> Term -> Continuity -> Term
+tupleSelector n t c = case (n,t) of
+  (_, Tuplex ls c) -> 
+     let l = length ls 
+         ts = tupleSelect n t c
+     in if n == l then ts else if n < l then App (Const "cfst" noType) ts c
+        else error "Haskell2IsabelleHOLCF, tupleSelector"
+  _ -> error "Haskell2IsabelleHOLCF, tupleSelector"
+
+tupleSelect :: Int -> Term -> Continuity -> Term
+tupleSelect n t c = case n of
+  0 -> error "Haskell2IsabelleHOLCF, tupleSelect"
+  1 -> App (Const "cfst" noType) t c
+  2 -> App (Const "csnd" noType) t c
+  _ -> tupleSelect (n - 1) (App (Const "csnd" noType) t c) c
+
+{-
+fixPoint :: [Named Sentence] -> [Named Sentence]
+fixPoint xs = case xs of
+  [a] -> case a of 
+    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           -- buggy!!!
        then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
        else xs
   a:as -> 
@@ -181,6 +267,7 @@ fixPoint xs = case xs of
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
      in [NamedSen jn True (ConstDef (IsaEq jl js))]    
   [] -> []
+-}
 
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
@@ -211,23 +298,28 @@ extRightH s = case s of
   NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extRightH"
 
-fixPointRep :: Term -> Term -> Term
-fixPointRep t1 t2 = case t1 of
-  Const n x -> Fix $ IsaSign.Abs (Free n x) x (roughRepl (Free n x) t1 t2) IsCont 
-  _ -> error "Haskell2IsabelleHOLCF, fixPointRep"
-
-{- replacement for terms, with possible variable capture -}
+{- replacement for terms. litEq is used to abstract from type variable names. 
 roughRepl :: Term -> Term -> Term -> Term
-roughRepl nt ot t = if (litEq t ot) then nt else case t of
+-- roughRepl nt ot t = if (litEq t ot) then nt else case t of
+roughRepl nt ot t = if (t == ot) then nt else case t of
  IsaSign.Abs v y x c -> IsaSign.Abs v y (roughRepl nt ot x) c
  IsaSign.App x y c -> IsaSign.App (roughRepl nt ot x) (roughRepl nt ot y) c
  IsaSign.If x y z c -> IsaSign.If (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) c 
- IsaSign.Paren x -> IsaSign.Paren (roughRepl nt ot x) 
  IsaSign.Case x ys -> IsaSign.Case (roughRepl nt ot x) [(a,roughRepl nt ot b) | (a,b) <- ys]
  IsaSign.Let xs y -> IsaSign.Let [(a,roughRepl nt ot b) | (a,b) <- xs] (roughRepl nt ot y)
+ IsaSign.IsaEq x y -> IsaSign.IsaEq (roughRepl nt ot x) (roughRepl nt ot y) 
  IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (roughRepl nt ot) xs) c
  IsaSign.Fix x -> IsaSign.Fix (roughRepl nt ot x)
+ IsaSign.Paren x -> IsaSign.Paren (roughRepl nt ot x) 
  _ -> t  
+-}
+
+----------------------------- equivalence between types modulo variables name -------------------
+
+constEq :: Term -> Term -> Bool
+constEq t1 t2 = case (t1,t2) of
+  (Const m x, Const n y) -> if n == m && typEq x y then True else False
+  _ -> False
 
 litEq :: Term -> Term -> Bool
 litEq t1 t2 = case (t1,t2) of
@@ -239,7 +331,7 @@ typEq t1 t2 = case (t1,t2) of
  (IsaSign.Type _ _ ls1,IsaSign.Type _ _ ls2) -> 
     if typeId t1 == typeId t2 && typeSort t1 == typeSort t2 then typLEq ls1 ls2 else False
  (TFree _ _,TFree _ _) -> if typeSort t1 == typeSort t2 then True else False
- (TVar _ _,TVar _ _) -> if t1 == t2 then True else False
+ (TVar _ _,TVar _ _) -> if typeSort t1 == typeSort t2 then True else False
  _ -> False
 
 typLEq :: [Typ] -> [Typ] -> Bool
@@ -357,6 +449,7 @@ getSort c t = case c of
 transTN :: String -> String -> String
 transTN s1 s2 = case (s1,s2) of 
    ("Prelude","Bool") -> "tr"
+   ("Prelude","Int") -> "int lift"
    _ -> transPath s1 s2 
 
 transPath :: String -> String -> String
@@ -625,8 +718,10 @@ mapEI5 :: (i1 -> i2) ->
           EI i1 e1 p1 d t c -> EI i2 e2 p2 d t c
 mapEI5 a b c e = HsExpMaps.mapEI a b c id id id e
 
-transE :: IsaName i => (i -> VName) -> (e -> IsaTerm) -> (p -> IsaPattern) -> 
-            (HsExpStruct.EI i e p j h k) -> IsaTerm
+-- transE :: IsaName i => (i -> VName) -> (e -> IsaTerm) -> (p -> IsaPattern) -> 
+--            (HsExpStruct.EI i e p j h k) -> IsaTerm
+transE :: (PNT -> VName) -> (e -> IsaTerm) -> (p -> IsaPattern) -> 
+            (HsExpStruct.EI PNT e p j h k) -> IsaTerm
 transE trId trE trP e =
  case (mapEI5 trId trE trP e) of 
    HsId (HsVar x)              -> Const "DIC" noType     
@@ -634,7 +729,8 @@ transE trId trE trP e =
    HsIf x y z                  -> If x y z IsCont 
    HsTuple es                  -> Tuplex es IsCont 
    HsParen e                   -> Paren e
-   _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
+   _ -> Const "dummy" noType
+--   _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
 --   HsId (HsCon c)              -> Const c noType
 --   HsId (HsVar "==")              -> Const "Eq" noType     
 --   HsLambda ps e               -> multiAbs ps e 
@@ -680,6 +776,8 @@ transCN s x = let
   if elem pcpo (typeSort z) then case pp x of
       "True" -> f "TT"
       "False" -> f "FF"
+--      "+" -> f "+"
+--      "-" -> f "-"
       _ -> f y
   else f y
 
@@ -695,16 +793,61 @@ transHV s x = let
      (termMAbs IsCont [Free "x" noType, Free "y" noType] 
         (App (Const "Def" noType) (termMAppl NotCont (Const eq k) 
            [Free "x" noType, Free "y" noType]) NotCont))
+   "+" -> if tag == False then Const "op +" k
+          else
+     (termMAbs IsCont [Free "x" noType, Free "y" noType]
+        (termMAppl IsCont intPlus [Free "x" noType, Free "y" noType]))
+     where 
+      intPlus = (App (Const "flift1" noType) (IsaSign.Abs (Free "u" noType) noType  
+         (App (Const "flift2" noType) 
+            (IsaSign.Abs (Free "v" noType) noType (termMAppl NotCont (Const "op +" k) 
+               [Free "v" noType, Free "u" noType]) NotCont) NotCont) NotCont) NotCont)
+   "-" -> if tag == False then Const "op -" k
+          else
+     (termMAbs IsCont [Free "x" noType, Free "y" noType]
+        (termMAppl IsCont intMinus [Free "x" noType, Free "y" noType]))
+     where 
+       intMinus = (App (Const "flift1" noType) (IsaSign.Abs (Free "u" noType) noType 
+         (App (Const "flift2" noType) 
+           (IsaSign.Abs (Free "v" noType) noType (termMAppl NotCont (Const "op -" k) 
+               [Free "v" noType, Free "u" noType]) NotCont) NotCont) NotCont) NotCont)
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> Free n k
         _ -> error "Haskell2IsabelleHOLCF, transHV"
 
+showNName :: PNT -> String
+showNName n = case n of 
+  PNT (PN (UnQual x) _) _ _ -> x
+  _ -> "other"
+
 transExp :: ConstTab -> PrExp -> IsaTerm
 transExp cs t = case t of 
     (TiPropDecorate.Exp (HsLambda ps e)) -> 
           termMAbs IsCont (map (transPat cs) ps) (transExp cs e)
+--    (TiPropDecorate.Exp (HsApp (Exp (HsApp (TiSpec (HsVar 
+--       (HsLit _ (HsInt n)))))))) -> Const (show n) (IsaSign.Type "int lift" [] [])
+    (TiPropDecorate.Exp (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)) ->
+       case (showNName x) of
+         "fromInteger" -> transExp cs z
+         _ -> transE showIsaName (transExp cs) (transPat cs) 
+                (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)
+    (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) ->
+       case (showNName x) of
+         "fromInteger" -> transExp cs y
+         "inst__Prelude_Num_Int" -> transExp cs y
+         _ -> termMAppl IsCont (transExp cs (TiPropDecorate.TiSpec (HsVar x) s w)) [(transExp cs y)] 
+--         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)
+--         "inst__Prelude_Num_Int" -> transE showIsaName (transExp cs) (transPat cs) y
+    (TiPropDecorate.Exp (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))) ->
+       case (showNName x) of
+         "fromInteger" -> transExp cs y
+         "inst__Prelude_Num_Int" -> transExp cs y
+         _ -> termMAppl IsCont (transExp cs y) [(transExp cs (TiPropDecorate.TiSpec (HsVar x) s w))]
+--        _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))
+    (TiPropDecorate.Exp (HsLit _ (HsInt n))) -> 
+            Const ("(Def " ++ (show n) ++ ")") (IsaSign.Type "int lift" [] [])
     (TiPropDecorate.Exp e) -> 
           transE showIsaName (transExp cs) (transPat cs) e
     (TiPropDecorate.TiSpec (HsVar x) s _) -> transHV s x
@@ -735,7 +878,9 @@ termMAppl c t ts =
  case ts of 
    [] -> t
    v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
-      termMAppl c (App t v c) vs 
+      case v of  
+        (Const "inst__Prelude_Num_Int" _) -> (termMAppl c t vs)
+        _ -> termMAppl c (App t v c) vs 
 
 ------------------ checking for mutually recursive functions --------------------------------------------
 
@@ -743,11 +888,30 @@ getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
 getDepSent ls = abGetDep sentDepOn ls   
 
 sentDepOn :: Named Sentence -> Named Sentence -> Bool
-sentDepOn x y = depOn (==) (fst . sentAna) (snd . sentAna) x y 
+sentDepOn x y = 
+  depOn (\x y -> simTerms x y && typEq (termType x) (termType y)) (fst . sentAna) (snd . sentAna) x y 
 
 sentAna :: Named Sentence -> (Term, [Term])
 sentAna s = case s of
   NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
+
+simTerms :: Term -> Term -> Bool
+simTerms t1 t2 = case (t1, t2) of
+ (IsaSign.Const x _,  IsaSign.Const y _) -> if x == y then True else False
+ (IsaSign.Free _ _, IsaSign.Free _ _) -> True
+ (IsaSign.Var _ _, IsaSign.Var _ _) -> True
+ (IsaSign.Bound _, IsaSign.Bound _) -> True
+ (IsaSign.Abs _ _ _ c, IsaSign.Abs _ _ _ d) -> if c == d then True else False
+ (If _ _ _ c, If _ _ _ d) -> if c == d then True else False
+ (Case _ _, Case _ _) -> True
+ (Let _ _, Let _ _) -> True
+ (IsaEq _ _, IsaEq _ _) -> True
+ (Fix _, Fix _) -> True
+ (Bottom, Bottom) -> True
+ (Paren x, y) -> simTerms x y
+ (x, Paren y) -> simTerms x y
+ (Wildcard, Wildcard) -> True
+ _ -> False
 
 constFilter :: Term -> [Term]
 constFilter t = case t of
@@ -755,9 +919,11 @@ constFilter t = case t of
  IsaSign.Abs _ _ x _ -> constFilter x
  IsaSign.App x y _ -> concat $ map constFilter [x,y]
  IsaSign.If x y z c -> concat $ map constFilter [x,y,z] 
- IsaSign.Paren x -> constFilter x
  IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
  IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
+ IsaSign.IsaEq x y -> concat $ map constFilter [x,y]
  IsaSign.Tuplex xs _ -> concat $ map constFilter xs
- _ -> []
+ IsaSign.Fix x -> constFilter x
+ IsaSign.Paren x -> constFilter x
+ _ -> [t]
  
