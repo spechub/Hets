@@ -234,7 +234,7 @@ emptyTypeSig = TySg {
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data BaseSig = Pure_thy | HOL_thy | HOLCF_thy | Main_thy | MainHC_thy
+data BaseSig = Pure_thy | HOL_thy | HOLCF_thy | Main_thy | MainHC_thy | HsHOLCF_thy
              deriving (Eq, Ord, Show) 
              {- possibly simply supply a theory like MainHC as string 
                 or recursively as Isabelle.Sign -}
