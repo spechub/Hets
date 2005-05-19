@@ -1,3 +1,14 @@
+{- |
+Module      :  $Header$
+Copyright   :  Heng Jiang, Uni Bremen 2004-2005
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  hets@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+-}
+
 module Main where
 
 import OWL_DL.AS
@@ -7,28 +18,65 @@ import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System.Exit
 import System(getArgs, system)
+import System.Environment(getEnv)
 import qualified Common.Lib.Map as Map
 import qualified List as List
 
 
 main :: IO()
 main =
-    do filename <- getArgs
-       if null filename then
-          error "Usage: readAStest <URI>"
-          else do exitCode <- system ("./processor " ++ head filename)
-                  -- putStrLn $ show exitCode
-                  if exitCode == ExitSuccess then
-                     processor2 "output.term"
-                     else error ("process stop!")
+    do args <- getArgs
+       if (null args) || (length args > 2) then
+          error "Usage: readAStest [option] <URI or file>"
+          -- default option : output OWL_DL abstract syntax
+          else if length args == 1 then     
+                  process True args  
+                  else case head args of
+                       "-a" -> process True $ tail args          -- output abstract syntax
+                       "-t" -> process False $ tail args         -- output ATerm
+                       _    -> error ("unknow option: " ++ (head args))
 
-processor2 :: String -> IO()
-processor2 filename = 
+
+       where isURI :: String -> Bool
+             isURI str = let pre = take 7 str
+                         in if pre == "http://" || pre == "file://" 
+                               then True
+                               else False
+
+             run :: ExitCode -> Bool -> IO()
+             run exitCode abs 
+                 | exitCode == ExitSuccess =  processor2 abs "output.term"
+                 | otherwise =  error "process stop!"
+
+             process :: Bool -> [String] -> IO()
+             process abs args  = 
+                 do
+                  pwd <- getEnv "PWD" 
+                  if (head $ head args) == '-' then
+                     error "Usage: readAStest [option] <URI or file>"
+                     else if isURI $ head args then
+                             do exitCode <- system ("./processor " ++ head args)
+                                run exitCode abs
+                             else if (head $ head args) == '/' then
+                                     do exitCode <- system ("./processor file://" ++ head args)
+                                        run exitCode abs
+                                     else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
+                                             run exitCode abs
+                        
+processor2 :: Bool -> String  -> IO()
+processor2 abs filename = 
     do d <- readFile filename
        let aterm = getATermFull $ readATerm d
+       if abs then
+          outputAS aterm
+          else putStrLn $ show aterm
+
+outputAS :: ATerm -> IO()
+outputAS aterm =
        case aterm of
           AAppl "OWLParserOutput" [valid, msg, ns, onto] _ ->
               do
+--                  putStrLn $ show (fromATerm valid, buildMsg msg, buildNS ns, reducedDisjoint (fromATerm onto::Ontology))
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
