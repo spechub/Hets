@@ -20,6 +20,7 @@ import Debug.Trace
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
+import Syntax.AS_Library
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.Result
@@ -109,12 +110,77 @@ getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
     typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
 
 
+
+type LibNode = (LIB_NAME,Node)
+type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
+
+getAllGlobDefPathsBeginningWithTypesTo_new 
+    :: [LEdge DGLinkLab -> Bool] -> LibEnv -> LibNode -> [LibLEdge]
+    -> [(LibNode, [LibLEdge])]
+getAllGlobDefPathsBeginningWithTypesTo_new types libEnv libnode path =
+  (libnode,path):(typeGlobPaths ++
+    (concat ( [getAllGlobDefPathsBeginningWithTypesTo_new
+                   types libEnv nextLibnode newPath |
+                       (nextLibnode, newPath) <- globalPaths])
+    )
+   )
+
+  where
+    inEdges = getAllIngoingEdges libEnv libnode
+    globalEdges = [libedge| libedge <- filter (isGlobalDef.snd) inEdges,
+		   notElem libedge path]
+    edgesOfTypes 
+        = [libedge| libedge <- filterByTypes_new types inEdges,
+	   notElem libedge path]
+    globalPaths = [(getSourceLibNode libedge, (libedge:path))|
+		   libedge <- globalEdges]
+    typeGlobPaths = [(getSourceLibNode libedge, (libedge:path))|
+		     libedge <- edgesOfTypes]
+
+
+getSourceLibNode :: LibLEdge -> LibNode
+getSourceLibNode (ln,edge) = (ln, getSourceNode edge)
+
+lookupDGraphInLibEnv :: LIB_NAME -> LibEnv -> DGraph
+lookupDGraphInLibEnv ln libEnv =
+    case Map.lookup ln libEnv of
+    Nothing -> error ("lookupDGraphInLibEnv: Could not find development graph "
+		      ++ "with library name " ++(show ln)++ " in given libEnv")
+    Just (_,_,dgraph) -> dgraph
+
+
+{- returns all edges that go directly in the given node,
+   in case of a DGRef node also all ingoing edges of the referenced node
+   are returned -}
+getAllIngoingEdges :: LibEnv -> LibNode -> [LibLEdge]
+getAllIngoingEdges libEnv (ln,node) =
+  case isDGRef nodelab of
+    False -> inEdgesInThisGraph
+    True -> inEdgesInThisGraph ++ inEdgesInRefGraph
+
+  where 
+    dgraph = lookupDGraphInLibEnv ln libEnv
+    nodelab = lab' (context dgraph node)
+    inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
+    refLn = dgn_libname nodelab
+    refGraph = lookupDGraphInLibEnv refLn libEnv
+    refNode = dgn_node nodelab
+    inEdgesInRefGraph = [(refLn,inEdge)| inEdge <- inn refGraph refNode]
+
+
 -- removes all edges that are not of the given types
 filterByTypes :: [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab]
 	      -> [LEdge DGLinkLab]
 filterByTypes [] _edges = []
 filterByTypes (isType:typeChecks) edgs =
   (filter isType edgs)++(filterByTypes typeChecks edgs)
+
+
+-- removes all edges that are not of the given types
+filterByTypes_new :: [LEdge DGLinkLab -> Bool] -> [LibLEdge] -> [LibLEdge]
+filterByTypes_new [] _edges = []
+filterByTypes_new (isType:typeChecks) edgs =
+  (filter (isType.snd) edgs)++(filterByTypes_new typeChecks edgs)
 
 
 -- --------------------------------------
