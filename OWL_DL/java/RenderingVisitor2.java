@@ -342,23 +342,37 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLEquivalentPropertiesAxiom axiom) throws OWLException {
-		pw.print("EquivalentProperties(");
+		boolean fun = false;
+		
+		
 		for (Iterator it = axiom.getProperties().iterator(); it.hasNext();) {
 			OWLProperty prop = (OWLProperty) it.next();
+			if(!fun && prop != null && prop.getClass().getName().contains("Object")){
+				pw.print("Ax(IEquivalentProperties(");
+				fun = true;
+			}else if(!fun && prop != null){
+				pw.print("Ax(DEquivalentProperties(");
+				fun = true;
+			}
 			prop.accept(this);
 			if (it.hasNext()) {
 				pw.print(",");
 			}
 		}
-		pw.print(")");
+		pw.print(",[]))");
 	}
 
 	public void visit(OWLSubPropertyAxiom axiom) throws OWLException {
-		pw.print("SubPropertyOf(");
+		
+		if(axiom.getSubProperty().getClass().getName().contains("Object")){
+			pw.print("Ax(ISubPropertyOf(");
+		}else{
+			pw.print("Ax(DSubPropertyOf(");
+		}
 		axiom.getSubProperty().accept(this);
 		pw.print(",");
 		axiom.getSuperProperty().accept(this);
-		pw.print(")");
+		pw.print("))");
 	}
 
 	public void visit(OWLDifferentIndividualsAxiom ax) throws OWLException {
