@@ -19,12 +19,13 @@ module Isabelle.IsaStrings where
 import qualified Common.Lib.Set as Set
 import Data.Char
 
+-- | check for legal alphanumeric isabelle characters
 isIsaChar :: Char -> Bool
 isIsaChar c = isAlphaNum c && isAscii c || c `elem` "_'"
 
+-- | convert pasted strings to a relevant set of strings
 mkIsaSet :: [String] -> Set.Set String
-mkIsaSet = 
-    foldr ( \ s -> if all isIsaChar s then Set.insert s else id) Set.empty
+mkIsaSet = Set.fromList -- do not filter out anything
 
 pureS :: Set.Set String
 pureS = mkIsaSet [
