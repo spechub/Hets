@@ -24,7 +24,8 @@ import Isabelle.IsaStrings
 ------------------- Id translation functions -------------------
 isaPrelude :: Map.Map BaseSig (Set.Set String)
 isaPrelude = Map.fromList 
-  [(MainHC_thy, foldr Set.insert mainS ["pApp","apt","app","defOp","pair"]),
+  [(HsHOLCF_thy, Set.insert "fliftbin" holcfS),
+   (MainHC_thy, foldr Set.insert mainS ["pApp","apt","app","defOp","pair"]),
    (Main_thy, mainS), (HOLCF_thy, holcfS), 
    (HOL_thy, holS), (Pure_thy, pureS)]
 
@@ -41,7 +42,8 @@ showIsaIT ident i theory = showIsaT ident theory ++ "_" ++ show i
 
 transStringT :: BaseSig -> String -> String
 transStringT i s = let t = transString s in
-  if Set.member t $ Map.findWithDefault Set.empty i isaPrelude 
+  if Set.member t $ maybe (error "Isabelle.Translate.transStringT") id 
+         $ Map.lookup i isaPrelude 
   then t ++ "X" else t
 
 transString :: String -> String
