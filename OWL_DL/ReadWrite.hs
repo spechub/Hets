@@ -293,11 +293,11 @@ instance ShATermConvertible Axiom where
 	case toShATerm att0 aa of {  (att1,aa') ->
 	case toShATerm att1 ab of {  (att2,ab') ->
 	addATerm (ShAAppl "DSubPropertyOf" [ aa',ab' ] []) att2 }}
-    toShATerm att0 (IEquivalentProperty aa ab ac) =
+    toShATerm att0 (IEquivalentProperties aa ab ac) =
 	case toShATerm att0 aa of {  (att1,aa') ->
 	case toShATerm att1 ab of {  (att2,ab') ->
 	case toShATerm att2 ac of {  (att3,ac') ->
-	addATerm (ShAAppl "IEquivalentProperty" [ aa',ab',ac' ] []) att3 }}}
+	addATerm (ShAAppl "IEquivalentProperties" [ aa',ab',ac' ] []) att3 }}}
     toShATerm att0 (ISubPropertyOf aa ab) =
 	case toShATerm att0 aa of {  (att1,aa') ->
 	case toShATerm att1 ab of {  (att2,ab') ->
@@ -372,11 +372,11 @@ instance ShATermConvertible Axiom where
 		    case fromShATerm (getATermByIndex1 aa att) of {  aa' ->
 		    case fromShATerm (getATermByIndex1 ab att) of {  ab' ->
 		    (DSubPropertyOf aa' ab') }}
-	    (ShAAppl "IEquivalentProperty" [ aa,ab,ac ] _) ->
+	    (ShAAppl "IEquivalentProperties" [ aa,ab,ac ] _) ->
 		    case fromShATerm (getATermByIndex1 aa att) of {  aa' ->
 		    case fromShATerm (getATermByIndex1 ab att) of {  ab' ->
 		    case fromShATerm (getATermByIndex1 ac att) of {  ac' ->
-		    (IEquivalentProperty aa' ab' ac') }}}
+		    (IEquivalentProperties aa' ab' ac') }}}
 	    (ShAAppl "ISubPropertyOf" [ aa,ab ] _) ->
 		    case fromShATerm (getATermByIndex1 aa att) of {  aa' ->
 		    case fromShATerm (getATermByIndex1 ab att) of {  ab' ->

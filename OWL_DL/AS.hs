@@ -93,7 +93,9 @@ data Value = ValueID    IndividualvaluedPropertyID IndividualID
 type Type = Description
 
 -- | Axiom (Class Axioms, Descriptions, Restrictions, Property Axioms)
-data Axiom = Class 
+data Axiom = Thing
+           | Nothing
+           | Class 
                    ClassID 
                    Bool -- ^ True == deprecated
                    Modality 
@@ -151,7 +153,7 @@ data Axiom = Class
            | DSubPropertyOf 
                    DatavaluedPropertyID 
                    DatavaluedPropertyID
-           | IEquivalentProperty 
+           | IEquivalentProperties
                    IndividualvaluedPropertyID 
                    IndividualvaluedPropertyID 
                    [IndividualvaluedPropertyID]
@@ -177,7 +179,7 @@ data Restriction = DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent
                  | IndivRestriction IndividualvaluedPropertyID Ircomponent [Ircomponent]
                    deriving (Show, Eq)
 
-data Drcomponent = DRCAllValuesFrom Description
+data Drcomponent = DRCAllValuesFrom DataRange
                  | DRCSomeValuesFrom DataRange
                  | DRCValue DataLiteral
                  | DRCCardinality Cardinality
