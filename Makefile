@@ -69,7 +69,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Modal CoCASL COL CspCASL Hatchet CASL_DL
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL Hatchet CASL_DL
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -142,7 +142,8 @@ Haskell_files = $(addsuffix .hs, \
     $(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
 
 ## rule for ATC generation
-Haskell/ATC_Haskell.der.hs: $(Haskell_files) utils/genRules
+Haskell/ATC_Haskell.der.hs: $(Haskell_files) ATC/Haskell.header.hs \
+    utils/genRules
 	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
             $(Haskell_files)
 
@@ -189,7 +190,7 @@ genrule_header_files = $(wildcard ATC/*.header.hs)
 atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Static/DevGraph.hs Proofs/Proofs.hs Isabelle/IsaSign.hs 
+    Static/DevGraph.hs Proofs/Proofs.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -198,7 +199,9 @@ CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs 
 
 HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
-    HasCASL/Sublogic.hs \
+    HasCASL/Sublogic.hs
+
+Isabelle_files = Isabelle/IsaSign.hs 
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
@@ -379,6 +382,12 @@ install: hets-opt install-hets
 
 genRules: $(generated_rule_files)
 
+gen_atc_files = \
+  if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; \
+  then utils/genRules -r $(rule) -o ATC -h \
+      ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
+  else utils/genRules -r $(rule) -o ATC $(file); fi ;
+
 $(atc_der_files): $(atc_files) $(genrule_header_files) utils/genRules
 	$(foreach file, $(atc_files), $(gen_atc_files))
 
@@ -387,6 +396,9 @@ CASL/ATC_CASL.der.hs: $(CASL_files) utils/genRules
 
 HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) utils/genRules
 	utils/genRules -r $(rule) -o HasCASL $(HasCASL_files)
+
+Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) utils/genRules
+	utils/genRules -r $(rule) -o Isabelle $(Isabelle_files)
 
 Modal/ATC_Modal.der.hs: $(Modal_files) utils/genRules
 	utils/genRules -r $(rule) -o Modal $(Modal_files)
@@ -403,17 +415,12 @@ COL/ATC_COL.der.hs: $(COL_files) utils/genRules
 CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 	utils/genRules -r $(rule) -o CspCASL $(CspCASL_files)
 
-Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) utils/genRules
+Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) ATC/Hatchet.header.hs \
+    utils/genRules
 	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
             $(Hatchet_files)
 
 rule = ShATermConvertible
-
-gen_atc_files = \
-  if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; \
-  then utils/genRules -r $(rule) -o ATC -h \
-      ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
-  else utils/genRules -r $(rule) -o ATC $(file); fi ;
 
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files)

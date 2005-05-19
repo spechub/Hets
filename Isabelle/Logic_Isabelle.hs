@@ -22,9 +22,9 @@ import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.DefaultMorphism
 
-import ATC.IsaSign
 import Logic.Logic
 
+import Isabelle.ATC_Isabelle
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
 #ifdef UNI_PACKAGE
