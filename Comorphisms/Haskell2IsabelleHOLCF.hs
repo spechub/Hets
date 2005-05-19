@@ -250,25 +250,6 @@ tupleSelect n t c = case n of
   2 -> App (Const "csnd" noType) t c
   _ -> tupleSelect (n - 1) (App (Const "csnd" noType) t c) c
 
-{-
-fixPoint :: [Named Sentence] -> [Named Sentence]
-fixPoint xs = case xs of
-  [a] -> case a of 
-    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           -- buggy!!!
-       then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
-       else xs
-  a:as -> 
-     let jn = joinNames (map extAxName xs) 
-         jt = typTuple (map extAxType xs)
-         jl = Const jn jt
-         jv = Free jn jt
-         ys = [roughRepl jv (extRightH x) (extLeftH x) | x <- xs]
-         jr = Tuplex ys IsCont
-         js = Fix $ IsaSign.Abs jv jt jr IsCont 
-     in [NamedSen jn True (ConstDef (IsaEq jl js))]    
-  [] -> []
--}
-
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
   NamedSen n True _ -> n
@@ -297,22 +278,6 @@ extRightH :: Named Sentence -> Term
 extRightH s = case s of 
   NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extRightH"
-
-{- replacement for terms. litEq is used to abstract from type variable names. 
-roughRepl :: Term -> Term -> Term -> Term
--- roughRepl nt ot t = if (litEq t ot) then nt else case t of
-roughRepl nt ot t = if (t == ot) then nt else case t of
- IsaSign.Abs v y x c -> IsaSign.Abs v y (roughRepl nt ot x) c
- IsaSign.App x y c -> IsaSign.App (roughRepl nt ot x) (roughRepl nt ot y) c
- IsaSign.If x y z c -> IsaSign.If (roughRepl nt ot x) (roughRepl nt ot y) (roughRepl nt ot z) c 
- IsaSign.Case x ys -> IsaSign.Case (roughRepl nt ot x) [(a,roughRepl nt ot b) | (a,b) <- ys]
- IsaSign.Let xs y -> IsaSign.Let [(a,roughRepl nt ot b) | (a,b) <- xs] (roughRepl nt ot y)
- IsaSign.IsaEq x y -> IsaSign.IsaEq (roughRepl nt ot x) (roughRepl nt ot y) 
- IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (roughRepl nt ot) xs) c
- IsaSign.Fix x -> IsaSign.Fix (roughRepl nt ot x)
- IsaSign.Paren x -> IsaSign.Paren (roughRepl nt ot x) 
- _ -> t  
--}
 
 ----------------------------- equivalence between types modulo variables name -------------------
 
@@ -735,6 +700,7 @@ transE trId trE trP e =
  case (mapEI5 trId trE trP e) of 
    HsId (HsVar x)              -> Const "DIC" noType     
    HsApp x y                   -> termMAppl IsCont x [y]  
+   HsLambda ps e               -> termMAbs IsCont ps e 
    HsIf x y z                  -> If x y z IsCont 
    HsTuple es                  -> Tuplex es IsCont 
    HsParen e                   -> Paren e
@@ -742,7 +708,6 @@ transE trId trE trP e =
 --   _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
 --   HsId (HsCon c)              -> Const c noType
 --   HsId (HsVar "==")              -> Const "Eq" noType     
---   HsLambda ps e               -> multiAbs ps e 
 --   HsLet ds e                  -> Let ds e 
 --   HsCase e ds                 -> Case e ds 
 
@@ -766,7 +731,6 @@ transP trId trP p =
 --   HsPApp c ps -> App x y IsCont
 --   HsPAsPat x p -> AsPattern (x,p)
 --   HsPIrrPat p -> twiddlePat p
---   _ -> not_supported "Pattern" p
 
 class IsaName i => TransFunction i j k where
  transFun :: (j i) -> k
@@ -785,8 +749,6 @@ transCN s x = let
   if elem pcpo (typeSort z) then case pp x of
       "True" -> f "TT"
       "False" -> f "FF"
---      "+" -> f "+"
---      "-" -> f "-"
       _ -> f y
   else f y
 
@@ -816,23 +778,6 @@ transHV s x = let
 
 transExp :: ConstTab -> PrExp -> IsaTerm
 transExp cs t = case t of 
-    (TiPropDecorate.Exp (HsLambda ps e)) ->                  -- transfer this case to transE??
-       termMAbs IsCont (map (transPat cs) ps) (transExp cs e)   
-    (TiPropDecorate.Exp (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)) -> 
-       case (showIsaString x) of                   -- transfer to termMAppl??
-         "fromInteger" -> transExp cs z
-         _ -> transE showIsaName (transExp cs) (transPat cs) 
-                (HsApp (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) z)
-    (TiPropDecorate.Exp (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)) ->
-       case (showIsaString x) of                   -- transfer to termMAppl?? 
-         "fromInteger" -> transExp cs y
-         "inst__Prelude_Num_Int" -> transExp cs y
-         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp (TiPropDecorate.TiSpec (HsVar x) s w) y)
-    (TiPropDecorate.Exp (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))) ->
-       case (showIsaString x) of                      -- transfer to termMAppl??
-         "fromInteger" -> transExp cs y
-         "inst__Prelude_Num_Int" -> transExp cs y
-         _ -> transE showIsaName (transExp cs) (transPat cs) (HsApp y (TiPropDecorate.TiSpec (HsVar x) s w))
     (TiPropDecorate.Exp e) -> case e of
        HsLit _ (HsInt n) -> 
            Const ("(Def " ++ (show n) ++ ")") (IsaSign.Type "int lift" [] [])
@@ -845,14 +790,11 @@ transExp cs t = case t of
 transPat :: ConstTab -> PrPat -> IsaPattern
 transPat cs t = case t of 
     (TiDecorate.Pat p) -> transP showIsaName (transPat cs) p
-    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV s x
-    (TiDecorate.TiPSpec (HsCon x) s _) -> transCN s x
+    (TiDecorate.TiPSpec w s _) -> case w of 
+         HsVar x -> transHV s x
+         HsCon x -> transCN s x
     (TiDecorate.TiPTyped x _) -> transPat cs x
     _ -> Bottom
---    (TiDecorate.TiPSpec (HsVar x) s _) -> transHV cs s x
---    _ -> error "Haskell2IsabelleHOLCF.transPat"
--- transPat :: SyntaxRec.HsPatI PNT -> IsaPattern
--- transPat (Pat p) = transP showIsaS transPat p
 
 termMAbs :: Continuity -> [Term] -> Term -> Term
 termMAbs c ts t = 
@@ -863,11 +805,14 @@ termMAbs c ts t =
 
 termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts = 
- case ts of 
-   [] -> t
-   v:vs -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
+ case (t,ts) of   
+   (Const "inst__Prelude_Num_Int" _, [a]) -> a
+   (Const "fromInteger" _, [a]) -> a
+   (_,[]) -> t
+   (_,v:vs) -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
       case v of  
         (Const "inst__Prelude_Num_Int" _) -> (termMAppl c t vs)
+        (Const "fromInteger" _) -> (termMAppl c t vs)
         _ -> termMAppl c (App t v c) vs 
 
 ------------------ checking for mutually recursive functions --------------------------------------------
