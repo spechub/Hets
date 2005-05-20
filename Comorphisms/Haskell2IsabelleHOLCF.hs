@@ -120,8 +120,8 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
        inclusion Isabelle sig1 sig2
     map_theory Haskell2IsabelleHOLCF (sign, sens) = do
         sign' <- transSignature sign
-        sens'' <- transSentences sign' (map sentence sens)
-        return (sign', sens'')
+        (sign'',sens'') <- transSentences sign' (map sentence sens)
+        return (sign'', sens'')
     map_symbol Haskell2IsabelleHOLCF _ = 
         error "Haskell2IsabelleHOLCF.map_symbol"
 
@@ -130,10 +130,17 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
 tcTopDecls); property/parse2/Parse/PropPosSyntax (def of HsDecl).  -}
 
 transSentences :: 
-    IsaSign.Sign -> [PrDecl] -> Result [Named IsaSign.Sentence]
+    IsaSign.Sign -> [PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transSentences sign ls = do xs <- mapM (transSentence sign) ls
-                            return $ fixMRec xs
+                            ys <- return $ fixMRec xs
+                            ac <- return $ newConstTab ys
+                            nc <- return $ Map.union (constTab sign) ac
+                            nsig <- return $ sign {constTab = nc}
+                            return (nsig,ys) 
 --                            return $ concat (getDepSent xs) 
+
+newConstTab :: [Named IsaSign.Sentence] -> ConstTab
+newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
 
 transSentence :: 
     IsaSign.Sign -> PrDecl -> Result [Named IsaSign.Sentence]
@@ -173,37 +180,65 @@ fixPoint xs = case xs of
        else xs
   a:as -> 
      let jn = joinNames (map extAxName xs)
-         ks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
+         -- ks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
+         ks = [(extAxName x, extAxType x) | x <- xs]
+         jv = Tuplex [(Free (extAxName x) (extAxType x)) | x <- xs] IsCont
          jt = typTuple (map extAxType xs)
-         ys = [varsForMFuns jn jt ks (extLeftH x) | x <- xs]
-         jr = Tuplex ys IsCont
+         ys = [varsForMFuns ks (extRightH x) | x <- xs]
+         jr = Tuplex ys IsCont -- Tuplex (map extRightH xs) IsCont - Tuplex ys IsCont
          jl = Const jn jt
-         jv = Free jn jt
+--         jv = Free jn jt
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
      in [NamedSen jn True (ConstDef (IsaEq jl js))]    
   [] -> []
 
-listEnum :: [a] -> [(a,Int)]
-listEnum l = case l of
- [] -> []
- a:as -> (a,length (a:as)):(listEnum as)
-
 fixPointRep :: Term -> Term -> Term
 fixPointRep t1 t2 = case t1 of
-  Const n x -> Fix $ IsaSign.Abs (Free n x) x (varForFun n x t2) IsCont 
+  Const n x -> Fix $ IsaSign.Abs (Free n x) x (varForFun (n,x) t2) IsCont 
   _ -> error "Haskell2IsabelleHOLCF, fixPointRep"
 
-{- replacement function -}
-varsForMFuns :: VName -> Typ -> [(VName, (Typ, Int))] -> Term -> Term
--- roughRepl nt ot t = if (litEq t ot) then nt else case t of
-varsForMFuns vn ty ls t = varsForFuns (\c d -> termPack vn ty $ tElem c d ls) vn ty ls t
-
-varForFun ::  VName -> Typ -> Term -> Term
-varForFun vn ty t = varsForFuns (sElem vn ty) vn ty () t 
+{- replaces constants with variables of same name and type -}
+varForFun ::  (VName,Typ) -> Term -> Term
+varForFun (vn,ty) t = varsForFuns (sElem vn ty) (vn,ty) t 
 
 sElem :: VName -> Typ -> VName -> Typ -> Maybe Term
 sElem vn ty n t = if vn == n && typEq ty t then Just (Free n ty) else Nothing
 
+{- replacement function -}
+varsForMFuns :: [(VName,Typ)] -> Term -> Term
+-- roughRepl nt ot t = if (litEq t ot) then nt else case t of
+varsForMFuns ls t = varsForFuns (\c d -> tElem c d ls) ls t
+
+tElem :: VName -> Typ -> [(VName,Typ)] -> Maybe Term
+tElem x ty ls = let r = [t | (y,t) <- remove_duplicates ls, x == y, typEq ty t]
+ in case r of 
+  [] -> Nothing
+  [a] -> Just (Free x ty)
+  _ -> error "Haskell2IsabelleHOLCF, tElem"
+
+{- in t, replaces variables, build according to f and ls, for constants matching vn and ty -} 
+varsForFuns :: 
+  (VName -> Typ -> Maybe Term) -> a -> Term -> Term
+varsForFuns f ls t = case t of
+ IsaSign.Const n t1 -> maybe t id $ f n t1
+--   case f n t1 of 
+--     Nothing -> t
+--     Just k -> k   
+ IsaSign.Abs v y x c -> IsaSign.Abs v y (varsForFuns f ls x) c
+ IsaSign.App x y c -> IsaSign.App (varsForFuns f ls x) (varsForFuns f ls y) c
+ IsaSign.If x y z c -> 
+     IsaSign.If (varsForFuns f ls x) (varsForFuns f ls y) (varsForFuns f ls z) c 
+ IsaSign.Case x ys -> 
+     IsaSign.Case (varsForFuns f ls x) [(a,varsForFuns f ls b) | (a,b) <- ys]
+ IsaSign.Let xs y -> 
+     IsaSign.Let [(a,varsForFuns f ls b) | (a,b) <- xs] (varsForFuns f ls y)
+ IsaSign.IsaEq x y -> IsaSign.IsaEq (varsForFuns f ls x) (varsForFuns f ls y) 
+ IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (varsForFuns f ls) xs) c
+ IsaSign.Fix x -> IsaSign.Fix (varsForFuns f ls x)
+ IsaSign.Paren x -> IsaSign.Paren (varsForFuns f ls x) 
+ _ -> t  
+
+{- in t, replaces variables, build according to f and ls, for constants matching vn and ty 
 varsForFuns :: 
   (VName -> Typ -> Maybe Term) -> VName -> Typ -> a -> Term -> Term
 varsForFuns f vn ty ls t = case t of
@@ -222,6 +257,11 @@ varsForFuns f vn ty ls t = case t of
  IsaSign.Paren x -> IsaSign.Paren (varsForFuns f vn ty ls x) 
  _ -> t  
 
+termPack :: [(VName, (Typ, Int))] -> Typ -> Maybe (Typ, Int) -> Maybe Term
+termPack vn ty m = case m of
+ Nothing -> Nothing
+ Just (_,n) -> Just $ tupleSelector n (Free vn ty) IsCont
+
 tElem :: VName -> Typ -> [(VName, (Typ, Int))] -> Maybe (Typ, Int)
 tElem x ty ls = let r = [(t,n) | (y,(t,n)) <- ls, y == x, typEq ty t]
  in case r of 
@@ -229,26 +269,23 @@ tElem x ty ls = let r = [(t,n) | (y,(t,n)) <- ls, y == x, typEq ty t]
   [a] -> Just a
   _ -> error "Haskell2IsabelleHOLCF, tElem"
 
-termPack :: VName -> Typ -> Maybe (Typ, Int) -> Maybe Term
-termPack vn ty m = case m of
- Nothing -> Nothing
- Just (_,n) -> Just $ tupleSelector n (Free vn ty) IsCont
-
 tupleSelector :: Int -> Term -> Continuity -> Term
 tupleSelector n t c = case (n,t) of
   (_, Tuplex ls c) -> 
      let l = length ls 
          ts = tupleSelect n t c
-     in if n == l then ts else if n < l then App (Const "cfst" noType) ts c
-        else error "Haskell2IsabelleHOLCF, tupleSelector"
-  _ -> error "Haskell2IsabelleHOLCF, tupleSelector"
+     in if n == l then ts else if n < l then termMApp c (Const "cfst" noType) ts
+        else error "Haskell2IsabelleHOLCF, 2 tupleSelector"
+  _ -> error "Haskell2IsabelleHOLCF, 1 tupleSelector"
 
 tupleSelect :: Int -> Term -> Continuity -> Term
 tupleSelect n t c = case n of
   0 -> error "Haskell2IsabelleHOLCF, tupleSelect"
-  1 -> App (Const "cfst" noType) t c
-  2 -> App (Const "csnd" noType) t c
+  1 -> termMApp c (Const "cfst" noType) t 
+  2 -> termMApp c (Const "csnd" noType) t 
   _ -> tupleSelect (n - 1) (App (Const "csnd" noType) t c) c
+-}
+
 
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
@@ -278,6 +315,11 @@ extRightH :: Named Sentence -> Term
 extRightH s = case s of 
   NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extRightH"
+
+listEnum :: [a] -> [(a,Int)]
+listEnum l = case l of
+ [] -> []
+ a:as -> (a,length (a:as)):(listEnum as)
 
 ----------------------------- equivalence between types modulo variables name -------------------
 
