@@ -63,7 +63,11 @@ replaceChar :: Char -> String
 -- <http://www.htmlhelp.com/reference/charset/>
 replaceChar c = if isIsaChar c then [c] else let n = ord c in 
     if n <= 32 || n >= 127 && n < 160 || n > 255 then "Slash_" ++ show n 
-    else maybe (error "Isabelle.replaceChar") id $ Map.lookup c $ Map.fromList 
+    else maybe (error "Isabelle.replaceChar") id $ Map.lookup c charMap
+
+-- | a separate Map speeds up lookup
+charMap :: Map.Map Char String
+charMap = Map.fromList
  [('!' , "Exclam"),
   ('"' , "Quot"),
   ('#' , "Hash"),
