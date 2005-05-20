@@ -137,7 +137,6 @@ transSentences sign ls = do xs <- mapM (transSentence sign) ls
                             nc <- return $ Map.union (constTab sign) ac
                             nsig <- return $ sign {constTab = nc}
                             return (nsig,ys) 
---                            return $ concat (getDepSent xs) 
 
 newConstTab :: [Named IsaSign.Sentence] -> ConstTab
 newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
@@ -175,21 +174,23 @@ addFixPoints xs = concat $ map fixPoint xs
 fixPoint :: [Named Sentence] -> [Named Sentence]
 fixPoint xs = case xs of
   [a] -> case a of 
-    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           -- buggy!!!
+    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           
        then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
        else xs
   a:as -> 
      let jn = joinNames (map extAxName xs)
-         -- ks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
          ks = [(extAxName x, extAxType x) | x <- xs]
          jv = Tuplex [(Free (extAxName x) (extAxType x)) | x <- xs] IsCont
          jt = typTuple (map extAxType xs)
          ys = [varsForMFuns ks (extRightH x) | x <- xs]
          jr = Tuplex ys IsCont -- Tuplex (map extRightH xs) IsCont - Tuplex ys IsCont
          jl = Const jn jt
---         jv = Free jn jt
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
-     in [NamedSen jn True (ConstDef (IsaEq jl js))]    
+         mainfd = NamedSen jn True (ConstDef (IsaEq jl js)) 
+         nks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
+         sF = elaborate (length xs) jn jt nks 
+         origds = [NamedSen (extAxName x) True $ ConstDef (IsaEq (extLeftH x) (sF (extRightH x))) | x <- xs] 
+     in mainfd : origds   
   [] -> []
 
 fixPointRep :: Term -> Term -> Term
@@ -206,7 +207,6 @@ sElem vn ty n t = if vn == n && typEq ty t then Just (Free n ty) else Nothing
 
 {- replacement function -}
 varsForMFuns :: [(VName,Typ)] -> Term -> Term
--- roughRepl nt ot t = if (litEq t ot) then nt else case t of
 varsForMFuns ls t = varsForFuns (\c d -> tElem c d ls) ls t
 
 tElem :: VName -> Typ -> [(VName,Typ)] -> Maybe Term
@@ -216,14 +216,35 @@ tElem x ty ls = let r = [t | (y,t) <- remove_duplicates ls, x == y, typEq ty t]
   [a] -> Just (Free x ty)
   _ -> error "Haskell2IsabelleHOLCF, tElem"
 
-{- in t, replaces variables, build according to f and ls, for constants matching vn and ty -} 
+elaborate :: Int -> VName -> Typ -> [(VName, (Typ, Int))] -> Term -> Term
+elaborate mx vn ty ls t = varsForFuns (\c d -> ntElem mx c d vn ty ls) ls t
+
+ntElem :: Int -> VName -> Typ -> VName -> Typ -> [(VName,(Typ,Int))] -> Maybe Term
+ntElem mx x tx vn ty ls = let r = [(t,n) | (y,(t,n)) <- remove_duplicates ls, x == y, typEq tx t]
+ in case r of 
+  [] -> Nothing
+  [(a,n)] -> Just $ tupleSelector mx n (Const vn ty) IsCont
+  _ -> error "Haskell2IsabelleHOLCF, tElem"
+
+tupleSelector :: Int -> Int -> Term -> Continuity -> Term
+tupleSelector mx n t c
+  | mx < 2 = error "Haskell2IsabelleHOLCF, tupleSelector - error 1"  
+  | n == 0 = error "Haskell2IsabelleHOLCF, tupleSelector - error 2"
+  | mx < n = error "Haskell2IsabelleHOLCF, tupleSelector - error 3"
+  | n == mx = tupleSelect (n - 1) t c
+  | True = termMAppl c (Const "cfst" noType) $ [tupleSelect (n - 1) t c]
+
+tupleSelect :: Int -> Term -> Continuity -> Term
+tupleSelect n t c = case n of
+  0 -> t
+  _ -> tupleSelect (n - 1) (termMAppl c (Const "csnd" noType) [t]) c
+
+{- in term t, replaces variables, build according to f and ls, 
+   for constants matching the VName and Typ parameters of f     -} 
 varsForFuns :: 
   (VName -> Typ -> Maybe Term) -> a -> Term -> Term
 varsForFuns f ls t = case t of
  IsaSign.Const n t1 -> maybe t id $ f n t1
---   case f n t1 of 
---     Nothing -> t
---     Just k -> k   
  IsaSign.Abs v y x c -> IsaSign.Abs v y (varsForFuns f ls x) c
  IsaSign.App x y c -> IsaSign.App (varsForFuns f ls x) (varsForFuns f ls y) c
  IsaSign.If x y z c -> 
@@ -237,55 +258,6 @@ varsForFuns f ls t = case t of
  IsaSign.Fix x -> IsaSign.Fix (varsForFuns f ls x)
  IsaSign.Paren x -> IsaSign.Paren (varsForFuns f ls x) 
  _ -> t  
-
-{- in t, replaces variables, build according to f and ls, for constants matching vn and ty 
-varsForFuns :: 
-  (VName -> Typ -> Maybe Term) -> VName -> Typ -> a -> Term -> Term
-varsForFuns f vn ty ls t = case t of
- IsaSign.Const n t1 -> maybe t id $ f n t1 
- IsaSign.Abs v y x c -> IsaSign.Abs v y (varsForFuns f vn ty ls x) c
- IsaSign.App x y c -> IsaSign.App (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) c
- IsaSign.If x y z c -> 
-     IsaSign.If (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) (varsForFuns f vn ty ls z) c 
- IsaSign.Case x ys -> 
-     IsaSign.Case (varsForFuns f vn ty ls x) [(a,varsForFuns f vn ty ls b) | (a,b) <- ys]
- IsaSign.Let xs y -> 
-     IsaSign.Let [(a,varsForFuns f vn ty ls b) | (a,b) <- xs] (varsForFuns f vn ty ls y)
- IsaSign.IsaEq x y -> IsaSign.IsaEq (varsForFuns f vn ty ls x) (varsForFuns f vn ty ls y) 
- IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (varsForFuns f vn ty ls) xs) c
- IsaSign.Fix x -> IsaSign.Fix (varsForFuns f vn ty ls x)
- IsaSign.Paren x -> IsaSign.Paren (varsForFuns f vn ty ls x) 
- _ -> t  
-
-termPack :: [(VName, (Typ, Int))] -> Typ -> Maybe (Typ, Int) -> Maybe Term
-termPack vn ty m = case m of
- Nothing -> Nothing
- Just (_,n) -> Just $ tupleSelector n (Free vn ty) IsCont
-
-tElem :: VName -> Typ -> [(VName, (Typ, Int))] -> Maybe (Typ, Int)
-tElem x ty ls = let r = [(t,n) | (y,(t,n)) <- ls, y == x, typEq ty t]
- in case r of 
-  [] -> Nothing
-  [a] -> Just a
-  _ -> error "Haskell2IsabelleHOLCF, tElem"
-
-tupleSelector :: Int -> Term -> Continuity -> Term
-tupleSelector n t c = case (n,t) of
-  (_, Tuplex ls c) -> 
-     let l = length ls 
-         ts = tupleSelect n t c
-     in if n == l then ts else if n < l then termMApp c (Const "cfst" noType) ts
-        else error "Haskell2IsabelleHOLCF, 2 tupleSelector"
-  _ -> error "Haskell2IsabelleHOLCF, 1 tupleSelector"
-
-tupleSelect :: Int -> Term -> Continuity -> Term
-tupleSelect n t c = case n of
-  0 -> error "Haskell2IsabelleHOLCF, tupleSelect"
-  1 -> termMApp c (Const "cfst" noType) t 
-  2 -> termMApp c (Const "csnd" noType) t 
-  _ -> tupleSelect (n - 1) (App (Const "csnd" noType) t c) c
--}
-
 
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
@@ -822,7 +794,7 @@ transExp :: ConstTab -> PrExp -> IsaTerm
 transExp cs t = case t of 
     (TiPropDecorate.Exp e) -> case e of
        HsLit _ (HsInt n) -> 
-           Const ("(Def " ++ (show n) ++ ")") (IsaSign.Type "int lift" [] [])
+           Const ("(Def (" ++ (show n) ++ "::int))") (IsaSign.Type "int lift" [] [])
        _ -> transE showIsaName (transExp cs) (transPat cs) e
     TiPropDecorate.TiSpec w s _ -> case w of 
        HsVar x -> transHV s x
