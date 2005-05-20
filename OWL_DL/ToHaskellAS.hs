@@ -80,7 +80,7 @@ outputAS aterm =
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
-                  putStrLn $ show $ reducedDisjoint (fromATerm onto::Ontology)
+                  putStrLn $ show $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
           _ -> error "false file."
 
     where buildNS :: ATerm -> Namespace
@@ -139,4 +139,22 @@ outputAS aterm =
                          _ -> False
                       _ -> False
 
-                                    
+          createEqClass :: Ontology -> Ontology
+          createEqClass (Ontology oid directives) =
+              Ontology oid (findAndCreate directives)
+           where findAndCreate :: [Directive] -> [Directive]
+                 findAndCreate [] = []
+                 findAndCreate (h:r) = 
+                     case h of
+                       Ax (Class cid isdep Complete annos desps) ->
+                          (Ax (EquivalentClasses (DC cid) desps)):(findAndCreate r)
+                       _ -> h:(findAndCreate r)
+
+
+
+
+
+
+
+
+
