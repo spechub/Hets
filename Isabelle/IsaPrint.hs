@@ -136,7 +136,7 @@ showTerm (Const c _) = c
 showTerm (Free v _) = v
 
 showTerm (Tuplex ls c) = case c of
-   IsCont -> "<" ++ (showTupleArgs ls) ++ ">"
+   IsCont -> "< " ++ (showTupleArgs ls) ++ ">" -- the extra space takes care of a minor Isabelle bug
    NotCont -> "(" ++ (showTupleArgs ls) ++ ")" 
  where 
    showTupleArgs xs = case xs of 

@@ -119,15 +119,18 @@ flatDom = Type "flat" dom []
 mkContFun :: Typ -> Typ -> Typ
 mkContFun t1 t2 = Type "dFun" dom [t1,t2]
 
+mkStrictProduct :: Typ -> Typ -> Typ
+mkStrictProduct t1 t2 = Type "**" dom [t1,t2]
+
 mkContProduct :: Typ -> Typ -> Typ
-mkContProduct t1 t2 = Type "**" dom [t1,t2]
+mkContProduct t1 t2 = Type "*" dom [t1,t2]
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 mkCurryContFun :: [Typ] -> Typ -> Typ
 mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
 
-mkContSum :: Typ -> Typ -> Typ
-mkContSum t1 t2 = Type "++" dom [t1,t2]
+mkStrictSum :: Typ -> Typ -> Typ
+mkStrictSum t1 t2 = Type "++" dom [t1,t2]
 
 prodS :: TName
 prodS = "*"    -- this is printed as it is!
