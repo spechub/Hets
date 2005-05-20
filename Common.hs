@@ -30,7 +30,7 @@ identifiers and annotations as well as their parsing and printing.
  * "Common.DefaultMorphism"      
         just a source and target signature (no mappings) 
 
- * "Common.DynamicUtils"
+ * "Common.DynamicUtils"         only a wrapper for Data.Dynamic.mkTyConApp
 
  * "Common.Earley"
         the mixfix resolution engine used for CASL and HasCASL
@@ -38,15 +38,13 @@ identifiers and annotations as well as their parsing and printing.
  * "Common.GlobalAnnotations"    
         analysed list, number and display annotations 
 
- * "Common.GraphUtils"
-
  * "Common.Id"                   simple, mixfix and compound identifiers 
 
- * "Common.Keywords"
+ * "Common.Keywords"             string constants for keywords
 
- * "Common.LaTeX_AS_Annotation"
+ * "Common.LaTeX_AS_Annotation"  latex printing of annotations
 
- * "Common.LaTeX_funs"
+ * "Common.LaTeX_funs"           
 
  * "Common.LaTeX_maps"
 
@@ -56,11 +54,11 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.PPUtils"              pretty printing utilities
 
- * "Common.PrettyPrint"
+ * "Common.PrettyPrint"          pretty printing classes and instance
 
- * "Common.PrintLaTeX"
+ * "Common.PrintLaTeX"           
 
- * "Common.Print_AS_Annotation"
+ * "Common.Print_AS_Annotation"  pretty printing of annotations
 
  * "Common.Result"               a kind of error monad
 
@@ -74,23 +72,23 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.Utils"                some functions for lists 
 
- * "Common.ATerm.AbstractSyntax"
+ * "Common.ATerm.AbstractSyntax" shared ATerms
 
- * "Common.ATerm.ConvInstances"
+ * "Common.ATerm.ConvInstances"  some aterm conversion instances 
 
- * "Common.ATerm.Conversion"
+ * "Common.ATerm.Conversion"     other aterm conversion instances
 
- * "Common.ATerm.ReadWrite"
+ * "Common.ATerm.ReadWrite"      reading and writing aterms
 
- * "Common.Lib.Map"
+ * "Common.Lib.Map"              see Data.Map 
 
- * "Common.Lib.Pretty"
+ * "Common.Lib.Pretty"           adapted printer for latex
 
- * "Common.Lib.Rel"
+ * "Common.Lib.Rel"              relations as special graphs
 
- * "Common.Lib.Set"
+ * "Common.Lib.Set"              see Data.Set
 
- * "Common.Lib.State"
+ * "Common.Lib.State"            a portable state monad  
 
 -}
 module Common where
