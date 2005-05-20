@@ -76,8 +76,14 @@ showTyp a pri t = case t of
  (Type name _ args) -> case args of 
    [] -> name
    arg:[] ->  showTyp a 10 arg ++ sp ++ name
-   [t1,t2] -> showTypeOp a pri name t1 t2 
-   _  -> lb ++ (rearrangeVarsInType a pri name args) ++ rb
+   [t1,t2] -> let tyst = showTypeOp a pri name t1 t2
+      in case a of 
+         Quoted -> tyst
+         _ -> lb ++ tyst ++ rb
+   _  -> let tyst = (rearrangeVarsInType a pri name args) 
+       in case a of 
+         Quoted -> tyst
+         _ -> lb ++ tyst ++ rb
  where rearrangeVarsInType x p n as = 
             let (tyVars,types) = foldl split ([],[]) as
             in (encloseTup x p (concRev tyVars types)) ++ sp ++ n 
@@ -142,7 +148,9 @@ showTerm (Tuplex ls c) = case c of
    showTupleArgs xs = case xs of 
      [] -> []
      [a] -> showTerm a
-     a:as -> (showTerm a) ++ "," ++ showTupleArgs as
+     a:as -> case a of
+      (Free n t) -> (showTerm a) ++ "::" ++ (showTyp Unquoted 1000 t) ++ "," ++ showTupleArgs as
+      _ -> (showTerm a) ++ "," ++ showTupleArgs as
 
 showTerm (Abs v y t l) 
   | y == noType = lb ++ (case l of 
@@ -150,8 +158,10 @@ showTerm (Abs v y t l)
     IsCont -> "LAM ") ++ showTerm v ++ ". " ++ showTerm t ++ rb
   | True = lb ++ (case l of 
     NotCont -> "%"
-    IsCont -> "LAM ") ++ showTerm v ++ "::" 
-       ++ showTyp Unquoted 1000 y ++ ". " ++ showTerm t ++ rb
+    IsCont -> "LAM ") ++ (case v of 
+      (Free n y) -> showTerm v ++ "::" 
+       ++ showTyp Unquoted 1000 y
+      _ -> showTerm v) ++ ". " ++ showTerm t ++ rb
 
 showTerm (Paren t) = showTerm t 
 showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
