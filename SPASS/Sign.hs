@@ -23,6 +23,16 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 
+data Sign = Sign { sortRel :: Rel.Rel SPIdentifier
+                 , sortMap :: Map.Map SPIdentifier (Maybe Generated)
+                 , funcMap :: Map.Map SPIdentifier ([SPIdentifier], SPIdentifier)
+                 , predMap :: Map.Map SPIdentifier [SPIdentifier]
+                 } deriving (Eq, Show)
+
+data Generated = Generated { freely :: Bool
+                           , byFunctions :: [SPIdentifier]
+                           } deriving (Eq, Show)
+
 {- |
   A SPASS Identifier is a String for now. See also 'checkIdentifier' function
   below. Might need conversion functions as well.
