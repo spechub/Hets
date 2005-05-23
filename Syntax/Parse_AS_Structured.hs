@@ -389,21 +389,17 @@ fitArg l = do b <- oBracketT
               return (fa, toPos b [] c)
 
 fittingArg :: LogicGraph -> AParser AnyLogic FIT_ARG
-fittingArg l = do (an,s) <- try (do an <- annos
-                                    s <- asKey viewS
-                                    return (an,s))
+fittingArg l = do s <- asKey viewS
                   vn <- simpleId
                   (fa,ps) <- fitArgs l
-                  return (Fit_view vn fa (tokPos s ++ ps) an)
+                  return (Fit_view vn fa (tokPos s ++ ps))
             <|>
-               do Logic lid <- getUserState
-                  sp <- aSpec l
-                  (symbit,ps) <- option (G_symb_map_items_list lid [],[])
-                                 (do s <- asKey fitS               
-                                     (m, qs) <- parseItemsMap
-                                     return (m, catPos (s : qs)))
+               do sp <- aSpec l
+                  (symbit, ps) <- option ([],[]) $ do 
+                                 s <- asKey fitS               
+                                 (m, qs) <- parseMapping l
+                                 return (m, catPos $ s : qs)
                   return (Fit_spec sp symbit ps)
-
 
 optEnd :: AParser st (Maybe Token)
 optEnd = option Nothing (fmap Just (asKey endS))

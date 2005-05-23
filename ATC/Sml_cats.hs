@@ -1367,8 +1367,9 @@ instance ATermConvertibleSML FIT_ARG where
             (ShAAppl "fit-spec" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ab''= G_symb_map_items_list CASL ab'
+                ab''= case from_sml_ShATerm (getATermByIndex1 ab att) of
+                      [] -> []
+                      ab' -> [G_symb_map $ G_symb_map_items_list CASL ab']
                 ac' = pos_l
                 in (Fit_spec aa' ab'' ac')
             (ShAAppl "fit-view" [ aa,ab ] _)  ->
@@ -1376,7 +1377,7 @@ instance ATermConvertibleSML FIT_ARG where
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Fit_view aa' ab' ac' [])
+                in (Fit_view aa' ab' ac')
             _ -> from_sml_ShATermError "FIT_ARG" aterm
         where
             aterm = getATerm att'
@@ -1774,8 +1775,6 @@ instance ATermConvertibleSML LIB_ITEM where
                 ad''= case from_sml_ShATerm (getATermByIndex1 ad att) of 
                       [] -> []
                       ad' -> [G_symb_map $ G_symb_map_items_list CASL ad']
-{-              as  = toAnnoList ae att
-                ac''= addLAnnoList as ac'-}
                 ae' = pos_l
                 in (Syntax.AS_Library.View_defn aa' ab' ac' ad'' ae')
             (ShAAppl "arch-spec-defn" [ aa,ab,_ ] _)  ->

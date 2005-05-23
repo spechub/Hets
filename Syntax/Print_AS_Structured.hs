@@ -145,15 +145,12 @@ instance PrettyPrint IMPORTED where
 instance PrettyPrint FIT_ARG where
     printText0 ga (Fit_spec aa ab _) =
         let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-            null' = case ab of 
-                    G_symb_map_items_list _ sis -> null sis
-        in aa' <+> if null' then empty else hang (text fitS) 4 ab'
-    printText0 ga (Fit_view aa ab _ ad) =
+            ab' = fcat $ map (printText0 ga) ab
+        in aa' <> (if null ab then empty else space <> hang (text fitS) 4 ab')
+    printText0 ga (Fit_view aa ab _) =
         let aa' = printText0 ga aa
             ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
-            ad' = vcat $ map (printText0 ga) ad
-        in ad' $$ hang (text viewS <+> aa') 4 ab'
+        in hang (text viewS <+> aa') 4 ab'
 
 
 instance PrettyPrint Logic_code where

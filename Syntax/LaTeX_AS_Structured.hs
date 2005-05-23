@@ -178,22 +178,19 @@ instance PrintLaTeX IMPORTED where
 instance PrintLaTeX FIT_ARG where
     printLatex0 ga (Fit_spec aa ab _) =
         let aa' = printLatex0 ga aa
-            ab' = printLatex0 ga ab
-            null' = case ab of 
-                    G_symb_map_items_list _ sis -> null sis
-        in if null' then aa' 
+            ab' = fsep_latex $ map (printLatex0 ga) ab
+        in if null ab then aa' 
         else fsep_latex [aa',
                              hc_sty_plain_keyword fitS <\+>
                                  set_tabbed_nest_latex ab']
-    printLatex0 ga (Fit_view aa ab _ ad) =
+    printLatex0 ga (Fit_view aa ab _) =
         let aa' = simple_id_latex aa
             ab' = print_fit_arg_list printLatex0 
                                      brackets_latex 
                                      sep_latex
                                      ga ab
-            ad' = vcat $ map (printLatex0 ga) ad
             view_name = hc_sty_plain_keyword viewS <\+> aa'
-        in ad' $$ if null ab then view_name else 
+        in if null ab then view_name else 
            setTabWithSpaces_latex 16 <> tab_hang_latex view_name 16 ab'
 
 {- This can be found in Print_AS_Library

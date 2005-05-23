@@ -201,24 +201,9 @@ fixes translation error of Pair
 
 simplification of HasCASL sentences (omit types)
 
-analyse the ghc-6.4 difference in Logic/Comorphism.hs
-
 Logic COL is a ruin (with wrongly qualified module names)
 
-non-free/generated datatype declarations generate ga-axioms
-(this is indented)
-
 pretty printing mangles trailing and preceding annotations
-
-allow more annotations in structured specs
-the type FIT_ARG should be changed to
-
-data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] [Pos]
-	       -- pos: opt "fit"
-	     | Fit_view VIEW_NAME [Annoted FIT_ARG] [Pos]
-    -- annotations before view are stored elsewhere
-
-homogenizeGM should be moved to Static.AnalysisStructured
 
 logic coding from the comand line with printing of results
 (started -v5)

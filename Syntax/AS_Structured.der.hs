@@ -94,11 +94,10 @@ data PARAMS = Params [Annoted SPEC]
 data IMPORTED = Imported [Annoted SPEC]
 		deriving (Show)
 
-data FIT_ARG = Fit_spec (Annoted SPEC) G_symb_map_items_list [Pos]
+data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] [Pos]
 	       -- pos: opt "fit"
-	     | Fit_view VIEW_NAME [Annoted FIT_ARG] [Pos] [Annotation]
-	       -- The list of Annotations is written before the keyword 'view'
-	       -- pos: "view", opt many of "[","]"
+	     | Fit_view VIEW_NAME [Annoted FIT_ARG] [Pos]
+               -- annotations before the view keyword are stored in Spec_inst
 	       deriving (Show)
 
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
@@ -131,15 +130,3 @@ data Logic_code = Logic_code (Maybe Token)
 
 data Logic_name = Logic_name Token (Maybe Token)
 		  deriving (Show,Eq)
-
-homogenizeGM :: AnyLogic
-              -> [Syntax.AS_Structured.G_mapping] -> Result G_symb_map_items_list
-homogenizeGM (Logic lid) gsis = 
-  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis 
-  where
-  homogenize1 res 
-       (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
-    (G_symb_map_items_list lid sis) <- res
-    sis1' <- rcoerce lid1 lid nullPos sis1
-    return (G_symb_map_items_list lid (sis++sis1'))
-  homogenize1 res _ = res 

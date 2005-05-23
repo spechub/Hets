@@ -436,7 +436,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
       gsigmaT = getSig tar
   G_sign lidS sigmaS <- return gsigmaS
   G_sign lidT sigmaT <- return gsigmaT
-  gsis1 <- adj $ Syntax.AS_Structured.homogenizeGM (Logic lidS) gsis
+  gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- rcoerce lid lidS pos sigmaS
   sigmaT' <- rcoerce lid lidT pos sigmaT

@@ -103,8 +103,8 @@ end
 
 module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY, 
                                   ana_VIEW_TYPE, ana_err, isStructured,
-                                  ana_RENAMING, ana_RESTRICTION, 
-                                  extendMorphism)
+                                  ana_RENAMING, ana_RESTRICTION,
+                                  homogenizeGM, extendMorphism)
 where
 
 import Driver.Options
@@ -894,10 +894,9 @@ ana_FIT_ARG :: LogicGraph -> GlobalContext -> SPEC_NAME -> NodeSig -> NodeSig
                -> NODE_NAME -> FIT_ARG
                -> Result (FIT_ARG, DGraph, (G_morphism,NodeSig))
 ana_FIT_ARG lg gctx spname nsigI nsigP opts name
-            fs@(Fit_spec asp gsis poss) = do
-   let pos = get_pos fs
-       adj = adjustPos pos
-   nP <- maybeToResult pos 
+            (Fit_spec asp gsis pos) = do
+   let adj = adjustPos pos
+   nP <- maybeToResult pos
          "Internal error: empty parameter spec" (getNode nsigP)
    (sp',nsigA,dg') <- ana_SPEC lg gctx nsigI name opts (item asp)
    nA <- maybeToResult pos 
@@ -908,14 +907,14 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts name
    G_sign lidP sigmaP <- return gsigmaP
    G_sign lidA sigmaA <- return gsigmaA
 --   G_sign lidI sigmaI <- return gsigmaI
-   G_symb_map_items_list lid sis <- return gsis
+   G_symb_map_items_list lid sis <- homogenizeGM (Logic lidP) gsis
    sigmaA' <- adj $ mcoerce lidA lidP "Analysis of fitting argument" sigmaA
 --   sigmaI' <- adj $ mcoerce lidI lidP "Analysis of fitting argument" sigmaI
    mor <- adj $ if isStructured opts then return (ide lidP sigmaP)
            else do
              rmap <- stat_symb_map_items lid sis
              rmap' <- if null sis then return Map.empty 
-                       else mcoerce lid lidP "Analysis of fitting argument" rmap
+                      else mcoerce lid lidP "Analysis of fitting argument" rmap
              induced_from_to_morphism lidP rmap' sigmaP sigmaA'
    {-
    let symI = sym_of lidP sigmaI'
@@ -930,15 +929,14 @@ ana_FIT_ARG lg gctx spname nsigI nsigP opts name
          dgl_morphism = gEmbed (G_morphism lidP mor),
          dgl_type = GlobalThm Open None Open,
          dgl_origin = DGSpecInst spname})
-   return (Fit_spec (replaceAnnoted sp' asp) gsis poss,
+   return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            insEdgeNub link dg',
            (G_morphism lidP mor,nsigA)
            )
 
 ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
-            fv@(Fit_view vn afitargs poss ans) = do
-   let pos =  poss
-       adj = adjustPos pos
+            fv@(Fit_view vn afitargs pos) = do
+   let adj = adjustPos pos
    case Map.lookup vn genv of
     Nothing -> plain_error (fv,dg,error "no morphism") 
                  ("View "++ showPretty vn " not found") pos
@@ -1122,7 +1120,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
        return (Fit_view vn 
                         (map (uncurry replaceAnnoted)
                              (zip (reverse fitargs') afitargs))
-                        poss ans,
+                        pos,
                foldr insEdgeNub
                  (insNode (nA,node_contentsA) $
                   insNode (n',node_contents') dg')
@@ -1366,6 +1364,18 @@ ana_VIEW_TYPE lg gctx@(gannos,genv,_) l parSig opts name
                     pos,
           (srcNsig,tarNsig),
           dg'')
+
+homogenizeGM :: AnyLogic
+              -> [Syntax.AS_Structured.G_mapping] -> Result G_symb_map_items_list
+homogenizeGM (Logic lid) gsis = 
+  foldl homogenize1 (return (G_symb_map_items_list lid [])) gsis 
+  where
+  homogenize1 res 
+       (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
+    (G_symb_map_items_list lid2 sis) <- res
+    sis1' <- rcoerce lid1 lid2 nullPos sis1
+    return (G_symb_map_items_list lid2 (sis++sis1'))
+  homogenize1 res _ = res 
 
 -- | check if structured analysis should be performed 
 isStructured :: HetcatsOpts -> Bool
