@@ -722,7 +722,7 @@ transE trId trE trP e =
 --   _ -> error "Haskell2IsabelleHOLCF.transE, not supported"
 --   HsId (HsCon c)              -> Const c noType
 --   HsId (HsVar "==")              -> Const "Eq" noType     
---   HsLet ds e                  -> Let ds e 
+--   HsLet ds e                  -> Let (map transPatBind ds) (transExp e) 
 --   HsCase e ds                 -> Case e ds 
 
 multiAbs :: [IsaPattern] -> IsaTerm -> IsaTerm
@@ -730,6 +730,12 @@ multiAbs ps t = case ps of
   [] -> t
   a:as -> IsaSign.Abs a (termType a) (multiAbs as t) IsCont
 
+transPatBind :: ConstTab -> PrDecl -> (IsaTerm,IsaTerm)
+transPatBind cs s = case s of
+  TiPropDecorate.Dec (PropSyntaxStruct.Base 
+        (HsDeclStruct.HsPatBind _ p (HsGuardsStruct.HsBody e) _)) ->
+                (transPat cs p, transExp cs e) 
+ 
 transP :: IsaName i => (i -> VName) -> (p -> IsaPattern) -> 
             (HsPatStruct.PI i p) -> IsaPattern
 transP trId trP p =
@@ -778,6 +784,10 @@ transHV s x = let
      (termMAbs IsCont [Free "x" noType, Free "y" noType] 
         (App (Const "Def" noType) (termMAppl NotCont (Const eq k) 
            [Free "x" noType, Free "y" noType]) NotCont))
+   "&&" -> if tag == False then Const "op &" k
+           else (Const "trand" k) 
+   "||" -> if tag == False then Const "op |" k
+           else (Const "tror" k) 
    "+" -> if tag == False then Const "op +" k
           else (termMAppl NotCont (Const "fliftbin" noType) [(Const "op +" k)]) 
    "-" -> if tag == False then Const "op -" k
@@ -795,6 +805,8 @@ transExp cs t = case t of
     (TiPropDecorate.Exp e) -> case e of
        HsLit _ (HsInt n) -> 
            Const ("(Def (" ++ (show n) ++ "::int))") (IsaSign.Type "int lift" [] [])
+       HsLet (TiPropDecorate.Decs ds _) k -> 
+          Let (map (transPatBind cs) ds) (transExp cs k) -- (transE showIsaName (transExp cs) (transPat cs) e) 
        _ -> transE showIsaName (transExp cs) (transPat cs) e
     TiPropDecorate.TiSpec w s _ -> case w of 
        HsVar x -> transHV s x
@@ -822,11 +834,13 @@ termMAppl c t ts =
  case (t,ts) of   
    (Const "inst__Prelude_Num_Int" _, [a]) -> a
    (Const "fromInteger" _, [a]) -> a
+   (Const "derived__Prelude_Eq_Bool" _, [a]) -> a
    (_,[]) -> t
    (_,v:vs) -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
       case v of  
         (Const "inst__Prelude_Num_Int" _) -> (termMAppl c t vs)
         (Const "fromInteger" _) -> (termMAppl c t vs)
+        (Const "derived__Prelude_Eq_Bool" _) -> (termMAppl c t vs)
         _ -> termMAppl c (App t v c) vs 
 
 ------------------ checking for mutually recursive functions --------------------------------------------
