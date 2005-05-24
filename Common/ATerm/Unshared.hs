@@ -22,7 +22,7 @@ import Common.ATerm.Conversion
 data ATerm = AAppl String [ATerm] [ATerm]
            | AList [ATerm]        [ATerm]
            | AInt  Integer        [ATerm]
-             deriving (Eq,Ord)
+             deriving (Eq,Ord,Show)
 
 fromATerm :: ShATermConvertible t => ATerm -> t
 fromATerm = fromShATerm . toATermTable 
