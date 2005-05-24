@@ -35,9 +35,9 @@ module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null,
                        union , isSubrelOf, difference, path, delete,
                        succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
-                       intransKernel, mostRight, rmSym, symmetricSets,
+                       intransKernel, mostRight,
                        restrict, toSet, fromSet, topSort, nodes,
-                       transpose, collaps, transReduce, setInsert, keysSet,
+                       transpose, transReduce, setInsert, keysSet,
                        haveCommonLeftElem) where
 
 import qualified Common.Lib.Map as Map
@@ -82,17 +82,11 @@ delete a b (Rel m) =
 member :: Ord a => a -> a -> Rel a -> Bool
 member a b r = Set.member b $ succs r a
 
-{--------------------------------------------------------------------
-  SymMember (Added by K.L.)
---------------------------------------------------------------------}
--- | test if elements are related in both directions
-symMember :: Ord a => a -> a -> Rel a -> Bool
-symMember a b r = member a b r && member b a r
-
 -- | get direct successors
 succs :: Ord a => Rel a -> a -> Set.Set a
 succs (Rel m) a = Map.findWithDefault Set.empty a m
 
+-- | get all transitive successors
 reachable :: Ord a => Rel a -> a -> Set.Set a
 reachable r a = Set.fold reach Set.empty $ succs r a where
     reach e s = if Set.member e s then s 
@@ -118,33 +112,27 @@ transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
 transpose :: Ord a => Rel a -> Rel a 
 transpose = fromList . List.map ( \ (a, b) -> (b, a)) . toList
 
--- | make relation irreflexive 
+-- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
-irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s -> 
-           let r = Set.delete k s in 
+irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s ->
+           let r = Set.delete k s in
            if Set.null r then id else
-              Map.insert k r) Map.empty m 
+              Map.insert k r) Map.empty m
 
 -- | compute strongly connected components for a transitively closed relation 
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
 sccOfClosure r@(Rel m) = 
         if Map.null m then []
         else let ((k, v), p) = Map.deleteFindMin m in
-             if Set.member k v then
-                let c = preds r k v in
+             if Set.member k v then -- has a cycle 
+                let c = preds r k v in -- get the cycle
                 c : sccOfClosure (Rel $ Set.fold Map.delete p c)
              else sccOfClosure (Rel p) 
 
-{- | collaps strongly connected components to its minimal representative
-     (input must be transitively closed) -}
-collaps :: Ord a => Rel a -> Rel a
-collaps r = let
-    toCollapsMap l = case l of 
-        [] -> Map.empty
-        x : t -> let (m, s) = Set.deleteFindMin x in
-                     Set.fold ( \ e -> Map.insert e m) (toCollapsMap t) s 
-    in Common.Lib.Rel.map 
-           (\ e -> Map.findWithDefault e e $ toCollapsMap $ sccOfClosure r) r
+{- | restrict strongly connected components to its minimal representative
+     (input sets must be non-null). Direct cycles may remain. -}
+collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
+collaps cs = delSet $ Set.unions $ List.map Set.deleteMin cs
 
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a DAG. -}
@@ -172,10 +160,6 @@ toList (Rel m) = concatMap (\ (a , bs) -> List.map ( \ b -> (a, b) )
 instance (Show a, Ord a) => Show (Rel a) where
     show = show . Set.fromDistinctAscList . toList
 
-{--------------------------------------------------------------------
-  Image (Added by T.M.) (implementation changed by C.M.)
---------------------------------------------------------------------}
-
 -- | Insert into a set of values
 setInsert :: (Ord k, Ord a) => k -> a -> Map.Map k (Set.Set a) 
           -> Map.Map k (Set.Set a)
@@ -195,20 +179,18 @@ map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
 map f (Rel m) = Rel $ Map.foldWithKey 
     ( \ a v -> Map.insertWith Set.union (f a) $ Set.map f v) Map.empty m 
 
-{--------------------------------------------------------------------
-  Restriction (Added by T.M.) 
---------------------------------------------------------------------}
 -- | Restriction of a relation under a set
 restrict :: Ord a => Rel a -> Set.Set a -> Rel a
-restrict (Rel m) s = Rel $ Map.foldWithKey 
-    ( \ a v -> if Set.member a s then
-                   let r = Set.intersection v s in
-                   if Set.null r then id else Map.insert a r
-               else id) Map.empty m 
+restrict r s = delSet (nodes r Set.\\ s) r 
 
-{--------------------------------------------------------------------
- Conversion from/to sets (Added by T.M.) (implementation changed by C.M.)
---------------------------------------------------------------------}
+-- | restrict to elements not in the input set
+delSet :: Ord a => Set.Set a -> Rel a -> Rel a
+delSet s (Rel m) = Rel $ Map.foldWithKey
+    ( \ a v -> if Set.member a s then id else
+                   let r = v Set.\\ s in
+                   if Set.null r then id else Map.insert a r)
+                   Map.empty m
+
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
 toSet = Set.fromDistinctAscList . toList
@@ -226,114 +208,57 @@ fromAscList = Rel . Map.fromDistinctAscList
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes (Rel m) = Set.union (keysSet m) $ elemSet m
+nodes (Rel m) = Set.union (keysSet m) $ elemsSet m
 
+-- | The set of all keys of the map
 keysSet :: Ord a => Map.Map a b -> Set.Set a
 keysSet = Set.fromDistinctAscList . Map.keys
 
-elemSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
-elemSet = Set.unions . Map.elems
+elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
+elemsSet = Set.unions . Map.elems
 
--- | topological sort a relation (more efficient for a closed relation)
+topSortDAG :: Ord a => Rel a -> [Set.Set a]
+topSortDAG r@(Rel m) = if Map.null m then [] else
+    let ml = keysSet m Set.\\ elemsSet m -- most left
+    in ml : topSortDAG (delSet ml r)
+
+-- | topologically sort a closed relation (ignore isolated cycles)
 topSort :: Ord a => Rel a -> [Set.Set a]
-topSort r@(Rel m) = 
-    if Map.null m then []
-    else let ms = keysSet m Set.\\ elemSet m in 
-        if Set.null ms then case removeCycle r of 
-           Nothing -> topSort (transClosure r)
-           Just (a, cyc, restRel) ->
-               List.map ( \ s -> if Set.member a s then 
-                     Set.union s cyc else s) $ topSort restRel
-        else let (lowM, rest) = 
-                     Map.partitionWithKey (\ k _ -> Set.member k ms) m
-                 -- no not forget loose ends 
-                 ls = elemSet lowM Set.\\ keysSet rest in 
-                 -- put them as low as possible
-            ms : (topSort $ Rel $ Set.fold ( \ i -> 
-                      Map.insert i Set.empty) rest ls)
+topSort r = let cs = sccOfClosure r in
+      List.map (expandCycle cs) $ topSortDAG $ irreflex $ collaps cs r 
 
--- | try to remove a cycle
-removeCycle :: Ord a => Rel a -> Maybe (a, Set.Set a, Rel a)
-removeCycle r@(Rel m) = 
-    let cycles = Map.filterWithKey Set.member m in
-        if Map.null cycles then Nothing
-           else let (a, os) = Map.findMin cycles
-                    cs = preds r a os
-                    m1 = Map.foldWithKey 
-                         ( \ k v -> let i = v Set.\\ cs 
-                                    in if Set.member k cs 
-                                       then Map.insertWith Set.union a i
-                                       else Map.insert k 
-                                            (if Set.size v > Set.size i 
-                                             then Set.insert a i else i))
-                         Map.empty m
-                    in Just (a, Set.delete a cs, Rel m1)
+-- | find the cycle and add it to the result set
+expandCycle :: Ord a => [Set.Set a] -> Set.Set a -> Set.Set a
+expandCycle [] s = s
+expandCycle (c : r) s = if Set.null c then error "expandCycle" else
+    let (a, b) = Set.deleteFindMin c in
+    if Set.member a s then Set.union b s else expandCycle r s
 
-{- The result is a representative "a", the cycle "cs", i.e. all other
-elements that are represented by "a" and the remaining relation with
-all elements from "cs" replaced by "a" and without the cycle "(a,a)"
--}
-
+{- | gets the most right elements of the irreflexive relation, 
+     unless no hierarchy is left then isolated nodes are output -}
+mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
+mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
+    else let Rel im = irreflex r 
+             mr = elemsSet im Set.\\ keysSet im
+         in if Set.null mr then keysSet $ Map.filterWithKey (\ k v -> 
+                                           Set.singleton k == v) m
+            else mr
 
 {--------------------------------------------------------------------
   MostRight (Added by K.L.)
 --------------------------------------------------------------------}
 {- | 
-find s such that forall y . yRx and x in s (only the maximal element
-of symmetric most right elements is inlcuded in s; all elements in s
-are not symmetric)
+find s such that x in s => forall y . yRx \/ not yRx /\ not xRy
 
  * precondition: (transClosure r == r)
 
- * only the greatest element of symmetric elements is shown 
-   according to Ord
-
- * Cyclic relations have no toplevel element!
+ * strongly connected components (cycles) are treated as a compound node
 -}
+
 mostRight :: (Ord a) => Rel a -> (Set.Set a)
-mostRight r = 
-    let rmp = toMap $ rmSym $ rmReflex r
-    in (Set.unions $ Map.elems rmp) Set.\\ 
-            (Set.fromDistinctAscList $ Map.keys rmp)
-
-{--------------------------------------------------------------------
-  symmetricSets (Added by K.L.)
---------------------------------------------------------------------}
--- | symmetricSets calculates a Set of Sets of Symmetric elements
---
--- * precondition: (transClosure r == r)
-symmetricSets :: (Ord a) => Rel a -> Set.Set (Set.Set a)
-symmetricSets rel = 
-    fst $ Map.foldWithKey  
-           (\k e (s,seen) -> 
-              if not (Set.null seen) && 
-                 k == Set.findMin seen 
-              then (s,seen) 
-              else (let sym = Set.fold (\ e1 s1 -> 
-                                              if member e1 k rel
-                                              then Set.insert k $ 
-                                                   Set.insert e1 s1
-                                              else s1) Set.empty  e 
-                    in if Set.null sym 
-                       then s 
-                       else Set.insert sym s
-                   ,Set.insert k seen `Set.union` e))
-           (Set.empty,Set.empty)  $ 
-                      toMap $ rmReflex rel 
-
-symmetricMap :: (Ord a) => Rel a -> Map.Map a (Set.Set a) 
-symmetricMap = Set.fold (\s mp -> 
-                               Set.fold (\k mp1 -> 
-                                           Map.insert k s mp1) mp s)
-                            Map.empty . symmetricSets
-                  
-{--------------------------------------------------------------------
-  remove reflexive (Added by K.L.)
---------------------------------------------------------------------}
--- | remove reflexive relations
--- Warning: this function violates the empty set condition
-rmReflex :: (Ord a) => Rel a -> Rel a
-rmReflex = Rel . Map.mapWithKey Set.delete . toMap
+mostRight r = let 
+    cs = sccOfClosure r
+    in expandCycle cs (mostRightOfCollapsed $ collaps cs r)
 
 {--------------------------------------------------------------------
   intransitive kernel (Added by K.L.)
@@ -341,48 +266,27 @@ rmReflex = Rel . Map.mapWithKey Set.delete . toMap
 -- |
 -- intransitive kernel of a reflexive and transitive closure
 --
--- * only the lowest (according to Ord) left element is related to all symmetric right elements if (transClosure r == r)
---
--- * Warning: all reflexive relations are removed!!
-intransKernel :: (Show a ,Ord a) => Rel a -> Rel a
-intransKernel r = 
-    let rmap = toMap $ rmReflex $ rmSym r
-        insDirR k set m = Map.insert k (dirRight set) m
-        dirRight set = set Set.\\ transRight set
-        transRight =  Set.unions . List.map lkup . Set.toList
-        lkup = (\ e -> maybe Set.empty id (Map.lookup e rmap))
-        filterEmptySet = Map.filter (not . Set.null)  
-        addSym sm =                     
-            Map.mapWithKey 
-                      (\ k s -> Set.delete k $ 
-                                Set.union s $ 
-                                Map.findWithDefault Set.empty k sm)
-    in Rel $ filterEmptySet $ 
-             addSym (symmetricMap r) $ 
-             Map.foldWithKey insDirR Map.empty rmap
-
-{--------------------------------------------------------------------
-  remove symmetric relations (Added by K.L.)
---------------------------------------------------------------------}
--- extend to
--- aRb /\ bRa /\ bRc /\ aRd ~~> aRb /\ bRc /\ aRd /\ aRc /\ bRd with a<b /\ a/=b/=c/=d
--- | remove symmetric relations aRb and bRa ~~> aRb with a < b
---
 -- * precondition: (transClosure r == r)
-rmSym :: (Ord a) => Rel a -> Rel a
-rmSym rel =
-          let rl = Map.keys (toMap rel) 
-              sym (x,y) r1 = if symMember x y rel 
-                              then delete y x r1
-                              else r1
-          in foldr sym rel [(x,y) | x <- rl, y <- rl, x<y]    
+--
+-- * cycles are uniquely represented (according to Ord)
+intransKernel :: Ord a => Rel a -> Rel a
+intransKernel r = 
+    let cs = sccOfClosure r
+    in foldr addCycle (transReduce $ collaps cs r) cs
+
+-- add a cycle given by a set in the collapsed node
+addCycle :: Ord a => Set.Set a -> Rel a -> Rel a
+addCycle c r = if Set.null c then error "addCycle" else
+    let (a, b) = Set.deleteFindMin c 
+        (m, d) = Set.deleteFindMax c 
+    in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $ 
+       zip (Set.toAscList d) (Set.toAscList b) 
+
 
 {--------------------------------------------------------------------
   common transitive left element of two elements (Added by K.L.)
 --------------------------------------------------------------------}
 -- | calculates if two given elements have a common left element
---
--- * precondition: (transClosure r == r)
 --
 -- * if one of the arguments is not present False is returned
 haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool

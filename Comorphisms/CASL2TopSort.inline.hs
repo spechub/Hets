@@ -247,7 +247,7 @@ procOpMapping subSortMap opName set r@(Result ds1 mal) =
 
 symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA f)]
 symmetryAxioms ssMap sortRels =
-    let symSets = Rel.symmetricSets sortRels
+    let symSets = Rel.sccOfClosure sortRels
         mR = Rel.mostRight sortRels
         symTopSorts symSet = not (Set.null (Set.intersection mR symSet))
         xVar = mkSimpleId "x"
@@ -263,7 +263,7 @@ symmetryAxioms ssMap sortRels =
                           let ts = lkupTop ssMap s,
                           let symS = fromJust (lkupPRED_NAME ssMap s)] 
                           
-    in concatMap toAxioms (Set.toList (Set.filter symTopSorts symSets))
+    in concatMap toAxioms (filter symTopSorts symSets)
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType) 
                -> Map.Map OP_NAME (Set.Set OpType) 
