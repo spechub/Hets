@@ -570,7 +570,7 @@ remove_dupes ls ms = case ls of
    [] -> ms
 
 getInstPrems :: HsInstance -> [HsPred]
-getInstPrems i = snd (snd i)
+getInstPrems (_, IE _ _ ps) = ps
 
 getMainInstType :: HsInstance -> HsType
 getMainInstType i = getInstType (fst i)

@@ -2,6 +2,7 @@ import qualified TiTypes
 import qualified TiKinds
 import qualified TiPropDecorate as T
 import qualified TiDecorate as D
+import qualified TiInstanceDB as I
 import SrcLoc
 import qualified PropSyntaxRec as P
 import Haskell.HatParser(HsDecls(..))
@@ -9,6 +10,21 @@ import Haskell.HatAna(Sign(..))
 import Data.Set
 import Ents
 {-| Exclude: KindConstraint |-}
+
+instance ShATermConvertible i => ShATermConvertible (I.InstEntry i) where
+    toShATerm att0 (I.IE a b c) =
+        case toShATerm att0 a of { (att1,a') ->
+        case toShATerm att1 b of { (att2,b') ->
+        case toShATerm att2 c of { (att3,c') ->
+        addATerm (ShAAppl "IE" [a',b',c'] []) att3 }}}
+    fromShATerm att =
+        case getATerm att of
+            (ShAAppl "IE" [a,b,c] _) ->
+                    case fromShATerm (getATermByIndex1 a att) of { a' ->
+                    case fromShATerm (getATermByIndex1 b att) of { b' ->
+                    case fromShATerm (getATermByIndex1 c att) of { c' ->
+                    (I.IE a' b' c') }}}
+            u -> fromShATermError "InstEntry" u
 
 instance (ShATermConvertible a,
           ShATermConvertible b) => ShATermConvertible (Either a b) where
