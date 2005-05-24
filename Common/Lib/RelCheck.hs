@@ -1,23 +1,31 @@
+{-# OPTIONS -fglasgow-exts #-}
+{- |
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2003-2005
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  non-portable (Arbitrary instance not of form (T a b c))
+
+a couple of test cases mainly for intransKernel
+
+-}
+
 module Common.Lib.RelCheck where
 
-import Debug.QuickCheck
+import Test.QuickCheck
 import Common.Lib.Rel
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
-{--------------------------------------------------------------------
-  SymMember (Added by K.L.)
---------------------------------------------------------------------}
--- | test for proper transitive membership
-propTransMember :: Ord a => a -> a -> Rel a -> Bool
-propTransMember a b r = not (member a b r) && path a b r
-
-
 instance Arbitrary (Rel Int) where
-    arbitrary = do l <- arbitrary
+    arbitrary = do l0 <- arbitrary
 		   l1 <- arbitrary
 		   l2 <- arbitrary
-		   let r = fromList $ filter (\ (x,y) -> x/=y) (l++l1++l2)
+		   l3 <- arbitrary
+		   l4 <- arbitrary
+		   let r = fromList (l0 ++ l1 ++ l2 ++ l3 ++ l4)
 		       keys = Map.keys $ toMap r
                    x <- choose (0,length keys-1)
 		   y <- choose (0,length keys-3)
@@ -33,20 +41,16 @@ instance Arbitrary (Rel Int) where
 			insert y x $ r
 		   return r'
 
-
-
-prop_transReduce_transClosure = prp_transClosure transReduce
 prop_intransKernel_transClosure = prp_transClosure intransKernel
 
 prp_transClosure intrKern r =
-    (Set.size (mostRight r) <= 3 && 
-     Set.size (symmetricSets r) > 1 &&
+    (Set.size (mostRight rel) <= 3 && 
+     length (sccOfClosure rel) > 1 &&
      length (Map.keys $ toMap r) > 6 )  ==>
        ((Set.size $ toSet $ irreflex r) < 10) `trivial`
         collect (length (Map.keys $ toMap r))
-		 (transClosure (irreflex r) ==
-		  transClosure (intrKern $ transClosure r))
-    where rel = r::(Rel Int)
+		 (rel == transClosure (intrKern rel))
+    where rel = transClosure r :: Rel Int
 
 tr = transClosure test1
  
@@ -76,18 +80,30 @@ myQuick = Config
 
 prp_invTest :: (Rel Int -> Rel Int) -> Rel Int -> Property
 prp_invTest relFun rel =
-    (Set.size (mostRight rel) <= 3 && 
-     Set.size (symmetricSets rel) > 1 &&
-     length (Map.keys $ toMap rel) > 6 )  ==>
+    (length (Map.keys $ toMap rel) > 6 )  ==>
        ((Set.size $ toSet $ irreflex rel) < 10) `trivial`
         collect (length (Map.keys $ toMap rel))
 		((not . elem Set.empty) $ Map.elems (toMap $ relFun rel)) 
 
-prop_inv_transReduce = prp_invTest transReduce
-prop_inv_intransKernel = prp_invTest intransKernel
+prop_inv_intransKernel = prp_invTest intransKernel -- violated precondition!
+prop_inv_transReduce = prp_invTest transReduce  -- violated precondition!
 prop_inv_transpose = prp_invTest transpose
 prop_inv_irreflex = prp_invTest irreflex
-prop_inv_rmSym = prp_invTest rmSym
 prop_inv_transClosure = prp_invTest transClosure
+
+prp_eq :: (Rel Int -> Rel Int) -> (Rel Int -> Rel Int) -> Rel Int -> Property
+prp_eq relFun1 relFun2 rel = let clos = transClosure rel in
+    (Set.size (nodes rel) > 6 && 
+      clos /= rel && clos /= irreflex clos && transpose rel /= rel) ==>
+       ((Set.size $ toSet rel) < 10) `trivial`
+        collect (Set.size (nodes rel))
+		(relFun1 rel == relFun2 rel)
+
+prop_transpose_transpose = prp_eq id (transpose . transpose)
+prop_irreflex_transpose = prp_eq (irreflex .  transpose) (transpose . irreflex)
+prop_transClosure_transpose = 
+    prp_eq (transClosure . transpose) (transpose . transClosure)
+prop_transClosure_intransKernel = prp_eq transClosure
+    (transClosure . intransKernel . transClosure)
 
 
