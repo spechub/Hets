@@ -248,7 +248,7 @@ mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
   MostRight (Added by K.L.)
 --------------------------------------------------------------------}
 {- | 
-find s such that x in s => forall y . yRx \/ not yRx /\ not xRy
+find s such that x in s => forall y . yRx or not yRx and not xRy
 
  * precondition: (transClosure r == r)
 
