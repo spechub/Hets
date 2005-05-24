@@ -75,7 +75,7 @@ instance PrettyPrint Sign where
                         values = vs, fixities = fs, scope = sc }
         = text "{-" $$ (if null is then empty else
               text "instances:" $$ 
-                   vcat (map (text . pp) is)) $$ 
+                   vcat (map (text . show) is)) $$ 
           (if Map.null ts then empty else
               text "\ntypes:" $$ 
                    vcat (map (text . pp) 
