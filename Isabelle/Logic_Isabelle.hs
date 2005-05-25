@@ -11,7 +11,6 @@ Portability :  non-portable (imports Logic)
    Instance of class Logic for Isabelle (including Pure, HOL etc.).
 -}
 
-
 module Isabelle.Logic_Isabelle where
 
 import Data.Dynamic
@@ -31,6 +30,7 @@ import Isabelle.IsaPrint
 import Isabelle.IsaProve
 #endif
 
+type IsabelleMorphism = DefaultMorphism Sign
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances

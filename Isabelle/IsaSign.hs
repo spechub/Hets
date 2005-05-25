@@ -19,7 +19,6 @@ LogicGraph.hs
 module Isabelle.IsaSign where
 
 import qualified Common.Lib.Map as Map
-import Common.DefaultMorphism
 
 -------------------- not quite from src/Pure/term.ML ------------------------
 ----------------------------- Names -----------------------------------------
@@ -277,10 +276,7 @@ emptySign = Sign { baseSig = Pure_thy,
                    domainTab = [],
                    showLemmas = False }
 
-type IsabelleMorphism = DefaultMorphism Sign
-
 ------------------------ Sentence -------------------------------------
-
 
 {- Instances in Haskell have form:
 
