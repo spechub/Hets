@@ -222,10 +222,44 @@ checkSorts s =
        addDiags $ concatMap (hasSort e) s
 
 addSubsort :: SORT -> SORT -> State (Sign f e) ()
-addSubsort super sub = 
-    do checkSorts [super, sub] 
+addSubsort = addSubsortOrIso True
+
+addSubsortOrIso :: Bool -> SORT -> SORT -> State (Sign f e) ()
+addSubsortOrIso b super sub = 
+    do if b then checkSorts [super, sub] else return ()
        e <- get
-       put e { sortRel = Rel.insert sub super $ sortRel e }
+       let r = sortRel e  
+       put e { sortRel = (if b then id else 
+                         Rel.insert super sub) $ Rel.insert sub super r }
+       let p = posOfId sub
+           rel = " '" ++ showPretty sub (if b then " < "
+                                         else " = ") ++ showPretty super "'"
+       if super == sub then 
+          addDiags [mkDiag Warning 
+                    "void reflexive subsort" sub]
+          else if b then 
+              if Rel.path super sub r then 
+                  if  Rel.path sub super r then
+                  addDiags [Diag Warning 
+                            ("sorts are isomorphic" ++ rel) p]
+                  else addDiags [Diag Warning 
+                                 ("added subsort cycle by" ++ rel) p]
+              else if Rel.path sub super r then 
+                  addDiags [Diag Hint ("redeclared subsort" ++ rel) p]
+              else return ()
+          else if Rel.path super sub r then 
+                  if Rel.path sub super r then
+                       addDiags [Diag Hint 
+                                 ("redeclared isomoprhic sorts" ++ rel) p]
+                  else addDiags [Diag Warning 
+                                 ("subsort '" ++ showPretty super 
+                                  "' made isomorphic by" ++ rel) 
+                                 $ posOfId super]
+               else if Rel.path sub super r then
+                  addDiags [Diag Warning 
+                            ("subsort  '" ++ showPretty sub
+                             "' made isomorphic by" ++ rel) p]
+                  else return()
 
 closeSubsortRel :: State (Sign f e) ()
 closeSubsortRel= 

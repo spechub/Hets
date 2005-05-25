@@ -54,6 +54,8 @@
 *** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : a ->? s'
 *** Hint 4.16, redeclared sort 's'
+*** Hint 4.27, redeclared subsort 's2 < s'
+*** Hint 4.30, redeclared subsort 's1 < s'
 *** Hint 4.35, redeclared op 'c'
 *** Hint 4.39, redeclared as total 'c'
 *** Hint 4.46, redeclared op 'c'

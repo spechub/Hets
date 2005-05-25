@@ -374,7 +374,10 @@ ana_SORT_ITEM mef ga asi =
                                    af { item = resF } ps}
     Iso_decl il _ ->
         do mapM_ addSort il
-           mapM_ ( \ i -> mapM_ (addSubsort i) il) il
+           case il of
+               [] -> return ()
+               _ : tl -> mapM_ (uncurry $ addSubsortOrIso False) 
+                         $ zip tl il
            return asi
 
 ana_OP_ITEM :: Resolver f => Min f e -> GlobalAnnos -> Annoted (OP_ITEM f) 
