@@ -510,6 +510,12 @@ hana: Haskell/hana
 Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+### Haskell to Isabelle-HOLCF translation
+h2hf: ToHaskell/h2hf
+
+ToHaskell/h2hf: ToHaskell/h2hf.hs ToHaskell/*.hs Haskell/*.hs HasCASL/*.hs Isabelle/*.hs Common/*.hs 
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
 ### HasCASL to Haskell translation
 h2h: ToHaskell/h2h
 
