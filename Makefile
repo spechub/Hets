@@ -14,7 +14,7 @@ all: hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc fgl hxt
+INCLUDE_PATH = fgl hxt
 COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
     fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
     fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query

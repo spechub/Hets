@@ -15,7 +15,6 @@ module Logic.Languages where
 
 -- for coercion used in Grothendieck.hs and Analysis modules
 
-import UnsafeCoerce
 import Data.Dynamic
 
 import Common.Id
@@ -35,7 +34,7 @@ mcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
           Monad m) => lid1 -> lid2 -> String -> a -> m b
 mcoerce i1 i2 err a = 
   if language_name i1 == language_name i2 
-     then return $ unsafeCoerce a 
+     then return $ fromDyn (toDyn a) $ error "mcoerce"  
      else fail (err1++"Logic "++ language_name i1 ++ " expected, but "
                 ++ language_name i2 ++ " found")
   where err1 = if err=="" then "" else err++": "

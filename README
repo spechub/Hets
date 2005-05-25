@@ -56,7 +56,6 @@ Comorphisms/                Comorphisms of the logic graph (TM)
 CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
 doc/                        Documentation (TM)
 docs/                       Haddock generated documentation (Klaus Luettich)
-ghc/                        ghc-specific "coerce" (CM)
 GUI/                        GUI for displaying development graphs  
                                 (TM/Jorina Gerken)
 HasCASL/                    Instance of Logic: HasCASL (CM)
