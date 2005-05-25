@@ -359,10 +359,8 @@ release:
 	$(RM) -r programatica
 	if [ -d ../programatica ] ; then \
             mkdir programatica; \
-            ln -s ../../programatica/tools programatica/tools ; \
-            find programatica/tools -name \*.o -o -name \*.hi \
-                | xargs $(RM) -r; fi
-	(cd HetCATS; $(MAKE) derivedSources; \
+            ln -s ../../programatica/tools programatica/tools ; fi \
+	(cd HetCATS; $(MAKE) derivedSources; $(MAKE) real_clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
