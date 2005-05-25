@@ -43,6 +43,7 @@ import Isabelle.Translate
 
 import Common.AS_Annotation
 import Common.PrettyPrint
+import Common.DefaultMorphism
 
 import Data.List
 import Data.Maybe
@@ -62,7 +63,7 @@ isabelleProver =
               prove = isaProve False
             }
 
-isabelleConsChecker :: ConsChecker Sign Sentence IsabelleMorphism ()
+isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
 isabelleConsChecker =
      ConsChecker { cons_checker_name = "Isabelle-refute",
                    cons_checker_sublogic = "Isabelle",
