@@ -1,11 +1,11 @@
 {-
 instances:
-(Eq Nat, (derived__Prelude_Eq_Nat, []))
-(Ord Nat, (derived__Prelude_Ord_Nat, []))
-(Show Nat, (derived__Prelude_Show_Nat, []))
-(Eq List_FNat_J, (derived__Prelude_Eq_List_FNat_J, []))
-(Ord List_FNat_J, (derived__Prelude_Ord_List_FNat_J, []))
-(Show List_FNat_J, (derived__Prelude_Show_List_FNat_J, []))
+Eq Nat
+Ord Nat
+Show Nat
+Eq List_FNat_J
+Ord List_FNat_J
+Show List_FNat_J
 
 types:
 List_FNat_J :: (*, data)

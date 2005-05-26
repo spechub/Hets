@@ -1,14 +1,14 @@
 {-
 instances:
-(Eq B, (derived__Prelude_Eq_B, []))
-(Ord B, (derived__Prelude_Ord_B, []))
-(Show B, (derived__Prelude_Show_B, []))
-(Eq C, (derived__Prelude_Eq_C, []))
-(Ord C, (derived__Prelude_Ord_C, []))
-(Show C, (derived__Prelude_Show_C, []))
-(Eq AT, (derived__Prelude_Eq_AT, []))
-(Ord AT, (derived__Prelude_Ord_AT, []))
-(Show AT, (derived__Prelude_Show_AT, []))
+Eq B
+Ord B
+Show B
+Eq C
+Ord C
+Show C
+Eq AT
+Ord AT
+Show AT
 
 types:
 AT :: (*, data)

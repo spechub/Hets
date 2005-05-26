@@ -1,8 +1,8 @@
 {-
 instances:
-(Eq (List a), (derived__Prelude_Eq_List, [Eq a]))
-(Ord (List a), (derived__Prelude_Ord_List, [Ord a]))
-(Show (List a), (derived__Prelude_Show_List, [Show a]))
+Eq (List a)
+Ord (List a)
+Show (List a)
 
 types:
 List :: (*->*, data)

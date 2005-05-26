@@ -1,11 +1,11 @@
 {-
 instances:
-(Eq A__s, (derived__Prelude_Eq_A__s, []))
-(Ord A__s, (derived__Prelude_Ord_A__s, []))
-(Show A__s, (derived__Prelude_Show_A__s, []))
-(Eq A__t, (derived__Prelude_Eq_A__t, []))
-(Ord A__t, (derived__Prelude_Ord_A__t, []))
-(Show A__t, (derived__Prelude_Show_A__t, []))
+Eq A__s
+Ord A__s
+Show A__s
+Eq A__t
+Ord A__t
+Show A__t
 
 types:
 A__s :: (*, data)

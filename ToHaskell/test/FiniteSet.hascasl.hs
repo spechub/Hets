@@ -1,8 +1,8 @@
 {-
 instances:
-(Eq (FiniteSet a1), (derived__Prelude_Eq_FiniteSet, []))
-(Ord (FiniteSet a1), (derived__Prelude_Ord_FiniteSet, []))
-(Show (FiniteSet a1), (derived__Prelude_Show_FiniteSet, []))
+Eq (FiniteSet a1)
+Ord (FiniteSet a1)
+Show (FiniteSet a1)
 
 types:
 FiniteSet :: (*->*, data)

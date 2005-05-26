@@ -1,14 +1,14 @@
 {-
 instances:
-(Eq A__a, (derived__Prelude_Eq_A__a, []))
-(Ord A__a, (derived__Prelude_Ord_A__a, []))
-(Show A__a, (derived__Prelude_Show_A__a, []))
-(Eq A__b, (derived__Prelude_Eq_A__b, []))
-(Ord A__b, (derived__Prelude_Ord_A__b, []))
-(Show A__b, (derived__Prelude_Show_A__b, []))
-(Eq Pair, (derived__Prelude_Eq_Pair, []))
-(Ord Pair, (derived__Prelude_Ord_Pair, []))
-(Show Pair, (derived__Prelude_Show_Pair, []))
+Eq A__a
+Ord A__a
+Show A__a
+Eq A__b
+Ord A__b
+Show A__b
+Eq Pair
+Ord Pair
+Show Pair
 
 types:
 A__a :: (*, data)

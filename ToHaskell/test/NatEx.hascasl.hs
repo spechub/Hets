@@ -1,8 +1,8 @@
 {-
 instances:
-(Eq Nat, (derived__Prelude_Eq_Nat, []))
-(Ord Nat, (derived__Prelude_Ord_Nat, []))
-(Show Nat, (derived__Prelude_Show_Nat, []))
+Eq Nat
+Ord Nat
+Show Nat
 
 types:
 Nat :: (*, data)
