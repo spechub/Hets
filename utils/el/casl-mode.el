@@ -2,7 +2,7 @@
 (autoload 'turn-on-casl-indent "casl-indent" "Turn on CASL indentation." t)
 
 ;; Version number
-(defconst casl-mode-version "0.1"
+(defconst casl-mode-version "0.2"
   "Version of CASL-Mode")
 
 (defgroup casl nil
@@ -96,7 +96,7 @@
    '("\\s-+\\(\\sw+\\)[ \t\n]*::?=\\s-*\\(\\sw*\\).*"
      (1 casl-other-name-face keep t) (2 casl-other-name-face keep t)  )
    ;; constructor
-   '("\\(\\sw+\\)?\\s-*|\\s-*\\(\\sw+\\)\\s-*[|(]?\\([ \t]*\\|$\\)"
+   '("\\(\\sw+\\)?\\s-*|\\s-*\\(\\sw+\\)\\s-*[|(]?\\([ \t\n]*\\|$\\)"
      (1 casl-other-name-face keep t) (2 casl-other-name-face keep t))
    ;; in ()1
    '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
@@ -211,82 +211,235 @@
 (setq casl-error-list nil)
 
 (defvar hets-program nil)
+(defvar old-buffer nil)
 
 (defun casl-run-hets ()
   "Run hets process to compile the current CASL file."
   (interactive)
   (save-buffer nil)
   (setq old-buffer (current-buffer))
-  (if hets-program 
-      (setq casl-hets-program hets-program)
-      (setq casl-hets-program "hets"))
   (let* ((casl-hets-file-name (buffer-file-name))
 	 (outbuf (get-buffer-create "*hets-run*")))
+    (if hets-program 
+	(setq casl-hets-program hets-program)
+      (setq casl-hets-program "hets"))
+    (setq hets-command (concat casl-hets-program " " casl-hets-file-name))
+
+    ;; Pop up the compilation buffer.
     (set-buffer outbuf)
     (setq buffer-read-only nil)
     (buffer-disable-undo (current-buffer))
     (erase-buffer)
     (buffer-enable-undo (current-buffer))
+    (set-buffer-modified-p nil)
+    (insert hets-command "\n")
     (pop-to-buffer outbuf)
-    (insert casl-hets-program " " casl-hets-file-name "\n")
-    (let ((status 
-	   (call-process shell-file-name nil t nil "-c" 
-			 (concat casl-hets-program " " casl-hets-file-name))))
-      (cond ((numberp status)
-	     (compilation-handle-exit 'exit status
-				      (if (zerop status)
-					  "finished\n"
-					(format "exited abnormally with code %d\n" status))))
-	    ((stringp status)
-	     (compilation-handle-exit 'signal status
-				      (concat status "\n")))
-	    (t
-	     (compilation-handle-exit 'bizarre status status)))
-      (if (zerop status)
-	  (setq casl-error-list nil)
-	(setq casl-error-list nil)
-	(casl-parse-error)
-	(message "%s errors have been found." (length casl-error-list)))
-      (pop-to-buffer old-buffer)
-      )))
+    (goto-char (point-max))
+    ;; (display-buffer outbuf nil t)
+    (save-excursion
+      ;; (set-buffer outbuf)
+      (compilation-mode "hets-compile")
+      ;; Start the compilation.
+      (if (fboundp 'start-process)
+	  (let* ((process-environment
+		  (append
+		   (if (and (boundp 'system-uses-terminfo)
+			    system-uses-terminfo)
+		       (list "TERM=dumb" "TERMCAP="
+			     (format "COLUMNS=%d" (window-width)))
+		     (list "TERM=emacs"
+			   (format "TERMCAP=emacs:co#%d:tc=unknown:"
+				   (window-width))))
+		   ;; Set the EMACS variable, but
+		   ;; don't override users' setting of $EMACS.
+		   (if (getenv "EMACS")
+		       process-environment
+		     (cons "EMACS=t" process-environment))))
+		 (proc (start-process-shell-command "hets-compile" outbuf
+						    hets-command)))
+	    (set-process-sentinel proc 'casl-compilation-sentinel)
+	    (set-process-filter proc 'casl-compilation-filter)
+	    
+	    (set-marker (process-mark proc) (point) outbuf))
+	
+        ;; this part is not useful 
+	;; force to redisplay
+
+;; 	(message "Executing...")
+;; 	(setq mode-line-process ":run")
+;; 	(force-mode-line-update)
+;; 	(sit-for 0)
+;; 	(let ((status 
+;; 	       (call-process shell-file-name nil outbuf t "-c" hets-command)))
+;; 	  (cond ((numberp status)
+;; 		 (casl-compilation-handle-exit 'exit status
+;; 					  (if (zerop status)
+;; 					      "finished\n"
+;; 					    (format "exited abnormally with code %d\n" status))))
+;; 		((stringp status)
+;; 		 (casl-compilation-handle-exit 'signal status
+;; 					  (concat status "\n")))
+;; 		(t
+;; 		 (casl-compilation-handle-exit 'bizarre status status)))
+;; 	  (if (zerop status)
+;; 	      (setq casl-error-list nil)
+;; 	    (setq casl-error-list nil)
+;; 	    (casl-parse-error)
+;; 	    (message "%s errors have been found." (length casl-error-list)))
+;; 	  )
+	))
+      (pop-to-buffer old-buffer)))
+
 
 (defun casl-run-hetsg ()
-  "Run hets -g process to compile the current CASL file."
+  "Run hets process with -g to compile the current CASL file."
   (interactive)
   (save-buffer nil)
   (setq old-buffer (current-buffer))
-  (if hets-program 
-      (setq casl-hets-program hets-program)
-      (setq casl-hets-program "hets"))
   (let* ((casl-hets-file-name (buffer-file-name))
 	 (outbuf (get-buffer-create "*hets-run*")))
+    (if hets-program 
+	(setq casl-hets-program hets-program)
+      (setq casl-hets-program "hets"))
+    (setq hets-command (concat casl-hets-program " -g " casl-hets-file-name))
+
+    ;; Pop up the compilation buffer.
     (set-buffer outbuf)
     (setq buffer-read-only nil)
     (buffer-disable-undo (current-buffer))
     (erase-buffer)
     (buffer-enable-undo (current-buffer))
+    (set-buffer-modified-p nil)
+    (insert hets-command "\n")
     (pop-to-buffer outbuf)
-    (insert casl-hets-program " " casl-hets-file-name "\n")
-    (let ((status 
-	   (call-process shell-file-name nil t nil "-c" 
-			 (concat casl-hets-program " -g " casl-hets-file-name))))
-      (cond ((numberp status)
-	     (compilation-handle-exit 'exit status
-				      (if (zerop status)
-					  "finished\n"
-					(format "exited abnormally with code %d\n" status))))
-	    ((stringp status)
-	     (compilation-handle-exit 'signal status
-				      (concat status "\n")))
-	    (t
-	     (compilation-handle-exit 'bizarre status status)))
-      (if (zerop status)
-	  (setq casl-error-list nil)
+    (goto-char (point-max))
+    ;; (display-buffer outbuf nil t)
+    (save-excursion
+      (set-buffer outbuf)
+      (compilation-mode "hets-compile")
+      ;; Start the compilation.
+      (if (fboundp 'start-process)
+	  (let* ((process-environment
+		  (append
+		   (if (and (boundp 'system-uses-terminfo)
+			    system-uses-terminfo)
+		       (list "TERM=dumb" "TERMCAP="
+			     (format "COLUMNS=%d" (window-width)))
+		     (list "TERM=emacs"
+			   (format "TERMCAP=emacs:co#%d:tc=unknown:"
+				   (window-width))))
+		   ;; Set the EMACS variable, but
+		   ;; don't override users' setting of $EMACS.
+		   (if (getenv "EMACS")
+		       process-environment
+		     (cons "EMACS=t" process-environment))))
+		 (proc (start-process-shell-command "hets-compile" outbuf
+						    hets-command)))
+	    (set-process-sentinel proc 'casl-compilation-sentinel)
+	    (set-process-filter proc 'casl-compilation-filter)
+	    
+	    (set-marker (process-mark proc) (point) outbuf))
+	;; force to redisplay
+;; 	(message "Executing...")
+;; 	(setq mode-line-process ":run")
+;; 	(force-mode-line-update)
+;; 	(sit-for 0)
+;; 	(let ((status 
+;; 	       (call-process shell-file-name nil outbuf t "-c" hets-command)))
+;; 	  (cond ((numberp status)
+;; 		 (casl-compilation-handle-exit 'exit status
+;; 					  (if (zerop status)
+;; 					      "finished\n"
+;; 					    (format "exited abnormally with code %d\n" status))))
+;; 		((stringp status)
+;; 		 (casl-compilation-handle-exit 'signal status
+;; 					  (concat status "\n")))
+;; 		(t
+;; 		 (casl-compilation-handle-exit 'bizarre status status)))
+;; 	  (if (zerop status)
+;; 	      (setq casl-error-list nil)
+;; 	    (setq casl-error-list nil)
+;; 	    (casl-parse-error)
+;; 	    (message "%s errors have been found." (length casl-error-list)))
+	  )))
+      (pop-to-buffer old-buffer))
+
+;; sentinel and filter of asynchronous process of hets
+;; Called when compilation process changes state.
+(defun casl-compilation-sentinel (proc msg)
+  "Sentinel for compilation buffers."
+  (let ((buffer (process-buffer proc)))
+    (if (memq (process-status proc) '(signal exit))
+	(progn
+	  (if (null (buffer-name buffer))
+	      ;; buffer killed
+	      (set-process-buffer proc nil)
+	    (let ((obuf (current-buffer)))
+	      ;; save-excursion isn't the right thing if
+	      ;; process-buffer is current-buffer
+	      (unwind-protect
+		  (progn
+		    ;; Write something in the compilation buffer
+		    ;; and hack its mode line.
+		    (set-buffer buffer)
+		    (casl-compilation-handle-exit (process-status proc)
+					     (process-exit-status proc)
+					     msg)
+		    ;; Since the buffer and mode line will show that the
+		    ;; process is dead, we can delete it now.  Otherwise it
+		    ;; will stay around until M-x list-processes.
+		    (delete-process proc))
+		(set-buffer obuf))))
+	  ;; (setq compilation-in-progress (delq proc compilation-in-progress))
+	  ))))
+
+;; show the message from hets compile direct on *hets-run* buffer
+(defun casl-compilation-filter (proc string)
+  (display-buffer (process-buffer proc))
+  (unless (equal (buffer-name) "*hets-run*")
+    (progn
+      (pop-to-buffer "*hets-run*")
+      (goto-char (point-max))
+      ))
+  (with-current-buffer (process-buffer proc)
+    (let ((moving (= (point) (process-mark proc))))
+      (save-excursion
+        ;; Insert the text, advancing the process marker.
+        (goto-char (process-mark proc))
+        (insert string)
+        (set-marker (process-mark proc) (point)))
+      (if moving (goto-char (process-mark proc)))))
+  (pop-to-buffer old-buffer))
+
+(defun casl-compilation-handle-exit (process-status exit-status msg)
+  "Write msg in the current buffer and hack its mode-line-process."
+  (let ((buffer-read-only nil)
+	(status (cons msg exit-status))
+	(omax (point-max))
+	(opoint (point)))
+    ;; Record where we put the message, so we can ignore it
+    ;; later on.
+    ;; (goto-char omax)
+    (goto-char (point-max))
+    (insert ?\n mode-name " " (car status))
+    (if (bolp)
+	(forward-char -1))
+    (insert " at " (substring (current-time-string) 0 19))
+    (goto-char (point-max))
+    (setq mode-line-process (format ":%s [%s]" process-status (cdr status)))
+    ;; Force mode line redisplay soon.
+    (force-mode-line-update)
+    (if (and opoint (< opoint omax))
+	(goto-char opoint))
+    
+    ;; Automatically parse (and mouse-highlight) error messages:
+    (if (zerop exit-status)
 	(setq casl-error-list nil)
-	(casl-parse-error)
-	(message "%s errors have been found." (length casl-error-list)))
-      (pop-to-buffer old-buffer)
-      )))
+      (setq casl-error-list nil)
+      (casl-parse-error)
+      (message "%s errors have been found." (length casl-error-list)))
+    (pop-to-buffer old-buffer)
+    ))
 
 
 ;; also functions with old hets-program?
@@ -294,6 +447,7 @@
   "Error Parser"
   (interactive)
   ;;;(pop-to-buffer compiler-buffer)
+  (pop-to-buffer "*hets-run*")
   (goto-char (point-min))
   (while (not (eobp))
     (if (not (or (looking-at "Fail") (looking-at "\\*\\*\\*")))
@@ -308,30 +462,39 @@
 	(when (not (string= (match-string-no-properties  0) ""))
 	  (setq error-line (match-string-no-properties 1))
 	  (setq error-colnum (match-string-no-properties 2))
+	  (setq error-window-point (point))
 	  (setq casl-error-list
-		(nconc casl-error-list (list (list file-name error-line error-colnum))))
+		(nconc casl-error-list (list (list file-name error-line error-colnum error-window-point))))
 	)
 	(forward-line 1)))))
 
 (defun casl-compile-goto-next-error ()
   "search the next error position from error-list, and move to it."
   (interactive)
-  ;; wenn error-list leer ist...
+  ;; if error-list is empty ...
   (if (null casl-error-list)
       (if (member (get-buffer "*hets-run*") (buffer-list))
 	  (message "no error.")
-	(message "this file have not yet been compiled."))    ;; wie sagt auf englisch?
+	(message "this file have not yet been compiled.")) 
     (let* ((this-error (pop casl-error-list))
 	   (error-file-name (nth 0 this-error))
 	   (error-line (nth 1 this-error))
-	   (error-column (nth 2 this-error)))
+	   (error-column (nth 2 this-error))
+	   (error-window-point (nth 3 this-error)))
+
       ;; (message "DEBUG<Goto Error>: file: %s, line: %s, column: %s" error-file-name  error-line error-column)
-      ;; wenn die Datei, die fehlerbehaftet ist, schon geoeffnet...
+      ;; if the file already opened ...
       (if (get-file-buffer error-file-name)
 	  (pop-to-buffer (get-file-buffer error-file-name))
 	(generate-new-buffer error-file-name)
 	(pop-to-buffer error-file-name)
 	(insert-file-contents error-file-name))
+      ;; switch to hets-run window to jump to next error message
+      (setq file-buffer (current-buffer))
+      (pop-to-buffer "*hets-run*")
+      (goto-char error-window-point)
+      ;; return to current file
+      (pop-to-buffer file-buffer)
       (goto-line (string-to-number error-line))
       (move-to-column (- (string-to-number error-column) 1))
       (message "goto next error... line: %s column: %s" error-line error-column)
@@ -368,7 +531,7 @@
 
 
   (run-hooks 'casl-mode-hook)
-)
+  )
 
 (provide 'casl-mode)
 
