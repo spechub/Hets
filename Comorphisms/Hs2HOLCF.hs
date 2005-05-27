@@ -350,6 +350,14 @@ instance IsaName a => IsaName (HId a) where
                  HsVar x -> showIsaString x
                  HsCon x -> showIsaString x
 
+instance IsaName a => IsaName (TiTypes.Type a) where
+ showIsaString (Typ t) = case t of
+  HsTyFun _ _  -> "Fun"
+  HsTyApp _ _ -> "App"
+  HsTyVar x -> showIsaString x
+  HsTyCon x -> showIsaString x
+  HsTyForall _ _ x -> showIsaString x
+
 ------------------------------- Kind translation ------------------------------
 
 kindTrans :: Kind -> IsaKind
@@ -519,7 +527,7 @@ getIsaInsts db = map transTypeInsts (getTypeInsts db)
 
 getTypeInsts :: HsInstances -> [(HsType, HsInstances)]
 getTypeInsts db = 
-  [(t, [x | x <- db, getMainInstType x == t]) 
+  [(t, [x | x <- db, showIsaString (getMainInstType x) == showIsaString t]) 
                     | t <- remove_duplicates (map getMainInstType db)]
 
 transTypeInsts :: (HsType, HsInstances) -> IsaTypeInsts
@@ -567,8 +575,9 @@ prepInst :: HsInstance -> (HsClass, [(HsType, [HsClass])])
 prepInst i = (getMainInstClass i, prepInst1 i)
 
 prepInst1 :: HsInstance -> [(HsType, [HsClass])]
-prepInst1 i = [(x, [getInstClass y | y <- getInstPrems i, getInstType y == x]) 
-               | x <- map getInstType (getInstPrems i)] 
+prepInst1 i = 
+  [(x, [getInstClass y | y <- getInstPrems i, showIsaString (getInstType y) == showIsaString x]) 
+               | x <- remove_duplicates $ map getInstType (getInstPrems i)] 
 
 --------------------------- checking mutual dependencies ---------------------------
 
