@@ -30,7 +30,7 @@ data TheoryMorphism sign sen mor =
 
 type Rule = String
 
-type Tactic_script = String  -- the file name
+type Tactic_script = String  -- e.g. the file name, or the script itself, or a configuration string
 
 data Proof_status proof_tree = Open String
                       | Disproved String 
