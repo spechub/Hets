@@ -17,8 +17,12 @@ the SPASS prover.
 
 "SPASS.Logic_SPASS" provides the SPASS instance of
 type class 'Logic.Logic.Logic'.
--}
 
---TODO: reference relevant papers
+Relevant papers on SPASS include:
+
+C. Weidenbach, Spass: Combining superposition, sorts and splitting, in
+Handbook of Automated Reasoning, A. Robinson and A. Voronkov, Eds. Elsevier,
+1999.
+-}
 
 module SPASS where
