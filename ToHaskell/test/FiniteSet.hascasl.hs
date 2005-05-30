@@ -1,8 +1,4 @@
 {-
-instances:
-Eq (FiniteSet a1)
-Ord (FiniteSet a1)
-Show (FiniteSet a1)
 
 types:
 FiniteSet :: (*->*, data)
@@ -14,12 +10,6 @@ a___2_P_2 ::
     forall a . (FiniteSet a, FiniteSet a) -> FiniteSet a
 a___b_2_r :: forall a . a -> FiniteSet a
 a___b_r :: forall a . FiniteSet a
-derived__Prelude_Eq_FiniteSet ::
-    forall a . Eq (FiniteSet a)
-derived__Prelude_Ord_FiniteSet ::
-    forall a . Ord (FiniteSet a)
-derived__Prelude_Show_FiniteSet ::
-    forall a . Show (FiniteSet a)
 FiniteSet :: forall a . FiniteSet a
 
 scope:
@@ -37,9 +27,7 @@ a___b_2_r |-> Prelude.a___b_2_r, Value
 a___b_r |-> Prelude.a___b_r, Value
 -}
 module Dummy where
-import MyLogic
-data FiniteSet a1
-    = FiniteSet deriving (Show, Eq, Ord)
+data FiniteSet a1 = FiniteSet
 a___2_P_2
     :: (FiniteSet a, FiniteSet a) -> FiniteSet a
 a___2_P_2

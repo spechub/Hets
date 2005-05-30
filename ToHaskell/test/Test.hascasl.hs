@@ -1,14 +1,4 @@
 {-
-instances:
-Eq B
-Ord B
-Show B
-Eq C
-Ord C
-Show C
-Eq AT
-Ord AT
-Show AT
 
 types:
 AT :: (*, data)
@@ -18,15 +8,6 @@ C :: (*, data)
 
 values:
 a___P :: (AT, B) -> C
-derived__Prelude_Eq_AT :: Eq AT
-derived__Prelude_Eq_B :: Eq B
-derived__Prelude_Eq_C :: Eq C
-derived__Prelude_Ord_AT :: Ord AT
-derived__Prelude_Ord_B :: Ord B
-derived__Prelude_Ord_C :: Ord C
-derived__Prelude_Show_AT :: Show AT
-derived__Prelude_Show_B :: Show B
-derived__Prelude_Show_C :: Show C
 f :: B -> B
 f_02 :: C -> C
 s1 :: AT -> Int
@@ -62,9 +43,8 @@ s1 |-> Prelude.s1, Value
 s2 |-> Prelude.s2, Value
 -}
 module Dummy where
-import MyLogic
-data B = B deriving (Show, Eq, Ord)
-data C = C deriving (Show, Eq, Ord)
+data B = B
+data C = C
 type A__s = B
 a___P :: (AT, B) -> C
 a___P = error{-((AT, B) -> C)-} "a___P"
@@ -76,4 +56,4 @@ s1 :: AT -> Int
 s2 :: AT -> B
 s1 (A (x_11_11, x_11_12)) = x_11_11
 s2 (A (x_11_11, x_11_12)) = x_11_12
-data AT = A !(Int, B) deriving (Show, Eq, Ord)
+data AT = A !(Int, B)

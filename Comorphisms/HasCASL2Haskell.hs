@@ -28,6 +28,7 @@ import qualified Common.Lib.Map as Map
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Builtin
 import HasCASL.Le
 import HasCASL.Morphism
 import HasCASL.UniqueId
@@ -146,7 +147,8 @@ kindToTypeArgs i k = case k of
     MissingKind -> []
     ClassKind _ rk -> kindToTypeArgs i rk
     Downset _ _ rk _ -> kindToTypeArgs i rk
-    FunKind _ kr _ -> (hsTyVar $ fakeSN $ UnQual ("a" ++ show i)) 
+    FunKind _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
+                                   $ toProgPos $ get_pos k) 
                       : kindToTypeArgs (i+1) kr
     Intersection l _ -> if null l then []
                          else kindToTypeArgs i $ head l
@@ -231,21 +233,31 @@ translateType t =
                         $ map translateType tlist
   LazyType lt _ -> translateType lt
   KindedType kt _kind _ -> translateType kt
-  TypeAppl t1 t2 -> hsTyApp (translateType t1) (translateType t2)
+  TypeAppl t1 t2 -> if isPredType t1 then 
+       hsTyFun (translateType t2) boolType
+       else hsTyApp (translateType t1) (translateType t2)
   TypeName tid _kind n -> 
       if n == 0 then
-         hsTyCon $ mkHsIdent UpperId tid
+         if tid == unitTypeId then boolType
+         else if tid == logId then 
+              hsTyFun boolType boolType
+         else hsTyCon $ mkHsIdent UpperId tid
       else hsTyVar $ mkHsIdent LowerId tid
   _ -> error ("translateType: unexpected type: " ++ show t)
-
+  where boolType = hsTyCon $ mkSName "Bool" $ toProgPos $ get_pos t
+        isPredType ty = case ty of
+                        TypeName tid _ n -> n == 0 && tid == predTypeId
+                        _ -> False
 
 toProgPos :: [Pos] -> SrcLoc
 toProgPos p = if null p then loc0 else let SourcePos n l c = head p
               in SrcLoc n (1000 + (l-1) * 80 + c) l c 
 
+mkSName :: String -> SrcLoc -> SN HsName
+mkSName s p = SN (UnQual s) p
+
 mkHsIdent :: IdCase -> Id -> SN HsName
-mkHsIdent c i = SN (UnQual $ translateIdWithType c i)
-                $ toProgPos $  posOfId i
+mkHsIdent c i = mkSName (translateIdWithType c i) $ toProgPos $ posOfId i
 
 translateId :: Env -> Id -> TypeScheme -> (IdCase, SN HsName)
 translateId env uid sc = 
@@ -261,20 +273,49 @@ translateId env uid sc =
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Env -> Term -> HsExp
 translateTerm env t = 
-  let loc = toProgPos $ get_pos t in
-  case t of
+  let loc = toProgPos $ get_pos t 
+  in case t of
     QualVar (VarDecl v ty _ _) -> 
         let (c, i) = translateId env v $ simpleTypeScheme ty in 
             case c of 
             LowerId -> rec $ HsId $ HsVar i
             _ -> error "translateTerm: variable with UpperId" 
-    QualOp _ (InstOpId uid _ _) sc _ -> 
+    QualOp _ (InstOpId uid _ _) sc _ -> let
     -- The identifier 'uid' may have been renamed. To find its new name,
     -- the typescheme 'ts' is tested for unifiability with the 
     -- typeschemes of the assumps. If an identifier is found, it is used
     -- as HsVar or HsCon.
-      let (c, ui) = translateId env uid sc
-      in rec $ HsId $ case c of
+      mkPHsVar s = rec $ HsPId $ HsVar $ mkSName s loc 
+      mkHsVar s = rec $ HsId $ HsVar $ mkSName s loc 
+      mkHsCon s = rec $ HsId $ HsCon $ mkSName s loc 
+      mkUncurry s = rec $ HsApp (mkHsVar "uncurry") (mkHsVar s)
+      mkErr s = expUndef loc $ s ++ pp loc
+      hTrue = mkHsCon "True"
+      a = mkHsVar "a"
+      b = mkHsVar "b"
+      c = mkHsVar "c"
+      vs2 = [mkPHsVar "a", mkPHsVar "b"]
+      vs3 = vs2 ++ [mkPHsVar "c"]
+      pat2 = [rec $ HsPTuple vs2]
+      pat3 = [rec $ HsPTuple vs3]
+      mkLam2 x y = rec $ HsParen $ rec $ HsLambda pat2 $ rec $ HsIf x y hTrue
+      mkLam3 x y = rec $ HsParen $ rec $ HsLambda pat3 $ rec $ HsIf x y c
+      in if uid == botId then mkErr "bottom at "
+      else if uid == trueId then hTrue
+      else if uid == falseId then mkHsCon "False"
+      else if uid == notId || uid == negId then mkHsVar "not"
+      else if uid == defId then rec $ HsRightSection 
+               (HsVar $ mkSName "seq" loc) hTrue
+      else if uid == orId then mkUncurry "||"
+      else if uid == andId then mkUncurry "&&"
+      else if uid == eqId || uid == eqvId || uid == exEq then 
+           mkErr "equality at "
+      else if uid == implId then mkLam2 a b
+      else if uid == infixIf then mkLam2 b a
+      else if uid == whenElse then mkLam3 b a
+      else if uid == ifThenElse then mkLam3 a b
+      else let (cs, ui) = translateId env uid sc
+      in rec $ HsId $ case cs of
         UpperId -> HsCon ui
         LowerId -> HsVar ui
     ApplTerm t1 t2 _ ->
@@ -377,7 +418,7 @@ cleanSig ds sens =
 
 
 expUndef :: SrcLoc -> String -> HsExp
-expUndef loc s = rec $ HsApp (rec $ HsId $ HsVar $ fakeSN $ UnQual "error")
+expUndef loc s = rec $ HsApp (rec $ HsId $ HsVar $ mkSName "error" loc)
                        $ rec $ HsLit loc $ HsString s
 
 -- For the definition of an undefined function.
@@ -395,4 +436,4 @@ translateSentence env sen = case sentence sen of
     _ -> []
 
 derives :: [SN HsName]
-derives = map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 
+derives = [] -- map (fakeSN . UnQual) ["Show", "Eq", "Ord"] 

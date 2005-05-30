@@ -1,11 +1,4 @@
 {-
-instances:
-Eq A__s
-Ord A__s
-Show A__s
-Eq A__t
-Ord A__t
-Show A__t
 
 types:
 A__s :: (*, data)
@@ -15,12 +8,6 @@ values:
 a :: A__s
 b :: A__s
 c :: A__t
-derived__Prelude_Eq_A__s :: Eq A__s
-derived__Prelude_Eq_A__t :: Eq A__t
-derived__Prelude_Ord_A__s :: Ord A__s
-derived__Prelude_Ord_A__t :: Ord A__t
-derived__Prelude_Show_A__s :: Show A__s
-derived__Prelude_Show_A__t :: Show A__t
 x :: A__s
 y :: A__t
 A__s :: A__s
@@ -47,9 +34,8 @@ x |-> Prelude.x, Value
 y |-> Prelude.y, Value
 -}
 module Dummy where
-import MyLogic
-data A__s = A__s deriving (Show, Eq, Ord)
-data A__t = A__t deriving (Show, Eq, Ord)
+data A__s = A__s
+data A__t = A__t
 a :: A__s
 a = error{-A__s-} "a"
 b :: A__s

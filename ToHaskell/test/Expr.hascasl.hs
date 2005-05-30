@@ -17,7 +17,6 @@ b_02 |-> Prelude.b_02, Value
 notA |-> Prelude.notA, Value
 -}
 module Dummy where
-import MyLogic
 a :: Bool
 b_02 :: Bool -> Bool
 b :: Bool

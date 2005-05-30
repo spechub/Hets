@@ -92,7 +92,6 @@ instance PrettyPrint Sign where
           text (pp sc) $$
           text "-}" $$
           text "module Dummy where"
-          $$ text "import MyLogic"
 
 extendSign :: Sign -> [Instance PNT]
             -> [TAssump PNT] 

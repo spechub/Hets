@@ -1,28 +1,15 @@
 {-
-instances:
-Eq Nat
-Ord Nat
-Show Nat
-Eq List_FNat_J
-Ord List_FNat_J
-Show List_FNat_J
 
 types:
 List_FNat_J :: (*, data)
 Nat :: (*, data)
 
 values:
-a___2_L_E_2 :: (Nat, Nat) -> Unit
-derived__Prelude_Eq_List_FNat_J :: Eq List_FNat_J
-derived__Prelude_Eq_Nat :: Eq Nat
-derived__Prelude_Ord_List_FNat_J :: Ord List_FNat_J
-derived__Prelude_Ord_Nat :: Ord Nat
-derived__Prelude_Show_List_FNat_J :: Show List_FNat_J
-derived__Prelude_Show_Nat :: Show Nat
+a___2_L_E_2 :: (Nat, Nat) -> Bool
 insert :: (Nat, List_FNat_J) -> List_FNat_J
 insert_1sort :: List_FNat_J -> List_FNat_J
-is_1ordered :: List_FNat_J -> Unit
-permutation :: (List_FNat_J, List_FNat_J) -> Unit
+is_1ordered :: List_FNat_J -> Bool
+permutation :: (List_FNat_J, List_FNat_J) -> Bool
 prec :: Nat -> Nat
 sorter :: List_FNat_J -> List_FNat_J
 A__0 :: Nat
@@ -61,38 +48,39 @@ prec |-> Prelude.prec, Value
 sorter |-> Prelude.sorter, Value
 -}
 module Dummy where
-import MyLogic
-a___2_L_E_2 :: (Nat, Nat) -> Unit
+a___2_L_E_2 :: (Nat, Nat) -> Bool
 insert :: (Nat, List_FNat_J) -> List_FNat_J
 insert_1sort :: List_FNat_J -> List_FNat_J
-is_1ordered :: List_FNat_J -> Unit
-permutation :: (List_FNat_J, List_FNat_J) -> Unit
+is_1ordered :: List_FNat_J -> Bool
+permutation :: (List_FNat_J, List_FNat_J) -> Bool
 permutation
-    =   error{-((List_FNat_J, List_FNat_J) -> Unit)-}
+    =   error{-((List_FNat_J, List_FNat_J) -> Bool)-}
             "permutation"
 prec :: Nat -> Nat
 sorter :: List_FNat_J -> List_FNat_J
 sorter
     = error{-(List_FNat_J -> List_FNat_J)-} "sorter"
 prec (Succ x_11_11) = x_11_11
-data Nat = A__0 | Succ !Nat deriving (Show, Eq, Ord)
-a___2_L_E_2 (A__0, x) = true
-a___2_L_E_2 ((Succ x), A__0) = false
+data Nat = A__0 | Succ !Nat
+a___2_L_E_2 (A__0, x) = True
+a___2_L_E_2 ((Succ x), A__0) = False
 a___2_L_E_2 ((Succ x), (Succ y)) = a___2_L_E_2 (x, y)
 a___2_L_E_2 (x, y)
-    =   a___2when_2else_2{-Unit-}
-            (true, a___2_E_2{-Nat-} (x, y), bottom{-Unit-})
-data List_FNat_J
-    = Nil | Cons !(Nat, List_FNat_J)
-    deriving (Show, Eq, Ord)
-is_1ordered Nil = true
-is_1ordered (Cons (x, Nil)) = true
+    =   (\ (a, b, c) -> if b then a else c)
+            (True,
+             error{-(((,) Nat Nat) -> Bool)-}
+                 "equality at __unknown__:0,0"
+                 (x, y),
+             error{-Bool-} "bottom at __unknown__:0,0")
+data List_FNat_J = Nil | Cons !(Nat, List_FNat_J)
+is_1ordered Nil = True
+is_1ordered (Cons (x, Nil)) = True
 is_1ordered (Cons (x, (Cons (y, a__L))))
-    =   a___2_S_B_2
+    =   uncurry{-Bool Bool Bool-} (&&)
             (a___2_L_E_2 (x, y), is_1ordered (Cons (y, a__L)))
 insert (x, Nil) = Cons (x, Nil)
 insert (x, (Cons (y, a__L)))
-    =   a___2when_2else_2{-List_FNat_J-}
+    =   (\ (a, b, c) -> if b then a else c)
             (Cons (x, insert (y, a__L)), a___2_L_E_2 (x, y),
              Cons (y, insert (x, a__L)))
 insert_1sort Nil = Nil

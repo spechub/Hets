@@ -143,6 +143,12 @@ unitType = simpleTypeScheme logicalType
 botId :: Id
 botId = mkId [mkSimpleId "bottom"]
 
+predTypeId :: Id
+predTypeId = mkId [mkSimpleId "Pred"]
+
+logId :: Id
+logId = mkId [mkSimpleId "Logical"]
+
 botType :: TypeScheme
 botType = bindA aType
 
@@ -158,10 +164,8 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
                          (TypeInfo k [k] s d) m) tm $
               (unitTypeId, star, [], NoTypeDefn)
-              : (simpleIdToId $ mkSimpleId "Pred", 
-                FunKind star star [], [], AliasTypeDefn defType)
-              : (simpleIdToId $ mkSimpleId "Logical", 
-                star, [], AliasTypeDefn $ simpleTypeScheme $ 
+              : (predTypeId, FunKind star star [], [], AliasTypeDefn defType)
+              : (logId, star, [], AliasTypeDefn $ simpleTypeScheme $ 
                  FunType logicalType PFunArr logicalType [])
               : (productId, prodKind, [], NoTypeDefn)
               : map ( \ (a, l) -> (arrowId a, funKind, 

@@ -1,19 +1,9 @@
 {-
-instances:
-Eq (List a)
-Ord (List a)
-Show (List a)
 
 types:
 List :: (*->*, data)
 
 values:
-derived__Prelude_Eq_List ::
-    forall a . (Eq a) -> Eq (List a)
-derived__Prelude_Ord_List ::
-    forall a . (Ord a) -> Ord (List a)
-derived__Prelude_Show_List ::
-    forall a . (Show a) -> Show (List a)
 A__cons :: forall a . a -> (List a) -> List a
 A__nil :: forall a . List a
 
@@ -27,7 +17,4 @@ A__nil |-> Prelude.A__nil, con of List
 List |-> Prelude.List, Type [A__nil, A__cons] []
 -}
 module Dummy where
-import MyLogic
-data List a
-    = A__nil | A__cons !a !(List a)
-    deriving (Show, Eq, Ord)
+data List a = A__nil | A__cons !a !(List a)
