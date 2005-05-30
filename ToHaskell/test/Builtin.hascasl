@@ -1,0 +1,11 @@
+type dummy
+
+pred p : dummy
+
+var x : dummy
+
+. p x
+
+. not (p x)
+
+. p x = p x when def (p x) \/ false else p x
