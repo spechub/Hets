@@ -56,7 +56,7 @@ import System
 
 import HTk
 
-isabelleProver :: Prover Sign Sentence () ()
+isabelleProver :: Prover Sign Sentence ()
 isabelleProver =
      Prover { prover_name = "Isabelle",
               prover_sublogic = "Isabelle",
@@ -65,15 +65,12 @@ isabelleProver =
 
 isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
 isabelleConsChecker =
-     ConsChecker { cons_checker_name = "Isabelle-refute",
-                   cons_checker_sublogic = "Isabelle",
-                   cons_check = \ thn mor -> isaProve True thn (t_target mor) [] }
+     Prover { prover_name = "Isabelle-refute",
+              prover_sublogic = "Isabelle",
+              prove = \ thn mor -> isaProve True thn (t_target mor) }
 
-                 -- input: theory name, theory, goals
-                 -- output: proof status for goals and lemmas
-isaProve :: Bool -> String -> (Sign,[Named Sentence]) -> [Named Sentence] 
-              -> IO([Proof_status ()])
-isaProve checkCons thName (sig,axs) goals = do
+isaProve :: Bool -> String -> Theory Sign Sentence -> IO([Proof_status ()])
+isaProve checkCons thName (Theory sig nSens) = do
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
   case (ex,exorig) of
@@ -112,6 +109,7 @@ isaProve checkCons thName (sig,axs) goals = do
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
   where
+      (axs, goals) = partition isAxiom nSens 
       thName' = thName++if checkCons then "_c" else ""
       fileName = thName'++".thy"
       origName = thName'++".orig.thy"

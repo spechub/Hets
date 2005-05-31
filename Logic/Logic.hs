@@ -116,7 +116,7 @@ type EndoMap a = Map.Map a a
 -- Should we allow arbitrary composition graphs and build paths?
 
 class (Language lid, Eq sign, Eq morphism)
-    => Category lid sign morphism | lid -> sign, lid -> morphism where
+    => Category lid sign morphism | lid -> sign morphism where
          ide :: lid -> sign -> morphism
          comp :: lid -> morphism -> morphism -> Result morphism
            -- diagrammatic order
@@ -130,8 +130,7 @@ class (Language lid, PrintTypeConv basic_spec,
        EqPrintTypeConv symb_items, 
        EqPrintTypeConv symb_map_items) 
     => Syntax lid basic_spec symb_items symb_map_items
-        | lid -> basic_spec, lid -> symb_items,
-          lid -> symb_map_items
+        | lid -> basic_spec symb_items symb_map_items
       where 
          -- parsing
          parse_basic_spec :: lid -> Maybe(AParser st basic_spec)
@@ -151,8 +150,7 @@ class (Category lid sign morphism, Ord sentence,
        Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree, 
        Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
-        | lid -> sentence, lid -> sign, lid -> morphism,
-          lid -> symbol, lid -> proof_tree
+        | lid -> sentence proof_tree sign morphism symbol
       where
          -- sentence translation
       map_sen :: lid -> morphism -> sentence -> Result sentence
@@ -169,11 +167,11 @@ class (Category lid sign morphism, Ord sentence,
       sym_of :: lid -> sign -> Set.Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 
-      provers :: lid -> [Prover sign sentence proof_tree symbol]
+      provers :: lid -> [Prover sign sentence proof_tree]
       provers _ = []
       cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree] 
       cons_checkers _ = []
-      consCheck :: lid -> Theory sign sentence -> 
+      consCheck :: lid -> (sign, [Named sentence]) -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       consCheck l _ _ _ = statErr l "consCheck"
 
@@ -187,9 +185,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
     => StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol 
-        | lid -> basic_spec, lid -> sentence, lid -> symb_items,
-          lid -> symb_map_items, lid -> proof_tree,
-          lid -> sign, lid -> morphism, lid -> symbol, lid -> raw_symbol
+        | lid -> basic_spec sentence proof_tree symb_items symb_map_items
+                 sign morphism symbol raw_symbol 
       where
          -- static analysis of basic specifications and symbol maps
          basic_analysis :: lid -> 
@@ -282,9 +279,9 @@ class (StaticAnalysis lid
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
-        | lid -> sublogics, lid -> basic_spec, lid -> sentence, 
-          lid -> symb_items, lid -> symb_map_items, lid -> proof_tree,
-          lid -> sign, lid -> morphism, lid ->symbol, lid -> raw_symbol
+        | lid -> sublogics
+                 basic_spec sentence symb_items symb_map_items
+                 sign morphism symbol raw_symbol proof_tree
           where
 
          -- for a process logic, return its data logic
@@ -355,7 +352,7 @@ empty_theory :: StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol =>
         lid -> Theory sign sentence
-empty_theory lid = (empty_signature lid,[])
+empty_theory lid = Theory (empty_signature lid) []
  
 ----------------------------------------------------------------
 -- Existential type covering any logic

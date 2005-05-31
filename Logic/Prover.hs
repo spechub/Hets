@@ -19,7 +19,7 @@ import Data.Dynamic
 
 -- theories and theory morphisms
 
-type Theory sign sen = (sign,[Named sen])
+data Theory sign sen = Theory sign [Named sen]
 
 data TheoryMorphism sign sen mor = 
      TheoryMorphism {t_source, t_target :: Theory sign sen,
@@ -28,9 +28,8 @@ data TheoryMorphism sign sen mor =
 
 -- proofs and provers
 
-type Rule = String
-
-type Tactic_script = String  -- e.g. the file name, or the script itself, or a configuration string
+-- e.g. the file name, or the script itself, or a configuration string
+type Tactic_script = String  
 
 data Proof_status proof_tree = Open String
                       | Disproved String 
@@ -42,15 +41,13 @@ data Proof_status proof_tree = Open String
                       | Consistent Tactic_script
      deriving (Eq, Show, Read)
 
-data Prover sign sen proof_tree symbol = 
-     Prover { prover_name :: String,
-              prover_sublogic :: String,
-              prove :: String -> (sign, [Named sen]) -> [Named sen] 
-                         -> IO([Proof_status proof_tree])
-                 -- input: theory name, theory, goals
-                 -- output: proof status for goals and lemmas
-            }
-
+data ProverTemplate goal proof_tree = Prover
+    { prover_name :: String,
+      prover_sublogic :: String,
+      prove :: String -> goal -> IO([Proof_status proof_tree])
+      -- input: theory name, theory, goals
+      -- output: proof status for goals and lemmas
+    }
 
 {- possibly needed in the future
               add_sym :: symbol -> IO(Bool),  -- returns True if succeeded
@@ -62,33 +59,42 @@ data Prover sign sen proof_tree symbol =
               replay :: proof_tree -> Maybe sen -- what about the theory???
 -}
 
-data ConsChecker sign sentence morphism proof_tree = 
- ConsChecker { 
-   cons_checker_name :: String,
-   cons_checker_sublogic :: String,
-   cons_check :: String -> TheoryMorphism sign sentence morphism 
-                 -- name of target theory, theory extension
-                        -> IO([Proof_status proof_tree])
-  }
+type Prover sign sentence proof_tree = 
+    ProverTemplate (Theory sign sentence) proof_tree
 
+type ConsChecker sign sentence morphism proof_tree =
+    ProverTemplate (TheoryMorphism sign sentence morphism) proof_tree  
+
+theoryTc :: TyCon
+theoryTc = mkTyCon "Logic.Prover.Theory"
+
+instance (Typeable a, Typeable b) => Typeable (Theory a b) where
+        typeOf t = mkTyConApp theoryTc 
+               [typeOf ((undefined :: Theory a b -> a) t),
+                typeOf ((undefined :: Theory a b -> b) t)]
+
+theoryMorTc :: TyCon
+theoryMorTc = mkTyCon "Logic.Prover.TheoryMorphism"
+
+instance (Typeable a, Typeable b, Typeable c) 
+    => Typeable (TheoryMorphism a b c) where
+        typeOf t = mkTyConApp theoryMorTc 
+               [typeOf ((undefined :: TheoryMorphism a b c -> a) t),
+                typeOf ((undefined :: TheoryMorphism a b c -> b) t),
+                typeOf ((undefined :: TheoryMorphism a b c -> c) t)]
 
 proverTc :: TyCon
-proverTc      = mkTyCon "Logic.Prover.Prover"
-instance Typeable (Prover sign sen proof_tree symbol) where
-    typeOf _ = mkTyConApp proverTc []
+proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
-
-consCheckerTc :: TyCon
-consCheckerTc      = mkTyCon "Logic.Prover.ConsChecker"
-instance Typeable (ConsChecker sign sen mor proof_tree) where
-    typeOf _ = mkTyConApp consCheckerTc []
-
+instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
+    typeOf p = mkTyConApp proverTc 
+               [typeOf ((undefined :: ProverTemplate a b -> a) p),
+                typeOf ((undefined :: ProverTemplate a b -> b) p)]
 
 tcProof_status :: TyCon
-tcProof_status      = mkTyCon "Logic.Prover.Proof_status"
+tcProof_status = mkTyCon "Logic.Prover.Proof_status"
 
-instance Typeable proof_tree
-    => Typeable (Proof_status proof_tree) where
+instance Typeable proof_tree => Typeable (Proof_status proof_tree) where
   typeOf b = mkTyConApp tcProof_status
              [typeOf $ (undefined :: Proof_status proof_tree -> proof_tree) b]
 

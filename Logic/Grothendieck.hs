@@ -756,7 +756,7 @@ data G_prover = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-       G_prover lid (Prover sign sentence proof_tree symbol)
+       G_prover lid (Prover sign sentence proof_tree)
      | forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .

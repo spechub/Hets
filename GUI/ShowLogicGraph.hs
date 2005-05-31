@@ -174,7 +174,7 @@ showLogicGraph
 	   where
              showProver lid = unlines $ map prover_name (provers lid)
 
-             showConsChecker lid = unlines $ map cons_checker_name (cons_checkers lid)
+             showConsChecker lid = unlines $ map prover_name (cons_checkers lid)
 	     showParse lid =  
                    let s1 =  case parse_basic_spec lid of
 			       Just _  -> "Parser for basic specifications.\n"

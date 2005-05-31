@@ -1819,6 +1819,21 @@ selectProver provers = do
            _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
    return (provers!!i)
  
+cons_check :: Logic lid sublogics
+              basic_spec sentence symb_items symb_map_items
+              sign morphism symbol raw_symbol proof_tree 
+           => lid -> ConsChecker sign sentence morphism proof_tree 
+           -> String -> TheoryMorphism sign sentence morphism 
+           -> IO([Proof_status proof_tree])
+cons_check _ = prove
+
+proveTheory :: Logic lid sublogics
+              basic_spec sentence symb_items symb_map_items
+              sign morphism symbol raw_symbol proof_tree 
+           => lid -> Prover sign sentence proof_tree 
+           -> String -> Theory sign sentence -> IO([Proof_status proof_tree])
+proveTheory _ = prove
+
 -- applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
@@ -1866,7 +1881,9 @@ basicInferenceNode checkCons lg (ln,node)
            goals'' <- resToIORes $ mapM (mapNamedM $ map_sentence cid sign') goals'
            -- call the prover
            p' <- coerce lidT lid4 p
-           ps <- ioToIORes $ prove p' thName (sign'',sens'') goals'' 
+           ps <- ioToIORes $ proveTheory lidT p' thName 
+                 $ Theory sign'' $ map (\ s -> s {isAxiom = True}) sens''
+                   ++ map (\ s -> s {isAxiom = False}) goals'' 
            -- update the development graph
            let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
 	       newProofStatus
@@ -1875,10 +1892,10 @@ basicInferenceNode checkCons lg (ln,node)
          G_cons_checker lid4 p -> do
            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
            let mor = TheoryMorphism { t_source = empty_theory lidT, 
-                                      t_target = (sign'',sens''),
+                                      t_target = Theory sign'' sens'',
                                       t_morphism = incl } 
            p' <- coerce lidT lid4 p
-           ps <- ioToIORes $ cons_check p' thName mor
+           ps <- ioToIORes $ cons_check lidT p' thName mor
            let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
                newProofStatus
