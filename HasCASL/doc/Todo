@@ -36,6 +36,8 @@ their types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
+declaring the Y combinator does not work (see HasCASL/Recursion.het)
+
 
 
 terms: 
@@ -45,7 +47,8 @@ yet.
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
-Overloading is forbidden for builtin functions
+Overloading is forbidden for builtin functions (but maybe
+redeclaration should be allowed)
 
 shorter printing of terms
 
@@ -82,11 +85,19 @@ is unused (also parser error messages are poor)
 
 
 
-ToHaskell:
+
+Haskell:
 formulas are not translated to P-Logic Axioms
 
+class and instance stuff is filtered out in Haskell/HatAna (as
+conflict with the prelude)
+
 free types with subtypes components get too few constructors (and
-become disjoint types)
+become disjoint types, see HasCASL/Secd.het)
+
+
+Programatica's output of decorated modules is not legal haskell
+wrt. inserted dictionaries
 
 
 
