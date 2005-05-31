@@ -126,6 +126,17 @@ data SPSymbolList =
       deriving (Eq, Ord, Show)
 
 {- |
+  Creates an empty SPASS Symbol List.
+-}
+emptySymbolList :: SPSymbolList
+emptySymbolList =
+        SPSymbolList { functions   = [],
+                       predicates  = [],
+                       sorts       = [],
+                       operators   = [],
+                       quantifiers = [] }
+
+{- |
   A common data type used for all signature symbols.
 -}
 data SPSignSym =

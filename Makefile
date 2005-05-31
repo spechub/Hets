@@ -69,7 +69,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL Hatchet CASL_DL
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL Hatchet CASL_DL SPASS
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -216,6 +216,8 @@ Hatchet_files = Haskell/Hatchet/AnnotatedHsSyn.hs \
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
+SPASS_files = SPASS/Sign.hs
+
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
 generated_rule_files = $(atc_der_files) $(atc_logic_files)
@@ -233,6 +235,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Haskell/Hatchet/FiniteMaps.hs Common/DynamicUtils.hs \
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
+    SPASS/Logic_SPASS.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
@@ -419,6 +422,9 @@ Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) ATC/Hatchet.header.hs \
     utils/genRules
 	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
             $(Hatchet_files)
+
+SPASS/ATC_SPASS.der.hs: $(SPASS_files) utils/genRules
+	utils/genRules -r $(rule) -o SPASS $(SPASS_files)
 
 rule = ShATermConvertible
 

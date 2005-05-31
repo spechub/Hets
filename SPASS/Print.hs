@@ -23,6 +23,16 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 
 import SPASS.Sign
+import SPASS.Conversions
+
+instance PrintLaTeX Sign where
+  printLatex0 = printText0
+
+instance PrettyPrint Sign where
+  printText0 ga = printText0 ga . signToSPLogicalPart
+
+instance PrintLaTeX SPTerm where
+  printLatex0 = printText0
 
 {- |
   Helper function. Generates a '.' as a Doc.
