@@ -14,7 +14,7 @@ Portability :  portable
 
 module Logic.Prover where
 import Common.DynamicUtils 
-import Common.AS_Annotation (Named)
+import Common.AS_Annotation
 import Data.Dynamic
 
 -- theories and theory morphisms
@@ -22,24 +22,25 @@ import Data.Dynamic
 data Theory sign sen = Theory sign [Named sen]
 
 data TheoryMorphism sign sen mor = 
-     TheoryMorphism {t_source, t_target :: Theory sign sen,
+     TheoryMorphism {t_source :: Theory sign sen,
+                     t_target :: Theory sign sen,
                      t_morphism :: mor
                     } 
 
 -- proofs and provers
 
 -- e.g. the file name, or the script itself, or a configuration string
-type Tactic_script = String  
+data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
 data Proof_status proof_tree = Open String
                       | Disproved String 
-                      | Proved(String,
-                               [String], -- used axioms
-                               String, -- name of prover
-                               proof_tree,
-                               Tactic_script)
+                      | Proved String
+                               [String] -- used axioms
+                               String -- name of prover
+                               proof_tree
+                               Tactic_script
                       | Consistent Tactic_script
-     deriving (Eq, Show, Read)
+     deriving (Eq, Show)
 
 data ProverTemplate goal proof_tree = Prover
     { prover_name :: String,
