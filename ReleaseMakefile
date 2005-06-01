@@ -37,7 +37,7 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
 endif
 
 HC_OPTS    = -fglasgow-exts -fallow-overlapping-instances \
-    $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS) -DHATCHET -DCASLEXTENSIONS
+    $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS) -DCASLEXTENSIONS
 
 ####################################################################
 ### targets

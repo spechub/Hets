@@ -61,8 +61,9 @@ Haskell/hapa.hs
 Haskell/questions
 Haskell/todo
 
-Haskell/Hatchet/examples
+Haskell/Hatchet
 Haskell/Language
+Hatchet
 Lottery
 Modal/Basic.mod
 Static/hetana.hs

@@ -21,7 +21,7 @@ COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
-    Haskell/Hatchet Hatchet Taxonomy CASL_DL SPASS $(PFE_PATHS)
+    Taxonomy CASL_DL SPASS $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty = 
@@ -69,7 +69,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL Hatchet CASL_DL SPASS
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -86,7 +86,7 @@ uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
 endif
 
 ### list of directories to run checks in
-TESTDIRS += Common CASL HasCASL Haskell/Hatchet/examples
+TESTDIRS += Common CASL HasCASL
 
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
@@ -150,8 +150,6 @@ Haskell/ATC_Haskell.der.hs: $(Haskell_files) ATC/Haskell.header.hs \
 TESTDIRS += ToHaskell
 endif
 
-happy_files += Haskell/Hatchet/HsParser.hs
-
 ### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
 ### cannot link the various .o files properly. So after switching on
@@ -161,7 +159,7 @@ happy_files += Haskell/Hatchet/HsParser.hs
 #HC_PROF = -prof -auto-all 
 
 HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
-HC_OPTS = $(HCI_OPTS) $(HC_PROF) -DHATCHET -DCASLEXTENSIONS
+HC_OPTS = $(HCI_OPTS) $(HC_PROF) -DCASLEXTENSIONS
 DRIFT_OPTS = +RTS -K10m -RTS
 
 ####################################################################
@@ -208,12 +206,6 @@ CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
 CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 
-Hatchet_files = Haskell/Hatchet/AnnotatedHsSyn.hs \
-    Haskell/Hatchet/MultiModuleBasics.hs Haskell/Hatchet/HsSyn.hs \
-    Haskell/Hatchet/Representation.hs Haskell/Hatchet/Class.hs \
-    Haskell/Hatchet/KindInference.hs Haskell/Hatchet/Env.hs \
-    Hatchet/HatParser.hs
-
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
 SPASS_files = SPASS/Sign.hs
@@ -233,7 +225,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = Haskell/Hatchet/FiniteMaps.hs Common/DynamicUtils.hs \
+cpp_sources = Common/DynamicUtils.hs \
     Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs \
@@ -419,11 +411,6 @@ COL/ATC_COL.der.hs: $(COL_files) utils/genRules
 CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
 	utils/genRules -r $(rule) -o CspCASL $(CspCASL_files)
 
-Hatchet/ATC_Hatchet.der.hs: $(Hatchet_files) ATC/Hatchet.header.hs \
-    utils/genRules
-	utils/genRules -r $(rule) -o Hatchet -h ATC/Hatchet.header.hs \
-            $(Hatchet_files)
-
 SPASS/ATC_SPASS.der.hs: $(SPASS_files) utils/genRules
 	utils/genRules -r $(rule) -o SPASS $(SPASS_files)
 
@@ -461,7 +448,6 @@ bin_clean:
 	$(RM) atctest2
 	$(RM) atctest
 	$(RM) Common/annos
-	$(RM) Haskell/Hatchet/hatch
 	$(RM) ToHaskell/translateAna
 	$(RM) Taxonomy/taxonomyTool
 

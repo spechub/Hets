@@ -41,9 +41,6 @@ import HasCASL.Logic_HasCASL
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
-#ifdef HATCHET
-import Hatchet.Logic_Hatchet
-#endif
 import Isabelle.Logic_Isabelle
 #ifdef CASLEXTENSIONS 
 import Modal.Logic_Modal
@@ -53,9 +50,6 @@ import CspCASL.Logic_CspCASL
 
 logicList :: [AnyLogic]
 logicList = [Logic CASL, Logic HasCASL,
-#ifdef HATCHET
-             Logic Hatchet,
-#endif
 #ifdef PROGRAMATICA
              Logic Haskell, 
 #endif
