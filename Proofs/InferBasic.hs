@@ -1,5 +1,3 @@
-{-# OPTIONS -cpp #-}
-
 {-| 
    
 Module      :  $Header$
@@ -72,27 +70,7 @@ import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library 
 import Proofs.Proofs
-#ifdef UNI_PACKAGE
-import GUI.HTkUtils
-#else
-import Data.Char(isDigit, digitToInt)
-
-listBox :: String -> [String] -> IO (Maybe Int)
-listBox prompt choices = do
-   putStrLn prompt
-   mapM_ putStrLn $ zipWith (\ n c -> shows n ": " ++ c) [0::Int ..] choices
-   putStrLn "Please enter a number on the next line"
-   s <- getLine
-   if all isDigit s then 
-          let n = foldl ( \ r a -> r * 10 + digitToInt a) 0 s in 
-              if n >= length choices then
-                 putStrLn "number to large, try again"
-                 >> listBox prompt choices
-              else putStrLn ("you have chosen entry \"" ++ choices!!n)
-                   >> return (Just n)
-      else putStrLn ("illegal input \"" ++ s ++ "\" try again")
-           >> listBox prompt choices
-#endif
+import GUI.Utils
 
 {- todo: implement apply for GlobDecomp and Subsumption 
    the list of DGChage must be constructed in parallel to the

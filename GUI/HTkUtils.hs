@@ -92,11 +92,9 @@ createTextSaveDisplayExt title filename txt conf unpost =
 createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ default filename for saving the text
                       -> String -- ^ text to be displayed
-                      -> [Config Editor]-- ^ configuration options for 
-                      -- the text editor
                       -> IO()
-createTextSaveDisplay t f txt conf = 
-    do createTextSaveDisplayExt t f txt conf done; done
+createTextSaveDisplay t f txt = 
+    do createTextSaveDisplayExt t f txt [size(100,50)] done; done
 
 
 --- added by KL

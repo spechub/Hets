@@ -40,7 +40,7 @@ import Proofs.InferBasic
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
-import GUI.HTkUtils
+import GUI.Utils
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 
 import FileDialog
@@ -765,7 +765,7 @@ displayTheory ext node dgraph gth =
            (DGNode name (G_sign _ _) _ _ _ _) ->
               let thname = showName name
                   title = ext ++ " of " ++ thname
-               in createTextSaveDisplay title (thname++".het") str [size(100,50)]
+               in createTextSaveDisplay title (thname++".het") str
            (DGRef _ _ _ _ _) -> error 
                             "nodes of type dg_ref do not have a theory"
      

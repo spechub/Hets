@@ -229,7 +229,7 @@ cpp_sources = Common/DynamicUtils.hs \
     Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs \
-    Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \
+    GUI/Utils.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
 
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
