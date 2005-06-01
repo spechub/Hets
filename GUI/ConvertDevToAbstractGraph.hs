@@ -36,6 +36,7 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Proofs.Proofs
+import Proofs.InferBasic
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
