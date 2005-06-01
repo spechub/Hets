@@ -37,6 +37,11 @@ import Static.DGToSpec
 
 import Proofs.Proofs
 import Proofs.InferBasic
+import Proofs.Global
+import Proofs.Local
+import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
+
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
