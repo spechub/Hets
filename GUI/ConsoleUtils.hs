@@ -1,13 +1,18 @@
 {-
 Module      :  $Header$
-Copyright   :  (c)  Till Mossakowski and Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable (imports Logic)
+Portability :  portable
 
-   Utilities on top of HTk
+   gui utilities that work via the console instead of using HTk
+   
+   The interface should remain compatible with GUI.HTkUtils 
+   so that GUI.Utils can reexport functions of both modules
+   based on the presence of UNI_PACKAGE.
+
 -}
 
 module GUI.ConsoleUtils where
