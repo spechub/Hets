@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 ----------------------------------------------------------------------------- 
 -- |
 -- Module      :  Common.Lib.Map
@@ -148,6 +149,8 @@ module Common.Lib.Map  (
             ) where
 
 import Prelude hiding (lookup,map,filter,foldr,foldl,null)
+
+#if __GLASGOW_HASKELL__<=602
 import qualified Common.Lib.Set as Set
 import qualified Data.List as List
 import Data.Typeable
@@ -1606,3 +1609,6 @@ prop_List :: [Int] -> Bool
 prop_List xs
   = (sort (nub xs) == [x | (x,()) <- toList (fromList [(x,()) | x <- xs])])
 -}
+#else
+import Data.Map
+#endif

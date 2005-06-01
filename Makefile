@@ -190,7 +190,7 @@ genrule_header_files = $(wildcard ATC/*.header.hs)
 atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Static/DevGraph.hs Proofs/Proofs.hs
+    Static/DevGraph.hs Logic/Prover.hs Proofs/Proofs.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -234,6 +234,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Haskell/Hatchet/FiniteMaps.hs Common/DynamicUtils.hs \
+    Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs \
     Proofs/Proofs.hs hets.hs CASL/CCC/FreeTypes.hs \

@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Common.Lib.Set
@@ -97,6 +98,8 @@ module Common.Lib.Set  (
             ) where
 
 import Prelude hiding (filter,foldr,null,map)
+
+#if __GLASGOW_HASKELL__<=602
 import qualified Data.List as List
 import Data.Typeable
 
@@ -1057,3 +1060,6 @@ prop_List xs
   = (sort (nub xs) == toList (fromList xs))
 -}
 
+#else
+import Data.Set
+#endif

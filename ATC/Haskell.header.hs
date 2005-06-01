@@ -7,7 +7,7 @@ import SrcLoc
 import qualified PropSyntaxRec as P
 import Haskell.HatParser(HsDecls(..))
 import Haskell.HatAna(Sign(..))
-import Data.Set
+import ATC.Set
 import Ents
 {-| Exclude: KindConstraint |-}
 
@@ -45,10 +45,6 @@ instance (ShATermConvertible a,
             u -> fromShATermError "Either" u
         where
             aterm = getATerm att
-
-instance (Ord a, ShATermConvertible a) => ShATermConvertible (Set a) where
-    toShATerm att fm = toShATerm att $ setToList fm
-    fromShATerm att  = mkSet $ fromShATerm att
 
 instance (ShATermConvertible n) => ShATermConvertible (Ent n) where
     toShATerm att0 (Ent aa ab ac) =

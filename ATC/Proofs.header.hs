@@ -37,16 +37,3 @@ instance ShATermConvertible BasicProof where
          where
          aterm = getATerm att
 
-instance ShATermConvertible (Proof_status proof_tree) where
-     toShATerm att0 ps =
-         case toShATerm att0 ps of { (att1,i1) ->
-            addATerm (ShAAppl "Proof_status proof_tree" [i1] []) att1}
-     fromShATerm att = 
-         case aterm of
-	    (ShAAppl "Proof_status proof_tree" [i1] _) ->
-	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
-                 i1'}
-	    u     -> fromShATermError "Proof_status proof_tree" u
-         where
-         aterm = getATerm att
-
