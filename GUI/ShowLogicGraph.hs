@@ -1,11 +1,21 @@
-{- Version 0.9b, 11,06,2004 -}
+{- |
+Module      :  $Header$
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  till@tzi.de
+Stability   :  provisional
+Portability :  non-portable (Logic)
+
+  display the logic graph
+   
+-}
+
+--   Version 0.9b, 11,06,2004
 
 module GUI.ShowLogicGraph
 where
 
-import Debug.Trace
-import Common.PrettyPrint
- 
 -- for graph display
 import DaVinciGraph
 import GraphDisp
@@ -15,10 +25,8 @@ import GraphConfigure
 import TextDisplay
 import Configuration
 import qualified HTk
-import Channels
 import Debug(debug)
-import Events
-import Destructible
+
 
 --  data structure
 import Comorphisms.LogicGraph

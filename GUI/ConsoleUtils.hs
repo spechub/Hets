@@ -1,4 +1,4 @@
-{-
+{- |
 Module      :  $Header$
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt

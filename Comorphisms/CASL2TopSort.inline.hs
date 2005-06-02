@@ -1,4 +1,4 @@
-{- 
+{- | 
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -9,11 +9,6 @@ Portability :  portable
 
    Coding out subsorting into unary predicates.
    New concept for proving Ontologies.
--}
-
-{-
-   todo:
-
 -}
 
 module Comorphisms.CASL2TopSort where

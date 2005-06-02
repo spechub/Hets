@@ -1,9 +1,16 @@
-{- HetCATS/Haskell/Wrapper.hs
-   $Id$
-   Authors: C. Maeder
-   Year:    2003
+{- |
+Module:  $Header$
+Copyright   :  (c) C. Maeder, Uni Bremen 2003
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt          
+                                                                               
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  portable
 
    extract Haskell code from String
+-}
+
+{-
    stops at unbalanced "}" 
 
    "then" may be recognized if it is not preceded by "if"

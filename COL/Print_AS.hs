@@ -1,4 +1,4 @@
-{-
+{- |
 Module      :  $Header$
 Copyright   :  (c) Wiebke Herding, C. Maeder, Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
@@ -10,7 +10,7 @@ Portability :  portable
   printing AS_Modal ModalSign data types
 -}
 
-module Modal.Print_AS where
+module COL.Print_AS where
 
 import Common.Id
 import Common.Keywords

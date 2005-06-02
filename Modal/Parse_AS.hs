@@ -1,4 +1,4 @@
-{-
+{- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Wiebke Herding, C. Maeder, Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt

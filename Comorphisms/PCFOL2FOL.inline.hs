@@ -1,19 +1,12 @@
-{-                                                                          
-Module:  $Header: /repository/HetCATS/Comorphisms/PFOL2FOL.inline.hs,      v 
-1.20 2004/06/02 19:52:39 mnd Exp $                                            
-Copyright   :  (c) Zicheng Wang, C. Maeder, Uni Bremen 2002-2005                         
+{- |
+Module:  $Header$
+Copyright   :  (c) Zicheng Wang, C. Maeder, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt          
                                                                                
-Maintainer  :  hets@tzi.de                                                     
-Stability   :  provisional                                                     
-Portability :  portable                                                        
--}
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  portable
 
-{- todo
-  generate axioms
-  translate formulas
-  optimize for total sigs
-  translate morphisms (remove partiality)
 -}
 
 module Comorphisms.PCFOL2FOL where
