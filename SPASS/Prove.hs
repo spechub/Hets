@@ -28,15 +28,12 @@ import qualified Common.Lib.Rel
 {- |
   Not yet implemented.
 -}
-spassProver :: Prover Sign Sentence () ()
+spassProver :: Prover Sign Sentence ()
 spassProver =
   Prover { prover_name = "SPASS",
            prover_sublogic = "SPASS",
            prove = spassProve
          }
 
-                 -- input: theory name, theory, goals
-                 -- output: proof status for goals and lemmas
-spassProve :: String -> (Sign,[Named Sentence]) -> [Named Sentence] 
-              -> IO([Proof_status ()])
-spassProve thName (sig,axs) goals = return []
+spassProve :: String -> Theory Sign Sentence -> IO([Proof_status ()])
+spassProve thName (Theory sig nSens) = return []
