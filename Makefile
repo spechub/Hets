@@ -9,7 +9,7 @@
 # !!! Note: This makefile is written for GNU make !!!
 #           (gmake on solaris)
 
-all: hets 
+all: patch hets
 
 ####################################################################
 ## Some varibles, which control the compilation
@@ -266,7 +266,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 patch:
 
-hets: $(sources) $(derived_sources) patch
+hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-opt: 
