@@ -296,8 +296,8 @@ translateTerm env t =
       c = mkHsVar "c"
       vs2 = [mkPHsVar "a", mkPHsVar "b"]
       vs3 = vs2 ++ [mkPHsVar "c"]
-      pat2 = [rec $ HsPTuple vs2]
-      pat3 = [rec $ HsPTuple vs3]
+      pat2 = [rec $ HsPTuple loc vs2]
+      pat3 = [rec $ HsPTuple loc vs3]
       mkLam2 x y = rec $ HsParen $ rec $ HsLambda pat2 $ rec $ HsIf x y hTrue
       mkLam3 x y = rec $ HsParen $ rec $ HsLambda pat3 $ rec $ HsIf x y c
       in if uid == botId then mkErr "bottom at "
@@ -360,7 +360,8 @@ translatePattern env pat = case pat of
                      rec $ HsPParen $ rec $ HsPApp u (os ++ [a])
                  _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _ -> 
-          rec $ HsPTuple $ map (translatePattern env) pats
+          rec $ HsPTuple (toProgPos $ get_pos pat) 
+                  $ map (translatePattern env) pats
       TypedTerm _ InType _ _ -> error "translatePattern InType"
       TypedTerm p _ _ty _ -> translatePattern env p 
                                  --the type is implicit

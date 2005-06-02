@@ -721,7 +721,7 @@ transP :: IsaName i => (i -> VName) -> (p -> IsaPattern) ->
 transP trId trP p =
  case HsPatMaps.mapPI trId trP p of
    HsPId (HsVar x) -> Const "DIC" noType
-   HsPTuple xs -> Tuplex xs IsCont 
+   HsPTuple _ xs -> Tuplex xs IsCont 
    HsPParen x -> Paren x
    HsPWildCard -> Wildcard
    _ -> error "Haskell2IsabelleHOLCF.transP, not supported"
