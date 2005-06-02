@@ -9,7 +9,7 @@
 # !!! Note: This makefile is written for GNU make !!!
 #           (gmake on solaris)
 
-all: hets
+all: hets 
 
 ####################################################################
 ## Some varibles, which control the compilation
@@ -105,11 +105,14 @@ happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
+patch: Haskell/Programatica.patch
+	patch -sNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
+
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	$< > $@
 
 $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
-                          $(LEX_DIR)/HsTokens.hs
+    $(LEX_DIR)/HsTokens.hs
 	$(HC) --make -O -package data \
            -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
            -i$(PFE_TOOLDIR)/base/lib \
@@ -125,7 +128,7 @@ APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
 
 ## rule for appendHaskellPreludeString
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
-        $(APPENDPRELUDESTRING)
+    $(APPENDPRELUDESTRING)
 	$(APPENDPRELUDESTRING) < $< > $@
 
 Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
@@ -257,11 +260,13 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 .PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
     lib_clean distclean check capa hacapa h2h clean_genRules genRules \
     taxonomy count doc apache_doc post_doc4apache \
-     derivedSources install_hets install release
+     derivedSources install_hets install release patch
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
-hets: $(sources) $(derived_sources)
+patch:
+
+hets: $(sources) $(derived_sources) patch
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-opt: 
