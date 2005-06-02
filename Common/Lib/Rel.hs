@@ -136,18 +136,15 @@ collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
 collaps cs = delSet $ Set.unions $ List.map Set.deleteMin cs
 
 {- | transitive reduction (minimal relation with the same transitive closure)
-     of a DAG. -}
+     of a transitively closed DAG. -}
 transReduce :: Ord a => Rel a -> Rel a
-transReduce rel@(Rel m) =
-    Map.foldWithKey ( \ i ->
-               flip $ Set.fold ( \ j ->
-               if covers i j rel then 
-                  insert i j else id)) empty m
-    where
-    -- (a, b) in r but no c with (a, c) and (c, b) in r
-    covers :: Ord a => a -> a -> Rel a -> Bool
-    covers a b r = Set.null $ Set.filter ( \ c -> path c b r) 
-                       (Set.delete a $ Set.delete b $ reachable r a)  
+transReduce rel@(Rel m) = Rel $ rmNull $ 
+    Map.mapWithKey ( \ i s ->
+                  -- (i, j) in rel but no c with (i, c) and (c, j) in rel
+        Set.filter ( \ j ->
+            Set.null $ Set.filter ( \ c -> 
+                Set.member j $ succs rel c)
+                  $ Set.delete i $ Set.delete j s) s) m
 
 -- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
