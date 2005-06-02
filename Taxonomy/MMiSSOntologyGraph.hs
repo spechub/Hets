@@ -753,10 +753,10 @@ showRelationDialog parentContainer onto gv (name,descr,gid) =
 	    return()
   where 
     firstRow =  
-      (S.newFormEntry "" ()) S.\\ 
-      (S.newFormEntry "Show" ()) S.\\
+      (S.newFormEntry "" ()) S.\\ --
+      (S.newFormEntry "Show" ()) S.\\ --
       (S.newFormEntry "Transitive" ())
     relSpecToFormEntry (A.RelViewSpec relname b1 b2) = 
-      (S.newFormEntry relname ()) S.\\
-      (S.newFormEntry "" b1) S.\\
+      (S.newFormEntry relname ()) S.\\ --
+      (S.newFormEntry "" b1) S.\\ --
       (S.newFormEntry "" b2)
