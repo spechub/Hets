@@ -112,12 +112,13 @@ transClosure r@(Rel m) = Rel $ Map.mapWithKey ( \ k _ -> reachable r k) m
 transpose :: Ord a => Rel a -> Rel a 
 transpose = fromList . List.map ( \ (a, b) -> (b, a)) . toList
 
+-- | establish the invariant
+rmNull :: Ord a => Map.Map a (Set.Set a) -> Map.Map a (Set.Set a)
+rmNull = Map.filter (not . Set.null)
+
 -- | make relation irreflexive
 irreflex :: Ord a => Rel a -> Rel a
-irreflex (Rel m) = Rel $ Map.foldWithKey ( \ k s ->
-           let r = Set.delete k s in
-           if Set.null r then id else
-              Map.insert k r) Map.empty m
+irreflex (Rel m) = Rel $ rmNull $ Map.mapWithKey (Set.delete) m
 
 -- | compute strongly connected components for a transitively closed relation 
 sccOfClosure :: Ord a => Rel a -> [Set.Set a]
@@ -185,11 +186,8 @@ restrict r s = delSet (nodes r Set.\\ s) r
 
 -- | restrict to elements not in the input set
 delSet :: Ord a => Set.Set a -> Rel a -> Rel a
-delSet s (Rel m) = Rel $ Map.foldWithKey
-    ( \ a v -> if Set.member a s then id else
-                   let r = v Set.\\ s in
-                   if Set.null r then id else Map.insert a r)
-                   Map.empty m
+delSet s (Rel m) = Rel $ Map.filterWithKey 
+    ( \ a _ -> not $ Set.member a s) $ rmNull $ Map.map (Set.\\ s) m 
 
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
