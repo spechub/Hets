@@ -46,6 +46,10 @@ transStringT i s = let t = transString s in
          $ Map.lookup i isaPrelude 
   then t ++ "X" else t
 
+-- | check for legal alphanumeric isabelle characters
+isIsaChar :: Char -> Bool
+isIsaChar c = isAlphaNum c && isAscii c || c `elem` "_'"
+
 transString :: String -> String
 transString str = let 
     x = 'X'
