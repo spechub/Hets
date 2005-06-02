@@ -14,6 +14,10 @@ display of development graphs, using abstract graph interface
 
 "GUI.HTkUtils"	some utilities for "HTk"
 
+"GUI.ConsoleUtils" similar utilities for using without "HTk"
+
+"GUI.Utils" either "GUI.HTkUtils" or "GUI.ConsoleUtils"
+
 "GUI.ShowLogicGraph" display of logic graph
 
 "GUI.Taxonomy" display of subsort relation (taxonomy)
