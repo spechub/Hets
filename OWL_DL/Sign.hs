@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Signatures for modal logic (OWL_DL).
+   Signatures and sentences for OWL_DL.
 -}
 
 module OWL_DL.Sign where
@@ -37,12 +37,6 @@ data RoleID = IVP IndividualValuedPropertyID
 
 type ID = URIreference          -- for universal ID
 
-data OWL_DLSentence = ConceptAxiom Axiom
-                    | RoleAxiom Axiom
-                    | FactSen Fact
+data OWL_DLSentence = OWLAxiom Axiom                       
+                    | OWLFact Fact
 
--- data Concept = 
-
--- data Role = 
-
--- data Fact 
