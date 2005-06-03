@@ -135,16 +135,19 @@ sccOfClosure r@(Rel m) =
 collaps :: Ord a => [Set.Set a] -> Rel a -> Rel a
 collaps cs = delSet $ Set.unions $ List.map Set.deleteMin cs
 
+setToMap :: Ord a => Set.Set a -> Map.Map a ()
+setToMap s = Map.fromDistinctAscList $ 
+             List.map (\ a -> (a, ())) $ Set.toList s
+
 {- | transitive reduction (minimal relation with the same transitive closure)
      of a transitively closed DAG. -}
 transReduce :: Ord a => Rel a -> Rel a
-transReduce rel@(Rel m) = Rel $ rmNull $ 
-    Map.mapWithKey ( \ i s ->
-                  -- (i, j) in rel but no c with (i, c) and (c, j) in rel
+transReduce (Rel m) = Rel $ rmNull $ 
+-- keep all (i, j) in rel for which no c with (i, c) and (c, j) in rel
+    Map.mapWithKey ( \ i s -> let d = setToMap $ Set.delete i s in
         Set.filter ( \ j ->
-            Set.null $ Set.filter ( \ c -> 
-                Set.member j $ succs rel c)
-                  $ Set.delete i $ Set.delete j s) s) m
+            Map.null $ Map.filter (Set.member j)
+                $ Map.intersection m $ Map.delete j d) s) m
 
 -- | convert a list of ordered pairs to a relation 
 fromList :: Ord a => [(a, a)] -> Rel a
@@ -183,8 +186,7 @@ restrict r s = delSet (nodes r Set.\\ s) r
 
 -- | restrict to elements not in the input set
 delSet :: Ord a => Set.Set a -> Rel a -> Rel a
-delSet s (Rel m) = Rel $ Map.filterWithKey 
-    ( \ a _ -> not $ Set.member a s) $ rmNull $ Map.map (Set.\\ s) m 
+delSet s (Rel m) = Rel $ rmNull (Map.map (Set.\\ s) m) Map.\\ setToMap s 
 
 -- | convert a relation to a set of ordered pairs
 toSet :: (Ord a) => Rel a -> Set.Set (a, a)
