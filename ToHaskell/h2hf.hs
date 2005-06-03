@@ -54,7 +54,7 @@ main = do l <- getArgs
 		let r = runParser hParser (emptyAnnos ()) (head l) s 
 	        case r of 
 		       Right (sig, hs) -> let 
-                         tn = (takeWhile (/= '.') $ reverse (takeWhile (/= '/') $ reverse $ show $ head l))
+                         tn = (takeWhile (/= '.') $ reverse (takeWhile (\x -> x /= '/' && x /= '"') $ reverse $ show $ head l))
                             ++ "_theory" 
                          doc = text "theory" <+> text tn <+> text "=" $$
                             createTheoryText sig hs
