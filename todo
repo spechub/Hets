@@ -14,7 +14,7 @@ Suchfunktion für einen Knoten im DG:
 BasicProof in Proofs.Proofs: sind Datenstrukturen für informelle Beweise OK?
 Konfidenzgrade von Beweisen?
 
-von Till/Jorina zu erledigen:
+von Till/Jorina (jfgerken@tzi.de) zu erledigen:
 Repräsentation ändern:
   Beweisobjekte an DGs, nicht an Regeln
   Für Theoreme in Theorien an Beweisobjekte
