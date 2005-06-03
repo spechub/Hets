@@ -51,11 +51,15 @@ main :: IO ()
 main = do l <- getArgs
 	  if length l >= 1 then
 	     do s <- readFile $ head l
-		let r = runParser hParser (emptyAnnos ()) (head l) s 
+                s1 <- return $ dropWhile (\x -> x == '\n' || x == ' ') s
+                s2 <- return $ if takeWhile (/= ' ') s1 == "module" 
+                               then dropWhile (/= '\n') s1 else s1  
+		let r = runParser hParser (emptyAnnos ()) (head l) s2  
 	        case r of 
 		       Right (sig, hs) -> let 
-                         tn = (takeWhile (/= '.') $ reverse (takeWhile (\x -> x /= '/' && x /= '"') $ reverse $ show $ head l))
-                            ++ "_theory" 
+                         tn = dropWhile (== '"') $ (takeWhile (/= '.') 
+                              $ reverse (takeWhile (\x -> x /= '/') $ reverse 
+                              $ show $ head l)) ++ "_theory" 
                          doc = text "theory" <+> text tn <+> text "=" $$
                             createTheoryText sig hs
                          in writeFile (tn ++ ".thy") (shows doc "\n")
