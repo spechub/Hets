@@ -39,20 +39,16 @@ put :: s -> State s ()
 put s = State $ \_ -> ((), s)
 
 modify :: (s -> s) -> State s ()
-modify f = do
-	s <- get
-	put (f s)
+modify f = get >>= put . f
 
 gets :: (s -> a) -> State s a
-gets f = do
-	s <- get
-	return (f s)
+gets f = fmap f get
 
 evalState :: State s a -> s -> a
-evalState m s = fst (runState m s)
+evalState m = fst . runState m
 
 execState :: State s a -> s -> s
-execState m s = snd (runState m s)
+execState m = snd . runState m
 
 mapState :: ((a, s) -> (b, s)) -> State s a -> State s b
 mapState f m = State $ f . runState m
