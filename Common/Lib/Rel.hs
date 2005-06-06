@@ -30,8 +30,8 @@ for plain maps involving sets.
 
 -}
 
-module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null, 
-                       insert, member, toMap, Common.Lib.Rel.map, 
+module Common.Lib.Rel (Rel(), empty, null, 
+                       insert, member, toMap, map, 
                        union , isSubrelOf, difference, path, delete,
                        succs, predecessors, irreflex, sccOfClosure,
                        transClosure, fromList, toList, image,
@@ -40,6 +40,7 @@ module Common.Lib.Rel (Rel(), empty, Common.Lib.Rel.null,
                        transpose, transReduce, setInsert, keysSet,
                        haveCommonLeftElem) where
 
+import Prelude hiding (map, null)
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Data.List as List
