@@ -1,3 +1,12 @@
+/**
+ * This class instead of RenderingVisitor to show the result
+ * 
+ * Created: Fri Feb 21 10:57:24 2003
+ * 
+ * @author Sean Bechhofer
+ * @version $Id: RenderingVisitor.java,v 1.7 2004/03/30 17:46:38 sean_bechhofer
+ *          Exp $
+ */
 
 import org.semanticweb.owl.model.helper.OWLObjectVisitorAdapter;
 import java.io.PrintWriter;
@@ -26,35 +35,22 @@ import org.semanticweb.owl.model.OWLSameIndividualsAxiom;
 import java.util.Set;
 import java.util.Map;
 import org.semanticweb.owl.model.OWLDataType;
-import org.semanticweb.owl.model.OWLDescriptionVisitor;
-import org.semanticweb.owl.model.OWLClassAxiomVisitor;
-import org.semanticweb.owl.model.OWLIndividualAxiomVisitor;
+// import org.semanticweb.owl.model.OWLDescriptionVisitor;
+// import org.semanticweb.owl.model.OWLClassAxiomVisitor;
+// import org.semanticweb.owl.model.OWLIndividualAxiomVisitor;
 import org.semanticweb.owl.model.OWLEquivalentPropertiesAxiom;
 import org.semanticweb.owl.model.OWLSubPropertyAxiom;
 import org.semanticweb.owl.model.OWLProperty;
 import org.semanticweb.owl.model.OWLDataCardinalityRestriction;
 import org.semanticweb.owl.model.OWLDataValueRestriction;
 import org.semanticweb.owl.io.abstract_syntax.Renderer;
-import org.semanticweb.owl.io.vocabulary.XMLSchemaSimpleDatatypeVocabulary;
+// import org.semanticweb.owl.io.vocabulary.XMLSchemaSimpleDatatypeVocabulary;
 import org.semanticweb.owl.model.OWLDataSomeRestriction;
 import org.semanticweb.owl.model.OWLDataAllRestriction;
 import org.semanticweb.owl.model.OWLDataEnumeration;
 import org.semanticweb.owl.model.OWLOntology;
 import java.net.URI;
 import org.semanticweb.owl.io.ShortFormProvider;
-
-// Generated package name
-
-/**
- * RenderingVisitor.java
- * 
- * 
- * Created: Fri Feb 21 10:57:24 2003
- * 
- * @author Sean Bechhofer
- * @version $Id: RenderingVisitor.java,v 1.7 2004/03/30 17:46:38 sean_bechhofer
- *          Exp $
- */
 
 public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 
@@ -89,93 +85,87 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 		pw.print("DC(\"" + shortForms.shortForm(clazz.getURI()) + "\")");
 	}
 
+	// this methode is unnecessary!
 	public void visit(OWLIndividual ind) throws OWLException {
-		pw.print("\"" + shortForms.shortForm(ind.getURI()) + "\"");
-		
-//		
-//		RenderingVisitor2 visitor = new RenderingVisitor2(shortForms, ontology);
-//		if (ind.isAnonymous()) {
-//			/* We need to print out the entire description... */
-//			pw.print("Individual(_");
-//			if (ind.getTypes(ontology).isEmpty()
-//					&& ind.getObjectPropertyValues(ontology).keySet().isEmpty()
-//					&& ind.getDataPropertyValues(ontology).keySet().isEmpty()) {
-//				pw.print(")");
-//			} else {
-//				for (Iterator it = ind.getTypes(ontology).iterator(); it
-//						.hasNext();) {
-//					OWLDescription eq = (OWLDescription) it.next();
-//					visitor.reset();
-//					eq.accept(visitor);
-//					pw.print(",Type(" + visitor.result() + ")");
-//				}
-//				Map propertyValues = ind.getObjectPropertyValues(ontology);
-//
-//				for (Iterator it = propertyValues.keySet().iterator(); it
-//						.hasNext();) {
-//					OWLObjectProperty prop = (OWLObjectProperty) it.next();
-//					Set vals = (Set) propertyValues.get(prop);
-//					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
-//						OWLIndividual oi = (OWLIndividual) valIt.next();
-//						visitor.reset();
-//						oi.accept(visitor);
-//						pw.print(",Value(" + "\""
-//								+ shortForms.shortForm(prop.getURI()) + "\","
-//								+ visitor.result() + ")");
-//					}
-//				}
-//				Map dataValues = ind.getDataPropertyValues(ontology);
-//
-//				for (Iterator it = dataValues.keySet().iterator(); it.hasNext();) {
-//					OWLDataProperty prop = (OWLDataProperty) it.next();
-//					Set vals = (Set) dataValues.get(prop);
-//					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
-//						OWLDataValue dtv = (OWLDataValue) valIt.next();
-//						visitor.reset();
-//						dtv.accept(visitor);
-//						pw.print(",Value(" + "\""
-//								+ shortForms.shortForm(prop.getURI()) + "\","
-//								+ visitor.result() + ")");
-//						if (it.hasNext()) {
-//							pw.print(",");
-//						}
-//					}
-//				}
-//				pw.print(")");
-//			}
-//		} else {
-//			pw.print("\"" + shortForms.shortForm(ind.getURI()) + "\"");
-//		}
+
+		RenderingVisitor2 visitor = new RenderingVisitor2(shortForms, ontology);
+		if (ind.isAnonymous()) {
+			/* We need to print out the entire description... */
+			pw.print("Individual(_");
+			if (ind.getTypes(ontology).isEmpty()
+					&& ind.getObjectPropertyValues(ontology).keySet().isEmpty()
+					&& ind.getDataPropertyValues(ontology).keySet().isEmpty()) {
+				pw.print(")");
+			} else {
+				for (Iterator it = ind.getTypes(ontology).iterator(); it
+						.hasNext();) {
+					OWLDescription eq = (OWLDescription) it.next();
+					visitor.reset();
+					eq.accept(visitor);
+					pw.print(",Type(" + visitor.result() + ")");
+				}
+				Map propertyValues = ind.getObjectPropertyValues(ontology);
+
+				for (Iterator it = propertyValues.keySet().iterator(); it
+						.hasNext();) {
+					OWLObjectProperty prop = (OWLObjectProperty) it.next();
+					Set vals = (Set) propertyValues.get(prop);
+					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
+						OWLIndividual oi = (OWLIndividual) valIt.next();
+						visitor.reset();
+						oi.accept(visitor);
+						pw.print(",Value("
+								+ "\"" + shortForms.shortForm(prop.getURI()) + "\","
+								+ visitor.result() + ")");
+					}
+				}
+				Map dataValues = ind.getDataPropertyValues(ontology);
+
+				for (Iterator it = dataValues.keySet().iterator(); it.hasNext();) {
+					OWLDataProperty prop = (OWLDataProperty) it.next();
+					Set vals = (Set) dataValues.get(prop);
+					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
+						OWLDataValue dtv = (OWLDataValue) valIt.next();
+						visitor.reset();
+						dtv.accept(visitor);
+						pw.print(",Value(" + "\"" + shortForms.shortForm(prop.getURI())
+								+ "\"," + visitor.result() + ")");
+						if (it.hasNext()) {
+							pw.print(",");
+						}
+					}
+				}
+				pw.print(")");
+			}
+		} else {
+			pw.print("\"" + shortForms.shortForm(ind.getURI()) + "\"");
+		}
 	}
 
 	public void visit(OWLObjectProperty prop) throws OWLException {
-		// System.out.println("ObjectProperty in RV: " + prop.toString());
 		pw.print("\"" + shortForms.shortForm(prop.getURI()) + "\"");
 	}
 
 	public void visit(OWLDataProperty prop) throws OWLException {
-		// System.out.println("DataProperty in RV: " + prop.toString());
 		pw.print("\"" + shortForms.shortForm(prop.getURI()) + "\"");
 	}
 
 	public void visit(OWLDataValue cd) throws OWLException {
 
-		// pw.print("\"" + Renderer.escape(cd.getValue()) + "\"");
-		String data = Renderer.escape(cd.getValue());
+		pw.print("\"" + Renderer.escape(cd.getValue()) + "\"");
+		/* Only show it if it's not string */
 
 		URI dvdt = cd.getURI();
 		String dvlang = cd.getLang();
 		if (dvdt != null) {
-			pw
-					.print("TypedL((\"" + data + "\",\"<" + dvdt.toString()
-							+ ">\"))");
-			// pw.print("^^" + "<" + dvdt.toString() + ">");
-		} else if (dvlang != null) {
-			pw.print("PlainL((\"" + data + "\",\"" + dvlang + "\"))");
-			// pw.print("@" + dvlang);
-		} else
-			pw.print("Plain(\"" + data + "\")");
+			
+			pw.print("^^" + "<" + dvdt.toString() + ">");
+		} else 
+			if (dvlang != null) {
 
+				pw.print("@" + dvlang);
+			} else pw.print("@");
+		
 	}
 
 	public void visit(OWLAnd and) throws OWLException {
@@ -266,19 +256,15 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 
 	public void visit(OWLObjectCardinalityRestriction restriction)
 			throws OWLException {
-		pw.print("DR(IndivRestriction(");
+		pw.print("DR(IndivRestriction(");             
 		restriction.getObjectProperty().accept(this);
 		if (restriction.isExactly()) {
-			pw.print(",IRCCardinality( Cardinality ("
-					+ restriction.getAtLeast() + ")), []))");
+			pw.print(",IRCCardinality( Cardinality (" + restriction.getAtLeast() + ")), []))");
 		} else if (restriction.isAtMost()) {
-			pw.print(",IRCCardinality( MaxCardinality("
-					+ restriction.getAtMost() + ")), []))");
+			pw.print(",IRCCardinality( MaxCardinality(" + restriction.getAtMost() + ")), []))");
 		} else if (restriction.isAtLeast()) {
-			pw.print(",IRCCardinality( MinCardinality("
-					+ restriction.getAtLeast() + ")), []))");
-		} else
-			pw.print("))");
+			pw.print(",IRCCardinality( MinCardinality(" + restriction.getAtLeast() + ")), []))");
+		} else pw.print("))"); 
 	}
 
 	public void visit(OWLDataCardinalityRestriction restriction)
@@ -286,21 +272,18 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 		pw.print("DR(DataRestriction(");
 		restriction.getDataProperty().accept(this);
 		if (restriction.isExactly()) {
-			pw.print(",DRCCardinality(Cardinality(" + restriction.getAtLeast()
-					+ ")), []))");
+			pw.print(",DRCCardinality(Cardinality(" + restriction.getAtLeast() + ")), []))");
 		} else if (restriction.isAtMost()) {
-			pw.print(",DRCCardinality(MaxCardinality("
-					+ restriction.getAtMost() + ")), []))");
+			pw.print(",DRCCardinality(MaxCardinality(" + restriction.getAtMost() + ")), []))");
 		} else if (restriction.isAtLeast()) {
-			pw.print(",DRCCardinality(MinCardinality("
-					+ restriction.getAtLeast() + ")), []))");
-		} else
-			pw.print("))");
-
+			pw.print(",DRCCardinality(MinCardinality(" + restriction.getAtLeast() + ")), []))");
+		} else pw.print("))"); 
+		
+		
 	}
 
 	public void visit(OWLDataValueRestriction restriction) throws OWLException {
-		pw.print("DR(DataRestriction(");
+		pw.print("DR(DRCRestriction(");
 		restriction.getDataProperty().accept(this);
 		/* Changed from hasValue */
 		pw.print(",DRCValue(");
@@ -342,37 +325,23 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLEquivalentPropertiesAxiom axiom) throws OWLException {
-		boolean fun = false;
-		
-		
+		pw.print("EquivalentProperties(");
 		for (Iterator it = axiom.getProperties().iterator(); it.hasNext();) {
 			OWLProperty prop = (OWLProperty) it.next();
-			if(!fun && prop != null && prop.getClass().getName().contains("Object")){
-				pw.print("Ax(IEquivalentProperties(");
-				fun = true;
-			}else if(!fun && prop != null){
-				pw.print("Ax(DEquivalentProperties(");
-				fun = true;
-			}
 			prop.accept(this);
 			if (it.hasNext()) {
 				pw.print(",");
 			}
 		}
-		pw.print(",[]))");
+		pw.print(")");
 	}
 
 	public void visit(OWLSubPropertyAxiom axiom) throws OWLException {
-		
-		if(axiom.getSubProperty().getClass().getName().contains("Object")){
-			pw.print("Ax(ISubPropertyOf(");
-		}else{
-			pw.print("Ax(DSubPropertyOf(");
-		}
+		pw.print("SubPropertyOf(");
 		axiom.getSubProperty().accept(this);
 		pw.print(",");
 		axiom.getSuperProperty().accept(this);
-		pw.print("))");
+		pw.print(")");
 	}
 
 	public void visit(OWLDifferentIndividualsAxiom ax) throws OWLException {
@@ -400,11 +369,11 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	}
 
 	public void visit(OWLDataType ocdt) throws OWLException {
-		pw.print("DID(\"" + shortForms.shortForm(ocdt.getURI()) + "\")");
+		pw.print(shortForms.shortForm(ocdt.getURI()));
 	}
 
 	public void visit(OWLDataEnumeration enumeration) throws OWLException {
-		pw.print("OneOfData([");
+		pw.print("OneOfData(");
 		for (Iterator it = enumeration.getValues().iterator(); it.hasNext();) {
 			OWLDataValue desc = (OWLDataValue) it.next();
 			desc.accept(this);
@@ -412,7 +381,7 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 				pw.print(",");
 			}
 		}
-		pw.print("])");
+		pw.print(")");
 	}
 
 } // RenderingVisitor
