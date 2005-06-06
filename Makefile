@@ -60,7 +60,7 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 CPPP = cpp 
 
-HC_WARN = -Wall
+HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances 
 # -ddump-minimal-imports 
