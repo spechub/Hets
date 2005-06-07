@@ -4,7 +4,7 @@ RCS file: /cvs/programatica/tools/base/parse2/NumberNames.hs,v
 retrieving revision 1.5
 diff -u -r1.5 NumberNames.hs
 --- base/parse2/NumberNames.hs	8 Dec 2001 01:18:40 -0000	1.5
-+++ base/parse2/NumberNames.hs	2 Jun 2005 16:47:07 -0000
++++ base/parse2/NumberNames.hs	7 Jun 2005 17:05:36 -0000
 @@ -7,5 +7,5 @@
  --
  numberNames m = mapNames conv m
@@ -12,3 +12,17 @@ diff -u -r1.5 NumberNames.hs
 -    conv (SN i p) = PN i (S p)
 +    conv (SN i p) = PN i (Sn (show i) p)
  --}
+Index: property/parse2/Parser/PropParser.y
+===================================================================
+RCS file: /cvs/programatica/tools/property/parse2/Parser/PropParser.y,v
+retrieving revision 1.57
+diff -u -r1.57 PropParser.y
+--- property/parse2/Parser/PropParser.y	31 May 2005 02:25:36 -0000	1.57
++++ property/parse2/Parser/PropParser.y	7 Jun 2005 17:05:37 -0000
+@@ -1,5 +1,6 @@
+ -- A copied and modified version of ../base/parse2/Parser/HsParser.y...
+ {
++{-# OPTIONS -w #-}
+ module PropParser (parse) where
+  
+ import PropPosSyntax
