@@ -54,7 +54,7 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
 
 HC = ghc
 PERL = perl
-HAPPY = happy -sgca
+HAPPY = happy -sga
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -572,9 +572,6 @@ hets.hs: Driver/Version.hs
 
 %: %.hs
 	$(HC) --make -o $@ $<
-
-%.hs: %.ly
-	$(HAPPY) $<
 
 %.hs: %.y
 	$(HAPPY) -o $@ $<
