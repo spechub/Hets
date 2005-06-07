@@ -1,17 +1,18 @@
------------------------------------------------------------------------------
--- |
--- Module      :  $Header$
--- Copyright   :  (c) Andy Gill 2001,
---		  (c) Oregon Graduate Institute of Science and Technology, 2001
--- License     :  BSD-style (see the file libraries/base/LICENSE)
--- 
--- Maintainer  :  hets@tzi.de
--- Stability   :  experimental
--- Portability :  portable
---
--- State type from Control.Monad.State without State Monad
---
------------------------------------------------------------------------------
+{- |
+Module      :  $Header$
+Copyright   :  C. Maeder and Uni Bremen 2002-2005
+License     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  experimental
+Portability :  portable
+
+State type from Control.Monad.State but no class MonadState
+
+This module may be replaced by the (non-nhc98 module) Control.Monad.State
+
+-}
+
 
 module Common.Lib.State where
 
