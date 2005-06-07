@@ -46,6 +46,7 @@ import Logic.Comorphism
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
+import Common.PrettyPrint
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import Common.Id

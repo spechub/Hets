@@ -41,6 +41,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
 import Common.Result
+import Common.PrettyPrint
 
 import Data.Maybe
 import Data.List

@@ -11,7 +11,7 @@ Portability :  portable
    for accumulating 'Diagnosis' messages during analysis phases.
 -}
 
-module Common.Result(module Common.Result, Common.PrettyPrint.showPretty) where
+module Common.Result where
 
 import Common.Id
 import Common.PrettyPrint

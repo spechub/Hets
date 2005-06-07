@@ -21,6 +21,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Print_AS_Annotation()
 import Common.Result
+import Common.PrettyPrint
 import Control.Monad(foldM)
 
 import Text.ParserCombinators.Parsec

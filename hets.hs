@@ -27,6 +27,7 @@ import Data.Graph.Inductive.Graph
 
 import Common.Utils
 import Common.Result
+import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 import qualified Common.Lib.Map as Map

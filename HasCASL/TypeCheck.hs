@@ -31,6 +31,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
+import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.Lib.State
 

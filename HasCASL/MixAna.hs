@@ -14,6 +14,7 @@ module HasCASL.MixAna where
 
 import Common.GlobalAnnotations
 import Common.Result
+import Common.PrettyPrint
 import Common.Id
 import Common.Keywords
 import Common.Earley

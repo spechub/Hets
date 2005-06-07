@@ -26,6 +26,7 @@ import Taxonomy.MMiSSOntology
 
 import Common.Taxonomy
 import Common.Result
+import Common.PrettyPrint
 import Common.AS_Annotation
 
 convTaxo :: TaxoGraphKind -> MMiSSOntology
