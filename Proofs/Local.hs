@@ -30,6 +30,7 @@ import Data.Graph.Inductive.Graph
 import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Syntax.AS_Library
 
 -- --------------------
 -- local decomposition
@@ -42,7 +43,7 @@ locDecomp ::  ProofStatus -> IO ProofStatus
 locDecomp proofStatus@(ln,libEnv,_) = do
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      result = locDecompAux libEnv dgraph ([],[]) localThmEdges
+      result = locDecompAux libEnv ln dgraph ([],[]) localThmEdges
       nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus 
@@ -51,18 +52,18 @@ locDecomp proofStatus@(ln,libEnv,_) = do
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-locDecompAux libEnv dgraph historyElement [] = (dgraph, historyElement)
-locDecompAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+locDecompAux libEnv ln dgraph historyElement [] = (dgraph, historyElement)
+locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
      then
-       locDecompAux libEnv dgraph (rules,changes) list
+       locDecompAux libEnv ln dgraph (rules,changes) list
      else
        if isDuplicate newEdge dgraph changes
-          then locDecompAux libEnv auxGraph 
+          then locDecompAux libEnv ln auxGraph 
                  (newRules,(DeleteEdge ledge):changes) list
-       else locDecompAux libEnv newGraph (newRules,newChanges) list
+       else locDecompAux libEnv ln newGraph (newRules,newChanges) list
 
   where
     morphism = dgl_morphism edgeLab
@@ -111,7 +112,7 @@ locSubsume :: ProofStatus -> IO ProofStatus
 locSubsume proofStatus@(ln,libEnv,_) = do
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      result = locSubsumeAux libEnv dgraph ([],[]) localThmEdges
+      result = locSubsumeAux libEnv ln dgraph ([],[]) localThmEdges
       nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
@@ -119,23 +120,23 @@ locSubsume proofStatus@(ln,libEnv,_) = do
   return newProofStatus
 
 -- auxiliary method for locSubsume
-locSubsumeAux :: LibEnv -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+locSubsumeAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-locSubsumeAux libEnv dgraph historyElement [] = (dgraph, historyElement)
-locSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+locSubsumeAux _ _ dgraph historyElement [] = (dgraph, historyElement)
+locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (getDGNode libEnv dgraph tgt, maybeThSrc) of
     (Just (target,_), Just thSrc) ->
-      case (maybeResult (computeTheory libEnv dgraph target), maybeResult (translateG_theory morphism thSrc)) of
+      case (maybeResult (computeTheory libEnv ln dgraph target), maybeResult (translateG_theory morphism thSrc)) of
         (Just theoryTgt, Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceTheory lidSrc theoryTgt) of
-            Nothing -> locSubsumeAux libEnv dgraph (rules,changes) list
+            Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
 	    Just (_,sentencesTgt) ->
               if (all (`elem` sentencesTgt) sensSrc) 
-               then locSubsumeAux libEnv newGraph (newRules,newChanges) list
-                else locSubsumeAux libEnv dgraph (rules,changes) list
-        otherwise -> locSubsumeAux libEnv dgraph (rules,changes) list
+               then locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
+                else locSubsumeAux libEnv ln dgraph (rules,changes) list
+        otherwise -> locSubsumeAux libEnv ln dgraph (rules,changes) list
     otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
-		 locSubsumeAux libEnv dgraph (rules,changes) list
+		 locSubsumeAux libEnv ln dgraph (rules,changes) list
 
   where
     morphism = dgl_morphism edgeLab

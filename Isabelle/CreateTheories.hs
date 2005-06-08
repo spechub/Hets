@@ -64,7 +64,7 @@ printTheory :: LIB_NAME -> LibEnv -> DGraph
 printTheory ln le dg (sn, ge) = case ge of 
     SpecEntry (_,_,_, e) -> case getNode e of 
         Nothing -> return ()
-        Just n -> case maybeResult $ computeTheory le dg n of
+        Just n -> case maybeResult $ computeTheory le ln dg n of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->
                 let r1 = do

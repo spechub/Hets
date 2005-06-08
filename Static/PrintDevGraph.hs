@@ -36,14 +36,14 @@ printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
 printLibrary le (ln, (ga, ge, dg)) = 
     text libraryS <+> printText0 ga ln $$ 
          foldr (aboveWithNLs 2) P.empty 
-                   (map (printTheory le ga dg) $ Map.toList ge)
+                   (map (printTheory le ln ga dg) $ Map.toList ge)
 
-printTheory :: LibEnv -> GlobalAnnos -> DGraph 
+printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos -> DGraph 
             -> (SIMPLE_ID, GlobalEntry) -> Doc
-printTheory le ga dg (sn, ge) = case ge of 
+printTheory le ln ga dg (sn, ge) = case ge of 
     SpecEntry (_,_,_, e) -> case getNode e of 
         Nothing -> P.empty
-        Just n -> case maybeResult $ computeTheory le dg n of
+        Just n -> case maybeResult $ computeTheory le ln dg n of
             Nothing -> P.empty
             Just (G_theory lid sign sens) ->
                 text specS <+> printText0 ga sn $$

@@ -733,12 +733,12 @@ getSignatureOfNode descr ab2dgNode dgraph =
 lookupTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> 
                       DGraph -> IO (Res.Result (Node,G_theory))
 lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
- (_,libEnv,_) <- readIORef proofStatusRef
+ (ln,libEnv,_) <- readIORef proofStatusRef
  case (do
   (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-  gth <- computeTheory libEnv dgraph node
+  gth <- computeTheory libEnv _libname dgraph node
   return (node, gth)
     ) of
    r -> return r
@@ -786,7 +786,7 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
    (_libname, node) <- 
         Res.maybeToResult nullPos ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-   th <- computeTheory libEnv dgraph node
+   th <- computeTheory libEnv _libname dgraph node
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result diags _ <-  Res.ioresToIO(
@@ -826,7 +826,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
           name = case dgnode of
                        (DGNode name _ _ _ _ _) -> name
                        _ -> emptyName
-       in case computeTheory libEnv dgraph node of
+       in case computeTheory libEnv libname dgraph node of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th
                     title =  "Sublogic of "++showName name
@@ -918,7 +918,7 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_)
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of
            Just m -> m
            _ -> error "checkconsistencyOfEdge: wrong logic"
-      let th = case computeTheory libEnv dgraph source of
+      let th = case computeTheory libEnv ln dgraph source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconsistencyOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th

@@ -220,7 +220,7 @@ basicInferenceNode checkCons lg (ln,node)
       ioresToIO (do 
         -- compute the theory of the node, and its name
         G_theory lid1 sign axs <- 
-             resToIORes $ computeTheory libEnv dGraph node
+             resToIORes $ computeTheory libEnv ln dGraph node
         ctx <- resToIORes 
                     $ maybeToMonad ("Could node find node "++show node)
                     $ fst $ match node dGraph

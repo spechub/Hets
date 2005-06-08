@@ -242,15 +242,15 @@ calculateMorphismOfPathWithStart _ _ (_,p) = calculateMorphismOfPath p
    that consist of globalDef edges only
    or
    that consist of a localDef edge followed by any number of globalDef edges -}
-getAllLocGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
-			      -> [(Node, [LEdge DGLinkLab])]
-getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo 
+getAllLocGlobDefPathsTo ::  LibEnv -> LibNode -> [LibLEdge]
+			    -> [(LibNode, [LibLEdge])]
+getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo_new 
 			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: LibEnv -> DGraph -> Node -> Result G_theory 
-computeTheory libEnv dg n = do
-  let  paths = reverse $ getAllLocGlobDefPathsTo dg n []
+computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
+computeTheory libEnv ln dg n = do
+  let  paths = reverse $ (removeLibname (getAllLocGlobDefPathsTo libEnv (ln,n) []))
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
@@ -259,3 +259,8 @@ computeTheory libEnv dg n = do
   ths' <- mapM (uncurry translateG_theory) $ zip mors ths
   th'' <- flatG_theories ths'
   return (nubG_theory th'')
+
+  where removeLibname :: [(LibNode, [LibLEdge])] -> [(Node, [LEdge DGLinkLab])]
+        removeLibname [] = []
+        removeLibname (((_,node),libedges):list) =
+	    (node,map snd libedges):(removeLibname list)
