@@ -109,7 +109,8 @@ patch: Haskell/Programatica.patch
 	patch -sNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
-	$< > $@
+	echo "{-# OPTIONS -w #-}" > $@
+	$< >> $@
 
 $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
     $(LEX_DIR)/HsTokens.hs
@@ -574,7 +575,10 @@ hets.hs: Driver/Version.hs
 	$(HC) --make -o $@ $<
 
 %.hs: %.y
-	$(HAPPY) -o $@ $<
+	$(HAPPY) -o $@.tmp $<
+	echo "{-# OPTIONS -w #-}" > $@
+	cat $@.tmp >> $@
+	$(RM) $@.tmp  
 
 %.hs: %.der.hs utils/DrIFT
 	($(DRIFT_ENV);	export DERIVEPATH; $(DRIFT) $(DRIFT_OPTS) $< > $@)
