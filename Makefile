@@ -119,6 +119,7 @@ $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
            -i$(PFE_TOOLDIR)/base/lib \
 	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
               $@.hs -o $@
+	strip $@
 
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs $(LEX_DIR)/HsLex.hs \
@@ -562,7 +563,9 @@ check:
 ####################################################################
 ## Preparing the version of HetCATS
 Driver/Version.hs: Driver/Version.in version_nr
+	$(RM) $@
 	$(PERL) utils/build_version.pl version_nr < Driver/Version.in > $@
+	chmod 444 $@
 
 ## two hardcoded dependencies for a correct generation of Version.hs
 Driver/Options.hs Driver/WriteFn.hs Driver/ReadFn.hs: Driver/Version.hs
@@ -578,14 +581,18 @@ hets.hs: Driver/Version.hs
 	$(HAPPY) -o $@.tmp $<
 	echo "{-# OPTIONS -w #-}" > $@
 	cat $@.tmp >> $@
-	$(RM) $@.tmp  
+	$(RM) $@.tmp
 
 %.hs: %.der.hs utils/DrIFT
+	$(RM) $@
 	($(DRIFT_ENV);	export DERIVEPATH; $(DRIFT) $(DRIFT_OPTS) $< > $@)
+	chmod 444 $@
 
 ## rules for inlineAxioms
 %.hs: %.inline.hs $(INLINEAXIOMS)
+	$(RM) $@
 	$(INLINEAXIOMS) $< > $@
+	chmod 444 $@
 
 ## rule for cpp and haddock 
 %.hspp: %.hs
@@ -608,4 +615,6 @@ hets.hs: Driver/Version.hs
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
 Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
     utils/genTransMFormFunc.pl $(INLINEAXIOMS)
+	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
+	chmod 444 $@
