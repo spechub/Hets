@@ -1,9 +1,9 @@
 {-| 
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
@@ -14,28 +14,29 @@ Portability :  non-portable(DevGraph)
 
 module Driver.WriteFn where
 
-import Driver.Options
+import System.IO
 
 import Common.Utils
 import Common.Result
-
-import System.IO
-import System.IO.Error(try)
-import Syntax.Print_HetCASL
-import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 import Common.GlobalAnnotations (GlobalAnnos)
-import Driver.Version
 import Common.ConvertGlobalAnnos()
+import qualified Common.Lib.Map as Map
+import Common.SimpPretty (writeFileSDoc)
+
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
-import qualified Common.Lib.Map as Map
 
-import ATC.Proofs
-import Proofs.Proofs
+import Syntax.Print_HetCASL
+import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 
 import Static.DevGraph
-import ATC.DevGraph
-import Common.SimpPretty (writeFileSDoc)
+import Proofs.Proofs
+
+import ATC.DevGraph()
+import ATC.Proofs()
+
+import Driver.Version
+import Driver.Options
 
 {---
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
@@ -124,21 +125,19 @@ toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
 
-writeFileInfo :: HetcatsOpts -> [Diagnosis] -> String -> LIB_NAME -> LibEnv -> IO()
-writeFileInfo opts diags file ln lenv = 
-  if hasErrors diags then return ()
+writeFileInfo :: HetcatsOpts -> [Diagnosis] -> String -> LIB_NAME -> LibEnv 
+              -> IO()
+writeFileInfo opts diags' file ln lenv = 
+  if hasErrors diags' then return () -- errors are reported elsewhere
    else case Map.lookup ln lenv of
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
       let envFile = rmSuffix file ++ ".env"
       putIfVerbose opts 2 ("Writing "++envFile)
-      res <- try (globalContexttoShATerm envFile gctx)
-      case res of
-       Right _ -> return ()
-       Left ioErr -> do 
-           putIfVerbose opts 2 (envFile++" not written")
-	   putIfVerbose opts 3 ("see following error description:\n"
-				++show ioErr++"\n")
+      catch (globalContexttoShATerm envFile gctx) $ \ err -> do
+              putIfVerbose opts 2 (envFile ++ " not written")
+	      putIfVerbose opts 3 ("see following error description:\n"
+				   ++ shows err "\n")
 
 write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
 write_casl_asc_stdout opt ga ld =
