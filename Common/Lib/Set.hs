@@ -101,7 +101,6 @@ import Prelude hiding (filter,foldr,null,map)
 
 #if __GLASGOW_HASKELL__<=602
 import qualified Data.List as List
-import Data.Typeable
 
 {-
 -- just for testing

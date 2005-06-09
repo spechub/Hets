@@ -153,7 +153,6 @@ import Prelude hiding (lookup,map,filter,foldr,foldl,null)
 #if __GLASGOW_HASKELL__<=602
 import qualified Common.Lib.Set as Set
 import qualified Data.List as List
-import Data.Typeable
 
 {-
 -- for quick check
