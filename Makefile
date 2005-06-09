@@ -29,8 +29,10 @@ space = $(empty) $(empty)
 
 ## set ghc imports properly for your system
 GHC_IMPORTS = `$(HC) --print-libdir`/imports
+# import directories for ghc-5.04.2
+GHC5 = $(GHC_IMPORTS)/base:$(GHC_IMPORTS)/haskell98
 DRIFT_ENV = \
-    DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(subst $(space),:,$(PFE_PATHS))
+    DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
@@ -60,6 +62,7 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 CPPP = cpp 
 
+# remove -fno-warn-orphans for older ghcs
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances 
@@ -348,9 +351,10 @@ utils/genRules: $(GENERATERULES_deps)
             $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
                 GenerateRules.hs -o ../genRules && strip ../genRules)
 
+# "hssource" for ghc-5.04.2
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
-            -i../.. -o $(INLINEAXIOMS)
+            -package hssource -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
 release: 
