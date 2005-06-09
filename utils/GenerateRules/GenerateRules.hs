@@ -62,7 +62,7 @@ genRules flags files =
        exc <- parseHeader (concat headers) 
        let (ds,imports) = ((\ (x,y) -> (concat x,concat y)) . unzip) i_ds
        ds' <- exclude flags exc ds 
-       let fileHead = "{-# OPTIONS_GHC -fno-warn-unused-imports #-}" ++
+       let fileHead = "{-# OPTIONS -fno-warn-unused-imports #-}" ++
              "\n{- |\nModule      :  " ++ fName ++
              "\nCopyright   :  (c) Uni Bremen 2004" ++
              "\nLicence     :  similar to LGPL, see HetCATS/LICENCE.txt" ++
