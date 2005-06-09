@@ -319,7 +319,7 @@ transOP_SYMB sign (Qual_op_name op ot _) =
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
                     return $ showIsaIT op (i+1) baseSign) of
     Just str -> str  
-    Nothing -> showIsaT op baseSign
+    Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
 transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> String
@@ -329,7 +329,7 @@ transPRED_SYMB sign (Qual_pred_name p pt _) =
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
                     return $ showIsaIT p (i+1) baseSign) of
     Just str -> str
-    Nothing -> error "CASL2Isabelle: showIsaT p baseSign"
+    Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
