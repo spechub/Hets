@@ -188,6 +188,7 @@ emacs mode:
     in such a way that the error is at the top (for long error lists)
   Version for XEamcs?
 
+  should work with parser error messages as well (adapt these?)
 
 OWL-DL logic
 OWL-DL -> CASL
