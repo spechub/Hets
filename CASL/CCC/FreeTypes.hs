@@ -564,8 +564,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                     "when_else(t1,False,t2) -> t2; "
     proof = 
 	unsafePerformIO (do
-	    cim <- newChildProcess "/home/xinga/bin/cime" []
-			 --     cim <- newChildProcess "cime" []
+	--    cim <- newChildProcess "/home/xinga/bin/cime" []
+            cim <- newChildProcess "cime" []
 	    sendMsg cim (sighead ++ (opSignStr (noDouble (o_constructors ++ 
 							    constructors ++ 
 							    o_op_Syms ++ 
@@ -909,9 +909,9 @@ equiv_cime index f =
   case (quanti f) of
     Equivalence (Predication predS1 ts1 _) f1 _ ->
         case (quanti f1) of
-          Conjunction f2 _ -> error "not implement"
-	  Disjunction f2 _ -> error "not implement"
-          Negation f2 _ -> error "not implement"
+          Conjunction _ _ -> error "not implement"
+	  Disjunction _ _ -> error "not implement"
+          Negation _ _ -> error "not implement"
           Predication predS2 ts2 _ ->
               ((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
@@ -921,8 +921,8 @@ equiv_cime index f =
               fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
               ")," ++ (terms_cime ts1) ++");" ++
               fk2 ++ "(True," ++ (terms_cime ts1) ++ ") -> True;")
-          Strong_equation t1 t2 _ -> ""
-	  Existl_equation t1 t2 _ -> ""
+          Strong_equation _ _ _ -> ""
+	  Existl_equation _ _ _ -> ""
           _ -> error "!! " --(showPretty f1 "CASL.CCC.FreeTypes.<equiv_cime1>")
     _ -> error "CASL.CCC.FreeTypes.<equiv_cime2>"
   where fk1="U"++(show index)
