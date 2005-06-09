@@ -16,7 +16,7 @@ module Data.Graph.Inductive.Query.Monad(
     -- ** Instances of graphRec
     graphNodesM0, graphNodesM, graphNodes, graphFilterM, graphFilter,
     -- * Example: Monadic DFS Algorithm(s)
-    dfsGT, dfsM, dfsM', dffM, graphDff, graphDff',
+    dfsGT, dfsM, dfsM' --, dffM, graphDff, graphDff',
 ) where
 
 
@@ -26,7 +26,7 @@ module Data.Graph.Inductive.Query.Monad(
 --  ==> we can safely use imperative updates in the graph implementation
 --
 
-import Data.Tree
+--import Data.Tree
 --import Control.Monad (liftM)
 
 import Data.Graph.Inductive.Graph
@@ -203,7 +203,7 @@ dfsM vs = runGT (dfsGT vs)
 dfsM' :: GraphM m gr => m (gr a b) -> m [Node]
 dfsM' mg = do {vs <- nodesM mg; runGT (dfsGT vs) mg}
 
-
+{-
 -- | depth-first search yielding dfs forest
 dffM :: GraphM m gr => [Node] -> GT m (gr a b) [Tree Node]
 dffM vs = MGT (\mg->
@@ -224,4 +224,4 @@ graphDff vs = runGT (dffM vs)
 
 graphDff' :: GraphM m gr => m (gr a b) -> m [Tree Node]
 graphDff' mg = do {vs <- nodesM mg; runGT (dffM vs) mg}
-
+-}

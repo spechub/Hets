@@ -11,7 +11,7 @@ module Data.Graph.Inductive.Basic
     -- * Predicates and Classifications
     hasLoop,isSimple,
     -- * Tree Operations
-    postorder, postorderF, preorder, preorderF
+--    postorder, postorderF, preorder, preorderF
 ) 
 where
 
@@ -20,7 +20,7 @@ import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Internal.Thread (threadMaybe,threadList)
 
 import Data.List (nub)
-import Data.Tree
+--import Data.Tree
 
 -- | Reverse the direction of all edges.
 grev :: DynGraph gr => gr a b -> gr a b 
@@ -108,6 +108,7 @@ gfold f d b l g = fst (gfoldn f d b l g)
 -- undirBy :: (b -> b -> b) -> Graph a b -> Graph a b
 -- undirBy = gmap (\(p,v,l,s)->let ps = nub (p++s) in (ps,v,l,ps))
 
+{-
 -- | Flatten a 'Tree', returning the elements in post-order.
 postorder :: Tree a -> [a]
 postorder (Node v ts) = postorderF ts ++ [v]
@@ -124,3 +125,4 @@ preorder = flatten
 -- | Flatten multiple 'Tree's in pre-order.
 preorderF :: [Tree a] -> [a]
 preorderF = concatMap preorder
+-}
