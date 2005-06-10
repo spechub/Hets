@@ -1,18 +1,21 @@
 {-| 
-   
 Module      :  $Header$
 Copyright   :  (c) Felix Reckers, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
+
+parse a header file that may contain manually written instances 
+or exclude directives 
 
 -}
 
 module ParseHeader where
 
 import Text.ParserCombinators.Parsec
+-- maybe the stuff in Parsec.Token should be used (instead of spaces)
 
 type Data   = String
 type Exclude = String
@@ -24,7 +27,7 @@ header = do (d,e) <- instances [] []
 instances :: [Data] -> [Exclude] -> Parser ([Data],[Exclude])
 instances ds ex = do ex' <- try excludeRule
                      instances ds (ex'++ex) 
-		  <|>
+                  <|>
                   do try comment
                      instances ds ex
                   <|>
@@ -44,59 +47,58 @@ excludeRule = do string "{-|"
                  spaces
                  is <- sepBy1 identifier (try comma')
                  spaces
-	         string "|-}"
+                 string "|-}"
                  return is
     where comma' = do spaces 
-		      char ','
-		      spaces
+                      char ','
+                      spaces
 
 instances' :: Parser Data
 instances' = do string "instance"
                 spaces
-                (try constraints) <|> spaces
+                try constraints <|> spaces
                 spaces 
                 identifier
-		spaces
-		dataConstructor
+                spaces
+                dataConstructor
 
 
 constraints :: Parser ()
-constraints =  do fmap (\x -> [x]) constraint <|> (between (char '(')  (char ')') (sepBy1 constraint (char ',')))
-                  spaces
-                  string "=>"
-		  spaces
-                  return ()  
+constraints =  do 
+    fmap (:[]) constraint <|> 
+             between (char '(')  (char ')') (sepBy1 constraint (char ','))
+    spaces
+    string "=>"
+    spaces
+    return ()  
 
 constraint :: Parser () 
 constraint = do spaces
-	        identifier
+                identifier
                 spaces1 
                 sepBy1 spaces1 lIdentifier
-		spaces1
-
-spaces1 = skipMany1 space
+                spaces1
+    where spaces1 = skipMany1 space
 
 dataConstructor:: Parser String
-dataConstructor = (try identifier) <|> do char '('
-                                          identifier
+dataConstructor = try identifier <|> (char '(' >> identifier)
                                    
            
+iRest :: Char -> Parser String
+iRest x = fmap (x:) $ many (alphaNum <|> oneOf "_.")
 
 identifier :: Parser String
-identifier = do x <- upper
-                xs <- many (alphaNum <|> oneOf "_.")
-		return (x:xs)
+identifier = upper >>= iRest
 
 lIdentifier :: Parser String
-lIdentifier = do x <- lower
-                 xs <- many (alphaNum <|> oneOf "_.")
-		 return (x:xs)
+lIdentifier = lower >>= iRest
+
 
 comment :: Parser ()
 comment = do string "{-" 
-	     manyTill anyChar (try (string "-}"))
-	     return ()
-	  <|>
+             manyTill anyChar (try (string "-}"))
+             return ()
+          <|>
           do string "--"
              manyTill anyChar (try newline)
-	     return ()
+             return ()
