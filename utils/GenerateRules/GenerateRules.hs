@@ -46,8 +46,7 @@ main = do args <- getArgs
             (_, _, errs) -> fail $ concat errs ++ usageInfo usage options
        where usage = "Usage: genRules [OPTION...] file [file ...]" 
 
-{- | if output dir is "ATC" then create an equally named .der.hs file
-   otherwise create "<dir>.ATC_<dir> module. -}
+-- | only place imports and data directives into the output module
 genRules :: [Flag] -> [FilePath] -> IO ()
 genRules flags files = 
     do ids <- mapM readParseFile files
@@ -70,27 +69,21 @@ genRules flags files =
              "\n  dependency files: " ++ unwords files ++ "\n-}"
        checkFlags q
        if null ds then fail "no data types left" else
-           writeFile outf
-                 (fileHead ++ "\n\nmodule " ++ toModule outf 
-                  ++ " where\n\n" 
-                  ++ concat (map (\x->"import "++x++"\n") 
-                                            $ imports ++ is) 
-                  ++ "\n" 
-                  ++ rules rule ds ++ "\n")
+           writeFile outf $
+                  fileHead ++ "\n\nmodule " ++ toModule outf 
+                  ++ " where\n" 
+                  ++ concatMap ( \ i -> "\nimport " ++ i ) 
+                                            (imports ++ is) 
+                  ++ "\n\n" 
+                  ++ concatMap ( \ d -> "{-! for " ++ d 
+                                 ++ " derive : " ++ rule ++ " !-}\n") ds
                           
 readParseFile :: FilePath -> IO ([String],[Import])
 readParseFile fp =
     do inp <- readFile fp
-       y <- case parseInputFile fp inp of
-         Left err -> do putStr "parse error at "
-                        fail err
+       case parseInputFile fp inp of
+         Left err -> fail $ "parse error at " ++ err
          Right x  -> return x
-       return y
-
-rules :: String -> [String] -> String
-rules _ [] = []
-rules rule (d:ds) = "{-! for " ++ d ++ " derive : " ++ rule ++ " !-}\n" 
-                    ++ rules rule ds
 
 anaFlags :: [Flag] -> (String, [String], [Import], FilePath)
 anaFlags [] = ("", [], [], "")
@@ -108,7 +101,7 @@ checkFlags (r, ds, is, o) =
     else let fds = filter wrong ds in if not (null fds) 
          then fail $ "wrong data type to exclude: " ++ head fds     
     else let fis = filter wrong is in if not (null fis) 
-         then fail $ "wrong module to import: " ++ head fds     
+         then fail $ "wrong module to import: " ++ head fis     
     else return ()
     where wrong s = null s || not (isUpper $ head s)
 
