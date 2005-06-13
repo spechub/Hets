@@ -57,6 +57,8 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
 HC = ghc
 PERL = perl
 HAPPY = happy -sga
+GENRULES = utils/genRules
+GENRULECALL = $(GENRULES) -r ShATermConvertible -i Common.ATerm.Lib
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -141,7 +143,7 @@ Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
     HsModule HsName HsLiteral HsIdent
 
 Other_PFE_files = property/AST/HsPropStruct base/defs/PNT \
-    base/defs/UniqueNames base/Modules/TypedIds base/TI/TiKinds \
+    base/defs/UniqueNames base/Modules/TypedIds base/Modules/Ents \
     base/parse2/SourceNames base/syntax/SyntaxRec \
     property/syntax/PropSyntaxStruct
 
@@ -150,10 +152,8 @@ Haskell_files = $(addsuffix .hs, \
     $(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
 
 ## rule for ATC generation
-Haskell/ATC_Haskell.der.hs: $(Haskell_files) ATC/Haskell.header.hs \
-    utils/genRules
-	utils/genRules -r $(rule) -o Haskell -h ATC/Haskell.header.hs \
-            $(Haskell_files)
+Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
+	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
 
 TESTDIRS += ToHaskell
 endif
@@ -191,8 +191,6 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     $(gendrifted_files)
 
-genrule_header_files = $(wildcard ATC/*.header.hs)
-
 atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
@@ -200,6 +198,31 @@ atc_files = Common/AS_Annotation.der.hs \
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
+
+ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/AS_Structured.der.hs: Syntax/AS_Structured.der.hs $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -i ATC.Grothendieck -o $@ $<
+
+ATC/AS_Architecture.der.hs: Syntax/AS_Architecture.der.hs $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Structured -o $@ $<
+
+ATC/AS_Library.der.hs: Syntax/AS_Library.der.hs $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Architecture -o $@ $<
+
+ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
+
+ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Library -o $@ $<
+
+ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
+	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<
+
+ATC/Proofs.der.hs: Proofs/Proofs.hs $(GENRULES)
+	$(GENRULECALL) -x BasicProof -i ATC.DevGraph -i ATC.GlobalAnnotations \
+            -i ATC.Prover -i ATC.BasicProof -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs 
@@ -239,6 +262,9 @@ cpp_sources = Common/DynamicUtils.hs \
     SPASS/Logic_SPASS.hs \
     GUI/Utils.hs hets.hs CASL/CCC/FreeTypes.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
+
+# unused, remove when header files are gone 
+genrule_header_files = $(wildcard ATC/*.header.hs) 
 
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(wildcard utils/DrIFT-src/*.lhs) \
@@ -389,43 +415,32 @@ install: hets-opt install-hets
 
 genRules: $(generated_rule_files)
 
-gen_atc_files = \
-  if [ -f ATC/$(basename $(basename $(notdir $(file)))).header.hs ]; \
-  then utils/genRules -r $(rule) -o ATC -h \
-      ATC/$(basename $(basename $(notdir $(file)))).header.hs $(file); \
-  else utils/genRules -r $(rule) -o ATC $(file); fi ;
+CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(CASL_files)
 
-$(atc_der_files): $(atc_files) $(genrule_header_files) utils/genRules
-	$(foreach file, $(atc_files), $(gen_atc_files))
+HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(HasCASL_files)
 
-CASL/ATC_CASL.der.hs: $(CASL_files) utils/genRules
-	utils/genRules -r $(rule) -o CASL $(CASL_files)
+Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Isabelle_files)
 
-HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) utils/genRules
-	utils/genRules -r $(rule) -o HasCASL $(HasCASL_files)
+Modal/ATC_Modal.der.hs: $(Modal_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(Modal_files)
 
-Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) utils/genRules
-	utils/genRules -r $(rule) -o Isabelle $(Isabelle_files)
+CASL_DL/ATC_CASL_DL.der.hs: $(CASL_DL_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(CASL_DL_files)
 
-Modal/ATC_Modal.der.hs: $(Modal_files) utils/genRules
-	utils/genRules -r $(rule) -o Modal $(Modal_files)
+CoCASL/ATC_CoCASL.der.hs: $(CoCASL_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(CoCASL_files)
 
-CASL_DL/ATC_CASL_DL.der.hs: $(CASL_DL_files) utils/genRules
-	utils/genRules -r $(rule) -o CASL_DL $(CASL_DL_files)
+COL/ATC_COL.der.hs: $(COL_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(COL_files)
 
-CoCASL/ATC_CoCASL.der.hs: $(CoCASL_files) utils/genRules
-	utils/genRules -r $(rule) -o CoCASL $(CoCASL_files)
+CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(CspCASL_files)
 
-COL/ATC_COL.der.hs: $(COL_files) utils/genRules
-	utils/genRules -r $(rule) -o COL $(COL_files)
-
-CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) utils/genRules
-	utils/genRules -r $(rule) -o CspCASL $(CspCASL_files)
-
-SPASS/ATC_SPASS.der.hs: $(SPASS_files) utils/genRules
-	utils/genRules -r $(rule) -o SPASS $(SPASS_files)
-
-rule = ShATermConvertible
+SPASS/ATC_SPASS.der.hs: $(SPASS_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SPASS_files)
 
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files)
@@ -587,7 +602,7 @@ hets.hs: Driver/Version.hs
 	cat $@.tmp >> $@
 	$(RM) $@.tmp
 
-%.hs: %.der.hs utils/DrIFT
+%.hs: %.der.hs $(DRIFT)
 	$(RM) $@
 	($(DRIFT_ENV);	export DERIVEPATH; $(DRIFT) $(DRIFT_OPTS) $< > $@)
 	chmod 444 $@
@@ -617,6 +632,7 @@ hets.hs: Driver/Version.hs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
+# uses intransparently utils/outlineAxioms
 Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
     utils/genTransMFormFunc.pl $(INLINEAXIOMS)
 	$(RM) $@

@@ -25,7 +25,7 @@ import Common.Lib.Pretty
 import Common.AS_Annotation
 import Common.DefaultMorphism
 
-import Haskell.ATC_Haskell      -- generated ATerm conversions
+import Haskell.TiATC()
 import Haskell.HatParser                
 import Haskell.HatAna
 
