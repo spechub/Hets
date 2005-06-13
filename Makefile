@@ -315,9 +315,9 @@ hets-old: $(objects)
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf /home/luettich/ghc-pkg/package.conf \
-            -package WASH-CGI GUI/hets_cgi.hs -o hets.cgi $(HC_INCLUDE) \
-            $(HC_FLAGS) -O
+	ghc --make -package-conf $(HOME)/wash-pkg/package.conf \
+            -package WASH GUI/hets_cgi.hs -o $@ $(HC_INCLUDE) \
+            $(HC_FLAGS) $(PFE_FLAGS) -O
 	strip hets.cgi
 
 taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
@@ -332,6 +332,17 @@ taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
 hetcats.TAGS: $(sources) 
 	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
 	    $(sources); mv TAGS $@; mv tags hetcats.tags
+
+hets_maintainers.txt: $(sources)
+	@echo 'File : Maintainer' > $@
+	@echo -n Generating $@ " "
+	@$(PERL) -e  \
+               'foreach my $$f (@ARGV) { open I, "<$$f"; \
+                print "$$f :"; while (<I>) \
+                { if(m,^\s*Maintainer\s*:\s*(.*)$$,o) { \
+                print " $$1" ; last} }; print "\n"; close I; }' \
+            $(sources) >> $@
+	@echo " done"
 
 ###############################
 ### count lines of code
@@ -638,3 +649,4 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
+
