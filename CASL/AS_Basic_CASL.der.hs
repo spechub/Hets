@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -272,7 +272,12 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 data OP_SYMB = Op_name OP_NAME
 	     | Qual_op_name OP_NAME OP_TYPE [Pos]
 		 -- pos: "(", op, colon, ")"
-	       deriving (Show,Eq,Ord)
+	       deriving (Show,Ord)
+
+instance Eq OP_SYMB where
+  Op_name o1 == Op_name o2 = o1==o2
+  Qual_op_name o1 t1 _ == Qual_op_name o2 t2 _ = o1==o2 && t1==t2
+  _ == _ = False
 
 type OP_NAME = Id
 
