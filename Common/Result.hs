@@ -83,6 +83,9 @@ instance Monad Result where
      where Result errs2 y = f x
   fail s = fatal_error s []
 
+appendDiags :: [Diagnosis] -> Result ()
+appendDiags ds = Result ds (Just ())
+
 -- | join two results
 joinResultWith :: (a -> b -> c) -> Result a -> Result b -> Result c
 joinResultWith f (Result d1 m1) (Result d2 m2) = Result (d1 ++ d2) $
@@ -209,10 +212,12 @@ instance Show Diagnosis where
 
 instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s sp) = 
-        text "***" 
-        <+> text (show k)
+        (if isMessageW 
+            then empty
+            else text "***" <+> text (show k))
         <> (case sp of 
-             [] -> comma
+             [] | isMessageW -> empty
+                | otherwise  -> comma
              _ -> space <> let 
                       mi = minimumBy comparePos sp 
                       ma = maximumBy comparePos sp
@@ -221,6 +226,9 @@ instance PrettyPrint Diagnosis where
                      _ -> text $ showPos mi "-" 
                           ++ showPos ma {sourceName = ""} "," )
         <+> text s
+        where isMessageW = case k of
+                           MessageW -> True
+                           _        -> False
 
 instance PosItem Diagnosis where
     get_pos d = diagPos d
