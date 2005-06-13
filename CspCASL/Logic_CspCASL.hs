@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  experimental
 Portability :  non-portable
 

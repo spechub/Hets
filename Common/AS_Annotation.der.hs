@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -184,7 +184,8 @@ data Annoted a = Annoted { item :: a
 
 -- | naming or labelling sentences
 data Named s = NamedSen { senName  :: String,
-                          isAxiom :: Bool, 
+                          isAxiom :: Bool,  -- should add thm status
+                          --isDef :: Bool,
                           sentence :: s }
 	       deriving (Eq, Ord, Show)
 

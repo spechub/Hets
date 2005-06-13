@@ -3,7 +3,7 @@
    Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-   Maintainer  :  hets@tzi.de
+   Maintainer  :  maeder@tzi.de
    Stability   :  provisional
    Portability :  non-portable (via imports)
 

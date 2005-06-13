@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
@@ -13,6 +13,9 @@ parser for CSP-CASL
 -}
 
 {- todo:
+
+   provide a better name for this module!!!
+
    equation systems of processes 
    
    spec hugo =

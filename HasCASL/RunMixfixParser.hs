@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 

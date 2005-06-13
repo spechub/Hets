@@ -5,7 +5,7 @@
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 
-   Maintainer  :  hets@tzi.de
+   Maintainer  :  maeder@tzi.de
    Stability   :  provisional
    Portability :  portable
 

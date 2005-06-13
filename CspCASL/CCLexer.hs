@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  M.Roggenbach@swansea.ac.uk@tzi.de
 Stability   :  provisional
 Portability :  portable
 

@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c)  Till Mossakowski and Klaus Lüttich, Uni Bremen 2002-2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 

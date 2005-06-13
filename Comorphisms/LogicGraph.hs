@@ -5,7 +5,7 @@
    Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-   Maintainer  :  hets@tzi.de
+   Maintainer  :  till@tzi.de
    Stability   :  provisional
    Portability :  non-portable
    

@@ -5,7 +5,7 @@ Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 

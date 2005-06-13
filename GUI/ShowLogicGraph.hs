@@ -1,9 +1,9 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Heng Jiang and Till Mossakowski, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  non-portable (Logic)
 

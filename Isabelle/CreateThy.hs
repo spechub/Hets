@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 

@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 

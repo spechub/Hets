@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2005
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
     
