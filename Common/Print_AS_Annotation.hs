@@ -3,24 +3,17 @@ Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  meader@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
 This module contains all instances of PrettyPrint for AS_Annotation.hs
 -}
 
-{-
-   todo:
-      - LaTeX Pretty Printing
--}
-
 module Common.Print_AS_Annotation where
 
 import Common.AS_Annotation
-
 import Common.GlobalAnnotations
-
 import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
