@@ -29,7 +29,8 @@ Rene (Klaus)
 SPASS inkl. GUI
 allgemeine Hets-GUI für Anzeige von (un)bewiesenen Goals,
   bewiesene Goals als Axioms mit ausgeben
-
+wenn Zeit ist: einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
+               in aktuellen DG
 
 ************************************************
 Tina (Till)
