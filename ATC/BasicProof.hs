@@ -1,3 +1,17 @@
+{- | 
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
+Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+a hand written 'ShATermConvertible' instance for 'BasicProof' 
+-}
+
+-- previously part of a header file that are deprecated now
+
 module ATC.BasicProof where
 
 import Proofs.Proofs
@@ -22,7 +36,7 @@ instance ShATermConvertible BasicProof where
             addATerm (ShAAppl "BasicProof" [i1] []) att1}
 
      fromShATerm att = 
-         case aterm of
+         case getATerm att of
 	    (ShAAppl "BasicProof" [i1,i2] _) ->
 	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case getATermByIndex1 i2 att of { att' ->
@@ -37,6 +51,4 @@ instance ShATermConvertible BasicProof where
                  "Handwritten" -> Handwritten
                  _ -> fromShATermError "BasicProof" v}
 	    u     -> fromShATermError "BasicProof" u
-         where
-         aterm = getATerm att
 
