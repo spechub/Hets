@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Hughes, Peyton Jones, Klaus Lüttich 2002/2003
 Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
