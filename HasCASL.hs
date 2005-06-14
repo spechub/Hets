@@ -79,8 +79,7 @@ Portability :  mostly portable
 
  * "HasCASL.Unify"              unification algorithm for types
 
- * "HasCASL.UniqueId"           creating unique names for translations
-                                (i.e. to Haskell)  
+ * "HasCASL.UniqueId"           creating unique names for overloaded ones
 
  * "HasCASL.VarDecl"            analyse declarations of variables 
 
