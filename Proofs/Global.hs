@@ -88,8 +88,8 @@ removeSuperfluousInsertions dgraph (rules,changes)
 globDecompAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
 	      -> (DGraph,([DGRule],[DGChange]))
 globDecompAux dgraph [] historyElem = (dgraph, historyElem)
-globDecompAux dgraph (edge:edges) historyElem =
-  globDecompAux newDGraph edges newHistoryElem
+globDecompAux dgraph (edge:list) historyElem =
+  globDecompAux newDGraph list newHistoryElem
 
   where
     (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
@@ -129,12 +129,12 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
 			  dgl_type = 
-			    (GlobalThm (Proven proofBasis)
+			    (GlobalThm (Proven (GlobDecomp edge) proofBasis)
 			     conservativity conservStatus),
 			  dgl_origin = DGProof}
 		  )
 -- for each path an unproven localThm edge is inserted
-globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
+globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
  ((node,path):list) =
   if isRedundant newEdge dgraph changes list
     then globDecompForOneEdgeAux dgraph edge changes list
@@ -210,7 +210,8 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
-		       dgl_type = (GlobalThm (Proven proofBasis)
+		       dgl_type = (GlobalThm (Proven (GlobSubsumption ledge)
+					      proofBasis)
 				   conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
@@ -224,7 +225,7 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
    are contained in the given list of nodes -}
 localThmPathsBetweenNodes ::  DGraph -> [Node] -> [[LEdge DGLinkLab]]
 localThmPathsBetweenNodes _ [] = []
-localThmPathsBetweenNodes dgraph nodes@(x:xs) =
+localThmPathsBetweenNodes dgraph nodes@(_:_) =
   localThmPathsBetweenNodesAux dgraph nodes nodes
 
 {- auxiliary method for localThmPathsBetweenNodes -}
@@ -249,7 +250,7 @@ combinePathsWithEdge [] _ = []
 combinePathsWithEdge (path:paths) edge@(src,_,_) =
   case path of
     [] -> combinePathsWithEdge paths edge
-    (x:xs) -> if (getTargetNode (last path)) == src 
+    (_:_) -> if (getTargetNode (last path)) == src 
 	      then (path++[edge]):(combinePathsWithEdge paths edge)
 		else combinePathsWithEdge paths edge
 
@@ -264,7 +265,7 @@ calculateResultingEdges [] = []
 calculateResultingEdges (path:paths) =
   case path of
     [] -> calculateResultingEdges paths
-    (x:xs) ->
+    (_:_) ->
        case calculateMorphismOfPath path of
          Nothing -> calculateResultingEdges paths
          Just morphism -> (last path, (src,tgt,morphism)):(calculateResultingEdges paths)
@@ -292,19 +293,19 @@ removeSuperfluousEdgesAux :: DGraph -> [LEdge DGLinkLab]
 			  -> [(LEdge DGLinkLab,(Node,Node,GMorphism))] 
 			  -> [LEdge DGLinkLab] -> (DGraph,[LEdge DGLinkLab])
 removeSuperfluousEdgesAux dgraph [] _ edgesToInsert= (dgraph,edgesToInsert)
-removeSuperfluousEdgesAux dgraph ((src,tgt,lab):edges) 
+removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list) 
 			  resultingEdges edgesToInsert =
   if not (null equivalentEdges)
      then removeSuperfluousEdgesAux
-	  newDGraph edges newResultingEdges edgesToInsert
+	  newDGraph list newResultingEdges edgesToInsert
       else removeSuperfluousEdgesAux
-	   dgraph edges resultingEdges ((src,tgt,lab):edgesToInsert)
+	   dgraph list resultingEdges (edge:edgesToInsert)
 
   where 
     equivalentEdges 
-	= [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism lab)]
-    newResultingEdges = [e | e <- resultingEdges,(fst e) /= (src,tgt,lab)]
-    newDGraph = delLEdge (src,tgt,lab) dgraph
+	= [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
+    newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
+    newDGraph = delLEdge edge dgraph
 
 {- returns true, if the given change is an insertion of an local theorem edge,
    false otherwise -}
@@ -312,4 +313,4 @@ isLocalThmInsertion :: DGChange -> Bool
 isLocalThmInsertion change
   = case change of
       InsertEdge edge -> isLocalThm edge
-      otherwise -> False
+      _ -> False

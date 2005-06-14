@@ -35,6 +35,7 @@ module Static.DevGraph where
 
 import Logic.Logic
 import Logic.Grothendieck
+import Logic.Prover
 import Syntax.AS_Library
 import Common.GlobalAnnotations
 
@@ -47,6 +48,7 @@ import Common.PrettyPrint
 import Common.PPUtils
 import Common.Result
 import Common.Lib.Pretty
+
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of 
@@ -137,7 +139,61 @@ instance PrettyPrint DGLinkLab where
                     <+> ptext (show (dgl_type l))
                     <+> printText0 ga (dgl_origin l)
 
-data ThmLinkStatus =  Open | Proven [DGLinkLab] deriving (Eq, Show)
+data DGRule = 
+   TheoremHideShift
+ | HideTheoremShift (LEdge DGLinkLab)
+ | Borrowing
+ | ConsShift
+ | DefShift 
+ | MonoShift
+ | ConsComp
+ | DefComp 
+ | MonoComp
+ | DefToMono
+ | MonoToCons
+ | FreeIsMono
+ | MonoIsFree
+ | Composition
+ | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
+ | LocDecomp (LEdge DGLinkLab)
+ | LocSubsumption (LEdge DGLinkLab)
+ | GlobSubsumption (LEdge DGLinkLab)
+ | LocalInference
+ | BasicInference BasicProof
+ | BasicConsInference Edge BasicConsProof
+   deriving (Eq, Show)
+
+data BasicProof =
+  forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+        sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree =>
+        BasicProof lid (Proof_status proof_tree)
+     |  Guessed
+     |  Conjectured
+     |  Handwritten
+
+instance Eq BasicProof where
+  Guessed == Guessed = True
+  Conjectured == Conjectured = True
+  Handwritten == Handwritten = True
+  BasicProof lid1 p1 == BasicProof lid2 p2 =
+    coerce lid1 lid2 p1 == Just p2
+  _ == _ = False
+
+instance Show BasicProof where
+  show (BasicProof _ p1) = show p1
+  show Guessed = "Guessed"
+  show Conjectured = "Conjectured"
+  show Handwritten = "Handwritten"
+
+data BasicConsProof = BasicConsProof -- more detail to be added ...
+     deriving (Eq, Show)
+
+data ThmLinkStatus =  Static.DevGraph.Open 
+		   | Proven DGRule [DGLinkLab] deriving (Eq, Show)
 
 data DGLinkType = LocalDef 
             | GlobalDef

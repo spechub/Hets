@@ -14,7 +14,7 @@ a hand written 'ShATermConvertible' instance for 'BasicProof'
 
 module ATC.BasicProof where
 
-import Proofs.Proofs
+import Static.DevGraph
 import Common.ATerm.Lib
 import Comorphisms.LogicGraph
 import Logic.Logic

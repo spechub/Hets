@@ -143,23 +143,6 @@ concatHistoryElems [] = ([],[])
 concatHistoryElems ((rules,changes):elems) =
   (rules++(fst (concatHistoryElems elems)),changes++(snd (concatHistoryElems elems)))
 
-
--- --------------------------------------------------------
--- further methods
--- -------------------------------------------------------
-
--- | Calculate the morphism of a path with given start node
-calculateMorphismOfPathWithStart :: DGraph -> LibEnv 
-                                    -> (Node,[LEdge DGLinkLab]) 
-                                           -> Maybe GMorphism
-calculateMorphismOfPathWithStart dg libEnv (n,[]) = do
-  ctx <- fst $ match n dg
-  case getDGNode libEnv dg (fst (labNode' ctx)) of
-    Just dgNode_ctx -> return $ ide Grothendieck (dgn_sign (snd (dgNode_ctx))) -- ??? to simplistic 
-    Nothing -> Nothing
-  
-calculateMorphismOfPathWithStart _ _ (_,p) = calculateMorphismOfPath p
-
 -- ---------------
 -- basic inference
 -- ---------------
@@ -301,7 +284,7 @@ proveLocalEdgesAux (rules,changes) dGraph ((edge@(src, tgt, edgelab)):edges) =
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = 
-		         (LocalThm (Proven proofBasis)
+		         (LocalThm (Proven LocalInference proofBasis)
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )

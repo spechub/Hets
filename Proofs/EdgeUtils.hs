@@ -51,7 +51,7 @@ isLocalThm edge = isProvenLocalThm edge || isUnprovenLocalThm edge
 isProvenGlobalThm :: LEdge DGLinkLab -> Bool
 isProvenGlobalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (GlobalThm (Proven _) _ _) -> True
+    (GlobalThm (Proven _ _) _ _) -> True
     _ -> False
 
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
@@ -63,7 +63,7 @@ isUnprovenGlobalThm (_,_,edgeLab) =
 isProvenLocalThm :: LEdge DGLinkLab -> Bool
 isProvenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (LocalThm (Proven _) _ _) -> True
+    (LocalThm (Proven _ _) _ _) -> True
     _ -> False
 
 isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
@@ -89,7 +89,7 @@ isHidingThm edge = isProvenHidingThm edge || isUnprovenHidingThm edge
 isProvenHidingThm :: LEdge DGLinkLab -> Bool
 isProvenHidingThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (HidingThm _ (Proven _)) -> True
+    (HidingThm _ (Proven _ _)) -> True
     _ -> False
 
 isUnprovenHidingThm :: LEdge DGLinkLab -> Bool
@@ -376,16 +376,16 @@ selectProofBasisAux label (path:list) =
  selectProofBasisAux -}
 calculateProofBasis :: [LEdge DGLinkLab] -> [DGLinkLab]
 calculateProofBasis [] = []
-calculateProofBasis ((_,_,lab):edges) =
-  lab:((getProofBasis lab)++(calculateProofBasis edges))
+calculateProofBasis ((_,_,label):edges) =
+  label:((getProofBasis label)++(calculateProofBasis edges))
 
 
 {- returns the proofBasis contained in the given DGLinkLab -}
 getProofBasis :: DGLinkLab -> [DGLinkLab]
-getProofBasis lab =
-  case dgl_type lab of 
-    (GlobalThm (Proven proofBasis) _ _) -> proofBasis
-    (LocalThm (Proven proofBasis) _ _) -> proofBasis
+getProofBasis label =
+  case dgl_type label of 
+    (GlobalThm (Proven _ proofBasis) _ _) -> proofBasis
+    (LocalThm (Proven _ proofBasis) _ _) -> proofBasis
     _ -> []
 
 
@@ -412,7 +412,7 @@ isProofCycle label (edge:path) =
 elemOfProofBasis :: DGLinkLab -> (LEdge DGLinkLab) -> Bool
 elemOfProofBasis label (_,_,dglink) =
   case dgl_type dglink of 
-    (GlobalThm (Proven proofBasis) _ _) -> elem label proofBasis
-    (LocalThm (Proven proofBasis) _ _) -> elem label proofBasis
+    (GlobalThm (Proven _ proofBasis) _ _) -> elem label proofBasis
+    (LocalThm (Proven _ proofBasis) _ _) -> elem label proofBasis
     _ -> False
 

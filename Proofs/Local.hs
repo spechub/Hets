@@ -54,7 +54,7 @@ locDecomp proofStatus@(ln,libEnv,_) = do
    actual implementation -}
 locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> (DGraph,([DGRule],[DGChange]))
-locDecompAux libEnv ln dgraph historyElement [] = (dgraph, historyElement)
+locDecompAux _ _ dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
      then
@@ -78,7 +78,7 @@ locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = 
-		         (LocalThm (Proven proofBasis)
+		         (LocalThm (Proven (LocDecomp ledge) proofBasis)
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )
@@ -134,8 +134,8 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
               if (all (`elem` sentencesTgt) sensSrc) 
                then locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
                 else locSubsumeAux libEnv ln dgraph (rules,changes) list
-        otherwise -> locSubsumeAux libEnv ln dgraph (rules,changes) list
-    otherwise -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
+        _ -> locSubsumeAux libEnv ln dgraph (rules,changes) list
+    _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
 		 locSubsumeAux libEnv ln dgraph (rules,changes) list
 
   where
@@ -147,7 +147,7 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
 	       tgt,
 	       DGLink {dgl_morphism = morphism,
 		       dgl_type = 
-		         (LocalThm (Proven [])
+		         (LocalThm (Proven (LocSubsumption ledge) [])
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
                )

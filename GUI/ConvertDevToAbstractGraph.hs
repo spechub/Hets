@@ -1012,7 +1012,7 @@ getDGLinkType lnk = case dgl_type lnk of
 getThmType :: ThmLinkStatus -> String
 getThmType thmLinkStatus =
   case thmLinkStatus of
-    Proven _ -> "proven"
+    Proven _ _ -> "proven"
     Open -> "unproven"
 
 {- converts the edges of the development graph

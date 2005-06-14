@@ -215,7 +215,7 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Library -o $@ $<
+	$(GENRULECALL) -i ATC.AS_Library -i ATC.BasicProof -o $@ $<
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<

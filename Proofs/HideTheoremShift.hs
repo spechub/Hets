@@ -72,19 +72,20 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic =
 {- inserts the given edges into the development graph and adds a corresponding entry to the changes -}
 insertNewEdges :: DGraph -> [DGChange] -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
 insertNewEdges dgraph changes [] = (dgraph,changes)
-insertNewEdges dgraph changes (edge:edges) =
-  if isDuplicate edge dgraph changes then insertNewEdges dgraph changes edges
-   else insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) edges
+insertNewEdges dgraph changes (edge:list) =
+  if isDuplicate edge dgraph changes then insertNewEdges dgraph changes list
+   else insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) list
 
 
 {- creates a new proven HidingThm edge from the given HidingThm edge using the edge list as the proofBasis -}
 makeProvenHidingThmEdge :: [LEdge DGLinkLab] -> LEdge DGLinkLab -> LEdge DGLinkLab
-makeProvenHidingThmEdge proofBasisEdges (src,tgt,edgeLab) =
+makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
    tgt,
    DGLink {dgl_morphism = morphism,
 	   dgl_type = (HidingThm hidingMorphism 
-		       (Proven (map getLabelOfEdge proofBasisEdges))),
+		       (Proven (HideTheoremShift ledge)
+			(map getLabelOfEdge proofBasisEdges))),
 	   dgl_origin = DGProof}
   )
   where
@@ -177,7 +178,7 @@ prettyPrintNodesOfPath dgraph (edge:path) =
 
 {- returns a string reprentation of the path: showing a tuple of its nodes-}
 prettyPrintPath :: DGraph -> [LEdge DGLinkLab] -> String
-prettyPrintPath dgraph [] = "<empty path>"
+prettyPrintPath _ [] = "<empty path>"
 prettyPrintPath dgraph path =
   "(" ++ (prettyPrintNodesOfPath dgraph path) ++ ")"
 
@@ -248,13 +249,13 @@ compMaybeMorphisms :: Maybe GMorphism -> Maybe GMorphism -> Maybe GMorphism
 compMaybeMorphisms morph1 morph2 =
   case (morph1, morph2) of
     (Just m1, Just m2) -> resultToMaybe $ compHomInclusion m1 m2 
-    otherwise -> Nothing
+    _ -> Nothing
 
 {- returns the Conservativity if the given edge has one,
    otherwise an error is raised -}
 getConservativity :: LEdge DGLinkLab -> Conservativity
-getConservativity edge@(_,_,edgeLab) =
+getConservativity (_,_,edgeLab) =
   case dgl_type edgeLab of
     (LocalThm _ cons _) -> cons
     (GlobalThm _ cons _) -> cons
-    otherwise -> None
+    _ -> None
