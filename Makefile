@@ -15,7 +15,7 @@ all: patch hets
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = fgl hxt
-COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data/Graph \
+COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data fgl/Data/Graph \
     fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
     fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
@@ -454,7 +454,8 @@ SPASS/ATC_SPASS.der.hs: $(SPASS_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SPASS_files)
 
 clean_genRules: 
-	$(RM) $(generated_rule_files) $(gendrifted_files)
+	$(RM) $(generated_rule_files) $(gendrifted_files) \
+            Haskell/ATC_Haskell.der.hs
 
 ###############
 ### clean up
