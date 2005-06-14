@@ -7,13 +7,12 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Here is the place where the class Logic is instantiated for Haskell.
-   Also the instances for Syntax an Category.
+   Here is the place where the classes 'Category', 'Syntax',
+   'StaticAnalysis', 'Sentences', and 'Logic' are instantiated for
+   Haskell.
 
-   todo:
-     - writing real functions
-
--}
+   Some method implementations for 'StaticAnalysis' and 'Sentences'
+   are still missing.  -}
 
 module Haskell.Logic_Haskell (Haskell(..), HaskellMorphism) where
 

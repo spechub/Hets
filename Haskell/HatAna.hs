@@ -7,6 +7,9 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable 
 
+This module supplies a signature type and a type checking function
+for the Haskell logic. 
+
 -}
 
 module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
