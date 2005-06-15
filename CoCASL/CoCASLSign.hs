@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Signatures for CoCASL, as extension of CASL signatures.
+Signatures for CoCASL, as extension of CASL signatures.
 -}
 
 module CoCASL.CoCASLSign where

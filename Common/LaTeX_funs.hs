@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Functions to calculate the length of a given word as it would be
+Functions to calculate the length of a given word as it would be
    printed with LaTeX according to one of four categories of words
    useful for CASL:
 

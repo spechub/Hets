@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Signatures for modal logic, as extension of CASL signatures.
+Signatures for modal logic, as extension of CASL signatures.
 -}
 
 module Modal.ModalSign where

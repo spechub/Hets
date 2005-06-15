@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
-    
-   latex printing of sign and morphism data types
+
+latex printing of sign and morphism data types
 
 -}
 

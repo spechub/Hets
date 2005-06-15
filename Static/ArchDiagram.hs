@@ -7,7 +7,7 @@
    Stability   :  provisional
    Portability :  non-portable (Logic)
 
-   Data types and functions for architectural diagrams.
+Data types and functions for architectural diagrams.
    Follows the CASL Reference Manual, section III.5.6.
 -}
 

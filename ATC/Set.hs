@@ -7,7 +7,6 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeders@tzi.de
 Stability   :  provisional
 Portability :  non-portable (cpp)
-    
 
 Data.Set and Common.Lib.Set are different types for ghc-6.2.2 but
 identical in ghc-6.4

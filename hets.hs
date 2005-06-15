@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The Main module of the Heterogeneous Tool Set. 
+The Main module of the Heterogeneous Tool Set. 
    It provides the main function to call.
 
 -}

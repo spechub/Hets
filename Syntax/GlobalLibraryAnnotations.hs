@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  luettich@tzi.de
 Stability   :  experimental
 Portability :  non-portable (imports existential types) 
-    
-   A module to extract GlobalAnnos from libraries
+
+A module to extract GlobalAnnos from libraries
 
 -}
 

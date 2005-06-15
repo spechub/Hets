@@ -8,7 +8,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   local proofs in development graphs.
+local proofs in development graphs.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 

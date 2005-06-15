@@ -7,7 +7,7 @@
    Stability   :  provisional
    Portability :  non-portable (via imports)
 
-   Parsing the architectural part of heterogenous specifications.
+Parsing the architectural part of heterogenous specifications.
    Follows Sect. II:3.1.4 of the CASL Reference Manual plus refinement
    extensions
 

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   todo:
+todo:
      - write difference function for ModuleInfos
      - include Prelude (or undefined) during type inference
 

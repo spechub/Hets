@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  luettich@tzi.de
 Stability   :  experimental
 Portability :  portable
-    
-   latex printing data types of 'BASIC_SPEC'
+
+latex printing data types of 'BASIC_SPEC'
 
    todo:
 

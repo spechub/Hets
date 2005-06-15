@@ -7,7 +7,6 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
 
-
 -- languages, define like "data CASL = CASL deriving Show" 
 -}
 

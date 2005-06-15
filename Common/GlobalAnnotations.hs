@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
-    
-   data structures for global annotations
+
+data structures for global annotations
 -}
 
 module Common.GlobalAnnotations (module Common.GlobalAnnotations,

@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Abstract syntax for COL extension of CASL
+Abstract syntax for COL extension of CASL
   Only the added syntax is specified
 -}
 

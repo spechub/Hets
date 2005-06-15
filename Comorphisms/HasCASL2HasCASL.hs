@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   translate HasCASL formulas to HasCASL program equations
+translate HasCASL formulas to HasCASL program equations
 
 -}
 

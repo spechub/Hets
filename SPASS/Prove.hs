@@ -7,7 +7,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-   Interface for the SPASS theorem prover.
+Interface for the SPASS theorem prover.
    See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}

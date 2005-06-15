@@ -7,8 +7,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
-   
-   Provides data structures for institution morphisms. 
+
+Provides data structures for institution morphisms. 
    These are just collections of
    functions between (some of) the types of logics.
 

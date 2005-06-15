@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   parse and call static analysis
+parse and call static analysis
 -}
 
 module HasCASL.RunStaticAna where

@@ -7,7 +7,6 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
-
 parser for CSP-CASL simple ids 
 
 -}

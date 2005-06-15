@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Analysis of libraries
+Analysis of libraries
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
 -}

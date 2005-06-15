@@ -7,7 +7,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-   Pretty printing for SPASS signatures.
+Pretty printing for SPASS signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
    for the SPASS syntax documentation.
 

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   Translation of identifiers to Haskell.
+Translation of identifiers to Haskell.
 -}
 
 module Haskell.TranslateId (IdCase(..), translateIdWithType) where

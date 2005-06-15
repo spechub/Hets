@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
-   
-   HasCASL parsable symbol items for structured specs 
+
+HasCASL parsable symbol items for structured specs 
 -}
 
 module HasCASL.SymbItem where

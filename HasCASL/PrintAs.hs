@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
-   
-   printing data types of the abstract syntax
+
+printing data types of the abstract syntax
 -}
 
 module HasCASL.PrintAs where

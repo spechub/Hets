@@ -8,7 +8,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   data types for proofs in development graphs.
+data types for proofs in development graphs.
 
 -}
 

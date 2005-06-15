@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
-   
-   latex output of the abstract syntax
+
+latex output of the abstract syntax
 -}
 
 module HasCASL.LaTeX_HasCASL where

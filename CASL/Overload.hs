@@ -7,7 +7,7 @@
     Stability   :  provisional
     Portability :  portable
 
-    Overload resolution (injections are inserted separately)
+Overload resolution (injections are inserted separately)
     Follows Sect. III:3.3 of the CASL Reference Manual.
     The algorthim is from:
       Till Mossakowski, Kolyang, Bernd Krieg-Brueckner:

@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   dumping a LibEnv
+dumping a LibEnv
 -}
 
 module Static.PrintDevGraph where

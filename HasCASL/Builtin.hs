@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-   HasCASL's builtin types and functions
+HasCASL's builtin types and functions
 -}
 
 module HasCASL.Builtin where

@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
-  The symbol map analysis for the CASL logic.
+
+The symbol map analysis for the CASL logic.
   Follows Sect. III:4.1 of the CASL Reference Manual.
 -}
 

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   Creating and searching unique identifier.
+Creating and searching unique identifier.
 -}
 
 

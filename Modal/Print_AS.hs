@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  printing AS_Modal ModalSign data types
+printing AS_Modal ModalSign data types
 -}
 
 module Modal.Print_AS where

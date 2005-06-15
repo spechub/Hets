@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Printing functions for Isabelle logic.
+Printing functions for Isabelle logic.
 -}
 {-
   todo: brackets in (? x . p x) ==> q

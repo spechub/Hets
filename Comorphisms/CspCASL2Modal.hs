@@ -7,8 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The embedding comorphism from CspCASL to ModalCASL.
+The embedding comorphism from CspCASL to ModalCASL.
    It keeps the CASL part and interprets the CspCASL LTS semantics as 
    Kripke structure
 -}

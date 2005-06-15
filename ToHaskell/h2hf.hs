@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  meader@tzi.de
 Stability   :  experimental
 Portability :  portable 
-   
+
 test translation
 -}
 

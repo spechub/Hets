@@ -6,7 +6,6 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
-  
 
 CSP-CASL keywords defined as strings to provide consistent keyword
 usage.

@@ -7,8 +7,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
-    
-   Mixfix analysis of terms
+
+Mixfix analysis of terms
 
    Missing features:
    - the positions of ids from string, list, number and floating annotations

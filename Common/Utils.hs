@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Useful functions that can't be found in the libraries.
+Useful functions that can't be found in the libraries.
    But should shared across HetCATS.
 
    Todo:

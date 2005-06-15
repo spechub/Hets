@@ -7,7 +7,7 @@ Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  non-portable (Logic)
 
-  display the logic graph
+display the logic graph
    
 -}
 

@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-   reading ATerms, CASL, HetCASL files and parsing them into an
+reading ATerms, CASL, HetCASL files and parsing them into an
    appropiate data structure 
  
 -}

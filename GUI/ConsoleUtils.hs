@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   gui utilities that work via the console instead of using HTk
+gui utilities that work via the console instead of using HTk
    
    The interface should remain compatible with GUI.HTkUtils 
    so that GUI.Utils can reexport functions of both modules

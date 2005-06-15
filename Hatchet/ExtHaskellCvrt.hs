@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Converts a Haskell module with pure AXIOM-Pragma to a Haskell
+Converts a Haskell module with pure AXIOM-Pragma to a Haskell
    module with AXIOM-Pragmas and corresponding lambda-expressions
 -}
 

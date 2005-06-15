@@ -8,7 +8,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   hide theorem shift proof in development graphs.
+hide theorem shift proof in development graphs.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 

@@ -7,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
+
 convert global annotations to a list of annotations
 
 -}

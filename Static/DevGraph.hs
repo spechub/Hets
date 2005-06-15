@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Central data structure for development graphs.
+Central data structure for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 

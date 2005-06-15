@@ -8,7 +8,6 @@
     Stability   :  provisional
     Portability :  portable
 
-
 -}
 
 module CASL.CCC.SignFuns where

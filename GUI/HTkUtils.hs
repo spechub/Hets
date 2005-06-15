@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
-   Utilities on top of HTk
+Utilities on top of HTk
 -}
 
 module GUI.HTkUtils where

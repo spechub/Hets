@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-   
-   HasCASL analysed symbols of a signature
+HasCASL analysed symbols of a signature
 -}
 
 module HasCASL.Symbol where

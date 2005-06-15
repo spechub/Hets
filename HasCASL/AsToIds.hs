@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   extract ids from As for mixfix analysis
+extract ids from As for mixfix analysis
 -}
 
 module HasCASL.AsToIds where

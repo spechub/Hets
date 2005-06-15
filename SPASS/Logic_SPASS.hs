@@ -8,7 +8,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
-   Instance of class Logic for SPASS.
+Instance of class Logic for SPASS.
 -}
 
 

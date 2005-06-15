@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
-   Instance of class Logic for Isabelle (including Pure, HOL etc.).
+Instance of class Logic for Isabelle (including Pure, HOL etc.).
 -}
 
 module Isabelle.Logic_Isabelle where

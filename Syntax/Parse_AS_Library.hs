@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   Parsing the specification library.
+Parsing the specification library.
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
 -}
 

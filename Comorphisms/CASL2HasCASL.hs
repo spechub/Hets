@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The embedding comorphism from CASL to HasCASL.
+The embedding comorphism from CASL to HasCASL.
 -}
 
 module Comorphisms.CASL2HasCASL where

@@ -7,7 +7,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-   Data structures representing SPASS signatures.
+Data structures representing SPASS signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
    for the SPASS syntax documentation.
 

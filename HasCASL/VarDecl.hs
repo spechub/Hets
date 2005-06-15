@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (MonadState)
-    
+
 analyse generic var (or type var) decls
 
 -}

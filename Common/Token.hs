@@ -7,8 +7,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-   
-   parser for CASL 'Id's based on "Common.Lexer"
+
+parser for CASL 'Id's based on "Common.Lexer"
 
 -}
 {- http://www.cofi.info/Documents/CASL/Summary/

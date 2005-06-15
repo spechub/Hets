@@ -9,7 +9,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
-   mkAppTy was renamed to mkTyConApp in ghc version 
+mkAppTy was renamed to mkTyConApp in ghc version 
    6.3 upwards
 
 -}

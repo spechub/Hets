@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
-   
-   merging parts of local environment
+
+merging parts of local environment
 -}
 
 module HasCASL.Merge where

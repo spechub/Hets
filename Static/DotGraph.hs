@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Display of development graphs using dot
+Display of development graphs using dot
 -}
 
 module Static.DotGraph where

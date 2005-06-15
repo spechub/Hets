@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   LaTeX Printing the Structured part of hetrogenous specifications.
+LaTeX Printing the Structured part of hetrogenous specifications.
 
 -}
 

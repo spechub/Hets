@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   may be needed for structured specs 
+may be needed for structured specs 
 -}
 
 module CASL.SymbolParser where

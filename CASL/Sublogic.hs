@@ -8,8 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-    
-  This module provides the sublogic functions (as required by Logic.hs)
+This module provides the sublogic functions (as required by Logic.hs)
   for CASL. The functions allow to compute the minimal sublogics needed
   by a given element, to check whether an item is part of a given
   sublogic, and to project an element into a given sublogic.

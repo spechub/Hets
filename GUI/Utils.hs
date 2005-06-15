@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (cpp)
 
-   Utilities on top of HTk or System.IO
+Utilities on top of HTk or System.IO
 -}
 
 module GUI.Utils (listBox, createTextSaveDisplay, askFileNameAndSave) where

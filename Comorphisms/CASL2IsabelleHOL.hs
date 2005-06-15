@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The embedding comorphism from CASL to Isabelle-HOL.
+The embedding comorphism from CASL to Isabelle-HOL.
 -}
 
 {- todo

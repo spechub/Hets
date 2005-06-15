@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   abstract syntax during static analysis
+abstract syntax during static analysis
 -}
 
 module HasCASL.Le where

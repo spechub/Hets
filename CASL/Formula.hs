@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   parse terms and formulae
+parse terms and formulae
 -}
 
 {- 

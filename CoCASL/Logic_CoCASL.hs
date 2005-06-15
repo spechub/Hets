@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Instance of class Logic for CoCASL.
+Instance of class Logic for CoCASL.
 -}
 
 {- todo:

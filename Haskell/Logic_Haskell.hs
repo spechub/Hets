@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Here is the place where the classes 'Category', 'Syntax',
+Here is the place where the classes 'Category', 'Syntax',
    'StaticAnalysis', 'Sentences', and 'Logic' are instantiated for
    Haskell.
 

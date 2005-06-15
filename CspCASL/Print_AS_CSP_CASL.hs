@@ -7,7 +7,6 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
-
 printing abstract syntax of CSP-CASL
 
 -}

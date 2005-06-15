@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
-   
-   utility functions and computations of meaningful positions for
+
+utility functions and computations of meaningful positions for
    various data types of the abstract syntax
 -}
 

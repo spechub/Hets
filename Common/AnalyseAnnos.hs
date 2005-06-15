@@ -9,7 +9,7 @@
    Stability   :  provisional
    Portability :  portable
 
-   Some functions for building and accessing the datastructures 
+Some functions for building and accessing the datastructures 
    of GlobalAnnotations. 
 
 -}

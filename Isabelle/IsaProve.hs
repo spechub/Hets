@@ -9,7 +9,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Interface for Isabelle theorem prover.
+Interface for Isabelle theorem prover.
 -}
 {-
   todo: thy files in subdir

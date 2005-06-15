@@ -8,8 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (overlapping instances, dynamics, existentials)
 
-   
-   The Grothendieck logic is defined to be the
+The Grothendieck logic is defined to be the
    heterogeneous logic over the logic graph.
    This will be the logic over which the data 
    structures and algorithms for specification in-the-large

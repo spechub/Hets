@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  printing AS_CoCASL and CoCASLSign data types
+printing AS_CoCASL and CoCASLSign data types
 -}
 
 module CoCASL.Print_AS where

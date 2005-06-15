@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   This module puts parenthesis around mixfix term for 
+This module puts parenthesis around mixfix term for 
    unambiguous pretty printing
 -}
 

@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   static analysis of modal logic parts
+static analysis of modal logic parts
 -}
 
 {- todo:

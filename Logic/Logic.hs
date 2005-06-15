@@ -7,8 +7,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
- 
-   Provides data structures for logics (with symbols). Logics are
+
+Provides data structures for logics (with symbols). Logics are
    a type class with an /identity/ type (usually interpreted
    by a singleton set) which serves to treat logics as 
    data. All the functions in the type class take the

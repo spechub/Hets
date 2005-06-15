@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
-  raw symbols bridge symb items and the symbols of a signature
+
+raw symbols bridge symb items and the symbols of a signature
 -}
 
 module HasCASL.RawSym where

@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  printing AS_Modal ModalSign data types
+printing AS_Modal ModalSign data types
 -}
 
 module COL.Print_AS where

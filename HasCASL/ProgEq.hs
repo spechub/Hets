@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   convert some formulas to program equations
+convert some formulas to program equations
 -}
 
 module HasCASL.ProgEq where

@@ -7,7 +7,7 @@ Maintainer  :  paolot@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The embedding comorphism from Haskell to Isabelle-HOLCF.
+The embedding comorphism from Haskell to Isabelle-HOLCF.
 -}
 
 module Comorphisms.Hs2HOLCF where

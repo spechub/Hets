@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   conversion from As to Le
+conversion from As to Le
 -}
 
 module HasCASL.AsToLe where

@@ -7,8 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The possible world encoding comorphism from ModalCASL to CASL.
+The possible world encoding comorphism from ModalCASL to CASL.
 
    We use the Relational Translation by adding one extra parameter of
    type world to each predicate.

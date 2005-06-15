@@ -8,8 +8,8 @@
    Maintainer  :  till@tzi.de
    Stability   :  provisional
    Portability :  non-portable
-   
-   Assembles all the logics into a list, as a prerequisite for the logic graph.
+
+Assembles all the logics into a list, as a prerequisite for the logic graph.
    The modules for the Grothendieck logic are logic graph indepdenent,
    and here is the logic graph that is used to instantiate these.
    Since the logic graph depends on a large number of modules for the

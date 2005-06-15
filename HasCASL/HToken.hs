@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-   
-   parser for HasCASL IDs
+
+parser for HasCASL IDs
    extending "Common.Keywords" and "Common.Token" 
 -}
 

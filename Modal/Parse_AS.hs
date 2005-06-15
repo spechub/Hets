@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Parser for modal logic extension of CASL
+Parser for modal logic extension of CASL
 -}
 
 module Modal.Parse_AS where

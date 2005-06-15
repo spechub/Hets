@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
-    
-   generic mixfix analysis
+
+generic mixfix analysis
 -}
 
 module Common.Earley (Rule

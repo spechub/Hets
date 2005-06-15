@@ -8,8 +8,7 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  experimental
 Portability :  non-portable
 
-
-   Here is the place where the class Logic is instantiated for CspCASL.
+Here is the place where the class Logic is instantiated for CspCASL.
    Also the instances for Syntax an Category.
 
    todo:

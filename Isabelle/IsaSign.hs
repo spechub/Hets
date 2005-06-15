@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Data structures for Isabelle signatures and theories.
+Data structures for Isabelle signatures and theories.
    Adapted from Isabelle.
 
 LogicList.hs

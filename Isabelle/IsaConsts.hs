@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   utilities for the HasCASL to Isabelle comorphism
+utilities for the HasCASL to Isabelle comorphism
 -}
 
 module Isabelle.IsaConsts where

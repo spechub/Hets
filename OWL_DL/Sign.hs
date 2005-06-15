@@ -7,7 +7,7 @@ Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Signatures and sentences for OWL_DL.
+Signatures and sentences for OWL_DL.
 -}
 
 module OWL_DL.Sign where

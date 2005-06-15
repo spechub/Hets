@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
-    
-   converting literals 
+
+converting literals 
 -}
 
 module Common.ConvertLiteral where

@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
+
 supply a simple data type for (precedence or subsort) relations. A
 relation is conceptually a set of (ordered) pairs,
 but the hidden implementation is based on a map of sets. 

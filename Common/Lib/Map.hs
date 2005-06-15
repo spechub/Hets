@@ -7,6 +7,7 @@
 -- Maintainer  :  libraries@haskell.org
 -- Stability   :  provisional
 -- Portability :  portable
+
 --
 -- An efficient implementation of maps from keys to values (dictionaries).
 --

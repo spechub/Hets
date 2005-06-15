@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Here is the place where the class Logic is instantiated for Hatchet.
+Here is the place where the class Logic is instantiated for Hatchet.
    Also the instances for Syntax an Category.
 
    todo:

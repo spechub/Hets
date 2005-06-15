@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-  This module provides functions to write a pretty printed abstract
+This module provides functions to write a pretty printed abstract
   syntax and all the other formats.
 
 -}

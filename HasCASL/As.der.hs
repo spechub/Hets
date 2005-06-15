@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-   abstract syntax for HasCASL,
+abstract syntax for HasCASL,
    more liberal than Concrete-Syntax.txt,
    annotations are almost as for CASL
 

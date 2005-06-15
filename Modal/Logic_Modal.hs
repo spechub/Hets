@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Instance of class Logic for modal logic.
+Instance of class Logic for modal logic.
 -}
 
 {- todo:

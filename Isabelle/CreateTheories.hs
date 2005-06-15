@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   dumping a LibEnv to Isabelle theory files
+dumping a LibEnv to Isabelle theory files
 -}
 
 module Isabelle.CreateTheories where

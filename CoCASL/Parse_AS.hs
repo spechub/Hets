@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Parser for CoCASL
+Parser for CoCASL
 -}
 
 module CoCASL.Parse_AS where

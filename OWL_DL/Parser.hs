@@ -7,7 +7,7 @@ Maintainer  :  jiang@tzi.de
  Stability   :  provisional
 Portability :  portable
 
-   Here is the place where the class Logic is instantiated for CASL.
+Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
 -}
 

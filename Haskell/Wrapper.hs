@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   extract Haskell code from String
+extract Haskell code from String
 -}
 
 {-

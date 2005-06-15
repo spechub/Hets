@@ -7,7 +7,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable (relies on Logic via DevGraph)
 
-   Interface for graph viewing and abstraction.
+Interface for graph viewing and abstraction.
    It is possible to hide sets of nodes and edges.
    Using a composition table for edge types,
    paths through hidden nodes can be displayed.

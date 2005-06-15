@@ -7,8 +7,7 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
-
-  static analysis for CSP-CASL
+static analysis for CSP-CASL
 
 -}
 

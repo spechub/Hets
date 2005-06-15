@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   pretty printing for heterogenous libraries in HetCASL.
+pretty printing for heterogenous libraries in HetCASL.
 -}
 
 module Syntax.Print_AS_Library where

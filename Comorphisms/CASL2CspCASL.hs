@@ -7,8 +7,7 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The embedding comorphism from CASL to CspCASL.
+The embedding comorphism from CASL to CspCASL.
 
 -}
 

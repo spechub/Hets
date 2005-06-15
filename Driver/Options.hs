@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Datatypes for options that hets understands.
+Datatypes for options that hets understands.
    Useful functions to parse and check user-provided values.
 -}
 

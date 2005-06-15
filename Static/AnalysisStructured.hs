@@ -8,7 +8,7 @@
    Stability   :  provisional
    Portability :  portable
 
-   Analysis of structured specifications
+Analysis of structured specifications
 
    Follows the verfication semantic rules in Chap. IV:4.7
    of the CASL Reference Manual.

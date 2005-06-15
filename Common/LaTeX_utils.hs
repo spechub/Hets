@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Useful functions for latex printing
+Useful functions for latex printing
 -}
 
 module Common.LaTeX_utils (module Common.LaTeX_utils,

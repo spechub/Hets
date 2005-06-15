@@ -7,7 +7,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
-   Conversion of development graphs from Logic.DevGraph
+Conversion of development graphs from Logic.DevGraph
    to abstract graphs of the graph display interface
 -}
 

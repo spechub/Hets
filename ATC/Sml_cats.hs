@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)
 
-   This module exports functions, that can convert an sml-CATS ATerm
+This module exports functions, that can convert an sml-CATS ATerm
    into the Haskell abstract syntax tree. So it contains all the
    necessary instances of ATermConvertible and a heuristic function
    that calculates the new lists of Pos out of Region tuples.

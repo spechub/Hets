@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   analyse class decls
+analyse class decls
 -}
 
 module HasCASL.ClassDecl where

@@ -7,7 +7,7 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  non-portable(via imports
 
-   Temporary interface for displaying development graphs.
+Temporary interface for displaying development graphs.
    Should be replaced with hets in the future.
    
 -}

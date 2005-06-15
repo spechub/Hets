@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
-   Here is the place where the class Logic is instantiated for HasCASL.
+Here is the place where the class Logic is instantiated for HasCASL.
    Also the instances for Syntax and Category.
 
    todo:

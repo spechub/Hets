@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-   Convert development graph back to structured specification
+Convert development graph back to structured specification
    and compute theory
 -}
 

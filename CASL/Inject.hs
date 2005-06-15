@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   This module replaces Sorted_term(s) with explicit injection
+This module replaces Sorted_term(s) with explicit injection
    functions.  Don't do this after simplification since crucial sort
    information may be missing 
 -}

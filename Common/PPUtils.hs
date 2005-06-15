@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Useful functions for pretty printing that will be allmost useful for
+Useful functions for pretty printing that will be allmost useful for
    many logics.
 
    Todo:

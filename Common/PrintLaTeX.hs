@@ -7,7 +7,7 @@
    Stability   :  provisional
    Portability :  portable
 
-   This class needs to be instantiated for every datastructure in AS_*
+This class needs to be instantiated for every datastructure in AS_*
    for LaTeX pretty printing. 
 -}
 

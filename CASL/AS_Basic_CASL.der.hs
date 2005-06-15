@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and 
+This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and 
    Symb_map_items.
    Follows Sect. II:2.2 of the CASL Reference Manual.
 -}

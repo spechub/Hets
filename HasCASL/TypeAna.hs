@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   analyse classes and types
+analyse classes and types
 -}
 
 module HasCASL.TypeAna where

@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-
-   Wrapper for Haskell parsing.
+Wrapper for Haskell parsing.
    Parses Haskell declarations (not a whole module), for use
      in heterogeneous specifications
 -}

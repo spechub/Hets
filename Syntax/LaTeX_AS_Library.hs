@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   LaTeX Pretty Printing heterogenous 
+LaTeX Pretty Printing heterogenous 
    libraries in HetCASL.
 
 -}

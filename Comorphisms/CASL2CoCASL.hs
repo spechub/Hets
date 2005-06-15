@@ -7,8 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The embedding comorphism from CASL to ColCASL.
+The embedding comorphism from CASL to ColCASL.
 
 -}
 

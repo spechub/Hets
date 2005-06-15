@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Grothendieck)
 
- latex printing
+latex printing
 -}
 
 module Logic.LaTeX_Grothendieck where

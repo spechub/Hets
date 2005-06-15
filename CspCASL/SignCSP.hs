@@ -7,8 +7,7 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional
 Portability :  portable
 
-
-  signatures for CSP-CASL
+signatures for CSP-CASL
 
 -}
 

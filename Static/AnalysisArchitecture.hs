@@ -7,7 +7,7 @@
    Stability   :  provisional
    Portability :  non-portable (via imports)
 
-   Analysis of architectural specifications.
+Analysis of architectural specifications.
 
    Follows the extended static semantics sketched in Chap. III:5.6
    of the CASL Reference Manual.

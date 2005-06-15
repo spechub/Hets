@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   analyse operation declarations
+analyse operation declarations
 -}
 
 module HasCASL.OpDecl where

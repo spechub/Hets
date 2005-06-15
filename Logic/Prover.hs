@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Provide prover stuff for class Logic.Sentences
+Provide prover stuff for class Logic.Sentences
 
 -}
 

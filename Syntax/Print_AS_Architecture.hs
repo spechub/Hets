@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   Printing the Architechture stuff of HetCASL.
+Printing the Architechture stuff of HetCASL.
 -}
 
 module Syntax.Print_AS_Architecture where

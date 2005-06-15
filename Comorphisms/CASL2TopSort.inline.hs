@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Coding out subsorting into unary predicates.
+Coding out subsorting into unary predicates.
    New concept for proving Ontologies.
 -}
 

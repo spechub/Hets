@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Abstract syntax for CoCASL, the coalgebraic extension of CASL
+Abstract syntax for CoCASL, the coalgebraic extension of CASL
   Only the added syntax is specified
 -}
 

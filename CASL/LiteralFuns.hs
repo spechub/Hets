@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  luettich@tzi.de
 Stability   :  experimental
 Portability :  portable 
-    
-   functions to test ids with argument terms for literals of CASL
+
+functions to test ids with argument terms for literals of CASL
 -}
 
 

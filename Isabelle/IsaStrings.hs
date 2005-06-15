@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
+
 String constants of Isabelle keywords to be excluded by translations
 
 obtained by manually taking @lexicon@ and @consts@ from 

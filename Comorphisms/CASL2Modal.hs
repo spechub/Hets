@@ -7,8 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The embedding comorphism from CASL to ModalCASL.
+The embedding comorphism from CASL to ModalCASL.
 
 -}
 

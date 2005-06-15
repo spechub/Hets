@@ -7,8 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   
-   The embedding comorphism from CoCASL to Isabelle-HOL.
+The embedding comorphism from CoCASL to Isabelle-HOL.
 
 -}
 

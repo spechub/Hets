@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Coding out subsorting (SubPCFOL= -> PCFOL=), 
+Coding out subsorting (SubPCFOL= -> PCFOL=), 
    following Chap. III:3.1 of the CASL Reference Manual
 -}
 

@@ -6,8 +6,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-   
-   parser for HasCASL kinds, types, terms, patterns and equations
+
+parser for HasCASL kinds, types, terms, patterns and equations
 -}
 
 module HasCASL.ParseTerm where

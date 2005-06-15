@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   substitution and unification of types
+substitution and unification of types
 -}
 
 module HasCASL.Unify where

@@ -7,7 +7,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-   Functions to convert to internal SP* data structures.
+Functions to convert to internal SP* data structures.
 
 -}
 

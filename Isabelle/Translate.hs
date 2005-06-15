@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   translate 'Id' to Isabelle strings
+translate 'Id' to Isabelle strings
 -}
 
 module Isabelle.Translate (showIsaT, showIsaIT, transStringT, 

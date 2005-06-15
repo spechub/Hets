@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-   auxiliary functions for raw kinds
+auxiliary functions for raw kinds
 -}
 
 module HasCASL.ClassAna where

@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-  Abstract syntax for modal logic extension of CASL
+Abstract syntax for modal logic extension of CASL
   Only the added syntax is specified
 -}
 

@@ -7,8 +7,8 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
-   
-   Provides data structures for institution comorphisms. 
+
+Provides data structures for institution comorphisms. 
    These are just collections of
    functions between (some of) the types of logics.
 

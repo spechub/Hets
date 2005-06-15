@@ -7,7 +7,7 @@ Maintainer  :  hausmann@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   static analysis for CoCASL
+static analysis for CoCASL
 -}
 
 {- todo:

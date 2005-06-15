@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-   LaTeX Printing the Architechture stuff of HetCASL.
+LaTeX Printing the Architechture stuff of HetCASL.
 -}
 
 module Syntax.LaTeX_AS_Architecture where

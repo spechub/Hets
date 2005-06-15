@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable
 
-   
-   The embedding comorphism from HasCASL to Haskell.
+The embedding comorphism from HasCASL to Haskell.
 
 -}
 

@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   static analysis of modal logic parts
+static analysis of modal logic parts
 -}
 
 module Modal.StatAna where

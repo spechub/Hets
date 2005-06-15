@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
+John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
    with modifications marked with 'added by KL'
 
    Based on /The Design of a Pretty-printing Library/

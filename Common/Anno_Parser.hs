@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   This file implements parsers for annotations and annoted items.
+This file implements parsers for annotations and annoted items.
    Follows Chap. II:5 of the CASL Reference Manual.
 
    uses Lexer, Keywords and Token rather than CaslLanguage 

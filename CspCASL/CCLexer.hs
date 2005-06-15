@@ -7,7 +7,6 @@ Maintainer  :  M.Roggenbach@swansea.ac.uk@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-
 Parser for CSP-CASL keywords
 
 -}
