@@ -1,13 +1,13 @@
 {-| 
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-   Version module of Hets
+Version module of Hets
 
    >>>HEADER<<<
 -}
