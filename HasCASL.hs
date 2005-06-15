@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  folder description ony
+Description :  folder description
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
