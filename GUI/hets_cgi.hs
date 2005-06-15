@@ -7,8 +7,10 @@ Maintainer   : jiang@tzi.de
 Stability    : provisional
 Portability  : non-portable
 
-   Interface for web page with WASH/CGI
+Interface for web page with WASH/CGI
+-}
 
+{-
    todo:
      - default for checkbox regarding logging of input must be "selected" 
        .. done
@@ -29,6 +31,7 @@ Portability  : non-portable
        .. ???
      - a handler for warning message
 -}
+
 module Main where
 
 import CGI
@@ -55,6 +58,56 @@ import System.Posix.Process
 import System.Posix.Env
 import Driver.Version
 
+------ Configuration section -------------------------
+
+--- site specific configuration
+
+-- a valid email address for the contact field / link
+contact_url :: String
+contact_url = "mailto:cofi@informatik.uni-bremen.de"
+
+-- the text displayed with the previous link
+contact_text :: String
+contact_text = "cofi@informatik.uni-bremen.de"
+
+-- a directory which must be accessable and exposed by the web server,
+-- where all the generated files are stored
+base_dir_generated :: String
+base_dir_generated = "/home/www/cofi/hets-tmp/"
+
+-- the url pointing to the above specified directory
+base_url_generated :: String
+base_url_generated = "http://www.informatik.uni-bremen.de/cofi/hets-tmp/"
+
+-- the directory where the CASL-lib repository is checked out. Must be
+-- accessable by the cgi script
+casl_lib_dir :: String
+casl_lib_dir = "/home/cofi/CASL-lib"
+
+-- the header of the LaTeX-file that will be processed by pdflatex
+latex_header :: String
+latex_header = base_dir_generated ++ "mould.m"
+
+-- where is the pdflatex command for the generation of PDF-files
+pdflatex_cmd :: String
+pdflatex_cmd = "/usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex"
+
+--- site independant configuration
+
+-- link to the homepage of hetcasl
+hetcasl_url :: String
+hetcasl_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm"
+
+-- link to the manual of Hets
+hets_manual_url :: String
+hets_manual_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/UserGuide.pdf"
+
+-- link to the hetcasl.sty file
+hetcasl_sty_url :: String
+hetcasl_sty_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty"
+
+------ End of Configuration section ------------------
+
 type DiagStr = String
 type HtmlTitle = String
 type ResAna  = String
@@ -75,7 +128,7 @@ page1 title1 =
     do    
       h1 $ text title1
       p (do text "Enter a "
-	    hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/HetCASL/index_e.htm") $ 
+	    hlink (read hetcasl_url) $ 
 	          (text "HetCASL")
             text " specification or library in the input zone, then press SUBMIT:")
       -- Input field
@@ -95,8 +148,8 @@ page1 title1 =
 	 submit0 reset (fieldVALUE "reset"))
       hr_S $ CGI.empty
       p $ (do text "Contact address: "
-	      hlink (read "mailto:cofi@informatik.uni-bremen.de") $ 
-	             text "cofi@informatik.uni-bremen.de")
+	      hlink (read contact_url) $ 
+	             text contact_text)
 
 reset :: CGI()
 reset = mainCGI
@@ -111,7 +164,7 @@ handle (F5 input box1 box2 box3 box4) =
     in  do
 	random1 <- io $ getRandom
 	processID <- io $ getProcessID
-	let outputfile = "/home/www/cofi/hets-tmp/result" ++ (show processID) ++
+	let outputfile = base_dir_generated ++ "result" ++ (show processID) ++
 			    (show random1)
 	res <- io $ anaInput str (tree, env, tex, achiv) outputfile
 	ask $ html ( do CGI.head (title $ text "HETS results")
@@ -124,7 +177,7 @@ handle (F5 input box1 box2 box3 box4) =
 anaInput :: String -> SelectedBox -> FilePath -> IO([DiagStr],[(HtmlTitle, ResAna)])
 anaInput contents showS@(_,_,_,willAchiv) outputfiles =
    do 
-   setEnv "HETS_LIB" "/home/cofi/CASL-lib" True
+   setEnv "HETS_LIB" casl_lib_dir True
    (parseErrors, ast) <- read_LIB_DEFN_M_WI defaultLogic "<stdin>" contents
    if parseErrors == "" then 
       do
@@ -188,14 +241,14 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
 			pdfFile   = outputfiles1 ++ ".pdf"
 			tmpFile   = outputfiles1 ++ ".tmp"
 		    write_casl_latex defaultHetcatsOpts globalAnnos (pptexFile) libDefn
-		    rawSystem "cp" ["/home/www/cofi/hets-tmp/mould.m", latexFile]
+		    rawSystem "cp" [latex_header, latexFile]
 		    setFileMode pptexFile fileMode
 		    setFileMode latexFile fileMode
 		    appendFile latexFile ("\\input{"++ pptexFile ++"}\n" ++ "\\end{document}\n")
                     
-                    system ("cd /home/www/cofi/hets-tmp; /usr/local/share/teTeX/2.0/bin/ix86-linux2/pdflatex " ++
+                    system ("cd "++ base_dir_generated ++" ; "++
+                            pdflatex_command ++
 			   latexFile ++ " > " ++ tmpFile)
-                    -- system "mv result* /home/www/cofi/hets-tmp/"
 		    setFileMode pdfFile fileMode
 		    return()
 			       
@@ -258,7 +311,7 @@ printR str (diags2, result) selectedBoxes outputFiles =
        printRes selectedBoxes outputFiles result 
        hr_S $ CGI.empty
        p (do text "Not the result you expected ? Please check the "
-	     hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/UserGuide.pdf") $ text "Hets Manual"
+	     hlink (read hets_manual_url) $ text "Hets Manual"
 	     text "."
 	 )
        hr_S $ CGI.empty
@@ -277,7 +330,7 @@ printR str (diags2, result) selectedBoxes outputFiles =
 	     if isEnv then
 		do  
 		p $ i(do text "You can download the " 
-		         hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
+		         hlink (read (base_url_generated ++
 				      (drop 24 (outputfiles++".txt")))) $ text "ACSII file" 
 		         text " here. The file will be deleted after 30 minutes.\n" 
 		     )
@@ -285,14 +338,14 @@ printR str (diags2, result) selectedBoxes outputFiles =
 		else if isTex then
 		     do
 		     p $ i(do text "You can download the "
-			      hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
+			      hlink (read (base_url_generated ++
 					   (drop 24 (outputfiles++".pp.tex")))) $ text "LaTeX file" 
 			      text " here. For compiling the LaTeX output, you need " 
-			      hlink (read "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/hetcasl.sty") $ text "hetcasl.sty" 
+			      hlink (read hetcasl_sty_url) $ text "hetcasl.sty" 
 			      text "."
 			  )
 		     p $ i(do text "You can also download the " 
-			      hlink (read ("http://www.informatik.uni-bremen.de/cofi/hets-tmp/" ++
+			      hlink (read (base_url_generated ++
 					   (drop 24 (outputfiles++".pdf")))) $ text "PDF file" 
 			      text ". All files will be deleted after 30 minutes.\n" 
 			  )
