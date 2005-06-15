@@ -2,7 +2,7 @@
 
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional

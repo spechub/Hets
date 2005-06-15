@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@tzi.de
  Stability   :  provisional

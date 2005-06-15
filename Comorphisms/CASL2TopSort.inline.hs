@@ -1,7 +1,7 @@
 {- | 
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional

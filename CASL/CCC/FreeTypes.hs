@@ -3,7 +3,7 @@
    
     Module      :  $Header$
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
-    Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
     Maintainer  :  hets@tzi.de
     Stability   :  provisional

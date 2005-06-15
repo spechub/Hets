@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich 
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional

@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c)  Daniel Pratsch and Uni Bremen 2002-2003
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional

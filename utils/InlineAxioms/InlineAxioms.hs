@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2002-2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
@@ -326,7 +326,7 @@ processFile prog file = do
        ParseOk hsMod -> putStr $ 
               "{- |\nModule      :  " ++ file ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++
-             "\nLicence     :  similar to LGPL, see HetCATS/LICENCE.txt" ++
+             "\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt" ++
              "\n\nMaintainer  :  maeder@tzi.de" ++
              "\nStability   :  provisional" ++
              "\nPortability :  portable\n" ++

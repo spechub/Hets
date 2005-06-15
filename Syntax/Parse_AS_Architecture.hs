@@ -1,7 +1,7 @@
 {- |
    Module      :  $Header$
    Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
-   Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
    Maintainer  :  maeder@tzi.de
    Stability   :  provisional

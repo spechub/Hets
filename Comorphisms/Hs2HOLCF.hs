@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
-Licence     :  All rights reserved.
+License     :  All rights reserved.
 
 Maintainer  :  paolot@tzi.de
 Stability   :  provisional
