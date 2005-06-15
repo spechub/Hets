@@ -197,7 +197,7 @@ spanAFunChar :: String -> (String,String)
 spanAFunChar            = span isAFunChar
 
 isAFunChar :: Char -> Bool
-isAFunChar c = isAlphaNum c || c == '_' || c == '*' || c == '+' ||  c == '-'
+isAFunChar c = isAlphaNum c || c `elem` "_*+-."
 
 spanAbbrevChar :: String -> (String,String)
 spanAbbrevChar          = span isBase64Char
