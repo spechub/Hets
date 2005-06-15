@@ -1,11 +1,14 @@
 {- |
 Module      :  $Header$
+Description :  folder description ony
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  mostly portable
+Portability :  portable (except HasCASL.Logic_HasCASL)
+
+This folder contains the files for HasCASL basic specs
 
  * "HasCASL.As"                 abstract syntax with derived 'PosItem'
 
