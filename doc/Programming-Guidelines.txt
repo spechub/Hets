@@ -41,7 +41,7 @@ All Haskell source files start with a haddock header of the form:
 {- |
 Module      :  $Header$
 Copyright   :  (c) <You> and Uni Bremen 2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
@@ -158,7 +158,7 @@ Do avoid mixing "let" and "where". (I prefer "let" and have auxiliary
 function on the top-level that are not exported.) Export lists also
 support the detection of unused functions.
 
-If you notice that ypu're doing the same task again, try to generalize
+If you notice that you're doing the same task again, try to generalize
 your first one in order to avoid duplicate code. It is
 frustrating to change the same error in several places.
 
@@ -246,7 +246,7 @@ operators) since a clash with template haskell is possible.
 Types
 ---------------------------------------------------------------------------
 
-Prefer proper data types over type synonyms or tupels even if you have
+Prefer proper data types over type synonyms or tuples even if you have
 to do more constructing and unpacking. This will make it easier to
 supply class instances later on. Don't put class constraints on
 a data type, constraints belong only to the functions that manipulate
