@@ -355,9 +355,8 @@ doc: docs/index.html
 # generate haddock documentation with links to sources
 docs/index.html: $(doc_sources)
 	$(HADDOCK) $(doc_sources) -o docs -h -v \
-            -i docs/base.haddock -i docs/parsec.haddock -s ../ \
             -t 'Hets - the Heterogeneous Tool Set' \
-	    -p Hets-Haddock-Prologue.txt
+            -p Hets-Haddock-Prologue.txt
 
 # sources are not copied here
 apache_doc:
