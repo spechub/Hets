@@ -174,7 +174,7 @@ DRIFT_OPTS = +RTS -K10m -RTS
 ## sources for hets 
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
-    Static/LogicStructured.hs Common/CaslLanguage.hs ./Test.hs
+    Common/CaslLanguage.hs ./Test.hs
 
 SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
 
@@ -272,13 +272,16 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(wildcard utils/InlineAxioms/*.hs) \
     $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
     $(genrule_header_files) $(generated_rule_files) \
+    $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
     Modal/GeneratePatterns.inline.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     hxt/HXT.hs hxt/Net.hs $(patsubst %.hs, %.der.hs, $(drifted_files))
 
+hspp_sources = $(patsubst %.hs, %.hspp, $(cpp_sources))
+
 # this variable holds the modules that should be documented
 doc_sources = $(filter-out $(nondoc_sources), $(sources)) \
-    $(patsubst %.hs, %.hspp, $(cpp_sources)) $(uni_sources)
+    $(hspp_sources)
 
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
     Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
@@ -353,10 +356,17 @@ count: $(sources)
 doc: docs/index.html
 
 # generate haddock documentation with links to sources
+# the interface treatment is stolen from uni/mk/suffix.mk
 docs/index.html: $(doc_sources)
-	$(HADDOCK) $(doc_sources) -o docs -h -v \
+	$(RM) -r docs
+	mkdir docs
+	cp -r ../uni/www docs/www
+	HINTERFACES0=`find docs/www -name '*.haddock' \
+           -printf "--read-interface=www/%P,%p "` ; \
+        HINTERFACES=`echo $$HINTERFACES0 | sed -e 's+/[^/]*.haddock,+,+g'` ; \
+        $(HADDOCK) -o docs -h -v -s ../%F $$HINTERFACES \
             -t 'Hets - the Heterogeneous Tool Set' \
-            -p Hets-Haddock-Prologue.txt
+            -p Hets-Haddock-Prologue.txt $(doc_sources) 
 
 # sources are not copied here
 apache_doc:
@@ -369,14 +379,15 @@ apache_doc:
 	$(MAKE) hets.cgi
 
 post_doc4apache:
+	$(RM) -r a-docs
 	$(PERL) utils/post_process_docs.pl docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
-	cp docs/*.* a-docs/
+	cp -r docs a-docs
 
 ###############################
 ### release management
 
-derivedSources: $(derived_sources)
+derivedSources: $(derived_sources) $(hspp_sources)
 
 utils/DrIFT: $(DRIFT_deps)
 	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT && \
