@@ -272,7 +272,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(wildcard utils/InlineAxioms/*.hs) \
     $(cpp_sources) $(pfe_sources) $(gen_inline_axiom_files) \
     $(genrule_header_files) $(generated_rule_files) \
-    $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
+    $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     hxt/HXT.hs hxt/Net.hs $(patsubst %.hs, %.der.hs, $(drifted_files))
@@ -280,8 +280,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
 hspp_sources = $(patsubst %.hs, %.hspp, $(cpp_sources))
 
 # this variable holds the modules that should be documented
-doc_sources = $(filter-out $(nondoc_sources), $(sources)) \
-    $(hspp_sources)
+doc_sources = $(filter-out $(nondoc_sources), $(sources) $(hspp_sources))
 
 tax_sources = Taxonomy/AbstractGraphView.hs Taxonomy/MMiSSOntology.hs \
     Taxonomy/MMiSSOntologyGraph.hs Taxonomy/OntoParser.hs
