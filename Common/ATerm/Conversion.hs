@@ -111,7 +111,7 @@ instance ShATermConvertible Char where
                       where at = getATerm att 
    toShATermList att s = addATerm (ShAAppl (show s) [] []) att
    fromShATermList att = case at of 
-                         (ShAAppl s [] _) -> read s
+                         (ShAAppl s [] _) -> s -- read s
                          _                -> fromShATermError "String" at
                        where at = getATerm att
                         
