@@ -13,8 +13,6 @@ runtranslate ()
    runcheck $PA $1 $1 $1 $1.hs $SET
 }
 
-ghc -c MyLogic.hs
-
 for i in [A-Z]*.hascasl; 
 do
     ../../HasCASL/hacapa analysis < $i > $i.output
