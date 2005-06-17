@@ -15,12 +15,13 @@ all: patch hets
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = fgl hxt
-COMMONLIB_PATH = Common/Lib Common/ATerm fgl/Data fgl/Data/Graph \
+LIB_PATH = fgl/Data fgl/Data/Graph \
     fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
     fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
-    Logic CASL CASL/CCC Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
-    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver $(INCLUDE_PATH) \
+    Common/Lib Common/ATerm Logic CASL CASL/CCC \
+    Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
+    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
@@ -176,7 +177,7 @@ DRIFT_OPTS = +RTS -K10m -RTS
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Common/CaslLanguage.hs ./Test.hs Static/LogicStructured.hs
 
-SOURCE_PATHS = $(COMMONLIB_PATH) $(CLEAN_PATH)
+SOURCE_PATHS = $(CLEAN_PATH)
 
 sources = hets.hs $(filter-out $(non_sources), \
     $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
@@ -305,7 +306,7 @@ hets: $(sources) $(derived_sources)
 hets-opt: 
 	$(MAKE) distclean
 	$(MAKE) derivedSources
-	$(MAKE) real_clean
+	$(MAKE) clean
 	$(MAKE) hets-optimized
 
 hets-optimized: $(derived_sources) 
@@ -413,7 +414,7 @@ release:
 	if [ -d ../programatica ] ; then \
             mkdir programatica; \
             ln -s ../../programatica/tools programatica/tools ; fi
-	(cd HetCATS; $(MAKE) derivedSources; $(MAKE) real_clean; \
+	(cd HetCATS; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
             ./clean.sh; \
@@ -463,7 +464,7 @@ SPASS/ATC_SPASS.der.hs: $(SPASS_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SPASS_files)
 
 clean_genRules: 
-	$(RM) $(generated_rule_files) $(gendrifted_files) \
+	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
             Haskell/ATC_Haskell.der.hs
 
 ###############
@@ -474,7 +475,7 @@ clean: bin_clean o_clean
 ### removes *.hi and *.o in all include directories
 o_clean:
 	for p in $(CLEAN_PATH) ; do \
-	    (cd $$p ; $(RM) *.hi *.o *.hspp) ; done
+	    (cd $$p ; $(RM) *.hi *.o) ; done
 
 ### remove binaries
 bin_clean: 
@@ -498,22 +499,22 @@ bin_clean:
 	$(RM) ToHaskell/translateAna
 	$(RM) Taxonomy/taxonomyTool
 
-### additonally removes *.d (dependency files) in every include directory
+### removes *.d (dependency files) in every directory
 ### also delete *.d.bak (dependency file backups)
 d_clean: clean
-	for p in $(CLEAN_PATH) ; do \
+	for p in $(CLEAN_PATH) $(LIB_PATH) $(INCLUDE_PATH) ; do \
 	    (cd $$p ; $(RM) *.d *.d.bak) ; done
 
-### remove files also in own libraries
+### remove files in own libraries
 lib_clean:
-	for p in $(COMMONLIB_PATH) ; do \
+	for p in $(LIB_PATH) $(INCLUDE_PATH) ; do \
 	    (cd $$p ; $(RM) *.hi *.d *.o) ; done
 
-### additionally removes the files that define the sources-variable
-real_clean: bin_clean lib_clean clean
+### additionally removes the library files
+real_clean: lib_clean clean
 
-### additionally removes files not in CVS tree
-distclean: real_clean clean_genRules d_clean
+### additionally removes generated files not in the CVS tree
+distclean: clean clean_genRules lib_clean d_clean
 	$(RM) $(derived_sources) 
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 
