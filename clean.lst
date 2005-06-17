@@ -35,14 +35,9 @@ Common/test
 
 Comorphisms/test
 
-CspCASL/Doku
-CspCASL/FileAttributes.csp-casl
 CspCASL/Main.hs
 CspCASL/Makefile
-CspCASL/ghc-call
-CspCASL/print-call
 CspCASL/print_csp.hs
-CspCASL/test3.csp-casl
 CspCASL/test
 
 GUI/hetdg.hs
