@@ -10,7 +10,7 @@ Portability :  portable (except HasCASL.Logic_HasCASL)
 
 This folder contains the files for HasCASL basic specs
 
- * "HasCASL.As"                 abstract syntax with derived 'PosItem'
+ * "HasCASL.As"                 abstract syntax with derived position access
 
  * "HasCASL.AsToIds"            get relevant identifiers for mixfix resolution 
 

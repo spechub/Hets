@@ -18,10 +18,6 @@ module Common.LaTeX_utils (module Common.LaTeX_utils,
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
-
 import Common.Print_AS_Annotation(splitAndPrintRAnnos)
 import Common.LaTeX_AS_Annotation
 import Common.Lib.Pretty
@@ -29,8 +25,7 @@ import Common.PrintLaTeX
 
 import Common.LaTeX_funs hiding (startAnno,endAnno) 
 
--- | 
--- LaTeX variants of 'commaT' ...
+-- | LaTeX variants 
 commaT_latex,semiT_latex,crossT_latex 
     :: PrintLaTeX a => GlobalAnnos -> [a] -> Doc
 

@@ -14,7 +14,14 @@ Here is the place where the classes 'Category', 'Syntax',
    Some method implementations for 'StaticAnalysis' and 'Sentences'
    are still missing.  -}
 
-module Haskell.Logic_Haskell (Haskell(..), HaskellMorphism) where
+module Haskell.Logic_Haskell 
+    (Haskell(..), 
+     HaskellMorphism,
+     SYMB_ITEMS,
+     SYMB_MAP_ITEMS, 
+     Haskell_Sublogics,
+     Symbol,
+     RawSymbol) where
 
 import Data.Dynamic            
 import Common.DynamicUtils 

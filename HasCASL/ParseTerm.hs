@@ -129,7 +129,7 @@ extVar vp =
              return (t, Just ContraVar, tokPos a)
           <|> return (t, Nothing, [])
 
--- several 'extTypeVar' with a 'Kind'
+-- several 'extVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
               typeKind ts ps
@@ -155,7 +155,7 @@ typeKind vs ps =
                   (Downset Nothing t MissingKind [])) 
     <|> return (makeTypeArgs vs ps [] star)
 
--- | add the 'Kind' to all 'extTypeVar' and yield a 'TypeArg'
+-- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
 makeTypeArgs :: [(TypeId, Maybe Variance, [Pos])] -> [Token] 
              -> [Pos] -> Kind -> [TypeArg]
 makeTypeArgs ts ps qs k = 
@@ -174,7 +174,7 @@ singleTypeArg = do  as <- typeVars
                             [a] -> return a 
                             _ -> unexpected "list of type arguments"
 
--- | a 'singleTypArg' put in parentheses
+-- | a 'singleTypeArg' put in parentheses
 parenTypeArg :: AParser st (TypeArg, [Token])
 parenTypeArg = 
     do o <- oParenT
@@ -395,7 +395,7 @@ makeVarDecls :: [Var] -> [Token] -> Type -> [Pos] -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma $ tokPos p)
                      (init vs) ps ++ [VarDecl (last vs) t Other q]
 
--- | either like 'varDecls' or type variables with a 'typeDownset'.
+-- | either like 'varDecls' or declared type variables.
 -- A 'GenVarDecl' may later become a 'GenTypeVarDecl'.
 genVarDecls:: AParser st [GenVarDecl]
 genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
@@ -410,13 +410,13 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
 
 -- * patterns
 
-{- | different legal 'PatternToken's possibly excluding 'funS' or
+{- | different legal 'TermToken's possibly excluding 'funS' or
 'equalS' for case or let patterns resp. -}
 tokenPattern :: TokenMode -> AParser st Pattern
 tokenPattern b = fmap TermToken (aToken b <|> pToken (string "_"))
 -- a single underscore serves as wildcard pattern
                                           
--- | 'tokenPattern' or 'BracketPattern'
+-- | 'tokenPattern' or 'BracketTerm'
 primPattern :: TokenMode -> AParser st Pattern
 primPattern b = tokenPattern b 
                 <|> mkBrackets pattern (BracketTerm Squares)

@@ -258,7 +258,7 @@ rational :: Rational -> Doc
 parens       :: Doc -> Doc;     -- ^ Wrap document in @(...)@
 brackets     :: Doc -> Doc;     -- ^ Wrap document in @[...]@
 braces       :: Doc -> Doc;     -- ^ Wrap document in @{...}@
-quotes       :: Doc -> Doc;     -- ^ Wrap document in @'...'@
+quotes       :: Doc -> Doc;     -- ^ Wrap document in @\'...\'@
 doubleQuotes :: Doc -> Doc;     -- ^ Wrap document in @\"...\"@
 
 -- Combining @Doc@ values

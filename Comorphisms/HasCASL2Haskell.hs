@@ -28,11 +28,11 @@ import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Builtin
-import HasCASL.Le
+import HasCASL.Le as HC
 import HasCASL.Morphism
 import HasCASL.UniqueId
 
-import Haskell.Logic_Haskell
+import Haskell.Logic_Haskell as HS
 import Haskell.HatParser hiding(TypeInfo, Kind)
 import Haskell.HatAna 
 import Haskell.TranslateId
@@ -48,12 +48,12 @@ instance Comorphism HasCASL2Haskell
                BasicSpec Sentence SymbItems SymbMapItems
                Env
                Morphism
-               Symbol RawSymbol ()
+               HC.Symbol HC.RawSymbol ()
                Haskell ()
                HsDecls (TiDecl PNT) () ()
                Sign
                HaskellMorphism
-               () () () where
+               HS.Symbol HS.RawSymbol Haskell_Sublogics where
     sourceLogic HasCASL2Haskell = HasCASL
     sourceSublogic HasCASL2Haskell = top
     targetLogic HasCASL2Haskell = Haskell

@@ -54,7 +54,7 @@ replacePropPredication mTerm pSymb frmIns frmToChn =
 
 -- | 
 -- noMixfixF checks a 'FORMULA' f for Mixfix_*. 
--- A logic specific helper has to be provided for checking the 'f'.
+-- A logic specific helper has to be provided for checking the f.
 
 noMixfixF :: (Show f) => (f -> Bool) -> FORMULA f -> Bool
 noMixfixF cef form = 
@@ -81,7 +81,7 @@ noMixfixF cef form =
 
 -- | 
 -- noMixfixT checks a 'TERM' f for Mixfix_*. 
--- A logic specific helper has to be provided for checking the 'f'.
+-- A logic specific helper has to be provided for checking the f.
     
 noMixfixT :: (Show f) => (f -> Bool) -> TERM f -> Bool
 noMixfixT cef term = 

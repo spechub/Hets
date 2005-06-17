@@ -30,7 +30,7 @@ import Logic.Comorphism
 import Logic.Grothendieck
 
 import Syntax.AS_Library
-import Syntax.Print_AS_Library
+import Syntax.Print_AS_Library()
 
 import Static.DevGraph
 import Static.DGToSpec

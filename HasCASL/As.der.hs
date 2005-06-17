@@ -93,7 +93,7 @@ data Kind = MissingKind -- ^ initially missing information
           | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
           | FunKind Kind Kind [Pos]     -- ^ only argument may be an 'ExtKind' 
             -- pos "->" 
-          | ExtKind Kind Variance [Pos] -- ^ no 'InVar'  
+          | ExtKind Kind Variance [Pos]  
              -- pos "+" or "-" 
             deriving Show
 

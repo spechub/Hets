@@ -16,7 +16,7 @@ Mixfix analysis of terms
 -}
 
 module CASL.MixfixParser (resolveFormula, resolveMixfix, MixResolve
-                         ,resolveMixTrm, resolveMixFrm, mkIdSet)
+                         ,resolveMixTrm, resolveMixFrm, IdSet, mkIdSet)
     where 
 import CASL.AS_Basic_CASL 
 import Common.GlobalAnnotations

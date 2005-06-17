@@ -528,7 +528,7 @@ print_Literal :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
 				   -- fsep or fsep_latex
 	      -> Doc   -- ^ a comma 
 	      -> Doc   -- ^ a document containing the dot for a Fraction
-	      -> Doc   -- ^ a document containing the 'E' of a Floating
+	      -> Doc   -- ^ a document containing the E of a Floating
 	      -> Maybe (Token -> Doc) -- ^ this function should be 
 				      -- given to print a Token in a 
 				      -- special way 

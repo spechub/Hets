@@ -37,6 +37,9 @@ module Driver.Options
     , HetOutFormat(..)
     , HetOutType(..)
     , PrettyType(..)
+    , ATType(..)
+    , GraphType(..)
+    , Flattening(..)
     ) where
 
 import Driver.Version

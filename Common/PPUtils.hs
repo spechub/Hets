@@ -113,10 +113,10 @@ aboveWithNLs n d1 d2 = if isEmpty d2 then d1 else
 vsep :: [Doc] -> Doc
 vsep = foldr ($++$) empty
 
--- | 
--- the functions 'commaT', 'semiT', 'crossT' and 'semiAnno' are good
--- for ASCII pretty printing but don't work well for LaTeX output.
-
+{- | the functions 'commaT_text', 'semiT_text', 'crossT_text' and 
+     'semiAnno_text' are good for ASCII pretty printing 
+      but don't work well for LaTeX output.
+-}
 commaT_text, semiT_text, crossT_text 
     :: PrettyPrint a => GlobalAnnos -> [a] -> Doc
 commaT_text = listSep_text comma
@@ -126,7 +126,7 @@ crossT_text = listSep_text (space<>char '*')
 listSep_text :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_text separator ga = fsep . punctuate separator . map (printText0 ga)
 
-semiAnno_text :: (PrettyPrint a) => 
+semiAnno_text :: PrettyPrint a => 
 		 GlobalAnnos -> [Annoted a] -> Doc
 semiAnno_text ga l = if null l then empty else
 		     (vcat $ map (pf' True)

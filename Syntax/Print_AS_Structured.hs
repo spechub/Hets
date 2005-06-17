@@ -285,7 +285,7 @@ skip_Group sp =
 -- then the following item from 'Annoted' a
 spAnnotedPrint :: (a -> Doc) -- ^ print function for the item
                -> (Annotation -> Doc) -- ^ print function for the annotation
-               -> (Doc -> Doc -> Doc) -- ^ a function like '<+>' or '<\+>'
+               -> (Doc -> Doc -> Doc) -- ^ a function like '<+>'
                -> Doc -- ^ keyword or spec head (spec ... =) 
                -> Annoted a -- ^ item to print after keyword or spec head
                -> Doc

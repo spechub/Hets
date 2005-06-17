@@ -29,7 +29,7 @@ import Logic.Grothendieck        (G_sign (..),
                                   G_morphism (..),
                                   gEmbed)
 import Logic.Logic               
-import Common.Lib.Graph          (Node,
+import Data.Graph.Inductive.Graph(Node,
                                   empty,
                                   insNode,
                                   insEdge,

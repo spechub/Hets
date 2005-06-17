@@ -10,7 +10,7 @@ Portability :  portable
 generic mixfix analysis
 -}
 
-module Common.Earley (Rule
+module Common.Earley (Rule, Filt
                      -- * special tokens for special ids
                      , varTok, exprTok, typeTok
                      , applId, parenId, typeId, exprId, varId

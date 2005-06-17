@@ -22,7 +22,7 @@ TODO:
 -}
 
 module CASL.Amalgamability(-- * Types
-                           CASLSign, CASLMor, 
+                           CASLSign, CASLMor, CASLDiag,
                            -- * Functions
                            ensuresAmalgamability) where
 

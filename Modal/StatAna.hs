@@ -13,7 +13,7 @@ static analysis of modal logic parts
 module Modal.StatAna where
 
 import Modal.AS_Modal
-import Modal.Print_AS
+import Modal.Print_AS()
 import Modal.ModalSign
 
 import CASL.Sign

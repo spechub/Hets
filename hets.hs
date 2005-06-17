@@ -47,7 +47,7 @@ import Logic.Grothendieck
 
 import Static.AnalysisLibrary
 import Static.DevGraph
-import Static.PrintDevGraph
+import Static.PrintDevGraph()
 
 import Isabelle.CreateTheories
 

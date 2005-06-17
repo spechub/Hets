@@ -20,7 +20,7 @@ This module exports functions, that can convert an sml-CATS ATerm
 -}
 
 
-module ATC.Sml_cats (read_sml_ATerm) where
+module ATC.Sml_cats (ATermConvertibleSML, read_sml_ATerm) where
 
 import Data.List (isPrefixOf)
 
