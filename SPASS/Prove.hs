@@ -27,6 +27,7 @@ import System.Posix
 import Text.Regex
 import List
 import Maybe
+import HTk
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -37,7 +38,7 @@ import qualified Common.Lib.Rel as Rel
 -}
 data SPASSConfig = SPASSConfig { -- | time limit in seconds passed to SPASS via -TimeLimit. Default will be used if Nothing.
                                  timeLimit :: Maybe Int,
-                                 -- | extra options passed verbatimely to SPASS. -TimeLimit and -DocProof will be overridden.
+                                 -- | extra options passed verbatimely to SPASS. -DocProof, -Stdin, and -TimeLimit will be overridden.
                                  extraOpts :: [String]
                                } deriving (Eq, Ord, Show)
 
@@ -123,7 +124,7 @@ data State = State { currentGoal :: Maybe String,
 {- |
   Creates an empty State.
 -}
-emptyState :: State
+emptyState :: SPASS.Prove.State
 emptyState = State {currentGoal = Nothing,
                     configsMap = emptyConfigsMap,
                     resultsMap = emptyResultsMap}
@@ -171,6 +172,34 @@ parseSpassOutput spass = parseIt (Nothing, [], [])
     re_stop = mkRegex ".*SPASS-STOP.*"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
+
+{- |
+  Runs SPASS. SPASS is assumed to reside in PATH.
+-}
+runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axiomsand possibly goals that have been proved earlier as additional axioms
+         -> SPASSConfig -- ^ configuration to use
+         -> Named SPTerm -- ^ goal to prove
+         -> IO (Proof_status (), [String]) -- ^ (proof status, complete output)
+runSpass lp config nGoal = do
+  -- FIXME: this should be retrieved from the user instead of being hardcoded.
+  let problem = SPProblem {identifier = "hets_exported",
+                           description = SPDescription {name = "hets_exported", author = "hets user", SPASS.Sign.version = Nothing, logic = Nothing, status = SPStateUnknown, desc = "", date = Nothing},
+                           logicalPart = insertSentence nGoal lp}
+  let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
+  let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
+  let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show $ timeLimit config)]
+  spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+  -- FIXME: use printText0 instead. but where to get an instance of GlobalAnnos from?
+  sendMsg spass (showPretty problem "")
+  (res, usedAxioms, output) <- parseSpassOutput spass
+  return (proof_status res usedAxioms cleanOptions, output)
+  where
+    proof_status res usedAxioms options
+      | isJust res && elem (fromJust res) proved = Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (tail $ concatMap (' ':) options))
+      | isJust res && elem (fromJust res) disproved = Disproved (senName nGoal)
+      | otherwise = Open (senName nGoal)
+    proved = ["Proof found."]
+    disproved = ["Completion found."]
 
 {- |
   Test function. Currently it runs SPASS, parses the output, and outputs relevant parts to stdout.

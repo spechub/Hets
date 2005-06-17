@@ -19,8 +19,12 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 
+import Common.AS_Annotation
 import SPASS.Sign
 
+{- |
+  Converts a Sign to an initial (no axioms or goals) SPLogicalPart.
+-}
 signToSPLogicalPart :: Sign -> SPLogicalPart
 signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
                                        declarationList = decList,
@@ -42,3 +46,19 @@ signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
 
     genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym, freelyGenerated = freely gen, funcList = byFunctions gen}) (filter (isJust . snd) (Map.toList (sortMap s)))
 
+{- |
+  Inserts a Named Sentence (axiom or goal) into an SPLogicalPart.
+-}
+insertSentence :: Named Sentence -> SPLogicalPart -> SPLogicalPart
+insertSentence nSen lp = lp {formulaLists = fLists'}
+  where
+    insertFormula oType x [] =
+      [SPFormulaList {originType= oType, formulae= [x]}]
+    insertFormula oType x (l:ls) = 
+      if originType l == oType
+        then l{formulae= x:(formulae l)}:ls
+        else l:(insertFormula oType x ls)
+    fLists' = if isAxiom nSen
+                then insertFormula SPOriginAxioms nSen fLists
+                else insertFormula SPOriginConjectures nSen fLists
+    fLists = formulaLists lp
