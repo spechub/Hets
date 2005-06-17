@@ -23,22 +23,27 @@ Common/annos.hs
 Common/ghc-call
 Common/test_parser.hs
 
+Common/ATerm/ATermDiffMain.hs
 Common/ATerm/ATermLibTest.hs
+
 Common/Lib/Graph
 
 Common/Lib/Parsec
-Common/Lib/RelCheck.hs
 Common/Lib/Text
+Common/Lib/HUnit
 Common/test
+
+Comorphisms/test
 
 CspCASL/Doku
 CspCASL/FileAttributes.csp-casl
 CspCASL/Main.hs
+CspCASL/Makefile
 CspCASL/ghc-call
 CspCASL/print-call
 CspCASL/print_csp.hs
 CspCASL/test3.csp-casl
-CspCASL/tests
+CspCASL/test
 
 GUI/hetdg.hs
 GUI/todo
@@ -56,18 +61,32 @@ Haskell/HParser.hs
 Haskell/Language.hs
 Haskell/Logical.hs
 Haskell/ghc-call
-Haskell/hapa.lhs
-Haskell/hapa.hs
+Haskell/hana.hs
 Haskell/questions
+Haskell/test
 Haskell/todo
+Haskell/wrap.hs
 
 Haskell/Hatchet
 Haskell/Language
 Hatchet
+
+Isabelle/CreateThy.hs
+
+LICENCE.txt
 Lottery
 Modal/Basic.mod
+
+OWL_DL
+SPASS/tests
+
+Static/LogicStructured.hs
 Static/hetana.hs
+
 Syntax/hetpa.hs
+
+Taxonomy/taxonomyTool.hs
+
 Test.hs
 ToHaskell
 aterm_conv
@@ -81,6 +100,8 @@ hetcats/Algebra_I.tree.gen_trm
 hetcats/README
 
 doc
+fgl
+hxt
 ideas
 install.sh
 mini
@@ -100,5 +121,6 @@ utils/haddock
 utils/haddock.solaris
 utils/AG-src
 utils/hd-lib
-utils/post_process_docs.pl
+utils/Omdoc
+
 
