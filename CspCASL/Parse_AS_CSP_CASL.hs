@@ -36,7 +36,7 @@ process + channel names should be Ids
 add line numbers (using Annoted)
 -}
 
-module CspCASL.Parse_hugo where
+module CspCASL.Parse_AS_CSP_CASL where
 
 import Debug.Trace
 

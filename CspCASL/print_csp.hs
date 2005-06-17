@@ -14,7 +14,7 @@
 --------------------------------------------------------}
 module Main where
 
-import CspCASL.Parse_hugo
+import CspCASL.Parse_AS_CSP_CASL
 import Text.ParserCombinators.Parsec
 import System.IO
 import System.Environment
