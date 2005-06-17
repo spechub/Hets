@@ -172,32 +172,14 @@ parseSpassOutput spass = parseIt (Nothing, [], [])
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
 
-readSpassOutput :: ChildProcess -> IO [String]
-readSpassOutput spass = readIt []
-  where
-    readIt res = do
-      line <- readMsg spass
-      if isJust (matchRegex re line)
-        then
-          return (res ++ [line])
-        else
-          readIt (res ++ [line])
-    re = mkRegex ".*SPASS-STOP.*"
-
-
+{- |
+  Test function. Currently it runs SPASS, parses the output, and outputs relevant parts to stdout.
+-}
 testSpass :: String -> IO ()
 testSpass file = do
---  spass <- newChildProcess "SPASS" [ChildProcess.arguments ["-TimeLimit=10", "-DocProof", "../../Sorts.dfg"]]
   spass <- newChildProcess "SPASS" [ChildProcess.arguments ["-TimeLimit=10", "-DocProof", file]]
---  spass <- newChildProcess "tail" [ChildProcess.arguments ["-f", "foo.txt"]]
---  sleep 5
---  msgs <- mapM readMsg (replicate 5 spass)
 --  sendMsg spass "bar"
   _ <- waitForChildProcess spass
   (res, usedAxioms, output) <- parseSpassOutput spass
---  return ()
---  msg <- readMsg spass
---  putStrLn $ show msg
---  msg <- readMsg spass
   putStrLn $ show (res, usedAxioms)
 --  mapM_ putStrLn output
