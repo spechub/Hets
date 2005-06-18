@@ -45,8 +45,8 @@ data SPASSConfig = SPASSConfig { -- | time limit in seconds passed to SPASS via 
 {- |
   Creates an empty SPASSConfig. Default time limit and no extra options.
 -}
-emptySpassConfig :: SPASSConfig
-emptySpassConfig = SPASSConfig {timeLimit = Nothing,
+emptyConfig :: SPASSConfig
+emptyConfig = SPASSConfig {timeLimit = Nothing,
                                 extraOpts = []}
 
 {- |
@@ -78,7 +78,7 @@ emptyConfigsMap = Map.empty
 adjustOrSetConfig :: (SPASSConfig -> SPASSConfig) -> SPIdentifier -> SPASSConfigsMap -> SPASSConfigsMap
 adjustOrSetConfig f k m = if (Map.member k m)
                             then Map.adjust f k m
-                            else Map.insert k (f emptySpassConfig) m
+                            else Map.insert k (f emptyConfig) m
 
 {- |
   Performs a lookup on the ConfigsMap. Returns the config for the goal or an
@@ -87,7 +87,7 @@ adjustOrSetConfig f k m = if (Map.member k m)
 getConfig :: SPIdentifier -> SPASSConfigsMap -> SPASSConfig
 getConfig id m = if (isJust lookupId)
                    then fromJust lookupId
-                   else emptySpassConfig
+                   else emptyConfig
   where
     lookupId = Map.lookup id m
 
@@ -187,7 +187,9 @@ runSpass lp config nGoal = do
                            logicalPart = insertSentence nGoal lp}
   let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
   let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
-  let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show $ timeLimit config)]
+  let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
+  let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
+  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions))
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   -- FIXME: use printText0 instead. but where to get an instance of GlobalAnnos from?
   sendMsg spass (showPretty problem "")
@@ -195,7 +197,7 @@ runSpass lp config nGoal = do
   return (proof_status res usedAxioms cleanOptions, output)
   where
     proof_status res usedAxioms options
-      | isJust res && elem (fromJust res) proved = Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (tail $ concatMap (' ':) options))
+      | isJust res && elem (fromJust res) proved = Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options))
       | isJust res && elem (fromJust res) disproved = Disproved (senName nGoal)
       | otherwise = Open (senName nGoal)
     proved = ["Proof found."]
