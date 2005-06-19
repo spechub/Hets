@@ -34,6 +34,7 @@ Check CASL-lib/Basic/Numbers.casl
 
 module CASL.CCC.FreeTypes where
 
+import System
 import Debug.Trace
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism              
@@ -47,10 +48,10 @@ import Common.PrettyPrint
 -- import Common.Lib.Pretty
 import Common.Result
 import Common.Id
-#ifdef UNI_PACKAGE
+-- #ifdef UNI_PACKAGE
 -- import Isabelle.IsaProve
-import ChildProcess
-#endif
+-- import ChildProcess
+-- #endif
 import Foreign
 
 {-
@@ -81,7 +82,7 @@ checkFreeType :: (PosItem f, PrettyPrint f, Eq f) =>
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
                  -> [Named (FORMULA f)] -> Result (Maybe Bool)
 checkFreeType (osig,osens) m fsn      
-#ifdef UNI_PACKAGE
+-- #ifdef UNI_PACKAGE
     | any (\s->not $ elem s srts) newL =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
             sname = concat $ map tokStr ts 
@@ -118,9 +119,9 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("patterns overlap in " ++ symb) pos
     | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
 	warning Nothing "not terminating" []
-#endif         
+-- #endif         
     | otherwise = return (Just True)
-#ifdef UNI_PACKAGE
+-- #ifdef UNI_PACKAGE
 {-
   call the symbols in the image of the signature morphism "new"
 
@@ -276,17 +277,9 @@ checkFreeType (osig,osens) m fsn
 	let checkT (Sorted_term t _ _) = checkTerm t
             checkT (Qual_var _ _ _) = True
             checkT (Application subop subts _) = (elem subop constructors) &&
-   --   if not (elem subop constructors) then error (showPretty subop "warum?")
-   -- &&
-   --   else True
                                                  (all id $ map checkT subts)  
 	    checkT _ = False
         in all id $ map checkT ts
-   --  all id $ map (\t-> case (term t) of
-   --             Qual_var _ _ _ -> True
-   --             Application subOp subTs _ ->(elem subOp constructors) &&
-   --                                         (all id $ map checkTerm (subTs))
-   --             _ -> False) ts
     checkTerm _ = error "CASL.CCC.FreeTypes.<checkTerm>"
 {-
    no variable occurs twice in a leading term, 
@@ -425,7 +418,9 @@ forall x, y:Nat
 
 CiME:
 let F = signature "when_else : 3; 
-                   eq : binary; 
+                   eq : binary;
+                   and : binary;
+                   or : binary; 
                    not: unary; 
                    True,False : constant; 
                    0 : constant; 
@@ -435,6 +430,14 @@ let X = vars "t1 t2 x y";
 let axioms = TRS F X "
 eq(t1,t1) -> True; 
 eq(t1,t2) -> False;
+and(True,True) -> True; 
+and(True,False) -> False; 
+and(False,True) -> False; 
+and(False,False) -> False;
+or(True,True) -> True; 
+or(True,False) -> True; 
+or(False,True) -> True; 
+or(False,False) -> False;
 not(True) -> False;
 not(False) -> True; 
 when_else(t1,True,t2) -> t1; 
@@ -467,7 +470,9 @@ end
 
 CiME:
 let F = signature "when_else : 3; 
-                   eq : binary; 
+                   eq : binary;
+                   and : binary;
+                   or : binary;
                    not : unary; 
                    True,False : constant; 
                    True : constant; 
@@ -483,6 +488,14 @@ let X = vars "t1 t2 x y t f";
 let axioms = TRS F X "
 eq(t1,t1) -> True;
 eq(t1,t2) -> False;
+and(True,True) -> True; 
+and(True,False) -> False; 
+and(False,True) -> False; 
+and(False,False) -> False;
+or(True,True) -> True; 
+or(True,False) -> True; 
+or(False,True) -> True; 
+or(False,False) -> False;
 not(True) -> False;
 not(False) -> True;
 when_else(t1,True,t2) -> t1;
@@ -515,13 +528,20 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
     o_pred_Syms = concat $ map (\s-> case s of
                                        Just (Right p) -> [p]
                                        _ -> []) o_l_Syms  
-    --  read the result of proof
-    rP cp = do
-	    msg <- readMsg cp
-            case msg of
-              "Termination proof found." -> return True
-              "Quitting." -> return False
-              _ -> rP cp
+    --  read the result of proof 
+--    rP cp = do
+--	    msg <- readMsg cp
+--            case msg of
+--              "Termination proof found." -> return True
+--              "Quitting." -> return False
+--              _ -> rP cp
+    readRes = do str <- readFile "Res.cime"
+                 return (subStr "Termination proof found." str)
+    subStr [] _ = True
+    subStr _ [] = False
+    subStr xs ys = if (head xs) == (head ys) &&
+                      xs == take (length xs) ys then True
+                   else subStr xs (tail ys)
     noDouble [] = []
     noDouble (x:xs) 
         | elem x xs = noDouble xs
@@ -530,13 +550,13 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
     opSignStr signs str                      
         | null signs = str
         | otherwise = opSignStr (tail signs) (str ++ 
-					      (opS_cime $ head signs) ++ "; ")
+					      (opS_cime $ head signs) ++ ";\n")
     --  build signature of predication together 
     predSignStr signs str                      
         | null signs = str
         | otherwise = 
 	    predSignStr (tail signs) (str ++ 
-				      (predS_cime $ head signs) ++ "; ")
+				      (predS_cime $ head signs) ++ ";\n")
     allVar vs = 
 	foldl (\hv tv->hv ++ 
 	               (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
@@ -550,53 +570,61 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
     axiomStr axs str
         | null axs = str
         | otherwise = 
-	    axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ "; ")
-    sighead = "let F = signature \"when_else : 3; " ++
-                                  "eq : binary; " ++ 
-                                  "not : unary ; " ++ 
-                                  "True,False : constant; "
+	    axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ ";\n")
+    sighead = "let F = signature \"when_else : 3;\n" ++
+                                  "eq : binary;\n" ++
+                                  "and : binary;\n" ++
+                                  "or : binary;\n" ++
+                                  "not : unary;\n" ++ 
+                                  "True,False : constant;\n"
     varhead = "let X = vars \"t1 t2 "
-    axhead = "let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
-                                    "eq(t1,t2) -> False; " ++ 
-                                    "not(True) -> False; " ++
-                                    "not(False) -> True; " ++  
-                                    "when_else(t1,True,t2) -> t1; " ++ 
-                                    "when_else(t1,False,t2) -> t2; "
+    axhead = "let axioms = TRS F X \"eq(t1,t1) -> True;\n" ++ 
+                                    "eq(t1,t2) -> False;\n" ++
+                                    "and(True,True) -> True;\n" ++
+                                    "and(True,False) -> False;\n" ++
+                                    "and(False,True) -> False;\n" ++
+                                    "and(False,False) -> False;\n" ++
+                                    "or(True,True) -> True;\n" ++
+                                    "or(True,False) -> True;\n" ++
+                                    "or(False,True) -> True;\n" ++
+                                    "or(False,False) -> False;\n" ++
+                                    "not(True) -> False;\n" ++
+                                    "not(False) -> True;\n" ++  
+                                    "when_else(t1,True,t2) -> t1;\n" ++ 
+                                    "when_else(t1,False,t2) -> t2;\n"
+    c_sigs = (sighead ++ (opSignStr (noDouble (o_constructors ++ 
+					       constructors ++ 
+					       o_op_Syms ++ 
+					       op_Syms)) "") ++
+			 (predSignStr (noDouble (o_pred_Syms ++ 
+						 pred_Syms)) "")++
+	      "\";\n")
+    c_vars = (varhead ++ (varsStr (allVar $ map varOfAxiom $ 
+			           old_axioms ++ axioms) "") ++ 
+	      "\"; \n")
+    c_axms =(axhead ++ (axiomStr (old_axioms ++ axioms) "") ++ "\";\n")
+    ipath = "./CASL/CCC/Input.cime"
+    opath = "./CASL/CCC/Result.cime"
+    c_proof = ("termcrit \"dp\";\n" ++
+               "termination axioms;\n" ++
+               "#quit;")  
     proof = 
 	unsafePerformIO (do
 	--    cim <- newChildProcess "/home/xinga/bin/cime" []
-            cim <- newChildProcess "cime" []
-	    sendMsg cim (sighead ++ (opSignStr (noDouble (o_constructors ++ 
-							    constructors ++ 
-							    o_op_Syms ++ 
-							    op_Syms)) "") ++
-			 (predSignStr (noDouble (o_pred_Syms ++ 
-						 pred_Syms)) "")++
-			 "\";")
-	    sendMsg cim (varhead ++ (varsStr (allVar $ map varOfAxiom $ 
-					      old_axioms ++ axioms) "") ++ 
-			 "\";")        
-	    sendMsg cim (axhead ++
-                         (axiomStr (old_axioms ++ axioms) "") ++
-			 "\";")    
-	    sendMsg cim "termcrit \"dp\";"
-	    sendMsg cim "termination axioms;"
-            sendMsg cim "#quit;"
-            res <-rP cim
-            return res)
-{-
-   --  print infomation 
-         tmp  = ("let F = signature \"when_else : 3; eq : binary; True,False : constant; " ++ 
-                              (opSignStr (noDouble (o_constructors ++ constructors ++ o_op_Syms ++ op_Syms)) "") ++
-                              (predSignStr (noDouble (o_pred_Syms ++ pred_Syms)) "") ++ "\";") 
-         tmp1 = ("let X = vars \"t1 t2 " ++ (varsStr (allVar $ map varOfAxiom $ old_axioms ++ axioms) "") ++ "\";")        
-         tmp2 = ("let axioms = TRS F X \"eq(t1,t1) -> True; " ++ 
-                                                     "eq(t1,t2) -> False; " ++ 
-                                                     "when_else(t1,True,t2) -> t1; " ++ 
-                                                     "when_else(t1,False,t2) -> t2; " ++
-                                (axiomStr (old_axioms ++ axioms) "") ++"\";")    
--}
-#endif
+        --    cim <- newChildProcess "cime" []
+	--    sendMsg cim c_sigs
+	--    sendMsg cim c_vars        
+	--    sendMsg cim c_axms   
+	--    sendMsg cim "termcrit \"dp\";\n"
+	--    sendMsg cim "termination axioms;\n"
+        --    sendMsg cim "#quit;"
+            writeFile ipath (c_sigs ++ c_vars ++ c_axms ++ c_proof)
+            system ("cime < " ++ ipath ++ " | cat > " ++ opath)
+            res <- readFile opath
+        --    system "rm ./CASL/CCC/*.cime"
+        --    res <-rP cim
+            return (subStr "Termination proof found." res))
+-- #endif
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
