@@ -13,11 +13,12 @@ Here is the place where the class Logic is instantiated for CASL.
 
 module OWL_DL.ReadWrite where
 
--- import Text.XML.HXT.DOM.XmlTreeTypes
+import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
 import OWL_DL.AS
 import Common.ATerm.Lib
- 
+import Char
+
 instance ShATermConvertible Message where
     toShATerm att0 (Message aa) =
 	case toShATerm att0 aa of {  (att1,aa') ->
@@ -45,6 +46,32 @@ instance ShATermConvertible Ontology where
 	    u -> fromShATermError "Ontology" u
 	where
 	    aterm = getATerm att
+
+instance ShATermConvertible QName where
+    toShATerm att0 (QN aa ab ac) =
+        case toShATerm att0 (aa ++ ":" ++ ab) of {(att1, aa') ->
+           addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1}    
+
+    fromShATerm att =
+        case aterm of
+         (ShAAppl idName _ _) ->
+           let idName' = read idName::String
+               (pre, loc) = span (not . (==':')) idName'
+           in if null loc then    -- no : in ID, only localName
+                 QN "" pre ""
+                 else 
+                  if (not $ isAlpha $ head pre) 
+                     then QN "" idName' ""
+                     else 
+                      if (take 4 pre  == "http" ||
+                          take 4 pre == "file")
+                          then let (ns, loc2) = span (not . (=='#')) idName'
+                               in if length loc2 > 1 then
+                                     QN "" (tail loc2) ns
+                                     else QN "" ns ""  
+                          else  QN pre (tail loc) ""
+         u -> fromShATermError "QName" u
+        where  aterm = getATerm att
 
 instance ShATermConvertible Directive where
     toShATerm att0 (Anno aa) =
@@ -225,6 +252,10 @@ instance ShATermConvertible Value where
 	    aterm = getATerm att
 
 instance ShATermConvertible Axiom where
+    toShATerm att0 Thing =
+	addATerm (ShAAppl "Thing" [] []) att0
+    toShATerm att0 OWL_DL.AS.Nothing =
+	addATerm (ShAAppl "Nothing" [] []) att0
     toShATerm att0 (Class aa ab ac ad ae) =
 	case toShATerm att0 aa of {  (att1,aa') ->
 	case toShATerm att1 ab of {  (att2,ab') ->
@@ -304,6 +335,10 @@ instance ShATermConvertible Axiom where
 	addATerm (ShAAppl "ISubPropertyOf" [ aa',ab' ] []) att2 }}
     fromShATerm att =
 	case aterm of
+	    (ShAAppl "Thing" [ ] _) ->
+		    Thing
+	    (ShAAppl "Nothing" [ ] _) ->
+                    OWL_DL.AS.Nothing
 	    (ShAAppl "Class" [ aa,ab,ac,ad,ae ] _) ->
 		    case fromShATerm (getATermByIndex1 aa att) of {  aa' ->
 		    case fromShATerm (getATermByIndex1 ab att) of {  ab' ->
@@ -606,3 +641,33 @@ instance ShATermConvertible DataRange where
 	    aterm = getATerm att
 
 --  Imported from other files :-
+
+{-
+instance ShATermConvertible Char where
+    toShATerm att c = addATerm (ShAAppl (show (c:[])) [] []) att
+    fromShATerm att = case at of
+                        (ShAAppl s [] _) -> conv s
+                        _ -> fromShATermError "Char" at
+                        where at = getATerm att
+    toShATermList att s = addATerm (ShAAppl (show s) [] []) att
+    fromShATermList att = case at of
+                            (ShAAppl s [] _) ->
+                                if (head s == '"') then
+                                   read s::String
+                                   else read s
+                            _ -> fromShATermError "String" at
+                 where at = getATerm att
+conv :: String -> Char
+conv ('\"':sr) = case reverse sr of
+                  ('\"':so) -> conv' (reverse so)
+                               where
+                               conv' ('\\':x:[]) = case x of
+                                   'n'  -> '\n'
+                                   't'  -> '\t'
+                                   'r'  -> '\r'
+                                   '\"' -> '\"'
+                                   _    -> error "very strange reach"
+                               conv' (x:[]) = x
+                               conv' _ = error "String not convertible to char"
+                  _         -> error "No matching '\"' found"
+-}

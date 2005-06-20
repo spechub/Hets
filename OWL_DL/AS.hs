@@ -15,11 +15,11 @@ module OWL_DL.AS where
 
 {- -- global: ShATermConvertible !-}
 
--- import Text.XML.HXT.DOM.XmlTreeTypes
+import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
  
--- type URIreference = QName
-type URIreference = String
+type URIreference =  QName
+-- type URIreference = String
 
 type DatatypeID = URIreference
 type ClassID = URIreference
@@ -29,10 +29,11 @@ type DatavaluedPropertyID = URIreference
 type IndividualvaluedPropertyID = URIreference
 type AnnotationPropertyID = URIreference
 type OntologyPropertyID = URIreference
-type Namespace = Map.Map String URIreference
 
+type Namespace = Map.Map String String      -- prefix:localname
 data Message = Message [(String, String, String)] deriving (Show)
 type Validation = String
+
 
 -- | Data structur for Ontologies
 data Ontology = Ontology 
