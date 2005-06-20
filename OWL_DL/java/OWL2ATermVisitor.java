@@ -1,8 +1,10 @@
+
 import java.net.URI;
 // import java.net.URISyntaxException;
 // import java.util.ArrayList;
 // import java.util.Comparator;
 // import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -14,7 +16,7 @@ import org.mindswap.pellet.PelletOptions;
 import org.mindswap.pellet.utils.ATermUtils;
 // import org.semanticweb.owl.io.abstract_syntax.RenderingVisitor;
 // import org.semanticweb.owl.io.RendererException;
-// import org.semanticweb.owl.io.abstract_syntax.Renderer;
+import org.semanticweb.owl.io.abstract_syntax.Renderer;
 import org.semanticweb.owl.io.vocabulary.OWLVocabularyAdapter;
 // import org.semanticweb.owl.io.vocabulary.RDFSVocabularyAdapter;
 // import org.semanticweb.owl.io.vocabulary.RDFVocabularyAdapter;
@@ -58,22 +60,25 @@ import org.semanticweb.owl.model.OWLSubClassAxiom;
 import org.semanticweb.owl.model.OWLSubPropertyAxiom;
 import org.semanticweb.owl.model.helper.OntologyHelper;
 
+import aterm.AFun;
 import aterm.ATerm;
 import aterm.ATermAppl;
 import aterm.ATermList;
 
+import java.util.Map;
+
 /**
- * This class instead of PelletVisitor
- * 
- * @author Heng Jiang
+ * PelletVisitor
  *  
  */
 
 public class OWL2ATermVisitor implements OWLObjectVisitor {
+	/**
+	 * Comment for <code>serialVersionUID</code>
+	 */
+	private static final long serialVersionUID = 1L;
 
-	// private static final long serialVersionUID = 1L;
-
-	// public static boolean DEBUG = false;
+	public static boolean DEBUG = false;
 
 	private static OWLVocabularyAdapter OWL = OWLVocabularyAdapter.INSTANCE;
 
@@ -89,11 +94,15 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 
 	private List shortNames;
 
-	// private Map known;
+	private Map known;
 
-	// private int reservedNames;
+	private int reservedNames;
 
 	private ATermRender2 visitRend;
+	
+	AFun axFun = ATermRender2.factory.makeAFun("Ax", 1, false);
+	
+	AFun fcFun = ATermRender2.factory.makeAFun("Fc", 1, false);
 
 	/*
 	 * private String[] names = { "a", "b", "c", "d", "e", "f", "g", "h", "i",
@@ -111,6 +120,7 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		visitRend = new ATermRender2(ontology);
 		visitRend.generateShortNames();
 		namespaces = visitRend.buildNamespaces();
+
 	}
 
 	public ATerm result() {
@@ -125,26 +135,25 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		return namespaces;
 	}
 
-	
-//
-//    public void visit( OWLDataValue cd ) throws OWLException {
-//    	
-//    	
-//    	pw.print( "\"" + Renderer.escape( cd.getValue() ) + "\"");
-//
-//    	/* Only show it if it's not string */
-//
-//    	URI dvdt = cd.getURI();
-//    	String dvlang = cd.getLang();
-//    	if ( dvdt!=null) {
-//    	    pw.print( "^^" + "<" + dvdt.toString() + ">");
-//    	} else {
-//    	    if (dvlang!=null) {
-//    		pw.print( "@" + dvlang );
-//    	    }
-//    	}	
-//    }
-	
+	//
+	//    public void visit( OWLDataValue cd ) throws OWLException {
+	//    	
+	//    	
+	//    	pw.print( "\"" + Renderer.escape( cd.getValue() ) + "\"");
+	//
+	//    	/* Only show it if it's not string */
+	//
+	//    	URI dvdt = cd.getURI();
+	//    	String dvlang = cd.getLang();
+	//    	if ( dvdt!=null) {
+	//    	    pw.print( "^^" + "<" + dvdt.toString() + ">");
+	//    	} else {
+	//    	    if (dvlang!=null) {
+	//    		pw.print( "@" + dvlang );
+	//    	    }
+	//    	}
+	//    }
+
 	public ATermAppl term(OWLDataValue dv) throws OWLException {
 		URI datatypeURI = dv.getURI();
 		String lexicalValue = dv.getValue().toString();
@@ -194,6 +203,7 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 	}
 
 	public void visit(OWLIndividualAxiom axiom) throws OWLException {
+		// System.out.println("YOHO! in AV " );
 		term = visitRend.renderIndividualAxiom(axiom);
 	}
 
@@ -205,11 +215,10 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		term = visitRend.renderDataProperty(ontology, prop);
 	}
 
-	
 	public void visit(OWLDataValue cd) throws OWLException {
 		term = term(cd);
 	}
-	
+
 	public void visit(OWLDataType ocdt) throws OWLException {
 		term = visitRend.renderDataType(ontology, ocdt);
 	}
@@ -333,76 +342,101 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 	}
 
 	public void visit(OWLEquivalentClassesAxiom axiom) throws OWLException {
-		KnowledgeBase kb = loader.getKB();
-
+		// KnowledgeBase kb = loader.getKB();
+		
+        // System.out.println("DEBUG: ECA BEGINN.");
+		ATermList al = ATermRender2.factory.makeList();
 		Iterator eqs = axiom.getEquivalentClasses().iterator();
+			
 		if (eqs.hasNext()) {
 			OWLDescription desc1 = (OWLDescription) eqs.next();
-			desc1.accept(this);
-			ATerm c1 = term;
+			// desc1.accept(this);
+			
+			ATerm c1 = visitRend.mkSimpleDescription(desc1);
 
 			while (eqs.hasNext()) {
 				OWLDescription desc2 = (OWLDescription) eqs.next();
-				desc2.accept(this);
-				ATerm c2 = term;
+				// desc2.accept(this);
+				al = ATermRender2.factory.makeList(visitRend.mkSimpleDescription(desc2), al);
 
 				//	kb.addSameClass(c1, c2);
 			}
+	
+		AFun equivalentFun = ATermRender2.factory.makeAFun(
+				"EquivalentClasses", 2, false);
+		term = ATermRender2.factory.makeAppl(axFun, ATermRender2.factory.makeAppl(equivalentFun, c1,al));
 		}
+		// System.out.println("DEBUG: ECA END.");
 	}
 
 	public void visit(OWLDisjointClassesAxiom axiom) throws OWLException {
-		KnowledgeBase kb = loader.getKB();
+		// KnowledgeBase kb = loader.getKB();
+		// System.out.println("DEBUG: DCA BEGINN.");
+		ATermList al = ATermRender2.factory.makeList();
 
 		Object[] disjs = axiom.getDisjointClasses().toArray();
-		for (int i = 0; i < disjs.length; i++) {
-			for (int j = i + 1; j < disjs.length; j++) {
-				OWLDescription desc1 = (OWLDescription) disjs[i];
-				OWLDescription desc2 = (OWLDescription) disjs[j];
-				desc1.accept(this);
-				ATerm c1 = term;
-				desc2.accept(this);
-				ATerm c2 = term;
-
-				kb.addDisjointClass(c1, c2);
-			}
+		if(disjs.length < 2){
+			throw(new OWLException("no or only one argument of DisjointClasses."));
 		}
+		ATerm c1 = visitRend.mkSimpleDescription((OWLDescription) disjs[0]);
+		ATerm c2 = visitRend.mkSimpleDescription((OWLDescription) disjs[1]);
+		
+		for (int i = 2; i < disjs.length; i++) {
+			OWLDescription desc = (OWLDescription) disjs[i];
+			al = ATermRender2.factory.makeList(visitRend.mkSimpleDescription(desc), al);
+		}
+
+		AFun disjointClassFun = ATermRender2.factory.makeAFun(
+				"DisjointClasses", 3, false);
+		term = ATermRender2.factory.makeAppl(axFun, ATermRender2.factory.makeAppl(disjointClassFun, c1, c2,
+				al));
+		// System.out.println("DEBUG: DCA END.");
 	}
 
 	public void visit(OWLSubClassAxiom axiom) throws OWLException {
-		axiom.getSubClass().accept(this);
-		ATerm c1 = term;
-		axiom.getSuperClass().accept(this);
-		ATerm c2 = term;
-
+//		axiom.getSubClass().accept(this);
+//		ATerm c1 = term;
+//		axiom.getSuperClass().accept(this);
+//		ATerm c2 = term;
+		
+		AFun subClassFun = ATermRender2.factory.makeAFun("SubClassOf", 2, false);
+		ATerm c1 = visitRend.mkSimpleDescription(axiom.getSubClass());
+		ATerm c2 = visitRend.mkSimpleDescription(axiom.getSuperClass());
+		
+		term = ATermRender2.factory.makeAppl(axFun, ATermRender2.factory.makeAppl(subClassFun, c1, c2));
+		
 		// KnowledgeBase kb = loader.getKB();
-		//kb.addSubClass(c1, c2);
+		// kb.addSubClass(c1, c2);
 	}
 
 	public void visit(OWLEquivalentPropertiesAxiom axiom) throws OWLException {
+		
+		term = visitRend.renderPropertyAxiom(axiom);
 		// KnowledgeBase kb = loader.getKB();
-
-		Object[] eqs = axiom.getProperties().toArray();
-		for (int i = 0; i < eqs.length; i++) {
-			for (int j = i + 1; j < eqs.length; j++) {
-				OWLProperty prop1 = (OWLProperty) eqs[i];
-				OWLProperty prop2 = (OWLProperty) eqs[j];
-				prop1.accept(this);
-				ATerm p1 = term;
-				prop2.accept(this);
-				ATerm p2 = term;
-
-				//kb.addSameProperty(p1, p2);
-			}
-		}
+//
+//		Object[] eqs = axiom.getProperties().toArray();
+//		for (int i = 0; i < eqs.length; i++) {
+//			for (int j = i + 1; j < eqs.length; j++) {
+//				OWLProperty prop1 = (OWLProperty) eqs[i];
+//				OWLProperty prop2 = (OWLProperty) eqs[j];
+//				prop1.accept(this);
+//				ATerm p1 = term;
+//				prop2.accept(this);
+//				ATerm p2 = term;
+//
+//				// kb.addSameProperty(p1, p2);
+//			}
+//		}
 	}
 
 	public void visit(OWLSubPropertyAxiom axiom) throws OWLException {
-
-		axiom.getSubProperty().accept(this);
-		ATerm p1 = term;
-		axiom.getSuperProperty().accept(this);
-		ATerm p2 = term;
+		
+		term = visitRend.renderPropertyAxiom(axiom);
+//
+//		axiom.getSubProperty().accept(this);
+//		ATerm p1 = term;
+//		axiom.getSuperProperty().accept(this);
+//		ATerm p2 = term;
 
 		//KnowledgeBase kb = loader.getKB();
 		//kb.addSubProperty(p1, p2);
@@ -412,43 +446,80 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		//	KnowledgeBase kb = loader.getKB();
 
 		Object[] inds = axiom.getIndividuals().toArray();
-		for (int i = 0; i < inds.length; i++) {
-			for (int j = i + 1; j < inds.length; j++) {
-				ATerm i1 = loader.term((OWLIndividual) inds[i]);
-				ATerm i2 = loader.term((OWLIndividual) inds[j]);
+		ATermList al = ATermRender2.factory.makeList();
+		
+		if(inds.length < 2){
+			throw(new OWLException("no or only one argument of DifferentIndividualAxiom."));
+		}
+		
+		ATerm c1 = visitRend.mkSimpleIndividual((OWLIndividual) inds[0]);
+		ATerm c2 = visitRend.mkSimpleIndividual((OWLIndividual) inds[1]);
+		
+		for (int i = 2; i < inds.length; i++) {
+			OWLIndividual desc = (OWLIndividual) inds[i];
+			al = ATermRender2.factory.makeList(visitRend.mkSimpleIndividual(desc), al);
+		}
+
+		AFun diffIndFun = ATermRender2.factory.makeAFun(
+				"DifferentIndividuals", 3, false);
+		term = ATermRender2.factory.makeAppl(fcFun, ATermRender2.factory.makeAppl(diffIndFun, c1, c2,
+				al));
+		
+//		for (int i = 0; i < inds.length; i++) {
+//			for (int j = i + 1; j < inds.length; j++) {
+//				ATerm i1 = loader.term((OWLIndividual) inds[i]);
+//				ATerm i2 = loader.term((OWLIndividual) inds[j]);
 
 				//			kb.addDifferent(i1, i2);
-			}
-		}
 	}
 
 	public void visit(OWLSameIndividualsAxiom axiom) throws OWLException {
 		//	KnowledgeBase kb = loader.getKB();
 
-		Iterator eqs = axiom.getIndividuals().iterator();
-		if (eqs.hasNext()) {
-			ATerm i1 = loader.term((OWLIndividual) eqs.next());
+		// Iterator eqs = axiom.getIndividuals().iterator();
 
-			while (eqs.hasNext()) {
-				ATerm i2 = loader.term((OWLIndividual) eqs.next());
-
-				//				kb.addSame(i1, i2);
-			}
+		Object[] eqs = axiom.getIndividuals().toArray();
+		ATermList al = ATermRender2.factory.makeList();
+		
+		if(eqs.length < 2){
+			throw(new OWLException("no or only one argument of DifferentIndividualAxiom."));
 		}
-	}
+		
+		ATerm c1 = visitRend.mkSimpleIndividual((OWLIndividual) eqs[0]);
+		ATerm c2 = visitRend.mkSimpleIndividual((OWLIndividual) eqs[1]);
+		
+		for (int i = 2; i < eqs.length; i++) {
+			OWLIndividual desc = (OWLIndividual) eqs[i];
+			al = ATermRender2.factory.makeList(visitRend.mkSimpleIndividual(desc), al);
+		}
+
+		AFun sameIndFun = ATermRender2.factory.makeAFun(
+				"SameIndividual", 3, false);
+		term = ATermRender2.factory.makeAppl(fcFun, ATermRender2.factory.makeAppl(sameIndFun, c1, c2,
+				al));
+		
+//		if (eqs.hasNext()) {
+//			ATerm i1 = loader.term((OWLIndividual) eqs.next());
+//
+//			while (eqs.hasNext()) {
+//				ATerm i2 = loader.term((OWLIndividual) eqs.next());
+//
+//				//				kb.addSame(i1, i2);
+//			}
+		}
 
 	public void visit(OWLAnnotationProperty ap) {
 		// skip annotation properties?
-		try{
+		try {
 			term = visitRend.renderAnnotationProperty(ontology, ap);
-		}catch(Exception e){
+		} catch (Exception e) {
 			term = null;
 		}
 	}
 
 	public void visit(OWLAnnotationInstance ai) throws OWLException {
 		term = visitRend.renderAnnotationInstance(ontology, ai);
-		
+
 		// skip annotation instances
 	}
 

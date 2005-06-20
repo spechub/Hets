@@ -179,6 +179,7 @@ public class OWLToATerm implements OWLValidationConstants {
 
 }
 
+
 class OWLToATermErrorHandler implements OWLRDFErrorHandler {
 
 	ArrayList list;
