@@ -33,6 +33,7 @@ import Static.DevGraph
 import Proofs.Proofs
 
 import ATC.DevGraph()
+import ATC.GlobalAnnotations()
 import ATC.Proofs()
 
 import Driver.Version

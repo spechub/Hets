@@ -21,9 +21,10 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 import Static.DevGraph
 
-import ATC.AS_Library
-import ATC.DevGraph
-import ATC.Proofs
+import ATC.AS_Library()
+import ATC.DevGraph()
+import ATC.GlobalAnnotations()
+import ATC.Proofs()
 import ATC.Sml_cats
 
 import Common.ATerm.Lib

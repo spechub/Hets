@@ -215,6 +215,7 @@ ATC/AS_Library.der.hs: Syntax/AS_Library.der.hs $(GENRULES)
 ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
 
+# -x BasicProof is excluded automagically
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Library -i ATC.BasicProof -o $@ $<
 
@@ -222,8 +223,7 @@ ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<
 
 ATC/Proofs.der.hs: Proofs/Proofs.hs $(GENRULES)
-	$(GENRULECALL) -x BasicProof -i ATC.DevGraph -i ATC.GlobalAnnotations \
-            -i ATC.Prover -i ATC.BasicProof -o $@ $<
+	$(GENRULECALL) -i ATC.DevGraph -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs 
