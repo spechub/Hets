@@ -49,8 +49,8 @@ signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
 {- |
   Inserts a Named Sentence (axiom or goal) into an SPLogicalPart.
 -}
-insertSentence :: Named Sentence -> SPLogicalPart -> SPLogicalPart
-insertSentence nSen lp = lp {formulaLists = fLists'}
+insertSentence :: SPLogicalPart -> Named Sentence -> SPLogicalPart
+insertSentence lp nSen = lp {formulaLists = fLists'}
   where
     insertFormula oType x [] =
       [SPFormulaList {originType= oType, formulae= [x]}]

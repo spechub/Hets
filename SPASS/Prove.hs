@@ -130,7 +130,7 @@ emptyState = State {currentGoal = Nothing,
                     resultsMap = emptyResultsMap}
 
 {- |
-  Not yet implemented.
+  Currently implemented as a batch mode prover only.
 -}
 spassProver :: Prover Sign Sentence ()
 spassProver =
@@ -140,16 +140,29 @@ spassProver =
          }
 
 {- |
-  Invokes the prover GUI. Not yet implemented.
+  Helper function to check if a goal has been proved.
+-}
+isProved :: (Proof_status a) -> Bool
+isProved (Proved _ _ _ _ _) = True
+isProved _ = False
+
+{- |
+  Invokes the prover GUI. Currently implemented as a batch mode prover only.
 -}
 spassProve :: String -- ^ theory name
            -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
            -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProve thName (Theory sig nSens) =
-  return []
+  batchProve initialLogicalPart [] goals
   where
+    batchProve _ done [] = return done
+    batchProve lp done (x:xs) = do
+        (res, _) <- runSpass lp emptyConfig x
+        -- add proved goals as axioms
+        let lp' = if (isProved res) then (insertSentence lp (x{isAxiom = True})) else lp
+        batchProve lp' (res:done) xs
     (axioms, goals) = partition isAxiom nSens
-    initialLogicalPart = signToSPLogicalPart sig
+    initialLogicalPart = foldl insertSentence (signToSPLogicalPart sig) (reverse axioms)
 
 {- |
   Reads and parses the output of SPASS.
@@ -184,7 +197,7 @@ runSpass lp config nGoal = do
   -- FIXME: this should be retrieved from the user instead of being hardcoded.
   let problem = SPProblem {identifier = "hets_exported",
                            description = SPDescription {name = "hets_exported", author = "hets user", SPASS.Sign.version = Nothing, logic = Nothing, status = SPStateUnknown, desc = "", date = Nothing},
-                           logicalPart = insertSentence nGoal lp}
+                           logicalPart = insertSentence lp nGoal}
   let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
   let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
   let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
