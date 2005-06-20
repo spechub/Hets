@@ -1,4 +1,3 @@
-{-# OPTIONS -cpp #-}
 {- | 
    
     Module      :  $Header$
@@ -41,17 +40,11 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
--- import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import Common.AS_Annotation
 import Common.PrettyPrint
--- import Common.Lib.Pretty
 import Common.Result
 import Common.Id
--- #ifdef UNI_PACKAGE
--- import Isabelle.IsaProve
--- import ChildProcess
--- #endif
 import Foreign
 
 {-
@@ -82,7 +75,6 @@ checkFreeType :: (PosItem f, PrettyPrint f, Eq f) =>
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
                  -> [Named (FORMULA f)] -> Result (Maybe Bool)
 checkFreeType (osig,osens) m fsn      
--- #ifdef UNI_PACKAGE
     | any (\s->not $ elem s srts) newL =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
             sname = concat $ map tokStr ts 
@@ -119,9 +111,8 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("patterns overlap in " ++ symb) pos
     | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
 	warning Nothing "not terminating" []
--- #endif         
     | otherwise = return (Just True)
--- #ifdef UNI_PACKAGE
+
 {-
   call the symbols in the image of the signature morphism "new"
 
@@ -369,7 +360,7 @@ checkFreeType (osig,osens) m fsn
    Automatic termination proof
    using cime, see http://cime.lri.fr/
 
-  interface to cime system, using newChildProcess
+  interface to cime system, using system
   transform CASL signature to Cime signature, 
   CASL formulas to Cime rewrite rules
 
