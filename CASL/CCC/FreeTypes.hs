@@ -615,7 +615,6 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
         --    system "rm ./CASL/CCC/*.cime"
         --    res <-rP cim
             return (subStr "Termination proof found." res))
--- #endif
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
