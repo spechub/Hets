@@ -187,12 +187,16 @@ type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
 
-op Y : (p -->? p) --> p
+fun Y : (p --> p) --> p
 
 . all(\f: p -->? p . eq(f(Y(f)), Y(f)) und
 	all(\x:p . eq(f(x), x) impl Y(f) <<= x))
 
-op undefined : c -->? p = Y(\x: c -->? p .! x) 
+var f : p --> p; x : p
+. f(Y(f)) = Y(f)
+. f(x) = x => Y(f) <<= x  
+
+op undefined : c --> p = Y((\x': c --> p . x') as (c --> p) --> c --> p)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff

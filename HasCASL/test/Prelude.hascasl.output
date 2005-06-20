@@ -126,7 +126,36 @@ type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 type __-->__ < __-->?__
 var f : c --> d; g : c --> d
 type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
-op undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2
+fun Y : (p --> p) --> p
+var f : p --> p; x : p
+. ((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+       p * p ->? Unit)
+    ((var f : p --> p)
+       (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+             (p --> p) --> p)
+          (var f : p --> p) :
+            p) :
+         p,
+     ((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+          (p --> p) --> p)
+       (var f : p --> p) :
+         p) :
+      Unit
+. (fun __=>__ : Unit * Unit ->? Unit)
+    (((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+          p * p ->? Unit)
+       ((var f : p --> p)(var x : p) : p, var x : p) :
+         Unit,
+     ((pred __<<=__[p] : forall c : Cpo . c_v-1 * c_v-1) :
+          p * p ->? Unit)
+       (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+             (p --> p) --> p)
+          (var f : p --> p) :
+            p,
+        var x : p) :
+         Unit) :
+      Unit
+op undefined : forall c : Cpo; p : Pcpo . c_v-1 --> p_v-2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -164,6 +193,7 @@ p : Pcpo %(var_158)%
 s : Type %(var_1)%
 t : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
+Y : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1 %(fun)%
 __/\__ : Unit * Unit ->? Unit %(fun)%
 __<<=__ : forall c : Cpo . c_v-1 * c_v-1 ->? Unit %(pred)%
 __<=>__ : Unit * Unit ->? Unit %(fun)%
@@ -181,7 +211,8 @@ bottom : forall p : Pcpo . p_v-1 %(fun)%
 def : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 eq : forall s : Type . s_v-1 * s_v-1 ->? Unit %(pred)%
-f : c --> d %(var)%
+f : p --> p %(var)%
+  : c --> d %(var)%
 false
   : bool %(construct bool)%
   : Unit ->? Unit %(pred)%
@@ -200,8 +231,9 @@ true
   : Unit ->? Unit %(pred)%
   : Unit %(fun)%
 tt : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit) %(op)%
-undefined : forall c : Cpo; p : Pcpo . c_v-1 -->? p_v-2 %(op)%
-x : s %(var)%
+undefined : forall c : Cpo; p : Pcpo . c_v-1 --> p_v-2 %(op)%
+x : p %(var)%
+  : s %(var)%
 x1 : c %(var)%
 x2 : c %(var)%
 y1 : d %(var)%
@@ -271,6 +303,33 @@ forall x : s; y : t
                Unit) :
             s) :
        s * s ->? s) :
+    Unit
+((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+     p * p ->? Unit)
+  ((var f : p --> p)
+     (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+           (p --> p) --> p)
+        (var f : p --> p) :
+          p) :
+       p,
+   ((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+        (p --> p) --> p)
+     (var f : p --> p) :
+       p) :
+    Unit
+(fun __=>__ : Unit * Unit ->? Unit)
+  (((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+        p * p ->? Unit)
+     ((var f : p --> p)(var x : p) : p, var x : p) :
+       Unit,
+   ((pred __<<=__[p] : forall c : Cpo . c_v-1 * c_v-1) :
+        p * p ->? Unit)
+     (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+           (p --> p) --> p)
+        (var f : p --> p) :
+          p,
+      var x : p) :
+       Unit) :
     Unit
 free type bool
   ::= true : bool
@@ -507,13 +566,490 @@ free type bool
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Error 186.26, unexpected mixfix token: c
-*** Error, incompatible kind of: p_v158 -->? p_v158
-  expected: Cpo-
-     found: Type
-
 *** Error 193.32, unexpected mixfix token: impl
-*** Error 192.27, unexpected mixfix token: Y
+*** Error 192.40, unexpected mixfix token: und
 *** Error 192.3, unexpected mixfix token: all
-*** Error 195.27, unexpected mixfix token: Y
-*** Error 200.20, illegal overloading of predefined identifier 'true'
-*** Error 200.27, illegal overloading of predefined identifier 'false'
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_172_v172 --> _var_172_v172' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_172_v172 --> _var_172_v172' (190.12)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_179_v179 ->? _var_180_v180' (196.8)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'c' (184.13)
+  is not unifiable with type '_var_179_v179 ->? _var_180_v180' (196.8)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '(_var_179_v179 ->? _var_180_v180) --> _var_179_v179 ->? _var_180_v180' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '(_var_179_v179 ->? _var_180_v180) --> _var_179_v179 ->? _var_180_v180' (190.12)
+
+*** Hint 196.6-196.7, untypable application (with result type: Unit ->? p)
+ 'Y(f)'
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_186_v186 --> _var_186_v186' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_186_v186 --> _var_186_v186' (190.12)
+
+*** Hint 196.6-196.7, rejected 'p < c' of '((fun Y[_var_186_v186]
+  : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+     (_var_186_v186 --> _var_186_v186) --> _var_186_v186)
+  (var f : p --> p) :
+    p'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_193_v193 ->? _var_194_v194' (196.8)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'c' (184.13)
+  is not unifiable with type '_var_193_v193 ->? _var_194_v194' (196.8)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '(_var_193_v193 ->? _var_194_v194) --> _var_193_v193 ->? _var_194_v194' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '(_var_193_v193 ->? _var_194_v194) --> _var_193_v193 ->? _var_194_v194' (190.12)
+
+*** Hint 196.6-196.7, untypable application (with result type: Unit ->? c)
+ 'Y(f)'
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_201_v201 --> _var_201_v201' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_201_v201 --> _var_201_v201' (190.12)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_207_v207 --> _var_207_v207' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_207_v207 --> _var_207_v207' (190.12)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_214_v214 ->? _var_215_v215' (196.8)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'c' (184.13)
+  is not unifiable with type '_var_214_v214 ->? _var_215_v215' (196.8)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '(_var_214_v214 ->? _var_215_v215) --> _var_214_v214 ->? _var_215_v215' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '(_var_214_v214 ->? _var_215_v215) --> _var_214_v214 ->? _var_215_v215' (190.12)
+
+*** Hint 196.6-196.7, untypable application (with result type: Unit ->? p)
+ 'Y(f)'
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_221_v221 --> _var_221_v221' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_221_v221 --> _var_221_v221' (190.12)
+
+*** Hint 196.6-196.7, rejected 'p < c' of '((fun Y[_var_221_v221]
+  : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+     (_var_221_v221 --> _var_221_v221) --> _var_221_v221)
+  (var f : p --> p) :
+    p'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_228_v228 ->? _var_229_v229' (196.8)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'c' (184.13)
+  is not unifiable with type '_var_228_v228 ->? _var_229_v229' (196.8)
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '(_var_228_v228 ->? _var_229_v229) --> _var_228_v228 ->? _var_229_v229' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '(_var_228_v228 ->? _var_229_v229) --> _var_228_v228 ->? _var_229_v229' (190.12)
+
+*** Hint 196.6-196.7, untypable application (with result type: Unit ->? c)
+ 'Y(f)'
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_236_v236 --> _var_236_v236' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_236_v236 --> _var_236_v236' (190.12)
+
+*** Hint 196.3-196.16, in type of '((var f : p --> p)
+   (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+         (p --> p) --> p)
+      (var f : p --> p) :
+        p) :
+     p,
+ ((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p)'
+  type 'p * p' (196.16)
+  is not unifiable with type 'Unit ->? _var_166_v166 * _var_166_v166' (196.16)
+
+*** Hint, rejected 's < p' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, rejected 'p < c' of '(var x : p)'
+
+*** Hint, rejected 's < c' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, rejected 's < p' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, rejected 'p < c' of '(var x : p)'
+
+*** Hint, rejected 's < c' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint 197.3-197.10, in type of '((var f : p --> p)(var x : p) : p, var x : p)'
+  type 'p * p' (197.10)
+  is not unifiable with type 'Unit ->? _var_244_v244 * _var_244_v244' (197.10)
+
+*** Hint 197.3-197.10, in type of '((var f : p --> p)(var x : p) : p, var x : s)'
+  type 'p * s' (197.10)
+  is not unifiable with type 'Unit ->? _var_244_v244 * _var_244_v244' (197.10)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_258_v258 --> _var_258_v258' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_258_v258 --> _var_258_v258' (190.12)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_263_v263 --> _var_263_v263' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_263_v263 --> _var_263_v263' (190.12)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : p)'
+  type 'p * p' (197.24)
+  is not unifiable with type 'Unit ->? _var_253_v253 * _var_253_v253' (197.24)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : s)'
+  type 'p * s' (197.24)
+  is not unifiable with type 'Unit ->? _var_253_v253 * _var_253_v253' (197.24)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_273_v273 --> _var_273_v273' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_273_v273 --> _var_273_v273' (190.12)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_278_v278 --> _var_278_v278' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_278_v278 --> _var_278_v278' (190.12)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : p)'
+  type 'p * p' (197.24)
+  is not unifiable with type 'Unit ->? _var_268_v268 * _var_268_v268' (197.24)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : s)'
+  type 'p * s' (197.24)
+  is not unifiable with type 'Unit ->? _var_268_v268 * _var_268_v268' (197.24)
+
+*** Hint, rejected 's < p' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, rejected 'p < c' of '(var x : p)'
+
+*** Hint, rejected 's < c' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, rejected 's < p' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? p' (197.5)
+
+*** Hint, rejected 'p < c' of '(var x : p)'
+
+*** Hint, rejected 's < c' of '(var x : s)'
+
+*** Hint, in type of '(var x : p)'
+  typename 'p' (195.22)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint, in type of '(var x : s)'
+  typename 's' (40.9)
+  is not unifiable with type 'Unit ->? c' (197.5)
+
+*** Hint 197.3-197.10, in type of '((var f : p --> p)(var x : p) : p, var x : p)'
+  type 'p * p' (197.10)
+  is not unifiable with type 'Unit ->? _var_283_v283 * _var_283_v283' (197.10)
+
+*** Hint 197.3-197.10, in type of '((var f : p --> p)(var x : p) : p, var x : s)'
+  type 'p * s' (197.10)
+  is not unifiable with type 'Unit ->? _var_283_v283 * _var_283_v283' (197.10)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_297_v297 --> _var_297_v297' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_297_v297 --> _var_297_v297' (190.12)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_302_v302 --> _var_302_v302' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_302_v302 --> _var_302_v302' (190.12)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : p)'
+  type 'p * p' (197.24)
+  is not unifiable with type 'Unit ->? _var_292_v292 * _var_292_v292' (197.24)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : s)'
+  type 'p * s' (197.24)
+  is not unifiable with type 'Unit ->? _var_292_v292 * _var_292_v292' (197.24)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_312_v312 --> _var_312_v312' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_312_v312 --> _var_312_v312' (190.12)
+
+*** Hint, rejected 'd < c' of '(var f : c --> d)'
+
+*** Hint, in type of '(var f : p --> p)'
+  typename 'p' (195.9)
+  is not unifiable with type '_var_317_v317 --> _var_317_v317' (190.12)
+
+*** Hint, in type of '(var f : c --> d)'
+  typename 'd' (184.19)
+  is not unifiable with type '_var_317_v317 --> _var_317_v317' (190.12)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : p)'
+  type 'p * p' (197.24)
+  is not unifiable with type 'Unit ->? _var_307_v307 * _var_307_v307' (197.24)
+
+*** Hint 197.15-197.24, in type of '(((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+      (p --> p) --> p)
+   (var f : p --> p) :
+     p,
+ var x : s)'
+  type 'p * s' (197.24)
+  is not unifiable with type 'Unit ->? _var_307_v307 * _var_307_v307' (197.24)
+
+*** Hint 197.4-197.24, in type of '(((fun __=__[_var_283_v283]
+   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+      _var_283_v283 * _var_283_v283 ->? Unit)
+   ((var f : p --> p)(var x : p) : p, var x : p) :
+     Unit,
+ ((pred __<<=__[_var_292_v292] : forall c : Cpo . c_v-1 * c_v-1) :
+      _var_292_v292 * _var_292_v292 ->? Unit)
+   (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+         (p --> p) --> p)
+      (var f : p --> p) :
+        p,
+    var x : p) :
+     Unit)'
+  type 'Unit * Unit' (197.24)
+  is not unifiable with type 'Unit ->? Unit * Unit' (197.24)
+
+*** Hint 197.4-197.24, in type of '(((fun __=__[_var_283_v283]
+   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+      _var_283_v283 * _var_283_v283 ->? Unit)
+   ((var f : p --> p)(var x : p) : p, var x : p) :
+     Unit,
+ ((pred __<<=__[_var_292_v292] : forall c : Cpo . c_v-1 * c_v-1) :
+      _var_292_v292 * _var_292_v292 ->? Unit)
+   (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+         (p --> p) --> p)
+      (var f : p --> p) :
+        p,
+    var x : s) :
+     Unit)'
+  type 'Unit * Unit' (197.24)
+  is not unifiable with type 'Unit ->? Unit * Unit' (197.24)
+
+*** Hint 197.4-197.24, in type of '(((fun __=__[_var_283_v283]
+   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+      _var_283_v283 * _var_283_v283 ->? Unit)
+   ((var f : p --> p)(var x : p) : p, var x : s) :
+     Unit,
+ ((pred __<<=__[_var_307_v307] : forall c : Cpo . c_v-1 * c_v-1) :
+      _var_307_v307 * _var_307_v307 ->? Unit)
+   (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+         (p --> p) --> p)
+      (var f : p --> p) :
+        p,
+    var x : p) :
+     Unit)'
+  type 'Unit * Unit' (197.24)
+  is not unifiable with type 'Unit ->? Unit * Unit' (197.24)
+
+*** Hint 197.4-197.24, in type of '(((fun __=__[_var_283_v283]
+   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+      _var_283_v283 * _var_283_v283 ->? Unit)
+   ((var f : p --> p)(var x : p) : p, var x : s) :
+     Unit,
+ ((pred __<<=__[_var_307_v307] : forall c : Cpo . c_v-1 * c_v-1) :
+      _var_307_v307 * _var_307_v307 ->? Unit)
+   (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
+         (p --> p) --> p)
+      (var f : p --> p) :
+        p,
+    var x : s) :
+     Unit)'
+  type 'Unit * Unit' (197.24)
+  is not unifiable with type 'Unit ->? Unit * Unit' (197.24)
+
+*** Hint 199.48, rejected '__->?__ < __-->__' of '((\ (var x' : c --> p) . (var x' : c --> p)) :
+     (_var_329_v329 --> _var_330_v330) ->? _var_328_v328) as
+    (c --> p) --> c --> p'
+
+*** Hint 199.48, in type of '((\ (var x' : c --> p) . (var x' : c --> p)) :
+     (_var_344_v344 --> _var_345_v345) ->? _var_343_v343) as
+    (c --> p) --> c --> p'
+  typename 'Unit'
+  is not unifiable with type 'c --> p' (199.54)
+
+*** Hint 199.27-199.48, untypable application 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p)'
+*** Error 199.14-199.24, no typing for 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p) as
+      c_v155 --> p_v158'
+*** Error 204.20, illegal overloading of predefined identifier 'true'
+*** Error 204.27, illegal overloading of predefined identifier 'false'

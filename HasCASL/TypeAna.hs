@@ -22,6 +22,7 @@ import Common.Id
 import Common.Result
 import Common.PrettyPrint
 import Data.List as List
+import Data.Maybe
 
 -- --------------------------------------------------------------------------
 -- kind analysis
@@ -308,9 +309,11 @@ checkFunKind mk t1 t2 k1 tm =
         FunKind fk ak _ -> do 
             inferKind (Just fk) t2 tm
             checkMaybeKinds tm (TypeAppl t1 t2) mk ak 
-        Intersection l@(_:_) ps -> do
-            ml <- mapM ( \ k -> checkFunKind mk t1 t2 k tm) l
-            return $ toIntersection ml ps
+        Intersection l@(_:_) ps -> let 
+            rs = map ( \ k -> checkFunKind mk t1 t2 k tm) l
+            ms = catMaybes $ map maybeResult rs
+            in if null ms then Result (concatMap diags rs) Nothing
+               else Result [] $ Just $ toIntersection ms ps
         ClassKind _ k -> checkFunKind mk t1 t2 k tm
         Downset _ _ k _ -> checkFunKind mk t1 t2 k tm
         ExtKind k _ _ -> checkFunKind mk t1 t2 k tm
@@ -346,7 +349,7 @@ inferKind mk ty tm = case ty of
 getIdKind :: TypeMap -> Id -> Result Kind
 getIdKind tm i = case Map.lookup i tm of
        Nothing -> mkError "unknown type" i
-       Just (TypeInfo rk l _ _) -> return $  
+       Just (TypeInfo rk l _ _) -> return $ 
            if null l then rk else 
               if isSingle l then head l else Intersection l []
 
