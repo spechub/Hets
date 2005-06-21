@@ -219,10 +219,9 @@ topSortDAG :: Ord a => Rel a -> [Set.Set a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
     let es = elemsSet m
         ml = keysSet m Set.\\ es -- most left
-        rs = es Set.\\ ml -- re-insert loose ends
         Rel m2 = delSet ml r
-    in ml : topSortDAG (Rel $ Set.fold ( \ e -> Map.insertWith Set.union e 
-                                             Set.empty ) m2 rs)
+        rs = es Set.\\ keysSet m2 -- re-insert loose ends
+    in ml : topSortDAG (Rel $ Set.fold (flip Map.insert Set.empty) m2 rs) 
 
 -- | topologically sort a closed relation (ignore isolated cycles)
 topSort :: Ord a => Rel a -> [Set.Set a]
