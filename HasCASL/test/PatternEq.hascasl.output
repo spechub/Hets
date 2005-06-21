@@ -70,33 +70,5 @@ program (op b : s) = (op a : s) %(pe_b)%
   (op c : t,
    ((op snd : s * t -> t)(op x : s, op y : t) : t) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint, in type of '(var x : _var_1_v1, var y : _var_2_v2)'
-  type '_var_1_v1 * _var_2_v2'
-  is not unifiable with type 'Unit ->? s * t' (3.17)
-
-*** Hint, in type of '(var x : _var_7_v7, var y : _var_8_v8)'
-  type '_var_7_v7 * _var_8_v8'
-  is not unifiable with type 'Unit ->? s * t' (5.18)
-
-*** Hint, in type of '(var x : _var_13_v13, var y : _var_14_v14)'
-  type '_var_13_v13 * _var_14_v14'
-  is not unifiable with type 'Unit ->? s * t' (6.18)
-
-*** Hint, in type of '(var x : _var_19_v19, var y : _var_20_v20)'
-  type '_var_19_v19 * _var_20_v20'
-  is not unifiable with type 'Unit ->? s * t' (7.18)
-
-*** Hint, in type of '(var x : _var_24_v24, var y : _var_25_v25)'
-  type '_var_24_v24 * _var_25_v25'
-  is not unifiable with type 'Unit ->? s * t' (10.17)
-
-*** Hint 12.21-12.26, in type of '(var x : s, var y : t)'
-  type 's * t' (12.26)
-  is not unifiable with type 'Unit ->? s * t' (12.23)
-
 *** Error 14.15-14.18, illegal toplevel pattern '(var x : s, var y : s)'
 *** Warning, illegal lhs pattern '(var b : s)'
-*** Hint 23.24-23.29, in type of '(op x : s, op y : t)'
-  type 's * t' (23.29)
-  is not unifiable with type 'Unit ->? s * t' (23.26)
-

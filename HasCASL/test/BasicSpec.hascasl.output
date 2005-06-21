@@ -200,6 +200,7 @@ type Data4
 *** Warning 11.19, redeclared class 'a'
 *** Hint 18.15, variable shadows global name(s) 'x'
 *** Error 20.12, unexpected mixfix token: res
+*** Warning 21.22, trying hard to find lazy type for 'program fst(x : s, var y : t) : s = x'
 *** Hint 21.1, no type match for: fst
   with (maximal) type: _var_4_v4 ->? s
   known types:
@@ -207,6 +208,7 @@ type Data4
 *** Hint 21.5-21.13, untypable application (with result type: s)
  'fst(x : s, var y : t)'
 *** Error 21.22, no typing for 'program fst(x : s, var y : t) : s = x'
+*** Warning 22.22, trying hard to find lazy type for 'program snd(x : s, var y : t) : t = y'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _var_5_v5 ->? t
   known types:
@@ -215,6 +217,7 @@ type Data4
  'snd(x : s, var y : t)'
 *** Error 22.22, no typing for 'program snd(x : s, var y : t) : t = y'
 *** Hint 26.6, redeclared type 's'
+*** Warning 28.33, trying hard to find lazy type for 'program all(var p : ? s) : ? Unit = eq(p, tt)'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:
@@ -232,13 +235,5 @@ type Data4
 *** Error 38.17, unexpected mixfix token: all
 *** Error 37.27, unexpected mixfix token: all
 *** Error 40.20, unexpected mixfix token: all
-*** Hint, in type of '(var x : t, var y : t)'
-  type 't * t'
-  is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
-
-*** Hint, in type of '(var x : s, var y : t)'
-  type 's * t'
-  is not unifiable with type 'Unit ->? _var_8_v8 * _var_8_v8'
-
 *** Error 66.25, unexpected mixfix token: e
 *** Error 67.12, unexpected mixfix token: e

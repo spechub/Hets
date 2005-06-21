@@ -47,6 +47,7 @@ true : Unit %(fun)%
    (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
     Unit
 %% Diagnostics -----------------------------------------------------------
+*** Warning 8.9-8.11, trying hard to find lazy type for '__=__(f(a), g(c))'
 *** Hint, in type of '(op a : t)'
   typename 't' (4.10)
   is not unifiable with type 'Unit ->? ? t'

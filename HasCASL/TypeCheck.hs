@@ -75,15 +75,15 @@ lookupError ty ois =
     ++ "  known types:\n    " ++
        showSepList ("\n    "++) (showPretty . opType) ois "" 
 
-checkList :: [Maybe Type] -> [Term] 
+checkList :: Bool -> [Maybe Type] -> [Term] 
           -> State Env [(Subst, Constraints, [Type], [Term])]
-checkList [] [] = return [(eps, noC, [], [])]
-checkList (ty : rty) (trm : rt) = do 
-      fts <- infer ty trm >>= reduce False 
+checkList _ [] [] = return [(eps, noC, [], [])]
+checkList b (ty : rty) (trm : rt) = do 
+      fts <- infer b ty trm >>= reduce False 
       combs <- mapM ( \ (sf, cs, tyf, tf) -> do
                       vs <- gets localVars
                       putLocalVars $ Map.map (subst sf) vs
-                      rts <- checkList (map (fmap (subst sf)) rty) rt
+                      rts <- checkList b (map (fmap (subst sf)) rty) rt
                       putLocalVars vs
                       return $ map ( \ (sr, cr, tys, tts) ->
                              (compSubst sf sr, 
@@ -91,8 +91,9 @@ checkList (ty : rty) (trm : rt) = do
                               subst sr tyf : tys,
                                      tf : tts)) rts) fts
       return $ concat combs
-checkList _ _ = error "checkList"
+checkList _ _ _ = error "checkList"
 
+-- | reduce a substitution, if true try to find a monomorphic substitution
 reduce :: Bool -> [(Subst, Constraints, Type, Term)] 
        -> State Env [(Subst, Constraints, Type, Term)]
 reduce b alts = do
@@ -115,8 +116,19 @@ reduce b alts = do
        return $ concat combs
 
 typeCheck :: Maybe Type -> Term -> State Env (Maybe Term)
-typeCheck mt trm = 
-    do alts <- infer mt trm >>= reduce True 
+typeCheck mt trm = do
+    e <- get
+    mtrm <- typeCheck0 False mt trm
+    case mtrm of 
+        Nothing -> do 
+            put e
+            addDiags [mkDiag Warning "trying hard to find lazy type for" trm]
+            typeCheck0 True mt trm
+        Just _ -> return mtrm
+
+typeCheck0 :: Bool -> Maybe Type -> Term -> State Env (Maybe Term)
+typeCheck0 b mt trm = 
+    do alts <- infer b mt trm >>= reduce True 
        tm <- gets typeMap
        let p = get_pos trm
        if null alts then 
@@ -162,15 +174,16 @@ freshTypeVar p =
 freshVars :: [Term] -> State Env [Type]
 freshVars l = mapM (freshTypeVar . posOfTerm) l
 
-inferAppl :: [Pos] -> Maybe Type -> Term  -> Term 
+-- | infer type of application, if true consider lifting for lazy types
+inferAppl :: Bool -> [Pos] -> Maybe Type -> Term  -> Term 
           -> State Env [(Subst, Constraints, Type, Term)]
-inferAppl ps mt t1 t2 = do
+inferAppl b ps mt t1 t2 = do
             let origAppl = ApplTerm t1 t2 ps
             aty <- freshTypeVar $ posOfTerm t2
             rty <- case mt of 
                 Nothing -> freshTypeVar $ posOfTerm t1
                 Just ty -> return ty
-            ops <- infer (Just $ FunType aty PFunArr rty []) t1 
+            ops <- infer b (Just $ FunType aty PFunArr rty []) t1 
                    >>= reduce False
             combs <- mapM ( \ (sf, cf, funty, tf) -> do 
                 let (sfty, frty) = case funty of 
@@ -178,9 +191,12 @@ inferAppl ps mt t1 t2 = do
                           _ -> (subst sf aty, subst sf rty)
                 vs <- gets localVars
                 putLocalVars $ Map.map (subst sf) vs
-                args1 <- infer (Just sfty) t2 >>= reduce False
-                putLocalVars $ Map.map (subst sf) vs            
-                args2 <- infer (Just $ liftType sfty ps) t2 >>= reduce False
+                args1 <- infer b (Just sfty) t2 >>= reduce False
+                args2 <- if b then do 
+                            putLocalVars $ Map.map (subst sf) vs            
+                            infer b (Just $ liftType sfty ps) t2 
+                                      >>= reduce False
+                         else return []
                 putLocalVars vs
                 let args = args1 ++ args2
                     combs2 = map ( \ (sa, ca, _, ta) ->
@@ -216,9 +232,10 @@ getTypeOf trm = case trm of
     AsPattern _ p _ -> getTypeOf p
     _ -> error "getTypeOf"
 
-infer :: Maybe Type -> Term 
+-- | infer type of term, if true consider lifting for lazy types
+infer :: Bool -> Maybe Type -> Term 
       -> State Env [(Subst, Constraints, Type, Term)]
-infer mt trm = do
+infer b mt trm = do
     tm <- gets typeMap
     as <- gets assumps
     vs <- gets localVars
@@ -275,16 +292,16 @@ infer mt trm = do
                      sc -> TypedTerm (QualOp br 
                                        (InstOpId i is []) sc ps)
                                        Inferred ty ps)) ls
-            else inferAppl ps mt (ResolvedMixTerm i [] ps)
+            else inferAppl b ps mt (ResolvedMixTerm i [] ps)
                  $ mkTupleTerm ts ps
-        ApplTerm t1 t2 ps -> inferAppl ps mt t1 t2
+        ApplTerm t1 t2 ps -> inferAppl b ps mt t1 t2
         TupleTerm ts ps -> if null ts then return 
             [(eps, case mt of 
               Nothing -> noC
               Just ty -> insertC (Subtyping logicalType ty) noC,
               logicalType, trm)]
             else do
-                ls <- checkList (map (const Nothing) ts) ts 
+                ls <- checkList b (map (const Nothing) ts) ts 
                 return $ map ( \ (su, cs, tys, trms) ->
                     let nTy = mkProductType tys ps in
                                (su, case mt of 
@@ -298,7 +315,7 @@ infer mt trm = do
             case qual of 
                 InType -> do 
                     vTy <- freshTypeVar ps
-                    rs <- infer Nothing t
+                    rs <- infer b Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                            let sTy = subst s ty in
                                (s,  insertC (Subtyping sTy vTy) 
@@ -311,7 +328,7 @@ infer mt trm = do
                                  TypedTerm tr qual sTy ps)) rs
                 AsType -> do
                     vTy <- freshTypeVar ps
-                    rs <- infer Nothing t
+                    rs <- infer b Nothing t
                     return $ map ( \ (s, cs, typ, tr) -> 
                         let sTy = subst s ty in
                                 (s, insertC (Subtyping sTy vTy) 
@@ -322,7 +339,7 @@ infer mt trm = do
                                                       sTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
                 _ -> do
-                    rs <- infer (Just ty) t
+                    rs <- infer b (Just ty) t
                     return $ map ( \ (s, cs, _, tr) -> 
                           let sTy = subst s ty in
                                 (s, case mt of 
@@ -333,7 +350,7 @@ infer mt trm = do
                                       else TypedTerm tr qual sTy ps)) rs
         QuantifiedTerm quant decls t ps -> do
             mapM_ addGenLocalVar decls
-            rs <- infer (Just logicalType) t 
+            rs <- infer b (Just logicalType) t 
             putLocalVars vs
             putTypeMap tm
             return $ map ( \ (s, cs, typ, tr) -> 
@@ -351,10 +368,10 @@ infer mt trm = do
                                           Total -> FunArr
                                          else FunArr) (fty $ tail l) []
                 myty = fty pvs
-            ls <- checkList (map Just pvs) pats
+            ls <- checkList b (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
                        mapM_ addLocalVar $ concatMap extractVars nps
-                       es <- infer (Just $ subst s rty) resTrm
+                       es <- infer b (Just $ subst s rty) resTrm
                        putLocalVars vs
                        return $ map ( \ (s2, cr, _, rtm) -> 
                                       let s3 = compSubst s s2
@@ -369,7 +386,7 @@ infer mt trm = do
                                        Inferred typ ps)) es) ls
             return $ concat rs 
         CaseTerm ofTrm eqs ps -> do 
-            ts <- infer Nothing ofTrm
+            ts <- infer b Nothing ofTrm
             rty <- case mt of 
                    Nothing -> freshTypeVar $ posOfTerm trm
                    Just ty -> return ty
@@ -377,7 +394,7 @@ infer mt trm = do
                                       "unresolved of-term in case" ofTrm]
                 else return () 
             rs <- mapM ( \ (s1, cs, oty, otrm) -> do 
-                 es <- inferCaseEqs oty (subst s1 rty) eqs
+                 es <- inferCaseEqs b oty (subst s1 rty) eqs
                  return $ map ( \ (s2, cr, _, ty, nes) ->
                                 (compSubst s1 s2, 
                                  substC s2 cs `joinC` cr, ty, 
@@ -385,11 +402,11 @@ infer mt trm = do
                                  Inferred ty ps)) es) ts
             return $ concat rs
         LetTerm br eqs inTrm ps -> do 
-            es <- inferLetEqs eqs
+            es <- inferLetEqs b eqs
             rs <- mapM ( \ (s1, cs, _, nes) -> do 
                mapM_ addLocalVar $ concatMap 
                          ( \ (ProgEq p _ _) -> extractVars p) nes
-               ts <- infer mt inTrm 
+               ts <- infer b mt inTrm 
                return $ map ( \ (s2, cr, ty, nt) -> 
                               (compSubst s1 s2, 
                                substC s2 cs `joinC` cr,
@@ -398,23 +415,24 @@ infer mt trm = do
             putLocalVars vs
             return $ concat rs
         AsPattern (VarDecl v _ ok qs) pat ps -> do 
-           pats <- infer mt pat
+           pats <- infer b mt pat
            return $ map ( \ (s1, cs, t1, p1) -> (s1, cs, t1, 
                           AsPattern (VarDecl v t1 ok qs) p1 ps)) pats
         _ -> do ty <- freshTypeVar $ posOfTerm trm
                 addDiags [mkDiag Error "unexpected term" trm]
                 return [(eps, noC, ty, trm)]
 
-inferLetEqs :: [ProgEq] -> State Env [(Subst, Constraints, [Type], [ProgEq])]
-inferLetEqs es = do
+inferLetEqs :: Bool -> [ProgEq] 
+            -> State Env [(Subst, Constraints, [Type], [ProgEq])]
+inferLetEqs b es = do
     let pats = map (\ (ProgEq p _ _) -> p) es 
         trms = map (\ (ProgEq _ t _) -> t) es
         qs = map (\ (ProgEq _ _ q) -> q) es
     do vs <- gets localVars
-       newPats <- checkList (map (const Nothing) pats) pats
+       newPats <- checkList b (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
              mapM_ addLocalVar $ concatMap extractVars pps
-             newTrms <- checkList (map Just tys) trms 
+             newTrms <- checkList b (map Just tys) trms 
              return $ map ( \ (sr, tcs, tys2, tts ) ->  
                           (compSubst sf sr, 
                            joinC tcs $ substC sr pcs, tys2, 
@@ -423,10 +441,10 @@ inferLetEqs es = do
        putLocalVars vs                                       
        return $ concat combs 
 
-inferCaseEq :: Type -> Type -> ProgEq 
+inferCaseEq :: Bool -> Type -> Type -> ProgEq 
             -> State Env [(Subst, Constraints, Type, Type, ProgEq)]
-inferCaseEq pty tty (ProgEq pat trm ps) = do
-   pats1 <- infer (Just pty) pat >>= reduce False
+inferCaseEq b pty tty (ProgEq pat trm ps) = do
+   pats1 <- infer b (Just pty) pat >>= reduce False
    e <- get            
    let pats = filter ( \ (_, _, _, p) -> isPat e p) pats1
    if null pats then addDiags [mkDiag Hint "unresolved case pattern" pat]
@@ -434,7 +452,7 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do 
                 mapM_ addLocalVar $ extractVars p
-                ts <- infer (Just $  subst s tty) trm >>= reduce False
+                ts <- infer b (Just $  subst s tty) trm >>= reduce False
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) -> 
                        (compSubst s st, 
@@ -443,13 +461,13 @@ inferCaseEq pty tty (ProgEq pat trm ps) = do
                         ProgEq p t ps)) ts) pats
    return $ concat es
 
-inferCaseEqs :: Type -> Type -> [ProgEq] 
+inferCaseEqs :: Bool -> Type -> Type -> [ProgEq] 
             -> State Env [(Subst, Constraints, Type, Type, [ProgEq])]
-inferCaseEqs pty tTy [] = return [(eps, noC, pty, tTy, [])]
-inferCaseEqs pty tty (eq:eqs) = do 
-  fts <- inferCaseEq pty tty eq
+inferCaseEqs _ pty tTy [] = return [(eps, noC, pty, tTy, [])]
+inferCaseEqs b pty tty (eq:eqs) = do 
+  fts <- inferCaseEq b pty tty eq
   rs <- mapM (\ (_, cs, pty1, tty1, ne) -> do 
-              rts <- inferCaseEqs pty1 tty1 eqs
+              rts <- inferCaseEqs b pty1 tty1 eqs
               return $ map ( \ (s2, cr, pty2, tty2, nes) ->
                              (s2, 
                               substC s2 cs `joinC` cr,
