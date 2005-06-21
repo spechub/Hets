@@ -109,16 +109,21 @@ anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) =
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds  
        tm <- gets typeMap
-       let Result _ mp = anaType (Nothing, t) tm
+       let Result es mp = anaType (Nothing, t) tm
        case mp of 
            Nothing -> do 
                mis <- mapM (addTypePattern NoTypeDefn inst star) is
                let newPats = idsToTypePatterns mis
-               mt <- anaStarType t
-               case mt of
-                   Nothing -> return $ Just $ TypeDecl newPats star ps
-                   Just newT -> do mapM_ (addSuperType newT) $ map fst is
-                                   return $ Just $ SubtypeDecl newPats newT ps
+               case t of 
+                   TypeToken tt -> do 
+                       let tid = simpleIdToId tt
+                           newT = TypeName tid star 0
+                       addTypeId False NoTypeDefn inst star tid
+                       mapM_ (addSuperType newT) $ map fst is
+                       return $ Just $ SubtypeDecl newPats newT ps
+                   _ -> do
+                       addDiags es
+                       return $ Just $ TypeDecl newPats star ps
            Just (ak, newT) -> do 
               mis <- mapM (addTypePattern NoTypeDefn inst ak) is
               let newPats = idsToTypePatterns mis
