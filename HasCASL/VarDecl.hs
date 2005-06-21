@@ -228,8 +228,8 @@ addOpId i oldSc attrs defn =
        if null ds then 
                do let Result es mo = foldM (mergeOpInfo tm) oInfo l
                   addDiags $ map (improveDiag i) es
-                  if i `elem` map fst bList then addDiags $ [mkDiag Error 
-                          "illegal overloading of predefined identifier" i]
+                  if i `elem` map fst bList then addDiags $ [mkDiag Warning
+                      "ignoring declaration for builtin identifier" i]
                       else return ()
                   case mo of 
                       Nothing -> return Nothing

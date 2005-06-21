@@ -9,7 +9,7 @@ haddockify code
 checking legality of internal and external terms is missing
 
 proper type terms as supertypes are treated like type
-synonyms. Function and product types are builtin. Subtypes relations
+synonyms. Function and product types are builtin. Subtype relations
 of these builtin types and user defined types are problematic. The
 unit type is a separat type!
 
@@ -36,8 +36,6 @@ their types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
-declaring the Y combinator does not work (see HasCASL/Recursion.het)
-
 
 
 terms: 
@@ -47,8 +45,7 @@ yet.
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
-Overloading is forbidden for builtin functions (but maybe
-redeclaration should be allowed)
+redeclaration for builtin identifiers are ignored
 
 shorter printing of terms
 
@@ -62,7 +59,7 @@ Sentences for attributes comm, assoc, unit are not generated yet.
 
 Test shadowing in MixAna with warning.
 
-
+First try type checking without lazy types
 
 
 CASL:

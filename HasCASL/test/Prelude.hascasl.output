@@ -341,14 +341,14 @@ free type bool
 *** Hint 11.6, redeclared type 'Unit'
 *** Error, illegal type pattern argument '__'
 *** Error, illegal type pattern argument '__'
-*** Error 17.6, illegal overloading of predefined identifier 'true'
-*** Error 17.12, illegal overloading of predefined identifier 'false'
-*** Error 19.9, illegal overloading of predefined identifier '__/\__'
-*** Error 19.17, illegal overloading of predefined identifier '__\/__'
-*** Error 19.25, illegal overloading of predefined identifier '__=>__'
-*** Error 19.33, illegal overloading of predefined identifier '__if__'
-*** Error 19.40, illegal overloading of predefined identifier '__<=>__'
-*** Error 22.8, illegal overloading of predefined identifier '__=__'
+*** Warning 17.6, ignoring declaration for builtin identifier 'true'
+*** Warning 17.12, ignoring declaration for builtin identifier 'false'
+*** Warning 19.9, ignoring declaration for builtin identifier '__/\__'
+*** Warning 19.17, ignoring declaration for builtin identifier '__\/__'
+*** Warning 19.25, ignoring declaration for builtin identifier '__=>__'
+*** Warning 19.33, ignoring declaration for builtin identifier '__if__'
+*** Warning 19.40, ignoring declaration for builtin identifier '__<=>__'
+*** Warning 22.8, ignoring declaration for builtin identifier '__=__'
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
 *** Error, illegal type pattern '__ * __ * __'
@@ -542,7 +542,7 @@ free type bool
 *** Error 134.31, unexpected mixfix token: impl
 *** Error 134.3, unexpected mixfix token: all
 *** Hint 139.5, is type variable 'p'
-*** Error 141.4, illegal overloading of predefined identifier 'bottom'
+*** Warning 141.4, ignoring declaration for builtin identifier 'bottom'
 *** Error 143.3, unexpected mixfix token: all
 *** Hint 148.6, is type variable 'f'
 *** Error 150.15, unexpected mixfix token: [
@@ -1051,5 +1051,5 @@ free type bool
 *** Hint 199.27-199.48, untypable application 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p)'
 *** Error 199.14-199.24, no typing for 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p) as
       c_v155 --> p_v158'
-*** Error 204.20, illegal overloading of predefined identifier 'true'
-*** Error 204.27, illegal overloading of predefined identifier 'false'
+*** Warning 204.20, ignoring declaration for builtin identifier 'true'
+*** Warning 204.27, ignoring declaration for builtin identifier 'false'
