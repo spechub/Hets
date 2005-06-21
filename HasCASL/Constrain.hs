@@ -317,7 +317,7 @@ shapeRel tm cs =
     in case shapeMatch tm (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do (s1, atoms) <- shapeUnify tm subL
-               let r = Rel.transClosure $ Rel.fromList $ subst s1 atoms
+               let r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldWithKey ( \ t1 st l1 -> 
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 -> 
@@ -331,8 +331,8 @@ shapeRel tm cs =
                    Result ds Nothing -> Result ds Nothing
                    Result _ (Just s2) -> 
                        let s = compSubst s1 s2 
-                           r2 = Rel.fromList $ subst s2 atoms
-                       in return (s, substC s qs, r2)
+                       in return (s, substC s qs, 
+                                  Rel.fromList $ subst s2 atoms)
                  else Result (map ( \ (t1, t2) ->
                                  mkDiag Hint "rejected" $ 
                                              Subtyping t1 t2) es) Nothing
@@ -411,7 +411,7 @@ monoSubsts tm r t =
     if Map.null s then s else
        compSubst s $ 
             monoSubsts tm (Rel.transReduce $ Rel.irreflex $
-                           Rel.map (subst s) r) 
+                           Rel.transClosure $ Rel.map (subst s) r) 
                            $ subst s t 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type
