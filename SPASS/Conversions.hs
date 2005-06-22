@@ -30,11 +30,12 @@ signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
                                        declarationList = decList,
                                        formulaLists = []}
   where
-    sList = if Rel.null (sortRel s) && Map.null (funcMap s) && Map.null (predMap s)
+    sList = if Rel.null (sortRel s) && Map.null (funcMap s) && 
+               Map.null (predMap s) && Map.null (sortMap s)
               then Nothing
               else Just emptySymbolList { functions = map (\(f, t) -> SPSignSym {sym = f, arity = length (fst t)}) (Map.toList (funcMap s)),
                                           predicates = map (\(p, t) -> SPSignSym {sym = p, arity = length t}) (Map.toList (predMap s)),
-                                          sorts = map SPSimpleSignSym (Set.toList (Rel.nodes (sortRel s)))}
+                                          sorts = map SPSimpleSignSym (Set.toList ((Rel.nodes (sortRel s)) `Set.union` (Map.keysSet (sortMap s))))}
 
     decList = subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
