@@ -99,19 +99,20 @@ reduce :: Bool -> [(Subst, Constraints, Type, Term)]
 reduce b alts = do
        tm <- gets typeMap
        combs <- mapM ( \ (s, cr, ty, tr) -> do 
-           Result ds mc <- toEnvState $ preClose tm $ substC s cr
+           Result ds mc <- toEnvState $ shapeRel tm $ substC s cr
            addDiags $ map (improveDiag tr) ds 
            return $ case mc of 
                Nothing -> []
-               Just (cs, cc) -> let 
+               Just (cs, qs, trel) -> let 
                    s1 = compSubst s cs
                    ms = if b then monoSubsts tm 
-                       (foldr (uncurry Rel.insert) 
-                                       (fromTypeMap tm) 
-                                        $ toListC cc) (subst s1 ty)
+                       (Rel.transClosure $ Rel.union (fromTypeMap tm) 
+                          $ trel) (subst cs ty)
                        else eps
                    s2 = compSubst s1 ms 
-                   in [(s2, substC ms cc, subst s2 ty, 
+                   in [(s2, substC ms $ foldr ( \ (a, t) -> insertC 
+                                     (Subtyping a t)) 
+                        qs $ Rel.toList trel, subst s2 ty, 
                                      substTerm s2 tr)]) alts
        return $ concat combs
 
