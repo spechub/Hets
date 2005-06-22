@@ -10,28 +10,66 @@
 use strict;
 use diagnostics;
 
+use File::Find;
+
 &usage if @ARGV < 2;
 
 my $dir = shift @ARGV;
-my @rules = map {my @tmp = (split /:/o, $_)[0,1];$tmp[1] = "" unless defined $tmp[1];[@tmp]} @ARGV;
+my @rules = map {my @tmp = (split m/:/o, $_)[0,1];$tmp[1] = "" unless defined $tmp[1];[@tmp]} @ARGV;
 
 #print join("\n", map { join("->",@$_); } @rules),"\n";
 
-my @html_files = &read_dir($dir);
+my @html_files = ();
 
-#print join(" ", @html_files),"\n";
+my @dirs = &process2($dir);
 
-&move_files;
-
-# reread directory to reflect the movement of files
-@html_files = &read_dir($dir);
-#print join(" ", @html_files),"\n";
-
-&rename_links;
+foreach my $d (@dirs) {
+    push @dirs, &process($d);
+}
 
 ########
 # subs #
 ########
+
+sub process {
+    my $d = $_[0];
+    my %res = &read_dir($d);
+    @html_files = @{$res{"html"}};
+
+    print join(" ", @html_files),"\n";
+
+    &move_files;
+    
+# reread directory to reflect the movement of files
+    %res = &read_dir($d);
+    @html_files = @{$res{"html"}};
+    print join(" ", @html_files),"\n";
+
+    &rename_links;
+    @html_files = ();
+    return @{$res{"dirs"}};
+}
+
+sub process2 {
+    ## Based on File::Find 
+    # maybe a nicer solution
+    my $d = $_[0];
+    find(\&process2_file, $d);
+    return ();
+}
+
+sub process2_file {
+    # modify file
+    &apply_rules($_) if m/\.html$/o;
+    # rename file
+    foreach my $rule (@rules) {
+	my ($old_name,$new_name) = @$rule;
+	if (m/$old_name/) {
+	    rename "$old_name", "$new_name" or
+		die "renaming of $old_name failed \n because of: $!";
+	}
+    }
+}
 
 sub usage {
 print 
@@ -46,9 +84,12 @@ print
 sub read_dir {
     my $dir = $_[0];
     opendir(DOCS_DIR, $dir) or die "cannot open directory for reading $dir";
-    my @html_files = grep {$_ = "$dir/$_"; m/\.html$/o} (readdir DOCS_DIR);
+    my @all_files = grep {$_ !~ m,^\.\.?,o } (readdir DOCS_DIR);
+    my @html_files = grep {$_ = "$dir/$_"; m/\.html$/o} @all_files;
+    my @dirs = grep { -d && -r && -w } @all_files;
+    print "Directories: ",join(",", @dirs),"\n";
     closedir(DOCS_DIR);
-    return @html_files;
+    return ("html" => \@html_files, "dirs" => \@dirs);
 }
 
 sub move_files {
@@ -63,19 +104,24 @@ sub move_files {
 
 sub rename_links {
     foreach my $file_name (@html_files) {
-	open HTML, "<$file_name" or die "cannot read file $file_name";
-	my $file_contents = join "", (<HTML>);
-	close HTML;
-	my $changed = -42;
-	foreach my $rule (@rules) {
-	    my ($old_name,$new_name) = @$rule;
-	    $changed = ($file_contents =~ s:$old_name:$new_name:gs);
-	}
-	if ($changed > 0) {
-	    open HTML, ">$file_name" or die "cannot write file $file_name";
-	    print HTML $file_contents;
-	    print STDERR "$file_name modified\n";
-	    close HTML;
-	}
+	&apply_rules($file_name);
     }
 }
+sub apply_rules {
+    my $file_name = $_[0];
+    open HTML, "<$file_name" or die "cannot read file $file_name";
+    my $file_contents = join "", (<HTML>);
+    close HTML;
+    my $changed = -42;
+    foreach my $rule (@rules) {
+	my ($old_name,$new_name) = @$rule;
+	$changed = ($file_contents =~ s:$old_name:$new_name:gs);
+    }
+    if ($changed > 0) {
+	open HTML, ">$file_name" or die "cannot write file $file_name";
+	print HTML $file_contents;
+	print STDERR "$file_name modified\n";
+	close HTML;
+    }
+}
+
