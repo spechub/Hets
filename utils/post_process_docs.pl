@@ -15,40 +15,17 @@ use File::Find;
 &usage if @ARGV < 2;
 
 my $dir = shift @ARGV;
-my @rules = map {my @tmp = (split m/:/o, $_)[0,1];$tmp[1] = "" unless defined $tmp[1];[@tmp]} @ARGV;
+my @rules = map {my @tmp = (split m/:/o, $_)[0,1];$tmp[1] = "" 
+		     unless defined $tmp[1];[@tmp]} 
+             @ARGV;
 
-print join("\n", map { join("->",@$_); } @rules),"\n";
+print STDERR "Rules:\n",join("\n", map { join("->",@$_); } @rules),"\n\n";
 
-my @html_files = ();
-
-my @dirs = &process2($dir);
-
-foreach my $d (@dirs) {
-    push @dirs, &process($d);
-}
+&process2($dir);
 
 ########
 # subs #
 ########
-
-sub process {
-    my $d = $_[0];
-    my %res = &read_dir($d);
-    @html_files = @{$res{"html"}};
-
-    print join(" ", @html_files),"\n";
-
-    &move_files;
-    
-# reread directory to reflect the movement of files
-    %res = &read_dir($d);
-    @html_files = @{$res{"html"}};
-    print join(" ", @html_files),"\n";
-
-    &rename_links;
-    @html_files = ();
-    return @{$res{"dirs"}};
-}
 
 sub process2 {
     ## Based on File::Find 
@@ -64,7 +41,7 @@ sub process2_file {
     # rename file
     foreach my $rule (@rules) {
 	my ($old_name,$new_name) = @$rule;
-	if (m/$old_name/) {
+	if (m/^$old_name$/) {
 	    rename "$old_name", "$new_name" or
 		die "renaming of $old_name failed \n because of: $!";
 	}
@@ -81,32 +58,6 @@ print
     exit 4;
 }
 
-sub read_dir {
-    my $dir = $_[0];
-    opendir(DOCS_DIR, $dir) or die "cannot open directory for reading $dir";
-    my @all_files = grep {$_ !~ m,^\.\.?,o } (readdir DOCS_DIR);
-    my @html_files = grep {$_ = "$dir/$_"; m/\.html$/o} @all_files;
-    my @dirs = grep { -d && -r && -w } @all_files;
-    print "Directories: ",join(",", @dirs),"\n";
-    closedir(DOCS_DIR);
-    return ("html" => \@html_files, "dirs" => \@dirs);
-}
-
-sub move_files {
-    foreach my $rule (@rules) {
-	my ($old_name,$new_name) = @$rule;
-	if (grep(m/$old_name/, @html_files)) {
-	    rename "$dir/$old_name", "$dir/$new_name" or
-		die "renaming of $old_name failed \n because of: $!";
-	}
-    } 
-}
-
-sub rename_links {
-    foreach my $file_name (@html_files) {
-	&apply_rules($file_name);
-    }
-}
 sub apply_rules {
     my $file_name = $_[0];
     open HTML, "<$file_name" or die "cannot read file $file_name";
