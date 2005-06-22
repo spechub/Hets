@@ -369,7 +369,7 @@ docs/index.html: $(doc_sources)
 
 # sources are not copied here
 apache_doc:
-	$(RM) docs/*.*
+	$(RM) -r docs
 	cvs up -d ; echo "CVS exited with: " $$?
 	$(MAKE) hets-opt
 	$(MAKE) doc
@@ -379,9 +379,10 @@ apache_doc:
 
 post_doc4apache:
 	$(RM) -r a-docs
-	$(PERL) utils/post_process_docs.pl docs \
-            'Common.Lib.Map.html:Common.Lib._Map.html'
 	cp -r docs a-docs
+	$(PERL) utils/post_process_docs.pl a-docs \
+            'Common.Lib.Map.html:Common.Lib._Map.html' \
+            'Data.Map.html:Data._Map.html'  
 
 ###############################
 ### release management
