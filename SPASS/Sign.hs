@@ -80,9 +80,13 @@ type SPIdentifier = String
 -}
 checkIdentifier :: String-> Bool
 checkIdentifier "" = False
-checkIdentifier xs = and (map checkChar xs)
-  where
-    checkChar c = isAlphaNum c || '_' == c
+checkIdentifier xs = and (map checkSPChar xs)
+
+{- |
+Allowed SPASS characters are letters, digits, and underscores.
+-}
+checkSPChar :: Char -> Bool
+checkSPChar c = isAlphaNum c || '_' == c
 
 
 ----- internal data structures follow -----
