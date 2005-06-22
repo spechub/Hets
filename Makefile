@@ -381,7 +381,8 @@ post_doc4apache:
 	$(RM) -r a-docs
 	cp -r docs a-docs
 	$(PERL) utils/post_process_docs.pl a-docs \
-            'Common.Lib.Map.html:Common.Lib._Map.html' \
+            'Common.Lib.Map.html:Common.Lib._Map.html'
+	$(PERL) utils/post_process_docs.pl a-docs \
             'Data.Map.html:Data._Map.html'  
 
 ###############################
