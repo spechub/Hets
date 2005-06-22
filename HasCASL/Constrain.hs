@@ -300,15 +300,6 @@ partitionC = Set.partition ( \ c -> case c of
 toListC :: Constraints -> [(Type, Type)]
 toListC l = [ (t1, t2) | Subtyping t1 t2 <- Set.toList l ]
 
-preClose :: TypeMap -> Constraints 
-         -> State Int (Result (Subst, Constraints))
-preClose tm cs = do 
-    Result ds mr <- shapeRel tm cs 
-    return $ Result ds $ case mr of 
-        Nothing -> Nothing
-        Just (s, qs, r) -> Just (s, foldr ( \ (a, b) -> 
-                             insertC (Subtyping a b)) qs $ Rel.toList r) 
-
 shapeRel :: TypeMap -> Constraints 
          -> State Int (Result (Subst, Constraints, Rel.Rel Type))
 shapeRel tm cs = 
@@ -410,8 +401,7 @@ monoSubsts tm r t =
     let s = monoSubst tm (Rel.transReduce $ Rel.irreflex r) t in
     if Map.null s then s else
        compSubst s $ 
-            monoSubsts tm (Rel.transReduce $ Rel.irreflex $
-                           Rel.transClosure $ Rel.map (subst s) r) 
+            monoSubsts tm (Rel.transClosure $ Rel.map (subst s) r) 
                            $ subst s t 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type
