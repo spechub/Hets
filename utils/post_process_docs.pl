@@ -17,7 +17,7 @@ use File::Find;
 my $dir = shift @ARGV;
 my @rules = map {my @tmp = (split m/:/o, $_)[0,1];$tmp[1] = "" unless defined $tmp[1];[@tmp]} @ARGV;
 
-#print join("\n", map { join("->",@$_); } @rules),"\n";
+print join("\n", map { join("->",@$_); } @rules),"\n";
 
 my @html_files = ();
 
@@ -112,10 +112,10 @@ sub apply_rules {
     open HTML, "<$file_name" or die "cannot read file $file_name";
     my $file_contents = join "", (<HTML>);
     close HTML;
-    my $changed = -42;
+    my $changed = 0;
     foreach my $rule (@rules) {
 	my ($old_name,$new_name) = @$rule;
-	$changed = ($file_contents =~ s:$old_name:$new_name:gs);
+	$changed += ($file_contents =~ s:$old_name:$new_name:gs);
     }
     if ($changed > 0) {
 	open HTML, ">$file_name" or die "cannot write file $file_name";
