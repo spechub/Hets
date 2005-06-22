@@ -99,7 +99,7 @@ addBuiltins ga =
         rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
         ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
         ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-        newPrecs = foldr (\ (a, b) p -> if Rel.member b a p then p else 
+        newPrecs = foldr (\ (a, b) p -> if Rel.path b a p then p else 
                          Rel.insert a b p) precs $  
                   concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in ga { assoc_annos = newAss
@@ -110,7 +110,7 @@ mkPrecIntMap r =
     let t = Rel.topSort r
         l = length t
         m = foldr ( \ (n, s) m1 -> 
-                    Set.fold ( \ i m2 ->Map.insert i n m2)  m1 s)
+                    Set.fold ( \ i m2 -> Map.insert i n m2)  m1 s)
                  Map.empty $ zip [1..l] t
         in (m, m Map.! eqId, l)
 
