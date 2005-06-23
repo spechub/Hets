@@ -41,7 +41,15 @@ signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
 
     subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b}) (Rel.toList (Rel.transReduce (sortRel s)))
 
-    termDecl = map (\(fsym, (args, ret)) -> SPTermDecl {termDeclTermList = map (\(t, x) -> SPComplexTerm {symbol = SPCustomSymbol t, arguments = [SPSimpleTerm (SPCustomSymbol ('x' : (show x)))]}) (zip args [1..]), termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret, arguments = [SPComplexTerm {symbol = SPCustomSymbol fsym, arguments = map (SPSimpleTerm . SPCustomSymbol . ('x':) . show . snd) (zip args [1..])}]}}) (Map.toList (funcMap s))
+    termDecl = map oneTermDecl (Map.toList (funcMap s))
+
+    oneTermDecl (fsym, (args, ret)) = if null args
+      then SPSimpleTermDecl $ SPComplexTerm {symbol = SPCustomSymbol ret,
+                                             arguments = [SPSimpleTerm $ SPCustomSymbol fsym]}
+      else SPTermDecl {termDeclTermList = map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t, arguments = [SPSimpleTerm (SPCustomSymbol ('x' : (show i)))]}) (zip args [1..]),
+                       termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret, 
+                                                     arguments = [SPComplexTerm {symbol = SPCustomSymbol fsym,
+                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('x':) . show . snd) (zip args [1..])}]}}
 
     predDecl = map (\(p, t) -> SPPredDecl {predSym = p, sortSyms = t}) (Map.toList (predMap s))
 
