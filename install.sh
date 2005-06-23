@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh +x
 
 #change daily snapshot into a backup or release
 #the first argument should be a version number or a date  
