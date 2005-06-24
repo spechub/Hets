@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  paolot@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -37,10 +37,11 @@ import Static.DGToSpec
 
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Translate
+import Isabelle.IsaPrint as IsaPrint
+import Isabelle.IsaHOLCFPrint 
 
 import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
-
 
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
@@ -128,16 +129,29 @@ createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
     let (axs, rest) = getAxioms sens
         (defs, _) = getDefs rest
-    in printText sig $++$ 
+--    in printText sig $++$ -- text specialDefinitions $++$
+    in printText sig $++$
     (if null axs then empty else text "axioms" $$ 
         vcat (map printNamedSen $ disambiguate sig axs)) $++$
     (if null defs then empty else text "defs" $$
         vcat (map printNamedSen defs)) 
-    $++$ text "end"       
+    $++$ text "end"     
+    $$ vcat (map (text . show) defs) 
+    $$ (text ("\n" ++ (show $ constTab sig)))
+    $$ (text ("\n" ++ (show $ arities $ tsig sig)))
+    $$ (text ("\n" ++ (show $ classrel $ tsig sig)))
 
 printNamedSen :: Named Sentence -> Doc
 printNamedSen (NamedSen lab _ s) = text (case s of
     ConstDef _ -> lab ++ "_def"
     Sentence _ -> lab
     Theorem _ _ _ -> "theorem " ++ lab) 
-    <+> colon <+> doubleQuotes (printText s)
+    <+> colon <+> doubleQuotes (case senTerm s of
+      IsaEq (Const df y) t ->  
+        text (df ++ " ::" ++ (showTyp Unquoted 1000 y) ++ " == " ++ (showOUTerm t))
+      _ -> (printText s))
+
+specialDefinitions :: String
+specialDefinitions = "constdefs \n fromInteger :: \"int lift -> int lift\" \n" ++
+    "\"fromInteger == flift2 id\" \n" ++ "inst__Prelude_Num_Int :: \"int lift -> int lift\" \n"
+    ++ "\"inst__Prelude_Num_Int == flift2 id\" \n"

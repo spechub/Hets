@@ -4,7 +4,7 @@ Module      :  $Header$
 Copyright   :  (c) C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  paolot@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -25,6 +25,7 @@ import Common.Lib.Pretty as P
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Translate
 import Isabelle.IsaPrint
+import Isabelle.IsaHOLCFPrint 
 
 
 createTheoryText :: Sign -> [Named Sentence] -> Doc
@@ -68,5 +69,10 @@ printNamedSen (NamedSen lab _ s) = text (case s of
     ConstDef _ -> lab ++ "_def"
     Sentence _ -> lab
     Theorem _ _ _ -> "theorem " ++ lab) 
-    <+> colon <+> doubleQuotes (printText s)
+    <+> colon <+> doubleQuotes (case senTerm s of
+      IsaEq (Const df y) t ->  
+        text (df ++ " ::" ++ (showTyp Unquoted 1000 y) ++ " == " ++ (showOUTerm t))
+      _ -> (printText s))
+
+-- (printText s)
 
