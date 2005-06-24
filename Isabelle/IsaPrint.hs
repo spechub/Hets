@@ -50,7 +50,7 @@ showIsaDef x = let d = senName x in
   else text (d++"_def:"++sp++"\""++(showTerm $ senTerm $ sentence x)++"\"")
 
 instance PrettyPrint Typ where
-  printText0 _ = text . showTyp Unquoted 1000
+  printText0 _ = text . showTyp Null 1000 -- Unquoted 1000
 
 showClass :: Sort -> String
 showClass s = case s of 
@@ -107,18 +107,8 @@ showTyp a pri t = case t of
              lb ++ showTyp x p r1 ++ " ** " ++ showTyp x p r2 ++ rb
           | True = rearrangeVarsInType x p n [r1,r2]
 
-
 instance PrettyPrint TypeSig where
-  printText0 _ tysig =
-    if Map.null (arities tysig) then empty
-      else text $ Map.foldWithKey showTycon "" (arities tysig) 
-    where showTycon t arity' rest = 
-              let arity = if null arity' then
-                          error "IsaPrint.printText0 (TypeSig)" 
-                                else length (snd $ head arity') in 
-            "typedecl "++
-            (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
-             else "") ++ show t  ++"\n"++rest
+  printText0 ga tysig = printText0 ga $ arities tysig
 
 instance PrettyPrint Term where
   printText0 _ = text . showTerm -- outerShowTerm   
@@ -149,7 +139,8 @@ showTerm (Tuplex ls c) = case c of
      [] -> []
      [a] -> showTerm a
      a:as -> case a of
-      (Free n t) -> (showTerm a) ++ "::" ++ (showTyp Unquoted 1000 t) ++ "," ++ showTupleArgs as
+      (Free n t) -> (showTerm a) ++ "::" ++ (showTyp Null 1000 t) ++ "," ++ showTupleArgs as
+--    (showTyp Unquoted 1000 t) ++ "," ++ showTupleArgs as
       _ -> (showTerm a) ++ "," ++ showTupleArgs as
 
 showTerm (Abs v y t l) 
@@ -160,15 +151,15 @@ showTerm (Abs v y t l)
     NotCont -> "%"
     IsCont -> "LAM ") ++ (case v of 
       (Free n y) -> showTerm v ++ "::" 
-       ++ showTyp Unquoted 1000 y
+       ++ showTyp Null 1000 y -- Unquoted 1000 y
       _ -> showTerm v) ++ ". " ++ showTerm t ++ rb
 
-showTerm (Paren t) = showTerm t 
-showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
-showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t) 
 -- showTerm t@(Const c _) = showPTree (toPrecTree t) 
+showTerm (Paren t) = showTerm t 
+showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
+showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t) 
 showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
 
@@ -211,7 +202,7 @@ showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
-   s++sp++ showTerm var ++" :: "++ showTyp Unquoted 1000 typ ++ " . "
+   s++sp++ showTerm var ++" :: "++ showTyp Null 1000 typ ++ " . " -- Unquoted 1000 typ ++ " . "
         ++ showTerm term
 
 outerShowTerm :: Term -> String
@@ -228,7 +219,7 @@ outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
 outerShowQuant s var typ term =
-  s++sp++ showTerm var ++" :: "++showTyp Unquoted 1000 typ++" . "
+  s++sp++ showTerm var ++" :: "++showTyp Null 1000 typ ++ " . " --  Unquoted 1000 typ++" . "
    ++ outerShowTerm term 
 
 
@@ -447,15 +438,42 @@ pair :: PrecTermTree -> PrecTermTree -> String
 pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
 
+
+-- instances for Classrel and Arities, in alternative to TSig
+instance PrettyPrint Classrel where
+ printText0 _ s = if Map.null s then text "pippo"
+      else text $ Map.foldWithKey showTycon "" s 
+   where 
+   showTycon t cl rest = case cl of 
+     Nothing -> rest
+     Just x ->  ("axclass " ++ classId t ++ " < " ++ (if x == [] then "pcpo" 
+       else showSort x) ++ "\n") ++ rest
+
+instance PrettyPrint Arities where
+ printText0 _ s = if Map.null s then empty  
+      else text $ Map.foldWithKey showInstances "" s 
+   where 
+   showInstances t cl rest =
+     (concat $ map (showInstance t) cl) ++ rest
+   showInstance t xs = 
+     "instance " ++ (show t) ++ " :: " ++ "(" ++ (showInstArgs $ snd xs) ++ ") " 
+        ++ (classId $ fst xs) ++ "\n" ++ "by intro_classes \n"
+   showInstArgs ys = case ys of 
+      [] -> ""     
+      [a] -> "\"" ++ (showSort $ snd a) ++ "\""
+      a:as -> "\"" ++ (showSort $ snd a) ++ "\", " ++ (showInstArgs as)
+
+
 instance PrettyPrint Sign where
   printText0 ga sig = printText0 ga
     (baseSig sig) <> colon $++$
-    printText0 ga (tsig sig) $++$
+    printText0 ga (classrel $ tsig sig) $++$
     showDataTypeDefs (dataTypeTab sig) $++$
     showDomainDefs (domainTab sig) $++$
     showsConstTab (constTab sig) $++$ 
-    (if showLemmas sig then showCaseLemmata (dataTypeTab sig) else empty)
+    (if showLemmas sig then showCaseLemmata (dataTypeTab sig) else empty) $++$
                                    -- this may prints an "o"
+    printText0 ga (tsig sig) 
     where
     showsConstTab tab =
      if Map.null tab then empty
@@ -532,8 +550,6 @@ quote_underscores ('_':'_':rest) = '_':quote_underscores rest
 quote_underscores ('_':rest) = '\'':'_':quote_underscores rest
 quote_underscores (c:rest) = c:quote_underscores rest
 
--- instance PrettyPrint Sign where
---     printText0 _ = ptext . show
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
