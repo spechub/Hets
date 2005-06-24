@@ -175,6 +175,8 @@ filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
 filterPathsByMorphism morphism paths = 
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
+liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
+liftOr f g x = f x || g x 
 
 {- returns a list of all paths to the given node
    that consist of globalDef edge only
@@ -185,8 +187,7 @@ getAllLocOrHideGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
 getAllLocOrHideGlobDefPathsTo =
     getAllGlobDefPathsBeginningWithTypesTo
-	([isLocalDef, isHidingDef]::[LEdge DGLinkLab -> Bool])
-
+	(liftOr isLocalDef isHidingDef)
 
 {- returns a list of all paths to the given node
    that consist of globalDef edges only
@@ -194,8 +195,7 @@ getAllLocOrHideGlobDefPathsTo =
    that consist of a localDef edge followed by any number of globalDef edges -}
 getAllLocGlobDefPathsTo :: DGraph -> Node -> [LEdge DGLinkLab]
 			      -> [(Node, [LEdge DGLinkLab])]
-getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo 
-			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
+getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo isLocalDef
 
 
 getAllPathsBeginningWithHidingDefTo :: DGraph -> Node -> [LEdge DGLinkLab]
@@ -224,18 +224,18 @@ getAllLocGlobPathsBetween dgraph src tgt =
   where
     outEdges = out dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <- 
-		(filterByTypes [isLocalEdge] outEdges)]
+		(filter isLocalEdge outEdges)]
     locGlobPaths = (concat [map ([edge]++) 
-		      (getAllPathsOfTypesBetween dgraph [isGlobalEdge] node tgt [])|
+		      (getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt [])|
 			 (edge,node) <- locEdges])
-    globPaths = getAllPathsOfTypesBetween dgraph [isGlobalEdge] src tgt []
+    globPaths = getAllPathsOfTypesBetween dgraph isGlobalEdge src tgt []
 
 
 {- returns all paths of globalDef edges or globalThm edges 
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllGlobPathsBetween dgraph src tgt =
-  getAllPathsOfTypesBetween dgraph [isGlobalDef,isGlobalThm] src tgt []
+  getAllPathsOfTypesBetween dgraph (liftOr isGlobalDef isGlobalThm) src tgt []
 
 
 {- gets all paths consisting of local/global thm/def edges
@@ -247,9 +247,8 @@ getAllThmDefPathsOfMorphismBetween dgraph morphism src tgt =
 
   where
     allPaths = getAllPathsOfTypesBetween dgraph types src tgt []
-    types = 
+    types = foldr1 liftOr
       [isGlobalThm,
-       isProvenLocalThm,
        isProvenLocalThm,
        isUnprovenLocalThm,
        isGlobalDef,
@@ -268,11 +267,11 @@ getAllGlobDefPathsBetween dgraph src tgt =
 getAllPathsOfTypeBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
 			    -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
-  getAllPathsOfTypesBetween dgraph (isType:[]) src tgt []
+  getAllPathsOfTypesBetween dgraph isType src tgt []
 
 {- returns all paths consisting of edges of the given types between
    the given nodes -}
-getAllPathsOfTypesBetween :: DGraph -> [LEdge DGLinkLab -> Bool] -> Node 
+getAllPathsOfTypesBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node 
 			     -> Node -> [LEdge DGLinkLab]
 			     -> [[LEdge DGLinkLab]]
 getAllPathsOfTypesBetween dgraph types src tgt path =
@@ -284,7 +283,7 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
   where
     inGoingEdges = inn dgraph tgt
     edgesOfTypes =
-        [edge| edge <- filterByTypes types inGoingEdges, notElem edge path]
+        [edge| edge <- filter types inGoingEdges, notElem edge path]
     edgesFromSrc = 
 	[edge| edge@(source,_,_) <- edgesOfTypes, source == src]
     nextStep =

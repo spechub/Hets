@@ -16,7 +16,6 @@ Convert development graph back to structured specification
 module Static.DGToSpec
 where
 
-import Debug.Trace
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
@@ -26,7 +25,6 @@ import Common.AS_Annotation
 import Common.Result
 import Common.Id
 import Data.Graph.Inductive.Graph
-import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 
 emptyAnno :: SPEC -> Annoted SPEC
@@ -90,7 +88,7 @@ getDGNode libEnv dgraph node =
   where contextOfNode = context dgraph node
         nodeLab = lab' contextOfNode
 
-getAllGlobDefPathsBeginningWithTypesTo :: [LEdge DGLinkLab -> Bool] -> DGraph 
+getAllGlobDefPathsBeginningWithTypesTo :: (LEdge DGLinkLab -> Bool) -> DGraph 
                                        -> Node -> [LEdge DGLinkLab]
 			               -> [(Node, [LEdge DGLinkLab])]
 getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
@@ -105,7 +103,7 @@ getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
     inEdges = inn dgraph node
     globalEdges = [edge| edge <- filter isGlobalDef inEdges, notElem edge path]
     edgesOfTypes 
-        = [edge| edge <- filterByTypes types inEdges, notElem edge path]
+        = [edge| edge <- filter types inEdges, notElem edge path]
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
 
@@ -115,7 +113,7 @@ type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
 
 getAllGlobDefPathsBeginningWithTypesTo_new 
-    :: [LEdge DGLinkLab -> Bool] -> LibEnv -> LibNode -> [LibLEdge]
+    :: (LEdge DGLinkLab -> Bool) -> LibEnv -> LibNode -> [LibLEdge]
     -> [(LibNode, [LibLEdge])]
 getAllGlobDefPathsBeginningWithTypesTo_new types libEnv libnode path =
   (libnode,path):(typeGlobPaths ++
@@ -169,19 +167,8 @@ getAllIngoingEdges libEnv (ln,node) =
 
 
 -- removes all edges that are not of the given types
-filterByTypes :: [LEdge DGLinkLab -> Bool] -> [LEdge DGLinkLab]
-	      -> [LEdge DGLinkLab]
-filterByTypes [] _edges = []
-filterByTypes (isType:typeChecks) edgs =
-  (filter isType edgs)++(filterByTypes typeChecks edgs)
-
-
--- removes all edges that are not of the given types
-filterByTypes_new :: [LEdge DGLinkLab -> Bool] -> [LibLEdge] -> [LibLEdge]
-filterByTypes_new [] _edges = []
-filterByTypes_new (isType:typeChecks) edgs =
-  (filter (isType.snd) edgs)++(filterByTypes_new typeChecks edgs)
-
+filterByTypes_new :: (LEdge DGLinkLab -> Bool) -> [LibLEdge] -> [LibLEdge]
+filterByTypes_new p = filter (p . snd) 
 
 -- --------------------------------------
 -- methods to determine or get morphisms
@@ -245,12 +232,12 @@ calculateMorphismOfPathWithStart _ _ (_,p) = calculateMorphismOfPath p
 getAllLocGlobDefPathsTo ::  LibEnv -> LibNode -> [LibLEdge]
 			    -> [(LibNode, [LibLEdge])]
 getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo_new 
-			      ([isLocalDef]::[LEdge DGLinkLab -> Bool])
+			      (isLocalDef)
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
 computeTheory libEnv ln dg n = do
-  let  paths = getAllGlobDefPathsBeginningWithTypesTo [isLocalDef] dg n []
+  let  paths = getAllGlobDefPathsBeginningWithTypesTo isLocalDef dg n []
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
