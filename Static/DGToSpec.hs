@@ -250,7 +250,7 @@ getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo_new
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
 computeTheory libEnv ln dg n = do
-  let  paths = reverse $ (removeLibname (getAllLocGlobDefPathsTo libEnv (ln,n) []))
+  let  paths = getAllGlobDefPathsBeginningWithTypesTo [isLocalDef] dg n []
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
             $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
