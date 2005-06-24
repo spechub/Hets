@@ -1,5 +1,4 @@
 {- |
-Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -36,7 +35,7 @@ type Indexname = (String,Int)
 --------- Classes
 {- Types are classified by sorts. -}
 
-data IsaClass  = IsaClass CName
+data IsaClass  = IsaClass {classId :: CName}
                  deriving (Ord, Eq, Show)   
 
 type Sort  = [IsaClass]
@@ -207,10 +206,9 @@ data Sentence = Sentence { senTerm :: Term } -- axiom
     table of association lists of all type arities; (t, ars) means
     that type constructor t has the arities ars; an element (c, Ss) of
     ars represents the arity t::(Ss)c;
-
 -}
 
-type Classrel = Map.Map IsaClass [IsaClass]
+type Classrel = Map.Map IsaClass (Maybe [IsaClass])
 type Arities = Map.Map TName [(IsaClass, [(Typ, Sort)])]
 type Abbrs = Map.Map TName ([TName], Typ)
 
