@@ -36,6 +36,7 @@ their types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
+let the example test/CastFun.hascasl go through
 
 
 terms: 

@@ -1,0 +1,36 @@
+type s
+op f : s --> s
+%% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Unit : Type
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
+__->?__ : Type- -> Type+ -> Type
+s : Type
+%% Assumptions -----------------------------------------------------------
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+f : s --> s %(op)%
+false : Unit %(fun)%
+not__ : ? Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
+%% Diagnostics -----------------------------------------------------------
+*** Hint 5.22, rejected '__->?__ < __-->__' of '((\ (var x : s) . (var x : s)) : _var_6_v6 ->? _var_7_v7) as
+    s --> s'
+
+*** Hint 5.7-5.22, untypable application (with result type: Unit)
+ '__=__(f, (\ (var x : s) . x) as s --> s)'
+*** Error 5.7-5.22, no typing for '__=__(f, (\ (var x : s) . x) as s --> s)'
