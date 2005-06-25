@@ -163,9 +163,138 @@ spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
-  state <- newIORef $ initialState th
-  return []
+  -- backing data structure
+  stateRef <- newIORef $ initialState th
+  -- main window
+  main <- initHTk [text $ thName ++ " - SPASS Prover"]
+  -- left frame
+  left <- newFrame main []
+  grid left [GridPos (0,0)]
+  lb <- newListBox left [value $ map senName goals, bg "white",
+                         selectMode Single] :: IO (ListBox String)
+  pack lb [Side AtLeft, Fill Y]
+  sb <- newScrollBar left []
+  pack sb [Side AtRight, Fill Y]
+  lb # scrollbar Vertical sb
+  -- right frame
+  right <- newFrame main []
+  grid right [GridPos (1,0)]
+  spacer <- newLabel right [text "   "]
+  grid spacer [GridPos (0,1), Sticky W, Sticky W]
+  l1 <- newLabel right [text "Options:"]
+  grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
+  l2 <- newLabel right [text "TimeLimit"]
+  grid l2 [GridPos (1,1), Sticky W]
+  (timeEntry :: Entry Int) <- newEntry right [width 8, value defaultTimeLimit]
+  grid timeEntry [GridPos (3,1), Sticky W]
+  timeSpinner <- newSpinButton right (\sp -> synchronize main
+                                     (do
+                                        s <- readIORef stateRef
+                                        if isJust (currentGoal s)
+                                          then (do
+                                            let goal = fromJust (currentGoal s)
+                                            let config = getConfig goal (configsMap s)
+                                            let t = timeLimit config
+                                            let t' = (case sp of
+                                                           Up -> if isJust t then (fromJust t) + 10 else defaultTimeLimit + 10
+                                                           _ -> if isJust t then (fromJust t) - 10 else defaultTimeLimit - 10)
+                                            let s' = s {configsMap = adjustOrSetConfig (setTimeLimit t') goal (configsMap s)}
+                                            writeIORef stateRef s'
+                                            timeEntry # value t' --(timeLimit $ getConfig goal (configsMap s'))
+                                            done)
+                                          else noGoalSelected)) []
+  grid timeSpinner [GridPos (3,1), Sticky E]
+  l3 <- newLabel right [text "Extra Options:"]
+  grid l3 [GridPos (1,2), Sticky W]
+  (optionsEntry :: Entry String) <- newEntry right [width 30]
+  grid optionsEntry [GridPos (1,3), Columnspan 3, Sticky W]
+  proveButton <- newButton right [text "Prove"]
+  grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
+  l4 <- newLabel right [text "Results:"]
+  grid l4 [GridPos (0,5), Columnspan 2, Sticky W]
+  l5 <- newLabel right [text "Status"]
+  grid l5 [GridPos (1,6), Sticky W]
+  statusLabel <- newLabel right [text "Open"]
+  grid statusLabel [GridPos (2,6), Sticky W]
+  detailsButton <- newButton right [text "Show Details"]
+  grid detailsButton [GridPos (2,7), Columnspan 2, Sticky E]
+  -- bottom frame
+  bottom <- newFrame main []
+  grid bottom [GridPos (0,1), Columnspan 2]
+  saveButton <- newButton bottom [text "Save Prover Configuration"]
+  pack saveButton [Side AtLeft]
+  exitButton <- newButton bottom [text "Exit Prover"]
+  pack exitButton [Side AtRight]
+  -- events
+  (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
+  prove <- clicked proveButton
+  showDetails <- clicked detailsButton
+  saveConfiguration <- clicked saveButton
+  exit <- clicked exitButton
+  -- event handlers
+  spawnEvent 
+    (forever
+      ((selectGoal >>> do
+          s <- readIORef stateRef
+          sel <- (getSelection lb) :: IO (Maybe [Int])
+          let s' = if isJust sel
+                     then s {currentGoal = Just $ senName (goals !! (head $ fromJust sel))}
+                     else s
+          writeIORef stateRef s'
+          done)
+      +> (prove >>> do
+            s <- readIORef stateRef
+            if isNothing $ currentGoal s
+              then noGoalSelected
+              else (do
+                let goal = fromJust $ currentGoal s
+                let (before, after)= splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
+                let proved = filter (\sen-> checkGoal (resultsMap s) (senName sen)) before
+                let lp' = foldl (\lp x -> insertSentence lp (x{isAxiom = True})) initialLogicalPart (reverse proved)
+                (res, output) <- runSpass lp' (getConfig goal (configsMap s)) (head after)
+                let s' = s{resultsMap = Map.insert goal (res, output) (resultsMap s)}
+                writeIORef stateRef s'
+                statusLabel # text (case res of
+                                         Proved _ _ _ _ _ -> "Proved"
+                                         Disproved _ -> "Disproved"
+                                         _ -> "Open")
+                done)
+            done)
+      +> (showDetails >>> do
+            s <- readIORef stateRef
+            if isNothing $ currentGoal s
+              then noGoalSelected
+              else (do
+                let goal = fromJust $ currentGoal s
+                let result = Map.lookup goal (resultsMap s)
+                let output = if isJust result then snd (fromJust result) else ["This goal hasn't been run through the prover yet."]
+                let text = concatMap ('\n':) output
+                createTextSaveDisplay ("SPASS Output for Goal "++goal) (goal ++ ".spass") text
+                done)
+            done)
+      +> (saveConfiguration >>> do
+            s <- readIORef stateRef
+            let text = concatMap ((++"\n")) ["Note that only non-default configurations are listed here.\n", show $ configsMap s, show $ resultsMap s]
+            createTextSaveDisplay ("SPASS Configuration for Theory " ++ thName) (thName ++ ".spcf") text
+            done)
+      +> (exit >>> destroy main)))
+  finishHTk
+  s <- readIORef stateRef
+  let proof_stats = map (\x -> let res = Map.lookup x (resultsMap s) in if isJust res then fst $ fromJust res else Open x) (map senName goals)
+  return proof_stats
+  where
+    noGoalSelected = createErrorWin "Please select a goal first." []
+    Theory sign nSens = th
+    (axioms, goals) = partition isAxiom nSens
+    initialLogicalPart = foldl insertSentence (signToSPLogicalPart sign) (reverse axioms)
   
+{- |
+-}
+checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
+checkGoal resMap goal =
+  isJust g && isProved (fst $ fromJust g)
+  where
+    g = Map.lookup goal resMap
 
 {- |
   A non-GUI batch mode prover. Uses default configuration for SPASS.
@@ -238,105 +367,3 @@ runSpass lp config nGoal = do
       | otherwise = Open (senName nGoal)
     proved = ["Proof found."]
     disproved = ["Completion found."]
-
-{- |
-  Test function. Currently it runs SPASS, parses the output, and outputs relevant parts to stdout.
--}
-testSpass :: String -> IO ()
-testSpass file = do
-  spass <- newChildProcess "SPASS" [ChildProcess.arguments ["-TimeLimit=10", "-DocProof", file]]
---  sendMsg spass "bar"
-  _ <- waitForChildProcess spass
-  (res, usedAxioms, output) <- parseSpassOutput spass
-  putStrLn $ show (res, usedAxioms)
---  mapM_ putStrLn output
-
-{- |
-  GUI prototype. Will later be moved to spassProveGUI.
--}
-gui :: IO ()
-gui =
-  do main <- initHTk [text "SPASS Prover"]
-     -- backing data structure
-     state <- newIORef (60 :: Int)
-     -- left frame
-     left <- newFrame main []
-     grid left [GridPos (0,0)]
-     lb <- newListBox left [value goals, bg "white",
-                            size (15,10), selectMode Single] :: IO (ListBox String)
-     pack lb [Side AtLeft, Fill Y]
-     sb <- newScrollBar left []
-     pack sb [Side AtRight, Fill Y]
-     lb # scrollbar Vertical sb
-     -- right frame
-     right <- newFrame main []
-     grid right [GridPos (1,0)]
-     spacer <- newLabel right [text "   "]
-     grid spacer [GridPos (0,1), Sticky W, Sticky W]
-     l1 <- newLabel right [text "Options:"]
-     grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
-     l2 <- newLabel right [text "TimeLimit"]
-     grid l2 [GridPos (1,1), Sticky W]
-     (timeEntry :: Entry Int) <- newEntry right [width 8, value (60::Int)]
-     grid timeEntry [GridPos (3,1), Sticky W]
-     timeSpinner <- newSpinButton right (\sp -> synchronize main
-                                        (do
-                                           t <- readIORef state
-                                           let t' = (case sp of
-                                                          Up -> t + 10
-                                                          _ -> t - 10)
-                                           writeIORef state t'
-                                           timeEntry # value t')) []
-     grid timeSpinner [GridPos (3,1), Sticky E]
-     l3 <- newLabel right [text "Extra Options:"]
-     grid l3 [GridPos (1,2), Sticky W]
-     (optionsEntry :: Entry String) <- newEntry right [width 30]
-     grid optionsEntry [GridPos (1,3), Columnspan 3, Sticky W]
-     proveButton <- newButton right [text "Prove"]
-     grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
-     l4 <- newLabel right [text "Results:"]
-     grid l4 [GridPos (0,5), Columnspan 2, Sticky W]
-     l5 <- newLabel right [text "Status"]
-     grid l5 [GridPos (1,6), Sticky W]
-     statusLabel <- newLabel right [text "Open"]
-     grid statusLabel [GridPos (2,6), Sticky W]
-     detailsButton <- newButton right [text "Show Details"]
-     grid detailsButton [GridPos (2,7), Columnspan 2, Sticky E]
-     -- bottom frame
-     bottom <- newFrame main []
-     grid bottom [GridPos (0,1), Columnspan 2]
-     saveButton <- newButton bottom [text "Save Prover Configuration"]
-     pack saveButton [Side AtLeft]
-     exitButton <- newButton bottom [text "Exit Prover"]
-     pack exitButton [Side AtRight]
-     -- events
-     (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
-     prove <- clicked proveButton
-     showDetails <- clicked detailsButton
-     saveConfiguration <- clicked saveButton
-     exit <- clicked exitButton
-     -- event handlers
-     spawnEvent 
-       (forever
-         ((selectGoal >> always
-             (do sel <- getSelection lb
-                 putStrLn  (show (sel:: Maybe [Int]))))
-         +> (prove >>> do sel <- getSelection lb
-                          extraOptions <- (getValue optionsEntry) :: IO String
-                          if isJust sel
-                            then putStrLn $ (show $ fromJust (sel:: Maybe [Int])) ++ ", " ++ extraOptions
-                            else createErrorWin "No goal selected." []
-                          done)
-         +> (showDetails >>> do createTextSaveDisplay "SPASS Output" "foo.spass" "just a test"
-                                done)
-         +> (saveConfiguration >>> do createTextSaveDisplay "Current SPASS Configuration" "foo.spcf" "and another test"
-                                      done)
-         +> (exit >>> destroy main)))
---     sync (click >>> done)
---     sel <- getSelection lb-- :: IO (Maybe [Int])
-     --let sel_ = (if isJust sel then (goals !! (fromJust sel)) else "Nothing")
---     putStrLn (show (sel:: Maybe [Int]))
---     destroy main
-     finishHTk
-  where
-    goals = map (("goal " ++) . show) [1..8]
