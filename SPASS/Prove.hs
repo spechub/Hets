@@ -28,6 +28,8 @@ import Text.Regex
 import List
 import Maybe
 import HTk
+import SpinButton
+import Data.IORef
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -99,8 +101,9 @@ defaultTimeLimit = 60
 
 {- |
   Represents the result of a prover run.
+  (Proof_status, full output)
 -}
-type SPASSResult = (Proof_status (), [String], [String])
+type SPASSResult = (Proof_status (), [String])
 
 {- |
   Store one result per goal.
@@ -116,18 +119,20 @@ emptyResultsMap = Map.empty
 {- |
   Represents the global state of the prover GUI.
 -}
-data State = State { currentGoal :: Maybe String,
+data State = State { currentGoal :: Maybe SPIdentifier,
+                     theory :: Theory Sign Sentence,
                      configsMap :: SPASSConfigsMap,
                      resultsMap :: SPASSResultsMap
-                   } deriving (Eq, Show)
+                   }
 
 {- |
-  Creates an empty State.
+  Creates an initial State around a Theory.
 -}
-emptyState :: SPASS.Prove.State
-emptyState = State {currentGoal = Nothing,
-                    configsMap = emptyConfigsMap,
-                    resultsMap = emptyResultsMap}
+initialState :: Theory Sign Sentence -> SPASS.Prove.State
+initialState th = State {currentGoal = Nothing,
+                         theory = th,
+                         configsMap = emptyConfigsMap,
+                         resultsMap = emptyResultsMap}
 
 {- |
   Currently implemented as a batch mode prover only.
@@ -136,7 +141,7 @@ spassProver :: Prover Sign Sentence ()
 spassProver =
   Prover { prover_name = "SPASS",
            prover_sublogic = "SPASS",
-           prove = spassProve
+           prove = spassProveBatch
          }
 
 {- |
@@ -147,12 +152,25 @@ isProved (Proved _ _ _ _ _) = True
 isProved _ = False
 
 {- |
-  Invokes the prover GUI. Currently implemented as a batch mode prover only.
+  Invokes the prover GUI. Not yet fully implemented.
 -}
-spassProve :: String -- ^ theory name
-           -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
-           -> IO([Proof_status ()]) -- ^ proof status for each goal
-spassProve thName (Theory sig nSens) =
+spassProveGUI :: String -- ^ theory name
+              -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+              -> IO([Proof_status ()]) -- ^ proof status for each goal
+spassProveGUI thName th = do
+  state <- newIORef $ initialState th
+  return []
+  
+
+{- |
+  A non-GUI batch mode prover. Uses default configuration for SPASS.
+  The list of goals is processed sequentially. Proved goals are inserted
+  as axioms.
+-}
+spassProveBatch :: String -- ^ theory name
+                -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+                -> IO([Proof_status ()]) -- ^ proof status for each goal
+spassProveBatch thName (Theory sig nSens) =
   batchProve initialLogicalPart [] goals
   where
     batchProve _ done [] = return done
@@ -192,7 +210,7 @@ parseSpassOutput spass = parseIt (Nothing, [], [])
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axiomsand possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
          -> Named SPTerm -- ^ goal to prove
-         -> IO (Proof_status (), [String]) -- ^ (proof status, complete output)
+         -> IO SPASSResult -- ^ (proof status, complete output)
 runSpass lp config nGoal = do
   -- FIXME: this should be retrieved from the user instead of being hardcoded.
   let problem = SPProblem {identifier = "hets_exported",
@@ -227,3 +245,73 @@ testSpass file = do
   (res, usedAxioms, output) <- parseSpassOutput spass
   putStrLn $ show (res, usedAxioms)
 --  mapM_ putStrLn output
+
+{- |
+  GUI prototype. Will later be moved to spassProveGUI.
+-}
+gui :: IO ()
+gui =
+  do main <- initHTk [text "SPASS Prover"]
+     -- left frame
+     left <- newFrame main []
+     grid left [GridPos (0,0)]
+     lb <- newListBox left [value goals, bg "white",
+                            size (15,10), selectMode Single] :: IO (ListBox String)
+     pack lb [Side AtLeft, Fill Y]
+     sb <- newScrollBar left []
+     pack sb [Side AtRight, Fill Y]
+     lb # scrollbar Vertical sb
+     -- right frame
+     right <- newFrame main []
+     grid right [GridPos (1,0)]
+     spacer <- newLabel right [text "   "]
+     grid spacer [GridPos (0,1), Sticky W, Sticky W]
+     l1 <- newLabel right [text "Options:"]
+     grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
+     l2 <- newLabel right [text "TimeLimit"]
+     grid l2 [GridPos (1,1), Sticky W]
+     (timeEntry :: Entry Int) <- newEntry right [width 4, value (60::Int)]
+     grid timeEntry [GridPos (3,1), Sticky W]
+     timeSpinner <- newSpinButton right (\_->return ()) []
+     grid timeSpinner [GridPos (3,1), Sticky E]
+     l3 <- newLabel right [text "Extra Options:"]
+     grid l3 [GridPos (1,2), Sticky W]
+     (optionsEntry :: Entry String) <- newEntry right [width 30]
+     grid optionsEntry [GridPos (1,3), Columnspan 2, Sticky W]
+     proveButton <- newButton right [text "Prove"]
+     grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
+     l4 <- newLabel right [text "Results:"]
+     grid l4 [GridPos (0,5), Columnspan 2, Sticky W]
+     l5 <- newLabel right [text "Status"]
+     grid l5 [GridPos (1,6), Sticky W]
+     statusLabel <- newLabel right [text "Open"]
+     grid statusLabel [GridPos (2,6), Sticky W]
+     detailsButton <- newButton right [text "Show Details"]
+     grid detailsButton [GridPos (2,7), Columnspan 2, Sticky E]
+     -- bottom frame
+     bottom <- newFrame main []
+     grid bottom [GridPos (0,1), Columnspan 2]
+     exitButton <- newButton bottom [text "Exit Prover"]
+     pack exitButton [Side AtRight]
+     -- events
+     prove <- clicked proveButton
+     exit <- clicked exitButton
+     (select, _) <- bindSimple lb (ButtonPress (Just 1))
+     -- event handlers
+     spawnEvent 
+       (forever
+         ((select >> always
+             (do sel <- getSelection lb
+                 putStrLn  (show (sel:: Maybe [Int]))))
+         +> (prove >>> do sel <- getSelection lb
+                          putStrLn  (show (sel:: Maybe [Int]))
+                          done)
+         +> (exit >>> destroy main)))
+--     sync (click >>> done)
+--     sel <- getSelection lb-- :: IO (Maybe [Int])
+     --let sel_ = (if isJust sel then (goals !! (fromJust sel)) else "Nothing")
+--     putStrLn (show (sel:: Maybe [Int]))
+--     destroy main
+     finishHTk
+  where
+    goals = map (("goal " ++) . show) [1..8]
