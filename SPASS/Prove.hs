@@ -27,9 +27,14 @@ import System.Posix
 import Text.Regex
 import List
 import Maybe
+import Data.IORef
+
 import HTk
 import SpinButton
-import Data.IORef
+import ModalDialog
+import DialogWin
+
+import GUI.HTkUtils
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -252,6 +257,8 @@ testSpass file = do
 gui :: IO ()
 gui =
   do main <- initHTk [text "SPASS Prover"]
+     -- backing data structure
+     state <- newIORef (60 :: Int)
      -- left frame
      left <- newFrame main []
      grid left [GridPos (0,0)]
@@ -270,14 +277,21 @@ gui =
      grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
      l2 <- newLabel right [text "TimeLimit"]
      grid l2 [GridPos (1,1), Sticky W]
-     (timeEntry :: Entry Int) <- newEntry right [width 4, value (60::Int)]
+     (timeEntry :: Entry Int) <- newEntry right [width 8, value (60::Int)]
      grid timeEntry [GridPos (3,1), Sticky W]
-     timeSpinner <- newSpinButton right (\_->return ()) []
+     timeSpinner <- newSpinButton right (\sp -> synchronize main
+                                        (do
+                                           t <- readIORef state
+                                           let t' = (case sp of
+                                                          Up -> t + 10
+                                                          _ -> t - 10)
+                                           writeIORef state t'
+                                           timeEntry # value t')) []
      grid timeSpinner [GridPos (3,1), Sticky E]
      l3 <- newLabel right [text "Extra Options:"]
      grid l3 [GridPos (1,2), Sticky W]
      (optionsEntry :: Entry String) <- newEntry right [width 30]
-     grid optionsEntry [GridPos (1,3), Columnspan 2, Sticky W]
+     grid optionsEntry [GridPos (1,3), Columnspan 3, Sticky W]
      proveButton <- newButton right [text "Prove"]
      grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
      l4 <- newLabel right [text "Results:"]
@@ -291,21 +305,32 @@ gui =
      -- bottom frame
      bottom <- newFrame main []
      grid bottom [GridPos (0,1), Columnspan 2]
+     saveButton <- newButton bottom [text "Save Prover Configuration"]
+     pack saveButton [Side AtLeft]
      exitButton <- newButton bottom [text "Exit Prover"]
      pack exitButton [Side AtRight]
      -- events
+     (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
      prove <- clicked proveButton
+     showDetails <- clicked detailsButton
+     saveConfiguration <- clicked saveButton
      exit <- clicked exitButton
-     (select, _) <- bindSimple lb (ButtonPress (Just 1))
      -- event handlers
      spawnEvent 
        (forever
-         ((select >> always
+         ((selectGoal >> always
              (do sel <- getSelection lb
                  putStrLn  (show (sel:: Maybe [Int]))))
          +> (prove >>> do sel <- getSelection lb
-                          putStrLn  (show (sel:: Maybe [Int]))
+                          extraOptions <- (getValue optionsEntry) :: IO String
+                          if isJust sel
+                            then putStrLn $ (show $ fromJust (sel:: Maybe [Int])) ++ ", " ++ extraOptions
+                            else createErrorWin "No goal selected." []
                           done)
+         +> (showDetails >>> do createTextSaveDisplay "SPASS Output" "foo.spass" "just a test"
+                                done)
+         +> (saveConfiguration >>> do createTextSaveDisplay "Current SPASS Configuration" "foo.spcf" "and another test"
+                                      done)
          +> (exit >>> destroy main)))
 --     sync (click >>> done)
 --     sel <- getSelection lb-- :: IO (Maybe [Int])
