@@ -44,43 +44,53 @@ main =
                                else False
 
              run :: ExitCode -> Bool -> IO()
-             run exitCode abs 
-                 | exitCode == ExitSuccess =  processor2 abs "output.term"
+             run exitCode abs' 
+                 | exitCode == ExitSuccess =  processor2 abs' "output.term"
                  | otherwise =  error "process stop!"
 
              process :: Bool -> [String] -> IO()
-             process abs args  = 
+             process abs' args  = 
                  do
                   pwd <- getEnv "PWD" 
                   if (head $ head args) == '-' then
                      error "Usage: readAStest [option] <URI or file>"
                      else if isURI $ head args then
                              do exitCode <- system ("./processor " ++ head args)
-                                run exitCode abs
+                                run exitCode abs'
                              else if (head $ head args) == '/' then
                                      do exitCode <- system ("./processor file://" ++ head args)
-                                        run exitCode abs
+                                        run exitCode abs'
                                      else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
-                                             run exitCode abs
+                                             run exitCode abs'
                         
 processor2 :: Bool -> String  -> IO()
-processor2 abs filename = 
+processor2 abs' filename = 
     do d <- readFile filename
        let aterm = getATermFull $ readATerm d
-       if abs then
-          outputAS aterm
+       if abs' then
+          outputList aterm
           else putStrLn $ show aterm
 
-outputAS :: ATerm -> IO()
-outputAS aterm =
+outputList :: ATerm -> IO()
+outputList aterm =
+    case aterm of
+       AList paarList _ -> 
+           outputAS paarList
+       _ -> error "error by reading file."
+
+outputAS :: [ATerm] -> IO()
+outputAS [] = putStrLn ""
+outputAS (aterm:res) =
        case aterm of
-          AAppl "OWLParserOutput" [valid, msg, ns, onto] _ ->
+          AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [valid, msg, ns, onto] _] _ ->
               do
 --                  putStrLn $ show (fromATerm valid, buildMsg msg, buildNS ns, reducedDisjoint (fromATerm onto::Ontology))
+                  putStrLn ("URI: " ++ uri)
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
                   putStrLn $ show $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
+                  outputAS res
           _ -> error "false file."
 
     where buildNS :: ATerm -> Namespace
