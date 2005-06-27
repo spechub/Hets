@@ -12,7 +12,8 @@ translate 'Id' to Isabelle strings
 -}
 
 module Isabelle.Translate (showIsaT, showIsaIT, transStringT, 
-                           transString, isaPrelude) where
+                           transString, isaPrelude,
+                           charMap) where
 
 import Common.Id 
 import qualified Common.Lib.Map as Map
