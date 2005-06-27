@@ -38,7 +38,7 @@ createTheoryText sig sens =
     (if null defs then empty else text "defs" $$
         vcat (map printNamedSen defs)) 
     $++$ text "end"     
-    $$ vcat (map (text . show) defs) 
+--    \$\$ vcat (map (text . show) defs) 
 
 getAxioms, getDefs :: [Named Sentence] -> 
                  ([Named Sentence], [Named Sentence])

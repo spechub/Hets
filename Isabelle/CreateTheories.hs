@@ -136,10 +136,10 @@ createTheoryText sig sens =
     (if null defs then empty else text "defs" $$
         vcat (map printNamedSen defs)) 
     $++$ text "end"     
-    $$ vcat (map (text . show) defs) 
-    $$ (text ("\n" ++ (show $ constTab sig)))
-    $$ (text ("\n" ++ (show $ arities $ tsig sig)))
-    $$ (text ("\n" ++ (show $ classrel $ tsig sig)))
+--    \$\$ vcat (map (text . show) defs) 
+--    \$\$ (text ("\n" ++ (show \$ constTab sig)))
+--    \$\$ (text ("\n" ++ (show \$ arities \$ tsig sig)))
+--    \$\$ (text ("\n" ++ (show \$ classrel \$ tsig sig)))
 
 printNamedSen :: Named Sentence -> Doc
 printNamedSen (NamedSen lab _ s) = text (case s of

@@ -441,7 +441,7 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
 
 -- instances for Classrel and Arities, in alternative to TSig
 instance PrettyPrint Classrel where
- printText0 _ s = if Map.null s then text "pippo"
+ printText0 _ s = if Map.null s then empty
       else text $ Map.foldWithKey showTycon "" s 
    where 
    showTycon t cl rest = case cl of 
@@ -456,13 +456,15 @@ instance PrettyPrint Arities where
    showInstances t cl rest =
      (concat $ map (showInstance t) cl) ++ rest
    showInstance t xs = 
-     "instance " ++ (show t) ++ " :: " ++ "(" ++ (showInstArgs $ snd xs) ++ ") " 
+     "instance " ++ (show t) ++ " :: " ++ (showInstArgs $ snd xs)  
         ++ (classId $ fst xs) ++ "\n" ++ "by intro_classes \n"
    showInstArgs ys = case ys of 
+     [] -> ""
+     a:as -> "(" ++ (showInstArgsR ys) ++ ") "
+   showInstArgsR ys = case ys of 
       [] -> ""     
       [a] -> "\"" ++ (showSort $ snd a) ++ "\""
-      a:as -> "\"" ++ (showSort $ snd a) ++ "\", " ++ (showInstArgs as)
-
+      a:as -> "\"" ++ (showSort $ snd a) ++ "\", " ++ (showInstArgsR as)
 
 instance PrettyPrint Sign where
   printText0 ga sig = printText0 ga
