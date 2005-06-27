@@ -356,21 +356,21 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
          -- any other semantic annotation? that's an error
          when (any (\an -> isSemanticAnno an && an/=anno0) $ l_annos asp')
               (pplain_error () (ptext "Conflicting semantic annotations") 
-                [])
+                pos)
          -- %implied should not occur here
          when (anno1==SA_implied) 
               (pplain_error () (ptext "Annotation %implied should come after a BASIC-ITEM") 
-                [])
+                pos)
          let sig1 = getSig nsig1
              sig' = getSig nsig'
          if anno1==SA_implies then do
            when (not (is_subgsign sig1 sig')) (pplain_error () 
              (ptext "Signature must not be extended in presence of %implies") 
-             [])
+             pos)
            -- insert a theorem link according to p. 319 of the CASL Reference Manual
            return $ insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
-             dgl_type = GlobalThm Open Cons Open,
+             dgl_type = GlobalThm Open None Open,
              dgl_origin = DGExtension }) dg1
           else do
            let anno2 = case anno1 of
