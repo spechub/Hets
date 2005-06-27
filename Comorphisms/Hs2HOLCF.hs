@@ -1,6 +1,7 @@
 {- |
+Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
-License     :  All rights reserved.
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  paolot@tzi.de
 Stability   :  provisional
@@ -319,7 +320,7 @@ transAbbrsInfo p = let x = extAbbrsInfo (snd p)
 
 getArities :: HsInstances -> IsaSign.Arities
 getArities db = -- trace (show $ getTypeInsts db) $ trace (show db) $ 
-      Map.fromList (groupInst $ getTypeInsts db) -- $ getIsaInsts db  
+      Map.fromList (groupInst $ getTypeInsts db) -- \$ getIsaInsts db  
 
 getTypeInsts :: HsInstances -> [IsaTypeInsts]
 getTypeInsts db = [(typeId $ transType [] $ getMainInstType x, [transInst x]) | x <- db]
