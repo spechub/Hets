@@ -43,6 +43,7 @@ import Comorphisms.PCFOL2FOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CASL2IsabelleHOL
+import Comorphisms.CASL2SPASS
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2IsabelleHOL
 import Comorphisms.CASL2Modal
@@ -84,7 +85,8 @@ addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
 
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
-                 Comorphism CASL2IsabelleHOL, 
+                 Comorphism CASL2IsabelleHOL,
+                 Comorphism CASL2SPASS,
 #ifdef PROGRAMATICA
 		 Comorphism HasCASL2Haskell,
 		 Comorphism Haskell2IsabelleHOLCF,
