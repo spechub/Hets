@@ -251,9 +251,11 @@ spassProveGUI thName th = do
                 let (before, after)= splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
                 let proved = filter (\sen-> checkGoal (resultsMap s) (senName sen)) before
                 let lp' = foldl (\lp x -> insertSentence lp (x{isAxiom = True})) initialLogicalPart (reverse proved)
-                (res, output) <- runSpass lp' (getConfig goal (configsMap s)) (head after)
-                let s' = s{resultsMap = Map.insert goal (res, output) (resultsMap s)}
-                writeIORef stateRef s'
+                extraOptions <- (getValue optionsEntry) :: IO String
+                let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
+                (res, output) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
+                let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s')}
+                writeIORef stateRef s''
                 statusLabel # text (case res of
                                          Proved _ _ _ _ _ -> "Proved"
                                          Disproved _ -> "Disproved"
