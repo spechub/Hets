@@ -48,7 +48,7 @@ dom:: Sort
 dom = [pcpo]
 
 isaTerm :: IsaClass
-isaTerm = IsaClass "term"
+isaTerm = IsaClass "type"
 
 pcpo :: IsaClass
 pcpo = IsaClass "pcpo"
