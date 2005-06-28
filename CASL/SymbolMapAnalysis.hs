@@ -156,7 +156,7 @@ inducedFromMorphism extEm rmap sigma = do
   let sigma' = 
         sigma
             {sortSet = Set.map (mapSort sort_Map) sortsSigma,
-             sortRel = Rel.transClosure $ 
+             sortRel = Rel.transClosure $  Rel.irreflex $
                          Rel.map (mapSort sort_Map) (sortRel sigma),
              opMap = Map.foldWithKey (mapOps sort_Map op_Map) 
                        Map.empty (opMap sigma),
