@@ -548,12 +548,12 @@ restrictSorts sym1 sym2 sigma1 sigma2 posmap =
   where
   s1 = symName sym1
   s2 = symName sym2
-  sub1 = subsortsOf s1 sigma1 
-  sub2 = subsortsOf s2 sigma2
+  sub1 = Set.insert s1 $ subsortsOf s1 sigma1 
+  sub2 = Set.insert s2 $ subsortsOf s2 sigma2
   subsyms1 = Set.map idToSortSymbol sub1
   subsyms2 = Set.map idToSortSymbol sub2
-  super1 = supersortsOf s1 sigma1
-  super2 = supersortsOf s2 sigma2
+  super1 = Set.insert s1 $ supersortsOf s1 sigma1
+  super2 = Set.insert s2 $ supersortsOf s2 sigma2
   supersyms1 = Set.map idToSortSymbol super1
   supersyms2 = Set.map idToSortSymbol super2
 
