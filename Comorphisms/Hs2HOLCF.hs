@@ -83,7 +83,8 @@ transSentences ::
     IsaSign.Sign -> [PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transSentences sign ls = do xx <- mapM (transSentence sign FunDef) ls
                             xs <- return [[s] | [s] <- xx, extAxType s /= noType]
-                            ys <- trace ("\n" ++ (show xs)) $ return $ fixMRec xs
+                            ys <- -- trace ("\n" ++ (show xs)) $ 
+                                  return $ fixMRec xs
                             ac <- return $ newConstTab ys
                             nc <- return $ Map.union (constTab sign) ac
                             nsig <- return $ sign {constTab = nc}
@@ -309,12 +310,18 @@ transClassInfo p = case snd p of
 ------------------------- translation of Abbrs (from KEnv) -----------------------------
  
 getAbbrs ::  TyMap -> IsaSign.Abbrs
-getAbbrs f = 
-    liftMapByList Map.toList Map.fromList showIsaName transAbbrsInfo f
+getAbbrs f = let 
+ mf = liftMapByList Map.toList Map.fromList showIsaName transAbbrsInfo f
+ nf = Map.filter (\x -> case x of 
+        Just _ -> True  
+        Nothing -> False) mf
+ in Map.map (\x -> maybe ([],noType) id x) nf
 
-transAbbrsInfo :: (Kind, HsTypeInfo) -> ([TName], IsaType)
-transAbbrsInfo p = let x = extAbbrsInfo (snd p) 
-                   in (map showIsaName (fst x), transType [] (snd x))
+transAbbrsInfo :: (Kind, HsTypeInfo) -> Maybe ([TName], IsaType)
+transAbbrsInfo p = case (snd p) of 
+  TiTypes.Synonym _ _ -> let x = extAbbrsInfo (snd p) in
+                      return $ (map showIsaName (fst x), transType [] (snd x))
+  _ -> Nothing
 
 ---------------------------- translation of arities --------------------------------
 
