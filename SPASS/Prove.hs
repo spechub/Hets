@@ -146,7 +146,7 @@ spassProver :: Prover Sign Sentence ()
 spassProver =
   Prover { prover_name = "SPASS",
            prover_sublogic = "SPASS",
-           prove = spassProveBatch
+           prove = spassProveGUI
          }
 
 {- |
