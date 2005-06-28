@@ -28,7 +28,11 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
+*** Warning 5.7-5.22, trying hard to find lazy type for '__=__(f, (\ (var x : s) . x) as s --> s)'
 *** Hint 5.22, rejected '__->?__ < __-->__' of '((\ (var x : s) . (var x : s)) : _var_6_v6 ->? _var_7_v7) as
+    s --> s'
+
+*** Hint 5.22, rejected '__->?__ < __-->__' of '((\ (var x : s) . (var x : s)) : _var_11_v11 ->? _var_12_v12) as
     s --> s'
 
 *** Hint 5.7-5.22, untypable application (with result type: Unit)
