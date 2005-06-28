@@ -107,8 +107,10 @@ showTyp a pri t = case t of
              lb ++ showTyp x p r1 ++ " ** " ++ showTyp x p r2 ++ rb
           | True = rearrangeVarsInType x p n [r1,r2]
 
+
 instance PrettyPrint TypeSig where
   printText0 ga tysig = printText0 ga $ arities tysig
+
 
 instance PrettyPrint Term where
   printText0 _ = text . showTerm -- outerShowTerm   
@@ -469,14 +471,31 @@ instance PrettyPrint Arities where
 instance PrettyPrint Sign where
   printText0 ga sig = printText0 ga
     (baseSig sig) <> colon $++$
+    printTypeDecls sig $++$
     printText0 ga (classrel $ tsig sig) $++$
     showDataTypeDefs (dataTypeTab sig) $++$
     showDomainDefs (domainTab sig) $++$
-    showsConstTab (constTab sig) $++$ 
+    showsConstTab (constTab sig) $++$     
     (if showLemmas sig then showCaseLemmata (dataTypeTab sig) else empty) $++$
                                    -- this may prints an "o"
     printText0 ga (tsig sig) 
     where
+--
+    printTypeDecls sig = let as = (arities $ tsig sig) in
+      if Map.null as then empty
+        else text $ Map.foldWithKey showTycon "" as 
+      where 
+      showTycon t arity' rest = 
+              let arity = if null arity' then
+                          error "IsaPrint.printText0 (TypeSig)" 
+                                else length (snd $ head arity') in 
+            if dtyp sig t then "" else  
+            "typedecl "++
+            (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
+             else "") ++ show t  ++"\n"++rest
+      dtyp sig t = elem t $ 
+         concat [map (typeId . fst) x | x <- (domainTab sig) ++ (dataTypeTab sig)]
+--        
     showsConstTab tab =
      if Map.null tab then empty
       else text("consts") $$ Map.foldWithKey showConst empty tab $$ text "\n"
