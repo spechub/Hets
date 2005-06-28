@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
@@ -99,7 +98,7 @@ reduce :: Bool -> [(Subst, Constraints, Type, Term)]
 reduce b alts = do
        tm <- gets typeMap
        combs <- mapM ( \ (s, cr, ty, tr) -> do 
-           Result ds mc <- toEnvState $ shapeRel tm $ substC s cr
+           Result ds mc <- toEnvState $ shapeRel tm cr
            addDiags $ map (improveDiag tr) ds 
            return $ case mc of 
                Nothing -> []
@@ -371,7 +370,7 @@ infer b mt trm = do
                 myty = fty pvs
             ls <- checkList b (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
-                       mapM_ addLocalVar $ concatMap extractVars nps
+                       mapM_ (addLocalVar True) $ concatMap extractVars nps
                        es <- infer b (Just $ subst s rty) resTrm
                        putLocalVars vs
                        return $ map ( \ (s2, cr, _, rtm) -> 
@@ -405,7 +404,7 @@ infer b mt trm = do
         LetTerm br eqs inTrm ps -> do 
             es <- inferLetEqs b eqs
             rs <- mapM ( \ (s1, cs, _, nes) -> do 
-               mapM_ addLocalVar $ concatMap 
+               mapM_ (addLocalVar True) $ concatMap 
                          ( \ (ProgEq p _ _) -> extractVars p) nes
                ts <- infer b mt inTrm 
                return $ map ( \ (s2, cr, ty, nt) -> 
@@ -432,7 +431,7 @@ inferLetEqs b es = do
     do vs <- gets localVars
        newPats <- checkList b (map (const Nothing) pats) pats
        combs <- mapM ( \ (sf, pcs, tys, pps) -> do
-             mapM_ addLocalVar $ concatMap extractVars pps
+             mapM_ (addLocalVar True) $ concatMap extractVars pps
              newTrms <- checkList b (map Just tys) trms 
              return $ map ( \ (sr, tcs, tys2, tts ) ->  
                           (compSubst sf sr, 
@@ -452,7 +451,7 @@ inferCaseEq b pty tty (ProgEq pat trm ps) = do
       else return ()
    vs <- gets localVars
    es <- mapM ( \ (s, cs, ty, p) -> do 
-                mapM_ addLocalVar $ extractVars p
+                mapM_ (addLocalVar True) $ extractVars p
                 ts <- infer b (Just $  subst s tty) trm >>= reduce False
                 putLocalVars vs
                 return $ map ( \ (st, cr, tyt, t) -> 

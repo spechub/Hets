@@ -128,7 +128,7 @@ anaBasicItem ga (ClassItems inst l ps) =
     do ul <- mapAnM (anaClassItem ga inst) l
        return $ ClassItems inst ul ps
 anaBasicItem _ (GenVarItems l ps) = 
-    do ul <- mapM anaGenVarDecl l
+    do ul <- mapM (anaddGenVarDecl True) l
        return $ GenVarItems (catMaybes ul) ps
 anaBasicItem ga (ProgItems l ps) = 
     do ul <- mapAnMaybe (anaProgEq ga) l
@@ -145,7 +145,7 @@ anaBasicItem ga (GenItems l ps) =
 anaBasicItem ga (AxiomItems decls fs ps) = 
     do tm <- gets typeMap -- save type map
        as <- gets assumps -- save vars
-       ds <- mapM anaGenVarDecl decls
+       ds <- mapM (anaddGenVarDecl True) decls
        ts <- mapM (anaFormula ga) fs
        putTypeMap tm -- restore 
        putAssumps as -- restore

@@ -27,7 +27,6 @@ import qualified Common.Lib.Set as Set
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.VarDecl
-import HasCASL.MinType
 import HasCASL.Le
 
 import Data.Maybe
@@ -58,7 +57,6 @@ iterateCharts ga terms chart =
        let self = iterateCharts ga  
            oneStep = nextChart addType opKindFilter
                      toMixTerm ga chart
-           ass = assumps e
            vs = localVars e
            tm = typeMap e
        if null terms then return chart else 
@@ -101,9 +99,9 @@ iterateCharts ga terms chart =
                                     _ -> return ()
                                recurse $ QualOp b (InstOpId v newTs qs) nSc ps
                     QuantifiedTerm quant decls hd ps -> do 
-                       newDs <- mapM anaGenVarDecl decls
+                       newDs <- mapM (anaddGenVarDecl False) decls
                        mt <- resolve ga hd
-                       putAssumps ass 
+                       putLocalVars vs
                        putTypeMap tm
                        let newT = case mt of Just trm -> trm
                                              _ -> hd
@@ -114,7 +112,7 @@ iterateCharts ga terms chart =
                        anaDecls <- mapM anaPattern newDecls
                        let bs = concatMap extractVars anaDecls 
                        checkUniqueVars bs 
-                       mapM_ addLocalVar bs
+                       mapM_ (addLocalVar False) bs
                        mt <- resolve ga hd
                        putLocalVars vs
                        let newT = case mt of Just trm -> trm
@@ -167,7 +165,7 @@ resolveCaseEq ga (ProgEq p t ps) =
                 newP <- anaPattern np
                 let bs = extractVars newP
                 checkUniqueVars bs
-                mapM_ addLocalVar bs
+                mapM_ (addLocalVar False) bs
                 mtt <- resolve ga t
                 putLocalVars vs
                 return $ case mtt of 
@@ -194,7 +192,7 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
                newPat <- anaPattern nPat
                let bs = extractVars newPat
                checkUniqueVars bs
-               mapM_ addLocalVar bs
+               mapM_ (addLocalVar False) bs
                mTrm <- resolve ga trm
                case mTrm of
                    Nothing -> resolveLetEqs ga rt 
@@ -236,7 +234,6 @@ resolver :: GlobalAnnos -> [Id] -> Term
 resolver ga bs trm =
     do ass <- gets assumps
        vs <- gets localVars
-       oldDs <- gets envDiags
        ps@((_, _, m), _) <- gets preIds
        let ids = Set.toList $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
            ks = Set.union (Set.fromList (tokStr exprTok: inS :
@@ -249,8 +246,7 @@ resolver ga bs trm =
        let Result ds mr = getResolved showPretty (posOfTerm trm) 
                           toMixTerm chart
        addDiags ds
-       newDs <- gets envDiags
-       if length newDs > length oldDs then return Nothing else return mr
+       return mr
 
 builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]

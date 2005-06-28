@@ -30,7 +30,6 @@ import HasCASL.AsUtils
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
-import HasCASL.MinType
 import HasCASL.TypeCheck
 
 idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
@@ -146,7 +145,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
            Nothing -> return Nothing
            Just (i, as) -> do 
                tm <- gets typeMap
-               newAs <- mapM anaTypeVarDecl as 
+               newAs <- mapM anaddTypeVarDecl as 
                mt <- anaStarType t
                let nAs = catMaybes newAs
                    newPat = TypePattern i nAs []
@@ -170,7 +169,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                            Just vds -> do 
                                checkUniqueVars vds
                                vs <- gets localVars
-                               mapM_ addLocalVar vds
+                               mapM_ (addLocalVar True) vds
                                mf <- anaFormula ga f
                                putTypeMap tm
                                putLocalVars vs
@@ -191,7 +190,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
               Nothing -> return Nothing
               Just (i, as) -> do
                   tm <- gets typeMap
-                  newAs <- mapM anaTypeVarDecl as 
+                  newAs <- mapM anaddTypeVarDecl as 
                   (ik, mt) <- anaPseudoType mk sc
                   putTypeMap tm
                   let nAs = catMaybes newAs
@@ -235,7 +234,7 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
               Nothing -> return Nothing
               Just (i, as) -> do 
                   tm <- gets typeMap
-                  newAs <- mapM anaTypeVarDecl as
+                  newAs <- mapM anaddTypeVarDecl as
                   putTypeMap tm
                   let nAs = catMaybes newAs
                       fullKind = typeArgsListToKind nAs k
@@ -312,7 +311,7 @@ anaPseudoType mk (TypeScheme tArgs ty p) =
             Nothing -> return Nothing
             Just j -> fromResult $ anaKindM j
        tm <- gets typeMap    -- save global variables  
-       mapM_ anaTypeVarDecl tArgs
+       mapM_ anaddTypeVarDecl tArgs
        mp <- fromResult (anaType (k, ty) . typeMap)
        putTypeMap tm       -- forget local variables 
        case mp of
@@ -330,7 +329,7 @@ addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])
 
 addTypePattern defn inst kind (i, as) =
     do tm <- gets typeMap
-       newAs <- mapM anaTypeVarDecl as 
+       newAs <- mapM anaddTypeVarDecl as 
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
        putTypeMap tm

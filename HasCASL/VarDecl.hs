@@ -44,6 +44,10 @@ appendSentences fs =
     do e <- get
        put $ e {sentences = reverse fs ++ sentences e}
 
+-- | store local assumptions
+putLocalVars :: Map.Map Id Type -> State Env ()
+putLocalVars vs =  do { e <- get; put e { localVars = vs } }
+
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = do mp <- fromResult $ anaStarTypeR t . typeMap
                    return $ fmap snd mp
@@ -59,7 +63,7 @@ anaInstTypes ts = if null ts then return []
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs ty p) =
     do tm <- gets typeMap    -- save global variables  
-       mArgs <- mapM anaTypeVarDecl tArgs
+       mArgs <- mapM anaddTypeVarDecl tArgs
        let newArgs = catMaybes mArgs  
        mt <- anaStarType ty
        putTypeMap tm       -- forget local variables 
@@ -143,14 +147,14 @@ addTypeKind warn d i k =
                      else addDiags $ diffKindDiag i ok rk 
 
 -- | analyse a type argument and look up a missing kind
-anaTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-anaTypeVarDecl(TypeArg t k s ps) = 
+anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
+anaddTypeVarDecl(TypeArg t k s ps) = 
     case k of 
     MissingKind -> do 
        tk <- gets typeMap
        let rm = getIdKind tk t
        case maybeResult rm of 
-              Nothing -> anaTypeVarDecl(TypeArg t star s ps)
+              Nothing -> anaddTypeVarDecl(TypeArg t star s ps)
               Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
     _ -> do nk <- anaKind k
             addTypeVarDecl True $ TypeArg t nk s ps
@@ -240,6 +244,29 @@ addOpId i oldSc attrs defn =
                   return Nothing
 
 ----------------------------------------------------------------------------
+-- local variables 
+-----------------------------------------------------------------------------
+
+-- | add a local variable with an analysed type (if True then warn)
+addLocalVar :: Bool -> VarDecl -> State Env () 
+addLocalVar b (VarDecl v t _ _) = 
+    do ass <- gets assumps
+       vs <- gets localVars
+       if b then if Map.member v ass then
+          addDiags [mkDiag Hint "variable shadows global name(s)" v]
+          else if Map.member v vs then 
+          addDiags [mkDiag Hint "shadowing by variable" v]
+          else return ()
+         else return ()  
+       putLocalVars $ Map.insert v t vs 
+
+-- | add a local variable with an analysed type
+addGenLocalVar :: GenVarDecl -> State Env () 
+addGenLocalVar d = case d of 
+     GenVarDecl v -> addLocalVar False v
+     GenTypeVarDecl t -> addTypeVarDecl False t >> return () 
+
+----------------------------------------------------------------------------
 -- GenVarDecl
 -----------------------------------------------------------------------------
 
@@ -249,71 +276,68 @@ addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
 addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl True t 
                                      return $ fmap GenTypeVarDecl mt
 
-anaGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
-anaGenVarDecl(GenVarDecl v) = optAnaVarDecl v
-anaGenVarDecl(GenTypeVarDecl t) = 
-    anaTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
+-- | analyse and add global (True) or local variable or type declaration 
+anaddGenVarDecl :: Bool -> GenVarDecl -> State Env (Maybe GenVarDecl)
+anaddGenVarDecl b gv = case gv of 
+    GenVarDecl v -> optAnaddVarDecl b v
+    GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
-convertTypeToKind :: Type -> State Env (Maybe Kind)
-convertTypeToKind (FunType t1 FunArr t2 ps) = 
-    do mk1 <- convertTypeToKind t1
-       mk2 <- convertTypeToKind t2
-       case (mk1, mk2) of
-           (Just k1, Just k2) -> case k2 of 
-               ExtKind _ _ _ -> return Nothing
-               _ -> return $ Just $ FunKind k1 k2 ps
-           _ -> return Nothing
-
-convertTypeToKind (BracketType Parens [] _) = 
-    return Nothing
-convertTypeToKind (BracketType Parens [t] _) = 
-    convertTypeToKind t
-convertTypeToKind (BracketType Parens ts ps) = 
-       do cs <- mapM convertTypeToKind ts
-          if all isJust cs then 
-             do let k:ks = catMaybes cs 
-                    rk = rawKind k
-                if all ((==rk) . rawKind) ks then
-                   return $ Just $ Intersection (k:ks) ps
-                   else return Nothing
-             else return Nothing
-convertTypeToKind (MixfixType [t1, TypeToken t]) = 
-    let s = tokStr t 
-        mv = case s of 
+convertTypeToKind :: Monad m => ClassMap -> Type -> m Kind
+convertTypeToKind cm ty = case ty of 
+    FunType t1 FunArr t2 ps -> do 
+        k1 <- convertTypeToKind cm t1
+        k2 <- convertTypeToKind cm t2
+        case k2 of 
+            ExtKind _ _ _ -> fail "extended kind in result"
+            _ -> return $ FunKind k1 k2 ps
+    BracketType Parens [] _ -> fail "empty tuple"
+    BracketType Parens [t] _ -> convertTypeToKind cm t
+    BracketType Parens ts ps -> do 
+        k:ks <- mapM (convertTypeToKind cm) ts
+        let rk = rawKind k
+        if all ((==rk) . rawKind) ks then
+            return $ Intersection (k:ks) ps
+            else fail "contradicting kinds of intersection"
+    MixfixType [t1, TypeToken t] ->
+        let s = tokStr t 
+            mv = case s of 
                    "+" -> Just CoVar 
                    "-" -> Just ContraVar 
                    _ -> Nothing
-    in case mv of 
-              Nothing -> do return Nothing
+        in case mv of 
+              Nothing -> fail "no variance found"
               Just v -> do 
-                  mk1 <- convertTypeToKind t1
-                  case mk1 of 
-                          Just k1 -> return $ Just $ ExtKind k1 v $ tokPos t
-                          _ -> return Nothing
-convertTypeToKind(TypeToken t) = 
-       if tokStr t == "Type" then return $ Just $ Intersection [] $ tokPos t 
+                  k1 <- convertTypeToKind cm t1
+                  return $ ExtKind k1 v $ tokPos t
+    TypeToken t -> 
+       if tokStr t == "Type" then return $ Intersection [] $ tokPos t 
           else do
           let ci = simpleIdToId t
-          cm <- gets classMap                                          
-          let rm = anaClassId ci cm
+              rm = anaClassId ci cm
           case maybeResult rm of 
-                  Nothing -> return Nothing
-                  Just k -> return $ Just $ ClassKind ci k
-convertTypeToKind _ = 
-    do return Nothing
+                  Nothing -> fail "class not found"
+                  Just k -> return $ ClassKind ci k
+    _ -> fail "wrong type construction"
 
-optAnaVarDecl :: VarDecl -> State Env (Maybe GenVarDecl)
-optAnaVarDecl vd@(VarDecl v t s q) = 
+-- | add global or local variable or type declaration (True means global)
+optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)
+optAnaddVarDecl b vd@(VarDecl v t s q) = 
     let varDecl = do mvd <- anaVarDecl vd
                      case mvd of 
                          Nothing -> return Nothing
-                         Just nvd -> do mmvd <- addVarDecl $ makeMonomorph nvd
-                                        return $ fmap GenVarDecl mmvd
+                         Just nvd -> let movd = makeMonomorph nvd in
+                             if b then do 
+                             mmvd <- addVarDecl movd
+                             return $ fmap GenVarDecl mmvd
+                             else do 
+                             addLocalVar True movd
+                             return $ Just $ GenVarDecl movd
     in if isSimpleId v then
-    do mk <- convertTypeToKind t
+    do cm <- gets classMap 
+       let mk = convertTypeToKind cm t
        case mk of 
            Just k -> do addDiags [mkDiag Hint "is type variable" v]
-                        tv <- anaTypeVarDecl $ TypeArg v k s q
+                        tv <- anaddTypeVarDecl $ TypeArg v k s q
                         return $ fmap GenTypeVarDecl tv 
            _ -> varDecl
     else varDecl
@@ -326,7 +350,7 @@ monoType t = subst (Map.fromList $
                     map ( \ (v, TypeArg i k _ _) -> 
                           (v, TypeName i k 0)) $ leaves (> 0) t) t
 
--- | analyse 
+-- | analyse variable declaration
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
 anaVarDecl(VarDecl v oldT sk ps) = 
     do mt <- anaStarType oldT

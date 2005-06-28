@@ -14,15 +14,9 @@ choose a minimal type
 
 module HasCASL.MinType where
 
-import Common.Lib.State
-import Common.Result
-import Common.Id
-import qualified Common.Lib.Map as Map
-
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.TypeAna
-import HasCASL.VarDecl
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
@@ -62,26 +56,3 @@ eqTerm t1 t2 = case (t1, t2) of
 
 eqProgEq :: ProgEq -> ProgEq -> Bool
 eqProgEq (ProgEq p1 t1 _) (ProgEq p2 t2 _) = eqTerm p1 p2 && eqTerm t1 t2
-
--- | store assumptions
-putLocalVars :: Map.Map Id Type -> State Env ()
-putLocalVars vs =  do { e <- get; put e { localVars = vs } }
-
--- | add a local variable with an analysed type
-addLocalVar :: VarDecl -> State Env () 
-addLocalVar (VarDecl v t _ _) = 
-    do ass <- gets assumps
-       vs <- gets localVars
-       if Map.member v ass then
-          addDiags [mkDiag Hint "variable shadows global name(s)" v]
-          else if Map.member v vs then 
-          addDiags [mkDiag Hint "shadowing by variable" v]
-          else return ()
-       putLocalVars $ Map.insert v t vs 
-
--- | add a local variable with an analysed type
-addGenLocalVar :: GenVarDecl -> State Env () 
-addGenLocalVar d = case d of 
-     GenVarDecl v -> addLocalVar v
-     GenTypeVarDecl t -> addTypeVarDecl True t >> return () 
-

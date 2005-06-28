@@ -25,7 +25,6 @@ import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsUtils
-import HasCASL.MinType
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
@@ -94,15 +93,13 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tm <- gets typeMap
-       ass <- gets assumps
-       mArgs <- mapM anaTypeVarDecl tArgs
+       mArgs <- mapM anaddTypeVarDecl tArgs
        mPats <- mapM (mapM anaVarDecl) oldPats
-       putAssumps ass
        let newPats = map catMaybes mPats
            monoPats = map (map makeMonomorph) newPats
            pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
        vs <- gets localVars
-       mapM (mapM addLocalVar) monoPats
+       mapM (mapM $ addLocalVar True) monoPats
        let newArgs = catMaybes mArgs  
        mty <- anaStarType scTy
        case mty of 

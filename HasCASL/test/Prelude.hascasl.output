@@ -42,16 +42,24 @@ op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
 %% trivial because its the strict function property
-. ((fun __=__[_var_22_v22 * _var_23_v23 ->? _var_22_v22]
+. ((fun __=__[s * t ->? _var_27_v27]
     : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-       (_var_22_v22 * _var_23_v23 ->? _var_22_v22) *
-       (_var_22_v22 * _var_23_v23 ->? _var_22_v22) ->? Unit)
-    ((op fst[_var_22_v22; _var_23_v23]
+       (s * t ->? _var_27_v27) * (s * t ->? _var_27_v27) ->? Unit)
+    ((\ (var x : s, var y : t) . def (x res y)) :
+         s * t ->? _var_27_v27,
+     (\ (var x : s, var y : t) . (def y) und (def x)) :
+         s * t ->? _var_27_v27) :
+      Unit
+. ((fun __=__[_var_48_v48 * _var_49_v49 ->? _var_48_v48]
+    : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+       (_var_48_v48 * _var_49_v49 ->? _var_48_v48) *
+       (_var_48_v48 * _var_49_v49 ->? _var_48_v48) ->? Unit)
+    ((op fst[_var_48_v48; _var_49_v49]
       : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
-         _var_22_v22 * _var_23_v23 ->? _var_22_v22,
-     (op __res__[_var_22_v22; _var_23_v23]
+         _var_48_v48 * _var_49_v49 ->? _var_48_v48,
+     (op __res__[_var_48_v48; _var_49_v49]
       : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
-         _var_22_v22 * _var_23_v23 ->? _var_22_v22) :
+         _var_48_v48 * _var_49_v49 ->? _var_48_v48) :
       Unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
@@ -106,8 +114,12 @@ type s < ? s_v1
 type nat
 class Cpo < Type
       {var c : Cpo; pred __<<=__ : c * c; ;
-       pred isChain : forall c : Cpo . nat -> c_v-1;
-       pred isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1);
+       pred isChain : forall c : Cpo . nat -> c_v-1
+              = \ (var s : nat -> c)
+                  . (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit;
+       pred isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1)
+              = \ (var x : c, var s : nat -> c)
+                  . (all (\ n : nat . s (n) <<= x)) as Unit;
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
       {var p : Pcpo; op bottom : p;}
@@ -185,11 +197,11 @@ bool
      %[free type bool
          ::= true : bool
              false : bool]%
-c : Cpo %(var_96)%
-d : Cpo %(var_101)%
-f : Flatcpo %(var_100)%
+c : Cpo %(var_122)%
+d : Cpo %(var_131)%
+f : Flatcpo %(var_130)%
 nat : Flatcpo
-p : Pcpo %(var_99)%
+p : Pcpo %(var_129)%
 s : Type %(var_1)%
 t : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
@@ -221,8 +233,16 @@ fst
   : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1
     %(op)% = \ (var x : s, var y : t) .! (var x : s) as s_v1
 g : c --> d %(var)%
-isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1) ->? Unit %(pred)%
-isChain : forall c : Cpo . (nat -> c_v-1) ->? Unit %(pred)%
+isBound
+  : forall c : Cpo . c_v-1 * (nat -> c_v-1) ->? Unit
+    %(pred)%
+      = \ (var x : c, var s : nat -> c)
+          . (all (\ n : nat . s (n) <<= x)) as Unit
+isChain
+  : forall c : Cpo . (nat -> c_v-1) ->? Unit
+    %(pred)%
+      = \ (var s : nat -> c)
+          . (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit
 not : Unit ->? Unit %(pred)%
 not__ : ? Unit ->? Unit %(fun)%
 sup : forall c : Cpo . (nat -> c_v-1) ->? c_v-1 %(op)%
@@ -258,16 +278,24 @@ forall x : s; y : t
       ((op fst : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1)
          (var x : s, var y : t),
        (var x : s) as s_v1) %(def_fst)%
-((fun __=__[_var_22_v22 * _var_23_v23 ->? _var_22_v22]
+((fun __=__[s * t ->? _var_27_v27]
   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-     (_var_22_v22 * _var_23_v23 ->? _var_22_v22) *
-     (_var_22_v22 * _var_23_v23 ->? _var_22_v22) ->? Unit)
-  ((op fst[_var_22_v22; _var_23_v23]
+     (s * t ->? _var_27_v27) * (s * t ->? _var_27_v27) ->? Unit)
+  ((\ (var x : s, var y : t) . def (x res y)) :
+       s * t ->? _var_27_v27,
+   (\ (var x : s, var y : t) . (def y) und (def x)) :
+       s * t ->? _var_27_v27) :
+    Unit
+((fun __=__[_var_48_v48 * _var_49_v49 ->? _var_48_v48]
+  : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
+     (_var_48_v48 * _var_49_v49 ->? _var_48_v48) *
+     (_var_48_v48 * _var_49_v49 ->? _var_48_v48) ->? Unit)
+  ((op fst[_var_48_v48; _var_49_v49]
     : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
-       _var_22_v22 * _var_23_v23 ->? _var_22_v22,
-   (op __res__[_var_22_v22; _var_23_v23]
+       _var_48_v48 * _var_49_v49 ->? _var_48_v48,
+   (op __res__[_var_48_v48; _var_49_v49]
     : forall s : Type; t : Type . s_v-1 * t_v-2 ->? s_v-1) :
-       _var_22_v22 * _var_23_v23 ->? _var_22_v22) :
+       _var_48_v48 * _var_49_v49 ->? _var_48_v48) :
     Unit
 ((fun __=__[s ->? Unit]
   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
@@ -304,6 +332,15 @@ forall x : s; y : t
             s) :
        s * s ->? s) :
     Unit
+forall s : nat -> c
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+      ((pred isChain : forall c : Cpo . nat -> c_v-1)(var s : nat -> c),
+       (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit) %(def_isChain)%
+forall x : c; s : nat -> c
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+      ((pred isBound : forall c : Cpo . c_v-1 * (nat -> c_v-1))
+         (var x : c, var s : nat -> c),
+       (all (\ n : nat . s (n) <<= x)) as Unit) %(def_isBound)%
 ((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
      p * p ->? Unit)
   ((var f : p --> p)
@@ -377,6 +414,10 @@ free type bool
   def(__res__(x, y))
   def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
+*** Hint 65.7, variable shadows global name(s) 'x'
+*** Error, unexpected term 'def (x res y)'
+*** Hint 65.40, variable shadows global name(s) 'x'
+*** Error, unexpected term '(def y) und (def x)'
 *** Hint 74.5, variable shadows global name(s) 'x'
 *** Hint 75.6, variable shadows global name(s) 'x'
 *** Hint 75.35, variable shadows global name(s) 'x'
@@ -386,7 +427,7 @@ free type bool
 *** Error 85.10, illegal supertype for variable '? s_v1'
 *** Warning 87.38, trying hard to find lazy type for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
 *** Hint 87.9, no type match for: all
-  with (maximal) type: _var_93_v93 ->? Unit ->? Unit
+  with (maximal) type: _var_119_v119 ->? Unit ->? Unit
   known types:
     
 *** Hint 87.13-87.15, untypable application (with result type: Unit ->? Unit)
@@ -414,8 +455,10 @@ free type bool
 *** Error 123.3, unexpected mixfix token: all
 *** Error 125.55, unexpected mixfix token: Suc
 *** Error 125.32, unexpected mixfix token: all
+*** Error, unexpected term 'all (\ n : nat . s (n) <<= s (Suc (n)))'
 *** Hint 126.15, variable shadows global name(s) 'x'
 *** Error 126.38, unexpected mixfix token: all
+*** Error, unexpected term 'all (\ n : nat . s (n) <<= x)'
 *** Error 131.56, unexpected mixfix token: impl
 *** Error 130.32, unexpected mixfix token: impl
 *** Error 130.3, unexpected mixfix token: all
@@ -453,9 +496,9 @@ free type bool
 
 *** Hint, rejected 'd < c' of '(var f : c --> d)'
 
-*** Hint 196.6-196.7, rejected 'p < c' of '((fun Y[_var_117_v117]
+*** Hint 196.6-196.7, rejected 'p < c' of '((fun Y[_var_147_v147]
   : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-     (_var_117_v117 --> _var_117_v117) --> _var_117_v117)
+     (_var_147_v147 --> _var_147_v147) --> _var_147_v147)
   (var f : p --> p) :
     p'
 
@@ -472,19 +515,19 @@ free type bool
 *** Hint, rejected 'd < c' of '(var f : c --> d)'
 
 *** Warning 199.14-199.24, trying hard to find lazy type for 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p) as
-      c_v96 --> p_v99'
+      c_v122 --> p_v129'
 *** Hint 199.48, rejected '__->?__ < __-->__' of '((\ (var x' : c --> p) . (var x' : c --> p)) :
-     (_var_164_v164 --> _var_165_v165) ->? _var_163_v163) as
+     (_var_194_v194 --> _var_195_v195) ->? _var_193_v193) as
     (c --> p) --> c --> p'
 
 *** Hint 199.48, in type of '((\ (var x' : c --> p) . (var x' : c --> p)) :
-     (_var_179_v179 --> _var_180_v180) ->? _var_178_v178) as
+     (_var_209_v209 --> _var_210_v210) ->? _var_208_v208) as
     (c --> p) --> c --> p'
   typename 'Unit'
   is not unifiable with type 'c --> p' (199.54)
 
 *** Hint 199.27-199.48, untypable application 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p)'
 *** Error 199.14-199.24, no typing for 'Y((\ (var x' : c --> p) . x') as (c --> p) --> c --> p) as
-      c_v96 --> p_v99'
+      c_v122 --> p_v129'
 *** Warning 204.20, ignoring declaration for builtin identifier 'true'
 *** Warning 204.27, ignoring declaration for builtin identifier 'false'

@@ -58,7 +58,7 @@ program equations or case patterns. (Merge.hs?)
 
 Sentences for attributes comm, assoc, unit are not generated yet.
 
-Test shadowing in MixAna with warning.
+MixAna only recognises new variables and thus cannot check for shadowing
 
 First try type checking without lazy types
 
