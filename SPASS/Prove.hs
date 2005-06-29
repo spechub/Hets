@@ -40,6 +40,9 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 
+-- debugging
+import Debug.Trace
+
 {- |
   Represents a prover configuration used when proving a goal.
 -}
@@ -133,11 +136,12 @@ data State = State { currentGoal :: Maybe SPIdentifier,
 {- |
   Creates an initial State around a Theory.
 -}
-initialState :: Theory Sign Sentence -> SPASS.Prove.State
-initialState th = State {currentGoal = Nothing,
-                         theory = th,
-                         configsMap = emptyConfigsMap,
-                         resultsMap = emptyResultsMap}
+initialState :: Theory Sign Sentence -> [Named Sentence] -> SPASS.Prove.State
+initialState th gs = 
+    State {currentGoal = Nothing,
+           theory = th,
+           configsMap = Map.fromList (map (\ x -> (senName x,emptyConfig) ) gs),
+           resultsMap = emptyResultsMap}
 
 {- |
   Currently implemented as a batch mode prover only.
@@ -164,9 +168,10 @@ spassProveGUI :: String -- ^ theory name
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
   -- backing data structure
-  stateRef <- newIORef $ initialState th
+  let initState = initialState th goals
+  stateRef <- newIORef initState
   -- main window
-  main <- initHTk [text $ thName ++ " - SPASS Prover"]
+  main <- createToplevel [text $ thName ++ " - SPASS Prover"]
   -- left frame
   left <- newFrame main []
   grid left [GridPos (0,0)]
@@ -276,20 +281,30 @@ spassProveGUI thName th = do
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
-            let text = concatMap ((++"\n")) ["Note that only non-default configurations are listed here.\n", show $ configsMap s, show $ resultsMap s]
+            let text = concatMap ((++"\n")) ["Configuration:\n", show $ configsMap s, "\nResults:\n", showResMap (resultsMap s)]
             createTextSaveDisplay ("SPASS Configuration for Theory " ++ thName) (thName ++ ".spcf") text
             done)
-      +> (exit >>> destroy main)))
-  finishHTk
+      ))
+  sync (exit >>> destroy main)
   s <- readIORef stateRef
   let proof_stats = map (\x -> let res = Map.lookup x (resultsMap s) in if isJust res then fst $ fromJust res else Open x) (map senName goals)
   return proof_stats
   where
     noGoalSelected = createErrorWin "Please select a goal first." []
     Theory sign nSens = th
-    (axioms, goals) = partition isAxiom nSens
+    (axioms, raw_goals) = partition isAxiom nSens
+    -- Note @Till: remove next line when goals are no longer doubled
+    goals = nub {-(\ x y -> senName x == senName y)-} raw_goals
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sign) (reverse axioms)
+    showResMap mp = 
+        '{':(foldr  (\ (k,(x,outp)) resF -> 
+                             shows k . 
+                             (++) ":=\n    (" .  
+                             shows x . (++) ",\n     \"" .
+                             (++) (unlines outp) . (++) "\")\n" . resF) id 
+                    (Map.toList mp)) "}" 
   
+
 {- |
 -}
 checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
@@ -307,7 +322,9 @@ spassProveBatch :: String -- ^ theory name
                 -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveBatch thName (Theory sig nSens) =
-  batchProve initialLogicalPart [] goals
+  do pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
+     putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
+     return pstl
   where
     batchProve _ done [] = return done
     batchProve lp done (x:xs) = do
@@ -358,6 +375,8 @@ runSpass lp config nGoal = do
   let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions))
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+  -- debugging output
+  -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
   -- FIXME: use printText0 instead. but where to get an instance of GlobalAnnos from?
   sendMsg spass (showPretty problem "")
   (res, usedAxioms, output) <- parseSpassOutput spass
