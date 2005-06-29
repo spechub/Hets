@@ -47,7 +47,8 @@ instance PrettyPrint Sentence where
 showIsaDef :: Named Sentence -> Doc
 showIsaDef x = let d = senName x in 
   if d == "" then empty
-  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm $ sentence x)++"\"")
+  else text (d++"_def:") <+> text ("\""++(showTerm $ senTerm $ sentence x)++"\"")
+--  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm $ sentence x)++"\"")
 
 instance PrettyPrint Typ where
   printText0 _ = text . showTyp Null 1000 -- Unquoted 1000
@@ -440,26 +441,25 @@ pair :: PrecTermTree -> PrecTermTree -> String
 pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
 
-
 -- instances for Classrel and Arities, in alternative to TSig
 instance PrettyPrint Classrel where
  printText0 _ s = if Map.null s then empty
-      else text $ Map.foldWithKey showTycon "" s 
+      else Map.foldWithKey showTycon empty s 
    where 
    showTycon t cl rest = case cl of 
      Nothing -> rest
-     Just x ->  ("axclass " ++ classId t ++ " < " ++ (if x == [] then "pcpo" 
-       else showSort x) ++ "\n") ++ rest
+     Just x ->  (text "axclass") <+> (text $ classId t) <+> text "<" <+> 
+       (if x == [] then (text "pcpo") else (text $ showSort x)) $$ rest
 
 instance PrettyPrint Arities where
  printText0 _ s = if Map.null s then empty  
-      else text $ Map.foldWithKey showInstances "" s 
+      else Map.foldWithKey showInstances empty s 
    where 
    showInstances t cl rest =
-     (concat $ map (showInstance t) cl) ++ rest
+     (vcat $ map (showInstance t) cl) $$ rest
    showInstance t xs = 
-     "instance " ++ (show t) ++ " :: " ++ (showInstArgs $ snd xs)  
-        ++ (classId $ fst xs) ++ "\n" ++ "by intro_classes \n"
+     (text "instance") <+> (text $ show t) <+> text "::" <+> text (showInstArgs $ snd xs)  
+        <+> text (classId $ fst xs) $$ text "by intro_classes"
    showInstArgs ys = case ys of 
      [] -> ""
      a:as -> "(" ++ (showInstArgsR ys) ++ ") "
@@ -483,48 +483,48 @@ instance PrettyPrint Sign where
 --
     printTypeDecls sig = let as = (arities $ tsig sig) in
       if Map.null as then empty
-        else text $ Map.foldWithKey showTycon "" as 
+        else Map.foldWithKey showTycon empty as 
       where 
       showTycon t arity' rest = 
               let arity = if null arity' then
                           error "IsaPrint.printText0 (TypeSig)" 
                                 else length (snd $ head arity') in 
-            if dtyp sig t then "" else  
-            "typedecl "++
-            (if arity>0 then lb++concat (map ((" 'a"++).show) [1..arity])++rb
-             else "") ++ show t  ++"\n"++rest
+            if dtyp sig t then empty else  
+            text "typedecl" <+> 
+            (if arity>0 then (text $ lb++concat (map ((" 'a"++).show) [1..arity])++rb)
+             else empty) <+> (text $ show t) $$ rest 
       dtyp sig t = elem t $ 
          concat [map (typeId . fst) x | x <- (domainTab sig) ++ (dataTypeTab sig)]
 --        
+    vvcat = foldr ($+$) empty
     showsConstTab tab =
      if Map.null tab then empty
       else text("consts") $$ Map.foldWithKey showConst empty tab $$ text "\n"
-    showConst c t rest = 
-         text (show c ++ " :: " ++ "\"" ++ showTyp Unquoted 1000 t -- (fst t) 
-                                ++ "\"") $$ rest
-    showDataTypeDefs dtDefs = vcat $ map (text . showDataTypeDef) dtDefs
-    showDataTypeDef [] = ""
+    showConst c t rest = text (show c) <+> text "::" <+> 
+              text ("\"" ++ showTyp Unquoted 1000 t ++ "\"") $$ rest
+    showDataTypeDefs dtDefs = vcat $ map showDataTypeDef dtDefs
+    showDataTypeDef [] = empty
     showDataTypeDef (dt:dts) = 
-       "datatype " ++ showDataType dt
-       ++ (concat $ map ((" and "++) . showDataType) dts) ++ "\n"
+       (text "datatype") <+> (showDataType dt)
+       <+> (vcat $ map ((text ("\n"++"and") <+>) . showDataType) dts) <> text "\n"
     showDataType (_,[]) = error "IsaPrint.showDataType"
     showDataType (t,op:ops) =
-       showTyp Quoted 1000 t ++ " = " ++ showOp op 
-       ++ (concat $ map ((" | "++) . showOp) ops)
-    showDomainDefs dtDefs = vcat $ map (text . showDomainDef) dtDefs
-    showDomainDef [] = ""
+       text (showTyp Quoted 1000 t) <+> text "=" <+> (showOp op) 
+       <+> (hsep $ map ((text "|" <+>) . showOp) ops)
+    showDomainDefs dtDefs = vcat $ map showDomainDef dtDefs
+    showDomainDef [] = empty
     showDomainDef (dt:dts) =
-       "domain " ++ showDomain dt 
-       ++ (concat $ map (("\n and "++) . showDomain) dts) ++ "\n"
+       (text "domain") <+> (showDomain dt) 
+       <+> (vcat $ map ((text ("\n"++"and") <+>) . showDomain) dts) <> text "\n"
     showDomain (_,[]) = error "IsaPrint.showDomain"
     showDomain (t,op:ops) =
-       showTyp Quoted 1000 t ++ " = " ++ showDOp op
-       ++ (concat $ map ((" | "++) . showDOp) ops)
+       text (showTyp Quoted 1000 t) <+> text "=" <+> (showDOp op)
+       <+> (hsep $ map ((text "|" <+>) . showDOp) ops)
     showDOp (opname,args) =
-       opname ++ (concat $ [sp++lb++opname++"_"++(show n)
+       text opname <+> (hsep $ [text $ sp++lb++opname++"_"++(show n)
            ++"::"++sp++(showOpArg x)++rb | (x,n) <- listEnum args])
     showOp (opname,args) =
-       opname ++ (concat $ map ((sp ++) . showOpArg) args)
+       text opname <+> (hsep $ map (text . showOpArg) args)
     showOpArg arg = case arg of
                     TFree _ _ -> showTyp Null 1000 arg
                     _         -> "\"" ++ showTyp Null 1000 arg ++ "\""

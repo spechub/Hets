@@ -32,13 +32,12 @@ createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
     let (axs, rest) = getAxioms sens
         (defs, _) = getDefs rest
-    in printText sig $++$ 
+    in printText sig $++$
     (if null axs then empty else text "axioms" $$ 
         vcat (map printNamedSen $ disambiguate sig axs)) $++$
     (if null defs then empty else text "defs" $$
         vcat (map printNamedSen defs)) 
     $++$ text "end"     
---    \$\$ vcat (map (text . show) defs) 
 
 getAxioms, getDefs :: [Named Sentence] -> 
                  ([Named Sentence], [Named Sentence])
@@ -71,8 +70,7 @@ printNamedSen (NamedSen lab _ s) = text (case s of
     Theorem _ _ _ -> "theorem " ++ lab) 
     <+> colon <+> doubleQuotes (case senTerm s of
       IsaEq (Const df y) t ->  
-        text (df ++ " ::" ++ (showTyp Unquoted 1000 y) ++ " == " ++ (showOUTerm t))
-      _ -> (printText s))
-
--- (printText s)
+        (text df) <+> text "::" <+> text (showTyp Unquoted 1000 y) <+> text "==" 
+                    <+> text (showOUTerm t)
+      _ -> (printText s)) <> text "\n"
 
