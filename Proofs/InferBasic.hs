@@ -47,6 +47,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
 import Common.PrettyPrint
+import Common.AS_Annotation
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import Common.Id
@@ -194,6 +195,23 @@ proveTheory :: Logic lid sublogics
            -> String -> Theory sign sentence -> IO([Proof_status proof_tree])
 proveTheory _ = prove
 
+
+-- helper functions for workaround
+
+getComponents l@(s,t,e) = l:getComponentsLT s t (dgl_type e)
+
+getComponentsLT s t (LocalThm stat1 _ stat2) =
+  getComponentsStat s t stat1 ++ getComponentsStat s t stat2
+getComponentsLT s t (GlobalThm stat1 _ stat2) =
+  getComponentsStat s t stat1 ++ getComponentsStat s t stat2
+getComponentsLT s t (HidingThm _ stat1) =
+  getComponentsStat s t stat1
+getComponentsLT _ _ _ = []
+
+getComponentsStat s t (Proven _ links) = map (\e -> (s,t,e)) links
+  ++ concatMap (getComponentsLT s t) (map dgl_type links)
+getComponentsStat _ _ _ = []
+
 -- applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
@@ -214,7 +232,8 @@ basicInferenceNode checkCons lg (ln,node)
             thName = showPretty (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
         -- compute the list of proof goals
-        let inEdges = inn dGraph node
+            -- workaround for Klaus' problem; Till
+        let inEdges = concatMap getComponents $ inn dGraph node
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
