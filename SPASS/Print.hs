@@ -139,7 +139,7 @@ instance PrettyPrint SPTerm where
   printText0 ga t = case t of
     SPQuantTerm{quantSym= qsym, termTermList= tlist, termTerm= t} -> printText0 ga qsym <> parens (brackets (printTermList tlist) <> comma <> printText0 ga t)
     SPSimpleTerm sym -> printText0 ga sym
-    SPComplexTerm{symbol= sym, arguments= args} -> printText0 ga sym <> parens (printTermList args)
+    SPComplexTerm{symbol= sym, arguments= args} -> printText0 ga sym <> if null args then empty else parens (printTermList args)
     where
       printTermList = foldl (\tl x-> if isEmpty tl then printText0 ga x else tl <> comma <> (printText0 ga x)) empty
 
