@@ -37,6 +37,12 @@ The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
 let the example test/CastFun.hascasl go through
+(the variable v for s --> s is to early or wrongly substituted 
+in s ->? s < v. Maybe a variable also for the arrow must be
+introduced in shapeMgu.)
+
+remove FunType and ProductType in favour of uniform TypeAppls
+
 
 
 terms: 

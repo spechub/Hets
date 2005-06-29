@@ -7,7 +7,14 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-type inference 
+type inference based on
+
+<http://www.cs.fiu.edu/~smithg/papers/>
+
+Principal Type Schemes for Functional Programs with Overloading and
+Subtyping, Geoffrey S. Smith, Science of Computer Programming 23(2-3),
+pp. 197-226, December 1994
+
 
 -}
 
