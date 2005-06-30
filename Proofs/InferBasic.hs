@@ -170,7 +170,7 @@ getProvers consCheck lg gsub =
 
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
 selectProver [p] = return p
-selectProver [] = resToIORes $ fatal_error "No pover available" nullPos
+selectProver [] = resToIORes $ fatal_error "No prover available" nullPos
 selectProver provers = do
    sel <- ioToIORes $ listBox 
                 "Choose a translation to a prover-supported logic"
@@ -195,23 +195,6 @@ proveTheory :: Logic lid sublogics
            -> String -> Theory sign sentence -> IO([Proof_status proof_tree])
 proveTheory _ = prove
 
-
--- helper functions for workaround
-
-getComponents l@(s,t,e) = l:getComponentsLT s t (dgl_type e)
-
-getComponentsLT s t (LocalThm stat1 _ stat2) =
-  getComponentsStat s t stat1 ++ getComponentsStat s t stat2
-getComponentsLT s t (GlobalThm stat1 _ stat2) =
-  getComponentsStat s t stat1 ++ getComponentsStat s t stat2
-getComponentsLT s t (HidingThm _ stat1) =
-  getComponentsStat s t stat1
-getComponentsLT _ _ _ = []
-
-getComponentsStat s t (Proven _ links) = map (\e -> (s,t,e)) links
-  ++ concatMap (getComponentsLT s t) (map dgl_type links)
-getComponentsStat _ _ _ = []
-
 -- applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
@@ -233,7 +216,7 @@ basicInferenceNode checkCons lg (ln,node)
                      ++ {-maybe (show node)-} showName nodeName
         -- compute the list of proof goals
             -- workaround for Klaus' problem; Till
-        let inEdges = inn dGraph node--concatMap getComponents $ inn dGraph node
+        let inEdges = inn dGraph node
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
