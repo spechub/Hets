@@ -105,6 +105,8 @@ aboveWithNLs n d1 d2 = if isEmpty d2 then d1 else
              if isEmpty d1 then d2 else 
              d1 $+$ foldr ($+$) d2 (replicate n $ text "")
 
+infixl 5 $++$
+
 -- | vertical composition with one blank line
 ($++$) :: Doc -> Doc -> Doc
 ($++$) = aboveWithNLs 1 
