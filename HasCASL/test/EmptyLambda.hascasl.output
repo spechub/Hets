@@ -1,0 +1,34 @@
+%% Type Constructors -----------------------------------------------------
+Logical : Type := Unit ->? Unit
+Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Unit : Type
+__*__ : Type+ -> Type+ -> Type
+__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
+__-->?__ : Type- -> Type+ -> Type < __->?__
+__->__ : Type- -> Type+ -> Type < __->?__
+__->?__ : Type- -> Type+ -> Type
+%% Assumptions -----------------------------------------------------------
+__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
+__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
+__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
+__if__ : ? Unit * ? Unit ->? Unit %(fun)%
+__when__else__
+  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+bottom : forall a : Type . a_v-1 %(fun)%
+def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+false : Unit %(fun)%
+not__ : ? Unit ->? Unit %(fun)%
+true : Unit %(fun)%
+¬__ : ? Unit ->? Unit %(fun)%
+%% Diagnostics -----------------------------------------------------------
+*** Warning 1.3-1.13, trying hard to find lazy type for '(\ . ())()'
+*** Hint 1.4-1.6, in type of '(\ . ()) : _var_2_v2'
+  typename 'Unit'
+  is not unifiable with type '_var_1_v1 ->? Unit'
+
+*** Hint 1.3-1.13, untypable application (with result type: Unit)
+ '(\ . ())()'
+*** Error 1.3-1.13, no typing for '(\ . ())()'

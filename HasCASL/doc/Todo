@@ -68,6 +68,10 @@ MixAna only recognises new variables and thus cannot check for shadowing
 
 First try type checking without lazy types
 
+implement empty lambda terms as functions from Unit
+(test/EmptyLambda.hascasl)
+
+
 
 CASL:
 Maybe in CASL.Morphism.compose the target(m1) only needs to be a
