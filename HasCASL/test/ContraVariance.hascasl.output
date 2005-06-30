@@ -1,15 +1,15 @@
-type m : Type- -> Type- := \ b : Type- . b_v-1
-     %% wrong
+type m : -Type -> -Type := \ b : -Type . b_v-1
+     %% should be wrong
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
-m : Type- -> Type- := \ b : Type- . b_v-1
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
+m : -Type -> -Type := \ b : -Type . b_v-1
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -28,10 +28,10 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.38, incompatible kind of: a
-  expected: Type-
-     found: Type+
+  expected: -Type
+     found: +Type
 
 *** Error 2.32, incompatible kind of: a
-  expected: Type-
-     found: Type+
+  expected: -Type
+     found: +Type
 

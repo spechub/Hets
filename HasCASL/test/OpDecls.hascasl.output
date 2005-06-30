@@ -48,11 +48,11 @@ op z : s
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 s : Type < t
 t : Type < t
 %% Assumptions -----------------------------------------------------------

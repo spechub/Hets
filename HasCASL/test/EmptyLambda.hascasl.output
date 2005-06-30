@@ -2,11 +2,11 @@
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%

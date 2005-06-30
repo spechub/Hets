@@ -298,7 +298,7 @@ convertTypeToKind cm ty = case ty of
         if all ((==rk) . rawKind) ks then
             return $ Intersection (k:ks) ps
             else fail "contradicting kinds of intersection"
-    MixfixType [t1, TypeToken t] ->
+    MixfixType [TypeToken t, t1] ->
         let s = tokStr t 
             mv = case s of 
                    "+" -> Just CoVar 

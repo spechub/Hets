@@ -27,11 +27,11 @@ Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
 [__] : a -> b
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 m : (a -> b) -> c
 nt : a -> (b -> c) -> c -> d %(var_1)%
 r : Type

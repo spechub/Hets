@@ -11,7 +11,7 @@ var s,t  : Type
 type Unit: Type  %% flat cpo with bottom
 
 %% type aliases
-type Pred __ : Type -> Type := \ t:Type- . t ->? Unit 
+type Pred __ : Type -> Type := \ t: -Type . t ->? Unit 
 type ? __ := \ t:Type . Unit ->? t
 
 pred true, false : Unit
@@ -24,11 +24,11 @@ pred __=__ : s * s  %% =e=
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
 
-type __->?__ : Type- -> Type+ -> Type
+type __->?__ : -Type -> +Type -> Type
 
 %% nested pairs are different from n-tupels (n > 2)
-type __*__ : Type+ -> Type+ -> Type
-type __*__*__ : Type+ -> Type+ -> Type+ -> Type
+type __*__ : +Type -> +Type -> Type
+type __*__*__ : +Type -> +Type -> +Type -> Type
 
 %% ...
 
@@ -47,7 +47,7 @@ program __und__ (x, y: Unit) : Unit = ()
 
 
 %% total function type
-type __->__ : Type- -> Type+ -> Type 
+type __->__ : -Type -> +Type -> Type 
 
 type __->__ < __ ->? __
 
@@ -152,19 +152,19 @@ class instance Flatcpo < Cpo
 
 var c, d: Cpo
 
-type instance __*__ : Cpo+ -> Cpo+ -> Cpo
+type instance __*__ : +Cpo -> +Cpo -> Cpo
 
 var x1,x2 : c; y1, y2 : d 
 
 program (x1, y1) <<= (x2, y2) = (x1 <<= x2) und (y1 <<= y2) 
 
 
-type instance __*__ : Pcpo+ -> Pcpo+ -> Pcpo      
+type instance __*__ : +Pcpo -> +Pcpo -> Pcpo      
 
 type Unit : Pcpo
 
 %% Pcont
-type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo 
+type instance __-->?__ : -Cpo -> +Cpo -> Pcpo 
 
  type __-->?__ < __->?__
  . __ in c -->? d  = \f : c ->? d . 
@@ -176,7 +176,7 @@ type instance __-->?__ : Cpo- -> Cpo+ -> Pcpo
   program f <<=[c -->? d] g = all(\x:c. def (f x) impl f(x) <<= g(x))
 
 %% Tcont
-type instance __-->__ : Cpo- -> Cpo+ -> Cpo
+type instance __-->__ : -Cpo -> +Cpo -> Cpo
 
  type __-->__ < __-->?__ 
  . __ in c --> d = \f : c -->? d . all(\x:c. def f(x))
@@ -185,7 +185,7 @@ type instance __-->__ : Cpo- -> Cpo+ -> Cpo
 
  program f <<= g = f <<=[c -->? d] g 
 
-type instance __-->__ : Cpo- -> Pcpo+ -> Pcpo
+type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 
 fun Y : (p --> p) --> p
 

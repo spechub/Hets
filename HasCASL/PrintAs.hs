@@ -47,9 +47,9 @@ instance PrettyPrint Kind where
                                   _ -> id) (printText0 ga k1)
                           <+> text funS 
                           <+> printText0 ga k2
-        ExtKind k v _ -> (case k of
+        ExtKind k v _ -> printText0 ga v <> (case k of
                     FunKind _ _ _ -> parens
-                    _ -> id) (printText0 ga k) <> printText0 ga v
+                    _ -> id) (printText0 ga k)
 
 instance PrettyPrint TypePattern where 
     printText0 ga tp = case tp of

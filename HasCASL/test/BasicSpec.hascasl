@@ -4,7 +4,7 @@ var t:Type
 
 class TYPE : {x.x < t}
 
-type Pred __ : Type- -> Type; Unit:TYPE
+type Pred __ : -Type -> Type; Unit:TYPE
 
 
 class a, b, c

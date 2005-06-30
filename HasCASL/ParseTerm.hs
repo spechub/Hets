@@ -86,13 +86,13 @@ parseSimpleKind = parseClassId
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser st Kind
-parseExtKind = do k <- parseSimpleKind
-                  do s <- plusT
-                     return (ExtKind k CoVar $ tokPos s)
-                   <|>
-                   do m <- minusT
-                      return (ExtKind k ContraVar $ tokPos m)
-                   <|> return k
+parseExtKind = do 
+    v <- option (mkSimpleId "") (plusT <|> minusT)
+    k <- parseSimpleKind
+    let s = tokStr v
+        p = tokPos v
+    return $ if s == plusS then ExtKind k CoVar p
+           else if s == minusS then ExtKind k ContraVar p else k
 
 -- | parse a (right associative) function kind for a given argument kind
 arrowKind :: Kind -> AParser st Kind

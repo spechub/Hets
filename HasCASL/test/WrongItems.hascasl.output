@@ -8,7 +8,7 @@ expecting id
 
 parse error at 3.16:
 unexpected "="
-expecting "[", "%", "+", "-", "->", "{", ";", "sort", "op", "fun", "pred", "type", class, "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
+expecting "[", "%", "->", "{", ";", "sort", "op", "fun", "pred", "type", class, "program", "generated", "free", "var", "forall", dot, "axiom", "internal" or end of input
 
 parse error at 4.17:
 unexpected list of type arguments

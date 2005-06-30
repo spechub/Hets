@@ -14,11 +14,11 @@ Nat : Type < Int
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Rat : Type
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 %% Assumptions -----------------------------------------------------------
 0 : Rat %(op)%
   : Nat %(op)%

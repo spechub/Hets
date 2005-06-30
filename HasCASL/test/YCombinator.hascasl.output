@@ -1,7 +1,7 @@
 class Cpo < Type
 class Cppo < Cpo
-type instance __-->__ : Cpo- -> Cpo+ -> Cpo
-type instance __-->__ : Cpo- -> Cppo+ -> Cppo
+type instance __-->__ : -Cpo -> +Cpo -> Cpo
+type instance __-->__ : -Cpo -> +Cppo -> Cppo
 var c : Cppo
 fun Y : (c --> c) --> c
 %% Classes ---------------------------------------------------------------
@@ -11,13 +11,13 @@ Cppo < Cpo
 Logical : Type := Unit ->? Unit
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
 __-->__
-  : (Cpo- -> Cpo+ -> Cpo, Cpo- -> Cppo+ -> Cppo,
-     Type- -> Type+ -> Type) < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+  : (-Cpo -> +Cpo -> Cpo, -Cpo -> +Cppo -> Cppo,
+     -Type -> +Type -> Type) < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 c : Cppo %(var_1)%
 %% Assumptions -----------------------------------------------------------
 Y : forall c : Cppo . (c_v-1 --> c_v-1) --> c_v-1 %(fun)%

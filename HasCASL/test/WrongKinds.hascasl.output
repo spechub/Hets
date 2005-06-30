@@ -1,22 +1,22 @@
 parse error at 1.2:
 unexpected ")"
-expecting words, "(" or "{"
+expecting "%", "+", "-", words, "(" or "{"
 
 parse error at 2.3:
 unexpected variance of kind
-expecting "%" or "->"
+expecting casl char, "_", "[", "%" or "->"
 
-parse error at 3.4:
-unexpected variance of kind
-expecting "%" or "->"
+parse error at 3.3:
+unexpected "+"
+expecting "%", words, "(" or "{"
 
 parse error at 4.2:
 unexpected "*"
-expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "->" or end of input
 
-parse error at 5.6:
+parse error at 5.7:
 unexpected variance of kind
-expecting "%" or "->"
+expecting casl char, "_", "[", "%" or "->"
 
 parse error at 6.8:
 unexpected variance of kind
@@ -24,64 +24,61 @@ expecting "%" or "->"
 
 parse error at 7.7:
 unexpected "*"
-expecting "[", "%", "+", "-", "->" or end of input
+expecting "[", "%", "->" or end of input
 
 parse error at 8.5:
 unexpected variance of kind
-expecting "%" or "->"
+expecting "[", "%" or "->"
 
-parse error at 9.10:
+parse error at 9.9:
+unexpected "+"
+expecting casl char, "_", "[", "%", "->", "," or ")"
+
+parse error at 10.10:
+unexpected "+"
+expecting "%", "->" or end of input
+
+parse error at 11.8:
 unexpected variance of kind
-expecting "%" or "->"
+expecting casl char, "_", "[", "%" or "->"
 
-parse error at 10.11:
+parse error at 12.8:
 unexpected variance of kind
-expecting "%" or "->"
+expecting casl char, "_", "[", "%" or "->"
 
-parse error at 11.7:
+parse error at 13.4:
 unexpected variance of kind
-expecting "%" or "->"
+expecting casl char, "_", "[", "%" or "->"
 
-parse error at 12.7:
-unexpected variance of kind
-expecting "%" or "->"
-
-(a, b -> c)
-parse error at 14.4:
-unexpected variance of kind
-expecting "%" or "->"
-
-parse error at 15.2:
+parse error at 14.2:
 unexpected "*"
-expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "->" or end of input
 
-parse error at 16.4:
+parse error at 15.4:
 unexpected variance of kind
-expecting "%" or "->"
+expecting "[", "%" or "->"
 
-(a -> b)+ -> c
-(a- -> b)+ -> c
-parse error at 19.2:
+parse error at 16.2:
 unexpected "*"
-expecting casl char, "_", "[", "%", "+", "-", "->" or end of input
+expecting casl char, "_", "[", "%", "->" or end of input
 
-parse error at 20.3:
+parse error at 17.3:
 unexpected "*"
-expecting casl char, "_", "[", "%", "+", "-", "->", "," or ")"
+expecting casl char, "_", "[", "%", "->", "," or ")"
 
-parse error at 21.5:
+parse error at 18.5:
 unexpected variance of kind
-expecting "%" or "->"
+expecting "[", "%" or "->"
 
-parse error at 22.5:
+parse error at 19.5:
 unexpected variance of kind
-expecting "%" or "->"
+expecting "[", "%" or "->"
 
-parse error at 23.5:
+parse error at 20.5:
 unexpected variance of kind
-expecting "%" or "->"
+expecting "[", "%" or "->"
 
-parse error at 24.7:
+parse error at 21.7:
 unexpected "*"
-expecting "%", "+", "-", "->" or end of input
+expecting "%", "->" or end of input
 

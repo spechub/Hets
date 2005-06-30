@@ -29,11 +29,11 @@ Pair
                (fst : a_v-1; snd : b_v-2)]%
 Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 a : Type %(var_1)%
 b : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------

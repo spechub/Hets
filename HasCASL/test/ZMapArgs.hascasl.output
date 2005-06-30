@@ -77,11 +77,11 @@ Tree
              Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
              EmptyLeaf : Tree a_v-1]%
 Unit : Type
-__*__ : Type+ -> Type+ -> Type
-__-->__ : Type- -> Type+ -> Type < (__-->?__, __->__)
-__-->?__ : Type- -> Type+ -> Type < __->?__
-__->__ : Type- -> Type+ -> Type < __->?__
-__->?__ : Type- -> Type+ -> Type
+__*__ : +Type -> +Type -> Type
+__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
+__-->?__ : -Type -> +Type -> Type < __->?__
+__->__ : -Type -> +Type -> Type < __->?__
+__->?__ : -Type -> +Type -> Type
 %% Assumptions -----------------------------------------------------------
 EmptyLeaf : forall a : Type . Tree a_v-1 %(construct Tree)%
 Leaf : forall a : Type . a_v-1 -> Tree a_v-1 %(construct Tree)%

@@ -1,5 +1,5 @@
 var b : Type
-var a :Type+
+var a : +Type
 type List a : Type
 free type List a ::= Nil | Cons(head : a; tail : List a)
 free type List a ::= Nil | Cons(head : a; tail : List b)
