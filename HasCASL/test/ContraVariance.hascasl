@@ -1,0 +1,3 @@
+type p := \ (a : Type+) . Pred (Pred a)  %% should be correct
+type p := \ (a : Type+) . Pred a         %% should be wrong
+type m := \ (b : Type-) . b              %% should be wrong

@@ -36,18 +36,26 @@ their types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
-test/Double.hascasl (for the function twice) fails
+test/Double (for the function twice) fails
 
-let the example test/CastFun.hascasl go through
+correct kind analysis test/ContraVariance and change position of
+variance sign to front!
+
+let the example test/CastFun go through
 (the variable v for s --> s is to early or wrongly substituted 
 in s ->? s < v. Maybe a variable also for the arrow must be
 introduced in shapeMgu.)
 
 remove FunType and ProductType in favour of uniform TypeAppls
 
+"\ a : +Type. Pred a 
+
 
 
 terms: 
+the order of types in instance lists is given by the order of the
+variables that needed to be declared before!
+
 polymorphic (and constrained) let bindings are not supported
 yet.
 
@@ -71,7 +79,7 @@ MixAna only recognises new variables and thus cannot check for shadowing
 First try type checking without lazy types
 
 implement empty lambda terms as functions from Unit
-(test/EmptyLambda.hascasl)
+(test/EmptyLambda)
 
 
 
