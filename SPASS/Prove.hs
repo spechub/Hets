@@ -12,7 +12,19 @@ Interface for the SPASS theorem prover.
 
 -}
 
+{- 
+    todo:
+      - use Colors for the Prove Status 
+        (Green: Proved, Red: Disproved, Black: Open)
+      - add a button to show the help text for SPASS options
+      - surround goal specific part of GUI with a border
+      - check if proving is possible more than one time even 
+        if the Goal was already proved
+-}
+
 module SPASS.Prove where
+
+import Control.Exception
 
 import Logic.Prover
 import SPASS.Sign
@@ -105,7 +117,7 @@ getConfig id m = if (isJust lookupId)
   Default time limit.
 -}
 defaultTimeLimit :: Int
-defaultTimeLimit = 60
+defaultTimeLimit = 5
 
 {- |
   Represents the result of a prover run.
@@ -161,6 +173,44 @@ isProved (Proved _ _ _ _ _) = True
 isProved _ = False
 
 {- |
+   updates the display of the status of the goal
+-}
+
+-- updateDisplay :: SPASS.Prove.State -> Entry Int 
+--              -> Entry String
+updateDisplay state statusLabel timeEntry optionsEntry =
+    maybe (return ())
+          (\ go -> 
+               let mprfst = Map.lookup go (resultsMap state)
+                   cf = Map.findWithDefault 
+                        (error "updateDisplay: configsMap \
+                               \was not initialised!!") 
+                        go (configsMap state)
+                   t' = maybe defaultTimeLimit id (timeLimit cf)
+                   opts' = unwords (extraOpts cf)
+               in do 
+                maybe (statusLabel # text "Open")
+                      (\ prfst -> statusLabel # text (case fst prfst of
+                                       Proved _ _ _ _ _ -> "Proved"
+                                       Disproved _ -> "Disproved"
+                                       _ -> "Open"))
+                      mprfst
+                timeEntry # value t'
+                optionsEntry # value opts'
+                return ()) 
+          (currentGoal state)
+
+getValueSave :: Entry Int -> IO Int
+getValueSave timeEntry =
+    catchJust userErrors ((getValue timeEntry) :: IO Int) 
+                  (\ s -> trace ("Warning: Error "++show s++" was ignored") (return defaultTimeLimit))
+    where selExcep ex = case ex of
+                        ErrorCall s 
+                            | isPrefixOf "NO PARSE:" s -> Just defaultTimeLimit
+                        IOException x -> trace ("ICH:" ++ show x) Nothing
+                        _ -> Nothing
+
+{- |
   Invokes the prover GUI. Not yet fully implemented.
 -}
 spassProveGUI :: String -- ^ theory name
@@ -198,14 +248,16 @@ spassProveGUI thName th = do
                                         if isJust (currentGoal s)
                                           then (do
                                             let goal = fromJust (currentGoal s)
-                                            let config = getConfig goal (configsMap s)
+                                            curEntTL <- getValueSave timeEntry 
+                                            let sEnt = s {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap s)}
+                                            let config = getConfig goal (configsMap sEnt)
                                             let t = timeLimit config
                                             let t' = (case sp of
                                                            Up -> if isJust t then (fromJust t) + 10 else defaultTimeLimit + 10
                                                            _ -> if isJust t then (fromJust t) - 10 else defaultTimeLimit - 10)
-                                            let s' = s {configsMap = adjustOrSetConfig (setTimeLimit t') goal (configsMap s)}
+                                            let s' = sEnt {configsMap = adjustOrSetConfig (setTimeLimit t') goal (configsMap sEnt)}
                                             writeIORef stateRef s'
-                                            timeEntry # value t' --(timeLimit $ getConfig goal (configsMap s'))
+                                            timeEntry # value (maybe defaultTimeLimit id (timeLimit (getConfig goal (configsMap s'))))
                                             done)
                                           else noGoalSelected)) []
   grid timeSpinner [GridPos (3,1), Sticky E]
@@ -246,13 +298,16 @@ spassProveGUI thName th = do
                      then s {currentGoal = Just $ senName (goals !! (head $ fromJust sel))}
                      else s
           writeIORef stateRef s'
+          updateDisplay s' statusLabel timeEntry optionsEntry
           done)
       +> (prove >>> do
-            s <- readIORef stateRef
-            if isNothing $ currentGoal s
+            rs <- readIORef stateRef
+            if isNothing $ currentGoal rs
               then noGoalSelected
               else (do
-                let goal = fromJust $ currentGoal s
+                curEntTL <- (getValueSave timeEntry) :: IO Int
+                let goal = fromJust $ currentGoal rs
+                let s = rs {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap rs)}
                 let (before, after)= splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
                 let proved = filter (\sen-> checkGoal (resultsMap s) (senName sen)) before
                 let lp' = foldl (\lp x -> insertSentence lp (x{isAxiom = True})) initialLogicalPart (reverse proved)
