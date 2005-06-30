@@ -1,0 +1,5 @@
+vars a : Type; b < a
+
+op twice : (a ->? b) -> a ->? b %% = \ (f : a ->? b) (x : a) . f(f(x))
+ 
+
