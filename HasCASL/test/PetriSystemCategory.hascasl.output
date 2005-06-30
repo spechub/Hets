@@ -1855,6 +1855,9 @@ in forall x : Elem
 *** Hint 19.7, is type variable 'Elem'
 *** Hint 31.6, is type variable 'Elem'
 *** Hint 31.6, redeclared type 'Elem'
+*** Hint 33.10, not a kind 'MultiSet Elem'
+*** Hint 33.27, not a kind 'Set Elem'
+*** Hint 35.17, not a class 'Elem'
 *** Hint 34.12, variable shadows global name(s) 'S'
 *** Hint 34.12, variable shadows global name(s) 'S'
 *** Hint, rejected 'Unit < Nat' of '((op __isIn__[_var_13_v13]
@@ -1878,6 +1881,8 @@ in forall x : Elem
 *** Hint 62.7, redeclared type 'S'
 *** Hint 62.10, is type variable 'V'
 *** Hint 62.10, redeclared type 'V'
+*** Hint 72.23, not a kind 'MultiSet P'
+*** Hint 73.26, not a kind 'MultiSet P'
 *** Hint 72.45, rejected 'Unit < Nat' of '((op __isIn__[_var_83_v83]
   : forall Elem : Type .
       Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
@@ -1908,6 +1913,7 @@ in forall x : Elem
        Set (_var_172_v172 ->? _var_173_v173)@((_var_172_v172 ->? _var_173_v173) ->? Unit)) :
     _var_153_v153'
 
+*** Hint 81.19, not a class 'T'
 *** Hint 80.28-80.35, in type of '(var hp : P ->? P,
  (op places
   : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
@@ -1955,6 +1961,7 @@ in forall x : Elem
        Set T@(T ->? Unit)) :
     _var_419_v419'
 
+*** Hint 95.38, not a class 'P'
 *** Hint, rejected 'Nat < Unit' of '(var x : P, var m : Marking@(MultiSet P@(P ->? Nat)))'
 
 *** Hint 94.29-95.27, rejected 'Unit < Nat' of 'let (var p : _var_581_v581 ->? _var_582_v582,
@@ -1981,6 +1988,7 @@ in forall x : P
               Unit) :
            Unit'
 
+*** Hint 104.19, not a class 'P'
 *** Hint 104.24-104.74, in type of '(((op freq[P]
    : forall Elem : Type .
        Elem_v-1 * MultiSet Elem_v-1@(Elem_v-1 ->? Nat) -> Nat) :
@@ -2012,6 +2020,8 @@ in forall x : P
   typename 'Nat' (28.38)
   is not unifiable with type '_var_724_v724 ->? _var_725_v725' (20.31)
 
+*** Hint 112.12, not a class 'HomSys'
+*** Hint 112.16, not a class 'HomSys'
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))) *

@@ -24,7 +24,7 @@ import Common.Result
 anaClassId :: ClassId -> ClassMap -> Result Kind
 anaClassId ci cMap = 
        case Map.lookup ci cMap of
-            Nothing -> mkError "undeclared class" ci
+            Nothing -> mkError "not a class" ci
             Just (ClassInfo l) -> return $ ClassKind ci $ toIntersection l []
 
 toIntersection :: [Kind] -> [Pos] -> Kind

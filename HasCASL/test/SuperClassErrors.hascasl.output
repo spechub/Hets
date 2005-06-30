@@ -56,10 +56,10 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 1.13, undeclared class 'b'
-*** Error 3.11, undeclared class 'd'
-*** Error 4.11, undeclared class 'e'
-*** Error 6.11, undeclared class 'g'
+*** Error 1.13, not a class 'b'
+*** Error 3.11, not a class 'd'
+*** Error 4.11, not a class 'e'
+*** Error 6.11, not a class 'g'
 *** Warning 8.7, redeclared class 'g'
 *** Warning 10.7, redeclared class 'g'
 *** Error 10.7, cyclic class 'g'

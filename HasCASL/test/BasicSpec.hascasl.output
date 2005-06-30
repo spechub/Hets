@@ -193,11 +193,12 @@ type Data4
 *** Error, unbound type variable(s)
   t : Type in 't_v1'
 *** Error, illegal type pattern argument '__'
-*** Error 11.16, undeclared class 'd'
+*** Error 11.16, not a class 'd'
 *** Warning 11.7, redeclared class 'a'
 *** Warning 11.10, redeclared class 'b'
 *** Warning 11.13, redeclared class 'c'
 *** Warning 11.19, redeclared class 'a'
+*** Hint 16.7, not a class 's'
 *** Hint 18.15, variable shadows global name(s) 'x'
 *** Error 20.12, unexpected mixfix token: res
 *** Warning 21.22, trying hard to find lazy type for 'program fst(x : s, var y : t) : s = x'
@@ -235,5 +236,9 @@ type Data4
 *** Error 38.17, unexpected mixfix token: all
 *** Error 37.27, unexpected mixfix token: all
 *** Error 40.20, unexpected mixfix token: all
+*** Hint 45.9, not a class 't'
+*** Hint 45.16, not a class 't'
+*** Hint 66.22, not a class 's'
 *** Error 66.25, unexpected mixfix token: e
+*** Hint 67.9, not a class 's'
 *** Error 67.12, unexpected mixfix token: e

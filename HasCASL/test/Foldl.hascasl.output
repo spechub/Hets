@@ -93,3 +93,4 @@ true : Unit %(fun)%
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'a'
+*** Hint 6.9, not a class 'a'

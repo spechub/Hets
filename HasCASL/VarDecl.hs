@@ -291,7 +291,7 @@ convertTypeToKind :: Env -> Type -> Result Kind
 convertTypeToKind e ty = let s = showPretty ty "" in
     case runParser (extKind << eof) (emptyAnnos ()) "" s of
     Right k -> anaKindM k e
-    Left _ -> fail $ s ++ " is not a kind" 
+    Left _ -> fail $ "not a kind '" ++ s ++ "'"
 
 -- | add global or local variable or type declaration (True means global)
 optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)
@@ -308,13 +308,14 @@ optAnaddVarDecl b vd@(VarDecl v t s q) =
                              return $ Just $ GenVarDecl movd
     in if isSimpleId v then
     do e <- get
-       let mk = convertTypeToKind e t
-       case maybeResult mk of 
+       let Result ds mk = convertTypeToKind e t
+       case mk of 
            Just k -> do 
                addDiags [mkDiag Hint "is type variable" v]
                tv <- anaddTypeVarDecl $ TypeArg v k s q
                return $ fmap GenTypeVarDecl tv 
-           _ -> varDecl
+           _ -> do addDiags $ map ( \ d -> Diag Hint (diagString d) q) ds  
+                   varDecl
     else varDecl
 
 makeMonomorph :: VarDecl -> VarDecl

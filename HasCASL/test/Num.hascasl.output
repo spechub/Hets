@@ -44,3 +44,4 @@ true : Unit %(fun)%
     Unit %(divide_def2_Rat)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.17, redeclared type 'Int'
+*** Hint 6.14, not a class 'Rat'

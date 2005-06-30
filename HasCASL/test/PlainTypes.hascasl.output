@@ -74,24 +74,34 @@ v : m List %(var)%
 x : tuple3 r s t %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
+*** Hint 7.6, not a kind '[r]'
+*** Hint 7.14, not a kind '{s}'
+*** Hint 11.7, not a kind 'tuple3 r s t'
+*** Hint 12.7, not a kind 'tuple3 r s'
 *** Error, incompatible kind of: tuple3 r s
   expected: Type
      found: c -> d
 
+*** Hint 18.7, not a kind 'm [__]'
 *** Error 18.12, unexpected place '__'
+*** Hint 22.7, not a kind 'm List'
+*** Hint 24.8, not a class 'm'
 *** Error 24.10, incompatible kind of: m
   expected: Type
      found: (a -> b) -> c
 
+*** Hint 26.8, not a kind 'm tuple1'
 *** Error 26.12, incompatible kind of: tuple1
   expected: a -> b
      found: b -> a
 
+*** Hint 28.8, not a kind 'm tuple3'
 *** Error 28.12, incompatible kind of: tuple3
   expected: a -> b
      found: a -> b -> c -> d
 
 *** Hint 30.5, is type variable 'nt'
+*** Hint 32.8, not a kind 'nt r List s'
 *** Error 32.15, incompatible kind of: List
   expected: b -> c
      found: a -> b

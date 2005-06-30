@@ -202,3 +202,5 @@ x : m a %(var)%
        Set _var_10_v10) :
     Unit' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
+*** Hint 33.7, not a class 'a'
+*** Hint 33.23, not a kind 'm a'

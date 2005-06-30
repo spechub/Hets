@@ -172,6 +172,9 @@ free type Nat
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Warning, unused type variables '[ a : Type ]'
+*** Hint 6.9, not a kind 'Tree Nat'
+*** Hint 7.9, not a class 'Nat'
+*** Hint 7.16, not a kind 'Tree Nat'
 *** Hint 10.27, variable shadows global name(s) 'n'
 *** Hint 11.37, variable shadows global name(s) 'n'
 *** Hint 12.33, variable shadows global name(s) 'h'

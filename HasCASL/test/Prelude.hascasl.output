@@ -389,6 +389,7 @@ free type bool
 *** Hint 27.8, redeclared type '__->?__'
 *** Hint 30.8, redeclared type '__*__'
 *** Error, illegal type pattern '__ * __ * __'
+*** Hint 40.7, not a class 's'
 *** Hint 42.16, variable shadows global name(s) 'x'
 *** Hint 44.15, variable shadows global name(s) 'x'
 *** Error 46.11, unexpected mixfix token: und
@@ -472,6 +473,10 @@ free type bool
 *** Hint 153.5, is type variable 'c'
 *** Hint 153.5, redeclared type 'c'
 *** Hint 153.8, is type variable 'd'
+*** Hint 157.7, not a class 'c'
+*** Hint 157.11, not a class 'c'
+*** Hint 157.18, not a class 'd'
+*** Hint 157.23, not a class 'd'
 *** Error 159.45, unexpected mixfix token: und
 *** Hint 169.9, redeclared type '__-->?__'
 *** Hint, repeated supertype '__->?__'
@@ -488,10 +493,14 @@ free type bool
   def(f)(x)
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
+*** Hint 184.7, not a kind 'c --> d'
+*** Hint 184.11, not a kind 'c --> d'
 *** Error 186.26, unexpected mixfix token: c
 *** Error 193.32, unexpected mixfix token: impl
 *** Error 192.40, unexpected mixfix token: und
 *** Error 192.3, unexpected mixfix token: all
+*** Hint 195.7, not a kind 'p --> p'
+*** Hint 195.20, not a class 'p'
 *** Hint, rejected 'd < c' of '(var f : c --> d)'
 
 *** Hint, rejected 'd < c' of '(var f : c --> d)'
