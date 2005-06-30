@@ -59,9 +59,9 @@ globDecomp proofStatus@(libname, libEnv,_) =
       let globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
 	  (newDGraph, newHistoryElem) 
 	      = globDecompAux dgraph globalThmEdges ([],[])
-	  (finalDGraph, finalHistoryElem) 
-	      = removeSuperfluousInsertions newDGraph newHistoryElem
-          newProofStatus = mkResultProofStatus proofStatus finalDGraph finalHistoryElem
+--	  (finalDGraph, finalHistoryElem) 
+--	      = removeSuperfluousInsertions newDGraph newHistoryElem
+          newProofStatus = mkResultProofStatus proofStatus newDGraph newHistoryElem --finalDGraph finalHistoryElem
       return newProofStatus
 
 

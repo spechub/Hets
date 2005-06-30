@@ -233,7 +233,7 @@ basicInferenceNode checkCons lg (ln,node)
                      ++ {-maybe (show node)-} showName nodeName
         -- compute the list of proof goals
             -- workaround for Klaus' problem; Till
-        let inEdges = concatMap getComponents $ inn dGraph node
+        let inEdges = inn dGraph node--concatMap getComponents $ inn dGraph node
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
