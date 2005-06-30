@@ -23,7 +23,12 @@ import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
+import Common.PrettyPrint
+import Common.Lexer
+import Common.AnnoState
+import Text.ParserCombinators.Parsec hiding (State)
 
+import HasCASL.ParseTerm
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
@@ -107,10 +112,10 @@ putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
 
 -- | store type id and check kind arity (warn on redeclared types)
 addTypeId :: Bool -> TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
-addTypeId warn defn _ kind i = 
-    do let nk = rawKind kind
+addTypeId warn defn _ k i = 
+    do let nk = rawKind k
        if placeCount i <= kindArity TopLevel nk then
-          do addTypeKind warn defn i kind
+          do addTypeKind warn defn i k
              return $ Just i 
           else do addDiags [mkDiag Error "wrong arity of" i]
                   return Nothing
@@ -282,42 +287,11 @@ anaddGenVarDecl b gv = case gv of
     GenVarDecl v -> optAnaddVarDecl b v
     GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
-convertTypeToKind :: Monad m => ClassMap -> Type -> m Kind
-convertTypeToKind cm ty = case ty of 
-    FunType t1 FunArr t2 ps -> do 
-        k1 <- convertTypeToKind cm t1
-        k2 <- convertTypeToKind cm t2
-        case k2 of 
-            ExtKind _ _ _ -> fail "extended kind in result"
-            _ -> return $ FunKind k1 k2 ps
-    BracketType Parens [] _ -> fail "empty tuple"
-    BracketType Parens [t] _ -> convertTypeToKind cm t
-    BracketType Parens ts ps -> do 
-        k:ks <- mapM (convertTypeToKind cm) ts
-        let rk = rawKind k
-        if all ((==rk) . rawKind) ks then
-            return $ Intersection (k:ks) ps
-            else fail "contradicting kinds of intersection"
-    MixfixType [TypeToken t, t1] ->
-        let s = tokStr t 
-            mv = case s of 
-                   "+" -> Just CoVar 
-                   "-" -> Just ContraVar 
-                   _ -> Nothing
-        in case mv of 
-              Nothing -> fail "no variance found"
-              Just v -> do 
-                  k1 <- convertTypeToKind cm t1
-                  return $ ExtKind k1 v $ tokPos t
-    TypeToken t -> 
-       if tokStr t == "Type" then return $ Intersection [] $ tokPos t 
-          else do
-          let ci = simpleIdToId t
-              rm = anaClassId ci cm
-          case maybeResult rm of 
-                  Nothing -> fail "class not found"
-                  Just k -> return $ ClassKind ci k
-    _ -> fail "wrong type construction"
+convertTypeToKind :: Env -> Type -> Result Kind
+convertTypeToKind e ty = let s = showPretty ty "" in
+    case runParser (extKind << eof) (emptyAnnos ()) "" s of
+    Right k -> anaKindM k e
+    Left _ -> fail $ s ++ " is not a kind" 
 
 -- | add global or local variable or type declaration (True means global)
 optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)
@@ -333,12 +307,13 @@ optAnaddVarDecl b vd@(VarDecl v t s q) =
                              addLocalVar True movd
                              return $ Just $ GenVarDecl movd
     in if isSimpleId v then
-    do cm <- gets classMap 
-       let mk = convertTypeToKind cm t
-       case mk of 
-           Just k -> do addDiags [mkDiag Hint "is type variable" v]
-                        tv <- anaddTypeVarDecl $ TypeArg v k s q
-                        return $ fmap GenTypeVarDecl tv 
+    do e <- get
+       let mk = convertTypeToKind e t
+       case maybeResult mk of 
+           Just k -> do 
+               addDiags [mkDiag Hint "is type variable" v]
+               tv <- anaddTypeVarDecl $ TypeArg v k s q
+               return $ fmap GenTypeVarDecl tv 
            _ -> varDecl
     else varDecl
 
