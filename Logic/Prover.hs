@@ -35,7 +35,7 @@ data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 data Proof_status proof_tree = Open String
                       | Disproved String 
                       | Proved String
-                               [String] -- used axioms
+                               [String] -- used axioms or theorems or goals
                                String -- name of prover
                                proof_tree
                                Tactic_script
