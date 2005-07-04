@@ -1,0 +1,202 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) various people and Klaus Lüttich, Uni Bremen 2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  lüttich@tzi.de
+Stability   :  provisional
+Portability :  needs POSIX
+
+this module collects functions useful for all prover connections in Hets
+some are moved from Isabelle.Translate and some others are moved from
+Isabelle.IsaProve.
+-}
+
+
+module Common.ProofUtils where
+
+import Data.Maybe
+import Data.List 
+
+import qualified Common.Lib.Map as Map
+import Common.AS_Annotation
+
+{- |
+prepareSenNames prepares sentence names for the usage within provers.
+
+ * generic names are added
+
+ * disambiguation of duplicate assigned names
+
+ * translation of special characters with the aid of the provided function
+
+-}
+prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
+prepareSenNames trFun = 
+    transSens trFun . disambiguateSens [] . nameSens
+
+-- | translate special characters in sentence names
+transSens :: (String -> String) -> [Named a] -> [Named a]
+transSens trFun = map (\ax -> ax{senName = trFun (senName ax)}) 
+
+-- | disambiguate sentence names
+disambiguateSens :: [Named a] -> [Named a] -> [Named a]
+disambiguateSens others axs = reverse $ disambiguateSensAux others axs []
+
+disambiguateSensAux :: [Named a] -> [Named a] -> [Named a] -> [Named a]
+disambiguateSensAux _ [] soFar = soFar
+disambiguateSensAux others (ax:rest) soFar =
+  disambiguateSensAux (ax':others) rest (ax':soFar)
+  where
+  name' = fromJust $ find (not . flip elem namesSoFar) 
+                          (name:[name++show (i :: Int) | i<-[1..]])
+  name = senName ax 
+  namesSoFar = map senName others
+  ax' = ax{senName = name'}
+
+-- | name unlabeled axioms with "Axnnn"
+nameSens :: [Named a] -> [Named a]
+nameSens sens = 
+  map nameSen (zip sens [1..length sens])
+  where nameSen (sen,no) = if senName sen == "" 
+                              then sen{senName = "Ax"++show no}
+                              else sen
+ 
+-- | collect the mapping of new to old names 
+collectNameMapping :: [Named a] -> [Named a] -> Map.Map String String
+collectNameMapping n o = Map.fromList (zipWith toPair n o) 
+    where toPair nSen oSen = (senName nSen, 
+                              if null oName 
+                                 then "<unnamed>"++senName nSen
+                                 else oName)
+              where oName = senName oSen
+
+-- | a separate Map speeds up lookup
+charMap :: Map.Map Char String
+charMap = Map.fromList
+ [('!' , "Exclam"),
+  ('"' , "Quot"),
+  ('#' , "Hash"),
+  ('$' , "Dollar"),
+  ('%' , "Percent"),
+  ('&' , "Amp"),
+  ('(' , "OBr"),
+  (')' , "CBr"),
+  ('*' , "x"), 
+  ('+' , "Plus"),
+  (',' , "Comma"),
+  ('-' , "Minus"),
+  ('.' , "Period"), -- Dot?
+  ('/' , "Slash"), -- Div?
+  (':' , "Colon"),
+  (';' , "Semi"),
+  ('<' , "Lt"),
+  ('=' , "Eq"),
+  ('>' , "Gt"),
+  ('?' , "Quest"),
+  ('@' , "At"),
+  ('[' , "OSqBr"),
+  ('\\' , "Bslash"),
+  (']' , "CSqBr"),        
+  ('^' , "Caret"), -- Hat?
+  ('`' , "Grave"),
+  ('{' , "LBrace"),
+  ('|' , "VBar"),
+  ('}' , "RBrace"),
+  ('~' , "Tilde"),
+  ('\160', "nbsp"),
+  ('¡' , "iexcl"),
+  ('¢' , "cent"),
+  ('£' , "pound"),
+  ('¤' , "curren"),
+  ('¥' , "yen"),
+  ('¦' , "brvbar"),
+  ('§' , "sect"),
+  ('¨' , "uml"),
+  ('©' , "copy"),
+  ('ª' , "ordf"),
+  ('«' , "laquo"),
+  ('¬' , "not"),
+  ('­' , "shy"),
+  ('®' , "reg"),
+  ('\175', "macr"), 
+  ('°' , "deg"),
+  ('±' , "plusmn"),
+  ('²' , "sup2"),
+  ('³' , "sup3"),
+  ('´' , "acute"),
+  ('µ' , "micro"),
+  ('¶' , "para"),
+  ('·' , "middot"),
+  ('¸' , "cedil"),
+  ('¹' , "sup1"),
+  ('º' , "ordm"),
+  ('»' , "raquo"),
+  ('¼' , "quarter"),
+  ('½' , "half"),
+  ('¾' , "frac34"),
+  ('¿' , "iquest"),
+  ('À' , "Agrave"),
+  ('Á' , "Aacute"),
+  ('Â' , "Acirc"),
+  ('Ã' , "Atilde"),
+  ('Ä' , "Auml"),
+  ('Å' , "Aring"),
+  ('Æ' , "AElig"),
+  ('Ç' , "Ccedil"),
+  ('È' , "Egrave"),
+  ('É' , "Eacute"),
+  ('Ê' , "Ecirc"),
+  ('Ë' , "Euml"),
+  ('Ì' , "Igrave"),
+  ('Í' , "Iacute"),
+  ('Î' , "Icirc"),
+  ('Ï' , "Iuml"),
+  ('Ð' , "ETH"),
+  ('Ñ' , "Ntilde"),
+  ('Ò' , "Ograve"),
+  ('Ó' , "Oacute"),
+  ('Ô' , "Ocirc"),
+  ('Õ' , "Otilde"),
+  ('Ö' , "Ouml"),
+  ('×' , "Times"),
+  ('Ø' , "OSlash"),
+  ('Ù' , "Ugrave"),
+  ('Ú' , "Uacute"),
+  ('Û' , "Ucirc"),
+  ('Ü' , "Uuml"),
+  ('Ý' , "Yacute"),
+  ('Þ' , "THORN"),
+  ('ß' , "szlig"),
+  ('à' , "agrave"),
+  ('á' , "aacute"),
+  ('â' , "acirc"),
+  ('ã' , "atilde"),
+  ('ä' , "auml"),
+  ('å' , "aring"),
+  ('æ' , "aelig"),
+  ('ç' , "ccedil"),
+  ('è' , "egrave"),
+  ('é' , "eacute"),
+  ('ê' , "ecirc"),
+  ('ë' , "euml"),
+  ('ì' , "igrave"),
+  ('í' , "iacute"),
+  ('î' , "icirc"),
+  ('ï' , "iuml"),
+  ('ð' , "eth"),
+  ('ñ' , "ntilde"),
+  ('ò' , "ograve"),
+  ('ó' , "oacute"),
+  ('ô' , "ocirc"),
+  ('õ' , "otilde"),
+  ('ö' , "ouml"),
+  ('÷' , "Divide"),
+  ('ø' , "oslash"),
+  ('ù' , "ugrave"),
+  ('ú' , "uacute"),
+  ('û' , "ucirc"),
+  ('ü' , "uuml"),
+  ('ý' , "yacute"),
+  ('þ' , "thorn"),
+  ('ÿ' , "yuml")]
