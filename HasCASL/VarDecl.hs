@@ -26,7 +26,7 @@ import Common.Result
 import Common.PrettyPrint
 import Common.Lexer
 import Common.AnnoState
-import Text.ParserCombinators.Parsec hiding (State)
+import Text.ParserCombinators.Parsec (runParser, eof)
 
 import HasCASL.ParseTerm
 import HasCASL.As
