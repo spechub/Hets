@@ -16,10 +16,10 @@ import OWL_DL.AS
 import qualified Common.Lib.Set as Set
 
 data OWL_DLSign = OWL_DLSign
-            {  concepts :: Set.Set Axiom      -- ^ a set of classes
-              ,subConcepts :: Set.Set Axiom   -- ^ a set of subclasses
-              ,indValuedRoles :: Set.Set Axiom  -- ^ a set of object property
-              ,dataValuedRoles :: Set.Set Axiom -- ^ a set of data property
+            {  concepts :: Set.Set URIReference -- ^ a set of classes
+              , primaryConcepts :: Set.Set URIReference -- ^ a set of subclasses
+              ,indValuedRoles :: Set.Set URIReference -- ^ a set of object property
+              ,dataValuedRoles :: Set.Set URIReference -- ^ a set of data property
               ,individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge 
               -- ^of roles, functional roles and concept membership
