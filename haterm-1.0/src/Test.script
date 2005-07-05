@@ -1,6 +1,0 @@
-fromATermString "A2" :: SortA
-fromATermString "A1(A2,B1(A2))" :: SortA
-toATermString (fromATermString "A2" :: SortA)
-toATermString (fromATermString "A1(A2,B1(A2))" :: SortA)
-toSharedATermString (fromATermString "!A1(A1(A2,B1(A2)),B1(A1(A2,B1(A2))))" :: SortA)
-toSharedATermString (fromATermString "!A1(A1(A2,B1(A2)),B1(#D))" :: SortA)
