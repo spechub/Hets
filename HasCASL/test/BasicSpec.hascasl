@@ -2,7 +2,7 @@ class Type
 
 var t:Type
 
-class TYPE : {x.x < t}
+class TYPE < Type
 
 type Pred __ : -Type -> Type; Unit:TYPE
 

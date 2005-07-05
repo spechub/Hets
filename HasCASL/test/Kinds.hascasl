@@ -1,6 +1,5 @@
 Type
 a
-(a,b) %[Intersection]%
 a->b
 a->b->c
 (a)
@@ -8,4 +7,3 @@ a->(b->c)
 (a->b)->c
 +(a->b) ->c
 +(-a ->b) ->c
-(a,b->c)

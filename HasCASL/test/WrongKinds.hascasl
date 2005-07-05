@@ -19,3 +19,5 @@ a*b->c*d->e
 (-a * (+b ->c)- * -d) -> e %[nested products]%
 (-a * (+b ->c)- * -d) -> e %[nested products]%
 (a,b) * (c,d) -> (e,f) %[Intersection]%
+(a,b) %[Intersection]%
+(a,b->c)
