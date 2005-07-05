@@ -310,7 +310,8 @@ joinNames ls = concat [x ++ "_X" | x <- ls]
 transTN :: String -> String -> String
 transTN s1 s2 = case (s1,s2) of 
    ("Prelude","Bool") -> "tr"
-   ("Prelude","Int") -> "int lift"
+   ("Prelude","Int") -> "dInt"
+   ("Prelude","[]") -> "seq"
    _ -> transPath s1 s2 
 
 transPath :: String -> String -> String
@@ -318,12 +319,26 @@ transPath s1 s2 = (showIsaName s1)++"_"++(showIsaName s2)
 
 
 -------------------------- TYPES -------------------------------------------------------------
------------------------- tuples ---------------------------------------------------------------
+------------------------ tuples, lifting -----------------------------------------------------
+
 typTuple :: [Typ] -> Typ
 typTuple ts = case ts of 
   [] -> noType
   [a] -> a
   a:as -> mkContProduct a (typTuple as)
+
+typeLift :: Typ -> Typ
+typeLift t = IsaSign.Type "lift" (remove_duplicates $ pcpo:(typeSort t)) [t]
+
+typeLift1 :: Typ -> Typ
+typeLift1 t = case t of
+   IsaSign.Type funS s [t1,t2] -> IsaSign.Type "dFun" (remove_duplicates $ pcpo:s) [typeLift t1, t2]
+   _ -> error "Hs2HOLCFaux, typeLift1"
+
+typeLift2 :: Typ -> Typ
+typeLift2 t = case t of
+   IsaSign.Type funS s [t1,t2] -> IsaSign.Type "dFun" (remove_duplicates $ pcpo:s) [typeLift t1, typeLift t2]
+   _ -> error "Hs2HOLCFaux, typeLift2"
 
 ----------------------------- equivalence of types modulo variables name -------------------
 
@@ -420,7 +435,19 @@ argTypes a = case a of
 
 
 -------------------------- TERMS --------------------------------------------------------------
------------------------- tuples, multiple abstractions and applications, fixpoints -----------
+---------------- lifting, tuples, multiple abstractions and applications, fixpoints -----------
+
+termLift :: Term -> Term
+termLift t = App (Const "Def" noType) t NotCont
+
+funLift1 :: Term -> Term
+funLift1 f = termMAppl NotCont (Const "flift1" noType) [f]
+
+funLift2 :: Term -> Term
+funLift2 f = termMAppl NotCont (Const "flift2" noType) [f]
+
+funFliftbin :: Term -> Term
+funFliftbin f = termMAppl NotCont (Const "fliftbin" noType) [f]
 
 termMAbs :: Continuity -> [Term] -> Term -> Term
 termMAbs c ts t = 
@@ -547,6 +574,7 @@ litEq t1 t2 = case (t1,t2) of
   (Free m x, Const n y) -> if n == m && typEq x y then True else False
   _ -> False
 
+{- this functions was actually meant to compare only constructors - check out, there might be bugs -} 
 simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
  (IsaSign.Const x _,  IsaSign.Const y _) -> if x == y then True else False
@@ -560,6 +588,7 @@ simTerms t1 t2 = case (t1, t2) of
  (IsaEq _ _, IsaEq _ _) -> True
  (Fix _, Fix _) -> True
  (Bottom, Bottom) -> True
+ (Tuplex _ _, Tuplex _ _) -> True
  (Paren x, y) -> simTerms x y
  (x, Paren y) -> simTerms x y
  (Wildcard, Wildcard) -> True
@@ -592,6 +621,7 @@ extRightH s = case s of
   NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extRightH"
 
+{- left comp is the def name, right comp are the constants in the def  -} 
 sentAna :: Named Sentence -> (Term, [Term])
 sentAna s = case s of
   NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
