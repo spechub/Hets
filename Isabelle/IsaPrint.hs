@@ -170,11 +170,11 @@ showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "=="
                          ++ sp ++ (showTerm t2) ++ rb
 showTerm (Case term alts) =
   let sAlts = map showCaseAlt alts
-  in 
-   lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
-      ++ sp ++ head sAlts
-      ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
+  in lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
+         ++ sp ++ head sAlts
+         ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
                                                     (tail sAlts)) ++ rb
+
 showTerm (If t1 t2 t3 c) = case c of
   NotCont -> 
     lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
@@ -320,6 +320,7 @@ showPTree (Node (PrecTerm term pre) annos) =
                     | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
                     | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
                     | c == "op *" -> infixP pre "*" LeftAs leftChild rightChild
+                    | c == "(op ##)" -> infixP pre "##" RightAs leftChild rightChild
 --                    | c == cappl -> infixP pre "$" LeftAs leftChild rightChild
                     | c `elem` [conj, disj, impl] ->
                         infixP pre (drop 3 c) RightAs leftChild rightChild
