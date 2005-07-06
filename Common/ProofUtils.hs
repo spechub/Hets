@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.List 
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
 {- |
@@ -30,28 +31,31 @@ prepareSenNames prepares sentence names for the usage within provers.
 
  * translation of special characters with the aid of the provided function
 
+Warning: all sentence names are disambiguated by adding a natural number.
+If that does not work for a certain reasoner you can hand in a function
+which uses a different alghorithm.
 -}
 prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
 prepareSenNames trFun = 
-    transSens trFun . disambiguateSens [] . nameSens
+    disambiguateSens Set.empty . transSens trFun . nameSens
 
 -- | translate special characters in sentence names
 transSens :: (String -> String) -> [Named a] -> [Named a]
 transSens trFun = map (\ax -> ax{senName = trFun (senName ax)}) 
 
 -- | disambiguate sentence names
-disambiguateSens :: [Named a] -> [Named a] -> [Named a]
-disambiguateSens others axs = reverse $ disambiguateSensAux others axs []
+disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
+disambiguateSens reservedNames axs = 
+    reverse $ disambiguateSensAux reservedNames axs []
 
-disambiguateSensAux :: [Named a] -> [Named a] -> [Named a] -> [Named a]
+disambiguateSensAux :: Set.Set String -> [Named a] -> [Named a] -> [Named a]
 disambiguateSensAux _ [] soFar = soFar
-disambiguateSensAux others (ax:rest) soFar =
-  disambiguateSensAux (ax':others) rest (ax':soFar)
+disambiguateSensAux nameSet (ax:rest) soFar =
+  disambiguateSensAux (Set.insert name' nameSet) rest (ax':soFar)
   where
-  name' = fromJust $ find (not . flip elem namesSoFar) 
+  name' = fromJust $ find (not . flip Set.member nameSet) 
                           (name:[name++show (i :: Int) | i<-[1..]])
   name = senName ax 
-  namesSoFar = map senName others
   ax' = ax{senName = name'}
 
 -- | name unlabeled axioms with "Axnnn"
