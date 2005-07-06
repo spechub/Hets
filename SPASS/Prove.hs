@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rwagner@tzi.de
@@ -14,10 +14,18 @@ Interface for the SPASS theorem prover.
 
 {- 
     todo:
-      - use Colors for the Prove Status 
-        (Green: Proved, Red: Disproved, Black: Open)
+      - use one of the technices in Comorphisms.CASL2SPASS to translate
+        formula labels into correct SPASS identifiers; 
+        and keep track of this translation for getting the right names
+        for ProofStatus ...
+        partly implemented
+      - use Colors for the Prove Status and add new status: Running
+        (Green: Proved, Red: Disproved, Black: Open, Blue: Running)
       - add a button to show the help text for SPASS options
-      - surround goal specific part of GUI with a border
+      - add a field for displaying "Used axioms" to the Status part
+        of the window
+      - surround goal specific part of GUI with a border and Status part 
+        with another border
       - check if proving is possible more than one time even 
         if the Goal was already proved
 -}
@@ -27,18 +35,21 @@ module SPASS.Prove where
 import Control.Exception
 
 import Logic.Prover
+
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Print
+import SPASS.Translate
 
 import Common.AS_Annotation
 import Common.PrettyPrint
+import Common.ProofUtils
 
 import ChildProcess
 import System.Posix
 import Text.Regex
-import List
-import Maybe
+import Data.List
+import Data.Maybe
 import Data.IORef
 
 import HTk
@@ -136,24 +147,29 @@ type SPASSResultsMap = Map.Map SPIdentifier SPASSResult
 emptyResultsMap :: SPASSResultsMap
 emptyResultsMap = Map.empty
 
+type SPASSGoalNameMap = Map.Map String String
+
 {- |
   Represents the global state of the prover GUI.
 -}
 data State = State { currentGoal :: Maybe SPIdentifier,
                      theory :: Theory Sign Sentence,
                      configsMap :: SPASSConfigsMap,
-                     resultsMap :: SPASSResultsMap
+                     resultsMap :: SPASSResultsMap,
+                     goalNamesMap :: SPASSGoalNameMap
                    }
 
 {- |
   Creates an initial State around a Theory.
 -}
-initialState :: Theory Sign Sentence -> [Named Sentence] -> SPASS.Prove.State
-initialState th gs = 
+initialState :: Theory Sign Sentence -> SPASSGoalNameMap 
+             -> [Named Sentence] -> SPASS.Prove.State
+initialState th gm gs = 
     State {currentGoal = Nothing,
            theory = th,
            configsMap = Map.fromList (map (\ x -> (senName x,emptyConfig) ) gs),
-           resultsMap = emptyResultsMap}
+           resultsMap = emptyResultsMap,
+           goalNamesMap = gm}
 
 {- |
   Currently implemented as a batch mode prover only.
@@ -218,7 +234,8 @@ spassProveGUI :: String -- ^ theory name
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
   -- backing data structure
-  let initState = initialState th goals
+  let initState = initialState th 
+                  (collectNameMapping goals (filter isAxiom nSens)) goals
   stateRef <- newIORef initState
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
@@ -347,9 +364,8 @@ spassProveGUI thName th = do
   where
     noGoalSelected = createErrorWin "Please select a goal first." []
     Theory sign nSens = th
-    (axioms, raw_goals) = partition isAxiom nSens
-    -- Note @Till: remove next line when goals are no longer doubled
-    goals = nub {-(\ x y -> senName x == senName y)-} raw_goals
+    (axioms, goals) = partition isAxiom 
+                          (prepareSenNames transSenName nSens)
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sign) (reverse axioms)
     showResMap mp = 
         '{':(foldr  (\ (k,(x,outp)) resF -> 
@@ -432,7 +448,10 @@ runSpass lp config nGoal = do
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   -- debugging output
   -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
-  -- FIXME: use printText0 instead. but where to get an instance of GlobalAnnos from?
+  -- FIXME: use printText0 instead. but where to get an instance of
+  -- GlobalAnnos from?
+  -- This can't be fixed until the prover interface is updated to hand
+  -- in global annos
   sendMsg spass (showPretty problem "")
   (res, usedAxioms, output) <- parseSpassOutput spass
   return (proof_status res usedAxioms cleanOptions, output)
