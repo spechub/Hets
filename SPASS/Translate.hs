@@ -38,7 +38,6 @@ reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
                                           , SPImplied
                                           ,SPEquiv])
 
-
 transSenName :: String -> String
 transSenName = transId . simpleIdToId . mkSimpleId
 
@@ -50,8 +49,11 @@ transId iden
     | otherwise = concatMap transToSPChar str
     where str = show iden
 
+charMap_SP :: Map.Map Char String
+charMap_SP = Map.insert '\'' "Prime" charMap
+
 transToSPChar :: Char -> SPIdentifier
 transToSPChar c
     | checkSPChar c = [c]
-    | otherwise = Map.findWithDefault def c charMap
+    | otherwise = Map.findWithDefault def c charMap_SP
     where def = "Slash_"++ show (ord c)
