@@ -44,6 +44,7 @@ import Isabelle.Translate
 import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.DefaultMorphism
+import Common.ProofUtils
 
 import Data.List
 import Data.Maybe
@@ -109,21 +110,19 @@ isaProve checkCons thName (Theory sig nSens) = do
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
   where
-      (axs, goals) = partition isAxiom nSens 
+      nSens' = prepareSenNames transString nSens
+      (disAxs, disGoals) = partition isAxiom nSens' 
       thName' = thName++if checkCons then "_c" else ""
       fileName = thName'++".thy"
       origName = thName'++".orig.thy"
       patchName = thName'++".patch"
       provedName = thName'++"_proved.thy"
       theory = if checkCons then showConsTheory else showTheory
-      disAxs = transSens (baseSig sig) $ disambiguateSens [] $ nameSens axs
       (lemmas, decs) = unzip (map formLemmas disAxs)
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
       showAxs = concat $ map ((++"\n") . showSen) (markSimp disAxs)
-      disGoals = transSens (baseSig sig) $ disambiguateSens disAxs $ nameSens 
-                 goals
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
       showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) goal
@@ -192,39 +191,11 @@ isSimpRule Bound{} = True
 isSimpRule Abs{}   = False
 isSimpRule arg     = False
 
--- translate special characters in sentence names
-transSens :: BaseSig -> [Named a] -> [Named a]
-transSens thy = map (\ax -> ax{senName = transStringT thy $ senName ax})
-
--- disambiguate sentence names
-disambiguateSens :: [Named a] -> [Named a] -> [Named a]
-disambiguateSens others axs = reverse $ disambiguateSensAux others axs []
-
-disambiguateSensAux :: [Named a] -> [Named a] -> [Named a] -> [Named a]
-disambiguateSensAux _ [] soFar = soFar
-disambiguateSensAux others (ax:rest) soFar =
-  disambiguateSensAux (ax':others) rest (ax':soFar)
-  where
-  name' = fromJust $ find (not . flip elem namesSoFar) 
-                          (name:[name++show (i :: Int) | i<-[1..]])
-  name = senName ax 
-  namesSoFar = map senName others
-  ax' = ax{senName = name'}
-
-
 -- output a sentences
 showSen :: PrettyPrint a => Named a -> String
 showSen s =  (if null (senName s) then "" 
                 else senName s++": ")
              ++ "\""++showPretty (sentence s) "\""
-
--- name unlabeled axioms with "Axnnn"
-nameSens :: [Named a] -> [Named a]
-nameSens sens = 
-  map nameSen (zip sens [1..length sens])
-  where nameSen (sen,no) = if senName sen == "" 
-                              then sen{senName = "Ax"++show no}
-                              else sen
 
 -- form a lemmas from given axiom and add them both to Isabelles simplifier
 formLemmas :: Named a -> (String, String)

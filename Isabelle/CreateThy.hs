@@ -20,6 +20,7 @@ import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty as P
+import Common.ProofUtils
 
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Translate
@@ -29,11 +30,11 @@ import Isabelle.IsaHOLCFPrint
 
 createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
-    let (axs, rest) = getAxioms sens
+    let (axs, rest) = getAxioms (prepareSenNames transString sens)
         (defs, _) = getDefs rest
     in printText sig $++$
     (if null axs then empty else text "axioms" $$ 
-        vcat (map printNamedSen $ disambiguate sig axs)) $++$
+        vcat (map printNamedSen axs)) $++$
     (if null defs then empty else text "defs" $$
         vcat (map printNamedSen defs)) 
     $++$ text "end"     
@@ -47,20 +48,6 @@ getAxioms = partition ( \ s -> case sentence s of
 getDefs = partition ( \ s -> case sentence s of 
                             ConstDef _ -> True
                             _ -> False)
-
-disambiguate :: Sign -> [Named Sentence] -> [Named Sentence]
-disambiguate sign axs = 
-    let s0 = Map.findWithDefault Set.empty (baseSig sign) isaPrelude
-        number :: Set.Set String -> Int -> String -> String
-        number given c n = let new = n ++ show c in 
-                               if Set.member new given then 
-                                  number given (c+1) n else new
-        rename given n = if Set.member n given then number given 2 n else n
-        accFun s a = let m = senName a
-                         n = if null m then number s 1 "Ax" 
-                                 else rename s (transString m) 
-                     in (Set.insert n s, a { senName = n})
-     in snd $ mapAccumL accFun s0 axs
 
 printNamedSen :: Named Sentence -> Doc
 printNamedSen (NamedSen lab _ s) = text (case s of
