@@ -7,24 +7,21 @@ class Type : Type
 
 class d < a
 
-class a < (d,e,Type,(g,h))
-
 class a < d
 
 
 class a < a
 
 class a : b
-class b : (c,d,e)
+class b : d
 
 class d : d
+class d : a
 type t:a
 
-class h : (a,b)
+class h : a
 
 class h : c
-
-class j : { v . v < t }
 
 type a__b, [__] : a -> b
 
