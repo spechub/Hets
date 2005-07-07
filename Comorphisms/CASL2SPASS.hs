@@ -12,8 +12,10 @@ The translating comorphism from CASL to SPASS.
 
 {- todo
 
+   - implement translation of Sort_gen_ax (FORMULA f) 
+   - add codeOut of Conditional of TERM f 
    - are all free type definitions a source of partial functions /
-     partiallity
+     partiallity? No...
 
 -}
 
@@ -21,10 +23,10 @@ module Comorphisms.CASL2SPASS where
 
 -- Debuging and Warning
 import Debug.Trace
-import Control.Exception
 
 import Logic.Logic as Logic
 import Logic.Comorphism
+
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
@@ -32,9 +34,10 @@ import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+
 import Data.List as List
 import Data.Maybe
-import Data.Char
+
 -- CASL
 import CASL.Logic_CASL 
 import CASL.AS_Basic_CASL
@@ -43,13 +46,12 @@ import qualified CASL.Sign as CSign
 import CASL.Morphism
 import CASL.Quantification 
 import CASL.Overload
+import CASL.Utils
 
 -- SPASS
 import SPASS.Sign as SPSign
 import SPASS.Logic_SPASS
-
--- Isabelle
-import Isabelle.Translate
+import SPASS.Translate
 
 -- | The identity of the comorphism
 data CASL2SPASS = CASL2SPASS deriving (Show)
@@ -135,35 +137,6 @@ instance Comorphism CASL2SPASS
     map_sentence _ sign =
       return . mapSen formTrCASL sign
     map_symbol _ _ = error "CASL2SPASS.map_symbol"
-
------------------------------- Ids ---------------------------------
-
--- | collect all keywords of SPASS
-reservedWords :: Set.Set SPIdentifier 
-reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
-                                          , SPTrue 
-                                          , SPFalse 
-                                          , SPOr 
-                                          , SPAnd
-                                          , SPNot
-                                          , SPImplies
-                                          , SPImplied
-                                          ,SPEquiv])
-
-
-transId :: Id -> SPIdentifier
-transId iden 
-    | checkIdentifier str = if Set.member str reservedWords 
-                            then "X_"++str
-                            else str
-    | otherwise = concatMap transToSPChar str
-    where str = show iden
-
-transToSPChar :: Char -> SPIdentifier
-transToSPChar c
-    | checkSPChar c = [c]
-    | otherwise = Map.findWithDefault def c charMap
-    where def = "Slash_"++ show (ord c)
 
 ---------------------------- Signature -----------------------------
 
@@ -314,7 +287,7 @@ transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign)) $
   return  (tSign {sortMap = integrateGenerated idMap 
                             genSens (sortMap tSign)},
-          map (mapNamed (transFORMULA sign idMap trForm)) realSens)
+          map (mapNamed (transFORM sign idMap trForm)) realSens)
   where (tSign,idMap) = transSign sign
         (genSens,realSens) = 
             partition (\ s -> case (sentence s) of
@@ -322,183 +295,7 @@ transTheory trSig trForm (sign,sens) =
                               _               -> False) sens
 
 
---     baseSig = baseSign,
---     tsig = emptyTypeSig {arities = 
---                Set.fold (\s -> let s1 = (showIsaT s baseSign) in
---                                 if s1 `elem` dtTypes then id
---                                  else Map.insert s1 [(isaTerm, [])]) 
---                                Map.empty (sortSet sign)},
---     constTab = Map.foldWithKey insertPreds
---                 (Map.filterWithKey (isNotIn dtDefs) 
---                 $ Map.foldWithKey insertOps Map.empty 
---                 $ opMap sign) $ predMap sign,
---     dataTypeTab = dtDefs},      
---      map (mapNamed (mapSen trForm sign)) real_sens)  
---      -- for now, no new sentences
---   where 
---     (real_sens, sort_gen_axs) = List.partition 
---         (\ s -> case sentence s of
---                 Sort_gen_ax _ _ -> False
---                 _ -> True) sens
---     dtDefs = topoSort (makeDtDefs sign sort_gen_axs)
---     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
---     insertOps op ts m = 
---      if Set.size ts == 1 
---       then Map.insert (showIsaT op baseSign) (transOpType (Set.findMin ts)) m
---       else 
---       foldl (\m1 (t,i) -> Map.insert (showIsaIT op i baseSign) 
---                           (transOpType t) m1) m 
---             (zip (Set.toList ts) [1..(Set.size ts)])
---     insertPreds pre ts m =
---      if Set.size ts == 1 
---       then Map.insert (showIsaT pre baseSign) 
---                (transPredType (Set.findMin ts)) m
---       else
---       foldl (\m1 (t,i) -> Map.insert (showIsaIT pre i baseSign) 
---                           (transPredType t) m1) m 
---             (zip (Set.toList ts) [1..Set.size ts])
-
-
--- topoSort 
--- A(i) = [[j]] with definition of datatype i needs j
--- inI(i) = [n] i is needed by n other definions
--- (1) L<-[]
--- (2) for i=1 to n do inI(i)<-0 od;
--- (3) for i=1 to n do 
--- (4)   for (j elem A(i)) do inI(j)<-inI(j) + 1 od
--- (5) od;
--- (6) for i=1 to n do 
--- (7)   if inI(i) = 0  then i:L fi 
--- (8) od; 
--- (9) while L != [] do
---(10)   v <- head(L)
---(11)   L <- tail(L)
---(12)   sortedList <- sortedList ++ v
---(13)   for (w elem A(v)) do
---(14)       inI(w) <- inI(w) - 1
---(15)       if inI(w)=0 then L<- L++w fi
---(16)   od;
---(17) od;
-{-
-
-topoSort :: [[(Typ, [(a, [Typ])])]] -> [[(Typ, [(a, [Typ])])]]
-topoSort [] = []
-topoSort dts = whileL (collectL inI_ 1) inI_ adI_ dts
-    where 
-    (inI_, adI_) =  makeLists [] dts 1 (map (const 0) dts) 
-                    $ map (const [0]) dts
-    -- generate both A- and inI-list
-    makeLists :: [[(Typ, [(a, [Typ])])]] -> [[(Typ, [(a, [Typ])])]] -> 
-                 Int -> [Int] -> [[Int]] -> ([Int], [[Int]])
-    makeLists _ [] _ inI ad = (inI, ad)
-    makeLists as1 (a:as2) n inI ad = 
-        if (snd (findIn as1 a n [])) == True then
-           makeLists (concat [as1, [a]]) as2 (n+1)  updateIn1 updateAdj1
-        else 
-           if (snd (findIn as2 a n [])) == True then
-              makeLists (concat [as1,[a]]) as2 (n+1) updateIn2 updateAdj2
-           else makeLists (concat [as1, [a]]) as2 (n+1) inI ad
-        where 
-        updateAdj1 = updateAdj ad (fst (findIn as1 a n [])) 0
-        updateAdj2 = updateAdj ad (fst (findIn as2 a n [])) n
-        updateIn1  = updateIn inI (count (fst (findIn as1 a n []))) n 
-        updateIn2  = updateIn inI (count (fst (findIn as1 a n [])) + 
-                                   count (fst (findIn as2 a n []))) n
-    -- is Type a in the list (b:bs)
-    findIn :: [[(Typ, [(a, [Typ])])]] -> [(Typ, [(a, [Typ])])] 
-           -> Int -> [Int]-> ([Int], Bool) 
-    findIn [] _ _ l = (if (sum l) > 0 then (l, True) else ([], False))
-    findIn (b:bs) a n l = findIn bs a n (concat [l, list])
-        where
-        list = map (compareTypes n (getType (head b))) 
-               $ concat (getUsedTypes (snd (head a)))
-    compareTypes n t1 t2 = if t1 == t2 then n else 0
-    -- returns the typename of a
-    getType a = let (Type d _ _) = fst a in d
-    -- returns all used types
-    getUsedTypes [] = []
-    getUsedTypes (b:bs) = (getUsedType (snd b)) :(getUsedTypes bs)
-    getUsedType  [] = []
-    getUsedType  (c:cs) = let (Type d _ _) = c in d :(getUsedType cs) 
-    updateAdj :: [[a]] -> [a] -> Int -> [[a]]
-    updateAdj (ad:ads) (c:cs) 0 = (c:ad):(updateAdj ads cs 0)   
-    updateAdj (ad:ads) cs n = ad:(updateAdj ads cs (n-1))
-    updateAdj ad _ _ = ad
-    count as = length (List.filter (> 0) as)
-    updateIn [] _ _ = error "topoSort.updateIn"
-    updateIn (_ : inIs) c 1 = c:inIs           
-    updateIn (inI:inIs) c n = inI:(updateIn inIs c (n-1)) 
-    -- Lines 6-8                      
-    collectL [] _ = []
-    collectL (inI:inIs) i = if inI == 0 then i:(collectL inIs (i+1)) 
-                            else (collectL inIs (i+1))
-
-    -- Lines 9-16
-    whileL [] _ _ _ = []
-    whileL (l:ls) inI adI dtDefs = selElemAt l dtDefs 
-                                   : whileL newLs newInIs adI dtDefs
-        where 
-        newLs = concat [ls, snd(updateInI2 (selElemAt l adI) inI 1 [] [])]
-        newInIs = fst(updateInI2 (selElemAt l adI) inI 1 [] [])
-        updateInI2 _  []  _ newL ins = (reverse ins, reverse newL)
-        updateInI2 [] inI' _ _ _   = (inI', [])
-        updateInI2 listOfInd (inI':inIs) n newL ins =
-                 let dInI = inI' - 1 in 
-                 if n `elem` listOfInd then 
-                    if dInI == 0 then
-                       updateInI2 listOfInd inIs (n+1) (n:newL) (dInI:ins)
-                    else 
-                       updateInI2 listOfInd inIs (n+1) newL (dInI:ins)
-                 else updateInI2 listOfInd inIs (n+1) newL (inI':ins)
-    -- get the l-th value from the list 
-    selElemAt :: Int -> [a] -> a
-    selElemAt l xs = xs !! (l - 1)                                  
-
-transSort :: SORT -> Typ
-transSort s = Type (showIsaT s baseSign) [] []
-
-transOpType :: OpType -> Typ
-transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
-                 $ transSort (opRes ot)
-
-transPredType :: PredType -> Typ
-transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
-
--}
 ------------------------------ Formulas ------------------------------
-{-
-var :: String -> Term
---(c) var v = IsaSign.Free v noType isaTerm
-var v = IsaSign.Free v noType
-
-transVar :: VAR -> String
-transVar v = showIsaT (simpleIdToId v) baseSign
-
-xvar :: Int -> String
-xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
-
-rvar :: Int -> String
-rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
-
-quantifyIsa :: String -> (String, Typ) -> Term -> Term
-quantifyIsa q (v,t) phi =
-  App (Const q noType) (Abs (Free v noType) t phi NotCont) NotCont
---(c) App (Const q noType isaTerm) (Abs (Cont v noType isaTerm) t phi NotCont) 
---(c) NotCont
---quantifyIsa :: String -> (String, Typ) -> Term -> Term
---quantifyIsa q (v,t) phi =
--- App (Const q) (Abs [(Free v, t)] phi NotCont) NotCont
-
-quantify :: QUANTIFIER -> (VAR, SORT) -> Term -> Term
-quantify q (v,t) phi  = 
-  quantifyIsa (qname q) (transVar v, transSort t) phi
-  where
-  qname Universal = allS
-  qname Existential = exS
-  qname Unique_existential = ex1S
-
--}
-
 
 transOP_SYMB :: IdType_SPId_Map -> OP_SYMB -> SPIdentifier
 transOP_SYMB idMap (Qual_op_name op ot _) = 
@@ -513,20 +310,23 @@ transPRED_SYMB idMap (Qual_pred_name p pt _) =
           id (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
 transPRED_SYMB _ (Pred_name _) = error "CASL2SPASS: unqualified predicate"
 
+-- | 
+-- Translate the quantifier
 quantify :: QUANTIFIER -> SPQuantSym
 quantify q = 
     case q of
     Universal -> SPForall
     Existential -> SPExists
     Unique_existential -> 
-        error "CASL2SPASS: no translation for existential quantification yet."
+        error "CASL2SPASS: no translation for existential quantification."
 
 transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) -> 
                (VAR,SORT) -> 
-               ((Set.Set SPIdentifier,IdType_SPId_Map),SPTerm)
+               ((Set.Set SPIdentifier,IdType_SPId_Map),
+                (SPIdentifier,SPIdentifier)) -- ^ ((new set of used Ids,new map of Ids to original Ids),(var as sp_Id,sort as sp_Id))
 transVarTup (usedIds,idMap) (v,s) = 
     ((Set.insert sid usedIds,insertSPId vi (CVar s) sid idMap)
-    , spTerm) 
+    , (sid,spSort)) 
     where spSort = maybe (error ("CASL2SPASS: translation of sort \""++
                                 showPretty s "\" not found"))
                          id (lookupSPId s CSort idMap) 
@@ -534,7 +334,9 @@ transVarTup (usedIds,idMap) (v,s) =
           sid = disSPOId (CVar s) (transId vi) 
                     ["_Va_"++ showPretty s "_Va"]
                     usedIds
-          spTerm = compTerm (spSym spSort) [simpTerm (spSym sid)]
+
+typedVarTerm :: SPIdentifier -> SPIdentifier -> SPTerm
+typedVarTerm spVar spSort = compTerm (spSym spSort) [simpTerm (spSym spVar)]
 
 spSym :: SPIdentifier -> SPSymbol
 spSym = SPCustomSymbol 
@@ -555,8 +357,12 @@ mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
 mapSen :: FormulaTranslator f e -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen trForm sign phi = 
-    transFORMULA sign (snd (transSign sign)) trForm phi
+mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
+
+transFORM :: CSign.Sign f e -> 
+                IdType_SPId_Map -> FormulaTranslator f e 
+                -> FORMULA f -> SPTerm
+transFORM s i tr = transFORMULA s i tr . codeOutUniqueExt id (\ _  -> id) 
 
 transFORMULA :: CSign.Sign f e -> 
                 IdType_SPId_Map -> FormulaTranslator f e 
@@ -564,9 +370,11 @@ transFORMULA :: CSign.Sign f e ->
 transFORMULA sign idMap tr (Quantification qu vdecl phi _) =
     SPQuantTerm (quantify qu) 
                     vList
-                    (transFORMULA sign idMap' tr phi) 
+                    (transFORMULA sign idMap' tr phi)
     where ((_,idMap'),vList) = 
-              mapAccumL transVarTup (sidSet,idMap) (flatVAR_DECLs vdecl)
+              mapAccumL (\ acc e -> let (acc',e') = transVarTup acc e
+                                    in (acc', (uncurry typedVarTerm) e')) 
+                        (sidSet,idMap) (flatVAR_DECLs vdecl)
           sidSet = elemsSPId_Set idMap
 transFORMULA sign idMap tr (Conjunction phis _) =
   if null phis then SPSimpleTerm SPTrue
@@ -611,11 +419,17 @@ transTERM _sign idMap _tr (Qual_var v s _) =
 transTERM sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
              (map (transTERM sign idMap tr) args)
+
+transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
+    error "CASL2SPASS.transTERM: Conditional terms must be coded out."
 {-
-transTERM sign idMap tr (Conditional t1 phi t2 _) 
     | term_sort t1 == term_sort t2 =
   foldl termAppl (con "If") [transFORMULA sign idMap tr phi,
        transTERM sign idMap tr t1, transTERM sign idMap tr t2]
+
+expansion of conditionals:
+'A[T1 when F else T2]' expands to '(A[T1] if F) /\ (A[T2] if not F)'
+
 -}
 transTERM sign idMap tr (Sorted_term t s _) 
     | term_sort t == s = transTERM sign idMap tr t
