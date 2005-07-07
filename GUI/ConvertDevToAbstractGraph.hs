@@ -398,10 +398,12 @@ openProofStatus filename ioRefProofStatus convRef hetsOpts =
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
              -> IO ()
-proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, _, ioRefVisibleNodes) proofFun 
+proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, hOpts, ioRefVisibleNodes) proofFun 
   = do
   proofStatus <- readIORef ioRefProofStatus
+  putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
   Res.Result diags res <- proofFun proofStatus
+  putIfVerbose hOpts 4 "Analyzing result of proof"
   case res of
     Nothing -> do sequence $ map (putStrLn . show) diags
                   return ()
