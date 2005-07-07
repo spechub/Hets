@@ -27,15 +27,15 @@ import Data.List as List
 import Data.Maybe
 
 -- | bound vars
-genVarsOf :: Type -> [TypeArg]
+genVarsOf :: Type -> [(Id, RawKind)]
 genVarsOf = map snd . leaves (<0)
 
 -- | vars or other ids 
-leaves :: (Int -> Bool) -> Type -> [(Int, TypeArg)]
+leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
 leaves b t = 
     case t of 
            TypeName j k i -> if b(i)
-                             then [(i, TypeArg j k Other [])]
+                             then [(i, (j, k))]
                              else []
            TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
            ExpandedType _ t2 -> leaves b t2
@@ -68,39 +68,38 @@ toEnvState p =
 
 toSchemes :: (Type -> Type -> a) -> TypeScheme -> TypeScheme -> State Int a
 toSchemes f sc1 sc2 =
-    do (t1, _) <- freshInstList sc1
-       (t2, _) <- freshInstList sc2
+    do t1 <- freshInst sc1
+       t2 <- freshInst sc2
        return $ f t1 t2
 
 asSchemes :: Int -> (Type -> Type -> a) -> TypeScheme -> TypeScheme -> a
 asSchemes c f sc1 sc2 = fst $ runState (toSchemes f sc1 sc2) c
 
 -- -------------------------------------------------------------------------
-freshInstList :: TypeScheme -> State Int (Type, [Type])
-freshInstList (TypeScheme tArgs t _) = 
+freshInst :: TypeScheme -> State Int Type
+freshInst (TypeScheme _ t _) = 
     do let ls = leaves (< 0) t -- generic vars
            vs = map snd ls
        ts <- mkSubst vs
-       return (subst (Map.fromList $ zip (map fst ls) ts) t,
-               map (mapArg $ zip vs ts) tArgs)
+       return $ subst (Map.fromList $ zip (map fst ls) ts) t
 
-mapArg :: [(TypeArg, a)] -> TypeArg -> a
-mapArg ts (TypeArg i k _ _) = 
-    maybe (error "mapArg") snd $ 
-            find (\ (TypeArg j l _ _, _) -> i == j && k == l) ts
+inc :: State Int Int 
+inc = do 
+    c <- get
+    put (c + 1)
+    return c
 
-freshVar :: [Pos] -> State Int (Id, Int) 
-freshVar p = 
-    do c <- get
-       put (c + 1)
-       return (simpleIdToId $ Token ("_var_" ++ show c) p, c)
+freshVar :: [Pos] -> State Int (Id, Int)
+freshVar ps = do 
+    c <- inc
+    return (simpleIdToId $ Token ("_var_" ++ show c) ps, c)
 
-mkSingleSubst :: TypeArg -> State Int Type
-mkSingleSubst tv@(TypeArg _ k _ _) =
-    do (ty, c) <- freshVar $ posOfTypeArg tv
-       return (TypeName ty k c)
+mkSingleSubst :: (Id, RawKind) -> State Int Type
+mkSingleSubst (i, rk) = do 
+    (ty, c) <- freshVar $ posOfId i
+    return $ TypeName ty rk c
 
-mkSubst :: [TypeArg] -> State Int [Type]
+mkSubst :: [(Id, RawKind)] -> State Int [Type]
 mkSubst = mapM mkSingleSubst
                    
 type Subst = Map.Map Int Type
@@ -136,7 +135,7 @@ getTypeVar :: TypeArg -> Id
 getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.fromList . map (getTypeVar . snd) . leaves b
+idsOf b = Set.fromList . map (fst . snd) . leaves b
 
 instance Unifiable Type where
     subst m = rename (\ i k n -> 
@@ -217,9 +216,9 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ _ (_, Nothing) = return eps
     match tm rel (b1, Just a1) (b2, Just a2) = match tm rel (b1, a1) (b2, a2)
 
-repl :: Map.Map TypeArg Type -> Type -> Type
+repl :: Map.Map Id Type -> Type -> Type
 repl m = rename ( \ i k n -> 
-                 case Map.lookup (TypeArg i k Other []) m of
+                 case Map.lookup i m of
                       Just s -> s 
                       Nothing -> TypeName i k n)
 
@@ -230,7 +229,8 @@ expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
     let (ps, as, ta, b) = expandAliases tm t in
        if b && length ps == length as then
-          ExpandedType t $ repl (Map.fromList (zip ps $ reverse as)) ta
+          ExpandedType t $ repl (Map.fromList (zip 
+                             (map getTypeVar ps) $ reverse as)) ta
           else ta
 
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)

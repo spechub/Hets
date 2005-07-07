@@ -494,13 +494,9 @@ sl_classDecl (ClassDecl _ k _) = sl_kind k
 
 
 sl_kind :: Kind -> HasCASL_Sublogics
-sl_kind (Downset _ t k _) = sublogics_max (sl_type t) (sl_kind k)
-sl_kind (ClassKind _ k) = sl_kind k
-sl_kind (Intersection l _) = comp_list $ map sl_kind l
+sl_kind (ClassKind _) = need_type_classes
 sl_kind (FunKind k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
 sl_kind (ExtKind k _ _) = sl_kind k
-sl_kind _ = bottom
--- prodKind =  FunKind starPlus (FunKind starPlus star []) [] !!!!
 
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
@@ -663,14 +659,19 @@ sl_progEq (ProgEq p t _) = sublogics_max (sl_pattern p) (sl_t t)
 sl_varDecl :: VarDecl -> HasCASL_Sublogics
 sl_varDecl (VarDecl _ t _ _) = sl_type t
 
+sl_varKind :: VarKind -> HasCASL_Sublogics
+sl_varKind vk = case vk of
+   VarKind k -> if k == star then bottom else sl_kind k
+   Downset t -> sublogics_max need_sub $ sl_type t
+   _ -> bottom
 
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ k _ _) = sublogics_max need_polymorphism (sl_kind k)
+sl_typeArg (TypeArg _ k _ _) = sublogics_max need_polymorphism (sl_varKind k)
 
 
 sl_genVarDecl :: GenVarDecl -> HasCASL_Sublogics
 sl_genVarDecl (GenVarDecl v) = sl_varDecl v
-sl_genVarDecl (GenTypeVarDecl _) = need_polymorphism
+sl_genVarDecl (GenTypeVarDecl v) = sl_typeArg v
 
 
 sl_opId :: OpId -> HasCASL_Sublogics
@@ -738,7 +739,6 @@ sl_typeDefn (Supertype _ ts t) =
   sublogics_max (sl_typeScheme ts) (sl_term t)
 sl_typeDefn (DatatypeDefn de) = sl_dataEntry de
 sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
-sl_typeDefn (TypeVarDefn _) = need_polymorphism
 sl_typeDefn _ = bottom
 
 

@@ -87,19 +87,19 @@ instance Show Variance where
         ContraVar -> minusS
 
 -- | kind or an extended kind
-data Kind = MissingKind -- ^ initially missing information
-          | Downset (Maybe Token) Type Kind [Pos] -- ^ plus the derived kind
-          | ClassKind ClassId Kind                -- ^ plus the declared kind
-          | Intersection [Kind] [Pos]   -- ^ with equal raw kinds
+data Kind = ClassKind ClassId           -- ^ plus the declared kind
           | FunKind Kind Kind [Pos]     -- ^ only argument may be an 'ExtKind' 
             -- pos "->" 
           | ExtKind Kind Variance [Pos]  
              -- pos "+" or "-" 
             deriving Show
 
+typeUniverseS :: String 
+typeUniverseS = "Type"
+
 -- | the type universe
 star :: Kind
-star = Intersection [] []
+star = ClassKind $ simpleIdToId $ mkSimpleId typeUniverseS
 
 -- | the 'ExtKind' 'star' 'CoVar' (Type+)
 starPlus :: Kind
@@ -110,9 +110,14 @@ funKind :: Kind
 funKind = FunKind (ExtKind star ContraVar [])
              (FunKind starPlus star []) []
 
--- | the 'Kind' of the pair product type
-prodKind :: Kind
-prodKind = FunKind starPlus (FunKind starPlus star []) []
+-- | construct higher order kind from arguments and result kind
+mkFunKind :: [Kind] -> Kind -> Kind
+mkFunKind args res = foldr ( \ a k -> FunKind a k []) res args 
+
+-- | the 'Kind' of the product type
+prodKind :: Int -> Kind
+prodKind n = if n > 1 then mkFunKind (replicate n starPlus) star
+             else error "prodKind"
 
 data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                -- pos ","s
@@ -140,7 +145,9 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos "(", ")"
                    deriving (Show, Eq)
 
-data Type = TypeName TypeId Kind Int  -- (Int == 0 means constructor,
+type RawKind = Kind
+
+data Type = TypeName TypeId RawKind Int  -- (Int == 0 means constructor,
                                       -- negative are bound variables)
           | TypeAppl Type Type
           | ExpandedType Type Type
@@ -164,7 +171,10 @@ unalias ty = case ty of
     _ -> ty
 
 mkProductType :: [Type] -> [Pos] -> Type
-mkProductType ts ps = if isSingle ts then head ts else ProductType ts ps
+mkProductType ts ps = case ts of
+    [] -> unitType
+    [t] -> t
+    _ -> ProductType ts ps
 
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
              deriving (Eq, Ord)
@@ -177,10 +187,12 @@ instance Show Arrow where
         PContFunArr -> pContFun 
 
 arrowId :: Arrow -> Id
-arrowId a = Id (map mkSimpleId [place, show a, place]) [] []
+arrowId a = mkId $ map mkSimpleId [place, show a, place]
 
-productId :: Id
-productId = Id (map mkSimpleId [place, prodS, place]) [] []
+productId :: Int -> Id
+productId n = if n > 1 then
+  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
+  else error "productId"
 
 -- no curried notation for bound variables 
 data TypeScheme = TypeScheme [TypeArg] Type [Pos]
@@ -191,15 +203,18 @@ data TypeScheme = TypeScheme [TypeArg] Type [Pos]
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] t []
 
-unitTypeId :: Id
-unitTypeId = simpleIdToId $ mkSimpleId "Unit"
+unitTypeS :: String
+unitTypeS = "Unit"
 
-logicalType :: Type 
-logicalType = TypeName unitTypeId star 0
+unitTypeId :: Id
+unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
+
+unitType :: Type 
+unitType = TypeName unitTypeId star 0
               -- ProductType [] [] 
 
 liftType :: Type -> [Pos] -> Type
-liftType t qs = FunType logicalType PFunArr t qs
+liftType t qs = FunType unitType PFunArr t qs
 
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
 mapTypeOfScheme f (TypeScheme args t ps) =
@@ -210,8 +225,8 @@ predTypeScheme = mapTypeOfScheme predType
 
 predType :: Type -> Type
 predType t = case t of
-                    BracketType Parens [] _ -> logicalType
-                    _ -> FunType t PFunArr logicalType []
+                    BracketType Parens [] _ -> unitType
+                    _ -> FunType t PFunArr unitType []
 
 data Partiality = Partial | Total deriving (Eq, Ord)
 
@@ -333,7 +348,10 @@ data SeparatorKind = Comma | Other deriving (Show, Eq, Ord)
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving Show
                -- pos "," or ":" 
 
-data TypeArg = TypeArg TypeId Kind SeparatorKind [Pos]
+data VarKind = VarKind Kind | Downset Type | MissingKind 
+               deriving (Show, Eq, Ord)
+
+data TypeArg = TypeArg TypeId VarKind SeparatorKind [Pos]
                -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
                deriving Show
 
@@ -394,29 +412,17 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) [Pos]
 -- ----------------------------------------------------------------------------
 
 instance Eq Kind where
-    MissingKind == MissingKind = True
-    Downset _ t1 _ _ == Downset _ t2 _ _ = t1 == t2
-    ClassKind i1 _ == ClassKind i2 _ = i1 == i2
-    Intersection ks1 _ == Intersection ks2 _ = ks1 == ks2
+    ClassKind i1 == ClassKind i2 = i1 == i2
     FunKind p1 c1 _ == FunKind p2 c2 _ = (p1, c1) == (p2, c2)
     ExtKind c1 v1 _ == ExtKind c2 v2 _ = (c1, v1) == (c2, v2)
     _ == _ = False
 
 instance Ord Kind where
-    MissingKind <= MissingKind = True
-    Downset _ t1 _ _ <= Downset _ t2 _ _ = t1 <= t2
-    ClassKind i1 _ <= ClassKind i2 _ = i1 <= i2
-    Intersection ks1 _ <= Intersection ks2 _ = ks1 <= ks2
+    ClassKind i1 <= ClassKind i2 = i1 <= i2
     FunKind p1 c1 _ <= FunKind p2 c2 _ = (p1, c1) <= (p2, c2)
     ExtKind c1 v1 _ <= ExtKind c2 v2 _ = (c1, v1) <= (c2, v2)
-    MissingKind <= _ = True
-    _ <= MissingKind = False
-    Downset _ _ _ _ <= _ = True
-    _ <= Downset _ _ _ _ = False
-    ClassKind _ _ <= _ = True
-    _ <= ClassKind _ _ = False
-    Intersection _ _ <= _ = True
-    _ <= Intersection _ _ = False
+    ClassKind _ <= _ = True
+    _ <= ClassKind _ = False
     ExtKind _ _ _ <= _ = True
     _ <= ExtKind _ _ _ = False
 

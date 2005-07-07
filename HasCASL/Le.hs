@@ -24,7 +24,8 @@ import Common.AS_Annotation(Named)
 -- classInfo
 -----------------------------------------------------------------------------
 
-data ClassInfo = ClassInfo { classKinds :: [Kind] -- superKinds
+data ClassInfo = ClassInfo { rawKind :: RawKind
+                           , classKinds :: [Kind] -- superKinds
                            } deriving (Show, Eq)
 
 -----------------------------------------------------------------------------
@@ -64,9 +65,11 @@ data TypeDefn = NoTypeDefn
               | Supertype Vars TypeScheme Term 
               | DatatypeDefn DataEntry
               | AliasTypeDefn TypeScheme
-              | TypeVarDefn Int deriving (Show, Eq)
+                deriving (Show, Eq)
 
-data TypeInfo = TypeInfo { typeKind :: Kind
+data TypeVarDefn = TypeVarDefn RawKind VarKind Int deriving Show
+
+data TypeInfo = TypeInfo { typeKind :: RawKind
                          , otherTypeKinds :: [Kind]
                          , superTypes :: [Type]
                          , typeDefn :: TypeDefn
@@ -74,11 +77,6 @@ data TypeInfo = TypeInfo { typeKind :: Kind
 
 starTypeInfo :: TypeInfo
 starTypeInfo = TypeInfo star [] [] NoTypeDefn
-
-isTypeVarDefn :: TypeInfo -> Bool
-isTypeVarDefn t = case typeDefn t of
-                  TypeVarDefn _ -> True
-                  _           -> False
 
 data Sentence = Formula Term
               | DatatypeSen [DataEntry]
@@ -88,6 +86,8 @@ data Sentence = Formula Term
 -----------------------------------------------------------------------------
 
 type TypeMap = Map.Map TypeId TypeInfo
+
+type LocalTypeVars = Map.Map TypeId TypeVarDefn
 
 -----------------------------------------------------------------------------
 -- assumptions
@@ -105,13 +105,10 @@ data ConstrInfo = ConstrInfo { constrId :: UninstOpId
 data OpDefn = NoOpDefn OpBrand
             | ConstructData TypeId     -- target type
             | SelectData [ConstrInfo] TypeId   -- constructors of source type
-            | Definition OpBrand Term            
-            | VarDefn deriving (Show, Eq)
+            | Definition OpBrand Term
+              deriving (Show, Eq)
 
-isVarDefn :: OpInfo -> Bool
-isVarDefn o = case opDefn o of 
-              VarDefn -> True
-              _       -> False 
+data VarDefn = VarDefn Type deriving Show
 
 isConstructor :: OpInfo -> Bool
 isConstructor o = case opDefn o of
@@ -130,8 +127,9 @@ type PrecMap = (Map.Map Id Int, Int, Int)
 
 data Env = Env { classMap :: ClassMap
                , typeMap :: TypeMap
+               , localTypeVars :: LocalTypeVars
                , assumps :: Assumps
-               , localVars :: Map.Map Id Type
+               , localVars :: Map.Map Id VarDefn
                , sentences :: [Named Sentence]       
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
@@ -139,7 +137,7 @@ data Env = Env { classMap :: ClassMap
                } deriving Show
 
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty Map.empty [] [] 
+initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] [] 
              ((Map.empty, 0, 0), Set.empty) 1
 
 -----------------------------------------------------------------------------

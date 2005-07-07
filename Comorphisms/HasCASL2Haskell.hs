@@ -143,14 +143,10 @@ typeSynonym loc hsname ty =
 
 kindToTypeArgs :: Int -> Kind -> [HsType]
 kindToTypeArgs i k = case k of
-    MissingKind -> []
-    ClassKind _ rk -> kindToTypeArgs i rk
-    Downset _ _ rk _ -> kindToTypeArgs i rk
+    ClassKind _ -> []
     FunKind _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
                                    $ toProgPos $ get_pos k) 
                       : kindToTypeArgs (i+1) kr
-    Intersection l _ -> if null l then []
-                         else kindToTypeArgs i $ head l
     ExtKind ek _ _ -> kindToTypeArgs i ek
 
 getAliasArgs :: TypeScheme -> [HsType]
@@ -212,7 +208,6 @@ translateAssump (i, opinf) =
                        [fname] []
                        $ translateTypeScheme $ opType opinf
   in case opDefn opinf of
-    VarDefn -> []
     ConstructData _ -> [] -- wrong case!
     _ -> [res, functionUndef loc fname]
 

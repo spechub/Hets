@@ -105,7 +105,7 @@ mkProgEq e t = case getTupleAp t of
         Just (i, _, [f]) -> if i `elem` [notId, negId] then
             case mkConstTrueEq e f of
             Just (ProgEq p _ ps) -> Just $ ProgEq p 
-                (mkQualOp falseId unitType []) ps
+                (mkQualOp falseId unitTypeScheme []) ps
             Nothing -> Nothing
             else mkConstTrueEq e t
         _ -> mkConstTrueEq e t
@@ -113,7 +113,7 @@ mkProgEq e t = case getTupleAp t of
 mkConstTrueEq e t = 
     let vs = map getVar $ extractVars t in
         if isLHS e t && null (checkUniqueness vs) then
-           Just $ ProgEq t (mkQualOp trueId unitType []) $ get_pos t
+           Just $ ProgEq t (mkQualOp trueId unitTypeScheme []) $ get_pos t
            else Nothing
 
 bottom :: Term

@@ -81,37 +81,39 @@ makeDataSelEqs (DataEntry _ i _ args alts) k =
     map (mapNamed Formula) $  
     concatMap (makeAltSelEqs(i, args, k)) alts
 
-anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeMap -> Result [AltDefn]
-anaAlts tys dt alts tm = 
-    do l <- mapM (anaAlt tys dt tm) alts
+anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeEnv -> Result [AltDefn]
+anaAlts tys dt alts te = 
+    do l <- mapM (anaAlt tys dt te) alts
        Result (checkUniqueness $ catMaybes $ 
                map ( \ (Construct i _ _ _) -> i) l) $ Just ()
        return l
 
-anaAlt :: [DataPat] -> DataPat -> TypeMap -> Alternative -> Result AltDefn 
-anaAlt _ (_, args, _) tm (Subtype ts _) = 
-    do l <- mapM ( \ t -> anaStarTypeR t tm) ts
-       return $ Construct Nothing (map (mkGenVars args . snd) l) Partial []
-anaAlt tys dt tm (Constructor i cs p _) = 
-    do newCs <- mapM (anaComps tys dt tm) cs
+anaAlt :: [DataPat] -> DataPat -> TypeEnv -> Alternative 
+       -> Result AltDefn 
+anaAlt _ (_, args, _) te (Subtype ts _) = 
+    do l <- mapM ( \ t -> anaStarTypeM t te) ts
+       return $ Construct Nothing (map ( \ (_, t) -> mkGenVars args t) l) 
+              Partial []
+anaAlt tys dt te (Constructor i cs p _) = 
+    do newCs <- mapM (anaComps tys dt te) cs
        let sels = map snd newCs
        Result (checkUniqueness $ catMaybes $ 
                 map ( \ (Select s _ _) -> s ) $ concat sels) $ Just ()
        return $ Construct (Just i) (map fst newCs) p sels
 
-anaComps :: [DataPat] -> DataPat -> TypeMap -> [Component]
+anaComps :: [DataPat] -> DataPat -> TypeEnv -> [Component]
          -> Result (Type, [Selector]) 
-anaComps tys rt tm cs =
-    do newCs <- mapM (anaComp tys rt tm) cs
+anaComps tys rt te cs =
+    do newCs <- mapM (anaComp tys rt te) cs
        return (mkProductType (map fst newCs) [], map snd newCs)
 
-anaComp :: [DataPat] -> DataPat -> TypeMap -> Component 
+anaComp :: [DataPat] -> DataPat -> TypeEnv -> Component 
         -> Result (Type, Selector)
-anaComp tys rt tm (Selector s p t _ _) =
-    do ct <- anaCompType tys rt t tm
+anaComp tys rt te (Selector s p t _ _) =
+    do ct <- anaCompType tys rt t te
        return (ct, Select (Just s) ct p)
-anaComp tys rt tm (NoSelector t) =
-    do ct <- anaCompType tys rt t tm
+anaComp tys rt te (NoSelector t) =
+    do ct <- anaCompType tys rt t te
        return  (ct, Select Nothing ct Partial)
 
 getSelType :: DataPat -> Partiality -> Type -> TypeScheme
@@ -120,20 +122,20 @@ getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in
     Partial -> addPartiality [dt]
     Total -> id) (FunType dt FunArr rt [])) []
 
-anaCompType :: [DataPat] -> DataPat -> Type -> TypeMap -> Result Type
-anaCompType tys (_, as, _) t tm = do
-    (_, ct1) <- anaStarTypeR t tm
+anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
+anaCompType tys (_, as, _) t te = do
+    (_, ct1) <- anaStarTypeM t te
     let ct = mkGenVars as ct1
         ds = unboundTypevars as ct 
     if null ds then return () else Result ds Nothing
-    mapM (checkMonomorphRecursion ct tm) tys
+    mapM (checkMonomorphRecursion ct te) tys
     return ct
  
-checkMonomorphRecursion :: Type -> TypeMap -> DataPat -> Result ()
-checkMonomorphRecursion t tm p@(i, _, _) = 
+checkMonomorphRecursion :: Type -> TypeEnv -> DataPat -> Result ()
+checkMonomorphRecursion t te p@(i, _, _) = 
     let rt = typeIdToType p in
-    if occursIn tm i t then 
-       if lesserType tm t rt || lesserType tm rt t then return ()
+    if occursIn (typeMap te) i t then 
+       if lesserType te t rt || lesserType te rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 
                                  ++ expected rt t) $ get_pos t] Nothing
     else return ()

@@ -81,13 +81,6 @@ mergeTypeInfo t1 t2 =
 mergeTypeDefn :: TypeDefn -> TypeDefn -> Result TypeDefn
 mergeTypeDefn d1 d2 = 
         case (d1, d2) of 
-            (TypeVarDefn 0, TypeVarDefn _) -> return d2
-            (TypeVarDefn _, TypeVarDefn 0) -> return d1
-            (TypeVarDefn c1, TypeVarDefn c2) -> do 
-                c <- mergeA "TypeVarDefn" c1 c2
-                return $ TypeVarDefn c
-            (TypeVarDefn _, _) -> fail "merge: TypeVarDefn"
-            (_, TypeVarDefn _) -> fail "merge: TypeVarDefn"
             (_, DatatypeDefn _) -> return d2 
             (PreDatatype, _) -> fail "expected data type definition"
             (_, PreDatatype) -> return d1
@@ -111,12 +104,14 @@ mergeScheme s1@(TypeScheme a1 t1 _)
             s2@(TypeScheme a2 t2 _) = 
     let v1 = genVarsOf t1
         v2 = genVarsOf t2
-        mp v = mapArg $ zip v [(1::Int)..] 
+        mp a v = foldr ( \ i l ->
+               maybe l (:l) $ findIndex ((== i) . getTypeVar) a)
+                  [] (map fst v)
     in 
     if t1 == t2 then 
        if null a1 && null a2 || isSingle a1 && isSingle a2 then 
           return s1
-       else if map (mp v1) a1 == map (mp v2) a2 then return s1
+       else if mp a1 v1 == mp a2 v2 then return s1
                 else fail ("differently bound type variables" 
                          ++ expected s1 s2) 
     else fail ("wrong type scheme" ++ expected s1 s2)
@@ -135,9 +130,6 @@ instance Mergeable OpBrand where
     merge _ _    = return Fun
     
 instance Mergeable OpDefn where
-    merge VarDefn VarDefn = return VarDefn
-    merge VarDefn _       = fail "illegal redeclaration of a variable"
-    merge _ VarDefn       = fail "illegal redeclaration as variable"
     merge (NoOpDefn _) d  = return d
     merge d (NoOpDefn _)  = return d
     merge (ConstructData d1) (ConstructData _d2) = do 

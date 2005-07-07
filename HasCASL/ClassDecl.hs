@@ -17,7 +17,6 @@ import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.VarDecl
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result
@@ -28,7 +27,10 @@ import Common.Result
 
 anaClassDecls :: ClassDecl -> State Env ClassDecl
 anaClassDecls (ClassDecl cls k ps) = 
-    do ak <- anaKind k
+    do cm <- gets classMap 
+       let Result ds (Just rk) = anaKindM k cm
+       addDiags ds 
+       let ak = if null ds then k else rk
        mapM_ (addClassDecl ak) cls
        return $ ClassDecl cls ak ps
 
@@ -41,32 +43,31 @@ putClassMap :: ClassMap -> State Env ()
 putClassMap ce = do { e <- get; put e { classMap = ce } }
 
 -- | store a class 
-addClassDecl :: Kind -> ClassId 
-             -> State Env ()
+addClassDecl :: Kind -> ClassId -> State Env ()
 -- check with merge
 addClassDecl kind ci = 
     if showId ci "" == "Type" then 
-       do addDiags [mkDiag Error 
-                    "illegal universe class declaration" ci]
+       do addDiags [mkDiag Warning 
+                    "void universe class declaration" ci]
     else do
-       cMap <- gets classMap
-       case Map.lookup ci cMap of
+       rk <- anaKind kind
+       cm <- gets classMap
+       case Map.lookup ci cm of
             Nothing -> do putClassMap $ Map.insert ci  
-                              ClassInfo { classKinds = [kind] } cMap
-            Just info -> do 
-                addDiags [mkDiag Warning "redeclared class" ci]
-                let superClasses = classKinds info
-                addDiags $ checkKinds ci kind $ head superClasses
-                if kind `elem` superClasses then
-                   return () 
-                   else if cyclicClassId ci kind then
+                              (ClassInfo rk [kind]) cm
+            Just (ClassInfo ork superClasses) -> do 
+                let ds = checkKinds ci rk ork
+                addDiags ds
+                if null ds then 
+                   if cyclicClassId cm ci kind then
                    addDiags [mkDiag Error "cyclic class" ci]
-                   else putClassMap $ Map.insert ci info 
-                                      { classKinds = Set.toList $
-                                        mkIntersection 
-                                        (kind:superClasses) } cMap
-
--- cycle check missing
+                   else if any (\ k -> lesserKind cm k kind) superClasses 
+                        then addDiags [mkDiag Warning "unchanged class" ci]
+                        else do addDiags [mkDiag Hint 
+                                         "refined class" ci]
+                                putClassMap $ Map.insert ci 
+                                    (ClassInfo ork $ kind : superClasses) cm
+                   else return ()
 
 showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (not $ isSingle is)

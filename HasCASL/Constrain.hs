@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
@@ -68,108 +67,78 @@ substC s = Set.fold (insertC . ( \ c -> case c of
     Kinding ty k -> Kinding (subst s ty) k
     Subtyping t1 t2 -> Subtyping (subst s t1) $ subst s t2)) noC
 
-simplify :: TypeMap -> Constraints -> ([Diagnosis], Constraints)
-simplify tm rs = 
+simplify :: TypeEnv -> Constraints -> ([Diagnosis], Constraints)
+simplify te rs = 
     if Set.null rs then ([], noC)
     else let (r, rt) = Set.deleteFindMin rs 
-             Result ds m = entail tm r
-             (es, cs) = simplify tm rt
+             Result ds m = entail te r
+             (es, cs) = simplify te rt
              in (ds ++ es, case m of
                                  Just _ -> cs
                                  Nothing -> insertC r cs)
 
-entail :: Monad m => TypeMap -> Constrain -> m ()
-entail tm p = 
-    do is <- byInst tm p
-       mapM_ (entail tm) $ Set.toList is
+entail :: Monad m => TypeEnv -> Constrain -> m ()
+entail te p = 
+    do is <- byInst te p
+       mapM_ (entail te) $ Set.toList is
 
-byInst :: Monad m => TypeMap -> Constrain -> m Constraints
-byInst tm c = case c of 
+byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
+byInst te c = let cm = classMap te in case c of 
     Kinding ty k -> case ty of 
-      ExpandedType _ t -> byInst tm $ Kinding t k
+      ExpandedType _ t -> byInst te $ Kinding t k
       _ -> case k of
-           Intersection l _ -> if null l then return noC else
-                          do pss <- mapM (\ ik -> byInst tm (Kinding ty ik)) l 
-                             return $ Set.unions pss
-           ExtKind ek _ _ -> byInst tm (Kinding ty ek)
-           ClassKind _ _ -> let (topTy, args) = getTypeAppl tm ty in
+           ExtKind ek _ _ -> byInst te (Kinding ty ek)
+           ClassKind _ -> let (topTy, args) = getTypeAppl te ty in
                case topTy of 
                TypeName _ kind _ -> if null args then
-                   if lesserKind tm kind k then return noC 
+                   if lesserKind cm kind k then return noC 
                          else fail $ expected k kind
                    else do 
-                       let ks = getKindAppl kind args
-                       newKs <- dom tm k ks 
+                       let ks = getKindAppl cm kind args
+                       newKs <- dom cm k ks 
                        return $ Set.fromList $ zipWith Kinding args newKs
                _ -> error "byInst: unexpected Type" 
            _ -> error "byInst: unexpected Kind" 
-    Subtyping t1 t2 -> if lesserType tm t1 t2 then return noC
+    Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
 
-maxKind :: TypeMap -> Kind -> Kind -> Maybe Kind
-maxKind tm k1 k2 = if lesserKind tm k1 k2 then Just k1 else 
-                if lesserKind tm k2 k1 then Just k2 else Nothing
+maxKind :: ClassMap -> Kind -> Kind -> Maybe Kind
+maxKind cm k1 k2 = if lesserKind cm k1 k2 then Just k1 else 
+                if lesserKind cm k2 k1 then Just k2 else Nothing
 
-maxKinds :: TypeMap -> [Kind] -> Maybe Kind
-maxKinds tm l = case l of 
+maxKinds :: ClassMap -> [Kind] -> Maybe Kind
+maxKinds cm l = case l of 
     [] -> Nothing
     [k] -> Just k
-    [k1, k2] -> maxKind tm k1 k2
-    k1 : k2 : ks -> case maxKind tm k1 k2 of 
-          Just k -> maxKinds tm (k : ks)
-          Nothing -> do k <- maxKinds tm (k2 : ks)
-                        maxKind tm k1 k 
+    [k1, k2] -> maxKind cm k1 k2
+    k1 : k2 : ks -> case maxKind cm k1 k2 of 
+          Just k -> maxKinds cm (k : ks)
+          Nothing -> do k <- maxKinds cm (k2 : ks)
+                        maxKind cm k1 k 
 
-maxKindss :: TypeMap -> [[Kind]] -> Maybe [Kind]
-maxKindss tm l = let margs = map (maxKinds tm) $ transpose l in
+maxKindss :: ClassMap -> [[Kind]] -> Maybe [Kind]
+maxKindss cm l = let margs = map (maxKinds cm) $ transpose l in
    if all isJust margs then Just $ map fromJust margs
       else Nothing
 
-dom :: Monad m => TypeMap -> Kind -> [(Kind, [Kind])] -> m [Kind]
-dom tm k ks = 
-    let fks = filter ( \ (rk, _) -> lesserKind tm rk k ) ks 
-        margs = maxKindss tm $ map snd fks
+dom :: Monad m => ClassMap -> Kind -> [(Kind, [Kind])] -> m [Kind]
+dom cm k ks = 
+    let fks = filter ( \ (rk, _) -> lesserKind cm rk k ) ks 
+        margs = maxKindss cm $ map snd fks
         in if null fks then fail ("class not found " ++ showPretty k "") 
            else case margs of 
               Nothing -> fail "dom: maxKind"
               Just args -> if any ((args ==) . snd) fks then return args
                            else fail "dom: not coregular"
 
--- | get kind of an analyzed type
-kindOfType :: TypeMap -> Type -> Kind
-kindOfType tm ty = case ty of 
-    TypeName _ k _ -> k
-    TypeAppl t1 t2 -> toIntersection 
-                (concatMap snd $ getKindAppl (kindOfType tm t1) [t2]) 
-                $ posOfType t1 ++ posOfType t2
-    ExpandedType _ t1 -> kindOfType tm t1
-    FunType t1 a t2 _ -> 
-       let i = arrowId a
-           Result _ mk = getIdKind tm i in case mk of
-       Just k -> let tn = TypeName i k 0 in 
-           kindOfType tm (TypeAppl (TypeAppl tn t1) t2)
-       Nothing -> error "kindOfType: FunType" 
-    ProductType ts ps -> let Result _ mk = getIdKind tm productId in case mk of
-            Nothing -> error "kindOfType: ProductType" 
-            Just k -> let 
-                rk = toIntersection (map fst $ getKindAppl k [ty,ty]) ps
-                tn = TypeName productId k 0 
-                mkAppl [t1] = t1
-                mkAppl (t1:tr) = TypeAppl (TypeAppl tn t1) $ mkAppl tr
-                mkAppl [] = error "kindOfType: mkAppl"
-                in if null ts then rk else kindOfType tm (mkAppl ts)
-    LazyType t _ -> kindOfType tm t
-    KindedType _ k _ -> k
-    _ -> error "kindOfType"
-
-freshTypeVarT :: TypeMap -> Type -> State Int Type             
-freshTypeVarT tm t = 
+freshTypeVarT :: TypeEnv -> Type -> State Int Type             
+freshTypeVarT te t = 
     do (var, c) <- freshVar $ posOfType t
-       return $ TypeName var (kindOfType tm t) c
+       return $ TypeName var (rawKindOfType te t) c
 
-freshVarsT :: TypeMap -> [Type] -> State Int [Type]
-freshVarsT tm l = mapM (freshTypeVarT tm) l
+freshVarsT :: TypeEnv -> [Type] -> State Int [Type]
+freshVarsT te l = mapM (freshTypeVarT te) l
 
 toPairState :: State Int a -> State (Int, b) a 
 toPairState p = 
@@ -187,8 +156,8 @@ swap :: (a, b) -> (b, a)
 swap (a, b) = (b, a)
 
 -- pre: shapeMatch succeeds
-shapeMgu :: TypeMap -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
-shapeMgu tm cs = 
+shapeMgu :: TypeEnv -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
+shapeMgu te cs = 
     let (atoms, structs) = partition ( \ p -> case p of
                                        (TypeName _ _ _, TypeName _ _ _) -> True
                                        _ -> False) cs 
@@ -197,48 +166,46 @@ shapeMgu tm cs =
         tl = tail structs 
         rest = tl ++ atoms
     in case p of 
-    (ExpandedType _ t, _) -> shapeMgu tm ((t, t2) : rest)
-    (_, ExpandedType _ t) -> shapeMgu tm ((t1, t) : rest)
-    (LazyType t _, _) -> shapeMgu tm ((t, t2) : rest)
-    (_, LazyType t _) -> shapeMgu tm ((t1, t) : rest)
-    (KindedType t _ _, _) -> shapeMgu tm ((t, t2) : rest)
-    (_, KindedType t _ _) -> shapeMgu tm ((t1, t) : rest)
+    (ExpandedType _ t, _) -> shapeMgu te ((t, t2) : rest)
+    (_, ExpandedType _ t) -> shapeMgu te ((t1, t) : rest)
+    (LazyType t _, _) -> shapeMgu te ((t, t2) : rest)
+    (_, LazyType t _) -> shapeMgu te ((t1, t) : rest)
+    (KindedType t _ _, _) -> shapeMgu te ((t, t2) : rest)
+    (_, KindedType t _ _) -> shapeMgu te ((t1, t) : rest)
     (TypeName _ _ v1, _) -> if (v1 > 0) then case t2 of
          ProductType ts ps -> do
-             nts <- toPairState $ freshVarsT tm ts
+             nts <- toPairState $ freshVarsT te ts
              let s = Map.singleton v1 $ ProductType nts ps
              addSubst s
-             shapeMgu tm (zip nts ts ++ subst s rest)
+             shapeMgu te (zip nts ts ++ subst s rest)
          FunType t3 ar t4 ps -> do
-             v3 <- toPairState $ freshTypeVarT tm t3
-             v4 <- toPairState $ freshTypeVarT tm t4
+             v3 <- toPairState $ freshTypeVarT te t3
+             v4 <- toPairState $ freshTypeVarT te t4
              let s = Map.singleton v1 $ FunType v3 ar v4 ps
              addSubst s
-             shapeMgu tm ((t3, v3) : (v4, t4) : subst s rest)
+             shapeMgu te ((t3, v3) : (v4, t4) : subst s rest)
          _ -> do
-             let (topTy, args) = getTypeAppl tm t2
-                 (_, ks) = getRawKindAppl (rawKind $ kindOfType tm topTy) args
-             vs <- toPairState $ freshVarsT tm args
+             let (topTy, args) = getTypeAppl te t2
+                 (_, ks) = getRawKindAppl (rawKindOfType te topTy) args
+             vs <- toPairState $ freshVarsT te args
              let s = Map.singleton v1 $ mkTypeAppl topTy vs
              addSubst s
-             shapeMgu tm (concat (zipWith zipC ks $ zip vs args) 
+             shapeMgu te (concat (zipWith zipC ks $ zip vs args) 
                           ++ subst s rest)
        else error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "") 
-    (_, TypeName _ _ _) -> do ats <- shapeMgu tm ((t2, t1) : map swap rest)
+    (_, TypeName _ _ _) -> do ats <- shapeMgu te ((t2, t1) : map swap rest)
                               return $ map swap ats
-    (ProductType s1 _, ProductType s2 _) -> shapeMgu tm (zip s1 s2 ++ rest)
+    (ProductType s1 _, ProductType s2 _) -> shapeMgu te (zip s1 s2 ++ rest)
     (FunType t3 a1 t4 _, FunType t5 a2 t6 _) ->
         let arr a = TypeName (arrowId a) funKind 0 in
-        shapeMgu tm ((arr a1, arr a2) : (t5, t3) : (t4, t6) : rest)
-    _ -> let (top1, as1) = getTypeAppl tm t1
-             (top2, as2) = getTypeAppl tm t2
+        shapeMgu te ((arr a1, arr a2) : (t5, t3) : (t4, t6) : rest)
+    _ -> let (top1, as1) = getTypeAppl te t1
+             (top2, as2) = getTypeAppl te t2
              in case (top1, top2) of 
-          (TypeName _ k1 _, TypeName _ k2 _) -> 
-              let r1 = rawKind k1 
-                  r2 = rawKind k2 
-                  (_, ks) = getRawKindAppl r1 as1 
+          (TypeName _ r1 _, TypeName _ r2 _) -> 
+              let (_, ks) = getRawKindAppl r1 as1 
               in if (r1 == r2 && length as1 == length as2) then
-                 shapeMgu tm ((top1, top2) : 
+                 shapeMgu te ((top1, top2) : 
                               concat (zipWith zipC ks $ zip as1 as2) 
                               ++ rest)
                  else error "shapeMgu"
@@ -250,10 +217,10 @@ zipC k p = let q = swap p in case k of
                       ExtKind _ ContraVar _ -> [q]
                       _ -> [p,q]
 
-shapeUnify :: TypeMap -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
-shapeUnify tm l = do 
+shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
+shapeUnify te l = do 
     c <- get 
-    let (r, (n, s)) = runState (shapeMgu tm l) (c, eps) 
+    let (r, (n, s)) = runState (shapeMgu te l) (c, eps) 
     put n
     return (s, r)
 
@@ -300,20 +267,20 @@ partitionC = Set.partition ( \ c -> case c of
 toListC :: Constraints -> [(Type, Type)]
 toListC l = [ (t1, t2) | Subtyping t1 t2 <- Set.toList l ]
 
-shapeRel :: TypeMap -> Constraints 
+shapeRel :: TypeEnv -> Constraints 
          -> State Int (Result (Subst, Constraints, Rel.Rel Type))
-shapeRel tm cs = 
+shapeRel te cs = 
     let (qs, subS) = partitionC cs
         subL = toListC subS
-    in case shapeMatch tm (map fst subL) $ map snd subL of
+    in case shapeMatch (typeMap te) (map fst subL) $ map snd subL of
        Result ds Nothing -> return $ Result ds Nothing
-       _ -> do (s1, atoms) <- shapeUnify tm subL
+       _ -> do (s1, atoms) <- shapeUnify te subL
                let r = Rel.transClosure $ Rel.fromList atoms
                    es = Map.foldWithKey ( \ t1 st l1 -> 
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 -> 
                                  case t2 of
-                                 TypeName _ _ 0 -> if lesserType tm t1 t2 
+                                 TypeName _ _ 0 -> if lesserType te t1 t2 
                                      then l2 else (t1, t2) : l2
                                  _ -> l2) l1 st
                              _ -> l1) [] $ Rel.toMap r 
@@ -329,18 +296,18 @@ shapeRel tm cs =
                                              Subtyping t1 t2) es) Nothing
 
 -- | compute monotonicity of a type variable
-monotonic :: TypeMap -> Int -> Type -> (Bool, Bool)
-monotonic tm v t = 
+monotonic :: TypeEnv -> Int -> Type -> (Bool, Bool)
+monotonic te v t = 
      case t of 
            TypeName _ _ i -> (True, i /= v)
-           ExpandedType _ t2 -> monotonic tm v t2
-           KindedType tk _ _ -> monotonic tm v tk
-           LazyType tl _ -> monotonic tm v tl
-           _ -> let (top, args) = getTypeAppl tm t in case top of
+           ExpandedType _ t2 -> monotonic te v t2
+           KindedType tk _ _ -> monotonic te v tk
+           LazyType tl _ -> monotonic te v tl
+           _ -> let (top, args) = getTypeAppl te t in case top of
                 TypeName _ k _ -> 
-                    let ks = snd $ getRawKindAppl (rawKind k) args 
+                    let ks = snd $ getRawKindAppl k args 
                         (bs1, bs2) = unzip $ zipWith ( \ rk a ->
-                             let (b1, b2) = monotonic tm v a
+                             let (b1, b2) = monotonic te v a
                              in case rk of
                                        ExtKind _ CoVar _ -> (b1, b2)
                                        ExtKind _ ContraVar _ -> (b2, b1)
@@ -349,59 +316,65 @@ monotonic tm v t =
                 _ -> error "monotonic"
 
 -- | find monotonicity based instantiation
-monoSubst :: TypeMap -> Rel.Rel Type -> Type -> Subst
-monoSubst tm r t = 
+monoSubst :: TypeEnv -> Rel.Rel Type -> Type -> Subst
+monoSubst te r t = 
     let varSet = Set.fromList . leaves (> 0)
         vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet 
               $ Set.toList $ Rel.nodes r
-        monos = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+        monos = filter ( \ (i, (n, rk)) -> case monotonic te i t of
                                 (True, _) -> 1 == Set.size 
-                                    (Rel.predecessors r $ TypeName n k i)
+                                    (Rel.predecessors r $ 
+                                        TypeName n rk i)
                                 _ -> False) vs
-        antis = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+        antis = filter ( \ (i, (n, rk)) -> case monotonic te i t of
                                 (_, True) -> 1 == Set.size
-                                     (Rel.succs r $ TypeName n k i)
+                                     (Rel.succs r $ 
+                                         TypeName n rk i)
                                 _ -> False) vs
-        resta = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+        resta = filter ( \ (i, (n, rk)) -> case monotonic te i t of
                                 (True, True) -> 1 < Set.size
-                                     (Rel.succs r $ TypeName n k i)
+                                     (Rel.succs r $ 
+                                         TypeName n rk i)
                                 _ -> False) vs
-        restb = filter ( \ (i, TypeArg n k _ _) -> case monotonic tm i t of
+        restb = filter ( \ (i, (n, rk)) -> case monotonic te i t of
                                 (True, True) -> 1 < Set.size
-                                     (Rel.predecessors r $ TypeName n k i)
+                                     (Rel.predecessors r $ 
+                                         TypeName n rk i)
                                 _ -> False) vs
     in if null antis then 
           if null monos then 
              if null resta then
                 if null restb then eps else
-                    let (i, TypeArg n k _ _) = head restb
-                        tn = TypeName n k i
+                    let (i, (n, rk)) = head restb
+                        tn = TypeName n rk i
                         s = Rel.predecessors r tn
                         sl = Set.delete tn $ foldl1 Set.intersection 
                                       $ map (Rel.succs r)
                                       $ Set.toList s
                     in Map.singleton i $ Set.findMin $ if Set.null sl then s
                        else sl
-             else   let (i, TypeArg n k _ _) = head resta
-                        tn = TypeName n k i
+             else   let (i, (n, rk)) = head resta
+                        tn = TypeName n rk i
                         s = Rel.succs r tn
                         sl = Set.delete tn $ foldl1 Set.intersection 
                                         $ map (Rel.predecessors r)
                                         $ Set.toList s
                     in Map.singleton i $ Set.findMin $ if Set.null sl then s
                        else sl
-          else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
-                (i, Set.findMin $ Rel.predecessors r $ TypeName n k i)) monos
-       else Map.fromAscList $ map ( \ (i, TypeArg n k _ _) -> 
-                (i, Set.findMin $ Rel.succs r $ TypeName n k i)) antis
+          else Map.fromAscList $ map ( \ (i, (n, rk)) -> 
+                (i, Set.findMin $ Rel.predecessors r $ 
+                  TypeName n rk i)) monos
+       else Map.fromAscList $ map ( \ (i, (n, rk)) -> 
+                (i, Set.findMin $ Rel.succs r $ 
+                  TypeName n rk i)) antis
        
 
-monoSubsts :: TypeMap -> Rel.Rel Type -> Type -> Subst
-monoSubsts tm r t = 
-    let s = monoSubst tm (Rel.transReduce $ Rel.irreflex r) t in
+monoSubsts :: TypeEnv -> Rel.Rel Type -> Type -> Subst
+monoSubsts te r t = 
+    let s = monoSubst te (Rel.transReduce $ Rel.irreflex r) t in
     if Map.null s then s else
        compSubst s $ 
-            monoSubsts tm (Rel.transClosure $ Rel.map (subst s) r) 
+            monoSubsts te (Rel.transClosure $ Rel.map (subst s) r) 
                            $ subst s t 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type

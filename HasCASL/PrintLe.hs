@@ -27,8 +27,9 @@ import qualified Common.Lib.Map as Map
 import Common.Keywords
 
 instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo ks) =
-           text lessS <+> printList0 ga ks
+    printText0 ga (ClassInfo rk ks) = case ks of
+           [] -> colon <+> printText0 ga rk
+           _ -> text lessS <+> printList0 ga ks
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
@@ -37,19 +38,14 @@ printGenKind k = case k of
                 Generated -> text generatedS <> space
 
 instance PrettyPrint TypeDefn where
-    printText0 _ NoTypeDefn = empty
-    printText0 _ PreDatatype = text "%(data type)%"
-    printText0 _ (TypeVarDefn i)= text ("%(var_" ++ show i ++ ")%")
-    printText0 ga (AliasTypeDefn s) = text assignS 
-                                      <+> printPseudoType ga s
-    printText0 ga (Supertype v t f) = text equalS <+> 
-                                         braces (printText0 ga v 
-                                           <+> colon
-                                           <+> printText0 ga t 
-                                           <+> text dotS
-                                           <+> printText0 ga f)
-    printText0 ga (DatatypeDefn dd)  = 
-        text " %[" <> printText0 ga dd <> text "]%"
+    printText0 ga td = case td of 
+        NoTypeDefn -> empty
+        PreDatatype -> text "%(data type)%"
+        AliasTypeDefn s -> text assignS <+> printPseudoType ga s
+        Supertype v t f -> text equalS <+> braces 
+            (printText0 ga v <+> colon <+> printText0 ga t <+> text dotS
+             <+> printText0 ga f)
+        DatatypeDefn dd -> text " %[" <> printText0 ga dd <> text "]%"
 
 printAltDefn :: GlobalAnnos -> DataPat -> AltDefn -> Doc
 printAltDefn ga dt (Construct mi ts p sels) = case mi of 
@@ -73,20 +69,26 @@ instance PrettyPrint TypeInfo where
            (space <> text lessS <+> printList0 ga sups))
         2 $ printText0 ga defn
 
+instance PrettyPrint TypeVarDefn where
+    printText0 ga (TypeVarDefn _ vk i) =
+        printVarKind ga vk <+> text ("%(var_" ++ shows i ")%")
+
+instance PrettyPrint VarDefn where
+    printText0 ga (VarDefn ty) =
+        colon <+> printText0 ga ty
+
 instance PrettyPrint ConstrInfo where
     printText0 ga (ConstrInfo i t) = 
         printText0 ga i <+> colon <+> printText0 ga t
 
 instance PrettyPrint OpDefn where
-    printText0 _ (NoOpDefn b) = text ("%(" ++ show b ++ ")%")
-    printText0 _ VarDefn = text "%(var)%"
-    printText0 _ (ConstructData i) = text ("%(construct " ++
-                                     showId i ")%")
-    printText0 ga (SelectData c i) = text ("%(select from " ++
-                                     showId i " constructed by")
-                                    $$ printList0 ga c <> text ")%"
-    printText0 ga (Definition b t) = hang (printText0 ga (NoOpDefn b))
-                                     2 (text equalS <+> printText0 ga t)
+    printText0 ga od = case od of
+        NoOpDefn b -> text $ "%(" ++ shows b ")%"
+        ConstructData i -> text $ "%(construct " ++ showId i ")%"
+        SelectData c i -> text ("%(select from " ++ showId i " constructed by")
+                          $$ printList0 ga c <> text ")%"
+        Definition b t -> hang (printText0 ga $ NoOpDefn b)
+                          2 (text equalS <+> printText0 ga t)
  
 instance PrettyPrint OpInfo where
     printText0 ga o = hang (colon <+> printText0 ga (opType o)
@@ -113,14 +115,19 @@ instance PrettyPrint Sentence where
         ProgEqSen _ _ pe -> text programS <+> printText0 ga pe
  
 instance PrettyPrint Env where
-    printText0 ga (Env{classMap=cm, typeMap=tm, 
-                       assumps=as, sentences=se, envDiags=ds}) = 
+    printText0 ga (Env{classMap=cm, typeMap=tm, localTypeVars=tvs,
+                       assumps=ops, localVars=vs, 
+                       sentences=se, envDiags=ds}) = 
         noPrint (Map.null cm) (header "Classes")
         $$ printMap0 ga cm
         $$ noPrint (Map.null tm) (header "Type Constructors")
         $$ printMap0 ga tm
-        $$ noPrint (Map.null as) (header "Assumptions")
-        $$ printMap0 ga as
+        $$ noPrint (Map.null tvs) (header "Type Variables")
+        $$ printMap0 ga tvs
+        $$ noPrint (Map.null ops) (header "Assumptions")
+        $$ printMap0 ga ops
+        $$ noPrint (Map.null vs) (header "Variables")
+        $$ printMap0 ga vs
         $$ noPrint (null se) (header "Sentences")
         $$ vcat (map (printText0 ga) $ reverse se)
         $$ noPrint (null ds) (header "Diagnostics")

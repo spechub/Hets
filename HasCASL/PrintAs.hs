@@ -31,16 +31,7 @@ instance PrettyPrint Variance where
 
 instance PrettyPrint Kind where
     printText0 ga knd = case knd of
-        Intersection [] _ -> text "Type"
-        MissingKind -> space
-        ClassKind ci _ -> printText0 ga ci
-        Downset mt t _ _ -> 
-            let tok = case mt of 
-                    Nothing -> text "_" 
-                    Just x -> text (tokStr x) <+> text dotS <+> text (tokStr x)
-            in braces (tok <+>
-                       text lessS <+> printText0 ga t)
-        Intersection ks _ -> printList0 ga ks
+        ClassKind ci -> printText0 ga ci
         FunKind k1 k2 _ -> 
                           (case k1 of 
                                   FunKind _ _ _ -> parens
@@ -66,11 +57,15 @@ bracket b t = let (o,c) = getBrackets b in text o <> t <> text c
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
-printKind ga kind = case kind of 
-                    Intersection [] _ -> empty
-                    Downset Nothing t _ _ -> 
+printKind ga k = if k == star then empty else printVarKind ga (VarKind k)
+
+-- | print a 'Kind' plus a preceding colon (or nothing for 'star')
+printVarKind :: GlobalAnnos -> VarKind -> Doc
+printVarKind ga vk = case vk of 
+                    Downset t -> 
                         space <> text lessS <+> printText0 ga t
-                    _ -> space <> colon <+> printText0 ga kind
+                    VarKind k -> space <> colon <+> printText0 ga k
+                    MissingKind -> empty
 
 instance PrettyPrint Type where 
     printText0 ga ty = case ty of
@@ -113,7 +108,7 @@ instance PrettyPrint Type where
                                          ProductType _ _ -> parens
                                          KindedType _ _ _ -> parens
                                          _ -> id) (printText0 ga t)  
-        ProductType ts _ -> if null ts then text "Unit"
+        ProductType ts _ -> if null ts then text unitTypeS
                                        -- parens empty 
                           else fsep (punctuate (space <> char '*') 
                                      (map ( \ t -> 
@@ -162,9 +157,8 @@ instance PrettyPrint Term where
 
 unPredType :: Type -> Type
 unPredType t = case t of
-               FunType ty PFunArr (TypeName 
-                                   (Id [Token "Unit" _] [] _) 
-                                   (Intersection [] _) 0) _ -> ty
+               FunType ty PFunArr (TypeName ut sk 0) _ -> 
+                   if ut == unitTypeId && sk == star then ty else t
                _ -> t
 
 unPredTypeScheme :: TypeScheme -> TypeScheme
@@ -242,7 +236,7 @@ instance PrettyPrint GenVarDecl where
 
 instance PrettyPrint TypeArg where 
     printText0 ga (TypeArg v c _ _) = 
-        printText0 ga v <+> colon <+> printText0 ga c
+        printText0 ga v <> printVarKind ga c
 
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc

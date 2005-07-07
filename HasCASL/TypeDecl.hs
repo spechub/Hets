@@ -38,7 +38,7 @@ idsToTypePatterns mis = map ( \ (i, as) -> TypePattern i as [] )
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
 anaFormula ga at = 
-    do mt <- resolveTerm ga (Just logicalType) $ item at 
+    do mt <- resolveTerm ga (Just unitType) $ item at 
        return $ case mt of Nothing -> Nothing
                            Just e -> Just at { item = e }
 
@@ -97,27 +97,29 @@ ana1TypeItem t = return $ Just t
 anaTypeItem :: GlobalAnnos -> GenKind -> Instance -> [DataPat] -> TypeItem 
             -> State Env (Maybe TypeItem)
 anaTypeItem _ _ inst _ (TypeDecl pats kind ps) = 
-    do ak <- anaKind kind
-       let Result ds (Just is) = convertTypePatterns pats
-       addDiags ds
-       mis <- mapM (addTypePattern NoTypeDefn inst ak) is
+    do cm <- gets classMap 
+       let Result cs (Just rrk) = anaKindM kind cm
+           Result ds (Just is) = convertTypePatterns pats
+       addDiags $ cs ++ ds
+       let (rk, ak) = if null cs then (rrk, kind) else (star, star)
+       mis <- mapM (addTypePattern NoTypeDefn inst (rk, [ak])) is
        return $ if null mis then Nothing else 
               Just $ TypeDecl (idsToTypePatterns mis) ak ps
 
 anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
        addDiags ds  
-       tm <- gets typeMap
-       let Result es mp = anaType (Nothing, t) tm
+       te <- get
+       let Result es mp = anaTypeM (Nothing, t) te
        case mp of 
            Nothing -> do 
-               mis <- mapM (addTypePattern NoTypeDefn inst star) is
+               mis <- mapM (addTypePattern NoTypeDefn inst (star, [star])) is
                let newPats = idsToTypePatterns mis
                case t of 
                    TypeToken tt -> do 
                        let tid = simpleIdToId tt
                            newT = TypeName tid star 0
-                       addTypeId False NoTypeDefn inst star tid
+                       addTypeId False NoTypeDefn inst star star tid
                        mapM_ (addSuperType newT) $ map fst is
                        return $ Just $ SubtypeDecl newPats newT ps
                    _ -> do
@@ -133,7 +135,7 @@ anaTypeItem _ _ inst _ (IsoDecl pats ps) =
     do let Result ds (Just is) = convertTypePatterns pats
            js = map fst is
        addDiags ds
-       mis <- mapM (addTypePattern NoTypeDefn inst star) is
+       mis <- mapM (addTypePattern NoTypeDefn inst (star, [star])) is
        mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) js) js 
        return $ if null mis then Nothing else 
               Just $ IsoDecl (idsToTypePatterns mis) ps
@@ -154,11 +156,12 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                    Just ty -> do
                        newPty <- generalizeS $ TypeScheme nAs ty []
                        let fullKind = typeArgsListToKind nAs star
-                           Result es mvds = anaVars v $ monoType ty
+                       rk <- anaKind fullKind
+                       let Result es mvds = anaVars v $ monoType ty
                            altDecl = Just $ AliasType newPat (Just fullKind)
                                      newPty ps
                            altAct = addTypeId True (AliasTypeDefn newPty) inst 
-                                    fullKind i >> return altDecl
+                                    rk fullKind i >> return altDecl
                        addDiags es
                        if cyclicType i ty then do 
                            addDiags [mkDiag Error 
@@ -178,7 +181,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                                    Just newF -> do 
                                        addTypeId True (Supertype v newPty
                                                       $ item newF)
-                                           inst fullKind i
+                                           inst rk fullKind i
                                        addSuperType ty i
                                        return $ Just $ SubtypeDefn newPat v ty 
                                               newF ps
@@ -188,28 +191,33 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
        addDiags ds
        case m of 
               Nothing -> return Nothing
-              Just (i, as) -> do
-                  tm <- gets typeMap
-                  newAs <- mapM anaddTypeVarDecl as 
+              Just (i, tArgs) -> do
+                  tm <- gets typeMap -- save global variables  
+                  newAs <- mapM anaddTypeVarDecl tArgs
                   (ik, mt) <- anaPseudoType mk sc
-                  putTypeMap tm
                   let nAs = catMaybes newAs
                   case mt of 
-                          Nothing -> return Nothing
+                          Nothing -> do putTypeMap tm -- forget local variables
+                                        return Nothing
                           Just (TypeScheme args ty qs) -> 
                               if cyclicType i ty then 
                                 do addDiags [mkDiag Error 
                                        "illegal recursive type synonym" ty]
+                                   putTypeMap tm
                                    return Nothing
                                 else do 
                                 let allArgs = nAs++args
                                     fullKind = typeArgsListToKind nAs ik
                                     allSc = TypeScheme allArgs ty qs
+                                rk <- anaKind fullKind
                                 newPty <- generalizeS allSc
-                                addTypeId True (AliasTypeDefn newPty) 
-                                        inst fullKind i 
-                                return $ Just $ AliasType (TypePattern i [] [])
-                                        (Just fullKind) newPty ps
+                                putTypeMap tm
+                                b <- addTypeId True (AliasTypeDefn newPty) 
+                                        inst rk fullKind i 
+                                return $ if b then Just $ AliasType 
+                                           (TypePattern i [] [])
+                                           (Just fullKind) newPty ps
+                                         else Nothing  
 
 anaTypeItem _ gk inst tys (Datatype d) = 
     do mD <- anaDatatype gk inst tys d 
@@ -219,31 +227,30 @@ anaTypeItem _ gk inst tys (Datatype d) =
 
 ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 
-    do k <- anaKind kind
-       addDiags $ checkKinds pat star k
-       cm <- gets classMap
-       let rms = map ( \ c -> anaClassId c cm) derivs
-           jcs = catMaybes $ map maybeResult rms
-           newDerivs = foldr( \ ck l -> case ck of 
-                                           ClassKind ci _ -> ci:l
-                                           _ -> l) [] jcs
+    do cm <- gets classMap 
+       let Result cs (Just rk) = anaKindM kind cm
+           k = if null cs then kind else star
+       addDiags $ checkKinds pat star rk ++ cs
+       let rms = map ( \ c -> anaKindM (ClassKind c) cm) derivs
+           mcs = map maybeResult rms
+           jcs = catMaybes mcs
+           newDerivs = map fst $ filter (isJust . snd) $ zip derivs mcs
            Result ds m = convertTypePattern pat
        addDiags (ds ++ concatMap diags rms) 
        addDiags $ concatMap (checkKinds pat star) jcs
        case m of 
               Nothing -> return Nothing
-              Just (i, as) -> do 
+              Just (i, tArgs) -> do 
                   tm <- gets typeMap
-                  newAs <- mapM anaddTypeVarDecl as
+                  newAs <- mapM anaddTypeVarDecl tArgs
                   putTypeMap tm
                   let nAs = catMaybes newAs
                       fullKind = typeArgsListToKind nAs k
                   addDiags $ checkUniqueTypevars nAs
-                  mi <- addTypeId False PreDatatype Plain fullKind i 
-                  return $ case mi of 
-                          Nothing -> Nothing 
-                          Just _ -> Just $ DatatypeDecl (TypePattern i nAs []) 
-                                    k alts newDerivs ps
+                  frk <- anaKind fullKind
+                  b <- addTypeId False PreDatatype Plain frk fullKind i
+                  return $ if b then Just $ DatatypeDecl 
+                      (TypePattern i nAs []) k alts newDerivs ps else Nothing
 
 dataPatToType :: DatatypeDecl -> DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) =
@@ -256,10 +263,8 @@ addSuperType t i =
     do tm <- gets typeMap
        case Map.lookup i tm of
            Nothing -> return () -- previous error
-           Just ti@(TypeInfo ok ks sups defn) -> 
-               if isTypeVarDefn ti then
-                  addDiags[mkDiag Error "illegal supertype for variable" t]
-               else if any (== t) sups then 
+           Just (TypeInfo ok ks sups defn) -> 
+               if any (== t) sups then 
                   addDiags[mkDiag Hint "repeated supertype" t]
                else putTypeMap $ Map.insert i 
                         (TypeInfo ok ks (t:sups) defn) tm
@@ -279,7 +284,7 @@ anaDatatype genKind inst tys
            fullKind = typeArgsListToKind nAs k
        tm <- gets typeMap
        mapM_ (addTypeVarDecl False) nAs
-       mNewAlts <- fromResult (anaAlts tys dt (map item alts) . typeMap)
+       mNewAlts <- fromResult $ anaAlts tys dt (map item alts) 
        putTypeMap tm
        case mNewAlts of 
          Nothing -> return Nothing
@@ -297,9 +302,10 @@ anaDatatype genKind inst tys
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
                            Just s -> addOpId s (getSelType dt pa ts) []
                                        $ SelectData [ConstrInfo c sc] i
-                           Nothing -> return Nothing) $ concat sels) newAlts
+                           Nothing -> return False) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind nAs newAlts
-           addTypeId True (DatatypeDefn de) inst fullKind i
+           rk <- anaKind fullKind
+           addTypeId True (DatatypeDefn de) inst rk fullKind i
            appendSentences $ makeDataSelEqs de k
            return $ Just d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
@@ -307,37 +313,41 @@ anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 -- | analyse a pseudo type (represented as a 'TypeScheme')
 anaPseudoType :: Maybe Kind -> TypeScheme -> State Env (Kind, Maybe TypeScheme)
 anaPseudoType mk (TypeScheme tArgs ty p) =
-    do k <- case mk of 
-            Nothing -> return Nothing
-            Just j -> fromResult $ anaKindM j
-       tm <- gets typeMap    -- save global variables  
+    do cm <- gets classMap 
+       let k = case mk of 
+            Nothing -> Nothing
+            Just j -> let Result cs (Just rk) = anaKindM j cm
+                      in Just $ if null cs then j else rk 
        mapM_ anaddTypeVarDecl tArgs
-       mp <- fromResult (anaType (k, ty) . typeMap)
-       putTypeMap tm       -- forget local variables 
+       mp <- anaType (Nothing, ty)
        case mp of
            Nothing -> return (star, Nothing)
-           Just (sk, newTy) -> do 
-              let newK = typeArgsListToKind tArgs sk
-              case k of 
+           Just ((_, sks), newTy) -> case sks of 
+               [sk] -> do  
+                   let newK = typeArgsListToKind tArgs sk
+                   irk <- anaKind newK
+                   case k of 
                      Nothing -> return () 
-                     Just j -> addDiags $ checkKinds ty j newK
-              return (newK, Just $ TypeScheme tArgs newTy p)
+                     Just j -> do grk <- anaKind j 
+                                  addDiags $ checkKinds ty grk irk
+                   return (newK, Just $ TypeScheme tArgs newTy p)
+               _ -> return (star, Nothing)
 
 -- | add a type pattern 
-addTypePattern :: TypeDefn -> Instance -> Kind -> (Id, [TypeArg])  
-               -> State Env (Maybe (Id, [TypeArg]))
+addTypePattern :: TypeDefn -> Instance -> (RawKind, [Kind]) 
+               -> (Id, [TypeArg])  -> State Env (Maybe (Id, [TypeArg]))
 
-addTypePattern defn inst kind (i, as) =
-    do tm <- gets typeMap
-       newAs <- mapM anaddTypeVarDecl as 
+addTypePattern defn inst (_, ks) (i, tArgs) = 
+    nonUniqueKind ks i $ \ kind -> do
+       tm <- gets typeMap
+       newAs <- mapM anaddTypeVarDecl tArgs
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
        putTypeMap tm
        addDiags $ checkUniqueTypevars nAs
-       mId <- addTypeId True defn inst fullKind i
-       return $ case mId of 
-                Nothing -> Nothing
-                Just newId -> Just (newId, nAs)
+       frk <- anaKind fullKind
+       b <- addTypeId True defn inst frk fullKind i
+       return $ if b then Just (i, nAs) else Nothing
 
 -- | convert type patterns
 convertTypePatterns :: [TypePattern] -> Result [(Id, [TypeArg])]

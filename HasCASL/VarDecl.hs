@@ -18,7 +18,6 @@ import Data.List as List
 import Control.Monad
 
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
@@ -30,6 +29,7 @@ import Text.ParserCombinators.Parsec (runParser, eof)
 
 import HasCASL.ParseTerm
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
@@ -50,16 +50,18 @@ appendSentences fs =
        put $ e {sentences = reverse fs ++ sentences e}
 
 -- | store local assumptions
-putLocalVars :: Map.Map Id Type -> State Env ()
+putLocalVars :: Map.Map Id VarDefn -> State Env ()
 putLocalVars vs =  do { e <- get; put e { localVars = vs } }
 
 anaStarType :: Type -> State Env (Maybe Type)
-anaStarType t = do mp <- fromResult $ anaStarTypeR t . typeMap
-                   return $ fmap snd mp
+anaStarType t = fmap (fmap snd) $ anaType (Just star, t) 
+
+anaType :: (Maybe Kind, Type)  -> State Env (Maybe ((RawKind, [Kind]), Type))
+anaType p = fromResult $ anaTypeM p
 
 anaInstTypes :: [Type] -> State Env [Type]
 anaInstTypes ts = if null ts then return []
-   else do mp <- fromResult $ anaType (Nothing, head ts) . typeMap
+   else do mp <- anaType (Nothing, head ts) 
            rs <- anaInstTypes $ tail ts
            return $ case mp of
                    Nothing -> rs
@@ -85,108 +87,133 @@ generalizeS sc = do
     addDiags $ generalizable sc
     return $ generalize sc
 
-anaKind :: Kind -> State Env Kind
-anaKind k = toState star $ anaKindM k
-
-toState :: a -> (Env -> Result a) -> State Env a
-toState bot r = do
-     ma <- fromResult r
-     case ma of 
-          Nothing -> return bot  
-          Just a -> return a
+anaKind :: Kind -> State Env RawKind
+anaKind k = do mrk <- fromResult $ anaKindM k . classMap
+               case mrk of 
+                   Nothing -> error "anaKind"
+                   Just rk -> return rk
 
 fromResult :: (Env -> Result a) -> State Env (Maybe a)
 fromResult f = do 
    e <- get
-   let r = f e
-   addDiags $ diags r
-   return $ maybeResult r
+   let Result ds mr = f e
+   addDiags ds
+   return mr
 
 -- ---------------------------------------------------------------------------
 -- storing type ids with their kind and definition
 -- ---------------------------------------------------------------------------
 
+-- | store local type variables
+putLocalTypeVars :: LocalTypeVars -> State Env ()
+putLocalTypeVars tvs = do 
+    e <- get 
+    put e { localTypeVars = tvs }
+
+addLocalTypeVar :: Bool -> TypeVarDefn -> Id -> State Env ()
+addLocalTypeVar warn tvd i = do 
+    tvs <- gets localTypeVars
+    if warn then do 
+         tm <- gets typeMap
+         case Map.lookup i tm of 
+             Nothing -> case Map.lookup i tvs of 
+                 Nothing -> return ()
+                 Just _ -> addDiags [mkDiag Hint 
+                    "type variables shadows type constructor" i]
+             Just _ -> addDiags [mkDiag Hint "redeclared type variable" i] 
+       else return ()
+    putLocalTypeVars $ Map.insert i tvd tvs
+
 -- | store a complete type map
 putTypeMap :: TypeMap -> State Env ()
-putTypeMap tk =  do { e <- get; put e { typeMap = tk } }
+putTypeMap tm = do 
+    e <- get 
+    put e { typeMap = tm }
 
 -- | store type id and check kind arity (warn on redeclared types)
-addTypeId :: Bool -> TypeDefn -> Instance -> Kind -> Id -> State Env (Maybe Id)
-addTypeId warn defn _ k i = 
-    do let nk = rawKind k
-       if placeCount i <= kindArity TopLevel nk then
-          do addTypeKind warn defn i k
-             return $ Just i 
+addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id 
+          -> State Env Bool
+addTypeId warn defn _ rk k i = 
+    do if placeCount i <= kindArity rk then do
+          addTypeKind warn defn i rk k
+          return True
           else do addDiags [mkDiag Error "wrong arity of" i]
-                  return Nothing
+                  return False
 
 -- | store type as is (warn on redeclared types)
-addTypeKind :: Bool -> TypeDefn -> Id -> Kind -> State Env () 
-addTypeKind warn d i k = 
-    do tk <- gets typeMap
-       let rk = rawKind k
-       case Map.lookup i tk of
-              Nothing -> case d of
-                  TypeVarDefn _ -> do 
-                      (_, v) <- toEnvState $ freshVar (posOfId i) 
-                      putTypeMap $ Map.insert i 
-                         (TypeInfo rk [k] [] $ TypeVarDefn v) tk
-                  _ -> putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tk
-              Just (TypeInfo ok ks sups defn) -> 
-                  if rk == ok
-                     then do let isKnownInst = k `elem` ks
-                                 insts = if isKnownInst then ks else
-                                        Set.toList $ mkIntersection (k:ks)
-                                 Result ds mDef = mergeTypeDefn defn d
-                             if warn && isKnownInst && case (defn, d) of 
+addTypeKind :: Bool -> TypeDefn -> Id -> RawKind -> Kind -> State Env Bool
+addTypeKind warn d i rk k = 
+    do tm <- gets typeMap
+       case Map.lookup i tm of
+           Nothing -> do 
+               putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tm
+               return True 
+           Just (TypeInfo ok oldks sups defn) -> 
+               if rk == ok then do 
+                   cm <- gets classMap
+                   let isKnownInst = k `elem` oldks
+                       insts = if isKnownInst then oldks else k : oldks
+                       Result ds mDef = mergeTypeDefn defn d
+                   if warn && isKnownInst && case (defn, d) of 
                                  (PreDatatype, DatatypeDefn _) -> False
-                                 _ -> True
-                                then
-                                addDiags [mkDiag Hint 
-                                          "redeclared type" i]
-                                else return ()
-                             case mDef of
-                                 Just newDefn -> putTypeMap $ Map.insert i 
-                                         (TypeInfo ok insts sups newDefn) tk
-                                 Nothing -> addDiags $ map (improveDiag i) ds
-                     else addDiags $ diffKindDiag i ok rk 
+                                 _ -> True then
+                       addDiags [mkDiag Hint "redeclared type" i]
+                       else return ()
+                   case mDef of
+                       Just newDefn -> do 
+                           putTypeMap $ Map.insert i 
+                               (TypeInfo ok insts sups newDefn) tm
+                           return True
+                       Nothing -> do 
+                           addDiags $ map (improveDiag i) ds
+                           return False
+                else do addDiags $ diffKindDiag i ok rk 
+                        return False
 
--- | analyse a type argument and look up a missing kind
+nonUniqueKind :: (PosItem a, PrettyPrint a) => [Kind] -> a -> 
+                 (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
+nonUniqueKind ks a f = case ks of
+    [k] -> f k
+    _ -> do addDiags [mkDiag Error "non-unique kind for" a]
+            return Nothing
+
+-- | analyse a type argument 
 anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-anaddTypeVarDecl(TypeArg t k s ps) = 
-    case k of 
-    MissingKind -> do 
-       tk <- gets typeMap
-       let rm = getIdKind tk t
-       case maybeResult rm of 
-              Nothing -> anaddTypeVarDecl(TypeArg t star s ps)
-              Just oldK -> addTypeVarDecl False (TypeArg t oldK s ps)
-    _ -> do nk <- anaKind k
-            addTypeVarDecl True $ TypeArg t nk s ps
+anaddTypeVarDecl ta@(TypeArg i vk s ps) = do
+    c <- toEnvState inc
+    case vk of 
+      VarKind k -> do 
+        rk <- anaKind k
+        addLocalTypeVar True (TypeVarDefn rk vk c) i
+        return $ Just ta
+      Downset t -> do                 
+        mt <- anaType (Nothing, t)
+        case mt of 
+            Nothing -> return Nothing
+            Just ((rk, ks), nt) -> 
+                nonUniqueKind ks t $ \ k -> do
+                   let nd = Downset (KindedType nt k [])
+                   addLocalTypeVar True (TypeVarDefn rk nd c) i
+                   return $ Just $ TypeArg i (Downset nt) s ps
+      MissingKind -> do 
+        tvs <- gets localTypeVars
+        case Map.lookup i tvs of 
+            Nothing -> do 
+                addDiags [mkDiag Warning "missing kind for type variable " i]
+                let dvk = VarKind star
+                addLocalTypeVar True (TypeVarDefn star dvk c) i
+                return $ Just $ TypeArg i dvk s ps
+            Just (TypeVarDefn rk dvk _) -> do 
+                addLocalTypeVar True (TypeVarDefn rk dvk c) i
+                return $ Just $ TypeArg i dvk s ps
 
 -- | add an analysed type argument (warn on redeclared types)
-addTypeVarDecl :: Bool -> TypeArg -> State Env (Maybe TypeArg)
-addTypeVarDecl warn ta@(TypeArg t k _ _) = 
-    do mi <- addTypeId warn (TypeVarDefn 0) Plain k t
-       return $ fmap (const ta) mi
-
--- | compute arity from a 'Kind'
-kindArity :: ApplMode -> Kind -> Int
-kindArity m k = 
-    case k of 
-    FunKind k1 k2 _ -> case m of 
-                       TopLevel -> kindArity OnlyArg k1 + 
-                                   kindArity TopLevel k2
-                       OnlyArg -> 1
-    Intersection [] _ -> case m of
-                  TopLevel -> 0
-                  OnlyArg -> 1
-    ClassKind _ ck -> kindArity m ck
-    Downset _ _ dk _ -> kindArity m dk
-    Intersection (k1:_) _ -> kindArity m k1
-    ExtKind ek _ _ -> kindArity m ek
-    _ -> error "kindArity"
-
+addTypeVarDecl :: Bool -> TypeArg -> State Env ()
+addTypeVarDecl warn (TypeArg i vk _ _) = 
+    do let k = toKind vk
+       rk <- anaKind k 
+       c <- toEnvState inc
+       addLocalTypeVar warn (TypeVarDefn rk vk c) i
 
 -- ---------------------------------------------------------------------------
 -- for storing selectors and constructors
@@ -207,17 +234,16 @@ partitionOpId e i sc =
     in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
 
 checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
-checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
-    let ls = map snd $ leaves (< 0) t -- generic vars
-        rest = tArgs List.\\ ls
-    if null rest then return sc
-      else do
-      addDiags [mkDiag Warning "unused type variables" rest]
-      return $ TypeScheme ls t ps
+checkUnusedTypevars sc@(TypeScheme tArgs t _) = do
+    let ls = map (fst . snd) $ leaves (< 0) t -- generic vars
+        rest = map getTypeVar tArgs List.\\ ls
+    if null rest then return ()
+      else addDiags [mkDiag Warning "unused type variables" rest]
+    return sc
 
 -- | storing an operation
 addOpId :: UninstOpId -> TypeScheme -> [OpAttr] -> OpDefn 
-        -> State Env (Maybe UninstOpId)
+        -> State Env Bool
 addOpId i oldSc attrs defn = 
     do sc <- checkUnusedTypevars oldSc
        e <- get
@@ -241,12 +267,12 @@ addOpId i oldSc attrs defn =
                       "ignoring declaration for builtin identifier" i]
                       else return ()
                   case mo of 
-                      Nothing -> return Nothing
+                      Nothing -> return False
                       Just oi -> do putAssumps $ Map.insert i 
                                                    (OpInfos (oi : r)) as
-                                    return $ Just i
+                                    return True
           else do addDiags ds
-                  return Nothing
+                  return False
 
 ----------------------------------------------------------------------------
 -- local variables 
@@ -254,57 +280,48 @@ addOpId i oldSc attrs defn =
 
 -- | add a local variable with an analysed type (if True then warn)
 addLocalVar :: Bool -> VarDecl -> State Env () 
-addLocalVar b (VarDecl v t _ _) = 
+addLocalVar warn (VarDecl v t _ _) = 
     do ass <- gets assumps
        vs <- gets localVars
-       if b then if Map.member v ass then
+       if warn then if Map.member v ass then
           addDiags [mkDiag Hint "variable shadows global name(s)" v]
           else if Map.member v vs then 
           addDiags [mkDiag Hint "shadowing by variable" v]
           else return ()
          else return ()  
-       putLocalVars $ Map.insert v t vs 
-
--- | add a local variable with an analysed type
-addGenLocalVar :: GenVarDecl -> State Env () 
-addGenLocalVar d = case d of 
-     GenVarDecl v -> addLocalVar False v
-     GenTypeVarDecl t -> addTypeVarDecl False t >> return () 
+       putLocalVars $ Map.insert v (VarDefn t) vs 
 
 ----------------------------------------------------------------------------
 -- GenVarDecl
 -----------------------------------------------------------------------------
 
-addGenVarDecl :: GenVarDecl -> State Env (Maybe GenVarDecl)
-addGenVarDecl(GenVarDecl v) = do mv <- addVarDecl v
-                                 return $ fmap GenVarDecl mv
-addGenVarDecl(GenTypeVarDecl t) = do mt <- addTypeVarDecl True t 
-                                     return $ fmap GenTypeVarDecl mt
+-- | add analysed local variable or type variable declaration 
+addGenVarDecl :: GenVarDecl -> State Env ()
+addGenVarDecl(GenVarDecl v) = addLocalVar True v
+addGenVarDecl(GenTypeVarDecl t) = addTypeVarDecl False t 
 
--- | analyse and add global (True) or local variable or type declaration 
+-- | analyse and add local variable or type variable declaration 
 anaddGenVarDecl :: Bool -> GenVarDecl -> State Env (Maybe GenVarDecl)
-anaddGenVarDecl b gv = case gv of 
-    GenVarDecl v -> optAnaddVarDecl b v
+anaddGenVarDecl warn gv = case gv of 
+    GenVarDecl v -> optAnaddVarDecl warn v
     GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
 convertTypeToKind :: Env -> Type -> Result Kind
 convertTypeToKind e ty = let s = showPretty ty "" in
     case runParser (extKind << eof) (emptyAnnos ()) "" s of
-    Right k -> anaKindM k e
+    Right k -> let Result ds _ = anaKindM k $ classMap e in
+               if null ds then return k else Result ds Nothing
     Left _ -> fail $ "not a kind '" ++ s ++ "'"
 
--- | add global or local variable or type declaration (True means global)
+-- | local variable or type variable declaration
 optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)
-optAnaddVarDecl b vd@(VarDecl v t s q) = 
+optAnaddVarDecl warn vd@(VarDecl v t s q) = 
     let varDecl = do mvd <- anaVarDecl vd
                      case mvd of 
                          Nothing -> return Nothing
-                         Just nvd -> let movd = makeMonomorph nvd in
-                             if b then do 
-                             mmvd <- addVarDecl movd
-                             return $ fmap GenVarDecl mmvd
-                             else do 
-                             addLocalVar True movd
+                         Just nvd -> do 
+                             let movd = makeMonomorph nvd 
+                             addLocalVar warn movd
                              return $ Just $ GenVarDecl movd
     in if isSimpleId v then
     do e <- get
@@ -312,7 +329,7 @@ optAnaddVarDecl b vd@(VarDecl v t s q) =
        case mk of 
            Just k -> do 
                addDiags [mkDiag Hint "is type variable" v]
-               tv <- anaddTypeVarDecl $ TypeArg v k s q
+               tv <- anaddTypeVarDecl $ TypeArg v (VarKind k) s q
                return $ fmap GenTypeVarDecl tv 
            _ -> do addDiags $ map ( \ d -> Diag Hint (diagString d) q) ds  
                    varDecl
@@ -323,8 +340,8 @@ makeMonomorph (VarDecl v t sk ps) = VarDecl v (monoType t) sk ps
 
 monoType :: Type -> Type
 monoType t = subst (Map.fromList $ 
-                    map ( \ (v, TypeArg i k _ _) -> 
-                          (v, TypeName i k 0)) $ leaves (> 0) t) t
+                    map ( \ (v, (i, rk)) -> 
+                          (v, TypeName i rk 0)) $ leaves (> 0) t) t
 
 -- | analyse variable declaration
 anaVarDecl :: VarDecl -> State Env (Maybe VarDecl)
@@ -333,12 +350,6 @@ anaVarDecl(VarDecl v oldT sk ps) =
        return $ case mt of 
                Nothing -> Nothing
                Just t -> Just $ VarDecl v t sk ps
-
--- | add a local variable with an analysed type
-addVarDecl :: VarDecl -> State Env (Maybe VarDecl) 
-addVarDecl vd@(VarDecl v t _ _) = 
-    do newV <- addOpId v (simpleTypeScheme t) [] VarDefn
-       return $ fmap (const vd) newV
 
 -- | get the variable
 getVar :: VarDecl -> Id

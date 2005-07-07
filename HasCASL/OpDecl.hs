@@ -70,21 +70,20 @@ getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
       (OpId i [] qs, TypeScheme (args ++ tvs) q ps)  
 
 anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId 
-        -> State Env (Maybe OpId) 
+        -> State Env Bool
 anaOpId ga br partSc attrs o =
     do let (OpId i _ _, sc) = getUninstOpId partSc o
        mSc <- anaTypeScheme sc 
        case mSc of 
-           Nothing -> return Nothing
+           Nothing -> return False
            Just newSc -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               mo <- addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br 
-               return $ fmap (const o) mo
+               addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br 
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
 anaOpItem ga br (OpDecl is sc attr ps) = do
-        mus <- mapM (anaOpId ga br sc attr) is
-        let us = catMaybes mus
+        bs <- mapM (anaOpId ga br sc attr) is
+        let us = map fst $ filter snd $ zip is bs
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
 

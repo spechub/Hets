@@ -629,7 +629,7 @@ redAppl cmxs sign
          lastArgs = map last (map args cmxs)
          varName = "caseVar" ++ show (length (args (head cmxs)))
          varId = (mkId [(mkSimpleId varName)])
-         newVar = QualVar (VarDecl varId (TypeName varId MissingKind 1) 
+         newVar = QualVar (VarDecl varId (TypeName varId star 1) 
                            Other [])
          newPeqs = (map newProgEq (zip lastArgs terms))
          newPeqs' = recArgs sign newPeqs

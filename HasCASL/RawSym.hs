@@ -15,7 +15,7 @@ module HasCASL.RawSym where
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.PrintLe()
-import HasCASL.TypeAna
+import HasCASL.ClassAna
 import HasCASL.VarDecl
 import HasCASL.Builtin
 import Common.Id
@@ -81,11 +81,8 @@ convTypeToKind (BracketType Parens [] _) =
     Nothing
 convTypeToKind (BracketType Parens [t] _) = 
     convTypeToKind t
-convTypeToKind (BracketType Parens ts ps) = 
-       do ks <- mapM convTypeToKind ts
-          Just $ Intersection ks ps
 
-convTypeToKind (MixfixType [t1, TypeToken t]) = 
+convTypeToKind (MixfixType [TypeToken t, t1]) = 
     let s = tokStr t 
         mv = case s of 
                    "+" -> Just CoVar 
@@ -96,9 +93,8 @@ convTypeToKind (MixfixType [t1, TypeToken t]) =
               Just v -> do k1 <- convTypeToKind t1
                            Just $ ExtKind k1 v $ tokPos t
 convTypeToKind (TypeToken t) = 
-       if tokStr t == "Type" then Just $ Intersection [] $ tokPos t else
           let ci = simpleIdToId t in
-          Just $ ClassKind ci MissingKind
+          Just $ ClassKind ci
 convTypeToKind _ = Nothing
 
 matchSymb :: Symbol -> RawSymbol -> Bool
@@ -112,14 +108,18 @@ matchSymb sy rsy = let ty = symType sy in
                 ASymbol s -> ty == symType s
 
 anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
-anaSymbolType t = 
+anaSymbolType t = do 
+    cm <- gets classMap
     case t of 
-    ClassAsItemType k -> do ak <- fromResult $ anaKindM k
-                            return $ fmap ClassAsItemType ak
-    TypeAsItemType k -> do ak <- fromResult $ anaKindM k
-                           return $ fmap TypeAsItemType ak
-    OpAsItemType sc -> do as <- anaTypeScheme sc
-                          return $ fmap OpAsItemType as 
+        ClassAsItemType k -> do 
+            let Result ds _ = anaKindM k cm
+            return $ if null ds then Just $ ClassAsItemType k else Nothing 
+        TypeAsItemType k -> do 
+            let Result ds _ = anaKindM k cm
+            return $ if null ds then Just $ TypeAsItemType k else Nothing 
+        OpAsItemType sc -> do 
+            asc <- anaTypeScheme sc
+            return $ fmap OpAsItemType asc 
 
 instance PosItem RawSymbol where
     get_pos = get_pos . rawSymName

@@ -15,21 +15,20 @@ choose a minimal type
 module HasCASL.MinType where
 
 import HasCASL.As
-import HasCASL.Le
 import HasCASL.TypeAna
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
 
-typeNub :: TypeMap -> (a -> (Type, Term)) -> [a] -> [a]
-typeNub tm f l = case l of 
+typeNub :: TypeEnv -> (a -> (Type, Term)) -> [a] -> [a]
+typeNub te f l = case l of 
     [] -> []
-    x : xs -> if any (flip comp (f x) . f) xs then typeNub tm f xs 
-              else x : typeNub tm f (filter (not . comp (f x) . f) xs)
+    x : xs -> if any (flip comp (f x) . f) xs then typeNub te f xs 
+              else x : typeNub te f (filter (not . comp (f x) . f) xs)
     where
     comp :: (Type, Term) -> (Type, Term) -> Bool
     comp (ty1, t1) (ty2, t2) = eqTerm t1 t2 && 
-         (lesserType tm ty1 ty2 || liftType ty1 [] == ty2)
+         (lesserType te ty1 ty2 || liftType ty1 [] == ty2)
 
 eqTerm :: Term -> Term -> Bool
 eqTerm t1 t2 = case (t1, t2) of

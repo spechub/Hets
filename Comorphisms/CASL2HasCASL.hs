@@ -84,7 +84,7 @@ fromPredType :: PredType -> TypeScheme
 fromPredType pt = 
     let args = map toType $ predArgs pt
         arg = mkProductType args []
-    in simpleTypeScheme $ if null args then logicalType else predType arg
+    in simpleTypeScheme $ if null args then unitType else predType arg
 
 mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
 mapTheory (sig, sents) = 
@@ -101,7 +101,7 @@ mapTheory (sig, sents) =
         newEnv = execState (mapM_ ( \ (mo, j, ty) -> case mo of
                     Just o -> addOpId o (simpleTypeScheme ty) [] 
                                   $ ConstructData j
-                    Nothing -> return Nothing) constr) env
+                    Nothing -> return False) constr) env
         in (newEnv, newSents)
 
 mapSig :: Sign f e -> Env
@@ -202,7 +202,7 @@ toTerm s f = case f of
     Cas.Strong_equation t1 t2 ps -> 
         mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts rs) ps) args qs ->
-        let sc = simpleTypeScheme $ if null ts then logicalType 
+        let sc = simpleTypeScheme $ if null ts then unitType
                  else predType $ mkProductType (map toType ts) rs 
             p = QualOp Pred (InstOpId i [] ps) sc ps
             in if null args then p else 

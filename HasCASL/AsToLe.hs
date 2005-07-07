@@ -97,11 +97,9 @@ preEnv = addPreDefs initialEnv
 cleanEnv :: Env -> Env
 cleanEnv e = diffEnv initialEnv 
              { classMap = classMap e
-             , typeMap = Map.filter (not . isTypeVarDefn) $ typeMap e
-             , assumps = filterVars $ assumps e }
+             , typeMap = typeMap e
+             , assumps = assumps e }
              preEnv where
-             filterVars :: Assumps -> Assumps
-             filterVars = filterAssumps (not . isVarDefn)
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec

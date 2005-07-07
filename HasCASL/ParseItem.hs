@@ -129,6 +129,12 @@ typeItems = do p <- pluralKeyword typeS
                      typeItemList [p, q] Instance
                  <|> typeItemList [p] Plain
 
+-- | several 'typeArg's 
+typeArgs :: AParser st ([TypeArg], [Token])
+typeArgs = 
+    do l <- many1 typeArg
+       return (map fst l, concatMap snd l)
+
 pseudoType :: AParser st TypeScheme
 pseudoType = do l <- asKey lamS
                 (ts, pps) <- typeArgs
@@ -356,7 +362,7 @@ predDefn :: OpId -> AParser st OpItem
 predDefn o = do (args, ps) <- opArg
                 e <- asKey equivS
                 f <- term
-                return $ OpDefn o [args] (simpleTypeScheme logicalType)
+                return $ OpDefn o [args] (simpleTypeScheme unitType)
                         Partial f (ps ++ tokPos e) 
 
 predItem :: AParser st OpItem

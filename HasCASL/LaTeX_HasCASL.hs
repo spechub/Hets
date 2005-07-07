@@ -22,7 +22,7 @@ import Common.PrettyPrint
 import Common.Keywords
 import Common.Lib.Pretty
 import Common.Id
-import Common.PrettyPrint
+import Common.PrettyPrint()
 import Common.GlobalAnnotations(GlobalAnnos)
 import Common.AS_Annotation(mapAnM)
 import Common.PrintLaTeX
@@ -38,25 +38,16 @@ instance PrintLaTeX Variance where
 
 instance PrintLaTeX Kind where
     printLatex0 ga knd = case knd of
-        Intersection [] _ -> text "Type"
-        MissingKind -> space
-        ClassKind ci _ -> printLatex0 ga ci
-        Downset mt t _ _ -> 
-            let tok = case mt of 
-                    Nothing -> text "\\_" 
-                    Just x -> (printLatex0 ga x) <+> hc_sty_axiom "\\bullet" <+> (printLatex0 ga x)
-            in braces_latex (tok <+>
-                       hc_sty_axiom lessS <+> printLatex0 ga t)
-        Intersection ks _ -> printList0 ga ks
+        ClassKind ci -> printLatex0 ga ci
         FunKind k1 k2 _ -> 
                           (case k1 of 
                                   FunKind _ _ _ -> parens
                                   _ -> id) (printLatex0 ga k1)
                           <+> hc_sty_axiom "\\rightarrow" 
                           <+> printLatex0 ga k2
-        ExtKind k v _ -> (case k of
+        ExtKind k v _ -> printLatex0 ga v <> (case k of
                     FunKind _ _ _ -> parens
-                    _ -> id) (printLatex0 ga k) <> printLatex0 ga v
+                    _ -> id) (printLatex0 ga k)
 
 instance PrintLaTeX TypePattern where 
     printLatex0 ga tp = case tp of
@@ -76,11 +67,15 @@ bracket b = case b of
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
-printKind ga kind = case kind of 
-                    Intersection [] _ -> empty
-                    Downset Nothing t _ _ -> 
+printKind ga k = if k == star then empty else printVarKind ga $ VarKind k
+
+printVarKind :: GlobalAnnos -> VarKind -> Doc
+printVarKind ga vk = case vk of 
+                    VarKind k -> space <> colon <+> printLatex0 ga k
+                    Downset t -> 
                         space <> hc_sty_axiom lessS <+> printLatex0 ga t
-                    _ -> space <> colon <+> printLatex0 ga kind
+                    _ -> empty
+
 
 instance PrintLaTeX Type where 
     printLatex0 ga ty = case ty of
@@ -283,8 +278,7 @@ instance PrintLaTeX GenVarDecl where
         GenTypeVarDecl tv -> printLatex0 ga tv
 
 instance PrintLaTeX TypeArg where 
-    printLatex0 ga (TypeArg v c _ _) = printLatex0 ga v <+> colon 
-                                      <+> printLatex0 ga c
+    printLatex0 ga (TypeArg v c _ _) = printLatex0 ga v <> printVarKind ga c
 
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (PrintLaTeX a) => GlobalAnnos -> [a] -> Doc
@@ -475,7 +469,7 @@ printSK k =
 
 ------------------------------------- Le -----------------------------------
 instance PrintLaTeX ClassInfo where
-    printLatex0 ga (ClassInfo ks) =
+    printLatex0 ga (ClassInfo _ ks) =
            space <> hc_sty_axiom lessS <+> printList0 ga ks
 
 printGenKind :: GenKind -> Doc
@@ -487,8 +481,6 @@ printGenKind k = case k of
 instance PrintLaTeX TypeDefn where
     printLatex0 _ NoTypeDefn = empty
     printLatex0 _ PreDatatype = space <> text "\\%(data type)\\%"
-    printLatex0 _ (TypeVarDefn i) = 
-        space <> text ("\\%(var_{" ++ show i ++ "})\\%")
     printLatex0 ga (AliasTypeDefn s) = space <> hc_sty_axiom assignS 
                                       <+> printPseudoType ga s
     printLatex0 ga (Supertype v t f) = space <> hc_sty_axiom equalS <+> 
@@ -527,7 +519,6 @@ instance PrintLaTeX ConstrInfo where
 
 instance PrintLaTeX OpDefn where
     printLatex0 _ (NoOpDefn b) = space <> text ("\\%(" ++ show b ++ ")\\%")
-    printLatex0 _ VarDefn = space <> text "\\%(var)\\%"
     printLatex0 _ (ConstructData i) = space <> text ("\\%(construct " ++
                                      showId i ")\\%")
     printLatex0 ga (SelectData c i) = space <> text ("\\%(select from " ++

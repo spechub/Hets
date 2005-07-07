@@ -116,29 +116,41 @@ mkPrecIntMap r =
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
+
+aTypeWithKind :: Kind -> Type
+aTypeWithKind k = TypeName aVar k (-1)
+
 aType :: Type
-aType = TypeName aVar star (-1)
+aType = aTypeWithKind star
+
+mStar :: Kind
+mStar = ExtKind star ContraVar []
+
+aBindWithKind :: Kind -> Type -> TypeScheme
+aBindWithKind k ty = TypeScheme [TypeArg aVar (VarKind k) Other []] ty []
 
 bindA :: Type -> TypeScheme
-bindA ty = TypeScheme [TypeArg aVar star Other []] ty []
+bindA = aBindWithKind star
 
 lazyLog :: Type 
-lazyLog = LazyType logicalType []
+lazyLog = LazyType unitType []
 
-eqType, logType, defType, notType, whenType, unitType :: TypeScheme
+aToUnitType :: Kind -> TypeScheme
+aToUnitType k = aBindWithKind k $ FunType aType PFunArr unitType []
+
+eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ 
           FunType (ProductType [aType, aType] [])
-          PFunArr logicalType []
+          PFunArr unitType []
 logType = simpleTypeScheme $ 
           FunType (ProductType [lazyLog, lazyLog] [])
-          PFunArr logicalType []
-defType = bindA $ FunType aType PFunArr logicalType []
-notType = simpleTypeScheme $ FunType lazyLog PFunArr logicalType []
+          PFunArr unitType []
+notType = simpleTypeScheme $ FunType lazyLog PFunArr unitType []
 
 whenType = bindA $ 
           FunType (ProductType [aType, lazyLog, aType] [])
           PFunArr aType []
-unitType = simpleTypeScheme logicalType
+unitTypeScheme = simpleTypeScheme unitType
 
 botId :: Id
 botId = mkId [mkSimpleId "bottom"]
@@ -152,10 +164,13 @@ logId = mkId [mkSimpleId "Logical"]
 botType :: TypeScheme
 botType = bindA aType
 
+defType :: TypeScheme
+defType = aToUnitType star
+
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) : 
         (negId, notType) : (whenElse, whenType) :
-        (trueId, unitType) : (falseId, unitType) :
+        (trueId, unitTypeScheme) : (falseId, unitTypeScheme) :
         (eqId, eqType) : (exEq, eqType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
@@ -164,11 +179,13 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
                          (TypeInfo k [k] s d) m) tm $
               (unitTypeId, star, [], NoTypeDefn)
-              : (predTypeId, FunKind star star [], [], AliasTypeDefn defType)
+              : (predTypeId, FunKind mStar star [], [], 
+                           AliasTypeDefn $ aToUnitType mStar)
               : (logId, star, [], AliasTypeDefn $ simpleTypeScheme $ 
-                 FunType logicalType PFunArr logicalType [])
-              : (productId, prodKind, [], NoTypeDefn)
-              : map ( \ (a, l) -> (arrowId a, funKind, 
+                 FunType unitType PFunArr unitType [])
+              : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
+                [2 .. 5]
+              ++ map ( \ (a, l) -> (arrowId a, funKind, 
                         map ( \ b -> TypeName (arrowId b) funKind 0) l,
                                    NoTypeDefn)) 
                 [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
@@ -195,7 +212,7 @@ mkEqTerm :: Id -> [Pos] -> Term  -> Term -> Term
 mkEqTerm i ps = mkBinTerm i eqType ps
 
 unitTerm :: Id -> [Pos] -> Term
-unitTerm i ps = mkQualOp i unitType ps
+unitTerm i ps = mkQualOp i unitTypeScheme ps
 
 toBinJunctor :: Id -> [Term] -> [Pos] -> Term
 toBinJunctor i ts ps = case ts of

@@ -60,29 +60,15 @@ mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 
 -- | parse a simple class name or the type universe as kind
 parseClassId :: AParser st Kind
-parseClassId = fmap (\c -> if showId c "" == "Type" 
-                   then Intersection [] $ posOfId c
-                   else ClassKind c MissingKind) classId
+parseClassId = fmap ClassKind classId
 
--- | do 'parseClassId' or a downset or an intersection kind 
+-- | do 'parseClassId' or a kind in parenthessis
 parseSimpleKind :: AParser st Kind
-parseSimpleKind = parseClassId
-             <|> 
-             do o <- oParenT
-                (cs, ps) <- kind `separatedBy` anComma
-                c <- cParenT
-                return (if isSingle cs then head cs else
-                        Intersection cs (toPos o ps c))
-             <|>
-             do o <- oBraceT
-                i <- pToken scanHCWords
-                d <- dotT
-                j <- asKey (tokStr i)
-                l <- lessT
-                t <- parseType
-                p <- cBraceT
-                return (Downset (Just i) t MissingKind 
-                        (catPos [o,d,j,l,p])) 
+parseSimpleKind = parseClassId <|> do 
+    oParenT
+    k <- kind
+    cParenT
+    return k
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
 parseExtKind :: AParser st Kind
@@ -145,27 +131,32 @@ typeKind vs ps =
     do c <- colT
        if allIsInVar vs then 
           do k <- extKind
-             return (makeTypeArgs vs ps (tokPos c) k)
+             return (makeTypeArgs vs ps (tokPos c) $ VarKind k)
           else do k <- kind
-                  return (makeTypeArgs vs ps (tokPos c) k)
+                  return (makeTypeArgs vs ps (tokPos c) $ VarKind k)
     <|>
     do l <- lessT
        t <- parseType
-       return (makeTypeArgs vs ps (tokPos l)
-                  (Downset Nothing t MissingKind [])) 
-    <|> return (makeTypeArgs vs ps [] star)
+       return (makeTypeArgs vs ps (tokPos l) $ Downset t) 
+    <|> return (makeTypeArgs vs ps [] MissingKind)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
 makeTypeArgs :: [(TypeId, Maybe Variance, [Pos])] -> [Token] 
-             -> [Pos] -> Kind -> [TypeArg]
+             -> [Pos] -> VarKind -> [TypeArg]
 makeTypeArgs ts ps qs k = 
     zipWith (mergeVariance Comma k) (init ts) 
                 (map tokPos ps)
                 ++ [mergeVariance Other k (last ts) qs]
-                where mergeVariance c e (t, Nothing, _) q =
-                          TypeArg t e c q
-                      mergeVariance c e (t, Just v, p) q = 
-                          TypeArg t (ExtKind e v p) c q 
+                where 
+    mergeVariance c e (t, Nothing, _) q = TypeArg t e c q
+    mergeVariance c (VarKind (ExtKind e v0 _)) (t, Just v, p) q = 
+        if v0 == v then TypeArg t (VarKind (ExtKind e v p)) c q
+        else error "makeTypeArgs1"
+    mergeVariance c (VarKind e) (t, Just v, p) q = 
+                          TypeArg t (VarKind (ExtKind e v p)) c q
+    mergeVariance c MissingKind (t, Just v, p) q = 
+                          TypeArg t (VarKind (ExtKind star v p)) c q
+    mergeVariance _ _ _ _ = error "makeTypeArgs2"
 
 -- | a single 'TypeArg' (parsed by 'typeVars')
 singleTypeArg :: AParser st TypeArg
@@ -188,12 +179,6 @@ typeArg =
     do a <- singleTypeArg
        return (a, [])
      <|> parenTypeArg
-
--- | several 'typeArg's 
-typeArgs :: AParser st ([TypeArg], [Token])
-typeArgs = 
-    do l <- many1 typeArg
-       return (map fst l, concatMap snd l)
 
 -- | a 'singleTypeArg' put in parentheses as 'TypePattern'
 typePatternArg :: AParser st TypePattern

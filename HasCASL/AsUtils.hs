@@ -76,16 +76,7 @@ mkForall vl f = if null vl then f else QuantifiedTerm Universal vl f []
 
 -- | construct application with curried arguments
 mkApplTerm :: Term -> [Term] -> Term
-mkApplTerm trm args = if null args then trm
-       else mkApplTerm (ApplTerm trm (head args) []) $ tail args
-
--- | get the type of a constructor with given curried argument types
-getConstrType :: DataPat -> Partiality -> [Type] -> Type
-getConstrType dt p ts = (case p of 
-     Total -> id 
-     Partial -> addPartiality ts) $
-                       foldr ( \ c r -> FunType c FunArr r [] ) 
-                             (typeIdToType dt) ts
+mkApplTerm = foldl ( \ t a -> ApplTerm t a []) 
 
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
@@ -113,14 +104,22 @@ getPartiality as t = case t of
 
 type DataPat = (Id, [TypeArg], Kind)
 
+-- | get the type of a constructor with given curried argument types
+getConstrType :: DataPat -> Partiality -> [Type] -> Type
+getConstrType dt p ts = (case p of 
+     Total -> id 
+     Partial -> addPartiality ts) $
+                       foldr ( \ c r -> FunType c FunArr r [] ) 
+                             (typeIdToType dt) ts
+
 -- | compute the type given by the input
 typeIdToType :: DataPat -> Type
 typeIdToType (i, nAs, k) = let      
     fullKind = typeArgsListToKind nAs k
     ti = TypeName i fullKind 0
     mkType _ ty [] = ty
-    mkType n ty ((TypeArg ai ak _ _): rest) =
-        mkType (n-1) (TypeAppl ty (TypeName ai ak n)) rest
+    mkType n ty (TypeArg ai ak _ _ : rest) =
+        mkType (n-1) (TypeAppl ty (TypeName ai (toKind ak) n)) rest
     in mkType (-1) ti nAs
 
 -- | extent a kind to expect further type arguments
@@ -128,7 +127,15 @@ typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind tArgs k = 
     if null tArgs then k
        else typeArgsListToKind (init tArgs) 
-            (FunKind (( \ (TypeArg _ xk _ _) -> xk) $ last tArgs) k []) 
+            (FunKind (( \ (TypeArg _ xk _ _) -> toKind xk) $ last tArgs) k []) 
+
+toKind :: VarKind -> Kind
+toKind vk = case vk of
+    VarKind k -> k
+    Downset t -> case t of 
+        KindedType _ k _ -> k
+        _ -> error "toKind: Downset"
+    MissingKind -> error "toKind: Missing"
 
 -- | generate a comparison string 
 expected :: PrettyPrint a => a -> a -> String
@@ -137,12 +144,6 @@ expected a b =
     "\n     found: " ++ showPretty b "\n" 
 
 -- ---------------------------------------------------------------------
-
-posOfKind :: Kind -> [Pos]
-posOfKind k = case k of
-    MissingKind -> []
-    ClassKind c _ -> posOfId c
-    _ -> get_pos k
 
 posOfVars :: Vars -> [Pos]
 posOfVars vr = 
