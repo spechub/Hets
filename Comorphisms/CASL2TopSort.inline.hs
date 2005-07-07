@@ -31,6 +31,7 @@ import Common.AS_Annotation
 -- CASL
 import CASL.Logic_CASL 
 import CASL.AS_Basic_CASL
+import CASL.Utils
 import CASL.Sign
 import CASL.Morphism 
 import CASL.Sublogic
@@ -402,17 +403,11 @@ genOpEquation kind opName sl terms =
           argSorts = init sl
           resSort  = last sl
 
-
-toSortTerm :: TERM f -> TERM f
-toSortTerm t@(Qual_var _ s _) = Sorted_term t s []
-toSortTerm _ = error "CASL2TopSort.toSortTerm: can only handle Qual_var" 
-
 genVars :: [SORT] -> [TERM f]
 genVars = zipWith toVarTerm varSymbs
     where varSymbs = map mkSimpleId 
                          (map (:[]) "xyzuwv"++
                           map (\i -> 'v':show i) [(1::Int)..])
-          toVarTerm vs s = (Qual_var vs s [])
 
 genSenName :: Show a => String -> a -> Int -> String
 genSenName suff symbName arity =
