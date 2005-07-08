@@ -52,7 +52,42 @@ data Record f a b = Record
     , foldMixfix_bracketed :: TERM f -> [b] -> [Pos] -> b
     , foldMixfix_braced :: TERM f -> [b] -> [Pos] -> b
     }
-   
+
+idRecord :: Record f (FORMULA f) (TERM f)
+idRecord = Record
+    { foldQuantification = \ _ -> Quantification  
+    , foldConjunction = \ _ -> Conjunction  
+    , foldDisjunction = \ _ -> Disjunction  
+    , foldImplication = \ _ -> Implication  
+    , foldEquivalence = \ _ -> Equivalence  
+    , foldNegation = \ _ -> Negation  
+    , foldTrue_atom = \ _ -> True_atom  
+    , foldFalse_atom = \ _ -> False_atom  
+    , foldPredication = \ _ -> Predication  
+    , foldDefinedness = \ _ -> Definedness  
+    , foldExistl_equation = \ _ -> Existl_equation  
+    , foldStrong_equation = \ _ -> Strong_equation  
+    , foldMembership = \ _ -> Membership  
+    , foldMixfix_formula = \ _ -> Mixfix_formula  
+    , foldUnparsed_formula = \ _ -> Unparsed_formula  
+    , foldSort_gen_ax = \ _ -> Sort_gen_ax  
+    , foldExtFORMULA = \ _ -> ExtFORMULA  
+    , foldSimple_id = \ _ -> Simple_id  
+    , foldQual_var = \ _ -> Qual_var  
+    , foldApplication = \ _ -> Application  
+    , foldSorted_term = \ _ -> Sorted_term  
+    , foldCast = \ _ -> Cast  
+    , foldConditional = \ _ -> Conditional  
+    , foldUnparsed_term = \ _ -> Unparsed_term  
+    , foldMixfix_qual_pred = \ _ -> Mixfix_qual_pred  
+    , foldMixfix_term = \ _ -> Mixfix_term  
+    , foldMixfix_token = \ _ -> Mixfix_token  
+    , foldMixfix_sorted_term = \ _ -> Mixfix_sorted_term  
+    , foldMixfix_cast = \ _ -> Mixfix_cast  
+    , foldMixfix_parenthesized = \ _ -> Mixfix_parenthesized  
+    , foldMixfix_bracketed = \ _ -> Mixfix_bracketed  
+    , foldMixfix_braced = \ _ -> Mixfix_braced  
+    }
 
 mapFormula :: Record f a b -> FORMULA f -> a
 mapFormula r f = case f of 
