@@ -64,7 +64,7 @@ getIdType i te = do
                  Just (TypeVarDefn _ _ c) -> c
                  _ -> 0
 
--- | construct application differently for left/top and right arguments 
+-- | construct application differently for left and right arguments 
 data ApplMode = TopLevel | OnlyArg 
 
 -- | manual mixfix resolution of parsed types
