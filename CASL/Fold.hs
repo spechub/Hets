@@ -89,6 +89,42 @@ idRecord mf = Record
     , foldMixfix_braced = \ _ -> Mixfix_braced  
     }
 
+constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
+constRecord mf join c = Record
+    { foldQuantification = \ _ _ _ r _ -> r
+    , foldConjunction = \ _ l _ -> join l
+    , foldDisjunction = \ _ l _ -> join l
+    , foldImplication = \ _ l r _ _ -> join [l, r]
+    , foldEquivalence = \ _ l r _ -> join [l, r] 
+    , foldNegation = \ _ r _ -> r
+    , foldTrue_atom = \ _ _ -> c
+    , foldFalse_atom = \ _ _ -> c
+    , foldPredication = \ _ _ l _ -> join l
+    , foldDefinedness = \ _ r _ -> r
+    , foldExistl_equation = \ _ l r _ -> join [l, r]
+    , foldStrong_equation = \ _ l r _ -> join [l, r]
+    , foldMembership = \ _ r _ _ -> r
+    , foldMixfix_formula = \ _ r -> r
+    , foldUnparsed_formula = \ _ _ _ -> c
+    , foldSort_gen_ax = \ _ _ _ -> c
+    , foldExtFORMULA = \ _ f -> mf f 
+    , foldSimple_id = \ _ _ -> c
+    , foldQual_var = \ _ _ _ _ -> c
+    , foldApplication = \ _ _ l _ -> join l
+    , foldSorted_term = \ _ r _ _ -> r
+    , foldCast = \ _ r _ _ -> r
+    , foldConditional = \ _ l f r _ -> join [l, f, r] 
+    , foldUnparsed_term = \ _ _ _ -> c
+    , foldMixfix_qual_pred = \ _ _ -> c
+    , foldMixfix_term = \ _ l -> join l
+    , foldMixfix_token = \ _ _ -> c
+    , foldMixfix_sorted_term = \ _ _ _ -> c
+    , foldMixfix_cast = \ _ _ _ -> c
+    , foldMixfix_parenthesized = \ _ l _ -> join l
+    , foldMixfix_bracketed = \ _ l _ -> join l
+    , foldMixfix_braced = \ _ l _ -> join l
+    }
+
 mapFormula :: Record f a b -> FORMULA f -> a
 mapFormula r f = case f of 
    Quantification q vs e ps -> foldQuantification r f q vs (mapFormula r e) ps
