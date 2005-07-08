@@ -120,7 +120,7 @@ addLocalTypeVar warn tvd i = do
                  Nothing -> return ()
                  Just _ -> addDiags [mkDiag Hint 
                     "type variables shadows type constructor" i]
-             Just _ -> addDiags [mkDiag Hint "redeclared type variable" i] 
+             Just _ -> addDiags [mkDiag Hint "rebound type variable" i] 
        else return ()
     putLocalTypeVars $ Map.insert i tvd tvs
 
@@ -286,7 +286,7 @@ addLocalVar warn (VarDecl v t _ _) =
        if warn then if Map.member v ass then
           addDiags [mkDiag Hint "variable shadows global name(s)" v]
           else if Map.member v vs then 
-          addDiags [mkDiag Hint "shadowing by variable" v]
+          addDiags [mkDiag Hint "rebound variable" v]
           else return ()
          else return ()  
        putLocalVars $ Map.insert v (VarDefn t) vs 
