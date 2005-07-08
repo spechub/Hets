@@ -3,43 +3,45 @@ class Type < Type
 class Type < Type
 class Type < Type
 class d < Type
-class a < Type
 class a < d
 class a < a
 class a < b
-class b < (c, d, e)
+class b < d
 class d < d
+class d < a
 type t : a
-class h < (a, b)
+class h < a
 class h < c
-class j < {v . v < t}
 type [__] : a -> b
 var x : a; y : Type; x : y
 var x : b
-var x : {_ < t}
+var x < t
 %% Classes ---------------------------------------------------------------
 a < (b, d)
-b < (c, d, e)
+b < (d, Type)
 c < Type
 d < Type
 e < Type
 f < Type
 g < Type
-h < (a, b, c)
-j < {v . v < t}
+h < (c, a)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 [__] : a -> b
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 t : a
-x : ({_ < t}, a, b) %(var_1)%
-y : Type %(var_2)%
+%% Type Variables --------------------------------------------------------
+x  < t : a %(var_4)%
+y  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -55,28 +57,28 @@ def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
-x : y %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+x : y
 %% Diagnostics -----------------------------------------------------------
-*** Error 3.7, illegal universe class declaration 'Type'
-*** Error 4.7, illegal universe class declaration 'Type'
-*** Error 6.7, illegal universe class declaration 'Type'
+*** Warning 3.7, void universe class declaration 'Type'
+*** Warning 4.7, void universe class declaration 'Type'
+*** Warning 6.7, void universe class declaration 'Type'
 *** Error 8.11, not a class 'a'
-*** Warning 8.7, redeclared class 'd'
-*** Error 10.24, not a class 'h'
-*** Warning 12.7, redeclared class 'a'
-*** Warning 15.7, redeclared class 'a'
-*** Error 15.7, cyclic class 'a'
-*** Warning 17.7, redeclared class 'a'
-*** Warning 18.7, redeclared class 'b'
-*** Warning 20.7, redeclared class 'd'
-*** Error 20.7, cyclic class 'd'
-*** Warning 25.7, redeclared class 'h'
+*** Warning 8.7, unchanged class 'd'
+*** Error 13.7, cyclic class 'a'
+*** Hint 15.7, refined class 'a'
+*** Hint 16.7, refined class 'b'
+*** Error 18.7, cyclic class 'd'
+*** Error 19.7, cyclic class 'd'
+*** Hint 24.7, refined class 'h'
 *** Error, illegal type pattern argument '__'
-*** Hint 31.5, is type variable 'x'
-*** Hint 31.12, is type variable 'y'
-*** Hint 31.24, not a class 'y'
-*** Hint 33.7, not a class 's'
-*** Error 33.9, unknown type 's'
-*** Hint 35.5, is type variable 'x'
+*** Hint 28.5, is type variable 'x'
+*** Hint 28.12, is type variable 'y'
+*** Hint 28.24, not a class 'y'
+*** Hint 30.7, not a class 's'
+*** Error 30.9, unknown type 's'
+*** Hint 32.5, is type variable 'x'
+*** Hint 32.5, type variables shadows type constructor 'x'
+*** Hint 34.5, type variables shadows type constructor 'x'
 *** Error, illegal type pattern argument '__'

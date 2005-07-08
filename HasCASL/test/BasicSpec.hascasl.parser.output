@@ -1,6 +1,6 @@
 class Type < Type
 var t : Type
-class TYPE < {x . x < t}
+class TYPE < Type
 type Pred __ : -Type -> Type; Unit : TYPE
 class a, b, c < Type
 class a, b, c < d; a < b
