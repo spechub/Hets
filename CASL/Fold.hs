@@ -33,16 +33,13 @@ data Record f a b = Record
     , foldStrong_equation :: FORMULA f -> b -> b -> [Pos] -> a
     , foldMembership :: FORMULA f -> b -> SORT -> [Pos] -> a
     , foldMixfix_formula :: FORMULA f -> b -> a
-    , foldUnparsed_formula :: FORMULA f -> String -> [Pos] -> a
     , foldSort_gen_ax :: FORMULA f -> [Constraint] -> Bool -> a
     , foldExtFORMULA :: FORMULA f -> f -> a
-    , foldSimple_id :: TERM f -> SIMPLE_ID -> b
     , foldQual_var :: TERM f -> VAR -> SORT -> [Pos] -> b
     , foldApplication :: TERM f -> OP_SYMB -> [b] -> [Pos] -> b
     , foldSorted_term :: TERM f ->  b -> SORT -> [Pos] -> b
     , foldCast :: TERM f -> b -> SORT -> [Pos] -> b
     , foldConditional :: TERM f -> b -> a -> b -> [Pos] -> b
-    , foldUnparsed_term :: TERM f -> String -> [Pos] -> b
     , foldMixfix_qual_pred :: TERM f -> PRED_SYMB -> b
     , foldMixfix_term :: TERM f -> [b] -> b
     , foldMixfix_token :: TERM f -> Token -> b
@@ -69,16 +66,13 @@ idRecord mf = Record
     , foldStrong_equation = \ _ -> Strong_equation  
     , foldMembership = \ _ -> Membership  
     , foldMixfix_formula = \ _ -> Mixfix_formula  
-    , foldUnparsed_formula = \ _ -> Unparsed_formula  
     , foldSort_gen_ax = \ _ -> Sort_gen_ax  
     , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f 
-    , foldSimple_id = \ _ -> Simple_id  
     , foldQual_var = \ _ -> Qual_var  
     , foldApplication = \ _ -> Application  
     , foldSorted_term = \ _ -> Sorted_term  
     , foldCast = \ _ -> Cast  
     , foldConditional = \ _ -> Conditional  
-    , foldUnparsed_term = \ _ -> Unparsed_term  
     , foldMixfix_qual_pred = \ _ -> Mixfix_qual_pred  
     , foldMixfix_term = \ _ -> Mixfix_term  
     , foldMixfix_token = \ _ -> Mixfix_token  
@@ -105,16 +99,13 @@ constRecord mf join c = Record
     , foldStrong_equation = \ _ l r _ -> join [l, r]
     , foldMembership = \ _ r _ _ -> r
     , foldMixfix_formula = \ _ r -> r
-    , foldUnparsed_formula = \ _ _ _ -> c
     , foldSort_gen_ax = \ _ _ _ -> c
     , foldExtFORMULA = \ _ f -> mf f 
-    , foldSimple_id = \ _ _ -> c
     , foldQual_var = \ _ _ _ _ -> c
     , foldApplication = \ _ _ l _ -> join l
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ r _ _ -> r
     , foldConditional = \ _ l f r _ -> join [l, f, r] 
-    , foldUnparsed_term = \ _ _ _ -> c
     , foldMixfix_qual_pred = \ _ _ -> c
     , foldMixfix_term = \ _ l -> join l
     , foldMixfix_token = \ _ _ -> c
@@ -145,20 +136,20 @@ mapFormula r f = case f of
       (mapTerm r t2) ps 
    Membership t s ps -> foldMembership r f (mapTerm r t) s ps
    Mixfix_formula t -> foldMixfix_formula r f (mapTerm r t)
-   Unparsed_formula s ps -> foldUnparsed_formula r f s ps
+   Unparsed_formula s _ -> error $ "Fold.mapFormula.Unparsed" ++ s
    Sort_gen_ax cs b -> foldSort_gen_ax r f cs b
    ExtFORMULA e -> foldExtFORMULA r f e
 
 mapTerm :: Record f a b -> TERM f -> b
 mapTerm r t = case t of
-   Simple_id i -> foldSimple_id r t i
+   Simple_id i -> error $ "Fold.mapTerm.Simple_id" ++ tokStr i
    Qual_var v s ps -> foldQual_var r t v s ps 
    Application o ts ps -> foldApplication r t o (map (mapTerm r) ts) ps
    Sorted_term st s ps -> foldSorted_term r t (mapTerm r st) s ps
    Cast ct s ps -> foldCast r t (mapTerm r ct) s ps
    Conditional t1 f t2 ps -> foldConditional r t (mapTerm r t1)
       (mapFormula r f) (mapTerm r t2) ps
-   Unparsed_term s ps -> foldUnparsed_term r t s ps
+   Unparsed_term s _ -> error $ "Fold.mapTermUnparsed" ++ s
    Mixfix_qual_pred p -> foldMixfix_qual_pred r t p
    Mixfix_term ts -> foldMixfix_term r t (map (mapTerm r) ts)
    Mixfix_token s -> foldMixfix_token r t s
