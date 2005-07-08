@@ -53,7 +53,7 @@ data Record f a b = Record
     , foldMixfix_braced :: TERM f -> [b] -> [Pos] -> b
     }
 
-idRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
+idRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
 idRecord mf = Record
     { foldQuantification = \ _ -> Quantification  
     , foldConjunction = \ _ -> Conjunction  
