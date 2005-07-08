@@ -8,37 +8,34 @@ class e < c
 class h < Type
       %% no implicit declaration
 class g < Type
-class g < (a, b)
+class g < a
       %% g is already real class
-class i < (g, a)
-class g < (a, i)
+class i < g
+class g < i
       %% cycle via i = g
 class i < Type
       %% i is already alias class 
-class i < (a, g)
-      %% ok
-class i < b
-type t
-class i < {x . x < t}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < a
 c < Type
 d < Type
 e < c
-g < (a, b)
+g < (a, Type)
 h < Type
-i < ({x . x < t}, a, b, g)
+i < g
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
-t : Type
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -60,10 +57,6 @@ true : Unit %(fun)%
 *** Error 3.11, not a class 'd'
 *** Error 4.11, not a class 'e'
 *** Error 6.11, not a class 'g'
-*** Warning 8.7, redeclared class 'g'
-*** Warning 10.7, redeclared class 'g'
+*** Hint 8.7, refined class 'g'
 *** Error 10.7, cyclic class 'g'
-*** Warning 11.7, redeclared class 'i'
-*** Warning 12.7, redeclared class 'i'
-*** Warning 13.7, redeclared class 'i'
-*** Warning 15.7, redeclared class 'i'
+*** Warning 11.7, unchanged class 'i'
