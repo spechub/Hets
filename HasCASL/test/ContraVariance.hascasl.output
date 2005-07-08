@@ -1,15 +1,22 @@
-type m : -Type -> -Type := \ b : -Type . b_v-1
-     %% should be wrong
+type p : +Type -> Type := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
+     %% should be correct
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
-m : -Type -> -Type := \ b : -Type . b_v-1
+p : +Type -> Type
+    := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
+%% Type Variables --------------------------------------------------------
+a  : +Type %(var_2)%
+b  : -Type %(var_3)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -27,11 +34,8 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 1.38, incompatible kind of: a
-  expected: -Type
-     found: +Type
-
-*** Error 2.32, incompatible kind of: a
-  expected: -Type
-     found: +Type
-
+*** Hint 2.14, type variables shadows type constructor 'a'
+*** Hint 2.32, wrong variance for 'a'
+*** Error, no kind found for 'Pred a_v2@(a_v2 ->? Unit)'
+*** Hint 3.27, wrong variance for 'b'
+*** Error, no kind found for 'b_v3'
