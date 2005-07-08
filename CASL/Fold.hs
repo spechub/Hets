@@ -53,8 +53,8 @@ data Record f a b = Record
     , foldMixfix_braced :: TERM f -> [b] -> [Pos] -> b
     }
 
-idRecord :: Record f (FORMULA f) (TERM f)
-idRecord = Record
+idRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
+idRecord mf = Record
     { foldQuantification = \ _ -> Quantification  
     , foldConjunction = \ _ -> Conjunction  
     , foldDisjunction = \ _ -> Disjunction  
@@ -71,7 +71,7 @@ idRecord = Record
     , foldMixfix_formula = \ _ -> Mixfix_formula  
     , foldUnparsed_formula = \ _ -> Unparsed_formula  
     , foldSort_gen_ax = \ _ -> Sort_gen_ax  
-    , foldExtFORMULA = \ _ -> ExtFORMULA  
+    , foldExtFORMULA = \ _ f -> ExtFORMULA $ mf f 
     , foldSimple_id = \ _ -> Simple_id  
     , foldQual_var = \ _ -> Qual_var  
     , foldApplication = \ _ -> Application  
