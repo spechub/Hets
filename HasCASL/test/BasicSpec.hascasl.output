@@ -33,7 +33,7 @@ forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
 TYPE < Type
-a < b
+a < (b, Type)
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
@@ -60,15 +60,19 @@ Data4
          ::= Cons41 : Data1 * Data2 ->? Data4 (sel1 :? Data1; sel2 :? Data2)
              Cons42 : Data2 * Data1 ->? Data4 (sel2 :? Data2; sel1 :? Data1)]%
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-Unit : TYPE
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+Unit : (TYPE, Type)
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
-s : c < ? s
-t : Type %(var_1)%
+s : (Type, c) < ? s
+%% Type Variables --------------------------------------------------------
+t  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 Cons21 : Data1 * Data2 -> Data2 %(construct Data2)%
 Cons22 : Data2 * Data1 -> Data2 %(construct Data2)%
@@ -114,8 +118,10 @@ sel2
      Cons31 : Data1 * Data2 -> Data3))%
 true : Unit %(fun)%
 tt : s ->? Unit %(pred)%
-x : s %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+x : s
+y : t
 %% Sentences -------------------------------------------------------------
 program (pred tt : s) = (\ (var x : s) . ()) : s ->? Unit %(pe_tt)%
 ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
@@ -188,18 +194,16 @@ type Data4
         (sel2 :? Data2; sel1 :? Data1) %(ga_Data4)%
 (fun true : Unit)
 %% Diagnostics -----------------------------------------------------------
-*** Error 1.7, illegal universe class declaration 'Type'
+*** Warning 1.7, void universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'
-*** Error, unbound type variable(s)
-  t : Type in 't_v1'
 *** Error, illegal type pattern argument '__'
 *** Error 11.16, not a class 'd'
-*** Warning 11.7, redeclared class 'a'
-*** Warning 11.10, redeclared class 'b'
-*** Warning 11.13, redeclared class 'c'
-*** Warning 11.19, redeclared class 'a'
+*** Warning 11.7, unchanged class 'a'
+*** Warning 11.10, unchanged class 'b'
+*** Warning 11.13, unchanged class 'c'
+*** Hint 11.19, refined class 'a'
 *** Hint 16.7, not a class 's'
-*** Hint 18.15, variable shadows global name(s) 'x'
+*** Hint 18.15, rebound variable 'x'
 *** Error 20.12, unexpected mixfix token: res
 *** Warning 21.22, trying hard to find lazy type for 'program fst(x : s, var y : t) : s = x'
 *** Hint 21.1, no type match for: fst
@@ -237,8 +241,11 @@ type Data4
 *** Error 37.27, unexpected mixfix token: all
 *** Error 40.20, unexpected mixfix token: all
 *** Hint 45.9, not a class 't'
+*** Hint 45.8, rebound variable 'x'
 *** Hint 45.16, not a class 't'
 *** Hint 66.22, not a class 's'
+*** Hint 66.21, rebound variable 'x'
 *** Error 66.25, unexpected mixfix token: e
 *** Hint 67.9, not a class 's'
+*** Hint 67.8, rebound variable 'x'
 *** Error 67.12, unexpected mixfix token: e
