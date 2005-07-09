@@ -99,7 +99,6 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// Warning
 			OWLToATermErrorHandler handler = new OWLToATermErrorHandler();
 			rdfParser.setOWLRDFErrorHandler(handler);
-			warningList = handler.getList();
 
 			// call parser
 			parser = rdfParser;
@@ -110,12 +109,11 @@ public class OWL2ATerm implements OWLValidationConstants {
 				parser.setOptions(opt);
 			}
 			onto = parser.parseOntology(uri);
-			
-			// ArrayList allImports = new ArrayList();
+			warningList = handler.getList();
 			
 			allImportsList.add(onto);
 			importsID.add(onto.getURI().toString());
-			
+
 			buildImportsList(onto);
 			// System.out.println(allImports);
 
@@ -165,9 +163,9 @@ public class OWL2ATerm implements OWLValidationConstants {
 				for (Iterator it = warningList.iterator(); it.hasNext();) {
 					String currentMsg = (String) it.next();
 					ATermAppl msgA = ATermRender2.strToATermAppl("");
-					if (currentMsg.matches(".*\\s[Ee]rror.*")) {
-						msgA = factory.makeAppl(errFun, factory
-								.parse(currentMsg));
+					if (currentMsg.matches(".*\\s[Ee]rror.*") || currentMsg.contains("failed")) {
+						msgA = factory.makeAppl(errFun, ATermRender2
+								.strToATermAppl(currentMsg));
 					} else {
 						msgA = factory.makeAppl(warnFun, ATermRender2
 								.strToATermAppl(currentMsg));
@@ -188,7 +186,8 @@ public class OWL2ATerm implements OWLValidationConstants {
 				// owlParserOutput(validation, messageList, onto)
 				// .writeToSharedTextFile(new FileOutputStream(file, true));
 			}
-			ontologyList.reverse().writeToTextFile(new FileOutputStream(file, true));
+			ontologyList.reverse().writeToTextFile(
+					new FileOutputStream(file, true));
 
 			System.out.println("Done!\n");
 		} catch (IOException e) {
@@ -204,7 +203,9 @@ public class OWL2ATerm implements OWLValidationConstants {
 	}
 
 	static ArrayList<OWLOntology> allImportsList = new ArrayList<OWLOntology>();
+
 	static ArrayList<String> importsID = new ArrayList<String>();
+
 	static void buildImportsList(OWLOntology ontology) {
 
 		// HashMap hMap = new HashMap();
@@ -296,10 +297,6 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// data property
 			Set dps = ontology.getDataProperties();
 
-			// Set priorVer = ontology.getPriorVersion();
-			// Set bwcw = ontology.getBackwardCompatibleWith();
-			// Set iw = ontology.getIncompatibleWith();
-
 			ATerm ontologyID;
 			// Build ontology header
 			if (ontology.getURI() != null) {
@@ -315,7 +312,13 @@ public class OWL2ATerm implements OWLValidationConstants {
 			AFun annoFun = factory.makeAFun("URIAnnotation", 2, false);
 			ATermAppl importID = factory.makeAppl(factory.makeAFun(
 					"owl:imports", 0, true));
-			ATermList importList = factory.makeList();
+			ATermAppl priorVersionID = factory.makeAppl(factory.makeAFun(
+					"owl:priorVersion", 0, true));
+			ATermAppl bwcwID = factory.makeAppl(factory.makeAFun(
+					"owl:backwardCompatibleWith", 0, true));
+			ATermAppl icpwID = factory.makeAppl(factory.makeAFun(
+					"owl:incompatibleWith", 0, true));
+			ATermList headTmpList = factory.makeList();
 
 			// System.out.println("WO? Anno");
 			// Annotation (Properties): version, comment, label, etc.
@@ -333,12 +336,54 @@ public class OWL2ATerm implements OWLValidationConstants {
 						((OWLOntology) it.next()).getPhysicalURI().toString(),
 						0, true));
 				ATermAppl anno = factory.makeAppl(annoFun, importID, phyURI);
-				importList = factory.makeList(anno, importList);
+				headTmpList = factory.makeList(anno, headTmpList);
 			}
-			if (!importList.isEmpty()) {
+			if (!headTmpList.isEmpty()) {
 				alist = factory.makeList(factory.makeAppl(axFun, factory
-						.makeAppl(ontologyProperty, importID, importList)),
+						.makeAppl(ontologyProperty, importID, headTmpList)),
 						alist);
+				headTmpList = factory.makeList();     // reset list
+			}
+			
+			// another informations of ontology header
+			for(Iterator it = ontology.getPriorVersion().iterator(); it.hasNext();){
+				ATermAppl phyURI = factory.makeAppl(factory.makeAFun(
+						((OWLOntology) it.next()).getPhysicalURI().toString(),
+						0, true));
+				ATermAppl anno = factory.makeAppl(annoFun, priorVersionID, phyURI);
+				headTmpList = factory.makeList(anno, headTmpList);
+			}
+			if (!headTmpList.isEmpty()) {
+				alist = factory.makeList(factory.makeAppl(axFun, factory
+						.makeAppl(ontologyProperty, importID, headTmpList)),
+						alist);
+				headTmpList = factory.makeList();     // reset list
+			}
+			for(Iterator it = ontology.getBackwardCompatibleWith().iterator(); it.hasNext();){
+				ATermAppl phyURI = factory.makeAppl(factory.makeAFun(
+						((OWLOntology) it.next()).getPhysicalURI().toString(),
+						0, true));
+				ATermAppl anno = factory.makeAppl(annoFun, bwcwID, phyURI);
+				headTmpList = factory.makeList(anno, headTmpList);
+			}
+			if (!headTmpList.isEmpty()) {
+				alist = factory.makeList(factory.makeAppl(axFun, factory
+						.makeAppl(ontologyProperty, importID, headTmpList)),
+						alist);
+				headTmpList = factory.makeList();     // reset list
+			}
+			for(Iterator it = ontology.getIncompatibleWith().iterator(); it.hasNext();){
+				ATermAppl phyURI = factory.makeAppl(factory.makeAFun(
+						((OWLOntology) it.next()).getPhysicalURI().toString(),
+						0, true));
+				ATermAppl anno = factory.makeAppl(annoFun, icpwID, phyURI);
+				headTmpList = factory.makeList(anno, headTmpList);
+			}
+			if (!headTmpList.isEmpty()) {
+				alist = factory.makeList(factory.makeAppl(axFun, factory
+						.makeAppl(ontologyProperty, importID, headTmpList)),
+						alist);
+				headTmpList = factory.makeList();     // reset list
 			}
 
 			// System.out.println("WO? Class");
@@ -445,50 +490,12 @@ public class OWL2ATerm implements OWLValidationConstants {
 	}
 }
 
-/**
- * 
- * @author Jiang
- * 
- * This is a errorhandler of OWLParser that creat a ATermList of errors and
- * warnings.
- */
-/*
- * class OWL2ATermErrorHandler implements OWLRDFErrorHandler {
- * 
- * ATermList eList;
- * 
- * ATermList wList;
- * 
- * private PureFactory factory = new PureFactory();
- * 
- * public OWL2ATermErrorHandler() { wList = factory.makeList0(); eList =
- * factory.makeList(); }
- * 
- * public void error(String message) throws SAXException { AFun errFun =
- * factory.makeAFun("ParserError", 1, false); ATermAppl err =
- * factory.makeAppl(errFun, factory.parse(message)); eList =
- * factory.makeList(err, eList); throw new SAXException(); }
- * 
- * public ATermList getList() { return wList.concat(eList); }
- * 
- * public void owlFullConstruct(int code, String message) throws SAXException { }
- * 
- * public void owlFullConstruct(int code, String message, Object obj) throws
- * SAXException { }
- * 
- * public void warning(String message) throws SAXException { AFun warnFun =
- * factory.makeAFun("ParseWarning", 1, false); ATermAppl warn =
- * factory.makeAppl(warnFun, factory.parse(message)); wList =
- * factory.makeList(warn, wList); } }
- */
-
 class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants {
 
 	static ATermFactory factory = new PureFactory();
 
 	static ATermList messageList = factory.makeList();
 
-	// File file;
 	AFun messageFun = factory.makeAFun("MassageList", 1, false);
 
 	public OWLATReporter() {
@@ -530,7 +537,7 @@ class OWLATReporter implements SpeciesValidatorReporter, OWLValidationConstants 
 	}
 
 	public void message(String str) {
-
+		System.out.println("Message from Reporter: " + str);
 	}
 
 	public void ontology(OWLOntology onto) {

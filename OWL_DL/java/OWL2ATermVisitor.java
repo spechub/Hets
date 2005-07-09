@@ -135,25 +135,6 @@ public class OWL2ATermVisitor implements OWLObjectVisitor {
 		return namespaces;
 	}
 
-	//
-	//    public void visit( OWLDataValue cd ) throws OWLException {
-	//    	
-	//    	
-	//    	pw.print( "\"" + Renderer.escape( cd.getValue() ) + "\"");
-	//
-	//    	/* Only show it if it's not string */
-	//
-	//    	URI dvdt = cd.getURI();
-	//    	String dvlang = cd.getLang();
-	//    	if ( dvdt!=null) {
-	//    	    pw.print( "^^" + "<" + dvdt.toString() + ">");
-	//    	} else {
-	//    	    if (dvlang!=null) {
-	//    		pw.print( "@" + dvlang );
-	//    	    }
-	//    	}
-	//    }
-
 	public ATermAppl term(OWLDataValue dv) throws OWLException {
 		URI datatypeURI = dv.getURI();
 		String lexicalValue = dv.getValue().toString();

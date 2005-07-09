@@ -92,60 +92,6 @@ public class RenderingVisitor2 extends OWLObjectVisitorAdapter {
 	public void visit(OWLIndividual ind) throws OWLException {
 		pw.print("\"" + shortForms.shortForm(ind.getURI()) + "\"");
 		
-//		
-//		RenderingVisitor2 visitor = new RenderingVisitor2(shortForms, ontology);
-//		if (ind.isAnonymous()) {
-//			/* We need to print out the entire description... */
-//			pw.print("Individual(_");
-//			if (ind.getTypes(ontology).isEmpty()
-//					&& ind.getObjectPropertyValues(ontology).keySet().isEmpty()
-//					&& ind.getDataPropertyValues(ontology).keySet().isEmpty()) {
-//				pw.print(")");
-//			} else {
-//				for (Iterator it = ind.getTypes(ontology).iterator(); it
-//						.hasNext();) {
-//					OWLDescription eq = (OWLDescription) it.next();
-//					visitor.reset();
-//					eq.accept(visitor);
-//					pw.print(",Type(" + visitor.result() + ")");
-//				}
-//				Map propertyValues = ind.getObjectPropertyValues(ontology);
-//
-//				for (Iterator it = propertyValues.keySet().iterator(); it
-//						.hasNext();) {
-//					OWLObjectProperty prop = (OWLObjectProperty) it.next();
-//					Set vals = (Set) propertyValues.get(prop);
-//					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
-//						OWLIndividual oi = (OWLIndividual) valIt.next();
-//						visitor.reset();
-//						oi.accept(visitor);
-//						pw.print(",Value(" + "\""
-//								+ shortForms.shortForm(prop.getURI()) + "\","
-//								+ visitor.result() + ")");
-//					}
-//				}
-//				Map dataValues = ind.getDataPropertyValues(ontology);
-//
-//				for (Iterator it = dataValues.keySet().iterator(); it.hasNext();) {
-//					OWLDataProperty prop = (OWLDataProperty) it.next();
-//					Set vals = (Set) dataValues.get(prop);
-//					for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
-//						OWLDataValue dtv = (OWLDataValue) valIt.next();
-//						visitor.reset();
-//						dtv.accept(visitor);
-//						pw.print(",Value(" + "\""
-//								+ shortForms.shortForm(prop.getURI()) + "\","
-//								+ visitor.result() + ")");
-//						if (it.hasNext()) {
-//							pw.print(",");
-//						}
-//					}
-//				}
-//				pw.print(")");
-//			}
-//		} else {
-//			pw.print("\"" + shortForms.shortForm(ind.getURI()) + "\"");
-//		}
 	}
 
 	public void visit(OWLObjectProperty prop) throws OWLException {
