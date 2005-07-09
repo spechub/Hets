@@ -89,7 +89,7 @@ outputAS (aterm:res) =
                   putStrLn $ fromATerm valid
                   putStrLn $ show (buildMsg msg)
                   putStrLn $ show (buildNS ns)
-                  putStrLn $ show $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
+                  putStrLn $ show $ propagateNspaces $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
                   outputAS res
           _ -> error "false file."
 
