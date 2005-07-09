@@ -63,6 +63,9 @@ main =
                                      else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
                                              run exitCode abs'
                         
+-- | 
+-- the first argument it decides whether the abstract syntax or ATerm is shown,
+-- the second argument is the ATerm file which can be read in.
 processor2 :: Bool -> String  -> IO()
 processor2 abs' filename = 
     do d <- readFile filename
@@ -78,19 +81,21 @@ outputList aterm =
            outputAS paarList
        _ -> error "error by reading file."
 
+-- | 
+-- this function show the abstract syntax of each OWL ontology from 
+-- UOPaar list.
 outputAS :: [ATerm] -> IO()
 outputAS [] = putStrLn ""
 outputAS (aterm:res) =
        case aterm of
           AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [valid, msg, ns, onto] _] _ ->
               do
---                  putStrLn $ show (fromATerm valid, buildMsg msg, buildNS ns, reducedDisjoint (fromATerm onto::Ontology))
-                  putStrLn ("URI: " ++ uri)
-                  putStrLn $ fromATerm valid
-                  putStrLn $ show (buildMsg msg)
-                  putStrLn $ show (buildNS ns)
-                  putStrLn $ show $ propagateNspaces $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
-                  outputAS res
+                putStrLn ("URI: " ++ uri)
+                putStrLn $ fromATerm valid
+                putStrLn $ show (buildMsg msg)
+                putStrLn $ show (buildNS ns)
+                putStrLn $ show $ propagateNspaces (buildNS ns) $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
+                outputAS res
           _ -> error "false file."
 
     where buildNS :: ATerm -> Namespace

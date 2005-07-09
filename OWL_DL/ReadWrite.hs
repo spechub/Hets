@@ -48,7 +48,7 @@ instance ShATermConvertible Ontology where
 	    aterm = getATerm att
 
 instance ShATermConvertible QName where
-    toShATerm att0 (QN aa ab ac) =
+    toShATerm att0 (QN aa ab _) =
         case toShATerm att0 (aa ++ ":" ++ ab) of {(att1, aa') ->
            addATerm (ShAAppl (aa ++ ":" ++ ab) [aa'] []) att1}    
 
@@ -640,27 +640,28 @@ instance ShATermConvertible DataRange where
 	where
 	    aterm = getATerm att
 
---  Imported from other files :-
 
+-- propagate own namesapces from prefix to namespacesURI within a ontology
 class PNamespace a where
     propagateNspaces :: Namespace -> a -> a
 
 instance PNamespace QName where
-    propageteNspaces ns qName = 
+    propagateNspaces ns qName = 
 	case qName of
 	QN pre local nsUri -> 
 	   if null nsUri then
-              let maybeNsUri = Map.lookup pre qName
+              let maybeNsUri = Map.lookup pre ns
 	      in  case maybeNsUri of 
 	            Just nsURI -> QN pre local nsURI
-		    Nothing    -> QN pre local ""
+		    Prelude.Nothing    -> QN pre local ""
 	      else QN pre local nsUri
 	
 instance PNamespace Ontology where	
     propagateNspaces ns onto = 
 	case onto of 
 	Ontology maybeID directives ->
-	    Ontology (maybePropagate ns maybeID) (Map.map (propagateNspaces ns) directives)
+	    Ontology (maybePropagate ns maybeID) 
+                     (map (propagateNspaces ns) directives)
 
 instance PNamespace Directive where
     propagateNspaces ns directiv = 
@@ -672,145 +673,164 @@ instance PNamespace Directive where
 instance PNamespace Annotation where
     propagateNspaces ns annotation =
 	case annotation of 
-	OntoAnnotation opID oID -> OntoAnnotation (propagateNspaces ns opID) (propagateNspaces ns oID)
-	URIAnnotation apID uri  -> URIAnnotation (propagateNspaces ns apID) (propagateNspaces ns uri)
-	DLAnnotation apID dl    -> DLAnnotation (propagateNspaces ns apID) dl
-	IndivAnnotation apID ind-> IndivAnnotation (propagateNspaces ns apID) (propagateNspaces ns ind)
+	OntoAnnotation opID oID -> 
+            OntoAnnotation (propagateNspaces ns opID) (propagateNspaces ns oID)
+	URIAnnotation apID uri  -> 
+            URIAnnotation (propagateNspaces ns apID) (propagateNspaces ns uri)
+	DLAnnotation apID dl    -> 
+            DLAnnotation (propagateNspaces ns apID) dl
+	IndivAnnotation apID ind-> 
+            IndivAnnotation (propagateNspaces ns apID) 
+                            (propagateNspaces ns ind)
 			
 instance PNamespace Fact where
     propagateNspaces ns fact =
     	case fact of
-    	Indiv ind                     -> Indiv (propagateNspaces ns ind)
-    	SameIndividual iID1 iID2 iIDs -> SameIndividual (propagateNspaces ns iID1) (propagateNspaces ns iID2) (Map.map (propagateNspaces ns) iIDs) 
-    	DifferentIndividuals iID1 iID2 iIDs -> DifferentIndividuals (propagateNspaces ns iID1) (propagateNspaces ns iID2) (Map.map (propagateNspaces ns) iIDs) 
+    	Indiv ind                     -> 
+            Indiv (propagateNspaces ns ind)
+    	SameIndividual iID1 iID2 iIDs -> 
+            SameIndividual (propagateNspaces ns iID1) 
+                               (propagateNspaces ns iID2) 
+                               (map (propagateNspaces ns) iIDs) 
+    	DifferentIndividuals iID1 iID2 iIDs -> 
+            DifferentIndividuals (propagateNspaces ns iID1) 
+                                     (propagateNspaces ns iID2) 
+                                     (map (propagateNspaces ns) iIDs) 
     
 instance PNamespace Individual where
     propagateNspaces ns indiv = 
 	case indiv of
 	Individual maybeIID annos types values ->
-	    Individual (maybePropagate ns maybeIID) (Map.map (propagateNspaces ns) annos) (Map.map (propagateNspaces ns) types) (Map.map (propagateNspaces ns) values)				   
-
+	    Individual (maybePropagate ns maybeIID) 
+                           (map (propagateNspaces ns) annos) 
+                           (map (propagateNspaces ns) types) 
+                           (map (propagateNspaces ns) values)
+   
 instance PNamespace Value where
     propagateNspaces ns value =
 	case value of
 	ValueID ivpID iID        -> 
-            Value (propagateNspaces ns ivpID) 
+            ValueID (propagateNspaces ns ivpID) 
                    (propagateNspaces ns iID) 
-	    ValueIndiv ivpID individual -> ValueIndiv (propagateNspaces ns ivpID)
-													  (propagateNspaces ns individual)  
-			ValueDL dvpID dl -> ValueDL (propagateNspaces ns dvpID) dl 	   
+	ValueIndiv ivpID individual -> 
+            ValueIndiv (propagateNspaces ns ivpID)
+		       (propagateNspaces ns individual)  
+	ValueDL dvpID dl -> ValueDL (propagateNspaces ns dvpID) dl 	   
 
 instance PNamespace Axiom where
-	propagateNspaces ns axiom =
-		case axiom of
-			Thing   -> Thing
-			Nothing -> AS.Nothing
-			Class cID isdep modal annos descriptions -> 
-				Class (propagateNspaces ns cID)
-					  isdep modal
-					  (Map.map (propagateNspaces ns) annos)
-					  (Map.map (propagateNspaces ns) descriptions)
-			EnumeratedClass cID isdep annos indivIDs ->
-				EnumeratedClass  (propagateNspaces ns cID)
-					 			 isdep 
-					  			 (Map.map (propagateNspaces ns) annos)
-					  			 (Map.map (propagateNspaces ns) indivIDs)
-			DisjointClasses des1 des2 deses ->
-				DisjointClasses (propagateNspaces ns des1)
-								(propagateNspaces ns des2)
-								(Map.map (propagateNspaces ns) deses)
-			EquivalentClasses des deses ->
-				EquivalentClasses (propagateNspaces ns des1)
-								  (Map.map (propagateNspaces ns) deses)
-			SubClassOf des1 des2 ->
-				SubClassOf (propagateNspaces ns des1)
-						   (propagateNspaces ns des2)
-			Datatype dtID isdep annos ->
-				Datatype (propagateNspaces ns dtID)
-						 isdep
-						 (Map.map (propagateNspaces ns) annos)
-			DatatypeProperty dvpID isdep annos dvpIDs isFunc descs drs ->
-				DatatypeProperty (propagateNspaces ns dvpID)
-								 isdep
-								 (Map.map (propagateNspaces ns) annos)
-								 (Map.map (propagateNspaces ns) dvpIDs)
-								 isFunc
-								 (Map.map (propagateNspaces ns) descs)
-								 (Map.map (propagateNspaces ns) drs)
-			ObjectProperty ivpID isdep annos ivpIDs maybeIvpID isSym maybeFunc descs1 descs1 ->
-				ObjectProperty (propagateNspaces ns dvpID)
-							   isdep
-							   (Map.map (propagateNspaces ns) annos)
-							   (maybePropagate ns maybeIvpID)
-							   isSym
-							   maybeFunc
-							   (Map.map (propagateNspaces ns) descs1)
-							   (Map.map (propagateNspaces ns) descs2)
-			AnnotationProperty apID annos ->
-				AnnotationProperty (propagateNspaces ns apID)
-				                   (Map.map (propagateNspaces ns) annos)			
-            OntologyProperty opID annos ->
-           		OntologyProperty (propagateNspaces ns opID)
-				                 (Map.map (propagateNspaces ns) annos)					 
-			DEquivalentProperties dvpID1 dvpID2 dvpIDs ->
-				DEquivalentProperties (propagateNspaces ns dvpID1)
-									  (propagateNspaces ns dvpID2)	
-				                      (Map.map (propagateNspaces ns) dvpIDs)	
-			DSubPropertyOf dvpID1 dvpID2 ->
-				DSubPropertyOf (propagateNspaces ns dvpID1)
-							   (propagateNspaces ns dvpID2)	
-			IEquivalentProperties ivpID1 ivpID2 ivpIDs ->
-				IEquivalentProperties (propagateNspaces ns ivpID1)
-									  (propagateNspaces ns ivpID2)	
-				                      (Map.map (propagateNspaces ns) ivpIDs)
-			ISubPropertyOf ivpID1 ivpID2 ->
-				ISubPropertyOf (propagateNspaces ns ivpID1)
-							   (propagateNspaces ns ivpID2)	
+    propagateNspaces ns axiom =
+        case axiom of
+	Thing   -> Thing
+	OWL_DL.AS.Nothing -> OWL_DL.AS.Nothing
+	Class cID isdep modal annos descriptions -> 
+            Class (propagateNspaces ns cID)
+                          isdep modal
+                          (map (propagateNspaces ns) annos)
+			  (map (propagateNspaces ns) descriptions)
+	EnumeratedClass cID isdep annos indivIDs ->
+	    EnumeratedClass  (propagateNspaces ns cID)
+                             isdep 
+                             (map (propagateNspaces ns) annos)
+                             (map (propagateNspaces ns) indivIDs)
+	DisjointClasses des1 des2 deses ->
+	    DisjointClasses (propagateNspaces ns des1)
+				(propagateNspaces ns des2)
+				(map (propagateNspaces ns) deses)
+	EquivalentClasses des deses ->
+	    EquivalentClasses (propagateNspaces ns des)
+				  (map (propagateNspaces ns) deses)
+	SubClassOf des1 des2 ->
+	    SubClassOf (propagateNspaces ns des1)
+			   (propagateNspaces ns des2)
+	Datatype dtID isdep annos ->
+            Datatype (propagateNspaces ns dtID)
+		     isdep
+		     (map (propagateNspaces ns) annos)
+	DatatypeProperty dvpID isdep annos dvpIDs isFunc descs drs ->
+	    DatatypeProperty (propagateNspaces ns dvpID)
+			     isdep
+			     (map (propagateNspaces ns) annos)
+			     (map (propagateNspaces ns) dvpIDs)
+			     isFunc
+			     (map (propagateNspaces ns) descs)
+			     (map (propagateNspaces ns) drs)
+	ObjectProperty ivpID isdep annos ivpIDs maybeIvpID isSym maybeFunc descs1 descs2 ->
+	    ObjectProperty (propagateNspaces ns ivpID)
+			   isdep
+			   (map (propagateNspaces ns) annos)
+                           (map (propagateNspaces ns) ivpIDs)
+			   (maybePropagate ns maybeIvpID)
+			   isSym
+			   maybeFunc
+			   (map (propagateNspaces ns) descs1)
+			   (map (propagateNspaces ns) descs2)
+	AnnotationProperty apID annos ->
+	    AnnotationProperty (propagateNspaces ns apID)
+				   (map (propagateNspaces ns) annos)
+        OntologyProperty opID annos ->
+            OntologyProperty (propagateNspaces ns opID)
+				 (map (propagateNspaces ns) annos)	 
+	DEquivalentProperties dvpID1 dvpID2 dvpIDs ->
+	    DEquivalentProperties (propagateNspaces ns dvpID1)
+				      (propagateNspaces ns dvpID2)	
+				      (map (propagateNspaces ns) dvpIDs)
+	DSubPropertyOf dvpID1 dvpID2 ->
+	    DSubPropertyOf (propagateNspaces ns dvpID1)
+			       (propagateNspaces ns dvpID2)	
+	IEquivalentProperties ivpID1 ivpID2 ivpIDs ->
+	    IEquivalentProperties (propagateNspaces ns ivpID1)
+				      (propagateNspaces ns ivpID2)	
+				      (map (propagateNspaces ns) ivpIDs)
+	ISubPropertyOf ivpID1 ivpID2 ->
+	    ISubPropertyOf (propagateNspaces ns ivpID1)
+			       (propagateNspaces ns ivpID2)	
 
 instance PNamespace Description where
-	propagateNspaces ns desc =
+    propagateNspaces ns desc =
 	case desc of 
-		DC cID          -> DC (propagateNspaces ns cID)
-		DR restr        -> DR (propagateNspaces ns restr)
-		UnionOf descs   -> UnionOf (Map.map (propagateNspaces ns) descs) 
-		IntersectionOf descs  -> IntersectionOf (Map.map (propagateNspaces ns) descs) 
-		ComplementOf desc -> ComplementOf (propagateNspaces ns desc)
-		OneOfDes indivIDs -> OneOfDes (Map.map (propagateNspaces ns) indivIDs)
+	DC cID          -> DC (propagateNspaces ns cID)
+	DR restr        -> DR (propagateNspaces ns restr)
+	UnionOf descs   -> UnionOf (map (propagateNspaces ns) descs) 
+	IntersectionOf descs  -> 
+            IntersectionOf (map (propagateNspaces ns) descs) 
+	ComplementOf desc1 -> ComplementOf (propagateNspaces ns desc1)
+	OneOfDes indivIDs -> OneOfDes (map (propagateNspaces ns) indivIDs)
 
 instance PNamespace Restriction where
-	propagateNspaces ns restr =
-		case restr of
-			DataRestriction dvpID comp comps ->
-				DataRestriction (propagateNspaces ns dvpID)
-								(propagateNspaces ns comp)
-								(Map.map (propagateNspaces ns) comps)
-		    IndivRestriction ivpID comp comps ->
-		    	IndivRestriction (propagateNspaces ns ivpID)
-					             (propagateNspaces ns comp)
-								 (Map.map (propagateNspaces ns) comps)
+    propagateNspaces ns restr =
+	case restr of
+	DataRestriction dvpID comp comps ->
+	    DataRestriction (propagateNspaces ns dvpID)
+                            (propagateNspaces ns comp)
+			    (map (propagateNspaces ns) comps)
+	IndivRestriction ivpID comp comps ->
+	    IndivRestriction (propagateNspaces ns ivpID)
+			     (propagateNspaces ns comp)
+			     (map (propagateNspaces ns) comps)
 
 instance PNamespace Drcomponent where
-	propagateNspaces ns drComp =
-		case drComp of
-			DRCAllValuesFrom dr  -> DRCAllValuesFrom (propagateNspaces ns dr)
-			DRCSomeValuesFrom dr -> DRCSomeValuesFrom (propagateNspaces ns dr)
-			u                    -> u
+    propagateNspaces ns drComp =
+	case drComp of
+	DRCAllValuesFrom dr  -> DRCAllValuesFrom (propagateNspaces ns dr)
+	DRCSomeValuesFrom dr -> DRCSomeValuesFrom (propagateNspaces ns dr)
+	u                    -> u
 
 instance PNamespace Ircomponent where
-	propagateNspaces ns irComp =
-		case irComp of
-			IRCAllValuesFrom desc  -> IRCAllValuesFrom (propagateNspaces ns desc)
-			IRCSomeValuesFrom desc -> IRCSomeValuesFrom (propagateNspaces ns desc)
-			u                      -> u
+    propagateNspaces ns irComp =
+	case irComp of
+	IRCAllValuesFrom desc  -> IRCAllValuesFrom (propagateNspaces ns desc)
+	IRCSomeValuesFrom desc -> IRCSomeValuesFrom (propagateNspaces ns desc)
+	u                      -> u
 
 instance PNamespace DataRange where
-	propagateNspaces ns dr =
-		case dr of
-			DID dtID -> DID (propagateNspaces ns dtID)
-			u        -> u
+    propagateNspaces ns dr =
+	case dr of
+	DID dtID -> DID (propagateNspaces ns dtID)
+	u        -> u
 
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns obj = 
-	   			case obj of 
-	   				Just j -> Just (propagateNspaces ns j)
-	   			    Nothing  -> Nothing
+    case obj of 
+	     Just j -> Just (propagateNspaces ns j)
+	     Prelude.Nothing  -> Prelude.Nothing
+
