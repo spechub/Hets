@@ -136,7 +136,7 @@ lazyLog :: Type
 lazyLog = LazyType unitType []
 
 aToUnitType :: Kind -> TypeScheme
-aToUnitType k = aBindWithKind k $ FunType aType PFunArr unitType []
+aToUnitType k = aBindWithKind k $ FunType (aTypeWithKind k) PFunArr unitType []
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ 
