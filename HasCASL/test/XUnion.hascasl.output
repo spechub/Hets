@@ -29,22 +29,26 @@ forall g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N));
      var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))) :
       Unit
 %% Type Constructors -----------------------------------------------------
-E : Type %(var_3)%
 Graph
   : Type -> Type -> Type
     := \ (N : Type)(E : Type) . Set N_v-1@(N_v-1 ->? Unit) *
                                 (E_v-2 ->? N_v-1) * (E_v-2 ->? N_v-1)
 Logical : Type := Unit ->? Unit
-N : Type %(var_2)%
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-S : Type %(var_1)%
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
+%% Type Variables --------------------------------------------------------
+E  : Type %(var_6)%
+N  : Type %(var_5)%
+S  : Type %(var_4)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -84,6 +88,9 @@ false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
+g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
 %% Sentences -------------------------------------------------------------
 ((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
@@ -110,10 +117,13 @@ true : Unit %(fun)%
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'
 *** Hint 1.11, is type variable 'E'
+*** Hint 2.12, rebound type variable 'S'
+*** Hint 3.14, rebound type variable 'N'
+*** Hint 3.16, rebound type variable 'E'
 *** Hint 8.11, not a kind 'Graph N E'
 *** Hint 8.15, not a kind 'Graph N E'
 *** Hint, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
   type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.37)
-  is not unifiable with type '_var_10_v10 ->? Unit' (2.19)
+  is not unifiable with type '_var_13_v13 ->? Unit' (2.19)
 
