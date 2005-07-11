@@ -1,5 +1,5 @@
 var S : Type; T : Type
-type Bool; Pred : Type -> Type := \ S : Type . S_v-1 ->? Unit;
+type Bool; Pred : -Type -> Type := \ S : -Type . S_v-1 ->? Unit;
      Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 op True, False : Bool
 op emptySet : Set S; {__} : S -> Set S;
@@ -176,11 +176,11 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
        : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
           (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
        ((var x : S, var y : T),
-        ((op __*__[S; T]
-          : forall S : Type; T : Type .
-              Set S_v-1@(S_v-1 ->? Unit) *
-              Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
-                                                                 T_v-2 ->? Unit)) :
+        ((op __*__[T; S]
+          : forall T : Type; S : Type .
+              Set S_v-2@(S_v-2 ->? Unit) *
+              Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
+                                                                 T_v-1 ->? Unit)) :
              Set S@(S ->? Unit) * Set T@(T ->? Unit) -> Set (S * T)@(S *
                                                                      T ->? Unit))
           (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
@@ -220,24 +220,28 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
 %% Type Constructors -----------------------------------------------------
 Bool : Type
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
-S : Type %(var_1)%
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
-T : Type %(var_2)%
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
+%% Type Variables --------------------------------------------------------
+S  : Type %(var_4)%
+T  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 False : Bool %(op)%
 True : Bool %(op)%
 __*__
-  : forall S : Type; T : Type .
-      Set S_v-1@(S_v-1 ->? Unit) *
-      Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
-                                                         T_v-2 ->? Unit)
+  : forall T : Type; S : Type .
+      Set S_v-2@(S_v-2 ->? Unit) *
+      Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
+                                                         T_v-1 ->? Unit)
     %(op)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -292,6 +296,13 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 {__} : forall S : Type . S_v-1 -> Set S_v-1@(S_v-1 ->? Unit) %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+s : Set S@(S ->? Unit)
+s' : Set S@(S ->? Unit)
+t : Set T@(T ->? Unit)
+x : S
+x' : S
+y : T
 %% Sentences -------------------------------------------------------------
 (fun not__ : ? Unit ->? Unit)
   (((op __isIn__[S]
@@ -457,11 +468,11 @@ true : Unit %(fun)%
      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
         (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
      ((var x : S, var y : T),
-      ((op __*__[S; T]
-        : forall S : Type; T : Type .
-            Set S_v-1@(S_v-1 ->? Unit) *
-            Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
-                                                               T_v-2 ->? Unit)) :
+      ((op __*__[T; S]
+        : forall T : Type; S : Type .
+            Set S_v-2@(S_v-2 ->? Unit) *
+            Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
+                                                               T_v-1 ->? Unit)) :
            Set S@(S ->? Unit) * Set T@(T ->? Unit) -> Set (S * T)@(S *
                                                                    T ->? Unit))
         (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
@@ -499,9 +510,9 @@ true : Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'S'
 *** Hint 1.8, is type variable 'T'
-*** Hint 3.18, redeclared type 'S'
+*** Hint 3.18, rebound type variable 'S'
 *** Hint 3.8, redeclared type 'Pred'
-*** Hint 4.17, redeclared type 'S'
+*** Hint 4.17, rebound type variable 'S'
 *** Hint 16.11, not a class 'S'
 *** Hint 16.14, not a class 'S'
 *** Hint 16.19, not a class 'T'
@@ -509,4 +520,4 @@ true : Unit %(fun)%
 *** Hint 16.27, not a kind 'Set (S)'
 *** Hint 16.37, not a kind 'Set (T)'
 *** Hint 20.32, not a class 'S'
-*** Hint 20.31, variable shadows global name(s) 'x'
+*** Hint 20.31, rebound variable 'x'
