@@ -21,7 +21,7 @@ b < a
 c < Type
 d < Type
 e < c
-g < (a, Type)
+g < a
 h < Type
 i < g
 %% Type Constructors -----------------------------------------------------

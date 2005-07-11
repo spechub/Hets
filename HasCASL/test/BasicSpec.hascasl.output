@@ -33,7 +33,7 @@ forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
 TYPE < Type
-a < (b, Type)
+a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------

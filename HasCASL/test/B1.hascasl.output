@@ -18,7 +18,7 @@ var x : b
 var x < t
 %% Classes ---------------------------------------------------------------
 a < (b, d)
-b < (d, Type)
+b < d
 c < Type
 d < Type
 e < Type

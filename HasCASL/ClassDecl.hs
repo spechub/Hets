@@ -66,7 +66,8 @@ addClassDecl kind ci =
                         else do addDiags [mkDiag Hint 
                                          "refined class" ci]
                                 putClassMap $ Map.insert ci 
-                                    (ClassInfo ork $ kind : superClasses) cm
+                                    (ClassInfo ork $ keepMinKinds cm $ 
+                                               kind : superClasses) cm
                    else return ()
 
 showClassList :: [ClassId] -> ShowS
