@@ -1,6 +1,6 @@
  var S,T : Type
   type Bool;
-       Pred := \ S . S ->? Unit ;
+       Pred := \ S- . S ->? Unit ;
        Set := \ S:Type . S ->? Unit ;
   ops True, False : Bool;
 
