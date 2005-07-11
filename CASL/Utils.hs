@@ -13,14 +13,17 @@ module to store utilities for CASL and its comorphisms
 
 module CASL.Utils where
 
+import Debug.Trace
 import Control.Exception (assert)
 
-import Data.Maybe (isJust,fromJust)
+import Data.Maybe 
 import Data.List
+
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 
 import Common.Id
+
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
@@ -107,18 +110,18 @@ delete_vMap vDecls m = foldr Map.delete m vars
 
 -- | replace_vars replaces all Qual_var occurences that are sopposed
 -- to be replaced according to the FreshVARMap
-replace_vars :: FreshVARMap f
+replace_varsF :: FreshVARMap f
              -> (FreshVARMap f -> f -> f) 
              -- ^ this function replaces Qual_var in ExtFORMULA 
              -> FORMULA f -> FORMULA f
-replace_vars m rep_ef phi =
+replace_varsF m rep_ef phi =
     case phi of
     ExtFORMULA f -> ExtFORMULA (rep_ef m f)
     Quantification q vs f ps -> 
         let new_map = delete_vMap vs m
         in Quantification q vs (if Map.null new_map 
                                    then f
-                                   else replace_vars new_map rep_ef f) ps
+                                   else replace_varsF new_map rep_ef f) ps
     Conjunction fs ps -> Conjunction (map rec fs) ps
     Disjunction fs ps -> Disjunction (map rec fs) ps
     Implication f1 f2 b ps -> Implication (rec f1) (rec f2) b ps
@@ -132,9 +135,9 @@ replace_vars m rep_ef phi =
     Mixfix_formula _ -> err "Mixfix_formula"
     Unparsed_formula _ _ -> err "Unparsed_formula"
     f -> f -- (True_atom and False_atom)
-    where rec = replace_vars m rep_ef
+    where rec = replace_varsF m rep_ef
           recT = replace_varsT m rep_ef
-          err s = error ("CASL.Utils.replace_vars: cannot handle "++s)
+          err s = error ("CASL.Utils.replace_varsF: cannot handle "++s)
     
 replace_varsT :: FreshVARMap f
               -> (FreshVARMap f -> f -> f) 
@@ -151,23 +154,23 @@ replace_varsT m rep_ef term =
     Unparsed_term _ _ -> err "Unparsed_term"
     _ -> err "Mixfix_*"
     where err s = error ("CASL.Utils.replace_varsT: should not occur: "++s)
-          rec = replace_vars m rep_ef
+          rec = replace_varsF m rep_ef
           recT = replace_varsT m rep_ef
 
--- | codeOutUniqueExt compiles every unique_existential quantification
+-- | codeOutUniqueExtF compiles every unique_existential quantification
 -- to simple quantifications. It works recursively through the whole
 -- formula and only touches Unique_existential quantifications
-codeOutUniqueExt :: (f -> f) 
+codeOutUniqueExtF :: (f -> f) 
                     -- ^ codes out Unique_existential in ExtFORMULA
                  -> (FreshVARMap f -> f -> f) 
                  -- ^ this function replaces Qual_var in ExtFORMULA 
                  -> FORMULA f -> FORMULA f
-codeOutUniqueExt pr_ef rep_ef phi =
+codeOutUniqueExtF pr_ef rep_ef phi =
     case phi of
     Quantification Unique_existential vDecl f _ -> 
         let f' = rec f
             vDecl' = fresh_vars vDecl
-            f'_rep = replace_vars (build_vMap vDecl vDecl') rep_ef f'
+            f'_rep = replace_varsF (build_vMap vDecl vDecl') rep_ef f'
             allForm = Quantification Universal vDecl' 
                            (Implication f'_rep implForm True []) []
             implForm = assert (not (null vDecl))
@@ -192,9 +195,9 @@ codeOutUniqueExt pr_ef rep_ef phi =
     Mixfix_formula _ -> err "Mixfix_formula"
     Unparsed_formula _ _ -> err "Unparsed_formula"
     f -> f -- (True_atom and False_atom)
-    where rec = codeOutUniqueExt pr_ef rep_ef
+    where rec = codeOutUniqueExtF pr_ef rep_ef
           recT = codeOutUniqueExtT pr_ef rep_ef
-          err s = error ("CASL.Utils.codeOutUniqueExt: cannot handle "++s)
+          err s = error ("CASL.Utils.codeOutUniqueExtF: cannot handle "++s)
           eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
               assert (sor1 == sor2)
                      (zipWith (eqFor sor1) vars1 vars2)
@@ -228,9 +231,129 @@ codeOutUniqueExtT pr_ef rep_ef term =
     Unparsed_term _ _ -> err "Unparsed_term"
     _ -> err "Mixfix_*"
     where err s = error ("CASL.Utils.codeOutUniqueExtT: should not occur: "++s)
-          rec = codeOutUniqueExt pr_ef rep_ef
+          rec = codeOutUniqueExtF pr_ef rep_ef
           recT = codeOutUniqueExtT pr_ef rep_ef
 
+codeOutCondRecord :: (Eq f) => (f -> f) 
+                  -> Record f (FORMULA f) (TERM f)
+codeOutCondRecord fun = 
+    (mapRecord fun) 
+          { foldPredication = 
+                \ phi _ _ _ -> 
+                    either (codeOutConditionalF fun) id
+                               (codeOutCondPredication phi)
+          , foldExistl_equation = 
+              \ (Existl_equation t1 t2 ps) _ _ _ -> 
+                  either (codeOutConditionalF fun) id
+                    (mkEquationAtom Existl_equation t1 t2 ps)
+          , foldStrong_equation = 
+              \ (Strong_equation t1 t2 ps) _ _ _ -> 
+                  either (codeOutConditionalF fun) id
+                    (mkEquationAtom Strong_equation t1 t2 ps)
+          , foldMembership = 
+              \ (Membership t s ps) _ _ _ -> 
+                  either (codeOutConditionalF fun) id
+                    (mkSingleTermF (\ x y -> Membership x s y) t ps)
+          , foldDefinedness = 
+              \ (Definedness t ps) _ _ -> 
+                  either (codeOutConditionalF fun) id
+                    (mkSingleTermF Definedness t ps)
+          }
+
+codeOutCondPredication :: (Eq f) => FORMULA f 
+                   -> Either (FORMULA f) (FORMULA f)
+                   -- ^ Left means check again for Conditional, 
+                   -- Right means no Conditional left
+codeOutCondPredication phi@(Predication _ ts _) = 
+    maybe (Right phi) (Left . constructExpansion phi) 
+          (listToMaybe (catMaybes (map findConditionalT ts)))
+codeOutCondPredication _ = error "CASL.Utils: Predication expected"
+
+constructExpansion :: (Eq f) => FORMULA f 
+                   -> TERM f 
+                   -> FORMULA f
+constructExpansion atom c@(Conditional t1 phi t2 _) =
+    Conjunction [ Implication phi (substConditionalF c t1 atom) False []
+                , Implication (Negation phi []) 
+                              (substConditionalF c t2 atom) False []] []
+constructExpansion _ _ = error "CASL.Utils: Conditional expected"
+
+mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> [Pos] -> FORMULA f) 
+               -- ^ equational constructor
+               -> TERM f -> TERM f -> [Pos] 
+               -> Either (FORMULA f) (FORMULA f)
+               -- ^ Left means check again for Conditional, 
+               -- Right means no Conditional left
+mkEquationAtom cons t1 t2 ps = 
+    maybe (Right phi) (Left . constructExpansion phi) 
+          (listToMaybe (catMaybes (map findConditionalT [t1,t2])))
+    where phi = cons t1 t2 ps
+
+mkSingleTermF :: (Eq f) => (TERM f -> [Pos] -> FORMULA f) 
+              -- ^ single term atom constructor
+               -> TERM f -> [Pos] 
+               -> Either (FORMULA f) (FORMULA f)
+               -- ^ Left means check again for Conditional, 
+               -- Right means no Conditional left
+mkSingleTermF cons t ps = 
+    maybe (Right phi) (Left . constructExpansion phi) 
+          (findConditionalT t)
+    where phi = cons t ps
+
+
+codeOutConditionalF :: (Eq f) => (f -> f) 
+                    -> FORMULA f -> FORMULA f
+codeOutConditionalF fun = foldFormula (codeOutCondRecord fun) 
+
+findConditionalRecord :: Record f () (Maybe (TERM f))
+findConditionalRecord = 
+    (constOnlyTermRecord (listToMaybe . catMaybes) Nothing)
+    { foldConditional = \ cond _ _ _ _ -> Just cond}
+
+findConditionalT :: TERM f -> Maybe (TERM f)
+findConditionalT = foldTerm findConditionalRecord
+
+substConditionalRecord :: (Eq f)  
+                       => TERM f -- ^ Conditional to search for
+                       -> TERM f -- ^ newly inserted term
+                       -> Record f (FORMULA f) (TERM f)
+substConditionalRecord c t = 
+    mapOnlyTermRecord 
+     { foldPredication = \ _ -> Predication  
+     , foldDefinedness = \ _ -> Definedness  
+     , foldExistl_equation = \ _ -> Existl_equation  
+     , foldStrong_equation = \ _ -> Strong_equation  
+     , foldMembership = \ _ -> Membership
+     , foldConditional = \ c1 _ _ _ _ -> 
+       -- FIXME: correct implementation would use an equality 
+       -- which checks for correct positions also! 
+             if c1 == c then t else c1
+     }
+
+substConditionalF :: (Eq f) 
+                  => TERM f -- ^ Conditional to search for
+                  -> TERM f -- ^ newly inserted term
+                  -> FORMULA f -> FORMULA f
+substConditionalF c t = foldFormula (substConditionalRecord c t)
+
+{- codeOutConditional{F,T} implemented via CASL.Fold.fold
+
+   at each atom with a term find first (most left,no recursion into
+   terms within it) Conditional term and report it (findConditionalT)
+
+   substitute the original atom with the conjunction of the already
+   encoded atoms and already encoded formula
+
+   encoded atoms are the result of the substition (substConditionalF)
+   of the Conditional term with each result term of the Conditional
+   term plus recusion of codingOutConditionalF
+
+   encoded formulas are the result of codingOutConditionalF
+
+expansion of conditionals according to CASL-Ref-Manual:
+'A[T1 when F else T2]' expands to '(A[T1] if F) /\ (A[T2] if not F)'
+
+-}
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
