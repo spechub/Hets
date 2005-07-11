@@ -13,7 +13,7 @@ The translating comorphism from CASL to SPASS.
 {- todo
 
    - implement translation of Sort_gen_ax (FORMULA f) 
-   - add codeOut of Conditional of TERM f 
+   - add codeOutConditionalF  of Conditional of TERM f 
    - are all free type definitions a source of partial functions /
      partiallity? No...
 
@@ -31,6 +31,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -279,10 +280,10 @@ transSign sign = (SPSign.emptySign { sortRel =
           (fMap,idMap') =  transFuncMap idMap  (CSign.opMap sign)
           (pMap,idMap'') = transPredMap idMap' (CSign.predMap sign) 
 
-transTheory :: SignTranslator f e ->
-               FormulaTranslator f e ->
-               (CSign.Sign f e, [Named (FORMULA f)])
-                   -> Result SPASSTheory 
+transTheory :: (Eq f) => SignTranslator f e 
+            -> FormulaTranslator f e 
+            -> (CSign.Sign f e, [Named (FORMULA f)])
+            -> Result SPASSTheory 
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (CSign.extendedInfo sign)) $
   return  (tSign {sortMap = integrateGenerated idMap 
@@ -356,13 +357,16 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-mapSen :: FormulaTranslator f e -> CSign.Sign f e -> FORMULA f -> SPTerm
+mapSen :: (Eq f) => FormulaTranslator f e 
+       -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
 
-transFORM :: CSign.Sign f e -> 
-                IdType_SPId_Map -> FormulaTranslator f e 
-                -> FORMULA f -> SPTerm
-transFORM s i tr = transFORMULA s i tr . codeOutUniqueExt id (\ _  -> id) 
+transFORM :: (Eq f) => CSign.Sign f e 
+          -> IdType_SPId_Map -> FormulaTranslator f e 
+          -> FORMULA f -> SPTerm
+transFORM sign i tr phi = transFORMULA sign i tr phi'
+    where phi' = codeOutConditionalF id 
+                        (codeOutUniqueExtF id (\ _  -> id) phi)
 
 transFORMULA :: CSign.Sign f e -> 
                 IdType_SPId_Map -> FormulaTranslator f e 
@@ -402,10 +406,12 @@ transFORMULA sign idMap tr (Strong_equation t1 t2 _)
     | term_sort t1 == term_sort t2 =
         mkEq (transTERM sign idMap tr t1) (transTERM sign idMap tr t2)
 transFORMULA sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
-{-
-transFORMULA _ _ (Definedness _ _) = true -- totality assumed
-transFORMULA _ _ (Membership t s _) | term_sort t == s = true
--}
+transFORMULA _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
+transFORMULA sign idMap tr (Membership t s _) = 
+    maybe (error ("CASL2SPASS.tF: no SPASS Id found for \""++
+                  showPretty s "\""))
+          (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
+          (lookupSPId s CSort idMap)
 transFORMULA _ _ _ _ = 
   error "CASL2SPASS.transFORMULA: unknown FORMULA"
 
@@ -414,7 +420,7 @@ transTERM :: CSign.Sign f e ->
              IdType_SPId_Map -> FormulaTranslator f e
           -> TERM f -> SPTerm
 transTERM _sign idMap _tr (Qual_var v s _) =
-  maybe (error ("CASL2SPASS: no SPASS Id found for \""++showPretty v "\""))
+  maybe (error ("CASL2SPASS.tT: no SPASS Id found for \""++showPretty v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
@@ -422,15 +428,6 @@ transTERM sign idMap tr (Application opsymb args _) =
 
 transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "CASL2SPASS.transTERM: Conditional terms must be coded out."
-{-
-    | term_sort t1 == term_sort t2 =
-  foldl termAppl (con "If") [transFORMULA sign idMap tr phi,
-       transTERM sign idMap tr t1, transTERM sign idMap tr t2]
-
-expansion of conditionals:
-'A[T1 when F else T2]' expands to '(A[T1] if F) /\ (A[T2] if not F)'
-
--}
 transTERM sign idMap tr (Sorted_term t s _) 
     | term_sort t == s = transTERM sign idMap tr t
 transTERM sign idMap tr (Cast t s _) 
