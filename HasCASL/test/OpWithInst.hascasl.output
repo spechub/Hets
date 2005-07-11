@@ -45,4 +45,4 @@ true : Unit %(fun)%
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Warning 4.22, missing kind for type variable  'a'
-*** Hint 6.28, type variables shadows type constructor 'a'
+*** Hint 6.28, rebound type variable 'a'

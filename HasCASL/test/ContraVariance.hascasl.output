@@ -34,7 +34,7 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 2.14, type variables shadows type constructor 'a'
+*** Hint 2.14, rebound type variable 'a'
 *** Hint 2.32, wrong covariance of 'a'
 *** Hint 2.32, no kind found for 'a_v2'
 *** Error 2.27-2.32, no kind found for 'Pred a'
