@@ -192,7 +192,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
   let gid = nextGraphId graphMem
       actGraphInfo = graphInfo graphMem
   let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, showInternalNames, hetsOpts, ioRefVisibleNodes)
-  Result descr _ <- 
+  Result descr msg <- 
     makegraph ("Development graph for "++show ln) 
          -- action on "open"
              (do currentPath <- getCurrentDirectory
@@ -230,12 +230,14 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                               redisplay gid actGraphInfo
                               return ()    ),
                   Button "Hide nodes" 
-                          (do Result descr _ <- hideSetOfNodeTypes gid
+                          (do Result descr msg <- hideSetOfNodeTypes gid
                                                     ["internal",
                                                     "locallyEmpty_internal"]
                                                     actGraphInfo
                               writeIORef event descr
-                              redisplay gid actGraphInfo
+                              case msg of
+                                Nothing -> do redisplay gid actGraphInfo; return ()
+                                Just err -> putStrLn err
                               return ()    ),
 
                   Button "Show nodes" 
@@ -384,6 +386,9 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                   ("localunproventhm","unproventhm","localunproventhm"), 
                   ("localunproventhm","localunproventhm","localunproventhm")] 
                  actGraphInfo
+  case msg of
+    Nothing -> return ()
+    Just err -> fail err
   writeIORef ioRefGraphMem graphMem{nextGraphId = gid+1}
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
@@ -1052,8 +1057,11 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges)
          tarnode = Map.lookup (libname,tar) (dg2abstrNode convMaps)
      case (srcnode,tarnode) of 
       (Just s, Just t) -> do
-        Result newDescr err <- addlink descr (getDGLinkType edgelab)
+        Result newDescr msg <- addlink descr (getDGLinkType edgelab)
                                    "" (Just ledge) s t graphInfo
+        case msg of
+          Nothing -> return ()
+          Just err -> fail err
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert
                                      (libname, (src,tar,show edgelab))
