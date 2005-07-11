@@ -1,17 +1,21 @@
-var a : Type; b : Type
+var a : Type; b < a_v1
 op twice : (a ->? b) -> a ->? b
    %% = \ (f : a ->? b) (x : a) . f(f(x))
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
-a : Type %(var_1)%
-b : Type %(var_2)%
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_1)%
+b  < a_v1 : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -28,10 +32,9 @@ false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 twice
-  : forall a : Type; b : Type . (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
+  : forall a : Type; b < a_v1 : Type .
+      (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
     %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'a'
-*** Error, unbound type variable(s)
-  a : Type in 'a_v1'
