@@ -68,7 +68,7 @@ makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let sc = TypeScheme args (getConstrType dt p ts) [] 
-                  newSc = generalize sc
+                  newSc = sc
                   vars = genSelVars 1 sels 
                   as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
                   ct = mkApplTerm (mkOpTerm c newSc) as
@@ -118,15 +118,15 @@ anaComp tys rt te (NoSelector t) =
 
 getSelType :: DataPat -> Partiality -> Type -> TypeScheme
 getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
-    generalize $ TypeScheme args ((case p of 
+    TypeScheme args ((case p of 
     Partial -> addPartiality [dt]
     Total -> id) (FunType dt FunArr rt [])) []
 
 anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
-anaCompType tys (_, as, _) t te = do
+anaCompType tys (_, tArgs, _) t te = do
     (_, ct1) <- anaStarTypeM t te
-    let ct = mkGenVars as ct1
-        ds = unboundTypevars as ct 
+    let ct = mkGenVars tArgs ct1
+        ds = unboundTypevars True tArgs ct1 
     if null ds then return () else Result ds Nothing
     mapM (checkMonomorphRecursion ct te) tys
     return ct
