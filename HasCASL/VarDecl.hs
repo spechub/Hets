@@ -78,14 +78,26 @@ anaTypeScheme (TypeScheme tArgs ty p) =
            Nothing -> return Nothing
            Just newTy -> do 
                let newSc = TypeScheme newArgs newTy p
-               gTy <- if null newArgs then return $ generalize newSc 
-                      else generalizeS newSc
+               gTy <- generalizeS newSc
                return $ Just gTy
 
 generalizeS :: TypeScheme -> State Env TypeScheme
-generalizeS sc = do 
-    addDiags $ generalizable sc
-    return $ generalize sc
+generalizeS sc@(TypeScheme tArgs ty p) = do 
+    let fvs = leaves (> 0) ty
+        svs = sortBy comp fvs
+        comp a b = compare (fst a) $ fst b
+        ts = zipWith ( \ (v, (i, rk)) n -> 
+                       (v, TypeName i rk n)) svs [-1, -2..]
+        newTy = subst (Map.fromList ts) ty
+    tvs <- gets localTypeVars 
+    let newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
+                  Nothing -> error "generalizeS" 
+                  Just (TypeVarDefn _ vk _) -> 
+                      TypeArg i vk Other []) svs
+    if null tArgs then return $ TypeScheme newArgs newTy p
+       else do 
+         addDiags $ generalizable sc
+         return $ TypeScheme newArgs newTy p
 
 anaKind :: Kind -> State Env RawKind
 anaKind k = do mrk <- fromResult $ anaKindM k . classMap
@@ -118,9 +130,9 @@ addLocalTypeVar warn tvd i = do
          case Map.lookup i tm of 
              Nothing -> case Map.lookup i tvs of 
                  Nothing -> return ()
-                 Just _ -> addDiags [mkDiag Hint 
-                    "type variables shadows type constructor" i]
-             Just _ -> addDiags [mkDiag Hint "rebound type variable" i] 
+                 Just _ -> addDiags [mkDiag Hint "rebound type variable" i] 
+             Just _ -> addDiags [mkDiag Hint 
+                    "type variable shadows type constructor" i]
        else return ()
     putLocalTypeVars $ Map.insert i tvd tvs
 
