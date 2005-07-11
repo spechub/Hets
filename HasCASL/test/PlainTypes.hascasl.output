@@ -1,14 +1,19 @@
 class a, b, c, d < Type
-type r, s, t
+type r : a; s : a; s : b; t : c
 type [__], {__} : a -> b
 var u : [r]; v : {s}
 type tuple3 : a -> b -> c -> d
 var x : tuple3 r s t
+var y : tuple3 r s
 type tuple1 : b -> a
 type m : (a -> b) -> c
 type List : a -> b
-var v : m List
+var w : m List
+var o1 : m
+var o2 : m tuple1
+var o3 : m tuple3
 var nt : a -> (b -> c) -> c -> d
+var o4 : nt r List s
 type s1, r1, t1 < t
 type s2 = r2 = t2
 type s3 = {x : t . ((fun __=__[t]
@@ -24,21 +29,23 @@ d < Type
 %% Type Constructors -----------------------------------------------------
 List : a -> b
 Logical : Type := Unit ->? Unit
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 [__] : a -> b
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 m : (a -> b) -> c
-nt : a -> (b -> c) -> c -> d %(var_1)%
-r : Type
-r1 : Type < t
+r : a
+r1 : c < t
 r2 : Type < (t2, r2, s2)
-s : Type
-s1 : Type < t
+s : (b, a)
+s1 : c < t
 s2 : Type < (t2, r2, s2)
 s3
   : Type < t
@@ -47,12 +54,14 @@ s3
                     t * t ->? Unit)
                  (var x : t, var x : t) :
                    Unit}
-t : Type
-t1 : Type < t
+t : c
+t1 : c < t
 t2 : Type < (t2, r2, s2)
 tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
+%% Type Variables --------------------------------------------------------
+nt  : a -> (b -> c) -> c -> d %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -68,42 +77,51 @@ def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
-u : [r] %(var)%
-v : m List %(var)%
-  : {s} %(var)%
-x : tuple3 r s t %(var)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+o1 : m
+o2 : m tuple1
+o3 : m tuple3
+o4 : nt r List s
+u : [r]
+v : {s}
+w : m List
+x : tuple3 r s t
+y : tuple3 r s
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.6, not a kind '[r]'
 *** Hint 7.14, not a kind '{s}'
 *** Hint 11.7, not a kind 'tuple3 r s t'
 *** Hint 12.7, not a kind 'tuple3 r s'
-*** Error, incompatible kind of: tuple3 r s
-  expected: Type
-     found: c -> d
+*** Error 12.9-12.18, no kind found for 'tuple3 r s'
+  expected: [ Type ]
+     found: [ c -> d ]
 
 *** Hint 18.7, not a kind 'm [__]'
 *** Error 18.12, unexpected place '__'
 *** Hint 22.7, not a kind 'm List'
 *** Hint 24.8, not a class 'm'
-*** Error 24.10, incompatible kind of: m
-  expected: Type
-     found: (a -> b) -> c
+*** Error 24.10, no kind found for 'm'
+  expected: [ Type ]
+     found: [ (a -> b) -> c ]
 
 *** Hint 26.8, not a kind 'm tuple1'
-*** Error 26.12, incompatible kind of: tuple1
-  expected: a -> b
-     found: b -> a
+*** Hint 26.12, no kind found for 'tuple1'
+  expected: [ a -> b ]
+     found: [ b -> a ]
 
+*** Error 26.10-26.12, no kind found for 'm tuple1'
 *** Hint 28.8, not a kind 'm tuple3'
-*** Error 28.12, incompatible kind of: tuple3
-  expected: a -> b
-     found: a -> b -> c -> d
+*** Hint 28.12, no kind found for 'tuple3'
+  expected: [ a -> b ]
+     found: [ a -> b -> c -> d ]
 
+*** Error 28.10-28.12, no kind found for 'm tuple3'
 *** Hint 30.5, is type variable 'nt'
 *** Hint 32.8, not a kind 'nt r List s'
-*** Error 32.15, incompatible kind of: List
-  expected: b -> c
-     found: a -> b
+*** Hint 32.15, no kind found for 'List'
+  expected: [ b -> c ]
+     found: [ a -> b ]
 
-*** Hint 38.12, variable shadows global name(s) 'x'
+*** Error 32.10-32.20, no kind found for 'nt r List s'
+*** Hint 38.12, rebound variable 'x'

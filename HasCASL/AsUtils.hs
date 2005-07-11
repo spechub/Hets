@@ -167,15 +167,15 @@ posOfType :: Type -> [Pos]
 posOfType ty = 
     case ty of
     TypeName i _ _ -> posOfId i
-    TypeAppl t1 t2 -> posOf [t1, t2]
-    ExpandedType t1 t2 -> posOf [t1, t2]
+    TypeAppl t1 t2 -> concatMap posOfType [t1, t2]
+    ExpandedType t1 t2 -> concatMap posOfType [t1, t2]
     TypeToken t -> tokPos t
-    BracketType _ ts ps -> firstPos ts ps
-    KindedType t _ ps -> firstPos [t] ps
-    MixfixType ts -> posOf ts
-    LazyType t ps -> firstPos [t] ps
-    ProductType ts ps -> firstPos ts ps
-    FunType t1 _ t2 ps -> firstPos [t1,t2] ps
+    BracketType _ ts ps -> concatMap posOfType ts ++ ps
+    KindedType t _ ps -> posOfType t ++ ps
+    MixfixType ts -> concatMap posOfType ts
+    LazyType t ps -> posOfType t ++ ps
+    ProductType ts ps -> concatMap posOfType ts ++ ps
+    FunType t1 _ t2 ps -> concatMap posOfType [t1, t2] ++ ps
 
 posOfTerm :: Term -> [Pos]
 posOfTerm trm =

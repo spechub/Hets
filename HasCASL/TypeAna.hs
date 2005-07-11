@@ -47,14 +47,17 @@ getRawKind :: TypeEnv -> Id -> Result RawKind
 getRawKind te = fmap fst . getIdKind te
 
 -- | extract kinds of co- or invariant type id
-getCoVarKind :: TypeEnv -> Id -> Result (RawKind, [Kind])
-getCoVarKind te i = do 
+getCoVarKind :: Maybe Bool -> TypeEnv -> Id -> Result (RawKind, [Kind])
+getCoVarKind b te i = do 
     (rk, l) <- getIdKind te i
-    case rk of 
-           ExtKind ek ContraVar _ -> Result
-               [mkDiag Hint "wrong variance for" i] $ Just (ek, [])
+    case (rk, b) of 
+           (ExtKind ek ContraVar _, Just True) -> Result
+               [mkDiag Hint "wrong contravariance of" i] $ Just (ek, [])
+           (ExtKind ek CoVar _, Just False) -> Result
+               [mkDiag Hint "wrong covariance of" i] $ Just (ek, [])
            _ -> return (invertKindVariance False rk, 
-                        map (invertKindVariance False) l)
+                        map (invertKindVariance False) $ 
+                            keepMinKinds (classMap te) l)
 
 -- | create type from id 
 getIdType :: Id -> TypeEnv -> Result Type
@@ -258,56 +261,38 @@ lesserType te t1 t2 = case (t1, t2) of
 -- infer kind
 -- ---------------------------------------------------------------------------
 
--- | infer all minimal kinds less than (or equal to) the input kind
-inferSubKinds :: Kind -> Type -> TypeEnv 
-              -> Result (RawKind, [Kind])
-inferSubKinds k t te = do 
-    (rk, ks) <- inferKinds t te 
-    let rs = filter ( \ ki -> lesserKind (classMap te) ki k) ks
-    return (rk, rs)
-
 -- | check if there is at least one solution
-hasSolutions :: Type -> [Kind] -> Result ()
-hasSolutions ty ks = 
-   if null ks then mkError "no kind found for" ty
-    else return ()
-
-{- | invert (if true) or delete (if false) variances of extended kinds 
-   of type variables -}
-invertLocalVariances :: Bool -> LocalTypeVars -> LocalTypeVars
-invertLocalVariances b = 
-    Map.map ( \ td -> case td of 
-        TypeVarDefn rk (VarKind k) i -> 
-              TypeVarDefn (invertKindVariance b rk) 
-                              (VarKind $ invertKindVariance b k) i
-        _ -> td)
-
--- | invert (if true) or delete variances
-invertVariances :: Bool -> TypeEnv -> TypeEnv
-invertVariances b te = 
-    te { localTypeVars = invertLocalVariances b $ localTypeVars te }
+subKinds :: DiagKind -> ClassMap -> Type -> Kind -> [Kind] -> [Kind] 
+         -> Result [Kind]
+subKinds dk cm ty sk ks res = 
+   if any ( \ k -> lesserKind cm k sk) ks then return res
+   else Result [Diag dk
+        ("no kind found for '" ++ showPretty ty "'" ++ 
+         if null ks then "" else expected sk $ head ks)
+        $ posOfType ty] $ Just []
 
 -- | infer all minimal kinds
-inferKinds :: Type -> TypeEnv -> Result (RawKind, [Kind])
-inferKinds ty te@Env{classMap = cm} = let
+inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result (RawKind, [Kind])
+inferKinds b ty te@Env{classMap = cm} = let
   resu = case ty of 
-    TypeName i _ _ -> getCoVarKind te i
+    TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do 
-       (rk, ks) <- inferKinds t1 te
+       (rk, ks) <- inferKinds b t1 te
        case rk of 
            FunKind _ rr _ -> do 
                kks <- mapM (getFunKinds cm) ks
                rs <- mapM ( \ fk -> case fk of
                     FunKind arg res _ -> do 
                         (_, l) <- case arg of 
-                            ExtKind ek ContraVar _ -> 
-                                inferSubKinds ek t2 $ 
-                                           invertVariances True te 
-                            ExtKind ek CoVar _ -> 
-                                inferSubKinds ek t2 te
-                            _ -> inferSubKinds arg t2 $ 
-                                           invertVariances False te 
-                        return $ if null l then [] else [res]
+                            ExtKind _ ContraVar _ -> 
+                                inferKinds (fmap not b) t2 te
+                            ExtKind _ CoVar _ -> 
+                                inferKinds b t2 te
+                            _ -> inferKinds Nothing t2 te
+                        let ek = case arg of 
+                                 ExtKind k _ _ -> k
+                                 _ -> arg
+                        subKinds Hint cm t2 ek l [res]
                     _ -> error "inferKinds: no function kind"
                   ) $ keepMinKinds cm $ concat kks
                return (rr, keepMinKinds cm $ concat rs)
@@ -315,9 +300,10 @@ inferKinds ty te@Env{classMap = cm} = let
     KindedType t kind  _ -> do 
         let Result ds _ = anaKindM kind cm
         k <- if null ds then return kind else Result ds Nothing
-        (rk, ks) <- inferSubKinds k t te
-        return (rk, if null ks then [] else [k])
-    _ -> inferKinds (convertType te ty) te 
+        (rk, ks) <- inferKinds b t te
+        l <- subKinds Hint cm t k ks [k] 
+        return (rk, l)
+    _ -> inferKinds b (convertType te ty) te 
   in -- trace (showPretty ty " : " ++ showPretty resu "") 
      resu
 
@@ -326,11 +312,15 @@ anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
 anaTypeM (mk, t) te = 
     do nt <- mkTypeConstrAppls TopLevel t te
        let ty = expandAlias (typeMap te) nt
-       p <- case mk of 
-           Nothing -> inferKinds ty te
-           Just k -> inferSubKinds k ty te
-       hasSolutions ty $ snd p
-       return (p, ty)
+           cm = classMap te
+       (rk, ks) <- inferKinds (Just True) ty te
+       l <- case mk of 
+               Nothing -> subKinds Error cm t 
+                          (if null ks then rk else head ks)
+                          ks ks  
+               Just k -> subKinds Error cm t k ks $ 
+                         filter ( \ j -> lesserKind (classMap te) j k) ks
+       return ((rk, l), ty)
 
 -- | resolve the type and check if its a plain raw kind
 anaStarTypeM :: Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)

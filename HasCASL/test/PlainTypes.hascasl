@@ -1,6 +1,6 @@
 class a,b,c,d
 
-type r,s,t
+type r : a; s : a; s: b; t : c
 
 type [__], {__} : a -> b
 
@@ -19,7 +19,7 @@ var z : m [__]
 
 type List : a -> b
 
-var v : m List
+var w : m List
 
 var o1 : m
 

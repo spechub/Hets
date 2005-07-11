@@ -35,7 +35,8 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 2.14, type variables shadows type constructor 'a'
-*** Hint 2.32, wrong variance for 'a'
-*** Error, no kind found for 'Pred a_v2@(a_v2 ->? Unit)'
-*** Hint 3.27, wrong variance for 'b'
-*** Error, no kind found for 'b_v3'
+*** Hint 2.32, wrong covariance of 'a'
+*** Hint 2.32, no kind found for 'a_v2'
+*** Error 2.27-2.32, no kind found for 'Pred a'
+*** Hint 3.27, wrong contravariance of 'b'
+*** Error 3.27, no kind found for 'b'
