@@ -341,21 +341,30 @@ mkGenVars fvs newTy =
 generalize :: TypeScheme -> TypeScheme
 generalize (TypeScheme args ty p) =
     let fvs = leaves (> 0) ty
+        svs = sortBy comp fvs
+        comp a b = compare (fst a) $ fst b
         ts = zipWith ( \ (v, (i, rk)) n -> 
-                       (v, TypeName i rk n)) fvs [-1, -2..]
+                       (v, TypeName i rk n)) svs [-1, -2..]
         newTy = subst (Map.fromList ts) ty
-     in if length args == length fvs then TypeScheme args newTy p
+     in if map getTypeVar args == map (fst . snd) svs 
+        then TypeScheme args newTy p
         else error "generalize"
 
--- | check for unbound type variables
+-- | check for unbound (or too many) type variables
 unboundTypevars :: [TypeArg] -> Type -> [Diagnosis]
 unboundTypevars args ty = 
-    let restVars = map (fst . snd) (leaves (> 0) ty) List.\\ 
-                   map getTypeVar args in
-    if null restVars then []
+    let fvs = map (fst . snd) (leaves (> 0) ty)
+        argIds = map getTypeVar args 
+        restVars1 = fvs List.\\ argIds
+        restVars2 = argIds List.\\ fvs
+    in (if null restVars1 then []
        else [mkDiag Error ("unbound type variable(s)\n  "
                                   ++ showSepList ("," ++) showId 
-                                  restVars " in") ty]
+                                  restVars1 " in") ty])
+       ++ if null restVars2 then [] else
+            [mkDiag Warning ("ignoring unused variable(s)\n  "
+                                  ++ showSepList ("," ++) showId 
+                                  restVars2 " in") ty]
 
 generalizable :: TypeScheme -> [Diagnosis]
 generalizable (TypeScheme args ty _) = 
