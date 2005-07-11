@@ -14,20 +14,20 @@ This module puts parenthesis around mixfix terms for
 module CASL.ShowMixfix where
 
 import CASL.AS_Basic_CASL
-import qualified CASL.Fold as Fold
+import CASL.Fold
 
-mkMixfixRecord :: (f -> f) -> Fold.Record f (FORMULA f) (TERM f)
-mkMixfixRecord mf = (Fold.idRecord mf) 
-     { Fold.foldApplication = \ _ o ts ps ->
+mkMixfixRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
+mkMixfixRecord mf = (mapRecord mf) 
+     { foldApplication = \ _ o ts ps ->
          if null ts then Application o ts ps else 
          Mixfix_term [Application o [] [], Mixfix_parenthesized ts ps]
-     , Fold.foldPredication = \ _ p ts ps -> 
+     , foldPredication = \ _ p ts ps -> 
          if null ts then Predication p ts ps else Mixfix_formula $ 
             Mixfix_term [Mixfix_qual_pred p, Mixfix_parenthesized ts ps]
      }
 
 mapTerm :: (f -> f) -> TERM f -> TERM f
-mapTerm = Fold.mapTerm . mkMixfixRecord
+mapTerm = foldTerm . mkMixfixRecord
 
 mapFormula :: (f -> f) -> FORMULA f -> FORMULA f
-mapFormula = Fold.mapFormula . mkMixfixRecord
+mapFormula = foldFormula . mkMixfixRecord

@@ -35,7 +35,7 @@ projOpSymb pos s1 s2 =
     Qual_op_name projName (Op_type Total [s1] s2 pos) pos
 
 projRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
-projRecord mf = (idRecord mf) 
+projRecord mf = (mapRecord mf) 
      { foldApplication = \ _ o ts ps -> case o of
          Qual_op_name _ ty _ -> Application o 
              (zipWith (project ps) ts $ args_OP_TYPE ty) ps
@@ -49,7 +49,7 @@ projRecord mf = (idRecord mf)
      }
 
 projTerm :: (f -> f) -> TERM f -> TERM f
-projTerm = mapTerm . projRecord
+projTerm = foldTerm . projRecord
 
 projFormula :: (f -> f) -> FORMULA f -> FORMULA f
-projFormula = mapFormula . projRecord
+projFormula = foldFormula . projRecord

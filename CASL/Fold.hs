@@ -50,8 +50,8 @@ data Record f a b = Record
     , foldMixfix_braced :: TERM f -> [b] -> [Pos] -> b
     }
 
-idRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
-idRecord mf = Record
+mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
+mapRecord mf = Record
     { foldQuantification = \ _ -> Quantification  
     , foldConjunction = \ _ -> Conjunction  
     , foldDisjunction = \ _ -> Disjunction  
@@ -83,81 +83,81 @@ idRecord mf = Record
     , foldMixfix_braced = \ _ -> Mixfix_braced  
     }
 
-constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
-constRecord mf join c = Record
+noMixfixRecord :: (f -> Bool) -> Record f Bool Bool
+noMixfixRecord mf = Record
     { foldQuantification = \ _ _ _ r _ -> r
-    , foldConjunction = \ _ l _ -> join l
-    , foldDisjunction = \ _ l _ -> join l
-    , foldImplication = \ _ l r _ _ -> join [l, r]
-    , foldEquivalence = \ _ l r _ -> join [l, r] 
+    , foldConjunction = \ _ l _ -> and l
+    , foldDisjunction = \ _ l _ -> and l
+    , foldImplication = \ _ l r _ _ -> and [l, r]
+    , foldEquivalence = \ _ l r _ -> and [l, r] 
     , foldNegation = \ _ r _ -> r
-    , foldTrue_atom = \ _ _ -> c
-    , foldFalse_atom = \ _ _ -> c
-    , foldPredication = \ _ _ l _ -> join l
+    , foldTrue_atom = \ _ _ -> True
+    , foldFalse_atom = \ _ _ -> True
+    , foldPredication = \ _ _ l _ -> and l
     , foldDefinedness = \ _ r _ -> r
-    , foldExistl_equation = \ _ l r _ -> join [l, r]
-    , foldStrong_equation = \ _ l r _ -> join [l, r]
+    , foldExistl_equation = \ _ l r _ -> and [l, r]
+    , foldStrong_equation = \ _ l r _ -> and [l, r]
     , foldMembership = \ _ r _ _ -> r
-    , foldMixfix_formula = \ _ r -> r
-    , foldSort_gen_ax = \ _ _ _ -> c
+    , foldMixfix_formula = \ _ _ -> False
+    , foldSort_gen_ax = \ _ _ _ -> True
     , foldExtFORMULA = \ _ f -> mf f 
-    , foldQual_var = \ _ _ _ _ -> c
-    , foldApplication = \ _ _ l _ -> join l
+    , foldQual_var = \ _ _ _ _ -> True
+    , foldApplication = \ _ _ l _ -> and l
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ r _ _ -> r
-    , foldConditional = \ _ l f r _ -> join [l, f, r] 
-    , foldMixfix_qual_pred = \ _ _ -> c
-    , foldMixfix_term = \ _ l -> join l
-    , foldMixfix_token = \ _ _ -> c
-    , foldMixfix_sorted_term = \ _ _ _ -> c
-    , foldMixfix_cast = \ _ _ _ -> c
-    , foldMixfix_parenthesized = \ _ l _ -> join l
-    , foldMixfix_bracketed = \ _ l _ -> join l
-    , foldMixfix_braced = \ _ l _ -> join l
+    , foldConditional = \ _ l f r _ -> and [l, f, r] 
+    , foldMixfix_qual_pred = \ _ _ -> False
+    , foldMixfix_term = \ _ _ -> False
+    , foldMixfix_token = \ _ _ -> False
+    , foldMixfix_sorted_term = \ _ _ _ -> False
+    , foldMixfix_cast = \ _ _ _ -> False
+    , foldMixfix_parenthesized = \ _ _ _ -> False
+    , foldMixfix_bracketed = \ _ _ _ -> False
+    , foldMixfix_braced = \ _ _ _ -> False
     }
 
-mapFormula :: Record f a b -> FORMULA f -> a
-mapFormula r f = case f of 
-   Quantification q vs e ps -> foldQuantification r f q vs (mapFormula r e) ps
-   Conjunction fs ps -> foldConjunction r f (map (mapFormula r) fs) ps
-   Disjunction fs ps -> foldDisjunction r f (map (mapFormula r) fs) ps
-   Implication f1 f2 b ps -> foldImplication r f (mapFormula r f1)
-      (mapFormula r f2) b ps
-   Equivalence f1 f2 ps -> foldEquivalence r f (mapFormula r f1)
-      (mapFormula r f2) ps
-   Negation e ps -> foldNegation r f (mapFormula r e) ps
+foldFormula :: Record f a b -> FORMULA f -> a
+foldFormula r f = case f of 
+   Quantification q vs e ps -> foldQuantification r f q vs (foldFormula r e) ps
+   Conjunction fs ps -> foldConjunction r f (map (foldFormula r) fs) ps
+   Disjunction fs ps -> foldDisjunction r f (map (foldFormula r) fs) ps
+   Implication f1 f2 b ps -> foldImplication r f (foldFormula r f1)
+      (foldFormula r f2) b ps
+   Equivalence f1 f2 ps -> foldEquivalence r f (foldFormula r f1)
+      (foldFormula r f2) ps
+   Negation e ps -> foldNegation r f (foldFormula r e) ps
    True_atom ps -> foldTrue_atom r f ps
    False_atom ps -> foldFalse_atom  r f ps
-   Predication p ts ps -> foldPredication r f p (map (mapTerm r) ts) ps
-   Definedness t ps -> foldDefinedness r f (mapTerm r t) ps
-   Existl_equation t1 t2 ps -> foldExistl_equation r f (mapTerm r t1) 
-      (mapTerm r t2) ps
-   Strong_equation t1 t2 ps -> foldStrong_equation r f (mapTerm r t1) 
-      (mapTerm r t2) ps 
-   Membership t s ps -> foldMembership r f (mapTerm r t) s ps
-   Mixfix_formula t -> foldMixfix_formula r f (mapTerm r t)
-   Unparsed_formula s _ -> error $ "Fold.mapFormula.Unparsed" ++ s
+   Predication p ts ps -> foldPredication r f p (map (foldTerm r) ts) ps
+   Definedness t ps -> foldDefinedness r f (foldTerm r t) ps
+   Existl_equation t1 t2 ps -> foldExistl_equation r f (foldTerm r t1) 
+      (foldTerm r t2) ps
+   Strong_equation t1 t2 ps -> foldStrong_equation r f (foldTerm r t1) 
+      (foldTerm r t2) ps 
+   Membership t s ps -> foldMembership r f (foldTerm r t) s ps
+   Mixfix_formula t -> foldMixfix_formula r f (foldTerm r t)
+   Unparsed_formula s _ -> error $ "Fold.foldFormula.Unparsed" ++ s
    Sort_gen_ax cs b -> foldSort_gen_ax r f cs b
    ExtFORMULA e -> foldExtFORMULA r f e
 
-mapTerm :: Record f a b -> TERM f -> b
-mapTerm r t = case t of
-   Simple_id i -> error $ "Fold.mapTerm.Simple_id" ++ tokStr i
+foldTerm :: Record f a b -> TERM f -> b
+foldTerm r t = case t of
+   Simple_id i -> error $ "Fold.foldTerm.Simple_id" ++ tokStr i
    Qual_var v s ps -> foldQual_var r t v s ps 
-   Application o ts ps -> foldApplication r t o (map (mapTerm r) ts) ps
-   Sorted_term st s ps -> foldSorted_term r t (mapTerm r st) s ps
-   Cast ct s ps -> foldCast r t (mapTerm r ct) s ps
-   Conditional t1 f t2 ps -> foldConditional r t (mapTerm r t1)
-      (mapFormula r f) (mapTerm r t2) ps
-   Unparsed_term s _ -> error $ "Fold.mapTermUnparsed" ++ s
+   Application o ts ps -> foldApplication r t o (map (foldTerm r) ts) ps
+   Sorted_term st s ps -> foldSorted_term r t (foldTerm r st) s ps
+   Cast ct s ps -> foldCast r t (foldTerm r ct) s ps
+   Conditional t1 f t2 ps -> foldConditional r t (foldTerm r t1)
+      (foldFormula r f) (foldTerm r t2) ps
+   Unparsed_term s _ -> error $ "Fold.foldTermUnparsed" ++ s
    Mixfix_qual_pred p -> foldMixfix_qual_pred r t p
-   Mixfix_term ts -> foldMixfix_term r t (map (mapTerm r) ts)
+   Mixfix_term ts -> foldMixfix_term r t (map (foldTerm r) ts)
    Mixfix_token s -> foldMixfix_token r t s
    Mixfix_sorted_term s ps -> foldMixfix_sorted_term r t s ps
    Mixfix_cast s ps -> foldMixfix_cast r t s ps
    Mixfix_parenthesized ts ps -> foldMixfix_parenthesized r t
-      (map (mapTerm r) ts) ps
+      (map (foldTerm r) ts) ps
    Mixfix_bracketed ts ps -> foldMixfix_bracketed r t
-      (map (mapTerm r) ts) ps
+      (map (foldTerm r) ts) ps
    Mixfix_braced ts ps -> foldMixfix_braced r t
-      (map (mapTerm r) ts) ps
+      (map (foldTerm r) ts) ps

@@ -33,7 +33,7 @@ injOpSymb pos s1 s2 =
     Qual_op_name injName (Op_type Total [s1] s2 pos) pos
 
 injRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
-injRecord mf = (idRecord mf) 
+injRecord mf = (mapRecord mf) 
      { foldApplication = \ _ o ts ps -> case o of
          Qual_op_name _ ty _ -> Application o 
              (zipWith (inject ps) ts $ args_OP_TYPE ty) ps
@@ -46,7 +46,7 @@ injRecord mf = (idRecord mf)
      }
 
 injTerm :: (f -> f) -> TERM f -> TERM f
-injTerm = mapTerm . injRecord
+injTerm = foldTerm . injRecord
 
 injFormula :: (f -> f) -> FORMULA f -> FORMULA f
-injFormula = mapFormula . injRecord
+injFormula = foldFormula . injRecord

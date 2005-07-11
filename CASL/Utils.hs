@@ -39,7 +39,7 @@ replacePropPredication :: Maybe (PRED_NAME,VAR,TERM f)
 		       -> FORMULA f -- ^ Formula with placeholder
 		       -> FORMULA f
 replacePropPredication mTerm pSymb frmIns =
-    mapFormula (idRecord $ const $ error 
+    foldFormula (mapRecord $ const $ error 
              "replacePropPredication: unexpected extended formula")
         { foldPredication = \ (Predication qpn ts ps) _ _ _ -> 
               let (pSymbT,var,term) = fromJust mTerm in case qpn of
@@ -52,31 +52,17 @@ replacePropPredication mTerm pSymb frmIns =
               _ -> error "replacePropPredication: unknown formula to replace"
          , foldConditional = \ t _ _ _ _ -> t }
 
-
-noMixfixRecord :: (f -> Bool) -> Record f Bool Bool
-noMixfixRecord cef = (constRecord cef and True)
-    { foldMixfix_formula = \ _ _ -> False
-    , foldMixfix_qual_pred = \ _ _ -> False
-    , foldMixfix_term = \ _ _ -> False
-    , foldMixfix_token = \ _ _ -> False
-    , foldMixfix_sorted_term = \ _ _ _ -> False
-    , foldMixfix_cast = \ _ _ _ -> False
-    , foldMixfix_parenthesized = \ _ _ _ -> False
-    , foldMixfix_bracketed = \ _ _ _ -> False
-    , foldMixfix_braced = \ _ _ _ -> False
-    }
-
 -- | 
 -- noMixfixF checks a 'FORMULA' f for Mixfix_*. 
 -- A logic specific helper has to be provided for checking the f.
 noMixfixF :: (f -> Bool) -> FORMULA f -> Bool
-noMixfixF = mapFormula . noMixfixRecord
+noMixfixF = foldFormula . noMixfixRecord
 
 -- | 
 -- noMixfixT checks a 'TERM' f for Mixfix_*. 
 -- A logic specific helper has to be provided for checking the f.
 noMixfixT :: (f -> Bool) -> TERM f -> Bool
-noMixfixT = mapTerm . noMixfixRecord
+noMixfixT = foldTerm . noMixfixRecord
 
 -- |
 -- isMixfixTerm checks the 'TERM' f for Mixfix_*, 
