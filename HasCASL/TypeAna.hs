@@ -296,7 +296,7 @@ inferKinds b ty te@Env{classMap = cm} = let
                     _ -> error "inferKinds: no function kind"
                   ) $ keepMinKinds cm $ concat kks
                return (rr, keepMinKinds cm $ concat rs)
-           _ -> error "inferKinds: no function raw kind"
+           _ -> mkError "unexpected type argument" t2
     KindedType t kind  _ -> do 
         let Result ds _ = anaKindM kind cm
         k <- if null ds then return kind else Result ds Nothing
@@ -351,8 +351,8 @@ generalize (TypeScheme args ty p) =
         else error "generalize"
 
 -- | check for unbound (or too many) type variables
-unboundTypevars :: [TypeArg] -> Type -> [Diagnosis]
-unboundTypevars args ty = 
+unboundTypevars :: Bool -> [TypeArg] -> Type -> [Diagnosis]
+unboundTypevars b args ty = 
     let fvs = map (fst . snd) (leaves (> 0) ty)
         argIds = map getTypeVar args 
         restVars1 = fvs List.\\ argIds
@@ -361,14 +361,14 @@ unboundTypevars args ty =
        else [mkDiag Error ("unbound type variable(s)\n  "
                                   ++ showSepList ("," ++) showId 
                                   restVars1 " in") ty])
-       ++ if null restVars2 then [] else
+       ++ if b || null restVars2 then [] else
             [mkDiag Warning ("ignoring unused variable(s)\n  "
                                   ++ showSepList ("," ++) showId 
                                   restVars2 " in") ty]
 
 generalizable :: TypeScheme -> [Diagnosis]
 generalizable (TypeScheme args ty _) = 
-    (if null args then [] else unboundTypevars args ty)
+    (if null args then [] else unboundTypevars False args ty)
     ++ checkUniqueTypevars args
     
 -- | check uniqueness of type variables 
