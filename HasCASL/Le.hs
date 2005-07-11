@@ -76,7 +76,7 @@ data TypeInfo = TypeInfo { typeKind :: RawKind
                          } deriving (Show, Eq)
 
 starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo star [] [] NoTypeDefn
+starTypeInfo = TypeInfo star [star] [] NoTypeDefn
 
 data Sentence = Formula Term
               | DatatypeSen [DataEntry]
