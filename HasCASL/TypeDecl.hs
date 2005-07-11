@@ -318,19 +318,20 @@ anaPseudoType mk (TypeScheme tArgs ty p) =
             Nothing -> Nothing
             Just j -> let Result cs (Just rk) = anaKindM j cm
                       in Just $ if null cs then j else rk 
-       mapM_ anaddTypeVarDecl tArgs
+       nAs <- mapM anaddTypeVarDecl tArgs
+       let ntArgs = catMaybes nAs
        mp <- anaType (Nothing, ty)
        case mp of
            Nothing -> return (star, Nothing)
            Just ((_, sks), newTy) -> case sks of 
                [sk] -> do  
-                   let newK = typeArgsListToKind tArgs sk
+                   let newK = typeArgsListToKind ntArgs sk
                    irk <- anaKind newK
                    case k of 
                      Nothing -> return () 
                      Just j -> do grk <- anaKind j 
                                   addDiags $ checkKinds ty grk irk
-                   return (newK, Just $ TypeScheme tArgs newTy p)
+                   return (newK, Just $ TypeScheme ntArgs newTy p)
                _ -> return (star, Nothing)
 
 -- | add a type pattern 
