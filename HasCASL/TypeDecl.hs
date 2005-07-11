@@ -145,14 +145,16 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
        addDiags ds
        case m of 
            Nothing -> return Nothing
-           Just (i, as) -> do 
-               tm <- gets typeMap
-               newAs <- mapM anaddTypeVarDecl as 
+           Just (i, tArgs) -> do 
+               tvs <- gets localTypeVars
+               newAs <- mapM anaddTypeVarDecl tArgs
                mt <- anaStarType t
                let nAs = catMaybes newAs
                    newPat = TypePattern i nAs []
                case mt of 
-                   Nothing -> return Nothing
+                   Nothing -> do
+                       putLocalTypeVars tvs
+                       return Nothing
                    Just ty -> do
                        newPty <- generalizeS $ TypeScheme nAs ty []
                        let fullKind = typeArgsListToKind nAs star
@@ -160,12 +162,16 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                        let Result es mvds = anaVars v $ monoType ty
                            altDecl = Just $ AliasType newPat (Just fullKind)
                                      newPty ps
-                           altAct = addTypeId True (AliasTypeDefn newPty) inst 
-                                    rk fullKind i >> return altDecl
+                           altAct = do 
+                               putLocalTypeVars tvs
+                               addTypeId True (AliasTypeDefn newPty) inst 
+                                    rk fullKind i 
+                               return altDecl
                        addDiags es
                        if cyclicType i ty then do 
                            addDiags [mkDiag Error 
                                      "illegal recursive subtype definition" ty]
+                           putLocalTypeVars tvs
                            return Nothing
                            else case mvds of 
                            Nothing -> altAct
@@ -174,7 +180,6 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                                vs <- gets localVars
                                mapM_ (addLocalVar True) vds
                                mf <- anaFormula ga f
-                               putTypeMap tm
                                putLocalVars vs
                                case mf of 
                                    Nothing -> altAct
@@ -183,6 +188,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                                                       $ item newF)
                                            inst rk fullKind i
                                        addSuperType ty i
+                                       putLocalTypeVars tvs
                                        return $ Just $ SubtypeDefn newPat v ty 
                                               newF ps
 
@@ -192,18 +198,18 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
        case m of 
               Nothing -> return Nothing
               Just (i, tArgs) -> do
-                  tm <- gets typeMap -- save global variables  
+                  tvs <- gets localTypeVars -- save variables  
                   newAs <- mapM anaddTypeVarDecl tArgs
                   (ik, mt) <- anaPseudoType mk sc
                   let nAs = catMaybes newAs
                   case mt of 
-                          Nothing -> do putTypeMap tm -- forget local variables
+                          Nothing -> do putLocalTypeVars tvs 
                                         return Nothing
                           Just (TypeScheme args ty qs) -> 
                               if cyclicType i ty then 
                                 do addDiags [mkDiag Error 
                                        "illegal recursive type synonym" ty]
-                                   putTypeMap tm
+                                   putLocalTypeVars tvs
                                    return Nothing
                                 else do 
                                 let allArgs = nAs++args
@@ -211,7 +217,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                     allSc = TypeScheme allArgs ty qs
                                 rk <- anaKind fullKind
                                 newPty <- generalizeS allSc
-                                putTypeMap tm
+                                putLocalTypeVars tvs
                                 b <- addTypeId True (AliasTypeDefn newPty) 
                                         inst rk fullKind i 
                                 return $ if b then Just $ AliasType 
@@ -241,9 +247,9 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
        case m of 
               Nothing -> return Nothing
               Just (i, tArgs) -> do 
-                  tm <- gets typeMap
+                  tvs <- gets localTypeVars
                   newAs <- mapM anaddTypeVarDecl tArgs
-                  putTypeMap tm
+                  putLocalTypeVars tvs
                   let nAs = catMaybes newAs
                       fullKind = typeArgsListToKind nAs k
                   addDiags $ checkUniqueTypevars nAs
@@ -282,12 +288,13 @@ anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
     do let dt = dataPatToType d
            fullKind = typeArgsListToKind nAs k
-       tm <- gets typeMap
+       tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) nAs
        mNewAlts <- fromResult $ anaAlts tys dt (map item alts) 
-       putTypeMap tm
        case mNewAlts of 
-         Nothing -> return Nothing
+         Nothing -> do 
+             putLocalTypeVars tvs
+             return Nothing
          Just newAlts -> do 
            mapM_ (addDataSubtype dt) $ foldr 
              ( \ (Construct mc ts _ _) l -> case mc of
@@ -307,6 +314,7 @@ anaDatatype genKind inst tys
            rk <- anaKind fullKind
            addTypeId True (DatatypeDefn de) inst rk fullKind i
            appendSentences $ makeDataSelEqs de k
+           putLocalTypeVars tvs
            return $ Just d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
 
@@ -340,11 +348,11 @@ addTypePattern :: TypeDefn -> Instance -> (RawKind, [Kind])
 
 addTypePattern defn inst (_, ks) (i, tArgs) = 
     nonUniqueKind ks i $ \ kind -> do
-       tm <- gets typeMap
+       tvs <- gets localTypeVars
        newAs <- mapM anaddTypeVarDecl tArgs
        let nAs = catMaybes newAs
            fullKind = typeArgsListToKind nAs kind
-       putTypeMap tm
+       putLocalTypeVars tvs
        addDiags $ checkUniqueTypevars nAs
        frk <- anaKind fullKind
        b <- addTypeId True defn inst frk fullKind i

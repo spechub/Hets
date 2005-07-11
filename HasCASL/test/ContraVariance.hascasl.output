@@ -14,9 +14,6 @@ __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 p : +Type -> Type
     := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
-%% Type Variables --------------------------------------------------------
-a  : +Type %(var_2)%
-b  : -Type %(var_3)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -34,7 +31,6 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 2.14, rebound type variable 'a'
 *** Hint 2.32, wrong covariance of 'a'
 *** Hint 2.32, no kind found for 'a_v2'
 *** Error 2.27-2.32, no kind found for 'Pred a'

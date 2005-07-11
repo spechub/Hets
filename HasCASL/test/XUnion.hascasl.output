@@ -46,9 +46,9 @@ __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 %% Type Variables --------------------------------------------------------
-E  : Type %(var_6)%
-N  : Type %(var_5)%
-S  : Type %(var_4)%
+E  : Type %(var_3)%
+N  : Type %(var_2)%
+S  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%

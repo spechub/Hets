@@ -176,11 +176,11 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
        : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
           (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
        ((var x : S, var y : T),
-        ((op __*__[T; S]
-          : forall T : Type; S : Type .
-              Set S_v-2@(S_v-2 ->? Unit) *
-              Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
-                                                                 T_v-1 ->? Unit)) :
+        ((op __*__[S; T]
+          : forall S : Type; T : Type .
+              Set S_v-1@(S_v-1 ->? Unit) *
+              Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                                 T_v-2 ->? Unit)) :
              Set S@(S ->? Unit) * Set T@(T ->? Unit) -> Set (S * T)@(S *
                                                                      T ->? Unit))
           (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
@@ -232,16 +232,16 @@ __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 %% Type Variables --------------------------------------------------------
-S  : Type %(var_4)%
+S  : Type %(var_1)%
 T  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 False : Bool %(op)%
 True : Bool %(op)%
 __*__
-  : forall T : Type; S : Type .
-      Set S_v-2@(S_v-2 ->? Unit) *
-      Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
-                                                         T_v-1 ->? Unit)
+  : forall S : Type; T : Type .
+      Set S_v-1@(S_v-1 ->? Unit) *
+      Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                         T_v-2 ->? Unit)
     %(op)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
@@ -468,11 +468,11 @@ y : T
      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
         (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
      ((var x : S, var y : T),
-      ((op __*__[T; S]
-        : forall T : Type; S : Type .
-            Set S_v-2@(S_v-2 ->? Unit) *
-            Set T_v-1@(T_v-1 ->? Unit) -> Set (S_v-2 * T_v-1)@(S_v-2 *
-                                                               T_v-1 ->? Unit)) :
+      ((op __*__[S; T]
+        : forall S : Type; T : Type .
+            Set S_v-1@(S_v-1 ->? Unit) *
+            Set T_v-2@(T_v-2 ->? Unit) -> Set (S_v-1 * T_v-2)@(S_v-1 *
+                                                               T_v-2 ->? Unit)) :
            Set S@(S ->? Unit) * Set T@(T ->? Unit) -> Set (S * T)@(S *
                                                                    T ->? Unit))
         (var s : Set S@(S ->? Unit), var t : Set T@(T ->? Unit)) :
