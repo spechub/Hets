@@ -90,10 +90,9 @@ anaAlts tys dt alts te =
 
 anaAlt :: [DataPat] -> DataPat -> TypeEnv -> Alternative 
        -> Result AltDefn 
-anaAlt _ (_, args, _) te (Subtype ts _) = 
+anaAlt _ _ te (Subtype ts _) = 
     do l <- mapM ( \ t -> anaStarTypeM t te) ts
-       return $ Construct Nothing (map ( \ (_, t) -> mkGenVars args t) l) 
-              Partial []
+       return $ Construct Nothing (map snd l) Partial []
 anaAlt tys dt te (Constructor i cs p _) = 
     do newCs <- mapM (anaComps tys dt te) cs
        let sels = map snd newCs
@@ -124,9 +123,8 @@ getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in
 
 anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
 anaCompType tys (_, tArgs, _) t te = do
-    (_, ct1) <- anaStarTypeM t te
-    let ct = mkGenVars tArgs ct1
-        ds = unboundTypevars True tArgs ct1 
+    (_, ct) <- anaStarTypeM t te
+    let ds = unboundTypevars True tArgs ct 
     if null ds then return () else Result ds Nothing
     mapM (checkMonomorphRecursion ct te) tys
     return ct

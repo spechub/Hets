@@ -309,7 +309,9 @@ anaDatatype genKind inst tys
                    sc <- generalizeS ty 
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
-                           Just s -> addOpId s (getSelType dt pa ts) []
+                           Just s -> do 
+                               selSc <- generalizeS $ getSelType dt pa ts
+                               addOpId s selSc []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return False) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind nAs newAlts

@@ -277,26 +277,6 @@ anaStarTypeM t = anaTypeM (Just star, t)
 cyclicType :: Id -> Type -> Bool
 cyclicType i ty = Set.member i $ idsOf (==0) ty
 
--- | mark bound variables in type 
-mkGenVars :: [TypeArg] -> Type -> Type
-mkGenVars fvs newTy = 
-     let ts = zipWith ( \ (TypeArg i vk _ _) n ->
-                                   TypeName i (toKind vk) n) fvs [-1, -2..]
-         m = Map.fromList $ zip (map getTypeVar fvs) ts
-     in  repl m newTy
-
-generalize :: TypeScheme -> TypeScheme
-generalize (TypeScheme args ty p) =
-    let fvs = leaves (> 0) ty
-        svs = sortBy comp fvs
-        comp a b = compare (fst a) $ fst b
-        ts = zipWith ( \ (v, (i, rk)) n -> 
-                       (v, TypeName i rk n)) svs [-1, -2..]
-        newTy = subst (Map.fromList ts) ty
-     in if map getTypeVar args == map (fst . snd) svs 
-        then TypeScheme args newTy p
-        else error "generalize"
-
 -- | check for unbound (or too many) type variables
 unboundTypevars :: Bool -> [TypeArg] -> Type -> [Diagnosis]
 unboundTypevars b args ty = 
