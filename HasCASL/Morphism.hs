@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -14,8 +14,8 @@ module HasCASL.Morphism where
 
 import HasCASL.Le
 import HasCASL.As
+import HasCASL.TypeAna
 import HasCASL.AsToLe
-import HasCASL.Unify
 import HasCASL.MapTerm
 import HasCASL.AsUtils
 import HasCASL.Merge
@@ -30,12 +30,15 @@ import Data.List as List
 
 type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
 
+-- | keep types and class disjoint and use a single identifier map for both
 data Morphism = Morphism { msource :: Env
                          , mtarget :: Env
-                         , classIdMap :: IdMap  -- ignore
                          , typeIdMap :: IdMap 
                          , funMap :: FunMap } 
                          deriving (Eq, Show)
+
+mkMorphism :: Env -> Env -> Morphism
+mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty
 
 instance PrettyPrint Morphism where
   printText0 ga m = 
@@ -97,9 +100,6 @@ mapFunSym im fm (i, sc) =
                    (i, msc) fm in
         (j , sc2)
 
-mkMorphism :: Env -> Env -> Morphism
-mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty Map.empty
-
 embedMorphism :: Env -> Env -> Morphism
 embedMorphism = mkMorphism
 
@@ -118,8 +118,7 @@ compMor m1 m2 =
       let tm2 = typeIdMap m2 
           fm2 = funMap m2 in return
       (mkMorphism (msource m1) (mtarget m2))
-      { classIdMap = compIdMap (classIdMap m1) $ classIdMap m2
-      , typeIdMap = compIdMap (typeIdMap m1) tm2
+      { typeIdMap = compIdMap (typeIdMap m1) tm2
       , funMap = Map.foldWithKey ( \ p1 p2 -> 
                        Map.insert p1
                        $ mapFunSym tm2 fm2 p2) fm2 $ funMap m1
