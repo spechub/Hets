@@ -179,7 +179,7 @@ lesserType te t1 t2 = case (t1, t2) of
     (TypeName i1 _ _, TypeName i2 _ _) | i1 == i2 -> True
     (TypeName i _ _, _) -> case Map.lookup i $ localTypeVars te of 
         Nothing -> case Map.lookup i $ typeMap te of
-            Nothing -> error "lesserType: lookup"
+            Nothing -> False
             Just ti -> any ( \ t -> lesserType te t t2) $ superTypes ti
         Just (TypeVarDefn _ vk _) -> case vk of 
             Downset t -> lesserType te t t2
