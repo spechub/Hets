@@ -19,22 +19,6 @@ import Common.Id
 import Common.PrettyPrint
 import qualified Common.Lib.Set as Set
 
--- | recursively substitute type names within a type 
-rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
-rename m t = case t of
-           TypeName i k n -> m i k n
-           TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
-           ExpandedType t1 t2 -> ExpandedType (rename m t1) (rename m t2)
-           TypeToken _ -> t
-           BracketType b l ps ->
-               BracketType b (map (rename m) l) ps
-           KindedType tk k ps -> 
-               KindedType (rename m tk) k ps
-           MixfixType l -> MixfixType $ map (rename m) l
-           LazyType tl ps -> LazyType (rename m tl) ps
-           ProductType l ps -> ProductType (map (rename m) l) ps
-           FunType t1 a t2 ps -> FunType (rename m t1) a (rename m t2) ps
-
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
 getAppl :: Term -> Maybe (Id, TypeScheme, [Term])
@@ -129,6 +113,7 @@ typeArgsListToKind tArgs k =
        else typeArgsListToKind (init tArgs) 
             (FunKind (( \ (TypeArg _ xk _ _) -> toKind xk) $ last tArgs) k []) 
 
+-- | get the kind of an analyzed type variable
 toKind :: VarKind -> Kind
 toKind vk = case vk of
     VarKind k -> k
@@ -143,7 +128,7 @@ expected a b =
     "\n  expected: " ++ showPretty a 
     "\n     found: " ++ showPretty b "\n" 
 
--- ---------------------------------------------------------------------
+-- * compute better positions
 
 posOfVars :: Vars -> [Pos]
 posOfVars vr = 
