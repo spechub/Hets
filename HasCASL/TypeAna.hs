@@ -196,34 +196,38 @@ repl m = rename ( \ i k n ->
                       Just s -> s 
                       Nothing -> TypeName i k n)
 
+-- | expand aliases in a type scheme
 expand :: TypeMap -> TypeScheme -> TypeScheme
 expand = mapTypeOfScheme . expandAlias  
 
+-- | expand aliases in a type 
 expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
-    let (ps, as, ta, b) = expandAliases tm t in
-       if b && length ps == length as then
+    let (ps, ts, ta, b) = expandAliases tm t in
+       if b && length ps == length ts then
           ExpandedType t $ repl (Map.fromList (zip 
-                             (map getTypeVar ps) $ reverse as)) ta
+                             (map getTypeVar ps) $ reverse ts)) ta
           else ta
 
+{- | Collect formal and actual parameters of the first argument of a
+type application. -}
 expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
 expandAliases tm t = case t of 
     TypeName i _ _ -> case Map.lookup i tm of 
-            Just (TypeInfo _ _ _ 
-                  (AliasTypeDefn (TypeScheme l ty _))) ->
+            Just ti -> case typeDefn ti of
+                  AliasTypeDefn (TypeScheme l ty _) ->
                      (l, [], ty, True)
-            Just (TypeInfo _ _ _
-                  (Supertype _ (TypeScheme l ty _) _)) ->
+                  Supertype _ (TypeScheme l ty _) _ ->
                      case ty of 
                      TypeName _ _ _ -> wrap t
                      _ -> (l, [], ty, True)
+                  _ -> wrap t
             _ -> wrap t
     TypeAppl t1 t2 -> 
-        let (ps, as, ta, b) = expandAliases tm t1 
+        let (ps, ts, ta, b) = expandAliases tm t1 
             t3 = expandAlias tm t2
         in if b then 
-          (ps, t3:as, ta, b)  -- reverse later on
+          (ps, t3 : ts, ta, b)  -- reverse later on
           else wrap $ TypeAppl t1 t3
     FunType t1 a t2 ps -> 
         wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
@@ -234,13 +238,24 @@ expandAliases tm t = case t of
     _ -> wrap t
     where wrap ty = ([], [], ty, False)
 
+-- | find unexpanded alias identifier
+hasAlias :: TypeMap -> Type -> [Diagnosis]
+hasAlias tm t = 
+     map ( \ i -> mkDiag Error ("unexpanded alias '" ++ showId i "' in") t)
+     $ filter ( \ i -> case Map.lookup i tm of
+                         Just ti -> case typeDefn ti of
+                              AliasTypeDefn _ -> True
+                              _ -> False
+                         _ -> False) $ Set.toList $ idsOf (const True) t
+
 -- * resolve and analyse types
 
 -- | resolve type and infer minimal kinds
 anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
 anaTypeM (mk, parsedType) te = 
     do resolvedType <- mkTypeConstrAppl parsedType
-       let expandedType = expandAlias (typeMap te) resolvedType
+       let tm = typeMap te
+           expandedType = expandAlias tm resolvedType
            cm = classMap te
        ((rk, ks), checkedType) <- inferKinds (Just True) expandedType te
        l <- case mk of 
@@ -248,7 +263,8 @@ anaTypeM (mk, parsedType) te =
                           (if null ks then rk else head ks)
                           ks ks  
                Just k -> subKinds Error cm parsedType k ks $ 
-                         filter ( \ j -> lesserKind (classMap te) j k) ks
+                         filter ( \ j -> lesserKind cm j k) ks
+       Result (hasAlias tm checkedType) $ Just ()
        return ((rk, l), checkedType)
 
 -- | resolve the type and check if it is of the universe class
