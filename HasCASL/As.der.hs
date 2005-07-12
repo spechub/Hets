@@ -46,7 +46,7 @@ data BasicItem = SigItems SigItems
                -- pos "internal" "{", ";"s, "}"
                  deriving (Show, Eq)
 
--- | signature items types and functions
+-- | signature items are types or functions
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
               | OpItems OpBrand [Annoted OpItem] [Pos]
