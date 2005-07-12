@@ -33,7 +33,7 @@ import HasCASL.VarDecl
 import HasCASL.TypeCheck
 
 idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
-idsToTypePatterns mis = map ( \ (i, as) -> TypePattern i as [] ) 
+idsToTypePatterns mis = map ( \ (i, tArgs) -> TypePattern i tArgs [] ) 
                          $ catMaybes mis
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
@@ -103,8 +103,9 @@ anaTypeItem _ _ inst _ (TypeDecl pats kind ps) =
        addDiags $ cs ++ ds
        let (rk, ak) = if null cs then (rrk, kind) else (star, star)
        mis <- mapM (addTypePattern NoTypeDefn inst (rk, [ak])) is
-       return $ if null mis then Nothing else 
-              Just $ TypeDecl (idsToTypePatterns mis) ak ps
+       let newPats = idsToTypePatterns mis
+       return $ if null newPats then Nothing else 
+              Just $ TypeDecl newPats ak ps
 
 anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
@@ -115,7 +116,7 @@ anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) =
            Nothing -> do 
                mis <- mapM (addTypePattern NoTypeDefn inst (star, [star])) is
                let newPats = idsToTypePatterns mis
-               case t of 
+               if null newPats then return Nothing else case t of 
                    TypeToken tt -> do 
                        let tid = simpleIdToId tt
                            newT = TypeName tid star 0
@@ -129,7 +130,8 @@ anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) =
               mis <- mapM (addTypePattern NoTypeDefn inst ak) is
               let newPats = idsToTypePatterns mis
               mapM_ (addSuperType newT) $ map fst is   
-              return $ Just $ SubtypeDecl newPats newT ps
+              return $ if null newPats then Nothing else 
+                     Just $ SubtypeDecl newPats newT ps
 
 anaTypeItem _ _ inst _ (IsoDecl pats ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
