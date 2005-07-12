@@ -252,7 +252,7 @@ typeToken = fmap TypeToken (pToken (scanHCWords <|> placeS <|>
 
 -- | 'TypeToken's within 'BracketType's may recusively be
 -- 'idToken's. Parenthesis may group a mixfix type 
--- or may be interpreted as 'Intersection' later in a GEN-VAR-DECL.
+-- or may be interpreted as a kind later on in a GEN-VAR-DECL.
 primTypeOrId :: AParser st Type
 primTypeOrId = fmap TypeToken idToken
                <|> mkBrackets typeOrId (BracketType Squares)
