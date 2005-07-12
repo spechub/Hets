@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -19,6 +19,7 @@ import Common.Result
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.AsUtils
+import HasCASL.TypeAna
 import HasCASL.PrintLe()
 import HasCASL.Unify
 import HasCASL.Builtin

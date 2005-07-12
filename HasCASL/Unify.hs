@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005 
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -13,7 +13,7 @@ substitution and unification of types
 module HasCASL.Unify where
 
 import HasCASL.As
-import HasCASL.AsUtils
+import HasCASL.PrintAs()
 import HasCASL.Le
 
 import qualified Common.Lib.Map as Map
@@ -216,46 +216,4 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ _ (_, Nothing) = return eps
     match tm rel (b1, Just a1) (b2, Just a2) = match tm rel (b1, a1) (b2, a2)
 
-repl :: Map.Map Id Type -> Type -> Type
-repl m = rename ( \ i k n -> 
-                 case Map.lookup i m of
-                      Just s -> s 
-                      Nothing -> TypeName i k n)
 
-expand :: TypeMap -> TypeScheme -> TypeScheme
-expand = mapTypeOfScheme . expandAlias  
-
-expandAlias :: TypeMap -> Type -> Type
-expandAlias tm t = 
-    let (ps, as, ta, b) = expandAliases tm t in
-       if b && length ps == length as then
-          ExpandedType t $ repl (Map.fromList (zip 
-                             (map getTypeVar ps) $ reverse as)) ta
-          else ta
-
-expandAliases :: TypeMap -> Type -> ([TypeArg], [Type], Type, Bool)
-expandAliases tm t = case t of 
-    TypeName i _ _ -> case Map.lookup i tm of 
-            Just (TypeInfo _ _ _ 
-                  (AliasTypeDefn (TypeScheme l ty _))) ->
-                     (l, [], ty, True)
-            Just (TypeInfo _ _ _
-                  (Supertype _ (TypeScheme l ty _) _)) ->
-                     case ty of 
-                     TypeName _ _ _ -> wrap t
-                     _ -> (l, [], ty, True)
-            _ -> wrap t
-    TypeAppl t1 t2 -> 
-        let (ps, as, ta, b) = expandAliases tm t1 
-            t3 = expandAlias tm t2
-        in if b then 
-          (ps, t3:as, ta, b)  -- reverse later on
-          else wrap $ TypeAppl t1 t3
-    FunType t1 a t2 ps -> 
-        wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
-    ProductType ts ps -> wrap $ ProductType (map (expandAlias tm) ts) ps
-    LazyType ty ps -> wrap $ LazyType (expandAlias tm ty) ps
-    ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAlias tm t2
-    KindedType ty k ps -> wrap $ KindedType (expandAlias tm ty) k ps
-    _ -> wrap t
-    where wrap ty = ([], [], ty, False)
