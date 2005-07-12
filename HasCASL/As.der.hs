@@ -20,7 +20,7 @@ import Common.Keywords
 import Common.AS_Annotation 
 import HasCASL.HToken
 
--- * abstract syntax entities 
+-- * abstract syntax entities with small utility functions
 {-! global: UpPos !-}
 
 -- | annotated basic items
@@ -345,6 +345,11 @@ getBrackets b = case b of
                        Parens -> ("(", ")")
                        Squares -> ("[", "]")
                        Braces -> ("{", "}")
+
+-- | the brackets as tokens with positions
+mkBracketToken :: BracketKind -> [Pos] -> [Token]
+mkBracketToken k ps = 
+       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
 
 {- | The possible terms and patterns. Formulas are also kept as terms. Local variables and constants are kept separatetly. The variant 'ResolvedMixTerm' is an intermediate representation for type checking only. -}
 data Term = QualVar VarDecl

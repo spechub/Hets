@@ -1,5 +1,7 @@
 type p : +Type -> Type := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
      %% should be correct
+type m : +Type -> Type := \ b : +Type . b_v-1
+     %% should be wrong
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
@@ -12,6 +14,7 @@ __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
+m : +Type -> Type := \ b : +Type . b_v-1
 p : +Type -> Type
     := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
 %% Assumptions -----------------------------------------------------------
@@ -32,7 +35,6 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 2.32, wrong covariance of 'a'
-*** Hint 2.32, no kind found for 'a_v2'
 *** Error 2.27-2.32, no kind found for 'Pred a'
 *** Hint 3.27, wrong contravariance of 'b'
 *** Error 3.27, no kind found for 'b'

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -15,7 +15,9 @@ module HasCASL.TypeAna where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.ClassAna
+import HasCASL.TypeMixAna
 import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -24,6 +26,7 @@ import Common.Result
 import Common.PrettyPrint
 import Data.List as List
 import Data.Maybe
+import Control.Exception(assert)
 
 import Debug.Trace
 
@@ -34,30 +37,31 @@ import Debug.Trace
 type TypeEnv = Env
 
 -- | extract kinds of type id
-getIdKind :: TypeEnv -> Id -> Result (RawKind, [Kind])
+getIdKind :: TypeEnv -> Id -> Result ((RawKind, [Kind]), Type)
 getIdKind te i = 
     case Map.lookup i $ localTypeVars te of
        Nothing -> case Map.lookup i $ typeMap te of 
            Nothing -> mkError "unknown type" i
-           Just (TypeInfo rk l _ _) -> return (rk, l)
-       Just (TypeVarDefn rk vk _) -> return (rk, [toKind vk])
+           Just (TypeInfo rk l _ _) -> return ((rk, l), TypeName i rk 0)
+       Just (TypeVarDefn rk vk c) -> assert (c > 0) $ 
+           return ((rk, [toKind vk]), TypeName i rk c)
 
 -- | extract raw kind of type id
 getRawKind :: TypeEnv -> Id -> Result RawKind
-getRawKind te = fmap fst . getIdKind te
+getRawKind te = fmap (fst . fst) . getIdKind te
 
 -- | extract kinds of co- or invariant type id
-getCoVarKind :: Maybe Bool -> TypeEnv -> Id -> Result (RawKind, [Kind])
+getCoVarKind :: Maybe Bool -> TypeEnv -> Id -> Result ((RawKind, [Kind]), Type)
 getCoVarKind b te i = do 
-    (rk, l) <- getIdKind te i
+    ((rk, l), ty) <- getIdKind te i
     case (rk, b) of 
            (ExtKind ek ContraVar _, Just True) -> Result
-               [mkDiag Hint "wrong contravariance of" i] $ Just (ek, [])
+               [mkDiag Hint "wrong contravariance of" i] $ Just ((ek, []), ty)
            (ExtKind ek CoVar _, Just False) -> Result
-               [mkDiag Hint "wrong covariance of" i] $ Just (ek, [])
-           _ -> return (invertKindVariance False rk, 
+               [mkDiag Hint "wrong covariance of" i] $ Just ((ek, []), ty)
+           _ -> return ((invertKindVariance False rk, 
                         map (invertKindVariance False) $ 
-                            keepMinKinds (classMap te) l)
+                            keepMinKinds (classMap te) l), ty)
 
 -- | create type from id 
 getIdType :: Id -> TypeEnv -> Result Type
@@ -67,121 +71,17 @@ getIdType i te = do
                  Just (TypeVarDefn _ _ c) -> c
                  _ -> 0
 
--- | construct application differently for left and right arguments 
-data ApplMode = TopLevel | OnlyArg 
-
--- | manual mixfix resolution of parsed types
-mkTypeConstrAppls :: ApplMode -> Type -> TypeEnv -> Result Type
-mkTypeConstrAppls m ty te = case ty of
-    TypeName _ _ _ -> return ty
-    TypeAppl t1 t2 -> do 
-       t3 <- mkTypeConstrAppls m t1 te
-       t4 <- mkTypeConstrAppls OnlyArg t2 te
-       return $ TypeAppl t3 t4
-    TypeToken tt -> getIdType (simpleIdToId tt) te
-    BracketType b ts ps -> do
-       args <- mapM (\ trm -> mkTypeConstrAppls m trm te) ts
-       case args of
-                  [] -> case b of
-                        Parens -> return unitType
-                        _ -> let i = Id (mkBracketToken b ps) [] []
-                             in getIdType i te
-                  [x] -> case b of
-                         Parens -> return x
-                         _ -> do let [o,c] = mkBracketToken b ps 
-                                     i = Id [o, Token place $ firstPos args ps
-                                            , c] [] []
-                                 t <- getIdType i te
-                                 if isPlaceType (head ts) then return t
-                                    else return $ TypeAppl t x
-                  _ -> mkError "illegal type" ty
-    MixfixType [] -> error "mkTypeConstrAppl (MixfixType [])"
-    MixfixType (f:a) -> case (f, a) of 
-      (TypeToken t, [BracketType Squares as@(_:_) ps]) -> do 
-         mis <- mapM mkTypeCompId as 
-         getIdType (Id [t] mis ps) te
-      _ -> do newF <- mkTypeConstrAppls TopLevel f te 
-              nA <- mapM ( \ t -> mkTypeConstrAppls OnlyArg t te) a
-              return $ foldl1 TypeAppl $ newF : nA
-    KindedType t k p -> do 
-       newT <- mkTypeConstrAppls m t te
-       return $ KindedType newT k p
-    LazyType t p -> do
-       newT <- mkTypeConstrAppls TopLevel t te
-       return $ LazyType newT p 
-    ProductType ts ps -> let n = length ts in 
-       if all isPlaceType ts && n > 1 then 
-       getIdType (productId n) te else do
-       mTs <- mapM (\ t -> mkTypeConstrAppls TopLevel t te) ts
-       return $ mkProductType mTs ps
-    FunType t1 a t2 ps -> if isPlaceType t1 && isPlaceType t2 then
-       getIdType (arrowId a) te else do
-       newT1 <- mkTypeConstrAppls TopLevel t1 te
-       newT2 <- mkTypeConstrAppls TopLevel t2 te
-       return $ FunType newT1 a newT2 ps
-    ExpandedType _ t2 -> mkTypeConstrAppls m t2 te
-
-isPlaceType :: Type -> Bool
-isPlaceType ty = case ty of 
-    TypeToken t -> isPlace t
-    _ -> False
-
-mkTypeCompId :: Type -> Result Id
-mkTypeCompId ty = case ty of 
-    TypeToken t -> if isPlace t then mkError "unexpected place" t
-                   else return $ Id [t] [] []
-    MixfixType [] -> error "mkTypeCompId: MixfixType []"
-    MixfixType (hd:tps) ->
-         if null tps then mkTypeCompId hd
-         else do 
-         let (toks, comps) = break ( \ p -> 
-                        case p of BracketType Squares (_:_) _ -> True
-                                  _ -> False) tps
-         mts <- mapM mkTypeCompToks (hd:toks)
-         (mis, ps) <- if null comps then return ([], [])
-                     else mkTypeCompIds $ head comps
-         pls <- if null comps then return [] 
-                else mapM mkTypeIdPlace $ tail comps
-         return $ Id (concat mts ++ pls) mis ps 
-    _ -> do ts <- mkTypeCompToks ty
-            return $ Id ts [] []
-
-mkTypeCompIds :: Type -> Result ([Id], [Pos])
-mkTypeCompIds ty = case ty of
-    BracketType Squares tps@(_:_) ps -> do
-        mis <- mapM mkTypeCompId tps  
-        return (mis, ps)
-    _ -> mkError "no compound list for type id" ty
-
-mkTypeCompToks :: Type -> Result [Token]
-mkTypeCompToks ty = case ty of 
-    TypeToken t -> return [t]
-    BracketType bk [tp] ps -> case bk of 
-        Parens -> mkError "no type id" ty
-        _ -> do let [o,c] = mkBracketToken bk ps
-                mts <- mkTypeCompToks tp
-                return (o : mts ++ [c])
-    MixfixType tps -> do
-        mts <- mapM mkTypeCompToks tps
-        return $ concat mts
-    _ -> mkError "no type tokens" ty
-
-mkTypeIdPlace :: Type -> Result Token
-mkTypeIdPlace ty =  case ty of 
-    TypeToken t -> if isPlace t then return t
-                   else mkError "no place" t
-    _ -> mkError "no place" ty
 
 -- ---------------------------------------------------------------------------
 -- compare types
 -- ---------------------------------------------------------------------------
 
+-- | a list of argument kinds and a result kind (swap tuple)
 getKindAppl :: ClassMap -> Kind -> [a] -> [(Kind, [Kind])]
 getKindAppl cm k args = if null args then [(k, [])] else
     case k of 
     FunKind k1 k2 _ -> let ks = getKindAppl cm k2 (tail args)
                        in map ( \ (rk, kargs) -> (rk, k1 : kargs)) ks
---    ExtKind ek _ _ -> getKindAppl ek args
     ClassKind ci -> case Map.lookup ci cm of 
         Just (ClassInfo _ ks) -> case ks of 
             [] -> error $ "getKindAppl1 " ++ show k
@@ -189,8 +89,8 @@ getKindAppl cm k args = if null args then [(k, [])] else
         _ -> error $ "getKindAppl2 " ++ show k
     _ -> error $ "getKindAppl3 " ++ show k
 
-getTypeAppl :: TypeEnv -> Type -> (Type, [Type])
-getTypeAppl te ty = let (t, args) = getTyAppl ty in
+getTypeAppl :: Type -> (Type, [Type])
+getTypeAppl ty = let (t, args) = getTyAppl ty in
    (t, reverse args) where
     getTyAppl typ = case typ of
         TypeName _ _ _ -> (typ, [])
@@ -198,37 +98,25 @@ getTypeAppl te ty = let (t, args) = getTyAppl ty in
         ExpandedType _ t -> getTyAppl t
         LazyType t _ -> getTyAppl t
         KindedType t _ _ -> getTyAppl t
-        ProductType ts _ -> 
-            let n = length ts
-                pn = productId n
-                Result _ mk = getRawKind te pn
-            in case mk of
-            Just rk -> (TypeName pn rk 0, ts)
-            _ -> error "getTyAppl productId"
-        FunType t1 a t2 _ -> 
-            let i = arrowId a
-                Result _ mk = getRawKind te i in
-            case mk of
-            Just rk -> (TypeName i rk 0, [t2, t1])
-            _ -> error "getTyAppl arrowId"
+        ProductType ts _ ->  let n = length ts in 
+           (TypeName (productId n) (prodKind n) 0, ts)
+        FunType t1 a t2 _ -> (TypeName (arrowId a) funKind 0, [t2, t1])
         _ -> error "getTypeAppl: unresolved type"
 
 -- | construct application left-associative
 mkTypeAppl :: Type -> [Type] -> Type
 mkTypeAppl = foldl ( \ c a -> TypeAppl c a)
 
-convertType :: TypeEnv -> Type -> Type
-convertType te ty = let (c, args) = getTypeAppl te ty in
-    mkTypeAppl c args    
+convertType :: Type -> Type
+convertType ty = let (c, args) = getTypeAppl ty in mkTypeAppl c args    
 
-rawKindOfType :: TypeEnv -> Type -> RawKind 
-rawKindOfType te ty = case ty of
+rawKindOfType :: Type -> RawKind 
+rawKindOfType ty = case ty of
     TypeName _ k _ -> k
-    TypeAppl t1 _ -> case rawKindOfType te t1 of 
+    TypeAppl t1 _ -> case rawKindOfType t1 of 
         FunKind _ rk _ -> rk 
         _ -> error "rawKindOfType"
-    _ -> rawKindOfType te $ convertType te ty
-
+    _ -> rawKindOfType $ convertType ty
     
 lesserType :: TypeEnv -> Type -> Type -> Bool    
 lesserType te t1 t2 = case (t1, t2) of
@@ -236,7 +124,7 @@ lesserType te t1 t2 = case (t1, t2) of
         let b1 = lesserType te c1 c2 
             b2 = lesserType te c2 c1
             b = b1 && b2
-        in (case (rawKindOfType te c1, rawKindOfType te c2) of
+        in (case (rawKindOfType c1, rawKindOfType c2) of
             (FunKind ak1 _ _, FunKind ak2 _ _) -> 
                 case (ak1, ak2) of 
                     (ExtKind _ v1 _, ExtKind _ v2 _) -> 
@@ -255,7 +143,7 @@ lesserType te t1 t2 = case (t1, t2) of
             Downset t -> lesserType te t t2
             _ -> False
     (TypeAppl _ _, TypeName _ _ _) -> False
-    _ -> lesserType te (convertType te t1) $ convertType te t2
+    _ -> lesserType te (convertType t1) $ convertType t2
     
 -- ---------------------------------------------------------------------------
 -- infer kind
@@ -272,55 +160,77 @@ subKinds dk cm ty sk ks res =
         $ posOfType ty] $ Just []
 
 -- | infer all minimal kinds
-inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result (RawKind, [Kind])
+inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
 inferKinds b ty te@Env{classMap = cm} = let
   resu = case ty of 
     TypeName i _ _ -> getCoVarKind b te i
     TypeAppl t1 t2 -> do 
-       (rk, ks) <- inferKinds b t1 te
+       ((rk, ks), t3) <- inferKinds b t1 te
        case rk of 
-           FunKind _ rr _ -> do 
-               kks <- mapM (getFunKinds cm) ks
-               rs <- mapM ( \ fk -> case fk of
-                    FunKind arg res _ -> do 
-                        (_, l) <- case arg of 
+           FunKind rarg rr _ -> do 
+               ((_, l), t4) <- case rarg of 
                             ExtKind _ ContraVar _ -> 
                                 inferKinds (fmap not b) t2 te
                             ExtKind _ CoVar _ -> 
                                 inferKinds b t2 te
                             _ -> inferKinds Nothing t2 te
+               kks <- mapM (getFunKinds cm) ks
+               rs <- mapM ( \ fk -> case fk of
+                    FunKind arg res _ -> do 
                         let ek = case arg of 
                                  ExtKind k _ _ -> k
                                  _ -> arg
                         subKinds Hint cm t2 ek l [res]
                     _ -> error "inferKinds: no function kind"
                   ) $ keepMinKinds cm $ concat kks
-               return (rr, keepMinKinds cm $ concat rs)
+               return ((rr, keepMinKinds cm $ concat rs), TypeAppl t3 t4)
            _ -> mkError "unexpected type argument" t2
-    KindedType t kind  _ -> do 
+    KindedType kt kind ps -> do 
         let Result ds _ = anaKindM kind cm
         k <- if null ds then return kind else Result ds Nothing
-        (rk, ks) <- inferKinds b t te
-        l <- subKinds Hint cm t k ks [k] 
-        return (rk, l)
-    _ -> inferKinds b (convertType te ty) te 
+        ((rk, ks), t) <- inferKinds b kt te
+        l <- subKinds Hint cm kt k ks [k] 
+        return ((rk, l), KindedType t k ps)
+    ProductType ts ps -> do 
+        l <- mapM ( \ t -> inferKinds b t te) ts
+        let res@(Result _ mk) = inferKinds b (convertType ty) te 
+        case mk of 
+            Just (kp, _) -> return (kp, ProductType (map snd l) ps)
+            Nothing -> res
+    LazyType t ps -> do
+        (kp, nt) <- inferKinds b t te
+        return (kp,  LazyType nt ps)
+    FunType t1 a t2 ps -> do 
+        (_, t3) <- inferKinds (fmap not b) t1 te
+        (_, t4) <- inferKinds b t2 te
+        let res@(Result _ mk) = inferKinds b (convertType ty) te
+        case mk of 
+            Just (kp, _) -> return (kp, FunType t3 a t4 ps)
+            Nothing -> res
+    ExpandedType t1 t2 -> do 
+        let Result _ mk = inferKinds b t1 te
+        (kp, t4) <- inferKinds b t2 te
+        return (kp, case mk of 
+                Just (_, t3) -> ExpandedType t3 t4
+                Nothing -> t4)
+    _ -> error "inferKinds"
   in -- trace (showPretty ty " : " ++ showPretty resu "") 
      resu
 
 -- | resolve type and infer minimal kinds
 anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
-anaTypeM (mk, t) te = 
-    do nt <- mkTypeConstrAppls TopLevel t te
-       let ty = expandAlias (typeMap te) nt
+anaTypeM (mk, parsedType) te = 
+    do resolvedType <- mkTypeConstrAppl parsedType
+       let expandedType = expandAlias (typeMap te) resolvedType
            cm = classMap te
-       (rk, ks) <- inferKinds (Just True) ty te
+       ((rk, ks), checkedType) <- inferKinds (Just True) expandedType te
        l <- case mk of 
-               Nothing -> subKinds Error cm t 
+               Nothing -> subKinds Error cm parsedType 
                           (if null ks then rk else head ks)
                           ks ks  
-               Just k -> subKinds Error cm t k ks $ 
+               Just k -> subKinds Error cm parsedType k ks $ 
                          filter ( \ j -> lesserKind (classMap te) j k) ks
-       return ((rk, l), ty)
+       return ((rk, l), checkedType)
 
 -- | resolve the type and check if its a plain raw kind
 anaStarTypeM :: Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
@@ -375,6 +285,3 @@ generalizable (TypeScheme args ty _) =
 checkUniqueTypevars :: [TypeArg] -> [Diagnosis]
 checkUniqueTypevars = checkUniqueness . map getTypeVar
 
-mkBracketToken :: BracketKind -> [Pos] -> [Token]
-mkBracketToken k ps = 
-       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k

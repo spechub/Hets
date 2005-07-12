@@ -88,7 +88,7 @@ byInst te c = let cm = classMap te in case c of
       ExpandedType _ t -> byInst te $ Kinding t k
       _ -> case k of
            ExtKind ek _ _ -> byInst te (Kinding ty ek)
-           ClassKind _ -> let (topTy, args) = getTypeAppl te ty in
+           ClassKind _ -> let (topTy, args) = getTypeAppl ty in
                case topTy of 
                TypeName _ kind _ -> if null args then
                    if lesserKind cm kind k then return noC 
@@ -132,13 +132,13 @@ dom cm k ks =
               Just args -> if any ((args ==) . snd) fks then return args
                            else fail "dom: not coregular"
 
-freshTypeVarT :: TypeEnv -> Type -> State Int Type             
-freshTypeVarT te t = 
+freshTypeVarT :: Type -> State Int Type             
+freshTypeVarT t = 
     do (var, c) <- freshVar $ posOfType t
-       return $ TypeName var (rawKindOfType te t) c
+       return $ TypeName var (rawKindOfType t) c
 
-freshVarsT :: TypeEnv -> [Type] -> State Int [Type]
-freshVarsT te l = mapM (freshTypeVarT te) l
+freshVarsT :: [Type] -> State Int [Type]
+freshVarsT l = mapM freshTypeVarT l
 
 toPairState :: State Int a -> State (Int, b) a 
 toPairState p = 
@@ -174,20 +174,20 @@ shapeMgu te cs =
     (_, KindedType t _ _) -> shapeMgu te ((t1, t) : rest)
     (TypeName _ _ v1, _) -> if (v1 > 0) then case t2 of
          ProductType ts ps -> do
-             nts <- toPairState $ freshVarsT te ts
+             nts <- toPairState $ freshVarsT ts
              let s = Map.singleton v1 $ ProductType nts ps
              addSubst s
              shapeMgu te (zip nts ts ++ subst s rest)
          FunType t3 ar t4 ps -> do
-             v3 <- toPairState $ freshTypeVarT te t3
-             v4 <- toPairState $ freshTypeVarT te t4
+             v3 <- toPairState $ freshTypeVarT t3
+             v4 <- toPairState $ freshTypeVarT t4
              let s = Map.singleton v1 $ FunType v3 ar v4 ps
              addSubst s
              shapeMgu te ((t3, v3) : (v4, t4) : subst s rest)
          _ -> do
-             let (topTy, args) = getTypeAppl te t2
-                 (_, ks) = getRawKindAppl (rawKindOfType te topTy) args
-             vs <- toPairState $ freshVarsT te args
+             let (topTy, args) = getTypeAppl t2
+                 (_, ks) = getRawKindAppl (rawKindOfType topTy) args
+             vs <- toPairState $ freshVarsT args
              let s = Map.singleton v1 $ mkTypeAppl topTy vs
              addSubst s
              shapeMgu te (concat (zipWith zipC ks $ zip vs args) 
@@ -199,8 +199,8 @@ shapeMgu te cs =
     (FunType t3 a1 t4 _, FunType t5 a2 t6 _) ->
         let arr a = TypeName (arrowId a) funKind 0 in
         shapeMgu te ((arr a1, arr a2) : (t5, t3) : (t4, t6) : rest)
-    _ -> let (top1, as1) = getTypeAppl te t1
-             (top2, as2) = getTypeAppl te t2
+    _ -> let (top1, as1) = getTypeAppl t1
+             (top2, as2) = getTypeAppl t2
              in case (top1, top2) of 
           (TypeName _ r1 _, TypeName _ r2 _) -> 
               let (_, ks) = getRawKindAppl r1 as1 
@@ -303,7 +303,7 @@ monotonic te v t =
            ExpandedType _ t2 -> monotonic te v t2
            KindedType tk _ _ -> monotonic te v tk
            LazyType tl _ -> monotonic te v tl
-           _ -> let (top, args) = getTypeAppl te t in case top of
+           _ -> let (top, args) = getTypeAppl t in case top of
                 TypeName _ k _ -> 
                     let ks = snd $ getRawKindAppl k args 
                         (bs1, bs2) = unzip $ zipWith ( \ rk a ->
