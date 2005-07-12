@@ -46,6 +46,19 @@ getFunKinds cm k = case k of
          _ -> fail $ "not a function kind '" ++ showId c "'"
     ExtKind ek _ _ -> getFunKinds cm ek
 
+-- | a list of argument kinds with result kind
+getKindAppl :: ClassMap -> Kind -> [a] -> [([Kind], Kind)]
+getKindAppl cm k args = if null args then [([], k)] else
+    case k of 
+    FunKind k1 k2 _ -> let ks = getKindAppl cm k2 (tail args)
+                       in map ( \ (kargs, rk) -> (k1 : kargs, rk)) ks
+    ClassKind ci -> case Map.lookup ci cm of 
+        Just (ClassInfo _ ks) -> case ks of 
+            [] -> error $ "getKindAppl1 " ++ show k
+            _ -> concatMap (\ fk -> getKindAppl cm fk args) ks
+        _ -> error $ "getKindAppl2 " ++ show k
+    _ -> error $ "getKindAppl3 " ++ show k
+
 -- | compute arity from a raw kind
 kindArity :: RawKind -> Int
 kindArity k = 

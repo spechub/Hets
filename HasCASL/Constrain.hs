@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -122,14 +122,14 @@ maxKindss cm l = let margs = map (maxKinds cm) $ transpose l in
    if all isJust margs then Just $ map fromJust margs
       else Nothing
 
-dom :: Monad m => ClassMap -> Kind -> [(Kind, [Kind])] -> m [Kind]
+dom :: Monad m => ClassMap -> Kind -> [([Kind], Kind)] -> m [Kind]
 dom cm k ks = 
-    let fks = filter ( \ (rk, _) -> lesserKind cm rk k ) ks 
-        margs = maxKindss cm $ map snd fks
+    let fks = filter ( \ (_, rk) -> lesserKind cm rk k ) ks 
+        margs = maxKindss cm $ map fst fks
         in if null fks then fail ("class not found " ++ showPretty k "") 
            else case margs of 
               Nothing -> fail "dom: maxKind"
-              Just args -> if any ((args ==) . snd) fks then return args
+              Just args -> if any ((args ==) . fst) fks then return args
                            else fail "dom: not coregular"
 
 freshTypeVarT :: Type -> State Int Type             
