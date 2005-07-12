@@ -1,7 +1,7 @@
 type p : +Type -> Type := \ a : +Type . Pred (Pred a_v-1)@(Pred a_v-1@(a_v-1 ->? Unit) ->? Unit)
      %% should be correct
 type m : +Type -> Type := \ b : +Type . b_v-1
-     %% should be wrong
+     %% should be correct
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
