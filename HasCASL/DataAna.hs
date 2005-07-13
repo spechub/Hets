@@ -45,6 +45,12 @@ genSelVars _ [] = []
 genSelVars n (ts:sels)  = 
     genTuple n 1 ts : genSelVars (n + 1) sels
 
+getSelType :: DataPat -> Partiality -> Type -> TypeScheme
+getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
+    TypeScheme args ((case p of 
+    Partial -> addPartiality [dt]
+    Total -> id) (FunType dt FunArr rt [])) []
+
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt ct n m (Select mi ty p : sels) = 
     let sc = getSelType dt p ty in
@@ -114,12 +120,6 @@ anaComp tys rt te (Selector s p t _ _) =
 anaComp tys rt te (NoSelector t) =
     do ct <- anaCompType tys rt t te
        return  (ct, Select Nothing ct Partial)
-
-getSelType :: DataPat -> Partiality -> Type -> TypeScheme
-getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
-    TypeScheme args ((case p of 
-    Partial -> addPartiality [dt]
-    Total -> id) (FunType dt FunArr rt [])) []
 
 anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
 anaCompType tys (_, tArgs, _) t te = do
