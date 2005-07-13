@@ -7,7 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Morphism on 'Env' (as for CASL)
+mapping entities of morphisms
+
 -}
 
 module HasCASL.Morphism where
@@ -15,48 +16,21 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.As
 import HasCASL.TypeAna
+import HasCASL.DataAna
 import HasCASL.AsToLe
 import HasCASL.MapTerm
-import HasCASL.AsUtils
 import HasCASL.Merge
 
 import Common.Id
-import Common.Keywords
 import Common.Result
 import Common.PrettyPrint
-import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import Data.List as List
 
-type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
+instance Eq Morphism where
+    m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, funMap m1) == 
+               (msource m2, mtarget m2, typeIdMap m2, funMap m2)
 
--- | keep types and class disjoint and use a single identifier map for both
-data Morphism = Morphism { msource :: Env
-                         , mtarget :: Env
-                         , typeIdMap :: IdMap 
-                         , funMap :: FunMap } 
-                         deriving (Eq, Show)
-
-mkMorphism :: Env -> Env -> Morphism
-mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty
-
-instance PrettyPrint Morphism where
-  printText0 ga m = 
-      let tm = typeIdMap m 
-          fm = funMap m
-          ds = Map.foldWithKey ( \ (i, s) (j, t) l -> 
-                (printText0 ga i <+> colon <+> printText0 ga s
-                <+> text mapsTo <+>      
-                printText0 ga j <+> colon <+> printText0 ga t) : l)
-               [] fm 
-      in (if Map.null tm then empty
-         else text (typeS ++ sS) <+> printText0 ga tm)
-         $$ (if Map.null fm then empty 
-             else text (opS ++ sS) <+> fsep (punctuate comma ds))
-         $$ nest 1 colon <+> braces (printText0 ga $ msource m) 
-                    $$ nest 1 (text mapsTo)
-                    <+> braces (printText0 ga $ mtarget m)
-      
 mapTypeScheme :: IdMap -> TypeScheme -> TypeScheme
 mapTypeScheme im = mapTypeOfScheme $ mapType im
 
@@ -81,6 +55,21 @@ mapAlt m tm args dt c@(Construct mi ts p sels) =
           in Construct (Just j) ts (getPartiality ts ty) sels
                 -- do not change (unused) selectors
     Nothing -> c
+
+-- | get the partiality from a constructor type 
+-- with a given number of curried arguments
+getPartiality :: [a] -> Type -> Partiality
+getPartiality args t = case t of
+   KindedType ty _ _ -> getPartiality args ty
+   FunType _ a t2 _ -> case args of 
+     [] -> Total
+     [_] -> case a of 
+            PFunArr  -> Partial
+            PContFunArr -> Partial
+            _ -> Total
+     _:rs -> getPartiality rs t2
+   LazyType _ _ -> if null args then Partial else error "getPartiality"
+   _ -> Total
 
 mapSentence :: Morphism -> Sentence -> Result Sentence
 mapSentence m s = return $ case s of 

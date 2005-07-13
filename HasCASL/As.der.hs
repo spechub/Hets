@@ -179,9 +179,9 @@ data Type = TypeName TypeId RawKind Int
           -- pos arrow
             deriving Show
 
--- | a type name with a dummy kind
+-- | a type name with a star kind
 mkTypeName :: Id -> Type
-mkTypeName i = TypeName i (ClassKind $ mkId [mkSimpleId place]) 0
+mkTypeName i = TypeName i star 0
 
 -- | through away the user's type alias
 unalias :: Type -> Type

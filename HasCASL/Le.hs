@@ -168,6 +168,21 @@ initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] [] 
              ((Map.empty, 0, 0), Set.empty) 1
 
+-- * morphisms
+
+type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
+
+-- | keep types and class disjoint and use a single identifier map for both
+data Morphism = Morphism { msource :: Env
+                         , mtarget :: Env
+                         , typeIdMap :: IdMap 
+                         , funMap :: FunMap } 
+                         deriving Show
+
+-- | construct morphism for subsignatures 
+mkMorphism :: Env -> Env -> Morphism
+mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty
+
 -- * symbol stuff
 
 -- | the type or kind of an identifier

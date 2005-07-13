@@ -140,10 +140,6 @@ getTypeAppl ty = let (t, args) = getTyAppl ty in
         FunType t1 a t2 _ -> (TypeName (arrowId a) funKind 0, [t2, t1])
         _ -> error "getTypeAppl: unresolved type"
 
--- | construct application left-associative
-mkTypeAppl :: Type -> [Type] -> Type
-mkTypeAppl = foldl ( \ c a -> TypeAppl c a)
-
 -- | change lazy, product and fun types to uniform applications
 convertType :: Type -> Type
 convertType ty = let (c, args) = getTypeAppl ty in mkTypeAppl c args    

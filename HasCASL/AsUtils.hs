@@ -64,54 +64,29 @@ mkApplTerm = foldl ( \ t a -> ApplTerm t a [])
 
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
-addPartiality as t = case as of 
+addPartiality args t = case args of 
         [] -> LazyType t []
         _ : rs -> case t of 
            FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
                else FunType t1 a (addPartiality rs t2) ps
            _ -> error "addPartiality"
 
--- | get the partiality from a constructor type 
--- with a given number of curried arguments
-getPartiality :: [a] -> Type -> Partiality
-getPartiality as t = case t of
-   KindedType ty _ _ -> getPartiality as ty
-   FunType _ a t2 _ -> case as of 
-     [] -> Total
-     [_] -> case a of 
-            PFunArr  -> Partial
-            PContFunArr -> Partial
-            _ -> Total
-     _:rs -> getPartiality rs t2
-   LazyType _ _ -> if null as then Partial else error "getPartiality"
-   _ -> Total
-
-type DataPat = (Id, [TypeArg], Kind)
-
--- | get the type of a constructor with given curried argument types
-getConstrType :: DataPat -> Partiality -> [Type] -> Type
-getConstrType dt p ts = (case p of 
+-- | get the type of a constructor for printing (kinds may be wrong)
+getSimpleConstrType :: Id -> [TypeArg] -> Partiality -> [Type] -> Type
+getSimpleConstrType i is p ts = (case p of 
      Total -> id 
      Partial -> addPartiality ts) $
                        foldr ( \ c r -> FunType c FunArr r [] ) 
-                             (typeIdToType dt) ts
+                             (mkTypeAppl (mkTypeName i) $ 
+                                 map (mkTypeName . getTypeVar) is) ts
 
--- | compute the type given by the input
-typeIdToType :: DataPat -> Type
-typeIdToType (i, nAs, k) = let      
-    fullKind = typeArgsListToKind nAs k
-    ti = TypeName i fullKind 0
-    mkType _ ty [] = ty
-    mkType n ty (TypeArg ai ak _ _ : rest) =
-        mkType (n-1) (TypeAppl ty (TypeName ai (toKind ak) n)) rest
-    in mkType (-1) ti nAs
+-- | get the type variable
+getTypeVar :: TypeArg -> Id
+getTypeVar(TypeArg v _ _ _) = v
 
--- | extent a kind to expect further type arguments
-typeArgsListToKind :: [TypeArg] -> Kind -> Kind
-typeArgsListToKind tArgs k = 
-    if null tArgs then k
-       else typeArgsListToKind (init tArgs) 
-            (FunKind (( \ (TypeArg _ xk _ _) -> toKind xk) $ last tArgs) k []) 
+-- | construct application left-associative
+mkTypeAppl :: Type -> [Type] -> Type
+mkTypeAppl = foldl ( \ c a -> TypeAppl c a)
 
 -- | get the kind of an analyzed type variable
 toKind :: VarKind -> Kind

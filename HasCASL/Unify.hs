@@ -8,6 +8,7 @@ Stability   :  experimental
 Portability :  portable 
 
 substitution and unification of types
+
 -}
 
 module HasCASL.Unify where
@@ -129,10 +130,6 @@ subsume tm a b =
 
 equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
-
--- | get the type variable
-getTypeVar :: TypeArg -> Id
-getTypeVar(TypeArg v _ _ _) = v
 
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
 idsOf b = Set.fromList . map (fst . snd) . leaves b

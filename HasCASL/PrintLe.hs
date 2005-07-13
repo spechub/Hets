@@ -47,10 +47,10 @@ instance PrettyPrint TypeDefn where
              <+> printText0 ga f)
         DatatypeDefn dd -> text " %[" <> printText0 ga dd <> text "]%"
 
-printAltDefn :: GlobalAnnos -> DataPat -> AltDefn -> Doc
-printAltDefn ga dt (Construct mi ts p sels) = case mi of 
+printAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> AltDefn -> Doc
+printAltDefn ga dt tArgs  (Construct mi ts p sels) = case mi of 
         Just i -> hang (printText0 ga i <+> colon 
-                        <+> printText0 ga (getConstrType dt p ts))
+                        <+> printText0 ga (getSimpleConstrType dt tArgs p ts))
                   2 $ fcat (map (parens . semiT_text ga) sels)
         Nothing -> text (typeS ++ sS) <+> commaT_text ga ts
 
@@ -104,7 +104,7 @@ instance PrettyPrint DataEntry where
     printText0 ga (DataEntry im i k args alts) = hang
         (printGenKind k <> text typeS <+> printText0 ga i 
                   <> hcat (map (parens . printText0 ga) args))
-          2 (text defnS <+> vcat (map (printAltDefn ga (i, args, star)) alts))
+          2 (text defnS <+> vcat (map (printAltDefn ga i args) alts))
         $$ nest 2 (noPrint (Map.null im) 
            (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
                        
@@ -141,6 +141,23 @@ instance PrettyPrint Env where
                           vcat(map (\ (a, b) -> hang (printText0 g a) 
                                     2 $ printText0 g b) l)
 
+instance PrettyPrint Morphism where
+  printText0 ga m = 
+      let tm = typeIdMap m 
+          fm = funMap m
+          ds = Map.foldWithKey ( \ (i, s) (j, t) l -> 
+                (printText0 ga i <+> colon <+> printText0 ga s
+                <+> text mapsTo <+>      
+                printText0 ga j <+> colon <+> printText0 ga t) : l)
+               [] fm 
+      in (if Map.null tm then empty
+         else text (typeS ++ sS) <+> printText0 ga tm)
+         $$ (if Map.null fm then empty 
+             else text (opS ++ sS) <+> fsep (punctuate comma ds))
+         $$ nest 1 colon <+> braces (printText0 ga $ msource m) 
+                    $$ nest 1 (text mapsTo)
+                    <+> braces (printText0 ga $ mtarget m)
+      
 instance PrettyPrint SymbolType where
     printText0 ga t = case t of 
       OpAsItemType sc -> printText0 ga sc

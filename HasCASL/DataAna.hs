@@ -28,6 +28,33 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
+type DataPat = (Id, [TypeArg], Kind)
+
+-- | extent a kind to expect further type arguments
+typeArgsListToKind :: [TypeArg] -> Kind -> Kind
+typeArgsListToKind tArgs k = 
+    if null tArgs then k
+       else typeArgsListToKind (init tArgs) 
+            (FunKind (( \ (TypeArg _ xk _ _) -> toKind xk) $ last tArgs) k []) 
+
+-- | compute the type given by the input
+typeIdToType :: DataPat -> Type
+typeIdToType (i, nAs, k) = let
+    fullKind = typeArgsListToKind nAs k
+    ti = TypeName i fullKind 0
+    mkType _ ty [] = ty
+    mkType n ty (TypeArg ai ak _ _ : rest) =
+        mkType (n-1) (TypeAppl ty (TypeName ai (toKind ak) n)) rest
+    in mkType (-1) ti nAs
+
+-- | get the type of a constructor with given curried argument types
+getConstrType :: DataPat -> Partiality -> [Type] -> Type
+getConstrType dt p ts = (case p of
+     Total -> id
+     Partial -> addPartiality ts) $
+                       foldr ( \ c r -> FunType c FunArr r [] )
+                             (typeIdToType dt) ts
+
 mkSelId :: [Pos] -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId 
     [Token (str ++ "_" ++ show n ++ "_" ++ show m) p]
