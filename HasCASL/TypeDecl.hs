@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -26,7 +26,6 @@ import Common.GlobalAnnotations
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ClassAna
-import HasCASL.AsUtils
 import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.VarDecl
@@ -262,11 +261,8 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
 
 dataPatToType :: DatatypeDecl -> State Env DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do
-     let fullKind = typeArgsListToKind nAs k
-     rk <- anaKind fullKind
-     te <- get
-     return (i, nAs, mkTypeAppl (TypeName i rk 0) $ map snd $ 
-            catMaybes $ map (maybeResult . getIdKind te . getTypeVar) nAs)
+     rk <- anaKind k
+     return (i, nAs, patToType i nAs rk)
 dataPatToType _ = error "dataPatToType"
 
 -- | add a supertype to a given type id
