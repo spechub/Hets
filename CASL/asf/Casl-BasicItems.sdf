@@ -3,67 +3,49 @@ module Casl-BasicItems
 %% written/changed by Bjarke Wedemeijer (January 1998)
 %% adapted by Mark van den Brand (Juni 1999)
 %% adapted by Mark van den Brand (November 2000)
+%% adapted by Christian Maeder (January 2002)
+%% adapted by Christian Maeder (February 2004)
 
-imports Casl-Lexical Casl-Annotations
+imports Casl-Lexical
 exports
   sorts
-    Basic-Item Basic-Spec Sig-Items Var-Decl Datatype-Decl
-    Formula Sort-Item Op-Item Pred-Item Op-Type Op-Attr Op-Head
-    Term Terms Some-Sorts Arg-Decl Pred-Type Pred-Head
-    Alternative Component Quantifier Formula-1 Formula-2 Formula-3
-    MixFix QualPredName QualVarName QualOpName Atom Op-Name 
-    Pred-Name Formula-2-or Labelled-Op-Item Labelled-Pred-Item
-    Formula-2-and Labelled-Formula LabelAnnot Var-S Axiom-S
-    Sort-S Op-S Pred-S Datatype-S Opt-Semi
+	Basic-Spec Sort-S Op-S Pred-S Op-Type Pred-Type
+
+  lexical syntax
+	"."|[\183] -> Dot	
 
   context-free syntax
 
 %% Basic-Items section
-    "{" "}"     -> Basic-Spec
-    Basic-Item+ -> Basic-Spec
- 
-    Sig-Items                                            -> Basic-Item
-    "free" Datatype-S {Datatype-Decl ";"}+ Opt-Semi      -> Basic-Item
-    "generated" Datatype-S {Datatype-Decl ";"}+ Opt-Semi -> Basic-Item 
-    "generated" "{" Sig-Items+ "}" Opt-Semi              -> Basic-Item 
-    Var-S {Var-Decl ";"}+ Opt-Semi                       -> Basic-Item
-    Var-S {Var-Decl ";"}+ "." 
-      {Labelled-Formula "."}+ Opt-Semi                   -> Basic-Item
-    Axiom-S {Labelled-Formula ";"}+ Opt-Semi             -> Basic-Item 
+    "{" "}"         -> Basic-Spec
+    Ann Basic-Item+ -> Basic-Spec
+
+    Sig-Items				             -> Basic-Item 
+    "free" Data-Item                                 -> Basic-Item
+    "generated" Data-Item                            -> Basic-Item 
+    "generated" "{" Sig-Items+ "}" Opt-Semi          -> Basic-Item 
+    Var-S {Var-Decl ";"}+ Opt-Semi                   -> Basic-Item
+    "forall" {Var-Decl ";"}+ Ann Dot-Item	     -> Basic-Item 
+    Dot Ann Formula Opt-Semi                         -> Basic-Item
+
+    Dot Ann {Formula (Ann Dot)}+ Opt-Semi            -> Dot-Item 
+
+%% old style
+    Axiom-S Ann {Formula (";" Ann)}+ Opt-Semi        -> Basic-Item 
 
 %% Sig-Items
-    Sort-S {Sort-Item ";"}+ Opt-Semi Annote*          -> Sig-Items
-    Op-S {Labelled-Op-Item ";"}+ Opt-Semi Annote*     -> Sig-Items
-    Pred-S {Labelled-Pred-Item ";"}+ Opt-Semi Annote* -> Sig-Items
-    Datatype-S {Datatype-Decl ";"}+ Opt-Semi Annote*  -> Sig-Items
+    Sort-S Ann {Sort-Item (";" Ann)}+ Opt-Semi      -> Sig-Items
+    Op-S   Ann {Op-Item   (";" Ann)}+ Opt-Semi      -> Sig-Items
+    Pred-S Ann {Pred-Item (";" Ann)}+ Opt-Semi      -> Sig-Items
+    Data-Item                                       -> Sig-Items
 
-%% Labelled-Op-Item
-  Op-Item            -> Labelled-Op-Item
-  LabelAnnot Op-Item -> Labelled-Op-Item
-  Op-Item AssocAnnot -> Labelled-Op-Item
-  Op-Item Label      -> Labelled-Op-Item
-
-%% AssocAnnot
-  "%left" "assoc"  -> AssocAnnot
-  "%right" "assoc" -> AssocAnnot
-
-%% Annotations
-  "%(" Words ")%"               -> Label
-  "%floating" TextLine          -> AnnoteLine
-  "%number" TextLine            -> AnnoteLine
-  "%string" TextLine            -> AnnoteLine
-  "%list" TextLine              -> AnnoteLine
-  "%prec" TextLine              -> AnnoteLine
-  "%prec(" TextLines ")%"       -> AnnoteGroup
-  "%left_assoc" TextLine        -> AnnoteLine
-  "%left_assoc(" TextLine ")%"  -> AnnoteGroup
-  "%right_assoc" TextLine       -> AnnoteLine
-  "%right_assoc(" TextLine ")%" -> AnnoteGroup
+%% Data-Item (abbreviation)
+    Datatype-S Ann {Datatype-Decl (";" Ann)}+ Opt-Semi  -> Data-Item
 
 %% Sort-Item
     {Sort ","}+                               -> Sort-Item
     {Sort ","}+ "<" Sort                      -> Sort-Item
-    Sort "=" "{" Var ":" Sort "." Formula "}" -> Sort-Item
+    Sort "=" "{" Var ":" Sort Dot Formula "}" -> Sort-Item
     Sort "=" {Sort "="}+                      -> Sort-Item
 
 %% Op-Item 
@@ -78,7 +60,7 @@ exports
     "?" Sort              -> Op-Type
 
 %% Sorts
-    {Sort "*"}+ -> Some-Sorts
+    {Sort "*"|[\215]}+ -> Some-Sorts
 
 %% Op-Attr
     "assoc"                 -> Op-Attr
@@ -87,20 +69,13 @@ exports
     "unit" Term             -> Op-Attr
 
 %% Op-Head
-    "(" {Arg-Decl ";"}+ ")" ":" Sort  -> Op-Head
-    ":" Sort                          -> Op-Head
-    "(" {Arg-Decl ";"}+ ")" ":?" Sort -> Op-Head
-    ":?" Sort                         -> Op-Head
+    "(" {Arg-Decl ";"}+ ")" ":" Sort     -> Op-Head
+    ":" Sort                             -> Op-Head
+    "(" {Arg-Decl ";"}+ ")" ":" "?" Sort -> Op-Head
+    ":" "?" Sort                         -> Op-Head
 
 %% Arg-Decl
     {Var ","}+ ":" Sort -> Arg-Decl
-
-
-
-%% Labelled-Pred-Item
-  Pred-Item            -> Labelled-Pred-Item
-  LabelAnnot Pred-Item -> Labelled-Pred-Item
-  Pred-Item Label      -> Labelled-Pred-Item
 
 %% Pred-Item
     {Pred-Name ","}+ ":" Pred-Type    -> Pred-Item
@@ -115,7 +90,7 @@ exports
     "(" {Arg-Decl ";"}+ ")" -> Pred-Head
 
 %% Datatype-Decl
-    Sort "::=" {Alternative "|"}+ -> Datatype-Decl
+    Sort "::=" Ann {Alternative ("|" Ann)}+  -> Datatype-Decl
 
 %% Alternative
     Op-Name"(" {Component ";"}+ ")"     -> Alternative
@@ -124,23 +99,15 @@ exports
     Sort-S {Sort ","}+                  -> Alternative
 
 %% Component
-    {Op-Name ","}+ ":" Sort  -> Component
-    {Op-Name ","}+ ":?" Sort -> Component
-    Sort                     -> Component
+    {Op-Name ","}+ ":" Sort     -> Component
+    {Op-Name ","}+ ":" "?" Sort -> Component
+    Sort                        -> Component
 
 %% Var-Decl
     {Var ","}+  ":" Sort -> Var-Decl
 
-%% Labelled-Formula
-   Formula            -> Labelled-Formula
-   Formula Label      -> Labelled-Formula
-   LabelAnnot Formula -> Labelled-Formula
-
-%% LabelAnnot
-   "%[" Words "]" -> LabelAnnot
-
 %% Var-S
-    "var"  -> Var-S
+    "var" -> Var-S
     "vars" -> Var-S
 
 %% Axiom-S
@@ -164,45 +131,52 @@ exports
     "types" -> Datatype-S
 
 %% Opt-Semi
-                        -> Opt-Semi
-    ";"                 -> Opt-Semi
+    ";"? Ann               -> Opt-Semi
 
 %% Formula
-    Formula-1 -> Formula
-    Formula-2 -> Formula-1
-    Formula-3 -> Formula-2
-    Atom      -> Formula-3
+    Quantifier {Var-Decl ";"}+ Dot Formula -> Formula-Quant
+    Formula-Quant -> Formula		
 
-    Quantifier {Var-Decl ";"}+ "." Formula -> Formula-2
-    Formula-3 "/\\" Formula-2-and          -> Formula-2
-    Formula-3 "\\/" Formula-2-or           -> Formula-2 
+    Formula-2 "<=>" Formula-2             -> Formula-1
+    Formula-2 "<=>" Formula-Quant         -> Formula-1
+    Formula-2                             -> Formula-1
+    Formula-1                             -> Formula
 
-    Formula-3                              -> Formula-2-and  
-    Quantifier {Var-Decl ";"}+ "." Formula -> Formula-2-and
-    Formula-3 "/\\" Formula-2-and          -> Formula-2-and 
+    Formula-3  "=>" Formula-3             -> Formula-2a
+    Formula-3  "=>" Formula-2a            -> Formula-2a
+    Formula-3  "=>" Formula-Quant         -> Formula-1
+    Formula-3  "if" Formula-3             -> Formula-2b
+    Formula-2b "if" Formula-3             -> Formula-2b
+    Formula-2b "if" Formula-Quant         -> Formula-1
+    Formula-3  "if" Formula-Quant         -> Formula-1
+    Formula-2a                            -> Formula-2	
+    Formula-2b                            -> Formula-2	
+    Formula-3                             -> Formula-2
 
-    Formula-3                              -> Formula-2-or  
-    Quantifier {Var-Decl ";"}+ "." Formula -> Formula-2-or 
-    Formula-3 "\\/" Formula-2-or           -> Formula-2-or
-
-    Formula-3 "=>" Formula-2                     -> Formula-1
-    Formula-3 "if" Formula-2                     -> Formula-1 
-    Formula-3 "/\\" Formula-2-and "=>" Formula-2 -> Formula-1
-    Formula-3 "/\\" Formula-2-and "if" Formula-2 -> Formula-1
-    Formula-3 "\\/" Formula-2-or "=>" Formula-2  -> Formula-1
-    Formula-3 "\\/" Formula-2-or "if" Formula-2  -> Formula-1
-    Formula-3 "<=>" Formula-2                    -> Formula-1
-
-    "not" Formula-3 -> Formula-3
-    "(" Formula ")" -> Formula-3
+    Formula-4  "/\\" Formula-4            -> Formula-3a
+    Formula-3a "/\\" Formula-4            -> Formula-3a
+    Formula-3a "/\\" Formula-Quant        -> Formula-1
+    Formula-3  "/\\" Formula-Quant        -> Formula-1
+    Formula-4  "\\/" Formula-4            -> Formula-3b
+    Formula-3b "\\/" Formula-4            -> Formula-3b
+    Formula-3b "\\/" Formula-Quant        -> Formula-1
+    Formula-4  "\\/" Formula-Quant        -> Formula-1
+    Formula-4                             -> Formula-3			
+    Formula-3a                            -> Formula-3
+    Formula-3b                            -> Formula-3
+								
+    "not"|[\172] Formula-4     -> Formula-4
+    "not"|[\172] Formula-Quant -> Formula-Quant
+    "(" Formula ")"            -> Formula-5
+    Formula-5                  -> Formula-4
+    Atom                       -> Formula-5
 
     "true"                          -> Atom
     "false"                         -> Atom
     "def" Term                      -> Atom
-    Term "=e=" Term                 -> Atom
-    Term "=" Term                   -> Atom
-    Term "in" Sort                  -> Atom 
-    MixFix+                         -> Atom {prefer}
+    Term "=e="|"=" Term             -> Atom
+    Term "in" Sort                  -> Atom
+    Term                            -> Atom
 
 %% Quantifier
     "forall"     -> Quantifier
@@ -215,22 +189,19 @@ exports
 
 %% Term
     MixFix+     -> Term
-    Literal     -> Term
+    Term "when" Formula "else" Term     -> Term {right}
 
 %% MixFix
-    NoBracketToken                      -> MixFix
+    Token                               -> MixFix
+    Literal				-> MixFix
     Place                               -> MixFix
     QualPredName                        -> MixFix
     QualVarName                         -> MixFix
     QualOpName                          -> MixFix
-    MixFix ":" Sort                     -> MixFix {avoid}
-    MixFix "as" Sort                    -> MixFix
-    MixFix "when" Formula "else" MixFix -> MixFix {right}
+    MixFix ":"|"as" Sort                -> MixFix
     "(" Terms ")"                       -> MixFix
-    "[" Terms "]"                       -> MixFix
-    "[" "]"                             -> MixFix
-    "{" Terms "}"                       -> MixFix
-    "{" "}"                             -> MixFix 
+    "[" Terms? "]"                      -> MixFix
+    "{" Terms? "}"                      -> MixFix
 
 %% QualPredName 
     "(" "pred" Pred-Name ":" Pred-Type ")" -> QualPredName
@@ -242,7 +213,7 @@ exports
     "(" "op"  Op-Name ":" Op-Type ")"   -> QualOpName
 
 %% Various small definitions
-    Token-Id  -> Sort
+    Sort-Id   -> Sort
 
     Id        -> Op-Name
 
@@ -251,5 +222,5 @@ exports
     Simple-Id -> Var
 
   context-free priorities
-    Literal     -> Term >
-    MixFix+     -> Term
+    MixFix+     -> Term >
+    Term "when" Formula "else" Term     -> Term

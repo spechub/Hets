@@ -1,4 +1,11 @@
 module Casl-Arch
+
+%% written/changed by Bjarke Wedemeijer (January 1998)
+%% adapted by Mark van den Brand (June 1999)
+%% adapted by Mark van den Brand (November 2000)
+%% adapted by Christian Maeder (January 2002)
+%% adapted by Christian Maeder (February 2004)
+
 imports Casl-Struct
 exports
   sorts
@@ -54,11 +61,14 @@ exports
     Unit-Name ":" Unit-Spec -> Unit-Binding
 
 %% Unit-Term
-    Unit-Term Renaming                                   -> Unit-Term
-    Unit-Term Restriction                                -> Unit-Term
-    Unit-Term "and" { Unit-Term "and"}+                  -> Unit-Term
-    "local" {Unit-Defn ";"}+ Opt-Semi "within" Unit-Term -> Unit-Term
-    Group-Unit-Term                                      -> Unit-Term
+    Unit-Term-3                                          -> Unit-Term-2
+    Unit-Term-2                                          -> Unit-Term-1
+    Unit-Term-1                                          -> Unit-Term
+    Unit-Term-3 Renaming                                   -> Unit-Term-3
+    Unit-Term-3 Restriction                                -> Unit-Term-3
+    Unit-Term-2 "and" {Unit-Term "and"}+                   -> Unit-Term-1
+    "local" {Unit-Defn ";"}+ Opt-Semi "within" Unit-Term-2 -> Unit-Term-2
+    Group-Unit-Term                                        -> Unit-Term-3
 
 %% Group-Unit-Term
     "{" Unit-Term "}"       -> Group-Unit-Term

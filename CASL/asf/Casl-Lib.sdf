@@ -1,12 +1,19 @@
 module Casl-Lib
+
+%% written/changed by Bjarke Wedemeijer (January 1998)
+%% adapted by Mark van den Brand (June 1999)
+%% adapted by Mark van den Brand (November 2000)
+%% adapted by Christian Maeder (January 2002)
+%% adapted by Christian Maeder (February 2004)
+
 imports Casl-Arch
 exports
-  sorts Item-Name Item-Name-Or-Map
-        Lib-Defn Lib-Id Lib-Item Lib-Name Version
+  sorts Lib-Defn Lib-Items
   context-free syntax
 
 %% Lib-Defn
-    "library" Lib-Name Annote* Lib-Item+ -> Lib-Defn
+    "library" Lib-Name Ann Lib-Items -> Lib-Defn
+    Lib-Item+      -> Lib-Items
 
 
 %% Lib-Item

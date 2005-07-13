@@ -1,40 +1,34 @@
 module Casl-Struct
+
+%% written/changed by Bjarke Wedemeijer (January 1998)
+%% adapted by Mark van den Brand (June 1999)
+%% adapted by Mark van den Brand (November 2000)
+%% adapted by Christian Maeder (January 2002)
+%% adapted by Christian Maeder (February 2004)
+
 imports Casl-BasicItems
 exports
   sorts
-    Spec-Name Spec-Defn Spec-1 Spec-2 AnnotSpec-1
-    View-Name View-Defn View-Type Some-Generics
-    Spec Group-Spec Renaming Restriction
-    Fit Fit-Arg Symb-Items Symb-Map-Items
-    Some-Symb-Kind Type
-    Symb Symb-Map Symb-Or-Map Some-Params Some-Imports
-    Param Opt-End
+    Spec Spec-Defn View-Defn Spec-Name Symb-Map-Items Group-Spec Opt-End
 
   context-free syntax
 
 %% Spec
+    Spec-3                         -> Spec-2
     Spec-2                         -> Spec-1
-    AnnotSpec-1                    -> Spec
+    Spec-1                         -> Spec
 
-    Basic-Spec                     -> Spec-2
+    Basic-Spec                     -> Spec-3
+    Spec-3 Renaming                -> Spec-3
+    Spec-3 Restriction             -> Spec-3
 
-    Spec-2 Renaming                -> Spec-2
-    Spec-2 Restriction             -> Spec-2
+    Spec-2 "and" {Spec-2 "and"}+   -> Spec-1
+    Spec-1 "then" {Spec-1 "then"}+ -> Spec
+    Ann "free" Group-Spec              -> Spec-3
+    Ann "local" Spec "within" Spec-2   -> Spec-2
+    Ann "closed" Group-Spec            -> Spec-3
+    Ann Group-Spec                     -> Spec-3
 
-    Spec-2 "and" {Spec-2 "and"}+             -> Spec-1
-    AnnotSpec-1 "then" {AnnotSpec-1 "then"}+ -> Spec
-    "free" Group-Spec                        -> Spec-2
-    "local" Spec "within" AnnotSpec-1        -> Spec-1
-    "closed" Group-Spec                      -> Spec-2
-    Group-Spec                               -> Spec-2
-
-%% AnnotSpec-1
-    Annote+        -> AnnotSpec-1
-    Annote* Spec-1 -> AnnotSpec-1
-
-%% AnnotLine
-    "%implies" -> AnnoteLine
-    
 %% Group-Spec
     Spec-Name       -> Group-Spec
     "{" Spec "}"    -> Group-Spec
@@ -54,9 +48,6 @@ exports
     "spec" Spec-Name "=" Spec Opt-End               -> Spec-Defn
     "spec" Spec-Name Some-Generics "=" Spec Opt-End -> Spec-Defn
 
-%% AnnoteLine
-    "%def" -> AnnoteLine
-
 %% Some-Generics
     Some-Params              -> Some-Generics
     Some-Params Some-Imports -> Some-Generics
@@ -67,7 +58,6 @@ exports
 
 %% Imports
     "given" {Group-Spec ","}+ -> Some-Imports
-
 
 %% Fit-Arg
     Spec "fit" {Symb-Map-Items ","}+ -> Fit-Arg
@@ -119,9 +109,7 @@ exports
     Simple-Id       -> Spec-Name
     Simple-Id       -> View-Name
 
-    Token "[" {Id ","}+ "]"          -> Token-Id 
 
 %% Opt-End
-         -> Opt-End
-   "end" -> Opt-End
+   ("end" Ann)? -> Opt-End
 
