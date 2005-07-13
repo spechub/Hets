@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -91,7 +91,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
     do let (op@(OpId i _ _), TypeScheme tArgs scTy qs) = 
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
-       tm <- gets typeMap
+       tvs <- gets localTypeVars
        mArgs <- mapM anaddTypeVarDecl tArgs
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
@@ -105,7 +105,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
            Just ty -> do 
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
                putLocalVars vs
-               putTypeMap tm
+               putLocalTypeVars tvs
                newSc <- generalizeS $ TypeScheme newArgs 
                       (patternsToType newPats ty) qs
                case mt of 
@@ -130,7 +130,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
            Nothing -> do 
                resolveTerm ga Nothing trm -- get a view more diags
                putLocalVars vs
-               putTypeMap tm
+               putLocalTypeVars tvs
                return Nothing
                                                           
 -- ----------------------------------------------------------------------------
