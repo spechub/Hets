@@ -228,8 +228,7 @@ ATC/Proofs.der.hs: Proofs/Proofs.hs $(GENRULES)
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs 
 
-HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Morphism.hs \
-    HasCASL/Sublogic.hs
+HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 
 Isabelle_files = Isabelle/IsaSign.hs 
 
