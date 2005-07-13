@@ -66,7 +66,7 @@ anaTypeItems :: GlobalAnnos -> GenKind -> Instance -> [Annoted TypeItem]
             -> State Env [Annoted TypeItem]
 anaTypeItems ga gk inst l = do
     ul <- mapAnMaybe ana1TypeItem l
-    let tys = map ( \ (Datatype d) -> dataPatToType d) $ 
+    tys <- mapM ( \ (Datatype d) -> dataPatToType d) $ 
               filter ( \ t -> case t of 
                        Datatype _ -> True
                        _ -> False) $ map item ul
@@ -260,9 +260,13 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
                   return $ if b then Just $ DatatypeDecl 
                       (TypePattern i nAs []) k alts newDerivs ps else Nothing
 
-dataPatToType :: DatatypeDecl -> DataPat
-dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) =
-     (i, nAs, k)
+dataPatToType :: DatatypeDecl -> State Env DataPat
+dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do
+     let fullKind = typeArgsListToKind nAs k
+     rk <- anaKind fullKind
+     te <- get
+     return (i, nAs, mkTypeAppl (TypeName i rk 0) $ map snd $ 
+            catMaybes $ map (maybeResult . getIdKind te . getTypeVar) nAs)
 dataPatToType _ = error "dataPatToType"
 
 -- | add a supertype to a given type id
@@ -278,9 +282,9 @@ addSuperType t i =
                         (TypeInfo ok ks (t:sups) defn) tm
 
 addDataSubtype :: DataPat -> Type -> State Env ()
-addDataSubtype dt st = 
+addDataSubtype (_, _, rt) st = 
     case st of 
-    TypeName i _ _ -> addSuperType (typeIdToType dt) i 
+    TypeName i _ _ -> addSuperType rt i 
     _ -> addDiags [mkDiag Warning "data subtype ignored" st]
 
 -- | analyse a 'DatatypeDecl'
@@ -288,8 +292,9 @@ anaDatatype :: GenKind -> Instance -> [DataPat]
             -> DatatypeDecl -> State Env (Maybe DatatypeDecl)
 anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
-    do let dt = dataPatToType d
-           fullKind = typeArgsListToKind nAs k
+    do dt@(_, _, rt) <- dataPatToType d
+       let fullKind = typeArgsListToKind nAs k
+       rk <- anaKind fullKind
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) nAs
        mNewAlts <- fromResult $ anaAlts tys dt (map item alts) 
@@ -305,19 +310,19 @@ anaDatatype genKind inst tys
            mapM_ ( \ (Construct mc tc p sels) -> case mc of 
                Nothing -> return ()
                Just c -> do
-                   let ty = TypeScheme nAs (getConstrType dt p tc) []
-                   sc <- generalizeS ty 
+                   sc <- generalizeS $ TypeScheme nAs 
+                         (getConstrType rt p tc) []
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
                            Just s -> do 
-                               selSc <- generalizeS $ getSelType dt pa ts
+                               selSc <- generalizeS $ TypeScheme nAs 
+                                        (getSelType rt pa ts) []
                                addOpId s selSc []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return False) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind nAs newAlts
-           rk <- anaKind fullKind
            addTypeId True (DatatypeDefn de) inst rk fullKind i
-           appendSentences $ makeDataSelEqs de k
+           appendSentences $ makeDataSelEqs de rt
            putLocalTypeVars tvs
            return $ Just d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"
@@ -424,7 +429,8 @@ convertTypePattern (BracketTypePattern bk [ap] ps) =
          case ap of 
          TypePatternToken t -> if isPlace t then 
              return (tid, [])
-             else return (tid, [TypeArg (simpleIdToId t) MissingKind Other []])
+             else return (tid, [TypeArg (simpleIdToId t) MissingKind 
+                                        star 0 Other []])
          _ -> do a <- convertToTypeArg ap
                  return (tid, [a])
 convertTypePattern tp = illegalTypePattern tp
@@ -432,7 +438,7 @@ convertTypePattern tp = illegalTypePattern tp
 convertToTypeArg :: TypePattern -> Result TypeArg
 convertToTypeArg tp@(TypePatternToken t) = 
     if isPlace t then illegalTypePatternArg tp
-    else return $ TypeArg (simpleIdToId t) MissingKind Other []
+    else return $ TypeArg (simpleIdToId t) MissingKind star 0 Other []
 convertToTypeArg (TypePatternArg a _) =  return a
 convertToTypeArg (BracketTypePattern Parens [tp] _) =  convertToTypeArg tp
 convertToTypeArg tp = illegalTypePatternArg tp

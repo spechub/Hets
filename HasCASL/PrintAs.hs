@@ -235,7 +235,7 @@ instance PrettyPrint GenVarDecl where
         GenTypeVarDecl tv -> printText0 ga tv
 
 instance PrettyPrint TypeArg where 
-    printText0 ga (TypeArg v c _ _) = 
+    printText0 ga (TypeArg v c _ _ _ _) = 
         printText0 ga v <> printVarKind ga c
 
 -- | don't print an empty list and put parens around longer lists

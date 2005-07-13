@@ -42,9 +42,10 @@ mapDataEntry :: Morphism -> DataEntry -> DataEntry
 mapDataEntry m (DataEntry tm i k args alts) = 
     let tim = compIdMap tm $ typeIdMap m
     in DataEntry tim i k args $ map 
-           (mapAlt m tim args (Map.findWithDefault i i tim, args, star)) alts
+           (mapAlt m tim args $ patToType (Map.findWithDefault i i tim) 
+                   args star) alts
 
-mapAlt :: Morphism -> IdMap -> [TypeArg] -> DataPat -> AltDefn -> AltDefn
+mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
 mapAlt m tm args dt c@(Construct mi ts p sels) = 
     case mi of
     Just i -> 

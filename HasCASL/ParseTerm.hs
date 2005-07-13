@@ -148,14 +148,14 @@ makeTypeArgs ts ps qs k =
                 (map tokPos ps)
                 ++ [mergeVariance Other k (last ts) qs]
                 where 
-    mergeVariance c e (t, Nothing, _) q = TypeArg t e c q
+    mergeVariance c e (t, Nothing, _) q = TypeArg t e star 0 c q
     mergeVariance c (VarKind (ExtKind e v0 _)) (t, Just v, p) q = 
-        if v0 == v then TypeArg t (VarKind (ExtKind e v p)) c q
+        if v0 == v then TypeArg t (VarKind (ExtKind e v p)) star 0 c q
         else error "makeTypeArgs1"
     mergeVariance c (VarKind e) (t, Just v, p) q = 
-                          TypeArg t (VarKind (ExtKind e v p)) c q
+                          TypeArg t (VarKind (ExtKind e v p)) star 0 c q
     mergeVariance c MissingKind (t, Just v, p) q = 
-                          TypeArg t (VarKind (ExtKind star v p)) c q
+                          TypeArg t (VarKind (ExtKind star v p)) star 0 c q
     mergeVariance _ _ _ _ = error "makeTypeArgs2"
 
 -- | a single 'TypeArg' (parsed by 'typeVars')

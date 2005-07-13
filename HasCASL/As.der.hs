@@ -410,7 +410,7 @@ data VarKind = VarKind Kind | Downset Type | MissingKind
                deriving (Show, Eq, Ord)
 
 -- | a (simple) type variable with its kind (or supertype)
-data TypeArg = TypeArg TypeId VarKind SeparatorKind [Pos]
+data TypeArg = TypeArg TypeId VarKind RawKind Int SeparatorKind [Pos]
                -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
                deriving Show
 
@@ -538,9 +538,9 @@ instance Ord Type where
 
 -- is this equality only needed for the equality of schemes? 
 instance Eq TypeArg where
-    TypeArg i1 k1 _ _ == TypeArg i2 k2 _ _ = (i1, k1) == (i2, k2)
+    TypeArg i1 k1 _ _ _ _ == TypeArg i2 k2 _ _ _ _ = (i1, k1) == (i2, k2)
 instance Ord TypeArg where
-    TypeArg i1 k1 _ _ <= TypeArg i2 k2 _ _ = (i1, k1) <= (i2, k2)
+    TypeArg i1 k1 _ _ _ _ <= TypeArg i2 k2 _ _ _ _ = (i1, k1) <= (i2, k2)
 
 -- when are analyzed schemes equal? The name of variables should not matter
 instance Eq TypeScheme where

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -92,8 +92,8 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
     tvs <- gets localTypeVars 
     let newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
                   Nothing -> error "generalizeS" 
-                  Just (TypeVarDefn _ vk _) -> 
-                      TypeArg i vk Other []) svs
+                  Just (TypeVarDefn rk vk c) -> 
+                      TypeArg i vk rk c Other []) svs
     if null tArgs then return $ TypeScheme newArgs newTy p
        else do 
          addDiags $ generalizable sc
@@ -162,7 +162,6 @@ addTypeKind warn d i rk k =
                return True 
            Just (TypeInfo ok oldks sups defn) -> 
                if rk == ok then do 
-                   cm <- gets classMap
                    let isKnownInst = k `elem` oldks
                        insts = if isKnownInst then oldks else k : oldks
                        Result ds mDef = mergeTypeDefn defn d
@@ -191,13 +190,13 @@ nonUniqueKind ks a f = case ks of
 
 -- | analyse a type argument 
 anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-anaddTypeVarDecl ta@(TypeArg i vk s ps) = do
+anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
     c <- toEnvState inc
     case vk of 
       VarKind k -> do 
         rk <- anaKind k
         addLocalTypeVar True (TypeVarDefn rk vk c) i
-        return $ Just ta
+        return $ Just $ TypeArg i vk rk c s ps
       Downset t -> do                 
         mt <- anaType (Nothing, t)
         case mt of 
@@ -206,7 +205,7 @@ anaddTypeVarDecl ta@(TypeArg i vk s ps) = do
                 nonUniqueKind ks t $ \ k -> do
                    let nd = Downset (KindedType nt k [])
                    addLocalTypeVar True (TypeVarDefn rk nd c) i
-                   return $ Just $ TypeArg i (Downset nt) s ps
+                   return $ Just $ TypeArg i (Downset nt) rk c s ps
       MissingKind -> do 
         tvs <- gets localTypeVars
         case Map.lookup i tvs of 
@@ -214,17 +213,14 @@ anaddTypeVarDecl ta@(TypeArg i vk s ps) = do
                 addDiags [mkDiag Warning "missing kind for type variable " i]
                 let dvk = VarKind star
                 addLocalTypeVar True (TypeVarDefn star dvk c) i
-                return $ Just $ TypeArg i dvk s ps
+                return $ Just $ TypeArg i dvk star c s ps
             Just (TypeVarDefn rk dvk _) -> do 
                 addLocalTypeVar True (TypeVarDefn rk dvk c) i
-                return $ Just $ TypeArg i dvk s ps
+                return $ Just $ TypeArg i dvk rk c s ps
 
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env ()
-addTypeVarDecl warn (TypeArg i vk _ _) = 
-    do let k = toKind vk
-       rk <- anaKind k 
-       c <- toEnvState inc
+addTypeVarDecl warn (TypeArg i vk rk c _ _) = 
        addLocalTypeVar warn (TypeVarDefn rk vk c) i
 
 -- ---------------------------------------------------------------------------
@@ -341,7 +337,7 @@ optAnaddVarDecl warn vd@(VarDecl v t s q) =
        case mk of 
            Just k -> do 
                addDiags [mkDiag Hint "is type variable" v]
-               tv <- anaddTypeVarDecl $ TypeArg v (VarKind k) s q
+               tv <- anaddTypeVarDecl $ TypeArg v (VarKind k) star 0 s q
                return $ fmap GenTypeVarDecl tv 
            _ -> do addDiags $ map ( \ d -> Diag Hint (diagString d) q) ds  
                    varDecl

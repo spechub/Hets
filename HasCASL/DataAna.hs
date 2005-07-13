@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -28,32 +28,32 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
-type DataPat = (Id, [TypeArg], Kind)
+type DataPat = (Id, [TypeArg], Type)
 
--- | extent a kind to expect further type arguments
-typeArgsListToKind :: [TypeArg] -> Kind -> Kind
-typeArgsListToKind tArgs k = 
-    if null tArgs then k
-       else typeArgsListToKind (init tArgs) 
-            (FunKind (( \ (TypeArg _ xk _ _) -> toKind xk) $ last tArgs) k []) 
+typeArgToType :: TypeArg -> Type
+typeArgToType (TypeArg i _ rk c _ _) = TypeName i rk c
 
--- | compute the type given by the input
-typeIdToType :: DataPat -> Type
-typeIdToType (i, nAs, k) = let
-    fullKind = typeArgsListToKind nAs k
-    ti = TypeName i fullKind 0
-    mkType _ ty [] = ty
-    mkType n ty (TypeArg ai ak _ _ : rest) =
-        mkType (n-1) (TypeAppl ty (TypeName ai (toKind ak) n)) rest
-    in mkType (-1) ti nAs
+patToType :: Id -> [TypeArg] -> Kind -> Type
+patToType i args k = mkTypeAppl (TypeName i (typeArgsListToKind args k) 0)
+                     $ map typeArgToType args
+
+-- | create the kind from type arguments
+typeArgsListToKind :: [TypeArg] -> Kind -> Kind 
+typeArgsListToKind tArgs = mkFunKind $
+    map ( \ (TypeArg _ ak _ _ _ _) -> toKind ak) tArgs
 
 -- | get the type of a constructor with given curried argument types
-getConstrType :: DataPat -> Partiality -> [Type] -> Type
-getConstrType dt p ts = (case p of
+getConstrType :: Type -> Partiality -> [Type] -> Type
+getConstrType rty p ts = (case p of
      Total -> id
      Partial -> addPartiality ts) $
                        foldr ( \ c r -> FunType c FunArr r [] )
-                             (typeIdToType dt) ts
+                             rty ts
+
+getSelType :: Type -> Partiality -> Type -> Type
+getSelType dt p rt = (case p of 
+    Partial -> addPartiality [dt]
+    Total -> id) (FunType dt FunArr rt [])
 
 mkSelId :: [Pos] -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId 
@@ -72,15 +72,9 @@ genSelVars _ [] = []
 genSelVars n (ts:sels)  = 
     genTuple n 1 ts : genSelVars (n + 1) sels
 
-getSelType :: DataPat -> Partiality -> Type -> TypeScheme
-getSelType dp@(_, args, _) p rt = let dt = typeIdToType dp in 
-    TypeScheme args ((case p of 
-    Partial -> addPartiality [dt]
-    Total -> id) (FunType dt FunArr rt [])) []
-
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
-makeSelTupleEqs dt ct n m (Select mi ty p : sels) = 
-    let sc = getSelType dt p ty in
+makeSelTupleEqs dt@(_, tArgs, rt) ct n m (Select mi ty p : sels) = 
+    let sc = TypeScheme tArgs (getSelType rt p ty) [] in
     (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
@@ -97,10 +91,10 @@ makeSelEqs dt ct n (sel:sels) =
 makeSelEqs _ _ _ _ = []
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
-makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) = 
+makeAltSelEqs dt@(_, args, rt) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args (getConstrType dt p ts) [] 
+    Just c -> let sc = TypeScheme args (getConstrType rt p ts) [] 
                   newSc = sc
                   vars = genSelVars 1 sels 
                   as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
@@ -109,10 +103,10 @@ makeAltSelEqs dt@(_, args, _) (Construct mc ts p sels) =
                                   ++ map GenVarDecl (concat vars))))
                  $ makeSelEqs dt ct 1 sels
 
-makeDataSelEqs :: DataEntry -> Kind -> [Named Sentence]
-makeDataSelEqs (DataEntry _ i _ args alts) k =
+makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
+makeDataSelEqs (DataEntry _ i _ args alts) rt =
     map (mapNamed Formula) $  
-    concatMap (makeAltSelEqs(i, args, k)) alts
+    concatMap (makeAltSelEqs(i, args, rt)) alts
 
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeEnv -> Result [AltDefn]
 anaAlts tys dt alts te = 
@@ -157,8 +151,7 @@ anaCompType tys (_, tArgs, _) t te = do
     return ct
  
 checkMonomorphRecursion :: Type -> TypeEnv -> DataPat -> Result ()
-checkMonomorphRecursion t te p@(i, _, _) = 
-    let rt = typeIdToType p in
+checkMonomorphRecursion t te (i, _, rt) = 
     if occursIn (typeMap te) i t then 
        if lesserType te t rt || lesserType te rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 

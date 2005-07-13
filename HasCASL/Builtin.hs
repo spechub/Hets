@@ -127,7 +127,8 @@ mStar :: Kind
 mStar = ExtKind star ContraVar []
 
 aBindWithKind :: Kind -> Type -> TypeScheme
-aBindWithKind k ty = TypeScheme [TypeArg aVar (VarKind k) Other []] ty []
+aBindWithKind k ty = 
+    TypeScheme [TypeArg aVar (VarKind k) k (-1) Other []] ty []
 
 bindA :: Type -> TypeScheme
 bindA = aBindWithKind star

@@ -27,8 +27,8 @@ import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
 import HasCASL.Le as Le
 import HasCASL.As as As
+import HasCASL.AsUtils
 import HasCASL.Builtin
-import HasCASL.Morphism
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
@@ -186,7 +186,7 @@ transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"
 
 -- arguments of datatype's typeconstructor
 transTypeArg :: TypeArg -> Typ
-transTypeArg (TypeArg tyId _ _ _) = TFree (showIsaT tyId baseSign) []
+transTypeArg ta = TFree (showIsaT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
 transAltDefn :: AltDefn -> DataTypeAlt
@@ -239,7 +239,7 @@ transTerm sign (QuantifiedTerm quan varDecls phi _) =
         (GenVarDecl (VarDecl var typ _ _)) ->
           termAppl (con $ qname q) 
                (Abs (con $ transVar var) (transType typ) phi' NotCont)
-        (GenTypeVarDecl (TypeArg _ _ _ _)) ->  phi'
+        (GenTypeVarDecl (TypeArg _ _ _ _ _ _)) ->  phi'
     qname Universal   = allS
     qname Existential = exS
     qname Unique      = ex1S

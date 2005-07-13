@@ -153,7 +153,7 @@ getAliasArgs (TypeScheme arglist _ _) =
     map getArg arglist
 
 getArg :: TypeArg -> HsType
-getArg (TypeArg tid _ _ _) = hsTyVar $ mkHsIdent LowerId tid
+getArg ta = hsTyVar $ mkHsIdent LowerId $ getTypeVar ta
 
 getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _ t _) = translateType t

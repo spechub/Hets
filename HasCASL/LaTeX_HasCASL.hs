@@ -266,7 +266,8 @@ instance PrintLaTeX GenVarDecl where
         GenTypeVarDecl tv -> printLatex0 ga tv
 
 instance PrintLaTeX TypeArg where 
-    printLatex0 ga (TypeArg v c _ _) = printLatex0 ga v <> latexVarKind ga c
+    printLatex0 ga (TypeArg v c _ _ _ _) = 
+        printLatex0 ga v <> latexVarKind ga c
 
 -- | don't print an empty list and put parens around longer lists
 latexList0 :: (PrintLaTeX a) => GlobalAnnos -> [a] -> Doc

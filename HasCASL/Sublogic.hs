@@ -1,7 +1,7 @@
 {- |
 
 Module      :  $Header$
-Copyright   :  (c) Pascal Schmidt, Christian Maeder, and Uni Bremen 2002-2003
+Copyright   :  (c) Pascal Schmidt, Christian Maeder, and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -56,7 +56,6 @@ import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.Morphism
 import HasCASL.Builtin
 
 ------------------------------------------------------------------------------
@@ -666,7 +665,8 @@ sl_varKind vk = case vk of
    _ -> bottom
 
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ k _ _) = sublogics_max need_polymorphism (sl_varKind k)
+sl_typeArg (TypeArg _ k _ _ _ _) = 
+    sublogics_max need_polymorphism (sl_varKind k)
 
 
 sl_genVarDecl :: GenVarDecl -> HasCASL_Sublogics

@@ -22,18 +22,18 @@ import qualified Common.Lib.Set as Set
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
 getAppl :: Term -> Maybe (Id, TypeScheme, [Term])
-getAppl = thrdM reverse . getAppl2
+getAppl = thrdM reverse . getRevAppl
     where
     thrdM :: (c -> c) -> Maybe (a, b, c) -> Maybe (a, b, c)
     thrdM f = fmap ( \ (a, b, c) -> (a, b, f c))
-    getAppl2 :: Term -> Maybe (Id, TypeScheme, [Term])
-    getAppl2 t = case t of 
+    getRevAppl :: Term -> Maybe (Id, TypeScheme, [Term])
+    getRevAppl t = case t of 
         TypedTerm trm q _ _ -> case q of 
             InType -> Nothing
-            _ -> getAppl2 trm 
+            _ -> getRevAppl trm 
         QualOp _ (InstOpId i _ _) sc _ -> Just (i, sc, [])
         QualVar (VarDecl v ty _ _) -> Just (v, simpleTypeScheme ty, [])
-        ApplTerm t1 t2 _ -> thrdM (t2:) $ getAppl2 t1
+        ApplTerm t1 t2 _ -> thrdM (t2:) $ getRevAppl t1
         _ -> Nothing
 
 -- | extract bindings from an analysed pattern
@@ -82,7 +82,7 @@ getSimpleConstrType i is p ts = (case p of
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id
-getTypeVar(TypeArg v _ _ _) = v
+getTypeVar(TypeArg v _ _ _ _ _) = v
 
 -- | construct application left-associative
 mkTypeAppl :: Type -> [Type] -> Type
@@ -112,7 +112,7 @@ posOfVars vr =
     VarTuple _ ps -> ps
 
 posOfTypeArg :: TypeArg -> [Pos]
-posOfTypeArg (TypeArg t _ _ ps) = firstPos [t] ps
+posOfTypeArg (TypeArg t _ _ _ _ ps) = firstPos [t] ps
 
 posOfTypePattern :: TypePattern -> [Pos]
 posOfTypePattern pat = 
@@ -121,7 +121,7 @@ posOfTypePattern pat =
     TypePatternToken t -> tokPos t
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
-    TypePatternArg (TypeArg t _ _ _) _ -> posOfId t
+    TypePatternArg (TypeArg t _ _ _ _ _) _ -> posOfId t
 
 posOfType :: Type -> [Pos]
 posOfType ty = 

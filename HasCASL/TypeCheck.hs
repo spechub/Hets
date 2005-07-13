@@ -73,7 +73,7 @@ instantiate (TypeScheme tArgs t _) =
        return (subst s t, ats, Set.fromList cs)
 
 mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
-mapArgs s ts = foldr ( \ (TypeArg i vk _ _) l ->  
+mapArgs s ts = foldr ( \ (TypeArg i vk _ _ _ _) l ->  
     maybe l ( \ (_, t) -> (t, case vk of
         MissingKind -> error "mapArgs"
         VarKind k -> Kinding t k
