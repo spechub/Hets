@@ -40,9 +40,7 @@ mkTypeConstrAppls m ty = case ty of
                   [x] -> case b of
                          Parens -> return x
                          _ -> do let [o,c] = mkBracketToken b ps 
-                                     i = Id [o, Token place $ firstPos args ps
-                                            , c] [] []
-                                 let t = mkTypeName $ mkId 
+                                     t = mkTypeName $ mkId 
                                          [o, Token place $ firstPos args ps, c]
                                  if isPlaceType (head ts) then return t
                                     else return $ TypeAppl t x
