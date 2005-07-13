@@ -14,6 +14,7 @@ Interface for the SPASS theorem prover.
 
 {- 
     todo:
+      - implement waiting for SPASS (Zombies)
       - use one of the technices in Comorphisms.CASL2SPASS to translate
         formula labels into correct SPASS identifiers; 
         and keep track of this translation for getting the right names
@@ -312,7 +313,8 @@ spassProveGUI thName th = do
           s <- readIORef stateRef
           sel <- (getSelection lb) :: IO (Maybe [Int])
           let s' = if isJust sel
-                     then s {currentGoal = Just $ senName (goals !! (head $ fromJust sel))}
+                     then s {currentGoal = Just $ senName 
+                                           (goals !! (head $ fromJust sel))}
                      else s
           writeIORef stateRef s'
           updateDisplay s' statusLabel timeEntry optionsEntry
