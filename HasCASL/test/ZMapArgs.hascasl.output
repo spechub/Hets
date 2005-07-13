@@ -3,7 +3,7 @@ free type Tree(a : Type) ::= Leaf (a) |
                              EmptyLeaf
 free type Nat ::= Zero | 
                   Suc (Nat)
-op caseTree : forall a : Type . Tree Nat -> Tree Nat
+op caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
 . ((fun __=__[Tree Nat]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
@@ -11,15 +11,15 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
     ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
      (case (var t : Tree Nat) of
           (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
-              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                  Tree _var_14_v14 | 
+              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                  Tree _var_13_v13 | 
           ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
                Nat -> Tree Nat)
             (var n : Nat) :
               Tree Nat
             ->
-              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                  Tree _var_14_v14 | 
+              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                  Tree _var_13_v13 | 
           (((op Node[Nat]
              : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
                 Tree Nat -> Nat -> Tree Nat)
@@ -28,8 +28,8 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
             (var n : Nat) :
               Tree Nat
             ->
-              (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                  Tree _var_14_v14 | 
+              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                  Tree _var_13_v13 | 
           (((op Node[Nat]
              : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
                 Tree Nat -> Nat -> Tree Nat)
@@ -69,19 +69,24 @@ Nat
      %[free type Nat
          ::= Zero : Nat
              Suc : Nat -> Nat (Nat)]%
-Pred : Type -> Type := \ a : Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Tree
   : Type -> Type
      %[free type Tree(a : Type)
-         ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
-             Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
-             EmptyLeaf : Tree a_v-1]%
+         ::= Leaf : a_v1 -> Tree a (a_v1)
+             Node : Tree a_v1 -> a_v1 -> Tree a (Tree a_v1)(a_v1)
+             EmptyLeaf : Tree a]%
 Unit : Type
 __*__ : +Type -> +Type -> Type
+__*__*__ : +Type -> +Type -> +Type -> Type
+__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
+__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
 __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 EmptyLeaf : forall a : Type . Tree a_v-1 %(construct Tree)%
 Leaf : forall a : Type . a_v-1 -> Tree a_v-1 %(construct Tree)%
@@ -106,11 +111,15 @@ false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+h : Tree Nat
+n : Nat
+t : Tree Nat
 %% Sentences -------------------------------------------------------------
 free type Tree(a : Type)
-  ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
-      Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
-      EmptyLeaf : Tree a_v-1 %(ga_Tree)%
+  ::= Leaf : a_v1 -> Tree a (a_v1)
+      Node : Tree a_v1 -> a_v1 -> Tree a (Tree a_v1)(a_v1)
+      EmptyLeaf : Tree a %(ga_Tree)%
 free type Nat
   ::= Zero : Nat
       Suc : Nat -> Nat (Nat) %(ga_Nat)%
@@ -119,15 +128,15 @@ free type Nat
   ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
    (case (var t : Tree Nat) of
         (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
-            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                Tree _var_14_v14 | 
+            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                Tree _var_13_v13 | 
         ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
              Nat -> Tree Nat)
           (var n : Nat) :
             Tree Nat
           ->
-            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                Tree _var_14_v14 | 
+            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                Tree _var_13_v13 | 
         (((op Node[Nat]
            : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
               Tree Nat -> Nat -> Tree Nat)
@@ -136,8 +145,8 @@ free type Nat
           (var n : Nat) :
             Tree Nat
           ->
-            (op EmptyLeaf[_var_14_v14] : forall a : Type . Tree a_v-1) :
-                Tree _var_14_v14 | 
+            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
+                Tree _var_13_v13 | 
         (((op Node[Nat]
            : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
               Tree Nat -> Nat -> Tree Nat)
@@ -171,14 +180,17 @@ free type Nat
        Tree Nat) :
     Unit
 %% Diagnostics -----------------------------------------------------------
-*** Warning, unused type variables '[ a : Type ]'
+*** Warning 1.18, missing kind for type variable  'a'
+*** Warning 4.23, missing kind for type variable  'a'
+*** Warning 4.36, ignoring unused variable(s)
+  a in 'Tree Nat -> Tree Nat'
 *** Hint 6.9, not a kind 'Tree Nat'
 *** Hint 7.9, not a class 'Nat'
 *** Hint 7.16, not a kind 'Tree Nat'
-*** Hint 10.27, variable shadows global name(s) 'n'
-*** Hint 11.37, variable shadows global name(s) 'n'
-*** Hint 12.33, variable shadows global name(s) 'h'
-*** Hint 12.35, variable shadows global name(s) 'n'
-*** Hint 12.37, variable shadows global name(s) 'n'
-*** Hint 13.33, variable shadows global name(s) 'n'
-*** Hint 13.36, variable shadows global name(s) 'n'
+*** Hint 10.27, rebound variable 'n'
+*** Hint 11.37, rebound variable 'n'
+*** Hint 12.33, rebound variable 'h'
+*** Hint 12.35, rebound variable 'n'
+*** Hint 12.37, rebound variable 'n'
+*** Hint 13.33, rebound variable 'n'
+*** Hint 13.36, rebound variable 'n'
