@@ -23,6 +23,7 @@ Interface for the SPASS theorem prover.
       - use Colors for the Prove Status and add new status: Running
         (Green: Proved, Red: Disproved, Black: Open, Blue: Running)
       - add a button to show the help text for SPASS options
+      - Implement a consistency checker based on GUI
       - add a field for displaying "Used axioms" to the Status part
         of the window
       - surround goal specific part of GUI with a border and Status part 
