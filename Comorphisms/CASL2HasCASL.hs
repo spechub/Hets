@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -96,7 +96,7 @@ mapTheory (sig, sents) =
         constr = concatMap ( \ (DataEntry im i _ _ alts) ->
                          let j = Map.findWithDefault i i im in
                          map ( \ (Construct o args p _sels) ->
-                               (o, j, getConstrType (j, [], star) p
+                               (o, j, getSimpleConstrType j [] p
                                      $ map (mapType im) args)) alts) dts
         newEnv = execState (mapM_ ( \ (mo, j, ty) -> case mo of
                     Just o -> addOpId o (simpleTypeScheme ty) [] 
