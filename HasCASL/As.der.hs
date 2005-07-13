@@ -159,18 +159,18 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
 type RawKind = Kind
 
 -- | types based on variable or constructor names and applications
-data Type = TypeName TypeId RawKind Int  -- (Int == 0 means constructor,
-                                      -- negative are bound variables)
+data Type = TypeName TypeId RawKind Int  
+          -- Int == 0 means constructor, negative are bound variables
           | TypeAppl Type Type
           | ExpandedType Type Type    -- an alias type with its expansion
-            -- only the following variants are parsed
+          -- only the following variants are parsed
           | KindedType Type Kind [Pos]
+          -- pos ":"
           | TypeToken Token
           | BracketType BracketKind [Type] [Pos]
           -- pos "," (between type arguments)
-          -- pos ":"
           | MixfixType [Type] 
-          -- the following variants should be convert to type applications
+          -- the following variants should be converted to type applications
           | LazyType Type [Pos]
           -- pos "?"
           | ProductType [Type] [Pos]
@@ -178,6 +178,10 @@ data Type = TypeName TypeId RawKind Int  -- (Int == 0 means constructor,
           | FunType Type Arrow Type [Pos]
           -- pos arrow
             deriving Show
+
+-- | a type name with a dummy kind
+mkTypeName :: Id -> Type
+mkTypeName i = TypeName i (ClassKind $ mkId [mkSimpleId place]) 0
 
 -- | through away the user's type alias
 unalias :: Type -> Type

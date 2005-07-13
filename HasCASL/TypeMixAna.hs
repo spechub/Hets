@@ -30,20 +30,20 @@ data ApplMode = TopLevel | OnlyArg
 mkTypeConstrAppls :: ApplMode -> Type -> Result Type
 mkTypeConstrAppls m ty = case ty of
     TypeName _ _ _ -> return ty
-    TypeToken tt -> mkTypeName (simpleIdToId tt)
+    TypeToken tt -> return $ mkTypeName (simpleIdToId tt)
     BracketType b ts ps -> do
        args <- mapM (\ trm -> mkTypeConstrAppls m trm) ts
        case args of
                   [] -> case b of
                         Parens -> return unitType
-                        _ -> let i = Id (mkBracketToken b ps) [] []
-                             in mkTypeName i
+                        _ -> return $ mkTypeName $ mkId $ mkBracketToken b ps
                   [x] -> case b of
                          Parens -> return x
                          _ -> do let [o,c] = mkBracketToken b ps 
                                      i = Id [o, Token place $ firstPos args ps
                                             , c] [] []
-                                 t <- mkTypeName i
+                                 let t = mkTypeName $ mkId 
+                                         [o, Token place $ firstPos args ps, c]
                                  if isPlaceType (head ts) then return t
                                     else return $ TypeAppl t x
                   _ -> mkError "illegal type" ty
@@ -51,7 +51,7 @@ mkTypeConstrAppls m ty = case ty of
     MixfixType (f:a) -> case (f, a) of 
       (TypeToken t, [BracketType Squares as@(_:_) ps]) -> do 
          mis <- mapM mkTypeCompId as 
-         mkTypeName $ Id [t] mis ps
+         return $ mkTypeName $ Id [t] mis ps
       _ -> do newF <- mkTypeConstrAppls TopLevel f 
               nA <- mapM ( \ t -> mkTypeConstrAppls OnlyArg t) a
               return $ foldl1 TypeAppl $ newF : nA
@@ -63,20 +63,16 @@ mkTypeConstrAppls m ty = case ty of
        return $ LazyType newT p 
     ProductType ts ps -> let n = length ts in 
        if all isPlaceType ts && n > 1 then 
-       mkTypeName $ productId n else do
+       return $ mkTypeName $ productId n else do
        mTs <- mapM (\ t -> mkTypeConstrAppls TopLevel t) ts
        return $ mkProductType mTs ps
     FunType t1 a t2 ps -> if isPlaceType t1 && isPlaceType t2 then
-       mkTypeName $ arrowId a else do
+       return $ mkTypeName $ arrowId a else do
        newT1 <- mkTypeConstrAppls TopLevel t1
        newT2 <- mkTypeConstrAppls TopLevel t2
        return $ FunType newT1 a newT2 ps
     ExpandedType _ t2 -> mkTypeConstrAppls m t2
     _ -> error $ "mkTypeConstrAppls " ++ showPretty ty "\n" ++ show ty
-
--- | a type name with a dummy kind
-mkTypeName :: Id -> Result Type
-mkTypeName i = return $ TypeName i (ClassKind $ mkId [mkSimpleId place]) 0
 
 isPlaceType :: Type -> Bool
 isPlaceType ty = case ty of 
