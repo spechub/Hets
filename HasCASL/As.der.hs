@@ -25,7 +25,7 @@ import HasCASL.HToken
 
 -- | annotated basic items
 data BasicSpec = BasicSpec [Annoted BasicItem]
-                  deriving (Show, Eq)
+                  deriving Show
 
 -- | the possible items
 data BasicItem = SigItems SigItems
@@ -44,14 +44,14 @@ data BasicItem = SigItems SigItems
                -- pos "forall" (if GenVarDecl not empty), dots 
                | Internal [Annoted BasicItem] [Pos]
                -- pos "internal" "{", ";"s, "}"
-                 deriving (Show, Eq)
+                 deriving Show
 
 -- | signature items are types or functions
 data SigItems = TypeItems Instance [Annoted TypeItem] [Pos] -- including sort
               -- pos "type", ";"s
               | OpItems OpBrand [Annoted OpItem] [Pos]
               -- pos "op", ";"s
-                 deriving (Show, Eq)
+                 deriving Show
 
 -- | indicator for predicate, operation or function
 data OpBrand = Pred | Op | Fun deriving (Eq, Ord) 
@@ -68,7 +68,7 @@ isPred b = case b of Pred -> True
                      _ -> False
 
 -- | indicator in 'ClassItems' and 'TypeItems'
-data Instance = Instance | Plain deriving Eq
+data Instance = Instance | Plain
 
 instance Show Instance where
     show i = case i of
@@ -78,12 +78,12 @@ instance Show Instance where
 -- | a class item
 data ClassItem = ClassItem ClassDecl [Annoted BasicItem] [Pos] 
                  -- pos "{", ";"s "}"
-                 deriving (Show, Eq)
+                 deriving Show
 
 -- | declaring class identifiers
 data ClassDecl = ClassDecl [ClassId] Kind [Pos]
                -- pos ","s
-                 deriving (Show, Eq)
+                 deriving Show
 
 -- | co- or contra- variance indicator                          
 data Variance = CoVar | ContraVar deriving (Eq, Ord)
@@ -139,7 +139,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind [Pos]
                | AliasType TypePattern (Maybe Kind) TypeScheme [Pos]
                -- pos ":="
                | Datatype DatatypeDecl
-                 deriving (Show, Eq)
+                 deriving Show
 
 -- | a tuple pattern for 'SubtypeDefn' 
 data Vars = Var Var | VarTuple [Vars] [Pos] deriving Show
@@ -153,7 +153,7 @@ data TypePattern = TypePattern TypeId [TypeArg] [Pos]
                  -- pos brackets (no parenthesis)
                  | TypePatternArg TypeArg [Pos]
                  -- pos "(", ")"
-                   deriving (Show, Eq)
+                   deriving Show
 
 -- | a type synonym for raw kinds (just for readability)
 type RawKind = Kind
@@ -276,7 +276,7 @@ data OpItem = OpDecl [OpId] TypeScheme [OpAttr] [Pos]
                -- pos ","s, ":", ","s, "assoc", "comm", "idem", "unit"
             | OpDefn OpId [[VarDecl]] TypeScheme Partiality Term [Pos]
                -- pos "("s, ";"s, ")"s, ":" or ":?", "="
-              deriving (Show, Eq)
+              deriving Show
 
 -- | attributes without arguments for binary functions 
 data BinOpAttr = Assoc | Comm | Idem deriving Eq
@@ -299,7 +299,7 @@ data DatatypeDecl = DatatypeDecl
                     [ClassId]
                     [Pos] 
                      -- pos "::=", "|"s, "deriving"
-                     deriving (Show, Eq)
+                     deriving Show
 
 {- | Alternatives are subtypes or a constructor with a list of
 (curried) tuples as arguments. Only the components of the first tuple
@@ -399,7 +399,7 @@ data ProgEq = ProgEq Pattern Term [Pos] deriving (Show, Eq, Ord)
 
 {- | an indicator if variables were separated by commas or by separate
 declarations -}
-data SeparatorKind = Comma | Other deriving (Show, Eq, Ord)
+data SeparatorKind = Comma | Other deriving Show
 
 -- | a variable with its type
 data VarDecl = VarDecl Var Type SeparatorKind [Pos] deriving Show
