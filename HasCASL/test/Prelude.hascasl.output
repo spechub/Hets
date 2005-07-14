@@ -505,47 +505,6 @@ free type bool
 *** Hint 195.5, rebound variable 'f'
 *** Hint 195.20, not a class 'p'
 *** Hint 195.18, rebound variable 'x'
-*** Hint 196.3-196.16, 
-  expected: Pcpo
-     found: Type
-
-*** Error 196.3-196.16, in term'((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-     p * p ->? Unit)
-  ((var f : p --> p)
-     (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-           (p --> p) --> p)
-        (var f : p --> p) :
-          p) :
-       p,
-   ((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-        (p --> p) --> p)
-     (var f : p --> p) :
-       p) :
-    Unit' of type 'Unit'
- unresolved constraints '{ p : Pcpo }'
-*** Hint 197.4-197.24, 
-  expected: Cpo
-     found: Type
-
-*** Hint 197.4-197.24, 
-  expected: Pcpo
-     found: Type
-
-*** Error 197.4-197.24, in term'(fun __=>__ : Unit * Unit ->? Unit)
-  (((fun __=__[p] : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-        p * p ->? Unit)
-     ((var f : p --> p)(var x : p) : p, var x : p) :
-       Unit,
-   ((pred __<<=__[p] : forall c : Cpo . c_v-1 * c_v-1) :
-        p * p ->? Unit)
-     (((fun Y[p] : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-           (p --> p) --> p)
-        (var f : p --> p) :
-          p,
-      var x : p) :
-       Unit) :
-    Unit' of type 'Unit'
- unresolved constraints '{ p : Cpo, p : Pcpo }'
 *** Warning 199.14-199.24, trying hard to find lazy type for 'Y ((\ (var x' : c_v131 --> p_v129) . x') as
          (c --> p) --> c --> p) as
       c_v131 --> p_v129'

@@ -86,17 +86,27 @@ byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
 byInst te c = let cm = classMap te in case c of 
     Kinding ty k -> case ty of 
       ExpandedType _ t -> byInst te $ Kinding t k
-      _ -> case k of
+      _ -> if k == star then return noC else case k of
            ExtKind ek _ _ -> byInst te (Kinding ty ek)
            ClassKind _ -> let (topTy, args) = getTypeAppl ty in
                case topTy of 
-               TypeName _ kind _ -> if null args then
-                   if lesserKind cm kind k then return noC 
-                         else fail $ expected k kind
-                   else do 
-                       let ks = getKindAppl cm kind args
-                       newKs <- dom cm k ks 
-                       return $ Set.fromList $ zipWith Kinding args newKs
+               TypeName i _ _ -> let Result _ mk = getIdKind te i in
+                   case mk of 
+                   Nothing -> fail $ "remaining variable '" 
+                              ++ showPretty i "'"   
+                   Just ((_, ks), _) -> do 
+                       if null args then
+                          if any ( \ j -> lesserKind cm j k) ks 
+                             then return noC 
+                             else fail $ "constrain '" ++ 
+                                  showPretty c "' is unprovable"
+                                  ++ "\n  known kinds are: " ++
+                                  showPretty ks ""
+                          else do 
+                          let kas = concatMap ( \ j -> 
+                                         getKindAppl cm j args) ks
+                          newKs <- dom cm k kas 
+                          return $ Set.fromList $ zipWith Kinding args newKs
                _ -> error "byInst: unexpected Type" 
            _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
