@@ -43,10 +43,10 @@ __->?__ : -Type -> +Type -> Type
 m : (a -> b) -> c
 r : a
 r1 : c < t
-r2 : Type < (t2, r2, s2)
+r2 : Type < s2
 s : (b, a)
 s1 : c < t
-s2 : Type < (t2, r2, s2)
+s2 : Type
 s3
   : Type < t
     = {x : t . ((fun __=__[t]
@@ -56,7 +56,7 @@ s3
                    Unit}
 t : c
 t1 : c < t
-t2 : Type < (t2, r2, s2)
+t2 : Type < (r2, s2)
 tuple1 : b -> a
 tuple3 : a -> b -> c -> d
 {__} : a -> b
@@ -124,4 +124,7 @@ y : tuple3 r s
      found: a -> b
 
 *** Error 32.10-32.20, no kind found for 'nt r List s'
+*** Error, subtyping cycle via 's2' and 'r2'
+*** Error, subtyping cycle via 's2' and 't2'
+*** Error, subtyping cycle via 'r2' and 't2'
 *** Hint 38.12, rebound variable 'x'

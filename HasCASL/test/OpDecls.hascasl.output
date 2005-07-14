@@ -57,7 +57,7 @@ __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 s : Type < t
-t : Type < t
+t : Type
 %% Assumptions -----------------------------------------------------------
 __+__
   : t * t -> t %(op)%
