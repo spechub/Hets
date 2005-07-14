@@ -213,4 +213,10 @@ instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
     match _ _ _ (_, Nothing) = return eps
     match tm rel (b1, Just a1) (b2, Just a2) = match tm rel (b1, a1) (b2, a2)
 
+-- | make representation of bound variables unique
+generalize :: [TypeArg] -> Type -> Type
+generalize tArgs = 
+    subst $ Map.fromList $ zipWith 
+          ( \ (TypeArg i _ rk c _ _) n -> 
+                (c, TypeName i rk n)) tArgs [-1, -2..] 
 

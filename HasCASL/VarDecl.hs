@@ -86,16 +86,14 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
     let fvs = leaves (> 0) ty
         svs = sortBy comp fvs
         comp a b = compare (fst a) $ fst b
-        ts = zipWith ( \ (v, (i, rk)) n -> 
-                       (v, TypeName i rk n)) svs [-1, -2..]
-        newTy = subst (Map.fromList ts) ty
     tvs <- gets localTypeVars 
     let newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
                   Nothing -> error "generalizeS" 
                   Just (TypeVarDefn rk vk c) -> 
                       TypeArg i vk rk c Other []) svs
+        newTy = generalize newArgs ty
     if null tArgs then return $ TypeScheme newArgs newTy p
-       else do 
+       else do
          addDiags $ generalizable sc
          return $ TypeScheme newArgs newTy p
 
