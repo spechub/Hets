@@ -28,14 +28,16 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.Unify
 
-type DataPat = (Id, [TypeArg], Type)
+-- | description of polymorphic data types
+data DataPat = DataPat Id [TypeArg] RawKind Type
 
 typeArgToType :: TypeArg -> Type
 typeArgToType (TypeArg i _ rk c _ _) = TypeName i rk c
 
-patToType :: Id -> [TypeArg] -> Kind -> Type
-patToType i args k = mkTypeAppl (TypeName i (typeArgsListToKind args k) 0)
-                     $ map typeArgToType args
+patToType :: Id -> [TypeArg] -> RawKind -> Type
+patToType i args k = mkTypeAppl 
+    (TypeName i (mkFunKind (map ( \ (TypeArg _ _ rk _ _ _) -> rk) args) k) 0)
+    $ map typeArgToType args
 
 -- | create the kind from type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind 
@@ -73,7 +75,7 @@ genSelVars n (ts:sels)  =
     genTuple n 1 ts : genSelVars (n + 1) sels
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
-makeSelTupleEqs dt@(_, tArgs, rt) ct n m (Select mi ty p : sels) = 
+makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) = 
     let sc = TypeScheme tArgs (getSelType rt p ty) [] in
     (case mi of
      Just i -> let
@@ -91,7 +93,7 @@ makeSelEqs dt ct n (sel:sels) =
 makeSelEqs _ _ _ _ = []
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
-makeAltSelEqs dt@(_, args, rt) (Construct mc ts p sels) = 
+makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
     Just c -> let sc = TypeScheme args (getConstrType rt p ts) [] 
@@ -104,9 +106,9 @@ makeAltSelEqs dt@(_, args, rt) (Construct mc ts p sels) =
                  $ makeSelEqs dt ct 1 sels
 
 makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
-makeDataSelEqs (DataEntry _ i _ args alts) rt =
+makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
     map (mapNamed Formula) $  
-    concatMap (makeAltSelEqs(i, args, rt)) alts
+    concatMap (makeAltSelEqs $ DataPat i args rk rt) alts
 
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeEnv -> Result [AltDefn]
 anaAlts tys dt alts te = 
@@ -143,15 +145,15 @@ anaComp tys rt te (NoSelector t) =
        return  (ct, Select Nothing ct Partial)
 
 anaCompType :: [DataPat] -> DataPat -> Type -> TypeEnv -> Result Type
-anaCompType tys (_, tArgs, _) t te = do
+anaCompType tys (DataPat _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct 
     if null ds then return () else Result ds Nothing
     mapM (checkMonomorphRecursion ct te) tys
-    return ct
+    return $ generalize tArgs ct
  
 checkMonomorphRecursion :: Type -> TypeEnv -> DataPat -> Result ()
-checkMonomorphRecursion t te (i, _, rt) = 
+checkMonomorphRecursion t te (DataPat i _ _ rt) = 
     if occursIn (typeMap te) i t then 
        if lesserType te t rt || lesserType te rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 

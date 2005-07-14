@@ -93,7 +93,7 @@ mapTheory (sig, sents) =
         dts = concatMap ( \ ns -> case sentence ns of
                           DatatypeSen ds -> ds
                           _ ->  []) newSents
-        constr = concatMap ( \ (DataEntry im i _ _ alts) ->
+        constr = concatMap ( \ (DataEntry im i _ _ _ alts) ->
                          let j = Map.findWithDefault i i im in
                          map ( \ (Construct o args p _sels) ->
                                (o, j, getSimpleConstrType j [] p
@@ -162,7 +162,7 @@ toSentence sig f = case f of
                 Cas.Total -> HasCASL.As.Total
                 Cas.Partial -> HasCASL.As.Partial
        in DatatypeSen 
-          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind []
+          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] star
                           (map ( \ (i, t, ps) -> 
                                let args = opArgs t in 
                                Construct (Just i) 

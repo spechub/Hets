@@ -179,7 +179,7 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: DataEntry -> DataTypeTabEntry
-transDataEntry (DataEntry _ tyId Le.Free tyArgs alts) = 
+transDataEntry (DataEntry _ tyId Le.Free tyArgs _ alts) = 
                          [((transDName tyId tyArgs), (map transAltDefn alts))]
   where transDName ti ta = Type (showIsaT ti baseSign) [] (map transTypeArg ta)
 transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"
@@ -447,7 +447,7 @@ sortCaseAlts sign peqs =
 getCons :: Env -> TypeId -> [UninstOpId]
 getCons sign tyId = 
   extractIds (typeDefn (findInMap tyId (typeMap sign)))
-  where extractIds (DatatypeDefn (DataEntry _ _ _ _ altDefns)) =
+  where extractIds (DatatypeDefn (DataEntry _ _ _ _ _ altDefns)) =
           catMaybes (map stripConstruct altDefns)
         extractIds _ = error "HasCASL2Isabelle.extractIds"
         stripConstruct (Construct i _ _ _) = i

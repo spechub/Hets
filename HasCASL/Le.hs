@@ -46,7 +46,7 @@ data Selector = Select (Maybe UninstOpId) Type Partiality -- only result type
 type IdMap = Map.Map TypeId TypeId
 
 -- | for data types the morphism needs to be kept as well
-data DataEntry = DataEntry IdMap TypeId GenKind [TypeArg] [AltDefn]
+data DataEntry = DataEntry IdMap TypeId GenKind [TypeArg] RawKind [AltDefn]
                   deriving (Show, Eq, Ord)
 
 -- | possible definitions for type identifiers

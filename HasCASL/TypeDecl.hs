@@ -28,6 +28,7 @@ import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna
 import HasCASL.DataAna
+import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.TypeCheck
 
@@ -76,7 +77,7 @@ anaTypeItems ga gk inst l = do
 addDataSen :: [DataPat] -> State Env ()
 addDataSen tys = do 
     tm <- gets typeMap
-    let tis = map ( \ (i, _, _) -> i) tys
+    let tis = map ( \ (DataPat i _ _ _) -> i) tys
         ds = foldr ( \ i dl -> case Map.lookup i tm of 
                      Nothing -> dl
                      Just ti -> case typeDefn ti of
@@ -262,7 +263,7 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
 dataPatToType :: DatatypeDecl -> State Env DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do
      rk <- anaKind k
-     return (i, nAs, patToType i nAs rk)
+     return $ DataPat i nAs rk $ patToType i nAs rk
 dataPatToType _ = error "dataPatToType"
 
 -- | add a supertype to a given type id
@@ -278,7 +279,7 @@ addSuperType t i =
                         (TypeInfo ok ks (t:sups) defn) tm
 
 addDataSubtype :: DataPat -> Type -> State Env ()
-addDataSubtype (_, _, rt) st = 
+addDataSubtype (DataPat _ _ _ rt) st = 
     case st of 
     TypeName i _ _ -> addSuperType rt i 
     _ -> addDiags [mkDiag Warning "data subtype ignored" st]
@@ -288,9 +289,9 @@ anaDatatype :: GenKind -> Instance -> [DataPat]
             -> DatatypeDecl -> State Env (Maybe DatatypeDecl)
 anaDatatype genKind inst tys
        d@(DatatypeDecl (TypePattern i nAs _) k alts _ _) = 
-    do dt@(_, _, rt) <- dataPatToType d
+    do dt@(DataPat _ _ rk rt) <- dataPatToType d
        let fullKind = typeArgsListToKind nAs k
-       rk <- anaKind fullKind
+       frk <- anaKind fullKind
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False) nAs
        mNewAlts <- fromResult $ anaAlts tys dt (map item alts) 
@@ -306,18 +307,19 @@ anaDatatype genKind inst tys
            mapM_ ( \ (Construct mc tc p sels) -> case mc of 
                Nothing -> return ()
                Just c -> do
-                   sc <- generalizeS $ TypeScheme nAs 
-                         (getConstrType rt p tc) []
+                   let srt = generalize nAs rt 
+                       sc = TypeScheme nAs 
+                         (getConstrType srt p tc) []
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
                            Just s -> do 
-                               selSc <- generalizeS $ TypeScheme nAs 
-                                        (getSelType rt pa ts) []
+                               let selSc = TypeScheme nAs 
+                                        (getSelType srt pa ts) []
                                addOpId s selSc []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return False) $ concat sels) newAlts
-           let de = DataEntry Map.empty i genKind nAs newAlts
-           addTypeId True (DatatypeDefn de) inst rk fullKind i
+           let de = DataEntry Map.empty i genKind nAs rk newAlts
+           addTypeId True (DatatypeDefn de) inst frk fullKind i
            appendSentences $ makeDataSelEqs de rt
            putLocalTypeVars tvs
            return $ Just d 

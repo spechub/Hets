@@ -530,7 +530,7 @@ instance PrintLaTeX OpInfos where
     printLatex0 ga (OpInfos l) = vcat $ map (printLatex0 ga) l
 
 instance PrintLaTeX DataEntry where 
-    printLatex0 ga (DataEntry im i k args alts) =  
+    printLatex0 ga (DataEntry im i k args _ alts) =  
         latexGenKind k <> hc_sty_plain_keyword typeS <\+> printLatex0 ga i 
              <> hcat (map (parens . printLatex0 ga) args)
             <\+> (hc_sty_axiom defnS $$ 

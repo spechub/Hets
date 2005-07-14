@@ -743,7 +743,7 @@ sl_typeDefn _ = bottom
 
 
 sl_dataEntry :: DataEntry -> HasCASL_Sublogics
-sl_dataEntry (DataEntry _ _ _ l m) = 
+sl_dataEntry (DataEntry _ _ _ l _ m) = 
   sublogics_max (comp_list $ map sl_typeArg l)
                 (comp_list $ map sl_altDefn m)
 

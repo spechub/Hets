@@ -101,7 +101,7 @@ instance PrettyPrint OpInfos where
     printText0 ga (OpInfos l) = vcat $ map (printText0 ga) l
 
 instance PrettyPrint DataEntry where 
-    printText0 ga (DataEntry im i k args alts) = hang
+    printText0 ga (DataEntry im i k args _ alts) = hang
         (printGenKind k <> text typeS <+> printText0 ga i 
                   <> hcat (map (parens . printText0 ga) args))
           2 (text defnS <+> vcat (map (printAltDefn ga i args) alts))

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2004 - 2005
+Copyright   :  (c) Christian Maeder, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -35,7 +35,6 @@ import Haskell.Logic_Haskell as HS
 import Haskell.HatParser hiding(TypeInfo, Kind)
 import Haskell.HatAna 
 import Haskell.TranslateId
-
 
 -- | The identity of the comorphism
 data HasCASL2Haskell = HasCASL2Haskell deriving Show
@@ -172,11 +171,11 @@ translateAltDefn env dt args im (Construct muid origTs p _) =
                    UpperId -> -- no existentials, no context
                        [HsConDecl loc [] [] ui $ 
                                   map (HsBangedType . translateType) ts]
-                   _ -> error "ToHaskell.TranslateAna.translateAltDefn"
+                   _ -> error "HasCASL2Haskell.translateAltDefn"
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
-translateDt env (DataEntry im i _ args alts) = 
+translateDt env (DataEntry im i _ args _ alts) = 
          let j = Map.findWithDefault i i im 
              loc = toProgPos $ posOfId i 
              hsname = mkHsIdent UpperId j

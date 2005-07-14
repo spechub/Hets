@@ -1,7 +1,6 @@
-
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -92,8 +91,8 @@ mapTypeInfo im ti =
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
 mapTypeDefn im td = 
     case td of 
-    DatatypeDefn (DataEntry tm i k args alts) -> 
-        DatatypeDefn (DataEntry (compIdMap tm im) i k args alts)
+    DatatypeDefn (DataEntry tm i k args rk alts) -> 
+        DatatypeDefn (DataEntry (compIdMap tm im) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapTypeScheme im sc
     Supertype vs sc t -> 
         Supertype vs (mapTypeScheme im sc)

@@ -39,11 +39,11 @@ mapSen m = let im = typeIdMap m in
        mapTerm (mapFunSym im (funMap m), mapType im)
 
 mapDataEntry :: Morphism -> DataEntry -> DataEntry
-mapDataEntry m (DataEntry tm i k args alts) = 
+mapDataEntry m (DataEntry tm i k args rk alts) = 
     let tim = compIdMap tm $ typeIdMap m
-    in DataEntry tim i k args $ map 
+    in DataEntry tim i k args rk $ map 
            (mapAlt m tim args $ patToType (Map.findWithDefault i i tim) 
-                   args star) alts
+                   args rk) alts
 
 mapAlt :: Morphism -> IdMap -> [TypeArg] -> Type -> AltDefn -> AltDefn
 mapAlt m tm args dt c@(Construct mi ts p sels) = 
