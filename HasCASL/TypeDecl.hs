@@ -318,7 +318,7 @@ anaDatatype genKind inst tys
                                addOpId s selSc []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return False) $ concat sels) newAlts
-           let de = DataEntry Map.empty i genKind nAs rk newAlts
+           let de = DataEntry Map.empty i genKind (genTypeArgs nAs) rk newAlts
            addTypeId True (DatatypeDefn de) inst frk fullKind i
            appendSentences $ makeDataSelEqs de rt
            putLocalTypeVars tvs
