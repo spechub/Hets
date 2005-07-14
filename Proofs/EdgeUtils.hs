@@ -37,6 +37,9 @@ isProven edge = isGlobalDef edge || isLocalDef edge
 		|| isProvenGlobalThm edge || isProvenLocalThm edge
                 || isProvenHidingThm edge
 
+isDefEdge :: LEdge DGLinkLab -> Bool
+isDefEdge edge = isGlobalDef edge || isLocalDef edge || isHidingDef edge
+
 isGlobalEdge :: LEdge DGLinkLab -> Bool
 isGlobalEdge edge = isGlobalDef edge || isGlobalThm edge
 

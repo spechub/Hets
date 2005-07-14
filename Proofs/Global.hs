@@ -48,21 +48,17 @@ import Proofs.StatusUtils
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
 
-
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
 globDecomp :: ProofStatus -> IO ProofStatus
-globDecomp proofStatus@(libname, libEnv,_) =
-  case Map.lookup libname libEnv of
-    Nothing -> return proofStatus
-    Just (_,_,dgraph) -> do
-      let globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-	  (newDGraph, newHistoryElem) 
-	      = globDecompAux dgraph globalThmEdges ([],[])
+globDecomp proofStatus@(libname,libEnv,_) = do
+  let dgraph = lookupDGraph libname proofStatus
+      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+      (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
 --	  (finalDGraph, finalHistoryElem) 
 --	      = removeSuperfluousInsertions newDGraph newHistoryElem
-          newProofStatus = mkResultProofStatus proofStatus newDGraph newHistoryElem --finalDGraph finalHistoryElem
-      return newProofStatus
+      newProofStatus = mkResultProofStatus proofStatus newDGraph newHistoryElem --finalDGraph finalHistoryElem
+  return newProofStatus
 
 
 {- removes all superfluous insertions from the list of changes as well as
@@ -103,19 +99,21 @@ globDecompForOneEdge dgraph edge =
   globDecompForOneEdgeAux dgraph edge [] paths
   
   where
-    pathsToSource
-      = getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
-    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
+    source = getSourceNode edge
+    defEdgesToSource = [e | e <- (labEdges dgraph), isDefEdge e && (getTargetNode e) == source]
+    paths = [e:edge:[]|e <- defEdgesToSource]++[edge:[]]
+    --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
+--    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
 
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
-			   [(Node, [LEdge DGLinkLab])] -> (DGraph,[DGChange])
+			   [[LEdge DGLinkLab]] -> (DGraph,[DGChange])
 {- if the list of paths is empty from the beginning, nothing is done
    otherwise the unprovenThm edge is replaced by a proven one -}
 globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] = 
-  if null changes then (dgraph, changes)
-   else
+--  if null changes then (dgraph, changes)
+  -- else
      if isDuplicate provenEdge dgraph changes
             then (delLEdge edge dgraph,
 	    ((DeleteEdge edge):changes))
@@ -135,8 +133,8 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 		  )
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
- ((node,path):list) =
-  if isRedundant newEdge dgraph changes list
+ (path:list) =
+  if isDuplicate newEdge dgraph changes-- list
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
 
@@ -147,13 +145,22 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
                  Just morph -> morph
                  Nothing ->
 	           error "globDecomp: could not determine morphism of new edge"
-    newEdge = if isHiding then hidingEdge else localEdge
+    newEdge = if isHiding then hidingEdge
+	       else if isGlobalDef (head path) then globalEdge else localEdge
+    node = getSourceNode (head path)
     hidingEdge = 
        (node,
         target,
         DGLink {dgl_morphism = morphism,
                 dgl_type = (HidingThm (dgl_morphism (getLabelOfEdge (head path))) (Static.DevGraph.Open)),
                 dgl_origin = DGProof})
+    globalEdge = (node,
+	          target,
+	          DGLink {dgl_morphism = morphism,
+		          dgl_type = (GlobalThm (Static.DevGraph.Open)
+			  	      None (Static.DevGraph.Open)),
+		          dgl_origin = DGProof}
+		 )
     localEdge = (node,
 	         target,
 	         DGLink {dgl_morphism = morphism,
