@@ -85,8 +85,6 @@ __-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
-%% Type Variables --------------------------------------------------------
-a  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 EmptyLeaf : forall a : Type . Tree a_v-1 %(construct Tree)%
 Leaf : forall a : Type . a_v-1 -> Tree a_v-1 %(construct Tree)%

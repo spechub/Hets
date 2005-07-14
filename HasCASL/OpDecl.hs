@@ -104,10 +104,10 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        case mty of 
            Just ty -> do 
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
-               putLocalVars vs
-               putLocalTypeVars tvs
                newSc <- generalizeS $ TypeScheme newArgs 
                       (patternsToType newPats ty) qs
+               putLocalVars vs
+               putLocalTypeVars tvs
                case mt of 
                    Just lastTrm -> do 
                        let lamTrm = case (pats, partial) of 

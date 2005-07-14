@@ -69,16 +69,17 @@ anaInstTypes ts = if null ts then return []
 
 anaTypeScheme :: TypeScheme -> State Env (Maybe TypeScheme)
 anaTypeScheme (TypeScheme tArgs ty p) =
-    do tm <- gets typeMap    -- save global variables  
+    do tvs <- gets localTypeVars    -- save global variables  
        mArgs <- mapM anaddTypeVarDecl tArgs
        let newArgs = catMaybes mArgs  
        mt <- anaStarType ty
-       putTypeMap tm       -- forget local variables 
        case mt of 
-           Nothing -> return Nothing
+           Nothing -> do putLocalTypeVars tvs       -- forget local variables 
+                         return Nothing
            Just newTy -> do 
                let newSc = TypeScheme newArgs newTy p
                gTy <- generalizeS newSc
+               putLocalTypeVars tvs       -- forget local variables 
                return $ Just gTy
 
 generalizeS :: TypeScheme -> State Env TypeScheme
