@@ -73,9 +73,9 @@ Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Tree
   : Type -> Type
      %[free type Tree(a : Type)
-         ::= Leaf : a_v1 -> Tree a (a_v1)
-             Node : Tree a_v1 -> a_v1 -> Tree a (Tree a_v1)(a_v1)
-             EmptyLeaf : Tree a]%
+         ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
+             Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
+             EmptyLeaf : Tree a_v-1]%
 Unit : Type
 __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
@@ -117,9 +117,9 @@ n : Nat
 t : Tree Nat
 %% Sentences -------------------------------------------------------------
 free type Tree(a : Type)
-  ::= Leaf : a_v1 -> Tree a (a_v1)
-      Node : Tree a_v1 -> a_v1 -> Tree a (Tree a_v1)(a_v1)
-      EmptyLeaf : Tree a %(ga_Tree)%
+  ::= Leaf : a_v-1 -> Tree a_v-1 (a_v-1)
+      Node : Tree a_v-1 -> a_v-1 -> Tree a_v-1 (Tree a_v-1)(a_v-1)
+      EmptyLeaf : Tree a_v-1 %(ga_Tree)%
 free type Nat
   ::= Zero : Nat
       Suc : Nat -> Nat (Nat) %(ga_Nat)%

@@ -25,7 +25,8 @@ Logical : Type := Unit ->? Unit
 Pair
   : Type -> Type -> Type
      %[free type Pair(a : Type)(b : Type)
-         ::= Pair : a_v3 * b_v4 -> Pair a b (fst : a_v3; snd : b_v4)]%
+         ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+               (fst : a_v-1; snd : b_v-2)]%
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
@@ -79,23 +80,23 @@ snd
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-forall a : Type; b : Type; x_1_1 : a_v3; x_1_2 : b_v4
+forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op fst : forall a : Type; b : Type . Pair a_v3 b_v4 -> a_v3)
+      ((op fst : forall a : Type; b : Type . Pair a_v3 b_v4 -> a_v-1)
          ((op Pair
-           : forall a : Type; b : Type . a_v3 * b_v4 -> Pair a_v3 b_v4)
-            (var x_1_1 : a_v3, var x_1_2 : b_v4)),
-       var x_1_1 : a_v3) %(ga_select_fst)%
-forall a : Type; b : Type; x_1_1 : a_v3; x_1_2 : b_v4
+           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v3 b_v4)
+            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
+       var x_1_1 : a_v-1) %(ga_select_fst)%
+forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op snd : forall a : Type; b : Type . Pair a_v3 b_v4 -> b_v4)
+      ((op snd : forall a : Type; b : Type . Pair a_v3 b_v4 -> b_v-2)
          ((op Pair
-           : forall a : Type; b : Type . a_v3 * b_v4 -> Pair a_v3 b_v4)
-            (var x_1_1 : a_v3, var x_1_2 : b_v4)),
-       var x_1_2 : b_v4) %(ga_select_snd)%
+           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v3 b_v4)
+            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
+       var x_1_2 : b_v-2) %(ga_select_snd)%
 free type Pair(a : Type)(b : Type)
-  ::= Pair : a_v3 * b_v4 -> Pair a b
-        (fst : a_v3; snd : b_v4) %(ga_Pair)%
+  ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+        (fst : a_v-1; snd : b_v-2) %(ga_Pair)%
 forall a : a; b : b
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op f
