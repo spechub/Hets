@@ -19,6 +19,7 @@ import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
+import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
@@ -271,7 +272,12 @@ dataPatToType _ = error "dataPatToType"
 addSuperType :: Type -> Id -> State Env ()
 addSuperType t i =
     do tm <- gets typeMap
-       case Map.lookup i tm of
+       let js = superTypeToId t
+       if Set.member i js then return () -- silently ignore
+         else if Set.member i $ supIds tm Set.empty js then
+            addDiags[mkDiag Error 
+                ("subtyping cycle via '" ++ showId i "' and") t]
+         else case Map.lookup i tm of
            Nothing -> return () -- previous error
            Just (TypeInfo ok ks sups defn) -> 
                if any (== t) sups then 
