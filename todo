@@ -303,6 +303,16 @@ IsaWin: support CASL-libraries
 Till
 ************************************************
 
+Markus' Bsp:
+Isabelle: use meta-quantifiers
+local subsumption ?
+better syntax (Tina)
+check for proved theorems
+
+AbstractGraphView: switch to Result monad
+
+unite or rename consCheck and cons_checkers
+
 BinInt.casl: revealing in Int1 does not work correctly
 
 from Stefan Wölfl:
