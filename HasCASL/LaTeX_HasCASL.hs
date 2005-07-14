@@ -480,10 +480,10 @@ instance PrintLaTeX TypeDefn where
     printLatex0 ga (DatatypeDefn de)  = 
         space <> hc_sty_comment (printLatex0 ga de)
 
-latexAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> AltDefn -> Doc
-latexAltDefn ga dt args  (Construct mi ts p sels) = case mi of 
+latexAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
+latexAltDefn ga dt args rk (Construct mi ts p sels) = case mi of 
         Just i -> printLatex0 ga i <\+> colon_latex 
-                  <\+> printLatex0 ga (getSimpleConstrType dt args p ts) 
+                  <\+> printLatex0 ga (createConstrType dt args rk p ts) 
                   <\+> fcat (map (parens . semiT_latex ga) sels)
         Nothing -> hc_sty_plain_keyword (typeS ++ sS) <\+> commaT_latex ga ts
 
@@ -530,11 +530,11 @@ instance PrintLaTeX OpInfos where
     printLatex0 ga (OpInfos l) = vcat $ map (printLatex0 ga) l
 
 instance PrintLaTeX DataEntry where 
-    printLatex0 ga (DataEntry im i k args _ alts) =  
+    printLatex0 ga (DataEntry im i k args rk alts) =  
         latexGenKind k <> hc_sty_plain_keyword typeS <\+> printLatex0 ga i 
              <> hcat (map (parens . printLatex0 ga) args)
             <\+> (hc_sty_axiom defnS $$ 
-                 vcat (map (latexAltDefn ga i args) alts))
+                 vcat (map (latexAltDefn ga i args rk) alts))
         $$ nest 2 (noPrint (Map.null im) 
            (hc_sty_plain_keyword withS <\+> hc_sty_plain_keyword (typeS ++ sS) 
                    <\+> printMap0 ga (hc_sty_axiom mapsTo) im))

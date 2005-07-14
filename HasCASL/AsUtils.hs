@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003 
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005 
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -71,14 +71,44 @@ addPartiality args t = case args of
                else FunType t1 a (addPartiality rs t2) ps
            _ -> error "addPartiality"
 
--- | get the type of a constructor for printing (kinds may be wrong)
-getSimpleConstrType :: Id -> [TypeArg] -> Partiality -> [Type] -> Type
-getSimpleConstrType i is p ts = (case p of 
-     Total -> id 
+-- | convert a type argument to a type
+typeArgToType :: TypeArg -> Type
+typeArgToType (TypeArg i _ rk c _ _) = TypeName i rk c
+
+{- | convert a parameterized type identifier with a result raw kind 
+     to a type application -}
+patToType :: TypeId -> [TypeArg] -> RawKind -> Type
+patToType i args rk = mkTypeAppl 
+    (TypeName i (typeArgsListToRawKind True args rk) 0)
+    $ map typeArgToType args
+
+-- | create the (raw if True) kind from type arguments
+typeArgsListToRawKind :: Bool -> [TypeArg] -> Kind -> Kind 
+typeArgsListToRawKind b tArgs = mkFunKind $
+    map ( \ (TypeArg _ ak rk _ _ _) -> if b then rk else toKind ak) tArgs
+
+-- | create the kind from type arguments
+typeArgsListToKind :: [TypeArg] -> Kind -> Kind 
+typeArgsListToKind = typeArgsListToRawKind False
+
+-- | get the type of a constructor with given curried argument types
+getConstrType :: Type -> Partiality -> [Type] -> Type
+getConstrType rty p ts = (case p of
+     Total -> id
      Partial -> addPartiality ts) $
-                       foldr ( \ c r -> FunType c FunArr r [] ) 
-                             (mkTypeAppl (mkTypeName i) $ 
-                                 map (mkTypeName . getTypeVar) is) ts
+                       foldr ( \ c r -> FunType c FunArr r [] )
+                             rty ts
+
+-- | get the type of a selector given the data type as first arguemnt
+getSelType :: Type -> Partiality -> Type -> Type
+getSelType dt p rt = (case p of 
+    Partial -> addPartiality [dt]
+    Total -> id) (FunType dt FunArr rt [])
+
+-- | get the type of a constructor for printing (kinds may be wrong)
+createConstrType :: Id -> [TypeArg] -> RawKind -> Partiality -> [Type] -> Type
+createConstrType i is rk = 
+    getConstrType (patToType i is rk)
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id

@@ -158,13 +158,13 @@ getAliasType :: TypeScheme -> HsType
 getAliasType (TypeScheme _ t _) = translateType t
 
 -- | Translation of an alternative constructor for a datatype definition.
-translateAltDefn :: Env -> Id -> [TypeArg] -> IdMap -> AltDefn 
+translateAltDefn :: Env -> Id -> [TypeArg] -> RawKind -> IdMap -> AltDefn 
                  -> [HsConDecl HsType [HsType]]
-translateAltDefn env dt args im (Construct muid origTs p _) = 
+translateAltDefn env dt args rk im (Construct muid origTs p _) = 
     let ts = map (mapType im) origTs in
     case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
-                    sc = TypeScheme args (getSimpleConstrType dt args p ts) []
+                    sc = TypeScheme args (createConstrType dt args rk p ts) []
                     -- resolve overloading
                     (c, ui) = translateId env uid sc
                 in case c of 
@@ -175,7 +175,7 @@ translateAltDefn env dt args im (Construct muid origTs p _) =
     Nothing -> []
 
 translateDt :: Env -> DataEntry -> Named HsDecl
-translateDt env (DataEntry im i _ args _ alts) = 
+translateDt env (DataEntry im i _ args rk alts) = 
          let j = Map.findWithDefault i i im 
              loc = toProgPos $ posOfId i 
              hsname = mkHsIdent UpperId j
@@ -186,7 +186,7 @@ translateDt env (DataEntry im i _ args _ alts) =
          hsDataDecl loc
                        [] -- empty HsContext
                        tp
-                       (concatMap (translateAltDefn env j args im) alts)
+                       (concatMap (translateAltDefn env j args rk im) alts)
                        derives
 
 -------------------------------------------------------------------------

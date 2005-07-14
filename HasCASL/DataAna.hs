@@ -31,31 +31,7 @@ import HasCASL.Unify
 -- | description of polymorphic data types
 data DataPat = DataPat Id [TypeArg] RawKind Type
 
-typeArgToType :: TypeArg -> Type
-typeArgToType (TypeArg i _ rk c _ _) = TypeName i rk c
-
-patToType :: Id -> [TypeArg] -> RawKind -> Type
-patToType i args k = mkTypeAppl 
-    (TypeName i (mkFunKind (map ( \ (TypeArg _ _ rk _ _ _) -> rk) args) k) 0)
-    $ map typeArgToType args
-
--- | create the kind from type arguments
-typeArgsListToKind :: [TypeArg] -> Kind -> Kind 
-typeArgsListToKind tArgs = mkFunKind $
-    map ( \ (TypeArg _ ak _ _ _ _) -> toKind ak) tArgs
-
--- | get the type of a constructor with given curried argument types
-getConstrType :: Type -> Partiality -> [Type] -> Type
-getConstrType rty p ts = (case p of
-     Total -> id
-     Partial -> addPartiality ts) $
-                       foldr ( \ c r -> FunType c FunArr r [] )
-                             rty ts
-
-getSelType :: Type -> Partiality -> Type -> Type
-getSelType dt p rt = (case p of 
-    Partial -> addPartiality [dt]
-    Total -> id) (FunType dt FunArr rt [])
+-- * creating selector equations
 
 mkSelId :: [Pos] -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId 
@@ -109,6 +85,8 @@ makeDataSelEqs :: DataEntry -> Type -> [Named Sentence]
 makeDataSelEqs (DataEntry _ i _ args rk alts) rt =
     map (mapNamed Formula) $  
     concatMap (makeAltSelEqs $ DataPat i args rk rt) alts
+
+-- * analysis of alternatives
 
 anaAlts :: [DataPat] -> DataPat -> [Alternative] -> TypeEnv -> Result [AltDefn]
 anaAlts tys dt alts te = 

@@ -47,10 +47,10 @@ instance PrettyPrint TypeDefn where
              <+> printText0 ga f)
         DatatypeDefn dd -> text " %[" <> printText0 ga dd <> text "]%"
 
-printAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> AltDefn -> Doc
-printAltDefn ga dt tArgs  (Construct mi ts p sels) = case mi of 
+printAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
+printAltDefn ga dt tArgs rk (Construct mi ts p sels) = case mi of 
         Just i -> hang (printText0 ga i <+> colon 
-                        <+> printText0 ga (getSimpleConstrType dt tArgs p ts))
+                        <+> printText0 ga (createConstrType dt tArgs rk p ts))
                   2 $ fcat (map (parens . semiT_text ga) sels)
         Nothing -> text (typeS ++ sS) <+> commaT_text ga ts
 
@@ -101,10 +101,10 @@ instance PrettyPrint OpInfos where
     printText0 ga (OpInfos l) = vcat $ map (printText0 ga) l
 
 instance PrettyPrint DataEntry where 
-    printText0 ga (DataEntry im i k args _ alts) = hang
+    printText0 ga (DataEntry im i k args rk alts) = hang
         (printGenKind k <> text typeS <+> printText0 ga i 
                   <> hcat (map (parens . printText0 ga) args))
-          2 (text defnS <+> vcat (map (printAltDefn ga i args) alts))
+          2 (text defnS <+> vcat (map (printAltDefn ga i args rk) alts))
         $$ nest 2 (noPrint (Map.null im) 
            (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
                        

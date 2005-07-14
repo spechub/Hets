@@ -24,6 +24,7 @@ import Common.Result
 import Common.GlobalAnnotations
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeAna

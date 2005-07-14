@@ -96,7 +96,7 @@ mapTheory (sig, sents) =
         constr = concatMap ( \ (DataEntry im i _ _ _ alts) ->
                          let j = Map.findWithDefault i i im in
                          map ( \ (Construct o args p _sels) ->
-                               (o, j, getSimpleConstrType j [] p
+                               (o, j, createConstrType j [] star p
                                      $ map (mapType im) args)) alts) dts
         newEnv = execState (mapM_ ( \ (mo, j, ty) -> case mo of
                     Just o -> addOpId o (simpleTypeScheme ty) [] 

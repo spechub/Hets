@@ -16,7 +16,7 @@ module HasCASL.Morphism where
 import HasCASL.Le
 import HasCASL.As
 import HasCASL.TypeAna
-import HasCASL.DataAna
+import HasCASL.AsUtils
 import HasCASL.AsToLe
 import HasCASL.MapTerm
 import HasCASL.Merge
