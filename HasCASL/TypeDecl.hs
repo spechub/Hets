@@ -35,7 +35,7 @@ import HasCASL.VarDecl
 import HasCASL.TypeCheck
 
 idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
-idsToTypePatterns mis = map ( \ (i, tArgs) -> TypePattern i tArgs [] ) 
+idsToTypePatterns mis = map ( \ (i, tArgs) -> TypePattern i tArgs nullRange ) 
                          $ catMaybes mis
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
@@ -45,7 +45,7 @@ anaFormula ga at =
                            Just e -> Just at { item = e }
 
 anaVars :: Vars -> Type -> Result [VarDecl]
-anaVars (Var v) t = return [VarDecl v t Other []]
+anaVars (Var v) t = return [VarDecl v t Other nullRange]
 anaVars (VarTuple vs _) t = 
     case unalias t of 
            ProductType ts _ -> 
@@ -154,13 +154,13 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                newAs <- mapM anaddTypeVarDecl tArgs
                mt <- anaStarType t
                let nAs = catMaybes newAs
-                   newPat = TypePattern i nAs []
+                   newPat = TypePattern i nAs nullRange
                case mt of 
                    Nothing -> do
                        putLocalTypeVars tvs
                        return Nothing
                    Just ty -> do
-                       newPty <- generalizeS $ TypeScheme nAs ty []
+                       newPty <- generalizeS $ TypeScheme nAs ty nullRange
                        let fullKind = typeArgsListToKind nAs star
                        rk <- anaKind fullKind
                        let Result es mvds = anaVars v $ monoType ty
@@ -225,7 +225,7 @@ anaTypeItem _ _ inst _ (AliasType pat mk sc ps) =
                                 b <- addTypeId True (AliasTypeDefn newPty) 
                                         inst rk fullKind i 
                                 return $ if b then Just $ AliasType 
-                                           (TypePattern i [] [])
+                                           (TypePattern i [] nullRange)
                                            (Just fullKind) newPty ps
                                          else Nothing  
 
@@ -260,7 +260,7 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
                   frk <- anaKind fullKind
                   b <- addTypeId False PreDatatype Plain frk fullKind i
                   return $ if b then Just $ DatatypeDecl 
-                      (TypePattern i nAs []) k alts newDerivs ps else Nothing
+                      (TypePattern i nAs nullRange) k alts newDerivs ps else Nothing
 
 dataPatToType :: DatatypeDecl -> State Env DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do
@@ -316,12 +316,12 @@ anaDatatype genKind inst tys
                Just c -> do
                    let srt = generalize nAs rt 
                        sc = TypeScheme nAs 
-                         (getConstrType srt p tc) []
+                         (getConstrType srt p tc) nullRange
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
                            Just s -> do 
                                let selSc = TypeScheme nAs 
-                                        (getSelType srt pa ts) []
+                                        (getSelType srt pa ts) nullRange
                                addOpId s selSc []
                                        $ SelectData [ConstrInfo c sc] i
                            Nothing -> return False) $ concat sels) newAlts
@@ -397,8 +397,8 @@ convertTypePattern tp@(TypePatternToken t) =
 convertTypePattern tp@(MixfixTypePattern 
                        [ra, ri@(TypePatternToken inTok), rb]) =
     if head (tokStr inTok) `elem` signChars
-       then let inId = Id [Token place $ get_pos ra, inTok, 
-                           Token place $ get_pos rb] [] [] in
+       then let inId = Id [Token place $ getRange ra, inTok, 
+                           Token place $ getRange rb] [] nullRange in
        case (ra, rb) of 
             (TypePatternToken (Token "__" _),
              TypePatternToken (Token "__" _)) -> return (inId, [])
@@ -416,7 +416,7 @@ convertTypePattern tp@(MixfixTypePattern (TypePatternToken t1 : rp)) =
        case rp of 
                [TypePatternToken inId, TypePatternToken t2] -> 
                    if isPlace t2 && head (tokStr inId) `elem` signChars
-                     then return (Id [t1,inId,t2] [] [], [])
+                     then return (Id [t1,inId,t2] [] nullRange, [])
                    else illegalTypePattern tp
                _ -> illegalTypePattern tp
     else case rp of
@@ -429,13 +429,13 @@ convertTypePattern (BracketTypePattern bk [ap] ps) =
     case bk of 
     Parens -> convertTypePattern ap
     _ -> let (o, c) = getBrackets bk
-             tid = Id [Token o ps, Token place $ get_pos ap, 
-                       Token c ps] [] [] in  
+             tid = Id [Token o ps, Token place $ getRange ap, 
+                       Token c ps] [] nullRange in  
          case ap of 
          TypePatternToken t -> if isPlace t then 
              return (tid, [])
              else return (tid, [TypeArg (simpleIdToId t) MissingKind 
-                                        star 0 Other []])
+                                        star 0 Other nullRange])
          _ -> do a <- convertToTypeArg ap
                  return (tid, [a])
 convertTypePattern tp = illegalTypePattern tp
@@ -443,7 +443,7 @@ convertTypePattern tp = illegalTypePattern tp
 convertToTypeArg :: TypePattern -> Result TypeArg
 convertToTypeArg tp@(TypePatternToken t) = 
     if isPlace t then illegalTypePatternArg tp
-    else return $ TypeArg (simpleIdToId t) MissingKind star 0 Other []
+    else return $ TypeArg (simpleIdToId t) MissingKind star 0 Other nullRange
 convertToTypeArg (TypePatternArg a _) =  return a
 convertToTypeArg (BracketTypePattern Parens [tp] _) =  convertToTypeArg tp
 convertToTypeArg tp = illegalTypePatternArg tp
@@ -451,7 +451,7 @@ convertToTypeArg tp = illegalTypePatternArg tp
 convertToId :: TypePattern -> Result Id
 convertToId tp@(TypePatternToken t) = 
     if isPlace t then illegalTypeId tp
-       else return $ Id [t] [] []
+       else return $ Id [t] [] nullRange
 convertToId (MixfixTypePattern []) = error "convertToId: MixfixTypePattern []"
 convertToId (MixfixTypePattern (hd:tps)) = 
          if null tps then convertToId hd
@@ -460,16 +460,16 @@ convertToId (MixfixTypePattern (hd:tps)) =
                         case p of BracketTypePattern Squares (_:_) _ -> True
                                   _ -> False) tps
          ts <- mapM convertToToks (hd:toks)
-         (is, ps) <- if null comps then return ([], []) 
+         (is, ps) <- if null comps then return ([], nullRange) 
                      else convertToIds $ head comps
          pls <- if null comps then return [] 
                 else mapM convertToPlace $ tail comps
          return $ Id (concat ts ++ pls) is ps
 convertToId tp = do 
     ts <- convertToToks tp
-    return $ Id ts [] []
+    return $ Id ts [] nullRange
 
-convertToIds :: TypePattern -> Result ([Id], [Pos])
+convertToIds :: TypePattern -> Result ([Id], Range)
 convertToIds (BracketTypePattern Squares tps@(_:_) ps) = do
     is <- mapM convertToId tps
     return (is, ps)

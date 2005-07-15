@@ -19,35 +19,35 @@ import CASL.AS_Basic_CASL
 
 data Record f a b = Record
     { foldQuantification :: FORMULA f -> QUANTIFIER -> [VAR_DECL] -> 
-                          a -> [Pos] -> a
-    , foldConjunction :: FORMULA f -> [a] -> [Pos] -> a
-    , foldDisjunction :: FORMULA f -> [a] -> [Pos] -> a
-    , foldImplication :: FORMULA f -> a  -> a  -> Bool -> [Pos] -> a
-    , foldEquivalence :: FORMULA f -> a  -> a  -> [Pos] -> a
-    , foldNegation :: FORMULA f -> a  -> [Pos] -> a
-    , foldTrue_atom :: FORMULA f -> [Pos] -> a
-    , foldFalse_atom :: FORMULA f -> [Pos] -> a
-    , foldPredication :: FORMULA f -> PRED_SYMB -> [b] -> [Pos] -> a
-    , foldDefinedness :: FORMULA f -> b -> [Pos] -> a
-    , foldExistl_equation :: FORMULA f -> b -> b -> [Pos] -> a
-    , foldStrong_equation :: FORMULA f -> b -> b -> [Pos] -> a
-    , foldMembership :: FORMULA f -> b -> SORT -> [Pos] -> a
+                          a -> Range -> a
+    , foldConjunction :: FORMULA f -> [a] -> Range -> a
+    , foldDisjunction :: FORMULA f -> [a] -> Range -> a
+    , foldImplication :: FORMULA f -> a  -> a  -> Bool -> Range -> a
+    , foldEquivalence :: FORMULA f -> a  -> a  -> Range -> a
+    , foldNegation :: FORMULA f -> a  -> Range -> a
+    , foldTrue_atom :: FORMULA f -> Range -> a
+    , foldFalse_atom :: FORMULA f -> Range -> a
+    , foldPredication :: FORMULA f -> PRED_SYMB -> [b] -> Range -> a
+    , foldDefinedness :: FORMULA f -> b -> Range -> a
+    , foldExistl_equation :: FORMULA f -> b -> b -> Range -> a
+    , foldStrong_equation :: FORMULA f -> b -> b -> Range -> a
+    , foldMembership :: FORMULA f -> b -> SORT -> Range -> a
     , foldMixfix_formula :: FORMULA f -> b -> a
     , foldSort_gen_ax :: FORMULA f -> [Constraint] -> Bool -> a
     , foldExtFORMULA :: FORMULA f -> f -> a
-    , foldQual_var :: TERM f -> VAR -> SORT -> [Pos] -> b
-    , foldApplication :: TERM f -> OP_SYMB -> [b] -> [Pos] -> b
-    , foldSorted_term :: TERM f ->  b -> SORT -> [Pos] -> b
-    , foldCast :: TERM f -> b -> SORT -> [Pos] -> b
-    , foldConditional :: TERM f -> b -> a -> b -> [Pos] -> b
+    , foldQual_var :: TERM f -> VAR -> SORT -> Range -> b
+    , foldApplication :: TERM f -> OP_SYMB -> [b] -> Range -> b
+    , foldSorted_term :: TERM f ->  b -> SORT -> Range -> b
+    , foldCast :: TERM f -> b -> SORT -> Range -> b
+    , foldConditional :: TERM f -> b -> a -> b -> Range -> b
     , foldMixfix_qual_pred :: TERM f -> PRED_SYMB -> b
     , foldMixfix_term :: TERM f -> [b] -> b
     , foldMixfix_token :: TERM f -> Token -> b
-    , foldMixfix_sorted_term :: TERM f -> SORT -> [Pos] -> b
-    , foldMixfix_cast :: TERM f -> SORT -> [Pos] -> b
-    , foldMixfix_parenthesized :: TERM f -> [b] -> [Pos] -> b
-    , foldMixfix_bracketed :: TERM f -> [b] -> [Pos] -> b
-    , foldMixfix_braced :: TERM f -> [b] -> [Pos] -> b
+    , foldMixfix_sorted_term :: TERM f -> SORT -> Range -> b
+    , foldMixfix_cast :: TERM f -> SORT -> Range -> b
+    , foldMixfix_parenthesized :: TERM f -> [b] -> Range -> b
+    , foldMixfix_bracketed :: TERM f -> [b] -> Range -> b
+    , foldMixfix_braced :: TERM f -> [b] -> Range -> b
     }
 
 mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)

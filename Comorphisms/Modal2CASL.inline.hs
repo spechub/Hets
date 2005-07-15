@@ -126,8 +126,8 @@ transSig sign =
        relations = Map.union relsMod relsTermMod
        genRels f mp = Map.foldWithKey (\me _ nm -> f me nm) Map.empty mp
        genModFrms f mp = Map.foldWithKey f [] mp
-       relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] []
-       relSymbT me = Id [mkSimpleId "g_R_t"] [me] []
+       relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] nullRange
+       relSymbT me = Id [mkSimpleId "g_R_t"] [me] nullRange
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm) 
 			 (modies $ extendedInfo sign)
        relsTermMod = genRels (\ me nm -> 
@@ -199,8 +199,8 @@ mapSenTop mapEnv@(MME{worldSort = fws}) f =
     case f of
     Quantification q@(Universal) vs frm ps ->
 	Quantification q (qwv:vs) (mapSen mapEnv wvs frm) ps
-    f1 -> Quantification Universal [qwv] (mapSen mapEnv wvs f1) []
-    where qwv = Var_decl wvs fws []
+    f1 -> Quantification Universal [qwv] (mapSen mapEnv wvs f1) nullRange
+    where qwv = Var_decl wvs fws nullRange
 	  wvs = [head worldVars]
 
 
@@ -373,7 +373,7 @@ modalityToModName (Term_mod t) =
     _ -> error ("Modal2CASL: modalityToModName: Wrong term: " ++ show t)
 
 sortedWorldTerm :: SORT -> VAR -> TERM ()
-sortedWorldTerm fws v = Sorted_term (Qual_var v fws []) fws [] 
+sortedWorldTerm fws v = Sorted_term (Qual_var v fws nullRange) fws nullRange 
 
 addWorld_OP :: SORT -> OP_NAME -> Set.Set OpType 
 	    -> Map.Map OP_NAME (Set.Set OpType) 

@@ -72,38 +72,40 @@ initRules ga (opS, predS) =
        map (mkArgsRule 0) ops]
 
 -- | meaningful position of a term
-posOfTerm :: PosItem f => TERM f -> [Pos]
+posOfTerm :: PosItem f => TERM f -> Range
 posOfTerm trm =
     case trm of
               Mixfix_token t -> tokPos t
-              Mixfix_term ts -> concatMap posOfTerm ts
+              Mixfix_term ts -> concatMapRange posOfTerm ts
               Mixfix_qual_pred p -> 
                   case p of 
                   Pred_name i -> posOfId i
                   Qual_pred_name i _ _ -> posOfId i
-              Application o _ ps -> if null ps then
+              Application o _ ps -> if isNullRange ps then
                   (case o of 
                   Op_name i ->  posOfId i
                   Qual_op_name i _ _ -> posOfId i) else ps
-              _ -> get_pos trm
+              _ -> getRange trm
 
 -- | construct application
-asAppl :: Id -> [TERM f] -> [Pos] -> TERM f
+asAppl :: Id -> [TERM f] -> Range -> TERM f
 asAppl f as ps = Application (Op_name f) as 
-                 $ if null ps then posOfId f else ps
+                 $ if isNullRange ps then posOfId f else ps
 
 
 -- | constructing the parse tree from (the final) parser state(s)
-toAppl :: PosItem f => Id -> [TERM f] -> [Pos] -> TERM f
+toAppl :: PosItem f => Id -> [TERM f] -> Range -> TERM f
 toAppl ide ar qs = 
        if ide == singleArgId || ide == multiArgsId
             then assert (length ar > 1) $ 
                  let har:tar = ar
                      hp = posOfTerm har
-                     ps = if null hp then qs else head hp : qs 
+                     ps = if isNullRange hp 
+                            then qs 
+                            else Range[head (rangeToList hp)] `appRange` qs 
                      in case har of
                  Application q ts p -> assert (null ts) $ 
-                                        Application q tar $ ps ++ p
+                                        Application q tar $ (ps`appRange`  p)
                  Mixfix_qual_pred _ -> Mixfix_term [har,
                                    Mixfix_parenthesized tar ps]
                  _ -> error "stateToAppl"
@@ -273,7 +275,7 @@ resolveMixFrm par extR g ids@(ops, onlyPreds) frm =
                  Application (Op_name ide) as ps -> 
                      return $ Predication (Pred_name ide) as ps
                  Mixfix_qual_pred qide ->
-                  return $ Predication qide [] []
+                  return $ Predication qide [] nullRange
                  Mixfix_term [Mixfix_qual_pred qide, 
                               Mixfix_parenthesized ts ps] ->
                   return $ Predication qide ts ps

@@ -43,7 +43,7 @@ symbMap =   do s <- symb
                do   f <- asKey mapsTo
                     t <- symb
                     return (SymbOrMap s (Just t) $ tokPos f)
-                  <|> return (SymbOrMap s Nothing [])
+                  <|> return (SymbOrMap s Nothing nullRange)
 
 -- | parse kind of symbols
 symbKind :: AParser st (SymbKind, Token)
@@ -70,7 +70,7 @@ symbKind = try(
 -- | parse symbol items
 symbItems :: AParser st SymbItems
 symbItems = do s <- symb
-               return (SymbItems Implicit [s] [] [])
+               return (SymbItems Implicit [s] [] nullRange)
             <|> 
             do (k, p) <- symbKind
                (is, ps) <- symbs
@@ -87,7 +87,7 @@ symbs = do s <- symb
 symbMapItems :: AParser st SymbMapItems
 symbMapItems = 
             do s <- symbMap
-               return (SymbMapItems Implicit [s] [] [])
+               return (SymbMapItems Implicit [s] [] nullRange)
             <|> 
             do (k, p) <- symbKind
                (is, ps) <- symbMaps

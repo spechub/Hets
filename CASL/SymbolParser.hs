@@ -106,7 +106,7 @@ symbMapItemsList ks =
 symbMapItems :: [String] -> GenParser Char st SYMB_MAP_ITEMS
 symbMapItems ks = 
     do s <- symbMap ks
-       return (Symb_map_items Implicit [s] [])
+       return (Symb_map_items Implicit [s] nullRange)
     <|> 
     do (k, p) <- symbKind
        (is, ps) <- symbMaps ks

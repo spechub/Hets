@@ -18,7 +18,7 @@ import Haskell.HatParser hiding (hatParser)
 import Haskell.PreludeString
 
 import Common.AS_Annotation 
-import Common.Id(Pos(..))
+import Common.Id(Pos(..),Range(..))
 import Common.Result 
 import Common.GlobalAnnotations
 import Common.PrettyPrint
@@ -170,7 +170,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
    case sds of 
        [] -> return ()
        d : _ -> Result [Diag Hint ("\n" ++ pp sds) 
-                       [formSrcLoc $ srcLoc d]] $ Just ()
+                        (Range [formSrcLoc $ srcLoc d])] $ Just ()
    fs :>: (is, (ts, vs)) <- 
         lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
@@ -194,7 +194,7 @@ preludeConflicts =
                             in
         if preludeEntity e then 
             (es, 
-             Diag Warning ("possible Prelude conflict:\n  " ++ pp e) p : ds)
+             Diag Warning ("possible Prelude conflict:\n  " ++ pp e) (Range p) : ds)
            else (d : es, ds)) ([], [])
 
 preludeEntity :: (Printable i, Show t, DefinedNames i t) => 

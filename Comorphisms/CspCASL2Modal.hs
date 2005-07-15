@@ -17,6 +17,7 @@ module Comorphisms.CspCASL2Modal where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Common.Lib.Set as Set
+import Common.Id
 
 -- CASL
 import CASL.Sign
@@ -83,7 +84,7 @@ mapSym = error "CspCASL2Modal.mapSym not yet implemented"
 
 
 mapSen :: () -> ModalFORMULA
-mapSen _f = True_atom []
+mapSen _f = True_atom nullRange
 
 {- case f of 
     Quantification q vs frm ps ->

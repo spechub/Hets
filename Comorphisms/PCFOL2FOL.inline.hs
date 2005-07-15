@@ -113,7 +113,7 @@ defPred :: Id
 defPred = mkId[mkSimpleId "g__defined"]
  
 generateFOLAxioms :: Eq f => Sign f e -> [Named(FORMULA f)]
-generateFOLAxioms sig = filter ((/= True_atom []) . sentence) $ map 
+generateFOLAxioms sig = filter (is_True_atom . sentence) $ map 
   (mapNamed (simplifyFormula id . 
   rmDefs bsorts id)) $
   concat
@@ -164,19 +164,19 @@ generateFOLAxioms sig = filter ((/= True_atom []) . sentence) $ map
   x = mkSimpleId "x"
   mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]
 
-defined :: Set.Set SORT -> TERM f -> SORT -> [Pos] -> FORMULA f
+defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
 defined bsorts t s ps =
   if Set.member s bsorts then  
-     Predication (Qual_pred_name defPred (Pred_type [s] []) []) [t] ps
+     Predication (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
   else True_atom ps
 
 defVards :: Set.Set SORT -> [VAR_DECL] -> FORMULA f
 defVards bs [vs@(Var_decl [_] _ _)] = head $ defVars bs vs
-defVards bs vs = Conjunction (concatMap (defVars bs) vs) []
+defVards bs vs = Conjunction (concatMap (defVars bs) vs) nullRange
 defVars :: Set.Set SORT -> VAR_DECL -> [FORMULA f]
 defVars bs (Var_decl vns s _) = map (defVar bs s) vns
 defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
-defVar bs s v = defined bs (Qual_var v s []) s []
+defVar bs s v = defined bs (Qual_var v s nullRange) s nullRange
 
 totalizeTerm :: Set.Set SORT -> (f -> f) -> TERM f -> TERM f
 totalizeTerm bsrts mf t = case t of

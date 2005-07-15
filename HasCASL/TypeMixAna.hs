@@ -80,7 +80,7 @@ isPlaceType ty = case ty of
 mkTypeCompId :: Type -> Result Id
 mkTypeCompId ty = case ty of 
     TypeToken t -> if isPlace t then mkError "unexpected place" t
-                   else return $ Id [t] [] []
+                   else return $ Id [t] [] nullRange
     MixfixType [] -> error "mkTypeCompId: MixfixType []"
     MixfixType (hd:tps) ->
          if null tps then mkTypeCompId hd
@@ -89,15 +89,15 @@ mkTypeCompId ty = case ty of
                         case p of BracketType Squares (_:_) _ -> True
                                   _ -> False) tps
          mts <- mapM mkTypeCompToks (hd:toks)
-         (mis, ps) <- if null comps then return ([], [])
+         (mis, ps) <- if null comps then return ([], nullRange)
                      else mkTypeCompIds $ head comps
          pls <- if null comps then return [] 
                 else mapM mkTypeIdPlace $ tail comps
          return $ Id (concat mts ++ pls) mis ps 
     _ -> do ts <- mkTypeCompToks ty
-            return $ Id ts [] []
+            return $ Id ts [] nullRange
 
-mkTypeCompIds :: Type -> Result ([Id], [Pos])
+mkTypeCompIds :: Type -> Result ([Id], Range)
 mkTypeCompIds ty = case ty of
     BracketType Squares tps@(_:_) ps -> do
         mis <- mapM mkTypeCompId tps  

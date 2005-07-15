@@ -171,9 +171,9 @@ class (Category lid sign morphism, Ord sentence,
       provers _ = []
       cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree] 
       cons_checkers _ = []
-      consCheck :: lid -> (sign, [Named sentence]) -> 
+      conservativityCheck :: lid -> (sign, [Named sentence]) -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
-      consCheck l _ _ _ = statErr l "consCheck"
+      conservativityCheck l _ _ _ = statErr l "conservativityCheck"
 
 -- static analysis
 statErr :: (Language lid, Monad m) => lid -> String -> m a

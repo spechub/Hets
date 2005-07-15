@@ -45,7 +45,7 @@ annoParser2 parser = bind (\x (Annoted y pos l r) ->
                            Annoted y pos (x++l) r) annos parser
 
 emptyAnno :: a -> Annoted a
-emptyAnno x = Annoted x [] [] []
+emptyAnno x = Annoted x nullRange [] []
 
 ------------------------------------------------------------------------
 -- logic and encoding names
@@ -102,7 +102,7 @@ parseLogicAux =
          <|> do f <- asKey funS  -- parse at least a logic target after "logic"
                 t <- logicName
                 return (Logic_code Nothing Nothing (Just t) 
-                                       (tokPos l ++ tokPos f))
+                                       (tokPos l `appRange` tokPos f))
 
 -- parse optional logic source and target after a colon (given an encoding e)
 parseLogAfterColon :: Maybe Token -> [Token] 
@@ -214,7 +214,7 @@ specB l = do    p1 <- asKey localS
                 p2 <- asKey withinS
                 sp2 <- annoParser2 $ specB l
                 return (emptyAnno $ Local_spec sp1 sp2 
-                                  $ tokPos p1 ++ tokPos p2)
+                                  $ tokPos p1 `appRange` tokPos p2)
           <|> specC l
 
 specC :: LogicGraph -> AParser AnyLogic (Annoted SPEC)
@@ -293,7 +293,7 @@ groupSpecLookhead = oBraceT <|> ((simpleId << annos)
                                   <|> asKey unitS
                                   <|> asKey withinS <|> asKey endS
                                   <|> oBracketT <|> cBracketT
-                                  <|> (eof >> return (Token "" nullPos))))
+                                  <|> (eof >> return (Token "" nullRange))))
 
 specD :: LogicGraph -> AParser AnyLogic SPEC
            -- do some lookahead for free spec, to avoid clash with free type
@@ -377,12 +377,12 @@ groupSpec l = do b <- oBraceT
                  (f,ps) <- fitArgs l
                  return (Spec_inst n f ps)
 
-fitArgs :: LogicGraph -> AParser AnyLogic ([Annoted FIT_ARG],[Pos])
+fitArgs :: LogicGraph -> AParser AnyLogic ([Annoted FIT_ARG],Range)
 fitArgs l = do fas <- many (fitArg l)
                let (fas1,ps) = unzip fas
-               return (fas1,concat ps)
+               return (fas1,concatMapRange id ps)
 
-fitArg :: LogicGraph -> AParser AnyLogic (Annoted FIT_ARG,[Pos])
+fitArg :: LogicGraph -> AParser AnyLogic (Annoted FIT_ARG,Range)
 fitArg l = do b <- oBracketT   
               fa <- annoParser (fittingArg l)
               c <- cBracketT
@@ -392,10 +392,10 @@ fittingArg :: LogicGraph -> AParser AnyLogic FIT_ARG
 fittingArg l = do s <- asKey viewS
                   vn <- simpleId
                   (fa,ps) <- fitArgs l
-                  return (Fit_view vn fa (tokPos s ++ ps))
+                  return (Fit_view vn fa (tokPos s`appRange` ps))
             <|>
                do sp <- aSpec l
-                  (symbit, ps) <- option ([],[]) $ do 
+                  (symbit, ps) <- option ([],nullRange) $ do 
                                  s <- asKey fitS               
                                  (m, qs) <- parseMapping l
                                  return (m, catPos $ s : qs)
@@ -407,21 +407,21 @@ optEnd = option Nothing (fmap Just (asKey endS))
 generics :: LogicGraph -> AParser AnyLogic GENERICITY
 generics l = do 
    (pa,ps1) <- params l
-   (imp,ps2) <- option ([],[]) (imports l)
-   return (Genericity (Params pa) (Imported imp) (ps1++ps2))
+   (imp,ps2) <- option ([],nullRange) (imports l)
+   return (Genericity (Params pa) (Imported imp) (ps1 `appRange` ps2))
 
-params :: LogicGraph -> AParser AnyLogic ([Annoted SPEC],[Pos])
+params :: LogicGraph -> AParser AnyLogic ([Annoted SPEC],Range)
 params l = do pas <- many (param l)
               let (pas1,ps) = unzip pas
-              return (pas1,concat ps)
+              return (pas1,concatMapRange id ps)
 
-param :: LogicGraph -> AParser AnyLogic (Annoted SPEC,[Pos])
+param :: LogicGraph -> AParser AnyLogic (Annoted SPEC,Range)
 param l = do b <- oBracketT   
              pa <- aSpec l
              c <- cBracketT
              return (pa, toPos b [] c)
 
-imports :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], [Pos])
+imports :: LogicGraph -> AParser AnyLogic ([Annoted SPEC], Range)
 imports l = do s <- asKey givenS
                (sps,ps) <- annoParser (groupSpec l) `separatedBy` anComma
                return (sps, catPos (s:ps))

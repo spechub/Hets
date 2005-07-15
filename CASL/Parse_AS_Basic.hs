@@ -47,20 +47,20 @@ sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
 ---- helpers ----------------------------------------------------------------
 
 datatypeToFreetype :: (AParsable b, AParsable s, AParsable f) =>
-                      SIG_ITEMS s f -> [Pos] -> BASIC_ITEMS b s f 
+                      SIG_ITEMS s f -> Range -> BASIC_ITEMS b s f 
 datatypeToFreetype d pos =
    case d of
-     Datatype_items ts ps -> Free_datatype ts (pos ++ ps)
+     Datatype_items ts ps -> Free_datatype ts (pos `appRange` ps)
      _ -> error "datatypeToFreetype"
 
 axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) => 
-     BASIC_ITEMS b s f -> [Annotation] -> [VAR_DECL] -> [Pos] 
+     BASIC_ITEMS b s f -> [Annotation] -> [VAR_DECL] -> Range 
      -> BASIC_ITEMS b s f
 axiomToLocalVarAxioms ai a vs posl =
    case ai of
      Axiom_items ((Annoted ft qs as rs):fs) ds ->  
 	 let aft = Annoted ft qs (a++as) rs
-	     in Local_var_axioms vs (aft:fs) (posl ++ ds)
+	     in Local_var_axioms vs (aft:fs) (posl `appRange` ds)
      _ -> error "axiomToLocalVarAxioms"
 
 -- ------------------------------------------------------------------------
@@ -75,7 +75,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 		    return (datatypeToFreetype ti (tokPos f))
 	     <|> do g <- asKey generatedS
 		    do t <- typeItems ks
-		       return (Sort_gen [Annoted t [] [] []] $ tokPos g)
+		       return (Sort_gen [Annoted t nullRange [] []] $ tokPos g)
 		      <|> 
 		      do o <- oBraceT
 			 is <- annosParser (sigItems ks)
@@ -113,7 +113,7 @@ dotFormulae ks =
        (m, an) <- optSemi
        let ps = catPos (d:ds) 
 	   ns = init fs ++ [appendAnno (last fs) an]
-       return $ Axiom_items ns (ps ++ catPos m)
+       return $ Axiom_items ns (ps `appRange` catPos m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
 aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos

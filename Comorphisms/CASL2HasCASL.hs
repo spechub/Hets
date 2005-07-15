@@ -75,15 +75,15 @@ fromOpType ot ok =
                 Cas.Total -> FunArr 
                 Cas.Partial -> PFunArr
         args = map toType $ opArgs ot
-        arg = mkProductType args []
+        arg = mkProductType args nullRange
         res = toType $ opRes ot
     in simpleTypeScheme $ if null args then res 
-       else FunType arg arrow res []
+       else FunType arg arrow res nullRange
 
 fromPredType :: PredType -> TypeScheme
 fromPredType pt = 
     let args = map toType $ predArgs pt
-        arg = mkProductType args []
+        arg = mkProductType args nullRange
     in simpleTypeScheme $ if null args then unitType else predType arg
 
 mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])

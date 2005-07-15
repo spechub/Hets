@@ -90,7 +90,7 @@ instance PrettyPrint Diag where
 
 -- | Pretty print the diagram
 printDiag :: a -> String -> Diag -> Result a
---printDiag res t diag = warning res (showPretty diag t) nullPos
+--printDiag res t diag = warning res (showPretty diag t) nullRange
 printDiag res _ _ = do return res
 
 -- | A mapping from extended to basic static unit context
@@ -171,7 +171,7 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
 -- edge to that node. The edge is labelled with given signature morphism and
 -- the node contains the target of this morphism. Extends the development graph 
 -- with given morphis as well.
-extendDiagramWithMorphism :: [Pos]         -- ^ the position (for diagnostics)
+extendDiagramWithMorphism :: Range         -- ^ the position (for diagnostics)
 			  -> LogicGraph
 			  -> Diag          -- ^ the diagram to be extended
 			  -> DGraph        -- ^ the development graph
@@ -198,7 +198,7 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
 -- edge from that node. The edge is labelled with given signature morphism and
 -- the node contains the source of this morphism. Extends the development graph 
 -- with given morphis as well.
-extendDiagramWithMorphismRev :: [Pos]         -- ^ the position (for diagnostics)
+extendDiagramWithMorphismRev :: Range         -- ^ the position (for diagnostics)
 			     -> LogicGraph
 			     -> Diag          -- ^ the diagram to be extended
 			     -> DGraph        -- ^ the development graph
@@ -256,15 +256,15 @@ homogeniseDiagram targetLid diag =
     -- from diag, convert all the nodes and insert them to a new diagram; then
     -- copy all the edges from the original to new diagram (coercing the morphisms).
     do let convertNode (n, DiagNode { dn_sig = NodeSig (_, G_sign srcLid sig) }) =
-	       do sig' <- rcoerce targetLid srcLid nullPos sig
+	       do sig' <- rcoerce targetLid srcLid nullRange sig
 		  return (n, sig')
            convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
 	       let srcLid = sourceLogic cid
 	       in if isIdComorphism (Comorphism cid) then
-		     do mor' <- rcoerce targetLid srcLid nullPos mor
+		     do mor' <- rcoerce targetLid srcLid nullRange mor
 			return (n1, n2, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
-					 nullPos
+					 nullRange
 	   convertNodes cDiag [] = do return cDiag
 	   convertNodes cDiag (lNode : lNodes) =
 	       do convNode <- convertNode lNode
@@ -297,10 +297,10 @@ homogeniseSink targetLid edges =
     do let convertMorphism (n, GMorphism cid _ mor) =
 	       let srcLid = sourceLogic cid
 	       in if isIdComorphism (Comorphism cid) then
-		     do mor' <- rcoerce targetLid srcLid nullPos mor
+		     do mor' <- rcoerce targetLid srcLid nullRange mor
 			return (n, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
-					 nullPos
+					 nullRange
 	   convEdges [] = do return []
 	   convEdges (e : es) = do ce <- convertMorphism e
 				   ces <- convEdges es

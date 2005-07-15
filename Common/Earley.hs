@@ -43,29 +43,31 @@ getTokenList placeStr (Id ts cs ps) =
 
 -- | update token positions.
 -- return remaining positions 
-setToksPos :: [Token] -> [Pos] -> ([Token], [Pos])
-setToksPos (h:ts) (p:ps) = 
-    let (rt, rp) = setToksPos ts ps
-        in (h {tokPos = [p]} : rt, rp)
+setToksPos :: [Token] -> Range -> ([Token], Range)
+setToksPos (h:ts) (Range (p:ps)) = 
+    let (rt, rp) = setToksPos ts (Range ps)
+        in (h {tokPos = Range [p]} : rt, rp)
 setToksPos ts ps = (ts, ps)
 
 -- | update positions in 'Id'.
 -- return remaining positions 
-setPlainIdePos :: Id -> [Pos] -> (Id, [Pos]) 
+setPlainIdePos :: Id -> Range -> (Id, Range) 
 setPlainIdePos (Id ts cs _) ps =
     if null cs then 
        let (newTs, restPs) = setToksPos ts ps
-           in (Id newTs cs [], restPs)
+           in (Id newTs cs nullRange, restPs)
     else let (toks, pls) = splitMixToken ts
              (front, ps2) = setToksPos toks ps
-             (newCs, ps3, ps4) = if null ps2 then error "setPlainIdePos2"
+             ps2PL = rangeToList ps2
+             (newCs, ps3, ps4) = if isNullRange ps2 then error "setPlainIdePos2"
                                  else foldl ( \ (prevCs, seps, restPs) a -> 
                                   let (c1, qs) = setPlainIdePos a restPs
-                                  in if null qs then error "setPlainIdePos1"
-                                  else (c1: prevCs, head qs : seps, tail qs))
-                           ([], [head ps2], tail ps2) cs
+                                      qsPL = rangeToList qs
+                                  in if isNullRange qs then error "setPlainIdePos1"
+                                  else (c1: prevCs, Range (head qsPL : rangeToList seps), Range (tail qsPL)))
+                           ([], Range [head ps2PL], Range (tail ps2PL)) cs
              (newPls, ps7) = setToksPos pls ps4
-           in (Id (front ++ newPls) (reverse newCs) (reverse ps3), ps7)
+           in (Id (front ++ newPls) (reverse newCs) (reverseRange ps3), ps7)
 
 -- | a special index type for more type safety
 newtype Index = Index Int deriving (Eq, Ord, Show)
@@ -84,7 +86,7 @@ data Item a = Item
     , info :: Int       -- additional precedence info for 'rule'
     , lWeight :: Id     -- weights for lower precedence pre- and postfixes
     , rWeight :: Id     -- given by the 'Id's itself 
-    , posList :: [Pos]  -- positions of Id tokens
+    , posList :: Range  -- positions of Id tokens
     , args :: [a]       -- currently collected arguments 
       -- both in reverse order
     , ambigArgs :: [[a]] -- field for ambiguities
@@ -161,7 +163,7 @@ unknownId :: Id
 unknownId    = mkId [unknownTok]
 
 listId :: (Id, Id) -> Id
-listId (f,c) = Id [listTok] [f,c] []
+listId (f,c) = Id [listTok] [f,c] nullRange
 
 isListId :: Id -> Bool
 isListId (Id ts cs _) = not (null ts) && head ts == listTok 
@@ -169,7 +171,7 @@ isListId (Id ts cs _) = not (null ts) && head ts == listTok
 
 -- | interpret placeholders as literal places
 protect :: Id -> Id
-protect i = Id [protectTok] [i] []
+protect i = Id [protectTok] [i] nullRange
 
 unProtect :: Id -> Id
 unProtect (Id _ [i] _) = i
@@ -196,7 +198,7 @@ mkItem ind (ide, inf, toks) =
          , info = inf
          , lWeight = ide
          , rWeight = ide
-         , posList = []
+         , posList = nullRange
          , args = []
          , ambigArgs = []
          , ambigs = []
@@ -211,7 +213,7 @@ getTokenPlaceList = getTokenList termStr
 mixRule :: Int -> Id -> Rule
 mixRule b i = (i, b, getTokenPlaceList i)
 
-asListAppl :: ToExpr a -> Id -> [a] -> [Pos] -> a
+asListAppl :: ToExpr a -> Id -> [a] -> Range -> a
 asListAppl toExpr i ra br =
     if isListId i then    
            let Id _ [f, c] _ = i
@@ -232,7 +234,7 @@ listRules inf g =
         listRule co toks = (listId co, inf, toks)
     in concatMap ( \ (bs, (n, c)) ->
        let (b1, b2, cs) = getListBrackets bs 
-           e = Id (b1 ++ b2) cs [] in
+           e = Id (b1 ++ b2) cs nullRange in
            (if e == n then [] -- add b1 ++ b2 if its not yet included by n
                else [listRule (c, n) $ getPlainTokenList e]) 
            ++ [listRule (c, n) (b1 ++ [termTok] ++ b2), 
@@ -253,7 +255,7 @@ scanItem addType ks (trm, t) p =
     let ts = rest p
         as = args p
         ide = rule p
-        q = p { posList = tokPos t ++ posList p }
+        q = p { posList = tokPos t `appRange` posList p }
     in if null ts then [] else 
           let tt = tail ts
               r = q { rest = tt }
@@ -297,7 +299,7 @@ addArg ga toExpr argItem p =
                p { rest = tail $ rest p
                  , lWeight = getLWeight ga argItem p
                  , rWeight = getRWeight ga argItem p
-                 , posList = q ++ posList p
+                 , posList = q `appRange` posList p
                  , args = arg : args p 
                  , ambigs = (if null newAms then ams else newAms : ams)
                    ++ ambigs p }
@@ -329,13 +331,13 @@ getRWeight ga argItem opItem =
     else rWeight opItem
 
 -- | shortcut for a function that constructs an expression
-type ToExpr a = Id -> [a] -> [Pos] -> a 
+type ToExpr a = Id -> [a] -> Range -> a 
 
-mkExpr :: ToExpr a -> Item a -> (a, [Pos])
+mkExpr :: ToExpr a -> Item a -> (a, Range)
 mkExpr toExpr itm = 
     let orig = rule itm
         ps = posList itm
-        rs = reverse ps
+        rs = reverseRange ps
         (ide, qs) = if isListId orig then (orig, rs) else
                      if isProtected orig then 
                        setPlainIdePos (unProtect orig) rs
@@ -514,7 +516,7 @@ initChart ruleS knownS =
           , solveDiags = [] }
 
 -- | extract resolved result
-getResolved :: (a -> ShowS) -> [Pos] -> ToExpr a -> Chart a -> Result a
+getResolved :: (a -> ShowS) -> Range -> ToExpr a -> Chart a -> Result a
 getResolved pp p toExpr st = 
     let items = filter ((currIndex st/=) . index) $ currItems st 
         ds = solveDiags st
@@ -526,9 +528,9 @@ getResolved pp p toExpr st =
                           let expected = if null rest2 
                                          then filter (not . null . rest) rest1 
                                          else rest2 
-                              withpos = filter (not . null . posList) expected
+                              withpos = filter (not . isNullRange . posList) expected
                               (q, errs) = if null withpos then (p, expected) 
-                                            else (concatMap (reverse .  
+                                            else (concatMapRange (reverseRange .  
                                                   posList) withpos, withpos)
                               in Result (Diag Error 
                                ("expected further mixfix token: " 
@@ -551,7 +553,7 @@ getResolved pp p toExpr st =
                        else Result ((showAmbigs pp p $
                             map (fst . mkExpr toExpr) result) : ds) Nothing 
                                    
-showAmbigs :: (a -> ShowS) -> [Pos] -> [a] -> Diagnosis
+showAmbigs :: (a -> ShowS) -> Range -> [a] -> Diagnosis
 showAmbigs pp p as = 
     Diag Error ("ambiguous mixfix term\n  " ++ 
                 showSepList (showString "\n  ") pp

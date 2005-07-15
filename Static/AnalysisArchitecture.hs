@@ -171,7 +171,7 @@ ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _)
 
 -- | Analyse unit imports
 ana_UNIT_IMPORTED :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
-                  -> HetcatsOpts -> ExtStUnitCtx -> [Pos] -> [Annoted UNIT_TERM] 
+                  -> HetcatsOpts -> ExtStUnitCtx -> Range -> [Annoted UNIT_TERM] 
                   -> Result (DiagNodeSig, Diag, DGraph, [Annoted UNIT_TERM])
 ana_UNIT_IMPORTED _ _ (_, _, dg) curl _ (_, diag) _ [] =
     do return (Empty_node curl, diag, dg, [])
@@ -414,7 +414,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx (Group_unit_term ut poss) =
 ana_FIT_ARG_UNITS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic 
                   -> HetcatsOpts -> ExtStUnitCtx 
                   -> UNIT_TERM      -- ^ the whole application for diagnostic purposes
-                  -> [Pos]          -- ^ the position of the application (for diagnostic purposes)
+                  -> Range          -- ^ the position of the application (for diagnostic purposes)
                   -> [NodeSig]      -- ^ the signatures of unit's formal parameters
                   -> [FIT_ARG_UNIT] -- ^ the arguments for the unit
                   -> Result ([(G_morphism, NodeSig, DiagNodeSig)], DGraph, Diag)
@@ -542,7 +542,7 @@ ana_argSpecs lgraph defl gctx@(gannos, genv, _) opts (argSpec : argSpecs) =
 
 -- | Check that given diagram ensures amalgamability along given set of morphisms
 assertAmalgamability :: HetcatsOpts          -- ^ the program options
-                     -> [Pos]                -- ^ the position (for diagnostics)
+                     -> Range                -- ^ the position (for diagnostics)
                      -> Diag                 -- ^ the diagram to be checked
                      -> [(Node, GMorphism)]  -- ^ the sink
                      -> Result ()
@@ -557,7 +557,7 @@ assertAmalgamability opts pos diag sink =
 
 -- | Check the amalgamability assuming common logic for whole diagram
 homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
-                                 -> [Pos]               -- ^ the position (for diagnostics)
+                                 -> Range               -- ^ the position (for diagnostics)
                                  -> Diag                -- ^ the diagram to be checked
                                  -> [(Node, GMorphism)] -- ^ the sink
                                  -> Result Amalgamates
@@ -576,7 +576,7 @@ homogeneousEnsuresAmalgamability opts pos diag sink =
 
 -- | Get a position within the source file of a UNIT-TERM
 getPos_UNIT_TERM :: UNIT_TERM
-                 -> [Pos]
+                 -> Range
 -- UNIT-REDUCTION
 getPos_UNIT_TERM (Unit_reduction _ restr) =
     -- obtain position from RESTRICTION
@@ -601,15 +601,15 @@ getPos_UNIT_TERM (Group_unit_term _ poss) =
 
 
 -- | Get a position within the source file of UNIT-IMPORTED
-getPos_UNIT_IMPORTED :: [Pos] -> [Pos]
-getPos_UNIT_IMPORTED ps = case ps of 
+getPos_UNIT_IMPORTED :: Range -> Range
+getPos_UNIT_IMPORTED (Range ps) = Range $ case ps of 
                           [] -> []
                           _ : qs -> if null qs then ps else qs
 
 
 -- | Get a position within the source file of UNIT-EXPRESSION
-getPos_UNIT_EXPRESSION :: UNIT_EXPRESSION -> [Pos]
-getPos_UNIT_EXPRESSION (Unit_expression _ (Annoted ut _ _ _) []) =
+getPos_UNIT_EXPRESSION :: UNIT_EXPRESSION -> Range
+getPos_UNIT_EXPRESSION (Unit_expression _ (Annoted ut _ _ _) nullRange) =
     getPos_UNIT_TERM ut
 getPos_UNIT_EXPRESSION (Unit_expression _ _ poss) = 
     poss

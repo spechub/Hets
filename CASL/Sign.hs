@@ -78,10 +78,10 @@ supersortsOf s e = Rel.succs (sortRel e) s
 
 toOP_TYPE :: OpType -> OP_TYPE
 toOP_TYPE OpType { opArgs = args, opRes = res, opKind = k } =
-    Op_type k  args res [] 
+    Op_type k  args res nullRange
 
 toPRED_TYPE :: PredType -> PRED_TYPE
-toPRED_TYPE PredType { predArgs = args } = Pred_type args []
+toPRED_TYPE PredType { predArgs = args } = Pred_type args nullRange
 
 toOpType :: OP_TYPE -> OpType
 toOpType (Op_type k args r _) = OpType k args r

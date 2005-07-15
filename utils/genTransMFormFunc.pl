@@ -81,6 +81,7 @@ import Debug.Trace
 
 import Common.PrettyPrint
 import Common.AS_Annotation
+import Common.Id
 
 -- CASL
 import CASL.Logic_CASL 
@@ -121,6 +122,8 @@ foreach my $pair (@input) {
     # substitute formula variables with underscore
     # only 'p','q' and 'r' are recognized
     $pattern =~ s/ [pqr] / _ /go;
+    # substitute nullRange with underscore
+    $pattern =~ s/nullRange/ _ /go;
     # remove all stuff that s not needed from the pattern
     # closing brace
     $pattern =~ s/\}\s*$//o;

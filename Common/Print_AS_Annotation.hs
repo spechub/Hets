@@ -114,7 +114,7 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
 instance PrettyPrint s => PrettyPrint (Named s) where
     printText0 ga (NamedSen{senName = label, sentence = s}) =
 	printText0 ga s <> if null label then empty else
-		       space <> printText0 ga (Label [label] [])
+		       space <> printText0 ga (Label [label] nullRange)
 
 -- | function to split the annotation to the right of an item
 -- * fst contains printed label and implied annotion 

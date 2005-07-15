@@ -278,7 +278,7 @@ parse_display_str an str = case parse (tokenL [])
 			Left err -> Result [mkDiag Warning 
 					           (err' ++show err++"\nin:\n")
 					           an ] 
-				           $ Just [Token str []] 
+				           $ Just [Token str nullRange] 
 			Right i' -> Result [] $ Just i'
     where tokenL acc = 
 	      do isEof <- option False (eof >> return True) 
@@ -291,7 +291,7 @@ parse_display_str an str = case parse (tokenL [])
 			       else tokenL (acc ++ plcs ++tok)
 	  optTok pa = option [] (do t <- pa 
 				    return [t])
-	  mkTok p = bind Token p (return [])
+	  mkTok p = bind Token p (return nullRange)
 	  placeP = mkTok (string place)
 	  nonPlaceP = mkTok $ 
 		         do c <- anyChar 

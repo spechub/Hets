@@ -198,6 +198,19 @@ instance ShATermConvertible Pos where
         where
             aterm = getATerm att
 
+instance ShATermConvertible Range where
+    toShATerm att0 (Range l) =
+        case toShATerm att0 l of { (att1,aa') ->
+          addATerm (ShAAppl "Range"   [ aa' ] []) att1}
+    fromShATerm att =
+        case aterm of
+            (ShAAppl "Range" [ aa ] _) ->
+                case fromShATerm (getATermByIndex1 aa att) of { aa' ->
+                   Range aa' }
+            u -> fromShATermError "Range" u
+        where
+            aterm = getATerm att
+
 instance ShATermConvertible Token where
     toShATerm att0 (Token aa ab) =
        case toShATerm att0 aa of { (att1,aa') ->

@@ -373,8 +373,8 @@ renderLatexVerb mi d = renderStyle textStyle' d'
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrintLaTeX Token where
     printLatex0 ga t = printToken_latex casl_axiom_latex t'
-	where i = Id [t] [] []
-              t' = maybe t (\ ts -> if isMixfix (Id ts [] []) 
+	where i = Id [t] [] nullRange
+              t' = maybe t (\ ts -> if isMixfix (Id ts [] nullRange) 
 			            then t 
 			            else head ts) 
 		         (lookupDisplay ga DF_LATEX i) 

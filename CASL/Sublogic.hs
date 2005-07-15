@@ -280,15 +280,15 @@ mapMaybePos (p1:pl) f (h:t) = let
 -- map with partial function f on Maybe type
 --  will remove elements from given Pos list for elements of [a]
 --  where f returns Nothing
---  given number of elements from the beginning of [Pos] are always
+--  given number of elements from the beginning of Range are always
 --  kept
 --
-mapPos :: Int -> [Pos] -> (a -> Maybe b) -> [a] -> ([b],[Pos])
-mapPos c p f l = let
+mapPos :: Int -> Range -> (a -> Maybe b) -> [a] -> ([b],Range)
+mapPos c (Range p) f l = let
                    (res,pos) = (\(x,y) -> (catMaybes x,y)) 
                                $ unzip $ mapMaybePos (drop c p) f l
                  in
-                   (res,(take c p)++pos)
+                   (res,Range ((take c p)++pos))
 
 ------------------------------------------------------------------------------
 -- Functions to analyse formulae
@@ -642,7 +642,10 @@ pr_formula l f = pr_check l sl_formula f
 --
 pr_make_sorts :: [SORT] -> Annoted (BASIC_ITEMS b s f)
 pr_make_sorts s =
-  Annoted (Sig_items (Sort_items [Annoted (Sort_decl s [])[][][]][]))[][][]
+  Annoted (Sig_items (Sort_items 
+             [Annoted (Sort_decl s nullRange) nullRange [][]] 
+             nullRange)) 
+          nullRange [][]
 
 -- when processing BASIC_SPEC, add a Sort_decl in front for sorts
 -- defined by DATATYPE_DECLs that had to be removed completely,
@@ -825,12 +828,12 @@ pr_sort_item l (Subsort_decl sl s p) =
              if (has_sub l) then
                Just (Subsort_decl sl s p)
              else
-               Just (Sort_decl (s:sl) [])
+               Just (Sort_decl (s:sl) nullRange)
 pr_sort_item l (Subsort_defn s1 v s2 f p) =
              if (has_sub l) then
                Just (Subsort_defn s1 v s2 f p)
              else
-               Just (Sort_decl [s1] [])
+               Just (Sort_decl [s1] nullRange)
 pr_sort_item _ (Iso_decl s p) = Just (Iso_decl s p)
 
 pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS

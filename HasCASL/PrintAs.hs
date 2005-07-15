@@ -72,10 +72,10 @@ instance PrettyPrint Type where
         TypeName name _k i -> printText0 ga name  <> 
           if i == 0 then empty else text ("_v"++ show i)
         TypeAppl t1 t2 -> case t1 of 
-            TypeName (Id [a, Token "__" _, b] [] []) _ _ ->
+            TypeName (Id [a, Token "__" _, b] [] _) _ _ ->
                 printText0 ga a <> printText0 ga t2 <> printText0 ga b
             TypeAppl (TypeName (Id [Token "__" _, inTok, Token "__" _] 
-                                [] []) _ _) t0 -> printText0 ga t0 
+                                [] _) _ _) t0 -> printText0 ga t0 
                          <+> printText0 ga inTok <+> printText0 ga t2
             _ -> (case t1 of 
                   TypeName _ _ _ -> id

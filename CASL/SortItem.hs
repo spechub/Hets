@@ -50,7 +50,7 @@ isoDecl ks s =
            (do (l, p) <- sortId ks `separatedBy` equalT
 	       return (Iso_decl (s:l) (catPos (e:p))))
 
-subSortDefn :: AParsable f => [String] -> (Id, [Pos]) 
+subSortDefn :: AParsable f => [String] -> (Id, Range) 
             -> AParser st (SORT_ITEM f)
 subSortDefn ks (s, e) = 
     do a <- annos
@@ -62,20 +62,20 @@ subSortDefn ks (s, e) =
        f <- formula ks
        a2 <- annos
        p <- cBraceT
-       return $ Subsort_defn s v t (Annoted f [] a a2) 
-		  (e ++ catPos [o, c, d, p])
+       return $ Subsort_defn s v t (Annoted f nullRange a a2) 
+		  (e `appRange` catPos [o, c, d, p])
 
-subSortDecl :: [String] -> ([Id], [Pos]) -> AParser st (SORT_ITEM f)
+subSortDecl :: [String] -> ([Id], Range) -> AParser st (SORT_ITEM f)
 subSortDecl ks (l, p) = 
     do t <- lessT
        s <- sortId ks
-       return $ Subsort_decl l s (p ++ tokPos t)
+       return $ Subsort_decl l s (p `appRange` tokPos t)
 
 sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f) 
 sortItem ks = 
     do s <- sortId ks
-       subSortDecl ks ([s],[]) <|> commaSortDecl ks s
-	  <|> isoDecl ks s  <|> return (Sort_decl [s] [])
+       subSortDecl ks ([s],nullRange) <|> commaSortDecl ks s
+	  <|> isoDecl ks s  <|> return (Sort_decl [s] nullRange)
 
 -- ------------------------------------------------------------------------
 -- typeItem
@@ -87,14 +87,14 @@ datatype ks =
        e <- asKey defnS
        a <- getAnnos
        (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
-       return (Datatype_decl s (Annoted v [] a b:alts) 
+       return (Datatype_decl s (Annoted v nullRange a b:alts) 
 			(catPos (e:ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks = 
     do a <- alternative ks
        an <- lineAnnos
-       return (Annoted a [] [] an)
+       return (Annoted a nullRange [] an)
 
 alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks = 
@@ -108,9 +108,9 @@ alternative ks =
 	    c <- addAnnos >> cParenT
 	    let qs = toPos o ps c 
             do   q <- try (addAnnos >> quMarkT)
-		 return (Alt_construct Partial i cs (qs ++ tokPos q))
+		 return (Alt_construct Partial i cs (qs `appRange` tokPos q))
 	      <|> return (Alt_construct Total i cs qs)
-	 <|> return (Alt_construct Total i [] [])
+	 <|> return (Alt_construct Total i [] nullRange)
 
 isSortId :: Id -> Bool
 isSortId (Id is _ _) = case is of 
@@ -128,5 +128,5 @@ compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs = 
     do c <- anColon
        (b, t, qs) <- opSort ks
-       let p = catPos (cs++[c]) ++ qs
+       let p = catPos (cs++[c]) `appRange` qs
        return $ Cons_select (if b then Partial else Total) is t p

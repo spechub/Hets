@@ -172,14 +172,14 @@ codeOutUniqueExtF pr_ef rep_ef phi =
             vDecl' = fresh_vars vDecl
             f'_rep = replace_varsF (build_vMap vDecl vDecl') rep_ef f'
             allForm = Quantification Universal vDecl' 
-                           (Implication f'_rep implForm True []) []
+                           (Implication f'_rep implForm True nullRange) nullRange
             implForm = assert (not (null vDecl))
                        (let fs = concat (zipWith eqForms vDecl vDecl')
                         in (if length fs == 1 
                                then head fs
-                               else Conjunction fs []))
+                               else Conjunction fs nullRange))
         in Quantification Existential 
-                   vDecl (Conjunction [f',allForm] []) []
+                   vDecl (Conjunction [f',allForm] nullRange) nullRange
     ExtFORMULA f -> ExtFORMULA (pr_ef f)
     Quantification q vs f ps -> Quantification q vs (rec f) ps
     Conjunction fs ps -> Conjunction (map rec fs) ps
@@ -203,13 +203,13 @@ codeOutUniqueExtF pr_ef rep_ef phi =
                      (zipWith (eqFor sor1) vars1 vars2)
           eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
                                           (toSortTerm (toVarTerm v2 s))
-                                          []
+                                          nullRange
           fresh_vars = snd . mapAccumL fresh_var Set.empty
           fresh_var accSet (Var_decl vars sor _) = 
               let accSet' = Set.union (Set.fromList vars) accSet
                   (accSet'',vars') = mapAccumL nVar accSet' vars
-              in (accSet'',Var_decl vars' sor [])
-          genVar t i = Token (tokStr t ++ '_':show i) nullPos
+              in (accSet'',Var_decl vars' sor nullRange)
+          genVar t i = Token (tokStr t ++ '_':show i) nullRange
           nVar aSet v = 
               let v' = fromJust (find (not . flip Set.member aSet) 
                                  ([genVar v (i :: Int) | i<-[1..]]))
@@ -273,14 +273,14 @@ constructExpansion :: (Eq f) => FORMULA f
                    -> TERM f 
                    -> FORMULA f
 constructExpansion atom c@(Conditional t1 phi t2 _) =
-    Conjunction [ Implication phi (substConditionalF c t1 atom) False []
-                , Implication (Negation phi []) 
-                              (substConditionalF c t2 atom) False []] []
+    Conjunction [ Implication phi (substConditionalF c t1 atom) False nullRange
+                , Implication (Negation phi nullRange) 
+                              (substConditionalF c t2 atom) False nullRange] nullRange
 constructExpansion _ _ = error "CASL.Utils: Conditional expected"
 
-mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> [Pos] -> FORMULA f) 
+mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> Range -> FORMULA f) 
                -- ^ equational constructor
-               -> TERM f -> TERM f -> [Pos] 
+               -> TERM f -> TERM f -> Range 
                -> Either (FORMULA f) (FORMULA f)
                -- ^ Left means check again for Conditional, 
                -- Right means no Conditional left
@@ -289,9 +289,9 @@ mkEquationAtom cons t1 t2 ps =
           (listToMaybe (catMaybes (map findConditionalT [t1,t2])))
     where phi = cons t1 t2 ps
 
-mkSingleTermF :: (Eq f) => (TERM f -> [Pos] -> FORMULA f) 
+mkSingleTermF :: (Eq f) => (TERM f -> Range -> FORMULA f) 
               -- ^ single term atom constructor
-               -> TERM f -> [Pos] 
+               -> TERM f -> Range 
                -> Either (FORMULA f) (FORMULA f)
                -- ^ Left means check again for Conditional, 
                -- Right means no Conditional left
@@ -357,9 +357,9 @@ expansion of conditionals according to CASL-Ref-Manual:
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
-toSortTerm t@(Qual_var _ s _) = Sorted_term t s []
+toSortTerm t@(Qual_var _ s _) = Sorted_term t s nullRange
 toSortTerm _ = error "CASL2TopSort.toSortTerm: can only handle Qual_var" 
 
 -- | generates from a variable and sort an Qual_var term
 toVarTerm :: VAR -> SORT -> TERM f
-toVarTerm vs s = (Qual_var vs s [])
+toVarTerm vs s = (Qual_var vs s nullRange)

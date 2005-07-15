@@ -226,8 +226,8 @@ coselForms1 str (i, ty, il) =
         it = case i of
                Nothing -> Nothing
                Just i' -> Just (i',Application (Qual_op_name i' 
-                                                 (toOP_TYPE ty) [])
-                                              (map toQualVar vs) [])
+                                                 (toOP_TYPE ty) nullRange)
+                                              (map toQualVar vs) nullRange)
      in (it, vs, map ( \ (j, typ) -> (Just j, typ)) cs)
 
 comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT 
@@ -268,7 +268,7 @@ comakeDisj a1 a2 = do
         (i2, v2, _) = coselForms1 "Y" a2
     (c1,t1) <- i1
     (c2,t2) <- i2
-    let p = posOfId c1 ++ posOfId c2
+    let p = posOfId c1 `appRange` posOfId c2
     return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" 
                        ++ showId c2 "") True 
            $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
@@ -318,7 +318,7 @@ ana_C_BASIC_ITEM ga bi = do
            toCoSortGenAx ps False $ unionGenAx gs
            return $ CoSort_gen ul ps
 
-toCoSortGenAx :: [Pos] -> Bool -> GenAx -> State CSign ()
+toCoSortGenAx :: Range -> Bool -> GenAx -> State CSign ()
 toCoSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c -> let ide = compId c in  Qual_op_name ide  

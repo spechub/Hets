@@ -52,20 +52,20 @@ extractVars pat =
 
 -- | construct term from id
 mkOpTerm :: Id -> TypeScheme -> Term
-mkOpTerm i sc = QualOp Op (InstOpId i [] []) sc []
+mkOpTerm i sc = QualOp Op (InstOpId i [] nullRange) sc nullRange
 
 -- | bind a term
 mkForall :: [GenVarDecl] -> Term -> Term
-mkForall vl f = if null vl then f else QuantifiedTerm Universal vl f []
+mkForall vl f = if null vl then f else QuantifiedTerm Universal vl f nullRange
 
 -- | construct application with curried arguments
 mkApplTerm :: Term -> [Term] -> Term
-mkApplTerm = foldl ( \ t a -> ApplTerm t a []) 
+mkApplTerm = foldl ( \ t a -> ApplTerm t a nullRange) 
 
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
 addPartiality args t = case args of 
-        [] -> LazyType t []
+        [] -> LazyType t nullRange
         _ : rs -> case t of 
            FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
                else FunType t1 a (addPartiality rs t2) ps
@@ -96,14 +96,14 @@ getConstrType :: Type -> Partiality -> [Type] -> Type
 getConstrType rty p ts = (case p of
      Total -> id
      Partial -> addPartiality ts) $
-                       foldr ( \ c r -> FunType c FunArr r [] )
+                       foldr ( \ c r -> FunType c FunArr r nullRange )
                              rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = (case p of 
     Partial -> addPartiality [dt]
-    Total -> id) (FunType dt FunArr rt [])
+    Total -> id) (FunType dt FunArr rt nullRange)
 
 -- | get the type of a constructor for printing (kinds may be wrong)
 createConstrType :: Id -> [TypeArg] -> RawKind -> Partiality -> [Type] -> Type
@@ -135,16 +135,16 @@ expected a b =
 
 -- * compute better positions
 
-posOfVars :: Vars -> [Pos]
+posOfVars :: Vars -> Range
 posOfVars vr = 
     case vr of 
     Var v -> posOfId v
     VarTuple _ ps -> ps
 
-posOfTypeArg :: TypeArg -> [Pos]
+posOfTypeArg :: TypeArg -> Range
 posOfTypeArg (TypeArg t _ _ _ _ ps) = firstPos [t] ps
 
-posOfTypePattern :: TypePattern -> [Pos]
+posOfTypePattern :: TypePattern -> Range
 posOfTypePattern pat = 
     case pat of
     TypePattern t _ _ -> posOfId t
@@ -153,25 +153,25 @@ posOfTypePattern pat =
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _ _ _) _ -> posOfId t
 
-posOfType :: Type -> [Pos]
+posOfType :: Type -> Range
 posOfType ty = 
     case ty of
     TypeName i _ _ -> posOfId i
-    TypeAppl t1 t2 -> concatMap posOfType [t1, t2]
-    ExpandedType t1 t2 -> concatMap posOfType [t1, t2]
+    TypeAppl t1 t2 -> concatMapRange posOfType [t1, t2]
+    ExpandedType t1 t2 -> concatMapRange posOfType [t1, t2]
     TypeToken t -> tokPos t
-    BracketType _ ts ps -> concatMap posOfType ts ++ ps
-    KindedType t _ ps -> posOfType t ++ ps
-    MixfixType ts -> concatMap posOfType ts
-    LazyType t ps -> posOfType t ++ ps
-    ProductType ts ps -> concatMap posOfType ts ++ ps
-    FunType t1 _ t2 ps -> concatMap posOfType [t1, t2] ++ ps
+    BracketType _ ts ps -> concatMapRange posOfType ts `appRange` ps
+    KindedType t _ ps -> posOfType t `appRange` ps
+    MixfixType ts -> concatMapRange posOfType ts
+    LazyType t ps -> posOfType t `appRange` ps
+    ProductType ts ps -> concatMapRange posOfType ts `appRange` ps
+    FunType t1 _ t2 ps -> concatMapRange posOfType [t1, t2] `appRange` ps
 
-posOfTerm :: Term -> [Pos]
+posOfTerm :: Term -> Range
 posOfTerm trm =
     case trm of
     QualVar v -> posOfVarDecl v
-    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps++qs) 
+    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps `appRange` qs) 
     ResolvedMixTerm i _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps 
@@ -186,14 +186,14 @@ posOfTerm trm =
     BracketTerm _ ts ps -> firstPos ts ps 
     AsPattern v _ ps -> firstPos [v] ps
 
-posOfVarDecl :: VarDecl -> [Pos]
+posOfVarDecl :: VarDecl -> Range
 posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
 
 instance PosItem a => PosItem [a] where
-    get_pos = concatMap get_pos 
+    getRange = concatMapRange getRange 
 
 instance PosItem a => PosItem (a, b) where
-    get_pos (a, _) = get_pos a
+    getRange (a, _) = getRange a
 
 instance PosItem a => PosItem (Set.Set a) where
-    get_pos = get_pos . Set.toList
+    getRange = getRange . Set.toList

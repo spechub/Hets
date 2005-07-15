@@ -83,27 +83,27 @@ lookupSemanticAnno sa =
 
 -- | all possible annotations (without comment-outs)
 data Annotation = -- | constructor for comments or unparsed annotes
-                Unparsed_anno Annote_word Annote_text [Pos]
+                Unparsed_anno Annote_word Annote_text Range
 		-- | known annotes
-		| Display_anno Id [(Display_format, String)] [Pos]
+		| Display_anno Id [(Display_format, String)] Range
 		-- postion of anno start, keywords and anno end
-		| List_anno Id Id Id [Pos] 
+		| List_anno Id Id Id Range 
 		-- postion of anno start, commas and anno end
-		| Number_anno Id [Pos] 
+		| Number_anno Id Range 
 		-- postion of anno start, commas and anno end
-		| Float_anno Id Id [Pos] 
+		| Float_anno Id Id Range 
 		-- postion of anno start, commas and anno end
-		| String_anno Id Id [Pos] 
+		| String_anno Id Id Range 
 		-- postion of anno start, commas and anno end
-		| Prec_anno PrecRel [Id] [Id] [Pos] 
+		| Prec_anno PrecRel [Id] [Id] Range 
 		--          ^ positions: "{",commas,"}", RecRel, "{",commas,"}"
 		--          | Lower = "< "  BothDirections = "<>"
-		| Assoc_anno AssocEither [Id] [Pos] -- position of commas
-		| Label [String] [Pos] 
+		| Assoc_anno AssocEither [Id] Range -- position of commas
+		| Label [String] Range 
 		-- postion of anno start and anno end
 
 		-- All annotations below are only as annote line allowed
-		| Semantic_anno Semantic_anno [Pos] 
+		| Semantic_anno Semantic_anno Range 
 		-- position information for annotations is provided 
 		-- by every annotation
 		  deriving (Show)
@@ -177,7 +177,7 @@ isAnnote = not . isComment
 -- 'opt_pos' should carry the position of an optional semicolon
 -- following a formula (but is currently unused).
 data Annoted a = Annoted { item :: a
-			 , opt_pos :: [Pos]
+			 , opt_pos :: Range
 			 , l_annos :: [Annotation]
                          , r_annos :: [Annotation]}
 		 deriving (Show, Eq) 
@@ -203,6 +203,10 @@ mapNamedM f (NamedSen n a x) = do
   y <- f x 
   return $ NamedSen n a y
 
+-- | mark a sentence as goal
+markGoal :: Named s -> Named s
+markGoal x = x { isAxiom = False }
+
 -- | process all items and wrap matching annotations around the results 
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
 mapAnM f al = 
@@ -219,7 +223,7 @@ appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
 
 -- | put together preceding annotations and an item
 addLeftAnno :: [Annotation] -> a -> Annoted a
-addLeftAnno l i = Annoted i [] l []
+addLeftAnno l i = Annoted i nullRange l []
 
 -- | get the label following (or to the right of) an 'item'
 getRLabel :: Annoted a -> String

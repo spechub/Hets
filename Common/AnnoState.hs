@@ -145,7 +145,7 @@ annosParser parser =
 -- | parse an item list preceded by a singular or plural keyword,
 -- interspersed with semicolons and an optional semicolon at the end
 itemList :: [String] -> String -> ([String] -> AParser st b)
-               -> ([Annoted b] -> [Pos] -> a) -> AParser st a
+               -> ([Annoted b] -> Range -> a) -> AParser st a
 itemList ks kw ip constr = 
     do p <- pluralKeyword kw
        auxItemList (ks++startKeyword) [p] (ip ks) constr	      
@@ -153,7 +153,7 @@ itemList ks kw ip constr =
 -- | generalized version of 'itemList' 
 -- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'
 auxItemList :: [String] -> [Token] -> AParser st b
-            -> ([Annoted b] -> [Pos] -> a) -> AParser st a
+            -> ([Annoted b] -> Range -> a) -> AParser st a
 auxItemList startKeywords ps parser constr = do
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in 

@@ -60,10 +60,10 @@ anaAttr _ _ b = return $ Just b
 patternsToType :: [[VarDecl]] -> Type -> Type
 patternsToType [] t = t
 patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr 
-                          (patternsToType ps t) []
+                          (patternsToType ps t) nullRange
 
 tuplePatternToType :: [VarDecl] -> Type
-tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) []
+tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) nullRange
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
@@ -96,7 +96,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        mPats <- mapM (mapM anaVarDecl) oldPats
        let newPats = map catMaybes mPats
            monoPats = map (map makeMonomorph) newPats
-           pats = map (\ l -> mkTupleTerm (map QualVar l) []) monoPats
+           pats = map (\ l -> mkTupleTerm (map QualVar l) nullRange) monoPats
        vs <- gets localVars
        mapM (mapM $ addLocalVar True) monoPats
        let newArgs = catMaybes mArgs  
@@ -113,7 +113,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        let lamTrm = case (pats, partial) of 
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br (InstOpId i [] []) newSc []
+                           ot = QualOp br (InstOpId i [] nullRange) newSc nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
                            f = mkForall (map GenTypeVarDecl newArgs

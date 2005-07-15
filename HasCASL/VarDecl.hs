@@ -91,7 +91,7 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
     let newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
                   Nothing -> error "generalizeS" 
                   Just (TypeVarDefn rk vk c) -> 
-                      TypeArg i vk rk c Other []) svs
+                      TypeArg i vk rk c Other nullRange) svs
         newTy = generalize newArgs ty
     if null tArgs then return $ TypeScheme newArgs newTy p
        else do
@@ -202,7 +202,7 @@ anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
             Nothing -> return Nothing
             Just ((rk, ks), nt) -> 
                 nonUniqueKind ks t $ \ k -> do
-                   let nd = Downset (KindedType nt k [])
+                   let nd = Downset (KindedType nt k nullRange)
                    addLocalTypeVar True (TypeVarDefn rk nd c) i
                    return $ Just $ TypeArg i (Downset nt) rk c s ps
       MissingKind -> do 
@@ -395,7 +395,7 @@ anaPattern pat =
                                _ -> ty
          case p of 
              QualVar (VarDecl v (MixfixType []) ok qs) ->
-                 let newVd = VarDecl v newT ok (qs ++ ps) in
+                 let newVd = VarDecl v newT ok (qs `appRange` ps) in
                  return $ QualVar newVd
              _ -> do newP <- anaPattern p
                      return $ TypedTerm newP q newT ps

@@ -32,7 +32,7 @@ import qualified Syntax.AS_Architecture
 import qualified Syntax.AS_Structured
 
 
-data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
+data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] Range [Annotation]
 	        -- pos: "library"
 	        -- list of annotations is parsed preceding the first LIB_ITEM
 	        -- the last LIB_ITEM may be annotated with a following comment
@@ -45,34 +45,34 @@ data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] [Pos] [Annotation]
 data LIB_ITEM = Spec_defn Syntax.AS_Structured.SPEC_NAME 
 		          Syntax.AS_Structured.GENERICITY 
                           (Annoted Syntax.AS_Structured.SPEC) 
-			  [Pos]
+			  Range
 	      
 	      | View_defn Syntax.AS_Structured.VIEW_NAME 
 		          Syntax.AS_Structured.GENERICITY 
 			  Syntax.AS_Structured.VIEW_TYPE 
 			  [Syntax.AS_Structured.G_mapping]
-			  [Pos]
+			  Range
 
 	      | Arch_spec_defn Syntax.AS_Architecture.ARCH_SPEC_NAME 
 		               (Annoted Syntax.AS_Architecture.ARCH_SPEC) 
-			       [Pos]
+			       Range
 
 	      | Unit_spec_defn Syntax.AS_Structured.SPEC_NAME 
 		               Syntax.AS_Architecture.UNIT_SPEC 
-			       [Pos]
+			       Range
 
 	      | Ref_spec_defn Syntax.AS_Structured.SPEC_NAME 
 		               Syntax.AS_Architecture.REF_SPEC 
-			       [Pos]
+			       Range
 
-	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] [Pos] 
+	      | Download_items  LIB_NAME [ITEM_NAME_OR_MAP] Range 
 		-- pos: "from","get",commas, opt "end"
-	      | Logic_decl Syntax.AS_Structured.Logic_name [Pos]
+	      | Logic_decl Syntax.AS_Structured.Logic_name Range
 		-- pos:  "logic", Logic_name
 		deriving (Show)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
-		      | Item_name_map ITEM_NAME ITEM_NAME [Pos]
+		      | Item_name_map ITEM_NAME ITEM_NAME Range
 			-- pos: "|->"
 			deriving (Show,Eq)
 
@@ -81,14 +81,14 @@ type ITEM_NAME = SIMPLE_ID
 data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER
 	      | Lib_id LIB_ID
 
-data LIB_ID = Direct_link URL [Pos]
+data LIB_ID = Direct_link URL Range
 	      -- pos: start of URL
-	    | Indirect_link PATH [Pos]
+	    | Indirect_link PATH Range
 	      -- pos: start of PATH
 
 
 
-data VERSION_NUMBER = Version_number [String] [Pos]
+data VERSION_NUMBER = Version_number [String] Range
 		      -- pos: "version", start of first string
 		      deriving (Show,Eq) 
 

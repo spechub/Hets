@@ -413,7 +413,7 @@ condPrint_Mixfix pTok pId pTrm parens_fun
 	      fsep_fun $ (maybe (map pTok) (\f -> map f) (mpt_fun)) dispToks
 	  dispToks = maybe [] (\x -> maybe [] id (lookupDisplay ga x i)) mdf
 	     -- null if no display entry is available
-	  dispId = if null dispToks then i else Id dispToks [] []
+	  dispId = if null dispToks then i else Id dispToks [] nullRange
 {- TODO: consider string-, number-, list- and floating-annotations -}
 
 condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
@@ -452,7 +452,7 @@ print_mixfix_appl pTok pId pTrm parens_fun
 				      -- and LaTeX ensuring a space after 
 				      -- the last token of the identifier 
 				      -- if the compound is empty
-	      else pId (Id [] cs [])
+	      else pId (Id [] cs nullRange)
           (tps_b_comp,places) = splitMixToken tops
 	  nr_places = length $ filter isPlace tps_b_comp
 	  (terms_b_comp,terms_a_comp) = splitAt nr_places terms
@@ -559,7 +559,7 @@ print_Literal pTok pId pTrm parens_fun
 						       listBrackets li
  			  in hcat(map pTok openL) <+> list_body 
 			     <+> hcat(map pTok closeL)
-			     <> pId (Id [] comps [])
+			     <> pId (Id [] comps nullRange)
     | isString ga li ts = ptext $ 
 			  (\s -> let r = '"':(s ++ "\"") in seq r r) $ 
 			  concatMap convCASLChar $ toksString li

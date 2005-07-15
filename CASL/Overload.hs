@@ -81,7 +81,7 @@ minExpFORMULA mef ga sign formula = case formula of
         -> minExpFORMULA_pred mef ga sign ide Nothing terms pos
     Predication (Qual_pred_name ide ty pos1) terms pos2
         -> minExpFORMULA_pred mef ga sign ide (Just $ toPredType ty) 
-           terms (pos1 ++ pos2)
+           terms (pos1 `appRange` pos2)
     Existl_equation term1 term2 pos
         -> minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
     Strong_equation term1 term2 pos
@@ -108,7 +108,7 @@ oneExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e
            -> TERM f -> Result (TERM f)
 oneExpTerm minF ga sign term = do 
     ts <- minExpTerm minF ga sign term
-    is_unambiguous ga term ts []
+    is_unambiguous ga term ts nullRange
 
 {-----------------------------------------------------------
     - Minimal expansion of an equation formula -
@@ -118,10 +118,10 @@ minExpFORMULA_eq :: PrettyPrint f =>
                     Min f e               ->
                     GlobalAnnos           ->
                     Sign f e              ->
-                    (TERM f -> TERM f -> [Pos] -> FORMULA f) -> 
+                    (TERM f -> TERM f -> Range -> FORMULA f) -> 
                     TERM f                ->
                     TERM f                ->
-                    [Pos]              ->
+                    Range              ->
                     Result (FORMULA f)
 minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
     ps <- minExpTerm_cond mef ga sign ( \ t1 t2 -> eq t1 t2 pos) 
@@ -129,7 +129,7 @@ minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
     is_unambiguous ga (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
-hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> [Pos] 
+hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range 
              -> Result [[f]]
 hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
@@ -138,7 +138,7 @@ hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
     else return terms
 
 -- | check if there is a unique equivalence class
-is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> [Pos] 
+is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range 
                -> Result f
 is_unambiguous ga topterm ts pos = do 
     terms <- hasSolutions ga topterm ts pos
@@ -148,7 +148,7 @@ is_unambiguous ga topterm ts pos = do
                 showSepList (showString "\n  ") (shows . printText0 ga) 
                 (take 5 $ map head terms) "") pos] Nothing
 
-checkIdAndArgs :: Id -> [a] -> [Pos] -> Result Int
+checkIdAndArgs :: Id -> [a] -> Range -> Result Int
 checkIdAndArgs ide args poss =     
     let nargs = length args
         pargs = placeCount ide
@@ -161,7 +161,7 @@ checkIdAndArgs ide args poss =
 
 
 noOpOrPred :: PrettyPrint t =>
-              [a] -> String -> Maybe t -> Id -> [Pos] -> Int -> Result ()
+              [a] -> String -> Maybe t -> Id -> Range -> Int -> Result ()
 noOpOrPred ops str mty ide pos nargs =
     if null ops then case mty of 
            Nothing -> Result [Diag Error 
@@ -185,7 +185,7 @@ minExpFORMULA_pred :: PrettyPrint f =>
                       Id                    ->
                       Maybe PredType        ->
                       [TERM f]              ->
-                      [Pos]                 ->
+                      Range                 ->
                       Result (FORMULA f)
 minExpFORMULA_pred mef ga sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
@@ -212,11 +212,11 @@ minExpFORMULA_pred mef ga sign ide mty args pos = do
                        $ combine expansions
     is_unambiguous ga (Predication (Pred_name ide) args pos) qualForms pos
 
-qualifyPreds :: Id -> [Pos] -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
+qualifyPreds :: Id -> Range -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
 qualifyPreds ide pos = map $ map $ qualify_pred ide pos 
 
 -- | qualify a single pred, given by its signature and its arguments
-qualify_pred :: Id -> [Pos] -> (PredType, [TERM f]) -> FORMULA f
+qualify_pred :: Id -> Range -> (PredType, [TERM f]) -> FORMULA f
 qualify_pred ide pos (pred', terms') = 
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
@@ -292,7 +292,7 @@ minExpTerm _ _ _n _
 minExpTerm_var :: Sign f e -> Token -> Maybe SORT -> [[TERM f]]
 minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of 
     Nothing -> []
-    Just s -> let qv = [[Qual_var tok s []]] in
+    Just s -> let qv = [[Qual_var tok s nullRange]] in
               case ms of 
               Nothing -> qv
               Just s2 -> if s == s2 then qv else []
@@ -300,7 +300,7 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
 -- | minimal expansion of an (possibly qualified) operator application
 minExpTerm_appl :: PrettyPrint f => Min f e -> GlobalAnnos 
                 -> Sign f e -> Id -> Maybe OpType -> [TERM f] 
-                -> [Pos] -> Result [[TERM f]]
+                -> Range -> Result [[TERM f]]
 minExpTerm_appl mef ga sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
     let -- functions matching that name in the current environment
@@ -328,11 +328,11 @@ minExpTerm_appl mef ga sign ide mty args pos = do
                        $ combine expansions
     hasSolutions ga (Application (Op_name ide) args pos) qualTerms pos
 
-qualifyOps :: Id -> [Pos] -> [[(OpType, [TERM f])]] -> [[TERM f]]
+qualifyOps :: Id -> Range -> [[(OpType, [TERM f])]] -> [[TERM f]]
 qualifyOps ide pos = map $ map $ qualify_op ide pos
 
     -- qualify a single op, given by its signature and its arguments
-qualify_op :: Id -> [Pos] -> (OpType, [TERM f]) -> TERM f
+qualify_op :: Id -> Range -> (OpType, [TERM f]) -> TERM f
 qualify_op ide pos (op', terms') = 
     Application (Qual_op_name ide (toOP_TYPE op') pos) terms' pos
 
@@ -359,7 +359,7 @@ minExpTerm_op :: PrettyPrint f =>
                  GlobalAnnos           ->
                  Sign f e              ->
                  OP_SYMB               ->
-                 [TERM f] -> [Pos]     ->
+                 [TERM f] -> Range     ->
                  Result [[TERM f]]
 minExpTerm_op mef ga sign (Op_name ide@(Id (tok:_) _ _)) args pos =
     let res = minExpTerm_appl mef ga sign ide Nothing args pos in
@@ -374,7 +374,7 @@ minExpTerm_op mef ga sign (Qual_op_name ide ty pos1) args pos2 =
    if length args /= length (args_OP_TYPE ty) then 
       mkError "type qualification does not match number of arguments" ide
    else minExpTerm_appl mef ga sign ide (Just $ toOpType ty) args
-        (pos1 ++ pos2)
+        (pos1 `appRange` pos2)
 minExpTerm_op _ _ _ _ _ _ = error "minExpTerm_op"
 
 {-----------------------------------------------------------
@@ -394,7 +394,7 @@ minExpTerm_cond :: PrettyPrint f =>
                    (TERM f -> TERM f -> a) -> 
                    TERM f                ->
                    TERM f                ->
-                   [Pos]                 ->
+                   Range                 ->
                    Result [[a]]
 minExpTerm_cond  mef ga sign f term1 term2 pos = do
     pairs <- minExpTerm_eq mef ga sign term1 term2

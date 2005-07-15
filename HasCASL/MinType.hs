@@ -16,6 +16,7 @@ module HasCASL.MinType where
 
 import HasCASL.As
 import HasCASL.TypeAna
+import Common.Id
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
@@ -28,14 +29,14 @@ typeNub te f l = case l of
     where
     comp :: (Type, Term) -> (Type, Term) -> Bool
     comp (ty1, t1) (ty2, t2) = eqTerm t1 t2 && 
-         (lesserType te ty1 ty2 || liftType ty1 [] == ty2)
+         (lesserType te ty1 ty2 || liftType ty1 nullRange == ty2)
 
 eqTerm :: Term -> Term -> Bool
 eqTerm t1 t2 = case (t1, t2) of
      (TypedTerm t _ _ _, _) -> eqTerm t t2 
      (_, TypedTerm t _ _ _) -> eqTerm t1 t
      (QualVar (VarDecl v1 _s1 _ _), QualVar (VarDecl v2 _s2 _ _)) -> 
-         v1 == v2 -- (s1 == s2 || liftType s1 [] == s2 || s1 == liftType s2 [])
+         v1 == v2 -- (s1 == s2 || liftType s1 nullRange == s2 || s1 == liftType s2 nullRange)
      (QualOp _ (InstOpId i1 _ _) _ _, QualOp _ (InstOpId i2 _ _) _ _) -> 
          i1 == i2
      (ApplTerm tf1 ta1 _, ApplTerm tf2 ta2 _) -> 

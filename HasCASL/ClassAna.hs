@@ -126,7 +126,7 @@ diffKindDiag :: (PosItem a, PrettyPrint a) =>
 diffKindDiag a k1 k2 = 
            [ Diag Error
               ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
-            $ get_pos a ]
+            $ getRange a ]
 
 -- | check if raw kinds are equal
 checkKinds :: (PosItem a, PrettyPrint a) => 

@@ -97,15 +97,15 @@ mkProgEq e t = case getTupleAp t of
                       Set.fromList rvs `Set.isSubsetOf` Set.fromList pvs 
        in if i `elem` [eqId, exEq, eqvId] then 
               if cond a b
-                 then Just $ ProgEq a b $ get_pos i
-                 else if cond a b then Just $ ProgEq a b $ get_pos i
+                 then Just $ ProgEq a b $ getRange i
+                 else if cond a b then Just $ ProgEq a b $ getRange i
                       else mkConstTrueEq e t
           else mkConstTrueEq e t
     _ -> case getAppl t of 
         Just (i, _, [f]) -> if i `elem` [notId, negId] then
             case mkConstTrueEq e f of
             Just (ProgEq p _ ps) -> Just $ ProgEq p 
-                (mkQualOp falseId unitTypeScheme []) ps
+                (mkQualOp falseId unitTypeScheme nullRange) ps
             Nothing -> Nothing
             else mkConstTrueEq e t
         _ -> mkConstTrueEq e t
@@ -113,11 +113,11 @@ mkProgEq e t = case getTupleAp t of
 mkConstTrueEq e t = 
     let vs = map getVar $ extractVars t in
         if isLHS e t && null (checkUniqueness vs) then
-           Just $ ProgEq t (mkQualOp trueId unitTypeScheme []) $ get_pos t
+           Just $ ProgEq t (mkQualOp trueId unitTypeScheme nullRange) $ getRange t
            else Nothing
 
 bottom :: Term
-bottom = mkQualOp botId botType []
+bottom = mkQualOp botId botType nullRange
 
 mkCondEq e t = case getTupleAp t of
     Just (i, [p, r]) -> 
@@ -133,8 +133,8 @@ mkCondEq e t = case getTupleAp t of
           in if isExecutable env f &&
              Set.fromList fvs `Set.isSubsetOf` Set.fromList pvs then
              Just (ProgEq lhs 
-                   (mkTerm whenElse whenType [] 
-                    $ TupleTerm [rhs, f, bottom] []) ps)
+                   (mkTerm whenElse whenType nullRange 
+                    $ TupleTerm [rhs, f, bottom] nullRange) ps)
              else Nothing
       Nothing -> Nothing
 

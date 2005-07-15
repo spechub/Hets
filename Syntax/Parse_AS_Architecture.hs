@@ -81,7 +81,7 @@ basicArchSpec l =
        expr <- annoParser2 $ unitExpr l
        (m, an) <- optSemi
        return (emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an) 
-                     (tokPos kUnit ++ ps ++ catPos (kResult:m)))
+                     (tokPos kUnit `appRange` ps `appRange` catPos (kResult:m)))
 
 -- | Parse unit declaration or definition
 -- @
@@ -133,7 +133,7 @@ unitSpec l =
        if null gss then do
             option ( {- case item gs of 
                     Spec_inst sn [] _ -> Spec_name sn -- annotations are lost
-                    _ -> -} Unit_type [] gs []) rest
+                    _ -> -} Unit_type [] gs nullRange) rest
             else rest
 
 unitRestType :: LogicGraph -> ([Annoted SPEC], [Token]) 
@@ -176,9 +176,9 @@ refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
 refinedRestSpec l u = do
       b <- asKey behaviourallyS 
       onlyRefinedRestSpec l (tokPos b) u
-    <|> onlyRefinedRestSpec l [] u
+    <|> onlyRefinedRestSpec l nullRange u
 
-onlyRefinedRestSpec :: LogicGraph -> [Pos] -> UNIT_SPEC -> 
+onlyRefinedRestSpec :: LogicGraph -> Range -> UNIT_SPEC -> 
                        AParser AnyLogic REF_SPEC
 onlyRefinedRestSpec l b u = do
     r <- asKey refinedS
@@ -188,7 +188,7 @@ onlyRefinedRestSpec l b u = do
                  return (m, v : ts)
     t <- asKey toS
     rsp <- refSpec l
-    return $ Refinement (null b) u ms rsp (b ++ toPos r ps t)           
+    return $ Refinement (isNullRange b) u ms rsp (b `appRange` toPos r ps t)           
 
 -- | Parse group unit term
 -- @
@@ -201,7 +201,7 @@ groupUnitTerm l = annoParser $
         -- unit name/application
     do name <- simpleId
        args <- many (fitArgUnit l)
-       return (Unit_appl name args [])
+       return (Unit_appl name args nullRange)
     <|> -- unit term in brackets
     do lbr <- oBraceT
        ut <- unitTerm l
@@ -265,7 +265,7 @@ unitTermLocal l =
        kWithin <- asKey withinS
        uTerm <- unitTermLocal l
        return (emptyAnno $ Local_unit uDefns uTerm  
-                         (tokPos kLocal ++ ps ++ tokPos kWithin))
+                         (tokPos kLocal `appRange` ps `appRange` tokPos kWithin))
     <|> -- translation/reduction
     do ut <- unitTermTransRed l
        return ut
@@ -290,7 +290,7 @@ unitTermTransRed l = groupUnitTerm l >>=
 -- @
 unitExpr :: LogicGraph -> AParser AnyLogic (Annoted UNIT_EXPRESSION)
 unitExpr l =
-         do (bindings, poss) <- option ([], [])
+         do (bindings, poss) <- option ([], nullRange)
              (do kLambda <- asKey lambdaS
                  (bindings, poss) <- unitBinding l `separatedBy` anSemi
                  kDot <- asKey dotS

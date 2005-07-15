@@ -40,7 +40,7 @@ instance (Ord a, PosItem a, PrettyPrint a, Mergeable b)
 improveDiag :: (PosItem a, PrettyPrint a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
                       unlines $ (f ++ " of '" ++ showPretty v "'") : l
-                    , diagPos = get_pos v
+                    , diagPos = getRange v
                     }
 
 mergeMap :: (Ord a, PosItem a, PrettyPrint a) => 
@@ -120,7 +120,7 @@ mergeScheme s1@(TypeScheme a1 t1 _)
 instance Mergeable OpAttr where
     merge (UnitOpAttr t1 p1) (UnitOpAttr t2 p2) = 
         do t <- mergeTerm Warning t1 t2
-           return $ UnitOpAttr t (p1 ++ p2)
+           return $ UnitOpAttr t (p1 `appRange` p2)
     merge a1 a2 = mergeA "attributes" a1 a2 
 
 instance Mergeable OpBrand where
@@ -199,4 +199,4 @@ mergeA str t1 t2 = if t1 == t2 then return t1 else
 mergeTerm :: DiagKind -> Term -> Term -> Result Term
 mergeTerm k t1 t2 = if t1 == t2 then return t1 else
             Result [Diag k ("different terms" ++ expected t1 t2) 
-                    []] $ Just t2
+                    nullRange] $ Just t2

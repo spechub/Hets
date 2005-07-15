@@ -51,7 +51,7 @@ read_LIB_DEFN_M_WI :: Monad m => AnyLogic -> FilePath -> String -> m (String, LI
 read_LIB_DEFN_M_WI defl file input  =
        case runParser (library (defl, logicGraph)) (emptyAnnos defl)
 	    file input of
-	    Left err  -> return (showErr err, Lib_defn (Lib_id (Indirect_link "" [])) [] [] [])  
+	    Left err  -> return (showErr err, Lib_defn (Lib_id (Indirect_link "" nullRange)) [] nullRange [])  
 	    Right ast -> return ("",ast)
 
 
@@ -87,10 +87,10 @@ fromShATermString str = if null str then Result [dia3] Nothing else
         else Result [dia1] Nothing
     _                                   ->  Result [dia2] Nothing
     where att  = readATerm str
-	  dia1 = Diag Warning "Wrong version number ... re-analyzing" nullPos
+	  dia1 = Diag Warning "Wrong version number ... re-analyzing" nullRange
 	  dia2 = Diag Warning "Couldn't convert ShATerm back from file" 
-		      nullPos
-          dia3 = Diag Warning "got empty string from file" nullPos
+		      nullRange
+          dia3 = Diag Warning "got empty string from file" nullRange
 
 globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile

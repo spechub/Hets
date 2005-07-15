@@ -30,6 +30,34 @@ instance Show Pos where
 instance Eq Pos where
     _ == _ = True
 
+-- position lists with trivial equality
+newtype Range = Range [Pos]
+
+instance Eq Range where
+    _ == _ = True
+instance Show Range where
+   show _ = "nullRange"
+instance Ord Range where
+   compare (Range l1) (Range l2) = compare l1 l2
+
+rangeToList :: Range -> [Pos]
+rangeToList (Range l) = l
+
+nullRange :: Range
+nullRange = Range []
+
+isNullRange :: Range -> Bool
+isNullRange (Range l) = null l
+
+appRange :: Range -> Range -> Range
+appRange (Range l1) (Range l2) = Range (l1++l2)
+
+reverseRange :: Range -> Range
+reverseRange (Range l) = Range (reverse l)
+
+concatMapRange :: (a -> Range) -> [a] -> Range
+concatMapRange f = Range . concatMap (rangeToList . f)
+
 instance Ord Pos where
     compare _ _ = EQ
 
@@ -58,7 +86,7 @@ showPos p = let name = sourceName p
 
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
-                   , tokPos :: [Pos]
+                   , tokPos :: Range
                    } --deriving (Show)
 
 instance Show Token where
@@ -69,7 +97,7 @@ type SIMPLE_ID = Token
 
 -- | a 'Token' with 'nullPos'
 mkSimpleId :: String -> Token
-mkSimpleId s = Token s []
+mkSimpleId s = Token s nullRange
 
 extSimpleId :: String -> SIMPLE_ID -> SIMPLE_ID
 extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
@@ -87,12 +115,18 @@ instance Ord Token where
    Token s1 _  <= Token s2 _ = s1 <= s2
 
 -- | collect positions
-catPos :: [Token] -> [Pos]
-catPos = concatMap tokPos
+catPosAux :: [Token] -> [Pos]
+catPosAux = concatMap (rangeToList . tokPos)
+
+catPos :: [Token] -> Range
+catPos = Range . catPosAux
 
 -- | shortcut to get positions of surrounding and interspersed tokens
-toPos :: Token -> [Token] -> Token -> [Pos]
+toPos :: Token -> [Token] -> Token -> Range
 toPos o l c = catPos $ o:l++[c]
+
+toPosAux :: Token -> [Token] -> Token -> [Pos]
+toPosAux o l c = catPosAux $ o:l++[c]
 
 -- * placeholder stuff
 
@@ -107,7 +141,7 @@ isPlace (Token t _) = t == place
 -- * identifiers with positions (usually ignored) of compound lists 
 
 -- | mixfix and compound identifiers
-data Id = Id [Token] [Id] [Pos] 
+data Id = Id [Token] [Id] Range 
           -- pos of square brackets and commas of a compound list
           --deriving Show
 
@@ -116,7 +150,7 @@ instance Show Id where
 
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id
-mkId toks = Id toks [] []
+mkId toks = Id toks [] (Range [])
 
 -- ignore positions
 instance Eq Id where
@@ -177,18 +211,18 @@ getListBrackets (Id b cs _) =
 -- | reconstruct a list with surrounding strings and interspersed commas 
 -- with proper position information 
 -- that should be preserved by the input function
-expandPos :: (Token -> a) -> (String, String) -> [a] -> [Pos] -> [a]
+expandPos :: (Token -> a) -> (String, String) -> [a] -> Range -> [a]
 -- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] = 
 -- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
-expandPos f (o, c) ts ps =
+expandPos f (o, c) ts (Range ps) =
     if null ts then if null ps then map (f . mkSimpleId) [o, c]
-       else map f (zipWith Token [o, c] [[head ps] , [last ps]])
+       else map f (zipWith Token [o, c] [Range [head ps] , Range [last ps]])
     else  let n = length ts + 1
               diff = n - length ps
               commas j = if j == 2 then [c] else "," : commas (j - 1)
               ocs = o : commas n
               seps = map f (if diff == 0 then 
-                            zipWith ( \ s p -> Token s [p])
+                            zipWith ( \ s p -> Token s (Range [p]))
                             ocs ps else map mkSimpleId ocs)
           in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
                             
@@ -201,7 +235,7 @@ getPlainTokenList (Id ts cs ps) =
            toks ++ getCompoundTokenList cs ps ++ pls
 
 -- | reconstruct tokens of compound list  
-getCompoundTokenList :: [Id] -> [Pos] -> [Token]
+getCompoundTokenList :: [Id] -> Range -> [Token]
 getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]") 
               -- although positions will be replaced (by scan)
                              (map getPlainTokenList cs) ps
@@ -211,7 +245,7 @@ getCompoundTokenList cs ps = concat $ expandPos (:[]) ("[", "]")
 
 -- | a 'SIMPLE_ID' as 'Id'
 simpleIdToId :: SIMPLE_ID -> Id
-simpleIdToId sid = Id [sid] [] []
+simpleIdToId sid = Id [sid] [] (Range [])
 
 -- | efficiently test for a singleton list 
 isSingle :: [a] -> Bool
@@ -277,21 +311,22 @@ nullPos :: [Pos]
 nullPos = []
 
 -- | compute a meaningful single position from an 'Id' for diagnostics 
-posOfId :: Id -> [Pos]
-posOfId (Id ts _ ps) = let l = filter (not . isPlace) ts 
+posOfId :: Id -> Range
+posOfId (Id ts _ (Range ps)) = 
+   Range $ let l = filter (not . isPlace) ts 
                        in (if null l then 
                        -- for invisible "__ __" (only places)
-                          catPos ts
-                          else catPos l) ++ ps
+                          catPosAux ts
+                          else catPosAux l) ++ ps
 
 -- | get a reasonable position for a list
-posOf :: PosItem a => [a] -> [Pos]
-posOf = concatMap get_pos 
+posOf :: PosItem a => [a] -> Range
+posOf = Range . concatMap getPosList
 
 
 -- | get a reasonable position for a list with an additional position list
-firstPos :: PosItem a => [a] -> [Pos] -> [Pos]
-firstPos l ps = posOf l ++ ps
+firstPos :: PosItem a => [a] -> Range -> Range
+firstPos l (Range ps) = Range (rangeToList (posOf l) ++ ps)
 
 ---- helper class -------------------------------------------------------
 
@@ -302,18 +337,21 @@ firstPos l ps = posOf l ++ ps
 -}
 
 class PosItem a where
-    get_pos :: a -> [Pos]
-    get_pos _ = []
+    getRange :: a -> Range
+    getRange _ = nullRange  -- default implementation
+
+getPosList :: PosItem a => a -> [Pos]
+getPosList = rangeToList . getRange
 
 -- a Pos list should not contain nullPos
     
 -- handcoded instance
 instance PosItem Token where
-    get_pos (Token _ p) = p
+    getRange (Token _ p) = p
 
 -- handcoded instance
 instance PosItem Id where
-    get_pos = posOfId
+    getRange = posOfId
 
 -- handcoded instance
 instance PosItem ()

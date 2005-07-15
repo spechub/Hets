@@ -17,7 +17,7 @@ import Common.Print_AS_Annotation
 
 import Common.GlobalAnnotations
 
-import Common.Id (Id(..),splitMixToken,Token)
+import Common.Id (Id(..),splitMixToken,Token,nullRange)
 import Common.PrintLaTeX
 import Common.Lib.Pretty
 import Common.Lexer(whiteChars)
@@ -189,7 +189,7 @@ instance (PrintLaTeX a) => PrintLaTeX (Annoted a) where
 
 instance PrintLaTeX s => PrintLaTeX (Named s) where
     printLatex0 ga (NamedSen{senName = label, sentence = s}) =
-	printLatex0 ga s <\+> printLatex0 ga (Label [label] [])
+	printLatex0 ga s <\+> printLatex0 ga (Label [label] nullRange)
 
 -- |
 -- makes a \hspace*{String} as Doc with appropiate size

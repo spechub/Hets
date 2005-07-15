@@ -132,7 +132,7 @@ ana_BASIC_SPEC mef ab as ga (Basic_spec al) = fmap Basic_spec $
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
-mkForall :: [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
+mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
 mkForall vl f ps = if null vl then f else 
                    Quantification Universal vl f ps
 
@@ -224,7 +224,7 @@ type GenAx = (Set.Set SORT, Rel.Rel SORT, Set.Set Component)
 emptyGenAx :: GenAx
 emptyGenAx = (Set.empty, Rel.empty, Set.empty)
 
-toSortGenAx :: [Pos] -> Bool -> GenAx -> State (Sign f e) ()
+toSortGenAx :: Range -> Bool -> GenAx -> State (Sign f e) ()
 toSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c -> let ide = compId c in Qual_op_name ide  
@@ -478,7 +478,7 @@ ana_OP_ATTR mef ga ty ois oa = do
     Comm_op_attr -> do 
       let ns = map mkSimpleId ["x", "y"]
           vs = zipWith ( \ v t -> Var_decl [v] t 
-                         $ concatMap posOfId atys) ns atys
+                         $ concatMapRange posOfId atys) ns atys
           args = map toQualVar vs
           makeComm i = let p = posOfId i
                            qi = Qual_op_name i sty p in
@@ -571,7 +571,7 @@ instance PrettyPrint Component where
         printText0 ga i <+> colon <> printText0 ga ty
 
 instance PosItem Component where
-    get_pos = get_pos . compId
+    getRange = getRange . compId
 
 -- | return list of constructors 
 ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State (Sign f e) [Component]
@@ -620,7 +620,7 @@ makeDisjSubsorts d subs = case subs of
      pd = posOfId d
      p1 = posOfId s1
      p2 = posOfId s2
-     p = concat [pd, p1, p2]
+     p = pd `appRange` p1 `appRange` p2
      v = Var_decl [n] d pd
      qv = toQualVar v
      in NamedSen ("ga_disjoint_sorts_" ++ showId s1 "_" 
@@ -659,7 +659,7 @@ makeDisjoint l = case l of
   makeDisj a1 a2 = 
     let (c1, v1, t1, _) = selForms1 "X" a1
         (c2, v2, t2, _) = selForms1 "Y" a2
-        p = posOfId c1 ++ posOfId c2
+        p = posOfId c1 `appRange` posOfId c2
     in NamedSen ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "") True
            $ mkForall (v1 ++ v2) 
                  (Negation (Strong_equation t1 t2 p) p) p
@@ -704,7 +704,7 @@ getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
 genSelVars :: String -> Int -> [OpType] -> [VAR_DECL]
 genSelVars _ _ [] = []
 genSelVars str n (ty:rs)  = 
-    Var_decl [mkSelVar str n] (opRes ty) [] : genSelVars str (n+1) rs
+    Var_decl [mkSelVar str n] (opRes ty) nullRange : genSelVars str (n+1) rs
 
 mkSelVar :: String -> Int -> Token
 mkSelVar str n = mkSimpleId (str ++ show n)
@@ -730,8 +730,8 @@ selForms1 :: String -> (Id, OpType, [COMPONENTS])
 selForms1 str (i, ty, il) =
     let cs = concatMap (getCompType (opRes ty)) il
         vs = genSelVars str 1 $ map snd cs 
-    in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) [])
-            (map toQualVar vs) [], cs)
+    in (i, vs, Application (Qual_op_name i (toOP_TYPE ty) nullRange)
+            (map toQualVar vs) nullRange, cs)
 
 toQualVar :: VAR_DECL -> TERM f
 toQualVar (Var_decl v s ps) = 
@@ -798,7 +798,7 @@ anaForm mef ga ops preds sign f = do
     return (resF, anaF)
 
 anaTerm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
-        -> Sign f e -> SORT -> [Pos] -> (TERM f) -> Result (TERM f, TERM f)
+        -> Sign f e -> SORT -> Range -> (TERM f) -> Result (TERM f, TERM f)
 anaTerm mef ga ops preds sign srt pos t = do 
     resT <- resolveMixfix putParen mixResolve ga ops preds t
     anaT <- oneExpTerm mef ga sign 

@@ -81,7 +81,7 @@ inducedFromMorphism rmap1 sigma = do
       else Result [Diag Error 
            ("the following symbols: " ++ showPretty wrongRsyms 
             "\nare already mapped directly or do not match with signature\n"
-            ++ showPretty sigma "") []] Nothing
+            ++ showPretty sigma "") nullRange] Nothing
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
 mapTypeInfo im ti = 
@@ -219,7 +219,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
           else Result [Diag Error ("No symbol mapping found for:\n"
            ++ showPretty rmap "\nOrignal Signature1:\n"
            ++ showPretty sigma1 "\nInduced "
-           ++ showEnvDiff (mtarget mor1) sigma2) []] Nothing
+           ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism

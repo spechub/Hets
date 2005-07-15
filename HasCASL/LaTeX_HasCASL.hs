@@ -77,10 +77,10 @@ instance PrintLaTeX Type where
     printLatex0 ga ty = case ty of
         TypeName name _k _i -> printLatex0 ga name 
         TypeAppl t1 t2 -> case t1 of 
-            TypeName (Id [a, Token "__" _, b] [] []) _ _ ->
+            TypeName (Id [a, Token "__" _, b] [] nullRange) _ _ ->
                 printLatex0 ga a <> printLatex0 ga t2 <> printLatex0 ga b
             TypeAppl (TypeName (Id [Token "__" _, inTok, Token "__" _] 
-                                [] []) _ _) t0 -> printLatex0 ga t0 
+                                [] nullRange) _ _) t0 -> printLatex0 ga t0 
                          <\+> printLatex0 ga inTok <\+> printLatex0 ga t2
             _ -> (case t1 of 
                   TypeName _ _ _ -> id

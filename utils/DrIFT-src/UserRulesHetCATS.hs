@@ -26,15 +26,15 @@ updateposfn dat =
     else
       empty
  
-posLC = List (Con "Pos")
+posLC = Con "Range"
 
 makeGetPosFn b =
        let (e, vs) = mapAccumL accFun empty (types b)
            accFun d t = if isEmpty d && t == posLC 
                  then (text "p", text "p")
 	         else (d, text "_")
-       in hang (text "get_pos" <+> ppCons b vs <+> text "=") 
-	       4 $ if isEmpty e then text "[]" else e
+       in hang (text "getRange" <+> ppCons b vs <+> text "=") 
+	       4 $ if isEmpty e then text "nullRange" else e
 -- end of PosItem derivation 
 
 -- begin of ShATermConvertible derivation 

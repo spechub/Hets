@@ -23,12 +23,12 @@ import Common.Id
 injName :: Id
 injName = mkId [mkSimpleId "g__inj"]
 
-inject :: [Pos] -> TERM f -> SORT -> TERM f
+inject :: Range -> TERM f -> SORT -> TERM f
 inject pos argument result_type = let argument_type = term_sort argument in
     if argument_type == result_type then argument else 
-    Application (injOpSymb pos argument_type result_type) [argument] []
+    Application (injOpSymb pos argument_type result_type) [argument] nullRange
 
-injOpSymb :: [Pos] -> SORT -> SORT -> OP_SYMB
+injOpSymb :: Range -> SORT -> SORT -> OP_SYMB
 injOpSymb pos s1 s2 =
     Qual_op_name injName (Op_type Total [s1] s2 pos) pos
 

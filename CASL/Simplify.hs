@@ -14,6 +14,7 @@ module CASL.Simplify where
 
 import CASL.AS_Basic_CASL
 import Data.List(nub)
+import Common.Id
 
 simplifyTerm :: Eq f => (f -> f) -> TERM f -> TERM f
 simplifyTerm mf t = case t of
@@ -41,12 +42,12 @@ simplifyFormula mf form = case form of
           False_atom _ -> newF 
           _ -> Quantification q vs newF ps
    Conjunction fs ps -> 
-       case nub $ filter (/= True_atom []) $ map (simplifyFormula mf) fs of 
+       case nub $ filter is_True_atom $ map (simplifyFormula mf) fs of 
        [] -> True_atom ps
        [f] -> f 
        rs -> Conjunction rs ps
    Disjunction fs ps -> 
-       case nub $ filter (/= False_atom []) $ map (simplifyFormula mf) fs of 
+       case nub $ filter is_False_atom $ map (simplifyFormula mf) fs of 
        [] -> False_atom ps
        [f] -> f 
        rs -> Disjunction rs ps
@@ -70,8 +71,8 @@ simplifyFormula mf form = case form of
    Negation nf ps -> let
        newF = simplifyFormula mf nf
        in case newF of
-          False_atom qs -> True_atom (qs ++ ps)
-          True_atom qs -> False_atom (qs ++ ps)
+          False_atom qs -> True_atom (qs `appRange` ps)
+          True_atom qs -> False_atom (qs `appRange` ps)
           _ -> Negation newF ps
    Predication p args ps -> 
        let newArgs = map (simplifyTerm mf) args in

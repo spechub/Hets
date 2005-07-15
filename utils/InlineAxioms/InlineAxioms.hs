@@ -89,7 +89,7 @@ lookupLogic_in_LG err s = if s == "CASL" then caslAna
 deletePos :: String -> String
 deletePos "" = ""
 deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
-      Just r -> "[]" ++ deletePos r
+      Just r -> "nullRange" ++ deletePos r
       _ -> c : deletePos s
   where 
    deletePrefixes [] _ = Nothing

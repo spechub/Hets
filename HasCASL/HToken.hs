@@ -75,7 +75,7 @@ scanHCSigns = reserved hascasl_reserved_ops scanAnySigns
 
 -- | non-type variables ('lessS' additionally excluded)
 var :: GenParser Char st Id
-var = fmap (\l -> Id l [] []) (start (lessS : hascasl_reserved_ops, 
+var = fmap (\l -> Id l [] nullRange) (start (lessS : hascasl_reserved_ops, 
                                       hascasl_reserved_words))
 
 -- | the HasCASL keys for 'mixId'
@@ -112,13 +112,13 @@ hconsId = mixId (barS:hascasl_reserved_ops, hascasl_reserved_words)
 -- | simple 'Id' without compound list (only a words)
 typeVar :: GenParser Char st Id
 typeVar = do s <- pToken scanHCWords
-             return $ Id [s] [] [] 
+             return $ Id [s] [] nullRange 
              
 -- | simple 'Id' possibly with compound list
 classId :: GenParser Char st Id
 classId = 
     do s <- pToken scanHCWords
-       (c, p) <- option ([], []) $ comps hcKeys 
+       (c, p) <- option ([], nullRange) $ comps hcKeys 
        return $ Id [s] c p
 
 

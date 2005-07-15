@@ -411,7 +411,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
           return (libItem,gctx,l,libenv')
        else 
           resToIORes $ (fatal_error ("Internal error: did not find library "
-                ++show ln++" available: "++show (Map.keys libenv')) nullPos)
+                ++show ln++" available: "++show (Map.keys libenv')) nullRange)
     Just (gannos', genv', _dg') -> do
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv') 
                                        (return (genv,dg)) items
@@ -423,7 +423,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
 -- ??? Needs to be generalized to views between different logics
 ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> GlobalContext 
               -> AnyLogic -> HetcatsOpts -> SIMPLE_ID
-              -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> [Pos]
+              -> GENERICITY -> VIEW_TYPE -> [G_mapping] -> Range
               -> Result (LIB_ITEM, GlobalContext, AnyLogic, LibEnv)
 ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
               vn gen vt gsis pos = do
@@ -479,7 +479,7 @@ ana_ITEM_NAME_OR_MAP1 :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                       -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
   (genv,dg) <- res
-  entry <- maybeToResult []
+  entry <- maybeToResult nullRange
             (showPretty old " not found") (Map.lookup old genv')
   case Map.lookup new genv of
     Nothing -> return ()

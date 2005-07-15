@@ -36,6 +36,7 @@ Interface for Isabelle theorem prover.
 
 module Isabelle.IsaProve where
 
+import Debug.Trace
 import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
@@ -122,10 +123,10 @@ isaProve checkCons thName (Theory sig nSens) = do
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
-      showAxs = concat $ map ((++"\n") . showSen) (markSimp disAxs)
+      showAxs = concat $ map ((++"\n") . showSen) (map markSimp disAxs)
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
-      showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) goal
+      showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen) (markSimp goal)
       showTheory = thyPath ++ "theory " ++ getFN thName ++ " = " 
                    ++ showPretty sig "\n\naxioms\n" 
                    ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals
@@ -173,22 +174,27 @@ isaProve checkCons thName (Theory sig nSens) = do
          ++ ") )\"\nrefute\noops\n\n"
       showConsAx ax = showPretty (sentence ax) ""
 
-markSimp = map (\ax -> ax{senName = senName ax ++ 
-	if isSimpRule (senTerm (sentence ax)) then " [simp]" else ""})  
+markSimp ax = ax{senName = senName ax ++ 
+	      {-trace (show ax ++" "++ show (isSimpRule (senTerm (sentence ax)))) -}
+                 (if isSimpRule (senTerm (sentence ax)) then " [simp]" else "")}
 
+-- | test whether a formula should be put into the simpset
+isSimpRule :: Term -> Bool
+-- only universal quantifications
 isSimpRule App {funId = Const {termName = "All"}, argId = arg} = isSimpRule (termId arg)
-isSimpRule App {funId = Const {termName = "Not"}, argId = arg} = isSimpRule arg
--- hier die argumente noch ueberpruefen?
-isSimpRule Const {termName = t} = True
-
-isSimpRule App {funId = App {funId = Const {termName = fname}, 
-                                     argId = arg}, argId = arg2} = 
-    isSimpRule arg && isSimpRule arg2
-
+isSimpRule App {funId = Const {termName = "Ex"}, argId = arg} = False
+isSimpRule App {funId = Const {termName = "Ex1"}, argId = arg} = False
+-- accept everything expect from abstractions
+isSimpRule App {funId = arg1, argId = arg2} = isSimpRule arg1 && isSimpRule arg2
+isSimpRule Const {} = True
 isSimpRule Free{}  = True
 isSimpRule Var{}   = True
 isSimpRule Bound{} = True
 isSimpRule Abs{}   = False
+isSimpRule If{}    = True
+isSimpRule Case{}  = True
+isSimpRule Let{}   = True
+isSimpRule (Paren t) = isSimpRule t
 isSimpRule arg     = False
 
 -- output a sentences

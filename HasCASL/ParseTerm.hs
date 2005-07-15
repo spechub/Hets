@@ -41,7 +41,7 @@ qColonT = asKey (colonS++quMark)
 
 -- | a generic bracket parser 
 bracketParser :: AParser st a -> AParser st Token -> AParser st Token 
-              -> AParser st Token -> ([a] -> [Pos] -> b) -> AParser st b
+              -> AParser st Token -> ([a] -> Range -> b) -> AParser st b
 bracketParser parser op cl sep k = 
     do o <- op
        (ts, ps) <- option ([], []) (parser `separatedBy` sep)
@@ -49,11 +49,11 @@ bracketParser parser op cl sep k =
        return (k ts (toPos o ps c))
 
 -- | parser for square brackets
-mkBrackets :: AParser st a -> ([a] -> [Pos] -> b) -> AParser st b
+mkBrackets :: AParser st a -> ([a] -> Range -> b) -> AParser st b
 mkBrackets p c = bracketParser p oBracketT cBracketT anComma c
 
 -- | parser for braces
-mkBraces :: AParser st a -> ([a] -> [Pos] -> b) -> AParser st b
+mkBraces :: AParser st a -> ([a] -> Range -> b) -> AParser st b
 mkBraces p c = bracketParser p oBraceT cBraceT anComma c
 
 -- * kinds
@@ -105,7 +105,7 @@ extKind =
 -- * type variables
 
 -- a (simple) type variable with a 'Variance'
-extVar :: AParser st Id -> AParser st (Id, Maybe Variance, [Pos]) 
+extVar :: AParser st Id -> AParser st (Id, Maybe Variance, Range) 
 extVar vp = 
     do t <- vp
        do   a <- plusT
@@ -113,19 +113,19 @@ extVar vp =
           <|>
           do a <- minusT
              return (t, Just ContraVar, tokPos a)
-          <|> return (t, Nothing, [])
+          <|> return (t, Nothing, nullRange)
 
 -- several 'extVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
               typeKind ts ps
 
-allIsInVar :: [(TypeId, Maybe Variance, [Pos])] -> Bool
+allIsInVar :: [(TypeId, Maybe Variance, Range)] -> Bool
 allIsInVar = all ( \ (_, v, _) -> maybe True (const False) v)
 
 
 -- 'parseType' a 'Downset' starting with 'lessT'
-typeKind :: [(TypeId, Maybe Variance, [Pos])] -> [Token] 
+typeKind :: [(TypeId, Maybe Variance, Range)] -> [Token] 
          -> AParser st [TypeArg]
 typeKind vs ps = 
     do c <- colT
@@ -138,11 +138,11 @@ typeKind vs ps =
     do l <- lessT
        t <- parseType
        return (makeTypeArgs vs ps (tokPos l) $ Downset t) 
-    <|> return (makeTypeArgs vs ps [] MissingKind)
+    <|> return (makeTypeArgs vs ps nullRange MissingKind)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
-makeTypeArgs :: [(TypeId, Maybe Variance, [Pos])] -> [Token] 
-             -> [Pos] -> VarKind -> [TypeArg]
+makeTypeArgs :: [(TypeId, Maybe Variance, Range)] -> [Token] 
+             -> Range -> VarKind -> [TypeArg]
 makeTypeArgs ts ps qs k = 
     zipWith (mergeVariance Comma k) (init ts) 
                 (map tokPos ps)
@@ -314,7 +314,7 @@ parseType =
         <|> return t1
 
 -- | parse one of the four possible 'Arrow's
-arrowT :: AParser st (Arrow, [Pos])
+arrowT :: AParser st (Arrow, Range)
 arrowT = do a <- asKey funS
             return (FunArr, tokPos a)
          <|>
@@ -336,7 +336,7 @@ typeScheme = do f <- forallT
                 return $ case t of 
                          TypeScheme ots q ps ->
                              TypeScheme (concat ts ++ ots) q 
-                                        (toPos f cs d ++ ps)
+                                        (toPos f cs d `appRange` ps)
              <|> fmap simpleTypeScheme parseType
 
 
@@ -352,7 +352,7 @@ typeOrTypeScheme = do q <- qColonT
                       s <- typeScheme
                       return (q, TotalTypeScheme s)
 
-toPartialTypeScheme :: [Pos] -> TypeOrTypeScheme -> TypeScheme
+toPartialTypeScheme :: Range -> TypeOrTypeScheme -> TypeScheme
 toPartialTypeScheme qs ts = case ts of 
             PartialType t -> simpleTypeScheme $ liftType t qs
             TotalTypeScheme s -> s
@@ -376,7 +376,7 @@ varDeclType vs ps = do c <- colT
                        return (makeVarDecls vs ps t (tokPos c))
 
 -- | attach the 'Type' to every 'Var'
-makeVarDecls :: [Var] -> [Token] -> Type -> [Pos] -> [VarDecl]
+makeVarDecls :: [Var] -> [Token] -> Type -> Range -> [VarDecl]
 makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma $ tokPos p)
                      (init vs) ps ++ [VarDecl (last vs) t Other q]
 
@@ -465,7 +465,7 @@ lamPattern =
 -- and further places ('placeT')
 instOpId :: AParser st InstOpId
 instOpId = do i <- uninstOpId
-              (ts, qs) <- option ([], [])
+              (ts, qs) <- option ([], nullRange)
                                        (mkBrackets parseType (,))
               return (InstOpId i ts qs)
 

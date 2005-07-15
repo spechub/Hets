@@ -28,17 +28,17 @@ import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 
 emptyAnno :: SPEC -> Annoted SPEC
-emptyAnno x = Annoted x [] [] []
+emptyAnno x = Annoted x nullRange [] []
 
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
   let (_,_,n,preds) = context dg node
   predSps <- sequence (map (dgToSpec dg . snd) preds)
   let apredSps = map emptyAnno predSps
-      pos = []
+      pos = nullRange
   case n of
     (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) _ _ DGBasic) -> 
-      do sen' <- rcoerce lid1 lid2 nullPos sen
+      do sen' <- rcoerce lid1 lid2 nullRange sen
          let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
          if null apredSps
           then return b
@@ -48,11 +48,11 @@ dgToSpec dg node = do
     (DGNode _ _ _ _ _ DGUnion) ->
          return (Union apredSps pos)
     (DGNode _ _ _ _ _ DGTranslation) ->
-         return (Translation (head apredSps) (Renaming [] []))
+         return (Translation (head apredSps) (Renaming [] nullRange))
     (DGNode _ _ _ _ _ DGHiding) ->
-         return (Reduction (head apredSps) (Hidden [] []))
+         return (Reduction (head apredSps) (Hidden [] nullRange))
     (DGNode _ _ _ _ _ DGRevealing) ->
-         return (Reduction (head apredSps) (Hidden [] []))
+         return (Reduction (head apredSps) (Hidden [] nullRange))
     (DGNode _ _ _ _ _ DGFree) ->
          return (Free_spec (head apredSps) pos)
     (DGNode _ _ _ _ _ DGCofree) ->

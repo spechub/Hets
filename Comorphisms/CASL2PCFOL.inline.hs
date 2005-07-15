@@ -177,17 +177,17 @@ makeEquivMonoRs o o1 o2 rs args = map (makeEquivMonoR o o1 o2 args) rs
 makeEquivMonoR :: Id -> OpType -> OpType -> 
                   [SORT] -> SORT -> Named (FORMULA f)
 makeEquivMonoR o o1 o2 args res = 
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s []) args [1..]
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) args [1..]
         a1 = zipWith (\ v s -> 
-                      inject [] (toQualVar v) s) vds $ opArgs o1
+                      inject nullRange (toQualVar v) s) vds $ opArgs o1
         a2 = zipWith (\ v s -> 
-                      inject [] (toQualVar v) s) vds $ opArgs o2
-        t1 = inject [] (Application (Qual_op_name o (toOP_TYPE o1) []) a1 [])
+                      inject nullRange (toQualVar v) s) vds $ opArgs o2
+        t1 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o1) nullRange) a1 nullRange)
              res
-        t2 = inject [] (Application (Qual_op_name o (toOP_TYPE o2) []) a2 []) 
+        t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2) nullRange) a2 nullRange) 
              res
      in NamedSen "ga_function_monotonicity" True
-         $ mkForall vds (Existl_equation t1 t2 []) []
+         $ mkForall vds (Existl_equation t1 t2 nullRange) nullRange
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType 
                   -> [Named (FORMULA f)]
@@ -201,15 +201,15 @@ makeEquivPredMono o sig o1 o2 =
 
 makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
 makeEquivPred o o1 o2 args = 
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s []) args [1..]
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) args [1..]
         a1 = zipWith (\ v s -> 
-                      inject [] (toQualVar v) s) vds $ predArgs o1
+                      inject nullRange (toQualVar v) s) vds $ predArgs o1
         a2 = zipWith (\ v s -> 
-                      inject [] (toQualVar v) s) vds $ predArgs o2
-        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) []) a1 []
-        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) []) a2 []
+                      inject nullRange (toQualVar v) s) vds $ predArgs o2
+        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1 nullRange
+        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2 nullRange
     in NamedSen "ga_predicate_monotonicity" True
-        $ mkForall vds (Equivalence t1 t2 []) []
+        $ mkForall vds (Equivalence t1 t2 nullRange) nullRange
 
 f2Formula :: FORMULA f -> FORMULA f
 f2Formula = projFormula id . injFormula id 

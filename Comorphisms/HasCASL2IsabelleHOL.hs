@@ -72,7 +72,7 @@ instance Comorphism HasCASL2IsabelleHOL
     map_sentence HasCASL2IsabelleHOL sign phi =
        case transSentence sign phi of
          Nothing   -> warning (Sentence {senTerm = true}) 
-                           "translation of sentence not implemented" nullPos
+                           "translation of sentence not implemented" nullRange
          Just (ts) -> return $ Sentence {senTerm = ts}
     map_symbol HasCASL2IsabelleHOL _ = error "HasCASL2IsabelleHOL.map_symbol"
 
@@ -503,7 +503,7 @@ flattenPattern sign peqs = case peqs of
   -- at this stage there are patterns left which use 'ApplTerm' or 'TupleTerm'
   -- or the 'TypedTerm' variant of one of them
   _ -> let m = concentrate (matricize peqs) sign in 
-              transCaseAlt sign (ProgEq (shrinkPat m) (term m) [])
+              transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullRange)
 
 
 data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
@@ -630,7 +630,7 @@ redAppl cmxs sign
          varName = "caseVar" ++ show (length (args (head cmxs)))
          varId = (mkId [(mkSimpleId varName)])
          newVar = QualVar (VarDecl varId (TypeName varId star 1) 
-                           Other [])
+                           Other nullRange)
          newPeqs = (map newProgEq (zip lastArgs terms))
          newPeqs' = recArgs sign newPeqs
          substVar cmx 
@@ -646,12 +646,12 @@ redAppl cmxs sign
            | isSingle (args cmx) =
                cmx { args    = [], 
                      newArgs = newVar : (newArgs cmx),
-                     term    = CaseTerm newVar newPeqs' [] }
+                     term    = CaseTerm newVar newPeqs' nullRange }
            | otherwise                =
                cmx { args    = init(args cmx), 
                      newArgs = newVar : (newArgs cmx),
-                     term    = CaseTerm newVar newPeqs' [] }
-         newProgEq (p, t) = ProgEq p t []
+                     term    = CaseTerm newVar newPeqs' nullRange }
+         newProgEq (p, t) = ProgEq p t nullRange
 
 -- Input: ProgEqs that were build to replace an argument 
 --        with a case statement
@@ -669,7 +669,7 @@ recArgs sign peqs
         doPEQ (g:gByCs) res
           | isSingle g = doPEQ gByCs (res ++ g)
           | otherwise  = doPEQ gByCs (res ++ [(toPEQ (testPEQs sign g))])
-        toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) []
+        toPEQ cmx = ProgEq (shrinkPat cmx) (term cmx) nullRange
         testPEQs sig ps
           | null peqs = error "HasCASL2IsabelleHOL.testPEQs"
           | otherwise = concentrate (matricize ps) sig
@@ -681,10 +681,10 @@ shrinkPat cmx =
     Appl  -> case cons cmx of
                Just c ->  foldl mkApplT c ((args cmx) ++ (newArgs cmx))
                Nothing -> error "HasCASL2IsabelleHOL.shrinkPat"
-    Tuple -> TupleTerm ((args cmx) ++ (newArgs cmx)) []
+    Tuple -> TupleTerm ((args cmx) ++ (newArgs cmx)) nullRange
     QuOp  -> head (args cmx)
     _     -> head (newArgs cmx)
-  where mkApplT t1 t2 = ApplTerm t1 t2 []
+  where mkApplT t1 t2 = ApplTerm t1 t2 nullRange
 
 
 patIsVar :: ProgEq -> Bool

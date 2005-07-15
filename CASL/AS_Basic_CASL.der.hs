@@ -27,52 +27,52 @@ data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
 data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- the Annotation following the keyword is dropped
 		   -- but preceding the keyword is now an Annotation allowed
-		 | Free_datatype [Annoted DATATYPE_DECL] [Pos]
+		 | Free_datatype [Annoted DATATYPE_DECL] Range
 		   -- pos: free, type, semi colons
-		 | Sort_gen [Annoted (SIG_ITEMS s f)] [Pos] 
+		 | Sort_gen [Annoted (SIG_ITEMS s f)] Range 
 		   -- pos: generated, opt. braces 
-		 | Var_items [VAR_DECL] [Pos]
+		 | Var_items [VAR_DECL] Range
 		   -- pos: var, semi colons
-		 | Local_var_axioms [VAR_DECL] [Annoted (FORMULA f)] [Pos]
+		 | Local_var_axioms [VAR_DECL] [Annoted (FORMULA f)] Range
 		   -- pos: forall, semi colons, dots
-		 | Axiom_items [Annoted (FORMULA f)] [Pos]
+		 | Axiom_items [Annoted (FORMULA f)] Range
 		   -- pos: dots
                  | Ext_BASIC_ITEMS b
 		   deriving (Show,Eq)
 
-data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] [Pos] 
+data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range 
 	         -- pos: sort, semi colons
-	       | Op_items [Annoted (OP_ITEM f)] [Pos]
+	       | Op_items [Annoted (OP_ITEM f)] Range
 		 -- pos: op, semi colons
-	       | Pred_items [Annoted (PRED_ITEM f)] [Pos]
+	       | Pred_items [Annoted (PRED_ITEM f)] Range
 		 -- pos: pred, semi colons
-	       | Datatype_items [Annoted DATATYPE_DECL] [Pos]
+	       | Datatype_items [Annoted DATATYPE_DECL] Range
 		 -- type, semi colons
                | Ext_SIG_ITEMS s
 		 deriving (Show,Eq)
 
-data SORT_ITEM f = Sort_decl [SORT] [Pos]
+data SORT_ITEM f = Sort_decl [SORT] Range
 	         -- pos: commas
-	       | Subsort_decl [SORT] SORT [Pos]
+	       | Subsort_decl [SORT] SORT Range
 		 -- pos: commas, <
-	       | Subsort_defn SORT VAR SORT (Annoted (FORMULA f)) [Pos]
+	       | Subsort_defn SORT VAR SORT (Annoted (FORMULA f)) Range
 		 -- pos: "=", "{", ":", ".", "}"
 		 -- the left anno list stored in Annoted Formula is 
 		 -- parsed after the equal sign
-	       | Iso_decl [SORT] [Pos]
+	       | Iso_decl [SORT] Range
 	         -- pos: "="s
 		 deriving (Show,Eq)
 
-data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] [Pos]
+data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] Range
 	       -- pos: commas, colon, OP_ATTR sep. by commas
-	     | Op_defn OP_NAME OP_HEAD (Annoted (TERM f)) [Pos]
+	     | Op_defn OP_NAME OP_HEAD (Annoted (TERM f)) Range
 	       -- pos: "="
 	       deriving (Show,Eq)
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
-data OP_TYPE = Op_type FunKind [SORT] SORT [Pos]
-	       -- pos: "*"s, "->" ; if null [SORT] then [Pos] = [] or pos: "?"
+data OP_TYPE = Op_type FunKind [SORT] SORT Range
+	       -- pos: "*"s, "->" ; if null [SORT] then Range = [] or pos: "?"
 	       deriving (Show,Eq,Ord)
 
 args_OP_TYPE :: OP_TYPE -> [SORT]
@@ -81,11 +81,11 @@ args_OP_TYPE (Op_type _ args _ _) = args
 res_OP_TYPE :: OP_TYPE -> SORT
 res_OP_TYPE (Op_type _ _ res _) = res
 
-data OP_HEAD = Op_head FunKind [ARG_DECL] SORT [Pos]
+data OP_HEAD = Op_head FunKind [ARG_DECL] SORT Range
 	       -- pos: "(", semicolons, ")", colon
 	       deriving (Show,Eq)
 
-data ARG_DECL = Arg_decl [VAR] SORT [Pos]
+data ARG_DECL = Arg_decl [VAR] SORT Range
 	        -- pos: commas, colon
 		deriving (Show,Eq)
 
@@ -93,79 +93,85 @@ data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
 	     | Unit_op_attr (TERM f)
 	       deriving (Show,Eq)
 
-data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE [Pos]
+data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE Range
                  -- pos: commas, colon
-	       | Pred_defn PRED_NAME PRED_HEAD (Annoted (FORMULA f)) [Pos]
+	       | Pred_defn PRED_NAME PRED_HEAD (Annoted (FORMULA f)) Range
 		 -- pos: "<=>"
 		 deriving (Show,Eq)
 
-data PRED_TYPE = Pred_type [SORT] [Pos]
+data PRED_TYPE = Pred_type [SORT] Range
 	         -- pos: if null [SORT] then "(",")" else "*"s
 		 deriving (Show,Eq,Ord)
 
-data PRED_HEAD = Pred_head [ARG_DECL] [Pos]
+data PRED_HEAD = Pred_head [ARG_DECL] Range
 	         -- pos: "(",semi colons , ")"
 		 deriving (Show,Eq)
 
-data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] [Pos] 
+data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range 
 		     -- pos: "::=", "|"s
 		     deriving (Show,Eq)
 
-data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] [Pos]
+data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] Range
 		   -- pos: "(", semi colons, ")" optional "?"
-		 | Subsorts [SORT] [Pos]
+		 | Subsorts [SORT] Range
 		   -- pos: sort, commas
 		   deriving (Show,Eq)
 
-data COMPONENTS = Cons_select FunKind [OP_NAME] SORT [Pos]
+data COMPONENTS = Cons_select FunKind [OP_NAME] SORT Range
                   -- pos: commas, colon or ":?"
 		| Sort SORT		  
 		  deriving (Show,Eq)
 
-data VAR_DECL = Var_decl [VAR] SORT [Pos]
+data VAR_DECL = Var_decl [VAR] SORT Range
 	        -- pos: commas, colon
 		deriving (Show,Eq,Ord)
 
 {- Position definition for FORMULA: 
-   Information on parens are also encoded in [Pos].  If there
+   Information on parens are also encoded in Range.  If there
    are more Pos than necessary there is a pair of Pos enclosing the
    other Pos informations which encode the brackets of every kind
 -}
 
-data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) [Pos]
+data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
 	       -- pos: QUANTIFIER, semi colons, dot
-	     | Conjunction [FORMULA f] [Pos]
+	     | Conjunction [FORMULA f] Range
 	       -- pos: "/\"s
-	     | Disjunction [FORMULA f] [Pos]
+	     | Disjunction [FORMULA f] Range
 	       -- pos: "\/"s
-	     | Implication (FORMULA f) (FORMULA f) Bool [Pos]
+	     | Implication (FORMULA f) (FORMULA f) Bool Range
 	       -- pos: "=>" or "if" (True -> "=>")	   
-	     | Equivalence (FORMULA f) (FORMULA f) [Pos]
+	     | Equivalence (FORMULA f) (FORMULA f) Range
 	       -- pos: "<=>"
-	     | Negation (FORMULA f) [Pos]
+	     | Negation (FORMULA f) Range
 	       -- pos: not
-	     | True_atom [Pos]
+	     | True_atom Range
 	       -- pos: true	    
-	     | False_atom [Pos]
+	     | False_atom Range
                -- pos: false
-	     | Predication PRED_SYMB [TERM f] [Pos]
+	     | Predication PRED_SYMB [TERM f] Range
                -- pos: opt. "(",commas,")"
-	     | Definedness (TERM f) [Pos]
+	     | Definedness (TERM f) Range
 	       -- pos: def
-	     | Existl_equation (TERM f) (TERM f) [Pos]
+	     | Existl_equation (TERM f) (TERM f) Range
                -- pos: =e=
-	     | Strong_equation (TERM f) (TERM f) [Pos]
+	     | Strong_equation (TERM f) (TERM f) Range
 	       -- pos: =
-	     | Membership (TERM f) SORT [Pos]
+	     | Membership (TERM f) SORT Range
                -- pos: in
 	     | Mixfix_formula (TERM f)  -- Mixfix_ Term/Token/(..)/[..]/{..}
 	     -- a formula left original for mixfix analysis
-	     | Unparsed_formula String [Pos]
+	     | Unparsed_formula String Range
 	       -- pos: first Char in String
 	     | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
 	     | ExtFORMULA f
              -- needed for CASL extensions
 	       deriving (Show,Eq,Ord)
+
+is_True_atom, is_False_atom :: FORMULA f -> Bool
+is_True_atom (True_atom _) = True
+is_True_atom _ = False
+is_False_atom (False_atom _) = True
+is_False_atom _ = False
 
 {- In the CASL institution, sort generation constraints have an
 additional signature morphism component (Sect. III:2.1.3, p.134 of the
@@ -236,41 +242,41 @@ data QUANTIFIER = Universal | Existential | Unique_existential
 		  deriving (Show,Eq,Ord)
 
 data PRED_SYMB = Pred_name PRED_NAME 
-	       | Qual_pred_name PRED_NAME PRED_TYPE [Pos]
+	       | Qual_pred_name PRED_NAME PRED_TYPE Range
 		 -- pos: "(", pred, colon, ")"
 		 deriving (Show,Eq,Ord)
 
 data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
-	  | Qual_var VAR SORT [Pos]
+	  | Qual_var VAR SORT Range
 	    -- pos: "(", var, colon, ")"
-	  | Application OP_SYMB [TERM f] [Pos]
+	  | Application OP_SYMB [TERM f] Range
 	    -- pos: parens around TERM f if any and seperating commas
-	  | Sorted_term (TERM f) SORT [Pos]
+	  | Sorted_term (TERM f) SORT Range
 	    -- pos: colon
-	  | Cast (TERM f) SORT [Pos]
+	  | Cast (TERM f) SORT Range
 	    -- pos: "as"
-	  | Conditional (TERM f) (FORMULA f) (TERM f) [Pos]
+	  | Conditional (TERM f) (FORMULA f) (TERM f) Range
 	    -- pos: "when", "else"
-	  | Unparsed_term String [Pos]        -- SML-CATS
+	  | Unparsed_term String Range        -- SML-CATS
 
 	  -- A new intermediate state
           | Mixfix_qual_pred PRED_SYMB -- as part of a mixfix formula
           | Mixfix_term [TERM f]  -- not starting with Mixfix_sorted_term/cast
 	  | Mixfix_token Token   -- NO-BRACKET-TOKEN, LITERAL, PLACE
-	  | Mixfix_sorted_term SORT [Pos]
+	  | Mixfix_sorted_term SORT Range
 	    -- pos: colon
-	  | Mixfix_cast SORT [Pos]
+	  | Mixfix_cast SORT Range
 	    -- pos: "as" 
-          | Mixfix_parenthesized [TERM f] [Pos]  -- non-emtpy term list
+          | Mixfix_parenthesized [TERM f] Range  -- non-emtpy term list
 	    -- pos: "(", commas, ")" 
-          | Mixfix_bracketed [TERM f] [Pos]
+          | Mixfix_bracketed [TERM f] Range
 	    -- pos: "[", commas, "]" 
-          | Mixfix_braced [TERM f] [Pos]         -- also for list-notation 
+          | Mixfix_braced [TERM f] Range         -- also for list-notation 
 	    -- pos: "{", "}" 
 	    deriving (Show,Eq,Ord)
 
 data OP_SYMB = Op_name OP_NAME
-	     | Qual_op_name OP_NAME OP_TYPE [Pos]
+	     | Qual_op_name OP_NAME OP_TYPE Range
 		 -- pos: "(", op, colon, ")"
 	       deriving (Show,Ord)
 
@@ -288,19 +294,19 @@ type SORT = Id
 type VAR = SIMPLE_ID
 
 ----- 
-data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] [Pos] 
+data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range 
 		  -- pos: SYMB_KIND, commas
 		  deriving (Show,Eq)
 
-data SYMB_ITEMS_LIST = Symb_items_list [SYMB_ITEMS] [Pos] 
+data SYMB_ITEMS_LIST = Symb_items_list [SYMB_ITEMS] Range 
 		  -- pos: commas
 		  deriving (Show,Eq)
 
-data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] [Pos]
+data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
 		      -- pos: SYMB_KIND, commas
 		      deriving (Show,Eq)
 
-data SYMB_MAP_ITEMS_LIST = Symb_map_items_list [SYMB_MAP_ITEMS] [Pos] 
+data SYMB_MAP_ITEMS_LIST = Symb_map_items_list [SYMB_MAP_ITEMS] Range 
 		  -- pos: commas
 		  deriving (Show,Eq)
 
@@ -309,7 +315,7 @@ data SYMB_KIND = Implicit | Sorts_kind
 		 deriving (Show,Eq)
 
 data SYMB = Symb_id Id
-	  | Qual_id Id TYPE [Pos] 
+	  | Qual_id Id TYPE Range 
 	    -- pos: colon
 	    deriving (Show,Eq)
 
@@ -319,7 +325,7 @@ data TYPE = O_type OP_TYPE
 	    deriving (Show,Eq)
 
 data SYMB_OR_MAP = Symb SYMB
-		 | Symb_map SYMB SYMB [Pos]
+		 | Symb_map SYMB SYMB Range
 		   -- pos: "|->"
 		   deriving (Show,Eq)
 

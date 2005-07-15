@@ -124,33 +124,33 @@ aType :: Type
 aType = aTypeWithKind star
 
 mStar :: Kind
-mStar = ExtKind star ContraVar []
+mStar = ExtKind star ContraVar nullRange
 
 aBindWithKind :: Kind -> Type -> TypeScheme
 aBindWithKind k ty = 
-    TypeScheme [TypeArg aVar (VarKind k) k (-1) Other []] ty []
+    TypeScheme [TypeArg aVar (VarKind k) k (-1) Other nullRange] ty nullRange
 
 bindA :: Type -> TypeScheme
 bindA = aBindWithKind star
 
 lazyLog :: Type 
-lazyLog = LazyType unitType []
+lazyLog = LazyType unitType nullRange
 
 aToUnitType :: Kind -> TypeScheme
-aToUnitType k = aBindWithKind k $ FunType (aTypeWithKind k) PFunArr unitType []
+aToUnitType k = aBindWithKind k $ FunType (aTypeWithKind k) PFunArr unitType nullRange
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ 
-          FunType (ProductType [aType, aType] [])
-          PFunArr unitType []
+          FunType (ProductType [aType, aType] nullRange)
+          PFunArr unitType nullRange
 logType = simpleTypeScheme $ 
-          FunType (ProductType [lazyLog, lazyLog] [])
-          PFunArr unitType []
-notType = simpleTypeScheme $ FunType lazyLog PFunArr unitType []
+          FunType (ProductType [lazyLog, lazyLog] nullRange)
+          PFunArr unitType nullRange
+notType = simpleTypeScheme $ FunType lazyLog PFunArr unitType nullRange
 
 whenType = bindA $ 
-          FunType (ProductType [aType, lazyLog, aType] [])
-          PFunArr aType []
+          FunType (ProductType [aType, lazyLog, aType] nullRange)
+          PFunArr aType nullRange
 unitTypeScheme = simpleTypeScheme unitType
 
 botId :: Id
@@ -180,10 +180,10 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
                          (TypeInfo k [k] s d) m) tm $
               (unitTypeId, star, [], NoTypeDefn)
-              : (predTypeId, FunKind mStar star [], [], 
+              : (predTypeId, FunKind mStar star nullRange, [], 
                            AliasTypeDefn $ aToUnitType mStar)
               : (logId, star, [], AliasTypeDefn $ simpleTypeScheme $ 
-                 FunType unitType PFunArr unitType [])
+                 FunType unitType PFunArr unitType nullRange)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind, 
@@ -197,25 +197,25 @@ addOps as = foldr ( \ (i, sc) m ->
                  Map.insertWith ( \ _ old -> old) i
                  (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
 
-mkQualOp :: Id -> TypeScheme -> [Pos] -> Term 
+mkQualOp :: Id -> TypeScheme -> Range -> Term 
 mkQualOp i sc ps = QualOp Fun (InstOpId i [] ps) sc ps
 
-mkTerm :: Id -> TypeScheme -> [Pos] -> Term  -> Term
+mkTerm :: Id -> TypeScheme -> Range -> Term  -> Term
 mkTerm i sc ps t = ApplTerm (mkQualOp i sc ps) t ps
 
-mkBinTerm :: Id -> TypeScheme -> [Pos] -> Term  -> Term -> Term
+mkBinTerm :: Id -> TypeScheme -> Range -> Term  -> Term -> Term
 mkBinTerm i sc ps t1 t2 = mkTerm i sc ps $ TupleTerm [t1, t2] ps
 
-mkLogTerm :: Id -> [Pos] -> Term  -> Term -> Term
+mkLogTerm :: Id -> Range -> Term  -> Term -> Term
 mkLogTerm i ps = mkBinTerm i logType ps
 
-mkEqTerm :: Id -> [Pos] -> Term  -> Term -> Term
+mkEqTerm :: Id -> Range -> Term  -> Term -> Term
 mkEqTerm i ps = mkBinTerm i eqType ps
 
-unitTerm :: Id -> [Pos] -> Term
+unitTerm :: Id -> Range -> Term
 unitTerm i ps = mkQualOp i unitTypeScheme ps
 
-toBinJunctor :: Id -> [Term] -> [Pos] -> Term
+toBinJunctor :: Id -> [Term] -> Range -> Term
 toBinJunctor i ts ps = case ts of
     [] -> error "toBinJunctor"
     [t] -> t

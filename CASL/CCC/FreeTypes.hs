@@ -101,7 +101,7 @@ checkFreeType (osig,osens) m fsn
         let (symb, pos) = pattern_Pos leadingSymPatterns
         in warning Nothing ("patterns overlap in " ++ symb) pos
     | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
-	warning Nothing "not terminating" []
+	warning Nothing "not terminating" nullRange
     | otherwise = return (Just True)
 
 {-
@@ -220,12 +220,12 @@ checkFreeType (osig,osens) m fsn
                      filter (\f-> find_ot $ head $ filterOp $ 
                                   leadingSym f) op_fs of
                   Just (Left (Application _ _ p)) -> p
-                  _ -> []
+                  _ -> nullRange
     old_pred_ps = case head $ map leading_Term_Predication $ 
                        filter (\f->find_pt $ head $ filterPred $ 
                                    leadingSym f) pred_fs of
                     Just (Right (Predication _ _ p)) -> p
-                    _ -> []
+                    _ -> nullRange
     find_ot (ident,ot) = case Map.lookup ident oldOpMap of
                            Nothing -> False
                            Just ots -> Set.member ot ots
@@ -632,7 +632,7 @@ leadingSym f = do
  
 
 leadingSymPos :: PosItem f => FORMULA f 
-              -> (Maybe (Either OP_SYMB PRED_SYMB), [Pos])
+              -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
 leadingSymPos f = leading (f,False,False)
   where 
   leading (f1,b1,b2)= case (f1,b1,b2) of
@@ -647,18 +647,18 @@ leadingSymPos f = leading (f,False,False)
                        ((Definedness t _),_,_) -> 
                            case (term t) of
                              Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(get_pos f1))
+                             _ -> (Nothing,(getRange f1))
                        ((Predication predS _ _),_,_) -> 
-                           ((Just (Right predS)),(get_pos f1))
+                           ((Just (Right predS)),(getRange f1))
                        ((Strong_equation t _ _),_,_) -> 
                            case (term t) of
                              Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(get_pos f1))
+                             _ -> (Nothing,(getRange f1))
                        ((Existl_equation t _ _),_,_) -> 
                            case (term t) of
                              Application opS _ p -> (Just (Left opS), p)
-                             _ -> (Nothing,(get_pos f1))
-                       _ -> (Nothing,(get_pos f1)) 
+                             _ -> (Nothing,(getRange f1))
+                       _ -> (Nothing,(getRange f1)) 
 
 -- Sorted_term is always ignored
 term :: TERM f -> TERM f

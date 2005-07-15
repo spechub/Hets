@@ -71,8 +71,9 @@ module Common.Token where
 
 import Common.Keywords
 import Common.Lexer
-import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace)
+import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace, Range, nullRange)
 import Text.ParserCombinators.Parsec
+
 
 -- ----------------------------------------------
 -- * Casl keyword lists
@@ -200,7 +201,7 @@ start l = tokStart l <|> placeT <:> (tokStart l <|>
 -- ----------------------------------------------
 
 -- | parsing a compound list
-comps :: ([String], [String]) -> GenParser Char st ([Id], [Pos])
+comps :: ([String], [String]) -> GenParser Char st ([Id], Range)
 comps keys = do o <- oBracketT
 	        (ts, ps) <- mixId keys keys `separatedBy` commaT
 	        c <- cBracketT
@@ -214,8 +215,8 @@ comps keys = do o <- oBracketT
 mixId :: ([String], [String]) -> ([String], [String]) -> GenParser Char st Id
 mixId keys idKeys = 
     do l <- start keys
-       if isPlace (last l) then return (Id l [] [])
-	  else do (c, p) <- option ([], []) (comps idKeys)
+       if isPlace (last l) then return (Id l [] nullRange)
+	  else do (c, p) <- option ([], nullRange) (comps idKeys)
 		  u <- many placeT
 		  return (Id (l++u) c p)
 
@@ -237,7 +238,7 @@ consId ks = mixId (barS:ks++casl_reserved_fops,
 sortId :: [String] -> GenParser Char st Id
 sortId ks = 
     do s <- varId ks
-       (c, p) <- option ([], []) (comps $ casl_keys ks)
+       (c, p) <- option ([], nullRange) (comps $ casl_keys ks)
        return (Id [s] c p)
 
 -- ----------------------------------------------

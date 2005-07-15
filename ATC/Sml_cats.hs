@@ -179,13 +179,13 @@ instance ATermConvertibleSML Id where
                 let
                 aa' = from_sml_ATermTokenTup (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac' = []
+                ac' = nullRange
                 in (Id aa' ab' ac')
             (ShAAppl "simple-id" [ aa ] _) ->
                 let 
                 aa' = from_sml_ATermTokenTup (getATermByIndex1 aa att)
                 ab' = []
-                ac' = []
+                ac' = nullRange
                 in (Id aa' ab' ac')
             _ -> from_sml_ShATermError "Id" aterm
         where
@@ -215,7 +215,7 @@ instance ATermConvertibleSML Annotation where
                 ab' = pos_l
                 in (Unparsed_anno Comment_start (Group_anno aa') ab')
             (ShAAppl "unparsed-anno" [ aa ] _)  ->
-                parse_anno pos_l 
+                parse_anno (pos_l) 
                    (from_sml_ShATerm (getATermByIndex1 aa att))
             (ShAAppl "annote-line" [ aa,ab ] _)  ->
                 let
@@ -232,7 +232,7 @@ instance ATermConvertibleSML Annotation where
             (ShAAppl "display-anno" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = parse_disp_anno aa' pos_l 
+                ab' = parse_disp_anno aa' (pos_l) 
                            (chomp $ from_sml_ShATerm (getATermByIndex1 ab att))
                 in ab'
             (ShAAppl "string-anno" [ aa,ab ] _)  ->
@@ -296,7 +296,7 @@ instance ATermConvertibleSML Annotation where
                 aa' = pos_l
                 in (Semantic_anno SA_cons aa')
             (ShAAppl "mono" [] _) ->
-                Semantic_anno SA_mono pos_l
+                Semantic_anno SA_mono (pos_l)
             _ -> from_sml_ShATermError "Annotation" aterm
         where
             aterm = getATerm att'
@@ -304,7 +304,7 @@ instance ATermConvertibleSML Annotation where
                 case getATerm att of
                 (ShAAppl "pos-ANNO" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 --- Well the following instance has to tie together things, that don't
 --- belong to each other. Because I can't declare instances for
@@ -317,17 +317,17 @@ instance (ATermConvertibleSML a) => ATermConvertibleSML (Annoted a) where
                -- Basic Items (including sig_items)
                 "pos-BASIC-ITEMS" -> 
                       case from_sml_ATermAnnotedBasic_Items att of 
-                               (bi, las) -> Annoted bi [] las []
+                               (bi, las) -> Annoted bi nullRange las []
                -- L_.* constuctors from SML 
                 ""           -> Annoted (from_sml_ShATerm (getATermByIndex1 
                                                         (head as) 
                                                         att))
-                                             []
+                                             nullRange
                                              []
                                              (toAnnoList (last as) att)
                 _      -> -- "No appropiate constructor for Annoted found"
                         Annoted (from_sml_ShATerm att)
-                                    []
+                                    nullRange
                                     []
                                     []
              )
@@ -374,14 +374,14 @@ toAnnoList ai att = from_sml_ShATerm $ getATermByIndex1 ai att
 
 -------------------------------------------------------------------------
 
-parse_anno :: [Pos] -> String -> Annotation
+parse_anno :: Range -> String -> Annotation
 parse_anno _pos_l inp =
     case (parse (skip >> Common.Anno_Parser.annotations) "" inp) of
        Right [x]  -> x
        _          -> error ("something strange happend to \"" ++
                              inp ++ "\" during ATerm Conversion")
 
-parse_disp_anno :: Id -> [Pos] -> String -> Annotation
+parse_disp_anno :: Id -> Range -> String -> Annotation
 parse_disp_anno i pos_l inp =
     case (Common.Anno_Parser.parse_anno (Unparsed_anno (Annote_word "display")
                                          (Group_anno [inp']) pos_l) pos) of
@@ -389,8 +389,8 @@ parse_disp_anno i pos_l inp =
        Right x  -> x -- trace ("parsed display anno:" ++ show x) x
     where 
           pos = case pos_l of 
-                [] -> newPos "" 0 0 
-                h : _ -> h
+                 Range [] -> newPos "" 0 0 
+                 Range (h : _) -> h
           inp' = (showId i "") ++ (' ':s_inp)
           s_inp = case reverse inp of
                   rin | "%)" `isPrefixOf` rin -> reverse $ drop 2 rin
@@ -453,7 +453,7 @@ instance ATermConvertibleSML (BASIC_ITEMS a b c) where
                 case getATerm att of
                 (ShAAppl "pos-BASIC-ITEMS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML (SIG_ITEMS a b) where
     from_sml_ShATerm att =
@@ -493,7 +493,7 @@ instance ATermConvertibleSML (SIG_ITEMS a b) where
                 case getATerm att of
                 (ShAAppl "pos-SIG-ITEMS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML (SORT_ITEM a) where
     from_sml_ShATerm att =
@@ -531,7 +531,7 @@ instance ATermConvertibleSML (SORT_ITEM a) where
                 case getATerm att of
                 (ShAAppl "pos-SORT-ITEM" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML (OP_ITEM a) where
     from_sml_ShATerm att =
@@ -559,7 +559,7 @@ instance ATermConvertibleSML (OP_ITEM a) where
                 case getATerm att of
                 (ShAAppl "pos-OP-ITEM" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML OP_TYPE where
     from_sml_ShATerm att =
@@ -568,13 +568,13 @@ instance ATermConvertibleSML OP_TYPE where
                 let
                 (aa',ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab'      = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac'      = insertPos ps pos_l
+                ac'      = insertPos ps $ pos_l
                 in (Op_type Total aa' ab' ac')
             (ShAAppl "partial-op-type" [ aa,ab ] _)  ->
                 let
                 (aa',ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
                 ab'      = from_sml_ShATerm (getATermByIndex1 ab att)
-                ac'      = insertPos ps pos_l
+                ac'      = insertPos ps $ pos_l
                 in (Op_type Partial aa' ab' ac')
             _ -> from_sml_ShATermError "OP_TYPE" aterm
         where
@@ -583,22 +583,22 @@ instance ATermConvertibleSML OP_TYPE where
                 case getATerm att of
                 (ShAAppl "pos-OP-TYPE" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 ---- a helper for the SML-datatype SORTS -------------------------------
-from_sml_ATermSORTS :: ATermTable -> ([SORT],[Pos])
+from_sml_ATermSORTS :: ATermTable -> ([SORT],Range)
 from_sml_ATermSORTS att = 
         case aterm of
             (ShAAppl "sorts" [ aa ] _)  ->
                 (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)
-            _ -> from_sml_ShATermError "([SORT],[Pos])" aterm
+            _ -> from_sml_ShATermError "([SORT],Range)" aterm
         where
             aterm = getATerm att'
             (pos_l,att') =
                 case getATerm att of
                 (ShAAppl "pos-SORTS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 ------------------------------------------------------------------------
 
@@ -624,7 +624,7 @@ instance ATermConvertibleSML OP_HEAD where
                 case getATerm att of
                 (ShAAppl "pos-OP-HEAD" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML ARG_DECL where
     from_sml_ShATerm att =
@@ -646,7 +646,7 @@ instance ATermConvertibleSML ARG_DECL where
                 case getATerm att of
                 (ShAAppl "pos-ARG-DECL" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML (OP_ATTR a) where
     from_sml_ShATerm att =
@@ -696,7 +696,7 @@ instance ATermConvertibleSML (PRED_ITEM a) where
                 case getATerm att of
                 (ShAAppl "pos-PRED-ITEM" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML PRED_TYPE where
     from_sml_ShATerm att =
@@ -704,7 +704,7 @@ instance ATermConvertibleSML PRED_TYPE where
             (ShAAppl "pred-type" [ aa ] _)  ->
                 let
                 (aa',ps) = from_sml_ATermSORTS (getATermByIndex1 aa att)
-                ab'      = insertPos ps pos_l
+                ab'      = insertPos ps $ pos_l
                 in (Pred_type aa' ab')
             _ -> from_sml_ShATermError "PRED_TYPE" aterm
         where
@@ -713,7 +713,7 @@ instance ATermConvertibleSML PRED_TYPE where
                 case getATerm att of
                 (ShAAppl "pos-PRED-TYPE" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML PRED_HEAD where
     from_sml_ShATerm att =
@@ -730,7 +730,7 @@ instance ATermConvertibleSML PRED_HEAD where
                 case getATerm att of
                 (ShAAppl "pos-PRED-HEAD" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML DATATYPE_DECL where
     from_sml_ShATerm att =
@@ -750,7 +750,7 @@ instance ATermConvertibleSML DATATYPE_DECL where
                 case getATerm att of
                 (ShAAppl "pos-DATATYPE-DECL" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML ALTERNATIVE where
     from_sml_ShATerm att =
@@ -779,7 +779,7 @@ instance ATermConvertibleSML ALTERNATIVE where
                 case getATerm att of
                 (ShAAppl "pos-ALTERNATIVE" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML COMPONENTS where
     from_sml_ShATerm att =
@@ -807,7 +807,7 @@ instance ATermConvertibleSML COMPONENTS where
                 case getATerm att of
                 (ShAAppl "pos-COMPONENTS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML VAR_DECL where
     from_sml_ShATerm att =
@@ -816,7 +816,7 @@ instance ATermConvertibleSML VAR_DECL where
                 let
                 aa' = from_sml_ATermVARs (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Var_decl aa' ab' [])
+                in (Var_decl aa' ab' nullRange)
             _ -> from_sml_ShATermError "VAR_DECL" aterm
         where
             aterm = getATerm att
@@ -830,7 +830,7 @@ instance ATermConvertibleSML (FORMULA a) where
                 pq  = getPos (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = from_sml_ShATerm (getATermByIndex1 ac att)
-                ad' = insertPos pq pos_l
+                ad' = insertPos pq $ pos_l
                 in (Quantification aa' ab' ac' ad')
             (ShAAppl "conjunction" [ aa ] _)  ->
                 let
@@ -874,7 +874,7 @@ instance ATermConvertibleSML (FORMULA a) where
                  let
                  aa'      = from_sml_ShATerm (getATermByIndex1 aa att)
                  (ab',ps) = from_sml_ATermTERMS (getATermByIndex1 ab att)
-                 ac'      = insertPos ps pos_l
+                 ac'      = insertPos ps $ pos_l
                  in (Predication aa' ab' ac')
                (ShAAppl "definedness" [ aa ] _) ->
                  let
@@ -906,18 +906,18 @@ instance ATermConvertibleSML (FORMULA a) where
             (pos_l,_g_flag,att') = skipPosFlag "pos-FORMULA" att
 
 ---- a helper for the SML-datatype TERMS -------------------------------
-from_sml_ATermTERMS :: ATermTable -> ([TERM a],[Pos])
+from_sml_ATermTERMS :: ATermTable -> ([TERM a],Range)
 from_sml_ATermTERMS att = 
     case aterm of
              (ShAAppl "terms" [ aa ] _)  ->
                  (from_sml_ShATerm (getATermByIndex1 aa att),pos_l)
-             _ -> from_sml_ShATermError "([TERM],[Pos])" aterm
+             _ -> from_sml_ShATermError "([TERM],Range)" aterm
     where aterm = getATerm att'
           (pos_l,att') =
               case getATerm att of
               (ShAAppl "pos-TERMS" [reg_i,item_i] _) ->
                        (posFromRegion reg_i att,getATermByIndex1 item_i att)
-              _  -> ([],att)
+              _  -> (nullRange,att)
 
 ---- a helper for SIMPLE_IDs --------------------------------------------
 
@@ -983,7 +983,7 @@ instance ATermConvertibleSML PRED_SYMB where
                 case getATerm att of
                 (ShAAppl "pos-PRED-SYMB" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML (TERM a) where
     from_sml_ShATerm att =
@@ -1002,7 +1002,7 @@ instance ATermConvertibleSML (TERM a) where
                 let
                 aa'      = from_sml_ShATerm (getATermByIndex1 aa att)
                 (ab',ps) = from_sml_ATermTERMS (getATermByIndex1 ab att)
-                ac'      = insertPos ps pos_l
+                ac'      = insertPos ps $ pos_l
                 in (Application aa' ab' ac')
             (ShAAppl "sorted-term" [ aa,ab ] _)  ->
                 let
@@ -1049,7 +1049,7 @@ instance ATermConvertibleSML OP_SYMB where
                 case getATerm att of
                 (ShAAppl "pos-OP-SYMB" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML SYMB_ITEMS where
     from_sml_ShATerm att =
@@ -1067,7 +1067,7 @@ instance ATermConvertibleSML SYMB_ITEMS where
                 case getATerm att of
                 (ShAAppl "pos-SYMB-ITEMS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML SYMB_MAP_ITEMS where
     from_sml_ShATerm att =
@@ -1085,7 +1085,7 @@ instance ATermConvertibleSML SYMB_MAP_ITEMS where
                 case getATerm att of
                 (ShAAppl "pos-SYMB-MAP-ITEMS" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML SYMB_KIND where
     from_sml_ShATerm att =
@@ -1113,7 +1113,7 @@ instance ATermConvertibleSML SYMB where
             (ShAAppl "symb-id" [ aa ] _)  ->
                 let
                 i  = from_sml_ShATerm (getATermByIndex1 aa att)
-                aa' = setFstPos pos_l i
+                aa' = setFstPos (pos_l) i
                 in (Symb_id aa')
             (ShAAppl "qual-id" [ aa,ab ] _)  ->
                 let
@@ -1128,7 +1128,7 @@ instance ATermConvertibleSML SYMB where
                 case getATerm att of
                 (ShAAppl "pos-SYMB" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML TYPE where
     from_sml_ShATerm att =
@@ -1169,7 +1169,7 @@ instance ATermConvertibleSML SYMB_OR_MAP where
                 case getATerm att of
                 (ShAAppl "pos-SYMB-OR-MAP" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 ---- a helper for SYMB_MAP from SML -------------------------------------
 
@@ -1246,12 +1246,12 @@ instance ATermConvertibleSML SPEC where
                 let
                 aa' = from_sml_ATermSIMPLE_ID (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
-                in (Spec_inst aa' ab' [])
+                in (Spec_inst aa' ab' nullRange)
             _ -> from_sml_ShATermError "SPEC" aterm
         where
             aterm = getATerm att'
             group s gf = if gf then (Group s' pos_l) else s
-                where s' = Annoted s [] [] []
+                where s' = Annoted s nullRange [] []
             (pos_l,group_flag,att') = skipPosFlag "pos-SPEC" att
 
 --- a helper function for [(Annoted a, [Annotation])] --------------------
@@ -1279,7 +1279,7 @@ instance ATermConvertibleSML RENAMING where
                 case getATerm att of
                 (ShAAppl "pos-RENAMING" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML RESTRICTION where
     from_sml_ShATerm att =
@@ -1304,7 +1304,7 @@ instance ATermConvertibleSML RESTRICTION where
                 case getATerm att of
                 (ShAAppl "pos-RESTRICTION" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 {- !!! This will be done by the instance of LIB_ITEM !!!
 
@@ -1327,7 +1327,7 @@ instance ATermConvertibleSML GENERICITY where
                 case getATerm att of
                 (ShAAppl "pos-GENERICITY" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML PARAMS where
     from_sml_ShATerm att =
@@ -1385,7 +1385,7 @@ instance ATermConvertibleSML FIT_ARG where
                 case getATerm att of
                 (ShAAppl "pos-FIT-ARG" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
 
 instance ATermConvertibleSML VIEW_DEFN where
@@ -1407,7 +1407,7 @@ instance ATermConvertibleSML VIEW_TYPE where
                 case getATerm att of
                 (ShAAppl "pos-VIEW-TYPE" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 -------------------------------------------------------------------------
 
@@ -1439,7 +1439,7 @@ instance ATermConvertibleSML ARCH_SPEC where
                 case getATerm att of
                 (ShAAppl "pos-ARCH-SPEC" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 --------------------------------------------------------------------------
 from_sml_ATermRESULT_UNIT :: ATermTable -> (Annoted UNIT_EXPRESSION)
@@ -1450,7 +1450,7 @@ from_sml_ATermRESULT_UNIT att =
 --              aa' :: UNIT_EXPRESSION
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 as  = toAnnoList ab att
-                in (Annoted aa' [] as [])
+                in (Annoted aa' nullRange as [])
             _ -> from_sml_ShATermError "RESULT-UNIT" aterm
         where
             aterm = getATerm att'
@@ -1472,7 +1472,7 @@ instance ATermConvertibleSML UNIT_REF where
                                   (ShAAppl "pos-UNIT-DECL" [reg_i,item_i] _) ->
                                       (posFromRegion reg_i att,
                                        getATermByIndex1 item_i att1)
-                                  _  -> ([],att1)
+                                  _  -> (nullRange,att1)
                     aterm2 = getATerm att2
                 in case aterm2 of
                    ShAAppl "unit-decl" [aa,ab,_] _ -> 
@@ -1499,7 +1499,7 @@ instance ATermConvertibleSML UNIT_DECL_DEFN where
                                   (ShAAppl "pos-UNIT-DECL" [reg_i,item_i] _) ->
                                       (posFromRegion reg_i att,
                                        getATermByIndex1 item_i att1)
-                                  _  -> ([],att1)
+                                  _  -> (nullRange,att1)
                     aterm2 = getATerm att2
                 in case aterm2 of
                    ShAAppl "unit-decl" [aa,ab,ac] _ ->
@@ -1555,7 +1555,7 @@ from_sml_ATermUNIT_DEFN att =
               case getATerm att of
               (ShAAppl "pos-UNIT-DEFN" [reg_i,item_i] _) ->
                   (posFromRegion reg_i att,getATermByIndex1 item_i att)
-              _  -> ([],att)
+              _  -> (nullRange,att)
 -------------------------------------------------------------------------
 
 {- !!! This conversion is covered by the instance of LIB_ITEM !!!
@@ -1587,7 +1587,7 @@ instance ATermConvertibleSML UNIT_SPEC where
                 case getATerm att of
                 (ShAAppl "pos-UNIT-SPEC" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML REF_SPEC where
     from_sml_ShATerm att =
@@ -1609,7 +1609,7 @@ instance ATermConvertibleSML REF_SPEC where
                 ab'   = pos_l
                 aa''' = case aa'' of
                         (Annoted (Basic_arch_spec _ _ _) _ _ _) ->
-                            Annoted (Group_arch_spec aa'' ab') [] [][] 
+                            Annoted (Group_arch_spec aa'' ab') nullRange [][] 
                         _ -> aa''
                 in (Arch_unit_spec aa''' ab')
             (ShAAppl "closed" [ aa ] _)  ->
@@ -1624,7 +1624,7 @@ instance ATermConvertibleSML REF_SPEC where
                 case getATerm att of
                 (ShAAppl "pos-UNIT-SPEC" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
  
 ---- a helper for the SML-datatype UNIT_TYPE ----------------------------
 
@@ -1660,7 +1660,7 @@ instance ATermConvertibleSML UNIT_EXPRESSION where
                 case getATerm att of
                 (ShAAppl "pos-UNIT-EXPRESSION" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML UNIT_BINDING where
     from_sml_ShATerm att =
@@ -1678,7 +1678,7 @@ instance ATermConvertibleSML UNIT_BINDING where
                 case getATerm att of
                 (ShAAppl "pos-UNIT-BINDING" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML UNIT_TERM where
     from_sml_ShATerm att =
@@ -1714,7 +1714,7 @@ instance ATermConvertibleSML UNIT_TERM where
         where
             aterm = getATerm att'
             group ut gf = if gf then (Group_unit_term ut' pos_l) else ut
-                where ut' = Annoted ut [] [] []
+                where ut' = Annoted ut nullRange [] []
             (pos_l,group_flag,att') = skipPosFlag "pos-UNIT-TERM" att
 
 instance ATermConvertibleSML FIT_ARG_UNIT where
@@ -1724,7 +1724,7 @@ instance ATermConvertibleSML FIT_ARG_UNIT where
                 case from_sml_ShATerm (getATermByIndex1 aa att) of 
                 aa' -> case from_sml_ShATerm (getATermByIndex1 ab att) of
                     ab' -> Fit_arg_unit aa' (if null ab' then [] else 
-                      [G_symb_map $ G_symb_map_items_list CASL ab']) pos_l
+                      [G_symb_map $ G_symb_map_items_list CASL ab']) $ pos_l
             _ -> from_sml_ShATermError "FIT_ARG_UNIT" aterm
         where
             aterm = getATerm att'
@@ -1732,7 +1732,7 @@ instance ATermConvertibleSML FIT_ARG_UNIT where
                 case getATerm att of
                 (ShAAppl "pos-FIT-ARG-UNIT" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 -------------------------------------------------------------------------
 
 ----- instances of AS_LIbrary.hs ----------------------------------------
@@ -1753,7 +1753,7 @@ instance ATermConvertibleSML LIB_DEFN where
                 case getATerm att of
                 (ShAAppl "pos-LIB-DEFN" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML LIB_ITEM where
     from_sml_ShATerm att =
@@ -1801,7 +1801,7 @@ instance ATermConvertibleSML LIB_ITEM where
             (pos_l,att') = skipPos "pos-LIB-ITEM" att
 
 ---- helpers to skip nested "pos-"-constructors -----------------------
-skipPos :: String -> ATermTable -> ([Pos],ATermTable)
+skipPos :: String -> ATermTable -> (Range,ATermTable)
 skipPos mcon at   = 
      case getATerm at of
               ShAAppl con [reg_i,item_i] _ | mcon == con ->
@@ -1811,9 +1811,9 @@ skipPos mcon at   =
                                    ShAAppl con' _ _ | mcon == con' -> True
                                    _                               -> False
                             at'  = getATermByIndex1 item_i at
-              _  -> ([],at)
+              _  -> (nullRange,at)
 
-skipPosFlag :: String -> ATermTable -> ([Pos],Bool,ATermTable)
+skipPosFlag :: String -> ATermTable -> (Range,Bool,ATermTable)
 skipPosFlag mcon att   =                
     case getATerm att of
     ShAAppl con [reg_i,b_i,item_i] _ | mcon == con ->
@@ -1826,7 +1826,7 @@ skipPosFlag mcon att   =
                     at'   = getATermByIndex1 item_i att
                     pos_l = posFromRegion reg_i att
                     b     = from_sml_ShATerm $ getATermByIndex1 b_i att
-    _  -> ([],False,att)
+    _  -> (nullRange,False,att)
 
 -----------------------------------------------------------------------
 
@@ -1850,7 +1850,7 @@ instance ATermConvertibleSML ITEM_NAME_OR_MAP where
                 case getATerm att of
                 (ShAAppl "pos-ITEM-NAME-OR-MAP" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML LIB_NAME where
     from_sml_ShATerm att =
@@ -1893,7 +1893,7 @@ instance ATermConvertibleSML LIB_ID where
                 case getATerm att of
                 (ShAAppl "pos-LIB-ID" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 
 instance ATermConvertibleSML VERSION_NUMBER where
     from_sml_ShATerm att =
@@ -1910,7 +1910,7 @@ instance ATermConvertibleSML VERSION_NUMBER where
                 case getATerm att of
                 (ShAAppl "pos-VERSION" [reg_i,item_i] _) ->
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
-                _  -> ([],att)
+                _  -> (nullRange,att)
 -------------------------------------------------------------------------
 
 -- some helpers for Annoted things --------------------------------------
@@ -1922,37 +1922,40 @@ addRAnnoList as ani = ani {r_annos = (r_annos ani) ++ as }
 
 --- some helpers for Regions and Positions ------------------------------
 
-posFromRegion :: Int -> ATermTable -> [Pos]
-posFromRegion reg at = map ( \ (l, c) -> newPos "" l c ) 
-                       $ from_sml_ATerm_reg reg at 
+posFromRegion :: Int -> ATermTable -> Range
+posFromRegion reg at = Range $ map ( \ (l, c) -> newPos "" l c ) 
+                             $ from_sml_ATerm_reg reg at 
 
-getPos :: ATermTable -> [Pos]
+getPos :: ATermTable -> Range
 getPos att = case getATerm att of
                 ShAAppl _ (x:_) _ -> posFromRegion x att
-                _       -> []
+                _       -> nullRange
 
--- converts an aterm region information to [Pos]
+-- converts an aterm region information to Range
 from_sml_ATerm_reg :: Int -> ATermTable -> [(Int,Int)]
 from_sml_ATerm_reg reg_i at = [fst r,snd r] 
     where r :: ((Int,Int),(Int,Int)) -- Id.hs Region
           r = from_sml_ShATerm r_at
           r_at = getATermByIndex1 reg_i at
 
-insertIM, insertPos :: [a] -> [a] -> [a]
+insertIM, insertPosAux :: [a] -> [a] -> [a]
 insertIM ips ops | even $ length ops = let hl = (length ops) `div` 2
                                            (fp,lp) = splitAt hl ops
                                        in fp ++ ips ++ lp
                  | otherwise = error 
                                "wrong call: length of snd list must be even"
-insertPos = insertIM
+insertPosAux = insertIM
 
-setFstPos :: [Pos] -> Id -> Id
-setFstPos (p:_) i = case i of
+insertPos :: Range -> Range -> Range
+insertPos (Range l1) (Range l2) = Range (insertPosAux l1 l2)
+
+setFstPos :: Range -> Id -> Id
+setFstPos (Range (p:_)) i = case i of
                        Id tops ids pos_l ->
                            Id (setFstPos' tops) ids pos_l
     where setFstPos' tops | null tops = []
                           | otherwise = (ftop):(tail tops)
-              where ftop = (head tops) { tokPos = [p] }
+              where ftop = (head tops) { tokPos = Range [p] }
 setFstPos _ _ = error "wrong call: setFstPos"
 
 -------------------------------------------------------------------------

@@ -58,7 +58,7 @@ cBasic =  do f <- asKey cofreeS
              return (codatatypeToCofreetype ti (tokPos f))
       <|> do g <- asKey cogeneratedS
 	     do t <- sigItems cocasl_reserved_words
-		return (CoSort_gen [Annoted t [] [] []] $ tokPos g)
+		return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
 	       <|> 
 	       do o <- oBraceT
 	          is <- annosParser (sigItems cocasl_reserved_words)
@@ -77,14 +77,14 @@ codatatype ks =
        addAnnos
        a <- getAnnos
        (Annoted v _ _ b:as, ps) <- acoAlternative ks `separatedBy` barT
-       return $ CoDatatype_decl s (Annoted v [] a b:as) 
+       return $ CoDatatype_decl s (Annoted v nullRange a b:as) 
 			$ catPos $ e:ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks = 
     do a <- coalternative ks
        an <- annos
-       return (Annoted a [] [] an)
+       return (Annoted a nullRange [] an)
 
 coalternative :: [String] -> AParser st COALTERNATIVE
 coalternative ks = 
@@ -103,16 +103,16 @@ coalternative ks =
 	    c <- cParenT
 	    let qs = toPos o ps c 
             do   q <- quMarkT
-		 return (Co_construct Partial i cs $ qs ++ tokPos q)
+		 return (Co_construct Partial i cs (qs `appRange` tokPos q))
 	      <|> return (Co_construct Total i cs qs)
-	 <|> return (Co_construct Total i [] [])
+	 <|> return (Co_construct Total i [] nullRange)
 
 cocomponent :: [String] -> AParser st COCOMPONENTS
 cocomponent ks = 
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST
        t <- opType ks
-       return $ CoSelect is t $ catPos $ cs++[c]
+       return $ CoSelect is t $ catPos $ cs ++ [c]
 
 instance AParsable C_SIG_ITEM where
   aparser = coSigItems
@@ -123,7 +123,7 @@ instance AParsable C_BASIC_ITEM where
 
 ---- helpers ----------------------------------------------------------------
 
-codatatypeToCofreetype ::  C_SIG_ITEM -> [Pos] -> C_BASIC_ITEM
+codatatypeToCofreetype ::  C_SIG_ITEM -> Range -> C_BASIC_ITEM
 codatatypeToCofreetype d pos =
    case d of
-     CoDatatype_items ts ps -> CoFree_datatype ts $ pos ++ ps
+     CoDatatype_items ts ps -> CoFree_datatype ts (pos `appRange` ps)

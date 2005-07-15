@@ -147,7 +147,7 @@ typeCheck0 :: Bool -> Maybe Type -> Term -> State Env (Maybe Term)
 typeCheck0 b mt trm = 
     do alts <- infer b mt trm >>= reduce True 
        te <- get
-       let p = get_pos trm
+       let p = getRange trm
        if null alts then 
           do addDiags [mkDiag Error "no typing for" trm]
              return Nothing
@@ -183,7 +183,7 @@ typeCheck0 b mt trm =
                             p]
                        return Nothing
 
-freshTypeVar :: [Pos] -> State Env Type             
+freshTypeVar :: Range -> State Env Type             
 freshTypeVar p = 
     do (var, c) <- toEnvState $ freshVar p
        return $ TypeName var star c
@@ -195,7 +195,7 @@ substVarTypes :: Subst -> Map.Map Id VarDefn -> Map.Map Id VarDefn
 substVarTypes s = Map.map ( \ (VarDefn t) -> VarDefn $ subst s t)
 
 -- | infer type of application, if true consider lifting for lazy types
-inferAppl :: Bool -> [Pos] -> Maybe Type -> Term  -> Term 
+inferAppl :: Bool -> Range -> Maybe Type -> Term  -> Term 
           -> State Env [(Subst, Constraints, Type, Term)]
 inferAppl b ps mt t1 t2 = do
             let origAppl = ApplTerm t1 t2 ps
@@ -203,7 +203,7 @@ inferAppl b ps mt t1 t2 = do
             rty <- case mt of 
                 Nothing -> freshTypeVar $ posOfTerm t1
                 Just ty -> return ty
-            ops <- infer b (Just $ FunType aty PFunArr rty []) t1 
+            ops <- infer b (Just $ FunType aty PFunArr rty nullRange) t1 
                    >>= reduce False
             combs <- mapM ( \ (sf, cf, funty, tf) -> do 
                 let (sfty, frty) = case funty of 
@@ -306,9 +306,9 @@ infer b mt trm = do
                                  _ -> Op 
                        in (s, cs, ty, case opType oi of 
                            sc@(TypeScheme [] sTy _) -> assert (sTy == ty) $
-                                  QualOp br (InstOpId i [] []) sc ps
+                                  QualOp br (InstOpId i [] nullRange) sc ps
                            sc -> TypedTerm (QualOp br 
-                                       (InstOpId i is []) sc ps)
+                                       (InstOpId i is nullRange) sc ps)
                                        Inferred ty ps)) ls
             else inferAppl b ps mt (ResolvedMixTerm i [] ps)
                  $ mkTupleTerm ts ps
@@ -384,7 +384,7 @@ infer b mt trm = do
                         FunType (head l) (if null (tail l) then case part of
                                           Partial -> PFunArr
                                           Total -> FunArr
-                                         else FunArr) (fty $ tail l) []
+                                         else FunArr) (fty $ tail l) nullRange
                 myty = fty pvs
             ls <- checkList b (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do

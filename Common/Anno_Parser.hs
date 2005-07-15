@@ -42,7 +42,7 @@ commentLine = do
     try $ string "%%"
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno Comment_start (Line_anno line) [p, q]
+    return $ Unparsed_anno Comment_start (Line_anno line) (Range [p, q])
 
 dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-2)
@@ -54,7 +54,7 @@ commentGroup = do
     text_lines <- manyTill anyChar $ try $ string "}%"
     q <- getPos
     return $ Unparsed_anno Comment_start 
-               (Group_anno $ lines text_lines) [p, dec q]
+               (Group_anno $ lines text_lines) (Range [p, dec q])
 
 annote :: GenParser Char st Annotation
 annote = anno_label <|> do 
@@ -75,7 +75,7 @@ anno_label = do
     try $ string "%("
     label_lines <- manyTill anyChar $ try $ string ")%"
     q <- getPos
-    return (Label (lines label_lines) [p, dec q])
+    return (Label (lines label_lines) (Range [p, dec q]))
 
 anno_ident :: GenParser Char st Annote_word
 anno_ident = fmap Annote_word $ string "%" >> casl_words
@@ -85,13 +85,13 @@ annote_group p s = do
     char '(' -- ) 
     annote_lines <- manyTill anyChar $ try $ string ")%"
     q <- getPos
-    return $ Unparsed_anno s (Group_anno $ lines annote_lines) [p, dec q]
+    return $ Unparsed_anno s (Group_anno $ lines annote_lines) (Range [p, dec q])
 
 annote_line :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_line p s = do 
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno s (Line_anno line) [p, q]
+    return $ Unparsed_anno s (Line_anno line) (Range [p, q])
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
@@ -162,11 +162,11 @@ nextListToks f =
 caslListBrackets :: GenParser Char st Id
 caslListBrackets = 
     do l <- nextListToks $ afterPlace ([], [])
-       (c, p) <- option ([], []) $ comps ([], [])
+       (c, p) <- option ([], nullRange) $ comps ([], [])
        return $ Id l c p
 
 prec_anno, number_anno, string_anno, list_anno, floating_anno 
-    :: [Pos] -> GenParser Char st Annotation
+    :: Range -> GenParser Char st Annotation
 prec_anno ps = do 
     left_ids <- braces commaIds
     sign <- (try (string "<>") <|> (string "<")) << skip
@@ -193,7 +193,7 @@ string_anno ps  = literal_2ids_anno ps String_anno
 
 floating_anno ps = literal_2ids_anno ps Float_anno
 
-literal_2ids_anno :: [Pos] -> (Id -> Id -> [Pos] -> Annotation) 
+literal_2ids_anno :: Range -> (Id -> Id -> Range -> Annotation) 
                 -> GenParser Char st Annotation
 literal_2ids_anno ps con = do 
     i1 <- some_id
@@ -201,7 +201,7 @@ literal_2ids_anno ps con = do
     i2 <- some_id
     return $ con i1 i2 ps
 
-display_anno :: [Pos] -> GenParser Char st Annotation
+display_anno :: Range -> GenParser Char st Annotation
 display_anno ps = do 
     ident <- some_id
     tls <- many $ foldl1 (<|>) $ map disp_symb display_format_table
@@ -222,7 +222,7 @@ semantic_anno sa text sp =
         in case text of
                      Line_anno str ->      
                          if all (`elem` whiteChars) str then 
-                            Right $ Semantic_anno sa [sp]
+                            Right $ Semantic_anno sa (Range [sp])
                          else err
                      _ -> err
 

@@ -52,7 +52,7 @@ import Data.Maybe(maybeToList)
 library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
 library (l,lG) = 
    do setUserState l
-      (ps, ln) <- option ([], Lib_id $ Indirect_link libraryS [])
+      (ps, ln) <- option (nullRange, Lib_id $ Indirect_link libraryS nullRange)
 			   (do s1 <- asKey libraryS -- 'library' keyword
 			       n <- libName         -- library name
 			       return (tokPos s1, n))
@@ -74,7 +74,7 @@ version = do s <- asKey versionS
              pos <- getPos
              n <- many1 digit `sepBy1` (string ".")
              skip
-             return (Version_number n $ tokPos s ++ [pos])
+             return (Version_number n (tokPos s `appRange` Range [pos]))
 
 
 -- | Parse library ID
@@ -82,7 +82,7 @@ libId :: AParser st LIB_ID
 libId = do pos <- getPos
            path <- scanAnyWords `sepBy1` (string "/")
            skip
-           return (Indirect_link (concat (intersperse "/" path)) [pos])
+           return (Indirect_link (concat (intersperse "/" path)) (Range [pos]))
            -- ??? URL need to be added
 
 -- | Parse the library elements
@@ -92,7 +92,7 @@ libItems l =
     <|> do r <- libItem l
            an <- annos 
            is <- libItems l
-           return ((Annoted r [] [] an) : is)
+           return ((Annoted r nullRange [] an) : is)
 
 
 -- | Parse an element of the library
@@ -165,7 +165,7 @@ libItem l =
   <|> -- just a spec (turned into "spec spec = sp")
      do a <- aSpec l
         return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
-	       (Genericity (Params []) (Imported []) []) a [])	
+	       (Genericity (Params []) (Imported []) nullRange) a nullRange)	
 
 -- | Parse view type
 viewType :: LogicGraph -> AParser AnyLogic VIEW_TYPE

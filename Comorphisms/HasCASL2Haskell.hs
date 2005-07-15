@@ -143,7 +143,7 @@ kindToTypeArgs :: Int -> Kind -> [HsType]
 kindToTypeArgs i k = case k of
     ClassKind _ -> []
     FunKind _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
-                                   $ toProgPos $ get_pos k) 
+                                   $ toProgPos $ getRange k) 
                       : kindToTypeArgs (i+1) kr
     ExtKind ek _ _ -> kindToTypeArgs i ek
 
@@ -164,7 +164,7 @@ translateAltDefn env dt args rk im (Construct muid origTs p _) =
     let ts = map (mapType im) origTs in
     case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
-                    sc = TypeScheme args (createConstrType dt args rk p ts) []
+                    sc = TypeScheme args (createConstrType dt args rk p ts) nullRange
                     -- resolve overloading
                     (c, ui) = translateId env uid sc
                 in case c of 
@@ -235,14 +235,15 @@ translateType t =
          else hsTyCon $ mkHsIdent UpperId tid
       else hsTyVar $ mkHsIdent LowerId tid
   _ -> error ("translateType: unexpected type: " ++ show t)
-  where boolType = hsTyCon $ mkSName "Bool" $ toProgPos $ get_pos t
+  where boolType = hsTyCon $ mkSName "Bool" $ toProgPos $ getRange t
         isPredType ty = case ty of
                         TypeName tid _ n -> n == 0 && tid == predTypeId
                         _ -> False
 
-toProgPos :: [Pos] -> SrcLoc
-toProgPos p = if null p then loc0 else let SourcePos n l c = head p
-              in SrcLoc n (1000 + (l-1) * 80 + c) l c 
+toProgPos :: Range -> SrcLoc
+toProgPos p = if isNullRange p then loc0 
+               else let Range (SourcePos n l c:_) = p
+                     in SrcLoc n (1000 + (l-1) * 80 + c) l c 
 
 mkSName :: String -> SrcLoc -> SN HsName
 mkSName s p = SN (UnQual s) p
@@ -264,7 +265,7 @@ translateId env uid sc =
 -- | Converts a term in HasCASL to an expression in haskell
 translateTerm :: Env -> Term -> HsExp
 translateTerm env t = 
-  let loc = toProgPos $ get_pos t 
+  let loc = toProgPos $ getRange t 
   in case t of
     QualVar (VarDecl v ty _ _) -> 
         let (c, i) = translateId env v $ simpleTypeScheme ty in 
@@ -351,7 +352,7 @@ translatePattern env pat = case pat of
                      rec $ HsPParen $ rec $ HsPApp u (os ++ [a])
                  _ -> error ("problematic application pattern " ++ show pat)
       TupleTerm pats _ -> 
-          rec $ HsPTuple (toProgPos $ get_pos pat) 
+          rec $ HsPTuple (toProgPos $ getRange pat) 
                   $ map (translatePattern env) pats
       TypedTerm _ InType _ _ -> error "translatePattern InType"
       TypedTerm p _ _ty _ -> translatePattern env p 

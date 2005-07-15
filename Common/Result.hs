@@ -28,13 +28,13 @@ data DiagKind = Error | Warning | Hint | Debug
 -- | a diagnostic message with 'Pos'
 data Diagnosis = Diag { diagKind :: DiagKind
                       , diagString :: String
-                      , diagPos :: [Pos] 
+                      , diagPos :: Range
                       } deriving Eq
 
 -- | construct a message for a printable item that carries a position
 mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = char '\'' in
-    Diag k (s ++ show (space <> q <> nest 2 (printText a) <> q)) $ get_pos a
+    Diag k (s ++ show (space <> q <> nest 2 (printText a) <> q)) $ getRange a
 
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool
@@ -47,9 +47,9 @@ hasErrors :: [Diagnosis] -> Bool
 hasErrors = any isErrorDiag
 
 -- | adjust a null position of a diagnosis
-adjustDiagPos :: [Pos] -> Diagnosis -> Diagnosis
-adjustDiagPos p d = let o = diagPos d in 
-   d {diagPos = if null o then p else p++o}
+adjustDiagPos :: Range -> Diagnosis -> Diagnosis
+adjustDiagPos (Range p) d = let Range o = diagPos d in 
+   d {diagPos = Range (if null o then p else p++o)}
  
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
@@ -57,7 +57,7 @@ checkUniqueness l =
     let vd = filter ( not . null . tail) $ group $ sort l
     in map ( \ vs -> mkDiag Error ("duplicates at '" ++
                                   showSepList (showString " ") shortPosShow
-                                  (concatMap get_pos (tail vs)) "'" 
+                                  (concatMap getPosList (tail vs)) "'" 
                                    ++ " for")  (head vs)) vd
     where shortPosShow :: Pos -> ShowS
           shortPosShow p = showParen True 
@@ -81,7 +81,7 @@ instance Monad Result where
   Result errs Nothing >>= _ = Result errs Nothing
   Result errs1 (Just x) >>= f = Result (errs1++errs2) y
      where Result errs2 y = f x
-  fail s = fatal_error s []
+  fail s = fatal_error s nullRange
 
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
@@ -127,11 +127,11 @@ resToIORes :: Result a -> IOResult a
 resToIORes = IOResult . return
 
 -- | a failing result with a proper position
-fatal_error :: String -> [Pos] -> Result a
+fatal_error :: String -> Range -> Result a
 fatal_error s p = Result [Diag Error s p] Nothing  
 
 -- | a failing result using pretty printed 'Doc'
-pfatal_error :: Doc -> [Pos] -> Result a
+pfatal_error :: Doc -> Range -> Result a
 pfatal_error s p = fatal_error (show s) p  
 
 -- | a failing result constructing a message from a type 
@@ -139,35 +139,35 @@ mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
 -- | add an error message but don't fail
-plain_error :: a -> String -> [Pos] -> Result a
+plain_error :: a -> String -> Range -> Result a
 plain_error x s p = Result [Diag Error s p] $ Just x  
 
 -- | add an error message using a pretty printed 'Doc' but don't fail
-pplain_error :: a -> Doc -> [Pos] -> Result a
+pplain_error :: a -> Doc -> Range -> Result a
 pplain_error x s p = plain_error x (show s) p
 
 -- | add a warning
-warning :: a -> String -> [Pos] -> Result a
+warning :: a -> String -> Range -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x  
 
 -- | add a warning using a pretty printed 'Doc'
-pwarning :: a -> Doc -> [Pos] -> Result a
+pwarning :: a -> Doc -> Range -> Result a
 pwarning x s p = warning x (show s) p
 
 -- | add a hint
-hint :: a -> String -> [Pos] -> Result a
+hint :: a -> String -> Range -> Result a
 hint x s p = Result [Diag Hint s p] $ Just x  
 
 -- | add a hint using a pretty printed 'Doc'
-phint :: a -> Doc -> [Pos] -> Result a
+phint :: a -> Doc -> Range -> Result a
 phint x s p = hint x (show s) p
 
 -- | add a (web interface) message
 message :: a -> String -> Result a
-message x m = Result [Diag MessageW m []] $ Just x
+message x m = Result [Diag MessageW m nullRange] $ Just x
 
 -- | add a failure message to 'Nothing'
-maybeToResult :: [Pos] -> String -> Maybe a -> Result a
+maybeToResult :: Range -> String -> Maybe a -> Result a
 maybeToResult p s m = Result (case m of 
                               Nothing -> [Diag Error s p]
                               Just _ -> []) m
@@ -184,7 +184,7 @@ resultToMaybe :: Result a -> Maybe a
 resultToMaybe (Result ds val) = if hasErrors ds then Nothing else val
 
 -- | adjust positions of diagnoses
-adjustPos :: [Pos] -> Result a -> Result a
+adjustPos :: Range -> Result a -> Result a
 adjustPos p r =
   r {diags = map (adjustDiagPos p) $ diags r}
 
@@ -211,7 +211,7 @@ instance Show Diagnosis where
     showsPrec _ = showPretty
 
 instance PrettyPrint Diagnosis where
-    printText0 _ (Diag k s sp) = 
+    printText0 _ (Diag k s (Range sp)) = 
         (if isMessageW 
             then empty
             else text "***" <+> text (show k))
@@ -231,7 +231,7 @@ instance PrettyPrint Diagnosis where
                            _        -> False
 
 instance PosItem Diagnosis where
-    get_pos d = diagPos d
+    getRange d = diagPos d
 
 instance PrettyPrint a => PrettyPrint (Result a) where
     printText0 g (Result ds m) = vcat ((case m of 

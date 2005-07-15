@@ -90,7 +90,7 @@ inc = do
     put (c + 1)
     return c
 
-freshVar :: [Pos] -> State Int (Id, Int)
+freshVar :: Range -> State Int (Id, Int)
 freshVar ps = do 
     c <- inc
     return (simpleIdToId $ Token ("_var_" ++ show c) ps, c)
@@ -172,17 +172,17 @@ instance Unifiable Type where
                             "is not unifiable with type" t2
 
 showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
-showPrettyWithPos a =  let p = get_pos a in
+showPrettyWithPos a =  let p = getRange a in
         showChar '\'' . showPretty a . showChar '\'' 
-           . noShow (null p) (showChar ' ' . 
-               showParen True (showPos $ maximumBy comparePos p))
+           . noShow (isNullRange p) (showChar ' ' . 
+               showParen True (showPos $ maximumBy comparePos (rangeToList p)))
 
 uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
               String -> a -> String -> b -> Result Subst
 uniResult s1 a s2 b = 
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
                          showPrettyWithPos a "\n  " ++ s2 ++ " " ++
-                         showPrettyWithPos b "") []] Nothing
+                         showPrettyWithPos b "") nullRange] Nothing
 
 instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
     subst s (t1, t2) = (subst s t1, subst s t2)

@@ -47,9 +47,9 @@ idcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2)
 idcoerce i1 i2 a = fromJust $ coerce i1 i2 a 
 
 rcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
-           lid1 -> lid2 -> [Pos] -> a -> Result b
+           lid1 -> lid2 -> Range -> a -> Result b
 rcoerce i1 i2 pos a = adjustPos pos $ coerce i1 i2 a
 
 mrcoerce :: (Typeable a, Typeable b, Language lid1, Language lid2) => 
-           lid1 -> lid2 -> [Pos] -> String -> a -> Result b
+           lid1 -> lid2 -> Range -> String -> a -> Result b
 mrcoerce i1 i2 pos err a = adjustPos pos $ mcoerce i1 i2 err a

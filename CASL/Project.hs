@@ -25,12 +25,12 @@ import Common.Id
 projName :: Id
 projName = mkId [mkSimpleId "g__proj"]
 
-project :: [Pos] -> TERM f -> SORT -> TERM f
+project :: Range -> TERM f -> SORT -> TERM f
 project pos argument result_type = let argument_type = term_sort argument in
     if argument_type == result_type then argument else 
-    Application (projOpSymb pos argument_type result_type) [argument] []
+    Application (projOpSymb pos argument_type result_type) [argument] nullRange
 
-projOpSymb :: [Pos] -> SORT -> SORT -> OP_SYMB
+projOpSymb :: Range -> SORT -> SORT -> OP_SYMB
 projOpSymb pos s1 s2 =
     Qual_op_name projName (Op_type Total [s1] s2 pos) pos
 

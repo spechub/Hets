@@ -33,12 +33,12 @@ data DataPat = DataPat Id [TypeArg] RawKind Type
 
 -- * creating selector equations
 
-mkSelId :: [Pos] -> String -> Int -> Int -> Id
+mkSelId :: Range -> String -> Int -> Int -> Id
 mkSelId p str n m = mkId 
     [Token (str ++ "_" ++ show n ++ "_" ++ show m) p]
 
 mkSelVar :: Int -> Int -> Type -> VarDecl
-mkSelVar n m ty = VarDecl (mkSelId (get_pos ty) "x" n m) ty  Other []
+mkSelVar n m ty = VarDecl (mkSelId (getRange ty) "x" n m) ty  Other nullRange
 
 genTuple :: Int -> Int -> [Selector] -> [VarDecl]
 genTuple _ _ [] = [] 
@@ -52,11 +52,11 @@ genSelVars n (ts:sels)  =
 
 makeSelTupleEqs :: DataPat -> Term -> Int -> Int -> [Selector] -> [Named Term]
 makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) = 
-    let sc = TypeScheme tArgs (getSelType rt p ty) [] in
+    let sc = TypeScheme tArgs (getSelType rt p ty) nullRange in
     (case mi of
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
-                  eq = mkEqTerm eqId [] (mkApplTerm (mkOpTerm i sc) [ct]) vt
+                  eq = mkEqTerm eqId nullRange (mkApplTerm (mkOpTerm i sc) [ct]) vt
               in [NamedSen ("ga_select_" ++ show i) True eq]
      _ -> [])
     ++ makeSelTupleEqs dt ct n (m + 1) sels
@@ -72,10 +72,10 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args (getConstrType rt p ts) [] 
+    Just c -> let sc = TypeScheme args (getConstrType rt p ts) nullRange 
                   newSc = sc
                   vars = genSelVars 1 sels 
-                  as = map ( \ vs -> mkTupleTerm (map QualVar vs) []) vars
+                  as = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange) vars
                   ct = mkApplTerm (mkOpTerm c newSc) as
               in map (mapNamed (mkForall (map GenTypeVarDecl args
                                   ++ map GenVarDecl (concat vars))))
@@ -111,7 +111,7 @@ anaComps :: [DataPat] -> DataPat -> TypeEnv -> [Component]
          -> Result (Type, [Selector]) 
 anaComps tys rt te cs =
     do newCs <- mapM (anaComp tys rt te) cs
-       return (mkProductType (map fst newCs) [], map snd newCs)
+       return (mkProductType (map fst newCs) nullRange, map snd newCs)
 
 anaComp :: [DataPat] -> DataPat -> TypeEnv -> Component 
         -> Result (Type, Selector)
@@ -135,7 +135,7 @@ checkMonomorphRecursion t te (DataPat i _ _ rt) =
     if occursIn (typeMap te) i t then 
        if lesserType te t rt || lesserType te rt t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion" 
-                                 ++ expected rt t) $ get_pos t] Nothing
+                                 ++ expected rt t) $ getRange t] Nothing
     else return ()
 
 occursIn :: TypeMap -> TypeId -> Type -> Bool

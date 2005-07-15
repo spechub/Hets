@@ -45,9 +45,9 @@ instance PrettyPrint Constrain where
                                       <+> printText0 ga t2
 
 instance PosItem Constrain where
-  get_pos c = case c of 
-    Kinding ty _ -> get_pos ty
-    Subtyping t1 t2 -> get_pos t1 ++ get_pos t2
+  getRange c = case c of 
+    Kinding ty _ -> getRange ty
+    Subtyping t1 t2 -> getRange t1 `appRange` getRange t2
 
 type Constraints = Set.Set Constrain
 
@@ -261,7 +261,7 @@ collapser r =
                     c2 = Set.findMin rs
                 in Diag Hint ("contradicting type inclusions for '"
                          ++ showPretty c1 "' and '" 
-                         ++ showPretty c2 "'") []) ws) Nothing
+                         ++ showPretty c2 "'") nullRange) ws) Nothing
 
 extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
 extendSubst s (t, vs) = Set.fold ( \ (TypeName _ _ n) -> 

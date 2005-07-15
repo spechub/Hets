@@ -655,7 +655,7 @@ createLocalEdgeMenu gInfo =
     LocalMenu (Menu (Just "edge menu")
                [createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
-                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
+                createLocalMenuButtonCheckconservativityOfEdge gInfo]
               )
 
 createLocalEdgeMenuThmEdge gInfo =
@@ -663,7 +663,7 @@ createLocalEdgeMenuThmEdge gInfo =
               [createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
                 createLocalMenuButtonShowProofStatusOfThm gInfo,
-                createLocalMenuButtonCheckconsistencyOfEdge gInfo]
+                createLocalMenuButtonCheckconservativityOfEdge gInfo]
               )
 
 createLocalMenuButtonShowMorphismOfEdge _ = 
@@ -680,10 +680,10 @@ createLocalMenuButtonShowOriginOfEdge _ =
               return ()
           ))
 
-createLocalMenuButtonCheckconsistencyOfEdge gInfo = 
+createLocalMenuButtonCheckconservativityOfEdge gInfo = 
   (Button "Check conservativity (preliminary)" 
                       (\ (ginfo,descr,maybeLEdge)  -> 
-                        do checkconsistencyOfEdge descr gInfo maybeLEdge
+                        do checkconservativityOfEdge descr gInfo maybeLEdge
                            return ()
                        ))
 
@@ -756,7 +756,7 @@ lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
  (ln,libEnv,_) <- readIORef proofStatusRef
  case (do
   (_libname, node) <- 
-        Res.maybeToResult nullPos ("Node "++show descr++" not found")
+        Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
   gth <- computeTheory libEnv _libname dgraph node
   return (node, gth)
@@ -804,7 +804,7 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
  (_,libEnv,_) <- readIORef proofStatusRef
  case (do
    (_libname, node) <- 
-        Res.maybeToResult nullPos ("Node "++show descr++" not found")
+        Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
    th <- computeTheory libEnv _libname dgraph node
    return (node,th) ) of
@@ -818,7 +818,7 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
                    (map show paths)
          i <- case sel of
            Just j -> return j
-           _ -> Res.resToIORes $ Res.fatal_error "" nullPos
+           _ -> Res.resToIORes $ Res.fatal_error "" nullRange
          Comorphism cid <- return (paths!!i)
          -- adjust lid's
          let lidS = sourceLogic cid
@@ -923,12 +923,12 @@ showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
                 ++ "in the development graph")
 
-{- check consistency of the edge -}
-checkconsistencyOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_) 
+{- check conservativity of the edge -}
+checkconservativityOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
+checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_) 
                            (Just (source,target,linklab)) = do 
   (ln,libEnv,_) <- readIORef ref
-  let (_,_,dgraph) = maybe (error "checkconsistencyOfEdge") id 
+  let (_,_,dgraph) = maybe (error "checkconservativityOfEdge") id 
                      $ Map.lookup ln libEnv
       dgtar = lab' (context dgraph target)
   case dgtar of
@@ -937,15 +937,15 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_)
      GMorphism cid sign1 morphism2 -> do
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of
            Just m -> m
-           _ -> error "checkconsistencyOfEdge: wrong logic"
+           _ -> error "checkconservativityOfEdge: wrong logic"
       let th = case computeTheory libEnv ln dgraph source of
                 Res.Result _ (Just th1) -> th1
-                _ -> error "checkconsistencyOfEdge: computeTheory"
+                _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th
       case coerce lid1 lid (sign1,sens1) of
            Just (sign2, sens2) -> 
              let Res.Result diags res = 
-                     consCheck lid (sign2,sens2) morphism2' sens
+                     conservativityCheck lid (sign2,sens2) morphism2' sens
                  showRes = case res of
                    Just(Just True) -> "The link is conservative"
                    Just(Just False) -> "The link is not conservative"
@@ -953,10 +953,10 @@ checkconsistencyOfEdge _ (ref,_,_,_,_,_,_,opts,_)
                  showDiags = unlines (map show diags)
               in createTextDisplay "Result of consistency check" 
                       (showRes++"\n"++showDiags) [size(50,50)]
-           _ -> error "checkconsistencyOfEdge: wrong logic"
-    DGRef _ _ _ _ _ -> error "checkconsistencyOfEdge: no DGNode"
+           _ -> error "checkconservativityOfEdge: wrong logic"
+    DGRef _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
-checkconsistencyOfEdge descr _ Nothing = 
+checkconservativityOfEdge descr _ Nothing = 
       createTextDisplay "Error" 
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph") [size(30,10)]

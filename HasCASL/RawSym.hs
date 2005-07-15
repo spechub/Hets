@@ -57,7 +57,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
         let r = return $ AQualId idt $ OpAsItemType sc
             rk = if null vs then Nothing else 
                  convTypeToKind t 
-            rrk = maybeToResult (get_pos t) 
+            rrk = maybeToResult (getRange t) 
                            ("not a kind: " ++ showPretty t "") rk
         in case k of 
               SK_op -> r
@@ -122,7 +122,7 @@ anaSymbolType t = do
             return $ fmap OpAsItemType asc 
 
 instance PosItem RawSymbol where
-    get_pos = get_pos . rawSymName
+    getRange = getRange . rawSymName
 
 matchQualId :: Env -> RawSymbol -> Result RawSymbol
 matchQualId e rsy = 

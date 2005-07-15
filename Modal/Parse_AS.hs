@@ -74,9 +74,9 @@ mBasic =
     <|>
     do t <- asKey termS
        (as, fs, ps) <- mItem (sortId modal_reserved_words)
-       return (Term_mod_decl as fs (tokPos t ++ ps))
+       return (Term_mod_decl as fs (tokPos t `appRange` ps))
 
-mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], [Pos])
+mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
 mItem pr = do 
        c <- mKey
        (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)
@@ -85,7 +85,7 @@ mItem pr = do
 	  (fs, qs) <- annoParser (formula modal_reserved_words)
 		      `separatedBy` anSemi
 	  p <- cBraceT
-          return (as, fs, ps ++ toPos o qs p)
+          return (as, fs, ps `appRange` toPos o qs p)
 	<|>  return (as, [], ps)
 		
 instance AParsable M_BASIC_ITEM where

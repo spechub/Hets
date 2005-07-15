@@ -87,7 +87,7 @@ simplifyTerm minF simpF sign term =
         minT = maybeResult . oneExpTerm minF emptyGlobalAnnos sign
     in case term of
        Qual_var v _ _ -> 
-           let minTerm = Application (Op_name $ simpleIdToId v) [] []
+           let minTerm = Application (Op_name $ simpleIdToId v) [] nullRange
            in case minT minTerm of
               Just _ -> minTerm
               Nothing -> term
@@ -129,14 +129,14 @@ simplifyTerm minF simpF sign term =
    simplify the TERM with given sort and attach sort if necessary
 -}
 simplifyTermWithSort :: PrettyPrint f => Min f e -> (Sign f e -> f -> f) 
-        -> Sign f e -> SORT -> [Pos] -> TERM f -> TERM f
+        -> Sign f e -> SORT -> Range -> TERM f -> TERM f
 simplifyTermWithSort minF simpF sign gSort poss term = 
     let simplifyTermCS = simplifyTermWithSort minF simpF sign gSort poss
         simplifyTermC = simplifyTerm minF simpF sign
         minT = maybeResult . oneExpTerm minF emptyGlobalAnnos sign
     in case term of
        Qual_var v _ _ -> 
-           let minTerm = Application (Op_name $ simpleIdToId v) [] []
+           let minTerm = Application (Op_name $ simpleIdToId v) [] nullRange
                simT = Sorted_term minTerm gSort poss
            in case minT simT of
                   Just _ -> simT

@@ -170,14 +170,14 @@ getProvers consCheck lg gsub =
 
 selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
 selectProver [p] = return p
-selectProver [] = resToIORes $ fatal_error "No prover available" nullPos
+selectProver [] = resToIORes $ fatal_error "No prover available" nullRange
 selectProver provers = do
    sel <- ioToIORes $ listBox 
                 "Choose a translation to a prover-supported logic"
                 (map (show.snd) provers)
    i <- case sel of
            Just j -> return j
-           _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullPos
+           _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullRange
    return (provers!!i)
  
 cons_check :: Logic lid sublogics

@@ -155,7 +155,7 @@ transSig sig
     | Rel.null (sortRel sig) = 
         Result [Diag Hint (
         "CASL2TopSort.transSig: Signature is unchanged (no subsorting present)"
-                             ) nullPos] (Just (sig,[]))
+                             ) nullRange] (Just (sig,[]))
     | otherwise = 
     case generateSubSortMap (sortRel sig) (predMap sig) of
     Result dias m_subSortMap ->
@@ -190,7 +190,7 @@ transSig sig
                (Diag Warning
                      ("CASL2TopSort.transSig: generating "++
                       "overloading: Predicate "++show k++
-                      " gets additional type(s): "++show v2) nullPos)
+                      " gets additional type(s): "++show v2) nullRange)
                :d1++d2 )   
           newPreds mp = 
               foldr (\ pI nm -> Map.insert (predicate_PI pI) 
@@ -350,7 +350,7 @@ mkProfMapOp opName ssm = Set.fold seperate (return Map.empty)
                                          "\" is still partial as intended,\
                                           \ since a joining of types could\
                                          \ have made it total!!")
-                                        nullPos]
+                                        nullRange]
                              else dias
           pt2topSorts = map (lkupTop ssm) 
           pt2preds = map (lkupPRED_NAME ssm) 
@@ -380,24 +380,24 @@ genArgRest sen_name genProp sl spl fs =
 genPredication :: PRED_NAME -> [SORT] -> [TERM f] -> FORMULA f
 genPredication pName sl ts =
     Predication (Qual_pred_name pName 
-                                (Pred_type sl []) [])
+                                (Pred_type sl nullRange) nullRange)
                 ts
-                []
+                nullRange
 
 genOpEquation :: FunKind -> OP_NAME -> [SORT] -> [TERM f] -> FORMULA f
 genOpEquation kind opName sl terms = 
-    Strong_equation sortedFunTerm resTerm []
+    Strong_equation sortedFunTerm resTerm nullRange
     where sortedFunTerm = 
              Sorted_term (Application 
                             (Qual_op_name opName 
-                                          opType [])
+                                          opType nullRange)
                             argTerms
-                            []) 
+                            nullRange) 
                          resSort       
-                         []
+                         nullRange
           opType = case kind of 
-                   Partial -> Op_type Partial argSorts resSort []
-                   Total   -> Op_type Total   argSorts resSort []
+                   Partial -> Op_type Partial argSorts resSort nullRange
+                   Total   -> Op_type Total   argSorts resSort nullRange
           argTerms = init terms
           resTerm  = last terms
           argSorts = init sl
@@ -424,14 +424,14 @@ genQuantification prop vars spl =
         Just (Quantification Universal vds
                              (Implication prop
                                           dis
-                                          True []) []))
+                                          True nullRange) nullRange))
            (genDisjunction vars spl)
    where vds = reverse (foldl toVarDecl [] vars)
          -- toVarDecl :: [VAR_DECL] -> TERM f -> [VAR_DECL]
-         toVarDecl [] (Qual_var n s _) = [Var_decl [n] s []]
-         toVarDecl xxs@((Var_decl l s1 []):xs) (Qual_var n s _) 
-             | s1 == s   = Var_decl (l++[n]) s1 []:xs
-             | otherwise = Var_decl [n] s []:xxs
+         toVarDecl [] (Qual_var n s _) = [Var_decl [n] s nullRange]
+         toVarDecl xxs@((Var_decl l s1 _):xs) (Qual_var n s _) 
+             | s1 == s   = Var_decl (l++[n]) s1 nullRange:xs
+             | otherwise = Var_decl [n] s nullRange:xxs
          toVarDecl _ _ = 
              error "CASL2TopSort.toVarDecl: can only handle Qual_var"
          
@@ -446,11 +446,11 @@ genDisjunction vars spn
         [x] -> Just x
         _   -> error "CASL2TopSort.genDisjunction: this cannot happen"
     | null disjs        = Nothing
-    | otherwise         = Just (Disjunction disjs [])
+    | otherwise         = Just (Disjunction disjs nullRange)
       where disjs = foldl genConjunction [] (Set.toList spn)
             genConjunction acc pns 
                 | null conjs = acc
-                | otherwise  = (Conjunction (reverse conjs) []):acc
+                | otherwise  = (Conjunction (reverse conjs) nullRange):acc
                 where conjs = foldl genPred [] (zip vars pns)
             -- genPred :: TERM f -> PRED_NAME -> FORMULA f
             genPred acc (v@(Qual_var _ s _),mpn) = 
@@ -489,7 +489,7 @@ transSen sig f
     | Rel.null (sortRel sig) = 
         Result [Diag Hint (
         "CASL2TopSort.transSen: Sentence is unchanged (no subsorting present)"
-                             ) nullPos] (Just f)
+                             ) nullRange] (Just f)
     | otherwise = 
     case (generateSubSortMap (sortRel sig) 
                              (predMap sig)) of
@@ -575,18 +575,18 @@ genEitherAxiom ssMap =
             in if null constrs
                then case groupedInjOps of
                     [] -> Result [Diag Error 
-                                  "No injective operation found" nullPos] 
+                                  "No injective operation found" nullRange] 
                                  Nothing
                     [xs@(x:_)] -> Result [] (Just (genQuant x (genImpl xs)))
                     xs@((x:_):_)  -> 
                            Result [] (Just (genQuant x (Conjunction 
-                                                        (map genImpl xs) [])))
+                                                        (map genImpl xs) nullRange)))
                     _ -> error "CASL2TopSort.genEitherAxiom.groupedInjOps"
                else Result [Diag Error
                                  ("CASL2TopSort: Cannot handle \
                                   \datatype constructors; only subsort \
                                   \embeddings are allowed with free and \
-                                  \generated types!") nullPos] Nothing
+                                  \generated types!") nullRange] Nothing
           isInjOp ops = 
               case ops of
               Op_name _ -> error "CASL2TopSort.genEitherAxiom.isInjObj"
@@ -600,17 +600,17 @@ genEitherAxiom ssMap =
           lTop = lkupTop ssMap
           varName = mkSimpleId "x"
           mkVarTerm qon =
-              Sorted_term (Qual_var varName s []) s []
+              Sorted_term (Qual_var varName s nullRange) s nullRange
               where s = lTop (resultSort qon)
           mkVarDecl qon =
-              Var_decl [varName] (lTop (resultSort qon)) []
-          genQuant qon f = Quantification Universal [mkVarDecl qon] f []
+              Var_decl [varName] (lTop (resultSort qon)) nullRange
+          genQuant qon f = Quantification Universal [mkVarDecl qon] f nullRange
           genImpl []       = error "No OP_SYMB found"
           genImpl xs@(x:_) = 
               assert (lTop (resultSort x) == lTop (argSort x)) 
               (if (resultSort x) == lTop (resultSort x)
                then genDisj xs
-               else Implication (genProp x) (genDisj xs) True [])
+               else Implication (genProp x) (genDisj xs) True nullRange)
           genProp qon = genPredication (lPredName (resultSort qon)) 
                                        [lTop (resultSort qon)]
                                        [mkVarTerm qon]
@@ -619,7 +619,7 @@ genEitherAxiom ssMap =
                                       ++"\" found!"))
                               id
                               (lkupPRED_NAME ssMap s)
-          genDisj qons = Disjunction (map genPred qons) []
+          genDisj qons = Disjunction (map genPred qons) nullRange
           genPred qon = genPredication (lPredName (argSort qon)) 
                                        [lTop (resultSort qon)]
                                        [mkVarTerm qon]

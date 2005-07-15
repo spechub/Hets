@@ -127,10 +127,10 @@ qualOpName o =
        c <- anColon
        t <- opType [] << addAnnos
        p <- cParenT
-       return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] []
+       return $ Application (Qual_op_name i t $ toPos o [v, c] p) [] nullRange
 
-opSort :: [String] -> GenParser Char st (Bool, Id, [Pos])
-opSort k = fmap (\s -> (False, s, [])) (sortId k) <|> 
+opSort :: [String] -> GenParser Char st (Bool, Id, Range)
+opSort k = fmap (\s -> (False, s, nullRange)) (sortId k) <|> 
     do q <- quMarkT
        s <- sortId k
        return (True, s, tokPos q)
@@ -140,7 +140,7 @@ opFunSort k ts ps =
     do a <- pToken (string funS)
        (b, s, qs) <- opSort k
        return $ Op_type (if b then Partial else Total) ts s 
-                  (catPos (ps ++ [a]) ++ qs)
+                  ((catPos (ps ++ [a]) `appRange` qs))
 
 opType :: [String] -> AParser st OP_TYPE
 opType k = 
@@ -150,7 +150,7 @@ opType k =
 		  (ts, ps) <- sortId k `separatedBy` crossT
 		  opFunSort k (s:ts) (c:ps)
  	  <|> opFunSort k [s] []
-          <|> return (Op_type Total [] s [])
+          <|> return (Op_type Total [] s nullRange)
 
 parenTerm, braceTerm, bracketTerm :: AParsable f => AParser st (TERM f)
 parenTerm = 
@@ -197,7 +197,7 @@ varDecl k =
     do (vs, ps) <- varId k `separatedBy` anComma
        c <- colonT
        s <- sortId k
-       return $ Var_decl vs s (catPos ps ++ tokPos c)
+       return $ Var_decl vs s (catPos ps `appRange` tokPos c)
 
 predType :: [String] -> AParser st PRED_TYPE
 predType k = 
@@ -208,7 +208,7 @@ predType k =
 predUnitType :: GenParser Char st PRED_TYPE
 predUnitType = do o <- oParenT
 		  c <- cParenT
-		  return $ Pred_type [] (tokPos o ++ tokPos c)
+		  return $ Pred_type [] (tokPos o `appRange` tokPos c)
 
 qualPredName :: Token -> AParser st (TERM f)
 qualPredName o = 
@@ -300,19 +300,19 @@ impFormula k =
              do f <- andOrFormula k
 		do c <- implKey
 		   (fs, ps) <- andOrFormula k `separatedBy` implKey
-		   return (makeImpl True (f:fs) (catPos (c:ps)))
+		   return (makeImpl True (f:fs) (catPosAux (c:ps)))
 		  <|>
 		  do c <- ifKey
 		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
-		     return (makeIf (f:fs) (catPos (c:ps)))
+		     return (makeIf (f:fs) (catPosAux (c:ps)))
 		  <|>
 		  do c <- asKey equivS
 		     g <- andOrFormula k
 		     return (Equivalence f g $ tokPos c)
 		  <|> return f
-		    where makeImpl b [f,g] p = Implication f g b p
+		    where makeImpl b [f,g] p = Implication f g b (Range p)
 		          makeImpl b (f:r) (c:p) = 
-			             Implication f (makeImpl b r p) b [c]
+			             Implication f (makeImpl b r p) b (Range [c])
 		          makeImpl _ _ _ = 
 			      error "makeImpl got illegal argument"
 			  makeIf l p = makeImpl False (reverse l) (reverse p)

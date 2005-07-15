@@ -1179,7 +1179,7 @@ mapID idmap i@(Id toks comps pos1) =
       _ -> pplain_error i 
              (ptext "Identifier component " <+> printText i
               <+> ptext "can be mapped in various ways:"
-              <+> printText ids) nullPos
+              <+> printText ids) nullRange
 
 extID1 :: Map.Map Id (Set.Set Id) -> Id 
               -> Result (EndoMap Id) -> Result (EndoMap Id)
@@ -1233,7 +1233,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   when (not (Set.null illShared))
    (pplain_error () (ptext 
      "Symbols shared between actual parameter and body must be in formal parameter"
-     $$ printText illShared ) nullPos)
+     $$ printText illShared ) nullRange)
   let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.assocs m 
       comb1 [] = []
       comb1 (p : qs) = 
@@ -1245,7 +1245,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   when (not (Set.null newIdentifications))
    (pplain_error () (ptext 
      "Fitting morphism leads to forbidden identifications"
-     $$ printText newIdentifications) nullPos)
+     $$ printText newIdentifications) nullRange)
   incl <- inclusion lid sigmaAD sigma
   mor1 <- comp lid mor incl
   return (G_sign lid sigma, G_morphism lid mor1)
@@ -1339,7 +1339,7 @@ ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts
                 -> NODE_NAME -> IMPORTED
                 -> Result (IMPORTED,NodeSig,DGraph)
 ana_IMPORTS lg gctx l opts name (Imported asps) = do
-  let sp = Union asps []
+  let sp = Union asps nullRange
   (Union asps' _,nsig',dg') <- 
        ana_SPEC lg gctx (EmptyNode l) name opts sp
   return (Imported asps',nsig',dg')
@@ -1373,7 +1373,7 @@ homogenizeGM (Logic lid) gsis =
   homogenize1 res 
        (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
     (G_symb_map_items_list lid2 sis) <- res
-    sis1' <- rcoerce lid1 lid2 nullPos sis1
+    sis1' <- rcoerce lid1 lid2 nullRange sis1
     return (G_symb_map_items_list lid2 (sis++sis1'))
   homogenize1 res _ = res 
 

@@ -201,14 +201,14 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
                        return (ProgEq newPat newTrm ps : eqs)
 
 
-mkPatAppl :: Term -> Term -> [Pos] -> Term
+mkPatAppl :: Term -> Term -> Range -> Term
 mkPatAppl op arg qs = 
     case op of
             QualVar (VarDecl i (MixfixType []) _ _) -> 
                 ResolvedMixTerm i [arg] qs
             _ -> ApplTerm op arg qs
 
-toMixTerm :: Id -> [Term] -> [Pos] -> Term
+toMixTerm :: Id -> [Term] -> Range -> Term
 toMixTerm i ar qs = 
     if i == applId then assert (length ar == 2) $
            let [op, arg] = ar in mkPatAppl op arg qs

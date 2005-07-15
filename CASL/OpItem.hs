@@ -50,7 +50,7 @@ opHead ks =
        c <- anColon
        (b, s, qs) <- opSort ks
        return $ Op_head (if b then Partial else Total) vs s 
-              (ps ++ tokPos c ++ qs)
+              (ps `appRange` tokPos c `appRange` qs)
 
 opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = do p <- asKey assocS
@@ -70,8 +70,8 @@ isConstant :: OP_TYPE -> Bool
 isConstant(Op_type _ [] _ _) = True
 isConstant _ = False
 
-toHead :: [Pos] -> OP_TYPE -> OP_HEAD
-toHead c (Op_type k [] s ps) = Op_head k [] s (c ++ ps)
+toHead :: Range -> OP_TYPE -> OP_HEAD
+toHead (Range c) (Op_type k [] s ps) = Op_head k [] s (Range c `appRange` ps)
 toHead _ _ = error "toHead got non-empty argument type"
 
 opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
@@ -98,14 +98,14 @@ opBody ks o h =
     do e <- equalT
        a <- annos
        t <- term ks
-       return $ Op_defn o h (Annoted t [] a []) $ tokPos e
+       return $ Op_defn o h (Annoted t nullRange a []) $ tokPos e
 	  
 opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token] 
 	-> AParser st (OP_ITEM f)
 opAttrs ks os t c = 
     do q <- anComma 
        (as, cs) <- opAttr ks `separatedBy` anComma
-       let ps = sort (catPos (c ++ map snd as ++ (q:cs)))
+       let ps = Range (sort (catPosAux (c ++ map snd as ++ (q:cs))))
        return (Op_decl os t (map fst as) ps)
    <|> return (Op_decl os t [] (catPos c)) 
 
@@ -119,7 +119,7 @@ predItem :: AParsable f => [String] -> AParser st (PRED_ITEM f)
 predItem ks = 
     do (ps, cs)  <- parseId ks `separatedBy` anComma
        if isSingle ps then
-		predBody ks (head ps) (Pred_head [] [])
+		predBody ks (head ps) (Pred_head [] nullRange)
 		<|> 
 		do h <- predHead ks
 		   predBody ks (head ps) h
@@ -133,7 +133,7 @@ predBody ks p h =
     do e <- asKey equivS
        a <- annos
        f <- formula ks
-       return $ Pred_defn p h (Annoted f [] a []) $ tokPos e
+       return $ Pred_defn p h (Annoted f nullRange a []) $ tokPos e
 
 predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser st (PRED_ITEM f)
 predTypeCont ks ps cs = 

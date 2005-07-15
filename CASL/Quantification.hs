@@ -48,7 +48,7 @@ freeTermVars t = case t of
     _ -> Set.empty
 
 -- quantify only over free variables (and only once)
-effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> [Pos] -> FORMULA f
+effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
 effQuantify q vdecls phi pos =
     let fvs = freeVars phi 
 	filterVAR_DECL (Var_decl vs s ps) =
@@ -68,7 +68,7 @@ stripQuant (Quantification quant vdecl phi pos) =
 	case newF of 
 		 Quantification quant2 vd2 f2 ps -> 
 		     if quant == quant2 then 
-			effQuantify quant (vdecl ++ vd2) f2 (pos ++ ps)
+			effQuantify quant (vdecl ++ vd2) f2 (pos `appRange` ps)
 		     else qF
 		 _ -> qF
 stripQuant (Conjunction phis pos) =
