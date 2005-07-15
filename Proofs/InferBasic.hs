@@ -53,7 +53,7 @@ import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
-import Syntax.Print_AS_Library
+import Syntax.Print_AS_Library()
 import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -150,10 +150,11 @@ concatHistoryElems ((rules,changes):elems) =
 -- basic inference
 -- ---------------
 
-getGoals :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result G_l_sentence_list
-getGoals libEnv dg (n,_,edge) = do
+getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab 
+         -> Result G_l_sentence_list
+getGoals libEnv ln (n,_,edge) = do
   th <- maybeToMonad ("Could node find node "++show n)
-              $  computeLocalTheory libEnv dg n
+              $  computeLocalTheory libEnv (ln, n)
   let mor = dgl_morphism edge
   fmap sensOf $ translateG_theory mor th
 
@@ -221,7 +222,7 @@ basicInferenceNode checkCons lg (ln,node)
         let inEdges = inn dGraph node
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
-                      else resToIORes $ mapM (getGoals libEnv dGraph) localEdges
+                      else resToIORes $ mapM (getGoals libEnv ln) localEdges
         G_l_sentence_list lid3 goals <- 
           if null goalslist then return $ G_l_sentence_list lid1 [] 
             else resToIORes (maybeToMonad 

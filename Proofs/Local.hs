@@ -31,7 +31,6 @@ import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library
-import Common.PrettyPrint
 
 -- --------------------
 -- local decomposition
@@ -69,7 +68,7 @@ locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
-    th = computeLocalTheory libEnv dgraph src
+    th = computeLocalTheory libEnv (ln, src)
     pathsWithoutEdgeItself = [path|path <- allPaths, notElem ledge path]
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis edgeLab filteredPaths
@@ -141,7 +140,7 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
 
   where
     morphism = dgl_morphism edgeLab
-    maybeThSrc = computeLocalTheory libEnv dgraph src
+    maybeThSrc = computeLocalTheory libEnv (ln, src)
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
