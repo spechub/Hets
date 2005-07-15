@@ -46,10 +46,9 @@ isErrorDiag d = case diagKind d of
 hasErrors :: [Diagnosis] -> Bool
 hasErrors = any isErrorDiag
 
--- | adjust a null position of a diagnosis
+-- | add range to a diagnosis
 adjustDiagPos :: Range -> Diagnosis -> Diagnosis
-adjustDiagPos (Range p) d = let Range o = diagPos d in 
-   d {diagPos = Range (if null o then p else p++o)}
+adjustDiagPos r d = d { diagPos = appRange r $ diagPos d }
  
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
@@ -173,7 +172,7 @@ maybeToResult p s m = Result (case m of
                               Just _ -> []) m
 
 -- | add a failure message to 'Nothing'
--- (alternative for 'maybeToResult' with 'nullPos') 
+-- (alternative for 'maybeToResult' without 'Range') 
 maybeToMonad :: Monad m => String -> Maybe a -> m a
 maybeToMonad s m = case m of 
                         Nothing -> fail s 
