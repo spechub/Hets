@@ -55,14 +55,14 @@ data Annotation = OntoAnnotation
                 | IndivAnnotation 
                          AnnotationPropertyID 
                          Individual
-                  deriving (Show, Eq)
+                  deriving (Show, Eq,Ord)
 
 -- | Data literal
 data DataLiteral = TypedL TypedLiteral 
                  | PlainL PlainLiteral
                  | Plain  LexicalForm
                  | RDFSL  RDFSLiteral
-                   deriving (Show, Eq)
+                   deriving (Show, Eq,Ord)
 
 type RDFSLiteral = String
 
@@ -83,19 +83,19 @@ data Fact = Indiv Individual
                   IndividualID 
                   IndividualID 
                   [IndividualID]
-            deriving (Show, Eq)
+            deriving (Show, Eq,Ord)
 
 data Individual = Individual (Maybe IndividualID) [Annotation] [Type] [Value]
-                  deriving (Show, Eq)
+                  deriving (Show, Eq,Ord)
 data Value = ValueID    IndividualvaluedPropertyID IndividualID
            | ValueIndiv IndividualvaluedPropertyID Individual
            | ValueDL    DatavaluedPropertyID DataLiteral
-             deriving (Show, Eq)
+             deriving (Show, Eq,Ord)
 type Type = Description
 
 -- | Axiom (Class Axioms, Descriptions, Restrictions, Property Axioms)
 data Axiom = Thing
-           | Nothing
+           | OWL_DL.AS.Nothing
            | Class 
                    ClassID 
                    Bool -- ^ True == deprecated
@@ -161,44 +161,45 @@ data Axiom = Thing
            | ISubPropertyOf 
                    IndividualvaluedPropertyID 
                    IndividualvaluedPropertyID
-             deriving (Show, Eq)
+             deriving (Show,Eq,Ord)
 
 data Func = Functional | InverseFunctional | Functional_InverseFunctional | Transitive
-            deriving (Show, Eq)
+            deriving (Show, Eq,Ord)
 
 data Modality = Complete | Partial
-                deriving (Show, Eq)
+                deriving (Show, Eq,Ord)
+
 data Description = DC ClassID 
                  | DR Restriction
                  | UnionOf [Description]
                  | IntersectionOf [Description]
                  | ComplementOf Description
                  | OneOfDes [IndividualID]
-                   deriving (Show, Eq)
+                   deriving (Show,Eq,Ord)
 
 data Restriction = DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent]
                  | IndivRestriction IndividualvaluedPropertyID Ircomponent [Ircomponent]
-                   deriving (Show, Eq)
+                   deriving (Show, Eq,Ord)
 
 data Drcomponent = DRCAllValuesFrom DataRange
                  | DRCSomeValuesFrom DataRange
                  | DRCValue DataLiteral
                  | DRCCardinality Cardinality
-                   deriving (Show, Eq)
+                   deriving (Show, Eq,Ord)
                    
 data Ircomponent = IRCAllValuesFrom Description
                  | IRCSomeValuesFrom Description
                  | IRCValue IndividualID
                  | IRCCardinality Cardinality
-                   deriving (Show, Eq)
+                   deriving (Show, Eq,Ord)
 
 data Cardinality = MinCardinality Int
                  | MaxCardinality Int
                  | Cardinality Int
-                   deriving (Show, Eq)
+                   deriving (Show, Eq,Ord)
 
 data DataRange = DID DatatypeID 
                | OneOfData [DataLiteral]
                | RLit RDFSLiteral       -- ^ rdfs:literal
-                 deriving (Show, Eq)
+                 deriving (Show, Eq,Ord)
 
