@@ -20,25 +20,28 @@ A simple identifier is a lexical token given by a string and a start position.
 
 module Common.Id where
 
+-- do use in data types that derive d directly 
 data Pos = SourcePos { sourceName :: String
                      , sourceLine :: !Int 
-                     , sourceColumn :: !Int }
+                     , sourceColumn :: !Int } deriving (Eq, Ord)
 
 instance Show Pos where
     showsPrec _ = showPos
 
-instance Eq Pos where
-    _ == _ = True
-
--- position lists with trivial equality
+-- | position lists with trivial equality
 newtype Range = Range [Pos]
 
+-- let InlineAxioms recognize positions
+instance Show Range where
+    show _ = "nullRange"
+
+-- ignore all ranges in comparisons 
 instance Eq Range where
     _ == _ = True
-instance Show Range where
-   show _ = "nullRange"
+
+-- Ord must be consistent with Eq 
 instance Ord Range where
-   compare (Range l1) (Range l2) = compare l1 l2
+   compare _ _ = EQ
 
 rangeToList :: Range -> [Pos]
 rangeToList (Range l) = l
@@ -58,12 +61,8 @@ reverseRange (Range l) = Range (reverse l)
 concatMapRange :: (a -> Range) -> [a] -> Range
 concatMapRange f = Range . concatMap (rangeToList . f)
 
-instance Ord Pos where
-    compare _ _ = EQ
-
 comparePos :: Pos -> Pos -> Ordering
-comparePos (SourcePos s1 l1 c1) (SourcePos s2 l2 c2) = 
-    compare (s1, l1, c1) (s2, l2, c2)
+comparePos = compare
 
 -- | construct a new position
 newPos :: String -> Int -> Int -> Pos
@@ -87,7 +86,7 @@ showPos p = let name = sourceName p
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
                    , tokPos :: Range
-                   } --deriving (Show)
+                   } deriving (Eq, Ord)
 
 instance Show Token where
   show = tokStr
@@ -95,7 +94,7 @@ instance Show Token where
 -- | simple ids are just tokens 
 type SIMPLE_ID = Token
 
--- | a 'Token' with 'nullPos'
+-- | construct a token without position from a string
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
@@ -105,14 +104,6 @@ extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
 -- | show the plain string
 showTok :: Token -> ShowS
 showTok = showString . tokStr
-
--- | ignore 'tokPos'
-instance Eq Token where
-   Token s1 _ == Token s2 _ = s1 == s2
- 
--- | ignore 'tokPos'
-instance Ord Token where
-   Token s1 _  <= Token s2 _ = s1 <= s2
 
 -- | collect positions
 catPosAux :: [Token] -> [Pos]
@@ -307,9 +298,6 @@ isNonCompound (Id _ cs _) = null cs
 
 -- * position stuff
 
-nullPos :: [Pos]
-nullPos = []
-
 -- | compute a meaningful single position from an 'Id' for diagnostics 
 posOfId :: Id -> Range
 posOfId (Id ts _ (Range ps)) = 
@@ -343,8 +331,6 @@ class PosItem a where
 getPosList :: PosItem a => a -> [Pos]
 getPosList = rangeToList . getRange
 
--- a Pos list should not contain nullPos
-    
 -- handcoded instance
 instance PosItem Token where
     getRange (Token _ p) = p
