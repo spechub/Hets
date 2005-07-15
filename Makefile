@@ -22,7 +22,7 @@ CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS $(PFE_PATHS)
+    Taxonomy CASL_DL SPASS OWL_DL $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual 
 empty = 
@@ -75,7 +75,7 @@ HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -240,6 +240,8 @@ CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
 SPASS_files = SPASS/Sign.hs
+
+OWL_DL_files = OWL_DL/Sign.hs
 
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
 
@@ -462,6 +464,10 @@ CspCASL/ATC_CspCASL.der.hs: $(CspCASL_files) $(GENRULES)
 
 SPASS/ATC_SPASS.der.hs: $(SPASS_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(SPASS_files)
+
+OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.ReadWrite \
+          -o $@ $(OWL_DL_files)
 
 clean_genRules: 
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
