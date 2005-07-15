@@ -15,28 +15,30 @@ module OWL_DL.Sign where
 import OWL_DL.AS
 import qualified Common.Lib.Set as Set
 
-data OWL_DLSign = OWL_DLSign
-            {  concepts :: Set.Set URIReference -- ^ a set of classes
-              , primaryConcepts :: Set.Set URIReference -- ^ a set of subclasses
-              ,indValuedRoles :: Set.Set URIReference -- ^ a set of object property
-              ,dataValuedRoles :: Set.Set URIReference -- ^ a set of data property
+data Sign = Sign
+            {  concepts :: Set.Set URIreference -- ^ a set of classes
+              , primaryConcepts :: Set.Set URIreference -- ^ a set of subclasses
+              ,indValuedRoles :: Set.Set URIreference -- ^ a set of object property
+              ,dataValuedRoles :: Set.Set URIreference -- ^ a set of data property
               ,individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge 
               -- ^of roles, functional roles and concept membership
               ,axioms :: Set.Set SignAxiom  
-            }
+            } deriving (Show,Eq,Ord)
 
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
                | RoleDomain RoleID ID
                | RoleRange  RoleID ID
                | FuncRole   RoleID
                | Conceptmembership IndividualID ClassID
+                 deriving (Show,Eq,Ord)
 
-data RoleID = IVP IndividualValuedPropertyID 
-            | DVP DataValuedPropertyID
+data RoleID = IVP IndividualvaluedPropertyID 
+            | DVP DatavaluedPropertyID
+              deriving (Show,Eq,Ord)
 
 type ID = URIreference          -- for universal ID
 
-data OWL_DLSentence = OWLAxiom Axiom                       
-                    | OWLFact Fact
-
+data Sentence = OWLAxiom Axiom                       
+              | OWLFact Fact
+                deriving (Show,Eq,Ord)
