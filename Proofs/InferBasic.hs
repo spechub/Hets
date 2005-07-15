@@ -60,6 +60,7 @@ import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
 import GUI.Utils
 
 {- todo: implement apply for GlobDecomp and Subsumption 
@@ -89,7 +90,8 @@ automaticRecursive cnt proofstatus = do
    ie to the library denoted by the library name of the proofstatus -}
 automaticApplyRules :: ProofStatus -> IO ProofStatus
 automaticApplyRules p = do
-  p1 <- globSubsume p
+--  p0 <- theoremHideShift p
+  p1 <- globSubsume p --p0
   p2 <- globDecomp p1
   p3 <- locSubsume p2
   p4 <- locDecomp p3

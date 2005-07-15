@@ -64,6 +64,19 @@ dgToSpec dg node = do
 
 {- compute the theory of a given node. 
    If this node is a DGRef, the referenced node is looked up first. -}
+computeLocalTheory :: LibEnv -> LibNode -> Maybe G_theory
+computeLocalTheory libEnv (ln,node) =
+  if isDGRef nodeLab
+    then case Map.lookup refLn libEnv of
+      Just _ -> computeLocalTheory libEnv (refLn,dgn_node nodeLab)
+      Nothing -> Nothing
+    else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
+    where
+      dgraph = lookupDGraphInLibEnv ln libEnv
+      nodeLab = lab' $ context dgraph node
+      refLn = dgn_libname nodeLab
+
+{- old version: to be removed, if new one works
 computeLocalTheory :: LibEnv -> DGraph -> Node -> Maybe G_theory
 computeLocalTheory libEnv dgraph node =
   if isDGRef nodeLab
@@ -73,7 +86,7 @@ computeLocalTheory libEnv dgraph node =
       Nothing -> Nothing
     else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
     where nodeLab = lab' $ context dgraph node
-
+-}
 
 {- if the given node is a DGRef, the referenced node is returned (as a
 labeled node). Otherwise the node itself is returned (as a labeled
@@ -106,7 +119,6 @@ getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
         = [edge| edge <- filter types inEdges, notElem edge path]
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
-
 
 
 type LibNode = (LIB_NAME,Node)
@@ -214,16 +226,17 @@ isLocalDef (_,_,edgeLab) =
 -- -------------------------------------------------------
 
 -- | Calculate the morphism of a path with given start node
-calculateMorphismOfPathWithStart :: DGraph -> LibEnv 
-                                    -> (Node,[LEdge DGLinkLab]) 
+calculateMorphismOfPathWithStart :: LibEnv -> (LibNode,[LibLEdge]) 
                                            -> Maybe GMorphism
-calculateMorphismOfPathWithStart dg libEnv (n,[]) = do
+calculateMorphismOfPathWithStart libEnv ((ln,n),[]) = do
+  let dg = lookupDGraphInLibEnv ln libEnv
   ctx <- fst $ match n dg
   case getDGNode libEnv dg (fst (labNode' ctx)) of
     Just dgNode_ctx -> return $ ide Grothendieck (dgn_sign (snd (dgNode_ctx))) -- ??? to simplistic 
     Nothing -> Nothing
   
-calculateMorphismOfPathWithStart _ _ (_,p) = calculateMorphismOfPath p
+calculateMorphismOfPathWithStart _ (_,p) =
+    calculateMorphismOfPath (map snd p)
 
 {- returns a list of all paths to the given node
    that consist of globalDef edges only
@@ -237,17 +250,12 @@ getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo_new
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
 computeTheory libEnv ln dg n = do
-  let  paths = getAllGlobDefPathsBeginningWithTypesTo isLocalDef dg n []
+  let  paths = getAllGlobDefPathsBeginningWithTypesTo_new isLocalDef libEnv (ln,n) []
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
-            $ mapM (calculateMorphismOfPathWithStart dg libEnv) paths
+            $ mapM (calculateMorphismOfPathWithStart libEnv) paths
   ths <- maybeToMonad "Could not calculate sentence list of node"
-            $ mapM (computeLocalTheory libEnv dg . fst) paths
+            $ mapM (computeLocalTheory libEnv . fst) paths
   ths' <- mapM (uncurry translateG_theory) $ zip mors ths
   th'' <- flatG_theories ths'
   return (nubG_theory th'')
-
-  where removeLibname :: [(LibNode, [LibLEdge])] -> [(Node, [LEdge DGLinkLab])]
-        removeLibname [] = []
-        removeLibname (((_,node),libedges):list) =
-	    (node,map snd libedges):(removeLibname list)
