@@ -7,10 +7,15 @@ Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for CASL.
-   Also the instances for Syntax an Category.
+This module is equivalent to OWL_DL.ATC_OWL_DL.hs which is missing, therefore.
+
 -}
 
+{- todo:
+    - implement test programm calls to check if 
+      input and output ATerms are equivalent.
+
+-}
 module OWL_DL.ReadWrite where
 
 import Text.XML.HXT.DOM.XmlTreeTypes
