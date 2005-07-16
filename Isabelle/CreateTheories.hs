@@ -47,7 +47,7 @@ import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
 
 import Comorphisms.CASL2PCFOL
-import Comorphisms.PCFOL2FOL
+import Comorphisms.PCFOL2CFOL
 import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
 #ifdef PROGRAMATICA
