@@ -29,6 +29,7 @@ import CoCASL.Logic_CoCASL
 import CoCASL.AS_CoCASL
 import CoCASL.CoCASLSign
 import CoCASL.StatAna (CSign)
+import qualified CoCASL.Sublogic
 
 -- | The identity of the comorphism
 data CASL2CoCASL = CASL2CoCASL deriving (Show)
@@ -41,7 +42,7 @@ instance Comorphism CASL2CoCASL
                CASLSign 
                CASLMor
                Symbol RawSymbol ()
-               CoCASL ()
+               CoCASL CoCASL.Sublogic.CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign 
                CoCASLMor
@@ -56,7 +57,10 @@ instance Comorphism CASL2CoCASL
                         which_logic = FOL
                       }
     targetLogic CASL2CoCASL = CoCASL
-    targetSublogic CASL2CoCASL = ()
+    targetSublogic CASL2CoCASL = 
+        CoCASL.Sublogic.CoCASL_SL 
+          { CoCASL.Sublogic.has_co = False, 
+            CoCASL.Sublogic.casl = CASL.Sublogic.top }
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor
     map_sentence CASL2CoCASL _ = return . mapSen

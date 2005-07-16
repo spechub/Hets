@@ -21,6 +21,7 @@ import CoCASL.ATC_CoCASL
 import CoCASL.Parse_AS
 import CoCASL.StatAna
 import CoCASL.LaTeX_CoCASL
+import CoCASL.Sublogic
 import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
@@ -43,11 +44,13 @@ instance Language CoCASL  where
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
 
-tc_C_FORMULA, tc_C_SIG_ITEM, tc_C_BASIC_ITEM, modalSignTc :: TyCon
+tc_C_FORMULA, tc_C_SIG_ITEM, tc_C_BASIC_ITEM, 
+  modalSignTc, cocasl_SublocigsTc :: TyCon
 tc_C_FORMULA     = mkTyCon "CoCASL.AS_CoCASL.C_FORMULA"
 tc_C_SIG_ITEM    = mkTyCon "CoCASL.AS_CoCASL.C_SIG_ITEM"
 tc_C_BASIC_ITEM  = mkTyCon "CoCASL.AS_CoCASL.C_BASIC_ITEM"
 modalSignTc      = mkTyCon "CoCASL.CoCASLSign.CoCASLSign"
+cocasl_SublocigsTc  = mkTyCon "CoCASL.Sublogics.CoCASL_Sublogics"
 
 instance Typeable C_FORMULA where
   typeOf _ = mkTyConApp tc_C_FORMULA []
@@ -57,6 +60,8 @@ instance Typeable C_BASIC_ITEM where
   typeOf _ = mkTyConApp tc_C_BASIC_ITEM []
 instance Typeable CoCASLSign where
   typeOf _ = mkTyConApp modalSignTc []
+instance Typeable CoCASL_Sublogics where
+  typeOf _ = mkTyConApp cocasl_SublocigsTc []
 
 instance Category CoCASL CSign CoCASLMor  
     where
@@ -133,19 +138,49 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
          induced_from_to_morphism CoCASL = 
              inducedFromToMorphism dummy isSubCoCASLSign
 
-instance Logic CoCASL ()
+-- lattices (for sublogics)
+
+instance LatticeWithTop CoCASL_Sublogics where
+    -- meet, join :: l -> l -> l
+    meet = CoCASL.Sublogic.sublogics_min
+    join = CoCASL.Sublogic.sublogics_max
+    -- top :: l
+    top = CoCASL.Sublogic.top
+
+instance Logic CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign 
                CoCASLMor
                Symbol RawSymbol () where
-         min_sublogic_basic_spec CoCASL _basic_spec = ()
-         min_sublogic_sentence CoCASL _sentence = ()
-         min_sublogic_symb_items CoCASL _symb_items = ()
-         min_sublogic_symb_map_items CoCASL _symb_map_items = ()
-         min_sublogic_sign CoCASL _sign = ()
-         min_sublogic_morphism CoCASL _morphism = ()
-         min_sublogic_symbol CoCASL _symbol = ()
---         sublogic_names CoCASL _ = ["CoCASL"]
---         all_sublogics CoCASL = [()]
+
+         sublogic_names CoCASL = CoCASL.Sublogic.sublogics_name
+         all_sublogics CoCASL = CoCASL.Sublogic.sublogics_all
+
+         data_logic CoCASL = Nothing
+
+         is_in_basic_spec CoCASL = CoCASL.Sublogic.in_basic_spec
+         is_in_sentence CoCASL = CoCASL.Sublogic.in_sentence
+         is_in_symb_items CoCASL = CoCASL.Sublogic.in_symb_items
+         is_in_symb_map_items CoCASL = CoCASL.Sublogic.in_symb_map_items
+         is_in_sign CoCASL = CoCASL.Sublogic.in_sign
+         is_in_morphism CoCASL = CoCASL.Sublogic.in_morphism
+         is_in_symbol CoCASL = CoCASL.Sublogic.in_symbol
+
+         min_sublogic_basic_spec CoCASL = CoCASL.Sublogic.sl_basic_spec
+         min_sublogic_sentence CoCASL = CoCASL.Sublogic.sl_sentence
+         min_sublogic_symb_items CoCASL = CoCASL.Sublogic.sl_symb_items
+         min_sublogic_symb_map_items CoCASL = CoCASL.Sublogic.sl_symb_map_items
+         min_sublogic_sign CoCASL = CoCASL.Sublogic.sl_sign
+         min_sublogic_morphism CoCASL = CoCASL.Sublogic.sl_morphism
+         min_sublogic_symbol CoCASL = CoCASL.Sublogic.sl_symbol
+
+         proj_sublogic_basic_spec CoCASL = CoCASL.Sublogic.pr_basic_spec
+         proj_sublogic_symb_items CoCASL = CoCASL.Sublogic.pr_symb_items
+         proj_sublogic_symb_map_items CoCASL = CoCASL.Sublogic.pr_symb_map_items
+         proj_sublogic_sign CoCASL = CoCASL.Sublogic.pr_sign
+         proj_sublogic_morphism CoCASL = CoCASL.Sublogic.pr_morphism
+         proj_sublogic_epsilon CoCASL = CoCASL.Sublogic.pr_epsilon dummy
+         proj_sublogic_symbol CoCASL = CoCASL.Sublogic.pr_symbol
+
 
 

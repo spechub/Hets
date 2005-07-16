@@ -48,7 +48,7 @@ import HasCASL.Logic_HasCASL
 
 import Comorphisms.CASL2PCFOL
 import Comorphisms.PCFOL2FOL
-import Comorphisms.CASL2IsabelleHOL
+import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
@@ -76,7 +76,7 @@ printTheory ln le dg (sn, ge) = case ge of
                       sens1 <- coerce CASL lid sens0
                       th1 <- map_theory CASL2PCFOL (sign1, sens1)
                       th2 <- map_theory PCFOL2FOL th1
-                      map_theory CASL2IsabelleHOL th2
+                      map_theory CFOL2IsabelleHOL th2
 #ifdef PROGRAMATICA                                  
                     r2 = do 
                       sign1 <- coerce Haskell lid sign0 

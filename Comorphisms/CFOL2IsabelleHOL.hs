@@ -14,7 +14,7 @@ The embedding comorphism from CASL to Isabelle-HOL.
     disambiguate names (i.e. those coming from Main)
 -}
 
-module Comorphisms.CASL2IsabelleHOL where
+module Comorphisms.CFOL2IsabelleHOL where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -42,7 +42,7 @@ import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
 -- | The identity of the comorphism
-data CASL2IsabelleHOL = CASL2IsabelleHOL deriving (Show)
+data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show)
 
 -- Isabelle theories
 type IsaTheory = (IsaSign.Sign,[Named IsaSign.Sentence])
@@ -59,11 +59,11 @@ type FormulaTranslator f e = CASL.Sign.Sign f e -> f -> Term
 
 -- extended formula translation for CASL
 formTrCASL :: FormulaTranslator () ()
-formTrCASL _ _ = error "CASL2IsabelleHOL: No extended formulas allowed in CASL"
+formTrCASL _ _ = error "CFOL2IsabelleHOL: No extended formulas allowed in CASL"
 
-instance Language CASL2IsabelleHOL -- default definition is okay
+instance Language CFOL2IsabelleHOL -- default definition is okay
 
-instance Comorphism CASL2IsabelleHOL
+instance Comorphism CFOL2IsabelleHOL
                CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign 
@@ -84,9 +84,9 @@ instance Comorphism CASL2IsabelleHOL
     targetLogic _ = Isabelle
     targetSublogic _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
-    map_morphism CASL2IsabelleHOL mor = do
-       (sig1,_) <- map_sign CASL2IsabelleHOL (Logic.dom CASL mor)
-       (sig2,_) <- map_sign CASL2IsabelleHOL (cod CASL mor)
+    map_morphism CFOL2IsabelleHOL mor = do
+       (sig1,_) <- map_sign CFOL2IsabelleHOL (Logic.dom CASL mor)
+       (sig2,_) <- map_sign CFOL2IsabelleHOL (cod CASL mor)
        inclusion Isabelle sig1 sig2
     map_sentence _ sign =
       return . mapSen formTrCASL sign
@@ -264,9 +264,9 @@ makeDtDef sign nf = case sentence nf of
     makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
     makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
-    hasTheSort _ _ = error "CASL2IsabelleHOL.hasTheSort"
+    hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
     transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
-    transArgs _ = error "CASL2IsabelleHOL.transArgs"
+    transArgs _ = error "CFOL2IsabelleHOL.transArgs"
   _ -> Nothing
 
 transSort :: SORT -> Typ
@@ -384,6 +384,6 @@ transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
 transTERM sign tr (Sorted_term t s _) | term_sort t == s = transTERM sign tr t
 transTERM sign tr (Cast t s _) | term_sort t == s = transTERM sign tr t
 transTERM _sign _tr _ =
-  error "CASL2IsabelleHOL.transTERM" 
+  error "CFOL2IsabelleHOL.transTERM" 
 
 

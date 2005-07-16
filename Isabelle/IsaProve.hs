@@ -100,7 +100,7 @@ isaProve checkCons thName (Theory sig nSens) = do
   b <- newButton t [text "Please press me when current theory is proved!",size(50,10)]
   pack b []
   clickedb <- clicked b
-  sync (clickedb >>> destroy t)
+  sync (clickedb >>> destroy t) 
 --  closeChildProcessFds isa
   provedThy <- readFile fileName
   let newThy = withoutThms theory ++ onlyThms provedThy 

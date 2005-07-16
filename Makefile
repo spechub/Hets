@@ -233,7 +233,7 @@ HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 Isabelle_files = Isabelle/IsaSign.hs 
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
-CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
+CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs CoCASL/Sublogic.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
 CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 
@@ -249,7 +249,7 @@ generated_rule_files = $(atc_der_files) $(atc_logic_files)
 
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
-inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2FOL.hs \
+inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2CFOL.hs \
     Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
