@@ -42,3 +42,13 @@ type ID = URIreference          -- for universal ID
 data Sentence = OWLAxiom Axiom                       
               | OWLFact Fact
                 deriving (Show,Eq,Ord)
+
+simpleSign :: ID -> Sign
+simpleSign ontoID = 
+            Sign { concepts = Set.insert ontoID Set.empty,
+		   primaryConcepts = Set.empty,
+		   indValuedRoles = Set.empty,
+		   dataValuedRoles = Set.empty,
+		   individuals = Set.empty,
+		   axioms = Set.empty
+		 }
