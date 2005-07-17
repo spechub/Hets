@@ -75,7 +75,7 @@ printTheory ln le dg (sn, ge) = case ge of
                       sign1 <- coerce CASL lid sign0 
                       sens1 <- coerce CASL lid sens0
                       th1 <- map_theory CASL2PCFOL (sign1, sens1)
-                      th2 <- map_theory PCFOL2FOL th1
+                      th2 <- map_theory PCFOL2CFOL th1
                       map_theory CFOL2IsabelleHOL th2
 #ifdef PROGRAMATICA                                  
                     r2 = do 
