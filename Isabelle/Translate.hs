@@ -38,7 +38,7 @@ showIsaT ide thy = let
     rdru = reverse . dropWhile (== '_') 
     tr = transStringT thy
     str = show ide 
-    in if isInfix2 ide then "" {-"XX"-}  ++ tr (rdru $ rdru str) else tr str
+    in if isInfix2 ide then "XX"  ++ tr (rdru $ rdru str) else tr str
     -- otherwise cutting off may lead to a name clash!
 
 showIsaIT :: Id -> Int -> BaseSig -> String
@@ -48,7 +48,7 @@ transStringT :: BaseSig -> String -> String
 transStringT i s = let t = transString s in
   if Set.member t $ maybe (error "Isabelle.Translate.transStringT") id 
          $ Map.lookup i isaPrelude 
-  then t ++ "" {-"X"-} else t
+  then t ++ "X" else t
 
 -- | check for legal alphanumeric isabelle characters
 isIsaChar :: Char -> Bool
@@ -56,8 +56,8 @@ isIsaChar c = isAlphaNum c && isAscii c || c `elem` "_'"
 
 transString :: String -> String
 transString str = let 
-    x = 'U'
-    replaceChar1 d | d == x = "YU"  -- code out existing U!
+    x = 'X'
+    replaceChar1 d | d == x = "YX"  -- code out existing X!
                    | isIsaChar d = [d] 
                    | otherwise = replaceChar d ++ [x]
     in case str of 
