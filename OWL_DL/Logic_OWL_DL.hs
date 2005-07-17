@@ -33,6 +33,7 @@ import OWL_DL.AS
 import OWL_DL.Print
 import OWL_DL.ATC_OWL_DL
 import OWL_DL.Sign
+import Logic.Comorphism
 -- import OWL_DL.StaticAna
 
 
@@ -105,3 +106,15 @@ instance Logic OWL_DL ()
                Sign 
                OWL_DLMorphism
                () () () 
+
+
+instance Comorphism OWL_DL
+               OWL_DL ()
+               () Sentence () ()
+               Sign OWL_DLMorphism
+               () () ()
+               OWL_DL ()
+               () Sentence () ()
+               Sign OWL_DLMorphism
+               () () ()
+
