@@ -3,9 +3,9 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (via Logic)
 
 Instance of class Logic for modal logic.
 -}
@@ -14,14 +14,14 @@ Instance of class Logic for modal logic.
    check preservation of rigidity of morphisms
 -}
 
-module Modal.Logic_Modal where
+module COL.Logic_COL where
 
-import Modal.AS_Modal
-import Modal.ModalSign
-import Modal.ATC_Modal
-import Modal.Parse_AS
-import Modal.StatAna
-import Modal.LaTeX_Modal
+import COL.AS_COL
+import COL.COLSign
+import COL.ATC_COL()
+import COL.Parse_AS()
+import COL.StatAna
+import COL.LaTeX_COL()
 import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
@@ -35,112 +35,104 @@ import Logic.Logic
 import Data.Dynamic
 import Common.DynamicUtils 
 
-data Modal = Modal deriving Show
+data COL = COL deriving Show
 
-instance Language Modal  where
+instance Language COL where
  description _ = 
-  "ModalCASL extends CASL by modal operators. Syntax for ordinary\n\
-  \modalities, multi-modal logics as well as  term-modal\n\
-  \logic (also covering dynamic logic) is provided.\n\
-  \Specific modal logics can be obtained via restrictions to\n\
-  \sublanguages."
+  "COLCASL extends CASL by constructors and observers"
 
-type MSign = Sign M_FORMULA ModalSign
-type ModalMor = Morphism M_FORMULA ModalSign ()
-type ModalFORMULA = FORMULA M_FORMULA
+type C_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
+type CSign = Sign () COLSign
+type COLMor = Morphism () COLSign ()
+type COLFORMULA = FORMULA ()
 
-tc_M_FORMULA, tc_M_SIG_ITEM, tc_M_BASIC_ITEM, modalSignTc :: TyCon
-tc_M_FORMULA     = mkTyCon "Modal.AS_Modal.M_FORMULA"
-tc_M_SIG_ITEM    = mkTyCon "Modal.AS_Modal.M_SIG_ITEM"
-tc_M_BASIC_ITEM  = mkTyCon "Modal.AS_Modal.M_BASIC_ITEM"
-modalSignTc      = mkTyCon "Modal.ModalSign.ModalSign"
+tc_COL_SIG_ITEM, colSignTc :: TyCon
+tc_COL_SIG_ITEM    = mkTyCon "COL.AS_COL.COL_SIG_ITEM"
+colSignTc      = mkTyCon "COL.COLSign.COLSign"
 
-instance Typeable M_FORMULA where
-  typeOf _ = mkTyConApp tc_M_FORMULA []
-instance Typeable M_SIG_ITEM where
-  typeOf _ = mkTyConApp tc_M_SIG_ITEM []
-instance Typeable M_BASIC_ITEM where
-  typeOf _ = mkTyConApp tc_M_BASIC_ITEM []
-instance Typeable ModalSign where
-  typeOf _ = mkTyConApp modalSignTc []
+instance Typeable COL_SIG_ITEM where
+  typeOf _ = mkTyConApp tc_COL_SIG_ITEM []
+instance Typeable COLSign where
+  typeOf _ = mkTyConApp colSignTc []
 
-instance Category Modal MSign ModalMor  
+instance Category COL CSign COLMor  
     where
          -- ide :: id -> object -> morphism
-	 ide Modal = idMor dummy
+	 ide COL = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp Modal = compose (const id)
+	 comp COL = compose (const id)
          -- dom, cod :: id -> morphism -> object
-	 dom Modal = msource
-	 cod Modal = mtarget
+	 dom COL = msource
+	 cod COL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj Modal = legalSign
+	 legal_obj COL = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor Modal = legalMor
+	 legal_mor COL = legalMor
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax Modal M_BASIC_SPEC
+instance Syntax COL C_BASIC_SPEC
 		SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
-	 parse_symb_items Modal = Just $ symbItems modal_reserved_words
-	 parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
+         parse_basic_spec COL = Just $ basicSpec col_reserved_words
+	 parse_symb_items COL = Just $ symbItems col_reserved_words
+	 parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
 
--- Modal logic
+-- COL logic
 
-instance Sentences Modal ModalFORMULA () MSign ModalMor Symbol where
-      map_sen Modal = mapSen map_M_FORMULA
-      parse_sentence Modal = Nothing
-      sym_of Modal = symOf
-      symmap_of Modal = morphismToSymbMap
-      sym_name Modal = symName
-      provers Modal = [] 
-      cons_checkers Modal = []
+instance Sentences COL COLFORMULA () CSign COLMor Symbol where
+      map_sen COL m = return . mapSen (\ _ -> id) m
+      parse_sentence COL = Nothing
+      sym_of COL = symOf
+      symmap_of COL = morphismToSymbMap
+      sym_name COL = symName
+      provers COL = [] 
+      cons_checkers COL = []
 
-instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
+instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               MSign 
-               ModalMor 
+               CSign 
+               COLMor 
                Symbol RawSymbol where
-         basic_analysis Modal = Just $ basicAnalysis minExpForm
-			       ana_M_BASIC_ITEM ana_M_SIG_ITEM
-         stat_symb_map_items Modal = statSymbMapItems
-         stat_symb_items Modal = statSymbItems
-	 ensures_amalgamability Modal _ = 
-	     fail "Modal: ensures_amalgamability nyi" -- ???
+         basic_analysis COL = Just $ basicAnalysis (const $ const return) 
+                              (const return) ana_COL_SIG_ITEM const
+         stat_symb_map_items COL = statSymbMapItems
+         stat_symb_items COL = statSymbItems
+	 ensures_amalgamability COL _ = 
+	     fail "COL: ensures_amalgamability nyi" -- ???
 
-         sign_to_basic_spec Modal _sigma _sens = Basic_spec [] -- ???
+         sign_to_basic_spec COL _sigma _sens = Basic_spec [] -- ???
 
-         symbol_to_raw Modal = symbolToRaw
-         id_to_raw Modal = idToRaw
-         matches Modal = CASL.Morphism.matches
+         symbol_to_raw COL = symbolToRaw
+         id_to_raw COL = idToRaw
+         matches COL = CASL.Morphism.matches
          
-         empty_signature Modal = emptySign emptyModalSign
-         signature_union Modal sigma1 sigma2 = 
-           return $ addSig sigma1 sigma2
-         morphism_union Modal = morphismUnion (const id)
-	 final_union Modal = finalUnion
-         is_subsig Modal = isSubSig
-         inclusion Modal = sigInclusion dummy
-         cogenerated_sign Modal = cogeneratedSign dummy
-         generated_sign Modal = generatedSign dummy
-         induced_from_morphism Modal = inducedFromMorphism dummy
-         induced_from_to_morphism Modal = inducedFromToMorphism dummy
+         empty_signature COL = emptySign emptyCOLSign
+         signature_union COL sigma1 sigma2 = 
+           return $ addSig addCOLSign sigma1 sigma2
+         morphism_union COL = morphismUnion (const id) addCOLSign
+	 final_union COL = finalUnion addCOLSign
+         is_subsig COL = isSubSig isSubCOLSign
+         inclusion COL = sigInclusion dummy isSubCOLSign
+         cogenerated_sign COL = cogeneratedSign dummy
+         generated_sign COL = generatedSign dummy
+         induced_from_morphism COL = inducedFromMorphism dummy
+         induced_from_to_morphism COL = 
+             inducedFromToMorphism dummy isSubCOLSign
 
-instance Logic Modal ()
-               M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               MSign 
-               ModalMor
+instance Logic COL ()
+               C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CSign 
+               COLMor
                Symbol RawSymbol () where
-         min_sublogic_basic_spec Modal _basic_spec = ()
-         min_sublogic_sentence Modal _sentence = ()
-         min_sublogic_symb_items Modal _symb_items = ()
-         min_sublogic_symb_map_items Modal _symb_map_items = ()
-         min_sublogic_sign Modal _sign = ()
-         min_sublogic_morphism Modal _morphism = ()
-         min_sublogic_symbol Modal _symbol = ()
---         sublogic_names Modal _ = ["Modal"]
---         all_sublogics Modal = [()]
+         min_sublogic_basic_spec COL _basic_spec = ()
+         min_sublogic_sentence COL _sentence = ()
+         min_sublogic_symb_items COL _symb_items = ()
+         min_sublogic_symb_map_items COL _symb_map_items = ()
+         min_sublogic_sign COL _sign = ()
+         min_sublogic_morphism COL _morphism = ()
+         min_sublogic_symbol COL _symbol = ()
+--         sublogic_names COL _ = ["COL"]
+--         all_sublogics COL = [()]
 
 

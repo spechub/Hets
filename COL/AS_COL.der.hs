@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -23,9 +23,9 @@ import CASL.AS_Basic_CASL
 type COL_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
 
 data COL_SIG_ITEM =
-	  Constructor_items [Id] [Pos]
+	  Constructor_items [Annoted Id] Range
 		 -- pos: ids
-	| Observer_items [(Id, Maybe Int)] [Pos]
+	| Observer_items [Annoted (Id, Maybe Int)] Range
 		 -- pos: ids
              deriving (Eq, Show)
 

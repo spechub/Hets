@@ -3,25 +3,32 @@ Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
 Signatures for modal logic, as extension of CASL signatures.
 -}
 
-module Modal.ModalSign where
+module COL.COLSign where
 
-import CASL.Sign
-import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Id
 		       
-data ModalSign = ModalSign { rigidOps :: Map.Map Id (Set.Set OpType)
-			   , rigidPreds :: Map.Map Id (Set.Set PredType)
-			   , modies :: Set.Set SIMPLE_ID
-			   , termModies :: Set.Set Id --SORT
-			   } deriving (Show, Eq)
+data COLSign = COLSign { constructors :: Set.Set Id
+		       , observers :: Map.Map Id Int
+		       } deriving (Show, Eq)
 
-emptyModalSign :: ModalSign
-emptyModalSign = ModalSign Map.empty Map.empty Set.empty Set.empty 
+emptyCOLSign :: COLSign
+emptyCOLSign = COLSign Set.empty Map.empty
+
+addCOLSign :: COLSign -> COLSign -> COLSign
+addCOLSign s1 s2 = 
+    s1 { constructors = Set.union (constructors s1) $ constructors s2
+       , observers = Map.union (observers s1) $ observers s2 }
+
+isSubCOLSign :: COLSign -> COLSign -> Bool
+isSubCOLSign s1 s2 = 
+    Set.null (constructors s2 Set.\\ constructors s1)
+    && Map.null (observers s2 Map.\\ observers s1)
