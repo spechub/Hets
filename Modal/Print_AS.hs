@@ -26,8 +26,6 @@ import Modal.AS_Modal
 import Modal.ModalSign
 import CASL.AS_Basic_CASL (FORMULA(..))
 
-import Debug.Trace
-
 printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos 
                         -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfModalSign ga f =

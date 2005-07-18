@@ -13,7 +13,6 @@ module to store utilities for CASL and its comorphisms
 
 module CASL.Utils where
 
-import Debug.Trace
 import Control.Exception (assert)
 
 import Data.Maybe 
