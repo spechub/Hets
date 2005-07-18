@@ -47,6 +47,7 @@ import SPASS.Logic_SPASS
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
+import COL.Logic_COL
 #endif
 
 logicList :: [AnyLogic]
@@ -55,7 +56,7 @@ logicList = [Logic CASL, Logic HasCASL,
              Logic Haskell, 
 #endif
 #ifdef CASLEXTENSIONS 
-	     Logic CoCASL, Logic Modal, Logic CspCASL, 
+	     Logic CoCASL, Logic Modal, Logic CspCASL, Logic COL,
 #endif
              Logic Isabelle,Logic SPASS]
 
