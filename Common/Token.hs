@@ -71,7 +71,7 @@ module Common.Token where
 
 import Common.Keywords
 import Common.Lexer
-import Common.Id (Id(Id), Token(..), Pos, toPos, isPlace, Range, nullRange)
+import Common.Id
 import Text.ParserCombinators.Parsec
 
 
