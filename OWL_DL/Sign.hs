@@ -16,14 +16,15 @@ import OWL_DL.AS
 import qualified Common.Lib.Set as Set
 
 data Sign = Sign
-            {  concepts :: Set.Set URIreference -- ^ a set of classes
+            { ontologyID :: URIreference -- ^ URL of the ontology
+            , concepts :: Set.Set URIreference -- ^ a set of classes
               , primaryConcepts :: Set.Set URIreference -- ^ a set of subclasses
               ,indValuedRoles :: Set.Set URIreference -- ^ a set of object property
               ,dataValuedRoles :: Set.Set URIreference -- ^ a set of data property
               ,individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge 
               -- ^of roles, functional roles and concept membership
-              ,axioms :: Set.Set SignAxiom  
+              ,axioms :: Set.Set SignAxiom
             } deriving (Show,Eq,Ord)
 
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
@@ -45,7 +46,8 @@ data Sentence = OWLAxiom Axiom
 
 simpleSign :: ID -> Sign
 simpleSign ontoID = 
-            Sign { concepts = Set.insert ontoID Set.empty,
+            Sign { ontologyID = ontoID, 
+                  concepts = Set.empty,
 		   primaryConcepts = Set.empty,
 		   indValuedRoles = Set.empty,
 		   dataValuedRoles = Set.empty,
