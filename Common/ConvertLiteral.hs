@@ -21,9 +21,7 @@ type AsAppl a = Id -> [a] -> Range -> a
 
 inc :: Int -> Range -> Range
 inc n (Range p) = 
-  Range (map (incPos n) p)
-  where
-  incPos n p = incSourceColumn p n
+  Range (map (flip incSourceColumn n) p)
 
 makeStringTerm :: Id -> Id -> AsAppl a -> Token -> a
 makeStringTerm c f asAppl tok = 
