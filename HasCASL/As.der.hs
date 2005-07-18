@@ -99,7 +99,7 @@ data Kind = ClassKind ClassId           -- ^ plus the declared kind
             -- pos "->" 
           | ExtKind Kind Variance Range  
              -- pos "+" or "-" 
-            deriving Show
+            deriving (Show, Eq, Ord)
 
 -- | the string for the universe type
 typeUniverseS :: String 
@@ -142,7 +142,7 @@ data TypeItem  = TypeDecl [TypePattern] Kind Range
                  deriving Show
 
 -- | a tuple pattern for 'SubtypeDefn' 
-data Vars = Var Var | VarTuple [Vars] Range deriving Show
+data Vars = Var Var | VarTuple [Vars] Range deriving (Show, Eq)
 
 -- | the lhs of most type items 
 data TypePattern = TypePattern TypeId [TypeArg] Range
@@ -225,7 +225,7 @@ kinds. -}
 data TypeScheme = TypeScheme [TypeArg] Type Range
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
-                  deriving Show
+                  deriving (Show, Eq, Ord)
 
 -- | convert a type with unbound variables to a scheme
 simpleTypeScheme :: Type -> TypeScheme
@@ -289,7 +289,7 @@ instance Show BinOpAttr where
 
 -- | possible function attributes (including a term as a unit element)
 data OpAttr = BinOpAttr BinOpAttr Range 
-            | UnitOpAttr Term Range deriving Show
+            | UnitOpAttr Term Range deriving (Show, Eq)
 
 -- | a polymorphic data type declaration with a deriving clause
 data DatatypeDecl = DatatypeDecl 
@@ -474,21 +474,6 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range
 -- equality instances ignoring positions
 -- ----------------------------------------------------------------------------
 
-instance Eq Kind where
-    ClassKind i1 == ClassKind i2 = i1 == i2
-    FunKind p1 c1 _ == FunKind p2 c2 _ = (p1, c1) == (p2, c2)
-    ExtKind c1 v1 _ == ExtKind c2 v2 _ = (c1, v1) == (c2, v2)
-    _ == _ = False
-
-instance Ord Kind where
-    ClassKind i1 <= ClassKind i2 = i1 <= i2
-    FunKind p1 c1 _ <= FunKind p2 c2 _ = (p1, c1) <= (p2, c2)
-    ExtKind c1 v1 _ <= ExtKind c2 v2 _ = (c1, v1) <= (c2, v2)
-    ClassKind _ <= _ = True
-    _ <= ClassKind _ = False
-    ExtKind _ _ _ <= _ = True
-    _ <= ExtKind _ _ _ = False
-
 instance Eq Type where 
     TypeName i1 k1 v1 == TypeName i2 k2 v2 = 
         if v1 == 0 && v2 == 0 then (i1, k1) == (i2, k2)
@@ -542,32 +527,10 @@ instance Eq TypeArg where
 instance Ord TypeArg where
     TypeArg i1 k1 _ _ _ _ <= TypeArg i2 k2 _ _ _ _ = (i1, k1) <= (i2, k2)
 
--- when are analyzed schemes equal? The name of variables should not matter
-instance Eq TypeScheme where
-    TypeScheme v1 t1 _ == TypeScheme v2 t2 _ = (v1, t1) == (v2, t2) 
-instance Ord TypeScheme where
-    TypeScheme v1 t1 _ <= TypeScheme v2 t2 _ = (v1, t1) <= (v2, t2) 
-
-instance Eq Vars where
-    Var v1 == Var v2 = v1 == v2
-    VarTuple l1 _ == VarTuple l2 _ = l1 == l2
-    _ == _ = False
-
 instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
 instance Ord VarDecl where
     VarDecl v1 t1 _ _ <= VarDecl v2 t2 _ _ = (v1, t1) <= (v2, t2) 
-
-instance Eq OpAttr where 
-    BinOpAttr b1 _ == BinOpAttr b2 _ = b1 == b2
-    UnitOpAttr t1 _ == UnitOpAttr t2 _= t1 == t2
-    _ == _ = False
-
-instance Eq Alternative where 
-    Constructor i1 l1 p1 _ == Constructor i2 l2 p2 _ =
-        (i1, l1, p1) == (i2, l2, p2)
-    Subtype t1 _ == Subtype t2 _ = t1 == t2
-    _ == _ = False
 
 instance Eq Component where 
     Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
