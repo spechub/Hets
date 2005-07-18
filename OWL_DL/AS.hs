@@ -98,13 +98,13 @@ data Axiom = Thing
            | OWL_DL.AS.Nothing
            | Class 
                    ClassID 
-                   Bool -- ^ True == deprecated
+                   Bool -- True == deprecated
                    Modality 
                    [Annotation] 
                    [Description]
            | EnumeratedClass 
                    ClassID 
-                   Bool -- ^ True == deprecated
+                   Bool -- True == deprecated
                    [Annotation] 
                    [IndividualID]
            | DisjointClasses 
@@ -119,32 +119,32 @@ data Axiom = Thing
                    Description
            | Datatype 
                    DatatypeID 
-                   Bool -- ^ True == deprecated  
+                   Bool -- True == deprecated  
                    [Annotation]
            | DatatypeProperty 
                    DatavaluedPropertyID 
-                   Bool -- ^ True == deprecated  
+                   Bool -- True == deprecated  
                    [Annotation] 
-                   [DatavaluedPropertyID]  -- ^ super properties 
-                   Bool -- ^ True == Functional  
-                   [Description] -- ^ Domain 
-                   [DataRange] -- ^ Range
+                   [DatavaluedPropertyID]  -- super properties 
+                   Bool -- True == Functional  
+                   [Description] -- Domain 
+                   [DataRange] -- Range
            | ObjectProperty IndividualvaluedPropertyID 
-                   Bool -- ^ True == deprecated 
+                   Bool -- True == deprecated 
                    [Annotation] 
-                   [IndividualvaluedPropertyID] -- ^ super properties 
+                   [IndividualvaluedPropertyID] -- super properties 
                    (Maybe IndividualvaluedPropertyID)
-                      -- ^ inverse of property 
-                   Bool -- ^ True == symmetric
+                      -- inverse of property 
+                   Bool -- True == symmetric
                    (Maybe Func) 
-                   [Description] -- ^ Domain 
-                   [Description] -- ^ Range             
+                   [Description] -- Domain 
+                   [Description] -- Range             
            | AnnotationProperty 
-                   -- ^ Declaration of a new annotation property
+                   -- Declaration of a new annotation property
                    AnnotationPropertyID 
                    [Annotation]
            | OntologyProperty 
-                   -- ^ Declaration of a new ontology property
+                   -- Declaration of a new ontology property
                    OntologyPropertyID 
                    [Annotation]
            | DEquivalentProperties 
