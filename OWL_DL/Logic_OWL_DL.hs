@@ -84,13 +84,13 @@ instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
     cons_checkers OWL_DL = []
 
 
-instance StaticAnalysis OWL_DL () Sentence ()
+instance StaticAnalysis OWL_DL Ontology Sentence ()
                () ()
                Sign 
                OWL_DLMorphism 
                () () -- where
 {- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign:
-      basic_analysis OWL_DL = Just owlAna 
+      basic_analysis OWL_DL = Just basicOWL_DLAnalysis 
       empty_signature OWL_DL = emptySign
       signature_union OWL_DL s = return . addSign s
       final_union OWL_DL = signature_union OWL_DL

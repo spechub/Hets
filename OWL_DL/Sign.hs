@@ -19,20 +19,28 @@ data Sign = Sign
             { ontologyID :: URIreference -- ^ URL of the ontology
             , concepts :: Set.Set URIreference -- ^ a set of classes
               , primaryConcepts :: Set.Set URIreference -- ^ a set of subclasses
+            , datatypes :: Set.Set URIreference -- ^ a set of datatypes
               ,indValuedRoles :: Set.Set URIreference -- ^ a set of object property
               ,dataValuedRoles :: Set.Set URIreference -- ^ a set of data property
               ,individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge 
               -- ^of roles, functional roles and concept membership
               ,axioms :: Set.Set SignAxiom
+              , namespaceMap :: Namespace
             } deriving (Show,Eq,Ord)
 
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
-               | RoleDomain RoleID ID
-               | RoleRange  RoleID ID
+               | RoleDomain RoleID RDomain
+               | RoleRange  RoleID RRange
                | FuncRole   RoleID
                | Conceptmembership IndividualID ClassID
                  deriving (Show,Eq,Ord)
+
+data RDomain = RDomain Description
+                 deriving (Show,Eq,Ord)
+
+data RRange = RIRange Description
+            | RDRange DataRange
 
 data RoleID = IVP IndividualvaluedPropertyID 
             | DVP DatavaluedPropertyID
