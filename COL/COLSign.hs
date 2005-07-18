@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Signatures for modal logic, as extension of CASL signatures.
+Signatures of COL as extension of CASL signatures.
 -}
 
 module COL.COLSign where

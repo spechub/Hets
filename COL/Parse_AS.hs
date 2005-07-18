@@ -1,4 +1,4 @@
-{-
+{- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Parser for modal logic extension of CASL
+parsing of extensions
 -}
 
 module COL.Parse_AS where

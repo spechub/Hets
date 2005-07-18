@@ -7,11 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-static analysis of modal logic parts
--}
-
-{- todo:
-   check quantifiers (sorts, variables in body) in ana_M_FORMULA
+static analysis of COL parts
 -}
 
 module COL.StatAna where

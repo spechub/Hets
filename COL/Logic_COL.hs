@@ -7,11 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
 
-Instance of class Logic for modal logic.
--}
-
-{- todo:
-   check preservation of rigidity of morphisms
+Instance of class Logic
 -}
 
 module COL.Logic_COL where
