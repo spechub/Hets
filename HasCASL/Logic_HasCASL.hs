@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -10,35 +10,27 @@ Portability :  non-portable (imports Logic.Logic)
 Here is the place where the class Logic is instantiated for HasCASL.
    Also the instances for Syntax and Category.
 
-   todo:
-     - writing real functions
 -}
 
 module HasCASL.Logic_HasCASL(HasCASL(HasCASL), HasCASL_Sublogics) where
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.PrintLe
 import HasCASL.AsToLe
 import HasCASL.RawSym
 import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.ParseItem
 import HasCASL.Morphism
-import HasCASL.ATC_HasCASL
-import HasCASL.LaTeX_HasCASL
+import HasCASL.ATC_HasCASL()
+import HasCASL.LaTeX_HasCASL()
 import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
 import HasCASL.Merge
 import Logic.Logic
 import Data.Dynamic
 import Common.DynamicUtils 
-import Common.Result
 
--- type HasCASL_Sublogics = ()
-
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL where
  description _ = 
@@ -79,9 +71,7 @@ instance Typeable SymbMapItems where
 instance Typeable Morphism where
     typeOf _ = mkTyConApp morphismTc []
 instance Typeable HasCASL_Sublogics where
-    typeOf _ = mkTyConApp morphismTc []
-
--- abstract syntax, parsing (and printing)
+    typeOf _ = mkTyConApp sublogicTc []
 
 instance Syntax HasCASL BasicSpec
                 SymbItems SymbMapItems
@@ -101,7 +91,7 @@ instance Category HasCASL Env Morphism where
 instance Sentences HasCASL Sentence () Env Morphism Symbol where
     map_sen HasCASL = mapSentence
     sym_name HasCASL = symName
-    sym_of HasCASL = symOf -- \ _ -> Set.empty
+    sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
     parse_sentence HasCASL = Nothing
     provers HasCASL = [] 
@@ -124,6 +114,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
     cogenerated_sign HasCASL = cogeneratedSign
     generated_sign HasCASL = generatedSign
 
+    sign_to_basic_spec HasCASL _ _ = error "sign_to_basic_spec: HasCASL"
     stat_symb_map_items HasCASL = statSymbMapItems
     stat_symb_items HasCASL = statSymbItems
     symbol_to_raw HasCASL = symbolToRaw
@@ -132,13 +123,9 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
 
     final_union HasCASL = merge
 
--- lattices (for sublogics)
-
 instance LatticeWithTop HasCASL_Sublogics where
-    -- meet, join :: l -> l -> l
     meet = HasCASL.Sublogic.sublogics_min
     join = HasCASL.Sublogic.sublogics_max
-    -- top :: l
     top = HasCASL.Sublogic.top
 
 instance Logic HasCASL HasCASL_Sublogics
@@ -147,7 +134,7 @@ instance Logic HasCASL HasCASL_Sublogics
                Morphism
                Symbol RawSymbol () where
          sublogic_names HasCASL = HasCASL.Sublogic.sublogics_name
---         all_sublogics HasCASL = HasCASL.Sublogic.sublogics_all
+         all_sublogics HasCASL = HasCASL.Sublogic.sublogics_all
 
          data_logic HasCASL = Nothing
 
@@ -168,6 +155,3 @@ instance Logic HasCASL HasCASL_Sublogics
          min_sublogic_sign HasCASL = HasCASL.Sublogic.sl_env
          min_sublogic_morphism HasCASL = HasCASL.Sublogic.sl_morphism
          min_sublogic_symbol HasCASL = HasCASL.Sublogic.sl_symbol
-
-
-
