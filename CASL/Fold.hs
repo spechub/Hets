@@ -139,28 +139,8 @@ mapOnlyTermRecord =
     }
 
 noMixfixRecord :: (f -> Bool) -> Record f Bool Bool
-noMixfixRecord mf = Record
-    { foldQuantification = \ _ _ _ r _ -> r
-    , foldConjunction = \ _ l _ -> and l
-    , foldDisjunction = \ _ l _ -> and l
-    , foldImplication = \ _ l r _ _ -> and [l, r]
-    , foldEquivalence = \ _ l r _ -> and [l, r] 
-    , foldNegation = \ _ r _ -> r
-    , foldTrue_atom = \ _ _ -> True
-    , foldFalse_atom = \ _ _ -> True
-    , foldPredication = \ _ _ l _ -> and l
-    , foldDefinedness = \ _ r _ -> r
-    , foldExistl_equation = \ _ l r _ -> and [l, r]
-    , foldStrong_equation = \ _ l r _ -> and [l, r]
-    , foldMembership = \ _ r _ _ -> r
-    , foldMixfix_formula = \ _ _ -> False
-    , foldSort_gen_ax = \ _ _ _ -> True
-    , foldExtFORMULA = \ _ f -> mf f 
-    , foldQual_var = \ _ _ _ _ -> True
-    , foldApplication = \ _ _ l _ -> and l
-    , foldSorted_term = \ _ r _ _ -> r
-    , foldCast = \ _ r _ _ -> r
-    , foldConditional = \ _ l f r _ -> and [l, f, r] 
+noMixfixRecord mf = (constRecord mf and True)
+    { foldMixfix_formula = \ _ _ -> False
     , foldMixfix_qual_pred = \ _ _ -> False
     , foldMixfix_term = \ _ _ -> False
     , foldMixfix_token = \ _ _ -> False
