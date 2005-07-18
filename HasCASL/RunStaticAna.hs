@@ -14,7 +14,6 @@ module HasCASL.RunStaticAna where
 
 import HasCASL.Le
 import HasCASL.As
-import HasCASL.PrintLe
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
 import HasCASL.ProgEq
