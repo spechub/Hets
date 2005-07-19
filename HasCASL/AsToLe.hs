@@ -62,7 +62,8 @@ diffEnv e1 e2 = let tm = typeMap e2 in
     initialEnv
        { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
        , typeMap = Map.differenceWith diffType (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss tm) (assumps e1) (assumps e2)
+       , assumps = Map.differenceWith (diffAss $ addUnit tm) 
+                   (assumps e1) (assumps e2)
        }
 
 -- | compute difference of class infos
