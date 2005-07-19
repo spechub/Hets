@@ -10,6 +10,9 @@ Portability :  portable
 Coding out subsorting, lifted to the level of CoCASL 
 -}
 
+{- todo: CoCASLSign parts should be translated
+   Definedness formulas need to be coded out -}
+
 module Comorphisms.CoPCFOL2CoCFOL where
 
 import Logic.Logic
@@ -19,7 +22,7 @@ import qualified Common.Lib.Set as Set
 
 -- CoCASL
 import CoCASL.Logic_CoCASL
-import CoCASL.CoCASLSign
+--import CoCASL.CoCASLSign
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
 import qualified CoCASL.Sublogic
@@ -79,8 +82,35 @@ instance Comorphism CoPCFOL2CoCFOL
                 , mtarget = sig2FOL $ mtarget m
                 , fun_map = Map.map (\ (i, _) -> (i, Total)) $ 
                             fun_map m }
-    map_sentence CoPCFOL2CoCFOL sig = 
-        return . simplifyFormula id . totalizeFormula (sortsWithBottom sig) id
+    map_sentence CoPCFOL2CoCFOL sig = let bsrts = sortsWithBottom sig in 
+        return . simplifyFormula simC_FORMULA . 
+               totalizeFormula bsrts (totC_FORMULA bsrts)
     map_symbol CoPCFOL2CoCFOL s = 
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
+
+simMODALITY :: MODALITY -> MODALITY
+simMODALITY m = case m of 
+    Term_mod t -> Term_mod $ simplifyTerm simC_FORMULA t
+    _ -> m
+
+simC_FORMULA :: C_FORMULA -> C_FORMULA
+simC_FORMULA cf =  case cf of 
+   BoxOrDiamond b m f ps -> let
+       nm = simMODALITY m
+       nf = simplifyFormula simC_FORMULA f
+       in BoxOrDiamond b nm nf ps
+   _ -> cf
+
+totMODALITY :: Set.Set SORT -> MODALITY -> MODALITY
+totMODALITY bsrts m = case m of 
+    Term_mod t -> Term_mod $ totalizeTerm bsrts simC_FORMULA t
+    _ -> m
+
+totC_FORMULA :: Set.Set SORT -> C_FORMULA -> C_FORMULA
+totC_FORMULA bsrts cf =  case cf of 
+   BoxOrDiamond b m f ps -> let
+       nm = totMODALITY bsrts m
+       nf = totalizeFormula bsrts (totC_FORMULA bsrts) f
+       in BoxOrDiamond b nm nf ps
+   _ -> cf
 
