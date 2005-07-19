@@ -7,19 +7,15 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Coding out subsorting, lifted tot eh level of CoCASL 
+Coding out subsorting, lifted to the level of CoCASL 
 -}
 
 module Comorphisms.CoPCFOL2CoCFOL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
-import Common.AS_Annotation
-import Data.List
 
 -- CoCASL
 import CoCASL.Logic_CoCASL
