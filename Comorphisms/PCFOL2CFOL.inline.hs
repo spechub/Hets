@@ -189,8 +189,9 @@ totalizeConstraint :: Constraint -> Constraint
 totalizeConstraint c = 
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
-totalRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
-totalRecord bsrts mf = (mapRecord mf)
+totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
+totalizeFormula bsrts mf = foldFormula totalRecord  where
+  totalRecord = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
       Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
     , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
@@ -207,15 +208,7 @@ totalRecord bsrts mf = (mapRecord mf)
       if term_sort tr == s then tr else error "totalizeFormula:Cast"
     }
 
-totalizeTerm :: Set.Set SORT -> (f -> f) -> TERM f -> TERM f
-totalizeTerm bsrts = foldTerm . totalRecord bsrts
-
-totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
-totalizeFormula bsrts = foldFormula . totalRecord bsrts
-
-rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
-rmDefsRecord  bsrts mf = (mapRecord mf)
-    { foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps } 
-
 rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
-rmDefs bsrts = foldFormula . rmDefsRecord bsrts
+rmDefs bsrts mf = foldFormula rmDefsRecord where
+  rmDefsRecord = (mapRecord mf)
+    { foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps } 

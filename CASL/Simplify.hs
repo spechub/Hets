@@ -16,8 +16,9 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import Data.List(nub)
 
-simplifyRecord :: Eq f => (f -> f) -> Record f (FORMULA f) (TERM f)
-simplifyRecord mf = (mapRecord mf)
+simplifyFormula :: Eq f => (f -> f) -> FORMULA f -> FORMULA f
+simplifyFormula mf = foldFormula simplifyRecord where
+  simplifyRecord = (mapRecord mf)
     { foldConditional = \ _ t1 f t2 ps -> case f of 
       True_atom _ -> t1 
       False_atom _ -> t2 
@@ -53,9 +54,3 @@ simplifyRecord mf = (mapRecord mf)
     , foldStrong_equation = \ _ t1 t2 ps -> 
       if t1 == t2 then True_atom ps else Strong_equation t1 t2 ps
     }
-
-simplifyTerm :: Eq f => (f -> f) -> TERM f -> TERM f
-simplifyTerm = foldTerm . simplifyRecord
-
-simplifyFormula :: Eq f => (f -> f) -> FORMULA f -> FORMULA f
-simplifyFormula = foldFormula . simplifyRecord
