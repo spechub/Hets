@@ -27,6 +27,7 @@ import CASL.Morphism
 import CASL.Sublogic hiding (bottom)
 import CASL.Overload
 import CASL.Simplify
+import CASL.Fold
 
 -- | The identity of the comorphism
 data PCFOL2CFOL = PCFOL2CFOL deriving (Show)
@@ -178,20 +179,6 @@ defVars bs (Var_decl vns s _) = map (defVar bs s) vns
 defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
 defVar bs s v = defined bs (Qual_var v s nullRange) s nullRange
 
-totalizeTerm :: Set.Set SORT -> (f -> f) -> TERM f -> TERM f
-totalizeTerm bsrts mf t = case t of
-   Application o args ps -> 
-       Application (totalizeOpSymb o) (map (totalizeTerm bsrts mf) args) ps
-   Conditional t1 f t2 ps -> let
-       t3 = totalizeTerm bsrts mf t1
-       newF = totalizeFormula bsrts mf f
-       t4 = totalizeTerm bsrts mf t2
-       in Conditional t3 newF t4 ps 
-   Sorted_term tr s _ | term_sort tr == s -> totalizeTerm bsrts mf tr
-   Cast tr s _ | term_sort tr == s -> totalizeTerm bsrts mf tr
-   Qual_var _ _ _ -> t
-   _ -> error "PCFOL2CFOL.totalizeTerm"
-
 totalizeOpSymb :: OP_SYMB -> OP_SYMB
 totalizeOpSymb o = case o of 
                             Qual_op_name i (Op_type _ args res ps) qs -> 
@@ -202,63 +189,33 @@ totalizeConstraint :: Constraint -> Constraint
 totalizeConstraint c = 
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
+totalRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
+totalRecord bsrts mf = (mapRecord mf)
+    { foldQuantification = \  _ q vs qf ps ->
+      Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
+    , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
+    , foldExistl_equation = \ _ t1 t2 ps ->
+      Conjunction[Strong_equation t1 t2 ps,
+                      defined bsrts t1 (term_sort t1) ps] ps
+    , foldMembership = \ _ t s ps -> if term_sort t == s 
+      then True_atom ps else error "totalizeFormula:Membership"
+    , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
+    , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
+    , foldSorted_term = \ _ tr s _ -> 
+      if term_sort tr == s then tr else  error "totalizeFormula:Sorted_term"
+    , foldCast = \ _ tr s _ -> 
+      if term_sort tr == s then tr else error "totalizeFormula:Cast"
+    }
+
+totalizeTerm :: Set.Set SORT -> (f -> f) -> TERM f -> TERM f
+totalizeTerm bsrts = foldTerm . totalRecord bsrts
+
 totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
-totalizeFormula bsrts mf form = case form of 
-   Quantification q vs qf ps -> Quantification q vs 
-       (Implication (defVards bsrts vs) (totalizeFormula bsrts mf qf) 
-        False ps) ps
-   Conjunction fs ps -> Conjunction (map (totalizeFormula bsrts mf) fs) ps
-   Disjunction fs ps -> Disjunction (map (totalizeFormula bsrts mf) fs) ps
-   Implication f1 f2 b ps -> let
-       f3 = totalizeFormula bsrts mf f1
-       f4 = totalizeFormula bsrts mf f2
-       in Implication f3 f4 b ps
-   Equivalence f1 f2 ps -> let
-       f3 = totalizeFormula bsrts mf f1
-       f4 = totalizeFormula bsrts mf f2
-       in Equivalence f3 f4 ps
-   Negation nf ps -> let
-       newF = totalizeFormula bsrts mf nf
-       in Negation newF ps
-   Predication p args ps -> 
-       let newArgs = map (totalizeTerm bsrts mf) args in
-       Predication p newArgs ps
-   Definedness t ps -> let 
-       newT = totalizeTerm bsrts mf t
-       srt = term_sort newT 
-       in defined bsrts newT srt ps
-   Existl_equation t1 t2 ps -> let
-       t3 = totalizeTerm bsrts mf t1
-       t4 = totalizeTerm bsrts mf t2
-       in Conjunction[Strong_equation t3 t4 ps,
-                      defined bsrts t3 (term_sort t3) ps] ps
-   Strong_equation t1 t2 ps -> let
-       t3 = totalizeTerm bsrts mf t1
-       t4 = totalizeTerm bsrts mf t2
-       in Strong_equation t3 t4 ps
-   ExtFORMULA ef -> ExtFORMULA $ mf ef
-   Membership t s ps | term_sort t == s -> True_atom ps
-   Sort_gen_ax cs b -> Sort_gen_ax (map totalizeConstraint cs) b
-   True_atom _ -> form 
-   False_atom _ -> form 
-   _ -> error "PCFOL2CFOL.totalizeFormula"
+totalizeFormula bsrts = foldFormula . totalRecord bsrts
+
+rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
+rmDefsRecord  bsrts mf = (mapRecord mf)
+    { foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps } 
 
 rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
-rmDefs bsrts mf form = case form of 
-   Quantification q vs qf ps -> Quantification q vs (rmDefs bsrts mf qf) ps
-   Conjunction fs ps -> Conjunction (map (rmDefs bsrts mf) fs) ps
-   Disjunction fs ps -> Disjunction (map (rmDefs bsrts mf) fs) ps
-   Implication f1 f2 b ps -> let
-       f3 = rmDefs bsrts mf f1
-       f4 = rmDefs bsrts mf f2
-       in Implication f3 f4 b ps
-   Equivalence f1 f2 ps -> let
-       f3 = rmDefs bsrts mf f1
-       f4 = rmDefs bsrts mf f2
-       in Equivalence f3 f4 ps
-   Negation nf ps -> let
-       newF = rmDefs bsrts mf nf
-       in Negation newF ps
-   Definedness t ps -> defined bsrts t (term_sort t) ps
-   ExtFORMULA ef -> ExtFORMULA $ mf ef
-   _ -> form 
+rmDefs bsrts = foldFormula . rmDefsRecord bsrts
