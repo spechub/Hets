@@ -191,10 +191,16 @@ totalizeTerm bsrts mf t = case t of
    Cast tr s _ | term_sort tr == s -> totalizeTerm bsrts mf tr
    Qual_var _ _ _ -> t
    _ -> error "PCFOL2CFOL.totalizeTerm"
-   where totalizeOpSymb o = case o of 
+
+totalizeOpSymb :: OP_SYMB -> OP_SYMB
+totalizeOpSymb o = case o of 
                             Qual_op_name i (Op_type _ args res ps) qs -> 
                                 Qual_op_name i (Op_type Total args res ps) qs
                             _ -> o
+
+totalizeConstraint :: Constraint -> Constraint
+totalizeConstraint c = 
+    c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
 totalizeFormula :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
 totalizeFormula bsrts mf form = case form of 
@@ -232,7 +238,7 @@ totalizeFormula bsrts mf form = case form of
        in Strong_equation t3 t4 ps
    ExtFORMULA ef -> ExtFORMULA $ mf ef
    Membership t s ps | term_sort t == s -> True_atom ps
-   Sort_gen_ax _ _ -> form
+   Sort_gen_ax cs b -> Sort_gen_ax (map totalizeConstraint cs) b
    True_atom _ -> form 
    False_atom _ -> form 
    _ -> error "PCFOL2CFOL.totalizeFormula"
