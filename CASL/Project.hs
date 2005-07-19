@@ -34,9 +34,8 @@ projOpSymb :: Range -> SORT -> SORT -> OP_SYMB
 projOpSymb pos s1 s2 =
     Qual_op_name projName (Op_type Total [s1] s2 pos) pos
 
-projFormula :: (f -> f) -> FORMULA f -> FORMULA f
-projFormula mf = foldFormula projRecord where
-   projRecord = (mapRecord mf) 
+projRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
+projRecord mf = (mapRecord mf) 
      { foldApplication = \ _ o ts ps -> case o of
          Qual_op_name _ ty _ -> Application o 
              (zipWith (project ps) ts $ args_OP_TYPE ty) ps
@@ -48,3 +47,9 @@ projFormula mf = foldFormula projRecord where
          _ -> error "projPredication"
      , foldMembership = \ _ t s ps -> Definedness (project ps t s) ps
      }
+
+projTerm :: (f -> f) -> TERM f -> TERM f
+projTerm = foldTerm . projRecord
+
+projFormula :: (f -> f) -> FORMULA f -> FORMULA f
+projFormula = foldFormula . projRecord
