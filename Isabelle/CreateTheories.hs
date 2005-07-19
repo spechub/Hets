@@ -13,17 +13,9 @@ dumping a LibEnv to Isabelle theory files
 
 module Isabelle.CreateTheories where
 
-import Debug.Trace
-
-import Data.Maybe
-import Data.List
-
-import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.Result
 import Common.Lib.Pretty as P
 
@@ -38,10 +30,6 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Isabelle.CreateThy as CreateThy
-import Isabelle.IsaSign as IsaSign
-import Isabelle.Translate
-import Isabelle.IsaPrint as IsaPrint
-import Isabelle.IsaHOLCFPrint 
 
 import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
@@ -59,7 +47,7 @@ printLibEnv :: LibEnv -> IO ()
 printLibEnv le  =  mapM_ (printLibrary le) $ Map.toList le
 
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> IO ()
-printLibrary le (ln, (_, ge, dg)) = -- trace ("\n printLibrary evaluated \n" ++ show ge)
+printLibrary le (ln, (_, ge, dg)) =
       mapM_ (printTheory ln le dg) $ Map.toList ge
 
 printTheory :: LIB_NAME -> LibEnv -> DGraph 
