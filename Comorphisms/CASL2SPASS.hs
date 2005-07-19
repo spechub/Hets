@@ -22,7 +22,8 @@ The translating comorphism from CASL to SPASS.
 module Comorphisms.CASL2SPASS where
 
 -- Debuging and Warning
-import Debug.Trace
+-- import Debug.Trace
+import Control.Exception
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -48,6 +49,7 @@ import CASL.Morphism
 import CASL.Quantification 
 import CASL.Overload
 import CASL.Utils
+import CASL.Inject (injName)
 
 -- SPASS
 import SPASS.Sign as SPSign
@@ -218,23 +220,50 @@ transOpType ot = (map transId (CSign.opArgs ot), transId (CSign.opRes ot))
 transPredType :: CSign.PredType -> [SPIdentifier]
 transPredType pt = map transId (CSign.predArgs pt)
 
-integrateGenerated :: IdType_SPId_Map -> [Named (FORMULA f)] -> 
+integrateGenerated :: (PrettyPrint f, PosItem f) =>
+                      IdType_SPId_Map -> [Named (FORMULA f)] -> 
                       Map.Map SPIdentifier (Maybe Generated) -> 
-                      Map.Map SPIdentifier (Maybe Generated)
+                      Result 
+                         (Map.Map SPIdentifier (Maybe Generated),
+                          IdType_SPId_Map,
+                          Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+                          [Named SPTerm])
 integrateGenerated idMap genSens spSortMap 
-    | null genSens = spSortMap
-    | otherwise = trace "Generated axioms are not implemented yet" spSortMap
-{-        -- makeGens must not invent new sorts
-        assert (Map.size spSortMap' == Map.size spSortMap) spSortMap'
-    where spSortMap' = Map.union spSortMap (makeGens idMap genSens)
+    | null genSens = return (spSortMap,idMap,Map.empty,[])
+    | otherwise = 
+--        trace "Generated axioms are not implemented yet" spSortMap
+        -- makeGens must not invent new sorts
+        case makeGens idMap genSens of
+        Result dias mv -> 
+            maybe (Result dias Nothing)
+                  (\ (spSortMap_makeGens,newOpsMap,idMap') -> 
+                      let spSortMap' = Map.union spSortMap_makeGens spSortMap
+                      in assert (Map.size spSortMap' == Map.size spSortMap) 
+                             (Result dias 
+                                     (Just (spSortMap',
+                                            idMap',
+                                            newOpsMap,
+                                            mkInjSentences idMap' newOpsMap))))
+                  mv
 
-makeGens :: IdType_SPId_Map -> [Named (FORMULA f)] 
-           -> Map.Map SPIdentifier (Maybe Generated)
-makeGens idMap = 
-    foldr ins Map.empty (concat (makeGen idMap))
-  where
-  ins (s,mGen) = Map.insert s mGen
-  delDoubles xs = delDouble xs []
+makeGens :: (PrettyPrint f, PosItem f) =>
+            IdType_SPId_Map -> [Named (FORMULA f)] 
+         -> Result (Map.Map SPIdentifier (Maybe Generated),
+                    Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+                    IdType_SPId_Map)
+makeGens idMap fs =
+    case foldl makeGen (return (Map.empty,idMap,[])) fs of
+    Result ds mv -> 
+        maybe (Result ds Nothing)
+              (\ (opMap,idMap',pairs) -> 
+                   Result ds 
+                      (Just (foldr (uncurry Map.insert) 
+                                   Map.empty pairs,
+                             opMap,idMap')))
+              mv
+
+  -- !! GO ON HERE !!
+{-  delDoubles xs = delDouble xs []
   delDouble [] _  = []
   delDouble (x:xs) sortList = let (Type s _a _b) = fst (head x) in
       if (length sortList) == 
@@ -243,22 +272,84 @@ makeGens idMap =
       else
         (x:(delDouble xs (s:sortList)))
   addSortList x xs = (List.nub (x :xs))
-
-
-makeGen :: IdType_SPId_Map -> Named (FORMULA f) -> 
-           [(SPIdentifier,Maybe Generated)]
-makeGen sign nf = case sentence nf of 
-  Sort_gen_ax constrs free -> (map makeGenP srts) where 
-    (srts,ops,_maps) = recover_Sort_gen_ax constrs
-    makeGenP s = (transSort s, 
-                  mkGen (map makeOp (List.filter (hasTheSort s) ops)))
-    makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
-    hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
-    hasTheSort _ _ = error "CASL2SPASS.hasTheSort"
-    transArgs (Qual_op_name _ sot _) = map transSort $ args_OP_TYPE ot
-    transArgs _ = error "CASL2SPASS.transArgs"
-  _ -> []
 -}
+
+makeGen :: (PrettyPrint f, PosItem f) =>
+          Result (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+                   IdType_SPId_Map,
+                   [(SPIdentifier,Maybe Generated)])
+        -> Named (FORMULA f)
+        -> Result (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+                   IdType_SPId_Map,
+                   [(SPIdentifier,Maybe Generated)])
+makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where 
+ process (oMap,iMap,rList) = case sentence nf of 
+  Sort_gen_ax constrs free -> 
+      if null mp then (case mapAccumL makeGenP (oMap,iMap) srts of
+                       ((oMap',iMap'),genPairs) -> 
+                          Result ods (Just (oMap',iMap',rList++genPairs)))
+                 else mkError "Non injective sort mappings cannot \
+                              \be translated to SPASS" (sentence nf) 
+      where (srts,ops,mp) = recover_Sort_gen_ax constrs
+            hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
+            hasTheSort _ _ = error "CASL2SPASS.hasTheSort"
+            mkGen = Just . Generated free . map fst
+            makeGenP (opMap,idMap) s = ((newOpMap, newIdMap), 
+                                        (s', mkGen cons))
+                where ((newOpMap,newIdMap),cons) = 
+                          mapAccumL mkInjOp (opMap,idMap) ops_of_s
+                      ops_of_s = List.filter (hasTheSort s) ops
+                      s' = maybe (error "CASL2SPASS.makeGen: No mapping \
+                                        \found for '"++show s++"'") id 
+                                 (lookupSPId s CSort idMap)
+                      {- newOpMap = foldr (uncurry Map.insert) opMap cons 
+                      newIdMap = foldr (\ (x,y,z) -> insertSPId x y z) 
+                                 idMap 
+                                 (zipWith (\ (Qual_op_name i ot _) (si,_) -> 
+                                             (i,COp (CSign.toOpType ot),si))
+                                          ops_of_s cons)-}
+  _ -> r
+
+mkInjOp :: (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+            IdType_SPId_Map)
+        -> OP_SYMB 
+        -> ((Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+             IdType_SPId_Map),
+            (SPIdentifier,([SPIdentifier],SPIdentifier)))
+mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
+    if i == injName 
+       then ((Map.insert i' (transOpType ot') opMap,
+              insertSPId i (COp ot') i' idMap),
+             (i', transOpType ot'))
+       else ((opMap,idMap),
+             (maybe err id (lookupSPId i (COp ot') idMap),
+              transOpType ot'))
+    where i' = disSPOId (COp ot') (transId i) 
+                        (utype (transOpType ot')) usedNames
+          ot' = CSign.toOpType ot
+          usedNames = Map.keysSet opMap
+          err = error ("CASL2SPASS.mkInjOp: Cannot find SPId for '"++
+                       show qo++"'")
+          utype t = fst t ++ [snd t]
+mkInjOp _ _ = error "CASL2SPASS.mkInjOp: Wrong constructor!!"
+
+mkInjSentences :: IdType_SPId_Map 
+               -> Map.Map SPIdentifier ([SPIdentifier],SPIdentifier)
+               -> [Named SPTerm]
+mkInjSentences idMap = Map.foldWithKey genInj []
+    where genInj k (args,res) fs =
+              assert (length args == 1)
+                     ((emptyName
+                       (SPQuantTerm SPForall [typedVarTerm var (head args)]
+                             (compTerm SPEqual 
+                                       [compTerm (spSym k) 
+                                                 [simpTerm (spSym var)],
+                                        simpTerm (spSym var)])))
+                     {senName = newName k (head args) res} : fs)
+          var = fromJust (find (\ x -> not (Set.member x usedIds)) 
+                          ("x":["x"++show i | i <- [(1::Int)..]]))
+          newName o a r = "ga_"++o++'_':a++'_':r++"_id"
+          usedIds = elemsSPId_Set idMap
 
 transSign :: CSign.Sign f e -> 
              (SPSign.Sign,IdType_SPId_Map)
@@ -280,17 +371,22 @@ transSign sign = (SPSign.emptySign { sortRel =
           (fMap,idMap') =  transFuncMap idMap  (CSign.opMap sign)
           (pMap,idMap'') = transPredMap idMap' (CSign.predMap sign) 
 
-transTheory :: (Eq f) => SignTranslator f e 
+transTheory :: (PrettyPrint f, PosItem f,Eq f) => 
+               SignTranslator f e 
             -> FormulaTranslator f e 
             -> (CSign.Sign f e, [Named (FORMULA f)])
             -> Result SPASSTheory 
 transTheory trSig trForm (sign,sens) = 
-  fmap (trSig sign (CSign.extendedInfo sign)) $
-  return  (tSign {sortMap = integrateGenerated idMap 
-                            genSens (sortMap tSign)},
-          map (mapNamed (transFORM sign idMap trForm)) realSens)
-  where (tSign,idMap) = transSign sign
-        (genSens,realSens) = 
+  fmap (trSig sign (CSign.extendedInfo sign)) 
+    (case transSign sign of
+     (tSign,idMap) -> 
+        do (sortMap',idMap',injOpMap,injSentences) <- 
+               integrateGenerated idMap genSens (sortMap tSign)
+           return  (tSign { sortMap = sortMap'
+                          , funcMap = (Map.union (funcMap tSign) injOpMap)},
+                    injSentences ++
+                    map (mapNamed (transFORM sign idMap' trForm)) realSens))
+  where (genSens,realSens) = 
             partition (\ s -> case (sentence s) of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
@@ -299,15 +395,14 @@ transTheory trSig trForm (sign,sens) =
 ------------------------------ Formulas ------------------------------
 
 transOP_SYMB :: IdType_SPId_Map -> OP_SYMB -> SPIdentifier
-transOP_SYMB idMap (Qual_op_name op ot _) = 
-    maybe (error ("CASL2SPASS unknown op: " ++ show op))
+transOP_SYMB idMap qo@(Qual_op_name op ot _) = 
+    maybe (error ("CASL2SPASS.transOP_SYMB: unknown op: " ++ show qo))
           id (lookupSPId op (COp (CSign.toOpType ot)) idMap)
-
 transOP_SYMB _ (Op_name _) = error "CASL2SPASS: unqualified operation"
 
 transPRED_SYMB :: IdType_SPId_Map -> PRED_SYMB -> SPIdentifier
-transPRED_SYMB idMap (Qual_pred_name p pt _) =
-    maybe (error ("CASL2SPASS unknown pred: " ++ show p))
+transPRED_SYMB idMap qp@(Qual_pred_name p pt _) =
+    maybe (error ("CASL2SPASS.transPRED_SYMB: unknown pred: " ++ show qp))
           id (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
 transPRED_SYMB _ (Pred_name _) = error "CASL2SPASS: unqualified predicate"
 
@@ -357,18 +452,19 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-mapSen :: (Eq f) => FormulaTranslator f e 
+mapSen :: (Eq f,Show f) => FormulaTranslator f e 
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
 
-transFORM :: (Eq f) => CSign.Sign f e 
+transFORM :: (Eq f,Show f) => CSign.Sign f e 
           -> IdType_SPId_Map -> FormulaTranslator f e 
           -> FORMULA f -> SPTerm
 transFORM sign i tr phi = transFORMULA sign i tr phi'
     where phi' = codeOutConditionalF id 
                         (codeOutUniqueExtF id (\ _  -> id) phi)
 
-transFORMULA :: CSign.Sign f e -> 
+transFORMULA :: (Show f) => 
+                CSign.Sign f e -> 
                 IdType_SPId_Map -> FormulaTranslator f e 
                 -> FORMULA f -> SPTerm
 transFORMULA sign idMap tr (Quantification qu vdecl phi _) =
@@ -412,11 +508,12 @@ transFORMULA sign idMap tr (Membership t s _) =
                   showPretty s "\""))
           (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
           (lookupSPId s CSort idMap)
-transFORMULA _ _ _ _ = 
-  error "CASL2SPASS.transFORMULA: unknown FORMULA"
+transFORMULA _ _ _ f = 
+  error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++show f++"'") 
 
 
-transTERM :: CSign.Sign f e -> 
+transTERM :: (Show f) => 
+             CSign.Sign f e -> 
              IdType_SPId_Map -> FormulaTranslator f e
           -> TERM f -> SPTerm
 transTERM _sign idMap _tr (Qual_var v s _) =
@@ -429,10 +526,10 @@ transTERM sign idMap tr (Application opsymb args _) =
 transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "CASL2SPASS.transTERM: Conditional terms must be coded out."
 transTERM sign idMap tr (Sorted_term t s _) 
-    | term_sort t == s = transTERM sign idMap tr t
+    {- | term_sort t == s-} = transTERM sign idMap tr t
 transTERM sign idMap tr (Cast t s _) 
-    | term_sort t == s = transTERM sign idMap tr t
-transTERM _sign _idMap _tr _ =
-  error "CASL2SPASS.transTERM: unknown TERM" 
+    {- | term_sort t == s-} = transTERM sign idMap tr t
+transTERM _sign _idMap _tr t =
+  error ("CASL2SPASS.transTERM: unknown TERM '"++show t++"'") 
 
 
