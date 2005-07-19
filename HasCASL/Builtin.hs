@@ -175,6 +175,10 @@ bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (eqId, eqType) : (exEq, eqType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
+funSupertypes :: [(Arrow, [Arrow])]
+funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
+                 (ContFunArr, [PContFunArr, FunArr])]
+
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m -> 
                  Map.insertWith ( \ _ old -> old) i
@@ -189,8 +193,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
               ++ map ( \ (a, l) -> (arrowId a, funKind, 
                         map ( \ b -> TypeName (arrowId b) funKind 0) l,
                                    NoTypeDefn)) 
-                [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
-                 (ContFunArr, [PContFunArr, FunArr])]
+                funSupertypes
 
 addOps :: Assumps -> Assumps
 addOps as = foldr ( \ (i, sc) m -> 
