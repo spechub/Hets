@@ -58,12 +58,12 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
 anaAttr _ _ b = return $ Just b
 
 patternsToType :: [[VarDecl]] -> Type -> Type
-patternsToType [] t = t
-patternsToType (p: ps) t = FunType (tuplePatternToType p) PFunArr 
-                          (patternsToType ps t) nullRange
+patternsToType = flip $ foldl 
+    ( \ r e -> FunType (tuplePatternToType e) FunArr r nullRange)
 
 tuplePatternToType :: [VarDecl] -> Type
-tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) nullRange
+tuplePatternToType vds = 
+    mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) nullRange
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
@@ -105,7 +105,9 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
            Just ty -> do 
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
                newSc <- generalizeS $ TypeScheme newArgs 
-                      (patternsToType newPats ty) qs
+                      ((case partial of 
+                       Partial -> addPartiality newPats
+                       Total -> id) $ patternsToType newPats ty) qs
                putLocalVars vs
                putLocalTypeVars tvs
                case mt of 
