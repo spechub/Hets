@@ -13,83 +13,49 @@ resolve empty conjunctions and other trivial cases
 module CASL.Simplify where
 
 import CASL.AS_Basic_CASL
+import CASL.Fold
 import Data.List(nub)
-import Common.Id
+
+simplifyRecord :: Eq f => (f -> f) -> Record f (FORMULA f) (TERM f)
+simplifyRecord mf = (mapRecord mf)
+    { foldConditional = \ _ t1 f t2 ps -> case f of 
+      True_atom _ -> t1 
+      False_atom _ -> t2 
+      _ -> Conditional t1 f t2 ps 
+    , foldQuantification = \ _ q vs qf ps -> 
+      if null vs then qf else case qf of 
+      True_atom _ -> qf 
+      False_atom _ -> qf
+      _ -> Quantification q vs qf ps
+    , foldConjunction = \ _ fs ps -> case nub $ filter is_True_atom fs of 
+      [] -> True_atom ps
+      [f] -> f 
+      rs -> Conjunction rs ps
+    , foldDisjunction =  \ _ fs ps -> case nub $ filter is_False_atom fs of 
+      [] -> False_atom ps
+      [f] -> f 
+      rs -> Disjunction rs ps
+    , foldImplication = \ _ f1 f2 b ps -> case f1 of 
+      True_atom _ -> f2
+      False_atom _ -> True_atom ps
+      _ -> case f2 of 
+           True_atom _ -> f2 
+           _ -> if f1 == f2 then True_atom ps else Implication f1 f2 b ps
+    , foldEquivalence = \ _ f1 f2 ps -> case f2 of 
+      True_atom _ -> f1
+      _ -> case f1 of 
+           True_atom _ -> f2
+           _ -> if f1 == f2 then True_atom ps else Equivalence f1 f2 ps
+    , foldNegation = \ _ nf ps -> case nf of
+      False_atom _ -> True_atom ps
+      True_atom _ -> False_atom ps
+      _ -> Negation nf ps
+    , foldStrong_equation = \ _ t1 t2 ps -> 
+      if t1 == t2 then True_atom ps else Strong_equation t1 t2 ps
+    }
 
 simplifyTerm :: Eq f => (f -> f) -> TERM f -> TERM f
-simplifyTerm mf t = case t of
-   Application o args ps -> 
-       Application o (map (simplifyTerm mf) args) ps
-   Sorted_term st s ps -> Sorted_term (simplifyTerm mf st) s ps
-   Cast st s ps -> Cast (simplifyTerm mf st) s ps
-   Conditional t1 f t2 ps -> let
-       t3 = simplifyTerm mf t1
-       newF = simplifyFormula mf f
-       t4 = simplifyTerm mf t2
-       in case newF of 
-          True_atom _ -> t3 
-          False_atom _ -> t4 
-          _ -> Conditional t3 newF t4 ps 
-   _ -> t
+simplifyTerm = foldTerm . simplifyRecord
 
 simplifyFormula :: Eq f => (f -> f) -> FORMULA f -> FORMULA f
-simplifyFormula mf form = case form of 
-   Quantification q vs qf ps -> let
-       newF = simplifyFormula mf qf
-       in if null vs then newF else
-          case newF of 
-          True_atom _ -> newF 
-          False_atom _ -> newF 
-          _ -> Quantification q vs newF ps
-   Conjunction fs ps -> 
-       case nub $ filter is_True_atom $ map (simplifyFormula mf) fs of 
-       [] -> True_atom ps
-       [f] -> f 
-       rs -> Conjunction rs ps
-   Disjunction fs ps -> 
-       case nub $ filter is_False_atom $ map (simplifyFormula mf) fs of 
-       [] -> False_atom ps
-       [f] -> f 
-       rs -> Disjunction rs ps
-   Implication f1 f2 b ps -> let
-       f3 = simplifyFormula mf f1
-       f4 = simplifyFormula mf f2
-       in case f3 of 
-       True_atom _ -> f4
-       False_atom _ -> True_atom ps
-       _ -> case f4 of 
-            True_atom _ -> f4 
-            _ -> if f3 == f4 then True_atom ps else Implication f3 f4 b ps
-   Equivalence f1 f2 ps -> let
-       f3 = simplifyFormula mf f1
-       f4 = simplifyFormula mf f2
-       in case f4 of 
-       True_atom _ -> f3 
-       _ -> case f3 of 
-            True_atom _ -> f4
-            _ -> if f3 == f4 then True_atom ps else Equivalence f3 f4 ps
-   Negation nf ps -> let
-       newF = simplifyFormula mf nf
-       in case newF of
-          False_atom qs -> True_atom (qs `appRange` ps)
-          True_atom qs -> False_atom (qs `appRange` ps)
-          _ -> Negation newF ps
-   Predication p args ps -> 
-       let newArgs = map (simplifyTerm mf) args in
-       Predication p newArgs ps
-   Definedness t ps -> let 
-       newT = simplifyTerm mf t
-       in Definedness newT ps
-   Existl_equation t1 t2 ps -> let
-       t3 = simplifyTerm mf t1
-       t4 = simplifyTerm mf t2
-       in Existl_equation t3 t4 ps
-   Strong_equation t1 t2 ps -> let
-       t3 = simplifyTerm mf t1
-       t4 = simplifyTerm mf t2
-       in if t3 == t4 then True_atom ps else Strong_equation t3 t4 ps
-   Membership t s ps -> let 
-       newT = simplifyTerm mf t
-       in Membership newT s ps
-   ExtFORMULA ef -> ExtFORMULA $ mf ef
-   _ -> form 
+simplifyFormula = foldFormula . simplifyRecord
