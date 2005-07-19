@@ -7,10 +7,10 @@ op __union__ : Graph N E * Graph N E -> Graph N E;
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N));
        g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
-. ((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+. ((fun __=__[__*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N))]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-       ((N ->? Unit) * (E ->? N) * (E ->? N)) *
-       ((N ->? Unit) * (E ->? N) * (E ->? N)) ->? Unit)
+       __*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N)) *
+       __*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N)) ->? Unit)
     (((op __union__[N; E]
        : forall N : Type; E : Type .
            Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
@@ -92,10 +92,10 @@ true : Unit %(fun)%
 g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
 g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
 %% Sentences -------------------------------------------------------------
-((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
+((fun __=__[__*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N))]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-     ((N ->? Unit) * (E ->? N) * (E ->? N)) *
-     ((N ->? Unit) * (E ->? N) * (E ->? N)) ->? Unit)
+     __*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N)) *
+     __*__*__ ((N ->? Unit)) ((E ->? N)) ((E ->? N)) ->? Unit)
   (((op __union__[N; E]
      : forall N : Type; E : Type .
          Graph N_v-1 E_v-2@(Set N_v-1@(N_v-1 ->? Unit) * (E_v-2 ->? N_v-1) *
@@ -124,6 +124,6 @@ g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N))
 *** Hint 8.15, not a kind 'Graph N E'
 *** Hint, in type of '(var g : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)),
  var g' : Graph N E@(Set N@(N ->? Unit) * (E ->? N) * (E ->? N)))'
-  type 'Set N@(N ->? Unit) * (E ->? N) * (E ->? N)' (3.37)
-  is not unifiable with type '_var_13_v13 ->? Unit' (2.19)
+  typename '__->?__'
+  is not unifiable with type '__*__*__ (Set N@(N ->? Unit))' (8.23)
 

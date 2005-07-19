@@ -157,7 +157,7 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
                                 Set S@(S ->? Unit) ->? Unit))
        (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
          Unit,
-     ((fun __=__[S ->? Unit]
+     ((fun __=__[(S ->? Unit)]
        : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
           (S ->? Unit) * (S ->? Unit) ->? Unit)
        (((op __intersection__[S]
@@ -172,9 +172,9 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
          Unit) :
       Unit
 . (fun __<=>__ : ? Unit * ? Unit ->? Unit)
-    (((op __isIn__[S * T]
+    (((op __isIn__[(S * T)]
        : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
-          (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
+          (S * T) * Set ((S * T))@((S * T) ->? Unit) ->? Unit)
        ((var x : S, var y : T),
         ((op __*__[S; T]
           : forall S : Type; T : Type .
@@ -199,7 +199,7 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
             Unit) :
          Unit) :
       Unit
-. ((fun __=__[S * Bool]
+. ((fun __=__[(S * Bool)]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        (S * Bool) * (S * Bool) ->? Unit)
     (((op inl[S] : forall S : Type . S_v-1 -> S_v-1 * Bool) :
@@ -208,7 +208,7 @@ forall x : S; x' : S; y : T; s : Set S@(S ->? Unit);
          S * Bool,
      (var x : S, op False : Bool)) :
       Unit
-. ((fun __=__[S * Bool]
+. ((fun __=__[(S * Bool)]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        (S * Bool) * (S * Bool) ->? Unit)
     (((op inr[S] : forall S : Type . S_v-1 -> S_v-1 * Bool) :
@@ -449,7 +449,7 @@ y : T
                               Set S@(S ->? Unit) ->? Unit))
      (var s : Set S@(S ->? Unit), var s' : Set S@(S ->? Unit)) :
        Unit,
-   ((fun __=__[S ->? Unit]
+   ((fun __=__[(S ->? Unit)]
      : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
         (S ->? Unit) * (S ->? Unit) ->? Unit)
      (((op __intersection__[S]
@@ -464,9 +464,9 @@ y : T
        Unit) :
     Unit
 (fun __<=>__ : ? Unit * ? Unit ->? Unit)
-  (((op __isIn__[S * T]
+  (((op __isIn__[(S * T)]
      : forall S : Type . S_v-1 * Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
-        (S * T) * Set (S * T)@(S * T ->? Unit) ->? Unit)
+        (S * T) * Set ((S * T))@((S * T) ->? Unit) ->? Unit)
      ((var x : S, var y : T),
       ((op __*__[S; T]
         : forall S : Type; T : Type .
@@ -491,7 +491,8 @@ y : T
           Unit) :
        Unit) :
     Unit
-((fun __=__[S * Bool] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[(S * Bool)]
+  : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      (S * Bool) * (S * Bool) ->? Unit)
   (((op inl[S] : forall S : Type . S_v-1 -> S_v-1 * Bool) :
         S -> S * Bool)
@@ -499,7 +500,8 @@ y : T
        S * Bool,
    (var x : S, op False : Bool)) :
     Unit
-((fun __=__[S * Bool] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[(S * Bool)]
+  : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      (S * Bool) * (S * Bool) ->? Unit)
   (((op inr[S] : forall S : Type . S_v-1 -> S_v-1 * Bool) :
         S -> S * Bool)

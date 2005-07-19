@@ -10,29 +10,29 @@ op fmap : (a -> b) -> f a -> f b
 op empty : List a
 type Set : Functor
 op emptySet : Set a
-. ((fun __=__[Set _var_10_v10]
+. ((fun __=__[Set _var_12_v12]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-       Set _var_10_v10 * Set _var_10_v10 ->? Unit)
-    ((op fail[_var_10_v10; Set]
+       Set _var_12_v12 * Set _var_12_v12 ->? Unit)
+    ((op fail[_var_12_v12; Set]
       : forall a : Type; m : Monad . m_v-2 a_v-1) :
-         Set _var_10_v10,
-     (op emptySet[_var_10_v10] : forall a : Type . Set a_v-1) :
-         Set _var_10_v10) :
+         Set _var_12_v12,
+     (op emptySet[_var_12_v12] : forall a : Type . Set a_v-1) :
+         Set _var_12_v12) :
       Unit
-. ((fun __=__[List _var_20_v20]
+. ((fun __=__[List _var_27_v27]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-       List _var_20_v20 * List _var_20_v20 ->? Unit)
-    ((op fail[_var_20_v20; List]
+       List _var_27_v27 * List _var_27_v27 ->? Unit)
+    ((op fail[_var_27_v27; List]
       : forall a : Type; m : Monad . m_v-2 a_v-1) :
-         List _var_20_v20,
-     (op empty[_var_20_v20] : forall a : Type . List a_v-1) :
-         List _var_20_v20) :
+         List _var_27_v27,
+     (op empty[_var_27_v27] : forall a : Type . List a_v-1) :
+         List _var_27_v27) :
       Unit
 op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
 var x : m a
-. ((fun __=__[List a -> List b]
+. ((fun __=__[(List a -> List b)]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        (List a -> List b) * (List a -> List b) ->? Unit)
     (((op fmap[a; b; List]
@@ -130,25 +130,25 @@ true : Unit %(fun)%
 g : a -> b
 x : m a
 %% Sentences -------------------------------------------------------------
-((fun __=__[Set _var_10_v10]
+((fun __=__[Set _var_12_v12]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-     Set _var_10_v10 * Set _var_10_v10 ->? Unit)
-  ((op fail[_var_10_v10; Set]
+     Set _var_12_v12 * Set _var_12_v12 ->? Unit)
+  ((op fail[_var_12_v12; Set]
     : forall a : Type; m : Monad . m_v-2 a_v-1) :
-       Set _var_10_v10,
-   (op emptySet[_var_10_v10] : forall a : Type . Set a_v-1) :
-       Set _var_10_v10) :
+       Set _var_12_v12,
+   (op emptySet[_var_12_v12] : forall a : Type . Set a_v-1) :
+       Set _var_12_v12) :
     Unit
-((fun __=__[List _var_20_v20]
+((fun __=__[List _var_27_v27]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-     List _var_20_v20 * List _var_20_v20 ->? Unit)
-  ((op fail[_var_20_v20; List]
+     List _var_27_v27 * List _var_27_v27 ->? Unit)
+  ((op fail[_var_27_v27; List]
     : forall a : Type; m : Monad . m_v-2 a_v-1) :
-       List _var_20_v20,
-   (op empty[_var_20_v20] : forall a : Type . List a_v-1) :
-       List _var_20_v20) :
+       List _var_27_v27,
+   (op empty[_var_27_v27] : forall a : Type . List a_v-1) :
+       List _var_27_v27) :
     Unit
-((fun __=__[List a -> List b]
+((fun __=__[(List a -> List b)]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      (List a -> List b) * (List a -> List b) ->? Unit)
   (((op fmap[a; b; List]
@@ -195,14 +195,14 @@ x : m a
 *** Hint 15.5, is type variable 'f'
 *** Hint, constrain 'Set : Monad' is unprovable
   known kinds are: [ Functor ]
-*** Error, in term'((fun __=__[Set _var_10_v10]
+*** Error, in term'((fun __=__[Set _var_12_v12]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-     Set _var_10_v10 * Set _var_10_v10 ->? Unit)
-  ((op fail[_var_10_v10; Set]
+     Set _var_12_v12 * Set _var_12_v12 ->? Unit)
+  ((op fail[_var_12_v12; Set]
     : forall a : Type; m : Monad . m_v-2 a_v-1) :
-       Set _var_10_v10,
-   (op emptySet[_var_10_v10] : forall a : Type . Set a_v-1) :
-       Set _var_10_v10) :
+       Set _var_12_v12,
+   (op emptySet[_var_12_v12] : forall a : Type . Set a_v-1) :
+       Set _var_12_v12) :
     Unit' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
 *** Hint 33.7, not a class 'a'

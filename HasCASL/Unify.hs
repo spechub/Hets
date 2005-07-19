@@ -14,7 +14,9 @@ substitution and unification of types
 module HasCASL.Unify where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.PrintAs()
+import HasCASL.TypeAna
 import HasCASL.Le
 
 import qualified Common.Lib.Map as Map
@@ -30,21 +32,6 @@ import Data.Maybe
 -- | bound vars
 genVarsOf :: Type -> [(Id, RawKind)]
 genVarsOf = map snd . leaves (<0)
-
--- | vars or other ids 
-leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
-leaves b t = 
-    case t of 
-           TypeName j k i -> if b(i)
-                             then [(i, (j, k))]
-                             else []
-           TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-           ExpandedType _ t2 -> leaves b t2
-           KindedType tk _ _ -> leaves b tk
-           LazyType tl _ -> leaves b tl
-           ProductType l _ -> foldl List.union [] $ map (leaves b) l
-           FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
-           _ -> error ("leaves: " ++ show t)
 
 -- | composition (reversed: first substitution first!)
 compSubst :: Subst -> Subst -> Subst
@@ -108,110 +95,91 @@ type Subst = Map.Map Int Type
 eps :: Subst
 eps = Map.empty
 
-class Unifiable a where
-    subst :: Subst -> a -> a
-    match :: TypeMap -> (TypeId -> TypeId -> Bool) 
-          -> (Bool, a) -> (Bool, a) -> Result Subst
+match :: TypeMap -> (TypeId -> TypeId -> Bool) 
+          -> (Bool, Type) -> (Bool, Type) -> Result Subst
+match tm rel p1@(b1, ty1) p2@(b2, ty2) = case (ty1, ty2) of 
+    (_, ExpandedType _ t2) -> match tm rel p1 (b2, t2) 
+    (ExpandedType _ t1, _) -> match tm rel (b1, t1) p2
+    (_, LazyType t2 _) -> match tm rel p1 (b2, t2) 
+    (LazyType t1 _, _) -> match tm rel (b1, t1) p2
+    (_, KindedType t2 _ _) -> match tm rel p1 (b2, t2) 
+    (KindedType t1 _ _, _) -> match tm rel (b1, t1) p2
+    (ProductType _ _, _) -> match tm rel (b1, convertType ty1) p2
+    (_, ProductType _ _) -> match tm rel p1 (b2, convertType ty2)
+    (FunType _ _ _ _, _) -> match tm rel (b1, convertType ty1) p2
+    (_, FunType _ _ _ _) -> match tm rel p1 (b2, convertType ty2)
+    (TypeName i1 _k1 v1, TypeName i2 _k2 v2) ->
+        if rel i1 i2 && v1 == v2
+           then return eps
+        else if v1 > 0 && b1 then return $ Map.singleton v1 ty2
+        else if v2 > 0 && b2 then return $ Map.singleton v2 ty1
+{- the following two condition only guarantee that instScheme also matches for
+   a partial function that is mapped to a total one. 
+   Maybe a subtype condition is better. -}  
+        else if not b1 && b2 && v1 == 0 && v2 == 0 && Set.member i1 
+           (superIds tm i2) then return eps
+        else if b1 && not b2 && v1 == 0 && v2 == 0 && Set.member i2 
+           (superIds tm i1) then return eps
+        else uniResult "typename" ty1 "is not unifiable with typename" ty2
+    (TypeName _ _ v1, _) ->
+        if v1 > 0 && b1 then 
+           if null $ leaves (==v1) ty2 then 
+              return $ Map.singleton v1 ty2
+           else uniResult "var" ty1 "occurs in" ty2
+        else uniResult "typename" ty1  
+                            "is not unifiable with type" ty2
+    (_, TypeName _ _ _) -> match tm rel p2 p1
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> do
+        s1 <- match tm rel (b1, f1) (b2, f2)
+        s2 <- match tm rel (b1, if b1 then subst s1 a1 else a1) 
+                  (b2, if b2 then subst s1 a2 else a2) 
+        return $ compSubst s1 s2
+    _ -> uniResult "type" ty1 "is not unifiable with type" ty2
 
 -- | most general unifier via 'match' 
 -- where both sides may contribute substitutions
-mgu :: Unifiable a => TypeMap -> a -> a -> Result Subst
+mgu :: TypeMap -> Type -> Type -> Result Subst
 mgu tm a b = match tm (==) (True, a) (True, b)
 
-shapeMatch :: Unifiable a => TypeMap -> a -> a -> Result Subst
+mguList :: TypeMap -> [Type] -> [Type] -> Result Subst
+mguList tm l1 l2 = case (l1, l2) of
+    ([], []) -> return eps
+    (h1 : t1, h2 : t2) -> do 
+       s1 <- mgu tm h1 h2
+       s2 <- mguList tm (map (subst s1) t1) $ map (subst s1) t2
+       return $ compSubst s1 s2 
+    _ -> mkError "no unification with empty list" (l1 ++ l2)
+
+shapeMatch :: TypeMap -> Type -> Type -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
 
-unify :: Unifiable a => TypeMap -> a -> a -> Bool
+unify :: TypeMap -> Type -> Type -> Bool
 unify tm a b = isJust $ maybeResult $ mgu tm a b 
 
-subsume :: Unifiable a => TypeMap -> a -> a -> Bool
+subsume :: TypeMap -> Type -> Type -> Bool
 subsume tm a b = 
     isJust $ maybeResult $ match tm (==) (False, a) (True, b)
 
-equalSubs :: Unifiable a => TypeMap -> a -> a -> Bool
+equalSubs :: TypeMap -> Type -> Type -> Bool
 equalSubs tm a b = subsume tm a b && subsume tm b a
 
-idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
-idsOf b = Set.fromList . map (fst . snd) . leaves b
-
-instance Unifiable Type where
-    subst m = rename (\ i k n -> 
+subst :: Subst -> Type -> Type
+subst m = rename (\ i k n -> 
                case Map.lookup n m of
                Just s -> s
                _ -> TypeName i k n)
-    match tm rel t1 (b2, ExpandedType _ t2) = match tm rel t1 (b2, t2)
-    match tm rel (b1, ExpandedType _ t1) t2 = match tm rel (b1, t1) t2
-    match tm rel t1 (b2, LazyType t2 _) = match tm rel t1 (b2, t2)
-    match tm rel (b1, LazyType t1 _) t2 = match tm rel (b1, t1) t2
-    match tm rel t1 (b2, KindedType t2 _ _) = match tm rel t1 (b2, t2)
-    match tm rel (b1, KindedType t1 _ _) t2 = match tm rel (b1, t1) t2
-    match _ rel (b1, t1@(TypeName i1 _k1 v1)) (b2, t2@(TypeName i2 _k2 v2)) =
-        if rel i1 i2 && v1 == v2
-           then return eps
-        else if v1 > 0 && b1 then return $ 
-                Map.singleton v1 t2
-                else if v2 > 0 && b2 then return $
-                     Map.singleton v2 t1
-                        else uniResult "typename" t1 
-                                    "is not unifiable with typename" t2
-    match _tm _ (b1, TypeName i1 _ v1) (_, t2) =
-        if v1 > 0 && b1 then 
-           if null $ leaves (==v1) t2 then 
-              return $ Map.singleton v1 t2
-           else uniResult "var" i1 "occurs in" t2
-        else uniResult "typename" i1  
-                            "is not unifiable with type" t2
-    match tm rel t2 t1@(_, TypeName _ _ _) = match tm rel t1 t2
-    match tm rel (b1, TypeAppl t1 t2) (b2, TypeAppl t3 t4) = 
-        match tm rel (b1, (t1, t2)) (b2, (t3, t4))
-    match tm rel (b1, ProductType p1 _) (b2, ProductType p2 _) = 
-        match tm rel (b1, p1) (b2, p2)
-    match tm rel (b1, FunType t1 _ t2 _) (b2, FunType t3 _ t4 _) = 
-        match tm rel (b1, (t1, t2)) (b2, (t3, t4))
-    match _ _ (_,t1) (_,t2) = uniResult "type" t1  
-                            "is not unifiable with type" t2
-
-showPrettyWithPos :: (PrettyPrint a, PosItem a) => a -> ShowS
-showPrettyWithPos a =  let p = getRange a in
+ 
+showPrettyWithPos :: Type -> ShowS
+showPrettyWithPos a =  let p = posOfType a in
         showChar '\'' . showPretty a . showChar '\'' 
            . noShow (isNullRange p) (showChar ' ' . 
                showParen True (showPos $ maximumBy comparePos (rangeToList p)))
 
-uniResult :: (PrettyPrint a, PosItem a, PrettyPrint b, PosItem b) =>
-              String -> a -> String -> b -> Result Subst
+uniResult :: String -> Type -> String -> Type -> Result Subst
 uniResult s1 a s2 b = 
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
                          showPrettyWithPos a "\n  " ++ s2 ++ " " ++
                          showPrettyWithPos b "") nullRange] Nothing
-
-instance (Unifiable a, Unifiable b) => Unifiable (a, b) where  
-    subst s (t1, t2) = (subst s t1, subst s t2)
-    match tm rel (b1, (t1, t2)) (b2, (t3, t4)) =
-        let r1@(Result _ m1) = match tm rel (b1, t1) (b2, t3) in
-           case m1 of
-               Nothing -> r1
-               Just s1 -> let r2@(Result _ m2) = match tm rel 
-                                   (b1, if b1 then subst s1 t2 else t2)
-                                   (b2, if b2 then subst s1 t4 else t4)
-                              in case m2 of 
-                                     Nothing -> r2
-                                     Just s2 -> return $ compSubst s1 s2
-
-instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable [a] where
-    subst s = map (subst s) 
-    match _ _ (_, []) (_, []) = return eps
-    match tm rel (b1, a1:r1) (b2, a2:r2) = 
-        match tm rel (b1, (a1, r1)) (b2, (a2, r2))
-    match tm rel (b1, []) l = match tm rel l (b1, [])
-    match _ _ (_, (a:_)) (_, []) = uniResult "type component" a 
-                       "is not unifiable with the empty list" 
-                       (mkSimpleId "[]")
-
-instance (PrettyPrint a, PosItem a, Unifiable a) => Unifiable (Maybe a) where
-    subst s = fmap (subst s) 
-    match _ _ (_, Nothing) _ = return eps
-    match _ _ _ (_, Nothing) = return eps
-    match tm rel (b1, Just a1) (b2, Just a2) = match tm rel (b1, a1) (b2, a2)
 
 -- | make representation of bound variables unique
 generalize :: [TypeArg] -> Type -> Type

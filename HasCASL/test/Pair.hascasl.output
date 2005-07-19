@@ -1,7 +1,7 @@
 var a : Type; b : Type
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
 op f : forall a : Type; b : Type .
-         a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
+         a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
      = \ (var a : a, var b : b)
          .! (((op Pair[a_v1; b_v2]
                : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
@@ -10,16 +10,16 @@ op f : forall a : Type; b : Type .
                  Pair a_v1 b_v2) as
                 Pair a_v1 b_v2
 op g : Pair a b ->? a
-program ((op g[_var_19_v19; _var_21_v21]
+program ((op g[_var_25_v25; _var_27_v27]
           : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
-             Pair _var_19_v19 _var_21_v21 ->? _var_19_v19)
-          (((op Pair[_var_19_v19; _var_21_v21]
+             Pair _var_25_v25 _var_27_v27 ->? _var_25_v25)
+          (((op Pair[_var_25_v25; _var_27_v27]
              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                _var_19_v19 * _var_21_v21 -> Pair _var_19_v19 _var_21_v21)
-             (var a : _var_19_v19, var b : _var_21_v21) :
-               Pair _var_19_v19 _var_21_v21) :
-            _var_19_v19
-          = (var a : _var_19_v19)
+                _var_25_v25 * _var_27_v27 -> Pair _var_25_v25 _var_27_v27)
+             (var a : _var_25_v25, var b : _var_27_v27) :
+               Pair _var_25_v25 _var_27_v27) :
+            _var_25_v25
+          = (var a : _var_25_v25)
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pair
@@ -55,7 +55,7 @@ __when__else__
   : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
 bottom : forall a : Type . a_v-1 %(fun)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-f : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2
+f : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
     %(op)%
       = \ (var a : a, var b : b)
           .! (((op Pair[a_v1; b_v2]
@@ -100,7 +100,7 @@ free type Pair(a : Type)(b : Type)
 forall a : a; b : b
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op f
-        : forall a : Type; b : Type . a_v-1 * b_v-2 ->? Pair a_v-1 b_v-2)
+        : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
          (var a : a, var b : b),
        (((op Pair[a_v1; b_v2]
           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
@@ -108,16 +108,16 @@ forall a : a; b : b
           (var a : a, var b : b) :
             Pair a_v1 b_v2) as
            Pair a_v1 b_v2) %(def_f)%
-program ((op g[_var_19_v19; _var_21_v21]
+program ((op g[_var_25_v25; _var_27_v27]
           : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
-             Pair _var_19_v19 _var_21_v21 ->? _var_19_v19)
-          (((op Pair[_var_19_v19; _var_21_v21]
+             Pair _var_25_v25 _var_27_v27 ->? _var_25_v25)
+          (((op Pair[_var_25_v25; _var_27_v27]
              : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                _var_19_v19 * _var_21_v21 -> Pair _var_19_v19 _var_21_v21)
-             (var a : _var_19_v19, var b : _var_21_v21) :
-               Pair _var_19_v19 _var_21_v21) :
-            _var_19_v19
-          = (var a : _var_19_v19) %(pe_g)%
+                _var_25_v25 * _var_27_v27 -> Pair _var_25_v25 _var_27_v27)
+             (var a : _var_25_v25, var b : _var_27_v27) :
+               Pair _var_25_v25 _var_27_v27) :
+            _var_25_v25
+          = (var a : _var_25_v25) %(pe_g)%
 %% Diagnostics -----------------------------------------------------------
 *** Warning 1.5, missing kind for type variable  'a'
 *** Warning 1.8, missing kind for type variable  'b'

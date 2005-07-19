@@ -17,7 +17,6 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeMixAna
-import HasCASL.Unify
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
@@ -136,7 +135,7 @@ getTypeAppl ty = let (t, args) = getTyAppl ty in
         LazyType t ps -> getTyAppl $ liftType t ps
         KindedType t _ _ -> getTyAppl t
         ProductType ts _ ->  let n = length ts in 
-           (TypeName (productId n) (prodKind n) 0, ts)
+           (TypeName (productId n) (prodKind n) 0, reverse ts)
         FunType t1 a t2 _ -> (TypeName (arrowId a) funKind 0, [t2, t1])
         _ -> error "getTypeAppl: unresolved type"
 
@@ -183,7 +182,26 @@ lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl _ _, TypeName _ _ _) -> False
     _ -> lesserType te (convertType t1) $ convertType t2
 
--- * expand alias types
+-- * leaves of types and substitution
+
+-- | the type name components of a type 
+leaves :: (Int -> Bool) -> Type -> [(Int, (Id, RawKind))]
+leaves b t = 
+    case t of 
+           TypeName j k i -> if b(i)
+                             then [(i, (j, k))]
+                             else []
+           TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
+           ExpandedType _ t2 -> leaves b t2
+           KindedType tk _ _ -> leaves b tk
+           LazyType tl _ -> leaves b tl
+           ProductType l _ -> foldl List.union [] $ map (leaves b) l
+           FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
+           _ -> error ("leaves: " ++ show t)
+
+-- | type identifiers of a type
+idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
+idsOf b = Set.fromList . map (fst . snd) . leaves b
 
 -- | replace some type names with types
 repl :: Map.Map Id Type -> Type -> Type
@@ -191,6 +209,31 @@ repl m = rename ( \ i k n ->
                  case Map.lookup i m of
                       Just s -> s 
                       Nothing -> TypeName i k n)
+-- * super type ids
+
+-- | compute super type ids of one type id
+superIds :: TypeMap -> Id -> Set.Set Id
+superIds tm = supIds tm Set.empty . Set.singleton
+
+-- | compute all super type ids for several type ids given as second argument  
+supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
+supIds tm known new = 
+    if Set.null new then known else 
+       let more = Set.unions $ map superTypeToId $ 
+                  concatMap ( \ i -> superTypes 
+                            $ Map.findWithDefault starTypeInfo i tm)
+                  $ Set.toList new 
+           newKnown = Set.union known new
+    in supIds tm newKnown (more Set.\\ newKnown)
+
+-- | extract super type ids from a type
+superTypeToId :: Type -> Set.Set Id
+superTypeToId t = 
+    case t of
+           TypeName i _ _ -> Set.singleton i
+           _ -> Set.empty
+
+-- * expand alias types
 
 -- | expand aliases in a type scheme
 expand :: TypeMap -> TypeScheme -> TypeScheme

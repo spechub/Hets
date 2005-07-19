@@ -60,7 +60,7 @@ joinC = Set.union
 insertC :: Constrain -> Constraints -> Constraints
 insertC c = case c of 
             Subtyping t1 t2 -> if t1 == t2 then id else Set.insert c
-            _ -> Set.insert c
+            Kinding _ k -> if k == star then id else Set.insert c
 
 substC :: Subst -> Constraints -> Constraints
 substC s = Set.fold (insertC . ( \ c -> case c of
@@ -165,6 +165,9 @@ addSubst s = do
 swap :: (a, b) -> (b, a)
 swap (a, b) = (b, a)
 
+substPairList :: Subst -> [(Type, Type)] -> [(Type, Type)]
+substPairList s = map ( \ (a, b) -> (subst s a, subst s b))
+
 -- pre: shapeMatch succeeds
 shapeMgu :: TypeEnv -> [(Type, Type)] -> State (Int, Subst) [(Type, Type)]
 shapeMgu te cs = 
@@ -176,50 +179,36 @@ shapeMgu te cs =
         tl = tail structs 
         rest = tl ++ atoms
     in case p of 
-    (ExpandedType _ t, _) -> shapeMgu te ((t, t2) : rest)
-    (_, ExpandedType _ t) -> shapeMgu te ((t1, t) : rest)
-    (LazyType t _, _) -> shapeMgu te ((t, t2) : rest)
-    (_, LazyType t _) -> shapeMgu te ((t1, t) : rest)
-    (KindedType t _ _, _) -> shapeMgu te ((t, t2) : rest)
-    (_, KindedType t _ _) -> shapeMgu te ((t1, t) : rest)
-    (TypeName _ _ v1, _) -> if (v1 > 0) then case t2 of
-         ProductType ts ps -> do
-             nts <- toPairState $ freshVarsT ts
-             let s = Map.singleton v1 $ ProductType nts ps
+    (ExpandedType _ t, _) -> shapeMgu te $ (t, t2) : rest
+    (_, ExpandedType _ t) -> shapeMgu te $ (t1, t) : rest
+    (LazyType t _, _) -> shapeMgu te $ (t, t2) : rest
+    (_, LazyType t _) -> shapeMgu te $ (t1, t) : rest
+    (KindedType t _ _, _) -> shapeMgu te $ (t, t2) : rest
+    (_, KindedType t _ _) -> shapeMgu te $ (t1, t) : rest
+    (ProductType _ _, _) -> shapeMgu te $ (convertType t1, t2) : rest
+    (_, ProductType _ _) -> shapeMgu te $ (t1, convertType t2) : rest
+    (FunType _ _ _ _, _) -> shapeMgu te $ (convertType t1, t2) : rest
+    (_, FunType _ _ _ _) -> shapeMgu te $ (t1, convertType t2) : rest
+    (TypeName _ _ v1, TypeAppl f a) -> if (v1 > 0) then do
+             vf <- toPairState $ freshTypeVarT f 
+             va <- toPairState $ freshTypeVarT a 
+             let s = Map.singleton v1 (TypeAppl vf va)
              addSubst s
-             shapeMgu te (zip nts ts ++ subst s rest)
-         FunType t3 ar t4 ps -> do
-             v3 <- toPairState $ freshTypeVarT t3
-             v4 <- toPairState $ freshTypeVarT t4
-             let s = Map.singleton v1 $ FunType v3 ar v4 ps
-             addSubst s
-             shapeMgu te ((t3, v3) : (v4, t4) : subst s rest)
-         _ -> do
-             let (topTy, args) = getTypeAppl t2
-                 (_, ks) = getRawKindAppl (rawKindOfType topTy) args
-             vs <- toPairState $ freshVarsT args
-             let s = Map.singleton v1 $ mkTypeAppl topTy vs
-             addSubst s
-             shapeMgu te (concat (zipWith zipC ks $ zip vs args) 
-                          ++ subst s rest)
-       else error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "") 
+             shapeMgu te $ (vf, f) : (case rawKindOfType vf of
+                 FunKind (ExtKind _ CoVar _) _ _ -> [(va, a)]
+                 FunKind (ExtKind _ ContraVar _) _ _ -> [(a, va)]
+                 _ -> [(a, va), (va, a)]) ++ substPairList s rest
+       else error ("shapeMgu1: " ++ showPretty t1 " < " ++ showPretty t2 "") 
     (_, TypeName _ _ _) -> do ats <- shapeMgu te ((t2, t1) : map swap rest)
                               return $ map swap ats
-    (ProductType s1 _, ProductType s2 _) -> shapeMgu te (zip s1 s2 ++ rest)
-    (FunType t3 a1 t4 _, FunType t5 a2 t6 _) ->
-        let arr a = TypeName (arrowId a) funKind 0 in
-        shapeMgu te ((arr a1, arr a2) : (t5, t3) : (t4, t6) : rest)
-    _ -> let (top1, as1) = getTypeAppl t1
-             (top2, as2) = getTypeAppl t2
-             in case (top1, top2) of 
-          (TypeName _ r1 _, TypeName _ r2 _) -> 
-              let (_, ks) = getRawKindAppl r1 as1 
-              in if (r1 == r2 && length as1 == length as2) then
-                 shapeMgu te ((top1, top2) : 
-                              concat (zipWith zipC ks $ zip as1 as2) 
-                              ++ rest)
-                 else error "shapeMgu"
-          _ -> error ("shapeMgu: " ++ showPretty t1 " < " ++ showPretty t2 "")
+    (TypeAppl f1 a1, TypeAppl f2 a2) -> 
+         shapeMgu te $ (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
+              (FunKind (ExtKind _ CoVar _) _ _, 
+               FunKind (ExtKind _ CoVar _) _ _) -> (a1, a2) : rest
+              (FunKind (ExtKind _ ContraVar _) _ _, 
+               FunKind (ExtKind _ ContraVar _) _ _) -> (a2, a1) : rest
+              _ -> (a1, a2) : (a2, a1) : rest
+    _ -> error ("shapeMgu2: " ++ showPretty t1 " < " ++ showPretty t2 "")
 
 zipC :: Kind -> (Type, Type) -> [(Type, Type)] 
 zipC k p = let q = swap p in case k of
@@ -277,12 +266,20 @@ partitionC = Set.partition ( \ c -> case c of
 toListC :: Constraints -> [(Type, Type)]
 toListC l = [ (t1, t2) | Subtyping t1 t2 <- Set.toList l ]
 
+shapeMatchPairList :: TypeMap -> [(Type, Type)] -> Result Subst
+shapeMatchPairList tm l = case l of
+    [] -> return eps
+    (t1, t2) : rt -> do 
+        s1 <- shapeMatch tm t1 t2
+        s2 <- shapeMatchPairList tm $ substPairList s1 rt
+        return $ compSubst s1 s2
+
 shapeRel :: TypeEnv -> Constraints 
          -> State Int (Result (Subst, Constraints, Rel.Rel Type))
 shapeRel te cs = 
     let (qs, subS) = partitionC cs
         subL = toListC subS
-    in case shapeMatch (typeMap te) (map fst subL) $ map snd subL of
+    in case shapeMatchPairList (typeMap te) subL of
        Result ds Nothing -> return $ Result ds Nothing
        _ -> do (s1, atoms) <- shapeUnify te subL
                let r = Rel.transClosure $ Rel.fromList atoms
@@ -300,7 +297,7 @@ shapeRel te cs =
                    Result _ (Just s2) -> 
                        let s = compSubst s1 s2 
                        in return (s, substC s qs, 
-                                  Rel.fromList $ subst s2 atoms)
+                                  Rel.fromList $ substPairList s2 atoms)
                  else Result (map ( \ (t1, t2) ->
                                  mkDiag Hint "rejected" $ 
                                              Subtyping t1 t2) es) Nothing

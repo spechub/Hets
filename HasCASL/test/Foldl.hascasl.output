@@ -23,11 +23,11 @@ forall x : a
       Unit
 . ((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        a * a ->? Unit)
-    ((((op head[a ->? a] : forall a : Type . List a_v-1 -> a_v-1) :
-           List (a ->? a) -> a ->? a)
-        ((op nil[a ->? a] : forall a : Type . List a_v-1) :
-             List (a ->? a)) :
-          a ->? a)
+    ((((op head[(a ->? a)] : forall a : Type . List a_v-1 -> a_v-1) :
+           List ((a ->? a)) -> (a ->? a))
+        ((op nil[(a ->? a)] : forall a : Type . List a_v-1) :
+             List ((a ->? a))) :
+          (a ->? a))
        (var x : a) :
          a,
      var x : a) :
@@ -88,11 +88,11 @@ x : a
     Unit
 ((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      a * a ->? Unit)
-  ((((op head[a ->? a] : forall a : Type . List a_v-1 -> a_v-1) :
-         List (a ->? a) -> a ->? a)
-      ((op nil[a ->? a] : forall a : Type . List a_v-1) :
-           List (a ->? a)) :
-        a ->? a)
+  ((((op head[(a ->? a)] : forall a : Type . List a_v-1 -> a_v-1) :
+         List ((a ->? a)) -> (a ->? a))
+      ((op nil[(a ->? a)] : forall a : Type . List a_v-1) :
+           List ((a ->? a))) :
+        (a ->? a))
      (var x : a) :
        a,
    var x : a) :

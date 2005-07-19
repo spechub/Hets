@@ -1,5 +1,6 @@
 internal {type s, t; fun o, q : s -> t;
-          . ((fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+          . ((fun __=__[(s -> t)]
+              : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
                  (s -> t) * (s -> t) ->? Unit)
               (fun o : s -> t, fun q : s -> t) :
                 Unit}
@@ -36,7 +37,7 @@ q : s -> t %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-((fun __=__[s -> t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[(s -> t)] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      (s -> t) * (s -> t) ->? Unit)
   (fun o : s -> t, fun q : s -> t) :
     Unit

@@ -11,15 +11,15 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
     ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
      (case (var t : Tree Nat) of
           (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
-              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                  Tree _var_13_v13 | 
+              (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                  Tree _var_17_v17 | 
           ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
                Nat -> Tree Nat)
             (var n : Nat) :
               Tree Nat
             ->
-              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                  Tree _var_13_v13 | 
+              (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                  Tree _var_17_v17 | 
           (((op Node[Nat]
              : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
                 Tree Nat -> Nat -> Tree Nat)
@@ -28,8 +28,8 @@ forall h : Tree Nat; n : Nat; t : Tree Nat
             (var n : Nat) :
               Tree Nat
             ->
-              (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                  Tree _var_13_v13 | 
+              (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                  Tree _var_17_v17 | 
           (((op Node[Nat]
              : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
                 Tree Nat -> Nat -> Tree Nat)
@@ -126,15 +126,15 @@ free type Nat
   ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
    (case (var t : Tree Nat) of
         (op EmptyLeaf[Nat] : forall a : Type . Tree a_v-1) : Tree Nat ->
-            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                Tree _var_13_v13 | 
+            (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                Tree _var_17_v17 | 
         ((op Leaf[Nat] : forall a : Type . a_v-1 -> Tree a_v-1) :
              Nat -> Tree Nat)
           (var n : Nat) :
             Tree Nat
           ->
-            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                Tree _var_13_v13 | 
+            (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                Tree _var_17_v17 | 
         (((op Node[Nat]
            : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
               Tree Nat -> Nat -> Tree Nat)
@@ -143,8 +143,8 @@ free type Nat
           (var n : Nat) :
             Tree Nat
           ->
-            (op EmptyLeaf[_var_13_v13] : forall a : Type . Tree a_v-1) :
-                Tree _var_13_v13 | 
+            (op EmptyLeaf[_var_17_v17] : forall a : Type . Tree a_v-1) :
+                Tree _var_17_v17 | 
         (((op Node[Nat]
            : forall a : Type . Tree a_v-1 -> a_v-1 -> Tree a_v-1) :
               Tree Nat -> Nat -> Tree Nat)

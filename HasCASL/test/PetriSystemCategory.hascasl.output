@@ -82,44 +82,44 @@ type Net = {(p, pre, post) : Set P@(P ->? Unit) *
                                                                : ? Unit * ? Unit ->? Unit)
                                                                 ((fun __/\__
                                                                   : ? Unit * ? Unit ->? Unit)
-                                                                   (((fun __=__[T ->? Unit]
+                                                                   (((fun __=__[(T ->? Unit)]
                                                                       : forall a : Type .
                                                                           a_v-1 * a_v-1 ->? Unit) :
                                                                          (T ->? Unit) *
                                                                          (T ->? Unit) ->? Unit)
-                                                                      (((op dom[T; P ->? Nat]
+                                                                      (((op dom[T; (P ->? Nat)]
                                                                          : forall S : Type;
                                                                                   V : Type .
                                                                              (S_v-1 ->? V_v-2) -> Set S_v-1@(S_v-1 ->? Unit)) :
-                                                                            (T ->? P ->? Nat) -> Set T@(T ->? Unit))
+                                                                            (T ->? (P ->? Nat)) -> Set T@(T ->? Unit))
                                                                          (var pre : T ->? MultiSet P@(P ->? Nat)) :
                                                                            Set T@(T ->? Unit),
-                                                                       ((op dom[T; P ->? Nat]
+                                                                       ((op dom[T; (P ->? Nat)]
                                                                          : forall S : Type;
                                                                                   V : Type .
                                                                              (S_v-1 ->? V_v-2) -> Set S_v-1@(S_v-1 ->? Unit)) :
-                                                                            (T ->? P ->? Nat) -> Set T@(T ->? Unit))
+                                                                            (T ->? (P ->? Nat)) -> Set T@(T ->? Unit))
                                                                          (var post : T ->? MultiSet P@(P ->? Nat)) :
                                                                            Set T@(T ->? Unit)) :
                                                                         Unit,
                                                                     forall p1 : MultiSet P@(P ->? Nat)
                                                                       . (fun __=>__
                                                                          : ? Unit * ? Unit ->? Unit)
-                                                                          (((op __isIn__[P ->? Nat]
+                                                                          (((op __isIn__[(P ->? Nat)]
                                                                              : forall S : Type .
                                                                                  S_v-1 *
                                                                                  Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
                                                                                 (P ->? Nat) *
-                                                                                Set (P ->? Nat)@((P ->? Nat) ->? Unit) ->? Unit)
+                                                                                Set ((P ->? Nat))@((P ->? Nat) ->? Unit) ->? Unit)
                                                                              (var p1 : MultiSet P@(P ->? Nat),
                                                                               ((op range[T;
-                                                                                         P ->? Nat]
+                                                                                         (P ->? Nat)]
                                                                                 : forall S : Type;
                                                                                          V : Type .
                                                                                     (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-                                                                                   (T ->? P ->? Nat) -> Set (P ->? Nat)@((P ->? Nat) ->? Unit))
+                                                                                   (T ->? (P ->? Nat)) -> Set ((P ->? Nat))@((P ->? Nat) ->? Unit))
                                                                                 (var pre : T ->? MultiSet P@(P ->? Nat)) :
-                                                                                  Set (P ->? Nat)@((P ->? Nat) ->? Unit)) :
+                                                                                  Set ((P ->? Nat))@((P ->? Nat) ->? Unit)) :
                                                                                Unit,
                                                                            ((op __subset__[P]
                                                                              : forall S : Type .
@@ -142,20 +142,21 @@ type Net = {(p, pre, post) : Set P@(P ->? Unit) *
                                                                  forall p1 : MultiSet P@(P ->? Nat)
                                                                    . (fun __=>__
                                                                       : ? Unit * ? Unit ->? Unit)
-                                                                       (((op __isIn__[P ->? Nat]
+                                                                       (((op __isIn__[(P ->? Nat)]
                                                                           : forall S : Type .
                                                                               S_v-1 *
                                                                               Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
                                                                              (P ->? Nat) *
-                                                                             Set (P ->? Nat)@((P ->? Nat) ->? Unit) ->? Unit)
+                                                                             Set ((P ->? Nat))@((P ->? Nat) ->? Unit) ->? Unit)
                                                                           (var p1 : MultiSet P@(P ->? Nat),
-                                                                           ((op range[T; P ->? Nat]
+                                                                           ((op range[T;
+                                                                                      (P ->? Nat)]
                                                                              : forall S : Type;
                                                                                       V : Type .
                                                                                  (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-                                                                                (T ->? P ->? Nat) -> Set (P ->? Nat)@((P ->? Nat) ->? Unit))
+                                                                                (T ->? (P ->? Nat)) -> Set ((P ->? Nat))@((P ->? Nat) ->? Unit))
                                                                              (var pre : T ->? MultiSet P@(P ->? Nat)) :
-                                                                               Set (P ->? Nat)@((P ->? Nat) ->? Unit)) :
+                                                                               Set ((P ->? Nat))@((P ->? Nat) ->? Unit)) :
                                                                             Unit,
                                                                         ((op __subset__[P]
                                                                           : forall S : Type .
@@ -276,7 +277,7 @@ type HomNet = {(n1, hp, ht, n2) : Net@(Set P@(P ->? Unit) *
                                                                                    (fun __/\__
                                                                                     : ? Unit *
                                                                                       ? Unit ->? Unit)
-                                                                                     (((fun __=__[P ->? Nat]
+                                                                                     (((fun __=__[(P ->? Nat)]
                                                                                         : forall a : Type .
                                                                                             a_v-1 *
                                                                                             a_v-1 ->? Unit) :
@@ -298,7 +299,7 @@ type HomNet = {(n1, hp, ht, n2) : Net@(Set P@(P ->? Unit) *
                                                                                                  T ->? MultiSet P@(P ->? Nat))
                                                                                               (var t : T) :
                                                                                                 MultiSet P@(P ->? Nat)) :
-                                                                                             P ->? Nat,
+                                                                                             (P ->? Nat),
                                                                                          ((op preMap
                                                                                            : Net@(Set P@(P ->? Unit) *
                                                                                                   (T ->? MultiSet P@(P ->? Nat)) *
@@ -312,7 +313,7 @@ type HomNet = {(n1, hp, ht, n2) : Net@(Set P@(P ->? Unit) *
                                                                                                 T) :
                                                                                              MultiSet P@(P ->? Nat)) :
                                                                                           Unit,
-                                                                                      ((fun __=__[P ->? Nat]
+                                                                                      ((fun __=__[(P ->? Nat)]
                                                                                         : forall a : Type .
                                                                                             a_v-1 *
                                                                                             a_v-1 ->? Unit) :
@@ -334,7 +335,7 @@ type HomNet = {(n1, hp, ht, n2) : Net@(Set P@(P ->? Unit) *
                                                                                                  T ->? MultiSet P@(P ->? Nat))
                                                                                               (var t : T) :
                                                                                                 MultiSet P@(P ->? Nat)) :
-                                                                                             P ->? Nat,
+                                                                                             (P ->? Nat),
                                                                                          ((op postMap
                                                                                            : Net@(Set P@(P ->? Unit) *
                                                                                                   (T ->? MultiSet P@(P ->? Nat)) *
@@ -359,9 +360,9 @@ pred injective : HomNet
 type Marking : Type := MultiSet P@(P ->? Nat)
 type System = {(n, m) : Net@(Set P@(P ->? Unit) *
                              (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                        Marking@(MultiSet P@(P ->? Nat)) . let (var p : P ->? Unit,
-                                                                var pre1 : T ->? P ->? Nat,
-                                                                var post1 : T ->? P ->? Nat)
+                        Marking@(MultiSet P@(P ->? Nat)) . let (var p : (P ->? Unit),
+                                                                var pre1 : (T ->? (P ->? Nat)),
+                                                                var post1 : (T ->? (P ->? Nat)))
                                                                  = (var n : Net@(Set P@(P ->? Unit) *
                                                                                  (T ->? MultiSet P@(P ->? Nat)) *
                                                                                  (T ->? MultiSet P@(P ->? Nat))))
@@ -385,7 +386,7 @@ type System = {(n, m) : Net@(Set P@(P ->? Unit) *
                                                                           P *
                                                                           Set P@(P ->? Unit) ->? Unit)
                                                                        (var x : P,
-                                                                        var p : P ->? Unit) :
+                                                                        var p : (P ->? Unit)) :
                                                                          Unit) :
                                                                       Unit}
 op marking : System -> Marking; net : System -> Net;
@@ -501,18 +502,9 @@ forall h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                  (T ->? MultiSet P@(P ->? Nat))) *
                             Marking@(MultiSet P@(P ->? Nat))))
 . (fun __=>__ : ? Unit * ? Unit ->? Unit)
-    (((fun def__[(((P ->? Unit) * (T ->? P ->? Nat) *
-                   (T ->? P ->? Nat)) *
-                  (P ->? Nat)) *
-                 (P ->? P) * (T ->? T) *
-                 (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-                  (P ->? Nat))]
+    (((fun def__[__*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat)))]
        : forall a : Type . a_v-1 ->? Unit) :
-          (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-           (P ->? Nat)) *
-          (P ->? P) * (T ->? T) *
-          (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-           (P ->? Nat)) ->? Unit)
+          __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ->? Unit)
        ((op __o__
          : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                 (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -560,23 +552,10 @@ forall h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                  (T ->? MultiSet P@(P ->? Nat))) *
                             Marking@(MultiSet P@(P ->? Nat))))) :
          Unit,
-     ((fun __=__[(((P ->? Unit) * (T ->? P ->? Nat) *
-                   (T ->? P ->? Nat)) *
-                  (P ->? Nat)) *
-                 (P ->? P) * (T ->? T) *
-                 (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-                  (P ->? Nat))]
+     ((fun __=__[__*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat)))]
        : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-          ((((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-            (P ->? Nat)) *
-           (P ->? P) * (T ->? T) *
-           (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-            (P ->? Nat))) *
-          ((((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-            (P ->? Nat)) *
-           (P ->? P) * (T ->? T) *
-           (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-            (P ->? Nat))) ->? Unit)
+          __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) *
+          __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ->? Unit)
        ((op __o__
          : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                 (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -863,7 +842,7 @@ HomNet
                                                                            (fun __/\__
                                                                             : ? Unit *
                                                                               ? Unit ->? Unit)
-                                                                             (((fun __=__[P ->? Nat]
+                                                                             (((fun __=__[(P ->? Nat)]
                                                                                 : forall a : Type .
                                                                                     a_v-1 *
                                                                                     a_v-1 ->? Unit) :
@@ -885,7 +864,7 @@ HomNet
                                                                                          T ->? MultiSet P@(P ->? Nat))
                                                                                       (var t : T) :
                                                                                         MultiSet P@(P ->? Nat)) :
-                                                                                     P ->? Nat,
+                                                                                     (P ->? Nat),
                                                                                  ((op preMap
                                                                                    : Net@(Set P@(P ->? Unit) *
                                                                                           (T ->? MultiSet P@(P ->? Nat)) *
@@ -899,7 +878,7 @@ HomNet
                                                                                         T) :
                                                                                      MultiSet P@(P ->? Nat)) :
                                                                                   Unit,
-                                                                              ((fun __=__[P ->? Nat]
+                                                                              ((fun __=__[(P ->? Nat)]
                                                                                 : forall a : Type .
                                                                                     a_v-1 *
                                                                                     a_v-1 ->? Unit) :
@@ -921,7 +900,7 @@ HomNet
                                                                                          T ->? MultiSet P@(P ->? Nat))
                                                                                       (var t : T) :
                                                                                         MultiSet P@(P ->? Nat)) :
-                                                                                     P ->? Nat,
+                                                                                     (P ->? Nat),
                                                                                  ((op postMap
                                                                                    : Net@(Set P@(P ->? Unit) *
                                                                                           (T ->? MultiSet P@(P ->? Nat)) *
@@ -1053,41 +1032,41 @@ Net
                         (T ->? MultiSet P@(P ->? Nat)) . (fun __/\__
                                                           : ? Unit * ? Unit ->? Unit)
                                                            ((fun __/\__ : ? Unit * ? Unit ->? Unit)
-                                                              (((fun __=__[T ->? Unit]
+                                                              (((fun __=__[(T ->? Unit)]
                                                                  : forall a : Type .
                                                                      a_v-1 * a_v-1 ->? Unit) :
                                                                     (T ->? Unit) *
                                                                     (T ->? Unit) ->? Unit)
-                                                                 (((op dom[T; P ->? Nat]
+                                                                 (((op dom[T; (P ->? Nat)]
                                                                     : forall S : Type; V : Type .
                                                                         (S_v-1 ->? V_v-2) -> Set S_v-1@(S_v-1 ->? Unit)) :
-                                                                       (T ->? P ->? Nat) -> Set T@(T ->? Unit))
+                                                                       (T ->? (P ->? Nat)) -> Set T@(T ->? Unit))
                                                                     (var pre : T ->? MultiSet P@(P ->? Nat)) :
                                                                       Set T@(T ->? Unit),
-                                                                  ((op dom[T; P ->? Nat]
+                                                                  ((op dom[T; (P ->? Nat)]
                                                                     : forall S : Type; V : Type .
                                                                         (S_v-1 ->? V_v-2) -> Set S_v-1@(S_v-1 ->? Unit)) :
-                                                                       (T ->? P ->? Nat) -> Set T@(T ->? Unit))
+                                                                       (T ->? (P ->? Nat)) -> Set T@(T ->? Unit))
                                                                     (var post : T ->? MultiSet P@(P ->? Nat)) :
                                                                       Set T@(T ->? Unit)) :
                                                                    Unit,
                                                                forall p1 : MultiSet P@(P ->? Nat)
                                                                  . (fun __=>__
                                                                     : ? Unit * ? Unit ->? Unit)
-                                                                     (((op __isIn__[P ->? Nat]
+                                                                     (((op __isIn__[(P ->? Nat)]
                                                                         : forall S : Type .
                                                                             S_v-1 *
                                                                             Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
                                                                            (P ->? Nat) *
-                                                                           Set (P ->? Nat)@((P ->? Nat) ->? Unit) ->? Unit)
+                                                                           Set ((P ->? Nat))@((P ->? Nat) ->? Unit) ->? Unit)
                                                                         (var p1 : MultiSet P@(P ->? Nat),
-                                                                         ((op range[T; P ->? Nat]
+                                                                         ((op range[T; (P ->? Nat)]
                                                                            : forall S : Type;
                                                                                     V : Type .
                                                                                (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-                                                                              (T ->? P ->? Nat) -> Set (P ->? Nat)@((P ->? Nat) ->? Unit))
+                                                                              (T ->? (P ->? Nat)) -> Set ((P ->? Nat))@((P ->? Nat) ->? Unit))
                                                                            (var pre : T ->? MultiSet P@(P ->? Nat)) :
-                                                                             Set (P ->? Nat)@((P ->? Nat) ->? Unit)) :
+                                                                             Set ((P ->? Nat))@((P ->? Nat) ->? Unit)) :
                                                                           Unit,
                                                                       ((op __subset__[P]
                                                                         : forall S : Type .
@@ -1110,20 +1089,20 @@ Net
                                                             forall p1 : MultiSet P@(P ->? Nat)
                                                               . (fun __=>__
                                                                  : ? Unit * ? Unit ->? Unit)
-                                                                  (((op __isIn__[P ->? Nat]
+                                                                  (((op __isIn__[(P ->? Nat)]
                                                                      : forall S : Type .
                                                                          S_v-1 *
                                                                          Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
                                                                         (P ->? Nat) *
-                                                                        Set (P ->? Nat)@((P ->? Nat) ->? Unit) ->? Unit)
+                                                                        Set ((P ->? Nat))@((P ->? Nat) ->? Unit) ->? Unit)
                                                                      (var p1 : MultiSet P@(P ->? Nat),
-                                                                      ((op range[T; P ->? Nat]
+                                                                      ((op range[T; (P ->? Nat)]
                                                                         : forall S : Type;
                                                                                  V : Type .
                                                                             (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-                                                                           (T ->? P ->? Nat) -> Set (P ->? Nat)@((P ->? Nat) ->? Unit))
+                                                                           (T ->? (P ->? Nat)) -> Set ((P ->? Nat))@((P ->? Nat) ->? Unit))
                                                                         (var pre : T ->? MultiSet P@(P ->? Nat)) :
-                                                                          Set (P ->? Nat)@((P ->? Nat) ->? Unit)) :
+                                                                          Set ((P ->? Nat))@((P ->? Nat) ->? Unit)) :
                                                                        Unit,
                                                                    ((op __subset__[P]
                                                                      : forall S : Type .
@@ -1152,9 +1131,9 @@ System
            Marking@(MultiSet P@(P ->? Nat))
     = {(n, m) : Net@(Set P@(P ->? Unit) *
                      (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
-                Marking@(MultiSet P@(P ->? Nat)) . let (var p : P ->? Unit,
-                                                        var pre1 : T ->? P ->? Nat,
-                                                        var post1 : T ->? P ->? Nat)
+                Marking@(MultiSet P@(P ->? Nat)) . let (var p : (P ->? Unit),
+                                                        var pre1 : (T ->? (P ->? Nat)),
+                                                        var post1 : (T ->? (P ->? Nat)))
                                                          = (var n : Net@(Set P@(P ->? Unit) *
                                                                          (T ->? MultiSet P@(P ->? Nat)) *
                                                                          (T ->? MultiSet P@(P ->? Nat))))
@@ -1175,7 +1154,7 @@ System
                                                                    S_v-1 *
                                                                    Set S_v-1@(S_v-1 ->? Unit) ->? Unit) :
                                                                   P * Set P@(P ->? Unit) ->? Unit)
-                                                               (var x : P, var p : P ->? Unit) :
+                                                               (var x : P, var p : (P ->? Unit)) :
                                                                  Unit) :
                                                               Unit}
 T : Type
@@ -1190,10 +1169,10 @@ __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 %% Type Variables --------------------------------------------------------
 Elem  : Type %(var_6)%
-S  : Type %(var_44)%
-U  : Type %(var_42)%
-V  : Type %(var_45)%
-a  : Type %(var_39)%
+S  : Type %(var_62)%
+U  : Type %(var_60)%
+V  : Type %(var_63)%
+a  : Type %(var_57)%
 %% Assumptions -----------------------------------------------------------
 0 : Nat %(op)%
 1 : Nat %(op)%
@@ -1619,18 +1598,9 @@ in forall x : Elem
               Unit) :
            Unit
 (fun __=>__ : ? Unit * ? Unit ->? Unit)
-  (((fun def__[(((P ->? Unit) * (T ->? P ->? Nat) *
-                 (T ->? P ->? Nat)) *
-                (P ->? Nat)) *
-               (P ->? P) * (T ->? T) *
-               (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-                (P ->? Nat))]
+  (((fun def__[__*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat)))]
      : forall a : Type . a_v-1 ->? Unit) :
-        (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-         (P ->? Nat)) *
-        (P ->? P) * (T ->? T) *
-        (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-         (P ->? Nat)) ->? Unit)
+        __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ->? Unit)
      ((op __o__
        : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1678,23 +1648,10 @@ in forall x : Elem
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat))))) :
        Unit,
-   ((fun __=__[(((P ->? Unit) * (T ->? P ->? Nat) *
-                 (T ->? P ->? Nat)) *
-                (P ->? Nat)) *
-               (P ->? P) * (T ->? T) *
-               (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-                (P ->? Nat))]
+   ((fun __=__[__*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat)))]
      : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-        ((((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-          (P ->? Nat)) *
-         (P ->? P) * (T ->? T) *
-         (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-          (P ->? Nat))) *
-        ((((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-          (P ->? Nat)) *
-         (P ->? P) * (T ->? T) *
-         (((P ->? Unit) * (T ->? P ->? Nat) * (T ->? P ->? Nat)) *
-          (P ->? Nat))) ->? Unit)
+        __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) *
+        __*__*__*__ ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ((P ->? P)) ((T ->? T)) ((__*__*__ ((P ->? Unit)) ((T ->? (P ->? Nat))) ((T ->? (P ->? Nat))) * (P ->? Nat))) ->? Unit)
      ((op __o__
        : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                               (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -1885,14 +1842,14 @@ in forall x : Elem
 *** Hint 35.17, not a class 'Elem'
 *** Hint 34.12, rebound variable 'S'
 *** Hint 34.12, rebound variable 'S'
-*** Hint, rejected 'Unit < Nat' of '((op __isIn__[_var_16_v16]
+*** Hint, rejected 'Unit < Nat' of '((op __isIn__[_var_20_v20]
   : forall Elem : Type .
       Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                            MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit)) :
-     Pred (_var_16_v16 * MultiSet _var_16_v16)@(_var_16_v16 *
-                                                MultiSet _var_16_v16@(_var_16_v16 ->? Nat) ->? Unit))
+     Pred (_var_20_v20 * MultiSet _var_20_v20)@(_var_20_v20 *
+                                                MultiSet _var_20_v20@(_var_20_v20 ->? Nat) ->? Unit))
   (var x : Elem, var S : Set Elem@(Elem ->? Unit)) :
-    _var_15_v15'
+    _var_19_v19'
 
 *** Hint 37.7, is type variable 'S'
 *** Hint 37.7, rebound type variable 'S'
@@ -1910,35 +1867,37 @@ in forall x : Elem
 *** Hint 62.10, rebound type variable 'V'
 *** Hint 72.23, not a kind 'MultiSet P'
 *** Hint 73.26, not a kind 'MultiSet P'
-*** Hint 72.45, rejected 'Unit < Nat' of '((op __isIn__[_var_93_v93]
+*** Hint 72.45, rejected 'Unit < Nat' of '((op __isIn__[_var_141_v141]
   : forall Elem : Type .
       Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                            MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit)) :
-     Pred (_var_93_v93 * MultiSet _var_93_v93)@(_var_93_v93 *
-                                                MultiSet _var_93_v93@(_var_93_v93 ->? Nat) ->? Unit))
+     Pred (_var_141_v141 * MultiSet _var_141_v141)@(_var_141_v141 *
+                                                    MultiSet _var_141_v141@(_var_141_v141 ->? Nat) ->? Unit))
   (var p1 : MultiSet P@(P ->? Nat),
-   ((op range[_var_105_v105; _var_111_v111 ->? _var_112_v112]
+   ((op range[_var_161_v161;
+              _var_173_v173 _var_174_v174 _var_172_v172]
      : forall S : Type; V : Type .
          (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-        (_var_105_v105 ->? _var_111_v111 ->? _var_112_v112) -> Set (_var_111_v111 ->? _var_112_v112)@((_var_111_v111 ->? _var_112_v112) ->? Unit))
+        (_var_161_v161 ->? _var_173_v173 _var_174_v174 _var_172_v172) -> Set (_var_173_v173 _var_174_v174 _var_172_v172)@(_var_173_v173 _var_174_v174 _var_172_v172 ->? Unit))
      (var pre : T ->? MultiSet P@(P ->? Nat)) :
-       Set (_var_111_v111 ->? _var_112_v112)@((_var_111_v111 ->? _var_112_v112) ->? Unit)) :
-    _var_92_v92'
+       Set (_var_173_v173 _var_174_v174 _var_172_v172)@(_var_173_v173 _var_174_v174 _var_172_v172 ->? Unit)) :
+    _var_140_v140'
 
-*** Hint 73.48, rejected 'Unit < Nat' of '((op __isIn__[_var_164_v164]
+*** Hint 73.48, rejected 'Unit < Nat' of '((op __isIn__[_var_264_v264]
   : forall Elem : Type .
       Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                            MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit)) :
-     Pred (_var_164_v164 * MultiSet _var_164_v164)@(_var_164_v164 *
-                                                    MultiSet _var_164_v164@(_var_164_v164 ->? Nat) ->? Unit))
+     Pred (_var_264_v264 * MultiSet _var_264_v264)@(_var_264_v264 *
+                                                    MultiSet _var_264_v264@(_var_264_v264 ->? Nat) ->? Unit))
   (var p1 : MultiSet P@(P ->? Nat),
-   ((op range[_var_176_v176; _var_182_v182 ->? _var_183_v183]
+   ((op range[_var_284_v284;
+              _var_296_v296 _var_297_v297 _var_295_v295]
      : forall S : Type; V : Type .
          (S_v-1 ->? V_v-2) -> Set V_v-2@(V_v-2 ->? Unit)) :
-        (_var_176_v176 ->? _var_182_v182 ->? _var_183_v183) -> Set (_var_182_v182 ->? _var_183_v183)@((_var_182_v182 ->? _var_183_v183) ->? Unit))
+        (_var_284_v284 ->? _var_296_v296 _var_297_v297 _var_295_v295) -> Set (_var_296_v296 _var_297_v297 _var_295_v295)@(_var_296_v296 _var_297_v297 _var_295_v295 ->? Unit))
      (var pre : T ->? MultiSet P@(P ->? Nat)) :
-       Set (_var_182_v182 ->? _var_183_v183)@((_var_182_v182 ->? _var_183_v183) ->? Unit)) :
-    _var_163_v163'
+       Set (_var_296_v296 _var_297_v297 _var_295_v295)@(_var_296_v296 _var_297_v297 _var_295_v295 ->? Unit)) :
+    _var_263_v263'
 
 *** Hint 81.19, not a class 'T'
 *** Hint 80.28-80.35, in type of '(var hp : P ->? P,
@@ -1955,7 +1914,7 @@ in forall x : Elem
                   (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))) :
      Set P@(P ->? Unit))'
   typename 'P' (79.35)
-  is not unifiable with type '_var_248_v248 ->? _var_249_v249' (20.31)
+  is not unifiable with type '_var_409_v409 _var_410_v410 _var_408_v408' (63.47)
 
 *** Hint 80.66-80.78, in type of '(var ht : T ->? T,
  (op transitions
@@ -1971,14 +1930,14 @@ in forall x : Elem
                   (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))) :
      Set T@(T ->? Unit))'
   typename 'T' (79.45)
-  is not unifiable with type '_var_342_v342 ->? _var_343_v343' (20.31)
+  is not unifiable with type '_var_583_v583 _var_584_v584 _var_582_v582' (63.47)
 
-*** Hint 81.31, rejected 'Unit < Nat' of '((op __isIn__[_var_430_v430]
+*** Hint 81.31, rejected 'Unit < Nat' of '((op __isIn__[_var_746_v746]
   : forall Elem : Type .
       Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                            MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit)) :
-     Pred (_var_430_v430 * MultiSet _var_430_v430)@(_var_430_v430 *
-                                                    MultiSet _var_430_v430@(_var_430_v430 ->? Nat) ->? Unit))
+     Pred (_var_746_v746 * MultiSet _var_746_v746)@(_var_746_v746 *
+                                                    MultiSet _var_746_v746@(_var_746_v746 ->? Nat) ->? Unit))
   (var t : T,
    (op transitions
     : Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
@@ -1986,14 +1945,14 @@ in forall x : Elem
      (var n1 : Net@(Set P@(P ->? Unit) *
                     (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat)))) :
        Set T@(T ->? Unit)) :
-    _var_429_v429'
+    _var_745_v745'
 
 *** Hint 95.38, not a class 'P'
 *** Hint, rejected 'Nat < Unit' of '(var x : P, var m : Marking@(MultiSet P@(P ->? Nat)))'
 
-*** Hint 94.29-95.27, rejected 'Unit < Nat' of 'let (var p : _var_591_v591 ->? _var_592_v592,
-     var pre1 : _var_593_v593 ->? _var_595_v595 ->? _var_596_v596,
-     var post1 : _var_597_v597 ->? _var_599_v599 ->? _var_600_v600)
+*** Hint 94.29-95.27, rejected 'Unit < Nat' of 'let (var p : _var_1033_v1033 _var_1034_v1034 _var_1032_v1032,
+     var pre1 : _var_1037_v1037 _var_1038_v1038 (_var_1041_v1041 _var_1042_v1042 _var_1040_v1040),
+     var post1 : _var_1045_v1045 _var_1046_v1046 (_var_1049_v1049 _var_1050_v1050 _var_1048_v1048))
       = (var n : Net@(Set P@(P ->? Unit) *
                       (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))))
 in forall x : P
@@ -2005,13 +1964,15 @@ in forall x : P
                Pred (P * MultiSet P)@(P * MultiSet P@(P ->? Nat) ->? Unit))
             (var x : P, var m : Marking@(MultiSet P@(P ->? Nat))) :
               Unit,
-          ((op __isIn__[_var_618_v618]
+          ((op __isIn__[_var_1078_v1078]
             : forall Elem : Type .
                 Pred (Elem_v-1 * MultiSet Elem_v-1)@(Elem_v-1 *
                                                      MultiSet Elem_v-1@(Elem_v-1 ->? Nat) ->? Unit)) :
-               Pred (_var_618_v618 * MultiSet _var_618_v618)@(_var_618_v618 *
-                                                              MultiSet _var_618_v618@(_var_618_v618 ->? Nat) ->? Unit))
-            (var x : P, var p : _var_591_v591 ->? _var_592_v592) :
+               Pred (_var_1078_v1078 *
+                     MultiSet _var_1078_v1078)@(_var_1078_v1078 *
+                                                MultiSet _var_1078_v1078@(_var_1078_v1078 ->? Nat) ->? Unit))
+            (var x : P,
+             var p : _var_1033_v1033 _var_1034_v1034 _var_1032_v1032) :
               Unit) :
            Unit'
 
@@ -2045,7 +2006,7 @@ in forall x : P
         Marking@(MultiSet P@(P ->? Nat))) :
      Nat)'
   typename 'Nat' (28.38)
-  is not unifiable with type '_var_734_v734 ->? _var_735_v735' (20.31)
+  is not unifiable with type '_var_1302_v1302 _var_1303_v1303 _var_1301_v1301' (23.33)
 
 *** Hint 112.12, not a class 'HomSys'
 *** Hint 112.16, not a class 'HomSys'
@@ -2063,9 +2024,8 @@ in forall x : P
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2081,14 +2041,10 @@ in forall x : P
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat)))' (102.67)
-  is not unifiable with type '_var_863_v863 ->? _var_864_v864' (54.17)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (System@(Net@(Set P@(P ->? Unit) *
+                          (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                     Marking@(MultiSet P@(P ->? Nat)))) (P ->? P)' (102.54)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2104,9 +2060,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2122,14 +2077,10 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat)))' (102.67)
-  is not unifiable with type '_var_1155_v1155 ->? _var_1156_v1156' (54.17)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (System@(Net@(Set P@(P ->? Unit) *
+                          (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                     Marking@(MultiSet P@(P ->? Nat)))) (P ->? P)' (102.54)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2138,9 +2089,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2149,14 +2099,10 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat)))' (102.67)
-  is not unifiable with type '_var_1401_v1401 ->? _var_1402_v1402' (47.15)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (System@(Net@(Set P@(P ->? Unit) *
+                          (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                     Marking@(MultiSet P@(P ->? Nat)))) (P ->? P)' (102.54)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2165,9 +2111,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2176,9 +2121,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint 114.30-114.40, in type of '((op placesMap
   : HomSys@(System@(Net@(Set P@(P ->? Unit) *
@@ -2212,14 +2156,10 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                   (T ->? MultiSet P@(P ->? Nat))) *
                              Marking@(MultiSet P@(P ->? Nat))))) :
      P ->? P)'
-  type 'P ->? P' (107.33)
-  is not unifiable with type 'System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat)))' (102.67)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (System@(Net@(Set P@(P ->? Unit) *
+                          (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                     Marking@(MultiSet P@(P ->? Nat)))) (P ->? P)' (102.54)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2228,9 +2168,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2239,9 +2178,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint 114.30-114.40, in type of '((op placesMap
   : HomSys@(System@(Net@(Set P@(P ->? Unit) *
@@ -2275,12 +2213,10 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                   (T ->? MultiSet P@(P ->? Nat))) *
                              Marking@(MultiSet P@(P ->? Nat))))) :
      P ->? P)'
-  type 'P ->? P' (107.33)
-  is not unifiable with type 'Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-     (T ->? MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-     (T ->? MultiSet P@(P ->? Nat)))' (79.48)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) *
+                  (T ->? MultiSet P@(P ->? Nat)))) (P ->? P)' (79.35)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2289,9 +2225,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2300,9 +2235,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2311,9 +2245,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2322,9 +2255,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint 114.64-114.79, in type of '((op transitionsMap
   : HomSys@(System@(Net@(Set P@(P ->? Unit) *
@@ -2358,14 +2290,10 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                   (T ->? MultiSet P@(P ->? Nat))) *
                              Marking@(MultiSet P@(P ->? Nat))))) :
      T ->? T)'
-  type 'T ->? T' (108.38)
-  is not unifiable with type 'System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-             (T ->? MultiSet P@(P ->? Nat))) *
-        Marking@(MultiSet P@(P ->? Nat)))' (102.67)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (System@(Net@(Set P@(P ->? Unit) *
+                          (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
+                     Marking@(MultiSet P@(P ->? Nat)))) (P ->? P)' (102.54)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2374,9 +2302,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2385,9 +2312,8 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint 114.64-114.79, in type of '((op transitionsMap
   : HomSys@(System@(Net@(Set P@(P ->? Unit) *
@@ -2421,12 +2347,10 @@ System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                   (T ->? MultiSet P@(P ->? Nat))) *
                              Marking@(MultiSet P@(P ->? Nat))))) :
      T ->? T)'
-  type 'T ->? T' (108.38)
-  is not unifiable with type 'Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-     (T ->? MultiSet P@(P ->? Nat))) *
-(P ->? P) * (T ->? T) *
-Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-     (T ->? MultiSet P@(P ->? Nat)))' (79.48)
+  typename '__->?__'
+  is not unifiable with type '__*__*__*__ (Net@(Set P@(P ->? Unit) *
+                  (T ->? MultiSet P@(P ->? Nat)) *
+                  (T ->? MultiSet P@(P ->? Nat)))) (P ->? P)' (79.35)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2435,9 +2359,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h1 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2446,9 +2369,8 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 
 *** Hint, in type of '(var h2 : HomSys@(System@(Net@(Set P@(P ->? Unit) *
                                (T ->? MultiSet P@(P ->? Nat)) * (T ->? MultiSet P@(P ->? Nat))) *
@@ -2457,7 +2379,6 @@ Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                   System@(Net@(Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
                                (T ->? MultiSet P@(P ->? Nat))) *
                           Marking@(MultiSet P@(P ->? Nat)))))'
-  type 'Set P@(P ->? Unit) * (T ->? MultiSet P@(P ->? Nat)) *
-(T ->? MultiSet P@(P ->? Nat))' (71.59)
-  is not unifiable with type 'P ->? Unit' (8.19)
+  typename '__*__'
+  is not unifiable with type '__*__*__ (Set P@(P ->? Unit))' (71.34)
 

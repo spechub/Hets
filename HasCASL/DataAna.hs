@@ -148,27 +148,8 @@ relatedTypeIds tm i1 i2 =
 allRelIds :: TypeMap -> TypeId -> Set.Set TypeId
 allRelIds tm i = Set.union (superIds tm i) $ subIds tm i 
 
--- | super type ids
-superIds :: TypeMap -> Id -> Set.Set Id
-superIds tm = supIds tm Set.empty . Set.singleton
-
 subIds :: TypeMap -> Id -> Set.Set Id
 subIds tm i = foldr ( \ j s ->
                  if Set.member i $ superIds tm j then
                       Set.insert j s else s) Set.empty $ Map.keys tm
 
-supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
-supIds tm known new = 
-    if Set.null new then known else 
-       let more = Set.unions $ map superTypeToId $ 
-                  concatMap ( \ i -> superTypes 
-                            $ Map.findWithDefault starTypeInfo i tm)
-                  $ Set.toList new 
-           newKnown = Set.union known new
-    in supIds tm newKnown (more Set.\\ newKnown)
-
-superTypeToId :: Type -> Set.Set Id
-superTypeToId t = 
-    case t of
-           TypeName i _ _ -> Set.singleton i
-           _ -> Set.empty

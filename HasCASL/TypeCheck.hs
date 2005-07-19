@@ -26,6 +26,7 @@ import HasCASL.VarDecl
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.MixAna
+import HasCASL.TypeAna
 import HasCASL.MapTerm
 import HasCASL.Constrain
 import HasCASL.ProgEq
@@ -267,7 +268,7 @@ infer b mt trm = do
                  Just ty -> [(eps, insertC (Subtyping t ty) noC, t, qv)]
         QualOp br (InstOpId i ts qs) sc ps -> do
             (ty, inst, cs) <- instantiate sc
-            let Result ds ms = mgu tm (if null ts then inst else ts) inst
+            let Result ds ms = mguList tm (if null ts then inst else ts) inst
             addDiags $ map (improveDiag trm) ds 
             return $ case ms of 
                 Nothing -> []
