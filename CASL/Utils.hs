@@ -299,8 +299,27 @@ mkSingleTermF cons t ps =
           (findConditionalT t)
     where phi = cons t ps
 
+{- |
+'codeOutConditionalF' implemented via 'CASL.Fold.foldFormula'
 
-codeOutConditionalF :: (Eq f) => (f -> f) 
+at each atom with a term find first (most left,no recursion into
+   terms within it) Conditional term and report it (findConditionalT)
+
+substitute the original atom with the conjunction of the already
+   encoded atoms and already encoded formula
+
+encoded atoms are the result of the substition (substConditionalF)
+   of the Conditional term with each result term of the Conditional
+   term plus recusion of codingOutConditionalF
+
+encoded formulas are the result of codingOutConditionalF
+
+expansion of conditionals according to CASL-Ref-Manual:
+\'@A[T1 when F else T2]@\' expands to 
+\'@(A[T1] if F) \/\\ (A[T2] if not F)@\'
+-}
+codeOutConditionalF :: (Eq f) => 
+                       (f -> f) 
                     -> FORMULA f -> FORMULA f
 codeOutConditionalF fun = foldFormula (codeOutCondRecord fun) 
 
@@ -334,25 +353,6 @@ substConditionalF :: (Eq f)
                   -> TERM f -- ^ newly inserted term
                   -> FORMULA f -> FORMULA f
 substConditionalF c t = foldFormula (substConditionalRecord c t)
-
-{- codeOutConditional{F,T} implemented via CASL.Fold.fold
-
-   at each atom with a term find first (most left,no recursion into
-   terms within it) Conditional term and report it (findConditionalT)
-
-   substitute the original atom with the conjunction of the already
-   encoded atoms and already encoded formula
-
-   encoded atoms are the result of the substition (substConditionalF)
-   of the Conditional term with each result term of the Conditional
-   term plus recusion of codingOutConditionalF
-
-   encoded formulas are the result of codingOutConditionalF
-
-expansion of conditionals according to CASL-Ref-Manual:
-'A[T1 when F else T2]' expands to '(A[T1] if F) /\ (A[T2] if not F)'
-
--}
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
