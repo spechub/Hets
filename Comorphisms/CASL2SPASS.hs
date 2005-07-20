@@ -22,7 +22,7 @@ The translating comorphism from CASL to SPASS.
 module Comorphisms.CASL2SPASS where
 
 -- Debuging and Warning
--- import Debug.Trace
+import Debug.Trace
 import Control.Exception
 
 import Logic.Logic as Logic
@@ -452,18 +452,18 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-mapSen :: (Eq f,Show f) => FormulaTranslator f e 
+mapSen :: (Eq f,PrettyPrint f) => FormulaTranslator f e 
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
 
-transFORM :: (Eq f,Show f) => CSign.Sign f e 
+transFORM :: (Eq f,PrettyPrint f) => CSign.Sign f e 
           -> IdType_SPId_Map -> FormulaTranslator f e 
           -> FORMULA f -> SPTerm
 transFORM sign i tr phi = transFORMULA sign i tr phi'
     where phi' = codeOutConditionalF id 
                         (codeOutUniqueExtF id (\ _  -> id) phi)
 
-transFORMULA :: (Show f) => 
+transFORMULA :: (PrettyPrint f) => 
                 CSign.Sign f e -> 
                 IdType_SPId_Map -> FormulaTranslator f e 
                 -> FORMULA f -> SPTerm
@@ -508,11 +508,23 @@ transFORMULA sign idMap tr (Membership t s _) =
                   showPretty s "\""))
           (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
           (lookupSPId s CSort idMap)
+transFORMULA _ _ _ (Sort_gen_ax _ _) = 
+    error "Sort generation constraints as goals are not yet supported!"
+{- implementation sketch:
+   - invent new predicate P that is supposed to hold on 
+     every x in the (freely) generated sort.
+   - generate formulas with this predicate for each constructor.
+   - recursive constructors hold if the predicate holds on the variables
+   - prove forall x . P(x)
+
+  implementation is postponed as this translation does not produce
+only one goal, but additional symbols, axioms and a goal
+ -}
 transFORMULA _ _ _ f = 
-  error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++show f++"'") 
+    error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++show f++"'")
 
 
-transTERM :: (Show f) => 
+transTERM :: (PrettyPrint f) => 
              CSign.Sign f e -> 
              IdType_SPId_Map -> FormulaTranslator f e
           -> TERM f -> SPTerm
@@ -525,10 +537,24 @@ transTERM sign idMap tr (Application opsymb args _) =
 
 transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "CASL2SPASS.transTERM: Conditional terms must be coded out."
-transTERM sign idMap tr (Sorted_term t s _) 
-    {- | term_sort t == s-} = transTERM sign idMap tr t
-transTERM sign idMap tr (Cast t s _) 
-    {- | term_sort t == s-} = transTERM sign idMap tr t
+transTERM sign idMap tr t'@(Sorted_term t s _) 
+    | term_sort t == s = recRes
+    | otherwise = 
+        assert (trace ("Please check sorted term: '"++showPretty t' ""++
+                       "' with sorts '"++show (term_sort t)++
+                       "' <= '"++show s++"'")
+                      (Set.member (term_sort t) (CSign.subsortsOf s sign)))
+               recRes
+    where recRes = transTERM sign idMap tr t
+transTERM sign idMap tr t'@(Cast t s _) 
+    | term_sort t == s = recRes
+    | otherwise =
+          assert (trace ("Please check cast term: '"++showPretty t' ""++
+                         "' with sorts '"++show s++
+                         "' <= '"++show (term_sort t)++"'")
+                        (Set.member s (CSign.subsortsOf (term_sort t) sign)))
+                 recRes
+    where recRes = transTERM sign idMap tr t
 transTERM _sign _idMap _tr t =
   error ("CASL2SPASS.transTERM: unknown TERM '"++show t++"'") 
 
