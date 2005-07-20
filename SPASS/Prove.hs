@@ -14,7 +14,7 @@ Interface for the SPASS theorem prover.
 
 {- 
     todo:
-      - implement waiting for SPASS (Zombies)
+      - implement waiting for SPASS (Zombies). DONE. needs to be tested.
       - use one of the technices in Comorphisms.CASL2SPASS to translate
         formula labels into correct SPASS identifiers; 
         and keep track of this translation for getting the right names
@@ -423,7 +423,8 @@ parseSpassOutput spass = parseIt (Nothing, [], [])
       let usedAxiomsMatch = matchRegex re_ua line
       let usedAxioms' = if isJust usedAxiomsMatch then (words $ head $ fromJust usedAxiomsMatch) else usedAxioms
       if isJust (matchRegex re_stop line)
-        then
+        then do
+          _ <- waitForChildProcess spass
           return (res', usedAxioms', output ++ [line])
         else
           parseIt (res', usedAxioms', output ++ [line])
