@@ -15,6 +15,9 @@ Interface for the SPASS theorem prover.
 {- 
     todo:
       - implement waiting for SPASS (Zombies). DONE. needs to be tested.
+      - prevent parser from hanging if SPASS exits with errors. DONE.
+        needs to be tested. should probably also output an error message
+        to the user
       - use one of the technices in Comorphisms.CASL2SPASS to translate
         formula labels into correct SPASS identifiers; 
         and keep track of this translation for getting the right names
@@ -48,7 +51,8 @@ import Common.PrettyPrint
 import Common.ProofUtils
 
 import ChildProcess
-import System.Posix
+import ProcessClasses
+import System.Exit
 import Text.Regex
 import Data.List
 import Data.Maybe
@@ -414,8 +418,25 @@ spassProveBatch thName (Theory sig nSens) =
 -}
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
                  -> IO (Maybe String, [String], [String]) -- ^ (result, used axioms, complete output)
-parseSpassOutput spass = parseIt (Nothing, [], [])
+parseSpassOutput spass = parseItProtected (Nothing, [], [])
   where
+
+    -- check for errors. unfortunately we cannot just read from SPASS until an
+    -- EOF since readMsg will just wait forever on EOF.
+    parseItProtected (res, usedAxioms, output) = do
+      e <- getToolStatus spass
+      case e of
+        Nothing
+          -- still running
+          -> parseIt (res, usedAxioms, output)
+        Just (ExitFailure retval)
+          -- returned error
+          -> return (Nothing, [], ["SPASS returned error: "++(show retval)])
+        Just ExitSuccess
+          -- completed successfully. read remaining output.
+          -> parseIt (res, usedAxioms, output)
+
+    -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxioms, output) = do
       line <- readMsg spass
       let resMatch = matchRegex re_sb line
@@ -427,7 +448,9 @@ parseSpassOutput spass = parseIt (Nothing, [], [])
           _ <- waitForChildProcess spass
           return (res', usedAxioms', output ++ [line])
         else
-          parseIt (res', usedAxioms', output ++ [line])
+          parseItProtected (res', usedAxioms', output ++ [line])
+
+    -- regular expressions used in parseIt
     re_stop = mkRegex ".*SPASS-STOP.*"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
@@ -463,6 +486,8 @@ runSpass lp config nGoal = do
     proof_status res usedAxioms options
       | isJust res && elem (fromJust res) proved = Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options))
       | isJust res && elem (fromJust res) disproved = Disproved (senName nGoal)
+      -- TODO output error message to the user
+      -- isNothing res = ...
       | otherwise = Open (senName nGoal)
     proved = ["Proof found."]
     disproved = ["Completion found."]
