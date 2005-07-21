@@ -94,7 +94,6 @@ minExpFORMULA mef ga sign formula = case formula of
         let fs = map (concatMap ( \ t -> 
                     let s = term_sort t in
                     if leq_SORT sign sort s then
-                    if leq_SORT sign s sort then [True_atom pos] else
                     [Membership t sort pos] else
                     map ( \ c -> 
                         Membership (Sorted_term t c pos) sort pos)
