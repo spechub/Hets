@@ -197,8 +197,8 @@ totalRecord bsrts mf = (mapRecord mf)
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
                       defined bsrts t1 (term_sort t1) ps] ps
-    , foldMembership = \ _ t s ps -> if term_sort t == s 
-      then True_atom ps else error "totalizeFormula:Membership"
+    , foldMembership = \ _ t s ps -> if term_sort t == s then
+      defined bsrts t (term_sort t) ps else error "totalizeFormula:Membership"
     , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldSorted_term = \ _ tr s _ -> 
