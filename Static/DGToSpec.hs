@@ -101,6 +101,7 @@ getDGNode libEnv dgraph node =
   where contextOfNode = context dgraph node
         nodeLab = lab' contextOfNode
 
+{- old version: to be deleted when the new one works
 getAllGlobDefPathsBeginningWithTypesTo :: (LEdge DGLinkLab -> Bool) -> DGraph 
                                        -> Node -> [LEdge DGLinkLab]
 			               -> [(Node, [LEdge DGLinkLab])]
@@ -119,7 +120,7 @@ getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
         = [edge| edge <- filter types inEdges, notElem edge path]
     globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
     typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
-
+-}
 
 type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
@@ -238,14 +239,6 @@ calculateMorphismOfPathWithStart libEnv ((ln,n),[]) = do
 calculateMorphismOfPathWithStart _ (_,p) =
     calculateMorphismOfPath (map snd p)
 
-{- returns a list of all paths to the given node
-   that consist of globalDef edges only
-   or
-   that consist of a localDef edge followed by any number of globalDef edges -}
-getAllLocGlobDefPathsTo ::  LibEnv -> LibNode -> [LibLEdge]
-			    -> [(LibNode, [LibLEdge])]
-getAllLocGlobDefPathsTo = getAllGlobDefPathsBeginningWithTypesTo_new 
-			      (isLocalDef)
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
