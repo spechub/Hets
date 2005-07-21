@@ -317,16 +317,17 @@ mkInjOp :: (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
              IdType_SPId_Map),
             (SPIdentifier,([SPIdentifier],SPIdentifier)))
 mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
-    if i == injName 
+    if i == injName && isNothing lsid
        then ((Map.insert i' (transOpType ot') opMap,
               insertSPId i (COp ot') i' idMap),
              (i', transOpType ot'))
        else ((opMap,idMap),
-             (maybe err id (lookupSPId i (COp ot') idMap),
+             (maybe err id lsid,
               transOpType ot'))
     where i' = disSPOId (COp ot') (transId i) 
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
+          lsid = lookupSPId i (COp ot') idMap
           usedNames = Map.keysSet opMap
           err = error ("CASL2SPASS.mkInjOp: Cannot find SPId for '"++
                        show qo++"'")
