@@ -14,22 +14,18 @@ module Comorphisms.CoCASL2CoPCFOL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
-import Common.AS_Annotation
-import Data.List
 
 -- CoCASL
 import CoCASL.Logic_CoCASL
-import CoCASL.CoCASLSign
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
 import qualified CoCASL.Sublogic
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sublogic
+import CASL.Inject
+import CASL.Project
 import Comorphisms.CASL2PCFOL
 
 -- | The identity of the comorphism
@@ -81,6 +77,12 @@ instance Comorphism CoCASL2CoPCFOL
       (mor  { msource =  encodeSig $ msource mor,
               mtarget =  encodeSig $ mtarget mor })
       -- other components need not to be adapted!
-    map_sentence CoCASL2CoPCFOL _ = return . f2Formula
+    map_sentence CoCASL2CoPCFOL _ = return . cf2CFormula
     map_symbol CoCASL2CoPCFOL = Set.singleton . id
 
+cf2CFormula :: FORMULA C_FORMULA -> FORMULA C_FORMULA
+cf2CFormula = projFormula projC_Formula . injFormula injC_Formula 
+
+projC_Formula, injC_Formula :: C_FORMULA -> C_FORMULA
+projC_Formula = foldC_Formula (projRecord projC_Formula) mapCoRecord
+injC_Formula = foldC_Formula (injRecord injC_Formula) mapCoRecord

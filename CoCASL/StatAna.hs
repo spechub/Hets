@@ -33,6 +33,7 @@ import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
 import CASL.Inject
+import CASL.Fold
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -63,31 +64,45 @@ instance Resolver C_FORMULA where
     checkMix = noExtMixfixCo
     putInj = injC_FORMULA
 
-mapMODALITY :: MODALITY -> MODALITY
-mapMODALITY m = case m of 
-    Term_mod t -> Term_mod $ mapTerm mapC_FORMULA t
-    _ -> m
+data CoRecord a b c d = CoRecord 
+    { foldBoxOrDiamond :: C_FORMULA -> Bool -> d -> a -> Range -> c
+    , foldCoSort_gen_ax :: C_FORMULA -> [SORT] -> [OP_SYMB] -> Bool -> c  
+    , foldTerm_mod :: MODALITY -> b -> d
+    , foldSimple_mod :: MODALITY -> SIMPLE_ID -> d
+    }
+
+foldC_Formula :: Record C_FORMULA a b -> CoRecord a b c d -> C_FORMULA -> c
+foldC_Formula r cr c = case c of
+    BoxOrDiamond b m f ps -> 
+        foldBoxOrDiamond cr c b (foldModality r cr m) (foldFormula r f) ps 
+    CoSort_gen_ax s o b -> foldCoSort_gen_ax cr c s o b 
+
+foldModality :: Record C_FORMULA a b -> CoRecord a b c d -> MODALITY -> d
+foldModality r cr m = case m of
+    Term_mod t -> foldTerm_mod cr m $ foldTerm r t 
+    Simple_mod i -> foldSimple_mod cr m i
+
+mapCoRecord :: CoRecord (FORMULA C_FORMULA) (TERM C_FORMULA) C_FORMULA MODALITY
+mapCoRecord = CoRecord 
+    { foldBoxOrDiamond = \ _ -> BoxOrDiamond
+    , foldCoSort_gen_ax = \ _ -> CoSort_gen_ax 
+    , foldTerm_mod = \ _ -> Term_mod
+    , foldSimple_mod = \ _ -> Simple_mod
+    }
+
+constCoRecord :: ([a] -> a) -> a -> CoRecord a a a a
+constCoRecord join c = CoRecord 
+    { foldBoxOrDiamond = \ _ _ m f _ -> join [m, f]
+    , foldCoSort_gen_ax = \ _ _ _ _ -> c
+    , foldTerm_mod = \ _ t -> t
+    , foldSimple_mod = \ _ _ -> c
+    }
 
 mapC_FORMULA :: C_FORMULA -> C_FORMULA
-mapC_FORMULA cf =  case cf of 
-   BoxOrDiamond b m f ps -> let
-       nm = mapMODALITY m
-       nf = mapFormula mapC_FORMULA f
-       in BoxOrDiamond b nm nf ps
-   _ -> cf
-
-injMODALITY :: MODALITY -> MODALITY
-injMODALITY m = case m of 
-    Term_mod t -> Term_mod $ injTerm injC_FORMULA t
-    _ -> m
+mapC_FORMULA = foldC_Formula (mkMixfixRecord mapC_FORMULA) mapCoRecord
 
 injC_FORMULA :: C_FORMULA -> C_FORMULA
-injC_FORMULA cf =  case cf of 
-   BoxOrDiamond b m f ps -> let
-       nm = injMODALITY m
-       nf = injFormula injC_FORMULA f
-       in BoxOrDiamond b nm nf ps
-   _ -> cf
+injC_FORMULA =  foldC_Formula (injRecord injC_FORMULA) mapCoRecord
 
 resolveMODALITY :: MixResolve MODALITY
 resolveMODALITY ga ids m = case m of 
@@ -104,11 +119,8 @@ resolveC_FORMULA ga ids cf = case cf of
    _ -> error "resolveC_FORMULA"
 
 noExtMixfixCo :: C_FORMULA -> Bool
-noExtMixfixCo cf = 
-    let noInner = noMixfixF noExtMixfixCo in
-    case cf of
-    BoxOrDiamond _ _ f _     -> noInner f
-    _ -> True
+noExtMixfixCo = 
+    foldC_Formula (noMixfixRecord noExtMixfixCo) (constCoRecord and True) 
 
 minExpForm :: Min C_FORMULA CoCASLSign
 minExpForm ga s form = 
