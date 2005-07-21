@@ -27,13 +27,13 @@ simplifyRecord mf = (mapRecord mf)
       True_atom _ -> qf 
       False_atom _ -> qf
       _ -> Quantification q vs qf ps
-    , foldConjunction = 
-      \ _ fs ps -> case nub $ filter (not . is_True_atom) fs of 
+    , foldConjunction =  \ _ fs ps -> if any is_False_atom fs 
+      then False_atom ps else case nub $ filter (not . is_True_atom) fs of 
       [] -> True_atom ps
       [f] -> f 
       rs -> Conjunction rs ps
-    , foldDisjunction =  
-      \ _ fs ps -> case nub $ filter (not . is_False_atom) fs of 
+    , foldDisjunction = \ _ fs ps -> if any is_True_atom fs
+      then True_atom ps else case nub $ filter (not . is_False_atom) fs of 
       [] -> False_atom ps
       [f] -> f 
       rs -> Disjunction rs ps
