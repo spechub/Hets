@@ -215,7 +215,6 @@ c  : Cpo %(var_199)%
 d  : Cpo %(var_200)%
 f  : Flatcpo %(var_198)%
 p  : Pcpo %(var_197)%
-s  : Type %(var_1)%
 t  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1 %(fun)%
@@ -457,14 +456,15 @@ free type bool
 *** Hint 74.5, rebound variable 'x'
 *** Hint 75.6, rebound variable 'x'
 *** Hint 75.35, rebound variable 'x'
-*** Warning 87.38, trying hard to find lazy type for 'program all(var p : s_v1 ->? Unit) : Unit ->? Unit = eq(p, tt)'
+*** Warning 85.6, new type shadows type variable 's'
+*** Warning 87.38, trying hard to find lazy type for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
 *** Hint 87.9, no type match for: all
   with (maximal) type: _var_187_v187 ->? Unit ->? Unit
   known types:
     
 *** Hint 87.13-87.15, untypable application (with result type: Unit ->? Unit)
- 'all(var p : s_v1 ->? Unit)'
-*** Error 87.38, no typing for 'program all(var p : s_v1 ->? Unit) : Unit ->? Unit = eq(p, tt)'
+ 'all(var p : s ->? Unit)'
+*** Error 87.38, no typing for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.58, unexpected mixfix token: And

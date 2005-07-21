@@ -144,8 +144,21 @@ putTypeMap tm = do
 -- | store type id and check kind arity (warn on redeclared types)
 addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id 
           -> State Env Bool
-addTypeId warn defn _ rk k i = 
-    do if placeCount i <= kindArity rk then do
+addTypeId warn defn _ rk k i = do 
+    tvs <- gets localTypeVars
+    case Map.lookup i tvs of
+        Just _ -> do 
+            if warn then addDiags[mkDiag Warning 
+                                  "new type shadows type variable" i]
+               else return ()
+            putLocalTypeVars $ Map.delete i tvs
+        Nothing -> return()
+    cm <- gets classMap
+    case Map.lookup i cm of 
+      Just _ -> do 
+          addDiags [mkDiag Error "class name used as type" i]       
+          return False
+      Nothing -> if placeCount i <= kindArity rk then do
           addTypeKind warn defn i rk k
           return True
           else do addDiags [mkDiag Error "wrong arity of" i]
@@ -190,8 +203,14 @@ nonUniqueKind ks a f = case ks of
 -- | analyse a type argument 
 anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
 anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
-    c <- toEnvState inc
-    case vk of 
+  cm <- gets classMap
+  case Map.lookup i cm of 
+    Just _ -> do 
+        addDiags [mkDiag Error "class used as type variable" i]
+        return Nothing         
+    Nothing -> do
+     c <- toEnvState inc
+     case vk of 
       VarKind k -> do 
         rk <- anaKind k
         addLocalTypeVar True (TypeVarDefn rk vk c) i

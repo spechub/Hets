@@ -52,23 +52,32 @@ addClassDecl kind ci =
     else do
        rk <- anaKind kind
        cm <- gets classMap
-       case Map.lookup ci cm of
-            Nothing -> do putClassMap $ Map.insert ci  
-                              (ClassInfo rk [kind]) cm
-            Just (ClassInfo ork superClasses) -> do 
-                let ds = checkKinds ci rk ork
-                addDiags ds
-                if null ds then 
-                   if cyclicClassId cm ci kind then
-                   addDiags [mkDiag Error "cyclic class" ci]
-                   else if any (\ k -> lesserKind cm k kind) superClasses 
+       tm <- gets typeMap
+       tvs <- gets localTypeVars
+       case Map.lookup ci tm of 
+         Just _ -> addDiags [mkDiag Error "class name already a type" ci]
+         Nothing -> do 
+           case Map.lookup ci tvs of 
+             Just _ -> 
+               addDiags [mkDiag Error "class name already a type variable" ci]
+             Nothing -> do 
+               case Map.lookup ci cm of
+                 Nothing -> 
+                   putClassMap $ Map.insert ci (ClassInfo rk [kind]) cm
+                 Just (ClassInfo ork superClasses) -> do 
+                   let ds = checkKinds ci rk ork
+                   addDiags ds
+                   if null ds then 
+                     if cyclicClassId cm ci kind then
+                        addDiags [mkDiag Error "cyclic class" ci]
+                     else if any (\ k -> lesserKind cm k kind) superClasses 
                         then addDiags [mkDiag Warning "unchanged class" ci]
                         else do addDiags [mkDiag Hint 
                                          "refined class" ci]
                                 putClassMap $ Map.insert ci 
                                     (ClassInfo ork $ keepMinKinds cm $ 
                                                kind : superClasses) cm
-                   else return ()
+                     else return ()
 
 showClassList :: [ClassId] -> ShowS
 showClassList is = showParen (not $ isSingle is)
