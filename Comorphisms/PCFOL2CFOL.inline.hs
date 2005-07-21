@@ -114,7 +114,7 @@ defPred :: Id
 defPred = mkId[mkSimpleId "g__defined"]
  
 generateFOLAxioms :: Eq f => Sign f e -> [Named(FORMULA f)]
-generateFOLAxioms sig = filter (is_True_atom . sentence) $ map 
+generateFOLAxioms sig = filter (not . is_True_atom . sentence) $ map 
   (mapNamed (simplifyFormula id . 
   rmDefs bsorts id)) $
   concat
