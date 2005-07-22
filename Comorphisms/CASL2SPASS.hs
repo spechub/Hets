@@ -15,9 +15,9 @@ The translating comorphism from CASL to SPASS.
    - implement translation of Sort_gen_ax (FORMULA f) ... done
    - add codeOutConditionalF  of Conditional of TERM f ... done
    - check overloaded functions and predicates with overloadRelation; 
-     disambiguate only those which are not in overloadRelation
+     disambiguate only those which are not in overloadRelation ... done
    - inj operations must be inserted into CASL signature before 
-     transFuncMap is called 
+     transFuncMap is called for checking overloadRelation?
    - check if sorts are really non-empty in SPASS
    - are all free type definitions a source of partial functions /
      partiallity? No...
@@ -149,10 +149,10 @@ instance Comorphism CASL2SPASS
 ---------------------------- Signature -----------------------------
 
 transFuncMap :: IdType_SPId_Map ->
-                Map.Map Id (Set.Set CSign.OpType) -> 
-                (FuncMap,
-                 IdType_SPId_Map)
-transFuncMap idMap = Map.foldWithKey toSPOpType (Map.empty,idMap)
+                CSign.Sign e f ->
+                (FuncMap, IdType_SPId_Map)
+transFuncMap idMap sign = 
+    Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) 
               | Set.null typeSet = 
                   error "CASL2SPASS: empty sets are not allowed in OpMaps"
@@ -161,24 +161,72 @@ transFuncMap idMap = Map.foldWithKey toSPOpType (Map.empty,idMap)
                       sid' = sid fm oType
                   in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              | otherwise = Set.fold insOId (fm,im) typeSet
+              | otherwise =  
+                  case partOverload (leqF sign) 
+                           (partArities (length . CSign.opArgs) typeSet) of
+                  (overl,diffs) -> 
+                      Set.fold insOIdSet
+                             (Set.fold insOId (fm,im) diffs)
+                             overl
+                            -- 2.a with the union of all singleton sets
+                            -- and those that are not in overloading 
+                            -- relation use old strategy
+                            -- 2.b check the other sets with overloadRelation
+                            -- those with overloadRelation stay in one set
+                            -- with one identifier 
+         -- leqF :: Sign f e -> OpType -> OpType -> Bool
               where insOId typ (fm',im') =
                         let sid' = sid fm' typ
                         in (Map.insert sid' 
                                    (Set.singleton (transOpType typ)) fm',
                             insertSPId iden (COp typ) sid' im')
+                    insOIdSet tset (fm',im') =
+                        let sid' = sid fm' (Set.findMax tset)
+                        in (Map.insert sid' (Set.map transOpType tset) fm',
+                            Set.fold (\ x y -> 
+                                          insertSPId iden (COp x) sid' y)
+                                     im' tset)
                     sid fma t = disSPOId (COp t) (transId iden) 
                                        (uType (transOpType t))
                                        (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
                     uType t = fst t ++ [snd t]
 
+-- 1. devide into sets with different arities
+partArities :: (Ord a) => (a -> Int) -> Set.Set a -> Set.Set (Set.Set a)
+partArities len = part 0 Set.empty 
+    where part i acc s
+              | Set.null s = acc
+              | otherwise = 
+                  case Set.partition (\ x -> len x == i) s of
+                  (ar_i,rest) -> 
+                      part (i+1) (if Set.null ar_i 
+                                  then acc 
+                                  else Set.insert ar_i acc) rest
+
+partOverload :: (Ord a) => (a -> a -> Bool) 
+             -> Set.Set (Set.Set a) 
+             -> (Set.Set (Set.Set a), Set.Set a)
+partOverload leq = Set.fold part (Set.empty,Set.empty)
+    where part s (overl,diffs)
+              | Set.null s = (overl,diffs)
+              | Set.size s == 1 = (overl,Set.union diffs s)
+              | otherwise = 
+                  case Set.deleteFindMin s of
+                  (x,s') -> 
+                      case Set.partition (\ y -> leq x y) s' of
+                      (ov,rest) -> 
+                          if Set.null ov
+                          then part rest (overl,Set.insert x diffs)
+                          else part rest 
+                                   (Set.insert (Set.insert x ov) overl,
+                                    diffs)
+
 transPredMap :: IdType_SPId_Map -> 
-                Map.Map Id (Set.Set CSign.PredType) -> 
-                (PredMap,
-                 IdType_SPId_Map)
-transPredMap idMap = 
-    Map.foldWithKey toSPPredType (Map.empty,idMap)
+                CSign.Sign e f ->
+                (PredMap, IdType_SPId_Map)
+transPredMap idMap sign = 
+    Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im) 
               | Set.null typeSet = 
                   error "CASL2SPASS: empty sets are not allowed in PredMaps"
@@ -187,12 +235,25 @@ transPredMap idMap =
                       sid' = sid fm pType
                   in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
                       insertSPId iden (CPred pType) sid' im)
-              | otherwise = Set.fold insOId (fm,im) typeSet
+              | otherwise = 
+                  case partOverload (leqP sign) 
+                           (partArities (length . CSign.predArgs) typeSet) of
+                  (overl,diffs) -> 
+                      Set.fold insOIdSet
+                             (Set.fold insOId (fm,im) diffs)
+                             overl
+
               where insOId pType (fm',im') = 
                         let sid' = sid fm' pType 
                             predType = transPredType pType
                         in (Map.insert sid' (Set.singleton predType) fm',
                             insertSPId iden (CPred pType) sid' im')
+                    insOIdSet tset (fm',im') =
+                        let sid' = sid fm' (Set.findMax tset)
+                        in (Map.insert sid' (Set.map transPredType tset) fm',
+                            Set.fold (\ x y -> 
+                                          insertSPId iden (CPred x) sid' y)
+                                     im' tset)
                     sid fma t = disSPOId (CPred t) (transId iden) 
                                        (transPredType t)
                                        (Set.union (Map.keysSet fma)
@@ -353,8 +414,8 @@ transSign sign = (SPSign.emptySign { sortRel =
                               insertSPId i CSort sid im)) 
                                         (Map.empty,Map.empty) 
                                         (CSign.sortSet sign)
-          (fMap,idMap') =  transFuncMap idMap  (CSign.opMap sign)
-          (pMap,idMap'') = transPredMap idMap' (CSign.predMap sign) 
+          (fMap,idMap') =  transFuncMap idMap  sign
+          (pMap,idMap'') = transPredMap idMap' sign
 
 transTheory :: (PrettyPrint f, PosItem f,Eq f) => 
                SignTranslator f e 
