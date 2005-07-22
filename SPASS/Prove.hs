@@ -22,8 +22,6 @@ Interface for the SPASS theorem prover.
         and keep track of this translation for getting the right names
         for ProofStatus ...
         partly implemented
-      - use Colors for the Prove Status and add new status: Running
-        (Green: Proved, Red: Disproved, Black: Open, Blue: Running)
       - add a button to show the help text for SPASS options
       - Implement a consistency checker based on GUI
       - add a field for displaying "Used axioms" to the Status part
@@ -194,6 +192,23 @@ isProved (Proved _ _ _ _ _) = True
 isProved _ = False
 
 {- |
+  Green: Proved, Red: Disproved, Black: Open, Blue: Running
+-}
+data ProofStatusColour = Green | Red | Black | Blue
+   deriving (Bounded,Enum,Show)
+
+statusProved, statusDisproved, statusOpen, statusRunning :: (ProofStatusColour, String)
+statusProved    = (Green, "Proved")
+statusDisproved = (Red, "Disproved")
+statusOpen      = (Black, "Open")
+statusRunning   = (Blue, "Running")
+
+proofStatusToGuiStatus st = case st of
+  Proved _ _ _ _ _ -> statusProved
+  Disproved _ -> statusDisproved
+  _ -> statusOpen
+
+{- |
    updates the display of the status of the goal
 -}
 
@@ -209,13 +224,13 @@ updateDisplay state statusLabel timeEntry optionsEntry =
                         go (configsMap state)
                    t' = maybe defaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
+		   (color, label) = maybe statusOpen
+		                    (\ prfst -> proofStatusToGuiStatus (fst prfst))
+				    mprfst
+
                in do 
-                maybe (statusLabel # text "Open")
-                      (\ prfst -> statusLabel # text (case fst prfst of
-                                       Proved _ _ _ _ _ -> "Proved"
-                                       Disproved _ -> "Disproved"
-                                       _ -> "Open"))
-                      mprfst
+                statusLabel # text label
+		statusLabel # foreground (show color)
                 timeEntry # value t'
                 optionsEntry # value opts'
                 return ()) 
@@ -230,6 +245,7 @@ getValueSave timeEntry =
                             | isPrefixOf "NO PARSE:" s -> Just defaultTimeLimit
                         IOException x -> trace ("ICH:" ++ show x) Nothing
                         _ -> Nothing
+
 
 {- |
   Invokes the prover GUI. Not yet fully implemented.
@@ -295,8 +311,16 @@ spassProveGUI thName th = do
   grid l5 [GridPos (1,6), Sticky W]
   statusLabel <- newLabel right [text "Open"]
   grid statusLabel [GridPos (2,6), Sticky W]
+  l6 <- newLabel right [text "Used Axioms"]
+  grid l6 [GridPos (1,7), Sticky NW]
+  axiomsLb <- newListBox right [value $ ([]::[String]), bg "white",
+                               selectMode Single, height 3, width 12] :: IO (ListBox String)
+  grid axiomsLb [GridPos (2,7), Columnspan 2, Sticky W]
+  axiomsSb <- newScrollBar right []
+  grid axiomsSb [GridPos (2,7), Columnspan 2, Sticky E]
+  axiomsLb # scrollbar Vertical axiomsSb
   detailsButton <- newButton right [text "Show Details"]
-  grid detailsButton [GridPos (2,7), Columnspan 2, Sticky E]
+  grid detailsButton [GridPos (2,8), Columnspan 2, Sticky E]
   -- bottom frame
   bottom <- newFrame main []
   grid bottom [GridPos (0,1), Columnspan 2]
@@ -336,13 +360,14 @@ spassProveGUI thName th = do
                 let lp' = foldl (\lp x -> insertSentence lp (x{isAxiom = True})) initialLogicalPart (reverse proved)
                 extraOptions <- (getValue optionsEntry) :: IO String
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
+		statusLabel # text (snd statusRunning)
+		statusLabel # foreground (show $ fst statusRunning)
                 (res, output) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
                 let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s')}
                 writeIORef stateRef s''
-                statusLabel # text (case res of
-                                         Proved _ _ _ _ _ -> "Proved"
-                                         Disproved _ -> "Disproved"
-                                         _ -> "Open")
+		let (color, label) = proofStatusToGuiStatus res
+		statusLabel # foreground (show color)
+		statusLabel # text label
                 done)
             done)
       +> (showDetails >>> do
