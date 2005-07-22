@@ -81,8 +81,8 @@ instance Comorphism CoCASL2CoPCFOL
     map_symbol CoCASL2CoPCFOL = Set.singleton . id
 
 cf2CFormula :: FORMULA C_FORMULA -> FORMULA C_FORMULA
-cf2CFormula = projFormula projC_Formula . injFormula injC_Formula 
+cf2CFormula = projFormula Partial projC_Formula . injFormula injC_Formula 
 
 projC_Formula, injC_Formula :: C_FORMULA -> C_FORMULA
-projC_Formula = foldC_Formula (projRecord projC_Formula) mapCoRecord
+projC_Formula = foldC_Formula (projRecord Partial projC_Formula) mapCoRecord
 injC_Formula = foldC_Formula (injRecord injC_Formula) mapCoRecord

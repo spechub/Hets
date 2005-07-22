@@ -170,10 +170,10 @@ codeRecord bsrts mf = (mapRecord mf)
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
                   defined bsrts t1 (term_sort t1) ps] ps
-    , foldMembership = \ _ t s ps -> defined bsrts (project ps t s) s ps
+    , foldMembership = \ _ t s ps -> defined bsrts (project Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
-    , foldCast = \ _ t s ps -> project ps t s
+    , foldCast = \ _ t s ps -> project Total ps t s
     }
 
 codeFormula :: Set.Set SORT -> FORMULA () -> FORMULA ()

@@ -25,23 +25,24 @@ import Common.Id
 projName :: Id
 projName = mkId [mkSimpleId "g__proj"]
 
-project :: Range -> TERM f -> SORT -> TERM f
-project pos argument result_type = let argument_type = term_sort argument in
+project :: FunKind -> Range -> TERM f -> SORT -> TERM f
+project fk pos argument result_type = let argument_type = term_sort argument in
     if argument_type == result_type then argument else 
-    Application (projOpSymb pos argument_type result_type) [argument] nullRange
+    Application (projOpSymb fk pos argument_type result_type) 
+                    [argument] nullRange
 
-projOpSymb :: Range -> SORT -> SORT -> OP_SYMB
-projOpSymb pos s1 s2 =
-    Qual_op_name projName (Op_type Total [s1] s2 pos) pos
+projOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
+projOpSymb fk pos s1 s2 =
+    Qual_op_name projName (Op_type fk [s1] s2 pos) pos
 
-projRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
-projRecord mf = (mapRecord mf) 
-     { foldCast = \ _ st s ps -> project ps st s
-     , foldMembership = \ _ t s ps -> Definedness (project ps t s) ps
+projRecord :: FunKind -> (f -> f) -> Record f (FORMULA f) (TERM f)
+projRecord fk mf = (mapRecord mf) 
+     { foldCast = \ _ st s ps -> project fk ps st s
+     , foldMembership = \ _ t s ps -> Definedness (project fk ps t s) ps
      }
 
-projTerm :: (f -> f) -> TERM f -> TERM f
-projTerm = foldTerm . projRecord
+projTerm :: FunKind -> (f -> f) -> TERM f -> TERM f
+projTerm fk = foldTerm . projRecord fk
 
-projFormula :: (f -> f) -> FORMULA f -> FORMULA f
-projFormula = foldFormula . projRecord
+projFormula :: FunKind -> (f -> f) -> FORMULA f -> FORMULA f
+projFormula fk = foldFormula . projRecord fk

@@ -212,4 +212,4 @@ makeEquivPred o o1 o2 args =
         $ mkForall vds (Equivalence t1 t2 nullRange) nullRange
 
 f2Formula :: FORMULA f -> FORMULA f
-f2Formula = projFormula id . injFormula id 
+f2Formula = projFormula Partial id . injFormula id 
