@@ -90,7 +90,7 @@ encodeSig sig = sig { opMap = projOpMap, predMap = newpredMap }
    defTypes = Set.map defType bsorts
    newpredMap = Map.insert defPred defTypes $ predMap sig
    rel = Rel.irreflex $ sortRel sig
-   total (s, s') = OpType{opKind = Total, opArgs = [s], opRes = s'}
+   total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
    setprojOptype = Set.map total $ Rel.toSet rel
    projOpMap = Map.insert projName setprojOptype $ botOpMap
 
