@@ -143,7 +143,7 @@ generateFOLAxioms sig = filter (not . is_True_atom . sentence) $ map
       \ sorts s_k          \
       \ op f:s_i->t     \
       \ var y_k:s_k             \
-      \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_stricntess)%"
+      \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_strictness)%"
         | (f,typ) <- opList, opKind typ == Partial,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
     [inlineAxioms CASL 
