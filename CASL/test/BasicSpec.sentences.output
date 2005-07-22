@@ -1505,9 +1505,10 @@
                                 . not p \/ not q(x) \/ q(x) <=>
                                       (exists! x: s . not p /\ not q(x) /\ q(x))),
                . forall x: s . def f(x),  . forall x: s . f(x) =e= g(x),
-               . forall x: s . f(x) = g(x),  . true,  . forall x: s . def g(x),
-               . forall x: s . def g(x),  . forall x: s . def f(x),
-               . forall x: s . def g(x),  . p,  . forall x: s . q(x),
+               . forall x: s . f(x) = g(x),  . forall r1: t . r1 in s,
+               . forall x: s . def g(x),  . forall x: s . def g(x),
+               . forall x: s . def f(x),  . forall x: s . def g(x),  . p,
+               . forall x: s . q(x),
                . forall y: s; z: s; x: s . def x * y * z + z * y * x,  . def {},
                . forall x: s . def { x },  . true,
                . not True = False %(ga_disjoint_True_False)%,
