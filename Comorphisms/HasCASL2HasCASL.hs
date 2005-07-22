@@ -19,7 +19,6 @@ import Logic.Comorphism
 import HasCASL.Logic_HasCASL
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.Morphism
 import HasCASL.ProgEq
 
 import qualified Common.Lib.Set as Set
