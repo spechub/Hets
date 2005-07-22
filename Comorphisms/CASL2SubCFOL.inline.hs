@@ -101,13 +101,13 @@ generateAxioms sig = map (mapNamed $ rmDefs bsorts id) $
       " sort s < s'    \
       \ op pr : s'->s  \
       \ pred d:s       \
-      \ forall x,y:s'. d(pr(x)) /\\ d(pr(y)) => pr(x)=pr(y)=>x=y \
+      \ forall x,y:s'. d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y \
       \ %(ga_projection_injectivity)% " 
     ++ inlineAxioms CASL
      " sort s < s'     \
       \ op pr : s'->s  \
       \ pred d:s       \
-      \ forall x:s . d(x) => d(pr(x)) /\\ pr(x)=x     %(ga_projection)% " 
+      \ forall x:s . d(x) => pr(x)=x     %(ga_projection)% " 
       | s <- sorts, let y =  mkSimpleId "y",
         s' <- minSupers s] ++
     [inlineAxioms CASL 
