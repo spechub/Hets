@@ -362,7 +362,10 @@ spassProveGUI thName th = do
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
 		statusLabel # text (snd statusRunning)
 		statusLabel # foreground (show $ fst statusRunning)
-                (res, output) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
+                (err, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
+		if isJust err
+		  then createWarningWin (fromJust err) []
+		  else return ()
                 let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s')}
                 writeIORef stateRef s''
 		let (color, label) = proofStatusToGuiStatus res
@@ -430,7 +433,8 @@ spassProveBatch thName (Theory sig nSens) =
   where
     batchProve _ done [] = return done
     batchProve lp done (x:xs) = do
-        (res, _) <- runSpass lp emptyConfig x
+        (err, (res, _)) <- runSpass lp emptyConfig x
+	putStrLn $ show err
         -- add proved goals as axioms
         let lp' = if (isProved res) then (insertSentence lp (x{isAxiom = True})) else lp
         batchProve lp' (res:done) xs
@@ -485,7 +489,7 @@ parseSpassOutput spass = parseItProtected (Nothing, [], [])
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axiomsand possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
          -> Named SPTerm -- ^ goal to prove
-         -> IO SPASSResult -- ^ (proof status, complete output)
+         -> IO (Maybe String, SPASSResult) -- ^ (error, (proof status, complete output))
 runSpass lp config nGoal = do
   -- FIXME: this should be retrieved from the user instead of being hardcoded.
   let problem = SPProblem {identifier = "hets_exported",
@@ -505,13 +509,20 @@ runSpass lp config nGoal = do
   -- in global annos
   sendMsg spass (showPretty problem "")
   (res, usedAxioms, output) <- parseSpassOutput spass
-  return (proof_status res usedAxioms cleanOptions, output)
+  let (err, retval) = proof_status res usedAxioms cleanOptions
+  return (err, (retval, output))
+
   where
     proof_status res usedAxioms options
-      | isJust res && elem (fromJust res) proved = Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options))
-      | isJust res && elem (fromJust res) disproved = Disproved (senName nGoal)
-      -- TODO output error message to the user
-      -- isNothing res = ...
-      | otherwise = Open (senName nGoal)
+      | isJust res && elem (fromJust res) proved =
+          (Nothing, Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options)))
+      | isJust res && elem (fromJust res) disproved =
+          (Nothing, Disproved (senName nGoal))
+      | isJust res && elem (fromJust res) timelimit =
+          (Just "Timelimit exceeded.", Open (senName nGoal))
+      | isNothing res =
+          (Just "Internal error.", Open (senName nGoal))
+      | otherwise = (Nothing, Open (senName nGoal))
     proved = ["Proof found."]
     disproved = ["Completion found."]
+    timelimit = ["Ran out of time."]
