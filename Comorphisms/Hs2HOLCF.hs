@@ -205,7 +205,7 @@ transIdV a c t = return $ TFree (showIsaName t) (getSort a c t)
 
 transIdC :: PNT -> Maybe IsaType
 transIdC t = case t of
- PNT _ (TypedIds.Class _) _ -> Nothing
+ PNT _ (TypedIds.Class _ _) _ -> Nothing
  _ -> return $ let tfs = transFields t
   in 
   case (UniqueNames.orig t) of 
