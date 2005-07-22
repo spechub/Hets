@@ -31,6 +31,7 @@ import CASL.Sublogic hiding(bottom)
 import CASL.Overload
 import CASL.Fold
 import CASL.Project
+import CASL.Simplify
 import Comorphisms.PCFOL2CFOL
 
 -- | The identity of the comorphism
@@ -95,7 +96,8 @@ encodeSig sig = sig { opMap = projOpMap, predMap = newpredMap }
    projOpMap = Map.insert projName setprojOptype $ botOpMap
 
 generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = map (mapNamed $ rmDefs bsorts id) $
+generateAxioms sig = filter (not . is_True_atom . sentence) $ 
+  map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
   concat(
     [inlineAxioms CASL
       " sort s < s'    \
