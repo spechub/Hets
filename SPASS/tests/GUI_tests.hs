@@ -3,6 +3,7 @@
 module GUI_tests where 
 
 import qualified Common.Lib.Map as Map 
+import qualified Common.Lib.Set as Set 
 
 import HTk (initHTk, withdrawMainWin,destroy)
 import InfoBus (shutdown)
@@ -20,7 +21,7 @@ printStatus act = do st <- act
 
 sign1 :: SPASS.Sign.Sign
 sign1 = emptySign {sortMap = Map.insert "s" Nothing Map.empty,
-                  predMap = Map.fromList [("P",["s"]),("Q",["s"]),("R",["s"]),("A",["s"])]}
+                  predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y) ) [("P",["s"]),("Q",["s"]),("R",["s"]),("A",["s"])])}
 
 term_x :: SPTerm 
 term_x = SPSimpleTerm (SPCustomSymbol "x")

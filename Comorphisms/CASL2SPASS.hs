@@ -12,8 +12,13 @@ The translating comorphism from CASL to SPASS.
 
 {- todo
 
-   - implement translation of Sort_gen_ax (FORMULA f) 
-   - add codeOutConditionalF  of Conditional of TERM f 
+   - implement translation of Sort_gen_ax (FORMULA f) ... done
+   - add codeOutConditionalF  of Conditional of TERM f ... done
+   - check overloaded functions and predicates with overloadRelation; 
+     disambiguate only those which are not in overloadRelation
+   - inj operations must be inserted into CASL signature before 
+     transFuncMap is called 
+   - check if sorts are really non-empty in SPASS
    - are all free type definitions a source of partial functions /
      partiallity? No...
 
@@ -145,7 +150,7 @@ instance Comorphism CASL2SPASS
 
 transFuncMap :: IdType_SPId_Map ->
                 Map.Map Id (Set.Set CSign.OpType) -> 
-                (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
+                (FuncMap,
                  IdType_SPId_Map)
 transFuncMap idMap = Map.foldWithKey toSPOpType (Map.empty,idMap)
     where toSPOpType iden typeSet (fm,im) 
@@ -154,13 +159,14 @@ transFuncMap idMap = Map.foldWithKey toSPOpType (Map.empty,idMap)
               | Set.size typeSet == 1 =
                   let oType = head (Set.toList typeSet)
                       sid' = sid fm oType
-                  in (Map.insert sid' (transOpType oType) fm,
+                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
               | otherwise = Set.fold insOId (fm,im) typeSet
               where insOId typ (fm',im') =
                         let sid' = sid fm' typ
-                        in (Map.insert sid' (transOpType typ) fm',
-                         insertSPId iden (COp typ) sid' im')              
+                        in (Map.insert sid' 
+                                   (Set.singleton (transOpType typ)) fm',
+                            insertSPId iden (COp typ) sid' im')
                     sid fma t = disSPOId (COp t) (transId iden) 
                                        (uType (transOpType t))
                                        (Set.union (Map.keysSet fma)
@@ -169,7 +175,7 @@ transFuncMap idMap = Map.foldWithKey toSPOpType (Map.empty,idMap)
 
 transPredMap :: IdType_SPId_Map -> 
                 Map.Map Id (Set.Set CSign.PredType) -> 
-                (Map.Map SPIdentifier [SPIdentifier],
+                (PredMap,
                  IdType_SPId_Map)
 transPredMap idMap = 
     Map.foldWithKey toSPPredType (Map.empty,idMap)
@@ -179,13 +185,13 @@ transPredMap idMap =
               | Set.size typeSet == 1 =
                   let pType = head (Set.toList typeSet)
                       sid' = sid fm pType
-                  in (Map.insert sid' (transPredType pType) fm,
+                  in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
                       insertSPId iden (CPred pType) sid' im)
               | otherwise = Set.fold insOId (fm,im) typeSet
               where insOId pType (fm',im') = 
                         let sid' = sid fm' pType 
                             predType = transPredType pType
-                        in (Map.insert sid' predType fm',
+                        in (Map.insert sid' (Set.singleton predType) fm',
                             insertSPId iden (CPred pType) sid' im')
                     sid fma t = disSPOId (CPred t) (transId iden) 
                                        (transPredType t)
@@ -222,12 +228,9 @@ transPredType pt = map transId (CSign.predArgs pt)
 
 integrateGenerated :: (PrettyPrint f, PosItem f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] -> 
-                      Map.Map SPIdentifier (Maybe Generated) -> 
+                      SortMap -> 
                       Result 
-                         (Map.Map SPIdentifier (Maybe Generated),
-                          IdType_SPId_Map,
-                          Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-                          [Named SPTerm])
+                         (SortMap, IdType_SPId_Map, FuncMap, [Named SPTerm])
 integrateGenerated idMap genSens spSortMap 
     | null genSens = return (spSortMap,idMap,Map.empty,[])
     | otherwise = 
@@ -248,9 +251,7 @@ integrateGenerated idMap genSens spSortMap
 
 makeGens :: (PrettyPrint f, PosItem f) =>
             IdType_SPId_Map -> [Named (FORMULA f)] 
-         -> Result (Map.Map SPIdentifier (Maybe Generated),
-                    Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-                    IdType_SPId_Map)
+         -> Result (SortMap, FuncMap, IdType_SPId_Map)
 makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[])) fs of
     Result ds mv -> 
@@ -262,26 +263,10 @@ makeGens idMap fs =
                              opMap,idMap')))
               mv
 
-  -- !! GO ON HERE !!
-{-  delDoubles xs = delDouble xs []
-  delDouble [] _  = []
-  delDouble (x:xs) sortList = let (Type s _a _b) = fst (head x) in
-      if (length sortList) == 
-         (length (addSortList s sortList)) then
-        delDouble xs sortList
-      else
-        (x:(delDouble xs (s:sortList)))
-  addSortList x xs = (List.nub (x :xs))
--}
-
 makeGen :: (PrettyPrint f, PosItem f) =>
-          Result (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-                   IdType_SPId_Map,
-                   [(SPIdentifier,Maybe Generated)])
+           Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
         -> Named (FORMULA f)
-        -> Result (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-                   IdType_SPId_Map,
-                   [(SPIdentifier,Maybe Generated)])
+        -> Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
 makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where 
  process (oMap,iMap,rList) = case sentence nf of 
   Sort_gen_ax constrs free -> 
@@ -310,15 +295,13 @@ makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where
                                           ops_of_s cons)-}
   _ -> r
 
-mkInjOp :: (Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-            IdType_SPId_Map)
+mkInjOp :: (FuncMap, IdType_SPId_Map)
         -> OP_SYMB 
-        -> ((Map.Map SPIdentifier ([SPIdentifier],SPIdentifier),
-             IdType_SPId_Map),
+        -> ((FuncMap,IdType_SPId_Map),
             (SPIdentifier,([SPIdentifier],SPIdentifier)))
 mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
     if i == injName && isNothing lsid
-       then ((Map.insert i' (transOpType ot') opMap,
+       then ((Map.insert i' (Set.singleton (transOpType ot')) opMap,
               insertSPId i (COp ot') i' idMap),
              (i', transOpType ot'))
        else ((opMap,idMap),
@@ -335,10 +318,11 @@ mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
 mkInjOp _ _ = error "CASL2SPASS.mkInjOp: Wrong constructor!!"
 
 mkInjSentences :: IdType_SPId_Map 
-               -> Map.Map SPIdentifier ([SPIdentifier],SPIdentifier)
+               -> FuncMap
                -> [Named SPTerm]
-mkInjSentences idMap = Map.foldWithKey genInj []
-    where genInj k (args,res) fs =
+mkInjSentences idMap = Map.foldWithKey genInjs []
+    where genInjs k tset fs = Set.fold (genInj k) fs tset
+          genInj k (args,res) fs =
               assert (length args == 1)
                      ((emptyName
                        (SPQuantTerm SPForall [typedVarTerm var (head args)]
@@ -385,7 +369,7 @@ transTheory trSig trForm (sign,sens) =
                integrateGenerated idMap genSens (sortMap tSign)
            return  (tSign { sortMap = sortMap'
                           , funcMap = (Map.union (funcMap tSign) injOpMap)},
-                    injSentences ++
+                    injSentences ++ -- FIXME: add non-empty sort sentences
                     map (mapNamed (transFORM sign idMap' trForm)) realSens))
   where (genSens,realSens) = 
             partition (\ s -> case (sentence s) of

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rwagner@tzi.de
@@ -13,7 +13,9 @@ Functions to convert to internal SP* data structures.
 
 module SPASS.Conversions where
 
-import Maybe
+import Control.Exception
+
+import Data.Maybe
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -26,32 +28,57 @@ import SPASS.Sign
   Converts a Sign to an initial (no axioms or goals) SPLogicalPart.
 -}
 signToSPLogicalPart :: Sign -> SPLogicalPart
-signToSPLogicalPart s = SPLogicalPart {symbolList = sList,
-                                       declarationList = decList,
-                                       formulaLists = []}
+signToSPLogicalPart s = 
+    assert (checkArities s) 
+               (SPLogicalPart {symbolList = sList,
+                               declarationList = decList,
+                               formulaLists = []})
   where
     sList = if Rel.null (sortRel s) && Map.null (funcMap s) && 
                Map.null (predMap s) && Map.null (sortMap s)
               then Nothing
-              else Just emptySymbolList { functions = map (\(f, t) -> SPSignSym {sym = f, arity = length (fst t)}) (Map.toList (funcMap s)),
-                                          predicates = map (\(p, t) -> SPSignSym {sym = p, arity = length t}) (Map.toList (predMap s)),
-                                          sorts = map SPSimpleSignSym (Set.toList ((Rel.nodes (sortRel s)) `Set.union` (Map.keysSet (sortMap s))))}
+              else Just emptySymbolList 
+                       { functions = 
+                             map (\(f, ts) -> 
+                                      SPSignSym {sym = f, 
+                                                 arity = length (fst (head 
+                                                            (Set.toList ts)))}) 
+                                     (Map.toList (funcMap s)),
+                         predicates = 
+                             map (\(p, ts) -> 
+                                      SPSignSym {sym = p, 
+                                                 arity = length (head
+                                                          (Set.toList ts))}) 
+                                     (Map.toList (predMap s)),
+                         sorts = map SPSimpleSignSym 
+                                 (Set.toList ((Map.keysSet (sortMap s))))}
 
     decList = subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
     subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b}) (Rel.toList (Rel.transReduce (sortRel s)))
 
-    termDecl = map oneTermDecl (Map.toList (funcMap s))
+    termDecl = concatMap termDecls (Map.toList (funcMap s))
 
-    oneTermDecl (fsym, (args, ret)) = if null args
-      then SPSimpleTermDecl $ SPComplexTerm {symbol = SPCustomSymbol ret,
-                                             arguments = [SPSimpleTerm $ SPCustomSymbol fsym]}
-      else SPTermDecl {termDeclTermList = map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t, arguments = [SPSimpleTerm (SPCustomSymbol ('x' : (show i)))]}) (zip args [1..]),
+    termDecls (fsym, tset) = map (toFDecl fsym) (Set.toList tset)
+    toFDecl fsym (args, ret) = 
+        if null args
+        then SPSimpleTermDecl 
+                 (SPComplexTerm {symbol = SPCustomSymbol ret,
+                                 arguments = [SPSimpleTerm 
+                                              (SPCustomSymbol fsym)]})
+        else SPTermDecl {termDeclTermList = 
+                             map (\(t, i) -> 
+                                      SPComplexTerm {symbol = SPCustomSymbol t,
+                                                     arguments = 
+                                                         [SPSimpleTerm (SPCustomSymbol ('x' : (show i)))]}) (zip args [(1::Int)..]),
                        termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret, 
                                                      arguments = [SPComplexTerm {symbol = SPCustomSymbol fsym,
-                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('x':) . show . snd) (zip args [1..])}]}}
+                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('x':) . show . snd) (zip args [(1::Int)..])}]}}
 
-    predDecl = map (\(p, t) -> SPPredDecl {predSym = p, sortSyms = t}) (Map.toList (predMap s))
+    predDecl = concatMap predDecls (Map.toList (predMap s))
+
+    predDecls (p, tset) = map (toPDecl p) (Set.toList tset)
+    toPDecl p t = SPPredDecl {predSym = p, sortSyms = t} 
 
     genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym, freelyGenerated = freely gen, funcList = byFunctions gen}) (filter (isJust . snd) (Map.toList (sortMap s)))
 

@@ -24,6 +24,13 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 
+type SortMap = Map.Map SPIdentifier (Maybe Generated)
+
+type FuncMap = Map.Map SPIdentifier (Set.Set ([SPIdentifier], SPIdentifier))
+
+type PredMap = Map.Map SPIdentifier (Set.Set [SPIdentifier])
+
+
 {- |
   This Signature data type will be translated to the SPASS data types
   internally.
@@ -37,9 +44,9 @@ import qualified Common.Lib.Rel as Rel
   (predMap).
 -}
 data Sign = Sign { sortRel :: Rel.Rel SPIdentifier
-                 , sortMap :: Map.Map SPIdentifier (Maybe Generated)
-                 , funcMap :: Map.Map SPIdentifier ([SPIdentifier], SPIdentifier)
-                 , predMap :: Map.Map SPIdentifier [SPIdentifier]
+                 , sortMap :: SortMap
+                 , funcMap :: FuncMap
+                 , predMap :: PredMap 
                  } deriving (Eq, Show)
 
 {- |
@@ -59,6 +66,27 @@ emptySign = Sign { sortRel = Rel.empty
                  , predMap = Map.empty
                  }
 
+{- | 
+'checkArities'
+checks if the signature has only overloaded symbols with the same arity
+-}
+checkArities :: Sign -> Bool
+checkArities s = 
+    checkPredArities (predMap s) && checkFuncArities (funcMap s)
+
+checkPredArities :: PredMap -> Bool
+checkPredArities = Map.fold checkSet True 
+    where checkSet s bv 
+              | Set.null s = False
+              | Set.size s == 1 = bv 
+              | otherwise = 
+                  bv && 
+                  all (\ x -> length x == length (head sl)) (tail sl)
+                  where sl = Set.toList s
+
+checkFuncArities :: FuncMap -> Bool
+checkFuncArities = checkPredArities . mapToPredMap
+    where mapToPredMap = Map.map (Set.map fst)
 {- |
   A Sentence is a SPASS Term.
 -}
