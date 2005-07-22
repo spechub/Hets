@@ -36,15 +36,7 @@ projOpSymb pos s1 s2 =
 
 projRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
 projRecord mf = (mapRecord mf) 
-     { foldApplication = \ _ o ts ps -> case o of
-         Qual_op_name _ ty _ -> Application o 
-             (zipWith (project ps) ts $ args_OP_TYPE ty) ps
-         _ -> error "profApplication"
-     , foldCast = \ _ st s ps -> project ps st s
-     , foldPredication = \ _ p ts ps -> case p of
-         Qual_pred_name _ (Pred_type s _) _ -> Predication p
-             (zipWith (project ps) ts s) ps
-         _ -> error "projPredication"
+     { foldCast = \ _ st s ps -> project ps st s
      , foldMembership = \ _ t s ps -> Definedness (project ps t s) ps
      }
 
