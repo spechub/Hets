@@ -14,7 +14,6 @@ Interface for the SPASS theorem prover.
 
 {- 
     todo:
-      - implement waiting for SPASS (Zombies). DONE. needs to be tested.
       - prevent parser from hanging if SPASS exits with errors. DONE.
         needs to be tested. should probably also output an error message
         to the user
