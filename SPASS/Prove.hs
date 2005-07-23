@@ -267,7 +267,7 @@ spassProveGUI thName th = do
   left <- newFrame main []
   grid left [GridPos (0,0)]
   lb <- newListBox left [value $ map senName goals, bg "white",
-                         selectMode Single] :: IO (ListBox String)
+                         selectMode Single, height 18] :: IO (ListBox String)
   pack lb [Side AtLeft, Fill Y]
   sb <- newScrollBar left []
   pack sb [Side AtRight, Fill Y]
@@ -281,7 +281,7 @@ spassProveGUI thName th = do
   grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
   l2 <- newLabel right [text "TimeLimit"]
   grid l2 [GridPos (1,1), Sticky W]
-  (timeEntry :: Entry Int) <- newEntry right [width 8, value defaultTimeLimit]
+  (timeEntry :: Entry Int) <- newEntry right [width 15, value defaultTimeLimit]
   grid timeEntry [GridPos (3,1), Sticky W]
   timeSpinner <- newSpinButton right (\sp -> synchronize main
                                      (do
@@ -304,7 +304,7 @@ spassProveGUI thName th = do
   grid timeSpinner [GridPos (3,1), Sticky E]
   l3 <- newLabel right [text "Extra Options:"]
   grid l3 [GridPos (1,2), Sticky W]
-  (optionsEntry :: Entry String) <- newEntry right [width 30]
+  (optionsEntry :: Entry String) <- newEntry right [width 37]
   grid optionsEntry [GridPos (1,3), Columnspan 3, Sticky W]
   proveButton <- newButton right [text "Prove"]
   grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
@@ -316,11 +316,13 @@ spassProveGUI thName th = do
   grid statusLabel [GridPos (2,6), Sticky W]
   l6 <- newLabel right [text "Used Axioms"]
   grid l6 [GridPos (1,7), Sticky NW]
-  axiomsLb <- newListBox right [value $ ([]::[String]), bg "white",
-                               selectMode Browse, height 3, width 13] :: IO (ListBox String)
-  grid axiomsLb [GridPos (2,7), Columnspan 2, Sticky W]
-  axiomsSb <- newScrollBar right []
-  grid axiomsSb [GridPos (2,7), Columnspan 2, Sticky E]
+  axiomsFrame <- newFrame right []
+  grid axiomsFrame [GridPos (2,7), Columnspan 2]
+  axiomsLb <- newListBox axiomsFrame [value $ ([]::[String]), bg "white",
+                                      selectMode Browse, height 6, width 20] :: IO (ListBox String)
+  pack axiomsLb [Side AtLeft, Fill Y]
+  axiomsSb <- newScrollBar axiomsFrame []
+  pack axiomsSb [Side AtRight, Fill Y]
   axiomsLb # scrollbar Vertical axiomsSb
   detailsButton <- newButton right [text "Show Details"]
   grid detailsButton [GridPos (2,8), Columnspan 2, Sticky E]
