@@ -22,7 +22,6 @@ Interface for the SPASS theorem prover.
         and keep track of this translation for getting the right names
         for ProofStatus ...
         partly implemented
-      - add a button to show the help text for SPASS options
       - Implement a consistency checker based on GUI
       - add a field for displaying "Used axioms" to the Status part
         of the window
