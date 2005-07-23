@@ -507,18 +507,23 @@ runSpass lp config nGoal = do
   let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
   let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
   let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
-  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions))
+  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
-  -- debugging output
-  -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
-  -- FIXME: use printText0 instead. but where to get an instance of
-  -- GlobalAnnos from?
-  -- This can't be fixed until the prover interface is updated to hand
-  -- in global annos
-  sendMsg spass (showPretty problem "")
-  (res, usedAxioms, output) <- parseSpassOutput spass
-  let (err, retval) = proof_status res usedAxioms cleanOptions
-  return (err, (retval, output))
+  -- check if SPASS is running
+  e <- getToolStatus spass
+  if isJust e
+    then return (Just "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName nGoal), []))
+    else do
+      -- debugging output
+      -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
+      -- FIXME: use printText0 instead. but where to get an instance of
+      -- GlobalAnnos from?
+      -- This can't be fixed until the prover interface is updated to hand
+      -- in global annos
+      sendMsg spass (showPretty problem "")
+      (res, usedAxioms, output) <- parseSpassOutput spass
+      let (err, retval) = proof_status res usedAxioms cleanOptions
+      return (err, (retval, output))
 
   where
     proof_status res usedAxioms options
