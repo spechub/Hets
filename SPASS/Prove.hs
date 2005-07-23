@@ -14,8 +14,6 @@ Interface for the SPASS theorem prover.
 
 {- 
     todo:
-      - prevent parser from hanging if SPASS exits with errors. DONE.
-        needs to be tested.
       - use one of the technices in Comorphisms.CASL2SPASS to translate
         formula labels into correct SPASS identifiers; 
         and keep track of this translation for getting the right names
@@ -51,6 +49,7 @@ import Text.Regex
 import Data.List
 import Data.Maybe
 import Data.IORef
+import qualified Control.Exception as Exception
 
 import HTk
 import SpinButton
@@ -454,24 +453,49 @@ spassProveBatch thName (Theory sig nSens) =
 -}
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
                  -> IO (Maybe String, [String], [String]) -- ^ (result, used axioms, complete output)
-parseSpassOutput spass = parseItProtected (Nothing, [], [])
+parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
   where
 
     -- check for errors. unfortunately we cannot just read from SPASS until an
     -- EOF since readMsg will just wait forever on EOF.
-    parseItProtected (res, usedAxioms, output) = do
+    parseProtected f (res, usedAxioms, output) = do
       e <- getToolStatus spass
       case e of
         Nothing
           -- still running
-          -> parseIt (res, usedAxioms, output)
+          -> f (res, usedAxioms, output)
         Just (ExitFailure retval)
           -- returned error
-          -> return (Nothing, [], ["SPASS returned error: "++(show retval)])
+          -> do
+	      _ <- waitForChildProcess spass
+	      return (Nothing, [], ["SPASS returned error: "++(show retval)])
         Just ExitSuccess
           -- completed successfully. read remaining output.
-          -> parseIt (res, usedAxioms, output)
+          -> f (res, usedAxioms, output)
 
+    -- the first line of SPASS output it always empty.
+    -- the second contains SPASS-START in the usual case
+    -- and an error message in case of an error
+    parseStart firstline (res, usedAxioms, output) = do
+      line <- readMsg spass
+      if firstline
+        -- ignore empty first line
+        then parseProtected (parseStart False) (res, usedAxioms, output ++ [""])
+	-- check for a potential error
+	else do
+	  let startMatch = matchRegex re_start line
+	  if isJust startMatch
+	    -- got SPASS-START. continue parsing
+	    then parseProtected parseIt (res, usedAxioms, output ++ [line])
+	    -- error. abort parsing
+	    else do
+	      e <- waitForChildProcess spass
+	      case e of
+	        ChildTerminated ->
+		  return (Nothing, [], output ++ [line, "", "SPASS has been terminated."])
+		ChildExited retval ->
+		  return (Nothing, [], output ++ [line, "", "SPASS returned error: "++(show retval)])
+	  
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxioms, output) = do
       line <- readMsg spass
@@ -484,9 +508,10 @@ parseSpassOutput spass = parseItProtected (Nothing, [], [])
           _ <- waitForChildProcess spass
           return (res', usedAxioms', output ++ [line])
         else
-          parseItProtected (res', usedAxioms', output ++ [line])
+          parseProtected parseIt (res', usedAxioms', output ++ [line])
 
-    -- regular expressions used in parseIt
+    -- regular expressions used for parsing
+    re_start = mkRegex ".*SPASS-START.*"
     re_stop = mkRegex ".*SPASS-STOP.*"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
@@ -498,34 +523,38 @@ runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms
          -> SPASSConfig -- ^ configuration to use
          -> Named SPTerm -- ^ goal to prove
          -> IO (Maybe String, SPASSResult) -- ^ (error, (proof status, complete output))
-runSpass lp config nGoal = do
-  -- FIXME: this should be retrieved from the user instead of being hardcoded.
-  let problem = SPProblem {identifier = "hets_exported",
-                           description = SPDescription {name = "hets_exported", author = "hets user", SPASS.Sign.version = Nothing, logic = Nothing, status = SPStateUnknown, desc = "", date = Nothing},
-                           logicalPart = insertSentence lp nGoal}
-  let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
-  let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
-  let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
-  let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
-  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
-  spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
-  -- check if SPASS is running
-  e <- getToolStatus spass
-  if isJust e
-    then return (Just "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName nGoal), []))
-    else do
-      -- debugging output
-      -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
-      -- FIXME: use printText0 instead. but where to get an instance of
-      -- GlobalAnnos from?
-      -- This can't be fixed until the prover interface is updated to hand
-      -- in global annos
-      sendMsg spass (showPretty problem "")
-      (res, usedAxioms, output) <- parseSpassOutput spass
-      let (err, retval) = proof_status res usedAxioms cleanOptions
-      return (err, (retval, output))
+runSpass lp config nGoal =
+  Exception.catch (runSpassReal lp config nGoal)
+    (\_ -> return (Just "Error running SPASS.", (Open (senName nGoal), [])))
 
   where
+    runSpassReal lp config nGoal = do
+      -- FIXME: this should be retrieved from the user instead of being hardcoded.
+      let problem = SPProblem {identifier = "hets_exported",
+                               description = SPDescription {name = "hets_exported", author = "hets user", SPASS.Sign.version = Nothing, logic = Nothing, status = SPStateUnknown, desc = "", date = Nothing},
+                               logicalPart = insertSentence lp nGoal}
+      let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
+      let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
+      let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
+      let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
+      putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
+      spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+      -- check if SPASS is running
+      e <- getToolStatus spass
+      if isJust e
+        then return (Just "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName nGoal), []))
+        else do
+          -- debugging output
+          -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
+          -- FIXME: use printText0 instead. but where to get an instance of
+          -- GlobalAnnos from?
+          -- This can't be fixed until the prover interface is updated to hand
+          -- in global annos
+          sendMsg spass (showPretty problem "")
+          (res, usedAxioms, output) <- parseSpassOutput spass
+          let (err, retval) = proof_status res usedAxioms cleanOptions
+          return (err, (retval, output))
+
     proof_status res usedAxioms options
       | isJust res && elem (fromJust res) proved =
           (Nothing, Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options)))
