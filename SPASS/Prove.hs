@@ -41,6 +41,7 @@ import Logic.Prover
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Print
+import SPASS.ProveHelp
 import SPASS.Translate
 
 import Common.AS_Annotation
@@ -59,6 +60,7 @@ import HTk
 import SpinButton
 import ModalDialog
 import DialogWin
+import TextDisplay
 
 import GUI.HTkUtils
 
@@ -324,14 +326,17 @@ spassProveGUI thName th = do
   -- bottom frame
   bottom <- newFrame main []
   grid bottom [GridPos (0,1), Columnspan 2]
+  helpButton <- newButton bottom [text "Help"]
+  grid helpButton [GridPos (0,0)]
   saveButton <- newButton bottom [text "Save Prover Configuration"]
-  pack saveButton [Side AtLeft]
+  grid saveButton [GridPos (1,0)]
   exitButton <- newButton bottom [text "Exit Prover"]
-  pack exitButton [Side AtRight]
+  grid exitButton [GridPos (2,0)]
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   prove <- clicked proveButton
   showDetails <- clicked detailsButton
+  help <- clicked helpButton
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
   -- event handlers
@@ -384,6 +389,9 @@ spassProveGUI thName th = do
                 let text = concatMap ('\n':) output
                 createTextSaveDisplay ("SPASS Output for Goal "++goal) (goal ++ ".spass") text
                 done)
+            done)
+      +> (help >>> do
+            createTextDisplay "SPASS Help" spassHelpText [size (80, 30)]
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
