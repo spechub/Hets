@@ -15,16 +15,13 @@ Interface for the SPASS theorem prover.
 {- 
     todo:
       - prevent parser from hanging if SPASS exits with errors. DONE.
-        needs to be tested. should probably also output an error message
-        to the user
+        needs to be tested.
       - use one of the technices in Comorphisms.CASL2SPASS to translate
         formula labels into correct SPASS identifiers; 
         and keep track of this translation for getting the right names
         for ProofStatus ...
         partly implemented
       - Implement a consistency checker based on GUI
-      - add a field for displaying "Used axioms" to the Status part
-        of the window
       - surround goal specific part of GUI with a border and Status part 
         with another border
       - check if proving is possible more than one time even 
@@ -204,10 +201,6 @@ statusDisproved = (Red, "Disproved")
 statusOpen      = (Black, "Open")
 statusRunning   = (Blue, "Running")
 
-proofStatusToGuiStatus st = case st of
-  Proved _ _ _ _ _ -> statusProved
-  Disproved _ -> statusDisproved
-  _ -> statusOpen
 
 {- |
    updates the display of the status of the goal
@@ -215,7 +208,7 @@ proofStatusToGuiStatus st = case st of
 
 -- updateDisplay :: SPASS.Prove.State -> Entry Int 
 --              -> Entry String
-updateDisplay state statusLabel timeEntry optionsEntry =
+updateDisplay state statusLabel timeEntry optionsEntry axiomsLb =
     maybe (return ())
           (\ go -> 
                let mprfst = Map.lookup go (resultsMap state)
@@ -225,15 +218,25 @@ updateDisplay state statusLabel timeEntry optionsEntry =
                         go (configsMap state)
                    t' = maybe defaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
+                   toGuiStatus st = case st of
+                                    Proved _ _ _ _ _ -> statusProved
+                                    Disproved _ -> statusDisproved
+                                    _ -> statusOpen
 		   (color, label) = maybe statusOpen
-		                    (\ prfst -> proofStatusToGuiStatus (fst prfst))
+		                    (toGuiStatus . fst)
 				    mprfst
+		   usedAxioms = maybe []
+		                (\st -> case (fst st) of
+		                          Proved _ xs _ _ _ -> xs
+				          _ -> [])
+			        mprfst
 
                in do 
                 statusLabel # text label
 		statusLabel # foreground (show color)
                 timeEntry # value t'
                 optionsEntry # value opts'
+		axiomsLb # value (usedAxioms::[String])
                 return ()) 
           (currentGoal state)
 
@@ -315,7 +318,7 @@ spassProveGUI thName th = do
   l6 <- newLabel right [text "Used Axioms"]
   grid l6 [GridPos (1,7), Sticky NW]
   axiomsLb <- newListBox right [value $ ([]::[String]), bg "white",
-                               selectMode Single, height 3, width 12] :: IO (ListBox String)
+                               selectMode Browse, height 3, width 13] :: IO (ListBox String)
   grid axiomsLb [GridPos (2,7), Columnspan 2, Sticky W]
   axiomsSb <- newScrollBar right []
   grid axiomsSb [GridPos (2,7), Columnspan 2, Sticky E]
@@ -349,7 +352,7 @@ spassProveGUI thName th = do
                                            (goals !! (head $ fromJust sel))}
                      else s
           writeIORef stateRef s'
-          updateDisplay s' statusLabel timeEntry optionsEntry
+          updateDisplay s' statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (prove >>> do
             rs <- readIORef stateRef
@@ -372,9 +375,7 @@ spassProveGUI thName th = do
 		  else return ()
                 let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s')}
                 writeIORef stateRef s''
-		let (color, label) = proofStatusToGuiStatus res
-		statusLabel # foreground (show color)
-		statusLabel # text label
+                updateDisplay s'' statusLabel timeEntry optionsEntry axiomsLb
                 done)
             done)
       +> (showDetails >>> do
