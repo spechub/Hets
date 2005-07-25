@@ -155,7 +155,8 @@ transFuncMap idMap sign =
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) 
               | Set.null typeSet = 
-                  error "CASL2SPASS: empty sets are not allowed in OpMaps"
+                  error ("CASL2SPASS: empty sets are not allowed in OpMaps: "
+                         ++ show iden)
               | Set.size typeSet == 1 =
                   let oType = head (Set.toList typeSet)
                       sid' = sid fm oType
@@ -229,7 +230,8 @@ transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im) 
               | Set.null typeSet = 
-                  error "CASL2SPASS: empty sets are not allowed in PredMaps"
+                  error ("CASL2SPASS: empty sets are not allowed in PredMaps: "
+                         ++ show iden)
               | Set.size typeSet == 1 =
                   let pType = head (Set.toList typeSet)
                       sid' = sid fm pType
