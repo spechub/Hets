@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -648,12 +648,14 @@ exTerm b =
 
 -- | a 'LambdaTerm'
 lambdaTerm :: (InMode, TokenMode) -> AParser st Term
-lambdaTerm b = 
-             do l <- asKey lamS
-                pl <- lamPattern
-                (k, d) <- lamDot      
-                t <- mixTerm b
-                return (LambdaTerm pl k t (toPos l [] d))
+lambdaTerm b = do 
+    l <- asKey lamS
+    pl <- lamPattern
+    (k, d) <- lamDot      
+    t <- mixTerm b
+    return $ LambdaTerm 
+        (if null pl then [BracketTerm Parens [] nullRange] else pl)
+        k t $ toPos l [] d
 
 -- | a 'CaseTerm' with 'funS' excluded in 'patternTermPair'
 caseTerm :: (InMode, TokenMode) -> AParser st Term
