@@ -1,6 +1,40 @@
 var a : Type; b < a_v1
-op twice : (a ->? b) -> a ->? b
-   %% = \ (f : a ->? b) (x : a) . f(f(x))
+op twice2
+     : forall a : Type; b < a_v1 : Type .
+         (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
+     = \ (var f : a ->? b)(var x : a)
+         . ((var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) as b_v2
+op twice3
+     : forall a : Type; b < a_v1 : Type .
+         (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2
+     = ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
+           . (var f : a_v1 ->? b_v2)
+               ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
+                 b_v2) :
+            ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+           (a_v1 ->? b_v2) * a_v1 ->? b_v2
+op twice
+     : forall a : Type; b < a_v1 : Type .
+         (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
+     = ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
+           . (var f : (a_v1 ->? a_v1))
+               ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
+                 a_v1) :
+            (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+           (a_v1 ->? b_v2) -> a_v1 ->? b_v2
+var f : a ->? b; x : a
+. ((fun __=__[b] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+       b * b ->? Unit)
+    ((((op twice[a; b]
+        : forall a : Type; b < a_v1 : Type .
+            (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2) :
+           (a ->? b) -> a ->? b)
+        (var f : a ->? b) :
+          a ->? b)
+       (var x : a) :
+         b,
+     (var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) :
+      Unit
 %% Type Constructors -----------------------------------------------------
 Logical : Type := Unit ->? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
@@ -35,6 +69,75 @@ twice
   : forall a : Type; b < a_v1 : Type .
       (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
     %(op)%
+      = ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
+            . (var f : (a_v1 ->? a_v1))
+                ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
+                  a_v1) :
+             (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+            (a_v1 ->? b_v2) -> a_v1 ->? b_v2
+twice2
+  : forall a : Type; b < a_v1 : Type .
+      (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
+    %(op)%
+      = \ (var f : a ->? b)(var x : a)
+          . ((var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) as b_v2
+twice3
+  : forall a : Type; b < a_v1 : Type .
+      (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2
+    %(op)%
+      = ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
+            . (var f : a_v1 ->? b_v2)
+                ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
+                  b_v2) :
+             ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+            (a_v1 ->? b_v2) * a_v1 ->? b_v2
 ¬__ : ? Unit ->? Unit %(fun)%
+%% Variables -------------------------------------------------------------
+f : a ->? b
+x : a
+%% Sentences -------------------------------------------------------------
+forall f : a ->? b; x : a
+  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+      ((op twice2
+        : forall a : Type; b < a_v1 : Type .
+            (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2)
+         (var f : a ->? b)
+         (var x : a),
+       ((var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) as
+           b_v2) %(def_twice2)%
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  (op twice3
+   : forall a : Type; b < a_v1 : Type .
+       (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2,
+   ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
+       . (var f : a_v1 ->? b_v2)
+           ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
+             b_v2) :
+        ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+       (a_v1 ->? b_v2) * a_v1 ->? b_v2) %(def_twice3)%
+(fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
+  (op twice
+   : forall a : Type; b < a_v1 : Type .
+       (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2,
+   ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
+       . (var f : (a_v1 ->? a_v1))
+           ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
+             a_v1) :
+        (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+       (a_v1 ->? b_v2) -> a_v1 ->? b_v2) %(def_twice)%
+((fun __=__[b] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+     b * b ->? Unit)
+  ((((op twice[a; b]
+      : forall a : Type; b < a_v1 : Type .
+          (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2) :
+         (a ->? b) -> a ->? b)
+      (var f : a ->? b) :
+        a ->? b)
+     (var x : a) :
+       b,
+   (var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) :
+    Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'a'
+*** Hint 9.7, not a kind 'a ->? b'
+*** Hint 9.20, not a class 'a'
