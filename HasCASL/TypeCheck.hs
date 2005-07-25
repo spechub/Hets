@@ -381,12 +381,7 @@ infer b mt trm = do
         LambdaTerm pats part resTrm ps -> do 
             pvs <- freshVars pats
             rty <- freshTypeVar $ posOfTerm resTrm
-            let fty l = if null l then rty else 
-                        FunType (head l) (if null (tail l) then case part of
-                                          Partial -> PFunArr
-                                          Total -> FunArr
-                                         else FunArr) (fty $ tail l) nullRange
-                myty = fty pvs
+            let myty = getFunType rty part pvs
             ls <- checkList b (map Just pvs) pats
             rs <- mapM ( \ ( s, cs, _, nps) -> do
                        mapM_ (addLocalVar True) $ concatMap extractVars nps

@@ -50,7 +50,7 @@ mapAlt m tm args dt c@(Construct mi ts p sels) =
     case mi of
     Just i -> 
       let sc = TypeScheme args 
-             (getConstrType dt p (map (mapType tm) ts)) nullRange
+             (getFunType dt p (map (mapType tm) ts)) nullRange
           (j, TypeScheme _ ty _) = 
               mapFunSym (typeIdMap m) (funMap m) (i, sc)
           in Construct (Just j) ts (getPartiality ts ty) sels

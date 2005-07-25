@@ -92,8 +92,8 @@ typeArgsListToKind :: [TypeArg] -> Kind -> Kind
 typeArgsListToKind = typeArgsListToRawKind False
 
 -- | get the type of a constructor with given curried argument types
-getConstrType :: Type -> Partiality -> [Type] -> Type
-getConstrType rty p ts = (case p of
+getFunType :: Type -> Partiality -> [Type] -> Type
+getFunType rty p ts = (case p of
      Total -> id
      Partial -> addPartiality ts) $
                        foldr ( \ c r -> FunType c FunArr r nullRange )
@@ -108,7 +108,7 @@ getSelType dt p rt = (case p of
 -- | get the type of a constructor for printing (kinds may be wrong)
 createConstrType :: Id -> [TypeArg] -> RawKind -> Partiality -> [Type] -> Type
 createConstrType i is rk = 
-    getConstrType (patToType i is rk)
+    getFunType (patToType i is rk)
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id

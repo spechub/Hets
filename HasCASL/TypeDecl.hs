@@ -322,7 +322,7 @@ anaDatatype genKind inst tys
                Nothing -> return ()
                Just c -> do
                    let sc = TypeScheme nAs 
-                         (getConstrType srt p tc) nullRange
+                         (getFunType srt p tc) nullRange
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
                            Just s -> do 

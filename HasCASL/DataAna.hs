@@ -72,7 +72,7 @@ makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
 makeAltSelEqs dt@(DataPat _ args _ rt) (Construct mc ts p sels) = 
     case mc of
     Nothing -> []
-    Just c -> let sc = TypeScheme args (getConstrType rt p ts) nullRange 
+    Just c -> let sc = TypeScheme args (getFunType rt p ts) nullRange 
                   newSc = sc
                   vars = genSelVars 1 sels 
                   as = map ( \ vs -> mkTupleTerm (map QualVar vs) nullRange) vars
