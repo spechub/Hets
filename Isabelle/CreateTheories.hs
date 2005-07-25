@@ -90,6 +90,8 @@ printTheory ln le dg (sn, ge) = case ge of
                           ++ "_" ++ showPretty sn ""
                      doc = text "theory" <+> text tn <+> text "=" $$
                           createTheoryText sign sens
-                     in writeFile (tn ++ ".thy") (shows doc "\n")
+                     in do
+                        putStrLn $ "Writing " ++ tn ++ ".thy"
+                        writeFile (tn ++ ".thy") (shows doc "\n")
     _ -> return ()
 
