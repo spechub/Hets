@@ -314,14 +314,16 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
       sort_map = Map.foldWithKey ( \ i j -> 
                        Map.insert i $ mapSort sMap2 j)
                              sMap2 sMap1,
-      fun_map  = Map.foldWithKey ( \ p@(_, ot) (j, k) ->
+      fun_map  = Map.foldWithKey ( \ (i, ot) (j, k) ->
                        let (ni, nt) = mapOpSym sMap2 fMap2 (j, 
-                                            mapOpTypeK sMap1 k ot)
-                      in Map.insert p (ni, opKind nt)) 
+                                            makeTotal k ot)
+                      in Map.insert (i, (mapOpType sMap2 ot) 
+                                     { opKind = Partial })
+                                      (ni, opKind nt)) 
                  fMap2 $ fun_map mor1,
-      pred_map = Map.foldWithKey ( \ p@(_, ot) j ->
-                  Map.insert p $ fst $ mapPredSym sMap2 pMap2 
-                  (j, mapPredType sMap1 ot)) pMap2 $ pred_map mor1,
+      pred_map = Map.foldWithKey ( \ (i, ot) j ->
+                  Map.insert (i, mapPredType sMap2 ot) $ fst $
+                     mapPredSym sMap2 pMap2 (j, ot)) pMap2 $ pred_map mor1,
       extended_map = comp (extended_map mor1) (extended_map mor2)
       }
     else fail "target of first and source of second morphism are different"
@@ -353,9 +355,7 @@ legalMor mor =
         (\(id1,t) (id2,k) b -> 
            b
            &&
-           Set.member t (Map.findWithDefault Set.empty id1 (opMap sigma1)) 
-           &&
-           Set.member (mapOpTypeK smap k t) 
+           Set.member (makeTotal k t) 
                       (Map.findWithDefault Set.empty id2 (opMap sigma2))
         )
         True (fun_map mor)
@@ -363,9 +363,7 @@ legalMor mor =
         (\(id1,t) id2 b -> 
            b
            &&
-           Set.member t (Map.findWithDefault Set.empty id1 (predMap sigma1)) 
-           &&
-           Set.member (mapPredType smap t) 
+           Set.member t 
                       (Map.findWithDefault Set.empty id2 (predMap sigma2))
         )
         True (pred_map mor)
