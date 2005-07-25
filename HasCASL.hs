@@ -12,8 +12,6 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.As"                 abstract syntax with derived position access
 
- * "HasCASL.AsToIds"            get relevant identifiers for mixfix resolution 
-
  * "HasCASL.AsToLe"             convert abstract syntax to local environment
 
  * "HasCASL.AsUtils"            utilities to access the abstract syntax
@@ -22,9 +20,7 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.Builtin"            predefined HasCASL identifiers
 
- * "HasCASL.ClassAna"           check class identifiers
-
- * "HasCASL.ClassDecl"          analyse class declarations 
+ * "HasCASL.ClassAna"           analyse class identifiers and declarations
 
  * "HasCASL.Constrain"          kind and subtype constraints for type checking
 
@@ -81,8 +77,6 @@ This folder contains the files for HasCASL basic specs
  * "HasCASL.TypeDecl"           analyse type declarations 
 
  * "HasCASL.Unify"              unification algorithm for types
-
- * "HasCASL.UniqueId"           creating unique names for overloaded ones
 
  * "HasCASL.VarDecl"            analyse declarations of variables 
 
