@@ -938,21 +938,21 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
             fv@(Fit_view vn afitargs pos) = do
    let adj = adjustPos pos
    case Map.lookup vn genv of
-    Nothing -> plain_error (fv,dg,error "no morphism") 
+    Nothing -> fatal_error
                  ("View "++ showPretty vn " not found") pos
     Just (SpecEntry _) -> 
-     plain_error (fv,dg,error "no fit view") 
+     fatal_error 
       (showPretty spname " is a specification, not a view") pos
     Just (ArchEntry _) -> 
-     plain_error (fv,dg,error "no fit view") 
+     fatal_error 
       (showPretty spname
        " is an architectural specification, not a view ") pos
     Just (UnitEntry _) -> 
-     plain_error (fv,dg,error "no fit view") 
+     fatal_error 
       (showPretty spname
        " is a unit specification, not a view") pos
     Just (RefEntry) -> 
-     plain_error (fv,dg,error "no fit view") 
+     fatal_error 
       (showPretty spname
        " is a refinement specification, not a view") pos
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
@@ -1143,7 +1143,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
 
       -- finally the case with conflicting numbers of formal and actual parameters
       _ -> 
-        plain_error (fv,dg,error "no fit view") 
+        fatal_error 
           (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) pos
 
