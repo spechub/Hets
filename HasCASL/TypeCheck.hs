@@ -394,7 +394,7 @@ infer b mt trm = do
                                        case mt of 
                                        Nothing -> cr
                                        Just ty -> insertC (Subtyping typ 
-                                                          $ subst s2 ty) cr,
+                                                          $ subst s3 ty) cr,
                                        typ, TypedTerm
                                        (LambdaTerm nps part rtm ps)
                                        Inferred typ ps)) es) ls
