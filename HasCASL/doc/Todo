@@ -6,8 +6,6 @@ report other uninspected annotations
 
 haddockify code
 
-checking legality of internal and external terms is missing
-
 proper type terms as supertypes are treated like type
 synonyms. Function and product types are builtin. Subtype relations
 of these builtin types and user defined types are problematic. The
@@ -38,15 +36,7 @@ types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
-The definition in test/Double (for the function twice) still fails
-
-let the example test/CastFun go through
-
-(the variable v for s --> s is to early or wrongly substituted 
-in s ->? s < v. Maybe a variable also for the arrow must be
-introduced in shapeMgu.)
-
-remove FunType, LazyType and ProductType in favour of uniform TypeAppls
+remove FunType, (LazyType ?) and ProductType in favour of uniform TypeAppls
 
 
 
@@ -76,9 +66,6 @@ Sentences for attributes comm, assoc, unit are not generated yet.
 MixAna only recognises new variables and thus cannot check for shadowing
 
 First try type checking without lazy types
-
-implement empty lambda terms as functions from Unit
-(test/EmptyLambda)
 
 
 
