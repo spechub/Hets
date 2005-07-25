@@ -455,7 +455,7 @@ lamPattern :: AParser st [Pattern]
 lamPattern = 
     do  lookAhead lamDot 
         return []
-      <|> do p <- pattern
+      <|> do p <- typedPattern []
              ps <- lamPattern
              return (p : ps)
 
