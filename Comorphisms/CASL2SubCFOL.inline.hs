@@ -80,8 +80,8 @@ instance Comorphism CASL2SubCFOL
 
 -- | Add projections to the signature
 encodeSig :: Sign f e -> Sign f e
-encodeSig sig = sig { opMap = projOpMap, predMap = newpredMap }
- where
+encodeSig sig = if Set.null bsorts then sig else 
+    sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs=[], opRes=x }
    bsorts = sortSet sig -- all sorts must be considered for as and in forms
@@ -93,7 +93,8 @@ encodeSig sig = sig { opMap = projOpMap, predMap = newpredMap }
    rel = Rel.irreflex $ sortRel sig
    total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
    setprojOptype = Set.map total $ Rel.toSet rel
-   projOpMap = Map.insert projName setprojOptype $ botOpMap
+   projOpMap = (if Set.null setprojOptype then id else 
+               Map.insert projName setprojOptype) botOpMap
 
 generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
 generateAxioms sig = filter (not . is_True_atom . sentence) $ 
