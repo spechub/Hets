@@ -44,6 +44,12 @@ anaFormula ga at =
        return $ case mt of Nothing -> Nothing
                            Just e -> Just at { item = e }
 
+anaKind :: Kind -> State Env RawKind
+anaKind k = do mrk <- fromResult $ anaKindM k . classMap
+               case mrk of 
+                   Nothing -> error "anaKind"
+                   Just rk -> return rk
+
 anaVars :: Vars -> Type -> Result [VarDecl]
 anaVars (Var v) t = return [VarDecl v t Other nullRange]
 anaVars (VarTuple vs _) t = 
@@ -311,11 +317,11 @@ anaDatatype genKind inst tys
              ( \ (Construct mc ts _ _) l -> case mc of
                Nothing -> ts ++ l
                Just _ -> l) [] newAlts
+           let srt = generalize nAs rt 
            mapM_ ( \ (Construct mc tc p sels) -> case mc of 
                Nothing -> return ()
                Just c -> do
-                   let srt = generalize nAs rt 
-                       sc = TypeScheme nAs 
+                   let sc = TypeScheme nAs 
                          (getConstrType srt p tc) nullRange
                    addOpId c sc [] (ConstructData i) 
                    mapM_ ( \ (Select ms ts pa) -> case ms of 
@@ -327,7 +333,7 @@ anaDatatype genKind inst tys
                            Nothing -> return False) $ concat sels) newAlts
            let de = DataEntry Map.empty i genKind (genTypeArgs nAs) rk newAlts
            addTypeId True (DatatypeDefn de) inst frk fullKind i
-           appendSentences $ makeDataSelEqs de rt
+           appendSentences $ makeDataSelEqs de srt
            putLocalTypeVars tvs
            return $ Just d 
 anaDatatype _ _ _ _ = error "anaDatatype (not preprocessed)"

@@ -82,16 +82,16 @@ true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op fst : forall a : Type; b : Type . Pair a_v3 b_v4 -> a_v-1)
+      ((op fst : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> a_v-1)
          ((op Pair
-           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v3 b_v4)
+           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
             (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
        var x_1_1 : a_v-1) %(ga_select_fst)%
 forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op snd : forall a : Type; b : Type . Pair a_v3 b_v4 -> b_v-2)
+      ((op snd : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> b_v-2)
          ((op Pair
-           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v3 b_v4)
+           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
             (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
        var x_1_2 : b_v-2) %(ga_select_snd)%
 free type Pair(a : Type)(b : Type)

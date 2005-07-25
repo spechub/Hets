@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable (MonadState)
+Portability :  portable
 
 analyse generic var (or type var) decls
 
@@ -19,7 +19,6 @@ import Control.Monad
 
 import qualified Common.Lib.Map as Map
 import Common.Id
-import Common.AS_Annotation
 import Common.Lib.State
 import Common.Result
 import Common.PrettyPrint
@@ -36,22 +35,6 @@ import HasCASL.TypeAna
 import HasCASL.Unify
 import HasCASL.Merge
 import HasCASL.Builtin
-
--- | add diagnostic messages 
-addDiags :: [Diagnosis] -> State Env ()
-addDiags ds =
-    do e <- get
-       put $ e {envDiags = reverse ds ++ envDiags e}
-
--- | add sentences
-appendSentences :: [Named Sentence] -> State Env ()
-appendSentences fs =
-    do e <- get
-       put $ e {sentences = reverse fs ++ sentences e}
-
--- | store local assumptions
-putLocalVars :: Map.Map Id VarDefn -> State Env ()
-putLocalVars vs =  do { e <- get; put e { localVars = vs } }
 
 anaStarType :: Type -> State Env (Maybe Type)
 anaStarType t = fmap (fmap snd) $ anaType (Just star, t) 
@@ -98,29 +81,6 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
          addDiags $ generalizable sc
          return $ TypeScheme newArgs newTy p
 
-anaKind :: Kind -> State Env RawKind
-anaKind k = do mrk <- fromResult $ anaKindM k . classMap
-               case mrk of 
-                   Nothing -> error "anaKind"
-                   Just rk -> return rk
-
-fromResult :: (Env -> Result a) -> State Env (Maybe a)
-fromResult f = do 
-   e <- get
-   let Result ds mr = f e
-   addDiags ds
-   return mr
-
--- ---------------------------------------------------------------------------
--- storing type ids with their kind and definition
--- ---------------------------------------------------------------------------
-
--- | store local type variables
-putLocalTypeVars :: LocalTypeVars -> State Env ()
-putLocalTypeVars tvs = do 
-    e <- get 
-    put e { localTypeVars = tvs }
-
 addLocalTypeVar :: Bool -> TypeVarDefn -> Id -> State Env ()
 addLocalTypeVar warn tvd i = do 
     tvs <- gets localTypeVars
@@ -134,12 +94,6 @@ addLocalTypeVar warn tvd i = do
                     "type variable shadows type constructor" i]
        else return ()
     putLocalTypeVars $ Map.insert i tvd tvs
-
--- | store a complete type map
-putTypeMap :: TypeMap -> State Env ()
-putTypeMap tm = do 
-    e <- get 
-    put e { typeMap = tm }
 
 -- | store type id and check kind arity (warn on redeclared types)
 addTypeId :: Bool -> TypeDefn -> Instance -> RawKind -> Kind -> Id 
@@ -211,10 +165,13 @@ anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
     Nothing -> do
      c <- toEnvState inc
      case vk of 
-      VarKind k -> do 
-        rk <- anaKind k
-        addLocalTypeVar True (TypeVarDefn rk vk c) i
-        return $ Just $ TypeArg i vk rk c s ps
+      VarKind k ->  
+        let Result ds (Just rk) = anaKindM k cm
+        in if null ds then do
+            addLocalTypeVar True (TypeVarDefn rk vk c) i
+            return $ Just $ TypeArg i vk rk c s ps
+        else do addDiags ds
+                return Nothing
       Downset t -> do                 
         mt <- anaType (Nothing, t)
         case mt of 
@@ -240,14 +197,6 @@ anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
 addTypeVarDecl :: Bool -> TypeArg -> State Env ()
 addTypeVarDecl warn (TypeArg i vk rk c _ _) = 
        addLocalTypeVar warn (TypeVarDefn rk vk c) i
-
--- ---------------------------------------------------------------------------
--- for storing selectors and constructors
--- ---------------------------------------------------------------------------
-
--- | store assumptions
-putAssumps :: Assumps -> State Env ()
-putAssumps as =  do { e <- get; put e { assumps = as } }
 
 -- | get matching information of uninstantiated identifier
 findOpId :: Env -> UninstOpId -> TypeScheme -> Maybe OpInfo
@@ -300,10 +249,6 @@ addOpId i oldSc attrs defn =
           else do addDiags ds
                   return False
 
-----------------------------------------------------------------------------
--- local variables 
------------------------------------------------------------------------------
-
 -- | add a local variable with an analysed type (if True then warn)
 addLocalVar :: Bool -> VarDecl -> State Env () 
 addLocalVar warn (VarDecl v t _ _) = 
@@ -316,10 +261,6 @@ addLocalVar warn (VarDecl v t _ _) =
           else return ()
          else return ()  
        putLocalVars $ Map.insert v (VarDefn t) vs 
-
-----------------------------------------------------------------------------
--- GenVarDecl
------------------------------------------------------------------------------
 
 -- | add analysed local variable or type variable declaration 
 addGenVarDecl :: GenVarDecl -> State Env ()
@@ -377,21 +318,6 @@ anaVarDecl(VarDecl v oldT sk ps) =
                Nothing -> Nothing
                Just t -> Just $ VarDecl v t sk ps
 
--- | get the variable
-getVar :: VarDecl -> Id
-getVar(VarDecl v _ _ _) = v
-
--- | check uniqueness of variables 
-checkUniqueVars :: [VarDecl] -> State Env ()
-checkUniqueVars = addDiags . checkUniqueness . map getVar
-
--- | filter out assumption
-filterAssumps  :: (OpInfo -> Bool) -> Assumps -> Assumps
-filterAssumps p =
-    Map.filter (not . null . opInfos) .
-       Map.map (OpInfos . filter p . opInfos)
-
--- | analyse types in typed patterns, and
 -- create fresh type vars for unknown ids tagged with type MixfixType []. 
 anaPattern :: Pattern -> State Env Pattern
 anaPattern pat = 

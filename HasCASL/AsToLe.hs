@@ -14,6 +14,7 @@ module HasCASL.AsToLe where
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Id
 import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
@@ -21,10 +22,9 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 import HasCASL.As
-import HasCASL.AsToIds
 import HasCASL.Le
 import HasCASL.TypeAna
-import HasCASL.ClassDecl
+import HasCASL.ClassAna
 import HasCASL.VarDecl
 import HasCASL.Unify
 import HasCASL.OpDecl
@@ -32,6 +32,43 @@ import HasCASL.TypeDecl
 import HasCASL.Builtin
 import HasCASL.MapTerm
 import Data.Maybe
+
+-- * extract predicate ids from As for mixfix analysis
+
+type Ids = Set.Set Id
+
+unite :: [Ids] -> Ids
+unite = Set.unions
+
+idsOfBasicSpec :: BasicSpec -> Ids 
+idsOfBasicSpec (BasicSpec l) = unite $ map (idsOfBasicItem . item) l 
+
+idsOfBasicItem :: BasicItem -> Ids 
+idsOfBasicItem (SigItems i) = idsOfSigItems i
+idsOfBasicItem (ClassItems _ l _ ) = unite $ map (idsOfClassItem . item) l
+idsOfBasicItem (GenItems l _) = unite $ map (idsOfSigItems . item) l
+idsOfBasicItem (Internal l _) = unite $ map (idsOfBasicItem . item) l
+idsOfBasicItem _ = Set.empty
+
+idsOfClassItem :: ClassItem -> Ids
+idsOfClassItem (ClassItem _ l _) = unite $ map (idsOfBasicItem . item) l
+
+idsOfSigItems :: SigItems -> Ids
+idsOfSigItems (TypeItems _ _ _) = Set.empty
+idsOfSigItems (OpItems b l _) = unite $ map (idsOfOpItem b . item) l
+
+idsOfOpItem :: OpBrand -> OpItem -> Ids
+idsOfOpItem b (OpDecl os _ _ _) = 
+    let ois = Set.fromList $ map ( \ (OpId i _ _) -> i) os  
+        in case b of 
+                  Pred -> ois
+                  _ -> Set.empty
+idsOfOpItem b (OpDefn (OpId i _ _) _ _ _ _ _) =
+        case b of 
+                  Pred -> (Set.singleton i)
+                  _ -> Set.empty
+
+-- * basic analysis
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) -> 

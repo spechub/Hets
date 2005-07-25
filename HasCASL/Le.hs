@@ -15,7 +15,8 @@ module HasCASL.Le where
 import HasCASL.As
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.Result(Diagnosis)
+import Common.Lib.State
+import Common.Result
 import Common.Id
 import Common.AS_Annotation(Named)
 
@@ -167,6 +168,66 @@ data Env = Env { classMap :: ClassMap
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] [] 
              ((Map.empty, 0, 0), Set.empty) 1
+
+-- * accessing the environment
+
+-- | add diagnostic messages 
+addDiags :: [Diagnosis] -> State Env ()
+addDiags ds =
+    do e <- get
+       put $ e {envDiags = reverse ds ++ envDiags e}
+
+-- | add sentences
+appendSentences :: [Named Sentence] -> State Env ()
+appendSentences fs =
+    do e <- get
+       put $ e {sentences = reverse fs ++ sentences e}
+
+-- | store a class map
+putClassMap :: ClassMap -> State Env ()
+putClassMap ce = do 
+    e <- get 
+    put e { classMap = ce }
+
+-- | store local assumptions
+putLocalVars :: Map.Map Id VarDefn -> State Env ()
+putLocalVars vs =  do 
+    e <- get 
+    put e { localVars = vs }
+
+-- | converting a result to a state computation
+fromResult :: (Env -> Result a) -> State Env (Maybe a)
+fromResult f = do 
+   e <- get
+   let Result ds mr = f e
+   addDiags ds
+   return mr
+
+-- | store local type variables
+putLocalTypeVars :: LocalTypeVars -> State Env ()
+putLocalTypeVars tvs = do 
+    e <- get 
+    put e { localTypeVars = tvs }
+
+-- | store a complete type map
+putTypeMap :: TypeMap -> State Env ()
+putTypeMap tm = do 
+    e <- get 
+    put e { typeMap = tm }
+
+-- | store assumptions
+putAssumps :: Assumps -> State Env ()
+putAssumps ops = do 
+    e <- get
+    put e { assumps = ops }
+
+-- | get the variable
+getVar :: VarDecl -> Id
+getVar(VarDecl v _ _ _) = v
+
+-- | check uniqueness of variables 
+checkUniqueVars :: [VarDecl] -> State Env ()
+checkUniqueVars = addDiags . checkUniqueness . map getVar
 
 -- * morphisms
 

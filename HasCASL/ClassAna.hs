@@ -18,6 +18,7 @@ import Common.Id
 import HasCASL.Le
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+import Common.Lib.State
 import Common.Result
 
 -- * analyse kinds
@@ -134,3 +135,55 @@ checkKinds :: (PosItem a, PrettyPrint a) =>
 checkKinds p k1 k2 =
        if k1 == k2 then []
           else diffKindDiag p k1 k2
+
+-- | display a class list (unused)
+showClassList :: [ClassId] -> ShowS
+showClassList is = showParen (not $ isSingle is)
+                   $ showSepList ("," ++) showId is
+
+-- | analyse class decls
+anaClassDecls :: ClassDecl -> State Env ClassDecl
+anaClassDecls (ClassDecl cls k ps) = 
+    do cm <- gets classMap 
+       let Result ds (Just rk) = anaKindM k cm
+       addDiags ds 
+       let ak = if null ds then k else rk
+       mapM_ (addClassDecl rk ak) cls
+       return $ ClassDecl cls ak ps
+
+-- | store a class 
+addClassDecl :: RawKind -> Kind -> ClassId -> State Env ()
+-- check with merge
+addClassDecl rk kind ci = 
+    if showId ci "" == "Type" then 
+       do addDiags [mkDiag Warning 
+                    "void universe class declaration" ci]
+    else do
+       cm <- gets classMap
+       tm <- gets typeMap
+       tvs <- gets localTypeVars
+       case Map.lookup ci tm of 
+         Just _ -> addDiags [mkDiag Error "class name already a type" ci]
+         Nothing -> do 
+           case Map.lookup ci tvs of 
+             Just _ -> 
+               addDiags [mkDiag Error "class name already a type variable" ci]
+             Nothing -> do 
+               case Map.lookup ci cm of
+                 Nothing -> 
+                   putClassMap $ Map.insert ci (ClassInfo rk [kind]) cm
+                 Just (ClassInfo ork superClasses) -> do 
+                   let ds = checkKinds ci rk ork
+                   addDiags ds
+                   if null ds then 
+                     if cyclicClassId cm ci kind then
+                        addDiags [mkDiag Error "cyclic class" ci]
+                     else if any (\ k -> lesserKind cm k kind) superClasses 
+                        then addDiags [mkDiag Warning "unchanged class" ci]
+                        else do addDiags [mkDiag Hint 
+                                         "refined class" ci]
+                                putClassMap $ Map.insert ci 
+                                    (ClassInfo ork $ keepMinKinds cm $ 
+                                               kind : superClasses) cm
+                     else return ()
+

@@ -225,7 +225,7 @@ kinds. -}
 data TypeScheme = TypeScheme [TypeArg] Type Range
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
-                  deriving (Show, Eq, Ord)
+                  deriving Show
 
 -- | convert a type with unbound variables to a scheme
 simpleTypeScheme :: Type -> TypeScheme
@@ -521,11 +521,23 @@ instance Ord Type where
     ProductType _ _<= _ = True
     _ <= ProductType _ _ = False
 
--- is this equality only needed for the equality of schemes? 
+-- equality for disambiguation in HasCASL2Haskell
+instance Eq TypeScheme where
+    TypeScheme a1 t1 _ == TypeScheme a2 t2 _ = 
+        (length a1, t1) == (length a2, t2)
+
+-- order used within terms
+instance Ord TypeScheme where
+    TypeScheme a1 t1 _ <= TypeScheme a2 t2 _ = 
+        (length a1, t1) <= (length a2, t2)
+
+-- used within quantified formulas
 instance Eq TypeArg where
-    TypeArg i1 k1 _ _ _ _ == TypeArg i2 k2 _ _ _ _ = (i1, k1) == (i2, k2)
+    TypeArg i1 _ v1 c1 _ _ == TypeArg i2 _ v2 c2 _ _ = 
+        (i1, v1, c1) == (i2, v2, c2)
 instance Ord TypeArg where
-    TypeArg i1 k1 _ _ _ _ <= TypeArg i2 k2 _ _ _ _ = (i1, k1) <= (i2, k2)
+    TypeArg i1 _ v1 c1 _ _ <= TypeArg i2 _ v2 c2 _ _ = 
+        (i1, v1, c1) <= (i2, v2, c2)
 
 instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
