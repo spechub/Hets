@@ -27,7 +27,7 @@ listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
   do
     main <- createToplevel [text title]
-    lb  <- newListBox main [value entries, bg "white", size (100, 50)] ::
+    lb  <- newListBox main [value entries, bg "white", size (100, 39)] ::
              IO (ListBox String)
     pack lb [Side AtLeft, 
                  Expand On, Fill Both]
