@@ -169,7 +169,10 @@ isSubMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
 isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
 
 isSubOpMap :: OpMap -> OpMap -> Bool
-isSubOpMap a b = Map.isSubmapOfBy Set.isSubsetOf a $ addPartOpsM b 
+isSubOpMap a b = Map.isSubmapOfBy ( \ s t -> 
+               Set.fold ( \ e r -> r && (Set.member e t || case opKind e of
+                         Partial -> Set.member e {opKind = Total} t
+                         Total -> False)) True s) a b
 
 isSubSig :: (PrettyPrint e, PrettyPrint f) => 
             (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
@@ -181,23 +184,16 @@ isSubSig isSubExt a b =
           && isSubMapSet (predMap a) (predMap b)
           && isSubExt (extendedInfo a) (extendedInfo b) 
 
-partOps :: Set.Set OpType -> Set.Set OpType
-partOps s = Set.fromDistinctAscList $ map ( \ t -> t { opKind = Partial } ) 
+partOps :: Set.Set OpType -> [OpType]
+partOps s = map ( \ t -> t { opKind = Partial } ) 
          $ Set.toList $ Set.filter ((==Total) . opKind) s
 
 remPartOps :: Set.Set OpType -> Set.Set OpType 
-remPartOps s = s Set.\\ partOps s
+remPartOps s = foldr Set.delete s $ partOps s
 
 remPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
             -> Map.Map a (Set.Set OpType) 
 remPartOpsM = Map.map remPartOps
-
-addPartOps :: Set.Set OpType -> Set.Set OpType 
-addPartOps s = Set.union s $ partOps s
-
-addPartOpsM :: Ord a => Map.Map a (Set.Set OpType) 
-            -> Map.Map a (Set.Set OpType) 
-addPartOpsM = Map.map addPartOps
 
 addDiags :: [Diagnosis] -> State (Sign f e) ()
 addDiags ds = 
