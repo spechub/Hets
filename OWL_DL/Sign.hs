@@ -13,7 +13,9 @@ Signatures and sentences for OWL_DL.
 module OWL_DL.Sign where
 
 import OWL_DL.AS
+import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 
 data Sign = Sign
             { ontologyID :: URIreference -- ^ URL of the ontology
@@ -30,9 +32,9 @@ data Sign = Sign
             } deriving (Show,Eq,Ord)
 
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
-               | RoleDomain RoleID RDomain
-               | RoleRange  RoleID RRange
-               | FuncRole   RoleID
+               | RoleDomain ID RDomain
+               | RoleRange  ID RRange
+               | FuncRole   ID
                | Conceptmembership IndividualID ClassID
                  deriving (Show,Eq,Ord)
 
@@ -41,10 +43,11 @@ data RDomain = RDomain Description
 
 data RRange = RIRange Description
             | RDRange DataRange
+	      deriving (Show,Eq,Ord)
 
-data RoleID = IVP IndividualvaluedPropertyID 
-            | DVP DatavaluedPropertyID
-              deriving (Show,Eq,Ord)
+-- data RoleID = IVP IndividualvaluedPropertyID 
+--             | DVP DatavaluedPropertyID
+--         	 deriving (Show,Eq,Ord)
 
 type ID = URIreference          -- for universal ID
 
@@ -52,13 +55,50 @@ data Sentence = OWLAxiom Axiom
               | OWLFact Fact
                 deriving (Show,Eq,Ord)
 
+emptySign :: Sign
+emptySign =  Sign { ontologyID = QN "" "" "", 
+                    concepts = Set.empty,
+		    primaryConcepts = Set.empty,
+		    datatypes = Set.empty,
+		    indValuedRoles = Set.empty,
+		    dataValuedRoles = Set.empty,
+		    individuals = Set.empty,
+		    axioms = Set.empty,
+		    namespaceMap = Map.empty
+		  }
+
 simpleSign :: ID -> Sign
 simpleSign ontoID = 
             Sign { ontologyID = ontoID, 
                   concepts = Set.empty,
 		   primaryConcepts = Set.empty,
+		   datatypes = Set.empty,
 		   indValuedRoles = Set.empty,
 		   dataValuedRoles = Set.empty,
 		   individuals = Set.empty,
-		   axioms = Set.empty
+		   axioms = Set.empty,
+		   namespaceMap = Map.empty
 		 }
+
+diffSig :: Sign -> Sign -> Sign
+diffSig a b = 
+    a { concepts = concepts a `Set.difference` concepts b
+      , primaryConcepts = primaryConcepts a `Set.difference` primaryConcepts b
+      , datatypes = datatypes a `Set.difference` datatypes b
+      , indValuedRoles = indValuedRoles a `Set.difference` indValuedRoles b   
+      , dataValuedRoles = dataValuedRoles a `Set.difference` dataValuedRoles b
+      , individuals = individuals a `Set.difference` individuals b
+      , axioms = axioms a `Set.difference` axioms b
+      }
+
+insertSign :: Sign -> Sign -> Sign
+insertSign toIns totalSign =
+    totalSign { concepts = Set.union (concepts totalSign) (concepts toIns),
+		primaryConcepts = Set.union (primaryConcepts totalSign) (primaryConcepts toIns),
+		datatypes = Set.union (datatypes totalSign) (datatypes toIns),
+		indValuedRoles = Set.union (indValuedRoles totalSign) (indValuedRoles toIns),
+		dataValuedRoles = Set.union (dataValuedRoles totalSign) (dataValuedRoles toIns),
+		individuals = Set.union (individuals totalSign) (individuals toIns),
+		axioms = Set.union (axioms totalSign) (axioms toIns)
+	      }
+
