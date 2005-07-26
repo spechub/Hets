@@ -136,11 +136,6 @@ checkKinds p k1 k2 =
        if k1 == k2 then []
           else diffKindDiag p k1 k2
 
--- | display a class list (unused)
-showClassList :: [ClassId] -> ShowS
-showClassList is = showParen (not $ isSingle is)
-                   $ showSepList ("," ++) showId is
-
 -- | analyse class decls
 anaClassDecls :: ClassDecl -> State Env ClassDecl
 anaClassDecls (ClassDecl cls k ps) = 

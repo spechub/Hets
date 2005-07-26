@@ -171,12 +171,11 @@ op undefined : forall p : Pcpo; c : Cpo . c_v-2 --> p_v-1
      = (((fun Y[(c --> p)]
           : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
              ((c --> p) --> (c --> p)) --> (c --> p))
-          (((\ (var x' : _var_284_v284 --> p_v197)
-               . (var x' : _var_284_v284 --> p_v197)) :
-                (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+          (((\ (var x' : c_v199 --> p_v197) . (var x' : c_v199 --> p_v197)) :
+                (c_v199 --> p) ->? (c_v199 --> p)) as
                (c --> p) --> c --> p) :
             (c --> p)) as
-           _var_284_v284 --> p_v197
+           c_v199 --> p_v197
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -266,12 +265,11 @@ undefined
       = (((fun Y[(c --> p)]
            : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
               ((c --> p) --> (c --> p)) --> (c --> p))
-           (((\ (var x' : _var_284_v284 --> p_v197)
-                . (var x' : _var_284_v284 --> p_v197)) :
-                 (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+           (((\ (var x' : c_v199 --> p_v197) . (var x' : c_v199 --> p_v197)) :
+                 (c_v199 --> p) ->? (c_v199 --> p)) as
                 (c --> p) --> c --> p) :
              (c --> p)) as
-            _var_284_v284 --> p_v197
+            c_v199 --> p_v197
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 f : p --> p
@@ -396,12 +394,11 @@ forall x : c; s : nat -> c
    (((fun Y[(c --> p)]
       : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
          ((c --> p) --> (c --> p)) --> (c --> p))
-      (((\ (var x' : _var_284_v284 --> p_v197)
-           . (var x' : _var_284_v284 --> p_v197)) :
-            (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+      (((\ (var x' : c_v199 --> p_v197) . (var x' : c_v199 --> p_v197)) :
+            (c_v199 --> p) ->? (c_v199 --> p)) as
            (c --> p) --> c --> p) :
         (c --> p)) as
-       _var_284_v284 --> p_v197) %(def_undefined)%
+       c_v199 --> p_v197) %(def_undefined)%
 free type bool
   ::= true : bool
       false : bool %(ga_bool)%
@@ -536,16 +533,5 @@ free type bool
 *** Hint 195.5, rebound variable 'f'
 *** Hint 195.20, not a class 'p'
 *** Hint 195.18, rebound variable 'x'
-*** Hint 199.14-199.24, unable to prove: c < _var_284_v284
-*** Error 199.14-199.24, in term'(((fun Y[(c --> p)]
-   : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-      ((c --> p) --> (c --> p)) --> (c --> p))
-   (((\ (var x' : _var_284_v284 --> p_v197)
-        . (var x' : _var_284_v284 --> p_v197)) :
-         (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
-        (c --> p) --> c --> p) :
-     (c --> p)) as
-    _var_284_v284 --> p_v197' of type '_var_284_v284 --> p_v197'
- unresolved constraints '{ c < _var_284_v284 }'
 *** Warning 204.20, ignoring declaration for builtin identifier 'true'
 *** Warning 204.27, ignoring declaration for builtin identifier 'false'

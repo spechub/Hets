@@ -30,6 +30,8 @@ import Common.Keywords
 import Common.Id
 import Common.Result
 
+import Control.Exception(assert)
+
 import Data.List
 import Data.Maybe
 
@@ -84,63 +86,21 @@ entail te p =
 
 byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
 byInst te c = let cm = classMap te in case c of 
-    Kinding ty k -> case ty of 
-      ExpandedType _ t -> byInst te $ Kinding t k
-      _ -> if k == star then return noC else case k of
-           ExtKind ek _ _ -> byInst te (Kinding ty ek)
-           ClassKind _ -> let (topTy, args) = getTypeAppl ty in
-               case topTy of 
-               TypeName i _ _ -> let Result _ mk = getIdKind te i in
+    Kinding ty k -> if k == star then assert (rawKindOfType ty == star) $ 
+                    return noC else 
+      let Result _ds mk = inferKinds (Just True) ty te in
                    case mk of 
-                   Nothing -> fail $ "remaining variable '" 
-                              ++ showPretty i "'"   
-                   Just ((_, ks), _) -> do 
-                       if null args then
-                          if any ( \ j -> lesserKind cm j k) ks 
+                   Nothing -> fail $ "constrain '" ++ 
+                                  showPretty c "' is unprovable"
+                   Just ((_, ks), _) -> if any ( \ j -> lesserKind cm j k) ks 
                              then return noC 
                              else fail $ "constrain '" ++ 
                                   showPretty c "' is unprovable"
                                   ++ "\n  known kinds are: " ++
                                   showPretty ks ""
-                          else do 
-                          let kas = concatMap ( \ j -> 
-                                         getKindAppl cm j args) ks
-                          newKs <- dom cm k kas 
-                          return $ Set.fromList $ zipWith Kinding args newKs
-               _ -> error "byInst: unexpected Type" 
-           _ -> error "byInst: unexpected Kind" 
     Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
-
-maxKind :: ClassMap -> Kind -> Kind -> Maybe Kind
-maxKind cm k1 k2 = if lesserKind cm k1 k2 then Just k1 else 
-                if lesserKind cm k2 k1 then Just k2 else Nothing
-
-maxKinds :: ClassMap -> [Kind] -> Maybe Kind
-maxKinds cm l = case l of 
-    [] -> Nothing
-    [k] -> Just k
-    [k1, k2] -> maxKind cm k1 k2
-    k1 : k2 : ks -> case maxKind cm k1 k2 of 
-          Just k -> maxKinds cm (k : ks)
-          Nothing -> do k <- maxKinds cm (k2 : ks)
-                        maxKind cm k1 k 
-
-maxKindss :: ClassMap -> [[Kind]] -> Maybe [Kind]
-maxKindss cm l = let margs = map (maxKinds cm) $ transpose l in
-   if all isJust margs then Just $ map fromJust margs
-      else Nothing
-
-dom :: Monad m => ClassMap -> Kind -> [([Kind], Kind)] -> m [Kind]
-dom cm k ks = 
-    let fks = filter ( \ (_, rk) -> lesserKind cm rk k ) ks 
-        margs = maxKindss cm $ map fst fks
-        in if null fks then fail ("class not found " ++ showPretty k "") 
-           else case margs of 
-              Nothing -> fail "dom: maxKind"
-              Just args -> if any ((args ==) . fst) fks then return args
-                           else fail "dom: not coregular"
 
 freshTypeVarT :: Type -> State Int Type             
 freshTypeVarT t = 
@@ -210,26 +170,12 @@ shapeMgu te cs =
               _ -> (a1, a2) : (a2, a1) : rest
     _ -> error ("shapeMgu2: " ++ showPretty t1 " < " ++ showPretty t2 "")
 
-zipC :: Kind -> (Type, Type) -> [(Type, Type)] 
-zipC k p = let q = swap p in case k of
-                      ExtKind _ CoVar _ -> [p]
-                      ExtKind _ ContraVar _ -> [q]
-                      _ -> [p,q]
-
 shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do 
     c <- get 
     let (r, (n, s)) = runState (shapeMgu te l) (c, eps) 
     put n
     return (s, r)
-
-getRawKindAppl :: Kind -> [a] -> (Kind, [Kind])
-getRawKindAppl k args = if null args then (k, []) else
-    case k of 
-    FunKind k1 k2 _ -> let (rk, ks) = getRawKindAppl k2 (tail args)
-                       in (rk, k1 : ks)
-    ExtKind ek _ _ -> getRawKindAppl ek args
-    _ -> error ("getRawKindAppl " ++ show k)
 
 -- input an atomized constraint list 
 collapser :: Rel.Rel Type -> Result Subst
@@ -307,20 +253,14 @@ monotonic :: TypeEnv -> Int -> Type -> (Bool, Bool)
 monotonic te v t = 
      case t of 
            TypeName _ _ i -> (True, i /= v)
-           ExpandedType _ t2 -> monotonic te v t2
-           KindedType tk _ _ -> monotonic te v tk
-           LazyType tl _ -> monotonic te v tl
-           _ -> let (top, args) = getTypeAppl t in case top of
-                TypeName _ k _ -> 
-                    let ks = snd $ getRawKindAppl k args 
-                        (bs1, bs2) = unzip $ zipWith ( \ rk a ->
-                             let (b1, b2) = monotonic te v a
-                             in case rk of
-                                       ExtKind _ CoVar _ -> (b1, b2)
-                                       ExtKind _ ContraVar _ -> (b2, b1)
-                                       _ -> (b1 && b2, b1 && b2)) ks args
-                    in (and bs1, and bs2) 
-                _ -> error "monotonic"
+           TypeAppl t1 t2 -> let 
+                (a1, a2) = monotonic te v t2 
+                (f1, f2) = monotonic te v t1 
+                in case rawKindOfType t1 of
+                   ExtKind _ CoVar _ -> (f1 && a1, f2 && a2)
+                   ExtKind _ ContraVar _ -> (f1 && a2, f2 && a1)
+                   _ -> (f1 && a1 && a2, f2 && a1 && a2)
+           _ -> monotonic te v (convertType t)
 
 -- | find monotonicity based instantiation
 monoSubst :: TypeEnv -> Rel.Rel Type -> Type -> Subst
