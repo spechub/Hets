@@ -585,21 +585,21 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
   Spec_inst spname afitargs pos -> do
    let adj = adjustPos pos
    case Map.lookup spname genv of
-    Nothing -> plain_error (sp,nsig,dg) 
+    Nothing -> fatal_error 
                  ("Specification "++ showPretty spname " not found") pos
     Just (ViewEntry _) -> 
-     plain_error (sp,nsig,dg) 
+     fatal_error 
       (showPretty spname " is a view, not a specification") pos
     Just (ArchEntry _) -> 
-     plain_error (sp,nsig,dg) 
+     fatal_error 
       (showPretty spname
        " is an architectural, not a structured specification") pos
     Just (UnitEntry _) -> 
-     plain_error (sp,nsig,dg) 
+     fatal_error 
       (showPretty spname
        " is a unit specification, not a structured specification") pos
     Just (RefEntry) -> 
-     plain_error (sp,nsig,dg) 
+     fatal_error 
       (showPretty spname
        " is a refinement specification, not a structured specification") pos
     Just (SpecEntry gs@(imps,params,_,body)) -> 
@@ -728,7 +728,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
       -- finally the case with conflicting numbers of formal and actual parameters
       _ -> 
-        plain_error (sp,nsig,dg) 
+        fatal_error
           (showPretty spname " expects "++show (length params)++" arguments"
            ++" but was given "++show (length afitargs)) pos
 
