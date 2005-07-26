@@ -316,7 +316,8 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
                        let j = mapSort sMap2 (mapSort sMap1 i) in 
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-  in Morphism {
+  in if Map.null sMap2 && Map.null fMap2 && Map.null pMap2 then mor1 else 
+     Morphism {
       msource = src,
       mtarget = mtarget mor2,
       sort_map = sMap,
@@ -355,37 +356,26 @@ legalSign sigma =
                         && all legalSort (opArgs t) 
         legalPredType t = all legalSort (predArgs t) 
 
-legalMor ::  Morphism f e m -> Bool
+legalMor :: Morphism f e m -> Bool
 legalMor mor =
-  legalSign sigma1
-  && legalSign sigma2
-  && Map.foldWithKey
-        (\s1 s2 b -> b && Set.member s1 (sortSet sigma1)
-                       && Set.member s2 (sortSet sigma2))
-        True smap
-  && Map.foldWithKey 
-        (\(id1,t) (id2,k) b -> 
-           b
-           &&
-           Set.member t (Map.findWithDefault Set.empty id1 (opMap sigma1)) 
-           &&
-           Set.member (mapOpTypeK smap k t) 
-                      (Map.findWithDefault Set.empty id2 (opMap sigma2))
-        )
-        True (fun_map mor)
-  && Map.foldWithKey 
-        (\(id1,t) id2 b -> 
-           b
-           &&
-           Set.member t (Map.findWithDefault Set.empty id1 (predMap sigma1)) 
-           &&
-           Set.member (mapPredType smap t) 
-                      (Map.findWithDefault Set.empty id2 (predMap sigma2))
-        )
-        True (pred_map mor)
-  where sigma1 = msource mor
-        sigma2 = mtarget mor
-        smap = sort_map mor
+  let s1 = msource mor
+      s2 = mtarget mor
+      smap = sort_map mor
+      msorts = Set.map (mapSort smap) $ sortSet s1 
+      mops = Map.foldWithKey ( \ i -> 
+                 flip $ Set.fold ( \ ot ->
+                        let (j, nt) = mapOpSym smap (fun_map mor) (i, ot)
+                        in Rel.setInsert j nt)) Map.empty $ opMap s1
+      mpreds = Map.foldWithKey ( \ i -> 
+                 flip $ Set.fold ( \ pt ->
+                        let (j, nt) = mapPredSym smap (pred_map mor) (i, pt)
+                        in Rel.setInsert j nt)) Map.empty $ predMap s1
+  in 
+  legalSign s1
+  && Set.isSubsetOf msorts (sortSet s2)
+  && isSubOpMap mops (opMap s2)
+  && isSubMapSet mpreds (predMap s2)
+  && legalSign s2
 
 sigInclusion :: (PrettyPrint e, PrettyPrint f) 
              => Ext f e m -- ^ compute extended morphism 
@@ -407,65 +397,53 @@ morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
 morphismUnion uniteM addSigExt mor1 mor2 =
   let smap1 = sort_map mor1
       smap2 = sort_map mor2
-      s1 = msource mor1
-      s2 = msource mor2
-      us1 = Set.difference (sortSet s1) $ Rel.keysSet smap1
-      us2 = Set.difference (sortSet s2) $ Rel.keysSet smap2
-      omap1 = fun_map mor1
-      omap2 = fun_map mor2
-      uo1 = foldr delOp (opMap s1) $ Map.keys omap1
-      uo2 = foldr delOp (opMap s2) $ Map.keys omap2
-      delOp (n, ot) m = diffMapSet m $ Map.singleton n $ 
-                    Set.fromList [ot {opKind = Partial}, ot {opKind =Total}]
-      uo = addMapSet uo1 uo2
-      pmap1 = pred_map mor1
-      pmap2 = pred_map mor2
-      up1 = foldr delPred (predMap s1) $ Map.keys pmap1
-      up2 = foldr delPred (predMap s2) $ Map.keys pmap2
-      up = addMapSet up1 up2
-      delPred (n, pt) m = diffMapSet m $ Map.singleton n $ Set.singleton pt
-      (sds, smap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
-          Nothing -> (ds, Map.insert i j m)
-          Just k -> if j == k then (ds, m) else 
-              (Diag Error 
-               ("incompatible mapping of sort " ++ showId i " to " 
-                ++ showId j " and " ++ showId k "")
-               nullRange : ds, m)) ([], smap1) 
-          (Map.toList smap2 ++ map (\ a -> (a, a)) 
-                      (Set.toList $ Set.union us1 us2))
-      (ods, omap) = foldr ( \ (isc@(i, ot), jsc@(j, t)) (ds, m) -> 
-          case Map.lookup isc m of
-          Nothing -> (ds, Map.insert isc jsc m)
-          Just (k, p) -> if j == k then if p == t then (ds, m)
-                            else (ds, Map.insert isc (j, Total) m) else 
-              (Diag Error 
-               ("incompatible mapping of op " ++ showId i ":" 
-                ++ showPretty ot { opKind = t } " to " 
-                ++ showId j " and " ++ showId k "") nullRange : ds, m))
-           (sds, omap1) (Map.toList omap2 ++ concatMap 
-              ( \ (a, s) -> map ( \ ot -> ((a, ot {opKind = Partial}), 
-                                           (a, opKind ot))) 
-              $ Set.toList s) (Map.toList uo))
-      (pds, pmap) = foldr ( \ (isc@(i, pt), j) (ds, m) -> 
-          case Map.lookup isc m of
-          Nothing -> (ds, Map.insert isc j m)
-          Just k -> if j == k then (ds, m) else 
-              (Diag Error 
-               ("incompatible mapping of pred " ++ showId i ":" 
-                ++ showPretty pt " to " ++ showId j " and " 
-                ++ showId k "") nullRange : ds, m)) (ods, pmap1) 
-          (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map 
-              ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))
-      s3 = addSig addSigExt s1 s2
-      o3 = opMap s3 in 
-      if null pds then Result [] $ Just Morphism 
+      s3 = addSig addSigExt (msource mor1) (msource mor2)
+      (sds, smap) = Set.fold ( \ i (ds, m) -> 
+                  let j = mapSort smap1 i 
+                      k = mapSort smap2 i
+                  in if j == k then 
+                     if i == j then (ds, m) else (ds, Map.insert i j m)
+                     else (Diag Error 
+                           ("incompatible mapping of sort " ++ showId i " to " 
+                            ++ showId j " and " ++ showId k "")
+                           nullRange : ds, m)) ([], Map.empty) $ sortSet s3
+      (ods, omap) = Map.foldWithKey ( \ i -> 
+                        flip $ Set.fold ( \ ot (ds, m) -> 
+                        let p = (i, ot)
+                            k0 = opKind ot
+                            (j, ot1) = mapOpSym smap1 (fun_map mor1) p
+                            (k, ot2) = mapOpSym smap2 (fun_map mor2) p
+                            k1 = opKind ot1
+                            k2 = opKind ot2
+                            b = k0 == k1 && k1 == k2
+                        in if j == k then 
+                             if i == j && b then (ds, m)
+                             else (ds, Map.insert (i, ot { opKind = Partial })
+                                       (j, if b then k0 else Total) m)
+                           else (Diag Error 
+                              ("incompatible mapping of op " ++ showId i ":" 
+                               ++ showPretty ot " to " 
+                               ++ showId j " and " ++ showId k "") nullRange 
+                               : ds, m))) (sds, Map.empty) $ opMap s3
+      (pds, pmap) = Map.foldWithKey ( \ i -> 
+                        flip $ Set.fold ( \ pt (ds, m) -> 
+                        let p = (i, pt)
+                            (j, _) = mapPredSym smap1 (pred_map mor1) p
+                            (k, _) = mapPredSym smap2 (pred_map mor2) p
+                        in if j == k then 
+                             if i == j then (ds, m)
+                             else (ds, Map.insert p j m)
+                           else (Diag Error 
+                           ("incompatible mapping of pred " ++ showId i ":" 
+                            ++ showPretty pt " to " ++ showId j " and " 
+                            ++ showId k "") nullRange : ds, m)))
+                         (ods, Map.empty) $ predMap s3
+      in if null pds then Result [] $ Just Morphism 
          { msource = s3,
            mtarget = addSig addSigExt (mtarget mor1) $ mtarget mor2,
-           sort_map = Map.filterWithKey (/=) smap, 
-           fun_map = Map.filterWithKey 
-              (\ (i, ot) (j, k) -> i /= j || k == Total && Set.member ot 
-               (Map.findWithDefault Set.empty i o3)) omap, 
-           pred_map = Map.filterWithKey (\ (i, _) j -> i /= j) pmap,
+           sort_map = smap, 
+           fun_map = omap,
+           pred_map = pmap,
            extended_map = uniteM (extended_map mor1) $ extended_map mor2 }
       else Result pds Nothing
 
