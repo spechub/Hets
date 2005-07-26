@@ -85,7 +85,8 @@ mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
 
 mapOpType :: Sort_map -> OpType -> OpType
-mapOpType sorts t = t { opArgs = map (mapSort sorts) $ opArgs t
+mapOpType sorts t = if Map.null sorts then t else 
+                    t { opArgs = map (mapSort sorts) $ opArgs t
                       , opRes = mapSort sorts $ opRes t }
 
 mapOpTypeK :: Sort_map -> FunKind -> OpType -> OpType
@@ -107,7 +108,8 @@ compatibleOpTypes :: OpType -> OpType -> Bool
 compatibleOpTypes ot1 ot2 = opArgs ot1 == opArgs ot2 && opRes ot1 == opRes ot2
 
 mapPredType :: Sort_map -> PredType -> PredType
-mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
+mapPredType sorts t = if Map.null sorts then t else 
+                      t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
 mapPredSym sMap fMap (i, pt) = 
@@ -313,17 +315,18 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
       sMap2 = sort_map mor2 
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
-      sMap = Set.fold ( \ i ->
+      sMap = if Map.null sMap2 then sMap1 else 
+             Set.fold ( \ i ->
                        let j = mapSort sMap2 (mapSort sMap1 i) in 
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-  in if Map.null sMap2 && Map.null fMap2 && Map.null pMap2 then 
-     mor1 { mtarget = tar } else 
+  in 
      Morphism {
       msource = src,
       mtarget = tar,
       sort_map = sMap,
-      fun_map  = Map.foldWithKey ( \ i t m ->
+      fun_map  = if Map.null fMap2 then fMap1 else 
+                 Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot -> 
                        let (ni, nt) = mapOpSym sMap2 fMap2 $ 
                                       mapOpSym sMap1 fMap1 (i, ot)
@@ -332,7 +335,8 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
                           if i == ni && opKind ot == k then id else 
                           Map.insert (i, ot {opKind = Partial }) (ni, k)) m t)
                      Map.empty $ opMap src,
-      pred_map = Map.foldWithKey ( \ i t m ->
+      pred_map = if Map.null pMap2 then pMap1 else
+                 Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ pt -> 
                        let (ni, nt) = mapPredSym sMap2 pMap2 $ 
                                      mapPredSym sMap1 pMap1 (i, pt)
