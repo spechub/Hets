@@ -128,7 +128,7 @@ getConfig id m = if (isJust lookupId)
   Default time limit.
 -}
 defaultTimeLimit :: Int
-defaultTimeLimit = 5
+defaultTimeLimit = 10
 
 {- |
   Represents the result of a prover run.
@@ -527,7 +527,8 @@ runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms
          -> IO (Maybe String, SPASSResult) -- ^ (error, (proof status, complete output))
 runSpass lp config nGoal =
   Exception.catch (runSpassReal lp config nGoal)
-    (\_ -> return (Just "Error running SPASS.", (Open (senName nGoal), [])))
+    (\ exp -> return (Just ("Error running SPASS.\n"++show exp), 
+                      (Open (senName nGoal), [])))
 
   where
     runSpassReal lp config nGoal = do
