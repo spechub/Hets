@@ -264,15 +264,13 @@ insertClass onto className optText superCs maybeType =
     addClasses cList superCs = 
        let g = classGraph onto
            newgraph = 
-               case length cList of
-               x | x == 0 -> g
-                 | x == 1 -> 
-                     let (className, (ClassDecl _ _ _ _ _ cType)) = head cList
-                         (g1, node1) = getInsNode g className cType 
+               case cList of
+               [] -> g
+               [(className, ClassDecl _ _ _ _ _ cType)] -> 
+                     let (g1, node1) = getInsNode g className cType 
                      in foldl (addIsaEdge node1) g1 superCs		  
-                 | x > 1 -> 
-                   let (subClass, (ClassDecl _ _ _ _ _ subcType)) = head cList
-                       (g1, node1) = getInsNode g subClass subcType
+               (subClass, ClassDecl _ _ _ _ _ subcType) : _ -> 
+                   let (g1, node1) = getInsNode g subClass subcType
                    in foldl (insClass node1) g1 superCs
        in
          hasValue( onto { classes = addListToFM (classes onto) cList,
@@ -646,11 +644,13 @@ applyTranslation outStr inStr (search, replaceStr) =
    if lenInStr < lenSearch 
      then outStr ++ inStr
      else if (isPrefixOf search inStr)
-            then applyTranslation (outStr ++ replaceStr) (drop lenSearch inStr)  (search, replaceStr)
-            else applyTranslation (outStr ++ (take 1 inStr)) (drop 1 inStr)  (search, replaceStr)
+            then applyTranslation (outStr ++ replaceStr) 
+                     (genericDrop lenSearch inStr)  (search, replaceStr)
+            else applyTranslation (outStr ++ (take 1 inStr)) 
+                     (drop 1 inStr)  (search, replaceStr)
    where
    lenInStr = genericLength inStr
-   lenSearch = genericLength search   
+   lenSearch = genericLength search :: Integer  
 
 
 findLNode :: Gr (String, String, OntoObjectType) String -> String -> Maybe Node
