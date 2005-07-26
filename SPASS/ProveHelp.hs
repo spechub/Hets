@@ -16,7 +16,7 @@ module SPASS.ProveHelp where
 spassHelpText :: String
 spassHelpText =
   "The following text is a quotation from: \n"++
-  "    \"SPASS Version 2.0\" by Christoph Weidenbach\n"++
+  "    \"SPASS Version 2.0\" by Christoph Weidenbach et.al.\n"++
   "   (This document is part of the SPASS-2.1 source distribution)\n\n"++
   "Each reference listed here refers to this document!\n\n"++
   "Literal Quotation (p. 48 and 49):\n\n"++
@@ -41,7 +41,7 @@ spassHelpText =
   "   BoundLoops  Bound Loops determines the number of resource \n"++
   "               restricted main-loop iterations.\n"++ 
   "\nA.2. Inference Rules\n\n"++ 
-  "   ISoR        Sort Constraint Resolution, Definition 4.3.\n "++
+  "   ISoR        Sort Constraint Resolution, Definition 4.3.\n"++
   "   IEmS        Empty Sort, Definition 4.4.\n"++ 
   "   IEqR        Equality Resolution, Definition 4.7.\n"++ 
   "   IERR        Reflexivity Resolution, Definition 4.7.\n"++
