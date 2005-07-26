@@ -153,7 +153,7 @@ concatHistoryElems ((rules,changes):elems) =
 getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab 
          -> Result G_l_sentence_list
 getGoals libEnv ln (n,_,edge) = do
-  th <- maybeToMonad ("Could node find node "++show n)
+  th <- maybeToMonad ("Could not find node "++show n)
               $  computeLocalTheory libEnv (ln, n)
   let mor = dgl_morphism edge
   fmap sensOf $ translateG_theory mor th
@@ -230,31 +230,33 @@ basicInferenceNode checkCons lg (ln,node)
                                        (flatG_l_sentence_list goalslist))
         goals1 <- coerce lid1 lid3 goals
         -- select a suitable translation and prover
-        let provers = getProvers checkCons lg $ sublogicOfTh $ 
-                                (G_theory lid1 sign (axs++goals1))
+        let provers = getProvers checkCons lg 
+                          (sublogicOfTh (G_theory lid1 sign (axs++goals1)))
         (prover,Comorphism cid) <- selectProver provers
-        -- Borrowing: translate theory
+        -- Borrowing: prepare translation of theory
         let lidS = sourceLogic cid
             lidT = targetLogic cid
+            transTh = resToIORes . map_theory cid
         sign' <- coerce lidS lid1 sign
         axs' <- coerce lidS lid1 axs
-        (sign'',sens'') <- resToIORes $ map_theory cid (sign',axs')
+        let axs'' = map (\ s -> s {isAxiom = True}) axs'
         case prover of
          G_prover lid4 p -> do
-           -- Borrowing: translate goal
+           -- Borrowing: translate goals and theory
            goals' <- coerce lidS lid3 goals
-           goals'' <- resToIORes $ mapM (mapNamedM $ map_sentence cid sign') goals'
+           let goals'' = map (\ s -> s {isAxiom = False}) goals'
+           (sign'',sens'') <- transTh (sign',axs''++goals'')
            -- call the prover
            p' <- coerce lidT lid4 p
-           ps <- ioToIORes $ proveTheory lidT p' thName 
-                 $ Theory sign'' $ map (\ s -> s {isAxiom = True}) sens''
-                   ++ map (\ s -> s {isAxiom = False}) goals'' 
+           ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
            -- update the development graph
            let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
 	       newProofStatus
 		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
            return newProofStatus
          G_cons_checker lid4 p -> do
+           -- Borrowing: translate theory
+           (sign'',sens'') <- transTh (sign',axs'')
            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
            let mor = TheoryMorphism { t_source = empty_theory lidT, 
                                       t_target = Theory sign'' sens'',
