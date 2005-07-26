@@ -25,6 +25,11 @@ import OWL_DL.StructureAna
 -- import Data.Graph.Inductive.Tree
 import Data.Graph.Inductive.Graph
 -- import Data.Graph.Inductive.Internal.FiniteMap
+import OWL_DL.StaticAna
+import OWL_DL.Sign
+import Common.GlobalAnnotations
+import Common.Result
+import Common.AS_Annotation
 
 main :: IO()
 main =
@@ -35,9 +40,10 @@ main =
           else if length args == 1 then     
                   process 'a' args  
                   else case head args of
-                       "-a" -> process 'a' $ tail args          -- output abstract syntax
-                       "-t" -> process 't' $ tail args         -- output ATerm
-		       "-s" -> process 's' $ tail args
+                       "-a" -> process 'a' $ tail args   -- output abstract syntax
+                       "-t" -> process 't' $ tail args   -- output ATerm
+		       "-s" -> process 's' $ tail args   -- output DevGraph from structure analysis
+		       "-r" -> process 'r' $ tail args   -- output result of static analysis
 		       _    -> error ("unknow option: " ++ (head args))
 
 
@@ -78,6 +84,7 @@ processor2 opt filename =
        -- 'a' -> outputList 'a' aterm
             't' -> putStrLn $ show aterm
 	    's' -> outputList 's' aterm
+	    'r' -> outputList 'r' aterm
 	    _   -> outputList 'a' aterm
 
 outputList :: Char -> ATerm -> IO()
@@ -87,6 +94,7 @@ outputList opt aterm =
 	   case opt of 
 	   'a' -> outputAS paarList
 	   's' -> printDG paarList
+	   'r' -> printResOfStatic paarList
 	   u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
 
@@ -98,26 +106,39 @@ outputAS [] = putStrLn ""
 outputAS (aterm:res) =
        case aterm of
           AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [valid, msg, ns, onto] _] _ ->
-              do
+              do  let (_, ontology) = ontologyParse aterm
                   putStrLn ("URI: " ++ uri)
 		  putStrLn $ fromATerm valid
 		  putStrLn $ show (buildMsg msg)
 		  putStrLn $ show (buildNS ns)
-		  putStrLn $ show $ propagateNspaces (buildNS ns) $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)
+		  putStrLn $ show ontology
                   outputAS res
           _ -> error "false file."
 
--- for Structure Analyse
+-- for structure analysis
 printDG :: [ATerm] -> IO()
-printDG al =  putStrLn $ show $ buildDevGraph (reverse $ forDG al) empty
+printDG al =  putStrLn $ show $ buildDevGraph (Map.fromList $ reverse $ parsingAll al) 
 
-   where forDG :: [ATerm] -> [(String, Ontology)]
-	 forDG [] = []
-	 forDG (aterm:res) =
-	     case aterm of
-	     AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [_, _, ns, onto] _] _ -> (uri, propagateNspaces (buildNS ns) $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology)):forDG res
-	     _ -> error ""
-	      
+-- for static analysis
+printResOfStatic :: [ATerm] -> IO()
+printResOfStatic al = 
+   putStrLn $ show (map output (parsingAll al))
+   where output :: (String, Ontology) 
+		-> Result (Ontology,Sign,Sign,[Named Sentence])
+	 output (uri, ontology) = 
+	     basicOWL_DLAnalysis (ontology, emptySign, emptyGlobalAnnos) 
+
+parsingAll :: [ATerm] -> [(String, Ontology)]
+parsingAll [] = []
+parsingAll (aterm:res) =
+	     (ontologyParse aterm):(parsingAll res)
+      
+ontologyParse :: ATerm -> (String, Ontology)
+ontologyParse aterm =
+    case aterm of
+    AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [_, _, ns, onto] _] _ -> (uri, propagateNspaces (buildNS ns) $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology))
+    _ -> error "false ontology file."
+
 
 buildNS :: ATerm -> Namespace
 buildNS at = case at of
