@@ -30,6 +30,7 @@ import qualified Common.Lib.Rel as Rel
 import Control.Monad
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Control.Exception (assert)
 
 data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
@@ -97,7 +98,7 @@ makeTotal _ t = t
 mapOpSym :: Sort_map -> Fun_map -> (Id, OpType) -> (Id, OpType)
 mapOpSym sMap fMap (i, ot) = 
     let mot = mapOpType sMap ot in
-    case Map.lookup (i, mot {opKind = Partial} ) fMap of 
+    case Map.lookup (i, ot {opKind = Partial} ) fMap of 
     Nothing -> (i, mot)
     Just (j, k) -> (j, makeTotal k mot)
 
@@ -109,8 +110,8 @@ mapPredType :: Sort_map -> PredType -> PredType
 mapPredType sorts t = t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
-mapPredSym sMap fMap (i, pt) = let mpt = mapPredType sMap pt in
-    (Map.findWithDefault i (i, mpt) fMap, mpt)
+mapPredSym sMap fMap (i, pt) = 
+    (Map.findWithDefault i (i, pt) fMap, mapPredType sMap pt)
 
 type Ext f e m = Sign f e -> Sign f e -> m
 
@@ -305,25 +306,36 @@ compose :: (Eq e, Eq f) => (m -> m -> m)
         -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $ 
   let sMap1 = sort_map mor1 
+      src = msource mor1
+      fMap1 = fun_map mor1
+      pMap1 = pred_map mor1
       sMap2 = sort_map mor2 
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
+      sMap = Set.fold ( \ i ->
+                       let j = mapSort sMap2 (mapSort sMap1 i) in 
+                       if i == j then id else Map.insert i j)
+                 Map.empty $ sortSet src
   in Morphism {
-      msource = msource mor1,
+      msource = src,
       mtarget = mtarget mor2,
-      sort_map = Map.foldWithKey ( \ i j -> 
-                       Map.insert i $ mapSort sMap2 j)
-                             sMap2 sMap1,
-      fun_map  = Map.foldWithKey ( \ (i, ot) (j, k) ->
-                       let (ni, nt) = mapOpSym sMap2 fMap2 (j, 
-                                            makeTotal k ot)
-                      in Map.insert (i, (mapOpType sMap2 ot) 
-                                     { opKind = Partial })
-                                      (ni, opKind nt)) 
-                 fMap2 $ fun_map mor1,
-      pred_map = Map.foldWithKey ( \ (i, ot) j ->
-                  Map.insert (i, mapPredType sMap2 ot) $ fst $
-                     mapPredSym sMap2 pMap2 (j, ot)) pMap2 $ pred_map mor1,
+      sort_map = sMap,
+      fun_map  = Map.foldWithKey ( \ i t m ->
+                   Set.fold ( \ ot -> 
+                       let (ni, nt) = mapOpSym sMap2 fMap2 $ 
+                                      mapOpSym sMap1 fMap1 (i, ot)
+                           k = opKind nt
+                       in assert (mapOpTypeK sMap k ot == nt) $ 
+                          if i == ni && opKind ot == k then id else 
+                          Map.insert (i, ot {opKind = Partial }) (ni, k)) m t)
+                     Map.empty $ opMap src,
+      pred_map = Map.foldWithKey ( \ i t m ->
+                   Set.fold ( \ pt -> 
+                       let (ni, nt) = mapPredSym sMap2 pMap2 $ 
+                                     mapPredSym sMap1 pMap1 (i, pt)
+                       in assert (mapPredType sMap pt == nt) $
+                       if i == ni then id else Map.insert (i, pt) ni) m t)
+                      Map.empty $ predMap src,
       extended_map = comp (extended_map mor1) (extended_map mor2)
       }
     else fail "target of first and source of second morphism are different"
@@ -355,7 +367,9 @@ legalMor mor =
         (\(id1,t) (id2,k) b -> 
            b
            &&
-           Set.member (makeTotal k t) 
+           Set.member t (Map.findWithDefault Set.empty id1 (opMap sigma1)) 
+           &&
+           Set.member (mapOpTypeK smap k t) 
                       (Map.findWithDefault Set.empty id2 (opMap sigma2))
         )
         True (fun_map mor)
@@ -363,7 +377,9 @@ legalMor mor =
         (\(id1,t) id2 b -> 
            b
            &&
-           Set.member t 
+           Set.member t (Map.findWithDefault Set.empty id1 (predMap sigma1)) 
+           &&
+           Set.member (mapPredType smap t) 
                       (Map.findWithDefault Set.empty id2 (predMap sigma2))
         )
         True (pred_map mor)
