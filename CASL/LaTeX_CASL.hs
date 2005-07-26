@@ -14,7 +14,7 @@ latex printing of sign and morphism data types
 module CASL.LaTeX_CASL where
 
 import Common.Keywords
-import CASL.LaTeX_AS_Basic
+import CASL.LaTeX_AS_Basic()
 import CASL.Sign
 import CASL.Morphism
 import qualified Common.Lib.Map as Map
