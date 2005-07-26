@@ -321,7 +321,11 @@ integrateGenerated idMap genSens sign
 
 makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)] 
                 -> (PredMap, IdType_SPId_Map, [Named SPTerm])
-makeGenGoals idMap _ = trace "CASL2SPASS: Sort_gen_ax as goals not implemented, yet." (Map.empty,idMap,[])
+makeGenGoals idMap nfs 
+    | null nfs = (Map.empty,idMap,[])
+    | otherwise = 
+        trace "CASL2SPASS: Warning: Sort_gen_ax as goals not implemented, yet." 
+                  (Map.empty,idMap,[])
 {- implementation sketch:
    - invent new predicate P that is supposed to hold on 
      every x in the (freely) generated sort.
@@ -371,12 +375,6 @@ makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where
                       s' = maybe (error "CASL2SPASS.makeGen: No mapping \
                                         \found for '"++show s++"'") id 
                                  (lookupSPId s CSort idMap)
-                      {- newOpMap = foldr (uncurry Map.insert) opMap cons 
-                      newIdMap = foldr (\ (x,y,z) -> insertSPId x y z) 
-                                 idMap 
-                                 (zipWith (\ (Qual_op_name i ot _) (si,_) -> 
-                                             (i,COp (CSign.toOpType ot),si))
-                                          ops_of_s cons)-}
   _ -> r
 
 mkInjOp :: (FuncMap, IdType_SPId_Map)
