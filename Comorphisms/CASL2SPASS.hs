@@ -51,7 +51,7 @@ import CASL.Morphism
 import CASL.Quantification 
 import CASL.Overload
 import CASL.Utils
-import CASL.Inject (injName)
+import CASL.Inject 
 
 -- SPASS
 import SPASS.Sign as SPSign
@@ -457,7 +457,7 @@ transTheory :: (PrettyPrint f, PosItem f,Eq f) =>
             -> Result SPASSTheory 
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (CSign.extendedInfo sign)) 
-    (case transSign sign of
+    (case transSign (insertInjOps sign genAxs) of
      (tSign,idMap) -> 
         do (idMap',tSign',sentencesAndGoals) <- 
                integrateGenerated idMap genSens tSign
@@ -469,6 +469,7 @@ transTheory trSig trForm (sign,sens) =
             partition (\ s -> case (sentence s) of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
+        (genAxs,_) = partition isAxiom genSens
 
 
 ------------------------------ Formulas ------------------------------
