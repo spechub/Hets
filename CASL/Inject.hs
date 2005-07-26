@@ -14,10 +14,16 @@ This module replaces Sorted_term(s) with explicit injection
 
 module CASL.Inject where
 
+import Control.Exception
+import Debug.Trace
+
 import CASL.AS_Basic_CASL
+import CASL.Sign
 import CASL.Overload
 import CASL.Fold
 import Common.Id
+import Common.AS_Annotation
+import Common.PrettyPrint
 
 -- | the name of injections
 injName :: Id
@@ -50,3 +56,27 @@ injTerm = foldTerm . injRecord
 
 injFormula :: (f -> f) -> FORMULA f -> FORMULA f
 injFormula = foldFormula . injRecord
+
+
+insertInjOps ::(PrettyPrint f) => Sign f e -> [Named (FORMULA f)] -> Sign f e
+insertInjOps = foldl insSen
+    where insSen sign s =
+              case sentence s of
+              (Sort_gen_ax constrs _) ->
+               case recover_Sort_gen_ax constrs of
+               (_,ops,mp) -> if null mp
+                             then insOps sign ops
+                             else error "CASL.Inject.insertInjOps: Non \
+                                        \injective sort mappings cannot \
+                                        \be processed."
+              f -> assert (trace ("CASL.Inject.insertInjOps: Formula: \""
+                                  ++showPretty f "\" slipped throug filter.")
+                                 True) sign
+          insOps = foldl insOp
+          insOp sign o = 
+              case o of
+              (Qual_op_name i ot _)
+                  | i == injName -> 
+                       sign { opMap = addOpTo i (toOpType ot) (opMap sign)}
+                  | otherwise -> sign
+              _ -> error "CASL.Inject.insertInjOps: Wrong constructor."

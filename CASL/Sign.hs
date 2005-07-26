@@ -274,3 +274,14 @@ addVar s v =
           Nothing -> return ()
        put e { varMap = Map.insert v s m }
 
+addOpTo :: Id -> OpType -> OpMap -> OpMap 
+addOpTo k v m = 
+    let l = Map.findWithDefault Set.empty k m
+        n = Map.insert k (Set.insert v l) m   
+    in case opKind v of
+     Total -> let vp =  v { opKind = Partial } in 
+              if Set.member vp l then
+              Map.insert k (Set.insert v $ Set.delete vp l) m
+              else n
+     _ -> if Set.member v { opKind = Total } l then m
+          else n
