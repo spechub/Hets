@@ -12,16 +12,13 @@ The translating comorphism from CASL to SPASS.
 
 {- todo
 
-   - implement translation of Sort_gen_ax (FORMULA f) ... done
-   - add codeOutConditionalF  of Conditional of TERM f ... done
-   - check overloaded functions and predicates with overloadRelation; 
-     disambiguate only those which are not in overloadRelation ... done
    - inj operations must be inserted into CASL signature before 
      transFuncMap is called for checking overloadRelation?
-   - check if sorts are really non-empty in SPASS
-   - are all free type definitions a source of partial functions /
-     partiallity? No...
-
+   - check if sorts are really non-empty in SPASS, this is not granted.
+     So, generating formulas that all CASL-Sorts are non empty is needed.
+     ... done
+   - implement translation of Sort_gen_ax (FORMULA f) as goals
+     (s. below for a sketch)
 -}
 
 module Comorphisms.CASL2SPASS where
@@ -291,26 +288,50 @@ transPredType pt = map transId (CSign.predArgs pt)
 
 integrateGenerated :: (PrettyPrint f, PosItem f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] -> 
-                      SortMap -> 
-                      Result 
-                         (SortMap, IdType_SPId_Map, FuncMap, [Named SPTerm])
-integrateGenerated idMap genSens spSortMap 
-    | null genSens = return (spSortMap,idMap,Map.empty,[])
+                      SPSign.Sign -> 
+                      Result (IdType_SPId_Map, SPSign.Sign, [Named SPTerm])
+integrateGenerated idMap genSens sign 
+    | null genSens = return (idMap,sign,[])
     | otherwise = 
---        trace "Generated axioms are not implemented yet" spSortMap
-        -- makeGens must not invent new sorts
-        case makeGens idMap genSens of
-        Result dias mv -> 
+      case partition isAxiom genSens of
+      (genAxs,genGoals) ->
+        case makeGenGoals idMap genGoals of
+        (newPredsMap,idMap',goalsAndSentences) ->
+          -- makeGens must not invent new sorts
+          case makeGens idMap' genAxs of
+          Result dias mv -> 
             maybe (Result dias Nothing)
-                  (\ (spSortMap_makeGens,newOpsMap,idMap') -> 
-                      let spSortMap' = Map.union spSortMap_makeGens spSortMap
-                      in assert (Map.size spSortMap' == Map.size spSortMap) 
+                  (\ (spSortMap_makeGens,newOpsMap,idMap'') -> 
+                      let spSortMap' = 
+                            Map.union spSortMap_makeGens (SPSign.sortMap sign)
+                      in assert (Map.size spSortMap' == 
+                                    Map.size (SPSign.sortMap sign))
                              (Result dias 
-                                     (Just (spSortMap',
-                                            idMap',
-                                            newOpsMap,
-                                            mkInjSentences idMap' newOpsMap))))
+                                     (Just (idMap'',
+                                            sign { sortMap = spSortMap'
+                                                 , funcMap = 
+                                                     Map.union (funcMap sign) 
+                                                               newOpsMap
+                                                 , predMap = 
+                                                     Map.union (predMap sign) 
+                                                               newPredsMap},
+                                            mkInjSentences idMap' newOpsMap++
+                                            goalsAndSentences))))
                   mv
+
+makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)] 
+                -> (PredMap, IdType_SPId_Map, [Named SPTerm])
+makeGenGoals idMap _ = trace "CASL2SPASS: Sort_gen_ax as goals not implemented, yet." (Map.empty,idMap,[])
+{- implementation sketch:
+   - invent new predicate P that is supposed to hold on 
+     every x in the (freely) generated sort.
+   - generate formulas with this predicate for each constructor.
+   - recursive constructors hold if the predicate holds on the variables
+   - prove forall x . P(x)
+
+  implementation is postponed as this translation does not produce
+only one goal, but additional symbols, axioms and a goal
+ -}
 
 makeGens :: (PrettyPrint f, PosItem f) =>
             IdType_SPId_Map -> [Named (FORMULA f)] 
@@ -419,6 +440,18 @@ transSign sign = (SPSign.emptySign { sortRel =
           (fMap,idMap') =  transFuncMap idMap  sign
           (pMap,idMap'') = transPredMap idMap' sign
 
+nonEmptySortSens :: SortMap -> [Named SPTerm]
+nonEmptySortSens = 
+    Map.foldWithKey (\ s _ res -> extSen s:res) []
+    where extSen s = 
+              (emptyName (SPQuantTerm SPExists [varTerm]
+                                    (compTerm (spSym s) [varTerm])))
+              {senName = "ga_non_empty_sort_"++s}
+              where varTerm = simpTerm (spSym (newVar s))
+          newVar s = fromJust (find (\ x -> x /= s) 
+                          ("x":["x"++show i | i <- [(1::Int)..]]))
+
+
 transTheory :: (PrettyPrint f, PosItem f,Eq f) => 
                SignTranslator f e 
             -> FormulaTranslator f e 
@@ -428,11 +461,11 @@ transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign)) 
     (case transSign sign of
      (tSign,idMap) -> 
-        do (sortMap',idMap',injOpMap,injSentences) <- 
-               integrateGenerated idMap genSens (sortMap tSign)
-           return  (tSign { sortMap = sortMap'
-                          , funcMap = (Map.union (funcMap tSign) injOpMap)},
-                    injSentences ++ -- FIXME: add non-empty sort sentences
+        do (idMap',tSign',sentencesAndGoals) <- 
+               integrateGenerated idMap genSens tSign
+           return  (tSign',
+                    sentencesAndGoals ++ 
+                    nonEmptySortSens (sortMap tSign') ++
                     map (mapNamed (transFORM sign idMap' trForm)) realSens))
   where (genSens,realSens) = 
             partition (\ s -> case (sentence s) of
@@ -557,17 +590,8 @@ transFORMULA sign idMap tr (Membership t s _) =
           (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
           (lookupSPId s CSort idMap)
 transFORMULA _ _ _ (Sort_gen_ax _ _) = 
-    error "Sort generation constraints as goals are not yet supported!"
-{- implementation sketch:
-   - invent new predicate P that is supposed to hold on 
-     every x in the (freely) generated sort.
-   - generate formulas with this predicate for each constructor.
-   - recursive constructors hold if the predicate holds on the variables
-   - prove forall x . P(x)
-
-  implementation is postponed as this translation does not produce
-only one goal, but additional symbols, axioms and a goal
- -}
+    error "CASL2SPASS.transFORMULA: Sort generation constraints not\
+          \ supported at this point!"
 transFORMULA _ _ _ f = 
     error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++show f++"'")
 
