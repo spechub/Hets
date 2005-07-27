@@ -84,7 +84,7 @@ instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
     cons_checkers OWL_DL = []
 
 
-instance StaticAnalysis OWL_DL Ontology Sentence ()
+instance StaticAnalysis OWL_DL () Sentence ()
                () ()
                Sign 
                OWL_DLMorphism 
