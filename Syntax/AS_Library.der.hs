@@ -13,12 +13,6 @@ These data structures describe the abstract syntax tree for heterogenous
    Follows Sect. II:2.2.5 of the CASL Reference Manual.
 
 -}
-{-
-   todo:
-     - ATermConversion SML-CATS has now his own module 
-       (s. HetCATS/aterm_conv/)
-     - LaTeX Pretty Printing
--}
 
 module Syntax.AS_Library where
 
@@ -127,46 +121,37 @@ instance Ord LIB_NAME where
 
 -- functions for casts
 cast_S_L_Spec_defn :: Syntax.AS_Structured.SPEC_DEFN -> LIB_ITEM 
-cast_L_S_Spec_defn :: LIB_ITEM  -> Syntax.AS_Structured.SPEC_DEFN
-
 cast_S_L_Spec_defn (Syntax.AS_Structured.Spec_defn x y z p) = 
     (Syntax.AS_Library.Spec_defn x y z p) 
-cast_S_L_Spec_defn _ = error "wrong constructor for \"cast_S_L_Spec_defn\""
 
+cast_L_S_Spec_defn :: LIB_ITEM  -> Syntax.AS_Structured.SPEC_DEFN
 cast_L_S_Spec_defn (Syntax.AS_Library.Spec_defn x y z p) =
     (Syntax.AS_Structured.Spec_defn x y z p)
-cast_L_S_Spec_defn _ = error "wrong constructor for \"cast_L_S_Spec_defn\""
+cast_L_S_Spec_defn _ = error "cast_L_S_Spec_defn"
 
 cast_S_L_View_defn :: Syntax.AS_Structured.VIEW_DEFN -> LIB_ITEM 
-cast_L_S_View_defn :: LIB_ITEM  -> Syntax.AS_Structured.VIEW_DEFN
-
 cast_S_L_View_defn (Syntax.AS_Structured.View_defn w x y z p) = 
     (Syntax.AS_Library.View_defn w x y z p) 
-cast_S_L_View_defn _ = error "wrong constructor for \"cast_S_L_View_defn\""
 
+cast_L_S_View_defn :: LIB_ITEM  -> Syntax.AS_Structured.VIEW_DEFN
 cast_L_S_View_defn (Syntax.AS_Library.View_defn w x y z p) =
     (Syntax.AS_Structured.View_defn w x y z p)
-cast_L_S_View_defn _ = error "wrong constructor for \"cast_L_S_View_defn\""
+cast_L_S_View_defn _ = error "cast_L_S_View_defn"
 
 cast_A_L_Arch_spec_defn :: Syntax.AS_Architecture.ARCH_SPEC_DEFN -> LIB_ITEM
-cast_L_A_Arch_spec_defn :: LIB_ITEM       -> Syntax.AS_Architecture.ARCH_SPEC_DEFN
-
 cast_A_L_Arch_spec_defn (Syntax.AS_Architecture.Arch_spec_defn x y p) =
     (Syntax.AS_Library.Arch_spec_defn x y p)
-cast_A_L_Arch_spec_defn _ = 
-    error "wrong constructor for \"cast_A_L_Arch_defn\""
 
+cast_L_A_Arch_spec_defn :: LIB_ITEM -> Syntax.AS_Architecture.ARCH_SPEC_DEFN
 cast_L_A_Arch_spec_defn (Syntax.AS_Library.Arch_spec_defn x y p) =
     (Syntax.AS_Architecture.Arch_spec_defn x y p)
-cast_L_A_Arch_defn _ = error "wrong constructor for \"cast_L_A_Arch_defn\""
+cast_L_A_Arch_spec_defn _ = error "cast_L_A_Arch_spec_defn"
 
 cast_A_L_Unit_spec_defn :: Syntax.AS_Architecture.UNIT_SPEC_DEFN -> LIB_ITEM
-cast_L_A_Unit_spec_defn :: LIB_ITEM       -> Syntax.AS_Architecture.UNIT_SPEC_DEFN
-
 cast_A_L_Unit_spec_defn (Syntax.AS_Architecture.Unit_spec_defn x y p) =
     (Syntax.AS_Library.Unit_spec_defn x y p)
-cast_A_L_Unit_defn _ = error "wrong constructor for \"cast_A_L_Unit_defn\""
 
+cast_L_A_Unit_spec_defn :: LIB_ITEM -> Syntax.AS_Architecture.UNIT_SPEC_DEFN
 cast_L_A_Unit_spec_defn (Syntax.AS_Library.Unit_spec_defn x y p) =
     (Syntax.AS_Architecture.Unit_spec_defn x y p)
-cast_L_A_Spec_defn _ = error "wrong constructor for \"cast_L_A_Unit_defn\""
+cast_L_A_Unit_spec_defn _ = error "cast_L_A_Unit_spec_defn"
