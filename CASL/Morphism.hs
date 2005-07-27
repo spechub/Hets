@@ -388,13 +388,8 @@ sigInclusion :: (PrettyPrint e, PrettyPrint f)
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
 sigInclusion extEm isSubExt sigma1 sigma2 = 
-  if isSubSig isSubExt sigma1 sigma2 
-     then return (embedMorphism extEm sigma1 sigma2)
-     else pfatal_error 
-          (text "Attempt to construct inclusion between non-subsignatures:"
-           $$ text "Singature 1:" $$ printText sigma1
-           $$ text "Singature 2:" $$ printText sigma2)
-           nullRange
+  assert (isSubSig isSubExt sigma1 sigma2) $  
+     return (embedMorphism extEm sigma1 sigma2)
 
 morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
               -> (e -> e -> e) -- ^ join signature extensions
