@@ -18,9 +18,9 @@ import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.Keywords
 import Syntax.AS_Architecture
-import Syntax.LaTeX_AS_Structured
+import Syntax.LaTeX_AS_Structured()
 import Syntax.Print_AS_Structured
-import Syntax.Print_AS_Architecture
+import Syntax.Print_AS_Architecture()
 
 instance PrintLaTeX ARCH_SPEC where
     printLatex0 ga (Basic_arch_spec aa ab _) =

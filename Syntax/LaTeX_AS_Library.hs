@@ -25,8 +25,8 @@ import Common.Id
 import qualified Syntax.AS_Structured as AS_Struct 
 import Syntax.AS_Library
 
-import Syntax.LaTeX_AS_Architecture
-import Syntax.LaTeX_AS_Structured
+import Syntax.LaTeX_AS_Architecture()
+import Syntax.LaTeX_AS_Structured()
 import Syntax.Print_AS_Structured
 import Syntax.Print_AS_Library
 

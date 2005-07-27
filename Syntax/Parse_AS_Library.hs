@@ -28,18 +28,16 @@ module Syntax.Parse_AS_Library where
 import Logic.Grothendieck
 import Logic.Logic
 import Syntax.AS_Structured
--- import Syntax.AS_Architecture
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
 import Syntax.Parse_AS_Architecture
 import Common.AS_Annotation
 import Common.AnnoState
-import Common.Id(tokPos)
 import Common.Keywords
 import Common.Lexer
 import Common.Token
-import Text.ParserCombinators.Parsec
 import Common.Id
+import Text.ParserCombinators.Parsec
 import Data.List(intersperse)
 import Data.Maybe(maybeToList)
 

@@ -19,7 +19,7 @@ import Common.PrettyPrint
 import Common.PPUtils
 import Common.Keywords
 
-import Logic.Grothendieck
+import Logic.Grothendieck()
 
 import Syntax.AS_Structured
 import Common.AS_Annotation

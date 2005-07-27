@@ -6,19 +6,11 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
-Portability :  non-portable(Grothendieck)
+Portability :  non-portable(imports Syntax.AS_Structured)
 
 These data structures describe the abstract syntax tree for heterogenous 
    architectural specifications in HetCASL.
    Follows Sect. II:2.2.4 of the CASL Reference Manual.
--}
-
-{-
-
-   todo:
-     - ATermConversion SML-CATS has now his own module 
-       (s. HetCATS/aterm_conv/)
-     - LaTeX Pretty Printing
 -}
 
 module Syntax.AS_Architecture where
@@ -27,7 +19,6 @@ import Common.Id
 import Common.AS_Annotation
 
 import Syntax.AS_Structured
-import Logic.Grothendieck
 
 -- Drift directive:
 {-! global : UpPos !-}

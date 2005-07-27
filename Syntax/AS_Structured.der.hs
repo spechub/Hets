@@ -13,12 +13,6 @@ These data structures describe the abstract syntax tree for heterogenous
    Follows Sect. II:2.2.3 of the CASL Reference Manual.
 
 -}
-{-
-   todo:
-     - ATermConversion SML-CATS has now his own module 
-       (s. HetCATS/aterm_conv/)
-     - LaTeX Pretty Printing
--}
 
 module Syntax.AS_Structured where
 
@@ -28,9 +22,8 @@ module Syntax.AS_Structured where
 import Common.Id
 import Common.AS_Annotation
 
-import Logic.Logic (AnyLogic(Logic), rcoerce)
+import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
-import Common.Result
 
 data SPEC = Basic_spec G_basic_spec 
 	  | Translation (Annoted SPEC) RENAMING 

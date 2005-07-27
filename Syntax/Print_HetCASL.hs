@@ -24,8 +24,8 @@ import Common.LaTeX_utils (calc_line_length)
 import Common.GlobalAnnotations(emptyGlobalAnnos,GlobalAnnos)
 
 import Syntax.AS_Library
-import Syntax.Print_AS_Library
-import Syntax.LaTeX_AS_Library
+import Syntax.Print_AS_Library()
+import Syntax.LaTeX_AS_Library()
 
 data PrintMode = PMtext | PMlatex | PMdebugLatex
 

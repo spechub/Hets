@@ -23,7 +23,7 @@ import qualified Syntax.AS_Structured as AS_Struct
 import Syntax.AS_Library
 import Common.AS_Annotation
 
-import Syntax.Print_AS_Architecture
+import Syntax.Print_AS_Architecture()
 import Syntax.Print_AS_Structured
 
 nl :: Doc

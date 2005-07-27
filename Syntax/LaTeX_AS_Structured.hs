@@ -19,13 +19,11 @@ import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.Keywords
 
-import Logic.Grothendieck
-
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Logic.LaTeX_Grothendieck
+import Logic.LaTeX_Grothendieck()
 
 instance PrintLaTeX SPEC where
     printLatex0 ga (Basic_spec aa) =
