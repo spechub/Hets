@@ -175,7 +175,8 @@ ana_BASIC_ITEMS mef ab as ga bi =
                                       $ Set.toList $ freeVars f 
                                  in stripQuant $ mkForall (vs ++ il) f ps)) 
                       anaFs 
-               sens = map ( \ a -> NamedSen (getRLabel a) True $ item a) fufs
+               sens = map ( \ a -> NamedSen (getRLabel a) 
+                                   (notImplied a) $ item a) fufs
            addDiags es
            addSentences sens                        
            return $ Local_var_axioms il resFs ps
@@ -198,7 +199,8 @@ ana_BASIC_ITEMS mef ab as ga bi =
                                             Var_decl [v] s ps)
                                       $ Set.toList $ freeVars f 
                                  in stripQuant $ mkForall vs f ps)) anaFs
-               sens = map ( \ a -> NamedSen (getRLabel a) True $ item a) fufs
+               sens = map ( \ a -> NamedSen (getRLabel a) 
+                                   (notImplied a) $ item a) fufs
            addDiags es
            addSentences sens                        
            return $ Axiom_items resFs ps
@@ -353,7 +355,7 @@ ana_SORT_ITEM mef ga asi =
              Just (resF, anaF) -> do 
                let p = posOfId sub
                    pv = tokPos v
-               addSentences[NamedSen lab True $
+               addSentences[NamedSen lab (notImplied af) $
                              mkForall [Var_decl [v] super pv] 
                              (Equivalence 
                               (Membership (Qual_var v super pv) sub p)
@@ -374,8 +376,9 @@ ana_OP_ITEM mef ga aoi =
     case item aoi of 
     Op_decl ops ty il ps -> 
         do let oty = toOpType ty
+               ni = notImplied aoi
            mapM_ (addOp oty) ops
-           ul <- mapM (ana_OP_ATTR mef ga oty ops) il
+           ul <- mapM (ana_OP_ATTR mef ga oty ni ops) il
            if null $ filter ( \ i -> case i of 
                                    Assoc_op_attr -> True
                                    _ -> False) il 
@@ -407,7 +410,7 @@ ana_OP_ITEM mef ga aoi =
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
              Just (resT, anaT) -> do 
                  let p = posOfId i
-                 addSentences [NamedSen lab True $ mkForall vs 
+                 addSentences [NamedSen lab (notImplied at) $ mkForall vs 
                      (Strong_equation 
                       (Application (Qual_op_name i ty p) arg ps)
                       anaT p) ps]
@@ -420,9 +423,9 @@ sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
 ana_OP_ATTR :: Resolver f => Min f e -> GlobalAnnos 
-            -> OpType -> [Id] -> (OP_ATTR f)
+            -> OpType -> Bool -> [Id] -> (OP_ATTR f)
             -> State (Sign f e) (Maybe (OP_ATTR f))
-ana_OP_ATTR mef ga ty ois oa = do
+ana_OP_ATTR mef ga ty ni ois oa = do
   let   sty = toOP_TYPE ty
         rty = opRes ty 
         atys = opArgs ty 
@@ -447,8 +450,8 @@ ana_OP_ATTR mef ga ty ois oa = do
            case mt of 
              Nothing -> return Nothing
              Just (resT, anaT)  -> do 
-               addSentences $ map (makeUnit True anaT ty) ois
-               addSentences $ map (makeUnit False anaT ty) ois
+               addSentences $ map (makeUnit True anaT ty ni) ois
+               addSentences $ map (makeUnit False anaT ty ni) ois
                return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
       let ns = map mkSimpleId ["x", "y", "z"]
@@ -456,7 +459,7 @@ ana_OP_ATTR mef ga ty ois oa = do
           [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
           makeAssoc i = let p = posOfId i 
                             qi = Qual_op_name i sty p in 
-            NamedSen ("ga_assoc_" ++ showId i "") True $
+            NamedSen ("ga_assoc_" ++ showId i "") ni $
             mkForall vs
             (Strong_equation 
              (Application qi [v1, Application qi [v2, v3] p] p)
@@ -470,7 +473,7 @@ ana_OP_ATTR mef ga ty ois oa = do
           args = map toQualVar vs
           makeComm i = let p = posOfId i
                            qi = Qual_op_name i sty p in
-            NamedSen ("ga_comm_" ++ showId i "") True $
+            NamedSen ("ga_comm_" ++ showId i "") ni $
             mkForall vs
             (Strong_equation  
              (Application qi args p)
@@ -482,7 +485,7 @@ ana_OP_ATTR mef ga ty ois oa = do
           vd = Var_decl [v] rty q
           qv = toQualVar vd
           makeIdem i = let p = posOfId i in 
-            NamedSen ("ga_idem_" ++ showId i "") True $
+            NamedSen ("ga_idem_" ++ showId i "") ni $
             mkForall [vd]
             (Strong_equation  
              (Application (Qual_op_name i sty p) [qv, qv] p)
@@ -490,8 +493,9 @@ ana_OP_ATTR mef ga ty ois oa = do
       addSentences $ map makeIdem ois
       return $ Just oa
 
-makeUnit :: Bool -> TERM f -> OpType -> Id -> Named (FORMULA f)
-makeUnit b t ty i =
+-- first bool for left and right, second one for no implied annotation
+makeUnit :: Bool -> TERM f -> OpType -> Bool -> Id -> Named (FORMULA f)
+makeUnit b t ty ni i =
     let lab = "ga_" ++ (if b then "right" else "left") ++ "_unit_"
               ++ showId i ""
         v = mkSimpleId "x"
@@ -501,7 +505,7 @@ makeUnit b t ty i =
         qv = Qual_var v vty q
         args = [qv, t] 
         rargs = if b then args else reverse args
-    in NamedSen lab True $ mkForall [Var_decl [v] vty q]
+    in NamedSen lab ni $ mkForall [Var_decl [v] vty q]
                      (Strong_equation 
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
