@@ -71,6 +71,8 @@ import Debug.Trace
 -}
 data SPASSConfig = SPASSConfig { -- | time limit in seconds passed to SPASS via -TimeLimit. Default will be used if Nothing.
                                  timeLimit :: Maybe Int,
+				 -- | True if timelimit exceed during last prover run
+				 timeLimitExceeded :: Bool,
                                  -- | extra options passed verbatimely to SPASS. -DocProof, -Stdin, and -TimeLimit will be overridden.
                                  extraOpts :: [String]
                                } deriving (Eq, Ord, Show)
@@ -80,7 +82,8 @@ data SPASSConfig = SPASSConfig { -- | time limit in seconds passed to SPASS via 
 -}
 emptyConfig :: SPASSConfig
 emptyConfig = SPASSConfig {timeLimit = Nothing,
-                                extraOpts = []}
+                           timeLimitExceeded = False,
+                           extraOpts = []}
 
 {- |
   Utility function to set the time limit of a SPASSConfig.
@@ -171,6 +174,15 @@ initialState th gm gs =
            resultsMap = emptyResultsMap,
            goalNamesMap = gm}
 
+data SpassProverRetval = SpassSuccess
+                       | SpassTLimitExceeded
+		       | SpassError String
+  deriving (Eq, Show)
+
+isTimeLimitExceeded :: SpassProverRetval -> Bool
+isTimeLimitExceeded SpassTLimitExceeded = True
+isTimeLimitExceeded _ = False
+
 {- |
   Currently implemented as a batch mode prover only.
 -}
@@ -195,10 +207,11 @@ data ProofStatusColour = Green | Red | Black | Blue
    deriving (Bounded,Enum,Show)
 
 statusProved, statusDisproved, statusOpen, statusRunning :: (ProofStatusColour, String)
-statusProved    = (Green, "Proved")
-statusDisproved = (Red, "Disproved")
-statusOpen      = (Black, "Open")
-statusRunning   = (Blue, "Running")
+statusProved        = (Green, "Proved")
+statusDisproved     = (Red, "Disproved")
+statusOpen          = (Black, "Open")
+statusOpenTExceeded = (Black, "Open (Time is up!)")
+statusRunning       = (Blue, "Running")
 
 
 {- |
@@ -220,7 +233,9 @@ updateDisplay state statusLabel timeEntry optionsEntry axiomsLb =
                    toGuiStatus st = case st of
                                     Proved _ _ _ _ _ -> statusProved
                                     Disproved _ -> statusDisproved
-                                    _ -> statusOpen
+                                    _ -> if timeLimitExceeded cf
+				           then statusOpenTExceeded
+					   else statusOpen
 		   (color, label) = maybe statusOpen
 		                    (toGuiStatus . fst)
 				    mprfst
@@ -313,7 +328,7 @@ spassProveGUI thName th = do
   l5 <- newLabel right [text "Status"]
   grid l5 [GridPos (1,6), Sticky W]
   statusLabel <- newLabel right [text "Open"]
-  grid statusLabel [GridPos (2,6), Sticky W]
+  grid statusLabel [GridPos (2,6), Columnspan 2, Sticky W]
   l6 <- newLabel right [text "Used Axioms"]
   grid l6 [GridPos (1,7), Sticky NW]
   axiomsFrame <- newFrame right []
@@ -370,11 +385,12 @@ spassProveGUI thName th = do
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
 		statusLabel # text (snd statusRunning)
 		statusLabel # foreground (show $ fst statusRunning)
-                (err, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
-		if isJust err
-		  then createWarningWin (fromJust err) []
-		  else return ()
-                let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s')}
+                (retval, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) (head after)
+		case retval of
+		  SpassError message -> createErrorWin message []
+		  _ -> return ()
+                let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s'),
+		             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) goal (configsMap s')}
                 writeIORef stateRef s''
                 updateDisplay s'' statusLabel timeEntry optionsEntry axiomsLb
                 done)
@@ -524,10 +540,10 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axiomsand possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
          -> Named SPTerm -- ^ goal to prove
-         -> IO (Maybe String, SPASSResult) -- ^ (error, (proof status, complete output))
+         -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
 runSpass lp config nGoal =
   Exception.catch (runSpassReal lp config nGoal)
-    (\ exp -> return (Just ("Error running SPASS.\n"++show exp), 
+    (\ exp -> return (SpassError ("Error running SPASS.\n"++show exp), 
                       (Open (senName nGoal), [])))
 
   where
@@ -545,7 +561,7 @@ runSpass lp config nGoal =
       -- check if SPASS is running
       e <- getToolStatus spass
       if isJust e
-        then return (Just "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName nGoal), []))
+        then return (SpassError "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName nGoal), []))
         else do
           -- debugging output
           -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
@@ -560,14 +576,14 @@ runSpass lp config nGoal =
 
     proof_status res usedAxioms options
       | isJust res && elem (fromJust res) proved =
-          (Nothing, Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options)))
+          (SpassSuccess, Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options)))
       | isJust res && elem (fromJust res) disproved =
-          (Nothing, Disproved (senName nGoal))
+          (SpassSuccess, Disproved (senName nGoal))
       | isJust res && elem (fromJust res) timelimit =
-          (Just "Timelimit exceeded.", Open (senName nGoal))
+          (SpassTLimitExceeded, Open (senName nGoal))
       | isNothing res =
-          (Just "Internal error.", Open (senName nGoal))
-      | otherwise = (Nothing, Open (senName nGoal))
+          (SpassError "Internal error.", Open (senName nGoal))
+      | otherwise = (SpassSuccess, Open (senName nGoal))
     proved = ["Proof found."]
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]
