@@ -26,6 +26,7 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
+import Common.AS_Annotation
 import Data.Graph.Inductive.Graph
 import Proofs.Proofs
 import Proofs.EdgeUtils
@@ -131,7 +132,8 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
           case maybeResult (coerceTheory lidSrc theoryTgt) of
             Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
 	    Just (_,sentencesTgt) ->
-              if (all (`elem` sentencesTgt) sensSrc) 
+              -- check if all source axioms are also axioms in the target
+              if (all (`elem` sentencesTgt) (filter isAxiom sensSrc)) 
                then locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
                 else locSubsumeAux libEnv ln dgraph (rules,changes) list
         _ -> locSubsumeAux libEnv ln dgraph (rules,changes) list

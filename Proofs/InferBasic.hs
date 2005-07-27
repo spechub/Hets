@@ -239,13 +239,12 @@ basicInferenceNode checkCons lg (ln,node)
             transTh = resToIORes . map_theory cid
         sign' <- coerce lidS lid1 sign
         axs' <- coerce lidS lid1 axs
-        let axs'' = map (\ s -> s {isAxiom = True}) axs'
         case prover of
          G_prover lid4 p -> do
            -- Borrowing: translate goals and theory
            goals' <- coerce lidS lid3 goals
            let goals'' = map (\ s -> s {isAxiom = False}) goals'
-           (sign'',sens'') <- transTh (sign',axs''++goals'')
+           (sign'',sens'') <- transTh (sign',axs'++goals'')
            -- call the prover
            p' <- coerce lidT lid4 p
            ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
@@ -256,7 +255,7 @@ basicInferenceNode checkCons lg (ln,node)
            return newProofStatus
          G_cons_checker lid4 p -> do
            -- Borrowing: translate theory
-           (sign'',sens'') <- transTh (sign',axs'')
+           (sign'',sens'') <- transTh (sign',axs')
            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
            let mor = TheoryMorphism { t_source = empty_theory lidT, 
                                       t_target = Theory sign'' sens'',
