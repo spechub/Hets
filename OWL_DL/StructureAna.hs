@@ -23,12 +23,16 @@ import Text.XML.HXT.DOM.XmlTreeTypes
 import Logic.Grothendieck
 import Common.Id
 import List
+import qualified Common.Lib.Map as Map
 -- import Debug.Trace
 -- import Data.Graph.Inductive.Tree
 
-buildDevGraph :: [(String, Ontology)] -> DGraph -> DGraph
-buildDevGraph [] dg = dg
-buildDevGraph ((uri, onto):r) dg = 
+buildDevGraph :: Map.Map String Ontology -> DGraph
+buildDevGraph ontoMap = Map.foldWithKey graphFromMap Data.Graph.Inductive.Graph.empty ontoMap
+
+graphFromMap :: String -> Ontology -> DGraph -> DGraph
+-- buildDevGraph [] dg = dg
+graphFromMap uri onto dg =            --  ((uri, onto):r) dg = 
     let existedLNodes = labNodes dg
 	-- existedLEdges = labEdges dg
 	
@@ -51,12 +55,11 @@ buildDevGraph ((uri, onto):r) dg =
 						   })
                         ) (zip morphismList tagLNodes)
     in  if isEmpty dg then
-             let dg' = mkGraph newLNodes ledgeList
-	     in  buildDevGraph r dg'
+             mkGraph newLNodes ledgeList
+	     
 	   else 
-	     let dg' = insNodes newLNodes dg
-		 dg'' = insEdges ledgeList dg'
-	     in  buildDevGraph r dg'' 
+	     insEdges ledgeList (insNodes newLNodes dg)
+	     
 			      
 searchImports :: Ontology -> [String]
 searchImports (Ontology _ directives) = findImports directives
