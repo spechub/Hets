@@ -112,9 +112,11 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in las' $+$ (hang i' 0 la) $$ ras'
 
 instance PrettyPrint s => PrettyPrint (Named s) where
-    printText0 ga (NamedSen{senName = label, sentence = s}) =
-	printText0 ga s <> if null label then empty else
-		       space <> printText0 ga (Label [label] nullRange)
+    printText0 ga (NamedSen label isAx s) =
+	printText0 ga s <> (if null label then empty else
+	   space <> printText0 ga (Label [label] nullRange))
+        <> if isAx then empty else
+        space <> printText0 ga (Semantic_anno SA_implied nullRange)
 
 -- | function to split the annotation to the right of an item
 -- * fst contains printed label and implied annotion 
