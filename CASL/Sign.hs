@@ -37,15 +37,15 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 
 type OpMap = Map.Map Id (Set.Set OpType)
 
-data Sign f e = Sign { sortSet :: !(Set.Set SORT)
-               , sortRel :: !(Rel.Rel SORT)         
-               , opMap :: !OpMap
-               , assocOps :: !OpMap
-               , predMap :: !(Map.Map Id (Set.Set PredType))
-               , varMap :: !(Map.Map SIMPLE_ID SORT)
-               , sentences :: ![Named (FORMULA f)]        
-               , envDiags :: ![Diagnosis]
-               , extendedInfo :: !e
+data Sign f e = Sign { sortSet :: Set.Set SORT
+               , sortRel :: Rel.Rel SORT         
+               , opMap :: OpMap
+               , assocOps :: OpMap
+               , predMap :: Map.Map Id (Set.Set PredType)
+               , varMap :: Map.Map SIMPLE_ID SORT
+               , sentences :: [Named (FORMULA f)]        
+               , envDiags :: [Diagnosis]
+               , extendedInfo :: e
                } deriving Show
 
 -- better ignore assoc flags for equality
