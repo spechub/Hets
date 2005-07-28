@@ -37,7 +37,7 @@ import HasCASL.Merge
 import HasCASL.Builtin
 
 anaStarType :: Type -> State Env (Maybe Type)
-anaStarType t = fmap (fmap snd) $ anaType (Just star, t) 
+anaStarType t = fmap (fmap snd) $ anaType (Just universe, t) 
 
 anaType :: (Maybe Kind, Type)  -> State Env (Maybe ((RawKind, [Kind]), Type))
 anaType p = fromResult $ anaTypeM p
@@ -73,8 +73,8 @@ generalizeS sc@(TypeScheme tArgs ty p) = do
     tvs <- gets localTypeVars 
     let newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
                   Nothing -> error "generalizeS" 
-                  Just (TypeVarDefn rk vk c) -> 
-                      TypeArg i vk rk c Other nullRange) svs
+                  Just (TypeVarDefn v vk rk c) -> 
+                      TypeArg i v vk rk c Other nullRange) svs
         newTy = generalize newArgs ty
     if null tArgs then return $ TypeScheme newArgs newTy p
        else do
@@ -156,7 +156,7 @@ nonUniqueKind ks a f = case ks of
 
 -- | analyse a type argument 
 anaddTypeVarDecl :: TypeArg -> State Env (Maybe TypeArg)
-anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
+anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
   cm <- gets classMap
   case Map.lookup i cm of 
     Just _ -> do 
@@ -168,8 +168,8 @@ anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
       VarKind k ->  
         let Result ds (Just rk) = anaKindM k cm
         in if null ds then do
-            addLocalTypeVar True (TypeVarDefn rk vk c) i
-            return $ Just $ TypeArg i vk rk c s ps
+            addLocalTypeVar True (TypeVarDefn v vk rk c) i
+            return $ Just $ TypeArg i v vk rk c s ps
         else do addDiags ds
                 return Nothing
       Downset t -> do                 
@@ -179,24 +179,24 @@ anaddTypeVarDecl (TypeArg i vk _ _ s ps) = do
             Just ((rk, ks), nt) -> 
                 nonUniqueKind ks t $ \ k -> do
                    let nd = Downset (KindedType nt k nullRange)
-                   addLocalTypeVar True (TypeVarDefn rk nd c) i
-                   return $ Just $ TypeArg i (Downset nt) rk c s ps
+                   addLocalTypeVar True (TypeVarDefn InVar nd rk c) i
+                   return $ Just $ TypeArg i v (Downset nt) rk c s ps
       MissingKind -> do 
         tvs <- gets localTypeVars
         case Map.lookup i tvs of 
             Nothing -> do 
                 addDiags [mkDiag Warning "missing kind for type variable " i]
-                let dvk = VarKind star
-                addLocalTypeVar True (TypeVarDefn star dvk c) i
-                return $ Just $ TypeArg i dvk star c s ps
-            Just (TypeVarDefn rk dvk _) -> do 
-                addLocalTypeVar True (TypeVarDefn rk dvk c) i
-                return $ Just $ TypeArg i dvk rk c s ps
+                let dvk = VarKind universe
+                addLocalTypeVar True (TypeVarDefn v dvk rStar c) i
+                return $ Just $ TypeArg i v dvk rStar c s ps
+            Just (TypeVarDefn v0 dvk rk _) -> do 
+                addLocalTypeVar True (TypeVarDefn v0 dvk rk c) i
+                return $ Just $ TypeArg i v0 dvk rk c s ps
 
 -- | add an analysed type argument (warn on redeclared types)
 addTypeVarDecl :: Bool -> TypeArg -> State Env ()
-addTypeVarDecl warn (TypeArg i vk rk c _ _) = 
-       addLocalTypeVar warn (TypeVarDefn rk vk c) i
+addTypeVarDecl warn (TypeArg i v vk rk c _ _) = 
+       addLocalTypeVar warn (TypeVarDefn v vk rk c) i
 
 -- | get matching information of uninstantiated identifier
 findOpId :: Env -> UninstOpId -> TypeScheme -> Maybe OpInfo
@@ -273,11 +273,11 @@ anaddGenVarDecl warn gv = case gv of
     GenVarDecl v -> optAnaddVarDecl warn v
     GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
-convertTypeToKind :: Env -> Type -> Result Kind
+convertTypeToKind :: Env -> Type -> Result (Variance, Kind)
 convertTypeToKind e ty = let s = showPretty ty "" in
     case runParser (extKind << eof) (emptyAnnos ()) "" s of
-    Right k -> let Result ds _ = anaKindM k $ classMap e in
-               if null ds then return k else Result ds Nothing
+    Right (v, k) -> let Result ds _ = anaKindM k $ classMap e in
+               if null ds then return (v, k) else Result ds Nothing
     Left _ -> fail $ "not a kind '" ++ s ++ "'"
 
 -- | local variable or type variable declaration
@@ -294,9 +294,9 @@ optAnaddVarDecl warn vd@(VarDecl v t s q) =
     do e <- get
        let Result ds mk = convertTypeToKind e t
        case mk of 
-           Just k -> do 
+           Just (vv, k) -> do 
                addDiags [mkDiag Hint "is type variable" v]
-               tv <- anaddTypeVarDecl $ TypeArg v (VarKind k) star 0 s q
+               tv <- anaddTypeVarDecl $ TypeArg v vv (VarKind k) rStar 0 s q
                return $ fmap GenTypeVarDecl tv 
            _ -> do addDiags $ map ( \ d -> Diag Hint (diagString d) q) ds  
                    varDecl
@@ -352,7 +352,7 @@ anaPattern pat =
     where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
             MixfixType [] -> do
                 (tvar, c) <- toEnvState $ freshVar $ posOfId v
-                return $ VarDecl v (TypeName tvar star c) ok ps
+                return $ VarDecl v (TypeName tvar rStar c) ok ps
             _ -> do mt <- anaStarType t 
                     case mt of 
                         Just ty -> return $ VarDecl v ty ok ps 

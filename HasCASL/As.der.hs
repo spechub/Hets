@@ -56,16 +56,16 @@ data SigItems = TypeItems Instance [Annoted TypeItem] Range -- including sort
 -- | indicator for predicate, operation or function
 data OpBrand = Pred | Op | Fun deriving (Eq, Ord) 
 
+-- | test if the function was declared as predicate
+isPred :: OpBrand -> Bool
+isPred b = case b of Pred -> True
+                     _ -> False
+
 instance Show OpBrand where
     show b = case b of
         Pred -> predS
         Op -> opS
         Fun -> functS
-
--- | test if the function was declared as predicate
-isPred :: OpBrand -> Bool
-isPred b = case b of Pred -> True
-                     _ -> False
 
 -- | indicator in 'ClassItems' and 'TypeItems'
 data Instance = Instance | Plain
@@ -86,46 +86,38 @@ data ClassDecl = ClassDecl [ClassId] Kind Range
                  deriving Show
 
 -- | co- or contra- variance indicator                          
-data Variance = CoVar | ContraVar deriving (Eq, Ord)
+data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
 
 instance Show Variance where
     show v = case v of 
         CoVar -> plusS
         ContraVar -> minusS
+        InVar -> ""
 
--- | (higher) kind or an extended kind (with a variance)
-data Kind = ClassKind ClassId           -- ^ plus the declared kind
-          | FunKind Kind Kind Range     -- ^ only argument may be an 'ExtKind' 
-            -- pos "->" 
-          | ExtKind Kind Variance Range  
+-- | (higher) kinds
+data AnyKind a = ClassKind a
+               | FunKind Variance (AnyKind a) (AnyKind a) Range     
              -- pos "+" or "-" 
             deriving (Show, Eq, Ord)
+
+type Kind = AnyKind ClassId
+type RawKind = AnyKind ()
 
 -- | the string for the universe type
 typeUniverseS :: String 
 typeUniverseS = "Type"
 
 -- | the type universe
-star :: Kind
-star = ClassKind $ simpleIdToId $ mkSimpleId typeUniverseS
+universe :: Kind
+universe = ClassKind $ simpleIdToId $ mkSimpleId typeUniverseS
 
--- | the 'ExtKind' 'star' 'CoVar' (Type+)
-starPlus :: Kind
-starPlus = ExtKind star CoVar nullRange
+-- | the name for the Unit (or empty product) type 
+unitTypeS :: String
+unitTypeS = "Unit"
 
--- | the 'Kind' of the function type
-funKind :: Kind
-funKind = FunKind (ExtKind star ContraVar nullRange)
-             (FunKind starPlus star nullRange) nullRange
-
--- | construct higher order kind from arguments and result kind
-mkFunKind :: [Kind] -> Kind -> Kind
-mkFunKind args res = foldr ( \ a k -> FunKind a k nullRange) res args 
-
--- | the 'Kind' of the product type
-prodKind :: Int -> Kind
-prodKind n = if n > 1 then mkFunKind (replicate n starPlus) star
-             else error "prodKind"
+-- | the identifier for the Unit type
+unitTypeId :: Id
+unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
 
 -- | the possible type items 
 data TypeItem  = TypeDecl [TypePattern] Kind Range
@@ -155,9 +147,6 @@ data TypePattern = TypePattern TypeId [TypeArg] Range
                  -- pos "(", ")"
                    deriving Show
 
--- | a type synonym for raw kinds (just for readability)
-type RawKind = Kind
-
 -- | types based on variable or constructor names and applications
 data Type = TypeName TypeId RawKind Int  
           -- Int == 0 means constructor, negative are bound variables
@@ -179,23 +168,6 @@ data Type = TypeName TypeId RawKind Int
           -- pos arrow
             deriving Show
 
--- | a type name with a star kind
-mkTypeName :: Id -> Type
-mkTypeName i = TypeName i star 0
-
--- | through away the user's type alias
-unalias :: Type -> Type
-unalias ty = case ty of 
-    ExpandedType _ t -> unalias t 
-    _ -> ty
-
--- | construct a product type
-mkProductType :: [Type] -> Range -> Type
-mkProductType ts ps = case ts of
-    [] -> unitType
-    [t] -> t
-    _ -> ProductType ts ps
-
 -- | the builtin function arrows
 data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
              deriving (Eq, Ord)
@@ -207,16 +179,6 @@ instance Show Arrow where
         ContFunArr -> contFun
         PContFunArr -> pContFun 
 
--- | construct an infix identifier for a function arrow
-arrowId :: Arrow -> Id
-arrowId a = mkId $ map mkSimpleId [place, show a, place]
-
--- | construct a mixfix product identifier with n places 
-productId :: Int -> Id
-productId n = if n > 1 then
-  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
-  else error "productId"
-
 {- | a type with bound type variables. The bound variables within the
 scheme should have negative numbers in the order given by the type
 argument list. The type arguments store proper kinds (including
@@ -227,41 +189,10 @@ data TypeScheme = TypeScheme [TypeArg] Type Range
                 -- pos "\" "("s, ")"s, dot for type aliases
                   deriving Show
 
--- | convert a type with unbound variables to a scheme
-simpleTypeScheme :: Type -> TypeScheme
-simpleTypeScheme t = TypeScheme [] t nullRange
-
--- | the name for the Unit (or empty product) type 
-unitTypeS :: String
-unitTypeS = "Unit"
-
--- | the identifier for the Unit type
-unitTypeId :: Id
-unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
-
--- | the Unit type (name)
-unitType :: Type 
-unitType = TypeName unitTypeId star 0
-
--- | add an additional Unit type argument to a type 
-liftType :: Type -> Range -> Type
-liftType t qs = FunType unitType PFunArr t qs
-
-{- | add the Unit type as result type or convert a parsed empty tuple
-   to the unit type -}
-predType :: Type -> Type
-predType t = case t of
-                    BracketType Parens [] _ -> unitType
-                    _ -> FunType t PFunArr unitType nullRange
-
 -- | change the type within a scheme
 mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
 mapTypeOfScheme f (TypeScheme args t ps) =
     TypeScheme args (f t) ps
-
--- | change the type of the scheme to a 'predType'
-predTypeScheme :: TypeScheme -> TypeScheme
-predTypeScheme = mapTypeOfScheme predType
 
 -- | indicator for partial or total functions
 data Partiality = Partial | Total deriving (Eq, Ord)
@@ -350,11 +281,6 @@ getBrackets b = case b of
                        Squares -> ("[", "]")
                        Braces -> ("{", "}")
 
--- | the brackets as tokens with positions
-mkBracketToken :: BracketKind -> Range -> [Token]
-mkBracketToken k ps = 
-       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
-
 {- | The possible terms and patterns. Formulas are also kept as terms. Local variables and constants are kept separatetly. The variant 'ResolvedMixTerm' is an intermediate representation for type checking only. -}
 data Term = QualVar VarDecl
           -- pos "(", "var", ":", ")"
@@ -388,10 +314,6 @@ data Term = QualVar VarDecl
 -- | patterns are terms constructed by the first six variants
 type Pattern = Term
 
--- | construct a tuple from non-singleton lists
-mkTupleTerm :: [Term] -> Range -> Term
-mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
-
 -- | an equation or a case as pair of a pattern and a term 
 data ProgEq = ProgEq Pattern Term Range deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
@@ -410,8 +332,8 @@ data VarKind = VarKind Kind | Downset Type | MissingKind
                deriving (Show, Eq, Ord)
 
 -- | a (simple) type variable with its kind (or supertype)
-data TypeArg = TypeArg TypeId VarKind RawKind Int SeparatorKind Range
-               -- pos "," or ":" ("+" or "-" pos is moved to ExtClass)
+data TypeArg = TypeArg TypeId Variance VarKind RawKind Int SeparatorKind Range
+               -- pos "," or ":", "+" or "-"
                deriving Show
 
 -- | a value or type variable
@@ -533,11 +455,11 @@ instance Ord TypeScheme where
 
 -- used within quantified formulas
 instance Eq TypeArg where
-    TypeArg i1 _ v1 c1 _ _ == TypeArg i2 _ v2 c2 _ _ = 
-        (i1, v1, c1) == (i2, v2, c2)
+    TypeArg i1 _ e1 v1 c1 _ _ == TypeArg i2 _ e2 v2 c2 _ _ = 
+        (i1, e1, v1, c1) == (i2, e2, v2, c2)
 instance Ord TypeArg where
-    TypeArg i1 _ v1 c1 _ _ <= TypeArg i2 _ v2 c2 _ _ = 
-        (i1, v1, c1) <= (i2, v2, c2)
+    TypeArg i1 _ e1 v1 c1 _ _ <= TypeArg i2 _ e2 v2 c2 _ _ = 
+        (i1, e1, v1, c1) <= (i2, e2, v2, c2)
 
 instance Eq VarDecl where
     VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 

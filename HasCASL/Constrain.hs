@@ -62,7 +62,7 @@ joinC = Set.union
 insertC :: Constrain -> Constraints -> Constraints
 insertC c = case c of 
             Subtyping t1 t2 -> if t1 == t2 then id else Set.insert c
-            Kinding _ k -> if k == star then id else Set.insert c
+            Kinding _ k -> if k == universe then id else Set.insert c
 
 substC :: Subst -> Constraints -> Constraints
 substC s = Set.fold (insertC . ( \ c -> case c of
@@ -86,8 +86,8 @@ entail te p =
 
 byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
 byInst te c = let cm = classMap te in case c of 
-    Kinding ty k -> if k == star then assert (rawKindOfType ty == star) $ 
-                    return noC else 
+    Kinding ty k -> if k == universe then assert (rawKindOfType ty == ClassKind ())
+                    $ return noC else 
       let Result _ds mk = inferKinds (Just True) ty te in
                    case mk of 
                    Nothing -> fail $ "constrain '" ++ 
@@ -155,18 +155,18 @@ shapeMgu te cs =
              let s = Map.singleton v1 (TypeAppl vf va)
              addSubst s
              shapeMgu te $ (vf, f) : (case rawKindOfType vf of
-                 FunKind (ExtKind _ CoVar _) _ _ -> [(va, a)]
-                 FunKind (ExtKind _ ContraVar _) _ _ -> [(a, va)]
+                 FunKind CoVar _ _ _ -> [(va, a)]
+                 FunKind ContraVar _ _ _ -> [(a, va)]
                  _ -> [(a, va), (va, a)]) ++ substPairList s rest
        else error ("shapeMgu1: " ++ showPretty t1 " < " ++ showPretty t2 "") 
     (_, TypeName _ _ _) -> do ats <- shapeMgu te ((t2, t1) : map swap rest)
                               return $ map swap ats
     (TypeAppl f1 a1, TypeAppl f2 a2) -> 
          shapeMgu te $ (f1, f2) : case (rawKindOfType f1, rawKindOfType f2) of
-              (FunKind (ExtKind _ CoVar _) _ _, 
-               FunKind (ExtKind _ CoVar _) _ _) -> (a1, a2) : rest
-              (FunKind (ExtKind _ ContraVar _) _ _, 
-               FunKind (ExtKind _ ContraVar _) _ _) -> (a2, a1) : rest
+              (FunKind CoVar _ _ _, 
+               FunKind CoVar _ _ _) -> (a1, a2) : rest
+              (FunKind ContraVar _ _ _, 
+               FunKind ContraVar _ _ _) -> (a2, a1) : rest
               _ -> (a1, a2) : (a2, a1) : rest
     _ -> error ("shapeMgu2: " ++ showPretty t1 " < " ++ showPretty t2 "")
 
@@ -257,8 +257,8 @@ monotonic te v t =
                 (a1, a2) = monotonic te v t2 
                 (f1, f2) = monotonic te v t1 
                 in case rawKindOfType t1 of
-                   ExtKind _ CoVar _ -> (f1 && a1, f2 && a2)
-                   ExtKind _ ContraVar _ -> (f1 && a2, f2 && a1)
+                   FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
+                   FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
                    _ -> (f1 && a1 && a2, f2 && a1 && a2)
            _ -> monotonic te v (convertType t)
 

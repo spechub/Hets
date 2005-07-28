@@ -32,27 +32,25 @@ import Control.Exception(assert)
 type TypeEnv = Env
 
 -- | extract kinds of type identifier
-getIdKind :: TypeEnv -> Id -> Result ((RawKind, [Kind]), Type)
+getIdKind :: TypeEnv -> Id -> Result ((Variance, RawKind, [Kind]), Type)
 getIdKind te i = 
     case Map.lookup i $ localTypeVars te of
        Nothing -> case Map.lookup i $ typeMap te of 
            Nothing -> mkError "unknown type" i
-           Just (TypeInfo rk l _ _) -> return ((rk, l), TypeName i rk 0)
-       Just (TypeVarDefn rk vk c) -> assert (c > 0) $ 
-           return ((rk, [toKind vk]), TypeName i rk c)
+           Just (TypeInfo rk l _ _) -> return ((InVar, rk, l), TypeName i rk 0)
+       Just (TypeVarDefn v vk rk c) -> assert (c > 0) $ 
+           return ((v, rk, [toKind vk]), TypeName i rk c)
 
 -- | extract kinds of co- or invariant type identifiers
 getCoVarKind :: Maybe Bool -> TypeEnv -> Id -> Result ((RawKind, [Kind]), Type)
 getCoVarKind b te i = do 
-    ((rk, l), ty) <- getIdKind te i
-    case (rk, b) of 
-           (ExtKind ek ContraVar _, Just True) -> Result
-               [mkDiag Hint "wrong contravariance of" i] $ Just ((ek, []), ty)
-           (ExtKind ek CoVar _, Just False) -> Result
-               [mkDiag Hint "wrong covariance of" i] $ Just ((ek, []), ty)
-           _ -> return ((invertKindVariance False rk, 
-                        map (invertKindVariance False) $ 
-                            keepMinKinds (classMap te) l), ty)
+    ((v, rk, l), ty) <- getIdKind te i
+    case (v, b) of 
+           (ContraVar, Just True) -> Result
+               [mkDiag Hint "wrong contravariance of" i] $ Just ((rk, []), ty)
+           (CoVar, Just False) -> Result
+               [mkDiag Hint "wrong covariance of" i] $ Just ((rk, []), ty)
+           _ -> return ((rk, keepMinKinds (classMap te) l), ty)
 
 -- | check if there is at least one solution
 subKinds :: DiagKind -> ClassMap -> Type -> Kind -> [Kind] -> [Kind] 
@@ -72,20 +70,17 @@ inferKinds b ty te@Env{classMap = cm} = let
     TypeAppl t1 t2 -> do 
        ((rk, ks), t3) <- inferKinds b t1 te
        case rk of 
-           FunKind rarg rr _ -> do 
-               ((_, l), t4) <- case rarg of 
-                            ExtKind _ ContraVar _ -> 
+           FunKind v _ rr _ -> do 
+               ((_, l), t4) <- case v of 
+                            ContraVar -> 
                                 inferKinds (fmap not b) t2 te
-                            ExtKind _ CoVar _ -> 
+                            CoVar -> 
                                 inferKinds b t2 te
-                            _ -> inferKinds Nothing t2 te
+                            InVar -> inferKinds Nothing t2 te
                kks <- mapM (getFunKinds cm) ks
                rs <- mapM ( \ fk -> case fk of
-                    FunKind arg res _ -> do 
-                        let ek = case arg of 
-                                 ExtKind k _ _ -> k
-                                 _ -> arg
-                        subKinds Hint cm t2 ek l [res]
+                    FunKind _ arg res _ -> do 
+                        subKinds Hint cm t2 arg l [res]
                     _ -> error "inferKinds: no function kind"
                   ) $ keepMinKinds cm $ concat kks
                return ((rr, keepMinKinds cm $ concat rs), TypeAppl t3 t4)
@@ -135,8 +130,8 @@ getTypeAppl ty = let (t, args) = getTyAppl ty in
         LazyType t ps -> getTyAppl $ liftType t ps
         KindedType t _ _ -> getTyAppl t
         ProductType ts _ ->  let n = length ts in 
-           (TypeName (productId n) (prodKind n) 0, reverse ts)
-        FunType t1 a t2 _ -> (TypeName (arrowId a) funKind 0, [t2, t1])
+           (TypeName (productId n) (toRaw $ prodKind n) 0, reverse ts)
+        FunType t1 a t2 _ -> (TypeName (arrowId a) (toRaw funKind) 0, [t2, t1])
         _ -> error "getTypeAppl: unresolved type"
 
 -- | change lazy, product and fun types to uniform applications
@@ -150,7 +145,7 @@ rawKindOfType :: Type -> RawKind
 rawKindOfType ty = case ty of
     TypeName _ k _ -> k
     TypeAppl t1 _ -> case rawKindOfType t1 of 
-        FunKind _ rk _ -> rk 
+        FunKind _ _ rk _ -> rk 
         _ -> error "rawKindOfType"
     _ -> rawKindOfType $ convertType ty
 
@@ -162,21 +157,19 @@ lesserType te t1 t2 = case (t1, t2) of
             b2 = lesserType te a2 a1
             b = b1 && b2
         in (case (rawKindOfType c1, rawKindOfType c2) of
-            (FunKind ak1 _ _, FunKind ak2 _ _) -> 
-                case (ak1, ak2) of 
-                    (ExtKind _ v1 _, ExtKind _ v2 _) -> 
-                        if v1 == v2 then case v1 of 
+            (FunKind v1 _ _ _, FunKind v2 _ _ _) -> 
+                if v1 == v2 then case v1 of 
                             CoVar -> b1
-                            ContraVar -> b2 
+                            ContraVar -> b2
+                            _ -> b
                         else b
-                    _ -> b
             _ -> error "lesserType: no FunKind") && lesserType te c1 c2
     (TypeName i1 _ _, TypeName i2 _ _) | i1 == i2 -> True
     (TypeName i _ _, _) -> case Map.lookup i $ localTypeVars te of 
         Nothing -> case Map.lookup i $ typeMap te of
             Nothing -> False
             Just ti -> any ( \ t -> lesserType te t t2) $ superTypes ti
-        Just (TypeVarDefn _ vk _) -> case vk of 
+        Just (TypeVarDefn _ vk _ _) -> case vk of 
             Downset t -> lesserType te t t2
             _ -> False
     (TypeAppl _ _, TypeName _ _ _) -> False
@@ -299,7 +292,7 @@ anaTypeM (mk, parsedType) te =
        ((rk, ks), checkedType) <- inferKinds (Just True) expandedType te
        l <- case mk of 
                Nothing -> subKinds Error cm parsedType 
-                          (if null ks then rk else head ks)
+                          (if null ks then universe else head ks)
                           ks ks  
                Just k -> subKinds Error cm parsedType k ks $ 
                          filter ( \ j -> lesserKind cm j k) ks
@@ -308,7 +301,7 @@ anaTypeM (mk, parsedType) te =
 
 -- | resolve the type and check if it is of the universe class
 anaStarTypeM :: Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
-anaStarTypeM t = anaTypeM (Just star, t)
+anaStarTypeM t = anaTypeM (Just universe, t)
 
 -- * misc functions on types
 

@@ -19,6 +19,7 @@ import Common.Lexer
 import Common.Token
 import HasCASL.HToken
 import HasCASL.As
+import HasCASL.AsUtils
 import Text.ParserCombinators.Parsec
 import Data.List
 
@@ -71,92 +72,86 @@ parseSimpleKind = parseClassId <|> do
     return k
 
 -- | do 'parseSimpleKind' and check for an optional 'Variance'
-parseExtKind :: AParser st Kind
+parseExtKind :: AParser st (Variance, Kind)
 parseExtKind = do 
     v <- option (mkSimpleId "") (plusT <|> minusT)
     k <- parseSimpleKind
     let s = tokStr v
-        p = tokPos v
-    return $ if s == plusS then ExtKind k CoVar p
-           else if s == minusS then ExtKind k ContraVar p else k
+    return (if s == plusS then CoVar else 
+            if s == minusS then ContraVar else InVar, k)
 
 -- | parse a (right associative) function kind for a given argument kind
-arrowKind :: Kind -> AParser st Kind
-arrowKind k1 =
+arrowKind :: (Variance, Kind) -> AParser st Kind
+arrowKind (v, k) =
        do a <- asKey funS
           k2 <- kind
-          return (FunKind k1 k2 $ tokPos a)
+          return (FunKind v k k2 $ tokPos a)
 
 -- | parse a function kind but reject an extended kind
 kind :: AParser st Kind
 kind = 
-    do k1 <- parseExtKind
-       arrowKind k1 <|> case k1 of
-            ExtKind _ _ _ -> unexpected "variance of kind"
-            _ -> return k1
+    do k1@(v, k) <- parseExtKind
+       arrowKind k1 <|> case v of
+            InVar -> return k
+            _ -> unexpected "variance of kind"
 
 -- | parse a function kind but accept an extended kind
-extKind :: AParser st Kind
+extKind :: AParser st (Variance, Kind)
 extKind = 
     do k1 <- parseExtKind
-       arrowKind k1 <|> return k1
-
+       (do k <- arrowKind k1
+           return (InVar, k)) <|> return k1
 
 -- * type variables
 
 -- a (simple) type variable with a 'Variance'
-extVar :: AParser st Id -> AParser st (Id, Maybe Variance, Range) 
+extVar :: AParser st Id -> AParser st (Id, Variance) 
 extVar vp = 
     do t <- vp
-       do   a <- plusT
-            return (t, Just CoVar, tokPos a)
+       do   plusT
+            return (t, CoVar)
           <|>
-          do a <- minusT
-             return (t, Just ContraVar, tokPos a)
-          <|> return (t, Nothing, nullRange)
+          do minusT
+             return (t, ContraVar)
+          <|> return (t, InVar)
 
 -- several 'extVar' with a 'Kind'
 typeVars :: AParser st [TypeArg]
 typeVars = do (ts, ps) <- extVar typeVar `separatedBy` anComma
               typeKind ts ps
 
-allIsInVar :: [(TypeId, Maybe Variance, Range)] -> Bool
-allIsInVar = all ( \ (_, v, _) -> maybe True (const False) v)
+allIsInVar :: [(TypeId, Variance)] -> Bool
+allIsInVar = all ( \ (_, v) -> case v of 
+                  InVar -> True 
+                  _ -> False)
 
 
 -- 'parseType' a 'Downset' starting with 'lessT'
-typeKind :: [(TypeId, Maybe Variance, Range)] -> [Token] 
+typeKind :: [(TypeId, Variance)] -> [Token] 
          -> AParser st [TypeArg]
 typeKind vs ps = 
     do c <- colT
        if allIsInVar vs then 
-          do k <- extKind
-             return (makeTypeArgs vs ps (tokPos c) $ VarKind k)
+          do (v, k) <- extKind
+             return (makeTypeArgs vs ps v (VarKind k) $ tokPos c)
           else do k <- kind
-                  return (makeTypeArgs vs ps (tokPos c) $ VarKind k)
+                  return (makeTypeArgs vs ps InVar (VarKind k) $ tokPos c)
     <|>
     do l <- lessT
        t <- parseType
-       return (makeTypeArgs vs ps (tokPos l) $ Downset t) 
-    <|> return (makeTypeArgs vs ps nullRange MissingKind)
+       return (makeTypeArgs vs ps InVar (Downset t) $ tokPos l)
+    <|> return (makeTypeArgs vs ps InVar MissingKind nullRange)
 
 -- | add the 'Kind' to all 'extVar' and yield a 'TypeArg'
-makeTypeArgs :: [(TypeId, Maybe Variance, Range)] -> [Token] 
-             -> Range -> VarKind -> [TypeArg]
-makeTypeArgs ts ps qs k = 
-    zipWith (mergeVariance Comma k) (init ts) 
+makeTypeArgs :: [(TypeId, Variance)] -> [Token] 
+             -> Variance -> VarKind -> Range -> [TypeArg]
+makeTypeArgs ts ps vv vk qs = 
+    zipWith (mergeVariance Comma vv vk) (init ts) 
                 (map tokPos ps)
-                ++ [mergeVariance Other k (last ts) qs]
+                ++ [mergeVariance Other vv vk (last ts) qs]
                 where 
-    mergeVariance c e (t, Nothing, _) q = TypeArg t e star 0 c q
-    mergeVariance c (VarKind (ExtKind e v0 _)) (t, Just v, p) q = 
-        if v0 == v then TypeArg t (VarKind (ExtKind e v p)) star 0 c q
-        else error "makeTypeArgs1"
-    mergeVariance c (VarKind e) (t, Just v, p) q = 
-                          TypeArg t (VarKind (ExtKind e v p)) star 0 c q
-    mergeVariance c MissingKind (t, Just v, p) q = 
-                          TypeArg t (VarKind (ExtKind star v p)) star 0 c q
-    mergeVariance _ _ _ _ = error "makeTypeArgs2"
+    mergeVariance c v k (t, InVar) q = TypeArg t v k rStar 0 c q
+    mergeVariance c _ k (t, v) q = TypeArg t v k rStar 0 c q
 
 -- | a single 'TypeArg' (parsed by 'typeVars')
 singleTypeArg :: AParser st TypeArg
@@ -387,7 +382,7 @@ genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
                  if allIsInVar vs then
                     fmap (map GenVarDecl) 
                              (varDeclType 
-                              (map ( \ (i, _, _) -> i) vs) ps)
+                              (map ( \ (i, _) -> i) vs) ps)
                       <|> fmap (map GenTypeVarDecl)
                                (typeKind vs ps)
                      else fmap (map GenTypeVarDecl)

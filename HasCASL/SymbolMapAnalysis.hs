@@ -100,7 +100,7 @@ mapTypeDefn im td =
     _ -> td
 
 -- | compute type mapping
-typeFun :: Env -> RawSymbolMap -> Id -> Kind -> Result Id
+typeFun :: Env -> RawSymbolMap -> Id -> RawKind -> Result Id
 typeFun e rmap s k = do
     let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of 
                  Nothing -> Set.empty

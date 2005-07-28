@@ -20,6 +20,7 @@ import Common.Token
 import Common.AnnoState
 import HasCASL.HToken
 import HasCASL.As
+import HasCASL.AsUtils
 import Text.ParserCombinators.Parsec
 import Common.AS_Annotation
 import HasCASL.ParseTerm
@@ -45,7 +46,7 @@ commaTypeDecl s = do c <- anComma
                          p = c : cs
                      subTypeDecl (l, p)
                        <|> kindedTypeDecl (l, p)
-                       <|> return (TypeDecl l star $ catPos p)
+                       <|> return (TypeDecl l universe $ catPos p)
 
 kindedTypeDecl :: ([TypePattern], [Token]) -> AParser st TypeItem
 kindedTypeDecl (l, p) = 
@@ -99,7 +100,7 @@ sortItem = do s <- typePattern
                     <|>
                     isoDecl s
                     <|> 
-                    return (TypeDecl [s] star nullRange)
+                    return (TypeDecl [s] universe nullRange)
 
 sortItems :: AParser st SigItems
 sortItems = hasCaslItemList sortS sortItem (TypeItems Plain)
@@ -108,7 +109,7 @@ typeItem :: AParser st TypeItem
 typeItem = do s <- typePattern;
               subTypeDecl ([s],[])
                     <|>
-                    dataDef s star []
+                    dataDef s universe []
                     <|> 
                     pseudoTypeDef s Nothing []
                     <|>
@@ -118,7 +119,7 @@ typeItem = do s <- typePattern;
                     <|>
                     isoDecl s
                     <|> 
-                    return (TypeDecl [s] star nullRange)
+                    return (TypeDecl [s] universe nullRange)
 
 typeItemList :: [Token] -> Instance -> AParser st SigItems
 typeItemList ps k = hasCaslItemAux ps typeItem $ TypeItems k
@@ -226,7 +227,7 @@ dataItem = do t <- typePattern
                    k <- kind
                    Datatype d <- dataDef t k [c]
                    return d
-                <|> do Datatype d <- dataDef t star []
+                <|> do Datatype d <- dataDef t universe []
                        return d
 
 dataItems :: AParser st BasicItem
@@ -237,7 +238,7 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 classDecl :: AParser st ClassDecl
 classDecl = 
     do (is, cs) <- classId `separatedBy` anComma
-       (ps, k) <- option ([], star) $ bind  (,) (single (colT <|> lessT)) kind 
+       (ps, k) <- option ([], universe) $ bind  (,) (single (colT <|> lessT)) kind 
        return (ClassDecl is k $ catPos $ cs++ps)
 
 classItem :: AParser st ClassItem

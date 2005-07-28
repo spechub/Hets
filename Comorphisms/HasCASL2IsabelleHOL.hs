@@ -239,7 +239,7 @@ transTerm sign (QuantifiedTerm quan varDecls phi _) =
         (GenVarDecl (VarDecl var typ _ _)) ->
           termAppl (con $ qname q) 
                (Abs (con $ transVar var) (transType typ) phi' NotCont)
-        (GenTypeVarDecl (TypeArg _ _ _ _ _ _)) ->  phi'
+        (GenTypeVarDecl _) ->  phi'
     qname Universal   = allS
     qname Existential = exS
     qname Unique      = ex1S
@@ -629,7 +629,7 @@ redAppl cmxs sign
          lastArgs = map last (map args cmxs)
          varName = "caseVar" ++ show (length (args (head cmxs)))
          varId = (mkId [(mkSimpleId varName)])
-         newVar = QualVar (VarDecl varId (TypeName varId star 1) 
+         newVar = QualVar (VarDecl varId (TypeName varId rStar 1) 
                            Other nullRange)
          newPeqs = (map newProgEq (zip lastArgs terms))
          newPeqs' = recArgs sign newPeqs

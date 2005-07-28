@@ -74,7 +74,7 @@ instantiate (TypeScheme tArgs t _) =
        return (subst s t, ats, Set.fromList cs)
 
 mapArgs :: Subst -> [(Id, Type)] -> [TypeArg] -> [(Type, Constrain)]
-mapArgs s ts = foldr ( \ (TypeArg i vk _ _ _ _) l ->  
+mapArgs s ts = foldr ( \ (TypeArg i _ vk _ _ _ _) l ->  
     maybe l ( \ (_, t) -> (t, case vk of
         MissingKind -> error "mapArgs"
         VarKind k -> Kinding t k
@@ -187,7 +187,7 @@ typeCheck0 b mt trm =
 freshTypeVar :: Range -> State Env Type             
 freshTypeVar p = 
     do (var, c) <- toEnvState $ freshVar p
-       return $ TypeName var star c
+       return $ TypeName var rStar c
 
 freshVars :: [Term] -> State Env [Type]
 freshVars l = mapM (freshTypeVar . posOfTerm) l

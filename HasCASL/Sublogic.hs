@@ -55,6 +55,7 @@ module HasCASL.Sublogic ( -- * datatypes
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 
@@ -494,9 +495,7 @@ sl_classDecl (ClassDecl _ k _) = sl_kind k
 
 sl_kind :: Kind -> HasCASL_Sublogics
 sl_kind (ClassKind _) = need_type_classes
-sl_kind (FunKind k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
-sl_kind (ExtKind k _ _) = sl_kind k
-
+sl_kind (FunKind _ k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
 sl_typeItem (TypeDecl l k _) = sublogics_max (sl_kind k) 
@@ -660,12 +659,12 @@ sl_varDecl (VarDecl _ t _ _) = sl_type t
 
 sl_varKind :: VarKind -> HasCASL_Sublogics
 sl_varKind vk = case vk of
-   VarKind k -> if k == star then bottom else sl_kind k
+   VarKind k -> if k == universe then bottom else sl_kind k
    Downset t -> sublogics_max need_sub $ sl_type t
    _ -> bottom
 
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ k _ _ _ _) = 
+sl_typeArg (TypeArg _ _ k _ _ _ _) = 
     sublogics_max need_polymorphism (sl_varKind k)
 
 
@@ -797,7 +796,7 @@ sl_symbol (Symbol _ t e) =
   sublogics_max (sl_symbolType t) (sl_env e)
 
 
-sl_symbolType :: SymbolType -> HasCASL_Sublogics
+sl_symbolType :: SymbolType a -> HasCASL_Sublogics
 sl_symbolType (OpAsItemType t) = sl_typeScheme t
 sl_symbolType (ClassAsItemType _) = need_type_classes
 sl_symbolType _ = bottom

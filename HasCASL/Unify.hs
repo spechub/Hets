@@ -185,12 +185,12 @@ uniResult s1 a s2 b =
 generalize :: [TypeArg] -> Type -> Type
 generalize tArgs = 
     subst $ Map.fromList $ zipWith 
-          ( \ (TypeArg i _ rk c _ _) n -> 
+          ( \ (TypeArg i _ _ rk c _ _) n -> 
                 (c, TypeName i rk n)) tArgs [-1, -2..] 
 
 genTypeArgs :: [TypeArg] -> [TypeArg]
-genTypeArgs tArgs = snd $ mapAccumL ( \ n (TypeArg i vk rk _ s ps) ->
-                               (n-1, TypeArg i (case vk of 
+genTypeArgs tArgs = snd $ mapAccumL ( \ n (TypeArg i v vk rk _ s ps) ->
+                               (n-1, TypeArg i v (case vk of 
      Downset t -> Downset $ generalize tArgs t
      _ -> vk) rk n s ps)) (-1) tArgs
                                                 

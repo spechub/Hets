@@ -13,6 +13,7 @@ raw symbols bridge symb items and the symbols of a signature
 module HasCASL.RawSym where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.PrintLe()
 import HasCASL.ClassAna
@@ -56,7 +57,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
     Just (SymbType sc@(TypeScheme vs t _)) -> 
         let r = return $ AQualId idt $ OpAsItemType sc
             rk = if null vs then Nothing else 
-                 convTypeToKind t 
+                 convTypeToKind False t 
             rrk = maybeToResult (getRange t) 
                            ("not a kind: " ++ showPretty t "") rk
         in case k of 
@@ -64,38 +65,32 @@ symbToRaw k (Symb idt mt _)     = case mt of
               SK_fun -> r
               SK_pred -> return $ AQualId idt $ OpAsItemType
                          $ predTypeScheme sc
-              SK_class -> do ck <- rrk
+              SK_class -> do (_, ck) <- rrk
                              return $ AQualId idt $ ClassAsItemType ck
-              _ -> do ck <- rrk
+              _ -> do (_, ck) <- rrk
                       return $ AQualId idt $ TypeAsItemType ck
 
-convTypeToKind :: Type -> Maybe Kind
-convTypeToKind (FunType t1 FunArr t2 ps) = 
-    do k1 <- convTypeToKind t1
-       k2 <- convTypeToKind t2
-       case k2 of 
-               ExtKind _ _ _ -> Nothing
-               _ -> Just $ FunKind k1 k2 ps
-
-convTypeToKind (BracketType Parens [] _) = 
-    Nothing
-convTypeToKind (BracketType Parens [t] _) = 
-    convTypeToKind t
-
-convTypeToKind (MixfixType [TypeToken t, t1]) = 
+convTypeToKind :: Bool -> Type -> Maybe (Variance, Kind)
+convTypeToKind _ (FunType t1 FunArr t2 ps) = 
+    do (v, k1) <- convTypeToKind True t1
+       (_, k2) <- convTypeToKind False t2
+       return (InVar, FunKind v k1 k2 ps)
+convTypeToKind b (BracketType Parens [t] _) = 
+    convTypeToKind b t
+convTypeToKind True (MixfixType [TypeToken t, t1]) = 
     let s = tokStr t 
         mv = case s of 
-                   "+" -> Just CoVar 
-                   "-" -> Just ContraVar 
-                   _ -> Nothing
+                   "+" -> CoVar 
+                   "-" -> ContraVar 
+                   _ -> InVar
     in case mv of 
-              Nothing -> Nothing
-              Just v -> do k1 <- convTypeToKind t1
-                           Just $ ExtKind k1 v $ tokPos t
-convTypeToKind (TypeToken t) = 
+              InVar -> Nothing
+              _ -> do (_, k1) <- convTypeToKind False t1
+                      return (mv, k1)
+convTypeToKind _ (TypeToken t) = 
           let ci = simpleIdToId t in
-          Just $ ClassKind ci
-convTypeToKind _ = Nothing
+          return (InVar, ClassKind ci)
+convTypeToKind _ _ = fail "convTypeToKind"
 
 matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb sy rsy = let ty = symType sy in 
@@ -107,16 +102,16 @@ matchSymb sy rsy = let ty = symType sy in
                                maybeResult $ matchQualId (symEnv sy) rsy
                 ASymbol s -> ty == symType s
 
-anaSymbolType :: SymbolType -> State Env (Maybe SymbolType)
+anaSymbolType :: SymbolType ClassId -> State Env (Maybe (SymbolType ()))
 anaSymbolType t = do 
     cm <- gets classMap
     case t of 
         ClassAsItemType k -> do 
-            let Result ds _ = anaKindM k cm
-            return $ if null ds then Just $ ClassAsItemType k else Nothing 
+            let Result ds (Just rk) = anaKindM k cm
+            return $ if null ds then Just $ ClassAsItemType rk else Nothing 
         TypeAsItemType k -> do 
-            let Result ds _ = anaKindM k cm
-            return $ if null ds then Just $ TypeAsItemType k else Nothing 
+            let Result ds (Just rk) = anaKindM k cm
+            return $ if null ds then Just $ TypeAsItemType rk else Nothing 
         OpAsItemType sc -> do 
             asc <- anaTypeScheme sc
             return $ fmap OpAsItemType asc 

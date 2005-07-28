@@ -31,20 +31,17 @@ import Common.LaTeX_utils
 import qualified Common.Lib.Map as Map
 
 instance PrintLaTeX Variance where 
-    printLatex0 _ v = hc_sty_axiom $ show v
+    printLatex0 _ = hc_sty_axiom . show
 
-instance PrintLaTeX Kind where
+instance PrintLaTeX a => PrintLaTeX (AnyKind a) where
     printLatex0 ga knd = case knd of
         ClassKind ci -> printLatex0 ga ci
-        FunKind k1 k2 _ -> 
+        FunKind v k1 k2 _ -> printLatex0 ga v <>
                           (case k1 of 
-                                  FunKind _ _ _ -> parens
+                                  FunKind _ _ _ _ -> parens
                                   _ -> id) (printLatex0 ga k1)
                           <\+> hc_sty_axiom "\\rightarrow" 
                           <\+> printLatex0 ga k2
-        ExtKind k v _ -> printLatex0 ga v <> (case k of
-                    FunKind _ _ _ -> parens
-                    _ -> id) (printLatex0 ga k)
 
 instance PrintLaTeX TypePattern where 
     printLatex0 ga tp = case tp of
@@ -64,11 +61,13 @@ latexBracket b = case b of
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 latexKind :: GlobalAnnos -> Kind -> Doc
-latexKind ga k = if k == star then empty else latexVarKind ga $ VarKind k
+latexKind ga k = if k == universe then empty else latexVarKind ga InVar $ VarKind k
 
-latexVarKind :: GlobalAnnos -> VarKind -> Doc
-latexVarKind ga vk = case vk of 
-                    VarKind k -> space <> colon_latex <\+> printLatex0 ga k
+latexVarKind :: GlobalAnnos -> Variance -> VarKind -> Doc
+latexVarKind ga vv vk = case vk of 
+                    VarKind k -> space <> colon_latex <\+> 
+                                 printLatex0 ga vv <>
+                                 printLatex0 ga k
                     Downset t -> 
                         space <> hc_sty_axiom lessS <\+> printLatex0 ga t
                     _ -> empty
@@ -266,8 +265,8 @@ instance PrintLaTeX GenVarDecl where
         GenTypeVarDecl tv -> printLatex0 ga tv
 
 instance PrintLaTeX TypeArg where 
-    printLatex0 ga (TypeArg v c _ _ _ _) = 
-        printLatex0 ga v <> latexVarKind ga c
+    printLatex0 ga (TypeArg v vv c _ _ _ _) = 
+        printLatex0 ga v <> latexVarKind ga vv c
 
 -- | don't print an empty list and put parens around longer lists
 latexList0 :: (PrintLaTeX a) => GlobalAnnos -> [a] -> Doc
@@ -564,7 +563,7 @@ printMap0 :: (PrintLaTeX a, Ord a, PrintLaTeX b)
 printMap0 g d m =let l = Map.toList m in
     vcat(map (\ (a, b) -> printLatex0 g a <> d <> printLatex0 g b) l)
 
-instance PrintLaTeX SymbolType where
+instance PrintLaTeX a => PrintLaTeX (SymbolType a) where
     printLatex0 ga t = case t of 
       OpAsItemType sc -> printLatex0 ga sc
       TypeAsItemType k -> printLatex0 ga k

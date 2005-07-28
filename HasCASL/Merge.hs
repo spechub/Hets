@@ -68,7 +68,7 @@ instance Mergeable a => Mergeable (Maybe a) where
 instance Mergeable ClassInfo where
     merge = mergeA "super classes"
 
-instance Mergeable Kind where
+instance (PrettyPrint a, Eq a) => Mergeable (AnyKind a) where
     merge = mergeA "super kinds" 
 
 mergeTypeInfo :: TypeInfo -> TypeInfo -> Result TypeInfo 

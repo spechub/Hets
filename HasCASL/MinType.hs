@@ -15,6 +15,7 @@ choose a minimal type
 module HasCASL.MinType where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.TypeAna
 import Common.Id
 

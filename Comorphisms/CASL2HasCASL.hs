@@ -29,10 +29,10 @@ import qualified CASL.Morphism as CasM
 
 import HasCASL.Logic_HasCASL
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.VarDecl
-import HasCASL.AsUtils
 import HasCASL.Morphism
 import HasCASL.Sublogic as HasSub
 
@@ -66,9 +66,6 @@ instance Comorphism CASL2HasCASL
     map_symbol CASL2HasCASL = Set.singleton . mapSym
     map_theory CASL2HasCASL = return . mapTheory
 
-toType :: Id -> Type
-toType i = TypeName i star 0
-
 fromOpType :: OpType -> Cas.FunKind -> TypeScheme
 fromOpType ot ok = 
     let arrow = case ok of
@@ -96,7 +93,7 @@ mapTheory (sig, sents) =
         constr = concatMap ( \ (DataEntry im i _ _ _ alts) ->
                          let j = Map.findWithDefault i i im in
                          map ( \ (Construct o args p _sels) ->
-                               (o, j, createConstrType j [] star p
+                               (o, j, createConstrType j [] rStar p
                                      $ map (mapType im) args)) alts) dts
         newEnv = execState (mapM_ ( \ (mo, j, ty) -> case mo of
                     Just o -> addOpId o (simpleTypeScheme ty) [] 
@@ -141,7 +138,7 @@ mapSym s = let i = CasM.symName s in
     CasM.OpAsItemType ot -> 
         idToOpSymbol initialEnv i $ fromOpType ot $ opKind ot
     CasM.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
-    CasM.SortAsItemType -> idToTypeSymbol initialEnv i star
+    CasM.SortAsItemType -> idToTypeSymbol initialEnv i rStar
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal 
 toQuant Cas.Existential = Existential
@@ -162,7 +159,7 @@ toSentence sig f = case f of
                 Cas.Total -> HasCASL.As.Total
                 Cas.Partial -> HasCASL.As.Partial
        in DatatypeSen 
-          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] star
+          $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
                           (map ( \ (i, t, ps) -> 
                                let args = opArgs t in 
                                Construct (Just i) 

@@ -13,6 +13,7 @@ abstract syntax during static analysis
 module HasCASL.Le where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
@@ -69,10 +70,10 @@ type TypeMap = Map.Map TypeId TypeInfo
 
 -- | the minimal information for a sort
 starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo star [star] [] NoTypeDefn
+starTypeInfo = TypeInfo rStar [universe] [] NoTypeDefn
 
 -- | recursively substitute type names within a type 
-rename :: (TypeId -> Kind -> Int -> Type) -> Type -> Type
+rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
 rename m t = case t of
            TypeName i k n -> m i k n
            TypeAppl t1 t2 -> TypeAppl (rename m t1) (rename m t2)
@@ -109,7 +110,7 @@ data Sentence = Formula Term
 -- * variables
 
 -- | type variable are kept separately
-data TypeVarDefn = TypeVarDefn RawKind VarKind Int deriving Show
+data TypeVarDefn = TypeVarDefn Variance VarKind RawKind Int deriving Show
 
 type LocalTypeVars = Map.Map TypeId TypeVarDefn
 
@@ -247,13 +248,13 @@ mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty
 -- * symbol stuff
 
 -- | the type or kind of an identifier
-data SymbolType = OpAsItemType TypeScheme
-                | TypeAsItemType Kind
-                | ClassAsItemType Kind
+data SymbolType a = OpAsItemType TypeScheme
+                  | TypeAsItemType (AnyKind a)
+                  | ClassAsItemType (AnyKind a)
                   deriving (Show, Eq, Ord)
 
 -- symbols (may) need the env to look up type aliases
-data Symbol = Symbol {symName :: Id, symType :: SymbolType, symEnv :: Env} 
+data Symbol = Symbol {symName :: Id, symType :: SymbolType (), symEnv :: Env} 
               deriving Show
 
 instance Eq Symbol where
@@ -266,10 +267,10 @@ instance Ord Symbol where
 type SymbolMap = Map.Map Symbol Symbol 
 type SymbolSet = Set.Set Symbol 
 
-idToTypeSymbol :: Env -> Id -> Kind -> Symbol
+idToTypeSymbol :: Env -> Id -> RawKind -> Symbol
 idToTypeSymbol e idt k = Symbol idt (TypeAsItemType k) e
 
-idToClassSymbol :: Env -> Id -> Kind -> Symbol
+idToClassSymbol :: Env -> Id -> RawKind -> Symbol
 idToClassSymbol e idt k = Symbol idt (ClassAsItemType k) e
 
 idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
@@ -277,7 +278,7 @@ idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 
 -- note that the type of a qualified raw symbol is not analysed!
 data RawSymbol = AnID Id | AKindedId SymbKind Id 
-               | AQualId Id SymbolType
+               | AQualId Id (SymbolType ClassId)
                | ASymbol Symbol
                  deriving (Show, Eq, Ord)
 
@@ -292,7 +293,7 @@ rawSymName (AKindedId _ i) = i
 rawSymName (AQualId i _) = i
 rawSymName (ASymbol s) = symName s
 
-symbTypeToKind :: SymbolType -> SymbKind
+symbTypeToKind :: SymbolType a -> SymbKind
 symbTypeToKind (OpAsItemType _)    = SK_op
 symbTypeToKind (TypeAsItemType _)  = SK_type
 symbTypeToKind (ClassAsItemType _) = SK_class

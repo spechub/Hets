@@ -168,13 +168,12 @@ typeSynonym :: SrcLoc -> HsType -> Type -> HsDecl
 typeSynonym loc hsname ty = 
   hsTypeDecl loc hsname (translateType ty)
 
-kindToTypeArgs :: Int -> Kind -> [HsType]
+kindToTypeArgs :: Int -> RawKind -> [HsType]
 kindToTypeArgs i k = case k of
     ClassKind _ -> []
-    FunKind _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
+    FunKind _ _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
                                    $ toProgPos $ getRange k) 
                       : kindToTypeArgs (i+1) kr
-    ExtKind ek _ _ -> kindToTypeArgs i ek
 
 getAliasArgs :: TypeScheme -> [HsType]
 getAliasArgs (TypeScheme arglist _ _) = 

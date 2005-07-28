@@ -1,5 +1,5 @@
 var S : Type; T : Type
-type Bool; Pred : -Type -> Type := \ S : -Type . S_v-1 ->? Unit;
+type Bool; Pred : Type -> Type := \ S : Type . S_v-1 ->? Unit;
      Set : Type -> Type := \ S : Type . S_v-1 ->? Unit
 op True, False : Bool
 op emptySet : Set S; {__} : S -> Set S;
@@ -513,7 +513,10 @@ y : T
 *** Hint 1.6, is type variable 'S'
 *** Hint 1.8, is type variable 'T'
 *** Hint 3.18, rebound type variable 'S'
-*** Hint 3.8, redeclared type 'Pred'
+*** Error 3.8, incompatible kind of: Pred
+  expected: - ->
+     found:  ->
+
 *** Hint 4.17, rebound type variable 'S'
 *** Hint 16.11, not a class 'S'
 *** Hint 16.14, not a class 'S'

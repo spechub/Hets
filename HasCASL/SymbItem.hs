@@ -21,6 +21,7 @@ import Text.ParserCombinators.Parsec
 import HasCASL.HToken
 import HasCASL.ParseTerm
 import HasCASL.As
+import HasCASL.AsUtils
 
 -- * parsers for symbols
 -- | parse a (typed) symbol 

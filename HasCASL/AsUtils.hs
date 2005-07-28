@@ -14,10 +14,97 @@ utility functions and computations of meaningful positions for
 module HasCASL.AsUtils where
 
 import HasCASL.As
-import HasCASL.PrintAs()
+import HasCASL.PrintAs() -- reexport instances
+import Common.Keywords
 import Common.Id
 import Common.PrettyPrint
 import qualified Common.Lib.Set as Set
+
+-- | map a kind
+mapKind :: (a -> b) -> AnyKind a -> AnyKind b
+mapKind f k = case k of 
+    ClassKind a -> ClassKind $ f a
+    FunKind v a b r -> FunKind v (mapKind f a) (mapKind f b) r
+
+-- | compute raw kind (if class ids or no higher kinds)
+toRaw :: Kind -> RawKind 
+toRaw = mapKind $ const ()
+
+-- | the type universe as raw kind
+rStar :: RawKind 
+rStar = toRaw universe
+
+-- | the Unit type (name)
+unitType :: Type 
+unitType = TypeName unitTypeId rStar 0
+
+-- | add an additional Unit type argument to a type 
+liftType :: Type -> Range -> Type
+liftType t qs = FunType unitType PFunArr t qs
+
+{- | add the Unit type as result type or convert a parsed empty tuple
+   to the unit type -}
+predType :: Type -> Type
+predType t = case t of
+                    BracketType Parens [] _ -> unitType
+                    _ -> FunType t PFunArr unitType nullRange
+
+-- | construct a product type
+mkProductType :: [Type] -> Range -> Type
+mkProductType ts ps = case ts of
+    [] -> unitType
+    [t] -> t
+    _ -> ProductType ts ps
+
+-- | convert a type with unbound variables to a scheme
+simpleTypeScheme :: Type -> TypeScheme
+simpleTypeScheme t = TypeScheme [] t nullRange
+
+-- | change the type of the scheme to a 'predType'
+predTypeScheme :: TypeScheme -> TypeScheme
+predTypeScheme = mapTypeOfScheme predType
+
+-- | the 'Kind' of the function type
+funKind :: Kind
+funKind = FunKind ContraVar universe (FunKind CoVar universe universe nullRange) nullRange
+
+-- | construct higher order kind from arguments and result kind
+mkFunKind :: [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a
+mkFunKind args res = foldr ( \ (v, a) k -> FunKind v a k nullRange) res args 
+
+-- | the 'Kind' of the product type
+prodKind :: Int -> Kind
+prodKind n = if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
+             else error "prodKind"
+
+-- | a type name with a universe kind
+toType :: Id -> Type
+toType i = TypeName i rStar 0
+
+-- | through away the user's type alias
+unalias :: Type -> Type
+unalias ty = case ty of 
+    ExpandedType _ t -> unalias t 
+    _ -> ty
+
+-- | construct an infix identifier for a function arrow
+arrowId :: Arrow -> Id
+arrowId a = mkId $ map mkSimpleId [place, show a, place]
+
+-- | construct a mixfix product identifier with n places 
+productId :: Int -> Id
+productId n = if n > 1 then
+  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
+  else error "productId"
+
+-- | the brackets as tokens with positions
+mkBracketToken :: BracketKind -> Range -> [Token]
+mkBracketToken k ps = 
+       map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
+
+-- | construct a tuple from non-singleton lists
+mkTupleTerm :: [Term] -> Range -> Term
+mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
 
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
@@ -73,23 +160,24 @@ addPartiality args t = case args of
 
 -- | convert a type argument to a type
 typeArgToType :: TypeArg -> Type
-typeArgToType (TypeArg i _ rk c _ _) = TypeName i rk c
+typeArgToType (TypeArg i _ _ rk c _ _) = TypeName i rk c
 
 {- | convert a parameterized type identifier with a result raw kind 
      to a type application -}
 patToType :: TypeId -> [TypeArg] -> RawKind -> Type
 patToType i args rk = mkTypeAppl 
-    (TypeName i (typeArgsListToRawKind True args rk) 0)
+    (TypeName i (typeArgsListToRawKind args rk) 0)
     $ map typeArgToType args
 
 -- | create the (raw if True) kind from type arguments
-typeArgsListToRawKind :: Bool -> [TypeArg] -> Kind -> Kind 
-typeArgsListToRawKind b tArgs = mkFunKind $
-    map ( \ (TypeArg _ ak rk _ _ _) -> if b then rk else toKind ak) tArgs
+typeArgsListToRawKind :: [TypeArg] -> RawKind -> RawKind 
+typeArgsListToRawKind tArgs = mkFunKind $
+    map ( \ (TypeArg _ v _ rk _ _ _) -> (v, rk)) tArgs
 
 -- | create the kind from type arguments
 typeArgsListToKind :: [TypeArg] -> Kind -> Kind 
-typeArgsListToKind = typeArgsListToRawKind False
+typeArgsListToKind tArgs = mkFunKind $
+    map ( \ (TypeArg _ v ak _ _ _ _) -> (v, toKind ak)) tArgs
 
 -- | get the type of a constructor with given curried argument types
 getFunType :: Type -> Partiality -> [Type] -> Type
@@ -112,7 +200,7 @@ createConstrType i is rk =
 
 -- | get the type variable
 getTypeVar :: TypeArg -> Id
-getTypeVar(TypeArg v _ _ _ _ _) = v
+getTypeVar(TypeArg v _ _ _ _ _ _) = v
 
 -- | construct application left-associative
 mkTypeAppl :: Type -> [Type] -> Type
@@ -142,7 +230,7 @@ posOfVars vr =
     VarTuple _ ps -> ps
 
 posOfTypeArg :: TypeArg -> Range
-posOfTypeArg (TypeArg t _ _ _ _ ps) = firstPos [t] ps
+posOfTypeArg (TypeArg t _ _ _ _ _ ps) = firstPos [t] ps
 
 posOfTypePattern :: TypePattern -> Range
 posOfTypePattern pat = 
@@ -151,7 +239,7 @@ posOfTypePattern pat =
     TypePatternToken t -> tokPos t
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
-    TypePatternArg (TypeArg t _ _ _ _ _) _ -> posOfId t
+    TypePatternArg (TypeArg t _ _ _ _ _ _) _ -> posOfId t
 
 posOfType :: Type -> Range
 posOfType ty = 

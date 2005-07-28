@@ -70,8 +70,8 @@ instance PrettyPrint TypeInfo where
         2 $ printText0 ga defn
 
 instance PrettyPrint TypeVarDefn where
-    printText0 ga (TypeVarDefn _ vk i) =
-        printVarKind ga vk <+> text ("%(var_" ++ shows i ")%")
+    printText0 ga (TypeVarDefn v vk _ i) =
+        printVarKind ga v vk <+> text ("%(var_" ++ shows i ")%")
 
 instance PrettyPrint VarDefn where
     printText0 ga (VarDefn ty) =
@@ -158,7 +158,7 @@ instance PrettyPrint Morphism where
                     $$ nest 1 (text mapsTo)
                     <+> braces (printText0 ga $ mtarget m)
       
-instance PrettyPrint SymbolType where
+instance PrettyPrint a => PrettyPrint (SymbolType a) where
     printText0 ga t = case t of 
       OpAsItemType sc -> printText0 ga sc
       TypeAsItemType k -> printText0 ga k

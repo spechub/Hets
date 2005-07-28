@@ -109,7 +109,7 @@ anaTypeItem _ _ inst _ (TypeDecl pats kind ps) =
        let Result cs (Just rrk) = anaKindM kind cm
            Result ds (Just is) = convertTypePatterns pats
        addDiags $ cs ++ ds
-       let (rk, ak) = if null cs then (rrk, kind) else (star, star)
+       let (rk, ak) = if null cs then (rrk, kind) else (rStar, universe)
        mis <- mapM (addTypePattern NoTypeDefn inst (rk, [ak])) is
        let newPats = idsToTypePatterns mis
        return $ if null newPats then Nothing else 
@@ -122,18 +122,18 @@ anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) =
        let Result es mp = anaTypeM (Nothing, t) te
        case mp of 
            Nothing -> do 
-               mis <- mapM (addTypePattern NoTypeDefn inst (star, [star])) is
+               mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
                let newPats = idsToTypePatterns mis
                if null newPats then return Nothing else case t of 
                    TypeToken tt -> do 
                        let tid = simpleIdToId tt
-                           newT = TypeName tid star 0
-                       addTypeId False NoTypeDefn inst star star tid
+                           newT = TypeName tid rStar 0
+                       addTypeId False NoTypeDefn inst rStar universe tid
                        mapM_ (addSuperType newT) $ map fst is
                        return $ Just $ SubtypeDecl newPats newT ps
                    _ -> do
                        addDiags es
-                       return $ Just $ TypeDecl newPats star ps
+                       return $ Just $ TypeDecl newPats universe ps
            Just (ak, newT) -> do 
               mis <- mapM (addTypePattern NoTypeDefn inst ak) is
               let newPats = idsToTypePatterns mis
@@ -145,8 +145,8 @@ anaTypeItem _ _ inst _ (IsoDecl pats ps) =
     do let Result ds (Just is) = convertTypePatterns pats
            js = map fst is
        addDiags ds
-       mis <- mapM (addTypePattern NoTypeDefn inst (star, [star])) is
-       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i star 0)) js) js 
+       mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
+       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i rStar 0)) js) js 
        return $ if null mis then Nothing else 
               Just $ IsoDecl (idsToTypePatterns mis) ps
 
@@ -167,7 +167,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                        return Nothing
                    Just ty -> do
                        newPty <- generalizeS $ TypeScheme nAs ty nullRange
-                       let fullKind = typeArgsListToKind nAs star
+                       let fullKind = typeArgsListToKind nAs universe
                        rk <- anaKind fullKind
                        let Result es mvds = anaVars v $ monoType ty
                            altDecl = Just $ AliasType newPat (Just fullKind)
@@ -245,15 +245,15 @@ ana1Datatype :: DatatypeDecl -> State Env (Maybe DatatypeDecl)
 ana1Datatype (DatatypeDecl pat kind alts derivs ps) = 
     do cm <- gets classMap 
        let Result cs (Just rk) = anaKindM kind cm
-           k = if null cs then kind else star
-       addDiags $ checkKinds pat star rk ++ cs
+           k = if null cs then kind else universe
+       addDiags $ checkKinds pat rStar rk ++ cs
        let rms = map ( \ c -> anaKindM (ClassKind c) cm) derivs
            mcs = map maybeResult rms
            jcs = catMaybes mcs
            newDerivs = map fst $ filter (isJust . snd) $ zip derivs mcs
            Result ds m = convertTypePattern pat
        addDiags (ds ++ concatMap diags rms) 
-       addDiags $ concatMap (checkKinds pat star) jcs
+       addDiags $ concatMap (checkKinds pat rStar) jcs
        case m of 
               Nothing -> return Nothing
               Just (i, tArgs) -> do 
@@ -344,13 +344,13 @@ anaPseudoType mk (TypeScheme tArgs ty p) =
     do cm <- gets classMap 
        let k = case mk of 
             Nothing -> Nothing
-            Just j -> let Result cs (Just rk) = anaKindM j cm
-                      in Just $ if null cs then j else rk 
+            Just j -> let Result cs _ = anaKindM j cm
+                      in Just $ if null cs then j else universe 
        nAs <- mapM anaddTypeVarDecl tArgs
        let ntArgs = catMaybes nAs
        mp <- anaType (Nothing, ty)
        case mp of
-           Nothing -> return (star, Nothing)
+           Nothing -> return ( universe, Nothing)
            Just ((_, sks), newTy) -> case sks of 
                [sk] -> do  
                    let newK = typeArgsListToKind ntArgs sk
@@ -360,7 +360,7 @@ anaPseudoType mk (TypeScheme tArgs ty p) =
                      Just j -> do grk <- anaKind j 
                                   addDiags $ checkKinds ty grk irk
                    return (newK, Just $ TypeScheme ntArgs newTy p)
-               _ -> return (star, Nothing)
+               _ -> return ( universe, Nothing)
 
 -- | add a type pattern 
 addTypePattern :: TypeDefn -> Instance -> (RawKind, [Kind]) 
@@ -440,8 +440,8 @@ convertTypePattern (BracketTypePattern bk [ap] ps) =
          case ap of 
          TypePatternToken t -> if isPlace t then 
              return (tid, [])
-             else return (tid, [TypeArg (simpleIdToId t) MissingKind 
-                                        star 0 Other nullRange])
+             else return (tid, [TypeArg (simpleIdToId t) InVar MissingKind 
+                                        rStar 0 Other nullRange])
          _ -> do a <- convertToTypeArg ap
                  return (tid, [a])
 convertTypePattern tp = illegalTypePattern tp
@@ -449,7 +449,8 @@ convertTypePattern tp = illegalTypePattern tp
 convertToTypeArg :: TypePattern -> Result TypeArg
 convertToTypeArg tp@(TypePatternToken t) = 
     if isPlace t then illegalTypePatternArg tp
-    else return $ TypeArg (simpleIdToId t) MissingKind star 0 Other nullRange
+    else return $ TypeArg (simpleIdToId t) InVar MissingKind 
+         rStar 0 Other nullRange
 convertToTypeArg (TypePatternArg a _) =  return a
 convertToTypeArg (BracketTypePattern Parens [tp] _) =  convertToTypeArg tp
 convertToTypeArg tp = illegalTypePatternArg tp

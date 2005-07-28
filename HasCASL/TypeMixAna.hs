@@ -14,7 +14,7 @@ analyse mixfix types
 module HasCASL.TypeMixAna (mkTypeConstrAppl) where
 
 import HasCASL.As
-import HasCASL.PrintAs()
+import HasCASL.AsUtils
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
@@ -30,17 +30,17 @@ data ApplMode = TopLevel | OnlyArg
 mkTypeConstrAppls :: ApplMode -> Type -> Result Type
 mkTypeConstrAppls m ty = case ty of
     TypeName _ _ _ -> return ty
-    TypeToken tt -> return $ mkTypeName (simpleIdToId tt)
+    TypeToken tt -> return $ toType $ simpleIdToId tt
     BracketType b ts ps -> do
        args <- mapM (\ trm -> mkTypeConstrAppls m trm) ts
        case args of
                   [] -> case b of
                         Parens -> return unitType
-                        _ -> return $ mkTypeName $ mkId $ mkBracketToken b ps
+                        _ -> return $ toType $ mkId $ mkBracketToken b ps
                   [x] -> case b of
                          Parens -> return x
                          _ -> do let [o,c] = mkBracketToken b ps 
-                                     t = mkTypeName $ mkId 
+                                     t = toType $ mkId 
                                          [o, Token place $ firstPos args ps, c]
                                  if isPlaceType (head ts) then return t
                                     else return $ TypeAppl t x
@@ -49,7 +49,7 @@ mkTypeConstrAppls m ty = case ty of
     MixfixType (f:a) -> case (f, a) of 
       (TypeToken t, [BracketType Squares as@(_:_) ps]) -> do 
          mis <- mapM mkTypeCompId as 
-         return $ mkTypeName $ Id [t] mis ps
+         return $ toType $ Id [t] mis ps
       _ -> do newF <- mkTypeConstrAppls TopLevel f 
               nA <- mapM ( \ t -> mkTypeConstrAppls OnlyArg t) a
               return $ foldl1 TypeAppl $ newF : nA
@@ -61,11 +61,11 @@ mkTypeConstrAppls m ty = case ty of
        return $ LazyType newT p 
     ProductType ts ps -> let n = length ts in 
        if all isPlaceType ts && n > 1 then 
-       return $ mkTypeName $ productId n else do
+       return $ toType $ productId n else do
        mTs <- mapM (\ t -> mkTypeConstrAppls TopLevel t) ts
        return $ mkProductType mTs ps
     FunType t1 a t2 ps -> if isPlaceType t1 && isPlaceType t2 then
-       return $ mkTypeName $ arrowId a else do
+       return $ toType $ arrowId a else do
        newT1 <- mkTypeConstrAppls TopLevel t1
        newT2 <- mkTypeConstrAppls TopLevel t2
        return $ FunType newT1 a newT2 ps

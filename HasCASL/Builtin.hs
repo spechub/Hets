@@ -21,6 +21,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Earley
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 
 trueId :: Id
@@ -118,26 +119,24 @@ aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
 
 aTypeWithKind :: Kind -> Type
-aTypeWithKind k = TypeName aVar k (-1)
+aTypeWithKind k = TypeName aVar (toRaw k) (-1)
 
 aType :: Type
-aType = aTypeWithKind star
+aType = aTypeWithKind universe
 
-mStar :: Kind
-mStar = ExtKind star ContraVar nullRange
-
-aBindWithKind :: Kind -> Type -> TypeScheme
-aBindWithKind k ty = 
-    TypeScheme [TypeArg aVar (VarKind k) k (-1) Other nullRange] ty nullRange
+aBindWithKind :: Variance -> Kind -> Type -> TypeScheme
+aBindWithKind v k ty = TypeScheme [TypeArg aVar v (VarKind k) 
+    (toRaw k) (-1) Other nullRange] ty nullRange
 
 bindA :: Type -> TypeScheme
-bindA = aBindWithKind star
+bindA = aBindWithKind InVar universe
 
 lazyLog :: Type 
 lazyLog = LazyType unitType nullRange
 
-aToUnitType :: Kind -> TypeScheme
-aToUnitType k = aBindWithKind k $ FunType (aTypeWithKind k) PFunArr unitType nullRange
+aToUnitType :: Variance -> Kind -> TypeScheme
+aToUnitType v k = 
+   aBindWithKind v k $ FunType (aTypeWithKind k) PFunArr unitType nullRange
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ 
@@ -166,7 +165,7 @@ botType :: TypeScheme
 botType = bindA aType
 
 defType :: TypeScheme
-defType = aToUnitType star
+defType = aToUnitType InVar universe
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) : 
@@ -182,16 +181,16 @@ funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m -> 
                  Map.insertWith ( \ _ old -> old) i
-                         (TypeInfo k [k] s d) m) tm $
-              (unitTypeId, star, [], NoTypeDefn)
-              : (predTypeId, FunKind mStar star nullRange, [], 
-                           AliasTypeDefn $ aToUnitType mStar)
-              : (logId, star, [], AliasTypeDefn $ simpleTypeScheme $ 
+                         (TypeInfo (toRaw k) [k] s d) m) tm $
+              (unitTypeId, universe, [], NoTypeDefn)
+              : (predTypeId, FunKind ContraVar universe universe nullRange, [], 
+                           AliasTypeDefn $ aToUnitType ContraVar universe)
+              : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $ 
                  FunType unitType PFunArr unitType nullRange)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind, 
-                        map ( \ b -> TypeName (arrowId b) funKind 0) l,
+                        map ( \ b -> TypeName (arrowId b) (toRaw funKind) 0) l,
                                    NoTypeDefn)) 
                 funSupertypes
 

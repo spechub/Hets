@@ -27,20 +27,17 @@ noPrint :: Bool -> Doc -> Doc
 noPrint b d = if b then empty else d
 
 instance PrettyPrint Variance where 
-    printText0 _ v = text $ show v
+    printText0 _ = text . show
 
-instance PrettyPrint Kind where
+instance PrettyPrint a => PrettyPrint (AnyKind a) where
     printText0 ga knd = case knd of
         ClassKind ci -> printText0 ga ci
-        FunKind k1 k2 _ -> 
+        FunKind v k1 k2 _ -> printText0 ga v <>
                           (case k1 of 
-                                  FunKind _ _ _ -> parens
+                                  FunKind _ _ _ _ -> parens
                                   _ -> id) (printText0 ga k1)
                           <+> text funS 
                           <+> printText0 ga k2
-        ExtKind k v _ -> printText0 ga v <> (case k of
-                    FunKind _ _ _ -> parens
-                    _ -> id) (printText0 ga k)
 
 instance PrettyPrint TypePattern where 
     printText0 ga tp = case tp of
@@ -57,14 +54,15 @@ bracket b t = let (o,c) = getBrackets b in text o <> t <> text c
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
-printKind ga k = if k == star then empty else printVarKind ga (VarKind k)
+printKind ga k = if k == universe then empty else printVarKind ga InVar (VarKind k)
 
--- | print a 'Kind' plus a preceding colon (or nothing for 'star')
-printVarKind :: GlobalAnnos -> VarKind -> Doc
-printVarKind ga vk = case vk of 
+-- | print the kind of a variable with its variance and a preceding colon
+printVarKind :: GlobalAnnos -> Variance -> VarKind -> Doc
+printVarKind ga e vk = case vk of 
                     Downset t -> 
                         space <> text lessS <+> printText0 ga t
-                    VarKind k -> space <> colon <+> printText0 ga k
+                    VarKind k -> space <> colon <+> 
+                                 printText0 ga e <> printText0 ga k
                     MissingKind -> empty
 
 instance PrettyPrint Type where 
@@ -157,8 +155,8 @@ instance PrettyPrint Term where
 
 unPredType :: Type -> Type
 unPredType t = case t of
-               FunType ty PFunArr (TypeName ut sk 0) _ -> 
-                   if ut == unitTypeId && sk == star then ty else t
+               FunType ty PFunArr (TypeName ut (ClassKind _) 0) _ -> 
+                   if ut == unitTypeId then ty else t
                _ -> t
 
 unPredTypeScheme :: TypeScheme -> TypeScheme
@@ -235,8 +233,8 @@ instance PrettyPrint GenVarDecl where
         GenTypeVarDecl tv -> printText0 ga tv
 
 instance PrettyPrint TypeArg where 
-    printText0 ga (TypeArg v c _ _ _ _) = 
-        printText0 ga v <> printVarKind ga c
+    printText0 ga (TypeArg v e c _ _ _ _) = 
+        printText0 ga v <> printVarKind ga e c
 
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
