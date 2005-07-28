@@ -243,12 +243,21 @@ calculateMorphismOfPathWithStart _ (_,p) =
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
 computeTheory libEnv ln dg n = do
-  let  paths = getAllGlobDefPathsBeginningWithTypesTo_new isLocalDef libEnv (ln,n) []
+  let nodeLab = lab' $ context dg n
+      paths = getAllGlobDefPathsBeginningWithTypesTo_new isLocalDef libEnv (ln,n) []
+      -- remove emtpy path (to current node)
+      paths1 = filter (not . null . snd) paths
          -- reverse needed to have a "bottom up" ordering
   mors <- maybeToMonad "Could not calculate morphism of path"
-            $ mapM (calculateMorphismOfPathWithStart libEnv) paths
+            $ mapM (calculateMorphismOfPathWithStart libEnv) paths1
   ths <- maybeToMonad "Could not calculate sentence list of node"
-            $ mapM (computeLocalTheory libEnv . fst) paths
+            $ mapM (computeLocalTheory libEnv . fst) paths1
   ths' <- mapM (uncurry translateG_theory) $ zip mors ths
-  th'' <- flatG_theories ths'
+  -- turn all imported theorems into axioms
+  let ths'' = map (\(G_theory lid sign sens) ->
+                      G_theory lid sign (map (\x -> x{isAxiom=True}) sens) ) ths'
+  -- only local theory is kept with aioms and theorems
+  localTh <- maybeToResult nullRange "Statc.DGToSpec.computeTheory: this cannot happen" 
+             $ toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
+  th'' <- flatG_theories  (localTh:ths'')
   return (nubG_theory th'')
