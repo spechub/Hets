@@ -704,7 +704,7 @@ sensOf :: G_theory -> G_l_sentence_list
 sensOf (G_theory lid _ sens) = G_l_sentence_list lid sens
 
 -- | Join signature and sentence list into a theory
-toG_theory :: G_sign -> G_l_sentence_list -> Maybe G_theory
+toG_theory :: (Monad m) => G_sign -> G_l_sentence_list -> m G_theory
 toG_theory (G_sign lid1 sign1) (G_l_sentence_list lid2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "toG_theory" sens2
   return (G_theory lid1 sign1 sens2')
