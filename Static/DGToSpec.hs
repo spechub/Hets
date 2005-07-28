@@ -92,30 +92,6 @@ getDGNode libEnv dgraph node =
 type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
 
-getAllGlobDefPathsBeginningWithTypesTo_new 
-    :: (LEdge DGLinkLab -> Bool) -> LibEnv -> LibNode -> [LibLEdge]
-    -> [(LibNode, [LibLEdge])]
-getAllGlobDefPathsBeginningWithTypesTo_new types libEnv libnode path =
-  (libnode,path):(typeGlobPaths ++
-    (concat ( [getAllGlobDefPathsBeginningWithTypesTo_new
-                   types libEnv nextLibnode newPath |
-                       (nextLibnode, newPath) <- globalPaths])
-    )
-   )
-
-  where
-    inEdges = getAllIngoingEdges libEnv libnode
-    globalEdges = [libedge| libedge <- filter (isGlobalDef.snd) inEdges,
-		   notElem libedge path]
-    edgesOfTypes 
-        = [libedge| libedge <- filterByTypes_new types inEdges,
-	   notElem libedge path]
-    globalPaths = [(getSourceLibNode libedge, (libedge:path))|
-		   libedge <- globalEdges]
-    typeGlobPaths = [(getSourceLibNode libedge, (libedge:path))|
-		     libedge <- edgesOfTypes]
-
-
 getSourceLibNode :: LibLEdge -> LibNode
 getSourceLibNode (ln,edge) = (ln, getSourceNode edge)
 
@@ -144,11 +120,6 @@ getAllIngoingEdges libEnv (ln,node) =
     refGraph = lookupDGraphInLibEnv refLn libEnv
     refNode = dgn_node nodelab
     inEdgesInRefGraph = [(refLn,inEdge)| inEdge <- inn refGraph refNode]
-
-
--- removes all edges that are not of the given types
-filterByTypes_new :: (LEdge DGLinkLab -> Bool) -> [LibLEdge] -> [LibLEdge]
-filterByTypes_new p = filter (p . snd) 
 
 -- --------------------------------------
 -- methods to determine or get morphisms
@@ -191,23 +162,6 @@ isLocalDef (_,_,edgeLab) =
 
 liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
 liftOr f g x = f x || g x 
-
--- --------------------------------------------------------
--- further methods
--- -------------------------------------------------------
-
--- | Calculate the morphism of a path with given start node
-calculateMorphismOfPathWithStart :: LibEnv -> (LibNode,[LibLEdge]) 
-                                           -> Maybe GMorphism
-calculateMorphismOfPathWithStart libEnv ((ln,n),[]) = do
-  let dg = lookupDGraphInLibEnv ln libEnv
-  ctx <- fst $ match n dg
-  case getDGNode libEnv dg (fst (labNode' ctx)) of
-    Just dgNode_ctx -> return $ ide Grothendieck (dgn_sign (snd (dgNode_ctx))) -- ??? to simplistic 
-    Nothing -> Nothing
-  
-calculateMorphismOfPathWithStart _ (_,p) =
-    calculateMorphismOfPath (map snd p)
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
