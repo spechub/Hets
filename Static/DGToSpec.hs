@@ -76,18 +76,6 @@ computeLocalTheory libEnv (ln,node) =
       nodeLab = lab' $ context dgraph node
       refLn = dgn_libname nodeLab
 
-{- old version: to be removed, if new one works
-computeLocalTheory :: LibEnv -> DGraph -> Node -> Maybe G_theory
-computeLocalTheory libEnv dgraph node =
-  if isDGRef nodeLab
-    then case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just (_,_,refDgraph) -> 
-          computeLocalTheory libEnv refDgraph (dgn_node nodeLab)
-      Nothing -> Nothing
-    else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
-    where nodeLab = lab' $ context dgraph node
--}
-
 {- if the given node is a DGRef, the referenced node is returned (as a
 labeled node). Otherwise the node itself is returned (as a labeled
 node).-}
@@ -100,27 +88,6 @@ getDGNode libEnv dgraph node =
     else Just (labNode' contextOfNode)
   where contextOfNode = context dgraph node
         nodeLab = lab' contextOfNode
-
-{- old version: to be deleted when the new one works
-getAllGlobDefPathsBeginningWithTypesTo :: (LEdge DGLinkLab -> Bool) -> DGraph 
-                                       -> Node -> [LEdge DGLinkLab]
-			               -> [(Node, [LEdge DGLinkLab])]
-getAllGlobDefPathsBeginningWithTypesTo types dgraph node path =
-  (node,path):(typeGlobPaths ++
-    (concat ( [getAllGlobDefPathsBeginningWithTypesTo
-                   types dgraph (getSourceNode edge) p |
-                       (_, p@(edge:_)) <- globalPaths])
-    )
-   )
-
-  where
-    inEdges = inn dgraph node
-    globalEdges = [edge| edge <- filter isGlobalDef inEdges, notElem edge path]
-    edgesOfTypes 
-        = [edge| edge <- filter types inEdges, notElem edge path]
-    globalPaths = [(getSourceNode edge, (edge:path))| edge <- globalEdges]
-    typeGlobPaths = [(getSourceNode edge, (edge:path))| edge <- edgesOfTypes]
--}
 
 type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
