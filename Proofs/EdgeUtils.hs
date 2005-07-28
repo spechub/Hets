@@ -148,9 +148,6 @@ filterPathsByMorphism morphism paths =
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
 
-liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
-liftOr f g x = f x || g x 
-
 
 {- returns all paths consisting of global edges only
    or
