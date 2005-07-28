@@ -113,7 +113,7 @@ bottom = mkId[mkSimpleId "g__bottom"]
 defPred :: Id
 defPred = mkId[mkSimpleId "g__defined"]
  
-generateFOLAxioms :: Eq f => Sign f e -> [Named(FORMULA f)]
+generateFOLAxioms :: Sign f e -> [Named(FORMULA ())]
 generateFOLAxioms sig = filter (not . is_True_atom . sentence) $ map 
   (mapNamed (simplifyFormula id . 
   rmDefs bsorts id)) $

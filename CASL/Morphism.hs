@@ -73,12 +73,12 @@ type Sort_map = Map.Map SORT SORT
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
-data Morphism f e m = Morphism {msource :: Sign f e,
-                          mtarget :: Sign f e,
-                          sort_map :: Sort_map, 
-                          fun_map :: Fun_map, 
-                          pred_map :: Pred_map,
-                          extended_map :: m}
+data Morphism f e m = Morphism {msource :: !(Sign f e),
+                          mtarget :: !(Sign f e),
+                          sort_map :: !Sort_map, 
+                          fun_map :: !Fun_map, 
+                          pred_map :: !Pred_map,
+                          extended_map :: !m}
                          deriving (Eq, Show)
 
 mapSort :: Sort_map -> SORT -> SORT
@@ -306,7 +306,7 @@ idMor extEm sigma = embedMorphism extEm sigma sigma
 
 compose :: (Eq e, Eq f) => (m -> m -> m)
         -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $ 
+compose comp mor1 mor2 = case 
   let sMap1 = sort_map mor1 
       src = msource mor1
       tar = mtarget mor2
@@ -344,8 +344,9 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
                        if i == ni then id else Map.insert (i, pt) ni) m t)
                       Map.empty $ predMap src,
       extended_map = comp (extended_map mor1) (extended_map mor2)
-      }
-    else fail "target of first and source of second morphism are different"
+      } of 
+    m -> return m
+--    else fail "target of first and source of second morphism are different"
 
 legalSign ::  Sign f e -> Bool
 legalSign sigma =

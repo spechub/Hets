@@ -150,7 +150,7 @@ generateSubSortMap sortRels pMap =
 -- generated that each generated unary predicate must hold on at least
 -- one element of the top-sort.
 
-transSig :: Sign f e -> Result (Sign f e, [Named (FORMULA f)])
+transSig :: Sign () e -> Result (Sign () e, [Named (FORMULA ())])
 transSig sig 
     | Rel.null (sortRel sig) = 
         Result [Diag Hint (
@@ -220,7 +220,7 @@ transOpMap subSortMap = Map.map (tidySet . Set.map transType)
 
 procOpMapping :: SubSortMap 
               -> OP_NAME -> Set.Set OpType 
-              -> Result [Named (FORMULA f)] -> Result [Named (FORMULA f)]
+              -> Result [Named (FORMULA ())] -> Result [Named (FORMULA ())]
 procOpMapping subSortMap opName set r@(Result ds1 mal) =
     case mkProfMapOp opName subSortMap set of
     Result ds2 (Just profMap) ->
@@ -234,14 +234,14 @@ procOpMapping subSortMap opName set r@(Result ds1 mal) =
     Result ds2 Nothing -> Result (ds1++ds2) Nothing
   where 
      procProfMapOpMapping :: [SORT] -> (FunKind,Set.Set [Maybe PRED_NAME])
-                             -> [Named (FORMULA f)] -> [Named (FORMULA f)]
+                             -> [Named (FORMULA ())] -> [Named (FORMULA ())]
      procProfMapOpMapping sl (kind,spl) =  
             genArgRest 
                  (genSenName "o" opName (length sl))
                  (genOpEquation kind opName)
                  sl spl
 
-symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA f)]
+symmetryAxioms :: SubSortMap -> Rel.Rel SORT -> [Named (FORMULA ())]
 symmetryAxioms ssMap sortRels =
     let symSets = Rel.sccOfClosure sortRels
         mR = Rel.mostRight sortRels
@@ -263,7 +263,7 @@ symmetryAxioms ssMap sortRels =
 
 generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType) 
                -> Map.Map OP_NAME (Set.Set OpType) 
-               -> Result [Named (FORMULA f)]
+               -> Result [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = 
     -- generate argument restrictions for operations
     case Map.foldWithKey (procOpMapping subSortMap) (return []) oMap of 

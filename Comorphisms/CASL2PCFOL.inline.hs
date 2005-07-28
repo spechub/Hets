@@ -68,7 +68,7 @@ instance Comorphism CASL2PCFOL
                         which_logic = FOL
                       }
     map_theory CASL2PCFOL = mkTheoryMapping ( \ sig -> 
-      let e = encodeSig sig in return (e, generateAxioms sig))
+      let e = encodeSig sig in return (e, monotonicities sig ++ generateAxioms sig))
       (map_sentence CASL2PCFOL)
     map_morphism CASL2PCFOL mor = return 
       (mor  { msource =  encodeSig $ msource mor,
@@ -94,9 +94,8 @@ encodeSig sig
         projOpMap = Map.insert projName setprojOptype $ injOpMap
     -- membership predicates are coded out
 
-generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = monotonicities sig ++ 
-  concat([inlineAxioms CASL
+generateAxioms :: Sign f e -> [Named (FORMULA ())]
+generateAxioms sig = concat([inlineAxioms CASL
      "  sorts s, s' \
       \ op inj : s->s' \
       \ forall x,y:s . inj(x)=e=inj(y) => x=e=y  %(ga_embedding_injectivity)% "

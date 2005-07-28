@@ -96,7 +96,7 @@ encodeSig sig = if Set.null bsorts then sig else
    projOpMap = (if Set.null setprojOptype then id else 
                Map.insert projName setprojOptype) botOpMap
 
-generateAxioms :: Eq f => Sign f e -> [Named (FORMULA f)]
+generateAxioms :: Sign () e -> [Named (FORMULA ())]
 generateAxioms sig = filter (not . is_True_atom . sentence) $ 
   map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
   concat(

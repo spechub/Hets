@@ -82,7 +82,7 @@ import Common.Lib.Pretty
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
-import Common.Print_AS_Annotation
+import Common.Print_AS_Annotation()
 import Logic.Languages
 import Logic.Prover -- for one half of class Sentences
 
@@ -174,6 +174,12 @@ class (Category lid sign morphism, Ord sentence,
       conservativityCheck :: lid -> (sign, [Named sentence]) -> 
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+
+-- | a dummy function to allow type checking *.inline.hs files
+inlineAxioms :: StaticAnalysis lid 
+        basic_spec sentence proof_tree symb_items symb_map_items
+        sign morphism symbol raw_symbol => lid -> String -> [Named sentence]
+inlineAxioms _ _ = error "inlineAxioms"
 
 -- static analysis
 statErr :: (Language lid, Monad m) => lid -> String -> m a

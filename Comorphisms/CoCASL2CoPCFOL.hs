@@ -15,6 +15,7 @@ module Comorphisms.CoCASL2CoPCFOL where
 import Logic.Logic
 import Logic.Comorphism
 import qualified Common.Lib.Set as Set
+import Common.AS_Annotation
 
 -- CoCASL
 import CoCASL.Logic_CoCASL
@@ -27,6 +28,7 @@ import CASL.Sublogic
 import CASL.Inject
 import CASL.Project
 import Comorphisms.CASL2PCFOL
+import Comorphisms.CASL2CoCASL
 
 -- | The identity of the comorphism
 data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving (Show)
@@ -71,7 +73,7 @@ instance Comorphism CoCASL2CoPCFOL
                       }
           } 
     map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig -> 
-      let e = encodeSig sig in return (e, generateAxioms sig))
+      let e = encodeSig sig in return (e, monotonicities sig ++ map (mapNamed mapSen) (generateAxioms sig)))
       (map_sentence CoCASL2CoPCFOL)
     map_morphism CoCASL2CoPCFOL mor = return 
       (mor  { msource =  encodeSig $ msource mor,
