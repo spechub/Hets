@@ -168,7 +168,9 @@ generateAxioms sig = filter (not . is_True_atom . sentence) $
 codeRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeRecord bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
-      Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
+      case q of 
+      Universal -> Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
+      _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
