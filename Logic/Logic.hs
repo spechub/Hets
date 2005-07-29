@@ -240,6 +240,10 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          morphism_union l _ _ = statErr l "morphism_union"
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
+         is_transportable :: lid -> morphism -> Bool
+	 is_transportable l _ = 
+            error ("Logic.is_transportable nyi for logic"++language_name l)
+
            -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
          inclusion :: lid -> sign -> sign -> Result morphism
