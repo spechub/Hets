@@ -201,8 +201,9 @@ instance Show G_theory where
      show sign ++ "\n" ++ show sens
 
 instance PrettyPrint G_theory where
-  printText0 ga (G_theory lid sign sens) =
-     printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
+  printText0 ga g = case simplifyTh g of 
+     G_theory lid sign sens -> 
+         printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics

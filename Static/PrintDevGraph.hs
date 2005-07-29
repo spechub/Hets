@@ -45,9 +45,6 @@ printTheory le ln ga dg (sn, ge) = case ge of
         Nothing -> P.empty
         Just n -> case maybeResult $ computeTheory le (ln, n) of
             Nothing -> P.empty
-            Just (G_theory lid sign sens) ->
-                text specS <+> printText0 ga sn $$
-                 printText0 ga sign $$ text "" $$
-                   vsep (map (print_named lid ga . 
-                              mapNamed (simplify_sen lid sign)) sens)
+            Just g ->
+                text specS <+> printText0 ga g
     _ -> P.empty                             

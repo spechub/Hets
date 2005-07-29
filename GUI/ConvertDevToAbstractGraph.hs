@@ -776,17 +776,11 @@ getTheoryOfNode  (proofStatusRef,_,_,_,_,_,_,hetsOpts,_) descr ab2dgNode dgraph 
       (Just (n, gth)) -> displayTheory "Theory" n dgraph gth
       _ -> return ()
 
-printTheory :: G_theory -> String
-printTheory (G_theory lid sign sens) =
-   let shownsens = concatMap ((flip shows "\n\n") . 
-                    print_named lid emptyGlobalAnnos) sens
-    in showPretty sign "\n\n\n" ++ shownsens
-
 displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context dgraph node)
-        str = printTheory (simplifyTh gth) in case dgnode of
+        str = showPretty gth "\n" in case dgnode of
            (DGNode name (G_sign _ _) _ _ _ _) ->
               let thname = showName name
                   title = ext ++ " of " ++ thname
