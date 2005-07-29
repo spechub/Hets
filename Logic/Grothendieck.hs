@@ -201,8 +201,8 @@ instance Show G_theory where
      show sign ++ "\n" ++ show sens
 
 instance PrettyPrint G_theory where
-  printText0 ga (G_theory _ sign sens) =
-     printText0 ga sign $$ printText0 ga sens
+  printText0 ga (G_theory lid sign sens) =
+     printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
@@ -680,7 +680,7 @@ translateG_l_sentence_list (GMorphism cid sign1 morphism2)
 
 -- | Join two G_theories
 
-joinG_theories :: G_theory -> G_theory -> Result G_theory
+joinG_theories :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "joinG_theories" sens2
   sig2' <- mcoerce lid1 lid2 "joinG_theories" sig2
@@ -688,7 +688,7 @@ joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
          return $ G_theory lid1 sig1 $ List.union sens1 sens2'
 
 -- | Flatten a list of G_theories
-flatG_theories :: G_theory -> [G_theory] -> Result G_theory
+flatG_theories :: Monad m => G_theory -> [G_theory] -> m G_theory
 flatG_theories th ths = foldM joinG_theories th ths
 
 -- | Get signature of a theory
@@ -700,24 +700,23 @@ sensOf :: G_theory -> G_l_sentence_list
 sensOf (G_theory lid _ sens) = G_l_sentence_list lid sens
 
 -- | Join signature and sentence list into a theory
-toG_theory :: (Monad m) => G_sign -> G_l_sentence_list -> m G_theory
+toG_theory :: Monad m => G_sign -> G_l_sentence_list -> m G_theory
 toG_theory (G_sign lid1 sign1) (G_l_sentence_list lid2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "toG_theory" sens2
   return (G_theory lid1 sign1 sens2')
 
 -- | Join two G_l_sentence_lists
-joinG_l_sentence_list :: G_l_sentence_list -> G_l_sentence_list
-                            -> Maybe G_l_sentence_list
+joinG_l_sentence_list :: Monad m => G_l_sentence_list -> G_l_sentence_list
+                            -> m G_l_sentence_list
 joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
                       (G_l_sentence_list lid2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "Union of sentence lists" sens2
-  return (G_l_sentence_list lid1 (sens1++sens2'))
+  return $ G_l_sentence_list lid1 $ List.union sens1 sens2'
 
 -- | Flatten a list of G_l_sentence_list's
-flatG_l_sentence_list :: [G_l_sentence_list] -> Maybe G_l_sentence_list
-flatG_l_sentence_list [] = Nothing
-flatG_l_sentence_list (gl:gls) = foldM joinG_l_sentence_list gl gls
-
+flatG_l_sentence_list :: Monad m => G_l_sentence_list -> [G_l_sentence_list] 
+                      -> m G_l_sentence_list
+flatG_l_sentence_list gl gls = foldM joinG_l_sentence_list gl gls
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
