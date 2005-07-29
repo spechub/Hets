@@ -165,33 +165,27 @@ liftOr f g x = f x || g x
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
 computeTheory :: LibEnv -> LIB_NAME -> DGraph -> Node -> Result G_theory 
-computeTheory libEnv ln _ n = computeTheoryV libEnv [] ln n
+computeTheory libEnv ln _ n = computeTheoryV libEnv ln n
 
-computeTheoryV :: LibEnv -> [LibNode] -> LIB_NAME -> Node -> Result G_theory 
-computeTheoryV libEnv visited ln n = 
+computeTheoryV :: LibEnv -> LIB_NAME -> Node -> Result G_theory 
+computeTheoryV libEnv ln n = 
   let dg = lookupDGraphInLibEnv ln libEnv
       nodeLab = lab' $ context dg n
       inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
-      done = (ln, n) `elem` visited
-      new = (ln, n) : visited
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in
       case Map.lookup refLn libEnv of
-      Just _ -> computeTheoryV libEnv visited refLn (dgn_node nodeLab)
+      Just _ -> computeTheoryV libEnv refLn (dgn_node nodeLab)
       Nothing -> fail "computeTheory"
      else do
-  ths' <- if done then return []
-     else mapM (computePathTheory libEnv new ln) inEdges
-  -- turn all imported theorems into axioms
-  let ths'' = map ( \ (G_theory lid sign sens) ->
-                   G_theory lid sign (map (\x -> x{isAxiom=True}) sens) ) ths'
-  -- only local theory is kept with aioms and theorems
+  ths <- mapM (computePathTheory libEnv ln) inEdges
   localTh <- toG_theory (dgn_sign nodeLab) $ dgn_sens nodeLab
-  th'' <- flatG_theories $ localTh:ths''
-  return $ nubG_theory th''
+  flatG_theories localTh ths
 
-computePathTheory :: LibEnv -> [LibNode] -> LIB_NAME
-                  -> LEdge DGLinkLab -> Result G_theory 
-computePathTheory libEnv visited ln e@(src, _, link) = do 
-    th <- if isLocalDef e then computeLocalTheory libEnv (ln, src)
-          else computeTheoryV libEnv visited ln src 
-    translateG_theory (dgl_morphism link) th 
+computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory 
+computePathTheory libEnv ln e@(src, _, link) = do 
+    G_theory lid sign sens <- 
+        if isLocalDef e then computeLocalTheory libEnv (ln, src)
+          else computeTheoryV libEnv ln src 
+          -- turn all imported theorems into axioms
+    translateG_theory (dgl_morphism link) $ G_theory lid sign
+                      $ map ( \ x -> x {isAxiom = True} ) sens
