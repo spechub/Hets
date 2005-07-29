@@ -59,6 +59,7 @@ import Data.Dynamic
 import qualified Data.List as List
 import Data.Maybe
 import Control.Monad
+import Control.Exception(assert)
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -683,17 +684,12 @@ joinG_theories :: G_theory -> G_theory -> Result G_theory
 joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- mcoerce lid1 lid2 "joinG_theories" sens2
   sig2' <- mcoerce lid1 lid2 "joinG_theories" sig2
-  when (sig1 /= sig2') (fail ("joinG_theories: incompatible signatures: \nsig1:\n"++showPretty sig1 "\nsig2\n" ++ showPretty sig2' ""))
-  return (G_theory lid1 sig1 (sens1++sens2'))
+  assert (sig1 == sig2') $ 
+         return $ G_theory lid1 sig1 $ List.union sens1 sens2'
 
 -- | Flatten a list of G_theories
-flatG_theories :: [G_theory] -> Result G_theory
-flatG_theories [] = fail "Empty list of theories"
-flatG_theories (th:ths) = foldM joinG_theories th ths
-
--- | Remove duplicate sentences from a G_theory
-nubG_theory :: G_theory -> G_theory
-nubG_theory (G_theory lid sig sens) = G_theory lid sig (List.nub sens)
+flatG_theories :: G_theory -> [G_theory] -> Result G_theory
+flatG_theories th ths = foldM joinG_theories th ths
 
 -- | Get signature of a theory
 signOf :: G_theory -> G_sign
