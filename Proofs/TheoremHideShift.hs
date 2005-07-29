@@ -119,17 +119,16 @@ mkNfNodeForLeave node newNode proofstatus@(ln,_,_) = do
    if not, dgn_sign and dgn_sigma are taken from the nonLeaveValues and
    the remaining values are copied from the original node;
    in both cases the normal form node ist its own normal form -}
-mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe (G_sign, Maybe GMorphism)
+mkDGNodeNfNode :: DGNodeLab -> Node -> Maybe (G_theory, Maybe GMorphism)
 	       -> ProofStatus -> IO ProofStatus
 mkDGNodeNfNode nodelab newNode nonLeaveValues proofstatus = do
-  let (sign,sigma) = case nonLeaveValues of
-		       Nothing -> (dgn_sign nodelab,
+  let (th,sigma) = case nonLeaveValues of
+		       Nothing -> (dgn_theory nodelab,
 				  Just (ide Grothendieck (dgn_sign nodelab)))
 		       Just x -> x
       lnode = (newNode,
 	 DGNode {dgn_name = dgn_name nodelab,
-		 dgn_sign = sign,
-		 dgn_sens = dgn_sens nodelab,
+		 dgn_theory = th,
 		 dgn_nf = Just newNode,
 		 dgn_sigma = sigma,
 		 dgn_origin = DGProof
@@ -276,7 +275,7 @@ makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
 		       else (src,tgt,dgl_morphism lab)
 makeDiagramAux diagram dgraph (node:list) edges =
   makeDiagramAux (insNode sigNode diagram) dgraph list edges
-    where sigNode = (node, dgn_sign (lab' (context dgraph node)))
+    where sigNode = (node, dgn_theory (lab' (context dgraph node)))
 
 
 {- sets the normal form of the first given node to the second one and
@@ -309,8 +308,7 @@ setNfOfNode dgraph node nf_node = do
 					  dgn_sigma = dgn_sigma nodeLab
 					 })
 	         False -> (newNode, DGNode {dgn_name = dgn_name nodeLab,
-				  dgn_sign = dgn_sign nodeLab,
-				  dgn_sens = dgn_sens nodeLab,
+				  dgn_theory = dgn_theory nodeLab,
 				  dgn_nf = Just nf_node,
 				  dgn_sigma = dgn_sigma nodeLab,
 				  dgn_origin = DGProof

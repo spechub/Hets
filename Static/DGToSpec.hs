@@ -37,30 +37,30 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = nullRange
   case n of
-    (DGNode _ (G_sign lid1 sigma) (G_l_sentence_list lid2 sen) _ _ DGBasic) -> 
-      do sen' <- rcoerce lid1 lid2 nullRange sen
-         let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
+    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic -> 
+      do let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
          if null apredSps
           then return b
           else return (Extension (apredSps++[emptyAnno b]) pos)
-    (DGNode _ _ _ _ _ DGExtension) ->
+    DGRef name _ _ _ _ -> return (Spec_inst (getName name) [] pos)
+    _ -> case dgn_origin n of 
+        DGExtension ->
          return (Extension apredSps pos)
-    (DGNode _ _ _ _ _ DGUnion) ->
+        DGUnion ->
          return (Union apredSps pos)
-    (DGNode _ _ _ _ _ DGTranslation) ->
+        DGTranslation ->
          return (Translation (head apredSps) (Renaming [] nullRange))
-    (DGNode _ _ _ _ _ DGHiding) ->
+        DGHiding ->
          return (Reduction (head apredSps) (Hidden [] nullRange))
-    (DGNode _ _ _ _ _ DGRevealing) ->
+        DGRevealing ->
          return (Reduction (head apredSps) (Hidden [] nullRange))
-    (DGNode _ _ _ _ _ DGFree) ->
+        DGFree ->
          return (Free_spec (head apredSps) pos)
-    (DGNode _ _ _ _ _ DGCofree) ->
+        DGCofree ->
          return (Cofree_spec (head apredSps) pos)
-    (DGNode _ _ _ _ _ (DGSpecInst name)) ->
+        DGSpecInst name ->
          return (Spec_inst name [] pos)
-    (DGRef name _ _ _ _) -> return (Spec_inst (getName name) [] pos)
-    _ -> return (Extension apredSps pos)
+        _ -> return (Extension apredSps pos)
 
 {- compute the theory of a given node. 
    If this node is a DGRef, the referenced node is looked up first. -}
@@ -70,7 +70,7 @@ computeLocalTheory libEnv (ln, node) =
     then case Map.lookup refLn libEnv of
       Just _ -> computeLocalTheory libEnv (refLn,dgn_node nodeLab)
       Nothing -> fail "computeLocalTheory"
-    else toG_theory (dgn_sign nodeLab) (dgn_sens nodeLab)
+    else return $ dgn_theory nodeLab
     where
       dgraph = lookupDGraphInLibEnv ln libEnv
       nodeLab = lab' $ context dgraph node
@@ -176,8 +176,8 @@ computeTheory libEnv (ln, n) =
       Nothing -> fail "computeTheory"
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
-  localTh <- toG_theory (dgn_sign nodeLab) $ dgn_sens nodeLab
-  flatG_theories localTh ths
+  let localTh = dgn_theory nodeLab
+  flatG_sentences localTh ths
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory 
 computePathTheory libEnv ln e@(src, _, link) = do 

@@ -158,8 +158,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents = DGNode {
              dgn_name = name,
-             dgn_sign = G_sign lid sigma_complete, -- no, not only the delta
-             dgn_sens = G_l_sentence_list lid ax,
+             dgn_theory = G_theory lid sigma_complete ax, 
+                      -- no, not only the delta
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGBasic }
@@ -186,11 +186,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor 
            -- ??? too simplistic for non-comorphism inter-logic translations 
-      G_sign lid' _ <- return gsigma'
+      G_sign lid' gsig <- return gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigma',
-            dgn_sens = G_l_sentence_list lid' [],
+            dgn_theory = G_theory lid' gsig [],
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGTranslation }
@@ -218,11 +217,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        Nothing ->
         do let gsigma'' = dom Grothendieck hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions 
-           G_sign lid' _ <- return gsigma''
+           G_sign lid' gsig <- return gsigma''
            let node_contents = DGNode {
                  dgn_name = name,
-                 dgn_sign = gsigma'', -- G_sign lid' (empty_signature lid'), 
-                 dgn_sens = G_l_sentence_list lid' [],
+                 dgn_theory = G_theory lid' gsig [], 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGHiding }
@@ -239,16 +237,15 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
         let gsigma1 = dom Grothendieck tmor'
             gsigma'' = cod Grothendieck tmor'
            -- ??? too simplistic for non-comorphism inter-logic reductions 
-        G_sign lid1 _ <- return gsigma1
-        G_sign lid'' _ <- return gsigma''
+        G_sign lid1 gsig <- return gsigma1
+        G_sign lid'' gsig'' <- return gsigma''
         -- the case with identity translation leads to a simpler dg
         if tmor' == ide Grothendieck (dom Grothendieck tmor')
          then do
            let node1 = getNewNode dg'
                node_contents1 = DGNode {
                  dgn_name = name,
-                 dgn_sign = gsigma1, --G_sign lid1 (empty_signature lid1),
-                 dgn_sens = G_l_sentence_list lid1 [],
+                 dgn_theory = G_theory lid1 gsig [],
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealing }
@@ -264,8 +261,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            let [node1,node''] = newNodes 2 dg'
                node_contents1 = DGNode {
                  dgn_name = extName "T" name,
-                 dgn_sign = gsigma1, --G_sign lid1 (empty_signature lid1),
-                 dgn_sens = G_l_sentence_list lid1 [],
+                 dgn_theory = G_theory lid1 gsig [], 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealing }
@@ -275,8 +271,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                  dgl_origin = DGRevealing })
                node_contents'' = DGNode {
                 dgn_name = name,
-                 dgn_sign = gsigma'', -- G_sign lid'' (empty_signature lid''),
-                 dgn_sens = G_l_sentence_list lid'' [],
+                 dgn_theory = G_theory lid'' gsig'' [], 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealTranslation }
@@ -305,11 +300,10 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       let nsigs' = reverse nsigs
           adj = adjustPos pos
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
-      G_sign lid' _ <- return gbigSigma
+      G_sign lid' gsig <- return gbigSigma
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gbigSigma, -- G_sign lid' (empty_signature lid'), 
-            dgn_sens = G_l_sentence_list lid' [],
+            dgn_theory = G_theory lid' gsig [], 
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGUnion }
@@ -397,14 +391,13 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             "Internal error: Free spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = poss
-      G_sign lid' _ <- return gsigma'
+      G_sign lid' gsig <- return gsigma'
       incl <- adjustPos pos $ ginclusion lg (getSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigma', -- G_sign lid' (empty_signature lid'), -- delta is empty
+            dgn_theory = G_theory lid' gsig [], -- delta is empty
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
-            dgn_sens = G_l_sentence_list lid' [],
             dgn_origin = DGFree }
           node = getNewNode dg'
           link = (n',node,DGLink {
@@ -423,12 +416,11 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
             "Internal error: Cofree spec over empty spec" (getNode nsig')
       let gsigma' = getSig nsig'
           pos = poss
-      G_sign lid' _ <- return gsigma'
+      G_sign lid' gsig <- return gsigma'
       incl <- adjustPos pos $ ginclusion lg (getSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigma', -- G_sign lid' (empty_signature lid'), -- delta is empty
-            dgn_sens = G_l_sentence_list lid' [],
+            dgn_theory = G_theory lid' gsig [], -- delta is empty
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGCofree }
@@ -476,10 +468,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
          pos
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigma3, -- G_sign lid (empty_signature lid), -- delta is empty
+            dgn_theory = G_theory lid sigma3 [],
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
-            dgn_sens = G_l_sentence_list lid [],
             dgn_origin = DGLocal }
           node = getNewNode dg''
           link = (n'',node,DGLink {
@@ -506,14 +497,13 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           gsigma' = getSig nsig'
           adj = adjustPos pos 
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma' 
-      G_sign lid'' _ <- return gsigma''
+      G_sign lid'' gsig'' <- return gsigma''
       incl1 <- adj $ ginclusion lg gsigma gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma''
       let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
-            dgn_sens = G_l_sentence_list lid'' [],
+            dgn_theory = G_theory lid'' gsig'' [],
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGClosed }
@@ -547,14 +537,13 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
           gsigma' = getSig nsig'
           adj = adjustPos pos 
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma' 
-      G_sign lid'' _ <- return gsigma''
+      G_sign lid'' gsig'' <- return gsigma''
       incl1 <- adj $ ginclusion lg gsigma gsigma''
       incl2 <- adj $ ginclusion lg gsigma' gsigma''
       let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_sign =  gsigma'', -- G_sign lid'' (empty_signature lid''),
-            dgn_sens = G_l_sentence_list lid'' [],
+            dgn_theory = G_theory lid'' gsig'' [],
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGLogicQual }
@@ -609,7 +598,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (0,0) -> do
        let gsigmaB = getSig body
        gsigma <- adj $ gsigUnion lg (getSig nsig) gsigmaB
-       G_sign lid _ <- return gsigma
+       G_sign lid gsig <- return gsigma
        nB <- adj $ maybeToMonad 
              "Internal error: empty body spec" (getNode body)
        case (getNode nsig) of
@@ -626,8 +615,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
              let node = getNewNode dg
                  node_contents = DGNode {
                    dgn_name = name,
-                   dgn_sign = gsigma, -- G_sign lid (empty_signature lid),
-                   dgn_sens = G_l_sentence_list lid [],
+                   dgn_theory = G_theory lid gsig [],
 		   dgn_nf = Nothing,
 		   dgn_sigma = Nothing,
                    dgn_origin = DGSpecInst spname}
@@ -647,8 +635,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            let node = getNewNode dg
                node_contents = DGNode {
                  dgn_name = name,
-                 dgn_sign = gsigma, -- G_sign lid (empty_signature lid),
-                 dgn_sens = G_l_sentence_list lid [],
+                 dgn_theory = G_theory lid gsig [],
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGSpecInst spname}
@@ -675,7 +662,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        let actualargs = reverse args
        (gsigma',morDelta) <- adj $ apply_GS lg gs actualargs
        gsigmaRes <- adj $ gsigUnion lg (getSig nsig) gsigma'
-       G_sign lidRes _ <- return gsigmaRes
+       G_sign lidRes gsigRes <- return gsigmaRes
        nB <- adj $ maybeToMonad
              "Internal error: empty body spec" (getNode body)
        incl1 <- adj $ ginclusion lg (getSig nsig) gsigmaRes
@@ -684,8 +671,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        let node = getNewNode dg'
            node_contents = DGNode {
              dgn_name = name,
-             dgn_sign = gsigmaRes, -- G_sign lid' (empty_signature lid'),
-             dgn_sens = G_l_sentence_list lidRes [],
+             dgn_theory = G_theory lidRes gsigRes [],
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGSpecInst spname}
@@ -752,8 +738,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       let gsigmaD' = G_sign lidP' sigmaD'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_sign = gsigmaD', 
-            dgn_sens = G_l_sentence_list lidP' sensD',
+            dgn_theory = G_theory lidP' sigmaD' sensD',
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGData }
@@ -999,8 +984,8 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
            sigI <- adj $ mcoerce lidI lid "Analysis of instantiation with import" sigI1
            mor_I <- adj $ morphism_union lid morHom $ ide lid sigI 
            gsigmaA <- adj $ gsigUnion lg gsigmaI gsigmaT
-           G_sign lidA _ <- return gsigmaA
-           G_sign lidP _ <- return gsigmaP
+           G_sign lidA gsigA <- return gsigmaA
+           G_sign lidP gsigP <- return gsigmaP
            incl1 <- adj $ ginclusion lg gsigmaI gsigmaA
            incl2 <- adj $ ginclusion lg gsigmaT gsigmaA
            incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
@@ -1008,15 +993,13 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
            let [nA,n'] = newNodes 2 dg
                node_contentsA = DGNode {
                  dgn_name = name,
-                 dgn_sign = gsigmaA, 
-                 dgn_sens = G_l_sentence_list lidA [],
+                 dgn_theory = G_theory lidA gsigA [],
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGFitViewA spname}
                node_contents' = DGNode {
                  dgn_name = inc name,
-                 dgn_sign = gsigmaP, 
-                 dgn_sens = G_l_sentence_list lidP [],
+                 dgn_theory = G_theory lidP gsigP [],
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGFitView spname}
@@ -1060,7 +1043,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
        (gsigmaA,mor_f) <- adj $ apply_GS lg gs actualargs
        let gmor_f = gEmbed mor_f
        gsigmaRes <- adj $ gsigUnion lg gsigmaI gsigmaA
-       G_sign lidRes _ <- return gsigmaRes
+       G_sign lidRes gsigRes <- return gsigmaRes
        mor1 <- adj $ comp Grothendieck mor gmor_f
        incl1 <- adj $ ginclusion lg gsigmaA gsigmaRes
        mor' <- adj $ comp Grothendieck gmor_f incl1
@@ -1076,19 +1059,17 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI nsigP opts name
        incl2 <- adj $ ginclusion lg gsigmaI gsigmaRes
        incl3 <- adj $ ginclusion lg gsigmaI gsigmaP
        incl4 <- adj $ ginclusion lg gsigmaS gsigmaP
-       G_sign lidP _ <- return gsigmaP
+       G_sign lidP gsigP <- return gsigmaP
        let [nA,n'] = newNodes 2 dg'
            node_contentsA = DGNode {
            dgn_name = name,
-           dgn_sign = gsigmaRes,
-           dgn_sens = G_l_sentence_list lidRes [],
+           dgn_theory = G_theory lidRes gsigRes [],
 	   dgn_nf = Nothing,
 	   dgn_sigma = Nothing,
            dgn_origin = DGFitViewA spname}
            node_contents' = DGNode {
              dgn_name = extName "V" name,
-             dgn_sign = gsigmaP, 
-             dgn_sens = G_l_sentence_list lidP [],
+             dgn_theory = G_theory lidP gsigP [],
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGFitView spname}
@@ -1295,11 +1276,10 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
   (params',nsigPs,dg'') <- 
       ana_PARAMS lg (gannos,genv,dg') l nsigI opts (inc name) params
   gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
-  G_sign lidP _ <- return gsigmaP
+  G_sign lidP gsigP <- return gsigmaP
   let node_contents = DGNode {
         dgn_name = name,
-        dgn_sign = gsigmaP, -- G_sign lidP (empty_signature lidP),
-        dgn_sens = G_l_sentence_list lidP [],
+        dgn_theory = G_theory lidP gsigP [],
 	dgn_nf = Nothing,
 	dgn_sigma = Nothing,
         dgn_origin = DGFormalParams }

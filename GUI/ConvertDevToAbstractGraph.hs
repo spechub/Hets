@@ -736,13 +736,12 @@ getSignatureOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSignatureOfNode descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      do let dgnode = lab' (context dgraph node)
-         case dgnode of
-           (DGNode name (G_sign _ sig) _ _ _ _) ->
-              let title = "Signature of "++showName name
-               in createTextDisplay title (showPretty sig "") [size(80,50)]
-           (DGRef _ _ _ _ _) -> error 
+      let dgnode = lab' (context dgraph node) in
+         if isDGRef dgnode then error 
                             "nodes of type dg_ref do not have a signature"
+         else let title = "Signature of "++showName (dgn_name dgnode)
+               in createTextDisplay title (showPretty (dgn_sign dgnode) "")
+                      [size(80,50)]
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
@@ -781,7 +780,7 @@ displayTheory :: String -> Node -> DGraph -> G_theory
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context dgraph node)
         str = showPretty gth "\n" in case dgnode of
-           (DGNode name (G_sign _ _) _ _ _ _) ->
+           (DGNode name _ _ _ _) ->
               let thname = showName name
                   title = ext ++ " of " ++ thname
                in createTextSaveDisplay title (thname++".het") str
@@ -838,7 +837,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
     Just libNode@(_, node) -> 
       let dgnode = lab' (context dgraph node)
           name = case dgnode of
-                       (DGNode name _ _ _ _ _) -> name
+                       (DGNode name _ _ _ _) -> name
                        _ -> emptyName
        in case computeTheory libEnv libNode of
         Res.Result _ (Just th) ->
@@ -860,7 +859,7 @@ showOriginOfNode descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context dgraph node)
          case dgnode of
-           DGNode name _ _ _ _ orig ->    
+           DGNode name _ _ _ orig ->    
               let title =  "Origin of node "++showName name
                in createTextDisplay title 
                     (showPretty orig "") [size(30,10)]
@@ -926,7 +925,7 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
                      $ Map.lookup ln libEnv
       dgtar = lab' (context dgraph target)
   case dgtar of
-    DGNode name _ (G_l_sentence_list lid sens) _ _ _ -> 
+    DGNode name (G_theory lid _ sens) _ _ _ -> 
      case dgl_morphism linklab of 
      GMorphism cid sign1 morphism2 -> do
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of

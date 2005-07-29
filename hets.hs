@@ -28,7 +28,6 @@ import Data.Graph.Inductive.Graph
 import Common.Utils
 import Common.Result
 import Common.PrettyPrint
-import Common.AS_Annotation
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 import qualified Common.Lib.Map as Map
 
@@ -42,7 +41,6 @@ import Driver.Options
 
 import Comorphisms.LogicGraph
 
-import Logic.Languages
 import Logic.Grothendieck
 
 import Static.AnalysisLibrary
@@ -51,12 +49,6 @@ import Static.PrintDevGraph()
 
 import Isabelle.CreateTheories
 
--- for extraction functions
-import CASL.AS_Basic_CASL
-import CASL.Logic_CASL
-
-
---import Syntax.Print_HetCASL
 #ifdef UNI_PACKAGE
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
@@ -231,11 +223,3 @@ make ghci
 :module +Data.Graph.Inductive.Graph
 Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
 -}
-
-
--- further functions for extracting information from the output
-toCASLsens :: G_l_sentence_list -> [Named (FORMULA ())]
-toCASLsens (G_l_sentence_list lid sens) = 
-   case coerce lid CASL sens of 
-          Just sens' -> sens'
-          _ -> error "not a list of CASL sentences"

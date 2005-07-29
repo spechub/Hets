@@ -151,10 +151,10 @@ concatHistoryElems ((rules,changes):elems) =
 -- ---------------
 
 getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab 
-         -> Result G_l_sentence_list
+         -> Result G_theory
 getGoals libEnv ln (n,_,edge) = do
   th <- computeLocalTheory libEnv (ln, n)
-  fmap sensOf $ translateG_theory (dgl_morphism edge) th
+  translateG_theory (dgl_morphism edge) th
 
 getProvers :: Bool -> LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
 getProvers consCheck lg gsub =
@@ -211,7 +211,7 @@ basicInferenceNode checkCons lg (ln, node)
                     $ fst $ match node dGraph
         let nlab = lab' ctx  
             nodeName = case nlab of
-              DGNode _ _ _ _ _ _-> dgn_name nlab
+              DGNode _ _ _ _ _-> dgn_name nlab
               DGRef _ _ _ _ _ -> dgn_renamed nlab
             thName = showPretty (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
@@ -221,9 +221,9 @@ basicInferenceNode checkCons lg (ln, node)
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv ln) localEdges
-        G_l_sentence_list lid3 goals <- case goalslist of 
-            [] -> return $ G_l_sentence_list lid1 [] 
-            hd : tl -> flatG_l_sentence_list hd tl
+        G_theory lid3 _ goals <- case goalslist of 
+            [] -> return $ G_theory lid1 sign [] 
+            hd : tl -> flatG_sentences hd tl
         goals1 <- coerce lid1 lid3 goals
         -- select a suitable translation and prover
         let provers = getProvers checkCons lg 

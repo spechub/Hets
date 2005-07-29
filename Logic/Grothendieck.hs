@@ -59,7 +59,6 @@ import Data.Dynamic
 import qualified Data.List as List
 import Data.Maybe
 import Control.Monad
-import Control.Exception(assert)
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -79,40 +78,6 @@ instance Show G_basic_spec where
 
 instance PrettyPrint G_basic_spec where
     printText0 ga (G_basic_spec _ s) = printText0 ga s
-
--- | Grothendieck sentences
-data G_sentence = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_sentence lid sentence 
-
-instance Show G_sentence where
-    show (G_sentence _ s) = show s
-
--- | Grothendieck sentence lists
-data G_l_sentence_list = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
-  G_l_sentence_list lid [Named sentence] 
-
-instance Show G_l_sentence_list where
-    show (G_l_sentence_list _ s) = show s
-
-instance Eq G_l_sentence_list where
-    (G_l_sentence_list i1 nl1) == (G_l_sentence_list i2 nl2) =
-      coerce i1 i2 nl1 == Just nl2
-
-eq_G_l_sentence_set :: G_l_sentence_list -> G_l_sentence_list -> Bool
-eq_G_l_sentence_set (G_l_sentence_list i1 nl1) (G_l_sentence_list i2 nl2) =
-     case coerce i1 i2 nl1 of
-       Just nl1' -> Set.fromList nl1' == Set.fromList nl2
-       Nothing -> False
 
 -- | Grothendieck signatures
 data G_sign = forall lid sublogics
@@ -193,8 +158,9 @@ data G_theory = forall lid sublogics
   G_theory lid sign [Named sentence]
 
 instance Eq G_theory where
-  th1 == th2 = signOf th1 == signOf th2 && 
-               eq_G_l_sentence_set (sensOf th1) (sensOf th2)
+  G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
+     coerce l1 l2 sig1 == Just sig2
+     && coerce l1 l2 sens1 == Just sens2
 
 instance Show G_theory where
   show (G_theory _ sign sens) =
@@ -667,57 +633,20 @@ translateG_theory (GMorphism cid _ morphism2)
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return (G_theory tlid (cod tlid morphism2) sens''')
 
--- | Translation of a G_l_sentence_list along a GMorphism
-translateG_l_sentence_list :: GMorphism -> G_l_sentence_list
-                                 -> Result G_l_sentence_list
-translateG_l_sentence_list (GMorphism cid sign1 morphism2)
-                           (G_l_sentence_list lid sens) = do
-  let tlid = targetLogic cid
-  --(sigma2,_) <- map_sign cid sign1
-  sens' <- mcoerce lid (sourceLogic cid) "Translation of sentence list" sens
-  sens'' <- mapM (mapNamedM $ map_sentence cid sign1) sens'
-  sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return (G_l_sentence_list tlid sens''')
+-- | Join the sentences of two G_theories
+joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
+joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
+  sens2' <- mcoerce lid1 lid2 "joinG_sentences" sens2
+    -- assert (sig1 == sig2') ? 
+  return $ G_theory lid1 sig1 $ List.union sens1 sens2'
 
--- | Join two G_theories
-
-joinG_theories :: Monad m => G_theory -> G_theory -> m G_theory
-joinG_theories (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
-  sens2' <- mcoerce lid1 lid2 "joinG_theories" sens2
-  sig2' <- mcoerce lid1 lid2 "joinG_theories" sig2
-  assert (sig1 == sig2') $ 
-         return $ G_theory lid1 sig1 $ List.union sens1 sens2'
-
--- | Flatten a list of G_theories
-flatG_theories :: Monad m => G_theory -> [G_theory] -> m G_theory
-flatG_theories th ths = foldM joinG_theories th ths
+-- | flattening the sentences form a list of G_theories
+flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
+flatG_sentences th ths = foldM joinG_sentences th ths
 
 -- | Get signature of a theory
 signOf :: G_theory -> G_sign
 signOf (G_theory lid sign _) = G_sign lid sign
-
--- | Get sentences of a theory
-sensOf :: G_theory -> G_l_sentence_list
-sensOf (G_theory lid _ sens) = G_l_sentence_list lid sens
-
--- | Join signature and sentence list into a theory
-toG_theory :: Monad m => G_sign -> G_l_sentence_list -> m G_theory
-toG_theory (G_sign lid1 sign1) (G_l_sentence_list lid2 sens2) = do
-  sens2' <- mcoerce lid1 lid2 "toG_theory" sens2
-  return (G_theory lid1 sign1 sens2')
-
--- | Join two G_l_sentence_lists
-joinG_l_sentence_list :: Monad m => G_l_sentence_list -> G_l_sentence_list
-                            -> m G_l_sentence_list
-joinG_l_sentence_list (G_l_sentence_list lid1 sens1)
-                      (G_l_sentence_list lid2 sens2) = do
-  sens2' <- mcoerce lid1 lid2 "Union of sentence lists" sens2
-  return $ G_l_sentence_list lid1 $ List.union sens1 sens2'
-
--- | Flatten a list of G_l_sentence_list's
-flatG_l_sentence_list :: Monad m => G_l_sentence_list -> [G_l_sentence_list] 
-                      -> m G_l_sentence_list
-flatG_l_sentence_list gl gls = foldM joinG_l_sentence_list gl gls
 
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
@@ -782,10 +711,10 @@ coerceTheory lid (G_theory lid2 sign2 sens2)
 -- Grothendieck diagrams and weakly amalgamable cocones
 ------------------------------------------------------------------
 
-type GDiagram = Tree.Gr G_sign GMorphism
+type GDiagram = Tree.Gr G_theory GMorphism
 
 gWeaklyAmalgamableCocone :: GDiagram 
-                         -> Result (G_sign,Map.Map Graph.Node GMorphism)
+                         -> Result (G_theory,Map.Map Graph.Node GMorphism)
 gWeaklyAmalgamableCocone _ = 
     return (undefined,Map.empty) -- dummy implementation
 

@@ -65,8 +65,7 @@ type NODE_NAME = (SIMPLE_ID, String, Int)
 
 data DGNodeLab = DGNode {
                 dgn_name :: NODE_NAME,
-                dgn_sign :: G_sign,
-                dgn_sens :: G_l_sentence_list,
+                dgn_theory :: G_theory,
                 dgn_nf :: Maybe Node,
                 dgn_sigma :: Maybe GMorphism,
                 dgn_origin :: DGOrigin
@@ -77,15 +76,19 @@ data DGNodeLab = DGNode {
                 dgn_node :: Node,
 		dgn_nf :: Maybe Node,
 		dgn_sigma :: Maybe GMorphism
-              } deriving (Show,Eq) 
+              } deriving (Show,Eq)
+
+dgn_sign :: DGNodeLab -> G_sign
+dgn_sign dn = case dgn_theory dn of
+    G_theory lid sig _ -> G_sign lid sig
 
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode (DGNode n _ _ _ _ _) = isInternal n
+isInternalNode (DGNode n _ _ _ _) = isInternal n
 isInternalNode _ = False
 
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
-getDGNodeName (DGNode n _ _ _ _ _) = showName n
+getDGNodeName (DGNode n _ _ _ _) = showName n
 getDGNodeName (DGRef n _ _ _ _) = showName n
 
 emptyName :: NODE_NAME
@@ -118,11 +121,11 @@ extName :: String -> NODE_NAME -> NODE_NAME
 extName s (n,s1,i) = (n,s1++showInt i++s,0)
 
 isDGRef :: DGNodeLab -> Bool
-isDGRef (DGNode _ _ _ _ _ _) = False
+isDGRef (DGNode _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty (DGNode _ (G_sign lid sigma) (G_l_sentence_list _ sens) _ _ _) = 
+locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _) = 
   is_subsig lid sigma (empty_signature lid) && null sens
 locallyEmpty (DGRef _ _ _ _ _) = True
            
@@ -256,22 +259,24 @@ getLogic (EmptyNode l) = l
 -- | Create a node that represents a union of signatures
 nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
-  do sigUnion@(G_sign lid _) <- gsigManyUnion lgraph (map getSig nodeSigs)
+  do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph (map getSig nodeSigs)
      let nodeContents = DGNode {dgn_name = emptyName,
-				dgn_sign = sigUnion,
-				dgn_sens = G_l_sentence_list lid [],
+				dgn_theory = G_theory lid sigU [],
 				dgn_nf = Nothing,
 				dgn_sigma = Nothing,
 				dgn_origin = orig }
 	 node = getNewNode dg
 	 dg' = insNode (node, nodeContents) dg
-	 inslink dgres nsig = do dg <- dgres
-				 case getNode nsig of
-				      Nothing -> return dg
-				      Just n -> do incl <- ginclusion lgraph (getSig nsig) sigUnion
-						   return (insEdge (n, node, DGLink {dgl_morphism = incl,
+	 inslink dgres nsig = do 
+             dg <- dgres
+	     case getNode nsig of
+	         Nothing -> return dg
+		 Just n -> do 
+                     incl <- ginclusion lgraph (getSig nsig) sigUnion
+		     return $ insEdge (n, node, DGLink 
+                         {dgl_morphism = incl,
 										     dgl_type = GlobalDef,
-										     dgl_origin = orig }) dg)
+										     dgl_origin = orig }) dg
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig (node, sigUnion), dg'')
 
@@ -284,13 +289,12 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
 extendDGraph _ n@(EmptyNode _) _ _ =
-    do fail "Internal error: \
+    fail "Internal error: \
              \trying to add a morphism originating from an empty node"
-extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
-    let targetSig = cod Grothendieck morph
+extendDGraph dg (NodeSig (n, _)) morph orig = case cod Grothendieck morph of
+    targetSig@(G_sign lid tar) -> let 
         nodeContents = DGNode {dgn_name = emptyName,
-			       dgn_sign = targetSig,
-			       dgn_sens = G_l_sentence_list lid [],
+			       dgn_theory = G_theory lid tar [],
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
@@ -300,7 +304,7 @@ extendDGraph dg (NodeSig (n, G_sign lid _)) morph orig =
 	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (n, node, linkContents) dg'
-    in do return (NodeSig (node, targetSig), dg'')
+        in return (NodeSig (node, targetSig), dg'')
 
 
 -- | Extend the development graph with given morphism pointing to 
@@ -312,13 +316,12 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
 extendDGraphRev _ n@(EmptyNode _) _ _ =
-    do fail "Internal error: \
+    fail "Internal error: \
              \trying to add a morphism pointing to an empty node"
-extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
-    let sourceSig = dom Grothendieck morph
+extendDGraphRev dg (NodeSig (n, _)) morph orig = case dom Grothendieck morph of
+    sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyName,
-			       dgn_sign = sourceSig,
-			       dgn_sens = G_l_sentence_list lid [],
+			       dgn_theory = G_theory lid src [],
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
@@ -328,7 +331,7 @@ extendDGraphRev dg (NodeSig (n, G_sign lid _)) morph orig =
 	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (node, n, linkContents) dg'
-    in do return (NodeSig (node, sourceSig), dg'')
+        in return (NodeSig (node, sourceSig), dg'')
 
 
 data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic

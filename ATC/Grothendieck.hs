@@ -36,40 +36,6 @@ instance ShATermConvertible G_basic_spec where
          where
          aterm = getATerm att
 
-instance ShATermConvertible G_sentence where
-     toShATerm att0 (G_sentence lid sentence) = 
-	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 sentence of { (att2,i2) ->
-           addATerm (ShAAppl "G_sentence" [i1,i2] []) att2}}
-     fromShATerm att = 
-         case aterm of
-	    (ShAAppl "G_sentence" [i1,i2] _) ->
-		let i1' = fromShATerm (getATermByIndex1 i1 att)
-                    att' = getATermByIndex1 i2 att
-		    l = lookupLogic_in_LG ("ATerm_Convertible G_sentence:") i1' 
-                in case l of
-                    Logic lid -> (G_sentence lid (fromShATerm att'))
-	    u     -> fromShATermError "G_sentence" u
-         where
-         aterm = getATerm att
-
-instance ShATermConvertible G_l_sentence_list where
-     toShATerm att0 (G_l_sentence_list lid n_sentence) = 
-	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 n_sentence of { (att2,i2) ->
-            addATerm (ShAAppl "G_l_sentence_list" [i1,i2] []) att2}}
-     fromShATerm att = 
-         case aterm of
-	    (ShAAppl "G_l_sentence_list" [i1,i2] _) ->
-	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
-               case getATermByIndex1 i2 att of { att' ->
-               case lookupLogic_in_LG 
-                        ("ShATermConvertible G_l_sentence_list") i1'  of {
-                    Logic lid -> (G_l_sentence_list lid (fromShATerm att'))}}}
-	    u     -> fromShATermError "G_l_sentence_list" u
-         where
-         aterm = getATerm att
-
 instance ShATermConvertible G_sign where
      toShATerm att0 (G_sign lid sign) = 
 	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
@@ -84,6 +50,26 @@ instance ShATermConvertible G_sign where
                 in case l of
                     Logic lid -> (G_sign lid (fromShATerm att'))
 	    u     -> fromShATermError "G_sign" u
+         where
+         aterm = getATerm att
+
+instance ShATermConvertible G_theory where
+     toShATerm att0 (G_theory lid sign sens) = 
+	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
+         case toShATerm att1 sign of { (att2,i2) ->
+         case toShATerm att2 sens of { (att3,i3) ->
+           addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
+     fromShATerm att = 
+         case aterm of
+	    (ShAAppl "G_theory" [i1,i2,i3] _) ->
+		let i1' = fromShATerm (getATermByIndex1 i1 att)
+                    att' = getATermByIndex1 i2 att
+                    att'' = getATermByIndex1 i3 att'
+                    l = lookupLogic_in_LG ("ShATermConvertible G_sign:") i1' 
+                in case l of
+                    Logic lid -> (G_theory lid (fromShATerm att') 
+                                               (fromShATerm att''))
+	    u     -> fromShATermError "G_theory" u
          where
          aterm = getATerm att
 
