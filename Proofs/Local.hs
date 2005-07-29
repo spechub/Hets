@@ -127,7 +127,8 @@ locSubsumeAux _ _ dgraph historyElement [] = (dgraph, historyElement)
 locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (getDGNode libEnv dgraph tgt, maybeThSrc) of
     (Just (target,_), Just thSrc) ->
-      case (maybeResult (computeTheory libEnv ln dgraph target), maybeResult (translateG_theory morphism thSrc)) of
+      case (maybeResult (computeTheory libEnv (ln, target)), 
+                        maybeResult (translateG_theory morphism thSrc)) of
         (Just theoryTgt, Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceTheory lidSrc theoryTgt) of
             Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list

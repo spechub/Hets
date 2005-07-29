@@ -755,10 +755,10 @@ lookupTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode ->
 lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
  (ln,libEnv,_) <- readIORef proofStatusRef
  case (do
-  (_libname, node) <- 
+  libNode@(_, node) <- 
         Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-  gth <- computeTheory libEnv _libname dgraph node
+  gth <- computeTheory libEnv libNode
   return (node, gth)
     ) of
    r -> return r
@@ -803,10 +803,10 @@ translateTheoryOfNode :: GInfo -> Descr -> AGraphToDGraphNode ->
 translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode dgraph = do
  (_,libEnv,_) <- readIORef proofStatusRef
  case (do
-   (_libname, node) <- 
+   libNode@(_, node) <- 
         Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode 
-   th <- computeTheory libEnv _libname dgraph node
+   th <- computeTheory libEnv libNode
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result diags _ <-  Res.ioresToIO(
@@ -841,12 +841,12 @@ getSublogicOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode -> DGraph 
 getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
   (_,libEnv,_) <- readIORef proofStatusRef
   case Map.lookup descr ab2dgNode of
-    Just (libname, node) -> 
+    Just libNode@(_, node) -> 
       let dgnode = lab' (context dgraph node)
           name = case dgnode of
                        (DGNode name _ _ _ _ _) -> name
                        _ -> emptyName
-       in case computeTheory libEnv libname dgraph node of
+       in case computeTheory libEnv libNode of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th
                     title =  "Sublogic of "++showName name
@@ -938,7 +938,7 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
       let morphism2' = case coerce (targetLogic cid) lid morphism2 of
            Just m -> m
            _ -> error "checkconservativityOfEdge: wrong logic"
-      let th = case computeTheory libEnv ln dgraph source of
+      let th = case computeTheory libEnv (ln, source) of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th

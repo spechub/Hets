@@ -153,10 +153,8 @@ concatHistoryElems ((rules,changes):elems) =
 getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab 
          -> Result G_l_sentence_list
 getGoals libEnv ln (n,_,edge) = do
-  th <- maybeToMonad ("Could not find node "++show n)
-              $  computeLocalTheory libEnv (ln, n)
-  let mor = dgl_morphism edge
-  fmap sensOf $ translateG_theory mor th
+  th <- computeLocalTheory libEnv (ln, n)
+  fmap sensOf $ translateG_theory (dgl_morphism edge) th
 
 getProvers :: Bool -> LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
 getProvers consCheck lg gsub =
@@ -201,13 +199,13 @@ proveTheory _ = prove
 -- applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
-basicInferenceNode checkCons lg (ln,node) 
+basicInferenceNode checkCons lg (ln, node)
          proofStatus@(libname,libEnv,proofHistory) = do
       let dGraph = lookupDGraph libname proofStatus
       ioresToIO (do 
         -- compute the theory of the node, and its name
         G_theory lid1 sign axs <- 
-             resToIORes $ computeTheory libEnv ln dGraph node
+             resToIORes $ computeTheory libEnv (ln, node)
         ctx <- resToIORes 
                     $ maybeToMonad ("Could node find node "++show node)
                     $ fst $ match node dGraph
@@ -223,11 +221,9 @@ basicInferenceNode checkCons lg (ln,node)
             localEdges = filter isUnprovenLocalThm inEdges
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv ln) localEdges
-        G_l_sentence_list lid3 goals <- 
-          if null goalslist then return $ G_l_sentence_list lid1 [] 
-            else resToIORes (maybeToMonad 
-                                      "Logic mismatch for proof goals" 
-                                       (flatG_l_sentence_list goalslist))
+        G_l_sentence_list lid3 goals <- case goalslist of 
+            [] -> return $ G_l_sentence_list lid1 [] 
+            hd : tl -> flatG_l_sentence_list hd tl
         goals1 <- coerce lid1 lid3 goals
         -- select a suitable translation and prover
         let provers = getProvers checkCons lg 

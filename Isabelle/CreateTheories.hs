@@ -47,16 +47,15 @@ printLibEnv :: LibEnv -> IO ()
 printLibEnv le  =  mapM_ (printLibrary le) $ Map.toList le
 
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> IO ()
-printLibrary le (ln, (_, ge, dg)) =
-      mapM_ (printTheory ln le dg) $ Map.toList ge
+printLibrary le (ln, (_, ge, _)) =
+      mapM_ (printTheory ln le) $ Map.toList ge
 
-printTheory :: LIB_NAME -> LibEnv -> DGraph 
-            -> (SIMPLE_ID, GlobalEntry) -> IO ()
-printTheory ln le dg (sn, ge) = case ge of 
+printTheory :: LIB_NAME -> LibEnv -> (SIMPLE_ID, GlobalEntry) -> IO ()
+printTheory ln le (sn, ge) = case ge of 
     SpecEntry (_,_,_, e) -> case getNode e of 
         Nothing -> return ()
         Just n -> 
-          case maybeResult $ computeTheory le ln dg n of
+          case maybeResult $ computeTheory le (ln, n) of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->
                 let r1 = do

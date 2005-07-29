@@ -43,7 +43,7 @@ printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos -> DGraph
 printTheory le ln ga dg (sn, ge) = case ge of 
     SpecEntry (_,_,_, e) -> case getNode e of 
         Nothing -> P.empty
-        Just n -> case maybeResult $ computeTheory le ln dg n of
+        Just n -> case maybeResult $ computeTheory le (ln, n) of
             Nothing -> P.empty
             Just (G_theory lid sign sens) ->
                 text specS <+> printText0 ga sn $$
