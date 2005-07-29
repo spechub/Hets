@@ -45,18 +45,15 @@ transSens trFun = map (\ax -> ax{senName = trFun (senName ax)})
 
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
-disambiguateSens reservedNames axs = 
-    reverse $ disambiguateSensAux reservedNames axs []
-
-disambiguateSensAux :: Set.Set String -> [Named a] -> [Named a] -> [Named a]
-disambiguateSensAux _ [] soFar = soFar
-disambiguateSensAux nameSet (ax:rest) soFar =
-  disambiguateSensAux (Set.insert name' nameSet) rest (ax':soFar)
-  where
-  name' = fromJust $ find (not . flip Set.member nameSet) 
-                          (name:[name++show (i :: Int) | i<-[1..]])
-  name = senName ax 
-  ax' = ax{senName = name'}
+disambiguateSens _ [] = []
+disambiguateSens nameSet (ax : rest) = 
+  let name = senName ax in case Set.splitMember name nameSet of
+  (_, False, _) -> ax : disambiguateSens (Set.insert name nameSet) rest
+  (_, _, greater) -> let 
+      name' = fromJust $ find (not . flip Set.member greater) 
+                          [name++show (i :: Int) | i<-[1..]]
+      ax' = ax {senName = name'}
+      in ax' : disambiguateSens (Set.insert name' nameSet) rest
 
 -- | name unlabeled axioms with "Axnnn"
 nameSens :: [Named a] -> [Named a]
