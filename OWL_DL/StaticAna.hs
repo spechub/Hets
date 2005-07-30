@@ -50,8 +50,8 @@ anaOntology ga inSign ontology =
 	anaDirective ga (inSign {ontologyID = nullID}) (Ontology Prelude.Nothing []) directives
 			  
 -- concat the current result with total result 
--- first result is an result from current directive
--- second result is the total result
+-- first parameter is an result from current directive
+-- second parameter is the total result
 concatResult :: Result (Ontology,Sign,[Named Sentence]) 
 	     -> Result (Ontology,Sign,[Named Sentence]) 
 	     -> Result (Ontology,Sign,[Named Sentence]) 
@@ -61,22 +61,23 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
 	case maybeRes2 of 
 	Prelude.Nothing -> Result (diag1++diag2) Prelude.Nothing
 	_ -> Result (diag1++diag2) maybeRes2
-    Just (onto1@(Ontology maybeID1 direc1), inSign1, namedSen1) -> 
+    Just (Ontology maybeID1 direc1, inSign1, namedSen1) -> 
 	case maybeRes2 of
 	 Prelude.Nothing -> Result (diag1++diag2) maybeRes1
-	 Just ((Ontology maybeID2 direc2), inSign2, namedSen2) ->
+	 Just (Ontology maybeID2 direc2, inSign2, namedSen2) ->
 	    if maybeID1 /= maybeID2 then
 	       error "unknow error in concatResult"
 	       else let -- todo: concat ontology
                         accSign = inSign2 -- insertSign inSign1 inSign2
                         namedSen = namedSen2 ++ namedSen1
+                        direc = direc1 ++ direc2
                     in Result (diag2 ++ diag1) 
-			 (Just (onto1, accSign, namedSen)) 
+			 (Just (Ontology maybeID2 direc, accSign, namedSen)) 
 
 anaDirective :: GlobalAnnos -> Sign -> Ontology -> [Directive]
 		-> Result (Ontology,Sign,[Named Sentence])
 anaDirective _ _ _ [] = initResult
-anaDirective ga inSign onto (directiv:rest) = 
+anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) = 
   case directiv of
     Ax (Class cId _ _ _ des) -> 
 	if null des then        -- primary Concept has no super concept
@@ -101,21 +102,21 @@ anaDirective ga inSign onto (directiv:rest) =
 				   isAxiom = True,	
 				   sentence = OWLAxiom dc
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest)    
     Ax ec@(EquivalentClasses _ _) ->
 	let namedSent = NamedSen { senName = "EquivalentClasses",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom ec
 				 }
-        in   concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in   concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax sc@(SubClassOf _ _) ->
 	let namedSent = NamedSen { senName = "SubClassOf",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom sc
 				 }
-        in   concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in   concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax (Datatype dtId _ _) -> 
 	let d = datatypes inSign
@@ -160,42 +161,42 @@ anaDirective ga inSign onto (directiv:rest) =
 				   isAxiom = True,	
 				   sentence = OWLAxiom ap
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax op@(OntologyProperty _ _ ) ->
 	let namedSent = NamedSen { senName = "OntologyProperty",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom op
 				 }
-        in concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax dep@(DEquivalentProperties _ _ _) -> 
 	let namedSent = NamedSen { senName = "DataValuedEquivalentProterties",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom dep
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax dsp@(DSubPropertyOf _ _) ->
 	let namedSent = NamedSen { senName = "DataValuedSubPropertyOf",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom dsp
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest)  
     Ax iep@(IEquivalentProperties _ _ _) ->
 	let namedSent = NamedSen { senName = "IndividualValuedEquivalentProperties",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom iep
 				 }
-        in   concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in   concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax isp@(ISubPropertyOf _ _) -> 
 	let namedSent = NamedSen { senName = "IndividualValuedSubPropertyOf",	
 				   isAxiom = True,	
 				   sentence = OWLAxiom isp
 				 }
-        in   concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in   concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
 
     Fc ind@(Indiv (Individual maybeIID _ types _)) ->
@@ -205,7 +206,7 @@ anaDirective ga inSign onto (directiv:rest) =
 				       isAxiom = False,	
 				       sentence = OWLFact ind
 				     }
-            in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+            in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest)
 	Just iid -> let oriInd = individuals inSign
 		    in  if length types == 1 then
@@ -228,14 +229,14 @@ anaDirective ga inSign onto (directiv:rest) =
 				   isAxiom = False,	
 				   sentence = OWLFact si
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Fc di@(DifferentIndividuals _ _ _) ->
 	let namedSent = NamedSen { senName = "DifferentIndividuals",	
 				   isAxiom = False,	
 				   sentence = OWLFact di
 				 }
-        in  concatResult (Result [] (Just (onto, inSign, [namedSent])))
+        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     _ -> concatResult initResult (anaDirective ga inSign onto rest)  -- erstmal ignoriere another
  			
