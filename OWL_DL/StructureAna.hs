@@ -107,12 +107,12 @@ createLNodes (hs:rs) exLNodes =
 		 else cn
 	     where newDgn = 
 		    case dgn of
-		    DGNode (sid, u1, u2 ) p2 p3 p4 p5 p6->
+		    DGNode (sid, u1, u2 ) p2 p3 p4 p5 ->
 		      let idstr = show sid
 			  re = take ((length idstr) - (length $ showInt (end -1))) (show sid) 
 		          newID = mkSimpleId (re++(showInt end))
 			  newName = (newID, u1, u2) 
-		      in  DGNode newName p2 p3 p4 p5 p6
+		      in  DGNode newName p2 p3 p4 p5 
 		    u -> u 
 			     
 				  
@@ -133,9 +133,9 @@ buildLNodeFromStr uri i =
 	nodeName = makeName $ mkSimpleId $ localPart name
 	currentSign = simpleSign $ name
     in  (i+1, DGNode { dgn_name = nodeName,
-		       dgn_sign = G_sign OWL_DL currentSign,
+		       dgn_theory = G_theory OWL_DL currentSign [],
 		       -- lass erstmal kein Signatur.
-		       dgn_sens = G_l_sentence_list OWL_DL [],
+		       -- dgn_sens = G_l_sentence_list OWL_DL [],
 		       dgn_nf = Prelude.Nothing,
 		       dgn_sigma = Prelude.Nothing,
 		       dgn_origin = DGBasic
