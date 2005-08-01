@@ -49,6 +49,8 @@ Analysis of structured specifications
 
    No optimization of heterogeneous unions!
      (or use heterogeneous compInclusion in Proofs/Proof.hs)  
+     (or perhaps abandon optimized unions at all and 
+      replace compHomInclusion with comp Grothendieck? is this more efficient?)
 
    Treatment of translations and reductions along logic translations
    (see WADT 02 paper).
