@@ -20,6 +20,12 @@ This module provides the sublogic functions (as required by Logic.hs)
 module CASL.Sublogic ( -- * datatypes
                    CASL_Sublogics(..),
                    CASL_Formulas(..),
+                   SubsortingFeatures(..),
+                   SortGenerationFeatures(..),
+
+                   -- * predicates on CASL_Sublogics
+                   has_sub,
+                   has_cons,
 
                    -- * functions for LatticeWithTop instance
                    top,
@@ -29,8 +35,12 @@ module CASL.Sublogic ( -- * datatypes
                    -- * functions for the creation of minimal sublogics
                    bottom,
                    need_sub,
+                   need_sul,
                    need_part,
                    need_cons,
+                   need_e_cons,
+                   need_s_cons,
+                   need_se_cons,
                    need_eq,
                    need_pred,
                    need_horn,
@@ -83,6 +93,7 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
+import CASL.Inject
 
 ------------------------------------------------------------------------------
 -- | Datatypes for CASL sublogics
@@ -94,15 +105,52 @@ data CASL_Formulas = Atomic  -- ^ atomic logic
                    | FOL     -- ^ first-order logic
                    deriving (Show,Ord,Eq)
 
+data SubsortingFeatures = NoSub
+                        | LocFilSub
+                        | Sub
+                          deriving (Show,Ord,Eq)
+
+data SortGenerationFeatures = 
+          NoSortGen
+        | SortGen { emptyMapping :: Bool 
+                    -- ^ Mapping of indexed sorts is empty
+                  , onlyInjConstrs :: Bool
+                    -- ^ only injective constructors
+                  } deriving (Show,Eq)
+
+instance Ord SortGenerationFeatures where
+    (<=) x y = case x of
+               NoSortGen -> True
+               SortGen em_x ojc_x -> 
+                   case y of
+                   NoSortGen -> False
+                   SortGen em_y ojc_y -> 
+                       em_x >= em_y && ojc_x >= ojc_y
+                       -- False means more expressive / more features used
+
+
 data CASL_Sublogics = CASL_SL
-                      { has_sub::Bool,   -- ^ subsorting
+                      { sub_features :: SubsortingFeatures, -- ^ subsorting
                         has_part::Bool,  -- ^ partiality
-                        has_cons::Bool,  -- ^ sort generation constraints
+                        cons_features :: SortGenerationFeatures,  
+                            -- ^ sort generation constraints
                         has_eq::Bool,    -- ^ equality
                         has_pred::Bool,  -- ^ predicates
                         which_logic::CASL_Formulas
                       } deriving (Show,Eq)
+-------------------------
+-- old selector functions
+-------------------------
 
+has_sub :: CASL_Sublogics -> Bool
+has_sub sl = case sub_features sl of
+             NoSub -> False
+             _ -> True
+
+has_cons :: CASL_Sublogics -> Bool
+has_cons sl = case cons_features sl of
+              NoSortGen -> False
+              _ -> True
 -----------------------------------------------------------------------------
 -- Special sublogics elements
 -----------------------------------------------------------------------------
@@ -110,32 +158,45 @@ data CASL_Sublogics = CASL_SL
 -- top element
 --
 top :: CASL_Sublogics
-top = (CASL_SL True True True True True FOL)
+top = (CASL_SL Sub True (SortGen False False) True True FOL)
 
 -- bottom element
 --
 bottom :: CASL_Sublogics
-bottom = (CASL_SL False False False False False Atomic)
+bottom = (CASL_SL NoSub False (NoSortGen) False False Atomic)
 
 -- the following are used to add a needed feature to a given
 -- sublogic via sublogics_max, i.e. (sublogics_max given needs_part)
 -- will force partiality in addition to what features given already
 -- has included
 
--- minimal sublogic with subsorting
+-- minimal sublogics with subsorting
 --
 need_sub :: CASL_Sublogics
-need_sub = bottom { has_sub = True, which_logic = Horn }
+need_sub = bottom { sub_features = Sub, which_logic = Horn }
+
+need_sul :: CASL_Sublogics
+need_sul = bottom { sub_features = LocFilSub, which_logic = Horn }
 
 -- minimal sublogic with partiality
 --
 need_part :: CASL_Sublogics
 need_part = bottom { has_part = True }
 
--- minimal sublogic with sort generation constraints
+-- minimal sublogics with sort generation constraints
 --
 need_cons :: CASL_Sublogics
-need_cons = bottom { has_cons = True }
+need_cons = bottom { cons_features = SortGen { emptyMapping = False
+                                             , onlyInjConstrs = False} }
+need_e_cons :: CASL_Sublogics
+need_e_cons = bottom { cons_features = SortGen { emptyMapping = True
+                                               , onlyInjConstrs = False} }
+need_s_cons :: CASL_Sublogics
+need_s_cons = bottom { cons_features = SortGen { emptyMapping = False
+                                               , onlyInjConstrs = True} }
+need_se_cons :: CASL_Sublogics
+need_se_cons = bottom { cons_features = SortGen { emptyMapping = True
+                                                , onlyInjConstrs = True} }
 
 -- minimal sublogic with equality
 --
@@ -161,7 +222,7 @@ need_fol = bottom { which_logic = FOL }
 -----------------------------------------------------------------------------
 
 -- conversion from Int in [0..127] range to CASL_Sublogics
-
+{-
 boolFromInt :: Int -> Bool
 boolFromInt 0 = False
 boolFromInt _ = True
@@ -184,14 +245,22 @@ sublogicFromInt i =
   in
     CASL_SL (boolFromInt a) (boolFromInt b) (boolFromInt c) (boolFromInt d)
             (boolFromInt e) (formulasFromInt f)
-
+-}
 -- all elements
 -- create a list of all CASL sublogics by generating all possible
 -- feature combinations and then filtering illegal ones out
 --
 sublogics_all :: [CASL_Sublogics]
-sublogics_all = filter (not . adjust_check) $ map sublogicFromInt [0..127]
-
+sublogics_all = 
+    filter (not . adjust_check) 
+           [ CASL_SL s_f pa_b c_f e_b pr_b fo 
+                       | s_f <- [NoSub,LocFilSub,Sub ],
+                         pa_b <- [True,False],
+                         pr_b <- [True,False],
+                         e_b <- [True,False],
+                         fo <- [FOL,GHorn,Horn,Atomic],
+                         c_f <- (NoSortGen:[SortGen m s | m <- [True,False],
+                                                          s <- [True,False]])]
 ------------------------------------------------------------------------------
 -- Conversion functions (to String)
 ------------------------------------------------------------------------------
@@ -207,28 +276,37 @@ formulas_name True  Atomic = "Atom"
 formulas_name False Atomic = "Eq"
 
 sublogics_name :: CASL_Sublogics -> [String]
-sublogics_name x = [   ( if (has_sub  x) then "Sub" else "")
-                    ++ ( if (has_part x) then "P"   else "")
-                    ++ ( if (has_cons x) then "C"   else "")
+sublogics_name x = [   ( case sub_features x of 
+                         NoSub     -> ""
+                         LocFilSub -> "Sul"
+                         Sub       -> "Sub")
+                    ++ ( if (has_part x) then "P" else "")
+                    ++ ( if (has_cons x) 
+                         then (  (if onlyInjConstrs (cons_features x)
+                                  then "s" else "") 
+                               ++(if emptyMapping (cons_features x)
+                                  then "e" else "")
+                               ++"C")
+                         else "")
                     ++ ( formulas_name (has_pred x) (which_logic x) )
-                    ++ ( if (has_eq   x) then "="   else "")]
+                    ++ ( if (has_eq   x) then "=" else "")]
 
 ------------------------------------------------------------------------------
 -- min/join and max/meet functions
 ------------------------------------------------------------------------------
 
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_max a b = CASL_SL (has_sub  a || has_sub  b)
+sublogics_max a b = CASL_SL (max (sub_features a) (sub_features b))
                             (has_part a || has_part b)
-                            (has_cons a || has_cons b)
+                            (max (cons_features a) (cons_features b))
                             (has_eq   a || has_eq   b)
                             (has_pred a || has_pred b)
                             (max (which_logic a) (which_logic b))
 
 sublogics_min :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_min a b = CASL_SL (has_sub  a && has_sub  b)
+sublogics_min a b = CASL_SL (min (sub_features a) (sub_features b))
                             (has_part a && has_part b)
-                            (has_cons a && has_cons b)
+                            (min (cons_features a) (cons_features b))
                             (has_eq   a && has_eq   b)
                             (has_pred a && has_pred b)
                             (min (which_logic a) (which_logic b))
@@ -473,7 +551,20 @@ sl_form (Existl_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 -- need_sub is tested elsewhere (need_pred not required)
 sl_form (Membership t _ _) = sl_term t
-sl_form (Sort_gen_ax _ _) = need_cons
+sl_form (Sort_gen_ax constraints _) = 
+    case recover_Sort_gen_ax constraints of
+    (_,ops,mapping) 
+        | null mapping && null otherConstrs       -> need_se_cons
+        | null mapping && not (null otherConstrs) -> need_e_cons
+        | not (null mapping) && null otherConstrs -> need_s_cons
+        | otherwise                               -> need_cons
+       where otherConstrs = 
+                 filter (\ o -> case o of
+                                Op_name _ -> 
+                                    error "CASL.Sublogic.sl_form: Wrong \
+                                          \OP_SYMB constructor."
+                                Qual_op_name n _ _ -> n /= injName) ops
+
 sl_form _ = error "CASL.Sublogic.sl_form"
 
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
@@ -515,7 +606,11 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 
 sl_sign :: Sign f e -> CASL_Sublogics
 sl_sign s = 
-    let subs = if Rel.null $ sortRel s then bottom else need_sub
+    let subs = if Rel.null (sortRel s) 
+               then bottom 
+               else if Rel.locallyFiltered (sortRel s) 
+                    then need_sul 
+                    else need_sub
         preds = if Map.null $ predMap s then bottom else need_pred
         partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
                   $ Set.unions $ Map.elems $ opMap s then need_part else bottom

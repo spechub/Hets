@@ -38,7 +38,8 @@ module Common.Lib.Rel (Rel(), empty, null,
                        intransKernel, mostRight,
                        restrict, toSet, fromSet, topSort, nodes,
                        transpose, transReduce, setInsert, keysSet,
-                       haveCommonLeftElem) where
+                       haveCommonLeftElem,
+                       locallyFiltered,flatSet,partSet) where
 
 import Prelude hiding (map, null)
 import qualified Common.Lib.Map as Map
@@ -294,3 +295,36 @@ haveCommonLeftElem :: (Ord a) => a -> a -> Rel a -> Bool
 haveCommonLeftElem t1 t2 =
     Map.fold(\ e rs -> rs || (t1 `Set.member` e && 
                               t2 `Set.member` e)) False . toMap
+
+-- | partitions a set into a set of disjoint non empty subsets
+-- determined by the given function as equivilance classes
+partSet :: (Ord a) => (a -> a -> Bool) -> Set.Set a -> Set.Set (Set.Set a)
+partSet f = inner_partSet Set.empty
+    where inner_partSet acc s 
+              | Set.null s       = acc
+              | Set.size s == 1  = Set.insert s acc
+              | otherwise        = 
+                  inner_partSet (Set.insert (Set.insert x eqs) acc) rest
+            where (x,s') = Set.deleteFindMin s
+                  (eqs,rest) = Set.partition (f x) s'
+
+-- | flattens a set of non empty sets and uses the minimal element of
+-- each set to represent the set
+flatSet :: (Ord a) => Set.Set (Set.Set a) -> Set.Set a
+flatSet = Set.map (\s -> if Set.null s 
+                         then error "Common.Lib.Rel.flatSet: never!"
+                         else Set.findMin s)
+
+-- | checks if a given relation is locally filtered 
+--
+-- precondition: the relation must already be closed by transitive closure
+locallyFiltered :: (Ord a) => Rel a -> Bool
+locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
+    where iso x y = member x y rel && member y x rel
+          check s
+              | Set.size s <= 1 = True
+              | otherwise = 
+                  Set.fold (\y rs -> rs && 
+                                     not (haveCommonLeftElem x y rel)) True s' 
+                  && check s' 
+              where (x,s') = Set.deleteFindMin s

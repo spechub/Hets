@@ -55,25 +55,30 @@ instance Comorphism CASL2TopSort
                Symbol RawSymbol () where
     sourceLogic CASL2TopSort = CASL
     sourceSublogic CASL2TopSort = CASL_SL
-                      { has_sub = True,
+                      { sub_features = LocFilSub,
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = True,
+                                                  onlyInjConstrs = True},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
                       }
     targetLogic CASL2TopSort = CASL
     targetSublogic CASL2TopSort = CASL_SL
-                      { has_sub = False, -- subsorting is coded out
+                      { sub_features = NoSub, -- subsorting is coded out
                         has_part = True,
-                        has_cons = True,
+                        cons_features = NoSortGen, 
+                               -- special Sort_gen_ax are coded out
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
                       }
     mapSublogic CASL2TopSort sub = 
         sublogics_max (sublogics_max need_horn need_pred) sub
-                      { has_sub = False } -- subsorting is coded out
+                      { sub_features = NoSub,
+                        cons_features = NoSortGen} 
+                        -- subsorting is coded out and
+                        -- special Sort_gen_ax are coded out
     map_theory CASL2TopSort = mkTheoryMapping transSig transSen
     map_morphism CASL2TopSort mor = 
         let rsigSour = trSig $ msource mor
@@ -121,20 +126,19 @@ generateSubSortMap sortRels pMap =
                   add s v1 = v1 {predicate_PI = 
                                    case predicate_PI v1 of
                                    Id ts is ps -> 
-                                      assert (not $ null ts) $
-                                          Id (init ts ++ 
+                                      assert (not (null ts)) 
+                                         (Id (init ts ++ 
                                               [(last ts) {tokStr = 
                                                           tokStr (last ts)++s}
-                                              ]) is ps
+                                              ]) is ps)
                                 }
-        mR = Rel.mostRight sortRels
+        mR = (Rel.flatSet . 
+              Rel.partSet (\ x y -> Rel.member x y sortRels && 
+                                    Rel.member y x sortRels))  
+             (Rel.mostRight sortRels)
         toPredInfo k e = 
             let ts = case Set.filter (\pts -> Rel.member k pts sortRels) mR of
-                     s | Set.size s == 1 -> 
-                           head $ Set.toList s
-                       | otherwise ->
-                           error ("Something went wrong with: "++
-                                  show k++';':show e++';':show s) 
+                     s -> assert (Set.size s == 1) (head (Set.toList s))
             in PredInfo { topSort_PI = ts
                         , directSuperSorts_PI = Set.difference e mR
                         , predicate_PI = k }

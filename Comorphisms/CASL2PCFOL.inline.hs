@@ -51,18 +51,20 @@ instance Comorphism CASL2PCFOL
                Symbol RawSymbol () where
     sourceLogic CASL2PCFOL = CASL
     sourceSublogic CASL2PCFOL = CASL_SL
-                      { has_sub = True,
+                      { sub_features = Sub,
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
                       }
     targetLogic CASL2PCFOL = CASL
     targetSublogic CASL2PCFOL = CASL_SL
-                      { has_sub = False, -- subsorting is coded out
+                      { sub_features = NoSub, -- subsorting is coded out
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL

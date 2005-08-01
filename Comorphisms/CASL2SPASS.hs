@@ -12,11 +12,6 @@ The translating comorphism from CASL to SPASS.
 
 {- todo
 
-   - inj operations must be inserted into CASL signature before 
-     transFuncMap is called for checking overloadRelation?
-   - check if sorts are really non-empty in SPASS, this is not granted.
-     So, generating formulas that all CASL-Sorts are non empty is needed.
-     ... done
    - implement translation of Sort_gen_ax (FORMULA f) as goals
      (s. below for a sketch)
 -}
@@ -125,9 +120,10 @@ instance Comorphism CASL2SPASS
                SPASSMorphism () () ()  where
     sourceLogic _ = CASL
     sourceSublogic _ = CASL_SL
-                      { has_sub = True, 
-                        has_part = False, -- no partiality yet ...
-                        has_cons = True,
+                      { sub_features = LocFilSub, 
+                        has_part = False,
+                        cons_features = SortGen { emptyMapping = True,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
@@ -457,7 +453,7 @@ transTheory :: (PrettyPrint f, PosItem f,Eq f) =>
             -> Result SPASSTheory 
 transTheory trSig trForm (sign,sens) = 
   fmap (trSig sign (CSign.extendedInfo sign)) 
-    (case transSign (insertInjOps sign genAxs) of
+    (case transSign (foldl insInjOps sign genAxs) of
      (tSign,idMap) -> 
         do (idMap',tSign',sentencesAndGoals) <- 
                integrateGenerated idMap genSens tSign
@@ -469,7 +465,16 @@ transTheory trSig trForm (sign,sens) =
             partition (\ s -> case (sentence s) of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
-        (genAxs,_) = partition isAxiom genSens
+        (genAxs,_) = partition isAxiom genSens 
+        insInjOps sig s =
+              case sentence s of
+              (Sort_gen_ax constrs _) ->
+                 case recover_Sort_gen_ax constrs of
+                 (_,ops,mp) -> assert (null mp) (insertInjOps sig ops)
+              f -> assert (trace ("CASL.Inject.insertInjOps: Formula: \""
+                                  ++showPretty f "\" slipped throug filter.")
+                                 True) sig
+
 
 
 ------------------------------ Formulas ------------------------------

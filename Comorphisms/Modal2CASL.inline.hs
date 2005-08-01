@@ -70,9 +70,10 @@ instance Comorphism Modal2CASL
     sourceSublogic Modal2CASL = ()
     targetLogic Modal2CASL = CASL
     targetSublogic Modal2CASL = CASL_SL
-                      { has_sub = True, 
+                      { sub_features = Sub, 
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL

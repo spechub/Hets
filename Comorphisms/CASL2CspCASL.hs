@@ -52,9 +52,10 @@ instance Comorphism CASL2CspCASL
                () () () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = CASL_SL
-                      { has_sub = True, -- simple subsorting in CspCASL
+                      { sub_features = Sub, -- simple subsorting in CspCASL
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL

@@ -59,9 +59,10 @@ instance Comorphism CoCFOL2IsabelleHOL
       CoCASL.Sublogic.CoCASL_SL 
           { CoCASL.Sublogic.has_co = True,
             CoCASL.Sublogic.casl = 
-             CASL_SL  { has_sub = False, 
+             CASL_SL  { sub_features = NoSub, 
                         has_part = False, 
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL

@@ -52,9 +52,12 @@ instance Comorphism CASL2HasCASL
                Env Morphism Symbol RawSymbol () where
     sourceLogic CASL2HasCASL = CASL
     sourceSublogic CASL2HasCASL = CASL_SL
-                      { CasSub.has_sub = True, -- simple subsorting in HasCASL
+                      { CasSub.sub_features = CasSub.Sub, 
+                         -- simple subsorting in HasCASL
                         CasSub.has_part = True,
-                        CasSub.has_cons = True,
+                        CasSub.cons_features = 
+                            CasSub.SortGen { CasSub.emptyMapping = False,
+                                             CasSub.onlyInjConstrs = False},
                         CasSub.has_eq = True,
                         CasSub.has_pred = True,
                         CasSub.which_logic = CasSub.FOL

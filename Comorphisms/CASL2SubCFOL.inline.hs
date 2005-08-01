@@ -52,18 +52,20 @@ instance Comorphism CASL2SubCFOL
                Symbol RawSymbol () where
     sourceLogic CASL2SubCFOL = CASL
     sourceSublogic CASL2SubCFOL = CASL_SL
-                      { has_sub = True,
+                      { sub_features = Sub,
                         has_part = True,
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
                       }
     targetLogic CASL2SubCFOL = CASL
     targetSublogic CASL2SubCFOL = CASL_SL
-                      { has_sub = True,
+                      { sub_features = Sub,
                         has_part = False,  -- partiality is coded out
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL

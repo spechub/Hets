@@ -74,9 +74,10 @@ instance Comorphism CFOL2IsabelleHOL
                IsabelleMorphism () () ()  where
     sourceLogic _ = CASL
     sourceSublogic _ = CASL_SL
-                      { has_sub = False, -- no subsorting yet ...
+                      { sub_features = NoSub, -- no subsorting yet ...
                         has_part = False, -- no partiality yet ...
-                        has_cons = True,
+                        cons_features = SortGen { emptyMapping = False,
+                                                  onlyInjConstrs = False},
                         has_eq = True,
                         has_pred = True,
                         which_logic = FOL
