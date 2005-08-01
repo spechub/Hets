@@ -14,15 +14,11 @@ This module replaces Sorted_term(s) with explicit injection
 
 module CASL.Inject where
 
-import Control.Exception
-import Debug.Trace
-
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Overload
 import CASL.Fold
 import Common.Id
-import Common.AS_Annotation
 import Common.PrettyPrint
 
 -- | the name of injections
