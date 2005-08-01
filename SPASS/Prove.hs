@@ -280,16 +280,20 @@ spassProveGUI thName th = do
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
   -- left frame
   left <- newFrame main []
-  grid left [GridPos (0,0)]
-  lb <- newListBox left [value $ map senName goals, bg "white",
-                         selectMode Single, height 18] :: IO (ListBox String)
+  grid left [GridPos (0,0), Sticky N]
+  l0 <- newLabel left [text "Goals:"]
+  grid l0 [GridPos (0,0), Sticky W]
+  lbFrame <- newFrame left []
+  grid lbFrame [GridPos (0,1)]
+  lb <- newListBox lbFrame [value $ map senName goals, bg "white",
+                            selectMode Single, height 18] :: IO (ListBox String)
   pack lb [Side AtLeft, Fill Y]
-  sb <- newScrollBar left []
+  sb <- newScrollBar lbFrame []
   pack sb [Side AtRight, Fill Y]
   lb # scrollbar Vertical sb
   -- right frame
   right <- newFrame main []
-  grid right [GridPos (1,0)]
+  grid right [GridPos (1,0), Sticky N]
   spacer <- newLabel right [text "   "]
   grid spacer [GridPos (0,1), Sticky W, Sticky W]
   l1 <- newLabel right [text "Options:"]
