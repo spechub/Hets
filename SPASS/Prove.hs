@@ -295,20 +295,25 @@ spassProveGUI thName th = do
   left <- newFrame b2 []
   pack left [Expand On, Fill Both]
 
-  l0 <- newLabel left [text "Goals:"]
-  grid l0 [GridPos (0,0), Sticky W]
-  lbFrame <- newFrame left []
-  grid lbFrame [GridPos (0,1)]
+  b3 <- newVBox left []
+  pack b3 [Expand On, Fill Both]
+
+  l0 <- newLabel b3 [text "Goals:"]
+  pack l0 [Anchor NorthWest]
+
+  lbFrame <- newFrame b3 []
+  pack lbFrame [Expand On, Fill Both]
+
   lb <- newListBox lbFrame [value $ map senName goals, bg "white",
-                            selectMode Single, height 18] :: IO (ListBox String)
-  pack lb [Side AtLeft, Fill Y]
+                            selectMode Single, height 15] :: IO (ListBox String)
+  pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
-  pack sb [Side AtRight, Fill Y]
+  pack sb [Expand On, Side AtRight, Fill Y]
   lb # scrollbar Vertical sb
 
   -- right frame (options/results)
   right <- newFrame b2 []
-  pack right [Expand On, Fill Both, Side AtTop]
+  pack right [Expand On, Fill Both, Anchor NorthWest]
 
   spacer <- newLabel right [text "   "]
   grid spacer [GridPos (0,1), Sticky W, Sticky W]
@@ -316,7 +321,7 @@ spassProveGUI thName th = do
   grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
   l2 <- newLabel right [text "TimeLimit"]
   grid l2 [GridPos (1,1), Sticky W]
-  (timeEntry :: Entry Int) <- newEntry right [width 15, value defaultTimeLimit]
+  (timeEntry :: Entry Int) <- newEntry right [width 18, value defaultTimeLimit]
   grid timeEntry [GridPos (3,1), Sticky W]
   timeSpinner <- newSpinButton right (\sp -> synchronize main
                                      (do
