@@ -838,7 +838,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
       let dgnode = lab' (context dgraph node)
           name = case dgnode of
                        (DGNode name _ _ _ _) -> name
-                       _ -> emptyName
+                       _ -> emptyNodeName
        in case computeTheory libEnv libNode of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th

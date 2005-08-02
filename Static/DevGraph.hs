@@ -35,17 +35,27 @@ module Static.DevGraph where
 
 import Logic.Logic
 import Logic.Grothendieck
+import Logic.Comorphism
+import Logic.Morphism
 import Logic.Prover
-import Syntax.AS_Library
-import Common.GlobalAnnotations
 
-import Data.Graph.Inductive.Graph
+import Syntax.AS_Library
+
+import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Tree as Tree
+
 import qualified Common.Lib.Map as Map
+
+import Common.AS_Annotation
+import Common.GlobalAnnotations
 import Common.Id
-import Common.PrettyPrint
-import Common.Result
 import Common.Lib.Pretty
+import Common.PrettyPrint
+import Common.PPUtils
+import Common.Result
+
+import Data.List as List
+import Control.Monad
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of 
@@ -88,8 +98,8 @@ getDGNodeName :: DGNodeLab -> String
 getDGNodeName (DGNode n _ _ _ _) = showName n
 getDGNodeName (DGRef n _ _ _ _) = showName n
 
-emptyName :: NODE_NAME
-emptyName = (mkSimpleId "","",0)
+emptyNodeName :: NODE_NAME
+emptyNodeName = (mkSimpleId "","",0)
 
 showInt :: Int -> String
 showInt i = if i==0 then "" else show i
@@ -105,7 +115,7 @@ getName :: NODE_NAME -> SIMPLE_ID
 getName (n,_,_) = n
 
 makeMaybeName :: Maybe SIMPLE_ID -> NODE_NAME
-makeMaybeName Nothing = emptyName
+makeMaybeName Nothing = emptyNodeName
 makeMaybeName (Just n) = makeName n
 
 inc :: NODE_NAME -> NODE_NAME
@@ -263,7 +273,7 @@ nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> Result (NodeS
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
                                    $ map getMaybeSig nodeSigs
-     let nodeContents = DGNode {dgn_name = emptyName,
+     let nodeContents = DGNode {dgn_name = emptyNodeName,
 				dgn_theory = G_theory lid sigU [],
 				dgn_nf = Nothing,
 				dgn_sigma = Nothing,
@@ -293,7 +303,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 -- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar) -> let 
-        nodeContents = DGNode {dgn_name = emptyName,
+        nodeContents = DGNode {dgn_name = emptyNodeName,
 			       dgn_theory = G_theory lid tar [],
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
@@ -317,7 +327,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 -- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
-        nodeContents = DGNode {dgn_name = emptyName,
+        nodeContents = DGNode {dgn_name = emptyNodeName,
 			       dgn_theory = G_theory lid src [],
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
@@ -400,3 +410,96 @@ instance PrettyPrint DGOrigin where
      DGFitViewAImp n -> ("fitting view (imports and actual parameters) "++showPretty n "")
      DGProof -> "constructed within a proof"
      _ -> show origin
+
+-- * Grothendieck theories
+
+-- | Grothendieck theories
+data G_theory = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+  G_theory lid sign [Named sentence]
+
+instance Eq G_theory where
+  G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
+     coerce l1 l2 sig1 == Just sig2
+     && coerce l1 l2 sens1 == Just sens2
+
+instance Show G_theory where
+  show (G_theory _ sign sens) =
+     show sign ++ "\n" ++ show sens
+
+instance PrettyPrint G_theory where
+  printText0 ga g = case simplifyTh g of 
+     G_theory lid sign sens -> 
+         printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
+
+-- | compute sublogic of a theory
+sublogicOfTh :: G_theory -> G_sublogics
+sublogicOfTh (G_theory lid sigma sens) =
+  let sub = foldr Logic.Logic.join 
+                  (min_sublogic_sign lid sigma)
+                  (map (min_sublogic_sentence lid . sentence) sens)
+   in G_sublogics lid sub
+
+-- | simplify a theory (throw away qualifications)
+simplifyTh :: G_theory -> G_theory
+simplifyTh (G_theory lid sigma sens) =
+  G_theory lid sigma (map (mapNamed (simplify_sen lid sigma)) sens)
+
+-- | Translation of a G_theory along a GMorphism
+translateG_theory :: GMorphism -> G_theory -> Result G_theory
+translateG_theory (GMorphism cid _ morphism2)
+                           (G_theory lid sign sens) = do
+  let tlid = targetLogic cid
+  --(sigma2,_) <- map_sign cid sign1
+  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" sens
+  sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
+  (_, sens'') <- map_theory cid (sign',sens')
+  sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
+  return (G_theory tlid (cod tlid morphism2) sens''')
+
+-- | Join the sentences of two G_theories
+joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
+joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
+  sens2' <- mcoerce lid1 lid2 "joinG_sentences" sens2
+    -- assert (sig1 == sig2') ? 
+  return $ G_theory lid1 sig1 $ List.union sens1 sens2'
+
+-- | flattening the sentences form a list of G_theories
+flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
+flatG_sentences th ths = foldM joinG_sentences th ths
+
+-- | Get signature of a theory
+signOf :: G_theory -> G_sign
+signOf (G_theory lid sign _) = G_sign lid sign
+
+------------------------------------------------------------------
+-- Coercion
+------------------------------------------------------------------
+
+-- | coerce a theory into a "different" logic
+coerceTheory :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+      lid -> G_theory -> Result (sign, [Named sentence])
+coerceTheory lid (G_theory lid2 sign2 sens2)
+  = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
+
+
+------------------------------------------------------------------
+-- Grothendieck diagrams and weakly amalgamable cocones
+------------------------------------------------------------------
+
+type GDiagram = Tree.Gr G_theory GMorphism
+
+gWeaklyAmalgamableCocone :: GDiagram 
+                         -> Result (G_theory,Map.Map Graph.Node GMorphism)
+gWeaklyAmalgamableCocone _ = 
+    return (undefined,Map.empty) -- dummy implementation
+

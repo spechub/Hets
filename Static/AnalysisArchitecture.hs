@@ -490,7 +490,7 @@ ana_UNIT_SPEC lgraph defl gctx@(_, genv, _) curl just_struct
         ana_UNIT_SPEC lgraph defl gctx curl just_struct impsig (Spec_name spn)
 -- a trivial unit type
 ana_UNIT_SPEC lgraph _ gctx _ just_struct impsig (Unit_type [] resultSpec poss) =
-    do (resultSpec', resultSig, dg') <- ana_SPEC lgraph gctx impsig Static.DevGraph.emptyName  
+    do (resultSpec', resultSig, dg') <- ana_SPEC lgraph gctx impsig emptyNodeName  
                                                  just_struct  (item resultSpec)
        return (Unit_sig resultSig, dg', Unit_type [] (replaceAnnoted resultSpec' resultSpec) poss)
 -- a non-trivial unit type
@@ -498,7 +498,7 @@ ana_UNIT_SPEC lgraph defl gctx@(gannos, genv, _) _ opts impSig (Unit_type argSpe
     do (argSigs, dg1, argSpecs') <- ana_argSpecs lgraph defl gctx opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1 (impSig : map JustNode argSigs) DGFormalParams
        (resultSpec', resultSig, dg3) <- ana_SPEC lgraph (gannos, genv, dg2) (JustNode sigUnion)
-                                                 Static.DevGraph.emptyName opts (item resultSpec)
+                                                 emptyNodeName opts (item resultSpec)
        return (Par_unit_sig argSigs resultSig, dg3, 
                Unit_type argSpecs' (replaceAnnoted resultSpec' resultSpec) poss) 
 -- SPEC-NAME (an alias)
@@ -538,7 +538,7 @@ ana_argSpecs :: LogicGraph -> AnyLogic -> GlobalContext -> HetcatsOpts -> [Annot
 ana_argSpecs _ _ (_, _, dg) _ [] =
     do return ([], dg, [])
 ana_argSpecs lgraph defl gctx@(gannos, genv, _) opts (argSpec : argSpecs) =
-    do (argSpec', argSig, dg') <- ana_SPEC lgraph gctx (EmptyNode defl) Static.DevGraph.emptyName
+    do (argSpec', argSig, dg') <- ana_SPEC lgraph gctx (EmptyNode defl) emptyNodeName
                                            opts (item argSpec)
        (argSigs, dg'', argSpecs') <- ana_argSpecs lgraph defl (gannos, genv, dg') opts argSpecs
        return (argSig : argSigs, dg'', (replaceAnnoted argSpec' argSpec) : argSpecs')

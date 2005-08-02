@@ -46,14 +46,11 @@ import Logic.Prover
 import Logic.Comorphism
 import Logic.Morphism
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.Lib.Pretty
-import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
-import Common.AS_Annotation
 import Common.DynamicUtils 
 import Data.Dynamic
 import qualified Data.List as List
@@ -147,42 +144,6 @@ instance PrettyPrint G_ext_sign where
 
 langNameExtSig :: G_ext_sign -> String
 langNameExtSig (G_ext_sign lid _ _) = language_name lid
-
--- | Grothendieck theories
-data G_theory = forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-  G_theory lid sign [Named sentence]
-
-instance Eq G_theory where
-  G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
-     coerce l1 l2 sig1 == Just sig2
-     && coerce l1 l2 sens1 == Just sens2
-
-instance Show G_theory where
-  show (G_theory _ sign sens) =
-     show sign ++ "\n" ++ show sens
-
-instance PrettyPrint G_theory where
-  printText0 ga g = case simplifyTh g of 
-     G_theory lid sign sens -> 
-         printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
-
--- | compute sublogic of a theory
-sublogicOfTh :: G_theory -> G_sublogics
-sublogicOfTh (G_theory lid sigma sens) =
-  let sub = foldr Logic.Logic.join 
-                  (min_sublogic_sign lid sigma)
-                  (map (min_sublogic_sentence lid . sentence) sens)
-   in G_sublogics lid sub
-
--- | simplify a theory (throw away qualifications)
-simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma sens) =
-  G_theory lid sigma (map (mapNamed (simplify_sen lid sigma)) sens)
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics
@@ -621,33 +582,6 @@ compInclusion lg mor1 mor2 = do
 compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
 compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 
--- | Translation of a G_theory along a GMorphism
-translateG_theory :: GMorphism -> G_theory -> Result G_theory
-translateG_theory (GMorphism cid _ morphism2)
-                           (G_theory lid sign sens) = do
-  let tlid = targetLogic cid
-  --(sigma2,_) <- map_sign cid sign1
-  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" sens
-  sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
-  (_, sens'') <- map_theory cid (sign',sens')
-  sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return (G_theory tlid (cod tlid morphism2) sens''')
-
--- | Join the sentences of two G_theories
-joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
-joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
-  sens2' <- mcoerce lid1 lid2 "joinG_sentences" sens2
-    -- assert (sig1 == sig2') ? 
-  return $ G_theory lid1 sig1 $ List.union sens1 sens2'
-
--- | flattening the sentences form a list of G_theories
-flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
-flatG_sentences th ths = foldM joinG_sentences th ths
-
--- | Get signature of a theory
-signOf :: G_theory -> G_sign
-signOf (G_theory lid sign _) = G_sign lid sign
-
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) = 
@@ -688,33 +622,3 @@ data G_prover = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
        G_cons_checker lid (ConsChecker sign sentence morphism proof_tree)
-
-
-
-------------------------------------------------------------------
--- Coercion
-------------------------------------------------------------------
-
--- | coerce a theory into a "different" logic
-coerceTheory :: forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-      lid -> G_theory -> Result (sign, [Named sentence])
-coerceTheory lid (G_theory lid2 sign2 sens2)
-  = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
-
-
-------------------------------------------------------------------
--- Grothendieck diagrams and weakly amalgamable cocones
-------------------------------------------------------------------
-
-type GDiagram = Tree.Gr G_theory GMorphism
-
-gWeaklyAmalgamableCocone :: GDiagram 
-                         -> Result (G_theory,Map.Map Graph.Node GMorphism)
-gWeaklyAmalgamableCocone _ = 
-    return (undefined,Map.empty) -- dummy implementation
-
