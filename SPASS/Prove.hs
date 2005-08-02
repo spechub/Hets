@@ -56,6 +56,8 @@ import SpinButton
 import ModalDialog
 import DialogWin
 import TextDisplay
+import Separator
+import Space
 
 import GUI.HTkUtils
 
@@ -276,11 +278,23 @@ spassProveGUI thName th = do
   let initState = initialState th 
                   (collectNameMapping goals (filter isAxiom nSens)) goals
   stateRef <- newIORef initState
+
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
-  -- left frame
-  left <- newFrame main []
-  grid left [GridPos (0,0), Sticky N]
+  pack main [Expand On, Fill Both]
+
+  -- VBox for the whole window
+  b <- newVBox main []
+  pack b [Expand On, Fill Both]
+
+  -- HBox for the upper part (goals on the left, options/results on the right)
+  b2 <- newHBox b []
+  pack b2 [Expand On, Fill Both]
+
+  -- left frame (goals)
+  left <- newFrame b2 []
+  pack left [Expand On, Fill Both]
+
   l0 <- newLabel left [text "Goals:"]
   grid l0 [GridPos (0,0), Sticky W]
   lbFrame <- newFrame left []
@@ -291,9 +305,11 @@ spassProveGUI thName th = do
   sb <- newScrollBar lbFrame []
   pack sb [Side AtRight, Fill Y]
   lb # scrollbar Vertical sb
-  -- right frame
-  right <- newFrame main []
-  grid right [GridPos (1,0), Sticky N]
+
+  -- right frame (options/results)
+  right <- newFrame b2 []
+  pack right [Expand On, Fill Both, Side AtTop]
+
   spacer <- newLabel right [text "   "]
   grid spacer [GridPos (0,1), Sticky W, Sticky W]
   l1 <- newLabel right [text "Options:"]
@@ -345,15 +361,27 @@ spassProveGUI thName th = do
   axiomsLb # scrollbar Vertical axiomsSb
   detailsButton <- newButton right [text "Show Details"]
   grid detailsButton [GridPos (2,8), Columnspan 2, Sticky E]
-  -- bottom frame
-  bottom <- newFrame main []
-  grid bottom [GridPos (0,1), Columnspan 2]
+
+  -- separator
+  sp1 <- newSpace b (cm 0.15) []
+  pack sp1 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2 <- newSpace b (cm 0.15) []
+  pack sp2 [Expand Off, Fill X, Side AtBottom]
+
+  -- bottom frame (help/save/exit buttons)
+  bottom <- newFrame b []
+  pack bottom [Expand Off, Fill Both]
+  
   helpButton <- newButton bottom [text "Help"]
   grid helpButton [GridPos (0,0)]
   saveButton <- newButton bottom [text "Save Prover Configuration"]
   grid saveButton [GridPos (1,0)]
   exitButton <- newButton bottom [text "Exit Prover"]
   grid exitButton [GridPos (2,0)]
+
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   prove <- clicked proveButton
@@ -361,6 +389,7 @@ spassProveGUI thName th = do
   help <- clicked helpButton
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
+
   -- event handlers
   spawnEvent 
     (forever
