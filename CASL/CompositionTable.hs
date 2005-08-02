@@ -1,8 +1,11 @@
 module CompositionTable where
 
+{-
+DTD unter http://www.tzi.de/cofi/hets/CompositionTable.dtd
+-}
 type BaseRel = String
 
-type CompositionTable = [(BaseRel,BaseRel,[BaseRel])]
+typ CompositionTable = [(BaseRel,BaseRel,[BaseRel])]
 type ConverseTable = [(BaseRel,BaseRel)]
 
 data Table = Table { name :: String,
