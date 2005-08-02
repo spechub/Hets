@@ -1,0 +1,32 @@
+
+StaticAna:
+----------
+
+generell: 
+  - Bitte nur 80 Zeichen pro Zeile!
+  - immer Signaturen angeben!
+  - alle Warnungen von GHC bearbeiten, so dass keine mehr auftauchen
+       
+basicOWL_DLAnalysis:
+  - Nachdem anaOntology die Signatur gefüllt hat und die Sätze
+    getrennt, müssen jetzt alle in den Sätzen benutzten Identifier
+    in der Signatur eigetragen sein. Falls eine AnnotationProperty
+    nicht deklariert wurde, wird es mit einer Warnung nachgetragen.
+    Testfunktion liefert (Result (Sign,[Named Sentence])) 
+
+concatResult:
+  - Reihenfolge der Diagnosen muss immer gleich sein (diag1++diag2)
+  - Bei der Kombination von namedSen muss Sätze auch immer in der
+    Reihenfolge des Auftretens abgelegt werden.
+
+anaDirective:
+  - PrimaryConcept vs. Concept implementieren
+
+StructuredAna:
+--------------
+
+statt dem Comorphismus aus der Instanz in OWL_DL.Logic_OWL_DL bitte
+diesen IdentitätsComorphismus nutzen:
+   Logic.Grothendiek.idComorphism
+ (Identität in Bezug auf die LogicID)
+
