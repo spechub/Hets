@@ -25,6 +25,7 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 
 import OWL_DL.Sign
+import OWL_DL.AS
 
 instance PrintLaTeX Sign where
   printLatex0 = printText0
@@ -37,3 +38,10 @@ instance PrintLaTeX Sentence where
 
 instance PrettyPrint Sentence where
  printText0 _ = text . show
+
+instance PrettyPrint Ontology where
+ printText0 _ = text. show
+
+instance PrintLaTeX Ontology where
+ printLatex0 = printText0
+
