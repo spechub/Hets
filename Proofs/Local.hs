@@ -27,6 +27,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
 import Common.AS_Annotation
+import qualified Common.Lib.Set as Set
 import Data.Graph.Inductive.Graph
 import Proofs.Proofs
 import Proofs.EdgeUtils
@@ -134,7 +135,8 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
             Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
 	    Just (_,sentencesTgt) ->
               -- check if all source axioms are also axioms in the target
-              if (all (`elem` sentencesTgt) (filter isAxiom sensSrc)) 
+              if Set.isSubsetOf (Set.filter (isAxiom  . value) sensSrc)
+                 sentencesTgt
                then locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
                 else locSubsumeAux libEnv ln dgraph (rules,changes) list
         _ -> locSubsumeAux libEnv ln dgraph (rules,changes) list

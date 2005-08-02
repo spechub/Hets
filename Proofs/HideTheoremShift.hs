@@ -202,8 +202,8 @@ createEdgeForPath path =
     Just morphism -> (getSourceNode (head path),
                       getTargetNode (last path),
 		      DGLink {dgl_morphism = morphism,
-			      dgl_type = (GlobalThm Static.DevGraph.Open None
-					  Static.DevGraph.Open),
+			      dgl_type = (GlobalThm LeftOpen None
+					  LeftOpen),
 			      dgl_origin = DGProof}
 		     )    
     Nothing -> error ("Could not determine morphism of path " ++ (show path))

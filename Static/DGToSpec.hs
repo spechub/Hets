@@ -26,6 +26,7 @@ import Common.Result
 import Common.Id
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 emptyAnno :: SPEC -> Annoted SPEC
 emptyAnno x = Annoted x nullRange [] []
@@ -38,7 +39,8 @@ dgToSpec dg node = do
       pos = nullRange
   case n of
     DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic -> 
-      do let b = Basic_spec (G_basic_spec lid1 (sign_to_basic_spec lid1 sigma sen'))
+      do let b = Basic_spec $ G_basic_spec lid1 $ 
+                 sign_to_basic_spec lid1 sigma $ toNamedList sen'
          if null apredSps
           then return b
           else return (Extension (apredSps++[emptyAnno b]) pos)
@@ -186,4 +188,5 @@ computePathTheory libEnv ln e@(src, _, link) = do
           else computeTheory libEnv (ln, src) 
           -- turn all imported theorems into axioms
     translateG_theory (dgl_morphism link) $ G_theory lid sign
-                      $ map ( \ x -> x {isAxiom = True} ) sens
+                      $ Set.map ( \ x -> x { value = (value x) 
+                                             {isAxiom = True}} ) sens

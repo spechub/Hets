@@ -195,7 +195,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Static/DevGraph.hs Logic/Prover.hs Proofs/Proofs.hs
+    Logic/Prover.hs Proofs/Proofs.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -214,10 +214,6 @@ ATC/AS_Library.der.hs: Syntax/AS_Library.der.hs $(GENRULES)
 
 ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
-
-# -x BasicProof is excluded automagically
-ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Library -i ATC.BasicProof -o $@ $<
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<

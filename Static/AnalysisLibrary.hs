@@ -449,8 +449,8 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
       gmor = gEmbed (G_morphism lid mor)
       link = (nodeS,nodeT,DGLink {
                dgl_morphism = gmor,
-               dgl_type = GlobalThm Open None Open,
-                   -- 'Open' for conserv correct?
+               dgl_type = GlobalThm LeftOpen None LeftOpen,
+                   -- 'LeftOpen' for conserv correct?
                dgl_origin = DGView vn})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
   if Map.member vn genv 

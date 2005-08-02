@@ -160,7 +160,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents = DGNode {
              dgn_name = name,
-             dgn_theory = G_theory lid sigma_complete ax, 
+             dgn_theory = G_theory lid sigma_complete $ toThSens ax, 
                       -- no, not only the delta
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
@@ -189,7 +189,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       G_sign lid' gsig <- return gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid' gsig [],
+            dgn_theory = G_theory lid' gsig noSens,
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGTranslation }
@@ -218,7 +218,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            G_sign lid' gsig <- return gsigma''
            let node_contents = DGNode {
                  dgn_name = name,
-                 dgn_theory = G_theory lid' gsig [], 
+                 dgn_theory = G_theory lid' gsig noSens, 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGHiding }
@@ -243,7 +243,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            let node1 = getNewNode dg'
                node_contents1 = DGNode {
                  dgn_name = name,
-                 dgn_theory = G_theory lid1 gsig [],
+                 dgn_theory = G_theory lid1 gsig noSens,
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealing }
@@ -259,7 +259,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            let [node1,node''] = newNodes 2 dg'
                node_contents1 = DGNode {
                  dgn_name = extName "T" name,
-                 dgn_theory = G_theory lid1 gsig [], 
+                 dgn_theory = G_theory lid1 gsig noSens, 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealing }
@@ -269,7 +269,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                  dgl_origin = DGRevealing })
                node_contents'' = DGNode {
                 dgn_name = name,
-                 dgn_theory = G_theory lid'' gsig'' [], 
+                 dgn_theory = G_theory lid'' gsig'' noSens, 
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGRevealTranslation }
@@ -300,7 +300,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       G_sign lid' gsig <- return gbigSigma
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid' gsig [], 
+            dgn_theory = G_theory lid' gsig noSens, 
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGUnion }
@@ -357,7 +357,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            -- insert a theorem link according to p. 319 of the CASL Reference Manual
            return $ insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
-             dgl_type = GlobalThm Open None Open,
+             dgl_type = GlobalThm LeftOpen None LeftOpen,
              dgl_origin = DGExtension }) dg1
           else do
            let anno2 = case anno1 of
@@ -372,7 +372,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            incl <- ginclusion lg sig' sig1
            return $ insEdgeNub (n',n1,DGLink {
              dgl_morphism = incl,
-             dgl_type = GlobalThm Open anno2 Open,
+             dgl_type = GlobalThm LeftOpen anno2 LeftOpen,
              dgl_origin = DGExtension }) dg1            
        _ -> return dg1
      return (sp1':sps', JustNode nsig1, dg2)
@@ -385,7 +385,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid' gsig [], -- delta is empty
+            dgn_theory = G_theory lid' gsig noSens, -- delta is empty
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGFree }
@@ -407,7 +407,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid' gsig [], -- delta is empty
+            dgn_theory = G_theory lid' gsig noSens, -- delta is empty
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGCofree }
@@ -451,7 +451,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
          pos
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid sigma3 [],
+            dgn_theory = G_theory lid sigma3 noSens,
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGLocal }
@@ -483,7 +483,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' [],
+            dgn_theory = G_theory lid'' gsig'' noSens,
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGClosed }
@@ -520,7 +520,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       let node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' [],
+            dgn_theory = G_theory lid'' gsig'' noSens,
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGLogicQual }
@@ -589,7 +589,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
              let node = getNewNode dg
                  node_contents = DGNode {
                    dgn_name = name,
-                   dgn_theory = G_theory lid gsig [],
+                   dgn_theory = G_theory lid gsig noSens,
 		   dgn_nf = Nothing,
 		   dgn_sigma = Nothing,
                    dgn_origin = DGSpecInst spname}
@@ -609,7 +609,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
            let node = getNewNode dg
                node_contents = DGNode {
                  dgn_name = name,
-                 dgn_theory = G_theory lid gsig [],
+                 dgn_theory = G_theory lid gsig noSens,
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGSpecInst spname}
@@ -643,7 +643,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        let node = getNewNode dg'
            node_contents = DGNode {
              dgn_name = name,
-             dgn_theory = G_theory lidRes gsigRes [],
+             dgn_theory = G_theory lidRes gsigRes noSens,
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGSpecInst spname}
@@ -705,7 +705,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       let gsigmaD' = G_sign lidP' sigmaD'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lidP' sigmaD' sensD',
+            dgn_theory = G_theory lidP' sigmaD' $ toThSens sensD',
 	    dgn_nf = Nothing,
 	    dgn_sigma = Nothing,
             dgn_origin = DGData }
@@ -869,7 +869,7 @@ ana_FIT_ARG lg gctx spname nsigI
       -- ??? also output some symbol that is affected
    let link = (nP,nA,DGLink {
          dgl_morphism = gEmbed (G_morphism lidP mor),
-         dgl_type = GlobalThm Open None Open,
+         dgl_type = GlobalThm LeftOpen None LeftOpen,
          dgl_origin = DGSpecInst spname})
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            insEdgeNub link dg',
@@ -917,7 +917,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
          EmptyNode _ -> do
            let link = (nP,nSrc,DGLink {
                  dgl_morphism = ide Grothendieck gsigmaP,
-                 dgl_type = GlobalThm Open None Open,
+                 dgl_type = GlobalThm LeftOpen None LeftOpen,
                  dgl_origin = DGFitView spname})
            return (fv,insEdgeNub link dg,(G_morphism lid morHom,target))
               
@@ -945,19 +945,19 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
            let [nA,n'] = newNodes 2 dg
                node_contentsA = DGNode {
                  dgn_name = name,
-                 dgn_theory = G_theory lidA gsigA [],
+                 dgn_theory = G_theory lidA gsigA noSens,
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGFitViewA spname}
                node_contents' = DGNode {
                  dgn_name = inc name,
-                 dgn_theory = G_theory lidP gsigP [],
+                 dgn_theory = G_theory lidP gsigP noSens,
 		 dgn_nf = Nothing,
 		 dgn_sigma = Nothing,
                  dgn_origin = DGFitView spname}
                link = (nP,n',DGLink {
                  dgl_morphism = ide Grothendieck gsigmaP,
-                 dgl_type = GlobalThm Open None Open,
+                 dgl_type = GlobalThm LeftOpen None LeftOpen,
                  dgl_origin = DGFitView spname})
                link1 = (nSrc,n',DGLink {
                  dgl_morphism = incl4,
@@ -1015,19 +1015,19 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
        let [nA,n'] = newNodes 2 dg'
            node_contentsA = DGNode {
            dgn_name = name,
-           dgn_theory = G_theory lidRes gsigRes [],
+           dgn_theory = G_theory lidRes gsigRes noSens,
 	   dgn_nf = Nothing,
 	   dgn_sigma = Nothing,
            dgn_origin = DGFitViewA spname}
            node_contents' = DGNode {
              dgn_name = extName "V" name,
-             dgn_theory = G_theory lidP gsigP [],
+             dgn_theory = G_theory lidP gsigP noSens,
 	     dgn_nf = Nothing,
 	     dgn_sigma = Nothing,
              dgn_origin = DGFitView spname}
            link = (nP,n',DGLink {
              dgl_morphism = ide Grothendieck gsigmaP,
-             dgl_type = GlobalThm Open None Open,
+             dgl_type = GlobalThm LeftOpen None LeftOpen,
              dgl_origin = DGFitView spname})
            link1 = (nSrc,n',DGLink {
              dgl_morphism = incl4,
@@ -1232,7 +1232,7 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
   G_sign lidP gsigP <- return gsigmaP
   let node_contents = DGNode {
         dgn_name = name,
-        dgn_theory = G_theory lidP gsigP [],
+        dgn_theory = G_theory lidP gsigP noSens,
 	dgn_nf = Nothing,
 	dgn_sigma = Nothing,
         dgn_origin = DGFormalParams }

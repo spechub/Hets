@@ -60,7 +60,7 @@ isProvenGlobalThm (_,_,edgeLab) =
 isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
 isUnprovenGlobalThm (_,_,edgeLab) = 
   case dgl_type edgeLab of
-    (GlobalThm Static.DevGraph.Open _ _) -> True
+    (GlobalThm LeftOpen _ _) -> True
     _ -> False
 
 isProvenLocalThm :: LEdge DGLinkLab -> Bool
@@ -72,7 +72,7 @@ isProvenLocalThm (_,_,edgeLab) =
 isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
 isUnprovenLocalThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (LocalThm (Static.DevGraph.Open) _ _) -> True
+    (LocalThm LeftOpen _ _) -> True
     _ -> False
 
 
@@ -98,7 +98,7 @@ isProvenHidingThm (_,_,edgeLab) =
 isUnprovenHidingThm :: LEdge DGLinkLab -> Bool
 isUnprovenHidingThm (_,_,edgeLab) =
   case dgl_type edgeLab of
-    (HidingThm _ Static.DevGraph.Open) -> True
+    (HidingThm _ LeftOpen) -> True
     _ -> False
 
 -- ----------------------------------------------------------------------------

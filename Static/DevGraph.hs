@@ -36,7 +36,6 @@ module Static.DevGraph where
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Morphism
 import Logic.Prover
 
 import Syntax.AS_Library
@@ -45,6 +44,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Tree as Tree
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -53,7 +53,9 @@ import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Result
+import Common.DynamicUtils 
 
+import Data.Dynamic
 import Data.List as List
 import Control.Monad
 
@@ -133,7 +135,7 @@ isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _) = 
-  is_subsig lid sigma (empty_signature lid) && null sens
+  is_subsig lid sigma (empty_signature lid) && Set.null sens
 locallyEmpty (DGRef _ _ _ _ _) = True
            
 data DGLinkLab = DGLink {
@@ -202,7 +204,7 @@ instance Show BasicProof where
 data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Eq, Show)
 
-data ThmLinkStatus =  Static.DevGraph.Open 
+data ThmLinkStatus = LeftOpen 
 		   | Proven DGRule [DGLinkLab] deriving (Eq, Show)
 
 data DGLinkType = LocalDef 
@@ -274,7 +276,7 @@ nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
                                    $ map getMaybeSig nodeSigs
      let nodeContents = DGNode {dgn_name = emptyNodeName,
-				dgn_theory = G_theory lid sigU [],
+				dgn_theory = G_theory lid sigU noSens,
 				dgn_nf = Nothing,
 				dgn_sigma = Nothing,
 				dgn_origin = orig }
@@ -304,7 +306,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar) -> let 
         nodeContents = DGNode {dgn_name = emptyNodeName,
-			       dgn_theory = G_theory lid tar [],
+			       dgn_theory = G_theory lid tar noSens,
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
@@ -328,7 +330,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyNodeName,
-			       dgn_theory = G_theory lid src [],
+			       dgn_theory = G_theory lid src Set.empty,
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
 			       dgn_origin = orig}
@@ -411,6 +413,52 @@ instance PrettyPrint DGOrigin where
      DGProof -> "constructed within a proof"
      _ -> show origin
 
+-- * sentence packing
+
+data Decorated a = Decorated
+     { value :: Named a
+     , order :: Int
+     , thmStatus :: ThmLinkStatus
+     , isDef :: Bool
+     } deriving Show
+
+decoTc :: TyCon
+decoTc = mkTyCon "Static.DevGraph.Decorated"
+
+instance Typeable s => Typeable (Decorated s) where 
+  typeOf s = mkTyConApp decoTc [typeOf ((undefined :: Decorated a -> a) s)]
+
+type ThSens a = Set.Set (Decorated a)
+
+noSens :: ThSens a
+noSens = Set.empty
+
+emptyDecorated :: Decorated a
+emptyDecorated = Decorated { value = error "emptyDecorated"
+                           , order = 0
+                           , thmStatus = LeftOpen
+                           , isDef = False }
+
+mapValue :: (a -> b) -> Decorated a -> Decorated b
+mapValue f d = d { value = mapNamed f $ value d } 
+
+toNamedList :: ThSens a -> [Named a]
+toNamedList s = let compO d1 d2 = compare (order d1) (order d2)
+                in map value $ sortBy compO $ Set.toList s  
+
+toThSens :: Ord a => [Named a] -> ThSens a
+toThSens sens = Set.fromList $ zipWith 
+    ( \ v i -> emptyDecorated { value = v, order = i })
+    sens [1..]
+
+instance Eq a => Eq (Decorated a) where
+    d1 == d2 = (value d1, isDef d1) == 
+               (value d2, isDef d2)
+
+instance Ord a => Ord (Decorated a) where
+    d1 <= d2 = (value d1, isDef d1) <= 
+               (value d2, isDef d2)
+
 -- * Grothendieck theories
 
 -- | Grothendieck theories
@@ -420,7 +468,7 @@ data G_theory = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_theory lid sign [Named sentence]
+  G_theory lid sign (ThSens sentence)
 
 instance Eq G_theory where
   G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
@@ -434,20 +482,22 @@ instance Show G_theory where
 instance PrettyPrint G_theory where
   printText0 ga g = case simplifyTh g of 
      G_theory lid sign sens -> 
-         printText0 ga sign $++$ vsep (map (print_named lid ga) sens)
+         printText0 ga sign $++$ vsep (map (print_named lid ga) 
+                                           $ toNamedList sens)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
-  let sub = foldr Logic.Logic.join 
+  let sub = Set.fold Logic.Logic.join 
                   (min_sublogic_sign lid sigma)
-                  (map (min_sublogic_sentence lid . sentence) sens)
+                  (Set.map (min_sublogic_sentence lid . sentence . value) 
+                       sens)
    in G_sublogics lid sub
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma sens) =
-  G_theory lid sigma (map (mapNamed (simplify_sen lid sigma)) sens)
+simplifyTh (G_theory lid sigma sens) = G_theory lid sigma $ 
+    Set.map (mapValue $ simplify_sen lid sigma) sens
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
@@ -455,18 +505,19 @@ translateG_theory (GMorphism cid _ morphism2)
                            (G_theory lid sign sens) = do
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
-  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" sens
+  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" 
+          $ map value $ Set.toList sens
   sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
   (_, sens'') <- map_theory cid (sign',sens')
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
-  return (G_theory tlid (cod tlid morphism2) sens''')
+  return $ G_theory tlid (cod tlid morphism2) $ toThSens sens'''
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
   sens2' <- mcoerce lid1 lid2 "joinG_sentences" sens2
     -- assert (sig1 == sig2') ? 
-  return $ G_theory lid1 sig1 $ List.union sens1 sens2'
+  return $ G_theory lid1 sig1 $ Set.union sens1 sens2'
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
@@ -487,7 +538,7 @@ coerceTheory :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-      lid -> G_theory -> Result (sign, [Named sentence])
+      lid -> G_theory -> Result (sign, ThSens sentence)
 coerceTheory lid (G_theory lid2 sign2 sens2)
   = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
 

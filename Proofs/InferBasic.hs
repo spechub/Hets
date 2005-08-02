@@ -50,6 +50,7 @@ import Common.PrettyPrint
 import Common.AS_Annotation
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
@@ -222,12 +223,13 @@ basicInferenceNode checkCons lg (ln, node)
         goalslist <- if checkCons then return []
                       else resToIORes $ mapM (getGoals libEnv ln) localEdges
         G_theory lid3 _ goals <- case goalslist of 
-            [] -> return $ G_theory lid1 sign [] 
+            [] -> return $ G_theory lid1 sign noSens 
             hd : tl -> flatG_sentences hd tl
         goals1 <- coerce lid1 lid3 goals
         -- select a suitable translation and prover
         let provers = getProvers checkCons lg 
-                          (sublogicOfTh (G_theory lid1 sign (axs++goals1)))
+                          $ sublogicOfTh $ G_theory lid1 sign
+                          $ Set.union axs goals1
         (prover,Comorphism cid) <- selectProver provers
         -- Borrowing: prepare translation of theory
         let lidS = sourceLogic cid
@@ -239,8 +241,8 @@ basicInferenceNode checkCons lg (ln, node)
          G_prover lid4 p -> do
            -- Borrowing: translate goals and theory
            goals' <- coerce lidS lid3 goals
-           let goals'' = map (\ s -> s {isAxiom = False}) goals'
-           (sign'',sens'') <- transTh (sign',axs'++goals'')
+           let goals'' = map markGoal $ toNamedList goals'
+           (sign'',sens'') <- transTh (sign', toNamedList axs' ++ goals'')
            -- call the prover
            p' <- coerce lidT lid4 p
            ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
@@ -251,7 +253,7 @@ basicInferenceNode checkCons lg (ln, node)
            return newProofStatus
          G_cons_checker lid4 p -> do
            -- Borrowing: translate theory
-           (sign'',sens'') <- transTh (sign',axs')
+           (sign'',sens'') <- transTh (sign', toNamedList axs')
            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
            let mor = TheoryMorphism { t_source = empty_theory lidT, 
                                       t_target = Theory sign'' sens'',

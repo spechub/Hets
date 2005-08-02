@@ -710,7 +710,7 @@ createLocalMenuValueTitleShowConservativity =
     showCons c status =
       case (c,status) of
         (None,_) -> show c
-        (_,Open) -> (show c) ++ "?"
+        (_,LeftOpen) -> (show c) ++ "?"
         _ -> show c
 
 -- ------------------------------
@@ -820,9 +820,9 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
          sens' <- coerce lidS lid sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <- 
-             Res.resToIORes $ map_theory cid (sign',sens')
+             Res.resToIORes $ map_theory cid (sign', toNamedList sens')
          Res.ioToIORes $ displayTheory "Translated theory" node dgraph 
-            (G_theory lidT sign'' sens1)
+            (G_theory lidT sign'' $ toThSens sens1)
      )
     showDiags opts diags
     return ()
@@ -938,7 +938,8 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
       case coerce lid1 lid (sign1,sens1) of
            Just (sign2, sens2) -> 
              let Res.Result diags res = 
-                     conservativityCheck lid (sign2,sens2) morphism2' sens
+                     conservativityCheck lid (sign2, toNamedList sens2)
+                                         morphism2' $ toNamedList sens
                  showRes = case res of
                    Just(Just True) -> "The link is conservative"
                    Just(Just False) -> "The link is not conservative"
@@ -1026,7 +1027,7 @@ getThmType :: ThmLinkStatus -> String
 getThmType thmLinkStatus =
   case thmLinkStatus of
     Proven _ _ -> "proven"
-    Open -> "unproven"
+    LeftOpen -> "unproven"
 
 {- converts the edges of the development graph
 works the same way as convertNods does-}

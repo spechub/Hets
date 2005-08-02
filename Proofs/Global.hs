@@ -152,20 +152,20 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
        (node,
         target,
         DGLink {dgl_morphism = morphism,
-                dgl_type = (HidingThm (dgl_morphism (getLabelOfEdge (head path))) (Static.DevGraph.Open)),
+                dgl_type = (HidingThm (dgl_morphism (getLabelOfEdge (head path))) LeftOpen),
                 dgl_origin = DGProof})
     globalEdge = (node,
 	          target,
 	          DGLink {dgl_morphism = morphism,
-		          dgl_type = (GlobalThm (Static.DevGraph.Open)
-			  	      None (Static.DevGraph.Open)),
+		          dgl_type = (GlobalThm LeftOpen
+			  	      None LeftOpen),
 		          dgl_origin = DGProof}
 		 )
     localEdge = (node,
 	         target,
 	         DGLink {dgl_morphism = morphism,
-		         dgl_type = (LocalThm (Static.DevGraph.Open)
-			  	     None (Static.DevGraph.Open)),
+		         dgl_type = (LocalThm LeftOpen
+			  	     None LeftOpen),
 		         dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge dgraph
