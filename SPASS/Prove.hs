@@ -581,8 +581,12 @@ runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms
          -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
 runSpass lp config nGoal =
   Exception.catch (runSpassReal lp config nGoal)
-    (\ exp -> return (SpassError ("Error running SPASS.\n"++show exp), 
-                      (Open (senName nGoal), [])))
+    (\ exp -> return (case exp of
+		-- this is supposed to distinguish "fd ... vanished" errors from other exceptions
+                IOException e -> (SpassError ("Internal error communicating with SPASS.\n"++show e),
+                                    (Open (senName nGoal), []))
+                _ -> (SpassError ("Error running SPASS.\n"++show exp), 
+                        (Open (senName nGoal), []))))
 
   where
     runSpassReal lp config nGoal = do
