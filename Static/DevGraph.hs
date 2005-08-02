@@ -42,13 +42,10 @@ import Common.GlobalAnnotations
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.Result
 import Common.Lib.Pretty
-
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of 
@@ -201,8 +198,8 @@ data ThmLinkStatus =  Static.DevGraph.Open
 data DGLinkType = LocalDef 
             | GlobalDef
             | HidingDef
-            | FreeDef NodeSig -- the "parameter" node
-            | CofreeDef NodeSig -- the "parameter" node
+            | FreeDef MaybeNode -- the "parameter" node
+            | CofreeDef MaybeNode -- the "parameter" node
 	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
@@ -229,37 +226,43 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
-              deriving (Eq,Show)
+              deriving (Eq, Show)
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
-data NodeSig = NodeSig (Node,G_sign) | EmptyNode AnyLogic
-               deriving (Eq,Show)
+data NodeSig = NodeSig Node G_sign deriving (Eq, Show)
+
+data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Eq, Show)
 
 instance PrettyPrint NodeSig where
-  printText0 ga (EmptyNode _) = ptext "<empty NodeSig>"
-  printText0 ga (NodeSig(n,sig)) = 
+  printText0 ga (NodeSig n sig) = 
     ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
-
-getNode (NodeSig (n,sigma)) = Just n
-getNode (EmptyNode _) = Nothing
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)
 
-getSig (NodeSig (n,sigma)) = sigma
-getSig (EmptyNode l) = emptyG_sign l
+getSig :: NodeSig -> G_sign
+getSig (NodeSig _ sigma) = sigma
 
-getNodeAndSig (NodeSig (n,sigma)) = Just (n,sigma)
-getNodeAndSig (EmptyNode _) = Nothing
+getNode :: NodeSig -> Node
+getNode (NodeSig n _) = n
 
-getLogic (NodeSig (n,G_sign lid _)) = Logic lid
+getMaybeSig :: MaybeNode -> G_sign
+getMaybeSig (JustNode ns) = getSig ns
+getMaybeSig (EmptyNode l) = emptyG_sign l
+
+getLogic :: MaybeNode -> AnyLogic
+getLogic (JustNode ns) = getNodeLogic ns
 getLogic (EmptyNode l) = l
 
+getNodeLogic :: NodeSig -> AnyLogic
+getNodeLogic (NodeSig _ (G_sign lid _)) = Logic lid
+
 -- | Create a node that represents a union of signatures
-nodeSigUnion :: LogicGraph -> DGraph -> [NodeSig] -> DGOrigin -> Result (NodeSig, DGraph)
+nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
-  do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph (map getSig nodeSigs)
+  do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
+                                   $ map getMaybeSig nodeSigs
      let nodeContents = DGNode {dgn_name = emptyName,
 				dgn_theory = G_theory lid sigU [],
 				dgn_nf = Nothing,
@@ -268,17 +271,17 @@ nodeSigUnion lgraph dg nodeSigs orig =
 	 node = getNewNode dg
 	 dg' = insNode (node, nodeContents) dg
 	 inslink dgres nsig = do 
-             dg <- dgres
-	     case getNode nsig of
-	         Nothing -> return dg
-		 Just n -> do 
-                     incl <- ginclusion lgraph (getSig nsig) sigUnion
+             dgv <- dgres
+	     case nsig of
+	         EmptyNode _ -> dgres
+		 JustNode (NodeSig n sig) -> do 
+                     incl <- ginclusion lgraph sig sigUnion
 		     return $ insEdge (n, node, DGLink 
                          {dgl_morphism = incl,
-										     dgl_type = GlobalDef,
-										     dgl_origin = orig }) dg
+			  dgl_type = GlobalDef,
+			  dgl_origin = orig }) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
-     return (NodeSig (node, sigUnion), dg'')
+     return (NodeSig node sigUnion, dg'')
 
 -- | Extend the development graph with given morphism originating
 -- from given NodeSig
@@ -288,10 +291,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 	     -> DGOrigin  
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
-extendDGraph _ n@(EmptyNode _) _ _ =
-    fail "Internal error: \
-             \trying to add a morphism originating from an empty node"
-extendDGraph dg (NodeSig (n, _)) morph orig = case cod Grothendieck morph of
+extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar) -> let 
         nodeContents = DGNode {dgn_name = emptyName,
 			       dgn_theory = G_theory lid tar [],
@@ -304,7 +304,7 @@ extendDGraph dg (NodeSig (n, _)) morph orig = case cod Grothendieck morph of
 	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (n, node, linkContents) dg'
-        in return (NodeSig (node, targetSig), dg'')
+        in return (NodeSig node targetSig, dg'')
 
 
 -- | Extend the development graph with given morphism pointing to 
@@ -315,10 +315,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 	     -> DGOrigin  
 	     -> Result (NodeSig, DGraph)
 -- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
-extendDGraphRev _ n@(EmptyNode _) _ _ =
-    fail "Internal error: \
-             \trying to add a morphism pointing to an empty node"
-extendDGraphRev dg (NodeSig (n, _)) morph orig = case dom Grothendieck morph of
+extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyName,
 			       dgn_theory = G_theory lid src [],
@@ -331,32 +328,13 @@ extendDGraphRev dg (NodeSig (n, _)) morph orig = case dom Grothendieck morph of
 	node = getNewNode dg
 	dg' = insNode (node, nodeContents) dg
 	dg'' = insEdge (node, n, linkContents) dg'
-        in return (NodeSig (node, sourceSig), dg'')
+        in return (NodeSig node sourceSig, dg'')
 
-
-data ExtNodeSig = ExtNodeSig (Node,G_ext_sign) | ExtEmptyNode AnyLogic
-               deriving (Eq,Show)
-
-instance PrettyPrint ExtNodeSig where
-  printText0 ga (ExtEmptyNode _) = ptext "<empty NodeSig>"
-  printText0 ga (ExtNodeSig(n,sig)) = 
-    ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
-
-getExtNode (NodeSig (n,sigma)) = Just n
-getExtNode (EmptyNode _) = Nothing
-
-getExtSig (ExtNodeSig (n,sigma)) = sigma
-getExtSig (ExtEmptyNode (Logic lid)) = 
-  G_ext_sign lid (empty_signature lid) Set.empty
-
-getExtNodeAndSig (ExtNodeSig (n,sigma)) = Just (n,sigma)
-getExtNodeAndSig (ExtEmptyNode _) = Nothing
-
-getExtLogic (ExtNodeSig (_,G_ext_sign lid _ _)) = Logic lid
-getExtLogic (ExtEmptyNode l) = l
+-- import, formal parameters andd united signature of formal params
+type GenericitySig = (MaybeNode, [NodeSig], MaybeNode)
 
 -- import, formal parameters, united signature of formal params, body
-type ExtGenSig = (NodeSig,[NodeSig],G_sign,NodeSig)
+type ExtGenSig = (MaybeNode, [NodeSig], G_sign, NodeSig)
 
 -- source, morphism, parameterized target
 type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
@@ -365,25 +343,19 @@ type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 -- * Types for architectural and unit specification analysis
 -- (as defined for basic static semantics in Chap. III:5.1)
 
-type ParUnitSig = ([NodeSig], NodeSig)
-
 data UnitSig = Unit_sig NodeSig
-	     | Par_unit_sig ParUnitSig 
+             | Par_unit_sig [NodeSig] NodeSig 
 	       deriving (Show, Eq)
-emptyUnitSig :: AnyLogic -> UnitSig
-emptyUnitSig l = Unit_sig (EmptyNode l)
 
-type ImpUnitSig = (NodeSig, UnitSig)
-data ImpUnitSigOrSig = Imp_unit_sig ImpUnitSig 
-		     | Sig NodeSig
+data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig
+                     | Sig NodeSig
 		       deriving (Show, Eq)
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
-type ArchSig = (StUnitCtx, UnitSig)
-
+data ArchSig = ArchSig StUnitCtx UnitSig deriving (Show, Eq)
 
 -- * Types for global and library environments
 
@@ -391,7 +363,7 @@ data GlobalEntry = SpecEntry ExtGenSig
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
                  | UnitEntry UnitSig 
-                 | RefEntry deriving (Show,Eq)
+                 | RefEntry deriving (Show, Eq)
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
@@ -404,26 +376,27 @@ emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
 instance PrettyPrint DGOrigin where
-  printText0 _ origin = case origin of
-     DGBasic -> ptext "basic specification"
-     DGExtension -> ptext "extension"
-     DGTranslation -> ptext "translation"
-     DGUnion -> ptext "union"
-     DGHiding -> ptext "hiding"
-     DGRevealing -> ptext "revealing"
-     DGRevealTranslation -> ptext "translation part of a revealing"
-     DGFree -> ptext "free specification"
-     DGCofree -> ptext "cofree specification"
-     DGLocal -> ptext "local specification"
-     DGClosed -> ptext "closed specification"
-     DGClosedLenv -> ptext "closed specification (inclusion of local environment)"
-     DGFormalParams -> ptext "formal parameters of a generic specification"
-     DGImports -> ptext "imports of a generic specification"
-     DGSpecInst n -> ptext ("instantiation of "++showPretty n "")
-     DGFitSpec -> ptext "fittig specification"
-     DGView n -> ptext ("view "++showPretty n "")
-     DGFitView n -> ptext ("fitting view "++showPretty n "")
-     DGFitViewImp n -> ptext ("fitting view (imports) "++showPretty n "")
-     DGFitViewA n -> ptext ("fitting view (actual parameters) "++showPretty n "")
-     DGFitViewAImp n -> ptext ("fitting view (imports and actual parameters) "++showPretty n "")
-     DGProof -> ptext "constructed within a proof"
+  printText0 _ origin = text $ case origin of
+     DGBasic -> "basic specification"
+     DGExtension -> "extension"
+     DGTranslation -> "translation"
+     DGUnion -> "union"
+     DGHiding -> "hiding"
+     DGRevealing -> "revealing"
+     DGRevealTranslation -> "translation part of a revealing"
+     DGFree -> "free specification"
+     DGCofree -> "cofree specification"
+     DGLocal -> "local specification"
+     DGClosed -> "closed specification"
+     DGClosedLenv -> "closed specification (inclusion of local environment)"
+     DGFormalParams -> "formal parameters of a generic specification"
+     DGImports -> "imports of a generic specification"
+     DGSpecInst n -> ("instantiation of "++showPretty n "")
+     DGFitSpec -> "fittig specification"
+     DGView n -> ("view "++showPretty n "")
+     DGFitView n -> ("fitting view "++showPretty n "")
+     DGFitViewImp n -> ("fitting view (imports) "++showPretty n "")
+     DGFitViewA n -> ("fitting view (actual parameters) "++showPretty n "")
+     DGFitViewAImp n -> ("fitting view (imports and actual parameters) "++showPretty n "")
+     DGProof -> "constructed within a proof"
+     _ -> show origin

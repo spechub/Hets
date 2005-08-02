@@ -35,32 +35,33 @@ import Static.DevGraph
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig,
 			      dn_desc :: String } 
 		   deriving Show
-emptyDiagNodeLab :: AnyLogic -> DiagNodeLab
-emptyDiagNodeLab l = DiagNode { dn_sig = EmptyNode l, dn_desc = "" }
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
 		   deriving (Eq, Show)
-
-type BasedParUnitSig = (DiagNodeSig, ParUnitSig)
 
 type Diag = Tree.Gr DiagNodeLab DiagLinkLab
 emptyDiag :: Diag
 emptyDiag = Graph.empty
 
 data DiagNodeSig = Diag_node_sig Node NodeSig
-		 | Empty_node AnyLogic
-		   deriving Show
-emptyDiagNodeSig :: AnyLogic -> DiagNodeSig
-emptyDiagNodeSig l = Empty_node l
+                   deriving Show
+
+data MaybeDiagNode = JustDiagNode DiagNodeSig
+                   | EmptyDiagNode AnyLogic
+                   deriving Show
+
+toMaybeNode :: MaybeDiagNode -> MaybeNode
+toMaybeNode mdn = case mdn of
+    JustDiagNode dns -> JustNode $ getSigFromDiag dns
+    EmptyDiagNode l -> EmptyNode l
 
 -- | Return a signature stored within given diagram node sig
 getSigFromDiag :: DiagNodeSig -> NodeSig
 getSigFromDiag (Diag_node_sig _ ns) = ns
-getSigFromDiag (Empty_node l) = EmptyNode l
 
-data BasedUnitSig = Based_unit_sig DiagNodeSig 
-		  | Based_par_unit_sig BasedParUnitSig
-		    deriving Show
+data BasedUnitSig = Based_unit_sig DiagNodeSig
+                  | Based_par_unit_sig MaybeDiagNode UnitSig
+                    deriving Show
 
 type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
@@ -78,8 +79,8 @@ emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 -- PrettyPrint
 instance PrettyPrint Diag where
     printText0 ga diag = 
-	let gs (n, DiagNode {dn_sig = nsig}) = 
-		(n, getSig nsig)
+	let gs (n, dn) = 
+		(n, getSig $ dn_sig dn)
         in ptext "nodes: " 
 	   <+> (printText0 ga (map gs (labNodes diag)))
 	   <+> ptext "\nedges: "
@@ -97,13 +98,13 @@ printDiag res _ _ = do return res
 ctx :: ExtStUnitCtx -> StUnitCtx
 ctx (buc, _) = 
     let ctx' [] _ = emptyStUnitCtx
-	ctx' (id : ids) buc =
-	    let uctx = ctx' ids buc
-	    in case Map.lookup id buc of
-	            Just (Based_unit_sig (Diag_node_sig _ nsig)) 
-			-> Map.insert id (Sig nsig) uctx
-     		    Just (Based_par_unit_sig ((Diag_node_sig _ nsig), usig)) 
-			-> Map.insert id (Imp_unit_sig (nsig, Par_unit_sig usig)) uctx
+	ctx' (id1 : ids) buc0 =
+	    let uctx = ctx' ids buc0
+	    in case Map.lookup id1 buc0 of
+                    Just (Based_unit_sig mds) -> Map.insert id1 
+                           (Sig $ getSigFromDiag mds) uctx
+                    Just (Based_par_unit_sig mds usig) -> Map.insert id1 
+                           (Imp_unit_sig (toMaybeNode mds) usig) uctx
 		    _ -> uctx -- this should never be the case
     in ctx' (Map.keys buc) buc
 
@@ -117,14 +118,13 @@ insInclusionEdges :: LogicGraph
 		  -> DiagNodeSig   -- ^ the target node
 		  -> Result Diag
 -- ^ returns the diagram with edges inserted
-insInclusionEdges lgraph diag srcNodes (Diag_node_sig tn tnsig) =
+insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) =
     do let inslink diag dns = do d <- diag
 				 case dns of
-			            Empty_node _ -> return d
 				    Diag_node_sig n nsig -> 
 					do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
 					   return (insEdge (n, tn, DiagLink { dl_morphism = incl }) d)
-       diag' <- foldl inslink (return diag) srcNodes
+       diag' <- foldl inslink (return diag0) srcNodes
        return diag'
 
 
@@ -136,14 +136,13 @@ insInclusionEdgesRev :: LogicGraph
 		     -> [DiagNodeSig] -- ^ the target nodes
 		     -> Result Diag
 -- ^ returns the diagram with edges inserted
-insInclusionEdgesRev lgraph diag (Diag_node_sig sn snsig) targetNodes =
+insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
     do let inslink diag dns = do d <- diag
 				 case dns of
-			            Empty_node _ -> return d
 				    Diag_node_sig n nsig -> 
 					do incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
 					   return (insEdge (sn, n, DiagLink { dl_morphism = incl }) d)
-       diag' <- foldl inslink (return diag) targetNodes
+       diag' <- foldl inslink (return diag0) targetNodes
        return diag'
 
 
@@ -153,7 +152,7 @@ insInclusionEdgesRev lgraph diag (Diag_node_sig sn snsig) targetNodes =
 extendDiagramIncl :: LogicGraph
 		  -> Diag          -- ^ the diagram to be extended
 		  -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
-		  -> NodeSig       -- ^ the signature with which the new node should be labelled
+		  -> NodeSig      -- ^ the signature with which the new node should be labelled
 		  -> String        -- ^ the node description (for diagnostics)
 		  -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
@@ -255,8 +254,9 @@ homogeniseDiagram targetLid diag =
     -- integers. We can therefore just obtain a list of all the labelled nodes
     -- from diag, convert all the nodes and insert them to a new diagram; then
     -- copy all the edges from the original to new diagram (coercing the morphisms).
-    do let convertNode (n, DiagNode { dn_sig = NodeSig (_, G_sign srcLid sig) }) =
-	       do sig' <- rcoerce targetLid srcLid nullRange sig
+    do let convertNode (n, dn) =
+	       do G_sign srcLid sig <- return $ getSig $ dn_sig dn
+                  sig' <- rcoerce targetLid srcLid nullRange sig
 		  return (n, sig')
            convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
 	       let srcLid = sourceLogic cid
@@ -275,12 +275,12 @@ homogeniseDiagram targetLid diag =
 	       do convEdge <- convertEdge lEdge
 		  let cDiag' = insEdge convEdge cDiag
 		  convertEdges cDiag' lEdges
-	   nodes = labNodes diag
-	   edges = labEdges diag
+	   dNodes = labNodes diag
+	   dEdges = labEdges diag
        -- insert converted nodes to an empty diagram
-       cDiag <- convertNodes Graph.empty nodes
+       cDiag <- convertNodes Graph.empty dNodes
        -- insert converted edges to the diagram containing only nodes
-       cDiag' <- convertEdges cDiag edges
+       cDiag' <- convertEdges cDiag dEdges
        return cDiag'
 
 
@@ -292,7 +292,7 @@ homogeniseSink :: Logic lid sublogics
 		=> lid                 -- ^ the target logic to which morphisms will be coerced
 		-> [(Node, GMorphism)] -- ^ the list of edges to be homogenised
 		-> Result [(Node, morphism)]
-homogeniseSink targetLid edges =
+homogeniseSink targetLid dEdges =
     -- See homogeniseDiagram for comments on implementation.
     do let convertMorphism (n, GMorphism cid _ mor) =
 	       let srcLid = sourceLogic cid
@@ -305,7 +305,7 @@ homogeniseSink targetLid edges =
 	   convEdges (e : es) = do ce <- convertMorphism e
 				   ces <- convEdges es
 				   return (ce : ces)
-       convEdges edges
+       convEdges dEdges
 
 
 -- | Create a graph containing descriptions of nodes and edges.
@@ -327,7 +327,6 @@ inclusionSink :: LogicGraph
 inclusionSink lgraph srcNodes tnsig =
     do let insmorph ls dns = do l <- ls
 			        case dns of
-			            Empty_node _ -> return l
 				    Diag_node_sig n nsig -> 
 					do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
 					   return ((n, incl): l)

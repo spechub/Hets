@@ -39,7 +39,7 @@ import Common.PrettyPrint
 import Driver.Options
 import Driver.ReadFn
 import Driver.WriteFn (writeFileInfo)
-import Data.List(nub)
+import Data.List
 import System.Environment(getEnv)
 
 -- | parsing and static analysis for files
@@ -269,7 +269,7 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
      return()
      else
      resToIORes $ message () analyseMessage
-  (gen',(imp,params,parsig,allparams),dg') <- 
+  (gen',(imp,params,allparams),dg') <- 
      resToIORes (ana_GENERICITY lgraph gctx l opts (extName "P" (makeName spn)) gen)
   (sp',body,dg'') <- 
      resToIORes (ana_SPEC lgraph (gannos,genv,dg') 
@@ -281,7 +281,7 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
                                 pos)
    else return (libItem',
                 (gannos,
-                 Map.insert spn (SpecEntry (imp,params,parsig,body)) genv,
+                 Map.insert spn (SpecEntry (imp,params,getMaybeSig allparams,body)) genv,
                  dg''),
                 l,
                 libenv)
@@ -428,7 +428,7 @@ ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> GlobalContext
 ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
               vn gen vt gsis pos = do
   let adj = adjustPos pos
-  (gen',(imp,params,parsig,allparams),dg') <- 
+  (gen',(imp,params,allparams),dg') <- 
        ana_GENERICITY lgraph gctx l opts (extName "VG" (makeName vn)) gen
   (vt',(src,tar),dg'') <- 
        ana_VIEW_TYPE lgraph (gannos,genv,dg') l allparams opts (makeName vn) vt
@@ -444,17 +444,15 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
            else do
              rmap <- adj $ stat_symb_map_items lid sis
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
-  nodeS <- maybeToResult pos 
-         "Internal error: empty source spec of view" (getNode src)
-  nodeT <- maybeToResult pos 
-         "Internal error: empty source spec of view" (getNode tar)
-  let gmor = gEmbed (G_morphism lid mor)
+  let nodeS = getNode src
+      nodeT = getNode tar
+      gmor = gEmbed (G_morphism lid mor)
       link = (nodeS,nodeT,DGLink {
                dgl_morphism = gmor,
                dgl_type = GlobalThm Open None Open,
                    -- 'Open' for conserv correct?
                dgl_origin = DGView vn})
-      vsig = (src,gmor,(imp,params,parsig,tar))
+      vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
   if Map.member vn genv 
    then plain_error (View_defn vn gen' vt' gsis pos,gctx,l,libenv)
                     ("Name "++showPretty vn " already defined")
@@ -496,9 +494,9 @@ ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
     ArchEntry _asig -> ana_err "arch spec download"
     UnitEntry _usig -> ana_err "unit spec download"
 
-refNodesig :: LIB_NAME -> (DGraph, [NodeSig]) -> (Maybe SIMPLE_ID, NodeSig) 
-           -> (DGraph, [NodeSig])
-refNodesig ln (dg,refdNodes) (name,NodeSig(n,sigma)) =
+refNodesig :: LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig) 
+           -> (DGraph, NodeSig)
+refNodesig ln dg (name, NodeSig n sigma) =
   let node_contents = DGRef {
         dgn_renamed = makeMaybeName name,
         dgn_libname = ln,
@@ -507,25 +505,25 @@ refNodesig ln (dg,refdNodes) (name,NodeSig(n,sigma)) =
 	dgn_sigma = Nothing
 	}
       node = getNewNode dg
-   in (insNode (node,node_contents) dg, NodeSig(node,sigma) : refdNodes)
-refNodesig _ln (dg,refdNodes) (_,EmptyNode l) =
-  (dg,EmptyNode l : refdNodes)
+   in (insNode (node,node_contents) dg, NodeSig node sigma)
 
 refNodesigs :: LIB_NAME -> DGraph -> [(Maybe SIMPLE_ID, NodeSig)] 
             -> (DGraph, [NodeSig])
-refNodesigs ln dg nds =
-  (dg',reverse nodes')
-  where (dg', nodes') = foldl (refNodesig ln) (dg,[]) nds
+refNodesigs ln = mapAccumR (refNodesig ln)  
 
 refExtsig :: LIB_NAME -> DGraph -> Maybe SIMPLE_ID -> ExtGenSig
           -> (DGraph, ExtGenSig)
 refExtsig ln dg name (imps,params,gsigmaP,body) =
-  (dg1,(imps1,params1,gsigmaP,body1))
-  where
+  let
   params' = map (\x -> (Nothing,x)) params
-  (dg1,imps1:body1:params1) =  
-    refNodesigs ln dg
-       ((Nothing,imps):(name,body):params')
+  (dg0, body1) = refNodesig ln dg (name, body)
+  (dg1, params1) = refNodesigs ln dg0 params'
+  (dg2, imps1) = case imps of 
+                 EmptyNode _ -> (dg1, imps)
+                 JustNode ns -> let 
+                     (dg3, nns) = refNodesig ln dg1 (Nothing, ns)
+                     in (dg3, JustNode nns)
+  in (dg2,(imps1,params1,gsigmaP,body1))
 
 refViewsig :: LIB_NAME -> DGraph -> (NodeSig, t1, ExtGenSig)
            -> (DGraph, (NodeSig, t1, ExtGenSig))

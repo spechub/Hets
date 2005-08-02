@@ -52,9 +52,7 @@ printLibrary le (ln, (_, ge, _)) =
 
 printTheory :: LIB_NAME -> LibEnv -> (SIMPLE_ID, GlobalEntry) -> IO ()
 printTheory ln le (sn, ge) = case ge of 
-    SpecEntry (_,_,_, e) -> case getNode e of 
-        Nothing -> return ()
-        Just n -> 
+    SpecEntry (_,_,_, NodeSig n _) ->
           case maybeResult $ computeTheory le (ln, n) of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->

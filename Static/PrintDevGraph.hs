@@ -41,9 +41,8 @@ printLibrary le (ln, (ga, ge, dg)) =
 printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos -> DGraph 
             -> (SIMPLE_ID, GlobalEntry) -> Doc
 printTheory le ln ga dg (sn, ge) = case ge of 
-    SpecEntry (_,_,_, e) -> case getNode e of 
-        Nothing -> P.empty
-        Just n -> case maybeResult $ computeTheory le (ln, n) of
+    SpecEntry (_,_,_, NodeSig n _) -> 
+        case maybeResult $ computeTheory le (ln, n) of
             Nothing -> P.empty
             Just g ->
                 text specS <+> printText0 ga g
