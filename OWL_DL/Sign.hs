@@ -19,23 +19,29 @@ import qualified Common.Lib.Map as Map
 
 data Sign = Sign
             { ontologyID :: URIreference -- ^ URL of the ontology
-            , concepts :: Set.Set URIreference -- ^ a set of classes
-              , primaryConcepts :: Set.Set URIreference -- ^ a set of subclasses
+            , concepts :: Set.Set URIreference 
+              -- ^ a set of classes
+            , primaryConcepts :: Set.Set URIreference 
+              -- ^ a subset of concepts which are not marked 
+              -- with CASL_Sort = false
             , datatypes :: Set.Set URIreference -- ^ a set of datatypes
-              ,indValuedRoles :: Set.Set URIreference -- ^ a set of object property
-              ,dataValuedRoles :: Set.Set URIreference -- ^ a set of data property
-              ,individuals :: Set.Set IndividualID  -- ^ a set of individual
+            , indValuedRoles :: Set.Set URIreference 
+              -- ^ a set of object property
+            , dataValuedRoles :: Set.Set URIreference 
+              -- ^ a set of data property
+            , annotationRoles :: Set.Set URIreference
+            , individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge 
               -- ^of roles, functional roles and concept membership
-              ,axioms :: Set.Set SignAxiom
-              , namespaceMap :: Namespace
+            , axioms :: Set.Set SignAxiom
+            , namespaceMap :: Namespace
             } deriving (Show,Eq,Ord)
 
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
                | RoleDomain ID RDomain
                | RoleRange  ID RRange
                | FuncRole   ID
-               | Conceptmembership IndividualID ClassID
+               | Conceptmembership IndividualID Description
                  deriving (Show,Eq,Ord)
 
 data RDomain = RDomain Description
@@ -67,7 +73,7 @@ emptySign =  Sign { ontologyID = QN "" "" "",
 		    namespaceMap = Map.empty
 		  }
 
-simpleSign :: ID -> Sign
+emptySign :: ID -> Sign
 simpleSign ontoID = 
             Sign { ontologyID = ontoID, 
                   concepts = Set.empty,
@@ -91,7 +97,7 @@ diffSig a b =
       , axioms = axioms a `Set.difference` axioms b
       }
 
-insertSign :: Sign -> Sign -> Sign
+addSign :: Sign -> Sign -> Sign
 insertSign toIns totalSign =
     totalSign { concepts = Set.union (concepts totalSign) (concepts toIns),
 		primaryConcepts = Set.union (primaryConcepts totalSign) (primaryConcepts toIns),
@@ -101,4 +107,9 @@ insertSign toIns totalSign =
 		individuals = Set.union (individuals totalSign) (individuals toIns),
 		axioms = Set.union (axioms totalSign) (axioms toIns)
 	      }
+
+{- a Set.isSubsetOf b && -}
+
+isSubSign :: Sign -> Sign -> Bool
+isSubSign a b = True
 
