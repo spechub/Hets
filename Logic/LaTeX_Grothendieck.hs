@@ -23,9 +23,6 @@ instance PrintLaTeX G_basic_spec where
 instance PrintLaTeX G_sign where
     printLatex0 ga (G_sign _ s) = printLatex0 ga s
 
-instance PrintLaTeX G_ext_sign where
-    printLatex0 ga (G_ext_sign _ s _) = printLatex0 ga s
-
 instance PrintLaTeX G_symb_items_list where
     printLatex0 ga (G_symb_items_list _ l) = 
         commaT_latex ga l
@@ -33,7 +30,6 @@ instance PrintLaTeX G_symb_items_list where
 instance PrintLaTeX G_symb_map_items_list where
     printLatex0 ga (G_symb_map_items_list _ l) = 
         commaT_latex ga l
-
  
 instance PrintLaTeX GMorphism where
     printLatex0 ga (GMorphism cid s m) = 
