@@ -206,7 +206,7 @@ createEdgeForPath path =
 					  LeftOpen),
 			      dgl_origin = DGProof}
 		     )    
-    Nothing -> error ("Could not determine morphism of path " ++ (show path))
+    Nothing -> error "createEdgeForPath"
 
 
 {- returns a list of path pairs, as shorthand the pairs are not returned as path-path tuples but as path-<list of path> tuples. Every path in the list is a pair of the single path.

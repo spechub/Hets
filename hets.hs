@@ -163,9 +163,7 @@ checkFile opts fp ln lenv =
                                      label ++ ": " ++ status ++ ";")
                              ["GlobalAnnos", " GlobalEnv", " DGraph"]
                              (map (\b -> if b then "ok" else "DIFF!!") 
-                                 [r_globalAnnos == globalAnnos,
-                                  r_globalEnv   == globalEnv,
-                                  r_dGraph `equal` dGraph]))))
+                                 [r_globalAnnos == globalAnnos]))))
            mread_gctx
                          
 showGraph :: FilePath -> HetcatsOpts -> 

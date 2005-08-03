@@ -16,6 +16,7 @@ module Proofs.StatusUtils where
 
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
+import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Syntax.AS_Library
 import Proofs.Proofs
@@ -161,7 +162,7 @@ showChanges (change:changes) =
 showEdgeChange :: LEdge DGLinkLab -> String
 showEdgeChange (src,tgt,edgelab) =
   " from " ++ (show src) ++ " to " ++ (show tgt)
-  ++ " and of type " ++ (show (dgl_type edgelab)) ++ "\n\n"
+  ++ " and of type " ++ showPretty (dgl_type edgelab) "\n\n"
 
 showNodeChange :: LNode DGNodeLab -> String
 showNodeChange (descr, nodelab) =

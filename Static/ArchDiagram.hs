@@ -35,21 +35,17 @@ import Static.DevGraph
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig,
 			      dn_desc :: String } 
-		   deriving Show
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
-		   deriving (Eq, Show)
 
 type Diag = Tree.Gr DiagNodeLab DiagLinkLab
 emptyDiag :: Diag
 emptyDiag = Graph.empty
 
 data DiagNodeSig = Diag_node_sig Node NodeSig
-                   deriving Show
 
 data MaybeDiagNode = JustDiagNode DiagNodeSig
                    | EmptyDiagNode AnyLogic
-                   deriving Show
 
 toMaybeNode :: MaybeDiagNode -> MaybeNode
 toMaybeNode mdn = case mdn of
@@ -62,7 +58,6 @@ getSigFromDiag (Diag_node_sig _ ns) = ns
 
 data BasedUnitSig = Based_unit_sig DiagNodeSig
                   | Based_par_unit_sig MaybeDiagNode UnitSig
-                    deriving Show
 
 type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx

@@ -89,7 +89,6 @@ data ConversionMaps = ConversionMaps {
                         abstr2dgNode :: AGraphToDGraphNode,
                         abstr2dgEdge :: AGraphToDGraphEdge,
                         libname2dg :: LibEnv}
-                      deriving Show
 
 instance PrettyPrint String where
     printText0 ga c = ptext (take 25 c)
@@ -912,7 +911,7 @@ showOriginOfEdge descr Nothing =
 showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showProofStatusOfThm _ (Just ledge) =
     createTextDisplay "Proof Status" 
-         (show (getProofStatusOfThm ledge)) [size(30,10)]
+         (showPretty (getProofStatusOfThm ledge) "\n") [size(30,10)]
 showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
                 ++ "in the development graph")
@@ -1057,11 +1056,11 @@ convertEdgesAux convMaps descr graphInfo ((ledge@(src,tar,edgelab)):lEdges)
           Just err -> fail err
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert
-                                     (libname, (src,tar,show edgelab))
+                                     (libname, (src,tar,showPretty edgelab ""))
                                      newDescr
                                      (dg2abstrEdge convMaps),
                                  abstr2dgEdge = Map.insert newDescr
-                                     (libname, (src,tar,show edgelab))
+                                     (libname, (src,tar,showPretty edgelab ""))
                                      (abstr2dgEdge convMaps)}
                                          descr graphInfo lEdges libname)
         return newConvMaps
@@ -1230,7 +1229,7 @@ applyChangesAux gid libname graphInfo visibleNodes eventDescr
          case (Map.lookup (libname,src) dg2abstrNodeMap,
                Map.lookup (libname,tgt) dg2abstrNodeMap) of
            (Just abstrSrc, Just abstrTgt) ->
-             do let dgEdge = (libname, (src,tgt,show edgelab))
+             do let dgEdge = (libname, (src,tgt,showPretty edgelab ""))
                 (Result descr err) <- 
                    addlink gid (getDGLinkType edgelab)
                               "" (Just ledge) abstrSrc abstrTgt graphInfo
@@ -1253,7 +1252,7 @@ applyChangesAux gid libname graphInfo visibleNodes eventDescr
    
 
     DeleteEdge (src,tgt,edgelab) -> 
-      do let dgEdge = (libname, (src,tgt,show edgelab))
+      do let dgEdge = (libname, (src,tgt,showPretty edgelab ""))
              dg2abstrEdgeMap = dg2abstrEdge convMaps 
          case Map.lookup dgEdge dg2abstrEdgeMap of
             Just abstrEdge ->
@@ -1274,8 +1273,8 @@ applyChangesAux gid libname graphInfo visibleNodes eventDescr
 
             Nothing -> error ("applyChangesAux: deleted edge from " 
                               ++ (show src) ++ " to " ++ (show tgt) 
-                              ++ " of type " ++ (show (dgl_type edgelab))
-                              ++ " and origin " ++ (show (dgl_origin edgelab))
+                              ++ " of type " ++ showPretty (dgl_type edgelab) 
+                              " and origin " ++ (show (dgl_origin edgelab))
                               ++ " of development "
                          ++ "graph does not exist in abstraction graph")
 

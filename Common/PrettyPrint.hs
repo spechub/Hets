@@ -32,7 +32,7 @@ class PrettyPrint a => PrintLaTeX a where
     printLatex0 :: GlobalAnnos -> a -> Doc
 
 -- | This type class allows pretty printing of instantiated data types
-class Show a => PrettyPrint a where
+class PrettyPrint a where
     printText0 :: GlobalAnnos -> a -> Doc
 
 -- | printText uses empty global annotations

@@ -86,7 +86,7 @@ data DGNodeLab = DGNode {
                 dgn_node :: Node,
 		dgn_nf :: Maybe Node,
 		dgn_sigma :: Maybe GMorphism
-              } deriving (Show,Eq)
+              } deriving Eq
 
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
@@ -145,11 +145,11 @@ data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
-              deriving (Eq,Show)
+              deriving Eq
 
 instance PrettyPrint DGLinkLab where
   printText0 ga l = printText0 ga (dgl_morphism l)
-                    <+> ptext (show (dgl_type l))
+                    <+> printText0 ga (dgl_type l)
                     <+> printText0 ga (dgl_origin l)
 
 data DGRule = 
@@ -174,7 +174,7 @@ data DGRule =
  | LocalInference
  | BasicInference BasicProof
  | BasicConsInference Edge BasicConsProof
-   deriving (Eq, Show)
+   deriving Eq
 
 data BasicProof =
   forall lid sublogics
@@ -203,10 +203,16 @@ instance Show BasicProof where
   show Handwritten = "Handwritten"
 
 data BasicConsProof = BasicConsProof -- more detail to be added ...
-     deriving (Eq, Show)
+     deriving Eq
 
 data ThmLinkStatus = LeftOpen 
-		   | Proven DGRule [DGLinkLab] deriving (Eq, Show)
+		   | Proven DGRule [DGLinkLab]
+                     deriving Eq
+
+instance PrettyPrint ThmLinkStatus where
+    printText0 ga tls = case tls of 
+        LeftOpen -> text "Open"
+        Proven _ ls -> vcat $ map (printText0 ga) ls
 
 data DGLinkType = LocalDef 
             | GlobalDef
@@ -222,7 +228,19 @@ data DGLinkType = LocalDef
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
-              deriving (Eq,Show)
+              deriving Eq
+
+instance PrettyPrint DGLinkType where
+    printText0 _ t = text $ case t of
+        LocalDef -> "LocalDef"
+        GlobalDef -> "GlobalDef"
+        HidingDef -> "HidingDef"
+        FreeDef _ -> "FreeDef"
+        CofreeDef _ -> "CofreeDef"
+	LocalThm _ _ _ -> "LocalThm"
+	GlobalThm _ _ _ -> "GlobalThm"
+	HidingThm _ _ -> "HidingThm"
+        FreeThm _ _ -> "FreeThm"
 
 data Conservativity = None | Cons | Mono | Def
               deriving (Eq,Ord)
@@ -239,13 +257,13 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
-              deriving (Eq, Show)
+              deriving (Show, Eq)
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
-data NodeSig = NodeSig Node G_sign deriving (Eq, Show)
+data NodeSig = NodeSig Node G_sign deriving Eq
 
-data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Eq, Show)
+data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving Eq
 
 instance PrettyPrint NodeSig where
   printText0 ga (NodeSig n sig) = 
@@ -272,7 +290,8 @@ getNodeLogic :: NodeSig -> AnyLogic
 getNodeLogic (NodeSig _ (G_sign lid _)) = Logic lid
 
 -- | Create a node that represents a union of signatures
-nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin -> Result (NodeSig, DGraph)
+nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
+             -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
                                    $ map getMaybeSig nodeSigs
@@ -358,17 +377,15 @@ type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 
 data UnitSig = Unit_sig NodeSig
              | Par_unit_sig [NodeSig] NodeSig 
-	       deriving (Show, Eq)
 
 data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig
                      | Sig NodeSig
-		       deriving (Show, Eq)
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
-data ArchSig = ArchSig StUnitCtx UnitSig deriving (Show, Eq)
+data ArchSig = ArchSig StUnitCtx UnitSig
 
 -- * Types for global and library environments
 
@@ -376,7 +393,7 @@ data GlobalEntry = SpecEntry ExtGenSig
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
                  | UnitEntry UnitSig 
-                 | RefEntry deriving (Show, Eq)
+                 | RefEntry
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
@@ -421,7 +438,7 @@ data Decorated a = Decorated
      , order :: Int
      , thmStatus :: ThmLinkStatus
      , isDef :: Bool
-     } deriving Show
+     } 
 
 decoTc :: TyCon
 decoTc = mkTyCon "Static.DevGraph.Decorated"
@@ -484,10 +501,6 @@ instance Eq G_theory where
   G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
      coerceSign l1 l2 "" sig1 == Just sig2
      && coerceThSens l1 l2 "" sens1 == Just sens2
-
-instance Show G_theory where
-  show (G_theory _ sign sens) =
-     show sign ++ "\n" ++ show sens
 
 instance PrettyPrint G_theory where
   printText0 ga g = case simplifyTh g of 
