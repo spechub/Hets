@@ -183,7 +183,8 @@ data BasicProof =
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree =>
-        BasicProof lid (Proof_status proof_tree) -- should be list of Proof_Status!
+        BasicProof lid (Proof_status proof_tree)
+                       -- should be list of Proof_Status!
      |  Guessed
      |  Conjectured
      |  Handwritten
@@ -322,7 +323,7 @@ extendDGraph :: DGraph    -- ^ the development graph to be extended
 	     -> GMorphism -- ^ the morphism to be inserted
 	     -> DGOrigin  
 	     -> Result (NodeSig, DGraph)
--- ^ returns 1. the target signature of the morphism and 2. the resulting DGraph
+-- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar) -> let 
         nodeContents = DGNode {dgn_name = emptyNodeName,
@@ -427,7 +428,8 @@ instance PrettyPrint DGOrigin where
      DGFitView n -> ("fitting view "++showPretty n "")
      DGFitViewImp n -> ("fitting view (imports) "++showPretty n "")
      DGFitViewA n -> ("fitting view (actual parameters) "++showPretty n "")
-     DGFitViewAImp n -> ("fitting view (imports and actual parameters) "++showPretty n "")
+     DGFitViewAImp n -> ("fitting view (imports and actual parameters) "
+                         ++showPretty n "")
      DGProof -> "constructed within a proof"
      _ -> show origin
 
@@ -436,9 +438,23 @@ instance PrettyPrint DGOrigin where
 data Decorated a = Decorated
      { value :: Named a
      , order :: Int
-     , thmStatus :: ThmLinkStatus
+     , thmStatus :: [ThmLinkStatus]
      , isDef :: Bool
      } 
+
+emptyDecorated :: Decorated a
+emptyDecorated = Decorated { value = error "emptyDecorated"
+                           , order = 0
+                           , thmStatus = []
+                           , isDef = False }
+
+instance Eq a => Eq (Decorated a) where
+    d1 == d2 = (value d1, isDef d1) == 
+               (value d2, isDef d2)
+
+instance Ord a => Ord (Decorated a) where
+    d1 <= d2 = (value d1, isDef d1) <= 
+               (value d2, isDef d2)
 
 decoTc :: TyCon
 decoTc = mkTyCon "Static.DevGraph.Decorated"
@@ -451,11 +467,16 @@ type ThSens a = Set.Set (Decorated a)
 noSens :: ThSens a
 noSens = Set.empty
 
-emptyDecorated :: Decorated a
-emptyDecorated = Decorated { value = error "emptyDecorated"
-                           , order = 0
-                           , thmStatus = LeftOpen
-                           , isDef = False }
+joinSens :: Ord a => ThSens a -> ThSens a -> ThSens a
+joinSens s1 s2 = Set.fromDistinctAscList $ mergeSens 
+    (Set.toList s1) (Set.toList s2)
+    where mergeSens [] l2 = l2
+          mergeSens l1 [] = l1
+          mergeSens l1@(e1 : r1) l2@(e2 : r2) = case compare e1 e2 of
+              LT -> e1 : mergeSens r1 l2
+              EQ -> e1 { thmStatus = List.union (thmStatus e1) $ thmStatus e2 }
+                    : mergeSens r1 r2
+              GT -> e2 : mergeSens l1 r2
 
 mapValue :: (a -> b) -> Decorated a -> Decorated b
 mapValue f d = d { value = mapNamed f $ value d } 
@@ -468,14 +489,6 @@ toThSens :: Ord a => [Named a] -> ThSens a
 toThSens sens = Set.fromList $ zipWith 
     ( \ v i -> emptyDecorated { value = v, order = i })
     sens [1..]
-
-instance Eq a => Eq (Decorated a) where
-    d1 == d2 = (value d1, isDef d1) == 
-               (value d2, isDef d2)
-
-instance Ord a => Ord (Decorated a) where
-    d1 <= d2 = (value d1, isDef d1) <= 
-               (value d2, isDef d2)
 
 -- * Grothendieck theories
 
@@ -539,7 +552,7 @@ joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
     -- assert (sig1 == sig2') ? 
-  return $ G_theory lid1 sig1 $ Set.union sens1 sens2'
+  return $ G_theory lid1 sig1 $ joinSens sens1 sens2'
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
