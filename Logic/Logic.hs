@@ -70,7 +70,7 @@ Provides data structures for logics (with symbols). Logics are
    introduce coercion safer functions (separately for each type)
 -}
 
-module Logic.Logic (module Logic.Logic, module Logic.Languages) where
+module Logic.Logic where
 
 import Common.Id
 import Common.GlobalAnnotations
@@ -83,7 +83,6 @@ import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
 import Common.Print_AS_Annotation()
-import Logic.Languages
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -110,6 +109,15 @@ instance (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 type EndoMap a = Map.Map a a
+
+-- languages, define like "data CASL = CASL deriving Show" 
+
+class Show lid => Language lid where
+    language_name :: lid -> String
+    language_name i = show i
+    description :: lid -> String
+    -- default implementation
+    description _ = "No description available"
 
 -- Categories are given by a quotient,
 -- i.e. we need equality
