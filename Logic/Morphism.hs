@@ -28,7 +28,6 @@ import qualified Common.Lib.Set as Set
 import Data.Maybe
 import Data.Dynamic
 import Common.DynamicUtils 
-import Common.AS_Annotation (Named, mapNamedM)
 
 class (Language cid,
        Logic lid1 sublogics1
