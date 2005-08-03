@@ -21,6 +21,7 @@ Analysis of libraries
 module Static.AnalysisLibrary (anaFile, ana_LIB_DEFN, anaString) where
 
 import Logic.Logic
+import Logic.Coerce
 import Logic.Grothendieck
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
@@ -438,8 +439,8 @@ ana_VIEW_DEFN lgraph _defl libenv gctx@(gannos, genv, _) l opts
   G_sign lidT sigmaT <- return gsigmaT
   gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
-  sigmaS' <- rcoerce lid lidS pos sigmaS
-  sigmaT' <- rcoerce lid lidT pos sigmaT
+  sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
+  sigmaT' <- adj $ coerceSign lidT lid "" sigmaT
   mor <- if isStructured opts then return (ide lid sigmaS')
            else do
              rmap <- adj $ stat_symb_map_items lid sis

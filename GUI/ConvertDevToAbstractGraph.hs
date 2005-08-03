@@ -26,6 +26,7 @@ Conversion of development graphs from Logic.DevGraph
 module GUI.ConvertDevToAbstractGraph where
 
 import Logic.Logic
+import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Comorphism
 
@@ -816,8 +817,8 @@ translateTheoryOfNode gInfo@(proofStatusRef,_,_,_,_,_,_,opts,_) descr ab2dgNode 
          -- adjust lid's
          let lidS = sourceLogic cid
              lidT = targetLogic cid
-         sign' <- coerce lidS lid sign
-         sens' <- coerce lidS lid sens
+         sign' <- coerceSign lid lidS "" sign
+         sens' <- coerceThSens lid lidS "" sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <- 
              Res.resToIORes $ map_theory cid (sign', toNamedList sens')
@@ -928,26 +929,24 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
     DGNode name (G_theory lid _ sens) _ _ _ -> 
      case dgl_morphism linklab of 
      GMorphism cid sign1 morphism2 -> do
-      let morphism2' = case coerce (targetLogic cid) lid morphism2 of
-           Just m -> m
-           _ -> error "checkconservativityOfEdge: wrong logic"
+      morphism2' <- coerceMorphism (targetLogic cid) lid 
+                   "checkconservativityOfEdge" morphism2
       let th = case computeTheory libEnv (ln, source) of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th
-      case coerce lid1 lid (sign1,sens1) of
-           Just (sign2, sens2) -> 
-             let Res.Result diags res = 
+      sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
+      sens2 <- coerceThSens lid1 lid "" sens1
+      let Res.Result diags res = 
                      conservativityCheck lid (sign2, toNamedList sens2)
                                          morphism2' $ toNamedList sens
-                 showRes = case res of
+          showRes = case res of
                    Just(Just True) -> "The link is conservative"
                    Just(Just False) -> "The link is not conservative"
                    _ -> "Could not determine whether link is conservative"
-                 showDiags = unlines (map show diags)
-              in createTextDisplay "Result of consistency check" 
+          showDiags = unlines (map show diags)
+      createTextDisplay "Result of consistency check" 
                       (showRes++"\n"++showDiags) [size(50,50)]
-           _ -> error "checkconservativityOfEdge: wrong logic"
     DGRef _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
 checkconservativityOfEdge descr _ Nothing = 

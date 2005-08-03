@@ -130,10 +130,10 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
     (Just (target,_), Just thSrc) ->
       case (maybeResult (computeTheory libEnv (ln, target)), 
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just theoryTgt, Just (G_theory lidSrc _ sensSrc)) ->
-          case maybeResult (coerceTheory lidSrc theoryTgt) of
+        (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
+          case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
-	    Just (_,sentencesTgt) ->
+	    Just sentencesTgt ->
               -- check if all source axioms are also axioms in the target
               if Set.isSubsetOf (Set.filter (isAxiom  . value) sensSrc)
                  sentencesTgt

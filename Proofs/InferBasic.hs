@@ -43,6 +43,7 @@ import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
+import Logic.Coerce
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
@@ -157,20 +158,19 @@ getGoals libEnv ln (n,_,edge) = do
   th <- computeLocalTheory libEnv (ln, n)
   translateG_theory (dgl_morphism edge) th
 
-getProvers :: Bool -> LogicGraph -> G_sublogics -> [(G_prover,AnyComorphism)]
-getProvers consCheck lg gsub =
-  if consCheck then
-     [(G_cons_checker (targetLogic cid) p,Comorphism cid) | 
-        Comorphism cid <- cms,
-        p <- cons_checkers (targetLogic cid)]
-     else
-     [(G_prover (targetLogic cid) p,Comorphism cid) | 
-        Comorphism cid <- cms,
+getProvers :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
+getProvers cms =
+     [(G_prover (targetLogic cid) p, cm) | 
+        cm@(Comorphism cid) <- cms,
         p <- provers (targetLogic cid)]
-  where cms = findComorphismPaths lg gsub
 
+getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
+getConsCheckers cms =
+     [(G_cons_checker (targetLogic cid) p, cm) | 
+        cm@(Comorphism cid) <- cms,
+        p <- cons_checkers (targetLogic cid)]
 
-selectProver :: [(G_prover,AnyComorphism)] -> IOResult (G_prover,AnyComorphism)
+selectProver :: [(a,AnyComorphism)] -> IOResult (a,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = resToIORes $ fatal_error "No prover available" nullRange
 selectProver provers = do
@@ -203,7 +203,7 @@ basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus
 basicInferenceNode checkCons lg (ln, node)
          proofStatus@(libname,libEnv,proofHistory) = do
       let dGraph = lookupDGraph libname proofStatus
-      ioresToIO (do 
+      ioresToIO $ do 
         -- compute the theory of the node, and its name
         G_theory lid1 sign axs <- 
              resToIORes $ computeTheory libEnv (ln, node)
@@ -225,47 +225,45 @@ basicInferenceNode checkCons lg (ln, node)
         G_theory lid3 _ goals <- case goalslist of 
             [] -> return $ G_theory lid1 sign noSens 
             hd : tl -> flatG_sentences hd tl
-        goals1 <- coerce lid1 lid3 goals
+        goals1 <- coerceThSens lid3 lid1 "" goals
         -- select a suitable translation and prover
-        let provers = getProvers checkCons lg 
-                          $ sublogicOfTh $ G_theory lid1 sign
+        let cms = findComorphismPaths lg $ sublogicOfTh $ G_theory lid1 sign
                           $ Set.union axs goals1
-        (prover,Comorphism cid) <- selectProver provers
-        -- Borrowing: prepare translation of theory
-        let lidS = sourceLogic cid
-            lidT = targetLogic cid
-            transTh = resToIORes . map_theory cid
-        sign' <- coerce lidS lid1 sign
-        axs' <- coerce lidS lid1 axs
-        case prover of
-         G_prover lid4 p -> do
-           -- Borrowing: translate goals and theory
-           goals' <- coerce lidS lid3 goals
-           let goals'' = map markGoal $ toNamedList goals'
-           (sign'',sens'') <- transTh (sign', toNamedList axs' ++ goals'')
-           -- call the prover
-           p' <- coerce lidT lid4 p
-           ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
-           -- update the development graph
-           let (nextDGraph, nextHistoryElem) = proveLocalEdges dGraph localEdges
-	       newProofStatus
-		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-           return newProofStatus
-         G_cons_checker lid4 p -> do
-           -- Borrowing: translate theory
-           (sign'',sens'') <- transTh (sign', toNamedList axs')
-           incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
-           let mor = TheoryMorphism { t_source = empty_theory lidT, 
-                                      t_target = Theory sign'' sens'',
-                                      t_morphism = incl } 
-           p' <- coerce lidT lid4 p
-           ps <- ioToIORes $ cons_check lidT p' thName mor
-           let nextHistoryElem = ([LocalInference],[])
+        if checkCons then do 
+            (G_cons_checker lid4 cc, Comorphism cid) <- 
+                 selectProver $ getConsCheckers cms
+            bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
+                   (sign, toNamedList axs)
+            -- Borrowing: translate theory
+            (sign'', sens'') <- resToIORes $ map_theory cid bTh'
+            let lidT = targetLogic cid
+            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
+            let mor = TheoryMorphism { t_source = empty_theory lidT, 
+                                       t_target = Theory sign'' sens'',
+                                       t_morphism = incl } 
+            cc' <- coerceConsChecker lid4 lidT "" cc
+            ps <- ioToIORes $ cons_check lidT cc' thName mor
+            let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
-               newProofStatus
-		 = mkResultProofStatus proofStatus dGraph nextHistoryElem
-           return newProofStatus
-       )
+                newProofStatus
+		  = mkResultProofStatus proofStatus dGraph nextHistoryElem
+            return newProofStatus
+          else do -- proving
+            (G_prover lid4 p, Comorphism cid) <- selectProver $ getProvers cms
+            let lidT = targetLogic cid
+                transTh = resToIORes . map_theory cid
+            bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
+                   (sign, toNamedList axs ++ map markGoal (toNamedList goals1))
+            (sign'',sens'') <- transTh bTh'
+            -- call the prover
+            p' <- coerceProver lid4 lidT "" p
+            ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
+            -- update the development graph
+            let (nextDGraph, nextHistoryElem) = 
+                          proveLocalEdges dGraph localEdges
+	        newProofStatus
+		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+            return newProofStatus
 
 proveLocalEdges :: DGraph -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 proveLocalEdges dGraph edges = (nextDGraph,([LocalInference],changes))

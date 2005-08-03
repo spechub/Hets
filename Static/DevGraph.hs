@@ -37,6 +37,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Prover
+import Logic.Coerce
 
 import Syntax.AS_Library
 
@@ -192,7 +193,7 @@ instance Eq BasicProof where
   Conjectured == Conjectured = True
   Handwritten == Handwritten = True
   BasicProof lid1 p1 == BasicProof lid2 p2 =
-    coerce lid1 lid2 p1 == Just p2
+    coerceBasicProof lid1 lid2 "Eq BasicProof" p1 == Just p2
   _ == _ = False
 
 instance Show BasicProof where
@@ -470,10 +471,19 @@ data G_theory = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_theory lid sign (ThSens sentence)
 
+coerceThSens :: 
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m) => lid1 -> lid2 -> String 
+            -> ThSens sentence1 -> m (ThSens sentence2)
+coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
+
 instance Eq G_theory where
   G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
-     coerce l1 l2 sig1 == Just sig2
-     && coerce l1 l2 sens1 == Just sens2
+     coerceSign l1 l2 "" sig1 == Just sig2
+     && coerceThSens l1 l2 "" sens1 == Just sens2
 
 instance Show G_theory where
   show (G_theory _ sign sens) =
@@ -505,17 +515,16 @@ translateG_theory (GMorphism cid _ morphism2)
                            (G_theory lid sign sens) = do
   let tlid = targetLogic cid
   --(sigma2,_) <- map_sign cid sign1
-  sens' <- mcoerce lid (sourceLogic cid) "translateG_theory" 
-          $ map value $ Set.toList sens
-  sign' <- mcoerce lid (sourceLogic cid) "translateG_theory" sign
-  (_, sens'') <- map_theory cid (sign',sens')
+  bTh <- coerceBasicTheory lid (sourceLogic cid) 
+                    "translateG_theory" (sign, toNamedList sens)
+  (_, sens'') <- map_theory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid (cod tlid morphism2) $ toThSens sens'''
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 _ sens2) = do
-  sens2' <- mcoerce lid1 lid2 "joinG_sentences" sens2
+  sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
     -- assert (sig1 == sig2') ? 
   return $ G_theory lid1 sig1 $ Set.union sens1 sens2'
 
@@ -526,22 +535,6 @@ flatG_sentences th ths = foldM joinG_sentences th ths
 -- | Get signature of a theory
 signOf :: G_theory -> G_sign
 signOf (G_theory lid sign _) = G_sign lid sign
-
-------------------------------------------------------------------
--- Coercion
-------------------------------------------------------------------
-
--- | coerce a theory into a "different" logic
-coerceTheory :: forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-      lid -> G_theory -> Result (sign, ThSens sentence)
-coerceTheory lid (G_theory lid2 sign2 sens2)
-  = mcoerce lid lid2 "Coercion of theories" (sign2,sens2)
-
 
 ------------------------------------------------------------------
 -- Grothendieck diagrams and weakly amalgamable cocones

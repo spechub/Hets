@@ -17,6 +17,7 @@ where
 import Logic.Comorphism
 import Logic.Logic
 import Logic.Grothendieck
+import Logic.Coerce
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Tree as Tree
@@ -256,12 +257,11 @@ homogeniseDiagram targetLid diag =
     -- copy all the edges from the original to new diagram (coercing the morphisms).
     do let convertNode (n, dn) =
 	       do G_sign srcLid sig <- return $ getSig $ dn_sig dn
-                  sig' <- rcoerce targetLid srcLid nullRange sig
+                  sig' <- coerceSign srcLid targetLid "" sig
 		  return (n, sig')
            convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
-	       let srcLid = sourceLogic cid
-	       in if isIdComorphism (Comorphism cid) then
-		     do mor' <- rcoerce targetLid srcLid nullRange mor
+	       if isIdComorphism (Comorphism cid) then
+		     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
 			return (n1, n2, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
 					 nullRange
@@ -295,9 +295,8 @@ homogeniseSink :: Logic lid sublogics
 homogeniseSink targetLid dEdges =
     -- See homogeniseDiagram for comments on implementation.
     do let convertMorphism (n, GMorphism cid _ mor) =
-	       let srcLid = sourceLogic cid
-	       in if isIdComorphism (Comorphism cid) then
-		     do mor' <- rcoerce targetLid srcLid nullRange mor
+	       if isIdComorphism (Comorphism cid) then
+		     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
 			return (n, mor')
 		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
 					 nullRange

@@ -19,9 +19,8 @@ import Common.PrettyPrint
 import Common.Result
 import Common.Lib.Pretty as P
 
-import Logic.Logic
+import Logic.Coerce
 import Logic.Comorphism
-import Logic.Grothendieck
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -56,24 +55,22 @@ printTheory ln le (sn, ge) = case ge of
           case maybeResult $ computeTheory le (ln, n) of
             Nothing -> return ()
             Just (G_theory lid sign0 sens0) ->
-                let r1 = do
-                      sign1 <- coerce CASL lid sign0 
-                      sens1 <- coerce CASL lid sens0
-                      th1 <- map_theory CASL2PCFOL (sign1, sens1)
+                let th = (sign0, toNamedList sens0)
+                    r1 = do
+                      th0 <- coerceBasicTheory lid CASL "" th
+                      th1 <- map_theory CASL2PCFOL th0
                       th2 <- map_theory PCFOL2CFOL th1
                       map_theory CFOL2IsabelleHOL th2
 #ifdef PROGRAMATICA                                  
                     r2 = do 
-                      sign1 <- coerce Haskell lid sign0 
-                      sens1 <- coerce Haskell lid sens0
-                      map_theory Haskell2IsabelleHOLCF (sign1, sens1)
+                      th0 <- coerceBasicTheory lid Haskell "" th
+                      map_theory Haskell2IsabelleHOLCF th0
 #else 
                     r2 = r1
 #endif
                     r4 = do 
-                      sign1 <- coerce HasCASL lid sign0 
-                      sens1 <- coerce HasCASL lid sens0
-                      map_theory HasCASL2IsabelleHOL (sign1, sens1)
+                      th0 <- coerceBasicTheory lid HasCASL "" th
+                      map_theory HasCASL2IsabelleHOL th0
                     r3 = case maybeResult r1 of 
                          Nothing -> case maybeResult r2 of 
                              Nothing -> r4

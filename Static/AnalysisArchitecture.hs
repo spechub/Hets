@@ -19,6 +19,7 @@ where
 import Driver.Options
 
 import Logic.Logic
+import Logic.Coerce
 import Logic.Grothendieck
 
 import Static.DevGraph
@@ -460,10 +461,10 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig (Fit_arg_unit ut symbMap p
        G_sign lidS sigmaS <- return gsigmaS
        G_sign lidT sigmaT <- return gsigmaT
        G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
-       sigmaT' <- rcoerce lidT lidS poss sigmaT
+       sigmaT' <- adj $ coerceSign lidT lidS "" sigmaT
        mor <- if isStructured opts then return (ide lidS sigmaS)
                  else do rmap <- adj $ stat_symb_map_items lid sis
-                         rmap' <- rcoerce lid lidS poss rmap
+                         rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
                          adj $ induced_from_to_morphism lidS rmap' sigmaS sigmaT'
        let gMorph = G_morphism lidS mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
