@@ -27,10 +27,10 @@ Provides data structures for institution comorphisms.
 module Logic.Comorphism where
 
 import Logic.Logic
+import Logic.Coerce
 import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.AS_Annotation
-import Data.Maybe
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -169,36 +169,38 @@ instance (Comorphism cid1
      sourceSublogic cid1
    targetSublogic (CompComorphism cid1 cid2) = 
      mapSublogic cid2 
-      (idcoerce (targetLogic cid1) (sourceLogic cid2) 
+      (coerceSublogic (targetLogic cid1) (sourceLogic cid2) 
         (targetSublogic cid1))
    mapSublogic (CompComorphism cid1 cid2) = 
      mapSublogic cid2 
-     . idcoerce (targetLogic cid1) (sourceLogic cid2) 
+     . coerceSublogic (targetLogic cid1) (sourceLogic cid2) 
      . mapSublogic cid1
    map_sentence (CompComorphism cid1 cid2) = 
        \si1 se1 -> 
          do (si2,_) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1 
-            (si2', se2') <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
-                            "Mapping sentence along comorphism" (si2, se2)
-            map_sentence cid2 si2' se2'
+            (si2', se2') <- coerceBasicTheory 
+                (targetLogic cid1) (sourceLogic cid2) 
+                "Mapping sentence along comorphism" (si2, [emptyName se2])
+            case se2' of 
+                [x] -> map_sentence cid2 si2' $ sentence x
+                _ -> error "CompComorphism.map_sentence"
 
    map_theory (CompComorphism cid1 cid2) = 
        \ti1 -> 
          do ti2 <- map_theory cid1 ti1
-            ti2' <- mcoerce (targetLogic cid1) (sourceLogic cid2) 
+            ti2' <- coerceBasicTheory (targetLogic cid1) (sourceLogic cid2) 
                         "Mapping theory along comorphism" ti2 
             map_theory cid2 ti2'
 
    map_morphism (CompComorphism cid1 cid2) = \ m1 -> 
        do m2 <- map_morphism cid1 m1 
-          m3 <- mcoerce (targetLogic cid1) (sourceLogic cid2)
+          m3 <- coerceMorphism (targetLogic cid1) (sourceLogic cid2)
                   "Mapping signature morphism along comorphism"m2
           map_morphism cid2 m3
 
    map_symbol (CompComorphism cid1 cid2) = \ s1 -> 
-         let mycast = fromJust . mcoerce (targetLogic cid1) (sourceLogic cid2)
-                                  "Mapping symbol along comorphism"
+         let mycast = coerceSymbol (targetLogic cid1) (sourceLogic cid2)
          in Set.unions
                 (map (map_symbol cid2 . mycast) 
                  (Set.toList (map_symbol cid1 s1)))
