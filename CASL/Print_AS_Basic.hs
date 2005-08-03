@@ -657,8 +657,7 @@ condParensAppl pf parens_fun ga o_i t mdir =
     _ -> parens_fun t'
     where t' = pf t
 
-condParensSorted_term :: Show f => 
-                         (Doc -> Doc) 
+condParensSorted_term :: (Doc -> Doc) 
                          -- ^ a function that surrounds 
 			 -- the given Doc with appropiate 
 			 -- parens

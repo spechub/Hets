@@ -597,7 +597,7 @@ transFORMULA _ _ _ (Sort_gen_ax _ _) =
     error "CASL2SPASS.transFORMULA: Sort generation constraints not\
           \ supported at this point!"
 transFORMULA _ _ _ f = 
-    error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++show f++"'")
+    error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++showPretty f "'")
 
 
 transTERM :: (PrettyPrint f) => 
@@ -632,6 +632,6 @@ transTERM sign idMap tr t'@(Cast t s _)
                  recRes
     where recRes = transTERM sign idMap tr t
 transTERM _sign _idMap _tr t =
-  error ("CASL2SPASS.transTERM: unknown TERM '"++show t++"'") 
+  error ("CASL2SPASS.transTERM: unknown TERM '"++showPretty t "'") 
 
 

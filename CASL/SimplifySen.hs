@@ -50,7 +50,7 @@ simplifySen minF simpF sign formula =
     Membership t sort pos -> Membership (simplifyTermC t) sort pos
     ExtFORMULA f -> ExtFORMULA $ simpF sign f
     f@(Sort_gen_ax _ _) -> f
-    f -> error ("Error in simplifySen " ++ show f)
+    _ -> error "simplifySen"
     where
         simplifySenCall = simplifySen minF simpF sign
         simplifyTermC = simplifyTerm minF simpF sign
@@ -188,13 +188,13 @@ anaFormula minF simpF sign form1 =
               (simplifyTermC t1) (simplifyTermC t2) pos         
             Strong_equation t1 t2 pos -> Strong_equation 
               (simplifyTermC t1) (simplifyTermC t2) pos  
-            f -> error ("Error in anaFormula1 " ++ show f)
+            _ -> error "anaFormula1"
         rmForm = case simpForm of 
             Existl_equation t1 t2 pos -> Existl_equation 
               (rmSort t1) (rmSort t2) pos       
             Strong_equation t1 t2 pos -> Strong_equation 
               (rmSort t1) (rmSort t2) pos  
-            f -> error ("Error in anaFormula2 " ++ show f)
+            _ -> error "anaFormula2"
      in case form1 of 
         Predication predSymb@(Pred_name _) tl pos -> 
            let minPred = Predication predSymb (map rmSort tl) pos
