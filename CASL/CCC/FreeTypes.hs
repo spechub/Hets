@@ -1,7 +1,7 @@
 {- | 
    
     Module      :  $Header$
-    Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
+    Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
     Maintainer  :  hets@tzi.de
@@ -24,8 +24,6 @@ Just Nothing => don't know
 
 module CASL.CCC.FreeTypes where
 
-import System
-import Debug.Trace
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism              
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
@@ -36,7 +34,9 @@ import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.Result
 import Common.Id
-import Foreign
+import System.Cmd
+import System.IO.Unsafe
+import Debug.Trace
 
 {-
    function checkFreeType:
