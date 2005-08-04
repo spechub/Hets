@@ -166,7 +166,6 @@ data DGRule =
  | MonoToCons
  | FreeIsMono
  | MonoIsFree
- | Composition
  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
  | LocDecomp (LEdge DGLinkLab)
  | LocSubsumption (LEdge DGLinkLab)
