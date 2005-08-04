@@ -119,14 +119,28 @@ data SortGenerationFeatures =
                   } deriving (Show,Eq)
 
 instance Ord SortGenerationFeatures where
-    (<=) x y = case x of
-               NoSortGen -> True
-               SortGen em_x ojc_x -> 
-                   case y of
-                   NoSortGen -> False
-                   SortGen em_y ojc_y -> 
-                       em_x >= em_y && ojc_x >= ojc_y
-                       -- False means more expressive / more features used
+  {-   NoSortGen False False > NoSortGen True False 
+     > NoSortGen False True  > NoSortGen True True -}
+    compare x y = 
+        case x of
+        NoSortGen -> case y of
+                     NoSortGen -> EQ
+                     _         -> LT
+        SortGen em_x ojc_x -> 
+            case y of
+            NoSortGen -> GT
+            SortGen em_y ojc_y ->
+                case (em_x,ojc_x,em_y,ojc_y) of
+                (False,True,True,True)  -> GT
+                (True,False,True,True)  -> GT
+                (True,True,False,True)  -> LT
+                (True,True,True,False)  -> LT
+                (False,False,True,True) -> GT
+                (True,False,False,True) -> GT
+                (True,True,False,False) -> LT
+                (False,True,True,False) -> LT
+                _ -> EQ
+                -- False means more expressive / more features used
 
 
 data CASL_Sublogics = CASL_SL
