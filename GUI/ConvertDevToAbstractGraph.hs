@@ -40,6 +40,7 @@ import Proofs.Proofs
 import Proofs.InferBasic
 import Proofs.Global
 import Proofs.Local
+import Proofs.Composition
 import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
 
@@ -257,6 +258,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                           (proofMenu gInfo (fmap return . locSubsume)),
                    Button "Local Decomposition (merge of rules)"
                           (proofMenu gInfo (fmap return . locDecomp)),
+                   Button "Composition (merge of rules)"
+                          (proofMenu gInfo (fmap return . composition)),
                    Button "Hide Theorem Shift"
                           (proofMenu gInfo (fmap return . 
                                             (hideTheoremShift False))),

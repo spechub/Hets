@@ -131,8 +131,9 @@ instance ShATermConvertible DGRule where
         addATerm (ShAAppl "FreeIsMono" [] []) att0
     toShATerm att0 MonoIsFree =
         addATerm (ShAAppl "MonoIsFree" [] []) att0
-    toShATerm att0 Composition =
-        addATerm (ShAAppl "Composition" [] []) att0
+    toShATerm att0 (Composition l) =
+        case toShATerm att0 l of { (att1,l') ->
+        addATerm (ShAAppl "Composition" [l'] []) att1 }
     toShATerm att0 (GlobDecomp a) =
         case toShATerm att0 a of { (att1,a') ->
         addATerm (ShAAppl "GlobDecomp" [a'] []) att1 }
@@ -183,8 +184,9 @@ instance ShATermConvertible DGRule where
                     FreeIsMono
             (ShAAppl "MonoIsFree" [] _) ->
                     MonoIsFree
-            (ShAAppl "Composition" [] _) ->
-                    Composition
+            (ShAAppl "Composition" [l] _) ->
+		    case fromShATerm (getATermByIndex1 l att) of { l' ->
+                    (Composition l') }
             (ShAAppl "GlobDecomp" [a] _) ->
                     case fromShATerm (getATermByIndex1 a att) of { a' ->
                     (GlobDecomp a') }
