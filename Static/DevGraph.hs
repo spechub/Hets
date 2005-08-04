@@ -171,6 +171,7 @@ data DGRule =
  | LocDecomp (LEdge DGLinkLab)
  | LocSubsumption (LEdge DGLinkLab)
  | GlobSubsumption (LEdge DGLinkLab)
+ | Composition [LEdge DGLinkLab]
  | LocalInference
  | BasicInference BasicProof
  | BasicConsInference Edge BasicConsProof
