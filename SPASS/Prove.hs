@@ -20,8 +20,6 @@ Interface for the SPASS theorem prover.
         for ProofStatus ...
         partly implemented
       - Implement a consistency checker based on GUI
-      - surround goal specific part of GUI with a border and Status part 
-        with another border
       - check if proving is possible more than one time even 
         if the Goal was already proved
 -}
