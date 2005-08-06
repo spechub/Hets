@@ -170,6 +170,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
+         is_transportable CASL = isSortInjective
          
          empty_signature CASL = emptySign ()
          signature_union CASL sigma1 sigma2 = 

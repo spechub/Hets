@@ -460,6 +460,13 @@ morphismUnion uniteM addSigExt mor1 mor2 =
            extended_map = uniteM (extended_map mor1) $ extended_map mor2 }
       else Result pds Nothing
 
+isSortInjective :: Morphism f e m -> Bool
+isSortInjective m = 
+   null [() | k1 <- src, k2 <-src, k1 /= k2, 
+              (Map.lookup k1 sm::Maybe SORT)==Map.lookup k2 sm]
+   where sm = sort_map m
+         src = Map.keys sm
+
 instance PrettyPrint Symbol where
   printText0 ga sy = 
     printText0 ga (symName sy) <> 
