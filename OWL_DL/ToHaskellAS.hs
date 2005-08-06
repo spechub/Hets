@@ -23,7 +23,7 @@ import qualified Common.Lib.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
 -- import Data.Graph.Inductive.Tree
-import Data.Graph.Inductive.Graph
+-- import Data.Graph.Inductive.Graph
 import Static.DevGraph
 -- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
