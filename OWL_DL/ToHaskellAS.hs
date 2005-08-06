@@ -24,6 +24,7 @@ import qualified List as List
 import OWL_DL.StructureAna
 -- import Data.Graph.Inductive.Tree
 import Data.Graph.Inductive.Graph
+import Static.DevGraph
 -- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
 import OWL_DL.Sign
@@ -105,40 +106,63 @@ outputAS :: [ATerm] -> IO()
 outputAS [] = putStrLn ""
 outputAS (aterm:res) =
        case aterm of
-          AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [valid, msg, ns, onto] _] _ ->
-              do  let (_, ontology) = ontologyParse aterm
+          AAppl "UOPaar" [_, AAppl "OWLParserOutput" [valid, msg, _, _] _] _ ->
+              do  let (uri, namespace, ontology) = ontologyParse aterm
                   putStrLn ("URI: " ++ uri)
 		  putStrLn $ fromATerm valid
 		  putStrLn $ show (buildMsg msg)
-		  putStrLn $ show (buildNS ns)
+		  putStrLn $ show namespace
 		  putStrLn $ show ontology
                   outputAS res
           _ -> error "false file."
 
+instance Show DGLinkLab where
+    show (DGLink _ _ _) = show ""
+instance Show DGNodeLab where
+    show (DGNode name _ _ _ _) = show name
+    show (DGRef name _ _ _ _) = show name
+    
 -- for structure analysis
 printDG :: [ATerm] -> IO()
-printDG al =  putStrLn $ show $ buildDevGraph (Map.fromList $ reverse $ parsingAll al) 
+printDG al =  
+    do let p = paarWithUriAndOntology $ reverse $ parsingAll al
+       putStrLn $ show $ buildDevGraph (Map.fromList p)
+  where paarWithUriAndOntology :: [(String, Namespace, Ontology)] 
+				  -> [(String, Ontology)]
+	paarWithUriAndOntology [] = []
+	paarWithUriAndOntology ((uri, _, onto):r) =
+	    (uri,onto):(paarWithUriAndOntology r)
 
 -- for static analysis
 printResOfStatic :: [ATerm] -> IO()
 printResOfStatic al = 
-   putStrLn $ show (map output (parsingAll al))
-   where output :: (String, Ontology) 
-		-> Result (Ontology,Sign,Sign,[Named Sentence])
-	 output (uri, ontology) = 
-	     basicOWL_DLAnalysis (ontology, emptySign, emptyGlobalAnnos) 
+   putStrLn $ show (map output $ parsingAll al)
+   where output :: (String, Namespace, Ontology) 
+	-- 	-> Result (Ontology,Sign,Sign,[Named Sentence])
+	        -> Result (Sign,[Named Sentence])
+	 output (_, ns, ontology) = 
+	     let Result diagsA (Just (_, _, accSig, namedSen)) = 
+		     basicOWL_DLAnalysis (ontology, 
+					  emptySign {namespaceMap = ns}, 
+					  emptyGlobalAnnos)
+	     in  Result diagsA (Just (accSig, namedSen))
 
-parsingAll :: [ATerm] -> [(String, Ontology)]
+parsingAll :: [ATerm] -> [(String, Namespace, Ontology)]
 parsingAll [] = []
 parsingAll (aterm:res) =
 	     (ontologyParse aterm):(parsingAll res)
       
-ontologyParse :: ATerm -> (String, Ontology)
-ontologyParse aterm =
-    case aterm of
-    AAppl "UOPaar" [AAppl uri _  _, AAppl "OWLParserOutput" [_, _, ns, onto] _] _ -> (uri, propagateNspaces (buildNS ns) $ createEqClass $ reducedDisjoint (fromATerm onto::Ontology))
-    _ -> error "false ontology file."
-
+ontologyParse :: ATerm -> (String, Namespace, Ontology)
+ontologyParse 
+    (AAppl "UOPaar" 
+        [AAppl uri _  _, 
+	 AAppl "OWLParserOutput" [_, _, ns, onto] _] _) 
+    = (uri, 
+       namespace, 
+       propagateNspaces namespace $ createAndReduceClassAxiom
+                                         (fromATerm onto::Ontology))
+   where namespace = buildNS ns 
+ontologyParse _ = error "false ontology file."
 
 buildNS :: ATerm -> Namespace
 buildNS at = case at of
@@ -171,6 +195,7 @@ mkMsg (h:r) (Message preRes) =
         mkMsg r (Message (("ParserError", fromATerm $ head errors, ""):preRes))
     _ -> error "unknow message."
 
+{-
 reducedDisjoint :: Ontology -> Ontology
 reducedDisjoint (Ontology oid directives) = 
     Ontology oid (rdDisj $  List.nub directives)
@@ -195,18 +220,62 @@ reducedDisjoint (Ontology oid directives) =
                          else False
                   _ -> False
               _ -> False
+-}
 
-createEqClass :: Ontology -> Ontology
-createEqClass (Ontology oid directives) =
-    Ontology oid (findAndCreate directives)
+createAndReduceClassAxiom :: Ontology -> Ontology
+createAndReduceClassAxiom (Ontology oid directives) =
+    let (definition, axiom, other) =  
+	    findAndCreate (List.nub directives) ([], [], []) 
+	directives' = reverse definition ++ reverse axiom ++ reverse other
+    in  Ontology oid directives' 
     
-   where findAndCreate :: [Directive] -> [Directive]
-         findAndCreate [] = []
-         findAndCreate (h:r) = 
+   where findAndCreate :: [Directive] 
+	               -> ([Directive], [Directive], [Directive])
+		       -> ([Directive], [Directive], [Directive])
+			  -- (definition of concept and role, axiom, rest)
+         findAndCreate [] res = res
+         findAndCreate (h:r) (def, axiom, rest) = 
              case h of
              Ax (Class cid _ Complete _ desps) ->
-                 (Ax (EquivalentClasses (DC cid) desps)):(findAndCreate r)
-	     _ -> h:(findAndCreate r)
+		 -- the original directive must also be saved.
+		 findAndCreate r 
+		    (h:def,(Ax (EquivalentClasses (DC cid) desps)):axiom,rest)
+                 -- h:(Ax (EquivalentClasses (DC cid) desps)):(findAndCreate r)
+	     Ax (Class cid _ Partial _ desps) ->
+		 if null desps then
+		    findAndCreate r (h:def, axiom, rest) -- h:(findAndCreate r)
+		    else 
+		     findAndCreate r (h:def, 
+				      (appendSubClassAxiom cid desps) ++ axiom,
+				      rest) 
+	     Ax (EnumeratedClass _ _ _ _) -> 
+		 findAndCreate r (h:def, axiom, rest)
+	     Ax (DisjointClasses _ _ _) ->
+                             if any (eqClass h) r then
+                                findAndCreate r (def, axiom, rest)
+                                else findAndCreate r (def,h:axiom, rest)
+	     Ax (DatatypeProperty _ _ _ _ _ _ _) -> 
+		 findAndCreate r (h:def, axiom, rest)
+	     Ax (ObjectProperty _ _ _ _ _ _ _ _ _) -> 
+		 findAndCreate r (h:def, axiom, rest)
+	     _ -> findAndCreate r (def, axiom, h:rest)
+             
+	 appendSubClassAxiom :: ClassID -> [Description] -> [Directive]
+	 appendSubClassAxiom _ [] = []
+	 appendSubClassAxiom cid (hd:rd) =
+	     (Ax (SubClassOf (DC cid) hd)):(appendSubClassAxiom cid rd) 
+
+         eqClass :: Directive -> Directive -> Bool
+         eqClass dj1 dj2 =
+              case dj1 of
+              Ax (DisjointClasses c1 c2 _) ->
+                  case dj2 of
+                  Ax (DisjointClasses c3 c4 _) ->
+                      if (c1 == c4 && c2 == c3) 
+                         then True
+                         else False
+                  _ -> False
+              _ -> False
 
 
 
