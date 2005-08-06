@@ -651,15 +651,27 @@ class PNamespace a where
     propagateNspaces :: Namespace -> a -> a
 
 instance PNamespace QName where
-    propagateNspaces ns qName = 
-	case qName of
-	QN pre local nsUri -> 
-	   if null nsUri then
-              let maybeNsUri = Map.lookup pre ns
-	      in  case maybeNsUri of 
-	            Just nsURI -> QN pre local nsURI
-		    Prelude.Nothing    -> QN pre local ""
-	      else QN pre local nsUri
+    propagateNspaces ns old@(QN pre local nsUri) = 
+	if null nsUri then
+	   if null pre then
+	      let (pre', local') = span (/=':') 
+				     (if (head local) == '\"' then
+				         read local::String
+				         else local
+				     )
+	      in if (length pre' > 1) || (null local') then
+		    QN pre local nsUri
+		    else let local'' = tail local'
+		         in  prop pre' local''
+	      else prop pre local
+	   else old
+      where 
+        prop :: String -> String -> QName
+	prop p loc =
+           let maybeNsUri = Map.lookup p ns
+	   in  case maybeNsUri of 
+		    Just nsURI -> QN p loc nsURI
+		    Prelude.Nothing    -> QN p loc ""
 	
 instance PNamespace Ontology where	
     propagateNspaces ns onto = 
