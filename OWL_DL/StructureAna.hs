@@ -18,17 +18,21 @@ import OWL_DL.Sign
 import OWL_DL.Logic_OWL_DL
 import OWL_DL.AS
 -- import OWL_DL.ReadWrite
-import Common.DefaultMorphism
+-- import Common.DefaultMorphism
 import Text.XML.HXT.DOM.XmlTreeTypes
 import Logic.Grothendieck
+import Logic.Logic
 import Common.Id
+import Common.Result
 import List
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 -- import Debug.Trace
 -- import Data.Graph.Inductive.Tree
 
 buildDevGraph :: Map.Map String Ontology -> DGraph
-buildDevGraph ontoMap = Map.foldWithKey graphFromMap Data.Graph.Inductive.Graph.empty ontoMap
+buildDevGraph ontoMap = Map.foldWithKey graphFromMap 
+			Data.Graph.Inductive.Graph.empty ontoMap
 
 graphFromMap :: String -> Ontology -> DGraph -> DGraph
 -- buildDevGraph [] dg = dg
@@ -37,26 +41,29 @@ graphFromMap uri onto dg =            --  ((uri, onto):r) dg =
 	-- existedLEdges = labEdges dg
 	
         currentSign = simpleSign $ strToQN uri
-	cl@(ind, currentLnode) = head $ createLNodes [uri] existedLNodes
+	cl@(ind, _) = head $ createLNodes [uri] existedLNodes
 	importsList = searchImports onto
 	tagLNodes = createLNodes importsList (nub (cl:existedLNodes))
 	newLNodes = reduceLNodes (cl:tagLNodes) dg
-
+{-
 	morphismList = 
 		  map (\x -> GMorphism OWL_DL 
 		             currentSign 
 		             (ideOfDefaultMorphism $ simpleSign $ strToQN x)
 		      ) $ reverse importsList
-	ledgeList = map (\(x, y) -> 
+-}
+	morphism = idComorphism (Logic OWL_DL) 
+	Result _ (Just comorphism) = 
+	    gEmbedComorphism morphism (G_sign OWL_DL currentSign)	
+	ledgeList = map (\y -> 
 		             let (indT, _) = y
-		             in (ind, indT, DGLink { dgl_morphism = x,
+		             in (ind, indT, DGLink { dgl_morphism = comorphism,
 						     dgl_type = GlobalDef,
 						     dgl_origin = DGBasic
 						   })
-                        ) (zip morphismList tagLNodes)
+                        ) tagLNodes
     in  if isEmpty dg then
              mkGraph newLNodes ledgeList
-	     
 	   else 
 	     insEdges ledgeList (insNodes newLNodes dg)
 	     
@@ -133,7 +140,7 @@ buildLNodeFromStr uri i =
 	nodeName = makeName $ mkSimpleId $ localPart name
 	currentSign = simpleSign $ name
     in  (i+1, DGNode { dgn_name = nodeName,
-		       dgn_theory = G_theory OWL_DL currentSign [],
+		       dgn_theory = G_theory OWL_DL currentSign Set.empty,
 		       -- lass erstmal kein Signatur.
 		       -- dgn_sens = G_l_sentence_list OWL_DL [],
 		       dgn_nf = Prelude.Nothing,
