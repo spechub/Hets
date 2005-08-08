@@ -86,7 +86,7 @@ data DGNodeLab = DGNode {
                 dgn_node :: Node,
 		dgn_nf :: Maybe Node,
 		dgn_sigma :: Maybe GMorphism
-              } deriving Eq
+              } deriving (Show, Eq)
 
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
@@ -145,7 +145,7 @@ data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,
               dgl_type :: DGLinkType,
               dgl_origin :: DGOrigin }
-              deriving Eq
+              deriving (Show, Eq)
 
 instance PrettyPrint DGLinkLab where
   printText0 ga l = printText0 ga (dgl_morphism l)
@@ -174,7 +174,7 @@ data DGRule =
  | LocalInference
  | BasicInference BasicProof
  | BasicConsInference Edge BasicConsProof
-   deriving Eq
+   deriving (Show, Eq)
 
 data BasicProof =
   forall lid sublogics
@@ -204,11 +204,11 @@ instance Show BasicProof where
   show Handwritten = "Handwritten"
 
 data BasicConsProof = BasicConsProof -- more detail to be added ...
-     deriving Eq
+     deriving (Show, Eq)
 
 data ThmLinkStatus = LeftOpen 
 		   | Proven DGRule [DGLinkLab]
-                     deriving Eq
+                     deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
     printText0 ga tls = case tls of 
@@ -229,7 +229,7 @@ data DGLinkType = LocalDef
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
-              deriving Eq
+              deriving (Show, Eq)
 
 instance PrettyPrint DGLinkType where
     printText0 _ t = text $ case t of
@@ -264,11 +264,14 @@ type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
 data NodeSig = NodeSig Node G_sign deriving Eq
 
-data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving Eq
+data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where
   printText0 ga (NodeSig n sig) = 
     ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
+
+instance Show NodeSig where
+    showsPrec _ = showPretty 
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)
@@ -520,6 +523,9 @@ instance PrettyPrint G_theory where
      G_theory lid sign sens -> 
          printText0 ga sign $++$ vsep (map (print_named lid ga) 
                                            $ toNamedList sens)
+
+instance Show G_theory where
+    showsPrec _ = showPretty
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
