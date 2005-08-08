@@ -423,6 +423,9 @@ instance PrettyPrint GMorphism where
       $$
       printText0 ga m
 
+instance Show GMorphism where
+    showsPrec _ = showPretty 
+
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
     GMorphism (IdComorphism lid (top_sublogic lid)) sigma (ide lid sigma)
