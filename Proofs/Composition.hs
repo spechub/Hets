@@ -1,13 +1,15 @@
 module Proofs.Composition (composition) where
 
+import Logic.Grothendieck
 import Proofs.EdgeUtils
 import Proofs.Proofs
 import Proofs.StatusUtils
 import Static.DevGraph
+import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 
 composition :: ProofStatus -> IO ProofStatus
-composition proofStatus@(libname,libEnv,_) = do
+composition proofStatus@(libname,_,_) = do
   let dgraph = lookupDGraph libname proofStatus
       globalThmEdges = filter isGlobalThm (labEdges dgraph)
       (newDGraph, newHistoryElem) = compositionAux dgraph globalThmEdges ([],[])
@@ -29,7 +31,8 @@ compositionAux dgraph (edge:edges) (rules,changes) =
 
 compositionForOneEdge :: DGraph -> LEdge DGLinkLab -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
 compositionForOneEdge dgraph edge@(src,tgt,lab) =
-  compositionForOneEdgeAux edge pathsOfMorphism
+  compositionForOneEdgeAux edge [path | path <- pathsOfMorphism,
+				 not (elem edge path)]
 
   where
     globThmPaths = getAllPathsOfTypeBetween dgraph isGlobalThm src tgt
@@ -39,7 +42,9 @@ compositionForOneEdge dgraph edge@(src,tgt,lab) =
 compositionForOneEdgeAux :: LEdge DGLinkLab -> [[LEdge DGLinkLab]] -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
 compositionForOneEdgeAux _ [] = Nothing
 compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
-  | cons <= pathCons = Just (newEdge,path)
+  | cons <= pathCons = if cons == Mono 
+		        then handleConservativityMono newEdge path 
+		         else Just (newEdge,path)
   | otherwise = compositionForOneEdgeAux edge paths
 
   where
@@ -52,6 +57,14 @@ compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
 		       dgl_type = (GlobalThm (Proven (Composition path) (map getEdgeLabel path))) cons consStatus,
 		       dgl_origin = DGProof}
 	      )
+
+handleConservativityMono :: LEdge DGLinkLab -> [LEdge DGLinkLab]
+			 -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
+handleConservativityMono newEdge path =
+  case calculateMorphismOfPath path of
+    Nothing -> Nothing
+    Just morph -> if isTransportable morph then Just (newEdge,path)
+		   else Nothing
 
 
 getConservativity :: LEdge DGLinkLab -> Conservativity
