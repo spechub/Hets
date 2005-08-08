@@ -1015,7 +1015,7 @@ getDGNodeType dgnode =
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_type lnk of
   GlobalDef ->
-    if hasIdComorphism $ dgl_morphism lnk then "globaldef"
+    if isHomogeneous $ dgl_morphism lnk then "globaldef"
         else "hetdef"
   HidingDef -> "hidingdef"
   LocalThm thmLinkStatus _ _ -> "local" ++ getThmType thmLinkStatus ++ "thm"

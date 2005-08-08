@@ -37,6 +37,7 @@ The Grothendieck logic is defined to be the
    compComorphism: cancellation of id comorphisms if target sublogic is
                    not increased
    gWeaklyAmalgamableCocone
+   Transportability for heterogeneous morphisms
 -}
 
 module Logic.Grothendieck where
@@ -405,8 +406,8 @@ instance Eq GMorphism where
        && coerceMorphism (targetLogic cid1) (targetLogic cid2) 
                    "Eq GMorphism.coerceMorphism" mor1 == Just mor2
 
-hasIdComorphism :: GMorphism -> Bool
-hasIdComorphism (GMorphism cid _ _) =
+isHomogeneous :: GMorphism -> Bool
+isHomogeneous (GMorphism cid _ _) =
   isIdComorphism (Comorphism cid)
 
 data Grothendieck = Grothendieck deriving Show
@@ -561,6 +562,12 @@ findComorphismPaths lg (G_sublogics lid sub) =
               Nothing -> Nothing
               Just c1 -> Just (c1,c:comps)
         in catMaybes $ map addCoMor $ filter (not . (`elem` comps)) $ coMors
+
+-- | check transpotability of Grothendieck signature morphisms
+-- | (currently returns false for heterogeneous morphisms)
+isTransportable :: GMorphism -> Bool
+isTransportable (GMorphism cid _ mor) =
+  isIdComorphism (Comorphism cid) && is_transportable (targetLogic cid) mor
 
 
 ------------------------------------------------------------------
