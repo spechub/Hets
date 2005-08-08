@@ -129,6 +129,20 @@ getLabelOfEdge (_,_,label) = label
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
 
+{- returns all paths consisting of edges of the given type in the given
+   development graph-}
+getAllPathsOfType :: DGraph -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
+getAllPathsOfType dgraph isType =
+  concat 
+  [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
+   source <- sources]
+
+  where
+    edgesOfType = [edge | edge <- filter isType (labEdges dgraph)]
+    sources = nub (map getSourceNode edgesOfType)
+    targets = nub (map getTargetNode edgesOfType)
+
+
 {- returns a list of all proven global paths of the given morphism between
    the given source and target node-}
 getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
@@ -146,7 +160,6 @@ filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
 		      -> [[LEdge DGLinkLab]]
 filterPathsByMorphism morphism paths = 
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
-
 
 
 {- returns all paths consisting of global edges only

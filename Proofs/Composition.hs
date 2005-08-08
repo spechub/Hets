@@ -8,6 +8,40 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 
+compositionCreateEdges :: ProofStatus -> IO ProofStatus
+compositionCreateEdges proofStatus@(libname,_,_) = do
+  let dgraph = lookupDGraph libname proofStatus
+      pathsToCompose = getAllPathsOfType dgraph isGlobalThm
+      (newDGraph,newHistoryElem)
+	  = compositionCreateEdgesAux dgraph pathsToCompose ([],[])
+  return proofStatus
+
+compositionCreateEdgesAux :: DGraph -> [[LEdge DGLinkLab]] 
+			  -> ([DGRule],[DGChange]) 
+			  -> (DGraph,([DGRule],[DGChange]))
+compositionCreateEdgesAux dgraph [] historyElem = (dgraph,historyElem)
+compositionCreateEdgesAux dgraph (path:paths) (rules,changes) =
+  case path of
+    [] -> compositionCreateEdgesAux dgraph paths (rules,changes)
+    _ -> case calculateMorphismOfPath path of
+	   Nothing -> compositionCreateEdgesAux dgraph paths (rules,changes)
+           Just _ -> compositionCreateEdgesAux (insEdge newEdge dgraph) paths ((Composition path):rules,(InsertEdge newEdge):changes)
+
+  where
+    src = getSourceNode (head path)
+    tgt = getTargetNode (last path)
+    cons = getConservativityOfPath path
+    Just morph = calculateMorphismOfPath path
+    consStatus = LeftOpen
+    newEdge = (src,
+	       tgt,
+	       DGLink {dgl_morphism = morph,
+		       dgl_type = (GlobalThm (Proven (Composition path) (map getEdgeLabel path))) cons consStatus,
+		       dgl_origin = DGProof}
+	      )
+
+
+
 composition :: ProofStatus -> IO ProofStatus
 composition proofStatus@(libname,_,_) = do
   let dgraph = lookupDGraph libname proofStatus
@@ -49,7 +83,7 @@ compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
 
   where
     cons = getConservativity edge
-    pathCons = minimum [getConservativity e | e <- path]
+    pathCons = getConservativityOfPath path
     consStatus = getConservativityStatus edge
     newEdge = (src,
 	       tgt,
@@ -73,6 +107,9 @@ getConservativity (_,_,lab) =
     LocalThm _ cons _ -> cons
     GlobalThm _ cons _ -> cons
 
+
+getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity
+getConservativityOfPath path = minimum [getConservativity e | e <- path]
 
 getConservativityStatus :: LEdge DGLinkLab -> ThmLinkStatus
 getConservativityStatus (_,_,lab) =
