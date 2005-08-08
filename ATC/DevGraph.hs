@@ -1,6 +1,6 @@
 {- |
-Module      :  ATC/DevGraph.der.hs
-Description :  generated ShATermConvertible instances
+Module      :  $Header$
+Description :  manual ShATermConvertible instances
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt
 
