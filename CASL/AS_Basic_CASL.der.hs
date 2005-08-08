@@ -22,7 +22,6 @@ import Data.List (nub)
 {-! global: UpPos !-}
 
 data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
-		  deriving (Show,Eq)
 
 data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- the Annotation following the keyword is dropped
@@ -38,7 +37,6 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
 		 | Axiom_items [Annoted (FORMULA f)] Range
 		   -- pos: dots
                  | Ext_BASIC_ITEMS b
-		   deriving (Show,Eq)
 
 data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range 
 	         -- pos: sort, semi colons
@@ -49,7 +47,6 @@ data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range
 	       | Datatype_items [Annoted DATATYPE_DECL] Range
 		 -- type, semi colons
                | Ext_SIG_ITEMS s
-		 deriving (Show,Eq)
 
 data SORT_ITEM f = Sort_decl [SORT] Range
 	         -- pos: commas
@@ -61,13 +58,11 @@ data SORT_ITEM f = Sort_decl [SORT] Range
 		 -- parsed after the equal sign
 	       | Iso_decl [SORT] Range
 	         -- pos: "="s
-		 deriving (Show,Eq)
 
 data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] Range
 	       -- pos: commas, colon, OP_ATTR sep. by commas
 	     | Op_defn OP_NAME OP_HEAD (Annoted (TERM f)) Range
 	       -- pos: "="
-	       deriving (Show,Eq)
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
@@ -83,7 +78,6 @@ res_OP_TYPE (Op_type _ _ res _) = res
 
 data OP_HEAD = Op_head FunKind [ARG_DECL] SORT Range
 	       -- pos: "(", semicolons, ")", colon
-	       deriving (Show,Eq)
 
 data ARG_DECL = Arg_decl [VAR] SORT Range
 	        -- pos: commas, colon
@@ -91,13 +85,11 @@ data ARG_DECL = Arg_decl [VAR] SORT Range
 
 data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
 	     | Unit_op_attr (TERM f)
-	       deriving (Show,Eq)
 
 data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE Range
                  -- pos: commas, colon
 	       | Pred_defn PRED_NAME PRED_HEAD (Annoted (FORMULA f)) Range
 		 -- pos: "<=>"
-		 deriving (Show,Eq)
 
 data PRED_TYPE = Pred_type [SORT] Range
 	         -- pos: if null [SORT] then "(",")" else "*"s
@@ -105,22 +97,18 @@ data PRED_TYPE = Pred_type [SORT] Range
 
 data PRED_HEAD = Pred_head [ARG_DECL] Range
 	         -- pos: "(",semi colons , ")"
-		 deriving (Show,Eq)
 
 data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range 
 		     -- pos: "::=", "|"s
-		     deriving (Show,Eq)
 
 data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] Range
 		   -- pos: "(", semi colons, ")" optional "?"
 		 | Subsorts [SORT] Range
 		   -- pos: sort, commas
-		   deriving (Show,Eq)
 
 data COMPONENTS = Cons_select FunKind [OP_NAME] SORT Range
                   -- pos: commas, colon or ":?"
 		| Sort SORT		  
-		  deriving (Show,Eq)
 
 data VAR_DECL = Var_decl [VAR] SORT Range
 	        -- pos: commas, colon
