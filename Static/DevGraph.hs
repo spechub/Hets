@@ -71,22 +71,27 @@ getNewNode g = case newNodes 1 g of
 --     should be added
 --      or should it be kept separately?
 -- what about open theorems of a node???
+
+-- | name of a node in a DG; auxiliary nodes may have extension string
+-- | and non-zero number (for these, names are usually hidden)
 type NODE_NAME = (SIMPLE_ID, String, Int)
 
-data DGNodeLab = DGNode {
-                dgn_name :: NODE_NAME,
-                dgn_theory :: G_theory,
-                dgn_nf :: Maybe Node,
-                dgn_sigma :: Maybe GMorphism,
-                dgn_origin :: DGOrigin
-              }
-            | DGRef {
-                dgn_renamed :: NODE_NAME,
-                dgn_libname :: LIB_NAME,
-                dgn_node :: Node,
-		dgn_nf :: Maybe Node,
-		dgn_sigma :: Maybe GMorphism
-              } deriving (Show, Eq)
+-- | node inscriptions in development graphs           
+data DGNodeLab = 
+  DGNode {
+    dgn_name :: NODE_NAME,  -- name in the input language
+    dgn_theory :: G_theory, -- local theory
+    dgn_nf :: Maybe Node,   -- normal form, for Theorem-Hide-Shift
+    dgn_sigma :: Maybe GMorphism, -- inclusion of signature into nf signature 
+    dgn_origin :: DGOrigin  -- origin in input language
+  }
+ | DGRef {  -- reference to node in a different DG
+    dgn_renamed :: NODE_NAME,    -- new name of node (in current DG)
+    dgn_libname :: LIB_NAME,     -- pointer to DG where ref'd node resides
+    dgn_node :: Node,            -- pointer to ref'd node
+    dgn_nf :: Maybe Node,        -- normal form, for Theorem-Hide-Shift
+    dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature 
+  } deriving (Show, Eq)
 
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
@@ -138,13 +143,12 @@ locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _) = 
   is_subsig lid sigma (empty_signature lid) && Set.null sens
 locallyEmpty (DGRef _ _ _ _ _) = True
-           
+
+-- | link inscriptions in development graphs           
 data DGLinkLab = DGLink {
-              -- dgl_name :: String,
-              -- dgl_src, dgl_tar :: DGNodeLab,  -- already in graph structure
-              dgl_morphism :: GMorphism,
-              dgl_type :: DGLinkType,
-              dgl_origin :: DGOrigin }
+              dgl_morphism :: GMorphism,  -- signature morphism of link
+              dgl_type :: DGLinkType,     -- type: local, global, def, thm?
+              dgl_origin :: DGOrigin }    -- origin in input language
               deriving (Show, Eq)
 
 instance PrettyPrint DGLinkLab where
@@ -152,6 +156,48 @@ instance PrettyPrint DGLinkLab where
                     <+> printText0 ga (dgl_type l)
                     <+> printText0 ga (dgl_origin l)
 
+-- | Link types of development graphs
+-- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
+data DGLinkType = LocalDef 
+            | GlobalDef
+            | HidingDef
+            | FreeDef MaybeNode -- the "parameter" node
+            | CofreeDef MaybeNode -- the "parameter" node
+	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
+               -- ??? Some more proof information is needed here
+               -- (proof tree, ...)
+	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
+	    | HidingThm GMorphism ThmLinkStatus
+            | FreeThm GMorphism Bool
+              -- DGLink S1 S2 m2 (DGLinkType m1 p) n
+              -- corresponds to a span of morphisms
+              -- S1 <--m1-- S --m2--> S2
+              deriving (Show, Eq)
+
+instance PrettyPrint DGLinkType where
+    printText0 _ t = text $ case t of
+        LocalDef -> "LocalDef"
+        GlobalDef -> "GlobalDef"
+        HidingDef -> "HidingDef"
+        FreeDef _ -> "FreeDef"
+        CofreeDef _ -> "CofreeDef"
+	LocalThm _ _ _ -> "LocalThm"
+	GlobalThm _ _ _ -> "GlobalThm"
+	HidingThm _ _ -> "HidingThm"
+        FreeThm _ _ -> "FreeThm"
+
+-- | Conservativity annotations. For compactness, only the greatest
+-- | applicable value is used in a DG
+data Conservativity = None | Cons | Mono | Def
+              deriving (Eq,Ord)
+instance Show Conservativity where
+  show None = ""
+  show Cons = "Cons"
+  show Mono = "Mono"
+  show Def = "Def"
+
+-- | Rules in the development graph calculus
+-- | Sect. IV:4.4 of the CASL Reference Manual explains them in depth
 data DGRule = 
    TheoremHideShift
  | HideTheoremShift (LEdge DGLinkLab)
@@ -159,9 +205,6 @@ data DGRule =
  | ConsShift
  | DefShift 
  | MonoShift
- | ConsComp
- | DefComp 
- | MonoComp
  | DefToMono
  | MonoToCons
  | FreeIsMono
@@ -215,42 +258,11 @@ instance PrettyPrint ThmLinkStatus where
         LeftOpen -> text "Open"
         Proven _ ls -> vcat $ map (printText0 ga) ls
 
-data DGLinkType = LocalDef 
-            | GlobalDef
-            | HidingDef
-            | FreeDef MaybeNode -- the "parameter" node
-            | CofreeDef MaybeNode -- the "parameter" node
-	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
-               -- ??? Some more proof information is needed here
-               -- (proof tree, ...)
-	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
-	    | HidingThm GMorphism ThmLinkStatus
-            | FreeThm GMorphism Bool
-              -- DGLink S1 S2 m2 (DGLinkType m1 p) n
-              -- corresponds to a span of morphisms
-              -- S1 <--m1-- S --m2--> S2
-              deriving (Show, Eq)
 
-instance PrettyPrint DGLinkType where
-    printText0 _ t = text $ case t of
-        LocalDef -> "LocalDef"
-        GlobalDef -> "GlobalDef"
-        HidingDef -> "HidingDef"
-        FreeDef _ -> "FreeDef"
-        CofreeDef _ -> "CofreeDef"
-	LocalThm _ _ _ -> "LocalThm"
-	GlobalThm _ _ _ -> "GlobalThm"
-	HidingThm _ _ -> "HidingThm"
-        FreeThm _ _ -> "FreeThm"
 
-data Conservativity = None | Cons | Mono | Def
-              deriving (Eq,Ord)
-instance Show Conservativity where
-  show None = ""
-  show Cons = "Cons"
-  show Mono = "Mono"
-  show Def = "Def"
-
+-- | Data type indicating the origin of nodes and edges in the input language
+-- | This is not used in the DG calculus, only may be used in the future
+-- | for reconstruction of input and management of change.
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
               | DGLocal | DGClosed | DGClosedLenv | DGLogicQual | DGLogicQualLenv 
@@ -262,8 +274,12 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
+-- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 
+-- | NodeSig or possibly the empty sig in a logic
+-- | (but since we want to avoid lots of vacuous nodes with empty sig,
+-- |  we do not assign a real node in the DG here)
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where

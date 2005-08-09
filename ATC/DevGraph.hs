@@ -117,12 +117,6 @@ instance ShATermConvertible DGRule where
         addATerm (ShAAppl "DefShift" [] []) att0
     toShATerm att0 MonoShift =
         addATerm (ShAAppl "MonoShift" [] []) att0
-    toShATerm att0 ConsComp =
-        addATerm (ShAAppl "ConsComp" [] []) att0
-    toShATerm att0 DefComp =
-        addATerm (ShAAppl "DefComp" [] []) att0
-    toShATerm att0 MonoComp =
-        addATerm (ShAAppl "MonoComp" [] []) att0
     toShATerm att0 DefToMono =
         addATerm (ShAAppl "DefToMono" [] []) att0
     toShATerm att0 MonoToCons =
@@ -170,12 +164,6 @@ instance ShATermConvertible DGRule where
                     DefShift
             (ShAAppl "MonoShift" [] _) ->
                     MonoShift
-            (ShAAppl "ConsComp" [] _) ->
-                    ConsComp
-            (ShAAppl "DefComp" [] _) ->
-                    DefComp
-            (ShAAppl "MonoComp" [] _) ->
-                    MonoComp
             (ShAAppl "DefToMono" [] _) ->
                     DefToMono
             (ShAAppl "MonoToCons" [] _) ->
