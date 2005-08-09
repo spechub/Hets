@@ -30,16 +30,16 @@ type IndividualvaluedPropertyID = URIreference
 type AnnotationPropertyID = URIreference
 type OntologyPropertyID = URIreference
 
-type Namespace = Map.Map String String      -- prefix:localname
+type Namespace = Map.Map String String      -- ^ prefix -> localname
 data Message = Message [(String, String, String)] deriving (Show)
 type Validation = String
 
 
--- | Data structur for Ontologies
+-- | Data structure for Ontologies
 data Ontology = Ontology 
                          (Maybe OntologyID)
                          [Directive] 
---                         [Namespace]     -- NTrees XNode : namespaces
+                         Namespace
                 deriving (Show, Eq)
 data Directive = Anno Annotation | Ax Axiom | Fc Fact
                  deriving (Show, Eq)

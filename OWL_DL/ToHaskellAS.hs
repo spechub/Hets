@@ -115,12 +115,6 @@ outputAS (aterm:res) =
 		  putStrLn $ show ontology
                   outputAS res
           _ -> error "false file."
-
-instance Show DGLinkLab where
-    show (DGLink _ _ _) = show ""
-instance Show DGNodeLab where
-    show (DGNode name _ _ _ _) = show name
-    show (DGRef name _ _ _ _) = show name
     
 -- for structure analysis
 printDG :: [ATerm] -> IO()
