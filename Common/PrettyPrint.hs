@@ -28,7 +28,7 @@ import Common.Lib.Pretty
 import Common.GlobalAnnotations
 
 -- | This type class allows latex printing of instantiated data types
-class PrettyPrint a => PrintLaTeX a where
+class PrintLaTeX a where
     printLatex0 :: GlobalAnnos -> a -> Doc
 
 -- | This type class allows pretty printing of instantiated data types
