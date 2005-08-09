@@ -262,16 +262,13 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
 
-data NodeSig = NodeSig Node G_sign deriving Eq
+data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where
   printText0 ga (NodeSig n sig) = 
     ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
-
-instance Show NodeSig where
-    showsPrec _ = showPretty 
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)
@@ -381,15 +378,17 @@ type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 
 data UnitSig = Unit_sig NodeSig
              | Par_unit_sig [NodeSig] NodeSig 
+               deriving Show
 
 data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig
                      | Sig NodeSig
+                       deriving Show
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
-data ArchSig = ArchSig StUnitCtx UnitSig
+data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
 
 -- * Types for global and library environments
 
@@ -398,6 +397,7 @@ data GlobalEntry = SpecEntry ExtGenSig
                  | ArchEntry ArchSig
                  | UnitEntry UnitSig 
                  | RefEntry
+                   deriving Show
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
@@ -443,7 +443,7 @@ data Decorated a = Decorated
      , order :: Int
      , thmStatus :: [ThmLinkStatus]
      , isDef :: Bool
-     } 
+     } deriving Show
 
 emptyDecorated :: Decorated a
 emptyDecorated = Decorated { value = error "emptyDecorated"
@@ -518,14 +518,15 @@ instance Eq G_theory where
      coerceSign l1 l2 "" sig1 == Just sig2
      && coerceThSens l1 l2 "" sens1 == Just sens2
 
+instance Show G_theory where
+  show (G_theory _ sign sens) =
+     show sign ++ "\n" ++ show sens
+
 instance PrettyPrint G_theory where
   printText0 ga g = case simplifyTh g of 
      G_theory lid sign sens -> 
          printText0 ga sign $++$ vsep (map (print_named lid ga) 
                                            $ toNamedList sens)
-
-instance Show G_theory where
-    showsPrec _ = showPretty
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
