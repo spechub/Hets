@@ -31,6 +31,7 @@ data LIB_DEFN = Lib_defn LIB_NAME [Annoted LIB_ITEM] Range [Annotation]
 	        -- list of annotations is parsed preceding the first LIB_ITEM
 	        -- the last LIB_ITEM may be annotated with a following comment
 	        -- the first LIB_ITEM cannot be annotated
+		deriving (Show)
 
 {- for information on the list of Pos see the documentation in
    AS_Structured.hs and AS_Architecture.hs -}
@@ -62,6 +63,7 @@ data LIB_ITEM = Spec_defn Syntax.AS_Structured.SPEC_NAME
 		-- pos: "from","get",commas, opt "end"
 	      | Logic_decl Syntax.AS_Structured.Logic_name Range
 		-- pos:  "logic", Logic_name
+		deriving (Show)
 
 data ITEM_NAME_OR_MAP = Item_name ITEM_NAME 
 		      | Item_name_map ITEM_NAME ITEM_NAME Range

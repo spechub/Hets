@@ -48,6 +48,7 @@ data SPEC = Basic_spec G_basic_spec
 	    -- pos: "logic", Logic_name,":"
           | Data AnyLogic AnyLogic (Annoted SPEC) (Annoted SPEC) Range
             -- pos: "data"
+	    deriving Show
 
 
 {- Renaming and Hiding can be performend with intermediate Logic
@@ -56,43 +57,50 @@ data SPEC = Basic_spec G_basic_spec
 -}
 data RENAMING = Renaming [G_mapping] Range
 	        -- pos: "with", list of comma pos 
-		 deriving Eq
+		 deriving (Show, Eq)
 
 data RESTRICTION = Hidden [G_hiding] Range
 		   -- pos: "hide", list of comma pos 
 		 | Revealed G_symb_map_items_list Range
 		   -- pos: "reveal", list of comma pos 
-		   deriving Eq
+		   deriving (Show, Eq)
 
 data G_mapping = G_symb_map G_symb_map_items_list
 	       | G_logic_translation Logic_code
-		 deriving Eq
+		 deriving (Show, Eq)
 
 data G_hiding = G_symb_list G_symb_items_list
 	       | G_logic_projection Logic_code
-		 deriving Eq
+		 deriving (Show, Eq)
 
 data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
 	         -- pos: "spec","=",opt "end"
+		 deriving Show
 
 data GENERICITY = Genericity PARAMS IMPORTED Range
 		  -- pos: many of "[","]" opt ("given", commas) 
+		  deriving Show
 
 data PARAMS = Params [Annoted SPEC]
+	      deriving Show
 
 data IMPORTED = Imported [Annoted SPEC]
+		deriving Show
 
 data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
 	       -- pos: opt "fit"
 	     | Fit_view VIEW_NAME [Annoted FIT_ARG] Range
                -- annotations before the view keyword are stored in Spec_inst
+	       deriving Show
 
 data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
 			   [G_mapping] Range
 	         -- pos: "view",":",opt "=", opt "end" 
+		  deriving Show
 
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
 	         -- pos: "to"
+		 deriving Show
 
 type SPEC_NAME = SIMPLE_ID
 type VIEW_NAME = SIMPLE_ID
@@ -111,7 +119,7 @@ data Logic_code = Logic_code (Maybe Token)
                  -- ^ this notation is not very useful and is not maintained
                  -- "logic bla1:bla2 ->" => <encoding> and <src-logic> (!)
                  -- "logic bla1: ->bla2" => <encoding> and <targ-logic>
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 data Logic_name = Logic_name Token (Maybe Token)
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)

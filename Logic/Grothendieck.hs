@@ -72,6 +72,9 @@ data G_basic_spec = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_basic_spec lid basic_spec 
 
+instance Show G_basic_spec where
+    show (G_basic_spec _ s) = show s
+
 instance PrettyPrint G_basic_spec where
     printText0 ga (G_basic_spec _ s) = printText0 ga s
 
@@ -97,6 +100,9 @@ instance Eq G_sign where
 is_subgsign :: G_sign -> G_sign -> Bool
 is_subgsign (G_sign i1 sigma1) (G_sign i2 sigma2) = 
     maybe False (is_subsig i1 sigma1) $ coerceSign i2 i1 "is_subgsign" sigma2 
+
+instance Show G_sign where
+    show (G_sign _ s) = show s
 
 instance PrettyPrint G_sign where
     printText0 ga (G_sign _ s) = printText0 ga s
@@ -131,8 +137,11 @@ data G_symbol = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree  =>
   G_symbol lid symbol 
 
+instance Show G_symbol where
+    show (G_symbol _ s) = show s
+
 instance PrettyPrint G_symbol where
-  printText0 ga (G_symbol _ s) = printText0 ga s
+    printText0 ga (G_symbol _ s) = printText0 ga s
 
 instance Eq G_symbol where
   (G_symbol i1 s1) == (G_symbol i2 s2) =
@@ -146,6 +155,9 @@ data G_symb_items_list = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
         G_symb_items_list lid [symb_items] 
+
+instance Show G_symb_items_list where
+    show (G_symb_items_list _ l) = show l
 
 instance PrettyPrint G_symb_items_list where
     printText0 ga (G_symb_items_list _ l) = 
@@ -163,6 +175,9 @@ data G_symb_map_items_list = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
         G_symb_map_items_list lid [symb_map_items] 
+
+instance Show G_symb_map_items_list where
+    show (G_symb_map_items_list _ l) = show l
 
 instance PrettyPrint G_symb_map_items_list where
     printText0 ga (G_symb_map_items_list _ l) = 
@@ -217,6 +232,9 @@ data G_morphism = forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         G_morphism lid morphism
+
+instance Show G_morphism where
+    show (G_morphism _ l) = show l
 
 ----------------------------------------------------------------
 -- Existential types for the logic graph
@@ -414,6 +432,9 @@ data Grothendieck = Grothendieck deriving Show
 
 instance Language Grothendieck
 
+instance Show GMorphism where
+    show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
+
 instance PrettyPrint GMorphism where
     printText0 ga (GMorphism cid s m) = 
       ptext (show cid) 
@@ -422,9 +443,6 @@ instance PrettyPrint GMorphism where
       ptext "(" <+> printText0 ga s <+> ptext ")" 
       $$
       printText0 ga m
-
-instance Show GMorphism where
-    showsPrec _ = showPretty 
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) = 
