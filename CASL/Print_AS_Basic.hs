@@ -378,7 +378,7 @@ pluralS_symb_list k l = case k of
 				   then "s" 
 				   else ""
 
-condPrint_Mixfix :: PrettyPrint f => (Token -> Doc)
+condPrint_Mixfix :: (Token -> Doc)
 		 -> (Id -> Doc)
 		 -> (TERM f -> Doc)
 		 -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -424,7 +424,7 @@ condPrint_Mixfix_text ga =
 
 -- printing consitent mixfix application or predication
 {- TODO: consider string-, number-, list- and floating-annotations -}
-print_mixfix_appl :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
+print_mixfix_appl :: (Token -> Doc)  -- ^ print a Token
 		  -> (Id -> Doc)     -- ^ print an Id
 		  -> (TERM f -> Doc)   -- ^ print TERM recursively 	 
 		  -> (Doc -> Doc)   -- ^ a function that surrounds 
@@ -498,7 +498,7 @@ print_mixfix_appl pTok pId pTrm parens_fun
 		      mpt_fun
 
 -- printing consistent prefix application and predication
-print_prefix_appl :: PrettyPrint f => (TERM f -> Doc)   -- ^ print TERM recursively 
+print_prefix_appl :: (TERM f -> Doc)   -- ^ print TERM recursively 
 		  -> (Doc -> Doc)    -- ^ a function that surrounds 
 				     -- the given Doc with appropiate 
 				     -- parens
@@ -515,7 +515,7 @@ print_prefix_appl_text :: PrettyPrint f => GlobalAnnos -> Doc -> [TERM f] -> Doc
 print_prefix_appl_text ga =
     print_prefix_appl (printText0 ga) parens fsep comma
 
-print_Literal :: PrettyPrint f => (Token -> Doc)  -- ^ print a Token
+print_Literal :: (Token -> Doc)  -- ^ print a Token
               -> (Id -> Doc)     -- ^ print an Id
 	      -> (TERM f -> Doc)   -- ^ print TERM recursively 	 
 	      -> (Doc -> Doc)    -- ^ a function that surrounds 
@@ -608,7 +608,7 @@ print_Literal_text ga =
     print_Literal (printText0 ga) (printText0 ga) (printText0 ga) 
          parens (<+>) fsep comma  (char '.') (char 'E') Nothing Nothing ga
 
-condParensAppl :: PrettyPrint f => (TERM f -> Doc)
+condParensAppl :: (TERM f -> Doc)
 	       -> (Doc -> Doc)    -- ^ a function that surrounds 
 				  -- the given Doc with appropiate 
 				  -- parens
@@ -690,7 +690,7 @@ condParensNeg f parens_fun =
     if is_atomic_FORMULA f then id else parens_fun
 
 
-condParensXjunction :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
+condParensXjunction :: (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
@@ -704,7 +704,7 @@ condParensXjunction pf parens_fun ga x =
     where x' = pf ga x
 
 
-condParensImplEquiv :: PrettyPrint f => (GlobalAnnos -> FORMULA f -> Doc)
+condParensImplEquiv :: (GlobalAnnos -> FORMULA f -> Doc)
 		    -> (Doc -> Doc)    -- ^ a function that surrounds 
 				       -- the given Doc with appropiate 
 				       -- parens
@@ -742,25 +742,24 @@ condParensImplEquiv pf parens_fun ga e_i f isRight =
 
 
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
-instance (PrettyPrint s, PrettyPrint f) => 
-         ListCheck (SIG_ITEMS s f) where
+instance ListCheck (SIG_ITEMS s f) where
     (Sort_items l _)     `innerListGT` i = length l > i
     (Op_items l _)       `innerListGT` i = length l > i
     (Pred_items l _)     `innerListGT` i = length l > i
     (Datatype_items l _) `innerListGT` i = length l > i
     (Ext_SIG_ITEMS _)    `innerListGT` _ = False        
 
-instance PrettyPrint f => ListCheck (SORT_ITEM f) where
+instance ListCheck (SORT_ITEM f) where
     (Sort_decl l _)          `innerListGT` i = length l > i
     (Subsort_decl l _ _)     `innerListGT` i = length l > i
     (Subsort_defn _ _ _ _ _) `innerListGT` _ = False
     (Iso_decl _ _)           `innerListGT` _ = False
 
-instance PrettyPrint f => ListCheck (OP_ITEM f) where
+instance ListCheck (OP_ITEM f) where
     (Op_decl l _ _ _) `innerListGT` i = length l > i
     (Op_defn _ _ _ _) `innerListGT` _ = False
 
-instance PrettyPrint f => ListCheck (PRED_ITEM f) where
+instance ListCheck (PRED_ITEM f) where
     (Pred_decl l _ _)   `innerListGT` i = length l > i
     (Pred_defn _ _ _ _) `innerListGT` _ = False
 
