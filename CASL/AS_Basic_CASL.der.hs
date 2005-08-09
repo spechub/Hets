@@ -22,6 +22,7 @@ import Data.List (nub)
 {-! global: UpPos !-}
 
 data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
+		  deriving Show
 
 data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- the Annotation following the keyword is dropped
@@ -37,6 +38,7 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
 		 | Axiom_items [Annoted (FORMULA f)] Range
 		   -- pos: dots
                  | Ext_BASIC_ITEMS b
+		   deriving Show
 
 data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range 
 	         -- pos: sort, semi colons
@@ -47,6 +49,7 @@ data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range
 	       | Datatype_items [Annoted DATATYPE_DECL] Range
 		 -- type, semi colons
                | Ext_SIG_ITEMS s
+		 deriving Show
 
 data SORT_ITEM f = Sort_decl [SORT] Range
 	         -- pos: commas
@@ -58,17 +61,19 @@ data SORT_ITEM f = Sort_decl [SORT] Range
 		 -- parsed after the equal sign
 	       | Iso_decl [SORT] Range
 	         -- pos: "="s
+		 deriving Show
 
 data OP_ITEM f = Op_decl [OP_NAME] OP_TYPE [OP_ATTR f] Range
 	       -- pos: commas, colon, OP_ATTR sep. by commas
 	     | Op_defn OP_NAME OP_HEAD (Annoted (TERM f)) Range
 	       -- pos: "="
+	       deriving Show
 
 data FunKind = Total | Partial deriving (Show, Eq, Ord)
 
 data OP_TYPE = Op_type FunKind [SORT] SORT Range
 	       -- pos: "*"s, "->" ; if null [SORT] then Range = [] or pos: "?"
-	       deriving (Show,Eq,Ord)
+	       deriving (Show, Eq, Ord)
 
 args_OP_TYPE :: OP_TYPE -> [SORT]
 args_OP_TYPE (Op_type _ args _ _) = args
@@ -78,41 +83,48 @@ res_OP_TYPE (Op_type _ _ res _) = res
 
 data OP_HEAD = Op_head FunKind [ARG_DECL] SORT Range
 	       -- pos: "(", semicolons, ")", colon
+	       deriving Show
 
 data ARG_DECL = Arg_decl [VAR] SORT Range
 	        -- pos: commas, colon
-		deriving (Show,Eq)
+		deriving Show
 
 data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
 	     | Unit_op_attr (TERM f)
+	       deriving (Show, Eq, Ord)
 
 data PRED_ITEM f = Pred_decl [PRED_NAME] PRED_TYPE Range
                  -- pos: commas, colon
 	       | Pred_defn PRED_NAME PRED_HEAD (Annoted (FORMULA f)) Range
 		 -- pos: "<=>"
+		 deriving Show
 
 data PRED_TYPE = Pred_type [SORT] Range
 	         -- pos: if null [SORT] then "(",")" else "*"s
-		 deriving (Show,Eq,Ord)
+		 deriving (Show, Eq, Ord)
 
 data PRED_HEAD = Pred_head [ARG_DECL] Range
 	         -- pos: "(",semi colons , ")"
+		 deriving Show
 
 data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range 
 		     -- pos: "::=", "|"s
+		     deriving Show
 
 data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] Range
 		   -- pos: "(", semi colons, ")" optional "?"
 		 | Subsorts [SORT] Range
 		   -- pos: sort, commas
+		   deriving Show
 
 data COMPONENTS = Cons_select FunKind [OP_NAME] SORT Range
                   -- pos: commas, colon or ":?"
 		| Sort SORT		  
+		  deriving Show
 
 data VAR_DECL = Var_decl [VAR] SORT Range
 	        -- pos: commas, colon
-		deriving (Show,Eq,Ord)
+		deriving (Show, Eq, Ord)
 
 {- Position definition for FORMULA: 
    Information on parens are also encoded in Range.  If there
@@ -153,7 +165,7 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
 	     | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
 	     | ExtFORMULA f
              -- needed for CASL extensions
-	       deriving (Show,Eq,Ord)
+	       deriving (Show, Eq, Ord)
 
 is_True_atom, is_False_atom :: FORMULA f -> Bool
 is_True_atom (True_atom _) = True
@@ -184,7 +196,7 @@ and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 data Constraint = Constraint { newSort :: SORT,
                                opSymbs :: [(OP_SYMB,[Int])],
                                origSort :: SORT }
-                  deriving (Show,Eq,Ord)
+                  deriving (Show, Eq, Ord)
 
 -- | from a Sort_gex_ax, recover:  
 -- | a traditional sort generation constraint plus a sort mapping
@@ -227,12 +239,12 @@ recover_free_Sort_gen_ax constrs =
   getOpProfile constr = (newSort constr,map fst $ opSymbs constr)
 
 data QUANTIFIER = Universal | Existential | Unique_existential
-		  deriving (Show,Eq,Ord)
+		  deriving (Show, Eq, Ord)
 
 data PRED_SYMB = Pred_name PRED_NAME 
 	       | Qual_pred_name PRED_NAME PRED_TYPE Range
 		 -- pos: "(", pred, colon, ")"
-		 deriving (Show,Eq,Ord)
+		 deriving (Show, Eq, Ord)
 
 data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	  | Qual_var VAR SORT Range
@@ -261,17 +273,12 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
 	    -- pos: "[", commas, "]" 
           | Mixfix_braced [TERM f] Range         -- also for list-notation 
 	    -- pos: "{", "}" 
-	    deriving (Show,Eq,Ord)
+	    deriving (Show, Eq, Ord)
 
 data OP_SYMB = Op_name OP_NAME
 	     | Qual_op_name OP_NAME OP_TYPE Range
 		 -- pos: "(", op, colon, ")"
-	       deriving (Show,Ord)
-
-instance Eq OP_SYMB where
-  Op_name o1 == Op_name o2 = o1==o2
-  Qual_op_name o1 t1 _ == Qual_op_name o2 t2 _ = o1==o2 && t1==t2
-  _ == _ = False
+	       deriving (Show, Eq, Ord)
 
 type OP_NAME = Id
 
@@ -284,36 +291,36 @@ type VAR = SIMPLE_ID
 ----- 
 data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range 
 		  -- pos: SYMB_KIND, commas
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 data SYMB_ITEMS_LIST = Symb_items_list [SYMB_ITEMS] Range 
 		  -- pos: commas
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
 		      -- pos: SYMB_KIND, commas
-		      deriving (Show,Eq)
+		      deriving (Show, Eq)
 
 data SYMB_MAP_ITEMS_LIST = Symb_map_items_list [SYMB_MAP_ITEMS] Range 
 		  -- pos: commas
-		  deriving (Show,Eq)
+		  deriving (Show, Eq)
 
 data SYMB_KIND = Implicit | Sorts_kind 
 	       | Ops_kind | Preds_kind
-		 deriving (Show,Eq)
+		 deriving (Show, Eq)
 
 data SYMB = Symb_id Id
 	  | Qual_id Id TYPE Range 
 	    -- pos: colon
-	    deriving (Show,Eq)
+	    deriving (Show, Eq)
 
 data TYPE = O_type OP_TYPE
 	  | P_type PRED_TYPE
 	  | A_type SORT -- ambiguous pred or (constant total) op 
-	    deriving (Show,Eq)
+	    deriving (Show, Eq)
 
 data SYMB_OR_MAP = Symb SYMB
 		 | Symb_map SYMB SYMB Range
 		   -- pos: "|->"
-		   deriving (Show,Eq)
+		   deriving (Show, Eq)
 

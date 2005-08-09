@@ -21,16 +21,18 @@ import Common.Id
 ----------------------------------------------------------------------------
 data C3PO = Named_c3po NAMED_CSP_CASL_C_SPEC 
           | C3po CSP_CASL_C_SPEC
+		   deriving Show
 
 data NAMED_CSP_CASL_C_SPEC =  Named_csp_casl_spec SPEC_NAME CSP_CASL_C_SPEC
+		   deriving Show
 
 type SPEC_NAME = SIMPLE_ID
 
 data CSP_CASL_C_SPEC = Csp_casl_c_spec DATA_DEFN CHANNEL_DECL PROCESS_DEFN
-
+		   deriving Show
 
 data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
-		   deriving (Show,Eq)
+		   deriving Show
 
 ----------------------------------------------------------------------------
 -- DATA, CHANNEL & PROCESS Def.
@@ -39,10 +41,10 @@ data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
 type DATA_DEFN = BASIC_SPEC () () ()   -- will become a structured spec later
 
 data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
-		   deriving (Show,Eq)
+		   deriving Show
 
 data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
-		   deriving (Show,Eq)
+		   deriving Show
 
 type CHANNEL_NAME = SIMPLE_ID
 
