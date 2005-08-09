@@ -100,12 +100,14 @@ import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
 -- | shortcut for class constraints
-class (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
+class (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, ShATermConvertible a) 
+    => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (PrintLaTeX a, Typeable a, ShATermConvertible a) => PrintTypeConv a
+instance (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, 
+               ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 type EndoMap a = Map.Map a a
