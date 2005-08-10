@@ -110,6 +110,13 @@ chomp = reverse . chomp' . reverse
           chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
                             | otherwise = xs
 
+isSublistOf :: (Eq a) => [a] -> [a] -> Bool
+isSublistOf [] _ = True
+isSublistOf _ [] = False
+isSublistOf ys l@(_:l') 
+    | length ys <= length l = (ys `isPrefixOf` l) || (ys `isSublistOf` l')
+    | otherwise = False
+
 -- IgnoreMaybe datatype
 -- extension to Maybe for use in computations over recursive types
 -- that need a "don't care" result
