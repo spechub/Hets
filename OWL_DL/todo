@@ -36,9 +36,7 @@ General Ideas:
 
  - Static analysis of abstract syntax in Haskell within Hets
    
-   (1) splitting of OWL-DL-IDs into namespace and local-name part
-       with a disambiguation of IDs which have the same local-name
-       part.
+   (1) splitting of OWL-DL-IDs into namespace and local-name part.
 
    (2) detection of circular imports and construction of import
        structure as graph, where the nodes are labeled with the same
@@ -56,6 +54,10 @@ General Ideas:
        are just inclusions where the source sign is a subset of the
        target sign.
        
+ - Comorphism to CASL_DL 
+ 
+   (1) disambiguation of IDs which have the same local-name
+       part.
 
 Detailed Advices:
 -----------------
@@ -69,6 +71,10 @@ Static Analysis of OWL DL Abstract Syntax
   data type is QName from Text.XML.HXT.DOM.XmlTreeTypes where also
   some useful functions on QName are defined.
 
+- @Klaus: to be continued. 
+
+later within comorphism from OWL_DL to CASL_DL:
+
 - Disambiguation of (1) must be done in a second step, which must
   traverse the whole AS-tree. The traversal function (in its own
   class) needs a map as parameter which stores the mapping between
@@ -79,4 +85,3 @@ Static Analysis of OWL DL Abstract Syntax
   The map will be saved later in a datastructure that is global to the
   development graph.
 
-- @Klaus: to be continued. 
