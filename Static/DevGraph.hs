@@ -272,6 +272,7 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
+              | DGintegratedSCC
               deriving (Show, Eq)
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
