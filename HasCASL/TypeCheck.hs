@@ -354,8 +354,8 @@ infer b mt trm = do
                                 $ insertC (Subtyping typ vTy) 
                                 $ case mt of
                                  Nothing -> cs
-                                 Just jTy -> insertC (Subtyping (subst s jTy)
-                                                      sTy) cs,
+                                 Just jTy -> insertC (Subtyping sTy 
+                                                      $ subst s jTy) cs,
                                  sTy, TypedTerm tr qual sTy ps)) rs
                 _ -> do
                     rs <- infer b (Just ty) t
