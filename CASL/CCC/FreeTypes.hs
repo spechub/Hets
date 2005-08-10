@@ -1,5 +1,5 @@
 {- | 
-   
+
     Module      :  $Header$
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -34,6 +34,7 @@ import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.Result
 import Common.Id
+import Maybe
 import System.Cmd
 import System.IO.Unsafe
 import Debug.Trace
@@ -64,7 +65,7 @@ import Debug.Trace
 -}
 checkFreeType :: (PosItem f, PrettyPrint f, Eq f) => 
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
-                 -> [Named (FORMULA f)] -> Result (Maybe Bool)
+                 -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
 checkFreeType (osig,osens) m fsn      
     | any (\s->not $ elem s srts) newL =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
@@ -73,7 +74,7 @@ checkFreeType (osig,osens) m fsn
     | any (\s->not $ elem s f_Inhabited) newL =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) newL
             sname = concat $ map tokStr ts 
-        in warning (Just False) (sname ++ " is not inhabited") pos
+        in warning (Just (False,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
         let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $ 
 		  map leadingSymPos _axioms
@@ -83,10 +84,10 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing "partial axiom is not definitional" pos
     | any id $ map find_ot id_ots =    
         let pos = old_op_ps
-        in warning Nothing ("Op: " ++ old_op_id ++ " ist not new") pos
+        in warning Nothing ("Op: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
-        in warning Nothing ("Pedication: " ++ old_pred_id ++ " ist not new")pos
+        in warning Nothing ("Pedication: " ++ old_pred_id ++ " is not new")pos
     | not $ and $ map checkTerm leadingTerms =
         let (Application os _ pos) = 
 		head $ filter (\t->not $ checkTerm t) leadingTerms
@@ -97,12 +98,14 @@ checkFreeType (osig,osens) m fsn
 		head $ filter (\t->not $ checkVar t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
 			    opSymStr os) pos
-    | not $ and $ map checkPatterns leadingPatterns = 
-        let (symb, pos) = pattern_Pos leadingSymPatterns
-        in warning Nothing ("patterns overlap in " ++ symb) pos
+--    | not $ and $ map checkPatterns leadingPatterns = 
+--        let (symb, pos) = pattern_Pos leadingSymPatterns  
+--        in warning Nothing ("patterns overlap in " ++ symb) pos
     | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
 	warning Nothing "not terminating" nullRange
-    | otherwise = return (Just True)
+    | not $ null overlap_query = 
+        return (Just (True,overlap_query))
+    | otherwise = return (Just (True,[]))
 
 {-
   call the symbols in the image of the signature morphism "new"
@@ -276,7 +279,7 @@ checkFreeType (osig,osens) m fsn
                               no symbol may be a variable
                               check recursively the arguments of constructor 
                               in each group
--}
+-}   
     leadingSymPatterns = 
 	case (groupAxioms (t_axioms ++ impl_p_axioms)) of
           Just sym_fs ->
@@ -287,9 +290,9 @@ checkFreeType (osig,osens) m fsn
                                 _ -> [])).
                     (map leading_Term_Predication)) $ map snd sym_fs)
           Nothing -> error "CASL.CCC.FreeTypes.<axiom group>"
-    leadingPatterns1 = snd $ unzip leadingSymPatterns
-    leadingPatterns = 
-	trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1
+--    leadingPatterns1 = snd $ unzip leadingSymPatterns           -- *
+--    leadingPatterns = 
+--	trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1
                                                             --leading Patterns
     isApp t = case t of
                 Application _ _ _->True
@@ -308,6 +311,15 @@ checkFreeType (osig,osens) m fsn
                          Application (Qual_op_name _ _ _) ts _-> ts
                          Sorted_term t' _ _ -> patternsOfTerm t'
                          _ -> []
+    patternsOfAxiom f = case f of
+                          Quantification _ _ f' _ -> patternsOfAxiom f'
+                          Negation f' _ -> patternsOfAxiom f'
+                          Implication _ f' _ _ -> patternsOfAxiom f'
+                          Equivalence f' _ _ -> patternsOfAxiom f'
+                          Predication _ ts _ -> ts 
+	                  Existl_equation t _ _ -> patternsOfTerm t
+	                  Strong_equation t _ _ -> patternsOfTerm t
+                          _ -> []
     sameOps app1 app2 = case (term app1) of               -- eq of app
                           Application ops1 _ _ -> 
 			      case (term app2) of
@@ -328,6 +340,51 @@ checkFreeType (osig,osens) m fsn
             checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
         | all isApp $ map head ps = all id $ map checkPatterns $ group ps
         | otherwise = False
+    overlapSym = map fst $ 
+                 filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
+    overlap_Axioms fos
+        | not $ null fos =
+            if ap `elem` (map patternsOfAxiom $ tail fos)
+            then ((head fos):
+                  (filter (\a->(patternsOfAxiom a)==ap) $ tail fos)):
+                 (overlap_Axioms $ filter (\a->(patternsOfAxiom a)/= ap) $ 
+                                   tail fos)
+            else overlap_Axioms $ tail fos
+        | otherwise = [[]]
+      where ap = patternsOfAxiom $ head fos 
+    overlapAxioms = filter (\p-> not $ null p) $ 
+                    concat $ map overlap_Axioms $ map snd $
+                    filter (\a-> (fst a) `elem` overlapSym) $ 
+                    fromJust $ groupAxioms (t_axioms ++ impl_p_axioms)
+    numOfImpl fos = length $ filter is_impli fos
+    overlapQuery fos = 
+        case numOfImpl fos of
+          0 -> resQ
+          1 -> Implication (head cond) resQ True nullRange
+          _ -> Implication (Conjunction cond nullRange) resQ True nullRange
+      where cond= noDouble $ concat $ map conditionAxiom fos
+            res= noDouble $ concat $ map resultAxiom fos
+            resQ = if length res == 2 then 
+                       Strong_equation (head res) (last res) nullRange
+                   else if length res > 2 then
+                       let resQs =
+                             map (\t->Strong_equation (head res) t nullRange) $
+                             tail res 
+                       in Conjunction resQs nullRange
+                   else error "Overlap"   
+    conditionAxiom f = case f of
+                         Quantification _ _ f' _ -> conditionAxiom f'
+                         Implication f' _ _ _ -> [f']
+                         _ -> []
+    resultAxiom f = case f of
+                      Quantification _ _ f' _ -> resultAxiom f'
+                      Implication _ f' _ _ -> resultAxiom f'
+                      Negation f' _ -> resultAxiom f'
+                      Strong_equation _ t _ -> [t]
+                      Existl_equation _ t _ -> [t]
+                      _ -> []
+    overlap_query1 = map overlapQuery overlapAxioms
+    overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
     pattern_Pos sym_ps = 
 	if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $ 
@@ -521,9 +578,9 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
         | otherwise = 
 	    predSignStr (tail signs) (str ++ 
 				      (predS_cime $ head signs) ++ ";\n")
-    allVar vs = 
-	foldl (\hv tv->hv ++ 
-	               (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
+    allVar vs = noDouble $ concat vs
+--	foldl (\hv tv->hv ++ 
+--	               (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
     --  transform variables to string
     varsStr vars str                               
         | null vars = str
@@ -741,6 +798,14 @@ isOp_Pred f = case f of
                Strong_equation t _ _ -> case (term t) of
                                           (Application _ _ _) -> True
                                           _-> False 
+               _ -> False
+
+
+is_impli :: FORMULA f -> Bool
+is_impli f = case (quanti f) of
+               Quantification _ _ f' _ -> is_impli_equiv f'
+               Implication _ _ _ _ -> True
+               Negation f' _ -> is_impli_equiv f'
                _ -> False
 
 
@@ -1028,6 +1093,24 @@ equiv_cime index f =
               fk2 ++ "(" ++ (term_cime t1) ++ ");\n" ++
               fk2 ++ "(" ++ (term_cime t2) ++ 
               ") -> " ++ "True;\n"),(index + 2))
+          Negation (Predication predS2 ts2 _) _ ->           -- !!
+              (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
+              "));\n" ++
+              fk1 ++ "(True) -> False;\n" ++
+              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+              fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
+              "));\n" ++
+              fk2 ++ "(False) -> True;\n"),(index + 2))
+          Negation (Strong_equation t1 t2 _) _ ->
+              (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+              "));\n" ++
+              fk1 ++ "(True) -> False;\n" ++
+              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+              fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ "));\n" ++
+              fk2 ++ "(False)"  ++ 
+              ") -> " ++ "True;\n"),(index + 2))
           _ -> error "!! " --(showPretty f1 "CASL.CCC.FreeTypes.<equiv_cime1>")
     _ -> error "CASL.CCC.FreeTypes.<equiv_cime2>"
   where fk1 = "af" ++ (show index)
@@ -1048,13 +1131,24 @@ axiom_cime f =
   case (quanti f) of
     Quantification _ _ f' _ -> axiom_cime f'
     Conjunction fs _ -> 
-        conj_cime fs 
+        conj_cime fs ++ " -> True"
     Disjunction fs _ -> 
-        disj_cime fs
+        disj_cime fs ++ " -> True"
 --    Implication _ _ _ _ -> impli_cime 1 f 
 --    Equivalence _ _ _ -> equiv_cime 1 f
-    Negation f' _ -> 
-        "not(" ++ (axiom_cime f') ++ ")"
+    Negation f' _ ->
+        case f' of
+          Conjunction fs _ ->
+              conj_cime fs ++ " -> False"
+          Disjunction fs _ ->
+              disj_cime fs ++ " -> False"
+          Predication p_s ts _ -> 
+              ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> False")
+          Existl_equation t1 t2 _ -> 
+              "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> False"
+          Strong_equation t1 t2 _ -> 
+              "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> False"
+          _ -> error "CASL.CCC.FreeTypes.<Termination_Axioms_Negation>"
     True_atom _ -> 
         error "CASL.CCC.FreeTypes.<Termination_Axioms_True>"     
     False_atom _ -> 
@@ -1068,7 +1162,8 @@ axiom_cime f =
     Strong_equation t1 t2 _ -> 
         (term_cime t1) ++ " -> " ++ (term_cime t2)                   
     _ -> error "CASL.CCC.FreeTypes.<Termination_Axioms>"
-  where termsStr ts = tail $ concat $ map (\s->","++s) $ map term_cime ts
+  where termsStr ts = if null ts then error "CASL.CCC.FreeTypes.axiom_cime"
+                      else tail $ concat $ map (\s->","++s) $ map term_cime ts
 
 
 conj_cime :: [FORMULA f] -> Cime
@@ -1118,5 +1213,7 @@ sigAuxf f i =
 
 
 terms_cime :: [TERM f] -> Cime
-terms_cime ts = tail $ concat $ map (\s->","++s) $ map term_cime ts
+terms_cime ts = 
+    if null ts then error "terms_cime"
+    else tail $ concat $ map (\s->","++s) $ map term_cime ts
 
