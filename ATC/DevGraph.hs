@@ -371,6 +371,8 @@ instance ShATermConvertible DGOrigin where
         addATerm (ShAAppl "DGFitViewAImp" [a'] []) att1 }
     toShATerm att0 DGProof =
         addATerm (ShAAppl "DGProof" [] []) att0
+    toShATerm att0 DGintegratedSCC =
+        addATerm (ShAAppl "DGintegratedSCC" [] []) att0
     fromShATerm att =
         case getATerm att of
             (ShAAppl "DGBasic" [] _) ->
@@ -429,6 +431,8 @@ instance ShATermConvertible DGOrigin where
                     (DGFitViewAImp a') }
             (ShAAppl "DGProof" [] _) ->
                     DGProof
+            (ShAAppl "DGintegratedSCC" [] []) ->
+                    DGintegratedSCC
             u -> fromShATermError "DGOrigin" u
 
 instance ShATermConvertible NodeSig where
