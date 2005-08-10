@@ -170,7 +170,10 @@ with the other AnnotationProperties?
 
 Options:
 \begin{enumerate}
-\item keeping them as annotations in \CASLDL
+\item keeping them as annotations in \CASLDL \ 
+  this means providing a declaration and an application annotation for
+  AnnotationProperties (see below).
+
 \item declaring them as special binary relations, that could relate
   with every symbol (sort name, pred name, op name)
 \end{enumerate}
@@ -206,9 +209,28 @@ Each named spec that should be transformed to an OWL DL file must get
 an URI and file path. The URI is used as the base URI of the xml (owl)
 document. 
 
+\item[Declaration and application of OWL Annotation Properties]\ 
+
+OWL allows the declaration of untyped annotation properties. They can
+be applied to all symbols / entities like the ontology as a whole and
+to classes, properties and individuals. We will map them in \CASLDL to
+\CASL annotations.  
+
+{\small"\KW{\%owl\_annotation\_properties(}" SIMPLE\_ID + "\KW{)\%}"}
+
+{\small"\KW{\%owl\_annotations(}" (SIMPLE\_ID "(" CID "," ANNO-LITERAL ")") + "\KW{)\%}"}
+
 \end{description}
 
 QURI ::= "\textbackslash"" URI "\textbackslash""
+
+ANNO-LITERAL ::= DATA-LITERAL $|$ URI $|$ INDIVIDUAL-ID
+
+CID is a \CASL Id that must be declared in the current specification (library).
+
+DATA-LITERAL is a literal allowed for a subsort of \Id{Data}.
+
+INDIVIDULA-ID is the Id of a declared constant operation.
 
 \subsection{Needed Formula Extensions}
 
