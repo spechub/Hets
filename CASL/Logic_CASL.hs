@@ -151,7 +151,7 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
-      conservativityCheck CASL = checkFreeType
+      conservativityCheck CASL th mor phis = fmap (fmap fst) (checkFreeType th mor phis)
       simplify_sen CASL = simplifySen dummyMin dummy
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
