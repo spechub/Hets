@@ -56,13 +56,15 @@ instance ShATermConvertible BasicProof where
 	    u     -> fromShATermError "BasicProof" u
 
 instance ShATermConvertible DGNodeLab where
-    toShATerm att0 (DGNode a b c d e) =
+    toShATerm att0 (DGNode a b c d e f g) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
         case toShATerm att3 d of { (att4,d') ->
         case toShATerm att4 e of { (att5,e') ->
-        addATerm (ShAAppl "DGNode" [a',b',c',d',e'] []) att5 }}}}}
+        case toShATerm att5 f of { (att6,f') ->
+        case toShATerm att6 g of { (att7,g') ->
+        addATerm (ShAAppl "DGNode" [a',b',c',d',e',f',g'] []) att7 }}}}}}}
     toShATerm att0 (DGRef a b c d e) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
@@ -72,13 +74,15 @@ instance ShATermConvertible DGNodeLab where
         addATerm (ShAAppl "DGRef" [a',b',c',d',e'] []) att5 }}}}}
     fromShATerm att =
         case getATerm att of
-            (ShAAppl "DGNode" [a,b,c,d,e] _) ->
+            (ShAAppl "DGNode" [a,b,c,d,e,f,g] _) ->
                     case fromShATerm (getATermByIndex1 a att) of { a' ->
                     case fromShATerm (getATermByIndex1 b att) of { b' ->
                     case fromShATerm (getATermByIndex1 c att) of { c' ->
                     case fromShATerm (getATermByIndex1 d att) of { d' ->
                     case fromShATerm (getATermByIndex1 e att) of { e' ->
-                    (DGNode a' b' c' d' e') }}}}}
+                    case fromShATerm (getATermByIndex1 f att) of { f' ->
+                    case fromShATerm (getATermByIndex1 g att) of { g' ->
+                    (DGNode a' b' c' d' e' f' g') }}}}}}}
             (ShAAppl "DGRef" [a,b,c,d,e] _) ->
                     case fromShATerm (getATermByIndex1 a att) of { a' ->
                     case fromShATerm (getATermByIndex1 b att) of { b' ->

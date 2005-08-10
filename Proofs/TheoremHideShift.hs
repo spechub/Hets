@@ -131,7 +131,9 @@ mkDGNodeNfNode nodelab newNode nonLeaveValues proofstatus = do
 		 dgn_theory = th,
 		 dgn_nf = Just newNode,
 		 dgn_sigma = sigma,
-		 dgn_origin = DGProof
+		 dgn_origin = DGProof,
+		 dgn_cons = None,
+		 dgn_cons_status = LeftOpen
 		})
   return (insertNfNode proofstatus lnode)
 
@@ -308,11 +310,13 @@ setNfOfNode dgraph node nf_node = do
 					  dgn_sigma = dgn_sigma nodeLab
 					 })
 	         False -> (newNode, DGNode {dgn_name = dgn_name nodeLab,
-				  dgn_theory = dgn_theory nodeLab,
-				  dgn_nf = Just nf_node,
-				  dgn_sigma = dgn_sigma nodeLab,
-				  dgn_origin = DGProof
-				 })
+					    dgn_theory = dgn_theory nodeLab,
+					    dgn_nf = Just nf_node,
+					    dgn_sigma = dgn_sigma nodeLab,
+					    dgn_origin = DGProof,
+					    dgn_cons = None,
+					    dgn_cons_status = LeftOpen
+					   })
     auxGraph = insNode newLNode dgraph
 
 

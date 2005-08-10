@@ -38,7 +38,7 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = nullRange
   case n of
-    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic -> 
+    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic _ _ -> 
       do let b = Basic_spec $ G_basic_spec lid1 $ 
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
          if null apredSps

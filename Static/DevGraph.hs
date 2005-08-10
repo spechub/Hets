@@ -83,7 +83,9 @@ data DGNodeLab =
     dgn_theory :: G_theory, -- local theory
     dgn_nf :: Maybe Node,   -- normal form, for Theorem-Hide-Shift
     dgn_sigma :: Maybe GMorphism, -- inclusion of signature into nf signature 
-    dgn_origin :: DGOrigin  -- origin in input language
+    dgn_origin :: DGOrigin,  -- origin in input language
+    dgn_cons :: Conservativity,
+    dgn_cons_status :: ThmLinkStatus
   }
  | DGRef {  -- reference to node in a different DG
     dgn_renamed :: NODE_NAME,    -- new name of node (in current DG)
@@ -98,12 +100,12 @@ dgn_sign dn = case dgn_theory dn of
     G_theory lid sig _ -> G_sign lid sig
 
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode (DGNode n _ _ _ _) = isInternal n
+isInternalNode (DGNode n _ _ _ _ _ _) = isInternal n
 isInternalNode _ = False
 
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
-getDGNodeName (DGNode n _ _ _ _) = showName n
+getDGNodeName (DGNode n _ _ _ _ _ _) = showName n
 getDGNodeName (DGRef n _ _ _ _) = showName n
 
 emptyNodeName :: NODE_NAME
@@ -136,11 +138,11 @@ extName :: String -> NODE_NAME -> NODE_NAME
 extName s (n,s1,i) = (n,s1++showInt i++s,0)
 
 isDGRef :: DGNodeLab -> Bool
-isDGRef (DGNode _ _ _ _ _) = False
+isDGRef (DGNode _ _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _) = 
+locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _ _ _) = 
   is_subsig lid sigma (empty_signature lid) && Set.null sens
 locallyEmpty (DGRef _ _ _ _ _) = True
 
@@ -316,7 +318,9 @@ nodeSigUnion lgraph dg nodeSigs orig =
 				dgn_theory = G_theory lid sigU noSens,
 				dgn_nf = Nothing,
 				dgn_sigma = Nothing,
-				dgn_origin = orig }
+				dgn_origin = orig,
+				dgn_cons = None,
+				dgn_cons_status = LeftOpen}
 	 node = getNewNode dg
 	 dg' = insNode (node, nodeContents) dg
 	 inslink dgres nsig = do 
@@ -346,7 +350,9 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
 			       dgn_theory = G_theory lid tar noSens,
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
-			       dgn_origin = orig}
+			       dgn_origin = orig,
+			       dgn_cons = None,
+			       dgn_cons_status = LeftOpen}
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
 			       dgl_origin = orig}
@@ -370,7 +376,9 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
 			       dgn_theory = G_theory lid src Set.empty,
 			       dgn_nf = Nothing,
 			       dgn_sigma = Nothing,
-			       dgn_origin = orig}
+			       dgn_origin = orig,
+			       dgn_cons = None,
+			       dgn_cons_status = LeftOpen}
 	linkContents = DGLink {dgl_morphism = morph,
 			       dgl_type = GlobalDef, -- TODO: other type
 			       dgl_origin = orig}

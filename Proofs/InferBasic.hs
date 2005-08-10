@@ -212,7 +212,7 @@ basicInferenceNode checkCons lg (ln, node)
                     $ fst $ match node dGraph
         let nlab = lab' ctx  
             nodeName = case nlab of
-              DGNode _ _ _ _ _-> dgn_name nlab
+              DGNode _ _ _ _ _ _ _-> dgn_name nlab
               DGRef _ _ _ _ _ -> dgn_renamed nlab
             thName = showPretty (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
