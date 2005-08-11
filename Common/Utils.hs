@@ -30,16 +30,14 @@ joinWith sep = concat . intersperse (sep:[])
 
 {- |
   A function inspired by the perl function split. A list is splitted
-  on a seperator element in smaller lists. The seperator element is
-  dropped from the resulting list.
+  on a seperator element in smaller non-empty lists. 
+  The seperator element is dropped from the resulting list.
 -}
 splitOn :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
-splitOn sep = (\(f,r) -> f : case r of 
-                             [] -> []
-                             _  -> (splitOn sep $ tail r)
-              ) . break ((==) sep)
+splitOn x xs = let (l, r) = break (==x) xs in 
+    (if null l then [] else [l]) ++ (if null r then [] else splitOn x $ tail r)
 
 {-|
   A function inspired by a perl function from the standard perl-module
