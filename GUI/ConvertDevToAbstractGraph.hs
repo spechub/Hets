@@ -231,9 +231,12 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                               redisplay gid actGraphInfo
                               return ()    ),
                   Button "Hide nodes" 
-                          (do Result descr msg <- hideSetOfNodeTypes gid
-                                                    ["internal",
-                                                    "locallyEmpty_internal"]
+                          (do Result descr msg
+			        <- hideSetOfNodeTypes gid
+                                       ["open_cons__internal",
+					"locallyEmpty__open_cons__internal",
+					"proven_cons__internal",
+				        "locallyEmpty__proven_cons__internal"]
                                                     actGraphInfo
                               writeIORef event descr
                               case msg of
@@ -267,26 +270,40 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                           (proofMenu gInfo (fmap return . theoremHideShift))
                     ]])]
       -- the node types
-               [("spec", 
-                 createLocalMenuNodeTypeSpec "Magenta" ioRefSubtreeEvents 
+               [("open_cons__spec", 
+                 createLocalMenuNodeTypeSpec "Red" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
-                ("locallyEmpty_spec", 
-                 createLocalMenuNodeTypeSpec "Violet" ioRefSubtreeEvents
+		("proven_cons__spec", 
+                 createLocalMenuNodeTypeSpec "Green" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
-                ("internal", 
-                 createLocalMenuNodeTypeInternal "Grey" gInfo
+                ("locallyEmpty__open_cons__spec", 
+                 createLocalMenuNodeTypeSpec "Red" ioRefSubtreeEvents
+                                  actGraphInfo ioRefGraphMem gInfo
                 ),
-                ("locallyEmpty_internal", 
-                 createLocalMenuNodeTypeInternal "LightGrey" gInfo
+                ("locallyEmpty__proven_cons__spec", 
+                 createLocalMenuNodeTypeSpec "Green" ioRefSubtreeEvents
+                                  actGraphInfo ioRefGraphMem gInfo
+                ),
+                ("open_cons__internal", 
+                 createLocalMenuNodeTypeInternal "Red" gInfo
+                ),
+                ("proven_cons__internal", 
+                 createLocalMenuNodeTypeInternal "Green" gInfo
+                ),
+                ("locallyEmpty__open_cons__internal", 
+                 createLocalMenuNodeTypeInternal "Red" gInfo
+                ),
+                ("locallyEmpty__proven_cons__internal", 
+                 createLocalMenuNodeTypeInternal "Green" gInfo
                 ),
                 ("dg_ref", 
                  createLocalMenuNodeTypeDgRef "SteelBlue" actGraphInfo 
                                               ioRefGraphMem graphMem gInfo
                  ),
                 ("locallyEmpty_dg_ref", 
-                 createLocalMenuNodeTypeDgRef "LightSteelBlue"
+                 createLocalMenuNodeTypeDgRef "SteelBlue"
                         actGraphInfo ioRefGraphMem graphMem gInfo
                  ) ]
       -- the link types (share strings to avoid typos)
@@ -480,6 +497,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                   -- >$$$ LocalMenu (Button "xxx" undefined) 
                   $$$ emptyNodeTypeParms 
                      :: DaVinciNodeTypeParms (String,Int,Int)
+
 
 -- local menu for the nodetypes internal and locallyEmpty_internal
 createLocalMenuNodeTypeInternal color 
@@ -1004,14 +1022,23 @@ convertNodesAux convMaps descr graphInfo ((node,dgnode):lNodes) libname =
 
 -- | gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> String
-getDGNodeType dgnode = 
-    (if locallyEmpty dgnode then "locallyEmpty_"  else "")  
-    ++ case isDGRef dgnode of
+getDGNodeType dgnodelab = 
+    (if locallyEmpty dgnodelab then "locallyEmpty__"  else "")
+    ++ case isDGRef dgnodelab of
        True -> "dg_ref"
-       False -> if isInternalNode dgnode 
+       False -> (if hasOpenConsStatus dgnodelab 
+		 then "open_cons__" 
+		 else "proven_cons__")
+		++ if isInternalNode dgnodelab 
                    then "internal"
                    else "spec"
-    
+    where
+      hasOpenConsStatus (DGNode _ _ _ _ _ _ status) =
+	  case status of
+	    LeftOpen -> True
+	    _ -> False
+
+
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_type lnk of
   GlobalDef ->
