@@ -15,8 +15,18 @@ module CASL.CompositionTable.ComputeTable where
 
 import CASL.CompositionTable.CompositionTable
 import CASL.AS_Basic_CASL
-import CASL.Logic_CASL
+import CASL.Sign
+import Common.AS_Annotation
+import Common.Id
+import Common.PrettyPrint
 
-computeCompTable :: (CASLSign, [Named CASLFORMULA]) -> Table
-computeCompTable = 
-  error "CASL.CompositionTable.CompositionTable.computeCompTable nyi"
+-- Christian: I also need the name of the spec!
+computeCompTable :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)]) -> Table
+computeCompTable spName (sig,sens) = 
+  Table attrs compTable convTable models
+  where 
+  attrs = Table_Attrs {tableName = showPretty spName "",
+                       tableIdentity = ""}
+  compTable = Compositiontable []
+  convTable = Conversetable []
+  models = Models []
