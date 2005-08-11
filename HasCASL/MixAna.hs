@@ -26,6 +26,7 @@ import qualified Common.Lib.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
 
@@ -108,9 +109,8 @@ iterateCharts ga terms chart =
                        recurse $ QuantifiedTerm quant (catMaybes newDs) newT ps
                     LambdaTerm decls part hd ps -> do
                        mDecls <- mapM (resolvePattern ga) decls
-                       let newDecls = catMaybes mDecls
-                       anaDecls <- mapM anaPattern newDecls
-                       let bs = concatMap extractVars anaDecls 
+                       let anaDecls = catMaybes mDecls
+                           bs = concatMap extractVars anaDecls 
                        checkUniqueVars bs 
                        mapM_ (addLocalVar False) bs
                        mt <- resolve ga hd
@@ -160,11 +160,10 @@ resolveCaseEq ga (ProgEq p t ps) =
     do mp <- resolvePattern ga p
        case mp of 
            Nothing -> return Nothing
-           Just np -> do 
-                vs <- gets localVars
-                newP <- anaPattern np
+           Just newP -> do 
                 let bs = extractVars newP
                 checkUniqueVars bs
+                vs <- gets localVars
                 mapM_ (addLocalVar False) bs
                 mtt <- resolve ga t
                 putLocalVars vs
@@ -188,8 +187,7 @@ resolveLetEqs ga (ProgEq pat trm ps : rt) =
        case mPat of 
            Nothing -> do resolve ga trm
                          resolveLetEqs ga rt
-           Just nPat -> do 
-               newPat <- anaPattern nPat
+           Just newPat -> do 
                let bs = extractVars newPat
                checkUniqueVars bs
                mapM_ (addLocalVar False) bs
@@ -223,8 +221,12 @@ getKnowns :: Id -> Knowns
 getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $ 
                          Set.unions (map getKnowns cs) 
 
-resolvePattern :: GlobalAnnos -> Term -> State Env (Maybe Term)
-resolvePattern ga = resolver ga (unknownId : builtinIds)
+resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
+resolvePattern ga p = do 
+    mp <- resolver ga (unknownId : builtinIds) p
+    case mp of
+        Nothing -> return Nothing 
+        Just np -> fmap Just $ anaPattern np
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
 resolve ga = resolver ga builtinIds
@@ -257,3 +259,37 @@ initRules (pm@(_, _, m), ps) bs is =
             (bs ++ is) ++
     map ( \ i -> (protect i, m + 3, getPlainTokenList i)) 
             (filter isMixfix is)
+
+-- create fresh type vars for unknown ids tagged with type MixfixType []. 
+anaPattern :: Pattern -> State Env Pattern
+anaPattern pat = 
+    case pat of
+    QualVar vd -> do newVd <- checkVarDecl vd
+                     return $ QualVar newVd
+    ResolvedMixTerm i pats ps -> do 
+         l <- mapM anaPattern pats
+         return $ ResolvedMixTerm i l ps
+    ApplTerm p1 p2 ps -> do
+         p3 <- anaPattern p1
+         p4 <- anaPattern p2
+         return $ ApplTerm p3 p4 ps
+    TupleTerm pats ps -> do 
+         l <- mapM anaPattern pats
+         return $ TupleTerm l ps
+    TypedTerm p q ty ps -> do 
+         case p of 
+             QualVar (VarDecl v (MixfixType []) ok qs) ->
+                 let newVd = VarDecl v ty ok (qs `appRange` ps) in
+                 return $ QualVar newVd
+             _ -> do newP <- anaPattern p
+                     return $ TypedTerm newP q ty ps
+    AsPattern vd p2 ps -> do
+         newVd <- checkVarDecl vd
+         p4 <- anaPattern p2
+         return $ AsPattern newVd p4 ps
+    _ -> return pat
+    where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
+            MixfixType [] -> do
+                (tvar, c) <- toEnvState $ freshVar $ posOfId v
+                return $ VarDecl v (TypeName tvar rStar c) ok ps
+            _ -> return vd

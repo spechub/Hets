@@ -54,7 +54,6 @@ data DataEntry = DataEntry IdMap TypeId GenKind [TypeArg] RawKind [AltDefn]
 -- | possible definitions for type identifiers
 data TypeDefn = NoTypeDefn
               | PreDatatype     -- auxiliary entry for DatatypeDefn
-              | Supertype Vars TypeScheme Term 
               | DatatypeDefn DataEntry
               | AliasTypeDefn TypeScheme
                 deriving (Show, Eq)
@@ -62,7 +61,7 @@ data TypeDefn = NoTypeDefn
 -- | for type identifiers also store the raw kind, instances and supertypes
 data TypeInfo = TypeInfo { typeKind :: RawKind
                          , otherTypeKinds :: [Kind]
-                         , superTypes :: [Type]
+                         , superTypes :: Set.Set TypeId
                          , typeDefn :: TypeDefn
                          } deriving (Show, Eq)
 
@@ -70,7 +69,7 @@ type TypeMap = Map.Map TypeId TypeInfo
 
 -- | the minimal information for a sort
 starTypeInfo :: TypeInfo
-starTypeInfo = TypeInfo rStar [universe] [] NoTypeDefn
+starTypeInfo = TypeInfo rStar [universe] Set.empty NoTypeDefn
 
 -- | recursively substitute type names within a type 
 rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type

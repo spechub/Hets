@@ -107,9 +107,13 @@ type RawKind = AnyKind ()
 typeUniverseS :: String 
 typeUniverseS = "Type"
 
+-- | the id of the universe type 
+universeId :: Id
+universeId = simpleIdToId $ mkSimpleId typeUniverseS
+
 -- | the type universe
 universe :: Kind
-universe = ClassKind $ simpleIdToId $ mkSimpleId typeUniverseS
+universe = ClassKind universeId
 
 -- | the name for the Unit (or empty product) type 
 unitTypeS :: String

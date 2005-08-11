@@ -18,6 +18,7 @@ import Data.List as List
 import Control.Monad
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result
@@ -124,7 +125,7 @@ addTypeKind warn d i rk k =
     do tm <- gets typeMap
        case Map.lookup i tm of
            Nothing -> do 
-               putTypeMap $ Map.insert i (TypeInfo rk [k] [] d) tm
+               putTypeMap $ Map.insert i (TypeInfo rk [k] Set.empty d) tm
                return True 
            Just (TypeInfo ok oldks sups defn) -> 
                if rk == ok then do 
@@ -225,13 +226,18 @@ addOpId i oldSc attrs defn =
        let as = assumps e
            tm = typeMap e
            TypeScheme _ ty _ = sc 
-           ds = if placeCount i > 1 then case unalias ty of 
-                   FunType arg _ _ _ -> case unalias arg of
-                       ProductType ts _ -> if placeCount i /= length ts then 
+           ds = if placeCount i > 1 then
+                let (fty, fargs) = getTypeAppl ty in
+                   if lesserType e fty (toType $ arrowId PFunArr)
+                      && length fargs == 2 then
+                     let (pty, ts) = getTypeAppl (head fargs) 
+                         n = length ts in
+                     if n > 1 && lesserType e pty (toType $ productId n) then
+                        if placeCount i /= n then 
                             [mkDiag Error "wrong number of places in" i]
                             else [] 
-                       _ -> [mkDiag Error "expected tuple argument for" i]
-                   _ -> [mkDiag Error "expected function type for" i]
+                     else [mkDiag Error "expected tuple argument for" i]
+                   else [mkDiag Error "expected function type for" i]
                  else []
            (l, r) = partitionOpId e i sc
            oInfo = OpInfo sc attrs defn 
@@ -317,43 +323,3 @@ anaVarDecl(VarDecl v oldT sk ps) =
        return $ case mt of 
                Nothing -> Nothing
                Just t -> Just $ VarDecl v t sk ps
-
--- create fresh type vars for unknown ids tagged with type MixfixType []. 
-anaPattern :: Pattern -> State Env Pattern
-anaPattern pat = 
-    case pat of
-    QualVar vd -> do newVd <- checkVarDecl vd
-                     return $ QualVar newVd
-    ResolvedMixTerm i pats ps -> do 
-         l <- mapM anaPattern pats
-         return $ ResolvedMixTerm i l ps
-    ApplTerm p1 p2 ps -> do
-         p3 <- anaPattern p1
-         p4 <- anaPattern p2
-         return $ ApplTerm p3 p4 ps
-    TupleTerm pats ps -> do 
-         l <- mapM anaPattern pats
-         return $ TupleTerm l ps
-    TypedTerm p q ty ps -> do 
-         mt <- anaStarType ty 
-         let newT = case mt of Just t -> t
-                               _ -> ty
-         case p of 
-             QualVar (VarDecl v (MixfixType []) ok qs) ->
-                 let newVd = VarDecl v newT ok (qs `appRange` ps) in
-                 return $ QualVar newVd
-             _ -> do newP <- anaPattern p
-                     return $ TypedTerm newP q newT ps
-    AsPattern vd p2 ps -> do
-         newVd <- checkVarDecl vd
-         p4 <- anaPattern p2
-         return $ AsPattern newVd p4 ps
-    _ -> return pat
-    where checkVarDecl vd@(VarDecl v t ok ps) = case t of 
-            MixfixType [] -> do
-                (tvar, c) <- toEnvState $ freshVar $ posOfId v
-                return $ VarDecl v (TypeName tvar rStar c) ok ps
-            _ -> do mt <- anaStarType t 
-                    case mt of 
-                        Just ty -> return $ VarDecl v ty ok ps 
-                        _ -> return vd

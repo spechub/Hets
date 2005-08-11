@@ -53,9 +53,9 @@ module HasCASL.Sublogic ( -- * datatypes
                  ) where
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 
@@ -559,13 +559,9 @@ sl_arrow (PFunArr) = need_part
 sl_arrow (PContFunArr) = need_part
 sl_arrow _ = bottom
 
-
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
 sl_typeScheme (TypeScheme l t _) = 
-  comp_list ((comp_list $ map sl_typeArg l) :  
-             case unalias t of 
-             FunType t1 a t2 _ -> [(sl_type t1), (sl_arrow a), (sl_type t2)]
-             _ -> [sl_type t])
+  comp_list $ sl_type t : map sl_typeArg l
 
 sl_opItem :: OpItem -> HasCASL_Sublogics
 sl_opItem (OpDecl l t m _) = 
@@ -727,15 +723,12 @@ sl_env e =
         ops = comp_list $ map sl_opInfos (Map.elems (assumps e))
         in comp_list [classes, types, ops]
 
-
 sl_typeInfo :: TypeInfo -> HasCASL_Sublogics
-sl_typeInfo t = sublogics_max (comp_list $ map sl_type (superTypes t))
-                              (sl_typeDefn (typeDefn t))
-
+sl_typeInfo t = let s = sl_typeDefn (typeDefn t) in
+                    if Set.null $ superTypes t then s else
+                    sublogics_max need_sub  s
 
 sl_typeDefn :: TypeDefn -> HasCASL_Sublogics
-sl_typeDefn (Supertype _ ts t) = 
-  sublogics_max (sl_typeScheme ts) (sl_term t)
 sl_typeDefn (DatatypeDefn de) = sl_dataEntry de
 sl_typeDefn (AliasTypeDefn t) = sl_typeScheme t
 sl_typeDefn _ = bottom

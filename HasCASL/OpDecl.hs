@@ -21,6 +21,7 @@ import Common.Result
 import Common.GlobalAnnotations
 
 import HasCASL.As
+import HasCASL.TypeAna
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
@@ -30,13 +31,15 @@ import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
 anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) = 
-    do let mTy = case unalias ty of 
-                      FunType arg _ t3 _ -> 
-                          case unalias arg of 
-                          ProductType [t1, t2] _ -> Just (t1,t2,t3)
+    do e <- get
+       let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
+                   [arg, t3] | lesserType e fty (toType $ arrowId PFunArr) 
+                       -> let (pty, ts) = getTypeAppl arg in case ts of
+                          [t1, t2] | lesserType e pty (toType $ productId 2)
+                                       -> Just (t1,t2,t3)
                           _ -> Nothing
-                      _ -> Nothing
-       tm <- gets typeMap
+                   _ -> Nothing
+       let tm = typeMap e
        mapM_ (addTypeVarDecl False) tvs
        case mTy of 
              Nothing -> do addDiags [mkDiag Error 

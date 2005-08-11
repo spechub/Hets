@@ -7,20 +7,16 @@ op twice2
 op twice3
      : forall a : Type; b < a_v1 : Type .
          (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2
-     = ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
-           . (var f : a_v1 ->? b_v2)
-               ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
-                 b_v2) :
-            ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+     = ((\ (var f : a ->? b, var x : a)
+           . (var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) :
+            ((a ->? b) * a) ->? b) as
            (a_v1 ->? b_v2) * a_v1 ->? b_v2
 op twice
      : forall a : Type; b < a_v1 : Type .
          (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
-     = ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
-           . (var f : (a_v1 ->? a_v1))
-               ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
-                 a_v1) :
-            (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+     = ((\ (var f : (a ->? a))(var x : a)
+           . (var f : (a ->? a))((var f : (a ->? a))(var x : a) : a) : a) :
+            (a ->? a) -> a ->? a) as
            (a_v1 ->? b_v2) -> a_v1 ->? b_v2
 var f : a ->? b; x : a
 . ((fun __=__[b] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
@@ -69,11 +65,9 @@ twice
   : forall a : Type; b < a_v1 : Type .
       (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2
     %(op)%
-      = ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
-            . (var f : (a_v1 ->? a_v1))
-                ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
-                  a_v1) :
-             (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+      = ((\ (var f : (a ->? a))(var x : a)
+            . (var f : (a ->? a))((var f : (a ->? a))(var x : a) : a) : a) :
+             (a ->? a) -> a ->? a) as
             (a_v1 ->? b_v2) -> a_v1 ->? b_v2
 twice2
   : forall a : Type; b < a_v1 : Type .
@@ -85,11 +79,9 @@ twice3
   : forall a : Type; b < a_v1 : Type .
       (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2
     %(op)%
-      = ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
-            . (var f : a_v1 ->? b_v2)
-                ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
-                  b_v2) :
-             ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+      = ((\ (var f : a ->? b, var x : a)
+            . (var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) :
+             ((a ->? b) * a) ->? b) as
             (a_v1 ->? b_v2) * a_v1 ->? b_v2
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
@@ -109,21 +101,17 @@ forall f : a ->? b; x : a
   (op twice3
    : forall a : Type; b < a_v1 : Type .
        (a_v-1 ->? b_v-2) * a_v-1 ->? b_v-2,
-   ((\ (var f : a_v1 ->? b_v2, var x : a_v1)
-       . (var f : a_v1 ->? b_v2)
-           ((var f : a_v1 ->? b_v2)(var x : a_v1) : b_v2) :
-             b_v2) :
-        ((a_v1 ->? b_v2) * a_v1) ->? b_v2) as
+   ((\ (var f : a ->? b, var x : a)
+       . (var f : a ->? b)((var f : a ->? b)(var x : a) : b) : b) :
+        ((a ->? b) * a) ->? b) as
        (a_v1 ->? b_v2) * a_v1 ->? b_v2) %(def_twice3)%
 (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
   (op twice
    : forall a : Type; b < a_v1 : Type .
        (a_v-1 ->? b_v-2) -> a_v-1 ->? b_v-2,
-   ((\ (var f : (a_v1 ->? a_v1))(var x : a_v1)
-       . (var f : (a_v1 ->? a_v1))
-           ((var f : (a_v1 ->? a_v1))(var x : a_v1) : a_v1) :
-             a_v1) :
-        (a_v1 ->? a_v1) -> a_v1 ->? a_v1) as
+   ((\ (var f : (a ->? a))(var x : a)
+       . (var f : (a ->? a))((var f : (a ->? a))(var x : a) : a) : a) :
+        (a ->? a) -> a ->? a) as
        (a_v1 ->? b_v2) -> a_v1 ->? b_v2) %(def_twice)%
 ((fun __=__[b] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      b * b ->? Unit)

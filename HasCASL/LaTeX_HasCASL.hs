@@ -29,6 +29,7 @@ import Common.AS_Annotation(mapAnM)
 import Common.PrintLaTeX
 import Common.LaTeX_utils
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 instance PrintLaTeX Variance where 
     printLatex0 _ = hc_sty_axiom . show
@@ -470,12 +471,6 @@ instance PrintLaTeX TypeDefn where
         space <> hc_sty_comment (hc_sty_plain_keyword dataS)
     printLatex0 ga (AliasTypeDefn s) = space <> hc_sty_axiom assignS 
                                       <\+> latexPseudoType ga s
-    printLatex0 ga (Supertype v t f) = space <> equals_latex <\+> 
-                                         braces_latex (printLatex0 ga v 
-                                           <\+> colon_latex
-                                           <\+> printLatex0 ga t 
-                                           <\+> hc_sty_axiom "\\bullet"
-                                           <\+> printLatex0 ga f)
     printLatex0 ga (DatatypeDefn de)  = 
         space <> hc_sty_comment (printLatex0 ga de)
 
@@ -496,8 +491,8 @@ instance PrintLaTeX Selector where
 instance PrintLaTeX TypeInfo where
     printLatex0 ga (TypeInfo _ ks sups defn) =
         space <> colon_latex <\+> latexList0 ga ks
-        <> noPrint (null sups)
-           (space <> hc_sty_axiom lessS <\+> latexList0 ga sups)
+        <> noPrint (Set.null sups)
+           (space <> hc_sty_axiom lessS <\+> latexList0 ga (Set.toList sups))
         <> printLatex0 ga defn
 
 instance PrintLaTeX ConstrInfo where

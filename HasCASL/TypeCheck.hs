@@ -60,9 +60,7 @@ checkPattern ga pat = do
     mPat <- resolvePattern ga pat
     case mPat of 
               Nothing -> return Nothing
-              Just p -> do 
-                  np <- anaPattern p 
-                  typeCheck Nothing np
+              Just np -> typeCheck Nothing np
 
 instantiate :: TypeScheme -> State Env (Type, [Type], Constraints)
 instantiate (TypeScheme tArgs t _) = 

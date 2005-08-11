@@ -228,7 +228,7 @@ free type odd2(a : +Type)
 *** Error, unbound type variable(s)
   b in 'List b_v1'
 *** Hint 6.16, rebound type variable 'a'
-*** Error, unexpected type argument 'b'
+*** Error 6.50-6.57, unexpected type argument 'b'
 *** Hint 7.16, rebound type variable 'a'
 *** Error, illegal polymorphic recursion
   expected: List a_v7

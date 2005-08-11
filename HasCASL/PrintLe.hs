@@ -24,6 +24,7 @@ import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty as Pretty
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Keywords
 
 instance PrettyPrint ClassInfo where
@@ -42,9 +43,6 @@ instance PrettyPrint TypeDefn where
         NoTypeDefn -> empty
         PreDatatype -> text "%(data type)%"
         AliasTypeDefn s -> text assignS <+> printPseudoType ga s
-        Supertype v t f -> text equalS <+> braces 
-            (printText0 ga v <+> colon <+> printText0 ga t <+> text dotS
-             <+> printText0 ga f)
         DatatypeDefn dd -> text " %[" <> printText0 ga dd <> text "]%"
 
 printAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
@@ -65,8 +63,8 @@ instance PrettyPrint Selector where
 instance PrettyPrint TypeInfo where
     printText0 ga (TypeInfo _ ks sups defn) =
         hang (colon <+> printList0 ga ks
-        <> noPrint (null sups)
-           (space <> text lessS <+> printList0 ga sups))
+        <> noPrint (Set.null sups)
+           (space <> text lessS <+> printList0 ga (Set.toList sups)))
         2 $ printText0 ga defn
 
 instance PrettyPrint TypeVarDefn where

@@ -181,7 +181,7 @@ funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
 addUnit :: TypeMap -> TypeMap
 addUnit tm = foldr ( \ (i, k, s, d) m -> 
                  Map.insertWith ( \ _ old -> old) i
-                         (TypeInfo (toRaw k) [k] s d) m) tm $
+                         (TypeInfo (toRaw k) [k] (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [], 
                            AliasTypeDefn $ aToUnitType ContraVar universe)
@@ -190,7 +190,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind, 
-                        map ( \ b -> TypeName (arrowId b) (toRaw funKind) 0) l,
+                        map ( \ b -> arrowId b) l,
                                    NoTypeDefn)) 
                 funSupertypes
 

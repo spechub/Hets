@@ -25,6 +25,7 @@ import HasCASL.Unify
 import HasCASL.Builtin
 import HasCASL.MapTerm
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 import Control.Monad(foldM)
 import Data.List
@@ -90,11 +91,6 @@ mergeTypeDefn d1 d2 =
             (AliasTypeDefn s1, AliasTypeDefn s2) -> 
                 do s <- mergeScheme s1 s2
                    return $ AliasTypeDefn s
-            (Supertype v1 s1 t1, Supertype v2 s2 t2) -> 
-                do s <- mergeScheme s1 s2
-                   v <- merge v1 v2
-                   t <- mergeTerm Warning t1 t2
-                   return $ Supertype v s t
             (_, _) -> mergeA "TypeDefn" d1 d2
 
 instance Mergeable Vars where
@@ -152,6 +148,9 @@ instance Eq a => Mergeable [a] where
       l3 <- merge l1 l2
       return $ if any (e==) l2 then l3
          else e:l3
+
+instance Ord a => Mergeable (Set.Set a) where
+    merge s1 s2 = return $ Set.union s1 s2
 
 mergeOpInfos :: TypeMap -> OpInfos -> OpInfos -> Result OpInfos 
 mergeOpInfos tm (OpInfos l1) (OpInfos l2) = 

@@ -81,12 +81,6 @@ prodKind n = if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
 toType :: Id -> Type
 toType i = TypeName i rStar 0
 
--- | through away the user's type alias
-unalias :: Type -> Type
-unalias ty = case ty of 
-    ExpandedType _ t -> unalias t 
-    _ -> ty
-
 -- | construct an infix identifier for a function arrow
 arrowId :: Arrow -> Id
 arrowId a = mkId $ map mkSimpleId [place, show a, place]

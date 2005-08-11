@@ -165,10 +165,11 @@ lesserType te t1 t2 = case (t1, t2) of
                         else b
             _ -> error "lesserType: no FunKind") && lesserType te c1 c2
     (TypeName i1 _ _, TypeName i2 _ _) | i1 == i2 -> True
-    (TypeName i _ _, _) -> case Map.lookup i $ localTypeVars te of 
+    (TypeName i k _, _) -> case Map.lookup i $ localTypeVars te of 
         Nothing -> case Map.lookup i $ typeMap te of
             Nothing -> False
-            Just ti -> any ( \ t -> lesserType te t t2) $ superTypes ti
+            Just ti -> any ( \ j -> lesserType te (TypeName j k 0) t2) $ 
+                       Set.toList $ superTypes ti
         Just (TypeVarDefn _ vk _ _) -> case vk of 
             Downset t -> lesserType te t t2
             _ -> False
@@ -212,19 +213,11 @@ superIds tm = supIds tm Set.empty . Set.singleton
 supIds :: TypeMap -> Set.Set Id -> Set.Set Id -> Set.Set Id
 supIds tm known new = 
     if Set.null new then known else 
-       let more = Set.unions $ map superTypeToId $ 
-                  concatMap ( \ i -> superTypes 
+       let more = Set.unions $ map ( \ i -> superTypes 
                             $ Map.findWithDefault starTypeInfo i tm)
                   $ Set.toList new 
            newKnown = Set.union known new
     in supIds tm newKnown (more Set.\\ newKnown)
-
--- | extract super type ids from a type
-superTypeToId :: Type -> Set.Set Id
-superTypeToId t = 
-    case t of
-           TypeName i _ _ -> Set.singleton i
-           _ -> Set.empty
 
 -- * expand alias types
 
@@ -249,18 +242,14 @@ expandAliases tm t = case t of
             Just ti -> case typeDefn ti of
                   AliasTypeDefn (TypeScheme l ty _) ->
                      (l, [], ty, True)
-                  Supertype _ (TypeScheme l ty _) _ ->
-                     case ty of 
-                     TypeName _ _ _ -> wrap t
-                     _ -> (l, [], ty, True)
                   _ -> wrap t
             _ -> wrap t
     TypeAppl t1 t2 -> 
         let (ps, ts, ta, b) = expandAliases tm t1 
             t3 = expandAlias tm t2
-        in if b then 
+        in if b && length ps > length ts then 
           (ps, t3 : ts, ta, b)  -- reverse later on
-          else wrap $ TypeAppl t1 t3
+          else wrap $ TypeAppl (expandAlias tm t1) t3
     FunType t1 a t2 ps -> 
         wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
     ProductType ts ps -> wrap $ ProductType (map (expandAlias tm) ts) ps
@@ -287,10 +276,11 @@ anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
 anaTypeM (mk, parsedType) te = 
     do resolvedType <- mkTypeConstrAppl parsedType
        let tm = typeMap te
+           adj = adjustPos $ posOfType parsedType
            expandedType = expandAlias tm resolvedType
            cm = classMap te
-       ((rk, ks), checkedType) <- inferKinds (Just True) expandedType te
-       l <- case mk of 
+       ((rk, ks), checkedType) <- adj $ inferKinds (Just True) expandedType te
+       l <- adj $ case mk of 
                Nothing -> subKinds Error cm parsedType 
                           (if null ks then universe else head ks)
                           ks ks  

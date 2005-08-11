@@ -26,12 +26,12 @@ var x : s
 program (op def[s]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
             Pred s@(s ->? Unit)
-          = (\ (var x : s) : s . ()) : s ->? Unit
+          = (\ (var x : s) . ()) : s ->? Unit
         %% def is also total (identical to tt) 
 program (op tt[s]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
             Pred s@(s ->? Unit)
-          = (\ (var x : s) : s . ()) : s ->? Unit
+          = (\ (var x : s) . ()) : s ->? Unit
         %% tt is total "op tt(x: s): unit = ()"
 %% total function type
 type __->__ : -Type -> +Type -> Type
@@ -42,14 +42,13 @@ op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 -> s_v-1
 op fst : forall s : Type; t : Type . s_v-1 * t_v-2 -> s_v-1
      = \ (var x : s, var y : t) .! (var x : s) as s_v1
 %% trivial because its the strict function property
-. ((fun __=__[((s * _var_37_v37) ->? _var_33_v33)]
+. ((fun __=__[((s * t) ->? _var_33_v33)]
     : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-       ((s * _var_37_v37) ->? _var_33_v33) *
-       ((s * _var_37_v37) ->? _var_33_v33) ->? Unit)
-    ((\ ((var x : s) : s, var y : _var_37_v37) . def (x res y)) :
-         (s * _var_37_v37) ->? _var_33_v33,
-     (\ ((var x : s) : s, var y : _var_37_v37) . (def y) und (def x)) :
-         (s * _var_37_v37) ->? _var_33_v33) :
+       ((s * t) ->? _var_33_v33) * ((s * t) ->? _var_33_v33) ->? Unit)
+    ((\ (var x : s, var y : t) . def (x res y)) :
+         (s * t) ->? _var_33_v33,
+     (\ (var x : s, var y : t) . (def y) und (def x)) :
+         (s * t) ->? _var_33_v33) :
       Unit
 . ((fun __=__[((_var_73_v73 * _var_71_v71) -> _var_73_v73)]
     : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
@@ -68,7 +67,7 @@ pred eq : s * s
 . ((fun __=__[(s ->? Unit)]
     : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
        (s ->? Unit) * (s ->? Unit) ->? Unit)
-    ((\ (var x : s) : s
+    ((\ (var x : s)
         . ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
             (var x : s, var x : s) :
               Unit) :
@@ -171,12 +170,11 @@ op undefined : forall p : Pcpo; c : Cpo . c_v-2 --> p_v-1
      = (((fun Y[(c --> p)]
           : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
              ((c --> p) --> (c --> p)) --> (c --> p))
-          (((\ (var x' : _var_284_v284 --> p_v197)
-               . (var x' : _var_284_v284 --> p_v197)) :
-                (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+          (((\ (var x' : c --> p) . (var x' : c --> p)) :
+                (c --> p) ->? (c --> p)) as
                (c --> p) --> c --> p) :
             (c --> p)) as
-           _var_284_v284 --> p_v197
+           c_v199 --> p_v197
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -209,7 +207,7 @@ bool
          ::= true : bool
              false : bool]%
 nat : (Flatcpo, Type)
-s : Type < ? s_v1
+s : Type
 %% Type Variables --------------------------------------------------------
 c  : Cpo %(var_199)%
 d  : Cpo %(var_200)%
@@ -266,12 +264,11 @@ undefined
       = (((fun Y[(c --> p)]
            : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
               ((c --> p) --> (c --> p)) --> (c --> p))
-           (((\ (var x' : _var_284_v284 --> p_v197)
-                . (var x' : _var_284_v284 --> p_v197)) :
-                 (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+           (((\ (var x' : c --> p) . (var x' : c --> p)) :
+                 (c --> p) ->? (c --> p)) as
                 (c --> p) --> c --> p) :
              (c --> p)) as
-            _var_284_v284 --> p_v197
+            c_v199 --> p_v197
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 f : p --> p
@@ -285,11 +282,11 @@ y2 : d
 program (op def[s]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
             Pred s@(s ->? Unit)
-          = (\ (var x : s) : s . ()) : s ->? Unit %(pe_def)%
+          = (\ (var x : s) . ()) : s ->? Unit %(pe_def)%
 program (op tt[s]
          : forall s : Type . Pred s_v-1@(s_v-1 ->? Unit)) :
             Pred s@(s ->? Unit)
-          = (\ (var x : s) : s . ()) : s ->? Unit %(pe_tt)%
+          = (\ (var x : s) . ()) : s ->? Unit %(pe_tt)%
 forall x : s; y : t
   . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
       ((op __res__ : forall s : Type; t : Type . s_v-1 * t_v-2 -> s_v-1)
@@ -300,14 +297,13 @@ forall x : s; y : t
       ((op fst : forall s : Type; t : Type . s_v-1 * t_v-2 -> s_v-1)
          (var x : s, var y : t),
        (var x : s) as s_v1) %(def_fst)%
-((fun __=__[((s * _var_37_v37) ->? _var_33_v33)]
+((fun __=__[((s * t) ->? _var_33_v33)]
   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
-     ((s * _var_37_v37) ->? _var_33_v33) *
-     ((s * _var_37_v37) ->? _var_33_v33) ->? Unit)
-  ((\ ((var x : s) : s, var y : _var_37_v37) . def (x res y)) :
-       (s * _var_37_v37) ->? _var_33_v33,
-   (\ ((var x : s) : s, var y : _var_37_v37) . (def y) und (def x)) :
-       (s * _var_37_v37) ->? _var_33_v33) :
+     ((s * t) ->? _var_33_v33) * ((s * t) ->? _var_33_v33) ->? Unit)
+  ((\ (var x : s, var y : t) . def (x res y)) :
+       (s * t) ->? _var_33_v33,
+   (\ (var x : s, var y : t) . (def y) und (def x)) :
+       (s * t) ->? _var_33_v33) :
     Unit
 ((fun __=__[((_var_73_v73 * _var_71_v71) -> _var_73_v73)]
   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
@@ -323,7 +319,7 @@ forall x : s; y : t
 ((fun __=__[(s ->? Unit)]
   : forall s : Type . s_v-1 * s_v-1 ->? Unit) :
      (s ->? Unit) * (s ->? Unit) ->? Unit)
-  ((\ (var x : s) : s
+  ((\ (var x : s)
       . ((pred eq[s] : forall s : Type . s_v-1 * s_v-1) : s * s ->? Unit)
           (var x : s, var x : s) :
             Unit) :
@@ -396,12 +392,11 @@ forall x : c; s : nat -> c
    (((fun Y[(c --> p)]
       : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
          ((c --> p) --> (c --> p)) --> (c --> p))
-      (((\ (var x' : _var_284_v284 --> p_v197)
-           . (var x' : _var_284_v284 --> p_v197)) :
-            (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
+      (((\ (var x' : c --> p) . (var x' : c --> p)) :
+            (c --> p) ->? (c --> p)) as
            (c --> p) --> c --> p) :
         (c --> p)) as
-       _var_284_v284 --> p_v197) %(def_undefined)%
+       c_v199 --> p_v197) %(def_undefined)%
 free type bool
   ::= true : bool
       false : bool %(ga_bool)%
@@ -437,14 +432,14 @@ free type bool
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 58.13, rebound variable 'x'
 *** Hint 59.9, rebound variable 'x'
-*** Warning 60.30, trying hard to find lazy type for 'program snd(x : s_v1, var y : t_v2) : t_v2 = y'
+*** Warning 60.30, trying hard to find lazy type for 'program snd(x : s, var y : t) : t = y'
 *** Hint 60.9, no type match for: snd
-  with (maximal) type: _var_11_v11 ->? t_v2
+  with (maximal) type: _var_11_v11 ->? t
   known types:
     
-*** Hint 60.13-60.21, untypable application (with result type: t_v2)
- 'snd(x : s_v1, var y : t_v2)'
-*** Error 60.30, no typing for 'program snd(x : s_v1, var y : t_v2) : t_v2 = y'
+*** Hint 60.13-60.21, untypable application (with result type: t)
+ 'snd(x : s, var y : t)'
+*** Error 60.30, no typing for 'program snd(x : s, var y : t) : t = y'
 *** Error 65.22-65.30, ambiguous mixfix term
   def(__res__(x, y))
   def__(__res__(x, y))
@@ -457,14 +452,19 @@ free type bool
 *** Hint 75.6, rebound variable 'x'
 *** Hint 75.35, rebound variable 'x'
 *** Warning 85.6, new type shadows type variable 's'
-*** Warning 87.38, trying hard to find lazy type for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
+*** Error 85.11, illegal type variable as supertype 's'
+*** Warning 87.38, trying hard to find lazy type for 'program all(var p : Pred s@(s ->? Unit)) :
+              Pred Unit@(Unit ->? Unit)
+            = eq(p, tt)'
 *** Hint 87.9, no type match for: all
-  with (maximal) type: _var_187_v187 ->? Unit ->? Unit
+  with (maximal) type: _var_187_v187 ->? Pred Unit@(Unit ->? Unit)
   known types:
     
-*** Hint 87.13-87.15, untypable application (with result type: Unit ->? Unit)
- 'all(var p : s ->? Unit)'
-*** Error 87.38, no typing for 'program all(var p : s ->? Unit) : Unit ->? Unit = eq(p, tt)'
+*** Hint 87.13-87.15, untypable application (with result type: Pred Unit@(Unit ->? Unit))
+ 'all(var p : Pred s@(s ->? Unit))'
+*** Error 87.38, no typing for 'program all(var p : Pred s@(s ->? Unit)) :
+              Pred Unit@(Unit ->? Unit)
+            = eq(p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.58, unexpected mixfix token: And
@@ -520,7 +520,6 @@ free type bool
 *** Error 176.51, unexpected mixfix token: impl
 *** Error 176.31, unexpected mixfix token: all
 *** Error 181.9, non-unique kind for '__-->__'
-*** Hint, repeated supertype '__-->?__'
 *** Error 182.51-182.53, ambiguous mixfix term
   def__(f(x))
   def(f)(x)
@@ -536,16 +535,5 @@ free type bool
 *** Hint 195.5, rebound variable 'f'
 *** Hint 195.20, not a class 'p'
 *** Hint 195.18, rebound variable 'x'
-*** Hint 199.14-199.24, unable to prove: c < _var_284_v284
-*** Error 199.14-199.24, in term'(((fun Y[(c --> p)]
-   : forall p : Pcpo . (p_v-1 --> p_v-1) --> p_v-1) :
-      ((c --> p) --> (c --> p)) --> (c --> p))
-   (((\ (var x' : _var_284_v284 --> p_v197)
-        . (var x' : _var_284_v284 --> p_v197)) :
-         (_var_284_v284 --> p) ->? (_var_284_v284 --> p)) as
-        (c --> p) --> c --> p) :
-     (c --> p)) as
-    _var_284_v284 --> p_v197' of type '_var_284_v284 --> p_v197'
- unresolved constraints '{ c < _var_284_v284 }'
 *** Warning 204.20, ignoring declaration for builtin identifier 'true'
 *** Warning 204.27, ignoring declaration for builtin identifier 'false'

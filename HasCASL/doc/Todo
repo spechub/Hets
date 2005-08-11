@@ -6,16 +6,20 @@ report other uninspected annotations
 
 haddockify code
 
-proper type terms as supertypes are treated like type
-synonyms. Function and product types are builtin. Subtype relations
-of these builtin types and user defined types are problematic. The
-unit type is a separat type!
+proper type terms as supertypes are reduced to subtypes of higher kind
+and a type synonym for the subtype that (now) must not occur
+elsewhere.
+
+Four function and (many) product type names are builtin in order to
+construct type applications.  The unit type is a separate type (and
+not the empty product).
 
 class names are not considered for mapping (Morphism.hs) 
 
 
 
 datatypes:
+
 Data types result in special data type sentences that imply the usual
 equations, only selector equations are generated (so
 that they may become program equations)
@@ -38,10 +42,11 @@ The supertype relation is not checked in isSubEnv and diffEnv
 
 remove FunType, (LazyType ?) and ProductType in favour of uniform TypeAppls
 
-
+sentences need to be generated for subtype definitions!
 
 
 terms: 
+
 the order of types in instance lists is given by the order of the
 variables that needed to be declared before!
 

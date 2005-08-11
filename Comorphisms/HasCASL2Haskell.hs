@@ -23,6 +23,7 @@ import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 import HasCASL.Logic_HasCASL
 import HasCASL.As
@@ -141,20 +142,17 @@ translateTypeInfo env (tid,info) =
   let hsname = mkHsIdent UpperId tid
       hsTyName = hsTyCon hsname
       mkTp l = foldl hsTyApp hsTyName l
+      k = typeKind info
       loc = toProgPos $ posOfId tid
       ddecl = hsDataDecl loc
                        [] -- empty HsContext
-                       (mkTp $ kindToTypeArgs 1 $ typeKind info)
+                       (mkTp $ kindToTypeArgs 1 k)
                        [HsConDecl loc [] [] hsname []]
                        derives
   in case typeDefn info of
-       NoTypeDefn -> case superTypes info of
+       NoTypeDefn -> case Set.toList $ superTypes info of
          [] -> [ddecl]
-         [si] -> if isSameId tid si then [ddecl] else 
-                 [typeSynonym loc hsTyName si]
-         si : _ -> [typeSynonym loc hsTyName si]
-       Supertype _ ts _ ->
-           [hsTypeDecl loc (mkTp $ getAliasArgs ts) $ getAliasType ts]
+         j : _ -> [typeSynonym loc hsTyName $ TypeName j k 0]
        AliasTypeDefn ts -> 
            [hsTypeDecl loc (mkTp $ getAliasArgs ts) $ getAliasType ts]
        DatatypeDefn de -> [sentence $ translateDt env de] 

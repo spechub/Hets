@@ -24,7 +24,6 @@ import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.RawSym
 import HasCASL.Morphism
-import HasCASL.MapTerm
 import HasCASL.VarDecl
 import Common.Id
 import Common.Result
@@ -85,7 +84,8 @@ inducedFromMorphism rmap1 sigma = do
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo 
 mapTypeInfo im ti = 
-    ti { superTypes = map (mapType im) $ superTypes ti 
+    ti { superTypes = Set.map ( \ i -> Map.findWithDefault i i im) 
+                      $ superTypes ti 
        , typeDefn = mapTypeDefn im $ typeDefn ti }
 
 mapTypeDefn :: IdMap -> TypeDefn -> TypeDefn
@@ -94,9 +94,6 @@ mapTypeDefn im td =
     DatatypeDefn (DataEntry tm i k args rk alts) -> 
         DatatypeDefn (DataEntry (compIdMap tm im) i k args rk alts)
     AliasTypeDefn sc -> AliasTypeDefn $ mapTypeScheme im sc
-    Supertype vs sc t -> 
-        Supertype vs (mapTypeScheme im sc)
-              $ mapTerm (id, mapType im) t
     _ -> td
 
 -- | compute type mapping

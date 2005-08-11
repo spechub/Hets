@@ -47,13 +47,7 @@ r2 : Type < s2
 s : (b, a)
 s1 : c < t
 s2 : Type
-s3
-  : Type < t
-    = {x : t . ((fun __=__[t]
-                 : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
-                    t * t ->? Unit)
-                 (var x : t, var x : t) :
-                   Unit}
+s3 : Type < t
 t : c
 t1 : c < t
 t2 : Type < (r2, s2)
@@ -106,25 +100,25 @@ y : tuple3 r s
      found: (a -> b) -> c
 
 *** Hint 26.8, not a kind 'm tuple1'
-*** Hint 26.12, no kind found for 'tuple1'
+*** Hint 26.10-26.12, no kind found for 'tuple1'
   expected: a -> b
      found: b -> a
 
 *** Error 26.10-26.12, no kind found for 'm tuple1'
 *** Hint 28.8, not a kind 'm tuple3'
-*** Hint 28.12, no kind found for 'tuple3'
+*** Hint 28.10-28.12, no kind found for 'tuple3'
   expected: a -> b
      found: a -> b -> c -> d
 
 *** Error 28.10-28.12, no kind found for 'm tuple3'
 *** Hint 30.5, is type variable 'nt'
 *** Hint 32.8, not a kind 'nt r List s'
-*** Hint 32.15, no kind found for 'List'
+*** Hint 32.10-32.20, no kind found for 'List'
   expected: b -> c
      found: a -> b
 
 *** Error 32.10-32.20, no kind found for 'nt r List s'
-*** Error, subtyping cycle via 's2' and 'r2'
-*** Error, subtyping cycle via 's2' and 't2'
-*** Error, subtyping cycle via 'r2' and 't2'
+*** Error 36.9, subtyping cycle via 's2' and 'r2'
+*** Error 36.12, subtyping cycle via 's2' and 't2'
+*** Error 36.12, subtyping cycle via 'r2' and 't2'
 *** Hint 38.12, rebound variable 'x'

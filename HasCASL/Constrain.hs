@@ -325,8 +325,8 @@ monoSubsts te r t =
                            $ subst s t 
 
 fromTypeMap :: TypeMap -> Rel.Rel Type
-fromTypeMap = Map.foldWithKey (\ t ti r ->
-                    foldr (Rel.insert (TypeName t (typeKind ti) 0)) r
-                                  [ ty | ty@(TypeName _ _ _) <- 
-                                    superTypes ti ]) Rel.empty 
+fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
+                    Set.fold ( \ j -> Rel.insert (TypeName t k 0)
+                                $ TypeName j k 0) r
+                                    $ superTypes ti) Rel.empty 
 

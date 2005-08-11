@@ -19,7 +19,6 @@ import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
@@ -32,11 +31,11 @@ import HasCASL.TypeAna
 import HasCASL.DataAna
 import HasCASL.Unify
 import HasCASL.VarDecl
+import HasCASL.SubtypeDecl
 import HasCASL.TypeCheck
 
-idsToTypePatterns :: [Maybe (Id, [TypeArg])] -> [TypePattern]
-idsToTypePatterns mis = map ( \ (i, tArgs) -> TypePattern i tArgs nullRange ) 
-                         $ catMaybes mis
+toTypePattern :: (Id, [TypeArg]) -> TypePattern
+toTypePattern (i, tArgs) = TypePattern i tArgs nullRange
 
 anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
 anaFormula ga at = 
@@ -44,25 +43,20 @@ anaFormula ga at =
        return $ case mt of Nothing -> Nothing
                            Just e -> Just at { item = e }
 
-anaKind :: Kind -> State Env RawKind
-anaKind k = do mrk <- fromResult $ anaKindM k . classMap
-               case mrk of 
-                   Nothing -> error "anaKind"
-                   Just rk -> return rk
-
-anaVars :: Vars -> Type -> Result [VarDecl]
-anaVars (Var v) t = return [VarDecl v t Other nullRange]
-anaVars (VarTuple vs _) t = 
-    case unalias t of 
-           ProductType ts _ -> 
-               if length ts == length vs then 
-                  let lrs = zipWith anaVars vs ts 
+anaVars :: TypeEnv -> Vars -> Type -> Result [VarDecl]
+anaVars _ (Var v) t = return [VarDecl v t Other nullRange]
+anaVars te (VarTuple vs _) t = 
+    let (topTy, ts) = getTypeAppl t
+        n = length ts
+    in if n > 1 && lesserType te topTy (toType $ productId n) then
+               if n == length vs then 
+                  let lrs = zipWith (anaVars te) vs ts 
                       lms = map maybeResult lrs in
                       if all isJust lms then 
                          return $ concatMap fromJust lms
                          else Result (concatMap diags lrs) Nothing 
-               else mkError "wrong arity" t
-           _ -> mkError "product type expected" t
+               else mkError "wrong arity" topTy
+        else mkError "product type expected" topTy
 
 mapAnMaybe :: (Monad m) => (a -> m (Maybe b)) -> [Annoted a] -> m [Annoted b]
 mapAnMaybe f al = 
@@ -111,7 +105,7 @@ anaTypeItem _ _ inst _ (TypeDecl pats kind ps) =
        addDiags $ cs ++ ds
        let (rk, ak) = if null cs then (rrk, kind) else (rStar, universe)
        mis <- mapM (addTypePattern NoTypeDefn inst (rk, [ak])) is
-       let newPats = idsToTypePatterns mis
+       let newPats = map toTypePattern $ catMaybes mis
        return $ if null newPats then Nothing else 
               Just $ TypeDecl newPats ak ps
 
@@ -122,33 +116,36 @@ anaTypeItem _ _ inst _ (SubtypeDecl pats t ps) =
        let Result es mp = anaTypeM (Nothing, t) te
        case mp of 
            Nothing -> do 
-               mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
-               let newPats = idsToTypePatterns mis
+               mis <- mapM (addTypePattern NoTypeDefn inst 
+                            (rStar, [universe])) is
+               let nis = catMaybes mis
+                   newPats = map toTypePattern nis
                if null newPats then return Nothing else case t of 
                    TypeToken tt -> do 
                        let tid = simpleIdToId tt
                            newT = TypeName tid rStar 0
                        addTypeId False NoTypeDefn inst rStar universe tid
-                       mapM_ (addSuperType newT) $ map fst is
+                       mapM_ (addSuperType newT universe) nis
                        return $ Just $ SubtypeDecl newPats newT ps
                    _ -> do
                        addDiags es
                        return $ Just $ TypeDecl newPats universe ps
-           Just (ak, newT) -> do 
+           Just (ak@(rk, _), newT) -> do 
               mis <- mapM (addTypePattern NoTypeDefn inst ak) is
-              let newPats = idsToTypePatterns mis
-              mapM_ (addSuperType newT) $ map fst is   
-              return $ if null newPats then Nothing else 
-                     Just $ SubtypeDecl newPats newT ps
+              let nis = catMaybes mis
+              mapM_ (addSuperType newT $ rawToKind rk) nis
+              return $ if null nis then Nothing else 
+                     Just $ SubtypeDecl (map toTypePattern nis) newT ps
 
 anaTypeItem _ _ inst _ (IsoDecl pats ps) = 
     do let Result ds (Just is) = convertTypePatterns pats
-           js = map fst is
        addDiags ds
        mis <- mapM (addTypePattern NoTypeDefn inst (rStar, [universe])) is
-       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i rStar 0)) js) js 
-       return $ if null mis then Nothing else 
-              Just $ IsoDecl (idsToTypePatterns mis) ps
+       let nis = catMaybes mis
+       mapM_ ( \ i -> mapM_ (addSuperType (TypeName i rStar 0) 
+                                          universe) nis) $ map fst nis 
+       return $ if null nis then Nothing else 
+              Just $ IsoDecl (map toTypePattern nis) ps
 
 anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) = 
     do let Result ds m = convertTypePattern pat
@@ -166,17 +163,14 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                        putLocalTypeVars tvs
                        return Nothing
                    Just ty -> do
-                       newPty <- generalizeS $ TypeScheme nAs ty nullRange
+--                       newPty <- generalizeS $ TypeScheme nAs ty nullRange
                        let fullKind = typeArgsListToKind nAs universe
                        rk <- anaKind fullKind
-                       let Result es mvds = anaVars v $ monoType ty
-                           altDecl = Just $ AliasType newPat (Just fullKind)
-                                     newPty ps
+                       e <- get
+                       let Result es mvds = anaVars e v $ monoType ty
                            altAct = do 
                                putLocalTypeVars tvs
-                               addTypeId True (AliasTypeDefn newPty) inst 
-                                    rk fullKind i 
-                               return altDecl
+                               return Nothing
                        addDiags es
                        if cyclicType i ty then do 
                            addDiags [mkDiag Error 
@@ -194,10 +188,11 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                                case mf of 
                                    Nothing -> altAct
                                    Just newF -> do 
-                                       addTypeId True (Supertype v newPty
-                                                      $ item newF)
+                                       addTypeId True NoTypeDefn
+ --  (Supertype v newPty  $ item newF)
                                            inst rk fullKind i
-                                       addSuperType ty i
+ -- add a corresponding equation
+                                       addSuperType ty universe (i, nAs)
                                        putLocalTypeVars tvs
                                        return $ Just $ SubtypeDefn newPat v ty 
                                               newF ps
@@ -274,27 +269,10 @@ dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do
      return $ DataPat i nAs rk $ patToType i nAs rk
 dataPatToType _ = error "dataPatToType"
 
--- | add a supertype to a given type id
-addSuperType :: Type -> Id -> State Env ()
-addSuperType t i =
-    do tm <- gets typeMap
-       let js = superTypeToId t
-       if Set.member i js then return () -- silently ignore
-         else if Set.member i $ supIds tm Set.empty js then
-            addDiags[mkDiag Error 
-                ("subtyping cycle via '" ++ showId i "' and") t]
-         else case Map.lookup i tm of
-           Nothing -> return () -- previous error
-           Just (TypeInfo ok ks sups defn) -> 
-               if any (== t) sups then 
-                  addDiags[mkDiag Hint "repeated supertype" t]
-               else putTypeMap $ Map.insert i 
-                        (TypeInfo ok ks (t:sups) defn) tm
-
-addDataSubtype :: DataPat -> Type -> State Env ()
-addDataSubtype (DataPat _ _ _ rt) st = 
+addDataSubtype :: DataPat -> Kind -> Type -> State Env ()
+addDataSubtype (DataPat _ nAs _ rt) k st = 
     case st of 
-    TypeName i _ _ -> addSuperType rt i 
+    TypeName i _ _ -> addSuperType rt k (i, nAs)  
     _ -> addDiags [mkDiag Warning "data subtype ignored" st]
 
 -- | analyse a 'DatatypeDecl'
@@ -313,7 +291,7 @@ anaDatatype genKind inst tys
              putLocalTypeVars tvs
              return Nothing
          Just newAlts -> do 
-           mapM_ (addDataSubtype dt) $ foldr 
+           mapM_ (addDataSubtype dt fullKind) $ foldr 
              ( \ (Construct mc ts _ _) l -> case mc of
                Nothing -> ts ++ l
                Just _ -> l) [] newAlts
