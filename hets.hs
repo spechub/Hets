@@ -105,6 +105,7 @@ processFile opt file =
                                  Just (ln,ld1,_,lenv) -> do
                                    when (hasEnvOut opt)
                                         (writeFileInfo opt ds file ln lenv)
+                                   writeSpecFiles opt file ln lenv
                                    putIfVerbose opt 5 (showPretty lenv "")
                                    doIfVerbose opt 7 (printLibEnv lenv)
                                    --checkFile opt file ln lenv
