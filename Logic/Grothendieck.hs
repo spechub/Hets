@@ -53,6 +53,7 @@ import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
+import Common.Utils
 import Common.DynamicUtils 
 import Data.Dynamic
 import qualified Data.List as List
@@ -371,16 +372,10 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
    where ln1 = language_name lid1
          ln2 = language_name lid2
 
--- | split list at separator elements, avoid empty sublists
-splitBy :: Eq a => a -> [a] -> [[a]]
-splitBy x xs = let (l, r) = break (==x) xs in 
-    (if null l then [] else [l]) ++ (if null r then [] else splitBy x $ tail r)
--- suffix "By" usually indicates a (a -> a -> Bool) argument instead of Eq
-
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism coname logicGraph = do
-  let nameList = splitBy ';' coname
+  let nameList = splitOn ';' coname
   cs <- sequence $ map lookupN nameList
   case cs of
     c:cs1 -> foldM compComorphism c cs1
