@@ -1,4 +1,4 @@
-module CompositionTable where
+module CASL.CompositionTable.CompositionTable where
 
 import Text.XML.HaXml.Xml2Haskell
 import Text.XML.HaXml.OneOfN
