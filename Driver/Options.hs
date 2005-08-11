@@ -44,6 +44,7 @@ module Driver.Options
 
 import Driver.Version
 import Common.Utils
+import Common.Id
 import Common.Result
 import Common.Amalgamate
 
@@ -61,7 +62,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, webS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, webS, specS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -75,6 +76,7 @@ libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
 webS = "web"
+specS = "spec"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -88,12 +90,14 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, dS :: String
+graphS, ppS, envS, naxS, dS, thyS, comptableXmlS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
 dS = "."
+thyS = "thy"
+comptableXmlS = "comptable.xml"
 
 showOpt :: String -> String 
 showOpt s = if null s then "" else " --" ++ s
@@ -108,6 +112,7 @@ data HetcatsOpts =        -- for comments see usage info
     HcOpt { analysis :: AnaType    
           , gui      :: GuiType    
           , infiles  :: [FilePath] -- files to be read
+          , specNames :: [SIMPLE_ID] -- specs to be processed 
           , intype   :: InType     
           , libdir   :: FilePath   
           , outdir   :: FilePath   
@@ -129,6 +134,7 @@ instance Show HetcatsOpts where
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
                 ++ showEqOpt outtypesS (showOutTypes $ outtypes opts)
+                ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
                 ++ showRaw (rawopts opts)
                 ++ showEqOpt amalgS ( tail $ init $ show $ 
                                       case caslAmalg opts of
@@ -142,20 +148,22 @@ instance Show HetcatsOpts where
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
-makeOpts opts (Analysis x) = opts { analysis = x }
-makeOpts opts (Gui x)      = opts { gui = x }
-makeOpts opts (InType x)   = opts { intype = x }
-makeOpts opts (LibDir x)   = opts { libdir = x }
-makeOpts opts (OutDir x)   = opts { outdir = x }
-makeOpts opts (OutTypes x) = opts { outtypes = x }
-makeOpts opts (Raw x)      = opts { rawopts = x }
-makeOpts opts (Web x)      = opts { web = x }
-makeOpts opts (Verbose x)  = opts { verbose = x }
-makeOpts opts (DefaultLogic x) = opts { defLogic = x }
-makeOpts opts (CASLAmalg x) = opts { caslAmalg = x }
-makeOpts opts Quiet         = opts { verbose = 0 }
-makeOpts opts Help          = opts -- skipped
-makeOpts opts Version       = opts -- skipped
+makeOpts opts flg = case flg of
+    Analysis x -> opts { analysis = x }
+    Gui x      -> opts { gui = x }
+    InType x   -> opts { intype = x }
+    LibDir x   -> opts { libdir = x }
+    OutDir x   -> opts { outdir = x }
+    OutTypes x -> opts { outtypes = x }
+    Specs x    -> opts { specNames = x }
+    Raw x      -> opts { rawopts = x }
+    Web x      -> opts { web = x }
+    Verbose x  -> opts { verbose = x }
+    DefaultLogic x -> opts { defLogic = x }
+    CASLAmalg x   -> opts { caslAmalg = x }
+    Quiet         -> opts { verbose = 0 }
+    Help          -> opts -- skipped
+    Version       -> opts -- skipped
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 -- basic values when the user specifies nothing else
@@ -165,6 +173,7 @@ defaultHetcatsOpts =
           , gui      = Not
           , web      = NoWeb
           , infiles  = []
+          , specNames = []
           , intype   = GuessIn
           , libdir   = ""
           , outdir   = ""
@@ -182,19 +191,20 @@ defaultOutType :: OutType
 defaultOutType = HetCASLOut OutASTree OutAscii
 
 -- | every 'Flag' describes an option (see usage info)
-data Flag = Analysis AnaType     
-          | Gui      GuiType     
+data Flag = Verbose  Int  
+          | Quiet                
+          | Version              
           | Help                 
+          | Gui      GuiType     
+          | Web      WebType     
+          | Analysis AnaType     
+          | DefaultLogic String  
           | InType   InType      
           | LibDir   FilePath    
           | OutDir   FilePath    
-          | OutTypes [OutType]   
-          | Quiet                
+          | OutTypes [OutType]
+          | Specs    [SIMPLE_ID]
           | Raw      [RawOpt]    
-          | Verbose  Int         
-          | Version              
-          | Web      WebType     
-          | DefaultLogic String  
           | CASLAmalg [CASLAmalgOpt] 
 
 -- | 'AnaType' describes the type of analysis to be performed
@@ -261,6 +271,8 @@ data OutType = PrettyOut PrettyType
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
              | EnvOut
+             | ThyFile -- isabelle theory file
+             | ComptableXml
 
 instance Show OutType where
     show o = case o of
@@ -268,6 +280,8 @@ instance Show OutType where
              HetCASLOut h f -> show h ++ dS ++ show f
              GraphOut f -> graphS ++ show f
              EnvOut -> envS
+             ThyFile -> thyS
+             ComptableXml -> comptableXmlS
 
 instance Read OutType where
     readsPrec  _ s = if isPrefixOf ppS s then 
@@ -280,6 +294,10 @@ instance Read OutType where
                  _ -> hetsError (s ++ " expected one of " ++ show graphList)
         else if isPrefixOf envS s then
              [(EnvOut, drop (length envS) s)]
+        else if isPrefixOf thyS s then
+             [(ThyFile, drop (length thyS) s)]
+        else if isPrefixOf comptableXmlS s then
+             [(ComptableXml, drop (length comptableXmlS) s)]
         else [(HetCASLOut h f, u) | (h, d : t) <- reads s, 
               d == '.' , (f, u) <- reads t]
 
@@ -412,10 +430,13 @@ options =
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default " ++ show defaultOutType ++ "," ++ crS ++
        listS ++ crS ++ bS ++ envS ++ crS ++ bS ++
+       thyS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
        ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
        graphS ++ joinBar (map show graphList) ++ crS ++ bS ++
        astS ++ formS ++ crS ++ bS ++ 
        joinBar (map show outTypeList) ++ bracket naxS ++ formS)
+    , Option ['n'] [specS] (ReqArg parseSpecOpts "SPECS")
+      ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
       ("raw options for pretty printing" ++ crS ++ "RAW is " 
        ++ joinBar [asciiS, textS, latexS, texS]
@@ -517,6 +538,10 @@ parseOutTypes str = case reads $ bracket str of
     [(l, "")] -> OutTypes l
     _ -> hetsError (str ++ " is not a valid OTYPES")
   
+-- | 'parseSpecOpts' parses a 'Specs' Flag from user input
+parseSpecOpts :: String -> Flag
+parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
+
 -- | 'parseRawOpts' parses a 'Raw' Flag from user input
 parseRawOpts :: String -> Flag
 parseRawOpts s =
