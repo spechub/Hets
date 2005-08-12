@@ -263,6 +263,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                           (proofMenu gInfo (fmap return . locDecomp)),
                    Button "Composition (merge of rules)"
                           (proofMenu gInfo (fmap return . composition)),
+		   Button "Composition - creating new links"
+                          (proofMenu gInfo (fmap return . compositionCreatingEdges)),
                    Button "Hide Theorem Shift"
                           (proofMenu gInfo (fmap return . 
                                             (hideTheoremShift False))),
