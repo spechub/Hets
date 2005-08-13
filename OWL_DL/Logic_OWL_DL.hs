@@ -21,7 +21,7 @@ module OWL_DL.Logic_OWL_DL where
 import Data.Dynamic
 
 import Common.DynamicUtils
-import Common.Result
+-- import Common.Result
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Lib.Pretty
@@ -33,7 +33,7 @@ import OWL_DL.AS
 import OWL_DL.Print
 import OWL_DL.ATC_OWL_DL
 import OWL_DL.Sign
-import Logic.Comorphism
+-- import Logic.Comorphism
 import OWL_DL.StaticAna
 
 
@@ -45,7 +45,7 @@ instance Language OWL_DL where
 
 
 -- Typeable instance
-tc_Sign, tc_Sentence :: TyCon
+tc_Sign, tc_Sentence, tc_Ontology :: TyCon
 
 tc_Sign = mkTyCon "OWL_DL.Sign.Sign"
 tc_Sentence = mkTyCon "OWL_DL.Sign.Sentence"
@@ -110,7 +110,7 @@ instance Logic OWL_DL ()
 
 tc_Ontology     = mkTyCon "OWL_DL.AS.Ontology"
 instance Typeable Ontology where
-      typeOf b = mkTyConApp tc_Ontology []
+      typeOf _ = mkTyConApp tc_Ontology []
 {-
 instance Comorphism OWL_DL
                OWL_DL ()
