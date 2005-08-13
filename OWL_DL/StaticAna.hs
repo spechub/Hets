@@ -22,28 +22,31 @@ import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
+import OWL_DL.Namespace
 -- import Debug.Trace
 
 basicOWL_DLAnalysis :: 
     (Ontology, Sign, GlobalAnnos) ->
 	Result (Ontology,Sign,Sign,[Named Sentence])
-basicOWL_DLAnalysis (ontology, inSign, ga) =
-    let Result diags1 (Just (onto, accSign, namedSen)) = 
-	    anaOntology ga inSign ontology
+basicOWL_DLAnalysis (ontology@(Ontology _ _ ns), inSign, ga) =
+    let (integNamespace, transMap) = 
+	    integrateNamespaces (namespaceMap inSign) ns
+	ontology' = renameNamespace transMap ontology
+        Result diags1 (Just (onto, accSign, namedSen)) = 
+	    anaOntology ga (inSign {namespaceMap = integNamespace}) ontology'
 	diffSign = diffSig accSign inSign
     in  Result diags1 $ Just (onto, diffSign, accSign, namedSen)
-
 
 anaOntology :: GlobalAnnos -> Sign -> Ontology
             -> Result (Ontology,Sign,[Named Sentence]) 
 anaOntology ga inSign ontology =
     case ontology of
-     Ontology (Just ontoID) directives ->
+     Ontology (Just ontoID) directives ns ->
        anaDirective ga (inSign {ontologyID = ontoID}) 
-			(Ontology (Just ontoID) []) directives
-     Ontology Prelude.Nothing directives ->
+			(Ontology (Just ontoID) [] ns) directives
+     Ontology Prelude.Nothing directives ns ->
 	anaDirective ga (inSign {ontologyID = nullID}) 
-			 (Ontology Prelude.Nothing []) directives
+			 (Ontology Prelude.Nothing [] ns) directives
 			  
 -- concat the current result with total result 
 -- first parameter is an result from current directive
@@ -57,10 +60,11 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
 	case maybeRes2 of 
 	Prelude.Nothing -> Result (diag2++diag1) Prelude.Nothing
 	_ -> Result (diag2++diag1) maybeRes2
-    Just (Ontology maybeID1 direc1, _, namedSen1) -> 
+    Just (Ontology maybeID1 direc1 _, _, namedSen1) -> 
 	case maybeRes2 of
 	 Prelude.Nothing -> Result (diag2++diag1) maybeRes1
-	 Just (Ontology maybeID2 direc2, inSign2, namedSen2) ->
+	 Just (Ontology maybeID2 direc2 ons2, inSign2, namedSen2) ->
+         -- the namespace of first ontology muss be same as the second.  
 	    if maybeID1 /= maybeID2 then
 	       error "unknow error in concatResult"
 	       else let -- todo: concat ontology
@@ -68,12 +72,12 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
                         namedSen = namedSen2 ++ namedSen1
                         direc = direc2 ++ direc1
                     in Result (diag2 ++ diag1) 
-			 (Just (Ontology maybeID2 direc, accSign, namedSen)) 
+			 (Just (Ontology maybeID2 direc ons2,accSign,namedSen))
 
 anaDirective :: GlobalAnnos -> Sign -> Ontology -> [Directive]
 		-> Result (Ontology,Sign,[Named Sentence])
 anaDirective _ _ _ [] = initResult
-anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) = 
+anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) = 
   case directiv of
     Ax clazz@(Class cId _ _ _ _) -> 
      let (isPrimary, diags1) = checkPrimaryConcept clazz
@@ -106,7 +110,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				       sentence = OWLAxiom dc
 				     }
             in  concatResult (Result diags1 
-			      (Just (Ontology mID (direc ++ [directiv]), 
+			      (Just (Ontology mID (direc ++ [directiv]) ns, 
 				     inSign, [namedSent])))
 	            (anaDirective ga inSign onto rest)  
 	  _ -> concatResult (Result diags1 Prelude.Nothing) 
@@ -120,12 +124,12 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				       sentence = OWLAxiom ec
 				     }
 	    in  concatResult (Result diags1 
-			       (Just (Ontology mID (direc ++ [directiv]),
+			       (Just (Ontology mID (direc ++ [directiv]) ns,
 				      inSign, [namedSent])))
 	             (anaDirective ga inSign onto rest)
  	  _ -> concatResult (Result diags1 Prelude.Nothing) 
 	           (anaDirective ga inSign onto rest)
-    -- ToDO: build subClassOf from Class constructure.
+    -- ToDO: build subClassOf from Class constructure. -> done
     Ax (SubClassOf des1@(DC cid1) des2@(DC cid2)) ->
       let Result diags1 maybeRes = checkConcept (des1:des2:[]) inSign
       in  case maybeRes of 
@@ -135,7 +139,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				      Set.insert (Subconcept cid1 cid2) ax}
               in  concatResult (Result diags1
 				(Just (onto, accSign, [])))
-	              (anaDirective ga inSign onto rest)
+	              (anaDirective ga accSign onto rest)
 	  _ -> concatResult (Result diags1 Prelude.Nothing) 
 	           (anaDirective ga inSign onto rest)
     Ax (Datatype dtId _ _) -> 
@@ -195,7 +199,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				   isAxiom = True,	
 				   sentence = OWLAxiom op
 				 }
-        in concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]),
+        in concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
 					  inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Ax dep@(DEquivalentProperties pid1 pid2 pids) -> 
@@ -208,7 +212,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				 sentence = OWLAxiom dep
 			       }
               in  concatResult (Result [] 
-				(Just (Ontology mID (direc ++ [directiv]),
+				(Just (Ontology mID (direc ++ [directiv]) ns,
 				       inSign, [namedSent])))
 		      (anaDirective ga inSign onto rest) 
 	  _ -> concatResult (Result diags1 Prelude.Nothing) 
@@ -223,7 +227,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				 sentence = OWLAxiom dsp
 			       }
 	      in  concatResult (Result [] 
-				(Just (Ontology mID (direc ++ [directiv]),
+				(Just (Ontology mID (direc ++ [directiv]) ns,
 				       inSign, [namedSent])))
 	              (anaDirective ga inSign onto rest)
 	  _ -> concatResult (Result diags1 Prelude.Nothing) 
@@ -238,7 +242,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 			      sentence = OWLAxiom iep
 			     }
 	      in   concatResult (Result [] 
-				 (Just (Ontology mID (direc ++ [directiv]),
+				 (Just (Ontology mID (direc ++ [directiv]) ns,
 					inSign, [namedSent])))
 	               (anaDirective ga inSign onto rest)
  	  _ -> concatResult (Result diags1 Prelude.Nothing) 
@@ -253,7 +257,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				 sentence = OWLAxiom isp
 			       }
               in  concatResult (Result [] 
-				(Just (Ontology mID (direc ++ [directiv]),
+				(Just (Ontology mID (direc ++ [directiv]) ns,
 				       inSign, [namedSent])))
 	              (anaDirective ga inSign onto rest) 
  	  _ -> concatResult (Result diags1 Prelude.Nothing) 
@@ -266,7 +270,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				       sentence = OWLFact ind
 				     }
             in  concatResult (Result [] 
-			      (Just (Ontology mID (direc ++ [directiv]), 
+			      (Just (Ontology mID (direc ++ [directiv]) ns, 
 				     inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest)
 	Just iid -> 
@@ -305,7 +309,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				   isAxiom = False,	
 				   sentence = OWLFact si
 				 }
-        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), 
+        in  concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
 					   inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     Fc di@(DifferentIndividuals _ _ _) ->
@@ -313,7 +317,7 @@ anaDirective ga inSign onto@(Ontology mID direc) (directiv:rest) =
 				   isAxiom = False,	
 				   sentence = OWLFact di
 				 }
-        in  concatResult (Result [] (Just (Ontology mID (direc ++ [directiv]), 
+        in  concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
 					   inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
     _ -> concatResult initResult (anaDirective ga inSign onto rest) 
