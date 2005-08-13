@@ -325,21 +325,21 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
  			
     where foldDomain :: ID -> [Description] 
 		     -> Set.Set SignAxiom -> Set.Set SignAxiom
-	  foldDomain _ [] s = s
-	  foldDomain rId (h:r) s = 
-	      foldDomain rId r (Set.insert (RoleDomain rId (RDomain h)) s)
+	  -- foldDomain _ [] s = s
+	  foldDomain rId d s = 
+	      Set.insert (RoleDomain rId (map (\x -> RDomain x) d)) s
 
           foldDRange :: ID -> [DataRange] 
 		     -> Set.Set SignAxiom -> Set.Set SignAxiom
-	  foldDRange _ [] s = s
-	  foldDRange rId (h:r) s =
-	      foldDRange rId r (Set.insert (RoleRange rId (RDRange h)) s)
+	  -- foldDRange _ [] s = s
+	  foldDRange rId d s =
+	      Set.insert (RoleRange rId (map (\x -> RDRange x) d)) s
 
           foldIRange :: ID -> [Description] 
 		     -> Set.Set SignAxiom -> Set.Set SignAxiom
-	  foldIRange _ [] s = s
-	  foldIRange rId (h:r) s =
-	      foldIRange rId r (Set.insert (RoleRange rId (RIRange h)) s)
+	  -- foldIRange _ [] s = s
+	  foldIRange rId d s =
+	      Set.insert (RoleRange rId (map (\x -> RIRange x) d)) s
 
           -- if CASL_Sort == false then the concept is not primary
           checkPrimaryConcept :: Axiom -> (Bool,[Diagnosis])
