@@ -280,10 +280,6 @@ batchInfoText :: Int -- ^ total number of goals
 batchInfoText gTotal gDone =
   "Running prover in batch mode: At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
 
-foo :: IORef SPASS.Prove.State -> IO () -> Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool
-foo r f g (retval, res) = do
-  return True
-
 {- |
   Called every time a goal has been processed in the batch mode gui.
 -}
