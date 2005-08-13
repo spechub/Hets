@@ -322,6 +322,16 @@ instance PNamespace Axiom where
 	    ISubPropertyOf (renameNamespace tMap ivpID1)
 			       (renameNamespace tMap ivpID2)
 
+instance PNamespace DataLiteral where
+    propagateNspaces ns dataL =
+	case dataL of
+	TypedL (lf, uri) -> TypedL (lf, (propagateNspaces ns uri))
+	u                -> u
+    renameNamespace tMap dataL =
+	case dataL of
+	TypedL (lf, uri) -> TypedL (lf, (renameNamespace tMap uri))
+	u                -> u
+
 instance PNamespace Description where
     propagateNspaces ns desc =
 	case desc of 
@@ -371,12 +381,14 @@ instance PNamespace Drcomponent where
 	case drComp of
 	DRCAllValuesFrom dr  -> DRCAllValuesFrom (propagateNspaces ns dr)
 	DRCSomeValuesFrom dr -> DRCSomeValuesFrom (propagateNspaces ns dr)
+	DRCValue dataLiteral -> DRCValue (propagateNspaces ns dataLiteral)
 	u                    -> u
 
     renameNamespace tMap drComp =
 	case drComp of
 	DRCAllValuesFrom dr  -> DRCAllValuesFrom (renameNamespace tMap dr)
 	DRCSomeValuesFrom dr -> DRCSomeValuesFrom (renameNamespace tMap dr)
+	DRCValue dataLiteral -> DRCValue (renameNamespace tMap dataLiteral)
 	u                    -> u
 
 instance PNamespace Ircomponent where
@@ -384,12 +396,14 @@ instance PNamespace Ircomponent where
 	case irComp of
 	IRCAllValuesFrom desc  -> IRCAllValuesFrom (propagateNspaces ns desc)
 	IRCSomeValuesFrom desc -> IRCSomeValuesFrom (propagateNspaces ns desc)
+	IRCValue individualID  -> IRCValue (propagateNspaces ns individualID)
 	u                      -> u
 
     renameNamespace tMap irComp =
 	case irComp of
 	IRCAllValuesFrom desc  -> IRCAllValuesFrom (renameNamespace tMap desc)
 	IRCSomeValuesFrom desc -> IRCSomeValuesFrom (renameNamespace tMap desc)
+	IRCValue individualID  -> IRCValue (renameNamespace tMap individualID)
 	u                      -> u
 
 instance PNamespace DataRange where
