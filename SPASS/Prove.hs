@@ -48,6 +48,7 @@ import Data.List
 import Data.Maybe
 import Data.IORef
 import qualified Control.Exception as Exception
+import qualified Control.Concurrent as Concurrent
 
 import HTk
 import SpinButton
@@ -128,10 +129,16 @@ getConfig id m = if (isJust lookupId)
     lookupId = Map.lookup id m
 
 {- |
-  Default time limit.
+  Default time limit in seconds.
 -}
 defaultTimeLimit :: Int
 defaultTimeLimit = 10
+
+{- |
+  Time limit used by the batch mode prover.
+-}
+batchTimeLimit :: Int
+batchTimeLimit = 5
 
 {- |
   Represents the result of a prover run.
@@ -264,6 +271,44 @@ getValueSave timeEntry =
                         IOException x -> trace ("ICH:" ++ show x) Nothing
                         _ -> Nothing
 
+{- |
+  Text displayed by the batch mode window.
+-}
+batchInfoText :: Int -- ^ total number of goals
+              -> Int -- ^ number of that have been processed
+	      -> String
+batchInfoText gTotal gDone =
+  "Running prover in batch mode: At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
+
+foo :: IORef SPASS.Prove.State -> IO () -> Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool
+foo r f g (retval, res) = do
+  return True
+
+{- |
+  Called every time a goal has been processed in the batch mode gui.
+-}
+goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing State data structure
+	      -> Int -- ^ total number of goals
+	      -> Label -- ^ info label
+	      -> Button -- ^ cancel/continue button
+	      -> Named SPTerm -- ^ goal that has just been processed
+	      -> (SpassProverRetval, SPASSResult)
+	      -> IO Bool
+goalProcessed stateRef numGoals label button nGoal (retval, res) = do
+  s <- readIORef stateRef
+
+  let s' = s{resultsMap = Map.insert (senName nGoal) res (resultsMap s),
+             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) (senName nGoal) (configsMap s)}
+  writeIORef stateRef s'
+
+  if (numGoals - (Map.size $ resultsMap s')) > 0
+    then label # text (batchInfoText numGoals (Map.size $ resultsMap s'))
+    else do
+      button # text "Continue"
+      label # text "Batch mode finished. Click 'Continue' to see the results."
+
+  -- always continue
+  return True
 
 {- |
   Invokes the prover GUI. Not yet fully implemented.
@@ -276,6 +321,40 @@ spassProveGUI thName th = do
   let initState = initialState th 
                   (collectNameMapping goals (filter isAxiom nSens)) goals
   stateRef <- newIORef initState
+
+  -- batch window
+  batchWin <- createToplevel [text $ thName ++ " - SPASS Prover"]
+  pack batchWin [Expand On, Fill Both]
+
+  batchB <- newVBox batchWin []
+  pack batchB [Expand On, Fill Both]
+
+  let numGoals = length goals
+
+  batchL <- newLabel batchB [text $ batchInfoText numGoals 0]
+  pack batchL []
+
+  batchSp1 <- newSpace batchB (cm 0.15) []
+  pack batchSp1 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator batchB
+
+  batchSp2 <- newSpace batchB (cm 0.15) []
+  pack batchSp2 [Expand Off, Fill X, Side AtBottom]
+
+  batchCancelButton <- newButton batchB [text "Cancel Batch Mode"]
+  pack batchCancelButton [Expand Off, Side AtRight]
+
+  -- batch window events
+  batchCancel <- clicked batchCancelButton
+
+  batchProver <- Concurrent.forkIO (do
+                                      _ <- spassProveBatch (goalProcessed stateRef numGoals batchL batchCancelButton) thName th
+			              return ())
+  sync (batchCancel >>> do
+			  -- putStrLn "killing batch prover"
+                          Concurrent.killThread batchProver
+                          destroy batchWin)
 
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
@@ -414,7 +493,7 @@ spassProveGUI thName th = do
                 curEntTL <- (getValueSave timeEntry) :: IO Int
                 let goal = fromJust $ currentGoal rs
                 let s = rs {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap rs)}
-                let (before, after)= splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
+                let (before, after) = splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
                 let proved = filter (\sen-> checkGoal (resultsMap s) (senName sen)) before
                 let lp' = foldl (\lp x -> insertSentence lp (x{isAxiom = True})) initialLogicalPart (reverse proved)
                 extraOptions <- (getValue optionsEntry) :: IO String
@@ -438,7 +517,9 @@ spassProveGUI thName th = do
               else (do
                 let goal = fromJust $ currentGoal s
                 let result = Map.lookup goal (resultsMap s)
-                let output = if isJust result then snd (fromJust result) else ["This goal hasn't been run through the prover yet."]
+                let output = if isJust result
+		               then snd (fromJust result)
+			       else ["This goal hasn't been run through the prover yet."]
                 let text = concatMap ('\n':) output
                 createTextSaveDisplay ("SPASS Output for Goal "++goal) (goal ++ ".spass") text
                 done)
@@ -472,6 +553,7 @@ spassProveGUI thName th = do
   
 
 {- |
+Checks whether a goal in the results map is marked as proved.
 -}
 checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
 checkGoal resMap goal =
@@ -484,22 +566,38 @@ checkGoal resMap goal =
   The list of goals is processed sequentially. Proved goals are inserted
   as axioms.
 -}
-spassProveBatch :: String -- ^ theory name
+spassProveBatch :: (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool)
+                -> String -- ^ theory name
                 -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
-spassProveBatch thName (Theory sig nSens) =
-  do pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
+spassProveBatch f thName (Theory sig nSens) =
+  do -- putStrLn $ showPretty initialLogicalPart ""
+     pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
      putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
      return pstl
   where
-    batchProve _ done [] = return done
+    batchProve _ done [] = return (reverse done)
     batchProve lp done (x:xs) = do
-        (err, (res, _)) <- runSpass lp emptyConfig x
-	putStrLn $ show err
-        -- add proved goals as axioms
-        let lp' = if (isProved res) then (insertSentence lp (x{isAxiom = True})) else lp
-        batchProve lp' (res:done) xs
-    (axioms, goals) = partition isAxiom nSens
+	putStrLn $ "Trying to prove goal: " ++ (senName x)
+        -- putStrLn $ show x
+        (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just batchTimeLimit}) x
+	putStrLn $ "SPASS returned: " ++ (show err)
+	-- if the batch prover runs in a separate thread that's killed via killThread
+	-- runSpass will return SpassError. we have to stop the recursion in that
+	-- case
+	case err of
+	  SpassError _ -> return ((reverse (res:done)) ++ (map (Open . senName) xs))
+	  _ -> do
+                 -- add proved goals as axioms
+                 let lp' = if (isProved res)
+	                     then (insertSentence lp (x{isAxiom = True}))
+		             else lp
+                 cont <- f x (err, (res, full))
+                 if cont
+                   then batchProve lp' (res:done) xs
+                   else return ((reverse (res:done)) ++ (map (Open . senName) xs))
+    (axioms, goals) = partition isAxiom 
+                          (prepareSenNames transSenName nSens)
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sig) (reverse axioms)
 
 {- |
@@ -573,13 +671,19 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
-runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axiomsand possibly goals that have been proved earlier as additional axioms
+runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
          -> Named SPTerm -- ^ goal to prove
          -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
-runSpass lp config nGoal =
-  Exception.catch (runSpassReal lp config nGoal)
-    (\ exp -> return (case exp of
+runSpass lp config nGoal = do
+  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
+  spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+  Exception.catch (runSpassReal spass lp config nGoal)
+    (\ exp -> do
+      -- kill spass process
+      destroy spass
+      _ <- waitForChildProcess spass
+      return (case exp of
 		-- this is supposed to distinguish "fd ... vanished" errors from other exceptions
                 IOException e -> (SpassError ("Internal error communicating with SPASS.\n"++show e),
                                     (Open (senName nGoal), []))
@@ -587,17 +691,7 @@ runSpass lp config nGoal =
                         (Open (senName nGoal), []))))
 
   where
-    runSpassReal lp config nGoal = do
-      -- FIXME: this should be retrieved from the user instead of being hardcoded.
-      let problem = SPProblem {identifier = "hets_exported",
-                               description = SPDescription {name = "hets_exported", author = "hets user", SPASS.Sign.version = Nothing, logic = Nothing, status = SPStateUnknown, desc = "", date = Nothing},
-                               logicalPart = insertSentence lp nGoal}
-      let filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
-      let cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
-      let tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
-      let allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
-      putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
-      spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
+    runSpassReal spass lp config nGoal = do
       -- check if SPASS is running
       e <- getToolStatus spass
       if isJust e
@@ -613,6 +707,21 @@ runSpass lp config nGoal =
           (res, usedAxioms, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxioms cleanOptions
           return (err, (retval, output))
+
+    -- FIXME: this should be retrieved from the user instead of being hardcoded.
+    problem = SPProblem {identifier = "hets_exported",
+                         description = SPDescription {name = "hets_exported",
+			                              author = "hets user",
+						      SPASS.Sign.version = Nothing,
+						      logic = Nothing,
+						      status = SPStateUnknown,
+						      desc = "",
+						      date = Nothing},
+                         logicalPart = insertSentence lp nGoal}
+    filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
+    cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
+    tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
+    allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
 
     proof_status res usedAxioms options
       | isJust res && elem (fromJust res) proved =
