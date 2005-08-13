@@ -170,7 +170,7 @@ isaProve checkCons thName (Theory sig nSens) = do
          ++ "lemma inconsistent:\n "
          ++ "\"~( (" 
          ++ concat (intersperse " ) & \\\n(" 
-               (map (showConsAx . mapNamed freeTypesSen) disAxs))
+               ("(? x . true)":map (showConsAx . mapNamed freeTypesSen) disAxs))
          ++ ") )\"\nrefute\noops\n\n"
       showConsAx ax = showPretty (sentence ax) ""
 
