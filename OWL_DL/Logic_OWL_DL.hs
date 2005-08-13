@@ -34,7 +34,7 @@ import OWL_DL.Print
 import OWL_DL.ATC_OWL_DL
 import OWL_DL.Sign
 import Logic.Comorphism
--- import OWL_DL.StaticAna
+import OWL_DL.StaticAna
 
 
 data OWL_DL = OWL_DL deriving Show
@@ -68,7 +68,7 @@ instance Category OWL_DL Sign OWL_DLMorphism
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax OWL_DL () () ()
+instance Syntax OWL_DL Ontology () ()
     -- default implementation is fine!
 
 
@@ -84,30 +84,34 @@ instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
     cons_checkers OWL_DL = []
 
 
-instance StaticAnalysis OWL_DL () Sentence ()
+instance StaticAnalysis OWL_DL Ontology Sentence ()
                () ()
                Sign 
                OWL_DLMorphism 
-               () () -- where
-{- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign:
+               () ()   where
+{- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -} 
       basic_analysis OWL_DL = Just basicOWL_DLAnalysis 
       empty_signature OWL_DL = emptySign
       signature_union OWL_DL s = return . addSign s
       final_union OWL_DL = signature_union OWL_DL
       inclusion OWL_DL = defaultInclusion (is_subsig OWL_DL)
       is_subsig OWL_DL = isSubSign
--}
+
+
 {-   this function will be implemented in OWL_DL.Taxonomy
 	 theory_to_taxonomy OWL_DL = convTaxo
 -}
 
 instance Logic OWL_DL ()
-               () Sentence () ()
+               Ontology Sentence () ()
                Sign 
                OWL_DLMorphism
                () () () 
 
-
+tc_Ontology     = mkTyCon "OWL_DL.AS.Ontology"
+instance Typeable Ontology where
+      typeOf b = mkTyConApp tc_Ontology []
+{-
 instance Comorphism OWL_DL
                OWL_DL ()
                () Sentence () ()
@@ -117,4 +121,4 @@ instance Comorphism OWL_DL
                () Sentence () ()
                Sign OWL_DLMorphism
                () () ()
-
+-}
