@@ -41,7 +41,7 @@ instance ShATermConvertible Ontology where
     toShATerm att0 (Ontology aa ab ac) =
 	case toShATerm att0 aa of {  (att1,aa') ->
 	case toShATerm att1 ab of {  (att2,ab') ->
-        case toShATerm att2 ab of {  (att3,ac') ->
+        case toShATerm att2 ac of {  (att3,ac') ->
 	addATerm (ShAAppl "Ontology" [ aa',ab',ac'] []) att3 }}}
     fromShATerm att =
 	case aterm of
@@ -66,7 +66,7 @@ instance ShATermConvertible Namespace where
 	      case toShATerm att0 pre of { (att1, pre') ->
               case toShATerm att1 uri of { (att2, uri') ->
               case addATerm (ShAAppl "NS" [pre', uri'] []) att2 of {
-               (att3, ns) -> toShATerm' att2 (ns:nsList) rest }}}  
+               (att3, ns) -> toShATerm' att3 (ns:nsList) rest }}}  
 {-
     toShATerm att0 (Map.Tip) = addATerm (ShAAppl "Namespace" [ShAList [] []] []) att0
     toShATerm att0 (Map.Bin _ k x l r) =
