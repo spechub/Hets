@@ -12,7 +12,8 @@ Portability :  portable
 module Main where
 
 import OWL_DL.AS
-import OWL_DL.ReadWrite
+-- import OWL_DL.ReadWrite
+import OWL_DL.Namespace
 
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
@@ -24,7 +25,7 @@ import qualified List as List
 import OWL_DL.StructureAna
 -- import Data.Graph.Inductive.Tree
 -- import Data.Graph.Inductive.Graph
-import Static.DevGraph
+-- import Static.DevGraph
 -- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
 import OWL_DL.Sign
@@ -41,10 +42,16 @@ main =
           else if length args == 1 then     
                   process 'a' args  
                   else case head args of
-                       "-a" -> process 'a' $ tail args   -- output abstract syntax
-                       "-t" -> process 't' $ tail args   -- output ATerm
-		       "-s" -> process 's' $ tail args   -- output DevGraph from structure analysis
-		       "-r" -> process 'r' $ tail args   -- output result of static analysis
+                       "-a" -> process 'a' $ tail args   
+		       -- output abstract syntax
+                       "-t" -> process 't' $ tail args   
+		       -- output ATerm
+		       "-s" -> process 's' $ tail args   
+		       -- output DevGraph from structure analysis
+		       "-r" -> process 'r' $ tail args   
+		       -- output result of static analysis
+                       "-i" -> process 'i' $ tail args   
+		       -- test integrate ontology
 		       _    -> error ("unknow option: " ++ (head args))
 
 
@@ -66,12 +73,12 @@ main =
                   if (head $ head args) == '-' then
                      error "Usage: readAStest [option] <URI or file>"
                      else if isURI $ head args then
-                             do exitCode <- system ("./processor " ++ head args)
+                             do exitCode <- system ("./owl_parser " ++ head args)
                                 run exitCode opt
                              else if (head $ head args) == '/' then
-                                     do exitCode <- system ("./processor file://" ++ head args)
+                                     do exitCode <- system ("./owl_parser file://" ++ head args)
                                         run exitCode opt
-                                     else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
+                                     else do exitCode <- system ("./owl_parser file://" ++ pwd ++ "/" ++ head args)
                                              run exitCode opt
                         
 -- | 
@@ -86,6 +93,7 @@ processor2 opt filename =
             't' -> putStrLn $ show aterm
 	    's' -> outputList 's' aterm
 	    'r' -> outputList 'r' aterm
+            'i' -> outputList 'i' aterm
 	    _   -> outputList 'a' aterm
 
 outputList :: Char -> ATerm -> IO()
@@ -96,8 +104,16 @@ outputList opt aterm =
 	   'a' -> outputAS paarList
 	   's' -> printDG paarList
 	   'r' -> printResOfStatic paarList
+	   'i' -> testIntegrate paarList
 	   u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
+
+testIntegrate :: [ATerm] -> IO()
+testIntegrate al =  
+    do let ontologies = map snd $ reverse $ parsingAll al
+       putStrLn $ show (foldr integrateOntology emptyOnto ontologies) 
+  where emptyOnto = Ontology Prelude.Nothing [] Map.empty
+
 
 -- | 
 -- this function show the abstract syntax of each OWL ontology from 
@@ -107,11 +123,11 @@ outputAS [] = putStrLn ""
 outputAS (aterm:res) =
        case aterm of
           AAppl "UOPaar" [_, AAppl "OWLParserOutput" [valid, msg, _, _] _] _ ->
-              do  let (uri, namespace, ontology) = ontologyParse aterm
+              do  let (uri, ontology) = ontologyParse aterm
                   putStrLn ("URI: " ++ uri)
 		  putStrLn $ fromATerm valid
 		  putStrLn $ show (buildMsg msg)
-		  putStrLn $ show namespace
+--		  putStrLn $ show namespace
 		  putStrLn $ show ontology
                   outputAS res
           _ -> error "false file."
@@ -121,43 +137,45 @@ printDG :: [ATerm] -> IO()
 printDG al =  
     do let p = paarWithUriAndOntology $ reverse $ parsingAll al
        putStrLn $ show $ buildDevGraph (Map.fromList p)
-  where paarWithUriAndOntology :: [(String, Namespace, Ontology)] 
+  where paarWithUriAndOntology :: [(String, Ontology)] 
 				  -> [(String, Ontology)]
 	paarWithUriAndOntology [] = []
-	paarWithUriAndOntology ((uri, _, onto):r) =
+	paarWithUriAndOntology ((uri, onto):r) =
 	    (uri,onto):(paarWithUriAndOntology r)
 
 -- for static analysis
 printResOfStatic :: [ATerm] -> IO()
 printResOfStatic al = 
    putStrLn $ show (map output $ parsingAll al)
-   where output :: (String, Namespace, Ontology) 
+   where output :: (String, Ontology) 
 	-- 	-> Result (Ontology,Sign,Sign,[Named Sentence])
 	        -> Result (Sign,[Named Sentence])
-	 output (_, ns, ontology) = 
+	 output (_, ontology) = 
 	     let Result diagsA (Just (_, _, accSig, namedSen)) = 
 		     basicOWL_DLAnalysis (ontology, 
-					  emptySign {namespaceMap = ns}, 
+					  emptySign, 
 					  emptyGlobalAnnos)
 	     in  Result diagsA (Just (accSig, namedSen))
 
-parsingAll :: [ATerm] -> [(String, Namespace, Ontology)]
+parsingAll :: [ATerm] -> [(String, Ontology)]
 parsingAll [] = []
 parsingAll (aterm:res) =
 	     (ontologyParse aterm):(parsingAll res)
       
-ontologyParse :: ATerm -> (String, Namespace, Ontology)
+ontologyParse :: ATerm -> (String, Ontology)
 ontologyParse 
     (AAppl "UOPaar" 
         [AAppl uri _  _, 
-	 AAppl "OWLParserOutput" [_, _, ns, onto] _] _) 
-    = (uri, 
-       namespace, 
-       propagateNspaces namespace $ createAndReduceClassAxiom
-                                         (fromATerm onto::Ontology))
-   where namespace = buildNS ns 
+	 AAppl "OWLParserOutput" [_, _, _, onto] _] _) 
+    = case ontology of
+      Ontology _ _ namespace ->
+	  (uri, 
+	   -- namespace, 
+	   propagateNspaces namespace $ createAndReduceClassAxiom ontology)
+   where ontology = fromATerm onto::Ontology 
 ontologyParse _ = error "false ontology file."
 
+{-
 buildNS :: ATerm -> Namespace
 buildNS at = case at of
              AAppl "Namespace" [AList nsl _] _ ->
@@ -170,6 +188,7 @@ mkMap (h:r) mp = case h of
                  AAppl "NS" [name, uri] _ ->
                      mkMap r (Map.insert (fromATerm name) (fromATerm uri) mp)
                  _ -> error "illegal namespace."
+-}
 
 buildMsg :: ATerm -> Message
 buildMsg at = case at of
@@ -217,11 +236,11 @@ reducedDisjoint (Ontology oid directives) =
 -}
 
 createAndReduceClassAxiom :: Ontology -> Ontology
-createAndReduceClassAxiom (Ontology oid directives) =
+createAndReduceClassAxiom (Ontology oid directives ns) =
     let (definition, axiom, other) =  
 	    findAndCreate (List.nub directives) ([], [], []) 
 	directives' = reverse definition ++ reverse axiom ++ reverse other
-    in  Ontology oid directives' 
+    in  Ontology oid directives' ns
     
    where findAndCreate :: [Directive] 
 	               -> ([Directive], [Directive], [Directive])
