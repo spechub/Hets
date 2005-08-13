@@ -248,7 +248,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 			// ATerm for output:
 			// OWLParserOutput(validation, messages, namespaces, ontology)
 			AFun outputAFun = factory.makeAFun("OWLParserOutput", 4, false);
-			AFun ontologyFun = factory.makeAFun("Ontology", 2, false);
+			AFun ontologyFun = factory.makeAFun("Ontology", 3, false);
 			AFun msgFun = factory.makeAFun("Message", 1, false);
 			ATermList alist = factory.makeList();
 			AFun validation = factory.makeAFun("mixer", 0, true);
@@ -477,11 +477,12 @@ public class OWL2ATerm implements OWLValidationConstants {
 
 			// System.out.println(atermList.toString());
 
+			ATermAppl namespace = ploader.getNamespace();
 			ATermAppl msgTerm = factory.makeAppl(msgFun, messages);
 			ATermAppl ontologyTerm = factory.makeAppl(ontologyFun, ontologyID,
-					alist.reverse());
-			return factory.makeAppl(outputAFun, validTerm, msgTerm, ploader
-					.getNamespace(), ontologyTerm);
+					alist.reverse(), namespace);
+			return factory.makeAppl(outputAFun, validTerm, msgTerm, 
+						namespace, ontologyTerm);
 
 		} catch (Exception e) {
 			System.out.println("Exception by owlParserOutput: \n" + e);
