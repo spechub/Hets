@@ -27,6 +27,7 @@ import Common.Result
 import List
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Maybe(fromJust)
 -- import Debug.Trace
 -- import Data.Graph.Inductive.Tree
 
@@ -69,7 +70,7 @@ graphFromMap uri onto dg =            --  ((uri, onto):r) dg =
 	     
 			      
 searchImports :: Ontology -> [String]
-searchImports (Ontology _ directives) = findImports directives
+searchImports (Ontology _ directives _) = findImports directives
 					
 findImports :: [Directive] -> [String]
 findImports [] = []
@@ -94,7 +95,7 @@ createLNodes (hs:rs) exLNodes =
     let lnode@(_, currentLN) = buildLNodeFromStr hs ((length exLNodes) -1)
     in  if isEqLNode currentLN exLNodes then
 	   (getLnode currentLN exLNodes):(createLNodes rs exLNodes)
-	   else let lnode' = disambiguateName lnode 1 exLNodes
+	   else let lnode' = disambiguateName lnode exLNodes
                 in  lnode':(createLNodes rs (lnode':exLNodes))
     
     where getLnode _ [] = error "LNode not found"
@@ -105,10 +106,19 @@ createLNodes (hs:rs) exLNodes =
 	  isEqLNode cn exn = 
 	      any (\x -> (dgn_sign cn) == (dgn_sign $ snd x)) exn
 
-          disambiguateName :: (LNode DGNodeLab) -> Int
+          disambiguateName :: (LNode DGNodeLab)
 			   -> [LNode DGNodeLab] 
 			   -> (LNode DGNodeLab)
-          disambiguateName cn@(ind, dgn) end exn = 
+          disambiguateName cn@(ind, dgn) exn = 
+	    let name@(sid, u1, u2) = dgn_name dgn
+		nameSet = map (dgn_name . snd) exn
+                name' = if name `elem` nameSet then
+		          fromJust $ find (not . flip elem nameSet)
+                          [(mkSimpleId ((show name)++(show (i::Int))),u1,u2)|i<-[1..]]
+			 else name
+            in  (ind, dgn {dgn_name = name'})
+		   
+{-
               if any (\x -> (dgn_name dgn) == (dgn_name $ snd x)) exn then
 		 disambiguateName (ind, newDgn) (end+1) exn
 		 else cn
@@ -121,7 +131,7 @@ createLNodes (hs:rs) exLNodes =
 			  newName = (newID, u1, u2) 
 		      in  DGNode newName p2 p3 p4 p5 
 		    u -> u 
-			     
+-}			     
 				  
 strToQN :: String -> QName
 strToQN str = 
