@@ -138,7 +138,7 @@ defaultTimeLimit = 10
   Time limit used by the batch mode prover.
 -}
 batchTimeLimit :: Int
-batchTimeLimit = 5
+batchTimeLimit = 30
 
 {- |
   Represents the result of a prover run.
@@ -166,7 +166,8 @@ data State = State { currentGoal :: Maybe SPIdentifier,
                      theory :: Theory Sign Sentence,
                      configsMap :: SPASSConfigsMap,
                      resultsMap :: SPASSResultsMap,
-                     goalNamesMap :: SPASSGoalNameMap
+                     goalNamesMap :: SPASSGoalNameMap,
+		     goalsList :: [Named SPTerm]
                    }
 
 {- |
@@ -179,7 +180,8 @@ initialState th gm gs =
            theory = th,
            configsMap = Map.fromList (map (\ x -> (senName x,emptyConfig) ) gs),
            resultsMap = emptyResultsMap,
-           goalNamesMap = gm}
+           goalNamesMap = gm,
+	   goalsList = gs}
 
 data SpassProverRetval = SpassSuccess
                        | SpassTLimitExceeded
@@ -220,14 +222,53 @@ statusOpen          = (Black, "Open")
 statusOpenTExceeded = (Black, "Open (Time is up!)")
 statusRunning       = (Blue, "Running")
 
+toGuiStatus :: SPASSConfig -> (Proof_status a) -> (ProofStatusColour, String)
+toGuiStatus cf st = case st of
+  Proved _ _ _ _ _ -> statusProved
+  Disproved _ -> statusDisproved
+  _ -> if timeLimitExceeded cf
+         then statusOpenTExceeded
+         else statusOpen
+
+indicatorProved, indicatorDisproved, indicatorOpen :: String
+indicatorProved = "[+]"
+indicatorDisproved = "[-]"
+indicatorOpen = "[ ]"
+
+toStatusIndicator :: SPASSConfig -> (Proof_status a) -> String
+toStatusIndicator cf st = case st of
+  Proved _ _ _ _ _ -> indicatorProved
+  Disproved _ -> indicatorDisproved
+  _ -> indicatorOpen
+
+goalsView :: SPASS.Prove.State -> [String]
+goalsView s = map (\ g ->
+                       let res = Map.lookup g (resultsMap s)
+		           cf = Map.findWithDefault
+		                (error "updateDisplay: configsMap \
+				       \was not initialised!!")
+				g (configsMap s)
+			   indicator = maybe indicatorOpen
+			               ((toStatusIndicator cf) . fst)
+				       res
+			in
+			  indicator ++ (' ':g))(map senName (goalsList s))
 
 {- |
    updates the display of the status of the goal
 -}
 
--- updateDisplay :: SPASS.Prove.State -> Entry Int 
---              -> Entry String
-updateDisplay state statusLabel timeEntry optionsEntry axiomsLb =
+updateDisplay :: SPASS.Prove.State -> Bool -> ListBox String -> Label -> Entry Int -> Entry String -> ListBox String -> IO ()
+updateDisplay state updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = do
+    if updateLb
+      then do
+        selectedOld <- (getSelection goalsLb) :: IO (Maybe [Int])
+	-- putStrLn $ show selectedOld
+        goalsLb # value (goalsView state)
+	-- putStrLn $ "activating: " ++ (show $ (head . fromJust) selectedOld)
+	-- FIXME: activateElem doesn't have any visible effect
+	maybe (return ()) ((activateElem goalsLb) . head) selectedOld
+      else return ()
     maybe (return ())
           (\ go -> 
                let mprfst = Map.lookup go (resultsMap state)
@@ -237,14 +278,8 @@ updateDisplay state statusLabel timeEntry optionsEntry axiomsLb =
                         go (configsMap state)
                    t' = maybe defaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
-                   toGuiStatus st = case st of
-                                    Proved _ _ _ _ _ -> statusProved
-                                    Disproved _ -> statusDisproved
-                                    _ -> if timeLimitExceeded cf
-				           then statusOpenTExceeded
-					   else statusOpen
 		   (color, label) = maybe statusOpen
-		                    (toGuiStatus . fst)
+		                    ((toGuiStatus cf) . fst)
 				    mprfst
 		   usedAxioms = maybe []
 		                (\st -> case (fst st) of
@@ -377,7 +412,8 @@ spassProveGUI thName th = do
   lbFrame <- newFrame b3 []
   pack lbFrame [Expand On, Fill Both]
 
-  lb <- newListBox lbFrame [value $ map senName goals, bg "white",
+  s0 <- readIORef stateRef
+  lb <- newListBox lbFrame [value $ goalsView s0, bg "white",
                             selectMode Single, height 15] :: IO (ListBox String)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
@@ -479,7 +515,7 @@ spassProveGUI thName th = do
                                            (goals !! (head $ fromJust sel))}
                      else s
           writeIORef stateRef s'
-          updateDisplay s' statusLabel timeEntry optionsEntry axiomsLb
+          updateDisplay s' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (prove >>> do
             rs <- readIORef stateRef
@@ -503,7 +539,7 @@ spassProveGUI thName th = do
                 let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s'),
 		             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) goal (configsMap s')}
                 writeIORef stateRef s''
-                updateDisplay s'' statusLabel timeEntry optionsEntry axiomsLb
+                updateDisplay s'' True lb statusLabel timeEntry optionsEntry axiomsLb
                 done)
             done)
       +> (showDetails >>> do
