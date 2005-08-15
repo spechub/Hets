@@ -286,7 +286,7 @@ batchInfoText gTotal gDone =
 goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing State data structure
 	      -> Int -- ^ total number of goals
 	      -> Label -- ^ info label
-	      -> Button -- ^ cancel/continue button
+	      -> Button -- ^ cancel (continue) button
 	      -> Named SPTerm -- ^ goal that has just been processed
 	      -> (SpassProverRetval, SPASSResult)
 	      -> IO Bool
