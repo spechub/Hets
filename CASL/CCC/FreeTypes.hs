@@ -129,7 +129,7 @@ checkFreeType (osig,osens) m fsn
   if there are axioms not being of this form, output "don't know"
 
 -}
-    where 
+    where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showPretty fs1 "new formulars") fs1     -- new formulars
     is_user_or_sort_gen ax = take 12 name == "ga_generated" || 
@@ -170,9 +170,11 @@ checkFreeType (osig,osens) m fsn
     op_Syms = concat $ map (\s-> case s of
                                    Just (Left op) -> [op]
                                    _ -> []) l_Syms
-    pred_Syms = concat $ map (\s-> case s of
-                                     Just (Right p) -> [p]
-                                     _ -> []) l_Syms  
+--    pred_Syms1 = concat $ map (\s-> case s of
+--                                     Just (Right p) -> [p]
+--                                     _ -> []) l_Syms
+--    pred_Syms = trace (showPretty pred_Syms1 "PRED_SYM") pred_Syms1
+  
 {-
   check all partial axiom
 -}
@@ -545,6 +547,7 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                Sort_gen_ax _ _ -> False
                                _ -> True) oldfs
     all_axioms = old_axioms ++ axioms
+    all_predSymbs = noDouble $ concat $ map predSymbsOfAxiom all_axioms
     o_fconstrs = concat $ map fc oldfs
     (_,o_constructors1,_) = recover_Sort_gen_ax o_fconstrs
     o_constructors = trace (showPretty o_constructors1 "Ocons") o_constructors1
@@ -555,9 +558,11 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
     o_op_Syms = concat $ map (\s-> case s of
                                      Just (Left op) -> [op]
                                      _ -> []) o_l_Syms
-    o_pred_Syms = concat $ map (\s-> case s of
-                                       Just (Right p) -> [p]
-                                       _ -> []) o_l_Syms  
+--    o_pred_Syms1 = concat $ map (\s-> case s of
+--                                       Just (Right p) -> [p]
+--                                       _ -> []) o_l_Syms
+--    o_pred_Syms = trace (showPretty o_pred_Syms1 "OLD_PRED_SYM") o_pred_Syms1
+  
     subStr [] _ = True
     subStr _ [] = False
     subStr xs ys = if (head xs) == (head ys) &&
@@ -663,12 +668,13 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
 					       constructors ++ 
 					       o_op_Syms ++ 
 					       op_Syms)) "") ++
-			 (predSignStr (noDouble (o_pred_Syms ++ 
-						 pred_Syms)) "") ++
+			 (predSignStr all_predSymbs "") ++
 	      sigAux ++ "\";\n")
     c_vars = (varhead ++ (varsStr (allVar $ map varOfAxiom $ 
 			           all_axioms) "") ++ "\"; \n")
-    c_axms =(axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")
+    c_axms = if null n_impli_equiv 
+             then (axhead ++ axAux ++ "\";\n")
+             else (axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")
     ipath = "./CASL/CCC/Input.cime"
     opath = "./CASL/CCC/Result.cime"
     c_proof = ("termcrit \"dp\";\n" ++
@@ -716,6 +722,26 @@ leadingSymPos f = leading (f,False,False)
                              Application opS _ p -> (Just (Left opS), p)
                              _ -> (Nothing,(getRange f1))
                        _ -> (Nothing,(getRange f1)) 
+
+
+predSymbsOfAxiom :: (FORMULA f) -> [PRED_SYMB]
+predSymbsOfAxiom f = case f of
+                       Quantification _ _ f' _ -> 
+                           predSymbsOfAxiom f'
+                       Conjunction fs _ -> 
+                           concat $ map predSymbsOfAxiom fs 
+	               Disjunction fs _ ->
+                           concat $ map predSymbsOfAxiom fs
+	               Implication f1 f2 _ _ ->
+                           (predSymbsOfAxiom f1) ++ (predSymbsOfAxiom f2)
+	               Equivalence f1 f2 _ ->
+                           (predSymbsOfAxiom f1) ++ (predSymbsOfAxiom f2)
+                       Negation f' _ ->
+                           predSymbsOfAxiom f'
+	               Predication p_s _ _ ->
+                           [p_s]
+                       _ -> []
+
 
 -- Sorted_term is always ignored
 term :: TERM f -> TERM f
@@ -890,7 +916,16 @@ allVarOfTerm t = case t of
                    Sorted_term t' _ _ -> allVarOfTerm  t'
                    Application _ ts _ -> if length ts==0 then []
                                          else concat $ map allVarOfTerm ts
-                   _ -> [] 
+                   _ -> []
+
+
+allArguOfTerm :: TERM f-> [TERM f]
+allArguOfTerm t = case t of
+                    Qual_var _ _ _ -> [t]
+                    Application _ ts _ -> ts
+                    Sorted_term t' _ _ -> allArguOfTerm t'
+                    Cast t' _ _ -> allArguOfTerm t'
+                    _ -> [] 
 
 
 {- It filters all variables of a axiom
@@ -925,6 +960,8 @@ term_cime :: TERM f -> Cime
 term_cime t = 
   case (term t) of
     Qual_var var _ _ -> tokStr var
+    Application (Op_name opn) _ _ ->
+        id_cime opn
     Application (Qual_op_name opn _ _) ts _ -> 
         if null ts then (id_cime opn)
         else ((id_cime opn) ++ "(" ++ 
@@ -972,8 +1009,8 @@ predS_cime p_s =
    i: (phi => f(t_1,...,t_m)=t)
      Example: 
                 X=e => f(t_1,...,t_m)=t
-     cime -->   f(t_1,...,t_m) -> U(X,Var(t));
-                U(e,Var(t)) -> t;
+     cime -->   f(t_1,...,t_m) -> U(X,t_1,...,t_m);
+                U(e,t_1,...t_m) -> t;
    P.S. Bool ignore
 
    ii: (phi1  => p(t_1,...,t_m)<=>phi)
@@ -989,70 +1026,143 @@ predS_cime p_s =
 impli_cime :: Int -> FORMULA f -> (Cime,Int)
 impli_cime index f =
   case (quanti f) of
-    Implication (Predication predS1 ts1 _) (Strong_equation t1 t2 _) _ _ ->
-        (((term_cime t1) ++ " -> " ++ 
-        fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-        ")," ++ (terms_cime $ allVarOfTerm t2) ++ ");\n" ++
-        fk1 ++ "(True," ++ (terms_cime $ allVarOfTerm t2) ++ ") -> " ++
-        (term_cime t2) ++ ";\n"),(index +1 )) 
-    Implication (Strong_equation t1 t2 _) (Strong_equation t3 t4 _) _ _ ->
-        (((term_cime t3) ++ " -> " ++
-        fk1 ++ "(" ++ (term_cime t1) ++ "," ++ 
-        (terms_cime $ allVarOfTerm t4) ++ ");\n" ++
-        fk1 ++ "(" ++ (term_cime t2) ++ "," ++
-        (terms_cime $ allVarOfTerm t4) ++ ") -> " ++
-        (term_cime t4) ++ ";\n"),(index + 1))
     Implication (Predication predS1 ts1 _) f1 _ _ ->
         case (quanti f1) of
-          Equivalence (Predication predS2 ts2 _) (Predication predS3 ts3 _) _->
-              (((predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
-              ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
-              "));\n" ++
-              fk1 ++ "(True,True) -> True;\n" ++
-              (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
-              ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
-              "));\n" ++
-              fk2 ++ "(True,True) -> True;\n"),(index + 2))
-          Equivalence (Predication predS2 ts2 _) (Strong_equation t1 t2 _) _->
-              (((term_cime t1) ++ " -> " ++ 
+          Strong_equation t1 t2 _ ->
+              (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-              ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
-              ")," ++ (terms_cime $ allVarOfTerm t2) ++ ");\n" ++
-              fk1 ++ "(True,True," ++ (terms_cime $ allVarOfTerm t2) ++ 
-              ") -> " ++ (term_cime t2) ++ ";\n" ++
-              (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-              ")," ++ (term_cime t1) ++ ");\n" ++
-              fk2 ++ "(True," ++ (term_cime t2) ++ 
-              ") -> " ++ "True;\n"),(index + 2))
+              ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
+              fk1 ++ "(True," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
+              ") -> True;\n"),(index + 1))
+          Negation (Strong_equation t1 t2 _) _ ->
+              (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+              ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
+              fk1 ++ "(True," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
+              ") -> False;\n"),(index + 1))
+          Equivalence (Predication predS2 ts2 _) f2 _ ->
+              case (quanti f2) of
+                Predication predS3 ts3 _ ->
+                    (((predSymStr predS3)++"("++(terms_cime ts3)++") -> "++
+                    fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++ 
+                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
+                    ")," ++ (terms_cime ts3) ++ ");\n" ++
+                    fk1++"(True,True,"++(terms_cime ts3)++") -> True;\n" ++
+                    (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
+                    fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
+                    ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
+                    ")," ++ (terms_cime ts2) ++ ");\n" ++
+                    fk2++"(True,True," ++ (terms_cime ts2) ++ ") -> True;\n"),
+                    (index + 2))
+                Negation (Predication predS3 ts3 _) _ ->
+                    (((predSymStr predS3)++"("++(terms_cime ts3)++") -> "++
+                    fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++ 
+                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
+                    ")," ++ (terms_cime ts3) ++ ");\n" ++
+                    fk1++"(True,True,"++(terms_cime ts3)++") -> False;\n" ++
+                    (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
+                    fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
+                    ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
+                    ")," ++ (terms_cime ts2) ++ ");\n" ++
+                    fk2++"(True,False," ++ (terms_cime ts2) ++ ") -> True;\n"),
+                    (index + 2))
+                Strong_equation t1 t2 _ ->
+                    (("eq("++(term_cime t1)++","++(term_cime t2)++") -> " ++
+                    fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1)++
+                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
+                    "),"++(term_cime t1)++","++(term_cime t2)++");\n" ++
+                    fk1++"(True,True,"++(term_cime t1)++","++(term_cime t2)++ 
+                    ") -> True;\n" ++
+                    (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
+                    fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
+                    "),"++(term_cime t1)++","++(terms_cime ts2) ++ ");\n" ++
+                    fk2++"(True,"++(term_cime t2)++","++(terms_cime ts2) ++
+                    ") -> " ++ "True;\n"),(index + 2))
+                Negation (Strong_equation t1 t2 _) _ ->
+                    (("eq("++(term_cime t1)++","++(term_cime t2)++") -> " ++
+                    fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1)++
+                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
+                    "),"++(term_cime t1)++","++(term_cime t2)++");\n" ++
+                    fk1++"(True,True,"++(term_cime t1)++","++(term_cime t2)++ 
+                    ") -> False;\n" ++
+                    (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
+                    fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
+                    "),eq("++(term_cime t1)++","++(term_cime t2)++"),"++
+                    (terms_cime ts2) ++ ");\n" ++
+                    fk2++"(True,False,"++(terms_cime ts2) ++
+                    ") -> " ++ "True;\n"),(index + 2))
+                _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
           _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
     Implication (Strong_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
-          Equivalence (Predication predS1 ts1 _) (Predication predS2 ts2 _) _->
-              (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_cime t1) ++ "," ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ "));\n" ++
-              fk1 ++ "(" ++ (term_cime t2) ++ ",True) -> True;\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (term_cime t1) ++ "," ++
-              (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ "));\n" ++
-              fk2 ++ "(" ++ (term_cime t2) ++ 
-              ",True) -> True;\n"),(index + 2))
-          Equivalence (Predication predS1 ts1 _) (Strong_equation t3 t4 _) _->
-              (((term_cime t3) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_cime t1) ++ "," ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-              ")," ++ (terms_cime $ allVarOfTerm t4) ++ ");\n" ++
-              fk1 ++ "(" ++ (term_cime t2) ++ ",True," ++ 
-              (terms_cime $ allVarOfTerm t4) ++ ") -> " ++
-              (term_cime t4) ++ ";\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (term_cime t1) ++ "," ++ 
-              (term_cime t3) ++ ");\n" ++
-              fk2 ++ "(" ++ (term_cime t2) ++ "," ++ 
-              (term_cime t4) ++ ") -> " ++ "True;\n"),(index + 2)) 
+          Strong_equation t3 t4 _ ->
+              (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
+              fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
+              (term_cime t4) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ "," ++ (term_cime t3) ++ "," ++
+              (term_cime t4) ++ ") -> True;\n"),(index + 1))
+          Negation (Strong_equation t3 t4 _) _ ->
+              (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
+              fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
+              (term_cime t4) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ "," ++ (term_cime t3) ++ "," ++
+              (term_cime t4) ++ ") -> False;\n"),(index + 1))
+          Equivalence (Predication predS1 ts1 _) f2 _->
+              case (quanti f2) of
+                Predication predS2 ts2 _ ->
+                    (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ")," ++
+                    (terms_cime ts2) ++ ");\n" ++
+                    fk1++"("++(term_cime t2)++ ",True," ++ (terms_cime ts2) ++
+                    ") -> True;\n" ++
+                    (predSymStr predS1)++"("++(terms_cime ts1)++") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ")," ++ 
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2) ++ ",True,"++(terms_cime ts1) ++
+                    ") -> True;\n"),(index + 2))
+                Negation (Predication predS2 ts2 _) _ ->
+                    (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ")," ++
+                    (terms_cime ts2) ++ ");\n" ++
+                    fk1++"("++(term_cime t2)++ ",True," ++ (terms_cime ts2) ++
+                    ") -> False;\n" ++
+                    (predSymStr predS1)++"("++(terms_cime ts1)++") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ")," ++ 
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2) ++ ",False,"++(terms_cime ts1) ++
+                    ") -> True;\n"),(index + 2))
+                Strong_equation t3 t4 _ ->
+                    (("eq("++(term_cime t3)++","++(term_cime t4)++") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+                    ")," ++ (term_cime t3)++","++(term_cime t4) ++ ");\n" ++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True," ++ 
+                    (term_cime t3)++ "," ++ (term_cime t4) ++ ") -> " ++
+                    "True;\n" ++
+                    (predSymStr predS1)++"(" ++ (terms_cime ts1) ++ ") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (term_cime t3) ++ "," ++ (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2)++"," ++ (term_cime t4) ++ "," ++ 
+                    (terms_cime ts1) ++ ") -> " ++ "True;\n"),(index + 2))
+                Negation (Strong_equation t3 t4 _) _ ->
+                    (("eq("++(term_cime t3)++","++(term_cime t4)++") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+                    ")," ++ (term_cime t3)++","++(term_cime t4) ++ ");\n" ++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True," ++ 
+                    (term_cime t3)++ "," ++ (term_cime t4) ++ ") -> " ++
+                    "False;\n" ++
+                    (predSymStr predS1)++"(" ++ (terms_cime ts1) ++ ") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ ",eq(" ++ 
+                    (term_cime t3) ++ "," ++ (term_cime t4) ++ ")," ++
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2)++",False," ++ 
+                    (terms_cime ts1) ++ ") -> " ++ "True;\n"),(index + 2))
+                _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
           _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
     _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
   where fk1 = "af" ++ (show index)
@@ -1063,11 +1173,11 @@ impli_cime index f =
      Example:
              p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
      cime --> p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t --> 
-                 f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),Var(t));
-                 U1(True,Var(t)) -> t;
+                 f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),tt_1,...,tt_n);
+                 U1(True,tt_1,...,tt_n) -> t;
           --> f(tt_1,...,tt_n)=t => p(t_1,...,t_m)  --> 
-                 p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n));
-                 U2(t) -> True; 
+                 p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n),t_1,...,t_m);
+                 U2(t,t_1,...t_m) -> True; 
 -}
 equiv_cime :: Int -> FORMULA f -> (Cime,Int)
 equiv_cime index f =
@@ -1077,39 +1187,44 @@ equiv_cime index f =
           Predication predS2 ts2 _ ->
               (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
-              "));\n" ++
-              fk1 ++ "(True) -> True;\n" ++
+              ")," ++ (terms_cime ts2) ++ ");\n" ++
+              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> True;\n" ++
               (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
               fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
-              "));\n" ++
-              fk2 ++ "(True) -> True;\n"),(index + 2))
-          Strong_equation t1 t2 _ -> 
-              (((term_cime t1) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-              ")," ++ (terms_cime $ allVarOfTerm t2) ++ ");\n" ++
-              fk1 ++ "(True," ++ (terms_cime $ allVarOfTerm t2) ++ ") -> " ++
-              (term_cime t2) ++ ";\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (term_cime t1) ++ ");\n" ++
-              fk2 ++ "(" ++ (term_cime t2) ++ 
-              ") -> " ++ "True;\n"),(index + 2))
+              ")," ++ (terms_cime ts1) ++ ");\n" ++
+              fk2 ++ "(True," ++ (terms_cime ts1) ++ ") -> True;\n"),
+              (index + 2))
           Negation (Predication predS2 ts2 _) _ ->           -- !!
               (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
-              "));\n" ++
-              fk1 ++ "(True) -> False;\n" ++
+              ")," ++ (terms_cime ts2) ++ ");\n" ++
+              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> False;\n" ++
               (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
               fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
-              "));\n" ++
-              fk2 ++ "(False) -> True;\n"),(index + 2))
+              ")," ++ (terms_cime ts1) ++ ");\n" ++
+              fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> True;\n"),
+              (index + 2))
+          Strong_equation t1 t2 _ -> 
+              (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+              ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
+              fk1++"(True,"++(term_cime t1)++","++(term_cime t2)++") -> " ++
+              "True;\n" ++
+              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+              fk2 ++ "(" ++ (term_cime t1) ++ "," ++ (terms_cime ts1) ++ 
+              ");\n" ++
+              fk2 ++ "(" ++ (term_cime t2) ++ "," ++ (terms_cime ts1) ++
+              ") -> " ++ "True;\n"),(index + 2))
           Negation (Strong_equation t1 t2 _) _ ->
               (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
-              "));\n" ++
-              fk1 ++ "(True) -> False;\n" ++
+              ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
+              fk1 ++ "(True," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
+              ") -> False;\n" ++
               (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ "));\n" ++
-              fk2 ++ "(False)"  ++ 
+              fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
+              ")," ++ (terms_cime ts1) ++ ");\n" ++
+              fk2 ++ "(False," ++ (terms_cime ts1) ++ ")" ++
               ") -> " ++ "True;\n"),(index + 2))
           _ -> error "!! " --(showPretty f1 "CASL.CCC.FreeTypes.<equiv_cime1>")
     _ -> error "CASL.CCC.FreeTypes.<equiv_cime2>"
@@ -1180,40 +1295,58 @@ disj_cime fs =
   else ("or(" ++ (axiom_cime $ head fs) ++ "," ++
                  (conj_cime $ tail fs) ++ ")")
 
-
-v_termN :: TERM f -> Int 
-v_termN t = case (term t) of
-                  Simple_id _ -> 1
-                  Qual_var _ _ _ -> 1
-                  Application _ ts _ -> sum $ map v_termN ts
-                  _ -> 0
-
-
+-- the signature for auxiliary function
 sigAuxf :: FORMULA f -> Int -> [((String,Int),Int)]
 sigAuxf f i = 
         case (quanti f) of
           Implication _ f' _ _ -> 
               case f' of 
-                Equivalence _ (Strong_equation _ t _) _  -> 
-                    [((("af"++show(i)),2+(v_termN t)),i+2),
-                     ((("af"++show(i+1)),2),i+2)]
-                Equivalence _ (Predication _ _ _) _  -> 
-                    [((("af"++show(i)),2),i+2),
-                     ((("af"++show(i+1)),2),i+2)]
-                Strong_equation _ t _ -> 
-                    [((("af"++show(i)),1+v_termN t),i+1)]
+                Equivalence (Predication _ ts1 _) f1 _  ->
+                    case f1 of
+                      Strong_equation _ _ _ ->
+                          [((("af"++show(i)),4),i+2),
+                           ((("af"++show(i+1)),2+(length ts1)),i+2)]
+                      Negation (Strong_equation _ _ _) _ ->
+                          [((("af"++show(i)),4),i+2),
+                           ((("af"++show(i+1)),2+(length ts1)),i+2)]
+                      Predication _ ts2 _ -> 
+                          [((("af"++show(i)),2+(length ts2)),i+2),
+                           ((("af"++show(i+1)),2+(length ts1)),i+2)]
+                      Negation (Predication _ ts2 _) _ ->
+                          [((("af"++show(i)),2+(length ts2)),i+2),
+                           ((("af"++show(i+1)),2+(length ts1)),i+2)]
+                      _ -> [(("",-1),i)]
+                Strong_equation _ _ _ ->                     -- Pred ?
+                    [((("af"++show(i)),3),i+1)]
+                Negation (Strong_equation _ _ _) _ -> 
+                    [((("af"++show(i)),3),i+1)]
                 _ -> [(("",-1),i)]
-          Equivalence _ (Strong_equation _ t _) _ ->
-                [((("af"++show(i)),1+(v_termN t)),i+2),
-                 ((("af"++show(i+1)),1),i+2)]
-          Equivalence _ (Predication _ _ _) _ ->
-                [((("af"++show(i)),1),i+2),
-                 ((("af"++show(i+1)),1),i+2)]
-          _ -> [(("",-1),i)]
-
+          Equivalence (Predication _ ts _) f' _ ->
+              case f' of
+                Predication _ ts2 _ ->
+                    [((("af"++show(i)),1+(length ts2)),i+2),
+                     ((("af"++show(i+1)),1+(length ts)),i+2)]
+                Negation (Predication _ ts2 _) _ ->
+                    [((("af"++show(i)),1+(length ts2)),i+2),
+                     ((("af"++show(i+1)),1+(length ts)),i+2)]
+                Strong_equation _ _ _ ->
+                    [((("af"++show(i)),3),i+2),
+                     ((("af"++show(i+1)),1+(length ts)),i+2)]
+            --        [((("af"++show(i)),1+(ags_termN t)),i+2),
+            --         ((("af"++show(i+1)),1+(length ts)),i+2)]
+                Negation (Strong_equation _ _ _) _ ->
+                    [((("af"++show(i)),3),i+2),
+                     ((("af"++show(i+1)),1+(length ts)),i+2)]
+                _ -> [(("",-1),i)]
+          _ -> [(("",-1),i)]         -- ! --
+--  where ags_termN t = case (term t) of
+--                        Simple_id _ -> 1
+--                        Qual_var _ _ _ -> 1
+--                        Application _ ts _ -> length ts
+--                        _ -> 0
 
 terms_cime :: [TERM f] -> Cime
 terms_cime ts = 
-    if null ts then error "terms_cime"
+    if null ts then error "!!!!!!terms_cime"
     else tail $ concat $ map (\s->","++s) $ map term_cime ts
 
