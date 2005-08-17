@@ -13,7 +13,6 @@ Here is the place where the class Logic is instantiated for CASL.
 
 module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor) where
 
-import CASL.CompositionTable.ComputeTable 
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL
 import CASL.Parse_AS_Basic

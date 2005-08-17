@@ -17,9 +17,9 @@ module Driver.WriteFn where
 import System.IO
 import Data.List
 
+import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
 import Common.Result
-import Common.PrettyPrint
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos()
 import qualified Common.Lib.Map as Map
@@ -34,6 +34,8 @@ import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 
 import CASL.Logic_CASL
+import CASL.CompositionTable.ComputeTable
+import CASL.CompositionTable.CompositionTable
 
 import Isabelle.CreateTheories
 
@@ -170,32 +172,47 @@ proofStatusToShATerm :: FilePath -> ProofStatus -> IO()
 proofStatusToShATerm filepath proofStatus =
   writeShATermFileSDoc filepath proofStatus
 
+
+writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO()
+writeVerbFile opt f str = do
+    putIfVerbose opt 2 $ "Writing file: " ++ show f 
+    writeFile f str
+
 writeSpecFiles :: HetcatsOpts -> FilePath -> LIB_NAME -> LibEnv -> IO()
 writeSpecFiles opt file ln lenv =
     case Map.lookup ln lenv of
     Nothing -> return () -- ignore 
-    Just (_, gctx, _) -> 
+    Just (_, gctx, _) -> let 
+        ns = specNames opt 
+        allSpecs = null ns in 
         mapM_ ( \ i -> case Map.lookup i gctx of
-               Just ge@(SpecEntry (_,_,_, NodeSig n _)) ->   
+               Just (SpecEntry (_,_,_, NodeSig n _)) ->   
                    case maybeResult $ computeTheory lenv (ln, n) of
                    Nothing -> putIfVerbose opt 0 $ 
                               "could not compute theory of spec " ++ show i
-                   Just th0@(G_theory lid sign0 sens0) -> 
-                       mapM_ ( \ t -> case t of 
-                          ThyFile -> printTheory ln lenv (i, ge)
-                          ComptableXml -> let 
-                             th = (sign0, toNamedList sens0)
-                             r1 = coerceBasicTheory lid CASL "" th
-                             in case r1 of 
-                                Nothing -> putIfVerbose opt 0 $ 
-                                        "No CASL: spec " ++ show i
-                                Just th2 -> let 
-                                    f = rmSuffix file ++ "_" ++ show i 
-                                        ++ "." ++ show t 
-                                    in do putIfVerbose opt 0 $ 
-                                             "Writing file: " ++ show f
-                                          writeFile f $ showPretty th0 "\n"
-                          _ -> return () -- ignore other file types
+                   Just gTh@(G_theory lid sign0 sens0) ->
+                       mapM_ ( \ t ->
+                           let f = rmSuffix file ++ "_" ++ show i ++ "." 
+                                   ++ show t
+                           in case t of 
+                                ThyFile -> case printTheory ln i gTh of
+                                    Nothing -> putIfVerbose opt 0 $ 
+                                        "could not translate to Isabelle " ++
+                                         show i 
+                                    Just d -> writeVerbFile opt f $ 
+                                              shows d "\n"
+                                ComptableXml -> let 
+                                    th = (sign0, toNamedList sens0)
+                                    r1 = coerceBasicTheory lid CASL "" th
+                                  in case r1 of 
+                                     Nothing -> putIfVerbose opt 0 $ 
+                                         "could not translate from CASL " ++
+                                         show i 
+                                     Just th2 -> writeVerbFile opt f $ 
+                                                 render $ table_document $ 
+                                                 computeCompTable i th2
+                                _ -> return () -- ignore other file types
                              ) $ outtypes opt
-               _ -> putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ specNames opt    
+               _ -> if allSpecs then return () else 
+                    putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
+              ) $ if allSpecs then Map.keys gctx else ns

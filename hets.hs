@@ -47,8 +47,6 @@ import Static.AnalysisLibrary
 import Static.DevGraph
 import Static.PrintDevGraph()
 
-import Isabelle.CreateTheories
-
 #ifdef UNI_PACKAGE
 import GUI.AbstractGraphView
 import GUI.ConvertDevToAbstractGraph
@@ -107,7 +105,6 @@ processFile opt file =
                                         (writeFileInfo opt ds file ln lenv)
                                    writeSpecFiles opt file ln lenv
                                    putIfVerbose opt 5 (showPretty lenv "")
-                                   doIfVerbose opt 7 (printLibEnv lenv)
                                    --checkFile opt file ln lenv
                                    return (ld1,res)
                                  Nothing -> return (ld, res)

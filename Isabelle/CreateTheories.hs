@@ -13,7 +13,6 @@ dumping a LibEnv to Isabelle theory files
 
 module Isabelle.CreateTheories where
 
-import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.PrettyPrint
 import Common.Result
@@ -26,7 +25,6 @@ import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
 import Static.DevGraph
-import Static.DGToSpec
 
 import Isabelle.CreateThy as CreateThy
 
@@ -42,19 +40,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
 #endif
 
-printLibEnv :: LibEnv -> IO ()
-printLibEnv le  =  mapM_ (printLibrary le) $ Map.toList le
-
-printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> IO ()
-printLibrary le (ln, (_, ge, _)) =
-      mapM_ (printTheory ln le) $ Map.toList ge
-
-printTheory :: LIB_NAME -> LibEnv -> (SIMPLE_ID, GlobalEntry) -> IO ()
-printTheory ln le (sn, ge) = case ge of 
-    SpecEntry (_,_,_, NodeSig n _) ->
-          case maybeResult $ computeTheory le (ln, n) of
-            Nothing -> return ()
-            Just (G_theory lid sign0 sens0) ->
+printTheory :: LIB_NAME -> SIMPLE_ID -> G_theory -> Maybe Doc
+printTheory ln sn (G_theory lid sign0 sens0) = 
                 let th = (sign0, toNamedList sens0)
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th
@@ -77,15 +64,12 @@ printTheory ln le (sn, ge) = case ge of
                              _ -> r2
                          _ -> r1
                 in case maybeResult r3 of 
-                   Nothing -> 
-                          return ()
+                   Nothing -> Nothing                          
                    Just (sign, sens) -> let 
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
                           ++ "_" ++ showPretty sn ""
                      doc = text "theory" <+> text tn <+> text "=" $$
                           createTheoryText sign sens
-                     in do
-                        putStrLn $ "Writing " ++ tn ++ ".thy"
-                        writeFile (tn ++ ".thy") (shows doc "\n")
-    _ -> return ()
+                     in Just doc
+
 
