@@ -70,6 +70,10 @@ instance Comorphism CASL2SubCFOL
                         has_pred = True,
                         which_logic = FOL
                       }
+    mapSublogic CASL2SubCFOL sl = sl { has_part    = False
+                                     , has_pred    = True
+                                     , which_logic = FOL
+                                     , has_eq      = True} 
     map_theory CASL2SubCFOL = mkTheoryMapping ( \ sig -> 
       let e = encodeSig sig in return (e, generateAxioms sig))
       (map_sentence CASL2SubCFOL)
