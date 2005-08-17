@@ -496,8 +496,11 @@ noSens :: ThSens a
 noSens = Set.empty
 
 joinSens :: Ord a => ThSens a -> ThSens a -> ThSens a
-joinSens s1 s2 = Set.fromDistinctAscList $ mergeSens 
-    (Set.toList s1) (Set.toList s2)
+joinSens s1 s2 = let l1 = Set.toList s1
+                     m = foldr ( \ e m -> max m $ order e) 0 l1
+                     l2 = map ( \ e -> e {order = m + order e }) 
+                          $ Set.toList s2 
+                 in Set.fromDistinctAscList $ mergeSens l1 l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@(e1 : r1) l2@(e2 : r2) = case compare e1 e2 of
