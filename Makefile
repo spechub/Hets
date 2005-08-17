@@ -19,7 +19,7 @@ LIB_PATH = fgl/Data fgl/Data/Graph \
     fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
     fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
 CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
-    Common/Lib Common/ATerm Logic CASL CASL/CCC \
+    Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS OWL_DL $(PFE_PATHS)
