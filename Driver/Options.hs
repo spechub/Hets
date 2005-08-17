@@ -11,11 +11,6 @@ Datatypes for options that hets understands.
    Useful functions to parse and check user-provided values.
 -}
 
-{- Maybe TODO:
-    -- an Error should be raised when more than one OutDir were specified,
-       or when the OutDir wasn't approved sane
--}
-
 module Driver.Options 
     ( defaultHetcatsOpts
     , showDiags
@@ -53,7 +48,6 @@ import System.IO.Error
 import System.Exit
 
 import Data.List
-import Control.Monad (filterM)
 
 import System.Console.GetOpt
 
@@ -598,10 +592,11 @@ hetcatsOpts argv =
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
 checkFlags fs =
-    let collectFlags = (collectOutDirs
+    let collectFlags = (collectDirs
                         . collectOutTypes
                         . collectVerbosity
                         . collectRawOpts
+                        . collectSpecOpts
                         -- collect some more here?
                    )
     in do if not $ null [ () | Help <- fs]
@@ -618,36 +613,58 @@ checkFlags fs =
 -- | 'checkInFiles' checks all given InFiles for sanity
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs = 
-    do ifs <- filterM checkInFile fs
-       case ifs of
-                []  -> return (hetsError "No valid input file specified")
-                xs  -> return xs
-
+    do mapM_ checkInFile fs
+       case fs of
+                []  -> hetsError "No valid input file specified"
+                _  -> return fs
 
 -- auxiliary functions: FileSystem interaction --
 
 -- | 'checkInFile' checks a single InFile for sanity
-checkInFile :: FilePath -> IO Bool
+checkInFile :: FilePath -> IO ()
 checkInFile file =
     do exists <- doesFileExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       return (exists && (readable perms))
+       if exists && readable perms then return () else 
+          hetsError $ "Not a valid input file: " ++ file
+
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
 checkOutDirs fs = 
-    do ods <- ((filterM checkOutDir) 
-               . (map (\(OutDir x) -> x))) fs
-       if null ods
-          then return []
-          else return $ [OutDir $ head ods]
+    do case fs of 
+         _ : _ : _ -> hetsError 
+           "Only one output directory may be specified on the command line"
+         _ -> do mapM_ checkOutDir fs
+                 return fs
 
--- | 'checkOutDir' checks a single OutDir for sanity
-checkOutDir :: String -> IO Bool
-checkOutDir file = 
+-- | 'checkLibDirs' checks a list of LibDir for sanity
+checkLibDirs :: [Flag] -> IO [Flag]
+checkLibDirs fs = 
+    do case fs of 
+         _ : _ : _ -> hetsError 
+           "Only one library directory may be specified on the command line"
+         _ -> do mapM_ checkLibDir fs
+                 return fs
+
+-- | 'checkLibDir' checks a single LibDir for sanity
+checkLibDir :: Flag -> IO ()
+checkLibDir (LibDir file) = 
     do exists <- doesDirectoryExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       return (exists && (writable perms))
+       if exists && readable perms then return ()
+          else hetsError $ "Not a valid library directory: " ++ file
+checkLibDir _ = return ()
+
+-- | 'checkOutDir' checks a single OutDir for sanity
+checkOutDir :: Flag -> IO ()
+checkOutDir (OutDir file) = 
+    do exists <- doesDirectoryExist file
+       perms  <- catch (getPermissions file) (\_ -> return noPerms)
+       if exists && writable perms then return ()
+          else hetsError $ "Not a valid output directory: " ++ file
+checkOutDir _ = return ()
+
 
 -- Nil Permissions. Returned, if an Error occurred in FS-Interaction
 noPerms :: Permissions
@@ -659,13 +676,17 @@ noPerms = Permissions { readable = False
 
 -- auxiliary functions: collect flags -- 
 
-collectOutDirs :: [Flag] -> IO [Flag]
-collectOutDirs fs =
+collectDirs :: [Flag] -> IO [Flag]
+collectDirs fs =
     let (ods,fs') = partition isOutDir fs
+        (lds,fs'') = partition isLibDir fs'
         isOutDir (OutDir _) = True
         isOutDir _          = False
+        isLibDir (LibDir _) = True
+        isLibDir _          = False
     in do ods' <- checkOutDirs ods
-          return $ ods' ++ fs'
+          lds' <- checkLibDirs lds
+          return $ ods' ++ lds' ++ fs''
 
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
@@ -696,6 +717,15 @@ collectRawOpts fs =
         raws = foldl concatRawOpts [] rfs
         concatRawOpts = (\os (Raw ot) -> os ++ ot)
     in if (null raws) then fs' else ((Raw raws):fs')
+
+collectSpecOpts :: [Flag] -> [Flag]
+collectSpecOpts fs =
+    let (rfs,fs') = partition isSpecOpt fs
+        isSpecOpt (Specs _) = True
+        isSpecOpt _       = False
+        specs = foldl concatSpecOpts [] rfs
+        concatSpecOpts = (\os (Specs ot) -> os ++ ot)
+    in if null specs then fs' else (Specs specs : fs')
 
 
 -- auxiliary functions: error messages --
