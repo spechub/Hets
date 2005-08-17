@@ -73,12 +73,16 @@ instance Comorphism CASL2TopSort
                         has_pred = True,
                         which_logic = FOL
                       }
+--        -- finer information of target sublogics corresponding to source sublogics
+--    mapSublogic :: cid -> sublogics1 -> sublogics2
+
     mapSublogic CASL2TopSort sub = 
-        sublogics_max (sublogics_max need_horn need_pred) sub
-                      { sub_features = NoSub,
-                        cons_features = NoSortGen} 
-                        -- subsorting is coded out and
-                        -- special Sort_gen_ax are coded out
+         sub { sub_features = NoSub
+             , cons_features = NoSortGen
+             , which_logic = max Horn (which_logic sub)
+             , has_pred = True}  
+             -- subsorting is coded out and
+             -- special Sort_gen_ax are coded out
     map_theory CASL2TopSort = mkTheoryMapping transSig transSen
     map_morphism CASL2TopSort mor = 
         let rsigSour = trSig $ msource mor
