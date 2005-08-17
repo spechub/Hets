@@ -131,17 +131,26 @@ instance Ord SortGenerationFeatures where
             NoSortGen -> GT
             SortGen em_y ojc_y ->
                 case (em_x,ojc_x,em_y,ojc_y) of
-                (False,True,True,True)  -> GT
-                (True,False,True,True)  -> GT
-                (True,True,False,True)  -> LT
-                (True,True,True,False)  -> LT
-                (False,False,True,True) -> GT
-                (True,False,False,True) -> GT
-                (True,True,False,False) -> LT
-                (False,True,True,False) -> LT
-                _ -> EQ
                 -- False means more expressive / more features used
+                (True,True,True,True)    -> EQ
+                (True,True,False,True)   -> LT
+                (True,True,True,False)   -> LT
+                (True,True,False,False)  -> LT
 
+                (True,False,True,True)   -> GT
+                (True,False,True,False)  -> EQ
+                (True,False,False,True)  -> GT
+                (True,False,False,False) -> LT
+
+                (False,True,True,True)   -> GT
+                (False,True,True,False)  -> LT
+                (False,True,False,False) -> LT
+                (False,True,False,True)  -> EQ
+
+                (False,False,True,True)  -> GT
+                (False,False,True,False) -> GT
+                (False,False,False,True) -> GT
+                (False,False,False,False)-> EQ
 
 data CASL_Sublogics = CASL_SL
                       { sub_features :: SubsortingFeatures, -- ^ subsorting
@@ -172,7 +181,7 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: CASL_Sublogics
-top = (CASL_SL Sub True (SortGen False False) True True FOL)
+top = (CASL_SL LocFilSub True (SortGen True True) True True FOL)
 
 -- bottom element
 --
