@@ -104,6 +104,7 @@ checkFreeType (osig,osens) m fsn
     | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
 	warning Nothing "not terminating" nullRange
     | not $ null overlap_query = 
+  --  | not $ null overlapSym = 
         return (Just (True,overlap_query))
     | otherwise = return (Just (True,[]))
 
@@ -310,8 +311,10 @@ checkFreeType (osig,osens) m fsn
                                      else check ps
                     in check ts 
     patternsOfTerm t = case t of
+                         Qual_var _ _ _ -> [t]
                          Application (Qual_op_name _ _ _) ts _-> ts
                          Sorted_term t' _ _ -> patternsOfTerm t'
+                         Cast t' _ _ -> patternsOfTerm t'
                          _ -> []
     patternsOfAxiom f = case f of
                           Quantification _ _ f' _ -> patternsOfAxiom f'
@@ -342,38 +345,68 @@ checkFreeType (osig,osens) m fsn
             checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
         | all isApp $ map head ps = all id $ map checkPatterns $ group ps
         | otherwise = False
-    overlapSym = map fst $ 
-                 filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
+    checkPatterns2 ps 
+        | length ps <=1 = Just True
+        | allIdentic ps = Nothing
+        | all isVar $ map head ps = 
+	    if allIdentic $ map head ps then checkPatterns2 $ map tail ps
+            else Just False
+        | all (\p-> sameOps p (head (head ps))) $ map head ps = 
+            checkPatterns2 $ 
+            map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
+        | all isApp $ map head ps = Nothing
+        | otherwise = Just False
+    overlapSym1 = map fst $ 
+                  filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
+    overlapSym = trace (showPretty overlapSym1 "OverlapSym") overlapSym1 
     overlap_Axioms fos
-        | not $ null fos =
-            if ap `elem` (map patternsOfAxiom $ tail fos)
-            then ((head fos):
-                  (filter (\a->(patternsOfAxiom a)==ap) $ tail fos)):
-                 (overlap_Axioms $ filter (\a->(patternsOfAxiom a)/= ap) $ 
-                                   tail fos)
-            else overlap_Axioms $ tail fos
-        | otherwise = [[]]
-      where ap = patternsOfAxiom $ head fos 
-    overlapAxioms = filter (\p-> not $ null p) $ 
-                    concat $ map overlap_Axioms $ map snd $
-                    filter (\a-> (fst a) `elem` overlapSym) $ 
-                    fromJust $ groupAxioms (t_axioms ++ impl_p_axioms)
+        | length fos <= 1 = [[]]
+        | length fos == 2 = if not $ checkPatterns $ map patternsOfAxiom fos
+                            then [fos]
+                            else [[]]
+        | otherwise = (concat $ map overlap_Axioms $ 
+                       map (\f->[(head fos),f]) $ (tail fos)) ++
+                      (overlap_Axioms $ tail fos)
+    --    | not $ null fos =
+    --        if ap `elem` (map patternsOfAxiom $ tail fos)
+    --        then ((head fos):
+    --              (filter (\a->(patternsOfAxiom a)==ap) $ tail fos)):
+    --             (overlap_Axioms $ filter (\a->(patternsOfAxiom a)/= ap) $ 
+    --                               tail fos)
+    --        else overlap_Axioms $ tail fos
+    --    | otherwise = [[]]
+    --  where ap = patternsOfAxiom $ head fos 
+    overlapAxioms1 = filter (\p-> not $ null p) $ 
+                     concat $ map overlap_Axioms $ map snd $
+                     filter (\a-> (fst a) `elem` overlapSym) $ 
+                     fromJust $ groupAxioms (t_axioms ++ impl_p_axioms)
+    overlapAxioms = trace (showPretty overlapAxioms1 "OverlapA") overlapAxioms1
     numOfImpl fos = length $ filter is_impli fos
     overlapQuery fos = 
+        case (checkPatterns2 $ map patternsOfAxiom fos) of
+          Just True -> error "overlapQuery:not overlap" 
+          Just False -> overlapQuery1 fos
+          Nothing -> overlapQuery2 fos
+    overlapQuery1 fos =
+        case numOfImpl fos of
+          0 -> False_atom nullRange
+          1 -> Negation (head cond) nullRange
+          _ -> Negation (Conjunction cond nullRange) nullRange
+      where cond= noDouble $ concat $ map conditionAxiom fos
+    overlapQuery2 fos = 
         case numOfImpl fos of
           0 -> resQ
           1 -> Implication (head cond) resQ True nullRange
           _ -> Implication (Conjunction cond nullRange) resQ True nullRange
       where cond= noDouble $ concat $ map conditionAxiom fos
-            res= noDouble $ concat $ map resultAxiom fos
-            resQ = if length res == 2 then 
-                       Strong_equation (head res) (last res) nullRange
-                   else if length res > 2 then
-                       let resQs =
-                             map (\t->Strong_equation (head res) t nullRange) $
-                             tail res 
-                       in Conjunction resQs nullRange
-                   else error "Overlap"   
+            res= concat $ map resultAxiom fos
+            resQ = Strong_equation (head res) (last res) nullRange
+          --         else if length res > 2 then
+          --             let resQs =
+          --               map (\t->Strong_equation (head res) t nullRange) $
+          --                   tail res 
+          --             in Conjunction resQs nullRange
+          --         else error "Overlap"   
     conditionAxiom f = case f of
                          Quantification _ _ f' _ -> conditionAxiom f'
                          Implication f' _ _ _ -> [f']
@@ -605,36 +638,6 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
                                   "or : binary;\n" ++
                                   "not : unary;\n" ++ 
                                   "True,False : constant;\n"
-{-
-    -- how much variables in a term
-    v_termN t = case (term t) of
-                  Simple_id _ -> 1
-                  Qual_var _ _ _ -> 1
-                  Application _ ts _ -> sum $ map v_termN ts
-                  _ -> 0
-
-    -- the signature for auxiliary function
-    sigAuxf f i = 
-        case (quanti f) of
-          Implication _ f' _ _ -> 
-              case f' of 
-                Equivalence _ (Strong_equation _ t _) _  -> 
-                    [((("af"++show(i)),2+(v_termN t)),i+2),
-                     ((("af"++show(i+1)),2),i+2)]
-                Equivalence _ (Predication _ _ _) _  -> 
-                    [((("af"++show(i)),2),i+2),
-                     ((("af"++show(i+1)),2),i+2)]
-                Strong_equation _ t _ -> 
-                    [((("af"++show(i)),1+v_termN t),i+1)]
-                _ -> [(("",-1),i)]
-          Equivalence _ (Strong_equation _ t _) _ ->
-                [((("af"++show(i)),1+(v_termN t)),i+2),
-                 ((("af"++show(i+1)),1),i+2)]
-          Equivalence _ (Predication _ _ _) _ ->
-                [((("af"++show(i)),1),i+2),
-                 ((("af"++show(i+1)),1),i+2)]
-          _ -> [(("",-1),i)]
--} 
     auxSigstr ies i str 
         | null ies = str
         | otherwise =  
@@ -1249,8 +1252,6 @@ axiom_cime f =
         conj_cime fs ++ " -> True"
     Disjunction fs _ -> 
         disj_cime fs ++ " -> True"
---    Implication _ _ _ _ -> impli_cime 1 f 
---    Equivalence _ _ _ -> equiv_cime 1 f
     Negation f' _ ->
         case f' of
           Conjunction fs _ ->
@@ -1347,6 +1348,6 @@ sigAuxf f i =
 
 terms_cime :: [TERM f] -> Cime
 terms_cime ts = 
-    if null ts then error "!!!!!!terms_cime"
+    if null ts then ""
     else tail $ concat $ map (\s->","++s) $ map term_cime ts
 
