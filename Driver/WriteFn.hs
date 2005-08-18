@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-| 
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
@@ -34,8 +35,10 @@ import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME()) 
 
 import CASL.Logic_CASL
+#ifdef UNI_PACKAGE
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
+#endif
 
 import Isabelle.CreateTheories
 
@@ -201,6 +204,7 @@ writeSpecFiles opt file ln lenv =
                                          show i 
                                     Just d -> writeVerbFile opt f $ 
                                               shows d "\n"
+#ifdef UNI_PACKAGE
                                 ComptableXml -> let 
                                     th = (sign0, toNamedList sens0)
                                     r1 = coerceBasicTheory lid CASL "" th
@@ -211,6 +215,7 @@ writeSpecFiles opt file ln lenv =
                                      Just th2 -> writeVerbFile opt f $ 
                                                  render $ table_document $ 
                                                  computeCompTable i th2
+#endif
                                 _ -> return () -- ignore other file types
                              ) $ outtypes opt
                _ -> if allSpecs then return () else 
