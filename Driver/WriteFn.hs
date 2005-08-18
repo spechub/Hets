@@ -17,6 +17,7 @@ module Driver.WriteFn where
 
 import System.IO
 import Data.List
+import Control.Monad
 
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
@@ -28,6 +29,8 @@ import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
+
+import Data.Maybe
 
 import Logic.Coerce
 
@@ -212,9 +215,13 @@ writeSpecFiles opt file ln lenv =
                                      Nothing -> putIfVerbose opt 0 $ 
                                          "could not translate from CASL " ++
                                          show i 
-                                     Just th2 -> writeVerbFile opt f $ 
+                                     Just th2 -> 
+                                       let Result d res = computeCompTable i th2
+			                in do showDiags opt d
+                                              when (isJust res) $
+			                         writeVerbFile opt f $ 
                                                  render $ table_document $ 
-                                                 computeCompTable i th2
+                                                 fromJust res
 #endif
                                 _ -> return () -- ignore other file types
                              ) $ outtypes opt
