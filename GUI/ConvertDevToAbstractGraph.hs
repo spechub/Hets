@@ -304,7 +304,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                  createLocalMenuNodeTypeDgRef "SteelBlue" actGraphInfo 
                                               ioRefGraphMem graphMem gInfo
                  ),
-                ("locallyEmpty_dg_ref", 
+                ("locallyEmpty__dg_ref", 
                  createLocalMenuNodeTypeDgRef "SteelBlue"
                         actGraphInfo ioRefGraphMem graphMem gInfo
                  ) ]
