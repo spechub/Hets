@@ -2,7 +2,7 @@
   op 0 : Nat
   op __ - __ : Nat * Nat -> Int
 
-
+sort s
 var a :s 
 
 forall a : Nat

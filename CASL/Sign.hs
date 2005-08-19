@@ -262,17 +262,31 @@ closeSubsortRel=
     do e <- get
        put e { sortRel = Rel.transClosure $ sortRel e }
 
+alsoWarning :: String -> Id -> [Diagnosis]
+alsoWarning msg i = [mkDiag Warning ("also known as " ++ msg) i]
+
+checkWithOtherMap :: String -> Map.Map Id a -> Id -> [Diagnosis]
+checkWithOtherMap msg m i = 
+    case Map.lookup i m of 
+    Nothing -> []
+    Just _ -> alsoWarning msg i
+
 addVars :: VAR_DECL -> State (Sign f e) ()
-addVars (Var_decl vs s _) = mapM_ (addVar s) vs
+addVars (Var_decl vs s _) = do 
+    checkSorts [s]
+    mapM_ (addVar s) vs
 
 addVar :: SORT -> SIMPLE_ID -> State (Sign f e) ()
 addVar s v = 
     do e <- get
        let m = varMap e
-       case Map.lookup v m of
-          Just _ -> addDiags [mkDiag Warning "variable shadowed" v] 
-          Nothing -> return ()
+           i = simpleIdToId v 
+           ds = case Map.lookup v m of
+                Just _ -> [mkDiag Warning "known variable shadowed" v] 
+                Nothing -> []
        put e { varMap = Map.insert v s m }
+       addDiags $ ds ++ checkWithOtherMap "operation" (opMap e) i
+                ++ checkWithOtherMap "predicate" (predMap e) i
 
 addOpTo :: Id -> OpType -> OpMap -> OpMap 
 addOpTo k v m = 

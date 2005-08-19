@@ -1,7 +1,6 @@
-
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -42,6 +41,13 @@ checkPlaces args i =
     if let n = placeCount i in n == 0 || n == length args then []
            else [mkDiag Error "wrong number of places" i]
 
+checkWithVars :: Map.Map SIMPLE_ID a -> Id -> [Diagnosis]
+checkWithVars m i@(Id ts _ _) = if isSimpleId i then
+    case Map.lookup (head ts) m of
+    Nothing -> []
+    Just _ -> alsoWarning "variable" i
+    else []
+
 addOp :: OpType -> Id -> State (Sign f e) ()
 addOp ty i = 
     do checkSorts (opRes ty : opArgs ty)
@@ -49,6 +55,8 @@ addOp ty i =
        let m = opMap e
            l = Map.findWithDefault Set.empty i m
            check = addDiags $ checkPlaces (opArgs ty) i
+                   ++ checkWithOtherMap "predicate" (predMap e) i 
+                   ++ checkWithVars (varMap e) i
            store = do put e { opMap = addOpTo i ty m }
        if Set.member ty l then 
              addDiags [mkDiag Hint "redeclared op" i] 
@@ -85,6 +93,8 @@ addPred ty i =
           addDiags [mkDiag Hint "redeclared pred" i] 
           else do put e { predMap = Map.insert i (Set.insert ty l) m }
                   addDiags $ checkPlaces (predArgs ty) i
+                           ++ checkWithOtherMap "operation" (opMap e) i
+                           ++ checkWithVars (varMap e) i
 
 allOpIds :: Sign f e -> Set.Set Id
 allOpIds = Rel.keysSet . opMap
