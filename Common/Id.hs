@@ -292,10 +292,6 @@ isSurround i@(Id tops _ _) = not (null tops) && (isMixfix i)
                              && not (isPlace (head tops)) 
                                     && not (isPlace (last tops)) 
 
--- | has no compound list
-isNonCompound :: Id -> Bool
-isNonCompound (Id _ cs _) = null cs
-
 -- * position stuff
 
 -- | compute a meaningful single position from an 'Id' for diagnostics 
