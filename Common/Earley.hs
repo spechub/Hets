@@ -285,24 +285,30 @@ scan f ks term = concatMap (scanItem f ks term)
 mkAmbigs :: ToExpr a -> Item a -> [a]
 mkAmbigs toExpr p = 
     let l = args p in
-    map ( \ as -> fst $ 
+    map ( \ aas -> fst $ 
           mkExpr toExpr 
-          p { args = take (length l - length as) l ++ as
+          p { args = take (length l - length aas) l ++ aas
             } ) $ ambigArgs p
 
 addArg :: GlobalAnnos -> ToExpr a -> Item a -> Item a -> Item a
 addArg ga toExpr argItem p = 
-    let (arg, q) = mkExpr toExpr argItem 
+    let (arg, ps) = mkExpr toExpr argItem 
         ams = ambigs argItem
         newAms = mkAmbigs toExpr argItem
-        in assert (not $ null $ rest p) $
+        pArgs = args p 
+        op = rule p
+        num = length pArgs
+        q = assert (not $ null $ rest p) $
                p { rest = tail $ rest p
-                 , lWeight = getNewWeight ALeft ga argItem p
-                 , rWeight = getNewWeight ARight ga argItem p
-                 , posList = q `appRange` posList p
-                 , args = arg : args p 
+                 , posList = ps `appRange` posList p
+                 , args = arg : pArgs 
                  , ambigs = (if null newAms then ams else newAms : ams)
                    ++ ambigs p }
+        in if isLeftArg op num then 
+              q { lWeight = getNewWeight ALeft ga argItem op }
+           else if isRightArg op num then
+                q { rWeight = getNewWeight ARight ga argItem op }
+           else q 
 
 -- | shortcut for a function that constructs an expression
 type ToExpr a = Id -> [a] -> Range -> a 
@@ -355,23 +361,14 @@ joinPlace side = case side of
     ALeft -> begPlace
     ARight -> endPlace
 
-isJoinArg :: AssocEither -> Id -> Int -> Bool
-isJoinArg side = case side of
-    ALeft -> isLeftArg
-    ARight -> isRightArg
-
-getNewWeight :: AssocEither -> GlobalAnnos -> Item a -> Item a -> Id 
-getNewWeight side ga argItem opItem = 
-    let op = rule opItem
-        arg = getWeight side argItem
-        num = length $ args opItem in
-    if isJoinArg side op num then
-       if joinPlace side arg then 
+getNewWeight :: AssocEither -> GlobalAnnos -> Item a -> Id -> Id 
+getNewWeight side ga argItem op =
+    let arg = getWeight side argItem
+    in if joinPlace side arg then 
           case precRel (prec_annos ga) op arg of
             Higher -> arg
             _ -> op
        else op
-    else getWeight side opItem
 
 checkArg :: AssocEither -> GlobalAnnos -> Item a -> Item a -> Bool
 checkArg side ga argItem opItem =
