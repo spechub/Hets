@@ -33,12 +33,6 @@ import HasCASL.Le
 import Data.Maybe
 import Control.Exception(assert)
 
-opKindFilter :: Int -> Int -> Maybe Bool
-opKindFilter arg op = 
-    if op < arg then Just True
-       else if arg < op then Just False 
-            else Nothing
-
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
 getIdPrec (pm, r, m) ps i =  if i == applId then m + 1 
     else Map.findWithDefault 
@@ -56,8 +50,7 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 iterateCharts ga terms chart = 
     do e <- get
        let self = iterateCharts ga  
-           oneStep = nextChart addType opKindFilter
-                     toMixTerm ga chart
+           oneStep = nextChart addType toMixTerm ga chart
            vs = localVars e
            tm = typeMap e
        if null terms then return chart else 

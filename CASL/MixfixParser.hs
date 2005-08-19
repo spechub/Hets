@@ -30,9 +30,9 @@ import CASL.ShowMixfix
 import CASL.Print_AS_Basic()
 import Control.Exception (assert)
 
--- > 0 means predicate
+-- predicates get lower precedence
 mkRule :: Id -> Rule
-mkRule = mixRule 0
+mkRule = mixRule 1
 
 mkSingleArgRule :: Int -> Id -> Rule
 mkSingleArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [varTok])
@@ -61,15 +61,15 @@ initRules ga (opS, predS) =
        mkRule singleArgId :
        mkRule singleOpArgId :
        mkRule multiArgsId :
-       listRules 0 ga, 
-       map (mixRule 1) preds,
-       map (mkSingleArgRule 1) preds,
-       map (mkSingleOpArgRule 1) preds,
-       map (mkArgsRule 1) preds,
+       listRules 1 ga, 
+       map (mixRule 0) preds,
+       map (mkSingleArgRule 0) preds,
+       map (mkSingleOpArgRule 0) preds,
+       map (mkArgsRule 0) preds,
        map mkRule ops,
-       map (mkSingleArgRule 0) ops,
-       map (mkSingleOpArgRule 0) ops,
-       map (mkArgsRule 0) ops]
+       map (mkSingleArgRule 1) ops,
+       map (mkSingleOpArgRule 1) ops,
+       map (mkArgsRule 1) ops]
 
 -- | meaningful position of a term
 posOfTerm :: PosItem f => TERM f -> Range
@@ -120,12 +120,6 @@ addType tt t =
     Mixfix_cast s ps -> Cast t s ps
     _ -> error "addType"
 
-
-filterByPredicate :: Int -> Int -> Maybe Bool
-filterByPredicate bArg bOp = 
-    if bArg > 0 then Just False else
-       if bOp > 0 then Just True else Nothing
-
 type TermChart f = Chart (TERM f)
 
 type MixResolve f = GlobalAnnos -> IdSet -> f -> Result f 
@@ -136,7 +130,7 @@ iterateCharts :: (PrettyPrint f, PosItem f) => (f -> f)
 iterateCharts par extR g ids terms c = 
     let self = iterateCharts par extR g ids
         expand = expandPos Mixfix_token 
-        oneStep = nextChart addType filterByPredicate toAppl g c
+        oneStep = nextChart addType toAppl g c
         resolveTerm = resolveMixTrm par extR g ids
     in if null terms then c
        else case head terms of
