@@ -203,3 +203,6 @@ data DataRange = DID DatatypeID
                | RLit RDFSLiteral       -- ^ rdfs:literal
                  deriving (Show, Eq,Ord)
 
+emptyOntology :: Ontology
+emptyOntology = Ontology Prelude.Nothing [] Map.empty
+
