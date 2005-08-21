@@ -14,24 +14,36 @@ module Main where
 import OWL_DL.AS
 -- import OWL_DL.ReadWrite
 import OWL_DL.Namespace
-
+import OWL_DL.Logic_OWL_DL
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System.Exit
 import System(getArgs, system)
 import System.Environment(getEnv)
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
 -- import Data.Graph.Inductive.Tree
 -- import Data.Graph.Inductive.Graph
--- import Static.DevGraph
+import Static.DevGraph
 -- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
 import OWL_DL.Sign
 import Common.GlobalAnnotations
 import Common.Result
 import Common.AS_Annotation
+import Syntax.AS_Library
+import Driver.Options
+import qualified GUI.AbstractGraphView as GUI.AbstractGraphView 
+import GUI.ConvertDevToAbstractGraph
+import DialogWin (useHTk)
+import InfoBus 
+import qualified Events as Events
+import Destructible
+import Common.Id
+import Logic.Grothendieck
+import Data.Graph.Inductive.Query.DFS
+import Maybe(fromJust)
 
 main :: IO()
 main =
@@ -43,15 +55,17 @@ main =
                   process 'a' args  
                   else case head args of
                        "-a" -> process 'a' $ tail args   
-		       -- output abstract syntax
+		       -- ^ output abstract syntax
                        "-t" -> process 't' $ tail args   
-		       -- output ATerm
+		       -- ^ output ATerm
 		       "-s" -> process 's' $ tail args   
-		       -- output DevGraph from structure analysis
+		       -- ^ output DevGraph from structure analysis
 		       "-r" -> process 'r' $ tail args   
-		       -- output result of static analysis
+		       -- ^ output result of static analysis
                        "-i" -> process 'i' $ tail args   
-		       -- test integrate ontology
+		       -- ^ test integrate ontology
+		       "-g" -> process 'i' $ tail args
+		       -- ^ show graph of structure
 		       _    -> error ("unknow option: " ++ (head args))
 
 
@@ -94,6 +108,7 @@ processor2 opt filename =
 	    's' -> outputList 's' aterm
 	    'r' -> outputList 'r' aterm
             'i' -> outputList 'i' aterm
+	    'g' -> outputList 'g' aterm
 	    _   -> outputList 'a' aterm
 
 outputList :: Char -> ATerm -> IO()
@@ -105,14 +120,15 @@ outputList opt aterm =
 	   's' -> printDG paarList
 	   'r' -> printResOfStatic paarList
 	   'i' -> testIntegrate paarList
+	   'g' -> outputGraph paarList
 	   u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
 
+-- test for integrate ontologies
 testIntegrate :: [ATerm] -> IO()
 testIntegrate al =  
     do let ontologies = map snd $ reverse $ parsingAll al
-       putStrLn $ show (foldr integrateOntology emptyOnto ontologies) 
-  where emptyOnto = Ontology Prelude.Nothing [] Map.empty
+       putStrLn $ show (foldl integrateOntology emptyOntology ontologies) 
 
 
 -- | 
@@ -135,13 +151,19 @@ outputAS (aterm:res) =
 -- for structure analysis
 printDG :: [ATerm] -> IO()
 printDG al =  
-    do let p = paarWithUriAndOntology $ reverse $ parsingAll al
-       putStrLn $ show $ buildDevGraph (Map.fromList p)
-  where paarWithUriAndOntology :: [(String, Ontology)] 
-				  -> [(String, Ontology)]
-	paarWithUriAndOntology [] = []
-	paarWithUriAndOntology ((uri, onto):r) =
-	    (uri,onto):(paarWithUriAndOntology r)
+    do let p = reverse $ parsingAll al
+	   (ontoMap, dg) = buildDevGraph (Map.fromList p)
+       -- putStrLn $ show dg
+       putStrLn $ show $ 
+		nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
+       -- showGraph (simpleLibName, simpleLibEnv $ buildDevGraph (Map.fromList p))
+
+-- for graph of structure analysis
+outputGraph :: [ATerm] -> IO()
+outputGraph al =  
+    do let p = reverse $ parsingAll al
+	   (_, dg) = buildDevGraph (Map.fromList p)
+       showGraph (simpleLibName, simpleLibEnv dg)
 
 -- for static analysis
 printResOfStatic :: [ATerm] -> IO()
@@ -157,6 +179,7 @@ printResOfStatic al =
 					  emptyGlobalAnnos)
 	     in  Result diagsA (Just (accSig, namedSen))
 
+-- parse of ontology which from current file with its imported ontologies
 parsingAll :: [ATerm] -> [(String, Ontology)]
 parsingAll [] = []
 parsingAll (aterm:res) =
@@ -169,72 +192,33 @@ ontologyParse
 	 AAppl "OWLParserOutput" [_, _, _, onto] _] _) 
     = case ontology of
       Ontology _ _ namespace ->
-	  (uri, 
+	  (if head uri == '"' then read uri::String else uri, 
 	   -- namespace, 
 	   propagateNspaces namespace $ createAndReduceClassAxiom ontology)
    where ontology = fromATerm onto::Ontology 
 ontologyParse _ = error "false ontology file."
-
-{-
-buildNS :: ATerm -> Namespace
-buildNS at = case at of
-             AAppl "Namespace" [AList nsl _] _ ->
-                 mkMap nsl (Map.empty)
-             _ -> error ""
-          
-mkMap :: [ATerm] -> Namespace -> Namespace
-mkMap [] mp = mp 
-mkMap (h:r) mp = case h of
-                 AAppl "NS" [name, uri] _ ->
-                     mkMap r (Map.insert (fromATerm name) (fromATerm uri) mp)
-                 _ -> error "illegal namespace."
--}
 
 buildMsg :: ATerm -> Message
 buildMsg at = case at of
               AAppl "Message" [AList msgl _] _ ->
                   mkMsg msgl (Message [])
               _ -> error "illegal message:)"
-
-mkMsg :: [ATerm] -> Message -> Message
-mkMsg [] (Message msg) = Message (reverse msg)
-mkMsg (h:r) (Message preRes) =
-    case h of
-    AAppl "Message" [a,b,c] _ ->
+    where
+    mkMsg :: [ATerm] -> Message -> Message
+    mkMsg [] (Message msg) = Message (reverse msg)
+    mkMsg (h:r) (Message preRes) =
+      case h of
+      AAppl "Message" [a,b,c] _ ->
         mkMsg r (Message ((fromATerm a, fromATerm b, fromATerm c):preRes))
-    AAppl "ParseWarning" warnings _ ->
+      AAppl "ParseWarning" warnings _ ->
         mkMsg r (Message (("ParserWarning", fromATerm $ head warnings, ""):preRes))
-    AAppl "ParseError" errors _ ->
+      AAppl "ParseError" errors _ ->
         mkMsg r (Message (("ParserError", fromATerm $ head errors, ""):preRes))
-    _ -> error "unknow message."
+      _ -> error "unknow message."
 
-{-
-reducedDisjoint :: Ontology -> Ontology
-reducedDisjoint (Ontology oid directives) = 
-    Ontology oid (rdDisj $  List.nub directives)
-	     
-    where rdDisj :: [Directive] -> [Directive]
-          rdDisj [] = []
-          rdDisj (h:r) = case h of
-                         Ax (DisjointClasses _ _ _) ->
-                             if any (eqClass h) r then
-                                rdDisj r
-                                else h:(rdDisj r)
-			 _ -> h:(rdDisj r)
-                  
-          eqClass :: Directive -> Directive -> Bool
-          eqClass dj1 dj2 =
-              case dj1 of
-              Ax (DisjointClasses c1 c2 _) ->
-                  case dj2 of
-                  Ax (DisjointClasses c3 c4 _) ->
-                      if (c1 == c4 && c2 == c3) 
-                         then True
-                         else False
-                  _ -> False
-              _ -> False
--}
-
+-- remove equivalent disjoint class axiom, create equivalentClasses, 
+-- subClassOf axioms, and sort directives (definitions of classes and 
+-- properties muss be moved to begin of directives)
 createAndReduceClassAxiom :: Ontology -> Ontology
 createAndReduceClassAxiom (Ontology oid directives ns) =
     let (definition, axiom, other) =  
@@ -290,11 +274,48 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
                   _ -> False
               _ -> False
 
+-- static analysis based on order of imports graph (dfs)
+nodesStaticAna :: [DGNodeLab] 
+	       -> Sign 
+	       -> OntologyMap 
+	       -> Result (Ontology, Sign, [Named Sentence])
+nodesStaticAna [] _ _ = initResult 
+nodesStaticAna (hnode:rnodes) inSign ontoMap =
+    let ontology@(Ontology mid _ _) = fromJust $ 
+		   Map.lookup (getNameFromNode $ dgn_name hnode) ontoMap
+        Result diag res = 
+	    basicOWL_DLAnalysis (ontology, inSign, emptyGlobalAnnos)
+    in  case res of
+        Just ((Ontology _ directives namespace),_,accSig,sent) ->
+	    concatResult 
+	    (Result diag 
+	      (Just ((Ontology mid directives namespace), accSig, sent))) 
+	    (nodesStaticAna rnodes accSig ontoMap)
+	_   -> nodesStaticAna rnodes inSign ontoMap 
 
+-- ToDo: showGraph
+showGraph :: (LIB_NAME, LibEnv)  -> IO ()
+showGraph (ln, libenv) =
+   do
+            graphMem <- initializeConverter
+            useHTk -- All messages are displayed in TK dialog windows 
+                   -- from this point on
+            (gid, gv, _cmaps) <- 
+		convertGraph graphMem ln libenv defaultHetcatsOpts
+            GUI.AbstractGraphView.redisplay gid gv
+            graph <- GUI.AbstractGraphView.get_graphid gid gv
+            Events.sync(destroyed graph)
+            InfoBus.shutdown
+            exitWith ExitSuccess 
 
+simpleLibEnv :: DGraph -> LibEnv
+simpleLibEnv dg =
+    Map.singleton simpleLibName (emptyGlobalAnnos, Map.singleton (mkSimpleId "") (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
+       where nodeSig = NodeSig 0 g_sign
+	     g_sign = G_sign OWL_DL emptySign
 
-
-
+simpleLibName :: LIB_NAME
+simpleLibName = Lib_id (Direct_link "" (Range []))
 
 
 
