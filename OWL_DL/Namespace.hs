@@ -20,6 +20,7 @@ import qualified Common.Lib.Map as Map
 import Text.XML.HXT.DOM.XmlTreeTypes
 import List(find)
 import Maybe(fromJust)
+import Char(isDigit, isAlpha)
 
 type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
 
@@ -49,7 +50,9 @@ instance PNamespace QName where
 				         read local::String
 				         else local
 				     )
-	      in if (length pre' > 2) || (null local') then
+              -- hiding "fpt://" oder "http://"   
+	      in if ((length pre' > 2) && (isAlpha $ head $ reverse pre')) 
+		     || (null local') then
 		    QN pre local nsUri
 		    else let local'' = tail local'
 		         in  prop pre' local''
@@ -435,18 +438,18 @@ integrateNamespaces oldNsMap testNsMap =
     testAndInteg oldNsMap (Map.toList testNsMap) Map.empty
   
    where testAndInteg :: Namespace -> [(String, String)] 
-		      -> Map.Map String String
+		      -> TranslationMap
 		      -> (Namespace, TranslationMap)
 	 testAndInteg old [] tm = (old, tm)
  	 testAndInteg old ((pre, uri):r) tm 
-             | pre `elem` (Map.keys old) && uri `elem` (Map.elems old) =
+             | Map.member pre old && uri `elem` (Map.elems old) =
 		 testAndInteg old r tm
              -- if the uri already existed in old map, the key muss be changed.
 	     | uri `elem` (Map.elems old) = 
 		 testAndInteg old r 
 			  (Map.insert pre (findKey uri $ Map.toList old) tm)
-	     | pre `elem` (Map.keys old) = 
-	        let pre' = disambiguateName pre (Map.keys old)
+	     | Map.member pre old = 
+	        let pre' = disambiguateName pre old
                 in  testAndInteg (Map.insert pre' uri old) r 
 			(Map.insert pre pre' tm)
 	     | otherwise = testAndInteg (Map.insert pre uri old) r tm
@@ -457,10 +460,13 @@ integrateNamespaces oldNsMap testNsMap =
 	    | ele1 == ele2 = key
 	    | otherwise = findKey ele1 rest
 	     
-         disambiguateName :: String -> [String] -> String
-	 disambiguateName name nameSet =
-	     fromJust $ find (not . flip elem nameSet) 
-			  [name ++ (show (i::Int)) | i <-[1..]]
+         disambiguateName :: String -> Namespace -> String
+	 disambiguateName name nameMap =
+	     let name' = if isDigit $ head $ reverse name then
+		            take ((length name) -1) name
+	                    else name
+	     in  fromJust $ find (not . flip Map.member nameMap) 
+			  [name' ++ (show (i::Int)) | i <-[1..]]
 
 integrateOntology :: Ontology -> Ontology -> Ontology
 integrateOntology (Ontology oid1 directives1 ns1) 
@@ -476,3 +482,6 @@ integrateOntology (Ontology oid1 directives1 ns1)
 	  newOid (Just id1) (Just id2) = 
 	      Just (id1 { localPart=
 			  (localPart id1) ++ "&" ++ (localPart id2)})
+
+
+
