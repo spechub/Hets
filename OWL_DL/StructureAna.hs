@@ -27,42 +27,52 @@ import Common.Id
 import Common.Result
 import List
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+-- import qualified Common.Lib.Set as Set
 import Maybe(fromJust)
-import Debug.Trace
+-- import Debug.Trace
 -- import Data.Graph.Inductive.Tree
+import Char(isDigit)
+import OWL_DL.Namespace
 
-buildDevGraph :: Map.Map String Ontology -> DGraph
-buildDevGraph ontoMap = if detectLoop sscList then
-			   rebuildDGraph sscList dg
-			   else dg
-        where dg = (Map.foldWithKey graphFromMap 
-		    Data.Graph.Inductive.Graph.empty 
-		    ontoMap)
-	      sscList = scc (trace ("DEBUG: " ++ (show $ dfs' dg)) dg)
+type OntologyMap = Map.Map String Ontology
 
+buildDevGraph :: OntologyMap -> (OntologyMap, DGraph)
+buildDevGraph ontoMap = 
+    if detectLoop sscList then
+       rebuildDGraph sscList ontoMap' dg
+      else (ontoMap', dg)
+     
+   where (ontoMap', dg) = 
+	     Map.foldWithKey graphFromMap 
+		    (ontoMap, Data.Graph.Inductive.Graph.empty) 
+		    ontoMap
+	 sscList = scc dg
+
+-- ^ detect loop reference in graph
 detectLoop :: [[Node]] -> Bool
 detectLoop nl = 
     any (\x -> length x > 1) nl	
 
-graphFromMap :: String -> Ontology -> DGraph -> DGraph
--- buildDevGraph [] dg = dg
-graphFromMap uri onto dg =            --  ((uri, onto):r) dg = 
+graphFromMap :: String -> Ontology 
+	     -> (OntologyMap, DGraph) 
+	     -> (OntologyMap, DGraph)
+graphFromMap uri onto (ontoMap, dg) =
     let existedLNodes = labNodes dg
 	-- existedLEdges = labEdges dg
 	
         currentSign = simpleSign $ strToQN uri
-	cl@(ind, _) = head $ createLNodes [uri] existedLNodes
+       -- get current node
+	(lnode, ontoMap1) = 
+	    createLNodes [uri] existedLNodes ontoMap 
+	cl@(ind, _) = head lnode
 	importsList = searchImports onto
-	tagLNodes = createLNodes importsList (nub (cl:existedLNodes))
+       -- create LabNodes from imports list, thsi incl. the LNodes which been
+       -- existed because of building of edge.
+	(tagLNodes, ontoMap2) = 
+	    createLNodes importsList (nub (cl:existedLNodes)) ontoMap1
+       -- if tagnode existed then it muss be reduced.
 	newLNodes = reduceLNodes (cl:tagLNodes) dg
-{-
-	morphismList = 
-		  map (\x -> GMorphism OWL_DL 
-		             currentSign 
-		             (ideOfDefaultMorphism $ simpleSign $ strToQN x)
-		      ) $ reverse importsList
--}
+
 	morphism = idComorphism (Logic OWL_DL) 
 	Result _ (Just comorphism) = 
 	    gEmbedComorphism morphism (G_sign OWL_DL currentSign)	
@@ -74,47 +84,70 @@ graphFromMap uri onto dg =            --  ((uri, onto):r) dg =
 						   })
                         ) tagLNodes
     in  if isEmpty dg then
-             mkGraph newLNodes ledgeList
+             (ontoMap2, (mkGraph newLNodes ledgeList))
 	   else 
-	     insEdges ledgeList (insNodes newLNodes dg)
+	     (ontoMap2, insEdges ledgeList (insNodes newLNodes dg))
 	     
 			      
 searchImports :: Ontology -> [String]
 searchImports (Ontology _ directives _) = findImports directives
-					
-findImports :: [Directive] -> [String]
-findImports [] = []
-findImports (hd:rd) = 
-    case hd of
-       Ax (OntologyProperty oid uriannos) ->   --   [URIAnnotation aid qn]) ->
+    where
+    findImports :: [Directive] -> [String]
+    findImports [] = []
+    findImports (hd:rd) = 
+	case hd of
+	Ax (OntologyProperty oid uriannos) ->   
 	    if localPart oid == "imports" then
 	       findImports' uriannos
 	       else findImports rd
-       _ -> findImports rd
-  where findImports' :: [Annotation] -> [String]
-	findImports' [] = []
-	findImports' (ha:ra) =
-	    case ha of
-	      URIAnnotation _ qn ->
-		  (localPart qn):(findImports' ra)
-	      _ -> []
+	_ -> findImports rd
+    findImports' :: [OWL_DL.AS.Annotation] -> [String]
+    findImports' [] = []
+    findImports' (ha:ra) =
+	case ha of
+	URIAnnotation _ qn ->
+	    (localPart qn):(findImports' ra)
+	_ -> []
 	  
-createLNodes :: [String] -> [LNode DGNodeLab] -> [LNode DGNodeLab]
-createLNodes [] _ = []
-createLNodes (hs:rs) exLNodes =
-    let lnode@(_, currentLN) = buildLNodeFromStr hs ((length exLNodes) -1)
-    in  if isEqLNode currentLN exLNodes then
-	   (getLnode currentLN exLNodes):(createLNodes rs exLNodes)
+createLNodes :: [String] -> [LNode DGNodeLab] 
+	     -> OntologyMap 
+	     -> ([LNode DGNodeLab], OntologyMap)
+createLNodes [] _ om = ([], om)
+createLNodes (hs:rs) exLNodes om =
+    let	lnode@(_, currentLN) = buildLNodeFromStr hs ((length exLNodes)-1)
+    in  -- if the node already existed muss be anyhow also created 
+        -- for building of edges. But the ontology map need not to
+        -- change
+        if isEqLNode currentLN exLNodes then
+           let (newLNodes, ontoMap') = createLNodes rs exLNodes om
+	   in (
+	       (getLnode currentLN exLNodes):newLNodes,
+	       ontoMap'
+	      )
 	   else let lnode' = disambiguateName lnode exLNodes
-                in  lnode':(createLNodes rs (lnode':exLNodes))
+		    (newLNodes, ontoMap') =
+			createLNodes rs (lnode':exLNodes) om
+		    (sid, _, _) = dgn_name $ snd lnode'
+                in  
+		   (
+		     lnode':newLNodes,
+		     Map.delete hs (Map.insert (show sid) 
+				    (case Map.lookup hs ontoMap' of
+				      Just res -> res
+				      Prelude.Nothing -> emptyOntology
+				    ) 
+				    ontoMap')
+		    )
     
-    where getLnode _ [] = error "LNode not found"
-	  getLnode node (hx:rx) | dgn_sign node == (dgn_sign $ snd hx) = hx
+    where 
+          -- get (LNode DGNodeLab) with LabNode 
+          getLnode _ [] = error "LNode not found"
+	  getLnode node (hx:rx) | dgn_theory node == (dgn_theory $ snd hx) = hx
 			        | otherwise = getLnode node rx
 
           isEqLNode :: DGNodeLab -> [LNode DGNodeLab] -> Bool
 	  isEqLNode cn exn = 
-	      any (\x -> (dgn_sign cn) == (dgn_sign $ snd x)) exn
+	      any (\x -> (dgn_theory cn) == (dgn_theory $ snd x)) exn
 
           disambiguateName :: (LNode DGNodeLab)
 			   -> [LNode DGNodeLab] 
@@ -123,11 +156,15 @@ createLNodes (hs:rs) exLNodes =
 	    let name@(sid, u1, u2) = dgn_name dgn
 		nameSet = map (dgn_name . snd) exn
                 name' = if name `elem` nameSet then
-		          fromJust $ find (not . flip elem nameSet)
-                          [(mkSimpleId ((show sid)++(show (i::Int))),u1,u2)|i<-[1..]]
+		           let n = show sid
+			       nsid = if isDigit $ head $ reverse n then
+				         take ((length n) - 1) n
+					 else n
+		           in  fromJust $ find (not . flip elem nameSet)
+			           [(mkSimpleId (nsid ++
+				            (show (i::Int))),u1,u2)|i<-[1..]]
 			 else name
             in  (ind, dgn {dgn_name = name'})
-		     
 				  
 strToQN :: String -> QName
 strToQN str = 
@@ -146,7 +183,7 @@ buildLNodeFromStr uri i =
 	nodeName = makeName $ mkSimpleId $ localPart name
 	currentSign = simpleSign name
     in  (i+1, DGNode { dgn_name = nodeName,
-		       dgn_theory = G_theory OWL_DL currentSign Set.empty,
+		       dgn_theory = G_theory OWL_DL currentSign noSens,
 		       -- lass erstmal kein Signatur.
 		       -- dgn_sens = G_l_sentence_list OWL_DL [],
 		       dgn_nf = Prelude.Nothing,
@@ -157,6 +194,7 @@ buildLNodeFromStr uri i =
 		     }
 	)
 
+-- remove existed nodes in graph
 reduceLNodes :: [LNode DGNodeLab] -> DGraph -> [LNode DGNodeLab]
 reduceLNodes [] _ = []
 reduceLNodes (hn@(ind, _):rn) dg =
@@ -164,24 +202,35 @@ reduceLNodes (hn@(ind, _):rn) dg =
 	 reduceLNodes rn dg
 	 else hn:(reduceLNodes rn dg)
 
-rebuildDGraph :: [[Node]] -> DGraph -> DGraph
-rebuildDGraph [] dg = dg
-rebuildDGraph (hd:rs) dg 
-   | length hd <= 1 = rebuildDGraph rs dg
-   | otherwise = rebuildDGraph rs $ integrateScc hd dg
 
-integrateScc :: [Node] -> DGraph -> DGraph
-integrateScc nodeList dg =
+
+rebuildDGraph :: [[Node]] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
+rebuildDGraph [] ontoMap dg = (ontoMap, dg)
+rebuildDGraph (hd:rs) ontoMap dg 
+   | length hd <= 1 = rebuildDGraph rs ontoMap dg
+   | otherwise = 
+       let (ontoMap', dg') = integrateScc hd ontoMap dg
+       in   rebuildDGraph rs ontoMap' dg'
+
+integrateScc :: [Node] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
+integrateScc nodeList ontoMap dg =
     let decomps = map (fromJust . fst . flip match dg) nodeList 
 	(_, _, lnodes,_) = unzip4 decomps
  	dgnNames = map (getNameFromNode . dgn_name) lnodes
 	theories = map dgn_theory lnodes
-	
+	ontologies = map (\x -> case Map.lookup x ontoMap of
+			        Just res -> res
+			        Prelude.Nothing -> emptyOntology
+			 ) dgnNames
         newName = makeName $ mkSimpleId $ (\z -> take ((length z) -1) z) $ 
 		    foldr (\x y -> x ++ "_" ++ y) "" dgnNames
 	newTheory = integrateTheory theories
-	newNodeNum = (noNodes dg)
-    in  insNode (newNodeNum, 
+	newNodeNum = noNodes dg
+    in  (
+	 Map.insert (getNameFromNode newName)
+	            (foldl integrateOntology emptyOntology ontologies)
+	            (Map.filterWithKey (\x _ -> not $ x `elem` dgnNames) ontoMap), 
+	 insNode (newNodeNum, 
 		 DGNode { dgn_name = newName,
 			  dgn_theory = newTheory,
 			  dgn_nf = Prelude.Nothing,
@@ -191,6 +240,7 @@ integrateScc nodeList dg =
 			  dgn_cons_status = LeftOpen
 		       	}
 		) $ changeEdges2 decomps newNodeNum (delNodes nodeList dg)
+	)
 
 -- simple integrate Theory
 integrateTheory :: [G_theory] -> G_theory
@@ -202,9 +252,9 @@ integrateTheory theories = head theories
     assembleTheories (G_theory _ sign1 theSen1) 
 		     (G_theory _ sign2 theSen2) =
           G_theory OWL_DL (addSign sign1 sign2)   
-		          (Set.union theSen1 theSen2)
+		          (toThSens $ nub ((toNamedList theSen1) 
+					   ++ (toNamedList theSen2)))
 -}
-    
 
 getNameFromNode :: NODE_NAME -> String
 getNameFromNode (sid, _, _) = show sid
@@ -229,7 +279,8 @@ changeEdges2 ((fromNodes, n, _, toNodes):r) newNode dg =
 			            delEdge (n, tn) dg2
 	    | otherwise = changeTo rf dg2
 
-
+emptyOWL_DLTheory:: G_theory
+emptyOWL_DLTheory = G_theory OWL_DL emptySign noSens
 
 
 
