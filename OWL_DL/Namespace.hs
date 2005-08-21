@@ -18,7 +18,7 @@ import OWL_DL.AS
 -- import OWL_DL.Sign
 import qualified Common.Lib.Map as Map
 import Text.XML.HXT.DOM.XmlTreeTypes
-import List(find)
+import List(find, nub)
 import Maybe(fromJust)
 import Char(isDigit, isAlpha)
 
@@ -435,7 +435,8 @@ maybeRename tMap obj =
 integrateNamespaces :: Namespace -> Namespace
                     -> (Namespace,TranslationMap)
 integrateNamespaces oldNsMap testNsMap =
-    testAndInteg oldNsMap (Map.toList testNsMap) Map.empty
+    if oldNsMap == testNsMap then (oldNsMap, Map.empty)
+       else testAndInteg oldNsMap (Map.toList testNsMap) Map.empty
   
    where testAndInteg :: Namespace -> [(String, String)] 
 		      -> TranslationMap
@@ -469,19 +470,24 @@ integrateNamespaces oldNsMap testNsMap =
 			  [name' ++ (show (i::Int)) | i <-[1..]]
 
 integrateOntology :: Ontology -> Ontology -> Ontology
-integrateOntology (Ontology oid1 directives1 ns1) 
-                  (Ontology oid2 directives2 ns2) =
+integrateOntology onto1@(Ontology oid1 directives1 ns1) 
+                  onto2@(Ontology oid2 directives2 ns2) =
+  if onto1 == onto2 then onto1
+   else
     let (newNamespace, transMap) = integrateNamespaces ns1 ns2
     in  Ontology (newOid oid1 oid2) 
-	         (directives1 ++ (map (renameNamespace transMap) directives2)) 
+	         (nub (directives1 ++ 
+		       (map (renameNamespace transMap) directives2))) 
 		 newNamespace
     where newOid :: Maybe OntologyID -> Maybe OntologyID -> Maybe OntologyID
 	  newOid Prelude.Nothing Prelude.Nothing = Prelude.Nothing
 	  newOid Prelude.Nothing oid@(Just _) = oid
 	  newOid oid@(Just _) Prelude.Nothing = oid
 	  newOid (Just id1) (Just id2) = 
-	      Just (id1 { localPart=
-			  (localPart id1) ++ "&" ++ (localPart id2)})
+	      if id1 == id2 then Just id1
+		 else 
+		 Just (id1 { localPart=
+			     (localPart id1) ++ "&" ++ (localPart id2)})
 
 
 
