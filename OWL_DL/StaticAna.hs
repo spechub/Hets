@@ -60,19 +60,20 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
 	case maybeRes2 of 
 	Prelude.Nothing -> Result (diag2++diag1) Prelude.Nothing
 	_ -> Result (diag2++diag1) maybeRes2
-    Just (Ontology maybeID1 direc1 _, _, namedSen1) -> 
+    Just (onto1, _, namedSen1) -> 
 	case maybeRes2 of
 	 Prelude.Nothing -> Result (diag2++diag1) maybeRes1
-	 Just (Ontology maybeID2 direc2 ons2, inSign2, namedSen2) ->
+	 Just (onto2, inSign2, namedSen2) ->
          -- the namespace of first ontology muss be same as the second.  
-	    if maybeID1 /= maybeID2 then
-	       error "unknow error in concatResult"
-	       else let -- todo: concat ontology
+--	    if maybeID1 /= maybeID2 then
+--	       error "unknow error in concatResult"
+--	       else let
+                    let
                         accSign = inSign2 -- insertSign inSign1 inSign2
                         namedSen = namedSen2 ++ namedSen1
-                        direc = direc2 ++ direc1
+                        ontology = integrateOntology onto1 onto2
                     in Result (diag2 ++ diag1) 
-			 (Just (Ontology maybeID2 direc ons2,accSign,namedSen))
+			 (Just (ontology, accSign, namedSen))
 
 anaDirective :: GlobalAnnos -> Sign -> Ontology -> [Directive]
 		-> Result (Ontology,Sign,[Named Sentence])
