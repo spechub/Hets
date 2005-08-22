@@ -87,7 +87,7 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("Op: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
-        in warning Nothing ("Pedication: " ++ old_pred_id ++ " is not new")pos
+        in warning Nothing ("Predication: " ++ old_pred_id ++ " is not new")pos
     | not $ and $ map checkTerm leadingTerms =
         let (Application os _ pos) = 
 		head $ filter (\t->not $ checkTerm t) leadingTerms
