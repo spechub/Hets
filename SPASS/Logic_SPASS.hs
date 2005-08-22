@@ -18,9 +18,6 @@ module SPASS.Logic_SPASS where
 import Data.Dynamic
 
 import Common.DynamicUtils 
-import Common.Lib.Pretty
-import Common.AS_Annotation
-import Common.PrettyPrint
 import Common.DefaultMorphism
 
 import SPASS.ATC_SPASS
