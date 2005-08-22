@@ -8,7 +8,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-  Composition rules in the development graphs calculus.
+Composition rules in the development graphs calculus.
   Follows Sect. IV:4.4 of the CASL Reference Manual, while combining
   several rules into one.
 -}
@@ -23,7 +23,11 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 
-{- creates new edges by composing all paths of global theorem edges in the currenct development graph. These new edges are proven global theorems with the morphism and the conservativity of the corresponding path. If a new edge is the proven version of a previsously existing edge, that edge is deleted. -}
+-- | creates new edges by composing all paths of global theorem edges 
+-- in the currenct development graph. These new edges are proven global 
+-- theorems with the morphism and the conservativity of the corresponding
+-- path. If a new edge is the proven version of a previsously existing 
+-- edge, that edge is deleted.
 compositionCreatingEdges :: ProofStatus -> IO ProofStatus
 compositionCreatingEdges proofStatus@(libname,_,_) = do
   let dgraph = lookupDGraph libname proofStatus
@@ -86,7 +90,10 @@ deleteRedundantEdgesAux dgraph (edge:list) changes =
 -- ---------------------------------------------------------------------------
 -- composition without creating new new edges
 -- ---------------------------------------------------------------------------
-{- gets all unproven global theorem edges in the current development graph and checks, if they are a composition of a global theorem path. If so, the edge is proven, with the corresponding path as its proof basis. If there is more than one path, the first of them is arbitrarily taken.-}
+-- | gets all unproven global theorem edges in the current development graph
+-- and checks, if they are a composition of a global theorem path. If so, 
+-- the edge is proven, with the corresponding path as its proof basis. 
+-- If there is more than one path, the first of them is arbitrarily taken.
 composition :: ProofStatus -> IO ProofStatus
 composition proofStatus@(libname,_,_) = do
   let dgraph = lookupDGraph libname proofStatus
