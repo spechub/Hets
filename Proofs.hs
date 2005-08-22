@@ -17,10 +17,12 @@ in the following modules:
 
 "Proofs.Global" rules /global decomposition/, /global subsumption/
  
-"Proofs.HideTheoremShift" rule /Hide-Theorem-Shift/
-
 "Proofs.Local" rules /local decomposition/, /local subsumption/ 
 (these are derived rules in the calculus)
+
+"Proofs.Composition" various composition rules
+
+"Proofs.HideTheoremShift" rule /Hide-Theorem-Shift/
 
 "Proofs.TheoremHideShift" rule /Theorem-Hide-Shift/
 

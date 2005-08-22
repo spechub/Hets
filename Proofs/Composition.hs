@@ -1,3 +1,18 @@
+{-| 
+   
+Module      :  $Header$
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  jfgerken@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
+
+  Composition rules in the development graphs calculus.
+  Follows Sect. IV:4.4 of the CASL Reference Manual, while combining
+  several rules into one.
+-}
+
 module Proofs.Composition (composition, compositionCreatingEdges) where
 
 import Logic.Grothendieck
