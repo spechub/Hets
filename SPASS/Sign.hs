@@ -122,6 +122,8 @@ checkSPChar c = isAlphaNum c || '_' == c
 
 -- * Internal data structures
 
+-- ** SPASS Problems
+
 {- |
   A SPASS problem consists of a description and a logical part. The optional
   settings part hasn't been implemented yet.
@@ -133,6 +135,8 @@ data SPProblem =
 --                    settings    :: [SPSetting],
                     }
       deriving (Eq, Ord, Show)
+
+-- ** SPASS Logical Parts
 
 {- |
   A SPASS logical part consists of a symbol list, a declaration list, and a
@@ -147,6 +151,8 @@ data SPLogicalPart =
 --                        proofLists :: [SPProofList]
                         }
       deriving (Eq, Ord, Show)
+
+-- *** Symbol Lists
 
 {- |
   All non-predefined signature symbols must be declared as part of a SPASS
@@ -180,6 +186,8 @@ data SPSignSym =
       | SPSimpleSignSym SPIdentifier
       deriving (Eq, Ord, Show)
 
+-- *** Declarations
+
 {- |
   SPASS Declarations allow the introduction of sorts.
 -}
@@ -196,6 +204,8 @@ data SPDeclaration =
                     funcList        :: [SPIdentifier]}
       deriving (Eq, Ord, Show)
 
+-- *** Formula List
+
 {- |
   SPASS Formula List
 -}
@@ -211,6 +221,8 @@ data SPOriginType =
         SPOriginAxioms
       | SPOriginConjectures
       deriving (Eq, Ord, Show)
+
+-- *** Formulae And Terms
 
 {- |
   A SPASS Formula is modelled as a Named SPTerm for now. This doesn't reflect
@@ -254,6 +266,8 @@ data SPSymbol =
       | SPEquiv
       | SPCustomSymbol SPIdentifier
       deriving (Eq, Ord, Show)
+
+-- ** SPASS Desciptions
 
 {- |
   A description is mandatory for a SPASS problem. It has to specify at least
