@@ -68,6 +68,21 @@ import qualified Common.Lib.Rel as Rel
 -- debugging
 import Debug.Trace
 
+-- * Prover implementation
+
+{- |
+  The Prover implementation. First runs the batch prover (with graphical
+  feedback), then starts the GUI prover.
+-}
+spassProver :: Prover Sign Sentence ()
+spassProver =
+  Prover { prover_name = "SPASS",
+           prover_sublogic = "SPASS",
+           prove = spassProveGUI
+         }
+
+-- * Shared data structures and assorted utility functions
+
 {- |
   Represents a prover configuration used when proving a goal.
 -}
@@ -99,6 +114,45 @@ setTimeLimit n c = if n > 0 then c{timeLimit = Just n} else c{timeLimit = Nothin
 -}
 setExtraOpts :: [String] -> SPASSConfig -> SPASSConfig
 setExtraOpts opts c = c{extraOpts = opts}
+
+{- |
+  Represents the general return value of a prover run.
+-}
+data SpassProverRetval
+  -- | SPASS completed successfully
+  = SpassSuccess
+  -- | SPASS did not terminate before the time limit exceeded
+  | SpassTLimitExceeded
+  -- | an error occured while running SPASS
+  | SpassError String
+  deriving (Eq, Show)
+
+{- |
+  Checks whether a SpassProverRetval indicates that the time limit was
+  exceeded.
+-}
+isTimeLimitExceeded :: SpassProverRetval -> Bool
+isTimeLimitExceeded SpassTLimitExceeded = True
+isTimeLimitExceeded _ = False
+
+{- |
+  Represents the result of a prover run.
+  (Proof_status, full output)
+-}
+type SPASSResult = (Proof_status (), [String])
+
+
+-- * GUI Prover
+
+-- ** Constants
+
+{- |
+  Default time limit for the GUI mode prover in seconds.
+-}
+guiDefaultTimeLimit :: Int
+guiDefaultTimeLimit = 10
+
+-- ** Data Structures
 
 {- |
   We need to store one SPASSConfig per goal.
@@ -139,24 +193,6 @@ getConfig id m = if (isJust lookupId)
     lookupId = Map.lookup id m
 
 {- |
-  Default time limit for the GUI mode prover in seconds.
--}
-defaultTimeLimit :: Int
-defaultTimeLimit = 10
-
-{- |
-  Time limit used by the batch mode prover.
--}
-batchTimeLimit :: Int
-batchTimeLimit = 15
-
-{- |
-  Represents the result of a prover run.
-  (Proof_status, full output)
--}
-type SPASSResult = (Proof_status (), [String])
-
-{- |
   Store one result per goal.
 -}
 type SPASSResultsMap = Map.Map SPIdentifier SPASSResult
@@ -168,7 +204,7 @@ emptyResultsMap :: SPASSResultsMap
 emptyResultsMap = Map.empty
 
 {- |
-  Map to SPASS complian identifiers
+  Map to SPASS compliant identifiers
 -}
 type SPASSGoalNameMap = Map.Map String String
 
@@ -203,42 +239,13 @@ initialState th gm gs =
 	   goalsList = gs}
 
 {- |
-  Represents the general return value of a prover run.
--}
-data SpassProverRetval
-  -- | SPASS completed successfully
-  = SpassSuccess
-  -- | SPASS did not terminate before the time limit exceeded
-  | SpassTLimitExceeded
-  -- | an error occured while running SPASS
-  | SpassError String
-  deriving (Eq, Show)
-
-{- |
-  Checks whether a SpassProverRetval indicates that the time limit was
-  exceeded.
--}
-isTimeLimitExceeded :: SpassProverRetval -> Bool
-isTimeLimitExceeded SpassTLimitExceeded = True
-isTimeLimitExceeded _ = False
-
-{- |
-  The Prover implementation. First runs the batch prover (with graphical
-  feedback), then starts the GUI prover.
--}
-spassProver :: Prover Sign Sentence ()
-spassProver =
-  Prover { prover_name = "SPASS",
-           prover_sublogic = "SPASS",
-           prove = spassProveGUI
-         }
-
-{- |
   Helper function to check if a goal has been proved.
 -}
 isProved :: (Proof_status a) -> Bool
 isProved (Proved _ _ _ _ _) = True
 isProved _ = False
+
+-- ** Defining the view
 
 {- |
   Colors used by the GUI to indicate the status of a goal.
@@ -357,6 +364,62 @@ goalsView s = map (\ g ->
 			in
 			  indicator ++ (' ':g))(map senName (goalsList s))
 
+-- ** GUI Implementation
+
+-- *** Utility Functions
+
+{- |
+  Retrieves the value of the time limit 'Entry'. Ignores invalid input.
+-}
+getValueSafe :: Entry Int -- ^ time limit 'Entry'
+             -> IO Int -- ^ user-requested time limit or default in case of a parse error
+getValueSafe timeEntry =
+    catchJust userErrors ((getValue timeEntry) :: IO Int) 
+                  (\ s -> trace ("Warning: Error "++show s++" was ignored") (return guiDefaultTimeLimit))
+    where selExcep ex = case ex of
+                        ErrorCall s 
+                            | isPrefixOf "NO PARSE:" s -> Just guiDefaultTimeLimit
+                        IOException x -> trace ("ICH:" ++ show x) Nothing
+                        _ -> Nothing
+
+-- *** Callbacks
+
+{- |
+  Text displayed by the batch mode window.
+-}
+batchInfoText :: Int -- ^ total number of goals
+              -> Int -- ^ number of that have been processed
+	      -> String
+batchInfoText gTotal gDone =
+  "Running prover in batch mode:\n"
+  ++ "At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
+
+{- |
+  Called every time a goal has been processed in the batch mode gui.
+-}
+goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing State data structure
+	      -> Int -- ^ total number of goals
+	      -> Label -- ^ info label
+	      -> Button -- ^ cancel (continue) button
+	      -> Named SPTerm -- ^ goal that has just been processed
+	      -> (SpassProverRetval, SPASSResult)
+	      -> IO Bool
+goalProcessed stateRef numGoals label button nGoal (retval, res) = do
+  s <- readIORef stateRef
+
+  let s' = s{resultsMap = Map.insert (senName nGoal) res (resultsMap s),
+             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) (senName nGoal) (configsMap s)}
+  writeIORef stateRef s'
+
+  if (numGoals - (Map.size $ resultsMap s')) > 0
+    then label # text (batchInfoText numGoals (Map.size $ resultsMap s'))
+    else do
+      button # text "Continue"
+      label # text "Batch mode finished. Click 'Continue' to see the results."
+
+  -- always continue
+  return True
+
 {- |
    Updates the display of the status of the current goal.
 -}
@@ -385,7 +448,7 @@ updateDisplay state updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb
                         (error "updateDisplay: configsMap \
                                \was not initialised!!") 
                         go (configsMap state)
-                   t' = maybe defaultTimeLimit id (timeLimit cf)
+                   t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
 		   (color, label) = maybe statusOpen
 		                    ((toGuiStatus cf) . fst)
@@ -405,54 +468,7 @@ updateDisplay state updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb
                 return ()) 
           (currentGoal state)
 
-{- |
-  Retrieves the value of the time limit 'Entry'. Ignores invalid input.
--}
-getValueSafe :: Entry Int -- ^ time limit 'Entry'
-             -> IO Int -- ^ user-requested time limit or default in case of a parse error
-getValueSafe timeEntry =
-    catchJust userErrors ((getValue timeEntry) :: IO Int) 
-                  (\ s -> trace ("Warning: Error "++show s++" was ignored") (return defaultTimeLimit))
-    where selExcep ex = case ex of
-                        ErrorCall s 
-                            | isPrefixOf "NO PARSE:" s -> Just defaultTimeLimit
-                        IOException x -> trace ("ICH:" ++ show x) Nothing
-                        _ -> Nothing
-
-{- |
-  Text displayed by the batch mode window.
--}
-batchInfoText :: Int -- ^ total number of goals
-              -> Int -- ^ number of that have been processed
-	      -> String
-batchInfoText gTotal gDone =
-  "Running prover in batch mode: At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
-
-{- |
-  Called every time a goal has been processed in the batch mode gui.
--}
-goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing State data structure
-	      -> Int -- ^ total number of goals
-	      -> Label -- ^ info label
-	      -> Button -- ^ cancel (continue) button
-	      -> Named SPTerm -- ^ goal that has just been processed
-	      -> (SpassProverRetval, SPASSResult)
-	      -> IO Bool
-goalProcessed stateRef numGoals label button nGoal (retval, res) = do
-  s <- readIORef stateRef
-
-  let s' = s{resultsMap = Map.insert (senName nGoal) res (resultsMap s),
-             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) (senName nGoal) (configsMap s)}
-  writeIORef stateRef s'
-
-  if (numGoals - (Map.size $ resultsMap s')) > 0
-    then label # text (batchInfoText numGoals (Map.size $ resultsMap s'))
-    else do
-      button # text "Continue"
-      label # text "Batch mode finished. Click 'Continue' to see the results."
-
-  -- always continue
-  return True
+-- *** Main GUI
 
 {- |
   Invokes the prover GUI. First runs the batch prover on all goals,
@@ -544,7 +560,7 @@ spassProveGUI thName th = do
   grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
   l2 <- newLabel right [text "TimeLimit"]
   grid l2 [GridPos (1,1), Sticky W]
-  (timeEntry :: Entry Int) <- newEntry right [width 18, value defaultTimeLimit]
+  (timeEntry :: Entry Int) <- newEntry right [width 18, value guiDefaultTimeLimit]
   grid timeEntry [GridPos (3,1), Sticky W]
   timeSpinner <- newSpinButton right (\sp -> synchronize main
                                      (do
@@ -557,11 +573,11 @@ spassProveGUI thName th = do
                                             let config = getConfig goal (configsMap sEnt)
                                             let t = timeLimit config
                                             let t' = (case sp of
-                                                           Up -> if isJust t then (fromJust t) + 10 else defaultTimeLimit + 10
-                                                           _ -> if isJust t then (fromJust t) - 10 else defaultTimeLimit - 10)
+                                                           Up -> if isJust t then (fromJust t) + 10 else guiDefaultTimeLimit + 10
+                                                           _ -> if isJust t then (fromJust t) - 10 else guiDefaultTimeLimit - 10)
                                             let s' = sEnt {configsMap = adjustOrSetConfig (setTimeLimit t') goal (configsMap sEnt)}
                                             writeIORef stateRef s'
-                                            timeEntry # value (maybe defaultTimeLimit id (timeLimit (getConfig goal (configsMap s'))))
+                                            timeEntry # value (maybe guiDefaultTimeLimit id (timeLimit (getConfig goal (configsMap s'))))
                                             done)
                                           else noGoalSelected)) []
   grid timeSpinner [GridPos (3,1), Sticky E]
@@ -696,7 +712,18 @@ spassProveGUI thName th = do
                              shows x . (++) ",\n     \"" .
                              (++) (unlines outp) . (++) "\")\n" . resF) id 
                     (Map.toList mp)) "}" 
-  
+
+-- * Non-interactive Batch Prover
+
+-- ** Constants
+
+{- |
+  Time limit used by the batch mode prover.
+-}
+batchTimeLimit :: Int
+batchTimeLimit = 15
+
+-- ** Utility Functions
 
 {- |
   Checks whether a goal in the results map is marked as proved.
@@ -707,12 +734,14 @@ checkGoal resMap goal =
   where
     g = Map.lookup goal resMap
 
+-- ** Implementation
+
 {- |
   A non-GUI batch mode prover. Uses default configuration for SPASS.
   The list of goals is processed sequentially. Proved goals are inserted
   as axioms.
 -}
-spassProveBatch :: (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool)
+spassProveBatch :: (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool) -- ^ called after every prover run. return True if you want the prover to continue.
                 -> String -- ^ theory name
                 -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
@@ -745,6 +774,8 @@ spassProveBatch f thName (Theory sig nSens) =
     (axioms, goals) = partition isAxiom 
                           (prepareSenNames transSenName nSens)
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sig) (reverse axioms)
+
+-- * SPASS Interfacing Code
 
 {- |
   Reads and parses the output of SPASS.
@@ -866,7 +897,10 @@ runSpass lp config nGoal = do
                          logicalPart = insertSentence lp nGoal}
     filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
     cleanOptions = filter (\x-> not (or (map (\y-> isPrefixOf y x) filterOptions))) (extraOpts config)
-    tLimit = if isJust (timeLimit config) then fromJust (timeLimit config) else defaultTimeLimit
+    tLimit = if isJust (timeLimit config)
+               then fromJust (timeLimit config)
+               -- this is OK. the batch prover always has the time limit set
+               else guiDefaultTimeLimit
     allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
 
     proof_status res usedAxioms options
