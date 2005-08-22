@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Data structures representing SPASS signatures.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -23,6 +24,8 @@ import Common.DefaultMorphism
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+
+-- * Externally used data structures
 
 type SortMap = Map.Map SPIdentifier (Maybe Generated)
 
@@ -117,7 +120,7 @@ checkSPChar :: Char -> Bool
 checkSPChar c = isAlphaNum c || '_' == c
 
 
------ internal data structures follow -----
+-- * Internal data structures
 
 {- |
   A SPASS problem consists of a description and a logical part. The optional

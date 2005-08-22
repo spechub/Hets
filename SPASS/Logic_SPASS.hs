@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  Instance of class Logic for SPASS.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -27,13 +28,16 @@ import Logic.Logic
 
 import SPASS.Sign
 import SPASS.Print
+
 #ifdef UNI_PACKAGE
 import SPASS.Prove
 #endif
 
 
--- a dummy datatype for the LogicGraph and for identifying the right
--- instances
+{- |
+  A dummy datatype for the LogicGraph and for identifying the right
+  instances
+-}
 data SPASS = SPASS deriving (Show)
 instance Language SPASS where
  description _ = 
@@ -69,6 +73,7 @@ instance Sentences SPASS Sentence () Sign SPASSMorphism ()  where
       map_sen SPASS _ s = return s
       print_named SPASS ga formula = 
 	printFormula ga formula
+-- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
       provers SPASS = [spassProver] 
       cons_checkers SPASS = []

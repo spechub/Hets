@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Pretty printing for SPASS signatures.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

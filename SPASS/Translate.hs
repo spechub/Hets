@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Functions used by 'Comorphisms.CASL2SPASS' and 'SPASS.Prove' for the translation into valid SPASS identifiers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

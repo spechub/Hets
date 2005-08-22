@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Interface for the SPASS theorem prover.
 Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@ Stability   :  provisional
 Portability :  needs POSIX
 
 Interface for the SPASS theorem prover.
-   See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
+See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
@@ -111,8 +112,17 @@ emptyConfigsMap :: SPASSConfigsMap
 emptyConfigsMap = Map.empty
 
 {- |
+  Adjusts the configuration associated to a goal by applying the supplied
+  function or inserts a new emptyConfig with the function applied if there's
+  no configuration associated yet.
+
+  Uses Map.member, Map.adjust, and Map.insert for the corresponding tasks
+  internally.
 -}
-adjustOrSetConfig :: (SPASSConfig -> SPASSConfig) -> SPIdentifier -> SPASSConfigsMap -> SPASSConfigsMap
+adjustOrSetConfig :: (SPASSConfig -> SPASSConfig) -- ^ function to be applied against the current configuration or a new emptyConfig
+                  -> SPIdentifier -- ^ name of the goal
+                  -> SPASSConfigsMap -- ^ current SPASSConfigsMap
+                  -> SPASSConfigsMap -- ^ resulting SPASSConfigsMap with the changes applied
 adjustOrSetConfig f k m = if (Map.member k m)
                             then Map.adjust f k m
                             else Map.insert k (f emptyConfig) m
@@ -129,7 +139,7 @@ getConfig id m = if (isJust lookupId)
     lookupId = Map.lookup id m
 
 {- |
-  Default time limit in seconds.
+  Default time limit for the GUI mode prover in seconds.
 -}
 defaultTimeLimit :: Int
 defaultTimeLimit = 10
@@ -138,7 +148,7 @@ defaultTimeLimit = 10
   Time limit used by the batch mode prover.
 -}
 batchTimeLimit :: Int
-batchTimeLimit = 30
+batchTimeLimit = 15
 
 {- |
   Represents the result of a prover run.
@@ -157,16 +167,25 @@ type SPASSResultsMap = Map.Map SPIdentifier SPASSResult
 emptyResultsMap :: SPASSResultsMap
 emptyResultsMap = Map.empty
 
+{- |
+  Map to SPASS complian identifiers
+-}
 type SPASSGoalNameMap = Map.Map String String
 
 {- |
   Represents the global state of the prover GUI.
 -}
-data State = State { currentGoal :: Maybe SPIdentifier,
+data State = State { -- | currently selected goal or Nothing
+                     currentGoal :: Maybe SPIdentifier,
+		     -- | theory to work on
                      theory :: Theory Sign Sentence,
+		     -- | stores the prover configurations for each goal
                      configsMap :: SPASSConfigsMap,
+		     -- | stores the results retrieved by running SPASS for each goal
                      resultsMap :: SPASSResultsMap,
+		     -- | stores a mapping to SPASS compliant identifiers for all goals
                      goalNamesMap :: SPASSGoalNameMap,
+		     -- | list of all goals
 		     goalsList :: [Named SPTerm]
                    }
 
@@ -183,17 +202,29 @@ initialState th gm gs =
            goalNamesMap = gm,
 	   goalsList = gs}
 
-data SpassProverRetval = SpassSuccess
-                       | SpassTLimitExceeded
-		       | SpassError String
+{- |
+  Represents the general return value of a prover run.
+-}
+data SpassProverRetval
+  -- | SPASS completed successfully
+  = SpassSuccess
+  -- | SPASS did not terminate before the time limit exceeded
+  | SpassTLimitExceeded
+  -- | an error occured while running SPASS
+  | SpassError String
   deriving (Eq, Show)
 
+{- |
+  Checks whether a SpassProverRetval indicates that the time limit was
+  exceeded.
+-}
 isTimeLimitExceeded :: SpassProverRetval -> Bool
 isTimeLimitExceeded SpassTLimitExceeded = True
 isTimeLimitExceeded _ = False
 
 {- |
-  Currently implemented as a batch mode prover only.
+  The Prover implementation. First runs the batch prover (with graphical
+  feedback), then starts the GUI prover.
 -}
 spassProver :: Prover Sign Sentence ()
 spassProver =
@@ -210,19 +241,61 @@ isProved (Proved _ _ _ _ _) = True
 isProved _ = False
 
 {- |
-  Green: Proved, Red: Disproved, Black: Open, Blue: Running
+  Colors used by the GUI to indicate the status of a goal.
 -}
-data ProofStatusColour = Green | Red | Black | Blue
+data ProofStatusColour
+  -- | Proved
+  = Green
+  -- | Disproved
+  | Red
+  -- | Open
+  | Black
+  -- | Running
+  | Blue
    deriving (Bounded,Enum,Show)
 
-statusProved, statusDisproved, statusOpen, statusRunning :: (ProofStatusColour, String)
-statusProved        = (Green, "Proved")
-statusDisproved     = (Red, "Disproved")
-statusOpen          = (Black, "Open")
-statusOpenTExceeded = (Black, "Open (Time is up!)")
-statusRunning       = (Blue, "Running")
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Proved proof
+  status.
+-}
+statusProved :: (ProofStatusColour, String)
+statusProved = (Green, "Proved")
 
-toGuiStatus :: SPASSConfig -> (Proof_status a) -> (ProofStatusColour, String)
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Disproved
+  proof status.
+-}
+statusDisproved :: (ProofStatusColour, String)
+statusDisproved = (Red, "Disproved")
+
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Open proof
+  status.
+-}
+statusOpen :: (ProofStatusColour, String)
+statusOpen = (Black, "Open")
+
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Open proof
+  status in case the time limit has been exceeded.
+-}
+statusOpenTExceeded :: (ProofStatusColour, String)
+statusOpenTExceeded = (Black, "Open (Time is up!)")
+
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Running proof
+  status.
+-}
+statusRunning :: (ProofStatusColour, String)
+statusRunning = (Blue, "Running")
+
+{- |
+  Converts a 'Proof_status' into a ('ProofStatusColour', 'String') tuple to be
+  displayed by the GUI.
+-}
+toGuiStatus :: SPASSConfig -- ^ current prover configuration
+            -> (Proof_status a) -- ^ status to convert
+            -> (ProofStatusColour, String)
 toGuiStatus cf st = case st of
   Proved _ _ _ _ _ -> statusProved
   Disproved _ -> statusDisproved
@@ -230,18 +303,48 @@ toGuiStatus cf st = case st of
          then statusOpenTExceeded
          else statusOpen
 
-indicatorProved, indicatorDisproved, indicatorOpen :: String
+{- |
+  Short 'String' representing a 'Proved' proof status in the 'ListBox' of
+  the prover GUI.
+-}
+indicatorProved :: String
 indicatorProved = "[+]"
+
+{- |
+  Short 'String' representing a 'Disproved' proof status in the 'ListBox' of
+  the prover GUI.
+-}
+indicatorDisproved :: String
 indicatorDisproved = "[-]"
+
+{- |
+  Short 'String' representing an 'Open' proof status in the 'ListBox' of
+  the prover GUI.
+-}
+indicatorOpen :: String
 indicatorOpen = "[ ]"
 
-toStatusIndicator :: SPASSConfig -> (Proof_status a) -> String
+{- |
+  Converts a 'Proof_status' into a short 'String' to be displayed by the GUI
+  in a 'ListBox'.
+-}
+toStatusIndicator :: SPASSConfig -- ^ current prover configuration
+                  -> (Proof_status a) -- ^ status to convert
+                  -> String
 toStatusIndicator cf st = case st of
   Proved _ _ _ _ _ -> indicatorProved
   Disproved _ -> indicatorDisproved
   _ -> indicatorOpen
 
-goalsView :: SPASS.Prove.State -> [String]
+{- |
+  Generates a list of textual representations of all goals from a 
+  'SPASS.Prove.State'.
+
+  The resulting strings contain the result of 'toStatusIndicator'
+  concatenated with the goal name.
+-}
+goalsView :: SPASS.Prove.State  -- ^ current global prover state
+          -> [String] -- ^ resulting ['String'] list
 goalsView s = map (\ g ->
                        let res = Map.lookup g (resultsMap s)
 		           cf = Map.findWithDefault
@@ -255,10 +358,16 @@ goalsView s = map (\ g ->
 			  indicator ++ (' ':g))(map senName (goalsList s))
 
 {- |
-   updates the display of the status of the goal
+   Updates the display of the status of the current goal.
 -}
-
-updateDisplay :: SPASS.Prove.State -> Bool -> ListBox String -> Label -> Entry Int -> Entry String -> ListBox String -> IO ()
+updateDisplay :: SPASS.Prove.State -- ^ current global prover state
+              -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
+              -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
+              -> Label -- ^ 'Label' displaying the status of the currently selected goal (see 'toGuiStatus')
+              -> Entry Int -- ^ 'Entry' containing the time limit of the current goal
+              -> Entry String -- ^ 'Entry' containing the extra options
+              -> ListBox String -- ^ 'ListBox' displaying all axioms used to prove a goal (if any)
+              -> IO ()
 updateDisplay state updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = do
     if updateLb
       then do
@@ -296,8 +405,12 @@ updateDisplay state updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb
                 return ()) 
           (currentGoal state)
 
-getValueSave :: Entry Int -> IO Int
-getValueSave timeEntry =
+{- |
+  Retrieves the value of the time limit 'Entry'. Ignores invalid input.
+-}
+getValueSafe :: Entry Int -- ^ time limit 'Entry'
+             -> IO Int -- ^ user-requested time limit or default in case of a parse error
+getValueSafe timeEntry =
     catchJust userErrors ((getValue timeEntry) :: IO Int) 
                   (\ s -> trace ("Warning: Error "++show s++" was ignored") (return defaultTimeLimit))
     where selExcep ex = case ex of
@@ -342,7 +455,8 @@ goalProcessed stateRef numGoals label button nGoal (retval, res) = do
   return True
 
 {- |
-  Invokes the prover GUI. Not yet fully implemented.
+  Invokes the prover GUI. First runs the batch prover on all goals,
+  then drops the user into a detailed GUI.
 -}
 spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
@@ -438,7 +552,7 @@ spassProveGUI thName th = do
                                         if isJust (currentGoal s)
                                           then (do
                                             let goal = fromJust (currentGoal s)
-                                            curEntTL <- getValueSave timeEntry 
+                                            curEntTL <- getValueSafe timeEntry 
                                             let sEnt = s {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap s)}
                                             let config = getConfig goal (configsMap sEnt)
                                             let t = timeLimit config
@@ -522,7 +636,7 @@ spassProveGUI thName th = do
             if isNothing $ currentGoal rs
               then noGoalSelected
               else (do
-                curEntTL <- (getValueSave timeEntry) :: IO Int
+                curEntTL <- (getValueSafe timeEntry) :: IO Int
                 let goal = fromJust $ currentGoal rs
                 let s = rs {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap rs)}
                 let (before, after) = splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
@@ -585,7 +699,7 @@ spassProveGUI thName th = do
   
 
 {- |
-Checks whether a goal in the results map is marked as proved.
+  Checks whether a goal in the results map is marked as proved.
 -}
 checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
 checkGoal resMap goal =
