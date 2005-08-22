@@ -967,7 +967,7 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
                    Just(Just False) -> "The link is not conservative"
                    _ -> "Could not determine whether link is conservative"
           showDiags = unlines (map show diags)
-      createTextDisplay "Result of consistency check" 
+      createTextDisplay "Result of conservativity check" 
                       (showRes++"\n"++showDiags) [size(50,50)]
     DGRef _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
