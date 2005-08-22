@@ -55,17 +55,17 @@ main =
                   process 'a' args  
                   else case head args of
                        "-a" -> process 'a' $ tail args   
-		       -- ^ output abstract syntax
+		       -- output abstract syntax
                        "-t" -> process 't' $ tail args   
-		       -- ^ output ATerm
+		       -- output ATerm
 		       "-s" -> process 's' $ tail args   
-		       -- ^ output DevGraph from structure analysis
+		       -- output DevGraph from structure analysis
 		       "-r" -> process 'r' $ tail args   
-		       -- ^ output result of static analysis
+		       -- output result of static analysis
                        "-i" -> process 'i' $ tail args   
-		       -- ^ test integrate ontology
+		       -- test integrate ontology
 		       "-g" -> process 'i' $ tail args
-		       -- ^ show graph of structure
+		       -- show graph of structure
 		       _    -> error ("unknow option: " ++ (head args))
 
 
