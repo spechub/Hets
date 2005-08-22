@@ -388,6 +388,7 @@ batchInfoText :: Int -- ^ total number of goals
 	      -> String
 batchInfoText gTotal gDone =
   "Running prover in batch mode:\n"
+  ++ show gDone ++ "/" ++ show gTotal ++ " goals processed.\n"
   ++ "At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
 
 {- |
