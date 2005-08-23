@@ -221,6 +221,43 @@ data DGRule =
  | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
 
+instance PrettyPrint DGRule where
+  printText0 ga r = case r of 
+   TheoremHideShift -> text "Theorem-Hide-Shift"
+   HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:" <+> printLEdgeInProof ga l
+   Borrowing -> text "Borrowing"
+   ConsShift -> text "Cons-Shift"
+   DefShift  -> text "Def-Shift"
+   MonoShift -> text "Mono-Shift"
+   DefToMono -> text "DefToMono"
+   MonoToCons -> text "MonoToCons"
+   FreeIsMono -> text "FreeIsMono"
+   MonoIsFree -> text "MonoIsFree"
+   GlobDecomp l -> text "Global Decomposition; resulting link:"  <+> printLEdgeInProof ga l 
+   LocDecomp l -> text "Local Decomposition; resulting link:" <+> printLEdgeInProof ga l
+   LocSubsumption l -> text "Local Subsumption; resulting link:" <+> printLEdgeInProof ga l
+   GlobSubsumption l -> text "Global Subsumption; resulting link:" <+> printLEdgeInProof ga l
+   Composition ls -> 
+       text "Composition" <+> vcat (map (printLEdgeInProof ga) ls)
+   LocalInference -> text "Local Inference"
+   BasicInference bp -> text "Basic Inference using:" <+> text (show bp)
+   BasicConsInference _ bp -> text "Basic Cons-Inference using:" <+> text (show bp)
+
+printLEdgeInProof :: GlobalAnnos -> LEdge DGLinkLab -> Doc
+printLEdgeInProof ga (s,t,l) = 
+  printText0 ga s <> text "-->" <> printText0 ga t <> text ":"
+  <+> printLabInProof ga l
+
+printLabInProof :: GlobalAnnos -> DGLinkLab -> Doc
+printLabInProof ga l =
+  hang(
+    printText0 ga (dgl_type l)
+    <+> text "with origin: " 
+    <> printText0 ga (dgl_origin l)
+    <> text ", and morphism: " )
+   2 (printText0 ga (dgl_morphism l))
+
+
 data BasicProof =
   forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -258,7 +295,9 @@ data ThmLinkStatus = LeftOpen
 instance PrettyPrint ThmLinkStatus where
     printText0 ga tls = case tls of 
         LeftOpen -> text "Open"
-        Proven _ ls -> vcat $ map (printText0 ga) ls
+        Proven r ls -> hang (text "Proven with rule" <+> printText0 ga r
+                             $$ text "Proof based on links:")
+                       2 (vcat (map (printLabInProof ga) ls))
 
 
 
