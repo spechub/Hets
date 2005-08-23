@@ -14,11 +14,77 @@ utility functions and computations of meaningful positions for
 module HasCASL.AsUtils where
 
 import HasCASL.As
-import HasCASL.PrintAs() -- reexport instances
-import Common.Keywords
+import HasCASL.HToken
 import Common.Id
+import Common.Keywords
 import Common.PrettyPrint
 import qualified Common.Lib.Set as Set
+
+-- | the string for the universe type
+typeUniverseS :: String 
+typeUniverseS = "Type"
+
+-- | the id of the universe type 
+universeId :: Id
+universeId = simpleIdToId $ mkSimpleId typeUniverseS
+
+-- | the type universe
+universe :: Kind
+universe = ClassKind universeId
+
+-- | the name for the Unit type 
+unitTypeS :: String
+unitTypeS = "Unit"
+
+-- | the identifier for the Unit type
+unitTypeId :: Id
+unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
+
+-- | get top-level type constructor and its arguments
+getTypeAppl :: Type -> (Type, [Type])
+getTypeAppl ty = let (t, args) = getTyAppl ty in
+   (t, reverse args) where
+    getTyAppl typ = case typ of
+        TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
+        ExpandedType _ t -> getTyAppl t
+        KindedType t _ _ -> getTyAppl t
+        _ -> (typ, [])
+
+-- | the builtin function arrows
+data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
+             deriving (Eq, Ord)
+
+instance Show Arrow where
+    show a = case a of 
+        FunArr -> funS
+        PFunArr -> pFun
+        ContFunArr -> contFun
+        PContFunArr -> pContFun 
+
+-- | construct an infix identifier for a function arrow
+arrowId :: Arrow -> Id
+arrowId a = mkId $ map mkSimpleId [place, show a, place]
+
+isArrow :: Id -> Bool
+isArrow i = isPartialArrow i || elem i (map arrowId [FunArr, ContFunArr])
+
+isPartialArrow :: Id -> Bool
+isPartialArrow i = elem i $ map arrowId [PFunArr, PContFunArr]
+
+-- | construct a mixfix product identifier with n places 
+productId :: Int -> Id
+productId n = if n > 1 then
+  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
+  else error "productId"
+
+isProductId :: Id -> Bool
+isProductId (Id ts cs _) = null cs && length ts > 2 && altPlaceProd ts
+     where altPlaceProd l = case l of 
+               [] -> False
+               t : r -> isPlace t && altProdPlace r
+           altProdPlace l = case l of
+               [] -> True
+               t : r -> tokStr t == prodS && altPlaceProd r             
 
 -- | map a kind
 mapKind :: (a -> b) -> AnyKind a -> AnyKind b
@@ -38,23 +104,38 @@ rStar = toRaw universe
 unitType :: Type 
 unitType = TypeName unitTypeId rStar 0
 
--- | add an additional Unit type argument to a type 
-liftType :: Type -> Range -> Type
-liftType t qs = FunType unitType PFunArr t qs
+lazyTypeId :: Id
+lazyTypeId = mkId [mkSimpleId "?"]
+
+lazyKind :: Kind 
+lazyKind = FunKind CoVar universe universe nullRange
+
+lazyTypeConstr :: Type
+lazyTypeConstr = TypeName lazyTypeId (toRaw lazyKind) 0
+
+-- | make a type lazy
+mkLazyType :: Type -> Type
+mkLazyType t = TypeAppl lazyTypeConstr t
+
+-- | function type
+mkFunArrType :: Type -> Arrow -> Type -> Type
+mkFunArrType t1 a t2 = 
+    mkTypeAppl (TypeName (arrowId a) (toRaw funKind) 0) [t1, t2]
 
 {- | add the Unit type as result type or convert a parsed empty tuple
    to the unit type -}
 predType :: Type -> Type
 predType t = case t of
                     BracketType Parens [] _ -> unitType
-                    _ -> FunType t PFunArr unitType nullRange
+                    _ -> mkFunArrType t PFunArr unitType
 
 -- | construct a product type
-mkProductType :: [Type] -> Range -> Type
-mkProductType ts ps = case ts of
+mkProductType :: [Type] -> Type
+mkProductType ts = case ts of
     [] -> unitType
     [t] -> t
-    _ -> ProductType ts ps
+    _ -> let n = length ts in 
+         mkTypeAppl (TypeName (productId n) (toRaw $ prodKind n) 0) ts
 
 -- | convert a type with unbound variables to a scheme
 simpleTypeScheme :: Type -> TypeScheme
@@ -66,7 +147,8 @@ predTypeScheme = mapTypeOfScheme predType
 
 -- | the 'Kind' of the function type
 funKind :: Kind
-funKind = FunKind ContraVar universe (FunKind CoVar universe universe nullRange) nullRange
+funKind = FunKind ContraVar universe 
+          (FunKind CoVar universe universe nullRange) nullRange
 
 -- | construct higher order kind from arguments and result kind
 mkFunKind :: [(Variance, AnyKind a)] -> AnyKind a -> AnyKind a
@@ -80,16 +162,6 @@ prodKind n = if n > 1 then mkFunKind (replicate n (CoVar, universe)) universe
 -- | a type name with a universe kind
 toType :: Id -> Type
 toType i = TypeName i rStar 0
-
--- | construct an infix identifier for a function arrow
-arrowId :: Arrow -> Id
-arrowId a = mkId $ map mkSimpleId [place, show a, place]
-
--- | construct a mixfix product identifier with n places 
-productId :: Int -> Id
-productId n = if n > 1 then
-  mkId $ map mkSimpleId $ place : concat (replicate (n-1) [prodS, place])
-  else error "productId"
 
 -- | the brackets as tokens with positions
 mkBracketToken :: BracketKind -> Range -> [Token]
@@ -146,10 +218,11 @@ mkApplTerm = foldl ( \ t a -> ApplTerm t a nullRange)
 -- | make function arrow partial after some arguments
 addPartiality :: [a] -> Type -> Type
 addPartiality args t = case args of 
-        [] -> LazyType t nullRange
-        _ : rs -> case t of 
-           FunType t1 a t2 ps -> if null rs then FunType t1 PFunArr t2 ps 
-               else FunType t1 a (addPartiality rs t2) ps
+        [] -> mkLazyType t
+        _ : rs -> case getTypeAppl t of 
+           (TypeName a _ _, [t1, t2]) | a == arrowId FunArr -> 
+               if null rs then mkFunArrType t1 PFunArr t2
+               else mkFunArrType t1 FunArr $ addPartiality rs t2
            _ -> error "addPartiality"
 
 -- | convert a type argument to a type
@@ -178,14 +251,14 @@ getFunType :: Type -> Partiality -> [Type] -> Type
 getFunType rty p ts = (case p of
      Total -> id
      Partial -> addPartiality ts) $
-                       foldr ( \ c r -> FunType c FunArr r nullRange )
+                       foldr ( \ c r -> mkFunArrType c FunArr r)
                              rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type
 getSelType dt p rt = (case p of 
     Partial -> addPartiality [dt]
-    Total -> id) (FunType dt FunArr rt nullRange)
+    Total -> id) $ mkFunArrType dt FunArr rt
 
 -- | get the type of a constructor for printing (kinds may be wrong)
 createConstrType :: Id -> [TypeArg] -> RawKind -> Partiality -> [Type] -> Type
@@ -214,62 +287,6 @@ expected :: PrettyPrint a => a -> a -> String
 expected a b = 
     "\n  expected: " ++ showPretty a 
     "\n     found: " ++ showPretty b "\n" 
-
--- * compute better positions
-
-posOfVars :: Vars -> Range
-posOfVars vr = 
-    case vr of 
-    Var v -> posOfId v
-    VarTuple _ ps -> ps
-
-posOfTypeArg :: TypeArg -> Range
-posOfTypeArg (TypeArg t _ _ _ _ _ ps) = firstPos [t] ps
-
-posOfTypePattern :: TypePattern -> Range
-posOfTypePattern pat = 
-    case pat of
-    TypePattern t _ _ -> posOfId t
-    TypePatternToken t -> tokPos t
-    MixfixTypePattern ts -> posOf ts
-    BracketTypePattern _ ts ps -> firstPos ts ps
-    TypePatternArg (TypeArg t _ _ _ _ _ _) _ -> posOfId t
-
-posOfType :: Type -> Range
-posOfType ty = 
-    case ty of
-    TypeName i _ _ -> posOfId i
-    TypeAppl t1 t2 -> concatMapRange posOfType [t1, t2]
-    ExpandedType t1 t2 -> concatMapRange posOfType [t1, t2]
-    TypeToken t -> tokPos t
-    BracketType _ ts ps -> concatMapRange posOfType ts `appRange` ps
-    KindedType t _ ps -> posOfType t `appRange` ps
-    MixfixType ts -> concatMapRange posOfType ts
-    LazyType t ps -> posOfType t `appRange` ps
-    ProductType ts ps -> concatMapRange posOfType ts `appRange` ps
-    FunType t1 _ t2 ps -> concatMapRange posOfType [t1, t2] `appRange` ps
-
-posOfTerm :: Term -> Range
-posOfTerm trm =
-    case trm of
-    QualVar v -> posOfVarDecl v
-    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps `appRange` qs) 
-    ResolvedMixTerm i _ _ -> posOfId i
-    ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
-    TupleTerm ts ps -> firstPos ts ps 
-    TypedTerm t _ _ ps -> firstPos [t] ps 
-    QuantifiedTerm _ _ t ps -> firstPos [t] ps 
-    LambdaTerm _ _ t ps -> firstPos [t] ps 
-    CaseTerm t _ ps -> firstPos [t] ps 
-    LetTerm _ _ t ps -> firstPos [t] ps
-    TermToken t -> tokPos t
-    MixTypeTerm _ t ps -> firstPos [t] ps
-    MixfixTerm ts -> posOf ts
-    BracketTerm _ ts ps -> firstPos ts ps 
-    AsPattern v _ ps -> firstPos [v] ps
-
-posOfVarDecl :: VarDecl -> Range
-posOfVarDecl (VarDecl v _ _ ps) = firstPos [v] ps
 
 instance PosItem a => PosItem [a] where
     getRange = concatMapRange getRange 

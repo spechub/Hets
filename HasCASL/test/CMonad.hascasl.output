@@ -32,7 +32,7 @@ op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
 var x : m a
-. ((fun __=__[(List a -> List b)]
+. ((fun __=__[List a -> List b]
     : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        (List a -> List b) * (List a -> List b) ->? Unit)
     (((op fmap[a; b; List]
@@ -76,8 +76,9 @@ var x : m a
 Functor < Type -> Type
 Monad < Functor
 %% Type Constructors -----------------------------------------------------
+? : +Type -> Type
 List : Monad
-Logical : Type := Unit ->? Unit
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Set : Functor
 Unit : Type
@@ -148,7 +149,7 @@ x : m a
    (op empty[_var_27_v27] : forall a : Type . List a_v-1) :
        List _var_27_v27) :
     Unit
-((fun __=__[(List a -> List b)]
+((fun __=__[List a -> List b]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      (List a -> List b) * (List a -> List b) ->? Unit)
   (((op fmap[a; b; List]
@@ -193,9 +194,9 @@ x : m a
 *** Hint 7.8, is type variable 'b'
 *** Hint 9.5, is type variable 'm'
 *** Hint 15.5, is type variable 'f'
-*** Hint, constrain 'Set : Monad' is unprovable
+*** Hint 25.8, constrain 'Set : Monad' is unprovable
   known kinds are: [ Functor ]
-*** Error, in term'((fun __=__[Set _var_12_v12]
+*** Error 25.8, in term'((fun __=__[Set _var_12_v12]
   : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      Set _var_12_v12 * Set _var_12_v12 ->? Unit)
   ((op fail[_var_12_v12; Set]

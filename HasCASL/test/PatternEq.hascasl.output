@@ -19,7 +19,8 @@ program (op b : s) = (op a : s)
 op x : s; y : t
 op c : t = ((op snd : s * t -> t)(op x : s, op y : t) : t) as t
 %% Type Constructors -----------------------------------------------------
-Logical : Type := Unit ->? Unit
+? : +Type -> Type
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
@@ -73,5 +74,5 @@ program (op b : s) = (op a : s) %(pe_b)%
   (op c : t,
    ((op snd : s * t -> t)(op x : s, op y : t) : t) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 14.15-14.18, illegal toplevel pattern '(var x : s, var y : s)'
-*** Warning, illegal lhs pattern '(var b : s)'
+*** Error 14.11-14.18, illegal toplevel pattern '(var x : s, var y : s)'
+*** Warning 17.10, illegal lhs pattern '(var b : s)'

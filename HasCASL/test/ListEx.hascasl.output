@@ -13,13 +13,14 @@ free type even(a : +Type) ::= rek (odd a);
           odd(a : +Type) ::= rek (even a)
 free type odd2(a : +Type) ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------
+? : +Type -> Type
 List
   : +Type -> Type
      %[free type List(a : +Type)
          ::= Nil : List a_v-1
              Cons : a_v-1 * List a_v-1 -> List a_v-1
                (head : a_v-1; tail : List a_v-1)]%
-Logical : Type := Unit ->? Unit
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Tree
   : +Type -> Type
@@ -225,12 +226,12 @@ free type odd2(a : +Type)
 *** Hint 4.16, rebound type variable 'a'
 *** Hint 4.11, redeclared type 'List'
 *** Hint 5.16, rebound type variable 'a'
-*** Error, unbound type variable(s)
+*** Error 5.50-5.55, unbound type variable(s)
   b in 'List b_v1'
 *** Hint 6.16, rebound type variable 'a'
 *** Error 6.50-6.57, unexpected type argument 'b'
 *** Hint 7.16, rebound type variable 'a'
-*** Error, illegal polymorphic recursion
+*** Error 7.50-7.61, illegal polymorphic recursion
   expected: List a_v7
      found: List (List a_v7)
 
@@ -241,7 +242,7 @@ free type odd2(a : +Type)
 *** Hint 13.39, rebound type variable 'a'
 *** Hint 14.17, rebound type variable 'a'
 *** Hint 14.49, rebound type variable 'a'
-*** Error, illegal polymorphic recursion
+*** Error 14.27-14.38, illegal polymorphic recursion
   expected: odd2 a_v14
      found: odd2 (odd2 a_v13)
 

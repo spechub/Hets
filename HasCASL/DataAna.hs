@@ -111,7 +111,7 @@ anaComps :: [DataPat] -> DataPat -> TypeEnv -> [Component]
          -> Result (Type, [Selector]) 
 anaComps tys rt te cs =
     do newCs <- mapM (anaComp tys rt te) cs
-       return (mkProductType (map fst newCs) nullRange, map snd newCs)
+       return (mkProductType $ map fst newCs, map snd newCs)
 
 anaComp :: [DataPat] -> DataPat -> TypeEnv -> Component 
         -> Result (Type, Selector)

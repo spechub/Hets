@@ -57,7 +57,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
     Just (SymbType sc@(TypeScheme vs t _)) -> 
         let r = return $ AQualId idt $ OpAsItemType sc
             rk = if null vs then Nothing else 
-                 convTypeToKind False t 
+                 convTypeToKind t 
             rrk = maybeToResult (getRange t) 
                            ("not a kind: " ++ showPretty t "") rk
         in case k of 
@@ -69,28 +69,6 @@ symbToRaw k (Symb idt mt _)     = case mt of
                              return $ AQualId idt $ ClassAsItemType ck
               _ -> do (_, ck) <- rrk
                       return $ AQualId idt $ TypeAsItemType ck
-
-convTypeToKind :: Bool -> Type -> Maybe (Variance, Kind)
-convTypeToKind _ (FunType t1 FunArr t2 ps) = 
-    do (v, k1) <- convTypeToKind True t1
-       (_, k2) <- convTypeToKind False t2
-       return (InVar, FunKind v k1 k2 ps)
-convTypeToKind b (BracketType Parens [t] _) = 
-    convTypeToKind b t
-convTypeToKind True (MixfixType [TypeToken t, t1]) = 
-    let s = tokStr t 
-        mv = case s of 
-                   "+" -> CoVar 
-                   "-" -> ContraVar 
-                   _ -> InVar
-    in case mv of 
-              InVar -> Nothing
-              _ -> do (_, k1) <- convTypeToKind False t1
-                      return (mv, k1)
-convTypeToKind _ (TypeToken t) = 
-          let ci = simpleIdToId t in
-          return (InVar, ClassKind ci)
-convTypeToKind _ _ = fail "convTypeToKind"
 
 matchSymb :: Symbol -> RawSymbol -> Bool
 matchSymb sy rsy = let ty = symType sy in 

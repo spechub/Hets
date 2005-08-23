@@ -20,8 +20,9 @@ import Common.Keywords
 import Common.AS_Annotation 
 import HasCASL.HToken
 
+{-! for VarDecl derive: UpPos !-}
+
 -- * abstract syntax entities with small utility functions
-{-! global: UpPos !-}
 
 -- | annotated basic items
 data BasicSpec = BasicSpec [Annoted BasicItem]
@@ -103,26 +104,6 @@ data AnyKind a = ClassKind a
 type Kind = AnyKind ClassId
 type RawKind = AnyKind ()
 
--- | the string for the universe type
-typeUniverseS :: String 
-typeUniverseS = "Type"
-
--- | the id of the universe type 
-universeId :: Id
-universeId = simpleIdToId $ mkSimpleId typeUniverseS
-
--- | the type universe
-universe :: Kind
-universe = ClassKind universeId
-
--- | the name for the Unit (or empty product) type 
-unitTypeS :: String
-unitTypeS = "Unit"
-
--- | the identifier for the Unit type
-unitTypeId :: Id
-unitTypeId = simpleIdToId $ mkSimpleId unitTypeS
-
 -- | the possible type items 
 data TypeItem  = TypeDecl [TypePattern] Kind Range
                -- pos ","s
@@ -163,25 +144,12 @@ data Type = TypeName TypeId RawKind Int
           | BracketType BracketKind [Type] Range
           -- pos "," (between type arguments)
           | MixfixType [Type] 
-          -- the following variants should be converted to type applications
-          | LazyType Type Range
-          -- pos "?"
-          | ProductType [Type] Range
-          -- pos crosses 
-          | FunType Type Arrow Type Range
-          -- pos arrow
             deriving Show
 
--- | the builtin function arrows
-data Arrow = FunArr| PFunArr | ContFunArr | PContFunArr 
-             deriving (Eq, Ord)
-
-instance Show Arrow where
-    show a = case a of 
-        FunArr -> funS
-        PFunArr -> pFun
-        ContFunArr -> contFun
-        PContFunArr -> pContFun 
+-- | change the type within a scheme
+mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
+mapTypeOfScheme f (TypeScheme args t ps) =
+    TypeScheme args (f t) ps
 
 {- | a type with bound type variables. The bound variables within the
 scheme should have negative numbers in the order given by the type
@@ -192,11 +160,6 @@ data TypeScheme = TypeScheme [TypeArg] Type Range
                 -- pos "forall", ";"s,  dot (singleton list)
                 -- pos "\" "("s, ")"s, dot for type aliases
                   deriving Show
-
--- | change the type within a scheme
-mapTypeOfScheme :: (Type -> Type) -> TypeScheme -> TypeScheme
-mapTypeOfScheme f (TypeScheme args t ps) =
-    TypeScheme args (f t) ps
 
 -- | indicator for partial or total functions
 data Partiality = Partial | Total deriving (Eq, Ord)
@@ -354,7 +317,7 @@ data InstOpId = InstOpId UninstOpId [Type] Range deriving (Show, Eq, Ord)
 
 -- * synonyms for identifiers
 
-{- | type variable are expected to be simple whereas type constructors may be 
+{- | type variables are expected to be simple whereas type constructors may be 
      mixfix- and compound identifiers -} 
 type TypeId = Id
 type UninstOpId = Id
@@ -409,9 +372,6 @@ instance Eq Type where
     BracketType b1 l1 _ == BracketType b2 l2 _ = (b1, l1) == (b2, l2)
     KindedType t1 k1 _ == KindedType t2 k2 _ = (t1, k1) == (t2, k2)
     MixfixType l1 == MixfixType l2 = l1 == l2
-    LazyType t1 _ == LazyType t2 _ = t1 == t2 
-    ProductType l1 _ == ProductType l2 _ = l1 == l2
-    FunType f1 a1 g1 _ == FunType f2 a2 g2 _ = (f1, a1, g1) == (f2, a2, g2)
     ExpandedType _ t1 == t2 = t1 == t2
     t1 == ExpandedType _ t2 = t1 == t2
     _ == _ = False
@@ -425,9 +385,6 @@ instance Ord Type where
     BracketType b1 l1 _ <= BracketType b2 l2 _ = (b1, l1) <= (b2, l2)
     KindedType t1 k1 _ <= KindedType t2 k2 _ = (t1, k1) <= (t2, k2)
     MixfixType l1 <= MixfixType l2 = l1 <= l2
-    LazyType t1 _ <= LazyType t2 _ = t1 <= t2 
-    ProductType l1 _ <= ProductType l2 _ = l1 <= l2
-    FunType f1 a1 g1 _ <= FunType f2 a2 g2 _ = (f1, a1, g1) <= (f2, a2, g2)
     ExpandedType _ t1 <= t2 = t1 <= t2
     t1 <= ExpandedType _ t2 = t1 <= t2
     TypeName _ _ _ <= _ = True
@@ -440,12 +397,6 @@ instance Ord Type where
     _ <= BracketType _ _ _ = False
     KindedType _ _ _ <= _ = True
     _ <= KindedType _ _ _ = False
-    MixfixType _ <= _ = True
-    _ <= MixfixType _ = False
-    LazyType _ _<= _ = True
-    _ <= LazyType _ _ = False
-    ProductType _ _<= _ = True
-    _ <= ProductType _ _ = False
 
 -- equality for disambiguation in HasCASL2Haskell
 instance Eq TypeScheme where
@@ -475,3 +426,42 @@ instance Eq Component where
         (i1, t1, p1) == (i2, t2, p2)
     NoSelector t1 == NoSelector t2 = t1 == t2
     _ == _ = False
+
+-- * compute better position 
+
+instance PosItem Type where
+  getRange ty = case ty of
+    TypeName i _ _ -> posOfId i
+    TypeAppl t1 t2 -> posOf [t1, t2]
+    ExpandedType t1 t2 -> posOf [t1, t2]
+    TypeToken t -> tokPos t
+    BracketType _ ts ps -> firstPos ts ps
+    KindedType t _ ps -> firstPos [t] ps
+    MixfixType ts -> posOf ts
+
+instance PosItem Term where
+   getRange trm = case trm of
+    QualVar v -> getRange v
+    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps `appRange` qs)
+    ResolvedMixTerm i _ _ -> posOfId i
+    ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
+    TupleTerm ts ps -> firstPos ts ps
+    TypedTerm t _ _ ps -> firstPos [t] ps
+    QuantifiedTerm _ _ t ps -> firstPos [t] ps
+    LambdaTerm _ _ t ps -> firstPos [t] ps
+    CaseTerm t _ ps -> firstPos [t] ps
+    LetTerm _ _ t ps -> firstPos [t] ps
+    TermToken t -> tokPos t
+    MixTypeTerm _ t ps -> firstPos [t] ps
+    MixfixTerm ts -> posOf ts
+    BracketTerm _ ts ps -> firstPos ts ps
+    AsPattern v _ ps -> firstPos [v] ps
+
+instance PosItem TypePattern where
+  getRange pat = case pat of
+    TypePattern t _ ps -> firstPos [t] ps
+    TypePatternToken t -> tokPos t
+    MixfixTypePattern ts -> posOf ts
+    BracketTypePattern _ ts ps -> firstPos ts ps
+    TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
+

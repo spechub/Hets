@@ -70,20 +70,20 @@ instance Comorphism CASL2HasCASL
 fromOpType :: OpType -> Cas.FunKind -> TypeScheme
 fromOpType ot ok = 
     let args = map toType $ opArgs ot
-        arg = mkProductType args nullRange
+        arg = mkProductType args
         res = toType $ opRes ot
     in simpleTypeScheme $ 
       if null args then case ok of 
                 Cas.Total -> res
-                Cas.Partial -> liftType res  nullRange
-       else FunType arg (case ok of
+                Cas.Partial -> mkLazyType res
+       else mkFunArrType arg (case ok of
                 Cas.Total -> FunArr 
-                Cas.Partial -> PFunArr) res nullRange
+                Cas.Partial -> PFunArr) res
 
 fromPredType :: PredType -> TypeScheme
 fromPredType pt = 
     let args = map toType $ predArgs pt
-        arg = mkProductType args nullRange
+        arg = mkProductType args
     in simpleTypeScheme $ if null args then unitType else predType arg
 
 mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
@@ -168,15 +168,15 @@ toSentence sig f = case f of
                 Cas.Partial -> HasCASL.As.Partial
        in DatatypeSen 
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
-                          (map ( \ (i, t, ps) -> 
+                          (map ( \ (i, t) -> 
                                let args = opArgs t in 
                                Construct (Just i) 
                                  (if null args then []
-                                  else [mkProductType (map toType args) ps])
+                                  else [mkProductType $ map toType args])
                                (mapPart $ opKind t) [])
-                          $ filter ( \ (_, t, _) -> opRes t == s) 
-                                $ map ( \ (Cas.Qual_op_name i t ps) -> 
-                                      (i, toOpType t, ps)) ops)) sorts
+                          $ filter ( \ (_, t) -> opRes t == s) 
+                                $ map ( \ (Cas.Qual_op_name i t _) -> 
+                                      (i, toOpType t)) ops)) sorts
    _ -> Formula $ toTerm sig f
 
 toTerm :: Sign f e -> Cas.FORMULA f -> Term 
@@ -206,9 +206,9 @@ toTerm s f = case f of
         mkEqTerm exEq ps (fromTERM s t1) $ fromTERM s t2
     Cas.Strong_equation t1 t2 ps -> 
         mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
-    Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts rs) ps) args qs ->
+    Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
         let sc = simpleTypeScheme $ if null ts then unitType
-                 else predType $ mkProductType (map toType ts) rs 
+                 else predType $ mkProductType $ map toType ts 
             p = QualOp Pred (InstOpId i [] ps) sc ps
             in if null args then p else 
                ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs 
@@ -218,15 +218,15 @@ toTerm s f = case f of
 
 fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme
 fromOP_TYPE ot = 
-    let (args, res, ps, total, arr) = case ot of 
-                   Cas.Op_type Cas.Total as rs qs -> 
-                       (as, rs, qs, True, FunArr)
-                   Cas.Op_type Cas.Partial as rs qs -> 
-                       (as, rs, qs, False, PFunArr)
+    let (args, res, total, arr) = case ot of 
+                   Cas.Op_type Cas.Total ars rs _ -> 
+                       (ars, rs, True, FunArr)
+                   Cas.Op_type Cas.Partial ars rs _ -> 
+                       (ars, rs, False, PFunArr)
         resType = toType res
         in simpleTypeScheme $ if null args then 
-           if total then resType else LazyType resType ps
-           else FunType (mkProductType (map toType args) ps) arr resType ps
+           if total then resType else mkLazyType resType
+           else mkFunArrType (mkProductType $ map toType args) arr resType
 
 fromTERM :: Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of

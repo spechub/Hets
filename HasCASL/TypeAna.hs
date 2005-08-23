@@ -60,7 +60,7 @@ subKinds dk cm ty sk ks res =
    else Result [Diag dk
         ("no kind found for '" ++ showPretty ty "'" ++ 
          if null ks then "" else expected sk $ head ks)
-        $ posOfType ty] $ Just []
+        $ getRange ty] $ Just []
 
 -- | infer all minimal kinds
 inferKinds :: Maybe Bool -> Type -> TypeEnv -> Result ((RawKind, [Kind]), Type)
@@ -91,22 +91,6 @@ inferKinds b ty te@Env{classMap = cm} = let
         ((rk, ks), t) <- inferKinds b kt te
         l <- subKinds Hint cm kt k ks [k] 
         return ((rk, l), KindedType t k ps)
-    ProductType ts ps -> do 
-        l <- mapM ( \ t -> inferKinds b t te) ts
-        let res@(Result _ mk) = inferKinds b (convertType ty) te 
-        case mk of 
-            Just (kp, _) -> return (kp, ProductType (map snd l) ps)
-            Nothing -> res
-    LazyType t ps -> do
-        (kp, nt) <- inferKinds b t te
-        return (kp,  LazyType nt ps)
-    FunType t1 a t2 ps -> do 
-        (_, t3) <- inferKinds (fmap not b) t1 te
-        (_, t4) <- inferKinds b t2 te
-        let res@(Result _ mk) = inferKinds b (convertType ty) te
-        case mk of 
-            Just (kp, _) -> return (kp, FunType t3 a t4 ps)
-            Nothing -> res
     ExpandedType t1 t2 -> do 
         let Result _ mk = inferKinds b t1 te
         (kp, t4) <- inferKinds b t2 te
@@ -119,24 +103,12 @@ inferKinds b ty te@Env{classMap = cm} = let
 
 -- * converting type terms
 
--- | change lazy, product and fun types to type constructor name with arguments
-getTypeAppl :: Type -> (Type, [Type])
-getTypeAppl ty = let (t, args) = getTyAppl ty in
-   (t, reverse args) where
-    getTyAppl typ = case typ of
-        TypeName _ _ _ -> (typ, [])
-        TypeAppl t1 t2 -> let (t, args) = getTyAppl t1 in (t, t2 : args)
-        ExpandedType _ t -> getTyAppl t
-        LazyType t ps -> getTyAppl $ liftType t ps
-        KindedType t _ _ -> getTyAppl t
-        ProductType ts _ ->  let n = length ts in 
-           (TypeName (productId n) (toRaw $ prodKind n) 0, reverse ts)
-        FunType t1 a t2 _ -> (TypeName (arrowId a) (toRaw funKind) 0, [t2, t1])
-        _ -> error "getTypeAppl: unresolved type"
-
--- | change lazy, product and fun types to uniform applications
-convertType :: Type -> Type
-convertType ty = let (c, args) = getTypeAppl ty in mkTypeAppl c args    
+-- | throw away alias or kind information
+stripType :: Type -> Type
+stripType ty = case ty of
+    ExpandedType _ t -> t
+    KindedType t _ _ -> t
+    _ -> error "stripType"
 
 -- * subtyping relation
 
@@ -147,7 +119,7 @@ rawKindOfType ty = case ty of
     TypeAppl t1 _ -> case rawKindOfType t1 of 
         FunKind _ _ rk _ -> rk 
         _ -> error "rawKindOfType"
-    _ -> rawKindOfType $ convertType ty
+    _ -> rawKindOfType $ stripType ty
 
 -- | subtyping relation    
 lesserType :: TypeEnv -> Type -> Type -> Bool    
@@ -174,7 +146,9 @@ lesserType te t1 t2 = case (t1, t2) of
             Downset t -> lesserType te t t2
             _ -> False
     (TypeAppl _ _, TypeName _ _ _) -> False
-    _ -> lesserType te (convertType t1) $ convertType t2
+    (KindedType t _ _, _) -> lesserType te t t2
+    (ExpandedType _ t, _) -> lesserType te t t2
+    _ -> lesserType te t1 $ stripType t2
 
 -- * leaves of types and substitution
 
@@ -186,12 +160,7 @@ leaves b t =
                              then [(i, (j, k))]
                              else []
            TypeAppl t1 t2 -> leaves b t1 `List.union` leaves b t2
-           ExpandedType _ t2 -> leaves b t2
-           KindedType tk _ _ -> leaves b tk
-           LazyType tl _ -> leaves b tl
-           ProductType l _ -> foldl List.union [] $ map (leaves b) l
-           FunType t1 _ t2 _ -> leaves b t1 `List.union` leaves b t2
-           _ -> error ("leaves: " ++ show t)
+           _ -> leaves b $ stripType t
 
 -- | type identifiers of a type
 idsOf :: (Int -> Bool) -> Type -> Set.Set TypeId
@@ -250,10 +219,6 @@ expandAliases tm t = case t of
         in if b && length ps > length ts then 
           (ps, t3 : ts, ta, b)  -- reverse later on
           else wrap $ TypeAppl (expandAlias tm t1) t3
-    FunType t1 a t2 ps -> 
-        wrap $ FunType (expandAlias tm t1) a (expandAlias tm t2) ps
-    ProductType ts ps -> wrap $ ProductType (map (expandAlias tm) ts) ps
-    LazyType ty ps -> wrap $ LazyType (expandAlias tm ty) ps
     ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAlias tm t2
     KindedType ty k ps -> wrap $ KindedType (expandAlias tm ty) k ps
     _ -> wrap t
@@ -276,7 +241,7 @@ anaTypeM :: (Maybe Kind, Type) -> TypeEnv -> Result ((RawKind, [Kind]), Type)
 anaTypeM (mk, parsedType) te = 
     do resolvedType <- mkTypeConstrAppl parsedType
        let tm = typeMap te
-           adj = adjustPos $ posOfType parsedType
+           adj = adjustPos $ getRange parsedType
            expandedType = expandAlias tm resolvedType
            cm = classMap te
        ((rk, ks), checkedType) <- adj $ inferKinds (Just True) expandedType te

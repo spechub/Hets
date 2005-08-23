@@ -43,8 +43,8 @@ addSuperType t ak p@(i, nAs) =
          addDiags[mkDiag Error 
                 ("illegal type variable as supertype") j]
          else addSuperId j i 
-    LazyType tl _ -> addSuperType tl ak p
-    KindedType tk k _ -> addSuperType tk k p
+    TypeAppl (TypeName l _ _) tl | l == lazyTypeId -> 
+        addSuperType tl ak p
     TypeAppl t1 t2 -> do 
         j <- newSubTypeIdentifier i
         let rk = rawKindOfType t1
@@ -66,7 +66,7 @@ addSuperType t ak p@(i, nAs) =
             addTypeId False (AliasTypeDefn newSc)
                   Plain ark fullKind i
             return ()
-    _ -> addSuperType (convertType t) ak p
+    _ -> addSuperType (stripType t) ak p
 
 newSubTypeIdentifier :: Id -> State Env Id
 newSubTypeIdentifier i = do

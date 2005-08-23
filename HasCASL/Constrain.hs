@@ -104,7 +104,7 @@ byInst te c = let cm = classMap te in case c of
 
 freshTypeVarT :: Type -> State Int Type             
 freshTypeVarT t = 
-    do (var, c) <- freshVar $ posOfType t
+    do (var, c) <- freshVar $ getRange t
        return $ TypeName var (rawKindOfType t) c
 
 freshVarsT :: [Type] -> State Int [Type]
@@ -141,14 +141,12 @@ shapeMgu te cs =
     in case p of 
     (ExpandedType _ t, _) -> shapeMgu te $ (t, t2) : rest
     (_, ExpandedType _ t) -> shapeMgu te $ (t1, t) : rest
-    (LazyType t _, _) -> shapeMgu te $ (t, t2) : rest
-    (_, LazyType t _) -> shapeMgu te $ (t1, t) : rest
+    (TypeAppl (TypeName l _ _) t, _) | l == lazyTypeId -> 
+        shapeMgu te $ (t, t2) : rest
+    (_, TypeAppl (TypeName l _ _) t) | l == lazyTypeId -> 
+        shapeMgu te $ (t1, t) : rest
     (KindedType t _ _, _) -> shapeMgu te $ (t, t2) : rest
     (_, KindedType t _ _) -> shapeMgu te $ (t1, t) : rest
-    (ProductType _ _, _) -> shapeMgu te $ (convertType t1, t2) : rest
-    (_, ProductType _ _) -> shapeMgu te $ (t1, convertType t2) : rest
-    (FunType _ _ _ _, _) -> shapeMgu te $ (convertType t1, t2) : rest
-    (_, FunType _ _ _ _) -> shapeMgu te $ (t1, convertType t2) : rest
     (TypeName _ _ v1, TypeAppl f a) -> if (v1 > 0) then do
              vf <- toPairState $ freshTypeVarT f 
              va <- toPairState $ freshTypeVarT a 
@@ -260,7 +258,7 @@ monotonic te v t =
                    FunKind CoVar _ _ _ -> (f1 && a1, f2 && a2)
                    FunKind ContraVar _ _ _ -> (f1 && a2, f2 && a1)
                    _ -> (f1 && a1 && a2, f2 && a1 && a2)
-           _ -> monotonic te v (convertType t)
+           _ -> monotonic te v (stripType t)
 
 -- | find monotonicity based instantiation
 monoSubst :: TypeEnv -> Rel.Rel Type -> Type -> Subst

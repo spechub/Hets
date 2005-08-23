@@ -279,12 +279,17 @@ anaddGenVarDecl warn gv = case gv of
     GenVarDecl v -> optAnaddVarDecl warn v
     GenTypeVarDecl t -> anaddTypeVarDecl t >>= (return . fmap GenTypeVarDecl)
 
-convertTypeToKind :: Env -> Type -> Result (Variance, Kind)
-convertTypeToKind e ty = let s = showPretty ty "" in
+convTypeToKind :: Type -> Maybe (Variance, Kind)
+convTypeToKind ty = let s = showPretty ty "" in
     case runParser (extKind << eof) (emptyAnnos ()) "" s of
-    Right (v, k) -> let Result ds _ = anaKindM k $ classMap e in
+    Right (v, k) -> Just (v, k)
+    _ -> Nothing
+
+convertTypeToKind :: Env -> Type -> Result (Variance, Kind)
+convertTypeToKind e ty =  case convTypeToKind ty of
+    Just (v, k) -> let Result ds _ = anaKindM k $ classMap e in
                if null ds then return (v, k) else Result ds Nothing
-    Left _ -> fail $ "not a kind '" ++ s ++ "'"
+    _ -> fail $ "not a kind '" ++ showPretty ty "'"
 
 -- | local variable or type variable declaration
 optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)

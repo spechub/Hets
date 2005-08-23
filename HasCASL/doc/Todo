@@ -40,8 +40,6 @@ types is not properly computed!
 The supertype relation is not checked in isSubEnv and diffEnv
 (AsToLe).
 
-remove FunType, (LazyType ?) and ProductType in favour of uniform TypeAppls
-
 sentences need to be generated for subtype definitions!
 
 
@@ -70,7 +68,7 @@ Sentences for attributes comm, assoc, unit are not generated yet.
 
 MixAna only recognises new variables and thus cannot check for shadowing
 
-First try type checking without lazy types
+Unify alone handles lazy types 
 
 
 

@@ -56,7 +56,7 @@ iterateCharts ga terms chart =
        if null terms then return chart else 
           do let t:tt = terms 
                  recurse trm = self tt $ 
-                          oneStep (trm, exprTok {tokPos = posOfTerm trm})
+                          oneStep (trm, exprTok {tokPos = getRange trm})
              case t of
                     MixfixTerm ts -> self (ts ++ tt) chart
                     MixTypeTerm q typ ps -> do 
@@ -238,7 +238,7 @@ resolver ga bs trm =
                initChart (listRules (m + 3) ga ++ 
                           (initRules ps bs 
                           ids)) (if unknownId `elem` bs then ks else Set.empty)
-       let Result ds mr = getResolved showPretty (posOfTerm trm) 
+       let Result ds mr = getResolved showPretty (getRange trm) 
                           toMixTerm chart
        addDiags ds
        return mr

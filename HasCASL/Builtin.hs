@@ -132,24 +132,19 @@ bindA :: Type -> TypeScheme
 bindA = aBindWithKind InVar universe
 
 lazyLog :: Type 
-lazyLog = LazyType unitType nullRange
+lazyLog = mkLazyType unitType
 
 aToUnitType :: Variance -> Kind -> TypeScheme
 aToUnitType v k = 
-   aBindWithKind v k $ FunType (aTypeWithKind k) PFunArr unitType nullRange
+    aBindWithKind v k $ mkFunArrType (aTypeWithKind k) PFunArr unitType
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
-eqType = bindA $ 
-          FunType (ProductType [aType, aType] nullRange)
-          PFunArr unitType nullRange
+eqType = bindA $ mkFunArrType (mkProductType [aType, aType]) PFunArr unitType
 logType = simpleTypeScheme $ 
-          FunType (ProductType [lazyLog, lazyLog] nullRange)
-          PFunArr unitType nullRange
-notType = simpleTypeScheme $ FunType lazyLog PFunArr unitType nullRange
-
-whenType = bindA $ 
-          FunType (ProductType [aType, lazyLog, aType] nullRange)
-          PFunArr aType nullRange
+          mkFunArrType (mkProductType [lazyLog, lazyLog]) PFunArr unitType
+notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
+whenType = 
+    bindA $ mkFunArrType (mkProductType [aType, lazyLog, aType]) PFunArr aType
 unitTypeScheme = simpleTypeScheme unitType
 
 botId :: Id
@@ -183,10 +178,11 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
                          (TypeInfo (toRaw k) [k] (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
-              : (predTypeId, FunKind ContraVar universe universe nullRange, [], 
+              : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn $ aToUnitType ContraVar universe)
+              : (lazyTypeId, lazyKind, [], NoTypeDefn)
               : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $ 
-                 FunType unitType PFunArr unitType nullRange)
+                 mkLazyType unitType)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
               ++ map ( \ (a, l) -> (arrowId a, funKind, 

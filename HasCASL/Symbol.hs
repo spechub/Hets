@@ -15,6 +15,7 @@ module HasCASL.Symbol where
 import HasCASL.Le
 import HasCASL.PrintLe()
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.RawSym
 import Common.Id
 import Common.Result
@@ -69,15 +70,13 @@ plainHide syms sigma =
 subSyms :: Env -> Type -> SymbolSet
 subSyms e t = case t of
            TypeName i k n ->
-               if n == 0 then if i == unitTypeId then Set.empty 
+               if n == 0 then if i == unitTypeId || i == lazyTypeId || 
+                 isArrow i || isProductId i then Set.empty 
                   else Set.singleton $ idToTypeSymbol e i k
                else Set.empty
            TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
            ExpandedType _ t1 -> subSyms e t1
            KindedType tk _ _ -> subSyms e tk
-           LazyType tl _ -> subSyms e tl
-           ProductType l _ -> Set.unions $ map (subSyms e) l
-           FunType t1 _ t2 _ -> Set.union (subSyms e t1) (subSyms e t2)
            _ -> error ("subSyms: " ++ show t)
 
 subSymsOf :: Symbol -> SymbolSet

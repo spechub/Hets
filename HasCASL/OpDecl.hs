@@ -61,8 +61,7 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
 anaAttr _ _ b = return $ Just b
 
 tuplePatternToType :: [VarDecl] -> Type
-tuplePatternToType vds = 
-    mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds) nullRange
+tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =

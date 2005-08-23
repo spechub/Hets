@@ -1,7 +1,7 @@
 class a, b, c, d < Type
 type r : a; s : a; s : b; t : c
 type [__], {__} : a -> b
-var u : [r]; v : {s}
+var u : [ r ]; v : { s }
 type tuple3 : a -> b -> c -> d
 var x : tuple3 r s t
 var y : tuple3 r s
@@ -27,8 +27,9 @@ b < Type
 c < Type
 d < Type
 %% Type Constructors -----------------------------------------------------
+? : +Type -> Type
 List : a -> b
-Logical : Type := Unit ->? Unit
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 [__] : a -> b
@@ -77,8 +78,8 @@ o1 : m
 o2 : m tuple1
 o3 : m tuple3
 o4 : nt r List s
-u : [r]
-v : {s}
+u : [ r ]
+v : { s }
 w : m List
 x : tuple3 r s t
 y : tuple3 r s

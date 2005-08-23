@@ -14,6 +14,7 @@ module HasCASL.ClassAna where
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.PrintAs()
 import Common.Id
 import HasCASL.Le
 import Common.PrettyPrint

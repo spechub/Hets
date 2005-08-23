@@ -17,7 +17,6 @@ import Common.Earley
 import HasCASL.Builtin
 import HasCASL.MixAna
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.ParseTerm
 import HasCASL.Le
 import Common.GlobalAnnotations
@@ -74,7 +73,7 @@ resolveTerm ga = do
                                          builtinIds (Set.toList ids))
                               Set.empty) 
                    initialEnv { preIds = (prec, stdPreds) }
-       return $ getResolved showPretty (posOfTerm trm) 
+       return $ getResolved showPretty (getRange trm) 
                           toMixTerm chart
 
 testTermMix :: GlobalAnnos -> AParser () WrapString

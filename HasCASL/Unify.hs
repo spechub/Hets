@@ -100,14 +100,12 @@ match :: TypeMap -> (TypeId -> TypeId -> Bool)
 match tm rel p1@(b1, ty1) p2@(b2, ty2) = case (ty1, ty2) of 
     (_, ExpandedType _ t2) -> match tm rel p1 (b2, t2) 
     (ExpandedType _ t1, _) -> match tm rel (b1, t1) p2
-    (_, LazyType t2 _) -> match tm rel p1 (b2, t2) 
-    (LazyType t1 _, _) -> match tm rel (b1, t1) p2
+    (_, TypeAppl (TypeName l _ _) t2) | l == lazyTypeId -> 
+              match tm rel p1 (b2, t2) 
+    (TypeAppl (TypeName l _ _) t1, _) | l == lazyTypeId -> 
+              match tm rel (b1, t1) p2
     (_, KindedType t2 _ _) -> match tm rel p1 (b2, t2) 
     (KindedType t1 _ _, _) -> match tm rel (b1, t1) p2
-    (ProductType _ _, _) -> match tm rel (b1, convertType ty1) p2
-    (_, ProductType _ _) -> match tm rel p1 (b2, convertType ty2)
-    (FunType _ _ _ _, _) -> match tm rel (b1, convertType ty1) p2
-    (_, FunType _ _ _ _) -> match tm rel p1 (b2, convertType ty2)
     (TypeName i1 _k1 v1, TypeName i2 _k2 v2) ->
         if rel i1 i2 && v1 == v2
            then return eps
@@ -170,7 +168,7 @@ subst m = rename (\ i k n ->
                _ -> TypeName i k n)
  
 showPrettyWithPos :: Type -> ShowS
-showPrettyWithPos a =  let p = posOfType a in
+showPrettyWithPos a =  let p = getRange a in
         showChar '\'' . showPretty a . showChar '\'' 
            . noShow (isNullRange p) (showChar ' ' . 
                showParen True (showPos $ maximumBy comparePos (rangeToList p)))

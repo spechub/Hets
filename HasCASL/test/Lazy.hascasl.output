@@ -2,14 +2,15 @@ type t
 op f : ? t -> t
 op g : t -> (? t)
 op a, b : t
-op c, d : Unit ->? t
+op c, d : ? t
 . ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
        t * t ->? Unit)
     ((op f : ? t -> t)(op a : t) : t,
-     (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
+     (op g : t -> ? t)(op c : ? t) : ? t) :
       Unit
 %% Type Constructors -----------------------------------------------------
-Logical : Type := Unit ->? Unit
+? : +Type -> Type
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
@@ -34,8 +35,8 @@ __when__else__
 a : t %(op)%
 b : t %(op)%
 bottom : forall a : Type . a_v-1 %(fun)%
-c : Unit ->? t %(op)%
-d : Unit ->? t %(op)%
+c : ? t %(op)%
+d : ? t %(op)%
 def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
 f : ? t -> t %(op)%
 false : Unit %(fun)%
@@ -47,28 +48,5 @@ true : Unit %(fun)%
 ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
      t * t ->? Unit)
   ((op f : ? t -> t)(op a : t) : t,
-   (op g : t -> ? t)(op c : Unit ->? t) : ? t) :
+   (op g : t -> ? t)(op c : ? t) : ? t) :
     Unit
-%% Diagnostics -----------------------------------------------------------
-*** Warning 8.9-8.11, trying hard to find lazy type for '__=__(f(a), g(c))'
-*** Hint, in type of '(op a : t)'
-  typename 't' (4.10)
-  is not unifiable with type '(Unit ->? ? t)' (2.9)
-
-*** Hint, in type of '(op c : Unit ->? t)'
-  typename 't' (3.8)
-  is not unifiable with type '(Unit ->? t)' (6.10)
-
-*** Hint, in type of '(op a : t)'
-  typename 't' (4.10)
-  is not unifiable with type '(Unit ->? ? t)' (2.9)
-
-*** Hint, in type of '(op c : Unit ->? t)'
-  typename 't' (3.8)
-  is not unifiable with type '(Unit ->? t)' (6.10)
-
-*** Hint 8.9-8.11, in type of '((op f : ? t -> t)(op a : t) : t,
- (op g : t -> ? t)(op c : Unit ->? t) : ? t)'
-  typename 't' (3.15)
-  is not unifiable with type '(_var_2_v2 * _var_2_v2)'
-

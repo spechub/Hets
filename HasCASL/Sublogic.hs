@@ -56,6 +56,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 
@@ -490,11 +491,14 @@ sl_classItem (ClassItem c l _) = sublogics_max (sl_classDecl c)
 
 
 sl_classDecl :: ClassDecl -> HasCASL_Sublogics
-sl_classDecl (ClassDecl _ k _) = sl_kind k
+sl_classDecl (ClassDecl _ _ _) = need_type_classes
 
+sl_Rawkind :: RawKind -> HasCASL_Sublogics
+sl_Rawkind (ClassKind _) = bottom
+sl_Rawkind (FunKind _ _ _ _) = need_hol
 
 sl_kind :: Kind -> HasCASL_Sublogics
-sl_kind (ClassKind _) = need_type_classes
+sl_kind (ClassKind i) = if i == universeId then bottom else need_type_classes
 sl_kind (FunKind _ k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
@@ -524,41 +528,38 @@ sl_typePattern (BracketTypePattern _ l _) = comp_list $ map sl_typePattern l
 sl_typePattern (TypePatternArg _ _) = need_polymorphism
 sl_typePattern _ = bottom
 
-
 sl_type :: Type -> HasCASL_Sublogics
-{- sl_type (TypeName _ k i) = 
-  if (i == 0) then sublogics_max need_type_constructors (sl_kind k)
-    else sl_kind k
-sl_type (TypeAppl t1 t2) = comp_list [need_hol, (sl_type t1), (sl_type t2)] -}
-sl_type (TypeName _ _ v) = if v /= 0 then need_polymorphism else bottom
-sl_type (TypeAppl t1 t2) = comp_list [need_type_constructors,
-                           (sl_type t1), (sl_type t2)]
-sl_type (BracketType _ l _) = comp_list $ map sl_type l
-sl_type (KindedType t k _) = sublogics_max (sl_type t) (sl_kind k)
-sl_type (ExpandedType _ t) = sl_type t
-sl_type (MixfixType l) = comp_list $ map sl_type l
-sl_type (LazyType t _) = sublogics_max need_hol (sl_type t)
-sl_type (ProductType l _) = comp_list $ map sl_type l
+sl_type = sl_BasicFun
+
+sl_Basictype :: Type -> HasCASL_Sublogics
+sl_Basictype ty = case ty of 
+    TypeName _ k v -> sublogics_max 
+        (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k 
+    KindedType t k _ -> sublogics_max (sl_Basictype t) $ sl_kind k
+    ExpandedType _ t -> sl_Basictype t
+    BracketType Parens [t] _ -> sl_Basictype t
+    _ -> case getTypeAppl ty of
+         (TypeName ide _ _, [_, _]) | isArrow ide ->
+            sublogics_max need_ho $ sl_BasicFun ty
+         (TypeName ide _ _, [arg]) | ide == lazyTypeId ->
+            sublogics_max need_hol $ sl_Basictype arg
+         (_, args) -> comp_list $ need_type_constructors : 
+                      map sl_Basictype args
+
+sl_BasicProd :: Type -> HasCASL_Sublogics
+sl_BasicProd ty = case getTypeAppl ty of
+    (TypeName ide _ _, tyArgs@(_:_:_)) | ide == productId (length tyArgs)
+        -> comp_list $ map sl_Basictype tyArgs
+    _ -> sl_Basictype ty 
+
+sl_BasicFun :: Type -> HasCASL_Sublogics
+sl_BasicFun ty = case getTypeAppl ty of
+    (TypeName ide _ _, [arg, res]) | isArrow ide -> 
+           comp_list [if isPartialArrow ide then need_part else bottom,
+              sl_BasicProd arg, sl_Basictype res]
+    _ -> sl_Basictype ty
+
 -- FOL i.e. no higher types (i.e. all types are basic, tuples, or tuple -> basic)
-sl_type (FunType t1 a t2 _) = 
-{-  let sl = comp_list [(sl_type t1), (sl_arrow a), (sl_type t2)]
-      hsl = sublogics_max need_ho sl
-  in
-    case t1 of
-      ProductType _ _ -> case t2 of 
-                           TypeName _ _ _ -> sl
-                           _ -> hsl
-      _ -> hsl
-sl_type _ = bottom -}
-  comp_list [need_ho, (sl_type t1), (sl_arrow a), (sl_type t2)]
-sl_type (TypeToken _) = bottom
-
-
-sl_arrow :: Arrow -> HasCASL_Sublogics
-sl_arrow (PFunArr) = need_part
-sl_arrow (PContFunArr) = need_part
-sl_arrow _ = bottom
-
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
 sl_typeScheme (TypeScheme l t _) = 
   comp_list $ sl_type t : map sl_typeArg l
@@ -655,7 +656,7 @@ sl_varDecl (VarDecl _ t _ _) = sl_type t
 
 sl_varKind :: VarKind -> HasCASL_Sublogics
 sl_varKind vk = case vk of
-   VarKind k -> if k == universe then bottom else sl_kind k
+   VarKind k -> sl_kind k
    Downset t -> sublogics_max need_sub $ sl_type t
    _ -> bottom
 

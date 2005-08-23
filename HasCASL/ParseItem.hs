@@ -309,15 +309,14 @@ opArgs =
 opDeclOrDefn :: OpId -> AParser st OpItem
 opDeclOrDefn o = 
     do (c, st) <- typeOrTypeScheme
-       let qs = tokPos c
-           t = toPartialTypeScheme qs st
+       let t = toPartialTypeScheme st
        opAttrs [o] [] c t
          <|> opTerm o [] nullRange c st
-         <|> return (OpDecl [o] t [] qs)
+         <|> return (OpDecl [o] t [] $ tokPos c)
     <|> 
-    do (as, ps) <- opArgs
+    do (args, ps) <- opArgs
        (c, st) <- typeOrTotalType
-       opTerm o as ps c st 
+       opTerm o args ps c st 
 
 -- | a 'Total' or a 'Partial' function definition type
 typeOrTotalType :: AParser st (Token, TypeOrTypeScheme)

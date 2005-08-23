@@ -169,8 +169,8 @@ typeSynonym loc hsname ty =
 kindToTypeArgs :: Int -> RawKind -> [HsType]
 kindToTypeArgs i k = case k of
     ClassKind _ -> []
-    FunKind _ _ kr _ -> (hsTyVar $ mkSName ("a" ++ show i) 
-                                   $ toProgPos $ getRange k) 
+    FunKind _ _ kr ps -> (hsTyVar $ mkSName ("a" ++ show i) 
+                                   $ toProgPos ps) 
                       : kindToTypeArgs (i+1) kr
 
 getAliasArgs :: TypeScheme -> [HsType]
@@ -243,28 +243,23 @@ translateTypeScheme (TypeScheme _ t _) =
 
 -- | Translation of types (e.g. product type, type application ...).
 translateType :: Type -> HsType
-translateType t = 
-  case t of
-  FunType t1 _arr t2 _ -> hsTyFun (translateType t1) (translateType t2)
-  ProductType tlist ps -> hsTyTuple (toProgPos ps) 
-                        $ map translateType tlist
-  LazyType lt _ -> translateType lt
-  KindedType kt _kind _ -> translateType kt
-  TypeAppl t1 t2 -> if isPredType t1 then 
-       hsTyFun (translateType t2) boolType
-       else hsTyApp (translateType t1) (translateType t2)
-  TypeName tid _kind n -> 
-      if n == 0 then
-         if tid == unitTypeId then boolType
-         else if tid == logId then 
-              hsTyFun boolType boolType
-         else hsTyCon $ mkHsIdent UpperId tid
-      else hsTyVar $ mkHsIdent LowerId tid
-  _ -> error ("translateType: unexpected type: " ++ show t)
-  where boolType = hsTyCon $ mkSName "Bool" $ toProgPos $ getRange t
-        isPredType ty = case ty of
-                        TypeName tid _ n -> n == 0 && tid == predTypeId
-                        _ -> False
+translateType t = case getTypeAppl t of 
+   (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
+      if n == 0 then 
+          if tid == unitTypeId && null tyArgs then
+             hsTyCon $ mkSName "Bool" $ toProgPos $ getRange t
+          else if tid == lazyTypeId && num == 1 then
+             translateType $ head tyArgs
+          else if isArrow tid && num == 2 then
+             let [t1, t2] = tyArgs in
+             hsTyFun (translateType t1) (translateType t2)
+          else if isProductId tid && num > 1 then
+             hsTyTuple loc0 $ map translateType tyArgs
+          else foldl hsTyApp (hsTyCon $ mkHsIdent UpperId tid)
+               $ map translateType tyArgs
+       else foldl hsTyApp (hsTyVar $ mkHsIdent LowerId tid)
+            $ map translateType tyArgs
+   _ -> error "translateType"
 
 toProgPos :: Range -> SrcLoc
 toProgPos p = if isNullRange p then loc0 
@@ -410,7 +405,7 @@ translateLetProgEq env (ProgEq pat t ps) =
 -- | Translation of a toplevel program equation
 translateProgEq :: Env -> ProgEq -> HsDecl
 translateProgEq env (ProgEq pat t _) =
-    let loc = toProgPos $ posOfTerm pat in case getAppl pat of
+    let loc = toProgPos $ getRange pat in case getAppl pat of
     Just (uid, sc, args) -> 
         let (_, ui) = translateId env uid sc
         in hsFunBind loc [HsMatch loc ui

@@ -8,8 +8,9 @@ forall y : Rat
       Unit
   %(divide_def2_Rat)%
 %% Type Constructors -----------------------------------------------------
+? : +Type -> Type
 Int : Type < Rat
-Logical : Type := Unit ->? Unit
+Logical : Type := ? Unit
 Nat : Type < Int
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Rat : Type

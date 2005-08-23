@@ -21,7 +21,8 @@ program ((op g[_var_25_v25; _var_27_v27]
             _var_25_v25
           = (var a : _var_25_v25)
 %% Type Constructors -----------------------------------------------------
-Logical : Type := Unit ->? Unit
+? : +Type -> Type
+Logical : Type := ? Unit
 Pair
   : Type -> Type -> Type
      %[free type Pair(a : Type)(b : Type)

@@ -131,42 +131,33 @@ transSignature sign =
 transOpInfo :: OpInfo -> Maybe Typ
 transOpInfo (OpInfo t _ opDef) = 
   case opDef of
-    NoOpDefn Pred   -> Just (transPredType t)
-    NoOpDefn _      -> Just (transOpType t)
     ConstructData _ -> Nothing
-    Definition _ _  -> Just (transOpType t)
-    _ -> error "HasCASL2IsabelleHOL.transOpInfo"
+    _  -> Just (transOpType t)
 
 -- operation type
 transOpType :: TypeScheme -> Typ
 transOpType (TypeScheme _ op _) = transType op
 
--- predicate type
-transPredType :: TypeScheme -> Typ
-transPredType  (TypeScheme _ pre _) = 
-       case pre of
-         FunType t _ _ _ -> mkFunType (transType t) boolType
-         _  -> error "HasCASL2IsabelleHOL.transPredType"
-
 -- types
 transType :: Type -> Typ
 -- type name
-transType (TypeName tyId _ i) = 
-    if i == 0 then Type (showIsaT tyId baseSign) [] [] -- translate kind here!!
-       else TFree (showIsaT tyId baseSign) []
--- product type
-transType (ProductType ts _) = 
-  foldl1 IsaSign.prodType (map transType ts)
--- function type
-transType (FunType t arr t' _) = 
-  case arr of
-    PFunArr -> mkFunType (transType t) (mkOptionType (transType t'))
-    FunArr  -> mkFunType (transType t) (transType t')
-    _ -> error "HasCASL2IsabelleHOL.transType.FunType"
--- type application
-transType (TypeAppl t t') = 
-    binTypeAppl (transType t) (transType t')
-transType _ = error "HasCASL2IsabelleHOL.transType"
+transType t = case getTypeAppl t of 
+   (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
+      if n == 0 then 
+          if tid == unitTypeId && null tyArgs then boolType
+          else if tid == lazyTypeId && num == 1 then
+             transType $ head tyArgs
+          else if isArrow tid && num == 2 then
+             let [t1, t2] = tyArgs in
+             mkFunType (transType t1) $ (if isPartialArrow tid then 
+                                         mkOptionType else id) $ transType t2
+          else if isProductId tid && num > 1 then
+             foldl1 IsaSign.prodType $ map transType tyArgs
+          else foldl binTypeAppl (Type (showIsaT tid baseSign) [] [])
+               $ map transType tyArgs
+       else foldl binTypeAppl (TFree (showIsaT tid baseSign) [])
+            $ map transType tyArgs
+   _ -> error "transType"
 
 
 ---------- translation of a datatype declaration ----------
@@ -273,14 +264,13 @@ transTerm sign (TypedTerm t _ _ _) =
       mkApp s sg tt tt' = termAppl (termAppl (con s) (transTerm sg tt)) 
                          (transTerm sg tt')
       transApplOp s tt tt' =
-        case tt of TypedTerm _ _ typ _ ->
-                     case typ of FunType _ PFunArr _ _ -> 
-                                   mkApp "app" s tt tt'
-                                 FunType _ FunArr _ _  -> 
-                                   mkApp "apt" s tt tt'
-                                 _                     -> 
-                                   mkApp "app" s tt tt'
-                   _ -> mkApp "app" s tt tt'
+        case tt of 
+        TypedTerm _ _ typ _ -> case getTypeAppl typ of 
+            (TypeName tid _ 0, [_, _]) | isArrow tid -> 
+                if isPartialArrow tid then mkApp "app" s tt tt'
+                   else mkApp "apt" s tt tt'
+            _ -> mkApp "app" s tt tt'
+        _ -> mkApp "app" s tt tt'
     transApplTerm _ _ = error "HasCASL2IsabelleHOL.transApplTerm"
 
 -- lambda abstraction
@@ -468,13 +458,14 @@ getTypeName p =
      ApplTerm  t _ _                   -> getTypeName t
      TupleTerm ts _                    -> getTypeName (head ts)
      _  -> error "HasCASL2IsabelleHOL.getTypeName"
-   where name tp = case tp of 
-                     TypeName tyId _ 0       -> tyId
-                     TypeAppl tp' _          -> name tp'
-                     FunType _ _ tp' _       -> name tp'
-                     ProductType (tp':_) _   -> name tp'
-                     _                       -> 
-                       error "HasCASL2IsabelleHOL.name (of type)"
+   where name tp = case getTypeAppl tp of 
+             (TypeName tyId _ 0, tyArgs) -> let num = length tyArgs in
+                 if isArrow tyId && num == 2 then 
+                    name $ head $ tail tyArgs
+                 else if isProductId tyId && num > 1 then
+                    name $ head tyArgs 
+                 else tyId
+             _ -> error "HasCASL2IsabelleHOL.name (of type)"
 
 
 -- Input: Case alternatives and name of one constructor

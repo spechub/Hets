@@ -60,16 +60,13 @@ mapAlt m tm args dt c@(Construct mi ts p sels) =
 -- | get the partiality from a constructor type 
 -- with a given number of curried arguments
 getPartiality :: [a] -> Type -> Partiality
-getPartiality args t = case t of
-   KindedType ty _ _ -> getPartiality args ty
-   FunType _ a t2 _ -> case args of 
+getPartiality args t = case getTypeAppl t of
+   (TypeName i _ _, [_, res]) | isArrow i -> case args of
      [] -> Total
-     [_] -> case a of 
-            PFunArr  -> Partial
-            PContFunArr -> Partial
-            _ -> Total
-     _:rs -> getPartiality rs t2
-   LazyType _ _ -> if null args then Partial else error "getPartiality"
+     [_] -> if isPartialArrow i then Partial else Total
+     _ : rs -> getPartiality rs res
+   (TypeName i _ _, [_]) | i == lazyTypeId -> 
+        if null args then Partial else error "getPartiality"
    _ -> Total
 
 mapSentence :: Morphism -> Sentence -> Result Sentence

@@ -15,6 +15,7 @@ module HasCASL.TypeMixAna (mkTypeConstrAppl) where
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.PrintAs()
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
@@ -56,21 +57,23 @@ mkTypeConstrAppls m ty = case ty of
     KindedType t k p -> do 
        newT <- mkTypeConstrAppls m t
        return $ KindedType newT k p
-    LazyType t p -> do
-       newT <- mkTypeConstrAppls TopLevel t
-       return $ LazyType newT p 
-    ProductType ts ps -> let n = length ts in 
-       if all isPlaceType ts && n > 1 then 
-       return $ toType $ productId n else do
-       mTs <- mapM (\ t -> mkTypeConstrAppls TopLevel t) ts
-       return $ mkProductType mTs ps
-    FunType t1 a t2 ps -> if isPlaceType t1 && isPlaceType t2 then
-       return $ toType $ arrowId a else do
-       newT1 <- mkTypeConstrAppls TopLevel t1
-       newT2 <- mkTypeConstrAppls TopLevel t2
-       return $ FunType newT1 a newT2 ps
-    ExpandedType _ t2 -> mkTypeConstrAppls m t2
-    _ -> error $ "mkTypeConstrAppls " ++ showPretty ty "\n" ++ show ty
+    _ -> case getTypeAppl ty of 
+       (top@(TypeName i _ _), ts) -> let n = length ts in 
+           if i == lazyTypeId && n == 1 then do
+           newT <- mkTypeConstrAppls TopLevel $ head ts
+           return $ mkLazyType newT
+           else if i == productId n then
+             if all isPlaceType ts then 
+                return top else do
+                mTs <- mapM (mkTypeConstrAppls TopLevel) ts
+                return $ mkProductType mTs
+           else if n == 2 && isArrow i then
+                if all isPlaceType ts then
+                return top else do
+                mTs <- mapM (mkTypeConstrAppls TopLevel) ts
+                return $ mkTypeAppl top mTs
+           else error "mkTypeConstrAppls"
+       _ -> error $ "mkTypeConstrAppls " ++ showPretty ty "\n" ++ show ty
 
 isPlaceType :: Type -> Bool
 isPlaceType ty = case ty of 

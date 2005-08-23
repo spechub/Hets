@@ -282,9 +282,9 @@ primType = typeToken
 
 -- | a 'primType' possibly preceded by 'quMarkT'
 lazyType :: AParser st Type
-lazyType = do q <- quMarkT
+lazyType = do quMarkT
               t <- primType 
-              return (LazyType t $ tokPos q)
+              return (mkLazyType t)
            <|> primType
 
 -- | several 'lazyType's (as 'MixfixType') possibly followed by 'kindAnno' 
@@ -296,8 +296,8 @@ mixType = do ts <- many1 lazyType
 
 -- | 'mixType' possibly interspersed with 'crossT' 
 prodType :: AParser st Type
-prodType = do (ts, ps) <- mixType `separatedBy` crossT
-              return $ mkProductType ts $ catPos ps
+prodType = do (ts, _) <- mixType `separatedBy` crossT
+              return $ mkProductType ts
 
 -- | a (right associativ) function type  
 parseType :: AParser st Type
@@ -305,22 +305,22 @@ parseType =
     do t1 <- prodType 
        do a <- arrowT <?> funS
           t2 <- parseType
-          return (FunType t1 (fst a) t2 $ snd a)
+          return (mkFunArrType t1 a t2)
         <|> return t1
 
 -- | parse one of the four possible 'Arrow's
-arrowT :: AParser st (Arrow, Range)
-arrowT = do a <- asKey funS
-            return (FunArr, tokPos a)
+arrowT :: AParser st Arrow
+arrowT = do asKey funS
+            return FunArr
          <|>
-         do a <- asKey pFun
-            return (PFunArr, tokPos a)
+         do asKey pFun
+            return PFunArr
          <|>
-         do a <- asKey contFun
-            return (ContFunArr, tokPos a)
+         do asKey contFun
+            return ContFunArr
          <|>
-         do a <- asKey pContFun 
-            return (PContFunArr, tokPos a)
+         do asKey pContFun 
+            return PContFunArr
 
 -- | parse a 'TypeScheme' using 'forallT', 'typeVars', 'dotT' and 'parseType'
 typeScheme :: AParser st TypeScheme
@@ -347,14 +347,14 @@ typeOrTypeScheme = do q <- qColonT
                       s <- typeScheme
                       return (q, TotalTypeScheme s)
 
-toPartialTypeScheme :: Range -> TypeOrTypeScheme -> TypeScheme
-toPartialTypeScheme qs ts = case ts of 
-            PartialType t -> simpleTypeScheme $ liftType t qs
+toPartialTypeScheme :: TypeOrTypeScheme -> TypeScheme
+toPartialTypeScheme ts = case ts of 
+            PartialType t -> simpleTypeScheme $ mkLazyType t
             TotalTypeScheme s -> s
 
 partialTypeScheme :: AParser st (Token, TypeScheme)
 partialTypeScheme = do (c, ts) <- typeOrTypeScheme
-                       return (c, toPartialTypeScheme (tokPos c) ts)
+                       return (c, toPartialTypeScheme ts)
 
 
 -- * varDecls and genVarDecls

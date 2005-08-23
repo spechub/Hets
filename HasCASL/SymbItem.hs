@@ -35,7 +35,7 @@ symb = do i <- uninstOpId
                t <- parseType
                let p = tokPos c
                return (Symb i (Just $ SymbType $ simpleTypeScheme $ 
-                                  LazyType t p) p)
+                                  mkLazyType t) p)
              <|> return (Symb i Nothing $ posOfId i)
                
 -- | parse a mapped symbol

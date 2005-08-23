@@ -37,6 +37,7 @@ a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
+? : +Type -> Type
 Data1
   : Type < Data2
      %[type Data1
@@ -59,7 +60,7 @@ Data4
      %[type Data4
          ::= Cons41 : Data1 * Data2 ->? Data4 (sel1 :? Data1; sel2 :? Data2)
              Cons42 : Data2 * Data1 ->? Data4 (sel2 :? Data2; sel1 :? Data1)]%
-Logical : Type := Unit ->? Unit
+Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
 Unit : (TYPE, Type)
 __*__ : +Type -> +Type -> Type
@@ -196,7 +197,7 @@ type Data4
 %% Diagnostics -----------------------------------------------------------
 *** Warning 1.7, void universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'
-*** Error, illegal type pattern argument '__'
+*** Error 7.11, illegal type pattern argument '__'
 *** Error 11.16, not a class 'd'
 *** Warning 11.7, unchanged class 'a'
 *** Warning 11.10, unchanged class 'b'
@@ -205,29 +206,25 @@ type Data4
 *** Hint 16.7, not a class 's'
 *** Hint 18.15, rebound variable 'x'
 *** Error 20.12, unexpected mixfix token: res
-*** Warning 21.22, trying hard to find lazy type for 'program fst(x : s, var y : t) : s = x'
 *** Hint 21.1, no type match for: fst
   with (maximal) type: _var_4_v4 ->? s
   known types:
     
-*** Hint 21.5-21.13, untypable application (with result type: s)
+*** Hint 21.1-21.16, untypable application (with result type: s)
  'fst(x : s, var y : t)'
 *** Error 21.22, no typing for 'program fst(x : s, var y : t) : s = x'
-*** Warning 22.22, trying hard to find lazy type for 'program snd(x : s, var y : t) : t = y'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _var_5_v5 ->? t
   known types:
     
-*** Hint 22.5-22.13, untypable application (with result type: t)
+*** Hint 22.1-22.16, untypable application (with result type: t)
  'snd(x : s, var y : t)'
 *** Error 22.22, no typing for 'program snd(x : s, var y : t) : t = y'
-*** Hint 26.6, redeclared type 's'
-*** Warning 28.33, trying hard to find lazy type for 'program all(var p : ? s) : ? Unit = eq(p, tt)'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _var_6_v6 ->? ? Unit
   known types:
     
-*** Hint 28.13-28.15, untypable application (with result type: ? Unit)
+*** Hint 28.9-28.15, untypable application (with result type: ? Unit)
  'all(var p : ? s)'
 *** Error 28.33, no typing for 'program all(var p : ? s) : ? Unit = eq(p, tt)'
 *** Error 30.40, unexpected mixfix token: t1
@@ -243,6 +240,7 @@ type Data4
 *** Hint 45.9, not a class 't'
 *** Hint 45.8, rebound variable 'x'
 *** Hint 45.16, not a class 't'
+*** Hint 57.11, redeclared type 's'
 *** Hint 66.22, not a class 's'
 *** Hint 66.21, rebound variable 'x'
 *** Error 66.25, unexpected mixfix token: e

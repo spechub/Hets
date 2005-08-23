@@ -13,14 +13,16 @@ printing data types of the abstract syntax
 module HasCASL.PrintAs where
 
 import HasCASL.As
-import Common.Keywords
+import HasCASL.AsUtils
 import HasCASL.HToken
 import Common.Lib.Pretty
 import Common.Id
+import Common.Keywords
 import Common.PPUtils
 import Common.PrettyPrint
 import Common.GlobalAnnotations(GlobalAnnos)
 import Common.AS_Annotation(mapAnM)
+import Data.List
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -54,7 +56,8 @@ bracket b t = let (o,c) = getBrackets b in text o <> t <> text c
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 printKind :: GlobalAnnos -> Kind -> Doc
-printKind ga k = if k == universe then empty else printVarKind ga InVar (VarKind k)
+printKind ga k = if k == universe then empty else 
+                 printVarKind ga InVar (VarKind k)
 
 -- | print the kind of a variable with its variance and a preceding colon
 printVarKind :: GlobalAnnos -> Variance -> VarKind -> Doc
@@ -65,61 +68,71 @@ printVarKind ga e vk = case vk of
                                  printText0 ga e <> printText0 ga k
                     MissingKind -> empty
 
-instance PrettyPrint Type where 
-    printText0 ga ty = case ty of
-        TypeName name _k i -> printText0 ga name  <> 
+data TypePrec = Outfix | Prefix | ProdInfix | FunInfix deriving (Eq, Ord)
+
+parenPrec :: TypePrec -> (TypePrec, Type) -> Type
+parenPrec p1 (p2, d) = if p2 < p1 then d else BracketType Parens [d] nullRange
+
+toMixType :: Type -> (TypePrec, Type)
+toMixType typ = case typ of 
+    ExpandedType t1 t2 -> (Prefix, ExpandedType 
+                      (parenPrec Prefix $ toMixType t1)
+                         $ parenPrec Prefix $ toMixType t2)
+    BracketType k l ps -> (Outfix, BracketType k (map 
+                             (snd . toMixType) l) ps)
+    KindedType t kind ps -> (Prefix, KindedType 
+                             (parenPrec Prefix $ toMixType t) kind ps) 
+    MixfixType ts -> (Prefix, MixfixType $ map (snd . toMixType) ts)
+    _ -> let (topTy, tyArgs) = getTypeAppl typ in
+      case topTy of  
+      TypeName name@(Id ts cs _) _k _i -> case tyArgs of 
+          [] -> (Outfix, topTy)
+          [arg] -> let dArg = toMixType arg in
+               case ts of 
+               [e1, e2, e3] | not (isPlace e1) && isPlace e2 
+                              && not (isPlace e3) && null cs -> 
+                   (Outfix, MixfixType [TypeToken e1, snd dArg, TypeToken e3])
+               _ -> (Prefix, MixfixType [topTy, parenPrec Prefix dArg])
+          [arg1, arg2] -> let dArg1 = toMixType arg1 
+                              dArg2 = toMixType arg2 in
+               case ts of 
+               [e1, e2, e3] | isPlace e1 && not (isPlace e2)
+                              && isPlace e3 && null cs -> 
+                    if tokStr e2 == prodS then 
+                      (ProdInfix, MixfixType [
+                       parenPrec ProdInfix dArg1, TypeToken e2,
+                       parenPrec ProdInfix dArg2])
+                    else -- assume fun type 
+                      (FunInfix, MixfixType [
+                       parenPrec FunInfix dArg1, TypeToken e2, snd dArg2])
+               _ -> (Prefix, MixfixType [topTy, parenPrec Prefix dArg1,
+                               parenPrec Prefix dArg2])
+          _ -> if name == productId (length tyArgs) then 
+                (ProdInfix, MixfixType $ intersperse 
+                 (TypeToken $ mkSimpleId prodS) $ 
+                          map (parenPrec ProdInfix . toMixType) tyArgs)
+                else (Prefix, MixfixType $ topTy :   
+                            map (parenPrec Prefix . toMixType) tyArgs)
+      _ | null tyArgs -> (Outfix, topTy)
+      _ -> (Prefix, MixfixType $ parenPrec ProdInfix (toMixType topTy) 
+         : map (parenPrec Prefix . toMixType) tyArgs)
+
+printType :: GlobalAnnos -> Type -> Doc
+printType ga ty = case ty of 
+        TypeName name _k i -> printText0 ga name  <>
           if i == 0 then empty else text ("_v"++ show i)
-        TypeAppl t1 t2 -> case t1 of 
-            TypeName (Id [a, Token "__" _, b] [] _) _ _ ->
-                printText0 ga a <> printText0 ga t2 <> printText0 ga b
-            TypeAppl (TypeName (Id [Token "__" _, inTok, Token "__" _] 
-                                [] _) _ _) t0 -> parens $ printText0 ga t0 
-                         <+> printText0 ga inTok <+> printText0 ga t2
-            _ -> (case t1 of 
-                  TypeName _ _ _ -> id
-                  TypeToken _ -> id
-                  BracketType _ _ _ -> id
-                  TypeAppl _ _ -> id 
-                  _ -> parens) (printText0 ga t1) <+> 
-                 (case t2 of 
-                  TypeName _ _ _ -> id
-                  TypeToken _ -> id
-                  BracketType _ _ _ -> id
-                  _ -> parens) (printText0 ga t2) 
-        ExpandedType t1 t2 -> printText0 ga t1 <> (case t2 of
-                                ProductType [] _ -> empty 
-                                _ -> text asP <> parens (printText0 ga t2))
+        TypeAppl t1 t2 -> parens (printType ga t1) <> 
+                          parens (printType ga t2) 
+        ExpandedType t1 t2 -> printType ga t1 <> text asP <> printType ga t2
         TypeToken t -> printText0 ga t
-        BracketType k l _ -> bracket k $ commaT_text ga l
-        KindedType t kind _ -> (case t of 
-                                FunType _ _ _ _ -> parens
-                                ProductType [] _ -> id
-                                ProductType _ _ -> parens
-                                LazyType _ _ -> parens
-                                TypeAppl _ _ -> parens
-                                _ -> id) (printText0 ga t) 
+        BracketType k l _ -> bracket k $ fsep $ 
+                             punctuate comma $ map (printType ga) l
+        KindedType t kind _ -> printType ga t
                                        <+> colon <+> printText0 ga kind
-        MixfixType ts -> fsep (map (printText0 ga) ts)
-        LazyType t _ -> text quMark <+> (case t of 
-                                         FunType _ _ _ _ -> parens
-                                         ProductType [] _ -> id
-                                         ProductType _ _ -> parens
-                                         KindedType _ _ _ -> parens
-                                         _ -> id) (printText0 ga t)  
-        ProductType ts _ -> if null ts then text unitTypeS
-                                       -- parens empty 
-                          else fsep (punctuate (space <> char '*') 
-                                     (map ( \ t -> 
-                                            (case t of 
-                                            FunType _ _ _ _ -> parens
-                                            ProductType [] _ -> id
-                                            ProductType _ _ -> parens
-                                            _ -> id) $ printText0 ga t) ts))
-        FunType t1 arr t2 _ -> (case t1 of 
-                                FunType _ _ _ _ -> parens
-                                _ -> id) (printText0 ga t1)
-                                        <+> printText0 ga arr
-                                        <+> printText0 ga t2
+        MixfixType ts -> fsep $ map (printType ga) ts
+
+instance PrettyPrint Type where
+    printText0 ga = printType ga . snd . toMixType 
 
 -- no curried notation for bound variables 
 instance PrettyPrint TypeScheme where
@@ -154,10 +167,10 @@ instance PrettyPrint Term where
                   _ -> False) t
 
 unPredType :: Type -> Type
-unPredType t = case t of
-               FunType ty PFunArr (TypeName ut (ClassKind _) 0) _ -> 
-                   if ut == unitTypeId then ty else t
-               _ -> t
+unPredType t = case getTypeAppl t of
+    (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0]) | 
+         ut == unitTypeId && at == arrowId PFunArr -> ty
+    _ -> t
 
 unPredTypeScheme :: TypeScheme -> TypeScheme
 unPredTypeScheme = mapTypeOfScheme unPredType
@@ -247,9 +260,6 @@ instance PrettyPrint InstOpId where
     printText0 ga (InstOpId n l _) = printText0 ga n <> noPrint (null l) 
                                      (brackets $ semiT_text ga l)
 
-------------------------------------------------------------------------
--- item stuff
-------------------------------------------------------------------------
 -- | print a 'TypeScheme' as a pseudo type
 printPseudoType :: GlobalAnnos -> TypeScheme -> Doc
 printPseudoType ga (TypeScheme l t _) = noPrint (null l) (text lamS 

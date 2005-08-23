@@ -73,58 +73,21 @@ latexVarKind ga vv vk = case vk of
                         space <> hc_sty_axiom lessS <\+> printLatex0 ga t
                     _ -> empty
 
-instance PrintLaTeX Type where 
-    printLatex0 ga ty = case ty of
-        TypeName name _k _i -> printLatex0 ga name 
-        TypeAppl t1 t2 -> case t1 of 
-            TypeName (Id [a, Token "__" _, b] [] _) _ _ ->
-                printLatex0 ga a <> printLatex0 ga t2 <> printLatex0 ga b
-            TypeAppl (TypeName (Id [Token "__" _, inTok, Token "__" _] 
-                                [] _) _ _) t0 -> printLatex0 ga t0 
-                         <\+> printLatex0 ga inTok <\+> printLatex0 ga t2
-            _ -> (case t1 of 
-                  TypeName _ _ _ -> id
-                  TypeToken _ -> id
-                  BracketType _ _ _ -> id
-                  TypeAppl _ _ -> id 
-                  _ -> parens) (printLatex0 ga t1) <\+> 
-                 (case t2 of 
-                  TypeName _ _ _ -> id
-                  TypeToken _ -> id
-                  BracketType _ _ _ -> id
-                  _ -> parens) (printLatex0 ga t2) 
-        ExpandedType t1 _ -> printLatex0 ga t1     
+latexType :: GlobalAnnos -> Type -> Doc
+latexType ga ty = case ty of 
+        TypeName name _k _i -> printLatex0 ga name
+        TypeAppl t1 t2 -> parens (latexType ga t1) <> 
+                          parens (latexType ga t2) 
+        ExpandedType t1 _ -> latexType ga t1
         TypeToken t -> printLatex0 ga t
-        BracketType k l _ -> latexBracket k $ commaT_latex ga l
-        KindedType t kind _ -> (case t of 
-                                FunType _ _ _ _ -> parens
-                                ProductType [] _ -> id
-                                ProductType _ _ -> parens
-                                LazyType _ _ -> parens
-                                TypeAppl _ _ -> parens
-                                _ -> id) (printLatex0 ga t) 
-                                       <\+> colon_latex <\+> printLatex0 ga kind
-        MixfixType ts -> fsep_latex (map (printLatex0 ga) ts)
-        LazyType t _ -> hc_sty_axiom quMark <\+> (case t of 
-                                         FunType _ _ _ _ -> parens
-                                         ProductType [] _ -> id
-                                         ProductType _ _ -> parens
-                                         KindedType _ _ _ -> parens
-                                         _ -> id) (printLatex0 ga t)  
-        ProductType ts _ -> if null ts then hc_sty_plain_keyword "Unit"
-                                       -- parens empty 
-                          else fsep_latex (punctuate (space <> char '*') 
-                                     (map ( \ t -> 
-                                            (case t of 
-                                            FunType _ _ _ _ -> parens
-                                            ProductType [] _ -> id
-                                            ProductType _ _ -> parens
-                                            _ -> id) $ printLatex0 ga t) ts))
-        FunType t1 arr t2 _ -> (case t1 of 
-                                FunType _ _ _ _ -> parens
-                                _ -> id) (printLatex0 ga t1)
-                                        <\+> printLatex0 ga arr
-                                        <\+> printLatex0 ga t2
+        BracketType k l _ -> latexBracket k $ fsep_latex $ 
+                             punctuate comma_latex $ map (latexType ga) l
+        KindedType t kind _ -> latexType ga t
+                               <\+> colon_latex <\+> printLatex0 ga kind
+        MixfixType ts -> fsep_latex $ map (latexType ga) ts
+
+instance PrintLaTeX Type where 
+    printLatex0 ga = latexType ga . snd . toMixType 
 
 -- no curried notation for bound variables 
 instance PrintLaTeX TypeScheme where

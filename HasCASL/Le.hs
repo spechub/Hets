@@ -83,9 +83,6 @@ rename m t = case t of
            KindedType tk k ps -> 
                KindedType (rename m tk) k ps
            MixfixType l -> MixfixType $ map (rename m) l
-           LazyType tl ps -> LazyType (rename m tl) ps
-           ProductType l ps -> ProductType (map (rename m) l) ps
-           FunType t1 a t2 ps -> FunType (rename m t1) a (rename m t2) ps
 
 -- | rename the type according to identifier map (for comorphisms)
 mapType :: IdMap -> Type -> Type
