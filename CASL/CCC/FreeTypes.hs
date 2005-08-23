@@ -87,7 +87,7 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("Op: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
-        in warning Nothing ("Predication: " ++ old_pred_id ++ " is not new")pos
+        in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
     | not $ and $ map checkTerm leadingTerms =
         let (Application os _ pos) = 
 		head $ filter (\t->not $ checkTerm t) leadingTerms
@@ -678,8 +678,8 @@ elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
     c_axms = if null n_impli_equiv 
              then (axhead ++ axAux ++ "\";\n")
              else (axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")
-    ipath = "./CASL/CCC/Input.cime"
-    opath = "./CASL/CCC/Result.cime"
+    ipath = "/tmp/Input.cime"
+    opath = "/tmp/Result.cime"
     c_proof = ("termcrit \"dp\";\n" ++
                "termination axioms;\n" ++
                "#quit;")  
@@ -1227,8 +1227,8 @@ equiv_cime index f =
               (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
               fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
               ")," ++ (terms_cime ts1) ++ ");\n" ++
-              fk2 ++ "(False," ++ (terms_cime ts1) ++ ")" ++
-              ") -> " ++ "True;\n"),(index + 2))
+              fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> " ++ "True;\n"),
+              (index + 2))
           _ -> error "!! " --(showPretty f1 "CASL.CCC.FreeTypes.<equiv_cime1>")
     _ -> error "CASL.CCC.FreeTypes.<equiv_cime2>"
   where fk1 = "af" ++ (show index)
