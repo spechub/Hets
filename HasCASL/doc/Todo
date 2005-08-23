@@ -66,7 +66,7 @@ program equations or case patterns. (Merge.hs?)
 
 Sentences for attributes comm, assoc, unit are not generated yet.
 
-MixAna only recognises new variables and thus cannot check for shadowing
+MixAna only recognizes unknown variables and thus cannot check for shadowing
 
 Unify alone handles lazy types 
 
