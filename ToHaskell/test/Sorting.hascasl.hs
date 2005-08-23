@@ -69,7 +69,7 @@ a___2_L_E_2 (x, y)
     =   (\ (a, b, c) -> if b then a else c)
             (True,
              error{-(((,) Nat Nat) -> Bool)-}
-                 "equality at __unknown__:0,0"
+                 "equality at Sorting.hascasl:14,7"
                  (x, y),
              error{-Bool-} "bottom at __unknown__:0,0")
 data List_FNat_J = Nil | Cons !(Nat, List_FNat_J)
