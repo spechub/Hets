@@ -3,20 +3,18 @@ class Ord < Eq
 type a : Ord
 op f : forall e : Ord . e -> e
 op c : a
-. ((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+. ((fun __=__[a] : forall a : Type . a * a ->? Unit) :
        a * a ->? Unit)
-    (((op f[a] : forall e : Ord . e_v-1 -> e_v-1) : a -> a)
-       (((op f[a] : forall e : Ord . e_v-1 -> e_v-1) : a -> a)(op c : a) :
-            a) :
+    (((op f[a] : forall e : Ord . e -> e) : a -> a)
+       (((op f[a] : forall e : Ord . e -> e) : a -> a)(op c : a) : a) :
          a,
      op c : a) :
       Unit
 type t : Eq
 op b : t
-. ((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+. ((fun __=__[t] : forall a : Type . a * a ->? Unit) :
        t * t ->? Unit)
-    (((op f[t] : forall e : Ord . e_v-1 -> e_v-1) : t -> t)(op b : t) :
-         t,
+    (((op f[t] : forall e : Ord . e -> e) : t -> t)(op b : t) : t,
      op b : t) :
       Unit
 %% Classes ---------------------------------------------------------------
@@ -25,7 +23,7 @@ Ord < Eq
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
@@ -40,44 +38,40 @@ t : Eq
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__
-  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
+__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 b : t %(op)%
-bottom : forall a : Type . a_v-1 %(fun)%
+bottom : forall a : Type . a %(fun)%
 c : a %(op)%
-def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-f : forall e : Ord . e_v-1 -> e_v-1 %(op)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+f : forall e : Ord . e -> e %(op)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[a] : forall a : Type . a * a ->? Unit) :
      a * a ->? Unit)
-  (((op f[a] : forall e : Ord . e_v-1 -> e_v-1) : a -> a)
-     (((op f[a] : forall e : Ord . e_v-1 -> e_v-1) : a -> a)(op c : a) :
-          a) :
+  (((op f[a] : forall e : Ord . e -> e) : a -> a)
+     (((op f[a] : forall e : Ord . e -> e) : a -> a)(op c : a) : a) :
        a,
    op c : a) :
     Unit
-((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[t] : forall a : Type . a * a ->? Unit) :
      t * t ->? Unit)
-  (((op f[t] : forall e : Ord . e_v-1 -> e_v-1) : t -> t)(op b : t) :
-       t,
+  (((op f[t] : forall e : Ord . e -> e) : t -> t)(op b : t) : t,
    op b : t) :
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 16.3, constrain 't : Ord' is unprovable
   known kinds are: [ Eq ]
-*** Error 16.3, in term'((fun __=__[t] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+*** Error 16.3, in term'((fun __=__[t] : forall a : Type . a * a ->? Unit) :
      t * t ->? Unit)
-  (((op f[t] : forall e : Ord . e_v-1 -> e_v-1) : t -> t)(op b : t) :
-       t,
+  (((op f[t] : forall e : Ord . e -> e) : t -> t)(op b : t) : t,
    op b : t) :
     Unit' of type 'Unit'
  unresolved constraints '{ t : Ord }'

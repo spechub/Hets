@@ -1,34 +1,32 @@
 var a : Type; b : Type
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
-op f : forall a : Type; b : Type .
-         a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+op f : forall a : Type; b : Type . a * b -> Pair a b
      = \ (var a : a, var b : b)
-         .! (((op Pair[a_v1; b_v2]
-               : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                  a_v1 * b_v2 -> Pair a_v1 b_v2)
+         .! (((op Pair[a; b]
+               : forall a : Type; b : Type . a * b -> Pair a b) :
+                  a * b -> Pair a b)
                (var a : a, var b : b) :
-                 Pair a_v1 b_v2) as
-                Pair a_v1 b_v2
+                 Pair a b) as
+                Pair a b
 op g : Pair a b ->? a
-program ((op g[_var_25_v25; _var_27_v27]
-          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
-             Pair _var_25_v25 _var_27_v27 ->? _var_25_v25)
-          (((op Pair[_var_25_v25; _var_27_v27]
-             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                _var_25_v25 * _var_27_v27 -> Pair _var_25_v25 _var_27_v27)
-             (var a : _var_25_v25, var b : _var_27_v27) :
-               Pair _var_25_v25 _var_27_v27) :
-            _var_25_v25
-          = (var a : _var_25_v25)
+program ((op g[_v25; _v27]
+          : forall a : Type; b : Type . Pair a b ->? a) :
+             Pair _v25 _v27 ->? _v25)
+          (((op Pair[_v25; _v27]
+             : forall a : Type; b : Type . a * b -> Pair a b) :
+                _v25 * _v27 -> Pair _v25 _v27)
+             (var a : _v25, var b : _v27) :
+               Pair _v25 _v27) :
+            _v25
+          = (var a : _v25)
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
 Pair
   : Type -> Type -> Type
      %[free type Pair(a : Type)(b : Type)
-         ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
-               (fst : a_v-1; snd : b_v-2)]%
-Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+         ::= Pair : a * b -> Pair a b (fst : a; snd : b)]%
+Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
@@ -43,82 +41,73 @@ a  : Type %(var_1)%
 b  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Pair
-  : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
-    %(construct Pair)%
+  : forall a : Type; b : Type . a * b -> Pair a b %(construct Pair)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__
-  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall a : Type . a_v-1 %(fun)%
-def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
-f : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
+__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
+f : forall a : Type; b : Type . a * b -> Pair a b
     %(op)%
       = \ (var a : a, var b : b)
-          .! (((op Pair[a_v1; b_v2]
-                : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                   a_v1 * b_v2 -> Pair a_v1 b_v2)
+          .! (((op Pair[a; b]
+                : forall a : Type; b : Type . a * b -> Pair a b) :
+                   a * b -> Pair a b)
                 (var a : a, var b : b) :
-                  Pair a_v1 b_v2) as
-                 Pair a_v1 b_v2
+                  Pair a b) as
+                 Pair a b
 false : Unit %(fun)%
 fst
-  : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> a_v-1
+  : forall a : Type; b : Type . Pair a b -> a
     %(select from Pair constructed by
-    Pair : forall a : Type; b : Type .
-             a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)%
-g : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1 %(op)%
+    Pair : forall a : Type; b : Type . a * b -> Pair a b)%
+g : forall a : Type; b : Type . Pair a b ->? a %(op)%
 not__ : ? Unit ->? Unit %(fun)%
 snd
-  : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> b_v-2
+  : forall a : Type; b : Type . Pair a b -> b
     %(select from Pair constructed by
-    Pair : forall a : Type; b : Type .
-             a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)%
+    Pair : forall a : Type; b : Type . a * b -> Pair a b)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
-  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op fst : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> a_v-1)
-         ((op Pair
-           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
-       var x_1_1 : a_v-1) %(ga_select_fst)%
-forall a : Type; b : Type; x_1_1 : a_v-1; x_1_2 : b_v-2
-  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op snd : forall a : Type; b : Type . Pair a_v-1 b_v-2 -> b_v-2)
-         ((op Pair
-           : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
-            (var x_1_1 : a_v-1, var x_1_2 : b_v-2)),
-       var x_1_2 : b_v-2) %(ga_select_snd)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op fst : forall a : Type; b : Type . Pair a b -> a)
+         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+            (var x_1_1 : a, var x_1_2 : b)),
+       var x_1_1 : a) %(ga_select_fst)%
+forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op snd : forall a : Type; b : Type . Pair a b -> b)
+         ((op Pair : forall a : Type; b : Type . a * b -> Pair a b)
+            (var x_1_1 : a, var x_1_2 : b)),
+       var x_1_2 : b) %(ga_select_snd)%
 free type Pair(a : Type)(b : Type)
-  ::= Pair : a_v-1 * b_v-2 -> Pair a_v-1 b_v-2
-        (fst : a_v-1; snd : b_v-2) %(ga_Pair)%
+  ::= Pair : a * b -> Pair a b (fst : a; snd : b) %(ga_Pair)%
 forall a : a; b : b
-  . (fun __=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit)
-      ((op f
-        : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2)
+  . (fun __=__ : forall a : Type . a * a ->? Unit)
+      ((op f : forall a : Type; b : Type . a * b -> Pair a b)
          (var a : a, var b : b),
-       (((op Pair[a_v1; b_v2]
-          : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-             a_v1 * b_v2 -> Pair a_v1 b_v2)
+       (((op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b) :
+             a * b -> Pair a b)
           (var a : a, var b : b) :
-            Pair a_v1 b_v2) as
-           Pair a_v1 b_v2) %(def_f)%
-program ((op g[_var_25_v25; _var_27_v27]
-          : forall a : Type; b : Type . Pair a_v-1 b_v-2 ->? a_v-1) :
-             Pair _var_25_v25 _var_27_v27 ->? _var_25_v25)
-          (((op Pair[_var_25_v25; _var_27_v27]
-             : forall a : Type; b : Type . a_v-1 * b_v-2 -> Pair a_v-1 b_v-2) :
-                _var_25_v25 * _var_27_v27 -> Pair _var_25_v25 _var_27_v27)
-             (var a : _var_25_v25, var b : _var_27_v27) :
-               Pair _var_25_v25 _var_27_v27) :
-            _var_25_v25
-          = (var a : _var_25_v25) %(pe_g)%
+            Pair a b) as
+           Pair a b) %(def_f)%
+program ((op g[_v25; _v27]
+          : forall a : Type; b : Type . Pair a b ->? a) :
+             Pair _v25 _v27 ->? _v25)
+          (((op Pair[_v25; _v27]
+             : forall a : Type; b : Type . a * b -> Pair a b) :
+                _v25 * _v27 -> Pair _v25 _v27)
+             (var a : _v25, var b : _v27) :
+               Pair _v25 _v27) :
+            _v25
+          = (var a : _v25) %(pe_g)%
 %% Diagnostics -----------------------------------------------------------
 *** Warning 1.5, missing kind for type variable  'a'
 *** Warning 1.8, missing kind for type variable  'b'

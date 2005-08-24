@@ -71,7 +71,7 @@ addSuperType t ak p@(i, nAs) =
 newSubTypeIdentifier :: Id -> State Env Id
 newSubTypeIdentifier i = do
    n <- toEnvState inc
-   return $ simpleIdToId $ Token ("_subtype_" ++ show n) $ posOfId i
+   return $ simpleIdToId $ Token ("_t" ++ show n) $ posOfId i
         
 rawToKind :: RawKind -> Kind
 rawToKind = mapKind (const universeId)

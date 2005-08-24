@@ -4,29 +4,26 @@ op nil : List a
 op head : List a -> a
 op snoc : List a -> a --> List a
 forall x : a
-. ((fun __=__[List a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+. ((fun __=__[List a] : forall a : Type . a * a ->? Unit) :
        List a * List a ->? Unit)
-    ((((op snoc[a]
-        : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+    ((((op snoc[a] : forall a : Type . List a -> a --> List a) :
            List a -> a --> List a)
-        ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+        ((op nil[a] : forall a : Type . List a) : List a) :
           a --> List a)
        (var x : a) :
          List a,
-     (((op snoc[a]
-        : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+     (((op snoc[a] : forall a : Type . List a -> a --> List a) :
            List a -> a --> List a)
-        ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+        ((op nil[a] : forall a : Type . List a) : List a) :
           a --> List a)
        (var x : a) :
          List a) :
       Unit
-. ((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+. ((fun __=__[a] : forall a : Type . a * a ->? Unit) :
        a * a ->? Unit)
-    ((((op head[a ->? a] : forall a : Type . List a_v-1 -> a_v-1) :
+    ((((op head[a ->? a] : forall a : Type . List a -> a) :
            List (a ->? a) -> a ->? a)
-        ((op nil[a ->? a] : forall a : Type . List a_v-1) :
-             List (a ->? a)) :
+        ((op nil[a ->? a] : forall a : Type . List a) : List (a ->? a)) :
           a ->? a)
        (var x : a) :
          a,
@@ -36,7 +33,7 @@ forall x : a
 ? : +Type -> Type
 List : Type -> Type
 Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
@@ -51,48 +48,44 @@ a  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__
-  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall a : Type . a_v-1 %(fun)%
-def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
-head : forall a : Type . List a_v-1 -> a_v-1 %(op)%
-nil : forall a : Type . List a_v-1 %(op)%
+head : forall a : Type . List a -> a %(op)%
+nil : forall a : Type . List a %(op)%
 not__ : ? Unit ->? Unit %(fun)%
-snoc : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1 %(op)%
+snoc : forall a : Type . List a -> a --> List a %(op)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 x : a
 %% Sentences -------------------------------------------------------------
-((fun __=__[List a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[List a] : forall a : Type . a * a ->? Unit) :
      List a * List a ->? Unit)
-  ((((op snoc[a]
-      : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+  ((((op snoc[a] : forall a : Type . List a -> a --> List a) :
          List a -> a --> List a)
-      ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+      ((op nil[a] : forall a : Type . List a) : List a) :
         a --> List a)
      (var x : a) :
        List a,
-   (((op snoc[a]
-      : forall a : Type . List a_v-1 -> a_v-1 --> List a_v-1) :
+   (((op snoc[a] : forall a : Type . List a -> a --> List a) :
          List a -> a --> List a)
-      ((op nil[a] : forall a : Type . List a_v-1) : List a) :
+      ((op nil[a] : forall a : Type . List a) : List a) :
         a --> List a)
      (var x : a) :
        List a) :
     Unit
-((fun __=__[a] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[a] : forall a : Type . a * a ->? Unit) :
      a * a ->? Unit)
-  ((((op head[a ->? a] : forall a : Type . List a_v-1 -> a_v-1) :
+  ((((op head[a ->? a] : forall a : Type . List a -> a) :
          List (a ->? a) -> a ->? a)
-      ((op nil[a ->? a] : forall a : Type . List a_v-1) :
-           List (a ->? a)) :
+      ((op nil[a ->? a] : forall a : Type . List a) : List (a ->? a)) :
         a ->? a)
      (var x : a) :
        a,

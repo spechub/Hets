@@ -80,7 +80,7 @@ inc = do
 freshVar :: Range -> State Int (Id, Int)
 freshVar ps = do 
     c <- inc
-    return (simpleIdToId $ Token ("_var_" ++ show c) ps, c)
+    return (simpleIdToId $ Token ("_v" ++ show c) ps, c)
 
 mkSingleSubst :: (Id, RawKind) -> State Int Type
 mkSingleSubst (i, rk) = do 

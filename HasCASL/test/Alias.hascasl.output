@@ -1,24 +1,24 @@
 var s : Type
-type MyPred : Type -> Type := \ s : Type . s_v-1 ->? Unit
-type MyAlias : Type -> Type := \ t : Type . t_v-1 ->? Unit
-type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a_v-1 ->
-                                                           b_v-2 -> Unit
-type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a_v-1 ->
-                                                           b_v-2 -> Unit
-type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a_v-1 ->
-                                                           b_v-2 -> Unit
-type a2 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
-type a3 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
-type a4 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
+type MyPred : Type -> Type := \ s : Type . s ->? Unit
+type MyAlias : Type -> Type := \ t : Type . t ->? Unit
+type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a ->
+                                                           b -> Unit
+type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a ->
+                                                           b -> Unit
+type a1 : Type -> Type -> Type := \ (a : Type)(b : Type) . a ->
+                                                           b -> Unit
+type a2 : Type -> Type -> Type := \ a : Type . a -> Unit
+type a3 : Type -> Type -> Type := \ a : Type . a -> Unit
+type a4 : Type -> Type -> Type := \ a : Type . a -> Unit
 type a5(a : Type)
 type a6(a : Type)
-type a7 : Type -> Type := \ a : Type . a6 a_v-1 -> Unit
+type a7 : Type -> Type := \ a : Type . a6 a -> Unit
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
-MyAlias : Type -> Type := \ t : Type . t_v-1 ->? Unit
-MyPred : Type -> Type := \ s : Type . s_v-1 ->? Unit
-Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+MyAlias : Type -> Type := \ t : Type . t ->? Unit
+MyPred : Type -> Type := \ s : Type . s ->? Unit
+Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Unit : Type
 __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
@@ -29,28 +29,26 @@ __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 a1
-  : Type -> Type -> Type
-    := \ (a : Type)(b : Type) . a_v-1 -> b_v-2 -> Unit
-a2 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
-a3 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
-a4 : Type -> Type -> Type := \ a : Type . a_v-1 -> Unit
+  : Type -> Type -> Type := \ (a : Type)(b : Type) . a -> b -> Unit
+a2 : Type -> Type -> Type := \ a : Type . a -> Unit
+a3 : Type -> Type -> Type := \ a : Type . a -> Unit
+a4 : Type -> Type -> Type := \ a : Type . a -> Unit
 a5 : Type -> Type
 a6 : Type -> Type
-a7 : Type -> Type := \ a : Type . a6 a_v-1 -> Unit
+a7 : Type -> Type := \ a : Type . a6 a -> Unit
 %% Type Variables --------------------------------------------------------
 s  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__
-  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall a : Type . a_v-1 %(fun)%
-def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
@@ -70,21 +68,21 @@ true : Unit %(fun)%
 *** Warning 9.15, missing kind for type variable  'a'
 *** Warning 9.19, missing kind for type variable  'b'
 *** Warning 9.24-9.29, ignoring unused variable(s)
-  b in 'a_v10 -> Unit'
+  b in 'a -> Unit'
 *** Warning 11.15, missing kind for type variable  'a'
 *** Hint 11.19, rebound type variable 'a'
 *** Warning 11.24-11.29, ignoring unused variable(s)
-  a in 'a_v13 -> Unit'
+  a in 'a -> Unit'
 *** Error 11.15, duplicates at '(11,19)' for 'a'
 *** Warning 13.9, missing kind for type variable  'a'
 *** Hint 13.11, rebound type variable 'a'
 *** Warning 13.16-13.21, ignoring unused variable(s)
-  a in 'a_v15 -> Unit'
+  a in 'a -> Unit'
 *** Error 13.9, duplicates at '(13,11)' for 'a'
 *** Warning 15.9, missing kind for type variable  'a'
 *** Warning 17.9, missing kind for type variable  'a'
-*** Error 17.14-17.22, illegal recursive type synonym 'a5 a_v17 -> Unit'
+*** Error 17.14-17.22, illegal recursive type synonym 'a5 a -> Unit'
 *** Warning 19.9, missing kind for type variable  'a'
 *** Warning 21.9, missing kind for type variable  'a'
 *** Warning 23.9, missing kind for type variable  'a'
-*** Error 21.14-23.22, illegal recursive type synonym '(a7 a_v20)@(a6 a_v20 -> Unit) -> Unit'
+*** Error 21.14-23.22, illegal recursive type synonym 'a7 a -> Unit'

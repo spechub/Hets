@@ -75,9 +75,10 @@ parenPrec p1 (p2, d) = if p2 < p1 then d else BracketType Parens [d] nullRange
 
 toMixType :: Type -> (TypePrec, Type)
 toMixType typ = case typ of 
-    ExpandedType t1 t2 -> (Prefix, ExpandedType 
+    ExpandedType t1 _ -> toMixType t1 
+    {- (Prefix, ExpandedType 
                       (parenPrec Prefix $ toMixType t1)
-                         $ parenPrec Prefix $ toMixType t2)
+                         $ parenPrec Prefix $ toMixType t2) -}
     BracketType k l ps -> (Outfix, BracketType k (map 
                              (snd . toMixType) l) ps)
     KindedType t kind ps -> (Prefix, KindedType 
@@ -119,8 +120,8 @@ toMixType typ = case typ of
 
 printType :: GlobalAnnos -> Type -> Doc
 printType ga ty = case ty of 
-        TypeName name _k i -> printText0 ga name  <>
-          if i == 0 then empty else text ("_v"++ show i)
+        TypeName name _ _ -> printText0 ga name  
+          -- if i == 0 then empty else text ("_v"++ show i)
         TypeAppl t1 t2 -> parens (printType ga t1) <> 
                           parens (printType ga t2) 
         ExpandedType t1 t2 -> printType ga t1 <> text asP <> printType ga t2

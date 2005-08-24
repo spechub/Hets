@@ -2,7 +2,7 @@ type Nat < Int; Int < Rat
 op 0 : Nat
 op 0 : Rat
 forall y : Rat
-. ((fun __=__[Rat] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+. ((fun __=__[Rat] : forall a : Type . a * a ->? Unit) :
        Rat * Rat ->? Unit)
     (var y : Rat, op 0 : Nat) :
       Unit
@@ -12,7 +12,7 @@ forall y : Rat
 Int : Type < Rat
 Logical : Type := ? Unit
 Nat : Type < Int
-Pred : -Type -> Type := \ a : -Type . a_v-1 ->? Unit
+Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Rat : Type
 Unit : Type
 __*__ : +Type -> +Type -> Type
@@ -28,15 +28,14 @@ __->?__ : -Type -> +Type -> Type
   : Nat %(op)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a_v-1 * a_v-1 ->? Unit %(fun)%
+__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__
-  : forall a : Type . a_v-1 * ? Unit * a_v-1 ->? a_v-1 %(fun)%
-bottom : forall a : Type . a_v-1 %(fun)%
-def__ : forall a : Type . a_v-1 ->? Unit %(fun)%
+__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
+bottom : forall a : Type . a %(fun)%
+def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
@@ -44,7 +43,7 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 y : Rat
 %% Sentences -------------------------------------------------------------
-((fun __=__[Rat] : forall a : Type . a_v-1 * a_v-1 ->? Unit) :
+((fun __=__[Rat] : forall a : Type . a * a ->? Unit) :
      Rat * Rat ->? Unit)
   (var y : Rat, op 0 : Nat) :
     Unit %(divide_def2_Rat)%
