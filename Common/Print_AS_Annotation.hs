@@ -122,26 +122,27 @@ instance PrettyPrint s => PrettyPrint (Named s) where
 -- * fst contains printed label and implied annotion 
 --   if any at the begining of the list of annotations
 -- * snd contains the remaining annos
-splitAndPrintRAnnos :: (GlobalAnnos -> Annotation -> Doc)
-		       -> (GlobalAnnos -> [Annotation] -> Doc)
-		       -> (Doc -> Doc -> Doc)    -- ^ a beside with space 
+splitAndPrintRAnnos :: (GlobalAnnos -> Annotation -> d)
+		       -> (GlobalAnnos -> [Annotation] -> d)
+		       -> (d -> d -> d)    -- ^ a beside with space 
 						 -- like <+> or <\+>
-		       -> Doc -- ^ for Latex something to move the label 
+		       -> (d -> d) -- ^ for Latex something to move the label 
 			      -- and \/ or implied annotation to the right 
-			      -- margin                       
-		       -> GlobalAnnos -> [Annotation] -> (Doc,Doc)
-splitAndPrintRAnnos pf pf_list sepF move ga ras =
+			      -- margin
+                       -> d   -- ^ empty doc
+		       -> GlobalAnnos -> [Annotation] -> (d, d)
+splitAndPrintRAnnos pf pf_list sepF move nil ga ras =
     case ras of
-	     []     -> (empty,empty)
+	     []     -> (nil,nil)
 	     r@(l:[])
-		 | isLabel l -> (pf ga l,empty)
-		 | isImplied l -> (move <> pf ga l, empty)
-		 | otherwise -> (empty,pf_list ga r)
+		 | isLabel l -> (pf ga l,nil)
+		 | isImplied l -> (move $ pf ga l, nil)
+		 | otherwise -> (nil,pf_list ga r)
 	     r@(l:impl:xs)
 		 | isLabel l && not (isImplied impl) 
 		     -> (pf ga l, pf_list ga (impl:xs))
 		 | isLabel l && isImplied impl 
 		     -> (pf ga l `sepF` pf ga impl, pf_list ga xs)
 		 | isImplied l 
-		     -> (move  <> pf ga l, pf_list ga (impl:xs))
-		 | otherwise -> (empty,pf_list ga r)
+		     -> (move $ pf ga l, pf_list ga (impl:xs))
+		 | otherwise -> (nil,pf_list ga r)

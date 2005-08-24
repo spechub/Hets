@@ -142,8 +142,8 @@ semiAnno_text ga l = if null l then empty else
 			$$ ras
 	      where (laImpl,ras) = splitAndPrintRAnnos printText0 
 	                                     printAnnotationList_Text0 
-					     (<+>)
-					     (empty) ga (r_annos a_item)
+					     (<+>) id empty
+                                             ga (r_annos a_item)
 
 {--------------------------------------------------------------------
   Lists

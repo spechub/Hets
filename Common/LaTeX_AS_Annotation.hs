@@ -180,7 +180,7 @@ instance (PrintLaTeX a) => PrintLaTeX (Annoted a) where
 	    (la,ras') = splitAndPrintRAnnos printLatex0
 			                    printAnnotationList_Latex0
 					    (<\+>)
-					    (latex_macro "\\`")
+					    (latex_macro "\\`" <>) empty
 					    ga ras
 	    la' = hspace_latex "3mm"<>la
 	    leftASF  = if null las then id else ($+$) las' 

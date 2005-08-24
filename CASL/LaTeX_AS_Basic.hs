@@ -100,8 +100,8 @@ printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 	    (la,ras') = 
 		splitAndPrintRAnnos printLatex0 
 				    printAnnotationList_Latex0 
-				    (<\+>)
-				    (latex_macro "\\`") ga ras
+				    (<\+>) (latex_macro "\\`" <>) 
+                                    empty ga ras
         in  {-trace (show i)-} (las' $+$ fsep_latex [i',la] $$ ras')
 
 instance (PrintLaTeX s, PrintLaTeX f) => 

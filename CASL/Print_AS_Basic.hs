@@ -90,8 +90,7 @@ printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
 		       empty
 	    (la,ras') = splitAndPrintRAnnos printText0 
 				    printAnnotationList_Text0 
-				    (<+>)
-				    (empty) ga ras
+				    (<+>) id empty ga ras
         in las' $+$ (hang i' 0 la) $$ ras'
 
 instance (PrettyPrint s, PrettyPrint f) =>

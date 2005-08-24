@@ -51,7 +51,7 @@ semiAnno_latex ga l = if null l then empty else
 	      where (laImpl,ras) = splitAndPrintRAnnos printLatex0 
 	                                     printAnnotationList_Latex0 
 					     (<\+>)
-					     (latex_macro "\\`") 
+					     (latex_macro "\\`" <>) empty 
 					     ga (r_annos a_item)
 		    item' = printLatex0 ga (item a_item)
 		    item'' = if printSemi then item'<>semi_latex else item'
