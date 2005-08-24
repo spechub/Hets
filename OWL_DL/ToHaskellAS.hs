@@ -56,18 +56,18 @@ main =
                   else case head args of
                        "-a" -> process 'a' $ tail args   
 		       -- output abstract syntax
-                       "-t" -> process 't' $ tail args   
-		       -- output ATerm
-		       "-s" -> process 's' $ tail args   
-		       -- output DevGraph from structure analysis
-		       "-r" -> process 'r' $ tail args   
-		       -- output result of static analysis
+		       "-g" -> process 'g' $ tail args
+		       -- show graph of structure
+		       "-h" -> showHelp
                        "-i" -> process 'i' $ tail args   
 		       -- test integrate ontology
-		       "-g" -> process 'i' $ tail args
-		       -- show graph of structure
+		       "-r" -> process 'r' $ tail args   
+		       -- output result of static analysis
+		       "-s" -> process 's' $ tail args   
+		       -- output DevGraph from structure analysis
+                       "-t" -> process 't' $ tail args   
+		       -- output ATerm
 		       _    -> error ("unknow option: " ++ (head args))
-
 
        where isURI :: String -> Bool
              isURI str = let preU = take 7 str
@@ -95,6 +95,17 @@ main =
                                      else do exitCode <- system ("./owl_parser file://" ++ pwd ++ "/" ++ head args)
                                              run exitCode opt
                         
+showHelp :: IO()
+showHelp = 
+    do putStrLn "\nUsage: readAStest [Option] URI"
+       putStrLn "  -a\t\t--abstract\t\toutput OWL_DL abstract syntax"
+       putStrLn "  -g\t\t--gui\t\t\tshow graph of structure"
+       putStrLn "  -h\t\t--help\t\t\tprint usage information and exit"
+       putStrLn "  -i\t\t--integrate\t\ttest integrate ontology"
+       putStrLn "  -r\t\t--static\t\toutput result (list) of static analysis for each include ontologies"
+       putStrLn "  -s\t\t--structure\t\toutput total result of static analysis from structure analysis"
+       putStrLn "  -t\t\t--Aterm\t\t\toutput ATerm from OWL_DL parser\n"
+
 -- | 
 -- the first argument it decides whether the abstract syntax or ATerm is shown,
 -- the second argument is the ATerm file which can be read in.
@@ -117,14 +128,14 @@ outputList opt aterm =
        AList paarList _ -> 
 	   case opt of 
 	   'a' -> outputAS paarList
-	   's' -> printDG paarList
+	   's' -> outputTotalStaticAna paarList
 	   'r' -> printResOfStatic paarList
 	   'i' -> testIntegrate paarList
 	   'g' -> outputGraph paarList
 	   u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
 
--- test for integrate ontologies
+-- test for integrate ontologies (for option -i)
 testIntegrate :: [ATerm] -> IO()
 testIntegrate al =  
     do let ontologies = map snd $ reverse $ parsingAll al
@@ -148,9 +159,10 @@ outputAS (aterm:res) =
                   outputAS res
           _ -> error "false file."
     
--- for structure analysis
-printDG :: [ATerm] -> IO()
-printDG al =  
+-- output total signature and sentences with all ontologies which are imported
+-- (from the graph of structure analysis)
+outputTotalStaticAna :: [ATerm] -> IO()
+outputTotalStaticAna al =  
     do let p = reverse $ parsingAll al
 	   (ontoMap, dg) = buildDevGraph (Map.fromList p)
        -- putStrLn $ show dg
