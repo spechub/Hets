@@ -64,15 +64,15 @@ renderText mi d = fullRender (mode           textStyle')
 
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrettyPrint Token where
-    printText0 _ = ptext . tokStr
+    printText0 _ = text . tokStr
 
 isChar :: Token -> Bool
 isChar t = take 1 (tokStr t) == "\'"
 
 instance PrettyPrint Id where
-    printText0  ga i = 
-	printId printText0 ga Nothing (error "Common.PrettyPrint: Id") i
+    printText0 _ = hcat . map (text . tokStr) . getPlainTokenList
 
+-- | print latex identifier
 printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
 	   -> GlobalAnnos -> (Maybe Display_format) 
 	   -> ([Token] -> Doc)    -- ^ function to join translated tokens
