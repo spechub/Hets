@@ -933,8 +933,8 @@ showOriginOfEdge descr Nothing =
 {- prints the proof base of the edge -}
 showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showProofStatusOfThm _ (Just ledge) =
-    createTextDisplay "Proof Status" 
-         (showPretty (getProofStatusOfThm ledge) "\n") [size(30,10)]
+    createTextSaveDisplay "Proof Status" "proofstatus.txt"
+         (showPretty (getProofStatusOfThm ledge) "\n") 
 showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
                 ++ "in the development graph")
