@@ -24,7 +24,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 
--- Christian: I also need the name of the spec!
+-- | given a specfication (name and theory), compute the composition table
 computeCompTable :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)]) 
                        -> Result Table
 computeCompTable spName (sig,sens) = do
@@ -39,10 +39,12 @@ computeCompTable spName (sig,sens) = do
          __cup__ : Rel * Rel -> Rel, assoc, idem, comm, unit 1
   -} 
   let name = showPretty spName ""
-      errmsg = "cannot determine composition table of specification"++name
+      errmsg = "cannot determine composition table of specification "++name
       errSorts = errmsg 
-                   ++ "\nneed exactly two sorts s,t, with s<t, but found\n"
-                   ++ showPretty ((emptySign ()::Sign () ()) { sortRel = (sortRel sig)}) ""
+                   ++ "\nneed exactly two sorts s,t, with s<t, but found:\n"
+                   ++ showPretty ((emptySign ()::Sign () ()) 
+				     { sortSet = sortSet sig,
+				       sortRel = sortRel sig }) ""
   -- look for sorts
   (baseRel,rel) <-
      case map Set.toList $ Rel.topSort $ sortRel sig of
