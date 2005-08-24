@@ -446,20 +446,17 @@ integrateNamespaces oldNsMap testNsMap =
              | Map.member pre old && uri `elem` (Map.elems old) =
 		 testAndInteg old r tm
              -- if the uri already existed in old map, the key muss be changed.
-	     | uri `elem` (Map.elems old) = 
+	     | Map.member uri revMap = 
+	       -- uri `elem` (Map.elems old) = 
 		 testAndInteg old r 
-			  (Map.insert pre (findKey uri $ Map.toList old) tm)
+	              (Map.insert pre (fromJust $ Map.lookup uri revMap) tm)  
+                  -- (findKey uri $ Map.toList old) tm)
 	     | Map.member pre old = 
 	        let pre' = disambiguateName pre old
                 in  testAndInteg (Map.insert pre' uri old) r 
 			(Map.insert pre pre' tm)
 	     | otherwise = testAndInteg (Map.insert pre uri old) r tm
-
-         findKey :: String -> [(String, String)] -> String
-	 findKey ele [] = ele      -- remove warnung ...
-	 findKey ele1 ((key,ele2):rest) 
-	    | ele1 == ele2 = key
-	    | otherwise = findKey ele1 rest
+            where revMap = reverseMap old
 	     
          disambiguateName :: String -> Namespace -> String
 	 disambiguateName name nameMap =
@@ -489,5 +486,11 @@ integrateOntology onto1@(Ontology oid1 directives1 ns1)
 		 Just (id1 { localPart=
 			     (localPart id1) ++ "&" ++ (localPart id2)})
 
-
-
+reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
+reverseMap oldMap =
+    Map.foldWithKey transport Map.empty oldMap
+  where
+   transport :: (Ord a) =>  k -> a -> Map.Map a k -> Map.Map a k 
+   transport mKey mElem newMap 
+       | Map.member mElem newMap = error "double keys in translationMap."
+       | otherwise = Map.insert mElem mKey newMap
