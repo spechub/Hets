@@ -84,8 +84,7 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
    tgt,
    DGLink {dgl_morphism = morphism,
 	   dgl_type = (HidingThm hidingMorphism 
-		       (Proven (HideTheoremShift ledge)
-			(map getLabelOfEdge proofBasisEdges))),
+		       (Proven (HideTheoremShift ledge)	proofBasisEdges)),
 	   dgl_origin = DGProof}
   )
   where

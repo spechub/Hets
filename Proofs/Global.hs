@@ -122,7 +122,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    proofBasis = getLabelsOfInsertedEdges changes
+    proofBasis = getInsertedEdges changes
     provenEdge = (source,
 		  target,
 		  DGLink {dgl_morphism = dgl_morphism edgeLab,
@@ -212,7 +212,7 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     morphism = dgl_morphism edgeLab
     allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
     filteredPaths = [path| path <- allPaths, notElem ledge path]
-    proofBasis = selectProofBasis edgeLab filteredPaths
+    proofBasis = selectProofBasis ledge filteredPaths
     (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
     newEdge = (src,
 	       tgt,

@@ -289,7 +289,7 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
 data ThmLinkStatus = LeftOpen 
-		   | Proven DGRule [DGLinkLab]
+		   | Proven DGRule [LEdge DGLinkLab]
                      deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
@@ -297,7 +297,7 @@ instance PrettyPrint ThmLinkStatus where
         LeftOpen -> text "Open"
         Proven r ls -> hang (text "Proven with rule" <+> printText0 ga r
                              $$ text "Proof based on links:")
-                       2 (vcat (map (printLabInProof ga) ls))
+                       2 (vcat (map (printLEdgeInProof ga) ls))
 
 
 

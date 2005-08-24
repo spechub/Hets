@@ -58,7 +58,8 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = morph,
-		       dgl_type = (GlobalThm (Proven (Composition path) (map getEdgeLabel path))) cons consStatus,
+		       dgl_type = (GlobalThm (Proven (Composition path) path))
+		       cons consStatus,
 		       dgl_origin = DGProof}
 	      )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
@@ -143,7 +144,8 @@ compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
     newEdge = (src,
 	       tgt,
 	       DGLink {dgl_morphism = dgl_morphism lab,
-		       dgl_type = (GlobalThm (Proven (Composition path) (map getEdgeLabel path))) cons consStatus,
+		       dgl_type = (GlobalThm (Proven (Composition path) path))
+		       cons consStatus,
 		       dgl_origin = DGProof}
 	      )
 
