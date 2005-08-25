@@ -60,6 +60,15 @@ implId = mkInfix implS
 eqvId :: Id 
 eqvId = mkInfix equivS
 
+{- 
+    make these prefix identifier to allow "not def x" to be recognized
+    as "not (def x)" by giving def__ higher precedence then not__. 
+    Simple identifiers usually have higher precedence then ____, 
+    otherwise "def x" would be rejected. But with simple identifiers 
+    "not def x" would be parsed as "(not def) x" because ____ is left
+    associative.
+-}   
+
 defId :: Id 
 defId = mkId $ map mkSimpleId [defS, place]
 
