@@ -17,7 +17,6 @@ module Proofs.Composition (composition, compositionCreatingEdges) where
 
 import Logic.Grothendieck
 import Proofs.EdgeUtils
-import Proofs.Proofs
 import Proofs.StatusUtils
 import Static.DevGraph
 import Static.DGToSpec

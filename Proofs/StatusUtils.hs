@@ -19,7 +19,6 @@ import Data.Graph.Inductive.Graph
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Syntax.AS_Library
-import Proofs.Proofs
 
 -- -------------------------------
 -- methods used in several proofs

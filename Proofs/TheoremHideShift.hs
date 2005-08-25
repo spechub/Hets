@@ -33,7 +33,6 @@ import Common.Result
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import Syntax.AS_Library
-import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 

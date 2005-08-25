@@ -48,11 +48,8 @@ import Isabelle.CreateTheories
 import Static.DevGraph
 import Static.DGToSpec
 
-import Proofs.Proofs
-
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
-import ATC.Proofs()
 
 import Driver.Version
 import Driver.Options

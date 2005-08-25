@@ -158,6 +158,26 @@ instance PrettyPrint DGLinkLab where
                     <+> printText0 ga (dgl_type l)
                     <+> printText0 ga (dgl_origin l)
 
+{-
+   proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
+   DG0 is the development graph resulting from the static analysis
+   Ri is a list of rules that transforms DGi-1 to DGi
+   With the list of intermediate proof states, one can easily implement
+    an undo operation
+-}
+
+{-type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
+umstellen auf:-}
+
+type ProofHistory = [([DGRule],[DGChange])]
+type ProofStatus = (LIB_NAME,LibEnv,Map.Map LIB_NAME ProofHistory) 
+
+data DGChange = InsertNode (LNode DGNodeLab)
+              | DeleteNode (LNode DGNodeLab)
+              | InsertEdge (LEdge DGLinkLab)
+              | DeleteEdge (LEdge DGLinkLab)
+                deriving Eq
+
 -- | Link types of development graphs
 -- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
 data DGLinkType = LocalDef 

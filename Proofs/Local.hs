@@ -29,7 +29,6 @@ import Common.Result
 import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
 import Data.Graph.Inductive.Graph
-import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library

@@ -56,7 +56,6 @@ import Common.Id
 import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
-import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.Global

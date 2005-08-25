@@ -36,7 +36,6 @@ import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
 
-import Proofs.Proofs
 import Proofs.InferBasic
 import Proofs.Global
 import Proofs.Local

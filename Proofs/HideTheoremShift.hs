@@ -29,7 +29,6 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
 import Data.Graph.Inductive.Graph
-import Proofs.Proofs
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import GUI.Utils

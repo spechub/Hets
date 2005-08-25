@@ -24,7 +24,6 @@ import Static.DevGraph
 import ATC.AS_Library()
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
-import ATC.Proofs()
 import ATC.Sml_cats
 
 import Common.ATerm.Lib
@@ -33,8 +32,6 @@ import Common.AnnoState
 import Common.Id
 import Common.Result
 import Text.ParserCombinators.Parsec
-
-import Proofs.Proofs
 
 import Driver.Options
 import Driver.Version

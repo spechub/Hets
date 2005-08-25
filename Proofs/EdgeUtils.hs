@@ -21,7 +21,6 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
-import Proofs.Proofs
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdge (v, w, l) g = case match v g of
