@@ -188,14 +188,14 @@ objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    HasCASL/As.hs \
+    HasCASL/As.hs ATC/DevGraph.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs Proofs/Proofs.hs
+    Logic/Prover.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
@@ -217,9 +217,6 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<
-
-ATC/Proofs.der.hs: Proofs/Proofs.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.DevGraph -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs 
