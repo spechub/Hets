@@ -172,6 +172,15 @@ mkBracketToken k ps =
 mkTupleTerm :: [Term] -> Range -> Term
 mkTupleTerm ts ps = if isSingle ts then head ts else TupleTerm ts ps
 
+-- | try to extract tuple arguments
+getTupleArgs :: Term -> Maybe [Term]    
+getTupleArgs t = case t of
+    TypedTerm trm qt _ _ -> case qt of 
+      InType -> Nothing
+      _ -> getTupleArgs trm
+    TupleTerm ts _ -> Just ts
+    _ -> Nothing
+
 {- | decompose an 'ApplTerm' into an application of an operation and a
      list of arguments -}
 getAppl :: Term -> Maybe (Id, TypeScheme, [Term])

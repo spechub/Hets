@@ -17,10 +17,10 @@ import Common.Id
 import qualified Common.Lib.Set as Set
 
 import HasCASL.As
-import HasCASL.Le
-import HasCASL.VarDecl
-import HasCASL.Builtin
 import HasCASL.AsUtils
+import HasCASL.Le
+import HasCASL.Builtin
+import HasCASL.VarDecl
 
 isOp :: OpInfo -> Bool
 isOp o = case opDefn o of
@@ -150,14 +150,6 @@ getTupleAp t = case getAppl t of
        Just ts -> Just (i, ts)
        Nothing -> Nothing
    _ -> Nothing
-
-getTupleArgs :: Term -> Maybe [Term]    
-getTupleArgs t = case t of
-    TypedTerm trm qt _ _ -> case qt of 
-      InType -> Nothing
-      _ -> getTupleArgs trm
-    TupleTerm ts _ -> Just ts
-    _ -> Nothing
 
 translateSen :: Env -> Sentence -> Sentence
 translateSen env s = case s of 
