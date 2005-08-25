@@ -70,7 +70,7 @@ isChar :: Token -> Bool
 isChar t = take 1 (tokStr t) == "\'"
 
 instance PrettyPrint Id where
-    printText0 _ = hcat . map (text . tokStr) . getPlainTokenList
+    printText0 _ = text . show
 
 -- | print latex identifier
 printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
