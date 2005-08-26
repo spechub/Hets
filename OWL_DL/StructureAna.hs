@@ -23,6 +23,7 @@ import Data.Graph.Inductive.Query.DFS
 import Text.XML.HXT.DOM.XmlTreeTypes
 import Logic.Grothendieck
 import Logic.Logic
+import Logic.Coerce
 import Common.Id
 import Common.Result
 import List
@@ -244,17 +245,22 @@ integrateScc nodeList ontoMap dg =
 
 -- simple integrate Theory
 integrateTheory :: [G_theory] -> G_theory
-integrateTheory theories = head theories
-{-
+integrateTheory theories = -- head theories
   foldl assembleTheories emptyOWL_DLTheory theories
    where
     assembleTheories :: G_theory -> G_theory -> G_theory
-    assembleTheories (G_theory _ sign1 theSen1) 
-		     (G_theory _ sign2 theSen2) =
-          G_theory OWL_DL (addSign sign1 sign2)   
-		          (toThSens $ nub ((toNamedList theSen1) 
-					   ++ (toNamedList theSen2)))
--}
+    assembleTheories (G_theory lid1 sign1 theSen1) 
+		     (G_theory lid2 sign2 theSen2) =
+              let thSen1' = maybe (error "could not coerce sentences") 
+                        id (coerceThSens lid1 lid2 "" theSen1)
+                  sign1' = maybe (error "could not coerce sign") 
+                        id (coerceSign lid1 lid2 "" sign1)
+                  csign = case signature_union lid2 sign1' sign2 of
+                          Result diags mv -> 
+                              maybe (error ("sig_union"++show diags)) id mv
+              in G_theory lid2 csign (joinSens thSen1' theSen2)
+
+
 
 getNameFromNode :: NODE_NAME -> String
 getNameFromNode (sid, _, _) = show sid
