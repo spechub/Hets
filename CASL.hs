@@ -21,7 +21,8 @@ folder /Syntax/ (see "Syntax.ADoc").
 
 /Parser/
 
-The CASL parser, written with "Common.Lib.Parsec", is contained in
+The CASL parser, written with <http://www.cs.uu.nl/people/daan/parsec.html>, 
+is contained in
 "CASL.Parse_AS_Basic".  Several modules provide parsers for individual
 non-terminals of the CASL grammar: "CASL.OpItem", "CASL.SortItem",
 "CASL.Formula", "CASL.Quantification".  The mixfix parser (which is

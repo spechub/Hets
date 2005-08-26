@@ -1,7 +1,8 @@
 {- | The folder Syntax contains abstract syntax, parsing and printing
 for heterogeneous structured and architectural specifications and
-specification libraries.  Parsing is based on "Common.Lib.Parsec",
-pretty printing  on "Common.Lib.Pretty".
+specification libraries.  Parsing is based on 
+<http://www.cs.uu.nl/people/daan/parsec.html>,
+pretty printing on "Common.Lib.Pretty".
 Some modules deal with global annotations (see "Common.AS_Annotation").
 
 /Abstract syntax/
