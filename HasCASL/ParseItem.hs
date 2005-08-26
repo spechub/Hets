@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -12,17 +12,18 @@ parser for HasCASL basic Items
 
 module HasCASL.ParseItem where
 
+import Text.ParserCombinators.Parsec
+
+import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Token
-import Common.AnnoState
+
 import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsUtils
-import Text.ParserCombinators.Parsec
-import Common.AS_Annotation
 import HasCASL.ParseTerm
 
 -- * adapted item list parser (using 'itemAux')
