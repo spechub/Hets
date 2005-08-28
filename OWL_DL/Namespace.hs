@@ -15,8 +15,9 @@ This module is OWL namespace handler.
 module OWL_DL.Namespace where
 
 import OWL_DL.AS
--- import OWL_DL.Sign
+import OWL_DL.Sign
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Text.XML.HXT.DOM.XmlTreeTypes
 import List(find, nub)
 import Maybe(fromJust)
@@ -420,6 +421,59 @@ instance PNamespace DataRange where
 	DID dtID -> DID (renameNamespace tMap dtID)
 	u        -> u
 
+instance PNamespace Sign where
+   propagateNspaces ns sig = sig
+			    
+   renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p9 p10) =
+       Sign (renameNamespace tMap p1)
+	    (Set.map (renameNamespace tMap) p2)
+	    (Set.map (renameNamespace tMap) p3)
+	    (Set.map (renameNamespace tMap) p4)
+	    (Set.map (renameNamespace tMap) p5)
+	    (Set.map (renameNamespace tMap) p6)
+	    (Set.map (renameNamespace tMap) p7)
+	    (Set.map (renameNamespace tMap) p8)
+	    (Set.map (renameNamespace tMap) p9)
+	    (renameNamespace tMap p10)
+
+instance PNamespace SignAxiom where
+   propagateNspaces ns signAxiom = signAxiom
+
+   renameNamespace tMap signAxiom =
+       case signAxiom of
+       Subconcept cId1 cId2 -> Subconcept (renameNamespace tMap cId1)
+			                  (renameNamespace tMap cId2)
+       RoleDomain id1 rDomains -> RoleDomain (renameNamespace tMap id1)
+				      (map (renameNamespace tMap) rDomains)
+       RoleRange id1 rRange -> RoleRange (renameNamespace tMap id1)
+				      (map (renameNamespace tMap) rRange)
+       FuncRole id1 -> FuncRole (renameNamespace tMap id1)
+       Conceptmembership iId des -> 
+	   Conceptmembership (renameNamespace tMap iId)
+			     (renameNamespace tMap des)
+
+instance PNamespace RDomain where
+    propagateNspaces ns rd = rd
+    renameNamespace tMap rd = 
+	case rd of
+	RDomain des -> RDomain (renameNamespace tMap des)
+
+instance PNamespace RRange where
+   propagateNspaces ns rr = rr
+
+   renameNamespace tMap rr =
+	case rr of
+	RIRange des -> RIRange (renameNamespace tMap des)
+	RDRange dr  -> RDRange (renameNamespace tMap dr)
+
+instance PNamespace Sentence where
+   propagateNspaces ns sent = sent
+
+   renameNamespace tMap sent =
+       case sent of
+       OWLAxiom axiom -> OWLAxiom (renameNamespace tMap axiom)
+       OWLFact fact   -> OWLFact  (renameNamespace tMap fact)
+
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns obj = 
     case obj of 
@@ -484,7 +538,9 @@ integrateOntology onto1@(Ontology oid1 directives1 ns1)
 	      if id1 == id2 then Just id1
 		 else 
 		 Just (id1 { localPart=
-			     (localPart id1) ++ "&" ++ (localPart id2)})
+			     (localPart $ strToQN $ localPart id1) ++ 
+			     "_" ++ 
+			     (localPart $ strToQN $ localPart id2)})
 
 reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
@@ -494,3 +550,14 @@ reverseMap oldMap =
    transport mKey mElem newMap 
        | Map.member mElem newMap = error "double keys in translationMap."
        | otherwise = Map.insert mElem mKey newMap
+
+strToQN :: String -> QName
+strToQN str = 
+    let str' = if head str == '"' then
+	          read str::String
+		  else str
+        nodeName = fst $ span (/='/') $ reverse str'
+    in  if head nodeName == '#' then
+	   QN "" (fst $ span (/='.') (reverse $ tail nodeName)) str'  
+	   -- QN prefix local uri
+	   else QN ""  (fst $ span (/='.') (reverse nodeName)) str'
