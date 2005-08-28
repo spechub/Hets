@@ -8,7 +8,8 @@ SEPARATOR=":"
 #OWLAPI="econn-owlapi"
 #JUNIT="junit"
 
-cd java
+cd ./OWL_DL/java
+# cd ./java
 LIBHOME="./jlib"
 CLASSPATH=
 for x in $LIBHOME/*.jar 
@@ -20,4 +21,4 @@ done
 
 java -cp $CLASSPATH OWL2ATerm $* || exit $?
 mv output.term ../
-cd ..
+cd -
