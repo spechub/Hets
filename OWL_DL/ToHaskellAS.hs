@@ -23,8 +23,8 @@ import System.Environment(getEnv)
 import qualified Data.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
--- import Data.Graph.Inductive.Tree
--- import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Tree
+import Data.Graph.Inductive.Graph
 import Static.DevGraph
 -- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
@@ -43,13 +43,17 @@ import Destructible
 import Common.Id
 import Logic.Grothendieck
 import Data.Graph.Inductive.Query.DFS
+import Data.Graph.Inductive.Query.BFS
+import Data.Tree
+import Debug.Trace
+
 import Maybe(fromJust)
 
 main :: IO()
 main =
     do args <- getArgs
        if (null args) || (length args > 2) then
-          error "Usage: readAStest [option] <URI or file>"
+          showHelp
           -- default option : output OWL_DL abstract syntax
           else if length args == 1 then     
                   process 'a' args  
@@ -59,7 +63,7 @@ main =
 		       "-g" -> process 'g' $ tail args
 		       -- show graph of structure
 		       "-h" -> showHelp
-                       "-i" -> process 'i' $ tail args   
+                       "-i" -> showHelp 
 		       -- test integrate ontology
 		       "-r" -> process 'r' $ tail args   
 		       -- output result of static analysis
@@ -85,19 +89,19 @@ main =
                  do
                   pwd <- getEnv "PWD" 
                   if (head $ head args) == '-' then
-                     error "Usage: readAStest [option] <URI or file>"
+                     showHelp
                      else if isURI $ head args then
-                             do exitCode <- system ("./owl_parser " ++ head args)
+                             do exitCode <- system ("./processor " ++ head args)
                                 run exitCode opt
                              else if (head $ head args) == '/' then
-                                     do exitCode <- system ("./owl_parser file://" ++ head args)
+                                     do exitCode <- system ("./processor file://" ++ head args)
                                         run exitCode opt
-                                     else do exitCode <- system ("./owl_parser file://" ++ pwd ++ "/" ++ head args)
+                                     else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
                                              run exitCode opt
                         
 showHelp :: IO()
 showHelp = 
-    do putStrLn "\nUsage: readAStest [Option] URI"
+    do putStrLn "\nUsage: readAStest [option] <URI or file>"
        putStrLn "  -a\t\t--abstract\t\toutput OWL_DL abstract syntax"
        putStrLn "  -g\t\t--gui\t\t\tshow graph of structure"
        putStrLn "  -h\t\t--help\t\t\tprint usage information and exit"
@@ -116,14 +120,14 @@ processor2 opt filename =
        case opt of
        -- 'a' -> outputList 'a' aterm
             't' -> putStrLn $ show aterm
-	    's' -> outputList 's' aterm
-	    'r' -> outputList 'r' aterm
-            'i' -> outputList 'i' aterm
-	    'g' -> outputList 'g' aterm
-	    _   -> outputList 'a' aterm
+	    's' -> outputList 's' filename aterm
+	    'r' -> outputList 'r' filename aterm
+            'i' -> outputList 'i' filename aterm
+	    'g' -> outputList 'g' filename aterm
+	    _   -> outputList 'a' filename aterm
 
-outputList :: Char -> ATerm -> IO()
-outputList opt aterm =
+outputList :: Char -> String -> ATerm -> IO()
+outputList opt filename aterm =
     case aterm of
        AList paarList _ -> 
 	   case opt of 
@@ -131,7 +135,7 @@ outputList opt aterm =
 	   's' -> outputTotalStaticAna paarList
 	   'r' -> printResOfStatic paarList
 	   'i' -> testIntegrate paarList
-	   'g' -> outputGraph paarList
+	   'g' -> outputGraph filename paarList
 	   u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
 
@@ -166,16 +170,110 @@ outputTotalStaticAna al =
     do let p = reverse $ parsingAll al
 	   (ontoMap, dg) = buildDevGraph (Map.fromList p)
        -- putStrLn $ show dg
-       putStrLn $ show $ 
-		nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
-       -- showGraph (simpleLibName, simpleLibEnv $ buildDevGraph (Map.fromList p))
+       -- putStrLn $ show $ 
+       --		nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
+       -- putStrLn $ show $ (rdff [12] dg)
+	   topNodes = topsort dg
+       -- putStrLn $ show $ topNodes
+       -- putStrLn $ show $ map (\x -> bfs x dg) topNodes
+        -- subTreeList = map (\x -> bfs x dg) top
+	   -- lnodeList =  map (map (\y -> matchNode dg y)) subTreeList
+       let Result _ res =
+	       nodesStaticAna' (reverse topNodes) Map.empty ontoMap dg []
+       case res of
+           Just (_, dg') -> 
+	    do -- putStrLn $ show sm
+	       showGraph (simpleLibName "", simpleLibEnv "" (insEdges (rev $ labEdges dg) (delEdges (edges dg') dg')))
+	   _            -> error "no devGraph..."
+
+    where rev :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
+	  rev [] = []
+	  rev ((source, target, edge):r) = (target, source, edge):(rev r)
+   
+matchNode :: DGraph -> Node -> LNode DGNodeLab
+matchNode dgraph node =
+	     let (mcontext, _ ) = match node dgraph
+		 (_, _, dgNode, _) = fromJust mcontext
+	     in (node, dgNode)
+
+type SignMap = Map.Map Node (Sign, [Named Sentence])
+
+nodesStaticAna' :: [Node] 
+	       -> SignMap 
+               -> OntologyMap
+	       -> DGraph 
+               -> [Diagnosis]
+	       -> Result (SignMap, DGraph)
+nodesStaticAna' [] signMap _ dg diag = Result diag (Just (signMap, dg)) 
+nodesStaticAna' (h:r) signMap ontoMap dg diag =
+    let Result digs res = 
+	    nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
+			  (emptySign, [], diag)
+			  signMap ontoMap dg 
+    in  case res of
+        Just (newSignMap, newDg) -> 
+	    nodesStaticAna' r newSignMap ontoMap newDg (diag++digs)
+	Prelude.Nothing -> 
+	    nodesStaticAna' r signMap ontoMap dg (diag++digs)
+    
+
+nodeStaticAna :: [LNode DGNodeLab]
+	      -> (Sign, [Named Sentence], [Diagnosis])	 
+	      -> SignMap
+	      -> OntologyMap
+              -> DGraph
+              -> Result (SignMap, DGraph)
+nodeStaticAna [] _ _ _ _ = initResult
+nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
+    case Map.lookup n signMap of
+    Just _ -> 
+	Result oldDiags (Just (signMap, dg))
+    _   -> 
+	let ontology@(Ontology mid _ _) = fromJust $ 
+		   Map.lookup (getNameFromNode $ dgn_name topNode) ontoMap
+	    Result diag res = 
+		 basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
+        in  case res of  
+	    Just (_,_,accSig,sent) ->
+	     let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig (toThSens sent)}) 
+		 ledges = (inn dg n) ++ (out dg n)
+	     in	 Result (oldDiags ++ diag)
+		        (Just ((Map.insert n (accSig, sent) signMap), (insEdges ledges (insNode newLNode (delNode n dg)))))  
+	    _   -> Result oldDiags Prelude.Nothing 
+
+nodeStaticAna ((n, dgNode):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
+     case Map.lookup n signMap of
+     Just (sig, nsen) -> 
+	 nodeStaticAna r ((integSign sig inSig), (inSent ++ nsen), oldDiags)
+		       signMap ontoMap dg
+     Prelude.Nothing ->
+	 let Result digs' res' =
+		 nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg)) 
+				   (emptySign, [], [])
+				   signMap ontoMap dg 
+         in case res' of
+	    Just (signMap', dg') ->
+	     let (sig', nsen') = fromJust $ Map.lookup n signMap'	 
+	     in	 nodeStaticAna r 
+	          ((integSign sig' inSig),(inSent ++ nsen'),(oldDiags ++ digs'))
+		  signMap' ontoMap dg'
+	    _  -> nodeStaticAna r (inSig, inSent, oldDiags)
+		                signMap ontoMap dg
+
+integSign :: Sign -> Sign -> Sign
+integSign inSig totalSig =
+    let (newNamespace, transMap) = 
+	    integrateNamespaces (namespaceMap totalSig) (namespaceMap inSig)
+    in  addSign (renameNamespace transMap inSig)
+	        (totalSig {namespaceMap = newNamespace})
+
 
 -- for graph of structure analysis
-outputGraph :: [ATerm] -> IO()
-outputGraph al =  
+outputGraph :: String -> [ATerm] -> IO()
+outputGraph filename al =  
     do let p = reverse $ parsingAll al
 	   (_, dg) = buildDevGraph (Map.fromList p)
-       showGraph (simpleLibName, simpleLibEnv dg)
+       showGraph (simpleLibName filename, simpleLibEnv filename dg)
 
 -- for static analysis
 printResOfStatic :: [ATerm] -> IO()
@@ -320,14 +418,15 @@ showGraph (ln, libenv) =
             InfoBus.shutdown
             exitWith ExitSuccess 
 
-simpleLibEnv :: DGraph -> LibEnv
-simpleLibEnv dg =
-    Map.singleton simpleLibName (emptyGlobalAnnos, Map.singleton (mkSimpleId "") (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
+simpleLibEnv :: String -> DGraph -> LibEnv
+simpleLibEnv filename dg =
+    Map.singleton (simpleLibName filename) 
+	   (emptyGlobalAnnos, Map.singleton (mkSimpleId "") 
+	    (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
        where nodeSig = NodeSig 0 g_sign
 	     g_sign = G_sign OWL_DL emptySign
 
-simpleLibName :: LIB_NAME
-simpleLibName = Lib_id (Direct_link "" (Range []))
-
+simpleLibName :: String -> LIB_NAME
+simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 
 
