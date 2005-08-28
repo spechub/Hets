@@ -167,17 +167,6 @@ createLNodes (hs:rs) exLNodes om =
 			 else name
             in  (ind, dgn {dgn_name = name'})
 				  
-strToQN :: String -> QName
-strToQN str = 
-    let str' = if head str == '"' then
-	          read str::String
-		  else str
-        nodeName = fst $ span (/='/') $ reverse str'
-    in  if head nodeName == '#' then
-	   QN "" (fst $ span (/='.') (reverse $ tail nodeName)) str'  
-	   -- QN prefix local uri
-	   else QN ""  (fst $ span (/='.') (reverse nodeName)) str'
-
 buildLNodeFromStr :: String -> Int -> (LNode DGNodeLab)
 buildLNodeFromStr uri i =
     let name = strToQN uri
