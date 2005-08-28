@@ -28,7 +28,7 @@ module Driver.Options
     , AnaType(..)
     , RawOpt(..)
     , OutType(..)
-    , WebType(..)
+    -- , WebType(..)
     , HetOutFormat(..)
     , HetOutType(..)
     , PrettyType(..)
@@ -56,7 +56,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, webS, specS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, owlS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -69,7 +69,7 @@ onlyGuiS = "only-gui"
 libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
-webS = "web"
+owlS = "owl"
 specS = "spec"
 
 asciiS, latexS, textS, texS :: String
@@ -114,7 +114,7 @@ data HetcatsOpts =        -- for comments see usage info
           , rawopts  :: [RawOpt]   
           , verbose  :: Int        
           , defLogic :: String     
-          , web      :: WebType    
+          , owl      :: AnaType
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt] 
           }
@@ -123,7 +123,7 @@ instance Show HetcatsOpts where
     show opts =  showEqOpt verboseS (show $ verbose opts)
                 ++ show (gui opts)
                 ++ show (analysis opts)
-                ++ show (web opts)
+                ++ show (owl opts)
                 ++ showEqOpt libdirS (libdir opts)
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
@@ -151,7 +151,7 @@ makeOpts opts flg = case flg of
     OutTypes x -> opts { outtypes = x }
     Specs x    -> opts { specNames = x }
     Raw x      -> opts { rawopts = x }
-    Web x      -> opts { web = x }
+    OWL x      -> opts { owl = x }
     Verbose x  -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
     CASLAmalg x   -> opts { caslAmalg = x }
@@ -165,7 +165,7 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
           , gui      = Not
-          , web      = NoWeb
+          , owl      = Basic
           , infiles  = []
           , specNames = []
           , intype   = GuessIn
@@ -190,7 +190,7 @@ data Flag = Verbose  Int
           | Version              
           | Help                 
           | Gui      GuiType     
-          | Web      WebType     
+          | OWL      AnaType     
           | Analysis AnaType     
           | DefaultLogic String  
           | InType   InType      
@@ -220,7 +220,7 @@ instance Show GuiType where
              Not  -> ""
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | WebIn | HetCASLIn 
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | OWL_DLIn | HetCASLIn 
             | HaskellIn | GuessIn
 
 instance Show InType where
@@ -228,7 +228,7 @@ instance Show InType where
              ATermIn at -> genTermS ++ show at
              ASTreeIn at -> astS ++ show at
              CASLIn -> "casl"
-             WebIn -> "web"
+             OWL_DLIn -> "owl"
              HetCASLIn -> "het"
              HaskellIn -> "hs"
              GuessIn -> ""
@@ -255,7 +255,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, HaskellIn, WebIn]
+plainInTypes = [CASLIn, HetCASLIn, HaskellIn, OWL_DLIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -372,6 +372,7 @@ instance Read GraphType where
 graphList :: [GraphType]
 graphList = [Dot, PostScript, Davinci]
 
+{-
 -- | 'WebType'
 data WebType = WebType | NoWeb  -- compare with WebIn?!
 
@@ -379,6 +380,7 @@ instance Show WebType where
     show w = case w of
              WebType -> showOpt webS
              NoWeb -> ""
+-}
 
 -- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
 data RawOpt = RawAscii String | RawLatex String
@@ -405,8 +407,8 @@ options =
       "show graphical output in a GUI window"
     , Option ['G'] [onlyGuiS] (NoArg $ Gui Only)
       "like -g but write no output files"
-    , Option ['w'] [webS] (NoArg (Web WebType))
-      "show web interface"
+    -- , Option ['w'] [webS] (NoArg (Web WebType))
+    --  "show web interface"
     , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
       "skip static analysis, just parse"
     , Option ['s'] [structS]  (NoArg $ Analysis Structured)
