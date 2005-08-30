@@ -1,4 +1,4 @@
-module CASL.CompositionTable.CompositionTable where
+module CompositionTable where
 
 import Text.XML.HaXml.Xml2Haskell
 import Text.XML.HaXml.OneOfN
@@ -14,7 +14,7 @@ Reading in the created files with standard HaXml-functions is not a problem.
 
 -- Public identifier (suggestion)
 publicId::String
-publicId = "-//CoFI//DTD CompositionTable 1.0//EN"
+publicId = "-//CoFI//DTD CompositionTable 1.1//EN"
 
 -- System URI
 systemURI::String
@@ -60,22 +60,22 @@ data Table_Attrs = Table_Attrs
 newtype Compositiontable = Compositiontable [Cmptabentry] 		deriving (Eq,Show)
 newtype Conversetable = Conversetable [Contabentry] 		deriving (Eq,Show)
 newtype Models = Models [Model] 		deriving (Eq,Show)
-data Cmptabentry = Cmptabentry Cmptabentry_Attrs [Ctele]
+data Cmptabentry = Cmptabentry Cmptabentry_Attrs [Baserel]
                  deriving (Eq,Show)
 data Cmptabentry_Attrs = Cmptabentry_Attrs
-    { cmptabentryBaserel1 :: String
-    , cmptabentryBaserel2 :: String
+    { cmptabentryArgBaserel1 :: String
+    , cmptabentryArgBaserel2 :: String
     } deriving (Eq,Show)
 data Contabentry = Contabentry
-    { contabentryBaserel1 :: String
-    , contabentryBaserel2 :: String
+    { contabentryArgBaseRel :: String
+    , contabentryConverseBaseRel :: String
     } deriving (Eq,Show)
 data Model = Model
     { modelString1 :: String
     , modelString2 :: String
     } deriving (Eq,Show)
-data Ctele = Ctele
-    { cteleBaserel :: String
+data Baserel = Baserel
+    { baserelBaserel :: String
     } deriving (Eq,Show)
 
 
@@ -93,12 +93,8 @@ instance XmlContent Table where
     fromElem (CMisc _:rest) = fromElem rest
     fromElem rest = (Nothing, rest)
     toElem (Table as a b c) =
-    	  [CElem (Elem "table" (toAttrs as) (toElem a ++ toElem b ++ toElem c))]
-
-singleElem::Table->Element
-singleElem (Table as a b c) =
-	(Elem "table" (toAttrs as) (toElem a ++ toElem b ++ toElem c))
-
+        [CElem (Elem "table" (toAttrs as) (toElem a ++ toElem b ++
+                                           toElem c))]
 instance XmlAttributes Table_Attrs where
     fromAttrs as =
         Table_Attrs
@@ -148,12 +144,12 @@ instance XmlContent Cmptabentry where
 instance XmlAttributes Cmptabentry_Attrs where
     fromAttrs as =
         Cmptabentry_Attrs
-          { cmptabentryBaserel1 = definiteA fromAttrToStr "cmptabentry" "baserel1" as
-          , cmptabentryBaserel2 = definiteA fromAttrToStr "cmptabentry" "baserel2" as
+          { cmptabentryArgBaserel1 = definiteA fromAttrToStr "cmptabentry" "argBaserel1" as
+          , cmptabentryArgBaserel2 = definiteA fromAttrToStr "cmptabentry" "argBaserel2" as
           }
     toAttrs v = catMaybes 
-        [ toAttrFrStr "baserel1" (cmptabentryBaserel1 v)
-        , toAttrFrStr "baserel2" (cmptabentryBaserel2 v)
+        [ toAttrFrStr "argBaserel1" (cmptabentryArgBaserel1 v)
+        , toAttrFrStr "argBaserel2" (cmptabentryArgBaserel2 v)
         ]
 instance XmlContent Contabentry where
     fromElem (CElem (Elem "contabentry" as []):rest) =
@@ -165,12 +161,12 @@ instance XmlContent Contabentry where
 instance XmlAttributes Contabentry where
     fromAttrs as =
         Contabentry
-          { contabentryBaserel1 = definiteA fromAttrToStr "contabentry" "baserel1" as
-          , contabentryBaserel2 = definiteA fromAttrToStr "contabentry" "baserel2" as
+          { contabentryArgBaseRel = definiteA fromAttrToStr "contabentry" "argBaseRel" as
+          , contabentryConverseBaseRel = definiteA fromAttrToStr "contabentry" "converseBaseRel" as
           }
     toAttrs v = catMaybes 
-        [ toAttrFrStr "baserel1" (contabentryBaserel1 v)
-        , toAttrFrStr "baserel2" (contabentryBaserel2 v)
+        [ toAttrFrStr "argBaseRel" (contabentryArgBaseRel v)
+        , toAttrFrStr "converseBaseRel" (contabentryConverseBaseRel v)
         ]
 instance XmlContent Model where
     fromElem (CElem (Elem "model" as []):rest) =
@@ -189,20 +185,20 @@ instance XmlAttributes Model where
         [ toAttrFrStr "string1" (modelString1 v)
         , toAttrFrStr "string2" (modelString2 v)
         ]
-instance XmlContent Ctele where
-    fromElem (CElem (Elem "ctele" as []):rest) =
+instance XmlContent Baserel where
+    fromElem (CElem (Elem "baserel" as []):rest) =
         (Just (fromAttrs as), rest)
     fromElem (CMisc _:rest) = fromElem rest
     fromElem rest = (Nothing, rest)
     toElem as =
-        [CElem (Elem "ctele" (toAttrs as) [])]
-instance XmlAttributes Ctele where
+        [CElem (Elem "baserel" (toAttrs as) [])]
+instance XmlAttributes Baserel where
     fromAttrs as =
-        Ctele
-          { cteleBaserel = definiteA fromAttrToStr "ctele" "baserel" as
+        Baserel
+          { baserelBaserel = definiteA fromAttrToStr "baserel" "baserel" as
           }
     toAttrs v = catMaybes 
-        [ toAttrFrStr "baserel" (cteleBaserel v)
+        [ toAttrFrStr "baserel" (baserelBaserel v)
         ]
 
 

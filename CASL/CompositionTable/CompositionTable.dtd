@@ -1,29 +1,29 @@
 <!--
-CompositionTable DTD Version 1.0
+CompositionTable DTD Version 1.1
 
 PUBLIC Identifier
--//CoFI//DTD CompositionTable 1.0//EN
+-//CoFI//DTD CompositionTable 1.1//EN
 //-->
 <!ELEMENT table (compositiontable,conversetable,models)>
 <!ELEMENT compositiontable (cmptabentry*)>
 <!ELEMENT conversetable (contabentry*)>
 <!ELEMENT models (model*)>
-<!ELEMENT cmptabentry (ctele*)>
+<!ELEMENT cmptabentry (baserel*)>
 <!ELEMENT contabentry EMPTY>
 <!ELEMENT model EMPTY>
-<!ELEMENT ctele EMPTY>
+<!ELEMENT baserel EMPTY>
 
 <!ATTLIST table name CDATA #REQUIRED>
 <!ATTLIST table identity CDATA #REQUIRED>
 
-<!ATTLIST cmptabentry baserel1 CDATA #REQUIRED>
-<!ATTLIST cmptabentry baserel2 CDATA #REQUIRED>
+<!ATTLIST cmptabentry argBaserel1 CDATA #REQUIRED>
+<!ATTLIST cmptabentry argBaserel2 CDATA #REQUIRED>
 
-<!ATTLIST contabentry baserel1 CDATA #REQUIRED>
-<!ATTLIST contabentry baserel2 CDATA #REQUIRED>
+<!ATTLIST contabentry argBaseRel CDATA #REQUIRED>
+<!ATTLIST contabentry converseBaseRel CDATA #REQUIRED>
 
 <!ATTLIST model string1 CDATA #REQUIRED>
 <!ATTLIST model string2 CDATA #REQUIRED>
 
-<!ATTLIST ctele baserel CDATA #REQUIRED>
+<!ATTLIST baserel baserel CDATA #REQUIRED>
 
