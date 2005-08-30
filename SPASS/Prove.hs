@@ -435,8 +435,11 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
 	-- putStrLn $ show selectedOld
         goalsLb # value (goalsView st)
 	-- putStrLn $ "activating: " ++ (show $ (head . fromJust) selectedOld)
-	-- FIXME: activateElem doesn't have any visible effect
-	maybe (return ()) ((activateElem goalsLb) . head) selectedOld
+	-- FIXME: while extracting this ListBox functionality, make sure 
+        -- to activate multiple lines if it is allowed.
+        when (isJust selectedOld) 
+             (do selection (head (fromJust selectedOld)) goalsLb
+                 return ())
       else return ()
     maybe (return ())
           (\ go -> 
@@ -745,7 +748,7 @@ spassProveBatch :: (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool)
 spassProveBatch f _ (Theory sig nSens) =
   do -- putStrLn $ showPretty initialLogicalPart ""
      pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
-     putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
+     -- putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
      return pstl
   where
     batchProve _ resDone [] = return (reverse resDone)
