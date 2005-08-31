@@ -272,7 +272,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                     ]])]
       -- the node types
                [("open_cons__spec", 
-                 createLocalMenuNodeTypeSpec "Red" ioRefSubtreeEvents 
+                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
 		("proven_cons__spec", 
@@ -280,7 +280,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty__open_cons__spec", 
-                 createLocalMenuNodeTypeSpec "Red" ioRefSubtreeEvents
+                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty__proven_cons__spec", 
@@ -288,13 +288,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("open_cons__internal", 
-                 createLocalMenuNodeTypeInternal "Red" gInfo
+                 createLocalMenuNodeTypeInternal "Coral" gInfo
                 ),
                 ("proven_cons__internal", 
                  createLocalMenuNodeTypeInternal "Green" gInfo
                 ),
                 ("locallyEmpty__open_cons__internal", 
-                 createLocalMenuNodeTypeInternal "Red" gInfo
+                 createLocalMenuNodeTypeInternal "Coral" gInfo
                 ),
                 ("locallyEmpty__proven_cons__internal", 
                  createLocalMenuNodeTypeInternal "Green" gInfo
@@ -330,7 +330,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unproventhm",
-                   Solid $$$ Color "Red" 
+                   Solid $$$ Color "Coral" 
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
@@ -340,12 +340,12 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("localunproventhm",
-                   Dashed $$$ Color "Red" 
+                   Dashed $$$ Color "Coral" 
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unprovenhidingthm",
-                   Solid $$$ Color "Orange"
+                   Solid $$$ Color "Yellow"
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("provenhidingthm",
