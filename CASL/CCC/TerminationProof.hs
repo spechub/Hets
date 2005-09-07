@@ -175,9 +175,9 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showPretty fs1 "all formulars") fs1
-    all_axioms = filter (\f->case f of                      
-                               Sort_gen_ax _ _ -> False
-                               _ -> True) fs
+    all_axioms1 = filter (\f->(not $ is_Sort_gen_ax f) &&
+                             (not $ is_Membership f)) fs
+    all_axioms = trace (showPretty all_axioms1 "Terminal_allAxiom") all_axioms1
     all_predSymbs = everyOnce $ concat $ map predSymbsOfAxiom all_axioms
     fconstrs = concat $ map constraintOfAxiom fs
     (_,constructors1,_) = recover_Sort_gen_ax fconstrs

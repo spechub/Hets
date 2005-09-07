@@ -15,7 +15,7 @@
 
 checkFreeType :: (PrettyPrint f, Eq f) => 
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
-                 -> [Named (FORMULA f)] -> Result (Maybe Bool)
+                 -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
 Just (Just True) => Yes, is consistent
 Just (Just False) => No, is inconsistent
 Just Nothing => don't know
@@ -37,8 +37,6 @@ import Common.PrettyPrint
 import Common.Result
 import Common.Id
 import Maybe
--- import System.Cmd
--- import System.IO.Unsafe
 import Debug.Trace
 
 {-
@@ -69,11 +67,11 @@ checkFreeType :: (PosItem f, PrettyPrint f, Eq f) =>
                  (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
                  -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
 checkFreeType (osig,osens) m fsn      
-    | any (\s->not $ elem s srts) newL =
-        let (Id ts _ pos) = head $ filter (\s->not $ elem s srts) newL
+    | not $ null notSubSorts =
+        let (Id ts _ pos) = head notSubSorts
             sname = concat $ map tokStr ts 
 	in warning Nothing (sname ++ " is not freely generated") pos
-    | any (\s->not $ elem s f_Inhabited) newL =
+    | any (\s->not $ elem s f_Inhabited) $ diffList newL subSorts =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) newL
             sname = concat $ map tokStr ts 
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
@@ -82,7 +80,7 @@ checkFreeType (osig,osens) m fsn
 		  map leadingSymPos _axioms
         in warning Nothing "axiom is not definitional" pos
     | not $ null $ p_t_axioms ++ pcheck = 
-	let pos = posOf (p_t_axioms ++ pcheck)
+	let pos = posOf $ (take 1 (p_t_axioms ++ pcheck))
         in warning Nothing "partial axiom is not definitional" pos
     | any id $ map find_ot id_ots =    
         let pos = old_op_ps
@@ -99,16 +97,13 @@ checkFreeType (osig,osens) m fsn
         let (Application os _ pos) = 
 		head $ filter (\t->not $ checkVar t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-			    opSymStr os) pos
---    | not $ and $ map checkPatterns leadingPatterns = 
---        let (symb, pos) = pattern_Pos leadingSymPatterns  
---        in warning Nothing ("patterns overlap in " ++ symb) pos
---    | (not $ null (axioms ++ old_axioms)) && (not $ proof) = 
+			    opSymStr os) pos 
     | terminationProof (osens ++ fsn) =
 	warning Nothing "not terminating" nullRange
     | not $ null overlap_query = 
   --  | not $ null overlapSym = 
         return (Just (True,overlap_query))
+    | not $ null subSortsF = return (Just (True,concat $ map snd subSortsF))
     | otherwise = return (Just (True,[]))
 
 {-
@@ -136,12 +131,13 @@ checkFreeType (osig,osens) m fsn
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showPretty fs1 "new formulars") fs1     -- new formulars
---    is_user_or_sort_gen ax = take 12 name == "ga_generated" || 
---			     take 3 name /= "ga_"
---             where name = senName ax
+    ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
+ --   sig = trace (showPretty sig1 "Sig") sig1
+ --   osigO = trace (showPretty osig "Old-Sig") osig
     oldSorts1 = Set.union (sortSet sig) (sortSet osig)
     oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1  -- old sorts
+    oSorts = Set.toList oldSorts
     allSorts1 = sortSet $ mtarget m
     allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
     newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
@@ -150,35 +146,25 @@ checkFreeType (osig,osens) m fsn
     newL = Set.toList newSorts
     oldOpMap = opMap sig
     oldPredMap = predMap sig 
-    fconstrs = concat $ map constraintOfAxiom fs
- --   fc f = case f of
- --            Sort_gen_ax constrs True -> constrs
- --            _ ->[]
+    fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
     srts = trace (showPretty srts1 "srts") srts1      --   srts
     constructors = trace (showPretty constructors1 "constrs") constructors1   
                                                            -- constructors
-    f_Inhabited1 = inhabited (Set.toList oldSorts) fconstrs
+    f_Inhabited1 = inhabited oSorts fconstrs
     f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1 
                                                              --  f_inhabited
-    axioms1 = filter (\f-> case f of                       
-                             Sort_gen_ax _ _ -> False
-                             _ -> True) fs
+    axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
+                           (not $ is_Membership f)) fs
     axioms = trace (showPretty axioms1 "axioms") axioms1         --  axioms
-    _axioms = map (\f-> case f of
-                          Quantification _ _ f' _ -> f'
-                          _ -> f) axioms
+    _axioms = map quanti axioms
     l_Syms1 = map leadingSym axioms                                    
     l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1  
                                                       -- leading_Symbol
-    op_Syms = concat $ map (\s-> case s of
-                                   Just (Left op) -> [op]
-                                   _ -> []) l_Syms
---    pred_Syms1 = concat $ map (\s-> case s of
---                                     Just (Right p) -> [p]
---                                     _ -> []) l_Syms
---    pred_Syms = trace (showPretty pred_Syms1 "PRED_SYM") pred_Syms1
-  
+    spSrts = filter (\s->not $ elem s srts) newL
+    notSubSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == False) spSrts
+    subSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == True) spSrts
+    subSortsF = map (\s->isSubSort s oSorts fs) subSorts
 {-
   check all partial axiom
 -}
@@ -260,7 +246,7 @@ checkFreeType (osig,osens) m fsn
     leadingTerms = trace (showPretty leadingTerms1 "leadingTerm") leadingTerms1
                                                                -- leading Term
     checkTerm (Sorted_term t _ _) = checkTerm t
-    checkTerm (Qual_var _ _ _) = True
+    checkTerm (Qual_var _ _ _) = True         -- sort?
     checkTerm (Application _ ts _)= 
 	let checkT (Sorted_term t _ _) = checkTerm t
             checkT (Qual_var _ _ _) = True
@@ -417,259 +403,7 @@ checkFreeType (osig,osens) m fsn
                    Left (Qual_op_name on _ ps) -> (idStr on,ps)
                    Right (Qual_pred_name pn _ ps) -> (idStr pn,ps)
                    _ -> error "pattern overlap"
-{- 
-   Automatic termination proof
-   using cime, see http://cime.lri.fr/
 
-  interface to cime system, using system
-  transform CASL signature to Cime signature, 
-  CASL formulas to Cime rewrite rules
-
-Example1:
-
-spec NatJT2 = {} then
-  free type Nat ::= 0 | suc(Nat)
-  op __+__ : Nat*Nat->Nat
-  forall x,y:Nat
-  . 0+x=x
-  . suc(x)+y=suc(x+y)
-end
-
-theory generated by Hets:
-
-sorts Nat
-op 0 : Nat
-op __+__ : Nat * Nat -> Nat
-op suc : Nat -> Nat
-
-forall X1:Nat; Y1:Nat
-    . (op suc : Nat -> Nat)((var X1 : Nat) : Nat) : Nat =
-          (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat <=>
-          (var X1 : Nat) : Nat = (var Y1 : Nat) : Nat %(ga_injective_suc)%
-
-forall Y1:Nat
-    . not (op 0 : Nat) : Nat =
-        (op suc : Nat -> Nat)((var Y1 : Nat) : Nat) : Nat %(ga_disjoint_0_suc)%
-
-generated{sort Nat; op 0 : Nat;
-                    op suc : Nat -> Nat} %(ga_generated_Nat)%
-
-forall x, y:Nat
-    . (op __+__ : Nat * Nat -> Nat)((op 0 : Nat) : Nat,
-                                    (var x : Nat) : Nat) : Nat =
-          (var x : Nat) : Nat
-
-forall x, y:Nat
-    . (op __+__ : Nat *
-                  Nat -> Nat)((op suc : Nat -> Nat)((var x : Nat) : Nat) : Nat,
-                              (var y : Nat) : Nat) : Nat =
-          (op suc : Nat -> Nat)((op __+__ : Nat *
-                                            Nat -> Nat)((var x : Nat) : Nat,
-                                                        (var y : Nat) : Nat) :
-                                                                    Nat) : Nat
-
-CiME:
-let F = signature "when_else : 3; 
-                   eq : binary;
-                   and : binary;
-                   or : binary; 
-                   not: unary; 
-                   True,False : constant; 
-                   0 : constant; 
-                   suc : unary; 
-                   __+__ : binary; ";
-let X = vars "t1 t2 x y";
-let axioms = TRS F X "
-eq(t1,t1) -> True; 
-eq(t1,t2) -> False;
-and(True,True) -> True; 
-and(True,False) -> False; 
-and(False,True) -> False; 
-and(False,False) -> False;
-or(True,True) -> True; 
-or(True,False) -> True; 
-or(False,True) -> True; 
-or(False,False) -> False;
-not(True) -> False;
-not(False) -> True; 
-when_else(t1,True,t2) -> t1; 
-when_else(t1,False,t2) -> t2; 
-__+__(0,x) -> x; 
-__+__(suc(x),y) -> suc(__+__(x,y)); ";
-termcrit "dp";
-termination axioms;
-
-Example2:
-spec NatJT1 = 
-  sort Elem
-  free type Bool ::= True | False
-  op __or__ : Bool*Bool->Bool
-  . True or True = True
-  . True or False = True
-  . False or True = True
-  . False or False = False
-then
-  free types Tree ::= Leaf(Elem) | Branch(Forest);
-             Forest ::= Nil | Cons(Tree;Forest)
-  op elemT : Elem * Tree -> Bool
-  op elemF : Elem * Forest -> Bool
-  forall x,y:Elem; t:Tree; f:Forest
-  . elemT(x,Leaf(y)) = True when x=y else False
-  . elemT(x,Branch(f)) = elemF(x,f)
-  . elemF(x,Nil) = False
-  . elemF(x,Cons(t,f)) = elemT(x,t) or elemF(x,f)
-end
-
-CiME:
-let F = signature "when_else : 3; 
-                   eq : binary;
-                   and : binary;
-                   or : binary;
-                   not : unary; 
-                   True,False : constant; 
-                   True : constant; 
-                   False : constant; 
-                   __or__ : binary; 
-                   Leaf : unary; 
-                   Branch : unary; 
-                   Nil : constant; 
-                   Cons : binary; 
-                   elemT : binary; 
-                   elemF : binary; ";
-let X = vars "t1 t2 x y t f";
-let axioms = TRS F X "
-eq(t1,t1) -> True;
-eq(t1,t2) -> False;
-and(True,True) -> True; 
-and(True,False) -> False; 
-and(False,True) -> False; 
-and(False,False) -> False;
-or(True,True) -> True; 
-or(True,False) -> True; 
-or(False,True) -> True; 
-or(False,False) -> False;
-not(True) -> False;
-not(False) -> True;
-when_else(t1,True,t2) -> t1;
-when_else(t1,False,t2) -> t2;
-__or__(True,True) -> True; 
-__or__(True,False) -> True; 
-__or__(False,True) -> True; 
-__or__(False,False) -> False;
-elemT(x,Leaf(y)) -> when_else(True,eq(x,y),False); 
-elemT(x,Branch(f)) -> elemF(x,f); 
-elemF(x,Nil) -> False; 
-elemF(x,Cons(t,f)) -> __or__(elemT(x,t),elemF(x,f)); ";
-
-------------------------------------------------------------------------
---    oldfs1 = map sentence (filter is_user_or_sort_gen osens)
---    oldfs = trace (showPretty oldfs1 "old formulas") oldfs1   -- old formulas
---    old_axioms = filter (\f->case f of                      
---                               Sort_gen_ax _ _ -> False
---                               _ -> True) oldfs
---    all_axioms = old_axioms ++ axioms
-    all_predSymbs = everyOnce $ concat $ map predSymbsOfAxiom all_axioms
-    o_fconstrs = concat $ map constraintOfAxiom oldfs
-    (_,o_constructors1,_) = recover_Sort_gen_ax o_fconstrs
-    o_constructors = trace (showPretty o_constructors1 "Ocons") o_constructors1
-                                                           -- old constructors
-    o_l_Syms1 = map leadingSym $ filter isOp_Pred $ oldfs             
-    o_l_Syms = trace (showPretty o_l_Syms1 "o_leading_Symbol") o_l_Syms1
-                                                          -- old leading_Symbol
-    o_op_Syms = concat $ map (\s-> case s of
-                                     Just (Left op) -> [op]
-                                     _ -> []) o_l_Syms
---    o_pred_Syms1 = concat $ map (\s-> case s of
---                                       Just (Right p) -> [p]
---                                       _ -> []) o_l_Syms
---    o_pred_Syms = trace (showPretty o_pred_Syms1 "OLD_PRED_SYM") o_pred_Syms1
-
-    --  build signature of operation together 
-    opSignStr signs str                      
-        | null signs = str
-        | otherwise = opSignStr (tail signs) (str ++ 
-					      (opS_cime $ head signs) ++ ";\n")
-    --  build signature of predication together 
-    predSignStr signs str                      
-        | null signs = str
-        | otherwise = 
-	    predSignStr (tail signs) (str ++ 
-				      (predS_cime $ head signs) ++ ";\n")
-    allVar vs = everyOnce $ concat vs
---	foldl (\hv tv->hv ++ 
---	               (filter (\v->not $ elem v hv) tv)) (head vs) (tail vs)
-    --  transform variables to string
-    varsStr vars str                               
-        | null vars = str
-        | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
-                      else varsStr (tail vars) (str ++ " " ++ 
-						(tokStr $ head vars))
-    --  transform all axioms to string
-    axiomStr axs str
-        | null axs = str
-        | otherwise = 
-	    axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ ";\n")
-    impli_equiv = filter is_impli_equiv all_axioms
-    n_impli_equiv = filter (not.is_impli_equiv) all_axioms
-    sighead = "let F = signature \"when_else : 3;\n" ++
-                                  "eq : binary;\n" ++
-                                  "and : binary;\n" ++
-                                  "or : binary;\n" ++
-                                  "not : unary;\n" ++ 
-                                  "True,False : constant;\n"
-    auxSigstr ies i str 
-        | null ies = str
-        | otherwise =  
-              auxSigstr (tail ies) (snd $ last tmp) (str ++ 
-                             (concat $ map (\s-> ((fst.fst) s) ++ 
-                             (dimension $ ((snd.fst) s)) ++ ";\n") tmp))
-            where tmp = sigAuxf (head ies) i
-    sigAux = auxSigstr impli_equiv 1 ""
-    auxAxstr afs i str
-        | null afs = str
-        | otherwise =
-              auxAxstr (tail afs) (snd tmp) (str ++ (fst tmp))
-            where tmp = impli_equiv_cime i (head afs)
-    axAux = auxAxstr impli_equiv 1 ""  
-    varhead = "let X = vars \"t1 t2 "
-    axhead = "let axioms = TRS F X \"eq(t1,t1) -> True;\n" ++ 
-                                    "eq(t1,t2) -> False;\n" ++
-                                    "and(True,True) -> True;\n" ++
-                                    "and(True,False) -> False;\n" ++
-                                    "and(False,True) -> False;\n" ++
-                                    "and(False,False) -> False;\n" ++
-                                    "or(True,True) -> True;\n" ++
-                                    "or(True,False) -> True;\n" ++
-                                    "or(False,True) -> True;\n" ++
-                                    "or(False,False) -> False;\n" ++
-                                    "not(True) -> False;\n" ++
-                                    "not(False) -> True;\n" ++  
-                                    "when_else(t1,True,t2) -> t1;\n" ++ 
-                                    "when_else(t1,False,t2) -> t2;\n"
-    c_sigs = (sighead ++ (opSignStr (everyOnce (o_constructors ++ 
-					       constructors ++ 
-					       o_op_Syms ++ 
-					       op_Syms)) "") ++
-			 (predSignStr all_predSymbs "") ++
-	      sigAux ++ "\";\n")
-    c_vars = (varhead ++ (varsStr (allVar $ map varOfAxiom $ 
-			           all_axioms) "") ++ "\"; \n")
-    c_axms = if null n_impli_equiv 
-             then (axhead ++ axAux ++ "\";\n")
-             else (axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")
-    ipath = "/tmp/Input.cime"
-    opath = "/tmp/Result.cime"
-    c_proof = ("termcrit \"dp\";\n" ++
-               "termination axioms;\n" ++
-               "#quit;")  
-    proof = 
-	unsafePerformIO (do
-            writeFile ipath (c_sigs ++ c_vars ++ c_axms ++ c_proof)
-            system ("cime < " ++ ipath ++ " | cat > " ++ opath)
-            res <- readFile opath
-            -- system ("rm ./CASL/CCC/*.cime")
-            return (subStr "Termination proof found." res))
--}
 
 
 {- group the axioms according to their leading symbol
@@ -688,3 +422,22 @@ groupAxioms phis = do
             in p'++(filterA ps symb')
 
 
+isSubSort :: SORT -> [SORT] -> [FORMULA f] -> (Bool,[FORMULA f])
+isSubSort _ _ [] = (False,[])
+isSubSort s sts (f:fs) = 
+    case f of
+      Quantification Universal [vd] f1 _ ->
+          if elem (sortOfVar_Decl vd) sts 
+          then case f1 of
+                 Equivalence (Membership _ s1 _) f2 _ ->
+                     if s1==s 
+                     then (True,
+                           [(Quantification Existential [vd] f2 nullRange)])
+                     else isSubSort s sts fs
+                 _ -> isSubSort s sts fs
+          else isSubSort s sts fs
+      _ -> isSubSort s sts fs
+
+
+sortOfVar_Decl :: VAR_DECL -> SORT
+sortOfVar_Decl (Var_decl _ s _) = s   

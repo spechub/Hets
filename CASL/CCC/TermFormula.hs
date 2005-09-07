@@ -50,6 +50,12 @@ is_user_or_sort_gen ax = take 12 name == "ga_generated" ||
     where name = senName ax     
 
 
+is_Sort_gen_ax :: FORMULA f -> Bool
+is_Sort_gen_ax f = case f of
+                     Sort_gen_ax _ _ -> True
+                     _ -> False   
+
+
 is_impli :: FORMULA f -> Bool
 is_impli f = case (quanti f) of
                Quantification _ _ f' _ -> is_impli_equiv f'
@@ -137,14 +143,6 @@ predSymbsOfAxiom f = case f of
                        _ -> []
 
 
-subStr :: String -> String -> Bool
-subStr [] _ = True
-subStr _ [] = False
-subStr xs ys = if (head xs) == (head ys) &&
-                  xs == take (length xs) ys then True
-               else subStr xs (tail ys)
-
-
 
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = case f of
@@ -189,6 +187,24 @@ idStr (Id ts _ _) = concat $ map tokStr ts
 everyOnce :: (Eq a) => [a] -> [a]
 everyOnce [] = []
 everyOnce (x:xs) = x:(everyOnce $ filter (\a-> a /= x ) xs)
+
+
+
+subStr :: String -> String -> Bool
+subStr [] _ = True
+subStr _ [] = False
+subStr xs ys = if (head xs) == (head ys) &&
+                  xs == take (length xs) ys then True
+               else subStr xs (tail ys)
+
+
+diffList :: (Eq a) => [a] -> [a] -> [a]
+diffList [] _ = []
+diffList l [] = l
+diffList (l:ls) a = if elem l a
+                    then diffList ls a
+                    else l:(diffList ls a)
+
 
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
@@ -276,5 +292,14 @@ opTyp_Axiom f =
     Just (Left (Qual_op_name _ (Op_type Total _ _ _) _)) -> Just True 
     Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
     _ -> Nothing 
+
+
+is_Membership :: FORMULA f -> Bool
+is_Membership f =
+  case f of
+    Quantification _ _ f' _ -> is_Membership f'
+    Equivalence f' _ _ -> is_Membership f'
+    Membership _ _ _ -> True
+    _ -> False
 
 

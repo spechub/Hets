@@ -53,31 +53,22 @@ imageOfMorphism m =
 
 inhabited :: [SORT] -> [Constraint] -> [SORT]
 inhabited sorts constrs = iterateInhabited sorts
-      where (_,ops,_)=recover_Sort_gen_ax constrs
-            argsAndres=concat $ map (\os-> case os of
-                                          Op_name _->[]
-                                          Qual_op_name _ ot _->
-                                            case ot of
-                                             Op_type _ args res _->[(args,res)]
-                                    ) ops
-            iterateInhabited l =
+    where (_,ops,_)=recover_Sort_gen_ax constrs
+          argsRes=concat $ 
+                    map (\os-> case os of
+                                 Op_name _->[]
+                                 Qual_op_name _ ot _->
+                                     case ot of
+                                       Op_type _ args res _ -> [(args,res)]
+                        ) ops
+          iterateInhabited l =
 	            if l==newL then newL else iterateInhabited newL
-		             where newL =foldr (\(as,rs) l'->
-                                                  if (all (\s->elem s l') as)
+		            where newL =foldr (\(ags,rs) l'->
+                                                  if (all (\s->elem s l') ags)
                                                       && (not (elem rs l'))
                                                   then rs:l'
-					          else l') l argsAndres
+					          else l') l argsRes
 
-{-
-inhabitedF :: FORMULA f -> [SORT]
-inhabitedF f = case f of
-                Sort_gen_ax constrs True-> inhabited constrs
-                _ -> []
--}
 
-partial_OpSymb :: OP_SYMB -> Maybe Bool
-partial_OpSymb os = case os of
-                      Op_name _ -> Nothing
-	              Qual_op_name _ ot _ -> case ot of
-                                     Op_type Total _ _ _ -> Just False
-	                             Op_type Partial _ _ _ -> Just True
+
+
