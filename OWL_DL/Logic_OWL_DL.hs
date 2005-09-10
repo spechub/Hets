@@ -49,12 +49,14 @@ tc_Sign, tc_Sentence, tc_Ontology :: TyCon
 
 tc_Sign = mkTyCon "OWL_DL.Sign.Sign"
 tc_Sentence = mkTyCon "OWL_DL.Sign.Sentence"
+tc_Ontology     = mkTyCon "OWL_DL.AS.Ontology"
 
 instance Typeable Sign where
   typeOf _ = mkTyConApp tc_Sign []
 instance Typeable Sentence where
   typeOf _ = mkTyConApp tc_Sentence []
-
+instance Typeable Ontology where
+      typeOf _ = mkTyConApp tc_Ontology []
 type OWL_DLMorphism = DefaultMorphism Sign
 
 instance Category OWL_DL Sign OWL_DLMorphism  
@@ -108,9 +110,6 @@ instance Logic OWL_DL ()
                OWL_DLMorphism
                () () () 
 
-tc_Ontology     = mkTyCon "OWL_DL.AS.Ontology"
-instance Typeable Ontology where
-      typeOf _ = mkTyConApp tc_Ontology []
 {-
 instance Comorphism OWL_DL
                OWL_DL ()
