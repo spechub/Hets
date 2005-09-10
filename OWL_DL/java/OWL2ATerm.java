@@ -4,7 +4,7 @@
  */
 
 /**
- * @author jiang
+ * @author Heng Jiang <jiang@tzi.de>
  *
  */
 
@@ -72,16 +72,9 @@ public class OWL2ATerm implements OWLValidationConstants {
 		ATermList messageList;
 		List warningList;
 
-		// LongOpt[] longopts = new LongOpt[11];
-		// boolean warnings = false;
-		// boolean constructs = false;
-		// boolean noImports = false;
-		// BasicConfigurator.configure();
-
 		try {
 			SpeciesValidator sv = new SpeciesValidator();
 			URI uri = new URI(args[0]);
-			// URI uri = new URI("file:///D:/JOB/wine.xml");
 			URIMapper mapper = null;
 
 			/* Use the RDF Parser */
@@ -93,9 +86,8 @@ public class OWL2ATerm implements OWLValidationConstants {
 				file.createNewFile();
 			}
 
-			// System.out.println("OWL parse beginning ...");
-		    // System.out.println("Please waiting...");
-
+			System.out.println("\nOWL parsing beginning.");
+		    
 			// Warning
 			OWLToATermErrorHandler handler = new OWLToATermErrorHandler();
 			rdfParser.setOWLRDFErrorHandler(handler);
@@ -127,7 +119,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 				// String keyUri = (String) ontos.next();
 				OWLOntology ontology = (OWLOntology) ontos.next();
 
-				System.out.println("\nparsing " + ontology.getURI() + " ...");
+				System.out.println("parsing OWL: " + ontology.getURI() + " ...");
 
 				/*
 				 * Map options = new HashMap(); options.put("uriMapper",
@@ -136,12 +128,12 @@ public class OWL2ATerm implements OWLValidationConstants {
 				 */
 
 				// build an new SpeciesValidatorReporter to save all messages.
-				System.out.println("creating messages...");
+                // System.out.println("creating messages...");
 				OWLATReporter reporter = new OWLATReporter();
 				sv.setReporter(reporter);
 
 				// Validation
-				System.out.println("Please waiting ......");
+				// System.out.println("Please waiting ......");
 				if (sv.isOWLLite(ontology)) {
 					validation = LITE;
 
@@ -189,7 +181,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 			ontologyList.reverse().writeToTextFile(
 					new FileOutputStream(file, true));
 
-			System.out.println("Done!\n");
+			System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.out.println("Error: can not build file: output.term");
 			System.exit(2);
@@ -271,7 +263,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 
 			// Load the current OWL ontology
 			// use an original PelletLoader to load current Ontology.
-			System.out.println("creating ATermList from OWL.");
+			// System.out.println("creating ATermList from OWL.");
 			PelletLoader loader = new PelletLoader(new KnowledgeBase());
 			loader.load(ontology);
 			ploader.setKB(loader.getKB());
