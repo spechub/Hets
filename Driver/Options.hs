@@ -627,9 +627,18 @@ checkInFile :: FilePath -> IO ()
 checkInFile file =
     do exists <- doesFileExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       if exists && readable perms then return () else 
+       isUri    <- checkUri file
+       if ((exists && readable perms) || isUri) then return () else 
           hetsError $ "Not a valid input file: " ++ file
 
+-- | check if infile ist uri (http://, https://, ftp://, file://, etc.)
+checkUri :: FilePath -> IO Bool
+checkUri file = do let (_, t) = span (/=':') file
+		   if (null t || length t < 4) then return False
+		      else do let (_:c2:c3:_) = t
+                	      if c2 == '/' && c3 == '/' then
+			         return True
+			         else return False
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
