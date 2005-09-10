@@ -206,3 +206,12 @@ data DataRange = DID DatatypeID
 emptyOntology :: Ontology
 emptyOntology = Ontology Prelude.Nothing [] Map.empty
 
+-- | check if infile ist uri (http://, https://, ftp://, file://, etc.)
+checkUri :: FilePath -> Bool
+checkUri file = 
+    let (_, t) = span (/=':') file
+    in  if (null t || length t < 4) then False
+	else let (_:c2:c3:_) = t
+             in  if c2 == '/' && c3 == '/' then
+		 True
+		 else False
