@@ -22,6 +22,7 @@ import Control.Monad (when)
 
 import System.Environment (getArgs)
 import System.Exit (ExitCode(ExitSuccess), exitWith)
+import Maybe
 
 import Data.Graph.Inductive.Graph
 
@@ -42,6 +43,7 @@ import Driver.Options
 import Comorphisms.LogicGraph
 
 import Logic.Grothendieck
+import OWL_DL.OWLAnalysis
 
 import Static.AnalysisLibrary
 import Static.DevGraph
@@ -81,6 +83,16 @@ processFile opt file =
                      _ -> showGraph file opt r
 #endif
 -}
+             OWL_DLIn -> do
+	         ontoMap <- parseOWL file
+		 case owl opt of
+		    Skip  -> do putIfVerbose opt 2
+			         ("Skipping static analysis on file: " ++ file)
+			        -- return (fromJust $ Map.lookup file ontoMap)
+				return ()
+  		    _     -> do paraForGraph <- structureAna file opt ontoMap
+			        showGraph file opt paraForGraph
+			       
              _ -> do
                   ld <- read_LIB_DEFN opt file
 --                (env,ld') <- analyse_LIB_DEFN opt
