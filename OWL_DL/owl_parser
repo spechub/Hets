@@ -8,8 +8,7 @@ SEPARATOR=":"
 #OWLAPI="econn-owlapi"
 #JUNIT="junit"
 
-cd ./OWL_DL/java
-# cd ./java
+cd $HETS_OWL_PARSER/java
 LIBHOME="./jlib"
 CLASSPATH=
 for x in $LIBHOME/*.jar 
