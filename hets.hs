@@ -24,7 +24,7 @@ import System.Environment (getArgs)
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 import Maybe
 
-import Data.Graph.Inductive.Graph
+-- import Data.Graph.Inductive.Graph
 
 import Common.Utils
 import Common.Result
@@ -88,7 +88,6 @@ processFile opt file =
 		 case owl opt of
 		    Skip  -> do putIfVerbose opt 2
 			         ("Skipping static analysis on file: " ++ file)
-			        -- return (fromJust $ Map.lookup file ontoMap)
 				return ()
   		    _     -> do paraForGraph <- structureAna file opt ontoMap
 			        showGraph file opt paraForGraph
@@ -165,9 +164,9 @@ checkFile opts fp ln lenv =
                   ++ " from env-file " ++ show envFile
                   ++ ": status: " 
                   ++ (case read_gctx of
-                      (r_globalAnnos, r_globalEnv, r_dGraph) ->
+                      (r_globalAnnos, _, _) ->
                        case gctx of
-                       (globalAnnos, globalEnv, dGraph) ->
+                       (globalAnnos, _, _) ->
                          concat $ 
                           zipWith (\label status ->
                                      label ++ ": " ++ status ++ ";")
