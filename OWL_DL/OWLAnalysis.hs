@@ -12,21 +12,18 @@ Portability :  portable
 module OWL_DL.OWLAnalysis where
 
 import OWL_DL.AS
--- import OWL_DL.ReadWrite
 import OWL_DL.Namespace
 import OWL_DL.Logic_OWL_DL
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
+import System(system)
 import System.Exit
-import System(getArgs, system)
 import System.Environment(getEnv)
 import qualified Data.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
--- import Data.Graph.Inductive.Tree
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
--- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
 import OWL_DL.Sign
 import Common.GlobalAnnotations
@@ -34,19 +31,15 @@ import Common.Result
 import Common.AS_Annotation
 import Syntax.AS_Library
 import Driver.Options
-import qualified GUI.AbstractGraphView as GUI.AbstractGraphView 
-import GUI.ConvertDevToAbstractGraph
-import DialogWin (useHTk)
-import InfoBus 
-import qualified Events as Events
-import Destructible
 import Common.Id
 import Logic.Grothendieck
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
 import Maybe(fromJust)
 
-parseOWL :: FilePath -> IO OntologyMap 
+-- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
+parseOWL :: FilePath              -- ^ local filepath or uri
+	 -> IO OntologyMap        -- ^ map: uri -> Ontology  
 parseOWL filename  = 
   do
     pwd <- getEnv "PWD" 
@@ -80,6 +73,7 @@ parseOWL filename  =
 		     parseProc "./OWL_DL/output.term"
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
+-- | parse the file "output.term" from java-owl-parser
 parseProc :: FilePath -> IO OntologyMap
 parseProc filename = 
     do d <- readFile filename
@@ -89,13 +83,13 @@ parseProc filename =
 	     return $ Map.fromList $ parsingAll paarList
 	 _ -> error ("false file: " ++ show filename ++ ".")
 	  
-
-            
+-- | parse an ontology with all imported ontologies           
 parsingAll :: [ATerm] -> [(String, Ontology)]
 parsingAll [] = []
 parsingAll (aterm:res) =
 	     (ontologyParse aterm):(parsingAll res)
       
+-- | ontology parser, this version ignore validation, massages of java-parser.
 ontologyParse :: ATerm -> (String, Ontology)
 ontologyParse 
     (AAppl "UOPaar" 
@@ -104,7 +98,6 @@ ontologyParse
     = case ontology of
       Ontology _ _ namespace ->
 	  (if head uri == '"' then read uri::String else uri, 
-	   -- namespace, 
 	   propagateNspaces namespace $ createAndReduceClassAxiom ontology)
    where ontology = fromATerm onto::Ontology 
 ontologyParse _ = error "false ontology file."
@@ -130,10 +123,9 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
 		 -- the original directive must also be saved.
 		 findAndCreate r 
 		    (h:def,(Ax (EquivalentClasses (DC cid) desps)):axiom,rest)
-                 -- h:(Ax (EquivalentClasses (DC cid) desps)):(findAndCreate r)
-	     Ax (Class cid _ Partial _ desps) ->
+ 	     Ax (Class cid _ Partial _ desps) ->
 		 if null desps then
-		    findAndCreate r (h:def, axiom, rest) -- h:(findAndCreate r)
+		    findAndCreate r (h:def, axiom, rest) 
 		    else 
 		     findAndCreate r (h:def, 
 				      (appendSubClassAxiom cid desps) ++ axiom,
@@ -167,7 +159,7 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
                   _ -> False
               _ -> False
 
-
+-- | structure analysis bases of ontologyMap from owl parser
 structureAna :: FilePath
 	     -> HetcatsOpts
              -> OntologyMap
@@ -184,6 +176,7 @@ structureAna file opt ontoMap =
 				   simpleLibEnv file dg))
 	 _          -> staticAna file (newOntoMap, dg)
 
+-- simpleLibEnv and simpleLibName builded two simple lib-entities for showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg =
     Map.singleton (simpleLibName filename) 
@@ -195,18 +188,18 @@ simpleLibEnv filename dg =
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 
+-- | static analysis if the HetcatesOpts is not Structured. 
 staticAna :: FilePath
           -> (OntologyMap, DGraph)
 	  -> IO (Maybe (LIB_NAME, -- filename
 			(),   -- as tree
 			(),   -- development graph
 			LibEnv    -- DGraphs for imported modules 
-		       )
-		)
+		       ))
 staticAna file (ontoMap, dg) =  
     do let topNodes = topsort dg
        Result _ res <-
-	       nodesStaticAna' (reverse topNodes) Map.empty ontoMap dg []
+	       nodesStaticAna (reverse topNodes) Map.empty ontoMap dg []
        case res of
            Just (_, dg') -> 
 	    return (Just (simpleLibName file, 
@@ -220,34 +213,37 @@ staticAna file (ontoMap, dg) =
 	  rev [] = []
 	  rev ((source, target, edge):r) = (target, source, edge):(rev r)
    
+-- | find a node in DevGraph
 matchNode :: DGraph -> Node -> LNode DGNodeLab
 matchNode dgraph node =
 	     let (mcontext, _ ) = match node dgraph
 		 (_, _, dgNode, _) = fromJust mcontext
 	     in (node, dgNode)
 
+-- | a map to save which node has been analysed.
 type SignMap = Map.Map Node (Sign, [Named Sentence])
 
-nodesStaticAna' :: [Node] 
+-- | call to static analyse of all nodes
+nodesStaticAna :: [Node] 
 	       -> SignMap 
                -> OntologyMap
 	       -> DGraph 
                -> [Diagnosis]
 	       -> IO (Result (SignMap, DGraph))
-nodesStaticAna' [] signMap _ dg diag = 
+nodesStaticAna [] signMap _ dg diag = 
     return $ Result diag (Just (signMap, dg)) 
-nodesStaticAna' (h:r) signMap ontoMap dg diag = do
+nodesStaticAna (h:r) signMap ontoMap dg diag = do
     Result digs res <- 
 	    nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
 			  (emptySign, [], diag)
 			  signMap ontoMap dg 
     case res of
         Just (newSignMap, newDg) -> 
-		nodesStaticAna' r newSignMap ontoMap newDg (diag++digs)
+		nodesStaticAna r newSignMap ontoMap newDg (diag++digs)
 	Prelude.Nothing -> 
-	    nodesStaticAna' r signMap ontoMap dg (diag++digs)
+	    nodesStaticAna r signMap ontoMap dg (diag++digs)
     
-
+-- | call to static analyse of single nodes
 nodeStaticAna :: [LNode DGNodeLab]
 	      -> (Sign, [Named Sentence], [Diagnosis])	 
 	      -> SignMap
@@ -271,20 +267,23 @@ nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
         case res of  
 	  Just (_,_,accSig,sent) ->
             do    
-	     let newLNode = 
+	     let accSent = inSent ++ sent
+                 newLNode = 
 		     (n, topNode {dgn_theory = 
-				  G_theory OWL_DL accSig (toThSens sent)
+				  G_theory OWL_DL accSig (toThSens accSent)
 				 }) 
 		 ledges = (inn dg n) ++ (out dg n)
 	     return $ Result (oldDiags ++ diag)
-		        (Just ((Map.insert n (accSig, sent) signMap), 
+		        (Just ((Map.insert n (accSig, accSent) signMap), 
 			       (insEdges ledges 
 				     (insNode newLNode (delNode n dg)))
 			      )
 			)
-	  _   -> return $ Result oldDiags Prelude.Nothing 
+	  _   -> do let actDiag = mkDiag Error 
+				    ("error by analysing of " ++ (show mid)) ()
+                    return $ Result (actDiag:oldDiags) Prelude.Nothing 
 
-nodeStaticAna ((n, dgNode):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
+nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
   do
    case Map.lookup n signMap of
      Just (sig, nsen) -> 
