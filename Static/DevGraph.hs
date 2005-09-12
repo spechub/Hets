@@ -103,6 +103,10 @@ isInternalNode :: DGNodeLab -> Bool
 isInternalNode (DGNode n _ _ _ _ _ _) = isInternal n
 isInternalNode _ = False
 
+isRefNode :: DGNodeLab -> Bool
+isRefNode (DGNode _ _ _ _ _ _ _) = False
+isRefNode _ = True
+
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName (DGNode n _ _ _ _ _ _) = showName n
@@ -143,7 +147,8 @@ isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _ _ _) = 
-  is_subsig lid sigma (empty_signature lid) && Set.null sens
+  Set.null $ Set.filter 
+      (\s -> not (isAxiomDecorated s) && not (isProvenDecorated s) ) sens 
 locallyEmpty (DGRef _ _ _ _ _) = True
 
 -- | link inscriptions in development graphs           
@@ -320,6 +325,13 @@ instance PrettyPrint ThmLinkStatus where
                        2 (vcat (map (printLEdgeInProof ga) ls))
 
 
+isProvenDecorated :: Decorated a -> Bool
+isProvenDecorated = any isProvenDecoratedAux . thmStatus
+  where isProvenDecoratedAux LeftOpen = False
+        isProvenDecoratedAux (Proven _ _) = True
+
+isAxiomDecorated :: Decorated a -> Bool
+isAxiomDecorated = isAxiom . value
 
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future
@@ -528,6 +540,10 @@ data Decorated a = Decorated
      , thmStatus :: [ThmLinkStatus]
      , isDef :: Bool
      } deriving Show
+
+instance PrettyPrint a => PrettyPrint (Decorated a) where
+  printText0 ga x =
+     printText0 ga (value x)
 
 emptyDecorated :: Decorated a
 emptyDecorated = Decorated { value = error "emptyDecorated"

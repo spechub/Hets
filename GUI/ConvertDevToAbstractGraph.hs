@@ -62,6 +62,7 @@ import Configuration
 import qualified HTk
 
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.Id
 import Common.PrettyPrint
@@ -276,7 +277,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
 		("proven_cons__spec", 
-                 createLocalMenuNodeTypeSpec "Green" ioRefSubtreeEvents 
+                 createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
                 ("locallyEmpty__open_cons__spec", 
@@ -291,7 +292,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                  createLocalMenuNodeTypeInternal "Coral" gInfo
                 ),
                 ("proven_cons__internal", 
-                 createLocalMenuNodeTypeInternal "Green" gInfo
+                 createLocalMenuNodeTypeInternal "Coral" gInfo
                 ),
                 ("locallyEmpty__open_cons__internal", 
                  createLocalMenuNodeTypeInternal "Coral" gInfo
@@ -487,6 +488,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                     createLocalMenuTaxonomy gInfo,
                     createLocalMenuButtonShowSublogic gInfo,
                     createLocalMenuButtonShowNodeOrigin gInfo,
+                    createLocalMenuButtonShowProofStatusOfNode gInfo,
                     createLocalMenuButtonProveAtNode gInfo,
                     createLocalMenuButtonCCCAtNode gInfo,
                     createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents 
@@ -518,6 +520,7 @@ createLocalMenuNodeTypeInternal color
                      createLocalMenuButtonTranslateTheory gInfo,
                      createLocalMenuTaxonomy gInfo,
                      createLocalMenuButtonShowSublogic gInfo,
+                     createLocalMenuButtonShowProofStatusOfNode gInfo,
                      createLocalMenuButtonProveAtNode gInfo,
                      createLocalMenuButtonCCCAtNode gInfo,
                      createLocalMenuButtonShowNodeOrigin gInfo])
@@ -600,6 +603,8 @@ createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_,_) =
   createMenuButton "Show sublogic" (getSublogicOfNode proofStatus) gInfo
 createLocalMenuButtonShowNodeOrigin  = 
   createMenuButton "Show origin" showOriginOfNode 
+createLocalMenuButtonShowProofStatusOfNode gInfo =
+  createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (proveAtNode False gInfo) gInfo
 createLocalMenuButtonCCCAtNode gInfo =
@@ -890,6 +895,36 @@ showOriginOfNode descr ab2dgNode dgraph =
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
 
+-- | Show proof status of a node
+showProofStatusOfNode _ descr ab2dgNode dgraph = 
+  case Map.lookup descr ab2dgNode of
+    Just (libname, node) -> 
+      do let dgnode = lab' (context dgraph node)
+         let stat = if not (isRefNode dgnode) then showStatusAux dgnode
+		     else "Please follow the reference to see its proof status"
+         let title =  "Proof status of node "++showName (dgn_name dgnode)
+         createTextDisplay title stat [size(150,130)]
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
+
+showStatusAux :: DGNodeLab -> String
+showStatusAux dgnode =
+  case dgn_theory dgnode of
+  G_theory lid sigma sens ->
+     let goals = Set.filter (not . isAxiomDecorated) sens
+         (open,proven) = Set.partition isProvenDecorated goals
+      in "Proven proof goals:\n" 
+         ++ showPretty proven "" 
+         ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode /= LeftOpen
+             then showPretty (dgn_cons_status dgnode) "is the conservativity status of this node"
+             else ""
+         ++ "\nOpen proof goals:\n" 
+         ++ showPretty open ""
+         ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode == LeftOpen
+             then showPretty (dgn_cons_status dgnode) "should be the conservativity status of this node"
+             else ""
+
 
 {- start local theorem proving or consistency checking at a node -}
 --proveAtNode :: Bool -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
@@ -1034,8 +1069,8 @@ getDGNodeType dgnodelab =
                    then "internal"
                    else "spec"
     where
-      hasOpenConsStatus (DGNode _ _ _ _ _ _ status) =
-	  case status of
+      hasOpenConsStatus dgn = dgn_cons dgn /= None &&
+	  case dgn_cons_status dgn of
 	    LeftOpen -> True
 	    _ -> False
 

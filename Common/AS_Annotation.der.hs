@@ -187,8 +187,7 @@ notImplied a = not $ any isImplied $ r_annos a
 
 -- | naming or labelling sentences
 data Named s = NamedSen { senName  :: String,
-                          isAxiom :: Bool,  -- should add thm status
-                          --isDef :: Bool,
+                          isAxiom :: Bool, 
                           sentence :: s }
 	       deriving (Eq, Ord, Show)
 
