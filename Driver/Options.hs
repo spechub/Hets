@@ -17,6 +17,7 @@ module Driver.Options
     , showDiags1
     , guess
     , existsAnSource
+    , checkUri
     , checkRecentEnv
     , checkEitherDirOrExFile
     , doIfVerbose
@@ -56,7 +57,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, owlS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -69,7 +70,6 @@ onlyGuiS = "only-gui"
 libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
-owlS = "owl"
 specS = "spec"
 
 asciiS, latexS, textS, texS :: String
@@ -220,7 +220,7 @@ instance Show GuiType where
              Not  -> ""
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | OWL_DLIn | HetCASLIn 
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn 
             | HaskellIn | GuessIn
 
 instance Show InType where
@@ -228,8 +228,8 @@ instance Show InType where
              ATermIn at -> genTermS ++ show at
              ASTreeIn at -> astS ++ show at
              CASLIn -> "casl"
-             OWL_DLIn -> "owl"
              HetCASLIn -> "het"
+             OWL_DLIn -> "owl"
              HaskellIn -> "hs"
              GuessIn -> ""
 
@@ -255,7 +255,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, HaskellIn, OWL_DLIn]
+plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -627,18 +627,17 @@ checkInFile :: FilePath -> IO ()
 checkInFile file =
     do exists <- doesFileExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       isUri    <- checkUri file
-       if ((exists && readable perms) || isUri) then return () else 
+       if ((exists && readable perms) || checkUri file) then return () else 
           hetsError $ "Not a valid input file: " ++ file
 
--- | check if infile ist uri (http://, https://, ftp://, file://, etc.)
-checkUri :: FilePath -> IO Bool
-checkUri file = do let (_, t) = span (/=':') file
-		   if (null t || length t < 4) then return False
-		      else do let (_:c2:c3:_) = t
-                	      if c2 == '/' && c3 == '/' then
-			         return True
-			         else return False
+-- | check if infile is uri 
+checkUri :: FilePath -> Bool
+checkUri file = let (_, t) = span (/=':') file in
+		   if length t < 4 then False
+		      else let (_:c2:c3:_) = t in
+                	      if c2 == '/' && c3 == '/' then True 
+                              -- (http://, https://, ftp://, file://, etc.)
+			         else False
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
