@@ -10,10 +10,10 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ghc:hetcats:fgl
+INCLUDE_PATH = hxt
 
 HC         = ghc
-HC_INCLUDE = -i$(INCLUDE_PATH)
+HC_INCLUDE = -i$(INCLUDE_PATH) -package fgl
 
 # check for the "uni" library
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
