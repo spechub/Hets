@@ -54,18 +54,10 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-((fun __=__[a] : forall a : Type . a * a ->? Unit) :
-     a * a ->? Unit)
-  (((op f[a] : forall e : Ord . e -> e) : a -> a)
-     (((op f[a] : forall e : Ord . e -> e) : a -> a)(op c : a) : a) :
-       a,
-   op c : a) :
+(__=__ : a * a ->? Unit)
+  ((f : a -> a)((f : a -> a)(c) : a) : a, c) :
     Unit
-((fun __=__[t] : forall a : Type . a * a ->? Unit) :
-     t * t ->? Unit)
-  (((op f[t] : forall e : Ord . e -> e) : t -> t)(op b : t) : t,
-   op b : t) :
-    Unit
+(__=__ : t * t ->? Unit)((f : t -> t)(b) : t, b) : Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 16.3, constrain 't : Ord' is unprovable
   known kinds are: [ Eq ]

@@ -66,30 +66,19 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 x : a
 %% Sentences -------------------------------------------------------------
-((fun __=__[List a] : forall a : Type . a * a ->? Unit) :
-     List a * List a ->? Unit)
-  ((((op snoc[a] : forall a : Type . List a -> a --> List a) :
-         List a -> a --> List a)
-      ((op nil[a] : forall a : Type . List a) : List a) :
-        a --> List a)
-     (var x : a) :
+(__=__ : List a * List a ->? Unit)
+  (((snoc : List a -> a --> List a)(nil : List a) : a --> List a)
+     (x) :
        List a,
-   (((op snoc[a] : forall a : Type . List a -> a --> List a) :
-         List a -> a --> List a)
-      ((op nil[a] : forall a : Type . List a) : List a) :
-        a --> List a)
-     (var x : a) :
+   ((snoc : List a -> a --> List a)(nil : List a) : a --> List a)(x) :
        List a) :
     Unit
-((fun __=__[a] : forall a : Type . a * a ->? Unit) :
-     a * a ->? Unit)
-  ((((op head[a ->? a] : forall a : Type . List a -> a) :
-         List (a ->? a) -> a ->? a)
-      ((op nil[a ->? a] : forall a : Type . List a) : List (a ->? a)) :
+(__=__ : a * a ->? Unit)
+  (((head : List (a ->? a) -> a ->? a)(nil : List (a ->? a)) :
         a ->? a)
-     (var x : a) :
+     (x) :
        a,
-   var x : a) :
+   x) :
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'a'

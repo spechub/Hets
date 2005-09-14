@@ -63,17 +63,16 @@ true : Unit %(fun)%
 g : Graph N E
 g' : Graph N E
 %% Sentences -------------------------------------------------------------
-((fun __=__[(N ->? Unit) * (E ->? N) * (E ->? N)]
-  : forall a : Type . a * a ->? Unit) :
+(__=__ :
      ((N ->? Unit) * (E ->? N) * (E ->? N)) *
      ((N ->? Unit) * (E ->? N) * (E ->? N))
      ->? Unit)
   (((op __union__[N; E]
      : forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E) :
         Graph N E * Graph N E -> Graph N E)
-     (var g : Graph N E, var g' : Graph N E) :
+     (g, g') :
        Graph N E,
-   var g : Graph N E) :
+   g) :
     Unit
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.7, is type variable 'S'

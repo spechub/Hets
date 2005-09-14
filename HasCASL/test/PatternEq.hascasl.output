@@ -55,23 +55,15 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) : t %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) %(pe_snd)%
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
-            (var y : t) %(pe_snd)%
-program (var b : s) = (op a : s) %(pe_b)%
-program (op b : s) = (op a : s) %(pe_b)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op c : t,
-   ((op snd : s * t -> t)(op x : s, op y : t) : t) as t) %(def_c)%
+program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program snd(var x : s, var y : t) : t = (var y : t) : t %(pe_snd)%
+program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program (var b : s) = a %(pe_b)%
+program b = a %(pe_b)%
+__=__(c, (snd(x, y) : t) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 14.11-14.18, illegal toplevel pattern '(var x : s, var y : s)'
 *** Warning 17.10, illegal lhs pattern '(var b : s)'

@@ -120,17 +120,14 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : +Type; x_1_1 : a; x_1_2 : List a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op head : forall a : +Type . List a -> a)
-         ((op Cons : forall a : +Type . a * List a -> List a)
-            (var x_1_1 : a, var x_1_2 : List a)),
-       var x_1_1 : a) %(ga_select_head)%
+  . __=__
+      ((op head : forall a : +Type . List a -> a)(Cons(x_1_1, x_1_2)),
+       x_1_1) %(ga_select_head)%
 forall a : +Type; x_1_1 : a; x_1_2 : List a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op tail : forall a : +Type . List a -> List a)
-         ((op Cons : forall a : +Type . a * List a -> List a)
-            (var x_1_1 : a, var x_1_2 : List a)),
-       var x_1_2 : List a) %(ga_select_tail)%
+         (Cons(x_1_1, x_1_2)),
+       x_1_2) %(ga_select_tail)%
 free type List(a : +Type)
   ::= Nil : List a
       Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
@@ -144,49 +141,49 @@ free type List(a : +Type)
   ::= Nil : List a
       Cons : a * List a -> List a (head : a; tail : List a) %(ga_List)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op head : forall a : +Type . Tree a -> Tree a)
          ((op Branch : forall a : +Type . Tree a * Tree a -> Tree a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree a)),
-       var x_1_1 : Tree a) %(ga_select_head)%
+            (x_1_1, x_1_2)),
+       x_1_1) %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op tail : forall a : +Type . Tree a -> Tree a)
          ((op Branch : forall a : +Type . Tree a * Tree a -> Tree a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree a)),
-       var x_1_2 : Tree a) %(ga_select_tail)%
+            (x_1_1, x_1_2)),
+       x_1_2) %(ga_select_tail)%
 free type Tree(a : +Type)
   ::= Leaf : Tree a
       Branch : Tree a * Tree a -> Tree a
         (head : Tree a; tail : Tree a) %(ga_Tree)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree1 a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op head : forall a : +Type . Tree1 a -> Tree a)
          ((op Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree1 a)),
-       var x_1_1 : Tree a) %(ga_select_head)%
+            (x_1_1, x_1_2)),
+       x_1_1) %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree1 a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op tail : forall a : +Type . Tree1 a -> Tree1 a)
          ((op Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree1 a)),
-       var x_1_2 : Tree1 a) %(ga_select_tail)%
+            (x_1_1, x_1_2)),
+       x_1_2) %(ga_select_tail)%
 generated type Tree1(a : +Type)
   ::= Leaf : Tree1 a
       Branch : Tree a * Tree1 a -> Tree1 a
         (head : Tree a; tail : Tree1 a) %(ga_Tree1)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree2 a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op head : forall a : +Type . Tree2 a -> Tree a)
          ((op Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree2 a)),
-       var x_1_1 : Tree a) %(ga_select_head)%
+            (x_1_1, x_1_2)),
+       x_1_1) %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree2 a
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
+  . __=__
       ((op tail : forall a : +Type . Tree2 a -> Tree2 a)
          ((op Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)
-            (var x_1_1 : Tree a, var x_1_2 : Tree2 a)),
-       var x_1_2 : Tree2 a) %(ga_select_tail)%
+            (x_1_1, x_1_2)),
+       x_1_2) %(ga_select_tail)%
 type Tree2(a : +Type)
   ::= Leaf : Tree2 a
       Branch : Tree a * Tree2 a -> Tree2 a

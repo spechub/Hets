@@ -36,7 +36,4 @@ q : s -> t %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-((fun __=__[s -> t] : forall a : Type . a * a ->? Unit) :
-     (s -> t) * (s -> t) ->? Unit)
-  (fun o : s -> t, fun q : s -> t) :
-    Unit
+(__=__ : (s -> t) * (s -> t) ->? Unit)(o, q) : Unit

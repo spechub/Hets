@@ -123,11 +123,8 @@ tt : s ->? Unit %(pred)%
 x : s
 y : t
 %% Sentences -------------------------------------------------------------
-program (pred tt : s) = (\ (var x : s) . ()) : s ->? Unit %(pe_tt)%
-((fun __=__[t] : forall a : Type . a * a ->? Unit) :
-     t * t ->? Unit)
-  (var x : t, var y : t) :
-    Unit
+program tt = (\ x . ()) : s ->? Unit %(pe_tt)%
+(__=__ : t * t ->? Unit)(x, y) : Unit
 type Data1
   ::= a : Data1
       b : Data1
@@ -137,62 +134,46 @@ type Data2
       Cons22 : Data2 * Data1 -> Data2 (Data2; Data1)
       types Data1 %(ga_Data2)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel1 : Data3 ->? Data1)
-         ((op Cons31 : Data1 * Data2 -> Data3)
-            (var x_1_1 : Data1, var x_1_2 : Data2)),
-       var x_1_1 : Data1) %(ga_select_sel1)%
+  . __=__
+      ((op sel1 : Data3 ->? Data1)(Cons31(x_1_1, x_1_2)),
+       x_1_1) %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel2 : Data3 ->? Data2)
-         ((op Cons31 : Data1 * Data2 -> Data3)
-            (var x_1_1 : Data1, var x_1_2 : Data2)),
-       var x_1_2 : Data2) %(ga_select_sel2)%
+  . __=__
+      ((op sel2 : Data3 ->? Data2)(Cons31(x_1_1, x_1_2)),
+       x_1_2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel2 : Data3 ->? Data2)
-         ((op Cons32 : Data2 * Data1 -> Data3)
-            (var x_1_1 : Data2, var x_1_2 : Data1)),
-       var x_1_1 : Data2) %(ga_select_sel2)%
+  . __=__
+      ((op sel2 : Data3 ->? Data2)(Cons32(x_1_1, x_1_2)),
+       x_1_1) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel1 : Data3 ->? Data1)
-         ((op Cons32 : Data2 * Data1 -> Data3)
-            (var x_1_1 : Data2, var x_1_2 : Data1)),
-       var x_1_2 : Data1) %(ga_select_sel1)%
+  . __=__
+      ((op sel1 : Data3 ->? Data1)(Cons32(x_1_1, x_1_2)),
+       x_1_2) %(ga_select_sel1)%
 type Data3
   ::= Cons31 : Data1 * Data2 -> Data3 (sel1 :? Data1; sel2 :? Data2)
       Cons32 : Data2 * Data1 -> Data3
         (sel2 :? Data2; sel1 :? Data1) %(ga_Data3)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel1 : Data4 ->? Data1)
-         ((op Cons41 : Data1 * Data2 ->? Data4)
-            (var x_1_1 : Data1, var x_1_2 : Data2)),
-       var x_1_1 : Data1) %(ga_select_sel1)%
+  . __=__
+      ((op sel1 : Data4 ->? Data1)(Cons41(x_1_1, x_1_2)),
+       x_1_1) %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel2 : Data4 ->? Data2)
-         ((op Cons41 : Data1 * Data2 ->? Data4)
-            (var x_1_1 : Data1, var x_1_2 : Data2)),
-       var x_1_2 : Data2) %(ga_select_sel2)%
+  . __=__
+      ((op sel2 : Data4 ->? Data2)(Cons41(x_1_1, x_1_2)),
+       x_1_2) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel2 : Data4 ->? Data2)
-         ((op Cons42 : Data2 * Data1 ->? Data4)
-            (var x_1_1 : Data2, var x_1_2 : Data1)),
-       var x_1_1 : Data2) %(ga_select_sel2)%
+  . __=__
+      ((op sel2 : Data4 ->? Data2)(Cons42(x_1_1, x_1_2)),
+       x_1_1) %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . (fun __=__ : forall a : Type . a * a ->? Unit)
-      ((op sel1 : Data4 ->? Data1)
-         ((op Cons42 : Data2 * Data1 ->? Data4)
-            (var x_1_1 : Data2, var x_1_2 : Data1)),
-       var x_1_2 : Data1) %(ga_select_sel1)%
+  . __=__
+      ((op sel1 : Data4 ->? Data1)(Cons42(x_1_1, x_1_2)),
+       x_1_2) %(ga_select_sel1)%
 type Data4
   ::= Cons41 : Data1 * Data2 ->? Data4 (sel1 :? Data1; sel2 :? Data2)
       Cons42 : Data2 * Data1 ->? Data4
         (sel2 :? Data2; sel1 :? Data1) %(ga_Data4)%
-(fun true : Unit)
+true
 %% Diagnostics -----------------------------------------------------------
 *** Warning 1.7, void universe class declaration 'Type'
 *** Hint 3.5, is type variable 't'

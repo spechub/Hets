@@ -117,52 +117,20 @@ true : Unit %(fun)%
 g : a -> b
 x : m a
 %% Sentences -------------------------------------------------------------
-((fun __=__[Set _v12] : forall a : Type . a * a ->? Unit) :
-     Set _v12 * Set _v12 ->? Unit)
-  ((op fail[_v12; Set] : forall a : Type; m : Monad . m a) :
-       Set _v12,
-   (op emptySet[_v12] : forall a : Type . Set a) : Set _v12) :
+(__=__ : Set _v12 * Set _v12 ->? Unit)
+  (fail : Set _v12, emptySet : Set _v12) :
     Unit
-((fun __=__[List _v27] : forall a : Type . a * a ->? Unit) :
-     List _v27 * List _v27 ->? Unit)
-  ((op fail[_v27; List] : forall a : Type; m : Monad . m a) :
-       List _v27,
-   (op empty[_v27] : forall a : Type . List a) : List _v27) :
+(__=__ : List _v27 * List _v27 ->? Unit)
+  (fail : List _v27, empty : List _v27) :
     Unit
-((fun __=__[List a -> List b] : forall a : Type . a * a ->? Unit) :
-     (List a -> List b) * (List a -> List b) ->? Unit)
-  (((op fmap[a; b; List]
-     : forall a : Type; b : Type; f : Functor .
-         (a -> b) -> f a -> f b) :
-        (a -> b) -> List a -> List b)
-     (var g : a -> b) :
-       List a -> List b,
-   ((op map[a; b]
-     : forall a : Type; b : Type . (a -> b) -> List a -> List b) :
-        (a -> b) -> List a -> List b)
-     (var g : a -> b) :
-       List a -> List b) :
+(__=__ : (List a -> List b) * (List a -> List b) ->? Unit)
+  ((fmap : (a -> b) -> List a -> List b)(g) : List a -> List b,
+   (map : (a -> b) -> List a -> List b)(g) : List a -> List b) :
     Unit
-((fun __=__[m b] : forall a : Type . a * a ->? Unit) :
-     m b * m b ->? Unit)
-  ((((op fmap[a; b; m]
-      : forall a : Type; b : Type; f : Functor .
-          (a -> b) -> f a -> f b) :
-         (a -> b) -> m a -> m b)
-      (var g : a -> b) :
-        m a -> m b)
-     (var x : m a) :
-       m b,
-   ((op __bind__[a; b; m]
-     : forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b) :
-        m a * (a -> m b) -> m b)
-     (var x : m a,
-      (\ (var y : a)
-         .! ((op return[b; m] : forall a : Type; m : Monad . a -> m a) :
-                 b -> m b)
-              ((var g : a -> b)(var y : a) : b) :
-                m b) :
-          a -> m b) :
+(__=__ : m b * m b ->? Unit)
+  (((fmap : (a -> b) -> m a -> m b)(g) : m a -> m b)(x) : m b,
+   (__bind__ : m a * (a -> m b) -> m b)
+     (x, (\ y .! (return : b -> m b)(g(y) : b) : m b) : a -> m b) :
        m b) :
     Unit
 %% Diagnostics -----------------------------------------------------------

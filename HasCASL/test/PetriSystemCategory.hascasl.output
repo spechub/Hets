@@ -557,35 +557,18 @@ h2 : HomSys
 free type Boolean
   ::= True : Boolean
       False : Boolean %(ga_Boolean)%
-let (var S : Set Elem) =
-        ((op MultiSetToSet[Elem]
-          : forall Elem : Type . MultiSet Elem -> Set Elem) :
-             MultiSet Elem -> Set Elem)
-          (var B : MultiSet Elem) :
-            Set Elem
+let S = (MultiSetToSet : MultiSet Elem -> Set Elem)(B) : Set Elem
 in forall x : Elem
-     . (fun __<=>__ : ? Unit * ? Unit ->? Unit)
+     . __<=>__
          (((op __isIn__[Elem] : forall S : Type . S * Set S ->? Unit) :
                Elem * Set Elem ->? Unit)
-            (var x : Elem, var S : Set Elem) :
+            (x, S) :
               Unit,
-          (pred __>__ : Nat * Nat)
-            (((op freq[Elem]
-               : forall Elem : Type . Elem * MultiSet Elem -> Nat) :
-                  Elem * MultiSet Elem -> Nat)
-               (var x : Elem, var B : MultiSet Elem) :
-                 Nat,
-             op 0 : Nat) :
+          __>__((freq : Elem * MultiSet Elem -> Nat)(x, B) : Nat, 0) :
               Unit) :
            Unit
-(fun __=>__ : ? Unit * ? Unit ->? Unit)
-  (((fun def__[_t1516
-               (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
-                (P ->? Nat))
-               (P ->? P) (T ->? T)
-               (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
-                (P ->? Nat))]
-     : forall a : Type . a ->? Unit) :
+__=>__
+  ((def__ :
         _t1516
         (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
          (P ->? Nat))
@@ -593,17 +576,9 @@ in forall x : Elem
         (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
          (P ->? Nat))
         ->? Unit)
-     ((op __o__ : HomSys * HomSys ->? HomSys)
-        (var h2 : HomSys, var h1 : HomSys) :
-          HomSys) :
+     ((op __o__ : HomSys * HomSys ->? HomSys)(h2, h1) : HomSys) :
        Unit,
-   ((fun __=__[_t1516
-               (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
-                (P ->? Nat))
-               (P ->? P) (T ->? T)
-               (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
-                (P ->? Nat))]
-     : forall a : Type . a * a ->? Unit) :
+   (__=__ :
         _t1516
         (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
          (P ->? Nat))
@@ -618,27 +593,23 @@ in forall x : Elem
         (_t1088 (_t366 (P ->? Unit) (T ->? P ->? Nat) (T ->? P ->? Nat))
          (P ->? Nat))
         ->? Unit)
-     ((op __o__ : HomSys * HomSys ->? HomSys)
-        (var h2 : HomSys, var h1 : HomSys) :
-          HomSys,
-      ((op dom : HomSys -> System)(var h1 : HomSys) : System,
+     ((op __o__ : HomSys * HomSys ->? HomSys)(h2, h1) : HomSys,
+      ((op dom : HomSys -> System)(h1) : System,
        ((op __o__[P; P; P]
          : forall S : Type; V : Type; U : Type .
              (V ->? U) * (S ->? V) -> S ->? U) :
             (P ->? P) * (P ->? P) -> P ->? P)
-         ((op placesMap : HomSys -> P ->? P)(var h2 : HomSys) : P ->? P,
-          (op placesMap : HomSys -> P ->? P)(var h1 : HomSys) : P ->? P) :
+         ((op placesMap : HomSys -> P ->? P)(h2) : P ->? P,
+          (op placesMap : HomSys -> P ->? P)(h1) : P ->? P) :
            P ->? P,
        ((op __o__[T; T; T]
          : forall S : Type; V : Type; U : Type .
              (V ->? U) * (S ->? V) -> S ->? U) :
             (T ->? T) * (T ->? T) -> T ->? T)
-         ((op transitionsMap : HomSys -> T ->? T)(var h2 : HomSys) :
-              T ->? T,
-          (op transitionsMap : HomSys -> T ->? T)(var h1 : HomSys) :
-              T ->? T) :
+         ((op transitionsMap : HomSys -> T ->? T)(h2) : T ->? T,
+          (op transitionsMap : HomSys -> T ->? T)(h1) : T ->? T) :
            T ->? T,
-       (op cod : HomSys -> System)(var h2 : HomSys) : System) as
+       (op cod : HomSys -> System)(h2) : System) as
           HomSys) :
        Unit) :
     Unit

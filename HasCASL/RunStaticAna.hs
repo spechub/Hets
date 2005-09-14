@@ -17,6 +17,7 @@ import HasCASL.As
 import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
 import HasCASL.ProgEq
+import HasCASL.SimplifyTerm
 
 import Common.Lib.State
 import Common.Lib.Pretty
@@ -32,7 +33,9 @@ bParser ga = do b <- basicSpec
 
 anaParser :: StringParser
 anaParser ga = do (a, e) <- bParser ga
-                  return $ show (printText0 ga a $$ printText0 ga e)
+                  let ne = e { sentences = map
+                         (mapNamed $ simplifySentence e) $ sentences e }
+                  return $ show (printText0 ga a $$ printText0 ga ne)
 
 type SenParser = GlobalAnnos -> AParser () [Named Sentence]
 

@@ -43,9 +43,7 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 y : Rat
 %% Sentences -------------------------------------------------------------
-((fun __=__[Rat] : forall a : Type . a * a ->? Unit) :
-     Rat * Rat ->? Unit)
-  (var y : Rat, op 0 : Nat) :
+(__=__ : Rat * Rat ->? Unit)(y, op 0 : Nat) :
     Unit %(divide_def2_Rat)%
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.17, redeclared type 'Int'

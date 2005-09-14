@@ -26,6 +26,7 @@ import HasCASL.ATC_HasCASL()
 import HasCASL.LaTeX_HasCASL()
 import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
+import HasCASL.SimplifyTerm
 import HasCASL.Merge
 import Logic.Logic
 import Data.Dynamic
@@ -90,6 +91,7 @@ instance Category HasCASL Env Morphism where
 
 instance Sentences HasCASL Sentence () Env Morphism Symbol where
     map_sen HasCASL = mapSentence
+    simplify_sen HasCASL = simplifySentence
     sym_name HasCASL = symName
     sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
@@ -138,7 +140,6 @@ instance Logic HasCASL HasCASL_Sublogics
 
          data_logic HasCASL = Nothing
 
-
          is_in_basic_spec HasCASL = HasCASL.Sublogic.in_basicSpec
          is_in_sentence HasCASL = HasCASL.Sublogic.in_sentence
          is_in_symb_items HasCASL = HasCASL.Sublogic.in_symbItems
@@ -146,7 +147,6 @@ instance Logic HasCASL HasCASL_Sublogics
          is_in_sign HasCASL = HasCASL.Sublogic.in_env
          is_in_morphism HasCASL = HasCASL.Sublogic.in_morphism
          is_in_symbol HasCASL = HasCASL.Sublogic.in_symbol
-
 
          min_sublogic_basic_spec HasCASL = HasCASL.Sublogic.sl_basicSpec
          min_sublogic_sentence HasCASL = HasCASL.Sublogic.sl_sentence

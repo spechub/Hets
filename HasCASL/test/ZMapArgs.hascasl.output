@@ -108,50 +108,32 @@ free type Tree(a : Type)
 free type Nat
   ::= Zero : Nat
       Suc : Nat -> Nat (Nat) %(ga_Nat)%
-((fun __=__[Tree Nat] : forall a : Type . a * a ->? Unit) :
-     Tree Nat * Tree Nat ->? Unit)
-  ((op caseTree : Tree Nat -> Tree Nat)(var t : Tree Nat) : Tree Nat,
-   (case (var t : Tree Nat) of
-        (op EmptyLeaf[Nat] : forall a : Type . Tree a) : Tree Nat ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) : Tree _v17 | 
-        ((op Leaf[Nat] : forall a : Type . a -> Tree a) : Nat -> Tree Nat)
-          (var n : Nat) :
-            Tree Nat
-          ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) : Tree _v17 | 
-        (((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) :
-              Tree Nat -> Nat -> Tree Nat)
-           ((op EmptyLeaf[Nat] : forall a : Type . Tree a) : Tree Nat) :
+(__=__ : Tree Nat * Tree Nat ->? Unit)
+  (caseTree(t) : Tree Nat,
+   (case t of
+        EmptyLeaf : Tree Nat -> EmptyLeaf : Tree _v17 | 
+        (Leaf : Nat -> Tree Nat)(n) : Tree Nat -> EmptyLeaf : Tree _v17 | 
+        ((Node : Tree Nat -> Nat -> Tree Nat)(EmptyLeaf : Tree Nat) :
              Nat -> Tree Nat)
-          (var n : Nat) :
+          (n) :
             Tree Nat
           ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) : Tree _v17 | 
-        (((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) :
-              Tree Nat -> Nat -> Tree Nat)
-           ((((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) :
-                  Tree Nat -> Nat -> Tree Nat)
-               (var h : Tree Nat) :
-                 Nat -> Tree Nat)
-              (var n : Nat) :
+            EmptyLeaf : Tree _v17 | 
+        ((Node : Tree Nat -> Nat -> Tree Nat)
+           (((Node : Tree Nat -> Nat -> Tree Nat)(h) : Nat -> Tree Nat)(n) :
                 Tree Nat) :
              Nat -> Tree Nat)
-          (var n : Nat) :
+          (n) :
             Tree Nat
           ->
-            (var h : Tree Nat) | 
-        (((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) :
-              Tree Nat -> Nat -> Tree Nat)
-           (((op Leaf[Nat] : forall a : Type . a -> Tree a) : Nat -> Tree Nat)
-              (var n : Nat) :
-                Tree Nat) :
+            h | 
+        ((Node : Tree Nat -> Nat -> Tree Nat)
+           ((Leaf : Nat -> Tree Nat)(n) : Tree Nat) :
              Nat -> Tree Nat)
-          (var n : Nat) :
+          (n) :
             Tree Nat
           ->
-            ((op Leaf[Nat] : forall a : Type . a -> Tree a) : Nat -> Tree Nat)
-              (var n : Nat) :
-                Tree Nat) :
+            (Leaf : Nat -> Tree Nat)(n) : Tree Nat) :
        Tree Nat) :
     Unit
 %% Diagnostics -----------------------------------------------------------

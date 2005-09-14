@@ -32,5 +32,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program (op f : a -> a)(v : a @ (var _ : a)) : a =
-            (var v : a) %(pe_f)%
+program f(v : a @ _) : a = v %(pe_f)%

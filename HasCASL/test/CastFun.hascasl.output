@@ -36,8 +36,6 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-((fun __=__[s --> s] : forall a : Type . a * a ->? Unit) :
-     (s --> s) * (s --> s) ->? Unit)
-  (op f : s --> s,
-   ((\ (var x : s) . (var x : s)) : s ->? s) as s --> s) :
+(__=__ : (s --> s) * (s --> s) ->? Unit)
+  (f, ((\ x . x) : s ->? s) as s --> s) :
     Unit

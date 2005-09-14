@@ -133,65 +133,38 @@ z : s
             s
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op c : s,
+__=__
+  (c,
    ((op __+__ : s * s -> s)(op a : s, op b : s) : s) as s) %(def_c)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op d : s,
+__=__
+  (d,
    ((op __+__ : s * s -> s)(op a : s, op a : s) : s) as s) %(def_d)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op e : s * s -> s,
-   (op __+__ : s * s -> s) as s * s -> s) %(def_e)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op f : s * s -> s,
-   (op __+__ : s * s -> s) as s * s -> s) %(def_f)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op g : s * s, (op a : s, op b : s) as s * s) %(def_g)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op h : s,
+__=__(e, (op __+__ : s * s -> s) as s * s -> s) %(def_e)%
+__=__(f, (op __+__ : s * s -> s) as s * s -> s) %(def_f)%
+__=__(g, (op a : s, op b : s) as s * s) %(def_g)%
+__=__
+  (h,
    ((op __+__ : s * s -> s)(op a : s, op b : s) : s) as s) %(def_h)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op i : s,
+__=__
+  (i,
    ((op __+__ : s * s -> s)(op a : s, op b : s) : s) as s) %(def_i)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op i1 : s, ((op incr : s -> s)(op a : s) : s) as s) %(def_i1)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op i2 : s, ((op incr : s -> s)(op a : s) : s) as s) %(def_i2)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op i3 : s, ((op incr : s -> s)(op a : s) : s) as s) %(def_i3)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op l1 : s,
-   ((op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) :
-        s) as
-       s) %(def_l1)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op l2 : s * s * s -> s,
-   (op __<=__<=__ : s * s * s -> s) as s * s * s -> s) %(def_l2)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op l3 : s,
-   ((op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) :
-        s) as
-       s) %(def_l3)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op l4 : s,
-   ((op __<=__<=__ : s * s * s -> s)(op a : s, op b : s, op c : s) :
-        s) as
-       s) %(def_l4)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op l5 : s * s * s,
-   (op a : s, op b : s, op c : s) as s * s * s) %(def_l5)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op y : s,
-   ((op __<=__<=__ : s * s * s -> s)
-      ((op a : s) : s, var x : s, op a : s) :
-        s) as
+__=__(i1, (incr(op a : s) : s) as s) %(def_i1)%
+__=__(i2, (incr(op a : s) : s) as s) %(def_i2)%
+__=__(i3, (incr(op a : s) : s) as s) %(def_i3)%
+__=__(l1, (__<=__<=__(op a : s, op b : s, c) : s) as s) %(def_l1)%
+__=__(l2, __<=__<=__ as s * s * s -> s) %(def_l2)%
+__=__(l3, (__<=__<=__(op a : s, op b : s, c) : s) as s) %(def_l3)%
+__=__(l4, (__<=__<=__(op a : s, op b : s, c) : s) as s) %(def_l4)%
+__=__(l5, (op a : s, op b : s, c) as s * s * s) %(def_l5)%
+__=__
+  (y,
+   (__<=__<=__((op a : s) : s, var x : s, op a : s) : s) as
        s) %(def_y)%
-(fun __=__ : forall a : Type . a * a ->? Unit)
-  (op z : s,
-   ((op __+__ : s * s -> s)((op x : s) as s, ((op x : s) as t) as s) :
-        s) as
+__=__
+  (z,
+   ((op __+__ : s * s -> s)(x as s, (x as t) as s) : s) as
        s) %(def_z)%
-(op x : s) in s %(bla_label)%
-(op x : s) in t
+x in s %(bla_label)%
+x in t
 %% Diagnostics -----------------------------------------------------------
 *** Error 9.7, expected tuple argument for '__+__'
