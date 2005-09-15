@@ -146,15 +146,17 @@ writeFileInfo :: HetcatsOpts -> [Diagnosis] -> String -> LIB_NAME -> LibEnv
               -> IO()
 writeFileInfo opts diags' file ln lenv = 
   if hasErrors diags' then return () -- errors are reported elsewhere
-   else case Map.lookup ln lenv of
+  else let envFile = rmSuffix file ++ ".env" in
+  case analysis opts of 
+  Basic -> case Map.lookup ln lenv of
     Nothing -> putStrLn ("*** Error: Cannot find library "++show ln)
     Just gctx -> do
-      let envFile = rmSuffix file ++ ".env"
-      putIfVerbose opts 2 ("Writing "++envFile)
+      putIfVerbose opts 2 ("Writing " ++ envFile)
       catch (globalContexttoShATerm envFile gctx) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
 	      putIfVerbose opts 3 ("see following error description:\n"
 				   ++ shows err "\n")
+  _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)
 
 write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
 write_casl_asc_stdout opt ga ld =
