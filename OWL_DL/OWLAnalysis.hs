@@ -19,7 +19,7 @@ import Common.ATerm.Unshared
 import System(system)
 import System.Exit
 import System.Environment(getEnv)
-import qualified Data.Map as Map
+import qualified Common.Lib.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
 import Data.Graph.Inductive.Graph
