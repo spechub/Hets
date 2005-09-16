@@ -244,7 +244,7 @@ data DGRule =
  | MonoIsFree
  | GlobDecomp (LEdge DGLinkLab)  -- edge in the conclusion
  | LocDecomp (LEdge DGLinkLab)
- | LocSubsumption (LEdge DGLinkLab)
+ | LocInference (LEdge DGLinkLab)
  | GlobSubsumption (LEdge DGLinkLab)
  | Composition [LEdge DGLinkLab]
  | LocalInference
@@ -266,7 +266,7 @@ instance PrettyPrint DGRule where
    MonoIsFree -> text "MonoIsFree"
    GlobDecomp l -> text "Global Decomposition; resulting link:"  <+> printLEdgeInProof ga l 
    LocDecomp l -> text "Local Decomposition; resulting link:" <+> printLEdgeInProof ga l
-   LocSubsumption l -> text "Local Subsumption; resulting link:" <+> printLEdgeInProof ga l
+   LocInference l -> text "Local Inference; resulting link:" <+> printLEdgeInProof ga l
    GlobSubsumption l -> text "Global Subsumption; resulting link:" <+> printLEdgeInProof ga l
    Composition ls -> 
        text "Composition" <+> vcat (map (printLEdgeInProof ga) ls)

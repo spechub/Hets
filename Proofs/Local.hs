@@ -20,7 +20,7 @@ re-proved)
 
 -}
 
-module Proofs.Local (locSubsume, locDecomp) where
+module Proofs.Local (localInference, locDecomp) where
 
 import Logic.Grothendieck
 import Static.DevGraph
@@ -109,29 +109,29 @@ isSameTranslation th morphism path =
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges
-locSubsume :: ProofStatus -> IO ProofStatus
-locSubsume proofStatus@(ln,libEnv,_) = do
+localInference :: ProofStatus -> IO ProofStatus
+localInference proofStatus@(ln,libEnv,_) = do
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-  result <- locSubsumeAux libEnv ln dgraph ([],[]) localThmEdges
+  result <- localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
   let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
 	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
   return newProofStatus
 
--- auxiliary method for locSubsume
-locSubsumeAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
+-- auxiliary method for localInference
+localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
 	            -> IO (DGraph,([DGRule],[DGChange]))
-locSubsumeAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
-locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+localInferenceAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
+localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (getDGNode libEnv dgraph tgt, maybeThSrc) of
     (Just (target,_), Just thSrc) ->
       case (maybeResult (computeTheory libEnv (ln, target)), 
                         maybeResult (translateG_theory morphism thSrc)) of
         (Just (G_theory lidTgt sig sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
-            Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
+            Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
 	    Just sentencesTgt -> do
               -- check if all source axioms are also axioms in the target
               let goals = Set.filter (isAxiom  . value) sensSrc 
@@ -149,7 +149,7 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
                      newGraph = insEdge newEdge auxGraph
                      newChanges = DeleteEdge ledge : InsertEdge newEdge
                                    : changes
-                 locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
+                 localInferenceAux libEnv ln newGraph (newRules,newChanges) list
 		else do 
                  let n = getNewNode auxGraph
 		     newNode = (n, oldContents{dgn_theory = newTh})
@@ -159,10 +159,10 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
 		     newChanges = changes ++ DeleteEdge ledge : 
                                     InsertNode newNode : changes' ++ 
                                     [DeleteNode oldNode,InsertEdge newEdge]
-                 locSubsumeAux libEnv ln newGraph' (newRules,newChanges) list
-        _ -> locSubsumeAux libEnv ln dgraph (rules,changes) list
+                 localInferenceAux libEnv ln newGraph' (newRules,newChanges) list
+        _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
     _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
-		 locSubsumeAux libEnv ln dgraph (rules,changes) list
+		 localInferenceAux libEnv ln dgraph (rules,changes) list
 
   where
     morphism = dgl_morphism edgeLab
@@ -171,9 +171,9 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newLab = DGLink {dgl_morphism = morphism,
 		       dgl_type = 
-		         (LocalThm (Proven (LocSubsumption ledge) [])
+		         (LocalThm (Proven (LocInference ledge) [])
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
-    newRules = (LocSubsumption ledge):rules
+    newRules = (LocInference ledge):rules
     oldNode = labNode' (context dgraph tgt)
     (_,oldContents) = oldNode
