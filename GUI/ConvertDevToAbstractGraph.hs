@@ -913,7 +913,7 @@ showStatusAux dgnode =
   case dgn_theory dgnode of
   G_theory lid sigma sens ->
      let goals = Set.filter (not . isAxiomDecorated) sens
-         (open,proven) = Set.partition isProvenDecorated goals
+         (proven,open) = Set.partition isProvenDecorated goals
       in "Proven proof goals:\n" 
          ++ showPretty proven "" 
          ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode /= LeftOpen
@@ -1314,7 +1314,7 @@ applyChangesAux gid libname graphInfo visibleNodes eventDescr
                           ++ (show msg))
            _ -> 
                error ("applyChangesAux: could not add link " ++ (show src) 
-                      ++ " to " ++ (show tgt) ++ ": illigal end nodes")
+                      ++ " to " ++ (show tgt) ++ ": illegal end nodes")
    
 
     DeleteEdge (src,tgt,edgelab) -> 

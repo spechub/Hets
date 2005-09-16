@@ -113,8 +113,8 @@ locSubsume :: ProofStatus -> IO ProofStatus
 locSubsume proofStatus@(ln,libEnv,_) = do
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      result = locSubsumeAux libEnv ln dgraph ([],[]) localThmEdges
-      nextDGraph = fst result
+  result <- locSubsumeAux libEnv ln dgraph ([],[]) localThmEdges
+  let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
 	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
@@ -122,22 +122,44 @@ locSubsume proofStatus@(ln,libEnv,_) = do
 
 -- auxiliary method for locSubsume
 locSubsumeAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-	            -> (DGraph,([DGRule],[DGChange]))
-locSubsumeAux _ _ dgraph historyElement [] = (dgraph, historyElement)
+	            -> IO (DGraph,([DGRule],[DGChange]))
+locSubsumeAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
 locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (getDGNode libEnv dgraph tgt, maybeThSrc) of
     (Just (target,_), Just thSrc) ->
       case (maybeResult (computeTheory libEnv (ln, target)), 
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
+        (Just (G_theory lidTgt sig sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> locSubsumeAux libEnv ln dgraph (rules,changes) list
-	    Just sentencesTgt ->
+	    Just sentencesTgt -> do
               -- check if all source axioms are also axioms in the target
-              if Set.isSubsetOf (Set.filter (isAxiom  . value) sensSrc)
-                 sentencesTgt
-               then locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
-                else locSubsumeAux libEnv ln dgraph (rules,changes) list
+              let goals = Set.filter (isAxiom  . value) sensSrc 
+                           Set.\\ sentencesTgt
+                  goals' = markAsGoal goals
+                  newTh = case (dgn_theory oldContents) of
+		          G_theory lid sig sens ->
+                           case coerceThSens lidSrc lid "" goals' of
+                             Nothing -> G_theory lid sig sens
+                             Just goals'' -> 
+                                 G_theory lid sig (sens `joinSens` goals'')
+              if Set.null goals
+		then do
+                 let newEdge = (src, tgt, newLab)
+                     newGraph = insEdge newEdge auxGraph
+                     newChanges = DeleteEdge ledge : InsertEdge newEdge
+                                   : changes
+                 locSubsumeAux libEnv ln newGraph (newRules,newChanges) list
+		else do 
+                 let n = getNewNode auxGraph
+		     newNode = (n, oldContents{dgn_theory = newTh})
+                 (newGraph,changes') <- adoptEdges (insNode newNode $ auxGraph) tgt n
+	         let newEdge = (src, n, newLab)
+                     newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
+		     newChanges = changes ++ DeleteEdge ledge : 
+                                    InsertNode newNode : changes' ++ 
+                                    [DeleteNode oldNode,InsertEdge newEdge]
+                 locSubsumeAux libEnv ln newGraph' (newRules,newChanges) list
         _ -> locSubsumeAux libEnv ln dgraph (rules,changes) list
     _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
 		 locSubsumeAux libEnv ln dgraph (rules,changes) list
@@ -147,16 +169,11 @@ locSubsumeAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) 
     maybeThSrc = computeLocalTheory libEnv (ln, src)
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    newEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = morphism,
+    newLab = DGLink {dgl_morphism = morphism,
 		       dgl_type = 
 		         (LocalThm (Proven (LocSubsumption ledge) [])
 			  conservativity conservStatus),
 		       dgl_origin = DGProof}
-               )
-    newGraph = insEdge newEdge auxGraph
     newRules = (LocSubsumption ledge):rules
-    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
-
-
+    oldNode = labNode' (context dgraph tgt)
+    (_,oldContents) = oldNode

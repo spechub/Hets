@@ -183,6 +183,12 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteEdge (LEdge DGLinkLab)
                 deriving Eq
 
+instance Show DGChange where
+  show (InsertNode (n,_)) = "InsertNode "++show n
+  show (DeleteNode (n,_)) = "DeleteNode "++show n
+  show (InsertEdge (n,m,_)) = "InsertEdge "++show n++"->"++show m
+  show (DeleteEdge (n,m,_)) = "DeleteEdge "++show n++"->"++show m
+
 -- | Link types of development graphs
 -- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
 data DGLinkType = LocalDef 
@@ -586,6 +592,9 @@ joinSens s1 s2 = let l1 = Set.toList s1
 
 mapValue :: (a -> b) -> Decorated a -> Decorated b
 mapValue f d = d { value = mapNamed f $ value d } 
+
+markAsGoal :: Ord a => ThSens a -> ThSens a
+markAsGoal = Set.map (\d -> d { value = (value d) {isAxiom = False}})
 
 toNamedList :: ThSens a -> [Named a]
 toNamedList s = let compO d1 d2 = compare (order d1) (order d2)

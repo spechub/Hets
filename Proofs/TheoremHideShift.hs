@@ -178,31 +178,6 @@ insertNfNode proofstatus@(ln,_,_) dgnode =
 		    proofstatus
 
 
-{- adopts the edges of the old node to the new node -}
-adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
-adoptEdges dgraph oldNode newNode = do
-  let ingoingEdges = inn dgraph oldNode
-      outgoingEdges = [outEdge| outEdge <- out dgraph oldNode,
-		                not (elem outEdge ingoingEdges)]
-      (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
-      (finalGraph, furtherChanges) 
-	  = adoptEdgesAux auxGraph outgoingEdges newNode False
-  return (finalGraph, changes ++ furtherChanges)
-
-{- auxiliary method for adoptEdges -}
-adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
-		     -> (DGraph,[DGChange])
-adoptEdgesAux dgraph [] _ _ = (dgraph,[])
-adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
-  (finalGraph, [DeleteEdge oldEdge,InsertEdge newEdge]++furtherChanges)
-
-  where
-    (newSrc,newTgt) = if src == tgt then (node,node) else (src,tgt)
-    newEdge = if areIngoingEdges then (newSrc,node,edgelab)
-	        else (node,newTgt,edgelab)
-    auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
-    (finalGraph,furtherChanges) 
-	= adoptEdgesAux auxGraph list node areIngoingEdges
 
 {- handles all nodes that are no leaves
    (ie nodes that have ingoing edges of type HidingDef) -}

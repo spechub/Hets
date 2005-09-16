@@ -215,19 +215,9 @@ basicInferenceNode checkCons lg (ln, node)
               DGRef _ _ _ _ _ -> dgn_renamed nlab
             thName = showPretty (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
-        -- compute the list of proof goals
-            -- workaround for Klaus' problem; Till
-        let inEdges = inn dGraph node
-            localEdges = filter isUnprovenLocalThm inEdges
-        goalslist <- if checkCons then return []
-                      else resToIORes $ mapM (getGoals libEnv ln) localEdges
-        G_theory lid3 _ goals <- case goalslist of 
-            [] -> return $ G_theory lid1 sign noSens 
-            hd : tl -> flatG_sentences hd tl
-        goals1 <- coerceThSens lid3 lid1 "" goals
         -- select a suitable translation and prover
-        let cms = findComorphismPaths lg $ sublogicOfTh $ G_theory lid1 sign
-                          $ Set.union axs goals1
+        let cms = findComorphismPaths lg $ sublogicOfTh $ 
+                     G_theory lid1 sign axs 
         if checkCons then do 
             (G_cons_checker lid4 cc, Comorphism cid) <- 
                  selectProver $ getConsCheckers cms
@@ -252,14 +242,16 @@ basicInferenceNode checkCons lg (ln, node)
             let lidT = targetLogic cid
                 transTh = resToIORes . map_theory cid
             bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
-                   (sign, toNamedList axs ++ map markGoal (toNamedList goals1))
+                   (sign, toNamedList axs)
             (sign'',sens'') <- transTh bTh'
             -- call the prover
             p' <- coerceProver lid4 lidT "" p
             ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
             -- update the development graph
+            -- todo: throw out the stuff about edges
+            -- instead, mark proven things as proven in the node
             let (nextDGraph, nextHistoryElem) = 
-                          proveLocalEdges dGraph localEdges
+                          proveLocalEdges dGraph []
 	        newProofStatus
 		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
             return newProofStatus
