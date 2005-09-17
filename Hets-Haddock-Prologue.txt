@@ -28,7 +28,8 @@ types are used for implementing the heterogeneity, see
 heterogeneous structured specifications. "Static" is for the static
 analysis, based on the verification static semantics for Heterogeneous
 CASL.  "Static.DevGraph" contains the data structures for
-heterogeneous development graphs. Finally, the folder "Proofs"
+heterogeneous development graphs, including proof management. 
+Finally, the folder "Proofs"
 contains an implementation of the proof calculus for heterogeneous
 development graphs.
 
