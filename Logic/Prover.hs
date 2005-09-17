@@ -34,13 +34,17 @@ data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
 data Proof_status proof_tree = Open String
                       | Disproved String 
-                      | Proved String
-                               [String] -- used axioms or theorems or goals
-                               String -- name of prover
-                               proof_tree
-                               Tactic_script
+                      | Proved { goalName :: String,
+                                 usedAxioms :: [String], -- used axioms or theorems or goals
+                                 proverName :: String, -- name of prover
+                                 proofTree :: proof_tree,
+                                 tacticScript :: Tactic_script }
                       | Consistent Tactic_script
      deriving (Eq, Show)
+
+isProvedStat :: Proof_status proof_tree -> Bool
+isProvedStat (Proved _ _ _ _ _) = True
+isProvedStat _ = False
 
 data ProverTemplate goal proof_tree = Prover
     { prover_name :: String,

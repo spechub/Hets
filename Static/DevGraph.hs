@@ -248,7 +248,7 @@ data DGRule =
  | GlobSubsumption (LEdge DGLinkLab)
  | Composition [LEdge DGLinkLab]
  | LocalInference
- | BasicInference BasicProof
+ | BasicInference AnyComorphism BasicProof -- coding and proof tree
  | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
 
@@ -271,7 +271,7 @@ instance PrettyPrint DGRule where
    Composition ls -> 
        text "Composition" <+> vcat (map (printLEdgeInProof ga) ls)
    LocalInference -> text "Local Inference"
-   BasicInference bp -> text "Basic Inference using:" <+> text (show bp)
+   BasicInference c bp -> text "Basic Inference using:" <+> text ("Comorphism: "++show c ++ "Proof tree: "++show bp)
    BasicConsInference _ bp -> text "Basic Cons-Inference using:" <+> text (show bp)
 
 printLEdgeInProof :: GlobalAnnos -> LEdge DGLinkLab -> Doc
@@ -297,7 +297,6 @@ data BasicProof =
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree =>
         BasicProof lid (Proof_status proof_tree)
-                       -- should be list of Proof_Status!
      |  Guessed
      |  Conjectured
      |  Handwritten
@@ -331,13 +330,6 @@ instance PrettyPrint ThmLinkStatus where
                        2 (vcat (map (printLEdgeInProof ga) ls))
 
 
-isProvenDecorated :: Decorated a -> Bool
-isProvenDecorated = any isProvenDecoratedAux . thmStatus
-  where isProvenDecoratedAux LeftOpen = False
-        isProvenDecoratedAux (Proven _ _) = True
-
-isAxiomDecorated :: Decorated a -> Bool
-isAxiomDecorated = isAxiom . value
 
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future
@@ -546,6 +538,14 @@ data Decorated a = Decorated
      , thmStatus :: [ThmLinkStatus]
      , isDef :: Bool
      } deriving Show
+
+isProvenDecorated :: Decorated a -> Bool
+isProvenDecorated = any isProvenDecoratedAux . thmStatus
+  where isProvenDecoratedAux LeftOpen = False
+        isProvenDecoratedAux (Proven _ _) = True
+
+isAxiomDecorated :: Decorated a -> Bool
+isAxiomDecorated = isAxiom . value
 
 instance PrettyPrint a => PrettyPrint (Decorated a) where
   printText0 ga x =

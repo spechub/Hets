@@ -250,34 +250,42 @@ basicInferenceNode checkCons lg (ln, node)
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
-            let (nextDGraph, nextHistoryElem) = 
-                          proveLocalEdges dGraph []
-	        newProofStatus
-		 = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-            return newProofStatus
+            let newThms = filter isProvedStat ps
+            (nextDGraph, nextHistoryElem) <- 
+              if null newThms then return (dGraph,([],[]))
+               else do
+                 let oldNode = labNode' (context dGraph node)
+                     (_,oldContents) = oldNode
+                     newTh = case (dgn_theory oldContents) of
+		             G_theory lid sig sens ->
+                               G_theory lid sig (markProved (Comorphism cid) 
+                                                            lidT newThms sens)
+                     n = getNewNode dGraph
+		     newNode = (n, oldContents{dgn_theory = newTh})
+                 (newGraph,changes) <- ioToIORes $
+                             adoptEdges (insNode newNode $ dGraph) node n
+	         let newGraph' = delNode node $ newGraph
+		     newChanges = InsertNode newNode : changes ++ 
+                                        [DeleteNode oldNode]
+                     rules = map (\s -> BasicInference (Comorphism cid) 
+                                            (BasicProof lidT s)) 
+                                 ps
+                 return (newGraph',(rules,newChanges))
+            return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
-proveLocalEdges :: DGraph -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
-proveLocalEdges dGraph edges = (nextDGraph,([LocalInference],changes))
-
-  where (nextDGraph,(_,changes)) = proveLocalEdgesAux ([],[]) dGraph edges
-
-
-proveLocalEdgesAux :: ([DGRule],[DGChange]) -> DGraph -> [LEdge DGLinkLab] 
-  -> (DGraph,([DGRule],[DGChange]))
-proveLocalEdgesAux historyElem dGraph [] = (dGraph, historyElem)
-proveLocalEdgesAux (rules,changes) dGraph ((edge@(src, tgt, edgelab)):edges) = 
-  if True then proveLocalEdgesAux (rules,(DeleteEdge edge):((InsertEdge provenEdge):changes)) (insEdge provenEdge(delLEdge edge dGraph)) edges
-   else proveLocalEdgesAux (rules,changes) dGraph edges
-
-  where
-    morphism = dgl_morphism edgelab
-    (LocalThm _ conservativity conservStatus) = (dgl_type edgelab)
-    proofBasis = [] -- to be implemented
-    provenEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = morphism,
-		       dgl_type = 
-		         (LocalThm (Proven LocalInference proofBasis)
-			  conservativity conservStatus),
-		       dgl_origin = DGProof}
-               )
+-- | mark all newly proven goals with their proof tree
+markProved :: (Ord a, Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree) => 
+     AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a -> ThSens a
+markProved c lid status = 
+ Set.map (\sen -> 
+  let findProof [] = sen
+      findProof (s:rest) =
+       if goalName s == senName (value sen) 
+        then sen {thmStatus = Proven (BasicInference c (BasicProof lid s)) []
+                              : filter (/=LeftOpen) (thmStatus sen)}
+        else findProof rest
+   in findProof status
+   )
+     
