@@ -86,7 +86,7 @@ public class OWL2ATerm implements OWLValidationConstants {
 				file.createNewFile();
 			}
 
-			System.out.println("\nOWL parsing beginning.");
+			System.out.println("\nOWL parsing starts.");
 		    
 			// Warning
 			OWLToATermErrorHandler handler = new OWLToATermErrorHandler();
