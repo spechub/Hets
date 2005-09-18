@@ -422,7 +422,7 @@ instance PNamespace DataRange where
 	u        -> u
 
 instance PNamespace Sign where
-   propagateNspaces ns sig = sig
+   propagateNspaces _ sig = sig
 			    
    renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p9 p10) =
        Sign (renameNamespace tMap p1)
@@ -437,7 +437,7 @@ instance PNamespace Sign where
 	    (renameNamespace tMap p10)
 
 instance PNamespace SignAxiom where
-   propagateNspaces ns signAxiom = signAxiom
+   propagateNspaces _ signAxiom = signAxiom
 
    renameNamespace tMap signAxiom =
        case signAxiom of
@@ -453,13 +453,13 @@ instance PNamespace SignAxiom where
 			     (renameNamespace tMap des)
 
 instance PNamespace RDomain where
-    propagateNspaces ns rd = rd
+    propagateNspaces _ rd = rd
     renameNamespace tMap rd = 
 	case rd of
 	RDomain des -> RDomain (renameNamespace tMap des)
 
 instance PNamespace RRange where
-   propagateNspaces ns rr = rr
+   propagateNspaces _ rr = rr
 
    renameNamespace tMap rr =
 	case rr of
@@ -467,7 +467,7 @@ instance PNamespace RRange where
 	RDRange dr  -> RDRange (renameNamespace tMap dr)
 
 instance PNamespace Sentence where
-   propagateNspaces ns sent = sent
+   propagateNspaces _ sent = sent
 
    renameNamespace tMap sent =
        case sent of
