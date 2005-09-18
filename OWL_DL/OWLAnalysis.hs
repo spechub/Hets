@@ -171,12 +171,15 @@ structureAna :: FilePath
 structureAna file opt ontoMap =
     do 
        let (newOntoMap, dg) = buildDevGraph ontoMap
-       case owl opt of
-         Structured -> return (Just (simpleLibName file, (), (), 
-				   simpleLibEnv file dg))
+       case analysis opt of
+         Structured -> do
+               putIfVerbose opt 1 "Structure anaylsing finished. "   
+               return (Just (simpleLibName file, (), (), 
+				   simpleLibEnv file $ reverseGraph dg))
 	 _          -> staticAna file (newOntoMap, dg)
 
--- simpleLibEnv and simpleLibName builded two simple lib-entities for showGraph
+-- simpleLibEnv and simpleLibName builded two simple lib-entities for 
+-- showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg =
     Map.singleton (simpleLibName filename) 
@@ -188,7 +191,7 @@ simpleLibEnv filename dg =
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 
--- | static analysis if the HetcatesOpts is not Structured. 
+-- | static analysis if the HetcatesOpts is not only Structured. 
 staticAna :: FilePath
           -> (OntologyMap, DGraph)
 	  -> IO (Maybe (LIB_NAME, -- filename
@@ -204,21 +207,11 @@ staticAna file (ontoMap, dg) =
            Just (_, dg') -> 
 	    return (Just (simpleLibName file, 
 			  (), (),
-                          simpleLibEnv file (insEdges (rev $ labEdges dg) 
-					         (delEdges (edges dg') dg'))
-			 ))
+                          simpleLibEnv file 
+			  (insEdges (reverseLinks $ labEdges dg) 
+			   (delEdges (edges dg') dg')
+			  )))
 	   _            -> error "no devGraph..."
-
-    where rev :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
-	  rev [] = []
-	  rev ((source, target, edge):r) = (target, source, edge):(rev r)
-   
--- | find a node in DevGraph
-matchNode :: DGraph -> Node -> LNode DGNodeLab
-matchNode dgraph node =
-	     let (mcontext, _ ) = match node dgraph
-		 (_, _, dgNode, _) = fromJust mcontext
-	     in (node, dgNode)
 
 -- | a map to save which node has been analysed.
 type SignMap = Map.Map Node (Sign, [Named Sentence])
@@ -250,7 +243,9 @@ nodeStaticAna :: [LNode DGNodeLab]
 	      -> OntologyMap
               -> DGraph
               -> IO (Result (SignMap, DGraph))
-nodeStaticAna [] _ _ _ _ = do return initResult
+nodeStaticAna [] _ _ _ _ = 
+    do putStrLn "Static anaylsing finished."
+       return initResult
 nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
   do
     let nn@(nodeName, _, _) = dgn_name topNode
@@ -314,3 +309,19 @@ integSign inSig totalSig =
     in  addSign (renameNamespace transMap inSig)
 	        (totalSig {namespaceMap = newNamespace})
 
+reverseLinks :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
+reverseLinks [] = []
+reverseLinks ((source, target, edge):r) = 
+    (target, source, edge):(reverseLinks r)
+
+reverseGraph :: DGraph -> DGraph
+reverseGraph dg =
+    let newLinks = reverseLinks $ labEdges dg
+    in  insEdges newLinks (delEdges (edges dg) dg)
+   
+-- | find a node in DevGraph
+matchNode :: DGraph -> Node -> LNode DGNodeLab
+matchNode dgraph node =
+	     let (mcontext, _ ) = match node dgraph
+		 (_, _, dgNode, _) = fromJust mcontext
+	     in (node, dgNode)
