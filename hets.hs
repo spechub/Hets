@@ -85,12 +85,16 @@ processFile opt file =
 -}
              OWL_DLIn -> do
 	         ontoMap <- parseOWL file
-		 case owl opt of
+		 case analysis opt of
 		    Skip  -> do putIfVerbose opt 2
 			         ("Skipping static analysis on file: " ++ file)
 				return ()
   		    _     -> do paraForGraph <- structureAna file opt ontoMap
-			        showGraph file opt paraForGraph
+			        case gui opt of
+				  Only    -> showGraph file opt paraForGraph
+				  Also    -> showGraph file opt paraForGraph
+					     --  write_LIB_DEFN 
+				  Not     -> return ()
 			       
              _ -> do
                   ld <- read_LIB_DEFN opt file
