@@ -114,7 +114,6 @@ data HetcatsOpts =        -- for comments see usage info
           , rawopts  :: [RawOpt]   
           , verbose  :: Int        
           , defLogic :: String     
-          , owl      :: AnaType
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt] 
           }
@@ -123,7 +122,6 @@ instance Show HetcatsOpts where
     show opts =  showEqOpt verboseS (show $ verbose opts)
                 ++ show (gui opts)
                 ++ show (analysis opts)
-                ++ show (owl opts)
                 ++ showEqOpt libdirS (libdir opts)
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
@@ -151,7 +149,6 @@ makeOpts opts flg = case flg of
     OutTypes x -> opts { outtypes = x }
     Specs x    -> opts { specNames = x }
     Raw x      -> opts { rawopts = x }
-    OWL x      -> opts { owl = x }
     Verbose x  -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
     CASLAmalg x   -> opts { caslAmalg = x }
@@ -165,7 +162,6 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = 
     HcOpt { analysis = Basic
           , gui      = Not
-          , owl      = Basic
           , infiles  = []
           , specNames = []
           , intype   = GuessIn
@@ -190,7 +186,6 @@ data Flag = Verbose  Int
           | Version              
           | Help                 
           | Gui      GuiType     
-          | OWL      AnaType     
           | Analysis AnaType     
           | DefaultLogic String  
           | InType   InType      
