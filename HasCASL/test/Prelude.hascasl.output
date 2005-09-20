@@ -23,68 +23,45 @@ type __*__ : +Type -> +Type -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : Pred s
 var x : s
-program (op def[s] : forall s : Type . Pred s) : Pred s =
-            (\ (var x : s) . ()) : s ->? Unit
+program (op def[s] : forall s : Type . Pred s) = \ (var x : s) . ()
         %% def is also total (identical to tt) 
-program (op tt[s] : forall s : Type . Pred s) : Pred s =
-            (\ (var x : s) . ()) : s ->? Unit
+program (op tt[s] : forall s : Type . Pred s) = \ (var x : s) . ()
         %% tt is total "op tt(x: s): unit = ()"
 %% total function type
 type __->__ : -Type -> +Type -> Type
 type __->__ < __->?__
 %% total functions
 op __res__ : forall s : Type; t : Type . s * t -> s
-     = \ (var x : s, var y : t) .! (var x : s) as s
+     = \ ((var x : s), (var y : t)) .! (var x : s) as s
 op fst : forall s : Type; t : Type . s * t -> s
-     = \ (var x : s, var y : t) .! (var x : s) as s
+     = \ ((var x : s), (var y : t)) .! (var x : s) as s
 %% trivial because its the strict function property
-. ((fun __=__[s * t ->? _v33] : forall s : Type . s * s ->? Unit) :
-       (s * t ->? _v33) * (s * t ->? _v33) ->? Unit)
-    ((\ (var x : s, var y : t) . def (x res y)) : s * t ->? _v33,
-     (\ (var x : s, var y : t) . (def y) und (def x)) :
-         s * t ->? _v33) :
-      Unit
-. ((fun __=__[_v73 * _v71 -> _v73]
-    : forall s : Type . s * s ->? Unit) :
-       (_v73 * _v71 -> _v73) * (_v73 * _v71 -> _v73) ->? Unit)
-    ((op fst[_v73; _v71] : forall s : Type; t : Type . s * t -> s) :
-         _v73 * _v71 -> _v73,
-     (op __res__[_v73; _v71] : forall s : Type; t : Type . s * t -> s) :
-         _v73 * _v71 -> _v73) :
-      Unit
+. (fun __=__[s * t ->? _v33] : forall s : Type . s * s ->? Unit)
+  ((\ ((var x : s), (var y : t)) . def (x res y),
+    \ ((var x : s), (var y : t)) . (def y) und (def x)))
+. (fun __=__[_v73 * _v71 -> _v73] :
+   forall s : Type . s * s ->? Unit)
+  (((op fst[_v73; _v71] : forall s : Type; t : Type . s * t -> s),
+    (op __res__[_v73; _v71] : forall s : Type; t : Type . s * t -> s)))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : s * s
-. ((fun __=__[s ->? Unit] : forall s : Type . s * s ->? Unit) :
-       (s ->? Unit) * (s ->? Unit) ->? Unit)
-    ((\ (var x : s)
-        . ((pred eq[s] : forall s : Type . s * s) : s * s ->? Unit)
-            (var x : s, var x : s) :
-              Unit) :
-         s ->? Unit,
-     (op tt[s] : forall s : Type . Pred s) : Pred s) :
-      Unit
-. ((fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit) :
-       (s * s ->? s) * (s * s ->? s) ->? Unit)
-    ((\ (var x : s, var y : s)
-        . ((op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s) :
-               s * Unit -> s)
-            (var x : s,
-             ((pred eq[s] : forall s : Type . s * s) : s * s ->? Unit)
-               (var x : s, var y : s) :
-                 Unit) :
-              s) :
-         s * s ->? s,
-     (\ (var x : s, var y : s)
-        . ((op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s) :
-               s * Unit -> s)
-            (var y : s,
-             ((pred eq[s] : forall s : Type . s * s) : s * s ->? Unit)
-               (var x : s, var y : s) :
-                 Unit) :
-              s) :
-         s * s ->? s) :
-      Unit
+. (fun __=__[s ->? Unit] : forall s : Type . s * s ->? Unit)
+  ((\ (var x : s)
+      . (pred eq[s] : forall s : Type . s * s)
+        (((var x : s), (var x : s))),
+    (op tt[s] : forall s : Type . Pred s)))
+. (fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
+  ((\ ((var x : s), (var y : s))
+      . (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
+        (((var x : s),
+          (pred eq[s] : forall s : Type . s * s)
+          (((var x : s), (var y : s))))),
+    \ ((var x : s), (var y : s))
+      . (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
+        (((var y : s),
+          (pred eq[s] : forall s : Type . s * s)
+          (((var x : s), (var y : s)))))))
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit." 
 %% where "bla" is never used, but only "()" instead
@@ -102,10 +79,10 @@ class Cpo < Type
       {var c : Cpo; pred __<<=__ : c * c; ;
        pred isChain : forall c : Cpo . nat -> c
               = \ (var s : nat -> c)
-                  . (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit;
+                  . all (\ n : nat . s (n) <<= s (Suc (n))) as Unit;
        pred isBound : forall c : Cpo . c * (nat -> c)
-              = \ (var x : c, var s : nat -> c)
-                  . (all (\ n : nat . s (n) <<= x)) as Unit;
+              = \ ((var x : c), (var s : nat -> c))
+                  . all (\ n : nat . s (n) <<= x) as Unit;
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
       {var p : Pcpo; op bottom : p;}
@@ -125,37 +102,21 @@ var f : c --> d; g : c --> d
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun Y : (p --> p) --> p
 var f : p --> p; x : p
-. ((fun __=__[p] : forall s : Type . s * s ->? Unit) :
-       p * p ->? Unit)
-    ((var f : p --> p)
-       (((fun Y[p] : forall p : Pcpo . (p --> p) --> p) : (p --> p) --> p)
-          (var f : p --> p) :
-            p) :
-         p,
-     ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) : (p --> p) --> p)
-       (var f : p --> p) :
-         p) :
-      Unit
+. (fun __=__[p] : forall s : Type . s * s ->? Unit)
+  (((var f : p --> p)
+    ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)),
+    (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)))
 . (fun __=>__ : Unit * Unit ->? Unit)
-    (((fun __=__[p] : forall s : Type . s * s ->? Unit) :
-          p * p ->? Unit)
-       ((var f : p --> p)(var x : p) : p, var x : p) :
-         Unit,
-     ((pred __<<=__[p] : forall c : Cpo . c * c) : p * p ->? Unit)
-       (((fun Y[p] : forall p : Pcpo . (p --> p) --> p) : (p --> p) --> p)
-          (var f : p --> p) :
-            p,
-        var x : p) :
-         Unit) :
-      Unit
+  (((fun __=__[p] : forall s : Type . s * s ->? Unit)
+    (((var f : p --> p) (var x : p), (var x : p))),
+    (pred __<<=__[p] : forall c : Cpo . c * c)
+    (((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p),
+      (var x : p)))))
 op undefined : forall p : Pcpo; c : Cpo . c --> p
-     = (((fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p) :
-             ((c --> p) --> c --> p) --> c --> p)
-          (((\ (var x' : c --> p) . (var x' : c --> p)) :
-                (c --> p) ->? c --> p) as
-               (c --> p) --> c --> p) :
-            c --> p) as
-           c --> p
+     = (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
+       (\ (var x' : c --> p) . (var x' : c --> p) as
+        (c --> p) --> c --> p)
+       as c --> p
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
@@ -208,7 +169,7 @@ __\/__ : Unit * Unit ->? Unit %(fun)%
 __if__ : Unit * Unit ->? Unit %(fun)%
 __res__
   : forall s : Type; t : Type . s * t -> s
-    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
+    %(op)% = \ ((var x : s), (var y : t)) .! (var x : s) as s
 __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 bottom : forall p : Pcpo . p %(fun)%
 def : forall s : Type . Pred s %(op)%
@@ -220,17 +181,17 @@ false
   : Unit %(fun)%
 fst
   : forall s : Type; t : Type . s * t -> s
-    %(op)% = \ (var x : s, var y : t) .! (var x : s) as s
+    %(op)% = \ ((var x : s), (var y : t)) .! (var x : s) as s
 isBound
   : forall c : Cpo . c * (nat -> c) ->? Unit
     %(pred)%
-      = \ (var x : c, var s : nat -> c)
-          . (all (\ n : nat . s (n) <<= x)) as Unit
+      = \ ((var x : c), (var s : nat -> c))
+          . all (\ n : nat . s (n) <<= x) as Unit
 isChain
   : forall c : Cpo . (nat -> c) ->? Unit
     %(pred)%
       = \ (var s : nat -> c)
-          . (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit
+          . all (\ n : nat . s (n) <<= s (Suc (n))) as Unit
 not : Unit ->? Unit %(pred)%
 not__ : ? Unit ->? Unit %(fun)%
 sup : forall c : Cpo . (nat -> c) ->? c %(op)%
@@ -242,13 +203,10 @@ tt : forall s : Type . Pred s %(op)%
 undefined
   : forall p : Pcpo; c : Cpo . c --> p
     %(op)%
-      = (((fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p) :
-              ((c --> p) --> c --> p) --> c --> p)
-           (((\ (var x' : c --> p) . (var x' : c --> p)) :
-                 (c --> p) ->? c --> p) as
-                (c --> p) --> c --> p) :
-             c --> p) as
-            c --> p
+      = (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
+        (\ (var x' : c --> p) . (var x' : c --> p) as
+         (c --> p) --> c --> p)
+        as c --> p
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 f : p --> p
@@ -259,56 +217,25 @@ x2 : c
 y1 : d
 y2 : d
 %% Sentences -------------------------------------------------------------
-program def : Pred s = (\ x . ()) : s ->? Unit %(pe_def)%
-program tt : Pred s = (\ x . ()) : s ->? Unit %(pe_tt)%
-forall x : s; y : t . __=__(__res__(x, y), x as s) %(def___res__)%
-forall x : s; y : t . __=__(fst(x, y), x as s) %(def_fst)%
-(__=__ : (s * t ->? _v33) * (s * t ->? _v33) ->? Unit)
-  ((\ (x, y) . def (x res y)) : s * t ->? _v33,
-   (\ (x, y) . (def y) und (def x)) : s * t ->? _v33) :
-    Unit
-(__=__ : (_v73 * _v71 -> _v73) * (_v73 * _v71 -> _v73) ->? Unit)
-  (fst : _v73 * _v71 -> _v73, __res__ : _v73 * _v71 -> _v73) :
-    Unit
-(__=__ : (s ->? Unit) * (s ->? Unit) ->? Unit)
-  ((\ x . (eq : s * s ->? Unit)(x, x) : Unit) : s ->? Unit,
-   tt : Pred s) :
-    Unit
-(__=__ : (s * s ->? s) * (s * s ->? s) ->? Unit)
-  ((\ (x, y)
-      . (__res__ : s * Unit -> s)
-          (x, (eq : s * s ->? Unit)(x, y) : Unit) :
-            s) :
-       s * s ->? s,
-   (\ (x, y)
-      . (__res__ : s * Unit -> s)
-          (y, (eq : s * s ->? Unit)(x, y) : Unit) :
-            s) :
-       s * s ->? s) :
-    Unit
+program def = \ x . () %(pe_def)%
+program tt = \ x . () %(pe_tt)%
+forall x : s; y : t . (x res y) = (x as s) %(def___res__)%
+forall x : s; y : t . (fst (x, y)) = (x as s) %(def_fst)%
+(\ (x, y) . def (x res y)) = (\ (x, y) . (def y) und (def x))
+fst = __res__ ()
+(\ x . eq (x, x)) = tt
+(\ (x, y) . x res (eq (x, y))) = (\ (x, y) . y res (eq (x, y)))
 forall s : nat -> c
-  . __=__
-      (isChain(s),
-       (all (\ n : nat . s (n) <<= s (Suc (n)))) as Unit) %(def_isChain)%
+  . (isChain (s)) =
+    (all (\ n : nat . s (n) <<= s (Suc (n))) as Unit) %(def_isChain)%
 forall x : c; s : nat -> c
-  . __=__
-      (isBound(x, s),
-       (all (\ n : nat . s (n) <<= x)) as Unit) %(def_isBound)%
-(__=__ : p * p ->? Unit)
-  (f((Y : (p --> p) --> p)(f) : p) : p,
-   (Y : (p --> p) --> p)(f) : p) :
-    Unit
-__=>__
-  ((__=__ : p * p ->? Unit)(f(x) : p, x) : Unit,
-   (__<<=__ : p * p ->? Unit)((Y : (p --> p) --> p)(f) : p, x) :
-       Unit) :
-    Unit
-__=__
-  (undefined,
-   ((Y : ((c --> p) --> c --> p) --> c --> p)
-      (((\ x' . x') : (c --> p) ->? c --> p) as (c --> p) --> c --> p) :
-        c --> p) as
-       c --> p) %(def_undefined)%
+  . (isBound (x, s)) =
+    (all (\ n : nat . s (n) <<= x) as Unit) %(def_isBound)%
+(f (Y (f))) = (Y (f))
+((f (x)) = x) => ((Y (f)) <<= x)
+undefined =
+(Y (\ x' . x' as (c --> p) --> c --> p) as
+ c --> p) %(def_undefined)%
 free type bool
   ::= true : bool
       false : bool %(ga_bool)%
@@ -338,8 +265,8 @@ free type bool
 *** Hint 52.8, redeclared type '__->__'
 *** Hint, repeated supertype '__->?__'
 *** Error 54.42-54.49, ambiguous mixfix term
-  def__(f(x))
-  def(f)(x)
+  def__ f (x)
+  (def (f)) x
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 58.13, rebound variable 'x'
@@ -349,11 +276,11 @@ free type bool
   known types:
     
 *** Hint 60.9-60.24, untypable application (with result type: t)
- 'snd(x : s, var y : t)'
-*** Error 60.30, no typing for 'program snd(x : s, var y : t) : t = y'
+ 'snd (x : s, (var y : t))'
+*** Error 60.30, no typing for 'program snd (x : s, (var y : t)) : t = y'
 *** Error 65.18-65.30, ambiguous mixfix term
-  def(__res__(x, y))
-  def__(__res__(x, y))
+  def (x res y)
+  def__ __res__(x, y)
 *** Error 65.59, unexpected mixfix token: und
 *** Hint 65.7, rebound variable 'x'
 *** Error 65.18-65.30, unexpected term 'def (x res y)'
@@ -369,8 +296,8 @@ free type bool
   known types:
     
 *** Hint 87.9-87.15, untypable application (with result type: Pred Unit)
- 'all(var p : Pred s)'
-*** Error 87.38, no typing for 'program all(var p : Pred s) : Pred Unit = eq(p, tt)'
+ 'all (var p : Pred s)'
+*** Error 87.38, no typing for 'program all (var p : Pred s) : Pred Unit = eq (p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.58, unexpected mixfix token: And
@@ -427,8 +354,8 @@ free type bool
 *** Error 176.31, unexpected mixfix token: all
 *** Error 181.9, non-unique kind for '__-->__'
 *** Error 182.46-182.53, ambiguous mixfix term
-  def__(f(x))
-  def(f)(x)
+  def__ f (x)
+  (def (f)) x
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Hint 184.7, not a kind 'c --> d'

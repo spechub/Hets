@@ -14,11 +14,9 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = fgl hxt
-LIB_PATH = fgl/Data fgl/Data/Graph \
-    fgl/Data/Graph/Inductive fgl/Data/Graph/Inductive/Internal \
-    fgl/Data/Graph/Inductive/Monad fgl/Data/Graph/Inductive/Query
-CLEAN_PATH = . utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
+INCLUDE_PATH = hxt
+CLEAN_PATH = . hxt/Data hxt/Text/XML/HXT/DOM hxt/Text.XML.HXT.Parser \
+    utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
@@ -67,7 +65,8 @@ CPPP = cpp
 
 # remove -fno-warn-orphans for older ghcs
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
+HC_FLAGS = -package fgl \
+    $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances 
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
@@ -357,7 +356,8 @@ docs/index.html: $(doc_sources)
 	cp -r ../uni/www docs/www
 	HINTERFACES0=`find docs/www -name '*.haddock' \
            -printf "--read-interface=www/%P,%p "` ; \
-        HINTERFACES=`echo $$HINTERFACES0 | sed -e 's+/[^/]*.haddock,+,+g'` ; \
+        HINTERFACES=`echo $$HINTERFACES0 | \
+           $(PERL) -pe 's+/[^/]*.haddock,+,+g'` ; \
         $(HADDOCK) -o docs -h -v -s ../%F $$HINTERFACES \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(doc_sources) 
@@ -499,22 +499,11 @@ bin_clean:
 	$(RM) ToHaskell/translateAna
 	$(RM) Taxonomy/taxonomyTool
 
-### removes *.d (dependency files) in every directory
-### also delete *.d.bak (dependency file backups)
-d_clean: clean
-	for p in $(CLEAN_PATH) $(LIB_PATH) $(INCLUDE_PATH) ; do \
-	    (cd $$p ; $(RM) *.d *.d.bak) ; done
-
-### remove files in own libraries
-lib_clean:
-	for p in $(LIB_PATH) $(INCLUDE_PATH) ; do \
-	    (cd $$p ; $(RM) *.hi *.d *.o) ; done
-
 ### additionally removes the library files
-real_clean: lib_clean clean
+real_clean: clean
 
 ### additionally removes generated files not in the CVS tree
-distclean: clean clean_genRules lib_clean d_clean
+distclean: clean clean_genRules
 	$(RM) $(derived_sources) 
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 

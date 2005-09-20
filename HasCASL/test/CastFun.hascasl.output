@@ -1,10 +1,7 @@
 type s
 op f : s --> s
-. ((fun __=__[s --> s] : forall a : Type . a * a ->? Unit) :
-       (s --> s) * (s --> s) ->? Unit)
-    (op f : s --> s,
-     ((\ (var x : s) . (var x : s)) : s ->? s) as s --> s) :
-      Unit
+. (fun __=__[s --> s] : forall a : Type . a * a ->? Unit)
+  (((op f : s --> s), \ (var x : s) . (var x : s) as s --> s))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -36,6 +33,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(__=__ : (s --> s) * (s --> s) ->? Unit)
-  (f, ((\ x . x) : s ->? s) as s --> s) :
-    Unit
+f = (\ x . x as s --> s)

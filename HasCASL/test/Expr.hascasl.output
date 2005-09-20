@@ -2,20 +2,18 @@ type bool ::= True |
               False
 op a : bool = (op True : bool) as bool
 op notA : bool
-     = ((case (op a : bool) of
-             (op True : bool) -> (op False : bool) | 
-             (op False : bool) -> (op True : bool)) :
-            bool) as
-           bool
+     = case (op a : bool) of
+           (op True : bool) -> (op False : bool) | 
+           (op False : bool) -> (op True : bool)
+       as bool
 op b : bool
-     = (let (var x : bool) = (op True : bool);
-            (var y : bool) = (op False : bool);
-            (var z : bool) = (var x : bool)
-        in (op True : bool)) as
-           bool
+     = let (var x : bool) = (op True : bool);
+           (var y : bool) = (op False : bool);
+           (var z : bool) = (var x : bool)
+       in (op True : bool)
+       as bool
 op b : bool -> bool
-     = ((\ (var x : bool) .! (var x : bool)) : bool -> bool) as
-           bool -> bool
+     = \ (var x : bool) .! (var x : bool) as bool -> bool
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -47,16 +45,14 @@ __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 a : bool %(op)% = (op True : bool) as bool
 b : bool -> bool
-    %(op)%
-      = ((\ (var x : bool) .! (var x : bool)) : bool -> bool) as
-            bool -> bool
+    %(op)% = \ (var x : bool) .! (var x : bool) as bool -> bool
   : bool
     %(op)%
-      = (let (var x : bool) = (op True : bool);
-             (var y : bool) = (op False : bool);
-             (var z : bool) = (var x : bool)
-         in (op True : bool)) as
-            bool
+      = let (var x : bool) = (op True : bool);
+            (var y : bool) = (op False : bool);
+            (var z : bool) = (var x : bool)
+        in (op True : bool)
+        as bool
 bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
@@ -64,32 +60,26 @@ not__ : ? Unit ->? Unit %(fun)%
 notA
   : bool
     %(op)%
-      = ((case (op a : bool) of
-              (op True : bool) -> (op False : bool) | 
-              (op False : bool) -> (op True : bool)) :
-             bool) as
-            bool
+      = case (op a : bool) of
+            (op True : bool) -> (op False : bool) | 
+            (op False : bool) -> (op True : bool)
+        as bool
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 type bool
   ::= True : bool
       False : bool %(ga_bool)%
-__=__(a, True as bool) %(def_a)%
-__=__
-  (notA,
-   ((case a of
-         True -> False | 
-         False -> True) :
-        bool) as
-       bool) %(def_notA)%
-__=__
-  (op b : bool,
-   (let x = True;
-        y = False;
-        z = x
-    in True) as
-       bool) %(def_b)%
-__=__
-  (op b : bool -> bool,
-   ((\ x .! x) : bool -> bool) as bool -> bool) %(def_b)%
+a = (True as bool) %(def_a)%
+notA =
+(case a of
+     True -> False | 
+     False -> True
+ as bool) %(def_notA)%
+(op b : bool) =
+(let x = True;
+     y = False;
+     z = x
+ in True
+ as bool) %(def_b)%
+(op b : bool -> bool) = (\ x .! x as bool -> bool) %(def_b)%

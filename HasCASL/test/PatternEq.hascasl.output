@@ -1,23 +1,23 @@
 type s, t
 op snd : s * t -> t
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t) : t
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
-program (op snd : s * t -> t)(var x : s, var y : t) : t =
+program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
 op a : s
 program (var b : s) = (op a : s)
 op b : s
 program (op b : s) = (op a : s)
 op x : s; y : t
-op c : t = ((op snd : s * t -> t)(op x : s, op y : t) : t) as t
+op c : t = (op snd : s * t -> t) (((op x : s), (op y : t))) as t
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -45,7 +45,8 @@ __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 a : s %(op)%
 b : s %(op)%
 bottom : forall a : Type . a %(fun)%
-c : t %(op)% = ((op snd : s * t -> t)(op x : s, op y : t) : t) as t
+c : t
+    %(op)% = (op snd : s * t -> t) (((op x : s), (op y : t))) as t
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%
@@ -55,15 +56,15 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
-program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
-program snd(var x : s, var y : t) : t = (var y : t) : t %(pe_snd)%
-program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
-program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
-program snd(var x : s, var y : t) : t = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) : t %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program (var b : s) = a %(pe_b)%
 program b = a %(pe_b)%
-__=__(c, (snd(x, y) : t) as t) %(def_c)%
+c = (snd (x, y) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
-*** Error 14.11-14.18, illegal toplevel pattern '(var x : s, var y : s)'
+*** Error 14.11-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
 *** Warning 17.10, illegal lhs pattern '(var b : s)'

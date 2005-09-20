@@ -41,21 +41,21 @@ b [a __ b] a
 ({}, [], {[] {}})
 {{}, [], {[] {}}}
 [{}, [], {[] {}}]
-(var y : bb)
-(op y : bb)
-(op __<__ : ##)
-(op __<__ : ## -> --)
-(op __<__ : bb)
-(op __<__ : ? bb)
-(op __<__ : ? ##)
-(pred y : bb)
-(pred y : bb * bb)
-(var y : bb -> bb)
+((var y : bb))
+((op y : bb))
+((op __<__ : ##))
+((op __<__ : ## -> --))
+((op __<__ : bb))
+((op __<__ : ? bb))
+((op __<__ : ? ##))
+((pred y : bb))
+((pred y : bb * bb))
+((var y : bb -> bb))
 a = e =< b
 ys as b
-(pred y : bb)
-(pred y : bb)
-(pred y : Unit)
+((pred y : bb))
+((pred y : bb))
+((pred y : Unit))
 (predy y : bb)
 (predy : bb)
 (predy : bb)
@@ -97,8 +97,8 @@ a \ a : v .! ! x
 =e= e =e=
 =e= e =e=
 = e =e= e =
-(op __<__ : ? (## -> bb))
-(op __<__ : ? (aa * bb))
+((op __<__ : ? (## -> bb)))
+((op __<__ : ? (aa * bb)))
 let x = y in z
 let x = y;
     x = y;
@@ -129,5 +129,5 @@ y where
 y where
       x = y;
       z = y in t
-(op __<__ : ?##)
-(op __<__ : ? ##)
+((op __<__ : ?##))
+((op __<__ : ? ##))

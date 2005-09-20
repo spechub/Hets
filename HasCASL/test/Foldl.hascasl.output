@@ -4,31 +4,18 @@ op nil : List a
 op head : List a -> a
 op snoc : List a -> a --> List a
 forall x : a
-. ((fun __=__[List a] : forall a : Type . a * a ->? Unit) :
-       List a * List a ->? Unit)
-    ((((op snoc[a] : forall a : Type . List a -> a --> List a) :
-           List a -> a --> List a)
-        ((op nil[a] : forall a : Type . List a) : List a) :
-          a --> List a)
-       (var x : a) :
-         List a,
-     (((op snoc[a] : forall a : Type . List a -> a --> List a) :
-           List a -> a --> List a)
-        ((op nil[a] : forall a : Type . List a) : List a) :
-          a --> List a)
-       (var x : a) :
-         List a) :
-      Unit
-. ((fun __=__[a] : forall a : Type . a * a ->? Unit) :
-       a * a ->? Unit)
-    ((((op head[a ->? a] : forall a : Type . List a -> a) :
-           List (a ->? a) -> a ->? a)
-        ((op nil[a ->? a] : forall a : Type . List a) : List (a ->? a)) :
-          a ->? a)
-       (var x : a) :
-         a,
-     var x : a) :
-      Unit
+. (fun __=__[List a] : forall a : Type . a * a ->? Unit)
+  ((((op snoc[a] : forall a : Type . List a -> a --> List a)
+     (op nil[a] : forall a : Type . List a))
+    (var x : a),
+    ((op snoc[a] : forall a : Type . List a -> a --> List a)
+     (op nil[a] : forall a : Type . List a))
+    (var x : a)))
+. (fun __=__[a] : forall a : Type . a * a ->? Unit)
+  ((((op head[a ->? a] : forall a : Type . List a -> a)
+     (op nil[a ->? a] : forall a : Type . List a))
+    (var x : a),
+    (var x : a)))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 List : Type -> Type
@@ -66,20 +53,8 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 x : a
 %% Sentences -------------------------------------------------------------
-(__=__ : List a * List a ->? Unit)
-  (((snoc : List a -> a --> List a)(nil : List a) : a --> List a)
-     (x) :
-       List a,
-   ((snoc : List a -> a --> List a)(nil : List a) : a --> List a)(x) :
-       List a) :
-    Unit
-(__=__ : a * a ->? Unit)
-  (((head : List (a ->? a) -> a ->? a)(nil : List (a ->? a)) :
-        a ->? a)
-     (x) :
-       a,
-   x) :
-    Unit
+((snoc (nil)) x) = ((snoc (nil)) x)
+((head (nil)) x) = x
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'a'
 *** Hint 2.11, rebound type variable 'a'

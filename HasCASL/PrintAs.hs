@@ -15,6 +15,7 @@ module HasCASL.PrintAs where
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.HToken
+import HasCASL.MixPrint
 import Common.Lib.Pretty
 import Common.Id
 import Common.Keywords
@@ -161,11 +162,7 @@ instance PrettyPrint TypeQual where
     printText0 _ q = text $ show q
 
 instance PrettyPrint Term where
-    printText0 ga t = printTerm ga 
-           (case t of 
-                  QualVar _ -> True
-                  QualOp _ _ _ _ -> True
-                  _ -> False) t
+    printText0 ga t = printTerm ga $ convTerm ga t
 
 unPredType :: Type -> Type
 unPredType t = case getTypeAppl t of
@@ -176,64 +173,52 @@ unPredType t = case getTypeAppl t of
 unPredTypeScheme :: TypeScheme -> TypeScheme
 unPredTypeScheme = mapTypeOfScheme unPredType
 
-printTerm :: GlobalAnnos -> Bool -> Term -> Doc
-printTerm ga b trm = 
-    let ppParen = if b then parens else id 
-        commaT = fsep . punctuate comma . map (printTerm ga False)
-        printApplTerm t = printTerm ga (case t of
-                               ApplTerm _ _ _ -> False
-                               TermToken _ -> False
-                               ResolvedMixTerm _ _ _ -> False
-                               _ -> True) t
-    in
-        (case trm of
-               TupleTerm _ _ -> id
-               BracketTerm _ _ _ -> id
-               TermToken _ -> id
-               MixTypeTerm _ _ _ -> id
-               _ -> ppParen)
-      $ case trm of
-        QualVar vd -> text varS <+> printText0 ga vd
-        QualOp br n t _ -> sep [printText0 ga br <+> printText0 ga n,
-                                colon <+> printText0 ga 
-                                (if isPred br then unPredTypeScheme t else t)]
+printTerm :: GlobalAnnos -> Term -> Doc
+printTerm ga trm = 
+    let commaT = fsep . punctuate comma . map (printTerm ga)
+    in case trm of 
+        QualVar vd -> parens $ text varS <+> printText0 ga vd
+        QualOp br n t _ -> parens $ fsep [printText0 ga br, printText0 ga n,
+                                colon, printText0 ga $ 
+                                if isPred br then unPredTypeScheme t else t]
         ResolvedMixTerm n ts _ -> 
             case ts of 
             [] ->  printText0 ga n
-            [t] -> printText0 ga n <> printTerm ga True t
+            [t] -> printText0 ga n <+> printTerm ga t
             _ -> printText0 ga n <> parens (commaT ts)
         ApplTerm t1 t2 _ -> 
-            cat [printApplTerm t1, nest 2 $ printTerm ga True t2]
+            hang (printTerm ga t1) 2 $ printTerm ga t2
         TupleTerm ts _ -> parens (commaT ts)
-        TypedTerm t q typ _ -> hang (printApplTerm t <+> printText0 ga q)
-                                  4 $ printText0 ga typ
+        TypedTerm t q typ _ -> 
+            fsep [printTerm ga t, printText0 ga q, printText0 ga typ]
         QuantifiedTerm q vs t _ -> hang (printText0 ga q <+> semiT_text ga vs)
-                                   2 (text dotS <+> printText0 ga t)
+                                   2 (text dotS <+> printTerm ga t)
         LambdaTerm ps q t _ -> hang (text lamS <+> (case ps of
-            [p] -> printText0 ga p
-            _ -> fcat $ map (parens . printTerm ga False) ps))
-            2 ((case q of 
+            [p] -> printTerm ga p
+            _ -> fcat $ map (parens . printTerm ga) ps))
+            2 $ (case q of 
                 Partial -> text dotS
-                Total -> text $ dotS ++ exMark) <+> printText0 ga t)
-        CaseTerm t es _  -> hang (text caseS <+> printText0 ga t <+> text ofS)
+                Total -> text $ dotS ++ exMark) <+> printTerm ga t
+        CaseTerm t es _  -> hang (fsep [text caseS, printText0 ga t, text ofS])
             4 $ vcat (punctuate (text " | ") $ map (printEq0 ga funS) es)
         LetTerm br es t _ -> 
-            let dt = printText0 ga t
+            let dt = printTerm ga t
                 des = vcat $ punctuate semi $ map (printEq0 ga equalS) es
                 in case br of 
-                Let -> sep [text letS <+> des, text inS <+> dt]
+                Let -> hang (sep [text letS <+> des, text inS]) 3 dt
                 Where -> hang (sep [dt, text whereS]) 6 des 
                 Program -> text programS <+> des
         TermToken t -> printText0 ga t
         MixTypeTerm q t _ -> printText0 ga q <+> printText0 ga t
-        MixfixTerm ts -> fsep $ map (printText0 ga) ts
+        MixfixTerm ts -> fsep $ map (printTerm ga) ts
         BracketTerm k l _ -> bracket k $ commaT l
-        AsPattern v p _ -> printText0 ga v <+> text asP <+> printText0 ga p
+        AsPattern (VarDecl v _ _ _) p _ -> 
+            printText0 ga v <+> text asP <+> printTerm ga p
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
 printEq0 :: GlobalAnnos -> String -> ProgEq -> Doc
 printEq0 ga s (ProgEq p t _) = 
-    hang (hang (printText0 ga p) 2 $ text s) 4 $ printText0 ga t
+    hang (hang (printTerm ga p) 2 $ text s) 4 $ printTerm ga t
 
 instance PrettyPrint VarDecl where 
     printText0 ga (VarDecl v t _ _) = printText0 ga v <> 
@@ -272,7 +257,8 @@ instance PrettyPrint BasicSpec where
     printText0 ga (BasicSpec l) = vcat (map (printText0 ga) l)
 
 instance PrettyPrint ProgEq where
-    printText0 ga = printEq0 ga equalS
+    printText0 ga (ProgEq p q ps) = 
+        printEq0 ga equalS $ ProgEq (convTerm ga p) (convTerm ga q) ps 
 
 instance PrettyPrint BasicItem where 
     printText0 ga bi = case bi of

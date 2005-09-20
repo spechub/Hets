@@ -143,21 +143,20 @@ ideToTerm :: Id -> Term
 ideToTerm i = ResolvedMixTerm i [] nullRange
 
 parenthesizeTerms :: [Term] -> Term
-parenthesizeTerms ts = BracketTerm Parens ts nullRange
+parenthesizeTerms ts = case ts of 
+    trm@(QualVar _) : [] -> trm
+    trm@(QualOp _ _ _ _) : [] -> trm
+    _ -> BracketTerm Parens ts nullRange
 
 splitTerm :: Term -> Maybe (Id, Bool, [Term])
 splitTerm trm = case trm of
-  ResolvedMixTerm i [] _ -> Just(i, False, [])
-  _ -> case getAppl trm of
-    Just(i, _, ts) -> 
-      case ts of 
-       [] -> Just(i, False, [])
-       [tu] ->  
-           case getTupleArgs tu of
-             Just targs -> Just (i, False, targs)
-             Nothing -> Just (i, False, ts)
-       _ -> Just (i, False, ts)
-    _ -> Nothing
+  ResolvedMixTerm i ts _ -> Just(i, False, ts)
+  ApplTerm (ResolvedMixTerm i [] _) t2 _ -> 
+      case getTupleArgs t2 of
+      Just ts -> Just(i, False, ts)
+      _ -> Just(i, False, [t2]) 
+  ApplTerm t1 t2 _ -> Just(applId, False, [t1, t2])
+  _ -> Nothing
 
 convApplTerm :: GlobalAnnos -> Term -> Term
 convApplTerm ga t = fst $ toMixWeight ga splitTerm hsConvFuns t
@@ -169,7 +168,8 @@ convTerm :: GlobalAnnos -> Term -> Term
 convTerm ga trm = case trm of
     ResolvedMixTerm n ts ps -> 
         ResolvedMixTerm n (map (convTerm ga) ts) ps
-    ApplTerm _ _ _ -> convApplTerm ga trm
+    ApplTerm t1 t2 ps -> 
+        convApplTerm ga $ ApplTerm (convTerm ga t1) (convTerm ga t2) ps
     TupleTerm ts ps -> TupleTerm (map (convTerm ga) ts) ps
     TypedTerm t q typ ps -> let nt = convTerm ga t in
            case q of 
