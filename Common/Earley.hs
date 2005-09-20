@@ -20,7 +20,9 @@ module Common.Earley (Rule
                      , endPlace, begPlace
                      -- * resolution chart
                      , Chart, mixDiags, ToExpr
-                     , initChart, nextChart, getResolved)
+                     , initChart, nextChart, getResolved
+                     -- * printing 
+                     , joinPlace, isLeftArg, isRightArg)
     where
 
 import Common.Id
