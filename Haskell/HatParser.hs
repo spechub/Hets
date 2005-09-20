@@ -22,7 +22,6 @@ import HsConstants as P(mod_Prelude)
 import HsDeclStruct as P
 import HsModule as P (HsModuleI(HsModule))
 import HsName as P (hsUnQual, HsName(UnQual))
-import LexerOptions as P(lexerflags0)
 import Lift as P(Lift(lift))
 import Modules as P(inscope)
 import MUtils as P(mapFst)
@@ -68,7 +67,7 @@ hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
 	       let (l, c) = (sourceLine p, sourceColumn p)
-                   ts = pLexerPass0 lexerflags0 
+                   ts = pLexerPass0 True
                         (replicate (l-2) '\n' ++
                          "module Prelude where\n" ++
                          replicate (c-1) ' ' ++ s)

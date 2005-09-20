@@ -16,7 +16,7 @@ module Haskell.PreludeString (preludeDecls) where
 import Haskell.HatParser
 
 preludeDecls :: [HsDecl]
-preludeDecls = let ts = pLexerPass0 lexerflags0 preludeString
+preludeDecls = let ts = pLexerPass0 True preludeString
    in case parseTokens parse "Haskell/ProgramaticaPrelude.hs" ts of
       Just (HsModule _ _ _ _ ds) -> ds
       _ -> error "preludeDecls"
