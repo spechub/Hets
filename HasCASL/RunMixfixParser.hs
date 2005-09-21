@@ -27,8 +27,6 @@ import Common.Result
 import Common.Lexer
 import Common.Lib.State
 import qualified Common.Lib.Set as Set
-import Common.PPUtils
-import Common.PrettyPrint
 
 -- start testing
 stdOpsL, stdPredsL :: [String]
@@ -76,10 +74,4 @@ resolveTerm ga = do
                    initialEnv { preIds = (prec, stdPreds) }
        return $ getResolved (shows . printTerm emptyGlobalAnnos . parenTerm)
                   (getRange trm) toMixTerm chart
-
-testTermMix :: GlobalAnnos -> AParser () WrapString
-testTermMix ga = do Result ds mt <- resolveTerm ga
-                    return $ WrapString $ 
-                        case mt of Just t -> show $ printText0 ga t
-                                   _ -> show ds
 
