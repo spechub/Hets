@@ -61,12 +61,15 @@ setPlainIdePos (Id ts cs _) ps =
     else let (toks, pls) = splitMixToken ts
              (front, ps2) = setToksPos toks ps
              ps2PL = rangeToList ps2
-             (newCs, ps3, ps4) = if isNullRange ps2 then error "setPlainIdePos2"
-                                 else foldl ( \ (prevCs, seps, restPs) a -> 
-                                  let (c1, qs) = setPlainIdePos a restPs
-                                      qsPL = rangeToList qs
-                                  in if isNullRange qs then error "setPlainIdePos1"
-                                  else (c1: prevCs, Range (head qsPL : rangeToList seps), Range (tail qsPL)))
+             (newCs, ps3, ps4) = 
+                 if isNullRange ps2 then error "setPlainIdePos2"
+                    else foldl ( \ (prevCs, seps, restPs) a -> 
+                         let (c1, qs) = setPlainIdePos a restPs
+                             qsPL = rangeToList qs
+                         in if isNullRange qs then error "setPlainIdePos1"
+                            else (c1: prevCs, 
+                                  Range (head qsPL : rangeToList seps), 
+                                  Range (tail qsPL)))
                            ([], Range [head ps2PL], Range (tail ps2PL)) cs
              (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverseRange ps3), ps7)
@@ -518,10 +521,12 @@ getResolved pp p toExpr st =
                           let expected = if null rest2 
                                          then filter (not . null . rest) rest1 
                                          else rest2 
-                              withpos = filter (not . isNullRange . posList) expected
+                              withpos = filter (not . isNullRange . posList)
+                                        expected
                               (q, errs) = if null withpos then (p, expected) 
-                                            else (concatMapRange (reverseRange .  
-                                                  posList) withpos, withpos)
+                                            else (concatMapRange 
+                                                  (reverseRange . posList) 
+                                                  withpos, withpos)
                               in Result (Diag Error 
                                ("expected further mixfix token: " 
                                 ++ show (take 5 $ nub 
@@ -531,15 +536,14 @@ getResolved pp p toExpr st =
                             let har = head result 
                                 ams = ambigs har
                                 ambAs = mkAmbigs toExpr har
-                                res = Just $ fst $ mkExpr toExpr har
-                                in 
-                                if null ams then 
+                             in if null ams then 
                                    if null ambAs then
-                                      Result ds res
+                                      Result ds $ Just $ fst $ 
+                                             mkExpr toExpr har
                                    else Result ((showAmbigs pp p $ 
-                                             take 5 ambAs) : ds) res
+                                             take 5 ambAs) : ds) Nothing
                                 else Result ((map (showAmbigs pp p) $ 
-                                             take 5 ams) ++ ds) res
+                                             take 5 ams) ++ ds) Nothing
                        else Result ((showAmbigs pp p $
                             map (fst . mkExpr toExpr) result) : ds) Nothing 
                                    
