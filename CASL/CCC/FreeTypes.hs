@@ -71,8 +71,8 @@ checkFreeType (osig,osens) m fsn
         let (Id ts _ pos) = head notSubSorts
             sname = concat $ map tokStr ts 
 	in warning Nothing (sname ++ " is not freely generated") pos
-    | any (\s->not $ elem s f_Inhabited) $ diffList newL subSorts =
-        let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) newL
+    | any (\s->not $ elem s f_Inhabited) $ diffList nSorts subSorts =
+        let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) nSorts
             sname = concat $ map tokStr ts 
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
@@ -88,14 +88,14 @@ checkFreeType (osig,osens) m fsn
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
         in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
-    | not $ and $ map checkTerm leadingTerms =
+    | not $ and $ map (checkTerm constructors) leadingTerms=
         let (Application os _ pos) = 
-		head $ filter (\t->not $ checkTerm t) leadingTerms
+		head $ filter (\t->not $ checkTerm constructors t) leadingTerms
         in warning Nothing ("a leading term of " ++ (opSymStr os) ++
            " consist of not only variables and constructors") pos
-    | not $ and $ map checkVar leadingTerms =
+    | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ pos) = 
-		head $ filter (\t->not $ checkVar t) leadingTerms
+		head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
 			    opSymStr os) pos 
     | terminationProof (osens ++ fsn) =
@@ -133,8 +133,6 @@ checkFreeType (osig,osens) m fsn
     fs = trace (showPretty fs1 "new formulars") fs1     -- new formulars
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
- --   sig = trace (showPretty sig1 "Sig") sig1
- --   osigO = trace (showPretty osig "Old-Sig") osig
     oldSorts1 = Set.union (sortSet sig) (sortSet osig)
     oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1  -- old sorts
     oSorts = Set.toList oldSorts
@@ -143,7 +141,7 @@ checkFreeType (osig,osens) m fsn
     newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
                                                           -- new sorts
     newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
-    newL = Set.toList newSorts
+    nSorts = Set.toList newSorts
     oldOpMap = opMap sig
     oldPredMap = predMap sig 
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
@@ -161,7 +159,7 @@ checkFreeType (osig,osens) m fsn
     l_Syms1 = map leadingSym axioms                                    
     l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1  
                                                       -- leading_Symbol
-    spSrts = filter (\s->not $ elem s srts) newL
+    spSrts = filter (\s->not $ elem s srts) nSorts
     notSubSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == False) spSrts
     subSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == True) spSrts
     subSortsF = map (\s->isSubSort s oSorts fs) subSorts
@@ -198,15 +196,7 @@ checkFreeType (osig,osens) m fsn
                            _ -> False) _axioms 
     pred_fs = filter (\f-> case leadingSym f of
                              Just (Right _) -> True
-                             _ -> False) _axioms 
-    filterOp symb = case symb of
-                      Just (Left (Qual_op_name ident (Op_type k as rs _) _))->
-			  [(ident, OpType {opKind=k, opArgs=as, opRes=rs})]
-                      _ -> []
-    filterPred symb = case symb of
-                        Just (Right (Qual_pred_name ident (Pred_type s _) _))->
-                            [(ident, PredType {predArgs=s})]
-                        _ -> [] 
+                             _ -> False) _axioms  
     id_ots = concat $ map filterOp $ l_Syms 
     id_pts = concat $ map filterPred $ l_Syms
     old_op_id= idStr $ fst $ head $ filter (\ot->find_ot ot) $ id_ots
@@ -245,22 +235,6 @@ checkFreeType (osig,osens) m fsn
                                          _ -> []) $ ltp
     leadingTerms = trace (showPretty leadingTerms1 "leadingTerm") leadingTerms1
                                                                -- leading Term
-    checkTerm (Sorted_term t _ _) = checkTerm t
-    checkTerm (Qual_var _ _ _) = True         -- sort?
-    checkTerm (Application _ ts _)= 
-	let checkT (Sorted_term t _ _) = checkTerm t
-            checkT (Qual_var _ _ _) = True
-            checkT (Application subop subts _) = (elem subop constructors) &&
-                                                 (all id $ map checkT subts)  
-	    checkT _ = False
-        in all id $ map checkT ts
-    checkTerm _ = error "CASL.CCC.FreeTypes.<checkTerm>"
-{-
-   no variable occurs twice in a leading term, 
-      if not, return Nothing
--} 
-    checkVar (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
-    checkVar _ = error "CASL.CCC.FreeTypes<checkVar>"
 {-  
    check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
@@ -281,70 +255,7 @@ checkFreeType (osig,osens) m fsn
                                 Just (Right (Predication _ ts _))->ts
                                 _ -> [])).
                     (map leading_Term_Predication)) $ map snd sym_fs)
-          Nothing -> error "CASL.CCC.FreeTypes.<axiom group>"
---    leadingPatterns1 = snd $ unzip leadingSymPatterns           -- *
---    leadingPatterns = 
---	trace (showPretty leadingPatterns1 "leadingPatterns") leadingPatterns1
-                                                            --leading Patterns
-    isApp t = case t of
-                Application _ _ _->True
-                Sorted_term t' _ _ ->isApp t'
-                _ -> False
-    isVar t = case t of
-                Qual_var _ _ _ ->True
-                Sorted_term t' _ _ ->isVar t'
-                _ -> False
-    allIdentic ts = all (\t-> t== (head ts)) ts
-    notOverlap ts = let check [] = True
-                        check (p:ps)=if elem p ps then False
-                                     else check ps
-                    in check ts 
-    patternsOfTerm t = case t of
-                         Qual_var _ _ _ -> [t]
-                         Application (Qual_op_name _ _ _) ts _-> ts
-                         Sorted_term t' _ _ -> patternsOfTerm t'
-                         Cast t' _ _ -> patternsOfTerm t'
-                         _ -> []
-    patternsOfAxiom f = case f of
-                          Quantification _ _ f' _ -> patternsOfAxiom f'
-                          Negation f' _ -> patternsOfAxiom f'
-                          Implication _ f' _ _ -> patternsOfAxiom f'
-                          Equivalence f' _ _ -> patternsOfAxiom f'
-                          Predication _ ts _ -> ts 
-	                  Existl_equation t _ _ -> patternsOfTerm t
-	                  Strong_equation t _ _ -> patternsOfTerm t
-                          _ -> []
-    sameOps app1 app2 = case (term app1) of               -- eq of app
-                          Application ops1 _ _ -> 
-			      case (term app2) of
-                                Application ops2 _ _ -> ops1==ops2
-                                _ -> False
-                          _ -> False
-    group [] = []
-    group ps = (filter (\p1-> sameOps (head p1) (head (head ps))) ps):
-               (group $ filter (\p2-> not $ 
-                                      sameOps (head p2) (head (head ps))) ps)
-    checkPatterns ps 
-        | length ps <=1 = True
-        | allIdentic ps = False
-        | all isVar $ map head ps = 
-	    if allIdentic $ map head ps then checkPatterns $ map tail ps
-            else False
-        | all (\p-> sameOps p (head (head ps))) $ map head ps = 
-            checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
-        | all isApp $ map head ps = all id $ map checkPatterns $ group ps
-        | otherwise = False
-    checkPatterns2 ps 
-        | length ps <=1 = Just True
-        | allIdentic ps = Nothing
-        | all isVar $ map head ps = 
-	    if allIdentic $ map head ps then checkPatterns2 $ map tail ps
-            else Just False
-        | all (\p-> sameOps p (head (head ps))) $ map head ps = 
-            checkPatterns2 $ 
-            map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
-        | all isApp $ map head ps = Nothing
-        | otherwise = Just False
+          Nothing -> error "CASL.CCC.FreeTypes.<leadingSymPatterns>"
     overlapSym1 = map fst $ 
                   filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
     overlapSym = trace (showPretty overlapSym1 "OverlapSym") overlapSym1 
@@ -381,17 +292,6 @@ checkFreeType (osig,osens) m fsn
       where cond= everyOnce $ concat $ map conditionAxiom fos
             res= concat $ map resultAxiom fos
             resQ = Strong_equation (head res) (last res) nullRange
-    conditionAxiom f = case f of
-                         Quantification _ _ f' _ -> conditionAxiom f'
-                         Implication f' _ _ _ -> [f']
-                         _ -> []
-    resultAxiom f = case f of
-                      Quantification _ _ f' _ -> resultAxiom f'
-                      Implication _ f' _ _ -> resultAxiom f'
-                      Negation f' _ -> resultAxiom f'
-                      Strong_equation _ t _ -> [t]
-                      Existl_equation _ t _ -> [t]
-                      _ -> []
     overlap_query1 = map overlapQuery overlapAxioms
     overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
@@ -440,4 +340,135 @@ isSubSort s sts (f:fs) =
 
 
 sortOfVar_Decl :: VAR_DECL -> SORT
-sortOfVar_Decl (Var_decl _ s _) = s   
+sortOfVar_Decl (Var_decl _ s _) = s
+
+
+filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]
+filterOp symb = case symb of
+                  Just (Left (Qual_op_name ident (Op_type k ags rs _) _))->
+	              [(ident, OpType {opKind=k, opArgs=ags, opRes=rs})]
+                  _ -> []
+
+
+filterPred :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,PredType)]
+filterPred symb = case symb of
+                    Just (Right (Qual_pred_name ident (Pred_type s _) _)) ->
+                        [(ident, PredType {predArgs=s})]
+                    _ -> []    
+
+
+-- the leading terms consist of variables and constructors only 
+checkTerm :: [OP_SYMB] -> TERM f -> Bool
+checkTerm cons t =
+    case t of
+      Sorted_term t' _ _ -> checkTerm cons t'
+      Qual_var _ _ _ -> True         -- sort?
+      Application _ ts _ -> all id $ map checkT ts
+      _ -> error "CASL.CCC.FreeTypes.<checkTerm>"
+  where checkT (Sorted_term tt _ _) = checkT tt
+        checkT (Qual_var _ _ _) = True
+        checkT (Application subop subts _) = (elem subop cons) &&
+                                             (all id $ map checkT subts)  
+	checkT _ = False
+
+
+{-
+   no variable occurs twice in a leading term, 
+      if not, return Nothing
+-} 
+checkVar_App :: (Eq f) => TERM f -> Bool
+checkVar_App (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
+checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
+
+
+allIdentic :: (Eq a) => [a] -> Bool
+allIdentic ts = all (\t-> t== (head ts)) ts
+
+
+notOverlap :: (Eq a) => [a] -> Bool
+notOverlap [] = True
+notOverlap (p:ps) = if elem p ps then False
+                    else notOverlap ps
+                   
+
+patternsOfTerm :: TERM f -> [TERM f]
+patternsOfTerm t = case t of
+                     Qual_var _ _ _ -> [t]
+                     Application (Qual_op_name _ _ _) ts _-> ts
+                     Sorted_term t' _ _ -> patternsOfTerm t'
+                     Cast t' _ _ -> patternsOfTerm t'
+                     _ -> []
+
+
+patternsOfAxiom :: FORMULA f -> [TERM f]
+patternsOfAxiom f = case f of
+                      Quantification _ _ f' _ -> patternsOfAxiom f'
+                      Negation f' _ -> patternsOfAxiom f'
+                      Implication _ f' _ _ -> patternsOfAxiom f'
+                      Equivalence f' _ _ -> patternsOfAxiom f'
+                      Predication _ ts _ -> ts 
+	              Existl_equation t _ _ -> patternsOfTerm t
+	              Strong_equation t _ _ -> patternsOfTerm t
+                      _ -> []
+
+
+sameOps_App :: TERM f -> TERM f -> Bool
+sameOps_App app1 app2 = case (term app1) of               -- eq of app
+                          Application ops1 _ _ -> 
+			      case (term app2) of
+                                Application ops2 _ _ -> ops1==ops2
+                                _ -> False
+                          _ -> False
+
+
+group_App :: [[TERM f]] -> [[[TERM f]]]
+group_App [] = []
+group_App ps = (filter (\p1-> sameOps_App (head p1) (head (head ps))) ps):
+               (group_App $ filter (\p2-> not $ 
+                                   sameOps_App (head p2) (head (head ps))) ps)
+
+
+-- it examines whether it is overlap 
+checkPatterns :: (Eq f) => [[TERM f]] -> Bool
+checkPatterns ps 
+        | length ps <=1 = True
+        | allIdentic ps = False
+        | all isVar $ map head ps = 
+	    if allIdentic $ map head ps then checkPatterns $ map tail ps
+            else False
+        | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
+            checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
+        | all isApp $ map head ps = all id $ map checkPatterns $ group_App ps
+        | otherwise = False
+
+
+checkPatterns2 :: (Eq f) => [[TERM f]] -> Maybe Bool
+checkPatterns2 ps  
+        | length ps <=1 = Just True
+        | allIdentic ps = Nothing
+        | all isVar $ map head ps = 
+	    if allIdentic $ map head ps then checkPatterns2 $ map tail ps
+            else Just False
+        | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
+            checkPatterns2 $ 
+            map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
+        | all isApp $ map head ps = Nothing
+        | otherwise = Just False
+
+
+conditionAxiom ::  FORMULA f -> [ FORMULA f]
+conditionAxiom f = case f of
+                     Quantification _ _ f' _ -> conditionAxiom f'
+                     Implication f' _ _ _ -> [f']
+                     _ -> []
+
+
+resultAxiom :: FORMULA f -> [TERM f]
+resultAxiom f = case f of
+                  Quantification _ _ f' _ -> resultAxiom f'
+                  Implication _ f' _ _ -> resultAxiom f'
+                  Negation f' _ -> resultAxiom f'
+                  Strong_equation _ t _ -> [t]
+                  Existl_equation _ t _ -> [t]
+                  _ -> []
+
