@@ -182,21 +182,21 @@ true
     
 *** Hint 21.1-21.16, untypable application (with result type: s)
  'fst (x : s, (var y : t))'
-*** Error 21.22, no typing for 'program fst (x : s, (var y : t)) : s = x'
+*** Error 21.22, no typing for 'program fst(x : s, (var y : t)) : s = x'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _v5 ->? t
   known types:
     
 *** Hint 22.1-22.16, untypable application (with result type: t)
  'snd (x : s, (var y : t))'
-*** Error 22.22, no typing for 'program snd (x : s, (var y : t)) : t = y'
+*** Error 22.22, no typing for 'program snd(x : s, (var y : t)) : t = y'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _v6 ->? ? Unit
   known types:
     
 *** Hint 28.9-28.15, untypable application (with result type: ? Unit)
  'all (var p : ? s)'
-*** Error 28.33, no typing for 'program all (var p : ? s) : ? Unit = eq (p, tt)'
+*** Error 28.33, no typing for 'program all(var p : ? s) : ? Unit = eq (p, tt)'
 *** Error 30.40, unexpected mixfix token: t1
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 32.45, unexpected mixfix token: And

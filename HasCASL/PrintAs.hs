@@ -184,7 +184,14 @@ printTerm ga trm =
         ResolvedMixTerm n ts _ -> 
             case ts of 
             [] ->  printText0 ga n
-            [t] -> printText0 ga n <+> printTerm ga t
+            [t] -> printText0 ga n <> (case t of 
+                   TupleTerm _ _ -> id 
+                   BracketTerm _ _ _ -> id
+                   QualVar _ -> id 
+                   QualOp _ _ _ _ -> id 
+                   ResolvedMixTerm _ [] _ -> (space <>)
+                   TermToken _ -> (space <>)
+                   _ -> parens) (printTerm ga t)
             _ -> printText0 ga n <> parens (commaT ts)
         ApplTerm t1 t2 _ -> 
             hang (printTerm ga t1) 2 $ printTerm ga t2

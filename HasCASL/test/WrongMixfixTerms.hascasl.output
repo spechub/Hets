@@ -14,13 +14,13 @@ __=__(__-->__(L, x), __-->__(L, [__] x))
   __-->__(L, __::__(x, []))
 *** Error 6.5-6.9, expected further mixfix token: ["!=","/=","/\\","<","<="]
 *** Error 7.1-7.17, ambiguous mixfix term
-  __<=__(f (a), __<=__(f (a), f (a)))
-  __<=__(__<=__(f (a), f (a)), f (a))
-  __<=__<=__(f (a), f (a), f (a))
+  __<=__(f a, __<=__(f a, f a))
+  __<=__(__<=__(f a, f a), f a)
+  __<=__<=__(f a, f a, f a)
 *** Error 8.1-8.5, ambiguous mixfix term
-  (m (#)) #
-  __# __# m
-  __# m (#)
+  m # #
+  __#(__# m)
+  __#(m #)
 *** Error 9.1-9.5, ambiguous mixfix term
-  D__ A (b)
-  (D (A)) b
+  D__(A b)
+  D A b

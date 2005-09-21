@@ -14,7 +14,6 @@ module HasCASL.MixAna where
 
 import Common.GlobalAnnotations
 import Common.Result
-import Common.PrettyPrint
 import Common.Id
 import Common.Keywords
 import Common.Earley
@@ -26,6 +25,7 @@ import qualified Common.Lib.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.PrintAs
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
@@ -238,7 +238,8 @@ resolver ga bs trm =
                initChart (listRules (m + 3) ga ++ 
                           (initRules ps bs 
                           ids)) (if unknownId `elem` bs then ks else Set.empty)
-       let Result ds mr = getResolved showPretty (getRange trm) 
+       let Result ds mr = getResolved 
+              (shows . printTerm emptyGlobalAnnos . parenTerm) (getRange trm) 
                           toMixTerm chart
        addDiags ds
        return mr
@@ -286,3 +287,49 @@ anaPattern pat =
                 (tvar, c) <- toEnvState $ freshVar $ posOfId v
                 return $ VarDecl v (TypeName tvar rStar c) ok ps
             _ -> return vd
+
+-- | put parenthesis around applications  
+parenTerm :: Term -> Term
+parenTerm trm = case trm of
+    ResolvedMixTerm n ts ps -> 
+        ResolvedMixTerm n (map parenTerm ts) ps
+    ApplTerm t1 t2' ps -> let t2 = parenTerm t2' in
+        ApplTerm (addParAppl t1) (case t2 of
+           ResolvedMixTerm _ [] _ -> t2
+           QualVar _ -> t2
+           QualOp _ _ _ _ -> t2
+           TermToken _ -> t1
+           BracketTerm _ _ _ -> t2
+           TupleTerm _ _ -> t2
+           _ -> addPar t2) ps
+    TupleTerm ts ps -> TupleTerm (map parenTerm ts) ps
+    TypedTerm t q typ ps -> 
+        TypedTerm (addParAppl t) q typ ps
+    QuantifiedTerm q vs t ps -> QuantifiedTerm q vs (parenTerm t) ps
+    LambdaTerm ps q t qs -> 
+        LambdaTerm (map parenTerm ps) q (parenTerm t) qs
+    CaseTerm t es ps -> CaseTerm (parenTerm t) (map parenProgEq es) ps 
+    LetTerm br es t ps -> 
+        LetTerm br (map parenProgEq es) (parenTerm t) ps
+    MixfixTerm ts -> MixfixTerm $ map addParAppl ts
+    BracketTerm k ts ps -> BracketTerm k (map parenTerm ts) ps
+    AsPattern v p ps -> AsPattern v (addParAppl p) ps
+    TermToken _ -> trm
+    MixTypeTerm _ _ _ -> trm
+    QualVar _ -> trm
+    QualOp _ _ _ _ -> trm
+    where addPar t = TupleTerm [t] nullRange
+          addParAppl t' = let t = parenTerm t' in case t of 
+           ApplTerm _ _ _ -> t
+           ResolvedMixTerm _ _ _ -> t
+           QualVar _ -> t
+           QualOp _ _ _ _ -> t
+           TermToken _ -> t
+           BracketTerm _ _ _ -> t
+           TupleTerm _ _ -> t
+           _ -> addPar t
+
+-- | put parenthesis around applications in equations
+parenProgEq :: ProgEq -> ProgEq
+parenProgEq (ProgEq p t q) = ProgEq (parenTerm p) (parenTerm t) q
+

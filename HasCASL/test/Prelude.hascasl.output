@@ -265,8 +265,8 @@ free type bool
 *** Hint 52.8, redeclared type '__->__'
 *** Hint, repeated supertype '__->?__'
 *** Error 54.42-54.49, ambiguous mixfix term
-  def__ f (x)
-  (def (f)) x
+  def__(f x)
+  def f x
 *** Error 54.32, unexpected mixfix token: all
 *** Error 54.6, unexpected mixfix token: :
 *** Hint 58.13, rebound variable 'x'
@@ -277,10 +277,10 @@ free type bool
     
 *** Hint 60.9-60.24, untypable application (with result type: t)
  'snd (x : s, (var y : t))'
-*** Error 60.30, no typing for 'program snd (x : s, (var y : t)) : t = y'
+*** Error 60.30, no typing for 'program snd(x : s, (var y : t)) : t = y'
 *** Error 65.18-65.30, ambiguous mixfix term
-  def (x res y)
-  def__ __res__(x, y)
+  def (__res__(x, y))
+  def__(__res__(x, y))
 *** Error 65.59, unexpected mixfix token: und
 *** Hint 65.7, rebound variable 'x'
 *** Error 65.18-65.30, unexpected term 'def (x res y)'
@@ -297,7 +297,7 @@ free type bool
     
 *** Hint 87.9-87.15, untypable application (with result type: Pred Unit)
  'all (var p : Pred s)'
-*** Error 87.38, no typing for 'program all (var p : Pred s) : Pred Unit = eq (p, tt)'
+*** Error 87.38, no typing for 'program all(var p : Pred s) : Pred Unit = eq (p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.58, unexpected mixfix token: And
@@ -354,8 +354,8 @@ free type bool
 *** Error 176.31, unexpected mixfix token: all
 *** Error 181.9, non-unique kind for '__-->__'
 *** Error 182.46-182.53, ambiguous mixfix term
-  def__ f (x)
-  (def (f)) x
+  def__(f x)
+  def f x
 *** Error 182.36, unexpected mixfix token: all
 *** Error 182.7, unexpected mixfix token: :
 *** Hint 184.7, not a kind 'c --> d'
