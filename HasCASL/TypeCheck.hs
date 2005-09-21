@@ -55,13 +55,6 @@ resolveTerm ga mt trm = do
               Nothing -> return Nothing
               Just t -> typeCheck mt t 
 
-checkPattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
-checkPattern ga pat = do
-    mPat <- resolvePattern ga pat
-    case mPat of 
-              Nothing -> return Nothing
-              Just np -> typeCheck Nothing np
-
 instantiate :: TypeScheme -> State Env (Type, [Type], Constraints)
 instantiate (TypeScheme tArgs t _) = 
     do let ls = leaves (< 0) t -- generic vars
