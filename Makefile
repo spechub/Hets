@@ -15,7 +15,7 @@ all: patch hets
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = hxt
-CLEAN_PATH = . hxt/Data hxt/Text/XML/HXT/DOM hxt/Text.XML.HXT.Parser \
+CLEAN_PATH = . hxt/Data hxt/Text/XML/HXT/DOM hxt/Text/XML/HXT/Parser \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
