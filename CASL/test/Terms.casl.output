@@ -55,3 +55,9 @@ a b when b c else a f g when f a f else f a f g when f a f else f
 (pred y : bb)
 (pred y : bb)
 (pred y : ())
+12.23E-34
++ 12.23E+34
+- 12.23E-34
+- 12.23E34
+- 1
++ 2

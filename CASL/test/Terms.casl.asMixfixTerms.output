@@ -57,3 +57,9 @@ a when b else c
 (pred y : bb)
 (pred y : bb)
 (pred y : ())
+12.23E-34
++ 12.23E+34
+- 12.23E-34
+- 12.23E34
+- 1
++ 2
