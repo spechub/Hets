@@ -26,55 +26,22 @@ module CASL.LiteralFuns ( isLiteral
                         , isQualOpSy
                         ) where
 
-import Data.Char (isDigit)
 import Common.Id
 import Common.GlobalAnnotations
+import Common.ConvertLiteral 
 import CASL.AS_Basic_CASL
 
 isLiteral :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isLiteral ga i trm =
-       or [ isNumber ga i trm 
-          , isString ga i trm
-          , isList   ga i trm
-          , isFloat  ga i trm
-          , isFrac   ga i trm
-          ]
+isLiteral = isGenLiteral splitApplM
 
 isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isNumber ga i trs = 
-    (digitTest i && null trs) 
-    || (getLiteralType ga i == Number && all (sameId digitTest i) trs)
-    where digitTest ii = 
-              (getLiteralType ga ii == Number) || case ii of
-                         Id [t] [] _ 
-                             | not $ null tstr -> isDigit $ head $ tstr 
-                             | otherwise    -> False
-                             where tstr = tokStr t
-                         _           -> False
+isNumber = isGenNumber splitApplM
 
 isSignedNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isSignedNumber ga i trs = length trs == 1 && 
-                          isSign i && isNumber ga ni nt && isAppl hd  
-                          where hd = head trs
-                                (ni,nt) = splitAppl hd
-
-isSign :: Id -> Bool
-isSign i = case i of
-           Id [tok] [] _ -> let ts = tokStr tok 
-                            in ts == "-" || ts == "+" 
-           _             -> False
+isSignedNumber = isGenSignedNumber splitApplM
 
 isString :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isString ga i trs = case getLiteralType ga i of 
-                    StringNull -> null trs
-                    StringCons _ -> all (sameId stringTest i) trs
-                    _ -> False
-    where 
-          stringTest ii = case getLiteralType ga ii of 
-                          StringNull -> True 
-                          _ -> case ii of
-                               Id [t] [] _ -> take 1 (tokStr t) == "\'"
-                               _           -> False
+isString = isGenString splitApplM
 
 convCASLChar :: Token -> String
 convCASLChar t = case tokStr t of
@@ -85,39 +52,16 @@ convCASLChar t = case tokStr t of
                                " is not a valid CASL Char")
 
 isList :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isList ga i trms = -- trace ("isList: "++show i++"; "++show trms) $
-                   (case getLiteralType ga i of 
-                     ListNull _ -> null trms
-                     ListCons _ n -> listTest n i trms
-                     _ -> False)
-    where listTest n1 i1 terms = case getLiteralType ga i1 of 
-              ListNull _ -> n1 == i1 && null terms
-              ListCons _ n2 -> n1 == n2 && length terms == 2 && 
-                               let hd = head $ tail terms
-                                   (i2, ts) = splitAppl hd
-                                   in isAppl hd && listTest n1 i2 ts
-              _ -> False
+isList = isGenList splitApplM
 
 isFloat :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isFloat ga i [l, r] =
-    case getLiteralType ga i of 
-    Floating -> (isNumber ga li ltrm || isFrac ga li ltrm) 
-                && isAppl l && isAppl r 
-                && (isSignedNumber ga ri rtrm || isNumber ga ri rtrm)
-    _        -> False
-    where (li,ltrm) = splitAppl l
-          (ri,rtrm) = splitAppl r 
-isFloat _ _ _ = False
+isFloat = isGenFloat splitApplM
 
 isFrac :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isFrac ga i [l, r] = 
-    case getLiteralType ga i of 
-    Fraction -> isAppl l && isAppl r 
-                && isNumber ga li ltrm && isNumber ga ri rtrm
-    _        -> False
-    where (li,ltrm) = splitAppl l 
-          (ri,rtrm) = splitAppl r
-isFrac _ _ _ = False
+isFrac = isGenFrac splitApplM
+
+splitApplM :: TERM f -> Maybe (Id, [TERM f])
+splitApplM t = if isAppl t then Just $ splitAppl t else Nothing
 
 isAppl :: TERM f -> Bool
 isAppl t = case t of
@@ -189,15 +133,6 @@ basicTerm trm = case trm of
                     _    -> error "wrong Id for getToken"
                 Application _oi _ats _ -> Nothing
                 _   -> error "wrong TERM for basicTerm" 
-
-sameId :: (Id -> Bool) -> Id -> TERM f -> Bool
-sameId test i t = case t of
-                         Application o its _ 
-                             | op_id o == i && 
-                               not (null its) -> all (sameId test i) its
-                             | null its -> test $ op_id o -- digits i.e.
-                             | otherwise    -> False
-                         _           -> False
 
 op_id :: OP_SYMB -> Id
 op_id op = case op of 
