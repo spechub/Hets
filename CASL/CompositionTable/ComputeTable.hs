@@ -37,6 +37,10 @@ computeCompTable spName (sig,sens) = do
          __cmps__: BaseRel * BaseRel -> Rel;
 	  compl__: Rel -> Rel;	
          __cup__ : Rel * Rel -> Rel, assoc, idem, comm, unit 1
+     forall x:BaseRel
+     . x cmps id = x
+     . id cmps x = x
+     . inv(id) = id
   -} 
   let name = showPretty spName ""
       errmsg = "cannot determine composition table of specification "++name
@@ -45,6 +49,12 @@ computeCompTable spName (sig,sens) = do
                    ++ showPretty ((emptySign ()::Sign () ()) 
 				     { sortSet = sortSet sig,
 				       sortRel = sortRel sig }) ""
+      errCmps ops = errmsg 
+                   ++ "\nneed exactly one operation __cmps__: BaseRel * BaseRel -> Rel, but found:\n"
+                   ++ showPretty ops "" 
+      errCmpl ops = errmsg 
+                   ++ "\nneed exactly one operation  compl__: Rel -> Rel, but found:\n"
+                   ++ showPretty ops "" 
   -- look for sorts
   (baseRel,rel) <-
      case map Set.toList $ Rel.topSort $ sortRel sig of
@@ -63,6 +73,19 @@ computeCompTable spName (sig,sens) = do
       cupt   = OpType {opKind = Total, opArgs = [rel,rel], opRes = rel}
   -- look for operation symbols
   let mlookup t = map snd $ filter (\(t',_) -> t==t') opTypes
+  cmps <- case mlookup cmpt of
+              [op] -> return op
+              ops -> fail (errCmps ops)
+  cmpl <- case mlookup complt of
+              [op] -> return op
+              ops -> fail (errCmpl ops)
+  {- look for 
+     forall x:BaseRel
+     . x cmps id = x
+     . id cmps x = x
+     . inv(id) = id  -}
+  -- let idaxioms idt = 
+  --    [Quantification Universal [Var_decl [x] baseRel nullRange ....
   let ids = mlookup idt 
   let attrs = Table_Attrs {tableName = name,
                            tableIdentity = ""}
