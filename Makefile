@@ -310,6 +310,12 @@ hets-old: $(objects)
 	$(RM) $@
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
+cgi: 
+	$(MAKE) distclean
+	$(MAKE) derivedSources
+	$(MAKE) real_clean
+	$(MAKE) hets.cgi
+
 hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make -package-conf $(HOME)/wash-pkg/package.conf \
             -package WASH GUI/hets_cgi.hs -o $@ $(HC_INCLUDE) \
