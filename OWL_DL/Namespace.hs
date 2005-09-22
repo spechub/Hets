@@ -51,14 +51,19 @@ instance PNamespace QName where
 				         read local::String
 				         else local
 				     )
-              -- hiding "fpt://" oder "http://"   
+              -- hiding "ftp://" oder "http://"   
 	      in if ((length pre' > 2) && (isAlpha $ head $ reverse pre')) 
 		     || (null local') then
 		    QN pre local nsUri
 		    else let local'' = tail local'
 		         in  prop pre' local''
 	      else prop pre local
-	   else old
+	   else
+	     if null pre then
+		case Map.lookup (nsUri ++ "#") (reverseMap ns) of
+		  Prelude.Nothing -> old
+		  Just pre' -> QN pre' local nsUri
+		else old
       where 
         prop :: String -> String -> QName
 	prop p loc =
@@ -68,7 +73,8 @@ instance PNamespace QName where
 		    Prelude.Nothing    -> QN p loc ""
     renameNamespace tMap old@(QN pre local nsUri) = 
 	case Map.lookup pre tMap of
-	Prelude.Nothing -> old
+	Prelude.Nothing -> 
+	    old
 	Just pre' -> QN pre' local nsUri
 	
 instance PNamespace Ontology where	
