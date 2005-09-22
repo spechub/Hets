@@ -71,7 +71,8 @@ contact_text :: String
 contact_text = "cofi@informatik.uni-bremen.de"
 
 -- a directory which must be accessable and exposed by the web server,
--- where all the generated files are stored
+-- where all the generated files are stored. This string must end with
+-- a slash!
 base_dir_generated :: String
 base_dir_generated = "/home/www/cofi/hets-tmp/"
 
@@ -247,7 +248,7 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
 		    appendFile latexFile ("\\input{"++ pptexFile ++"}\n" ++ "\\end{document}\n")
                     
                     system ("cd "++ base_dir_generated ++" ; "++
-                            pdflatex_command ++
+                            pdflatex_cmd ++
 			   latexFile ++ " > " ++ tmpFile)
 		    setFileMode pdfFile fileMode
 		    return()
@@ -331,7 +332,7 @@ printR str (diags2, result) selectedBoxes outputFiles =
 		do  
 		p $ i(do text "You can download the " 
 		         hlink (read (base_url_generated ++
-				      (drop 24 (outputfiles++".txt")))) $ text "ACSII file" 
+				      (drop (length base_dir_generated) (outputfiles++".txt")))) $ text "ACSII file" 
 		         text " here. The file will be deleted after 30 minutes.\n" 
 		     )
 		printRes (isTree, False, isTex, willAchiv) outputfiles rR
@@ -339,7 +340,7 @@ printR str (diags2, result) selectedBoxes outputFiles =
 		     do
 		     p $ i(do text "You can download the "
 			      hlink (read (base_url_generated ++
-					   (drop 24 (outputfiles++".pp.tex")))) $ text "LaTeX file" 
+					   (drop (length base_dir_generated) (outputfiles++".pp.tex")))) $ text "LaTeX file" 
 			      text " here. For compiling the LaTeX output, you need " 
 			      hlink (read hetcasl_sty_url) $ text "hetcasl.sty" 
 			      text "."
