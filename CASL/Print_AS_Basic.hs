@@ -13,8 +13,6 @@ pretty printing data types of 'BASIC_SPEC'
 
 module CASL.Print_AS_Basic where
 
-
-
 import Data.List (mapAccumL)
 import Data.Char (isDigit)
 
@@ -22,6 +20,7 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.ConvertLiteral
 import CASL.LiteralFuns
 import CASL.Utils
 
@@ -295,13 +294,7 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
 	    o' = printText0 ga o
 	in if isQual then 
 	     print_prefix_appl_text ga (parens o') l
-	   else 
-	     if isLiteral ga o_id l then
-	       {-trace ("a literal application: " 
-		      ++ show (Application o l [])) $ -}
-		     print_Literal_text ga o_id l
-	     else
-	       condPrint_Mixfix_text ga o_id l
+	   else print_Literal_text ga o_id l
     printText0 ga (Sorted_term t s _) = 
         condParensSorted_term parens t (printText0 ga t) <> 
         colon <+> printText0 ga s
@@ -603,9 +596,27 @@ mergeTok ts
 	  merge tok newTok = newTok {tokStr = tokStr tok ++ tokStr newTok} 
 
 print_Literal_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
-print_Literal_text ga =
-    print_Literal (printText0 ga) (printText0 ga) (printText0 ga) 
-         parens (<+>) fsep comma  (char '.') (char 'E') Nothing Nothing ga
+print_Literal_text ga i ts = 
+    let pTok = printText0 ga in
+    if isList ga i ts then
+       let list_body = commaT_text ga $ getListElems splitAppl ts 
+	   (openL, closeL, comps) = getListBrackets $ 
+                case getLiteralType ga i of
+		ListNull b -> b
+		ListCons b _ -> b
+		_ -> error "print_Literal_text"
+        in hcat(map pTok openL) <+> list_body 
+			     <+> hcat(map pTok closeL)
+			     <> printText0 ga (Id [] comps nullRange)
+    else if isNumber ga i ts then
+         pTok $ toNumber splitAppl i ts
+    else if isFrac ga i ts then
+         pTok $ toFrac splitAppl ts
+    else if isFloat ga i ts then
+         pTok $ toFloat splitAppl ga ts 
+    else if isString ga i ts then 
+        pTok $ Token ( "\"" ++ toString splitAppl ga i ts ++ "\"") nullRange
+    else condPrint_Mixfix_text ga i ts
 
 condParensAppl :: (TERM f -> Doc)
 	       -> (Doc -> Doc)    -- ^ a function that surrounds 
