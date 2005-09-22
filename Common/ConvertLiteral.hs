@@ -10,7 +10,7 @@ Portability :  portable
 converting literals 
 -}
 
-module Common.ConvertLiteral where
+module Common.ConvertLiteral (convertMixfixToken) where
 
 import Common.Id
 import Common.Lexer
@@ -32,7 +32,8 @@ makeStringTerm c f asAppl tok =
   makeStrTerm p l = 
     if null l then asAppl c [] p
     else let (hd, tl) = splitString caslChar l
-         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p] [] nullRange) [] p, 
+         in asAppl f [asAppl (Id [Token ("'" ++ hd ++ "'") p]
+                              [] nullRange) [] p, 
                       makeStrTerm (inc (length hd) p) tl] p
 
 makeNumberTerm :: Id -> AsAppl a -> Token -> a
