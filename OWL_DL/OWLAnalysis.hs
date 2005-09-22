@@ -173,10 +173,17 @@ structureAna file opt ontoMap =
        let (newOntoMap, dg) = buildDevGraph ontoMap
        case analysis opt of
          Structured -> do
-               putIfVerbose opt 1 "Structure anaylsing finished. "   
-               return (Just (simpleLibName file, (), (), 
-				   simpleLibEnv file $ reverseGraph dg))
+	    printMsg $ labNodes dg
+            -- putIfVerbose opt 1 "Structure anaylsing finished. "   
+	    return (Just (simpleLibName file, (), (), 
+			  simpleLibEnv file $ reverseGraph dg))
 	 _          -> staticAna file (newOntoMap, dg)
+     where printMsg :: [LNode DGNodeLab] -> IO()
+	   printMsg [] = putStrLn ""
+	   printMsg ((_, node):rest) =
+	       do putStrLn ("Analyzing ontology " ++ 
+			    (showName $ dgn_name node))
+		  printMsg rest
 
 -- simpleLibEnv and simpleLibName builded two simple lib-entities for 
 -- showGraph
@@ -249,7 +256,7 @@ nodeStaticAna [] _ _ _ _ =
 nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
   do
     let nn@(nodeName, _, _) = dgn_name topNode
-    putStrLn ("Analyzing ontology: " ++ (show nodeName))
+    putStrLn ("Analyzing ontology " ++ (show nodeName))
     case Map.lookup n signMap of
      Just _ -> 
 	return $ Result oldDiags (Just (signMap, dg))
