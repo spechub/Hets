@@ -14,7 +14,6 @@ pretty printing data types of 'BASIC_SPEC'
 module CASL.Print_AS_Basic where
 
 import Data.List (mapAccumL)
-import Data.Char (isDigit)
 
 import Common.Id
 import CASL.AS_Basic_CASL
@@ -519,87 +518,17 @@ print_Literal :: (Token -> Doc)  -- ^ print a Token
 				   -- fill the line policy  like
 				   -- fsep or fsep_latex
 	      -> Doc   -- ^ a comma 
-	      -> Doc   -- ^ a document containing the dot for a Fraction
-	      -> Doc   -- ^ a document containing the E of a Floating
 	      -> Maybe (Token -> Doc) -- ^ this function should be 
 				      -- given to print a Token in a 
 				      -- special way 
 	      -> (Maybe Display_format)
 	      -> GlobalAnnos -> Id -> [TERM f] -> Doc
 print_Literal pTok pId pTrm parens_fun 
-	      beside_fun fsep_fun comma_doc dot_doc e_doc mpt_fun mdf
-	      ga li ts 
-    | isSignedNumber ga li ts = let [t_ts] = ts
-				in pId li <> 
-				       ((uncurry p_l) (splitAppl t_ts))
-    | isNumber ga li ts = pTok $ tokNumber li
-    | isFrac   ga li ts = let [lt,rt] = ts
-			      (lni,lnt) = splitAppl lt
-			      (rni,rnt) = splitAppl rt
-			      ln = p_l lni lnt
-			      rn = p_l rni rnt
-			  in ln <> dot_doc <> rn
-    | isFloat  ga li ts = let [bas,ex] = ts
-			      (bas_i,bas_t) = splitAppl bas
-			      (ex_i,ex_t)   = splitAppl ex
-			      bas_d = p_l bas_i bas_t
-			      ex_d  = p_l ex_i ex_t
-			  in bas_d <> e_doc <> ex_d
-    | isList   ga li ts = let list_body = fsep_fun $ punctuate comma_doc 
-					  $ map pTrm $ listElements li
-			      (openL, closeL, comps) = getListBrackets $ 
-						       listBrackets li
- 			  in hcat(map pTok openL) <+> list_body 
-			     <+> hcat(map pTok closeL)
-			     <> pId (Id [] comps nullRange)
-    | isString ga li ts = ptext $ 
-			  (\s -> let r = '"':(s ++ "\"") in seq r r) $ 
-			  concatMap convCASLChar $ toksString li
-    | otherwise = condPrint_Mixfix pTok pId pTrm parens_fun 
-		                   beside_fun fsep_fun comma_doc mpt_fun mdf
-				   ga li ts
-    where p_l = print_Literal pTok pId pTrm parens_fun 
-	      beside_fun fsep_fun comma_doc dot_doc e_doc mpt_fun mdf
-	      ga
-	  tokNumber i   = if tokIsDigit then
-			     tok
-			   else
-			    {-trace ("Number: "++show ts) $ -}
-			     mergeTok $ map (termToTok "number") $
-			         collectElements (Nothing) i ts
-	     where tok = case i of
-			 Id []     _ _ -> error "malformed Id!!!"
-			 Id (x:_) _ _ -> x 
-		   tokIsDigit = (isDigit $ head $ tokStr $ tok) && null ts
-	  toksString i   = case getLiteralType ga i of 
-			   StringNull -> []
-			   StringCons n -> map (termToTok "string") $ 
-				   collectElements (Just n) i ts
-			   _ -> error "toksString"
-	  termToTok tokType x = case basicTerm x of
-				Just tokk -> tokk
-				Nothing   -> error ("malformed " ++ tokType)
-	  listElements i = case getLiteralType ga i of
-			   ListNull _ -> []
-			   ListCons _ n -> collectElements (Just n) i ts
-			   _ -> error "listElements"
-	  listBrackets i = case getLiteralType ga i of
-			   ListNull b -> b
-			   ListCons b _ -> b
-			   _ -> error "listBrackets"
-
-mergeTok :: [Token] -> Token
-mergeTok ts 
-    | not (null ts) = foldr merge initTok ts
-    | otherwise = error "mergeTok: wrong call with empty list" 
-    where initTok = Token {tokStr="",tokPos = tokPos (head ts)}
-	  merge tok newTok = newTok {tokStr = tokStr tok ++ tokStr newTok} 
-
-print_Literal_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
-print_Literal_text ga i ts = 
-    let pTok = printText0 ga in
+	      beside_fun fsep_fun comma_doc mpt_fun mdf
+	      ga i ts =  
     if isList ga i ts then
-       let list_body = commaT_text ga $ getListElems splitAppl ts 
+       let list_body = fsep_fun $ punctuate comma_doc $ map pTrm 
+                       $ getListElems splitAppl ts 
 	   (openL, closeL, comps) = getListBrackets $ 
                 case getLiteralType ga i of
 		ListNull b -> b
@@ -607,7 +536,7 @@ print_Literal_text ga i ts =
 		_ -> error "print_Literal_text"
         in hcat(map pTok openL) <+> list_body 
 			     <+> hcat(map pTok closeL)
-			     <> printText0 ga (Id [] comps nullRange)
+			     <> pId (Id [] comps nullRange)
     else if isNumber ga i ts then
          pTok $ toNumber splitAppl i ts
     else if isFrac ga i ts then
@@ -616,7 +545,12 @@ print_Literal_text ga i ts =
          pTok $ toFloat splitAppl ga ts 
     else if isString ga i ts then 
         pTok $ Token ( "\"" ++ toString splitAppl ga i ts ++ "\"") nullRange
-    else condPrint_Mixfix_text ga i ts
+    else condPrint_Mixfix pTok pId pTrm parens_fun 
+	      beside_fun fsep_fun comma_doc mpt_fun mdf ga i ts
+
+print_Literal_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
+print_Literal_text ga = print_Literal (printText0 ga) (printText0 ga) 
+    (printText0 ga) parens (<+>) fsep comma Nothing Nothing ga
 
 condParensAppl :: (TERM f -> Doc)
 	       -> (Doc -> Doc)    -- ^ a function that surrounds 

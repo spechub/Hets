@@ -13,9 +13,10 @@ latex printing data types of 'BASIC_SPEC'
 
 -}
 
-module CASL.LaTeX_AS_Basic where
-
-
+module CASL.LaTeX_AS_Basic 
+    ( hc_sty_sig_item_keyword
+    , optLatexQuMark
+    ) where
 
 import Common.Id
 import CASL.AS_Basic_CASL
@@ -23,7 +24,6 @@ import CASL.Print_AS_Basic
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
 import Common.GlobalAnnotations
-import CASL.LiteralFuns
 
 import Common.LaTeX_AS_Annotation
 
@@ -365,11 +365,7 @@ instance PrintLaTeX f => PrintLaTeX (TERM f) where
 	in if isQual then 
 	     print_prefix_appl_latex ga (parens_latex o') l
 	   else 
-	     if isLiteral ga o_id l then
-	       {-trace ("print_Application: "++show ap)-}
-	       (print_Literal_latex ga o_id l)
-	     else
-	       condPrint_Mixfix_latex ga o_id l
+	       print_Literal_latex ga o_id l
     printLatex0 ga (Sorted_term t s _) = 
 	condParensSorted_term parens_latex t (printLatex0 ga t) <> 
         colon_latex <\+> printLatex0 ga s
@@ -464,7 +460,6 @@ print_Literal_latex ga =
     print_Literal (printLatex0 ga) (printLatex0 ga) (printLatex0 ga) 
 		  parens_tab_latex
 		  (<\+>) fsep_latex comma_latex
-		  (casl_normal_latex ".") (casl_normal_latex "E")
                   (Just $ printDisplayToken_latex casl_axiom_latex)
                   (Just DF_LATEX) ga
 
