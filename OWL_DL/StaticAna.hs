@@ -152,47 +152,62 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 	let dvr = dataValuedRoles inSign
 	    ax = axioms inSign
 	    roleDomains = foldDomain dpId domains ax
-	    roleRanges = foldDRange dpId ranges roleDomains
+	    roleRangesAndDomains = foldDRange dpId ranges roleDomains
 	    accSign = if isFunc then
 		         inSign { dataValuedRoles = Set.insert dpId dvr,
 				  axioms = Set.insert (FuncRole dpId) 
-				                      roleRanges
+				                      roleRangesAndDomains
 				}
 			 else inSign { dataValuedRoles = Set.insert dpId dvr,
-				       axioms = roleRanges
+				       axioms = roleRangesAndDomains
 				     }
         in concatResult ( Result [] (Just (onto, accSign, [])))
 	          (anaDirective ga accSign onto rest)  
-    Ax (ObjectProperty ivId _ _ _ _ _ maybeFunc domains ranges) ->
+    Ax op@(ObjectProperty ivId _ _ _ m_inv isSmy maybeFunc domains ranges)->
         let ivr = indValuedRoles inSign
 	    ax = axioms inSign
 	    roleDomains = foldDomain ivId domains ax
-	    roleRanges = foldIRange ivId ranges roleDomains
+	    roleRangesAndDomains = foldIRange ivId ranges roleDomains
 	    accSign = case maybeFunc of
-		         Just Transitive -> 
-			     inSign { indValuedRoles = Set.insert ivId ivr,
-				      axioms = roleRanges
-				    }
-			 Just _ ->
+			 Just Functional ->
 			     inSign { indValuedRoles = Set.insert ivId ivr,
 				      axioms = Set.insert (FuncRole ivId) 
-				                           roleRanges
+				                           roleRangesAndDomains
 				    }
-			 _ -> inSign { indValuedRoles = Set.insert ivId ivr,
-				       axioms = roleRanges
+			 Just Functional_InverseFunctional -> 
+			     inSign { indValuedRoles = Set.insert ivId ivr,
+				      axioms = Set.insert (FuncRole ivId) 
+				                           roleRangesAndDomains
+				    }
+			 _ ->
+			     inSign { indValuedRoles = Set.insert ivId ivr,
+				       axioms = roleRangesAndDomains
 				     }
-        in concatResult ( Result [] (Just (onto, accSign, [])))
+	    namedSent = case maybeFunc of
+			Just Functional                   -> []
+			Just Functional_InverseFunctional -> []
+			_                                 ->
+			  case m_inv of
+			  Prelude.Nothing ->
+			      if not isSmy then 
+				 []
+				 else
+				 [NamedSen { senName = 
+					     "individual_valued_role",
+					     isAxiom = True,
+					     sentence = OWLAxiom op
+					   } ]
+			  _ -> 	[NamedSen { senName = 
+					    "individual_valued_role",
+					    isAxiom = True,
+					    sentence = OWLAxiom op
+					  } ]
+        in concatResult ( Result [] (Just (onto, accSign, namedSent)))
 	          (anaDirective ga accSign onto rest)  
     Ax (AnnotationProperty apid _) -> 
 	let accSign = inSign { annotationRoles = 
 			            Set.insert apid (annotationRoles inSign)
 			     }
-      {-
-	let namedSent = NamedSen { senName = "AnnotationProperty",	
-				   isAxiom = True,	
-				   sentence = OWLAxiom ap
-				 }
-      -}
         in  concatResult (Result [] (Just (onto, accSign, [])))
 	        (anaDirective ga accSign onto rest) 
     Ax op@(OntologyProperty _ _ ) ->
@@ -439,4 +454,3 @@ nullID = QN "" "" ""
 
 initResult :: Result a
 initResult = Result [] Prelude.Nothing
-
