@@ -19,6 +19,11 @@ module Common.ConvertLiteral
     , isGenList
     , isGenFloat
     , isGenFrac
+    , toNumber
+    , toFrac
+    , toFloat
+    , toString
+    , getListElems
     ) where
 
 import Common.Id
@@ -111,9 +116,9 @@ convertMixfixToken ga asAppl toTerm t =
 
 -- * test if term is a literal
 
-type Split a = a -> Maybe (Id, [a])
+type SplitM a = a -> Maybe (Id, [a])
 
-isGenLiteral :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenLiteral :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenLiteral splt ga i trm =
        or [ isGenNumber splt ga i trm 
           , isGenString splt ga i trm
@@ -122,7 +127,7 @@ isGenLiteral splt ga i trm =
           , isGenFrac   splt ga i trm
           ]
 
-isGenNumber :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenNumber :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenNumber splt ga i trs = 
     (digitTest i && null trs) 
     || (getLiteralType ga i == Number && all (sameId splt digitTest i) trs)
@@ -134,7 +139,7 @@ isGenNumber splt ga i trs =
                              where tstr = tokStr t
                          _           -> False
 
-isGenSignedNumber :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenSignedNumber :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenSignedNumber splt ga i trs = 
     case trs of 
     [hd] -> case splt hd of 
@@ -148,7 +153,7 @@ isSign i = case i of
                             in ts == "-" || ts == "+" 
            _             -> False
 
-isGenString :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenString :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenString splt ga i trs = case getLiteralType ga i of 
                     StringNull -> null trs
                     StringCons _ -> all (sameId splt stringTest i) trs
@@ -160,7 +165,7 @@ isGenString splt ga i trs = case getLiteralType ga i of
                                Id [t] [] _ -> take 1 (tokStr t) == "\'"
                                _           -> False
 
-isGenList :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenList :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenList splt ga i trms =
                    (case getLiteralType ga i of 
                      ListNull _ -> null trms
@@ -175,7 +180,7 @@ isGenList splt ga i trms =
                                _ -> False
               _ -> False
 
-isGenFloat :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenFloat :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenFloat splt ga i [l, r] =
     case getLiteralType ga i of 
     Floating -> case (splt l, splt r) of 
@@ -186,7 +191,7 @@ isGenFloat splt ga i [l, r] =
     _ -> False
 isGenFloat _ _ _ _ = False
 
-isGenFrac :: Split a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenFrac :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenFrac splt ga i [l, r] = 
     case getLiteralType ga i of 
     Fraction -> case (splt l, splt r) of 
@@ -196,8 +201,75 @@ isGenFrac splt ga i [l, r] =
     _ -> False
 isGenFrac _ _ _ _ = False
 
-sameId :: Split a -> (Id -> Bool) -> Id -> a -> Bool
+sameId :: SplitM a -> (Id -> Bool) -> Id -> a -> Bool
 sameId splt test i t = case splt t of
     Just (j, ts) -> if null ts then test j 
                     else j == i && all (sameId splt test i) ts
     _ -> False
+
+-- * convert an application back to a literal
+
+type Split a = a -> (Id, [a])
+
+joinToken :: Token -> Token -> Token
+joinToken (Token s1 _) (Token s2 _) = 
+    Token (s1 ++ s2) nullRange -- forget the range
+
+toSignedNumber :: Split a -> Id -> [a] -> Token
+toSignedNumber splt (Id [sign] [] _) [hd] = case splt hd of
+  (i, ts) -> joinToken sign $ toNumber splt i ts
+toSignedNumber _ _ _ = error "toSignedNumber2"
+
+toNumber :: Split a -> Id -> [a] -> Token
+toNumber splt i ts = if null ts then case i of 
+    Id [d] [] _ -> d
+    _ -> error "toNumber"
+    else foldr1 joinToken $ map (toNumber2 splt) ts
+
+toNumber2 :: Split a -> a -> Token
+toNumber2 splt t = case splt t of (j, args) -> toNumber splt j args
+
+toFrac :: Split a -> [a] -> Token
+toFrac splt [lt, rt] = 
+    joinToken (toNumber2 splt lt) $ 
+              joinToken (Token "." nullRange) $ 
+                      toNumber2 splt rt
+toFrac _ _ = error "toFrac"
+
+toFloat :: Split a -> GlobalAnnos -> [a] -> Token
+toFloat splt ga [lt, rt] = 
+    case (splt lt, splt rt) of 
+    ((bas_i, bas_t), (ex_i, ex_t)) -> 
+        let t1 = if isGenFrac (Just . splt) ga bas_i bas_t then
+                 toFrac splt bas_t else
+                 toNumber splt bas_i bas_t
+            t2 = if isGenSignedNumber (Just . splt) ga ex_i ex_t then
+                 toSignedNumber splt ex_i ex_t else
+                 toNumber splt ex_i ex_t
+        in joinToken t1 $ joinToken (Token "E" nullRange) t2 
+toFloat _ _ _ = error "toFloat2"
+
+toChar :: Token -> String
+toChar t = case tokStr t of
+           '\'' : rt -> init rt 
+           _ -> error "toChar"
+
+-- | the string without double quotes
+toString :: Split a -> GlobalAnnos -> Id -> [a] -> String
+toString splt ga i ts = if null ts then 
+    case getLiteralType ga i of 
+    StringNull -> ""
+    _ -> case i of 
+         Id [c] [] _ -> toChar c
+         _ -> error "toString" 
+    else concatMap (toString2 splt ga) ts
+
+toString2 :: Split a -> GlobalAnnos -> a -> String
+toString2 splt ga t = case splt t of (i, ts) -> toString splt ga i ts
+
+-- | get list elements
+getListElems :: Split a -> [a] -> [a]
+getListElems splt ts = case ts of  
+                     [] -> []
+                     [ft, rt] -> ft : getListElems splt (snd $ splt rt)
+                     _ -> error "getListElems"
