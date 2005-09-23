@@ -36,22 +36,21 @@ op __res__ : forall s : Type; t : Type . s * t -> s
 op fst : forall s : Type; t : Type . s * t -> s
      = \ ((var x : s), (var y : t)) .! (var x : s) as s
 %% trivial because its the strict function property
-. (fun __=__[s * t ->? _v33] : forall s : Type . s * s ->? Unit)
+. (__=__)
   ((\ ((var x : s), (var y : t)) . def (x res y),
     \ ((var x : s), (var y : t)) . (def y) und (def x)))
-. (fun __=__[_v73 * _v71 -> _v73] :
-   forall s : Type . s * s ->? Unit)
+. (__=__)
   (((op fst[_v73; _v71] : forall s : Type; t : Type . s * t -> s),
     (op __res__[_v73; _v71] : forall s : Type; t : Type . s * t -> s)))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : s * s
-. (fun __=__[s ->? Unit] : forall s : Type . s * s ->? Unit)
+. (__=__)
   ((\ (var x : s)
       . (pred eq[s] : forall s : Type . s * s)
         (((var x : s), (var x : s))),
     (op tt[s] : forall s : Type . Pred s)))
-. (fun __=__[s * s ->? s] : forall s : Type . s * s ->? Unit)
+. (__=__)
   ((\ ((var x : s), (var y : s))
       . (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
         (((var x : s),
@@ -102,13 +101,12 @@ var f : c --> d; g : c --> d
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun Y : (p --> p) --> p
 var f : p --> p; x : p
-. (fun __=__[p] : forall s : Type . s * s ->? Unit)
+. (__=__)
   (((var f : p --> p)
     ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)),
     (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)))
-. (fun __=>__ : Unit * Unit ->? Unit)
-  (((fun __=__[p] : forall s : Type . s * s ->? Unit)
-    (((var f : p --> p) (var x : p), (var x : p))),
+. (__=>__)
+  (((__=__) (((var f : p --> p) (var x : p), (var x : p))),
     (pred __<<=__[p] : forall c : Cpo . c * c)
     (((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p),
       (var x : p)))))
@@ -219,22 +217,25 @@ y2 : d
 %% Sentences -------------------------------------------------------------
 program def = \ x . () %(pe_def)%
 program tt = \ x . () %(pe_tt)%
-forall x : s; y : t . (x res y) = (x as s) %(def___res__)%
-forall x : s; y : t . (fst (x, y)) = (x as s) %(def_fst)%
-(\ (x, y) . def (x res y)) = (\ (x, y) . (def y) und (def x))
-fst = __res__ ()
-(\ x . eq (x, x)) = tt
-(\ (x, y) . x res (eq (x, y))) = (\ (x, y) . y res (eq (x, y)))
+forall x : s; y : t . x res y = (x as s) %(def___res__)%
+forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
+(__=__)
+((\ (x, y) . def (x res y), \ (x, y) . (def y) und (def x)))
+(__=__) ((fst, __res__))
+(__=__) ((\ x . (eq) ((x, x)), tt))
+(__=__)
+((\ (x, y) . (__res__) ((x, (eq) ((x, y)))),
+  \ (x, y) . (__res__) ((y, (eq) ((x, y))))))
 forall s : nat -> c
-  . (isChain (s)) =
+  . isChain (s) =
     (all (\ n : nat . s (n) <<= s (Suc (n))) as Unit) %(def_isChain)%
 forall x : c; s : nat -> c
-  . (isBound (x, s)) =
+  . isBound (x, s) =
     (all (\ n : nat . s (n) <<= x) as Unit) %(def_isBound)%
-(f (Y (f))) = (Y (f))
-((f (x)) = x) => ((Y (f)) <<= x)
+(__=__) ((f ((Y) f), (Y) f))
+((__=__) ((f (x), x))) => ((__<<=__) (((Y) f, x)))
 undefined =
-(Y (\ x' . x' as (c --> p) --> c --> p) as
+((Y) (\ x' . x' as (c --> p) --> c --> p) as
  c --> p) %(def_undefined)%
 free type bool
   ::= true : bool
@@ -277,7 +278,7 @@ free type bool
     
 *** Hint 60.9-60.24, untypable application (with result type: t)
  'snd (x : s, (var y : t))'
-*** Error 60.30, no typing for 'program snd(x : s, (var y : t)) : t = y'
+*** Error 60.30, no typing for 'program snd ((x : s, (var y : t))) : t = y'
 *** Error 65.18-65.30, ambiguous mixfix term
   def (__res__(x, y))
   def__(__res__(x, y))
@@ -297,7 +298,7 @@ free type bool
     
 *** Hint 87.9-87.15, untypable application (with result type: Pred Unit)
  'all (var p : Pred s)'
-*** Error 87.38, no typing for 'program all(var p : Pred s) : Pred Unit = eq (p, tt)'
+*** Error 87.38, no typing for 'program all (var p : Pred s) : Pred Unit = eq (p, tt)'
 *** Error 90.45, unexpected mixfix token: t1
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 93.58, unexpected mixfix token: And

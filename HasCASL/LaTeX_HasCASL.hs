@@ -59,6 +59,7 @@ latexBracket b = case b of
        Parens -> parens_latex
        Squares -> brackets_latex
        Braces -> braces_latex
+       NoBrackets -> id
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 latexKind :: GlobalAnnos -> Kind -> Doc

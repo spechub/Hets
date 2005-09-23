@@ -3,7 +3,7 @@ op f : ? t -> t
 op g : t -> (? t)
 op a, b : t
 op c, d : ? t
-. (fun __=__[t] : forall a : Type . a * a ->? Unit)
+. (__=__)
   (((op f : ? t -> t) (op a : t), (op g : t -> ? t) (op c : ? t)))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
@@ -41,4 +41,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(f (a)) = (g (c))
+(__=__) ((f (a), g (c)))

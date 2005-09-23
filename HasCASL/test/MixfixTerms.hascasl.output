@@ -1,26 +1,23 @@
--__(__! a)
-__+__(a, a)
-not__(__=__(a, a))
-not__(__+__(a, a))
-not__(__+__(s (a), a))
-not__(__<=__(s (n), 0))
-__<=__(def__(s (n)), 0)
-__=>__(not__ a, b)
-__=>__(not__(s (a)), s (b))
-__=__(def__ a, b)
-__*__(__@@__(1, 0), b (n div 1 @@ 0))
-__when__else__(__@@__(1, 0), __<__(n, __@@__(1, 0)),
-               __*__(__@@__(1, 0), b (n div 1 @@ 0)))
-__=__(m (m, n), __when__else__(m, __<=__(m, n), n))
-__<=>__(__<__(__div__(i, p), __div__(j, q)),
-        __<__(__*__(i, q), __*__(j, p)))
-__=__(__+__(f, -__ f), f)
-__=__(__+__(__+__(-__ f, -__ f), -__ f),
-      __+__(__+__(-__ f, -__ f), -__ f))
-__none__but__(f (a), a, f (a))
-__one__done(f (a), a)
-__-->__(f (a), f (a))
-__<=__(s (a), 0)
-not__(if__then__else__(if__then__else__(a, b, c), b, c))
-__when__else__(a, exists . true, b)
-__=__(__:::__(__*__(a, b), a (b)), __:::__(a, b))
+- a !
+a + a
+not a = a
+not a + a
+not s (a) + a
+not s (n) <= 0
+(def s (n)) <= 0
+not a => b
+not s (a) => s (b)
+def a = b
+10 * b (n div 10)
+10 when n < 10 else 10 * b (n div 10)
+m (m, n) = m when m <= n else n
+i div p < j div q <=> (i * q) < (j * p)
+f + - f = f
+- f + - f + - f = - f + - f + - f
+f (a) none a but f (a)
+f (a) one a done
+f (a) --> f (a)
+s (a) <= 0
+not if if a then b else c then b else c
+a when (exists . true) else b
+(a * b) ::: a (b) = a ::: b

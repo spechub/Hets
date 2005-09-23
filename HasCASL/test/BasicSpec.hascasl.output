@@ -12,8 +12,7 @@ pred eq : s * s
 type s < ? s
 forall x : t; y : t
 . %(..)%
-  (fun __=__[t] : forall a : Type . a * a ->? Unit)
-  (((var x : t), (var y : t)))
+  (__=__) (((var x : t), (var y : t)))
 type s
 op a : (? s)
 type Data1 ::= a | 
@@ -26,7 +25,7 @@ type Data3 ::= Cons31 (sel1 :? Data1; sel2 :? Data2) |
                Cons32 (sel2 :? Data2; sel1 :? Data1)
 type Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
                Cons42 (sel2 :? Data2; sel1 :? Data1)?
-. (fun true : Unit)
+. true
 forall x : s
 forall x : s
 %% Classes ---------------------------------------------------------------
@@ -122,7 +121,7 @@ x : s
 y : t
 %% Sentences -------------------------------------------------------------
 program tt = \ x . () %(pe_tt)%
-x = y
+(__=__) ((x, y))
 type Data1
   ::= a : Data1
       b : Data1
@@ -132,32 +131,32 @@ type Data2
       Cons22 : Data2 * Data1 -> Data2 (Data2; Data1)
       types Data1 %(ga_Data2)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . ((op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2))) =
+  . (op sel1 : Data3 ->? Data1) Cons31 (x_1_1, x_1_2) =
     x_1_1 %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . ((op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2))) =
+  . (op sel2 : Data3 ->? Data2) Cons31 (x_1_1, x_1_2) =
     x_1_2 %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . ((op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2))) =
+  . (op sel2 : Data3 ->? Data2) Cons32 (x_1_1, x_1_2) =
     x_1_1 %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . ((op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2))) =
+  . (op sel1 : Data3 ->? Data1) Cons32 (x_1_1, x_1_2) =
     x_1_2 %(ga_select_sel1)%
 type Data3
   ::= Cons31 : Data1 * Data2 -> Data3 (sel1 :? Data1; sel2 :? Data2)
       Cons32 : Data2 * Data1 -> Data3
         (sel2 :? Data2; sel1 :? Data1) %(ga_Data3)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . ((op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2))) =
+  . (op sel1 : Data4 ->? Data1) Cons41 (x_1_1, x_1_2) =
     x_1_1 %(ga_select_sel1)%
 forall x_1_1 : Data1; x_1_2 : Data2
-  . ((op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2))) =
+  . (op sel2 : Data4 ->? Data2) Cons41 (x_1_1, x_1_2) =
     x_1_2 %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . ((op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2))) =
+  . (op sel2 : Data4 ->? Data2) Cons42 (x_1_1, x_1_2) =
     x_1_1 %(ga_select_sel2)%
 forall x_1_1 : Data2; x_1_2 : Data1
-  . ((op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2))) =
+  . (op sel1 : Data4 ->? Data1) Cons42 (x_1_1, x_1_2) =
     x_1_2 %(ga_select_sel1)%
 type Data4
   ::= Cons41 : Data1 * Data2 ->? Data4 (sel1 :? Data1; sel2 :? Data2)
@@ -182,21 +181,21 @@ true
     
 *** Hint 21.1-21.16, untypable application (with result type: s)
  'fst (x : s, (var y : t))'
-*** Error 21.22, no typing for 'program fst(x : s, (var y : t)) : s = x'
+*** Error 21.22, no typing for 'program fst ((x : s, (var y : t))) : s = x'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _v5 ->? t
   known types:
     
 *** Hint 22.1-22.16, untypable application (with result type: t)
  'snd (x : s, (var y : t))'
-*** Error 22.22, no typing for 'program snd(x : s, (var y : t)) : t = y'
+*** Error 22.22, no typing for 'program snd ((x : s, (var y : t))) : t = y'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _v6 ->? ? Unit
   known types:
     
 *** Hint 28.9-28.15, untypable application (with result type: ? Unit)
  'all (var p : ? s)'
-*** Error 28.33, no typing for 'program all(var p : ? s) : ? Unit = eq (p, tt)'
+*** Error 28.33, no typing for 'program all (var p : ? s) : ? Unit = eq (p, tt)'
 *** Error 30.40, unexpected mixfix token: t1
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 32.45, unexpected mixfix token: And

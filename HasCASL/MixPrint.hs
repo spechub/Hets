@@ -4,7 +4,7 @@ Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
-Stability   :  unstable
+Stability   :  experimental
 Portability :  portable 
 
 conversion for mixfix printing 
@@ -15,6 +15,7 @@ module HasCASL.MixPrint where
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Id
+import Common.ConvertLiteral
 import Common.Earley
 import qualified Common.Lib.Map as Map
 
@@ -36,6 +37,8 @@ data ConvFuns a = ConvFuns
     , juxtapose :: [a] -> a
     , convTok :: Token -> a
     , convComp :: [Id] -> a
+    , commarize :: [a] -> a
+    , convertTerm :: GlobalAnnos -> a -> a
     , convId :: Id -> a
     }
 
@@ -63,33 +66,52 @@ checkMyArg side ga (op, opPrec) (arg, argPrec) weight =
                         _ -> side == ALeft
             else True
 
-getIdBoolPrec :: PrecMap -> Id -> Bool -> Int
-getIdBoolPrec (pm, r, m) i b =  if i == applId then m + 1
+getSimpleIdPrec :: PrecMap -> Id -> Int
+getSimpleIdPrec (pm, _, m) i =  if i == applId then m + 1
     else Map.findWithDefault
-    (if begPlace i || endPlace i then if b then r else m
+    (if begPlace i || endPlace i then m
      else m + 2) i pm
 
-applWeight :: PrecMap -> Weight
-applWeight (_, _, m) = mkTrivWeight applId (m + 1)
+mkWeight :: Int -> Weight
+mkWeight m = mkTrivWeight applId (m + 1)
 
--- the Bool indicates if Id is a predicate
 toMixWeight :: GlobalAnnos 
-         -> (a -> Maybe (Id, Bool, [a]))
+         -> SplitM a
          -> ConvFuns a
          -> a -> (a, Maybe Weight)
 toMixWeight ga splt convFuns trm =
     case splt trm of 
-    Nothing -> (trm, Nothing)
-    Just (i@(Id ts cs _), b, aas) -> let
+    Nothing -> (convertTerm convFuns ga trm, Nothing)
+    Just (i@(Id ts cs _), aas) -> let 
         newGa = addBuiltins ga
         pa = prec_annos newGa
-        precs = mkPrecIntMap pa
-        p = getIdBoolPrec precs i b
+        precs@(_, _, m) = mkPrecIntMap pa
+        doSplit = maybe (error "doSplit") id . splt
+        dw = Just $ mkWeight (m + 2)
+        mk t = (convTok convFuns t, dw)
+      in if isGenNumber splt ga i aas then 
+             mk $ toNumber doSplit i aas 
+         else if isGenFrac splt ga i aas then
+             mk $ toFrac doSplit aas
+         else if isGenFloat splt ga i aas then 
+             mk $ toFloat doSplit ga aas
+         else if isGenString splt ga i aas then 
+             mk $ toString doSplit ga i aas
+         else if isGenList splt ga i aas then
+             let mkList op args cl = 
+                     juxtapose convFuns 
+                         [ convId convFuns op
+                         , commarize convFuns $ 
+                                   map (convertTerm convFuns ga) args
+                         , convId convFuns cl ]
+             in (toMixfixList mkList doSplit ga i aas, dw)
+      else let
+        p = getSimpleIdPrec precs i
         newArgs = map (toMixWeight ga splt convFuns) aas
         in if placeCount i /= length aas then
            (juxtapose convFuns [convId convFuns i, 
                       parenthesize convFuns $ map fst newArgs],
-            Just $ applWeight precs)
+            Just $ mkWeight (m + 1)) 
            else let 
              parArgs = zipWith ( \ (arg, itm) num ->
                 let pArg = parenthesize convFuns [arg]
@@ -121,7 +143,7 @@ toMixWeight ga splt convFuns trm =
                   _ -> i
                   else i
              fts = fst $ splitMixToken ts 
-             (rArgs, fArgs) = mapAccumR ( \ ac t -> 
+             (rArgs, fArgs) = mapAccumL ( \ ac t -> 
                if isPlace t then case ac of 
                  hd : tl -> (tl, hd)
                  _ -> error "addPlainArg"
@@ -134,7 +156,9 @@ toMixWeight ga splt convFuns trm =
 hsConvFuns :: ConvFuns Term
 hsConvFuns = ConvFuns
     { parenthesize = parenthesizeTerms
+    , commarize = \ ts ->  BracketTerm NoBrackets ts nullRange
     , juxtapose = MixfixTerm
+    , convertTerm = convTerm
     , convTok = TermToken
     , convComp = \ is -> BracketTerm Squares (map ideToTerm is) nullRange
     , convId = ideToTerm }
@@ -148,14 +172,14 @@ parenthesizeTerms ts = case ts of
     trm@(QualOp _ _ _ _) : [] -> trm
     _ -> BracketTerm Parens ts nullRange
 
-splitTerm :: Term -> Maybe (Id, Bool, [Term])
+splitTerm :: Term -> Maybe (Id, [Term])
 splitTerm trm = case trm of
-  ResolvedMixTerm i ts _ -> Just(i, False, ts)
+  ResolvedMixTerm i ts _ -> Just(i, ts)
   ApplTerm (ResolvedMixTerm i [] _) t2 _ -> 
       case getTupleArgs t2 of
-      Just ts -> Just(i, False, ts)
-      _ -> Just(i, False, [t2]) 
-  ApplTerm t1 t2 _ -> Just(applId, False, [t1, t2])
+      Just ts -> Just(i, ts)
+      _ -> Just(i, [t2])
+  ApplTerm t1 t2 _ -> Just(applId, [t1, t2])
   _ -> Nothing
 
 convApplTerm :: GlobalAnnos -> Term -> Term
@@ -166,15 +190,20 @@ convProgEq ga (ProgEq p t q) = ProgEq (convTerm ga p) (convTerm ga t) q
 
 convTerm :: GlobalAnnos -> Term -> Term
 convTerm ga trm = case trm of
-    ResolvedMixTerm n ts ps -> 
-        ResolvedMixTerm n (map (convTerm ga) ts) ps
-    ApplTerm t1 t2 ps -> 
-        convApplTerm ga $ ApplTerm (convTerm ga t1) (convTerm ga t2) ps
+    QualOp _ (InstOpId i _ _) _ ps -> if elem i $ map fst bList then 
+        ResolvedMixTerm i [] ps else trm
+    ResolvedMixTerm i [] _ -> if isGenString splitTerm ga i [] then 
+          TermToken $ toString (fromJust . splitTerm) ga i [] else trm
+    ResolvedMixTerm _ _ _ -> convApplTerm ga trm
+    ApplTerm _ _ _ -> convApplTerm ga trm
     TupleTerm ts ps -> TupleTerm (map (convTerm ga) ts) ps
-    TypedTerm t q typ ps -> let nt = convTerm ga t in
+    TypedTerm t q ty ps -> let nt = convTerm ga t in
            case q of 
            Inferred -> nt 
-           _ -> TypedTerm nt q typ ps
+           _ -> case nt of 
+               TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
+               QualVar (VarDecl _ oty _ _) | oty == ty -> nt 
+               _ -> TypedTerm nt q ty ps
     QuantifiedTerm q vs t ps -> QuantifiedTerm q vs (convTerm ga t) ps
     LambdaTerm ps q t qs -> 
         LambdaTerm (map (convTerm ga) ps) q (convTerm ga t) qs
@@ -187,5 +216,4 @@ convTerm ga trm = case trm of
     TermToken _ -> trm
     MixTypeTerm _ _ _ -> trm
     QualVar _ -> trm
-    QualOp _ _ _ _ -> trm
 

@@ -11,7 +11,7 @@ op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
          . (var f : a ->? a) ((var f : a ->? a) (var x : a))
        as (a ->? b) -> a ->? b
 var f : a ->? b; x : a
-. (fun __=__[b] : forall a : Type . a * a ->? Unit)
+. (__=__)
   ((((op twice[a; b] :
       forall a : Type; b < a : Type . (a ->? b) -> a ->? b)
      (var f : a ->? b))
@@ -70,12 +70,12 @@ f : a ->? b
 x : a
 %% Sentences -------------------------------------------------------------
 forall f : a ->? b; x : a
-  . ((twice2 (f)) x) = (f (f (x)) as b) %(def_twice2)%
+  . twice2 (f) x = (f (f (x)) as b) %(def_twice2)%
 twice3 =
 (\ (f, x) . f (f (x)) as (a ->? b) * a ->? b) %(def_twice3)%
 twice =
 (\ (f)(x) . f (f (x)) as (a ->? b) -> a ->? b) %(def_twice)%
-((twice (f)) x) = (f (f (x)))
+(__=__) ((((twice) f) x, f (f (x))))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'a'
 *** Hint 9.7, not a kind 'a ->? b'

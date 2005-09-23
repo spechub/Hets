@@ -10,24 +10,24 @@ op fmap : (a -> b) -> f a -> f b
 op empty : List a
 type Set : Functor
 op emptySet : Set a
-. (fun __=__[Set _v12] : forall a : Type . a * a ->? Unit)
+. (__=__)
   (((op fail[_v12; Set] : forall a : Type; m : Monad . m a),
     (op emptySet[_v12] : forall a : Type . Set a)))
-. (fun __=__[List _v27] : forall a : Type . a * a ->? Unit)
+. (__=__)
   (((op fail[_v27; List] : forall a : Type; m : Monad . m a),
     (op empty[_v27] : forall a : Type . List a)))
 op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
 var x : m a
-. (fun __=__[List a -> List b] : forall a : Type . a * a ->? Unit)
+. (__=__)
   (((op fmap[a; b; List] :
      forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
     (var g : a -> b),
     (op map[a; b] :
      forall a : Type; b : Type . (a -> b) -> List a -> List b)
     (var g : a -> b)))
-. (fun __=__[m b] : forall a : Type . a * a ->? Unit)
+. (__=__)
   ((((op fmap[a; b; m] :
       forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
      (var g : a -> b))
@@ -92,10 +92,10 @@ true : Unit %(fun)%
 g : a -> b
 x : m a
 %% Sentences -------------------------------------------------------------
-fail = emptySet
-fail = empty
-(fmap (g)) = (map (g))
-((fmap (g)) x) = (x bind (\ y .! return (g (y))))
+(__=__) ((fail, emptySet))
+(__=__) ((fail, ""))
+(__=__) (((fmap) g, (map) g))
+(__=__) ((((fmap) g) x, (__bind__) ((x, \ y .! (return) (g (y))))))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.5, is type variable 'a'
 *** Hint 7.8, is type variable 'b'
@@ -103,7 +103,7 @@ fail = empty
 *** Hint 15.5, is type variable 'f'
 *** Hint 25.8, constrain 'Set : Monad' is unprovable
   known kinds are: [ Functor ]
-*** Error 25.8, in term'(fun __=__[Set _v12] : forall a : Type . a * a ->? Unit)
+*** Error 25.8, in term'(__=__)
 (((op fail[_v12; Set] : forall a : Type; m : Monad . m a),
   (op emptySet[_v12] : forall a : Type . Set a)))' of type 'Unit'
  unresolved constraints '{ Set : Monad }'

@@ -1,6 +1,6 @@
 type s
 op f : s --> s
-. (fun __=__[s --> s] : forall a : Type . a * a ->? Unit)
+. (__=__)
   (((op f : s --> s), \ (var x : s) . (var x : s) as s --> s))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
@@ -33,4 +33,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-f = (\ x . x as s --> s)
+(__=__) ((f, \ x . x as s --> s))

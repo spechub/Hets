@@ -5,7 +5,7 @@ program (op snd : s * t -> t) (((var x : s), (var y : t))) =
 program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
 program (op snd : s * t -> t) (((var x : s), (var y : t))) =
-            (var y : t) : t
+            (var y : t)
 program (op snd : s * t -> t) (((var x : s), (var y : t))) =
             (var y : t)
 program (op snd : s * t -> t) (((var x : s), (var y : t))) =
@@ -58,7 +58,7 @@ y : t %(op)%
 %% Sentences -------------------------------------------------------------
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
-program snd ((var x : s), (var y : t)) = (var y : t) : t %(pe_snd)%
+program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%

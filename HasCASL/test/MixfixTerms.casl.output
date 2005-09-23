@@ -1,24 +1,15 @@
-__+__(__+__(__+__(__+__(__*__(4, __^__(x, 4)),
-                        __*__(3, __^__(x, 3))),
-                  __*__(2, __^__(x, 2))),
-            __*__(1, __^__(x, 1))),
-      __*__(0, __^__(x, 0)))
-__::::__('a',
-         __::::__('b',
-                  __::::__('\"',
-                           __::::__('\'', __::::__('\n', __::::__('\\', empty))))))
-__@@__(1, 2)
-__:::__(__@@__(1, 2), 1)
-__E__(1, 1)
-__E__(__:::__(1, 0), 2)
-__E__(__:::__(1, 0), -(__@@__(2, 3)))
-__+__(__@@__(1, 2),
-      __*__(__@@__(3, 4),
-            __::::__('a', __::::__('f', __::::__('a', empty)))))
-__+__(empty, empty)
+4 * x ^ 4 + 3 * x ^ 3 + 2 * x ^ 2 + 1 * x ^ 1 + 0 * x ^ 0
+"ab\"\'\n\\"
+12
+12.1
+1E1
+1.0E2
+1.0E-23
+12 + 34 * "afa"
+"" + ""
 (op x : a) ((a, b))
 a
-__+__(a, b)
+a + b
 a (: (s + b) : s)
 parse error at 14.12:
 unexpected "as" or "a"
@@ -29,11 +20,11 @@ unexpected "as" or "a"
 expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
 
 []
-+__ a
++ a
 a + b
-__when__else__(a, __<__(a, b), b)
-__when__else__(a, (pred a : b), b)
-{____}(a, b)
+a when a < b else b
+a when (pred a : b) else b
+{ a b }
 *** Error 22.1-22.5, ambiguous mixfix term
   a b p
   ____p(a, b)
@@ -47,14 +38,14 @@ __when__else__(a, (pred a : b), b)
 *** Error 25.1-25.11, ambiguous mixfix term
   B (__::__(a (__::__(c, __::__(d, []))), __::__(b, [])))
   B[a[c,d],b]
-__::__(a, __::__(__::__(c, __::__(d, [])), __::__(b, [])))
+[ a, [ c, d ], b ]
 *** Error 27.1-27.10, ambiguous mixfix term
   __::__(a (__::__(c, __::__(d, []))), __::__(b, []))
   __::__(a[c,d], __::__(b, []))
 a B [a[c,d], b] b
-while__do__od(while__do__od(a, b), c)
-while__do__od(while__do__od(a, b), while__do__od(c, d))
-{____}(a, {____}(b, c))
+while while a do b od do c od
+while while a do b od do while c do d od od
+{ a { b c } }
 *** Error 32.1-32.10, ambiguous mixfix term
   __::__(a, __::__(A__(0 B), []))
   __::__(a, __::__(A 0 B, []))
@@ -69,14 +60,13 @@ while__do__od(while__do__od(a, b), while__do__od(c, d))
 *** Error 35.1-35.7, ambiguous mixfix term
   -__(A__(0 B))
   -__(A 0 B)
-__!(__!(__! a))
-__-->__(__-->__(__{__}--__-->{__}__(Pl7, nicht_wenden,
-                                    folge_dem_Gang, nicht_wenden, Pl3),
-                RS3),
-        RS6)
-__*__(__+__(a, b), c)
-__*__(a, __*__(b, c))
-__*__(c, __+__(a, b))
-__*__(__*__(a, b), c)
-__*__(s (n), c)
-__!(- a)
+a ! ! !
+Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 -->
+RS3
+--> RS6
+(a + b) * c
+a * (b * c)
+c * (a + b)
+a * b * c
+s (n) * c
+(- a) !

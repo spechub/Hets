@@ -239,7 +239,8 @@ instance Show TypeQual where
 data LetBrand = Let | Where | Program deriving (Show, Eq, Ord)
 
 -- | the possible kinds of brackets (that should match when parsed) 
-data BracketKind = Parens | Squares | Braces deriving (Show, Eq, Ord)
+data BracketKind = Parens | Squares | Braces | NoBrackets 
+                   deriving (Show, Eq, Ord)
 
 -- | the brackets as strings for printing
 getBrackets :: BracketKind -> (String, String)
@@ -247,6 +248,7 @@ getBrackets b = case b of
                        Parens -> ("(", ")")
                        Squares -> ("[", "]")
                        Braces -> ("{", "}")
+                       NoBrackets -> ("", "") -- for printing only
 
 {- | The possible terms and patterns. Formulas are also kept as terms. Local variables and constants are kept separatetly. The variant 'ResolvedMixTerm' is an intermediate representation for type checking only. -}
 data Term = QualVar VarDecl
