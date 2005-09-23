@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -112,7 +112,7 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in las' $+$ (hang i' 0 la) $$ ras'
 
 instance PrettyPrint s => PrettyPrint (Named s) where
-    printText0 ga (NamedSen label isAx isDef s) =
+    printText0 ga (NamedSen label isAx _isDef s) =
 	printText0 ga s <> (if null label then empty else
 	   space <> printText0 ga (Label [label] nullRange))
         <> if isAx then empty else
