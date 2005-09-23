@@ -12,6 +12,8 @@ generically converting literals
 
 module Common.ConvertLiteral 
     (convertMixfixToken
+    , AsAppl
+    , SplitM
     , isGenNumber
     , isGenString
     , isGenList
@@ -198,34 +200,32 @@ sameId splt test i t = case splt t of
 
 -- * convert an application back to a literal
 
-type Split a = a -> (Id, [a])
-
 joinToken :: Token -> Token -> Token
 joinToken (Token s1 _) (Token s2 _) = 
     Token (s1 ++ s2) nullRange -- forget the range
 
-toSignedNumber :: Split a -> Id -> [a] -> Token
+toSignedNumber :: (a -> (Id, [a])) -> Id -> [a] -> Token
 toSignedNumber splt (Id [sign] [] _) [hd] = case splt hd of
   (i, ts) -> joinToken sign $ toNumber splt i ts
 toSignedNumber _ _ _ = error "toSignedNumber2"
 
-toNumber :: Split a -> Id -> [a] -> Token
+toNumber :: (a -> (Id, [a])) -> Id -> [a] -> Token
 toNumber splt i ts = if null ts then case i of 
     Id [d] [] _ -> d
     _ -> error "toNumber"
     else foldr1 joinToken $ map (toNumber2 splt) ts
 
-toNumber2 :: Split a -> a -> Token
+toNumber2 :: (a -> (Id, [a])) -> a -> Token
 toNumber2 splt t = case splt t of (j, args) -> toNumber splt j args
 
-toFrac :: Split a -> [a] -> Token
+toFrac :: (a -> (Id, [a])) -> [a] -> Token
 toFrac splt [lt, rt] = 
     joinToken (toNumber2 splt lt) $ 
               joinToken (Token "." nullRange) $ 
                       toNumber2 splt rt
 toFrac _ _ = error "toFrac"
 
-toFloat :: Split a -> GlobalAnnos -> [a] -> Token
+toFloat :: (a -> (Id, [a])) -> GlobalAnnos -> [a] -> Token
 toFloat splt ga [lt, rt] = 
     case (splt lt, splt rt) of 
     ((bas_i, bas_t), (ex_i, ex_t)) -> 
@@ -243,9 +243,13 @@ toChar t = case tokStr t of
            '\'' : rt -> init rt 
            _ -> error "toChar"
 
+toString :: (a -> (Id, [a])) -> GlobalAnnos -> Id -> [a] -> Token
+toString splt ga i ts =  
+  Token ( "\"" ++ toString1 splt ga i ts ++ "\"") nullRange
+
 -- | the string without double quotes
-toString :: Split a -> GlobalAnnos -> Id -> [a] -> String
-toString splt ga i ts = if null ts then 
+toString1 :: (a -> (Id, [a])) -> GlobalAnnos -> Id -> [a] -> String
+toString1 splt ga i ts = if null ts then 
     case getLiteralType ga i of 
     StringNull -> ""
     _ -> case i of 
@@ -253,11 +257,11 @@ toString splt ga i ts = if null ts then
          _ -> error "toString" 
     else concatMap (toString2 splt ga) ts
 
-toString2 :: Split a -> GlobalAnnos -> a -> String
-toString2 splt ga t = case splt t of (i, ts) -> toString splt ga i ts
+toString2 :: (a -> (Id, [a])) -> GlobalAnnos -> a -> String
+toString2 splt ga t = case splt t of (i, ts) -> toString1 splt ga i ts
 
 -- | get list elements
-getListElems :: Split a -> [a] -> [a]
+getListElems :: (a -> (Id, [a])) -> [a] -> [a]
 getListElems splt ts = case ts of  
                      [] -> []
                      [ft, rt] -> ft : getListElems splt (snd $ splt rt)

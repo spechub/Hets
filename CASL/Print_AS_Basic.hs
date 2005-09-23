@@ -544,7 +544,7 @@ print_Literal pTok pId pTrm parens_fun
     else if isFloat ga i ts then
          pTok $ toFloat splitAppl ga ts 
     else if isString ga i ts then 
-        pTok $ Token ( "\"" ++ toString splitAppl ga i ts ++ "\"") nullRange
+        pTok $ toString splitAppl ga i ts
     else condPrint_Mixfix pTok pId pTrm parens_fun 
 	      beside_fun fsep_fun comma_doc mpt_fun mdf ga i ts
 
