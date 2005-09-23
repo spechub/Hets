@@ -527,16 +527,10 @@ print_Literal pTok pId pTrm parens_fun
 	      beside_fun fsep_fun comma_doc mpt_fun mdf
 	      ga i ts =  
     if isList ga i ts then
-       let list_body = fsep_fun $ punctuate comma_doc $ map pTrm 
-                       $ getListElems splitAppl ts 
-	   (openL, closeL, comps) = getListBrackets $ 
-                case getLiteralType ga i of
-		ListNull b -> b
-		ListCons b _ -> b
-		_ -> error "print_Literal_text"
-        in hcat(map pTok openL) <+> list_body 
-			     <+> hcat(map pTok closeL)
-			     <> pId (Id [] comps nullRange)
+       let mkList op l cl = pId op <+>
+               fsep_fun (punctuate comma_doc $ map pTrm l)
+               <+> pId cl
+       in toMixfixList mkList splitAppl ga i ts 
     else if isNumber ga i ts then
          pTok $ toNumber splitAppl i ts
     else if isFrac ga i ts then
