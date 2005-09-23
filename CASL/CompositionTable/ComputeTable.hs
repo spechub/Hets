@@ -16,6 +16,7 @@ module CASL.CompositionTable.ComputeTable where
 import CASL.CompositionTable.CompositionTable
 import CASL.AS_Basic_CASL
 import CASL.Sign
+import Data.Maybe
 import Common.AS_Annotation
 import Common.Id
 import Common.PrettyPrint
@@ -27,7 +28,7 @@ import qualified Common.Lib.Rel as Rel
 -- | given a specfication (name and theory), compute the composition table
 computeCompTable :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)]) 
                        -> Result Table
-computeCompTable spName (sig,sens) = do
+computeCompTable spName (sig,nsens) = do
   {- look for something isomorphic to
        sorts BaseRel < Rel
        ops 
@@ -49,12 +50,9 @@ computeCompTable spName (sig,sens) = do
                    ++ showPretty ((emptySign ()::Sign () ()) 
 				     { sortSet = sortSet sig,
 				       sortRel = sortRel sig }) ""
-      errCmps ops = errmsg 
-                   ++ "\nneed exactly one operation __cmps__: BaseRel * BaseRel -> Rel, but found:\n"
-                   ++ showPretty ops "" 
-      errCmpl ops = errmsg 
-                   ++ "\nneed exactly one operation  compl__: Rel -> Rel, but found:\n"
-                   ++ showPretty ops "" 
+      errOps ops prof = 
+        errmsg ++ "\nneed exactly one operation "++prof++", but found:\n"
+               ++ showPretty ops "" 
   -- look for sorts
   (baseRel,rel) <-
      case map Set.toList $ Rel.topSort $ sortRel sig of
@@ -68,17 +66,19 @@ computeCompTable spName (sig,sens) = do
       zerot  = OpType {opKind = Total, opArgs = [], opRes = rel}
       invt   = OpType {opKind = Total, opArgs = [baseRel], opRes = baseRel}
       cmpt   = OpType {opKind = Total, opArgs = [baseRel,baseRel], 
-		       opRes = baseRel}
+		       opRes = rel}
       complt = OpType {opKind = Total, opArgs = [rel], opRes = rel}
       cupt   = OpType {opKind = Total, opArgs = [rel,rel], opRes = rel}
   -- look for operation symbols
   let mlookup t = map snd $ filter (\(t',_) -> t==t') opTypes
-  cmps <- case mlookup cmpt of
-              [op] -> return op
-              ops -> fail (errCmps ops)
-  cmpl <- case mlookup complt of
-              [op] -> return op
-              ops -> fail (errCmpl ops)
+  let oplookup typ msg = 
+        case mlookup typ of
+               [op] -> return op
+               ops -> fail (errOps ops msg )
+  cmps <- oplookup cmpt "__cmps__: BaseRel * BaseRel -> Rel"
+  cmpl <- oplookup complt "compl__: Rel -> Rel"
+  inv <- oplookup invt "inv__ : BaseRel -> BaseRel"
+  cup <- oplookup cupt "__cup__ : Rel * Rel -> Rel"
   {- look for 
      forall x:BaseRel
      . x cmps id = x
@@ -86,10 +86,38 @@ computeCompTable spName (sig,sens) = do
      . inv(id) = id  -}
   -- let idaxioms idt = 
   --    [Quantification Universal [Var_decl [x] baseRel nullRange ....
-  let ids = mlookup idt 
+  let ids = mlookup idt
+  let sens = map (stripQuant . sentence) nsens
+  let cmpTab sen = case sen of
+       Strong_equation (Application (Qual_op_name c _ _) 
+                        [Application (Qual_op_name arg1 _ _) [] _,
+                         Application (Qual_op_name arg2 _ _) [] _] _) 
+                       res _ ->
+         if c==cmps 
+           then 
+            Just (Cmptabentry 
+                   (Cmptabentry_Attrs { 
+                      cmptabentryArgBaserel1 = showPretty arg1 "",
+                      cmptabentryArgBaserel2 = showPretty arg2 "" })
+                   (extractRel cup res) )
+           else Nothing
+       _ -> Nothing
   let attrs = Table_Attrs {tableName = name,
-                           tableIdentity = ""}
-      compTable = Compositiontable []
+                           tableIdentity = "id"}
+      compTable = Compositiontable (mapMaybe cmpTab sens) 
       convTable = Conversetable []
       models = Models []
   return $ Table attrs compTable convTable models
+
+stripQuant :: FORMULA f -> FORMULA f
+stripQuant (Quantification _ _ f _) = stripQuant f
+stripQuant f = f
+
+extractRel :: Id -> TERM f -> [Baserel]
+extractRel cup (Application (Qual_op_name cup' _ _) [arg1,arg2] _) =
+  if cup==cup' 
+    then extractRel cup arg1 ++ extractRel cup arg2
+    else []
+extractRel _ (Application (Qual_op_name b _ _) [] _) =
+  [Baserel (showPretty b "")]
+extractRel _ _ = []
