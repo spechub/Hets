@@ -603,28 +603,28 @@ newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
 
 extAxName :: Named Sentence -> VName
 extAxName s = case s of 
-  NamedSen n True _ -> n
+  NamedSen n True _ _ -> n
   _ -> error "Haskell2IsabelleHOLCF, extAxName"
 
 extAxType :: Named Sentence -> Typ
 extAxType s = case s of 
-  NamedSen _ True (ConstDef (IsaEq (Const _ t) _)) -> t
+  NamedSen _ True _ (ConstDef (IsaEq (Const _ t) _)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extAxType"
 
 extLeftH :: Named Sentence -> Term
 extLeftH s = case s of 
-  NamedSen _ _ (ConstDef (IsaEq t _)) -> t
+  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extLeftH"
 
 extRightH :: Named Sentence -> Term
 extRightH s = case s of 
-  NamedSen _ _ (ConstDef (IsaEq _ t)) -> t
+  NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
   _ -> error "Haskell2IsabelleHOLCF, extRightH"
 
 {- left comp is the def name, right comp are the constants in the def  -} 
 sentAna :: Named Sentence -> (Term, [Term])
 sentAna s = case s of
-  NamedSen _ True (ConstDef (IsaEq l r)) -> (l, constFilter r)
+  NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
 
 ------------------ checking for mutually recursive function defs --------------------------------------
 
@@ -647,8 +647,8 @@ addFixPoints xs = concat $ map fixPoint xs
 fixPoint :: [Named Sentence] -> [Named Sentence]
 fixPoint xs = case xs of
   [a] -> case a of 
-    NamedSen n w (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           
-       then [NamedSen n w $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
+    NamedSen n w d (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           
+       then [NamedSen n w d $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
        else xs
   a:as -> 
      let jn = joinNames (map extAxName xs)
@@ -659,10 +659,10 @@ fixPoint xs = case xs of
          jr = Tuplex ys IsCont -- Tuplex (map extRightH xs) IsCont - Tuplex ys IsCont
          jl = Const jn jt
          js = Fix $ IsaSign.Abs jv jt jr IsCont 
-         mainfd = NamedSen jn True (ConstDef (IsaEq jl js)) 
+         mainfd = NamedSen jn True False (ConstDef (IsaEq jl js)) 
          nks = [(extAxName x, (extAxType x, n)) | (x, n) <- listEnum xs]
          sF = elaborate (length xs) jn jt nks 
-         origds = [NamedSen (extAxName x) True $ ConstDef (IsaEq (extLeftH x) (sF (extRightH x))) | x <- xs] 
+         origds = [NamedSen (extAxName x) True False $ ConstDef (IsaEq (extLeftH x) (sF (extRightH x))) | x <- xs] 
      in mainfd : origds   
   [] -> []
 

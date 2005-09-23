@@ -112,7 +112,7 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in las' $+$ (hang i' 0 la) $$ ras'
 
 instance PrettyPrint s => PrettyPrint (Named s) where
-    printText0 ga (NamedSen label isAx s) =
+    printText0 ga (NamedSen label isAx isDef s) =
 	printText0 ga s <> (if null label then empty else
 	   space <> printText0 ga (Label [label] nullRange))
         <> if isAx then empty else

@@ -108,8 +108,8 @@ transSentence sign a (TiPropDecorate.Dec d) = case d of
 
 makeSentence :: String -> ConstTab -> IsaType -> VName -> [PrPat] -> IsaTerm -> Named Sentence
 makeSentence d cs y df ps tx = 
-  if tx == xDummy then NamedSen d True $ ConstDef $ IsaEq xDummy $ xDummy 
-  else NamedSen d True $ ConstDef $
+  if tx == xDummy then NamedSen d True False $ ConstDef $ IsaEq xDummy $ xDummy 
+  else NamedSen d True False $ ConstDef $
        IsaEq (Const df y) $ termMAbs IsCont (map (transPat cs) ps) tx
 
 --------------------------- translation of sentences --------------------------------

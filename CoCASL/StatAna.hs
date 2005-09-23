@@ -249,7 +249,7 @@ comakeDisjToSort a s = do
         p = posOfId s
     (c,t) <- i 
     return $ NamedSen ("ga_disjoint_" ++ showId c "_sort_" 
-                       ++ showId s "") True $
+                       ++ showId s "") True False $
         mkForall v (Negation (Membership t s p) p) p
 
 comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS]) 
@@ -260,7 +260,7 @@ comakeInjective a = do
     (c,t1) <- i1
     (_,t2) <- i2
     let p = posOfId c
-    return $ NamedSen ("ga_injective_" ++ showId c "") True $
+    return $ NamedSen ("ga_injective_" ++ showId c "") True False $
        mkForall (v1 ++ v2) 
        (Equivalence (Strong_equation t1 t2 p)
         (let ces = zipWith ( \ w1 w2 -> Strong_equation 
@@ -282,7 +282,7 @@ comakeDisj a1 a2 = do
     (c2,t2) <- i2
     let p = posOfId c1 `appRange` posOfId c2
     return $ NamedSen ("ga_disjoint_" ++ showId c1 "_" 
-                       ++ showId c2 "") True 
+                       ++ showId c2 "") True False
            $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 -- | return the constructor and the set of total selectors 
@@ -344,7 +344,7 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
     addSentences [NamedSen 
                   ("ga_cogenerated_" ++ 
                    showSepList (showString "_") showId sortList "") 
-                  True $ ExtFORMULA $ CoSort_gen_ax sortList 
+                  True False $ ExtFORMULA $ CoSort_gen_ax sortList 
                            (opSyms ++ injSyms) isFree]
 
 ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA CoCASLSign

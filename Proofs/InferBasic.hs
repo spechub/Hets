@@ -283,8 +283,7 @@ markProved c lid status =
   let findProof [] = sen
       findProof (s:rest) =
        if goalName s == senName (value sen) 
-        then sen {thmStatus = Proven (BasicInference c (BasicProof lid s)) []
-                              : filter (/=LeftOpen) (thmStatus sen)}
+        then sen {thmStatus = (c,BasicProof lid s) : thmStatus sen}
         else findProof rest
    in findProof status
    )

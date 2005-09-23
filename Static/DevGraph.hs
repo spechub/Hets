@@ -148,7 +148,7 @@ isDGRef (DGRef _ _ _ _ _) = True
 locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _ _ _) = 
   Set.null $ Set.filter 
-      (\s -> not (isAxiomDecorated s) && not (isProvenDecorated s) ) sens 
+      (\s -> not (isAxiomSenStatus s) && not (isProvenSenStatus s) ) sens 
 locallyEmpty (DGRef _ _ _ _ _) = True
 
 -- | link inscriptions in development graphs           
@@ -532,46 +532,42 @@ instance PrettyPrint DGOrigin where
 
 -- * sentence packing
 
-data Decorated a = Decorated
+data SenStatus a = SenStatus
      { value :: Named a
      , order :: Int
-     , thmStatus :: [ThmLinkStatus]
-     , isDef :: Bool
+     , thmStatus :: [(AnyComorphism,BasicProof)]
      } deriving Show
 
-isProvenDecorated :: Decorated a -> Bool
-isProvenDecorated = any isProvenDecoratedAux . thmStatus
-  where isProvenDecoratedAux LeftOpen = False
-        isProvenDecoratedAux (Proven _ _) = True
+isProvenSenStatus :: SenStatus a -> Bool
+isProvenSenStatus = any isProvenSenStatusAux . thmStatus
+  where isProvenSenStatusAux (_,BasicProof _ (Proved _ _ _ _ _)) = True 
+        isProvenSenStatusAux _ = False
 
-isAxiomDecorated :: Decorated a -> Bool
-isAxiomDecorated = isAxiom . value
+isAxiomSenStatus :: SenStatus a -> Bool
+isAxiomSenStatus = isAxiom . value
 
-instance PrettyPrint a => PrettyPrint (Decorated a) where
+instance PrettyPrint a => PrettyPrint (SenStatus a) where
   printText0 ga x =
      printText0 ga (value x)
 
-emptyDecorated :: Decorated a
-emptyDecorated = Decorated { value = error "emptyDecorated"
+emptySenStatus :: SenStatus a
+emptySenStatus = SenStatus { value = error "emptySenStatus"
                            , order = 0
-                           , thmStatus = []
-                           , isDef = False }
+                           , thmStatus = [] }
 
-instance Eq a => Eq (Decorated a) where
-    d1 == d2 = (value d1, isDef d1) == 
-               (value d2, isDef d2)
+instance Eq a => Eq (SenStatus a) where
+    d1 == d2 = value d1 == value d2
 
-instance Ord a => Ord (Decorated a) where
-    d1 <= d2 = (value d1, isDef d1) <= 
-               (value d2, isDef d2)
+instance Ord a => Ord (SenStatus a) where
+    d1 <= d2 = value d1 <= value d2
 
 decoTc :: TyCon
-decoTc = mkTyCon "Static.DevGraph.Decorated"
+decoTc = mkTyCon "Static.DevGraph.SenStatus"
 
-instance Typeable s => Typeable (Decorated s) where 
-  typeOf s = mkTyConApp decoTc [typeOf ((undefined :: Decorated a -> a) s)]
+instance Typeable s => Typeable (SenStatus s) where 
+  typeOf s = mkTyConApp decoTc [typeOf ((undefined :: SenStatus a -> a) s)]
 
-type ThSens a = Set.Set (Decorated a)
+type ThSens a = Set.Set (SenStatus a)
 
 noSens :: ThSens a
 noSens = Set.empty
@@ -590,7 +586,7 @@ joinSens s1 s2 = let l1 = Set.toList s1
                     : mergeSens r1 r2
               GT -> e2 : mergeSens l1 r2
 
-mapValue :: (a -> b) -> Decorated a -> Decorated b
+mapValue :: (a -> b) -> SenStatus a -> SenStatus b
 mapValue f d = d { value = mapNamed f $ value d } 
 
 markAsGoal :: Ord a => ThSens a -> ThSens a
@@ -602,7 +598,7 @@ toNamedList s = let compO d1 d2 = compare (order d1) (order d2)
 
 toThSens :: Ord a => [Named a] -> ThSens a
 toThSens sens = Set.fromList $ zipWith 
-    ( \ v i -> emptyDecorated { value = v, order = i })
+    ( \ v i -> emptySenStatus { value = v, order = i })
     sens [1..]
 
 -- * Grothendieck theories

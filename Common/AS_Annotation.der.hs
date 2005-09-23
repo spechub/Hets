@@ -187,27 +187,25 @@ notImplied a = not $ any isImplied $ r_annos a
 
 -- | naming or labelling sentences
 data Named s = NamedSen { senName  :: String,
-                          isAxiom :: Bool, 
+                          isAxiom :: Bool,
+                          isDef :: Bool,
                           sentence :: s }
 	       deriving (Eq, Ord, Show)
 
 -- | equip a sentence with an empty name
 emptyName :: s -> Named s
-emptyName x = NamedSen { senName = "", isAxiom = True, sentence = x}
+emptyName x = NamedSen { senName = "", sentence = x, 
+                         isAxiom = False, isDef = False}
 
 -- | extending sentence maps to maps on labelled sentences
 mapNamed :: (s ->t) -> Named s -> Named t
-mapNamed f (NamedSen n a x) = NamedSen n a $ f x
+mapNamed f x = x { sentence = f (sentence x) }
 
 -- | extending sentence maybe-maps to maps on labelled sentences
 mapNamedM :: Monad m => (s -> m t) -> Named s -> m (Named t)
-mapNamedM f (NamedSen n a x) = do
-  y <- f x 
-  return $ NamedSen n a y
-
--- | mark a sentence as goal
-markGoal :: Named s -> Named s
-markGoal x = x { isAxiom = False }
+mapNamedM f x = do
+  y <- f (sentence x)
+  return (x {sentence = y})
 
 -- | process all items and wrap matching annotations around the results 
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]

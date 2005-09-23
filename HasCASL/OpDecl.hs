@@ -121,7 +121,7 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        addOpId i newSc [] $ Definition br lamTrm
                        appendSentences [NamedSen 
                                         ("def_" ++ showId i "")
-                                        True $ Formula f] 
+                                        True False $ Formula f] 
                        return $ Just $ OpDefn op [] newSc Total lamTrm ps
                    Nothing -> do 
                        addOpId i newSc [] $ NoOpDefn br
@@ -146,7 +146,7 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                Just (i, sc, _) -> do 
                            addOpId i sc [] $ NoOpDefn Op
                            appendSentences [NamedSen ("pe_" ++ showId i "")
-                                            True $ ProgEqSen i sc newPrg]
+                                            True True $ ProgEqSen i sc newPrg]
                            e <- get
                            if isLHS e newPat then return () 
                               else addDiags [mkDiag Warning

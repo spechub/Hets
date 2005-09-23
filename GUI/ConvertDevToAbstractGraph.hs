@@ -912,8 +912,8 @@ showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode =
   case dgn_theory dgnode of
   G_theory lid sigma sens ->
-     let goals = Set.filter (not . isAxiomDecorated) sens
-         (proven,open) = Set.partition isProvenDecorated goals
+     let goals = Set.filter (not . isAxiomSenStatus) sens
+         (proven,open) = Set.partition isProvenSenStatus goals
       in "Proven proof goals:\n" 
          ++ showPretty proven "" 
          ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode /= LeftOpen

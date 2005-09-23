@@ -86,7 +86,7 @@ addDataSen tys = do
                                 DatatypeDefn dd -> dd : dl
                                 _ -> dl) [] tis
         sen = NamedSen ("ga_" ++ showSepList (showString "_") showId tis "") 
-              True $ DatatypeSen ds
+              True True $ DatatypeSen ds
     if null tys then return () else appendSentences [sen]
 
 ana1TypeItem :: TypeItem -> State Env (Maybe TypeItem)

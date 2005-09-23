@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  portable
 
 derive 'ShATermConvertible' instance 
-  for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'Decorated' 'DGChange'
+  for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'SenStatus' 'DGChange'
 
 instances for 'BasicProof' and 'G_theory' need to be given explicitely
 
@@ -41,7 +41,7 @@ import ATC.Grothendieck()
 {-! for ImpUnitSigOrSig derive : ShATermConvertible !-}
 {-! for ArchSig derive : ShATermConvertible !-}
 {-! for GlobalEntry derive : ShATermConvertible !-}
-{-! for Decorated derive : ShATermConvertible !-}
+{-! for SenStatus derive : ShATermConvertible !-}
 {-! for DGChange derive : ShATermConvertible !-}
 
 instance ShATermConvertible BasicProof where

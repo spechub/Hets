@@ -57,7 +57,7 @@ makeSelTupleEqs dt@(DataPat _ tArgs _ rt) ct n m (Select mi ty p : sels) =
      Just i -> let
                   vt = QualVar $ mkSelVar n m ty
                   eq = mkEqTerm eqId nullRange (mkApplTerm (mkOpTerm i sc) [ct]) vt
-              in [NamedSen ("ga_select_" ++ show i) True eq]
+              in [NamedSen ("ga_select_" ++ show i) True False eq]
      _ -> [])
     ++ makeSelTupleEqs dt ct n (m + 1) sels
 makeSelTupleEqs _ _ _ _ [] = []

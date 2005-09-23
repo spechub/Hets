@@ -50,7 +50,7 @@ getDefs = partition ( \ s -> case sentence s of
                             _ -> False)
 
 printNamedSen :: Named Sentence -> Doc
-printNamedSen (NamedSen lab _ s) = text (case s of
+printNamedSen sen = text (case s of
     ConstDef _ -> lab ++ "_def"
     Sentence _ -> lab
     Theorem _ _ _ -> "theorem " ++ lab) 
@@ -59,4 +59,5 @@ printNamedSen (NamedSen lab _ s) = text (case s of
         (text df) <+> text "::" <+> text (showTyp Unquoted 1000 y) <+> text "==" 
                     <+> text (showOUTerm t)
       _ -> (printText s)) <> text "\n"
-
+   where lab = senName sen
+         s = sentence sen

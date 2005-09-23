@@ -68,7 +68,7 @@ instance Comorphism HasCASL2Haskell
 
 mapSingleSentence :: Env -> Sentence -> Result (TiDecl PNT)
 mapSingleSentence sign sen = do
-    (_, l) <- mapTheory (sign, [NamedSen "" True sen])
+    (_, l) <- mapTheory (sign, [NamedSen "" True False sen])
     case l of 
       [] -> fail "sentence was not translated"
       [s] -> return $ sentence s
@@ -208,7 +208,7 @@ translateDt env (DataEntry im i _ args rk alts) =
              hsTyName = hsTyCon hsname
              tp = foldl hsTyApp hsTyName $ map getArg args
          in
-         NamedSen ("ga_" ++ showId j "") True $
+         NamedSen ("ga_" ++ showId j "") True True $
          hsDataDecl loc
                        [] -- empty HsContext
                        tp
