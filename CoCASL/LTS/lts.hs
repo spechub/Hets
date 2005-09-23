@@ -1,105 +1,140 @@
-import Data.List
+import qualified Data.List as List
+import qualified Data.Set as Set
 
 type Node = Char
 type Action = Char
-type Edge = (Node,Action,Node)
-type LTS = ([Node],[Edge],[Action])
 
-data HML = Top | Bot | Neg HML | And HML HML | Or HML HML | Implies HML HML | Box HML Action | Diamond HML Action deriving (Show,Eq,Ord)
+data Edge = Edge 
+    { leftNode :: Node
+    , action :: Action
+    , rightNode :: Node 
+    } deriving (Show,Eq,Ord)
 
+data LTS = LTS
+    { nodeList :: [Node]
+    , edgeList :: [Edge]
+    , actionList :: [Action]
+    } deriving (Show, Eq, Ord)
+                 
+data LogOp = AndOp
+           | OrOp
+           | ImpliesOp
+             deriving (Show, Eq, Ord)
 
-satisfy :: LTS -> HML -> [(Node,[(Node,HML,Bool)],Bool)]
-satisfy (n1,e1,a1) f = case n1 of
-                       []   -> []
-                       n:nt -> case hml (n1,e1,a1) f n of
-                               (l,True)  -> (n,l,True):satisfy (nt,e1,a1) f 
-                               (l,False) -> (n,l,False):satisfy (nt,e1,a1) f
+data ModOp = BoxOp
+           | DiamondOp
+             deriving (Show, Eq, Ord)
 
-hml :: LTS -> HML -> Node  -> ([(Node,HML,Bool)],Bool)
-hml (n1,e1,a1) f n = ltshml (n1,e1,a1) f n e1
+data HML = Top 
+         | Bot 
+         | Neg HML 
+         | Bin LogOp HML HML 
+         | Modal ModOp HML Action 
+           deriving (Show, Eq, Ord)
 
-ltshml :: LTS -> HML -> Node -> [Edge] -> ([(Node,HML,Bool)],Bool)
-ltshml (n1,e1,a1) f n ed1 = case f of
-                            Bot         -> ([(n,Bot,False)],False)
-                            Top         -> ([(n,Top,True)],True)
-                            Neg g       -> case ltshml (n1,e1,a1) g n ed1 of
-                                           (l,True)  -> ((n,Neg g,False):l,False)
-                                           (l,False) -> ((n,Neg g,True):l,True)
-                            And g h     -> case ltshml (n1,e1,a1) g n ed1 of
-                                           (l,True)  ->  case ltshml (n1,e1,a1) h n ed1 of
-                                                         (k,True)  -> ((n,And g h,True):l++k,True) 
-                                                         (k,False) -> ((n,And g h,False):l++k,False)
-                                           (l,False) -> ((n,And g h,False):l,False) 
-                            Or g h      -> case ltshml (n1,e1,a1) g n ed1 of
-                                           (l,True)  -> ((n,Or g h,True):l,True)
-                                           (l,False) -> case ltshml (n1,e1,a1) h n ed1 of
-                                                         (k,True)  -> ((n,Or g h,True):l++k,True) 
-                                                         (k,False) -> ((n,Or g h,False):l++k,False)                           
-                            Implies g h -> case ltshml (n1,e1,a1) g n ed1 of
-                                           (l,True)  ->  case ltshml (n1,e1,a1) h n ed1 of
-                                                         (k,True)  -> ((n,Implies g h,True):l++k,True) 
-                                                         (k,False) -> ((n,Implies g h,False):l++k,False)
-                                           (l,False) -> ((n,Implies g h,True):l,True) 
-                            Box g a     -> case ed1 of
-                                           []         -> ([(n,Box g a, True)],True)
-                                           (p,b,q):et -> if p==n then
-                                                                 if b==a then
-                                                                         case ltshml (n1,e1,a1) g q e1 of
-                                                                         (l,True)  -> case ltshml (n1,e1,a1) (Box g a) n et of
-                                                                                      (k,True)  -> (nub((n,Box g a,True):l++k),True) 
-                                                                                      (k,False) -> (nub((n,Box g a,False):l++k),False)
-                                                                         (l,False) -> (nub((n,Box g a,False):l),False)
-                                                                 else ltshml (n1,e1,a1) (Box g a) n et
-                                                         else ltshml (n1,e1,a1) (Box g a) n et
-                            Diamond g a -> case ed1 of
-                                           []         -> ([(n,Diamond g a, False)],False)
-                                           (p,b,q):et -> if p==n then
-                                                                 if b==a then
-                                                                         case ltshml (n1,e1,a1) g q e1 of
-                                                                         (l,True)  -> (nub((n,Diamond g a,True):l),True)
-                                                                         (l,False) -> case ltshml (n1,e1,a1) (Diamond g a) n et of
-                                                                                      (k,True)  -> (nub((n,Diamond g a,True):l++k),True) 
-                                                                                      (k,False) -> (nub((n,Diamond g a,False):l++k),False)
-                                                                 else ltshml (n1,e1,a1) (Diamond g a) n et
-                                                         else ltshml (n1,e1,a1) (Diamond g a) n et
+satisfy :: LTS -> HML -> [(Node, ([(Node, HML, Bool)], Bool))]
+satisfy lts f = case nodeList lts of
+    []     -> []
+    n : nt -> (n, hml lts f n) : satisfy lts { nodeList = nt } f
 
+hml :: LTS -> HML -> Node -> ([(Node, HML, Bool)], Bool)
+hml lts f n = ltshml lts f n $ edgeList lts
 
-simulations :: LTS -> LTS -> [((Node,Node),[(Node,Node)])] 
-simulations (n1,e1,a1) (n2,e2,a2) = sims (n1,e1,a1) (n2,e2,a2) n1 n2
+ltshml :: LTS -> HML -> Node -> [Edge] -> ([(Node, HML, Bool)], Bool)
+ltshml lts f n ed1 = case f of
+    Bot                 -> ([(n, Bot, False)], False)
+    Top                 -> ([(n, Top, True)], True)
+    Neg g               -> case ltshml lts g n ed1 of
+        (l, b) -> ((n, Neg g, not b) : l, not b)
+    Bin AndOp g h       -> case ltshml lts g n ed1 of
+        (l, True)  ->  case ltshml lts h n ed1 of
+            (k, True)  -> ((n, Bin AndOp g h, True) : l ++ k, True) 
+            (k, False) -> ((n, Bin AndOp g h, False) : l ++ k, False)
+        (l, False) -> ((n, Bin AndOp g h, False) : l, False) 
+    Bin OrOp g h        -> case ltshml lts g n ed1 of
+        (l, True)  -> ((n, Bin OrOp g h, True) : l, True)
+        (l, False) -> case ltshml lts h n ed1 of
+            (k, True)  -> ((n, Bin OrOp g h, True) : l ++ k, True) 
+            (k, False) -> ((n, Bin OrOp g h, False) : l ++ k, False)
+    Bin ImpliesOp g h   -> case ltshml lts g n ed1 of
+        (l, True)  ->  case ltshml lts h n ed1 of
+            (k, True)  -> ((n, Bin ImpliesOp g h, True) : l ++ k, True) 
+            (k, False) -> ((n, Bin ImpliesOp g h, False) : l ++ k, False)
+        (l, False) -> ((n, Bin ImpliesOp g h, True) : l, True) 
+    Modal BoxOp g a     -> case ed1 of
+        []         -> ([(n, Modal BoxOp g a, True)], True)
+        ed : et ->
+            if (leftNode ed) == n then
+                if (action ed) == a then
+                    case ltshml lts g (rightNode ed) (edgeList lts) of
+                        (l, True)  -> case ltshml lts (Modal BoxOp g a)
+                                                 n et of
+                            (k, True)  -> (List.nub
+                                 ((n, Modal BoxOp g a, True) : l ++ k), True) 
+                            (k, False) -> (List.nub
+                                 ((n, Modal BoxOp g a, False) : l ++ k), False)
+                        (l, False) -> (List.nub
+                                 ((n, Modal BoxOp g a, False) : l), False)
+                else ltshml lts (Modal BoxOp g a) n et
+            else ltshml lts (Modal BoxOp g a) n et
+    Modal DiamondOp g a -> case ed1 of
+        []         -> ([(n, Modal DiamondOp g a, False)], False)
+        ed : et ->
+            if (leftNode ed) == n then
+                if (action ed) == a then
+                    case ltshml lts g (rightNode ed) (edgeList lts) of
+                        (l,True)  -> (List.nub
+                            ((n, Modal DiamondOp g a, True) : l), True)
+                        (l,False) -> case ltshml lts (Modal DiamondOp g a)
+                                                 n et of
+                            (k,True)  -> (List.nub
+                             ((n, Modal DiamondOp g a, True) : l ++ k), True) 
+                            (k,False) -> (List.nub
+                             ((n, Modal DiamondOp g a, False) : l ++ k), False)
+                else ltshml lts (Modal DiamondOp g a) n et
+            else ltshml lts (Modal DiamondOp g a) n et
+
+simulations :: LTS -> LTS -> [((Node,Node), [(Node,Node)])] 
+simulations lts1 lts2 = sims lts1 lts2 (nodeList lts1) (nodeList lts2)
 
 sims :: LTS -> LTS -> [Node] -> [Node] -> [((Node,Node),[(Node,Node)])] 
-sims (n1,e1,a1) (n2,e2,a2) nd1 nd2 = case nd1 of
-                                            []   -> []
-                                            n:nt -> case nd2 of
-                                                    []   -> sims (n1,e1,a1) (n2,e2,a2) nt n2
-                                                    m:mt -> case simulates (n1,e1,a1) (n2,e2,a2) n m of
-                                                          True  -> ((n,m),simulation (n1,e1,a1) (n2,e2,a2) n m):sims (n1,e1,a1) (n2,e2,a2) nd1 mt
-                                                          False -> sims (n1,e1,a1) (n2,e2,a2) nd1 mt
+sims lts1 lts2 nd1 nd2 = case nd1 of
+    []     -> []
+    n : nt -> case nd2 of
+        []     -> sims lts1 lts2 nt (nodeList lts2)
+        m : mt -> if simulates lts1 lts2 n m then
+                  ((n, m), simulation lts1 lts2 n m) : sims lts1 lts2 nd1 mt
+                  else sims lts1 lts2 nd1 mt
 
 simulation :: LTS -> LTS -> Node -> Node -> [(Node,Node)] 
-simulation (n1,e1,a1) (n2,e2,a2) n m = case sim (n1,e1,a1) (n2,e2,a2) n m e1 e2 [] of
-                                        (l,True)  -> l
-                                        (l,False) -> l 
+simulation lts1 lts2 n m = fst $ sim lts1 lts2 n m
+                                     (edgeList lts1) (edgeList lts2) []
 
 simulates :: LTS -> LTS -> Node -> Node -> Bool 
-simulates (n1,e1,a1) (n2,e2,a2) n m = case sim (n1,e1,a1) (n2,e2,a2) n m e1 e2 [] of
-                                      (l,True)  -> True
-                                      (l,False) -> False
+simulates lts1 lts2 n m = snd $ sim lts1 lts2 n m
+                                    (edgeList lts1) (edgeList lts2) []
 
-sim ::  LTS -> LTS -> Node -> Node -> [Edge] -> [Edge] -> [(Node,Node)] -> ([(Node,Node)],Bool) 
-sim (n1,e1,a1) (n2,e2,a2) n m ed1 ed2 l = if elem (n,m) l then (l,True) else
-                                          case ed1 of
-                                          []          -> (nub ((n,m):l),True)
-                                          (p,a,q):e1t -> if p==n then
-                                                                 case ed2 of
-                                                                 []          -> ([],False)
-                                                                 (r,b,s):e2t -> if r==m then 
-                                                                                        if a==b then
-                                                                                            case sim (n1,e1,a1) (n2,e2,a2) q s e1 e2 (nub ((n,m):l)) of
-                                                                                            (k,True)  -> case sim (n1,e1,a1) (n2,e2,a2) n m e1t e2 l of
-                                                                                                         (o,True)  -> (nub (k++o),True)
-                                                                                                         (o,False) -> ([],False)
-                                                                                            (k,False) -> sim (n1,e1,a1) (n2,e2,a2) n m ed1 e2t l
-                                                                                        else (sim (n1,e1,a1) (n2,e2,a2) n m ed1 e2t l)
-                                                                                else (sim (n1,e1,a1) (n2,e2,a2) n m ed1 e2t l)                     
-                                                         else sim (n1,e1,a1) (n2,e2,a2) n m e1t e2 l
+
+sim ::  LTS -> LTS -> Node -> Node -> [Edge] -> [Edge] -> [(Node,Node)] ->
+                                                      ([(Node,Node)],Bool) 
+sim lts1 lts2 n m ed1 ed2 l = if elem (n, m) l then (l, True) else
+    case ed1 of
+    []       -> (List.nub ((n, m) : l), True)
+    ed : e1t ->
+        if (leftNode ed) == n then
+            case ed2 of
+                []       -> ([], False)
+                ee : e2t ->
+                    if (leftNode ee) == m then 
+                        if (action ed) == (action ee) then
+                            case sim lts1 lts2 (rightNode ed) (rightNode ee)
+                                     (edgeList lts1) (edgeList lts2)
+                                     (List.nub ((n, m) : l)) of
+                                (k, True)  -> case sim lts1 lts2 n m 
+                                                      e1t (edgeList lts2) l of
+                                    (o, True)  -> (List.nub (k ++ o), True)
+                                    (_, False) -> ([], False)
+                                (_, False) -> sim lts1 lts2 n m ed1 e2t l
+                        else (sim lts1 lts2 n m ed1 e2t l)
+                    else (sim lts1 lts2 n m ed1 e2t l)                     
+        else sim lts1 lts2 n m e1t (edgeList lts2) l
