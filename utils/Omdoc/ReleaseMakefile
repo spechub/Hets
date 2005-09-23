@@ -1,0 +1,61 @@
+# Makefile for a Release
+# $Header$
+# Author: (c) Christian Maeder, Uni Bremen 2002-2004
+# Year:   2004
+
+# This Makefile will compile the hets sources
+# note that you'll need the "uni" library residing in ".." 
+# from http://www.informatik.uni-bremen.de/~ger/cvs/CVS.html
+
+####################################################################
+## Some varibles, which control the compilation
+
+INCLUDE_PATH = ghc:hetcats:fgl
+
+HC         = ghc
+HC_INCLUDE = -i$(INCLUDE_PATH)
+
+# check for the "uni" library
+UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
+ifneq ($(strip $(UNI_PACKAGE_CONF)),)
+HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
+             -package uni-server -DUNI_PACKAGE
+endif
+
+# check for programatica
+PFE_TOOLDIR := $(wildcard ../programatica/tools)
+ifneq ($(strip $(PFE_TOOLDIR)),)
+PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
+      base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
+      base/transforms base/transforms/Deriving hs2html pfe property base \
+      property/pfe property/syntax property/AST property/transforms \
+      property/TI property/defs property/parse2 property/parse2/Parser \
+      hs2stratego hs2stratego/AST
+PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
+PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
+            -fno-monomorphism-restriction -fallow-undecidable-instances
+endif
+
+HC_OPTS    = -fglasgow-exts -fallow-overlapping-instances \
+    $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS)
+
+####################################################################
+### targets
+
+all: hets-optimized
+
+hets-optimized:
+	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w
+	strip hets
+
+###############
+### clean up
+
+### remove binary
+bin_clean: 
+	$(RM) hets
+
+### remove *.hi and *.o
+clean: bin_clean
+	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
+
