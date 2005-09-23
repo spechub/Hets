@@ -102,10 +102,21 @@ computeCompTable spName (sig,nsens) = do
                    (extractRel cup res) )
            else Nothing
        _ -> Nothing
+  let invTab sen = case sen of
+       Strong_equation (Application (Qual_op_name i _ _) 
+                        [Application (Qual_op_name arg _ _) [] _] _) 
+                       (Application (Qual_op_name res _ _) [] _) _ ->
+         if i==inv 
+           then 
+            Just (Contabentry {
+                   contabentryArgBaseRel = showPretty arg "",
+                   contabentryConverseBaseRel = showPretty res "" } )
+           else Nothing
+       _ -> Nothing
   let attrs = Table_Attrs {tableName = name,
                            tableIdentity = "id"}
       compTable = Compositiontable (mapMaybe cmpTab sens) 
-      convTable = Conversetable []
+      convTable = Conversetable (mapMaybe invTab sens) 
       models = Models []
   return $ Table attrs compTable convTable models
 
