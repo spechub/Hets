@@ -28,13 +28,7 @@ import Common.ConvertLiteral
 import CASL.AS_Basic_CASL
 
 isLiteral :: GlobalAnnos -> Id -> [TERM f] -> Bool
-isLiteral ga i trm =
-       or [ isNumber ga i trm
-          , isString ga i trm
-          , isList   ga i trm
-          , isFloat  ga i trm
-          , isFrac   ga i trm
-          ]
+isLiteral = isGenLiteral splitApplM
 
 isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isNumber = isGenNumber splitApplM

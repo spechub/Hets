@@ -14,6 +14,7 @@ module Common.ConvertLiteral
     (convertMixfixToken
     , AsAppl
     , SplitM
+    , isGenLiteral
     , isGenNumber
     , isGenString
     , isGenList
@@ -117,6 +118,15 @@ convertMixfixToken ga asAppl toTerm t =
 -- * test if term is a literal
 
 type SplitM a = a -> Maybe (Id, [a])
+
+isGenLiteral :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenLiteral splt ga i trm =
+       or [ isGenNumber splt ga i trm
+          , isGenString splt ga i trm
+          , isGenList   splt ga i trm
+          , isGenFloat  splt ga i trm
+          , isGenFrac   splt ga i trm
+          ]
 
 isGenNumber :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenNumber splt ga i trs = 
