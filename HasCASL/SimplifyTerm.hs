@@ -17,23 +17,36 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
-import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.Lib.State
 
+-- | remove qualification of unique identifiers
 simplifyTerm :: Env -> Term -> Term
 simplifyTerm env trm = case trm of
-   QualVar (VarDecl v _ _ _) -> if Map.member v $ assumps env then
-         trm else ResolvedMixTerm v [] nullRange
-   QualOp _ (InstOpId i _ _) _ _ -> 
+   QualVar (VarDecl v _ _ ps) -> if Map.member v $ assumps env then
+         trm else ResolvedMixTerm v [] ps
+   QualOp _ (InstOpId i _ _) _ ps -> 
        if Map.member i $ localVars env then trm else 
           case Map.lookup i $ assumps env of 
-          Just (OpInfos [_]) -> ResolvedMixTerm i [] nullRange
+          Just (OpInfos [_]) -> ResolvedMixTerm i [] ps
           _ -> trm
    ApplTerm t1 t2 ps ->
        ApplTerm (simplifyTerm env t1) (simplifyTerm env t2) ps
    TupleTerm ts ps -> TupleTerm (map (simplifyTerm env) ts) ps
-   TypedTerm te q ty ps -> TypedTerm (simplifyTerm env te) q ty ps
+   TypedTerm te q ty ps -> let 
+      nt = simplifyTerm env te 
+      ntyped = TypedTerm nt q ty ps 
+      in case q of
+      InType -> ntyped
+      AsType -> ntyped
+      _ -> case nt of 
+           QualVar (VarDecl v oty _ qs) | oty == ty -> 
+              if Map.member v $ assumps env then ntyped
+              else TypedTerm (ResolvedMixTerm v [] qs) OfType ty ps
+           QualOp _ (InstOpId i _ _) _ qs | q == Inferred ->
+              if Map.member i $ localVars env then ntyped
+              else TypedTerm (ResolvedMixTerm i [] qs) OfType ty ps
+           _ -> ntyped
    QuantifiedTerm q vs te ps -> 
        let nEnv = execState (mapM_ ( \ vd -> 
               case vd of 
