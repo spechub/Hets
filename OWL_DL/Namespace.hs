@@ -18,10 +18,12 @@ import OWL_DL.AS
 import OWL_DL.Sign
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.AS_Annotation as Common.Annotation
 import Text.XML.HXT.DOM.XmlTreeTypes
 import List(find, nub)
 import Maybe(fromJust)
 import Char(isDigit, isAlpha)
+
 
 type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
 
@@ -480,6 +482,12 @@ instance PNamespace Sentence where
        OWLAxiom axiom -> OWLAxiom (renameNamespace tMap axiom)
        OWLFact fact   -> OWLFact  (renameNamespace tMap fact)
 
+instance PNamespace (Common.Annotation.Named Sentence) where
+    propagateNspaces _ nsent = nsent
+    
+    renameNamespace tMap (Common.Annotation.NamedSen str isAx isDef sent) =
+	Common.Annotation.NamedSen str isAx isDef (renameNamespace tMap sent)
+
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns obj = 
     case obj of 
@@ -567,3 +575,8 @@ strToQN str =
 	   QN "" (fst $ span (/='.') (reverse $ tail nodeName)) str'  
 	   -- QN prefix local uri
 	   else QN ""  (fst $ span (/='.') (reverse nodeName)) str'
+
+printQN :: QName -> String
+printQN (QN pre local uri)
+	    | null pre = show (uri ++ ":" ++ local)
+	    | otherwise = show (pre ++ ":" ++ local)
