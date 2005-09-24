@@ -211,7 +211,7 @@ staticAna file (ontoMap, dg) =
        Result _ res <-
 	       nodesStaticAna (reverse topNodes) Map.empty ontoMap dg []
        case res of
-           Just (_, dg') -> 
+           Just (_, dg') -> 	    
 	    return (Just (simpleLibName file, 
 			  (), (),
                           simpleLibEnv file 
@@ -234,13 +234,14 @@ nodesStaticAna [] signMap _ dg diag =
     return $ Result diag (Just (signMap, dg)) 
 nodesStaticAna (h:r) signMap ontoMap dg diag = do
     Result digs res <- 
-	    nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
+	nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
 			  (emptySign, [], diag)
 			  signMap ontoMap dg 
     case res of
         Just (newSignMap, newDg) -> 
 		nodesStaticAna r newSignMap ontoMap newDg (diag++digs)
 	Prelude.Nothing -> 
+               -- Warning or Error message
 	    nodesStaticAna r signMap ontoMap dg (diag++digs)
     
 -- | call to static analyse of single nodes
@@ -269,18 +270,19 @@ nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
         case res of  
 	  Just (_,_,accSig,sent) ->
             do    
-	     let accSent = inSent ++ sent
+	     let (_, tMap) = 
+		     integrateNamespaces (namespaceMap inSig) 
+					     (namespaceMap accSig)
+		 sent' = map (renameNamespace tMap) sent
+	         accSent = inSent ++ sent' 
                  newLNode = 
 		     (n, topNode {dgn_theory = 
 				  G_theory OWL_DL accSig (toThSens accSent)
 				 }) 
 		 ledges = (inn dg n) ++ (out dg n)
+	         newG = (insEdges ledges (insNode newLNode (delNode n dg)))
 	     return $ Result (oldDiags ++ diag)
-		        (Just ((Map.insert n (accSig, accSent) signMap), 
-			       (insEdges ledges 
-				     (insNode newLNode (delNode n dg)))
-			      )
-			)
+		      (Just ((Map.insert n (accSig, accSent) signMap), newG))
 	  _   -> do let actDiag = mkDiag Error 
 				    ("error by analysing of " ++ (show mid)) ()
                     return $ Result (actDiag:oldDiags) Prelude.Nothing 
@@ -289,7 +291,11 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
   do
    case Map.lookup n signMap of
      Just (sig, nsen) -> 
-	 nodeStaticAna r ((integSign sig inSig), (inSent ++ nsen), oldDiags)
+       let (_, tMap) = 
+	       integrateNamespaces (namespaceMap inSig) (namespaceMap sig)
+       in  nodeStaticAna r ((integSign sig inSig), 
+			    (inSent ++ (map (renameNamespace tMap) nsen)), 
+			    oldDiags)
 		       signMap ontoMap dg
      Prelude.Nothing ->
        do	 
@@ -300,13 +306,17 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
          case res' of
 	  Just (signMap', dg') ->
             do
-	     let (sig', nsen') = fromJust $ Map.lookup n signMap'	 
+	     let (sig', nsen') = fromJust $ Map.lookup n signMap'
+		 (_, tMap) = 
+		     integrateNamespaces (namespaceMap inSig) 
+					     (namespaceMap sig')
 	     nodeStaticAna r 
 	          ((integSign sig' inSig),
-		   (inSent ++ nsen'),
+		   (inSent ++ (map (renameNamespace tMap) nsen')),
 		   (oldDiags ++ digs'))
 		  signMap' ontoMap dg'
-	  _  -> nodeStaticAna r (inSig, inSent, oldDiags)
+	  _  -> do error "Error by analysis : nodeStaticAna"
+		   nodeStaticAna r (inSig, inSent, oldDiags)
 		                         signMap ontoMap dg
 
 integSign :: Sign -> Sign -> Sign
