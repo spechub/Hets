@@ -15,7 +15,7 @@ module OWL_DL.StaticAna where
 import OWL_DL.Sign
 import OWL_DL.AS
 import Text.XML.HXT.DOM.XmlTreeTypes
--- import Common.Id
+import Common.Id
 -- import List
 -- import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -106,8 +106,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkConcept (des1:des2:deses) inSign
       in  case maybeRes of
           Just _ -> 
-	    let namedSent = NamedSen { senName = "DisjointClasses",	
+	    let namedSent = NamedSen { senName = (printDescForSentName des1) 
+				              ++ "_DisjointClasses_"
+				              ++ (printDescForSentName des2),
 				       isAxiom = True,	
+				       isDef = False,
 				       sentence = OWLAxiom dc
 				     }
             in  concatResult (Result diags1 
@@ -120,8 +123,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       let Result diags1 maybeRes = checkConcept (des1:deses) inSign
       in  case maybeRes of 
           Just _ -> 
-	    let namedSent = NamedSen { senName = "EquivalentClasses",	
+	    let namedSent = NamedSen { senName = (printDescForSentName des1)
+				        ++ "_EquivalentClasses_"
+				        ++ (printDescForSentName $ head deses),
 				       isAxiom = True,	
+				       isDef = False,
 				       sentence = OWLAxiom ec
 				     }
 	    in  concatResult (Result diags1 
@@ -195,11 +201,13 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 				 [NamedSen { senName = 
 					     "individual_valued_role",
 					     isAxiom = True,
+					     isDef = True,
 					     sentence = OWLAxiom op
 					   } ]
 			  _ -> 	[NamedSen { senName = 
 					    "individual_valued_role",
 					    isAxiom = True,
+					    isDef = True,
 					    sentence = OWLAxiom op
 					  } ]
         in concatResult ( Result [] (Just (onto, accSign, namedSent)))
@@ -212,7 +220,8 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 	        (anaDirective ga accSign onto rest) 
     Ax op@(OntologyProperty _ _ ) ->
 	let namedSent = NamedSen { senName = "OntologyProperty",	
-				   isAxiom = True,	
+				   isAxiom = True,
+				   isDef = True,
 				   sentence = OWLAxiom op
 				 }
         in concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
@@ -223,8 +232,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       in  case maybeRes of
           Just _ -> 
 	      let namedSent = 
-		      NamedSen { senName = "DataValuedEquivalentProterties",
-				 isAxiom = True,	
+		      NamedSen { senName = (printQN pid1)
+				    ++ "_DataValuedEquivalentProterties_"
+			            ++ (printQN pid2),
+				 isAxiom = True,
+				 isDef = False,
 				 sentence = OWLAxiom dep
 			       }
               in  concatResult (Result [] 
@@ -238,8 +250,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       in  case maybeRes of
           Just _ -> 
 	      let namedSent = 
-		      NamedSen { senName = "DataValuedSubPropertyOf",	
-				 isAxiom = True,	
+		      NamedSen { senName = (printQN pid1)
+				    ++ "_DataValuedSubPropertyOf_"
+			            ++ (printQN pid2),	
+				 isAxiom = True,
+				 isDef = False,
 				 sentence = OWLAxiom dsp
 			       }
 	      in  concatResult (Result [] 
@@ -253,8 +268,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       in  case maybeRes of
           Just _ -> 
 	      let namedSent = 
-		    NamedSen {senName = "IndividualValuedEquivalentProperties",
+		    NamedSen {senName = (printQN pid1)
+			         ++ "_IndividualValuedEquivalentProperties_"
+			         ++ (printQN pid2),
 			      isAxiom = True,	
+			      isDef = False,
 			      sentence = OWLAxiom iep
 			     }
 	      in   concatResult (Result [] 
@@ -268,8 +286,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
       in  case maybeRes of
           Just _ -> 
 	      let namedSent = 
-		      NamedSen { senName = "IndividualValuedSubPropertyOf",
+		      NamedSen { senName = (printQN pid1)
+				     ++ "_IndividualValuedSubPropertyOf_"
+			             ++ (printQN pid2),
 				 isAxiom = True,	
+				 isDef = False,
 				 sentence = OWLAxiom isp
 			       }
               in  concatResult (Result [] 
@@ -283,9 +304,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 	Prelude.Nothing ->          -- Error (Warnung): Individual without name
 	    let namedSent = NamedSen { senName = "Individual",	
 				       isAxiom = False,	
+				       isDef = True,
 				       sentence = OWLFact ind
 				     }
-            in  concatResult (Result [] 
+		diag = [Diag Warning "Individual without name" nullRange]
+            in  concatResult (Result diag 
 			      (Just (Ontology mID (direc ++ [directiv]) ns, 
 				     inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest)
@@ -320,17 +343,23 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 		         in  msSet iid r (diagL ++ [diag'], 
 					  Set.insert membership ms)
      
-    Fc si@(SameIndividual _ _ _) ->
-	let namedSent = NamedSen { senName = "SameIndividual",	
-				   isAxiom = False,	
+    Fc si@(SameIndividual iid1 iid2 _) ->
+	let namedSent = NamedSen { senName = (printQN iid1) 
+                                      ++ "_SameIndividual_"
+				      ++ (printQN iid2),	
+				   isAxiom = False,
+				   isDef = True,
 				   sentence = OWLFact si
 				 }
         in  concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
 					   inSign, [namedSent])))
 	        (anaDirective ga inSign onto rest) 
-    Fc di@(DifferentIndividuals _ _ _) ->
-	let namedSent = NamedSen { senName = "DifferentIndividuals",	
-				   isAxiom = False,	
+    Fc di@(DifferentIndividuals iid1 iid2 _) ->
+	let namedSent = NamedSen { senName = (printQN iid1)
+				     ++ "DifferentIndividuals"
+				     ++ (printQN iid2),	
+				   isAxiom = False,
+				   isDef = True,
 				   sentence = OWLFact di
 				 }
         in  concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
@@ -449,8 +478,13 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 				         (show h ++ " has not be declared.") 
 					 ()
 		          in Result (diag1 ++ [diag2]) Prelude.Nothing
+	  printDescForSentName :: Description -> String
+	  printDescForSentName (DC cid) = printQN cid
+	  printDescForSentName _ = ""
+
 nullID :: ID
 nullID = QN "" "" ""
 
 initResult :: Result a
 initResult = Result [] Prelude.Nothing
+
