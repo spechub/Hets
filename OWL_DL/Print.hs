@@ -96,15 +96,15 @@ instance PrettyPrint Axiom where
 	case axiom of
 	DisjointClasses desc1 desc2 _ ->     -- description list is ignored
 	    (text "(forall ((x owl:Thing)) (not (and (") <+> 
-	          (printDescription ga (QN "" "" "") desc1) <+>
+	          (printDescription ga emptyQN desc1) <+>
                   (text "x) (") <+> 
-	          (printDescription ga (QN "" "" "") desc2) <+>
+	          (printDescription ga emptyQN desc2) <+>
 	          (text "x))))")
 	EquivalentClasses desc1 (desc2:_) ->  -- description list is ignored
           case desc2 of
 	  DC cid ->
 	    (text "(forall ((x owl:Thing)) (iff (") <+> 
-	         (printDescription ga (QN "" "" "") desc1) <+>
+	         (printDescription ga emptyQN desc1) <+>
 		 (text "x) (") <+> 
 	         (printText0 ga cid) <+>
 	         (text "x)))")	
@@ -209,12 +209,12 @@ instance PrettyPrint SignAxiom where
 
 instance PrettyPrint RDomain where
     printText0 ga (RDomain desc) =
-	printDescription ga (QN "" "" "") desc
+	printDescription ga emptyQN desc
 
 instance PrettyPrint RRange where
     printText0 ga rRange =
 	case rRange of
-	RIRange desc -> printDescription ga (QN "" "" "") desc
+	RIRange desc -> printDescription ga emptyQN desc
 	RDRange dataRange -> printText0 ga dataRange 
 
 instance PrettyPrint DataRange where
@@ -224,8 +224,8 @@ instance PrettyPrint DataRange where
 	OneOfData dls ->
 	    (text "(forall ((x rdfs:Literal))") $+$
 	      (nest 2 $ text "(iff (") <> (text "class") <+> (text "x)") $+$
-	      (nest 3 $ text "(or (") <> (foldListToDocH ga (form4 ga) (QN "" "" "") dls) 
-					<> (char ')') $+$
+	      (nest 3 $ text "(or (") <> 
+	      (foldListToDocH ga (form4 ga) emptyQN dls) <> (char ')') $+$
 	      (text "))")
 	RLit rdfLit   -> (text "rdf_literal") <+> (text rdfLit)
 
@@ -250,21 +250,25 @@ instance PrettyPrint Restriction where
 
 instance PrettyPrint Description where
     printText0 ga desc =
-	printDescription ga (QN "" "" "") desc
+	printDescription ga emptyQN desc
 
 instance PrettyPrint Fact where
     printText0 ga fact =
 	case fact of
 	SameIndividual iid1 iid2 iids -> 
-	    (text "same_individual") <+> (printText0 ga iid1) <+>
-	          (printText0 ga iid2) <+> 
-	          (text $ show $ map (printText0 ga) iids)
+	    foldListToDocV ga (\x y -> (text "(=") <+> (printText0 ga x)
+			       <+> (printText0 ga y) <> (char ')'))
+	                   iid1 (iid2:iids)
 	DifferentIndividuals iid1 iid2 iids -> 
 	    (text "(forall ((x owl:Thing)) (iff") $+$
 	      (nest 4 $ text "(") <> (text "class") <+> (text "x)") $+$
-	      (nest 3 $ text "(or (") <> (foldListToDocH ga (form2 ga) (QN "" "" "") (iid1:iid2:iids)) <> (char ')') $+$
+	      (nest 3 $ text "(or (") <> 
+	      (foldListToDocH ga (form2 ga) emptyQN (iid1:iid2:iids)) <> 
+	      (char ')') $+$
 	      (text "))") $+$
-	      (text "[ALLDIFFERENT") <+> (foldListToDocH ga (form3 ga) (QN "" "" "") (iid1:iid2:iids)) <> (char ']')
+	      (text "[ALLDIFFERENT") <+> 
+	      (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)) <> 
+	      (char ']')
 	u -> text $ show u
 
 printRestriction1 :: GlobalAnnos -> URIreference -> [Drcomponent] -> Doc
@@ -429,7 +433,7 @@ foldListToDocH ga printForm iD (h:r) =
 
 form1 :: GlobalAnnos -> URIreference -> Description -> Doc
 form1 ga _ des = 
-    (text "(") <> (printDescription ga (QN "" "" "") des) <+> 
+    (text "(") <> (printDescription ga emptyQN  des) <+> 
 		   (text "x)")
 
 form2 :: GlobalAnnos -> URIreference -> IndividualID -> Doc
@@ -444,3 +448,6 @@ form4 :: GlobalAnnos -> URIreference -> DataLiteral -> Doc
 form4 ga _ dl = 
     (text "(=") <+> (printText0 ga dl) <+> 
 		    (text "x)")
+
+emptyQN :: QName
+emptyQN = QN "" "" ""
