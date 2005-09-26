@@ -44,7 +44,7 @@ import Driver.Options
 import Comorphisms.LogicGraph
 
 --import Logic.Languages
-import Logic.Grothendieck
+import Logic.Grothendieck hiding (Morphism)
 
 import Static.AnalysisLibrary
 import Static.DevGraph
@@ -69,6 +69,7 @@ import DialogWin (useHTk)
 
 -- my imports
 import CASL.Sign
+import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
 import Data.Typeable
 import qualified Common.Id as Id
@@ -471,7 +472,7 @@ getNodeNameMapping dg mapper dispose =
 			Map.insert (adjustNodeName ("AnonNode#"++(show n)) $ getDGNodeName node) (mapper dg n) mapping
 		) Map.empty $ Graph.labNodes dg
 
-type Imports = Set.Set String
+type Imports = Set.Set (String, (Maybe MorphismMap))
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
 type Preds = Map.Map Id.Id (Set.Set PredType)
@@ -583,14 +584,29 @@ getAxioms l = filter (\(NamedSen {isAxiom = iA}) -> iA) l
 getNonAxioms::[Ann.Named a]->[Ann.Named a]
 getNonAxioms l = filter (\(NamedSen {isAxiom = iA}) -> not iA) l
 
+isEmptyMorphism::(Morphism a b c)->Bool
+isEmptyMorphism (Morphism _ _ sm fm pm _) =
+	Map.null sm && Map.null fm && Map.null pm
+
 -- fetch the names of all nodes from wich sorts,rels, etc. are imported
 -- this does not list all imports in the DGraph, just the ones that cause
 -- sorts,rels, etc. to dissappear from a node
 getNodeImportsNodeNames::DGraph->ImportsMap
 getNodeImportsNodeNames dg = getNodeNameMapping dg (
 	\dgr n -> Set.fromList $ 
-	 foldl (\names (n,node) ->
-		(adjustNodeName ("AnonNode#"++(show n)) $ getDGNodeName node):names
+	 foldl (\names (from,node) ->
+	 	let
+			edges = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
+			caslmorph = case edges of
+				[] -> emptyCASLMorphism
+				(l:r) -> getCASLMorph l
+			mmm = if isEmptyMorphism caslmorph
+				then
+					Nothing
+				else
+					(Just (makeMorphismMap caslmorph))
+		in
+			((adjustNodeName ("AnonNode#"++(show from)) $ getDGNodeName node), mmm):names
 		) [] $ inputLNodes dgr n ) Set.null
 	
 adjustNodeName::String->String->String
@@ -630,10 +646,10 @@ first f (a:l) = let b = f a in case b of Nothing -> first f l; _ -> b
 -- searches for the origin of an attribute used in a node
 -- the finder-function returns true, if the the attribute is 'true' for
 -- the attribute-map for a node
-findNodeNameFor::(Map.Map String (Set.Set String))->(Map.Map String a)->(a->Bool)->String->(Maybe String)
+findNodeNameFor::ImportsMap->(Map.Map String a)->(a->Bool)->String->(Maybe String)
 findNodeNameFor importsMap attribMap finder name =
 	let	m_currentAttrib = Map.lookup name attribMap
-		currentImports = Data.Maybe.fromMaybe Set.empty $ Map.lookup name importsMap
+		currentImports = Set.map fst $ Map.findWithDefault Set.empty name importsMap
 	in
 		if (
 			case m_currentAttrib of
@@ -647,50 +663,50 @@ findNodeNameFor importsMap attribMap finder name =
 -- lookup a sort starting with a given node (by name)
 -- will traverse the importsMap while the sort is not found and
 -- return the name of the [first] node that has this sort in its sort-set 
-findNodeNameForSort::(Map.Map String (Set.Set String))->(Map.Map String (Set.Set SORT))->SORT->String->(Maybe String)
+findNodeNameForSort::ImportsMap->SortsMap->SORT->String->(Maybe String)
 findNodeNameForSort importsMap sortsMap sort name =
 	findNodeNameFor importsMap sortsMap (Set.member sort) name
 
 -- lookup the origin of a predication by id
 -- not very usefull without specifying the argument-sorts
-findNodeNameForPredication::(Map.Map String (Set.Set String))->(Map.Map String (Map.Map Id.Id (Set.Set PredType)))->Id.Id->String->(Maybe String)
+findNodeNameForPredication::ImportsMap->PredsMap->Id.Id->String->(Maybe String)
 findNodeNameForPredication importsMap predsMap predId name =
 	findNodeNameFor importsMap predsMap (\m -> Map.lookup predId m /= Nothing) name
 	
 -- lookup the origin of a predication by id and argument-sorts (PredType)
-findNodeNameForPredicationWithSorts::(Map.Map String (Set.Set String))->(Map.Map String (Map.Map Id.Id (Set.Set PredType)))->(Id.Id, PredType)->String->(Maybe String)
+findNodeNameForPredicationWithSorts::ImportsMap->PredsMap->(Id.Id, PredType)->String->(Maybe String)
 findNodeNameForPredicationWithSorts importsMap predsMap (predId, pt) name =
 	findNodeNameFor importsMap predsMap 
-		(\m ->	let predSet = Data.Maybe.fromMaybe Set.empty $ Map.lookup predId m
+		(\m ->	let predSet = Map.findWithDefault Set.empty predId m
 			in Set.member pt predSet )
 		name
 
 -- lookup the origin of an operand		
-findNodeNameForOperator::(Map.Map String (Set.Set String))->(Map.Map String (Map.Map Id.Id (Set.Set OpType)))->Id.Id->String->(Maybe String)
+findNodeNameForOperator::ImportsMap->OpsMap->Id.Id->String->(Maybe String)
 findNodeNameForOperator importsMap opsMap opId name =
 	findNodeNameFor importsMap opsMap (\m -> Map.lookup opId m /= Nothing) name
 	
 -- lookup the origin of an operand with OpType
-findNodeNameForOperatorWithSorts::(Map.Map String (Set.Set String))->(Map.Map String (Map.Map Id.Id (Set.Set OpType)))->(Id.Id, OpType)->String->(Maybe String)
+findNodeNameForOperatorWithSorts::ImportsMap->OpsMap->(Id.Id, OpType)->String->(Maybe String)
 findNodeNameForOperatorWithSorts importsMap opsMap (opId, ot) name =
 	findNodeNameFor importsMap opsMap 
-		(\m ->	let opSet = Data.Maybe.fromMaybe Set.empty $ Map.lookup opId m
+		(\m ->	let opSet = Map.findWithDefault Set.empty opId m
 			in Set.member ot opSet )
 		name
 		
-findNodeNameForOperatorWithFK::(Map.Map String (Set.Set String))->(Map.Map String (Map.Map Id.Id (Set.Set OpType)))->(Id.Id, FunKind)->String->(Maybe String)
+findNodeNameForOperatorWithFK::ImportsMap->OpsMap->(Id.Id, FunKind)->String->(Maybe String)
 findNodeNameForOperatorWithFK importsMap opsMap (opId, fk) name =
 	findNodeNameFor importsMap opsMap 
-		(\m ->	let opSet = Data.Maybe.fromMaybe Set.empty $ Map.lookup opId m
+		(\m ->	let opSet = Map.findWithDefault Set.empty opId m
 			in not $ null $ filter (\(OpType ofk _ _) -> ofk == fk) $ Set.toList opSet )
 		name
 
 
-findNodeNameForSentenceName::(Map.Map String (Set.Set String))->(Map.Map String (Set.Set (Ann.Named CASLFORMULA)))->String->String->(Maybe String)
+findNodeNameForSentenceName::ImportsMap->SensMap->String->String->(Maybe String)
 findNodeNameForSentenceName importsMap sensMap sName name =
 	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n -> (senName n) == sName) n) name
 	
-findNodeNameForSentence::(Map.Map String (Set.Set String))->(Map.Map String (Set.Set (Ann.Named CASLFORMULA)))->CASLFORMULA->String->(Maybe String)
+findNodeNameForSentence::ImportsMap->SensMap->CASLFORMULA->String->(Maybe String)
 findNodeNameForSentence importsMap sensMap s name =
 	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n -> (sentence n) == s) n) name
 	
@@ -708,6 +724,19 @@ buildCASLSentenceDiff = Set.difference
 
 buildCASLSignDiff::CASLSign->CASLSign->CASLSign
 buildCASLSignDiff = diffSig
+
+emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
+emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
+		
+emptyCASLGMorphism::Logic.Grothendieck.GMorphism
+emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL emptyCASLMorphism)
+
+makeCASLGMorphism::(CASL.Morphism.Morphism () () ())->Logic.Grothendieck.GMorphism
+makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL m)
+
+emptyCASLSign::CASLSign
+emptyCASLSign = emptySign ()
+
 
 -- | create a node containing only the local attributes of this node by stripping
 -- the attributes of the second node
@@ -779,6 +808,124 @@ stripCASLMorphisms dg (n, node) =
 						(Just caslmorph) -> stripCASLMorphism newnode caslmorph
 						_ -> newnode
 						) node morphisms)
+						
+						
+type MorphismMap = (
+		(Map.Map SORT SORT)
+		,(Map.Map (Id.Id,OpType) (Id.Id,OpType))
+		,(Map.Map (Id.Id,PredType) (Id.Id,PredType))
+		)
+
+makeMorphismMap::(Morphism () () ())->MorphismMap
+makeMorphismMap (Morphism _ _ sortmap funmap predmap _) =
+	let
+		newfunmap = Map.fromList $ map (
+			\((sid,sot),(tid,tfk)) ->
+				-- Hets sets opKind to Partial on morphism... why ?
+				-- resulting signatures have Total operators...
+				((sid,(sot { opKind = Total }) ), (tid,
+					OpType
+						tfk
+						(map (\id' -> Map.findWithDefault id' id' sortmap) (opArgs sot))
+						((\id' -> Map.findWithDefault id' id' sortmap) (opRes sot))
+					) ) ) $ Map.toList funmap
+		newpredmap = Map.fromList $ map (
+			\((sid, spt),tid) ->
+				((sid, spt), (tid,
+					PredType (map (\id' -> Map.findWithDefault id' id' sortmap) (predArgs spt))
+				) ) ) $ Map.toList predmap
+	in
+		(sortmap, newfunmap, newpredmap)
+		
+morphismMapToMorphism::MorphismMap->(Morphism () () ())
+morphismMapToMorphism (sortmap, funmap, predmap) =
+	let
+		mfunmap = Map.fromList $ map (\((sid, sot),t) -> ((sid, sot { opKind = Partial }),t)) $ Map.toList $ Map.map (\(tid,(OpType fk _ _)) ->
+			(tid, fk) ) funmap
+		mpredmap = Map.map (\(tid,_) ->	tid ) predmap
+	in
+		Morphism (emptySign ()) (emptySign ()) sortmap mfunmap mpredmap ()
+		
+applyMorphHiding::MorphismMap->[Id.Id]->MorphismMap
+applyMorphHiding mm [] = mm
+applyMorphHiding (sortmap, funmap, predmap) hidings =
+	(
+		 Map.filterWithKey (\sid _ -> not $ elem sid hidings) sortmap
+		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) funmap
+		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) predmap
+	)
+	
+buildMorphismSign::MorphismMap->[Id.Id]->CASLSign->CASLSign
+buildMorphismSign
+	mm@(mmsm, mmfm, mmpm) 
+	hidings
+	sourcesign =
+	let
+		(Sign
+			sortset
+			sortrel
+			opmap
+			assocops
+			predmap
+			varmap
+			sens
+			envdiags
+			ext
+			) = applySignHiding sourcesign hidings
+	in
+		Sign
+			(Set.map
+				(\origsort ->
+					Map.findWithDefault origsort origsort mmsm
+				)
+				sortset)
+			(Rel.fromList $ map (\(a, b) ->
+				(Map.findWithDefault a a mmsm
+				,Map.findWithDefault b b mmsm)
+				) $ Rel.toList sortrel)
+			(foldl (\mappedops (sid, sopts) ->
+				foldl (\mo sot ->
+					case Map.lookup (sid, sot) mmfm of
+						Nothing -> mo
+						(Just (mid, mot)) ->
+							Map.insertWith (Set.union) mid (Set.singleton mot) mo
+					) mappedops $ Set.toList sopts
+				) Map.empty $ Map.toList opmap)
+			(foldl (\mappedops (sid, sopts) ->
+				foldl (\mo sot ->
+					case Map.lookup (sid, sot) mmfm of
+						Nothing -> mo
+						(Just (mid, mot)) ->
+							Map.insertWith (Set.union) mid (Set.singleton mot) mo
+					) mappedops $ Set.toList sopts
+				) Map.empty $ Map.toList assocops)
+			(foldl (\mappedpreds (sid, sprts) ->
+				foldl (\mp spt ->
+					case Map.lookup (sid, spt) mmpm of
+						Nothing -> mp
+						(Just (mid, mpt)) ->
+							Map.insertWith (Set.union) mid (Set.singleton mpt) mp
+					) mappedpreds $ Set.toList sprts
+				) Map.empty $ Map.toList predmap)
+			(Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm) varmap)
+			sens
+			envdiags
+			ext
+	
+applySignHiding::CASLSign->[Id.Id]->CASLSign
+applySignHiding 
+	(Sign sortset sortrel opmap assocops predmap varmap sens envdiags ext)
+	hidings =
+	Sign
+		(Set.filter (not . flip elem hidings) sortset)
+		(Rel.fromList $ filter (\(id,_) -> not $ elem id hidings) $ Rel.toList sortrel)
+		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) opmap)
+		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) assocops)
+		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) predmap)
+		(Map.filter (\varsort -> not $ elem varsort hidings) varmap)
+		sens
+		envdiags
+		ext
 
 createLocalNode::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
 createLocalNode dg (n, node) =

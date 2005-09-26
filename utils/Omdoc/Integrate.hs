@@ -174,7 +174,8 @@ devGraphToXml dg = let	(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNode
 			preds = Hets.getPredMapsWithNodeNames dg
 			ops = Hets.getOpMapsWithNodeNames dg
 			sens = Hets.getSentencesWithNodeNames dg
-			imports = Hets.getNodeImportsNodeNames dg
+			mimports = Hets.getNodeImportsNodeNames dg
+			imports = Map.map (Set.map fst) mimports
 		    in
 		    foldl (\dgx (node, name) ->
 		    	let
@@ -201,7 +202,7 @@ devGraphToXml dg = let	(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNode
 			+= (
 			   (foldl (\ix i -> ix +++ xmlNL +++ importToXml i += (xmlNL +++
 			   -- morphism-generation-hack ... ugly. needs more work.
-			   	(caslMorphismToXml imports sorts preds ops i name $
+			   	(caslMorphismToXml mimports sorts preds ops i name $
 					Hets.getCASLMorph $ head $
 					( \e ->
 						let
@@ -226,13 +227,13 @@ devGraphToXml dg = let	(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNode
 					)
 				) (HXT.txt "") adtsorts)
 			   +++
-			   (foldl (\px p -> px +++ xmlNL +++ predicationToXml imports sorts name p)
+			   (foldl (\px p -> px +++ xmlNL +++ predicationToXml mimports sorts name p)
 			   	(HXT.txt "") $ Map.toList nPreds)
 			   +++
-			   (foldl (\px o -> px +++ xmlNL +++ operatorToXml imports sorts name o)
+			   (foldl (\px o -> px +++ xmlNL +++ operatorToXml mimports sorts name o)
 			   	(HXT.txt "") $ Map.toList nOps)
 			   +++
-			   (wrapFormulas imports sorts preds ops name $ Set.toList nSens)
+			   (wrapFormulas mimports sorts preds ops name $ Set.toList nSens)
 			   +++ xmlNL
 			   )
 			+++ xmlNL
@@ -622,114 +623,6 @@ caslMorphismToXml imports sorts preds ops sourcename targetname (CASL.Morphism.M
 			in
 				morphx -- maybe some postprocessing ?
 	
-type MorphismMap = (
-		(Map.Map SORT SORT)
-		,(Map.Map (Id.Id,OpType) (Id.Id,OpType))
-		,(Map.Map (Id.Id,PredType) (Id.Id,PredType))
-		)
-
-makeMorphismMap::(Morphism () () ())->MorphismMap
-makeMorphismMap (Morphism _ _ sortmap funmap predmap _) =
-	let
-		newfunmap = Map.fromList $ map (
-			\((sid,sot),(tid,tfk)) ->
-				-- Hets sets opKind to Partial on morphism... why ?
-				-- resulting signatures have Total operators...
-				((sid,(sot { opKind = Total }) ), (tid,
-					OpType
-						tfk
-						(map (\id' -> Map.findWithDefault id' id' sortmap) (opArgs sot))
-						((\id' -> Map.findWithDefault id' id' sortmap) (opRes sot))
-					) ) ) $ Map.toList funmap
-		newpredmap = Map.fromList $ map (
-			\((sid, spt),tid) ->
-				((sid, spt), (tid,
-					PredType (map (\id' -> Map.findWithDefault id' id' sortmap) (predArgs spt))
-				) ) ) $ Map.toList predmap
-	in
-		(sortmap, newfunmap, newpredmap)
-		
-applyMorphHiding::MorphismMap->[Id.Id]->MorphismMap
-applyMorphHiding mm [] = mm
-applyMorphHiding (sortmap, funmap, predmap) hidings =
-	(
-		 Map.filterWithKey (\sid _ -> not $ elem sid hidings) sortmap
-		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) funmap
-		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) predmap
-	)
-	
-buildMorphismSign::MorphismMap->[Id.Id]->CASLSign->CASLSign
-buildMorphismSign
-	mm@(mmsm, mmfm, mmpm) 
-	hidings
-	sourcesign =
-	let
-		(Sign
-			sortset
-			sortrel
-			opmap
-			assocops
-			predmap
-			varmap
-			sens
-			envdiags
-			ext
-			) = applySignHiding sourcesign hidings
-	in
-		Sign
-			(Set.map
-				(\origsort ->
-					Map.findWithDefault origsort origsort mmsm
-				)
-				sortset)
-			(Rel.fromList $ map (\(a, b) ->
-				(Map.findWithDefault a a mmsm
-				,Map.findWithDefault b b mmsm)
-				) $ Rel.toList sortrel)
-			(foldl (\mappedops (sid, sopts) ->
-				foldl (\mo sot ->
-					case Map.lookup (sid, sot) mmfm of
-						Nothing -> mo
-						(Just (mid, mot)) ->
-							Map.insertWith (Set.union) mid (Set.singleton mot) mo
-					) mappedops $ Set.toList sopts
-				) Map.empty $ Map.toList opmap)
-			(foldl (\mappedops (sid, sopts) ->
-				foldl (\mo sot ->
-					case Map.lookup (sid, sot) mmfm of
-						Nothing -> mo
-						(Just (mid, mot)) ->
-							Map.insertWith (Set.union) mid (Set.singleton mot) mo
-					) mappedops $ Set.toList sopts
-				) Map.empty $ Map.toList assocops)
-			(foldl (\mappedpreds (sid, sprts) ->
-				foldl (\mp spt ->
-					case Map.lookup (sid, spt) mmpm of
-						Nothing -> mp
-						(Just (mid, mpt)) ->
-							Map.insertWith (Set.union) mid (Set.singleton mpt) mp
-					) mappedpreds $ Set.toList sprts
-				) Map.empty $ Map.toList predmap)
-			(Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm) varmap)
-			sens
-			envdiags
-			ext
-	
-applySignHiding::CASLSign->[Id.Id]->CASLSign
-applySignHiding 
-	(Sign sortset sortrel opmap assocops predmap varmap sens envdiags ext)
-	hidings =
-	Sign
-		(Set.filter (not . flip elem hidings) sortset)
-		(Rel.fromList $ filter (\(id,_) -> not $ elem id hidings) $ Rel.toList sortrel)
-		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) opmap)
-		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) assocops)
-		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) predmap)
-		(Map.filter (\varsort -> not $ elem varsort hidings) varmap)
-		sens
-		envdiags
-		ext
-					
 
 processXmlMorphism::
 	Hets.ImportsMap->
@@ -812,7 +705,7 @@ processXmlMorphism
 								isTag "OMOBJ" .> getChildren .>
 								isTag "OMATTR" .> getChildren .> 
 								isTag "OMS" .> getValue "name" ) [tp]
-							sorts = explode "-\\\\" $ Map.findWithDefault "" "type" tatpmap
+							sorts = explode "-\\" $ Map.findWithDefault "" "type" tatpmap
 							newOp = Op_type
 								(funKindFromName $ Map.findWithDefault "Total" "funtype" tatpmap)
 								(map Hets.stringToId ( if (length sorts) == 1 then [] else init sorts ))
@@ -822,31 +715,17 @@ processXmlMorphism
 					x -> Debug.Trace.trace x np
 					) Map.empty requations
 		in
-			(imports, (Map.adjust (Set.union (Debug.Trace.trace ("new symbol set : "++(show newSymbolsSet)) newSymbolsSet)) targetname sorts), preds, newOpsMap, emptyCASLMorphism)
+			(imports, (Map.adjust (Set.union (Debug.Trace.trace ("new symbol set : "++(show newSymbolsSet)) newSymbolsSet)) targetname sorts), preds, newOpsMap, Hets.emptyCASLMorphism)
 				
 
 			
 xmlToMorphismMap::
-	Hets.ImportsMap->
-	Hets.SortsMap->
-	Hets.PredsMap->
-	Hets.OpsMap->
-	String->
-	String->
 	HXT.XmlTrees->
-	MorphismMap
+	Hets.MorphismMap
 xmlToMorphismMap
-	imports
-	sorts
-	preds
-	ops
-	sourcename
-	targetname
 	t
 	=
 		let
-			sourcesorts = Map.findWithDefault Set.empty sourcename sorts
-			targetsorts = Map.findWithDefault Set.empty targetname sorts
 			hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
 			pattern = isTag "requation" .> getChildren .> isTag "pattern"
 			value = isTag "requation" .> getChildren .> isTag "value"
@@ -903,17 +782,22 @@ xmlToMorphismMap
 								isTag "OMOBJ" .> getChildren .>
 								isTag "OMATTR" .> getChildren .> 
 								isTag "OMS" .> getValue "name" ) [tp]
-							sorts = explode "-\\\\" $ Map.findWithDefault "" "type" tatpmap
-							newOp = Op_type
+							ssorts = explode "-\\" $ Map.findWithDefault "" "type" satpmap
+							tsorts = explode "-\\" $ Map.findWithDefault "" "type" tatpmap
+							sOp = OpType
+								Partial -- (funKindFromName $ Map.findWithDefault "Total" "funtype" satpmap)
+								(map Hets.stringToId ( if (length ssorts) == 1 then [] else init ssorts ))
+								(Hets.stringToId $ last ssorts)
+							tOp = OpType
 								(funKindFromName $ Map.findWithDefault "Total" "funtype" tatpmap)
-								(map Hets.stringToId ( if (length sorts) == 1 then [] else init sorts ))
-								(Hets.stringToId $ last sorts) Id.nullRange
+								(map Hets.stringToId ( if (length tsorts) == 1 then [] else init tsorts ))
+								(Hets.stringToId $ last tsorts)
 						in
-							np
+							Map.insert (Hets.stringToId ssymbolname, sOp) (Hets.stringToId tsymbolname, tOp) np
 					x -> Debug.Trace.trace x np
 					) Map.empty requations
 		in
-			(sortmap, Map.empty, Map.empty)
+			(sortmap, newOpsMap, Map.empty)
 
 			
 --helper
@@ -1013,7 +897,7 @@ stringToLinkType s =
 			else
 			[GlobalThm LeftOpen (stringToConservativity $ (words s)!!2) LeftOpen]
 		"HidingThm" ->
-			[HidingThm emptyCASLGMorphism LeftOpen]
+			[HidingThm Hets.emptyCASLGMorphism LeftOpen]
 		"FreeDef" ->
 			[FreeDef (EmptyNode (Logic.Logic CASL))]
 		"CofreeDef" ->
@@ -1027,13 +911,7 @@ defaultDGOrigin::DGOrigin
 defaultDGOrigin = DGExtension
 
 defaultDGLinkLab::DGLinkLab
-defaultDGLinkLab = DGLink emptyCASLGMorphism defaultDGLinkType defaultDGOrigin
-
-emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
-emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
-		
-emptyCASLGMorphism::Logic.Grothendieck.GMorphism
-emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL emptyCASLMorphism)
+defaultDGLinkLab = DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin
 
 headorempty::[[a]]->[a]
 headorempty [] = []
@@ -1051,7 +929,7 @@ stringToLink s =
 		if (length swords == 0) then [] -- error "Cannot determine DGLinkLab from empty string!"
 		else
 			if linktypel == [] then [] else
-			[DGLink emptyCASLGMorphism (head linktypel) (stringToOrigin lorigin)]
+			[DGLink Hets.emptyCASLGMorphism (head linktypel) (stringToOrigin lorigin)]
 
 -- | stringToLEdge returns a list with at most one LEdge
 -- empty on error, error on unknown link origins (nodes)
@@ -1282,9 +1160,23 @@ createImportHints t =
 							) hints ldata
 				) Map.empty theonames
 		
-importsFromXmlTheory::HXT.XmlTrees->(Set.Set String)
+importsFromXmlTheory::HXT.XmlTrees->Hets.Imports
 importsFromXmlTheory t =
-	Set.fromList $ map (\n -> drop 1 $ xshow [n]) $ applyXmlFilter (getChildren .> isTag "imports" .> getValue "from") t
+	let
+		imports = applyXmlFilter (getChildren .> isTag "imports") t
+	in
+		foldl (\imps i ->
+			let
+				from = drop 1 $ xshow $ applyXmlFilter (getValue "from") [i]
+				mm = foldl (\(mmsm, mmfm, mmpm) m ->
+					let
+						(nmmsm, nmmfm, nmmpm) = xmlToMorphismMap [m]
+					in
+						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm)
+					) (Map.empty, Map.empty, Map.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
+			in
+				Set.union imps (Set.singleton (from, (Just mm)))
+		) Set.empty imports
 	
 importsFromXml::HXT.XmlTrees->Hets.ImportsMap
 importsFromXml t =
@@ -1322,15 +1214,15 @@ createFullMaps::Hets.SortsMap->Hets.RelsMap->Hets.PredsMap->Hets.OpsMap->Hets.Se
 createFullMaps sortsmap relsmap predsmap opsmap sensmap importsmap nodename =
 	let	imports = getImports importsmap nodename
 		sorts = foldl (\ss i -> Set.union ss (Map.findWithDefault Set.empty i sortsmap))
-				(Map.findWithDefault Set.empty nodename sortsmap) $ Set.toList imports
+				(Map.findWithDefault Set.empty nodename sortsmap) $ Set.toList $ Set.map fst imports
 		rels = foldl (\rl i -> Rel.union rl (Map.findWithDefault Rel.empty i relsmap))
-				(Map.findWithDefault Rel.empty nodename relsmap) $ Set.toList imports
+				(Map.findWithDefault Rel.empty nodename relsmap) $ Set.toList $ Set.map fst imports
 		preds = foldl (\rl i -> Map.union rl (Map.findWithDefault Map.empty i predsmap))
-				(Map.findWithDefault Map.empty nodename predsmap) $ Set.toList imports
+				(Map.findWithDefault Map.empty nodename predsmap) $ Set.toList $ Set.map fst imports
 		ops = foldl (\rl i -> Map.union rl (Map.findWithDefault Map.empty i opsmap))
-				(Map.findWithDefault Map.empty nodename opsmap) $ Set.toList imports
+				(Map.findWithDefault Map.empty nodename opsmap) $ Set.toList $ Set.map fst imports
 		sens = foldl (\rl i -> Set.union rl (Map.findWithDefault Set.empty i sensmap))
-				(Map.findWithDefault Set.empty nodename sensmap) $ Set.toList imports
+				(Map.findWithDefault Set.empty nodename sensmap) $ Set.toList $ Set.map fst imports
 	in (sorts, rels, preds, ops, sens)
 	
 mapsToG_theory::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->G_theory
@@ -1452,7 +1344,7 @@ xmlToDGraph t ig =
 								else
 									map (\ih -> (importnodenum, nodenum, getIHLink ih)) $ Set.toList filteredimporthints
 						) le $ Set.toList nodeimports
-				) [] $ Map.toList imports
+				) [] $ Map.toList $ Map.map (Set.map fst) imports
 		validedges = foldl (\e newe@(n,m,_) ->
 			if (n==0) || (m==0) then
 				Debug.Trace.trace ("Invalid Edge found from " ++ (show n) ++ " to " ++ (show m) ++ "...") e
@@ -1462,6 +1354,25 @@ xmlToDGraph t ig =
 		cleannodes = map (\(n,node) -> (n, cleanNodeName node)) lnodes  
 	in
 		Graph.mkGraph cleannodes validedges
+		
+getNodeSignature::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->(Maybe DGNodeLab)->CASLSign
+getNodeSignature igdg mnode =
+	case mnode of
+		Nothing -> Hets.emptyCASLSign
+		(Just node@(DGNode {})) ->
+			case Hets.getCASLSign $ dgn_sign node of
+				Nothing -> Hets.emptyCASLSign
+				(Just sign) -> sign
+		(Just ref@(DGRef { dgn_libname = lname, dgn_node = rnode})) ->
+			let
+				libnode = filter (\(_, (S (_,src) (_,mdg))) -> src == (show lname)) $ Graph.labNodes igdg
+			in
+				case libnode of
+					(l:r) ->
+						case l of
+							(_, (S (_,_) (_,(Just ldg)))) -> getNodeSignature igdg $ Graph.lab ldg rnode 
+							_ -> Hets.emptyCASLSign
+					_ -> Hets.emptyCASLSign
 
 importGraphToDGraph::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->DGraph
 importGraphToDGraph ig n =
@@ -1481,18 +1392,29 @@ importGraphToDGraph ig n =
 			\le (nodename, nodeimports) ->
 				let	
 					nodenum = Map.findWithDefault 0 nodename nameNodeMap
+					tnode = case map snd $ filter (\(n,_) -> n == nodenum) lnodes of
+						(l:r) -> l
+						_ -> error "node error!"
+					targetsign = getNodeSignature ig (Just tnode)
 				in
-					foldl (\le' ni ->
+					foldl (\le' (ni, mmm) ->
 						let
 							importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
 								0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
 								x -> x
+							snode = case map snd $ filter (\(n,_) -> n == importnodenum) lnodes of
+								(l:r) -> l
+								_ -> error "node error!"
+							sourcesign = getNodeSignature ig (Just snode)
 							filteredimporthints = Set.filter (\h -> (fromName h) == ni) $ Map.findWithDefault Set.empty nodename importhints
+							ddgl = case mmm of
+								Nothing -> defaultDGLinkLab
+								(Just mm) -> defaultDGLinkLab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
 						in	
 							le' ++
 							if Set.null filteredimporthints
 								then
-									[(importnodenum, nodenum, defaultDGLinkLab)]
+									[(importnodenum, nodenum, ddgl)]
 								else
 									map (\ih -> (importnodenum, nodenum, getIHLink ih)) $ Set.toList filteredimporthints
 						) le $ Set.toList nodeimports
@@ -1781,11 +1703,11 @@ showLinks dg =
 
 -- | get all imports for a node (recursive)
 -- note : this is used for acyclic imports only
-getImports::Hets.ImportsMap->String->(Set.Set String)
+getImports::Hets.ImportsMap->String->Hets.Imports
 getImports importsmap nodename =
 	let currentimports = Map.findWithDefault Set.empty nodename importsmap
 	in
-		foldl (\is i ->
+		foldl (\is (i,_) ->
 			Set.union is (getImports importsmap i)
 			) currentimports $ Set.toList currentimports
 
