@@ -138,7 +138,7 @@ typeCheck mt trm =
                    es = map ( \ d -> d {diagKind = Hint, diagPos = p}) ds
                addDiags es 
                if Set.null rcs then return ()
-                  else addDiags [(mkDiag Error ("in term'"
+                  else addDiags [(mkDiag Error ("in term '"
                              ++ showPretty t "' of type '" 
                              ++ showPretty ty "'\n unresolved constraints")
                                  rcs){diagPos = p}]
