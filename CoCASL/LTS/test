@@ -13,6 +13,9 @@ simulations (LTS ['s','t','u','v'] [(Edge 's' 'a' 't'),(Edge 't' 'b' 'u'),(Edge 
 (('v','p'),[('s','p'),('t','q'),('u','r'),('v','p')])
 ]
 
+ bisimulations (LTS ['p','q','r']  [(Edge 'p' 'a' 'q'),(Edge 'q' 'b' 'r'),(Edge 'r' 'a' 'p'),(Edge 'p' 'c' 'r')] ['a','b','c']) (LTS ['s','t','u','v'] [(Edge 's' 'a' 't'),(Edge 't' 'b' 'u'),(Edge 'u' 'a' 's'),(Edge 'u' 'a' 'v'),(Edge 'v' 'c' 'u')] ['a','b','c'])
+
+[]
 
 --Exercise Sheet 1, 3:
 
@@ -38,6 +41,14 @@ simulations (LTS ['t','u','v'] [(Edge 't' 'a' 'u'),(Edge 'u' 'b' 'v')] ['a','b']
 (('v','q'),[('v','q')]),
 (('v','r'),[('v','r')]),
 (('v','s'),[('v','s')])
+]
+
+bisimulations (LTS ['p','q','r','s'] [(Edge 'p' 'a' 'q'),(Edge 'p' 'a' 'r'),(Edge 'r' 'b' 's')] ['a','b']) (LTS ['t','u','v'] [(Edge 't' 'a' 'u'),(Edge 'u' 'b' 'v')] ['a','b'])
+
+[
+(('q','v'),[('q','v')]),
+(('r','u'),[('s','v'),('r','u')]),
+(('s','v'),[('s','v')])
 ]
 
 
