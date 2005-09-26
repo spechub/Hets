@@ -45,7 +45,6 @@ simulations (LTS ['t','u','v'] [(Edge 't' 'a' 'u'),(Edge 'u' 'b' 'v')] ['a','b']
 
 satisfy (LTS ['p','q','r','s'] [(Edge 'p' 'b' 'q'),(Edge 'p' 'b' 'r'),(Edge 'q' 'a' 'r'),(Edge 's' 'b' 'q'),(Edge 'r' 'a' 'p'),(Edge 'r' 'b' 'r'),(Edge 'r' 'a' 's')] ['a','b']) (Modal BoxOp (Modal DiamondOp (Top) 'a') 'b')
 
-
 [
 ('p',([('p',Modal BoxOp (Modal DiamondOp Top 'a') 'b',True),('q',Modal DiamondOp Top 'a',True),('r',Top,True),('r',Modal DiamondOp Top 'a',True),('p',Top,True)],True)),
 
@@ -58,7 +57,6 @@ satisfy (LTS ['p','q','r','s'] [(Edge 'p' 'b' 'q'),(Edge 'p' 'b' 'r'),(Edge 'q' 
 
 
 satisfy (LTS ['p','q','r','s'] [(Edge 'p' 'b' 'q'),(Edge 'p' 'b' 'r'),(Edge 'q' 'a' 'r'),(Edge 's' 'b' 'q'),(Edge 'r' 'a' 'p'),(Edge 'r' 'b' 'r'),(Edge 'r' 'a' 's')] ['a','b']) (Modal BoxOp (Modal DiamondOp (Modal DiamondOp (Top) 'b') 'b') 'a')
-
 
 [
 ('p',([('p',Modal BoxOp (Modal DiamondOp (Modal DiamondOp Top 'b') 'b') 'a',True)],True)),
@@ -79,7 +77,6 @@ satisfy (LTS ['p','q','r','s'] [(Edge 'p' 'b' 'q'),(Edge 'p' 'b' 'r'),(Edge 'q' 
 
 ('q',([('q',Modal DiamondOp (Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b')) 'a',False),('r',Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b'),False),('r',Modal BoxOp Bot 'a',False),('p',Bot,False),('r',Modal BoxOp (Modal BoxOp Bot 'b') 'b',False),('r',Modal BoxOp Bot 'b',False),('r',Bot,False)],False)),
 
-('r',([('r',Modal DiamondOp (Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b')) 'a',True),('p',Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b'),True),('p',Modal BoxOp Bot 'a',True)],True)),
+('r',([('r',Modal DiamondOp (Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b')) 'a',True),('p',Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b'),True),('p',Modal BoxOp Bot 'a',True),('p',Modal BoxOp (Modal BoxOp Bot 'b') 'b',False),('q',Modal BoxOp Bot 'b',True),('r',Modal BoxOp Bot 'b',False),('r',Bot,False)],True)),
 
-('s',([('s',Modal DiamondOp (Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b')) 'a',False)],False))
-]
+('s',([('s',Modal DiamondOp (Bin OrOp (Modal BoxOp Bot 'a') (Modal BoxOp (Modal BoxOp Bot 'b') 'b')) 'a',False)],False))]

@@ -1,5 +1,4 @@
 import qualified Data.List as List
-import qualified Data.Set as Set
 
 type Node = Char
 type Action = Char
@@ -42,57 +41,34 @@ hml lts f n = ltshml lts f n $ edgeList lts
 
 ltshml :: LTS -> HML -> Node -> [Edge] -> ([(Node, HML, Bool)], Bool)
 ltshml lts f n ed1 = case f of
-    Bot                 -> ([(n, Bot, False)], False)
-    Top                 -> ([(n, Top, True)], True)
-    Neg g               -> case ltshml lts g n ed1 of
-        (l, b) -> ((n, Neg g, not b) : l, not b)
-    Bin AndOp g h       -> case ltshml lts g n ed1 of
-        (l, True)  ->  case ltshml lts h n ed1 of
-            (k, True)  -> ((n, Bin AndOp g h, True) : l ++ k, True) 
-            (k, False) -> ((n, Bin AndOp g h, False) : l ++ k, False)
-        (l, False) -> ((n, Bin AndOp g h, False) : l, False) 
-    Bin OrOp g h        -> case ltshml lts g n ed1 of
-        (l, True)  -> ((n, Bin OrOp g h, True) : l, True)
-        (l, False) -> case ltshml lts h n ed1 of
-            (k, True)  -> ((n, Bin OrOp g h, True) : l ++ k, True) 
-            (k, False) -> ((n, Bin OrOp g h, False) : l ++ k, False)
-    Bin ImpliesOp g h   -> case ltshml lts g n ed1 of
-        (l, True)  ->  case ltshml lts h n ed1 of
-            (k, True)  -> ((n, Bin ImpliesOp g h, True) : l ++ k, True) 
-            (k, False) -> ((n, Bin ImpliesOp g h, False) : l ++ k, False)
-        (l, False) -> ((n, Bin ImpliesOp g h, True) : l, True) 
-    Modal BoxOp g a     -> case ed1 of
-        []         -> ([(n, Modal BoxOp g a, True)], True)
+    Bot          -> ([(n, Bot, False)], False)
+    Top          -> ([(n, Top, True)], True)
+    Neg g        -> case ltshml lts g n ed1 of
+        (l, b1) -> ((n, Neg g, not b1) : l, not b1)
+    Bin op g h   -> case ltshml lts g n ed1 of
+        (l,b1) -> case ltshml lts h n ed1 of
+            (k,b2) -> case op of
+                AndOp     -> ((n, f, b1 && b2) : l ++ k, b1 && b2) 
+                OrOp      -> ((n, f, b1 || b2) : l ++ k, b1 || b2)
+                ImpliesOp -> ((n, f, (not b1) || b2) : l ++ k, (not b1) || b2)
+    Modal op g a -> case ed1 of
+        []         -> case op of
+            BoxOp     -> ([(n, f, True)], True)
+            DiamondOp -> ([(n, f, False)], False)
         ed : et ->
             if (leftNode ed) == n then
                 if (action ed) == a then
                     case ltshml lts g (rightNode ed) (edgeList lts) of
-                        (l, True)  -> case ltshml lts (Modal BoxOp g a)
-                                                 n et of
-                            (k, True)  -> (List.nub
-                                 ((n, Modal BoxOp g a, True) : l ++ k), True) 
-                            (k, False) -> (List.nub
-                                 ((n, Modal BoxOp g a, False) : l ++ k), False)
-                        (l, False) -> (List.nub
-                                 ((n, Modal BoxOp g a, False) : l), False)
-                else ltshml lts (Modal BoxOp g a) n et
-            else ltshml lts (Modal BoxOp g a) n et
-    Modal DiamondOp g a -> case ed1 of
-        []         -> ([(n, Modal DiamondOp g a, False)], False)
-        ed : et ->
-            if (leftNode ed) == n then
-                if (action ed) == a then
-                    case ltshml lts g (rightNode ed) (edgeList lts) of
-                        (l,True)  -> (List.nub
-                            ((n, Modal DiamondOp g a, True) : l), True)
-                        (l,False) -> case ltshml lts (Modal DiamondOp g a)
-                                                 n et of
-                            (k,True)  -> (List.nub
-                             ((n, Modal DiamondOp g a, True) : l ++ k), True) 
-                            (k,False) -> (List.nub
-                             ((n, Modal DiamondOp g a, False) : l ++ k), False)
-                else ltshml lts (Modal DiamondOp g a) n et
-            else ltshml lts (Modal DiamondOp g a) n et
+                        (l, b1)  -> case ltshml lts f n et of
+                            (k, b2)  -> case op of
+                              BoxOp     -> if b1 then
+                                (List.nub((n, f, b2) : l ++ k), b2) 
+                                else (List.nub((n, f, False) : l), False)
+                              DiamondOp -> if b1 then
+                                (List.nub((n, f, True) : l), True) 
+                                else (List.nub((n, f, b2) : l ++ k), b2) 
+                else ltshml lts f n et
+            else ltshml lts f n et
 
 simulations :: LTS -> LTS -> [((Node,Node), [(Node,Node)])] 
 simulations lts1 lts2 = sims lts1 lts2 (nodeList lts1) (nodeList lts2)
