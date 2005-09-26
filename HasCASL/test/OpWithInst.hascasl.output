@@ -2,7 +2,7 @@ type s
 op a : s
 op __=[s]__ : forall a . a * a -> Unit
 . (op __=[s]__[s] : forall a : Type . a * a -> Unit)
-  (((op a : s), (op a : s)))
+  ((op a : s), (op a : s))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -35,7 +35,7 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(__=[s]__) ((a, a))
+__=[s]__ (a, a)
 %% Diagnostics -----------------------------------------------------------
 *** Warning 4.22, missing kind for type variable  'a'
 *** Warning 6.28, missing kind for type variable  'a'

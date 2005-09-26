@@ -4,13 +4,13 @@ op a, b : s
 op __+__ : s * s -> s
 op __+__ : t * t -> t
 op a, b : t
-op c : s = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
-op d : s = (op __+__ : s * s -> s) (((op a : s), (op a : s))) as s
+op c : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
+op d : s = (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s
 op e : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
 op f : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
 op g : s * s = ((op a : s), (op b : s)) as s * s
-op h : s = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
-op i : s = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
+op h : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
+op i : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
 op incr : s -> s
 op i1 : s = (op incr : s -> s) (op a : s) as s
 op i2 : s = (op incr : s -> s) (op a : s) as s
@@ -18,27 +18,27 @@ op i3 : s = (op incr : s -> s) (op a : s) as s
 op __<=__<=__ : s * s * s -> s
 op l1 : s
      = (op __<=__<=__ : s * s * s -> s)
-       (((op a : s), (op b : s), (op c : s)))
+       ((op a : s), (op b : s), (op c : s))
        as s
 op l2 : s * s * s -> s
      = (op __<=__<=__ : s * s * s -> s) as s * s * s -> s
 op l3 : s
      = (op __<=__<=__ : s * s * s -> s)
-       (((op a : s), (op b : s), (op c : s)))
+       ((op a : s), (op b : s), (op c : s))
        as s
 op l4 : s
      = (op __<=__<=__ : s * s * s -> s)
-       (((op a : s), (op b : s), (op c : s)))
+       ((op a : s), (op b : s), (op c : s))
        as s
 op l5 : s * s * s
      = ((op a : s), (op b : s), (op c : s)) as s * s * s
 op x : s
 op y : s
      = (op __<=__<=__ : s * s * s -> s)
-       (((op a : s), (var x : s), (op a : s)))
+       ((op a : s), (var x : s), (op a : s))
        as s
 op z : s
-     = (op __+__ : s * s -> s) (((op x : s) as s, (op x : s) as t as s))
+     = (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s)
        as s
 . (op x : s) in s %(bla_label)%
 . (op x : s) in t
@@ -76,18 +76,18 @@ b : t %(op)%
   : s %(op)%
 bottom : forall a : Type . a %(fun)%
 c : s
-    %(op)% = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
+    %(op)% = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
 d : s
-    %(op)% = (op __+__ : s * s -> s) (((op a : s), (op a : s))) as s
+    %(op)% = (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s
 def__ : forall a : Type . a ->? Unit %(fun)%
 e : s * s -> s %(op)% = (op __+__ : s * s -> s) as s * s -> s
 f : s * s -> s %(op)% = (op __+__ : s * s -> s) as s * s -> s
 false : Unit %(fun)%
 g : s * s %(op)% = ((op a : s), (op b : s)) as s * s
 h : s
-    %(op)% = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
+    %(op)% = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
 i : s
-    %(op)% = (op __+__ : s * s -> s) (((op a : s), (op b : s))) as s
+    %(op)% = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
 i1 : s %(op)% = (op incr : s -> s) (op a : s) as s
 i2 : s %(op)% = (op incr : s -> s) (op a : s) as s
 i3 : s %(op)% = (op incr : s -> s) (op a : s) as s
@@ -96,7 +96,7 @@ l1
   : s
     %(op)%
       = (op __<=__<=__ : s * s * s -> s)
-        (((op a : s), (op b : s), (op c : s)))
+        ((op a : s), (op b : s), (op c : s))
         as s
 l2
   : s * s * s -> s
@@ -105,13 +105,13 @@ l3
   : s
     %(op)%
       = (op __<=__<=__ : s * s * s -> s)
-        (((op a : s), (op b : s), (op c : s)))
+        ((op a : s), (op b : s), (op c : s))
         as s
 l4
   : s
     %(op)%
       = (op __<=__<=__ : s * s * s -> s)
-        (((op a : s), (op b : s), (op c : s)))
+        ((op a : s), (op b : s), (op c : s))
         as s
 l5
   : s * s * s
@@ -122,25 +122,25 @@ x : s %(op)%
 y : s
     %(op)%
       = (op __<=__<=__ : s * s * s -> s)
-        (((op a : s), (var x : s), (op a : s)))
+        ((op a : s), (var x : s), (op a : s))
         as s
 z : s
     %(op)%
-      = (op __+__ : s * s -> s) (((op x : s) as s, (op x : s) as t as s))
+      = (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s)
         as s
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 c =
-((op __+__ : s * s -> s) (((op a : s), (op b : s))) as s) %(def_c)%
+((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s) %(def_c)%
 d =
-((op __+__ : s * s -> s) (((op a : s), (op a : s))) as s) %(def_d)%
+((op __+__ : s * s -> s) ((op a : s), (op a : s)) as s) %(def_d)%
 e = ((op __+__ : s * s -> s) as s * s -> s) %(def_e)%
 f = ((op __+__ : s * s -> s) as s * s -> s) %(def_f)%
 g = (((op a : s), (op b : s)) as s * s) %(def_g)%
 h =
-((op __+__ : s * s -> s) (((op a : s), (op b : s))) as s) %(def_h)%
+((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s) %(def_h)%
 i =
-((op __+__ : s * s -> s) (((op a : s), (op b : s))) as s) %(def_i)%
+((op __+__ : s * s -> s) ((op a : s), (op b : s)) as s) %(def_i)%
 i1 = (incr (op a : s) as s) %(def_i1)%
 i2 = (incr (op a : s) as s) %(def_i2)%
 i3 = (incr (op a : s) as s) %(def_i3)%
@@ -150,8 +150,7 @@ l3 = ((op a : s) <= (op b : s) <= c as s) %(def_l3)%
 l4 = ((op a : s) <= (op b : s) <= c as s) %(def_l4)%
 l5 = (((op a : s), (op b : s), c) as s * s * s) %(def_l5)%
 y = ((a : s) <= (var x : s) <= (op a : s) as s) %(def_y)%
-z =
-((op __+__ : s * s -> s) ((x as s, x as t as s)) as s) %(def_z)%
+z = ((op __+__ : s * s -> s) (x as s, x as t as s) as s) %(def_z)%
 x in s %(bla_label)%
 x in t
 %% Diagnostics -----------------------------------------------------------

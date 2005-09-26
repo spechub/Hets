@@ -5,30 +5,30 @@ free type Nat ::= Zero |
                   Suc (Nat)
 op caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
-. (__=__)
-  (((op caseTree : Tree Nat -> Tree Nat) (var t : Tree Nat),
-    case (var t : Tree Nat) of
-        (op EmptyLeaf[Nat] : forall a : Type . Tree a) ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-        (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat) ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-        ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
-         (op EmptyLeaf[Nat] : forall a : Type . Tree a))
-        (var n : Nat)
-          ->
-            (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-        ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
-         (((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
-           (var h : Tree Nat))
-          (var n : Nat)))
-        (var n : Nat)
-          ->
-            (var h : Tree Nat) | 
-        ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
-         ((op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat)))
-        (var n : Nat)
-          ->
-            (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat)))
+. __=__
+  ((op caseTree : Tree Nat -> Tree Nat) (var t : Tree Nat),
+   case (var t : Tree Nat) of
+       (op EmptyLeaf[Nat] : forall a : Type . Tree a) ->
+           (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
+       (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat) ->
+           (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
+       ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+        (op EmptyLeaf[Nat] : forall a : Type . Tree a))
+       (var n : Nat)
+         ->
+           (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
+       ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+        (((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+          (var h : Tree Nat))
+         (var n : Nat)))
+       (var n : Nat)
+         ->
+           (var h : Tree Nat) | 
+       ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+        ((op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat)))
+       (var n : Nat)
+         ->
+           (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -86,14 +86,14 @@ free type Tree(a : Type)
 free type Nat
   ::= Zero : Nat
       Suc : Nat -> Nat (Nat) %(ga_Nat)%
-(__=__)
-((caseTree (t),
-  case t of
-      EmptyLeaf -> EmptyLeaf | 
-      (Leaf) n -> EmptyLeaf | 
-      ((Node) (EmptyLeaf)) n -> EmptyLeaf | 
-      ((Node) (((Node) h) n)) n -> h | 
-      ((Node) ((Leaf) n)) n -> (Leaf) n))
+__=__
+(caseTree t,
+ case t of
+     EmptyLeaf -> EmptyLeaf | 
+     Leaf n -> EmptyLeaf | 
+     (Node EmptyLeaf) n -> EmptyLeaf | 
+     (Node ((Node h) n)) n -> h | 
+     (Node (Leaf n)) n -> Leaf n)
 %% Diagnostics -----------------------------------------------------------
 *** Warning 1.18, missing kind for type variable  'a'
 *** Warning 4.23, missing kind for type variable  'a'

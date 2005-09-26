@@ -2,11 +2,11 @@
 a + a
 not a = a
 not a + a
-not s (a) + a
-not s (n) <= 0
-(def s (n)) <= 0
+not s a + a
+not s n <= 0
+(def s n) <= 0
 not a => b
-not s (a) => s (b)
+not s a => s b
 def a = b
 10 * b (n div 10)
 10 when n < 10 else 10 * b (n div 10)
@@ -14,10 +14,10 @@ m (m, n) = m when m <= n else n
 i div p < j div q <=> (i * q) < (j * p)
 f + - f = f
 - f + - f + - f = - f + - f + - f
-f (a) none a but f (a)
-f (a) one a done
-f (a) --> f (a)
-s (a) <= 0
+f a none a but f a
+f a one a done
+f a --> f a
+s a <= 0
 not if if a then b else c then b else c
 a when (exists . true) else b
-(a * b) ::: a (b) = a ::: b
+(a * b) ::: a b = a ::: b

@@ -7,7 +7,7 @@
 1.0E-23
 12 + 34 * "afa"
 "" + ""
-(op x : a) ((a, b))
+(op x : a) (a, b)
 a
 a + b
 a (: (s + b) : s)
@@ -68,5 +68,5 @@ RS3
 a * (b * c)
 c * (a + b)
 a * b * c
-s (n) * c
-(- a) !
+s n * c
+-__ a !

@@ -11,83 +11,83 @@ op emptySet : Set S; {__} : S -> Set S;
    __disjointUnion__ : Set S * Set S -> Set (S * Bool);
    inl, inr : S -> S * Bool
 forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
-. (not__)
+. not__
   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-   (((var x : S), (op emptySet[S] : forall S : Type . Set S))))
-. (__<=>__)
-  (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-    (((var x : S),
-      (op {__}[S] : forall S : Type . S -> Set S) (var x' : S))),
-    (__=__) (((var x : S), (var x' : S)))))
-. (__<=>__)
-  (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-    (((var x : S), (var s : Set S))),
-    (var s : Set S) (var x : S)))
-. (__<=>__)
-  (((op __subset__[S] : forall S : Type . Pred (Set S * Set S))
-    (((var s : Set S), (var s' : Set S))),
-    forall x : S
-      . (__=>__)
-        (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-          (((var x : S), (var s : Set S))),
-          (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-          (((var x : S), (var s' : Set S)))))))
-. (__<=>__)
-  (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-    (((var x : S),
-      (op __union__[S] : forall S : Type . Set S * Set S -> Set S)
-      (((var s : Set S), (var s' : Set S))))),
-    (__\/__)
-    (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s : Set S))),
-      (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s' : Set S)))))))
-. (__<=>__)
-  (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-    (((var x : S),
-      (op __intersection__[S] : forall S : Type . Set S * Set S -> Set S)
-      (((var s : Set S), (var s' : Set S))))),
-    (__/\__)
-    (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s : Set S))),
-      (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s' : Set S)))))))
-. (__<=>__)
-  (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-    (((var x : S),
-      (op __\\__[S] : forall S : Type . Set S * Set S -> Set S)
-      (((var s : Set S), (var s' : Set S))))),
-    (__/\__)
-    (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s : Set S))),
-      (not__)
-      ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-       (((var x : S), (var s' : Set S))))))))
-. (__<=>__)
-  (((op __disjoint__[S] : forall S : Type . Pred (Set S * Set S))
-    (((var s : Set S), (var s' : Set S))),
-    (__=__)
-    (((op __intersection__[S] :
-       forall S : Type . Set S * Set S -> Set S)
-      (((var s : Set S), (var s' : Set S))),
-      (op emptySet[S] : forall S : Type . Set S)))))
-. (__<=>__)
-  (((op __isIn__[S * T] : forall S : Type . S * Set S ->? Unit)
-    ((((var x : S), (var y : T)),
-      (op __*__[S; T] :
-       forall S : Type; T : Type . Set S * Set T -> Set (S * T))
-      (((var s : Set S), (var t : Set T))))),
-    (__/\__)
-    (((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
-      (((var x : S), (var s : Set S))),
-      (op __isIn__[T] : forall S : Type . S * Set S ->? Unit)
-      (((var y : T), (var t : Set T)))))))
-. (__=__)
-  (((op inl[S] : forall S : Type . S -> S * Bool) (var x : S),
-    ((var x : S), (op False : Bool))))
-. (__=__)
-  (((op inr[S] : forall S : Type . S -> S * Bool) (var x : S),
-    ((var x : S), (op True : Bool))))
+   ((var x : S), (op emptySet[S] : forall S : Type . Set S)))
+. __<=>__
+  ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+   ((var x : S),
+    (op {__}[S] : forall S : Type . S -> Set S) (var x' : S)),
+   __=__ ((var x : S), (var x' : S)))
+. __<=>__
+  ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+   ((var x : S), (var s : Set S)),
+   (var s : Set S) (var x : S))
+. __<=>__
+  ((op __subset__[S] : forall S : Type . Pred (Set S * Set S))
+   ((var s : Set S), (var s' : Set S)),
+   forall x : S
+     . __=>__
+       ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+        ((var x : S), (var s : Set S)),
+        (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+        ((var x : S), (var s' : Set S))))
+. __<=>__
+  ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+   ((var x : S),
+    (op __union__[S] : forall S : Type . Set S * Set S -> Set S)
+    ((var s : Set S), (var s' : Set S))),
+   __\/__
+   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s : Set S)),
+    (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s' : Set S))))
+. __<=>__
+  ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+   ((var x : S),
+    (op __intersection__[S] : forall S : Type . Set S * Set S -> Set S)
+    ((var s : Set S), (var s' : Set S))),
+   __/\__
+   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s : Set S)),
+    (op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s' : Set S))))
+. __<=>__
+  ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+   ((var x : S),
+    (op __\\__[S] : forall S : Type . Set S * Set S -> Set S)
+    ((var s : Set S), (var s' : Set S))),
+   __/\__
+   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s : Set S)),
+    not__
+    ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+     ((var x : S), (var s' : Set S)))))
+. __<=>__
+  ((op __disjoint__[S] : forall S : Type . Pred (Set S * Set S))
+   ((var s : Set S), (var s' : Set S)),
+   __=__
+   ((op __intersection__[S] :
+     forall S : Type . Set S * Set S -> Set S)
+    ((var s : Set S), (var s' : Set S)),
+    (op emptySet[S] : forall S : Type . Set S)))
+. __<=>__
+  ((op __isIn__[S * T] : forall S : Type . S * Set S ->? Unit)
+   (((var x : S), (var y : T)),
+    (op __*__[S; T] :
+     forall S : Type; T : Type . Set S * Set T -> Set (S * T))
+    ((var s : Set S), (var t : Set T))),
+   __/\__
+   ((op __isIn__[S] : forall S : Type . S * Set S ->? Unit)
+    ((var x : S), (var s : Set S)),
+    (op __isIn__[T] : forall S : Type . S * Set S ->? Unit)
+    ((var y : T), (var t : Set T))))
+. __=__
+  ((op inl[S] : forall S : Type . S -> S * Bool) (var x : S),
+   ((var x : S), (op False : Bool)))
+. __=__
+  ((op inr[S] : forall S : Type . S -> S * Bool) (var x : S),
+   ((var x : S), (op True : Bool)))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Bool : Type
@@ -145,23 +145,23 @@ x : S
 x' : S
 y : T
 %% Sentences -------------------------------------------------------------
-not ((__isIn__) ((x, emptySet)))
-((__isIn__) ((x, ({__}) x'))) <=> ((__=__) ((x, x')))
-((__isIn__) ((x, s))) <=> (s (x))
-((__subset__) ((s, s'))) <=>
-(forall x : S . ((__isIn__) ((x, s))) => ((__isIn__) ((x, s'))))
-((__isIn__) ((x, (__union__) ((s, s'))))) <=>
-(((__isIn__) ((x, s))) \/ ((__isIn__) ((x, s'))))
-((__isIn__) ((x, (__intersection__) ((s, s'))))) <=>
-(((__isIn__) ((x, s))) /\ ((__isIn__) ((x, s'))))
-((__isIn__) ((x, (__\\__) ((s, s'))))) <=>
-(((__isIn__) ((x, s))) /\ (not ((__isIn__) ((x, s')))))
-((__disjoint__) ((s, s'))) <=>
-((__=__) (((__intersection__) ((s, s')), emptySet)))
-((__isIn__) (((x, y), (__*__) ((s, t))))) <=>
-(((__isIn__) ((x, s))) /\ ((__isIn__) ((y, t))))
-(__=__) (((inl) x, (x, False)))
-(__=__) (((inr) x, (x, True)))
+not__ (__isIn__ (x, emptySet))
+(__isIn__ (x, {__} x')) <=> (__=__ (x, x'))
+(__isIn__ (x, s)) <=> (s x)
+(__subset__ (s, s')) <=>
+(forall x : S . (__isIn__ (x, s)) => (__isIn__ (x, s')))
+(__isIn__ (x, __union__ (s, s'))) <=>
+((__isIn__ (x, s)) \/ (__isIn__ (x, s')))
+(__isIn__ (x, __intersection__ (s, s'))) <=>
+((__isIn__ (x, s)) /\ (__isIn__ (x, s')))
+(__isIn__ (x, __\\__ (s, s'))) <=>
+((__isIn__ (x, s)) /\ (not__ (__isIn__ (x, s'))))
+(__disjoint__ (s, s')) <=>
+(__=__ (__intersection__ (s, s'), emptySet))
+(__isIn__ ((x, y), __*__ (s, t))) <=>
+((__isIn__ (x, s)) /\ (__isIn__ (y, t)))
+__=__ (inl x, (x, False))
+__=__ (inr x, (x, True))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'S'
 *** Hint 1.8, is type variable 'T'

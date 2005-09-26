@@ -20,7 +20,6 @@ import Common.Earley
 import qualified Common.Lib.Map as Map
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 
@@ -108,10 +107,13 @@ toMixWeight ga splt convFuns trm =
       else let
         p = getSimpleIdPrec precs i
         newArgs = map (toMixWeight ga splt convFuns) aas
-        in if placeCount i /= length aas then
-           (juxtapose convFuns [convId convFuns i, 
+        n = length aas
+        in if placeCount i /= n then
+              case aas of
+              [] -> (convId convFuns i, Just $ mkWeight (m + 2))
+              _ -> (juxtapose convFuns [convId convFuns i, 
                       parenthesize convFuns $ map fst newArgs],
-            Just $ mkWeight (m + 1)) 
+                    Just $ mkWeight (m + 1)) 
            else let 
              parArgs = zipWith ( \ (arg, itm) num ->
                 let pArg = parenthesize convFuns [arg]
@@ -156,7 +158,7 @@ toMixWeight ga splt convFuns trm =
 hsConvFuns :: ConvFuns Term
 hsConvFuns = ConvFuns
     { parenthesize = parenthesizeTerms
-    , commarize = \ ts ->  BracketTerm NoBrackets ts nullRange
+    , commarize = \ ts -> BracketTerm NoBrackets ts nullRange
     , juxtapose = MixfixTerm
     , convertTerm = convTerm
     , convTok = TermToken
@@ -170,15 +172,17 @@ parenthesizeTerms :: [Term] -> Term
 parenthesizeTerms ts = case ts of 
     trm@(QualVar _) : [] -> trm
     trm@(QualOp _ _ _ _) : [] -> trm
+    trm@(TupleTerm _ _) : [] -> trm
+    trm@(BracketTerm _ _ _) : [] -> trm
+    trm@(ResolvedMixTerm _ [] _) : [] -> trm
     _ -> BracketTerm Parens ts nullRange
 
 splitTerm :: Term -> Maybe (Id, [Term])
 splitTerm trm = case trm of
-  ResolvedMixTerm i ts _ -> Just(i, ts)
-  ApplTerm (ResolvedMixTerm i [] _) t2 _ -> 
-      case getTupleArgs t2 of
-      Just ts -> Just(i, ts)
-      _ -> Just(i, [t2])
+  ResolvedMixTerm i ts _ -> case ts of 
+     [TupleTerm args _] -> Just (i, args)
+     _ -> Just(i, ts)
+  ApplTerm (ResolvedMixTerm i [] _) (TupleTerm ts _) _ -> Just(i, ts) 
   ApplTerm t1 t2 _ -> Just(applId, [t1, t2])
   _ -> Nothing
 

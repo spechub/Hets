@@ -12,7 +12,7 @@ pred eq : s * s
 type s < ? s
 forall x : t; y : t
 . %(..)%
-  (__=__) (((var x : t), (var y : t)))
+  __=__ ((var x : t), (var y : t))
 type s
 op a : (? s)
 type Data1 ::= a | 
@@ -121,7 +121,7 @@ x : s
 y : t
 %% Sentences -------------------------------------------------------------
 program tt = \ x . () %(pe_tt)%
-(__=__) ((x, y))
+__=__ (x, y)
 type Data1
   ::= a : Data1
       b : Data1
@@ -181,14 +181,14 @@ true
     
 *** Hint 21.1-21.16, untypable application (with result type: s)
  'fst (x : s, (var y : t))'
-*** Error 21.22, no typing for 'program fst ((x : s, (var y : t))) : s = x'
+*** Error 21.22, no typing for 'program fst (x : s, (var y : t)) : s = x'
 *** Hint 22.1, no type match for: snd
   with (maximal) type: _v5 ->? t
   known types:
     
 *** Hint 22.1-22.16, untypable application (with result type: t)
  'snd (x : s, (var y : t))'
-*** Error 22.22, no typing for 'program snd ((x : s, (var y : t))) : t = y'
+*** Error 22.22, no typing for 'program snd (x : s, (var y : t)) : t = y'
 *** Hint 28.9, no type match for: all
   with (maximal) type: _v6 ->? ? Unit
   known types:

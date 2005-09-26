@@ -5,11 +5,11 @@ type Graph : Type -> Type -> Type := \ (N : Type)(E : Type) . Set N
 op __union__ : Graph N E * Graph N E -> Graph N E;
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
-. (__=__)
-  (((op __union__[N; E] :
-     forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
-    (((var g : Graph N E), (var g' : Graph N E))),
-    (var g : Graph N E)))
+. __=__
+  ((op __union__[N; E] :
+    forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
+   ((var g : Graph N E), (var g' : Graph N E)),
+   (var g : Graph N E))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Graph
@@ -56,8 +56,7 @@ true : Unit %(fun)%
 g : Graph N E
 g' : Graph N E
 %% Sentences -------------------------------------------------------------
-(__=__)
-(((__union__ : Graph N E * Graph N E -> Graph N E) ((g, g')), g))
+__=__ ((__union__ : Graph N E * Graph N E -> Graph N E) (g, g'), g)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'

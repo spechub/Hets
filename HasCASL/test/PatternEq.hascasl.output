@@ -1,23 +1,23 @@
 type s, t
 op snd : s * t -> t
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
-program (op snd : s * t -> t) (((var x : s), (var y : t))) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) =
             (var y : t)
 op a : s
 program (var b : s) = (op a : s)
 op b : s
 program (op b : s) = (op a : s)
 op x : s; y : t
-op c : t = (op snd : s * t -> t) (((op x : s), (op y : t))) as t
+op c : t = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -45,8 +45,7 @@ __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 a : s %(op)%
 b : s %(op)%
 bottom : forall a : Type . a %(fun)%
-c : t
-    %(op)% = (op snd : s * t -> t) (((op x : s), (op y : t))) as t
+c : t %(op)% = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
 def__ : forall a : Type . a ->? Unit %(fun)%
 false : Unit %(fun)%
 not__ : ? Unit ->? Unit %(fun)%

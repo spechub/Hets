@@ -141,12 +141,12 @@ free type List(a : +Type)
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree a
   . (op head : forall a : +Type . Tree a -> Tree a)
     ((op Branch : forall a : +Type . Tree a * Tree a -> Tree a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_1 %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree a
   . (op tail : forall a : +Type . Tree a -> Tree a)
     ((op Branch : forall a : +Type . Tree a * Tree a -> Tree a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_2 %(ga_select_tail)%
 free type Tree(a : +Type)
   ::= Leaf : Tree a
@@ -155,12 +155,12 @@ free type Tree(a : +Type)
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree1 a
   . (op head : forall a : +Type . Tree1 a -> Tree a)
     ((op Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_1 %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree1 a
   . (op tail : forall a : +Type . Tree1 a -> Tree1 a)
     ((op Branch : forall a : +Type . Tree a * Tree1 a -> Tree1 a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_2 %(ga_select_tail)%
 generated type Tree1(a : +Type)
   ::= Leaf : Tree1 a
@@ -169,12 +169,12 @@ generated type Tree1(a : +Type)
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree2 a
   . (op head : forall a : +Type . Tree2 a -> Tree a)
     ((op Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_1 %(ga_select_head)%
 forall a : +Type; x_1_1 : Tree a; x_1_2 : Tree2 a
   . (op tail : forall a : +Type . Tree2 a -> Tree2 a)
     ((op Branch : forall a : +Type . Tree a * Tree2 a -> Tree2 a)
-     ((x_1_1, x_1_2)))
+     (x_1_1, x_1_2))
     = x_1_2 %(ga_select_tail)%
 type Tree2(a : +Type)
   ::= Leaf : Tree2 a

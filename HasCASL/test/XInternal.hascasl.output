@@ -1,5 +1,5 @@
 internal {type s, t; fun o, q : s -> t;
-          . (__=__) (((fun o : s -> t), (fun q : s -> t)))}
+          . __=__ ((fun o : s -> t), (fun q : s -> t))}
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -33,4 +33,4 @@ q : s -> t %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(__=__) ((o, q))
+__=__ (o, q)

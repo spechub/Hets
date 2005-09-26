@@ -3,14 +3,14 @@ class Ord < Eq
 type a : Ord
 op f : forall e : Ord . e -> e
 op c : a
-. (__=__)
-  (((op f[a] : forall e : Ord . e -> e)
-    ((op f[a] : forall e : Ord . e -> e) (op c : a)),
-    (op c : a)))
+. __=__
+  ((op f[a] : forall e : Ord . e -> e)
+   ((op f[a] : forall e : Ord . e -> e) (op c : a)),
+   (op c : a))
 type t : Eq
 op b : t
-. (__=__)
-  (((op f[t] : forall e : Ord . e -> e) (op b : t), (op b : t)))
+. __=__
+  ((op f[t] : forall e : Ord . e -> e) (op b : t), (op b : t))
 %% Classes ---------------------------------------------------------------
 Eq < Type
 Ord < Eq
@@ -48,11 +48,10 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-(__=__) (((f) ((f) c), c))
-(__=__) (((f) b, b))
+__=__ (f (f c), c)
+__=__ (f b, b)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 16.3, constrain 't : Ord' is unprovable
   known kinds are: [ Eq ]
-*** Error 16.3, in term'(__=__)
-(((op f[t] : forall e : Ord . e -> e) (op b : t), (op b : t)))' of type 'Unit'
+*** Error 16.3, in term '__=__ ((op f[t] : forall e : Ord . e -> e) (op b : t), (op b : t))' of type 'Unit'
  unresolved constraints '{ t : Ord }'
