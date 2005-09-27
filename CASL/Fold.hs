@@ -83,7 +83,7 @@ mapRecord mf = Record
     , foldMixfix_braced = \ _ -> Mixfix_braced  
     }
 
-mapOnlyTermRecord :: Record f b (TERM f)
+mapOnlyTermRecord :: Record f (FORMULA f) (TERM f)
 mapOnlyTermRecord = 
     (mapRecord (\ _ -> error "Will be overwitten"))
     { foldQuantification = \ _ _ _ _ _ ->
@@ -102,40 +102,8 @@ mapOnlyTermRecord =
            error "No implementation for True_atom"
     , foldFalse_atom = \ _ _ ->
            error "No implementation for False_atom"
-    , foldPredication = \ _ _ _ _ ->
-           error "No implementation for Predication"
-    , foldDefinedness = \ _ _ _ ->
-           error "No implementation for Definedness"
-    , foldExistl_equation = \ _ _ _ _ ->
-           error "No implementation for Existl_equation"
-    , foldStrong_equation = \ _ _ _ _ ->
-           error "No implementation for Strong_equation"
-    , foldMembership = \ _ _ _ _ ->
-           error "No implementation for Membership"
-    , foldMixfix_formula = \ _ _ ->
-           error "No implementation for Mixfix_formula"
     , foldSort_gen_ax = \ _ _ _ ->
            error "No implementation for Sort_gen_ax"
-    , foldExtFORMULA = \ _ _ ->
-           error "No implementation for ExtFORMULA"
-    , foldConditional = 
-        \ (Conditional _ phi _ _) t1 _ t2 ps -> Conditional t1 phi t2 ps
-    , foldMixfix_qual_pred = \ _ _ ->
-           error "No implementation for Mixfix_qual_pred"
-    , foldMixfix_term = \ _ _ ->
-           error "No implementation for Mixfix_term"
-    , foldMixfix_token = \ _ _ ->
-           error "No implementation for Mixfix_token"
-    , foldMixfix_sorted_term = \ _ _ _ ->
-           error "No implementation for Mixfix_sorted_term"
-    , foldMixfix_cast = \ _ _ _ ->
-           error "No implementation for Mixfix_cast"
-    , foldMixfix_parenthesized = \ _ _ _ ->
-           error "No implementation for Mixfix_parenthesized"
-    , foldMixfix_bracketed = \ _ _ _ ->
-           error "No implementation for Mixfix_bracketed"
-    , foldMixfix_braced = \ _ _ _ ->
-           error "No implementation for Mixfix_braced"
     }
 
 noMixfixRecord :: (f -> Bool) -> Record f Bool Bool
@@ -184,60 +152,6 @@ constRecord mf join c = Record
     , foldMixfix_braced = \ _ l _ -> join l
     }
 
-constOnlyTermRecord :: ([a] -> a) -> a -> Record f () a
-constOnlyTermRecord trTrm c = 
-    (constRecord (\ _ -> error "Will be overwitten") trTrm c)
-    { foldQuantification = \ _ _ _ _ _ ->
-           error "No implementation for Quantification"
-    , foldConjunction = \ _ _ _ ->
-           error "No implementation for Conjunction"
-    , foldDisjunction = \ _ _ _ ->
-           error "No implementation for Disjunction"
-    , foldImplication = \ _ _ _ _ ->
-           error "No implementation for Implication"
-    , foldEquivalence = \ _ _ _ _ ->
-           error "No implementation for Equivalence"
-    , foldNegation = \ _ _ _ ->
-           error "No implementation for Negation"
-    , foldTrue_atom = \ _ _ ->
-           error "No implementation for True_atom"
-    , foldFalse_atom = \ _ _ ->
-           error "No implementation for False_atom"
-    , foldPredication = \ _ _ _ _ ->
-           error "No implementation for Predication"
-    , foldDefinedness = \ _ _ _ ->
-           error "No implementation for Definedness"
-    , foldExistl_equation = \ _ _ _ _ ->
-           error "No implementation for Existl_equation"
-    , foldStrong_equation = \ _ _ _ _ ->
-           error "No implementation for Strong_equation"
-    , foldMembership = \ _ _ _ _ ->
-           error "No implementation for Membership"
-    , foldMixfix_formula = \ _ _ ->
-           error "No implementation for Mixfix_formula"
-    , foldSort_gen_ax = \ _ _ _ ->
-           error "No implementation for Sort_gen_ax"
-    , foldExtFORMULA = \ _ _ ->
-           error "No implementation for ExtFORMULA"
-    , foldConditional = \ _ t1 _ t2 _ -> trTrm [t1,t2]
-    , foldMixfix_qual_pred = \ _ _ ->
-           error "No implementation for Mixfix_qual_pred"
-    , foldMixfix_term = \ _ _ ->
-           error "No implementation for Mixfix_term"
-    , foldMixfix_token = \ _ _ ->
-           error "No implementation for Mixfix_token"
-    , foldMixfix_sorted_term = \ _ _ _ ->
-           error "No implementation for Mixfix_sorted_term"
-    , foldMixfix_cast = \ _ _ _ ->
-           error "No implementation for Mixfix_cast"
-    , foldMixfix_parenthesized = \ _ _ _ ->
-           error "No implementation for Mixfix_parenthesized"
-    , foldMixfix_bracketed = \ _ _ _ ->
-           error "No implementation for Mixfix_bracketed"
-    , foldMixfix_braced = \ _ _ _ ->
-           error "No implementation for Mixfix_braced"
-    }
-
 foldFormula :: Record f a b -> FORMULA f -> a
 foldFormula r f = case f of 
    Quantification q vs e ps -> foldQuantification r f q vs (foldFormula r e) ps
@@ -263,23 +177,26 @@ foldFormula r f = case f of
    ExtFORMULA e -> foldExtFORMULA r f e
 
 foldTerm :: Record f a b -> TERM f -> b
-foldTerm r t = case t of
-   Simple_id i -> error $ "Fold.foldTerm.Simple_id" ++ tokStr i
+foldTerm r = foldOnlyTerm (foldFormula r) r
+
+foldOnlyTerm :: (FORMULA f -> a) -> Record f a b -> TERM f -> b
+foldOnlyTerm ff r t = case t of
+   Simple_id i -> error $ "Fold.Simple_id" ++ tokStr i
    Qual_var v s ps -> foldQual_var r t v s ps 
-   Application o ts ps -> foldApplication r t o (map (foldTerm r) ts) ps
-   Sorted_term st s ps -> foldSorted_term r t (foldTerm r st) s ps
-   Cast ct s ps -> foldCast r t (foldTerm r ct) s ps
-   Conditional t1 f t2 ps -> foldConditional r t (foldTerm r t1)
-      (foldFormula r f) (foldTerm r t2) ps
-   Unparsed_term s _ -> error $ "Fold.foldTermUnparsed" ++ s
+   Application o ts ps -> foldApplication r t o (map (foldOnlyTerm ff r) ts) ps
+   Sorted_term st s ps -> foldSorted_term r t (foldOnlyTerm ff r st) s ps
+   Cast ct s ps -> foldCast r t (foldOnlyTerm ff r ct) s ps
+   Conditional t1 f t2 ps -> foldConditional r t (foldOnlyTerm ff r t1)
+      (ff f) (foldOnlyTerm ff r t2) ps
+   Unparsed_term s _ -> error $ "Fold.Unparsed_term" ++ s
    Mixfix_qual_pred p -> foldMixfix_qual_pred r t p
-   Mixfix_term ts -> foldMixfix_term r t (map (foldTerm r) ts)
+   Mixfix_term ts -> foldMixfix_term r t (map (foldOnlyTerm ff r) ts)
    Mixfix_token s -> foldMixfix_token r t s
    Mixfix_sorted_term s ps -> foldMixfix_sorted_term r t s ps
    Mixfix_cast s ps -> foldMixfix_cast r t s ps
    Mixfix_parenthesized ts ps -> foldMixfix_parenthesized r t
-      (map (foldTerm r) ts) ps
+      (map (foldOnlyTerm ff r) ts) ps
    Mixfix_bracketed ts ps -> foldMixfix_bracketed r t
-      (map (foldTerm r) ts) ps
+      (map (foldOnlyTerm ff r) ts) ps
    Mixfix_braced ts ps -> foldMixfix_braced r t
-      (map (foldTerm r) ts) ps
+      (map (foldOnlyTerm ff r) ts) ps
