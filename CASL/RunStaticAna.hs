@@ -22,6 +22,8 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.StaticAna
 import CASL.SimplifySen
+import CASL.Quantification
+import CASL.AlphaConvert
 
 localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
               -> Result (BASIC_SPEC () () ())
@@ -58,7 +60,8 @@ props ga bs =
         in Result ds $ case ms of 
            Just (_newBs, difSig, accSig, sents) -> Just (difSig, 
                      map (mapNamed $ simplifySen (error "props1")
-                                     (error "props2") accSig)
+                                     (error "props2") accSig
+                           . stripQuant . convertFormula 1 id)
                        sents)
            Nothing -> Nothing
 

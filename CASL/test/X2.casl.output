@@ -5,33 +5,33 @@
  op c : s
  op c : a -> s
  op c : a * t * t * t -> s
- op d : s -> t,[  . forall X1: a; X2: t; X3: t; X4: t
-                        . a(c(X1, X2, X3, X4)) = X2,
-                  . forall X1: a; X2: t; X3: t; X4: t . b(c(X1, X2, X3, X4)) = X3,
-                  . forall X1: a; X2: t; X3: t; X4: t . d(c(X1, X2, X3, X4)) = X4,
-                  . forall X1: a; X2: t; X3: t; X4: t; Y1: a; Y2: t; Y3: t; Y4: t
-                        . c(X1, X2, X3, X4) = c(Y1, Y2, Y3, Y4) <=>
-                              X1 = Y1 /\ X2 = Y2 /\ X3 = Y3 /\ X4 = Y4,
-                  . forall X1: a; Y1: a . c(X1) = c(Y1) <=> X1 = Y1,
-                  . forall x: s . not (x in s2 /\ x in s1),  . not c in s2,
+ op d : s -> t,[  . forall v1: a; v2: t; v3: t; v4: t
+                        . a(c(v1, v2, v3, v4)) = v2,
+                  . forall v1: a; v2: t; v3: t; v4: t . b(c(v1, v2, v3, v4)) = v3,
+                  . forall v1: a; v2: t; v3: t; v4: t . d(c(v1, v2, v3, v4)) = v4,
+                  . forall v1: a; v2: t; v3: t; v4: t; v5: a; v6: t; v7: t; v8: t
+                        . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=>
+                              v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ v4 = v8,
+                  . forall v1: a; v2: a . c(v1) = c(v2) <=> v1 = v2,
+                  . forall v1: s . not (v1 in s2 /\ v1 in s1),  . not c in s2,
                   . not c in s1,
-                  . forall X1: a; X2: t; X3: t; X4: t . not c(X1, X2, X3, X4) in s2,
-                  . forall X1: a; X2: t; X3: t; X4: t . not c(X1, X2, X3, X4) in s1,
-                  . forall X1: a . not c(X1) in s2,
-                  . forall X1: a . not c(X1) in s1,
-                  . forall Y1: a; Y2: t; Y3: t; Y4: t . not c = c(Y1, Y2, Y3, Y4),
-                  . forall Y1: a . not c = c(Y1),
-                  . forall X1: a; X2: t; X3: t; X4: t; Y1: a
-                        . not c(X1, X2, X3, X4) = c(Y1),
-                  . not def a(c),  . forall X1: a . not def a(c(X1)),
-                  . not def b(c),  . forall X1: a . not def b(c(X1)),
-                  . not def d(c),  . forall X1: a . not def d(c(X1)),
+                  . forall v1: a; v2: t; v3: t; v4: t . not c(v1, v2, v3, v4) in s2,
+                  . forall v1: a; v2: t; v3: t; v4: t . not c(v1, v2, v3, v4) in s1,
+                  . forall v1: a . not c(v1) in s2,
+                  . forall v1: a . not c(v1) in s1,
+                  . forall v1: a; v2: t; v3: t; v4: t . not c = c(v1, v2, v3, v4),
+                  . forall v1: a . not c = c(v1),
+                  . forall v1: a; v2: t; v3: t; v4: t; v5: a
+                        . not c(v1, v2, v3, v4) = c(v5),
+                  . not def a(c),  . forall v1: a . not def a(c(v1)),
+                  . not def b(c),  . forall v1: a . not def b(c(v1)),
+                  . not def d(c),  . forall v1: a . not def d(c(v1)),
                  generated{sort s; op c : s; op c : a ->? s;
                                    op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                    op g__inj : s2 -> s},
-                  . forall X1: a; X2: t; X3: t; X4: t . a(c(X1, X2, X3, X4)) = X2,
-                  . forall X1: a; X2: t; X3: t; X4: t . b(c(X1, X2, X3, X4)) = X3,
-                  . forall X1: a; X2: t; X3: t; X4: t . d(c(X1, X2, X3, X4)) = X4,
+                  . forall v1: a; v2: t; v3: t; v4: t . a(c(v1, v2, v3, v4)) = v2,
+                  . forall v1: a; v2: t; v3: t; v4: t . b(c(v1, v2, v3, v4)) = v3,
+                  . forall v1: a; v2: t; v3: t; v4: t . d(c(v1, v2, v3, v4)) = v4,
                  generated{sort s; op c : s; op c : a ->? s;
                                    op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                    op g__inj : s2 -> s} ])
