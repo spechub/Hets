@@ -546,7 +546,7 @@ transFORM :: (Eq f,PrettyPrint f) => CSign.Sign f e
           -> FORMULA f -> SPTerm
 transFORM sign i tr phi = transFORMULA sign i tr phi'
     where phi' = codeOutConditionalF id 
-                        (codeOutUniqueExtF id (\ _  -> id) phi)
+                        (codeOutUniqueExtF id id phi)
 
 transFORMULA :: (PrettyPrint f) => 
                 CSign.Sign f e -> 
