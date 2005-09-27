@@ -66,22 +66,6 @@ noMixfixF = foldFormula . noMixfixRecord
 noMixfixT :: (f -> Bool) -> TERM f -> Bool
 noMixfixT = foldTerm . noMixfixRecord
 
--- |
--- isMixfixTerm checks the 'TERM' f for Mixfix_*, 
--- but performs no recusive lookup
-isMixfixTerm :: TERM f -> Bool
-isMixfixTerm term = 
-    case term of
-    Simple_id _ -> False -- error "CASL.Utils.isMixfixTerm"
-    Qual_var _ _ _ -> False
-    Application _ _ _ -> False
-    Sorted_term _ _ _  -> False
-    Cast _ _ _ -> False
-    Conditional _ _ _ _ -> False
-    Unparsed_term s _ -> 
-        error $ "CASL.Utils.isMixfixTerm: should not occur: " ++ s
-    _ -> True
-
 type FreshVARMap f = Map.Map VAR (TERM f)
 
 -- | build_vMap constructs a mapping between a list of old variables and
@@ -141,7 +125,7 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
               let accSet' = Set.union (Set.fromList vars) accSet
                   (accSet'',vars') = mapAccumL nVar accSet' vars
               in (accSet'',Var_decl vars' sor nullRange)
-            genVar t i = Token (tokStr t ++ '_':show i) nullRange
+            genVar t i = mkSimpleId $ tokStr t ++ '_' : show i
             nVar aSet v = 
               let v' = fromJust (find (not . flip Set.member aSet) 
                                  ([genVar v (i :: Int) | i<-[1..]]))
@@ -210,10 +194,10 @@ codeOutCondPredication _ = error "CASL.Utils: Predication expected"
 constructExpansion :: (Eq f) => FORMULA f 
                    -> TERM f 
                    -> FORMULA f
-constructExpansion atom c@(Conditional t1 phi t2 _) =
-    Conjunction [ Implication phi (substConditionalF c t1 atom) False nullRange
-                , Implication (Negation phi nullRange) 
-                              (substConditionalF c t2 atom) False nullRange] nullRange
+constructExpansion atom c@(Conditional t1 phi t2 ps) =
+    Conjunction [ Implication phi (substConditionalF c t1 atom) False ps
+                , Implication (Negation phi ps) 
+                              (substConditionalF c t2 atom) False ps] ps
 constructExpansion _ _ = error "CASL.Utils: Conditional expected"
 
 mkEquationAtom :: (Eq f) => (TERM f -> TERM f -> Range -> FORMULA f) 
@@ -296,7 +280,7 @@ substConditionalF c t f =
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
-toSortTerm t@(Qual_var _ s _) = Sorted_term t s nullRange
+toSortTerm t@(Qual_var _ s ps) = Sorted_term t s ps
 toSortTerm _ = error "CASL2TopSort.toSortTerm: can only handle Qual_var" 
 
 -- | generates from a variable and sort an Qual_var term

@@ -16,19 +16,17 @@ module CASL.Print_AS_Basic where
 import Data.List (mapAccumL)
 
 import Common.Id
-import CASL.AS_Basic_CASL
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ConvertLiteral
-import CASL.LiteralFuns
-import CASL.Utils
-
 import Common.Print_AS_Annotation
-
 import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+
+import CASL.AS_Basic_CASL
+import CASL.LiteralFuns
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -406,6 +404,22 @@ condPrint_Mixfix pTok pId pTrm parens_fun
 	     -- null if no display entry is available
 	  dispId = if null dispToks then i else Id dispToks [] nullRange
 {- TODO: consider string-, number-, list- and floating-annotations -}
+
+-- |
+-- isMixfixTerm checks the 'TERM' f for Mixfix_*, 
+-- but performs no recusive lookup
+isMixfixTerm :: TERM f -> Bool
+isMixfixTerm term = 
+    case term of
+    Simple_id _ -> False -- error "CASL.Utils.isMixfixTerm"
+    Qual_var _ _ _ -> False
+    Application _ _ _ -> False
+    Sorted_term _ _ _  -> False
+    Cast _ _ _ -> False
+    Conditional _ _ _ _ -> False
+    Unparsed_term s _ -> 
+        error $ "CASL.Utils.isMixfixTerm: should not occur: " ++ s
+    _ -> True
 
 condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
 condPrint_Mixfix_text ga =
