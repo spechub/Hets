@@ -15,22 +15,10 @@ module CASL.AlphaConvert (alphaEquiv, convertFormula) where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
+import CASL.Utils
 import CASL.Quantification
 import qualified Common.Lib.Map as Map
 import Common.Id
-
-renameRec :: Map.Map Token Token -> (f -> f) -> Record f (FORMULA f) (TERM f)
-renameRec m mf = (mapRecord mf)
-     { foldQual_var = \ _ v s ps -> 
-           Qual_var (Map.findWithDefault v v m) s ps
-     , foldQuantification = \ (Quantification q vs f ps) _ _ _ _ -> 
-               let nm = foldr Map.delete m $ map fst $ flatVAR_DECLs vs 
-               in Quantification q vs (renameFormulaVars nm mf f) ps
-     }
-
--- | rename (free) variables according to the input map
-renameFormulaVars :: Map.Map Token Token -> (f -> f) -> FORMULA f -> FORMULA f
-renameFormulaVars m = foldFormula . renameRec m
 
 convertRecord :: Int -> (f -> f) -> Record f (FORMULA f) (TERM f)
 convertRecord n mf = (mapRecord mf)
@@ -38,7 +26,8 @@ convertRecord n mf = (mapRecord mf)
       let nvs = flatVAR_DECLs vs
           mkVar i = mkSimpleId $ "v" ++ show i
           rvs = map mkVar [n .. ]
-          nf = renameFormulaVars (Map.fromList $ zip (map fst nvs) rvs) mf 
+          nf = replace_varsF (Map.fromList $ zipWith ( \ (v, s) i -> 
+                             (v, Qual_var i s ps)) nvs rvs) mf 
                $ convertFormula (n + length nvs) mf qf
       in foldr ( \ (v, s) cf -> 
            Quantification q [Var_decl [v] s ps] cf ps)
