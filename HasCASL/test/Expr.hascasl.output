@@ -69,17 +69,17 @@ true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 type bool
   ::= True : bool
-      False : bool %(ga_bool)%
-a = (True as bool) %(def_a)%
+      False : bool
+a = (True as bool)
 notA =
 (case a of
      True -> False | 
      False -> True
- as bool) %(def_notA)%
+ as bool)
 (op b : bool) =
 (let x = True;
      y = False;
      z = x
  in True
- as bool) %(def_b)%
-(op b : bool -> bool) = (\ x .! x as bool -> bool) %(def_b)%
+ as bool)
+(op b : bool -> bool) = (\ x .! x as bool -> bool)

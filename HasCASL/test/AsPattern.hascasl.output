@@ -32,4 +32,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program f (v @ _) = v %(pe_f)%
+program f (v @ _) = v

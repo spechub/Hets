@@ -6,7 +6,7 @@
  pred p : a
  pred p : b
  pred q : a
- pred q : b,[  . forall x: a; y: a; z: a . o = o %(ga_assoc_o)%,
+ pred q : b,[  . forall x: a; y: a; z: a . o = o,
                . forall c: a . o(c) = o2(c) ])
 *** Hint 11.6, redeclared sort 'a'
 *** Error 13.8, expecting two arguments of equal sort

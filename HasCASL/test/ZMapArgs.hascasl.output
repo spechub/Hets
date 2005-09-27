@@ -82,10 +82,10 @@ t : Tree Nat
 free type Tree(a : Type)
   ::= Leaf : a -> Tree a (a)
       Node : Tree a -> a -> Tree a (Tree a)(a)
-      EmptyLeaf : Tree a %(ga_Tree)%
+      EmptyLeaf : Tree a
 free type Nat
   ::= Zero : Nat
-      Suc : Nat -> Nat (Nat) %(ga_Nat)%
+      Suc : Nat -> Nat (Nat)
 __=__
 (caseTree t,
  case t of

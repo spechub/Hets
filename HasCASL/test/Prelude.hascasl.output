@@ -213,10 +213,10 @@ x2 : c
 y1 : d
 y2 : d
 %% Sentences -------------------------------------------------------------
-program def = \ x . () %(pe_def)%
-program tt = \ x . () %(pe_tt)%
-forall x : s; y : t . x res y = (x as s) %(def___res__)%
-forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
+program def = \ x . ()
+program tt = \ x . ()
+forall x : s; y : t . x res y = (x as s)
+forall x : s; y : t . fst (x, y) = (x as s)
 __=__ (\ (x, y) . def (x res y), \ (x, y) . (def y) und (def x))
 __=__ (fst, __res__)
 __=__ (\ x . eq (x, x), tt)
@@ -224,19 +224,15 @@ __=__
 (\ (x, y) . __res__ (x, eq (x, y)),
  \ (x, y) . __res__ (y, eq (x, y)))
 forall s : nat -> c
-  . isChain s =
-    (all (\ n : nat . s (n) <<= s (Suc (n))) as Unit) %(def_isChain)%
+  . isChain s = (all (\ n : nat . s (n) <<= s (Suc (n))) as Unit)
 forall x : c; s : nat -> c
-  . isBound (x, s) =
-    (all (\ n : nat . s (n) <<= x) as Unit) %(def_isBound)%
+  . isBound (x, s) = (all (\ n : nat . s (n) <<= x) as Unit)
 __=__ (f (Y f), Y f)
 (__=__ (f x, x)) => (__<<=__ (Y f, x))
-undefined =
-(Y (\ x' . x' as (c --> p) --> c --> p) as
- c --> p) %(def_undefined)%
+undefined = (Y (\ x' . x' as (c --> p) --> c --> p) as c --> p)
 free type bool
   ::= true : bool
-      false : bool %(ga_bool)%
+      false : bool
 %% Diagnostics -----------------------------------------------------------
 *** Warning 4.7, void universe class declaration 'Type'
 *** Hint 6.5, is type variable 's'

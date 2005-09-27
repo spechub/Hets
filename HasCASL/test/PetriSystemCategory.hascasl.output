@@ -411,7 +411,7 @@ h2 : HomSys
 %% Sentences -------------------------------------------------------------
 free type Boolean
   ::= True : Boolean
-      False : Boolean %(ga_Boolean)%
+      False : Boolean
 let S = MultiSetToSet B in
    forall x : Elem
      . ((__isIn__ : Elem * Set Elem ->? Unit) (x, S)) <=>
