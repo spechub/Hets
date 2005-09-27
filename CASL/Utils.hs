@@ -70,7 +70,7 @@ noMixfixT = foldTerm . noMixfixRecord
 -- isMixfixTerm checks the 'TERM' f for Mixfix_*, 
 -- but performs no recusive lookup
 isMixfixTerm :: TERM f -> Bool
-isMixfixTerm term =
+isMixfixTerm term = 
     case term of
     Simple_id _ -> False -- error "CASL.Utils.isMixfixTerm"
     Qual_var _ _ _ -> False
@@ -103,135 +103,74 @@ lookup_vMap v s m =
           (Map.lookup v m)
 
 -- | specialized delete that deletes all shadowed variables
-delete_vMap :: [VAR_DECL] -> FreshVARMap f-> FreshVARMap f
+delete_vMap :: [VAR_DECL] -> FreshVARMap f -> FreshVARMap f
 delete_vMap vDecls m = foldr Map.delete m vars
     where vars = concatMap (\ (Var_decl vs _ _) -> vs) vDecls
 
--- | replace_vars replaces all Qual_var occurences that are sopposed
+
+replaceVarsRec :: FreshVARMap f -> (f -> f) -> Record f (FORMULA f) (TERM f)
+replaceVarsRec m mf = (mapRecord mf)
+     { foldQual_var = \ qv v s _ -> 
+           maybe qv id (lookup_vMap v s m)
+     , foldQuantification = \ (Quantification q vs f ps) _ _ _ _ -> 
+               let nm = delete_vMap vs m 
+               in Quantification q vs (replace_varsF nm mf f) ps
+     }
+
+-- | replace_vars replaces all Qual_var occurences that are supposed
 -- to be replaced according to the FreshVARMap
 replace_varsF :: FreshVARMap f
-             -> (FreshVARMap f -> f -> f) 
+             -> (f -> f) 
              -- ^ this function replaces Qual_var in ExtFORMULA 
              -> FORMULA f -> FORMULA f
-replace_varsF m rep_ef phi =
-    case phi of
-    ExtFORMULA f -> ExtFORMULA (rep_ef m f)
-    Quantification q vs f ps -> 
-        let new_map = delete_vMap vs m
-        in Quantification q vs (if Map.null new_map 
-                                   then f
-                                   else replace_varsF new_map rep_ef f) ps
-    Conjunction fs ps -> Conjunction (map rec fs) ps
-    Disjunction fs ps -> Disjunction (map rec fs) ps
-    Implication f1 f2 b ps -> Implication (rec f1) (rec f2) b ps
-    Equivalence f1 f2 ps   -> Equivalence (rec f1) (rec f2) ps
-    Negation f ps -> Negation (rec f) ps
-    Predication symb ts ps  -> Predication symb (map recT ts) ps
-    Definedness t ps -> Definedness (recT t) ps
-    Existl_equation t1 t2 ps -> Existl_equation (recT t1) (recT t2) ps
-    Strong_equation t1 t2 ps -> Strong_equation (recT t1) (recT t2) ps
-    Membership t s ps -> Membership (recT t) s ps
-    Mixfix_formula _ -> err "Mixfix_formula"
-    Unparsed_formula _ _ -> err "Unparsed_formula"
-    f -> f -- (True_atom and False_atom)
-    where rec = replace_varsF m rep_ef
-          recT = replace_varsT m rep_ef
-          err s = error ("CASL.Utils.replace_varsF: cannot handle "++s)
+replace_varsF m mf phi = foldFormula (replaceVarsRec m mf) phi
     
-replace_varsT :: FreshVARMap f
-              -> (FreshVARMap f -> f -> f) 
-              -- ^ this function replaces Qual_var in ExtFORMULA 
-              -> TERM f -> TERM f 
-replace_varsT m rep_ef term =
-    case term of
-    si@(Simple_id _) -> si
-    q@(Qual_var v s _) -> maybe q id (lookup_vMap v s m)
-    Application symb ts ps -> Application symb (map recT ts) ps
-    Sorted_term t s ps  -> Sorted_term (recT t) s ps
-    Cast t s ps -> Cast (recT t) s ps
-    Conditional t1 f t2 ps -> Conditional (recT t1) (rec f) (recT t2) ps
-    Unparsed_term _ _ -> err "Unparsed_term"
-    _ -> err "Mixfix_*"
-    where err s = error ("CASL.Utils.replace_varsT: should not occur: "++s)
-          rec = replace_varsF m rep_ef
-          recT = replace_varsT m rep_ef
+codeOutUniqueRecord :: (f -> f) -> (f -> f) -> Record f (FORMULA f) (TERM f)
+codeOutUniqueRecord rf mf = (mapRecord mf)
+    { foldQuantification = \ _ q vDecl f' ps -> 
+         case q of 
+         Unique_existential -> let 
+            eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
+              assert (sor1 == sor2)
+                     (zipWith (eqFor sor1) vars1 vars2)
+            eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
+                                          (toSortTerm (toVarTerm v2 s))
+                                          nullRange
+            fresh_vars = snd . mapAccumL fresh_var Set.empty
+            fresh_var accSet (Var_decl vars sor _) = 
+              let accSet' = Set.union (Set.fromList vars) accSet
+                  (accSet'',vars') = mapAccumL nVar accSet' vars
+              in (accSet'',Var_decl vars' sor nullRange)
+            genVar t i = Token (tokStr t ++ '_':show i) nullRange
+            nVar aSet v = 
+              let v' = fromJust (find (not . flip Set.member aSet) 
+                                 ([genVar v (i :: Int) | i<-[1..]]))
+              in (Set.insert v' aSet,v')
+            vDecl' = fresh_vars vDecl
+            f'_rep = replace_varsF (build_vMap vDecl vDecl') rf f'
+            allForm = Quantification Universal vDecl' 
+                           (Implication f'_rep implForm True ps) ps
+            implForm = assert (not (null vDecl))
+                       (let fs = concat (zipWith eqForms vDecl vDecl')
+                        in (if length fs == 1 
+                               then head fs
+                               else Conjunction fs ps))
+            in Quantification Existential 
+                   vDecl (Conjunction [f',allForm] ps) ps
+         _ -> Quantification q vDecl f' ps 
+    }
 
 -- | codeOutUniqueExtF compiles every unique_existential quantification
 -- to simple quantifications. It works recursively through the whole
 -- formula and only touches Unique_existential quantifications
 codeOutUniqueExtF :: (f -> f) 
-                    -- ^ codes out Unique_existential in ExtFORMULA
-                 -> (FreshVARMap f -> f -> f) 
-                 -- ^ this function replaces Qual_var in ExtFORMULA 
-                 -> FORMULA f -> FORMULA f
-codeOutUniqueExtF pr_ef rep_ef phi =
-    case phi of
-    Quantification Unique_existential vDecl f _ -> 
-        let f' = rec f
-            vDecl' = fresh_vars vDecl
-            f'_rep = replace_varsF (build_vMap vDecl vDecl') rep_ef f'
-            allForm = Quantification Universal vDecl' 
-                           (Implication f'_rep implForm True nullRange) nullRange
-            implForm = assert (not (null vDecl))
-                       (let fs = concat (zipWith eqForms vDecl vDecl')
-                        in (if length fs == 1 
-                               then head fs
-                               else Conjunction fs nullRange))
-        in Quantification Existential 
-                   vDecl (Conjunction [f',allForm] nullRange) nullRange
-    ExtFORMULA f -> ExtFORMULA (pr_ef f)
-    Quantification q vs f ps -> Quantification q vs (rec f) ps
-    Conjunction fs ps -> Conjunction (map rec fs) ps
-    Disjunction fs ps -> Disjunction (map rec fs) ps
-    Implication f1 f2 b ps -> Implication (rec f1) (rec f2) b ps
-    Equivalence f1 f2 ps   -> Equivalence (rec f1) (rec f2) ps
-    Negation f ps -> Negation (rec f) ps
-    Predication symb ts ps  -> Predication symb (map recT ts) ps
-    Definedness t ps -> Definedness (recT t) ps
-    Existl_equation t1 t2 ps -> Existl_equation (recT t1) (recT t2) ps
-    Strong_equation t1 t2 ps -> Strong_equation (recT t1) (recT t2) ps
-    Membership t s ps -> Membership (recT t) s ps
-    Mixfix_formula _ -> err "Mixfix_formula"
-    Unparsed_formula _ _ -> err "Unparsed_formula"
-    f -> f -- (True_atom and False_atom)
-    where rec = codeOutUniqueExtF pr_ef rep_ef
-          recT = codeOutUniqueExtT pr_ef rep_ef
-          err s = error ("CASL.Utils.codeOutUniqueExtF: cannot handle "++s)
-          eqForms (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
-              assert (sor1 == sor2)
-                     (zipWith (eqFor sor1) vars1 vars2)
-          eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
-                                          (toSortTerm (toVarTerm v2 s))
-                                          nullRange
-          fresh_vars = snd . mapAccumL fresh_var Set.empty
-          fresh_var accSet (Var_decl vars sor _) = 
-              let accSet' = Set.union (Set.fromList vars) accSet
-                  (accSet'',vars') = mapAccumL nVar accSet' vars
-              in (accSet'',Var_decl vars' sor nullRange)
-          genVar t i = Token (tokStr t ++ '_':show i) nullRange
-          nVar aSet v = 
-              let v' = fromJust (find (not . flip Set.member aSet) 
-                                 ([genVar v (i :: Int) | i<-[1..]]))
-              in (Set.insert v' aSet,v')
-
-codeOutUniqueExtT :: (f -> f) 
-                  -- ^ codes out Unique_existential in ExtFORMULA
-                  -> (FreshVARMap f -> f -> f) 
                   -- ^ this function replaces Qual_var in ExtFORMULA 
-                  -> TERM f -> TERM f 
-codeOutUniqueExtT pr_ef rep_ef term =
-    case term of
-    si@(Simple_id _) -> si
-    q@(Qual_var _ _ _) -> q
-    Application symb ts ps -> Application symb (map recT ts) ps
-    Sorted_term t s ps  -> Sorted_term (recT t) s ps
-    Cast t s ps -> Cast (recT t) s ps
-    Conditional t1 f t2 ps -> Conditional (recT t1) (rec f) (recT t2) ps
-    Unparsed_term _ _ -> err "Unparsed_term"
-    _ -> err "Mixfix_*"
-    where err s = error ("CASL.Utils.codeOutUniqueExtT: should not occur: "++s)
-          rec = codeOutUniqueExtF pr_ef rep_ef
-          recT = codeOutUniqueExtT pr_ef rep_ef
+                  -> (f -> f) 
+                  -- ^ codes out Unique_existential in ExtFORMULA
+                  -> FORMULA f -> FORMULA f
+codeOutUniqueExtF rf mf phi = if noMixfixF (const True) phi 
+    then foldFormula (codeOutUniqueRecord rf mf) phi
+    else error "codeOutUniqueExtF.mixfix"
 
 codeOutCondRecord :: (Eq f) => (f -> f) 
                   -> Record f (FORMULA f) (TERM f)
@@ -323,26 +262,24 @@ codeOutConditionalF :: (Eq f) =>
                     -> FORMULA f -> FORMULA f
 codeOutConditionalF fun = foldFormula (codeOutCondRecord fun) 
 
-findConditionalRecord :: Record f () (Maybe (TERM f))
+findConditionalRecord :: Record f (Maybe (TERM f)) (Maybe (TERM f))
 findConditionalRecord = 
-    (constOnlyTermRecord (listToMaybe . catMaybes) Nothing)
-    { foldConditional = \ cond _ _ _ _ -> Just cond}
+    (constRecord (error "findConditionalRecord") 
+     (listToMaybe . catMaybes) Nothing)
+    { foldConditional = \ cond _ _ _ _ -> Just cond }
 
 findConditionalT :: TERM f -> Maybe (TERM f)
-findConditionalT = foldTerm findConditionalRecord
+findConditionalT t = if noMixfixT (error "findConditionalT.ExtFormula") t 
+    then foldOnlyTerm (error "findConditionalT") findConditionalRecord t
+    else error "findConditionalT.mixfix"
 
 substConditionalRecord :: (Eq f)  
                        => TERM f -- ^ Conditional to search for
                        -> TERM f -- ^ newly inserted term
                        -> Record f (FORMULA f) (TERM f)
 substConditionalRecord c t = 
-    mapOnlyTermRecord 
-     { foldPredication = \ _ -> Predication  
-     , foldDefinedness = \ _ -> Definedness  
-     , foldExistl_equation = \ _ -> Existl_equation  
-     , foldStrong_equation = \ _ -> Strong_equation  
-     , foldMembership = \ _ -> Membership
-     , foldConditional = \ c1 _ _ _ _ -> 
+    mapOnlyTermRecord
+     { foldConditional = \ c1 _ _ _ _ -> 
        -- FIXME: correct implementation would use an equality 
        -- which checks for correct positions also! 
              if c1 == c then t else c1
@@ -352,7 +289,10 @@ substConditionalF :: (Eq f)
                   => TERM f -- ^ Conditional to search for
                   -> TERM f -- ^ newly inserted term
                   -> FORMULA f -> FORMULA f
-substConditionalF c t = foldFormula (substConditionalRecord c t)
+substConditionalF c t f = 
+    if noMixfixF (error "substConditionalF.ExtFormula") f
+    then foldFormula (substConditionalRecord c t) f
+    else error "substConditionalF.mixfix"
 
 -- | adds Sorted_term to a Qual_var term
 toSortTerm :: TERM f -> TERM f
