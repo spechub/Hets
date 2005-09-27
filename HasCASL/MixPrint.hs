@@ -71,9 +71,6 @@ getSimpleIdPrec (pm, _, m) i =  if i == applId then m + 1
     (if begPlace i || endPlace i then m
      else m + 2) i pm
 
-mkWeight :: Int -> Weight
-mkWeight m = mkTrivWeight applId (m + 1)
-
 toMixWeight :: GlobalAnnos 
          -> SplitM a
          -> ConvFuns a
@@ -86,7 +83,7 @@ toMixWeight ga splt convFuns trm =
         pa = prec_annos newGa
         precs@(_, _, m) = mkPrecIntMap pa
         doSplit = maybe (error "doSplit") id . splt
-        dw = Just $ mkWeight (m + 2)
+        dw = Just $ mkTrivWeight i (m + 2)
         mk t = (convTok convFuns t, dw)
       in if isGenNumber splt ga i aas then 
              mk $ toNumber doSplit i aas 
@@ -110,10 +107,10 @@ toMixWeight ga splt convFuns trm =
         n = length aas
         in if placeCount i /= n then
               case aas of
-              [] -> (convId convFuns i, Just $ mkWeight (m + 2))
+              [] -> (convId convFuns i, Just $ mkTrivWeight i (m + 2))
               _ -> (juxtapose convFuns [convId convFuns i, 
                       parenthesize convFuns $ map fst newArgs],
-                    Just $ mkWeight (m + 1)) 
+                    Just $ mkTrivWeight applId (m + 1)) 
            else let 
              parArgs = zipWith ( \ (arg, itm) num ->
                 let pArg = parenthesize convFuns [arg]

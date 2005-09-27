@@ -66,9 +66,9 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
-  . fst Pair (x_1_1, x_1_2) = x_1_1
+  . fst (Pair (x_1_1, x_1_2)) = x_1_1
 forall a : Type; b : Type; x_1_1 : a; x_1_2 : b
-  . snd Pair (x_1_1, x_1_2) = x_1_2
+  . snd (Pair (x_1_1, x_1_2)) = x_1_2
 free type Pair(a : Type)(b : Type)
   ::= Pair : a * b -> Pair a b (fst : a; snd : b)
 forall a : a; b : b . f (a, b) = (Pair (a, b) as Pair a b)
