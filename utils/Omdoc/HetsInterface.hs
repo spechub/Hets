@@ -142,6 +142,8 @@ run file =
        showDiags opt ds
        return res
 
+dho::HetcatsOpts
+dho = defaultHetcatsOpts
 
 {- Call this function as follows (be sure that there is no ../uni):
 make hets
@@ -836,6 +838,64 @@ makeMorphismMap (Morphism _ _ sortmap funmap predmap _) =
 				) ) ) $ Map.toList predmap
 	in
 		(sortmap, newfunmap, newpredmap)
+		
+removeMorphismSorts::MorphismMap->Sorts->Sorts
+removeMorphismSorts (sm,_,_) sorts =
+	let
+		msorts = Map.elems sm
+	in
+		Set.filter (\s -> not $ elem s msorts) sorts
+		
+addMorphismSorts::MorphismMap->Sorts->Sorts
+addMorphismSorts (sm,_,_) sorts =
+	let
+		msorts = Map.elems sm
+	in	
+		Set.union sorts $ Set.fromList msorts
+		
+removeMorphismOps::MorphismMap->Ops->Ops
+removeMorphismOps (_,om,_) ops =
+	let
+		mops = map fst $ Map.elems om
+	in
+		Map.filterWithKey (\k _ -> not $ elem k mops) ops
+		
+addMorphismOps::MorphismMap->Ops->Ops
+addMorphismOps (_,om,_) ops =
+	let
+		mops = Map.elems om
+	in
+		foldl (\newmap (i,ot) ->
+			Map.insert
+				i
+				(Set.union
+					(Map.findWithDefault Set.empty i newmap)
+					(Set.singleton ot)
+				)
+				newmap
+			) ops mops 
+		
+removeMorphismPreds::MorphismMap->Preds->Preds
+removeMorphismPreds (_,_,pm) preds =
+	let
+		mpreds = map fst $ Map.elems pm
+	in
+		Map.filterWithKey (\k _ -> not $ elem k mpreds) preds 
+	
+addMorphismPreds::MorphismMap->Preds->Preds
+addMorphismPreds (_,_,pm) preds =
+	let
+		mpreds = Map.elems pm
+	in
+		foldl (\newmap (i,pt) ->
+			Map.insert
+				i
+				(Set.union
+					(Map.findWithDefault Set.empty i newmap)
+					(Set.singleton pt)
+				)
+				newmap
+			) preds mpreds 
 		
 morphismMapToMorphism::MorphismMap->(Morphism () () ())
 morphismMapToMorphism (sortmap, funmap, predmap) =

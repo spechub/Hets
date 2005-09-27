@@ -164,7 +164,9 @@ devGraphToOmdoc dg name = (HXT.etag "omdoc" += ( qualattr "xml" "id" name
 
 -- | Convert a DevGraph to an XML-Representation (without omdoc parent)				
 devGraphToXml::Static.DevGraph.DGraph->(HXT.XmlTree->HXT.XmlTrees)
-devGraphToXml dg = let	(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNodeRef dg
+devGraphToXml dg =
+		let
+			(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNodeRef dg
 			nodenameset = Set.union onlynodenameset onlyrefnameset
 			nodenamemap = Map.fromList $ Set.toList nodenameset
 			namenodemap = Map.fromList $ map (\(a,b) -> (b,a)) $ Map.toList nodenamemap
@@ -176,71 +178,89 @@ devGraphToXml dg = let	(onlynodenameset, onlyrefnameset) = Hets.getNodeNamesNode
 			sens = Hets.getSentencesWithNodeNames dg
 			mimports = Hets.getNodeImportsNodeNames dg
 			imports = Map.map (Set.map fst) mimports
-		    in
+		in
 		    foldl (\dgx (node, name) ->
 		    	let
-				nSorts = fromMaybe Set.empty $ Map.lookup name sorts 
-				-- OMDocS 'insort' is opposite to CASL-Sort-Relation 
-				nInsorts = Rel.transpose $ fromMaybe Rel.empty $ Map.lookup name rels
-				nInsortMap = foldl (\m (a,b) -> 
-					Map.insert a (Set.insert b (Map.findWithDefault Set.empty a m)) m
-					) Map.empty $ Rel.toList nInsorts
-				nPreds = fromMaybe Map.empty $ Map.lookup name preds  
-				nOps = fromMaybe Map.empty $ Map.lookup name ops
-				nSens = fromMaybe Set.empty $ Map.lookup name sens
-				(axioms, sortgen) = partitionSensSortGen $ Set.toList nSens
-				constructors = makeConstructors sortgen
+					nSorts = fromMaybe Set.empty $ Map.lookup name sorts 
+					-- OMDocS 'insort' is opposite to CASL-Sort-Relation 
+					nInsorts = Rel.transpose $ fromMaybe Rel.empty $ Map.lookup name rels
+					nInsortMap = foldl (\m (a,b) -> 
+						Map.insert a (Set.insert b (Map.findWithDefault Set.empty a m)) m
+						) Map.empty $ Rel.toList nInsorts
+					nPreds = fromMaybe Map.empty $ Map.lookup name preds  
+					nOps = fromMaybe Map.empty $ Map.lookup name ops
+					nSens = fromMaybe Set.empty $ Map.lookup name sens
+					(axioms, sortgen) = partitionSensSortGen $ Set.toList nSens
+					constructors = makeConstructors sortgen
+					
+					-- sort-imports (not all imports)
+					nImports = fromMaybe Set.empty $ Map.lookup name mimports
+					-- what adts are needed (insort, cons or both)
+					adtsorts = nub $ (map (\ (a,_) -> a) $ Map.toList nInsortMap) ++
+						(map (\(a,_) -> a) $ Map.toList constructors)
+					(realSorts, realOps, realPreds) = foldl (\(rs, ro, rp) (_,mmm) ->
+						case mmm of
+							Nothing -> (rs, ro, rp)
+							(Just mm) -> (Hets.removeMorphismSorts mm rs,
+								Hets.removeMorphismOps mm ro,
+								Hets.removeMorphismPreds mm rp)
+							) (nSorts, nOps, nPreds) $ Set.toList nImports
+				in
+					dgx +++
+					(HXT.etag "theory" += (qualattr "xml" "id" name))
+					+= (
+					   (foldl (\ix (i,_) -> ix +++ xmlNL +++ importToXml i += (xmlNL +++
+					   -- morphism-generation-hack ... ugly. needs more work.
+						(caslMorphismToXml mimports sorts preds ops i name $
+							Hets.getCASLMorph $ head $
+							( \e ->
+								let
+									thisnode = Map.findWithDefault (error $ "No such node N " ++ name) name namenodemap
+									inode = Map.findWithDefault (error $ "No such node I " ++ i) i namenodemap
+								in
+									filter (\(n,m,_) -> n == inode && m == thisnode) e
+							)
+							(Graph.labEdges dg)
+							)) +++ xmlNL 
+						) (HXT.txt "") $ Set.toList nImports)
+					   +++
+					   (foldl (\sx s -> sx +++ xmlNL +++ sortToXml s) (HXT.txt "") $ Set.toList realSorts) --nSorts)
+					   +++
+					   -- adt-generation needs some optimization...
+					   (foldl (\adtx sort -> adtx +++ xmlNL
+						+++ (
+							let 	sortrelation = (\a -> (sort, a)) $ fromMaybe Set.empty $ lookup sort $ Map.toList nInsortMap
+								cons = createAllConstructors $ Map.toList $ Map.findWithDefault Map.empty sort constructors
+							in
+								createADT sortrelation cons
+							)
+						) (HXT.txt "") adtsorts)
+					   +++
+					   (foldl (\px p -> px +++ xmlNL +++ predicationToXml mimports sorts name p)
+						(HXT.txt "") $ Map.toList realPreds) --nPreds)
+					   +++
+					   (foldl (\px o -> px +++ xmlNL +++ operatorToXml mimports sorts name o)
+						(HXT.txt "") $ Map.toList realOps) --nOps)
+					   +++
+					   (wrapFormulas mimports sorts preds ops name $ Set.toList nSens)
+					   +++ xmlNL
+					   )
+					+++ xmlNL
+					-- make private data for all incoming links
+					+++ inDGToXml dg node nodenamemap 
+					+++ xmlNL
+				) (refsToCatalogue dg +++ xmlNL) $ Set.toList onlynodenameset
 				
-				-- sort-imports (not all imports)
-				nImports = fromMaybe Set.empty $ Map.lookup name imports
-				-- what adts are needed (insort, cons or both)
-				adtsorts = nub $ (map (\ (a,_) -> a) $ Map.toList nInsortMap) ++
-					(map (\(a,_) -> a) $ Map.toList constructors)
-			in
-			dgx +++
-			(HXT.etag "theory" += (qualattr "xml" "id" name))
-			+= (
-			   (foldl (\ix i -> ix +++ xmlNL +++ importToXml i += (xmlNL +++
-			   -- morphism-generation-hack ... ugly. needs more work.
-			   	(caslMorphismToXml mimports sorts preds ops i name $
-					Hets.getCASLMorph $ head $
-					( \e ->
-						let
-							thisnode = Map.findWithDefault (error $ "No such node N " ++ name) name namenodemap
-							inode = Map.findWithDefault (error $ "No such node I " ++ i) i namenodemap
-						in
-						filter (\(n,m,_) -> n == inode && m == thisnode) e
-					)
-					(Graph.labEdges dg)
-					)) +++ xmlNL 
-			   	) (HXT.txt "") $ Set.toList nImports)
-			   +++
-			   (foldl (\sx s -> sx +++ xmlNL +++ sortToXml s) (HXT.txt "") $ Set.toList nSorts)
-			   +++
-			   -- adt-generation needs some optimization...
-			   (foldl (\adtx sort -> adtx +++ xmlNL
-			   	+++ (
-					let 	sortrelation = (\a -> (sort, a)) $ fromMaybe Set.empty $ lookup sort $ Map.toList nInsortMap
-						cons = createAllConstructors $ Map.toList $ Map.findWithDefault Map.empty sort constructors
-					in
-						createADT sortrelation cons
-					)
-				) (HXT.txt "") adtsorts)
-			   +++
-			   (foldl (\px p -> px +++ xmlNL +++ predicationToXml mimports sorts name p)
-			   	(HXT.txt "") $ Map.toList nPreds)
-			   +++
-			   (foldl (\px o -> px +++ xmlNL +++ operatorToXml mimports sorts name o)
-			   	(HXT.txt "") $ Map.toList nOps)
-			   +++
-			   (wrapFormulas mimports sorts preds ops name $ Set.toList nSens)
-			   +++ xmlNL
-			   )
-			+++ xmlNL
-			-- make private data for all incoming links
-			+++ inDGToXml dg node nodenamemap 
-			+++ xmlNL
-			  ) (refsToCatalogue dg +++ xmlNL) $ Set.toList onlynodenameset
+adjustLOCOmdoc::String->String
+adjustLOCOmdoc s =
+	let
+		woExt = reverse $ takeWhile (/='.') $ reverse s
+	in
+		if woExt == ""
+			then
+				s ++ ".omdoc"
+			else
+				woExt ++ ".omdoc"
 
 refsToCatalogue::DGraph->HXT.XmlFilter
 refsToCatalogue dg =
@@ -252,7 +272,7 @@ refsToCatalogue dg =
 		foldl (\cx r ->
 			cx +++
 			HXT.etag "loc" +=
-				( HXT.sattr "theory" (getDGNodeName r) +++ HXT.sattr "omdoc" ((show $ dgn_libname r)++".omdoc") ) +++
+				( HXT.sattr "theory" (getDGNodeName r) +++ HXT.sattr "omdoc" (adjustLOCOmdoc (show $ dgn_libname r)) ) +++
 				xmlNL
 				) (HXT.txt "") refs
 		)
@@ -744,60 +764,81 @@ xmlToMorphismMap
 									sm
 					_ -> sm
 					) Map.empty requations
-			newOpsMap = foldl (\np tp ->
-				case xshow $ applyXmlFilter (
-					pattern .> getChildren .> 
-					isTag "OMOBJ" .> getChildren .>
-					isTag "OMATTR" .> getChildren .>
-					isTag "OMATP" .> getChildren .>
-					isTag "OMS" .> withSValue "cd" "casl" .> withSValue "name" "funtype" .> getQualValue "" "name") [tp] of
-					"funtype" ->
-						let	satp = applyXmlFilter (
-								pattern .> getChildren .>
-								isTag "OMOBJ" .> getChildren .>
-								isTag "OMATTR" .> getChildren .>
-								isTag "OMATP") [tp]
-							tatp = applyXmlFilter (
-								value .> getChildren .>
-								isTag "OMOBJ" .> getChildren .>
-								isTag "OMATTR" .> getChildren .>
-								isTag "OMATP") [tp]
-							satpsym = applyXmlFilter (getChildren .> isTag "OMS") satp
-							satpstr = applyXmlFilter (getChildren .> isTag "OMSTR") satp
-							satpmap = Map.fromList $ zip
-								(map (\t -> xshow $ applyXmlFilter (getQualValue "" "name") [t]) satpsym)
-								(map (\t -> xshow $ applyXmlFilter (getChildren) [t]) satpstr) 
-							tatpsym = applyXmlFilter (getChildren .> isTag "OMS") tatp
-							tatpstr = applyXmlFilter (getChildren .> isTag "OMSTR") tatp
-							tatpmap = Map.fromList $ zip
-								(map (\t -> xshow $ applyXmlFilter (getQualValue "" "name") [t]) tatpsym)
-								(map (\t -> xshow $ applyXmlFilter (getChildren) [t]) tatpstr)
-							ssymbolname = xshow $ applyXmlFilter (
-								pattern .> getChildren .>
-								isTag "OMOBJ" .> getChildren .>
-								isTag "OMATTR" .> getChildren .> 
-								isTag "OMS" .> getValue "name" ) [tp]
-							tsymbolname = xshow $ applyXmlFilter (
-								value .> getChildren .>
-								isTag "OMOBJ" .> getChildren .>
-								isTag "OMATTR" .> getChildren .> 
-								isTag "OMS" .> getValue "name" ) [tp]
-							ssorts = explode "-\\" $ Map.findWithDefault "" "type" satpmap
-							tsorts = explode "-\\" $ Map.findWithDefault "" "type" tatpmap
-							sOp = OpType
-								Partial -- (funKindFromName $ Map.findWithDefault "Total" "funtype" satpmap)
-								(map Hets.stringToId ( if (length ssorts) == 1 then [] else init ssorts ))
-								(Hets.stringToId $ last ssorts)
-							tOp = OpType
-								(funKindFromName $ Map.findWithDefault "Total" "funtype" tatpmap)
-								(map Hets.stringToId ( if (length tsorts) == 1 then [] else init tsorts ))
-								(Hets.stringToId $ last tsorts)
-						in
-							Map.insert (Hets.stringToId ssymbolname, sOp) (Hets.stringToId tsymbolname, tOp) np
-					x -> Debug.Trace.trace x np
-					) Map.empty requations
+			(opsmap, predsmap) = foldl (\(om,pm) tp ->
+				let
+					satp = applyXmlFilter (
+						pattern .> getChildren .>
+						isTag "OMOBJ" .> getChildren .>
+						isTag "OMATTR" .> getChildren .>
+						isTag "OMATP") [tp]
+					tatp = applyXmlFilter (
+						value .> getChildren .>
+						isTag "OMOBJ" .> getChildren .>
+						isTag "OMATTR" .> getChildren .>
+						isTag "OMATP") [tp]
+					satpsym = applyXmlFilter (getChildren .> isTag "OMS") satp
+					satpstr = applyXmlFilter (getChildren .> isTag "OMSTR") satp
+					satpmap = Map.fromList $ zip
+						(map (\t -> xshow $ applyXmlFilter (getQualValue "" "name") [t]) satpsym)
+						(map (\t -> xshow $ applyXmlFilter (getChildren) [t]) satpstr) 
+					tatpsym = applyXmlFilter (getChildren .> isTag "OMS") tatp
+					tatpstr = applyXmlFilter (getChildren .> isTag "OMSTR") tatp
+					tatpmap = Map.fromList $ zip
+						(map (\t -> xshow $ applyXmlFilter (getQualValue "" "name") [t]) tatpsym)
+						(map (\t -> xshow $ applyXmlFilter (getChildren) [t]) tatpstr)
+					ssymbolname = xshow $ applyXmlFilter (
+						pattern .> getChildren .>
+						isTag "OMOBJ" .> getChildren .>
+						isTag "OMATTR" .> getChildren .> 
+						isTag "OMS" .> getValue "name" ) [tp]
+					tsymbolname = xshow $ applyXmlFilter (
+						value .> getChildren .>
+						isTag "OMOBJ" .> getChildren .>
+						isTag "OMATTR" .> getChildren .> 
+						isTag "OMS" .> getValue "name" ) [tp]
+					ssorts = explode "-\\" $ Map.findWithDefault "" "type" satpmap
+					tsorts = explode "-\\" $ Map.findWithDefault "" "type" tatpmap
+					sOp = OpType
+						-- The lookup-mechanism for displaying the morphism needs
+						-- 'Partial' entries...
+						Partial -- (funKindFromName $ Map.findWithDefault "Total" "funtype" satpmap)
+						(map Hets.stringToId ( if (length ssorts) == 1 then [] else init ssorts ))
+						(Hets.stringToId $ last ssorts)
+					sPred = PredType
+						(map Hets.stringToId ssorts)
+					tOp = OpType
+						(funKindFromName $ Map.findWithDefault "Total" "funtype" tatpmap)
+						(map Hets.stringToId ( if (length tsorts) == 1 then [] else init tsorts ))
+						(Hets.stringToId $ last tsorts)
+					tPred = PredType
+						(map Hets.stringToId tsorts)
+				in
+					case xshow $ applyXmlFilter (
+							pattern .> getChildren .> 
+							isTag "OMOBJ" .> getChildren .>
+							isTag "OMATTR" .> getChildren .>
+							isTag "OMATP" .> getChildren .>
+							isTag "OMS" .> withSValue "cd" "casl" .>
+							withSValue "name" "funtype" .>
+							getQualValue "" "name") [tp] of
+						"funtype" ->
+								(Map.insert (Hets.stringToId ssymbolname, sOp) (Hets.stringToId tsymbolname, tOp) om, pm)
+						"" ->
+							if (ssymbolname /= []) && (tsymbolname /= [])
+								then
+									(om,
+										Map.insert
+											(Hets.stringToId ssymbolname, sPred)
+											(Hets.stringToId tsymbolname, tPred)
+											pm
+									)
+								else
+									(om, pm)
+						x ->
+							Debug.Trace.trace ("Unknown Symbol : \"" ++ x ++ "\"") (om,pm)
+					) (Map.empty, Map.empty) requations
 		in
-			(sortmap, newOpsMap, Map.empty)
+			(sortmap, opsmap, predsmap)
 
 			
 --helper
@@ -1212,7 +1253,8 @@ conSensFromXmlTheory t =
 createFullMaps::Hets.SortsMap->Hets.RelsMap->Hets.PredsMap->Hets.OpsMap->Hets.SensMap->Hets.ImportsMap->String->
 	(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))
 createFullMaps sortsmap relsmap predsmap opsmap sensmap importsmap nodename =
-	let	imports = getImports importsmap nodename
+	let
+		imports = getImports importsmap nodename
 		sorts = foldl (\ss i -> Set.union ss (Map.findWithDefault Set.empty i sortsmap))
 				(Map.findWithDefault Set.empty nodename sortsmap) $ Set.toList $ Set.map fst imports
 		rels = foldl (\rl i -> Rel.union rl (Map.findWithDefault Rel.empty i relsmap))
@@ -1223,7 +1265,23 @@ createFullMaps sortsmap relsmap predsmap opsmap sensmap importsmap nodename =
 				(Map.findWithDefault Map.empty nodename opsmap) $ Set.toList $ Set.map fst imports
 		sens = foldl (\rl i -> Set.union rl (Map.findWithDefault Set.empty i sensmap))
 				(Map.findWithDefault Set.empty nodename sensmap) $ Set.toList $ Set.map fst imports
-	in (sorts, rels, preds, ops, sens)
+		msorts = foldl(\ms mmm ->
+			case mmm of
+				Nothing -> ms
+				(Just mm) -> Hets.addMorphismSorts mm ms
+				) sorts $ Set.toList $ Set.map snd imports 
+		mpreds = foldl(\mp mmm ->
+			case mmm of
+				Nothing -> mp
+				(Just mm) -> Hets.addMorphismPreds mm mp
+				) preds $ Set.toList $ Set.map snd imports 
+		mops = foldl(\mo mmm ->
+			case mmm of
+				Nothing -> mo
+				(Just mm) -> Hets.addMorphismOps mm mo
+				) ops $ Set.toList $ Set.map snd imports 
+	in
+		(msorts, rels, mpreds, mops, sens)
 	
 mapsToG_theory::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->G_theory
 mapsToG_theory (sortset, rels, predmap, opmap, sensmap) =
@@ -1416,7 +1474,16 @@ importGraphToDGraph ig n =
 								then
 									[(importnodenum, nodenum, ddgl)]
 								else
-									map (\ih -> (importnodenum, nodenum, getIHLink ih)) $ Set.toList filteredimporthints
+									map (\ih ->
+										let
+											ihlink = getIHLink ih
+											link = case dgl_origin ihlink of
+											-- this is rather ugly, but else morphisms would be lost for now...
+												DGTranslation -> ihlink { dgl_morphism = dgl_morphism ddgl }
+												_ -> ihlink
+										in
+											(importnodenum, nodenum, link)
+										) $ Set.toList filteredimporthints
 						) le $ Set.toList nodeimports
 				) [] $ Map.toList imports
 		validedges = foldl (\e newe@(n,m,_) ->
@@ -1428,8 +1495,7 @@ importGraphToDGraph ig n =
 		cleannodes = map (\(n,node) -> (n, cleanNodeName node)) lnodes  
 	in
 		Graph.mkGraph cleannodes validedges
-
-
+		
 getOmdocID::HXT.XmlTrees->String
 getOmdocID = xshow . applyXmlFilter (isTag "omdoc" .> getQualValue "xml" "id")
 		
@@ -1673,7 +1739,9 @@ dGraphGToLibEnv ig =
 	in
 		(ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
 			
-							
+showdg::(ASL.LIB_NAME, DGraph, LibEnv)->IO ()
+showdg (ln,dg,lenv) =
+	Hets.showGraph "" Hets.dho (Just (ln, "", dg, lenv))
 	 
 showLink::DGraph->Graph.Node->Graph.Node->String
 showLink dg n1 n2 =
