@@ -82,7 +82,7 @@ import Common.Lib.Pretty
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
-import Common.Print_AS_Annotation()
+import Common.Print_AS_Annotation
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -173,7 +173,7 @@ class (Category lid sign morphism, Ord sentence,
       parse_sentence _ = Nothing
            -- print a sentence with comments
       print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
-      print_named _ = printText0
+      print_named _ = printLabelledSen
       sym_of :: lid -> sign -> Set.Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id 

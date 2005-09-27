@@ -112,8 +112,13 @@ instance (PrettyPrint a) => PrettyPrint (Annoted a) where
         in las' $+$ (hang i' 0 la) $$ ras'
 
 instance PrettyPrint s => PrettyPrint (Named s) where
-    printText0 ga (NamedSen label isAx _isDef s) =
-	printText0 ga s <> (if null label then empty else
+    printText0 ga = printText0 ga . sentence
+-- other stuff must be printed logic dependent 
+
+-- | print sentence with label and non-axioms with implied annotation 
+printLabelledSen :: PrettyPrint s => GlobalAnnos -> Named s -> Doc
+printLabelledSen ga s@NamedSen{senName = label, isAxiom = isAx} =  
+    printText0 ga s <> (if null label then empty else
 	   space <> printText0 ga (Label [label] nullRange))
         <> if isAx then empty else
         space <> printText0 ga (Semantic_anno SA_implied nullRange)
