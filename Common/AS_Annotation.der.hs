@@ -195,7 +195,7 @@ data Named s = NamedSen { senName  :: String,
 -- | equip a sentence with an empty name
 emptyName :: s -> Named s
 emptyName x = NamedSen { senName = "", sentence = x, 
-                         isAxiom = False, isDef = False}
+                         isAxiom = True, isDef = False}
 
 -- | extending sentence maps to maps on labelled sentences
 mapNamed :: (s ->t) -> Named s -> Named t
