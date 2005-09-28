@@ -19,7 +19,7 @@ parse error at 15.7:
 unexpected "as" or "a"
 expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
 
-[]
+[  ]
 + a
 a + b
 a when a < b else b

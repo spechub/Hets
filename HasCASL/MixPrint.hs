@@ -82,8 +82,9 @@ toMixWeight ga splt convFuns trm =
         newGa = addBuiltins ga
         pa = prec_annos newGa
         precs@(_, _, m) = mkPrecIntMap pa
+        p = getSimpleIdPrec precs i
+        dw = Just $ mkTrivWeight i p
         doSplit = maybe (error "doSplit") id . splt
-        dw = Just $ mkTrivWeight i (m + 2)
         mk t = (convTok convFuns t, dw)
       in if isGenNumber splt ga i aas then 
              mk $ toNumber doSplit i aas 
@@ -102,12 +103,11 @@ toMixWeight ga splt convFuns trm =
                          , convId convFuns cl ]
              in (toMixfixList mkList doSplit ga i aas, dw)
       else let
-        p = getSimpleIdPrec precs i
         newArgs = map (toMixWeight ga splt convFuns) aas
         n = length aas
-        in if placeCount i /= n then
+        in if null aas || placeCount i /= n then
               case aas of
-              [] -> (convId convFuns i, Just $ mkTrivWeight i (m + 2))
+              [] -> (convId convFuns i, dw)
               _ -> (juxtapose convFuns [convId convFuns i, 
                       parenthesize convFuns $ map fst newArgs],
                     Just $ mkTrivWeight applId (m + 1)) 
@@ -193,8 +193,6 @@ convTerm :: GlobalAnnos -> Term -> Term
 convTerm ga trm = case trm of
     QualOp _ (InstOpId i _ _) _ ps -> if elem i $ map fst bList then 
         ResolvedMixTerm i [] ps else trm
-    ResolvedMixTerm i [] _ -> if isGenString splitTerm ga i [] then 
-          TermToken $ toString (fromJust . splitTerm) ga i [] else trm
     ResolvedMixTerm _ _ _ -> convApplTerm ga trm
     ApplTerm _ _ _ -> convApplTerm ga trm
     TupleTerm ts ps -> TupleTerm (map (convTerm ga) ts) ps
