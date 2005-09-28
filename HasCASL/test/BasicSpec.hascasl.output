@@ -7,7 +7,7 @@ class a, b, c < Type; a < b
 type s : c
 pred tt : s
 var x : s
-program (pred tt : s) = \ (var x : s) . ()
+program (pred tt : s) = \ (var x : s) . () : s ->? Unit
 pred eq : s * s
 type s < ? s
 forall x : t; y : t
@@ -120,8 +120,8 @@ tt : s ->? Unit %(pred)%
 x : s
 y : t
 %% Sentences -------------------------------------------------------------
-program tt = \ x . ()
-__=__ (x, y)
+program tt = \ x . () : s ->? Unit
+x = y
 type Data1
   ::= a : Data1
       b : Data1

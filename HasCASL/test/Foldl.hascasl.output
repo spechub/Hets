@@ -5,15 +5,15 @@ op head : List a -> a
 op snoc : List a -> a --> List a
 forall x : a
 . __=__
-  (((op snoc[a] : forall a : Type . List a -> a --> List a)
-    (op nil[a] : forall a : Type . List a))
+  ((op snoc[a] : forall a : Type . List a -> a --> List a)
+   (op nil[a] : forall a : Type . List a)
    (var x : a),
-   ((op snoc[a] : forall a : Type . List a -> a --> List a)
-    (op nil[a] : forall a : Type . List a))
+   (op snoc[a] : forall a : Type . List a -> a --> List a)
+   (op nil[a] : forall a : Type . List a)
    (var x : a))
 . __=__
-  (((op head[a ->? a] : forall a : Type . List a -> a)
-    (op nil[a ->? a] : forall a : Type . List a))
+  ((op head[a ->? a] : forall a : Type . List a -> a)
+   (op nil[a ->? a] : forall a : Type . List a)
    (var x : a),
    (var x : a))
 %% Type Constructors -----------------------------------------------------
@@ -53,8 +53,8 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 x : a
 %% Sentences -------------------------------------------------------------
-__=__ ((snoc nil) x, (snoc nil) x)
-__=__ ((head nil) x, x)
+snoc nil x = snoc nil x
+head nil x = x
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.5, is type variable 'a'
 *** Hint 2.11, rebound type variable 'a'

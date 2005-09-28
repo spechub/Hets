@@ -145,23 +145,17 @@ x : S
 x' : S
 y : T
 %% Sentences -------------------------------------------------------------
-not__ (__isIn__ (x, emptySet))
-(__isIn__ (x, {__} x')) <=> (__=__ (x, x'))
-(__isIn__ (x, s)) <=> (s x)
-(__subset__ (s, s')) <=>
-(forall x : S . (__isIn__ (x, s)) => (__isIn__ (x, s')))
-(__isIn__ (x, __union__ (s, s'))) <=>
-((__isIn__ (x, s)) \/ (__isIn__ (x, s')))
-(__isIn__ (x, __intersection__ (s, s'))) <=>
-((__isIn__ (x, s)) /\ (__isIn__ (x, s')))
-(__isIn__ (x, __\\__ (s, s'))) <=>
-((__isIn__ (x, s)) /\ (not__ (__isIn__ (x, s'))))
-(__disjoint__ (s, s')) <=>
-(__=__ (__intersection__ (s, s'), emptySet))
-(__isIn__ ((x, y), __*__ (s, t))) <=>
-((__isIn__ (x, s)) /\ (__isIn__ (y, t)))
-__=__ (inl x, (x, False))
-__=__ (inr x, (x, True))
+not__ (x isIn emptySet)
+x isIn {__} x' <=> x = x'
+x isIn s <=> s x
+s subset s' <=> (forall x : S . x isIn s => x isIn s')
+x isIn s union s' <=> x isIn s \/ x isIn s'
+x isIn s intersection s' <=> x isIn s /\ x isIn s'
+x isIn s \\ s' <=> x isIn s /\ not__ (x isIn s')
+s disjoint s' <=> s intersection s' = emptySet
+(x, y) isIn (s * t) <=> x isIn s /\ y isIn t
+inl x = (x, False)
+inr x = (x, True)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'S'
 *** Hint 1.8, is type variable 'T'

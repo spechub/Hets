@@ -133,24 +133,23 @@ type HomNet = {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) *
                                                (op transitions : Net -> Set T) (var n1 : Net)),
                                               __/\__
                                               (__=__
-                                               (((op freeMap[P] :
-                                                  forall S : Type . Map S -> MapMultiSet S)
-                                                 (var hp : P ->? P))
-                                                (((op preMap : Net -> T ->? MultiSet P)
-                                                  (var n1 : Net))
-                                                 (var t : T)),
+                                               ((op freeMap[P] :
+                                                 forall S : Type . Map S -> MapMultiSet S)
+                                                (var hp : P ->? P)
                                                 ((op preMap : Net -> T ->? MultiSet P)
-                                                 (var n2 : Net))
+                                                 (var n1 : Net)
+                                                 (var t : T)),
+                                                (op preMap : Net -> T ->? MultiSet P) (var n2 : Net)
                                                 ((var ht : T ->? T) (var t : T))),
                                                __=__
-                                               (((op freeMap[P] :
-                                                  forall S : Type . Map S -> MapMultiSet S)
-                                                 (var hp : P ->? P))
-                                                (((op postMap : Net -> T ->? MultiSet P)
-                                                  (var n1 : Net))
-                                                 (var t : T)),
+                                               ((op freeMap[P] :
+                                                 forall S : Type . Map S -> MapMultiSet S)
+                                                (var hp : P ->? P)
                                                 ((op postMap : Net -> T ->? MultiSet P)
-                                                 (var n2 : Net))
+                                                 (var n1 : Net)
+                                                 (var t : T)),
+                                                (op postMap : Net -> T ->? MultiSet P)
+                                                (var n2 : Net)
                                                 ((var ht : T ->? T) (var t : T))))))}
 op dom : HomNet -> Net; cod : HomNet -> Net;
    placesMap : HomNet -> (P ->? P);
@@ -414,20 +413,18 @@ free type Boolean
       False : Boolean
 let S = MultiSetToSet B in
    forall x : Elem
-     . ((__isIn__ : Elem * Set Elem ->? Unit) (x, S)) <=>
-       ((freq (x, B)) > 0)
-(def__ ((op __o__ : HomSys * HomSys ->? HomSys) (h2, h1))) =>
-(__=__
- ((op __o__ : HomSys * HomSys ->? HomSys) (h2, h1),
-  ((op dom : HomSys -> System) h1,
-   (__o__ : (P ->? P) * (P ->? P) -> P ->? P)
-   ((op placesMap : HomSys -> P ->? P) h2,
-    (op placesMap : HomSys -> P ->? P) h1),
-   (__o__ : (T ->? T) * (T ->? T) -> T ->? T)
-   ((op transitionsMap : HomSys -> T ->? T) h2,
-    (op transitionsMap : HomSys -> T ->? T) h1),
-   (op cod : HomSys -> System) h2)
-  as HomSys))
+     . (__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0
+def__ ((op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)) =>
+(op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =
+(((op dom : HomSys -> System) h1,
+  (__o__ : (P ->? P) * (P ->? P) -> P ->? P)
+  ((op placesMap : HomSys -> P ->? P) h2,
+   (op placesMap : HomSys -> P ->? P) h1),
+  (__o__ : (T ->? T) * (T ->? T) -> T ->? T)
+  ((op transitionsMap : HomSys -> T ->? T) h2,
+   (op transitionsMap : HomSys -> T ->? T) h1),
+  (op cod : HomSys -> System) h2)
+ as HomSys)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.7, is type variable 'S'
 *** Hint 7.9, is type variable 'V'

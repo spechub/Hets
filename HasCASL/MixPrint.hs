@@ -20,6 +20,7 @@ import Common.Earley
 import qualified Common.Lib.Map as Map
 
 import HasCASL.As
+import HasCASL.FoldTerm
 import HasCASL.Le
 import HasCASL.Builtin
 
@@ -189,30 +190,28 @@ convApplTerm ga t = fst $ toMixWeight ga splitTerm hsConvFuns t
 convProgEq :: GlobalAnnos -> ProgEq -> ProgEq
 convProgEq ga (ProgEq p t q) = ProgEq (convTerm ga p) (convTerm ga t) q
 
+convTermRec :: GlobalAnnos -> MapRec
+convTermRec ga = mapRec
+    { foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
+                 if elem i $ map fst bList then 
+                    ResolvedMixTerm i [] ps else t 
+    , foldApplTerm = \ t _ _ _ -> convApplTerm ga t
+    , foldResolvedMixTerm = \ t _ _ _ -> convApplTerm ga t
+    }
+
 convTerm :: GlobalAnnos -> Term -> Term
-convTerm ga trm = case trm of
-    QualOp _ (InstOpId i _ _) _ ps -> if elem i $ map fst bList then 
-        ResolvedMixTerm i [] ps else trm
-    ResolvedMixTerm _ _ _ -> convApplTerm ga trm
-    ApplTerm _ _ _ -> convApplTerm ga trm
-    TupleTerm ts ps -> TupleTerm (map (convTerm ga) ts) ps
-    TypedTerm t q ty ps -> let nt = convTerm ga t in
+convTerm ga = foldTerm $ convTermRec ga
+
+rmTypeRec :: MapRec
+rmTypeRec = mapRec
+    { foldTypedTerm = \ _ nt q ty ps -> 
            case q of 
            Inferred -> nt 
            _ -> case nt of 
                TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
                QualVar (VarDecl _ oty _ _) | oty == ty -> nt 
                _ -> TypedTerm nt q ty ps
-    QuantifiedTerm q vs t ps -> QuantifiedTerm q vs (convTerm ga t) ps
-    LambdaTerm ps q t qs -> 
-        LambdaTerm (map (convTerm ga) ps) q (convTerm ga t) qs
-    CaseTerm t es ps -> CaseTerm (convTerm ga t) (map (convProgEq ga) es) ps 
-    LetTerm br es t ps -> 
-        LetTerm br (map (convProgEq ga) es) (convTerm ga t) ps
-    MixfixTerm ts -> MixfixTerm $ map (convTerm ga) ts
-    BracketTerm k ts ps -> BracketTerm k (map (convTerm ga) ts) ps
-    AsPattern v p ps -> AsPattern v (convTerm ga p) ps
-    TermToken _ -> trm
-    MixTypeTerm _ _ _ -> trm
-    QualVar _ -> trm
+    }   
 
+rmSomeTypes :: Term -> Term
+rmSomeTypes = foldTerm rmTypeRec

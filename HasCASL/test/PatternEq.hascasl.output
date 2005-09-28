@@ -1,16 +1,16 @@
 type s, t
 op snd : s * t -> t
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
+            (var y : t) : t
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
-            (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) =
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
 op a : s
 program (var b : s) = (op a : s)
@@ -55,12 +55,12 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program snd ((var x : s), (var y : t)) = (var y : t)
-program snd ((var x : s), (var y : t)) = (var y : t)
-program snd ((var x : s), (var y : t)) = (var y : t)
-program snd ((var x : s), (var y : t)) = (var y : t)
-program snd ((var x : s), (var y : t)) = (var y : t)
-program snd ((var x : s), (var y : t)) = (var y : t)
+program snd ((var x : s), (var y : t)) : t = (var y : t)
+program snd ((var x : s), (var y : t)) : t = (var y : t)
+program snd ((var x : s), (var y : t)) : t = (var y : t) : t
+program snd ((var x : s), (var y : t)) : t = (var y : t)
+program snd ((var x : s), (var y : t)) : t = (var y : t)
+program snd ((var x : s), (var y : t)) : t = (var y : t)
 program (var b : s) = a
 program b = a
 c = (snd (x, y) as t)

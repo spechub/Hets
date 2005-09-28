@@ -23,9 +23,11 @@ type __*__ : +Type -> +Type -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op def, tt : Pred s
 var x : s
-program (op def[s] : forall s : Type . Pred s) = \ (var x : s) . ()
+program (op def[s] : forall s : Type . Pred s) : Pred s =
+            \ (var x : s) . () : s ->? Unit
         %% def is also total (identical to tt) 
-program (op tt[s] : forall s : Type . Pred s) = \ (var x : s) . ()
+program (op tt[s] : forall s : Type . Pred s) : Pred s =
+            \ (var x : s) . () : s ->? Unit
         %% tt is total "op tt(x: s): unit = ()"
 %% total function type
 type __->__ : -Type -> +Type -> Type
@@ -213,22 +215,20 @@ x2 : c
 y1 : d
 y2 : d
 %% Sentences -------------------------------------------------------------
-program def = \ x . ()
-program tt = \ x . ()
+program def : Pred s = \ x . () : s ->? Unit
+program tt : Pred s = \ x . () : s ->? Unit
 forall x : s; y : t . x res y = (x as s)
 forall x : s; y : t . fst (x, y) = (x as s)
-__=__ (\ (x, y) . def (x res y), \ (x, y) . (def y) und (def x))
-__=__ (fst, __res__)
-__=__ (\ x . eq (x, x), tt)
-__=__
-(\ (x, y) . __res__ (x, eq (x, y)),
- \ (x, y) . __res__ (y, eq (x, y)))
+(\ (x, y) . def (x res y)) = (\ (x, y) . (def y) und (def x))
+fst = __res__
+(\ x . eq (x, x)) = tt
+(\ (x, y) . x res eq (x, y)) = (\ (x, y) . y res eq (x, y))
 forall s : nat -> c
   . isChain s = (all (\ n : nat . s (n) <<= s (Suc (n))) as Unit)
 forall x : c; s : nat -> c
   . isBound (x, s) = (all (\ n : nat . s (n) <<= x) as Unit)
-__=__ (f (Y f), Y f)
-(__=__ (f x, x)) => (__<<=__ (Y f, x))
+f (Y f) = Y f
+f x = x => Y f <<= x
 undefined = (Y (\ x' . x' as (c --> p) --> c --> p) as c --> p)
 free type bool
   ::= true : bool

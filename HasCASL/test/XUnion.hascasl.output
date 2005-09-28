@@ -56,7 +56,7 @@ true : Unit %(fun)%
 g : Graph N E
 g' : Graph N E
 %% Sentences -------------------------------------------------------------
-__=__ ((__union__ : Graph N E * Graph N E -> Graph N E) (g, g'), g)
+(__union__ : Graph N E * Graph N E -> Graph N E) (g, g') = g
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.7, is type variable 'S'
 *** Hint 1.9, is type variable 'N'

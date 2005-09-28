@@ -162,7 +162,7 @@ instance PrettyPrint TypeQual where
     printText0 _ q = text $ show q
 
 instance PrettyPrint Term where
-    printText0 ga t = printTerm ga $ convTerm ga t
+    printText0 ga t = printTerm ga $ convTerm ga $ rmSomeTypes t
 
 unPredType :: Type -> Type
 unPredType t = case getTypeAppl t of

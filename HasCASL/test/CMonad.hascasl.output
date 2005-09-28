@@ -28,9 +28,9 @@ var x : m a
     forall a : Type; b : Type . (a -> b) -> List a -> List b)
    (var g : a -> b))
 . __=__
-  (((op fmap[a; b; m] :
-     forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
-    (var g : a -> b))
+  ((op fmap[a; b; m] :
+    forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
+   (var g : a -> b)
    (var x : m a),
    (op __bind__[a; b; m] :
     forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b)
@@ -92,10 +92,10 @@ true : Unit %(fun)%
 g : a -> b
 x : m a
 %% Sentences -------------------------------------------------------------
-__=__ (fail, emptySet)
-__=__ (fail, "")
-__=__ (fmap g, map g)
-__=__ ((fmap g) x, __bind__ (x, \ y .! return (g y)))
+fail = emptySet
+fail = ""
+fmap g = map g
+fmap g x = x bind (\ y .! return (g y))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.5, is type variable 'a'
 *** Hint 7.8, is type variable 'b'

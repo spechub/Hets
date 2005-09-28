@@ -1,6 +1,6 @@
 type a
 op f : a -> a
-program (op f : a -> a) (v @ (var _ : a)) = (var v : a)
+program (op f : a -> a) (v @ (var _ : a)) : a = (var v : a)
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit
@@ -32,4 +32,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program f (v @ _) = v
+program f (v @ _) : a = v

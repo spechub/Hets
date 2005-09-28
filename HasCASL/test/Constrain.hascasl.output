@@ -48,8 +48,8 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-__=__ (f (f c), c)
-__=__ (f b, b)
+f (f c) = c
+f b = b
 %% Diagnostics -----------------------------------------------------------
 *** Hint 16.3, constrain 't : Ord' is unprovable
   known kinds are: [ Eq ]
