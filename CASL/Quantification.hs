@@ -15,7 +15,7 @@ module CASL.Quantification where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import Common.Id
-import Data.List(nubBy)
+import Data.List
 import qualified Common.Lib.Set as Set
 
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
@@ -37,15 +37,23 @@ freeVars = foldFormula $ freeVarsRecord $ const Set.empty
 -- | quantify only over free variables (and only once)
 effQuantify :: QUANTIFIER -> [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
 effQuantify q vdecls phi pos =
-    let fvs = freeVars phi 
-	filterVAR_DECL (Var_decl vs s ps) =
-	    Var_decl (filter (\ v -> Set.member (v,s) fvs) vs) s ps
-	flatVAR_DECL (Var_decl vs s ps) = 
+    let flatVAR_DECL (Var_decl vs s ps) = 
 	    map (\v -> Var_decl [v] s ps) vs
-	newDecls = concatMap (flatVAR_DECL . filterVAR_DECL) vdecls
-	myNub = nubBy (\ (Var_decl v1 _ _) (Var_decl v2 _ _) -> v1 == v2)
-	in if null newDecls && q /= Unique_existential then phi else 
-	   Quantification q (reverse $ myNub $ reverse newDecls) phi pos
+        joinVarDecl = foldr1 ( \ (Var_decl v1 s1 ps) (Var_decl v2 _s2 _) -> 
+                          Var_decl (v1 ++ v2) s1 ps)
+	cleanDecls = 
+            map joinVarDecl . myGroup . reverse . myNub . reverse . 
+                   concatMap flatVAR_DECL
+        myGroup = groupBy ( \ (Var_decl _ s1 _) (Var_decl _ s2 _) -> s1 == s2)
+	myNub = nubBy ( \ (Var_decl v1 _ _) (Var_decl v2 _ _) -> v1 == v2)
+	in case q of 
+           Unique_existential -> Quantification q (cleanDecls vdecls) phi pos
+           _ -> let fvs = freeVars phi 
+	            filterVAR_DECL (Var_decl vs s ps) =
+	                Var_decl (filter (\ v -> Set.member (v,s) fvs) vs) s ps
+                    newDecls = cleanDecls $ map filterVAR_DECL vdecls
+                in if null newDecls then phi else 
+	           Quantification q newDecls phi pos
 
 
 stripRecord :: (f -> f) -> Record f (FORMULA f) (TERM f) 

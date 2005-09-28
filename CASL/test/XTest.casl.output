@@ -6,7 +6,7 @@
  pred p : a
  pred p : b
  pred q : a
- pred q : b,[  . forall v1: a; v2: a; v3: a . o = o,
+ pred q : b,[  . forall v1, v2, v3: a . o = o,
                . forall v1: a . o(v1) = o2(v1) ])
 *** Hint 11.6, redeclared sort 'a'
 *** Error 13.8, expecting two arguments of equal sort

@@ -1200,129 +1200,123 @@
  pred odd : Nat
  pred p : ()
  pred q : s,[  . forall v1: Nat . pre(suc(v1)) = v1,
-               . forall v1: Nat; v2: Nat . suc(v1) = suc(v2) <=> v1 = v2,
+               . forall v1, v2: Nat . suc(v1) = suc(v2) <=> v1 = v2,
                . forall v1: Nat . not 0 = suc(v1),  . not def pre(0),
               generated{sort Nat; op 0 : Nat; op suc : Nat -> Nat},
                . forall v1: Nat . 0 <= v1,  . forall v1: Nat . not suc(v1) <= 0,
-               . forall v1: Nat; v2: Nat . suc(v1) <= suc(v2) <=> v1 <= v2,
-               . forall v1: Nat; v2: Nat . v1 >= v2 <=> v2 <= v1,
-               . forall v1: Nat; v2: Nat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
-               . forall v1: Nat; v2: Nat . v1 > v2 <=> v1 < v2,
+               . forall v1, v2: Nat . suc(v1) <= suc(v2) <=> v1 <= v2,
+               . forall v1, v2: Nat . v1 >= v2 <=> v2 <= v1,
+               . forall v1, v2: Nat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
+               . forall v1, v2: Nat . v1 > v2 <=> v1 < v2,
                . forall v1: Nat . 0 + v1 = v1,
-               . forall v1: Nat; v2: Nat . suc(v2) + v1 = suc(v2 + v1),
+               . forall v1, v2: Nat . suc(v2) + v1 = suc(v2 + v1),
                . forall v1: Nat . 0 * v1 = 0,
-               . forall v1: Nat; v2: Nat . suc(v2) * v1 = v2 * v1 + v1,
+               . forall v1, v2: Nat . suc(v2) * v1 = v2 * v1 + v1,
                . forall v1: Nat . v1 ^ 0 = 1,
-               . forall v1: Nat; v2: Nat . v1 ^ suc(v2) = v1 * v1 ^ v2,
-               . forall v1: Nat; v2: Nat
-                     . min(v1, v2) = v1 when v1 <= v2 else v2,
-               . forall v1: Nat; v2: Nat
-                     . max(v1, v2) = v2 when v1 <= v2 else v1,
+               . forall v1, v2: Nat . v1 ^ suc(v2) = v1 * v1 ^ v2,
+               . forall v1, v2: Nat . min(v1, v2) = v1 when v1 <= v2 else v2,
+               . forall v1, v2: Nat . max(v1, v2) = v2 when v1 <= v2 else v1,
                . forall v1: Nat . + v1 = v1,  . forall v1: Nat . abs(v1) = v1,
                . forall v1: Nat . odd(v1) <=> not even(v1),  . even(0),
                . forall v1: Nat . even(suc(v1)) <=> odd(v1),  . 0 ! = 1,
                . forall v1: Nat . suc(v1) ! = suc(v1) * v1 !,
-               . forall v1: Nat; v2: Nat; v3: Nat
-                     . v1 -? v2 = v3 <=> v1 = v3 + v2,
+               . forall v1, v2, v3: Nat . v1 -? v2 = v3 <=> v1 = v3 + v2,
                . forall v1: Nat . not def v1 /? 0,
-               . forall v1: Nat; v2: Nat; v3: Nat
+               . forall v1, v2, v3: Nat
                      . (v1 /? v2 = v3 <=> v1 = v3 * v2) if v2 > 0,
-               . forall v1: Nat; v2: Nat; v3: Nat
+               . forall v1, v2, v3: Nat
                      . v1 div v2 = v3 <=>
                            (exists v4: Nat . v1 = v2 * v3 + v4 /\ v4 < v2),
-               . forall v1: Nat; v2: Nat; v3: Nat
+               . forall v1, v2, v3: Nat
                      . v1 mod v2 = v3 <=>
                            (exists v4: Nat . v1 = v2 * v4 + v3 /\ v3 < v2),
-               . forall v1: Nat; v2: Nat . v1 quot v2 = v1 div v2,
-               . forall v1: Nat; v2: Nat . v1 rem v2 = v1 mod v2,  . 1 = suc(0),
+               . forall v1, v2: Nat . v1 quot v2 = v1 div v2,
+               . forall v1, v2: Nat . v1 rem v2 = v1 mod v2,  . 1 = suc(0),
                . 2 = suc(1),  . 3 = suc(2),  . 4 = suc(3),  . 5 = suc(4),
                . 6 = suc(5),  . 7 = suc(6),  . 8 = suc(7),  . 9 = suc(8),
-               . forall v1: Nat; v2: Nat . v1 @@ v2 = v1 * suc(9) + v2,
+               . forall v1, v2: Nat . v1 @@ v2 = v1 * suc(9) + v2,
                . forall v1: Nat . v1 in Pos <=> v1 > 0,
-               . forall v1: Nat; v2: Nat . min(v1, v2) = min(v2, v1),
-               . forall v1: Nat; v2: Nat . max(v1, v2) = max(v2, v1),
-               . forall v1: Nat; v2: Nat; v3: Nat
+               . forall v1, v2: Nat . min(v1, v2) = min(v2, v1),
+               . forall v1, v2: Nat . max(v1, v2) = max(v2, v1),
+               . forall v1, v2, v3: Nat
                      . min(v1, min(v2, v3)) = min(min(v1, v2), v3),
-               . forall v1: Nat; v2: Nat; v3: Nat
+               . forall v1, v2, v3: Nat
                      . max(v1, max(v2, v3)) = max(max(v1, v2), v3),
-               . forall v1: Nat; v2: Nat . def v1 -? v2 <=> v1 >= v2,
-               . forall v1: Nat; v2: Nat . def v1 /? v2 <=> v1 mod v2 = 0,
-               . forall v1: Nat; v2: Nat . def v1 div v2 <=> not v2 = 0,
-               . forall v1: Nat; v2: Nat . def v1 mod v2 <=> not v2 = 0,
-               . forall v1: Nat; v2: Nat . def v1 quot v2 <=> not v2 = 0,
-               . forall v1: Nat; v2: Nat . def v1 rem v2 <=> not v2 = 0,
-               . forall v1: Nat; v2: Nat; v3: Nat
-                     . (v1 + v2) * v3 = v1 * v3 + v2 * v3,
+               . forall v1, v2: Nat . def v1 -? v2 <=> v1 >= v2,
+               . forall v1, v2: Nat . def v1 /? v2 <=> v1 mod v2 = 0,
+               . forall v1, v2: Nat . def v1 div v2 <=> not v2 = 0,
+               . forall v1, v2: Nat . def v1 mod v2 <=> not v2 = 0,
+               . forall v1, v2: Nat . def v1 quot v2 <=> not v2 = 0,
+               . forall v1, v2: Nat . def v1 rem v2 <=> not v2 = 0,
+               . forall v1, v2, v3: Nat . (v1 + v2) * v3 = v1 * v3 + v2 * v3,
                . forall v1: Nat . max(v1, 0) = v1,
                . forall v1: Nat . min(v1, 0) = 0,
               generated{sort Int; op __-__ : Nat * Nat -> Int},
-               . forall v1: Nat; v2: Nat; v3: Nat; v4: Nat
+               . forall v1, v2, v3, v4: Nat
                      . v1 - v2 = v3 - v4 <=> v1 + v4 = v3 + v2,
                . forall v1: Nat . v1 = v1 - 0,
-               . forall v1: Nat; v2: Nat; v3: Nat; v4: Nat
+               . forall v1, v2, v3, v4: Nat
                      . (v1 - v2) + (v3 - v4) = (v1 + v3) - (v2 + v4),
-               . forall v1: Nat; v2: Nat; v3: Nat; v4: Nat
+               . forall v1, v2, v3, v4: Nat
                      . (v1 - v2) * (v3 - v4) =
                            (v1 * v3 + v2 * v4) - (v2 * v3 + v1 * v4),
-               . forall v1: Int; v2: Int . v1 - v2 = v1 + - v2,
+               . forall v1, v2: Int . v1 - v2 = v1 + - v2,
                . forall v1: Int . + v1 = v1,
-               . forall v1: Nat; v2: Nat . - (v1 - v2) = v2 - v1,
+               . forall v1, v2: Nat . - (v1 - v2) = v2 - v1,
                . forall v1: Int
                      . sign(v1) = 0 when v1 = 0 else 1 when v1 > 0 else - 1,
-               . forall v1: Int; v2: Int . v1 <= v2 <=> v2 - v1 in Nat,
-               . forall v1: Int; v2: Int . v1 >= v2 <=> v2 <= v1,
-               . forall v1: Int; v2: Int . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
-               . forall v1: Int; v2: Int . v1 > v2 <=> v1 < v2,
-               . forall v1: Int; v2: Int
-                     . min(v1, v2) = v1 when v1 <= v2 else v2,
-               . forall v1: Int; v2: Int
-                     . max(v1, v2) = v2 when v1 <= v2 else v1,
+               . forall v1, v2: Int . v1 <= v2 <=> v2 - v1 in Nat,
+               . forall v1, v2: Int . v1 >= v2 <=> v2 <= v1,
+               . forall v1, v2: Int . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
+               . forall v1, v2: Int . v1 > v2 <=> v1 < v2,
+               . forall v1, v2: Int . min(v1, v2) = v1 when v1 <= v2 else v2,
+               . forall v1, v2: Int . max(v1, v2) = v2 when v1 <= v2 else v1,
                . forall v1: Int . abs(v1) = - v1 if v1 < 0,
                . forall v1: Nat . - 1 ^ v1 = 1 when even(v1) else - 1,
                . forall v1: Int; v2: Nat
                      . v1 ^ v2 = sign(v1) ^ v2 * abs(v1) ^ v2,
                . forall v1: Int . even(v1) <=> even(abs(v1)),
                . forall v1: Int . odd(v1) <=> not even(v1),
-               . forall v1: Int; v2: Int
+               . forall v1, v2: Int
                      . v1 /? v2 = sign(v1) * sign(v2) * (abs(v1) /? abs(v2)),
-               . forall v1: Int; v2: Int . (v1 mod v2) < abs(v2) if not v2 = 0,
-               . forall v1: Int; v2: Int
+               . forall v1, v2: Int . (v1 mod v2) < abs(v2) if not v2 = 0,
+               . forall v1, v2: Int
                      . v1 = (v1 div v2) * v2 + (v1 mod v2) if not v2 = 0,
                . forall v1: Int . not def v1 mod 0,
                . forall v1: Int . not def v1 div 0,
-               . forall v1: Int; v2: Int
+               . forall v1, v2: Int
                      . v1 quot v2 = sign(v1) * sign(v2) * (abs(v1) quot abs(v2)),
-               . forall v1: Int; v2: Int
+               . forall v1, v2: Int
                      . v1 rem v2 = sign(v1) * sign(v2) * (abs(v1) rem abs(v2)),
-               . forall v1: Nat; v2: Nat . def v1 -? v2 => v1 -? v2 = v1 - v2,
+               . forall v1, v2: Nat . def v1 -? v2 => v1 -? v2 = v1 - v2,
                . forall v1: Int . v1 = sign(v1) * abs(v1),
                . forall v1: Int . odd(v1) <=> odd(abs(v1)),
-               . forall v1: Int; v2: Int; v3: Int
+               . forall v1, v2, v3: Int
                      . v1 /? v2 = v3 <=> not v2 = 0 /\ v2 * v3 = v2,
-               . forall v1: Int; v2: Int . def v1 /? v2 <=> v1 mod v2 = 0,
-               . forall v1: Int; v2: Int . def v1 mod v2 <=> not v2 = 0,
-               . forall v1: Int; v2: Int . v1 mod v2 = v1 mod abs(v2),
-               . forall v1: Int; v2: Int . def v1 div v2 <=> not v2 = 0,
-               . forall v1: Int; v2: Int . def v1 quot v2 <=> not v2 = 0,
-               . forall v1: Int; v2: Int . def v1 rem v2 <=> not v2 = 0,
-               . forall v1: Int; v2: Int
+               . forall v1, v2: Int . def v1 /? v2 <=> v1 mod v2 = 0,
+               . forall v1, v2: Int . def v1 mod v2 <=> not v2 = 0,
+               . forall v1, v2: Int . v1 mod v2 = v1 mod abs(v2),
+               . forall v1, v2: Int . def v1 div v2 <=> not v2 = 0,
+               . forall v1, v2: Int . def v1 quot v2 <=> not v2 = 0,
+               . forall v1, v2: Int . def v1 rem v2 <=> not v2 = 0,
+               . forall v1, v2: Int
                      . v1 = (v1 quot v2) * v2 + (v1 rem v2) if not v2 = 0,
               generated{sort Rat; op __/__ : Int * Pos -> Rat},
-               . forall v1: Int; v2: Int; v3: Pos; v4: Pos
+               . forall v1, v2: Int; v3, v4: Pos
                      . v1 / v3 = v2 / v4 <=> v1 * v4 = v2 * v3,
                . forall v1: Int . v1 / 1 = v1,
-               . forall v1: Pos; v2: Pos; v3: Int; v4: Int
+               . forall v1, v2: Pos; v3, v4: Int
                      . (v3 / v1) <= (v4 / v2) <=> (v3 * v2) <= (v4 * v1),
-               . forall v1: Rat; v2: Rat . v1 >= v2 <=> v2 <= v1,
-               . forall v1: Rat; v2: Rat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
-               . forall v1: Rat; v2: Rat . v1 > v2 <=> v2 < v1,
-               . forall v1: Pos; v2: Pos; v3: Int; v4: Int
+               . forall v1, v2: Rat . v1 >= v2 <=> v2 <= v1,
+               . forall v1, v2: Rat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2,
+               . forall v1, v2: Rat . v1 > v2 <=> v2 < v1,
+               . forall v1, v2: Pos; v3, v4: Int
                      . (v3 / v1) + (v4 / v2) = (v3 * v2 + v4 * v1) / (v1 * v2),
-               . forall v1: Rat; v2: Rat . v1 - v2 = v1 + - v2,
-               . forall v1: Pos; v2: Pos; v3: Int; v4: Int
+               . forall v1, v2: Rat . v1 - v2 = v1 + - v2,
+               . forall v1, v2: Pos; v3, v4: Int
                      . (v3 / v1) * (v4 / v2) = (v3 * v4) / (v1 * v2),
                . forall v1: Rat . not def v1 / 0,
-               . forall v1: Rat; v2: Rat; v3: Rat
+               . forall v1, v2, v3: Rat
                      . (v1 / v2 = v3 <=> v3 = v1 * v2) if not v2 = 0,
                . forall v1: Rat . + v1 = v1,
                . forall v1: Pos; v2: Int . - (v2 / v1) = - v2 / v1,
@@ -1330,40 +1324,34 @@
                . forall v1: Rat . v1 ^ 0 = 1,
                . forall v1: Nat; v2: Rat . v2 ^ suc(v1) = v2 * v2 ^ v1,
                . forall v1: Pos; v2: Rat . v2 ^ - v1 = 1 / (v2 ^ v1),
-               . forall v1: Rat; v2: Rat
-                     . min(v1, v2) = v1 when v1 <= v2 else v2,
-               . forall v1: Rat; v2: Rat
-                     . max(v1, v2) = v2 when v1 <= v2 else v1,
-               . forall v1: Int; v2: Int; v3: Pos; v4: Pos
+               . forall v1, v2: Rat . min(v1, v2) = v1 when v1 <= v2 else v2,
+               . forall v1, v2: Rat . max(v1, v2) = v2 when v1 <= v2 else v1,
+               . forall v1, v2: Int; v3, v4: Pos
                      . (v1 / v3) / (v2 / v4) = (v1 / v3) * (v4 / v2) if not v2 = 0,
                . forall v1: s . v1 = v1,  . forall v1: s . v1 = v1,
                . forall v1: s . v1 = v1,  . forall v1: s . v1 = v1,
                . forall v1: s . v1 = v1,  . forall v1: s . v1 = v1,
                . forall v1: s . v1 = v1,  . forall v1: s . v1 = v1,
-               . forall v1: a; v2: t; v3: t; v4: t; v5: t
-                     . a(c(v1, v2, v3, v4, v5)) = v2,
-               . forall v1: a; v2: t; v3: t; v4: t; v5: t
-                     . b(c(v1, v2, v3, v4, v5)) = v3,
-               . forall v1: a; v2: t; v3: t; v4: t; v5: t
-                     . a(c(v1, v2, v3, v4, v5)) = v4,
-               . forall v1: a; v2: t; v3: t; v4: t; v5: t
-                     . d(c(v1, v2, v3, v4, v5)) = v5,
-               . forall v1: a; v2: t; v3: t; v4: t . a(c(v1, v2, v3, v4)) = v2,
-               . forall v1: a; v2: t; v3: t; v4: t . b(c(v1, v2, v3, v4)) = v3,
-               . forall v1: a; v2: t; v3: t; v4: t . d(c(v1, v2, v3, v4)) = v4,
-               . forall v1: a; v2: t; v3: t; v4: t; v5: a; v6: t; v7: t; v8: t
+               . forall v1: a; v2, v3, v4, v5: t . a(c(v1, v2, v3, v4, v5)) = v2,
+               . forall v1: a; v2, v3, v4, v5: t . b(c(v1, v2, v3, v4, v5)) = v3,
+               . forall v1: a; v2, v3, v4, v5: t . a(c(v1, v2, v3, v4, v5)) = v4,
+               . forall v1: a; v2, v3, v4, v5: t . d(c(v1, v2, v3, v4, v5)) = v5,
+               . forall v1: a; v2, v3, v4: t . a(c(v1, v2, v3, v4)) = v2,
+               . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
+               . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
+               . forall v1: a; v2, v3, v4: t; v5: a; v6, v7, v8: t
                      . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=>
                            v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ v4 = v8,
-               . forall v1: a; v2: a . c(v1) = c(v2) <=> v1 = v2,
+               . forall v1, v2: a . c(v1) = c(v2) <=> v1 = v2,
                . forall v1: s . not (v1 in s2 /\ v1 in s1),  . not c: s in s2,
                . not c: s in s1,
-               . forall v1: a; v2: t; v3: t; v4: t . not c(v1, v2, v3, v4) in s2,
-               . forall v1: a; v2: t; v3: t; v4: t . not c(v1, v2, v3, v4) in s1,
+               . forall v1: a; v2, v3, v4: t . not c(v1, v2, v3, v4) in s2,
+               . forall v1: a; v2, v3, v4: t . not c(v1, v2, v3, v4) in s1,
                . forall v1: a . not c(v1) in s2,
                . forall v1: a . not c(v1) in s1,
-               . forall v1: a; v2: t; v3: t; v4: t . not c = c(v1, v2, v3, v4),
+               . forall v1: a; v2, v3, v4: t . not c = c(v1, v2, v3, v4),
                . forall v1: a . not c = c(v1),
-               . forall v1: a; v2: t; v3: t; v4: t; v5: a
+               . forall v1: a; v2, v3, v4: t; v5: a
                      . not c(v1, v2, v3, v4) = c(v5),
                . not def a(c),  . forall v1: a . not def a(c(v1)),
                . not def b(c),  . forall v1: a . not def b(c(v1)),
@@ -1371,32 +1359,30 @@
               generated{sort s; op c : s; op c : a ->? s;
                                 op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                 op g__inj : s2 -> s},
-               . forall v1: a; v2: t; v3: t; v4: t . a(c(v1, v2, v3, v4)) = v2,
-               . forall v1: a; v2: t; v3: t; v4: t . b(c(v1, v2, v3, v4)) = v3,
-               . forall v1: a; v2: t; v3: t; v4: t . d(c(v1, v2, v3, v4)) = v4,
+               . forall v1: a; v2, v3, v4: t . a(c(v1, v2, v3, v4)) = v2,
+               . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
+               . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
               generated{sort s; op c : s; op c : a ->? s;
                                 op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                 op g__inj : s2 -> s},
-               . forall v1: a; v2: t; v3: t; v4: t . a(c(v1, v2, v3, v4)) = v2,
-               . forall v1: a; v2: t; v3: t; v4: t . b(c(v1, v2, v3, v4)) = v3,
-               . forall v1: a; v2: t; v3: t; v4: t . d(c(v1, v2, v3, v4)) = v4,
+               . forall v1: a; v2, v3, v4: t . a(c(v1, v2, v3, v4)) = v2,
+               . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
+               . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
               generated{sort s, t; op c : s; op c : a ->? s;
                                    op c : a * t * t * t -> s; op g__inj : s1 -> s;
                                    op g__inj : s2 -> s; op g__inj : t -> s},
                . true,  . true,  . forall v1: b . v1 in a <=> true,
-               . forall v1: s; v2: s; v3: s
-                     . c(v1, c(v2, v3)) = c(c(v1, v2), v3),
-               . forall v1: s; v2: s . c(v1, v2) = c(v2, v1),
+               . forall v1, v2, v3: s . c(v1, c(v2, v3)) = c(c(v1, v2), v3),
+               . forall v1, v2: s . c(v1, v2) = c(v2, v1),
                . forall v1: s . c(v1, v1) = v1,  . forall v1: s . c(v1, a) = v1,
                . forall v1: s . c(a, v1) = v1,
-               . forall v1: s; v2: s; v3: s
-                     . c(v1, c(v2, v3)) = c(c(v1, v2), v3),
-               . forall v1: s; v2: s . c(v1, v2) = c(v2, v1),
+               . forall v1, v2, v3: s . c(v1, c(v2, v3)) = c(c(v1, v2), v3),
+               . forall v1, v2: s . c(v1, v2) = c(v2, v1),
                . forall v1: s . c(v1, v1) = v1,  . forall v1: s . c(v1, a) = v1,
                . forall v1: s . c(a, v1) = v1,  . a: s = a: s,
-               . forall v1: s; v2: s; v3: t . c(v1, v2, v3) = a,  . a: s = a: s,
-               . forall v1: s; v2: s; v3: t . c(v1, v2, v3) = a,
-               . forall v1: s; v2: s; v3: t . c(v1, v2, v3) <=> false,
+               . forall v1, v2: s; v3: t . c(v1, v2, v3) = a,  . a: s = a: s,
+               . forall v1, v2: s; v3: t . c(v1, v2, v3) = a,
+               . forall v1, v2: s; v3: t . c(v1, v2, v3) <=> false,
                . forall v1: Data1; v2: Data2 . sel1(Cons31(v1, v2)) = v1,
                . forall v1: Data1; v2: Data2 . sel2(Cons31(v1, v2)) = v2,
                . forall v1: Data2; v2: Data1 . sel2(Cons32(v1, v2)) = v1,
@@ -1431,15 +1417,14 @@
                . forall v1: s . def g(v1),  . forall v1: s . def g(v1),
                . forall v1: s . def f(v1),  . forall v1: s . def g(v1),  . p,
                . forall v1: s . q(v1),
-               . forall v1: s; v2: s; v3: s . def v3 * v1 * v2 + v2 * v1 * v3,
+               . forall v1, v2, v3: s . def v3 * v1 * v2 + v2 * v1 * v3,
                . def {},  . forall v1: s . def { v1 },  . true,
                . not True = False,
               generated{sort Boolean; op False : Boolean; op True : Boolean},
                . Not False = True,  . Not True = False,
                . False And False = False,  . False And True = False,
                . True And False = False,  . True And True = True,
-               . forall v1: Boolean; v2: Boolean
-                     . v1 Or v2 = Not (Not v1 And Not v2),
+               . forall v1, v2: Boolean . v1 Or v2 = Not (Not v1 And Not v2),
                . forall v1: Nat . def chr(v1) <=> v1 <= 255,
                . forall v1: Char . chr(ord(v1)) = v1,
                . forall v1: Nat . ord(chr(v1)) = v1 if v1 <= 255,
@@ -1802,8 +1787,7 @@
                . SP = '\032',  . DEL = '\127',  . NL = LF,  . NP = FF,
                . '\n' = NL,  . '\t' = HT,  . '\v' = VT,  . '\b' = BS,
                . '\r' = CR,  . '\f' = FF,  . '\a' = BEL,  . '\?' = '?',
-               . forall v1: a; v2: a; v3: a
-                     . v1 || (v2 || v3) = (v1 || v2) || v3,
+               . forall v1, v2, v3: a . v1 || (v2 || v3) = (v1 || v2) || v3,
                . (b || b) || b = b ])
 *** Hint 17.9, redeclared as total 'min'
 *** Hint 17.14, redeclared as total 'max'
