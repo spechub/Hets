@@ -145,13 +145,13 @@ x : S
 x' : S
 y : T
 %% Sentences -------------------------------------------------------------
-not__ (x isIn emptySet)
-x isIn {__} x' <=> x = x'
+not x isIn emptySet
+x isIn { x' } <=> x = x'
 x isIn s <=> s x
 s subset s' <=> (forall x : S . x isIn s => x isIn s')
 x isIn s union s' <=> x isIn s \/ x isIn s'
 x isIn s intersection s' <=> x isIn s /\ x isIn s'
-x isIn s \\ s' <=> x isIn s /\ not__ (x isIn s')
+x isIn s \\ s' <=> x isIn s /\ not x isIn s'
 s disjoint s' <=> s intersection s' = emptySet
 (x, y) isIn (s * t) <=> x isIn s /\ y isIn t
 inl x = (x, False)

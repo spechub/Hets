@@ -414,7 +414,7 @@ free type Boolean
 let S = MultiSetToSet B in
    forall x : Elem
      . (__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0
-def__ ((op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)) =>
+def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =>
 (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =
 (((op dom : HomSys -> System) h1,
   (__o__ : (P ->? P) * (P ->? P) -> P ->? P)

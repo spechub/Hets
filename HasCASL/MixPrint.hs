@@ -178,9 +178,12 @@ parenthesizeTerms ts = case ts of
 splitTerm :: Term -> Maybe (Id, [Term])
 splitTerm trm = case trm of
   ResolvedMixTerm i ts _ -> case ts of 
-     [TupleTerm args _] -> Just (i, args)
+     [TupleTerm args _] | placeCount i > 1 -> Just (i, args)
      _ -> Just(i, ts)
-  ApplTerm (ResolvedMixTerm i [] _) (TupleTerm ts _) _ -> Just(i, ts) 
+  ApplTerm (ResolvedMixTerm i [] _) t2 _ ->
+      Just (i, case t2 of 
+          TupleTerm ts _ | placeCount i > 1 -> ts
+          _ -> [t2])                                       
   ApplTerm t1 t2 _ -> Just(applId, [t1, t2])
   _ -> Nothing
 
