@@ -1,6 +1,6 @@
 type s
 op f : s --> s
-. __=__ ((op f : s --> s), \ (var x : s) . (var x : s) as s --> s)
+. (op f : s --> s) = (\ (var x : s) . (var x : s) as s --> s)
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit

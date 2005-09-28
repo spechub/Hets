@@ -4,18 +4,17 @@ op nil : List a
 op head : List a -> a
 op snoc : List a -> a --> List a
 forall x : a
-. __=__
-  ((op snoc[a] : forall a : Type . List a -> a --> List a)
-   (op nil[a] : forall a : Type . List a)
-   (var x : a),
-   (op snoc[a] : forall a : Type . List a -> a --> List a)
-   (op nil[a] : forall a : Type . List a)
-   (var x : a))
-. __=__
-  ((op head[a ->? a] : forall a : Type . List a -> a)
-   (op nil[a ->? a] : forall a : Type . List a)
-   (var x : a),
-   (var x : a))
+. (op snoc[a] : forall a : Type . List a -> a --> List a)
+  (op nil[a] : forall a : Type . List a)
+  (var x : a)
+  =
+  (op snoc[a] : forall a : Type . List a -> a --> List a)
+  (op nil[a] : forall a : Type . List a)
+  (var x : a)
+. (op head[a ->? a] : forall a : Type . List a -> a)
+  (op nil[a ->? a] : forall a : Type . List a)
+  (var x : a)
+  = (var x : a)
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 List : Type -> Type

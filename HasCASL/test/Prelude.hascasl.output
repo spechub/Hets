@@ -38,26 +38,23 @@ op __res__ : forall s : Type; t : Type . s * t -> s
 op fst : forall s : Type; t : Type . s * t -> s
      = \ ((var x : s), (var y : t)) .! (var x : s) as s
 %% trivial because its the strict function property
-. __=__
-  (\ ((var x : s), (var y : t)) . def (x res y),
-   \ ((var x : s), (var y : t)) . (def y) und (def x))
-. __=__
-  ((op fst[_v73; _v71] : forall s : Type; t : Type . s * t -> s),
-   (op __res__[_v73; _v71] : forall s : Type; t : Type . s * t -> s))
+. (\ ((var x : s), (var y : t)) . def (x res y)) =
+  (\ ((var x : s), (var y : t)) . (def y) und (def x))
+. (op fst[_v73; _v71] : forall s : Type; t : Type . s * t -> s) =
+  (op __res__[_v73; _v71] : forall s : Type; t : Type . s * t -> s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred eq : s * s
-. __=__
-  (\ (var x : s)
+. (\ (var x : s)
      . (pred eq[s] : forall s : Type . s * s)
-       ((var x : s), (var x : s)),
-   (op tt[s] : forall s : Type . Pred s))
-. __=__
-  (\ ((var x : s), (var y : s))
+       ((var x : s), (var x : s)))
+  = (op tt[s] : forall s : Type . Pred s)
+. (\ ((var x : s), (var y : s))
      . (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
        ((var x : s),
-        (pred eq[s] : forall s : Type . s * s) ((var x : s), (var y : s))),
-   \ ((var x : s), (var y : s))
+        (pred eq[s] : forall s : Type . s * s) ((var x : s), (var y : s))))
+  =
+  (\ ((var x : s), (var y : s))
      . (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
        ((var y : s),
         (pred eq[s] : forall s : Type . s * s) ((var x : s), (var y : s))))
@@ -101,15 +98,13 @@ var f : c --> d; g : c --> d
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun Y : (p --> p) --> p
 var f : p --> p; x : p
-. __=__
-  ((var f : p --> p)
-   ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)),
-   (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p))
-. __=>__
-  (__=__ ((var f : p --> p) (var x : p), (var x : p)),
-   (pred __<<=__[p] : forall c : Cpo . c * c)
-   ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p),
-    (var x : p)))
+. (var f : p --> p)
+  ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p))
+  = (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)
+. (var f : p --> p) (var x : p) = (var x : p) =>
+  (pred __<<=__[p] : forall c : Cpo . c * c)
+  ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p),
+   (var x : p))
 op undefined : forall p : Pcpo; c : Cpo . c --> p
      = (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
        (\ (var x' : c --> p) . (var x' : c --> p) as

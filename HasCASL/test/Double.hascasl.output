@@ -11,12 +11,11 @@ op twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
          . (var f : a ->? a) ((var f : a ->? a) (var x : a))
        as (a ->? b) -> a ->? b
 var f : a ->? b; x : a
-. __=__
-  ((op twice[a; b] :
-    forall a : Type; b < a : Type . (a ->? b) -> a ->? b)
-   (var f : a ->? b)
-   (var x : a),
-   (var f : a ->? b) ((var f : a ->? b) (var x : a)))
+. (op twice[a; b] :
+   forall a : Type; b < a : Type . (a ->? b) -> a ->? b)
+  (var f : a ->? b)
+  (var x : a)
+  = (var f : a ->? b) ((var f : a ->? b) (var x : a))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
 Logical : Type := ? Unit

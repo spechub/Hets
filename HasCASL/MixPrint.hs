@@ -195,10 +195,7 @@ convProgEq ga (ProgEq p t q) = ProgEq (convTerm ga p) (convTerm ga t) q
 
 convTermRec :: GlobalAnnos -> MapRec
 convTermRec ga = mapRec
-    { foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
-                 if elem i $ map fst bList then 
-                    ResolvedMixTerm i [] ps else t 
-    , foldApplTerm = \ t _ _ _ -> convApplTerm ga t
+    { foldApplTerm = \ t _ _ _ -> convApplTerm ga t
     , foldResolvedMixTerm = \ t _ _ _ -> convApplTerm ga t
     }
 
@@ -207,7 +204,10 @@ convTerm ga = foldTerm $ convTermRec ga
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldTypedTerm = \ _ nt q ty ps -> 
+    { foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
+                 if elem i $ map fst bList then 
+                    ResolvedMixTerm i [] ps else t 
+    , foldTypedTerm = \ _ nt q ty ps -> 
            case q of 
            Inferred -> nt 
            _ -> case nt of 

@@ -12,7 +12,7 @@ pred eq : s * s
 type s < ? s
 forall x : t; y : t
 . %(..)%
-  __=__ ((var x : t), (var y : t))
+  (var x : t) = (var y : t)
 type s
 op a : (? s)
 type Data1 ::= a | 
