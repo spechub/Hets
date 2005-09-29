@@ -29,8 +29,12 @@ Assembles all the logics into a list, as a prerequisite for the logic graph.
 
 -}
 
-module Comorphisms.LogicList
-where
+module Comorphisms.LogicList 
+    ( logicList
+    , addLogicName
+    , defaultLogic
+    , lookupLogic_in_LG
+    ) where
 
 import Common.Result
 import qualified Common.Lib.Map as Map
@@ -71,8 +75,11 @@ preLogicGraph :: LogicGraph
 preLogicGraph = 
   emptyLogicGraph { logics = Map.fromList $ map addLogicName logicList }
 
--- currently only used in ATC/Grothendieck.hs
 lookupLogic_in_LG :: String -> String -> AnyLogic
 lookupLogic_in_LG errorPrefix logname =
     propagateErrors $ lookupLogic errorPrefix logname preLogicGraph
+-- currently only used in ATC/Grothendieck.hs 
+-- and indirectly in ATC/DevGraph.der.hs
+
+
 

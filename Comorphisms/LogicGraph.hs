@@ -31,7 +31,7 @@ Assembles all the logics and comorphisms into a graph.
 -}
 
 module Comorphisms.LogicGraph (defaultLogic, logicList, logicGraph, 
-                               lookupLogic_in_LG, lookupComorphism_in_LG)
+                               lookupComorphism_in_LG)
 where
 
 import Common.Result

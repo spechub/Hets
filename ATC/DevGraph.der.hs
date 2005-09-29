@@ -21,11 +21,10 @@ module ATC.DevGraph where
 
 import Static.DevGraph
 import Logic.Logic
-import Comorphisms.LogicGraph
 import Common.ATerm.Lib
 import ATC.AS_Library()
 import ATC.Prover()
-import ATC.Grothendieck()
+import ATC.Grothendieck
 
 {-! for DGNodeLab derive : ShATermConvertible !-}
 {-! for DGLinkLab derive : ShATermConvertible !-}
@@ -64,9 +63,8 @@ instance ShATermConvertible BasicProof where
 	    (ShAAppl "BasicProof" [i1,i2] _) ->
 	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case getATermByIndex1 i2 att of { att' ->
-               case lookupLogic_in_LG 
-                        ("ShATermConvertible BasicProof") i1'  of {
-                    Logic lid -> (BasicProof lid (fromShATerm att'))}}}
+               case atcLogicLookup "BasicProof" i1'  of {
+                    Logic lid -> BasicProof lid (fromShATerm att')}}}
             v@(ShAAppl "BasicProof" [i1] _) ->
                case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case i1' of
@@ -83,15 +81,12 @@ instance ShATermConvertible G_theory where
          case toShATerm att2 sens of { (att3,i3) ->
            addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
      fromShATerm att = 
-         case aterm of
+         case getATerm att of
 	    (ShAAppl "G_theory" [i1,i2,i3] _) ->
 		let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att'
-                    l = lookupLogic_in_LG ("ShATermConvertible G_sign:") i1' 
-                in case l of
-                    Logic lid -> (G_theory lid (fromShATerm att') 
-                                               (fromShATerm att''))
+                in case atcLogicLookup "G_theory" i1' of
+                    Logic lid -> G_theory lid (fromShATerm att') 
+                                               (fromShATerm att'')
 	    u     -> fromShATermError "G_theory" u
-         where
-         aterm = getATerm att
