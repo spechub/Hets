@@ -127,6 +127,7 @@ import qualified Common.Lib.Rel as Rel(image, setInsert)
 import Data.List hiding (union)
 import Common.PrettyPrint
 import Common.Lib.Pretty
+import Common.ProofUtils
 import Control.Monad 
 
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -160,15 +161,15 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        incl <- ginclusion lg 
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents =
-	       DGNode {
-		       dgn_name = name,
-		       dgn_theory = G_theory lid sigma_complete $ toThSens ax, 
+	    DGNode {
+             dgn_name = name,
+	     dgn_theory = G_theory lid sigma_complete (toThSens (nameSens ax)), 
 		       -- no, not only the delta
-		       dgn_nf = Nothing,
-		       dgn_sigma = Nothing,
-		       dgn_origin = DGBasic,
-		       dgn_cons = None,
-		       dgn_cons_status = LeftOpen }
+	     dgn_nf = Nothing,
+	     dgn_sigma = Nothing,
+	     dgn_origin = DGBasic,
+	     dgn_cons = None,
+	     dgn_cons_status = LeftOpen }
            node = getNewNode dg
            dg' = insNode (node,node_contents) dg
            link = DGLink {
