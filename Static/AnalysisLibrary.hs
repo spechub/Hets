@@ -502,9 +502,9 @@ refNodesig ln dg (name, NodeSig n sigma) =
         dgn_renamed = makeMaybeName name,
         dgn_libname = ln,
         dgn_node = n,
-	dgn_nf = Nothing,
-	dgn_sigma = Nothing
-	}
+        dgn_nf = Nothing,
+        dgn_sigma = Nothing
+        }
       node = getNewNode dg
    in (insNode (node,node_contents) dg, NodeSig node sigma)
 

@@ -5,7 +5,7 @@ The modules for CspCASL are built on top of those for "CASL",
 using the holes for future extensions that have been left in the
 datatypes for CASL.
 
-"CspCASL.AS_CSP_CASL"	abstract syntax
+"CspCASL.AS_CSP_CASL"   abstract syntax
 
 "CspCASL.CCKeywords", "CspCASL.CCLexer",  "CspCASL.CCToken", "CspCASL.Parse_hugo" preliminary parser
 

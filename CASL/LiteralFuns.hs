@@ -63,5 +63,5 @@ op_id op = case op of
 
 isQualOpSy :: OP_SYMB -> Bool
 isQualOpSy o = case o of
-	   Op_name _          -> False
-	   Qual_op_name _ _ _ -> True
+           Op_name _          -> False
+           Qual_op_name _ _ _ -> True

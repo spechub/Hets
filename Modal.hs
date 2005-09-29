@@ -8,14 +8,14 @@ using the holes for future extensions that have been left in the
 datatypes for CASL.
 
 "Modal.AS_Modal" abstract syntax
-	
+        
 "Modal.Parse_AS" parser
 
-"Modal.Print_AS" , "Modal.LaTeX_Modal"	pretty printing
+"Modal.Print_AS" , "Modal.LaTeX_Modal"  pretty printing
 
 "Modal.ModalSign" signatures
 
-"Modal.StatAna"	static analysis
+"Modal.StatAna" static analysis
 
 "Modal.ModalSystems" recognition of various systems such as S4, S5 etc.
 

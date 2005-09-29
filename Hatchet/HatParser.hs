@@ -32,10 +32,10 @@ data HsDecls = HsDecls [HsDecl] deriving (Eq, Show)
 hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
-	       let (l, c) = (sourceLine p, sourceColumn p)
+               let (l, c) = (sourceLine p, sourceColumn p)
                    r = HatParser.parse s 
                           (SrcLoc l 0) c []
                case r of
-		           Ok _ (HsModule _ _ _ hsDecls) -> 
-				     return (HsDecls hsDecls)
-			   Failed msg -> unexpected msg
+                           Ok _ (HsModule _ _ _ hsDecls) -> 
+                                     return (HsDecls hsDecls)
+                           Failed msg -> unexpected msg

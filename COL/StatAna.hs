@@ -36,7 +36,7 @@ ana_COL_SIG_ITEM _ mi =
     case mi of 
     Constructor_items al ps -> do
         mapM_ (updateExtInfo . addConstructor . item) al 
-	return $ Constructor_items al ps
+        return $ Constructor_items al ps
     Observer_items al ps -> do
         mapM_ (updateExtInfo . addObserver . item) al 
-	return $ Observer_items al ps
+        return $ Observer_items al ps

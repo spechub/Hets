@@ -296,9 +296,9 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
          (_,True) -> return cm1
          _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
        else fail ("Sublogic mismatch in composition of "++language_name cid1++
-		  " and "++language_name cid2)
+                  " and "++language_name cid2)
     else fail ("Logic mismatch in composition of "++language_name cid1++
-	             " and "++language_name cid2)
+                     " and "++language_name cid2)
 
 --- Morphisms ---
 
@@ -533,7 +533,7 @@ logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
       else case Map.lookup (ln1,ln2) (inclusions logicGraph) of 
            Just (Comorphism i) -> 
                return (Comorphism i)
-	   Nothing -> 
+           Nothing -> 
                fail ("No inclusion from "++ln1++" to "++ln2++" found")
 
 -- | inclusion morphism between two Grothendieck signatures

@@ -20,12 +20,12 @@
 -- trees of /bounded balance/) as described by:
 --
 --    * Stephen Adams, \"/Efficient sets: a balancing act/\",
---	Journal of Functional Programming 3(4):553-562, October 1993,
---	<http://www.swiss.ai.mit.edu/~adams/BB>.
+--      Journal of Functional Programming 3(4):553-562, October 1993,
+--      <http://www.swiss.ai.mit.edu/~adams/BB>.
 --
 --    * J. Nievergelt and E.M. Reingold,
---	\"/Binary search trees of bounded balance/\",
---	SIAM journal of computing 2(1), March 1973.
+--      \"/Binary search trees of bounded balance/\",
+--      SIAM journal of computing 2(1), March 1973.
 -----------------------------------------------------------------------------
 
 module Common.Lib.Map  ( 
@@ -66,7 +66,7 @@ module Common.Lib.Map  (
             , unionWith          
             , unionWithKey
             , unions
-	    , unionsWith
+            , unionsWith
 
             -- ** Difference
             , difference
@@ -84,9 +84,9 @@ module Common.Lib.Map  (
             , mapWithKey
             , mapAccum
             , mapAccumWithKey
-	    , mapKeys
-	    , mapKeysWith
-	    , mapKeysMonotonic
+            , mapKeys
+            , mapKeysWith
+            , mapKeysMonotonic
 
             -- ** Fold
             , fold
@@ -95,7 +95,7 @@ module Common.Lib.Map  (
             -- * Conversion
             , elems
             , keys
-	    , keysSet
+            , keysSet
             , assocs
             
             -- ** Lists

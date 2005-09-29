@@ -177,9 +177,9 @@ analyseTail trees = mapM analyseTail' trees
    analyseTail' :: XmlTree -> Result Directive
    analyseTail' tree = 
      case tree of
-	  NTree (XTag tagName tagTrees) subTrees -> 
+          NTree (XTag tagName tagTrees) subTrees -> 
                case tName tagName of
-	            "owl:Class"  -> 
+                    "owl:Class"  -> 
                         case owlClass tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
@@ -187,7 +187,7 @@ analyseTail trees = mapM analyseTail' trees
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)} 
                                                                  
-		    "owl:Restriction" -> 
+                    "owl:Restriction" -> 
                         case owlRestriction tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
@@ -201,49 +201,49 @@ analyseTail trees = mapM analyseTail' trees
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)} 
-		    "owl:ObjectProperty" -> 
+                    "owl:ObjectProperty" -> 
                         case owlObjProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)} 
-		    "owl:FunctionalProperty" ->  
+                    "owl:FunctionalProperty" ->  
                         case owlFuncProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)} 
-		    "owl:InverseFunctionalProperty" -> 
+                    "owl:InverseFunctionalProperty" -> 
                         case owlInvFuncProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)}
-		    "owl:TransitiveProperty" -> 
+                    "owl:TransitiveProperty" -> 
                         case owlTransProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)}
-		    "owl:SymmetricProperty" -> 
+                    "owl:SymmetricProperty" -> 
                         case owlSymmProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)}
-		    "rdf:Description" -> 
+                    "rdf:Description" -> 
                         case rdfDescription tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)} 
-		    "owl:AllDifferent" ->  
+                    "owl:AllDifferent" ->  
                         case owlAllDiff tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
@@ -251,14 +251,14 @@ analyseTail trees = mapM analyseTail' trees
                                                       Just fact -> Just (Fc fact)
                                                       Nothing -> Nothing::(Maybe Directive)}
 
-		    "owl:DatatypeProperty" ->  
+                    "owl:DatatypeProperty" ->  
                         case owlDtProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 
                                       maybeResult = case maybeRes of
                                                       Just axiom -> Just (Ax axiom)
                                                       Nothing -> Nothing::(Maybe Directive)}
-		    "owl:AnnotatonProperty" -> 
+                    "owl:AnnotatonProperty" -> 
                         case owlAnnoProp tree of
                           Result diagRes maybeRes ->
                               Result {diags = diagRes, 

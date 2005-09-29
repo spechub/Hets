@@ -12,7 +12,7 @@ for hiding and redisplaying (groups of) nodes and edges.
 "GUI.ConvertDevToAbstractGraph"
 display of development graphs, using abstract graph interface
 
-"GUI.HTkUtils"	some utilities for "HTk"
+"GUI.HTkUtils"  some utilities for "HTk"
 
 "GUI.ConsoleUtils" similar utilities for using without "HTk"
 

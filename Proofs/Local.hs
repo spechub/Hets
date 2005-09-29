@@ -48,13 +48,13 @@ locDecomp proofStatus@(ln,libEnv,_) = do
       nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus 
-	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
   return newProofStatus
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
 locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-	            -> (DGraph,([DGRule],[DGChange]))
+                    -> (DGraph,([DGRule],[DGChange]))
 locDecompAux _ _ dgraph historyElement [] = (dgraph, historyElement)
 locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
@@ -76,12 +76,12 @@ locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = morphism,
-		       dgl_type = 
-		         (LocalThm (Proven (LocDecomp ledge) proofBasis)
-			  conservativity conservStatus),
-		       dgl_origin = DGProof}
+               tgt,
+               DGLink {dgl_morphism = morphism,
+                       dgl_type = 
+                         (LocalThm (Proven (LocDecomp ledge) proofBasis)
+                          conservativity conservStatus),
+                       dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
     newRules = (LocDecomp ledge):rules
@@ -117,12 +117,12 @@ localInference proofStatus@(ln,libEnv,_) = do
   let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
-	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
   return newProofStatus
 
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-	            -> IO (DGraph,([DGRule],[DGChange]))
+                    -> IO (DGraph,([DGRule],[DGChange]))
 localInferenceAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
 localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   case (getDGNode libEnv dgraph tgt, maybeThSrc) of
@@ -132,37 +132,37 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
         (Just (G_theory lidTgt sig sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
-	    Just sentencesTgt -> do
+            Just sentencesTgt -> do
               -- check if all source axioms are also axioms in the target
               let goals = Set.filter (isAxiom  . value) sensSrc 
                            Set.\\ sentencesTgt
                   goals' = markAsGoal goals
                   newTh = case (dgn_theory oldContents) of
-		          G_theory lid sig sens ->
+                          G_theory lid sig sens ->
                            case coerceThSens lidSrc lid "" goals' of
                              Nothing -> G_theory lid sig sens
                              Just goals'' -> 
                                  G_theory lid sig (sens `joinSens` goals'')
               if Set.null goals
-		then do
+                then do
                  let newEdge = (src, tgt, newLab)
                      newGraph = insEdge newEdge auxGraph
                      newChanges = DeleteEdge ledge : InsertEdge newEdge
                                    : changes
                  localInferenceAux libEnv ln newGraph (newRules,newChanges) list
-		else do 
+                else do 
                  let n = getNewNode auxGraph
-		     newNode = (n, oldContents{dgn_theory = newTh})
+                     newNode = (n, oldContents{dgn_theory = newTh})
                  (newGraph,changes') <- adoptEdges (insNode newNode $ auxGraph) tgt n
-	         let newEdge = (src, n, newLab)
+                 let newEdge = (src, n, newLab)
                      newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
-		     newChanges = changes ++ DeleteEdge ledge : 
+                     newChanges = changes ++ DeleteEdge ledge : 
                                     InsertNode newNode : changes' ++ 
                                     [DeleteNode oldNode,InsertEdge newEdge]
                  localInferenceAux libEnv ln newGraph' (newRules,newChanges) list
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
     _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
-		 localInferenceAux libEnv ln dgraph (rules,changes) list
+                 localInferenceAux libEnv ln dgraph (rules,changes) list
 
   where
     morphism = dgl_morphism edgeLab
@@ -170,10 +170,10 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newLab = DGLink {dgl_morphism = morphism,
-		       dgl_type = 
-		         (LocalThm (Proven (LocInference ledge) [])
-			  conservativity conservStatus),
-		       dgl_origin = DGProof}
+                       dgl_type = 
+                         (LocalThm (Proven (LocInference ledge) [])
+                          conservativity conservStatus),
+                       dgl_origin = DGProof}
     newRules = (LocInference ledge):rules
     oldNode = labNode' (context dgraph tgt)
     (_,oldContents) = oldNode

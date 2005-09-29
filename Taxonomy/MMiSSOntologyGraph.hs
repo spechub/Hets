@@ -37,7 +37,7 @@ displayClassGraph onto startClass =
                                           ((p,v,l,s):_) -> return(([],v,l,[]) & empty)
      A.Result gid err <-
        A.makegraph  (getOntologyName onto)
-	   [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
+           [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
            [("class", Box $$$ Color "#e0eeee" $$$
                    createLocalMenu onto ginfo main
                    $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
@@ -76,7 +76,7 @@ setEmptyRelationSpecs gid gv onto =
      case lookup gid gs of
        Nothing -> return()
        Just g ->
-	 do A.Result gid err <- A.writeRelViewSpecs gid emptyRelViewSpecs gv
+         do A.Result gid err <- A.writeRelViewSpecs gid emptyRelViewSpecs gv
             return()
   where 
     emptyRelViewSpecs = map (\(relname) -> (A.RelViewSpec relname False False))
@@ -131,22 +131,22 @@ updateDaVinciGraph newGraph gid gv =
        Just g ->
         do oldGraph <- return(A.ontoGraph g)
            nMap <- return(A.nodeMap g)
-	   nodeMap1 <- foldM (createNode gid gv oldGraph) nMap (labNodes newGraph)
-	   nodeMap2 <- foldM (createLink gid gv) nodeMap1 (labEdges newGraph)
-	   A.Result gid err <- A.writeOntoGraph gid newGraph gv
+           nodeMap1 <- foldM (createNode gid gv oldGraph) nMap (labNodes newGraph)
+           nodeMap2 <- foldM (createLink gid gv) nodeMap1 (labEdges newGraph)
+           A.Result gid err <- A.writeOntoGraph gid newGraph gv
            A.Result gid err2 <- A.writeNodeMap gid nodeMap2 gv
            case err of
              Nothing -> return()
              Just(str) -> putStr str
            return()
-	where
+        where
           getTypeLabel OntoClass = "class"
           getTypeLabel OntoObject = "object"
           getTypeLabel OntoPredicate = "predicate"
-	  createNode :: Int -> A.GraphInfo -> Gr (String,String,OntoObjectType) String -> 
+          createNode :: Int -> A.GraphInfo -> Gr (String,String,OntoObjectType) String -> 
                           A.NodeMapping -> LNode (String, String, OntoObjectType) -> IO (A.NodeMapping)
-	  createNode gid ginfo oldGraph nMap (nodeID, (name, className, objectType)) = 
-	    case lookupFM nMap nodeID of
+          createNode gid ginfo oldGraph nMap (nodeID, (name, className, objectType)) = 
+            case lookupFM nMap nodeID of
               Just(_) -> return nMap
               Nothing ->
                 do (A.Result nid err) <- A.addnode gid (getTypeLabel objectType) name ginfo
@@ -155,25 +155,25 @@ updateDaVinciGraph newGraph gid gv =
                      Just(str) -> do putStr str
                                      return (addToFM nMap nodeID nid)
 
-	  createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String -> IO (A.NodeMapping)
-	  createLink gid ginfo nMap (node1, node2, edgeLabel) = 
-	    do dNodeID_1 <- case lookupFM nMap node1 of
-			      Nothing -> return (-1)
-			      Just(n) -> return(n)
-	       dNodeID_2 <- case lookupFM nMap node2 of
-			      Nothing -> return (-1)
-			      Just(n) -> return(n)                        
-	       if ((dNodeID_1 == -1) || (dNodeID_2 == -1))
-		 then return nMap
-		 else do A.Result eid err <- 
+          createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String -> IO (A.NodeMapping)
+          createLink gid ginfo nMap (node1, node2, edgeLabel) = 
+            do dNodeID_1 <- case lookupFM nMap node1 of
+                              Nothing -> return (-1)
+                              Just(n) -> return(n)
+               dNodeID_2 <- case lookupFM nMap node2 of
+                              Nothing -> return (-1)
+                              Just(n) -> return(n)                        
+               if ((dNodeID_1 == -1) || (dNodeID_2 == -1))
+                 then return nMap
+                 else do A.Result eid err <- 
                             if (edgeLabel == "isa") || (edgeLabel == "instanceOf") || (edgeLabel == "livesIn") || (edgeLabel == "proves")
                               then A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo 
---		              else A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo 
-		              else A.addlink gid edgeLabel edgeLabel dNodeID_1 dNodeID_2 ginfo 
+--                            else A.addlink gid edgeLabel edgeLabel dNodeID_2 dNodeID_1 ginfo 
+                              else A.addlink gid edgeLabel edgeLabel dNodeID_1 dNodeID_2 ginfo 
                          case err of
                            Nothing -> return()
                            Just(str) -> putStr str
-			 return nMap
+                         return nMap
 
 
 showRelationsForVisible :: MMiSSOntology -> A.GraphInfo -> (String, Int, Int) -> IO ()
@@ -222,9 +222,9 @@ showWholeObjectGraph onto gv (name,descr,gid) =
      updateDaVinciGraph (makeObjectGraph empty (getClassGraph onto) objectGraph) gid gv
      case error of
        Just _ -> do writeIORef gv oldGv
-		    return ()
+                    return ()
        Nothing -> do A.redisplay gid gv
-		     return () 
+                     return () 
 
 
 
@@ -271,9 +271,9 @@ showWholeClassGraph onto gv (name, descr, gid) =
      updateDaVinciGraph (getPureClassGraph (getClassGraph onto)) gid gv
      case error of
        Just _ -> do writeIORef gv oldGv
-		    return ()
+                    return ()
        Nothing -> do A.redisplay gid gv
-		     return () 
+                     return () 
 
 showRelationsToNeighbors :: MMiSSOntology -> A.GraphInfo -> Bool -> [String] -> (String, Int, Int) -> IO ()
 showRelationsToNeighbors onto gv withIncoming rels (name, _, gid) =
@@ -284,9 +284,9 @@ showRelationsToNeighbors onto gv withIncoming rels (name, _, gid) =
      return ()
 --     case error of
 --       Just _ -> do writeIORef gv oldGv
---		    return ()
+--                  return ()
 --       Nothing -> do A.redisplay gid gv
---		     return () 
+--                   return () 
 
 
 reduceToNeighbors :: Gr (String,String,OntoObjectType) String -> Bool -> String -> [String] 
@@ -319,9 +319,9 @@ showAllRelations onto gv withIncoming rels (name, _, gid) =
      return ()
 --     case error of
 --       Just _ -> do writeIORef gv oldGv
---		    return ()
+--                  return ()
 --      Nothing -> do A.redisplay gid gv
---		     return () 
+--                   return () 
 
 
 {--
@@ -410,11 +410,11 @@ showSuperSubClassesForVisible onto gv showSuper transitive (name, descr, gid) =
   do nodeList <- myGetNodes gid gv
      if transitive
        then updateDaVinciGraph
-		 (foldl (getSubSuperClosure (getClassGraph onto) showSuper) empty nodeList) 
-		 gid gv
+                 (foldl (getSubSuperClosure (getClassGraph onto) showSuper) empty nodeList) 
+                 gid gv
        else updateDaVinciGraph
-		 (foldl (getSubSuperSingle (getClassGraph onto) showSuper) empty nodeList)
-		 gid gv
+                 (foldl (getSubSuperSingle (getClassGraph onto) showSuper) empty nodeList)
+                 gid gv
      A.redisplay gid gv
      return () 
 
@@ -747,10 +747,10 @@ showRelationDialog parentContainer onto gv (name,descr,gid) =
        Nothing -> return()
        Just g ->
          do rvs <- return(A.relViewSpecs g)
-	    specEntries <- return(S.row (map relSpecToFormEntry rvs))
-	    form <- return(firstRow S.// specEntries)
-	    valueOpt <- S.doForm "Show relations" form
-	    return()
+            specEntries <- return(S.row (map relSpecToFormEntry rvs))
+            form <- return(firstRow S.// specEntries)
+            valueOpt <- S.doForm "Show relations" form
+            return()
   where 
     firstRow =  
       (S.newFormEntry "" ()) S.\\ --

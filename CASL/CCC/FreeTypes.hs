@@ -70,17 +70,17 @@ checkFreeType (osig,osens) m fsn
     | not $ null notSubSorts =
         let (Id ts _ pos) = head notSubSorts
             sname = concat $ map tokStr ts 
-	in warning Nothing (sname ++ " is not freely generated") pos
+        in warning Nothing (sname ++ " is not freely generated") pos
     | any (\s->not $ elem s f_Inhabited) $ diffList nSorts subSorts =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) nSorts
             sname = concat $ map tokStr ts 
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
         let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $ 
-		  map leadingSymPos _axioms
+                  map leadingSymPos _axioms
         in warning Nothing "axiom is not definitional" pos
     | not $ null $ p_t_axioms ++ pcheck = 
-	let pos = posOf $ (take 1 (p_t_axioms ++ pcheck))
+        let pos = posOf $ (take 1 (p_t_axioms ++ pcheck))
         in warning Nothing "partial axiom is not definitional" pos
     | any id $ map find_ot id_ots =    
         let pos = old_op_ps
@@ -90,16 +90,16 @@ checkFreeType (osig,osens) m fsn
         in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
     | not $ and $ map (checkTerm constructors) leadingTerms=
         let (Application os _ pos) = 
-		head $ filter (\t->not $ checkTerm constructors t) leadingTerms
+                head $ filter (\t->not $ checkTerm constructors t) leadingTerms
         in warning Nothing ("a leading term of " ++ (opSymStr os) ++
            " consist of not only variables and constructors") pos
     | not $ and $ map checkVar_App leadingTerms =
         let (Application os _ pos) = 
-		head $ filter (\t->not $ checkVar_App t) leadingTerms
+                head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-			    opSymStr os) pos 
+                            opSymStr os) pos 
     | terminationProof (osens ++ fsn) =
-	warning Nothing "not terminating" nullRange
+        warning Nothing "not terminating" nullRange
     | not $ null overlap_query = 
   --  | not $ null overlapSym = 
         return (Just (True,overlap_query))
@@ -184,7 +184,7 @@ checkFreeType (osig,osens) m fsn
                                    Negation _ _ -> False
                                    _ -> True) p_axioms
     pcheck = foldl (\im os-> filter (\im'-> 
-				     case leadingSym im' of
+                                     case leadingSym im' of
                                        (Just (Left opS)) -> opS /= os
                                        _ -> False) im) impl_p_axioms opSyms_p
 {-
@@ -247,9 +247,9 @@ checkFreeType (osig,osens) m fsn
                               in each group
 -}   
     leadingSymPatterns = 
-	case (groupAxioms (t_axioms ++ impl_p_axioms)) of
+        case (groupAxioms (t_axioms ++ impl_p_axioms)) of
           Just sym_fs ->
-	      zip (fst $ unzip sym_fs) $
+              zip (fst $ unzip sym_fs) $
               (map ((map (\f->case f of
                                 Just (Left (Application _ ts _))->ts
                                 Just (Right (Predication _ ts _))->ts
@@ -296,9 +296,9 @@ checkFreeType (osig,osens) m fsn
     overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
     pattern_Pos sym_ps = 
-	if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $ 
+        if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $ 
                                                         head sym_ps
-	else pattern_Pos $ tail sym_ps
+        else pattern_Pos $ tail sym_ps
     symPos sym = case sym of
                    Left (Qual_op_name on _ ps) -> (idStr on,ps)
                    Right (Qual_pred_name pn _ ps) -> (idStr pn,ps)
@@ -346,7 +346,7 @@ sortOfVar_Decl (Var_decl _ s _) = s
 filterOp :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,OpType)]
 filterOp symb = case symb of
                   Just (Left (Qual_op_name ident (Op_type k ags rs _) _))->
-	              [(ident, OpType {opKind=k, opArgs=ags, opRes=rs})]
+                      [(ident, OpType {opKind=k, opArgs=ags, opRes=rs})]
                   _ -> []
 
 
@@ -369,7 +369,7 @@ checkTerm cons t =
         checkT (Qual_var _ _ _) = True
         checkT (Application subop subts _) = (elem subop cons) &&
                                              (all id $ map checkT subts)  
-	checkT _ = False
+        checkT _ = False
 
 
 {-
@@ -407,15 +407,15 @@ patternsOfAxiom f = case f of
                       Implication _ f' _ _ -> patternsOfAxiom f'
                       Equivalence f' _ _ -> patternsOfAxiom f'
                       Predication _ ts _ -> ts 
-	              Existl_equation t _ _ -> patternsOfTerm t
-	              Strong_equation t _ _ -> patternsOfTerm t
+                      Existl_equation t _ _ -> patternsOfTerm t
+                      Strong_equation t _ _ -> patternsOfTerm t
                       _ -> []
 
 
 sameOps_App :: TERM f -> TERM f -> Bool
 sameOps_App app1 app2 = case (term app1) of               -- eq of app
                           Application ops1 _ _ -> 
-			      case (term app2) of
+                              case (term app2) of
                                 Application ops2 _ _ -> ops1==ops2
                                 _ -> False
                           _ -> False
@@ -434,7 +434,7 @@ checkPatterns ps
         | length ps <=1 = True
         | allIdentic ps = False
         | all isVar $ map head ps = 
-	    if allIdentic $ map head ps then checkPatterns $ map tail ps
+            if allIdentic $ map head ps then checkPatterns $ map tail ps
             else False
         | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
             checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
@@ -447,7 +447,7 @@ checkPatterns2 ps
         | length ps <=1 = Just True
         | allIdentic ps = Nothing
         | all isVar $ map head ps = 
-	    if allIdentic $ map head ps then checkPatterns2 $ map tail ps
+            if allIdentic $ map head ps then checkPatterns2 $ map tail ps
             else Just False
         | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
             checkPatterns2 $ 

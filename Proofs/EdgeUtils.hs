@@ -32,7 +32,7 @@ delLEdge (v, w, l) g = case match v g of
 -- -------------------------------------
 isProven :: LEdge DGLinkLab -> Bool
 isProven edge = isGlobalDef edge || isLocalDef edge 
-		|| isProvenGlobalThm edge || isProvenLocalThm edge
+                || isProvenGlobalThm edge || isProvenLocalThm edge
                 || isProvenHidingThm edge
 
 isDefEdge :: LEdge DGLinkLab -> Bool
@@ -145,7 +145,7 @@ getAllPathsOfType dgraph isType =
 {- returns a list of all proven global paths of the given morphism between
    the given source and target node-}
 getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
-					  -> [[LEdge DGLinkLab]]
+                                          -> [[LEdge DGLinkLab]]
 getAllGlobPathsOfMorphismBetween dgraph morphism src tgt = 
   filterPathsByMorphism morphism allPaths
 
@@ -156,7 +156,7 @@ getAllGlobPathsOfMorphismBetween dgraph morphism src tgt =
 {- returns all paths from the given list whose morphism is equal to the
    given one-}
 filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
-		      -> [[LEdge DGLinkLab]]
+                      -> [[LEdge DGLinkLab]]
 filterPathsByMorphism morphism paths = 
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
@@ -171,10 +171,10 @@ getAllLocGlobPathsBetween dgraph src tgt =
   where
     outEdges = out dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <- 
-		(filter isLocalEdge outEdges)]
+                (filter isLocalEdge outEdges)]
     locGlobPaths = (concat [map ([edge]++) 
-		      (getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt [])|
-			 (edge,node) <- locEdges])
+                      (getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt [])|
+                         (edge,node) <- locEdges])
     globPaths = getAllPathsOfTypesBetween dgraph isGlobalEdge src tgt []
 
 
@@ -188,7 +188,7 @@ getAllGlobPathsBetween dgraph src tgt =
 {- returns all paths consiting of edges of the given type between the
    given node -}
 getAllPathsOfTypeBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
-			    -> Node -> [[LEdge DGLinkLab]]
+                            -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
   getAllPathsOfTypesBetween dgraph isType src tgt []
 
@@ -196,8 +196,8 @@ getAllPathsOfTypeBetween dgraph isType src tgt =
 {- returns all paths consisting of edges of the given types between
    the given nodes -}
 getAllPathsOfTypesBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node 
-			     -> Node -> [LEdge DGLinkLab]
-			     -> [[LEdge DGLinkLab]]
+                             -> Node -> [LEdge DGLinkLab]
+                             -> [[LEdge DGLinkLab]]
 getAllPathsOfTypesBetween dgraph types src tgt path =
   [edge:path| edge <- edgesFromSrc]
           ++ (concat 
@@ -209,9 +209,9 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
     edgesOfTypes =
         [edge| edge <- filter types inGoingEdges, notElem edge path]
     edgesFromSrc = 
-	[edge| edge@(source,_,_) <- edgesOfTypes, source == src]
+        [edge| edge@(source,_,_) <- edgesOfTypes, source == src]
     nextStep =
-	[(edge, source)| edge@(source,_,_) <- edgesOfTypes, source /= src]
+        [(edge, source)| edge@(source,_,_) <- edgesOfTypes, source /= src]
 
 
 getAllPathsOfTypeFrom :: DGraph -> Node -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
@@ -219,17 +219,17 @@ getAllPathsOfTypeFrom = getAllPathsOfTypeFromAux []
 
 
 getAllPathsOfTypeFromAux :: [LEdge DGLinkLab] -> DGraph -> Node 
-			 -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
+                         -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFromAux path dgraph src isType = 
   [path ++ [edge]| edge <- edgesFromSrc, notElem edge path && isType edge]
     ++(concat
         [getAllPathsOfTypeFromAux (path ++ [edge]) dgraph nextSrc isType| 
-	 (edge,nextSrc) <- nextStep])
+         (edge,nextSrc) <- nextStep])
 
   where
     edgesFromSrc = out dgraph src
     nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesFromSrc,
-		tgt /= src && notElem edge path && isType edge] 
+                tgt /= src && notElem edge path && isType edge] 
 
 -- --------------------------------------------------------------
 -- methods to determine the inserted edges in the given dgchange
@@ -252,7 +252,7 @@ getInsertedEdges (change:list) =
    if this fails the same is done for the rest of the given paths, i.e.
    for the unproven ones -}
 selectProofBasis :: LEdge DGLinkLab -> [[LEdge DGLinkLab]]
-		 -> [LEdge DGLinkLab]
+                 -> [LEdge DGLinkLab]
 selectProofBasis ledge paths =
   if null provenProofBasis then selectProofBasisAux ledge unprovenPaths
    else provenProofBasis
@@ -265,7 +265,7 @@ selectProofBasis ledge paths =
 {- selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
 selectProofBasisAux :: LEdge DGLinkLab -> [[LEdge DGLinkLab]]
-		    -> [LEdge DGLinkLab]
+                    -> [LEdge DGLinkLab]
 selectProofBasisAux _ [] = []
 selectProofBasisAux ledge (path:list) =
     if notProofCycle ledge path then nub (calculateProofBasis path)
@@ -325,15 +325,15 @@ adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
 adoptEdges dgraph oldNode newNode = do
   let ingoingEdges = inn dgraph oldNode
       outgoingEdges = [outEdge| outEdge <- out dgraph oldNode,
-		                not (elem outEdge ingoingEdges)]
+                                not (elem outEdge ingoingEdges)]
       (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
       (finalGraph, furtherChanges) 
-	  = adoptEdgesAux auxGraph outgoingEdges newNode False
+          = adoptEdgesAux auxGraph outgoingEdges newNode False
   return (finalGraph, changes ++ furtherChanges)
 
 {- auxiliary method for adoptEdges -}
 adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
-		     -> (DGraph,[DGChange])
+                     -> (DGraph,[DGChange])
 adoptEdgesAux dgraph [] _ _ = (dgraph,[])
 adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
   (finalGraph, [DeleteEdge oldEdge,InsertEdge newEdge]++furtherChanges)
@@ -341,7 +341,7 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
   where
     (newSrc,newTgt) = if src == tgt then (node,node) else (src,tgt)
     newEdge = if areIngoingEdges then (newSrc,node,edgelab)
-	        else (node,newTgt,edgelab)
+                else (node,newTgt,edgelab)
     auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
     (finalGraph,furtherChanges) 
-	= adoptEdgesAux auxGraph list node areIngoingEdges
+        = adoptEdgesAux auxGraph list node areIngoingEdges

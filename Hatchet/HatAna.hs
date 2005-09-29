@@ -21,7 +21,7 @@ import Hatchet.HaskellUtils              (extractSentences)
 import Hatchet.ExtHaskellCvrt            
 
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo (..),
-					  joinModuleInfo,
+                                          joinModuleInfo,
                                           getTyconsMembers,
                                           getInfixDecls)
 import Haskell.Hatchet.TIHetsModule      (tiModule)
@@ -39,24 +39,24 @@ hatAna :: [HsDecl] -> ModuleInfo -> (ModuleInfo, [Named AHsDecl])
 hatAna = hatAna2 preludeModInfo 
 
 hatAna2 :: ModuleInfo -> [HsDecl] -> ModuleInfo 
-	-> (ModuleInfo, [Named AHsDecl])
+        -> (ModuleInfo, [Named AHsDecl])
 hatAna2 prelude hs sig = 
     let ahs = map toAHsDecl $ fixFunBinds $ cvrtHsDeclList hs
         aMod = AHsModule (moduleName sig) Nothing [] ahs
         (moduleEnv,
-   	 dataConEnv,
-   	 newClassHierarchy,
-   	 newKindInfoTable,
-   	 moduleRenamed,
-   	 moduleSynonyms) = tiModule aMod (joinModuleInfo sig prelude)
-  	modInfo = sig {     varAssumps = moduleEnv, 
-    			    dconsAssumps = dataConEnv, 
-    			    classHierarchy = newClassHierarchy,
-    			    kinds = newKindInfoTable,
-    			    tyconsMembers = getTyconsMembers moduleRenamed,
-    			    infixDecls = getInfixDecls moduleRenamed,
-    			    synonyms = moduleSynonyms }
-	in (diffModInfo modInfo prelude, extractSentences moduleRenamed)
+         dataConEnv,
+         newClassHierarchy,
+         newKindInfoTable,
+         moduleRenamed,
+         moduleSynonyms) = tiModule aMod (joinModuleInfo sig prelude)
+        modInfo = sig {     varAssumps = moduleEnv, 
+                            dconsAssumps = dataConEnv, 
+                            classHierarchy = newClassHierarchy,
+                            kinds = newKindInfoTable,
+                            tyconsMembers = getTyconsMembers moduleRenamed,
+                            infixDecls = getInfixDecls moduleRenamed,
+                            synonyms = moduleSynonyms }
+        in (diffModInfo modInfo prelude, extractSentences moduleRenamed)
 
 instance Eq ModuleInfo where
   m1 == m2 = 

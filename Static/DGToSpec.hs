@@ -101,7 +101,7 @@ lookupDGraphInLibEnv :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraphInLibEnv ln libEnv =
     case Map.lookup ln libEnv of
     Nothing -> error ("lookupDGraphInLibEnv: Could not find development graph "
-		      ++ "with library name " ++(show ln)++ " in given libEnv")
+                      ++ "with library name " ++(show ln)++ " in given libEnv")
     Just (_,_,dgraph) -> dgraph
 
 

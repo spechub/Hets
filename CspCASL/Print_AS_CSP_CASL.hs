@@ -24,15 +24,15 @@ instance PrettyPrint C3PO where
 
 instance PrettyPrint NAMED_CSP_CASL_C_SPEC where
     printText0 ga (Named_csp_casl_spec sn c3spec) =
-	ptext "ccspec"  <+> printText0 ga sn <+> equals $$
+        ptext "ccspec"  <+> printText0 ga sn <+> equals $$
         nest 2 (printText0 ga c3spec) $$
         ptext "end"
 
 instance PrettyPrint CSP_CASL_C_SPEC where
     printText0 ga (Csp_casl_c_spec dd _cd _pd) =
-	ptext "data" $$
-	nest 2 (printText0 ga dd)
+        ptext "data" $$
+        nest 2 (printText0 ga dd)
 
 instance PrettyPrint Basic_CSP_CASL_C_SPEC where
     printText0 ga (Basic_csp_casl_c_spec _cd _pd) =
-	ptext "<not printable yet>"
+        ptext "<not printable yet>"

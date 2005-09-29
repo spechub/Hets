@@ -193,24 +193,24 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
     opSignStr signs str                      
         | null signs = str
         | otherwise = opSignStr (tail signs) (str ++ 
-					      (opS_cime $ head signs) ++ ";\n")
+                                              (opS_cime $ head signs) ++ ";\n")
     --  build signature of predication together 
     predSignStr signs str                      
         | null signs = str
         | otherwise = 
-	    predSignStr (tail signs) (str ++ 
-				      (predS_cime $ head signs) ++ ";\n")
+            predSignStr (tail signs) (str ++ 
+                                      (predS_cime $ head signs) ++ ";\n")
     allVar vs = everyOnce $ concat vs   
     varsStr vars str                               
         | null vars = str
         | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                       else varsStr (tail vars) (str ++ " " ++ 
-						(tokStr $ head vars))
+                                                (tokStr $ head vars))
     --  transform all axioms to string
     axiomStr axs str
         | null axs = str
         | otherwise = 
-	    axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ ";\n")
+            axiomStr (tail axs) (str ++ (axiom_cime $ (head axs)) ++ ";\n")
     impli_equiv = filter is_impli_equiv all_axioms
     n_impli_equiv = filter (not.is_impli_equiv) all_axioms
     sighead = "let F = signature \"when_else : 3;\n" ++
@@ -249,11 +249,11 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
                                     "when_else(t1,True,t2) -> t1;\n" ++ 
                                     "when_else(t1,False,t2) -> t2;\n"
     c_sigs = (sighead ++ (opSignStr (everyOnce (constructors ++
-					        op_Syms)) "") ++
-			 (predSignStr all_predSymbs "") ++
-	      sigAux ++ "\";\n")
+                                                op_Syms)) "") ++
+                         (predSignStr all_predSymbs "") ++
+              sigAux ++ "\";\n")
     c_vars = (varhead ++ (varsStr (allVar $ map varOfAxiom $ 
-			           all_axioms) "") ++ "\"; \n")
+                                   all_axioms) "") ++ "\"; \n")
     c_axms = if null n_impli_equiv 
              then (axhead ++ axAux ++ "\";\n")
              else (axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")

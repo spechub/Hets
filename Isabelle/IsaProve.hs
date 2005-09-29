@@ -175,7 +175,7 @@ isaProve checkCons thName (Theory sig nSens) = do
       showConsAx ax = showPretty (sentence ax) ""
 
 markSimp ax = ax{senName = senName ax ++ 
-	      {-trace (show ax ++" "++ show (isSimpRule (senTerm (sentence ax)))) -}
+              {-trace (show ax ++" "++ show (isSimpRule (senTerm (sentence ax)))) -}
                  (if isSimpRule (senTerm (sentence ax)) then " [simp]" else "")}
 
 -- | test whether a formula should be put into the simpset

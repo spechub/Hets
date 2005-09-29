@@ -59,19 +59,19 @@ main =
                   process 'a' args  
                   else case head args of
                        "-a" -> process 'a' $ tail args   
-		       -- output abstract syntax
-		       "-g" -> process 'g' $ tail args
-		       -- show graph of structure
-		       "-h" -> showHelp
+                       -- output abstract syntax
+                       "-g" -> process 'g' $ tail args
+                       -- show graph of structure
+                       "-h" -> showHelp
                        "-i" -> showHelp 
-		       -- test integrate ontology
-		       "-r" -> process 'r' $ tail args   
-		       -- output result of static analysis
-		       "-s" -> process 's' $ tail args   
-		       -- output DevGraph from structure analysis
+                       -- test integrate ontology
+                       "-r" -> process 'r' $ tail args   
+                       -- output result of static analysis
+                       "-s" -> process 's' $ tail args   
+                       -- output DevGraph from structure analysis
                        "-t" -> process 't' $ tail args   
-		       -- output ATerm
-		       _    -> error ("unknow option: " ++ (head args))
+                       -- output ATerm
+                       _    -> error ("unknow option: " ++ (head args))
 
        where isURI :: String -> Bool
              isURI str = let preU = take 7 str
@@ -120,23 +120,23 @@ processor2 opt filename =
        case opt of
        -- 'a' -> outputList 'a' aterm
             't' -> putStrLn $ show aterm
-	    's' -> outputList 's' filename aterm
-	    'r' -> outputList 'r' filename aterm
+            's' -> outputList 's' filename aterm
+            'r' -> outputList 'r' filename aterm
             'i' -> outputList 'i' filename aterm
-	    'g' -> outputList 'g' filename aterm
-	    _   -> outputList 'a' filename aterm
+            'g' -> outputList 'g' filename aterm
+            _   -> outputList 'a' filename aterm
 
 outputList :: Char -> String -> ATerm -> IO()
 outputList opt filename aterm =
     case aterm of
        AList paarList _ -> 
-	   case opt of 
-	   'a' -> outputAS paarList
-	   's' -> outputTotalStaticAna paarList
-	   'r' -> printResOfStatic paarList
-	   'i' -> testIntegrate paarList
-	   'g' -> outputGraph filename paarList
-	   u   -> error ("unknow option: -" ++ [u])
+           case opt of 
+           'a' -> outputAS paarList
+           's' -> outputTotalStaticAna paarList
+           'r' -> printResOfStatic paarList
+           'i' -> testIntegrate paarList
+           'g' -> outputGraph filename paarList
+           u   -> error ("unknow option: -" ++ [u])
        _ -> error "error by reading file."
 
 -- test for integrate ontologies (for option -i)
@@ -156,10 +156,10 @@ outputAS (aterm:res) =
           AAppl "UOPaar" [_, AAppl "OWLParserOutput" [valid, msg, _, _] _] _ ->
               do  let (uri, ontology) = ontologyParse aterm
                   putStrLn ("URI: " ++ uri)
-		  putStrLn $ fromATerm valid
-		  putStrLn $ show (buildMsg msg)
---		  putStrLn $ show namespace
-		  putStrLn $ show ontology
+                  putStrLn $ fromATerm valid
+                  putStrLn $ show (buildMsg msg)
+--                putStrLn $ show namespace
+                  putStrLn $ show ontology
                   outputAS res
           _ -> error "false file."
     
@@ -168,111 +168,111 @@ outputAS (aterm:res) =
 outputTotalStaticAna :: [ATerm] -> IO()
 outputTotalStaticAna al =  
     do let p = reverse $ parsingAll al
-	   (ontoMap, dg) = buildDevGraph (Map.fromList p)
+           (ontoMap, dg) = buildDevGraph (Map.fromList p)
        -- putStrLn $ show dg
        -- putStrLn $ show $ 
-       --		nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
+       --               nodesStaticAna (reverse $ topsort' dg) emptySign ontoMap
        -- putStrLn $ show $ (rdff [12] dg)
-	   topNodes = topsort dg
+           topNodes = topsort dg
        -- putStrLn $ show $ topNodes
        -- putStrLn $ show $ map (\x -> bfs x dg) topNodes
         -- subTreeList = map (\x -> bfs x dg) top
-	   -- lnodeList =  map (map (\y -> matchNode dg y)) subTreeList
+           -- lnodeList =  map (map (\y -> matchNode dg y)) subTreeList
        let Result _ res =
-	       nodesStaticAna' (reverse topNodes) Map.empty ontoMap dg []
+               nodesStaticAna' (reverse topNodes) Map.empty ontoMap dg []
        case res of
            Just (_, dg') -> 
-	    do -- putStrLn $ show sm
-	       showGraph (simpleLibName "", simpleLibEnv "" (insEdges (rev $ labEdges dg) (delEdges (edges dg') dg')))
-	   _            -> error "no devGraph..."
+            do -- putStrLn $ show sm
+               showGraph (simpleLibName "", simpleLibEnv "" (insEdges (rev $ labEdges dg) (delEdges (edges dg') dg')))
+           _            -> error "no devGraph..."
 
     where rev :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
-	  rev [] = []
-	  rev ((source, target, edge):r) = (target, source, edge):(rev r)
+          rev [] = []
+          rev ((source, target, edge):r) = (target, source, edge):(rev r)
    
 matchNode :: DGraph -> Node -> LNode DGNodeLab
 matchNode dgraph node =
-	     let (mcontext, _ ) = match node dgraph
-		 (_, _, dgNode, _) = fromJust mcontext
-	     in (node, dgNode)
+             let (mcontext, _ ) = match node dgraph
+                 (_, _, dgNode, _) = fromJust mcontext
+             in (node, dgNode)
 
 type SignMap = Map.Map Node (Sign, [Named Sentence])
 
 nodesStaticAna' :: [Node] 
-	       -> SignMap 
+               -> SignMap 
                -> OntologyMap
-	       -> DGraph 
+               -> DGraph 
                -> [Diagnosis]
-	       -> Result (SignMap, DGraph)
+               -> Result (SignMap, DGraph)
 nodesStaticAna' [] signMap _ dg diag = Result diag (Just (signMap, dg)) 
 nodesStaticAna' (h:r) signMap ontoMap dg diag =
     let Result digs res = 
-	    nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
-			  (emptySign, [], diag)
-			  signMap ontoMap dg 
+            nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
+                          (emptySign, [], diag)
+                          signMap ontoMap dg 
     in  case res of
         Just (newSignMap, newDg) -> 
-	    nodesStaticAna' r newSignMap ontoMap newDg (diag++digs)
-	Prelude.Nothing -> 
-	    nodesStaticAna' r signMap ontoMap dg (diag++digs)
+            nodesStaticAna' r newSignMap ontoMap newDg (diag++digs)
+        Prelude.Nothing -> 
+            nodesStaticAna' r signMap ontoMap dg (diag++digs)
     
 
 nodeStaticAna :: [LNode DGNodeLab]
-	      -> (Sign, [Named Sentence], [Diagnosis])	 
-	      -> SignMap
-	      -> OntologyMap
+              -> (Sign, [Named Sentence], [Diagnosis])   
+              -> SignMap
+              -> OntologyMap
               -> DGraph
               -> Result (SignMap, DGraph)
 nodeStaticAna [] _ _ _ _ = initResult
 nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
     case Map.lookup n signMap of
     Just _ -> 
-	Result oldDiags (Just (signMap, dg))
+        Result oldDiags (Just (signMap, dg))
     _   -> 
-	let ontology@(Ontology mid _ _) = fromJust $ 
-		   Map.lookup (getNameFromNode $ dgn_name topNode) ontoMap
-	    Result diag res = 
-		 basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
+        let ontology@(Ontology mid _ _) = fromJust $ 
+                   Map.lookup (getNameFromNode $ dgn_name topNode) ontoMap
+            Result diag res = 
+                 basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         in  case res of  
-	    Just (_,_,accSig,sent) ->
-	     let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig (toThSens sent)}) 
-		 ledges = (inn dg n) ++ (out dg n)
-	     in	 Result (oldDiags ++ diag)
-		        (Just ((Map.insert n (accSig, sent) signMap), (insEdges ledges (insNode newLNode (delNode n dg)))))  
-	    _   -> Result oldDiags Prelude.Nothing 
+            Just (_,_,accSig,sent) ->
+             let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig (toThSens sent)}) 
+                 ledges = (inn dg n) ++ (out dg n)
+             in  Result (oldDiags ++ diag)
+                        (Just ((Map.insert n (accSig, sent) signMap), (insEdges ledges (insNode newLNode (delNode n dg)))))  
+            _   -> Result oldDiags Prelude.Nothing 
 
 nodeStaticAna ((n, dgNode):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
      case Map.lookup n signMap of
      Just (sig, nsen) -> 
-	 nodeStaticAna r ((integSign sig inSig), (inSent ++ nsen), oldDiags)
-		       signMap ontoMap dg
+         nodeStaticAna r ((integSign sig inSig), (inSent ++ nsen), oldDiags)
+                       signMap ontoMap dg
      Prelude.Nothing ->
-	 let Result digs' res' =
-		 nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg)) 
-				   (emptySign, [], [])
-				   signMap ontoMap dg 
+         let Result digs' res' =
+                 nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg)) 
+                                   (emptySign, [], [])
+                                   signMap ontoMap dg 
          in case res' of
-	    Just (signMap', dg') ->
-	     let (sig', nsen') = fromJust $ Map.lookup n signMap'	 
-	     in	 nodeStaticAna r 
-	          ((integSign sig' inSig),(inSent ++ nsen'),(oldDiags ++ digs'))
-		  signMap' ontoMap dg'
-	    _  -> nodeStaticAna r (inSig, inSent, oldDiags)
-		                signMap ontoMap dg
+            Just (signMap', dg') ->
+             let (sig', nsen') = fromJust $ Map.lookup n signMap'        
+             in  nodeStaticAna r 
+                  ((integSign sig' inSig),(inSent ++ nsen'),(oldDiags ++ digs'))
+                  signMap' ontoMap dg'
+            _  -> nodeStaticAna r (inSig, inSent, oldDiags)
+                                signMap ontoMap dg
 
 integSign :: Sign -> Sign -> Sign
 integSign inSig totalSig =
     let (newNamespace, transMap) = 
-	    integrateNamespaces (namespaceMap totalSig) (namespaceMap inSig)
+            integrateNamespaces (namespaceMap totalSig) (namespaceMap inSig)
     in  addSign (renameNamespace transMap inSig)
-	        (totalSig {namespaceMap = newNamespace})
+                (totalSig {namespaceMap = newNamespace})
 
 
 -- for graph of structure analysis
 outputGraph :: String -> [ATerm] -> IO()
 outputGraph filename al =  
     do let p = reverse $ parsingAll al
-	   (_, dg) = buildDevGraph (Map.fromList p)
+           (_, dg) = buildDevGraph (Map.fromList p)
        showGraph (simpleLibName filename, simpleLibEnv filename dg)
 
 -- for static analysis
@@ -280,31 +280,31 @@ printResOfStatic :: [ATerm] -> IO()
 printResOfStatic al = 
    putStrLn $ show (map output $ parsingAll al)
    where output :: (String, Ontology) 
-	-- 	-> Result (Ontology,Sign,Sign,[Named Sentence])
-	        -> Result (Sign,[Named Sentence])
-	 output (_, ontology) = 
-	     let Result diagsA (Just (_, _, accSig, namedSen)) = 
-		     basicOWL_DLAnalysis (ontology, 
-					  emptySign, 
-					  emptyGlobalAnnos)
-	     in  Result diagsA (Just (accSig, namedSen))
+        --      -> Result (Ontology,Sign,Sign,[Named Sentence])
+                -> Result (Sign,[Named Sentence])
+         output (_, ontology) = 
+             let Result diagsA (Just (_, _, accSig, namedSen)) = 
+                     basicOWL_DLAnalysis (ontology, 
+                                          emptySign, 
+                                          emptyGlobalAnnos)
+             in  Result diagsA (Just (accSig, namedSen))
 
 -- parse of ontology which from current file with its imported ontologies
 parsingAll :: [ATerm] -> [(String, Ontology)]
 parsingAll [] = []
 parsingAll (aterm:res) =
-	     (ontologyParse aterm):(parsingAll res)
+             (ontologyParse aterm):(parsingAll res)
       
 ontologyParse :: ATerm -> (String, Ontology)
 ontologyParse 
     (AAppl "UOPaar" 
         [AAppl uri _  _, 
-	 AAppl "OWLParserOutput" [_, _, _, onto] _] _) 
+         AAppl "OWLParserOutput" [_, _, _, onto] _] _) 
     = case ontology of
       Ontology _ _ namespace ->
-	  (if head uri == '"' then read uri::String else uri, 
-	   -- namespace, 
-	   propagateNspaces namespace $ createAndReduceClassAxiom ontology)
+          (if head uri == '"' then read uri::String else uri, 
+           -- namespace, 
+           propagateNspaces namespace $ createAndReduceClassAxiom ontology)
    where ontology = fromATerm onto::Ontology 
 ontologyParse _ = error "false ontology file."
 
@@ -332,45 +332,45 @@ buildMsg at = case at of
 createAndReduceClassAxiom :: Ontology -> Ontology
 createAndReduceClassAxiom (Ontology oid directives ns) =
     let (definition, axiom, other) =  
-	    findAndCreate (List.nub directives) ([], [], []) 
-	directives' = reverse definition ++ reverse axiom ++ reverse other
+            findAndCreate (List.nub directives) ([], [], []) 
+        directives' = reverse definition ++ reverse axiom ++ reverse other
     in  Ontology oid directives' ns
     
    where findAndCreate :: [Directive] 
-	               -> ([Directive], [Directive], [Directive])
-		       -> ([Directive], [Directive], [Directive])
-			  -- (definition of concept and role, axiom, rest)
+                       -> ([Directive], [Directive], [Directive])
+                       -> ([Directive], [Directive], [Directive])
+                          -- (definition of concept and role, axiom, rest)
          findAndCreate [] res = res
          findAndCreate (h:r) (def, axiom, rest) = 
              case h of
              Ax (Class cid _ Complete _ desps) ->
-		 -- the original directive must also be saved.
-		 findAndCreate r 
-		    (h:def,(Ax (EquivalentClasses (DC cid) desps)):axiom,rest)
+                 -- the original directive must also be saved.
+                 findAndCreate r 
+                    (h:def,(Ax (EquivalentClasses (DC cid) desps)):axiom,rest)
                  -- h:(Ax (EquivalentClasses (DC cid) desps)):(findAndCreate r)
-	     Ax (Class cid _ Partial _ desps) ->
-		 if null desps then
-		    findAndCreate r (h:def, axiom, rest) -- h:(findAndCreate r)
-		    else 
-		     findAndCreate r (h:def, 
-				      (appendSubClassAxiom cid desps) ++ axiom,
-				      rest) 
-	     Ax (EnumeratedClass _ _ _ _) -> 
-		 findAndCreate r (h:def, axiom, rest)
-	     Ax (DisjointClasses _ _ _) ->
+             Ax (Class cid _ Partial _ desps) ->
+                 if null desps then
+                    findAndCreate r (h:def, axiom, rest) -- h:(findAndCreate r)
+                    else 
+                     findAndCreate r (h:def, 
+                                      (appendSubClassAxiom cid desps) ++ axiom,
+                                      rest) 
+             Ax (EnumeratedClass _ _ _ _) -> 
+                 findAndCreate r (h:def, axiom, rest)
+             Ax (DisjointClasses _ _ _) ->
                              if any (eqClass h) r then
                                 findAndCreate r (def, axiom, rest)
                                 else findAndCreate r (def,h:axiom, rest)
-	     Ax (DatatypeProperty _ _ _ _ _ _ _) -> 
-		 findAndCreate r (h:def, axiom, rest)
-	     Ax (ObjectProperty _ _ _ _ _ _ _ _ _) -> 
-		 findAndCreate r (h:def, axiom, rest)
-	     _ -> findAndCreate r (def, axiom, h:rest)
+             Ax (DatatypeProperty _ _ _ _ _ _ _) -> 
+                 findAndCreate r (h:def, axiom, rest)
+             Ax (ObjectProperty _ _ _ _ _ _ _ _ _) -> 
+                 findAndCreate r (h:def, axiom, rest)
+             _ -> findAndCreate r (def, axiom, h:rest)
              
-	 appendSubClassAxiom :: ClassID -> [Description] -> [Directive]
-	 appendSubClassAxiom _ [] = []
-	 appendSubClassAxiom cid (hd:rd) =
-	     (Ax (SubClassOf (DC cid) hd)):(appendSubClassAxiom cid rd) 
+         appendSubClassAxiom :: ClassID -> [Description] -> [Directive]
+         appendSubClassAxiom _ [] = []
+         appendSubClassAxiom cid (hd:rd) =
+             (Ax (SubClassOf (DC cid) hd)):(appendSubClassAxiom cid rd) 
 
          eqClass :: Directive -> Directive -> Bool
          eqClass dj1 dj2 =
@@ -386,22 +386,22 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
 
 -- static analysis based on order of imports graph (dfs)
 nodesStaticAna :: [DGNodeLab] 
-	       -> Sign 
-	       -> OntologyMap 
-	       -> Result (Ontology, Sign, [Named Sentence])
+               -> Sign 
+               -> OntologyMap 
+               -> Result (Ontology, Sign, [Named Sentence])
 nodesStaticAna [] _ _ = initResult 
 nodesStaticAna (hnode:rnodes) inSign ontoMap =
     let ontology@(Ontology mid _ _) = fromJust $ 
-		   Map.lookup (getNameFromNode $ dgn_name hnode) ontoMap
+                   Map.lookup (getNameFromNode $ dgn_name hnode) ontoMap
         Result diag res = 
-	    basicOWL_DLAnalysis (ontology, inSign, emptyGlobalAnnos)
+            basicOWL_DLAnalysis (ontology, inSign, emptyGlobalAnnos)
     in  case res of
         Just ((Ontology _ directives namespace),_,accSig,sent) ->
-	    concatResult 
-	    (Result diag 
-	      (Just ((Ontology mid directives namespace), accSig, sent))) 
-	    (nodesStaticAna rnodes accSig ontoMap)
-	_   -> nodesStaticAna rnodes inSign ontoMap 
+            concatResult 
+            (Result diag 
+              (Just ((Ontology mid directives namespace), accSig, sent))) 
+            (nodesStaticAna rnodes accSig ontoMap)
+        _   -> nodesStaticAna rnodes inSign ontoMap 
 
 -- ToDo: showGraph
 showGraph :: (LIB_NAME, LibEnv)  -> IO ()
@@ -411,7 +411,7 @@ showGraph (ln, libenv) =
             useHTk -- All messages are displayed in TK dialog windows 
                    -- from this point on
             (gid, gv, _cmaps) <- 
-		convertGraph graphMem ln libenv defaultHetcatsOpts
+                convertGraph graphMem ln libenv defaultHetcatsOpts
             GUI.AbstractGraphView.redisplay gid gv
             graph <- GUI.AbstractGraphView.get_graphid gid gv
             Events.sync(destroyed graph)
@@ -421,10 +421,10 @@ showGraph (ln, libenv) =
 simpleLibEnv :: String -> DGraph -> LibEnv
 simpleLibEnv filename dg =
     Map.singleton (simpleLibName filename) 
-	   (emptyGlobalAnnos, Map.singleton (mkSimpleId "") 
-	    (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
+           (emptyGlobalAnnos, Map.singleton (mkSimpleId "") 
+            (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
        where nodeSig = NodeSig 0 g_sign
-	     g_sign = G_sign OWL_DL emptySign
+             g_sign = G_sign OWL_DL emptySign
 
 simpleLibName :: String -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))

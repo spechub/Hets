@@ -268,13 +268,13 @@ insertClass onto className optText superCs maybeType =
                [] -> g
                [(className, ClassDecl _ _ _ _ _ cType)] -> 
                      let (g1, node1) = getInsNode g className cType 
-                     in foldl (addIsaEdge node1) g1 superCs		  
+                     in foldl (addIsaEdge node1) g1 superCs               
                (subClass, ClassDecl _ _ _ _ _ subcType) : _ -> 
                    let (g1, node1) = getInsNode g subClass subcType
                    in foldl (insClass node1) g1 superCs
        in
          hasValue( onto { classes = addListToFM (classes onto) cList,
-			  classGraph = newgraph} )
+                          classGraph = newgraph} )
     getInsNode g cl clType =
         maybe (let n = head (newNodes 1 g)
                in ((insNode (n,(cl,"", getClassNodeType clType)) g), n))
@@ -286,7 +286,7 @@ insertClass onto className optText superCs maybeType =
         -- Nothing (s. def. of sClassDecls)
         (g2,node2) -> insEdge (node1, node2, "isa") g2
     addIsaEdge node1 g1 superClass =
-	maybe g1 (\ sNode -> insEdge (node1, sNode, "isa") g1)
+        maybe g1 (\ sNode -> insEdge (node1, sNode, "isa") g1)
                  (findLNode g1 superClass)
     getClassNodeType = maybe OntoClass (\ cType -> if cType == Predicate
                                         then OntoPredicate
@@ -328,11 +328,11 @@ insertBaseRelation onto relName defText superRel card =
                       _  -> hasError("Insertion of relation: " ++ rn ++ " -> Superrelation " ++ superR ++ " not defined in Ontology.\n")
     addRelations rList = 
        hasValue( MMiSSOntology {name = name onto, 
-	  		        classes = classes onto,
-			        objects = objects onto,
-			        relations = addListToFM (relations onto) rList,
-			        objectLinks = objectLinks onto,
-			        mode = mode onto,
+                                classes = classes onto,
+                                objects = objects onto,
+                                relations = addListToFM (relations onto) rList,
+                                objectLinks = objectLinks onto,
+                                mode = mode onto,
                                 classGraph = classGraph onto,
                                 relationGraph = relationGraph onto} )
 
@@ -357,21 +357,21 @@ insertRelationType onto relName source target =
   where
     addClasses o cList = 
                  MMiSSOntology {name = name o, 
-	  		        classes = addListToFM (classes o) cList,
-			        objects = objects o,
-			        relations = relations o,
-			        objectLinks = objectLinks o,
-			        mode = mode o,
+                                classes = addListToFM (classes o) cList,
+                                objects = objects o,
+                                relations = relations o,
+                                objectLinks = objectLinks o,
+                                mode = mode o,
                                 classGraph = foldl addClassNodeWithoutDecl (classGraph o) cList ,
                                 relationGraph = relationGraph onto}
 
     addRelations o rList = 
                  MMiSSOntology {name = name o, 
-	  		        classes = classes o,
-			        objects = objects o,
-			        relations = addListToFM (relations o) rList,
-			        objectLinks = objectLinks o,
-			        mode = mode o, 
+                                classes = classes o,
+                                objects = objects o,
+                                relations = addListToFM (relations o) rList,
+                                objectLinks = objectLinks o,
+                                mode = mode o, 
                                 classGraph = classGraph o,
                                 relationGraph = relationGraph onto} 
 
@@ -401,9 +401,9 @@ insertRelationType onto relName source target =
                             in return (MMiSSOntology {name = name onto,
                                                       classes = classes onto,
                                                       objects = objects onto,
-			                              relations = relations onto,
-			                              objectLinks = objectLinks onto,
-			                              mode = mode onto,
+                                                      relations = relations onto,
+                                                      objectLinks = objectLinks onto,
+                                                      mode = mode onto,
                                                       classGraph = newg,
                                                       relationGraph = relationGraph onto} )
 
@@ -423,19 +423,19 @@ insertObject onto objectName defText className =
                             classes = classes o2,
                             objects = addToFM (objects onto) objectName 
                                               (ObjectDecl objectName defText className),
-			    relations = relations onto,
-			    objectLinks = objectLinks onto,
-			    mode = mode onto,
+                            relations = relations onto,
+                            objectLinks = objectLinks onto,
+                            mode = mode onto,
                             classGraph = addObjectToGraph objectName className (classGraph onto),
                             relationGraph = relationGraph onto} )
   where
     addClasses o cList = 
                  MMiSSOntology {name = name o, 
-	  		        classes = addListToFM (classes o) cList,
-			        objects = objects o,
-			        relations = relations o,
-			        objectLinks = objectLinks o,
-			        mode = mode o,
+                                classes = addListToFM (classes o) cList,
+                                objects = objects o,
+                                relations = relations o,
+                                objectLinks = objectLinks o,
+                                mode = mode o,
                                 classGraph = foldl addClassNodeWithoutDecl (classGraph onto) cList,
                                 relationGraph = relationGraph onto}
     lookupClass o className =
@@ -470,9 +470,9 @@ insertLink onto source target relName =
      return (MMiSSOntology {name = name o3,
                             classes = classes o3,
                             objects = objects o3,
-			    relations = relations o3,
-			    objectLinks = (objectLinks o3) ++ [(ObjectLink source target relName)],
-			    mode = mode o3,
+                            relations = relations o3,
+                            objectLinks = (objectLinks o3) ++ [(ObjectLink source target relName)],
+                            mode = mode o3,
                             classGraph = addObjectLinkToGraph source target relName (classGraph onto),
                             relationGraph = relationGraph onto} )
   where
@@ -553,14 +553,14 @@ writePropRestriction inStr (relName, classList) =
   case length classList of
     0 -> inStr
     1 -> let start = "<rdfs:subClassOf>\n  <owl:Restriction>\n"
-	     classStr = "    <owl:allValuesFrom>\n" ++
+             classStr = "    <owl:allValuesFrom>\n" ++
                         "      <owl:Class rdf:about=\"#" ++ (head classList) ++ "\"/>\n" ++ 
-			"    </owl:allValuesFrom>\n" 
-	     onPropStr = "    <owl:onProperty>\n" 
-			  ++ "      <owl:ObjectProperty rdf:about=\"#" ++ relName ++ "\"/>\n"
-			  ++"    </owl:onProperty>\n" 
-	     end = "  </owl:Restriction>\n</rdfs:subClassOf>\n"
-	  in inStr ++ start ++ onPropStr ++ classStr ++ end
+                        "    </owl:allValuesFrom>\n" 
+             onPropStr = "    <owl:onProperty>\n" 
+                          ++ "      <owl:ObjectProperty rdf:about=\"#" ++ relName ++ "\"/>\n"
+                          ++"    </owl:onProperty>\n" 
+             end = "  </owl:Restriction>\n</rdfs:subClassOf>\n"
+          in inStr ++ start ++ onPropStr ++ classStr ++ end
     _ -> let start = "<rdfs:subClassOf>\n  <owl:Restriction>\n    <owl:onProperty>\n" ++
                      "        <owl:ObjectProperty rdf:about=\"#" ++ relName ++ "\"/>\n" ++ 
                      "    </owl:onProperty>\n" ++

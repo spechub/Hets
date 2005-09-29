@@ -81,7 +81,7 @@ instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
     print_named OWL_DL ga namedSen = 
         printText0 ga (sentence namedSen) <>
            if null (senName namedSen) then empty 
-	else space <> text "%%" <+> text (senName namedSen) 
+        else space <> text "%%" <+> text (senName namedSen) 
     provers OWL_DL = [] 
     cons_checkers OWL_DL = []
 
@@ -101,7 +101,7 @@ instance StaticAnalysis OWL_DL Ontology Sentence ()
 
 
 {-   this function will be implemented in OWL_DL.Taxonomy
-	 theory_to_taxonomy OWL_DL = convTaxo
+         theory_to_taxonomy OWL_DL = convTaxo
 -}
 
 instance Logic OWL_DL ()

@@ -13,8 +13,8 @@ module Common.ATerm.Lib (
 
         module Common.ATerm.AbstractSyntax,
         module Common.ATerm.Conversion,
-	module Common.ATerm.ConvInstances,
-	    
+        module Common.ATerm.ConvInstances,
+            
 ) where
 
 import Common.ATerm.AbstractSyntax hiding (addATermNoFullSharing)

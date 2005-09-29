@@ -98,28 +98,28 @@ generateOntology onto [] = hasValue(onto)
 
 generateOntology onto (f:fs) =
   let weOnto = case f of
-		ClassDeclFrag (ClassDecl name defaultText super) -> 
-		  insertClass onto name defaultText (maybeToList super) Nothing
+                ClassDeclFrag (ClassDecl name defaultText super) -> 
+                  insertClass onto name defaultText (maybeToList super) Nothing
 
-		ObjectDeclFrag (ObjectDecl name defaultText instanceOf) -> 
-		  insertObject onto name defaultText instanceOf
+                ObjectDeclFrag (ObjectDecl name defaultText instanceOf) -> 
+                  insertObject onto name defaultText instanceOf
 
-		RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) -> 
-		  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue 
-		  in weither (const weOnto)
+                RelationDeclFrag (RelationDecl cardValue name defaultText sourceClass targetClass) -> 
+                  let weOnto = insertBaseRelation onto name defaultText Nothing cardValue 
+                  in weither (const weOnto)
                       ( \ o -> insertRelationType o name sourceClass targetClass)
                       weOnto
 
-		BaseRelationDeclFrag (BaseRelationDecl cardValue name defaultText superRel) ->
-		  insertBaseRelation onto name defaultText superRel cardValue 
+                BaseRelationDeclFrag (BaseRelationDecl cardValue name defaultText superRel) ->
+                  insertBaseRelation onto name defaultText superRel cardValue 
 
-		RelationTypeDeclFrag (RelationTypeDecl name source target) -> 
-		  insertRelationType onto name source target
+                RelationTypeDeclFrag (RelationTypeDecl name source target) -> 
+                  insertRelationType onto name source target
 
-		ObjectLinkFrag (ObjectLink source target name) -> 
-		  insertLink onto source target name
+                ObjectLinkFrag (ObjectLink source target name) -> 
+                  insertLink onto source target name
 
-		otherwise -> hasValue(onto)
+                otherwise -> hasValue(onto)
   
   in weither (const weOnto) (flip generateOntology fs) weOnto
 

@@ -36,7 +36,7 @@ parseFile parser input filename
                            ; print err
                            -- AMGQ: There must be a nicer way to print
                            -- a blank line than the following?
-			   ; putStr "\n"
+                           ; putStr "\n"
                            }
             Right x -> do let Result diags sig = statAna x
                           sequence $ map (putStrLn . show) diags 

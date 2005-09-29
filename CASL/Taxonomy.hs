@@ -30,8 +30,8 @@ import Common.PrettyPrint
 import Common.AS_Annotation
 
 convTaxo :: TaxoGraphKind -> MMiSSOntology
-	 -> Sign f e 
-	 -> [Named (FORMULA f)] -> Result MMiSSOntology
+         -> Sign f e 
+         -> [Named (FORMULA f)] -> Result MMiSSOntology
 convTaxo kind onto sign sens =
    fromWithError $ 
    case kind of
@@ -39,7 +39,7 @@ convTaxo kind onto sign sens =
     KConcept -> foldl convSen (convSign KConcept onto sign) sens
 
 convSign :: TaxoGraphKind -> 
-	    MMiSSOntology -> Sign f e -> WithError MMiSSOntology
+            MMiSSOntology -> Sign f e -> WithError MMiSSOntology
 convSign KConcept o s = convSign KSubsort o s
 convSign KSubsort onto sign =
     Set.fold addSor (hasValue onto) $ sortSet sign
@@ -47,11 +47,11 @@ convSign KSubsort onto sign =
 
     --Map.foldWithKey addSort (hasValue onto) $ toMap $ sortRel sign
     where str x = showPretty x ""
-	  relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
-	  addSor sort weOnto =
-	     let sortStr = str sort 
+          relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
+          addSor sort weOnto =
+             let sortStr = str sort 
              in weither (const weOnto)
-		        (\ on -> insClass on sortStr
+                        (\ on -> insClass on sortStr
                                           (maybe [] toStrL $ 
                                                  Map.lookup sort relMap))
                         weOnto
@@ -60,7 +60,7 @@ convSign KSubsort onto sign =
           toStrL = Set.fold (\ s rs -> str s : rs) [] 
 
 convSen :: WithError MMiSSOntology 
-	-> Named (FORMULA f) -> WithError MMiSSOntology
+        -> Named (FORMULA f) -> WithError MMiSSOntology
 convSen weOnto _nSen = weither (const weOnto) hasValue weOnto
               -- insertClass (cSen nSen) o 
 

@@ -42,12 +42,12 @@ hParser = do
 
 main :: IO ()
 main = do l <- getArgs
-	  if length l >= 1 then
-	     do s <- readFile $ head l
-		let r = runParser hParser (emptyAnnos ()) (head l) s 
-	        case r of 
-		       Right (sig, hs) -> do
-		           putStrLn $ showPretty sig ""
-			   mapM_ (putStrLn . flip showPretty "") hs
-		       Left err -> putStrLn $ show err
-	     else putStrLn "missing argument"
+          if length l >= 1 then
+             do s <- readFile $ head l
+                let r = runParser hParser (emptyAnnos ()) (head l) s 
+                case r of 
+                       Right (sig, hs) -> do
+                           putStrLn $ showPretty sig ""
+                           mapM_ (putStrLn . flip showPretty "") hs
+                       Left err -> putStrLn $ show err
+             else putStrLn "missing argument"

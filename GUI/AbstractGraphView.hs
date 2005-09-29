@@ -89,10 +89,10 @@ data Result = Result Descr                          -- graph, node or edge descr
 
 
 data Entry = Entry {newNodes :: [(Descr,(String,DaVinciNode (String,Int,Int)))],
-		    oldNodes :: [(Descr,(String,String))],
-		    newEdges :: [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
-		    oldEdges :: [(Int,(Int,Int,String,EdgeValue))]
-		    }
+                    oldNodes :: [(Descr,(String,String))],
+                    newEdges :: [(Int,(Int,Int,String,DaVinciArc EdgeValue))],
+                    oldEdges :: [(Int,(Int,Int,String,EdgeValue))]
+                    }
 
 
 -- creates a new entry of the eventTable and fills it with the data contained in its parameters
@@ -112,7 +112,7 @@ specialzip (x:xs) (y:ys) = (x,y):(specialzip [x] ys)++(specialzip xs (y:ys))
 get :: Descr -> [(Descr,a)] -> (Descr,a)
 get d list = case lookup d list of
                 Just r -> (d,r)
-		Nothing -> error ("get: descriptor unknown: "++(show d)++"\n"++(show (map fst list)))
+                Nothing -> error ("get: descriptor unknown: "++(show d)++"\n"++(show (map fst list)))
 
 
 -- lookup tables and failure handling
@@ -136,7 +136,7 @@ fetch_graph gid gv delete cmd =
        Just g -> do (g',descr,ev_cnt',err) <- cmd (g,ev_cnt)
                     let gs'' = if delete then gs' else (gid,g'):gs'
                     writeIORef gv (gs'',ev_cnt')
-   		    return (Result descr err)
+                    return (Result descr err)
                     where gs' = remove gid gs
        Nothing -> return (Result 0 (Just ("Graph id "++show gid++" not found")))
 
@@ -157,7 +157,7 @@ initgraphs = do newRef <- newIORef ([],0)
 makegraph :: String -> IO () -> IO () -> IO () -> [GlobalMenu] ->
              [(String,DaVinciNodeTypeParms (String,Descr,Descr))] -> 
              [(String,DaVinciArcTypeParms 
-	           (String,Descr,Maybe (LEdge DGLinkLab)))] ->
+                   (String,Descr,Maybe (LEdge DGLinkLab)))] ->
              CompTable -> GraphInfo -> IO Result 
 makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable gv = do
   (gs,ev_cnt) <- readIORef gv
@@ -168,21 +168,21 @@ makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable g
                    FileMenuAct OpenMenuOption (Just open) $$
                    FileMenuAct SaveMenuOption (Just save) $$
                    FileMenuAct SaveAsMenuOption (Just saveAs) $$
-	           emptyGraphParms)
+                   emptyGraphParms)
                    menus 
       abstractNodetypeparams = LocalMenu
                                   (
                                       Button "Unhide abstracted nodes" (
-				        \ (name, descr, gid) -> do oldGv <- readIORef gv
-					                           (Result descr error) <- showIt gid descr gv
-					                           case error of
-								     Just _ -> do writeIORef gv oldGv
-								                  return ()
-								     Nothing -> do redisplay gid gv
-								                   return () 
-				         )
-				      ) $$$            
-	                       Rhombus  $$$
+                                        \ (name, descr, gid) -> do oldGv <- readIORef gv
+                                                                   (Result descr error) <- showIt gid descr gv
+                                                                   case error of
+                                                                     Just _ -> do writeIORef gv oldGv
+                                                                                  return ()
+                                                                     Nothing -> do redisplay gid gv
+                                                                                   return () 
+                                         )
+                                      ) $$$            
+                               Rhombus  $$$
                                ValueTitle ( \ (name,descr,gid) -> return name) $$$
                                emptyNodeTypeParms :: DaVinciNodeTypeParms (String,Int,Int)
       (nodetypenames,nodetypeparams1) = unzip (("ABSTRACT",abstractNodetypeparams):nodetypeparams)
@@ -193,11 +193,11 @@ makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable g
   let g = AbstractionGraph {
             theGraph = graph,
             nodeTypes = zip nodetypenames nodetypes,
-	    edgeTypes = zip edgetypenames edgetypes,
+            edgeTypes = zip edgetypenames edgetypes,
             nodes = [], 
             edges = [], 
             edgeComp = comptable,
-	    eventTable = [] }
+            eventTable = [] }
   writeIORef gv ((ev_cnt,g):gs,ev_cnt+1)
   return (Result ev_cnt Nothing)
 
@@ -216,7 +216,7 @@ delallgraphs gv = do
     destroy_all ((gid,_):gs) ev_cnt = do
          writeIORef gv (gs,ev_cnt)
          Result _ _ <- GUI.AbstractGraphView.delgraph gid gv
-	 (_,ev_cnt') <- readIORef gv
+         (_,ev_cnt') <- readIORef gv
          destroy_all gs ev_cnt'
 
 addnode :: Descr -> String -> String -> GraphInfo -> IO Result
@@ -225,11 +225,11 @@ addnode gid nodetype name gv =
       do case lookup nodetype (nodeTypes g) of
           Nothing -> return (g,0,ev_cnt,Just ("addnode: illegal node type: "++nodetype))
           Just nt ->
-	    do existingNodesOfSameType <- sequence [(getNodeValue (theGraph g) davinciNode)|(descr,(tp,davinciNode)) <- (nodes g), tp == nodetype]
+            do existingNodesOfSameType <- sequence [(getNodeValue (theGraph g) davinciNode)|(descr,(tp,davinciNode)) <- (nodes g), tp == nodetype]
                case elem name [existingName| (existingName, _,_) <- existingNodesOfSameType] of
-	         _ ->     do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
-		             return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
---	         True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
+                 _ ->     do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
+                             return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
+--               True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
    )
 
 
@@ -255,12 +255,12 @@ addlink gid edgetype name label src tar gv =
     (Just et, Just src_node, Just tar_node) -> 
       do existingEdgesOfSameTypeAndPosition <- sequence [(getArcValue (theGraph g) davinciArc)|(descr,(srcId, tgtId, tp, davinciArc)) <- (edges g), tp == edgetype && srcId == src && tgtId == tar]
          case lookup name [(nm,descr)|(nm,descr,graphId) <- existingEdgesOfSameTypeAndPosition] of
-	   _ ->
-	     do edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node) (snd tar_node)
+           _ ->
+             do edge <- newArc (theGraph g) et (name,ev_cnt,label) (snd src_node) (snd tar_node)
                 return (g{edges = (ev_cnt,(src,tar,edgetype,edge)):edges g},ev_cnt,ev_cnt+1,Nothing)
-{-	   Just _ -> do srcToString <- getNodeNameAndTypeAsString g src
-                        tarToString <- getNodeNameAndTypeAsString g tar	   
-	                return (g,0,ev_cnt,Just("addlink: edge \""++name++"\" from node "++(show src)++(srcToString)++" to node "++(show tar)++(tarToString)++" of type "++edgetype++" already exists in graph "++(show gid))) -}
+{-         Just _ -> do srcToString <- getNodeNameAndTypeAsString g src
+                        tarToString <- getNodeNameAndTypeAsString g tar    
+                        return (g,0,ev_cnt,Just("addlink: edge \""++name++"\" from node "++(show src)++(srcToString)++" to node "++(show tar)++(tarToString)++" of type "++edgetype++" already exists in graph "++(show gid))) -}
     (Nothing,_,_) -> return (g,0,ev_cnt,Just ("addlink: illegal edge type: "++edgetype))
     (_,Nothing,_) -> return (g,0,ev_cnt,Just ("addlink: illegal source node id: "++show src))
     (_,_,Nothing) -> return (g,0,ev_cnt,Just ("addlink: illegal target node id: "++show tar))
@@ -270,9 +270,9 @@ addlink gid edgetype name label src tar gv =
 getNodeNameAndTypeAsString :: AbstractionGraph -> Descr -> IO String
 getNodeNameAndTypeAsString g descr = case lookup descr (nodes g) of
                                         Just (tp, davinciNode) ->
-			                  do (name, i, j) <- getNodeValue (theGraph g) davinciNode
-			                     return (" (\""++name++"\" of type "++tp++")")
-			                Nothing -> error ("getNodeNameAndTypeAsString: unknown node: "++(show descr))
+                                          do (name, i, j) <- getNodeValue (theGraph g) davinciNode
+                                             return (" (\""++name++"\" of type "++tp++")")
+                                        Nothing -> error ("getNodeNameAndTypeAsString: unknown node: "++(show descr))
 
 
 dellink :: Descr -> Descr -> GraphInfo -> IO Result
@@ -296,15 +296,15 @@ redisplay gid gv =
 determineedgetype :: AbstractionGraph -> (String,String) -> Maybe String
 determineedgetype g (t1,t2) = case result of
                               [] -> Nothing
-			      x:xs -> Just x
+                              x:xs -> Just x
   where result = [ t | (tp1,tp2,t) <- (edgeComp g), (tp1==t1)&&(tp2==t2)]
-	
+        
 
 -- returns a pair of lists: one list of all in- and one of all out-going edges of the node
 fetchEdgesOfNode :: AbstractionGraph -> Descr -> Maybe ([Descr],[Descr])
 fetchEdgesOfNode g node = case sequence (map ((flip lookup) (edges g)) (map fst (edges g))) of
                             Just el -> Just ([descr|ed@(descr,(_,t,_,_)) <- (edges g), t == node],[descr|ed@(descr,(s,_,_,_)) <- (edges g), s == node])
-			    Nothing -> Nothing
+                            Nothing -> Nothing
 
 
 hidenodes :: Descr -> [Descr] -> GraphInfo -> IO Result
@@ -313,51 +313,51 @@ hidenodes gid node_list gv =
     case sequence (map (\node -> lookup node (nodes g)) node_list) of
       Just nl -> do -- try to determine the path to add and the edges to remove
                     case makepathsMain g node_list of
-	            -- try to create the paths
-		      Just (newEdges,delEdges) -> do -- save the old edges...
-		                                     let oeDescr = nub ((concat (map fst delEdges))++(concat (map snd delEdges)))
-							 oe = map (\ed -> get ed (edges g)) oeDescr
-						     oldEdges <- saveOldEdges g oe
-						     -- ... then try to remove them from the graph
-						     (gs,_) <- readIORef gv
-						     writeIORef gv (gs,ev_cnt+1)
-						     deletedEdges@(Result de1 error1) <- hideedgesaux gid oeDescr gv
-						     info1 <- readIORef gv
-						     case error1 of
-						       Nothing -> do -- determine the _new_ edges...
-						                     let existingEdges = [(src,tgt,tp)|(descr,(src,tgt,tp,daVinci)) <- (edges (snd (get gid (fst info1))))]
-						                         filteredNewEdges = [path| path@(src,tgt,tp) <- newEdges, notElem (src,tgt,tp) existingEdges]
-								     -- ... and try to add them
-						                     paths@(Result de2 error2) <- addpaths gid filteredNewEdges gv --info1
-								     case error2 of
-								       Nothing -> do -- save the old nodes...
-								                     let on = map (\nd -> get nd (nodes g)) node_list
-										     oldNodes <- saveOldNodes g on
-										     -- ... then try to remove them from the graph
-										     deletedNodes@(Result de3 error3) <- hidenodesaux gid node_list gv --info2
-										     info3 <- readIORef gv
-										     case error3 of
-										       Nothing -> do -- save the changes in an entry
-										                     let g' = snd (get gid (fst info3))
-													 newEdges = [edge| edge <- (edges g'), notElem edge (edges g)]
-										                         newEvent = createEntry [] oldNodes newEdges oldEdges ev_cnt
+                    -- try to create the paths
+                      Just (newEdges,delEdges) -> do -- save the old edges...
+                                                     let oeDescr = nub ((concat (map fst delEdges))++(concat (map snd delEdges)))
+                                                         oe = map (\ed -> get ed (edges g)) oeDescr
+                                                     oldEdges <- saveOldEdges g oe
+                                                     -- ... then try to remove them from the graph
+                                                     (gs,_) <- readIORef gv
+                                                     writeIORef gv (gs,ev_cnt+1)
+                                                     deletedEdges@(Result de1 error1) <- hideedgesaux gid oeDescr gv
+                                                     info1 <- readIORef gv
+                                                     case error1 of
+                                                       Nothing -> do -- determine the _new_ edges...
+                                                                     let existingEdges = [(src,tgt,tp)|(descr,(src,tgt,tp,daVinci)) <- (edges (snd (get gid (fst info1))))]
+                                                                         filteredNewEdges = [path| path@(src,tgt,tp) <- newEdges, notElem (src,tgt,tp) existingEdges]
+                                                                     -- ... and try to add them
+                                                                     paths@(Result de2 error2) <- addpaths gid filteredNewEdges gv --info1
+                                                                     case error2 of
+                                                                       Nothing -> do -- save the old nodes...
+                                                                                     let on = map (\nd -> get nd (nodes g)) node_list
+                                                                                     oldNodes <- saveOldNodes g on
+                                                                                     -- ... then try to remove them from the graph
+                                                                                     deletedNodes@(Result de3 error3) <- hidenodesaux gid node_list gv --info2
+                                                                                     info3 <- readIORef gv
+                                                                                     case error3 of
+                                                                                       Nothing -> do -- save the changes in an entry
+                                                                                                     let g' = snd (get gid (fst info3))
+                                                                                                         newEdges = [edge| edge <- (edges g'), notElem edge (edges g)]
+                                                                                                         newEvent = createEntry [] oldNodes newEdges oldEdges ev_cnt
                                                                                                      return (g'{eventTable = newEvent:eventTable g'},ev_cnt,(snd info3)+1,Nothing)
-										       Just t -> return (g,0,ev_cnt,Just ("hidenodes: error hiding nodes: "++t))
-								       Just text -> return (g,0,ev_cnt,Just ("hidenodes: error adding paths: "++text))
-						       Just text -> return (g,0,ev_cnt,Just ("hidenodes: error deleting edges: "++text))
-		      Nothing -> return (g,0,ev_cnt,Just "hidenodes: error making paths\n(possible reasons: an error occured getting the edges of the nodes\nor a pathtype could not be determined (missing entry in edgeComp table))")
+                                                                                       Just t -> return (g,0,ev_cnt,Just ("hidenodes: error hiding nodes: "++t))
+                                                                       Just text -> return (g,0,ev_cnt,Just ("hidenodes: error adding paths: "++text))
+                                                       Just text -> return (g,0,ev_cnt,Just ("hidenodes: error deleting edges: "++text))
+                      Nothing -> return (g,0,ev_cnt,Just "hidenodes: error making paths\n(possible reasons: an error occured getting the edges of the nodes\nor a pathtype could not be determined (missing entry in edgeComp table))")
       Nothing -> return (g,0,ev_cnt,Just "hidenodes: unknown node(s)")
-  )			   
+  )                        
 
 
 -- auxiliary function, which removes the nodes from the graph
 hidenodesaux :: Descr -> [Descr] -> GraphInfo -> IO Result
 hidenodesaux gid [] gv = do (gs,ev_cnt) <- readIORef gv
-			    return (Result ev_cnt Nothing)
+                            return (Result ev_cnt Nothing)
 hidenodesaux gid (d:delNodes) gv = do deletedNode@(Result de error) <- delnode gid d gv
                                       case error of
-				        Nothing -> do hidenodesaux gid delNodes gv
-				        Just t -> return deletedNode
+                                        Nothing -> do hidenodesaux gid delNodes gv
+                                        Just t -> return deletedNode
 
 
 -- returns the paths to add and the edges to remove
@@ -370,8 +370,8 @@ makepathsMain g node_list =
       case sequence (map (makepaths g node_list) edgelistPairs) of
         -- the paths to add (dangling ones are removed) and the edges to remove
         Just paths -> 
-	  Just (removeDanglingEdges (nub (concat paths)) node_list,
-		edgelistPairs)
+          Just (removeDanglingEdges (nub (concat paths)) node_list,
+                edgelistPairs)
         Nothing -> Nothing
     Nothing -> Nothing    
 
@@ -415,22 +415,22 @@ checkpath g node_list alreadyPassedNodes path@(src,tgt,ty,ed)
                          case fetchEdgesOfNode g src of
                            -- try to lookup ingoing edges
                            Just (inEdges,outEdges) -> case sequence (map (\ed -> lookup ed (edges g)) inEdges) of
-			                                -- try to make paths of these edges and the "tail" of the path (and recursively check them)
-			                                Just el -> case sequence (map (makepathsaux g node_list (src:alreadyPassedNodes)) (specialzip el [path])) of
-							             Just p -> Just (concat p)
-								     Nothing -> Nothing
-						        Nothing -> Nothing
+                                                        -- try to make paths of these edges and the "tail" of the path (and recursively check them)
+                                                        Just el -> case sequence (map (makepathsaux g node_list (src:alreadyPassedNodes)) (specialzip el [path])) of
+                                                                     Just p -> Just (concat p)
+                                                                     Nothing -> Nothing
+                                                        Nothing -> Nothing
   
   | elem tgt node_list = -- try to determine the in- and outgoing edges of the target node
                          case fetchEdgesOfNode g tgt of
-			   -- try to lookup the outgoing edges
+                           -- try to lookup the outgoing edges
                            Just (inEdges,outEdges) -> case sequence (map (\ed -> lookup ed (edges g)) outEdges) of
-			                                -- try to make paths of these edges and the "init" of the path (and recursively check them)
-			                                Just el -> case sequence (map (makepathsaux g node_list (tgt:alreadyPassedNodes)) (specialzip [path] el)) of
-							             Just p -> Just (concat p)
-								     Nothing -> Nothing
-							Nothing -> Nothing
-			   Nothing -> Nothing
+                                                        -- try to make paths of these edges and the "init" of the path (and recursively check them)
+                                                        Just el -> case sequence (map (makepathsaux g node_list (tgt:alreadyPassedNodes)) (specialzip [path] el)) of
+                                                                     Just p -> Just (concat p)
+                                                                     Nothing -> Nothing
+                                                        Nothing -> Nothing
+                           Nothing -> Nothing
   | otherwise = -- nothing to be done
                 Just [(src,tgt,ty)]
   
@@ -441,8 +441,8 @@ addpaths gid [] gv = do (gs,ev_cnt) <- readIORef gv
                         return (Result ev_cnt Nothing)
 addpaths gid ((src,tgt,ty):newEdges) gv = do edge@(Result de error) <- addlink gid ty "" Nothing src tgt gv
                                              case error of
-					       Nothing -> do addpaths gid newEdges gv
-					       Just t -> return edge	   
+                                               Nothing -> do addpaths gid newEdges gv
+                                               Just t -> return edge       
 
 
 -- fetches all the nodes of the given type and hides them using hidenodes
@@ -452,12 +452,12 @@ hidenodetype gid nodetype gv = fetch_graph gid gv False (\(g,ev_cnt) ->
                                            do case lookup nodetype (nodeTypes g) of
                                                Just nt ->
                                                  do let nodelist = [descr|(descr,(tp,_)) <- (nodes g), tp == nodetype]
-						    case nodelist of
-						      [] -> do return (g,0,ev_cnt,Just ("hidenodetype: no nodes of type "++nodetype++" found in graph "++(show gid)))
-						      node_list -> do (Result de error) <- hidenodes gid nodelist gv
-						                      info <- readIORef gv
-								      return (snd (get gid (fst info)), de, (snd info), error)
-					       Nothing -> return (g,0,ev_cnt,Just ("hidenodetype: illegal node type: "++nodetype))
+                                                    case nodelist of
+                                                      [] -> do return (g,0,ev_cnt,Just ("hidenodetype: no nodes of type "++nodetype++" found in graph "++(show gid)))
+                                                      node_list -> do (Result de error) <- hidenodes gid nodelist gv
+                                                                      info <- readIORef gv
+                                                                      return (snd (get gid (fst info)), de, (snd info), error)
+                                               Nothing -> return (g,0,ev_cnt,Just ("hidenodetype: illegal node type: "++nodetype))
 
                                         )
 
@@ -466,16 +466,16 @@ hideSetOfNodeTypes gid nodetypes gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
     case sequence [lookup nodetype (nodeTypes g)|nodetype <- nodetypes] of
       Just typelist ->
-	do let nodelist = [descr|(descr,(tp,_)) <- (nodes g), elem tp nodetypes]
-	   case nodelist of
+        do let nodelist = [descr|(descr,(tp,_)) <- (nodes g), elem tp nodetypes]
+           case nodelist of
              [] -> return (g,0,ev_cnt,Just ("hidenodetype: no nodes" 
-		    ++" of types "++(showList nodetypes ",")++
-		    " found in graph "++(show gid)))
-	     node_list -> do (Result de error) <- hidenodes gid nodelist gv
-			     info <- readIORef gv
-			     return (snd (get gid (fst info)), de, (snd info), error)
+                    ++" of types "++(showList nodetypes ",")++
+                    " found in graph "++(show gid)))
+             node_list -> do (Result de error) <- hidenodes gid nodelist gv
+                             info <- readIORef gv
+                             return (snd (get gid (fst info)), de, (snd info), error)
       Nothing -> return (g,0,ev_cnt,Just ("hidenodetype: illegal node types "
-				 ++"in list: "++(showList nodetypes ",")))
+                                 ++"in list: "++(showList nodetypes ",")))
 
                                         )
 
@@ -493,35 +493,35 @@ abstractnodes gid node_list gv =
       -- try to lookup the nodes of the list
       case sequence (map (\nd -> lookup nd (nodes g)) node_list) of
         Just nl -> -- try to lookup the in- and outgoing edges of the nodes
-	           case sequence (map (fetchEdgesOfNode g) node_list) of
-	             Just el -> do -- save the old edges
-		                   let oeDescr = nub ((concat (map fst el))++(concat (map snd el)))
-		                       oe = map (\edge -> get edge (edges g)) oeDescr
-		                   oldEdges <- saveOldEdges g oe
-				   -- save the old nodes
-		                   let on = map (\node -> get node (nodes g)) node_list
-                 		   oldNodes <- saveOldNodes g on
-				   -- try to create the new abstract node and add its in- and outgoing paths
-		                   (Result de1 error1) <- replaceByAbstractNode gid node_list nl oeDescr gv --(gs,ev_cnt+1)
-				   case error1 of
-				     Nothing -> do -- try to remove the in- and outgoing edges of the nodes to be hidden
-				                   (Result de2 error2) <- hideedgesaux gid oeDescr gv
-				                   case error2 of
-						     Nothing -> do -- try to remove the nodes of the list
-						                   (Result de3 error3) <- hidenodesaux gid node_list gv --info2
-								   info3 <- readIORef gv
-						                   case error3 of
-								     Nothing -> do -- save the changes in an entry
-								                   let g' = snd (get gid (fst info3))
-								                       newNodes = [nd| nd <- nodes g', notElem nd (nodes g)]
-								                       newEdges = [ed| ed <- edges g', notElem ed (edges g)]
-								                       newEntry = createEntry newNodes oldNodes newEdges oldEdges ev_cnt
-								                   return (g'{eventTable=newEntry:eventTable g'},ev_cnt,snd info3,Nothing)
-								     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error hiding nodes: "++t))
-						     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error hiding edges: " ++ t))
-				     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error making abstract node: "++ t))
-		     Nothing -> return (g,0,ev_cnt,Just "abstractnodes: error fetching the edges of the nodes")
-      	Nothing -> return (g,0,ev_cnt,Just "abstractnodes: unknown nodes")
+                   case sequence (map (fetchEdgesOfNode g) node_list) of
+                     Just el -> do -- save the old edges
+                                   let oeDescr = nub ((concat (map fst el))++(concat (map snd el)))
+                                       oe = map (\edge -> get edge (edges g)) oeDescr
+                                   oldEdges <- saveOldEdges g oe
+                                   -- save the old nodes
+                                   let on = map (\node -> get node (nodes g)) node_list
+                                   oldNodes <- saveOldNodes g on
+                                   -- try to create the new abstract node and add its in- and outgoing paths
+                                   (Result de1 error1) <- replaceByAbstractNode gid node_list nl oeDescr gv --(gs,ev_cnt+1)
+                                   case error1 of
+                                     Nothing -> do -- try to remove the in- and outgoing edges of the nodes to be hidden
+                                                   (Result de2 error2) <- hideedgesaux gid oeDescr gv
+                                                   case error2 of
+                                                     Nothing -> do -- try to remove the nodes of the list
+                                                                   (Result de3 error3) <- hidenodesaux gid node_list gv --info2
+                                                                   info3 <- readIORef gv
+                                                                   case error3 of
+                                                                     Nothing -> do -- save the changes in an entry
+                                                                                   let g' = snd (get gid (fst info3))
+                                                                                       newNodes = [nd| nd <- nodes g', notElem nd (nodes g)]
+                                                                                       newEdges = [ed| ed <- edges g', notElem ed (edges g)]
+                                                                                       newEntry = createEntry newNodes oldNodes newEdges oldEdges ev_cnt
+                                                                                   return (g'{eventTable=newEntry:eventTable g'},ev_cnt,snd info3,Nothing)
+                                                                     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error hiding nodes: "++t))
+                                                     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error hiding edges: " ++ t))
+                                     Just t -> return (g,0,ev_cnt,Just ("abstractnodes: error making abstract node: "++ t))
+                     Nothing -> return (g,0,ev_cnt,Just "abstractnodes: error fetching the edges of the nodes")
+        Nothing -> return (g,0,ev_cnt,Just "abstractnodes: unknown nodes")
     )
 
     
@@ -535,17 +535,17 @@ replaceByAbstractNode gid node_list nl edge_list gv =
                     (Result de1 error1) <- addnode gid "ABSTRACT" (show ev_cnt) gv
                     case error1 of
                       Nothing -> do -- determine its in- and outgoing paths...
-		                    let newEdges = [(src,de1,tp)| (src,tgt,tp,_) <- el, ((notElem src node_list) && (elem tgt node_list))]
-	                                             ++ [(de1,tgt,tp)| (src,tgt,tp,_) <- el, ((elem src node_list) && (notElem tgt node_list))]
-				    -- ... and try to add them
-	                            (Result de2 error2) <- addpaths gid (nub newEdges) gv
-				    info2 <- readIORef gv
+                                    let newEdges = [(src,de1,tp)| (src,tgt,tp,_) <- el, ((notElem src node_list) && (elem tgt node_list))]
+                                                     ++ [(de1,tgt,tp)| (src,tgt,tp,_) <- el, ((elem src node_list) && (notElem tgt node_list))]
+                                    -- ... and try to add them
+                                    (Result de2 error2) <- addpaths gid (nub newEdges) gv
+                                    info2 <- readIORef gv
                                     case error2 of
                                       Nothing -> do -- return the modified graph
-				                    let g' = snd (get gid (fst info2))
-			                            return (g',de2,snd info2,Nothing)
+                                                    let g' = snd (get gid (fst info2))
+                                                    return (g',de2,snd info2,Nothing)
                                       Just t -> return (g,0,ev_cnt,error2)
-	              Just text -> return (g,0,ev_cnt,Just ("replaceByAbstractNode: error creating abstract node: "++text))
+                      Just text -> return (g,0,ev_cnt,Just ("replaceByAbstractNode: error creating abstract node: "++text))
       Nothing -> return (g,0,ev_cnt,Just "replaceByAbstractNode: error looking up the edges of the nodes")
   )
   
@@ -555,19 +555,19 @@ hideedges gid edge_list gv = fetch_graph gid gv False (\(g,ev_cnt) ->
                                         -- check if all of the edges exist
                                         case sequence (map (\edge -> lookup edge (edges g)) edge_list) of
                                            Just el -> do -- save the old edges ...
-					                 let oe = map (\edge -> get edge (edges g)) edge_list
-							 oldEdges <- saveOldEdges g oe
-					                 -- ... then try to remove them from the graph
-							 (gs,_) <- readIORef gv
-							 writeIORef gv (gs,ev_cnt+1)
-					                 (Result de error) <- hideedgesaux gid edge_list gv
-							 info <- readIORef gv
-					                 case error of
-							   Nothing -> do -- save the changes in an entry
-							                 let g' = snd (get gid (fst info))
-							                     newEntry = createEntry [] [] [] oldEdges ev_cnt
-									 return (g'{eventTable = newEntry:eventTable g'},ev_cnt,snd info,Nothing)
-							   Just text -> return (g,0,ev_cnt,Just ("hideedges: error hiding edges: "++text))
+                                                         let oe = map (\edge -> get edge (edges g)) edge_list
+                                                         oldEdges <- saveOldEdges g oe
+                                                         -- ... then try to remove them from the graph
+                                                         (gs,_) <- readIORef gv
+                                                         writeIORef gv (gs,ev_cnt+1)
+                                                         (Result de error) <- hideedgesaux gid edge_list gv
+                                                         info <- readIORef gv
+                                                         case error of
+                                                           Nothing -> do -- save the changes in an entry
+                                                                         let g' = snd (get gid (fst info))
+                                                                             newEntry = createEntry [] [] [] oldEdges ev_cnt
+                                                                         return (g'{eventTable = newEntry:eventTable g'},ev_cnt,snd info,Nothing)
+                                                           Just text -> return (g,0,ev_cnt,Just ("hideedges: error hiding edges: "++text))
                                            Nothing -> return (g,0,ev_cnt,Just "hideedges: unknown edges")
                                       )
 
@@ -577,8 +577,8 @@ hideedgesaux gid [] gv = do (gs,ev_cnt) <- readIORef gv
                             return (Result ev_cnt Nothing)
 hideedgesaux gid (d:delEdges) gv = do dle@(Result descr error) <- dellink gid d gv
                                       case error of
-					Nothing -> do hideedgesaux gid delEdges gv --info
-					Just t -> return dle
+                                        Nothing -> do hideedgesaux gid delEdges gv --info
+                                        Just t -> return dle
 
 
 -- fetches all the edges of the given type and hides them using hideedges
@@ -589,8 +589,8 @@ hideedgetype gid edgetype gv =
     case lookup edgetype (edgeTypes g) of
       Just et -> do let edgelist = [descr|(descr,(_,_,tp,_)) <- (edges g), tp == edgetype]
                     case edgelist of
-		      [] -> do return (g,0,ev_cnt,Just ("hideedgetype: no edges of type "++edgetype++" found in graph "++(show gid)))
-		      edge_list -> do (Result de error) <- hideedges gid edge_list gv
+                      [] -> do return (g,0,ev_cnt,Just ("hideedgetype: no edges of type "++edgetype++" found in graph "++(show gid)))
+                      edge_list -> do (Result de error) <- hideedges gid edge_list gv
                                       info <- readIORef gv
                                       return (snd (get gid (fst info)), de, snd info,error)
       Nothing -> return (g,0,ev_cnt,Just ("hideedgetype: illegal edge type: "++edgetype))
@@ -606,23 +606,23 @@ showIt gid hide_event gv =
       Just entry -> do -- try to remove the paths that had been added
                        (Result de1 error1) <- hideedgesaux gid (map fst (newEdges entry)) gv
                        case error1 of
-		         Nothing -> do -- try to add the nodes that had been hidden
-			               (Result de2 error2) <- shownodes gid (oldNodes entry) gv
-			               case error2 of
-				         Nothing -> do -- try to remove the nodes that had been added
-					               (Result de3 error3) <- hidenodesaux gid (map fst (newNodes entry)) gv
-					               case error3 of
-						         Nothing -> do -- try to add the edges that had been hidden
-							               (Result de4 error4) <- showedges gid (oldEdges entry) gv
-								       info4 <- readIORef gv
-							               case error4 of
-			   	                                         Nothing -> do -- remove the event from the eventTable
-									               let g' = snd (get gid (fst info4))
-									               return (g'{eventTable = remove hide_event (eventTable g')},0,ev_cnt+1,Nothing)
-									 Just t4 -> return (g,0,ev_cnt,Just ("showIt: error restoring old edges:\n-> "++t4))
-							 Just t3 -> return (g,0,ev_cnt,Just ("showIt: error removing nodes:\n-> "++t3))
-					 Just t2 -> return (g,0,ev_cnt,Just ("showIt: error restoring nodes:\n-> "++t2))
-			 Just t1 -> return (g,0,ev_cnt,Just ("showIt: error removing edges:\n-> "++t1))
+                         Nothing -> do -- try to add the nodes that had been hidden
+                                       (Result de2 error2) <- shownodes gid (oldNodes entry) gv
+                                       case error2 of
+                                         Nothing -> do -- try to remove the nodes that had been added
+                                                       (Result de3 error3) <- hidenodesaux gid (map fst (newNodes entry)) gv
+                                                       case error3 of
+                                                         Nothing -> do -- try to add the edges that had been hidden
+                                                                       (Result de4 error4) <- showedges gid (oldEdges entry) gv
+                                                                       info4 <- readIORef gv
+                                                                       case error4 of
+                                                                         Nothing -> do -- remove the event from the eventTable
+                                                                                       let g' = snd (get gid (fst info4))
+                                                                                       return (g'{eventTable = remove hide_event (eventTable g')},0,ev_cnt+1,Nothing)
+                                                                         Just t4 -> return (g,0,ev_cnt,Just ("showIt: error restoring old edges:\n-> "++t4))
+                                                         Just t3 -> return (g,0,ev_cnt,Just ("showIt: error removing nodes:\n-> "++t3))
+                                         Just t2 -> return (g,0,ev_cnt,Just ("showIt: error restoring nodes:\n-> "++t2))
+                         Just t1 -> return (g,0,ev_cnt,Just ("showIt: error removing edges:\n-> "++t1))
       Nothing -> return (g,0,ev_cnt,Just ("showIt: invalid event descriptor: "++(show hide_event)))
   )
 
@@ -658,7 +658,7 @@ showedges gid ((edge@(d,(src,tgt,tp,value))):list) gv =
      ed@(Result de err) <- addlink gid tp name label src tgt gv
      case err of
        Nothing -> do -- try to add the rest
-	             showedges gid list gv
+                     showedges gid list gv
        Just _ -> return ed
 
 
@@ -672,7 +672,7 @@ saveOldNodes g ((node@(de,(tp,davincinode))):list) = do (name,descr,gid) <- getN
 
 -- creates a list of the edges that will be hidden (ie descriptor,source,target,type and name)
 saveOldEdges :: AbstractionGraph -> [(Int,(Int,Int,String,DaVinciArc EdgeValue))] ->
-		IO [(Int,(Int,Int,String,EdgeValue))] -- IO [(Int,(Int,Int,String,String))]
+                IO [(Int,(Int,Int,String,EdgeValue))] -- IO [(Int,(Int,Int,String,String))]
 saveOldEdges g [] = return []
 saveOldEdges g (edge@(de,(src,tgt,tp,davinciarc)):list) =
   do value <- getArcValue (theGraph g) davinciarc

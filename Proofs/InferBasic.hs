@@ -136,8 +136,8 @@ mergeHistory cnt proofstatus@(ln,libEnv,historyMap) = do
      return Nothing
    else do
     let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
-	newHistoryElem = (rules, removeContraryChanges changes)
-	newHistory = newHistoryElem:oldHistory
+        newHistoryElem = (rules, removeContraryChanges changes)
+        newHistory = newHistoryElem:oldHistory
     return (Just (ln,libEnv,Map.insert ln newHistory historyMap))
 
 
@@ -235,7 +235,7 @@ basicInferenceNode checkCons lg (ln, node)
             let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
                 newProofStatus
-		  = mkResultProofStatus proofStatus dGraph nextHistoryElem
+                  = mkResultProofStatus proofStatus dGraph nextHistoryElem
             return newProofStatus
           else do -- proving
             (G_prover lid4 p, Comorphism cid) <- selectProver $ getProvers cms
@@ -257,15 +257,15 @@ basicInferenceNode checkCons lg (ln, node)
                  let oldNode = labNode' (context dGraph node)
                      (_,oldContents) = oldNode
                      newTh = case (dgn_theory oldContents) of
-		             G_theory lid sig sens ->
+                             G_theory lid sig sens ->
                                G_theory lid sig (markProved (Comorphism cid) 
                                                             lidT newThms sens)
                      n = getNewNode dGraph
-		     newNode = (n, oldContents{dgn_theory = newTh})
+                     newNode = (n, oldContents{dgn_theory = newTh})
                  (newGraph,changes) <- ioToIORes $
                              adoptEdges (insNode newNode $ dGraph) node n
-	         let newGraph' = delNode node $ newGraph
-		     newChanges = InsertNode newNode : changes ++ 
+                 let newGraph' = delNode node $ newGraph
+                     newChanges = InsertNode newNode : changes ++ 
                                         [DeleteNode oldNode]
                      rules = map (\s -> BasicInference (Comorphism cid) 
                                             (BasicProof lidT s)) 

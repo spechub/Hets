@@ -65,18 +65,18 @@ instance Comorphism CASL2Modal
 mapSig :: CASLSign -> MSign
 mapSig sign = 
      (emptySign emptyModalSign) {sortSet = sortSet sign
-	       , sortRel = sortRel sign
+               , sortRel = sortRel sign
                , opMap = opMap sign
-	       , assocOps = assocOps sign
-	       , predMap = predMap sign }
+               , assocOps = assocOps sign
+               , predMap = predMap sign }
 
 mapMor :: CASLMor -> ModalMor
 mapMor m = Morphism {msource = mapSig $ msource m
-	           , mtarget = mapSig $ mtarget m
+                   , mtarget = mapSig $ mtarget m
                    , sort_map = sort_map m
                    , fun_map = fun_map m
                    , pred_map = pred_map m
-	           , extended_map = ()}
+                   , extended_map = ()}
 
 
 mapSym :: Symbol -> Symbol
@@ -86,22 +86,22 @@ mapSym = id  -- needs to be changed once modal symbols are added
 mapSen :: CASLFORMULA -> ModalFORMULA
 mapSen f = case f of 
     Quantification q vs frm ps ->
-	Quantification q vs (mapSen frm) ps
+        Quantification q vs (mapSen frm) ps
     Conjunction fs ps -> 
         Conjunction (map mapSen fs) ps 
     Disjunction fs ps -> 
         Disjunction (map mapSen fs) ps
     Implication f1 f2 b ps ->
-	Implication (mapSen f1) (mapSen f2) b ps
+        Implication (mapSen f1) (mapSen f2) b ps
     Equivalence f1 f2 ps -> 
-	Equivalence (mapSen f1) (mapSen f2) ps
+        Equivalence (mapSen f1) (mapSen f2) ps
     Negation frm ps -> Negation (mapSen frm) ps
     True_atom ps -> True_atom ps
     False_atom ps -> False_atom ps
     Existl_equation t1 t2 ps -> 
-	Existl_equation (mapTERM t1) (mapTERM t2) ps
+        Existl_equation (mapTERM t1) (mapTERM t2) ps
     Strong_equation t1 t2 ps -> 
-	Strong_equation (mapTERM t1) (mapTERM t2) ps
+        Strong_equation (mapTERM t1) (mapTERM t2) ps
     Predication pn as qs ->
         Predication pn (map mapTERM as) qs
     Definedness t ps -> Definedness (mapTERM t) ps

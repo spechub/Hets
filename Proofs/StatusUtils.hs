@@ -25,7 +25,7 @@ import Syntax.AS_Library
 -- -------------------------------
 lookupDGraphError :: LIB_NAME -> a
 lookupDGraphError libname = error ("Could not find lib with name <" 
-				   ++(show libname)++ "> in the given LibEnv")
+                                   ++(show libname)++ "> in the given LibEnv")
 
 mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
 mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
@@ -39,11 +39,11 @@ mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
       
     where
       history = case Map.lookup libname proofHistory of
-		  Nothing -> []
-		  Just h -> h
+                  Nothing -> []
+                  Just h -> h
 
 prepareResultProofHistory :: Map.Map LIB_NAME ProofHistory
-			  -> Map.Map LIB_NAME ProofHistory
+                          -> Map.Map LIB_NAME ProofHistory
 prepareResultProofHistory proofHistory = Map.map (([],[]):) proofHistory
 
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -119,7 +119,7 @@ updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
 {- updates the library environment and the proof history of the given
    proofstatus for the given library name-}
 updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
-		  -> ProofStatus
+                  -> ProofStatus
 updateProofStatus ln dgraph changes proofstatus =
   updateHistory ln changes proofstatusAux
   where
@@ -150,13 +150,13 @@ showChanges [] = ""
 showChanges (change:changes) = 
   case change of
     InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
-		       ++ (showChanges changes)
+                       ++ (showChanges changes)
     DeleteEdge edge -> "DeleteEdge " ++ (showEdgeChange edge)
-		       ++ (showChanges changes)
+                       ++ (showChanges changes)
     InsertNode node -> "InsertNode " ++ (showNodeChange node)
-		       ++ (showChanges changes)
+                       ++ (showChanges changes)
     DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
-		       ++ (showChanges changes)
+                       ++ (showChanges changes)
 
 showEdgeChange :: LEdge DGLinkLab -> String
 showEdgeChange (src,tgt,edgelab) =

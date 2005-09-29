@@ -15,10 +15,10 @@ module COL.COLSign where
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Id
-		       
+                       
 data COLSign = COLSign { constructors :: Set.Set Id
-		       , observers :: Map.Map Id Int
-		       } deriving (Show, Eq)
+                       , observers :: Map.Map Id Int
+                       } deriving (Show, Eq)
 
 emptyCOLSign :: COLSign
 emptyCOLSign = COLSign Set.empty Map.empty

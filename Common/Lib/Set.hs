@@ -20,12 +20,12 @@
 -- trees of /bounded balance/) as described by:
 --
 --    * Stephen Adams, \"/Efficient sets: a balancing act/\",
---	Journal of Functional Programming 3(4):553-562, October 1993,
---	<http://www.swiss.ai.mit.edu/~adams/BB>.
+--      Journal of Functional Programming 3(4):553-562, October 1993,
+--      <http://www.swiss.ai.mit.edu/~adams/BB>.
 --
 --    * J. Nievergelt and E.M. Reingold,
---	\"/Binary search trees of bounded balance/\",
---	SIAM journal of computing 2(1), March 1973.
+--      \"/Binary search trees of bounded balance/\",
+--      SIAM journal of computing 2(1), March 1973.
 --
 -- Note that the implementation is /left-biased/ -- the elements of a
 -- first argument are always perferred to the second, for example in
@@ -66,8 +66,8 @@ module Common.Lib.Set  (
             , splitMember
 
             -- * Map
-	    , map
-	    , mapMonotonic
+            , map
+            , mapMonotonic
 
             -- * Fold
             , fold

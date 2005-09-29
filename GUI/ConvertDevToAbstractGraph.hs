@@ -232,11 +232,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                               return ()    ),
                   Button "Hide nodes" 
                           (do Result descr msg
-			        <- hideSetOfNodeTypes gid
+                                <- hideSetOfNodeTypes gid
                                        ["open_cons__internal",
-					"locallyEmpty__open_cons__internal",
-					"proven_cons__internal",
-				        "locallyEmpty__proven_cons__internal"]
+                                        "locallyEmpty__open_cons__internal",
+                                        "proven_cons__internal",
+                                        "locallyEmpty__proven_cons__internal"]
                                                     actGraphInfo
                               writeIORef event descr
                               case msg of
@@ -263,7 +263,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                           (proofMenu gInfo (fmap return . locDecomp)),
                    Button "Composition (merge of rules)"
                           (proofMenu gInfo (fmap return . composition)),
-		   Button "Composition - creating new links"
+                   Button "Composition - creating new links"
                           (proofMenu gInfo (fmap return . compositionCreatingEdges)),
                    Button "Hide Theorem Shift"
                           (proofMenu gInfo (fmap return . 
@@ -276,7 +276,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                  createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
-		("proven_cons__spec", 
+                ("proven_cons__spec", 
                  createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents 
                                   actGraphInfo ioRefGraphMem gInfo
                 ),
@@ -372,7 +372,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                   ("def","proventhm","proventhm"),
                   ("def","unproventhm","unproventhm"),
                   ("def","localunproventhm","localunproventhm"),
-		  ("hidingdef","globaldef","hidingdef"),
+                  ("hidingdef","globaldef","hidingdef"),
                   ("hidingdef","def","def"),
                   ("hidingdef","hidingdef","hidingdef"),
                   ("hidingdef","hetdef","hetdef"),
@@ -901,7 +901,7 @@ showProofStatusOfNode _ descr ab2dgNode dgraph =
     Just (libname, node) -> 
       do let dgnode = lab' (context dgraph node)
          let stat = if not (isRefNode dgnode) then showStatusAux dgnode
-		     else "Please follow the reference to see its proof status"
+                     else "Please follow the reference to see its proof status"
          let title =  "Proof status of node "++showName (dgn_name dgnode)
          createTextDisplay title stat [size(150,130)]
     Nothing -> error ("node with descriptor "
@@ -1063,16 +1063,16 @@ getDGNodeType dgnodelab =
     ++ case isDGRef dgnodelab of
        True -> "dg_ref"
        False -> (if hasOpenConsStatus dgnodelab 
-		 then "open_cons__" 
-		 else "proven_cons__")
-		++ if isInternalNode dgnodelab 
+                 then "open_cons__" 
+                 else "proven_cons__")
+                ++ if isInternalNode dgnodelab 
                    then "internal"
                    else "spec"
     where
       hasOpenConsStatus dgn = dgn_cons dgn /= None &&
-	  case dgn_cons_status dgn of
-	    LeftOpen -> True
-	    _ -> False
+          case dgn_cons_status dgn of
+            LeftOpen -> True
+            _ -> False
 
 
 getDGLinkType :: DGLinkLab -> String

@@ -284,8 +284,8 @@ toMixfixList mkList splt ga i ts =
    let args = getListElems splt ts
        (openL, closeL, comps) = getListBrackets $ 
                 case getLiteralType ga i of
-		ListNull b -> b
-		ListCons b _ -> b
-		_ -> error "print_Literal_text"
+                ListNull b -> b
+                ListCons b _ -> b
+                _ -> error "print_Literal_text"
    in mkList (Id openL [] nullRange) args (Id closeL comps nullRange)
 

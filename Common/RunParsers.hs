@@ -38,32 +38,32 @@ toStringParser p ga = fmap (show . printText0 ga) $ p ga
 
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do l <- getArgs
-		  if null l then 
-		     parseSpec emptyGlobalAnnos $ snd  $ head $ fps
-		     else do let opt = head l
-				 lps' = filter (\(s, _) -> s == opt) lps
-				 fps' = filter (\(s, _) -> s == opt) fps
-			     ga <- if not $ null $ tail l then 
-				   do let annoFile = head (tail l)
-				      str <- readFile annoFile
-				      maybe (error "run parser") 
-					     return $ maybeResult 
-					     $ addGlobalAnnos emptyGlobalAnnos 
-					     $ parseString annotations str
-				      -- should not fail 
-				      -- but may return empty annos
-			           else return emptyGlobalAnnos
-			     if null lps' && null fps' then
-				do putStrLn ("unknown option: " ++ opt)
-				   p <- getProgName
-				   putStrLn("Usage: "++p++
-			              " [OPTIONS] <Annotations> < infile")
-				   putStrLn "where OPTIONS is one of:"
+                  if null l then 
+                     parseSpec emptyGlobalAnnos $ snd  $ head $ fps
+                     else do let opt = head l
+                                 lps' = filter (\(s, _) -> s == opt) lps
+                                 fps' = filter (\(s, _) -> s == opt) fps
+                             ga <- if not $ null $ tail l then 
+                                   do let annoFile = head (tail l)
+                                      str <- readFile annoFile
+                                      maybe (error "run parser") 
+                                             return $ maybeResult 
+                                             $ addGlobalAnnos emptyGlobalAnnos 
+                                             $ parseString annotations str
+                                      -- should not fail 
+                                      -- but may return empty annos
+                                   else return emptyGlobalAnnos
+                             if null lps' && null fps' then
+                                do putStrLn ("unknown option: " ++ opt)
+                                   p <- getProgName
+                                   putStrLn("Usage: "++p++
+                                      " [OPTIONS] <Annotations> < infile")
+                                   putStrLn "where OPTIONS is one of:"
                                    putStrLn $ unwords
-					      (map fst lps ++ map fst fps) 
-				else if null lps'
-				     then parseSpec ga $ snd $ head fps'
-				     else checkLines ga $ snd $ head lps'
+                                              (map fst lps ++ map fst fps) 
+                                else if null lps'
+                                     then parseSpec ga $ snd $ head fps'
+                                     else checkLines ga $ snd $ head lps'
 
 checkLines :: GlobalAnnos -> StringParser -> IO ()
 checkLines ga p = 
@@ -77,18 +77,18 @@ scanLines ga p (x:l) n = (parseLine ga p x n) : (scanLines ga p l (n+1))
 parseLine :: GlobalAnnos -> StringParser -> String -> Line -> String
 parseLine ga p line n = 
     let pos = setSourceLine (initialPos "") n
-	parser = do setPosition pos
-		    i <- p ga
-		    eof
-		    return i
-	in showParse $ runParser parser (emptyAnnos ()) "" line
+        parser = do setPosition pos
+                    i <- p ga
+                    eof
+                    return i
+        in showParse $ runParser parser (emptyAnnos ()) "" line
 
 parseSpec :: GlobalAnnos -> StringParser -> IO ()
 parseSpec ga p = do str <- getContents
-		    putStrLn $ showParse $ 
-			     runParser (p ga << eof) (emptyAnnos ()) "" str
+                    putStrLn $ showParse $ 
+                             runParser (p ga << eof) (emptyAnnos ()) "" str
 
 showParse :: Either ParseError String -> String
 showParse e = case e of 
-		     Left err -> "parse error at " ++ showErr err ++ "\n"
-		     Right x -> x
+                     Left err -> "parse error at " ++ showErr err ++ "\n"
+                     Right x -> x

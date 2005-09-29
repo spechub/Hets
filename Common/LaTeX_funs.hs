@@ -28,54 +28,54 @@ Functions to calculate the length of a given word as it would be
 
 
 module Common.LaTeX_funs (-- module Common.LaTeX_funs,
-		   space_latex_width,
+                   space_latex_width,
 
-		   calc_line_length,
-		   pt_length,
-		   -- calc_word_width,
-		   -- Word_type(..),
-		   keyword_width, structid_width, axiom_width, 
-		   annotation_width, annotationbf_width, comment_width,
-		   normal_width,
+                   calc_line_length,
+                   pt_length,
+                   -- calc_word_width,
+                   -- Word_type(..),
+                   keyword_width, structid_width, axiom_width, 
+                   annotation_width, annotationbf_width, comment_width,
+                   normal_width,
 
-		   escape_latex,
-		   escape_comment_latex,
-		   (<\+>),
-		   (<~>),
-		   latex_macro,
+                   escape_latex,
+                   escape_comment_latex,
+                   (<\+>),
+                   (<~>),
+                   latex_macro,
                    comma_latex,
-		   semi_latex,
-		   colon_latex,
-		   equals_latex,
-		   space_latex,
+                   semi_latex,
+                   colon_latex,
+                   equals_latex,
+                   space_latex,
                    
                    braces_latex, 
-		   parens_latex, 
-		   brackets_latex,
-		   quotes_latex,
+                   parens_latex, 
+                   brackets_latex,
+                   quotes_latex,
 
                    nest_latex,
-		   hang_latex,
-		   sep_latex,
-		   fsep_latex,
-		   
-		   initial_keyword_latex,
+                   hang_latex,
+                   sep_latex,
+                   fsep_latex,
+                   
+                   initial_keyword_latex,
 
-		   casl_keyword_latex, 
-		   casl_annotation_latex, 
-		   casl_annotationbf_latex, 
-		   casl_axiom_latex,
-		   casl_comment_latex, 
-		   casl_structid_latex,
-		   casl_normal_latex,
+                   casl_keyword_latex, 
+                   casl_annotation_latex, 
+                   casl_annotationbf_latex, 
+                   casl_axiom_latex,
+                   casl_comment_latex, 
+                   casl_structid_latex,
+                   casl_normal_latex,
 
                    hc_sty_keyword,
-		   hc_sty_small_keyword,
-		   hc_sty_plain_keyword,
-		   hc_sty_hetcasl_keyword,
+                   hc_sty_small_keyword,
+                   hc_sty_plain_keyword,
+                   hc_sty_hetcasl_keyword,
 
                    hc_sty_comment,
-		   hc_sty_annotation,
+                   hc_sty_annotation,
 
                    hc_sty_axiom,
                    hc_sty_structid,
@@ -109,21 +109,21 @@ space_latex_width = normal_width " "
 calc_line_length :: String -> Int
 calc_line_length s = 
     let (r_unit,r_number) = 
-	    (\(x,y) -> (reverse x,reverse y)) $ span isAlpha $ reverse s
-	unit = case r_unit of
-	       "mm" -> 1
-	       "cm" -> 10
-	       "pt" -> 0.351
-	       "in" -> 25.4
-	       u    -> error ( "unknown or unsupported LaTeX unit: " ++ u )
-	len :: Double
-	len = read $ map (\c -> case c of ',' -> '.';_ -> c) r_number
+            (\(x,y) -> (reverse x,reverse y)) $ span isAlpha $ reverse s
+        unit = case r_unit of
+               "mm" -> 1
+               "cm" -> 10
+               "pt" -> 0.351
+               "in" -> 25.4
+               u    -> error ( "unknown or unsupported LaTeX unit: " ++ u )
+        len :: Double
+        len = read $ map (\c -> case c of ',' -> '.';_ -> c) r_number
     in truncate (len * unit * 1000)
 
 pt_length :: Int -> String
 pt_length i = showFFloat (Just 3) pt "pt"
     where pt :: Float
-	  pt = fromRational (toRational i /351) 
+          pt = fromRational (toRational i /351) 
 
 -- a hack to have some debug prints
 condTrace :: String -> a -> a
@@ -135,30 +135,30 @@ condTrace s v = v -- trace s v
 -}
 
 data Word_type = Keyword | StructId | Normal
-	       | Comment | Annotation | AnnotationBold
-	       | Axiom 
-		 deriving (Show,Eq)
+               | Comment | Annotation | AnnotationBold
+               | Axiom 
+                 deriving (Show,Eq)
 
 calc_word_width :: Word_type -> String -> Int
 calc_word_width wt s = 
     case Map.lookup s wFM of
     Just l  -> l
     Nothing -> sum_char_width_deb (  showString "In map \""
-				   . showsPrec 0 wt 
-				   . showString "\" \'") wFM k_wFM s 
-	         - correction
+                                   . showsPrec 0 wt 
+                                   . showString "\" \'") wFM k_wFM s 
+                 - correction
     where (wFM,k_wFM) = case wt of
-			Keyword        -> (keyword_map,key_keyword_map)
-			StructId       -> (structid_map,key_structid_map)
-			Comment        -> (comment_map,key_comment_map)
-			Annotation     -> (annotation_map,key_annotation_map)
-			AnnotationBold -> (annotationbf_map,
-					   key_annotationbf_map)
-			Axiom          -> (axiom_map,key_axiom_map)
-			Normal         -> (normal_map,key_normal_map)
-	  correction = case wt of 
-		       Axiom -> itCorrection s
-		       _     -> 0
+                        Keyword        -> (keyword_map,key_keyword_map)
+                        StructId       -> (structid_map,key_structid_map)
+                        Comment        -> (comment_map,key_comment_map)
+                        Annotation     -> (annotation_map,key_annotation_map)
+                        AnnotationBold -> (annotationbf_map,
+                                           key_annotationbf_map)
+                        Axiom          -> (axiom_map,key_axiom_map)
+                        Normal         -> (normal_map,key_normal_map)
+          correction = case wt of 
+                       Axiom -> itCorrection s
+                       _     -> 0
 
 itCorrection :: String -> Int
 itCorrection [] = 0
@@ -166,57 +166,57 @@ itCorrection s
     | length s < 2 = 0
     | otherwise    = itCorrection' 0 s
     where itCorrection' :: Int -> String -> Int
-	  itCorrection' _ [] = error "itCorrection' applied to empty List"
-	  itCorrection' r ys@(y1:[y2]) 
-	      | not (isAlphaNum y1) = r 
-	      | not (isAlphaNum y2) = r 
-	      | otherwise           = r + lookupCorrection ys
+          itCorrection' _ [] = error "itCorrection' applied to empty List"
+          itCorrection' r ys@(y1:[y2]) 
+              | not (isAlphaNum y1) = r 
+              | not (isAlphaNum y2) = r 
+              | otherwise           = r + lookupCorrection ys
 
-	  itCorrection' r (y1:(ys@(y2:_)))
-	      | not (isAlphaNum y1) = itCorrection' r ys
-	      | otherwise           =
-		  itCorrection' 
-		        (r + lookupCorrection (y1:y2:[])) 
-			ys
-	  itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
-	  lookupCorrection str = Map.findWithDefault def_cor str 
+          itCorrection' r (y1:(ys@(y2:_)))
+              | not (isAlphaNum y1) = itCorrection' r ys
+              | otherwise           =
+                  itCorrection' 
+                        (r + lookupCorrection (y1:y2:[])) 
+                        ys
+          itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
+          lookupCorrection str = Map.findWithDefault def_cor str 
                                  italiccorrection_map 
-	  -- lookupWithDefaultFM correction_map def_cor pc
-	  -- TODO: Build a nice correction map
+          -- lookupWithDefaultFM correction_map def_cor pc
+          -- TODO: Build a nice correction map
           def_cor = 610
  
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
-		   -> Map.Map String Int 
-		   -> Map.Map Char [String]  -> String -> Int
+                   -> Map.Map String Int 
+                   -> Map.Map Char [String]  -> String -> Int
 sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
-	  sum_char_width' [c] r 
-	      | c == ' '  = r + lookupWithDefault_cFM "~"
-	      | otherwise = r + lookupWithDefault_cFM (c:[])
-	  sum_char_width' full@(c1:rest@(c2:cs)) r 
-	      | isLigature (c1:c2:[]) = case Map.lookup (c1:c2:[]) cFM of
-					Just l  -> sum_char_width' cs (r+l)
-					Nothing -> sum_char_width' rest nl
-	      | (c1:c2:[]) == "\\ " =  
-		  sum_char_width' cs (r + lookupWithDefault_cFM "~")	     
-	      | c1 == ' ' =
-		  sum_char_width' rest (r + lookupWithDefault_cFM "~")
-	      | otherwise = case prefixIsKey full key_cFM of
-			    Just key -> sum_char_width' 
-				        (drop (length key) full) 
-			                $ r + (cFM Map.! key)
-			    Nothing -> sum_char_width' rest nl 
-	      where nl = r + lookupWithDefault_cFM (c1:[])
-	  lookupWithDefault_cFM s' = case Map.lookup s' cFM of
-				     Nothing -> condTrace 
-					           ((pref_fun
-						     . showString s' 
-						     . showString "\' of \"" 
-						     . showString s)
-						    "\" not found!")
-						   2200
-				     Just w  -> w    
+          sum_char_width' [c] r 
+              | c == ' '  = r + lookupWithDefault_cFM "~"
+              | otherwise = r + lookupWithDefault_cFM (c:[])
+          sum_char_width' full@(c1:rest@(c2:cs)) r 
+              | isLigature (c1:c2:[]) = case Map.lookup (c1:c2:[]) cFM of
+                                        Just l  -> sum_char_width' cs (r+l)
+                                        Nothing -> sum_char_width' rest nl
+              | (c1:c2:[]) == "\\ " =  
+                  sum_char_width' cs (r + lookupWithDefault_cFM "~")         
+              | c1 == ' ' =
+                  sum_char_width' rest (r + lookupWithDefault_cFM "~")
+              | otherwise = case prefixIsKey full key_cFM of
+                            Just key -> sum_char_width' 
+                                        (drop (length key) full) 
+                                        $ r + (cFM Map.! key)
+                            Nothing -> sum_char_width' rest nl 
+              where nl = r + lookupWithDefault_cFM (c1:[])
+          lookupWithDefault_cFM s' = case Map.lookup s' cFM of
+                                     Nothing -> condTrace 
+                                                   ((pref_fun
+                                                     . showString s' 
+                                                     . showString "\' of \"" 
+                                                     . showString s)
+                                                    "\" not found!")
+                                                   2200
+                                     Just w  -> w    
 
 prefixIsKey :: String -> Map.Map Char [String] -> Maybe String
 prefixIsKey [] _ = Nothing
@@ -248,13 +248,13 @@ normal_width       = calc_word_width Normal
 (<\+>) :: Doc -> Doc -> Doc
 -- TODO: did not work correctly !!!
 d1 <\+> d2 = if isEmpty d1 
-	     then (if isEmpty d2 
-		   then empty
-		   else d2)
-	     else (if isEmpty d2
-		   then d1
-		   else 
-		   d1 <> casl_normal_latex " " <> d2)
+             then (if isEmpty d2 
+                   then empty
+                   else d2)
+             else (if isEmpty d2
+                   then d1
+                   else 
+                   d1 <> casl_normal_latex " " <> d2)
 
 (<~>) :: Doc -> Doc -> Doc
 d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
@@ -298,7 +298,7 @@ fsep_latex = fcat . (cond_punctuate (casl_normal_latex " "))
 initial_keyword_latex :: String -> String -> Doc
 initial_keyword_latex fs kw =
     let fs_w = keyword_width fs
-	kw_w = keyword_width kw
+        kw_w = keyword_width kw
     in if kw_w <= fs_w  then
           sp_text fs_w kw
        else
@@ -314,11 +314,11 @@ casl_annotationbf_latex s = sp_text (annotationbf_width s) s
 casl_comment_latex s      = sp_text (comment_width s)    s
 casl_structid_latex s     = sp_text (structid_width s)   s
 casl_axiom_latex s        = let s' = conv s 
-			    in sp_text (axiom_width s') s'
+                            in sp_text (axiom_width s') s'
     where conv [] = []
-	  conv (x:xs) 
-	      | x == '~'  = "\\sim{}"++conv xs
-	      | otherwise = x:conv xs
+          conv (x:xs) 
+              | x == '~'  = "\\sim{}"++conv xs
+              | otherwise = x:conv xs
 
 casl_normal_latex s       = sp_text (normal_width s)     s
 
@@ -327,11 +327,11 @@ hc_sty_keyword :: Maybe String -> String -> Doc
 hc_sty_keyword mfkw kw = 
     latex_macro "\\KW"<>fkw_doc<>latex_macro "{"<>kw_doc<> latex_macro "}"
     where (fkw_doc,kw_doc) = 
-	      case mfkw of
-	      Just fkw -> (latex_macro "["<>latex_macro fkw<>latex_macro "]",
-			   initial_keyword_latex fkw kw)
-	      Nothing  -> (empty,casl_keyword_latex kw)
-	 
+              case mfkw of
+              Just fkw -> (latex_macro "["<>latex_macro fkw<>latex_macro "]",
+                           initial_keyword_latex fkw kw)
+              Nothing  -> (empty,casl_keyword_latex kw)
+         
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword str = 
     case str of
@@ -403,7 +403,7 @@ cond_punctuate _p []     = []
 cond_punctuate p (doc:docs) = go doc docs
     where go d []     = [d]
           go d (e:es) = cond_predicate : go e es
-	      where cond_predicate = if isEmpty d then d else d<>p
+              where cond_predicate = if isEmpty d then d else d<>p
 
 -- |
 -- a constant String for the start of annotations
@@ -423,11 +423,11 @@ escape_latex "" = ""
 escape_latex (x:xs) 
     | x == '\\' = "\\textbackslash" ++ '{':'}':escape_latex xs
     | x == '"' = -- something to prevent german.sty from interpreting '"'
-	     case xs of
-	     []  -> default_quotes []
-	     y:ys | isAlphaNum y -> '`':'`':y:escape_latex ys
-	          | isSpace    y -> default_quotes (y:escape_latex ys)
-	          | otherwise    -> default_quotes (escape_latex xs) 
+             case xs of
+             []  -> default_quotes []
+             y:ys | isAlphaNum y -> '`':'`':y:escape_latex ys
+                  | isSpace    y -> default_quotes (y:escape_latex ys)
+                  | otherwise    -> default_quotes (escape_latex xs) 
     | x `elem` "_%$&{}#" = '\\':x:escape_latex xs
     | x == '~' = "\\Ax{\\sim}" ++escape_latex xs
     | x == '^'   = '\\':x:("{}"++escape_latex xs)
@@ -439,8 +439,8 @@ escape_comment_latex s
     |  or $ map (`elem` s) "<>" = ecl s'
     | otherwise = s'
     where s' = escape_latex s
-	  ecl "" = ""
-	  ecl (x:xs)
-	      | x == '<' 
-		|| x == '>' = "\\Ax{"++x:"}"++ecl xs
-	      | otherwise   = x: ecl xs
+          ecl "" = ""
+          ecl (x:xs)
+              | x == '<' 
+                || x == '>' = "\\Ax{"++x:"}"++ecl xs
+              | otherwise   = x: ecl xs

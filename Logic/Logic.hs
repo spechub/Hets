@@ -251,7 +251,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
          is_transportable :: lid -> morphism -> Bool
-	 is_transportable l _ = 
+         is_transportable l _ = 
             error ("Logic.is_transportable nyi for logic"++language_name l)
 
            -- see CASL reference manual, III.4.1.2
@@ -269,13 +269,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
              lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
          induced_from_to_morphism l _ _ _ = 
              statErr l "induced_from_to_morphism"
-	 -- generate taxonomy from theory
-	 theory_to_taxonomy :: lid 
-			    -> TaxoGraphKind
-			    -> MMiSSOntology
-			    -> sign -> [Named sentence] 
-			    -> Result MMiSSOntology
-	 theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
+         -- generate taxonomy from theory
+         theory_to_taxonomy :: lid 
+                            -> TaxoGraphKind
+                            -> MMiSSOntology
+                            -> sign -> [Named sentence] 
+                            -> Result MMiSSOntology
+         theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
 -- sublogics
 

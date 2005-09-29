@@ -41,7 +41,7 @@ cocaslFormula =
 modality :: [String] -> AParser st MODALITY
 modality ks = 
     do t <- term (prodS : ks ++ cocasl_reserved_words)
-	    -- put the term in parens if you need to use "*"
+            -- put the term in parens if you need to use "*"
        option () (asKey prodS >> return ())  
        -- presence of "*" is not stored yet! 
        return $ case t of 
@@ -57,14 +57,14 @@ cBasic =  do f <- asKey cofreeS
              ti <- coSigItems 
              return (codatatypeToCofreetype ti (tokPos f))
       <|> do g <- asKey cogeneratedS
-	     do t <- sigItems cocasl_reserved_words
-		return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
-	       <|> 
-	       do o <- oBraceT
-	          is <- annosParser (sigItems cocasl_reserved_words)
-	          c <- cBraceT
-	          return (CoSort_gen is
-		            (toPos g [o] c)) 
+             do t <- sigItems cocasl_reserved_words
+                return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
+               <|> 
+               do o <- oBraceT
+                  is <- annosParser (sigItems cocasl_reserved_words)
+                  c <- cBraceT
+                  return (CoSort_gen is
+                            (toPos g [o] c)) 
 
 coSigItems :: AParser st C_SIG_ITEM
 coSigItems = itemList cocasl_reserved_words cotypeS codatatype CoDatatype_items
@@ -78,7 +78,7 @@ codatatype ks =
        a <- getAnnos
        (Annoted v _ _ b:as, ps) <- acoAlternative ks `separatedBy` barT
        return $ CoDatatype_decl s (Annoted v nullRange a b:as) 
-			$ catPos $ e:ps
+                        $ catPos $ e:ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks = 
@@ -99,13 +99,13 @@ coalternative ks =
     where 
       cocomp i =
        do   o <- oParenT
-	    (cs, ps) <- cocomponent ks `separatedBy` anSemi
-	    c <- cParenT
-	    let qs = toPos o ps c 
+            (cs, ps) <- cocomponent ks `separatedBy` anSemi
+            c <- cParenT
+            let qs = toPos o ps c 
             do   q <- quMarkT
-		 return (Co_construct Partial i cs (qs `appRange` tokPos q))
-	      <|> return (Co_construct Total i cs qs)
-	 <|> return (Co_construct Total i [] nullRange)
+                 return (Co_construct Partial i cs (qs `appRange` tokPos q))
+              <|> return (Co_construct Total i cs qs)
+         <|> return (Co_construct Total i [] nullRange)
 
 cocomponent :: [String] -> AParser st COCOMPONENTS
 cocomponent ks = 

@@ -34,7 +34,7 @@ import Static.DevGraph
 -- (as defined for extended static semantics in Chap. III:5.6.1)
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig,
-			      dn_desc :: String } 
+                              dn_desc :: String } 
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
 
@@ -75,12 +75,12 @@ emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 -- PrettyPrint
 instance PrettyPrint Diag where
     printText0 ga diag = 
-	let gs (n, dn) = 
-		(n, getSig $ dn_sig dn)
+        let gs (n, dn) = 
+                (n, getSig $ dn_sig dn)
         in ptext "nodes: " 
-	   <+> (printText0 ga (map gs (labNodes diag)))
-	   <+> ptext "\nedges: "
-	   <+> (printText0 ga (edges diag))
+           <+> (printText0 ga (map gs (labNodes diag)))
+           <+> ptext "\nedges: "
+           <+> (printText0 ga (edges diag))
 
 
 -- * Functions
@@ -94,14 +94,14 @@ printDiag res _ _ = do return res
 ctx :: ExtStUnitCtx -> StUnitCtx
 ctx (buc, _) = 
     let ctx' [] _ = emptyStUnitCtx
-	ctx' (id1 : ids) buc0 =
-	    let uctx = ctx' ids buc0
-	    in case Map.lookup id1 buc0 of
+        ctx' (id1 : ids) buc0 =
+            let uctx = ctx' ids buc0
+            in case Map.lookup id1 buc0 of
                     Just (Based_unit_sig mds) -> Map.insert id1 
                            (Sig $ getSigFromDiag mds) uctx
                     Just (Based_par_unit_sig mds usig) -> Map.insert id1 
                            (Imp_unit_sig (toMaybeNode mds) usig) uctx
-		    _ -> uctx -- this should never be the case
+                    _ -> uctx -- this should never be the case
     in ctx' (Map.keys buc) buc
 
 
@@ -109,17 +109,17 @@ ctx (buc, _) =
 -- | Insert the edges from given source nodes to given target node
 -- into the given diagram. The edges are labelled with inclusions.
 insInclusionEdges :: LogicGraph
-		  -> Diag          -- ^ the diagram to which the edges should be inserted
-		  -> [DiagNodeSig] -- ^ the source nodes
-		  -> DiagNodeSig   -- ^ the target node
-		  -> Result Diag
+                  -> Diag          -- ^ the diagram to which the edges should be inserted
+                  -> [DiagNodeSig] -- ^ the source nodes
+                  -> DiagNodeSig   -- ^ the target node
+                  -> Result Diag
 -- ^ returns the diagram with edges inserted
 insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) =
     do let inslink diag dns = do d <- diag
-				 case dns of
-				    Diag_node_sig n nsig -> 
-					do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-					   return (insEdge (n, tn, DiagLink { dl_morphism = incl }) d)
+                                 case dns of
+                                    Diag_node_sig n nsig -> 
+                                        do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
+                                           return (insEdge (n, tn, DiagLink { dl_morphism = incl }) d)
        diag' <- foldl inslink (return diag0) srcNodes
        return diag'
 
@@ -127,17 +127,17 @@ insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) =
 -- | Insert the edges from given source node to given target nodes
 -- into the given diagram. The edges are labelled with inclusions.
 insInclusionEdgesRev :: LogicGraph
-		     -> Diag          -- ^ the diagram to which the edges should be inserted
-		     -> DiagNodeSig   -- ^ the source node
-		     -> [DiagNodeSig] -- ^ the target nodes
-		     -> Result Diag
+                     -> Diag          -- ^ the diagram to which the edges should be inserted
+                     -> DiagNodeSig   -- ^ the source node
+                     -> [DiagNodeSig] -- ^ the target nodes
+                     -> Result Diag
 -- ^ returns the diagram with edges inserted
 insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
     do let inslink diag dns = do d <- diag
-				 case dns of
-				    Diag_node_sig n nsig -> 
-					do incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
-					   return (insEdge (sn, n, DiagLink { dl_morphism = incl }) d)
+                                 case dns of
+                                    Diag_node_sig n nsig -> 
+                                        do incl <- ginclusion lgraph (getSig snsig) (getSig nsig)
+                                           return (insEdge (sn, n, DiagLink { dl_morphism = incl }) d)
        diag' <- foldl inslink (return diag0) targetNodes
        return diag'
 
@@ -146,17 +146,17 @@ insInclusionEdgesRev lgraph diag0 (Diag_node_sig sn snsig) targetNodes =
 -- given signature and with edges from given set of nodes to the new node.
 -- The new edges are labelled with sigature inclusions.
 extendDiagramIncl :: LogicGraph
-		  -> Diag          -- ^ the diagram to be extended
-		  -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
-		  -> NodeSig      -- ^ the signature with which the new node should be labelled
-		  -> String        -- ^ the node description (for diagnostics)
-		  -> Result (DiagNodeSig, Diag)
+                  -> Diag          -- ^ the diagram to be extended
+                  -> [DiagNodeSig] -- ^ the nodes which should be linked to the new node
+                  -> NodeSig      -- ^ the signature with which the new node should be labelled
+                  -> String        -- ^ the node description (for diagnostics)
+                  -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
 extendDiagramIncl lgraph diag srcNodes newNodeSig desc = 
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-	 node = getNewNode diag
-	 diag' = insNode (node, nodeContents) diag
-	 newDiagNode = Diag_node_sig node newNodeSig
+         node = getNewNode diag
+         diag' = insNode (node, nodeContents) diag
+         newDiagNode = Diag_node_sig node newNodeSig
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
      printDiag (newDiagNode, diag'') "extendDiagramIncl" diag''
      return (newDiagNode, diag'') 
@@ -167,26 +167,26 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
 -- the node contains the target of this morphism. Extends the development graph 
 -- with given morphis as well.
 extendDiagramWithMorphism :: Range         -- ^ the position (for diagnostics)
-			  -> LogicGraph
-			  -> Diag          -- ^ the diagram to be extended
-			  -> DGraph        -- ^ the development graph
-			  -> DiagNodeSig   -- ^ the node from which the edge should originate
-			  -> GMorphism     -- ^ the morphism with which the new edge should be labelled
-			  -> String        -- ^ the node description (for diagnostics)
-			  -> DGOrigin      -- ^ the origin of the new node
-			  -> Result (DiagNodeSig, Diag, DGraph)
+                          -> LogicGraph
+                          -> Diag          -- ^ the diagram to be extended
+                          -> DGraph        -- ^ the development graph
+                          -> DiagNodeSig   -- ^ the node from which the edge should originate
+                          -> GMorphism     -- ^ the morphism with which the new edge should be labelled
+                          -> String        -- ^ the node description (for diagnostics)
+                          -> DGOrigin      -- ^ the origin of the new node
+                          -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
   if (getSig nsig) == (dom Grothendieck morph) then
      do (targetSig, dg') <- extendDGraph dg nsig morph orig
-	let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
-	    node = getNewNode diag
- 	    diag' = insNode (node, nodeContents) diag
-	    diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
+        let nodeContents = DiagNode {dn_sig = targetSig, dn_desc = desc}
+            node = getNewNode diag
+            diag' = insNode (node, nodeContents) diag
+            diag'' = insEdge (n, node, DiagLink { dl_morphism = morph }) diag'
         printDiag (Diag_node_sig node targetSig, diag'', dg') "extendDiagramWithMorphism" diag''
         return (Diag_node_sig node targetSig, diag'', dg') 
      else do fatal_error ("Internal error: Static.AnalysisArchitecture.extendDiagramWithMorphism: the morphism domain differs from the signature in given source node")
-			 pos
+                         pos
 
 
 -- | Build a diagram that extends given diagram with a node and an
@@ -194,44 +194,44 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
 -- the node contains the source of this morphism. Extends the development graph 
 -- with given morphis as well.
 extendDiagramWithMorphismRev :: Range         -- ^ the position (for diagnostics)
-			     -> LogicGraph
-			     -> Diag          -- ^ the diagram to be extended
-			     -> DGraph        -- ^ the development graph
-			     -> DiagNodeSig   -- ^ the node to which the edge should point
-			     -> GMorphism     -- ^ the morphism with which the new edge should be labelled
-			     -> String        -- ^ the node description (for diagnostics)
-			     -> DGOrigin      -- ^ the origin of the new node
-			     -> Result (DiagNodeSig, Diag, DGraph)
+                             -> LogicGraph
+                             -> Diag          -- ^ the diagram to be extended
+                             -> DGraph        -- ^ the development graph
+                             -> DiagNodeSig   -- ^ the node to which the edge should point
+                             -> GMorphism     -- ^ the morphism with which the new edge should be labelled
+                             -> String        -- ^ the node description (for diagnostics)
+                             -> DGOrigin      -- ^ the origin of the new node
+                             -> Result (DiagNodeSig, Diag, DGraph)
 -- ^ returns the new node, the extended diagram and extended development graph
 extendDiagramWithMorphismRev pos _ diag dg (Diag_node_sig n nsig) morph desc orig =
   if (getSig nsig) == (cod Grothendieck morph) then
      do (sourceSig, dg') <- extendDGraphRev dg nsig morph orig
-	let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
-	    node = getNewNode diag
- 	    diag' = insNode (node, nodeContents) diag
-	    diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
+        let nodeContents = DiagNode {dn_sig = sourceSig, dn_desc = desc}
+            node = getNewNode diag
+            diag' = insNode (node, nodeContents) diag
+            diag'' = insEdge (node, n, DiagLink { dl_morphism = morph }) diag'
         printDiag (Diag_node_sig node sourceSig, diag'', dg') "extendDiagramWithMorphismRev" diag''
         return (Diag_node_sig node sourceSig, diag'', dg') 
      else do fatal_error ("Internal error: Static.AnalysisArchitecture.extendDiagramWithMorphismRev: the morphism codomain differs from the signature in given target node")
-			 pos
+                         pos
 
 
 -- | Build a diagram that extends given diagram with a node containing
 -- given signature and with edge from given nodes to the new node.
 -- The new edge is labelled with given signature morphism.
 extendDiagram :: Diag          -- ^ the diagram to be extended
-	      -> DiagNodeSig   -- ^ the node from which morphism originates
-	      -> GMorphism     -- ^ the morphism with which new edge should be labelled
-	      -> NodeSig       -- ^ the signature with which the new node should be labelled
-	      -> String        -- ^ the node description (for diagnostics)
-	      -> Result (DiagNodeSig, Diag)
+              -> DiagNodeSig   -- ^ the node from which morphism originates
+              -> GMorphism     -- ^ the morphism with which new edge should be labelled
+              -> NodeSig       -- ^ the signature with which the new node should be labelled
+              -> String        -- ^ the node description (for diagnostics)
+              -> Result (DiagNodeSig, Diag)
 -- ^ returns the new node and the extended diagram
 extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc = 
   do let nodeContents = DiagNode {dn_sig = newNodeSig, dn_desc = desc}
-	 node = getNewNode diag
-	 diag' = insNode (node, nodeContents) diag
-	 diag'' = insEdge (n, node, DiagLink { dl_morphism = edgeMorph }) diag'
-	 newDiagNode = Diag_node_sig node newNodeSig
+         node = getNewNode diag
+         diag' = insNode (node, nodeContents) diag
+         diag'' = insEdge (n, node, DiagLink { dl_morphism = edgeMorph }) diag'
+         newDiagNode = Diag_node_sig node newNodeSig
      printDiag (newDiagNode, diag'') "extendDiagram" diag''
      return (newDiagNode, diag'') 
 
@@ -240,38 +240,38 @@ extendDiagram diag (Diag_node_sig n _) edgeMorph newNodeSig desc =
 -- all the signatures in nodes and morphism on the edges are 
 -- coerced to a common logic.
 homogeniseDiagram :: Logic lid sublogics
-		           basic_spec sentence symb_items symb_map_items
-			   sign morphism symbol raw_symbol proof_tree
-		  => lid     -- ^ the target logic to which signatures and morphisms will be coerced
-		  -> Diag    -- ^ the diagram to be homogenised
-		  -> Result (Tree.Gr sign morphism)
+                           basic_spec sentence symb_items symb_map_items
+                           sign morphism symbol raw_symbol proof_tree
+                  => lid     -- ^ the target logic to which signatures and morphisms will be coerced
+                  -> Diag    -- ^ the diagram to be homogenised
+                  -> Result (Tree.Gr sign morphism)
 homogeniseDiagram targetLid diag = 
     -- The implementation relies on the representation of graph nodes as
     -- integers. We can therefore just obtain a list of all the labelled nodes
     -- from diag, convert all the nodes and insert them to a new diagram; then
     -- copy all the edges from the original to new diagram (coercing the morphisms).
     do let convertNode (n, dn) =
-	       do G_sign srcLid sig <- return $ getSig $ dn_sig dn
+               do G_sign srcLid sig <- return $ getSig $ dn_sig dn
                   sig' <- coerceSign srcLid targetLid "" sig
-		  return (n, sig')
+                  return (n, sig')
            convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor }) =
-	       if isIdComorphism (Comorphism cid) then
-		     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-			return (n1, n2, mor')
-		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
-					 nullRange
-	   convertNodes cDiag [] = do return cDiag
-	   convertNodes cDiag (lNode : lNodes) =
-	       do convNode <- convertNode lNode
-		  let cDiag' = insNode convNode cDiag
-		  convertNodes cDiag' lNodes
-	   convertEdges cDiag [] = do return cDiag
-	   convertEdges cDiag (lEdge : lEdges) = 
-	       do convEdge <- convertEdge lEdge
-		  let cDiag' = insEdge convEdge cDiag
-		  convertEdges cDiag' lEdges
-	   dNodes = labNodes diag
-	   dEdges = labEdges diag
+               if isIdComorphism (Comorphism cid) then
+                     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
+                        return (n1, n2, mor')
+                     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
+                                         nullRange
+           convertNodes cDiag [] = do return cDiag
+           convertNodes cDiag (lNode : lNodes) =
+               do convNode <- convertNode lNode
+                  let cDiag' = insNode convNode cDiag
+                  convertNodes cDiag' lNodes
+           convertEdges cDiag [] = do return cDiag
+           convertEdges cDiag (lEdge : lEdges) = 
+               do convEdge <- convertEdge lEdge
+                  let cDiag' = insEdge convEdge cDiag
+                  convertEdges cDiag' lEdges
+           dNodes = labNodes diag
+           dEdges = labEdges diag
        -- insert converted nodes to an empty diagram
        cDiag <- convertNodes Graph.empty dNodes
        -- insert converted edges to the diagram containing only nodes
@@ -282,47 +282,47 @@ homogeniseDiagram targetLid diag =
 -- | Coerce GMorphisms in the list of (diagram node, GMorphism) pairs
 -- to morphisms in given logic
 homogeniseSink :: Logic lid sublogics
-		         basic_spec sentence symb_items symb_map_items
-			 sign morphism symbol raw_symbol proof_tree
-		=> lid                 -- ^ the target logic to which morphisms will be coerced
-		-> [(Node, GMorphism)] -- ^ the list of edges to be homogenised
-		-> Result [(Node, morphism)]
+                         basic_spec sentence symb_items symb_map_items
+                         sign morphism symbol raw_symbol proof_tree
+                => lid                 -- ^ the target logic to which morphisms will be coerced
+                -> [(Node, GMorphism)] -- ^ the list of edges to be homogenised
+                -> Result [(Node, morphism)]
 homogeniseSink targetLid dEdges =
     -- See homogeniseDiagram for comments on implementation.
     do let convertMorphism (n, GMorphism cid _ mor) =
-	       if isIdComorphism (Comorphism cid) then
-		     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
-			return (n, mor')
-		     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
-					 nullRange
-	   convEdges [] = do return []
-	   convEdges (e : es) = do ce <- convertMorphism e
-				   ces <- convEdges es
-				   return (ce : ces)
+               if isIdComorphism (Comorphism cid) then
+                     do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
+                        return (n, mor')
+                     else do fatal_error "Trying to coerce a morphism between different logics. Heterogeneous specifications are not fully supported yet."
+                                         nullRange
+           convEdges [] = do return []
+           convEdges (e : es) = do ce <- convertMorphism e
+                                   ces <- convEdges es
+                                   return (ce : ces)
        convEdges dEdges
 
 
 -- | Create a graph containing descriptions of nodes and edges.
 diagDesc :: Diag 
-	 -> Tree.Gr String String
+         -> Tree.Gr String String
 diagDesc diag =
     let insNodeDesc g (n, DiagNode { dn_desc = desc }) =
-	    if desc == "" then g else insNode (n, desc) g
+            if desc == "" then g else insNode (n, desc) g
     in foldl insNodeDesc Graph.empty (labNodes diag)
 
 
 -- | Create a sink consisting of incusion morphisms between
 -- signatures from given set of nodes and given signature.
 inclusionSink :: LogicGraph
-	      -> [DiagNodeSig] -- ^ the source nodes
-	      -> NodeSig       -- ^ the target signature
-	      -> Result [(Node, GMorphism)]
+              -> [DiagNodeSig] -- ^ the source nodes
+              -> NodeSig       -- ^ the target signature
+              -> Result [(Node, GMorphism)]
 -- ^ returns the diagram with edges inserted
 inclusionSink lgraph srcNodes tnsig =
     do let insmorph ls dns = do l <- ls
-			        case dns of
-				    Diag_node_sig n nsig -> 
-					do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-					   return ((n, incl): l)
+                                case dns of
+                                    Diag_node_sig n nsig -> 
+                                        do incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
+                                           return ((n, incl): l)
        sink <- foldl insmorph (return []) srcNodes
        return sink

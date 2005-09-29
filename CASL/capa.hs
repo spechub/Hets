@@ -40,8 +40,8 @@ lineParser = [
  ("ShowFormMix", toStringParser testFormulaMix)]
 
 fileParser = [("BasicSpec", fromAParser (basicSpec []
-					 :: AParser () (BASIC_SPEC () () ())))
-	      , ("analysis", toStringParser runAna)
-	      , ("signature", toStringParser getSign)
-	      , ("sentences", toStringParser getProps)
-	     ]
+                                         :: AParser () (BASIC_SPEC () () ())))
+              , ("analysis", toStringParser runAna)
+              , ("signature", toStringParser getSign)
+              , ("sentences", toStringParser getProps)
+             ]

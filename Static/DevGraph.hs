@@ -196,11 +196,11 @@ data DGLinkType = LocalDef
             | HidingDef
             | FreeDef MaybeNode -- the "parameter" node
             | CofreeDef MaybeNode -- the "parameter" node
-	    | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
+            | LocalThm ThmLinkStatus Conservativity ThmLinkStatus
                -- ??? Some more proof information is needed here
                -- (proof tree, ...)
-	    | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
-	    | HidingThm GMorphism ThmLinkStatus
+            | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
+            | HidingThm GMorphism ThmLinkStatus
             | FreeThm GMorphism Bool
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
@@ -214,9 +214,9 @@ instance PrettyPrint DGLinkType where
         HidingDef -> "HidingDef"
         FreeDef _ -> "FreeDef"
         CofreeDef _ -> "CofreeDef"
-	LocalThm _ _ _ -> "LocalThm"
-	GlobalThm _ _ _ -> "GlobalThm"
-	HidingThm _ _ -> "HidingThm"
+        LocalThm _ _ _ -> "LocalThm"
+        GlobalThm _ _ _ -> "GlobalThm"
+        HidingThm _ _ -> "HidingThm"
         FreeThm _ _ -> "FreeThm"
 
 -- | Conservativity annotations. For compactness, only the greatest
@@ -319,7 +319,7 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
 data ThmLinkStatus = LeftOpen 
-		   | Proven DGRule [LEdge DGLinkLab]
+                   | Proven DGRule [LEdge DGLinkLab]
                      deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
@@ -385,76 +385,76 @@ nodeSigUnion lgraph dg nodeSigs orig =
   do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
                                    $ map getMaybeSig nodeSigs
      let nodeContents = DGNode {dgn_name = emptyNodeName,
-				dgn_theory = G_theory lid sigU noSens,
-				dgn_nf = Nothing,
-				dgn_sigma = Nothing,
-				dgn_origin = orig,
-				dgn_cons = None,
-				dgn_cons_status = LeftOpen}
-	 node = getNewNode dg
-	 dg' = insNode (node, nodeContents) dg
-	 inslink dgres nsig = do 
+                                dgn_theory = G_theory lid sigU noSens,
+                                dgn_nf = Nothing,
+                                dgn_sigma = Nothing,
+                                dgn_origin = orig,
+                                dgn_cons = None,
+                                dgn_cons_status = LeftOpen}
+         node = getNewNode dg
+         dg' = insNode (node, nodeContents) dg
+         inslink dgres nsig = do 
              dgv <- dgres
-	     case nsig of
-	         EmptyNode _ -> dgres
-		 JustNode (NodeSig n sig) -> do 
+             case nsig of
+                 EmptyNode _ -> dgres
+                 JustNode (NodeSig n sig) -> do 
                      incl <- ginclusion lgraph sig sigUnion
-		     return $ insEdge (n, node, DGLink 
+                     return $ insEdge (n, node, DGLink 
                          {dgl_morphism = incl,
-			  dgl_type = GlobalDef,
-			  dgl_origin = orig }) dgv
+                          dgl_type = GlobalDef,
+                          dgl_origin = orig }) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')
 
 -- | Extend the development graph with given morphism originating
 -- from given NodeSig
 extendDGraph :: DGraph    -- ^ the development graph to be extended
-	     -> NodeSig   -- ^ the NodeSig from which the morphism originates
-	     -> GMorphism -- ^ the morphism to be inserted
-	     -> DGOrigin  
-	     -> Result (NodeSig, DGraph)
+             -> NodeSig   -- ^ the NodeSig from which the morphism originates
+             -> GMorphism -- ^ the morphism to be inserted
+             -> DGOrigin  
+             -> Result (NodeSig, DGraph)
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
     targetSig@(G_sign lid tar) -> let 
         nodeContents = DGNode {dgn_name = emptyNodeName,
-			       dgn_theory = G_theory lid tar noSens,
-			       dgn_nf = Nothing,
-			       dgn_sigma = Nothing,
-			       dgn_origin = orig,
-			       dgn_cons = None,
-			       dgn_cons_status = LeftOpen}
-	linkContents = DGLink {dgl_morphism = morph,
-			       dgl_type = GlobalDef, -- TODO: other type
-			       dgl_origin = orig}
-	node = getNewNode dg
-	dg' = insNode (node, nodeContents) dg
-	dg'' = insEdge (n, node, linkContents) dg'
+                               dgn_theory = G_theory lid tar noSens,
+                               dgn_nf = Nothing,
+                               dgn_sigma = Nothing,
+                               dgn_origin = orig,
+                               dgn_cons = None,
+                               dgn_cons_status = LeftOpen}
+        linkContents = DGLink {dgl_morphism = morph,
+                               dgl_type = GlobalDef, -- TODO: other type
+                               dgl_origin = orig}
+        node = getNewNode dg
+        dg' = insNode (node, nodeContents) dg
+        dg'' = insEdge (n, node, linkContents) dg'
         in return (NodeSig node targetSig, dg'')
 
 
 -- | Extend the development graph with given morphism pointing to 
 -- given NodeSig
 extendDGraphRev :: DGraph    -- ^ the development graph to be extended
-	     -> NodeSig   -- ^ the NodeSig to which the morphism points
-	     -> GMorphism -- ^ the morphism to be inserted
-	     -> DGOrigin  
-	     -> Result (NodeSig, DGraph)
+             -> NodeSig   -- ^ the NodeSig to which the morphism points
+             -> GMorphism -- ^ the morphism to be inserted
+             -> DGOrigin  
+             -> Result (NodeSig, DGraph)
 -- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyNodeName,
-			       dgn_theory = G_theory lid src Set.empty,
-			       dgn_nf = Nothing,
-			       dgn_sigma = Nothing,
-			       dgn_origin = orig,
-			       dgn_cons = None,
-			       dgn_cons_status = LeftOpen}
-	linkContents = DGLink {dgl_morphism = morph,
-			       dgl_type = GlobalDef, -- TODO: other type
-			       dgl_origin = orig}
-	node = getNewNode dg
-	dg' = insNode (node, nodeContents) dg
-	dg'' = insEdge (node, n, linkContents) dg'
+                               dgn_theory = G_theory lid src Set.empty,
+                               dgn_nf = Nothing,
+                               dgn_sigma = Nothing,
+                               dgn_origin = orig,
+                               dgn_cons = None,
+                               dgn_cons_status = LeftOpen}
+        linkContents = DGLink {dgl_morphism = morph,
+                               dgl_type = GlobalDef, -- TODO: other type
+                               dgl_origin = orig}
+        node = getNewNode dg
+        dg' = insNode (node, nodeContents) dg
+        dg'' = insEdge (node, n, linkContents) dg'
         in return (NodeSig node sourceSig, dg'')
 
 -- import, formal parameters andd united signature of formal params

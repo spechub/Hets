@@ -78,18 +78,18 @@ setUserState st = getState >>= \ s -> setState s { userState = st }
 -- resets the internal state to 'emptyAnnos'
 getAnnos :: AParser st [Annotation]
 getAnnos = do aSt <- getState 
-	      setState aSt { toAnnos = [] }
-	      return $ toAnnos aSt
+              setState aSt { toAnnos = [] }
+              return $ toAnnos aSt
 
 -- | annotations on consecutive lines 
 mLineAnnos :: GenParser Char st [Annotation]
 mLineAnnos = 
        do a <- annotationL
-	  skipSmart
-	  do  l <- mLineAnnos
-	      return (a:l)
+          skipSmart
+          do  l <- mLineAnnos
+              return (a:l)
             <|> return [a]
-	 <|> return []
+         <|> return []
 
 
 -- | explicitly parse annotations, reset internal state 
@@ -112,11 +112,11 @@ optSemi = do (a1, s) <- try $ bind (,) annos Common.Lexer.semiT
 tryItemEnd :: [String] -> AParser st ()
 tryItemEnd l = 
     try (do c <- lookAhead (annos >>
-			      (single (oneOf "\"([{")
-			       <|> placeS
-			       <|> scanAnySigns
-			       <|> many scanLPD))
-	    if null c || c `elem` l then return () else unexpected c)
+                              (single (oneOf "\"([{")
+                               <|> placeS
+                               <|> scanAnySigns
+                               <|> many scanLPD))
+            if null c || c `elem` l then return () else unexpected c)
 
 
 
@@ -124,21 +124,21 @@ tryItemEnd l =
 -- the quantifier exists does not start a new item.
 startKeyword :: [String]
 startKeyword = dotS:cDot:
-		   (delete existsS casl_reserved_words)
+                   (delete existsS casl_reserved_words)
 
 -- | parse preceding annotations and the following item
 annoParser :: AParser st a 
-	   -> AParser st (Annoted a)
+           -> AParser st (Annoted a)
 annoParser parser = bind addLeftAnno annos parser
 
 -- | parse an item list preceded and followed by annotations
 annosParser :: AParser st a 
-	    -> AParser st [Annoted a]
+            -> AParser st [Annoted a]
 annosParser parser = 
     do a <- annos 
        l <- many1 $ bind (,) parser annos
        let ps = map fst l 
-	   as = map snd l
+           as = map snd l
            is = zipWith addLeftAnno (a: init as) ps  
        return (init is ++ [appendAnno (last is) (last as)])
 
@@ -148,7 +148,7 @@ itemList :: [String] -> String -> ([String] -> AParser st b)
                -> ([Annoted b] -> Range -> a) -> AParser st a
 itemList ks kw ip constr = 
     do p <- pluralKeyword kw
-       auxItemList (ks++startKeyword) [p] (ip ks) constr	      
+       auxItemList (ks++startKeyword) [p] (ip ks) constr              
 
 -- | generalized version of 'itemList' 
 -- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'
@@ -157,18 +157,18 @@ auxItemList :: [String] -> [Token] -> AParser st b
 auxItemList startKeywords ps parser constr = do
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in 
-	   return (constr r (catPos (ps++ts)))
+           return (constr r (catPos (ps++ts)))
 
 -- | parse an item list without a starting keyword
 itemAux :: [String] -> AParser st a 
-	-> AParser st ([a], [Token], [[Annotation]])
+        -> AParser st ([a], [Token], [[Annotation]])
 itemAux startKeywords itemParser = 
     do a <- itemParser
        (m, an) <- optSemi
        let r =  return ([a], [], [an])
        if null m then r else (tryItemEnd startKeywords >> r) <|> 
-	  do (ergs, ts, ans) <- itemAux startKeywords itemParser
-	     return (a:ergs, m++ts, an:ans)
+          do (ergs, ts, ans) <- itemAux startKeywords itemParser
+             return (a:ergs, m++ts, an:ans)
 
 -- | collect preceding and trailing annotations
 wrapAnnos :: AParser st a -> AParser st a
@@ -187,9 +187,9 @@ semiT = anSemi
 
 equalT, colonT, lessT, dotT :: AParser st Token
 equalT = wrapAnnos $ pToken $ 
-	 (((lookAhead $ keySign $ string exEqual) 
-			  >> unexpected exEqual)
-	 <|> keySign (string equalS))
+         (((lookAhead $ keySign $ string exEqual) 
+                          >> unexpected exEqual)
+         <|> keySign (string equalS))
 
 colonT = asKey colonS
 lessT = asKey lessS

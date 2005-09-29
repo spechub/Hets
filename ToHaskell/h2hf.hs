@@ -49,21 +49,21 @@ hParser = do
 
 main :: IO ()
 main = do l <- getArgs
-	  if length l >= 1 then
-	     do s <- readFile $ head l
+          if length l >= 1 then
+             do s <- readFile $ head l
                 s1 <- return $ dropWhile (\x -> x == '\n' || x == ' ') s
                 s2 <- return $ if takeWhile (/= ' ') s1 == "module" 
                                then dropWhile (/= '\n') s1 else s1  
-		let r = runParser hParser (emptyAnnos ()) (head l) s2  
-	        case r of 
-		       Right (sig, hs) -> let 
+                let r = runParser hParser (emptyAnnos ()) (head l) s2  
+                case r of 
+                       Right (sig, hs) -> let 
                          tn = dropWhile (== '"') $ (takeWhile (/= '.') 
                               $ reverse (takeWhile (\x -> x /= '/') $ reverse 
                               $ show $ head l)) ++ "_theory" 
                          doc = text "theory" <+> text tn <+> text "=" $$
                             createTheoryText sig hs
                          in writeFile (tn ++ ".thy") (shows doc "\n")
-		       Left err -> putStrLn $ show err
-	   else putStrLn "missing argument"
+                       Left err -> putStrLn $ show err
+           else putStrLn "missing argument"
 --       _ -> return ()
 

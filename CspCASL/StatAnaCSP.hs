@@ -58,13 +58,13 @@ statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
 statBasicSpec (Csp_casl_c_spec sp ch p) =
   do (sp',sig,_,_) <- basicAnalysis 
                                (const $ const return) 
-			       (const return)
-			       (const return) 
+                               (const return)
+                               (const return) 
                                diffCSPAddSign
                                (sp, emptyCSPSign, emptyGlobalAnnos)
      let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig
      return accSig
-	
+        
 -- | static analysis for Hets
 basicAnalysisCspCASL :: (Basic_CSP_CASL_C_SPEC,CSPSign,GlobalAnnos) 
         -> Result (Basic_CSP_CASL_C_SPEC,CSPSign,CSPSign,[Named ()])

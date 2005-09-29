@@ -32,35 +32,35 @@ compositionCreatingEdges proofStatus@(libname,_,_) = do
   let dgraph = lookupDGraph libname proofStatus
       pathsToCompose = getAllPathsOfType dgraph isGlobalThm
       (newDGraph,newHistoryElem)
-	  = compositionCreatingEdgesAux dgraph pathsToCompose ([],[])
+          = compositionCreatingEdgesAux dgraph pathsToCompose ([],[])
   return proofStatus
 
 {- auxiliary method for compositionCreatingEdges -}
 compositionCreatingEdgesAux :: DGraph -> [[LEdge DGLinkLab]] 
-			  -> ([DGRule],[DGChange]) 
-			  -> (DGraph,([DGRule],[DGChange]))
+                          -> ([DGRule],[DGChange]) 
+                          -> (DGraph,([DGRule],[DGChange]))
 compositionCreatingEdgesAux dgraph [] historyElem = (dgraph,historyElem)
 compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
  case calculateMorphismOfPath path of
    Nothing -> compositionCreatingEdgesAux dgraph paths (rules,changes)
    Just _ -> compositionCreatingEdgesAux (insEdge newEdge newDGraph) paths
-	     ((Composition path):rules,(InsertEdge newEdge):(newChanges++changes))
+             ((Composition path):rules,(InsertEdge newEdge):(newChanges++changes))
 
   where
     src = getSourceNode (head path)
     tgt = getTargetNode (last path)
     Just morph = calculateMorphismOfPath path
     cons = case getConservativityOfPath path of
-	     Mono -> if isTransportable morph then Mono else Cons
-	     c -> c
+             Mono -> if isTransportable morph then Mono else Cons
+             c -> c
     consStatus = LeftOpen
     newEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = morph,
-		       dgl_type = (GlobalThm (Proven (Composition path) path))
-		       cons consStatus,
-		       dgl_origin = DGProof}
-	      )
+               tgt,
+               DGLink {dgl_morphism = morph,
+                       dgl_type = (GlobalThm (Proven (Composition path) path))
+                       cons consStatus,
+                       dgl_origin = DGProof}
+              )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
 
 {-  this method is used by compositionCreatingEdgesAux.
@@ -70,22 +70,22 @@ deleteRedundantEdges dgraph (src,tgt,lab) =
   deleteRedundantEdgesAux dgraph redundantEdges []
   where
     redundantEdges = [e | e@(_,t,l) <- out dgraph src,
-		      t == tgt &&
-		      isUnprovenGlobalThm e &&
-		      dgl_morphism l == dgl_morphism lab &&
-		      haveSameCons l lab]
+                      t == tgt &&
+                      isUnprovenGlobalThm e &&
+                      dgl_morphism l == dgl_morphism lab &&
+                      haveSameCons l lab]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
     haveSameCons lab1 lab2 = case (dgl_type lab1,dgl_type lab2) of
-			       (GlobalThm LeftOpen cons1 status1, GlobalThm LeftOpen cons2 status2) -> cons1 == cons2 && status1 == status2
-			       _ -> False
+                               (GlobalThm LeftOpen cons1 status1, GlobalThm LeftOpen cons2 status2) -> cons1 == cons2 && status1 == status2
+                               _ -> False
 
 {- auxiliary method for deleteRedundantEdgesAux -}
 deleteRedundantEdgesAux :: DGraph -> [LEdge DGLinkLab] -> [DGChange]
-	     -> (DGraph,[DGChange])
+             -> (DGraph,[DGChange])
 deleteRedundantEdgesAux dgraph [] changes =  (dgraph,changes)
 deleteRedundantEdgesAux dgraph (edge:list) changes =
   deleteRedundantEdgesAux (delLEdge edge dgraph) list
-			      ((DeleteEdge edge):changes)
+                              ((DeleteEdge edge):changes)
 
 -- ---------------------------------------------------------------------------
 -- composition without creating new new edges
@@ -110,10 +110,10 @@ compositionAux dgraph (edge:edges) (rules,changes) =
   case compositionForOneEdge dgraph edge of
     Nothing -> compositionAux dgraph edges (rules,changes)
     Just (newEdge,proofBasis) ->
-	compositionAux (insEdge newEdge (delLEdge edge dgraph))
-		       edges
-		       ((Composition proofBasis):rules,
-			(InsertEdge newEdge):((DeleteEdge edge):changes))
+        compositionAux (insEdge newEdge (delLEdge edge dgraph))
+                       edges
+                       ((Composition proofBasis):rules,
+                        (InsertEdge newEdge):((DeleteEdge edge):changes))
 
 
 {- checks for the given edges, if there is a path in the given development graph that it is a composition of. If so, it is replaced by a proven version with the path as its proof basis.
@@ -121,7 +121,7 @@ The method returns Nothing if there is no such path or else the new edge and the
 compositionForOneEdge :: DGraph -> LEdge DGLinkLab -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
 compositionForOneEdge dgraph edge@(src,tgt,lab) =
   compositionForOneEdgeAux edge [path | path <- pathsOfMorphism,
-				 not (elem edge path)]
+                                 not (elem edge path)]
 
   where
     globThmPaths = getAllPathsOfTypeBetween dgraph isGlobalThm src tgt
@@ -132,8 +132,8 @@ compositionForOneEdgeAux :: LEdge DGLinkLab -> [[LEdge DGLinkLab]] -> Maybe (LEd
 compositionForOneEdgeAux _ [] = Nothing
 compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
   | cons <= pathCons = if cons == Mono 
-		        then handleConservativityMono newEdge path 
-		         else Just (newEdge,path)
+                        then handleConservativityMono newEdge path 
+                         else Just (newEdge,path)
   | otherwise = compositionForOneEdgeAux edge paths
 
   where
@@ -141,22 +141,22 @@ compositionForOneEdgeAux edge@(src,tgt,lab) (path:paths)
     pathCons = getConservativityOfPath path
     consStatus = getConservativityStatus edge
     newEdge = (src,
-	       tgt,
-	       DGLink {dgl_morphism = dgl_morphism lab,
-		       dgl_type = (GlobalThm (Proven (Composition path) path))
-		       cons consStatus,
-		       dgl_origin = DGProof}
-	      )
+               tgt,
+               DGLink {dgl_morphism = dgl_morphism lab,
+                       dgl_type = (GlobalThm (Proven (Composition path) path))
+                       cons consStatus,
+                       dgl_origin = DGProof}
+              )
 
 {- checks if the morphism of the given path is transportable. This is necessary for the composition of a path, if its conservativity is Mono.
 This method is used by compositionForOneEdgeAux to check, if a composition in case of conservativity Mono is possible.-}
 handleConservativityMono :: LEdge DGLinkLab -> [LEdge DGLinkLab]
-			 -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
+                         -> Maybe (LEdge DGLinkLab,[LEdge DGLinkLab])
 handleConservativityMono newEdge path =
   case calculateMorphismOfPath path of
     Nothing -> Nothing
     Just morph -> if isTransportable morph then Just (newEdge,path)
-		   else Nothing
+                   else Nothing
 
 {- returns the conservativity of the given edge -}
 getConservativity :: LEdge DGLinkLab -> Conservativity

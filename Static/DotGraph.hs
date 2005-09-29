@@ -34,7 +34,7 @@ showNode dg n = getDGNodeName $ lab' $ context dg n
 dotEdge :: DGraph -> (Node, Node, DGLinkLab) -> String
 dotEdge dg (n1,n2,link) = 
   showNode dg n1 ++ " -> " ++ showNode dg n2
-	       ++ edgeAttribute (dgl_type link) ++ ";"
+               ++ edgeAttribute (dgl_type link) ++ ";"
     
 nodeAttribute :: DGNodeLab -> String
 nodeAttribute (DGNode _ _ _ _ _ _) = ""

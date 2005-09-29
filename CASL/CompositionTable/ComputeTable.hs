@@ -32,11 +32,11 @@ computeCompTable spName (sig,nsens) = do
   {- look for something isomorphic to
        sorts BaseRel < Rel
        ops 
-         id	 : BaseRel;
-	 0,1	 : Rel;	 	 
-   	   inv__ : BaseRel -> BaseRel;
+         id      : BaseRel;
+         0,1     : Rel;          
+           inv__ : BaseRel -> BaseRel;
          __cmps__: BaseRel * BaseRel -> Rel;
-	  compl__: Rel -> Rel;	
+          compl__: Rel -> Rel;  
          __cup__ : Rel * Rel -> Rel, assoc, idem, comm, unit 1
      forall x:BaseRel
      . x cmps id = x
@@ -48,8 +48,8 @@ computeCompTable spName (sig,nsens) = do
       errSorts = errmsg 
                    ++ "\nneed exactly two sorts s,t, with s<t, but found:\n"
                    ++ showPretty ((emptySign ()::Sign () ()) 
-				     { sortSet = sortSet sig,
-				       sortRel = sortRel sig }) ""
+                                     { sortSet = sortSet sig,
+                                       sortRel = sortRel sig }) ""
       errOps ops prof = 
         errmsg ++ "\nneed exactly one operation "++prof++", but found:\n"
                ++ showPretty ops "" 
@@ -66,7 +66,7 @@ computeCompTable spName (sig,nsens) = do
       zerot  = OpType {opKind = Total, opArgs = [], opRes = rel}
       invt   = OpType {opKind = Total, opArgs = [baseRel], opRes = baseRel}
       cmpt   = OpType {opKind = Total, opArgs = [baseRel,baseRel], 
-		       opRes = rel}
+                       opRes = rel}
       complt = OpType {opKind = Total, opArgs = [rel], opRes = rel}
       cupt   = OpType {opKind = Total, opArgs = [rel,rel], opRes = rel}
   -- look for operation symbols

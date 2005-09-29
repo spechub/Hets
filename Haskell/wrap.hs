@@ -22,12 +22,12 @@ main = do
     l <- getArgs
     if length l == 1 
        then do
-	    let f = head l
-	    s <- readFile f
-	    let r = parse hStuff f s
-	    putStr $ case r of
-			 Right x -> x
-			 Left err -> show err
-	else do 
-	     p <- getProgName
+            let f = head l
+            s <- readFile f
+            let r = parse hStuff f s
+            putStr $ case r of
+                         Right x -> x
+                         Left err -> show err
+        else do 
+             p <- getProgName
              putStrLn("Usage: "++p++" <file>")

@@ -31,7 +31,7 @@ import Hatchet.HatParser (HsDecls(..), hatParser)
 import Hatchet.HatAna
 import Haskell.Hatchet.MultiModuleBasics (ModuleInfo,
                                           emptyModuleInfo,
-					  joinModuleInfo)
+                                          joinModuleInfo)
 import Haskell.Hatchet.AnnotatedHsSyn    (AHsDecl)
 import Haskell.Hatchet.HsSyn    (HsDecl)
 
@@ -80,11 +80,11 @@ type SYMB_ITEMS = ()
 type SYMB_MAP_ITEMS = ()
 
 instance Syntax Hatchet HsDecls
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec Hatchet = Just hatParser
-	 parse_symb_items Hatchet = Nothing
-	 parse_symb_map_items Hatchet = Nothing
+         parse_symb_items Hatchet = Nothing
+         parse_symb_map_items Hatchet = Nothing
 
 type Hatchet_Sublogics = ()
 
@@ -98,8 +98,8 @@ type RawSymbol = ()
 instance Sentences Hatchet Sentence () Sign Morphism Symbol where
     map_sen Hatchet _m s = return s
     print_named Hatchet ga (NamedSen lab _ sen) = printText0 ga sen <>
-	if null lab then empty 
-	else space <> text "{-" <+> text lab <+> text "-}" 
+        if null lab then empty 
+        else space <> text "{-" <+> text lab <+> text "-}" 
     provers Hatchet = [] 
     cons_checkers Hatchet = []
 
@@ -118,10 +118,10 @@ instance StaticAnalysis Hatchet HsDecls
     signature_union Hatchet sig1 sig2 = return (joinModuleInfo sig1 sig2)
     inclusion Hatchet _ _ = return ()
     basic_analysis Hatchet = Just(basicAnalysis)
-      where basicAnalysis (b@(HsDecls basicSpec), sig, _) = 	            
+      where basicAnalysis (b@(HsDecls basicSpec), sig, _) =                 
              let (modInfo, sens) = hatAna basicSpec sig
              in Result [] $ Just (b, diffModInfo modInfo sig, 
-				  modInfo, sens)
+                                  modInfo, sens)
     is_subsig Hatchet s1 s2 = joinModuleInfo s1 s2 == s2
 
 instance Logic Hatchet Hatchet_Sublogics

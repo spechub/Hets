@@ -21,25 +21,25 @@ import qualified Common.Lib.Set as Set
 
 instance Arbitrary (Rel Int) where
     arbitrary = do l0 <- arbitrary
-		   l1 <- arbitrary
-		   l2 <- arbitrary
-		   l3 <- arbitrary
-		   l4 <- arbitrary
-		   let r = fromList (l0 ++ l1 ++ l2 ++ l3 ++ l4)
-		       keys = Map.keys $ toMap r
+                   l1 <- arbitrary
+                   l2 <- arbitrary
+                   l3 <- arbitrary
+                   l4 <- arbitrary
+                   let r = fromList (l0 ++ l1 ++ l2 ++ l3 ++ l4)
+                       keys = Map.keys $ toMap r
                    x <- choose (0,length keys-1)
-		   y <- choose (0,length keys-3)
-		   z <- choose (0,length keys-1)
-		   x1 <- choose (0,length keys-2)
-		   y1 <- choose (0,length keys-1)
-		   let r' = 
-			insert x1 y1 $
-			insert y1 x1 $
-			insert x y $
-			insert x z $
-			insert z y $
-			insert y x $ r
-		   return r'
+                   y <- choose (0,length keys-3)
+                   z <- choose (0,length keys-1)
+                   x1 <- choose (0,length keys-2)
+                   y1 <- choose (0,length keys-1)
+                   let r' = 
+                        insert x1 y1 $
+                        insert y1 x1 $
+                        insert x y $
+                        insert x z $
+                        insert z y $
+                        insert y x $ r
+                   return r'
 
 prop_intransKernel_transClosure = prp_transClosure intransKernel
 
@@ -49,17 +49,17 @@ prp_transClosure intrKern r =
      length (Map.keys $ toMap r) > 6 )  ==>
        ((Set.size $ toSet $ irreflex r) < 10) `trivial`
         collect (length (Map.keys $ toMap r))
-		 (rel == transClosure (intrKern rel))
+                 (rel == transClosure (intrKern rel))
     where rel = transClosure r :: Rel Int
 
 tr = transClosure test1
  
 test1 = fromList (zip [(1::Int)..7] [2..8] ++ 
-		 [(2,1),(12,11),(4,12),(12,13),(13,12),
-		 (11,14),(14,11),(-1,14),(14,-1),(100,1),(2,100)])
+                 [(2,1),(12,11),(4,12),(12,13),(13,12),
+                 (11,14),(14,11),(-1,14),(14,-1),(100,1),(2,100)])
 
 test2 = fromList [(1,2::Int),(2,3),(3,2),(3,5),(3,4),(1,4),(4,5),
-		  (4,6),(5,6),(6,7),(6,8),(7,9),(8,9)]
+                  (4,6),(5,6),(6,7),(6,8),(7,9),(8,9)]
 
 test3 = delete 100 1 (test1 `union` fromList (zip [7..100] [8..101]))
 
@@ -83,7 +83,7 @@ prp_invTest relFun rel =
     (length (Map.keys $ toMap rel) > 6 )  ==>
        ((Set.size $ toSet $ irreflex rel) < 10) `trivial`
         collect (length (Map.keys $ toMap rel))
-		((not . elem Set.empty) $ Map.elems (toMap $ relFun rel)) 
+                ((not . elem Set.empty) $ Map.elems (toMap $ relFun rel)) 
 
 prop_inv_intransKernel = prp_invTest intransKernel -- violated precondition!
 prop_inv_transReduce = prp_invTest transReduce  -- violated precondition!
@@ -97,7 +97,7 @@ prp_eq relFun1 relFun2 rel = let clos = transClosure rel in
       clos /= rel && clos /= irreflex clos && transpose rel /= rel) ==>
        ((Set.size $ toSet rel) < 10) `trivial`
         collect (Set.size (nodes rel))
-		(relFun1 rel == relFun2 rel)
+                (relFun1 rel == relFun2 rel)
 
 prop_transpose_transpose = prp_eq id (transpose . transpose)
 prop_irreflex_transpose = prp_eq (irreflex .  transpose) (transpose . irreflex)

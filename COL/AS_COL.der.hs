@@ -23,10 +23,10 @@ import CASL.AS_Basic_CASL
 type COL_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
 
 data COL_SIG_ITEM =
-	  Constructor_items [Annoted Id] Range
-		 -- pos: ids
-	| Observer_items [Annoted (Id, Maybe Int)] Range
-		 -- pos: ids
+          Constructor_items [Annoted Id] Range
+                 -- pos: ids
+        | Observer_items [Annoted (Id, Maybe Int)] Range
+                 -- pos: ids
              deriving (Eq, Show)
 
 

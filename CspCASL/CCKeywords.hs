@@ -59,4 +59,4 @@ chanRenS   = "<-"
 csp_casl_keywords :: [String]
 csp_casl_keywords = 
  [ccspecS, dataS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
-	   , interParaS, hidingS, prefixS, sendS, receiveS, chanRenS]
+           , interParaS, hidingS, prefixS, sendS, receiveS, chanRenS]

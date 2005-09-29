@@ -62,12 +62,12 @@ inhabited sorts constrs = iterateInhabited sorts
                                        Op_type _ args res _ -> [(args,res)]
                         ) ops
           iterateInhabited l =
-	            if l==newL then newL else iterateInhabited newL
-		            where newL =foldr (\(ags,rs) l'->
+                    if l==newL then newL else iterateInhabited newL
+                            where newL =foldr (\(ags,rs) l'->
                                                   if (all (\s->elem s l') ags)
                                                       && (not (elem rs l'))
                                                   then rs:l'
-					          else l') l argsRes
+                                                  else l') l argsRes
 
 
 

@@ -30,10 +30,10 @@ hStuff, stuff :: GenParser Char st String
 hStuff = flat $ many stuff 
 
 stuff = lineComment <|> nestComment <|> stringLit <|> charLit
-	<|> balanced "{}" 
-	<|> balanced "()" 
-	<|> balanced "[]" 
-	<|> single (noneOf "])}") <?> ""
+        <|> balanced "{}" 
+        <|> balanced "()" 
+        <|> balanced "[]" 
+        <|> single (noneOf "])}") <?> ""
 
 balanced :: String -> GenParser Char st String
 balanced [o, c] = char o <:> hStuff <++> string [c]
@@ -41,23 +41,23 @@ balanced _ = error "balanced"
 
 nestComment :: GenParser Char st String
 nestComment = try (string "{-") <++> 
-		 flat (many (single (noneOf "-{") 
-			     <|> try (string "-" << notFollowedBy (char '}'))
-		             <|> nestComment 
-			     <|> string "{" ))
-		 <++> string "-}"
+                 flat (many (single (noneOf "-{") 
+                             <|> try (string "-" << notFollowedBy (char '}'))
+                             <|> nestComment 
+                             <|> string "{" ))
+                 <++> string "-}"
 
 lineComment, stringLit, charLit :: GenParser Char st String
 lineComment = try (string "--") <++> many (noneOf "\n\r")
-	      <++> many (oneOf "\n\r")  
+              <++> many (oneOf "\n\r")  
 
 stringLit = char '\"' <:> flat (many (single (noneOf "\\\"")
-				 <|> char '\\' <:> single anyChar))
-	    <++> string "\""
+                                 <|> char '\\' <:> single anyChar))
+            <++> string "\""
 
 charLit = try (string "'''") <|>
-	  char '\'' <:> flat (many (single (noneOf "\\\'")
-				 <|> char '\\' <:> single anyChar))
+          char '\'' <:> flat (many (single (noneOf "\\\'")
+                                 <|> char '\\' <:> single anyChar))
           <++> string "\'"
  
 

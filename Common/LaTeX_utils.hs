@@ -12,8 +12,8 @@ Useful functions for latex printing
 -}
 
 module Common.LaTeX_utils (module Common.LaTeX_utils,
-		       module Common.LaTeX_funs,
-		       hspace_latex) where
+                       module Common.LaTeX_funs,
+                       hspace_latex) where
 
 import Common.Id
 import Common.AS_Annotation
@@ -32,44 +32,44 @@ commaT_latex,semiT_latex,crossT_latex
 commaT_latex = listSep_latex comma_latex
 semiT_latex = listSep_latex semi_latex
 crossT_latex = listSep_latex 
-	       (space_latex <> hc_sty_axiom "\\times"<> space_latex)
+               (space_latex <> hc_sty_axiom "\\times"<> space_latex)
 
 listSep_latex :: PrintLaTeX a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_latex separator ga = fsep_latex . punctuate separator .
-			     map (printLatex0 ga)
+                             map (printLatex0 ga)
 
 
 semiAnno_latex :: (PrintLaTeX a) => 
-		  GlobalAnnos -> [Annoted a] -> Doc
+                  GlobalAnnos -> [Annoted a] -> Doc
 semiAnno_latex ga l = if null l then empty else
-		   (vcat $ map (pf' True)
-		              (init l) ++ [pf' False (last l)])
+                   (vcat $ map (pf' True)
+                              (init l) ++ [pf' False (last l)])
     where pfga as = vcat $ map (printLatex0 ga) as
-	  pf' printSemi a_item =
-	      leftAF (rightAF (
-		 if isEmpty laImpl then item'' else fsep_latex [item'', laImpl]))
-	      where (laImpl,ras) = splitAndPrintRAnnos printLatex0 
-	                                     printAnnotationList_Latex0 
-					     (<\+>)
-					     (latex_macro "\\`" <>) empty 
-					     ga (r_annos a_item)
-		    item' = printLatex0 ga (item a_item)
-		    item'' = if printSemi then item'<>semi_latex else item'
-		    leftAF = if null l_annos' then id 
-			                      else ($$) (pfga l_annos')
-		    l_annos' = l_annos a_item
-		    rightAF = if isEmpty ras then id
-			                     else (\ x -> x $$ ras)
+          pf' printSemi a_item =
+              leftAF (rightAF (
+                 if isEmpty laImpl then item'' else fsep_latex [item'', laImpl]))
+              where (laImpl,ras) = splitAndPrintRAnnos printLatex0 
+                                             printAnnotationList_Latex0 
+                                             (<\+>)
+                                             (latex_macro "\\`" <>) empty 
+                                             ga (r_annos a_item)
+                    item' = printLatex0 ga (item a_item)
+                    item'' = if printSemi then item'<>semi_latex else item'
+                    leftAF = if null l_annos' then id 
+                                              else ($$) (pfga l_annos')
+                    l_annos' = l_annos a_item
+                    rightAF = if isEmpty ras then id
+                                             else (\ x -> x $$ ras)
 
 tabList_latex :: [Doc] -> [Doc]
 tabList_latex [] = []
 tabList_latex [x] = [startTab_latex <> x <> endTab_latex]
 tabList_latex l = let h' = startTab_latex <> head l
-		      l' = last l <>endTab_latex
-		      rema = if null $ tail l 
-			    then [] 
-			    else init $ tail l 
-		  in h':rema++[l']
+                      l' = last l <>endTab_latex
+                      rema = if null $ tail l 
+                            then [] 
+                            else init $ tail l 
+                  in h':rema++[l']
 
 -- Heng: case Anweisung einführen, wie in hc_sty_hetcasl_keyword
 hc_sty_casl_keyword :: String -> Doc
@@ -99,7 +99,7 @@ sp_braces_latex =
 sp_braces_latex2 :: Doc -> Doc
 sp_braces_latex2 d =
     fcat [casl_normal_latex "\\{"<>d,
-	  casl_normal_latex "\\}"]
+          casl_normal_latex "\\}"]
 
 sp_brackets_latex :: Doc -> Doc
 sp_brackets_latex =

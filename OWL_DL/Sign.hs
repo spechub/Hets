@@ -50,11 +50,11 @@ data RDomain = RDomain Description
 
 data RRange = RIRange Description
             | RDRange DataRange
-	      deriving (Show,Eq,Ord)
+              deriving (Show,Eq,Ord)
 
 -- data RoleID = IVP IndividualvaluedPropertyID 
 --             | DVP DatavaluedPropertyID
---         	 deriving (Show,Eq,Ord)
+--               deriving (Show,Eq,Ord)
 
 data Sentence = OWLAxiom Axiom                       
               | OWLFact Fact
@@ -63,15 +63,15 @@ data Sentence = OWLAxiom Axiom
 emptySign :: Sign
 emptySign =  Sign { ontologyID = QN "" "" "", 
                     concepts = Set.empty,
-		    primaryConcepts = Set.empty,
-		    datatypes = Set.empty,
-		    indValuedRoles = Set.empty,
-		    dataValuedRoles = Set.empty,
-		    annotationRoles = Set.empty,
-		    individuals = Set.empty,
-		    axioms = Set.empty,
-		    namespaceMap = Map.empty
-		  }
+                    primaryConcepts = Set.empty,
+                    datatypes = Set.empty,
+                    indValuedRoles = Set.empty,
+                    dataValuedRoles = Set.empty,
+                    annotationRoles = Set.empty,
+                    individuals = Set.empty,
+                    axioms = Set.empty,
+                    namespaceMap = Map.empty
+                  }
 
 simpleSign :: ID -> Sign
 simpleSign ontoID = 
@@ -92,22 +92,22 @@ diffSig a b =
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =
     totalSign { concepts = Set.union (concepts totalSign) 
-		                     (concepts toIns),
-		primaryConcepts = Set.union (primaryConcepts totalSign) 
-		                            (primaryConcepts toIns),
-		datatypes = Set.union (datatypes totalSign) 
-		                      (datatypes toIns),
-		indValuedRoles = Set.union (indValuedRoles totalSign) 
-		                           (indValuedRoles toIns),
-		dataValuedRoles = Set.union (dataValuedRoles totalSign) 
-		                            (dataValuedRoles toIns),
-		annotationRoles = Set.union (annotationRoles totalSign)
-		                            (annotationRoles toIns),
-		individuals = Set.union (individuals totalSign) 
-		                        (individuals toIns),
-		axioms = Set.union (axioms totalSign) 
-		                   (axioms toIns)
-	      }
+                                     (concepts toIns),
+                primaryConcepts = Set.union (primaryConcepts totalSign) 
+                                            (primaryConcepts toIns),
+                datatypes = Set.union (datatypes totalSign) 
+                                      (datatypes toIns),
+                indValuedRoles = Set.union (indValuedRoles totalSign) 
+                                           (indValuedRoles toIns),
+                dataValuedRoles = Set.union (dataValuedRoles totalSign) 
+                                            (dataValuedRoles toIns),
+                annotationRoles = Set.union (annotationRoles totalSign)
+                                            (annotationRoles toIns),
+                individuals = Set.union (individuals totalSign) 
+                                        (individuals toIns),
+                axioms = Set.union (axioms totalSign) 
+                                   (axioms toIns)
+              }
 
 isSubSign :: Sign -> Sign -> Bool
 isSubSign a b = 

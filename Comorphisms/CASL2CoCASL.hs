@@ -71,18 +71,18 @@ instance Comorphism CASL2CoCASL
 mapSig :: CASLSign -> CSign
 mapSig sign = 
      (emptySign emptyCoCASLSign) {sortSet = sortSet sign
-	       , sortRel = sortRel sign
+               , sortRel = sortRel sign
                , opMap = opMap sign
-	       , assocOps = assocOps sign
-	       , predMap = predMap sign }
+               , assocOps = assocOps sign
+               , predMap = predMap sign }
 
 mapMor :: CASLMor -> CoCASLMor
 mapMor m = Morphism {msource = mapSig $ msource m
-	           , mtarget = mapSig $ mtarget m
+                   , mtarget = mapSig $ mtarget m
                    , sort_map = sort_map m
                    , fun_map = fun_map m
                    , pred_map = pred_map m
-	           , extended_map = ()}
+                   , extended_map = ()}
 
 
 mapSym :: Symbol -> Symbol

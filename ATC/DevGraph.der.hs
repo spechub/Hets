@@ -45,7 +45,7 @@ import ATC.Grothendieck
 
 instance ShATermConvertible BasicProof where
      toShATerm att0 (BasicProof lid p) = 
-	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
+         case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 p of { (att2,i2) ->
             addATerm (ShAAppl "BasicProof" [i1,i2] []) att2}}
      toShATerm att0 Guessed =
@@ -60,8 +60,8 @@ instance ShATermConvertible BasicProof where
 
      fromShATerm att = 
          case getATerm att of
-	    (ShAAppl "BasicProof" [i1,i2] _) ->
-	       case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
+            (ShAAppl "BasicProof" [i1,i2] _) ->
+               case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case getATermByIndex1 i2 att of { att' ->
                case atcLogicLookup "BasicProof" i1'  of {
                     Logic lid -> BasicProof lid (fromShATerm att')}}}
@@ -72,21 +72,21 @@ instance ShATermConvertible BasicProof where
                  "Conjectured" -> Conjectured
                  "Handwritten" -> Handwritten
                  _ -> fromShATermError "BasicProof" v}
-	    u     -> fromShATermError "BasicProof" u
+            u     -> fromShATermError "BasicProof" u
 
 instance ShATermConvertible G_theory where
      toShATerm att0 (G_theory lid sign sens) = 
-	 case toShATerm att0 (language_name lid) of { (att1,i1) ->
+         case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 sign of { (att2,i2) ->
          case toShATerm att2 sens of { (att3,i3) ->
            addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
      fromShATerm att = 
          case getATerm att of
-	    (ShAAppl "G_theory" [i1,i2,i3] _) ->
-		let i1' = fromShATerm (getATermByIndex1 i1 att)
+            (ShAAppl "G_theory" [i1,i2,i3] _) ->
+                let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att'
                 in case atcLogicLookup "G_theory" i1' of
                     Logic lid -> G_theory lid (fromShATerm att') 
                                                (fromShATerm att'')
-	    u     -> fromShATermError "G_theory" u
+            u     -> fromShATermError "G_theory" u

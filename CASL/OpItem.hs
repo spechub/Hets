@@ -54,17 +54,17 @@ opHead ks =
 
 opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = do p <- asKey assocS
-	       return (Assoc_op_attr, p)
-	    <|> 
-	    do p <- asKey commS
-	       return (Comm_op_attr, p)
-	    <|> 
-	    do p <- asKey idemS
-	       return (Idem_op_attr, p)
-	    <|> 
-	    do p <- asKey unitS
-	       t <- term ks
-	       return (Unit_op_attr t, p)
+               return (Assoc_op_attr, p)
+            <|> 
+            do p <- asKey commS
+               return (Comm_op_attr, p)
+            <|> 
+            do p <- asKey idemS
+               return (Idem_op_attr, p)
+            <|> 
+            do p <- asKey unitS
+               t <- term ks
+               return (Unit_op_attr t, p)
 
 isConstant :: OP_TYPE -> Bool
 isConstant(Op_type _ [] _ _) = True
@@ -78,19 +78,19 @@ opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
 opItem ks = 
     do (os, cs)  <- parseId ks `separatedBy` anComma
        if isSingle os then 
-	      do c <- anColon
-		 t <- opType ks
-		 if isConstant t then 
-		   opBody ks (head os) (toHead (tokPos c) t)
-		   <|> opAttrs ks os t [c]  -- this always succeeds
-		   else opAttrs ks os t [c]
-	      <|>
-	      do h <- opHead ks
-		 opBody ks (head os) h
-	      else
-	      do c <- anColon
-		 t <- opType ks
-		 opAttrs ks os t (cs++[c])
+              do c <- anColon
+                 t <- opType ks
+                 if isConstant t then 
+                   opBody ks (head os) (toHead (tokPos c) t)
+                   <|> opAttrs ks os t [c]  -- this always succeeds
+                   else opAttrs ks os t [c]
+              <|>
+              do h <- opHead ks
+                 opBody ks (head os) h
+              else
+              do c <- anColon
+                 t <- opType ks
+                 opAttrs ks os t (cs++[c])
 
 opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD 
        -> AParser st (OP_ITEM f)
@@ -99,9 +99,9 @@ opBody ks o h =
        a <- annos
        t <- term ks
        return $ Op_defn o h (Annoted t nullRange a []) $ tokPos e
-	  
+          
 opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token] 
-	-> AParser st (OP_ITEM f)
+        -> AParser st (OP_ITEM f)
 opAttrs ks os t c = 
     do q <- anComma 
        (as, cs) <- opAttr ks `separatedBy` anComma
@@ -109,7 +109,7 @@ opAttrs ks os t c =
        return (Op_decl os t (map fst as) ps)
    <|> return (Op_decl os t [] (catPos c)) 
 
--- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"  		
+-- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"            
 
 -- ----------------------------------------------------------------------
 -- predicates
@@ -119,16 +119,16 @@ predItem :: AParsable f => [String] -> AParser st (PRED_ITEM f)
 predItem ks = 
     do (ps, cs)  <- parseId ks `separatedBy` anComma
        if isSingle ps then
-		predBody ks (head ps) (Pred_head [] nullRange)
-		<|> 
-		do h <- predHead ks
-		   predBody ks (head ps) h
-		<|> 
-		predTypeCont ks ps cs
-		else predTypeCont ks ps cs
-		
+                predBody ks (head ps) (Pred_head [] nullRange)
+                <|> 
+                do h <- predHead ks
+                   predBody ks (head ps) h
+                <|> 
+                predTypeCont ks ps cs
+                else predTypeCont ks ps cs
+                
 predBody :: AParsable f => [String] -> PRED_NAME -> PRED_HEAD 
-	 -> AParser st (PRED_ITEM f)	
+         -> AParser st (PRED_ITEM f)    
 predBody ks p h = 
     do e <- asKey equivS
        a <- annos

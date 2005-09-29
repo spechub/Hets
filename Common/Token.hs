@@ -131,8 +131,8 @@ casl_reserved_fwords = formula_words ++ casl_reserved_words
 -- (including a quoted char, dot-words or a single digit)
 sid :: ([String], [String]) -> GenParser Char st Token
 sid (kOps, kWords) = pToken (scanQuotedChar <|> scanDotWords 
-		<|> scanDigit <|> reserved kOps scanAnySigns 
-		<|> reserved kWords scanAnyWords <?> "simple-id")
+                <|> scanDigit <|> reserved kOps scanAnySigns 
+                <|> reserved kWords scanAnyWords <?> "simple-id")
 
 -- * 'Token' lists parsers
 
@@ -151,8 +151,8 @@ innerMix1 l = sid l <:> option [] (innerMix2 l)
 -- | mixfix components not starting with a 'sid' (possibly places)
 innerMix2 :: ([String], [String]) -> GenParser Char st [Token]
 innerMix2 l = let p = innerList l in 
-		  flat (many1 (braceP p <|> bracketP p <|> many1 placeT))
-			   <++> option [] (innerMix1 l)
+                  flat (many1 (braceP p <|> bracketP p <|> many1 placeT))
+                           <++> option [] (innerMix1 l)
 
 -- | any mixfix components within braces or brackets
 innerList :: ([String], [String]) -> GenParser Char st [Token]
@@ -172,8 +172,8 @@ topMix2 l = flat (many1 (braceP $ innerList l)) <++> option [] (topMix1 l)
 -- that may follow a place ('placeT') (outside 'innerList')
 topMix3 :: ([String], [String]) -> GenParser Char st [Token]
 topMix3 l = let p = innerList l in 
-		bracketP p <++> flat (many (braceP p)) 
-			     <++> option [] (topMix1 l)
+                bracketP p <++> flat (many (braceP p)) 
+                             <++> option [] (topMix1 l)
 
 -- | any ('topMix1', 'topMix2', 'topMix3') mixfix components 
 -- that may follow a place ('placeT') at the top level
@@ -193,8 +193,8 @@ tokStart l = afterPlace l <++> flat (many (middle l))
 -- possibly starting with places but no single 'placeT' only. 
 start :: ([String], [String]) -> GenParser Char st [Token]
 start l = tokStart l <|> placeT <:> (tokStart l <|> 
-				 many1 placeT <++> option [] (tokStart l))
-				     <?> "id"
+                                 many1 placeT <++> option [] (tokStart l))
+                                     <?> "id"
 
 -- ----------------------------------------------
 -- * parser for mixfix and compound 'Id's
@@ -203,9 +203,9 @@ start l = tokStart l <|> placeT <:> (tokStart l <|>
 -- | parsing a compound list
 comps :: ([String], [String]) -> GenParser Char st ([Id], Range)
 comps keys = do o <- oBracketT
-	        (ts, ps) <- mixId keys keys `separatedBy` commaT
-	        c <- cBracketT
-	        return (ts, toPos o ps c)
+                (ts, ps) <- mixId keys keys `separatedBy` commaT
+                c <- cBracketT
+                return (ts, toPos o ps c)
 
 {- | parse mixfix components ('start') and an optional compound list ('comps')
    if the last token was no place. Accept possibly further places.
@@ -216,9 +216,9 @@ mixId :: ([String], [String]) -> ([String], [String]) -> GenParser Char st Id
 mixId keys idKeys = 
     do l <- start keys
        if isPlace (last l) then return (Id l [] nullRange)
-	  else do (c, p) <- option ([], nullRange) (comps idKeys)
-		  u <- many placeT
-		  return (Id (l++u) c p)
+          else do (c, p) <- option ([], nullRange) (comps idKeys)
+                  u <- many placeT
+                  return (Id (l++u) c p)
 
 -- | the Casl key strings (signs first) with additional keywords
 casl_keys :: [String] -> ([String], [String])
@@ -231,7 +231,7 @@ parseId ks = mixId (casl_keys ks) (casl_keys ks)
 -- | disallow 'barS' with in the top-level of constructor names
 consId :: [String] -> GenParser Char st Id
 consId ks = mixId (barS:ks++casl_reserved_fops, 
-		   ks++casl_reserved_fwords) $ casl_keys ks
+                   ks++casl_reserved_fwords) $ casl_keys ks
 
 -- | Casl sorts are simple words ('varId'), 
 -- but may have a compound list ('comps')

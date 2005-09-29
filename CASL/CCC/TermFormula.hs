@@ -44,12 +44,12 @@ partial_OpSymb os =
       Op_name _ -> Nothing
       Qual_op_name _ ot _ -> case ot of
                                Op_type Total _ _ _ -> Just False
-	                       Op_type Partial _ _ _ -> Just True
+                               Op_type Partial _ _ _ -> Just True
 
 
 is_user_or_sort_gen :: Named (FORMULA f) -> Bool
 is_user_or_sort_gen ax = take 12 name == "ga_generated" || 
-			 take 3 name /= "ga_"
+                         take 3 name /= "ga_"
     where name = senName ax     
 
 

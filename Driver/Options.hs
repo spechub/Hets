@@ -628,11 +628,11 @@ checkInFile file =
 -- | check if infile is uri 
 checkUri :: FilePath -> Bool
 checkUri file = let (_, t) = span (/=':') file in
-		   if length t < 4 then False
-		      else let (_:c2:c3:_) = t in
-                	      if c2 == '/' && c3 == '/' then True 
+                   if length t < 4 then False
+                      else let (_:c2:c3:_) = t in
+                              if c2 == '/' && c3 == '/' then True 
                               -- (http://, https://, ftp://, file://, etc.)
-			         else False
+                                 else False
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]

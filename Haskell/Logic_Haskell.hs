@@ -98,11 +98,11 @@ type SYMB_ITEMS = ()
 type SYMB_MAP_ITEMS = ()
 
 instance Syntax Haskell HsDecls
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec Haskell = Just hatParser
-	 parse_symb_items Haskell = Nothing
-	 parse_symb_map_items Haskell = Nothing
+         parse_symb_items Haskell = Nothing
+         parse_symb_map_items Haskell = Nothing
 
 type Haskell_Sublogics = ()
 
@@ -113,8 +113,8 @@ instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell ga NamedSen{senName = lab, sentence = sen} = 
         printText0 ga sen <>
-	if null lab then empty 
-	else space <> text "{-" <+> text lab <+> text "-}" 
+        if null lab then empty 
+        else space <> text "{-" <+> text lab <+> text "-}" 
     provers Haskell = [] 
     cons_checkers Haskell = []
 

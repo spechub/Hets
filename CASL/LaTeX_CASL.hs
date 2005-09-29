@@ -33,27 +33,27 @@ instance PrintLaTeX PredType where
 
 instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
     printLatex0 ga s = 
-	casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s) 
-	$$ 
+        casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s) 
+        $$ 
         (if Rel.null (sortRel s) then empty
             else casl_keyword_latex sortS <\+> 
              (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   casl_keyword_latex opS <\+>
-		   printLatex0 ga i <\+> colon_latex <>
-		   printLatex0 ga t) 
-	      $ concatMap (\ (o, ts) ->
-			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	       $ Map.toList $ opMap s)
-	$$ 
-	vcat (map (\ (i, t) -> 
-		   casl_keyword_latex predS <\+>
-		   printLatex0 ga i <\+> colon_latex <\+>
-		   printLatex0 ga (toPRED_TYPE t)) 
-	     $ concatMap (\ (o, ts) ->
-			  map ( \ ty -> (o, ty) ) $ Set.toList ts)
-	     $ Map.toList $ predMap s)
+        $$ 
+        vcat (map (\ (i, t) -> 
+                   casl_keyword_latex opS <\+>
+                   printLatex0 ga i <\+> colon_latex <>
+                   printLatex0 ga t) 
+              $ concatMap (\ (o, ts) ->
+                          map ( \ ty -> (o, ty) ) $ Set.toList ts)
+               $ Map.toList $ opMap s)
+        $$ 
+        vcat (map (\ (i, t) -> 
+                   casl_keyword_latex predS <\+>
+                   printLatex0 ga i <\+> colon_latex <\+>
+                   printLatex0 ga (toPRED_TYPE t)) 
+             $ concatMap (\ (o, ts) ->
+                          map ( \ ty -> (o, ty) ) $ Set.toList ts)
+             $ Map.toList $ predMap s)
      where printRel (subs, supersorts) =
              printLatex0 ga subs <\+> hc_sty_axiom lessS 
                              <\+> printSet ga supersorts

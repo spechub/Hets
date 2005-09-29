@@ -45,18 +45,18 @@ instance PrintLaTeX a => PrintLaTeX (DefaultMorphism a) where
 
 instance (ShATermConvertible a) => ShATermConvertible (DefaultMorphism a) where
     toShATerm att0 (MkMorphism s t) =
-	case toShATerm att0 s of {  (att1, s') ->
-	case toShATerm att1 t of {  (att2, t') ->
-	addATerm (ShAAppl "MkMorphism" [ s', t'] []) att2 }}
+        case toShATerm att0 s of {  (att1, s') ->
+        case toShATerm att1 t of {  (att2, t') ->
+        addATerm (ShAAppl "MkMorphism" [ s', t'] []) att2 }}
     fromShATerm att =
-	case aterm of
-	    (ShAAppl "MkMorphism" [ s, t ] _) ->
-		    case fromShATerm (getATermByIndex1 s att) of {  s' ->
-		    case fromShATerm (getATermByIndex1 t att) of {  t' ->
-		    (MkMorphism s' t') }}
-	    u -> fromShATermError "MkMorphism" u
-	where
-	    aterm = getATerm att
+        case aterm of
+            (ShAAppl "MkMorphism" [ s, t ] _) ->
+                    case fromShATerm (getATermByIndex1 s att) of {  s' ->
+                    case fromShATerm (getATermByIndex1 t att) of {  t' ->
+                    (MkMorphism s' t') }}
+            u -> fromShATermError "MkMorphism" u
+        where
+            aterm = getATerm att
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
 domOfDefaultMorphism (MkMorphism s _) = s
@@ -66,7 +66,7 @@ ideOfDefaultMorphism :: sign -> DefaultMorphism sign
 ideOfDefaultMorphism s = MkMorphism s s
 
 compOfDefaultMorphism :: (Monad m, Eq sign) => DefaultMorphism sign
-		      -> DefaultMorphism sign -> m (DefaultMorphism sign)
+                      -> DefaultMorphism sign -> m (DefaultMorphism sign)
 compOfDefaultMorphism (MkMorphism s1 s) (MkMorphism s2 s3) = 
     if s == s2 then return $ MkMorphism s1 s3 else 
     fail "intermediate signatures are different"

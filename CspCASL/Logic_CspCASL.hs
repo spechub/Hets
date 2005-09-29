@@ -59,31 +59,31 @@ instance Language CspCASL  -- default definition is okay
 instance Category CspCASL CSPSign CSPMorphism
     where
          -- ide :: id -> object -> morphism
-	 ide CspCASL sigma = 
+         ide CspCASL sigma = 
            let idAdd =
                 CSPAddMorphism { channelMap = Map.empty -- ??? too simplistic!
                                , processMap = Map.empty -- ??? too simplistic!
                                }
             in idMor (\ _ _ -> idAdd) sigma
          -- o :: id -> morphism -> morphism -> Maybe morphism
-	 comp CspCASL = compose (const id) -- ??? too simplistic!
+         comp CspCASL = compose (const id) -- ??? too simplistic!
          -- dom, cod :: id -> morphism -> object
-	 dom CspCASL = msource
-	 cod CspCASL = mtarget
+         dom CspCASL = msource
+         cod CspCASL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj CspCASL _ = fun_err "legall_obj"
+         legal_obj CspCASL _ = fun_err "legall_obj"
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor CspCASL _ = fun_err "legal_mor"
+         legal_mor CspCASL _ = fun_err "legal_mor"
 
 
 -- abstract syntax, parsing (and printing)
 
 instance Syntax CspCASL Basic_CSP_CASL_C_SPEC
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec CspCASL = Just basicCspCaslCSpec
-	 parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
-	 parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
+         parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
+         parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
 -- lattices (for sublogics)
 

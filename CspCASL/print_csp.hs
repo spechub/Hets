@@ -32,7 +32,7 @@ run p input
                            ; print err
                            }
             Right x -> putStrLn $ renderText Nothing $
-		       printText0 emptyGlobalAnnos x                        
+                       printText0 emptyGlobalAnnos x                        
 
 main :: IO ()
 main = do { l <- getArgs

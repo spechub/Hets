@@ -66,8 +66,8 @@ createTextSaveDisplayExt title filename txt conf unpost =
      pack t [Side AtTop, Expand Off, PadY 10]
      pack sb [Side AtTop, Expand On]
      pack ed [Side AtTop, Expand On, Fill X]
-     pack q [Side AtRight, PadX 5, PadY 5] 		 
-     pack s [Side AtLeft, PadX 5, PadY 5] 		 
+     pack q [Side AtRight, PadX 5, PadY 5]               
+     pack s [Side AtLeft, PadX 5, PadY 5]                
 
      ed # value txt
      ed # state Disabled

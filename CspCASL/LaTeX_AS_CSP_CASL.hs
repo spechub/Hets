@@ -25,15 +25,15 @@ instance PrintLaTeX C3PO where
 
 instance PrintLaTeX NAMED_CSP_CASL_C_SPEC where
     printLatex0 ga (Named_csp_casl_spec sn c3spec) =
-	ptext "ccspec"  <\+> printLatex0 ga sn <\+> equals $$
+        ptext "ccspec"  <\+> printLatex0 ga sn <\+> equals $$
         nest 2 (printLatex0 ga c3spec) $$
         ptext "end"
 
 instance PrintLaTeX CSP_CASL_C_SPEC where
     printLatex0 ga (Csp_casl_c_spec dd _cd _pd) =
-	ptext "data" $$
-	nest 2 (printLatex0 ga dd)
+        ptext "data" $$
+        nest 2 (printLatex0 ga dd)
 
 instance PrintLaTeX Basic_CSP_CASL_C_SPEC where
     printLatex0 _ga (Basic_csp_casl_c_spec _cd _pd) =
-	ptext "<not printable yet>"
+        ptext "<not printable yet>"

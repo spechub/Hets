@@ -3,7 +3,7 @@
 This folder contains various comorphisms (implemented using
 the type class 'Logic.Comorphism.Comorphism'), which are then
 collected to a logic graph in "Comorphisms.LogicGraph".
-The latter is based on the list of logics collected in 	
+The latter is based on the list of logics collected in  
 "Comorphisms.LogicList".
 
 The individual comorphisms are on the one hand trivial embeddings:

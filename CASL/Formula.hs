@@ -44,7 +44,7 @@ parse terms and formulae
 -}
 
 module CASL.Formula (term, formula, restrictedTerm, restrictedFormula, anColon
-	       , varDecl, opSort, opFunSort, opType, predType, predUnitType)
+               , varDecl, opSort, opFunSort, opType, predType, predUnitType)
     where
 
 import Common.AnnoState
@@ -57,10 +57,10 @@ import Text.ParserCombinators.Parsec
 
 simpleTerm :: [String] -> AParser st (TERM f)
 simpleTerm k = fmap Mixfix_token (pToken(scanFloat <|> scanString 
-		       <|>  scanQuotedChar <|> scanDotWords 
-		       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
-		       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
-		       <|>  placeS <?> "id/literal" )) 
+                       <|>  scanQuotedChar <|> scanDotWords 
+                       <|>  reserved (k ++ casl_reserved_fwords) scanAnyWords
+                       <|>  reserved (k ++ casl_reserved_fops) scanAnySigns
+                       <|>  placeS <?> "id/literal" )) 
 
 restTerms :: (AParsable f) => [String] -> AParser st [TERM f]
 restTerms k = (tryItemEnd startKeyword >> return []) <|> 
@@ -68,7 +68,7 @@ restTerms k = (tryItemEnd startKeyword >> return []) <|>
               <|> return []
 
 startTerm, restTerm, mixTerm, whenTerm :: AParsable f => [String] 
-				       -> AParser st (TERM f)
+                                       -> AParser st (TERM f)
 startTerm k = 
     parenTerm <|> braceTerm <|> bracketTerm <|> try (addAnnos >> simpleTerm k)
 
@@ -80,12 +80,12 @@ mixTerm k =
 
 whenTerm k = 
            do t <- mixTerm k 
-	      do w <- asKey whenS
-		 f <- impFormula k
-		 e <- asKey elseS
-		 r <- whenTerm k
-		 return (Conditional t f r $ toPos w [] e)
-		<|> return t
+              do w <- asKey whenS
+                 f <- impFormula k
+                 e <- asKey elseS
+                 r <- whenTerm k
+                 return (Conditional t f r $ toPos w [] e)
+                <|> return t
 
 term :: AParsable f => [String] -> AParser st (TERM f)
 term = whenTerm
@@ -146,10 +146,10 @@ opType :: [String] -> AParser st OP_TYPE
 opType k = 
     do (b, s, p) <- opSort k
        if b then return (Op_type Partial [] s p)
-	  else do c <- crossT 
-		  (ts, ps) <- sortId k `separatedBy` crossT
-		  opFunSort k (s:ts) (c:ps)
- 	  <|> opFunSort k [s] []
+          else do c <- crossT 
+                  (ts, ps) <- sortId k `separatedBy` crossT
+                  opFunSort k (s:ts) (c:ps)
+          <|> opFunSort k [s] []
           <|> return (Op_type Total [] s nullRange)
 
 parenTerm, braceTerm, bracketTerm :: AParsable f => AParser st (TERM f)
@@ -157,8 +157,8 @@ parenTerm =
     do o <- wrapAnnos oParenT
        qualVarName o <|> qualOpName o <|> qualPredName o <|> 
           do (ts, ps) <- terms []
-	     c <- addAnnos >> cParenT
-	     return (Mixfix_parenthesized ts $ toPos o ps c)
+             c <- addAnnos >> cParenT
+             return (Mixfix_parenthesized ts $ toPos o ps c)
 
 braceTerm = 
     do o <- wrapAnnos oBraceT
@@ -174,13 +174,13 @@ bracketTerm =
 
 quant :: AParser st (QUANTIFIER, Token)
 quant = do q <- asKey (existsS++exMark)
-	   return (Unique_existential, q)
+           return (Unique_existential, q)
         <|>
         do q <- asKey existsS
-	   return (Existential, q)
+           return (Existential, q)
         <|>
         do q <- forallT
-	   return (Universal, q)
+           return (Universal, q)
         <?> "quantifier"
        
 quantFormula :: AParsable f => [String] -> AParser st (FORMULA f)
@@ -190,7 +190,7 @@ quantFormula k =
        d <- dotT
        f <- impFormula k
        return $ Quantification q vs f
-	       $ toPos p ps d
+               $ toPos p ps d
 
 varDecl :: [String] -> AParser st VAR_DECL
 varDecl k = 
@@ -207,8 +207,8 @@ predType k =
 
 predUnitType :: GenParser Char st PRED_TYPE
 predUnitType = do o <- oParenT
-		  c <- cParenT
-		  return $ Pred_type [] (tokPos o `appRange` tokPos c)
+                  c <- cParenT
+                  return $ Pred_type [] (tokPos o `appRange` tokPos c)
 
 qualPredName :: Token -> AParser st (TERM f)
 qualPredName o = 
@@ -223,57 +223,57 @@ parenFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 parenFormula k = 
     do o <- oParenT << addAnnos
        do q <- qualPredName o <|> qualVarName o <|> qualOpName o
-	  l <- restTerms []  -- optional arguments
-	  termFormula k (if null l then q else
-				      Mixfix_term (q:l))
+          l <- restTerms []  -- optional arguments
+          termFormula k (if null l then q else
+                                      Mixfix_term (q:l))
          <|> do f <- impFormula [] << addAnnos
-		case f of Mixfix_formula t -> 
-				     do c <- cParenT
-					l <- restTerms k
-					let tt = Mixfix_parenthesized [t]
-					           (toPos o [] c)
-					    ft = if null l then tt 
-					           else Mixfix_term (tt:l)
-					  in termFormula k ft
-				     -- commas are not allowed
-			  _ -> cParenT >> return f 
+                case f of Mixfix_formula t -> 
+                                     do c <- cParenT
+                                        l <- restTerms k
+                                        let tt = Mixfix_parenthesized [t]
+                                                   (toPos o [] c)
+                                            ft = if null l then tt 
+                                                   else Mixfix_term (tt:l)
+                                          in termFormula k ft
+                                     -- commas are not allowed
+                          _ -> cParenT >> return f 
 
 termFormula :: AParsable f => [String] -> (TERM f) -> AParser st (FORMULA f)
 termFormula k t =  do e <- try (asKey exEqual)
-		      r <- whenTerm k
-		      return (Existl_equation t r $ tokPos e)
+                      r <- whenTerm k
+                      return (Existl_equation t r $ tokPos e)
                    <|>
-		   do try (string exEqual)
-		      unexpected ("sign following " ++ exEqual)
+                   do try (string exEqual)
+                      unexpected ("sign following " ++ exEqual)
                    <|>
-		   do e <- try equalT
-		      r <- whenTerm k
-		      return (Strong_equation t r $ tokPos e)
+                   do e <- try equalT
+                      r <- whenTerm k
+                      return (Strong_equation t r $ tokPos e)
                    <|>
-		   do e <- try (asKey inS)
-		      s <- sortId k
-		      return (Membership t s $ tokPos e)
-		   <|> return (Mixfix_formula t)
+                   do e <- try (asKey inS)
+                      s <- sortId k
+                      return (Membership t s $ tokPos e)
+                   <|> return (Mixfix_formula t)
 
 primFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 primFormula k = do f <- aparser
                    return (ExtFORMULA f)
-		<|>   
+                <|>   
               do c <- asKey trueS
-		 return (True_atom $ tokPos c)
+                 return (True_atom $ tokPos c)
               <|>
-	      do c <- asKey falseS
-		 return (False_atom $ tokPos c)
+              do c <- asKey falseS
+                 return (False_atom $ tokPos c)
               <|>
-	      do c <- asKey defS
-		 t <- whenTerm k
-		 return (Definedness t $ tokPos c)
+              do c <- asKey defS
+                 t <- whenTerm k
+                 return (Definedness t $ tokPos c)
               <|>
-	      do c <- try(asKey notS <|> asKey negS) <?> "\"not\""
-		 f <- primFormula k 
-		 return (Negation f $ tokPos c)
+              do c <- try(asKey notS <|> asKey negS) <?> "\"not\""
+                 f <- primFormula k 
+                 return (Negation f $ tokPos c)
               <|> parenFormula k <|> quantFormula k 
-		      <|> (whenTerm k >>= termFormula k)
+                      <|> (whenTerm k >>= termFormula k)
 
 andKey, orKey :: AParser st Token
 andKey = asKey lAnd
@@ -282,14 +282,14 @@ orKey = asKey lOr
 andOrFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 andOrFormula k = 
                do f <- primFormula k
-		  do c <- andKey
-		     (fs, ps) <- primFormula k `separatedBy` andKey
-		     return (Conjunction (f:fs) (catPos (c:ps)))
-		    <|>
-		    do c <- orKey
-		       (fs, ps) <- primFormula k `separatedBy` orKey
-		       return (Disjunction (f:fs) (catPos (c:ps)))
-		    <|> return f
+                  do c <- andKey
+                     (fs, ps) <- primFormula k `separatedBy` andKey
+                     return (Conjunction (f:fs) (catPos (c:ps)))
+                    <|>
+                    do c <- orKey
+                       (fs, ps) <- primFormula k `separatedBy` orKey
+                       return (Disjunction (f:fs) (catPos (c:ps)))
+                    <|> return f
 
 implKey, ifKey :: AParser st Token
 implKey = asKey implS
@@ -298,24 +298,24 @@ ifKey = asKey ifS
 impFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 impFormula k = 
              do f <- andOrFormula k
-		do c <- implKey
-		   (fs, ps) <- andOrFormula k `separatedBy` implKey
-		   return (makeImpl True (f:fs) (catPosAux (c:ps)))
-		  <|>
-		  do c <- ifKey
-		     (fs, ps) <- andOrFormula k `separatedBy` ifKey
-		     return (makeIf (f:fs) (catPosAux (c:ps)))
-		  <|>
-		  do c <- asKey equivS
-		     g <- andOrFormula k
-		     return (Equivalence f g $ tokPos c)
-		  <|> return f
-		    where makeImpl b [f,g] p = Implication f g b (Range p)
-		          makeImpl b (f:r) (c:p) = 
-			             Implication f (makeImpl b r p) b (Range [c])
-		          makeImpl _ _ _ = 
-			      error "makeImpl got illegal argument"
-			  makeIf l p = makeImpl False (reverse l) (reverse p)
+                do c <- implKey
+                   (fs, ps) <- andOrFormula k `separatedBy` implKey
+                   return (makeImpl True (f:fs) (catPosAux (c:ps)))
+                  <|>
+                  do c <- ifKey
+                     (fs, ps) <- andOrFormula k `separatedBy` ifKey
+                     return (makeIf (f:fs) (catPosAux (c:ps)))
+                  <|>
+                  do c <- asKey equivS
+                     g <- andOrFormula k
+                     return (Equivalence f g $ tokPos c)
+                  <|> return f
+                    where makeImpl b [f,g] p = Implication f g b (Range p)
+                          makeImpl b (f:r) (c:p) = 
+                                     Implication f (makeImpl b r p) b (Range [c])
+                          makeImpl _ _ _ = 
+                              error "makeImpl got illegal argument"
+                          makeIf l p = makeImpl False (reverse l) (reverse p)
 
 formula :: AParsable f => [String] -> AParser st (FORMULA f)
 formula = impFormula

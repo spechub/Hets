@@ -15,24 +15,24 @@ A very simplified version of John Hughes's
 
 module Common.SimpPretty (
 
-	-- * The document type
+        -- * The document type
         SDoc,            -- Abstract
 
-	-- * Primitive SDocuments
+        -- * Primitive SDocuments
         empty, comma,
 
-	-- * Converting values into documents
+        -- * Converting values into documents
         text,
 
-	-- * Wrapping documents in delimiters
+        -- * Wrapping documents in delimiters
         parens, brackets, braces,
 
-	-- * Combining documents
+        -- * Combining documents
         (<>), 
 
-	-- * Rendering documents
+        -- * Rendering documents
 
-	render, fullRender, writeFileSDoc
+        render, fullRender, writeFileSDoc
   ) where
 
 
@@ -46,13 +46,13 @@ infixl 6 <>
 
 -- The primitive SDoc values
 
-empty   :: SDoc;			-- ^ An empty document
+empty   :: SDoc;                        -- ^ An empty document
 comma   :: SDoc;                 -- ^ A ',' character
-text	 :: String   -> SDoc
+text     :: String   -> SDoc
 
-parens       :: SDoc -> SDoc; 	-- ^ Wrap document in @(...)@
-brackets     :: SDoc -> SDoc;  	-- ^ Wrap document in @[...]@
-braces	     :: SDoc -> SDoc;   	-- ^ Wrap document in @{...}@
+parens       :: SDoc -> SDoc;   -- ^ Wrap document in @(...)@
+brackets     :: SDoc -> SDoc;   -- ^ Wrap document in @[...]@
+braces       :: SDoc -> SDoc;           -- ^ Wrap document in @{...}@
 
 -- Combining @SDoc@ values
 
@@ -100,8 +100,8 @@ p <> q = Beside p q
 writeFileSDoc :: FilePath -> SDoc -> IO ()
 writeFileSDoc fp sd =
      do h <- openFile fp WriteMode
-	fullRender (hPutStr h) (>>) sd
-	hClose h
+        fullRender (hPutStr h) (>>) sd
+        hClose h
 
 render doc       = showSDoc doc ""
 
@@ -109,8 +109,8 @@ showSDoc :: SDoc -> String -> String
 showSDoc doc = fullRender showString (.) doc
 
 fullRender :: (String -> a)
-	     -> (a -> a -> a)
-             -> SDoc			
+             -> (a -> a -> a)
+             -> SDoc                    
              -> a                         
 fullRender txt comp doc 
   = lay doc 

@@ -24,18 +24,18 @@ translateIdWithType ty i =
       c = if null s then error "translateIdWithTyper" else head s
   in case ty of 
      UpperId -> 
-	 if isLower c || c == '_' || isDigit c
-	    then  "A__" ++ s else s  
+         if isLower c || c == '_' || isDigit c
+            then  "A__" ++ s else s  
      LowerId -> 
-	 if isUpper c || c == '_' || isDigit c || s `Set.member` lowerCaseList
-	    then "a__" ++ s  else s 
+         if isUpper c || c == '_' || isDigit c || s `Set.member` lowerCaseList
+            then "a__" ++ s  else s 
 
 -- reserved Haskell keywords
 lowerCaseList :: Set.Set String
 lowerCaseList = Set.fromList [
-		 "case", "class", "data", "default", "deriving", "do", "else",
-	         "if", "import", "in", "infix", "infixl", "infixr", "instance",
-	         "let", "module", "newtype", "of", "then", "type", "where"]
+                 "case", "class", "data", "default", "deriving", "do", "else",
+                 "if", "import", "in", "infix", "infixl", "infixr", "instance",
+                 "let", "module", "newtype", "of", "then", "type", "where"]
 
 -- | Letter case indicator
 data IdCase = UpperId | LowerId
@@ -58,8 +58,8 @@ translateToken t = let str = tokStr t in showString $
 translateCompound :: [Id] -> ShowS
 --  [      ,      ]
 translateCompound ids = noShow (null ids) $ showString "_F"
-	     . showSepList (showString "_K") translateId ids
-	     . showString "_J"
+             . showSepList (showString "_K") translateId ids
+             . showString "_J"
 
 -- | Converts characters to parts of Haskell identifiers
 -- thereby translating special ones

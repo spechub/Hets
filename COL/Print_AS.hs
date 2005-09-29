@@ -22,14 +22,14 @@ import COL.COLSign
 
 instance PrettyPrint COL_SIG_ITEM where
     printText0 ga (Constructor_items ls _) =
-	text constructorS <> pluralS_doc ls <+> semiAnno_text ga ls
+        text constructorS <> pluralS_doc ls <+> semiAnno_text ga ls
     printText0 ga (Observer_items ls _) =
-	text observerS <+> semiAnno_text ga ls
+        text observerS <+> semiAnno_text ga ls
 
 
 instance PrettyPrint COLSign where
     printText0 ga s = 
         text constructorS <+> semiT_text ga (Set.toList $ constructors s)
-	$$
+        $$
         text observerS <+> semiT_text ga (Map.toList $ observers s)
 

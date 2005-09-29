@@ -51,9 +51,9 @@ library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
 library (l,lG) = 
    do setUserState l
       (ps, ln) <- option (nullRange, Lib_id $ Indirect_link libraryS nullRange)
-			   (do s1 <- asKey libraryS -- 'library' keyword
-			       n <- libName         -- library name
-			       return (tokPos s1, n))
+                           (do s1 <- asKey libraryS -- 'library' keyword
+                               n <- libName         -- library name
+                               return (tokPos s1, n))
       an <- annos          -- annotations 
       ls <- libItems lG     -- library elements
       return (Lib_defn ln ls ps an)
@@ -104,7 +104,7 @@ libItem l =
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a 
-	       (catPos ([s, e] ++ maybeToList q)))
+               (catPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
        vn <- simpleId
@@ -126,8 +126,8 @@ libItem l =
        usp <- unitSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
-	        (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
-	       )
+                (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
+               )
   <|> -- ref spec
     do kRef <- asKey refinementS
        name <- simpleId
@@ -135,8 +135,8 @@ libItem l =
        rsp <- refSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Ref_spec_defn name rsp
-	           (catPos ([kRef, kEqu] ++ maybeToList kEnd))
-	       )
+                   (catPos ([kRef, kEqu] ++ maybeToList kEnd))
+               )
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
@@ -145,8 +145,8 @@ libItem l =
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-	        (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
-	       )
+                (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
+               )
   <|> -- download
     do s1 <- asKey fromS
        ln <- libName
@@ -163,7 +163,7 @@ libItem l =
   <|> -- just a spec (turned into "spec spec = sp")
      do a <- aSpec l
         return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
-	       (Genericity (Params []) (Imported []) nullRange) a nullRange)	
+               (Genericity (Params []) (Imported []) nullRange) a nullRange)    
 
 -- | Parse view type
 viewType :: LogicGraph -> AParser AnyLogic VIEW_TYPE

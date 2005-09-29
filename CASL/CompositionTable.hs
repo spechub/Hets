@@ -11,9 +11,9 @@ type ConverseTable = [(BaseRel,BaseRel)]
 data Table = Table { name :: String,
                      compositionTable :: CompositionTable,
                      converseTable :: ConverseTable,
-		     identity :: BaseRel,
+                     identity :: BaseRel,
                      models :: [(String,String)]
-		   }
+                   }
 
 -- hets --spec=RCC8 -o comptable.xml Calculi/Space/RCC8.het
 -- writes Calculi/Space/RCC8.comptable.xml

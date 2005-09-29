@@ -184,12 +184,12 @@ evaluateOnePointFORMULA sig (Sort_gen_ax constrs _)=
                                              Op_type _ args res _->[(args,res)]
                                   ) ops
           iterateInhabited l =
-	            if l==newL then newL else iterateInhabited newL
-		             where newL =foldr (\ (as,rs) l'->
+                    if l==newL then newL else iterateInhabited newL
+                             where newL =foldr (\ (as,rs) l'->
                                                   if (all (\s->elem s l') as)
                                                       && (not (elem rs l'))
                                                   then rs:l'
-					          else l') l argsAndres 
+                                                  else l') l argsAndres 
     --      inhabited = iterateInhabited []
           inhabited = iterateInhabited $ Set.toList sorts          
       in if any (\s->Set.member s sorts) srts then Nothing

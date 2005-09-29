@@ -23,4 +23,4 @@ initGlobalAnnos ld = setGlobalAnnos emptyGlobalAnnos ld
 
 setGlobalAnnos :: GlobalAnnos -> LIB_DEFN -> Result GlobalAnnos
 setGlobalAnnos ga ld = addGlobalAnnos ga annos
-    where annos = case ld of Lib_defn _ _ _ as -> as	  
+    where annos = case ld of Lib_defn _ _ _ as -> as      

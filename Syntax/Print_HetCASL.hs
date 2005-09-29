@@ -32,21 +32,21 @@ data PrintMode = PMtext | PMlatex | PMdebugLatex
 printLIB_DEFN_mode :: PrintMode -> GlobalAnnos -> LIB_DEFN -> String
 printLIB_DEFN_mode m ga ld = 
     let doc = case m of 
-	      PMtext -> printText0  ga ld
-	      _      -> printLatex0 ga ld
+              PMtext -> printText0  ga ld
+              _      -> printLatex0 ga ld
         rend = (case m of 
-		PMtext -> renderText Nothing
-		PMlatex -> renderLatex default_latex_line_length
-		PMdebugLatex -> debugRenderLatex default_latex_line_length)
+                PMtext -> renderText Nothing
+                PMlatex -> renderLatex default_latex_line_length
+                PMdebugLatex -> debugRenderLatex default_latex_line_length)
     in rend doc
-	 {- -- $$ printText0 ga r -}
+         {- -- $$ printText0 ga r -}
   -- print the whole result in this way causes LaTeX problems:
   -- not every line break gets an comment out (%) for LaTeX !!!
 
 default_latex_line_length :: Maybe Int
 default_latex_line_length = -- Nothing
    Just $ calc_line_length "345.0pt"
-	-- for svmono you need 336.0pt
+        -- for svmono you need 336.0pt
 
 printLIB_DEFN_text, printLIB_DEFN_latex, printLIB_DEFN_debugLatex 
     :: GlobalAnnos -> LIB_DEFN -> String

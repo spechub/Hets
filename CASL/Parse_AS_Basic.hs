@@ -42,7 +42,7 @@ typeItems ks = itemList ks typeS datatype Datatype_items
 opItems   ks = itemList ks opS opItem Op_items
 predItems ks = itemList ks predS predItem Pred_items
 sigItems ks = fmap Ext_SIG_ITEMS aparser <|>
-	   sortItems ks <|> opItems ks <|> predItems ks <|> typeItems ks
+           sortItems ks <|> opItems ks <|> predItems ks <|> typeItems ks
 
 ---- helpers ----------------------------------------------------------------
 
@@ -59,8 +59,8 @@ axiomToLocalVarAxioms :: (AParsable b, AParsable s, AParsable f) =>
 axiomToLocalVarAxioms ai a vs posl =
    case ai of
      Axiom_items ((Annoted ft qs as rs):fs) ds ->  
-	 let aft = Annoted ft qs (a++as) rs
-	     in Local_var_axioms vs (aft:fs) (posl `appRange` ds)
+         let aft = Annoted ft qs (a++as) rs
+             in Local_var_axioms vs (aft:fs) (posl `appRange` ds)
      _ -> error "axiomToLocalVarAxioms"
 
 -- ------------------------------------------------------------------------
@@ -68,51 +68,51 @@ axiomToLocalVarAxioms ai a vs posl =
 -- ------------------------------------------------------------------------
 
 basicItems :: (AParsable b, AParsable s, AParsable f) => 
-	      [String] -> AParser st (BASIC_ITEMS b s f)
+              [String] -> AParser st (BASIC_ITEMS b s f)
 basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
-	     <|> do f <- asKey freeS
-		    ti <- typeItems ks
-		    return (datatypeToFreetype ti (tokPos f))
-	     <|> do g <- asKey generatedS
-		    do t <- typeItems ks
-		       return (Sort_gen [Annoted t nullRange [] []] $ tokPos g)
-		      <|> 
-		      do o <- oBraceT
-			 is <- annosParser (sigItems ks)
-			 c <- cBraceT
+             <|> do f <- asKey freeS
+                    ti <- typeItems ks
+                    return (datatypeToFreetype ti (tokPos f))
+             <|> do g <- asKey generatedS
+                    do t <- typeItems ks
+                       return (Sort_gen [Annoted t nullRange [] []] $ tokPos g)
+                      <|> 
+                      do o <- oBraceT
+                         is <- annosParser (sigItems ks)
+                         c <- cBraceT
                          a <- lineAnnos 
-			 return (Sort_gen (init is ++ [appendAnno (last is) a])
-				   (toPos g [o] c)) 
-	     <|> do v <- pluralKeyword varS
-		    (vs, ps) <- varItems ks
-		    return (Var_items vs (catPos (v:ps)))
-	     <|> do f <- forallT 
-		    (vs, ps) <- varDecl ks `separatedBy` anSemi 
-		    a <- annos
-		    ai <- dotFormulae ks
-		    return (axiomToLocalVarAxioms ai a vs 
+                         return (Sort_gen (init is ++ [appendAnno (last is) a])
+                                   (toPos g [o] c)) 
+             <|> do v <- pluralKeyword varS
+                    (vs, ps) <- varItems ks
+                    return (Var_items vs (catPos (v:ps)))
+             <|> do f <- forallT 
+                    (vs, ps) <- varDecl ks `separatedBy` anSemi 
+                    a <- annos
+                    ai <- dotFormulae ks
+                    return (axiomToLocalVarAxioms ai a vs 
                            $ catPos (f:ps))
-	     <|> dotFormulae ks
+             <|> dotFormulae ks
              <|> itemList ks axiomS formula Axiom_items
 
 varItems :: [String] -> AParser st ([VAR_DECL], [Token])
 varItems ks = 
     do v <- varDecl ks
        do s <- try (addAnnos >> Common.Lexer.semiT) << addLineAnnos
-	  do   tryItemEnd (ks ++ startKeyword)
-	       return ([v], [s])
-	    <|> do (vs, ts) <- varItems ks
-		   return (v:vs, s:ts)
+          do   tryItemEnd (ks ++ startKeyword)
+               return ([v], [s])
+            <|> do (vs, ts) <- varItems ks
+                   return (v:vs, s:ts)
          <|> return ([v], [])
              
 dotFormulae :: (AParsable b, AParsable s, AParsable f) => 
-	       [String] -> AParser st (BASIC_ITEMS b s f)
+               [String] -> AParser st (BASIC_ITEMS b s f)
 dotFormulae ks = 
     do d <- dotT
        (fs, ds) <- aFormula ks `separatedBy` dotT
        (m, an) <- optSemi
        let ps = catPos (d:ds) 
-	   ns = init fs ++ [appendAnno (last fs) an]
+           ns = init fs ++ [appendAnno (last fs) an]
        return $ Axiom_items ns (ps `appRange` catPos m)
 
 aFormula  :: AParsable f => [String] -> AParser st (Annoted (FORMULA f))
@@ -123,6 +123,6 @@ aFormula ks = bind appendAnno (annoParser $ formula ks) lineAnnos
 -- ------------------------------------------------------------------------
 
 basicSpec :: (AParsable f, AParsable s, AParsable b) => 
-	     [String] -> AParser st (BASIC_SPEC b s f)
+             [String] -> AParser st (BASIC_SPEC b s f)
 basicSpec ks = (fmap Basic_spec $ annosParser $ basicItems ks)
             <|> (oBraceT >> cBraceT >> return (Basic_spec []))

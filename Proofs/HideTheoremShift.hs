@@ -45,14 +45,14 @@ hideTheoremShift isAutomatic proofStatus@(ln,_,_) = do
   let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
-	  = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
   return newProofStatus
 
 
 {- auxiliary method for hideTheoremShift -}
 hideTheoremShiftAux :: DGraph -> ([DGRule],[DGChange])
-		    -> [LEdge DGLinkLab] -> Bool 
-		    -> IO (DGraph,([DGRule],[DGChange]))
+                    -> [LEdge DGLinkLab] -> Bool 
+                    -> IO (DGraph,([DGRule],[DGChange]))
 hideTheoremShiftAux dgraph historyElement [] _ =
   return (dgraph, historyElement)
 hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic = 
@@ -64,7 +64,7 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic =
              auxDGraph = insEdge newEdge (delLEdge ledge dgraph)
              auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
              (newDGraph,newChanges) = 
-		 insertNewEdges auxDGraph auxChanges proofBasis
+                 insertNewEdges auxDGraph auxChanges proofBasis
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list isAutomatic
 
@@ -82,9 +82,9 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
    tgt,
    DGLink {dgl_morphism = morphism,
-	   dgl_type = (HidingThm hidingMorphism 
-		       (Proven (HideTheoremShift ledge)	proofBasisEdges)),
-	   dgl_origin = DGProof}
+           dgl_type = (HidingThm hidingMorphism 
+                       (Proven (HideTheoremShift ledge) proofBasisEdges)),
+           dgl_origin = DGProof}
   )
   where
     morphism = dgl_morphism edgeLab      
@@ -93,18 +93,18 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
 
 {- selects a proof basis for 'hide theorem shift' if there is one-}
 findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab -> Bool
-			  -> IO [LEdge DGLinkLab]
+                          -> IO [LEdge DGLinkLab]
 findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) isAutomatic=
   if (null pathPairsFilteredByConservativity) then return []
    else 
      do pb <- hideTheoremShift_selectProofBasis dgraph 
-			 pathPairsFilteredByConservativity isAutomatic
+                         pathPairsFilteredByConservativity isAutomatic
         case pb of
           Nothing -> return []
           Just proofBasis -> do let fstPath = fst proofBasis
-				    sndPath = snd proofBasis
-				return [createEdgeForPath fstPath, 
-					createEdgeForPath sndPath]
+                                    sndPath = snd proofBasis
+                                return [createEdgeForPath fstPath, 
+                                        createEdgeForPath sndPath]
 
    where
     pathsFromSrc = getAllPathsOfTypeFrom dgraph src (ledge /=)
@@ -113,8 +113,8 @@ findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) isAutomatic=
     (HidingThm hidingMorphism _) = (dgl_type edgelab)
     morphism = dgl_morphism edgelab
     pathPairsFilteredByMorphism 
-	= filterPairsByResultingMorphisms possiblePathPairs
-	  hidingMorphism morphism
+        = filterPairsByResultingMorphisms possiblePathPairs
+          hidingMorphism morphism
     pathPairsFilteredByConservativity
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
 
@@ -140,25 +140,25 @@ filterPairsByConservativityOfSecondPath (pair:list) =
    If there are more than one and the method is called in automatic mode Nothing is returned. In non-automatic mode the user is asked to select a proofBasis via listBox. -}
 hideTheoremShift_selectProofBasis :: 
     DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> Bool
-		 -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
+                 -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
 hideTheoremShift_selectProofBasis _ (basis:[]) _ = return (Just basis)
 hideTheoremShift_selectProofBasis dgraph basisList isAutomatic =
   case isAutomatic of
     True -> return Nothing
     False -> do sel <- listBox 
                        "Choose a path tuple as the proof basis"
-		       (map (prettyPrintPathTuple dgraph) basisList)
-		i <- case sel of
+                       (map (prettyPrintPathTuple dgraph) basisList)
+                i <- case sel of
                        Just j -> return j
                        _ -> error ("Proofs.Proofs: " ++
-				   "selection of proof basis failed")
-		return (Just (basisList!!i))
+                                   "selection of proof basis failed")
+                return (Just (basisList!!i))
 
 
 {- returns a string representation of the given paths:
    for each path a tuple of the names of its nodes is shown, the two are combined by an 'and' -}
 prettyPrintPathTuple :: DGraph -> ([LEdge DGLinkLab],[LEdge DGLinkLab]) 
-		     -> String
+                     -> String
 prettyPrintPathTuple dgraph (p1,p2) =
   (prettyPrintPath dgraph p1) ++ " and " ++ (prettyPrintPath dgraph p2)
 
@@ -199,18 +199,18 @@ createEdgeForPath path =
   case (calculateMorphismOfPath path) of
     Just morphism -> (getSourceNode (head path),
                       getTargetNode (last path),
-		      DGLink {dgl_morphism = morphism,
-			      dgl_type = (GlobalThm LeftOpen None
-					  LeftOpen),
-			      dgl_origin = DGProof}
-		     )    
+                      DGLink {dgl_morphism = morphism,
+                              dgl_type = (GlobalThm LeftOpen None
+                                          LeftOpen),
+                              dgl_origin = DGProof}
+                     )    
     Nothing -> error "createEdgeForPath"
 
 
 {- returns a list of path pairs, as shorthand the pairs are not returned as path-path tuples but as path-<list of path> tuples. Every path in the list is a pair of the single path.
 The path pairs are selected by having the same target node. -}
 selectPathPairs :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-		-> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
+                -> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
 selectPathPairs [] _ = []
 selectPathPairs _ [] = []
 selectPathPairs paths1 paths2 =
@@ -222,23 +222,23 @@ selectPathPairs paths1 paths2 =
 
 {- returns a list of path pairs by keeping those pairs, whose first path composed with the first given morphism and whose second path composed with the second given morphism result in the same morphism, and droping all other pairs.-}
 filterPairsByResultingMorphisms :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
-				-> GMorphism -> GMorphism
-				-> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
+                                -> GMorphism -> GMorphism
+                                -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
 filterPairsByResultingMorphisms [] _ _ = []
 filterPairsByResultingMorphisms (pair:pairs) morph1 morph2 =
   [((fst pair),path)| path <- suitingPaths]
-	  ++ (filterPairsByResultingMorphisms pairs morph1 morph2)
+          ++ (filterPairsByResultingMorphisms pairs morph1 morph2)
 
   where
     compMorph1
-	= compMaybeMorphisms (Just morph1) (calculateMorphismOfPath (fst pair))
+        = compMaybeMorphisms (Just morph1) (calculateMorphismOfPath (fst pair))
     suitingPaths :: [[LEdge DGLinkLab]]
     suitingPaths = if (compMorph1 /= Nothing) then
-		      [path |path <- (snd pair),
-		       (compMaybeMorphisms (Just morph2)
-			                   (calculateMorphismOfPath path))
-   		       == compMorph1]
-		    else []
+                      [path |path <- (snd pair),
+                       (compMaybeMorphisms (Just morph2)
+                                           (calculateMorphismOfPath path))
+                       == compMorph1]
+                    else []
 
 {- if the given maybe morphisms are both not Nothing,
    this method composes their GMorphisms -

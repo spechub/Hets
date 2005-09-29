@@ -2,8 +2,8 @@
 
    Zaehler.hs ist ein Programm zum wahlweisen Zaehlen von Formeln 
               und Termen die ueber CASL-Spezifikationen gebildet
-	      werden koennen.
-	      
+              werden koennen.
+              
    README     enthaelt weitere Informationen zu diesem Programm.
    
    Stand:     13.08.2002
@@ -35,23 +35,23 @@ type PredList = [Pred]
 -- LS: <begin> 
 
 data Sign = Sign {
-	sort_map :: Sort_Map, 
-	sort_op  :: Sort_Op_Index
-	}
+        sort_map :: Sort_Map, 
+        sort_op  :: Sort_Op_Index
+        }
 
 data ExtSign = ExtSign {
-	sign 	:: Sign,
-	pList 	:: PredList
-	}
+        sign    :: Sign,
+        pList   :: PredList
+        }
 
 data Options = Options {
-	totalOnly, countDowncasts :: Bool
-	}
+        totalOnly, countDowncasts :: Bool
+        }
 
 data ExtOptions = ExtOptions {
-	options	:: Options,
-	countUEx :: Bool
-	}
+        options :: Options,
+        countUEx :: Bool
+        }
 
 -- LS: <end>
 
@@ -63,18 +63,18 @@ type Env = FiniteMap SORT Int
 {-getSign erstellt Signatur zu Body -}
 getSign :: [String] -> Sign
 getSign body = Sign {
-	sort_map = getSortMap body,
-	sort_op = getSortOpIndex body
-	}
+        sort_map = getSortMap body,
+        sort_op = getSortOpIndex body
+        }
 
 {-getESign erstellt erweiterte Signatur zu Body -}
 
 getESign :: [String] -> ExtSign
 
 getESign body = ExtSign {
-	sign = getSign body,
-	pList = getPredList body
-	}
+        sign = getSign body,
+        pList = getPredList body
+        }
 
 -- Sort-Section ------------------------------------------------
 
@@ -86,8 +86,8 @@ getSortMap (x:xs)
   | ((x /= "sorts") && (x /="sort")) = emptyFM
   | otherwise         = 
       let sd = getSortDecls xs 
-	in 
-	  listToFM ( getListForFM (getSortList sd) (getSubSortDecls sd))
+        in 
+          listToFM ( getListForFM (getSortList sd) (getSubSortDecls sd))
 
 
 {- getSuperSorts liefert eine Liste aller direkten Obersorten 
@@ -159,7 +159,7 @@ getSubFromDecl str
   | otherwise      = [takeWhile isNoLAngle str]
   
   where isNoComma c = not(c == ',')
-	
+        
 isNoLAngle c = not(c == '<')
 
 {- Hilfsfunktion, die True liefert, wenn es sich bei der
@@ -176,7 +176,7 @@ isSortDecl str = not(elem '<' str)
 -} 
 initEnv soInd = let s_list = keysFM soInd
                 in 
-		   listToFM (zip s_list (replicate (length s_list) 0))
+                   listToFM (zip s_list (replicate (length s_list) 0))
 
 
 -- Op-Section -----------------------------------------------
@@ -199,12 +199,12 @@ getOpDecls b (x:xs)
 getOps str 
   | (elem '?' str) = Ops (setOpName str)  
                          (Partial_op_type (getParamSorts str) 
-			                  (getTargetSort str) 
-			                  [] )
+                                          (getTargetSort str) 
+                                          [] )
   | otherwise      = Ops (setOpName str)
                          (Total_op_type (getParamSorts str)
-			                (getTargetSort str)
-					[] )
+                                        (getTargetSort str)
+                                        [] )
   where setOpName str = str2Id (takeWhile isNoColon str)
 
 
@@ -214,19 +214,19 @@ getParamSorts str
   | not(elem '>' str) = []
   | otherwise         = if not(elem '*' str) then
                             getParam (dropName str)
-			 else 
-			    getParamList (dropName str)			    
+                         else 
+                            getParamList (dropName str)                     
 
   where getParam str = [str2Id (takeWhile isNoMin str)]
         dropName str = tail (dropWhile isNoColon str)
-	dropParam str = tail (dropWhile isNoAst str)
-	isNoMin c = not(c == '-')
-	isNoAst c = not(c == '*')
-	getParamList str = if (elem '*' str) then
-                	       (str2Id (takeWhile isNoAst str))
-			         :(getParamList (dropParam str))
-			    else
-			       getParam str
+        dropParam str = tail (dropWhile isNoAst str)
+        isNoMin c = not(c == '-')
+        isNoAst c = not(c == '*')
+        getParamList str = if (elem '*' str) then
+                               (str2Id (takeWhile isNoAst str))
+                                 :(getParamList (dropParam str))
+                            else
+                               getParam str
 
 {- getTargetSort sucht aus einer Op-Decl. die Zielsorte der 
    Operation heraus und gibt sie als SORT zurueck -} 
@@ -237,24 +237,24 @@ getTargetSort str
   | otherwise      = str2Id (tail (dropWhile isNoRAngle str))
 
   where isNoQMark c  = not(c == '?')
-	isNoRAngle c = not(c == '>')
+        isNoRAngle c = not(c == '>')
        
 {- getSortOpList erstellt aus dem "Body" eines 
    *.env.txt-files eine Liste, aus der ein 
    Sort_Op_Index erstellt werden kann -}
 getSortOpList body = if (sortList == []) then
                               []
-			   else
-			      map getEntry sortList
+                           else
+                              map getEntry sortList
   
   where sortList = map str2Id (getSortList (getSortDecls body))
-	opList   = map getOps (getOpDecls False body)
-	getOpsOfSort s = [op | op <- opList, s == (getOpTS op)] 
-	getEntry s = (s, (getOpsOfSort s))
+        opList   = map getOps (getOpDecls False body)
+        getOpsOfSort s = [op | op <- opList, s == (getOpTS op)] 
+        getEntry s = (s, (getOpsOfSort s))
 
 {- getSortOpIndex erstellt aus dem "Body" eines
    *.env.txt-files einen Sort_Op_Index -}
-getSortOpIndex body = listToFM (getSortOpList body)	
+getSortOpIndex body = listToFM (getSortOpList body)     
 
 {- getOpTS gibt die Ziel-Sorte einer Operation zurueck -}
 getOpTS (Ops opname (Total_op_type ps ts pos)) = ts
@@ -290,33 +290,33 @@ getOpName (Ops opname (Partial_op_type ps ts pos)) = opname
             countTerm n sort file opt
 
             wobei: n     - Laenge der Terme 
-	           sort  - Sorte der Terme
-		   file  - .env.txt-File mit der Signatur
-		   opt	 - Optionen
+                   sort  - Sorte der Terme
+                   file  - .env.txt-File mit der Signatur
+                   opt   - Optionen
 
    Das Ergebnis wird durch die Funktion print ausgegeben.
 -}
 countTerm n sort file opt = 
                   do { inp <- readFile file
                      ; let body = getBody (lines inp)
-			   sg = getSign body
-			   soInd = sort_op sg
-			   s = str2Id sort
-			   env = initEnv soInd
-		     -- Test-Informationen <begin>
-		     ; putStr ("\nSubsort-Map :\n")
-		     ; print (fmToList (sort_map sg))
-		     ; putStr ("\nEnv-Map :\n")
-		     ; print (fmToList env)
-		     ; putStr ("\n")
-		     ; putStr ("Sort-Op-Index:\n")		   
-		     ; print (fmToList soInd)
-		     ; putStr ("\n Op-List der Sorte Bool:\n")
-		     ; print (getOpList (str2Id "Bool") soInd)
-		     ; putStr ("\n")
-		     -- \Test-Informationen <end>
-		     ; print (cntTerm n env sg opt s)
-		     }
+                           sg = getSign body
+                           soInd = sort_op sg
+                           s = str2Id sort
+                           env = initEnv soInd
+                     -- Test-Informationen <begin>
+                     ; putStr ("\nSubsort-Map :\n")
+                     ; print (fmToList (sort_map sg))
+                     ; putStr ("\nEnv-Map :\n")
+                     ; print (fmToList env)
+                     ; putStr ("\n")
+                     ; putStr ("Sort-Op-Index:\n")                 
+                     ; print (fmToList soInd)
+                     ; putStr ("\n Op-List der Sorte Bool:\n")
+                     ; print (getOpList (str2Id "Bool") soInd)
+                     ; putStr ("\n")
+                     -- \Test-Informationen <end>
+                     ; print (cntTerm n env sg opt s)
+                     }
 
 {- cntTerm ist die eigentliche Term-zaehl-Fkt.
    n     - Laenge der zu zaehlenden Terme
@@ -331,29 +331,29 @@ cntTerm:: Int ->Env ->Sign ->Options ->SORT ->Int
 cntTerm n env sg opt s 
   | (n <= 0)  = 0
   | (n == 1)  = cntCon s env soInd t -- Necessary, since this counts
-				     -- Variables as well
+                                     -- Variables as well
   | otherwise = let sMap = sort_map sg
-		    list = getOpList s soInd
+                    list = getOpList s soInd
                     op_list = 
-		      [op | op <- list, 0 < (numPS op), (numPS op) <= (n-1)]
-		    f_op_list =
-		      if t 
-			then (filter isTotalOp op_list)
-			  else op_list
-		    upcasts = sum (map (cntTerm (n-1) env sg opt) 
-			               (getSubSorts s sMap))
-		    downcasts = sum (map (cntTerm (n-1) env sg opt) 
-			                 (getSuperSorts s sMap))
-		    op_terms  = sum (map (sumOp (n-1) env sg opt) 
-		                       f_op_list)
-		 in 
-		   op_terms
+                      [op | op <- list, 0 < (numPS op), (numPS op) <= (n-1)]
+                    f_op_list =
+                      if t 
+                        then (filter isTotalOp op_list)
+                          else op_list
+                    upcasts = sum (map (cntTerm (n-1) env sg opt) 
+                                       (getSubSorts s sMap))
+                    downcasts = sum (map (cntTerm (n-1) env sg opt) 
+                                         (getSuperSorts s sMap))
+                    op_terms  = sum (map (sumOp (n-1) env sg opt) 
+                                       f_op_list)
+                 in 
+                   op_terms
                    + upcasts
                    + (if (countDowncasts opt) then downcasts else 0) 
   where numPS op = length(getOpPS op)
-	sumOp m e sg2 opt2 op = 
-	      termTuples m e sg2 opt2 (getOpPS op)  
-	soInd = sort_op sg
+        sumOp m e sg2 opt2 op = 
+              termTuples m e sg2 opt2 (getOpPS op)  
+        soInd = sort_op sg
         t = totalOnly opt 
 
 -- termTuples counts tuples of Terms of given sorts and given
@@ -365,8 +365,8 @@ termTuples n env sg opt [] = if (n == 0) then 1 else 0 -- should never occur
 termTuples n env sg opt [st] = cntTerm n env sg opt st 
 termTuples n env sg opt (st:sts) = bigsum 
     1 (n - (length sts)) 
-	(\m -> (cntTerm m env sg opt st) 
-	     * (termTuples (n - m) env sg opt sts))
+        (\m -> (cntTerm m env sg opt st) 
+             * (termTuples (n - m) env sg opt sts))
 
 
 {- cntCon zaehlt die Konstanten der Sorte s im Sort_Op_Index ind.
@@ -377,12 +377,12 @@ termTuples n env sg opt (st:sts) = bigsum
 -}
 cntCon s env soInd t = 
                   let list = getOpList s soInd
-		      vars = lookupWithDefaultFM env 0 s
-		      conList = [op | op <- list, (getOpPS op) == [] ]
+                      vars = lookupWithDefaultFM env 0 s
+                      conList = [op | op <- list, (getOpPS op) == [] ]
                       cntAll = length (conList)
                       cntTotal = length (filter isTotalOp conList)
                   in 
-		    (if t then cntTotal else cntAll) + vars
+                    (if t then cntTotal else cntAll) + vars
 
 {- getOpList liefert die Liste der Operationen mit der 
    Zielsorte s im Sort_Op_Index ind (Hilfsfunktion) -}
@@ -436,18 +436,18 @@ getPredName str = str2Id (takeWhile isNoColon str)
    und gibt sie als Liste von SORT zurueck. -}
 readPredSorts str = if not(elem '*' str) then
                         getParam (dropName str)
-			 else 
-			    getParamList (dropName str)			    
+                         else 
+                            getParamList (dropName str)                     
 
   where getParam str = [str2Id str]
         dropName str = tail (dropWhile isNoColon str)
-	dropParam str = tail (dropWhile isNoAst str)
-	isNoAst c = not(c == '*')
-	getParamList str = if (elem '*' str) then
-                	       (str2Id (takeWhile isNoAst str))
-			         :(getParamList (dropParam str))
-			    else
-			       getParam str
+        dropParam str = tail (dropWhile isNoAst str)
+        isNoAst c = not(c == '*')
+        getParamList str = if (elem '*' str) then
+                               (str2Id (takeWhile isNoAst str))
+                                 :(getParamList (dropParam str))
+                            else
+                               getParam str
 
 {- getPredList erstellt aus dem zeilenweise gelisteten body 
    eine Liste aller deklarierten Praedikate. -}
@@ -474,39 +474,39 @@ isZeroPred (Pred pred_name (Pred_type xs pos_list)) = (xs == [])
             countForm n file opt ex_U
 
             wobei: n     - Laenge der Formeln 
-		   file  - .env.txt-File mit der Signatur
-		   eopt   - gueltige ExtOptions
+                   file  - .env.txt-File mit der Signatur
+                   eopt   - gueltige ExtOptions
 
    Das Ergebnis wird durch die Funktion print ausgegeben.
 -}
 countForm n file eopt = 
              do { inp <- readFile file
                 ; let body = getBody (lines inp)
-		      esg = getESign body
-       		      soInd = sort_op (sign esg)
-  		      {- 
-			 sMap = sort_map sg
-		      -}
-		      env = initEnv soInd
-		-- Test-Informationen <begin>
-		{-
-		; putStr ("\nSubsort-Map :\n")
-		; print (fmToList sMap)
-		; putStr ("\nEnv-Map :\n")
-		; print (fmToList env)
-		; putStr ("\n")
-		; putStr ("Sort-Op-Index:\n")		   
-		; print (fmToList soInd)
-		; putStr ("\n Op-List der Sorte Bit:\n")
-		; print (getOpList (str2Id "Bit") soInd)
-		; putStr ("\n")
-		-}
-	        ; print (quantification n env esg eopt)
-		; print (countF (n-1) (addToFM_C (+) env (str2Id "Bool") 1) esg eopt)
-		-- \Test-Informationen <end>
+                      esg = getESign body
+                      soInd = sort_op (sign esg)
+                      {- 
+                         sMap = sort_map sg
+                      -}
+                      env = initEnv soInd
+                -- Test-Informationen <begin>
+                {-
+                ; putStr ("\nSubsort-Map :\n")
+                ; print (fmToList sMap)
+                ; putStr ("\nEnv-Map :\n")
+                ; print (fmToList env)
+                ; putStr ("\n")
+                ; putStr ("Sort-Op-Index:\n")              
+                ; print (fmToList soInd)
+                ; putStr ("\n Op-List der Sorte Bit:\n")
+                ; print (getOpList (str2Id "Bit") soInd)
+                ; putStr ("\n")
+                -}
+                ; print (quantification n env esg eopt)
+                ; print (countF (n-1) (addToFM_C (+) env (str2Id "Bool") 1) esg eopt)
+                -- \Test-Informationen <end>
                 ; print (countF n env esg eopt)
-		}
-	
+                }
+        
 {- countF ist die eigentliche Formel-Zaehlfunktion:
    n     - Laenge der zu zaehlenden Terme
    env   - FiniteMap Sorte <# Variablen der Sorte als Int> 
@@ -519,15 +519,15 @@ countF n env esg eopt
   | (n <= 0)  = 0
   | (n == 1)  = length (filter isZeroPred pl)
   | otherwise =   predicates n env esg eopt
-	        + strong_Eq n env sg opt 
-	        + exist_Eq n env sg opt
-	        + definedness n env sg opt
-		+ membership n env sg opt
-		+ connectives n env esg eopt
-		+ negation n env esg eopt
-		+ quantification n env esg eopt
-	where pl = pList esg
-	      sg = sign esg
+                + strong_Eq n env sg opt 
+                + exist_Eq n env sg opt
+                + definedness n env sg opt
+                + membership n env sg opt
+                + connectives n env esg eopt
+                + negation n env esg eopt
+                + quantification n env esg eopt
+        where pl = pList esg
+              sg = sign esg
               opt = options eopt
 
 {- hier wird die Anzahl der Praedikate der Laenge n bezuegl.
@@ -539,19 +539,19 @@ countF n env esg eopt
 -}
 predicates n env esg eopt = 
     sum (map (sumPred (n-1) env (sign esg) (options eopt)) 
-	     (filter (\p -> (length (getPredSorts p)) <= 
-					(n - 1)) (pList esg)))
+             (filter (\p -> (length (getPredSorts p)) <= 
+                                        (n - 1)) (pList esg)))
     where sumPred m e sg opt pred = 
-	      termTuples m e sg opt (getPredSorts pred)  
+              termTuples m e sg opt (getPredSorts pred)  
 
 {- Number of (strong or existential) equations 
    n     - Laenge der Formeln
    env   - Sort-#Var-Map
    sg  - underlying (simple) signature
    opt   - (simple) options
-   b 	 - (Only in generic functions for equations) True if existential
-	   equations are being counted. Equations where one side is total
-	   are counted as strong!!
+   b     - (Only in generic functions for equations) True if existential
+           equations are being counted. Equations where one side is total
+           are counted as strong!!
 -}
 strong_Eq n env sg opt = 
   eqs n env sg opt False
@@ -598,13 +598,13 @@ sort_eqs_l n env sg opt b sort l =
 definedness n env sg opt =
                   let s_list = getSorts (sort_map sg)
                    in 
-		      if (totalOnly opt) then
-		         0
-		       else
+                      if (totalOnly opt) then
+                         0
+                       else
                          sum
-			  (map (count_partial_terms (n-1) env sg opt)
-				s_list)
-		     
+                          (map (count_partial_terms (n-1) env sg opt)
+                                s_list)
+                     
 {- hier wird die Anzahl der Formeln mit Zugehoerigkeit zu einer
    Sorte der Laenge n bezuegl. der entsprechenden Parameter 
    berechnet:
@@ -628,7 +628,7 @@ sort_membership :: Int -> Env -> Sign -> Options -> SORT -> Int
 sort_membership n env sg opt sort =
   (cntTerm (n - 1) env sg opt sort) * 
     (length (getSubSorts sort (sort_map sg)))
-		      
+                      
 {- hier wird die Anzahl der Formeln mit Konjunktion, Disjunktion,
    Aequivalenz und Implikation der Laenge n bezuegl. der 
    entsprechenden Parameter berechnet:
@@ -672,7 +672,7 @@ implication_l n env esg eopt l =
    n     - Laenge der Formeln
    esg - underlying extended signature
    eopt  - extended options
--} 		      
+-}                    
 negation n env esg eopt = 
                   countF (n-1) env esg eopt
 
@@ -685,16 +685,16 @@ negation n env esg eopt =
 -}
 quantification n env esg eopt =
             let s_list = getSorts (sort_map (sign esg))
-	     in
-	        (if (countUEx eopt) then 3 else 2) *
-		   (sum
-		     (map (cntF_x_env (n-1) env esg eopt)
-			   s_list))
+             in
+                (if (countUEx eopt) then 3 else 2) *
+                   (sum
+                     (map (cntF_x_env (n-1) env esg eopt)
+                           s_list))
     
   where xEnv e s = addToFM_C addX e s 1 
-	addX x y = x + y 
-	cntF_x_env m e esg2 eopt2 s = 
-	          (countF m (xEnv e s) esg2 eopt2) - (countF m e esg2 eopt2)
+        addX x y = x + y 
+        cntF_x_env m e esg2 eopt2 s = 
+                  (countF m (xEnv e s) esg2 eopt2) - (countF m e esg2 eopt2)
 
 
 ----------------- Benutzer-Schnittstelle-----------------------
@@ -706,43 +706,43 @@ quantification n env esg eopt =
 zaehler = do { putStr "\nProgramm zum zaehlen von Termen und Formeln\n"
              ; putStr "fuer CASL-Spezifikationen (Version 0.92)\n"
              ; putStr "\nHinweis: Der Zaehler arbeitet nur auf *.env.txt-files\n"
-	     ; putStr "\nSollen Terme oder Formeln gezaehlt werden? (t/f , default: t)\n"
-	     ; c0 <- getLine
-	     ; b0 <- return ((c0 == "f") || (c0 == "F"))
-	     ; putStr "\nGib die Datei an, die die Ausgabe von CATS\n" 
-	     ; putStr "(im *.env.txt-Format) enthaelt:\n"
-	     ; file <- getLine
-	     ; putStr "\nSollen nur totale Terme beruecksichtigt werden? (y/n , default: n)\n"
-	     ; c1 <- getLine
-	     ; b1 <- return ((c1 == "y") || (c1 == "Y"))
-	     ; putStr "\nSollen Downcasts beruecksichtigt werden? (y/n , default: n)\n"
-	     ; c2 <- getLine
-	     ; b2 <- return ((c2 == "y") || (c2 == "Y"))
-	     ; opt <- return Options{
-			totalOnly = b1, 
-			countDowncasts = b2
-			}
-	     ; if b0 then
-	          do { putStr "\nSoll eindeutige Existenz beruecksichtigt werden? (y/n , default: n)\n"
-		     ; c3 <- getLine
-		     ; b3 <- return ((c3 == "y") || (c3 == "Y"))
-		     ; putStr "\nGib die Laenge der Formeln an:\n"
-	     	     ; n <- getInt
-		     ; putStr "\nDas Ergebnis der Zaehlung lautet "  
-		     ; countForm n file ExtOptions{
-					  options = opt,
-					  countUEx = b3
-					}
-		   }
-		else 
-		  do { putStr "\nGib die Laenge der Terme an:\n"
-		     ; n <- getInt
-		     ; putStr "\nGib die Sorte an, der die Terme angehoeren sollen:\n"
-		     ; sort <- getLine
-		     ; putStr "\nDas Ergebnis der Zaehlung lautet "  
-		     ; countTerm n sort file opt
-		 }
-	     }
+             ; putStr "\nSollen Terme oder Formeln gezaehlt werden? (t/f , default: t)\n"
+             ; c0 <- getLine
+             ; b0 <- return ((c0 == "f") || (c0 == "F"))
+             ; putStr "\nGib die Datei an, die die Ausgabe von CATS\n" 
+             ; putStr "(im *.env.txt-Format) enthaelt:\n"
+             ; file <- getLine
+             ; putStr "\nSollen nur totale Terme beruecksichtigt werden? (y/n , default: n)\n"
+             ; c1 <- getLine
+             ; b1 <- return ((c1 == "y") || (c1 == "Y"))
+             ; putStr "\nSollen Downcasts beruecksichtigt werden? (y/n , default: n)\n"
+             ; c2 <- getLine
+             ; b2 <- return ((c2 == "y") || (c2 == "Y"))
+             ; opt <- return Options{
+                        totalOnly = b1, 
+                        countDowncasts = b2
+                        }
+             ; if b0 then
+                  do { putStr "\nSoll eindeutige Existenz beruecksichtigt werden? (y/n , default: n)\n"
+                     ; c3 <- getLine
+                     ; b3 <- return ((c3 == "y") || (c3 == "Y"))
+                     ; putStr "\nGib die Laenge der Formeln an:\n"
+                     ; n <- getInt
+                     ; putStr "\nDas Ergebnis der Zaehlung lautet "  
+                     ; countForm n file ExtOptions{
+                                          options = opt,
+                                          countUEx = b3
+                                        }
+                   }
+                else 
+                  do { putStr "\nGib die Laenge der Terme an:\n"
+                     ; n <- getInt
+                     ; putStr "\nGib die Sorte an, der die Terme angehoeren sollen:\n"
+                     ; sort <- getLine
+                     ; putStr "\nDas Ergebnis der Zaehlung lautet "  
+                     ; countTerm n sort file opt
+                 }
+             }
 
 {- getInt ist eine Hilfsfunktion, die die Eingabe einer Text-Zeile
    als Wert vom Typ Int interpretiert -}
@@ -774,9 +774,9 @@ getBody (x:xs)
   | otherwise      = getBody xs
 
   where cutRest str (x:xs) = if (x == str) then
-	                         [""] 
-			      else 
-			         (delSpaces x):(cutRest str xs) 
+                                 [""] 
+                              else 
+                                 (delSpaces x):(cutRest str xs) 
 
 {- Wandelt einen String in eine Id um indem der String
    an die erste Stelle der Token-Liste der Id gesetzt wird -}
@@ -798,9 +798,9 @@ isNoColon c = not(c == ':')
 bigsum :: Num a => Int -> Int -> (Int -> a) -> a
 
 bigsum n m f =
-	if (m < n) 
-		then 0
-		else (f n) + (bigsum (n + 1) m f)
+        if (m < n) 
+                then 0
+                else (f n) + (bigsum (n + 1) m f)
 
 -- twoElems calculates the number of distinct pairs formed
 -- from either one set (True) or two disjoint ones (False)
@@ -822,48 +822,48 @@ twoElems b n1 n2 =
 
 pred_zaehler = do { putStr "\nPred-Zaehler fuer CASL-Spezifikationen V0.4\n"
                   ; putStr "\nHinweis: Der Zaehler arbeitet nur auf *.env.txt-files\n"
-		  ; putStr "\nGib die Laenge der Praedikate an:\n"
-		  ; n <- getInt
-		  ; putStr "\nGib die Datei an, die die Spezifikation enthaelt:\n"
-		  ; file <- getLine
-		  ; putStr "\nSollen nur totale Terme gezaehlt werden? (y/n)\n"
-		  ; c1 <- getLine
-		  ; putStr "\nSoll Einbettung in die Obersorten beruecksichtigt werden? (y/n)\n"
-		  ; c2 <- getLine
-		  ; putStr "\nDas Ergebnis der Zaehlung lautet "  
-		  ; if ((c1 == "y") || (c1 == "Y")) then
-		       if ((c2 == "y") || (c2 == "Y")) then
-		          testFCount n file True True
-		        else
-		          testFCount n file True False
-		     else
-	               if ((c2 == "y") || (c2 == "Y")) then
-		          testFCount n file False True
-		        else
-		          testFCount n file False False
-		  }
+                  ; putStr "\nGib die Laenge der Praedikate an:\n"
+                  ; n <- getInt
+                  ; putStr "\nGib die Datei an, die die Spezifikation enthaelt:\n"
+                  ; file <- getLine
+                  ; putStr "\nSollen nur totale Terme gezaehlt werden? (y/n)\n"
+                  ; c1 <- getLine
+                  ; putStr "\nSoll Einbettung in die Obersorten beruecksichtigt werden? (y/n)\n"
+                  ; c2 <- getLine
+                  ; putStr "\nDas Ergebnis der Zaehlung lautet "  
+                  ; if ((c1 == "y") || (c1 == "Y")) then
+                       if ((c2 == "y") || (c2 == "Y")) then
+                          testFCount n file True True
+                        else
+                          testFCount n file True False
+                     else
+                       if ((c2 == "y") || (c2 == "Y")) then
+                          testFCount n file False True
+                        else
+                          testFCount n file False False
+                  }
 
 
 testFCount n file t sub_B = 
                         do { inp <- readFile file
                            ; let body = getBody (lines inp)
-		                 sMap = getSortMap body
-				 env  = initEnv sMap
-				 soInd = getSortOpIndex body
-			   -- Test-Informationen <start> 
-			   {-
-			   ; putStr ("\nSubsort-Map :\n")
-			   ; print (fmToList sort_map)
-			   ; putStr ("\nSupersort-Map :\n")
-			   ; putStr ("\n")
-			   -- ; print (fmToList sort_op_index)
-			   -- ; print (getOpList (str2Id "s1") sort_op_index)
-			   -- ; putStr ("\n")
-			   -- ; print (getOpList (str2Id "s2") sort_op_index)
-			   -}
-			   -- \Test-Informationen <end>
-			   ; print (predicates n env (getPredList body) soInd sMap t sub_B)
-			   }
+                                 sMap = getSortMap body
+                                 env  = initEnv sMap
+                                 soInd = getSortOpIndex body
+                           -- Test-Informationen <start> 
+                           {-
+                           ; putStr ("\nSubsort-Map :\n")
+                           ; print (fmToList sort_map)
+                           ; putStr ("\nSupersort-Map :\n")
+                           ; putStr ("\n")
+                           -- ; print (fmToList sort_op_index)
+                           -- ; print (getOpList (str2Id "s1") sort_op_index)
+                           -- ; putStr ("\n")
+                           -- ; print (getOpList (str2Id "s2") sort_op_index)
+                           -}
+                           -- \Test-Informationen <end>
+                           ; print (predicates n env (getPredList body) soInd sMap t sub_B)
+                           }
 -}
 
 

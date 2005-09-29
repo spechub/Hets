@@ -50,11 +50,11 @@ import Data.List
 type CSign = Sign C_FORMULA CoCASLSign
 
 basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
-		       Sign C_FORMULA CoCASLSign, GlobalAnnos)
-		   -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
-			      Sign C_FORMULA CoCASLSign,
-			      Sign C_FORMULA CoCASLSign,
-			      [Named (FORMULA C_FORMULA)])
+                       Sign C_FORMULA CoCASLSign, GlobalAnnos)
+                   -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
+                              Sign C_FORMULA CoCASLSign,
+                              Sign C_FORMULA CoCASLSign,
+                              [Named (FORMULA C_FORMULA)])
 basicCoCASLAnalysis = 
     basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
 

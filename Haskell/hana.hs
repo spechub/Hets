@@ -42,18 +42,18 @@ hParser = do
 
 main :: IO ()
 main = do l <- getArgs
-	  if length l >= 1 then
-	     do let fn = head l 
+          if length l >= 1 then
+             do let fn = head l 
                 s <- readFile fn
                 let ts = pLexerPass0 lexerflags0 s
                     Result ds m = do 
                       HsModule _ _ _ _ b <- parseTokens HP.parse fn ts
                       hatAna(HsDecls (preludeDecls ++ b), 
                                      emptySign, emptyGlobalAnnos) 
-	        case m of 
-		       Just (_, _, sig, hs) -> do
-		           putStrLn $ showPretty sig ""
-			   mapM_ (putStrLn . flip showPretty "") hs
-		       _ -> mapM_ (putStrLn . show) ds
-	     else putStrLn "missing argument"
+                case m of 
+                       Just (_, _, sig, hs) -> do
+                           putStrLn $ showPretty sig ""
+                           mapM_ (putStrLn . flip showPretty "") hs
+                       _ -> mapM_ (putStrLn . show) ds
+             else putStrLn "missing argument"
 

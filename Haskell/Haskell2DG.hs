@@ -86,11 +86,11 @@ typeInference moduleSyntax =
 
     -- call the type inference code for this module 
          (moduleEnv, 
-	  dataConEnv,
-	  newClassHierarchy, 
-	  newKindInfoTable,
-	  moduleRenamed,
-	  moduleSynonyms) = tiModule annotatedSyntax initialModInfo
+          dataConEnv,
+          newClassHierarchy, 
+          newKindInfoTable,
+          moduleRenamed,
+          moduleSynonyms) = tiModule annotatedSyntax initialModInfo
 
      let modInfo = ModuleInfo { varAssumps = moduleEnv, 
                                 moduleName = getAModuleName annotatedSyntax,
@@ -125,9 +125,9 @@ anaOneImport (AHsImportDecl _ aMod _ _ maybeListOfIdents) le = do
              (dg,node) = addNode empty annoSyn filteredModInfo
          case annoSyn of
               AHsModule _ _ idecls  _ -> case idecls of
-	         [] -> return (filteredModInfo,addDG2LibEnv le' ln node dg)
-		 _ -> return (filteredModInfo, addDG2LibEnv le' ln node 
-			     $ addLinks idecls dg node le')
+                 [] -> return (filteredModInfo,addDG2LibEnv le' ln node dg)
+                 _ -> return (filteredModInfo, addDG2LibEnv le' ln node 
+                             $ addLinks idecls dg node le')
 
  where filtModInfo _ modInfo Nothing = modInfo
                               -- we're not imposing restrictions

@@ -53,13 +53,13 @@ instance AParsable M_FORMULA where
 
 rigor :: AParser st RIGOR
 rigor = (asKey rigidS >> return Rigid) 
-	<|> (asKey flexibleS >> return Flexible)
+        <|> (asKey flexibleS >> return Flexible)
 
 rigidSigItems :: AParser st M_SIG_ITEM
 rigidSigItems = 
     do r <- rigor
        do itemList modal_reserved_words opS opItem (Rigid_op_items r)
-	 <|> itemList modal_reserved_words predS predItem (Rigid_pred_items r)
+         <|> itemList modal_reserved_words predS predItem (Rigid_pred_items r)
 
 instance AParsable M_SIG_ITEM where
   aparser = rigidSigItems
@@ -80,13 +80,13 @@ mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
 mItem pr = do 
        c <- mKey
        (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)
-		   [c] pr (,)
+                   [c] pr (,)
        do o <- oBraceT
-	  (fs, qs) <- annoParser (formula modal_reserved_words)
-		      `separatedBy` anSemi
-	  p <- cBraceT
+          (fs, qs) <- annoParser (formula modal_reserved_words)
+                      `separatedBy` anSemi
+          p <- cBraceT
           return (as, fs, ps `appRange` toPos o qs p)
-	<|>  return (as, [], ps)
-		
+        <|>  return (as, [], ps)
+                
 instance AParsable M_BASIC_ITEM where
   aparser = mBasic

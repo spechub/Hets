@@ -33,7 +33,7 @@ data DL_FORMULA = Cardinality CardType PRED_NAME
                -- denoting a variable;
                -- the second term is restricted to an Application denoting 
                -- a literal of type nonNegativeInteger (Nat)
-	       -- pos: position of keyword, brackets, parens and comma
+               -- pos: position of keyword, brackets, parens and comma
              deriving (Eq, Ord, Show)
 
 minCardinalityS,maxCardinalityS,cardinalityS :: String 

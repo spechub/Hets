@@ -89,7 +89,7 @@ simpleTheoryMapping mapSig mapSen (sign,sens) =
     (mapSig sign, map (mapNamed mapSen) sens)
 
 mkTheoryMapping :: (Monad m) => (sign1 -> m (sign2, [Named sentence2]))
-		   -> (sign1 -> sentence1 -> m sentence2) 
+                   -> (sign1 -> sentence1 -> m sentence2) 
                    -> (sign1, [Named sentence1]) 
                    -> m (sign2, [Named sentence2])
 mkTheoryMapping mapSig mapSen (sign,sens) = do

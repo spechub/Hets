@@ -67,11 +67,11 @@ write_LIB_DEFN ga file opt ld = sequence_ $ map write_type $ outtypes opt
     write_type t = 
         case t of 
             HetCASLOut OutASTree OutAscii -> printAscii t
-	    PrettyOut PrettyAscii -> printAscii t 
+            PrettyOut PrettyAscii -> printAscii t 
             PrettyOut PrettyLatex -> do
                 putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
                 write_casl_latex opt ga (casl_latex_filename file opt) ld
-	    EnvOut -> return () -- implemented in hets.hs 
+            EnvOut -> return () -- implemented in hets.hs 
             ThyFile -> return () -- (requires environment)
             ComptableXml -> return ()
             _ -> do putStrLn ( "Error: the OutType \"" ++ 
@@ -131,9 +131,9 @@ versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =      
     case  {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version of
     (att0,versionnr) -> 
-	case {-# SCC "att1" #-} toShATerm att0 atcon of
-	(att1,aterm) ->  {-# SCC "att3" #-} 
-	    fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+        case {-# SCC "att1" #-} toShATerm att0 atcon of
+        (att1,aterm) ->  {-# SCC "att3" #-} 
+            fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
                            
 toShATermString :: (ShATermConvertible a) => a -> String
 toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
@@ -154,8 +154,8 @@ writeFileInfo opts diags' file ln lenv =
       putIfVerbose opts 2 ("Writing " ++ envFile)
       catch (globalContexttoShATerm envFile gctx) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
-	      putIfVerbose opts 3 ("see following error description:\n"
-				   ++ shows err "\n")
+              putIfVerbose opts 3 ("see following error description:\n"
+                                   ++ shows err "\n")
   _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)
 
 write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
@@ -216,9 +216,9 @@ writeSpecFiles opt file ln lenv =
                                          show i 
                                      Just th2 -> 
                                        let Result d res = computeCompTable i th2
-			                in do showDiags opt d
+                                        in do showDiags opt d
                                               when (isJust res) $
-			                         writeVerbFile opt f $ 
+                                                 writeVerbFile opt f $ 
                                                  render $ table_document $ 
                                                  fromJust res
 #endif

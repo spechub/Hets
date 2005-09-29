@@ -54,25 +54,25 @@ instance Typeable COLSign where
 instance Category COL CSign COLMor  
     where
          -- ide :: id -> object -> morphism
-	 ide COL = idMor dummy
+         ide COL = idMor dummy
          -- comp :: id -> morphism -> morphism -> Maybe morphism
-	 comp COL = compose (const id)
+         comp COL = compose (const id)
          -- dom, cod :: id -> morphism -> object
-	 dom COL = msource
-	 cod COL = mtarget
+         dom COL = msource
+         cod COL = mtarget
          -- legal_obj :: id -> object -> Bool
-	 legal_obj COL = legalSign
+         legal_obj COL = legalSign
          -- legal_mor :: id -> morphism -> Bool
-	 legal_mor COL = legalMor
+         legal_mor COL = legalMor
 
 -- abstract syntax, parsing (and printing)
 
 instance Syntax COL C_BASIC_SPEC
-		SYMB_ITEMS SYMB_MAP_ITEMS
+                SYMB_ITEMS SYMB_MAP_ITEMS
       where 
          parse_basic_spec COL = Just $ basicSpec col_reserved_words
-	 parse_symb_items COL = Just $ symbItems col_reserved_words
-	 parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
+         parse_symb_items COL = Just $ symbItems col_reserved_words
+         parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
 
 -- COL logic
 
@@ -94,8 +94,8 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
                               (const return) ana_COL_SIG_ITEM const
          stat_symb_map_items COL = statSymbMapItems
          stat_symb_items COL = statSymbItems
-	 ensures_amalgamability COL _ = 
-	     fail "COL: ensures_amalgamability nyi" -- ???
+         ensures_amalgamability COL _ = 
+             fail "COL: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec COL _sigma _sens = Basic_spec [] -- ???
 
@@ -107,7 +107,7 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
          signature_union COL sigma1 sigma2 = 
            return $ addSig addCOLSign sigma1 sigma2
          morphism_union COL = morphismUnion (const id) addCOLSign
-	 final_union COL = finalUnion addCOLSign
+         final_union COL = finalUnion addCOLSign
          is_subsig COL = isSubSig isSubCOLSign
          inclusion COL = sigInclusion dummy isSubCOLSign
          cogenerated_sign COL = cogeneratedSign dummy

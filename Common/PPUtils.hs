@@ -61,15 +61,15 @@ instance ListCheck a => ListCheck (Annoted a) where
 pluralS :: ListCheck a => [a] -> String
 pluralS l = 
     case l of 
-	   []  -> error "pluralS does not accept empty list"
-	   [x] -> if x `innerListGT` 1 then lastS else ""
-	   _   -> lastS
+           []  -> error "pluralS does not accept empty list"
+           [x] -> if x `innerListGT` 1 then lastS else ""
+           _   -> lastS
     where lastS = "s"
 
 pluralS_doc :: ListCheck a => [a] -> Doc
 pluralS_doc l = case pluralS l of
-		"" -> empty
-		s  -> ptext s
+                "" -> empty
+                s  -> ptext s
 
 --------------------------------------------------------------------------
 
@@ -129,20 +129,20 @@ listSep_text :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_text separator ga = fsep . punctuate separator . map (printText0 ga)
 
 semiAnno_text :: PrettyPrint a => 
-		 GlobalAnnos -> [Annoted a] -> Doc
+                 GlobalAnnos -> [Annoted a] -> Doc
 semiAnno_text ga l = if null l then empty else
-		     (vcat $ map (pf' True)
-		      (init l) ++ [pf' False (last l)])
+                     (vcat $ map (pf' True)
+                      (init l) ++ [pf' False (last l)])
     where pfga as = vcat $ map (printText0 ga) as
-	  pf' printSemi a_item =
-	         pfga (l_annos a_item)
-			$$ hang (printText0 ga (item a_item)
-				 <> (if printSemi then semi else empty))
-			       0 laImpl 
-			$$ ras
-	      where (laImpl,ras) = splitAndPrintRAnnos printText0 
-	                                     printAnnotationList_Text0 
-					     (<+>) id empty
+          pf' printSemi a_item =
+                 pfga (l_annos a_item)
+                        $$ hang (printText0 ga (item a_item)
+                                 <> (if printSemi then semi else empty))
+                               0 laImpl 
+                        $$ ras
+              where (laImpl,ras) = splitAndPrintRAnnos printText0 
+                                             printAnnotationList_Text0 
+                                             (<+>) id empty
                                              ga (r_annos a_item)
 
 {--------------------------------------------------------------------

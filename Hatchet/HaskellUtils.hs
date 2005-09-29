@@ -25,10 +25,10 @@ filterDecls [] = []
 filterDecls (decl:decls) =
      (case decl of
        AHsFunBind matches -> 
-	   [(emptyName decl) { senName = show (1 + length decls) 
+           [(emptyName decl) { senName = show (1 + length decls) 
                                          ++ funName matches }]
        AHsPatBind _ pat _ _ -> 
-	   [(emptyName decl) { senName = show (1 + length decls) 
+           [(emptyName decl) { senName = show (1 + length decls) 
                                          ++ patName pat }]
        _ -> []) ++ filterDecls decls
      where funName ((AHsMatch _ name _ _ _):rest) = show name

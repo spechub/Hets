@@ -35,11 +35,11 @@ import CASL.Fold
 
 replacePropPredication :: Maybe (PRED_NAME,VAR,TERM f) 
                         -- ^ Just (pSymb,x,t) replace x 
-			-- with t in Predication of pSymb 
+                        -- with t in Predication of pSymb 
                        -> PRED_NAME -- ^ propositional symbol to replace
-		       -> FORMULA f -- ^ Formula to insert
-		       -> FORMULA f -- ^ Formula with placeholder
-		       -> FORMULA f
+                       -> FORMULA f -- ^ Formula to insert
+                       -> FORMULA f -- ^ Formula with placeholder
+                       -> FORMULA f
 replacePropPredication mTerm pSymb frmIns =
     foldFormula (mapRecord $ const $ error 
              "replacePropPredication: unexpected extended formula")
@@ -50,7 +50,7 @@ replacePropPredication mTerm pSymb frmIns =
                  | isJust mTerm && symb == pSymbT -> case ts of
                    Sorted_term (Qual_var v1 _ _) _ _ : args 
                        |  v1 == var -> Predication qpn (term:args) ps 
-	           _ -> error "replacePropPredication: unknown term to replace"
+                   _ -> error "replacePropPredication: unknown term to replace"
               _ -> error "replacePropPredication: unknown formula to replace"
          , foldConditional = \ t _ _ _ _ -> t }
 

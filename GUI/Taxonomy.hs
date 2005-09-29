@@ -38,7 +38,7 @@ displaySubsortGraph = displayGraph KSubsort
 displayGraph :: TaxoGraphKind -> String -> G_theory -> IO ()
 displayGraph kind thyName (G_theory lid sign sens) = 
     case theory_to_taxonomy lid kind 
-		       (emptyMMiSSOntology thyName AutoInsert) 
-		       sign $ toNamedList sens of
+                       (emptyMMiSSOntology thyName AutoInsert) 
+                       sign $ toNamedList sens of
      Res.Result [] (Just taxo) -> displayClassGraph taxo Nothing
      Res.Result dias _ -> showDiags defaultHetcatsOpts dias

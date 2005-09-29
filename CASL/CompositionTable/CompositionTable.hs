@@ -57,9 +57,9 @@ data Table_Attrs = Table_Attrs
     { tableName :: String
     , tableIdentity :: String
     } deriving (Eq,Show)
-newtype Compositiontable = Compositiontable [Cmptabentry] 		deriving (Eq,Show)
-newtype Conversetable = Conversetable [Contabentry] 		deriving (Eq,Show)
-newtype Models = Models [Model] 		deriving (Eq,Show)
+newtype Compositiontable = Compositiontable [Cmptabentry]               deriving (Eq,Show)
+newtype Conversetable = Conversetable [Contabentry]             deriving (Eq,Show)
+newtype Models = Models [Model]                 deriving (Eq,Show)
 data Cmptabentry = Cmptabentry Cmptabentry_Attrs [Baserel]
                  deriving (Eq,Show)
 data Cmptabentry_Attrs = Cmptabentry_Attrs

@@ -14,16 +14,16 @@ main = exec lineParser fileParser
 
 lineParser, fileParser :: [(String, StringParser)]
 lineParser = [("MixIds", fromAParser $ parseId []),
-	      ("VarIds", fromAParser $ varId []),
-	      ("SortIds", fromAParser $ sortId []),
-	      ("Annos", fromAParser annotationL)]
+              ("VarIds", fromAParser $ varId []),
+              ("SortIds", fromAParser $ sortId []),
+              ("Annos", fromAParser annotationL)]
 
 fileParser = [("Annotations", \ ga -> fmap (show . vcat . map 
-					    (printText0 ga)) 
-	       annotations)
-	     ,("GlobalAnnos", \ ga -> fmap 
-	       (show . printText0 ga . addGlobalAnnos ga)
-	       annotations)
-	     ]
+                                            (printText0 ga)) 
+               annotations)
+             ,("GlobalAnnos", \ ga -> fmap 
+               (show . printText0 ga . addGlobalAnnos ga)
+               annotations)
+             ]
 
 

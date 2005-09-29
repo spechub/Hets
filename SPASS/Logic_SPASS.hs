@@ -69,7 +69,7 @@ instance Logic.Logic.Syntax SPASS () () ()
 instance Sentences SPASS Sentence () Sign SPASSMorphism ()  where
       map_sen SPASS _ s = return s
       print_named SPASS ga formula = 
-	printFormula ga formula
+        printFormula ga formula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
       provers SPASS = [spassProver] 

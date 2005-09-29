@@ -81,8 +81,8 @@ mapSingleSentence sign sen = do
 mapTheory :: (Env, [Named Sentence]) -> Result (Sign, [Named (TiDecl PNT)])
 mapTheory (sig, csens) = do
     let hs = translateSig sig
-	ps = concatMap (translateSentence sig) csens
-	cs = cleanSig hs ps
+        ps = concatMap (translateSentence sig) csens
+        cs = cleanSig hs ps
     (_, _, hsig, sens) <- 
             hatAna (HsDecls (cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
@@ -99,7 +99,7 @@ distinctOpIds n ((i,OpInfos info) : idInfoList) =
     [] -> distinctOpIds 2 idInfoList
     [hd] -> (i, hd) : distinctOpIds 2 idInfoList
     hd : tl -> (newName i n, hd) : 
-	     distinctOpIds (n + 1) ((i, OpInfos tl) : idInfoList)
+             distinctOpIds (n + 1) ((i, OpInfos tl) : idInfoList)
 
 -- | Adds a number to the name of an identifier.
 newName :: Id -> Int -> Id
@@ -110,13 +110,13 @@ newName (Id tlist idlist poslist) n =
 findUniqueId :: Env -> UninstOpId -> TypeScheme -> Maybe (Id, OpInfo)
 findUniqueId env uid ts = 
     let OpInfos l = Map.findWithDefault (OpInfos []) uid (assumps env)
-	fit :: Int -> [OpInfo] -> Maybe (Id, OpInfo)
-	fit n tl = 
-	    case tl of
-		   [] -> Nothing
-		   oi:rt -> if ts == opType oi then 
-			    Just (if null rt then uid else newName uid n, oi)
-			    else fit (n + 1) rt
+        fit :: Int -> [OpInfo] -> Maybe (Id, OpInfo)
+        fit n tl = 
+            case tl of
+                   [] -> Nothing
+                   oi:rt -> if ts == opType oi then 
+                            Just (if null rt then uid else newName uid n, oi)
+                            else fit (n + 1) rt
     in fit 2 l
 
 -- former TranslateAna file

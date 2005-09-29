@@ -2,8 +2,8 @@
 
 
 "Driver.Options" command line options
-	
-"Driver.ReadFn"	reader for Hets input files
+        
+"Driver.ReadFn" reader for Hets input files
 
 "Driver.WriteFn" writer for files output by Hets
 
