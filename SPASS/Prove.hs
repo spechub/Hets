@@ -639,13 +639,19 @@ spassProveGUI thName th = do
     (forever
       ((selectGoal >>> do
           s <- readIORef stateRef
-          sel <- (getSelection lb) :: IO (Maybe [Int])
-          let s' = if isJust sel
-                     then s {currentGoal = Just $ senName 
-                                           (goals !! (head $ fromJust sel))}
+          let oldGoal = currentGoal s
+          curEntTL <- (getValueSafe timeEntry) :: IO Int
+          let s' = if isJust oldGoal
+                     then s {configsMap = adjustOrSetConfig
+		                          (setTimeLimit curEntTL) (fromJust oldGoal) (configsMap s)}
                      else s
-          writeIORef stateRef s'
-          updateDisplay s' False lb statusLabel timeEntry optionsEntry axiomsLb
+          sel <- (getSelection lb) :: IO (Maybe [Int])
+          let s'' = if isJust sel
+                      then s' {currentGoal = Just $ senName 
+                                            (goals !! (head $ fromJust sel))}
+                      else s'
+          writeIORef stateRef s''
+          updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (doProve >>> do
             rs <- readIORef stateRef
