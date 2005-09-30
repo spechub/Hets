@@ -1,4 +1,5 @@
-type Nat < Int; Int < Rat
+type Nat < Int;
+     Int < Rat
 op 0 : Nat
 op 0 : Rat
 forall y : Rat

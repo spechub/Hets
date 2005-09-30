@@ -16,7 +16,8 @@ op a : s
 program (var b : s) = (op a : s)
 op b : s
 program (op b : s) = (op a : s)
-op x : s; y : t
+op x : s;
+   y : t
 op c : t = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type

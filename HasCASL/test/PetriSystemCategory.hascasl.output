@@ -6,7 +6,8 @@ free type Boolean ::= True |
                       False
 var S : Type; V : Type
 type Set : Type -> Type := \ S : Type . S ->? Unit
-op emptySet : Set S; {__} : S -> Set S;
+op emptySet : Set S;
+   {__} : S -> Set S;
    __isIn__ : S * Set S ->? Unit;
    __subset__ : Pred (Set (S) * Set (S));
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S;
@@ -17,7 +18,8 @@ op emptySet : Set S; {__} : S -> Set S;
 var Elem : Type
 type MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
 op __isIn__ : Pred (Elem * MultiSet Elem);
-   __<=__ : Pred (MultiSet Elem * MultiSet Elem); {} : MultiSet Elem;
+   __<=__ : Pred (MultiSet Elem * MultiSet Elem);
+   {} : MultiSet Elem;
    {__} : Elem -> MultiSet Elem;
    __+__, __-__, __intersection__ : MultiSet Elem * MultiSet Elem ->
                                     MultiSet Elem;
@@ -42,18 +44,23 @@ var S : Type
 type MapMultiSet : Type -> Type := \ S : Type . MultiSet S ->?
                                                 MultiSet S
 var a : Type
-op sumN : (Nat ->? Nat) -> Nat -> Nat; sumSet : Set Nat ->? Nat;
+op sumN : (Nat ->? Nat) -> Nat -> Nat;
+   sumSet : Set Nat ->? Nat;
    sum : (a ->? Nat) -> Pred a ->? Nat
 var S : Type; V : Type; U : Type
 type Map : Type -> Type := \ S : Type . S ->? S
-op dom : (S ->? V) -> Set S; range : (S ->? V) -> Set V;
-   image : (S ->? V) -> Set S -> Set V; emptyMap : (S ->? V);
+op dom : (S ->? V) -> Set S;
+   range : (S ->? V) -> Set V;
+   image : (S ->? V) -> Set S -> Set V;
+   emptyMap : (S ->? V);
    __::__-->__ : Pred ((S ->? V) * Pred (S) * Pred (V));
    __[__/__] : (S ->? V) * S * V -> (S ->? V);
    __-__ : (S ->? V) * S -> (S ->? V);
    __o__ : (V ->? U) * (S ->? V) -> (S ->? U);
-   __||__ : (S ->? V) * Set S -> (S ->? V); undef__ : S ->? V;
-   ker : (S ->? V) -> Pred (S * S); injective : Pred (S ->? V);
+   __||__ : (S ->? V) * Set S -> (S ->? V);
+   undef__ : S ->? V;
+   ker : (S ->? V) -> Pred (S * S);
+   injective : Pred (S ->? V);
    __intersectionMap__, __unionMap__ : (S ->? V) * (S ->? V) ->
                                        (S ->? V);
    __restrict__ : (S ->? V) * Set S -> (S ->? V)
@@ -106,7 +113,8 @@ type Net = {(p, pre, post) : Set P * (T ->? MultiSet P) *
                                                            MultiSet Elem -> Set Elem)
                                                         (var p1 : MultiSet P),
                                                         (var p : Set P)))}
-op places : Net -> Set P; transitions : Net -> Set T;
+op places : Net -> Set P;
+   transitions : Net -> Set T;
    preMap, postMap : Net -> (T ->? MultiSet P)
 type HomNet = {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) *
                                   Net . (op __::__-->__[P; P] :
@@ -145,9 +153,11 @@ type HomNet = {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) *
                                              =
                                              (op postMap : Net -> T ->? MultiSet P) (var n2 : Net)
                                              ((var ht : T ->? T) (var t : T)))}
-op dom : HomNet -> Net; cod : HomNet -> Net;
+op dom : HomNet -> Net;
+   cod : HomNet -> Net;
    placesMap : HomNet -> (P ->? P);
-   transitionsMap : HomNet -> (T ->? T); id : Net ->? HomNet;
+   transitionsMap : HomNet -> (T ->? T);
+   id : Net ->? HomNet;
    __o__ : HomNet * HomNet ->? HomNet
 pred injective : HomNet
 type Marking : Type := MultiSet P
@@ -163,8 +173,10 @@ type System = {(n, m) : Net * Marking . let ((var p : P ->? Unit),
                                                (op __isIn__[P] :
                                                 forall S : Type . S * Set S ->? Unit)
                                                ((var x : P), (var p : P ->? Unit))}
-op marking : System -> Marking; net : System -> Net;
-   empty : Marking; __|<__> : System * T -> System;
+op marking : System -> Marking;
+   net : System -> Net;
+   empty : Marking;
+   __|<__> : System * T -> System;
    __|<__> : System * MultiSet T ->? System
 type HomSys = {(sys1, hp, ht, sys2) : System * (P ->? P) *
                                       (T ->? T) * System . (((op net : System -> Net)
@@ -188,9 +200,11 @@ type HomSys = {(sys1, hp, ht, sys2) : System * (P ->? P) *
                                                                  ((var hp : P ->? P) (var p : P),
                                                                   (op marking : System -> Marking)
                                                                   (var sys2 : System))))}
-op dom : HomSys -> System; cod : HomSys -> System;
+op dom : HomSys -> System;
+   cod : HomSys -> System;
    placesMap : HomSys -> (P ->? P);
-   transitionsMap : HomSys -> (T ->? T); id : System ->? HomSys;
+   transitionsMap : HomSys -> (T ->? T);
+   id : System ->? HomSys;
    __o__ : HomSys * HomSys ->? HomSys
 pred injective : HomSys
 forall h1 : HomSys; h2 : HomSys

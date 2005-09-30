@@ -72,7 +72,9 @@ type s < ? s
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
 type nat
 class Cpo < Type
-      {var c : Cpo; pred __<<=__ : c * c; ;
+      {var c : Cpo;
+       pred __<<=__ : c * c;
+       ;
        pred isChain : forall c : Cpo . nat -> c
               = \ (var s : nat -> c)
                   . all (\ n : nat . s (n) <<= s (Suc (n))) as Unit;
@@ -81,7 +83,8 @@ class Cpo < Type
                   . all (\ n : nat . s (n) <<= x) as Unit;
        op sup : (nat -> c) ->? c;}
 class Pcpo < Cpo
-      {var p : Pcpo; op bottom : p;}
+      {var p : Pcpo;
+       op bottom : p;}
 class instance Flatcpo < Cpo
                {var f : Flatcpo;}
 var c : Cpo; d : Cpo

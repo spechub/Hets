@@ -1,8 +1,10 @@
 var S : Type; T : Type
-type Bool; Pred : -Type -> Type := \ S : -Type . S ->? Unit;
+type Bool;
+     Pred : -Type -> Type := \ S : -Type . S ->? Unit;
      Set : Type -> Type := \ S : Type . S ->? Unit
 op True, False : Bool
-op emptySet : Set S; {__} : S -> Set S;
+op emptySet : Set S;
+   {__} : S -> Set S;
    __isIn__ : S * Set S ->? Unit;
    __subset__ : Pred (Set (S) * Set (S));
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S;

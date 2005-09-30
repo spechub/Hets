@@ -1,15 +1,18 @@
 class Type < Type
 var t : Type
 class TYPE < Type
-type Pred __ : -Type -> Type; Unit : TYPE
+type Pred __ : -Type -> Type;
+     Unit : TYPE
 class a, b, c < Type
-class a, b, c < d; a < b
+class a, b, c < d;
+      a < b
 type s : c
 pred tt : s
 var x : s
 program tt = \ x : s . ()
 program __ res __ (x : s, y : t) : s = x;
-        fst (x : s, y : t) : s = x; snd (x : s, y : t) : t = y
+        fst (x : s, y : t) : s = x;
+        snd (x : s, y : t) : t = y
 pred eq : s * s
 type s < ? s
 program all (p : (? s)) : (? Unit) = eq (p, tt)

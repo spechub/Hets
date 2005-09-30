@@ -1,4 +1,5 @@
-internal {type s, t; fun o, q : s -> t;
+internal {type s, t;
+          fun o, q : s -> t;
           . (fun o : s -> t) = (fun q : s -> t)}
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type

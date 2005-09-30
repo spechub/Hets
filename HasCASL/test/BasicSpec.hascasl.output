@@ -3,7 +3,8 @@ var t : Type
 class TYPE < Type
 type Unit : TYPE
 class a, b, c < Type
-class a, b, c < Type; a < b
+class a, b, c < Type;
+      a < b
 type s : c
 pred tt : s
 var x : s
