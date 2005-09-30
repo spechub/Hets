@@ -475,7 +475,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
 -}
 batchDlg :: String -- ^ theory name
          -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
-         -> IO SPASS.Prove.State
+         -> IO SPASS.Prove.State -- ^ initial global state for the main window
 batchDlg thName th = do
   let initState = initialState th 
                   (collectNameMapping goals (filter isAxiom nSens)) goals
