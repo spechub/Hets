@@ -8,11 +8,11 @@ expecting "\\" or "\""
 
 parse error at 3.2:
 unexpected end of input
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "var", "op", "fun", "pred" or "}"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let" or "}"
 
 parse error at 4.2:
 unexpected end of input
-expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let", "var", "op", "fun", "pred" or "]"
+expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case", "let" or "]"
 
 parse error at 5.2:
 unexpected end of input

@@ -401,8 +401,9 @@ primPattern :: TokenMode -> AParser st Pattern
 primPattern b = tokenPattern b
                 <|> mkBrackets pattern (BracketTerm Squares)
                 <|> mkBraces pattern (BracketTerm Braces)
-                <|> bracketParser pattern oParenT cParenT anComma
-                        (BracketTerm Parens)
+                <|> bracketParser 
+                        (pattern <|> varTerm <|> qualOpName)
+                        oParenT cParenT anComma (BracketTerm Parens)
 
 -- | several 'typedPattern'
 mixPattern :: TokenMode -> AParser st Pattern
@@ -484,8 +485,8 @@ termToken b = fmap TermToken (asKey exEqual <|> asKey equalS <|> tToken b)
 -- | 'termToken' plus 'BracketTerm's
 primTerm :: TokenMode -> AParser st Term
 primTerm b = termToken b
-           <|> mkBraces termInParens (BracketTerm Braces)
-           <|> mkBrackets termInParens (BracketTerm Squares)
+           <|> mkBraces term (BracketTerm Braces)
+           <|> mkBrackets term (BracketTerm Squares)
            <|> bracketParser termInParens oParenT cParenT anComma
                        (BracketTerm Parens)
 
