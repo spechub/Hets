@@ -10,11 +10,13 @@ proper type terms as supertypes are reduced to subtypes of higher kind
 and a type synonym for the subtype that (now) must not occur
 elsewhere.
 
-Four function and (many) product type names are builtin in order to
+Four function- and (many) product type names are builtin in order to
 construct type applications.  The unit type is a separate type (and
 not the empty product).
 
 class names are not considered for mapping (Morphism.hs) 
+
+class- and type names are kept disjoint
 
 
 
@@ -31,8 +33,12 @@ are also not renamed in DatatypeSens, because they are not used)
 
 types: 
 
-Make sure that no supertypes are declared for type synonyms. Cyclic
-atomic supertypes are rejected.
+Make sure that no supertypes are declared for type synonyms. 
+
+Cyclic atomic supertypes are rejected.
+
+Improve error messages for further (or repeated) non-atomic subtype
+declarations for the same sybtype. 
 
 In MinType the equality of terms and the overload relation of their
 types is not properly computed!
@@ -54,9 +60,7 @@ yet.
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
-redeclaration for builtin identifiers are ignored
-
-shorter printing of terms
+redeclarations of builtin identifiers are forbidden and ignored
 
 terms in sentences (from formulas) are not quantified
 over global variables
@@ -69,6 +73,8 @@ Sentences for attributes comm, assoc, unit are not generated yet.
 MixAna only recognizes unknown variables and thus cannot check for shadowing
 
 Unify alone handles lazy types 
+
+the removal of types for printing can be refined (propagated to the arguments)
 
 
 
@@ -84,7 +90,7 @@ conversion HsSyn and AHsSyn is stupid
 AxiomBinds are not renamed 
 
 PrintModuleInfo is entirely faked and unusable for showing a Haskell
-theory that was directly read in (form a .het file and Haskell code in
+theory that was directly read in (from a .het file with Haskell code in
 curly braces.)
 
 for logic Hatchet static analysis is not executed because its result
