@@ -378,8 +378,6 @@ getValueSafe timeEntry =
 --                        IOException x -> trace ("ICH:" ++ show x) Nothing
 --                        _ -> Nothing
 
--- *** Callbacks
-
 {- |
   Text displayed by the batch mode window.
 -}
@@ -390,6 +388,8 @@ batchInfoText gTotal gDone =
   "Running prover in batch mode:\n"
   ++ show gDone ++ "/" ++ show gTotal ++ " goals processed.\n"
   ++ "At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
+
+-- *** Callbacks
 
 {- |
   Called every time a goal has been processed in the batch mode gui.
@@ -475,42 +475,54 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
 -}
 batchDlg :: String -- ^ theory name
          -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
-         -> IORef SPASS.Prove.State -- ^ IORef to a global GUI state
-         -> [Named Sentence] -- ^ preprocessed (translated into valid SPASS identifiers) goals. must not be empty!
-         -> IO ()
-batchDlg thName th stateRef goals = do
-  batchWin <- createToplevel [text $ thName ++ " - SPASS Prover"]
-  pack batchWin [Expand On, Fill Both]
+         -> IO SPASS.Prove.State
+batchDlg thName th = do
+  let initState = initialState th 
+                  (collectNameMapping goals (filter isAxiom nSens)) goals
+  if (not $ null goals)
+    then runBatchDlg initState
+    else return initState
 
-  batchB <- newVBox batchWin []
-  pack batchB [Expand On, Fill Both]
+  where
+    Theory _ nSens = th
+    (_, goals) = partition isAxiom 
+                     (prepareSenNames transSenName nSens)
+    runBatchDlg s = do
+      stateRef <- newIORef s
 
-  let numGoals = length goals
-
-  batchL <- newLabel batchB [text $ batchInfoText numGoals 0]
-  pack batchL []
-
-  batchSp1 <- newSpace batchB (cm 0.15) []
-  pack batchSp1 [Expand Off, Fill X, Side AtBottom]
-
-  newHSeparator batchB
-
-  batchSp2 <- newSpace batchB (cm 0.15) []
-  pack batchSp2 [Expand Off, Fill X, Side AtBottom]
-
-  batchCancelButton <- newButton batchB [text "Cancel Batch Mode"]
-  pack batchCancelButton [Expand Off, Side AtRight]
-
-  -- batch window events
-  batchCancel <- clicked batchCancelButton
-
-  batchProver <- Concurrent.forkIO (do
-                                      _ <- spassProveBatch (goalProcessed stateRef numGoals batchL batchCancelButton) thName th
-                                      return ())
-  sync (batchCancel >>> do
-                          -- putStrLn "killing batch prover"
-                          Concurrent.killThread batchProver
-                          destroy batchWin)
+      batchWin <- createToplevel [text $ thName ++ " - SPASS Prover"]
+      pack batchWin [Expand On, Fill Both]
+    
+      batchB <- newVBox batchWin []
+      pack batchB [Expand On, Fill Both]
+    
+      let numGoals = length goals
+    
+      batchL <- newLabel batchB [text $ batchInfoText numGoals 0]
+      pack batchL []
+    
+      batchSp1 <- newSpace batchB (cm 0.15) []
+      pack batchSp1 [Expand Off, Fill X, Side AtBottom]
+    
+      newHSeparator batchB
+    
+      batchSp2 <- newSpace batchB (cm 0.15) []
+      pack batchSp2 [Expand Off, Fill X, Side AtBottom]
+    
+      batchCancelButton <- newButton batchB [text "Cancel Batch Mode"]
+      pack batchCancelButton [Expand Off, Side AtRight]
+    
+      -- batch window events
+      batchCancel <- clicked batchCancelButton
+    
+      batchProver <- Concurrent.forkIO (do
+                                          _ <- spassProveBatch (goalProcessed stateRef numGoals batchL batchCancelButton) thName th
+                                          return ())
+      sync (batchCancel >>> do
+                              -- putStrLn "killing batch prover"
+                              Concurrent.killThread batchProver
+                              destroy batchWin)
+      readIORef stateRef
 
 {- |
   Invokes the prover GUI. First runs the batch prover on all goals,
@@ -520,15 +532,9 @@ spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
-  -- backing data structure
-  let initState = initialState th 
-                  (collectNameMapping goals (filter isAxiom nSens)) goals
+  -- batch window creates initial backing data structure
+  initState <- batchDlg thName th
   stateRef <- newIORef initState
-
-  -- batch window
-  if (not $ null goals)
-    then batchDlg thName th stateRef goals
-    else return ()
 
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
