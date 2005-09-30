@@ -471,19 +471,14 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
 -- *** Main GUI
 
 {- |
-  Invokes the prover GUI. First runs the batch prover on all goals,
-  then drops the user into a detailed GUI.
+  Dialog window that runs all goals through the batch prover. 
 -}
-spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
-              -> IO([Proof_status ()]) -- ^ proof status for each goal
-spassProveGUI thName th = do
-  -- backing data structure
-  let initState = initialState th 
-                  (collectNameMapping goals (filter isAxiom nSens)) goals
-  stateRef <- newIORef initState
-
-  -- batch window
+batchDlg :: String -- ^ theory name
+         -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+         -> IORef SPASS.Prove.State -- ^ IORef to a global GUI state
+         -> [Named Sentence] -- ^ preprocessed (translated into valid SPASS identifiers) goals. must not be empty!
+         -> IO ()
+batchDlg thName th stateRef goals = do
   batchWin <- createToplevel [text $ thName ++ " - SPASS Prover"]
   pack batchWin [Expand On, Fill Both]
 
@@ -516,6 +511,24 @@ spassProveGUI thName th = do
                           -- putStrLn "killing batch prover"
                           Concurrent.killThread batchProver
                           destroy batchWin)
+
+{- |
+  Invokes the prover GUI. First runs the batch prover on all goals,
+  then drops the user into a detailed GUI.
+-}
+spassProveGUI :: String -- ^ theory name
+              -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+              -> IO([Proof_status ()]) -- ^ proof status for each goal
+spassProveGUI thName th = do
+  -- backing data structure
+  let initState = initialState th 
+                  (collectNameMapping goals (filter isAxiom nSens)) goals
+  stateRef <- newIORef initState
+
+  -- batch window
+  if (not $ null goals)
+    then batchDlg thName th stateRef goals
+    else return ()
 
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
