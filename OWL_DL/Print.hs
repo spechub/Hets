@@ -48,7 +48,7 @@ instance PrettyPrint Sign where
     ((text "data_valued_roles ") <> (foldSetToDoc ga p6)) $+$
     ((text "individuals ") <> (foldSetToDoc ga p8)) $+$
     ((text "sign_axioms") $+$ (foldSetToDoc2 ga p9)) $+$ 
-    (text "") $+$ (text "Sentence:")  
+    (text "\n") 
 
 instance PrettyPrint URIreference where
     printText0 _ (QN prefix localpart uri)
@@ -75,6 +75,7 @@ instance PrettyPrint Sentence where
           OWLAxiom axiom -> printText0 ga axiom
           OWLFact fact   -> printText0 ga fact
 
+-- not necessary
 instance PrettyPrint Ontology where
     printText0 ga (Ontology maybeID directives ns) =
         (text "Ontology") <+> 
@@ -93,119 +94,138 @@ instance PrettyPrint Directive where
 
 instance PrettyPrint Axiom where
     printText0 ga axiom =
-        case axiom of
-        DisjointClasses desc1 desc2 _ ->     -- description list is ignored
-            (text "(forall ((x owl:Thing)) (not (and (") <+> 
-                  (printDescription ga emptyQN desc1) <+>
-                  (text "x) (") <+> 
-                  (printDescription ga emptyQN desc2) <+>
-                  (text "x))))")
-        EquivalentClasses desc1 (desc2:_) ->  -- description list is ignored
-          case desc2 of
-          DC cid ->
-            (text "(forall ((x owl:Thing)) (iff (") <+> 
-                 (printDescription ga emptyQN desc1) <+>
-                 (text "x) (") <+> 
-                 (printText0 ga cid) <+>
-                 (text "x)))")  
-          _      -> 
-              case desc1 of
-                DC cid1 -> printDescription ga cid1 desc2
-                _       -> error ("EquivalentClasses Error:" ++ (show axiom))
-        Datatype dID _ _ -> 
-            printText0 ga dID
-        DEquivalentProperties dpID1 dpID2 _ ->
-            (text "(forall ((x owl:Thing)) (y owl:Thing)) (iff (") <+> 
-                        (printText0 ga dpID1) <+>
-                        (text "x y) (") <+> (printText0 ga dpID2) <+>
-                        (text "x y)))") 
-        IEquivalentProperties ipID1 ipID2 _ ->
-            (text "(forall ((x owl:Thing)) (y owl:Thing)) (iff (") <+> 
+	case axiom of
+	Class cid _ _ _ descs ->   -- descs is unionOf or complementOf
+          foldListToDocV ga (printDescription ga) cid descs
+	EnumeratedClass cid _ _ iids ->
+	    printDescription ga cid $ OneOfDes iids 
+	DisjointClasses desc1 desc2 _ ->     -- description list is ignored
+	    (text "(forall ((x owl:Thing)) (not (and (") <> 
+	          (printDescription ga emptyQN desc1) <+>
+                  (text "x) (") <> 
+	          (printDescription ga emptyQN desc2) <+>
+	          (text "x))))")
+	EquivalentClasses desc1 descs ->  
+         foldListToDocV ga 
+	  (\x y -> 
+          case y of
+	  DC cid2 ->
+	    (text "(forall ((x owl:Thing)) (iff (") <> 
+	         (printDescription ga emptyQN x) <+>
+		 (text "x) (") <> 
+	         (printText0 ga cid2) <+>
+	         (text "x)))")	
+	  _      -> 
+	      case x of
+	        DC cid1 -> printDescription ga cid1 y
+	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
+	  ) desc1 descs
+	Datatype dID _ _ -> 
+	    printText0 ga dID
+	DEquivalentProperties dpID1 dpID2 _ ->
+	    (text "(forall ((x owl:Thing)) (y owl:Thing)) (iff (") <> 
+	                (printText0 ga dpID1) <+>
+			(text "x y) (") <> (printText0 ga dpID2) <+>
+			(text "x y)))")	
+	IEquivalentProperties ipID1 ipID2 _ ->
+	    (text "(forall ((x owl:Thing)) (y owl:Thing)) (iff (") <> 
                         (printText0 ga ipID1) <+>
-                        (text "x y) (") <+> (printText0 ga ipID2) <+>
-                        (text "x y)))") 
-        DSubPropertyOf dpID1 dpID2 ->
-            (text "(forall ((u rdfs:Resource) (y rdfs:Resource)) (implies (") 
-                    <+> (printText0 ga dpID1) <+> (text "u y) (") 
-                    <+> (printText0 ga dpID2) <+> (text "u y)))")
-        ISubPropertyOf ipID1 ipID2 ->
-            (text "(forall ((u rdfs:Resource) (y rdfs:Resource)) (implies (") 
-                    <+> (printText0 ga ipID1) <+> (text "u y) (") 
-                    <+> (printText0 ga ipID2) <+> (text "u y)))")
-        ObjectProperty iid p2 p3 p4 maybeInverse isSymmetric maybeFunc p8 p9 ->
-            case maybeInverse of
-            Just pid -> (text "(forall ((x owl:Thing) (y owl:Thing)) (iff (")<>
-                        (printText0 ga iid) <+> (text "x y) (") <>
-                        (printText0 ga pid) <+> (text "y x) (") $+$
-                        (printText0 ga (ObjectProperty iid p2 p3 p4 
-                                Prelude.Nothing isSymmetric maybeFunc p8 p9))
-            _ -> if isSymmetric then
-                    (text "(forall ((x owl:Thing) (y owl:Thing)) (implies (")<>
-                    (printText0 ga iid) <+> (text "x y) (") <>
-                    (printText0 ga iid) <+> (text "y x) (") $+$
-                    (printText0 ga (ObjectProperty iid p2 p3 p4 maybeInverse 
-                                                       False maybeFunc p8 p9))
-                    else 
-                      case maybeFunc of
-                         Just InverseFunctional ->
-                            (text "(forall ((x owl:Thing) (y owl:Thing)") <+>
-                            (text "(z owl:Thing)) (implies") $+$
-                            (nest 2 $ text "(and (") <> (printText0 ga iid) <+>
-                            (text "y x) (") <> (printText0 ga iid) <+> 
-                            (text "z x))") $+$
-                            (nest 2 $ text "(= y z)") $+$
-                            (text "))") 
+			(text "x y) (") <> (printText0 ga ipID2) <+>
+			(text "x y)))")	
+	DSubPropertyOf dpID1 dpID2 ->
+	    (text "(forall ((u rdfs:Resource) (y rdfs:Resource)) (implies (") 
+	            <> (printText0 ga dpID1) <+> (text "u y) (") 
+	            <> (printText0 ga dpID2) <+> (text "u y)))")
+	ISubPropertyOf ipID1 ipID2 ->
+	    (text "(forall ((u rdfs:Resource) (y rdfs:Resource)) (implies (") 
+                    <> (printText0 ga ipID1) <+> (text "u y) (") 
+	            <> (printText0 ga ipID2) <+> (text "u y)))")
+	ObjectProperty iid p2 p3 p4 maybeInverse isSymmetric maybeFunc p8 p9 ->
+	    case maybeInverse of
+	    Just pid -> (text "(forall ((x owl:Thing) (y owl:Thing)) (iff (")<>
+			(printText0 ga iid) <+> (text "x y) (") <>
+			(printText0 ga pid) <+> (text "y x) (") $+$
+			(printText0 ga (ObjectProperty iid p2 p3 p4 
+				Prelude.Nothing isSymmetric maybeFunc p8 p9))
+	    _ -> if isSymmetric then
+		    (text "(forall ((x owl:Thing) (y owl:Thing)) (implies (")<>
+		    (printText0 ga iid) <+> (text "x y) (") <>
+		    (printText0 ga iid) <+> (text "y x) (") $+$
+		    (printText0 ga (ObjectProperty iid p2 p3 p4 maybeInverse 
+				                       False maybeFunc p8 p9))
+		    else 
+		      case maybeFunc of
+		         Just InverseFunctional ->
+			    (text "(forall ((x owl:Thing) (y owl:Thing)") <+>
+			    (text "(z owl:Thing)) (implies") $+$
+			    (nest 2 $ text "(and (") <> (printText0 ga iid) <+>
+			    (text "y x) (") <> (printText0 ga iid) <+> 
+			    (text "z x))") $+$
+			    (nest 2 $ text "(= y z)") $+$
+			    (text "))") 
                          Just Transitive ->  
-                            (text "(forall ((x owl:Thing) (y owl:Thing)") <+> 
-                            (text "(z owl:Thing)) (implies") $+$
-                            (nest 2 $ text "(and (") <> (printText0 ga iid) <+>
-                            (text "x y) (") <> (printText0 ga iid) <+> 
-                            (text "y Z))") $+$
-                            (nest 2 $ text "(") <> (printText0 ga iid) <+>
-                            (text "x z)") $+$
-                            (text "))")
-                         _  -> text "" 
-        u -> text $ show u              -- annotation is not yet instanced
+			    (text "(forall ((x owl:Thing) (y owl:Thing)") <+> 
+			    (text "(z owl:Thing)) (implies") $+$
+			    (nest 2 $ text "(and (") <> (printText0 ga iid) <+>
+			    (text "x y) (") <> (printText0 ga iid) <+> 
+			    (text "y Z))") $+$
+			    (nest 2 $ text "(") <> (printText0 ga iid) <+>
+			    (text "x z)") $+$
+			    (text "))")
+			 _  -> text "" 
+	u -> text $ show u         -- annotation is not yet instanced
 
 instance PrettyPrint SignAxiom where
     printText0 ga signAxiom =
-        case signAxiom of
-        Subconcept cid1 cid2 -> 
-            (text "(forall ((u rdfs:Resource)) (implies (" <> 
-                     (printText0 ga cid1) <> 
-                     (text " u) (") <> (printText0 ga cid2) <> (text " u)))"))
-        RoleDomain rid rdomains ->
-            foldListToDocH ga  
-            (\x y -> (text "(forall ((u rdfs:Resource) (y rdfs:Resource))") $+$
-                     (nest 2 $ text "(implies (") <> (printText0 ga x) <+> 
-                     (text "u y) (") <> (printText0 ga y) <> (text " u)") $+$
-                     (text "))"))
-            rid rdomains
-        RoleRange rid rranges ->
-            foldListToDocH ga  
-            (\x y -> (text "(forall ((u rdfs:Resource) (y rdfs:Resource))") $+$
-                     (nest 2 $ text "(implies (") <> (printText0 ga x) <+> 
-                     (text "u y) (") <> (printText0 ga y) <> (text " y)") $+$
-                     (text "))"))
-            rid rranges
-        FuncRole rid ->
-          (text "(and") $+$
-          (nest 2 $ text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))")
-          $+$ (nest 4 $ text "(implies") $+$
-            ((nest 6 $ text "(and (") <> (printText0 ga rid) <+> 
-             (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
-            (nest 6 $ text "(= y z)") $+$
-            (nest 2 $ text "))") $+$
-            (nest 2 $ 
-             text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))") 
-              $+$ (nest 4 $ text "(implies") $+$
-            ((nest 6 $ text "(and (") <> (printText0 ga rid) <+> 
-             (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
-            (nest 6 $ text "(= y z)") $+$
-            (nest 2 $ text "))") $+$ (text ")")
-        Conceptmembership iID desc ->
-            (text "(") <> (printDescription ga iID desc) 
-                     <+> (printText0 ga iID) <> (text ")")
+	case signAxiom of
+	Subconcept cid1 cid2 -> 
+	    (text "(forall ((u rdfs:Resource)) (implies (" <> 
+	             (printText0 ga cid1) <> 
+	             (text " u) (") <> (printText0 ga cid2) <> (text " u)))"))
+	RoleDomain rid rdomains ->
+	    foldListToDocH ga  
+	    (\x y -> (text "(forall ((u rdfs:Resource) (y rdfs:Resource))") $+$
+		     (nest 2 $ text "(implies (") <> (printText0 ga x) <+> 
+	             (text "u y) (") <> (printText0 ga y) <> (text " u)") $+$
+	             (text "))"))
+	    rid rdomains
+	RoleRange rid rranges -> 
+ --        if null rranges then text ""
+ --          else
+            case head rranges of
+	    RDRange _ ->          -- range (dataRange) of datatype property
+	     (text "(forall ((x owl:Thing) (y rdfs:Literal))") $+$
+                (nest 2 $ text "implies (") <> (printText0 ga rid) <+>
+		(text "x y)") $+$
+		(nest 4 $ text "(or") 
+		<+> (foldListToDocH ga (form5 ga) rid rranges)
+                <> (char ')') $+$ (text ")))")
+	    _         ->
+	      foldListToDocV ga  
+	        (\x y -> (text "(forall ((u rdfs:Resource) (y rdfs:Resource))")
+                     $+$ (nest 2 $ text "(implies (") <> (printText0 ga x) <+> 
+	             (text "u y) (") <> (printText0 ga y) <> (text " y)") $+$
+	             (text "))"))
+	           rid rranges
+	FuncRole (rtype, rid) ->
+	    case rtype of
+	    IRole -> 
+		(text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))")
+	        $+$ (nest 2 $ text "(implies") $+$
+	        ((nest 4 $ text "(and (") <> (printText0 ga rid) <+> 
+	        (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
+	        (nest 4 $ text "(= y z)") $+$
+	        (text "))") 
+	    DRole ->
+	     (text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))")
+	      $+$ (nest 2 $ text "(implies") $+$
+	      ((nest 4 $ text "(and (") <> (printText0 ga rid) <+> 
+	      (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
+	      (nest 4 $ text "(= y z)") $+$
+	      (text "))")
+	Conceptmembership iID desc ->
+	    (text "(") <> (printDescription ga iID desc) 
+		     <+> (printText0 ga iID) <> (text ")")
 
 instance PrettyPrint RDomain where
     printText0 ga (RDomain desc) =
@@ -276,26 +296,26 @@ printRestriction1 _ _ [] = empty
 printRestriction1 ga dpID (h:r) =
     case h of
     DRCAllValuesFrom dataRange -> 
-        (text "(forall ((x owl:Thing)) (iff") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(forall (y) (implies (") <> (printText0 ga dpID) <+>
-           (text "x y) (") <> (printText0 ga dataRange) <+>
-           (text "y)))") $+$
-        (text "))") $+$
-        (printRestriction1 ga dpID r)
+	(text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(forall (y) (implies (") <> (printText0 ga dpID) <+>
+	   (text "x y) (") <> (printText0 ga dataRange) <+>
+	   (text "y)))") $+$
+	(text ")") $+$
+	(printRestriction1 ga dpID r)
     DRCSomeValuesFrom dataRange -> 
-        (text "(forall ((x owl:Thing)) (iff") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(exists (y) (and (") <> (printText0 ga dpID) <+>
-           (text "x y) (") <> (printText0 ga dataRange) <+>
-           (text "y)))") $+$
-        (text "))") $+$
-        (printRestriction1 ga dpID r)
+	(text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(exists (y) (and (") <> (printText0 ga dpID) <+>
+	   (text "x y) (") <> (printText0 ga dataRange) <+>
+	   (text "y)))") $+$
+	(text ")") $+$
+	(printRestriction1 ga dpID r)
     DRCValue dl -> 
-        (text "(forall ((x owl:Thing)) (iff (restriction x) (") <>
-          (printText0 ga dpID) <+> (text "x") <+>
-          (printText0 ga dl) <> (text ")))") $+$
-        (printRestriction1 ga dpID r)
+	(text "(forall ((x owl:Thing)) (") <>
+	  (printText0 ga dpID) <+> (text "x") <+>
+	  (printText0 ga dl) <> (text "))") $+$
+	(printRestriction1 ga dpID r)
     DRCCardinality cardinality -> 
         (printCard ga dpID cardinality) $+$
         (printRestriction1 ga dpID r)
@@ -305,26 +325,27 @@ printRestriction2 _ _ [] = empty
 printRestriction2 ga ipID (h:r) =
     case h of
     IRCAllValuesFrom desc -> 
-        (text "(forall ((x owl:Thing)) (iff") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(forall (y) (implies (") <> (printText0 ga ipID) <+>
-           (text "x y) (") <> (printDescription ga ipID desc) <+>
-           (text "y)))") $+$
-        (text "))") $+$
-        (printRestriction2 ga ipID r)
+	(text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(forall (y) (implies (") <> (printText0 ga ipID) <+>
+	   (text "x y) (") <> (printDescription ga ipID desc) <+>
+	   (text "y)))") $+$
+	(text ")") $+$
+	(printRestriction2 ga ipID r)
     IRCSomeValuesFrom desc -> 
-        (text "(forall ((x owl:Thing)) (iff") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(exists (y) (and (") <> (printText0 ga ipID) <+>
-           (text "x y) (") <> (printDescription ga ipID desc) <+>
-           (text "y)))") $+$
-        (text "))") $+$
-        (printRestriction2 ga ipID r)
+	(text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(exists (y) (and (") <> (printText0 ga ipID) <+>
+	   (text "x y) (") <> (printDescription ga ipID desc) <+>
+	   (text "y)))") $+$
+	(text ")") $+$
+	(printRestriction2 ga ipID r)
     IRCValue iid -> 
-        (text "(forall ((x owl:Thing)) (iff (restriction x) (") <>
-          (printText0 ga ipID) <+> (text "x") <+>
-          (printText0 ga iid) <> (text ")))") $+$
-        (printRestriction2 ga ipID r)
+	(text "(forall ((x owl:Thing)) (") <>
+	  (printText0 ga ipID) <+> (text "x") <+>
+	  (printText0 ga iid) <> (text "))") $+$
+	(printRestriction2 ga ipID r)
+
     IRCCardinality cardinality -> 
         (printCard ga ipID cardinality)  $+$
         (printRestriction2 ga ipID r)
@@ -333,44 +354,44 @@ printCard :: GlobalAnnos -> URIreference -> Cardinality -> Doc
 printCard ga pid card =
     case card of
     MinCardinality n -> 
-      (text "(forall ((x owl:Thing)) (implies") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
+      (text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
                                   (text "owl:Thing)) (and ") $+$
         (nest 4 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
                                   (text "]") $+$
-        (nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
-           (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
-                                  (text ")") $+$
-        (nest 2 $ text "))") $+$
-      (text "))")
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
+	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
+			          (text ")") $+$
+	(nest 2 $ text "))") $+$
+      (text ")")
     MaxCardinality n -> 
       (text "(forall ((x owl:Thing) (x1 owl:Thing) ... (x") <> (int (n+1)) <+>
                   (text "owl:Thing)) (implies") $+$
-        (nest 2 $ text "(and (restriction x)") $+$
-        (nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...")<+>
-             (text "(") <> (printText0 ga pid) <+> (text "x x") <> 
-                (int (n+1)) <> (text "))") $+$
-        (nest 2 $ (text "not [ALLDIFFERENT x1 ... x")) <> (int (n+1)) <>
+	-- (nest 2 $ text "(and (restriction x)") $+$
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...")<+>
+	     (text "(") <> (printText0 ga pid) <+> (text "x x") <> 
+		(int (n+1)) <> (text "))") $+$
+	(nest 2 $ (text "not [ALLDIFFERENT x1 ... x")) <> (int (n+1)) <>
                                   (text "])") $+$
-        (text "))") 
+	(text ")") 
     Cardinality n ->
-      (text "(forall ((x owl:Thing)) (implies") $+$
-        (nest 2 $ text "(restriction x)") $+$
-        (nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
+      (text "(forall ((x owl:Thing)) ") $+$
+	-- (nest 2 $ text "(restriction x)") $+$
+	(nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
                                   (text "owl:Thing)) (and ") $+$
         (nest 4 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
                                   (text "]") $+$
-        (nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
-           (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
-                                  (text ")") $+$
-        (nest 4 $ text "(forall ((z owl:Thing)) (implies") $+$
-        (nest 6 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
-        (nest 6 $ text "(or (= z x1) ... (= z x") <> (int n) <> 
-                    (text "))") $+$
-        (nest 4 $ text "))") $+$
-        (nest 2 $ text "))") $+$
-        (text "))")
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
+	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
+			          (text ")") $+$
+	(nest 4 $ text "(forall ((z owl:Thing)) (implies") $+$
+	(nest 6 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
+	(nest 6 $ text "(or (= z x1) ... (= z x") <> (int n) <> 
+	            (text "))") $+$
+	(nest 4 $ text "))") $+$
+	(nest 2 $ text "))") $+$
+	(text ")")
 
 printDescription :: GlobalAnnos -> URIreference -> Description -> Doc
 printDescription ga iD desc =
@@ -448,6 +469,11 @@ form4 :: GlobalAnnos -> URIreference -> DataLiteral -> Doc
 form4 ga _ dl = 
     (text "(=") <+> (printText0 ga dl) <+> 
                     (text "x)")
+
+form5 :: GlobalAnnos -> URIreference -> RRange -> Doc
+form5 ga _ dl = 
+    (text "(=") <+> (printText0 ga dl) <+> 
+		    (text "y)")
 
 emptyQN :: QName
 emptyQN = QN "" "" ""

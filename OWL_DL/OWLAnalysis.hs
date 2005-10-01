@@ -268,23 +268,24 @@ nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
             Result diag res = 
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of  
-          Just (_,_,accSig,sent) ->
+	  Just (_,difSig,accSig,sent) ->
             do    
-             let (_, tMap) = 
-                     integrateNamespaces (namespaceMap inSig) 
-                                             (namespaceMap accSig)
-                 sent' = map (renameNamespace tMap) sent
-                 accSent = inSent ++ sent' 
+	     let {- (_, tMap) = 
+		     integrateNamespaces (namespaceMap inSig) 
+					     (namespaceMap accSig)
+		 sent' = map (renameNamespace tMap) sent
+		 -}
+	         accSent = inSent ++ sent 
                  newLNode = 
-                     (n, topNode {dgn_theory = 
-                                  G_theory OWL_DL accSig (toThSens accSent)
-                                 }) 
-                 ledges = (inn dg n) ++ (out dg n)
-                 newG = (insEdges ledges (insNode newLNode (delNode n dg)))
-             return $ Result (oldDiags ++ diag)
-                      (Just ((Map.insert n (accSig, accSent) signMap), newG))
-          _   -> do let actDiag = mkDiag Error 
-                                    ("error by analysing of " ++ (show mid)) ()
+		     (n, topNode {dgn_theory = 
+				  G_theory OWL_DL accSig (toThSens accSent)
+				 }) 
+		 ledges = (inn dg n) ++ (out dg n)
+	         newG = (insEdges ledges (insNode newLNode (delNode n dg)))
+	     return $ Result (oldDiags ++ diag)
+		      (Just ((Map.insert n (difSig, sent) signMap), newG))
+	  _   -> do let actDiag = mkDiag Error 
+				    ("error by analysing of " ++ (show mid)) ()
                     return $ Result (actDiag:oldDiags) Prelude.Nothing 
 
 nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =

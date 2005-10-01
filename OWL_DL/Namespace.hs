@@ -454,8 +454,8 @@ instance PNamespace SignAxiom where
        RoleDomain id1 rDomains -> RoleDomain (renameNamespace tMap id1)
                                       (map (renameNamespace tMap) rDomains)
        RoleRange id1 rRange -> RoleRange (renameNamespace tMap id1)
-                                      (map (renameNamespace tMap) rRange)
-       FuncRole id1 -> FuncRole (renameNamespace tMap id1)
+				      (map (renameNamespace tMap) rRange)
+       FuncRole (t, id1) -> FuncRole (t, (renameNamespace tMap id1))
        Conceptmembership iId des -> 
            Conceptmembership (renameNamespace tMap iId)
                              (renameNamespace tMap des)
