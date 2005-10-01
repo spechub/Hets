@@ -41,9 +41,11 @@ data Sign = Sign
 data SignAxiom = Subconcept ClassID ClassID       -- subclass, superclass
                | RoleDomain ID [RDomain]
                | RoleRange  ID [RRange]
-               | FuncRole   ID
+               | FuncRole (RoleType, ID) 
                | Conceptmembership IndividualID Description
                  deriving (Show,Eq,Ord)
+
+data RoleType = IRole | DRole deriving (Show, Eq, Ord)
 
 data RDomain = RDomain Description
                  deriving (Show,Eq,Ord)
