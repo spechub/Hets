@@ -14,6 +14,14 @@ module OWL_DL.OWLAnalysis where
 import OWL_DL.AS
 import OWL_DL.Namespace
 import OWL_DL.Logic_OWL_DL
+import OWL_DL.StaticAna
+import OWL_DL.Sign
+import OWL_DL.StructureAna
+
+-- import OWL_DL.Print
+-- import Common.Lib.Pretty
+-- import Common.PrettyPrint
+
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System(system)
@@ -21,11 +29,8 @@ import System.Exit
 import System.Environment(getEnv)
 import qualified Common.Lib.Map as Map
 import qualified List as List
-import OWL_DL.StructureAna
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
-import OWL_DL.StaticAna
-import OWL_DL.Sign
 import Common.GlobalAnnotations
 import Common.Result
 import Common.AS_Annotation
@@ -209,13 +214,14 @@ staticAna :: FilePath
 staticAna file (ontoMap, dg) =  
     do let topNodes = topsort dg
        Result _ res <-
+       --     do putStrLn $ show topNodes
                nodesStaticAna (reverse topNodes) Map.empty ontoMap dg []
        case res of
-           Just (_, dg') ->         
+           Just (_, dg') ->     
             return (Just (simpleLibName file, 
                           (), (),
                           simpleLibEnv file 
-                          (insEdges (reverseLinks $ labEdges dg) 
+                          (insEdges (reverseLinks $ labEdges dg') 
                            (delEdges (edges dg') dg')
                           )))
            _            -> error "no devGraph..."
@@ -239,7 +245,7 @@ nodesStaticAna (h:r) signMap ontoMap dg diag = do
                           signMap ontoMap dg 
     case res of
         Just (newSignMap, newDg) -> 
-                nodesStaticAna r newSignMap ontoMap newDg (diag++digs)
+                nodesStaticAna r newSignMap ontoMap newDg (diag++digs) 
         Prelude.Nothing -> 
                -- Warning or Error message
             nodesStaticAna r signMap ontoMap dg (diag++digs)
@@ -270,19 +276,17 @@ nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
         case res of  
 	  Just (_,difSig,accSig,sent) ->
             do    
-	     let {- (_, tMap) = 
-		     integrateNamespaces (namespaceMap inSig) 
-					     (namespaceMap accSig)
-		 sent' = map (renameNamespace tMap) sent
-		 -}
-	         accSent = inSent ++ sent 
+	     let accSent = inSent ++ sent 
                  newLNode = 
+                  -- (n+10, topNode {dgn_theory =
 		     (n, topNode {dgn_theory = 
 				  G_theory OWL_DL accSig (toThSens accSent)
 				 }) 
 		 ledges = (inn dg n) ++ (out dg n)
-	         newG = (insEdges ledges (insNode newLNode (delNode n dg)))
-	     return $ Result (oldDiags ++ diag)
+                 -- newG = insNode newLNode dg
+	         newG = insEdges ledges (insNode newLNode (delNode n dg))
+                 -- problem!
+ 	     return $ Result (oldDiags ++ diag)
 		      (Just ((Map.insert n (difSig, sent) signMap), newG))
 	  _   -> do let actDiag = mkDiag Error 
 				    ("error by analysing of " ++ (show mid)) ()
@@ -294,10 +298,10 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
      Just (sig, nsen) -> 
        let (_, tMap) = 
                integrateNamespaces (namespaceMap inSig) (namespaceMap sig)
-       in  nodeStaticAna r ((integSign sig inSig), 
+       in nodeStaticAna r ((integSign sig inSig), 
                             (inSent ++ (map (renameNamespace tMap) nsen)), 
                             oldDiags)
-                       signMap ontoMap dg
+                       signMap ontoMap dg 
      Prelude.Nothing ->
        do        
          Result digs' res' <-
@@ -315,10 +319,10 @@ nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap dg =
                   ((integSign sig' inSig),
                    (inSent ++ (map (renameNamespace tMap) nsen')),
                    (oldDiags ++ digs'))
-                  signMap' ontoMap dg'
+                  signMap' ontoMap dg' 
           _  -> do error "Error by analysis : nodeStaticAna"
                    nodeStaticAna r (inSig, inSent, oldDiags)
-                                         signMap ontoMap dg
+                                         signMap ontoMap dg 
 
 integSign :: Sign -> Sign -> Sign
 integSign inSig totalSig =
