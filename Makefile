@@ -162,12 +162,11 @@ endif
 ### Attention every module must be compiled with profiling or the linker
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
-### and comment out HC_PACKAGE variable definition above.
 ### Comment in the following line for switching on profiling. 
 #HC_PROF = -prof -auto-all 
 
-HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
-HC_OPTS = $(HCI_OPTS) $(HC_PROF) -DCASLEXTENSIONS
+HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
+    -DCASLEXTENSIONS
 DRIFT_OPTS = +RTS -K10m -RTS
 
 ####################################################################
@@ -524,8 +523,8 @@ Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
 	$(HC) --make -o $@ $< $(HC_OPTS) 
 
 ### interactive
-ghci: 
-	$(HC)i $(HCI_OPTS)
+ghci: $(derived_sources)
+	$(HC)i $(HC_OPTS)
 
 ### christian's target
 ### CASL parser
