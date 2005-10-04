@@ -245,8 +245,8 @@ integrateTheory theories = -- head theories
                   sign1' = maybe (error "could not coerce sign") 
                         id (coerceSign lid1 lid2 "" sign1)
                   csign = case signature_union lid2 sign1' sign2 of
-                          Result diags mv -> 
-                              maybe (error ("sig_union"++show diags)) id mv
+                          Result dgs mv -> 
+                              maybe (error ("sig_union"++show dgs)) id mv
               in G_theory lid2 csign (joinSens thSen1' theSen2)
 
 
