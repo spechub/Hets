@@ -87,7 +87,11 @@ casl_lib_dir = "/home/cofi/CASL-lib"
 
 -- the header of the LaTeX-file that will be processed by pdflatex
 latex_header :: String
-latex_header = base_dir_generated ++ "mould.m"
+latex_header = "\\documentclass{article}\n\
+               \\\usepackage{hetcasl}\n\
+               \\\usepackage{isolatin1}\n\
+               \\\begin{document}\n"
+
 
 -- where is the pdflatex command for the generation of PDF-files
 pdflatex_cmd :: String
@@ -175,12 +179,14 @@ handle (F5 input box1 box2 box3 box4) =
       getRandom = getStdRandom (randomR (100000,999999))
 
 -- Analyze the input
-anaInput :: String -> SelectedBox -> FilePath -> IO([DiagStr],[(HtmlTitle, ResAna)])
+anaInput :: String -> SelectedBox -> FilePath 
+         -> IO(Result [(HtmlTitle, ResAna)])
 anaInput contents showS@(_,_,_,willAchiv) outputfiles =
    do 
    setEnv "HETS_LIB" casl_lib_dir True
-   (parseErrors, ast) <- read_LIB_DEFN_M_WI defaultLogic "<stdin>" contents
-   if parseErrors == "" then 
+   let Result parseErrors mast = read_LIB_DEFN_M defaultLogic "<stdin>" contents
+   maybe (return ) 
+         (\ ast -> 
       do
       Common.Result.Result ds res <- ioresToIO 
                                      (ana_LIB_DEFN logicGraph defaultLogic 
@@ -201,7 +207,7 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
                            anaInput_aux diagStrs2 res outputfiles showS
                Nothing -> return(diagStrs2,[])
       else return (parseErrors:[], [])
-
+         ) mast
    where 
       filterDiagStr :: [String] -> [DiagStr] -> [DiagStr]
       filterDiagStr str [] = str
@@ -242,10 +248,11 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
                         pdfFile   = outputfiles1 ++ ".pdf"
                         tmpFile   = outputfiles1 ++ ".tmp"
                     write_casl_latex defaultHetcatsOpts globalAnnos (pptexFile) libDefn
-                    rawSystem "cp" [latex_header, latexFile]
+                    writeFile latexFile (latex_header ++
+                                         "\\input{"++ pptexFile ++
+                                         "}\n \\end{document}\n") 
                     setFileMode pptexFile fileMode
                     setFileMode latexFile fileMode
-                    appendFile latexFile ("\\input{"++ pptexFile ++"}\n" ++ "\\end{document}\n")
                     
                     system ("cd "++ base_dir_generated ++" ; "++
                             pdflatex_cmd ++
