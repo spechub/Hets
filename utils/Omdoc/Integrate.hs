@@ -25,7 +25,7 @@ import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Logic.Grothendieck as Logic.Grothendieck
 import CASL.Amalgamability(CASLSign)
 
-import qualified Text.XML.HXT.Parser as HXT hiding (run)
+import qualified Text.XML.HXT.Parser as HXT hiding (run, trace)
 import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT
 
 import qualified Comorphisms.CASL2PCFOL as Com
@@ -55,6 +55,8 @@ import Common.Utils (joinWith)
 
 import qualified System.IO.Error as System.IO.Error
 import qualified System.Directory as System.Directory
+
+import Char (toLower, isSpace)
 
 data ImportContext a = ImportContext {
 						 importsMap :: Hets.ImportsMap
@@ -209,19 +211,15 @@ devGraphToXml dg =
 					dgx +++
 					(HXT.etag "theory" += (qualattr "xml" "id" name))
 					+= (
-					   (foldl (\ix (i,_) -> ix +++ xmlNL +++ importToXml i += (xmlNL +++
-					   -- morphism-generation-hack ... ugly. needs more work.
-						(caslMorphismToXml mimports sorts preds ops i name $
-							Hets.getCASLMorph $ head $
-							( \e ->
-								let
-									thisnode = Map.findWithDefault (error $ "No such node N " ++ name) name namenodemap
-									inode = Map.findWithDefault (error $ "No such node I " ++ i) i namenodemap
-								in
-									filter (\(n,m,_) -> n == inode && m == thisnode) e
+					   (foldl (\ix (i,mmm) -> ix +++ xmlNL +++ importToXml i +=
+							(
+							case mmm of
+								Nothing -> HXT.txt ""
+								(Just mm) ->
+									morphismMapToXml mm i name
+									+++
+									xmlNL
 							)
-							(Graph.labEdges dg)
-							)) +++ xmlNL 
 						) (HXT.txt "") $ Set.toList nImports)
 					   +++
 					   (foldl (\sx s -> sx +++ xmlNL +++ sortToXml s) (HXT.txt "") $ Set.toList realSorts) --nSorts)
@@ -251,17 +249,6 @@ devGraphToXml dg =
 					+++ xmlNL
 				) (refsToCatalogue dg +++ xmlNL) $ Set.toList onlynodenameset
 				
-adjustLOCOmdoc::String->String
-adjustLOCOmdoc s =
-	let
-		woExt = reverse $ takeWhile (/='.') $ reverse s
-	in
-		if woExt == ""
-			then
-				s ++ ".omdoc"
-			else
-				woExt ++ ".omdoc"
-
 refsToCatalogue::DGraph->HXT.XmlFilter
 refsToCatalogue dg =
 	let refs = filter isDGRef $ map snd $ Graph.labNodes dg
@@ -272,7 +259,7 @@ refsToCatalogue dg =
 		foldl (\cx r ->
 			cx +++
 			HXT.etag "loc" +=
-				( HXT.sattr "theory" (getDGNodeName r) +++ HXT.sattr "omdoc" (adjustLOCOmdoc (show $ dgn_libname r)) ) +++
+				( HXT.sattr "theory" (getDGNodeName r) +++ HXT.sattr "omdoc" (asOmdocFile (unwrapLinkSource $ dgn_libname r)) ) +++
 				xmlNL
 				) (HXT.txt "") refs
 		)
@@ -372,34 +359,53 @@ consToSens sort conlist =
 -- needs a map of imports, sorts, the name of the current theory and the predication
 predicationToXml::Hets.ImportsMap->Hets.SortsMap->String->(Id.Id, (Set.Set PredType))->(HXT.XmlTree->HXT.XmlTrees)
 predicationToXml imports sorts name (predId, ptSet) =
--- NAME -> ID
-	(HXT.etag "symbol" += (qualattr predNameXMLNS predNameXMLAttr (show predId) +++ HXT.sattr "kind" "object"))
-	+= ( 
+	(HXT.etag "symbol" += (
+		qualattr predNameXMLNS predNameXMLAttr (show predId)
+		+++ HXT.sattr "kind" "object"
+		)
+	) += ( 
 		foldl (\tx (PredType predArgs) ->
-		tx +++ xmlNL
-		+++
-		(HXT.etag "type" += (HXT.sattr "system" "casl"))
-		+= (	xmlNL +++
-			HXT.etag "OMOBJ"
-			+= (
+			tx +++ xmlNL
+			+++
+			(HXT.etag "type" += (
+				HXT.sattr "system" "casl"
+				)
+			) += (
 				xmlNL +++
-				HXT.etag "OMA"
-				+= (
+				HXT.etag "OMOBJ" += (
 					xmlNL +++
-					(HXT.etag "OMS" += (HXT.sattr "cd" "casl" +++ HXT.sattr "name" "predication" ))
-					+++
-					(foldl (\px s ->
-						px +++ xmlNL
-						+++
-						(HXT.etag "OMS" += (HXT.sattr "cd" (fromMaybe "unknownOrigin" (Hets.findNodeNameForSort imports sorts s name)) +++ HXT.sattr "name" (show s)))
+					HXT.etag "OMA" += (
+						xmlNL +++
+						(HXT.etag "OMS" += (
+							HXT.sattr "cd" "casl"
+							+++ HXT.sattr "name" "predication"
+							)
+						) +++
+						(foldl (\px s ->
+							px +++ xmlNL
+							+++
+							(HXT.etag "OMS" += (
+								HXT.sattr
+									"cd"
+									(fromMaybe
+										"unknownOrigin"
+										(Hets.findNodeNameForSort
+											imports
+											sorts
+											s
+											name)
+									)
+									+++ HXT.sattr "name" (show s)
+								)
+							)
 						) (HXT.txt "") predArgs)
+						+++ xmlNL
+					)
 					+++ xmlNL
 				)
 				+++ xmlNL
 			)
 			+++ xmlNL
-		)
-		+++ xmlNL
 		) (HXT.txt "") $ Set.toList ptSet
 	)
 	
@@ -465,26 +471,202 @@ transformMorphOp (id, ot) = Qual_op_name id (cv_OpTypeToOp_type ot) Id.nullRange
 transformMorphPred::(Id.Id, PredType)->PRED_SYMB
 transformMorphPred (id, pt) = Qual_pred_name id (cv_PredTypeToPred_type pt) Id.nullRange
 
-createHidingString::CASLSign->String
-createHidingString (Sign sortset _ opmap _ predmap _ _ _ _) =
-	let hidden = map show (Set.toList sortset) ++
-			 map show (Map.keys opmap) ++
-			 map show (Map.keys predmap)
-	in	joinWith ',' hidden
-	
 createHidingString2::(Hets.Sorts, Hets.Rels, Hets.Preds, Hets.Ops)->String
 createHidingString2 (sorts, rels, preds, ops) =
 	let	hidden = map show (Set.toList sorts) ++
 			map show (Map.keys preds) ++
 			map show (Map.keys ops)
-	in	joinWith ',' hidden
+	in implode ", " hidden
 	
+morphismMapToXml::Hets.MorphismMap->String->String->HXT.XmlFilter
+morphismMapToXml (sm, om, pm, hs) source target =
+	HXT.etag "morphism" +=
+		(
+		(HXT.sattr "hiding" (implode ", " $ map show $ Set.toList hs))
+		+++
+		(foldl (\sx (ss,st) ->
+			sx +++
+			HXT.etag "requation" +=
+				(
+				HXT.etag "pattern" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(
+						HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" (show ss))
+						)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				+++
+				HXT.etag "value" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(
+						HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" (show st))
+						)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				)
+			+++
+			xmlNL
+		) (HXT.txt "") $ Map.toList sm)
+		+++
+		(foldl (\sx ((sid, sot),(tid, tot)) ->
+			sx +++
+			HXT.etag "requation" +=
+				(
+				HXT.etag "pattern" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(processOperatorForMorphism sid sot source)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				+++
+				HXT.etag "value" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(processOperatorForMorphism tid tot target)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				)
+			+++
+			xmlNL
+		) (HXT.txt "") $ Map.toList om)
+		+++
+		(foldl (\sx ((sid, spt),(tid, tpt)) ->
+			sx +++
+			HXT.etag "requation" +=
+				(
+				HXT.etag "pattern" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(processPredicationForMorphism sid spt source)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				+++
+				HXT.etag "value" +=
+					(
+					xmlNL
+					+++
+					inOMOBJ
+						(processPredicationForMorphism tid tpt target)
+					+++
+					xmlNL
+					)
+				+++
+				xmlNL
+				)
+			+++
+			xmlNL
+		) (HXT.txt "") $ Map.toList pm)
+		)
+		
+processOperatorForMorphism::Id.Id->OpType->String->HXT.XmlFilter
+processOperatorForMorphism 
+	opid ot@(OpType fk args res) source =
+		HXT.etag "OMATTR" +=
+			(xmlNL +++
+			HXT.etag "OMATP" += -- create attribution for this operator (sign)
+				(xmlNL +++
+				HXT.etag "OMS" += -- type of operator
+					(HXT.sattr "cd" "casl" +++
+					HXT.sattr "name" "funtype"
+					) +++
+				xmlNL +++
+				(HXT.etag "OMSTR" +=
+					(HXT.txt (show fk)) -- 'Partial' or 'Total'
+				) +++
+				xmlNL +++
+				HXT.etag "OMS" += -- signature of operator
+					(HXT.sattr "cd" "casl" +++
+					HXT.sattr "name" "type"
+					) +++
+				xmlNL +++
+				(HXT.etag "OMSTR" += -- create a string t1-\\t2-\\...-\\tn
+					(HXT.txt ( (foldl
+						(\t s -> t ++ (show s) ++ "-\\")
+						-- the function could be easier but we need different
+						-- behaviour for functions without parameters...
+						(if (length args > 0) then
+								(show (head args)) ++ "-\\"
+							else
+								"" )
+						(if (length args) > 0 then tail args else [])
+						) ++ (show res) )
+					)
+				) +++
+				xmlNL
+				) +++
+				xmlNL +++
+				HXT.etag "OMS" += -- finally : the name of the operator
+					(
+					HXT.sattr "cd" source
+					+++
+					HXT.sattr "name" (show opid)
+					)
+			)
+			
+processPredicationForMorphism::Id.Id->PredType->String->HXT.XmlFilter
+processPredicationForMorphism
+	prid pt@(PredType args) source =
+		HXT.etag "OMATTR" +=
+			(xmlNL +++
+			HXT.etag "OMATP" +=
+				(xmlNL +++
+				HXT.etag "OMS" +=
+					(HXT.sattr "cd" "casl" +++ HXT.sattr "name" "type") +++
+				xmlNL +++
+				(HXT.etag "OMSTR" +=
+					HXT.txt
+						( (foldl
+							(\t s -> t ++ "-\\" ++ (show s))
+							(if args == [] then "" else (show $ head args))
+							(drop 1 args)
+						   )
+						)
+				)
+				) +++
+				xmlNL
+			) +++
+		xmlNL +++
+		HXT.etag "OMS" +=
+			(
+			 HXT.sattr "cd" source
+			 +++
+			 HXT.sattr "name" (show prid)
+			) 
+
+		
 
 
 caslMorphismToXml::Hets.ImportsMap->Hets.SortsMap->Hets.PredsMap->Hets.OpsMap->String->String->(CASL.Morphism.Morphism () () ())->HXT.XmlFilter
 caslMorphismToXml imports sorts preds ops sourcename targetname (CASL.Morphism.Morphism ssource starget sortmap funmap predmap _) =
 	let
-		hides = createHidingString $ diffSig ssource starget
+		hides = Hets.createHidingString $ diffSig ssource starget
 {-		hides = createHidingString2 $ (\(a,b,c,d,_) -> (a,b,c,d)) $
 			Hets.diffMaps
 				(Hets.lookupMaps sorts Map.empty preds ops Map.empty sourcename)
@@ -747,6 +929,7 @@ xmlToMorphismMap
 	=
 		let
 			hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
+			hiddensyms = map Hets.stringToId $ map trimString $ explode "," hides
 			pattern = isTag "requation" .> getChildren .> isTag "pattern"
 			value = isTag "requation" .> getChildren .> isTag "value"
 			vsymbol = value .> getChildren .> isTag "OMOBJ" .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
@@ -838,7 +1021,7 @@ xmlToMorphismMap
 							Debug.Trace.trace ("Unknown Symbol : \"" ++ x ++ "\"") (om,pm)
 					) (Map.empty, Map.empty) requations
 		in
-			(sortmap, opsmap, predsmap)
+			(sortmap, opsmap, predsmap, Set.fromList hiddensyms)
 
 			
 --helper
@@ -1209,12 +1392,12 @@ importsFromXmlTheory t =
 		foldl (\imps i ->
 			let
 				from = drop 1 $ xshow $ applyXmlFilter (getValue "from") [i]
-				mm = foldl (\(mmsm, mmfm, mmpm) m ->
+				mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
 					let
-						(nmmsm, nmmfm, nmmpm) = xmlToMorphismMap [m]
+						(nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
 					in
-						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm)
-					) (Map.empty, Map.empty, Map.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
+						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm, Set.union mmhs nmmhs)
+					) (Map.empty, Map.empty, Map.empty, Set.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
 			in
 				Set.union imps (Set.singleton (from, (Just mm)))
 		) Set.empty imports
@@ -1501,7 +1684,7 @@ getOmdocID = xshow . applyXmlFilter (isTag "omdoc" .> getQualValue "xml" "id")
 		
 omdocToDevGraph::HXT.XmlTrees->(DGraph, String)
 omdocToDevGraph t = (xmlToDGraph (applyXmlFilter (isTag "omdoc" .> getChildren) t) (Graph.mkGraph [] []), getOmdocID t) 
-
+{-
 importOmdoc::String->(IO (DGraph, String))
 importOmdoc file =
 	do
@@ -1511,7 +1694,7 @@ importOmdoc file =
 					(Left error) -> putStrLn ("Error loading \"" ++ file ++ "\"") >> return (HXT.txt "" emptyRoot)
 					(Right doc) -> return doc
 		return (xmlToDGraph omdoc (Graph.mkGraph [] []), getOmdocID omdoc)
-		
+-}		
 	
 dgNameToLnDGLe::(DGraph, String)->(ASL.LIB_NAME,DGraph,LibEnv)
 dgNameToLnDGLe (dg, name) =
@@ -1580,22 +1763,78 @@ getImportMapFG filename =
 						return (tn, fp)) $ Map.toList catmap -- canon. off
 		canimpmap <- return $ Map.fromList canimps
 		System.Directory.setCurrentDirectory curdir
-		return ((omdocid, omdoc, cfn), canimpmap)	
+		return ((omdocid, omdoc, cfn), canimpmap)
 		
-makeImportGraph::String->(IO (ImportGraph HXT.XmlTrees))
-makeImportGraph filename =
+first::(a->Bool)->[a]->(Maybe a)
+first _ [] = Nothing
+first f (l:r) =
+	if f l
+		then
+			(Just l)
+		else
+			first f r
+			
+firstM::(Monad m)=>(a->Bool)->[m a]->(m (Maybe a))
+firstM _ [] = return Nothing
+firstM test (l:r) =
 	do
-	((omdocid, omdoc, cfn), imap) <- getImportMapFG filename
+		v <- l
+		if test v
+			then
+				return (Just v)
+				else
+				firstM test r
+
+-- | tries to find a file by first searching for it in the current
+-- directory and then in a list of given directories (in the order given)
+-- the directory will be taken as they are. If they are relative, they will be
+-- searched relative to the current directory
+findFile::FilePath->[FilePath]->(IO (Maybe FilePath))
+findFile file include =
+	let
+		isRelative = (head file) /= '/'
+	in	
+		if not isRelative
+			then
+				do
+				System.Directory.doesFileExist file >>= \r ->
+					if r 
+						then
+							return (Just file)
+						else
+							return Nothing
+			else
+				(firstM snd $
+					map 
+						(\f -> System.Directory.doesFileExist f >>=
+							\r -> return (f,r))
+							(file:(map (++"/"++file) include)))
+				>>= \mfp -> case mfp of
+					Nothing -> return Nothing
+					(Just (f,_)) -> return (Just f)
+
+-- | creates an import graph for an omdoc-file.
+-- you can specify a list of directories to look for files in
+-- the current directory will automatically be added to this list (and passed
+-- to all subsequent file-searches).
+makeImportGraph::String->[String]->(IO (ImportGraph HXT.XmlTrees))
+makeImportGraph filename includes =
+	do
+	fn <- findFile filename includes >>= \mfp -> case mfp of
+		Nothing -> return (error "Cannot find this file : \"" ++ filename ++ "\"")
+		(Just f) -> return f
+	curdir <- System.Directory.getCurrentDirectory
+	((omdocid, omdoc, cfn), imap) <- getImportMapFG fn
 	nodeone <- return (1, S (omdocid, cfn) omdoc)
 	foldl (\gio imp ->
 		do
 			gio >>= \g ->
-				extendImportGraph g 1 (TI imp)
+				extendImportGraph g 1 (TI imp) (includes++[curdir])
 			) (return (Graph.mkGraph [nodeone] [])) $ Map.toList imap
 		
 	
-extendImportGraph::(ImportGraph HXT.XmlTrees)->Graph.Node->TheoryImport->(IO (ImportGraph HXT.XmlTrees))
-extendImportGraph ig n (TI (thn, src)) =
+extendImportGraph::(ImportGraph HXT.XmlTrees)->Graph.Node->TheoryImport->[String]->(IO (ImportGraph HXT.XmlTrees))
+extendImportGraph ig n (TI (thn, src)) includes =
 	do
 		curdir <- System.Directory.getCurrentDirectory 
 		(S (name, source) _) <- return ((\(Just a) -> a) $ Graph.lab ig n)
@@ -1607,8 +1846,11 @@ extendImportGraph ig n (TI (thn, src)) =
 				System.IO.Error.catch
 					(System.Directory.setCurrentDirectory sourcepath)
 						(\_ -> putStrLn ("Could not change path to \"" ++ sourcepath ++  "\""))
+		srcfp <- findFile src includes >>= \mfp -> case mfp of
+			Nothing -> putStrLn ("Cannot find this file : \"" ++ src ++ "\"") >> return src
+			(Just f) -> return f
 		nodenum <- return (length $ Graph.nodes ig)
-		((omdocid, omdoc, cfn), imap) <- getImportMapFG src
+		((omdocid, omdoc, cfn), imap) <- getImportMapFG srcfp
 		matchingNodes <- return (filter (\(_, (S (iname, isrc) _)) -> iname == omdocid && isrc == cfn ) $ Graph.labNodes ig)
 		newnode <- return
 			(if null matchingNodes
@@ -1623,7 +1865,7 @@ extendImportGraph ig n (TI (thn, src)) =
 		newig <- (foldl (\nigio (thname, thsrc) ->
 			do
 				nigio >>= \nig ->
-					extendImportGraph nig newnodenum (TI (thname, thsrc))
+					extendImportGraph nig newnodenum (TI (thname, thsrc)) includes
 				) (return newgraph) $ Map.toList imap)
 		System.Directory.setCurrentDirectory curdir
 		return newig
@@ -1738,9 +1980,130 @@ dGraphGToLibEnv ig =
 					) nodes
 	in
 		(ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
+		
+unwrapLinkSource::ASL.LIB_NAME->String
+unwrapLinkSource
+	(ASL.Lib_id (ASL.Indirect_link src _)) = src
+		
+libEnvToDGraphG::(ASL.LIB_NAME, DGraph, LibEnv)->(ImportGraph DGraph)
+libEnvToDGraphG (ln,dg,lenv) =
+	let
+		input = (:) (ln,dg) $ map (\(ln' , (_,_,dg' )) -> (ln', dg' )) .
+				filter (\(ln' ,_) -> ln' /= ln) $
+				Map.toList lenv
+	in
+		makeIG input
+	where
+		makeIG::[(ASL.LIB_NAME, DGraph)]->(ImportGraph DGraph)
+		makeIG input =
+			let
+				(lnodes, edges) = foldl (\(lnodes' , edges' ) (libname, dg) ->
+					let
+						nodenum = (+) 1 $ length lnodes'
+						node = (nodenum, S (splitFile . fst . splitPath $ unwrapLinkSource libname, unwrapLinkSource libname) dg)
+						refs = filter isDGRef . map snd $ Graph.labNodes dg
+						imports = map (\n -> (nodenum, (getDGNodeName n, unwrapLinkSource $ dgn_libname n))) refs
+					in
+						(lnodes' ++ [node], edges' ++ imports)
+						) ([],[]) input
+				ledges = foldl (\ledges' (target, (thname, libname)) ->
+					let
+						source = case filter (\(_, S (_,ssrc) _) -> ssrc == libname) lnodes of
+							[] -> Debug.Trace.trace ("No source found for " ++ libname ++ " in " ++ (show $ map (\(S (_,src) _) -> src) $ map snd lnodes)) 0
+							sourcelist -> fst $ head sourcelist
+					in
+						(source, target, TI (thname, libname)):ledges'
+						) [] edges
+			in
+				Graph.mkGraph lnodes ledges
+				
+-- | separates the path and filename part from a filename, first element is the
+-- name, second the path (without last delimiter)
+splitPath::String->(String, String)
+splitPath f = case explode "/" f of
+	[x] -> (x,"")
+	l -> (last l, joinWith '/' $ init l)
+
+-- | returns the name of a file without extension
+splitFile::String->String
+splitFile file =
+	let
+		filenameparts = explode "." file
+	in
+		case (length filenameparts) of
+			1 -> file
+			2 -> case head filenameparts of
+					"" -> "."++(last filenameparts)
+					fn -> fn
+			_ -> joinWith '.' $ init filenameparts 
+	
+-- | returns an 'omdoc-version' of a filename (e.g. test.env -> test.omdoc)
+asOmdocFile::String->String
+asOmdocFile file =
+	let
+		parts = splitFile file
+		fullfilename = last parts
+		filenameparts = explode "." fullfilename
+		(filename, mfileext) =
+			case (length filenameparts) of
+				0 -> ("", Nothing)
+				1 -> (head filenameparts, Nothing)
+				2 -> case head filenameparts of
+						"" -> ("."++(last filenameparts), Nothing)
+						fn -> (fn, Just (last filenameparts))
+				_ -> ( joinWith '.' $ init filenameparts, Just (last filenameparts)) 
+	in
+		case mfileext of
+			Nothing -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
+			(Just fileext) ->
+				case map toLower fileext of
+					"omdoc" -> file
+					_ -> joinFile $ (init parts) ++ [filename ++ ".omdoc"]
+	where
+	splitFile::String->[String]
+	splitFile = explode "/"
+	joinFile::[String]->String
+	joinFile = implode "/"
+		
+-- | converts all DGraph-Nodes to XmlTrees-Nodes using 'devGraphToOmdoc' and
+-- the name extracted from the libname
+dGraphGToXmlG::(ImportGraph DGraph)->(ImportGraph (HXT.XmlTrees))
+dGraphGToXmlG ig =
+	let
+		nodes = map (\(n, (S i@(name,_) dg)) ->
+			(n, S i (devGraphToOmdoc dg name) ) ) $ Graph.labNodes ig
+	in
+		Graph.mkGraph nodes $ Graph.labEdges ig
+		
+fileSandbox::String->String->String
+fileSandbox [] file = file
+fileSandbox sb file =
+	sb ++ "/" ++ case head file of
+		'/' -> tail file
+		_ -> file
+
+-- | writes an XmlTrees-Graph to disk relative to a given directory
+-- will create directory-structures from libnames
+writeXmlG::(ImportGraph (HXT.XmlTrees))->String->IO ()
+writeXmlG ig sandbox =
+	let
+		nodes = map snd $ Graph.labNodes ig
+	in
+		(mapM (\(S (name,file) x) ->
+			let
+				omfile = fileSandbox sandbox $ asOmdocFile file
+			in
+				putStrLn ("Writing \"" ++ name ++ "\" to \"" ++ omfile ++ "\"") >>
+				System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
+				writeOmdoc x omfile
+			) nodes) >> return ()
+		
 			
+-- | shows a developement-graph and it's environment using the
+-- uniform-workbench			
 showdg::(ASL.LIB_NAME, DGraph, LibEnv)->IO ()
 showdg (ln,dg,lenv) =
+	-- dho is 'defaultHetcatsOpts' (not visible here)...
 	Hets.showGraph "" Hets.dho (Just (ln, "", dg, lenv))
 	 
 showLink::DGraph->Graph.Node->Graph.Node->String
@@ -3067,6 +3430,16 @@ processOperator imports ops name
 			)
 		
 
+trim::(a->Bool)->[a]->[a]
+trim test list = dropWhile test (reverse (dropWhile test (reverse list)))
+
+trimString = trim (Char.isSpace)
+			
+implode::[a]->[[a]]->[a]
+implode _ [] = []
+implode _ [last] = last
+implode with (item:rest) = item ++ with ++ (implode with rest)
+			
 -- explode byWhat list
 -- TODO : this looks very slow...
 explode::Eq a=>[a]->[a]->[[a]]

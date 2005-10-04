@@ -816,10 +816,27 @@ type MorphismMap = (
 		(Map.Map SORT SORT)
 		,(Map.Map (Id.Id,OpType) (Id.Id,OpType))
 		,(Map.Map (Id.Id,PredType) (Id.Id,PredType))
+		,(Set.Set SORT)
 		)
+		
+implode::[a]->[[a]]->[a]
+implode _ [] = []
+implode _ [last] = last
+implode with (item:rest) = item ++ with ++ (implode with rest)
 
+createHidingString::CASLSign->String
+createHidingString (Sign sortset _ opmap _ predmap _ _ _ _) =
+	let hidden = map show (Set.toList sortset) ++
+			 map show (Map.keys opmap) ++
+			 map show (Map.keys predmap)
+	in	implode ", " hidden
+
+getSymbols::CASLSign->[Id.Id]
+getSymbols (Sign sortset _ opmap _ predmap _ _ _ _) =
+	(Set.toList sortset) ++ (Map.keys opmap) ++ (Map.keys predmap)
+	
 makeMorphismMap::(Morphism () () ())->MorphismMap
-makeMorphismMap (Morphism _ _ sortmap funmap predmap _) =
+makeMorphismMap (Morphism ssource starget sortmap funmap predmap _) =
 	let
 		newfunmap = Map.fromList $ map (
 			\((sid,sot),(tid,tfk)) ->
@@ -837,31 +854,31 @@ makeMorphismMap (Morphism _ _ sortmap funmap predmap _) =
 					PredType (map (\id' -> Map.findWithDefault id' id' sortmap) (predArgs spt))
 				) ) ) $ Map.toList predmap
 	in
-		(sortmap, newfunmap, newpredmap)
+		(sortmap, newfunmap, newpredmap, Set.fromList $ getSymbols $ diffSig ssource starget)
 		
 removeMorphismSorts::MorphismMap->Sorts->Sorts
-removeMorphismSorts (sm,_,_) sorts =
+removeMorphismSorts (sm,_,_,_) sorts =
 	let
 		msorts = Map.elems sm
 	in
 		Set.filter (\s -> not $ elem s msorts) sorts
 		
 addMorphismSorts::MorphismMap->Sorts->Sorts
-addMorphismSorts (sm,_,_) sorts =
+addMorphismSorts (sm,_,_,_) sorts =
 	let
 		msorts = Map.elems sm
 	in	
 		Set.union sorts $ Set.fromList msorts
 		
 removeMorphismOps::MorphismMap->Ops->Ops
-removeMorphismOps (_,om,_) ops =
+removeMorphismOps (_,om,_,_) ops =
 	let
 		mops = map fst $ Map.elems om
 	in
 		Map.filterWithKey (\k _ -> not $ elem k mops) ops
 		
 addMorphismOps::MorphismMap->Ops->Ops
-addMorphismOps (_,om,_) ops =
+addMorphismOps (_,om,_,_) ops =
 	let
 		mops = Map.elems om
 	in
@@ -876,14 +893,14 @@ addMorphismOps (_,om,_) ops =
 			) ops mops 
 		
 removeMorphismPreds::MorphismMap->Preds->Preds
-removeMorphismPreds (_,_,pm) preds =
+removeMorphismPreds (_,_,pm,_) preds =
 	let
 		mpreds = map fst $ Map.elems pm
 	in
 		Map.filterWithKey (\k _ -> not $ elem k mpreds) preds 
 	
 addMorphismPreds::MorphismMap->Preds->Preds
-addMorphismPreds (_,_,pm) preds =
+addMorphismPreds (_,_,pm,_) preds =
 	let
 		mpreds = Map.elems pm
 	in
@@ -898,7 +915,7 @@ addMorphismPreds (_,_,pm) preds =
 			) preds mpreds 
 		
 morphismMapToMorphism::MorphismMap->(Morphism () () ())
-morphismMapToMorphism (sortmap, funmap, predmap) =
+morphismMapToMorphism (sortmap, funmap, predmap,_) =
 	let
 		mfunmap = Map.fromList $ map (\((sid, sot),t) -> ((sid, sot { opKind = Partial }),t)) $ Map.toList $ Map.map (\(tid,(OpType fk _ _)) ->
 			(tid, fk) ) funmap
@@ -908,16 +925,17 @@ morphismMapToMorphism (sortmap, funmap, predmap) =
 		
 applyMorphHiding::MorphismMap->[Id.Id]->MorphismMap
 applyMorphHiding mm [] = mm
-applyMorphHiding (sortmap, funmap, predmap) hidings =
+applyMorphHiding (sortmap, funmap, predmap, hidingset) hidings =
 	(
 		 Map.filterWithKey (\sid _ -> not $ elem sid hidings) sortmap
 		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) funmap
 		,Map.filterWithKey (\(sid,_) _ -> not $ elem sid hidings) predmap
+		,hidingset
 	)
 	
 buildMorphismSign::MorphismMap->[Id.Id]->CASLSign->CASLSign
 buildMorphismSign
-	mm@(mmsm, mmfm, mmpm) 
+	mm@(mmsm, mmfm, mmpm, _) 
 	hidings
 	sourcesign =
 	let
