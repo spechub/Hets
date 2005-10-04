@@ -47,12 +47,12 @@ import Haskell.Logic_Haskell
 #endif
 import Isabelle.Logic_Isabelle
 import SPASS.Logic_SPASS
-import OWL_DL.Logic_OWL_DL
 #ifdef CASLEXTENSIONS 
 import Modal.Logic_Modal
 import CoCASL.Logic_CoCASL
 import CspCASL.Logic_CspCASL
 import COL.Logic_COL
+import OWL_DL.Logic_OWL_DL
 #endif
 
 logicList :: [AnyLogic]
@@ -62,8 +62,9 @@ logicList = [Logic CASL, Logic HasCASL,
 #endif
 #ifdef CASLEXTENSIONS 
              Logic CoCASL, Logic Modal, Logic CspCASL, Logic COL,
+             Logic OWL_DL,
 #endif
-             Logic Isabelle,Logic SPASS, Logic OWL_DL]
+             Logic Isabelle,Logic SPASS]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)
