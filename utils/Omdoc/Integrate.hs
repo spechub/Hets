@@ -200,6 +200,7 @@ devGraphToXml dg =
 					-- what adts are needed (insort, cons or both)
 					adtsorts = nub $ (map (\ (a,_) -> a) $ Map.toList nInsortMap) ++
 						(map (\(a,_) -> a) $ Map.toList constructors)
+					-- remove everything that came from a morphism
 					(realSorts, realOps, realPreds) = foldl (\(rs, ro, rp) (_,mmm) ->
 						case mmm of
 							Nothing -> (rs, ro, rp)
@@ -227,7 +228,8 @@ devGraphToXml dg =
 					   -- adt-generation needs some optimization...
 					   (foldl (\adtx sort -> adtx +++ xmlNL
 						+++ (
-							let 	sortrelation = (\a -> (sort, a)) $ fromMaybe Set.empty $ lookup sort $ Map.toList nInsortMap
+							let 
+								sortrelation = (\a -> (sort, a)) $ Map.findWithDefault Set.empty sort nInsortMap
 								cons = createAllConstructors $ Map.toList $ Map.findWithDefault Map.empty sort constructors
 							in
 								createADT sortrelation cons
@@ -1089,15 +1091,15 @@ conservativityToString Def = "Def"
 -- | creates a Conservativity from a String or fails with error
 stringToConservativity::String->Conservativity
 stringToConservativity "None" = None
-stringToConservativity "Cons" = None
-stringToConservativity "Mono" = None
-stringToConservativity "Def" = None
+stringToConservativity "Cons" = Cons
+stringToConservativity "Mono" = Mono
+stringToConservativity "Def" = Def
 stringToConservativity s = error ("Unknown Conservativity : \"" ++ s ++ "\"") 
 
 -- | creates a String-representation of a DGLinkLab
 linkToString::DGLinkLab->String
 linkToString dgl =
-	"Type:" ++ (linkTypeToString $ dgl_type dgl) ++ " Origin:" ++ (show $ dgl_origin dgl)
+	"Type:\"" ++ (linkTypeToString $ dgl_type dgl) ++ "\" Origin:\"" ++ (show $ dgl_origin dgl) ++ "\""
 
 -- | stringToLinkType returns a list with at most one DGLinkType
 -- Unknown links result in empty list
@@ -1145,10 +1147,15 @@ headorempty x = head x
 -- error when string is empty (or whitespace only)
 stringToLink::String->[DGLinkLab]
 stringToLink s =
-	let	swords = words s
-		ltype = drop (length "Type:") $ headorempty $ filter (isPrefix "Type:") swords
+	let
+		swords = wordsWithQuotes s
+		ltype = case getFollows (=="Type:") swords of
+			Nothing -> ""
+			(Just l) -> unquote l
 		linktypel = stringToLinkType ltype
-		lorigin = drop (length "Origin:") $ headorempty $ filter (isPrefix "Origin:") swords
+		lorigin = case getFollows (=="Origin:") swords of
+			Nothing -> ""
+			(Just o) -> unquote o
 	in
 		if (length swords == 0) then [] -- error "Cannot determine DGLinkLab from empty string!"
 		else
@@ -1159,9 +1166,12 @@ stringToLink s =
 -- empty on error, error on unknown link origins (nodes)
 stringToLEdge::(Map.Map String Graph.Node)->Graph.Node->String->[(Graph.LEdge DGLinkLab)]
 stringToLEdge nameNodeMap targetnode linkstring =
-	let	swords = words linkstring
-		lfrom = drop (length "From:") $ head $ filter (isPrefix "From:") swords
-		linklabl = stringToLink linkstring
+	let
+		swords = wordsWithQuotes linkstring 
+		lfrom = case getFollows (=="From:") swords of 
+			Nothing -> "" -- leads to error below 
+			(Just name) -> unquote name
+		linklabl = stringToLink linkstring	
 		sourcenode = Map.findWithDefault (error ("Unknown Node : \"" ++ lfrom ++ "\"")) lfrom nameNodeMap
 	in
 		if linklabl == [] then [] else
@@ -1169,7 +1179,8 @@ stringToLEdge nameNodeMap targetnode linkstring =
 		
 inDGToXml::DGraph->Graph.Node->(Map.Map Graph.Node String)->HXT.XmlFilter
 inDGToXml dg n nodenames =
-	let 	inLinks = map (\ (from,_,a) -> (from, a) ) $ Graph.inn dg n
+	let
+		inLinks = map (\ (from,_,a) -> (from, a) ) $ Graph.inn dg n
 		named = map ( \ (from, a) -> (Map.findWithDefault "unknownNode" from nodenames, a)) inLinks  
 	in
 	if length inLinks == 0 then HXT.txt "" else
@@ -1177,9 +1188,36 @@ inDGToXml dg n nodenames =
 	+= ((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
 		+= HXT.cdata (
 		foldl (\ins (from, dgl) ->
-			ins ++ ("From:"++ from ++ " " ++ (linkToString dgl) ++ "\n")
+			ins ++ ("From:\""++ from ++ "\" " ++ (linkToString dgl) ++ "\n")
 			) "\n" named)
 		)
+		
+
+		
+getFollows::(a->Bool)->[a]->(Maybe a)
+getFollows _ [] = Nothing
+getFollows _ [r] = Nothing
+getFollows test (first:second:list) =
+	if test first then (Just second) else getFollows test (second:list)
+	
+unquote::String->String
+unquote [] = []
+unquote ('"':rest) = init rest
+unquote s = s
+		
+wordsWithQuotes::String->[String]
+wordsWithQuotes [] = []
+wordsWithQuotes ('"':w) = quote w
+	where
+		quote::String->[String]
+		quote w = ("\""++(takeWhile (/='"') w)++"\""):(wordsWithQuotes (drop 1 (dropWhile (/='"') w)))
+wordsWithQuotes w =
+	let
+		word = takeWhile (\c -> (not $ Char.isSpace c) && (c /= '\"')) (dropWhile Char.isSpace w)
+		rest = dropWhile Char.isSpace (dropWhile (\c -> (not $ Char.isSpace c) && (c /= '\"')) (dropWhile Char.isSpace w))
+	in
+		word:(wordsWithQuotes rest)
+		
 
 -- | retrieves a qualified value (prefix:localpart) from xml
 -- but tries also without prefix, if no such value can be found...
@@ -1361,7 +1399,9 @@ createImportHints t =
 					foldl (\h l ->
 						let
 							lablink = stringToLink l
-							fromname = drop (length "From:") $ headorempty $ filter (isPrefix "From:") $ words l
+							fromname = case getFollows (=="From:") (wordsWithQuotes l) of
+								Nothing -> ""
+								(Just n) -> unquote n
 						in
 							if l == [] then h -- empty lines create no hints...
 								else
@@ -1637,8 +1677,14 @@ importGraphToDGraph ig n =
 						(l:r) -> l
 						_ -> error "node error!"
 					targetsign = getNodeSignature ig (Just tnode)
+					nodeimporthints = Map.findWithDefault Set.empty nodename importhints
+					importsfrom = map (\(a,_) -> a) $ Set.toList nodeimports
+					-- the omdoc-imports have limited support for the imports
+					-- used in a dgraph. some import-hints have no import-tag in
+					-- the omdoc
+					importhintswithoutimports = Set.filter (\ih -> not $ elem (fromName ih) importsfrom) nodeimporthints 
 				in
-					foldl (\le' (ni, mmm) ->
+					(foldl (\le' (ni, mmm) ->
 						let
 							importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
 								0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
@@ -1647,7 +1693,7 @@ importGraphToDGraph ig n =
 								(l:r) -> l
 								_ -> error "node error!"
 							sourcesign = getNodeSignature ig (Just snode)
-							filteredimporthints = Set.filter (\h -> (fromName h) == ni) $ Map.findWithDefault Set.empty nodename importhints
+							filteredimporthints = Set.filter (\h -> (fromName h) == ni) nodeimporthints
 							ddgl = case mmm of
 								Nothing -> defaultDGLinkLab
 								(Just mm) -> defaultDGLinkLab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
@@ -1667,7 +1713,18 @@ importGraphToDGraph ig n =
 										in
 											(importnodenum, nodenum, link)
 										) $ Set.toList filteredimporthints
-						) le $ Set.toList nodeimports
+						) le $ Set.toList nodeimports)
+						-- add further imports
+						++
+						(map (\ih ->
+							let
+								ni = fromName ih
+								importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
+									0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
+									x -> x
+							in
+								(importnodenum, nodenum, getIHLink ih)
+								) $ Set.toList importhintswithoutimports)
 				) [] $ Map.toList imports
 		validedges = foldl (\e newe@(n,m,_) ->
 			if (n==0) || (m==0) then
@@ -1757,13 +1814,8 @@ getImportMapFG filename =
 					System.IO.Error.catch (System.Directory.setCurrentDirectory cfp) (\_ -> putStrLn ("Could not change path to \"" ++ cfp ++  "\""))
 			else
 				return ()
-		canimps <- mapM
-					(\(tn, fp) ->
-						System.Directory.canonicalizePath fp >>= \canifp ->
-						return (tn, fp)) $ Map.toList catmap -- canon. off
-		canimpmap <- return $ Map.fromList canimps
 		System.Directory.setCurrentDirectory curdir
-		return ((omdocid, omdoc, cfn), canimpmap)
+		return ((omdocid, omdoc, cfn), catmap)
 		
 first::(a->Bool)->[a]->(Maybe a)
 first _ [] = Nothing
