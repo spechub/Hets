@@ -69,7 +69,7 @@ transTheory ::
   HatAna.Sign -> [Named PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transTheory sign sens = do 
   sign' <- transSignature sign
-  (sign'',sens'') <- -- trace (show $ arities $ tsig sign') $ 
+  (sign'',sens'') <-  --   trace (show $ arities $ tsig sign') $ 
           transSentences sign' (map sentence sens)
   return (sign'', sens'')
 
@@ -83,15 +83,12 @@ transSentences ::
     IsaSign.Sign -> [PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transSentences sign ls = do xx <- mapM (transSentence sign FunDef) ls
                             xs <- return [[s] | [s] <- xx, extAxType s /= noType]
-                            ys <- -- trace ("\n" ++ (show xs)) $ 
+                            ys <-   -- trace ("\n" ++ (show xs)) $ 
                                   return $ fixMRec xs
-                            ac <- return $ newConstTab ys
-                            nc <- return $ Map.union (constTab sign) ac
-                            nsig <- return $ sign {constTab = nc}
-                            zz <- mapM (transSentence nsig InstDef) ls
+                            zz <- mapM (transSentence sign InstDef) ls
                             zw <- return $ concat zz
                             zs <- return [s | s <- zw, extAxType s /= noType]
-                            return (nsig, ys ++ zs) 
+                            return (sign, ys ++ zs) 
 
 transSentence :: IsaSign.Sign -> ExpRole -> PrDecl -> Result [Named IsaSign.Sentence]
 transSentence sign a (TiPropDecorate.Dec d) = case d of
@@ -157,7 +154,7 @@ transSignature sign = Result [] $ Just $ IsaSign.emptySign
            { 
              classrel = getClassrel (HatAna.types sign),
              abbrs = getAbbrs (HatAna.types sign),
-             arities = -- trace (show (HatAna.instances sign)) $ 
+             arities =  -- trace (show (HatAna.instances sign)) $ 
                     getArities (HatAna.instances sign) 
            },
     constTab = getConstTab (HatAna.values sign),
@@ -367,7 +364,7 @@ transMExp a cs t = case t of
        HsLit _ (HsInt n) -> return $ 
            Const ("(Def (" ++ (show n) ++ "::int))") (IsaSign.Type "dInt" [] [])
        HsList xs -> return $ case xs of 
-          [] -> (Const "nil" noType)
+          [] -> (Const "lNil" noType)
           _ -> error "Hs2HOLCF, transMExp, unsupported list notation" 
        HsLet (TiPropDecorate.Decs ds _) k -> do
           w <- mapM (transPatBind a cs) ds
@@ -384,7 +381,7 @@ transMExp a cs t = case t of
     _                      -> Nothing 
   where 
     transCases r cs k = case k of 
-       HsAlt _ p (HsBody e) _ -> do a <- transMPat NotCont cs p
+       HsAlt _ p (HsBody e) _ -> do a <- transMPat r cs p
                                     b <- transMExp r cs e
                                     return $ (a,b)
        _ -> error "HsHOLCF, transCases"
@@ -403,7 +400,7 @@ transMPat :: Continuity -> ConstTab -> PrPat -> Maybe IsaPattern
 transMPat a cs t = case t of 
     TiDecorate.Pat p -> case p of
        HsPList _ xs -> return $ case xs of 
-          [] -> (Const "nil" noType)
+          [] -> (Const "lNil" noType)
           _ -> error "Hs2HOLCF, transMPat, unsupported list notation" 
        _ -> transP a showIsaName (transMPat a cs) p
     TiDecorate.TiPSpec w s _ -> case w of 
@@ -457,7 +454,7 @@ transCN s x = let
   if elem pcpo (typeSort z) then case pp x of
       "True"   -> f "TT"
       "False"  -> f "FF"
-      ":"      -> f "op ##"
+      ":"      -> f "lCons"
       _ -> f y
   else f y
 
@@ -485,11 +482,11 @@ transHV a s x = let
    "*" -> if tag == False then Const "op *" k
            else funFliftbin (Const "op *" k)
    "head" -> if tag == False then (Const "hd" k)
-              else Const "HD" k
+              else Const "lHd" k
    "tail" -> if tag == False then (Const "tl" k)
-              else Const "TL" k 
+              else Const "lTl" k 
    ":"    -> if tag == False then (Const "op #" k)
-              else Const "op ##" k 
+              else Const "lCons" k 
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> Const n k 
         PNT (PN _ (UniqueNames.S _)) _ _ -> Free n k

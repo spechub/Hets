@@ -251,6 +251,9 @@ prepInst1 i =
 xDummy :: IsaTerm
 xDummy = Const "dummy" noType
 
+holEq :: IsaTerm -> IsaTerm -> IsaTerm
+holEq t1 t2 = termMAppl NotCont (Const eq noType) [t1, t2]
+
 -------------------------------- Name translation ----------------------------------
 -- Translating to strings compatible with Isabelle
 
@@ -311,7 +314,7 @@ transTN :: String -> String -> String
 transTN s1 s2 = case (s1,s2) of 
    ("Prelude","Bool") -> "tr"
    ("Prelude","Int") -> "dInt"
-   ("Prelude","[]") -> "seq"
+   ("Prelude","[]") -> "llist"
    _ -> transPath s1 s2 
 
 transPath :: String -> String -> String
@@ -599,27 +602,29 @@ simTerms t1 t2 = case (t1, t2) of
 --------------------- getting info from sentences ---------------------------------------
 
 newConstTab :: [Named IsaSign.Sentence] -> ConstTab
+-- newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
 newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
 
 extAxName :: Named Sentence -> VName
-extAxName s = case s of 
-  NamedSen n True _ _ -> n
-  _ -> error "Haskell2IsabelleHOLCF, extAxName"
+extAxName s = senName s
+-- extAxName s = case s of 
+--   NamedSen n _ _ _ -> n
+--  _ -> error "Hs2HOLCFaux, extAxName"
 
 extAxType :: Named Sentence -> Typ
 extAxType s = case s of 
   NamedSen _ True _ (ConstDef (IsaEq (Const _ t) _)) -> t
-  _ -> error "Haskell2IsabelleHOLCF, extAxType"
+  _ -> error "Hs2HOLCFaux, extAxType"
 
 extLeftH :: Named Sentence -> Term
 extLeftH s = case s of 
   NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
-  _ -> error "Haskell2IsabelleHOLCF, extLeftH"
+  _ -> error "Hs2HOLCFaux, extLeftH"
 
 extRightH :: Named Sentence -> Term
 extRightH s = case s of 
   NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
-  _ -> error "Haskell2IsabelleHOLCF, extRightH"
+  _ -> error "Hs2HOLCFaux, extRightH"
 
 {- left comp is the def name, right comp are the constants in the def  -} 
 sentAna :: Named Sentence -> (Term, [Term])
@@ -646,6 +651,23 @@ addFixPoints xs = concat $ map fixPoint xs
 
 fixPoint :: [Named Sentence] -> [Named Sentence]
 fixPoint xs = case xs of
+  [a] -> if sentDepOn a a 
+         then case a of 
+           NamedSen l m n (ConstDef (IsaEq lh rh)) ->             
+             [NamedSen l m n $ RecDef "fixrec" [[holEq lh rh]]]
+           _ -> error "Hs2HOLCFaux, fixPoint"
+         else xs
+  a:as -> 
+     let jn = joinNames (map extAxName xs)
+         ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
+     in [NamedSen jn True False $ RecDef "fixrec" ys]
+  [] -> []
+
+-- check out instances wrt sentDepOn
+
+{-
+fixPoint :: [Named Sentence] -> [Named Sentence]
+fixPoint xs = case xs of
   [a] -> case a of 
     NamedSen n w d (ConstDef (IsaEq lh rh)) -> if sentDepOn a a           
        then [NamedSen n w d $ ConstDef $ IsaEq lh $ fixPointRep lh rh]
@@ -665,5 +687,5 @@ fixPoint xs = case xs of
          origds = [NamedSen (extAxName x) True False $ ConstDef (IsaEq (extLeftH x) (sF (extRightH x))) | x <- xs] 
      in mainfd : origds   
   [] -> []
-
+-}
 

@@ -183,6 +183,8 @@ data Sentence = Sentence { senTerm :: Term } -- axiom
                         , senTerm :: Term 
                         , thmProof :: Maybe String }
               | ConstDef { senTerm :: Term }
+              | RecDef { keyWord :: String 
+                       , senTerms :: [[Term]] }
                 deriving (Eq, Ord, Show)
 
 -------------------- from src/Pure/sorts.ML ------------------------

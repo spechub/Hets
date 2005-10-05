@@ -200,7 +200,6 @@ showCaseAlt (pat, term) =
   showPattern pat ++ sp ++ "=>" ++ sp ++ showTerm term
 
 showPattern :: Term -> String
-showPattern (App t t' _) = showPattern t ++ sp ++ showPattern t'
 showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
