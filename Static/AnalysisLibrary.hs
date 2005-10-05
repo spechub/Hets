@@ -38,7 +38,6 @@ import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
 import Common.Result
-import Common.Utils
 import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
@@ -82,16 +81,12 @@ anaString logicGraph defaultLogic opts libenv input file =
           ioToIORes $ putIfVerbose opts 2 $ "Analyzing library " ++ show ln
           (_,ld,_,lenv) <-
               ana_LIB_DEFN logicGraph defaultLogic opts libenv ast
-          let odir' = outdir opts
-              odir = if null odir' then dirname file else odir'
-          ioToIORes $ putIfVerbose opts 3 ("Current OutDir: " ++ odir)
-          ioToIORes $ case gui opts of
-              Only -> return ()
-              _ -> write_LIB_DEFN emptyGlobalAnnos
-                   file opts { outdir = odir } ld
           case Map.lookup ln lenv of
-              Nothing -> error $ "missing library: " ++ show ln
+              Nothing -> error $ "anaString: missing library: " ++ show ln
               Just gctx@(ga, ge, _) -> ioToIORes $ do
+                  case gui opts of
+                      Only -> return ()
+                      _ -> write_LIB_DEFN ga file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts file gctx)
                   writeSpecFiles opts file lenv (ln, ge)
@@ -128,10 +123,7 @@ libNameToFile opts libname =
                 Indirect_link file _ ->
                   let path = libdir opts
                      -- add trailing "/" if necessary
-                  in if path == "" then file
-                     else if last path == '/'
-                          then path ++ file
-                          else path ++ "/" ++ file
+                  in pathAndBase path file
                 Direct_link _ _ -> error "libNameToFile"
 
 -- | lookup an env or read and analyze a file
@@ -192,7 +184,7 @@ anaLibFileOrGetEnv logicGraph defaultLogic opts libenv libname file =
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
 -- call this function as follows:
 -- do Result diags res <- ioresToIO (ana_LIB_DEFN ...)
---    sequence (map (putStrLn . show) diags)
+--    mapM_ (putStrLn . show) diags
 ana_LIB_DEFN :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> LibEnv -> LIB_DEFN
                  -> IOResult (LIB_NAME,LIB_DEFN,DGraph,LibEnv)
@@ -350,7 +342,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
              libItem@(Download_items ln items _) = do
   -- we take as the default logic for imported libs
   -- the global default logic
-  putMessageIORes opts 1 $ "Analyzing from " ++ showPretty ln "\n"
+  putMessageIORes opts 1 $ "Downloading " ++ showPretty ln ""
   (ln', libenv') <- anaLibFileOrGetEnv lgraph defl opts libenv ln
                     $ libNameToFile opts ln
   if ln == ln' then case Map.lookup ln libenv' of
