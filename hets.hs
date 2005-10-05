@@ -18,7 +18,6 @@ module Main where
 import System.Environment (getArgs)
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
-import Common.Utils
 import Common.Result
 import qualified Common.Lib.Map as Map
 

@@ -1,6 +1,6 @@
 {-|
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -91,13 +91,13 @@ anaString logicGraph defaultLogic opts libenv input file =
                    file opts { outdir = odir } ld
           case Map.lookup ln lenv of
               Nothing -> error $ "missing library: " ++ show ln
-              Just gctx@(ga, ge, _) -> do
-                  ioToIORes $ when (hasEnvOut opts)
+              Just gctx@(ga, ge, _) -> ioToIORes $ do
+                  when (hasEnvOut opts)
                         (writeFileInfo opts file gctx)
-                  ioToIORes $ writeSpecFiles opts file lenv (ln, ge)
-                  ioToIORes $ putIfVerbose opts 5 $ show $
+                  writeSpecFiles opts file lenv (ln, ge)
+                  putIfVerbose opts 5 $ show $
                                 printLibrary lenv (ln, gctx)
-                  ioToIORes $ putIfVerbose opts 3 $ showPretty ga ""
+                  putIfVerbose opts 3 $ showPretty ga ""
                   return (ln, lenv)
   Nothing -> resToIORes $ Result ps Nothing
 
@@ -114,7 +114,7 @@ anaLibFile logicGraph defaultLogic opts libenv libname = do
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
 fileToLibName opts efile =
     let path = libdir opts
-        file = fst $ stripSuffix downloadExtensions efile -- cut of extension
+        file = rmSuffix efile -- cut of extension
         nfile = dropWhile (== '/') $         -- cut off leading slashes
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
@@ -151,7 +151,7 @@ anaLibFileOrGetEnv logicGraph defaultLogic opts libenv libname file =
   case Map.lookup libname libenv of
    Just _ -> return (libname, libenv)
    Nothing -> IOResult $ do
-     let env_file = file ++ ".env"
+     let env_file = rmSuffix file ++ ".env"
                      -- file is sufficient here, because anaFile
                      -- trys all possible suffices with this basename
      recent_env_file <- checkRecentEnv env_file file

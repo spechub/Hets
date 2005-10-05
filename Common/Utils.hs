@@ -1,5 +1,4 @@
-{-| 
-   
+{- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -19,77 +18,74 @@ module Common.Utils where
 
 import Data.List
 
-{- | 
+{- |
   A function inspired by perls join function. It joins a list of
-  lists of elements by seperating them with a seperator element. 
--} 
+  lists of elements by seperating them with a seperator element.
+-}
 joinWith :: a -- ^ seperator element
          -> [[a]] -- ^ list of lists of elements
-         -> [a]  
+         -> [a]
 joinWith sep = concat . intersperse (sep:[])
 
 {- |
   A function inspired by the perl function split. A list is splitted
-  on a seperator element in smaller non-empty lists. 
+  on a seperator element in smaller non-empty lists.
   The seperator element is dropped from the resulting list.
 -}
 splitOn :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
-splitOn x xs = let (l, r) = break (==x) xs in 
+splitOn x xs = let (l, r) = break (==x) xs in
     (if null l then [] else [l]) ++ (if null r then [] else splitOn x $ tail r)
 
-{-|
+{- |
   A function inspired by a perl function from the standard perl-module
   File::Basename. It removes the directory part of a filepath.
 -}
 basename :: FilePath -> FilePath
 basename fp = (\(_path,basen) -> basen) (stripDir fp)
 
-{-|
+{- |
   A function inspired by a perl function from the standard perl-module
   File::Basename. It gives the directory part of a filepath.
 -}
 dirname :: FilePath -> FilePath
 dirname fp = (\(path,_basen) -> path) (stripDir fp)
 
-{-| 
+{- |
   A function inspired by a perl function from the standard perl-module
   File::Basename. It splits a filepath into the basename, the
   directory and gives the suffix that matched from the list of
   suffixes. If a suffix matched it is removed from the basename.
 -}
 fileparse :: [String] -- ^ list of suffixes
-          -> FilePath 
-          -> (FilePath,FilePath,Maybe String) 
+          -> FilePath
+          -> (FilePath,FilePath,Maybe String)
           -- ^ (basename,directory,matched suffix)
 fileparse sufs fp = let (path,base) = stripDir fp
-                        (base',suf) = stripSuffix sufs base 
-                    in (base',path,suf) 
+                        (base',suf) = stripSuffix sufs base
+                    in (base',path,suf)
 
 stripDir :: FilePath -> (FilePath,FilePath)
 stripDir fp =
     (\(x,y) -> (if not (null y) then reverse y else "./", reverse x))
     (break (== '/') (reverse fp))
 
-rmSuffix :: String -> String
-rmSuffix = reverse . tail . snd . break (=='.') . reverse
-
 stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
                      ((Just (x,s)):_)  -> (x,Just s)
                      _                 -> (fp, Nothing)
-    where stripSuf f s | s `isSuffixOf` f = 
-                           Just (take (length f - length s) f, s) 
+    where stripSuf f s | s `isSuffixOf` f =
+                           Just (take (length f - length s) f, s)
                        | otherwise = Nothing
           justs (Nothing) = False
           justs (Just _)  = True
 
 -- |
 -- like the chomp from Perl
--- but this chomp removes trailing newlines AND trailing spaces if any 
+-- but this chomp removes trailing newlines AND trailing spaces if any
 chomp :: String -> String
-chomp = reverse . chomp' . reverse 
+chomp = reverse . chomp' . reverse
     where chomp' [] = []
           chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
                             | otherwise = xs
@@ -97,7 +93,7 @@ chomp = reverse . chomp' . reverse
 isSublistOf :: (Eq a) => [a] -> [a] -> Bool
 isSublistOf [] _ = True
 isSublistOf _ [] = False
-isSublistOf ys l@(_:l') 
+isSublistOf ys l@(_:l')
     | length ys <= length l = (ys `isPrefixOf` l) || (ys `isSublistOf` l')
     | otherwise = False
 

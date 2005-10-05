@@ -18,6 +18,7 @@ module Driver.Options
     , guess
     , existsAnSource
     , downloadExtensions
+    , rmSuffix
     , checkUri
     , checkRecentEnv
     , checkEitherDirOrExFile
@@ -444,6 +445,10 @@ parseVerbosity (Just s)
 -- | intypes useable for downloads
 downloadExtensions :: [String]
 downloadExtensions = map (('.' :) . show) plainInTypes
+
+-- | remove the extension from a file
+rmSuffix :: FilePath -> FilePath
+rmSuffix = fst . stripSuffix downloadExtensions
 
 -- |
 -- checks if a source file for the given base  exists
