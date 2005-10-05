@@ -1,4 +1,4 @@
-{-| 
+{-|
 Module      :  $Header$
 Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -11,7 +11,7 @@ Datatypes for options that hets understands.
    Useful functions to parse and check user-provided values.
 -}
 
-module Driver.Options 
+module Driver.Options
     ( defaultHetcatsOpts
     , showDiags
     , showDiags1
@@ -31,7 +31,6 @@ module Driver.Options
     , AnaType(..)
     , RawOpt(..)
     , OutType(..)
-    -- , WebType(..)
     , HetOutFormat(..)
     , HetOutType(..)
     , PrettyType(..)
@@ -55,7 +54,7 @@ import System.Exit
 import Data.List
 
 bracket :: String -> String
-bracket s = "[" ++ s ++ "]" 
+bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS,
@@ -94,29 +93,29 @@ naxS = ".nax"
 thyS = "thy"
 comptableXmlS = "comptable.xml"
 
-showOpt :: String -> String 
+showOpt :: String -> String
 showOpt s = if null s then "" else " --" ++ s
 
-showEqOpt :: String -> String -> String 
-showEqOpt k s = if null s then "" else showOpt k ++ "=" ++ s 
+showEqOpt :: String -> String -> String
+showEqOpt k s = if null s then "" else showOpt k ++ "=" ++ s
 
 -- main Datatypes --
 
 -- | 'HetcatsOpts' is a record of all options received from the command line
 data HetcatsOpts =        -- for comments see usage info
-    HcOpt { analysis :: AnaType    
-          , gui      :: GuiType    
+    HcOpt { analysis :: AnaType
+          , gui      :: GuiType
           , infiles  :: [FilePath] -- files to be read
-          , specNames :: [SIMPLE_ID] -- specs to be processed 
-          , intype   :: InType     
-          , libdir   :: FilePath   
-          , outdir   :: FilePath   
-          , outtypes :: [OutType]  
-          , rawopts  :: [RawOpt]   
-          , verbose  :: Int        
-          , defLogic :: String     
+          , specNames :: [SIMPLE_ID] -- specs to be processed
+          , intype   :: InType
+          , libdir   :: FilePath
+          , outdir   :: FilePath
+          , outtypes :: [OutType]
+          , rawopts  :: [RawOpt]
+          , verbose  :: Int
+          , defLogic :: String
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
-          , caslAmalg :: [CASLAmalgOpt] 
+          , caslAmalg :: [CASLAmalgOpt]
           }
 
 instance Show HetcatsOpts where
@@ -129,7 +128,7 @@ instance Show HetcatsOpts where
                 ++ showEqOpt outtypesS (showOutTypes $ outtypes opts)
                 ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
                 ++ showRaw (rawopts opts)
-                ++ showEqOpt amalgS ( tail $ init $ show $ 
+                ++ showEqOpt amalgS ( tail $ init $ show $
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
                                       l -> l)
@@ -160,7 +159,7 @@ makeOpts opts flg = case flg of
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 -- basic values when the user specifies nothing else
 defaultHetcatsOpts :: HetcatsOpts
-defaultHetcatsOpts = 
+defaultHetcatsOpts =
     HcOpt { analysis = Basic
           , gui      = Not
           , infiles  = []
@@ -182,20 +181,20 @@ defaultOutType :: OutType
 defaultOutType = HetCASLOut OutASTree OutAscii
 
 -- | every 'Flag' describes an option (see usage info)
-data Flag = Verbose  Int  
-          | Quiet                
-          | Version              
-          | Help                 
-          | Gui      GuiType     
-          | Analysis AnaType     
-          | DefaultLogic String  
-          | InType   InType      
-          | LibDir   FilePath    
-          | OutDir   FilePath    
+data Flag = Verbose  Int
+          | Quiet
+          | Version
+          | Help
+          | Gui      GuiType
+          | Analysis AnaType
+          | DefaultLogic String
+          | InType   InType
+          | LibDir   FilePath
+          | OutDir   FilePath
           | OutTypes [OutType]
           | Specs    [SIMPLE_ID]
-          | Raw      [RawOpt]    
-          | CASLAmalg [CASLAmalgOpt] 
+          | Raw      [RawOpt]
+          | CASLAmalg [CASLAmalgOpt]
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -216,7 +215,7 @@ instance Show GuiType where
              Not  -> ""
 
 -- | 'InType' describes the type of input the infile contains
-data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn 
+data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
             | HaskellIn | GuessIn
 
 instance Show InType where
@@ -230,15 +229,15 @@ instance Show InType where
              GuessIn -> ""
 
 -- maybe this optional tree prefix can be omitted
-instance Read InType where 
-    readsPrec _ s = let f = filter ( \ o -> (case o of 
+instance Read InType where
+    readsPrec _ s = let f = filter ( \ o -> (case o of
                                  ATermIn _ -> isPrefixOf (treeS ++ show o) s
-                                 _ -> False) || isPrefixOf (show o) s) 
+                                 _ -> False) || isPrefixOf (show o) s)
                             (plainInTypes ++ aInTypes)
-                        in case f of 
+                        in case f of
                            [] -> []
                            t : _ -> [(t, drop (length (show t) +
-                                             case t of 
+                                             case t of
                                              ATermIn _ -> if isPrefixOf treeS s
                                                then length treeS else 0
                                              _ -> 0) s)]
@@ -257,7 +256,7 @@ aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 
 -- | 'OutType' describes the type of outputs that we want to generate
-data OutType = PrettyOut PrettyType 
+data OutType = PrettyOut PrettyType
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
              | EnvOut
@@ -274,11 +273,11 @@ instance Show OutType where
              ComptableXml -> comptableXmlS
 
 instance Read OutType where
-    readsPrec  _ s = if isPrefixOf ppS s then 
+    readsPrec  _ s = if isPrefixOf ppS s then
         case reads $ drop (length ppS) s of
                  [(p, r)] -> [(PrettyOut p, r)]
                  _ -> hetsError (s ++ " expected one of " ++ show prettyList)
-        else if isPrefixOf graphS s then 
+        else if isPrefixOf graphS s then
         case reads $ drop (length graphS) s of
                  [(t, r)] -> [(GraphOut t, r)]
                  _ -> hetsError (s ++ " expected one of " ++ show graphList)
@@ -288,10 +287,10 @@ instance Read OutType where
              [(ThyFile, drop (length thyS) s)]
         else if isPrefixOf comptableXmlS s then
              [(ComptableXml, drop (length comptableXmlS) s)]
-        else [(HetCASLOut h f, u) | (h, d : t) <- reads s, 
+        else [(HetCASLOut h f, u) | (h, d : t) <- reads s,
               d == '.' , (f, u) <- reads t]
 
--- | 'PrettyType' describes the type of output we want the pretty-printer 
+-- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
 data PrettyType = PrettyAscii | PrettyLatex | PrettyHtml
 
@@ -311,13 +310,13 @@ prettyList = [PrettyAscii,  PrettyLatex, PrettyHtml]
 data HetOutType = OutASTree | OutDGraph Flattening Bool
 
 instance Show HetOutType where
-    show h = case h of 
+    show h = case h of
              OutASTree -> astS
              OutDGraph f b -> show f ++ "dg" ++ if b then naxS else ""
 
 instance Read HetOutType where
-    readsPrec _ s = if isPrefixOf astS s then 
-                    [(OutASTree, drop (length astS) s)] 
+    readsPrec _ s = if isPrefixOf astS s then
+                    [(OutASTree, drop (length astS) s)]
                     else case readShow outTypeList s of
                     l@[(OutDGraph f _, r)] -> if isPrefixOf naxS r then
                              [(OutDGraph f True, drop (length naxS) r)]
@@ -331,7 +330,7 @@ outTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
 data Flattening = Flattened | HidingOutside | Full
 
 instance Show Flattening where
-    show f = case f of 
+    show f = case f of
              Flattened -> "f"
              HidingOutside -> "h"
              Full -> ""
@@ -368,16 +367,6 @@ instance Read GraphType where
 graphList :: [GraphType]
 graphList = [Dot, PostScript, Davinci]
 
-{-
--- | 'WebType'
-data WebType = WebType | NoWeb  -- compare with WebIn?!
-
-instance Show WebType where
-    show w = case w of
-             WebType -> showOpt webS
-             NoWeb -> ""
--}
-
 -- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
 data RawOpt = RawAscii String | RawLatex String
 
@@ -387,10 +376,10 @@ instance Show RawOpt where
              RawLatex s -> showRawOpt latexS s
              where showRawOpt f = showEqOpt (rawS ++ "=" ++ f)
 
--- | 'options' describes all available options and is used to generate usage 
+-- | 'options' describes all available options and is used to generate usage
 -- information
 options :: [OptDescr Flag]
-options = 
+options =
     [ Option ['v'] [verboseS] (OptArg parseVerbosity "Int")
       "set verbosity level, -v1 is the default"
     , Option ['q'] ["quiet"] (NoArg Quiet)
@@ -403,8 +392,6 @@ options =
       "show graphical output in a GUI window"
     , Option ['G'] [onlyGuiS] (NoArg $ Gui Only)
       "like -g but write no output files"
-    -- , Option ['w'] [webS] (NoArg (Web WebType))
-    --  "show web interface"
     , Option ['p'] [skipS]  (NoArg $ Analysis Skip)
       "skip static analysis, just parse"
     , Option ['s'] [structS]  (NoArg $ Analysis Structured)
@@ -414,7 +401,7 @@ options =
     , Option ['L'] [libdirS]  (ReqArg LibDir "DIR")
       "source directory of [Het]CASL libraries"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
-      ("input file type can be one of:" ++ crS ++ joinBar 
+      ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
         map (++ bracket bafS) [astS, bracket treeS ++ genTermS]))
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
@@ -425,19 +412,19 @@ options =
        thyS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
        ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
        graphS ++ joinBar (map show graphList) ++ crS ++ bS ++
-       astS ++ formS ++ crS ++ bS ++ 
+       astS ++ formS ++ crS ++ bS ++
        joinBar (map show outTypeList) ++ bracket naxS ++ formS)
     , Option ['n'] [specS] (ReqArg parseSpecOpts "SPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
-      ("raw options for pretty printing" ++ crS ++ "RAW is " 
+      ("raw options for pretty printing" ++ crS ++ "RAW is "
        ++ joinBar [asciiS, textS, latexS, texS]
-       ++ "=STRING where " ++ crS ++ 
+       ++ "=STRING where " ++ crS ++
        "STRING is passed to the appropriate printer")
     , Option ['a'] [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
-      ("CASL amalgamability analysis options" ++ crS ++ listS ++ 
+      ("CASL amalgamability analysis options" ++ crS ++ listS ++
        crS ++ joinBar (map show caslAmalgOpts))
-    ] where listS = "is a comma-separated list without blanks" 
+    ] where listS = "is a comma-separated list without blanks"
                     ++ crS ++ "of one or more from:"
             crS = "\n  "
             bS = "| "
@@ -461,28 +448,28 @@ downloadExtensions = map (('.' :) . show) plainInTypes
 -- |
 -- checks if a source file for the given base  exists
 existsAnSource :: FilePath -> IO (Maybe FilePath)
-existsAnSource base2 = 
+existsAnSource base2 =
        do
        let names = map (base2++) $ "" : downloadExtensions
        -- look for the first existing file
-       existFlags <- sequence (map doesFileExist names)
-       return (find fst (zip existFlags names) >>= (return . snd))
+       validFlags <- mapM checkInFile names
+       return (find fst (zip validFlags names) >>= (return . snd))
 
 -- | should env be written
 hasEnvOut :: HetcatsOpts -> Bool
 hasEnvOut = any ( \ o -> case o of EnvOut -> True
                                    _ -> False) . outtypes
 
--- | 
+-- |
 -- gets two Paths and checks if the first file is more recent than the
 -- second one
 checkRecentEnv :: FilePath -> FilePath -> IO Bool
-checkRecentEnv fp1 base2 = 
+checkRecentEnv fp1 base2 =
    do fp1_exists <- doesFileExist fp1
-      if not fp1_exists then return False 
+      if not fp1_exists then return False
        else do
         maybe_source_file <- existsAnSource base2
-        maybe (return False) 
+        maybe (return False)
              (\ fp2 ->     do fp1_time <- getModificationTime fp1
                               fp2_time <- getModificationTime fp2
                               return (fp1_time > fp2_time))
@@ -501,9 +488,9 @@ checkEitherDirOrExFile :: FilePath -> IO (Maybe Bool)
 checkEitherDirOrExFile fp =
     do isDir <- doesDirectoryExist fp
        (isRead,isExec,isSearch) <- catch getPerms errs
-       return (if isDir && isSearch && isRead 
+       return (if isDir && isSearch && isRead
                then Just True
-               else if isRead && isExec 
+               else if isRead && isExec
                     then Just False
                     else Nothing)
     where getPerms = do p <- getPermissions fp
@@ -511,7 +498,7 @@ checkEitherDirOrExFile fp =
                                 executable p,
                                 searchable p)
           errs ex
-               | isPermissionError ex || 
+               | isPermissionError ex ||
                  isDoesNotExistError ex = return (False,False,False)
                | otherwise = ioError ex
 
@@ -522,8 +509,8 @@ parseInType = InType . parseInType1
 
 -- | 'parseInType1' parses an 'InType' Flag from a String
 parseInType1 :: String -> InType
-parseInType1 str = 
-  case reads str of 
+parseInType1 str =
+  case reads str of
     [(t, "")] -> t
     _ -> hetsError (str ++ " is not a valid ITYPE")
       {- the mere typo read instead of reads caused the runtime error:
@@ -534,7 +521,7 @@ parseOutTypes :: String -> Flag
 parseOutTypes str = case reads $ bracket str of
     [(l, "")] -> OutTypes l
     _ -> hetsError (str ++ " is not a valid OTYPES")
-  
+
 -- | 'parseSpecOpts' parses a 'Specs' Flag from user input
 parseSpecOpts :: String -> Flag
 parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
@@ -555,24 +542,22 @@ guess _file itype  = itype
 
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
-guessInType file = 
+guessInType file =
     case fileparse (map show (plainInTypes ++ aInTypes) ++
-                    map ( \ t -> treeS ++ show t) 
+                    map ( \ t -> treeS ++ show t)
                     [ ATermIn x | x <- [BAF, NonBAF]])
          file of
       (_,_,Just suf) -> parseInType1 suf
-      (_,_,Nothing)  -> hetsError $
-                        "InType of " ++ file ++ " unclear, please specify"
-
+      (_,_,Nothing)  -> GuessIn
 
 -- | 'parseCASLAmalg' parses CASL amalgamability options
 parseCASLAmalg :: String -> Flag
-parseCASLAmalg str = 
+parseCASLAmalg str =
     case reads $ bracket str of
-    [(l, "")] -> CASLAmalg $ filter ( \ o -> case o of 
-                                      NoAnalysis -> False 
+    [(l, "")] -> CASLAmalg $ filter ( \ o -> case o of
+                                      NoAnalysis -> False
                                       _ -> True ) l
-    _ -> hetsError (str ++ 
+    _ -> hetsError (str ++
                     " is not a valid CASL amalgamability analysis option list")
 
 -- main functions --
@@ -586,10 +571,10 @@ hetcatsOpts argv =
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
                infs  <- checkInFiles non_opts
-               hcOpts <- return $ 
+               hcOpts <- return $
                          foldr (flip makeOpts) defaultHetcatsOpts flags
                let hcOpts' = hcOpts { infiles = infs }
-               seq (length $ show hcOpts') $ return $ hcOpts' 
+               seq (length $ show hcOpts') $ return $ hcOpts'
         (_,_,errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -606,7 +591,7 @@ checkFlags fs =
              then do putStrLn hetsUsage
                      exitWith ExitSuccess
              else return [] -- fall through
-          if not $ null [ () | Version <- fs] 
+          if not $ null [ () | Version <- fs]
              then do putStrLn ("version of hets: " ++ hetcats_version)
                      exitWith ExitSuccess
              else return [] -- fall through
@@ -615,58 +600,65 @@ checkFlags fs =
 
 -- | 'checkInFiles' checks all given InFiles for sanity
 checkInFiles :: [String] -> IO [FilePath]
-checkInFiles fs = 
-    do mapM_ checkInFile fs
+checkInFiles fs =
        case fs of
                 []  -> hetsError "No valid input file specified"
-                _  -> return fs
+                _  -> do
+                   let ifs = filter (not . checkUri) fs
+                       efs = filter hasExtension ifs
+                       hasExtension f = any ( \ e -> isSuffixOf e f)
+                                        downloadExtensions
+                   bs <- mapM checkInFile efs
+                   if and bs
+                      then return fs
+                      else hetsError $ "invalid input files: " ++
+                        (unwords $ map snd $ filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
 
 -- | 'checkInFile' checks a single InFile for sanity
-checkInFile :: FilePath -> IO ()
+checkInFile :: FilePath -> IO Bool
 checkInFile file =
     do exists <- doesFileExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
-       if ((exists && readable perms) || checkUri file) then return () else 
-          hetsError $ "Not a valid input file: " ++ file
+       return $ exists && readable perms
 
--- | check if infile is uri 
+-- | check if infile is uri
 checkUri :: FilePath -> Bool
 checkUri file = let (_, t) = span (/=':') file in
                    if length t < 4 then False
                       else let (_:c2:c3:_) = t in
-                              if c2 == '/' && c3 == '/' then True 
+                              if c2 == '/' && c3 == '/' then True
                               -- (http://, https://, ftp://, file://, etc.)
                                  else False
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
-checkOutDirs fs = do 
-    case fs of 
+checkOutDirs fs = do
+    case fs of
         [] -> return ()
         [f] -> checkOutDir f
-        _ -> hetsError 
+        _ -> hetsError
             "Only one output directory may be specified on the command line"
     return fs
 
 -- | 'checkLibDirs' checks a list of LibDir for sanity
 checkLibDirs :: [Flag] -> IO [Flag]
-checkLibDirs fs = do 
+checkLibDirs fs = do
     case fs of
-        [] -> do 
+        [] -> do
             s <- catch (getEnv "HETS_LIB") (const $ return "")
-            if null s then return [] else do 
-                let d = LibDir s  
+            if null s then return [] else do
+                let d = LibDir s
                 checkLibDir d
                 return [d]
         [f] -> checkLibDir f >> return fs
-        _ -> hetsError 
+        _ -> hetsError
             "Only one library directory may be specified on the command line"
 
 -- | 'checkLibDir' checks a single LibDir for sanity
 checkLibDir :: Flag -> IO ()
-checkLibDir (LibDir file) = 
+checkLibDir (LibDir file) =
     do exists <- doesDirectoryExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
        if exists && readable perms then return ()
@@ -675,7 +667,7 @@ checkLibDir _ = return ()
 
 -- | 'checkOutDir' checks a single OutDir for sanity
 checkOutDir :: Flag -> IO ()
-checkOutDir (OutDir file) = 
+checkOutDir (OutDir file) =
     do exists <- doesDirectoryExist file
        perms  <- catch (getPermissions file) (\_ -> return noPerms)
        if exists && writable perms then return ()
@@ -691,7 +683,7 @@ noPerms = Permissions { readable = False
                       , searchable = False
                       }
 
--- auxiliary functions: collect flags -- 
+-- auxiliary functions: collect flags --
 
 collectDirs :: [Flag] -> IO [Flag]
 collectDirs fs =
@@ -744,7 +736,6 @@ collectSpecOpts fs =
         concatSpecOpts = (\os (Specs ot) -> os ++ ot)
     in if null specs then fs' else (Specs specs : fs')
 
-
 -- auxiliary functions: error messages --
 
 -- | 'hetsError' is a generic Error messaging function that prints the Error
@@ -757,15 +748,15 @@ hetsUsage :: String
 hetsUsage = usageInfo header options
     where header = "Usage: hets [OPTION...] file ... file"
 
--- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts' 
+-- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
 -- Verbosity exceeds the given level
 putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
-putIfVerbose opts level str = 
+putIfVerbose opts level str =
     if outputToStdout opts
        then doIfVerbose opts level (putStrLn str)
     else return()
 
--- | 'doIfVerbose' executes a given function when the given HetcatsOpts' 
+-- | 'doIfVerbose' executes a given function when the given HetcatsOpts'
 -- Verbosity exceeds the given level
 doIfVerbose :: HetcatsOpts -> Int -> (IO ()) -> IO ()
 doIfVerbose opts level func =
@@ -782,7 +773,7 @@ showDiags opts ds = do
 showDiags1 :: HetcatsOpts -> IOResult a -> IOResult a
 showDiags1 opts res = do
   if outputToStdout opts
-     then do Result ds res' <- ioToIORes $ ioresToIO res 
+     then do Result ds res' <- ioToIORes $ ioresToIO res
              ioToIORes $ sequence $ map (putStrLn . show) -- take maxdiags
                        $ filter (relevantDiagKind . diagKind) ds
              case res' of
