@@ -17,12 +17,14 @@ module Driver.Options
     , showDiags1
     , guess
     , existsAnSource
+    , downloadExtensions
     , checkUri
     , checkRecentEnv
     , checkEitherDirOrExFile
     , doIfVerbose
     , putIfVerbose
     , hetcatsOpts
+    , hasEnvOut
     , HetcatsOpts(..)
     , GuiType(..)
     , InType(..)
@@ -45,12 +47,12 @@ import Common.Result
 import Common.Amalgamate
 
 import System.Directory
+import System.Environment
+import System.Console.GetOpt
 import System.IO.Error
 import System.Exit
 
 import Data.List
-
-import System.Console.GetOpt
 
 bracket :: String -> String
 bracket s = "[" ++ s ++ "]" 
@@ -84,12 +86,11 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, dS, thyS, comptableXmlS :: String
+graphS, ppS, envS, naxS, thyS, comptableXmlS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
-dS = "."
 thyS = "thy"
 comptableXmlS = "comptable.xml"
 
@@ -266,7 +267,7 @@ data OutType = PrettyOut PrettyType
 instance Show OutType where
     show o = case o of
              PrettyOut p -> ppS ++ show p
-             HetCASLOut h f -> show h ++ dS ++ show f
+             HetCASLOut h f -> show h ++ "." ++ show f
              GraphOut f -> graphS ++ show f
              EnvOut -> envS
              ThyFile -> thyS
@@ -441,7 +442,7 @@ options =
             crS = "\n  "
             bS = "| "
             joinBar l = "(" ++ joinWith '|' l ++ ")"
-            formS = dS ++ joinBar (map show formatList)
+            formS = '.' : joinBar (map show formatList)
 
 -- parser functions returning Flags --
 
@@ -455,17 +456,22 @@ parseVerbosity (Just s)
 
 -- | intypes useable for downloads
 downloadExtensions :: [String]
-downloadExtensions = map show plainInTypes
+downloadExtensions = map (('.' :) . show) plainInTypes
 
 -- |
 -- checks if a source file for the given base  exists
 existsAnSource :: FilePath -> IO (Maybe FilePath)
 existsAnSource base2 = 
        do
-       let names = map (base2++) ("":(map (dS ++) downloadExtensions))
+       let names = map (base2++) $ "" : downloadExtensions
        -- look for the first existing file
        existFlags <- sequence (map doesFileExist names)
        return (find fst (zip existFlags names) >>= (return . snd))
+
+-- | should env be written
+hasEnvOut :: HetcatsOpts -> Bool
+hasEnvOut = any ( \ o -> case o of EnvOut -> True
+                                   _ -> False) . outtypes
 
 -- | 
 -- gets two Paths and checks if the first file is more recent than the
@@ -636,21 +642,27 @@ checkUri file = let (_, t) = span (/=':') file in
 
 -- | 'checkOutDirs' checks a list of OutDir for sanity
 checkOutDirs :: [Flag] -> IO [Flag]
-checkOutDirs fs = 
-    do case fs of 
-         _ : _ : _ -> hetsError 
-           "Only one output directory may be specified on the command line"
-         _ -> do mapM_ checkOutDir fs
-                 return fs
+checkOutDirs fs = do 
+    case fs of 
+        [] -> return ()
+        [f] -> checkOutDir f
+        _ -> hetsError 
+            "Only one output directory may be specified on the command line"
+    return fs
 
 -- | 'checkLibDirs' checks a list of LibDir for sanity
 checkLibDirs :: [Flag] -> IO [Flag]
-checkLibDirs fs = 
-    do case fs of 
-         _ : _ : _ -> hetsError 
-           "Only one library directory may be specified on the command line"
-         _ -> do mapM_ checkLibDir fs
-                 return fs
+checkLibDirs fs = do 
+    case fs of
+        [] -> do 
+            s <- catch (getEnv "HETS_LIB") (const $ return "")
+            if null s then return [] else do 
+                let d = LibDir s  
+                checkLibDir d
+                return [d]
+        [f] -> checkLibDir f >> return fs
+        _ -> hetsError 
+            "Only one library directory may be specified on the command line"
 
 -- | 'checkLibDir' checks a single LibDir for sanity
 checkLibDir :: Flag -> IO ()
