@@ -59,35 +59,36 @@ import Driver.Options
   @param ld  - a LIB_DEFN read as ATerm or parsed
 -}
 write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-write_LIB_DEFN ga file opt ld = sequence_ $ map write_type $ outtypes opt
-    where
-    write_type :: OutType -> IO ()
-    write_type t =
-        case t of
+write_LIB_DEFN ga file opt ld = do 
+    let odir' = outdir opt
+        (base, path, _) = fileparse downloadExtensions file
+        odir = if null odir' then path else odir'
+        filePrefix = pathAndBase odir base 
+        filename ty = filePrefix ++ "." ++ show ty
+        verbMesg ty = putIfVerbose opt 3 $ "Writing file: " ++ filename ty
+        printAscii ty = do
+                verbMesg ty
+                write_casl_asc opt ga (filename ty) ld
+        write_type :: OutType -> IO ()
+        write_type t = case t of
             HetCASLOut OutASTree OutAscii -> printAscii t
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
-                putIfVerbose opt 3 ("Generating OutType: " ++ (show t))
-                write_casl_latex opt ga (casl_latex_filename file opt) ld
+                verbMesg t
+                write_casl_latex opt ga (filename t) ld
             EnvOut -> return () -- implemented in hets.hs
             ThyFile -> return () -- (requires environment)
             ComptableXml -> return ()
-            _ -> do putStrLn ( "Error: the OutType \"" ++
-                        show t ++ "\" is not implemented")
-                    return ()
-    printAscii ty = do
-                putIfVerbose opt 3 ("Generating OutType: " ++ (show ty))
-                write_casl_asc opt ga (casl_asc_filename file opt) ld
-{---
-  Produces the filename of the pretty printed CASL-file.
-  @param opt   - Options from the command line
-  @return path - full path to the generated file
--}
-casl_asc_filename :: FilePath -> HetcatsOpts -> FilePath
-casl_asc_filename file opt =
-    let (base,_,_) = fileparse [".casl",".tree.gen_trm",".het"] file
-    in (outdir opt) ++ "/" ++ base ++ ".pp.het"
-      -- maybe an optin out-file is better
+            _ -> putIfVerbose opt 0 $ "Error: the OutType \"" ++
+                        show t ++ "\" is not implemented" 
+    putIfVerbose opt 3 ("Current OutDir: " ++ odir)
+    mapM_ write_type $ outtypes opt
+
+pathAndBase :: FilePath -> FilePath -> FilePath
+pathAndBase path base = 
+    if null path then base 
+       else if last path == '/' then path ++ base
+            else path ++ "/" ++ base
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_asc opt ga oup ld =
@@ -95,12 +96,6 @@ write_casl_asc opt ga oup ld =
        putIfVerbose opt 3 (show (printText0_eGA ga))
        hPutStr hout $ printLIB_DEFN_text ga ld
        hClose hout
-
-casl_latex_filename :: FilePath -> HetcatsOpts -> FilePath
-casl_latex_filename file opt =
-    let (base,_,_) = fileparse [".casl",".tree.gen_trm",".het"] file
-    in (outdir opt) ++ "/" ++ base ++ ".pp.tex"
-      -- maybe an optin out-file is better
 
 debug_latex_filename :: FilePath -> FilePath
 debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
