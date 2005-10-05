@@ -306,59 +306,39 @@ toGuiStatus cf st = case st of
          then statusOpenTExceeded
          else statusOpen
 
-{- |
-  Short 'String' representing a 'Proved' proof status in the 'ListBox' of
-  the prover GUI.
--}
-indicatorProved :: String
-indicatorProved = "[+]"
 
 {- |
-  Short 'String' representing a 'Disproved' proof status in the 'ListBox' of
-  the prover GUI.
--}
-indicatorDisproved :: String
-indicatorDisproved = "[-]"
-
-{- |
-  Short 'String' representing an 'Open' proof status in the 'ListBox' of
-  the prover GUI.
--}
-indicatorOpen :: String
-indicatorOpen = "[ ]"
-
-{- |
-  Converts a 'Proof_status' into a short 'String' to be displayed by the GUI
-  in a 'ListBox'.
+  Converts a 'Proof_status' into a short 'GUI.HTkUtils.LBStatusIndicator' to be
+  displayed by the GUI in a 'ListBox'.
 -}
 toStatusIndicator :: SPASSConfig -- ^ current prover configuration
                   -> (Proof_status a) -- ^ status to convert
-                  -> String
+                  -> LBStatusIndicator
 toStatusIndicator _ st = case st of
-  Proved _ _ _ _ _ -> indicatorProved
-  Disproved _ -> indicatorDisproved
-  _ -> indicatorOpen
+  Proved _ _ _ _ _ -> LBIndicatorProved
+  Disproved _ -> LBIndicatorDisproved
+  _ -> LBIndicatorOpen
 
 {- |
-  Generates a list of textual representations of all goals from a 
-  'SPASS.Prove.State'.
+  Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
+  from a 'SPASS.Prove.State'.
 
-  The resulting strings contain the result of 'toStatusIndicator'
-  concatenated with the goal name.
+  Uses 'toStatusIndicator' internally.
 -}
 goalsView :: SPASS.Prove.State  -- ^ current global prover state
-          -> [String] -- ^ resulting ['String'] list
+          -> [LBGoalView] -- ^ resulting ['String'] list
 goalsView s = map (\ g ->
                        let res = Map.lookup g (resultsMap s)
                            cf = Map.findWithDefault
                                 (error "updateDisplay: configsMap \
                                        \was not initialised!!")
                                 g (configsMap s)
-                           statind = maybe indicatorOpen
+                           statind = maybe LBIndicatorOpen
                                        ((toStatusIndicator cf) . fst)
                                        res
                         in
-                          statind ++ (' ':g))(map senName (goalsList s))
+                          LBGoalView {statIndicator = statind, goalDescription = g})
+                   (map senName (goalsList s))
 
 -- ** GUI Implementation
 
@@ -429,18 +409,8 @@ updateDisplay :: SPASS.Prove.State -- ^ current global prover state
               -> ListBox String -- ^ 'ListBox' displaying all axioms used to prove a goal (if any)
               -> IO ()
 updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = do
-    if updateLb
-      then do
-        selectedOld <- (getSelection goalsLb) :: IO (Maybe [Int])
-        -- putStrLn $ show selectedOld
-        goalsLb # value (goalsView st)
-        -- putStrLn $ "activating: " ++ (show $ (head . fromJust) selectedOld)
-        -- FIXME: while extracting this ListBox functionality, make sure 
-        -- to activate multiple lines if it is allowed.
-        when (isJust selectedOld) 
-             (do selection (head (fromJust selectedOld)) goalsLb
-                 return ())
-      else return ()
+    when updateLb
+         (populateGoalsListBox goalsLb (goalsView st))
     maybe (return ())
           (\ go -> 
                let mprfst = Map.lookup go (resultsMap st)
@@ -562,8 +532,9 @@ spassProveGUI thName th = do
   pack lbFrame [Expand On, Fill Both]
 
   s0 <- readIORef stateRef
-  lb <- newListBox lbFrame [value $ goalsView s0, bg "white",
+  lb <- newListBox lbFrame [bg "white",
                             selectMode Single, height 15] :: IO (ListBox String)
+  populateGoalsListBox lb (goalsView s0)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
   pack sb [Expand On, Side AtRight, Fill Y]

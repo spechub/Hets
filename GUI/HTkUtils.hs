@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c)  Till Mossakowski and Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c)  Till Mossakowski, Klaus Lüttich, and Rene Wagner, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -21,6 +21,7 @@ import TextDisplay
 import FileDialog
  -- only to avoid problematic ghc 6.2.1 compilation order
 import Common.Lib.Rel()
+import Maybe
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
@@ -110,3 +111,42 @@ askFileNameAndSave defFN txt =
        mfile <- sync selev
        maybe done saveFile mfile
     where saveFile fp = writeFile fp txt
+
+--- added by RW
+-- |
+-- Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'
+data LBStatusIndicator = LBIndicatorProved
+                       | LBIndicatorDisproved
+                       | LBIndicatorOpen
+
+-- |
+-- Converts a 'LBStatusIndicator' into a short 'String' representing it in
+-- a 'ListBox'
+indicatorString :: LBStatusIndicator
+                -> String
+indicatorString i = case i of
+  LBIndicatorProved    -> "[+]"
+  LBIndicatorDisproved -> "[-]"
+  LBIndicatorOpen      -> "[ ]"
+
+-- |
+-- Represents a goal in a 'ListBox' that uses 'populateGoalsListBox'
+data LBGoalView = LBGoalView { -- | status indicator
+                               statIndicator :: LBStatusIndicator,
+                               -- | description
+                               goalDescription :: String
+                             }
+
+-- |
+-- Populates a 'ListBox' with goals. After the initial call to this function
+-- the number of goals is assumed to remain constant in ensuing calls.
+populateGoalsListBox :: ListBox String -- ^ listbox
+                     -> [LBGoalView] -- ^ list of goals. length must remain constant after the first call
+                     -> IO ()
+populateGoalsListBox lb v = do
+  selectedOld <- (getSelection lb) :: IO (Maybe [Int])
+  lb # value (toString v)
+  when (isJust selectedOld) 
+       (mapM_ (\n -> selection n lb) (fromJust selectedOld))
+  where
+    toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} -> (indicatorString i) ++ (' ':d))
