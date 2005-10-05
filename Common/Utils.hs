@@ -79,25 +79,11 @@ stripSuffix :: [String] -> FilePath -> (FilePath,Maybe String)
 stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
                      ((Just (x,s)):_)  -> (x,Just s)
                      _                 -> (fp, Nothing)
-    where stripSuf f s | s `isSuffixOf` f = Just (stripOf s f, s) 
+    where stripSuf f s | s `isSuffixOf` f = 
+                           Just (take (length f - length s) f, s) 
                        | otherwise = Nothing
           justs (Nothing) = False
           justs (Just _)  = True
-
-stripOf :: (Show a, Eq a) => [a] -> [a] -> [a]
-stripOf suf inp = reverse $ stripOf' (reverse suf) (reverse inp)
-    where stripOf' []    i  = i
-          stripOf' (_:_) [] = error $ 
-                               concat ["suffix is longer than input string\n"
-                                      ,"input was: ", show suf, " ",show inp ]
-          stripOf' (x:xs) (y:ys) | x == y    = stripOf' xs ys
-                                 | otherwise = 
-                                     error $ concat ["suffix don't match input"
-                                                    ," at "
-                                                    ,show $ reverse (x:xs)
-                                                    ," ",show $ reverse (y:ys)]
-
--- stripOf suf = reverse . drop (length suf) . reverse
 
 -- |
 -- like the chomp from Perl
