@@ -1,23 +1,19 @@
-{-| 
-   
+{- |
 Module      :  $Header$
-Copyright   :  (c) C. Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable(Logic)
+Portability :  non-portable(DevGraph)
 
-dumping a LibEnv
+pretty printing (parts of) a LibEnv
 -}
 
 module Static.PrintDevGraph where
 
-import Logic.Logic
-import Logic.Grothendieck
 import Syntax.AS_Library
-import Syntax.Print_AS_Library
-import Common.AS_Annotation
+import Syntax.Print_AS_Library()
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import Common.Id
@@ -29,21 +25,18 @@ import Common.Lib.Pretty as P
 import Static.DevGraph
 import Static.DGToSpec
 
-instance PrettyPrint LibEnv where
-    printText0 _ le = vcat (map (printLibrary le) $ Map.toList le)
-
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
-printLibrary le (ln, (ga, ge, dg)) = 
-    text libraryS <+> printText0 ga ln $$ 
-         foldr (aboveWithNLs 2) P.empty 
-                   (map (printTheory le ln ga dg) $ Map.toList ge)
+printLibrary le (ln, (ga, ge, _)) =
+    text libraryS <+> printText0 ga ln $$
+         foldr (aboveWithNLs 2) P.empty
+                   (map (printTheory le ln ga) $ Map.toList ge)
 
-printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos -> DGraph 
+printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
             -> (SIMPLE_ID, GlobalEntry) -> Doc
-printTheory le ln ga dg (sn, ge) = case ge of 
-    SpecEntry (_,_,_, NodeSig n _) -> 
+printTheory le ln ga (sn, ge) = case ge of
+    SpecEntry (_,_,_, NodeSig n _) ->
         case maybeResult $ computeTheory le (ln, n) of
             Nothing -> P.empty
-            Just g ->
-                text specS <+> printText0 ga g
-    _ -> P.empty                             
+            Just g -> text specS <+> printText0 ga sn <+> text equalS
+                         $$ printText0 ga g
+    _ -> P.empty
