@@ -53,6 +53,7 @@ import Common.Id
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+import Common.ProofUtils
 import Common.Result
 import Common.DynamicUtils 
 
@@ -572,12 +573,17 @@ type ThSens a = Set.Set (SenStatus a)
 noSens :: ThSens a
 noSens = Set.empty
 
+-- | join and disambiguate
 joinSens :: Ord a => ThSens a -> ThSens a -> ThSens a
 joinSens s1 s2 = let l1 = Set.toList s1
+                     sel = senName . value
+                     upd n s = s { value = (value s) { senName = n }} 
+                     ns = Set.map sel s1  
                      m = foldr (max . order) 0 l1
                      l2 = map ( \ e -> e {order = m + order e }) 
                           $ Set.toList s2 
-                 in Set.fromDistinctAscList $ mergeSens l1 l2
+                 in Set.fromDistinctAscList $ mergeSens l1 
+                        $ genericDisambigSens sel upd ns l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@(e1 : r1) l2@(e2 : r2) = case compare e1 e2 of
