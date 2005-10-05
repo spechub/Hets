@@ -179,7 +179,7 @@ defaultHetcatsOpts =
           }
 
 defaultOutType :: OutType
-defaultOutType = HetCASLOut OutASTree OutAscii
+defaultOutType = PrettyOut PrettyAscii
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag = Verbose  Int
