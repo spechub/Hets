@@ -423,18 +423,18 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                    (color, label) = maybe statusOpen
                                     ((toGuiStatus cf) . fst)
                                     mprfst
-                   usedAxioms = maybe []
-                                (\s -> case (fst s) of
-                                          Proved _ xs _ _ _ -> xs
-                                          _ -> [])
-                                mprfst
+                   usedAxs = maybe []
+                             (\s -> case (fst s) of
+                                       Proved _ xs _ _ _ -> xs
+                                       _ -> [])
+                             mprfst
 
                in do 
                 statusLabel # text label
                 statusLabel # foreground (show color)
                 timeEntry # value t'
                 optionsEntry # value opts'
-                axiomsLb # value (usedAxioms::[String])
+                axiomsLb # value (usedAxs::[String])
                 return ()) 
           (currentGoal st)
 
@@ -783,12 +783,12 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 
     -- check for errors. unfortunately we cannot just read from SPASS until an
     -- EOF since readMsg will just wait forever on EOF.
-    parseProtected f (res, usedAxioms, output) = do
+    parseProtected f (res, usedAxs, output) = do
       e <- getToolStatus spass
       case e of
         Nothing
           -- still running
-          -> f (res, usedAxioms, output)
+          -> f (res, usedAxs, output)
         Just (ExitFailure retval)
           -- returned error
           -> do
@@ -796,22 +796,22 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
               return (Nothing, [], ["SPASS returned error: "++(show retval)])
         Just ExitSuccess
           -- completed successfully. read remaining output.
-          -> f (res, usedAxioms, output)
+          -> f (res, usedAxs, output)
 
     -- the first line of SPASS output it always empty.
     -- the second contains SPASS-START in the usual case
     -- and an error message in case of an error
-    parseStart firstline (res, usedAxioms, output) = do
+    parseStart firstline (res, usedAxs, output) = do
       line <- readMsg spass
       if firstline
         -- ignore empty first line
-        then parseProtected (parseStart False) (res, usedAxioms, output ++ [""])
+        then parseProtected (parseStart False) (res, usedAxs, output ++ [""])
         -- check for a potential error
         else do
           let startMatch = matchRegex re_start line
           if isJust startMatch
             -- got SPASS-START. continue parsing
-            then parseProtected parseIt (res, usedAxioms, output ++ [line])
+            then parseProtected parseIt (res, usedAxs, output ++ [line])
             -- error. abort parsing
             else do
               e <- waitForChildProcess spass
@@ -822,18 +822,18 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
                   return (Nothing, [], output ++ [line, "", "SPASS returned error: "++(show retval)])
           
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
-    parseIt (res, usedAxioms, output) = do
+    parseIt (res, usedAxs, output) = do
       line <- readMsg spass
       let resMatch = matchRegex re_sb line
       let res' = if isJust resMatch then (Just $ head $ fromJust resMatch) else res
-      let usedAxiomsMatch = matchRegex re_ua line
-      let usedAxioms' = if isJust usedAxiomsMatch then (words $ head $ fromJust usedAxiomsMatch) else usedAxioms
+      let usedAxsMatch = matchRegex re_ua line
+      let usedAxs' = if isJust usedAxsMatch then (words $ head $ fromJust usedAxsMatch) else usedAxs
       if isJust (matchRegex re_stop line)
         then do
           _ <- waitForChildProcess spass
-          return (res', usedAxioms', output ++ [line])
+          return (res', usedAxs', output ++ [line])
         else
-          parseProtected parseIt (res', usedAxioms', output ++ [line])
+          parseProtected parseIt (res', usedAxs', output ++ [line])
 
     -- regular expressions used for parsing
     re_start = mkRegex ".*SPASS-START.*"
@@ -877,8 +877,8 @@ runSpass lp cfg nGoal = do
           -- This can't be fixed until the prover interface is updated to hand
           -- in global annos
           sendMsg spass (showPretty problem "")
-          (res, usedAxioms, output) <- parseSpassOutput spass
-          let (err, retval) = proof_status res usedAxioms cleanOptions
+          (res, usedAxs, output) <- parseSpassOutput spass
+          let (err, retval) = proof_status res usedAxs cleanOptions
           return (err, (retval, output))
 
     -- FIXME: this should be retrieved from the user instead of being hardcoded.
@@ -899,9 +899,9 @@ runSpass lp cfg nGoal = do
                else guiDefaultTimeLimit
     allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
 
-    proof_status res usedAxioms options
+    proof_status res usedAxs options
       | isJust res && elem (fromJust res) proved =
-          (SpassSuccess, Proved (senName nGoal) usedAxioms "SPASS" () (Tactic_script (concatMap (' ':) options)))
+          (SpassSuccess, Proved (senName nGoal) usedAxs "SPASS" () (Tactic_script (concatMap (' ':) options)))
       | isJust res && elem (fromJust res) disproved =
           (SpassSuccess, Disproved (senName nGoal))
       | isJust res && elem (fromJust res) timelimit =
