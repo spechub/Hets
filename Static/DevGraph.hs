@@ -146,7 +146,7 @@ isDGRef (DGNode _ _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty (DGNode _ (G_theory lid sigma sens) _ _ _ _ _) = 
+locallyEmpty (DGNode _ (G_theory _lid _sigma sens) _ _ _ _ _) = 
   Set.null $ Set.filter 
       (\s -> not (isAxiomSenStatus s) && not (isProvenSenStatus s) ) sens 
 locallyEmpty (DGRef _ _ _ _ _) = True
@@ -556,10 +556,10 @@ emptySenStatus = SenStatus { value = error "emptySenStatus"
                            , thmStatus = [] }
 
 instance Eq a => Eq (SenStatus a) where
-    d1 == d2 = value d1 == value d2
+    d1 == d2 = sentence (value d1) == sentence (value d2)
 
 instance Ord a => Ord (SenStatus a) where
-    d1 <= d2 = value d1 <= value d2
+    d1 <= d2 = sentence (value d1) <= sentence (value d2)
 
 decoTc :: TyCon
 decoTc = mkTyCon "Static.DevGraph.SenStatus"
