@@ -209,11 +209,6 @@ showGraph file opt env =
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
 
-hasEnvOut :: HetcatsOpts -> Bool
-hasEnvOut = any ( \ o -> case o of EnvOut -> True
-                                   _ -> False) . outtypes
-
-
 run  :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
 run file = 
     do let opt = defaultHetcatsOpts
