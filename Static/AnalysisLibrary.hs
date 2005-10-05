@@ -239,6 +239,12 @@ ana_LIB_DEFN lgraph defl opts libenv (Lib_defn ln alibItems pos ans) = do
                  Nothing -> return $ fail "Stopped. No result available"
              )
 
+putMessageIORes :: HetcatsOpts -> Int -> String -> IOResult ()
+putMessageIORes opts i msg =
+   if outputToStdout opts
+   then ioToIORes $ putIfVerbose opts i msg
+   else resToIORes $ message () msg
+
 -- analyse a LIB_ITEM
 -- Parameters: logic graph, default logic, opts, library env
 -- global context, current logic, LIB_ITEM
@@ -248,12 +254,7 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> IOResult (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
 ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
              (Spec_defn spn gen asp pos) = do
-  let analyseMessage = "Analyzing spec " ++ showPretty spn ""
-  ioToIORes (putIfVerbose opts 1  analyseMessage)
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "Analyzing spec " ++ showPretty spn ""
   (gen',(imp,params,allparams),dg') <-
      resToIORes (ana_GENERICITY lgraph gctx l opts (extName "P" (makeName spn)) gen)
   (sp',body,dg'') <-
@@ -273,24 +274,14 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
-  let analyseMessage = "Analyzing view " ++ showPretty vn ""
-  ioToIORes (putIfVerbose opts 1  analyseMessage)
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "Analyzing view " ++ showPretty vn ""
   resToIORes (ana_VIEW_DEFN lgraph defl libenv gctx l opts
                             vn gen vt gsis pos)
 
 -- architectural specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              (Arch_spec_defn asn asp pos) = do
-  let analyseMessage = "Analyzing arch spec " ++ showPretty asn ""
-  ioToIORes (putIfVerbose opts 1 analyseMessage )
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "Analyzing arch spec " ++ showPretty asn ""
   (archSig, dg', asp') <- resToIORes (ana_ARCH_SPEC lgraph defl gctx l opts
                                       (item asp))
   let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
@@ -311,12 +302,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
 -- unit specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              usd@(Unit_spec_defn usn usp pos) = do
-  let analyseMessage = "Analyzing unit spec " ++ showPretty usn ""
-  ioToIORes (putIfVerbose opts 1 analyseMessage)
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "Analyzing unit spec " ++ showPretty usn ""
   (unitSig, dg', usp') <- resToIORes (ana_UNIT_SPEC lgraph defl gctx l opts
                                       (EmptyNode defl) usp)
   let usd' = Unit_spec_defn usn usp' pos
@@ -336,12 +322,8 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
 -- refinement specification
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
              rd@(Ref_spec_defn rn ref pos) = do
-  let analyseMessage = "Analyzing refinement " ++ showPretty rn "\n  (refinement analysis not implemented yet)"
-  ioToIORes (putIfVerbose opts 1 analyseMessage )
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "Analyzing refinement "
+      ++ showPretty rn "\n  (refinement analysis not implemented yet)"
   let rd' = rd
       dg' = dg
   if Map.member rn genv
@@ -361,48 +343,27 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
 ana_LIB_ITEM lgraph _defl opts libenv gctx _l
              (Logic_decl ln@(Logic_name logTok _) pos) = do
   logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
-  let  analyseMessage = "logic " ++ show logNm
-  ioToIORes (putIfVerbose opts 1  analyseMessage)
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
+  putMessageIORes opts 1 $ "logic " ++ show logNm
   return (Logic_decl ln pos,gctx,logNm,libenv)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
              libItem@(Download_items ln items _) = do
   -- we take as the default logic for imported libs
   -- the global default logic
-
-  let analyseMessage = "Analyzing from " ++ showPretty ln "\n"
-  ioToIORes (putIfVerbose opts 1 analyseMessage)
-  if outputToStdout opts then
-     return()
-     else
-     resToIORes $ message () analyseMessage
-
-  libenv' <- anaLibFile lgraph defl opts libenv ln
-
-  -- let libMsg = unlines $ map show diags'
-  -- resToIORes $ message () libMsg
-
-  case Map.lookup ln libenv' of
-    Nothing -> do
-     if outputToStdout opts then
-        do
-          ioToIORes (putStrLn ("Internal error: did not find library "++
-                     show ln++" available: "++show (Map.keys libenv')))
-          return (libItem,gctx,l,libenv')
-       else
-          resToIORes $ (fatal_error ("Internal error: did not find library "
-                ++show ln++" available: "++show (Map.keys libenv')) nullRange)
+  putMessageIORes opts 1 $ "Analyzing from " ++ showPretty ln "\n"
+  (ln', libenv') <- anaLibFileOrGetEnv lgraph defl opts libenv ln
+                    $ libNameToFile opts ln
+  if ln == ln' then case Map.lookup ln libenv' of
+    Nothing -> error $ "Internal error: did not find library " ++
+                     show ln ++ " available: " ++ show (Map.keys libenv')
     Just (gannos', genv', _dg') -> do
       (genv1,dg1) <- resToIORes (foldl (ana_ITEM_NAME_OR_MAP ln genv')
                                        (return (genv,dg)) items
                                  )
       gannos'' <- resToIORes $ gannos `mergeGlobalAnnos` gannos'
       return (libItem,(gannos'',genv1,dg1),l,libenv')
-
+   else resToIORes $ fail $ "downloaded library '" ++ show ln'
+           ++ "' does not match library name '" ++ shows ln "'"
 
 -- ??? Needs to be generalized to views between different logics
 ana_VIEW_DEFN :: LogicGraph -> AnyLogic -> LibEnv -> GlobalContext
