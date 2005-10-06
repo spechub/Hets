@@ -18,7 +18,6 @@ The Main module of the Heterogeneous Tool Set.
 module Main where
 
 import System.Environment (getArgs)
-import Common.Result
 
 import Driver.Options
 
@@ -27,7 +26,7 @@ import Comorphisms.LogicGraph
 import OWL_DL.OWLAnalysis
 
 import Static.AnalysisLibrary
-import Static.DevGraph
+import Static.DevGraph (emptyLibEnv)
 
 import GUI.ShowGraph
 
@@ -38,7 +37,7 @@ import Haskell.Haskell2DG
 -}
 
 main :: IO ()
-main = do 
+main = do
     opts <- getArgs >>= hetcatsOpts
     putIfVerbose opts 3 ("Options: " ++ show opts)
     mapM_ (processFile opts) (infiles opts)
@@ -46,26 +45,16 @@ main = do
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
     do putIfVerbose opts 2 ("Processing input: " ++ file)
-       case guess file (intype opts) of
+       res <- case guess file (intype opts) of
 {-
 #ifdef PROGRAMATICA
-             HaskellIn -> do
-                 r <- anaHaskellFile opts file
-                 case gui opts of
-                     Not -> return ()
-                     _ -> showGraph file opts r
+             HaskellIn -> anaHaskellFile opts file
 #endif
 -}
              OWL_DLIn -> do
                  ontoMap <- parseOWL file
-                 paraForGraph <- structureAna file opts ontoMap
-                 case gui opts of
-                     Not -> return ()
-                     _   -> showGraph file opts paraForGraph
-             _ -> do
-                  Common.Result.Result ds res <- ioresToIO $
-                      anaFileOrGetEnv logicGraph opts emptyLibEnv file
-                  showDiags opts ds
-                  case gui opts of
-                      Not -> return ()
-                      _  -> showGraph file opts res
+                 structureAna file opts ontoMap
+             _ -> anaFileOrGetEnv logicGraph opts emptyLibEnv file
+       case gui opts of
+           Not -> return ()
+           _  -> showGraph file opts res

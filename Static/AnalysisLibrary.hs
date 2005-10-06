@@ -49,9 +49,9 @@ import Control.Monad
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
-anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> FilePath
+anaSourceFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> FilePath
               -> IOResult (LIB_NAME, LibEnv)
-anaFile lgraph defl opts libenv fname = IOResult $ do
+anaSourceFile lgraph defl opts libenv fname = IOResult $ do
   fname' <- existsAnSource fname
   case fname' of
     Nothing -> do
@@ -127,12 +127,14 @@ libNameToFile opts libname =
 
 -- | lookup an env or read and analyze a file
 anaFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LibEnv
-                -> FilePath -> IOResult (LIB_NAME, LibEnv)
+                -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaFileOrGetEnv lgraph opts libenv file = do
     defl <- lookupLogic "logic from command line: "
                   (defLogic opts) lgraph
-    anaLibFileOrGetEnv lgraph defl opts libenv
-                  (fileToLibName opts file) file
+    Result ds res <- ioresToIO $ anaLibFileOrGetEnv lgraph defl opts libenv
+                     (fileToLibName opts file) file
+    showDiags opts ds 
+    return res
 
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
@@ -143,8 +145,6 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
    Just _ -> return (libname, libenv)
    Nothing -> IOResult $ do
      let env_file = rmSuffix file ++ ".env"
-                     -- file is sufficient here, because anaFile
-                     -- trys all possible suffices with this basename
      recent_env_file <- checkRecentEnv env_file file
      if recent_env_file
         then do
@@ -153,7 +153,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
              case mgc of
                  Nothing -> ioresToIO $ do
                      resToIORes $ Result dias $ Just () -- add diags
-                     anaFile lgraph defl opts libenv file
+                     anaSourceFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do
                      putIfVerbose opts 1 ""
                           -- get all DGRefs from DGraph
@@ -177,7 +177,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
                                 ) (return libEnv') newRefLibs
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (libname, rEnv)) mEnv
-        else ioresToIO $ anaFile lgraph defl opts libenv file
+        else ioresToIO $ anaSourceFile lgraph defl opts libenv file
 
 -- | analyze a LIB_DEFN
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
