@@ -26,6 +26,7 @@ module Driver.Options
     , putIfVerbose
     , hetcatsOpts
     , hasEnvOut
+    , addEnvOut
     , HetcatsOpts(..)
     , GuiType(..)
     , InType(..)
@@ -464,6 +465,11 @@ existsAnSource base2 =
 hasEnvOut :: HetcatsOpts -> Bool
 hasEnvOut = any ( \ o -> case o of EnvOut -> True
                                    _ -> False) . outtypes
+
+-- | add EnvOut option for imported libraries
+addEnvOut :: HetcatsOpts -> HetcatsOpts
+addEnvOut opts = if hasEnvOut opts then opts else
+                 opts { outtypes = EnvOut : outtypes opts }
 
 -- |
 -- gets two Paths and checks if the first file is more recent than the
