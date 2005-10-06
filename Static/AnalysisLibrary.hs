@@ -51,7 +51,7 @@ import Control.Monad
 -- Parameters: logic graph, default logic, file name
 anaFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> FilePath
               -> IOResult (LIB_NAME, LibEnv)
-anaFile logicGraph defaultLogic opts libenv fname = IOResult $ do
+anaFile lgraph defl opts libenv fname = IOResult $ do
   fname' <- existsAnSource fname
   case fname' of
     Nothing -> do
@@ -59,28 +59,29 @@ anaFile logicGraph defaultLogic opts libenv fname = IOResult $ do
     Just fname'' -> do
         input <- readFile fname''
         putIfVerbose opts 1 $ "Reading file " ++ fname''
-        ioresToIO $ anaString logicGraph defaultLogic opts libenv input fname''
+        ioresToIO $ anaString lgraph defl opts libenv input fname''
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
               -> FilePath -> IOResult (LIB_NAME, LibEnv)
-anaString logicGraph defaultLogic opts libenv input file =
-  let Result ps mast = read_LIB_DEFN_M defaultLogic file input
+anaString lgraph defl opts libenv input file =
+  let Result ds mast = read_LIB_DEFN_M defl file input
   in case mast of
   Just ast@(Lib_defn ln _ _ _) -> case analysis opts of
       Skip  -> do
-          ioToIORes $ putIfVerbose opts 2 $
+          ioToIORes $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
-          resToIORes $ Result ps Nothing
+          resToIORes $ Result ds Nothing
       _ -> do
-          resToIORes $ if ln == fileToLibName opts file
+          if ln == fileToLibName opts file
              then return ()
-             else fail $ "library name '" ++ show ln
-                  ++ "' does not match file name: " ++ file
-          ioToIORes $ putIfVerbose opts 2 $ "Analyzing library " ++ show ln
+             else ioToIORes $ putIfVerbose opts 1 $ 
+                      "***Warning: library name '" ++ show ln
+                      ++ "' does not match file name: " ++ file
+          ioToIORes $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
           (_,ld,_,lenv) <-
-              ana_LIB_DEFN logicGraph defaultLogic opts libenv ast
+              ana_LIB_DEFN lgraph defl opts libenv ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just gctx@(ga, ge, _) -> ioToIORes $ do
@@ -94,16 +95,14 @@ anaString logicGraph defaultLogic opts libenv input file =
                                 printLibrary lenv (ln, gctx)
                   putIfVerbose opts 3 $ showPretty ga ""
                   return (ln, lenv)
-  Nothing -> resToIORes $ Result ps Nothing
+  Nothing -> resToIORes $ Result ds Nothing
 
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME
-              -> IOResult LibEnv
-anaLibFile logicGraph defaultLogic opts libenv libname = do
-     let file = libNameToFile opts libname
-     (_, libenv') <- anaLibFileOrGetEnv logicGraph
-                     defaultLogic opts libenv libname file
-     return libenv'
+              -> IOResult (LIB_NAME, LibEnv)
+anaLibFile lgraph defl opts libenv libname = do
+     anaLibFileOrGetEnv lgraph defl (addEnvOut opts) libenv libname 
+         $ libNameToFile opts libname
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
@@ -129,16 +128,16 @@ libNameToFile opts libname =
 -- | lookup an env or read and analyze a file
 anaFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LibEnv
                 -> FilePath -> IOResult (LIB_NAME, LibEnv)
-anaFileOrGetEnv logicGraph opts libenv file = do
+anaFileOrGetEnv lgraph opts libenv file = do
     defl <- lookupLogic "logic from command line: "
-                  (defLogic opts) logicGraph
-    anaLibFileOrGetEnv logicGraph defl opts libenv
+                  (defLogic opts) lgraph
+    anaLibFileOrGetEnv lgraph defl opts libenv
                   (fileToLibName opts file) file
 
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> IOResult (LIB_NAME, LibEnv)
-anaLibFileOrGetEnv logicGraph defaultLogic opts libenv libname file =
+anaLibFileOrGetEnv lgraph defl opts libenv libname file =
   -- is the library already in memory?
   case Map.lookup libname libenv of
    Just _ -> return (libname, libenv)
@@ -154,7 +153,7 @@ anaLibFileOrGetEnv logicGraph defaultLogic opts libenv libname file =
              case mgc of
                  Nothing -> ioresToIO $ do
                      resToIORes $ Result dias $ Just () -- add diags
-                     anaFile logicGraph defaultLogic opts libenv file
+                     anaFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do
                      putIfVerbose opts 1 ""
                           -- get all DGRefs from DGraph
@@ -173,12 +172,12 @@ anaLibFileOrGetEnv logicGraph defaultLogic opts libenv libname file =
                                    refLibs
                      Result ds mEnv <- ioresToIO $ foldl (\ioLibEnv tlibname ->
                                 do p_libEnv <- ioLibEnv
-                                   anaLibFile logicGraph defaultLogic
+                                   fmap snd $ anaLibFile lgraph defl
                                            opts p_libEnv tlibname
                                 ) (return libEnv') newRefLibs
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (libname, rEnv)) mEnv
-        else ioresToIO $ anaFile logicGraph defaultLogic opts libenv file
+        else ioresToIO $ anaFile lgraph defl opts libenv file
 
 -- | analyze a LIB_DEFN
 -- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
@@ -312,8 +311,8 @@ ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, _) l
              libenv)
 
 -- refinement specification
-ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos, genv, dg) l
-             rd@(Ref_spec_defn rn ref pos) = do
+ana_LIB_ITEM _lgraph _defl opts libenv (gannos, genv, dg) l
+             rd@(Ref_spec_defn rn _ pos) = do
   putMessageIORes opts 1 $ "Analyzing refinement "
       ++ showPretty rn "\n  (refinement analysis not implemented yet)"
   let rd' = rd
@@ -338,13 +337,12 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx _l
   putMessageIORes opts 1 $ "logic " ++ show logNm
   return (Logic_decl ln pos,gctx,logNm,libenv)
 
-ana_LIB_ITEM lgraph defl opts libenv gctx@(gannos,genv,dg) l
+ana_LIB_ITEM lgraph defl opts libenv (gannos,genv,dg) l
              libItem@(Download_items ln items _) = do
   -- we take as the default logic for imported libs
   -- the global default logic
   putMessageIORes opts 1 $ "Downloading " ++ showPretty ln ""
-  (ln', libenv') <- anaLibFileOrGetEnv lgraph defl opts libenv ln
-                    $ libNameToFile opts ln
+  (ln', libenv') <- anaLibFile lgraph defl opts libenv ln
   if ln == ln' then case Map.lookup ln libenv' of
     Nothing -> error $ "Internal error: did not find library " ++
                      show ln ++ " available: " ++ show (Map.keys libenv')
