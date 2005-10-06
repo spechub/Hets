@@ -15,7 +15,6 @@ This module provides functions to write a pretty printed abstract
 
 module Driver.WriteFn where
 
-import System.IO
 import Control.Monad
 import Data.Maybe
 
@@ -91,11 +90,7 @@ pathAndBase path base =
             else path ++ "/" ++ base
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_asc opt ga oup ld =
-    do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (printText0_eGA ga))
-       hPutStr hout $ printLIB_DEFN_text ga ld
-       hClose hout
+write_casl_asc _ ga oup ld = writeFile oup $ printLIB_DEFN_text ga ld
 
 debug_latex_filename :: FilePath -> FilePath
 debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
@@ -103,15 +98,10 @@ debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
 
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt ga oup ld =
-    do hout <- openFile oup WriteMode
-       putIfVerbose opt 3 (show (printText0_eGA ga))
-       hPutStr hout $ printLIB_DEFN_latex ga ld
-       hClose hout
-       doIfVerbose opt 5
-        (do dout <- openFile (debug_latex_filename oup) WriteMode
-            hPutStr dout $ printLIB_DEFN_debugLatex ga ld
-            hClose dout)
-       return ()
+    do writeFile oup $ printLIB_DEFN_latex ga ld
+       doIfVerbose opt 5 $ 
+           writeFile (debug_latex_filename oup) $ 
+               printLIB_DEFN_debugLatex ga ld
 
 writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFile fp atcon = writeFile fp $ toShATermString atcon
