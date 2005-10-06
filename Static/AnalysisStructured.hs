@@ -163,7 +163,9 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        let node_contents =
             DGNode {
              dgn_name = name,
-             dgn_theory = G_theory lid sigma_complete (toThSens (nameSens ax)), 
+             dgn_theory = G_theory lid sigma_complete 
+                                   (toThSens (disambiguateSens Set.empty 
+                                                    (nameSens ax))), 
                        -- no, not only the delta
              dgn_nf = Nothing,
              dgn_sigma = Nothing,
