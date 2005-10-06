@@ -253,8 +253,9 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 cpp_sources = Common/DynamicUtils.hs \
     Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
-    SPASS/Logic_SPASS.hs GUI/Utils.hs hets.hs Driver/WriteFn.hs \
-    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs $(happy_files)
+    SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
+    Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
+    GUI/ShowGraph.hs hets.hs $(happy_files)
 
 # unused, remove when header files are gone 
 genrule_header_files = $(wildcard ATC/*.header.hs) 
