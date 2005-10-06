@@ -1,6 +1,6 @@
-{-| 
+{- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Till Mossakowski, Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -21,7 +21,7 @@ import Text.ParserCombinators.Parsec.Error
 import Common.Lexer (fromSourcePos)
 
 -- | severness of diagnostic messages
-data DiagKind = Error | Warning | Hint | Debug 
+data DiagKind = Error | Warning | Hint | Debug
               | MessageW -- ^ used for messages in the web interface
                 deriving (Eq, Ord, Show)
 
@@ -49,19 +49,19 @@ hasErrors = any isErrorDiag
 -- | add range to a diagnosis
 adjustDiagPos :: Range -> Diagnosis -> Diagnosis
 adjustDiagPos r d = d { diagPos = appRange r $ diagPos d }
- 
+
 -- | A uniqueness check yields errors for duplicates in a given list.
 checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
-checkUniqueness l = 
+checkUniqueness l =
     let vd = filter ( not . null . tail) $ group $ sort l
     in map ( \ vs -> mkDiag Error ("duplicates at '" ++
                                   showSepList (showString " ") shortPosShow
-                                  (concatMap getPosList (tail vs)) "'" 
+                                  (concatMap getPosList (tail vs)) "'"
                                    ++ " for")  (head vs)) vd
     where shortPosShow :: Pos -> ShowS
-          shortPosShow p = showParen True 
-                           (shows (sourceLine p) . 
-                            showString "," . 
+          shortPosShow p = showParen True
+                           (shows (sourceLine p) .
+                            showString "," .
                             shows (sourceColumn p))
 
 -- | The result monad. A failing result should include an error message.
@@ -74,7 +74,7 @@ instance Eq a => Eq (Result a) where
 
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m
- 
+
 instance Monad Result where
   return x = Result [] $ Just x
   Result errs Nothing >>= _ = Result errs Nothing
@@ -107,9 +107,13 @@ x `ioBind` f = do
       return (Result (errs1++errs2) y)
 
 newtype IOResult a = IOResult (IO(Result a))
+
 instance Monad IOResult where
   return x = IOResult (return (return x))
   IOResult x >>= f = IOResult (x `ioBind` (\y -> let IOResult z = f y in z))
+
+instance Functor IOResult where
+  fmap f m = m >>= (return . f)
 
 -- | unpack an IOResult
 ioresToIO :: IOResult a -> IO(Result a)
@@ -125,19 +129,25 @@ resToIORes = IOResult . return
 
 -- | a failing result with a proper position
 fatal_error :: String -> Range -> Result a
-fatal_error s p = Result [Diag Error s p] Nothing  
+fatal_error s p = Result [Diag Error s p] Nothing
 
 -- | a failing result using pretty printed 'Doc'
 pfatal_error :: Doc -> Range -> Result a
-pfatal_error s p = fatal_error (show s) p  
+pfatal_error s p = fatal_error (show s) p
 
--- | a failing result constructing a message from a type 
+-- | a failing result constructing a message from a type
 mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
+-- | add a debug point
+debug :: (PosItem a, PrettyPrint a) => Int -> (String, a) -> Result ()
+debug n (s, a) = Result [mkDiag Debug
+                         (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
+                 $ Just ()
+
 -- | add an error message but don't fail
 plain_error :: a -> String -> Range -> Result a
-plain_error x s p = Result [Diag Error s p] $ Just x  
+plain_error x s p = Result [Diag Error s p] $ Just x
 
 -- | add an error message using a pretty printed 'Doc' but don't fail
 pplain_error :: a -> Doc -> Range -> Result a
@@ -145,7 +155,7 @@ pplain_error x s p = plain_error x (show s) p
 
 -- | add a warning
 warning :: a -> String -> Range -> Result a
-warning x s p = Result [Diag Warning s p] $ Just x  
+warning x s p = Result [Diag Warning s p] $ Just x
 
 -- | add a warning using a pretty printed 'Doc'
 pwarning :: a -> Doc -> Range -> Result a
@@ -153,7 +163,7 @@ pwarning x s p = warning x (show s) p
 
 -- | add a hint
 hint :: a -> String -> Range -> Result a
-hint x s p = Result [Diag Hint s p] $ Just x  
+hint x s p = Result [Diag Hint s p] $ Just x
 
 -- | add a hint using a pretty printed 'Doc'
 phint :: a -> Doc -> Range -> Result a
@@ -165,15 +175,15 @@ message x m = Result [Diag MessageW m nullRange] $ Just x
 
 -- | add a failure message to 'Nothing'
 maybeToResult :: Range -> String -> Maybe a -> Result a
-maybeToResult p s m = Result (case m of 
+maybeToResult p s m = Result (case m of
                               Nothing -> [Diag Error s p]
                               Just _ -> []) m
 
 -- | add a failure message to 'Nothing'
--- (alternative for 'maybeToResult' without 'Range') 
+-- (alternative for 'maybeToResult' without 'Range')
 maybeToMonad :: Monad m => String -> Maybe a -> m a
-maybeToMonad s m = case m of 
-                        Nothing -> fail s 
+maybeToMonad s m = case m of
+                        Nothing -> fail s
                         Just v -> return v
 
 -- | check whether no errors are present, coerce into 'Maybe'
@@ -199,8 +209,8 @@ propagateErrors r =
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
 showErr err
-    = showPos (fromSourcePos $ errorPos err) ":" ++ 
-      showErrorMessages "or" "unknown parse error" 
+    = showPos (fromSourcePos $ errorPos err) ":" ++
+      showErrorMessages "or" "unknown parse error"
                         "expecting" "unexpected" "end of input"
                        (errorMessages err)
 
@@ -208,19 +218,19 @@ instance Show Diagnosis where
     showsPrec _ = showPretty
 
 instance PrettyPrint Diagnosis where
-    printText0 _ (Diag k s (Range sp)) = 
-        (if isMessageW 
+    printText0 _ (Diag k s (Range sp)) =
+        (if isMessageW
             then empty
             else text "***" <+> text (show k))
-        <> (case sp of 
+        <> (case sp of
              [] | isMessageW -> empty
                 | otherwise  -> comma
-             _ -> space <> let 
-                      mi = minimumBy comparePos sp 
+             _ -> space <> let
+                      mi = minimumBy comparePos sp
                       ma = maximumBy comparePos sp
-                  in case comparePos mi ma of 
+                  in case comparePos mi ma of
                      EQ -> text (showPos ma ",")
-                     _ -> text $ showPos mi "-" 
+                     _ -> text $ showPos mi "-"
                           ++ showPos ma {sourceName = ""} "," )
         <+> text s
         where isMessageW = case k of
@@ -231,17 +241,8 @@ instance PosItem Diagnosis where
     getRange d = diagPos d
 
 instance PrettyPrint a => PrettyPrint (Result a) where
-    printText0 g (Result ds m) = vcat ((case m of 
+    printText0 g (Result ds m) = vcat ((case m of
                                        Nothing -> empty
                                        Just x -> printText0 g x) :
                                            map (printText0 g) ds)
 
--- ---------------------------------------------------------------------
--- debugging
--- ---------------------------------------------------------------------
-
--- | add a debug point
-debug :: (PosItem a, PrettyPrint a) => Int -> (String, a) -> Result ()
-debug n (s, a) = Result [mkDiag Debug 
-                         (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
-                 $ Just ()
