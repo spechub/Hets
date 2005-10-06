@@ -169,8 +169,6 @@ structureAna :: FilePath
              -> HetcatsOpts
              -> OntologyMap
              -> IO (Maybe (LIB_NAME, -- filename
-                    (),   -- as tree
-                    (),   -- development graph
                     LibEnv    -- DGraphs for imported modules 
                    ))
 structureAna file opt ontoMap =
@@ -180,8 +178,9 @@ structureAna file opt ontoMap =
          Structured -> do
             printMsg $ labNodes dg
             -- putIfVerbose opt 1 "Structure anaylsing finished. "   
-            return (Just (simpleLibName file, (), (), 
+            return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
+         Skip       -> return $ fail "" -- Nothing is ambiguous
          _          -> staticAna file (newOntoMap, dg)
      where printMsg :: [LNode DGNodeLab] -> IO()
            printMsg [] = putStrLn ""
@@ -207,8 +206,6 @@ simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 staticAna :: FilePath
           -> (OntologyMap, DGraph)
           -> IO (Maybe (LIB_NAME, -- filename
-                        (),   -- as tree
-                        (),   -- development graph
                         LibEnv    -- DGraphs for imported modules 
                        ))
 staticAna file (ontoMap, dg) =  
@@ -219,7 +216,6 @@ staticAna file (ontoMap, dg) =
        case res of
            Just (_, dg') ->     
             return (Just (simpleLibName file, 
-                          (), (),
                           simpleLibEnv file 
                           (insEdges (reverseLinks $ labEdges dg') 
                            (delEdges (edges dg') dg')
