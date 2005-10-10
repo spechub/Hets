@@ -22,6 +22,8 @@ process fname = do
            writeFile (fname++".dot") $ concat $ dot dg
     Nothing -> error "hetana: anaFileOrGetEnv"
 
+-- display *.dot file using "dotty"
+
 main :: IO()
 main = getArgs >>= mapM_ process
 
