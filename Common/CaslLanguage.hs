@@ -1,6 +1,7 @@
 module Common.CaslLanguage where
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P
+import qualified Text.ParserCombinators.Parsec.Pos as Pos
 import Text.ParserCombinators.Parsec.Language (emptyDef)
 
 import Common.Id
@@ -10,8 +11,8 @@ type GParser a = forall st. GenParser Char st a
 
 ------ helper functions ------ 
 
-convToPos :: SourcePos -> [Pos]
-convToPos p = [fromSourcePos p]
+convToPos :: Pos.SourcePos -> Range
+convToPos p = Range [fromSourcePos p]
 
 ------------------------------
 
@@ -144,14 +145,14 @@ reserved_pred = (reserved "preds") <|> (reserved "pred")
 simple_id:: GParser Id
 simple_id = do sp <- getPosition
                i  <- identifier
-               return $ Id [Token i (convToPos sp)] [] []
+               return $ mkId [Token i (convToPos sp)]
 
 casl_id :: GParser Id          
 casl_id = comp_id
  
 token_id :: GParser Id
 token_id = do tok <- try Common.CaslLanguage.token
-              return (Id [tok] [] [])
+              return $ mkId [tok]
 
 token :: GParser Token
 token = do sp  <- getPosition 
@@ -193,7 +194,9 @@ mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                      fts <- option [] (lookAhead 
                                          (fmap (:[]) (Common.CaslLanguage.token)))
                      Id ats _ _ <- 
-                         let accum_ts = (accum ++ ts)
+                         let accum_ts = accum ++ ts
+                             defId = mkId accum_ts
+                             optId = option defId $ mixfix_id accum_ts
                              is_last_op = case (last accum_ts) of 
                                           t@(Token s _) -> not
                                                        ((last s) `elem` "[{}]"
@@ -201,21 +204,16 @@ mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                                                         isPlace (t)) 
                          in if sqs == [] then
                                if is_last_op then
-                                  if fts == [] then
-                                     option (Id accum_ts [] []) 
-                                            (mixfix_id accum_ts)
+                                  if fts == [] then optId
                                   else
                                      unexpected "token follows token" 
                                else -- not is_last_op
-                                  option (Id accum_ts [] []) 
-                                         (mixfix_id accum_ts)
+                                  optId
                             else -- sqs \= []
-                               if isPlace (last accum_ts) then
-                                  option (Id accum_ts [] []) 
-                                         (mixfix_id accum_ts)
+                               if isPlace (last accum_ts) then optId
                                else
-                                  return (Id accum_ts [] [])
-                     return (Id ats [] [])                   
+                                  return defId
+                     return (mkId ats)                   
     where mkTokLst p = fmap (\(Id ts _cs _pos) -> ts) p
           bracket_pair open close = do o_sp <- getPosition
                                        o <- try (symbol open)
@@ -246,13 +244,13 @@ special_manyTill p end = scan
 
 comp_id :: GParser Id
 comp_id = do Id ts _ _  <- test_mixfix_id (mixfix_id [])
-             Id ts' cs pos <- option (Id ts [] []) 
+             Id ts' cs pos <- option (mkId ts) 
                                    (do cs <- squares (sepBy1 comp_id comma)
-                                       return (Id ts cs [])
+                                       return (Id ts cs nullRange)
                                        )
              option (Id ts' cs pos) 
                       (do ps <- many Common.CaslLanguage.place
-                          return (Id (ts'++ps) cs []))
+                          return (Id (ts'++ps) cs nullRange))
     where test_mixfix_id p = 
               do i@(Id ts _ _) <- p
                  if (case ts of []  -> False
