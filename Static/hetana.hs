@@ -4,28 +4,26 @@ where
 
 import System.Environment
 import Comorphisms.LogicGraph
+import qualified Common.Lib.Map as Map
 import Static.AnalysisLibrary
-import System.IO
 import Static.DotGraph
 import Static.DevGraph
 import Driver.Options
 
-proceed :: String -> IO()
-proceed fname = do
-  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts emptyLibEnv fname
+process :: String -> IO()
+process fname = do
+  res <- anaFileOrGetEnv logicGraph defaultHetcatsOpts emptyLibEnv fname
   case res of
-    Just(_,_,dg,_) -> do
-      putStrLn ("Successfully analyzed.")
-      putStrLn ("Writing development graph to "++fname++".dot")
-      h <- openFile (fname++".dot") WriteMode
-      sequence (map (hPutStrLn h) (dot dg))
-      hClose h
-    _ -> return ()
+    Just(ln,lenv) -> case Map.lookup ln lenv of
+        Nothing -> error "hetana: lookup"
+        Just (_,_,dg) -> do 
+           putStrLn ("Successfully analyzed.")
+           putStrLn ("Writing development graph to "++fname++".dot")
+           writeFile (fname++".dot") $ concat $ dot dg
+    Nothing -> error "hetana: anaFileOrGetEnv"
 
 main :: IO()
-main = do
-  files <- getArgs
-  sequence (map proceed files)
-  return ()
+main = getArgs >>= mapM_ process
+
 
 

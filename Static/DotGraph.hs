@@ -1,5 +1,4 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -37,7 +36,7 @@ dotEdge dg (n1,n2,link) =
                ++ edgeAttribute (dgl_type link) ++ ";"
     
 nodeAttribute :: DGNodeLab -> String
-nodeAttribute (DGNode _ _ _ _ _ _) = ""
+nodeAttribute (DGNode _ _ _ _ _ _ _) = ""
 nodeAttribute (DGRef _ _ _ _ _) =  " [shape=box]"
 
 dotNode :: DGraph -> (Node, DGNodeLab) -> String
