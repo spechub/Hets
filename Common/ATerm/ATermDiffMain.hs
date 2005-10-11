@@ -1,6 +1,6 @@
 module Main where
 
-import System
+import System.Environment
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import Common.ATerm.Diff
@@ -16,8 +16,9 @@ atDiffFP fp1 fp2 =
     do at1 <- atermFromFile fp1
        at2 <- atermFromFile fp2
        let (at,diffs) = atDiff at1 at2
-       putStrLn (writeATerm (toATermTable at))
-       putStrLn (writeATerm (toATermTable (AList diffs [])))
+       if null diffs then return () else do 
+           putStrLn (writeATerm (toATermTable at))
+           putStrLn (writeATerm (toATermTable (AList diffs [])))
 
 atermFromFile :: FilePath -> IO ATerm
 atermFromFile fp = 
