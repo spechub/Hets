@@ -254,7 +254,7 @@ nodeStaticAna :: [LNode DGNodeLab]
               -> DGraph
               -> IO (Result (SignMap, DGraph))
 nodeStaticAna [] _ _ _ _ = 
-    do putStrLn "Static anaylsing finished."
+    do putStrLn "Static anaylses finished."
        return initResult
 nodeStaticAna ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap dg =
   do
