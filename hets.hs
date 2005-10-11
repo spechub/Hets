@@ -21,12 +21,9 @@ import System.Environment (getArgs)
 
 import Driver.Options
 
-import Comorphisms.LogicGraph
-
 import OWL_DL.OWLAnalysis
 
 import Static.AnalysisLibrary
-import Static.DevGraph (emptyLibEnv)
 
 import GUI.ShowGraph
 
@@ -54,7 +51,7 @@ processFile opts file =
              OWL_DLIn -> do
                  ontoMap <- parseOWL file
                  structureAna file opts ontoMap
-             _ -> anaFileOrGetEnv logicGraph opts emptyLibEnv file
+             _ -> anaLib opts file
        case gui opts of
            Not -> return ()
            _  -> showGraph file opts res

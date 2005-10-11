@@ -19,7 +19,7 @@ Analysis of libraries
 -}
 
 module Static.AnalysisLibrary
-    ( anaFileOrGetEnv
+    ( anaLib
     , ana_LIB_DEFN
     ) where
 
@@ -33,6 +33,7 @@ import Static.DevGraph
 import Static.PrintDevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
+import Comorphisms.LogicGraph
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
@@ -46,6 +47,16 @@ import Driver.ReadFn
 import Driver.WriteFn
 import Data.List
 import Control.Monad
+
+-- | lookup an env or read and analyze a file
+anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+anaLib opts file = do
+    defl <- lookupLogic "logic from command line: "
+                  (defLogic opts) logicGraph
+    Result ds res <- ioresToIO $ anaLibFileOrGetEnv logicGraph defl opts 
+                     emptyLibEnv (fileToLibName opts file) file
+    showDiags opts ds 
+    return res
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
@@ -129,17 +140,6 @@ libNameToFile opts libname =
                      -- add trailing "/" if necessary
                   in pathAndBase path file
                 Direct_link _ _ -> error "libNameToFile"
-
--- | lookup an env or read and analyze a file
-anaFileOrGetEnv :: LogicGraph -> HetcatsOpts -> LibEnv
-                -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaFileOrGetEnv lgraph opts libenv file = do
-    defl <- lookupLogic "logic from command line: "
-                  (defLogic opts) lgraph
-    Result ds res <- ioresToIO $ anaLibFileOrGetEnv lgraph defl opts libenv
-                     (fileToLibName opts file) file
-    showDiags opts ds 
-    return res
 
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
