@@ -445,18 +445,25 @@ parseVerbosity (Just s)
 
 -- | intypes useable for downloads
 downloadExtensions :: [String]
-downloadExtensions = map (('.' :) . show) plainInTypes
-
+downloadExtensions = map ('.' :) $ 
+         map show plainInTypes
+         ++ map ((treeS ++) . show) [ATermIn BAF, ATermIn NonBAF]
+         ++ map show aInTypes
+         
 -- | remove the extension from a file
 rmSuffix :: FilePath -> FilePath
 rmSuffix = fst . stripSuffix downloadExtensions
 
 -- |
--- checks if a source file for the given base  exists
-existsAnSource :: FilePath -> IO (Maybe FilePath)
-existsAnSource base2 =
-       do
-       let names = map (base2++) $ "" : downloadExtensions
+-- checks if a source file for the given file name exists
+existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
+existsAnSource opts file = do
+       let base = rmSuffix file 
+           exts = case intype opts of 
+                  GuessIn -> downloadExtensions
+                  e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
+                  e -> ['.' : show e]
+           names = map (base ++) $ exts
        -- look for the first existing file
        validFlags <- mapM checkInFile names
        return (find fst (zip validFlags names) >>= (return . snd))
@@ -474,12 +481,12 @@ addEnvOut opts = if hasEnvOut opts then opts else
 -- |
 -- gets two Paths and checks if the first file is more recent than the
 -- second one
-checkRecentEnv :: FilePath -> FilePath -> IO Bool
-checkRecentEnv fp1 base2 =
-   do fp1_exists <- doesFileExist fp1
-      if not fp1_exists then return False
+checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
+checkRecentEnv opts fp1 base2 =
+   do fp1_valid <- checkInFile fp1
+      if not fp1_valid then return False
        else do
-        maybe_source_file <- existsAnSource base2
+        maybe_source_file <- existsAnSource opts base2
         maybe (return False)
              (\ fp2 ->     do fp1_time <- getModificationTime fp1
                               fp2_time <- getModificationTime fp2
@@ -554,12 +561,9 @@ guess _file itype  = itype
 -- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
 guessInType :: FilePath -> InType
 guessInType file =
-    case fileparse (map show (plainInTypes ++ aInTypes) ++
-                    map ( \ t -> treeS ++ show t)
-                    [ ATermIn x | x <- [BAF, NonBAF]])
-         file of
-      (_,_,Just suf) -> parseInType1 suf
-      (_,_,Nothing)  -> GuessIn
+    case fileparse downloadExtensions file of
+      (_,_,Just ('.' : suf)) -> parseInType1 suf
+      (_,_,_)  -> GuessIn
 
 -- | 'parseCASLAmalg' parses CASL amalgamability options
 parseCASLAmalg :: String -> Flag

@@ -52,10 +52,10 @@ import Control.Monad
 anaSourceFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> FilePath
               -> IOResult (LIB_NAME, LibEnv)
 anaSourceFile lgraph defl opts libenv fname = IOResult $ do
-  fname' <- existsAnSource fname
+  fname' <- existsAnSource opts fname
   case fname' of
     Nothing -> do
-        return $ fail $ "library or file '" ++ fname ++ "' not found."
+        return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just fname'' -> do
         input <- readFile fname''
         putIfVerbose opts 1 $ "Reading file " ++ fname''
@@ -66,19 +66,24 @@ anaSourceFile lgraph defl opts libenv fname = IOResult $ do
 anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
               -> FilePath -> IOResult (LIB_NAME, LibEnv)
 anaString lgraph defl opts libenv input file =
-  let Result ds mast = read_LIB_DEFN_M defl file input
+  let Result ds mast = read_LIB_DEFN_M lgraph defl opts file input
   in case mast of
-  Just ast@(Lib_defn ln _ _ _) -> case analysis opts of
+  Just ast@(Lib_defn ln _ _ ans) -> case analysis opts of
       Skip  -> do
           ioToIORes $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
+          ga <- resToIORes $ addGlobalAnnos emptyGlobalAnnos ans
+          case gui opts of
+                      Only -> return ()
+                      _ -> ioToIORes $ write_LIB_DEFN ga file opts ast
           resToIORes $ Result ds Nothing
       _ -> do
           if ln == fileToLibName opts file
              then return ()
-             else ioToIORes $ putIfVerbose opts 1 $ 
-                      "***Warning: library name '" ++ show ln
-                      ++ "' does not match file name: " ++ file
+             else showDiags1 opts $ resToIORes $ Result [mkDiag Warning
+                      ("file name '" ++ file 
+                       ++ "' does not match library name") $ getLIB_ID ln] 
+                       $ Just () 
           ioToIORes $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
           (_,ld,_,lenv) <-
               ana_LIB_DEFN lgraph defl opts libenv ast
@@ -145,14 +150,14 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
    Just _ -> return (libname, libenv)
    Nothing -> IOResult $ do
      let env_file = rmSuffix file ++ ".env"
-     recent_env_file <- checkRecentEnv env_file file
+     recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
         then do
              putIfVerbose opts 1 $ "Reading "++ env_file
              Result dias mgc <- globalContextfromShATerm env_file
              case mgc of
                  Nothing -> ioresToIO $ do
-                     resToIORes $ Result dias $ Just () -- add diags
+                     showDiags1 opts $ resToIORes $ Result dias $ Just ()
                      anaSourceFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do
                      putIfVerbose opts 1 ""
