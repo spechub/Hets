@@ -1,6 +1,6 @@
 {-|
 Module       : $Header$
-Copyright    : (c) Heng Jiang, Uni Bremen 2004
+Copyright    : (c) Heng Jiang, Klaus Lüttich Uni Bremen 2004-2005
 License      : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer   : jiang@tzi.de
@@ -38,14 +38,15 @@ import CGI
 import Driver.Options
 import Driver.WriteFn
 import Driver.ReadFn
-import Common.Lib.Map as Map
-import Common.Result
-import Common.AS_Annotation
+import qualified Common.Lib.Map as Map
+import qualified Common.Result as CRes
+-- import Common.AS_Annotation
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
 import Static.DevGraph
 import Syntax.AS_Library
-import Syntax.Parse_AS_Structured
+import Syntax.Print_HetCASL
+-- import Syntax.Parse_AS_Structured
 import Maybe
 import Random
 import IO
@@ -56,6 +57,8 @@ import System.Posix.Types
 import System.Posix.Files
 import System.Posix.Process
 import System.Posix.Env
+import Data.List
+import Control.Monad
 import Driver.Version
 
 ------ Configuration section -------------------------
@@ -75,6 +78,10 @@ contact_text = "cofi@informatik.uni-bremen.de"
 -- a slash!
 base_dir_generated :: String
 base_dir_generated = "/home/www/cofi/hets-tmp/"
+
+-- path to the log file
+logFile :: String
+logFile = "/home/www/cofi/hets-tmp/hets.log"
 
 -- the url pointing to the above specified directory
 base_url_generated :: String
@@ -113,20 +120,40 @@ hetcasl_sty_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_me
 
 ------ End of Configuration section ------------------
 
-type DiagStr = String
-type HtmlTitle = String
-type ResAna  = String
-type SelectedBox = (Bool, Bool, Bool, Bool)
+webOpts :: HetcatsOpts
+webOpts = defaultHetcatsOpts {outputToStdout = False,
+                              verbose = 0}
+
+data SelectedBoxes = 
+    SB {
+        outputTree :: Bool,
+        outputTxt  :: Bool,
+        outputTex  :: Bool, 
+        archive    :: Bool
+       } deriving Show
+
+data Output = 
+    OP {ascii_txt  :: String,
+        parse_tree :: String}
+
+defaultOutput :: Output
+defaultOutput = OP "" ""
+
+newtype RESL = RESL (CRes.Result Output)
+
+instance Read RESL where
+    readsPrec _ _ = error "Read for \"RESL\" not implemented!!"
+
+instance Show RESL where
+    showsPrec _ _ _ = error "Read for \"RESL\" not implemented!!"
 
 main :: IO()
-main =
-    run mainCGI
+main = run mainCGI
 
 mainCGI :: CGI()
 mainCGI =
-    do 
-       ask $ html (do CGI.head (title $ text "Hets Web Interface")
-                      CGI.body $ makeForm $ page1 ("Hets " ++ hetcats_version)) 
+  do ask $ html (do CGI.head (title $ text "Hets Web Interface")
+                    CGI.body $ makeForm $ page1 ("Hets " ++ hetcats_version))
 
 page1 :: String -> WithHTML x CGI ()
 page1 title1 =
@@ -139,7 +166,7 @@ page1 title1 =
       -- Input field
       input   <- p (makeTextarea "" (attr "rows" "22" ## attr "cols" "68"))
       -- check box
-      selectEnv <- checkboxInputField (attr "valus" "yes")
+      selectTxt <- checkboxInputField (attr "valus" "yes")
       text "output pretty print ASCII"
       selectTex <- checkboxInputField (attr "valus" "yes")
       text "output pretty print LaTeX"
@@ -148,7 +175,7 @@ page1 title1 =
       selectAchiv <- p $ b ( checkboxInputField(attr "checked" "checked") ##
                          text "If this checkbox is selected, your input will be logged!")
       -- submit/reset botton
-      p (submit (F5 input selectTree selectEnv selectTex selectAchiv)
+      p (submit (F5 input selectTree selectTxt selectTex selectAchiv)
                  handle (fieldVALUE "Submit") >>
          submit0 reset (fieldVALUE "reset"))
       hr_S $ CGI.empty
@@ -161,142 +188,123 @@ reset = mainCGI
 
 -- handle of the submit botton
 handle (F5 input box1 box2 box3 box4) = 
-    let str  = value input
-        tree = value box1
-        env  = value box2
-        tex  = value box3
-        achiv= value box4 
+    let str  = CGI.value input
+        selectedBoxes = SB {
+                            outputTree = CGI.value box1,
+                            outputTxt  = CGI.value box2,
+                            outputTex  = CGI.value box3,
+                            archive    = CGI.value box4 
+                           }
     in  do
         random1 <- io $ getRandom
         processID <- io $ getProcessID
         let outputfile = base_dir_generated ++ "result" ++ (show processID) ++
                             (show random1)
-        res <- io $ anaInput str (tree, env, tex, achiv) outputfile
+        RESL res <- io $ do r <- anaInput str selectedBoxes outputfile
+                            return (RESL r)
         ask $ html ( do CGI.head (title $ text "HETS results")
-                        CGI.body $ printR str res (tree, env, tex, achiv) outputfile)
+                        CGI.body $ printR str res selectedBoxes outputfile)
     where
       getRandom :: IO Int
       getRandom = getStdRandom (randomR (100000,999999))
 
 -- Analyze the input
-anaInput :: String -> SelectedBox -> FilePath 
-         -> IO(Result [(HtmlTitle, ResAna)])
-anaInput contents showS@(_,_,_,willAchiv) outputfiles =
-   do 
-   setEnv "HETS_LIB" casl_lib_dir True
-   let Result parseErrors mast = read_LIB_DEFN_M defaultLogic "<stdin>" contents
-   maybe (return ) 
-         (\ ast -> 
-      do
-      Common.Result.Result ds res <- ioresToIO 
-                                     (ana_LIB_DEFN logicGraph defaultLogic 
-                                      defaultHetcatsOpts{outputToStdout = False} emptyLibEnv ast)
-      let diagStrs1  = Prelude.map show ds
-          diagStrs2  = reverse $ filterDiagStr [] diagStrs1
-      -- putStrLn $ show $ length $ lines $ Prelude.head diagStrs1
-      case res of
-               Just (_, libdefn1, _, _) ->  
-                   do
-                   let Lib_defn _ alibItems _ _ = libdefn1
-                       items = reverse $ Prelude.map item alibItems
-                   -- diagStrs' <- addSpnToDiags items diagStrs
-                   if hasErrors ds then
-                      return (diagStrs2, [])
-                      else do
-                           saveLog willAchiv contents
-                           anaInput_aux diagStrs2 res outputfiles showS
-               Nothing -> return(diagStrs2,[])
-      else return (parseErrors:[], [])
-         ) mast
-   where 
-      filterDiagStr :: [String] -> [DiagStr] -> [DiagStr]
-      filterDiagStr str [] = str
-      filterDiagStr str d@(hdiags:rdiags)
-        | (length $ lines hdiags) < 2 = 
-                if "*** Hint" == take 8 hdiags then  filterDiagStr str rdiags
-                   else if "*** FatalError" == take 14 hdiags then hdiags:str
-                           else if "*** MessageW ," == take 14 hdiags then
-                                   filterDiagStr ((drop 14 hdiags):str) rdiags
-                                   else filterDiagStr (hdiags:str) rdiags
-        | otherwise  = filterDiagStr (filterDiagStr' str $ lines hdiags) rdiags 
+anaInput :: String -> SelectedBoxes -> FilePath 
+         -> IO (CRes.Result Output)
+anaInput contents selectedBoxes outputfiles =
+   do setEnv "HETS_LIB" casl_lib_dir True
+      let CRes.Result parseErrors mast = 
+              read_LIB_DEFN_M logicGraph defaultLogic 
+                              webOpts "<stdin>" contents
+      maybe (return $ CRes.Result parseErrors Nothing) 
+            ana_ast mast
 
-      filterDiagStr' :: [String] -> [DiagStr] -> [DiagStr]
-      filterDiagStr' str' [] = str'
-      filterDiagStr' str' (hd:rd)
-          | "*** Hint"       == take 8 hd = filterDiagStr' str' rd
-          | "*** MessageW ," == take 14 hd = filterDiagStr' ((drop 14 hd):str') rd
-          | otherwise = filterDiagStr' (hd:str') rd
+   where 
+      ana_ast ast = 
+         do
+         CRes.Result ds mres <- 
+             CRes.ioresToIO (ana_LIB_DEFN logicGraph defaultLogic 
+                                     webOpts
+                                     emptyLibEnv ast)
+         let ds1 = filter diagFilter ds
+         if CRes.hasErrors ds1
+            then return $ CRes.Result ds1 Nothing
+            else 
+              do 
+                 maybe (return $ CRes.Result ds1 Nothing)
+                       (\res -> 
+                          do saveLog (archive selectedBoxes)
+                             process_result ds1 res outputfiles selectedBoxes)
+                       mres
+
+      diagFilter d = case CRes.diagKind d of
+                     CRes.Hint  -> False
+                     CRes.Debug -> False
+                     _     -> True
                     
-      anaInput_aux :: [DiagStr]
-                      -> Maybe(LIB_NAME, LIB_DEFN, DGraph, LibEnv)
+      process_result :: [CRes.Diagnosis]
+                      -> (LIB_NAME, LIB_DEFN, DGraph, LibEnv)
                       -> FilePath
-                      -> SelectedBox 
-                      -> IO([DiagStr],[(HtmlTitle, ResAna)])
-      anaInput_aux diags1 res outputfiles1 (showTree, showEnv, showTex, _) =
-          case res of 
-               Just (libName, libDefn, _, libEnv) ->
-                do 
-                 let (globalAnnos, _, _) =  fromJust $ Map.lookup libName libEnv
-                     fileMode = foldl unionFileModes nullFileMode 
-                                [ownerReadMode, ownerWriteMode, groupReadMode, groupWriteMode, otherReadMode]
-                 resAsc <- write_casl_asc_stdout defaultHetcatsOpts globalAnnos libDefn
-                 resTex <- write_casl_latex_stdout defaultHetcatsOpts globalAnnos libDefn
-                 if showTex then
-                    do
-                    let pptexFile = outputfiles1 ++ ".pp.tex"
-                        latexFile = outputfiles1 ++ ".tex"
-                        pdfFile   = outputfiles1 ++ ".pdf"
-                        tmpFile   = outputfiles1 ++ ".tmp"
-                    write_casl_latex defaultHetcatsOpts globalAnnos (pptexFile) libDefn
+                      -> SelectedBoxes 
+                      -> IO (CRes.Result Output)
+      process_result ds (libName, libDefn, _, libEnv) outputfile conf =
+          do let (globalAnnos, _, _) =  fromJust $ Map.lookup libName libEnv
+                 fMode = foldl unionFileModes nullFileMode 
+                                [ownerReadMode, ownerWriteMode, 
+                                 groupReadMode, groupWriteMode, 
+                                 otherReadMode]
+                 resAsc = printLIB_DEFN_text globalAnnos libDefn
+             when (outputTex conf)
+                  (do
+                    let pptexFile = outputfile ++ ".pp.tex"
+                        latexFile = outputfile ++ ".tex"
+                        pdfFile   = outputfile ++ ".pdf"
+                        tmpFile   = outputfile ++ ".tmp"
+                    write_casl_latex webOpts 
+                         globalAnnos pptexFile libDefn
                     writeFile latexFile (latex_header ++
                                          "\\input{"++ pptexFile ++
                                          "}\n \\end{document}\n") 
-                    setFileMode pptexFile fileMode
-                    setFileMode latexFile fileMode
+                    setFileMode pptexFile fMode
+                    setFileMode latexFile fMode
                     
-                    system ("cd "++ base_dir_generated ++" ; "++
-                            pdflatex_cmd ++
-                           latexFile ++ " > " ++ tmpFile)
-                    setFileMode pdfFile fileMode
-                    return()
-                               
-                    else return()
-                 if showEnv then
-                    do
-                    let txtFile = outputfiles1 ++ ".txt"
-                    write_casl_asc defaultHetcatsOpts globalAnnos txtFile libDefn
-                    setFileMode txtFile fileMode
-                    else return()
-                 return $ (diags1, selectOut [showEnv, showTex, showTree] libDefn resAsc resTex)
-               Nothing -> return ([],[])
+                    system ("(cd "++ base_dir_generated ++" ; ls -lh "++
+                            pdflatex_cmd ++" ; "++ pdflatex_cmd ++ " " ++
+                           latexFile ++ ") > " ++ tmpFile)
+                    setFileMode pdfFile fMode 
+                  )
+             when (outputTxt conf)
+                  (do
+                    let txtFile = outputfile ++ ".txt"
+                    write_casl_asc webOpts globalAnnos txtFile libDefn
+                    setFileMode txtFile fMode
+                  )
+             return (CRes.Result ds $ Just $ selectOut conf libDefn resAsc)
 
-      selectOut :: [Bool] -> LIB_DEFN -> String -> String -> [(HtmlTitle, ResAna)]
-      selectOut [] _ _ _ = []
-      selectOut (hb:rb) libDefn ra rt 
-                | length rb == 2 && hb = 
-                    ("ASCII code:", ra):(selectOut rb libDefn ra rt)
-                | length rb == 1 && hb = 
-                    ("LaTeX code:", ""):(selectOut rb libDefn ra rt)
-                    -- ("LaTeX code:", rt):(selectOut rb libDefn ra rt)
-                | length rb == 0 && hb = 
-                    ("Parse tree:", show libDefn):(selectOut rb libDefn ra rt)
-                | otherwise = selectOut rb libDefn ra rt
+      selectOut :: SelectedBoxes -> LIB_DEFN -> String -> Output
+      selectOut conf libDefn ra = 
+          defaultOutput { ascii_txt  = if outputTxt conf then ra else ""
+                        , parse_tree = if outputTree conf 
+                                          then show libDefn 
+                                          else ""
+                        }
+
       -- log file
-      saveLog :: Bool -> String -> IO()
-      saveLog willSave contents 
-        | willSave =
-                  do 
-                  let logFile = "/home/www/cofi/hets-tmp/hets.log"
-                  fd <- openFd logFile ReadWrite Nothing defaultFileFlags{append = True} 
-                  fileSize <- sizeof fd
-                  let filelock = (WriteLock, AbsoluteSeek, 0, fileSize)  
-                      fileunlock = (Unlock, AbsoluteSeek, 0, fileSize)
+      saveLog :: Bool -> IO()
+      saveLog willSave =
+          when willSave (
+                do 
+                  fd <- openFd logFile ReadWrite Nothing 
+                               defaultFileFlags{append = True} 
+                  fSize <- sizeof fd
+                  let filelock = (WriteLock, AbsoluteSeek, 0, fSize)  
+                      fileunlock = (Unlock, AbsoluteSeek, 0, fSize)
                   aktTime <- timeStamp 
                   setLock fd filelock
                   fdWrite fd (aktTime ++ "\n" ++ contents ++ "\n\n")  
                   setLock fd fileunlock
                   closeFd fd
-        | otherwise = return ()
+                        )
         where 
           timeStamp :: IO String
           timeStamp =  do t <- getClockTime                   
@@ -306,58 +314,74 @@ anaInput contents showS@(_,_,_,willAchiv) outputfiles =
           sizeof :: Fd -> IO FileOffset
           sizeof fd = do fstatus <- getFdStatus fd
                          return $ fileSize fstatus
+
+catcher :: IO a -> IO String
+catcher act = catch (act >> return "") (\e -> return $ show e)
       
+
 -- Print the result                 
-printR :: String -> ([DiagStr], [(HtmlTitle, ResAna)]) -> SelectedBox -> FilePath 
-          -> WithHTML x CGI ()
-printR str (diags2, result) selectedBoxes outputFiles =
-    do 
-       h1 $ text "You have submitted the HetCASL library:"
-       mapM_ (\l -> text l >> br CGI.empty) $ lines str
-       h1 $ text "Result of parsing and static checking:"
-       mapM_ (\l -> h3 $ text l >> br CGI.empty) $ diags2 
-       printRes selectedBoxes outputFiles result 
-       hr_S $ CGI.empty
-       p (do text "Not the result you expected ? Please check the "
-             hlink (read hets_manual_url) $ text "Hets Manual"
-             text "."
+printR :: String -> CRes.Result Output -> SelectedBoxes 
+       -> FilePath 
+       -> WithHTML x CGI ()
+-- printR _ _ _ _ = CGI.empty
+printR str (CRes.Result ds mres) conf outputFile =
+  do h1 $ text "You have submitted the HetCASL library:"
+     mapM_ (\l -> text l >> br CGI.empty) $ lines str
+     h1 $ text "Result of parsing and static checking:"
+     mapM_ (\l -> h3 $ text l >> br CGI.empty) (Prelude.map show ds)
+     maybe CGI.empty printRes mres
+     -- case mres of
+     --   Just res -> printRes res 
+     --   Nothing  -> CGI.empty
+     hr_S $ CGI.empty
+     p (do text "Not the result you expected ? Please check the "
+           hlink (read hets_manual_url) $ text "Hets Manual"
+           text "."
+       )
+     hr_S $ CGI.empty
+     p $ (do text "Contact address: "
+             hlink (read "mailto:cofi@informatik.uni-bremen.de") $
+                   text "cofi@informatik.uni-bremen.de"
          )
-       hr_S $ CGI.empty
-       p $ (do text "Contact address: "
-               hlink (read "mailto:cofi@informatik.uni-bremen.de") $
-                      text "cofi@informatik.uni-bremen.de"
-           )
     where 
-        printRes :: SelectedBox -> FilePath -> 
-                    [(DiagStr, ResAna)] -> WithHTML x CGI ()
-        printRes _ _ [] = CGI.empty
-        printRes (isTree, isEnv, isTex, willAchiv) outputfiles 
-                     ((title_ana, text_ana):rR) =
-          do h3 $ text title_ana
-             p $ mapM_ (\l -> text l >> br CGI.empty) $ lines text_ana
-             if isEnv then
-                do  
-                p $ i(do text "You can download the " 
-                         hlink (read (base_url_generated ++
-                                      (drop (length base_dir_generated) (outputfiles++".txt")))) $ text "ACSII file" 
-                         text " here. The file will be deleted after 30 minutes.\n" 
-                     )
-                printRes (isTree, False, isTex, willAchiv) outputfiles rR
-                else if isTex then
-                     do
-                     p $ i(do text "You can download the "
-                              hlink (read (base_url_generated ++
-                                           (drop (length base_dir_generated) (outputfiles++".pp.tex")))) $ text "LaTeX file" 
-                              text " here. For compiling the LaTeX output, you need " 
-                              hlink (read hetcasl_sty_url) $ text "hetcasl.sty" 
-                              text "."
-                          )
-                     p $ i(do text "You can also download the " 
-                              hlink (read (base_url_generated ++
-                                           (drop 24 (outputfiles++".pdf")))) $ text "PDF file" 
-                              text ". All files will be deleted after 30 minutes.\n" 
-                          )
-                     printRes (isTree, isEnv, False, willAchiv) outputfiles rR
-                     else if isTree then
-                          printRes (False, isEnv, isTex, willAchiv) outputfiles rR
-                          else printRes (isTree, isEnv, isTex, willAchiv) outputfiles rR
+       printRes res = 
+         do 
+            when (outputTxt conf)
+                 (do
+               heading3 "ASCII code:"
+               format_txt (ascii_txt res)
+               p $ i(do text "You can download the " 
+                        hlink (read (base_url_generated ++
+                                     (drop (length base_dir_generated) 
+                                               (outputFile++".txt")))) 
+                                  $ text "ASCII file" 
+                        text " here. The file will be deleted after \
+                             \30 minutes.\n" 
+                    )
+                 )
+            when (outputTex conf)
+                 (do
+               heading3 "LaTeX code:"   
+               p $ i(do text "You can download the "
+                        hlink (read (base_url_generated ++
+                                     (drop (length base_dir_generated) 
+                                               (outputFile++".pp.tex")))) 
+                                  $ text "LaTeX file" 
+                        text " here. For compiling the LaTeX output, you need "
+                        hlink (read hetcasl_sty_url) $ text "hetcasl.sty" 
+                        text "."
+                    )
+               p $ i(do text "You can also download the " 
+                        hlink (read (base_url_generated ++
+                                     (drop 24 (outputFile++".pdf")))) 
+                                  $ text "PDF file" 
+                        text ". All files will be deleted after 30 minutes.\n" 
+                    )
+                 )
+            when (outputTree conf)
+                 (do
+               heading3 "Parse tree:"
+               format_txt (parse_tree res)
+                 )
+       format_txt txt = p $ mapM_ (\l -> text l >> br CGI.empty) $ lines txt
+       heading3 = h3 . text 
