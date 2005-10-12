@@ -3,16 +3,14 @@ module Main
 where
 
 import System.Environment
-import Comorphisms.LogicGraph
 import qualified Common.Lib.Map as Map
 import Static.AnalysisLibrary
 import Static.DotGraph
-import Static.DevGraph
 import Driver.Options
 
 process :: String -> IO()
 process fname = do
-  res <- anaFileOrGetEnv logicGraph defaultHetcatsOpts emptyLibEnv fname
+  res <- anaLib defaultHetcatsOpts fname
   case res of
     Just(ln,lenv) -> case Map.lookup ln lenv of
         Nothing -> error "hetana: lookup"

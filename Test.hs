@@ -1,5 +1,4 @@
 
-import Comorphisms.LogicGraph
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
@@ -11,7 +10,7 @@ import Common.Lib.Pretty
 import System.Environment
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process = anaFileOrGetEnv logicGraph defaultHetcatsOpts emptyLibEnv
+process = anaLib defaultHetcatsOpts
 
 printLibEnv :: LibEnv -> Doc
 printLibEnv le = vcat $ map (printLibrary le) $ Map.toList le
