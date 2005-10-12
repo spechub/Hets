@@ -202,12 +202,12 @@ proofManagementGUI = do
   grid displayGoalsButton [GridPos (4,1), Sticky E]
 
   l2 <- newLabel right [text "Choose Prover:"]
-  grid l2 [GridPos (1,2), Sticky W]
+  grid l2 [GridPos (1,2), Columnspan 3, Sticky W]
 
   pathsFrame <- newFrame right []
   grid pathsFrame [GridPos (2,3), Columnspan 3]
   pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Single, height 6, width 20] :: IO (ListBox String)
+                                      selectMode Single, height 6, width 40] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
@@ -225,7 +225,7 @@ proofManagementGUI = do
   statusLabel <- newLabel right [text (snd statusNotRunning)]
   grid statusLabel [GridPos (2,5), Columnspan 2, Sticky W]
 
-  l4 <- newLabel right [text "Details"]
+  l4 <- newLabel right [text "Details:"]
   grid l4 [GridPos (1,6), Sticky W]
 
   proofDetailsButton <- newButton right [text "Show Proof Details"]
@@ -250,6 +250,7 @@ proofManagementGUI = do
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
+  displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
   doProve <- clicked proveButton
   showProofDetails <- clicked proofDetailsButton
@@ -262,6 +263,10 @@ proofManagementGUI = do
           s <- readIORef stateRef
 	  putStrLn "goal selected"
           done)
+      +> (displayGoals >>> do
+            s <- readIORef stateRef
+	    putStrLn "display clicked"
+            done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
 	    putStrLn "proverPath selected"
