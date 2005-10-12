@@ -15,5 +15,5 @@
  framework-dirs:
  frameworks:
  haddock-interfaces:
--haddock-html:' | /home/linux-bkb/bin/ghc-pkg --auto-ghci-libs update
+-haddock-html:' | /home/linux-bkb/bin/ghc-pkg --auto-ghci-libs update -
 +haddock-html:' | /home/linux-bkb/bin/ghc-pkg --auto-ghci-libs update "$@"
