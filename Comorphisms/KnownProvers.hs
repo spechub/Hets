@@ -23,6 +23,10 @@ import qualified Common.Lib.Map as Map
 import Common.Result
 
 import Logic.Grothendieck
+import Logic.Comorphism
+
+import CASL.Logic_CASL
+import CASL.Sublogic
 
 import Comorphisms.PCFOL2CFOL
 import Comorphisms.CFOL2IsabelleHOL
@@ -50,9 +54,11 @@ isaComorphisms =
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms = 
-    do --partOut <- compComorphism (Comorphism CASL2SubCFOL) 
-       --                          (Comorphism CASL2SPASS)
-       return [Comorphism CASL2SPASS{-,partOut-}]
+    do let max_sub_SPASS = top {sub_features = LocFilSub}
+           idCASL =  Comorphism (IdComorphism CASL max_sub_SPASS)
+       idCASL_partOut <- compComorphism idCASL (Comorphism CASL2SubCFOL)
+       partOut <- compComorphism idCASL_partOut (Comorphism CASL2SPASS)
+       return [Comorphism CASL2SPASS,partOut]
 
 showKnownProvers :: IO ()
 showKnownProvers = 
