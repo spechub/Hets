@@ -317,8 +317,7 @@ cgi:
 	$(MAKE) hets.cgi
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make -package-conf $(HOME)/wash-pkg/package.conf \
-            -package WASH GUI/hets_cgi.hs -o $@ $(HC_INCLUDE) \
+	ghc --make -package WASH GUI/hets_cgi.hs -o $@ $(HC_INCLUDE) \
             $(HC_FLAGS) $(PFE_FLAGS) -O
 	strip hets.cgi
 
