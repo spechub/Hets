@@ -29,8 +29,8 @@ import Common.Result as Res
 import Driver.Options
 
 displayConceptGraph :: String -> G_theory -> IO ()
-displayConceptGraph _ _ = 
-    putStrLn "display of Concept Graph not yet implemented"
+displayConceptGraph  = displayGraph KConcept
+    -- putStrLn "display of Concept Graph not yet implemented"
 
 displaySubsortGraph :: String -> G_theory -> IO ()
 displaySubsortGraph = displayGraph KSubsort

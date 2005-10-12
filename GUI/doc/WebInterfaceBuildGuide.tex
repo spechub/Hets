@@ -1,0 +1,69 @@
+
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{url,hyperref}
+
+\title{How to build the hets web interface}
+\author{Klaus Lüttich}
+
+\begin{document}
+\maketitle
+
+\section{Quick start guide}
+This part gives only a very rough overview of what you need.
+\subsection{Installation of WASH}
+Prerequisites: ghc $>=$ 6.4, GNU make, darcs $>=$ 1.0.3
+
+\begin{enumerate}
+\item get WashNGo via darcs:\\
+  \texttt{darcs get http://darcs.complete.org/local-branches/WashNGo/}
+\item copy additional files to the WashNGo repository
+\item patch your darcs repository with the darcs patch (or the plain
+  patch)\\
+  from inside the WashNGo repository directory:\\
+  \verb|darcs apply UniqueRenamePatch|
+\item inside the WashNGo repository run \verb|make -f Makfile.hets all|
+\end{enumerate}
+\subsection{Compilation of hets.cgi}
+If you want different locations for the generated files and html-links
+you have to change \verb|HetCATS/GUI/hets_cgi.hs| and then just run
+\verb|make cgi|.
+
+\section{Detailed instructions}
+
+\subsection{Installation of WASH}
+All the additionally needed files and patches are in the archive
+\verb|HetCATS/GUI/wash.tgz|. Install darcs
+(\url{http://www.abridgegame.org/darcs/}).
+\begin{enumerate}
+\item get WashNGo via darcs:\\
+  \texttt{darcs get
+  http://darcs.complete.org/local-branches/WashNGo/}\\
+  You get a directory \verb|WashNGo| which is referenced as the
+  \emph{repository directory} from now on.
+\item copy all files from the directory
+  \verb|HetCATS/GUI/wash_addon/|to the repository directory.
+\item patch your darcs repository with the darcs patch\\
+  from inside the repository directory:\\
+  \verb|darcs apply UniqueRenamePatch|
+\item inside the WashNGo repository run
+  \verb|make -f Makfile.hets all|\\   
+  and you end up with \verb|$HOME/wash-pkg/|% $ where the file
+  \verb|package.conf|, all \verb|*.hi|-files and the needed library
+  file are installed to.
+\end{enumerate}
+
+\subsection{Configuration and Compilation of hets.cgi}
+
+All the configuration of the web interface is done via String
+constants in \\ \verb|HetCATS/GUI/hets_cgi.hs|. They are all documented
+in this source file.
+
+After checking and/or changing the configuration constants run
+\verb|make cgi|. If Programmatica is in place even Haskell support is
+compiled into hets.cgi.
+
+\paragraph{Note for Uni-Bremen people} The user id with which hets.cgi
+is running must have permission to write to \verb|/home/www/cofi/hets-tmp/|!
+\end{document}
