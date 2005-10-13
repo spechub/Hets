@@ -188,6 +188,9 @@ proofManagementGUI = do
   pack sb [Expand On, Side AtRight, Fill Y]
   lb # scrollbar Vertical sb
 
+  selectAllButton <- newButton b3 [text "Select all"]
+  pack selectAllButton [Expand Off, Fill None, Anchor SouthEast]
+
   -- right frame (options/results)
   right <- newFrame b2 []
   pack right [Expand On, Fill Both, Anchor NorthWest]
@@ -201,35 +204,38 @@ proofManagementGUI = do
   displayGoalsButton <- newButton right [text "Display"]
   grid displayGoalsButton [GridPos (4,1), Sticky E]
 
-  l2 <- newLabel right [text "Choose Prover:"]
+  l2 <- newLabel right [text "Pick Theorem Prover:"]
   grid l2 [GridPos (1,2), Columnspan 3, Sticky W]
+
+  spacer2 <- newLabel right [text "   "]
+  grid spacer2 [GridPos (1,3), Sticky W, Sticky W]
 
   pathsFrame <- newFrame right []
   grid pathsFrame [GridPos (2,3), Columnspan 3]
   pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Single, height 6, width 40] :: IO (ListBox String)
+                                      selectMode Single, height 6, width 35] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
   pathsLb # scrollbar Vertical pathsSb
 
-  moreButton <- newButton right [text "More..."]
+  moreButton <- newButton right [text "Fine grained selection..."]
   grid moreButton [GridPos (3,4), Sticky E]
 
   proveButton <- newButton right [text "Prove"]
   grid proveButton [GridPos (4,4), Sticky E]
 
   l3 <- newLabel right [text "Status:"]
-  grid l3 [GridPos (1,5), Sticky W]
+  grid l3 [GridPos (1,5), Columnspan 3, Sticky W]
 
   statusLabel <- newLabel right [text (snd statusNotRunning)]
-  grid statusLabel [GridPos (2,5), Columnspan 2, Sticky W]
+  grid statusLabel [GridPos (3,6), Columnspan 2, Sticky E]
 
   l4 <- newLabel right [text "Details:"]
-  grid l4 [GridPos (1,6), Sticky W]
+  grid l4 [GridPos (1,7), Columnspan 3, Sticky W]
 
   proofDetailsButton <- newButton right [text "Show Proof Details"]
-  grid proofDetailsButton [GridPos (3,6), Columnspan 2, Sticky E]
+  grid proofDetailsButton [GridPos (3,8), Columnspan 2, Sticky E]
 
   -- separator
   sp1 <- newSpace b (cm 0.15) []
@@ -249,6 +255,7 @@ proofManagementGUI = do
 
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
+  selectAllGoals <- clicked selectAllButton
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
   displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
@@ -263,6 +270,10 @@ proofManagementGUI = do
           s <- readIORef stateRef
 	  putStrLn "goal selected"
           done)
+      +> (selectAllGoals >>> do
+            s <- readIORef stateRef
+	    putStrLn "select all clicked"
+            done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
 	    putStrLn "display clicked"
