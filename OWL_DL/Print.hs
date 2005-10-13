@@ -53,7 +53,9 @@ instance PrettyPrint Sign where
 instance PrettyPrint URIreference where
     printText0 _ (QN prefix localpart uri)
         | localpart == "_" = text $ show "_"
-        | null prefix = text $ show (uri ++ ":" ++ localpart)
+        | null prefix = if null uri then
+                           text $ show localpart
+                           else text $ show (uri ++ ":" ++ localpart)
         | otherwise =   text $ show ( prefix ++ ":" ++ localpart) 
 
 instance PrettyPrint Namespace where
@@ -253,12 +255,12 @@ instance PrettyPrint DataLiteral where
     printText0 ga dl =
         case dl of
         TypedL (lf, uri) -> (char '(') <> (printText0 ga uri) <+>
-                            (text ("'" ++ lf ++ "')"))
-        PlainL (lf, lt)  -> text ("(stringInLang '" ++ lf ++ "' '" ++ lt ++
-                                  "')")
-        Plain lf         -> text ("'" ++ lf ++ "'")
+                            (text (": " ++ lf ++ ")"))
+        PlainL (lf, lt)  -> text ("(stringInLang '" ++ lf ++ " : " ++ lt ++
+                                  ")")
+        Plain lf         -> text lf 
         RDFSL rdfLit     -> -- (text "rdf_literal") <+> (text rdfLit)
-                            text ("'" ++ rdfLit ++ "'")
+                            text rdfLit
 
 instance PrettyPrint Restriction where
     printText0 ga restr =
@@ -289,8 +291,31 @@ instance PrettyPrint Fact where
               (text "[ALLDIFFERENT") <+> 
               (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)) <> 
               (char ']')
-        u -> text $ show u
+        Indiv individual -> printText0 ga individual
 
+instance PrettyPrint Individual where
+    printText0 ga individual@(Individual iid _ _ values) =
+        case iid of
+        Just _ ->
+            printIndividual values
+        _ -> text $ show individual
+     where printIndividual :: [Value] -> Doc
+           printIndividual [] = empty
+           printIndividual (hv:tv) =
+               case hv of
+               ValueID pid indivID -> 
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   <+> (printText0 ga indivID) <> (char ')') $+$
+                   (printIndividual tv)
+               ValueIndiv pid indiv ->
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   <+> (printText0 ga indiv) <> (char ')') $+$
+                   (printIndividual tv)
+               ValueDL pid dl ->
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   <+> (printText0 ga dl) <> (char ')') $+$
+                   (printIndividual tv)
+        
 printRestriction1 :: GlobalAnnos -> URIreference -> [Drcomponent] -> Doc
 printRestriction1 _ _ [] = empty
 printRestriction1 ga dpID (h:r) =
