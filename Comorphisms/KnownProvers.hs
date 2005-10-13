@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-| 
    
 Module      :  $Header$
@@ -31,6 +32,14 @@ import CASL.Sublogic
 import Comorphisms.PCFOL2CFOL
 import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CASL2PCFOL
+import Comorphisms.CoCASL2CoPCFOL
+import Comorphisms.CoPCFOL2CoCFOL
+import Comorphisms.CoCFOL2IsabelleHOL
+import Comorphisms.Modal2CASL
+import Comorphisms.HasCASL2IsabelleHOL
+#ifdef PROGRAMATICA
+import Comorphisms.Haskell2IsabelleHOLCF
+#endif
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2SPASS
 
@@ -45,19 +54,33 @@ knownProvers =
                              ("SPASS", spassCs)])
 
 isaComorphisms :: Result [AnyComorphism]
-isaComorphisms = 
-    do partOut <- compComorphism (Comorphism PCFOL2CFOL) 
+isaComorphisms = do
+       -- CASL
+       pc2IHOL <- compComorphism (Comorphism PCFOL2CFOL) 
                                  (Comorphism CFOL2IsabelleHOL)
-       sub_partOut <- compComorphism (Comorphism CASL2PCFOL)
-                                     partOut
-       return [Comorphism CFOL2IsabelleHOL,partOut,sub_partOut]
+       subpc2IHOL <- compComorphism (Comorphism CASL2PCFOL) pc2IHOL
+       -- CoCASL
+       co2IHOL <- 
+           (compComorphism (Comorphism CoCASL2CoPCFOL)
+                           (Comorphism CoPCFOL2CoCFOL)
+            >>= (\x -> compComorphism x (Comorphism CoPCFOL2CoCFOL)))
+       -- ModalCASL
+       mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
+       return [Comorphism CFOL2IsabelleHOL,pc2IHOL,subpc2IHOL,
+               co2IHOL,
+               Comorphism HasCASL2IsabelleHOL,
+#ifdef PROGRAMATICA
+               Comorphism Haskell2IsabelleHOLCF,
+#endif
+               mod2IHOL]
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms = 
     do let max_sub_SPASS = top {sub_features = LocFilSub}
            idCASL =  Comorphism (IdComorphism CASL max_sub_SPASS)
-       idCASL_partOut <- compComorphism idCASL (Comorphism CASL2SubCFOL)
-       partOut <- compComorphism idCASL_partOut (Comorphism CASL2SPASS)
+       partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL) 
+                   >>= (\x -> compComorphism x (Comorphism CASL2SPASS)))
+       -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
        return [Comorphism CASL2SPASS,partOut]
 
 showKnownProvers :: IO ()
