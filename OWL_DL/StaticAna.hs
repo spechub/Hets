@@ -345,11 +345,11 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                       (anaDirective ga inSign onto rest) 
           _ -> concatResult (Result diags1 Prelude.Nothing) 
                    (anaDirective ga inSign onto rest)
-    Fc ind@(Indiv (Individual maybeIID _ types _)) ->
+    Fc ind@(Indiv (Individual maybeIID _ types values)) ->
        case maybeIID of
         Prelude.Nothing ->          -- Error (Warnung): Individual without name
             let namedSent = NamedSen { senName = "Individual",  
-                                       isAxiom = False, 
+                                       isAxiom = True, 
                                        isDef = True,
                                        sentence = OWLFact ind
                                      }
@@ -366,8 +366,15 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                         inSign {individuals = Set.insert iid oriInd,
                                 axioms = Set.union membershipSet ax
                                }
+                    namedSent = if not $ null values then
+                                   [NamedSen { senName = "Individual",  
+                                               isAxiom = True, 
+                                               isDef = True,
+                                               sentence = OWLFact ind
+                                             }]
+                                   else []
                 in  concatResult 
-                         (Result diagL (Just (onto, accSign, [])))
+                         (Result diagL (Just (onto, accSign, namedSent)))
                          (anaDirective ga accSign onto rest) 
  
           where                                   
