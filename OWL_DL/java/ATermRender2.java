@@ -135,19 +135,25 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 		return resList;
 	}
 
-	public ATermAppl renderIndividual(OWLOntology ontology, OWLIndividual ind)
+	public ATermAppl renderIndividual2(OWLOntology ontology, OWLIndividual ind)
 			throws OWLException {
-		AFun consFun = factory.makeAFun("Indiv", 1, false);
+
 		AFun indivFun = factory.makeAFun("Individual", 4, false);
 		ATermAppl indivID = strToATermAppl("");
 		ATermList annos = factory.makeList();
 		ATermList types = factory.makeList();
 		ATermList values = factory.makeList();
-		AFun typeFun = factory.makeAFun("Type", 1, false);
+		// AFun typeFun = factory.makeAFun("Type", 1, false);
 		AFun valueIDFun = factory.makeAFun("ValueID", 2, false);
 		AFun valueDLFun = factory.makeAFun("ValueDL", 2, false);
+		AFun valuedIndivFun = factory.makeAFun("ValueIndiv", 2, false);
 		if (ind.isAnonymous()) {
-			Map m = ind.getIncomingObjectPropertyValues(ontology);
+			Map m = ind.getIncomingObjectPropertyValues(ontology); // why not
+																	// tests
+																	// ind.getURI
+																	// instead
+																	// of
+																	// getIncomingObjectPropertyValues?
 			if (!m.isEmpty())
 				indivID = strToATermAppl1("Nothing");
 			else
@@ -161,9 +167,8 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 				&& ind.getTypes(ontology).isEmpty()
 				&& ind.getObjectPropertyValues(ontology).keySet().isEmpty()
 				&& ind.getDataPropertyValues(ontology).keySet().isEmpty())
-			return factory.makeAppl(fcFun, factory.makeAppl(consFun, factory
-					.makeAppl(indivFun, indivID, emptyList, emptyList,
-							emptyList)));
+			return factory.makeAppl(indivFun,
+					indivID, emptyList, emptyList, emptyList);
 		annos = makeAnno(ind.getAnnotations(ontology).iterator());
 		for (Iterator it = ind.getTypes(ontology).iterator(); it.hasNext();) {
 			OWLDescription eq = (OWLDescription) (OWLDescription) it.next();
@@ -175,14 +180,19 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 
 		Map propertyValues = ind.getObjectPropertyValues(ontology);
 		for (Iterator it = propertyValues.keySet().iterator(); it.hasNext();) {
-			OWLObjectProperty prop = (OWLObjectProperty) (OWLObjectProperty) it
-					.next();
-			for (Iterator valIt = ((Set) (Set) propertyValues.get(prop))
-					.iterator(); valIt.hasNext();) {
-				OWLIndividual oi = (OWLIndividual) (OWLIndividual) valIt.next();
+			OWLObjectProperty prop = (OWLObjectProperty) it.next();
+			for (Iterator valIt = ((Set) propertyValues.get(prop)).iterator(); valIt
+					.hasNext();) {
+				OWLIndividual oi = (OWLIndividual) valIt.next();
 				ATermAppl propURI = strToATermAppl(shortForm(prop.getURI()));
-				ATermAppl resValue = factory.makeAppl(valueIDFun, propURI,
-						strToATermAppl(shortForm(oi.getURI())));
+				ATermAppl resValue = null;
+				if (oi.getURI() == null || oi.isAnonymous()) {
+					resValue = factory.makeAppl(valuedIndivFun, propURI,
+							renderIndividual2(ontology, oi));
+				} else {
+					resValue = factory.makeAppl(valueIDFun, propURI,
+							strToATermAppl(shortForm(oi.getURI())));
+				}
 				values = factory.makeList(resValue, values);
 			}
 
@@ -190,11 +200,10 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 
 		Map dataValues = ind.getDataPropertyValues(ontology);
 		for (Iterator it = dataValues.keySet().iterator(); it.hasNext();) {
-			OWLDataProperty prop = (OWLDataProperty) (OWLDataProperty) it
-					.next();
+			OWLDataProperty prop = (OWLDataProperty) it.next();
 			Set vals = (Set) (Set) dataValues.get(prop);
 			for (Iterator valIt = vals.iterator(); valIt.hasNext();) {
-				OWLDataValue dtv = (OWLDataValue) (OWLDataValue) valIt.next();
+				OWLDataValue dtv = (OWLDataValue) valIt.next();
 				visitor.reset();
 				dtv.accept(visitor);
 				ATermAppl propURI = strToATermAppl(shortForm(prop.getURI()));
@@ -204,9 +213,14 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 			}
 
 		}
+		return factory.makeAppl(indivFun, indivID,
+				annos, types, values);
+	}
 
-		return factory.makeAppl(fcFun, factory.makeAppl(consFun, factory
-				.makeAppl(indivFun, indivID, annos, types, values)));
+	public ATermAppl renderIndividual(OWLOntology ontology, OWLIndividual ind)
+			throws OWLException {
+		AFun consFun = factory.makeAFun("Indiv", 1, false);
+		return factory.makeAppl(fcFun, factory.makeAppl(consFun,  renderIndividual2(ontology, ind)));
 	}
 
 	public ATermAppl renderAnnotationProperty(OWLOntology ontology,
