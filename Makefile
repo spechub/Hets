@@ -255,6 +255,7 @@ cpp_sources = Common/DynamicUtils.hs \
     Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
+    Comorphisms/KnownProvers.hs \
     GUI/ShowGraph.hs hets.hs $(happy_files)
 
 # unused, remove when header files are gone 
