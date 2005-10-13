@@ -195,7 +195,8 @@ proofManagementGUI = do
   right <- newFrame b2 []
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
-  let spacing = "   "
+  let hindent = "   "
+  let vspacing = cm 0.2
 
   rvb <- newVBox right []
   pack rvb [Expand On, Fill Both]
@@ -206,7 +207,7 @@ proofManagementGUI = do
   rhb1 <- newHBox rvb []
   pack rhb1 [Expand On, Fill Both]
 
-  hsp1 <- newLabel rhb1 [text spacing]
+  hsp1 <- newLabel rhb1 [text hindent]
   pack hsp1 []
 
   displayGoalsButton <- newButton rhb1 [text "Display"]
@@ -218,7 +219,7 @@ proofManagementGUI = do
   proofDetailsButton <- newButton rhb1 [text "Show Proof Details"]
   pack proofDetailsButton []
 
-  vsp1 <- newLabel rvb [text " "]
+  vsp1 <- newSpace rvb vspacing []
   pack vsp1 []
 
   l2 <- newLabel rvb [text "Status:"]
@@ -227,11 +228,14 @@ proofManagementGUI = do
   rhb2 <- newHBox rvb []
   pack rhb2 [Expand On, Fill Both]
 
-  hsp2 <- newLabel rhb2 [text spacing]
+  hsp2 <- newLabel rhb2 [text hindent]
   pack hsp2 []
 
   statusLabel <- newLabel rhb2 [text (snd statusNotRunning)]
   pack statusLabel []
+
+  vsp2 <- newSpace rvb vspacing []
+  pack vsp2 []
 
   l3 <- newLabel rvb [text "Pick Theorem Prover:"]
   pack l3 [Anchor NorthWest]
@@ -239,7 +243,7 @@ proofManagementGUI = do
   rhb3 <- newHBox rvb []
   pack rhb3 [Expand On, Fill Both]
 
-  hsp3 <- newLabel rhb3 [text spacing]
+  hsp3 <- newLabel rhb3 [text hindent]
   pack hsp3 []
 
   pathsFrame <- newFrame rhb3 []
