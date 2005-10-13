@@ -194,7 +194,7 @@ addDGRef :: LIB_NAME -> DGraph -> Node -> (DGraph, Node)
 addDGRef ln dg node =
        let node_contents = 
             DGRef {
-             dgn_renamed = ln2SimpleId ln,
+             dgn_name = ln2SimpleId ln,
              dgn_libname = ln,
              dgn_node = node }
            [newNode] = newNodes 0 dg

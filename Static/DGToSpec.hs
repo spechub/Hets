@@ -44,7 +44,7 @@ dgToSpec dg node = do
          if null apredSps
           then return b
           else return (Extension (apredSps++[emptyAnno b]) pos)
-    DGRef name _ _ _ _ -> return (Spec_inst (getName name) [] pos)
+    DGRef name _ _ _ _ _ -> return (Spec_inst (getName name) [] pos)
     _ -> case dgn_origin n of 
         DGExtension ->
          return (Extension apredSps pos)
@@ -172,21 +172,25 @@ computeTheory libEnv (ln, n) =
   let dg = lookupDGraphInLibEnv ln libEnv
       nodeLab = lab' $ context dg n
       inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
+      localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in
       case Map.lookup refLn libEnv of
-      Just _ -> computeTheory libEnv (refLn, dgn_node nodeLab)
-      Nothing -> fail "computeTheory"
+      Just _ -> do 
+          refTh <- computeTheory libEnv (refLn, dgn_node nodeLab)
+          flatG_sentences localTh [axiomsToTheorems $ refTh]
+      Nothing -> fail ("Statoc.DGToSpec.computeTheory: referenced library "++show refLn++" not found")
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
-  let localTh = dgn_theory nodeLab
   flatG_sentences localTh ths
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory 
 computePathTheory libEnv ln e@(src, _, link) = do 
-    G_theory lid sign sens <- 
-        if isLocalDef e then computeLocalTheory libEnv (ln, src)
+  th <- if isLocalDef e then computeLocalTheory libEnv (ln, src)
           else computeTheory libEnv (ln, src) 
-          -- turn all imported theorems into axioms
-    translateG_theory (dgl_morphism link) $ G_theory lid sign
-                      $ Set.map ( \ x -> x { value = (value x) 
-                                             {isAxiom = True}} ) sens
+  -- translate theory and turn all imported theorems into axioms
+  translateG_theory (dgl_morphism link) $ axiomsToTheorems th
+
+axiomsToTheorems :: G_theory -> G_theory
+axiomsToTheorems (G_theory lid sign sens) =
+   G_theory lid sign $ Set.map ( \ x -> x {value = (value x) 
+                                          {isAxiom = True}} ) sens

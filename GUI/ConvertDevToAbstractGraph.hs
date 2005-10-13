@@ -301,11 +301,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                  createLocalMenuNodeTypeInternal "Green" gInfo
                 ),
                 ("dg_ref", 
-                 createLocalMenuNodeTypeDgRef "SteelBlue" actGraphInfo 
+                 createLocalMenuNodeTypeDgRef "Coral" actGraphInfo 
                                               ioRefGraphMem graphMem gInfo
                  ),
                 ("locallyEmpty__dg_ref", 
-                 createLocalMenuNodeTypeDgRef "SteelBlue"
+                 createLocalMenuNodeTypeDgRef "Green"
                         actGraphInfo ioRefGraphMem graphMem gInfo
                  ) ]
       -- the link types (share strings to avoid typos)
@@ -529,10 +529,16 @@ createLocalMenuNodeTypeInternal color
 
 -- local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createLocalMenuNodeTypeDgRef color actGraphInfo 
-                             ioRefGraphMem graphMem (_,_,convRef,_,_,_,_,hetsOpts,_) = 
+                             ioRefGraphMem graphMem
+                             gInfo@(_,_,convRef,_,_,_,_,hetsOpts,_) = 
                  Box $$$ Color color
                  $$$ ValueTitle (\ (s,_,_) -> return s)
-                 $$$ LocalMenu (Button "Show referenced library"
+                 $$$ LocalMenu (Menu (Just "node menu")
+                   [createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowTheory gInfo,
+                    createLocalMenuButtonProveAtNode gInfo,
+                    createLocalMenuButtonShowProofStatusOfNode gInfo,
+                    Button "Show referenced library"
                      (\ (name,descr,gid) ->
                         do convMaps <- readIORef convRef
                            (refDescr, newGraphInfo, refConvMaps) <- 
@@ -547,7 +553,7 @@ createLocalMenuNodeTypeDgRef color actGraphInfo
                                                nextGraphId = refDescr +1}
                            redisplay refDescr newGraphInfo
                            return ()
-                     ))
+                     )])
                  $$$ emptyNodeTypeParms
                      :: DaVinciNodeTypeParms (String,Int,Int)
 
@@ -763,12 +769,10 @@ getSignatureOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 getSignatureOfNode descr ab2dgNode dgraph = 
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
-      let dgnode = lab' (context dgraph node) in
-         if isDGRef dgnode then error 
-                            "nodes of type dg_ref do not have a signature"
-         else let title = "Signature of "++showName (dgn_name dgnode)
-               in createTextDisplay title (showPretty (dgn_sign dgnode) "")
-                      [size(80,50)]
+      let dgnode = lab' (context dgraph node)  
+          title = "Signature of "++showName (dgn_name dgnode)
+       in createTextDisplay title (showPretty (dgn_sign dgnode) "")
+                            [size(80,50)]
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
@@ -806,14 +810,10 @@ displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context dgraph node)
-        str = showPretty gth "\n" in case dgnode of
-           (DGNode name _ _ _ _ _ _) ->
-              let thname = showName name
-                  title = ext ++ " of " ++ thname
-               in createTextSaveDisplay title (thname++".het") str
-           (DGRef _ _ _ _ _) -> error 
-                            "nodes of type dg_ref do not have a theory"
-     
+        str = showPretty gth "\n" 
+        thname = showName (dgn_name dgnode)
+        title = ext ++ " of " ++ thname
+     in createTextSaveDisplay title (thname++".het") str
 
 
 {- translate the theory of a node in a window;
@@ -890,7 +890,7 @@ showOriginOfNode descr ab2dgNode dgraph =
               let title =  "Origin of node "++showName name
                in createTextDisplay title 
                     (showPretty orig "") [size(30,10)]
-           DGRef _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
+           DGRef _ _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
@@ -900,8 +900,7 @@ showProofStatusOfNode _ descr ab2dgNode dgraph =
   case Map.lookup descr ab2dgNode of
     Just (libname, node) -> 
       do let dgnode = lab' (context dgraph node)
-         let stat = if not (isRefNode dgnode) then showStatusAux dgnode
-                     else "Please follow the reference to see its proof status"
+         let stat = showStatusAux dgnode
          let title =  "Proof status of node "++showName (dgn_name dgnode)
          createTextDisplay title stat [size(150,130)]
     Nothing -> error ("node with descriptor "
@@ -916,12 +915,12 @@ showStatusAux dgnode =
          (proven,open) = Set.partition isProvenSenStatus goals
       in "Proven proof goals:\n" 
          ++ showPretty proven "" 
-         ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode /= LeftOpen
+         ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None && dgn_cons_status dgnode /= LeftOpen
              then showPretty (dgn_cons_status dgnode) "is the conservativity status of this node"
              else ""
          ++ "\nOpen proof goals:\n" 
          ++ showPretty open ""
-         ++ if dgn_cons dgnode /= None && dgn_cons_status dgnode == LeftOpen
+         ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None && dgn_cons_status dgnode == LeftOpen
              then showPretty (dgn_cons_status dgnode) "should be the conservativity status of this node"
              else ""
 
@@ -1003,7 +1002,7 @@ checkconservativityOfEdge _ (ref,_,_,_,_,_,_,opts,_)
           showDiags = unlines (map show diags)
       createTextDisplay "Result of conservativity check" 
                       (showRes++"\n"++showDiags) [size(50,50)]
-    DGRef _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
+    DGRef _ _ _ _ _ _ -> error "checkconservativityOfEdge: no DGNode"
 
 checkconservativityOfEdge descr _ Nothing = 
       createTextDisplay "Error" 
@@ -1140,7 +1139,7 @@ showReferencedLibrary graphMem descr abstractGraph graphInfo convMaps hetsOpts =
     Just (libname,node) -> 
          case Map.lookup libname libname2dgMap of
           Just (_,_,dgraph) -> 
-            do let (_,(DGRef _ refLibname refNode _ _)) = 
+            do let (_,(DGRef _ refLibname refNode _ _ _)) = 
                        labNode' (context dgraph node)
                case Map.lookup refLibname libname2dgMap of
                  Just (_,refDgraph,_) -> 

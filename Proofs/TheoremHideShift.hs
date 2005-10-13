@@ -152,15 +152,15 @@ mkDGRefNfNode nodelab newNode isLeave proofstatus@(ln,_,_) = do
       refNodelab = lab' (context refGraph refNf)
       (renamed, libname, sigma) =
           if isLeave 
-             then (dgn_renamed nodelab, dgn_libname nodelab,
+             then (dgn_name nodelab, dgn_libname nodelab,
                    case getSignature auxLibEnv refGraph refNf of
                      Nothing -> Nothing
                      Just sign -> Just (ide Grothendieck sign)
                   )
-           else (dgn_renamed refNodelab, dgn_libname refNodelab,
+           else (dgn_name refNodelab, dgn_libname refNodelab,
                           dgn_sigma refNodelab)
   let lnode = (newNode,
-               DGRef {dgn_renamed = renamed,
+               DGRef {dgn_name = renamed,
                       dgn_libname = libname,
                       dgn_node = refNf,
                       dgn_nf = Just newNode,
@@ -277,7 +277,7 @@ setNfOfNode dgraph node nf_node = do
     oldLNode = labNode' (context dgraph node)
     newNode = getNewNode dgraph
     newLNode = case isDGRef nodeLab of
-                 True -> (newNode, DGRef {dgn_renamed = dgn_renamed nodeLab,
+                 True -> (newNode, DGRef {dgn_name = dgn_name nodeLab,
                                           dgn_libname = dgn_libname nodeLab,
                                           dgn_node = dgn_node nodeLab,
                                           dgn_nf = Just nf_node,

@@ -165,7 +165,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
                      let libEnv' = Map.insert libname gc libenv
                          nodesDGRef =
                                  filter (\ labDG -> case labDG of
-                                                      DGRef _ _ _ _ _ -> True
+                                                      DGRef _ _ _ _ _ _ -> True
                                                       _ -> False)
                                         (map snd (labNodes dgraph))
                        -- and call anaLibFile with each of the dgn_libname
@@ -437,11 +437,12 @@ ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
 
 refNodesig :: LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
-refNodesig ln dg (name, NodeSig n sigma) =
+refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig)) =
   let node_contents = DGRef {
-        dgn_renamed = makeMaybeName name,
+        dgn_name = makeMaybeName name,
         dgn_libname = ln,
         dgn_node = n,
+        dgn_theory = G_theory lid sig noSens,
         dgn_nf = Nothing,
         dgn_sigma = Nothing
         }

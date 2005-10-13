@@ -89,9 +89,10 @@ data DGNodeLab =
     dgn_cons_status :: ThmLinkStatus
   }
  | DGRef {  -- reference to node in a different DG
-    dgn_renamed :: NODE_NAME,    -- new name of node (in current DG)
+    dgn_name :: NODE_NAME,    -- new name of node (in current DG)
     dgn_libname :: LIB_NAME,     -- pointer to DG where ref'd node resides
     dgn_node :: Node,            -- pointer to ref'd node
+    dgn_theory :: G_theory, -- local proof goals
     dgn_nf :: Maybe Node,        -- normal form, for Theorem-Hide-Shift
     dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature 
   } deriving (Show, Eq)
@@ -111,7 +112,7 @@ isRefNode _ = True
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName (DGNode n _ _ _ _ _ _) = showName n
-getDGNodeName (DGRef n _ _ _ _) = showName n
+getDGNodeName (DGRef n _ _ _ _ _) = showName n
 
 emptyNodeName :: NODE_NAME
 emptyNodeName = (mkSimpleId "","",0)
@@ -144,13 +145,14 @@ extName s (n,s1,i) = (n,s1++showInt i++s,0)
 
 isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _ _ _ _) = False
-isDGRef (DGRef _ _ _ _ _) = True
+isDGRef (DGRef _ _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty (DGNode _ (G_theory _lid _sigma sens) _ _ _ _ _) = 
-  Set.null $ Set.filter 
+locallyEmpty dgn = 
+  case dgn_theory dgn of
+  G_theory _lid _sigma sens ->
+    Set.null $ Set.filter 
       (\s -> not (isAxiomSenStatus s) && not (isProvenSenStatus s) ) sens 
-locallyEmpty (DGRef _ _ _ _ _) = True
 
 -- | link inscriptions in development graphs           
 data DGLinkLab = DGLink {
