@@ -195,23 +195,55 @@ proofManagementGUI = do
   right <- newFrame b2 []
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
-  spacer <- newLabel right [text "   "]
-  grid spacer [GridPos (0,1), Sticky W, Sticky W]
+  let spacing = "   "
 
-  l1 <- newLabel right [text "Selected Goal(s):"]
-  grid l1 [GridPos (0,0), Columnspan 4, Sticky W]
+  rvb <- newVBox right []
+  pack rvb [Expand On, Fill Both]
 
-  displayGoalsButton <- newButton right [text "Display"]
-  grid displayGoalsButton [GridPos (4,1), Sticky E]
+  l1 <- newLabel rvb [text "Selected Goal(s):"]
+  pack l1 [Anchor NorthWest]
 
-  l2 <- newLabel right [text "Pick Theorem Prover:"]
-  grid l2 [GridPos (1,2), Columnspan 3, Sticky W]
+  rhb1 <- newHBox rvb []
+  pack rhb1 [Expand On, Fill Both]
 
-  spacer2 <- newLabel right [text "   "]
-  grid spacer2 [GridPos (1,3), Sticky W, Sticky W]
+  hsp1 <- newLabel rhb1 [text spacing]
+  pack hsp1 []
 
-  pathsFrame <- newFrame right []
-  grid pathsFrame [GridPos (2,3), Columnspan 3]
+  displayGoalsButton <- newButton rhb1 [text "Display"]
+  pack displayGoalsButton []
+
+  proveButton <- newButton rhb1 [text "Prove"]
+  pack proveButton []
+
+  proofDetailsButton <- newButton rhb1 [text "Show Proof Details"]
+  pack proofDetailsButton []
+
+  vsp1 <- newLabel rvb [text " "]
+  pack vsp1 []
+
+  l2 <- newLabel rvb [text "Status:"]
+  pack l2 [Anchor NorthWest]
+
+  rhb2 <- newHBox rvb []
+  pack rhb2 [Expand On, Fill Both]
+
+  hsp2 <- newLabel rhb2 [text spacing]
+  pack hsp2 []
+
+  statusLabel <- newLabel rhb2 [text (snd statusNotRunning)]
+  pack statusLabel []
+
+  l3 <- newLabel rvb [text "Pick Theorem Prover:"]
+  pack l3 [Anchor NorthWest]
+
+  rhb3 <- newHBox rvb []
+  pack rhb3 [Expand On, Fill Both]
+
+  hsp3 <- newLabel rhb3 [text spacing]
+  pack hsp3 []
+
+  pathsFrame <- newFrame rhb3 []
+  pack pathsFrame []
   pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
                                       selectMode Single, height 6, width 35] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
@@ -219,23 +251,8 @@ proofManagementGUI = do
   pack pathsSb [Expand On, Side AtRight, Fill Y]
   pathsLb # scrollbar Vertical pathsSb
 
-  moreButton <- newButton right [text "Fine grained selection..."]
-  grid moreButton [GridPos (3,4), Sticky E]
-
-  proveButton <- newButton right [text "Prove"]
-  grid proveButton [GridPos (4,4), Sticky E]
-
-  l3 <- newLabel right [text "Status:"]
-  grid l3 [GridPos (1,5), Columnspan 3, Sticky W]
-
-  statusLabel <- newLabel right [text (snd statusNotRunning)]
-  grid statusLabel [GridPos (3,6), Columnspan 2, Sticky E]
-
-  l4 <- newLabel right [text "Details:"]
-  grid l4 [GridPos (1,7), Columnspan 3, Sticky W]
-
-  proofDetailsButton <- newButton right [text "Show Proof Details"]
-  grid proofDetailsButton [GridPos (3,8), Columnspan 2, Sticky E]
+  moreButton <- newButton rvb [text "More fine grained selection..."]
+  pack moreButton [Anchor SouthEast]
 
   -- separator
   sp1 <- newSpace b (cm 0.15) []
