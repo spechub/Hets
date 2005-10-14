@@ -13,6 +13,27 @@ works for SPASS.
 
 -}
 
+{- ToDo:
+
+    - "Pick Theorem Prover" needs only 4 lines as default for now and
+      it could have less columns such that it is as wide as the Button
+      line "Display", "Prove",...
+
+    - under MacOS X the window trembles because of the "Close" button
+      in the right corner. Please move it slightly to the left
+
+    - Window Title will be partly set with theory name 
+      (as it is for the SPASS GUI) 
+       "<theory_name> - Select Goal(s) and Prove"
+
+    - 'proofManagementGUI' may fill the select lists with fake data:
+      Provers: ["Isabelle","SPASS"]
+      Goals: ["min_0","div_mod_Nat","power_Nat"] where the first goal 
+      is "proved" and the other two are "Open"
+      Window Title: "Basic/Numbers_Nat_E1 - "
+
+-}
+
 module GUI.ProofManagement where
 
 import Control.Exception
@@ -249,7 +270,7 @@ proofManagementGUI = do
   pathsFrame <- newFrame rhb3 []
   pack pathsFrame []
   pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Single, height 6, width 35] :: IO (ListBox String)
+                                      selectMode Single, height 5, width 28] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
