@@ -74,11 +74,14 @@ import qualified CASL.AS_Basic_CASL as CASLBasic
 import Data.Typeable
 import qualified Common.Id as Id
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
 import qualified Syntax.AS_Library as ASL
 import qualified Data.Maybe as Data.Maybe
+
+import qualified GUI.ShowGraph as GUI
 
 import qualified CASL.Morphism as CASL.Morphism
 
@@ -93,7 +96,7 @@ import Debug.Trace (trace)
 import Haskell.Haskell2DG
 #endif
 -}
-
+{-
 showGraph :: FilePath -> HetcatsOpts -> 
              Maybe (LIB_NAME, -- filename
                     a,   -- as tree
@@ -124,10 +127,21 @@ showGraph file opt env =
             ("Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window")
 
+-}
+
+showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, a, v, LibEnv)->IO ()
+showGraph file opt env =
+	case env of
+		Just (ln,_,_,libenv) -> do
+			GUI.showGraph file opt (Just (ln, libenv))
+		Nothing -> return ()
+
+{-
 hasEnvOut :: HetcatsOpts -> Bool
 hasEnvOut = any ( \ o -> case o of EnvOut -> True
                                    _ -> False) . outtypes
-
+-}
+{-
 -- Just (_,_,dg,_) <- run "CASL/test/X1.casl"
 -- let (Just caslsign) = getCASLSign $ getFirstNodeSign dg 
 run  :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
@@ -141,6 +155,22 @@ run file =
                                         emptyLibEnv ld)
        showDiags opt ds
        return res
+-}
+
+run :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
+run file =
+	do
+		res <- anaLib dho file
+		return $ case res of
+			Nothing -> Nothing
+			(Just (ln, lenv)) ->
+				let
+					fakelibdefn = ASL.Lib_defn ln [] Id.nullRange []
+					dg = case Map.lookup ln lenv of
+						Nothing -> error "Cannot find entry for library."
+						(Just (_,_,dg' )) -> dg'
+				in
+					Just (ln, fakelibdefn, dg, lenv)
 
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
@@ -153,10 +183,10 @@ make ghci
 Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
 -}
 
-showGraph2::FilePath -> IO ()
+{- showGraph2::FilePath -> IO ()
 showGraph2 f = do
 	env <- run f
-	showGraph f Driver.Options.defaultHetcatsOpts env
+	showGraph f Driver.Options.defaultHetcatsOpts env -}
 
 -- further functions for extracting information from the output
 {-toCASLsens :: G_l_sentence_list -> [Named (FORMULA ())]
@@ -183,11 +213,11 @@ getFirstNode = (\x -> ((labNodes x)!!0))
 -- isAxiom was added... (a :: Bool)
 transSen::[Ann.Named CASLFORMULA]->[(String, CASLFORMULA)]
 transSen [] = []
-transSen ((Ann.NamedSen n _ s):rest) = [(n, s)] ++ transSen rest
+transSen ((Ann.NamedSen n _ _ s):rest) = [(n, s)] ++ transSen rest
 
 transSenBack::[(String, CASLFORMULA)]->[Ann.Named CASLFORMULA]
 transSenBack [] = []
-transSenBack ((n, s):rest) = (Ann.NamedSen n False s):(transSenBack rest)
+transSenBack ((n, s):rest) = (Ann.NamedSen n False False s):(transSenBack rest)
 
 getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]
 getPureFormulas [] = []
@@ -452,7 +482,7 @@ getNodeDeltaOpMaps dg n = getFromCASLSignDeltaM dg n opMap
 	
 -- get CASL-formulas from a node
 getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
-getNodeSentences (DGRef _ _ _ _ _) = []
+getNodeSentences (DGRef {}) = []
 getNodeSentences node =
 	let
 		(Just csen) = (\(G_theory _ _ thsens) -> (cast thsens)::(Maybe (ThSens CASLFORMULA))) $ dgn_theory node
@@ -471,7 +501,8 @@ getNodeNameMapping dg mapper dispose =
 		if dispose mapped then
 			mapping
 		else
-			Map.insert (adjustNodeName ("AnonNode#"++(show n)) $ getDGNodeName node) (mapper dg n) mapping
+			-- had to change '#' to '_' because '#' is not valid in names...
+			Map.insert (adjustNodeName ("AnonNode_"++(show n)) $ getDGNodeName node) (mapper dg n) mapping
 		) Map.empty $ Graph.labNodes dg
 
 type Imports = Set.Set (String, (Maybe MorphismMap))
@@ -608,7 +639,7 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
 				else
 					(Just (makeMorphismMap caslmorph))
 		in
-			((adjustNodeName ("AnonNode#"++(show from)) $ getDGNodeName node), mmm):names
+			((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm):names
 		) [] $ inputLNodes dgr n ) Set.null
 	
 adjustNodeName::String->String->String
@@ -619,7 +650,7 @@ adjustNodeName _ name = name
 getNodeNames::DGraph->(Set.Set (Graph.Node, String))
 getNodeNames dg =
 	fst $ foldl (\(ns, num) (n, node) ->
-		(Set.insert (n, adjustNodeName ("AnonNode#"++(show num)) $ getDGNodeName node) ns, num+1)
+		(Set.insert (n, adjustNodeName ("AnonNode_"++(show num)) $ getDGNodeName node) ns, num+1)
 		) (Set.empty, 1) $ Graph.labNodes dg
 		
 partition::(a->Bool)->[a]->([a], [a])
@@ -632,8 +663,8 @@ getNodeNamesNodeRef dg =
 	let
 		lnodes = Graph.labNodes dg
 		(nodes, refs) = partition (\(_,n) -> not $ isDGRef n) lnodes
-		nnames = map (\(n, node) -> (n, adjustNodeName ("AnonNode#"++(show n)) $ getDGNodeName node)) nodes
-		rnames = map (\(n, node) -> (n, adjustNodeName ("AnonRef#"++(show n)) $ getDGNodeName node)) refs
+		nnames = map (\(n, node) -> (n, adjustNodeName ("AnonNode_"++(show n)) $ getDGNodeName node)) nodes
+		rnames = map (\(n, node) -> (n, adjustNodeName ("AnonRef_"++(show n)) $ getDGNodeName node)) refs
 	in
 		(Set.fromList nnames, Set.fromList rnames)
 			

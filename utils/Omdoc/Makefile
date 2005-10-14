@@ -300,6 +300,9 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 patch:
 
+integrate:
+	$(HC) --make -o $@ Integrate.hs $(HCI_OPTS) -main-is Integrate
+
 hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 

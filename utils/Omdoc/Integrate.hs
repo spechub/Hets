@@ -55,6 +55,10 @@ import Common.Utils (joinWith)
 
 import qualified System.IO.Error as System.IO.Error
 import qualified System.Directory as System.Directory
+import qualified System.Exit as Exit
+
+import qualified System.Environment as Env
+import qualified System.Console.GetOpt as GetOpt
 
 import Char (toLower, isSpace)
 
@@ -69,25 +73,41 @@ data ImportContext a = ImportContext {
 						}
 						
 
+omdocNameXMLNS
+	,omdocNameXMLAttr :: String
+omdocNameXMLNS = "xml"
+omdocNameXMLAttr = "id"
+						
 theoryNameXMLNS
 	,theoryNameXMLAttr :: String
 theoryNameXMLNS = "xml"
 theoryNameXMLAttr = "id"
+
+axiomNameXMLNS
+	,axiomNameXMLAttr :: String
+axiomNameXMLNS = ""
+axiomNameXMLAttr = "name"
 						
 sortNameXMLNS
 	,sortNameXMLAttr :: String
-sortNameXMLNS = "xml"
-sortNameXMLAttr = "id"
+sortNameXMLNS = ""
+sortNameXMLAttr = "name"
+
+symbolTypeXMLNS
+	,symbolTypeXMLAttr :: String
+	
+symbolTypeXMLNS = ""
+symbolTypeXMLAttr = "role"
 
 predNameXMLNS
 	,predNameXMLAttr :: String
-predNameXMLNS = "xml"
-predNameXMLAttr = "id"
+predNameXMLNS = ""
+predNameXMLAttr = "name"
 
 opNameXMLNS
 	,opNameXMLAttr :: String
-opNameXMLNS = "xml"
-opNameXMLAttr = "id"
+opNameXMLNS = ""
+opNameXMLAttr = "name"
 
 -- | generate a DOCTYPE-Element for output
 mkOmdocTypeElem::
@@ -96,13 +116,23 @@ mkOmdocTypeElem::
 mkOmdocTypeElem system =
 	HXTT.XDTD HXTT.DOCTYPE [
 		 (a_name, "omdoc")
-		,(k_public, "-//OMDoc//DTD OMDoc V1.1//EN")
+		,(k_public, "-//OMDoc//DTD OMDoc V1.2//EN")
 		,(k_system, system)
 		]
 
--- | generate DOCTYPE-Element with \"omdoc.dtd\" as DTD-URI 
+defaultDTDURI::String
+-- www.mathweb.org does not provide the dtd anymore (or it is hidden..)
+-- defaultDTDURI = "http://www.mathweb.org/src/mathweb/omdoc/dtd/omdoc.dtd"
+-- the svn-server does provide the dtd but all my validating software refuses to load it...
+-- defaultDTDURI = "https://svn.mathweb.org/repos/mathweb.org/trunk/omdoc/dtd/omdoc.dtd"
+-- my private copy of the modular omdoc 1.2 dtd...
+-- defaultDTDURI = "/home/hendrik/Dokumente/Studium/Hets/cvs/HetCATScopy/utils/Omdoc/dtd/omdoc.dtd"
+-- until dtd-retrieving issues are solved I put the dtd online...
+defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
+
+-- | generate DOCTYPE-Element with default-DTD-URI 
 omdocDocTypeElem::HXTT.XNode
-omdocDocTypeElem = mkOmdocTypeElem "omdoc.dtd"
+omdocDocTypeElem = mkOmdocTypeElem defaultDTDURI
 
 -- | this function wraps trees into a form that can be written by HXT
 writeableTrees::XmlTrees->XmlTree
@@ -115,12 +145,30 @@ writeableTrees t =
 			
 		)
 		
+-- | this function wraps trees into a form that can be written by HXT
+writeableTreesDTD::String->XmlTrees->XmlTree
+writeableTreesDTD dtd t =
+		(NTree
+			((\(NTree a _) -> a) emptyRoot)
+			((NTree (mkOmdocTypeElem dtd) [])
+				:(NTree (XText "\n")[])
+				:t)
+			
+		)
+		
 -- | this function shows Xml with indention
 showOmdoc::XmlTrees->IO XmlTrees
 showOmdoc t = HXT.run' $
 	HXT.writeDocument
 		[(a_indent, v_1), (a_issue_errors, v_1)] $
 		writeableTrees t
+		
+-- | this function shows Xml with indention
+showOmdocDTD::String->XmlTrees->IO XmlTrees
+showOmdocDTD dtd t = HXT.run' $
+	HXT.writeDocument
+		[(a_indent, v_1), (a_issue_errors, v_1)] $
+		writeableTreesDTD dtd t
 
 -- | this function writes Xml with indention to a file
 writeOmdoc::XmlTrees->String->IO XmlTrees
@@ -128,8 +176,120 @@ writeOmdoc t f = HXT.run' $
 	HXT.writeDocument
 		[(a_indent, v_1), (a_output_file, f)] $
 		writeableTrees t
+		
+-- | this function writes Xml with indention to a file
+writeOmdocDTD::String->XmlTrees->String->IO XmlTrees
+writeOmdocDTD dtd t f = HXT.run' $
+	HXT.writeDocument
+		[(a_indent, v_1), (a_output_file, f)] $
+		writeableTreesDTD dtd t
 
-loadOmdoc::String->IO (Either IOError XmlTrees)
+-- | processing options for getopt		
+data PO = POInput String | POOutput String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String
+		
+processingOptions::[GetOpt.OptDescr PO]
+processingOptions =
+	[
+	  GetOpt.Option ['i'] ["input"] (GetOpt.ReqArg POInput "INPUT") "File to read from"
+	, GetOpt.Option ['o'] ["output"] (GetOpt.ReqArg POOutput "OUTPUT") "File to write to"
+	, GetOpt.Option ['l'] ["library"] (GetOpt.ReqArg POLib "LIBDIR") "Directory to search for input files"
+	, GetOpt.Option ['g'] ["showgraph"] (GetOpt.NoArg POShowGraph) "Show Graph"
+	, GetOpt.Option ['a'] ["all-libs"] (GetOpt.OptArg (POSandbox . (fromMaybe "")) "OUTDIR") "Output all used libraries [to dir]"
+	, GetOpt.Option ['h'] ["help"] (GetOpt.NoArg POHelp) "print this info"
+	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
+	]
+	
+usageString::String
+usageString = GetOpt.usageInfo "Integrate [-i <input>] [-o <output>] [-l dir] [-g] [-a[<directory>]] [-d <dtd-uri>]" processingOptions
+
+-- | some basic interface for command-line use... not very usefull right now.
+-- conversion only works from casl to omdoc. omdoc to casl is limited to showing
+-- the resulting graph (no data output)
+-- you can get the xml-output for a single file to stdout by using '-' as output
+-- you can not feed stdin into this 
+main::IO ()
+main =
+	do
+		args <- Env.getArgs
+		(options, nonoptions) <- case GetOpt.getOpt GetOpt.Permute processingOptions args of
+			(o,n,[]) -> return (o,n)
+			(_,_,errs) -> ioError (userError (concat errs ++ usageString))
+		if ((length args) == 0) || ((length ( filter (\op -> case op of POHelp -> True; _ -> False) options )) /= 0)
+			then
+				do
+					putStrLn usageString
+					Exit.exitWith (Exit.ExitSuccess)
+			else
+				do
+					return ()
+		inputopts <- return $ filter (\op -> case op of POInput _ -> True; _ -> False) options
+		outputopts <- return $ filter (\op -> case op of POOutput _ -> True; _ -> False) options
+		alloutopts <- return $ filter (\op -> case op of POSandbox _ -> True; _ -> False) options
+		showgraphopts <- return $ filter (\op -> case op of POShowGraph -> True; _ -> False) options
+		dtduriopts <- return $ filter (\op -> case op of PODTDURI _ -> True; _ -> False) options
+		input <- return $ case inputopts of
+					[] -> case nonoptions of
+						[] -> "-"
+						_ -> head nonoptions
+					((POInput s):r) -> s
+		output <- return $ case outputopts of
+					[] -> ""
+					((POOutput s):r) -> s
+		sandbox <- return $ case alloutopts of
+			[] -> ""
+			((POSandbox s):r) -> s
+		doshow <- return $ (length showgraphopts) /= 0
+		dtduri <- return $ case dtduriopts of
+			[] -> defaultDTDURI
+			((PODTDURI s):r) -> s
+		searchpath <- return $ map (\(POLib s) -> s) $ filter (\o -> case o of (POLib _) -> True; _ -> False) options
+		inputOmdoc <- return $ ( (isSuffixOf ".omdoc" input) || (isSuffixOf ".xml" input) )
+		inputCasl <- return $ ( (isSuffixOf ".casl" input) )
+		if inputOmdoc
+			then
+				do
+					ig <- makeImportGraph input searchpath
+					(ln,dg,lenv) <- return $ dGraphGToLibEnv $ hybridGToDGraphG $ processImportGraph ig
+					if doshow
+						then
+							showdg (ln,dg,lenv)
+						else
+							return ()
+			else if inputCasl
+				then
+					do
+					mdgenv <- Hets.run input
+					(ln,_,dg,lenv) <- case mdgenv of
+						Nothing -> ioError (userError "Could not load CASL-File...")
+						(Just env) -> return env
+					omdoc <- return $ devGraphToOmdoc dg (stripLibName (show ln))
+					if doshow
+						then
+							showdg (ln,dg,lenv)
+						else
+							return ()
+					case output of
+						"" -> return ()
+						"-" -> showOmdocDTD dtduri omdoc >> return ()
+						_ -> writeOmdocDTD dtduri omdoc output >> return ()
+					case sandbox of
+						"" -> return ()
+						_ ->
+								let
+									igdg = libEnvToDGraphG (ln,dg,lenv)
+									igx = dGraphGToXmlG igdg
+								in
+									do
+										putStrLn ("Writing to " ++ sandbox )
+										writeXmlG dtduri igx sandbox
+				else
+					do 
+					putStrLn ("Cannot process this input : \"" ++ input ++ "\"")
+		return ()
+
+-- | loads an omdoc-file and returns it even if there are errors
+-- fatal errors lead to IOError
+loadOmdoc ::String->(IO XmlTrees)
 loadOmdoc f =
 	do
 		tree <- (
@@ -143,12 +303,25 @@ loadOmdoc f =
 				]
 				emptyRoot
 			)
-		status <- return ( ( read $ xshow $ applyXmlFilter (getValue "status") tree) :: Int )
+		status <- return ( (
+			read $
+			xshow $
+			applyXmlFilter (getValue "status") tree
+			) :: Int )
 		if status <= HXT.c_err
 			then
-				return (Right (applyXmlFilter (getChildren .> isTag "omdoc") tree ))
+				return $ applyXmlFilter (getChildren .> isTag "omdoc") tree
+						
 			else
-				return (Left $ System.IO.Error.mkIOError System.IO.Error.userErrorType ("Error reading \"" ++ f ++ "\"...") Nothing (Just f))
+				ioError $ userError ("Error loading \"" ++ f ++ "\"")
+						
+stringToXml::String->(IO XmlTrees)
+stringToXml s =
+	(
+	HXT.run' $ parseDocument
+		[(a_validate, v_0), ("use-string", v_1)]
+		(head (replaceChildren (xtext s) emptyRoot))
+	) >>= return . applyXmlFilter getChildren
 		
 -- | some operations to get CASL-Signs
 getCASLSignFromDG::Static.DevGraph.DGraph->CASL.Amalgamability.CASLSign
@@ -157,11 +330,14 @@ getCASLSignFromDG dg =
 	in caslsign
 
 getCASLSignF::FilePath->IO CASL.Amalgamability.CASLSign
-getCASLSignF s = do Hets.getDG s >>= \dg -> return $ getCASLSignFromDG $ dg 
+getCASLSignF s = do Hets.getDG s >>= \dg -> return $ getCASLSignFromDG $ dg
+
+stripLibName::String->String
+stripLibName = last . explode "/"
 
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 devGraphToOmdoc::Static.DevGraph.DGraph->String->HXT.XmlTrees
-devGraphToOmdoc dg name = (HXT.etag "omdoc" += ( qualattr "xml" "id" name
+devGraphToOmdoc dg name = (HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name
 				+++ xmlNL +++ devGraphToXml dg )) emptyRoot
 
 -- | Convert a DevGraph to an XML-Representation (without omdoc parent)				
@@ -210,7 +386,7 @@ devGraphToXml dg =
 							) (nSorts, nOps, nPreds) $ Set.toList nImports
 				in
 					dgx +++
-					(HXT.etag "theory" += (qualattr "xml" "id" name))
+					(HXT.etag "theory" += (qualattr theoryNameXMLNS theoryNameXMLAttr name))
 					+= (
 					   (foldl (\ix (i,mmm) -> ix +++ xmlNL +++ importToXml i +=
 							(
@@ -277,22 +453,24 @@ importToXml i = HXT.etag "imports" += (HXT.sattr "from" ("#"++i))
 -- | create a xml-representation for a SORT
 sortToXml::SORT->(HXT.XmlTree->HXT.XmlTrees)
 -- NAME -> ID
-sortToXml s = HXT.etag "symbol" += ( HXT.sattr "kind" "sort" +++ qualattr "xml" "id" (show s) )
+sortToXml s = HXT.etag "symbol" += ( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort" +++ qualattr sortNameXMLNS sortNameXMLAttr (show s) )
 
 -- | create an ADT for a SORT-Relation and constructor information (in xml)
 createADT::(SORT, Set.Set SORT)->HXT.XmlFilter->HXT.XmlFilter
 createADT (s,ss) constructors =
-	HXT.etag "adt" += (qualattr "xml" "id" ((show s)++"-adt")) 
+	HXT.etag "adt" -- += (qualattr "xml" "id" ((show s)++"-adt")) -- id must be unique but is optional anyway... 
 	+= (
 	    xmlNL +++
-	    (HXT.etag "sortdef" += (HXT.sattr "name" (show s) +++ HXT.sattr "type" "free") )
-	    +++
-	    constructors
-	    +++
-	    (foldl (\isx is ->
-	    	isx +++ xmlNL +++ (HXT.etag "insort" += (HXT.sattr "for" ("#"++(show is))))
-	    ) (HXT.txt "") $ Set.toList ss)
-	    +++ xmlNL
+	    (HXT.etag "sortdef" += (
+			HXT.sattr "name" (show s) +++
+			HXT.sattr "type" "free" +++
+			constructors +++
+			(foldl (\isx is ->
+				isx +++ xmlNL +++ (HXT.etag "insort" += (HXT.sattr "for" ("#"++(show is))))
+			) (HXT.txt "") $ Set.toList ss)
+			+++ xmlNL
+			)
+		)
 	)
 
 -- | creates a xml-representation for a list of constructors	
@@ -323,9 +501,11 @@ initOrEmpty l = init l
 extractConsFromADT::HXT.XmlTrees->(Id.Id, [(Id.Id, OpType)])
 extractConsFromADT t =
 	let
-		sort = Hets.stringToId $ reverse $ drop (length "-adt") $ reverse $
-				xshow $ applyXmlFilter (isTag "adt" .> getQualValue "xml" "id") t
-		cons = applyXmlFilter (getChildren .> isTag "constructor") t
+		--sort = Hets.stringToId $ reverse $ drop (length "-adt") $ reverse $
+		--		xshow $ applyXmlFilter (isTag "adt" .> getQualValue "xml" "id") t
+		sort = Hets.stringToId $ xshow $ applyXmlFilter (isTag "adt" .> getChildren
+			.> isTag "sortdef" .> getValue "name") t
+		cons = applyXmlFilter (getChildren .> isTag "sortdef" .> getChildren .> isTag "constructor") t
 	in
 		(sort, map (\t -> extractCon [t] sort) cons)
 		
@@ -343,6 +523,7 @@ consToSens sort conlist =
 	Ann.NamedSen
 		("ga_generated_" ++ show sort)
 		True
+		False
 		(Sort_gen_ax
 			(
 			foldl (\constraints (id, ot) ->
@@ -363,7 +544,7 @@ predicationToXml::Hets.ImportsMap->Hets.SortsMap->String->(Id.Id, (Set.Set PredT
 predicationToXml imports sorts name (predId, ptSet) =
 	(HXT.etag "symbol" += (
 		qualattr predNameXMLNS predNameXMLAttr (show predId)
-		+++ HXT.sattr "kind" "object"
+		+++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"
 		)
 	) += ( 
 		foldl (\tx (PredType predArgs) ->
@@ -416,7 +597,7 @@ predicationToXml imports sorts name (predId, ptSet) =
 operatorToXml::Hets.ImportsMap->Hets.SortsMap->String->(Id.Id, (Set.Set OpType))->(HXT.XmlTree->HXT.XmlTrees)
 operatorToXml imports sorts name (opId, otSet) =
 -- NAME -> ID
-	(HXT.etag "symbol" += (qualattr opNameXMLNS opNameXMLAttr (show opId) +++ HXT.sattr "kind" "object"))
+	(HXT.etag "symbol" += (qualattr opNameXMLNS opNameXMLAttr (show opId) +++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"))
 	+= ( 
 		foldl (\tx (OpType fk opArgs opRes) ->
 		tx +++ xmlNL
@@ -488,104 +669,43 @@ morphismMapToXml (sm, om, pm, hs) source target =
 		+++
 		(foldl (\sx (ss,st) ->
 			sx +++
-			HXT.etag "requation" +=
-				(
-				HXT.etag "pattern" +=
+			requation
+				(inOMOBJ
 					(
-					xmlNL
-					+++
-					inOMOBJ
-						(
-						HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" (show ss))
-						)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				+++
-				HXT.etag "value" +=
+					HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" (show ss))
+					))
+				(inOMOBJ
 					(
-					xmlNL
-					+++
-					inOMOBJ
-						(
-						HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" (show st))
-						)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				)
-			+++
-			xmlNL
+					HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" (show st))
+					))
 		) (HXT.txt "") $ Map.toList sm)
 		+++
 		(foldl (\sx ((sid, sot),(tid, tot)) ->
 			sx +++
-			HXT.etag "requation" +=
-				(
-				HXT.etag "pattern" +=
-					(
-					xmlNL
-					+++
-					inOMOBJ
-						(processOperatorForMorphism sid sot source)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				+++
-				HXT.etag "value" +=
-					(
-					xmlNL
-					+++
-					inOMOBJ
-						(processOperatorForMorphism tid tot target)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				)
-			+++
-			xmlNL
+			requation
+				(inOMOBJ (processOperatorForMorphism sid sot source))
+				(inOMOBJ (processOperatorForMorphism tid tot target))
 		) (HXT.txt "") $ Map.toList om)
 		+++
 		(foldl (\sx ((sid, spt),(tid, tpt)) ->
 			sx +++
-			HXT.etag "requation" +=
-				(
-				HXT.etag "pattern" +=
-					(
-					xmlNL
-					+++
-					inOMOBJ
-						(processPredicationForMorphism sid spt source)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				+++
-				HXT.etag "value" +=
-					(
-					xmlNL
-					+++
-					inOMOBJ
-						(processPredicationForMorphism tid tpt target)
-					+++
-					xmlNL
-					)
-				+++
-				xmlNL
-				)
-			+++
-			xmlNL
+			requation
+				(inOMOBJ (processPredicationForMorphism sid spt source))
+				(inOMOBJ (processPredicationForMorphism tid tpt target))
 		) (HXT.txt "") $ Map.toList pm)
 		)
+	where
+	requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
+	requation p v =
+		HXT.etag "requation" +=
+			(
+			xmlNL +++
+			p +++
+			xmlNL +++
+			v +++
+			xmlNL
+			) +++
+		xmlNL
 		
 processOperatorForMorphism::Id.Id->OpType->String->HXT.XmlFilter
 processOperatorForMorphism 
@@ -920,9 +1040,16 @@ processXmlMorphism
 					) Map.empty requations
 		in
 			(imports, (Map.adjust (Set.union (Debug.Trace.trace ("new symbol set : "++(show newSymbolsSet)) newSymbolsSet)) targetname sorts), preds, newOpsMap, Hets.emptyCASLMorphism)
-				
 
-			
+singleitem::Int->[a]->[a]
+singleitem _ [] = []
+singleitem 0 _ = []
+singleitem 1 (i:r) = [i]
+singleitem n (i:r) = singleitem (n-1) r
+
+getChild::Int->XmlFilter
+getChild c (NTree _ cs) = singleitem c cs
+
 xmlToMorphismMap::
 	HXT.XmlTrees->
 	Hets.MorphismMap
@@ -932,10 +1059,10 @@ xmlToMorphismMap
 		let
 			hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
 			hiddensyms = map Hets.stringToId $ map trimString $ explode "," hides
-			pattern = isTag "requation" .> getChildren .> isTag "pattern"
-			value = isTag "requation" .> getChildren .> isTag "value"
-			vsymbol = value .> getChildren .> isTag "OMOBJ" .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
-			psymbol = pattern .> getChildren .> isTag "OMOBJ" .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
+			pattern = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 1
+			value = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 2
+			vsymbol = value .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
+			psymbol = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
 			requations = applyXmlFilter (isTag "morphism" .> getChildren .> isTag "requation") t
 			sortmap = foldl (\sm ts ->
 				case applyXmlFilter (value .> getChildren .> isTag "OMATTR") [ts] of
@@ -953,12 +1080,10 @@ xmlToMorphismMap
 				let
 					satp = applyXmlFilter (
 						pattern .> getChildren .>
-						isTag "OMOBJ" .> getChildren .>
 						isTag "OMATTR" .> getChildren .>
 						isTag "OMATP") [tp]
 					tatp = applyXmlFilter (
 						value .> getChildren .>
-						isTag "OMOBJ" .> getChildren .>
 						isTag "OMATTR" .> getChildren .>
 						isTag "OMATP") [tp]
 					satpsym = applyXmlFilter (getChildren .> isTag "OMS") satp
@@ -973,12 +1098,10 @@ xmlToMorphismMap
 						(map (\t -> xshow $ applyXmlFilter (getChildren) [t]) tatpstr)
 					ssymbolname = xshow $ applyXmlFilter (
 						pattern .> getChildren .>
-						isTag "OMOBJ" .> getChildren .>
 						isTag "OMATTR" .> getChildren .> 
 						isTag "OMS" .> getValue "name" ) [tp]
 					tsymbolname = xshow $ applyXmlFilter (
 						value .> getChildren .>
-						isTag "OMOBJ" .> getChildren .>
 						isTag "OMATTR" .> getChildren .> 
 						isTag "OMS" .> getValue "name" ) [tp]
 					ssorts = explode "-\\" $ Map.findWithDefault "" "type" satpmap
@@ -1043,7 +1166,7 @@ getAll dg =
 -- all CFs that generate sorts (constructors)
 partitionSensSortGen::[Ann.Named CASLFORMULA]->([Ann.Named CASLFORMULA],[Ann.Named CASLFORMULA])
 partitionSensSortGen sens =
-	foldl (\(sens,sortgen) s@(Ann.NamedSen name isaxiom sentence) ->
+	foldl (\(sens,sortgen) s@(Ann.NamedSen name isaxiom _ sentence) ->
 		if isPrefixOf "ga_generated_" name then
 			case sentence of
 				(Sort_gen_ax _ True) -> (sens, sortgen++[s])
@@ -1059,7 +1182,7 @@ makeConstructors sortgenaxlist =
 
 -- | creates constructors from a 'CASLFORMULA'
 makeConstructorMap::(Ann.Named CASLFORMULA)->(Id.Id, (Map.Map Id.Id (Set.Set OpType)))
-makeConstructorMap (Ann.NamedSen senname _ (Sort_gen_ax cons _)) =
+makeConstructorMap (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) =
 	let	sort = drop (length "ga_generated_") senname
 		constructormap = foldl(\cmap (Constraint _ symbs _) ->
 			foldl(\tcmap (Qual_op_name name ot _) ->
@@ -1148,7 +1271,7 @@ headorempty x = head x
 stringToLink::String->[DGLinkLab]
 stringToLink s =
 	let
-		swords = wordsWithQuotes s
+		swords = separateFromColonsNoCmt $ wordsWithQuotes s
 		ltype = case getFollows (=="Type:") swords of
 			Nothing -> ""
 			(Just l) -> unquote l
@@ -1167,7 +1290,7 @@ stringToLink s =
 stringToLEdge::(Map.Map String Graph.Node)->Graph.Node->String->[(Graph.LEdge DGLinkLab)]
 stringToLEdge nameNodeMap targetnode linkstring =
 	let
-		swords = wordsWithQuotes linkstring 
+		swords = separateFromColonsNoCmt $ wordsWithQuotes linkstring 
 		lfrom = case getFollows (=="From:") swords of 
 			Nothing -> "" -- leads to error below 
 			(Just name) -> unquote name
@@ -1192,7 +1315,36 @@ inDGToXml dg n nodenames =
 			) "\n" named)
 		)
 		
+-- | separates strings following colons if the string is not quoted
+separateFromColonsNoCmt::[String]->[String]
+separateFromColonsNoCmt strings =
+	separateFromColonsC strings (\s -> (head s) == '"')
 
+-- | separates strings following colons
+separateFromColons::[String]->[String]
+separateFromColons strings =
+	separateFromColonsC strings (\_ -> False)
+
+-- | separates strings following colons except on strings s where cond s is True 	
+separateFromColonsC::[String]->(String->Bool)->[String]
+separateFromColonsC strings cond =
+	foldl (\r s ->
+		let 
+			parts = explode ":" s
+		in
+			if cond s then r ++ [s] else
+				r ++ if length parts == 1
+					then
+						parts
+					else
+						( (map (++":") (init parts))
+						  ++
+						  case (last parts) of
+							"" -> []
+							_ -> [last parts]
+						)
+		) [] strings
+	
 		
 getFollows::(a->Bool)->[a]->(Maybe a)
 getFollows _ [] = Nothing
@@ -1245,7 +1397,7 @@ sortsFromXmlTheory t =
 	Set.fromList $ map Hets.stringToId $ map (\n -> xshow [n]) $
 		applyXmlFilter (
 			getChildren .> isTag "symbol" .>
-			withSValue "kind" "sort" .> getQualValue sortNameXMLNS sortNameXMLAttr) t
+			withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .> getQualValue sortNameXMLNS sortNameXMLAttr) t
 	
 sortsFromXml::HXT.XmlTrees->Hets.SortsMap
 sortsFromXml t =
@@ -1266,7 +1418,7 @@ relsFromXmlTheory t =
 	relsFromXmlADT::HXT.XmlTree->[(SORT, SORT)]
 	relsFromXmlADT t =
 		let	sort = Hets.stringToId $ xshow $ applyXmlFilter (getChildren .> isTag "sortdef" .> withSValue "type" "free" .> getValue "name") [t]
-			insorts = map (\n -> Hets.stringToId $ drop 1 $ xshow [n]) $ applyXmlFilter (getChildren .> isTag "insort" .> getValue "for") [t]
+			insorts = map (\n -> Hets.stringToId $ drop 1 $ xshow [n]) $ applyXmlFilter (getChildren .> isTag "sortdef" .> getChildren .> isTag "insort" .> getValue "for") [t]
 			-- note that we restore 'CASL-Order' here
 		in	map (\n -> (n, sort)) insorts
 		
@@ -1281,7 +1433,7 @@ relsFromXml t =
 		
 predsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set PredType))
 predsFromXmlTheory t =
-	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withSValue "kind" "object") t
+	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") t
 		predsymbols = filter (\n -> applyXmlFilter (
 				getChildren .> isTag "type" .>
 				getChildren .> isTag "OMOBJ" .>
@@ -1296,7 +1448,7 @@ predsFromXmlTheory t =
 	where
 		predFromXmlSymbol::HXT.XmlTree->(Id.Id, PredType)
 		predFromXmlSymbol t =
-			let	pId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue "xml" "id") [t]
+			let	pId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue predNameXMLNS predNameXMLAttr) [t]
 				args = applyXmlFilter (
 					getChildren .> isTag "type" .> withSValue "system" "casl" .>
 					getChildren .> isTag "OMOBJ" .>
@@ -1317,7 +1469,7 @@ predsFromXml t =
 		
 opsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set OpType))
 opsFromXmlTheory t =
-	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withSValue "kind" "object") t
+	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") t
 		opsymbols = filter (\n -> applyXmlFilter (
 				getChildren .> isTag "type" .>
 				getChildren .> isTag "OMOBJ" .>
@@ -1332,7 +1484,7 @@ opsFromXmlTheory t =
 	where
 		opFromXmlSymbol::HXT.XmlTree->(Id.Id, OpType)
 		opFromXmlSymbol t =
-			let	oId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue "xml" "id") [t]
+			let	oId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue opNameXMLNS opNameXMLAttr) [t]
 				isTotal = applyXmlFilter (
 					getChildren .> isTag "type" .> withSValue "system" "casl" .>
 					getChildren .> isTag "OMOBJ" .>
@@ -1399,7 +1551,7 @@ createImportHints t =
 					foldl (\h l ->
 						let
 							lablink = stringToLink l
-							fromname = case getFollows (=="From:") (wordsWithQuotes l) of
+							fromname = case getFollows (=="From:") (separateFromColonsNoCmt $ wordsWithQuotes l) of
 								Nothing -> ""
 								(Just n) -> unquote n
 						in
@@ -1575,6 +1727,7 @@ importGraphToDGNodes ig n =
 					(Hets.stringToSimpleId theoname, "", 0)
 					(ASL.Lib_id (ASL.Indirect_link ssrc Id.nullRange))
 					onodenum
+					(G_theory CASL Hets.emptyCASLSign (toThSens []))
 					Nothing
 					Nothing
 					) refimports
@@ -1803,9 +1956,7 @@ getImportMapFG filename =
 		putStrLn ("Processing : " ++ filename ++ " (" ++ cfn ++ ")")
 		cfp <- return ( reverse $ dropWhile (\c -> not $ elem c [ '/','\\' ]) $ reverse cfn)
 		loadresult <- loadOmdoc cfn
-		omdoc <- case loadresult of
-			(Left error) -> putStrLn ("Error loading \"" ++ cfn ++ "\"...") >> return (HXT.txt "" emptyRoot)
-			(Right doc) -> return doc
+		omdoc <- Control.Exception.catch (loadOmdoc cfn) (\_ -> putStrLn ("Error loading \"" ++ cfn ++ "\"...") >> return (HXT.txt "" emptyRoot) )
 		omdocid <- return (getOmdocID omdoc)
 		catmap <- return (getCatalogueInformation omdoc)
 		if not $ null cfp 
@@ -2136,8 +2287,8 @@ fileSandbox sb file =
 
 -- | writes an XmlTrees-Graph to disk relative to a given directory
 -- will create directory-structures from libnames
-writeXmlG::(ImportGraph (HXT.XmlTrees))->String->IO ()
-writeXmlG ig sandbox =
+writeXmlG::String->(ImportGraph (HXT.XmlTrees))->String->IO ()
+writeXmlG dtduri ig sandbox =
 	let
 		nodes = map snd $ Graph.labNodes ig
 	in
@@ -2147,7 +2298,7 @@ writeXmlG ig sandbox =
 			in
 				putStrLn ("Writing \"" ++ name ++ "\" to \"" ++ omfile ++ "\"") >>
 				System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
-				writeOmdoc x omfile
+				writeOmdocDTD dtduri x omfile
 			) nodes) >> return ()
 		
 			
@@ -2282,7 +2433,7 @@ buildCatalogue::Static.DevGraph.DGraph->[(String, String, String)]
 buildCatalogue dg =	let	justlabnodes = map (\(_,a)->a) $ Graph.labNodes dg
 				dgrefs = filter Static.DevGraph.isDGRef justlabnodes
 			in
-				foldl (\list (DGRef _ libname node _ _) ->
+				foldl (\list (DGRef _ libname node _ _ _) ->
 					list ++ [(show node, (getLibURI libname), caslS)])
 					[] dgrefs
 					
@@ -2577,7 +2728,7 @@ cleanup dg =	let	labnodes = Graph.labNodes dg
 		
 cleannode::Static.DevGraph.DGNodeLab->Static.DevGraph.DGNodeLab
 cleannode (Static.DevGraph.DGNode nam sgn arg sns nf sig org) = Static.DevGraph.DGNode (cleanname nam) sgn arg sns nf sig org  
-cleannode (Static.DevGraph.DGRef nam ln n nf sig) = Static.DevGraph.DGRef (cleanname nam) ln n nf sig
+cleannode (Static.DevGraph.DGRef nam ln n nt nf sig) = Static.DevGraph.DGRef (cleanname nam) ln n nt nf sig
 
 cleanname::Static.DevGraph.NODE_NAME->Static.DevGraph.NODE_NAME
 cleanname n = if isPrefix "anonnode:" (Static.DevGraph.showName n) then Static.DevGraph.emptyNodeName else n
@@ -2673,7 +2824,7 @@ wrapFormulas::Hets.ImportsMap->Hets.SortsMap->Hets.PredsMap->Hets.OpsMap->String
 wrapFormulas imports sorts preds ops name fs = (\(a,_) -> a) $ foldl (\(wrapped, n) f -> (wrapped +++ (wrapFormula imports sorts preds ops name n f), n+1) ) (HXT.txt "", 1) fs
 
 wrapFormula::Hets.ImportsMap->Hets.SortsMap->Hets.PredsMap->Hets.OpsMap->String->Int->(Ann.Named CASLFORMULA)->(HXT.XmlTree->HXT.XmlTrees)
-wrapFormula imports sorts preds ops tname number ansen = ( (createQAttributed "axiom" [("xml", "id", let name = (Ann.senName ansen) in if name=="" then ("AnonAx"++(show number)) else name)])
+wrapFormula imports sorts preds ops tname number ansen = ( (createQAttributed "axiom" [(axiomNameXMLNS, axiomNameXMLAttr, let name = (Ann.senName ansen) in if name=="" then ("AnonAx"++(show number)) else name)])
 			  += ( (xmlNL +++ (HXT.etag "FMP"
 			  	+= ( xmlNL +++ (HXT.etag "OMOBJ" +++ xmlNL)
 			  		+= (xmlNL +++ (processFormula imports sorts preds ops tname (Ann.sentence ansen)) ) +++ xmlNL ) ) +++ xmlNL ) ) ) +++ xmlNL
@@ -2949,11 +3100,11 @@ processFormula imports sorts preds ops name
 				HXT.sattr "name" caslSort_gen_axS)
 			) +++
 			(xmlNL) +++
-			(HXT.etag "OMBVAR" +=
-				( xmlNL +++
-				(processConstraints imports ops name constraints)
-				)
-			) +++
+			--(HXT.etag "OMBVAR" += -- ombvar not allowed in oma
+			--	( xmlNL +++
+				(processConstraints imports ops name constraints) +++
+			--	)
+			--) +++
 			HXT.etag "OMS" +=
 				(HXT.sattr "cd" caslS +++
 				HXT.sattr "name"
@@ -3019,17 +3170,20 @@ createSymbolForPredication imports preds name
 				)
 				) +++
 				xmlNL
-			) +++
-		xmlNL +++
-		HXT.etag "OMS" +=
-			( HXT.sattr "cd" ( fromMaybe "unknown" $
-				Hets.findNodeNameForPredicationWithSorts
-					imports	
-					preds
-					(pr, cv_Pred_typeToPredType pt)
-					name) +++
-			HXT.sattr "name" (show pr)
-			) 
+			+++ -- symbol was left out of omattr... need to check back-conversion
+			xmlNL +++
+			HXT.etag "OMS" +=
+				( HXT.sattr "cd" ( fromMaybe "unknown" $
+					Hets.findNodeNameForPredicationWithSorts
+						imports	
+						preds
+						(pr, cv_Pred_typeToPredType pt)
+						name) +++
+				HXT.sattr "name" (show pr)
+				) +++
+			xmlNL
+		)
+
 
 --data QUANTIFIER = Universal | Existential | Unique_existential
 -- Quantifier as CASL Symbol
@@ -3095,16 +3249,23 @@ emptyFormulaContext = FC Map.empty Map.empty Map.empty Map.empty Map.empty ""
 unwrapFormula::FormulaContext->HXT.XmlTrees->(Ann.Named CASLFORMULA)
 unwrapFormula fc t =
 	let
-		name = xshow $ applyXmlFilter (getQualValue "xml" "id") t
+		name = xshow $ applyXmlFilter (getQualValue axiomNameXMLNS axiomNameXMLAttr) t
 		formtree = applyXmlFilter (getChildren .> isTag "FMP" .> getChildren .> isTag "OMOBJ" .> getChildren) t
 	in
-		Ann.NamedSen (adjustFormulaName name) True (formulaFromXml fc formtree)
+		Ann.NamedSen (adjustFormulaName name) True False (formulaFromXml fc formtree)
 
 		  
+tailorempty::[a]->[a]
+tailorempty [] = []
+tailorempty l = tail l
+
+lastorempty::[a]->[a]
+lastorempty [] = []
+lastorempty l = [last l]
 
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
 formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's a quantifier...
-			let	quantTree = [head ((applyXmlFilter (isTag "OMBIND") t)::[XmlTree])]
+			let	quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") t)
 				quant = quantFromName $ xshow $ applyXmlFilter (getChildren .> isTag "OMS" .> withSValue "cd" caslS .> getValue "name") quantTree
 				-- first element is the quantification-OMS
 				formula = drop 1 ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND" +++ isTag "OMS")) quantTree)::[XmlTree]) 
@@ -3115,8 +3276,9 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 			else if (applyXmlFilter (isTag "OMA") t) /= [] then -- the case begins...
 			  let
 			  	formTree = applyXmlFilter (isTag "OMA") t
-				applySym = xshow $ applyXmlFilter (getValue "name") [head (applyXmlFilter (getChildren .> isTag "OMS") formTree)]
-				applySymCD = xshow $ applyXmlFilter (getValue "cd") [head (applyXmlFilter (getChildren .> isTag "OMS") formTree)]
+				applySymXml = singleitem 1 (applyXmlFilter (getChildren .> isTag "OMS") formTree)
+				applySym = xshow $ applyXmlFilter (getValue "name") applySymXml
+				applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
 			  in
 				let	formulas = map (\t -> formulaFromXml fc [t]) ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")) formTree)::[XmlTree])
 					terms = map (\t -> termFromXml fc [t]) ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA")) formTree)::[XmlTree])
@@ -3130,39 +3292,75 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 						Disjunction formulas Id.nullRange
 					else
 					if applySym `elem` [caslImplicationS, caslImplication2S] then
-						let boolF = formulaFromXml fc [((applyXmlFilter (getChildren .> isTag "OMS") formTree)::[XmlTree])!!1] 
+						let
+							boolF = formulaFromXml fc (applyXmlFilter (processChildren (isTag "OMS") .> getChild 1) formTree) 
 						in
-						Implication (formulas!!0) (formulas!!1) (isTrueAtom(boolF)) Id.nullRange
+							if (length formulas) < 2
+								then
+									Debug.Trace.trace ("Impossible to create implication...") (False_atom Id.nullRange)
+								else
+									Implication (formulas!!0) (formulas!!1) (isTrueAtom(boolF)) Id.nullRange
 					else
 					if applySym `elem` [caslEquivalenceS, caslEquivalence2S] then
-						Equivalence (formulas!!0) (formulas!!1) Id.nullRange
+						if (length formulas) < 2
+							then
+								Debug.Trace.trace ("Impossible to create equivalence...") (False_atom Id.nullRange)
+							else
+								Equivalence (formulas!!0) (formulas!!1) Id.nullRange
 					else
 					if applySym == caslNegationS then
-						Negation (formulas!!0) Id.nullRange
+						if formulas == []
+							then
+								Debug.Trace.trace ("Impossible to create negation...") (False_atom Id.nullRange)
+							else
+								Negation (formulas!!0) Id.nullRange
 					else
-					if applySym == caslPredicationS then --- ! ! ! ! !
-						let	pred = predicationFromXml $ [head $ tail $ applyXmlFilter (getChildren .> (isTag "OMS" +++ isTag "OMATTR")) t]
-							predterms = map (\t -> termFromXml fc [t]) $ tail $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) t)::[XmlTree])
+					if applySym == caslPredicationS then
+						let
+							predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 1) t
+							pred = predicationFromXml predxml
+							termxml = (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) t)
+							predterms = map (\tx -> termFromXml fc [tx]) $ tailorempty termxml
 						in
-						Predication pred predterms Id.nullRange 
+						if predxml == []
+							then
+								Debug.Trace.trace ("Impossible to create predication...") (False_atom Id.nullRange)
+							else
+								Predication pred predterms Id.nullRange 
 					else
 					if applySym == caslDefinednessS then
 						Definedness (termFromXml fc (applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" )) t)) Id.nullRange
 					else
 					if applySym == caslExistl_equationS then
-						Existl_equation (terms!!0) (terms!!1) Id.nullRange
+						if (length terms) < 2
+							then
+								Debug.Trace.trace ("Impossible to create existl_equation...") (False_atom Id.nullRange)
+							else
+								Existl_equation (terms!!0) (terms!!1) Id.nullRange
 					else
 					if applySym == caslStrong_equationS then
-						Strong_equation (terms!!0) (terms!!1) Id.nullRange
+						if (length terms) < 2
+							then
+								Debug.Trace.trace ("Impossible to create strong_equation...") (False_atom Id.nullRange)
+							else
+								Strong_equation (terms!!0) (terms!!1) Id.nullRange
 					else
 					if applySym == caslMembershipS then
-						let	sort = xshow $ [last $ ((applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") formTree)::[XmlTree])]
+						let	sort = xshow $ lastorempty (applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") formTree)
 						in
-						Membership (head terms) (Hets.stringToId sort) Id.nullRange
+						if terms == []
+							then
+								Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
+							else
+								Membership (head terms) (Hets.stringToId sort) Id.nullRange
 					else
 					if applySym == caslSort_gen_axS then
 						let	freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
-							constraintsx = applyXmlFilter (getChildren .> isTag "OMBVAR" .> getChildren .> isTag "OMBIND") formTree
+							constraintsx = applyXmlFilter
+								(
+								--getChildren .> isTag "OMBVAR" .> -- removed (see generation)
+								getChildren .> isTag "OMBIND"
+								) formTree
 							constraints = xmlToConstraints constraintsx
 						in
 						Sort_gen_ax constraints freeType
@@ -3183,7 +3381,7 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 								predterms = map (\t -> termFromXml fc [t]) $ tail $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) t)::[XmlTree])
 							in
 								case mptset of
-									Nothing -> error ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"")
+									Nothing -> Debug.Trace.trace ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"") (False_atom Id.nullRange) -- error ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"")
 									(Just ptset) ->
 										if Set.null ptset
 											then
@@ -3193,14 +3391,15 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 --					else
 --						error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
 			  else if (applyXmlFilter (isTag "OMS") t) /= [] then
-			  	let trueOrFalse = xshow $ [((applyXmlFilter (isTag "OMS" .> withSValue "cd" caslS .> getValue "name") t)::[XmlTree])!!0]
+			  	let trueOrFalse = xshow $ singleitem 1 (applyXmlFilter (isTag "OMS" .> withSValue "cd" caslS .> getValue "name") t)
 				in
 				if trueOrFalse == caslSymbolAtomTrueS then
 					True_atom Id.nullRange
 					else
 						if trueOrFalse == caslSymbolAtomFalseS then
 							False_atom Id.nullRange
-							else error (caslSymbolAtomTrueS ++ " or " ++ caslSymbolAtomFalseS ++ " expected, but \"" ++ trueOrFalse ++ "\" found!")
+							else
+								Debug.Trace.trace (caslSymbolAtomTrueS ++ " or " ++ caslSymbolAtomFalseS ++ " expected, but \"" ++ trueOrFalse ++ "\" found!") (False_atom Id.nullRange)
 			  else
 			  	error ("Impossible to create formula from \"" ++ xshow t++ "\"") 
 

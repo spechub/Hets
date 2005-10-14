@@ -1,9 +1,76 @@
+2005-10-11 - Hendrik Iben
+After some cleaning up the xml-conversion seems not to violate the OMDoc-
+DTD v1.2 any more.
+I included a simple main for compilation of the code and included a target
+'integrate' into the Makefile used to start the GHCi-session. There seem to
+be some problems when compiling because of the older HXT used for compiling
+the rest of Hets. It seems to be solveable by just symlinking the newer HXT,
+removing all interface-files (.hi) from OWL_DL and compiling again - or : just
+use the interpreter.
+The OMDoc-DTD is currently only accessible via HTTPS but as my validators are 
+not able to fetch it via this protocol I put up a copy on my webspace and use
+this URL as a default (http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd).
+
+The options for the command-line (or for ':set args' in ghci) are as follows:
+
+integrate [-i <input>] [-o <output>] [-l dir] [-g] [-a[<directory>]]
+[-d <dtd-uri>]
+
+-i is the input file (currently must end on '.casl', '.omdoc' or '.xml')
+-o is the output file (output format currently  depends on input format only...)
+-l is used to specifiy a directory to search for files in (only used when
+	reading omdoc-files). you can use this option more than once.
+-g setting this flag will show the resulting DGraph via daVinci
+-a if you specifiy a directory via this option all referenced libraries will
+	be converted to omdoc and saved to this directory (-o is ignored then)
+-d you can specify a URI for the OMDoc-DTD
+
+Examples:
+integrate -i CASL-lib/Basic/Numbers.casl -o Numbers.omdoc -g
+	
+	this will read in 'Numbers.casl', convert the DGraph to OMDoc and
+	output to Numbers.omdoc. In addition the DGraph will be shown via daVinci.
+	
+(in GHCi)
+:set args -i omdoc/Test.omdoc -g
+main
+
+	this will read in 'Test.omdoc' and show the constructed DGraph
+	
+integrate -i CASL-lib/Advanced/Architectural.casl -a libs
+
+	this will read in 'Architectural.casl' and output all needed libraries as
+	OMDoc into the directory 'libs'
+	
+You can get a summary of options with 'integrate -h'
+Currently there is no file-output when reading OMDoc-files.
+
+When using GHCi you have more tools to investigate the created structures :
+Load an OMDoc-File like this :
+
+(ln,dg,lenv) <- (makeImportGraph "<file>" ["<importdir1>", "<importdir2>"] >>=
+	return . dGraphGToLibEnv . hybridGToDGraphG . processImportGraph)
+	
+To display created sorts :
+
+	Hets.getSortsWithNodeNames dg
+	
+	... rels:
+	
+	Hets.getRelationsWithNodeNames dg
+	
+	see 'HetsInterace.hs' for more.
+
+
 2005-09-23 - Hendrik Iben
 The current status of Omdoc<->Hets conversion is experimental.
-A DGraph that has been created from a CASL-File can be written out as an OMDoc-File that in turn can be used to reconstruct the DGraph to some degree.
+A DGraph that has been created from a CASL-File can be written out as an
+OMDoc-File that in turn can be used to reconstruct the DGraph to some degree.
 
-To experiment with the code, start a GHCi-session by 'make ghci' (the Makefile is a modified version of the one to compile HetCATS).
-In GHCi load the file 'Integrate.hs' and wait for the interpreter to finish loading all needed modules.
+To experiment with the code, start a GHCi-session by 'make ghci' (the Makefile
+is a modified version of the one to compile HetCATS).
+In GHCi load the file 'Integrate.hs' and wait for the interpreter to finish
+loading all needed modules.
 You can load create a DGraph by 
 
 	dg <- Hets.getDG "<caslfile>"
@@ -12,7 +79,8 @@ and create OMDoc-data with
 
 	let omdoc = devGraphToOmdoc dg "<name>"
 	
-currently you need to specify the name for the OMDoc that really should be created from the library-name.
+currently you need to specify the name for the OMDoc that really should be
+created from the library-name.
 To write out the OMDoc-data to a file use
 
 	writeOmdoc omdoc "<filename>"
@@ -20,7 +88,8 @@ To write out the OMDoc-data to a file use
 This step may take a while...
 
 There are currently two ways of creating a DGraph from an OMDoc.
-The first way is a very simple approach that will just create a DGraph from OMDoc data and nothing more.
+The first way is a very simple approach that will just create a DGraph from
+OMDoc data and nothing more.
 
 Load the omdoc-file by
 
@@ -32,16 +101,19 @@ create the DGraph by
 
 	let (dg,name) = omdocToDevGraph omdoc
 
-where dg is the development graph and name is a string containing the name of this OMDoc (the one you specified when creating the OMDoc-data).
+where dg is the development graph and name is a string containing the name of
+this OMDoc (the one you specified when creating the OMDoc-data).
 
 You can get a graphical representation of this DGraph by
 
 	showDGAndName (dg,name)
 
-But you will not be able to see any referenced theory because the library-environment is empty.
+But you will not be able to see any referenced theory because the
+library-environment is empty.
 
 The second way of creating a DGraph from an OMDoc is a bit more complicated.
-By using this way, external references to imported theories are respected but for the price that the location of the files has to be determined first.
+By using this way, external references to imported theories are respected but
+for the price that the location of the files has to be determined first.
 
 Create a graph of imports by
 
@@ -54,14 +126,21 @@ Process the graph further with
 	let unhyb = hybridGToDGraphG igdg
 	let (ln,dg,lenv) = dGraphGToLibEnv unhyb
 
-Now you have a library-name (ln), the DGraph (dg) and a library-environment for all external references.
+Now you have a library-name (ln), the DGraph (dg) and a library-environment
+for all external references.
 
 You can get a graphical representation of this by
 
 	Hets.showGraph "" Driver.Options.defaultHetcatsOpts (Just (ln,"",dg,lenv))
 
-Please note that (currently) converting a DGraph to OMDoc does not create OMDoc-data for external libraries. You have to convert them manually if you want to be able to create a library-environment with them.
+Please note that (currently) converting a DGraph to OMDoc does not create
+OMDoc-data for external libraries. You have to convert them manually if you
+want to be able to create a library-environment with them.
 
-The OMDoc-files that are created try to be very close to the OMDoc-DTD v1.1 but there may be some violations of the DTD.
+The OMDoc-files that are created try to be very close to the OMDoc-DTD v1.1 but
+there may be some violations of the DTD.
 
-I have included the sources for a slightly modified Haskell-XML-Toolbox version 5.2 plus some needed modules for HTTP-transport. There are sources for HXT 4.02 in the repository but I did not want to replace them by this modified version.
+I have included the sources for a slightly modified Haskell-XML-Toolbox
+version 5.2 plus some needed modules for HTTP-transport. There are sources
+for HXT 4.02 in the repository but I did not want to replace them by this
+modified version.
