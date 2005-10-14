@@ -592,8 +592,11 @@ OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+checkMakeBinaries: test_parser hetpa hetana Test.o \
+    atermlibtest hatermdiff atctest
+
 ### run tests in other directories
-check:
+check: checkMakeBinaries
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ####################################################################
