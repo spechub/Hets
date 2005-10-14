@@ -226,7 +226,10 @@ parseDocument userOptions
 	.>>
 	traceTree
 	.>>
-	getXmlContents					-- get the content as text
+	(getXmlContents					-- get the content as text
+	  `whenNotM`
+	  hasOption "use-string"
+	)
 	.>>
 	choiceM						-- select parser
 	[ hasOption a_parse_html
