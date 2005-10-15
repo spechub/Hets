@@ -18,10 +18,6 @@ import OWL_DL.StaticAna
 import OWL_DL.Sign
 import OWL_DL.StructureAna
 
--- import OWL_DL.Print
--- import Common.Lib.Pretty
--- import Common.PrettyPrint
-
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System(system)
@@ -107,9 +103,9 @@ ontologyParse
    where ontology = fromATerm onto::Ontology 
 ontologyParse _ = error "false ontology file."
 
--- remove equivalent disjoint class axiom, create equivalentClasses, 
--- subClassOf axioms, and sort directives (definitions of classes and 
--- properties muss be moved to begin of directives)
+-- | remove equivalent disjoint class axiom, create equivalentClasses, 
+-- | subClassOf axioms, and sort directives (definitions of classes and 
+-- | properties muss be moved to begin of directives)
 createAndReduceClassAxiom :: Ontology -> Ontology
 createAndReduceClassAxiom (Ontology oid directives ns) =
     let (definition, axiom, other) =  
@@ -117,10 +113,11 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
         directives' = reverse definition ++ reverse axiom ++ reverse other
     in  Ontology oid directives' ns
     
-   where findAndCreate :: [Directive] 
+   where -- search directives list, sort the define concept and role, 
+         -- axioms, and rest
+         findAndCreate :: [Directive] 
                        -> ([Directive], [Directive], [Directive])
                        -> ([Directive], [Directive], [Directive])
-                          -- (definition of concept and role, axiom, rest)
          findAndCreate [] res = res
          findAndCreate (h:r) (def, axiom, rest) = 
              case h of
@@ -147,11 +144,14 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
                  findAndCreate r (h:def, axiom, rest)
              _ -> findAndCreate r (def, axiom, h:rest)
              
+         -- append single subClassOf axioms from an derective of ontology
          appendSubClassAxiom :: ClassID -> [Description] -> [Directive]
          appendSubClassAxiom _ [] = []
          appendSubClassAxiom cid (hd:rd) =
              (Ax (SubClassOf (DC cid) hd)):(appendSubClassAxiom cid rd) 
 
+         -- check if two disjointClasses axiom are equivalent
+         -- (a disjointOf b == b disjointOf a)
          eqClass :: Directive -> Directive -> Bool
          eqClass dj1 dj2 =
               case dj1 of
@@ -168,21 +168,21 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
 structureAna :: FilePath
              -> HetcatsOpts
              -> OntologyMap
-             -> IO (Maybe (LIB_NAME, -- filename
-                    LibEnv    -- DGraphs for imported modules 
+             -> IO (Maybe (LIB_NAME, -- ^ filename
+                    LibEnv           -- ^ DGraphs for imported modules 
                    ))
 structureAna file opt ontoMap =
     do 
        let (newOntoMap, dg) = buildDevGraph ontoMap
-       case analysis opt of
-         Structured -> do
+       case analysis opt of 
+         Structured -> do                   -- only structure analysis
             printMsg $ labNodes dg
-            -- putIfVerbose opt 1 "Structure anaylsing finished. "   
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
-         Skip       -> return $ fail "" -- Nothing is ambiguous
+         Skip       -> return $ fail ""     -- Nothing is ambiguous
          _          -> staticAna file (newOntoMap, dg)
-     where printMsg :: [LNode DGNodeLab] -> IO()
+     where -- output Analyzing messages for structured anaylsis
+           printMsg :: [LNode DGNodeLab] -> IO()
            printMsg [] = putStrLn ""
            printMsg ((_, node):rest) =
                do putStrLn ("Analyzing ontology " ++ 
@@ -203,10 +203,12 @@ simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 
 -- | static analysis if the HetcatesOpts is not only Structured. 
+-- | sequence call for nodesStaticAna on the basis of topologically
+-- | sort of all nodes
 staticAna :: FilePath
           -> (OntologyMap, DGraph)
-          -> IO (Maybe (LIB_NAME, -- filename
-                        LibEnv    -- DGraphs for imported modules 
+          -> IO (Maybe (LIB_NAME,     -- ^ filename
+                        LibEnv        -- ^ DGraphs for imported modules 
                        ))
 staticAna file (ontoMap, dg) =  
     do let topNodes = topsort dg
@@ -225,19 +227,23 @@ staticAna file (ontoMap, dg) =
 type SignMap = Map.Map Node (Sign, [Named Sentence])
 
 -- | call to static analyse of all nodes
-nodesStaticAna :: [Node] 
-               -> SignMap 
-               -> OntologyMap
-               -> Namespace
-               -> DGraph 
-               -> [Diagnosis]
+nodesStaticAna :: [Node]            -- ^ topologically sort of graph
+               -> SignMap           -- ^ an map of analyzed nodes 
+               -> OntologyMap       -- ^ an map of parsed ontology
+               -> Namespace         -- ^ global namespaces
+               -> DGraph            -- ^ current graph
+               -> [Diagnosis]       -- ^ diagnosis of result 
                -> IO (Result (SignMap, DGraph, Namespace))
+                      -- ^ result is tuple of new map of signs and sentences,
+                      -- ^ new grpah, and new global namespace map.
 nodesStaticAna [] signMap _ ns dg diag = 
     return $ Result diag (Just (signMap, dg, ns)) 
 nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
-    Result digs res <- 
+    Result digs res <-
+        -- Each node must be analyzed with the associated imported nodes. 
+        -- Those search for imported nodes is by bfs accomplished. 
         nodeStaticAna (reverse $ map (matchNode dg) (bfs h dg)) 
-                          (emptySign, [], diag)
+                          (emptySign, diag)
                           signMap ontoMap globalNs dg 
     case res of
         Just (newSignMap, newDg, newGlobalNs) -> 
@@ -247,17 +253,19 @@ nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
             nodesStaticAna r signMap ontoMap globalNs dg (diag++digs)
     
 -- | call to static analyse of single nodes
-nodeStaticAna :: [LNode DGNodeLab]
-              -> (Sign, [Named Sentence], [Diagnosis])   
-              -> SignMap
-              -> OntologyMap
-              -> Namespace
-              -> DGraph
+nodeStaticAna :: [LNode DGNodeLab]   -- ^ imported nodes of one node 
+                                     -- ^ (incl. itself)
+              -> (Sign, [Diagnosis]) -- ^ here saved incoming sign, diagnoses
+              -> SignMap             -- ^ an map of analyzed nodes
+              -> OntologyMap         -- ^ an map of parsed ontology
+              -> Namespace           -- ^ global namespaces
+              -> DGraph              -- ^ current graph
               -> IO (Result (SignMap, DGraph, Namespace))
 nodeStaticAna [] _ _ _ _ _ = 
     do return initResult           -- remove warning
+-- the last node in list is current top node.
 nodeStaticAna 
-    ((n,topNode):[]) (inSig, inSent, oldDiags) signMap ontoMap globalNs dg =
+    ((n,topNode):[]) (inSig, oldDiags) signMap ontoMap globalNs dg =
   do
     let nn@(nodeName, _, _) = dgn_name topNode
     putStrLn ("Analyzing ontology " ++ (show nodeName))
@@ -269,6 +277,8 @@ nodeStaticAna
         let ontology@(Ontology mid _ _) = fromJust $ 
                    Map.lookup (getNameFromNode nn) ontoMap
             Result diag res = 
+                 -- static analysis of current ontology with all sign of 
+                 -- imported ontology.
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of  
 	  Just (_,difSig,accSig,sent) ->
@@ -278,10 +288,18 @@ nodeStaticAna
                  newSent = map (renameNamespace tMap) sent 
                  newDifSig = renameNamespace tMap difSig
                  newSig  = renameNamespace tMap accSig
+                 -- the new node (with sign and sentence) has the sign of
+                 -- accumulated sign with imported signs, but the sentences 
+                 -- is only of current ontology, because all sentences of
+                 -- imported ontoloies can be automatically outputed by 
+                 -- showTheory (see GUI) 
                  newLNode = 
                	     (n, topNode {dgn_theory = 
 				  G_theory OWL_DL newSig (toThSens newSent)
 				 }) 
+                 -- by remove of an node all associated edges are also deleted
+                 -- so the deges must be saved before remove the node, then
+                 -- appended again.
 		 ledges = (inn dg n) ++ (out dg n)
                  newG = insEdges ledges (insNode newLNode (delNode n dg))
                  
@@ -291,38 +309,34 @@ nodeStaticAna
 	  _   -> do let actDiag = mkDiag Error 
 				    ("error by analysing of " ++ (show mid)) ()
                     return $ Result (actDiag:oldDiags) Prelude.Nothing 
-
-nodeStaticAna ((n, _):r) (inSig, inSent, oldDiags) signMap ontoMap globalNs dg 
+-- The other nodes in list are examined whether they were already analyzed.
+-- if yes then signs of it for further analysis are taken out; otherwise they
+-- are first analyzed (with complete part tree of this node).
+nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg 
  =
   do
    case Map.lookup n signMap of
-     Just (sig, nsen) -> 
---       let (_, tMap) = 
---               integrateNamespaces (namespaceMap inSig) (namespaceMap sig)
-        nodeStaticAna r ((integSign sig inSig), nsen, oldDiags)
+     Just (sig, _) -> 
+        nodeStaticAna r ((integSign sig inSig), oldDiags)
                              signMap ontoMap globalNs dg 
      Prelude.Nothing ->
        do        
          Result digs' res' <-
                  nodeStaticAna (reverse $ map (matchNode dg) (bfs n dg)) 
-                                   (emptySign, [], [])
+                                   (emptySign, [])
                                    signMap ontoMap globalNs dg 
          case res' of
           Just (signMap', dg', globalNs') ->
             do
-             let (sig', nsen') = fromJust $ Map.lookup n signMap'
---                 (_, tMap) = 
---                     integrateNamespaces (namespaceMap inSig) 
---                                             (namespaceMap sig')
+             let (sig', _) = fromJust $ Map.lookup n signMap'
              nodeStaticAna r 
-                  ((integSign sig' inSig),
-                   nsen',
-                   (oldDiags ++ digs'))
+                  ((integSign sig' inSig), (oldDiags ++ digs'))
                   signMap' ontoMap globalNs' dg' 
           _  -> do error "Error by analysis : nodeStaticAna"
-                   nodeStaticAna r (inSig, inSent, oldDiags)
+                   nodeStaticAna r (inSig, oldDiags)
                                          signMap ontoMap globalNs dg 
 
+-- | build up two sign
 integSign :: Sign -> Sign -> Sign
 integSign inSig totalSig =
     let (newNamespace, transMap) = 
@@ -330,11 +344,13 @@ integSign inSig totalSig =
     in  addSign (renameNamespace transMap inSig)
                 (totalSig {namespaceMap = newNamespace})
 
+-- | turn edges over
 reverseLinks :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
 reverseLinks [] = []
 reverseLinks ((source, target, edge):r) = 
     (target, source, edge):(reverseLinks r)
 
+-- | turn all edges over of graph
 reverseGraph :: DGraph -> DGraph
 reverseGraph dg =
     let newLinks = reverseLinks $ labEdges dg

@@ -16,8 +16,6 @@ import OWL_DL.Sign
 import OWL_DL.AS
 import Text.XML.HXT.DOM.XmlTreeTypes
 import Common.Id
--- import List
--- import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import Common.Result
@@ -25,6 +23,7 @@ import Common.GlobalAnnotations
 import OWL_DL.Namespace
 -- import Debug.Trace
 
+-- | static analysis of ontology with incoming sign.
 basicOWL_DLAnalysis :: 
     (Ontology, Sign, GlobalAnnos) ->
         Result (Ontology,Sign,Sign,[Named Sentence])
@@ -36,21 +35,22 @@ basicOWL_DLAnalysis (ontology@(Ontology _ _ ns), inSign, ga) =
             anaOntology ga (inSign {namespaceMap = integNamespace}) ontology'
         diffSign = diffSig accSign inSign
     in  Result diags1 $ Just (onto, diffSign, accSign, namedSen)
-
-anaOntology :: GlobalAnnos -> Sign -> Ontology
-            -> Result (Ontology,Sign,[Named Sentence]) 
-anaOntology ga inSign ontology =
-    case ontology of
-     Ontology (Just ontoID) directives ns ->
-       anaDirective ga (inSign {ontologyID = ontoID}) 
-                        (Ontology (Just ontoID) [] ns) directives
-     Ontology Prelude.Nothing directives ns ->
-        anaDirective ga (inSign {ontologyID = nullID}) 
-                         (Ontology Prelude.Nothing [] ns) directives
+   
+  where -- static analysis with changed namespace base of inSign.
+        anaOntology :: GlobalAnnos -> Sign -> Ontology
+                    -> Result (Ontology,Sign,[Named Sentence]) 
+        anaOntology ga inSign ontology =
+            case ontology of
+            Ontology (Just ontoID) directives ns ->
+                anaDirective ga (inSign {ontologyID = ontoID}) 
+                                 (Ontology (Just ontoID) [] ns) directives
+            Ontology Prelude.Nothing directives ns ->
+                anaDirective ga (inSign {ontologyID = nullID}) 
+                                 (Ontology Prelude.Nothing [] ns) directives
                           
--- concat the current result with total result 
--- first parameter is an result from current directive
--- second parameter is the total result
+-- | concat the current result with total result 
+-- | first parameter is an result from current directive
+-- | second parameter is the total result
 concatResult :: Result (Ontology,Sign,[Named Sentence]) 
              -> Result (Ontology,Sign,[Named Sentence]) 
              -> Result (Ontology,Sign,[Named Sentence]) 
@@ -64,17 +64,15 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
         case maybeRes2 of
          Prelude.Nothing -> Result (diag2++diag1) maybeRes1
          Just (onto2, inSign2, namedSen2) ->
-         -- the namespace of first ontology muss be same as the second.  
---          if maybeID1 /= maybeID2 then
---             error "unknow error in concatResult"
---             else let
-                    let
-                        accSign = inSign2 -- insertSign inSign1 inSign2
-                        namedSen = namedSen2 ++ namedSen1
-                        ontology = integrateOntology onto1 onto2
-                    in Result (diag2 ++ diag1) 
-                         (Just (ontology, accSign, namedSen))
+             let
+                 accSign = inSign2 -- insertSign inSign1 inSign2
+                 namedSen = namedSen2 ++ namedSen1
+                 ontology = integrateOntology onto1 onto2
+             in Result (diag2 ++ diag1) 
+                    (Just (ontology, accSign, namedSen))
 
+-- | static analyse of all directives of an ontology base of abstact syntax
+-- | (see OWL_DL/AS.hs)
 anaDirective :: GlobalAnnos -> Sign -> Ontology -> [Directive]
                 -> Result (Ontology,Sign,[Named Sentence])
 anaDirective _ _ _ [] = initResult
