@@ -32,21 +32,21 @@ basicOWL_DLAnalysis (ontology@(Ontology _ _ ns), inSign, ga) =
             integrateNamespaces (namespaceMap inSign) ns
         ontology' = renameNamespace transMap ontology
         Result diags1 (Just (onto, accSign, namedSen)) = 
-            anaOntology ga (inSign {namespaceMap = integNamespace}) ontology'
+            anaOntology (inSign {namespaceMap = integNamespace}) ontology'
         diffSign = diffSig accSign inSign
     in  Result diags1 $ Just (onto, diffSign, accSign, namedSen)
    
   where -- static analysis with changed namespace base of inSign.
-        anaOntology :: GlobalAnnos -> Sign -> Ontology
+        anaOntology :: Sign -> Ontology
                     -> Result (Ontology,Sign,[Named Sentence]) 
-        anaOntology ga inSign ontology =
-            case ontology of
-            Ontology (Just ontoID) directives ns ->
-                anaDirective ga (inSign {ontologyID = ontoID}) 
-                                 (Ontology (Just ontoID) [] ns) directives
-            Ontology Prelude.Nothing directives ns ->
-                anaDirective ga (inSign {ontologyID = nullID}) 
-                                 (Ontology Prelude.Nothing [] ns) directives
+        anaOntology inSign' ontology' =
+            case ontology' of
+            Ontology (Just ontoID) directives ns' ->
+                anaDirective ga (inSign' {ontologyID = ontoID}) 
+                                 (Ontology (Just ontoID) [] ns') directives
+            Ontology Prelude.Nothing directives ns' ->
+                anaDirective ga (inSign' {ontologyID = nullID}) 
+                                 (Ontology Prelude.Nothing [] ns') directives
                           
 -- | concat the current result with total result 
 -- | first parameter is an result from current directive
