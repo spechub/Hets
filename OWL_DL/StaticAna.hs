@@ -254,6 +254,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 					  } ]
         in concatResult ( Result [] (Just (onto, accSign, namedSent)))
                   (anaDirective ga accSign onto rest)  
+    -- annotation properties are not yet handled.
     Ax (AnnotationProperty apid _) -> 
         let accSign = inSign { annotationRoles = 
                                     Set.insert apid (annotationRoles inSign)
@@ -475,6 +476,8 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                       hasRealCASL_sortWithValue r first res diags1
           checkPrimaryConcept _ = (False, [])
           
+          -- all check-functions check whether the concepts oder roles of axioms 
+          -- already occurred in Sign
           checkConcept :: [Description] -> Sign -> Result Bool
           checkConcept deses sign =
               checkDes deses sign initResult
@@ -529,10 +532,12 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                                          (show h ++ " has not be declared.") 
                                          ()
                           in Result (diag1 ++ [diag2]) Prelude.Nothing
+          -- name of sentences need only the class id.
           printDescForSentName :: Description -> String
           printDescForSentName (DC cid) = printQN cid
           printDescForSentName _ = ""
 
+          -- the intersenctionOf-axiom can be builded from class definition.
           sentOfClass :: ClassID -> [Description] -> [Named Sentence]
 	  sentOfClass cId descs =
            if null descs then

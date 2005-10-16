@@ -29,7 +29,11 @@ type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix
 
 -- propagate own namesapces from prefix to namespacesURI within a ontology
 class PNamespace a where
+    -- | separate localpart of a QName into two divide: prefix and new 
+    -- | localpart. If uri of the QName already existed in NamespaceMap,
+    -- | should prefix also be changed. 
     propagateNspaces :: Namespace -> a -> a
+    -- | on the basis of translation map changes the prefix of namespace.
     renameNamespace :: TranslationMap -> a -> a
 
 instance PNamespace Namespace where
@@ -64,6 +68,8 @@ instance PNamespace QName where
              if null pre then
                 case Map.lookup (nsUri ++ "#") (reverseMap ns) of
                   Prelude.Nothing -> old
+                  -- if uri of QName already existed in namespace map, must
+                  -- the prefix also changed (as is located in map). 
                   Just pre' -> QN pre' local nsUri
                 else old
       where 
@@ -73,6 +79,7 @@ instance PNamespace QName where
            in  case maybeNsUri of 
                     Just nsURI -> QN p loc nsURI
                     Prelude.Nothing    -> QN p loc ""
+    
     renameNamespace tMap old@(QN pre local nsUri) = 
         case Map.lookup pre tMap of
         Prelude.Nothing -> 
@@ -130,8 +137,6 @@ instance PNamespace Annotation where
         IndivAnnotation apID ind-> 
             IndivAnnotation (renameNamespace tMap  apID) 
                             (renameNamespace tMap  ind)
-
-
                         
 instance PNamespace Fact where
     propagateNspaces ns fact =
@@ -488,12 +493,14 @@ instance PNamespace (Common.Annotation.Named Sentence) where
     renameNamespace tMap (Common.Annotation.NamedSen str isAx isDef sent) =
         Common.Annotation.NamedSen str isAx isDef (renameNamespace tMap sent)
 
+-- propagete namespace of Maybe
 maybePropagate :: (PNamespace a) => Namespace -> Maybe a -> Maybe a
 maybePropagate ns obj = 
     case obj of 
              Just j -> Just (propagateNspaces ns j)
              Prelude.Nothing  -> Prelude.Nothing
 
+-- rename namespace of Maybe
 maybeRename :: (PNamespace a) => TranslationMap -> Maybe a -> Maybe a
 maybeRename tMap obj =
     case obj of
@@ -515,10 +522,8 @@ integrateNamespaces oldNsMap testNsMap =
                  testAndInteg old r tm
              -- if the uri already existed in old map, the key muss be changed.
              | Map.member uri revMap = 
-               -- uri `elem` (Map.elems old) = 
                  testAndInteg old r 
                       (Map.insert pre (fromJust $ Map.lookup uri revMap) tm)  
-                  -- (findKey uri $ Map.toList old) tm)
              | Map.member pre old = 
                 let pre' = disambiguateName pre old
                 in  testAndInteg (Map.insert pre' uri old) r 
@@ -556,6 +561,7 @@ integrateOntology onto1@(Ontology oid1 directives1 ns1)
                              "_" ++ 
                              (localPart $ strToQN $ localPart id2)})
 
+-- | reverse a map: (key, value) -> (value, key)
 reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
     Map.foldWithKey transport Map.empty oldMap
@@ -565,6 +571,7 @@ reverseMap oldMap =
        | Map.member mElem newMap = error "double keys in translationMap."
        | otherwise = Map.insert mElem mKey newMap
 
+-- build a QName from string, without prefix.
 strToQN :: String -> QName
 strToQN str = 
     let str' = if head str == '"' then
@@ -576,6 +583,7 @@ strToQN str =
            -- QN prefix local uri
            else QN ""  (fst $ span (/='.') (reverse nodeName)) str'
 
+-- output a QName for pretty print
 printQN :: QName -> String
 printQN (QN pre local uri)
             | null pre = show (uri ++ ":" ++ local)

@@ -7,7 +7,7 @@ Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
-Pretty printing for OWL DL theories.
+Pretty printing for OWL DL theories. 
 
 -}
 
@@ -19,7 +19,6 @@ Pretty printing for OWL DL theories.
 
 module OWL_DL.Print where
 
--- import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrettyPrint
@@ -36,10 +35,8 @@ instance PrintLaTeX Sign where
   printLatex0 = printText0
 
 instance PrettyPrint Sign where
-  -- printText0 _ = text . show
   printText0 ga (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
     (text "namespaces ") $+$ (printText0 ga p10) $+$
-    -- (printText0 ga p1) $+$
     ((text "concepts ") <> (foldSetToDoc ga p2)) $+$
     ((text "primaryConcepts ") <> (foldSetToDoc ga p3)) $+$
     ((text "datatypes ") <> (foldSetToDoc ga p4)) $+$
@@ -97,11 +94,11 @@ instance PrettyPrint Directive where
 instance PrettyPrint Axiom where
     printText0 ga axiom =
 	case axiom of
-	Class cid _ _ _ descs ->   -- descs is unionOf or complementOf
+	Class cid _ _ _ descs ->             -- descs is here unionOf or complementOf
           foldListToDocV ga (printDescription ga) cid descs
 	EnumeratedClass cid _ _ iids ->
 	    printDescription ga cid $ OneOfDes iids 
-	DisjointClasses desc1 desc2 _ ->     -- description list is ignored
+	DisjointClasses desc1 desc2 _ ->     -- description list is ignored (always empty)
 	    (text "(forall ((x owl:Thing)) (not (and (") <> 
 	          (printDescription ga emptyQN desc1) <+>
                   (text "x) (") <> 
@@ -316,6 +313,8 @@ instance PrettyPrint Individual where
                    <+> (printText0 ga dl) <> (char ')') $+$
                    (printIndividual tv)
         
+-- to show restrictions, descriptions and cardinalities need the id of classes
+-- or properties, so those are implemented not in PrettyPrint. 
 printRestriction1 :: GlobalAnnos -> URIreference -> [Drcomponent] -> Doc
 printRestriction1 _ _ [] = empty
 printRestriction1 ga dpID (h:r) =
@@ -446,6 +445,7 @@ printDescription ga iD desc =
                                         <> (char ')') $+$
             (text "))") 
 
+-- form of pretty print 
 foldSetToDoc :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
 foldSetToDoc ga idSet =
     foldr addDoc empty $ map (printText0 ga) (Set.toList idSet)
@@ -464,19 +464,21 @@ foldSetToDoc2 ga idSet =
              | isEmpty d2 = d1
              | otherwise = d1 <> (char ',') $+$ d2
 
+-- output a list in vertikal direction
 foldListToDocV :: (PrettyPrint a, PrettyPrint b) 
                  => GlobalAnnos -> (a -> b -> Doc) -> a -> [b] -> Doc
 foldListToDocV _ _ _ [] = empty
 foldListToDocV ga printForm iD (h:r) =
     (printForm iD h) $+$ (foldListToDocV ga printForm iD r) 
 
+-- output a list in horizonal direction
 foldListToDocH :: (PrettyPrint a, PrettyPrint b) 
                  => GlobalAnnos -> (a -> b -> Doc) -> a -> [b] -> Doc
 foldListToDocH _ _ _ [] = empty
 foldListToDocH ga printForm iD (h:r) =
     (printForm iD h) <+> (foldListToDocH ga printForm iD r)
 
-
+-- output form with different demands
 form1 :: GlobalAnnos -> URIreference -> Description -> Doc
 form1 ga _ des = 
     (text "(") <> (printDescription ga emptyQN  des) <+> 
