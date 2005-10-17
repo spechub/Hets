@@ -72,7 +72,7 @@ concatResult (Result diag1 maybeRes1) (Result diag2 maybeRes2) =
                     (Just (ontology, accSign, namedSen))
 
 -- | static analyse of all directives of an ontology base of abstact syntax
--- | (see OWL_DL/AS.hs)
+-- | (see OWL_DL\/AS.hs)
 anaDirective :: GlobalAnnos -> Sign -> Ontology -> [Directive]
                 -> Result (Ontology,Sign,[Named Sentence])
 anaDirective _ _ _ [] = initResult

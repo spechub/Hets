@@ -168,8 +168,8 @@ createAndReduceClassAxiom (Ontology oid directives ns) =
 structureAna :: FilePath
              -> HetcatsOpts
              -> OntologyMap
-             -> IO (Maybe (LIB_NAME, -- ^ filename
-                    LibEnv           -- ^ DGraphs for imported modules 
+             -> IO (Maybe (LIB_NAME, -- filename
+                    LibEnv           -- DGraphs for imported modules 
                    ))
 structureAna file opt ontoMap =
     do 
@@ -207,8 +207,8 @@ simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 -- | sort of all nodes
 staticAna :: FilePath
           -> (OntologyMap, DGraph)
-          -> IO (Maybe (LIB_NAME,     -- ^ filename
-                        LibEnv        -- ^ DGraphs for imported modules 
+          -> IO (Maybe (LIB_NAME,     -- filename
+                        LibEnv        -- DGraphs for imported modules 
                        ))
 staticAna file (ontoMap, dg) =  
     do let topNodes = topsort dg
