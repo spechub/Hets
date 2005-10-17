@@ -27,7 +27,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 module SPASS.Prove where
 
-import Control.Exception
+-- import Control.Exception
 
 import Logic.Prover
 
@@ -49,6 +49,10 @@ import Data.Maybe
 import Data.IORef
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Concurrent
+
+import GHC.Read
+import System
+import System.IO.Error
 
 import HTk
 import SpinButton
@@ -350,7 +354,7 @@ goalsView s = map (\ g ->
 getValueSafe :: Entry Int -- ^ time limit 'Entry'
              -> IO Int -- ^ user-requested time limit or default in case of a parse error
 getValueSafe timeEntry =
-    catchJust userErrors ((getValue timeEntry) :: IO Int) 
+    Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int) 
                   (\ s -> trace ("Warning: Error "++show s++" was ignored") (return guiDefaultTimeLimit))
 --    where selExcep ex = case ex of
 --                        ErrorCall s 
@@ -361,13 +365,14 @@ getValueSafe timeEntry =
 {- |
   Text displayed by the batch mode window.
 -}
-batchInfoText :: Int -- ^ total number of goals
+batchInfoText :: Int -- ^ batch time limt
+              -> Int -- ^ total number of goals
               -> Int -- ^ number of that have been processed
               -> String
-batchInfoText gTotal gDone =
+batchInfoText tl gTotal gDone =
   "Running prover in batch mode:\n"
   ++ show gDone ++ "/" ++ show gTotal ++ " goals processed.\n"
-  ++ "At most " ++ (show ((gTotal - gDone) * batchTimeLimit)) ++ " seconds remaining."
+  ++ "At most " ++ (show ((gTotal - gDone) * tl)) ++ " seconds remaining."
 
 -- *** Callbacks
 
@@ -375,13 +380,14 @@ batchInfoText gTotal gDone =
   Called every time a goal has been processed in the batch mode gui.
 -}
 goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing State data structure
+              -> Int -- ^ batch time limit
               -> Int -- ^ total number of goals
               -> Label -- ^ info label
               -> Button -- ^ cancel (continue) button
               -> Named SPTerm -- ^ goal that has just been processed
               -> (SpassProverRetval, SPASSResult)
               -> IO Bool
-goalProcessed stateRef numGoals label cbutton nGoal (retval, res) = do
+goalProcessed stateRef tLimit numGoals label cbutton nGoal (retval, res) = do
   s <- readIORef stateRef
 
   let s' = s{resultsMap = Map.insert (senName nGoal) res (resultsMap s),
@@ -389,7 +395,7 @@ goalProcessed stateRef numGoals label cbutton nGoal (retval, res) = do
   writeIORef stateRef s'
 
   if (numGoals - (Map.size $ resultsMap s')) > 0
-    then label # text (batchInfoText numGoals (Map.size $ resultsMap s'))
+    then label # text (batchInfoText tLimit numGoals (Map.size $ resultsMap s'))
     else do
       cbutton # text "Continue"
       label # text "Batch mode finished. Click 'Continue' to see the results."
@@ -459,6 +465,7 @@ batchDlg thName th = do
                      (prepareSenNames transSenName nSens)
     runBatchDlg s = do
       stateRef <- newIORef s
+      tLimit <- getBatchTimeLimit
 
       batchWin <- createToplevel [text $ thName ++ " - SPASS Prover"]
       pack batchWin [Expand On, Fill Both]
@@ -468,7 +475,7 @@ batchDlg thName th = do
     
       let numGoals = length goals
     
-      batchL <- newLabel batchB [text $ batchInfoText numGoals 0]
+      batchL <- newLabel batchB [text $ batchInfoText tLimit numGoals 0]
       pack batchL []
     
       batchSp1 <- newSpace batchB (cm 0.15) []
@@ -486,7 +493,7 @@ batchDlg thName th = do
       batchCancel <- clicked batchCancelButton
     
       batchProver <- Concurrent.forkIO (do
-                                          _ <- spassProveBatch (goalProcessed stateRef numGoals batchL batchCancelButton) thName th
+                                          _ <- spassProveBatch tLimit (goalProcessed stateRef tLimit numGoals batchL batchCancelButton) thName th
                                           return ())
       sync (batchCancel >>> do
                               -- putStrLn "killing batch prover"
@@ -717,9 +724,24 @@ spassProveGUI thName th = do
   Time limit used by the batch mode prover.
 -}
 batchTimeLimit :: Int
-batchTimeLimit = 15
+batchTimeLimit = 20
 
 -- ** Utility Functions
+
+{- |
+  reads ENV-variable HETS_SPASS_BATCH_TIME_LIMIT and if it exists and has an Int-value this value is returned otherwise the value of 'batchTimeLimit' is returned.
+-}
+
+getBatchTimeLimit :: IO Int
+getBatchTimeLimit = do
+   is <- Exception.catch (getEnv "HETS_SPASS_BATCH_TIME_LIMIT")
+               (\e -> case e of 
+                      Exception.IOException ie -> 
+                          if isDoesNotExistError ie -- == NoSuchThing
+                          then return $ show batchTimeLimit
+                          else Exception.throwIO e
+                      _ -> Exception.throwIO e)
+   return (either (const batchTimeLimit) id (readEither is))
 
 {- |
   Checks whether a goal in the results map is marked as proved.
@@ -737,12 +759,14 @@ checkGoal resMap goal =
   The list of goals is processed sequentially. Proved goals are inserted
   as axioms.
 -}
-spassProveBatch :: (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool) -- ^ called after every prover run. return True if you want the prover to continue.
+spassProveBatch :: Int -- ^ batch time limit
+                -> (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool) -- ^ called after every prover run. return True if you want the prover to continue.
                 -> String -- ^ theory name
                 -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
-spassProveBatch f _ (Theory sig nSens) =
+spassProveBatch tLimit f _ (Theory sig nSens) =
   do -- putStrLn $ showPretty initialLogicalPart ""
+     -- read batchTimeLimit from ENV variable if set otherwise use constant
      pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
      -- putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
      return pstl
@@ -751,7 +775,7 @@ spassProveBatch f _ (Theory sig nSens) =
     batchProve lp resDone (g:gs) = do
         putStrLn $ "Trying to prove goal: " ++ (senName g)
         -- putStrLn $ show g
-        (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just batchTimeLimit}) g
+        (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just tLimit}) g
         putStrLn $ "SPASS returned: " ++ (show err)
         -- if the batch prover runs in a separate thread that's killed via killThread
         -- runSpass will return SpassError. we have to stop the recursion in that
@@ -858,7 +882,7 @@ runSpass lp cfg nGoal = do
       _ <- waitForChildProcess spass
       return (case excep of
                 -- this is supposed to distinguish "fd ... vanished" errors from other exceptions
-                IOException e -> (SpassError ("Internal error communicating with SPASS.\n"++show e),
+                Exception.IOException e -> (SpassError ("Internal error communicating with SPASS.\n"++show e),
                                     (Open (senName nGoal), []))
                 _ -> (SpassError ("Error running SPASS.\n"++show excep), 
                         (Open (senName nGoal), []))))
