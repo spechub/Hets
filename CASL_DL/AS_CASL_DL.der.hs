@@ -27,7 +27,7 @@ type AnDLFORM = Annoted (FORMULA DL_FORMULA)
 data CardType = CMin | CMax | CExact deriving (Eq, Ord, Show)
 
 data DL_FORMULA = Cardinality CardType PRED_NAME 
-                              (TERM DL_FORMULA) (TERM DL_FORMULA) [Pos]
+                              (TERM DL_FORMULA) (TERM DL_FORMULA) Range
                -- the PRED_NAME refers to a declared binary predicate; 
                -- the first term is restricted to constructors
                -- denoting a variable;

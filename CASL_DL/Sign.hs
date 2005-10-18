@@ -15,12 +15,16 @@ module CASL_DL.Sign where
 import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.Utils
+import Common.Lib.Pretty
+import Common.PrettyPrint
+import Common.PrintLaTeX
 
 import CASL.AS_Basic_CASL
 import CASL_DL.AS_CASL_DL
 
 import Data.List
 import Text.XML.HXT.DOM.XmlTreeTypes (QName)          
+import OWL_DL.ReadWrite ()
 
 data CASL_DLSign = 
     CASL_DLSign { annoProperties  :: Map.Map SIMPLE_ID PropertyType
@@ -65,5 +69,11 @@ diffCASL_DLSign a b = a
 
 isSubCASL_DLSign :: CASL_DLSign -> CASL_DLSign -> Bool
 isSubCASL_DLSign a b = 
-    Map.subset (annoProperties a) (annoProperties b) &&
+    Map.isSubmapOf (annoProperties a) (annoProperties b) &&
     (annoPopertySens a `isSublistOf` annoPopertySens b)
+
+instance PrettyPrint CASL_DLSign where
+    printText0 _ = text . show
+
+instance PrintLaTeX CASL_DLSign where
+    printLatex0 = printText0
