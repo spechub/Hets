@@ -205,6 +205,7 @@ basicInferenceNode checkCons lg (ln, node)
       let dGraph = lookupDGraph libname proofStatus
       ioresToIO $ do 
         -- compute the theory of the node, and its name
+        -- may contain proved theorems
         G_theory lid1 sign axs <- 
              resToIORes $ computeTheory libEnv (ln, node)
         ctx <- resToIORes 
@@ -237,10 +238,13 @@ basicInferenceNode checkCons lg (ln, node)
             return newProofStatus
           else do -- proving
             (G_prover lid4 p, Comorphism cid) <- selectProver $ getProvers cms
+            -- remove proved theorems from set of axioms
+            let ax_list = toNamedList 
+                           (Set.filter (\x -> not (isProvenSenStatus x)) axs)
             let lidT = targetLogic cid
                 transTh = resToIORes . map_theory cid
             bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
-                   (sign, toNamedList axs)
+                   (sign, ax_list)
             (sign'',sens'') <- transTh bTh'
             -- call the prover
             p' <- coerceProver lid4 lidT "" p
