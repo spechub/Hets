@@ -111,8 +111,7 @@ isRefNode _ = True
 
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
-getDGNodeName (DGNode n _ _ _ _ _ _) = showName n
-getDGNodeName (DGRef n _ _ _ _ _) = showName n
+getDGNodeName dgn  = showName $ dgn_name dgn
 
 emptyNodeName :: NODE_NAME
 emptyNodeName = (mkSimpleId "","",0)

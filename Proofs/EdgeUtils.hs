@@ -21,6 +21,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
+import Common.Utils
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdge (v, w, l) g = case match v g of
@@ -118,7 +119,7 @@ isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
       Nothing -> False
    else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
 
-  where nodeLab = lab' (context dgraph src)
+  where nodeLab = lab' (safeContext "Proofs.EdgeUtils.isIdentityEdge" dgraph src)
 
 {- returns the DGLinkLab of the given LEdge -}
 getLabelOfEdge :: (LEdge b) -> b

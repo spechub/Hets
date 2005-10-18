@@ -49,6 +49,7 @@ import Static.DGToSpec
 import Common.Result
 import Common.PrettyPrint
 import Common.AS_Annotation
+import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -251,7 +252,7 @@ basicInferenceNode checkCons lg (ln, node)
             (nextDGraph, nextHistoryElem) <- 
               if null newThms then return (dGraph,([],[]))
                else do
-                 let oldNode = labNode' (context dGraph node)
+                 let oldNode = labNode' (safeContext "Proofs.InferBasic.basicInferenceNode"  dGraph node)
                      (_,oldContents) = oldNode
                      newTh = case (dgn_theory oldContents) of
                              G_theory lid sig sens ->

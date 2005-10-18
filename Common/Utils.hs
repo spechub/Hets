@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 Useful functions that can't be found in the libraries.
-   But should shared across HetCATS.
+   But should shared across Hets.
 
    Todo:
      - Add your own functions.
@@ -17,6 +17,8 @@ Useful functions that can't be found in the libraries.
 module Common.Utils where
 
 import Data.List
+import Data.Graph.Inductive.Graph
+
 
 {- |
   A function inspired by perls join function. It joins a list of
@@ -175,3 +177,12 @@ notUnique (h:t) = let
                   in
                     case (h `elem` t) of True ->  h : rest
                                          False -> rest
+
+-- safe context for graphs
+safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node -> Context a b
+safeContext err g v =
+  case match v g of
+    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
+                          " not present in graph with nodes:\n"++
+                          show (nodes g)++"\nand edges:\n"++show (edges g))
+    (Just c,_)  -> c 

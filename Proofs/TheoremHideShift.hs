@@ -30,6 +30,7 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
+import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import Syntax.AS_Library
@@ -45,7 +46,7 @@ getSignature libEnv dgraph node =
          getSignature libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (dgn_sign nodeLab)
-    where nodeLab = lab' (context dgraph node)
+    where nodeLab = lab' (safeContext "Proofs.TheoremHideShift.getSignature" dgraph node)
 
 -- ----------------------------------------------
 -- theorem hide shift
@@ -91,7 +92,7 @@ handleLeaves proofstatus (node:list) = do
 convertToNf :: ProofStatus -> Node -> IO ProofStatus
 convertToNf proofstatus@(ln,libEnv,history) node = do
   let dgraph = lookupDGraph ln proofstatus
-      nodelab = lab' (context dgraph node)
+      nodelab = lab' (safeContext "Proofs.TheoremHideShift.convertToNf" dgraph node)
   case dgn_nf nodelab of
     Just _ -> return proofstatus
     Nothing -> do
@@ -106,7 +107,7 @@ convertToNf proofstatus@(ln,libEnv,history) node = do
 {- creates and inserts a normal form node from the given input -}
 mkNfNodeForLeave :: Node -> Node  -> ProofStatus -> IO ProofStatus
 mkNfNodeForLeave node newNode proofstatus@(ln,_,_) = do
-  let nodelab = lab' (context (lookupDGraph ln proofstatus) node)
+  let nodelab = lab' (safeContext "Proofs.TheoremHideShift.mkNfNodeForLeave" (lookupDGraph ln proofstatus) node)
   case isDGRef nodelab of
     True -> mkDGRefNfNode nodelab newNode True proofstatus
     False -> mkDGNodeNfNode nodelab newNode Nothing proofstatus
@@ -148,8 +149,8 @@ mkDGRefNfNode nodelab newNode isLeave proofstatus@(ln,_,_) = do
       <- theoremHideShift 
                     (changeCurrentLibName (dgn_libname nodelab) proofstatus)
   let refGraph = lookupDGraph (dgn_libname nodelab) proofstatus
-      (Just refNf) = dgn_nf $ lab' $ context refGraph $ dgn_node nodelab
-      refNodelab = lab' (context refGraph refNf)
+      (Just refNf) = dgn_nf $ lab' $ safeContext "Proofs.TheoremHideShift.mkDGRefNfNode" refGraph $ dgn_node nodelab
+      refNodelab = lab' (safeContext "Proofs.TheoremHideShift.mkDGRefNfNode" refGraph refNf)
       (renamed, libname, sigma) =
           if isLeave 
              then (dgn_name nodelab, dgn_libname nodelab,
@@ -185,7 +186,7 @@ handleNonLeaves :: ProofStatus -> [Node] -> IO ProofStatus
 handleNonLeaves proofstatus [] = return proofstatus
 handleNonLeaves proofstatus@(ln,_,_) (node:list) = do
   let dgraph = lookupDGraph ln proofstatus
-      nodelab = lab' (context dgraph node)
+      nodelab = lab' (safeContext "Proofs.TheoremHideShift.handleNonLeaves" dgraph node)
   case dgn_nf nodelab of
     Just _ -> handleNonLeaves proofstatus list
     Nothing ->
@@ -251,7 +252,7 @@ makeDiagramAux diagram dgraph [] (edge@(src,tgt,lab):list) =
                        else (src,tgt,dgl_morphism lab)
 makeDiagramAux diagram dgraph (node:list) edges =
   makeDiagramAux (insNode sigNode diagram) dgraph list edges
-    where sigNode = (node, dgn_theory (lab' (context dgraph node)))
+    where sigNode = (node, dgn_theory (lab' (safeContext "Proofs.TheoremHideShift.makeDiagramAux" dgraph node)))
 
 
 {- sets the normal form of the first given node to the second one and
@@ -273,8 +274,8 @@ setNfOfNode dgraph node nf_node = do
           ((InsertNode newLNode):changes)++[DeleteNode oldLNode])
 
   where
-    nodeLab = lab' (context dgraph node)
-    oldLNode = labNode' (context dgraph node)
+    nodeLab = lab' (safeContext "Proofs.TheoremHideShift.setNfOfNode" dgraph node)
+    oldLNode = labNode' (safeContext "Proofs.TheoremHideShift.setNfOfNode" dgraph node)
     newNode = getNewNode dgraph
     newLNode = case isDGRef nodeLab of
                  True -> (newNode, DGRef {dgn_name = dgn_name nodeLab,

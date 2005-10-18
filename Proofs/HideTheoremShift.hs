@@ -28,6 +28,7 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
+import Common.Utils
 import Data.Graph.Inductive.Graph
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -184,13 +185,15 @@ prettyPrintPath dgraph path =
 {- returns the name of the source node of the given edge-}
 prettyPrintSourceNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintSourceNode dgraph (src,_,_) =
-   getDGNodeName $ lab' $ context dgraph src
+   getDGNodeName $ lab' $ 
+      safeContext "Proofs.HideTheoremShift.prettyPrintSourceNode" dgraph src
 
 
 {- returns the name of the target node of the given edge-}
 prettyPrintTargetNode :: DGraph -> LEdge DGLinkLab -> String
 prettyPrintTargetNode dgraph (_,tgt,_) =
-   getDGNodeName $ lab' $ context dgraph tgt
+   getDGNodeName $ lab' $ 
+     safeContext "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
 
 
 {- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}

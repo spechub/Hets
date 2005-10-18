@@ -27,7 +27,9 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
 import Common.AS_Annotation
+import Common.Utils
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Data.Graph.Inductive.Graph
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -147,19 +149,21 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
                 then do
                  let newEdge = (src, tgt, newLab)
                      newGraph = insEdge newEdge auxGraph
-                     newChanges = DeleteEdge ledge : InsertEdge newEdge
-                                   : changes
+                     newChanges = changes ++ [DeleteEdge ledge, InsertEdge newEdge]
                  localInferenceAux libEnv ln newGraph (newRules,newChanges) list
                 else do 
                  let n = getNewNode auxGraph
                      newNode = (n, oldContents{dgn_theory = newTh})
+                     newList = map (replaceNode tgt n) list
                  (newGraph,changes') <- adoptEdges (insNode newNode $ auxGraph) tgt n
                  let newEdge = (src, n, newLab)
                      newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
-                     newChanges = changes ++ DeleteEdge ledge : 
+                     newLibEnv = Map.adjust adjMap ln libEnv 
+                     adjMap (annos,env,dg) = (annos,env,newGraph')
+                     newChanges = changes ++ DeleteEdge ledge :
                                     InsertNode newNode : changes' ++ 
                                     [DeleteNode oldNode,InsertEdge newEdge]
-                 localInferenceAux libEnv ln newGraph' (newRules,newChanges) list
+                 localInferenceAux newLibEnv ln newGraph' (newRules,newChanges) newList
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
     _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
                  localInferenceAux libEnv ln dgraph (rules,changes) list
@@ -175,5 +179,8 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
                           conservativity conservStatus),
                        dgl_origin = DGProof}
     newRules = (LocInference ledge):rules
-    oldNode = labNode' (context dgraph tgt)
+    oldNode = labNode' (safeContext "localInferenceAux" dgraph tgt)
     (_,oldContents) = oldNode
+    replaceNode from to (src,tgt,lab) = 
+       (replaceNodeAux from to src, replaceNodeAux from to tgt,lab)
+    replaceNodeAux from to n = if n==from then to else n

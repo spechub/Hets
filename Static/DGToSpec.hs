@@ -24,6 +24,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.Result
 import Common.Id
+import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -33,7 +34,7 @@ emptyAnno x = Annoted x nullRange [] []
 
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
-  let (_,_,n,preds) = context dg node
+  let (_,_,n,preds) = safeContext "Static.DGToSpec.dgToSpec" dg node
   predSps <- sequence (map (dgToSpec dg . snd) preds)
   let apredSps = map emptyAnno predSps
       pos = nullRange
@@ -75,7 +76,7 @@ computeLocalTheory libEnv (ln, node) =
     else return $ dgn_theory nodeLab
     where
       dgraph = lookupDGraphInLibEnv ln libEnv
-      nodeLab = lab' $ context dgraph node
+      nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory" dgraph node
       refLn = dgn_libname nodeLab
 
 {- if the given node is a DGRef, the referenced node is returned (as a
@@ -88,7 +89,7 @@ getDGNode libEnv dgraph node =
          getDGNode libEnv refDgraph (dgn_node nodeLab)
       Nothing -> Nothing
     else Just (labNode' contextOfNode)
-  where contextOfNode = context dgraph node
+  where contextOfNode = safeContext "Static.DGToSpec.getDGNode" dgraph node
         nodeLab = lab' contextOfNode
 
 type LibNode = (LIB_NAME,Node)
@@ -116,7 +117,7 @@ getAllIngoingEdges libEnv (ln,node) =
 
   where 
     dgraph = lookupDGraphInLibEnv ln libEnv
-    nodelab = lab' (context dgraph node)
+    nodelab = lab' (safeContext "Static.DGToSpec.getAllIngoingEdges" dgraph node)
     inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
     refLn = dgn_libname nodelab
     refGraph = lookupDGraphInLibEnv refLn libEnv
@@ -170,7 +171,7 @@ liftOr f g x = f x || g x
 computeTheory :: LibEnv -> LibNode -> Result G_theory 
 computeTheory libEnv (ln, n) = 
   let dg = lookupDGraphInLibEnv ln libEnv
-      nodeLab = lab' $ context dg n
+      nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
       inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in
