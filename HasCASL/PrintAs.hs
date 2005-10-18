@@ -167,15 +167,6 @@ instance PrettyPrint TypeQual where
 instance PrettyPrint Term where
     printText0 ga t = printTerm ga $ convTerm ga $ rmSomeTypes t
 
-unPredType :: Type -> Type
-unPredType t = case getTypeAppl t of
-    (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0]) |
-         ut == unitTypeId && at == arrowId PFunArr -> ty
-    _ -> t
-
-unPredTypeScheme :: TypeScheme -> TypeScheme
-unPredTypeScheme = mapTypeOfScheme unPredType
-
 printTerm :: GlobalAnnos -> Term -> Doc
 printTerm ga trm =
     let commaT = fsep . punctuate comma . map (printTerm ga)

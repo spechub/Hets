@@ -122,13 +122,6 @@ mkFunArrType :: Type -> Arrow -> Type -> Type
 mkFunArrType t1 a t2 = 
     mkTypeAppl (TypeName (arrowId a) (toRaw funKind) 0) [t1, t2]
 
-{- | add the Unit type as result type or convert a parsed empty tuple
-   to the unit type -}
-predType :: Type -> Type
-predType t = case t of
-                    BracketType Parens [] _ -> unitType
-                    _ -> mkFunArrType t PFunArr unitType
-
 -- | construct a product type
 mkProductType :: [Type] -> Type
 mkProductType ts = case ts of
@@ -141,9 +134,30 @@ mkProductType ts = case ts of
 simpleTypeScheme :: Type -> TypeScheme
 simpleTypeScheme t = TypeScheme [] t nullRange
 
+{- | add the Unit type as result type or convert a parsed empty tuple
+   to the unit type -}
+predType :: Type -> Type
+predType t = case t of
+                    BracketType Parens [] _ -> unitType
+                    _ -> mkFunArrType t PFunArr unitType
+
 -- | change the type of the scheme to a 'predType'
 predTypeScheme :: TypeScheme -> TypeScheme
 predTypeScheme = mapTypeOfScheme predType
+
+-- | check for and remove predicate arrow  
+unPredType :: Type -> (Bool, Type)
+unPredType t = case getTypeAppl t of
+    (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0]) |
+         ut == unitTypeId && at == arrowId PFunArr -> (True, ty)
+    _ -> (False, t)
+
+-- | test if type is a predicate type
+isPredType :: Type -> Bool
+isPredType = fst . unPredType
+
+unPredTypeScheme :: TypeScheme -> TypeScheme
+unPredTypeScheme = mapTypeOfScheme (snd . unPredType)
 
 -- | the 'Kind' of the function type
 funKind :: Kind
