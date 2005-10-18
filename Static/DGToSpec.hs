@@ -16,6 +16,7 @@ Convert development graph back to structured specification
 module Static.DGToSpec
 where
 
+
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
@@ -79,18 +80,6 @@ computeLocalTheory libEnv (ln, node) =
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory" dgraph node
       refLn = dgn_libname nodeLab
 
-{- if the given node is a DGRef, the referenced node is returned (as a
-labeled node). Otherwise the node itself is returned (as a labeled
-node).-}
-getDGNode :: LibEnv -> DGraph -> Node -> Maybe (LNode DGNodeLab)
-getDGNode libEnv dgraph node =
-  if isDGRef nodeLab then case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just (_,_,refDgraph) -> 
-         getDGNode libEnv refDgraph (dgn_node nodeLab)
-      Nothing -> Nothing
-    else Just (labNode' contextOfNode)
-  where contextOfNode = safeContext "Static.DGToSpec.getDGNode" dgraph node
-        nodeLab = lab' contextOfNode
 
 type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)

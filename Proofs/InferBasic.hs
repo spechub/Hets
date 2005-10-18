@@ -39,6 +39,8 @@ Add proof status information
 
 module Proofs.InferBasic (automatic, basicInferenceNode) where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Prover
 import Logic.Grothendieck
@@ -205,7 +207,7 @@ basicInferenceNode checkCons lg (ln, node)
       let dGraph = lookupDGraph libname proofStatus
       ioresToIO $ do 
         -- compute the theory of the node, and its name
-        G_theory lid1 sign axs <- 
+        G_theory lid1 sign axs <- trace "basicInferenceNode" $
              resToIORes $ computeTheory libEnv (ln, node)
         ctx <- resToIORes 
                     $ maybeToMonad ("Could node find node "++show node)

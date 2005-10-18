@@ -31,6 +31,7 @@ import Common.Utils
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.Graph.Inductive.Graph
+import Data.Maybe
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library
@@ -127,9 +128,9 @@ localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [L
                     -> IO (DGraph,([DGRule],[DGChange]))
 localInferenceAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
 localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
-  case (getDGNode libEnv dgraph tgt, maybeThSrc) of
-    (Just (target,_), Just thSrc) ->
-      case (maybeResult (computeTheory libEnv (ln, target)), 
+  case maybeThSrc of
+    Just thSrc ->
+      case (maybeResult (computeTheory libEnv (ln, tgt)), 
                         maybeResult (translateG_theory morphism thSrc)) of
         (Just (G_theory lidTgt sig sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of

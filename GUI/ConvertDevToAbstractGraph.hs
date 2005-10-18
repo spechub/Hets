@@ -25,6 +25,8 @@ Conversion of development graphs from Logic.DevGraph
 
 module GUI.ConvertDevToAbstractGraph where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
