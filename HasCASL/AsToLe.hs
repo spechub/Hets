@@ -187,13 +187,20 @@ anaBasicItem ga (AxiomItems decls fs ps) =
        putTypeMap tm -- restore 
        putAssumps as -- restore
        let newFs = catMaybes ts
-           sens = map ( \ f -> NamedSen (getRLabel f) True False $ Formula $ item f) 
+           newDs = catMaybes ds
+           sens = map ( \ f -> (emptyName $ Formula $ mkForall newDs
+                            (item f) ps) { senName = getRLabel f })
                   newFs 
        appendSentences sens
-       return $ AxiomItems (catMaybes ds) newFs ps
+       return $ AxiomItems newDs newFs ps
 anaBasicItem ga (Internal l ps) = 
     do ul <- mapAnM (anaBasicItem ga) l
        return $ Internal ul ps
+
+-- | quantify 
+mkForall :: [GenVarDecl] -> Term -> Range -> Term
+mkForall _vs t _ps = t -- look for a minimal quantification
+  -- if null vs then t else QuantifiedTerm Universal vs t ps 
 
 -- | analyse sig items
 anaSigItems :: GlobalAnnos -> GenKind -> SigItems -> State Env SigItems
