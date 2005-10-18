@@ -445,8 +445,7 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _, hOpts, io
   Res.Result diags res <- proofFun proofStatus
   putIfVerbose hOpts 4 "Analyzing result of proof"
   case res of
-    Nothing -> do sequence $ map (putStrLn . show) diags
-                  return ()
+    Nothing -> mapM_ (putStrLn . show) diags
     Just newProofStatus@(ln,libEnv,proofHistory) -> do
       let (Just history) = Map.lookup ln proofHistory
           (Just newGlobContext) = Map.lookup ln libEnv
@@ -483,6 +482,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                    [createLocalMenuButtonShowSpec gInfo,
                     createLocalMenuButtonShowNumberOfNode,
                     createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowLocalAx gInfo,
                     createLocalMenuButtonShowTheory gInfo,
                     createLocalMenuButtonTranslateTheory gInfo,
                     createLocalMenuTaxonomy gInfo,
@@ -516,6 +516,7 @@ createLocalMenuNodeTypeInternal color
                     [createLocalMenuButtonShowSpec gInfo,
                      createLocalMenuButtonShowNumberOfNode,
                      createLocalMenuButtonShowSignature gInfo,
+                    createLocalMenuButtonShowLocalAx gInfo,
                      createLocalMenuButtonShowTheory gInfo,
                      createLocalMenuButtonTranslateTheory gInfo,
                      createLocalMenuTaxonomy gInfo,
@@ -578,6 +579,8 @@ createLocalMenuButtonShowSignature =
   createMenuButton "Show signature" getSignatureOfNode
 createLocalMenuButtonShowTheory gInfo = 
   createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
+createLocalMenuButtonShowLocalAx gInfo = 
+  createMenuButton "Show local axioms" (getLocalAxOfNode gInfo) gInfo
 createLocalMenuButtonTranslateTheory gInfo = 
   createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
 
@@ -792,6 +795,25 @@ lookupTheoryOfNode proofStatusRef descr ab2dgNode dgraph = do
   return (node, gth)
     ) of
    r -> return r
+
+{- outputs the local axioms of a node in a window;
+used by the node menu defined in initializeGraph-}
+getLocalAxOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> 
+                     DGraph -> IO()
+getLocalAxOfNode  (proofStatusRef,_,_,_,_,_,_,hetsOpts,_) descr ab2dgNode dgraph = do
+  case Map.lookup descr ab2dgNode of
+    Just (libname, node) -> 
+      do let dgnode = lab' (context dgraph node)
+         case dgnode of
+           DGNode _ gth _ _ _ _ _ ->    
+              displayTheory "Local Axioms" node dgraph gth
+           DGRef name _ _ _ _ _ -> 
+              createTextDisplay ("Local Axioms of "++ showName name) 
+                    "no local axioms (reference node to other library)" 
+                    [size(30,10)]
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr) 
+                      ++ " has no corresponding node in the development graph")
 
 {- outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -1229,7 +1251,8 @@ applyChanges gid libname graphInfo eventDescr ioRefVisibleNodes
     (historyElem:list) ->
       case snd historyElem of
         [] -> return (eventDescr, convMaps)
-        changes@(x:xs) -> do
+        changes@(_:_) -> do
+          --putStrLn ("applyChanges: "++show (fst historyElem)++"\n"++show changes)
           visibleNodes <- readIORef ioRefVisibleNodes
           (newVisibleNodes, newEventDescr, newConvMaps) <- 
               applyChangesAux gid libname graphInfo visibleNodes
