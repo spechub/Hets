@@ -926,7 +926,7 @@ showProofStatusOfNode _ descr ab2dgNode dgraph =
       do let dgnode = lab' (context dgraph node)
          let stat = showStatusAux dgnode
          let title =  "Proof status of node "++showName (dgn_name dgnode)
-         createTextDisplay title stat [size(150,130)]
+         createTextDisplay title stat [size(105,55)]
     Nothing -> error ("node with descriptor "
                       ++ (show descr) 
                       ++ " has no corresponding node in the development graph")
