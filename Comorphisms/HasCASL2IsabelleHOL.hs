@@ -21,6 +21,7 @@ import qualified Common.Lib.Map as Map
 import Data.List
 import Data.Maybe
 import Common.AS_Annotation (Named(..))
+import Common.PrettyPrint
 
 -- HasCASL
 import HasCASL.Logic_HasCASL
@@ -140,7 +141,6 @@ transOpType (TypeScheme _ op _) = transType op
 
 -- types
 transType :: Type -> Typ
--- type name
 transType t = case getTypeAppl t of 
    (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
       if n == 0 then 
@@ -148,16 +148,18 @@ transType t = case getTypeAppl t of
           else if tid == lazyTypeId && num == 1 then
              transType $ head tyArgs
           else if isArrow tid && num == 2 then
-             let [t1, t2] = tyArgs in
-             mkFunType (transType t1) $ (if isPartialArrow tid then 
-                                         mkOptionType else id) $ transType t2
+             let [t1, t2] = tyArgs 
+                 tr = transType t2 
+             in mkFunType (transType t1) $ 
+                    if isPartialArrow tid && not (isPredType t)
+                        then mkOptionType tr else tr
           else if isProductId tid && num > 1 then
              foldl1 IsaSign.prodType $ map transType tyArgs
           else foldl binTypeAppl (Type (showIsaT tid baseSign) [] [])
                $ map transType tyArgs
        else foldl binTypeAppl (TFree (showIsaT tid baseSign) [])
             $ map transType tyArgs
-   _ -> error "transType"
+   _ -> error $ "transType " ++ showPretty t "\n" ++ show t
 
 
 ---------- translation of a datatype declaration ----------
@@ -210,110 +212,94 @@ transOpId sign op ts =
     Just str -> str  
     Nothing  -> showIsaT op baseSign
 
+transProgEq :: Env -> ProgEq -> (IsaSign.Term, IsaSign.Term)
+transProgEq sign (ProgEq pat t _) = 
+      (transPattern sign pat, transPattern sign t)
+
 -- terms
 transTerm :: Env -> As.Term -> IsaSign.Term
-transTerm _ (QualVar (VarDecl var t _ _)) = 
-  let t'  = transType t 
-      ot = mkFunType t' $ mkOptionType t'
-  in  termAppl (conSomeT ot) (IsaSign.Free (transVar var) t')
+transTerm sign trm = case trm of
+    QualVar (VarDecl var t _ _) ->  
+        let t' = transType t 
+            ot = mkFunType t' $ mkOptionType t'
+        in termAppl (conSomeT ot) $ IsaSign.Free (transVar var) t'
 
-transTerm sign (QualOp _ (InstOpId opId _ _) ts _)
-  | opId == trueId  =  con "True"
-  | opId == falseId = con "False"
-  | otherwise       = termAppl conSome (con (transOpId sign opId ts))
--- quantified formulas
-transTerm sign (QuantifiedTerm quan varDecls phi _) = 
-  foldr (quantify quan) (transTerm sign phi) varDecls
-  where
-    quantify q gvd phi' = 
-      case gvd of
-        (GenVarDecl (VarDecl var typ _ _)) ->
-          termAppl (con $ qname q) 
-               (Abs (con $ transVar var) (transType typ) phi' NotCont)
-        (GenTypeVarDecl _) ->  phi'
-    qname Universal   = allS
-    qname Existential = exS
-    qname Unique      = ex1S
--- strip TypedTerm
-transTerm sign (TypedTerm t _ _ _) = 
-  case t of ApplTerm _ _ _ -> transApplTerm sign t
-            _              -> transTerm sign t
-  where
-    transApplTerm sig (ApplTerm t' t'' _) = 
-      transAppl sig t'
-     where  
-     -- decides which kind of translation is necessary: formula, predicate, ...
-      transAppl s tt =
-       case tt of
-        QualOp Fun (InstOpId opId _ _) _ _ -> 
-        -- logical formulas are translated seperatly (transLog)
-          if opId == whenElse then transWhenElse s t''
-            else transLog s opId t' t''
-        -- predicates
-        QualOp Pred _ _ _                  -> 
-          termAppl (termAppl (con "pApp") (transTerm s t')) 
-                                          (transTerm s t'')
+    QualOp _ (InstOpId opId _ _) ts _ -> 
+        if opId == trueId then  con "True"
+        else if opId == falseId then con "False"
+        else termAppl conSome (con (transOpId sign opId ts))
+
+    QuantifiedTerm quan varDecls phi _ -> 
+        let quantify q gvd phi' = case gvd of
+                GenVarDecl (VarDecl var typ _ _) -> termAppl (con $ qname q) 
+                    $ Abs (con $ transVar var) (transType typ) phi' NotCont
+                GenTypeVarDecl _ ->  phi'
+            qname Universal   = allS
+            qname Existential = exS
+            qname Unique      = ex1S
+        in foldr (quantify quan) (transTerm sign phi) varDecls
+    TypedTerm t _ _ _ -> transTerm sign t
+    LambdaTerm pats p body _ -> 
+        let lambdaAbs f = if null pats then termAppl conSome 
+                           (Abs (IsaSign.Free "dummyVar" noType) 
+                                    noType (f sign body) NotCont)
+                          else termAppl conSome (foldr (abstraction sign) 
+                                 (f sign body)
+                                 pats)
+        in case p of
+         -- distinguishes between partial and total lambda abstraction
+         -- total lambda bodies are of type 'a' instead of type 'a option'
+        Partial -> lambdaAbs transTerm
+        Total   -> lambdaAbs transTotalLambda
+    LetTerm As.Let peqs body _ -> 
+        IsaSign.Let (map (transProgEq sign) peqs) $ transTerm sign body 
+    TupleTerm ts@(_ : _)  _ -> 
+        foldl1 (binConst pairC) (map (transTerm sign) ts)
+    ApplTerm t1 t2 _ -> transAppl sign Nothing t1 t2
+    CaseTerm t peqs _ ->  
+        -- flatten case alternatives
+        let alts = arangeCaseAlts sign peqs
+        in case t of
+        -- introduces new case statement if case variable is
+        -- a term application that may evaluate to 'Some x' or 'None'
+        QualVar (VarDecl decl _ _ _) -> 
+            Case (IsaSign.Free (transVar decl) noType) alts 
+        _ -> Case (transTerm sign t)
+             [(con "None", con "None"),
+              (App conSome (IsaSign.Free "caseVar" noType) NotCont,
+               Case (IsaSign.Free "caseVar" noType) alts)]
+    _ -> error $ "HasCASL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
+                ++ show trm
+
+transAppl :: Env -> Maybe As.Type -> As.Term -> As.Term -> IsaSign.Term
+transAppl s typ t' t'' = case t'' of 
+    TupleTerm [] _ -> transTerm s t'
+    _ -> case t' of
+        QualVar (VarDecl _ ty _ _) -> if isPredType ty 
+           then mkApp "pApp" s  t' t''
+           else transApplOp s ty t' t''
+        QualOp _ (InstOpId opId _ _) (TypeScheme _ ty _) _ ->
+            if elem opId $ map fst bList then
+               -- logical formulas are translated seperatly (transLog)
+               if opId == whenElse then transWhenElse s t''
+               else transLog s opId t' t''
+            else if isPredType ty then mkApp "pApp" s  t' t''
+            else transApplOp s ty t' t''
         -- distinguishes between partial and total term application
-        QualOp Op _ _ _                    -> transApplOp s t' t''
-        -- seeks for determining inner term
-        ApplTerm tt' _ _                  -> transAppl s tt'
-        -- strips TypedTerm
-        TypedTerm tt' _ _ _               -> 
-           transAppl s tt'
-        _                                  -> mkApp "app" s t' t''
-      mkApp s sg tt tt' = termAppl (termAppl (con s) (transTerm sg tt)) 
+        TypedTerm tt' _ typ' _ -> transAppl s (Just typ') tt' t''
+        _ -> maybe (mkApp "app" s  t' t'')
+                  ( \ ty -> transApplOp s ty t' t'') typ
+
+mkApp :: String -> Env -> As.Term -> As.Term -> IsaSign.Term
+mkApp s sg tt tt' = termAppl (termAppl (con s) (transTerm sg tt)) 
                          (transTerm sg tt')
-      transApplOp s tt tt' =
-        case tt of 
-        TypedTerm _ _ typ _ -> case getTypeAppl typ of 
+
+transApplOp :: Env -> As.Type -> As.Term -> As.Term -> IsaSign.Term
+transApplOp s typ tt tt' = case getTypeAppl typ of 
             (TypeName tid _ 0, [_, _]) | isArrow tid -> 
                 if isPartialArrow tid then mkApp "app" s tt tt'
                    else mkApp "apt" s tt tt'
             _ -> mkApp "app" s tt tt'
-        _ -> mkApp "app" s tt tt'
-    transApplTerm _ _ = error "HasCASL2IsabelleHOL.transApplTerm"
-
--- lambda abstraction
-transTerm sign (LambdaTerm pats p body _) =
-  -- distinguishes between partial and total lambda abstraction
-  -- total lambda bodies are of type 'a' instead of type 'a option'
-  case p of
-    Partial -> lambdaAbs transTerm
-    Total   -> lambdaAbs transTotalLambda
-  where 
-   lambdaAbs f =
-     if (null pats) then termAppl conSome 
-                           (Abs (IsaSign.Free "dummyVar" noType) 
-                                    noType (f sign body) NotCont)
---                           (Abs [("dummyVar", noType)] 
---                                      (f sign body) NotCont)
-       else termAppl conSome (foldr (abstraction sign) 
-                                 (f sign body)
-                                 pats)
--- let statement
-transTerm sign (LetTerm As.Let peqs body _) = 
-  IsaSign.Let (map transProgEq peqs) (transTerm sign body) 
-  where
-    transProgEq (ProgEq pat t _) = 
-      (transPattern sign pat, transPattern sign t)
--- tuple
-transTerm sign (TupleTerm ts _) =
-  foldl1 (binConst pairC) (map (transTerm sign) ts)
--- case statement
-transTerm sign (CaseTerm t peqs _) = 
-  -- flatten case alternatives
-  let alts = arangeCaseAlts sign peqs
-  in
-    -- introduces new case statement if case variable is
-    -- a term application that may evaluate to 'Some x' or 'None'
-    case t of
-      QualVar (VarDecl decl _ _ _) -> 
-        Case (IsaSign.Free (transVar decl) noType) alts 
-      _ -> Case (transTerm sign t)
-             ((con "None", con "None"):
-               [(App conSome (IsaSign.Free "caseVar" noType) NotCont,
-               Case (IsaSign.Free "caseVar" noType) alts)])
-transTerm _ _ = error "HasCASL2IsabelleHOL.transTerm"
 
 -- translation formulas with logical connectives
 transLog :: Env -> Id -> As.Term -> As.Term -> IsaSign.Term
@@ -322,6 +308,7 @@ transLog sign opId opTerm t = case t of
   | opId == andId  -> binConst conj l r 
   | opId == orId   -> binConst disj l r
   | opId == implId -> binConst impl l r 
+  | opId == infixIf -> binConst impl r l 
   | opId == eqvId  -> binConst eqv  l r
   | opId == exEq   -> binConst conj (binConst eq l r) $ 
                       binConst conj (termAppl defOp l) $ 
@@ -366,7 +353,7 @@ abstraction sign pat body =
 transPattern :: Env -> As.Term -> IsaSign.Term
 transPattern _ (QualVar (VarDecl var typ _ _)) = 
   IsaSign.Free (transVar var) $ transType typ
-transPattern sign (TupleTerm terms _) = 
+transPattern sign (TupleTerm terms@(_ : _)  _) = 
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
 transPattern _ (QualOp _ (InstOpId opId _ _) _ _) = 
     con $ showIsaT opId baseSign
@@ -395,7 +382,7 @@ transTotalLambda sign (LambdaTerm pats part body _) =
                                noType (f sign body) NotCont
 --      if (null pats) then Abs [("dummyVar", noType)] 
         else foldr (abstraction sign) (f sign body) pats
-transTotalLambda sign (TupleTerm terms _) =
+transTotalLambda sign (TupleTerm terms@(_ : _) _) =
   foldl1 (binConst isaPair) $ map (transTotalLambda sign) terms
 transTotalLambda sign (CaseTerm t pEqs _) = 
   Case (transTotalLambda sign t) $ map transCaseAltTotal pEqs
@@ -707,7 +694,7 @@ transPat _ (QualVar (VarDecl var _ _ _)) =
 transPat sign (ApplTerm term1 term2 _) = 
   termAppl (transPat sign term1) (transPat sign term2)
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm
-transPat sign (TupleTerm terms _) =
+transPat sign (TupleTerm terms@(_ : _) _) =
   foldl1 (binConst isaPair) (map (transPat sign) terms)
 transPat _ (QualOp _ (InstOpId i _ _) _ _) = con (showIsaT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
