@@ -88,5 +88,6 @@ instance StaticAnalysis SPASS () Sentence ()
 
 instance Logic SPASS () () Sentence () ()
                Sign 
-               SPASSMorphism () () ()
+               SPASSMorphism () () () where
+         stability _ = Testing
     -- again default implementations are fine

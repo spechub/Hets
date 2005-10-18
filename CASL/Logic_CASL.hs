@@ -191,6 +191,9 @@ instance Logic CASL CASL.Sublogic.CASL_Sublogics
                CASLSign 
                CASLMor
                Symbol RawSymbol () where
+
+         stability _ = Stable
+
          sublogic_names CASL = CASL.Sublogic.sublogics_name
          all_sublogics CASL = CASL.Sublogic.sublogics_all
 

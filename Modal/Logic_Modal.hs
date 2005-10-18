@@ -160,6 +160,7 @@ instance Logic Modal ()
                MSign 
                ModalMor
                Symbol RawSymbol () where
+         stability _ = Unstable
          min_sublogic_basic_spec Modal _basic_spec = ()
          min_sublogic_sentence Modal _sentence = ()
          min_sublogic_symb_items Modal _symb_items = ()

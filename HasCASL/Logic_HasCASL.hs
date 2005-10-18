@@ -135,6 +135,8 @@ instance Logic HasCASL HasCASL_Sublogics
                Env 
                Morphism
                Symbol RawSymbol () where
+         stability _ = Testing
+
          sublogic_names HasCASL = HasCASL.Sublogic.sublogics_name
          all_sublogics HasCASL = HasCASL.Sublogic.sublogics_all
 

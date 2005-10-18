@@ -92,5 +92,6 @@ instance StaticAnalysis Isabelle () Sentence ()
 
 instance Logic Isabelle () () Sentence () ()
                Sign 
-               IsabelleMorphism () () ()
+               IsabelleMorphism () () () where
+         stability _ = Testing
     -- again default implementations are fine

@@ -99,6 +99,10 @@ import Common.Amalgamate
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
+-- | Stability of logic implementations
+data Stability = Stable | Testing | Unstable | Experimental
+     deriving (Eq,Show)
+
 -- | shortcut for class constraints
 class (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, ShATermConvertible a) 
     => PrintTypeConv a
@@ -303,6 +307,11 @@ class (StaticAnalysis lid
                  basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol proof_tree
           where
+
+         -- stability of the implementation
+         stability :: lid -> Stability
+         -- default
+         stability _ = Experimental
 
          -- for a process logic, return its data logic
          data_logic :: lid -> Maybe AnyLogic

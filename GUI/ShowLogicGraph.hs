@@ -64,25 +64,34 @@ showLogicGraph
                 Button "Description" (\lg -> createTextDisplay ("Description of " ++ showTitle lg) (showDescription lg) [size(83,25)])
                ])
            
-           normalNodeTypeParms = 
+           makeLogicNodeMenu color =   
                logicNodeMenu $$$
                Ellipse $$$
                ValueTitle (return . showTitle) $$$
-               Color "green" $$$
+               Color color $$$
                nullNodeParms
 
-           proverNodeTypeParms = 
-               logicNodeMenu $$$
-               Ellipse $$$
-               ValueTitle (return . showTitle) $$$
-               Color "lightsteelblue" $$$
-               nullNodeParms
-      
-       normalNodeType <- newNodeType logicG normalNodeTypeParms
-       proverNodeType <- newNodeType logicG proverNodeTypeParms
+       stableNodeType <- newNodeType logicG $ makeLogicNodeMenu "#00FF00"
+       testingNodeType <- newNodeType logicG $ makeLogicNodeMenu "#88FF33"
+       unstableNodeType <- newNodeType logicG $ makeLogicNodeMenu "#CCFF66"
+       experimentalNodeType <- newNodeType logicG $ makeLogicNodeMenu "white"
+       proverNodeType <- newNodeType logicG $ makeLogicNodeMenu "lightsteelblue"
+
+       let newNode' logicG logic = 
+             case logic of
+                  Logic lid -> if (hasProver lid) then
+                                      newNode logicG proverNodeType logic
+                               else let nodeType = case stability lid of
+                                         Stable -> stableNodeType
+                                         Testing -> testingNodeType
+                                         Unstable -> unstableNodeType
+                                         Experimental -> experimentalNodeType
+                                      in newNode logicG nodeType logic
+             where hasProver lid = 
+                       not $ null $ provers lid
 
        -- production of the nodes (in a list)
-       nodeList <- mapM (newNode' logicG normalNodeType proverNodeType ) (Map.elems(logics logicGraph))
+       nodeList <- mapM (newNode' logicG) (Map.elems(logics logicGraph))
        -- build the map with the node's name and the node.
        let namesAndNodes = Map.fromList (zip (Map.keys(logics logicGraph)) nodeList)
        
@@ -169,7 +178,8 @@ showLogicGraph
 
         showDescription l =
             case l of
-              Logic lid -> description lid
+              Logic lid -> description lid ++ 
+                           "\n\nStability: " ++ show (stability lid)
 
 
         showComoDescription c =
@@ -178,11 +188,13 @@ showLogicGraph
 
         showTools lg = 
            case lg of
-                Logic lid -> showParse lid ++ "\n" ++ showProver lid ++ "\n" ++ showConsChecker lid
+                Logic lid -> showParse lid ++ "\nProvers: " ++ showProver lid ++ "\nConsistency checkers: " ++ showConsChecker lid
            where
-             showProver lid = unlines $ map prover_name (provers lid)
+             showProver lid = if null (provers lid) then "None"
+                               else unlines $ map prover_name (provers lid)
 
-             showConsChecker lid = unlines $ map prover_name (cons_checkers lid)
+             showConsChecker lid = if null (cons_checkers lid) then "None"
+                               else unlines $ map prover_name (cons_checkers lid)
              showParse lid =  
                    let s1 =  case parse_basic_spec lid of
                                Just _  -> "Parser for basic specifications.\n"
@@ -204,14 +216,6 @@ showLogicGraph
                                Nothing -> ""
                    in  (s1 ++ s2 ++ s3 ++ s4 ++ s5 ++ s6)
 
-        newNode' logicG normalNodeType proverNodeType logic = 
-             case logic of
-                  Logic lid -> if (hasProver lid) then
-                                      newNode logicG proverNodeType logic
-                               else
-                                      newNode logicG normalNodeType logic
-             where hasProver lid = 
-                       not $ null $ provers lid
 
         showSubLogicGraph 
            (displaySort' ::GraphDisp.Graph graph graphParms node nodeType nodeTypeParms arc arcType arcTypeParms) subl =

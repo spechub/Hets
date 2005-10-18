@@ -152,6 +152,7 @@ instance Logic CoCASL CoCASL_Sublogics
                CSign 
                CoCASLMor
                Symbol RawSymbol () where
+         stability _ = Unstable
 
          sublogic_names CoCASL = CoCASL.Sublogic.sublogics_name
          all_sublogics CoCASL = CoCASL.Sublogic.sublogics_all
