@@ -43,37 +43,35 @@ import Syntax.AS_Library
 {- a merge of the rules local subsumption, local decomposition I and 
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
-locDecomp ::  ProofStatus -> IO ProofStatus
-locDecomp proofStatus@(ln,libEnv,_) = do
+locDecomp ::  ProofStatus -> ProofStatus
+locDecomp proofStatus@(ln,libEnv,_) = 
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      result = locDecompAux libEnv ln dgraph ([],[]) localThmEdges
-      nextDGraph = fst result
-      nextHistoryElem = snd result
-      newProofStatus 
-          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-  return newProofStatus
+      (nextDGraph, nextHistoryElem) = 
+          locDecompAux libEnv ln dgraph ([],[]) localThmEdges
+  in mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
-locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-                    -> (DGraph,([DGRule],[DGChange]))
+locDecompAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) 
+             -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
 locDecompAux _ _ dgraph historyElement [] = (dgraph, historyElement)
-locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+locDecompAux libEnv ln dgraph (rules,changes) 
+                 (ledge@(src, tgt, edgeLab) : list) =
   if (null proofBasis && not (isIdentityEdge ledge libEnv dgraph))
      then
-       locDecompAux libEnv ln dgraph (rules,changes) list
+       locDecompAux libEnv ln dgraph (rules, changes) list
      else
        if isDuplicate newEdge dgraph changes
           then locDecompAux libEnv ln auxGraph 
-                 (newRules,(DeleteEdge ledge):changes) list
+                 (newRules, DeleteEdge ledge : changes) list
        else locDecompAux libEnv ln newGraph (newRules,newChanges) list
 
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
     th = computeLocalTheory libEnv (ln, src)
-    pathsWithoutEdgeItself = [path|path <- allPaths, notElem ledge path]
+    pathsWithoutEdgeItself = [ path | path <- allPaths, notElem ledge path ]
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis ledge filteredPaths
     auxGraph = delLEdge ledge dgraph
@@ -87,19 +85,23 @@ locDecompAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
                        dgl_origin = DGProof}
                )
     newGraph = insEdge newEdge auxGraph
-    newRules = (LocDecomp ledge):rules
-    newChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+    newRules =  LocDecomp ledge : rules
+    newChanges = DeleteEdge ledge : InsertEdge newEdge : changes
 
 
-{- removes all paths from the given list of paths whose morphism does not translate the given sentence list to the same resulting sentence list as the given morphism-}
-filterByTranslation :: Maybe G_theory -> GMorphism -> [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
+{- | removes all paths from the given list of paths whose morphism does
+not translate the given sentence list to the same resulting sentence
+list as the given morphism. -}
+filterByTranslation :: Maybe G_theory -> GMorphism -> [[LEdge DGLinkLab]] 
+                    -> [[LEdge DGLinkLab]]
 filterByTranslation maybeTh morphism paths =
   case maybeTh of
     Just th -> [path| path <- paths, isSameTranslation th morphism path]
     Nothing -> []
 --     isSameTranslation th morphism (calculateMorphismOfPath path)]
 
-{- checks if the given morphism and the morphism of the given path translate the given sentence list to the same resulting sentence list -}
+{- | checks if the given morphism and the morphism of the given path
+translate the given sentence list to the same resulting sentence list. -}
 isSameTranslation :: G_theory -> GMorphism -> [LEdge DGLinkLab] -> Bool
 isSameTranslation th morphism path =
   case calculateMorphismOfPath path of
@@ -132,7 +134,7 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
     Just thSrc ->
       case (maybeResult (computeTheory libEnv (ln, tgt)), 
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just (G_theory lidTgt sig sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
+        (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
             Just sentencesTgt -> do
@@ -160,7 +162,7 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
                  let newEdge = (src, n, newLab)
                      newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
                      newLibEnv = Map.adjust adjMap ln libEnv 
-                     adjMap (annos,env,dg) = (annos,env,newGraph')
+                     adjMap (annos, env, _dg) = (annos,env,newGraph')
                      newChanges = changes ++ DeleteEdge ledge :
                                     InsertNode newNode : changes' ++ 
                                     [DeleteNode oldNode,InsertEdge newEdge]
@@ -182,6 +184,6 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
     newRules = (LocInference ledge):rules
     oldNode = labNode' (safeContext "localInferenceAux" dgraph tgt)
     (_,oldContents) = oldNode
-    replaceNode from to (src,tgt,lab) = 
-       (replaceNodeAux from to src, replaceNodeAux from to tgt,lab)
+    replaceNode from to (src',tgt',labl) = 
+       (replaceNodeAux from to src', replaceNodeAux from to tgt',labl)
     replaceNodeAux from to n = if n==from then to else n

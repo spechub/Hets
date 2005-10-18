@@ -262,7 +262,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps globContext hetsOpts = do
                    Button "Local Inference"
                           (proofMenu gInfo (fmap return . localInference)),
                    Button "Local Decomposition (merge of rules)"
-                          (proofMenu gInfo (fmap return . locDecomp)),
+                          (proofMenu gInfo (return . return . locDecomp)),
                    Button "Composition (merge of rules)"
                           (proofMenu gInfo (fmap return . composition)),
                    Button "Composition - creating new links"

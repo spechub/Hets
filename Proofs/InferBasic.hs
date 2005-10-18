@@ -96,7 +96,7 @@ automaticApplyRules p = do
   p1 <- globSubsume p --p0
   p2 <- globDecomp p1
   p3 <- localInference p2
-  p4 <- locDecomp p3
+  let p4 = locDecomp p3
   hideTheoremShift True p4
 
 
