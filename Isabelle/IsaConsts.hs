@@ -96,14 +96,3 @@ pairC = "pair"
 
 isaPair :: String
 isaPair = "Pair"
-
--- new stuff
-
-boolT :: Typ
-boolT = Type "boolT" dom []
-
-isaOr :: Term
-isaOr = Const "OR" (mkContFun boolT (mkContFun boolT boolT))
-
-mkIsaOr :: Term -> Term -> Term
-mkIsaOr t1 t2 = App (App isaOr t1 IsCont) t2 IsCont
